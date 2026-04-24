@@ -1,17 +1,16 @@
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { CharGenFeats as K1_CharGenFeats } from "@/game/kotor/KOTOR";
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
+import { CharGenFeats as K1_CharGenFeats } from '@/game/kotor/KOTOR';
 
 /**
  * CharGenFeats class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenFeats.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenFeats extends K1_CharGenFeats {
-
   declare MAIN_TITLE_LBL: GUILabel;
   declare SUB_TITLE_LBL: GUILabel;
   declare STD_SELECTIONS_REMAINING_LBL: GUILabel;
@@ -26,7 +25,7 @@ export class CharGenFeats extends K1_CharGenFeats {
   declare BTN_RECOMMENDED: GUIButton;
   declare LB_FEATS: GUIListBox;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'ftchrgen_p';
     this.background = '';
@@ -35,10 +34,9 @@ export class CharGenFeats extends K1_CharGenFeats {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
-  
 }

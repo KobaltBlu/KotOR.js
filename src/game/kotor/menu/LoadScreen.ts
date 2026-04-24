@@ -1,19 +1,18 @@
-import { GameState } from "@/GameState";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { GameMenu } from "@/gui";
-import type { GUILabel, GUIProgressBar } from "@/gui";
+import { GameState } from '@/GameState';
+import { EngineMode } from '@/enums/engine/EngineMode';
+import { GameMenu } from '@/gui';
+import type { GUILabel, GUIProgressBar } from '@/gui';
 
 /**
  * LoadScreen class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LoadScreen.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class LoadScreen extends GameMenu {
-
   engineMode: EngineMode = EngineMode.LOADING;
   PB_PROGRESS: GUIProgressBar;
   LBL_HINT: GUILabel;
@@ -21,7 +20,7 @@ export class LoadScreen extends GameMenu {
   LBL_LOADING: GUILabel;
   defaultTex: any;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'loadscreen';
     this.background = '1600x1200load';
@@ -30,7 +29,7 @@ export class LoadScreen extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LBL_HINT.visible = false;
       (this.defaultTex = this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value;
@@ -43,7 +42,7 @@ export class LoadScreen extends GameMenu {
   }
 
   setLoadBackground(resref: string): Promise<boolean> {
-    return new Promise<boolean>( async (resolve, reject) => {
+    return new Promise<boolean>(async (resolve, reject) => {
       if (resref) {
         const texture = await this.loadTexture(resref);
         if (texture) {
@@ -52,11 +51,12 @@ export class LoadScreen extends GameMenu {
           return;
         } else {
           const default_texture = await this.loadTexture('load_default');
-          if(default_texture){
-            (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex = default_texture;
+          if (default_texture) {
+            (this.tGuiPanel.getFill().material as THREE.ShaderMaterial).uniforms.map.value = this.defaultTex =
+              default_texture;
             resolve(true);
             return;
-          }else{
+          } else {
             resolve(true);
             return;
           }
@@ -70,7 +70,8 @@ export class LoadScreen extends GameMenu {
 
   showRandomHint() {
     this.LBL_LOADING.setText(GameState.TLKManager.TLKStrings[42493].Value);
-    let id = Math.floor(Math.random() * (GameState.TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
+    let id =
+      Math.floor(Math.random() * (GameState.TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
     let hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[id];
     if (!hint) {
       console.log('showRandomHint', id);
@@ -85,7 +86,7 @@ export class LoadScreen extends GameMenu {
     this.setProgress(0);
   }
 
-  setHintMessage(message: string = ''){
+  setHintMessage(message: string = '') {
     this.LBL_HINT.setText(message);
   }
 
@@ -100,5 +101,4 @@ export class LoadScreen extends GameMenu {
     GameState.FadeOverlayManager.plane.visible = true;
     this.setProgress(0);
   }
-  
 }

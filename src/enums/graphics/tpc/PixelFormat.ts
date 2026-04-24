@@ -1,8 +1,8 @@
 /**
  * PixelFormat enum.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file PixelFormat.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -18,5 +18,5 @@ export enum PixelFormat {
   Depth16 = 7,
   DXT1 = 8,
   DXT3 = 9,
-  DXT5 = 10
-};
+  DXT5 = 10,
+}

@@ -1,16 +1,16 @@
-import React, { useEffect, useState } from "react";
-import MonacoEditor from "react-monaco-editor";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabLYTEditorState, LYTRoomEntry } from "@/apps/forge/states/tabs/TabLYTEditorState";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { CameraView } from "@/apps/forge/UI3DRenderer";
-import { Form } from "react-bootstrap";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
+import React, { useEffect, useState } from 'react';
+import MonacoEditor from 'react-monaco-editor';
+import { BaseTabProps } from '@/apps/forge/interfaces/BaseTabProps';
+import { TabLYTEditorState, LYTRoomEntry } from '@/apps/forge/states/tabs/TabLYTEditorState';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { LayoutContainerProvider } from '@/apps/forge/context/LayoutContainerContext';
+import { LayoutContainer } from '@/apps/forge/components/LayoutContainer/LayoutContainer';
+import { UI3DRendererView } from '@/apps/forge/components/UI3DRendererView';
+import { MenuItem } from '@/apps/forge/components/common/MenuBar';
+import { CameraView } from '@/apps/forge/UI3DRenderer';
+import { Form } from 'react-bootstrap';
+import { SectionContainer } from '@/apps/forge/components/SectionContainer';
+import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
 
 export const TabLYTEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabLYTEditorState;
@@ -188,9 +188,7 @@ const LYTSidebarComponent = function (props: { tab: TabLYTEditorState }) {
               {entry.lytRoom.name}
             </div>
           ))}
-          {rooms.length === 0 && (
-            <div style={{ padding: '6px', color: '#888' }}>No rooms</div>
-          )}
+          {rooms.length === 0 && <div style={{ padding: '6px', color: '#888' }}>No rooms</div>}
         </div>
       </SectionContainer>
 

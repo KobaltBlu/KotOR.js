@@ -1,3 +1,2 @@
-export interface ModuleEditorState {
-  
-}
+/** Base type for module editor state */
+export type ModuleEditorState = object;

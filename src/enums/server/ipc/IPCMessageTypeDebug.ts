@@ -6,8 +6,8 @@ export enum IPCMessageTypeDebug {
   ScriptSetBreakpoint = 0x07,
   ScriptRemovetBreakpoint = 0x08,
   ScriptUpdateState = 0x09,
-  ScriptContinue = 0x0A,
-  ScriptStepOverInstruction = 0x0B,
-  ScriptStepIntoInstruction = 0x0C,
-  ScriptStepOutInstruction = 0x0D
+  ScriptContinue = 0x0a,
+  ScriptStepOverInstruction = 0x0b,
+  ScriptStepIntoInstruction = 0x0c,
+  ScriptStepOutInstruction = 0x0d,
 }

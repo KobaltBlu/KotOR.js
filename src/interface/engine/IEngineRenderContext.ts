@@ -1,3 +1,1 @@
-export class IEngineRenderContext {
-
-}
+export class IEngineRenderContext {}

@@ -1,11 +1,11 @@
-import React, { useState } from "react";
-import { Dropdown } from "react-bootstrap";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import React, { useState } from 'react';
+import { Dropdown } from 'react-bootstrap';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
 import {
   AmbientMusicOstEntry,
   AudioPlayerOstStatePayload,
   AudioPlayerState,
-} from "@/apps/forge/states/AudioPlayerState";
+} from '@/apps/forge/states/AudioPlayerState';
 
 export type ForgeAudioOstControlsProps = {
   /**
@@ -15,7 +15,7 @@ export type ForgeAudioOstControlsProps = {
   /**
    * When set with `showInlineNowPlaying`, adds a modifier for navbar-only responsive rules.
    */
-  inlineNowVariant?: "navbar";
+  inlineNowVariant?: 'navbar';
   /** e.g. `forge-audio-ost--tab` for larger deck controls */
   className?: string;
 };
@@ -25,7 +25,7 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
 
   const [ost, setOst] = useState<AudioPlayerOstStatePayload>(() => ({
     active: false,
-    label: "",
+    label: '',
     trackIndex: -1,
     total: 0,
     shuffle: false,
@@ -37,11 +37,10 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
   const syncOstFromState = () => {
     const active = AudioPlayerState.ostMode && AudioPlayerState.ostTracks.length > 0;
     const physical = AudioPlayerState.getCurrentOstPhysicalIndex();
-    const entry =
-      active && physical >= 0 ? AudioPlayerState.ostTracks[physical] : undefined;
+    const entry = active && physical >= 0 ? AudioPlayerState.ostTracks[physical] : undefined;
     setOst({
       active,
-      label: entry?.displayName ?? entry?.label ?? "",
+      label: entry?.displayName ?? entry?.label ?? '',
       trackIndex: physical,
       total: AudioPlayerState.ostTracks.length,
       shuffle: AudioPlayerState.ostShuffle,
@@ -62,9 +61,9 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
 
   useEffectOnce(() => {
     syncOstFromState();
-    AudioPlayerState.AddEventListener("onOstState", onOstState);
+    AudioPlayerState.AddEventListener('onOstState', onOstState);
     return () => {
-      AudioPlayerState.RemoveEventListener("onOstState", onOstState);
+      AudioPlayerState.RemoveEventListener('onOstState', onOstState);
     };
   });
 
@@ -85,24 +84,20 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
   };
 
   const ostPosition =
-    ost.active && ost.total > 0
-      ? `${ost.queuePosition} / ${ost.total}${ost.shuffle ? " · shuffle" : ""}`
-      : "";
+    ost.active && ost.total > 0 ? `${ost.queuePosition} / ${ost.total}${ost.shuffle ? ' · shuffle' : ''}` : '';
   const ostTitle = ost.active
-    ? `Ambient soundtrack: ${ost.label}${ostPosition ? ` (${ostPosition})` : ""}`
-    : "Play all music from ambientmusic.2da (auto-advance)";
+    ? `Ambient soundtrack: ${ost.label}${ostPosition ? ` (${ostPosition})` : ''}`
+    : 'Play all music from ambientmusic.2da (auto-advance)';
 
   const onOstShuffleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     AudioPlayerState.setOstShuffle(e.target.checked);
   };
 
-  const nowPlayingTitle = ost.active && ost.label ? ost.label : "";
+  const nowPlayingTitle = ost.active && ost.label ? ost.label : '';
   const nowClass =
-    inlineNowVariant === "navbar"
-      ? "forge-audio-ost__now forge-audio-ost__now--navbar"
-      : "forge-audio-ost__now";
+    inlineNowVariant === 'navbar' ? 'forge-audio-ost__now forge-audio-ost__now--navbar' : 'forge-audio-ost__now';
 
-  const rootClass = ["forge-audio-ost", className].filter(Boolean).join(" ");
+  const rootClass = ['forge-audio-ost', className].filter(Boolean).join(' ');
 
   return (
     <div className={rootClass}>
@@ -116,12 +111,7 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
       <div className="forge-audio-ost__rule" aria-hidden />
 
       <div className="forge-audio-ost__ambient">
-        <Dropdown
-          className="forge-audio-ost__dropdown"
-          align="end"
-          show={ostMenuOpen}
-          onToggle={onOstMenuToggle}
-        >
+        <Dropdown className="forge-audio-ost__dropdown" align="end" show={ostMenuOpen} onToggle={onOstMenuToggle}>
           <Dropdown.Toggle
             as="button"
             type="button"
@@ -132,20 +122,14 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
             <i className="fa-solid fa-list-ul" />
           </Dropdown.Toggle>
           <Dropdown.Menu className="forge-mini-player__menu" renderOnMount>
-            <Dropdown.Header className="forge-mini-player__menu-header">
-              Ambient music
-            </Dropdown.Header>
+            <Dropdown.Header className="forge-mini-player__menu-header">Ambient music</Dropdown.Header>
             <div
               className="forge-mini-player__shuffle-row"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => e.stopPropagation()}
             >
               <label className="forge-mini-player__shuffle-label">
-                <input
-                  type="checkbox"
-                  checked={ost.shuffle}
-                  onChange={onOstShuffleChange}
-                />
+                <input type="checkbox" checked={ost.shuffle} onChange={onOstShuffleChange} />
                 Shuffle
               </label>
             </div>
@@ -159,9 +143,7 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
                   key={`${t.resRef}-${idx}`}
                   className="forge-mini-player__menu-item"
                   active={ost.active && ost.trackIndex === idx}
-                  title={`${t.displayName} — ${t.resRef}${
-                    t.label !== t.displayName ? ` (row: ${t.label})` : ""
-                  }`}
+                  title={`${t.displayName} — ${t.resRef}${t.label !== t.displayName ? ` (row: ${t.label})` : ''}`}
                   onClick={() => {
                     void AudioPlayerState.seekOstToPhysicalIndex(idx);
                   }}
@@ -175,11 +157,9 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
 
         <button
           type="button"
-          className={`forge-audio-ost__icon-btn${ost.active ? " forge-audio-ost__icon-btn--ost-on" : ""}`}
+          className={`forge-audio-ost__icon-btn${ost.active ? ' forge-audio-ost__icon-btn--ost-on' : ''}`}
           title={ostTitle}
-          aria-label={
-            ost.active ? "Stop ambient soundtrack" : "Start ambient soundtrack"
-          }
+          aria-label={ost.active ? 'Stop ambient soundtrack' : 'Start ambient soundtrack'}
           aria-pressed={ost.active}
           onClick={onOstToggle}
         >

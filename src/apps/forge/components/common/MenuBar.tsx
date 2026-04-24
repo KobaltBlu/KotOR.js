@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 export interface MenuItem {
   label?: string;
@@ -38,30 +38,36 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
         setOpenSubmenu((prev) => (prev === path ? null : prev));
       }, SUBMENU_CLOSE_DELAY_MS);
     },
-    [cancelPendingSubmenuClose],
+    [cancelPendingSubmenuClose]
   );
 
   useEffect(() => {
     return () => cancelPendingSubmenuClose();
   }, [cancelPendingSubmenuClose]);
 
-  const handleMenuClick = useCallback((label?: string) => {
-    setOpenMenu((prev) => (prev === label ? null : label ?? null));
-    setOpenSubmenu(null);
-    cancelPendingSubmenuClose();
-  }, [cancelPendingSubmenuClose]);
+  const handleMenuClick = useCallback(
+    (label?: string) => {
+      setOpenMenu((prev) => (prev === label ? null : (label ?? null)));
+      setOpenSubmenu(null);
+      cancelPendingSubmenuClose();
+    },
+    [cancelPendingSubmenuClose]
+  );
 
-  const handleItemClick = useCallback((item: MenuItem) => {
-    if (item.children) {
-      return; // Don't close menu if it has children
-    }
-    if (item.onClick) {
-      item.onClick();
-    }
-    setOpenMenu(null);
-    setOpenSubmenu(null);
-    cancelPendingSubmenuClose();
-  }, [cancelPendingSubmenuClose]);
+  const handleItemClick = useCallback(
+    (item: MenuItem) => {
+      if (item.children) {
+        return; // Don't close menu if it has children
+      }
+      if (item.onClick) {
+        item.onClick();
+      }
+      setOpenMenu(null);
+      setOpenSubmenu(null);
+      cancelPendingSubmenuClose();
+    },
+    [cancelPendingSubmenuClose]
+  );
 
   const closeAllMenus = useCallback(() => {
     cancelPendingSubmenuClose();
@@ -145,9 +151,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
           }}
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {item.checked && (
-              <span style={{ fontSize: '12px', color: '#4EC9B0' }}>✓</span>
-            )}
+            {item.checked && <span style={{ fontSize: '12px', color: '#4EC9B0' }}>✓</span>}
             <span>{item.label}</span>
           </span>
           {hasChildren ? (
@@ -175,7 +179,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
             }}
             onMouseLeave={() => scheduleSubmenuClose(itemPath)}
           >
-            {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, itemPath))}
+            {(item.children ?? []).map((child, childIndex) => renderMenuItem(child, childIndex, itemPath))}
           </div>
         )}
       </div>
@@ -203,10 +207,10 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
         const isOpen = openMenu === item.label;
         const hasChildren = item.children && item.children.length > 0;
         const handleTopClick = () => {
-          if(item.disabled) return;
-          if(hasChildren){
+          if (item.disabled) return;
+          if (hasChildren) {
             handleMenuClick(item.label);
-          }else if(item.onClick){
+          } else if (item.onClick) {
             item.onClick();
           }
         };
@@ -269,4 +273,3 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
     </div>
   );
 };
-

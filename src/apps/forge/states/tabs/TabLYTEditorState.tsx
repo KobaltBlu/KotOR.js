@@ -1,13 +1,13 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from '@/apps/forge/UI3DRenderer';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import * as KotOR from '@/apps/forge/KotOR';
 import * as THREE from 'three';
-import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { TabLYTEditor } from "@/apps/forge/components/tabs/tab-lyt-editor/TabLYTEditor";
-import { ILayoutRoom } from "@/interface/resource/ILayoutRoom";
+import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
+import { TabLYTEditor } from '@/apps/forge/components/tabs/tab-lyt-editor/TabLYTEditor';
+import { ILayoutRoom } from '@/interface/resource/ILayoutRoom';
 import {
   promptForDirectory,
   collectModelAssets,
@@ -17,7 +17,7 @@ import {
   writeFile,
   showExtractionResults,
   createProgressModal,
-} from "@/apps/forge/helpers/AssetExtraction";
+} from '@/apps/forge/helpers/AssetExtraction';
 
 export interface LYTRoomEntry {
   lytRoom: ILayoutRoom;
@@ -47,10 +47,10 @@ export class TabLYTEditorState extends TabState {
   constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
-    const grid1 = new THREE.GridHelper(250, 26, 0x00FF00);
+    const grid1 = new THREE.GridHelper(250, 26, 0x00ff00);
     grid1.rotation.x = -Math.PI / 2;
 
-    const grid2 = new THREE.GridHelper(250, 2, 0xFF0000);
+    const grid2 = new THREE.GridHelper(250, 2, 0xff0000);
     grid2.rotation.x = -Math.PI / 2;
 
     this.ui3DRenderer = new UI3DRenderer();
@@ -432,8 +432,11 @@ export class TabLYTEditorState extends TabState {
     await collectTxiReferencedTextures(allTextures);
 
     const { exportedFiles, skippedFiles, failedFiles } = await exportCollectedAssets(
-      allModels, allTextures, target, undefined,
-      (cur, tot, msg) => progress.setProgress(cur, tot, msg),
+      allModels,
+      allTextures,
+      target,
+      undefined,
+      (cur, tot, msg) => progress.setProgress(cur, tot, msg)
     );
 
     progress.setProgress(0, 0, 'Writing LYT file...');
@@ -450,13 +453,16 @@ export class TabLYTEditorState extends TabState {
       }
     }
 
-    showExtractionResults({
-      modelName: lytName,
-      modelCount: allModels.size,
-      textureCount: allTextures.size,
-      exportedFiles,
-      skippedFiles,
-      failedFiles,
-    }, progress);
+    showExtractionResults(
+      {
+        modelName: lytName,
+        modelCount: allModels.size,
+        textureCount: allTextures.size,
+        exportedFiles,
+        skippedFiles,
+        failedFiles,
+      },
+      progress
+    );
   }
 }

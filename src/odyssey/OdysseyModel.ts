@@ -1,34 +1,36 @@
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { OdysseyModelEngine } from "@/enums/odyssey/OdysseyModelEngine";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
-import { IOdysseyFileHeader } from "@/interface/odyssey/IOdysseyFileHeader";
-import { IOdysseyGeometryHeader } from "@/interface/odyssey/IOdysseyGeometryHeader";
-import { IOdysseyModelHeader } from "@/interface/odyssey/IOdysseyModelHeader";
-import { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
-import { OdysseyModelFactory } from "@/odyssey/OdysseyModelFactory";
-import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { OdysseyModelEngine } from '@/enums/odyssey/OdysseyModelEngine';
+import { OdysseyModelNodeType } from '@/enums/odyssey/OdysseyModelNodeType';
+import { IOdysseyArrayDefinition } from '@/interface/odyssey/IOdysseyArrayDefinition';
+import { IOdysseyFileHeader } from '@/interface/odyssey/IOdysseyFileHeader';
+import { IOdysseyGeometryHeader } from '@/interface/odyssey/IOdysseyGeometryHeader';
+import { IOdysseyModelHeader } from '@/interface/odyssey/IOdysseyModelHeader';
+import { OdysseyModelAnimation } from '@/odyssey/OdysseyModelAnimation';
+import { OdysseyModelFactory } from '@/odyssey/OdysseyModelFactory';
+import { OdysseyModelNode } from '@/odyssey/OdysseyModelNode';
+import { OdysseyModelUtility } from '@/odyssey/OdysseyModelUtility';
 
 const mdlStringCleaner = (str: string = ''): string => {
-  const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();
+  const cleaned = str
+    .replace(/\0[\s\S]*$/g, '')
+    .toLowerCase()
+    .trim();
   return cleaned != 'null' ? cleaned : '';
 };
 
 /**
  * OdysseyModel class.
- * 
- * The OdysseyModel class takes an MDL & MDX file and decode the values to later be passed to a 
+ *
+ * The OdysseyModel class takes an MDL & MDX file and decode the values to later be passed to a
  * OdysseyModel3D class to be converted into an object that can be added to the scene graph.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyModel.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyModel {
-
   mdlReader: BinaryReader;
   mdxReader: BinaryReader;
 
@@ -52,16 +54,15 @@ export class OdysseyModel {
   asciiHeadLink?: number;
   /** MDLedit `layoutposition` (beginmodelgeom). */
   asciiLayoutPosition?: { x: number; y: number; z: number };
-  
-  constructor( mdlReader: BinaryReader, mdxReader: BinaryReader ){
 
+  constructor(mdlReader: BinaryReader, mdxReader: BinaryReader) {
     this.mdlReader = mdlReader;
     this.mdxReader = mdxReader;
 
     this.fileHeader.flagBinary = this.mdlReader.readUInt32();
 
-    if (this.fileHeader.flagBinary != 0){
-      throw ("KotOR binary model not presented");
+    if (this.fileHeader.flagBinary != 0) {
+      throw 'KotOR binary model not presented';
     }
 
     this.fileHeader.mdlDataSize = this.mdlReader.readUInt32();
@@ -79,19 +80,19 @@ export class OdysseyModel {
 
     //Thanks bead-v :)
     //Use FunctionPointer0 in the geometry header to determine the engine version the model was prepared for.
-    switch(this.geometryHeader.functionPointer0){
+    switch (this.geometryHeader.functionPointer0) {
       case 4273776: //K1
         this.engine = OdysseyModelEngine.K1;
-      break;
+        break;
       case 4285200: //K2
         this.engine = OdysseyModelEngine.K2;
-      break;
+        break;
       case 4254992: //K1_XBOX
         this.engine = OdysseyModelEngine.K1_XBOX;
-      break;
+        break;
       case 4285872: //K2_XBOX
         this.engine = OdysseyModelEngine.K2_XBOX;
-      break;
+        break;
     }
 
     this.geometryHeader.modelName = mdlStringCleaner(this.mdlReader.readChars(32));
@@ -108,7 +109,7 @@ export class OdysseyModel {
     /*
      * Model Header
      */
-    
+
     this.modelHeader.classification = this.mdlReader.readByte();
     this.modelHeader.subClassification = this.mdlReader.readByte();
     const smoothingByte = this.mdlReader.readByte();
@@ -131,7 +132,7 @@ export class OdysseyModel {
     this.modelHeader.scale = this.mdlReader.readSingle();
     this.mdlReader.seek(148);
     this.modelHeader.superModelName = mdlStringCleaner(this.mdlReader.readChars(32));
-    
+
     /*
      * Names Array Header
      */
@@ -142,10 +143,18 @@ export class OdysseyModel {
     this.geometryHeader.mdxOffset = this.mdlReader.readUInt32();
 
     this.namesArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.mdlReader);
-    this.nameOffsetsArray = OdysseyModelUtility.ReadArray(this.mdlReader, this.fileHeader.modelDataOffset + this.namesArrayDefinition.offset, this.namesArrayDefinition.count);
+    this.nameOffsetsArray = OdysseyModelUtility.ReadArray(
+      this.mdlReader,
+      this.fileHeader.modelDataOffset + this.namesArrayDefinition.offset,
+      this.namesArrayDefinition.count
+    );
 
-    this.names = OdysseyModelUtility.ReadStrings(this.mdlReader, this.nameOffsetsArray, this.fileHeader.modelDataOffset);
-    for(let i = 0, namesLen = this.names.length; i < namesLen; i++){
+    this.names = OdysseyModelUtility.ReadStrings(
+      this.mdlReader,
+      this.nameOffsetsArray,
+      this.fileHeader.modelDataOffset
+    );
+    for (let i = 0, namesLen = this.names.length; i < namesLen; i++) {
       this.names[i] = mdlStringCleaner(this.names[i]);
     }
 
@@ -153,47 +162,49 @@ export class OdysseyModel {
      * Nodes
      */
 
-    this.rootNode = this.readNode( this.geometryHeader.rootNodeOffset );
+    this.rootNode = this.readNode(this.geometryHeader.rootNodeOffset);
 
     /*
      * Animations
      */
 
-    const animOffsets = OdysseyModelUtility.ReadArray(mdlReader, this.fileHeader.modelDataOffset + this.modelHeader.animationArrayDefinition.offset, this.modelHeader.animationArrayDefinition.count);
-    for (let i = 0; i < this.modelHeader.animationArrayDefinition.count; i++){
-      this.readAnimation( this.fileHeader.modelDataOffset + animOffsets[i] );
+    const animOffsets = OdysseyModelUtility.ReadArray(
+      mdlReader,
+      this.fileHeader.modelDataOffset + this.modelHeader.animationArrayDefinition.offset,
+      this.modelHeader.animationArrayDefinition.count
+    );
+    for (let i = 0; i < this.modelHeader.animationArrayDefinition.count; i++) {
+      this.readAnimation(this.fileHeader.modelDataOffset + animOffsets[i]);
     }
 
     this.mdlReader.dispose();
     this.mdxReader.dispose();
-
   }
 
-  readNode(offset: number, parent = this.rootNode){
-
-    this.mdlReader.position = this.fileHeader.modelDataOffset + offset;  
+  readNode(offset: number, parent = this.rootNode) {
+    this.mdlReader.position = this.fileHeader.modelDataOffset + offset;
     // let node: OdysseyModelNode;
 
     const node = OdysseyModelFactory.ReadNode(parent, this.mdlReader);
     node.isRootNode = !parent;
 
-    if(node){
+    if (node) {
       node.readBinary(this);
       node.odysseyModel = undefined;
 
-      for(let i = 0, len = node.childOffsets.length; i < len; i++){
-        node.add( this.readNode(node.childOffsets[i], node ) );
+      for (let i = 0, len = node.childOffsets.length; i < len; i++) {
+        node.add(this.readNode(node.childOffsets[i], node));
       }
-  
+
       return node;
-    }else{
+    } else {
       console.error('OdysseyModel.ReadNode', 'Unhandled Node', node.nodeType);
     }
 
     return node;
   }
 
-  readAnimation(offset: number){
+  readAnimation(offset: number) {
     const pos = this.mdlReader.position;
     this.mdlReader.seek(offset);
 
@@ -206,7 +217,7 @@ export class OdysseyModel {
     return anim;
   }
 
-  getAnimationDummyNodeName(){
+  getAnimationDummyNodeName() {
     return this.geometryHeader.modelName.trim().toLowerCase() + 'a';
   }
 
@@ -230,14 +241,14 @@ export class OdysseyModel {
       try {
         listener(event);
       } catch (e) {
-        console.error("OdysseyModel.emitChange listener error", e);
+        console.error('OdysseyModel.emitChange listener error', e);
       }
     });
   }
 
   markMetaChanged(field?: string): void {
     this.emitChange({
-      kind: "model.meta",
+      kind: 'model.meta',
       model: this,
       field,
     });
@@ -245,7 +256,7 @@ export class OdysseyModel {
 
   markControllerKeyframesChanged(nodeUUID: string, animationName?: string): void {
     this.emitChange({
-      kind: "controller.keyframes",
+      kind: 'controller.keyframes',
       model: this,
       nodeUUID,
       animationName,
@@ -254,7 +265,7 @@ export class OdysseyModel {
 
   markNodeMaterialChanged(nodeUUID: string): void {
     this.emitChange({
-      kind: "node.material",
+      kind: 'node.material',
       model: this,
       nodeUUID,
     });
@@ -262,7 +273,7 @@ export class OdysseyModel {
 
   markNodeGeometryChanged(nodeUUID: string): void {
     this.emitChange({
-      kind: "node.geometry",
+      kind: 'node.geometry',
       model: this,
       nodeUUID,
     });
@@ -270,7 +281,7 @@ export class OdysseyModel {
 
   markNodeHierarchyChanged(nodeUUID: string): void {
     this.emitChange({
-      kind: "node.hierarchy",
+      kind: 'node.hierarchy',
       model: this,
       nodeUUID,
     });
@@ -278,21 +289,20 @@ export class OdysseyModel {
 
   markNodeTransformChanged(nodeUUID: string): void {
     this.emitChange({
-      kind: "node.transform",
+      kind: 'node.transform',
       model: this,
       nodeUUID,
     });
   }
-  
 }
 
 export type OdysseyModelChangeKind =
-  | "node.transform"
-  | "controller.keyframes"
-  | "node.material"
-  | "node.geometry"
-  | "node.hierarchy"
-  | "model.meta";
+  | 'node.transform'
+  | 'controller.keyframes'
+  | 'node.material'
+  | 'node.geometry'
+  | 'node.hierarchy'
+  | 'model.meta';
 
 export interface OdysseyModelChangeEvent {
   kind: OdysseyModelChangeKind;

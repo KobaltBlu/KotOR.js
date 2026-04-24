@@ -1,0 +1,17 @@
+PASS src/apps/forge/states/tabs/TabIndoorBuilderState.test.ts
+  TabIndoorBuilderState
+    ΓêÜ setKits keeps the embedded kit last and preserves an existing selection (7 ms)
+    ΓêÜ setKits chooses the first real kit when no kit is already selected (1 ms)
+    ΓêÜ loadKitsFromPath delegates to the loader and installs the returned kits (4 ms)
+    ΓêÜ addRoomAt creates a room, selects it, marks the file dirty, and syncs 3D (3 ms)
+    ΓêÜ duplicateSelectedRooms offsets clones and deleteSelectedRooms removes them cleanly (4 ms)
+    ΓêÜ rotateSelectedRooms and flipSelectedRooms update the selected room flags (2 ms)
+    ΓêÜ setViewMode toggles renderer enablement and renders when entering 3D mode (16 ms)
+    ΓêÜ openFile updates tab metadata, loads the map, and syncs loaded rooms (41 ms)
+    ΓêÜ getExportBuffer serializes the current indoor map rooms (12 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       9 passed, 9 total
+Snapshots:   0 total
+Time:        4.232 s, estimated 16 s
+Ran all test suites matching src/apps/forge/states/tabs/TabIndoorBuilderState.test.ts.

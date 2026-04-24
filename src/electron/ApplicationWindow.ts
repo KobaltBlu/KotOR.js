@@ -1,19 +1,21 @@
-import { BrowserWindow } from "electron";
-import * as path from "path";
-import { WindowManager } from "./WindowManager";
-import Main from "./Main";
+﻿import { BrowserWindow } from 'electron';
+import * as path from 'path';
+import { WindowManager } from '@/electron/WindowManager';
+import Main from '@/electron/Main';
 
 export class ApplicationWindow {
-
   browserWindow: BrowserWindow;
   profile: any;
 
-  constructor(profile: any = {}){
+  constructor(profile: any = {}) {
     // Create the browser window.
     this.browserWindow = new BrowserWindow({
-      width: profile.width ? profile.width : 1200, 
+      width: profile.width ? profile.width : 1200,
       height: profile.height ? profile.height : 600,
-      fullscreen: profile.settings?.fullscreen.value != undefined ? profile.settings?.fullscreen.value : profile.settings?.fullscreen.defaultValue,
+      fullscreen:
+        profile.settings?.fullscreen.value != undefined
+          ? profile.settings?.fullscreen.value
+          : profile.settings?.fullscreen.defaultValue,
       frame: !profile.launch.frameless,
       title: profile.name,
       backgroundColor: profile.launch.backgroundColor,
@@ -27,7 +29,7 @@ export class ApplicationWindow {
         contextIsolation: true,
         sandbox: false,
         experimentalFeatures: true,
-      }
+      },
     });
 
     // Enable SharedArrayBuffer
@@ -39,15 +41,15 @@ export class ApplicationWindow {
     //     callback({ responseHeaders: details.responseHeaders });
     //   }
     // );
-    
+
     this.profile = profile;
 
     let queryString = new URLSearchParams();
-    if(typeof profile.launch.args === 'object'){
+    if (typeof profile.launch.args === 'object') {
       queryString = new URLSearchParams(
         Object.keys(profile.launch.args)
-        .map( key => key + '=' + profile.launch.args[key] )
-        .join('&')
+          .map((key) => key + '=' + profile.launch.args[key])
+          .join('&')
       );
     }
 
@@ -57,14 +59,14 @@ export class ApplicationWindow {
     this.browserWindow.loadURL(`file://${Main.ApplicationPath}/dist/${profile.launch.path}?${queryString.toString()}`);
     this.browserWindow.setMenuBarVisibility(false);
 
-    // Emitted when the window is closed.
-    this.browserWindow.on('closed', () => {
-      WindowManager.createLauncherWindow();
+    // Emitted before the window is closed.
+    this.browserWindow.on('close', () => {
       WindowManager.removeWindow(this);
+      WindowManager.showLauncher();
     });
 
-    this.browserWindow.webContents.on("did-create-window", (window, details) => {
-      if(details.url.indexOf(`debugger/index.html`) !== -1){
+    this.browserWindow.webContents.on('did-create-window', (window, details) => {
+      if (details.url.indexOf(`debugger/index.html`) !== -1) {
         // window.webContents.once("dom-ready", () => window.webContents.openDevTools());
         console.log('Debugger: Launched!');
       }
@@ -82,20 +84,18 @@ export class ApplicationWindow {
             webPreferences: {
               preload: path.join(Main.ApplicationPath, 'dist/electron/preload.js'),
               devTools: true,
-            }
-          }
-        }
+            },
+          },
+        };
       }
-      return { action: 'deny' }
-    })
+      return { action: 'deny' };
+    });
 
     WindowManager.hideLauncher();
     WindowManager.addWindow(this);
   }
-  
-  send(event: string, data: any) {
-    if(this.browserWindow)
-      this.browserWindow.webContents.send(event, data);
-  }
 
+  send(event: string, data: any) {
+    if (this.browserWindow) this.browserWindow.webContents.send(event, data);
+  }
 }

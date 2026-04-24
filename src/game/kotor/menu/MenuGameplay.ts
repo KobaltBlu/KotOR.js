@@ -1,19 +1,18 @@
-import type { SWDifficulty } from "@/engine/rules/SWDifficulty";
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
+import type { SWDifficulty } from '@/engine/rules/SWDifficulty';
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from '@/gui';
 
 /**
  * MenuGameplay class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuGameplay.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuGameplay extends GameMenu {
-
   CB_INVERTCAM: GUICheckBox;
   CB_LEVELUP: GUICheckBox;
   BTN_DIFFICULTY: GUIButton;
@@ -32,7 +31,7 @@ export class MenuGameplay extends GameMenu {
   difficultyList: SWDifficulty[] = [];
   selectedDifficulty: SWDifficulty;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optgameplay';
     this.background = '1600x1200back';
@@ -41,16 +40,18 @@ export class MenuGameplay extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_DIFFLEFT.addEventListener('click', (e) => {
         e.stopPropagation();
         let idx = this.difficultyList.indexOf(this.selectedDifficulty);
-        if(idx == -1){ idx = 1; }
+        if (idx == -1) {
+          idx = 1;
+        }
         idx -= 1;
 
-        if(idx < 0){ 
-          idx = 0; 
+        if (idx < 0) {
+          idx = 0;
         }
         this.selectedDifficulty = this.difficultyList[idx];
         this.updateSelectedDifficulty();
@@ -59,11 +60,13 @@ export class MenuGameplay extends GameMenu {
       this.BTN_DIFFRIGHT.addEventListener('click', (e) => {
         e.stopPropagation();
         let idx = this.difficultyList.indexOf(this.selectedDifficulty);
-        if(idx == -1){ idx = 1; }
+        if (idx == -1) {
+          idx = 1;
+        }
         idx += 1;
 
-        if(idx >= this.difficultyList.length){ 
-          idx = this.difficultyList.length - 1; 
+        if (idx >= this.difficultyList.length) {
+          idx = this.difficultyList.length - 1;
         }
         this.selectedDifficulty = this.difficultyList[idx];
         this.updateSelectedDifficulty();
@@ -92,86 +95,85 @@ export class MenuGameplay extends GameMenu {
         this.manager.MenuMouse.open();
       });
 
-      
+      this.BTN_DIFFICULTY.addEventListener('hover', () => {
+        this.LB_DESC.clearItems();
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42265].Value);
+      });
 
-      this.BTN_DIFFICULTY.addEventListener( 'hover', () => {
+      this.CB_LEVELUP.addEventListener('hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42265].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42266].Value);
       });
-      
-      this.CB_LEVELUP.addEventListener( 'hover', () => {
+
+      this.CB_INVERTCAM.addEventListener('hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42266].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48697].Value);
       });
-      
-      this.CB_INVERTCAM.addEventListener( 'hover', () => {
+
+      this.CB_AUTOSAVE.addEventListener('hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48697].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[38038].Value);
       });
-      
-      this.CB_AUTOSAVE.addEventListener( 'hover', () => {
+
+      this.CB_REVERSE.addEventListener('hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[38038].Value)
-      });  
-      
-      this.CB_REVERSE.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48699].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48699].Value);
       });
-      
-      this.CB_DISABLEMOVE.addEventListener( 'hover', () => {
+
+      this.CB_DISABLEMOVE.addEventListener('hover', () => {
         this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42484].Value)
+        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42484].Value);
       });
       resolve();
     });
   }
 
-  show(){
+  show() {
     super.show();
     const difficultyTable = GameState.SWRuleSet.difficulty;
     this.difficultyList = [];
 
-    for(let i = 0; i < difficultyTable.length; i++){
+    for (let i = 0; i < difficultyTable.length; i++) {
       const row = difficultyTable[i];
-      if(row.name == -1){
+      if (row.name == -1) {
         continue;
       }
-      
+
       this.difficultyList.push(row);
-      if(row.desc === 'Normal'){
+      if (row.desc === 'Normal') {
         this.selectedDifficulty = row;
       }
     }
     this.updateSelectedDifficulty();
   }
 
-  update(delta: number){
+  update(delta: number) {
     super.update(delta);
     this.updateSelectedDifficulty();
   }
 
-  updateSelectedDifficulty(){
-    if(!this.difficultyList.length){ return; }
+  updateSelectedDifficulty() {
+    if (!this.difficultyList.length) {
+      return;
+    }
 
-    if(!this.selectedDifficulty){
+    if (!this.selectedDifficulty) {
       this.selectedDifficulty = this.difficultyList[1];
     }
 
     const idx = this.difficultyList.indexOf(this.selectedDifficulty);
     const maxIdx = this.difficultyList.length - 1;
-    
+
     this.BTN_DIFFLEFT.show();
-    if(idx <= 0){
+    if (idx <= 0) {
       this.BTN_DIFFLEFT.hide();
     }
 
     this.BTN_DIFFRIGHT.show();
-    if(idx >= maxIdx){
+    if (idx >= maxIdx) {
       this.BTN_DIFFRIGHT.hide();
     }
 
     this.BTN_DIFFICULTY.setText(GameState.TLKManager.GetStringById(this.selectedDifficulty.name).Value);
   }
-  
 }

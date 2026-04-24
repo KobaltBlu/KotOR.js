@@ -1,52 +1,50 @@
-import { IAsyncLoopOptions } from "@/interface/utility/IAsyncLoopOptions";
+import { IAsyncLoopOptions } from '@/interface/utility/IAsyncLoopOptions';
 
 /**
  * AsyncLoop class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AsyncLoop.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class AsyncLoop {
-
   index: number = 0;
   array: any[] = [];
-  onLoop: Function|undefined;
-  onComplete: Function|undefined;
+  onLoop: Function | undefined;
+  onComplete: Function | undefined;
 
-  constructor(args: IAsyncLoopOptions = {}){
-
-    args = Object.assign({
-      array: [],        //The array to iterate over
-      onLoop: undefined,     //The callback to fire on each iteration
-      onComplete: undefined  //The callback to fire when all array elements have been iterated over
-    }, args);
+  constructor(args: IAsyncLoopOptions = {}) {
+    args = Object.assign(
+      {
+        array: [], //The array to iterate over
+        onLoop: undefined, //The callback to fire on each iteration
+        onComplete: undefined, //The callback to fire when all array elements have been iterated over
+      },
+      args
+    );
 
     this.index = 0; //index tracks the position of the current array element that is being iterated over.
 
     this.array = args.array || [];
     this.onLoop = args.onLoop;
     this.onComplete = args.onComplete;
-
   }
 
-  next(){
-    if(this.index < this.array.length){
+  next() {
+    if (this.index < this.array.length) {
       const index = this.index;
       const count = this.array.length;
-      let obj = this.array[this.index++];
+      const obj = this.array[this.index++];
 
-      if(typeof this.onLoop === 'function')
-        this.onLoop(obj, this, index, count);
-        
-    }else if(typeof this.onComplete === 'function'){
+      if (typeof this.onLoop === 'function') this.onLoop(obj, this, index, count);
+    } else if (typeof this.onComplete === 'function') {
       this.onComplete();
     }
   }
 
-  iterate( onComplete?: Function ){
+  iterate(onComplete?: Function) {
     //Set the array index variable to 0
     this.index = 0;
     //Callback to fire once the array is exhausted
@@ -60,11 +58,10 @@ export class AsyncLoop {
   //   this.next();
   // }
 
-  Begin( onComplete: Function ){
+  Begin(onComplete: Function) {
     //console.warn('AsyncLoop.iterate() is depricated. please use AsyncLoop.iterate() instead');
-    this.iterate( onComplete );
+    this.iterate(onComplete);
   }
-
 }
 
 /*

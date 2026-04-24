@@ -1,8 +1,8 @@
-import React, { useState } from "react";
-import { TabScriptCompileLogState, TabTextEditorState } from "@/apps/forge/states/tabs";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import React, { useState } from 'react';
+import { TabScriptCompileLogState, TabTextEditorState } from '@/apps/forge/states/tabs';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
 
-export const TabScriptCompileLog = function(props: any){
+export const TabScriptCompileLog = function (props: any) {
   const tab: TabScriptCompileLogState = props.tab;
   const parentTab: TabTextEditorState = props.parentTab;
 
@@ -12,26 +12,22 @@ export const TabScriptCompileLog = function(props: any){
     // console.log('onCompile');
   };
 
-  useEffectOnce( () => {
+  useEffectOnce(() => {
     // parentTab.addEventListener('onCompile', onCompile);
     return () => {
       // parentTab.removeEventListener('onCompile', onCompile);
-    }
+    };
   });
 
   return (
     <div className="tab-pane-content scroll-y log-list">
-      {
-        logs.map( (log) => {
-          return (
-            <div className="script-log">
-              <span className="message">{log.message}</span>
-            </div>
-          )
-        })
-      }
+      {logs.map((log) => {
+        return (
+          <div className="script-log">
+            <span className="message">{log.message}</span>
+          </div>
+        );
+      })}
     </div>
   );
-
-}
-
+};

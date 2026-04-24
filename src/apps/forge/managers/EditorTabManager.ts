@@ -1,20 +1,27 @@
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
-import { 
-  TabBIKPlayerState, TabGFFEditorState, TabImageViewerState, TabModelViewerState, 
-  TabModuleEditorState, TabQuickStartState, TabTwoDAEditorState, 
-  TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabState
-} from "@/apps/forge/states/tabs";
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { EventListenerModel } from '@/apps/forge/EventListenerModel';
+import { TabStoreState } from '@/apps/forge/interfaces/TabStoreState';
+import {
+  TabBIKPlayerState,
+  TabGFFEditorState,
+  TabImageViewerState,
+  TabModelViewerState,
+  TabModuleEditorState,
+  TabQuickStartState,
+  TabTwoDAEditorState,
+  TabUTCEditorState,
+  TabUTDEditorState,
+  TabUTPEditorState,
+  TabState,
+} from '@/apps/forge/states/tabs';
 
-export type TabManagerEventListenerTypes =
-  'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide';
+export type TabManagerEventListenerTypes = 'onTabAdded' | 'onTabRemoved' | 'onTabShow' | 'onTabHide';
 
 export interface TabManagerEventListeners {
-  onTabAdded: Function[],
-  onTabRemoved: Function[],
-  onTabShow: Function[],
-  onTabHide: Function[],
+  onTabAdded: Function[];
+  onTabRemoved: Function[];
+  onTabShow: Function[];
+  onTabHide: Function[];
 }
 
 export class EditorTabManager extends EventListenerModel {
@@ -27,30 +34,30 @@ export class EditorTabManager extends EventListenerModel {
     return EditorTabManager.__tabId++;
   }
 
-  constructor(){
+  constructor() {
     super();
     this.currentTab = undefined;
     this.tabs = [];
   }
 
-  addTab(tab: TabState){
+  addTab(tab: TabState) {
     //Check to see if the tab has the singleInstance flag set to TRUE
-    if(tab.singleInstance){
-      if(this.tabTypeExists(tab)){
+    if (tab.singleInstance) {
+      if (this.tabTypeExists(tab)) {
         this.getTabByType(tab.constructor.name)?.show();
         return; //Return because the TabManager can only have one of these
       }
     }
 
-    let alreadyAdded = this.tabs.find( (_tab: TabState) => _tab.id == tab.id) ? true : false;
-    if(alreadyAdded){
+    const alreadyAdded = this.tabs.find((_tab: TabState) => _tab.id == tab.id) ? true : false;
+    if (alreadyAdded) {
       console.warn('Tab already added to the TabManager', tab);
       return;
     }
 
     //Check to see if a tab is already editing this resource
-    let alreadyOpen = this.isResourceIdOpenInTab(tab.getResourceID());
-    if(alreadyOpen != null){
+    const alreadyOpen = this.isResourceIdOpenInTab(tab.getResourceID());
+    if (alreadyOpen != null) {
       //Show the tab that is already open
       alreadyOpen.show();
       //return so that the rest of the function is not called
@@ -67,132 +74,205 @@ export class EditorTabManager extends EventListenerModel {
     return tab;
   }
 
-  removeTab(tab: TabState){
+  removeTab(tab: TabState) {
     const length = this.tabs.length;
     const tabIndex = this.tabs.indexOf(tab);
 
-    for(let i = 0; i < length; i++){
-      if(tab == this.tabs[i]){
+    for (let i = 0; i < length; i++) {
+      if (tab == this.tabs[i]) {
         console.log('removeTab', 'Tab found. Deleting');
         tab.destroy();
         this.tabs.splice(i, 1);
         break;
       }
     }
-    try{
-      if(this.currentTab == tab){
-        let tabIndexToSelect = tabIndex-1;
-        if(tabIndexToSelect < 0) tabIndexToSelect = 0;
-        if(this.tabs.length){
+    try {
+      if (this.currentTab == tab) {
+        let tabIndexToSelect = tabIndex - 1;
+        if (tabIndexToSelect < 0) tabIndexToSelect = 0;
+        if (this.tabs.length) {
           console.log('removeTab', 'Current tab removed. Trying to show sibling child');
           const t = this.tabs[tabIndexToSelect];
-          if(t){
+          if (t) {
             console.log(t);
             t.show();
           }
         }
       }
-    }catch(e){ console.log(e); }
+    } catch (e) {
+      console.log(e);
+    }
 
     this.processEventListener('onTabRemoved');
-
   }
 
   //Checks the supplied resource ID against all open tabs and returns tab if it is found
-  isResourceIdOpenInTab(resID: number){
-
-    if(resID){
-      for(let i = 0; i < this.tabs.length; i++){
-        if(this.tabs[i].getResourceID() == resID){
+  isResourceIdOpenInTab(resID: number) {
+    if (resID) {
+      for (let i = 0; i < this.tabs.length; i++) {
+        if (this.tabs[i].getResourceID() == resID) {
           return this.tabs[i];
         }
       }
     }
 
     return null;
-
   }
 
-  getTabByType(tabClass: any){
-    for(let i = 0; i < this.tabs.length; i++){
-      if(this.tabs[i].constructor.name === tabClass)
-        return this.tabs[i];
+  getTabByType(tabClass: any) {
+    for (let i = 0; i < this.tabs.length; i++) {
+      if (this.tabs[i].constructor.name === tabClass) return this.tabs[i];
     }
     return;
   }
 
-  tabTypeExists(tab: TabState){
-    let tabClass = tab.constructor.name;
-    for(let i = 0; i < this.tabs.length; i++){
-      if(this.tabs[i].constructor.name === tabClass)
-        return true;
+  /**
+   * Returns the archive (ERF/SAV) tab that has the given file path, if open.
+   * Used when saving a resource back into its parent archive.
+   */
+  getArchiveTabByPath(archivePath: string): TabState | undefined {
+    if (!archivePath) return undefined;
+    for (let i = 0; i < this.tabs.length; i++) {
+      const tab = this.tabs[i];
+      if ((tab instanceof TabERFEditorState || tab instanceof TabSAVEditorState) && tab.file?.path === archivePath) {
+        return tab;
+      }
+    }
+    return undefined;
+  }
+
+  tabTypeExists(tab: TabState) {
+    const tabClass = tab.constructor.name;
+    for (let i = 0; i < this.tabs.length; i++) {
+      if (this.tabs[i].constructor.name === tabClass) return true;
     }
     return false;
   }
 
-  hideAll(){
-    for(let i = 0; i < this.tabs.length; i++){
+  hideAll() {
+    for (let i = 0; i < this.tabs.length; i++) {
       this.tabs[i].hide();
     }
   }
 
   restoreTabState(tabState: TabStoreState) {
-    if(tabState.file){
+    if (tabState.file) {
       tabState.file = Object.assign(new EditorFile(), tabState.file);
       console.log('file', tabState.file);
     }
-    switch(tabState.type){
+    switch (tabState.type) {
       case 'TabQuickStartState':
-        this.addTab(
-          new TabQuickStartState({editorFile: tabState.file})
-        );
-      break;
+        this.addTab(new TabQuickStartState({ editorFile: tabState.file }));
+        break;
       case 'TabImageViewerState':
-        this.addTab(
-          new TabImageViewerState({editorFile: tabState.file})
-        );
-      break;
+        this.addTab(new TabImageViewerState({ editorFile: tabState.file }));
+        break;
       case 'TabModelViewerState':
-        this.addTab(
-          new TabModelViewerState({editorFile: tabState.file})
-        );
-      break;
+        this.addTab(new TabModelViewerState({ editorFile: tabState.file }));
+        break;
       case 'TabGFFEditorState':
-        this.addTab(
-          new TabGFFEditorState({editorFile: tabState.file})
-        );
-      break;
+        this.addTab(new TabGFFEditorState({ editorFile: tabState.file }));
+        break;
       case 'TabModuleEditorState':
-        this.addTab(
-          new TabModuleEditorState({editorFile: tabState.file})
-        );
-      break;
+        this.addTab(new TabModuleEditorState({ editorFile: tabState.file }));
+        break;
       case 'TabTwoDAEditorState':
-        this.addTab(
-          new TabTwoDAEditorState({editorFile: tabState.file})
-        );
-      break;
+        this.addTab(new TabTwoDAEditorState({ editorFile: tabState.file }));
+        break;
       case 'TabUTCEditorState':
-        this.addTab(
-          new TabUTCEditorState({editorFile: tabState.file})
-        );
-      break;
+        this.addTab(new TabUTCEditorState({ editorFile: tabState.file }));
+        break;
       case 'TabUTDEditorState':
-        this.addTab(
-          new TabUTDEditorState({editorFile: tabState.file})
-        );
-      break;
+        this.addTab(new TabUTDEditorState({ editorFile: tabState.file }));
+        break;
       case 'TabUTPEditorState':
-        this.addTab(
-          new TabUTPEditorState({editorFile: tabState.file})
-        );
-      break;
+        this.addTab(new TabUTPEditorState({ editorFile: tabState.file }));
+        break;
       case 'TabBIKPlayerState':
-        this.addTab(
-          new TabBIKPlayerState({editorFile: tabState.file})
-        );
-      break;
+        this.addTab(new TabBIKPlayerState({ editorFile: tabState.file }));
+        break;
+      case 'TabBinaryViewerState':
+        this.addTab(new TabBinaryViewerState({ editorFile: tabState.file }));
+        break;
+      case 'TabAREEditorState':
+        this.addTab(new TabAREEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabIFOEditorState':
+        this.addTab(new TabIFOEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabJRLEditorState':
+        this.addTab(new TabJRLEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabSSFEditorState':
+        this.addTab(new TabSSFEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabTLKEditorState':
+        this.addTab(new TabTLKEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabFACEditorState':
+        this.addTab(new TabFACEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabLTREditorState':
+        this.addTab(new TabLTREditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabDLGEditorState':
+        this.addTab(new TabDLGEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabGITEditorState':
+        this.addTab(new TabGITEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabSAVEditorState':
+        this.addTab(new TabSAVEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabVISEditorState':
+        this.addTab(new TabVISEditorState({ editorFile: tabState.file }));
+        break;
+
+      case 'TabReferenceFinderState':
+        this.addTab(new TabReferenceFinderState());
+        break;
+      case 'TabScriptFindReferencesState':
+        this.addTab(new TabScriptFindReferencesState());
+        break;
+      case 'TabERFEditorState':
+        this.addTab(new TabERFEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabTextEditorState':
+        this.addTab(new TabTextEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabLIPEditorState':
+        this.addTab(new TabLIPEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabPTHEditorState':
+        this.addTab(new TabPTHEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabUTEEditorState':
+        this.addTab(new TabUTEEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabUTSEditorState':
+        this.addTab(new TabUTSEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabUTMEditorState':
+        this.addTab(new TabUTMEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabUTTEditorState':
+        this.addTab(new TabUTTEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabUTWEditorState':
+        this.addTab(new TabUTWEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabUTIEditorState':
+        this.addTab(new TabUTIEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabGUIEditorState':
+        this.addTab(new TabGUIEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabWOKEditorState':
+        this.addTab(new TabWOKEditorState({ editorFile: tabState.file }));
+        break;
+      case 'TabDiffToolState':
+        this.addTab(new TabDiffToolState());
+        break;
     }
   }
-
 }

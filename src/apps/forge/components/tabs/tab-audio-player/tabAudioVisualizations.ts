@@ -1,4 +1,4 @@
-export const TAB_AUDIO_VISUAL_IDS = ["spectrum", "hyperspace"] as const;
+export const TAB_AUDIO_VISUAL_IDS = ['spectrum', 'hyperspace'] as const;
 
 export type TabAudioVisualId = (typeof TAB_AUDIO_VISUAL_IDS)[number];
 
@@ -9,16 +9,16 @@ export const TAB_AUDIO_VISUAL_OPTIONS: ReadonlyArray<{
   icon: string;
 }> = [
   {
-    id: "spectrum",
-    label: "Spectrum",
-    title: "Mirror spectrum bars",
-    icon: "fa-bars-staggered",
+    id: 'spectrum',
+    label: 'Spectrum',
+    title: 'Mirror spectrum bars',
+    icon: 'fa-bars-staggered',
   },
   {
-    id: "hyperspace",
-    label: "Hyperspace",
-    title: "Always-on star streaks; circular spectrum reacts to audio",
-    icon: "fa-meteor",
+    id: 'hyperspace',
+    label: 'Hyperspace',
+    title: 'Always-on star streaks; circular spectrum reacts to audio',
+    icon: 'fa-meteor',
   },
 ];
 
@@ -36,7 +36,7 @@ export function createHyperspaceState(w: number, h: number): HyperspaceVizState 
   const diag = Math.hypot(w, h);
   /** Dense field — stars are decorative only (not tied to playback / FFT). */
   const target = Math.min(560, Math.max(200, Math.floor((w * h) / 480)));
-  const stars: HyperspaceVizState["stars"] = [];
+  const stars: HyperspaceVizState['stars'] = [];
   for (let i = 0; i < target; i++) {
     stars.push({
       angle: Math.random() * Math.PI * 2,
@@ -51,11 +51,7 @@ export function createHyperspaceState(w: number, h: number): HyperspaceVizState 
   };
 }
 
-export function ensureHyperspaceState(
-  state: HyperspaceVizState | null,
-  w: number,
-  h: number
-): HyperspaceVizState {
+export function ensureHyperspaceState(state: HyperspaceVizState | null, w: number, h: number): HyperspaceVizState {
   if (!state || state.lastW !== w || state.lastH !== h) {
     return createHyperspaceState(w, h);
   }
@@ -97,14 +93,9 @@ function drawHyperspaceCircularSpectrum(
   for (let i = 0; i < n; i++) {
     const t0 = i / n;
     const t1 = (i + 1) / n;
-    const binLo =
-      data && bufferLength > 0
-        ? Math.min(bufferLength - 1, Math.max(0, Math.floor(t0 * bufferLength)))
-        : 0;
+    const binLo = data && bufferLength > 0 ? Math.min(bufferLength - 1, Math.max(0, Math.floor(t0 * bufferLength))) : 0;
     const binHi =
-      data && bufferLength > 0
-        ? Math.min(bufferLength, Math.max(binLo + 1, Math.ceil(t1 * bufferLength)))
-        : 0;
+      data && bufferLength > 0 ? Math.min(bufferLength, Math.max(binLo + 1, Math.ceil(t1 * bufferLength))) : 0;
 
     let peak = 0;
     if (data && bufferLength > 0 && binHi > binLo) {
@@ -114,10 +105,7 @@ function drawHyperspaceCircularSpectrum(
       peak /= 255;
     } else {
       const symI = Math.min(i, n - i);
-      peak =
-        globalBreathe *
-        (0.82 +
-          0.18 * Math.sin(timeMs * 0.0024 + symI * 0.18 + Math.sin(symI * 0.07) * 0.5));
+      peak = globalBreathe * (0.82 + 0.18 * Math.sin(timeMs * 0.0024 + symI * 0.18 + Math.sin(symI * 0.07) * 0.5));
     }
 
     const target = Math.max(0.035, Math.min(1, peak * (0.72 + energy * 0.38)));
@@ -190,14 +178,8 @@ function drawHyperspaceCircularSpectrum(
       0,
       `rgba(${Math.floor(rC * 0.45)},${Math.floor(gC * 0.5)},${Math.floor(bC * 0.55)},${0.12 + mag * 0.12})`
     );
-    g.addColorStop(
-      0.55,
-      `rgba(${rC},${gC},${bC},${0.22 + warpDepth * 0.38})`
-    );
-    g.addColorStop(
-      1,
-      `rgba(${Math.min(255, rC + 55)},${Math.min(255, gC + 45)},255,${0.38 + warpDepth * 0.48})`
-    );
+    g.addColorStop(0.55, `rgba(${rC},${gC},${bC},${0.22 + warpDepth * 0.38})`);
+    g.addColorStop(1, `rgba(${Math.min(255, rC + 55)},${Math.min(255, gC + 45)},255,${0.38 + warpDepth * 0.48})`);
 
     ctx.beginPath();
     ctx.moveTo(ix0, iy0);
@@ -233,13 +215,13 @@ export function drawSpectrumBars(
   const avg = total / bufferLength;
   const strength = avg / 128;
 
-  ctx.filter = "blur(36px)";
+  ctx.filter = 'blur(36px)';
   const radius = Math.min(w, h) * 0.35 * (0.25 + strength * 0.75);
-  ctx.fillStyle = "rgba(38, 92, 140, 0.45)";
+  ctx.fillStyle = 'rgba(38, 92, 140, 0.45)';
   ctx.beginPath();
   ctx.arc(w / 2, h / 2 + radius * 0.15, radius, 0, Math.PI * 2, true);
   ctx.fill();
-  ctx.filter = "none";
+  ctx.filter = 'none';
 
   for (let i = 0; i < bufferLength; i++) {
     const barHeight = data[i] * factor;
@@ -257,8 +239,8 @@ export function drawSpectrumBars(
 
 export function drawSpectrumIdle(ctx: CanvasRenderingContext2D, w: number, h: number): void {
   const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, "rgb(12, 18, 28)");
-  g.addColorStop(1, "rgb(6, 10, 16)");
+  g.addColorStop(0, 'rgb(12, 18, 28)');
+  g.addColorStop(1, 'rgb(6, 10, 16)');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
 }
@@ -283,13 +265,13 @@ export function drawHyperspace(
   const starDr = 8.2 + 0.75 * Math.sin(timeMs * 0.00085);
 
   const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR * 1.1);
-  bg.addColorStop(0, "rgb(8, 14, 32)");
-  bg.addColorStop(0.45, "rgb(4, 8, 20)");
-  bg.addColorStop(1, "rgb(2, 4, 12)");
+  bg.addColorStop(0, 'rgb(8, 14, 32)');
+  bg.addColorStop(0.45, 'rgb(4, 8, 20)');
+  bg.addColorStop(1, 'rgb(2, 4, 12)');
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, w, h);
 
-  ctx.lineCap = "round";
+  ctx.lineCap = 'round';
 
   for (const star of state.stars) {
     const r0 = star.r;
@@ -320,17 +302,7 @@ export function drawHyperspace(
 
   const energy = meanFrequencyEnergy(data, bufferLength);
   ctx.save();
-  ctx.globalCompositeOperation = "lighter";
-  drawHyperspaceCircularSpectrum(
-    ctx,
-    cx,
-    cy,
-    minDim,
-    data,
-    bufferLength,
-    state.spectrumSmooth,
-    timeMs,
-    energy
-  );
+  ctx.globalCompositeOperation = 'lighter';
+  drawHyperspaceCircularSpectrum(ctx, cx, cy, minDim, data, bufferLength, state.spectrumSmooth, timeMs, energy);
   ctx.restore();
 }

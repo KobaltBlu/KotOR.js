@@ -10,14 +10,14 @@ export interface AsciiToken {
 /** Strip `#` comments and normalize newlines to `\n`. */
 export function preprocessMdlAscii(source: string): string {
   return source
-    .replace(/\r\n/g, "\n")
-    .replace(/\r/g, "\n")
-    .split("\n")
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\n')
     .map((line) => {
-      const hash = line.indexOf("#");
+      const hash = line.indexOf('#');
       return hash >= 0 ? line.slice(0, hash) : line;
     })
-    .join("\n");
+    .join('\n');
 }
 
 /**
@@ -30,19 +30,19 @@ export function tokenizeMdlAscii(source: string): AsciiToken[] {
   let i = 0;
   while (i < text.length) {
     const c = text[i];
-    if (c === "\n") {
+    if (c === '\n') {
       line++;
       i++;
       continue;
     }
-    if (c <= " " && c !== "\n") {
+    if (c <= ' ' && c !== '\n') {
       i++;
       continue;
     }
     const start = i;
     while (i < text.length) {
       const ch = text[i];
-      if (ch === "\n" || (ch <= " " && ch !== "\n")) break;
+      if (ch === '\n' || (ch <= ' ' && ch !== '\n')) break;
       i++;
     }
     out.push({ text: text.slice(start, i), line });
@@ -68,7 +68,7 @@ export class MdlAsciiTokenStream {
 
   take(): AsciiToken {
     const t = this.tokens[this.pos++];
-    if (!t) throw new MdlAsciiParseError("Unexpected end of file", 0);
+    if (!t) throw new MdlAsciiParseError('Unexpected end of file', 0);
     return t;
   }
 
@@ -113,9 +113,9 @@ export class MdlAsciiTokenStream {
 export class MdlAsciiParseError extends Error {
   constructor(
     message: string,
-    readonly line: number,
+    readonly line: number
   ) {
-    super(message + (line > 0 ? ` (line ${line})` : ""));
-    this.name = "MdlAsciiParseError";
+    super(message + (line > 0 ? ` (line ${line})` : ''));
+    this.name = 'MdlAsciiParseError';
   }
 }

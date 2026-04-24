@@ -1,9 +1,8 @@
-import React, { useRef } from "react";
+import React, { useRef } from 'react';
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from '@/apps/forge/KotOR';
 
-
-export const TwoDAEditorColumnHeader = function(props: any){
+export const TwoDAEditorColumnHeader = function (props: any) {
   const twoDAObject: KotOR.TwoDAObject = props.twoDAObject;
   const column = props.column;
   const index = twoDAObject.columns.indexOf(column);
@@ -14,7 +13,7 @@ export const TwoDAEditorColumnHeader = function(props: any){
     e.stopPropagation();
 
     const th = thRef.current;
-    if(!th) return;
+    if (!th) return;
 
     const startX = e.clientX;
     const startWidth = th.getBoundingClientRect().width;
@@ -44,10 +43,10 @@ export const TwoDAEditorColumnHeader = function(props: any){
     e.stopPropagation();
 
     const th = thRef.current;
-    if(!th) return;
+    if (!th) return;
 
     const table = th.closest('table');
-    if(!table) return;
+    if (!table) return;
 
     const colIndex = Array.from(th.parentElement!.children).indexOf(th);
     const label = !index ? 'ID' : column;
@@ -63,14 +62,12 @@ export const TwoDAEditorColumnHeader = function(props: any){
 
     // Switch to the cell/input font for body measurements
     ctx.font = '12px Consolas, "Courier New", monospace';
-    const inputs = table.querySelectorAll<HTMLInputElement>(
-      `tbody tr td:nth-child(${colIndex + 1}) input`
-    );
+    const inputs = table.querySelectorAll<HTMLInputElement>(`tbody tr td:nth-child(${colIndex + 1}) input`);
     inputs.forEach((input) => {
       const text = input.value || input.defaultValue || '';
       // 16px = 6px padding-left + 6px padding-right + 4px safety
       const w = ctx.measureText(text).width + 16;
-      if(w > maxWidth) maxWidth = w;
+      if (w > maxWidth) maxWidth = w;
     });
 
     const newWidth = Math.ceil(maxWidth);
@@ -89,5 +86,4 @@ export const TwoDAEditorColumnHeader = function(props: any){
       />
     </th>
   );
-
-}
+};

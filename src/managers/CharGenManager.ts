@@ -1,33 +1,32 @@
-import { TwoDAManager } from "@/managers/TwoDAManager";
-import { AudioLoader } from "@/audio/AudioLoader";
-import { GameEngineType } from "@/enums/engine";
-import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { CharGenClasses } from "@/game/CharGenClasses";
-import { GameState } from "@/GameState";
-import { LBL_3DView } from "@/gui";
-import type { ModulePlayer } from "@/module/ModulePlayer";
-import { OdysseyModel } from "@/odyssey";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { AudioEngine } from "@/audio/AudioEngine";
-import { LTRObject } from "@/resource/LTRObject";
-import { MDLLoader, ResourceLoader } from "@/loaders";
-import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TwoDAManager } from '@/managers/TwoDAManager';
+import { AudioLoader } from '@/audio/AudioLoader';
+import { GameEngineType } from '@/enums/engine';
+import { ModuleCreatureArmorSlot } from '@/enums/module/ModuleCreatureArmorSlot';
+import { GFFDataType } from '@/enums/resource/GFFDataType';
+import { CharGenClasses } from '@/game/CharGenClasses';
+import { GameState } from '@/GameState';
+import { LBL_3DView } from '@/gui';
+import type { ModulePlayer } from '@/module/ModulePlayer';
+import { OdysseyModel } from '@/odyssey';
+import { GFFField } from '@/resource/GFFField';
+import { GFFObject } from '@/resource/GFFObject';
+import { GFFStruct } from '@/resource/GFFStruct';
+import { OdysseyModel3D } from '@/three/odyssey';
+import { AudioEngine } from '@/audio/AudioEngine';
+import { LTRObject } from '@/resource/LTRObject';
+import { MDLLoader, ResourceLoader } from '@/loaders';
+import { ResourceTypes } from '@/resource/ResourceTypes';
 
 /**
  * CharGenManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenManager {
-
   static availPoints = 30;
   static str = 8;
   static dex = 8;
@@ -35,8 +34,6 @@ export class CharGenManager {
   static wis = 8;
   static int = 8;
   static cha = 8;
-
-  
 
   static availSkillPoints = 0;
 
@@ -48,7 +45,6 @@ export class CharGenManager {
   static repair = 0;
   static security = 0;
   static treatInjury = 0;
-
 
   static selectedClass: number = 0;
   static hoveredClass: number = 0;
@@ -74,7 +70,7 @@ export class CharGenManager {
   static ltrFemaleName: LTRObject;
   static ltrLastName: LTRObject;
 
-  static async Start(){
+  static async Start() {
     await GameState.MenuManager.LoadScreen.setLoadBackground('load_chargen');
     GameState.MenuManager.LoadScreen.open();
     GameState.MenuManager.LoadScreen.setHintMessage('');
@@ -93,7 +89,7 @@ export class CharGenManager {
     AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
   }
 
-  static async Init(){
+  static async Init() {
     CharGenManager.ltrMaleName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanm'));
     CharGenManager.ltrFemaleName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanf'));
     CharGenManager.ltrLastName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanl'));
@@ -108,61 +104,61 @@ export class CharGenManager {
   }
 
   static async LoadCGMainLight(): Promise<void> {
-    const mdl = await MDLLoader.loader.load('cgmain_light')
+    const mdl = await MDLLoader.loader.load('cgmain_light');
     CharGenManager.cgmain_light = mdl;
   }
 
   static async LoadCGBodyLight(): Promise<void> {
-    const mdl = await MDLLoader.loader.load('cgbody_light')
+    const mdl = await MDLLoader.loader.load('cgbody_light');
     CharGenManager.cgbody_light = mdl;
   }
 
   static async LoadCGHeadLight(): Promise<void> {
-    const mdl = await MDLLoader.loader.load('cghead_light')
+    const mdl = await MDLLoader.loader.load('cghead_light');
     CharGenManager.cghead_light = mdl;
   }
 
-  static InitializeCreatureTemplate(){
-    for(let i = 0; i < 6; i++){
+  static InitializeCreatureTemplate() {
+    for (let i = 0; i < 6; i++) {
       CharGenManager.lbl_3d_views.set(i, new LBL_3DView());
-      let template = CharGenManager.GetPlayerTemplate(i);
+      const template = CharGenManager.GetPlayerTemplate(i);
       CharGenManager.templates.set(i, template);
       CharGenManager.creatures.set(i, new GameState.Module.ModuleArea.ModulePlayer(template));
     }
-    let template = CharGenManager.templates.get(CharGenManager.selectedClass);
+    const template = CharGenManager.templates.get(CharGenManager.selectedClass);
     CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
   }
 
   static GetPlayerTemplate(nth = 0) {
-    let template = new GFFObject();
-    let idx = Math.floor(Math.random() * 15);
+    const template = new GFFObject();
+    const idx = Math.floor(Math.random() * 15);
     let classId = 0;
     switch (nth) {
-    case 0:
-      classId = 2;
-      break;
-    case 1:
-      classId = 1;
-      break;
-    case 2:
-      classId = 0;
-      break;
-    case 3:
-      classId = 0;
-      break;
-    case 4:
-      classId = 1;
-      break;
-    case 5:
-      classId = 2;
-      break;
+      case 0:
+        classId = 2;
+        break;
+      case 1:
+        classId = 1;
+        break;
+      case 2:
+        classId = 0;
+        break;
+      case 3:
+        classId = 0;
+        break;
+      case 4:
+        classId = 1;
+        break;
+      case 5:
+        classId = 2;
+        break;
     }
     let portraitId = 0;
-    let appearanceIdx = CharGenClasses[nth].appearances[idx];
+    const appearanceIdx = CharGenClasses[nth].appearances[idx];
     const portraits2DA = GameState.SWRuleSet.portraits;
-    if(portraits2DA){
+    if (portraits2DA) {
       for (let i = 0; i < portraits2DA.length; i++) {
-        let port = portraits2DA[i];
+        const port = portraits2DA[i];
         if (port.appearancenumber == appearanceIdx) {
           portraitId = i;
           break;
@@ -187,7 +183,9 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'BodyBag')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'FactionID')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'PortraitId')).setValue(portraitId);
-    template.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName')).setValue(CharGenManager.generateRandomName(gender));
+    template.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName')).setValue(
+      CharGenManager.generateRandomName(gender)
+    );
     template.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName'));
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'HitPoints')).setValue(8);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'CurrentHitPoints')).setValue(8);
@@ -195,7 +193,7 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'ForcePoints')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'CurrentForce')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Gender')).setValue(gender);
-    let equipment = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
+    const equipment = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptAttacked')).setValue('k_hen_attacked01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDamaged')).setValue('k_hen_damage01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDeath')).setValue('');
@@ -222,19 +220,19 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'refbonus')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'willbonus')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PerceptionRange')).setValue(13);
-    let skillList = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'SkillList'));
+    const skillList = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'SkillList'));
     for (let i = 0; i < 8; i++) {
-      let _skill = new GFFStruct();
+      const _skill = new GFFStruct();
       _skill.addField(new GFFField(GFFDataType.BYTE, 'Rank')).setValue(0);
       skillList.addChildStruct(_skill);
     }
-    let classList = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'ClassList'));
-    let classStruct = new GFFStruct();
+    const classList = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'ClassList'));
+    const classStruct = new GFFStruct();
     classStruct.addField(new GFFField(GFFDataType.INT, 'Class')).setValue(classId);
     classStruct.addField(new GFFField(GFFDataType.SHORT, 'ClassLevel')).setValue(1);
     classStruct.addField(new GFFField(GFFDataType.LIST, 'KnownList0'));
     classList.addChildStruct(classStruct);
-    let armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
+    const armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
     armorStruct.addField(new GFFField(GFFDataType.RESREF, 'EquippedRes')).setValue('g_a_clothes01');
     equipment.addChildStruct(armorStruct);
     if (appearanceIdx >= 91 && appearanceIdx <= 105) {
@@ -262,8 +260,6 @@ export class CharGenManager {
     return template;
   }
 
-  
-
   static resetSkillPoints() {
     for (let i = 0; i < 8; i++) {
       CharGenManager.selectedCreature.skills[i].rank = 0;
@@ -278,8 +274,6 @@ export class CharGenManager {
     CharGenManager.treatInjury = CharGenManager.selectedCreature.skills[7].rank;
   }
 
-  
-
   static getMaxSkillPoints() {
     return 10 + parseInt(CharGenManager.selectedCreature.classes[0].skillpointbase as any);
   }
@@ -293,7 +287,7 @@ export class CharGenManager {
   }
 
   static getRecommendedOrder() {
-    let skillOrder: any = {
+    const skillOrder: any = {
       '0': -1,
       '1': -1,
       '2': -1,
@@ -301,11 +295,11 @@ export class CharGenManager {
       '4': -1,
       '5': -1,
       '6': -1,
-      '7': -1
+      '7': -1,
     };
-    
+
     for (let i = 0; i < 8; i++) {
-      let value = TwoDAManager.datatables.get('skills').rows[i][this.getSkillTableColumnRecommended()];
+      const value = TwoDAManager.datatables.get('skills').rows[i][this.getSkillTableColumnRecommended()];
       if (value != '****') {
         skillOrder[value - 1] = i;
       }
@@ -313,20 +307,19 @@ export class CharGenManager {
     return skillOrder;
   }
 
-  static generateRandomName(gender: number = 0){
+  static generateRandomName(gender: number = 0) {
     const creature = CharGenManager.selectedCreature;
-    if(creature && !gender){
+    if (creature && !gender) {
       gender = creature.getGender();
     }
 
     let firstName = '';
-    if(gender == 0){
+    if (gender == 0) {
       firstName = CharGenManager.ltrMaleName.getName();
-    }else{
+    } else {
       firstName = CharGenManager.ltrFemaleName.getName();
     }
-    
+
     return firstName + ' ' + CharGenManager.ltrLastName.getName();
   }
-
 }

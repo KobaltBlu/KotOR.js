@@ -1,15 +1,23 @@
-import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import {
+  objectToTOML,
+  objectToXML,
+  objectToYAML,
+  tomlToObject,
+  xmlToObject,
+  yamlToObject,
+} from '@/utility/FormatSerialization';
 
 const LTR_HEADER_LENGTH = 9;
 
 /**
  * LTRObject class
- * 
+ *
  * Class representing a LTR file in memory.
  * uses Markov Chains to generate random names for character generation ingame
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LTRObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -17,10 +25,9 @@ const LTR_HEADER_LENGTH = 9;
  * @see http://web.archive.org/web/20160801205623/https://forum.bioware.com/topic/134653-ltr-file-format/#entry3901817
  */
 export class LTRObject {
-
   static CharacterArrays: any = {
     26: 'abcdefghijklmnopqrstuvwxyz',
-    28: 'abcdefghijklmnopqrstuvwxyz\'-'
+    28: "abcdefghijklmnopqrstuvwxyz'-",
   };
 
   buffer: Uint8Array;
@@ -32,24 +39,20 @@ export class LTRObject {
   doubleArray: number[][][] = [];
   tripleArray: number[][][][] = [];
 
-  constructor( data: string|Uint8Array){
-
-    if(typeof data === 'string'){
+  constructor(data: string | Uint8Array) {
+    if (typeof data === 'string') {
       this.file = data;
       this.openFile(this.file);
-    }else if(data instanceof Uint8Array){
+    } else if (data instanceof Uint8Array) {
       this.buffer = data;
       this.readBuffer(this.buffer);
     }
-
   }
 
-  openFile(file: string){
+  openFile(file: string) {}
 
-  }
-
-  readBuffer(data: Uint8Array){
-    if(data instanceof Uint8Array){
+  readBuffer(data: Uint8Array) {
+    if (data instanceof Uint8Array) {
       const br = new BinaryReader(data);
 
       this.fileType = br.readChars(4);
@@ -60,57 +63,52 @@ export class LTRObject {
 
       //Single Markov Chains
       this.singleArray[0] = [];
-      for(let i = 0; i < this.charCount; i++){
+      for (let i = 0; i < this.charCount; i++) {
         this.singleArray[0][i] = br.readSingle();
       }
 
       this.singleArray[1] = [];
-      for(let i = 0; i < this.charCount; i++){
+      for (let i = 0; i < this.charCount; i++) {
         this.singleArray[1][i] = br.readSingle();
       }
 
       this.singleArray[2] = [];
-      for(let i = 0; i < this.charCount; i++){
+      for (let i = 0; i < this.charCount; i++) {
         this.singleArray[2][i] = br.readSingle();
       }
 
       //Double Markov Chains
-      for(let i = 0; i < this.charCount; i++){
-        this.doubleArray[i] = [
-          [], [], []
-        ];
+      for (let i = 0; i < this.charCount; i++) {
+        this.doubleArray[i] = [[], [], []];
 
-        for(let j = 0; j < this.charCount; j++){
+        for (let j = 0; j < this.charCount; j++) {
           this.doubleArray[i][0][j] = br.readSingle();
         }
-  
-        for(let j = 0; j < this.charCount; j++){
+
+        for (let j = 0; j < this.charCount; j++) {
           this.doubleArray[i][1][j] = br.readSingle();
         }
-  
-        for(let j = 0; j < this.charCount; j++){
+
+        for (let j = 0; j < this.charCount; j++) {
           this.doubleArray[i][2][j] = br.readSingle();
         }
-
       }
 
       //Tripple Markov Chains
-      for(let i = 0; i < this.charCount; i++){
+      for (let i = 0; i < this.charCount; i++) {
         this.tripleArray[i] = [];
-        for(let j = 0; j < this.charCount; j++){
-          this.tripleArray[i][j] = [
-            [], [], []
-          ];
+        for (let j = 0; j < this.charCount; j++) {
+          this.tripleArray[i][j] = [[], [], []];
 
-          for(let k = 0; k < this.charCount; k++){
+          for (let k = 0; k < this.charCount; k++) {
             this.tripleArray[i][j][0][k] = br.readSingle();
           }
-    
-          for(let k = 0; k < this.charCount; k++){
+
+          for (let k = 0; k < this.charCount; k++) {
             this.tripleArray[i][j][1][k] = br.readSingle();
           }
-    
-          for(let k = 0; k < this.charCount; k++){
+
+          for (let k = 0; k < this.charCount; k++) {
             this.tripleArray[i][j][2][k] = br.readSingle();
           }
         }
@@ -127,84 +125,128 @@ export class LTRObject {
    */
   public getName(): string {
     const letters = LTRObject.CharacterArrays[this.charCount];
-    if(!letters){
+    if (!letters) {
       throw new Error('Invalid letter count');
     }
 
     let prob: number = 0;
     let i = 0;
     let wordIndex = 0;
-    let chars = [];
-    
+    const chars = [];
+
     let attempts = 0;
-    let bGetFirstThree = true;
+    const bGetFirstThree = true;
     let bGenerating = false;
     let bDone = false;
 
-    while(bGetFirstThree && !bDone){
-      for (i = 0, prob = Math.random(); i < this.charCount; i++)
-        if (prob < this.singleArray[0][i])
-          break;
-        
-      if (i == this.charCount){
+    while (bGetFirstThree && !bDone) {
+      for (i = 0, prob = Math.random(); i < this.charCount; i++) if (prob < this.singleArray[0][i]) break;
+
+      if (i == this.charCount) {
         continue;
       }
       chars[wordIndex++] = i;
 
       for (i = 0, prob = Math.random(); i < this.charCount; i++)
-        if (prob < this.doubleArray[chars[wordIndex-1]][0][i])
-          break;
+        if (prob < this.doubleArray[chars[wordIndex - 1]][0][i]) break;
 
-      if (i == this.charCount){
+      if (i == this.charCount) {
         continue;
       }
       chars[wordIndex++] = i;
 
       for (i = 0, prob = Math.random(); i < this.charCount; i++)
-        if (prob < this.tripleArray[chars[wordIndex-2]][chars[wordIndex-1]][0][i])
-          break;
+        if (prob < this.tripleArray[chars[wordIndex - 2]][chars[wordIndex - 1]][0][i]) break;
 
-      if (i == this.charCount){
+      if (i == this.charCount) {
         continue;
       }
       chars[wordIndex++] = i;
-      
+
       bGenerating = true;
-      while(bGenerating && !bDone){
+      while (bGenerating && !bDone) {
         prob = Math.random();
-        if ((Math.floor(Math.random() * 2147483647) % 12) <= chars.length) {
+        if (Math.floor(Math.random() * 2147483647) % 12 <= chars.length) {
           for (i = 0; i < this.charCount; i++) {
-            if (prob < this.tripleArray[chars[wordIndex-2]][chars[wordIndex-1]][2][i]) {
+            if (prob < this.tripleArray[chars[wordIndex - 2]][chars[wordIndex - 1]][2][i]) {
               chars[wordIndex++] = i;
               bGenerating = false;
               break;
             }
           }
         }
-  
-        if(!bGenerating){ 
+
+        if (!bGenerating) {
           bDone = true;
-          break; 
+          break;
         }
-  
+
         for (i = 0; i < this.charCount; i++) {
-          if (prob < this.tripleArray[chars[wordIndex-2]][chars[wordIndex-1]][1][i]) {
+          if (prob < this.tripleArray[chars[wordIndex - 2]][chars[wordIndex - 1]][1][i]) {
             chars[wordIndex++] = i;
             break;
           }
         }
-  
+
         if (i == this.charCount) {
-          if (chars.length < 3 || ++attempts > 100){
+          if (chars.length < 3 || ++attempts > 100) {
             bGenerating = false;
           }
         }
       }
     }
-    
-    return chars.map((value: number, index: number) => {
-      return index == 0 ? letters[value].toUpperCase() : letters[value];
-    }).join('') as string;
+
+    return chars
+      .map((value: number, index: number) => {
+        return index == 0 ? letters[value].toUpperCase() : letters[value];
+      })
+      .join('') as string;
   }
 
+  toJSON(): {
+    fileType: string;
+    fileVersion: string;
+    charCount: number;
+    singleArray: number[][];
+    doubleArray: number[][][];
+    tripleArray: number[][][][];
+  } {
+    return {
+      fileType: this.fileType,
+      fileVersion: this.fileVersion,
+      charCount: this.charCount,
+      singleArray: this.singleArray,
+      doubleArray: this.doubleArray,
+      tripleArray: this.tripleArray,
+    };
+  }
+
+  fromJSON(json: string | ReturnType<LTRObject['toJSON']>): void {
+    const data = typeof json === 'string' ? (JSON.parse(json) as ReturnType<LTRObject['toJSON']>) : json;
+    this.fileType = data.fileType;
+    this.fileVersion = data.fileVersion;
+    this.charCount = data.charCount;
+    this.singleArray = data.singleArray || [];
+    this.doubleArray = data.doubleArray || [];
+    this.tripleArray = data.tripleArray || [];
+  }
+
+  toXML(): string {
+    return objectToXML(this.toJSON());
+  }
+  fromXML(xml: string): void {
+    this.fromJSON(xmlToObject(xml) as ReturnType<LTRObject['toJSON']>);
+  }
+  toYAML(): string {
+    return objectToYAML(this.toJSON());
+  }
+  fromYAML(yaml: string): void {
+    this.fromJSON(yamlToObject(yaml) as ReturnType<LTRObject['toJSON']>);
+  }
+  toTOML(): string {
+    return objectToTOML(this.toJSON());
+  }
+  fromTOML(toml: string): void {
+    this.fromJSON(tomlToObject(toml) as ReturnType<LTRObject['toJSON']>);
+  }
 }

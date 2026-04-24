@@ -1,7 +1,7 @@
-import type { GUIControl } from "@/gui/GUIControl";
-import type { GUIListBox } from "@/gui/GUIListBox";
-import { BitWise } from "@/utility/BitWise";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import type { GUIControl } from '@/gui/GUIControl';
+import type { GUIListBox } from '@/gui/GUIListBox';
+import { BitWise } from '@/utility/BitWise';
+import { GUIControlTypeMask } from '@/enums/gui/GUIControlTypeMask';
 
 /**
  * Single dispatch point for list row body height.

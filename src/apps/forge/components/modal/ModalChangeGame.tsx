@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { Button, Modal } from "react-bootstrap";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import React, { useState } from 'react';
+import { Button, Modal } from 'react-bootstrap';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from '@/apps/forge/KotOR';
 
-export const ModalChangeGame = function(props: any){
+export const ModalChangeGame = function (props: any) {
   const [show, setShow] = useState(false);
   const [profiles, setProfiles] = useState<any[]>([]);
 
@@ -13,20 +13,20 @@ export const ModalChangeGame = function(props: any){
 
   const chooseProfile = (e: React.MouseEvent<HTMLButtonElement>, profile: any) => {
     setShow(false);
-    if(profile){
+    if (profile) {
       window.location.search = `?key=${profile.key}`;
     }
-  }
+  };
 
-  useEffectOnce( () => {
-    let compatible_profiles: any[] = [];
-    let all_profiles = (KotOR.ConfigClient.get(['Profiles']) || {});
-    let all_profile_keys = Object.keys(all_profiles);
-    
-    for(let i = 0, len = all_profile_keys.length; i < len; i++){
-      console.log(all_profile_keys[i])
-      let profile = all_profiles[all_profile_keys[i]];
-      if(profile.isForgeCompatible){
+  useEffectOnce(() => {
+    const compatible_profiles: any[] = [];
+    const all_profiles = KotOR.ConfigClient.get(['Profiles']) || {};
+    const all_profile_keys = Object.keys(all_profiles);
+
+    for (let i = 0, len = all_profile_keys.length; i < len; i++) {
+      console.log(all_profile_keys[i]);
+      const profile = all_profiles[all_profile_keys[i]];
+      if (profile.isForgeCompatible) {
         compatible_profiles.push(profile);
       }
     }
@@ -37,16 +37,11 @@ export const ModalChangeGame = function(props: any){
     return () => {
       ModalChangeGameState.RemoveEventListener('onShow', handleShow);
       ModalChangeGameState.RemoveEventListener('onHide', handleShow);
-    }
+    };
   });
 
   return (
-    <Modal 
-      show={show} 
-      onHide={handleClose} 
-      backdrop="static" 
-      keyboard={false}
-    >
+    <Modal show={show} onHide={handleClose} backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>Switch Game?</Modal.Title>
       </Modal.Header>
@@ -56,20 +51,22 @@ export const ModalChangeGame = function(props: any){
       </Modal.Body>
 
       <Modal.Footer>
-        {
-          profiles.map( (profile: any) => {
-            return (
-              <Button key={profile.key} variant="primary" onClick={(e: any) => chooseProfile(e, profile)}>{profile.name}</Button>
-            )
-          })
-        }
-        <Button variant="secondary" onClick={handleClose}>Close</Button>
+        {profiles.map((profile: any) => {
+          return (
+            <Button key={profile.key} variant="primary" onClick={(e: any) => chooseProfile(e, profile)}>
+              {profile.name}
+            </Button>
+          );
+        })}
+        <Button variant="secondary" onClick={handleClose}>
+          Close
+        </Button>
       </Modal.Footer>
     </Modal>
-  )
+  );
 };
 
-export type ModalChangeGameEventListenerTypes = 'onShow'|'onHide';
+export type ModalChangeGameEventListenerTypes = 'onShow' | 'onHide';
 
 export interface ModalChangeGameEventListeners {
   onShow: Function[];
@@ -77,55 +74,54 @@ export interface ModalChangeGameEventListeners {
 }
 
 export class ModalChangeGameState {
-
   static eventListeners: ModalChangeGameEventListeners = {
     onShow: [],
     onHide: [],
   };
 
-  static AddEventListener(type: ModalChangeGameEventListenerTypes, cb: Function){
-    if(Array.isArray(ModalChangeGameState.eventListeners[type])){
-      let ev = ModalChangeGameState.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index == -1){
+  static AddEventListener(type: ModalChangeGameEventListenerTypes, cb: Function) {
+    if (Array.isArray(ModalChangeGameState.eventListeners[type])) {
+      const ev = ModalChangeGameState.eventListeners[type];
+      const index = ev.indexOf(cb);
+      if (index == -1) {
         ev.push(cb);
-      }else{
+      } else {
         console.warn('Event Listener: Already added', type);
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static RemoveEventListener(type: ModalChangeGameEventListenerTypes, cb: Function){
-    if(Array.isArray(ModalChangeGameState.eventListeners[type])){
-      let ev = ModalChangeGameState.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index >= 0){
+  static RemoveEventListener(type: ModalChangeGameEventListenerTypes, cb: Function) {
+    if (Array.isArray(ModalChangeGameState.eventListeners[type])) {
+      const ev = ModalChangeGameState.eventListeners[type];
+      const index = ev.indexOf(cb);
+      if (index >= 0) {
         ev.splice(index, 1);
-      }else{
+      } else {
         console.warn('Event Listener: Already removed', type);
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static ProcessEventListener(type: ModalChangeGameEventListenerTypes, args: any[] = []){
-    if(Array.isArray(ModalChangeGameState.eventListeners[type])){
-      let ev = ModalChangeGameState.eventListeners[type];
-      for(let i = 0; i < ev.length; i++){
+  static ProcessEventListener(type: ModalChangeGameEventListenerTypes, args: any[] = []) {
+    if (Array.isArray(ModalChangeGameState.eventListeners[type])) {
+      const ev = ModalChangeGameState.eventListeners[type];
+      for (let i = 0; i < ev.length; i++) {
         const callback = ev[i];
-        if(typeof callback === 'function'){
+        if (typeof callback === 'function') {
           callback(...args);
         }
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static TriggerEventListener(type: ModalChangeGameEventListenerTypes, args: any[] = []){
+  static TriggerEventListener(type: ModalChangeGameEventListenerTypes, args: any[] = []) {
     ModalChangeGameState.ProcessEventListener(type, args);
   }
 

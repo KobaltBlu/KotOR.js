@@ -1,20 +1,19 @@
-import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
-import * as THREE from "three";
-import type { OdysseyModelNodeLight } from "@/odyssey";
+import { OdysseyObject3D } from '@/three/odyssey/OdysseyObject3D';
+import * as THREE from 'three';
+import type { OdysseyModelNodeLight } from '@/odyssey';
 
 /**
  * OdysseyLight3D class.
- * 
+ *
  * THREE.js representation of an OdysseyLight
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyLight3D.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyLight3D extends OdysseyObject3D {
-
   worldPosition: THREE.Vector3 = new THREE.Vector3();
   sphere: THREE.Sphere = new THREE.Sphere();
   isAnimated: boolean = false;
@@ -39,12 +38,12 @@ export class OdysseyLight3D extends OdysseyObject3D {
 
   cameraDistance: number = 0;
 
-  constructor(node: OdysseyModelNodeLight){
+  constructor(node: OdysseyModelNodeLight) {
     super(node);
-    this.type = 'OdysseyLight';
+    (this as { type: string }).type = 'OdysseyLight';
   }
 
-  getIntensity(){
+  getIntensity() {
     return this.multiplier;
     // if(this.odysseyModelNode)
     //   //return this.odysseyModelNode.multiplier;
@@ -53,27 +52,25 @@ export class OdysseyLight3D extends OdysseyObject3D {
     //   return 0;
   }
 
-  getRadius(){
-    return this.radius;// * this.multiplier;
+  getRadius() {
+    return this.radius; // * this.multiplier;
     // if(this.odysseyModelNode)
     //   return (this.odysseyModelNode as OdysseyModelNodeLight).radius;
     // else
     //   return 0;
   }
 
-  getShadowRadius(){
+  getShadowRadius() {
     return this.shadowRadius;
   }
 
-  isOnScreen( frustum: THREE.Frustum ){
-    if(!frustum) return true;
+  isOnScreen(frustum: THREE.Frustum) {
+    if (!frustum) return true;
 
-    if(!this.odysseyModel.visible)
-      return false;
+    if (!this.odysseyModel.visible) return false;
 
     this.sphere.center.copy(this.worldPosition);
     this.sphere.radius = this.getRadius();
     return frustum.intersectsSphere(this.sphere);
   }
-
 }

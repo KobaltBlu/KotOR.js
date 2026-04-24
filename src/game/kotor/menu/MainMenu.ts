@@ -1,27 +1,26 @@
-import { AudioLoader } from "@/audio/AudioLoader";
-import { CurrentGame } from "@/engine/CurrentGame";
-import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
-import { GameState } from "@/GameState";
-import { GameMenu, LBL_3DView } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { MDLLoader, TextureLoader } from "@/loaders";
-import { OdysseyModel } from "@/odyssey";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { AudioEngine } from "@/audio/AudioEngine";
-import { ApplicationProfile } from "@/utility/ApplicationProfile";
-import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { AudioLoader } from '@/audio/AudioLoader';
+import { CurrentGame } from '@/engine/CurrentGame';
+import { MenuSaveLoadMode } from '@/enums/gui/MenuSaveLoadMode';
+import { GameState } from '@/GameState';
+import { GameMenu, LBL_3DView } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
+import { MDLLoader, TextureLoader } from '@/loaders';
+import { OdysseyModel } from '@/odyssey';
+import { OdysseyModel3D } from '@/three/odyssey';
+import { AudioEngine } from '@/audio/AudioEngine';
+import { ApplicationProfile } from '@/utility/ApplicationProfile';
+import { ApplicationEnvironment } from '@/enums/ApplicationEnvironment';
 
 /**
  * MainMenu class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMenu.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MainMenu extends GameMenu {
-
   LB_MODULES: GUIListBox;
   LBL_3DVIEW: GUILabel;
   LBL_GAMELOGO: GUILabel;
@@ -40,7 +39,7 @@ export class MainMenu extends GameMenu {
   bgMusicBuffer: ArrayBuffer;
   bgMusicResRef: string = 'mus_theme_cult';
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'mainmenu16x12';
     this.background = '1600x1200back';
@@ -50,7 +49,7 @@ export class MainMenu extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.selectedControl = this.BTN_NEWGAME;
 
@@ -59,6 +58,10 @@ export class MainMenu extends GameMenu {
       this.LBL_LUCAS.hide();
       this.LBL_NEWCONTENT.hide();
       this.BTN_WARP.hide();
+      // The GUI resource includes legacy logo/background label fills that currently render a font atlas.
+      // We draw the real background via `this.background`, so keep these hidden to avoid the glyph block overlay.
+      this.LBL_GAMELOGO?.hide();
+      this.LBL_MENUBG?.hide();
 
       this.BTN_NEWGAME.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -69,7 +72,7 @@ export class MainMenu extends GameMenu {
         e.stopPropagation();
         //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
         this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
-        this.manager.MenuSaveLoad.open()
+        this.manager.MenuSaveLoad.open();
       });
 
       this.BTN_MOVIES.addEventListener('click', (e) => {
@@ -87,15 +90,7 @@ export class MainMenu extends GameMenu {
 
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (ApplicationProfile.ENV === ApplicationEnvironment.ELECTRON) {
-          window.close();
-        }else{
-          if(window.opener){
-            window.close();
-            return;
-          }
-          alert('To exit the game in your browser, close this tab or window. For the best experience, open the game from the KotOR.js launcher so Exit Game works from the menu.');
-        }
+        window.close();
       });
 
       MDLLoader.loader.load('mainmenu').then((mdl: OdysseyModel) => {
@@ -107,64 +102,71 @@ export class MainMenu extends GameMenu {
         (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
         this._3dView.setControl(this.LBL_3DVIEW);
         (this.LBL_3DVIEW.getFill().material as any).visible = true;
-        
-        OdysseyModel3D.FromMDL(mdl, { 
+
+        OdysseyModel3D.FromMDL(mdl, {
           // manageLighting: false,
-          context: this._3dView
-        }).then( (model: OdysseyModel3D) => {
-          console.log('Model Loaded', model);
-          this._3dViewModel = model;
-          
-          this._3dView.camera.position.copy(model.camerahook.position);
-          this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+          context: this._3dView,
+        })
+          .then((model: OdysseyModel3D) => {
+            console.log('Model Loaded', model);
+            this._3dViewModel = model;
 
-          this._3dView.addModel(this._3dViewModel);
-          TextureLoader.LoadQueue().then(() => {
-            this._3dViewModel.playAnimation(0, true);
-            resolve();
-          });
-        }).catch((e: any) => {
+            this._3dView.camera.position.copy(model.camerahook.position);
+            this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
-        });
+            this._3dView.addModel(this._3dViewModel);
+            TextureLoader.LoadQueue().then(() => {
+              this._3dViewModel.playAnimation(0, true);
+              resolve();
+            });
+          })
+          .catch((e: unknown) => {});
       });
     });
   }
 
-  Start(){
-    return new Promise<void>( (resolve, reject) => {
-      this.manager.ClearMenus(); 
-      AudioLoader.LoadMusic(this.bgMusicResRef).then((data: Uint8Array) => {
-        AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, this.bgMusicResRef);
-        AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
-        this.open();
-        resolve();
-      }, () => {
-        this.open();
-        console.error('Background Music not found', this.bgMusicResRef);
-        resolve();
-      });
+  Start() {
+    return new Promise<void>((resolve, reject) => {
+      this.manager.ClearMenus();
+      const audioEngine = AudioEngine.GetAudioEngine();
+      audioEngine.areaMusicDayAudioEmitter.stop();
+      AudioEngine.Unmute();
+      AudioLoader.LoadMusic(this.bgMusicResRef).then(
+        (data: Uint8Array) => {
+          audioEngine.setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, this.bgMusicResRef);
+          audioEngine.areaMusicDayAudioEmitter.play(true);
+          this.open();
+          resolve();
+        },
+        () => {
+          this.open();
+          console.error('Background Music not found', this.bgMusicResRef);
+          resolve();
+        }
+      );
     });
   }
 
   update(delta = 0) {
     super.update(delta);
-    try {
-      this._3dView.render(delta);
-    } catch (e: any) {
-      console.error(e);
+    // _3dView is set asynchronously in MDLLoader.load('mainmenu').then(...); guard so we don't throw before it's ready
+    if (this._3dView) {
+      try {
+        this._3dView.render(delta);
+      } catch (e: unknown) {
+        console.error(e);
+      }
     }
   }
 
   show() {
     super.show();
-    if(this.bgMusicBuffer){
+    if (this.bgMusicBuffer) {
       AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', this.bgMusicBuffer, this.bgMusicResRef);
       AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
     }
     GameState.AlphaTest = 0.5;
-    CurrentGame.InitGameInProgressFolder(false).then( () => {
-
-    });
+    CurrentGame.InitGameInProgressFolder(false).then(() => {});
   }
 
   triggerControllerDUpPress() {
@@ -222,5 +224,4 @@ export class MainMenu extends GameMenu {
   triggerControllerBPress() {
     this.BTN_EXIT.click();
   }
-  
 }

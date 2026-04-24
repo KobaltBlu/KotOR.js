@@ -5,8 +5,7 @@ export enum IPCMessageType {
   Area = 0x02,
   Object = 0x03,
   Script = 0x04,
-  Debug = 0x0FF,
-
+  Debug = 0x0ff,
 
   CreateObject = 0x01,
   DestroyObject = 0x02,
@@ -17,6 +16,6 @@ export enum IPCMessageType {
   SetScriptBreakpoint = 0x07,
   RemoveScriptBreakpoint = 0x08,
   UpdateScriptState = 0x09,
-  ContinueScript = 0x0A,
-  StepOverInstruction = 0x0B
+  ContinueScript = 0x0a,
+  StepOverInstruction = 0x0b,
 }

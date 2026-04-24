@@ -1,36 +1,35 @@
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
-import { ActionStatus } from "@/enums/actions/ActionStatus";
-import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { GameState } from "@/GameState";
-import { ICombatAction } from "@/interface/combat/ICombatAction";
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { ActionParameterType } from '@/enums/actions/ActionParameterType';
+import { ActionStatus } from '@/enums/actions/ActionStatus';
+import { ActionType } from '@/enums/actions/ActionType';
+import { ModuleObjectConstant } from '@/enums/module/ModuleObjectConstant';
+import { GameState } from '@/GameState';
+import { ICombatAction } from '@/interface/combat/ICombatAction';
 // import { ModuleObjectManager, PartyManager } from "@/managers";
-import { type ModuleCreature, type ModuleObject } from "@/module";
+import { type ModuleCreature, type ModuleObject } from '@/module';
 // import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { BitWise } from "@/utility/BitWise";
-import { ActionParameter } from "@/actions/ActionParameter";
-import { ActionQueue } from "@/actions/ActionQueue";
-import * as THREE from "three";
-import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import { GFFStruct } from '@/resource/GFFStruct';
+import { BitWise } from '@/utility/BitWise';
+import { ActionParameter } from '@/actions/ActionParameter';
+import { ActionQueue } from '@/actions/ActionQueue';
+import * as THREE from 'three';
+import { ComputedPath } from '@/engine/pathfinding/ComputedPath';
 
 /**
  * Base class for all game actions in the engine.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @remarks
  * Actions represent discrete behaviors that game objects can perform. They are managed
  * by the ActionQueue system and can be chained together to create complex behaviors.
  * Each action type extends this base class and implements its own update logic.
- * 
+ *
  * @file Action.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class Action {
-  
   /** Reference to the ActionQueue class */
   static ActionQueue: typeof ActionQueue = ActionQueue;
 
@@ -77,7 +76,7 @@ export class Action {
 
   /**
    * Creates a new action instance.
-   * 
+   *
    * @param actionId - Unique identifier for this action
    * @param groupId - Identifier for grouping related actions
    */
@@ -93,7 +92,7 @@ export class Action {
 
   /**
    * Updates the action state.
-   * 
+   *
    * @param delta - Time elapsed since last update in seconds
    * @returns Current status of the action
    * @virtual
@@ -105,13 +104,13 @@ export class Action {
   /**
    * The destructor for this action
    */
-  dispose(){
+  dispose() {
     //stub
   }
 
   /**
    * Sets the owner of this action.
-   * 
+   *
    * @param owner - The object that will perform this action
    */
   setOwner(owner: ModuleObject) {
@@ -120,7 +119,7 @@ export class Action {
 
   /**
    * Gets the owner of this action.
-   * 
+   *
    * @returns The object performing this action
    */
   getOwner() {
@@ -129,7 +128,7 @@ export class Action {
 
   /**
    * Sets the target of this action.
-   * 
+   *
    * @param target - The object this action is targeting
    */
   setTarget(target: ModuleObject) {
@@ -138,21 +137,21 @@ export class Action {
 
   /**
    * Gets the target of this action.
-   * 
+   *
    * @returns The target of this action
    */
   getTarget() {
     return this.target;
   }
 
-  setComputedPath(path: ComputedPath){
+  setComputedPath(path: ComputedPath) {
     this.computedPath = path;
     this.owner.setComputedPath(path);
   }
 
   /**
    * Handles creature collision avoidance during movement.
-   * 
+   *
    * @param delta - Time elapsed since last update in seconds
    * @param finalTarget - The final destination point
    * @param excludeTarget - Optional object to exclude from avoidance (e.g., target object being moved to)
@@ -258,31 +257,36 @@ export class Action {
   /**
    * Applies force-based avoidance for player character
    */
-  private applyPlayerAvoidance(owner: ModuleCreature, obstacle: ModuleCreature, obstacleDistance: number, delta: number) {
+  private applyPlayerAvoidance(
+    owner: ModuleCreature,
+    obstacle: ModuleCreature,
+    obstacleDistance: number,
+    delta: number
+  ) {
     const AVOIDANCE_FORCE = 0.3; // How strong the avoidance force is
     const MIN_AVOIDANCE_DISTANCE = 0.5; // Minimum distance before applying avoidance
-    
+
     // Calculate avoidance force based on distance to obstacle
     const distanceToObstacle = owner.position.distanceTo(obstacle.position);
-    const avoidanceStrength = Math.max(0, 1 - (distanceToObstacle / (obstacle.getHitDistance() * 2)));
-    
+    const avoidanceStrength = Math.max(0, 1 - distanceToObstacle / (obstacle.getHitDistance() * 2));
+
     if (avoidanceStrength < 0.1) return; // Don't apply very weak forces
-    
+
     // Calculate direction away from obstacle
     const awayFromObstacle = owner.position.clone().sub(obstacle.position).normalize();
-    
+
     // Calculate perpendicular direction (90 degrees to the right)
     const perpendicular = new THREE.Vector3(-awayFromObstacle.y, awayFromObstacle.x, 0).normalize();
-    
+
     // Determine which side to avoid to (based on current movement direction)
     const currentDirection = owner.forceVector.clone().normalize();
     const dotProduct = currentDirection.dot(perpendicular);
     const avoidDirection = dotProduct > 0 ? perpendicular : perpendicular.clone().negate();
-    
+
     // Apply avoidance force to movement vector
     const avoidanceForce = avoidDirection.clone().multiplyScalar(AVOIDANCE_FORCE * avoidanceStrength * delta);
     owner.forceVector.add(avoidanceForce);
-    
+
     // Normalize to maintain consistent speed
     const originalLength = owner.forceVector.length();
     if (originalLength > 0) {
@@ -293,7 +297,12 @@ export class Action {
   /**
    * Calculates the avoidance path around an obstacle
    */
-  private calculateAvoidancePath(owner: ModuleCreature, obstacle: ModuleCreature, finalTarget: THREE.Vector3, obstacleDistance: number) {
+  private calculateAvoidancePath(
+    owner: ModuleCreature,
+    obstacle: ModuleCreature,
+    finalTarget: THREE.Vector3,
+    obstacleDistance: number
+  ) {
     const SAFETY_BUFFER = 1.5;
     const safeRadius = obstacle.getHitDistance() * SAFETY_BUFFER;
 
@@ -311,7 +320,7 @@ export class Action {
       owner.getHitDistance()
     );
 
-     // Choose the better detour point based on edge distance
+    // Choose the better detour point based on edge distance
     const detour1Score = owner.area.scorePointEdgeDistance(detourPoint1);
     const detour2Score = owner.area.scorePointEdgeDistance(detourPoint2);
     const usePoint1 = detour1Score > detour2Score;
@@ -354,7 +363,7 @@ export class Action {
       const direction = obstacle.forceVector.clone().normalize();
       const perpendicular = new THREE.Vector3(-direction.y, direction.x, 0).normalize();
       const safeRadius = obstacle.getHitDistance() * 1.5;
-      
+
       const alternateDetour = owner.area.getNearestWalkablePoint(
         obstacle.position.clone().sub(perpendicular.clone().multiplyScalar(safeRadius)),
         obstacle.getHitDistance()
@@ -374,7 +383,7 @@ export class Action {
 
   /**
    * Sets multiple parameters for this action from GFF structs.
-   * 
+   *
    * @param params - Array of GFF structs containing parameter data
    * @param count - Number of parameters to set
    */
@@ -390,13 +399,15 @@ export class Action {
 
   /**
    * Gets the value of a parameter at the specified index.
-   * 
+   *
    * @param index - Index of the parameter to retrieve
    * @returns The parameter value, converted to appropriate type
    */
   getParameter<T>(index = 0): T {
-    let param = this.parameters[index];
-    if (!param) { return; }
+    const param = this.parameters[index];
+    if (!param) {
+      return;
+    }
     switch (param.type) {
       case ActionParameterType.DWORD:
         return GameState.ModuleObjectManager.GetObjectById(param.value as number) as T;
@@ -409,7 +420,7 @@ export class Action {
 
   /**
    * Sets a parameter value at the specified index.
-   * 
+   *
    * @param index - Index of the parameter to set
    * @param type - Type of the parameter from ActionParameterType
    * @param value - Value to set
@@ -425,7 +436,7 @@ export class Action {
 
     switch (param.type) {
       case ActionParameterType.INT:
-        param.value = !isNaN((value | 0)) ? (value | 0) : 0;
+        param.value = !isNaN(value | 0) ? value | 0 : 0;
         break;
       case ActionParameterType.FLOAT:
         param.value = !isNaN(parseFloat(value)) ? parseFloat(value) : 0;
@@ -441,8 +452,7 @@ export class Action {
         param.value = value.toString();
         break;
       case ActionParameterType.SCRIPT_SITUATION:
-        if (value instanceof GameState.NWScript.NWScriptInstance)
-          param.scriptInstance = value;
+        if (value instanceof GameState.NWScript.NWScriptInstance) param.scriptInstance = value;
         break;
       default:
         throw 'setParameter: Invalid type: (' + type + ')';

@@ -1,4 +1,5 @@
-@import "../../styles/variables";
+@use "sass:color";
+@use "../../styles/variables" as *;
 
 .cexoloc-editor {
   margin-bottom: $spacing-md;
@@ -76,11 +77,11 @@
       transition: background-color $transition-fast ease;
 
       &:hover {
-        background-color: lighten($success, 10%);
+        background-color: color.adjust($success, $lightness: 10%);
       }
 
       &:active {
-        background-color: darken($success, 5%);
+        background-color: color.adjust($success, $lightness: -5%);
       }
     }
 
@@ -94,11 +95,11 @@
       transition: background-color $transition-fast ease;
 
       &:hover {
-        background-color: lighten($warning, 10%);
+        background-color: color.adjust($warning, $lightness: 10%);
       }
 
       &:active {
-        background-color: darken($warning, 5%);
+        background-color: color.adjust($warning, $lightness: -5%);
       }
     }
   }

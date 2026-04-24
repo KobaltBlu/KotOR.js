@@ -1,7 +1,5 @@
-
-
 export enum EditorControlsCameraMode {
   EDITOR = 0,
   STATIC = 1,
-  ANIMATED = 2
-};
+  ANIMATED = 2,
+}

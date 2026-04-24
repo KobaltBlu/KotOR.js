@@ -1,22 +1,21 @@
-import { BrowserWindow, shell } from "electron";
-import * as path from "path";
-import Main from "./Main";
+﻿import { BrowserWindow, shell } from 'electron';
+import * as path from 'path';
+import Main from '@/electron/Main';
 
 export class LauncherWindow {
-
   browserWindow?: BrowserWindow;
 
-  constructor(){
-    if(this.browserWindow instanceof BrowserWindow){
+  constructor() {
+    if (this.browserWindow instanceof BrowserWindow) {
       this.browserWindow.show();
       this.browserWindow.focus();
       return;
     }
-    
+
     // Create the browser window.
     this.browserWindow = new BrowserWindow({
-      width: 1200, 
-      height: 600, 
+      width: 1200,
+      height: 600,
       minHeight: 600,
       minWidth: 1000,
       frame: false,
@@ -31,71 +30,67 @@ export class LauncherWindow {
         //worldSafeExecuteJavaScript: true,
         contextIsolation: true,
         sandbox: false,
-      }
+      },
     });
     // and load the index.html of the app.
     this.browserWindow.loadURL(`file://${Main.ApplicationPath}/dist/launcher/index.html`);
     //this.browserWindow.openDevTools();
     this.browserWindow.on('ready-to-show', () => {
       // this.browserWindow.webcontents.openDevTools();
-      if(!this.browserWindow) { return; }
+      if (!this.browserWindow) {
+        return;
+      }
       this.browserWindow.webContents.setWindowOpenHandler((details) => {
         console.log(details);
-        if(details.frameName == '_new' || details.url.indexOf('https://') >= 0){
+        if (details.frameName == '_new' || details.url.indexOf('https://') >= 0) {
           shell.openExternal(details.url);
           return { action: 'deny' };
         }
         return { action: 'allow' };
-      })
-    })
-  
+      });
+    });
+
     // Emitted when the window is closed.
     this.browserWindow.on('closed', () => {
-      // Dereference the window object, usually you would store windows
-      // in an array if your app supports multi windows, this is the time
-      // when you should delete the corresponding element.
-      // this.browserWindow = undefined;
+      this.browserWindow = undefined;
     });
-  
-    this.browserWindow.on('minimize',() => {
-      if(this.browserWindow) this.browserWindow.hide();
+
+    this.browserWindow.on('minimize', () => {
+      if (this.browserWindow) this.browserWindow.hide();
     });
-  
+
     this.browserWindow.on('close', () => {
       /*if(!app.isQuiting){
         event.preventDefault();
         winLauncher.hide();
       }
-  
+
       return false;*/
     });
-    
+
     this.browserWindow.on('show', () => {
       //tray.setHighlightMode('always');
     });
-  
+
     this.browserWindow.on('hide', () => {
       //tray.setHighlightMode('never');
     });
   }
 
-  toggleWindow(){
-    if(this.browserWindow)
-      this.browserWindow.isVisible() ? 
-        this.browserWindow.hide() : this.browserWindow.show();
+  toggleWindow() {
+    if (this.browserWindow && !this.browserWindow.isDestroyed())
+      this.browserWindow.isVisible() ? this.browserWindow.hide() : this.browserWindow.show();
   }
 
-  hide(){
-    if(this.browserWindow) this.browserWindow.hide();
+  hide() {
+    if (this.browserWindow && !this.browserWindow.isDestroyed()) this.browserWindow.hide();
   }
 
-  show(){
-    if(this.browserWindow) this.browserWindow.show();
+  show() {
+    if (this.browserWindow && !this.browserWindow.isDestroyed()) this.browserWindow.show();
   }
 
   send(event: string, data: any) {
-    if(this.browserWindow)
-      this.browserWindow.webContents.send(event, data);
+    if (this.browserWindow && !this.browserWindow.isDestroyed()) this.browserWindow.webContents.send(event, data);
   }
-
 }

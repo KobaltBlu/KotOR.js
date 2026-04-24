@@ -1,18 +1,19 @@
-import { Shader } from "@/shaders/Shader";
-import * as THREE from "three";
+import { Shader } from '@/shaders/Shader';
+import * as THREE from 'three';
+
+import { Shader } from '@/shaders/Shader';
 
 /**
  * ShaderGUIVoid class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ShaderGUIVoid.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ShaderGUIVoid extends Shader {
-
-  constructor(){
+  constructor() {
     super();
     this.name = 'void-gui';
     this.fragment = `
@@ -58,11 +59,10 @@ export class ShaderGUIVoid extends Shader {
       {
         u_time: { value: 0.0 },
         u_resolution: { value: new THREE.Vector2() },
-        u_color: { value: new THREE.Color(0xFFFFFF) },
-        u_colorIntensity: {value: 0.25 },
-        u_intensity: {value: 0.15 },
-      }
-    ])
+        u_color: { value: new THREE.Color(0xffffff) },
+        u_colorIntensity: { value: 0.25 },
+        u_intensity: { value: 0.15 },
+      },
+    ]) as Record<string, THREE.IUniform>;
   }
-
 }

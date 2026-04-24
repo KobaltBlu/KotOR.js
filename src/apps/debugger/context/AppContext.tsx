@@ -1,10 +1,10 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import * as KotOR from "@/apps/debugger/KotOR";
-import { DebuggerState } from "@/apps/debugger/states/DebuggerState";
-import { IPCMessage } from "@/server/ipc/IPCMessage";
-import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
-import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
-import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import * as KotOR from '@/apps/debugger/KotOR';
+import { DebuggerState } from '@/apps/debugger/states/DebuggerState';
+import { IPCMessage } from '@/server/ipc/IPCMessage';
+import { IPCMessageType } from '@/enums/server/ipc/IPCMessageType';
+import { IPCMessageParam } from '@/server/ipc/IPCMessageParam';
+import { IPCDataType } from '@/enums/server/ipc/IPCDataType';
 
 export interface AppProviderValues {
   stateRef: React.MutableRefObject<DebuggerState>;
@@ -17,11 +17,11 @@ export interface AppProviderValues {
 }
 export const AppContext = createContext<AppProviderValues>({} as any);
 
-export function useApp(){
+export function useApp() {
   return useContext(AppContext);
 }
 
-export const AppProvider = (props: {children: any; appState: DebuggerState}) => {
+export const AppProvider = (props: { children: any; appState: DebuggerState }) => {
   const [scriptMap, setScriptMap] = useState<Map<string, KotOR.NWScript>>(new Map());
   const [instanceMap, setInstanceMap] = useState<Map<string, KotOR.NWScriptInstance>>(new Map());
   const [parentMap, setParentMap] = useState<Map<string, Set<string>>>(new Map());
@@ -32,29 +32,29 @@ export const AppProvider = (props: {children: any; appState: DebuggerState}) => 
 
   const setSelectedInstanceHelper = (instance: KotOR.NWScriptInstance) => {
     stateRef.current?.setSelectedInstance(instance);
-  }
+  };
 
   const sendMessageHelper = (data: any) => {
     stateRef.current?.sendMessage(data);
-  }
+  };
 
   const onUpdateState = (state: DebuggerState) => {
     setScriptMap(new Map(state.scriptMap));
     setInstanceMap(new Map(state.instanceMap));
     setParentMap(new Map(state.parentMap));
-  }
+  };
 
   const onMessage = (message: any) => {
     onUpdateState(stateRef.current);
-  }
+  };
 
   const onSelectedInstance = (instance: KotOR.NWScriptInstance) => {
     setSelectedInstance(instance);
-  }
+  };
 
   useEffect(() => {
     const appState = stateRef.current;
-    if(!appState) return;
+    if (!appState) return;
 
     appState.addEventListener('update', onUpdateState);
     appState.addEventListener('selected-instance', onSelectedInstance);
@@ -76,12 +76,8 @@ export const AppProvider = (props: {children: any; appState: DebuggerState}) => 
     //@ts-ignore
     selectedInstance: [selectedInstance, setSelectedInstance],
     setSelectedInstanceHelper: setSelectedInstanceHelper,
-    sendMessageHelper: sendMessageHelper
+    sendMessageHelper: sendMessageHelper,
   };
 
-  return (
-    <AppContext.Provider value={providerValue}>
-      {props.children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={providerValue}>{props.children}</AppContext.Provider>;
 };

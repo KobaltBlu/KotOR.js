@@ -1,11 +1,11 @@
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import type { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
 
 /**
  * Represents a basic block in the control flow graph.
  * A basic block is a sequence of instructions with no branches except at the end.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptBasicBlock.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -77,12 +77,12 @@ export class NWScriptBasicBlock {
   isUnreachable: boolean = false;
 
   /**
-   * Dominator information for decompilation
+   * Dominator information for conversion
    */
   dominators: Set<NWScriptBasicBlock> = new Set();
 
   /**
-   * Post-dominator information for decompilation
+   * Post-dominator information for conversion
    */
   postDominators: Set<NWScriptBasicBlock> = new Set();
 
@@ -124,7 +124,7 @@ export class NWScriptBasicBlock {
   getAddressRange(): { start: number; end: number } {
     return {
       start: this.startInstruction.address,
-      end: this.endInstruction.address + this.endInstruction.instructionSize
+      end: this.endInstruction.address + this.endInstruction.instructionSize,
     };
   }
 
@@ -144,4 +144,3 @@ export class NWScriptBasicBlock {
     return `Block ${this.id} [0x${range.start.toString(16)}-0x${range.end.toString(16)}] (${this.instructions.length} instructions)`;
   }
 }
-

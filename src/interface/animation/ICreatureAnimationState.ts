@@ -1,11 +1,11 @@
-import type { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
+import type { ITwoDAAnimation } from '@/interface/twoDA/ITwoDAAnimation';
 
 /**
  * ICreatureAnimationState interface.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ICreatureAnimationState.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

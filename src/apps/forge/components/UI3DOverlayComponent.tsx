@@ -1,10 +1,12 @@
-import React, { useState } from "react"
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce"
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import React, { useState } from 'react';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
 import * as THREE from 'three';
 
-export const UI3DOverlayComponent = function(props: any){
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
 
+export const UI3DOverlayComponent = function (props: any) {
   const ui3DRenderer: UI3DRenderer = props.context;
   const [camera, setCamera] = useState<THREE.PerspectiveCamera>(ui3DRenderer?.currentCamera);
 
@@ -29,24 +31,34 @@ export const UI3DOverlayComponent = function(props: any){
     setCameraRotationW(ui3DRenderer.currentCamera.quaternion.w);
   };
 
-  useEffectOnce( () => { //constructor
+  useEffectOnce(() => {
+    //constructor
     ui3DRenderer.addEventListener('onAfterRender', onAfterRender);
-    return () => { //destructor
-      ui3DRenderer.removeEventListener('onAfterRender', onAfterRender)
-    }
+    return () => {
+      //destructor
+      ui3DRenderer.removeEventListener('onAfterRender', onAfterRender);
+    };
   });
 
   return (
     <>
-      {
-        camera ? (
-          <div className="info-overlay">
-            <b>Camera</b><br />
-            <span>Position - x: {cameraPositionX.toFixed(4)}, y: {cameraPositionY.toFixed(4)}, z: {cameraPositionZ.toFixed(4)}</span><br/>
-            <span>Rotation - x: {cameraRotationX.toFixed(4)}, y: {cameraRotationY.toFixed(4)}, z: {cameraRotationZ.toFixed(4)}, w: {cameraRotationW.toFixed(4)}</span><br/>
-          </div>
-        ) : <></>
-      }
+      {camera ? (
+        <div className="info-overlay">
+          <b>Camera</b>
+          <br />
+          <span>
+            Position - x: {cameraPositionX.toFixed(4)}, y: {cameraPositionY.toFixed(4)}, z: {cameraPositionZ.toFixed(4)}
+          </span>
+          <br />
+          <span>
+            Rotation - x: {cameraRotationX.toFixed(4)}, y: {cameraRotationY.toFixed(4)}, z: {cameraRotationZ.toFixed(4)}
+            , w: {cameraRotationW.toFixed(4)}
+          </span>
+          <br />
+        </div>
+      ) : (
+        <></>
+      )}
     </>
-  )
-}
+  );
+};

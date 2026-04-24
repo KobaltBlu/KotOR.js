@@ -1,24 +1,24 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import * as KotOR from '@/apps/forge/KotOR';
 import * as THREE from 'three';
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabUTCEditor } from "@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { TabUTCEditor } from '@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor';
+import { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
+import { ForgeCreature } from '@/apps/forge/module-editor/ForgeCreature';
 
 export class TabUTCEditorState extends TabState {
   tabName: string = `UTC`;
   creature: ForgeCreature = new ForgeCreature();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.creature.blueprint;
   }
 
   ui3DRenderer: UI3DRenderer;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
@@ -30,24 +30,23 @@ export class TabUTCEditorState extends TabState {
       {
         description: 'Odyssey Creature File',
         accept: {
-          'application/octet-stream': ['.utc']
-        }
-      }
+          'application/octet-stream': ['.utc'],
+        },
+      },
     ];
-
   }
 
-  public openFile(file?: EditorFile){
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
-      if(!file && this.file instanceof EditorFile){
+  public openFile(file?: EditorFile) {
+    return new Promise<KotOR.GFFObject>((resolve, reject) => {
+      if (!file && this.file instanceof EditorFile) {
         file = this.file;
       }
-  
-      if(file instanceof EditorFile){
-        if(this.file != file) this.file = file;
+
+      if (file instanceof EditorFile) {
+        if (this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
-  
-        file.readFile().then( (response) => {
+
+        file.readFile().then((response) => {
           this.creature = new ForgeCreature(response.buffer);
           this.creature.setContext(this.ui3DRenderer);
           this.creature.load();
@@ -64,9 +63,9 @@ export class TabUTCEditorState extends TabState {
   size: THREE.Vector3 = new THREE.Vector3();
   origin: THREE.Vector3 = new THREE.Vector3();
 
-  updateCameraFocus(){
+  updateCameraFocus() {
     const model = this.creature.model;
-    if(!model) return;
+    if (!model) return;
 
     const oldRotationZ = model.rotation.z;
     model.rotation.z = 0;
@@ -80,7 +79,7 @@ export class TabUTCEditorState extends TabState {
     model.position.set(-this.center.x, -this.center.y, -this.center.z);
     this.ui3DRenderer.camera.position.z = 0;
     this.ui3DRenderer.camera.position.y = (this.size.x + this.size.y) * 1.5;
-    this.ui3DRenderer.camera.lookAt(this.origin)
+    this.ui3DRenderer.camera.lookAt(this.origin);
 
     model.rotation.z = oldRotationZ;
   }
@@ -96,10 +95,10 @@ export class TabUTCEditorState extends TabState {
     this.ui3DRenderer.enabled = false;
   }
 
-  animate(delta: number = 0){
-    if(!this.creature) return;
+  animate(delta: number = 0) {
+    if (!this.creature) return;
     const model = this.creature.model;
-    if(model){
+    if (model) {
       model.update(delta);
       //rotate the object in the viewport
       model.rotation.z += delta;
@@ -122,20 +121,18 @@ export class TabUTCEditorState extends TabState {
     //     }
     //   }
     // }
-    
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(!!resref && ext == 'utc'){
+    if (!!resref && ext == 'utc') {
       this.creature.templateResRef = resref;
       this.updateFile();
       return this.creature.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
   }
-  
-  updateFile(){
+
+  updateFile() {
     this.creature.exportToBlueprint();
   }
-
 }

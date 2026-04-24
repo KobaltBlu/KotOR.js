@@ -1,22 +1,21 @@
-import { PazaakTurnMode } from "@/enums/minigames/PazaakTurnMode";
-import { PazaakHandSlots } from "@/enums/minigames/PazaakHandSlots";
-import { PazaakTableSlots } from "@/enums/minigames/PazaakTableSlots";
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
-import { PazaakTurnState } from "@/enums/minigames/PazaakTurnState";
+import { PazaakTurnMode } from '@/enums/minigames/PazaakTurnMode';
+import { PazaakHandSlots } from '@/enums/minigames/PazaakHandSlots';
+import { PazaakTableSlots } from '@/enums/minigames/PazaakTableSlots';
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUILabel, GUIButton } from '@/gui';
+import { PazaakTurnState } from '@/enums/minigames/PazaakTurnState';
 
 /**
  * MenuPazaakGame class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuPazaakGame.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuPazaakGame extends GameMenu {
-
   LBL_NPCSIDEDECK: GUILabel;
   LBL_PLRSIDEDECK: GUILabel;
   BTN_NPC0: GUIButton;
@@ -92,7 +91,7 @@ export class MenuPazaakGame extends GameMenu {
   BTN_FLIP2: GUIButton;
   BTN_FLIP3: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'pazaakgame';
     this.background = '1600x1200pazaak';
@@ -101,34 +100,34 @@ export class MenuPazaakGame extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       /**
        * Flip hand cards
        */
       this.BTN_FLIP0.addEventListener('click', () => {
-        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
+        if (this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed) {
           return;
         }
         this.flipHandCard(0, 0);
       });
 
       this.BTN_FLIP1.addEventListener('click', () => {
-        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
+        if (this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed) {
           return;
         }
         this.flipHandCard(0, 1);
       });
 
       this.BTN_FLIP2.addEventListener('click', () => {
-        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
+        if (this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed) {
           return;
         }
         this.flipHandCard(0, 2);
       });
 
       this.BTN_FLIP3.addEventListener('click', () => {
-        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
+        if (this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed) {
           return;
         }
         this.flipHandCard(0, 3);
@@ -139,7 +138,7 @@ export class MenuPazaakGame extends GameMenu {
        */
       this.BTN_PLRSIDE0.swapBorderAndHighliteOnHover = false;
       this.BTN_PLRSIDE0.addEventListener('click', () => {
-        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
+        if (this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed) {
           return;
         }
         this.playHandCard(0, 0);
@@ -147,15 +146,15 @@ export class MenuPazaakGame extends GameMenu {
 
       this.BTN_PLRSIDE1.swapBorderAndHighliteOnHover = false;
       this.BTN_PLRSIDE1.addEventListener('click', () => {
-        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
+        if (this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed) {
           return;
         }
         this.playHandCard(0, 1);
-      }); 
+      });
 
       this.BTN_PLRSIDE2.swapBorderAndHighliteOnHover = false;
       this.BTN_PLRSIDE2.addEventListener('click', () => {
-        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
+        if (this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed) {
           return;
         }
         this.playHandCard(0, 2);
@@ -163,7 +162,7 @@ export class MenuPazaakGame extends GameMenu {
 
       this.BTN_PLRSIDE3.swapBorderAndHighliteOnHover = false;
       this.BTN_PLRSIDE3.addEventListener('click', () => {
-        if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
+        if (this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed) {
           return;
         }
         this.playHandCard(0, 3);
@@ -173,12 +172,12 @@ export class MenuPazaakGame extends GameMenu {
       this.BTN_NPCSIDE1.swapBorderAndHighliteOnHover = false;
       this.BTN_NPCSIDE2.swapBorderAndHighliteOnHover = false;
       this.BTN_NPCSIDE3.swapBorderAndHighliteOnHover = false;
-      
+
       /**
        * End turn
        */
       this.BTN_XTEXT.addEventListener('click', () => {
-        if(this.noClicks()){
+        if (this.noClicks()) {
           return;
         }
         GameState.PazaakManager.AddEndTurnAction(PazaakTurnMode.PLAYER);
@@ -188,7 +187,7 @@ export class MenuPazaakGame extends GameMenu {
        * Stand
        */
       this.BTN_YTEXT.addEventListener('click', () => {
-        if(this.noClicks()){
+        if (this.noClicks()) {
           return;
         }
         GameState.PazaakManager.AddStandAction(PazaakTurnMode.PLAYER);
@@ -203,7 +202,7 @@ export class MenuPazaakGame extends GameMenu {
    * @param tableIndex - The index of the table
    * @param cardIndex - The index of the card
    */
-  flipHandCard(tableIndex: number, cardIndex: number){
+  flipHandCard(tableIndex: number, cardIndex: number) {
     const flipped = GameState.PazaakManager.Tables[tableIndex].flipCards.get(cardIndex);
     GameState.PazaakManager.Tables[tableIndex].flipCards.set(cardIndex, !flipped);
   }
@@ -213,15 +212,15 @@ export class MenuPazaakGame extends GameMenu {
    * @param tableIndex - The index of the table
    * @param cardIndex - The index of the card
    */
-  playHandCard(tableIndex: number, cardIndex: number){
+  playHandCard(tableIndex: number, cardIndex: number) {
     const flipped = GameState.PazaakManager.Tables[tableIndex].flipCards.get(cardIndex);
     GameState.PazaakManager.AddPlayHandCardAction(tableIndex, cardIndex, flipped);
   }
 
-  getTableCardButton(tableIndex: number, cardIndex: number){
-    if(tableIndex == PazaakTurnMode.PLAYER){
+  getTableCardButton(tableIndex: number, cardIndex: number) {
+    if (tableIndex == PazaakTurnMode.PLAYER) {
       return this.getControlByName(`BTN_PLR${cardIndex}`);
-    }else{
+    } else {
       return this.getControlByName(`BTN_NPC${cardIndex}`);
     }
   }
@@ -232,34 +231,34 @@ export class MenuPazaakGame extends GameMenu {
    * @param cardIndex - The index of the card
    * @returns The card label
    */
-  getTableCardLabel(tableIndex: number, cardIndex: number){
-    if(tableIndex == PazaakTurnMode.PLAYER){
+  getTableCardLabel(tableIndex: number, cardIndex: number) {
+    if (tableIndex == PazaakTurnMode.PLAYER) {
       return this.getControlByName(`LBL_PLR${cardIndex}`);
-    }else{
+    } else {
       return this.getControlByName(`LBL_NPC${cardIndex}`);
     }
   }
 
-  getHandCardButton(tableIndex: number, cardIndex: number){
-    if(tableIndex == PazaakTurnMode.PLAYER){
+  getHandCardButton(tableIndex: number, cardIndex: number) {
+    if (tableIndex == PazaakTurnMode.PLAYER) {
       return this.getControlByName(`BTN_PLRSIDE${cardIndex}`);
-    }else{
+    } else {
       return this.getControlByName(`BTN_NPCSIDE${cardIndex}`);
     }
   }
 
-  getHandCardLabel(tableIndex: number, cardIndex: number){
-    if(tableIndex == PazaakTurnMode.PLAYER){
+  getHandCardLabel(tableIndex: number, cardIndex: number) {
+    if (tableIndex == PazaakTurnMode.PLAYER) {
       return this.getControlByName(`LBL_PLRSIDE${cardIndex}`);
-    }else{
+    } else {
       return this.getControlByName(`LBL_NPCSIDE${cardIndex}`);
     }
   }
 
-  getHandCardFlipButton(tableIndex: number, cardIndex: number){
-    if(tableIndex == PazaakTurnMode.PLAYER){
+  getHandCardFlipButton(tableIndex: number, cardIndex: number) {
+    if (tableIndex == PazaakTurnMode.PLAYER) {
       return this.getControlByName(`BTN_FLIP${cardIndex}`);
-    }else{
+    } else {
       return undefined;
     }
   }
@@ -268,11 +267,11 @@ export class MenuPazaakGame extends GameMenu {
    * Set the turn indicator
    * @param turn - The turn number
    */
-  setTurnIndicator(turn: number){
-    if(turn == 0){
+  setTurnIndicator(turn: number) {
+    if (turn == 0) {
       this.LBL_PLRTURN.show();
       this.LBL_NPCTURN.hide();
-    }else{
+    } else {
       this.LBL_PLRTURN.hide();
       this.LBL_NPCTURN.show();
     }
@@ -284,16 +283,20 @@ export class MenuPazaakGame extends GameMenu {
    * @param winCount - The number of wins
    * @param score - The score of the table
    */
-  setTableWinCounter(tableIndex: number, winCount: number, score: number = 0){
-    if(tableIndex == PazaakTurnMode.PLAYER){
+  setTableWinCounter(tableIndex: number, winCount: number, score: number = 0) {
+    if (tableIndex == PazaakTurnMode.PLAYER) {
       this.LBL_PLRTOTAL.setText(score.toString());
-      for(let i = 0; i < 3; i++){
-        this.getControlByName(`LBL_PLRSCORE${i}`)?.setFillTextureName(i >= winCount ? 'lbl_winmark01' : 'lbl_winmark02'); 
+      for (let i = 0; i < 3; i++) {
+        this.getControlByName(`LBL_PLRSCORE${i}`)?.setFillTextureName(
+          i >= winCount ? 'lbl_winmark01' : 'lbl_winmark02'
+        );
       }
-    }else{
+    } else {
       this.LBL_NPCTOTAL.setText(score.toString());
-      for(let i = 0; i < 3; i++){
-        this.getControlByName(`LBL_NPCSCORE${i}`)?.setFillTextureName(i >= winCount ? 'lbl_winmark01' : 'lbl_winmark02');
+      for (let i = 0; i < 3; i++) {
+        this.getControlByName(`LBL_NPCSCORE${i}`)?.setFillTextureName(
+          i >= winCount ? 'lbl_winmark01' : 'lbl_winmark02'
+        );
       }
     }
   }
@@ -302,14 +305,11 @@ export class MenuPazaakGame extends GameMenu {
    * Check if the player can click
    * @returns True if the player can click, false otherwise
    */
-  noClicks(){
-    return (
-      GameState.PazaakManager.Actions.length > 0 || 
-      GameState.PazaakManager.TurnMode != PazaakTurnMode.PLAYER
-    );
+  noClicks() {
+    return GameState.PazaakManager.Actions.length > 0 || GameState.PazaakManager.TurnMode != PazaakTurnMode.PLAYER;
   }
 
-  open(){
+  open() {
     super.open();
     GameState.PazaakManager.BeginGame();
   }
@@ -318,9 +318,9 @@ export class MenuPazaakGame extends GameMenu {
    * Update the menu
    * @param delta - The delta time
    */
-  update(delta: number){
+  update(delta: number) {
     super.update(delta);
-    if(!GameState.MenuManager.InGameConfirm.isVisible()){
+    if (!GameState.MenuManager.InGameConfirm.isVisible()) {
       GameState.PazaakManager.ProcessActionQueue(delta);
     }
     this.rebuild();
@@ -329,46 +329,46 @@ export class MenuPazaakGame extends GameMenu {
   /**
    * Rebuild the menu
    */
-  rebuild(){
+  rebuild() {
     this.setTurnIndicator(GameState.PazaakManager.TurnMode);
 
-    if(GameState.PartyManager.Player){
+    if (GameState.PartyManager.Player) {
       this.LBL_PLRNAME.setText(GameState.PartyManager.Player.name);
     }
     // this.LBL_NPCNAME.setText(GameState.PazaakManager.Opponent.name);
 
-    this.BTN_XTEXT.pulsing = (GameState.PazaakManager.TurnState == PazaakTurnState.END_TURN);
+    this.BTN_XTEXT.pulsing = GameState.PazaakManager.TurnState == PazaakTurnState.END_TURN;
     this.BTN_XTEXT.disableSelection = this.noClicks();
-    this.BTN_YTEXT.pulsing = (GameState.PazaakManager.TurnState == PazaakTurnState.STAND);
+    this.BTN_YTEXT.pulsing = GameState.PazaakManager.TurnState == PazaakTurnState.STAND;
     this.BTN_YTEXT.disableSelection = this.noClicks();
 
-    if(this.BTN_XTEXT.pulsing){
-      if(GameState.PazaakManager.TurnMode != PazaakTurnMode.PLAYER){
+    if (this.BTN_XTEXT.pulsing) {
+      if (GameState.PazaakManager.TurnMode != PazaakTurnMode.PLAYER) {
         this.BTN_XTEXT.defaultColor.setRGB(0, 0.658824, 0.980392);
         this.BTN_XTEXT.defaultHighlightColor.setRGB(0, 0.658824, 0.980392);
-      }else{
+      } else {
         this.BTN_XTEXT.defaultColor.setRGB(1, 0, 0);
         this.BTN_XTEXT.defaultHighlightColor.setRGB(1, 0, 0);
       }
-    }else{
+    } else {
       this.BTN_XTEXT.defaultColor.setRGB(0, 0.658824, 0.980392);
       this.BTN_XTEXT.defaultHighlightColor.setRGB(1, 1, 0);
     }
 
-    if(this.BTN_YTEXT.pulsing){
-      if(GameState.PazaakManager.TurnMode != PazaakTurnMode.PLAYER){
+    if (this.BTN_YTEXT.pulsing) {
+      if (GameState.PazaakManager.TurnMode != PazaakTurnMode.PLAYER) {
         this.BTN_XTEXT.defaultColor.setRGB(0, 0.658824, 0.980392);
         this.BTN_YTEXT.defaultHighlightColor.setRGB(0, 0.658824, 0.980392);
-      }else{
+      } else {
         this.BTN_XTEXT.defaultColor.setRGB(1, 0, 0);
         this.BTN_YTEXT.defaultHighlightColor.setRGB(1, 0, 0);
       }
-    }else{
+    } else {
       this.BTN_YTEXT.defaultColor.setRGB(0, 0.658824, 0.980392);
       this.BTN_YTEXT.defaultHighlightColor.setRGB(1, 1, 0);
     }
 
-    for(let i = 0; i < 2; i++){
+    for (let i = 0; i < 2; i++) {
       const table = GameState.PazaakManager.Tables[i];
 
       this.setTableWinCounter(i, table.winCount, table.points);
@@ -376,15 +376,15 @@ export class MenuPazaakGame extends GameMenu {
       /**
        * Update table card area
        */
-      for(let j = 0; j < PazaakTableSlots.MAX_SLOTS; j++){
+      for (let j = 0; j < PazaakTableSlots.MAX_SLOTS; j++) {
         const slot = table.cardArea.get(j);
         const tableCardButton = this.getTableCardButton(i, j);
         const tableCardLabel = this.getTableCardLabel(i, j);
-        if(slot == undefined){
+        if (slot == undefined) {
           tableCardButton.hide();
           tableCardLabel.hide();
           continue;
-        };
+        }
 
         tableCardButton.show();
         tableCardButton.setFillTextureName(slot.textures[!slot.flipped ? 0 : 1]);
@@ -396,17 +396,17 @@ export class MenuPazaakGame extends GameMenu {
       /**
        * Update player hand cards
        */
-      for(let j = 0; j < PazaakHandSlots.MAX_SLOTS; j++){
+      for (let j = 0; j < PazaakHandSlots.MAX_SLOTS; j++) {
         const slot = table.handCards.get(j);
         const handCardButton = this.getHandCardButton(i, j);
         const handCardLabel = this.getHandCardLabel(i, j);
         const handCardFlipButton = this.getHandCardFlipButton(i, j);
         const flipped = table.flipCards.get(j);
-        const swapped = table.swapValueCards.get(j);
-        if(slot == undefined || slot == -1){
+        const _swapped = table.swapValueCards.get(j);
+        if (slot == undefined || slot == -1) {
           handCardButton.hide();
           handCardLabel.hide();
-          if(handCardFlipButton){
+          if (handCardFlipButton) {
             handCardFlipButton.hide();
           }
           continue;
@@ -414,30 +414,28 @@ export class MenuPazaakGame extends GameMenu {
 
         const card = GameState.PazaakManager.Config.data.sideDeckCards[slot];
 
-        if(i == PazaakTurnMode.PLAYER){
+        if (i == PazaakTurnMode.PLAYER) {
           handCardButton.setFillTextureName(card.textures[!flipped ? 0 : 1], false);
           handCardLabel.show();
           handCardLabel.setText(card.modifierLabel);
           handCardButton.disableSelection = this.noClicks() || table.handCardPlayed;
-        }else{
+        } else {
           handCardButton.setFillTextureName('lbl_cardback', false);
           handCardLabel.hide();
           handCardLabel.setText('');
           handCardButton.disableSelection = true;
         }
         handCardButton.show();
-        
-        if(handCardFlipButton){
-          if(card.reversible){
+
+        if (handCardFlipButton) {
+          if (card.reversible) {
             handCardFlipButton.show();
             handCardFlipButton.disableSelection = this.noClicks() || table.handCardPlayed;
-          }else{
+          } else {
             handCardFlipButton.hide();
           }
         }
       }
     }
-
   }
-  
 }

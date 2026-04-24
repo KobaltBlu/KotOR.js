@@ -1,19 +1,18 @@
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "@/gui";
-import { TextureLoaderState } from "@/loaders/TextureLoaderState";
-import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced } from "@/game/kotor/KOTOR";
+import { GameState } from '@/GameState';
+import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from '@/gui';
+import { TextureLoaderState } from '@/loaders/TextureLoaderState';
+import { MenuGraphicsAdvanced as K1_MenuGraphicsAdvanced } from '@/game/kotor/KOTOR';
 
 /**
  * MenuGraphicsAdvanced class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuGraphicsAdvanced.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
-
   declare LBL_BAR4: GUILabel;
   declare LBL_TITLE: GUILabel;
   declare LB_DESC: GUIListBox;
@@ -36,7 +35,7 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
   declare BTN_BACK: GUIButton;
   declare BTN_DEFAULT: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optgraphicadv_p';
     this.background = 'blackfill';
@@ -45,10 +44,11 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-
-      const texPacks = GameState.TwoDAManager.datatables.get('texpacks') || {} as any;
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
+      const texPacks =
+        GameState.TwoDAManager.datatables.get('texpacks') ||
+        ({} as Record<string, import('@/resource/TwoDAObject').ITwoDARowData>);
 
       this.BTN_ANTIALIASLEFT.border.dimension = 0;
       this.BTN_ANISOTROPYLEFT.border.dimension = 0;
@@ -70,24 +70,24 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_TEXQUALRIGHT.addEventListener('click', (e) => {
+      this.BTN_TEXQUALRIGHT.addEventListener('click', (_e) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality++;
-        if(quality >= texPacks.RowCount) quality = texPacks.RowCount-1;
+        if (quality >= texPacks.RowCount) quality = texPacks.RowCount - 1;
         GameState.iniConfig.setProperty('Graphics Options.Texture Quality', quality);
         this.updateTextureQualityLabel();
       });
 
-      this.BTN_TEXQUALLEFT.addEventListener('click', (e) => {
+      this.BTN_TEXQUALLEFT.addEventListener('click', (_e) => {
         let quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
         quality--;
-        if(quality < 0) quality = 0;
+        if (quality < 0) quality = 0;
         GameState.iniConfig.setProperty('Graphics Options.Texture Quality', quality);
         this.updateTextureQualityLabel();
       });
 
       // this.CB_FRAMEBUFF.onValueChanged = (value) => {
-      // 
+      //
       // };
       // this.CB_FRAMEBUFF.attachINIProperty('Graphics Options.Grass');
       resolve();
@@ -119,11 +119,16 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
   }
 
   updateTextureQualityLabel() {
-    const texPacks = GameState.TwoDAManager.datatables.get('texpacks') || {} as any;
+    const texPacks =
+      GameState.TwoDAManager.datatables.get('texpacks') ||
+      ({} as Record<string, import('@/resource/TwoDAObject').ITwoDARowData>);
     const quality = GameState.iniConfig.getProperty('Graphics Options.Texture Quality') || 0;
-    const _2darow = texPacks.rows[quality];
-    if (_2darow) {
-      this.BTN_TEXQUAL.setText(GameState.TLKManager.GetStringById(_2darow.strrefname).Value);
+    const row = texPacks.rows[quality] as { strrefname?: number | string } | undefined;
+    if (row?.strrefname !== undefined) {
+      const strRef = Number(row.strrefname);
+      if (!Number.isNaN(strRef)) {
+        this.BTN_TEXQUAL.setText(GameState.TLKManager.GetStringById(strRef).Value);
+      }
     }
     if (quality <= 0) {
       this.BTN_TEXQUALLEFT.hide();
@@ -136,5 +141,4 @@ export class MenuGraphicsAdvanced extends K1_MenuGraphicsAdvanced {
       this.BTN_TEXQUALRIGHT.show();
     }
   }
-  
 }

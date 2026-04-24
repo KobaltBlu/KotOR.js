@@ -1,6 +1,6 @@
-import React from "react";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { SectionContainer } from '@/apps/forge/components/SectionContainer';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface TransformSectionProps {
   node: KotOR.OdysseyObject3D;
@@ -34,9 +34,9 @@ function fmtNum(v: number): string {
 
 export const TransformSection: React.FC<TransformSectionProps> = ({ node, modelNode }) => {
   const euler = node.rotation;
-  const degX = (euler.x * 180 / Math.PI).toFixed(2);
-  const degY = (euler.y * 180 / Math.PI).toFixed(2);
-  const degZ = (euler.z * 180 / Math.PI).toFixed(2);
+  const degX = ((euler.x * 180) / Math.PI).toFixed(2);
+  const degY = ((euler.y * 180) / Math.PI).toFixed(2);
+  const degZ = ((euler.z * 180) / Math.PI).toFixed(2);
 
   return (
     <SectionContainer name="Transform">

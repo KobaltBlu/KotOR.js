@@ -1,15 +1,26 @@
-import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
-import type { NWScriptControlStructure } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
-import { NWScriptStackSimulator } from "@/nwscript/decompiler/NWScriptStackSimulator";
-import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
-import { NWScriptORChainDetector } from "@/nwscript/decompiler/NWScriptORChainDetector";
-import { NWScriptANDChainDetector } from "@/nwscript/decompiler/NWScriptANDChainDetector";
-import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
-import { OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_RETN, OP_ACTION, OP_JZ, OP_JNZ, OP_CPDOWNSP, OP_RSADD, OP_MOVSP } from "@/nwscript/NWScriptOPCodes";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type { NWScriptControlFlowGraph } from '@/nwscript/decompiler/NWScriptControlFlowGraph';
+import type { NWScriptBasicBlock } from '@/nwscript/decompiler/NWScriptBasicBlock';
+import type { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
+import { NWScriptExpression, NWScriptExpressionType } from '@/nwscript/decompiler/NWScriptExpression';
+import type { NWScriptControlStructure } from '@/nwscript/decompiler/NWScriptControlStructureBuilder';
+import { NWScriptStackSimulator } from '@/nwscript/decompiler/NWScriptStackSimulator';
+import { NWScriptExpressionBuilder } from '@/nwscript/decompiler/NWScriptExpressionBuilder';
+import { NWScriptORChainDetector } from '@/nwscript/decompiler/NWScriptORChainDetector';
+import { NWScriptANDChainDetector } from '@/nwscript/decompiler/NWScriptANDChainDetector';
+import type { NWScriptGlobalInit } from '@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer';
+import {
+  OP_STORE_STATE,
+  OP_STORE_STATEALL,
+  OP_JMP,
+  OP_RETN,
+  OP_ACTION,
+  OP_JZ,
+  OP_JNZ,
+  OP_CPDOWNSP,
+  OP_RSADD,
+  OP_MOVSP,
+} from '@/nwscript/NWScriptOPCodes';
+import { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
 
 /**
  * Represents a high-level statement in the decompiled code
@@ -41,9 +52,9 @@ export interface NWScriptProcessedBlock {
  * Processes the Control Flow Graph into high-level statements.
  * This layer sits between the CFG and the code generator, converting
  * low-level instructions into structured statements.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptStatementBuilder.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -56,13 +67,13 @@ export class NWScriptStatementBuilder {
   private stackSimulator: NWScriptStackSimulator;
   private expressionBuilder: NWScriptExpressionBuilder;
   private globalInits: NWScriptGlobalInit[] = [];
-  private localInits: import('./NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = [];
-  
+  private localInits: import('@/nwscript/decompiler/NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = [];
+
   /**
    * Map from block to structure that contains it
    */
   private blockToStructure: Map<NWScriptBasicBlock, NWScriptControlStructure> = new Map();
-  
+
   /**
    * Map from structure to its condition expression (cached)
    */
@@ -71,23 +82,24 @@ export class NWScriptStatementBuilder {
   /**
    * Current function parameters (for condition extraction)
    */
-  private currentFunctionParameters: import('./NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = [];
-  
+  private currentFunctionParameters: import('@/nwscript/decompiler/NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] =
+    [];
+
   /**
    * OR chain detector for simplifying OR expressions
    */
   private orChainDetector: NWScriptORChainDetector = new NWScriptORChainDetector();
-  
+
   /**
    * AND chain detector for simplifying AND expressions
    */
   private andChainDetector: NWScriptANDChainDetector = new NWScriptANDChainDetector();
 
   constructor(
-    cfg: NWScriptControlFlowGraph, 
-    structures: NWScriptControlStructure[] = [], 
+    cfg: NWScriptControlFlowGraph,
+    structures: NWScriptControlStructure[] = [],
     globalInits: NWScriptGlobalInit[] = [],
-    localInits: import('./NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = []
+    localInits: import('@/nwscript/decompiler/NWScriptLocalVariableAnalyzer').NWScriptLocalInit[] = []
   ) {
     this.cfg = cfg;
     this.structures = structures;
@@ -99,7 +111,7 @@ export class NWScriptStatementBuilder {
     this.setupGlobalVariableMapping();
     this.setupLocalVariableMapping();
   }
-  
+
   /**
    * Set global variable initializations (for updating after initial construction)
    */
@@ -107,27 +119,27 @@ export class NWScriptStatementBuilder {
     this.globalInits = globalInits;
     this.setupGlobalVariableMapping();
   }
-  
+
   /**
    * Setup global variable mapping for stack simulator and expression builder
    */
   private setupGlobalVariableMapping(): void {
     // Create mapping from BP offset to global variable info
-    const globalVarMap = new Map<number, { name: string, dataType: NWScriptDataType }>();
-    
+    const globalVarMap = new Map<number, { name: string; dataType: NWScriptDataType }>();
+
     for (let i = 0; i < this.globalInits.length; i++) {
       const init = this.globalInits[i];
       const varName = `globalVar_${i}`;
       // Use signed offset for map key (all stack offsets are negative)
-      const offsetSigned = init.offset > 0x7FFFFFFF ? init.offset - 0x100000000 : init.offset;
+      const offsetSigned = init.offset > 0x7fffffff ? init.offset - 0x100000000 : init.offset;
       globalVarMap.set(offsetSigned, { name: varName, dataType: init.dataType });
     }
-    
+
     // Set global variable mapping in stack simulator and expression builder
     this.stackSimulator.setGlobalVariables(globalVarMap);
     this.expressionBuilder.setGlobalVariables(globalVarMap);
   }
-  
+
   /**
    * Setup local variable mapping for stack simulator and expression builder
    * CRITICAL: CPTOPSP offsets differ from CPDOWNSP offsets due to stack pointer movement
@@ -138,7 +150,7 @@ export class NWScriptStatementBuilder {
    * @deprecated This method uses non-stack-aware heuristics and hardcoded offset patterns.
    * The current decompiler pipeline uses stack-aware variable resolution via variableStackPositions maps.
    * This method is kept for backward compatibility but should not be used in new code.
-   * 
+   *
    * NOTE: This class (NWScriptStatementBuilder) is not used in the current ControlNode-first pipeline.
    * Variable resolution is handled by NWScriptStackSimulator and NWScriptExpressionBuilder using
    * dynamic stack position tracking.
@@ -147,39 +159,39 @@ export class NWScriptStatementBuilder {
     // WARNING: This method uses hardcoded offset patterns and heuristics, not stack-aware tracking.
     // It should not be used in the current decompiler pipeline.
     // Create mapping from SP offset to local variable info
-    const localVarMap = new Map<number, { name: string, dataType: NWScriptDataType }>();
-    
+    const localVarMap = new Map<number, { name: string; dataType: NWScriptDataType }>();
+
     // NON-STACK-AWARE: This uses hardcoded patterns and heuristics
     // The current pipeline should use stack-aware resolution instead
     const numVars = this.localInits.length;
-    
+
     for (let i = 0; i < this.localInits.length; i++) {
       const init = this.localInits[i];
       const varName = `localVar_${i + 1}`; // Match AST builder naming (localVar_1, localVar_2, etc.)
-      
+
       // NON-STACK-AWARE: Hardcoded offset calculations based on patterns
       // This should be replaced with actual stack state tracking
       let cptopspOffset: number;
       if (numVars === 3) {
         // Hardcoded pattern: -12, -4, -8
-        const offsets = [0xFFFFFFF4, 0xFFFFFFFC, 0xFFFFFFF8]; // -12, -4, -8
+        const offsets = [0xfffffff4, 0xfffffffc, 0xfffffff8]; // -12, -4, -8
         cptopspOffset = offsets[i];
       } else if (numVars === 2) {
         // Hardcoded pattern: -8, -4
-        const offsets = [0xFFFFFFF8, 0xFFFFFFFC]; // -8, -4
+        const offsets = [0xfffffff8, 0xfffffffc]; // -8, -4
         cptopspOffset = offsets[i];
       } else {
         // Heuristic-based calculation (still not stack-aware)
         const offsetSigned = -8 - (numVars - i - 1) * 4;
         cptopspOffset = offsetSigned < 0 ? offsetSigned + 0x100000000 : offsetSigned;
       }
-      
+
       localVarMap.set(cptopspOffset, { name: varName, dataType: init.dataType });
-      
+
       // Also map the CPDOWNSP offset in case it's used
       localVarMap.set(init.offset, { name: varName, dataType: init.dataType });
     }
-    
+
     // Set local variable mapping in stack simulator and expression builder
     this.stackSimulator.setLocalVariables(localVarMap);
     this.expressionBuilder.setLocalVariables(localVarMap);
@@ -199,44 +211,44 @@ export class NWScriptStatementBuilder {
    */
   private buildBlockToStructureMap(): void {
     this.blockToStructure.clear();
-    
+
     const addStructureBlocks = (structure: NWScriptControlStructure) => {
       // Map header block
       this.blockToStructure.set(structure.headerBlock, structure);
-      
+
       // Map body blocks
       for (const block of structure.bodyBlocks) {
         this.blockToStructure.set(block, structure);
       }
-      
+
       // Map else blocks
       if (structure.elseBlocks) {
         for (const block of structure.elseBlocks) {
           this.blockToStructure.set(block, structure);
         }
       }
-      
+
       // Map exit block
       if (structure.exitBlock) {
         this.blockToStructure.set(structure.exitBlock, structure);
       }
-      
+
       // Map condition block (for for loops)
       if (structure.conditionBlock) {
         this.blockToStructure.set(structure.conditionBlock, structure);
       }
-      
+
       // Map increment block (for for loops)
       if (structure.incrementBlock) {
         this.blockToStructure.set(structure.incrementBlock, structure);
       }
-      
+
       // Recursively handle nested structures
       for (const nested of structure.nestedStructures) {
         addStructureBlocks(nested);
       }
     };
-    
+
     for (const structure of this.structures) {
       addStructureBlocks(structure);
     }
@@ -278,7 +290,8 @@ export class NWScriptStatementBuilder {
 
     // IMPROVEMENT: Try OR chain detection
     this.orChainDetector.setFunctionParameters(this.currentFunctionParameters);
-    // OR chain detector doesn't have setGlobalVariables/setLocalVariables yet, but it should use ExpressionBuilder
+    this.orChainDetector.setGlobalVariables(this.stackSimulator.getGlobalVariables());
+    this.orChainDetector.setLocalVariables(this.stackSimulator.getLocalVariables());
     const orChainExpr = this.orChainDetector.detectORChain(headerBlock);
     if (orChainExpr) {
       // Found an OR chain - use it
@@ -294,7 +307,7 @@ export class NWScriptStatementBuilder {
     conditionBuilder.setGlobalVariables(this.stackSimulator.getGlobalVariables());
     conditionBuilder.setLocalVariables(this.stackSimulator.getLocalVariables());
     const conditionInstr = headerBlock.conditionInstruction;
-    
+
     // Process instructions in the header block up to (but not including) the condition instruction
     // This builds up the stack with the condition value
     for (const instr of headerBlock.instructions) {
@@ -303,10 +316,10 @@ export class NWScriptStatementBuilder {
       }
       conditionBuilder.processInstruction(instr);
     }
-    
+
     // The condition should be on top of the stack
     const conditionExpr = conditionBuilder.pop();
-    
+
     if (conditionExpr) {
       // IMPROVEMENT: Try to simplify the expression (in case it's an AND/OR chain that wasn't detected)
       // Try AND simplification first, then OR
@@ -349,7 +362,8 @@ export class NWScriptStatementBuilder {
 
     // IMPROVEMENT: Try OR chain detection
     this.orChainDetector.setFunctionParameters(this.currentFunctionParameters);
-    // TODO: Add setGlobalVariables/setLocalVariables to OR chain detector
+    this.orChainDetector.setGlobalVariables(this.stackSimulator.getGlobalVariables());
+    this.orChainDetector.setLocalVariables(this.stackSimulator.getLocalVariables());
     const orChainExpr = this.orChainDetector.detectORChain(block);
     if (orChainExpr) {
       // Found an OR chain - use it
@@ -364,7 +378,7 @@ export class NWScriptStatementBuilder {
     conditionBuilder.setGlobalVariables(this.stackSimulator.getGlobalVariables());
     conditionBuilder.setLocalVariables(this.stackSimulator.getLocalVariables());
     const conditionInstr = block.conditionInstruction;
-    
+
     // Process instructions up to the condition instruction
     for (const instr of block.instructions) {
       if (instr === conditionInstr) {
@@ -372,7 +386,7 @@ export class NWScriptStatementBuilder {
       }
       conditionBuilder.processInstruction(instr);
     }
-    
+
     const conditionExpr = conditionBuilder.pop();
     if (conditionExpr) {
       // IMPROVEMENT: Try to simplify the expression (AND first, then OR)
@@ -380,7 +394,7 @@ export class NWScriptStatementBuilder {
       simplified = this.orChainDetector.simplifyExpression(simplified);
       return simplified;
     }
-    
+
     return null;
   }
 
@@ -408,11 +422,14 @@ export class NWScriptStatementBuilder {
   /**
    * Process blocks for a specific function context
    * This maintains stack state across blocks within the same function
-   * 
+   *
    * CRITICAL FIX: Process blocks in CFG execution order (topological/dominance order)
    * to ensure predecessors are processed before successors.
    */
-  processBlocksForFunction(functionBlocks: NWScriptBasicBlock[], parameters: import('./NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = []): void {
+  processBlocksForFunction(
+    functionBlocks: NWScriptBasicBlock[],
+    parameters: import('@/nwscript/decompiler/NWScriptFunctionAnalyzer').NWScriptFunctionParameter[] = []
+  ): void {
     // Clear stack for new function
     this.stackSimulator.clear();
     this.pendingNestedCalls.clear();
@@ -429,12 +446,12 @@ export class NWScriptStatementBuilder {
     // Filter to only include blocks that belong to this function
     const functionBlockSet = new Set(functionBlocks);
     const allBlocks = this.cfg.getTopologicalOrder();
-    const orderedFunctionBlocks = allBlocks.filter(block => functionBlockSet.has(block));
+    const orderedFunctionBlocks = allBlocks.filter((block) => functionBlockSet.has(block));
 
     // Track stack state per block for merge point handling
     // Note: We track stack pointer and size, but full stack contents are complex to restore
     // This is a limitation without full SSA - proper solution would use phi-nodes
-    const blockStackStates = new Map<NWScriptBasicBlock, { sp: number, size: number }>();
+    const blockStackStates = new Map<NWScriptBasicBlock, { sp: number; size: number }>();
 
     for (const block of orderedFunctionBlocks) {
       if (this.processedBlocks.has(block)) {
@@ -466,7 +483,7 @@ export class NWScriptStatementBuilder {
       // Save stack state after processing block (for future merge point handling)
       const stackStateAfter = {
         sp: this.stackSimulator.getStackPointer(),
-        size: this.stackSimulator.getStackSize()
+        size: this.stackSimulator.getStackSize(),
       };
       blockStackStates.set(block, stackStateAfter);
     }
@@ -477,19 +494,19 @@ export class NWScriptStatementBuilder {
    */
   private processBlock(block: NWScriptBasicBlock): NWScriptProcessedBlock {
     const statements: NWScriptStatement[] = [];
-    
+
     // Reset stack simulator for this block (or maintain state across blocks in a function)
     // For now, we'll maintain state across blocks within the same function context
-    
+
     // First pass: identify STORE_STATE+JMP patterns and extract nested calls
     this.identifyNestedCalls(block);
 
     // Second pass: process instructions into statements
     const skipAddresses = this.getSkipAddresses(block);
-    
+
     for (let i = 0; i < block.instructions.length; i++) {
       const instruction = block.instructions[i];
-      
+
       // Skip addresses marked for skipping (nested call code)
       if (skipAddresses.has(instruction.address)) {
         continue;
@@ -509,14 +526,14 @@ export class NWScriptStatementBuilder {
       // (because processing will consume the value from the stack)
       let isReturnValueWrite = false;
       let returnValueExpr: NWScriptExpression | null = null;
-      
+
       if (instruction.code === OP_CPDOWNSP) {
         const offset = instruction.offset || 0;
-        const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
-        
+        const offsetSigned = offset > 0x7fffffff ? offset - 0x100000000 : offset;
+
         // Check if this is a return value write (CPDOWNSP to return location, followed by MOVSP and JMP to RETN)
         isReturnValueWrite = this.isReturnValueWrite(instruction, block);
-        
+
         if (isReturnValueWrite) {
           // The value should be on the stack BEFORE processing CPDOWNSP
           const returnValue = this.stackSimulator.peek();
@@ -546,7 +563,7 @@ export class NWScriptStatementBuilder {
             actionExpr = stackTop.expression;
           }
         }
-        
+
         const statement = this.createStatement(instruction, actionExpr, block);
         if (statement) {
           statements.push(statement);
@@ -556,20 +573,20 @@ export class NWScriptStatementBuilder {
         if (isReturnValueWrite && returnValueExpr) {
           statements.push({
             type: 'return',
-            expression: returnValueExpr
+            expression: returnValueExpr,
           });
         } else {
           // Check if this CPDOWNSP writes to a reserved variable space (offset -8)
           // Pattern: RSADD -> [expressions] -> CPDOWNSP -8 -> MOVSP -4
           const offset = instruction.offset || 0;
-          const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
-          
+          const offsetSigned = offset > 0x7fffffff ? offset - 0x100000000 : offset;
+
           if (offsetSigned === -8 && instruction.size === 4) {
             // This is writing to a reserved variable space
             // Look backwards in the block to find the most recent RSADD
             let rsaddInstr: NWScriptInstruction | null = null;
             let current = instruction.prevInstr;
-            
+
             while (current && current.address >= block.startInstruction.address) {
               if (current.code === OP_RSADD) {
                 rsaddInstr = current;
@@ -577,7 +594,7 @@ export class NWScriptStatementBuilder {
               }
               current = current.prevInstr;
             }
-            
+
             // If we found an RSADD and there's a value on the stack, create an assignment
             if (rsaddInstr && this.stackSimulator.peek()) {
               const stackTop = this.stackSimulator.peek();
@@ -588,7 +605,7 @@ export class NWScriptStatementBuilder {
                   type: 'assignment',
                   variableName: `__var_${rsaddInstr.address}__`, // Temporary name, will be resolved in AST builder
                   expression: stackTop.expression,
-                  isGlobal: false
+                  isGlobal: false,
                 });
               }
             }
@@ -613,27 +630,28 @@ export class NWScriptStatementBuilder {
     // If we already have a return statement from CPDOWNSP detection, keep it
     // Otherwise, check if there's a return value on the stack
     if (block.exitType === 'return') {
-      const hasReturn = statements.some(stmt => stmt.type === 'return');
-      
+      const hasReturn = statements.some((stmt) => stmt.type === 'return');
+
       if (!hasReturn) {
         // Check if there's a value on the stack that looks like an intentional return value
         const returnItem = this.stackSimulator.pop();
         if (returnItem) {
           // Only return if it's a function call result, variable, or constant
           // Don't return leftover values from initialization
-          const isIntentionalReturn = 
+          const isIntentionalReturn =
             returnItem.expression.type === NWScriptExpressionType.FUNCTION_CALL ||
             returnItem.expression.type === NWScriptExpressionType.VARIABLE ||
-            (returnItem.expression.type === NWScriptExpressionType.CONSTANT && 
-             // Don't return string constants that look like global variable names
-             !(typeof returnItem.expression.value === 'string' && 
-               (returnItem.expression.value.startsWith('end_') || 
-                returnItem.expression.value.startsWith('g_'))));
-          
+            (returnItem.expression.type === NWScriptExpressionType.CONSTANT &&
+              // Don't return string constants that look like global variable names
+              !(
+                typeof returnItem.expression.value === 'string' &&
+                (returnItem.expression.value.startsWith('end_') || returnItem.expression.value.startsWith('g_'))
+              ));
+
           if (isIntentionalReturn) {
             statements.push({
               type: 'return',
-              expression: returnItem.expression
+              expression: returnItem.expression,
             });
           } else {
             // If not intentional, push it back
@@ -647,7 +665,7 @@ export class NWScriptStatementBuilder {
       block: block,
       statements: statements,
       entryPoint: block.isEntry || this.cfg.subroutineEntries.has(block.startInstruction.address),
-      exitPoint: block.isExit
+      exitPoint: block.isExit,
     };
 
     this.processedBlocks.set(block, processed);
@@ -678,12 +696,12 @@ export class NWScriptStatementBuilder {
    */
   private extractNestedCall(storeState: NWScriptInstruction, jmp: NWScriptInstruction): NWScriptExpression | null {
     if (!jmp.offset) return null;
-    
+
     const jmpTarget = jmp.address + jmp.offset;
     const nestedSimulator = new NWScriptStackSimulator();
     let current = jmp.nextInstr;
     let lastActionExpr: NWScriptExpression | null = null;
-    
+
     // Process instructions until we hit RETN (which ends the nested call)
     // The RETN should be before the jmpTarget
     while (current) {
@@ -691,19 +709,19 @@ export class NWScriptStatementBuilder {
       if (current.address >= jmpTarget) {
         break;
       }
-      
+
       // Stop at RETN (this ends the nested call)
       if (current.code === OP_RETN) {
         // Don't process RETN - the result should already be on the stack from the last ACTION
         break;
       }
-      
+
       // Skip STORE_STATE and JMP instructions (they're control flow, not part of the expression)
       if (current.code === OP_STORE_STATE || current.code === OP_JMP) {
         current = current.nextInstr;
         continue;
       }
-      
+
       // Process all other instructions (CONST, ACTION, etc.)
       const expr = nestedSimulator.processInstruction(current);
       if (current.code === OP_ACTION && expr) {
@@ -712,14 +730,14 @@ export class NWScriptStatementBuilder {
       }
       current = current.nextInstr;
     }
-    
+
     // The nested call result should be on the stack (pushed by the last ACTION)
     // If not, try to get it from the last ACTION expression we tracked
     const stackItem = nestedSimulator.pop();
     if (stackItem) {
       return stackItem.expression;
     }
-    
+
     // Fallback: use the last ACTION expression
     return lastActionExpr;
   }
@@ -729,7 +747,7 @@ export class NWScriptStatementBuilder {
    */
   private getSkipAddresses(block: NWScriptBasicBlock): Set<number> {
     const skipAddresses = new Set<number>();
-    
+
     for (const instruction of block.instructions) {
       if (instruction.code === OP_STORE_STATE || instruction.code === OP_STORE_STATEALL) {
         const nextInstr = instruction.nextInstr;
@@ -746,7 +764,7 @@ export class NWScriptStatementBuilder {
         }
       }
     }
-    
+
     return skipAddresses;
   }
 
@@ -762,7 +780,7 @@ export class NWScriptStatementBuilder {
     if (instruction.code === OP_ACTION) {
       // Always try to get the expression - it should be on the stack after processing
       let actionExpr = expr;
-      
+
       // If expr is null, try to get it from the stack (it was pushed by handleAction)
       if (!actionExpr) {
         const stackTop = this.stackSimulator.peek();
@@ -779,14 +797,14 @@ export class NWScriptStatementBuilder {
         const actionDef = instruction.actionDefinition;
         const argCount = instruction.argCount || 0;
         const args: NWScriptExpression[] = [];
-        
+
         // Get arguments from the stack (they should be there before the ACTION call)
         // We need to look at the stack before the ACTION processed
         // Actually, the arguments were already popped by handleAction, so we can't get them here
         // But we can still create a statement with the function name
         const functionName = actionDef.name || `Action_${instruction.action}`;
         const returnType = actionDef.type || NWScriptDataType.VOID;
-        
+
         actionExpr = NWScriptExpression.functionCall(functionName, args, returnType);
       }
 
@@ -795,30 +813,30 @@ export class NWScriptStatementBuilder {
         if (actionExpr.dataType === NWScriptDataType.VOID) {
           return {
             type: 'expression',
-            expression: actionExpr
+            expression: actionExpr,
           };
         } else {
           // For non-void functions, check if result is used or discarded
           const nextInstr = instruction.nextInstr;
-          
+
           // Check if next instruction discards the result
-          const isDiscarded = nextInstr && (
-            nextInstr.code === 0x1B || // MOVSP (cleanup, result discarded)
-            (nextInstr.code === 0x20 && block.exitType === 'return') // RETN (return value)
-          );
-          
+          const isDiscarded =
+            nextInstr &&
+            (nextInstr.code === 0x1b || // MOVSP (cleanup, result discarded)
+              (nextInstr.code === 0x20 && block.exitType === 'return')); // RETN (return value)
+
           if (isDiscarded && nextInstr.code === 0x20) {
             // Return statement
             return {
               type: 'return',
-              expression: actionExpr
+              expression: actionExpr,
             };
           } else {
             // Always generate as statement - even if result is used, we still need to show the call
             // The result will be on the stack and consumed by subsequent instructions
             return {
               type: 'expression',
-              expression: actionExpr
+              expression: actionExpr,
             };
           }
         }
@@ -843,25 +861,25 @@ export class NWScriptStatementBuilder {
   private isReturnValueWrite(cpdownsp: NWScriptInstruction, block: NWScriptBasicBlock): boolean {
     // Return values are written to offsets that are NOT -8 (which is for local variables)
     const offset = cpdownsp.offset || 0;
-    const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
-    
+    const offsetSigned = offset > 0x7fffffff ? offset - 0x100000000 : offset;
+
     // If it's -8, it's a local variable assignment, not a return
     if (offsetSigned === -8) {
       return false;
     }
-    
+
     // Check if there's a value on the stack (the return value)
     if (!this.stackSimulator.peek()) {
       return false;
     }
-    
+
     // Check if the next instruction is MOVSP (cleanup) followed by JMP
     // This pattern indicates a return value write
     let current = cpdownsp.nextInstr;
     let foundMovsp = false;
     let foundJmp = false;
     let jmpTarget: number | null = null;
-    
+
     while (current && current.address <= block.endInstruction.address) {
       if (current.code === OP_MOVSP) {
         foundMovsp = true;
@@ -878,7 +896,7 @@ export class NWScriptStatementBuilder {
       }
       current = current.nextInstr;
     }
-    
+
     // If we found MOVSP and JMP, check if the JMP target is a RETN block
     if (foundMovsp && foundJmp && jmpTarget !== null) {
       const targetBlock = this.cfg.getBlockForAddress(jmpTarget);
@@ -890,12 +908,12 @@ export class NWScriptStatementBuilder {
         return true;
       }
     }
-    
+
     // Also check if the block itself ends with RETN
     if (block.exitType === 'return' && foundMovsp) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -954,16 +972,16 @@ export class NWScriptStatementBuilder {
    * Get statements for blocks in a structure's body
    */
   getStatementsForStructureBody(structure: NWScriptControlStructure, isElse: boolean = false): NWScriptStatement[] {
-    const blocks = isElse ? (structure.elseBlocks || []) : structure.bodyBlocks;
+    const blocks = isElse ? structure.elseBlocks || [] : structure.bodyBlocks;
     const statements: NWScriptStatement[] = [];
-    
+
     for (const block of blocks) {
       const processed = this.processedBlocks.get(block);
       if (processed) {
         statements.push(...processed.statements);
       }
     }
-    
+
     return statements;
   }
 
@@ -986,7 +1004,7 @@ export class NWScriptStatementBuilder {
           // Extract condition expression for this structure
           this.extractConditionExpression(structure);
         }
-        
+
         // Process the block normally
         this.processBlock(block);
       }
@@ -995,4 +1013,3 @@ export class NWScriptStatementBuilder {
     return this.processedBlocks;
   }
 }
-

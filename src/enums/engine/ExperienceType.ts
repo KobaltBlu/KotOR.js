@@ -1,4 +1,4 @@
 export enum ExperienceType {
   PLOT = 0,
-  STEALTH = 1
+  STEALTH = 1,
 }

@@ -1,12 +1,12 @@
-import { GameState } from "@/GameState";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { GameEffect } from "@/effects/GameEffect";
+import { GameState } from '@/GameState';
+import { GameEffectType } from '@/enums/effects/GameEffectType';
+import { GameEffect } from '@/effects/GameEffect';
 
 /**
  * EffectPoison class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EffectPoison.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -14,7 +14,7 @@ import { GameEffect } from "@/effects/GameEffect";
 export class EffectPoison extends GameEffect {
   time: number;
   poison: any;
-  constructor(){
+  constructor() {
     super();
     this.type = GameEffectType.EffectPoison;
     this.time = 0;
@@ -26,28 +26,26 @@ export class EffectPoison extends GameEffect {
     //intList[4] : nLastTimeApplied ?Last Ticked
     //intList[5] : nPoisonDuration
     //intList[6] : nPosionPeriod
-    //intList[7] : 
-    
-    //floatList[0] : tick count
+    //intList[7] :
 
+    //floatList[0] : tick count
   }
 
-  initialize(){
+  initialize() {
     super.initialize();
     const poison2DA = GameState.TwoDAManager.datatables.get('poison');
-    if(poison2DA){
+    if (poison2DA) {
       this.poison = poison2DA.rows[this.getPoisionId()];
     }
 
     return this;
   }
 
-  onApply(){
-    if(this.applied)
-      return;
+  onApply() {
+    if (this.applied) return;
 
     //Poison Visual Effect
-    let eVisualEffect = new GameState.GameEffectFactory.EffectVisualEffect();
+    const eVisualEffect = new GameState.GameEffectFactory.EffectVisualEffect();
     eVisualEffect.setCreator(this.getCreator());
     eVisualEffect.setSpellId(this.getSpellId());
     eVisualEffect.setSubTypeUnMasked(this.getSubTypeUnMasked());
@@ -59,13 +57,10 @@ export class EffectPoison extends GameEffect {
     this.object.addEffect(eVisualEffect);
     eVisualEffect.setSkipOnLoad(true);
 
-      
     super.onApply();
   }
 
-  getPoisionId(){
+  getPoisionId() {
     return this.intList[0];
   }
-
 }
-

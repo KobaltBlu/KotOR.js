@@ -1,0 +1,187 @@
+import * as vscode from 'vscode';
+
+import { getLogger, setExtensionLogger, LogScope, createScopedLogger } from './logger';
+import { activateLsp, deactivateLsp } from './lsp/client';
+import { KotorForgeProvider } from './providers/KotorForgeProvider';
+import { registerKotorTreeView } from './kotorTreeView';
+import { registerStatusBarItem } from './statusBar';
+import { registerDocumentFormattingEditProvider } from './nwscriptFormat';
+import { registerTaskProvider } from './kotorTaskProvider';
+
+const log = createScopedLogger(LogScope.Extension);
+
+const FORGE_VIEW_TYPES = new Set([
+  'kotor.forge',
+  'kotor.forge.gff',
+  'kotor.forge.json'
+]);
+
+function getActiveForgeEditorUri(): vscode.Uri | undefined {
+  const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
+  const input = tab?.input as { uri?: vscode.Uri; viewType?: string } | undefined;
+  if (input?.uri && input?.viewType && FORGE_VIEW_TYPES.has(input.viewType)) {
+    return input.uri;
+  }
+  return undefined;
+}
+
+/**
+ * Extension activation function
+ */
+export function activate(context: vscode.ExtensionContext) {
+  log.trace('activate() entered');
+  const outputChannel = vscode.window.createOutputChannel('Forge-KotOR.js', { log: true });
+  context.subscriptions.push(outputChannel);
+  setExtensionLogger(outputChannel);
+
+  log.info('KotOR Forge extension is now active');
+  log.debug(`Extension extensionPath: ${context.extensionPath}`);
+  log.trace(`Extension subscriptions count: ${context.subscriptions.length}`);
+
+  // Register Forge-backed custom editors: default + Generic GFF option for GFF types
+  log.trace('Registering KotorForgeProvider (default + kotor.forge.gff)');
+  const forgeRegistration = KotorForgeProvider.register(context) as vscode.Disposable & {
+    postRunCommandToUri(uri: vscode.Uri, command: string): boolean;
+  };
+  context.subscriptions.push(forgeRegistration);
+  log.info('KotorForgeProvider registered; open files with KotOR Forge or "Open With" > KotOR Forge (Generic GFF) for GFF types');
+
+  // Start NWScript language server for .nss/.ncs IntelliSense, diagnostics, and debugging
+  log.trace('Calling activateLsp()');
+  activateLsp(context);
+  log.trace('activateLsp() returned');
+
+  void vscode.commands.executeCommand('setContext', 'kotorForge.hasRecentFiles', false);
+
+  registerKotorTreeView(context);
+  registerStatusBarItem(context);
+  registerDocumentFormattingEditProvider(context);
+  registerTaskProvider(context);
+
+  // Register commands
+  log.trace('Registering extension commands');
+  context.subscriptions.push(
+    vscode.commands.registerCommand('kotorForge.setKotorPath', async () => {
+      log.debug('Command invoked: kotorForge.setKotorPath');
+      const path = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        title: 'Select KotOR Installation Directory'
+      });
+      if (path && path[0]) {
+        log.info(`Setting KotOR path to: ${path[0].fsPath}`);
+        await vscode.workspace.getConfiguration('kotorForge').update('kotorPath', path[0].fsPath, true);
+        getLogger().info(`[Extension] KotOR path set to: ${path[0].fsPath}`);
+        vscode.window.showInformationMessage(`KotOR path set to: ${path[0].fsPath}`);
+        log.trace('kotorForge.setKotorPath completed successfully');
+      } else {
+        log.debug('kotorForge.setKotorPath cancelled or no path selected');
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.setTSLPath', async () => {
+      log.debug('Command invoked: kotorForge.setTSLPath');
+      const path = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        title: 'Select KotOR II Installation Directory'
+      });
+      if (path && path[0]) {
+        log.info(`Setting KotOR II path to: ${path[0].fsPath}`);
+        await vscode.workspace.getConfiguration('kotorForge').update('tslPath', path[0].fsPath, true);
+        getLogger().info(`[Extension] KotOR II path set to: ${path[0].fsPath}`);
+        vscode.window.showInformationMessage(`KotOR II path set to: ${path[0].fsPath}`);
+        log.trace('kotorForge.setTSLPath completed successfully');
+      } else {
+        log.debug('kotorForge.setTSLPath cancelled or no path selected');
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.openAsJson', async () => {
+      log.debug('Command invoked: kotorForge.openAsJson');
+      const jsonExts = new Set(['.2da', '.are', '.bic', '.dlg', '.fac', '.gff', '.git', '.gui', '.ifo', '.jrl', '.ltr', '.pth', '.res', '.tlk', '.utc', '.utd', '.ute', '.uti', '.utm', '.utp', '.uts', '.utt', '.utw', '.vis']);
+      let uri: vscode.Uri | undefined;
+      const tab = vscode.window.tabGroups?.activeTabGroup?.activeTab;
+      const input = tab?.input as { uri?: vscode.Uri } | undefined;
+      if (input?.uri) {
+        uri = input.uri;
+      } else if (vscode.window.activeTextEditor?.document?.uri) {
+        uri = vscode.window.activeTextEditor.document.uri;
+      }
+      const ext = uri ? (uri.fsPath.split('.').pop() ?? '').toLowerCase() : '';
+      if (!uri || !jsonExts.has(`.${ext}`)) {
+        vscode.window.showWarningMessage('Open a KotOR file that supports JSON view (e.g. .utc, .gff, .2da, .tlk) first.');
+        log.debug('openAsJson: no suitable file active');
+        return;
+      }
+      try {
+        await vscode.commands.executeCommand('vscode.openWith', uri, KotorForgeProvider.viewTypeJson);
+        log.info('openAsJson: opened JSON view');
+      } catch (e) {
+        log.error(`openAsJson failed: ${e}`);
+        vscode.window.showErrorMessage(`Failed to open as JSON: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.format', () => {
+      const uri = getActiveForgeEditorUri();
+      if (uri && forgeRegistration.postRunCommandToUri(uri, 'format')) {
+        log.debug('kotorForge.format sent to webview');
+      } else {
+        vscode.window.showWarningMessage('Open a KotOR Forge editor (e.g. 2DA, TLK, GFF) to use Format.');
+      }
+    }),
+    vscode.commands.registerCommand('kotorForge.sort', () => {
+      const uri = getActiveForgeEditorUri();
+      if (uri && forgeRegistration.postRunCommandToUri(uri, 'sort')) {
+        log.debug('kotorForge.sort sent to webview');
+      } else {
+        vscode.window.showWarningMessage('Open a KotOR Forge editor (e.g. TLK, 2DA) to use Sort.');
+      }
+    }),
+
+    vscode.commands.registerCommand('kotorForge.openDocumentation', async () => {
+      await vscode.env.openExternal(vscode.Uri.parse('https://github.com/KobaltBlu/KotOR.js'));
+    })
+  );
+  log.trace('Extension commands registered');
+
+  // Show welcome message on first install
+  const hasShownWelcome = context.globalState.get('hasShownWelcome', false);
+  log.trace(`hasShownWelcome from globalState: ${hasShownWelcome}`);
+  if (!hasShownWelcome) {
+    log.debug('Showing first-install welcome message');
+    vscode.window.showInformationMessage(
+      'Welcome to KotOR Forge! Set your game installation paths in settings to enable resource browsing.',
+      'Open Settings'
+    ).then(selection => {
+      log.trace(`Welcome message selection: ${selection ?? 'dismissed'}`);
+      if (selection === 'Open Settings') {
+        vscode.commands.executeCommand('workbench.action.openSettings', 'kotorForge');
+      }
+    });
+    context.globalState.update('hasShownWelcome', true);
+    log.trace('hasShownWelcome persisted to globalState');
+  }
+
+  log.trace('activate() completed');
+}
+
+/**
+ * Extension deactivation function
+ */
+export function deactivate(): PromiseLike<void> | undefined {
+  log.trace('deactivate() entered');
+  log.info('KotOR Forge extension is now deactivated');
+  const result = deactivateLsp();
+  if (result) {
+    log.trace('deactivateLsp() returned a Thenable; awaiting cleanup');
+    Promise.resolve(result).then(() => log.trace('deactivateLsp() resolved'), (err: unknown) => log.error(`deactivateLsp() rejected: ${err}`));
+  } else {
+    log.trace('deactivateLsp() returned undefined');
+  }
+  log.trace('deactivate() completed');
+  return result;
+}

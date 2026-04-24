@@ -1,29 +1,68 @@
-import type { Token } from "@/nwscript/compiler/NWScriptToken";
+import type { Token } from '@/nwscript/compiler/NWScriptToken';
 
-export type SourceInfo = Token["source"] | undefined;
-export type DataTypeNode = { type: "datatype"; unary: number; value: string; engine_type?: boolean; struct?: string };
-export type NameNode = { type: "name"; value: string; source?: SourceInfo };
+export type SourceInfo = Token['source'] | undefined;
+export type DataTypeNode = { type: 'datatype'; unary: number; value: string; engine_type?: boolean; struct?: string };
+export type NameNode = { type: 'name'; value: string; source?: SourceInfo };
 
-export type OperatorNode = { type: "operator"; value: string };
+export type OperatorNode = { type: 'operator'; value: string };
 
 // Expression nodes produced by the hand parser
-export interface LiteralNode { 
-  type: "literal"; 
-  datatype: DataTypeNode; 
-  value: number | string; 
+export interface LiteralNode {
+  type: 'literal';
+  datatype: DataTypeNode;
+  value: number | string;
   source: SourceInfo;
-  originalText?: "TRUE" | "FALSE" | "NULL" | "OBJECT_SELF" | "OBJECT_INVALID"; // Preserve original keyword text for code generation
+  originalText?: 'TRUE' | 'FALSE' | 'NULL' | 'OBJECT_SELF' | 'OBJECT_INVALID'; // Preserve original keyword text for code generation
 }
-export interface VariableReferenceNode { type: "variable_reference"; name: string; source: SourceInfo; terminated?: boolean; }
-export interface ArrayLiteralNode { type: "array_literal"; elements: ExpressionNode[]; source: SourceInfo; }
-export interface FunctionCallNode { type: "function_call"; name: string; arguments: ExpressionNode[]; source: SourceInfo; }
-export interface CallNode { type: "call"; callee: ExpressionNode; arguments: ExpressionNode[]; source: SourceInfo; }
-export interface IndexNode { type: "index"; left: ExpressionNode; index: ExpressionNode; source: SourceInfo; }
-export interface AssignNode { type: "assign"; left: ExpressionNode; right: ExpressionNode; operator: OperatorNode; source: SourceInfo; }
-export interface IncDecNode { type: "inc" | "dec"; value: ExpressionNode; postfix?: boolean; source: SourceInfo; }
-export interface UnaryNode { type: "not" | "comp" | "neg"; value: ExpressionNode; source: SourceInfo; }
+export interface VariableReferenceNode {
+  type: 'variable_reference';
+  name: string;
+  source: SourceInfo;
+  terminated?: boolean;
+}
+export interface ArrayLiteralNode {
+  type: 'array_literal';
+  elements: ExpressionNode[];
+  source: SourceInfo;
+}
+export interface FunctionCallNode {
+  type: 'function_call';
+  name: string;
+  arguments: ExpressionNode[];
+  source: SourceInfo;
+}
+export interface CallNode {
+  type: 'call';
+  callee: ExpressionNode;
+  arguments: ExpressionNode[];
+  source: SourceInfo;
+}
+export interface IndexNode {
+  type: 'index';
+  left: ExpressionNode;
+  index: ExpressionNode;
+  source: SourceInfo;
+}
+export interface AssignNode {
+  type: 'assign';
+  left: ExpressionNode;
+  right: ExpressionNode;
+  operator: OperatorNode;
+  source: SourceInfo;
+}
+export interface IncDecNode {
+  type: 'inc' | 'dec';
+  value: ExpressionNode;
+  postfix?: boolean;
+  source: SourceInfo;
+}
+export interface UnaryNode {
+  type: 'not' | 'comp' | 'neg';
+  value: ExpressionNode;
+  source: SourceInfo;
+}
 export interface CompareNode {
-  type: "compare";
+  type: 'compare';
   datatype: DataTypeNode;
   left: ExpressionNode;
   right: ExpressionNode;
@@ -31,7 +70,7 @@ export interface CompareNode {
   source: SourceInfo;
 }
 export interface BinaryOpNode {
-  type: "add" | "sub" | "mul" | "div" | "mod" | "incor" | "xor" | "booland" | "shift" | "binary";
+  type: 'add' | 'sub' | 'mul' | 'div' | 'mod' | 'incor' | 'xor' | 'booland' | 'shift' | 'binary';
   left: ExpressionNode;
   right: ExpressionNode;
   operator: OperatorNode;
@@ -53,15 +92,34 @@ export type ExpressionNode =
   | BinaryOpNode;
 
 // Statement / program nodes
-export interface DefineNode { type: "define"; name: NameNode; value: DataTypeNode | NameNode | LiteralNode; }
-export interface IncludeNode { type: "include"; value: LiteralNode | NameNode; }
+export interface DefineNode {
+  type: 'define';
+  name: NameNode;
+  value: DataTypeNode | NameNode | LiteralNode;
+}
+export interface IncludeNode {
+  type: 'include';
+  value: LiteralNode | NameNode;
+}
 
 // Used both for struct field declarations (datatype known) and member access (datatype resolved later)
-export interface StructPropertyNode { type: "property"; datatype?: DataTypeNode; name: string; left: ExpressionNode; source: SourceInfo; }
-export interface StructNode { type: "struct"; datatype?: DataTypeNode; name: string; properties: StructPropertyNode[]; source: SourceInfo; }
+export interface StructPropertyNode {
+  type: 'property';
+  datatype?: DataTypeNode;
+  name: string;
+  left: ExpressionNode;
+  source: SourceInfo;
+}
+export interface StructNode {
+  type: 'struct';
+  datatype?: DataTypeNode;
+  name: string;
+  properties: StructPropertyNode[];
+  source: SourceInfo;
+}
 
 export interface VariableNode {
-  type: "variable";
+  type: 'variable';
   is_const: boolean;
   declare: true;
   datatype: DataTypeNode;
@@ -71,7 +129,7 @@ export interface VariableNode {
 }
 
 export interface VariableListNode {
-  type: "variableList";
+  type: 'variableList';
   is_const: boolean;
   declare: true;
   datatype: DataTypeNode;
@@ -80,7 +138,7 @@ export interface VariableListNode {
 }
 
 export interface ArgumentNode {
-  type: "argument";
+  type: 'argument';
   datatype: DataTypeNode;
   name: string;
   value?: ExpressionNode;
@@ -88,7 +146,7 @@ export interface ArgumentNode {
 }
 
 export interface FunctionNode {
-  type: "function";
+  type: 'function';
   header_only: boolean;
   name: string;
   returntype: DataTypeNode;
@@ -98,19 +156,19 @@ export interface FunctionNode {
 }
 
 export interface ElseIfNode {
-  type: "elseif";
+  type: 'elseif';
   condition: ExpressionNode;
   statements: StatementNode[];
   source: SourceInfo;
 }
 
 export interface ElseNode {
-  type: "else";
+  type: 'else';
   statements: StatementNode[];
 }
 
 export interface IfNode {
-  type: "if";
+  type: 'if';
   condition: ExpressionNode;
   statements: StatementNode[];
   elseIfs: ElseIfNode[];
@@ -118,11 +176,21 @@ export interface IfNode {
   source: SourceInfo;
 }
 
-export interface WhileNode { type: "while"; condition: ExpressionNode; statements: StatementNode[]; source: SourceInfo; }
-export interface DoWhileNode { type: "do"; condition: ExpressionNode; statements: StatementNode[]; source: SourceInfo; }
+export interface WhileNode {
+  type: 'while';
+  condition: ExpressionNode;
+  statements: StatementNode[];
+  source: SourceInfo;
+}
+export interface DoWhileNode {
+  type: 'do';
+  condition: ExpressionNode;
+  statements: StatementNode[];
+  source: SourceInfo;
+}
 
 export interface ForNode {
-  type: "for";
+  type: 'for';
   initializer: VariableNode | VariableListNode | ExpressionNode | null;
   condition: ExpressionNode | null;
   incrementor: ExpressionNode | null;
@@ -130,22 +198,48 @@ export interface ForNode {
   source: SourceInfo;
 }
 
-export interface CaseNode { type: "case"; value: ExpressionNode; statements: StatementNode[]; source: SourceInfo; }
-export interface DefaultNode { type: "default"; statements: StatementNode[]; source: SourceInfo; }
+export interface CaseNode {
+  type: 'case';
+  value: ExpressionNode;
+  statements: StatementNode[];
+  source: SourceInfo;
+}
+export interface DefaultNode {
+  type: 'default';
+  statements: StatementNode[];
+  source: SourceInfo;
+}
 
 export interface SwitchNode {
-  type: "switch";
+  type: 'switch';
   condition: ExpressionNode;
   cases: CaseNode[];
   default: DefaultNode | null;
   source: SourceInfo;
 }
 
-export interface ReturnNode { type: "return"; value: ExpressionNode | null; source: SourceInfo; }
-export interface BreakNode { type: "break"; source: SourceInfo; }
-export interface ContinueNode { type: "continue"; source: SourceInfo; }
-export interface BlockNode { type: "block"; statements: StatementNode[]; }
-export interface CommentNode { type: "comment"; value: string; source: SourceInfo; }
+export interface ReturnNode {
+  type: 'return';
+  value: ExpressionNode | null;
+  source: SourceInfo;
+}
+export interface BreakNode {
+  type: 'break';
+  source: SourceInfo;
+}
+export interface ContinueNode {
+  type: 'continue';
+  source: SourceInfo;
+}
+export interface BlockNode {
+  type: 'block';
+  statements: StatementNode[];
+}
+export interface CommentNode {
+  type: 'comment';
+  value: string;
+  source: SourceInfo;
+}
 
 export type StatementNode =
   | DefineNode
@@ -167,7 +261,7 @@ export type StatementNode =
   | ExpressionNode;
 
 export interface ProgramNode {
-  type: "program";
+  type: 'program';
   statements: StatementNode[];
   parsed?: boolean;
 }

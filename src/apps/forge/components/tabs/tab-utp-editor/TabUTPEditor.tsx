@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react"
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import { TabUTIEditorState, TabUTPEditorState } from "@/apps/forge/states/tabs";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import * as KotOR from "@/apps/forge/KotOR";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import React, { useCallback, useEffect, useState } from 'react';
+import { BaseTabProps } from '@/apps/forge/interfaces/BaseTabProps';
+import { TabUTIEditorState, TabUTPEditorState } from '@/apps/forge/states/tabs';
+import { UI3DRendererView } from '@/apps/forge/components/UI3DRendererView';
+import * as KotOR from '@/apps/forge/KotOR';
+import { CExoLocStringEditor } from '@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor';
+import { ForgePlaceable } from '@/apps/forge/module-editor/ForgePlaceable';
 import {
   sanitizeResRef,
   clampByte,
@@ -16,15 +16,14 @@ import {
   createResRefFieldHandler,
   createCExoStringFieldHandler,
   createCExoLocStringFieldHandler,
-  createForgeCheckboxFieldHandler
-} from "@/apps/forge/helpers/UTxEditorHelpers";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+  createForgeCheckboxFieldHandler,
+} from '@/apps/forge/helpers/UTxEditorHelpers';
+import { ForgeCheckbox } from '@/apps/forge/components/forge-checkbox/forge-checkbox';
+import { SubTab, SubTabHost } from '@/apps/forge/components/SubTabHost';
+import { FormField } from '@/apps/forge/components/form-field/FormField';
+import { InfoBubble } from '@/apps/forge/components/info-bubble/info-bubble';
 
-export const TabUTPEditor = function(props: BaseTabProps){
-
+export const TabUTPEditor = function (props: BaseTabProps) {
   const tab: TabUTPEditorState = props.tab as TabUTPEditorState;
   const [selectedTab, setSelectedTab] = useState<string>('basic');
 
@@ -85,37 +84,41 @@ export const TabUTPEditor = function(props: BaseTabProps){
   const [type, setType] = useState<number>(0);
   const [useable, setUseable] = useState<boolean>(false);
   const [will, setWill] = useState<number>(0);
+  const [itemList, setItemList] = useState<PlaceableItemEntry[]>([]);
 
   const [kPlaceableAppearances, setKPlaceableAppearances] = useState<any[]>([]);
   const [kFactions, setKFactions] = useState<any[]>([]);
 
   // Helper functions using ForgePlaceable methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgePlaceable, parser: (value: number) => number = (v) => v) => 
-    tab.placeable.createNumberFieldHandler(setter, property, tab.placeable, tab, parser);
-  
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgePlaceable) => 
+  const onUpdateNumberField = (
+    setter: (value: number) => void,
+    property: keyof ForgePlaceable,
+    parser: (value: number) => number = (v) => v
+  ) => tab.placeable.createNumberFieldHandler(setter, property, tab.placeable, tab, parser);
+
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createByteFieldHandler(setter, property, tab.placeable, tab);
-  
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgePlaceable) => 
+
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createWordFieldHandler(setter, property, tab.placeable, tab);
-  
-  const updateBooleanField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) => 
+
+  const updateBooleanField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createBooleanFieldHandler(setter, property, tab.placeable, tab);
-  
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgePlaceable) => 
+
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createResRefFieldHandler(setter, property, tab.placeable, tab);
-  
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgePlaceable) => 
+
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createCExoStringFieldHandler(setter, property, tab.placeable, tab);
-  
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgePlaceable) => 
+
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createCExoLocStringFieldHandler(setter, property, tab.placeable, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) => 
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgePlaceable) =>
     tab.placeable.createForgeCheckboxFieldHandler(setter, property, tab.placeable, tab);
 
   const onPlaceableChange = useCallback(() => {
-    if(!tab.placeable) return;
+    if (!tab.placeable) return;
     setAnimationState(tab.placeable.animationState);
     setAppearance(tab.placeable.appearance);
     setAutoRemoveKey(tab.placeable.autoRemoveKey);
@@ -173,12 +176,44 @@ export const TabUTPEditor = function(props: BaseTabProps){
     setType(tab.placeable.t_type);
     setUseable(tab.placeable.useable);
     setWill(tab.placeable.will);
+    setItemList(tab.placeable.itemList.map((item) => ({ ...item })));
     setKPlaceableAppearances(tab.placeable.kPlaceableAppearances || []);
     setKFactions(tab.placeable.kFactions || []);
   }, [tab]);
 
+  const onOpenInventoryBrowser = () => {
+    const inventory = tab.placeable.itemList.map((entry) => ({
+      resref: entry.inventoryRes,
+      droppable: entry.droppable,
+      infinite: false,
+    }));
+
+    const modal = new ModalInventoryBrowserState(
+      inventory,
+      (updatedInventory) => {
+        const updatedPlaceableItems = updatedInventory.map((entry) => ({
+          inventoryRes: entry.resref,
+          droppable: entry.droppable,
+        }));
+
+        tab.placeable.setProperty('itemList', updatedPlaceableItems);
+        if (updatedPlaceableItems.length > 0 && !tab.placeable.hasInventory) {
+          tab.placeable.setProperty('hasInventory', true);
+          setHasInventory(true);
+        }
+
+        setItemList(updatedPlaceableItems.map((entry) => ({ ...entry })));
+        tab.updateFile();
+      },
+      'placeable'
+    );
+
+    modal.attachToModalManager(ForgeState.modalManager);
+    modal.open();
+  };
+
   useEffect(() => {
-    if(!tab) return;
+    if (!tab) return;
     onPlaceableChange();
     tab.addEventListener('onEditorFileChange', onPlaceableChange);
     tab.addEventListener('onEditorFileLoad', onPlaceableChange);
@@ -196,61 +231,106 @@ export const TabUTPEditor = function(props: BaseTabProps){
       headerTitle: 'Basic',
       content: (
         <>
-          <table style={{width: '100%;'}}>
+          <table style={{ width: '100%;' }}>
             <tbody>
-              <FormField label="Name" info="The display name of the placeable. This is what players will see in-game and can be localized for different languages.">
+              <FormField
+                label="Name"
+                info="The display name of the placeable. This is what players will see in-game and can be localized for different languages."
+              >
                 <CExoLocStringEditor value={locName} onChange={onUpdateCExoLocStringField(setLocName, 'locName')} />
               </FormField>
-              <FormField label="Tag" info="A unique identifier for this placeable. Used by scripts to reference this specific object. Must be unique within the module.">
+              <FormField
+                label="Tag"
+                info="A unique identifier for this placeable. Used by scripts to reference this specific object. Must be unique within the module."
+              >
                 <input type="text" maxLength={16} value={tag} onChange={onUpdateResRefField(setTag, 'tag')} />
               </FormField>
-              <FormField label="Appearance" info="The appearance of the placeable. This is the model that will be used to display the placeable in-game.">
-                <select className="form-select" value={appearance} onChange={onUpdateByteField(setAppearance, 'appearance')}>
+              <FormField
+                label="Appearance"
+                info="The appearance of the placeable. This is the model that will be used to display the placeable in-game."
+              >
+                <select
+                  className="form-select"
+                  value={appearance}
+                  onChange={onUpdateByteField(setAppearance, 'appearance')}
+                >
                   {kPlaceableAppearances.map((appearance: any, index: number) => (
-                    <option key={index} value={index}>{appearance.label}</option>
+                    <option key={index} value={index}>
+                      {appearance.label}
+                    </option>
                   ))}
                 </select>
               </FormField>
             </tbody>
           </table>
           <br />
-          <table style={{width: '100%'}}>
+          <table style={{ width: '100%' }}>
             <tbody>
               <tr>
                 <td>
-                  <ForgeCheckbox label="Plot Item" info="Whether this placeable is a plot item. This is used to determine if the placeable should be displayed in the plot window." value={plot} onChange={onUpdateForgeCheckboxField(setPlot, 'plot')} />
+                  <ForgeCheckbox
+                    label="Plot Item"
+                    info="Whether this placeable is a plot item. This is used to determine if the placeable should be displayed in the plot window."
+                    value={plot}
+                    onChange={onUpdateForgeCheckboxField(setPlot, 'plot')}
+                  />
                 </td>
                 <td>
-                  <ForgeCheckbox label="Static" info="Whether this placeable is static. This is used to determine if the placeable should be displayed in the static window." value={static_} onChange={onUpdateForgeCheckboxField(setStatic, 'static')} />
+                  <ForgeCheckbox
+                    label="Static"
+                    info="Whether this placeable is static. This is used to determine if the placeable should be displayed in the static window."
+                    value={static_}
+                    onChange={onUpdateForgeCheckboxField(setStatic, 'static')}
+                  />
                 </td>
                 <td>
-                  <ForgeCheckbox label="Min 1HP" info="Whether this placeable should have at least 1 hitpoint. This is used to determine if the placeable should be displayed in the min 1HP window." value={min1HP} onChange={onUpdateForgeCheckboxField(setMin1HP, 'min1HP')} />
+                  <ForgeCheckbox
+                    label="Min 1HP"
+                    info="Whether this placeable should have at least 1 hitpoint. This is used to determine if the placeable should be displayed in the min 1HP window."
+                    value={min1HP}
+                    onChange={onUpdateForgeCheckboxField(setMin1HP, 'min1HP')}
+                  />
                 </td>
               </tr>
             </tbody>
           </table>
           <br />
-          <table style={{width: '100%'}}>
+          <table style={{ width: '100%' }}>
             <tbody>
-              <FormField label="Hardness" info="The hardness of the placeable. This is used to determine if the placeable should be displayed in the hardness window.">
+              <FormField
+                label="Hardness"
+                info="The hardness of the placeable. This is used to determine if the placeable should be displayed in the hardness window."
+              >
                 <input type="number" min="0" value={hardness} onChange={onUpdateByteField(setHardness, 'hardness')} />
               </FormField>
-              <FormField label="Hitpoints" info="The hitpoints of the placeable. This is used to determine if the placeable should be displayed in the hitpoints window.">
+              <FormField
+                label="Hitpoints"
+                info="The hitpoints of the placeable. This is used to determine if the placeable should be displayed in the hitpoints window."
+              >
                 <input type="number" min="0" value={hp} onChange={onUpdateWordField(setHP, 'hp')} />
               </FormField>
-              <FormField label="Forititude Save" info="The forititude save of the placeable. This is used to determine if the placeable should be displayed in the forititude save window.">
+              <FormField
+                label="Forititude Save"
+                info="The forititude save of the placeable. This is used to determine if the placeable should be displayed in the forititude save window."
+              >
                 <input type="number" min="0" value={fort} onChange={onUpdateByteField(setFort, 'fort')} />
               </FormField>
-              <FormField label="Reflex Save" info="The reflex save of the placeable. This is used to determine if the placeable should be displayed in the reflex save window.">
+              <FormField
+                label="Reflex Save"
+                info="The reflex save of the placeable. This is used to determine if the placeable should be displayed in the reflex save window."
+              >
                 <input type="number" min="0" value={ref} onChange={onUpdateByteField(setRef, 'ref')} />
               </FormField>
-              <FormField label="Will Save" info="The will save of the placeable. This is used to determine if the placeable should be displayed in the will save window.">
+              <FormField
+                label="Will Save"
+                info="The will save of the placeable. This is used to determine if the placeable should be displayed in the will save window."
+              >
                 <input type="number" min="0" value={will} onChange={onUpdateByteField(setWill, 'will')} />
               </FormField>
             </tbody>
           </table>
         </>
-      )
+      ),
     },
     {
       id: 'lock',
@@ -259,49 +339,86 @@ export const TabUTPEditor = function(props: BaseTabProps){
       headerTitle: 'Lock',
       content: (
         <>
-          <table style={{width: '100%'}}>
+          <table style={{ width: '100%' }}>
             <tbody>
               <tr>
                 <td>
-                  <ForgeCheckbox label="Locked" value={locked} onChange={onUpdateForgeCheckboxField(setLocked, 'locked')} />
+                  <ForgeCheckbox
+                    label="Locked"
+                    value={locked}
+                    onChange={onUpdateForgeCheckboxField(setLocked, 'locked')}
+                  />
                 </td>
               </tr>
               <tr>
                 <td>
-                  <ForgeCheckbox label="Can be relocked" value={lockable} onChange={onUpdateForgeCheckboxField(setLockable, 'lockable')} />
+                  <ForgeCheckbox
+                    label="Can be relocked"
+                    value={lockable}
+                    onChange={onUpdateForgeCheckboxField(setLockable, 'lockable')}
+                  />
                 </td>
               </tr>
               <tr>
                 <td>
-                  <ForgeCheckbox label="Auto remove key after use" value={autoRemoveKey} onChange={onUpdateForgeCheckboxField(setAutoRemoveKey, 'autoRemoveKey')} />
+                  <ForgeCheckbox
+                    label="Auto remove key after use"
+                    value={autoRemoveKey}
+                    onChange={onUpdateForgeCheckboxField(setAutoRemoveKey, 'autoRemoveKey')}
+                  />
                 </td>
               </tr>
               <tr>
                 <td>
-                  <ForgeCheckbox label="Key required to unlock or lock" value={keyRequired} onChange={onUpdateForgeCheckboxField(setKeyRequired, 'keyRequired')} />
+                  <ForgeCheckbox
+                    label="Key required to unlock or lock"
+                    value={keyRequired}
+                    onChange={onUpdateForgeCheckboxField(setKeyRequired, 'keyRequired')}
+                  />
                 </td>
               </tr>
             </tbody>
           </table>
           <br />
-          <table style={{width: '100%'}}>
+          <table style={{ width: '100%' }}>
             <tbody>
               <tr>
-                <td><label>Open Lock DC</label></td>
-                <td><input type="number" value={openLockDC} onChange={onUpdateByteField(setOpenLockDC, 'openLockDC')} /></td>
+                <td>
+                  <label>Open Lock DC</label>
+                </td>
+                <td>
+                  <input type="number" value={openLockDC} onChange={onUpdateByteField(setOpenLockDC, 'openLockDC')} />
+                </td>
               </tr>
               <tr>
-                <td><label>Close Lock DC</label></td>
-                <td><input type="number" value={closeLockDC} onChange={onUpdateByteField(setCloseLockDC, 'closeLockDC')} /></td>
+                <td>
+                  <label>Close Lock DC</label>
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    value={closeLockDC}
+                    onChange={onUpdateByteField(setCloseLockDC, 'closeLockDC')}
+                  />
+                </td>
               </tr>
               <tr>
-                <td><label>Key Name</label></td>
-                <td><input type="text" maxLength={16} value={keyName} onChange={onUpdateResRefField(setKeyName, 'keyName')} /></td>
+                <td>
+                  <label>Key Name</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={keyName}
+                    onChange={onUpdateResRefField(setKeyName, 'keyName')}
+                  />
+                </td>
               </tr>
             </tbody>
           </table>
         </>
-      )
+      ),
     },
     {
       id: 'advanced',
@@ -310,55 +427,130 @@ export const TabUTPEditor = function(props: BaseTabProps){
       headerTitle: 'Advanced',
       content: (
         <>
-          <table style={{width: '100%'}}>
+          <table style={{ width: '100%' }}>
             <tbody>
               <tr>
-                <td><label>Blueprint ResRef</label></td>
-                <td><input type="text" disabled={true} value={templateResRef} /></td>
-              </tr>
-              <tr>
-                <td><label>Faction</label></td>
-                <td><select className="form-select" value={faction} onChange={onUpdateByteField(setFaction, 'faction')}>
-                  {kFactions.map((faction: any, index: number) => (
-                    <option key={index} value={index}>{faction.label}</option>
-                  ))}
-                </select></td>
-              </tr>
-              <tr>
-                <td><label>Conversation</label></td>
                 <td>
-                  <input type="text" maxLength={16} style={{width: 'auto' }} value={conversation} onChange={onUpdateResRefField(setConversation, 'conversation')} />
-                  <ForgeCheckbox label="No Interrupt" value={interruptable} onChange={onUpdateForgeCheckboxField(setInterruptable, 'interruptable')} />
+                  <label>Blueprint ResRef</label>
+                </td>
+                <td>
+                  <input type="text" disabled={true} value={templateResRef} />
                 </td>
               </tr>
               <tr>
-                <td><label>Animation State</label></td>
-                <td><input type="number" value={animationState} onChange={onUpdateByteField(setAnimationState, 'animationState')} /></td>
+                <td>
+                  <label>Faction</label>
+                </td>
+                <td>
+                  <select className="form-select" value={faction} onChange={onUpdateByteField(setFaction, 'faction')}>
+                    {kFactions.map((faction: any, index: number) => (
+                      <option key={index} value={index}>
+                        {faction.label}
+                      </option>
+                    ))}
+                  </select>
+                </td>
               </tr>
               <tr>
-                <td><label>Type</label></td>
-                <td><input type="number" value={type} onChange={onUpdateByteField(setType, 't_type')} /></td>
+                <td>
+                  <label>Conversation</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    style={{ width: 'auto' }}
+                    value={conversation}
+                    onChange={onUpdateResRefField(setConversation, 'conversation')}
+                  />
+                  <ForgeCheckbox
+                    label="No Interrupt"
+                    value={interruptable}
+                    onChange={onUpdateForgeCheckboxField(setInterruptable, 'interruptable')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>Animation State</label>
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    value={animationState}
+                    onChange={onUpdateByteField(setAnimationState, 'animationState')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>Type</label>
+                </td>
+                <td>
+                  <input type="number" value={type} onChange={onUpdateByteField(setType, 't_type')} />
+                </td>
               </tr>
             </tbody>
           </table>
           <br />
-          <table style={{width:'100%'}}>
+          <table style={{ width: '100%' }}>
             <tbody>
               <tr>
                 <td>
-                  <ForgeCheckbox label="Has Inventory" value={hasInventory} onChange={onUpdateForgeCheckboxField(setHasInventory, 'hasInventory')} />
+                  <ForgeCheckbox
+                    label="Has Inventory"
+                    value={hasInventory}
+                    onChange={onUpdateForgeCheckboxField(setHasInventory, 'hasInventory')}
+                  />
                 </td>
                 <td>
-                  <ForgeCheckbox label="Party Interact" value={partyInteract} onChange={onUpdateForgeCheckboxField(setPartyInteract, 'partyInteract')} />
+                  <ForgeCheckbox
+                    label="Party Interact"
+                    value={partyInteract}
+                    onChange={onUpdateForgeCheckboxField(setPartyInteract, 'partyInteract')}
+                  />
                 </td>
                 <td>
-                  <ForgeCheckbox label="Usable" value={useable} onChange={onUpdateForgeCheckboxField(setUseable, 'useable')} />
+                  <ForgeCheckbox
+                    label="Usable"
+                    value={useable}
+                    onChange={onUpdateForgeCheckboxField(setUseable, 'useable')}
+                  />
                 </td>
               </tr>
             </tbody>
           </table>
+          <br />
+          <fieldset>
+            <legend>
+              Inventory Items
+              <button className="btn btn-sm btn-outline-secondary ms-2" onClick={onOpenInventoryBrowser}>
+                Edit Inventory
+              </button>
+            </legend>
+            {itemList.length === 0 ? (
+              <p className="text-muted small">No items in inventory.</p>
+            ) : (
+              <table className="table table-sm table-dark mb-0 utc-inventory-table">
+                <thead>
+                  <tr>
+                    <th>ResRef</th>
+                    <th title="Droppable">Drop</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemList.map((entry, index) => (
+                    <tr key={`utp-item-${index}`}>
+                      <td>{entry.inventoryRes}</td>
+                      <td>{entry.droppable ? '✓' : ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </fieldset>
         </>
-      )
+      ),
     },
     {
       id: 'scripts',
@@ -367,80 +559,233 @@ export const TabUTPEditor = function(props: BaseTabProps){
       headerTitle: 'Scripts',
       content: (
         <>
-          <table style={{width: '100%'}}>
+          <table style={{ width: '100%' }}>
             <tbody>
-                <tr>
-                  <td><label>OnClick</label></td>
-                  <td><input type="text" maxLength={16} value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnClosed</label></td>
-                  <td><input type="text" maxLength={16} value={onClosed} onChange={onUpdateResRefField(setOnClosed, 'onClosed')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnDamaged</label></td>
-                  <td><input type="text" maxLength={16} value={onDamaged} onChange={onUpdateResRefField(setOnDamaged, 'onDamaged')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnDeath</label></td>
-                  <td><input type="text" maxLength={16} value={onDeath} onChange={onUpdateResRefField(setOnDeath, 'onDeath')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnDisarm</label></td>
-                  <td><input type="text" maxLength={16} value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnEndDialogue</label></td>
-                  <td><input type="text" maxLength={16} value={onEndDialogue} onChange={onUpdateResRefField(setOnEndDialogue, 'onEndDialogue')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnFailToOpen</label></td>
-                  <td><input type="text" maxLength={16} value={onFailToOpen} onChange={onUpdateResRefField(setOnFailToOpen, 'onFailToOpen')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnInvDisturbed</label></td>
-                  <td><input type="text" maxLength={16} value={onInvDisturbed} onChange={onUpdateResRefField(setOnInvDisturbed, 'onInvDisturbed')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnHeartbeat</label></td>
-                  <td><input type="text" maxLength={16} value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnLock</label></td>
-                  <td><input type="text" maxLength={16} value={onLock} onChange={onUpdateResRefField(setOnLock, 'onLock')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnMeleeAttacked</label></td>
-                  <td><input type="text" maxLength={16} value={onMeleeAttacked} onChange={onUpdateResRefField(setOnMeleeAttacked, 'onMeleeAttacked')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnOpen</label></td>
-                  <td><input type="text" maxLength={16} value={onOpen} onChange={onUpdateResRefField(setOnOpen, 'onOpen')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnSpellCastAt</label></td>
-                  <td><input type="text" maxLength={16} value={onSpellCastAt} onChange={onUpdateResRefField(setOnSpellCastAt, 'onSpellCastAt')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnTrapTriggered</label></td>
-                  <td><input type="text" maxLength={16} value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnUnlock</label></td>
-                  <td><input type="text" maxLength={16} value={onUnlock} onChange={onUpdateResRefField(setOnUnlock, 'onUnlock')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnUsed</label></td>
-                  <td><input type="text" maxLength={16} value={onUsed} onChange={onUpdateResRefField(setOnUsed, 'onUsed')} /></td>
-                </tr>
-                <tr>
-                  <td><label>OnUserDefined</label></td>
-                  <td><input type="text" maxLength={16} value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} /></td>
-                </tr>
+              <tr>
+                <td>
+                  <label>OnClick</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onClick}
+                    onChange={onUpdateResRefField(setOnClick, 'onClick')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnClosed</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onClosed}
+                    onChange={onUpdateResRefField(setOnClosed, 'onClosed')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnDamaged</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onDamaged}
+                    onChange={onUpdateResRefField(setOnDamaged, 'onDamaged')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnDeath</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onDeath}
+                    onChange={onUpdateResRefField(setOnDeath, 'onDeath')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnDisarm</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onDisarm}
+                    onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnEndDialogue</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onEndDialogue}
+                    onChange={onUpdateResRefField(setOnEndDialogue, 'onEndDialogue')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnFailToOpen</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onFailToOpen}
+                    onChange={onUpdateResRefField(setOnFailToOpen, 'onFailToOpen')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnInvDisturbed</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onInvDisturbed}
+                    onChange={onUpdateResRefField(setOnInvDisturbed, 'onInvDisturbed')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnHeartbeat</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onHeartbeat}
+                    onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnLock</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onLock}
+                    onChange={onUpdateResRefField(setOnLock, 'onLock')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnMeleeAttacked</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onMeleeAttacked}
+                    onChange={onUpdateResRefField(setOnMeleeAttacked, 'onMeleeAttacked')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnOpen</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onOpen}
+                    onChange={onUpdateResRefField(setOnOpen, 'onOpen')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnSpellCastAt</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onSpellCastAt}
+                    onChange={onUpdateResRefField(setOnSpellCastAt, 'onSpellCastAt')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnTrapTriggered</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onTrapTriggered}
+                    onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnUnlock</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onUnlock}
+                    onChange={onUpdateResRefField(setOnUnlock, 'onUnlock')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnUsed</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onUsed}
+                    onChange={onUpdateResRefField(setOnUsed, 'onUsed')}
+                  />
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>OnUserDefined</label>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    maxLength={16}
+                    value={onUserDefined}
+                    onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')}
+                  />
+                </td>
+              </tr>
             </tbody>
           </table>
         </>
-      )
+      ),
     },
     {
       id: 'description',
@@ -449,12 +794,18 @@ export const TabUTPEditor = function(props: BaseTabProps){
       headerTitle: 'Description',
       content: (
         <>
-          <InfoBubble content="The description text that appears when players examine this placeable. This can be localized for different languages and is what players see in the examine window." position="right">
+          <InfoBubble
+            content="The description text that appears when players examine this placeable. This can be localized for different languages and is what players see in the examine window."
+            position="right"
+          >
             <label style={{ cursor: 'help' }}>Description</label>
           </InfoBubble>
-          <CExoLocStringEditor value={description} onChange={onUpdateCExoLocStringField(setDescription, 'description')} />
+          <CExoLocStringEditor
+            value={description}
+            onChange={onUpdateCExoLocStringField(setDescription, 'description')}
+          />
         </>
-      )
+      ),
     },
     {
       id: 'comments',
@@ -463,16 +814,20 @@ export const TabUTPEditor = function(props: BaseTabProps){
       headerTitle: 'Comments',
       content: (
         <>
-          <table style={{width: '100%'}}>
+          <table style={{ width: '100%' }}>
             <tbody>
               <tr>
-                <td><label>Comments</label></td>
-                <td><textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} rows={5} /></td>
+                <td>
+                  <label>Comments</label>
+                </td>
+                <td>
+                  <textarea value={comment} onChange={onUpdateCExoStringField(setComment, 'comment')} rows={5} />
+                </td>
               </tr>
             </tbody>
           </table>
         </>
-      )
+      ),
     },
     {
       id: 'trap',
@@ -481,48 +836,93 @@ export const TabUTPEditor = function(props: BaseTabProps){
       headerTitle: 'Trap',
       content: (
         <>
-          <table style={{width: '100%;'}}>
+          <table style={{ width: '100%;' }}>
             <tbody>
               <tr>
-                <td><label>Trap Type</label></td>
-                <td><input type="number" value={trapType} onChange={onUpdateByteField(setTrapType, 'trapType')} /></td>
+                <td>
+                  <label>Trap Type</label>
+                </td>
+                <td>
+                  <input type="number" value={trapType} onChange={onUpdateByteField(setTrapType, 'trapType')} />
+                </td>
               </tr>
               <tr>
-                <td><label>Disarm DC</label></td>
-                <td><input type="number" value={disarmDC} onChange={onUpdateByteField(setDisarmDC, 'disarmDC')} /></td>
+                <td>
+                  <label>Disarm DC</label>
+                </td>
+                <td>
+                  <input type="number" value={disarmDC} onChange={onUpdateByteField(setDisarmDC, 'disarmDC')} />
+                </td>
               </tr>
               <tr>
-                <td><label>Trap Detect DC</label></td>
-                <td><input type="number" value={trapDetectDC} onChange={onUpdateByteField(setTrapDetectDC, 'trapDetectDC')} /></td>
+                <td>
+                  <label>Trap Detect DC</label>
+                </td>
+                <td>
+                  <input
+                    type="number"
+                    value={trapDetectDC}
+                    onChange={onUpdateByteField(setTrapDetectDC, 'trapDetectDC')}
+                  />
+                </td>
               </tr>
               <tr>
-                <td><label>Trap Detectable</label></td>
-                <td><ForgeCheckbox label="Trap Detectable" value={trapDetectable} onChange={onUpdateForgeCheckboxField(setTrapDetectable, 'trapDetectable')} /></td>
+                <td>
+                  <label>Trap Detectable</label>
+                </td>
+                <td>
+                  <ForgeCheckbox
+                    label="Trap Detectable"
+                    value={trapDetectable}
+                    onChange={onUpdateForgeCheckboxField(setTrapDetectable, 'trapDetectable')}
+                  />
+                </td>
               </tr>
               <tr>
-                <td><label>Trap Disarmable</label></td>
-                <td><ForgeCheckbox label="Trap Disarmable" value={trapDisarmable} onChange={onUpdateForgeCheckboxField(setTrapDisarmable, 'trapDisarmable')} /></td>
+                <td>
+                  <label>Trap Disarmable</label>
+                </td>
+                <td>
+                  <ForgeCheckbox
+                    label="Trap Disarmable"
+                    value={trapDisarmable}
+                    onChange={onUpdateForgeCheckboxField(setTrapDisarmable, 'trapDisarmable')}
+                  />
+                </td>
               </tr>
               <tr>
-                <td><label>Trap Flag</label></td>
-                <td><ForgeCheckbox label="Trap Flag" value={trapFlag} onChange={onUpdateForgeCheckboxField(setTrapFlag, 'trapFlag')} /></td>
+                <td>
+                  <label>Trap Flag</label>
+                </td>
+                <td>
+                  <ForgeCheckbox
+                    label="Trap Flag"
+                    value={trapFlag}
+                    onChange={onUpdateForgeCheckboxField(setTrapFlag, 'trapFlag')}
+                  />
+                </td>
               </tr>
               <tr>
-                <td><label>Trap One Shot</label></td>
-                <td><ForgeCheckbox label="Trap One Shot" value={trapOneShot} onChange={onUpdateForgeCheckboxField(setTrapOneShot, 'trapOneShot')} /></td>
+                <td>
+                  <label>Trap One Shot</label>
+                </td>
+                <td>
+                  <ForgeCheckbox
+                    label="Trap One Shot"
+                    value={trapOneShot}
+                    onChange={onUpdateForgeCheckboxField(setTrapOneShot, 'trapOneShot')}
+                  />
+                </td>
               </tr>
             </tbody>
           </table>
         </>
-      )
-    }
+      ),
+    },
   ];
-  return <>
-    <SubTabHost
-      tabs={tabs}
-      defaultTab="basic"
-      leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />}
-    />
-  </>;
-
+  return (
+    <>
+      <SubTabHost tabs={tabs} defaultTab="basic" leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />} />
+    </>
+  );
 };

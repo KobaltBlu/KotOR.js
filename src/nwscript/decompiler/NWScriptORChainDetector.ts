@@ -1,32 +1,48 @@
-import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
-import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { OP_EQUAL, OP_LOGORII, OP_JZ, OP_JNZ } from "@/nwscript/NWScriptOPCodes";
-import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { NWScriptBasicBlock } from '@/nwscript/decompiler/NWScriptBasicBlock';
+import type { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
+import { NWScriptExpression, NWScriptExpressionType } from '@/nwscript/decompiler/NWScriptExpression';
+import { NWScriptExpressionBuilder } from '@/nwscript/decompiler/NWScriptExpressionBuilder';
+import { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
+import { OP_EQUAL, OP_LOGORII, OP_JZ, OP_JNZ } from '@/nwscript/NWScriptOPCodes';
+import type { NWScriptFunctionParameter } from '@/nwscript/decompiler/NWScriptFunctionAnalyzer';
 
 /**
  * Detects and simplifies OR chains in NWScript bytecode.
  * Pattern: EQUALII -> [optional JZ] -> EQUALII -> LOGORII -> [repeat] -> final JZ
- * 
+ *
  * This optimizes expressions like:
  *   (param == const1 || param == const2 || param == const3)
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptORChainDetector.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class NWScriptORChainDetector {
   private functionParameters: NWScriptFunctionParameter[] = [];
+  private globalVariables: Map<number, { name: string; dataType: NWScriptDataType }> = new Map();
+  private localVariables: Map<number, { name: string; dataType: NWScriptDataType }> = new Map();
 
   /**
    * Set function parameters for proper variable name mapping
    */
   setFunctionParameters(parameters: NWScriptFunctionParameter[]): void {
     this.functionParameters = parameters;
+  }
+
+  /**
+   * Set global variables for variable name mapping (e.g. GetGlobalBoolean -> symbolic name)
+   */
+  setGlobalVariables(globals: Map<number, { name: string; dataType: NWScriptDataType }>): void {
+    this.globalVariables = globals;
+  }
+
+  /**
+   * Set local variables for variable name mapping (e.g. GetLocalInt -> symbolic name)
+   */
+  setLocalVariables(locals: Map<number, { name: string; dataType: NWScriptDataType }>): void {
+    this.localVariables = locals;
   }
 
   /**
@@ -40,7 +56,7 @@ export class NWScriptORChainDetector {
 
     const instructions = block.instructions;
     const conditionInstr = block.conditionInstruction;
-    
+
     // Find the index of the condition instruction
     const conditionIndex = instructions.indexOf(conditionInstr);
     if (conditionIndex < 0) {
@@ -49,10 +65,10 @@ export class NWScriptORChainDetector {
 
     // Analyze instructions up to the condition instruction
     const relevantInstructions = instructions.slice(0, conditionIndex + 1);
-    
+
     // Detect OR chain pattern
     const orChain = this.analyzeORChainPattern(relevantInstructions, conditionInstr);
-    
+
     if (orChain && orChain.comparisons.length > 1) {
       // Build OR expression tree from all comparisons
       return this.buildORExpression(orChain.comparisons);
@@ -68,36 +84,42 @@ export class NWScriptORChainDetector {
   private analyzeORChainPattern(
     instructions: NWScriptInstruction[],
     conditionInstr: NWScriptInstruction
-  ): { comparisons: NWScriptExpression[], redundantJZ: number[] } | null {
+  ): { comparisons: NWScriptExpression[]; redundantJZ: number[] } | null {
     const redundantJZ: number[] = [];
-    
+
     // Track the expression builder state
     const exprBuilder = new NWScriptExpressionBuilder();
     exprBuilder.setFunctionParameters(this.functionParameters);
-    
+    if (this.globalVariables.size > 0) {
+      exprBuilder.setGlobalVariables(this.globalVariables);
+    }
+    if (this.localVariables.size > 0) {
+      exprBuilder.setLocalVariables(this.localVariables);
+    }
+
     // Track JZ instructions and their conditions
     const jzConditions = new Map<number, NWScriptExpression>();
-    
+
     // Count LOGORII operations
     let logoriiCount = 0;
-    
+
     // Process instructions up to (but not including) the condition instruction
     const conditionIndex = instructions.indexOf(conditionInstr);
     if (conditionIndex < 0) {
       return null;
     }
-    
+
     for (let i = 0; i <= conditionIndex; i++) {
       const instr = instructions[i];
-      
+
       // Process instruction to build expression stack
       exprBuilder.processInstruction(instr);
-      
+
       // Count LOGORII operations
       if (instr.code === OP_LOGORII) {
         logoriiCount++;
       }
-      
+
       // Track JZ instructions and their conditions (for redundant check detection)
       if (instr.code === OP_JZ || instr.code === OP_JNZ) {
         const condition = exprBuilder.peek();
@@ -113,36 +135,36 @@ export class NWScriptORChainDetector {
         }
       }
     }
-    
+
     // Get the final expression from the stack (should be the OR chain result)
     const finalExpr = exprBuilder.peek();
-    
+
     if (!finalExpr) {
       return null;
     }
-    
+
     // Extract all comparisons from the final expression
     const comparisons = this.extractComparisonsFromExpression(finalExpr);
-    
+
     // If we found multiple comparisons and LOGORII operations, it's an OR chain
     // We need at least 2 comparisons and at least 1 LOGORII
     if (comparisons.length >= 2 && logoriiCount >= 1) {
       return { comparisons, redundantJZ };
     }
-    
+
     return null;
   }
-  
+
   /**
    * Extract all comparison expressions from an expression tree
    * Handles OR chains: (a == b || c == d || e == f)
    */
   private extractComparisonsFromExpression(expr: NWScriptExpression): NWScriptExpression[] {
     const comparisons: NWScriptExpression[] = [];
-    
+
     const collect = (e: NWScriptExpression | null): void => {
       if (!e) return;
-      
+
       if (e.type === NWScriptExpressionType.LOGICAL && e.operator === '||') {
         // Recursively collect from left and right of OR expression
         collect(e.left);
@@ -153,7 +175,7 @@ export class NWScriptORChainDetector {
       }
       // For other types, don't collect (they're not part of the OR chain)
     };
-    
+
     collect(expr);
     return comparisons;
   }
@@ -167,17 +189,17 @@ export class NWScriptORChainDetector {
       // Fallback - shouldn't happen
       return NWScriptExpression.constant(0, NWScriptDataType.INTEGER);
     }
-    
+
     if (comparisons.length === 1) {
       return comparisons[0];
     }
-    
+
     // Build left-associative OR tree
     let result = comparisons[0];
     for (let i = 1; i < comparisons.length; i++) {
       result = NWScriptExpression.logical('||', result, comparisons[i]);
     }
-    
+
     return result;
   }
 
@@ -188,7 +210,7 @@ export class NWScriptORChainDetector {
     if (expr1.type !== expr2.type) {
       return false;
     }
-    
+
     switch (expr1.type) {
       case NWScriptExpressionType.COMPARISON:
         // Compare comparison expressions
@@ -196,23 +218,20 @@ export class NWScriptORChainDetector {
           return false;
         }
         // For now, do a simple check - could be improved
-        return this.expressionsEqual(expr1.left!, expr2.left!) &&
-               this.expressionsEqual(expr1.right!, expr2.right!);
-      
+        return this.expressionsEqual(expr1.left!, expr2.left!) && this.expressionsEqual(expr1.right!, expr2.right!);
+
       case NWScriptExpressionType.CONSTANT:
         return expr1.value === expr2.value && expr1.dataType === expr2.dataType;
-      
+
       case NWScriptExpressionType.VARIABLE:
-        return expr1.variableName === expr2.variableName && 
-               expr1.isGlobal === expr2.isGlobal;
-      
+        return expr1.variableName === expr2.variableName && expr1.isGlobal === expr2.isGlobal;
+
       case NWScriptExpressionType.LOGICAL:
         if (expr1.operator !== expr2.operator) {
           return false;
         }
-        return this.expressionsEqual(expr1.left!, expr2.left!) &&
-               this.expressionsEqual(expr1.right!, expr2.right!);
-      
+        return this.expressionsEqual(expr1.left!, expr2.left!) && this.expressionsEqual(expr1.right!, expr2.right!);
+
       default:
         // For other types, do a simple comparison
         return false;
@@ -232,7 +251,7 @@ export class NWScriptORChainDetector {
         return this.buildORExpression(orChain);
       }
     }
-    
+
     // Recursively simplify left and right
     if (expr.left) {
       expr.left = this.simplifyExpression(expr.left);
@@ -240,7 +259,7 @@ export class NWScriptORChainDetector {
     if (expr.right) {
       expr.right = this.simplifyExpression(expr.right);
     }
-    
+
     return expr;
   }
 
@@ -249,7 +268,7 @@ export class NWScriptORChainDetector {
    */
   private extractORChain(expr: NWScriptExpression): NWScriptExpression[] {
     const comparisons: NWScriptExpression[] = [];
-    
+
     const collectComparisons = (e: NWScriptExpression): void => {
       if (e.type === NWScriptExpressionType.LOGICAL && e.operator === '||') {
         // Recursively collect from left and right
@@ -260,9 +279,8 @@ export class NWScriptORChainDetector {
         comparisons.push(e);
       }
     };
-    
+
     collectComparisons(expr);
     return comparisons;
   }
 }
-

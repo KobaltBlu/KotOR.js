@@ -1,17 +1,17 @@
-import { GameEffect } from "@/effects/GameEffect";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameEffect } from '@/effects/GameEffect';
+import { GameEffectType } from '@/enums/effects/GameEffectType';
 
 /**
  * EffectAreaOfEffect class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EffectAreaOfEffect.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectAreaOfEffect extends GameEffect {
-  constructor(){
+  constructor() {
     super();
     this.type = GameEffectType.EffectAreaOfEffect;
 
@@ -23,11 +23,9 @@ export class EffectAreaOfEffect extends GameEffect {
     // objectList[0] : aoeObject
   }
 
-  onApply(){
-    if(this.applied)
-      return;
-      
+  onApply() {
+    if (this.applied) return;
+
     super.onApply();
   }
-
 }

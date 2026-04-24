@@ -1,16 +1,16 @@
-import * as THREE from "three";
-import { OdysseyModel3D } from "@/three/odyssey";
-import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
-import type { OdysseyModel } from "@/odyssey/OdysseyModel";
+import * as THREE from 'three';
+import { OdysseyModel3D } from '@/three/odyssey';
+import { OdysseyModelNode } from '@/odyssey/OdysseyModelNode';
+import type { OdysseyModelAnimation } from '@/odyssey/OdysseyModelAnimation';
+import type { OdysseyModel } from '@/odyssey/OdysseyModel';
 
 /**
  * OdysseyModelAnimationNode class.
- * 
+ *
  * The OdysseyModelAnimationNode holds the values for an animation node
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyModelAnimationNode.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -21,7 +21,7 @@ export class OdysseyModelAnimationNode extends OdysseyModelNode {
   animation: OdysseyModelAnimation;
   sourceNodeUUID: string;
 
-  constructor(animation?: OdysseyModelAnimation){
+  constructor(animation?: OdysseyModelAnimation) {
     super(undefined);
     this.animation = animation;
     // super(parent);
@@ -33,27 +33,23 @@ export class OdysseyModelAnimationNode extends OdysseyModelNode {
     this.modelNodeCache = {};
   }
 
-  getNode(node: OdysseyModelNode, model: OdysseyModel3D){
-
-    if(node && model){
+  getNode(node: OdysseyModelNode, model: OdysseyModel3D) {
+    if (node && model) {
       let cache = this.modelNodeCache[model.uuid] || undefined;
-      if(typeof cache == 'undefined'){
+      if (typeof cache == 'undefined') {
         cache = this.modelNodeCache[model.uuid] = {};
       }
 
       let nodeCache = cache[node.name] || undefined;
-      if(typeof nodeCache == 'undefined'){
+      if (typeof nodeCache == 'undefined') {
         nodeCache = this.modelNodeCache[model.uuid][node.name] = model.nodes.get(node.name);
       }
 
       return nodeCache;
-
     }
-
   }
 
-  readBinary(odysseyModel: OdysseyModel){
+  readBinary(odysseyModel: OdysseyModel) {
     super.readBinary(odysseyModel);
   }
-
 }

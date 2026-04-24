@@ -1,4 +1,4 @@
-import type { GUIControl } from "@/gui/GUIControl";
+import type { GUIControl } from '@/gui/GUIControl';
 
 /**
  * Applies shared PROTOITEM font/texture from the list template to a row control.

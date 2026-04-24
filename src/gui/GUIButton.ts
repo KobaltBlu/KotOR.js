@@ -1,54 +1,53 @@
-import type { GameMenu } from "@/gui/GameMenu";
-import { GUIControl } from "@/gui/GUIControl";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import type { GFFStruct } from "@/resource/GFFStruct";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
+import type { GameMenu } from '@/gui/GameMenu';
+import { GUIControl } from '@/gui/GUIControl';
+import { GUIControlTypeMask } from '@/enums/gui/GUIControlTypeMask';
+import type { GFFStruct } from '@/resource/GFFStruct';
+import { GUIControlType } from '@/enums/gui/GUIControlType';
 
 /**
  * GUIButton class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIButton.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIButton extends GUIControl {
-  
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false) {
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUIButton;
     this.setControlType(GUIControlType.Button);
-    //this.widget.position.z = -2; 
+    //this.widget.position.z = -2;
   }
 
-  onHoverIn(){
+  onHoverIn() {
     super.onHoverIn();
-    if(!this.disableSelection && !this.disableHover){
-      if(this.swapBorderAndHighliteOnHover){
+    if (!this.disableSelection && !this.disableHover) {
+      if (this.swapBorderAndHighliteOnHover) {
         this.hideBorder();
         this.showHighlight();
-      }else{
+      } else {
         this.showBorder();
         this.showHighlight();
       }
       // this.pulsing = true;
       this.setTextColor(this.defaultHighlightColor.r, this.defaultHighlightColor.g, this.defaultHighlightColor.b);
       this.text.material.needsUpdate = true;
-    }else{
+    } else {
       this.hover = false;
       this.setTextColor(this.defaultColor.r, this.defaultColor.g, this.defaultColor.b);
       this.text.material.needsUpdate = true;
     }
   }
 
-  onHoverOut(){
+  onHoverOut() {
     super.onHoverOut();
-    if(!this.disableSelection && !this.disableHover){
-      if(this.swapBorderAndHighliteOnHover){
+    if (!this.disableSelection && !this.disableHover) {
+      if (this.swapBorderAndHighliteOnHover) {
         this.showBorder();
         this.hideHighlight();
-      }else{
+      } else {
         this.showBorder();
         this.hideHighlight();
       }
@@ -56,11 +55,10 @@ export class GUIButton extends GUIControl {
       // this.pulsing = false;
       this.setTextColor(this.defaultColor.r, this.defaultColor.g, this.defaultColor.b);
       this.text.material.needsUpdate = true;
-    }else{
+    } else {
       this.hover = false;
       this.setTextColor(this.defaultColor.r, this.defaultColor.g, this.defaultColor.b);
       this.text.material.needsUpdate = true;
     }
   }
-
 }

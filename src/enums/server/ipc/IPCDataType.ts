@@ -1,6 +1,6 @@
 export enum IPCDataType {
   /**
-   * Binary data  
+   * Binary data
    */
   VOID = 0x00,
   /**

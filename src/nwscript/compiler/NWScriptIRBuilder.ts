@@ -26,7 +26,7 @@ import {
   SemanticVariableListNode,
   SemanticBreakNode,
   SemanticContinueNode,
-} from "@/nwscript/compiler/ASTSemanticTypes";
+} from '@/nwscript/compiler/ASTSemanticTypes';
 import {
   OP_CPDOWNSP,
   OP_RSADD,
@@ -69,7 +69,7 @@ import {
   OP_INCISP,
   OP_NOP,
   OP_STORE_STATE,
-} from "@/nwscript/NWScriptOPCodes";
+} from '@/nwscript/NWScriptOPCodes';
 
 // Minimal IR types: label-based, linear instruction list.
 export type IRProgram = {
@@ -87,43 +87,43 @@ export type IRFunction = {
 };
 
 export type IRType = {
-  kind: "datatype";
+  kind: 'datatype';
   value: string;
   unary: number;
 };
 
 export type IRValue =
-  | { kind: "const"; type: IRType; value: number | string }
-  | { kind: "var"; name: string; isGlobal?: boolean; offset?: number; size?: number }
-  | { kind: "temp"; id: number };
+  | { kind: 'const'; type: IRType; value: number | string }
+  | { kind: 'var'; name: string; isGlobal?: boolean; offset?: number; size?: number }
+  | { kind: 'temp'; id: number };
 
 // IR instructions are deliberately concrete and label-based.
 export type IRInstruction =
-  | { op: "label"; name: string }
-  | { op: "rsadd"; type: IRType }
-  | { op: "movsp"; delta: number }
-  | { op: "loadconst"; type: IRType; value: number | string }
-  | { op: "loadvar"; type: IRType; varName: string; isGlobal?: boolean; size?: number }
-  | { op: "storevar"; type: IRType; varName: string; isGlobal?: boolean; size?: number }
-  | { op: "binop"; kind: "add" | "sub" | "mul" | "div" | "mod"; typeCode?: number }
-  | { op: "compare"; kind: "eq" | "ne" | "gt" | "lt" | "ge" | "le"; typeCode?: number; size?: number }
-  | { op: "logic"; kind: "and" | "or"; typeCode?: number }
-  | { op: "unary"; kind: "neg" | "not"; typeCode?: number }
-  | { op: "inc"; varName: string; isGlobal?: boolean; postfix?: boolean; size?: number }
-  | { op: "dec"; varName: string; isGlobal?: boolean; postfix?: boolean; size?: number }
-  | { op: "loadfield"; type: IRType; field: string; parent?: string }
-  | { op: "storefield"; type: IRType; field: string; parent?: string }
-  | { op: "loadindex"; type: IRType; indexLiteral?: number }
-  | { op: "storeindex"; type: IRType; indexLiteral?: number }
-  | { op: "cpdownsp"; offset: number; size: number }
-  | { op: "jsr"; target: string }
-  | { op: "jmp"; target: string }
-  | { op: "jz"; target: string }
-  | { op: "jnz"; target: string }
-  | { op: "action"; id: number; argc: number; returnSize: number; argSize: number }
-  | { op: "store_state"; bStackSize: number; stackSize: number }
-  | { op: "return" }
-  | { op: "nop" };
+  | { op: 'label'; name: string }
+  | { op: 'rsadd'; type: IRType }
+  | { op: 'movsp'; delta: number }
+  | { op: 'loadconst'; type: IRType; value: number | string }
+  | { op: 'loadvar'; type: IRType; varName: string; isGlobal?: boolean; size?: number }
+  | { op: 'storevar'; type: IRType; varName: string; isGlobal?: boolean; size?: number }
+  | { op: 'binop'; kind: 'add' | 'sub' | 'mul' | 'div' | 'mod'; typeCode?: number }
+  | { op: 'compare'; kind: 'eq' | 'ne' | 'gt' | 'lt' | 'ge' | 'le'; typeCode?: number; size?: number }
+  | { op: 'logic'; kind: 'and' | 'or'; typeCode?: number }
+  | { op: 'unary'; kind: 'neg' | 'not'; typeCode?: number }
+  | { op: 'inc'; varName: string; isGlobal?: boolean; postfix?: boolean; size?: number }
+  | { op: 'dec'; varName: string; isGlobal?: boolean; postfix?: boolean; size?: number }
+  | { op: 'loadfield'; type: IRType; field: string; parent?: string }
+  | { op: 'storefield'; type: IRType; field: string; parent?: string }
+  | { op: 'loadindex'; type: IRType; indexLiteral?: number }
+  | { op: 'storeindex'; type: IRType; indexLiteral?: number }
+  | { op: 'cpdownsp'; offset: number; size: number }
+  | { op: 'jsr'; target: string }
+  | { op: 'jmp'; target: string }
+  | { op: 'jz'; target: string }
+  | { op: 'jnz'; target: string }
+  | { op: 'action'; id: number; argc: number; returnSize: number; argSize: number }
+  | { op: 'store_state'; bStackSize: number; stackSize: number }
+  | { op: 'return' }
+  | { op: 'nop' };
 
 export type IRStructLayout = {
   name: string;
@@ -170,7 +170,7 @@ type WritableBuffer = Uint8Array & {
 };
 
 const allocBuffer = (length: number): WritableBuffer => {
-  if (typeof Buffer !== "undefined" && typeof Buffer.alloc === "function") {
+  if (typeof Buffer !== 'undefined' && typeof Buffer.alloc === 'function') {
     return Buffer.alloc(length) as WritableBuffer;
   }
   const arr = new Uint8Array(length) as WritableBuffer;
@@ -213,7 +213,7 @@ export class NWScriptIRBuilder {
   private continueLabels: string[] = [];
 
   private newTemp(): IRValue {
-    return { kind: "temp", id: this.tempId++ };
+    return { kind: 'temp', id: this.tempId++ };
   }
 
   private newLabel(prefix: string): string {
@@ -243,7 +243,7 @@ export class NWScriptIRBuilder {
   private static lowerFunction(fn: SemanticFunctionNode): IRFunction {
     const entryLabel = `fn_${fn.name}`;
     const builder = new NWScriptIRBuilder();
-    const instructions: IRInstruction[] = [{ op: "label", name: entryLabel }];
+    const instructions: IRInstruction[] = [{ op: 'label', name: entryLabel }];
     builder.lowerStatements(fn.statements as SemanticStatementNode[], instructions);
     const retSize = NWScriptIRBuilder.getTypeSize(fn.returntype);
 
@@ -251,9 +251,7 @@ export class NWScriptIRBuilder {
       name: fn.name,
       isEngineAction: (fn as any).is_engine_action || false,
       arguments: [],
-      returnType: fn.returntype
-        ? { kind: "datatype", value: fn.returntype.value, unary: fn.returntype.unary }
-        : null,
+      returnType: fn.returntype ? { kind: 'datatype', value: fn.returntype.value, unary: fn.returntype.unary } : null,
       returnSize: retSize,
       instructions,
       entryLabel,
@@ -268,84 +266,84 @@ export class NWScriptIRBuilder {
 
   private lowerStatement(stmt: SemanticStatementNode, acc: IRInstruction[]): void {
     switch (stmt.type) {
-      case "block":
+      case 'block':
         this.lowerStatements((stmt as SemanticBlockNode).statements as SemanticStatementNode[], acc);
         break;
-      case "return":
+      case 'return':
         if ((stmt as SemanticReturnNode).value) {
           this.lowerExpression((stmt as SemanticReturnNode).value as SemanticExpressionNode, acc);
         }
-        acc.push({ op: "return" });
+        acc.push({ op: 'return' });
         break;
-      case "function_call":
+      case 'function_call':
         this.lowerFunctionCall(stmt as SemanticFunctionCallNode, acc);
         break;
-      case "literal":
+      case 'literal':
         this.lowerLiteral(stmt as SemanticLiteralNode, acc);
         break;
-      case "property":
+      case 'property':
         this.lowerProperty(stmt as SemanticPropertyNode, acc);
         break;
-      case "index":
+      case 'index':
         this.lowerIndex(stmt as SemanticIndexNode, acc);
         break;
-      case "array_literal":
+      case 'array_literal':
         this.lowerArrayLiteral(stmt as SemanticArrayLiteralNode, acc);
         break;
-      case "variable_reference":
+      case 'variable_reference':
         this.lowerVarRef(stmt as SemanticVariableReferenceNode, acc);
         break;
-      case "assign":
+      case 'assign':
         this.lowerAssign(stmt as SemanticAssignNode, acc);
         break;
-      case "add":
-      case "sub":
-      case "mul":
-      case "div":
-      case "mod":
+      case 'add':
+      case 'sub':
+      case 'mul':
+      case 'div':
+      case 'mod':
         this.lowerBinary(stmt as SemanticBinaryNode, acc);
         break;
-      case "compare":
+      case 'compare':
         this.lowerCompare(stmt as SemanticCompareNode, acc);
         break;
-      case "neg":
-      case "not":
+      case 'neg':
+      case 'not':
         this.lowerUnary(stmt as SemanticUnaryNode, acc);
         break;
-      case "inc":
-      case "dec":
+      case 'inc':
+      case 'dec':
         this.lowerIncDec(stmt as SemanticIncDecNode, acc);
         break;
-      case "if":
+      case 'if':
         this.lowerIf(stmt as unknown as SemanticIfNode, acc);
         break;
-      case "while":
+      case 'while':
         this.lowerWhile(stmt as unknown as SemanticWhileNode, acc);
         break;
-      case "do":
+      case 'do':
         this.lowerDoWhile(stmt as unknown as SemanticDoWhileNode, acc);
         break;
-      case "for":
+      case 'for':
         this.lowerFor(stmt as unknown as SemanticForNode, acc);
         break;
-      case "switch":
+      case 'switch':
         this.lowerSwitch(stmt as unknown as SemanticSwitchNode, acc);
         break;
-      case "break":
+      case 'break':
         this.lowerBreak(stmt as SemanticBreakNode, acc);
         break;
-      case "continue":
+      case 'continue':
         this.lowerContinue(stmt as SemanticContinueNode, acc);
         break;
       default:
-        acc.push({ op: "nop" });
+        acc.push({ op: 'nop' });
         break;
     }
   }
 
   private lowerLiteral(lit: SemanticLiteralNode, acc: IRInstruction[]) {
-    const type: IRType = { kind: "datatype", value: lit.datatype.value, unary: lit.datatype.unary };
-    acc.push({ op: "loadconst", type, value: lit.value });
+    const type: IRType = { kind: 'datatype', value: lit.datatype.value, unary: lit.datatype.unary };
+    acc.push({ op: 'loadconst', type, value: lit.value });
   }
 
   private lowerArrayLiteral(arr: SemanticArrayLiteralNode, acc: IRInstruction[]) {
@@ -361,15 +359,14 @@ export class NWScriptIRBuilder {
     // Evaluate base
     this.lowerExpression(prop.left as SemanticExpressionNode, acc);
     const dt: IRType = prop.datatype
-      ? { kind: "datatype", value: prop.datatype.value, unary: prop.datatype.unary }
-      : { kind: "datatype", value: "int", unary: 0x03 };
-    const parentStruct =
-      (prop.left as any)?.datatype?.struct || (prop.left as any)?.datatype?.value || undefined;
+      ? { kind: 'datatype', value: prop.datatype.value, unary: prop.datatype.unary }
+      : { kind: 'datatype', value: 'int', unary: 0x03 };
+    const parentStruct = (prop.left as any)?.datatype?.struct || (prop.left as any)?.datatype?.value || undefined;
     if (prop.right) {
       this.lowerExpression(prop.right as SemanticExpressionNode, acc);
-      acc.push({ op: "storefield", type: dt, field: prop.name, parent: parentStruct });
+      acc.push({ op: 'storefield', type: dt, field: prop.name, parent: parentStruct });
     } else {
-      acc.push({ op: "loadfield", type: dt, field: prop.name, parent: parentStruct });
+      acc.push({ op: 'loadfield', type: dt, field: prop.name, parent: parentStruct });
     }
   }
 
@@ -377,52 +374,52 @@ export class NWScriptIRBuilder {
     this.lowerExpression(idx.left as SemanticExpressionNode, acc);
     this.lowerExpression(idx.index as SemanticExpressionNode, acc);
     const dt: IRType = (idx as any).datatype
-      ? { kind: "datatype", value: (idx as any).datatype.value, unary: (idx as any).datatype.unary }
-      : { kind: "datatype", value: "int", unary: 0x03 };
+      ? { kind: 'datatype', value: (idx as any).datatype.value, unary: (idx as any).datatype.unary }
+      : { kind: 'datatype', value: 'int', unary: 0x03 };
     let litIdx: number | undefined;
-    if (idx.index.type === "literal" && typeof (idx.index as any).value === "number") {
+    if (idx.index.type === 'literal' && typeof (idx.index as any).value === 'number') {
       litIdx = (idx.index as any).value;
     }
     // If part of assignment, store will be handled in assign lowering; otherwise load.
-    acc.push({ op: "loadindex", type: dt, indexLiteral: litIdx });
+    acc.push({ op: 'loadindex', type: dt, indexLiteral: litIdx });
   }
   private lowerVarRef(vr: SemanticVariableReferenceNode, acc: IRInstruction[]) {
     const dt: IRType = vr.datatype
-      ? { kind: "datatype", value: vr.datatype.value, unary: vr.datatype.unary }
-      : { kind: "datatype", value: "int", unary: 0x03 };
-    acc.push({ op: "loadvar", type: dt, varName: vr.name, isGlobal: vr.is_global });
+      ? { kind: 'datatype', value: vr.datatype.value, unary: vr.datatype.unary }
+      : { kind: 'datatype', value: 'int', unary: 0x03 };
+    acc.push({ op: 'loadvar', type: dt, varName: vr.name, isGlobal: vr.is_global });
   }
 
   private lowerAssign(asn: SemanticAssignNode, acc: IRInstruction[]) {
     this.lowerExpression(asn.right as SemanticExpressionNode, acc);
     const left = asn.left as any;
-    if (left.type === "variable_reference") {
+    if (left.type === 'variable_reference') {
       const vr = left as SemanticVariableReferenceNode;
       const dt: IRType = vr.datatype
-        ? { kind: "datatype", value: vr.datatype.value, unary: vr.datatype.unary }
-        : { kind: "datatype", value: "int", unary: 0x03 };
-      acc.push({ op: "storevar", type: dt, varName: vr.name, isGlobal: vr.is_global });
-    } else if (left.type === "property") {
+        ? { kind: 'datatype', value: vr.datatype.value, unary: vr.datatype.unary }
+        : { kind: 'datatype', value: 'int', unary: 0x03 };
+      acc.push({ op: 'storevar', type: dt, varName: vr.name, isGlobal: vr.is_global });
+    } else if (left.type === 'property') {
       const prop = left as SemanticPropertyNode;
       const dt: IRType = prop.datatype
-        ? { kind: "datatype", value: prop.datatype.value, unary: prop.datatype.unary }
-        : { kind: "datatype", value: "int", unary: 0x03 };
+        ? { kind: 'datatype', value: prop.datatype.value, unary: prop.datatype.unary }
+        : { kind: 'datatype', value: 'int', unary: 0x03 };
       this.lowerExpression(prop.left as SemanticExpressionNode, acc);
-      acc.push({ op: "storefield", type: dt, field: prop.name });
-    } else if (left.type === "index") {
+      acc.push({ op: 'storefield', type: dt, field: prop.name });
+    } else if (left.type === 'index') {
       const idx = left as SemanticIndexNode;
       const dt: IRType = (idx as any).datatype
-        ? { kind: "datatype", value: (idx as any).datatype.value, unary: (idx as any).datatype.unary }
-        : { kind: "datatype", value: "int", unary: 0x03 };
+        ? { kind: 'datatype', value: (idx as any).datatype.value, unary: (idx as any).datatype.unary }
+        : { kind: 'datatype', value: 'int', unary: 0x03 };
       this.lowerExpression(idx.left as SemanticExpressionNode, acc);
       this.lowerExpression(idx.index as SemanticExpressionNode, acc);
       let litIdx: number | undefined;
-      if (idx.index.type === "literal" && typeof (idx.index as any).value === "number") {
+      if (idx.index.type === 'literal' && typeof (idx.index as any).value === 'number') {
         litIdx = (idx.index as any).value;
       }
-      acc.push({ op: "storeindex", type: dt, indexLiteral: litIdx });
+      acc.push({ op: 'storeindex', type: dt, indexLiteral: litIdx });
     } else {
-      acc.push({ op: "nop" });
+      acc.push({ op: 'nop' });
     }
   }
 
@@ -435,58 +432,58 @@ export class NWScriptIRBuilder {
       (bin.right as any)?.datatype
     );
     switch (bin.type) {
-      case "add":
-        acc.push({ op: "binop", kind: "add", typeCode });
+      case 'add':
+        acc.push({ op: 'binop', kind: 'add', typeCode });
         break;
-      case "sub":
-        acc.push({ op: "binop", kind: "sub", typeCode });
+      case 'sub':
+        acc.push({ op: 'binop', kind: 'sub', typeCode });
         break;
-      case "mul":
-        acc.push({ op: "binop", kind: "mul", typeCode });
+      case 'mul':
+        acc.push({ op: 'binop', kind: 'mul', typeCode });
         break;
-      case "div":
-        acc.push({ op: "binop", kind: "div", typeCode });
+      case 'div':
+        acc.push({ op: 'binop', kind: 'div', typeCode });
         break;
-      case "mod":
-        acc.push({ op: "binop", kind: "mod", typeCode });
+      case 'mod':
+        acc.push({ op: 'binop', kind: 'mod', typeCode });
         break;
       default:
-        acc.push({ op: "nop" });
+        acc.push({ op: 'nop' });
         break;
     }
   }
 
   private lowerCompare(cmp: SemanticCompareNode, acc: IRInstruction[]) {
     const op = cmp.operator?.value;
-    if (op === "&&" || op === "||") {
+    if (op === '&&' || op === '||') {
       // Short-circuit lowering: evaluate left, branch if decisive, else evaluate right
-      const lblShort = this.newLabel(op === "&&" ? "and_short" : "or_short");
-      const lblEnd = this.newLabel(op === "&&" ? "and_end" : "or_end");
+      const lblShort = this.newLabel(op === '&&' ? 'and_short' : 'or_short');
+      const lblEnd = this.newLabel(op === '&&' ? 'and_end' : 'or_end');
       // Evaluate left
       this.lowerExpression(cmp.left as SemanticExpressionNode, acc);
       // Duplicate top for branch check
-      acc.push({ op: "loadconst", type: { kind: "datatype", value: "int", unary: 0x03 }, value: 0 });
-      acc.push({ op: "compare", kind: "eq" });
+      acc.push({ op: 'loadconst', type: { kind: 'datatype', value: 'int', unary: 0x03 }, value: 0 });
+      acc.push({ op: 'compare', kind: 'eq' });
       // For &&, if left == 0 jump short-circuit false; for ||, if left == 0 fall through to right
-      if (op === "&&") {
-        acc.push({ op: "jz", target: lblShort }); // if result of (left==0) is zero -> left !=0, continue; else jump short
+      if (op === '&&') {
+        acc.push({ op: 'jz', target: lblShort }); // if result of (left==0) is zero -> left !=0, continue; else jump short
       } else {
-        acc.push({ op: "jnz", target: lblShort }); // if left == 0 then jnz? Actually jnz jumps when !=0; we want jump when left!=0 -> short-circuit true
+        acc.push({ op: 'jnz', target: lblShort }); // if left == 0 then jnz? Actually jnz jumps when !=0; we want jump when left!=0 -> short-circuit true
       }
       // Evaluate right
       this.lowerExpression(cmp.right as SemanticExpressionNode, acc);
       // combine right with previous? Just leave right result on stack
-      acc.push({ op: "jmp", target: lblEnd });
+      acc.push({ op: 'jmp', target: lblEnd });
       // short-circuit path
-      acc.push({ op: "label", name: lblShort });
-      if (op === "&&") {
+      acc.push({ op: 'label', name: lblShort });
+      if (op === '&&') {
         // left was false => push 0
-        acc.push({ op: "loadconst", type: { kind: "datatype", value: "int", unary: 0x03 }, value: 0 });
+        acc.push({ op: 'loadconst', type: { kind: 'datatype', value: 'int', unary: 0x03 }, value: 0 });
       } else {
         // left was true => push 1
-        acc.push({ op: "loadconst", type: { kind: "datatype", value: "int", unary: 0x03 }, value: 1 });
+        acc.push({ op: 'loadconst', type: { kind: 'datatype', value: 'int', unary: 0x03 }, value: 1 });
       }
-      acc.push({ op: "label", name: lblEnd });
+      acc.push({ op: 'label', name: lblEnd });
       return;
     }
 
@@ -498,26 +495,26 @@ export class NWScriptIRBuilder {
       (cmp as any)?.datatype
     );
     switch (op) {
-      case "==":
-        acc.push({ op: "compare", kind: "eq", typeCode: typeInfo.typeCode, size: typeInfo.size });
+      case '==':
+        acc.push({ op: 'compare', kind: 'eq', typeCode: typeInfo.typeCode, size: typeInfo.size });
         break;
-      case "!=":
-        acc.push({ op: "compare", kind: "ne", typeCode: typeInfo.typeCode, size: typeInfo.size });
+      case '!=':
+        acc.push({ op: 'compare', kind: 'ne', typeCode: typeInfo.typeCode, size: typeInfo.size });
         break;
-      case ">":
-        acc.push({ op: "compare", kind: "gt", typeCode: typeInfo.typeCode, size: typeInfo.size });
+      case '>':
+        acc.push({ op: 'compare', kind: 'gt', typeCode: typeInfo.typeCode, size: typeInfo.size });
         break;
-      case "<":
-        acc.push({ op: "compare", kind: "lt", typeCode: typeInfo.typeCode, size: typeInfo.size });
+      case '<':
+        acc.push({ op: 'compare', kind: 'lt', typeCode: typeInfo.typeCode, size: typeInfo.size });
         break;
-      case ">=":
-        acc.push({ op: "compare", kind: "ge", typeCode: typeInfo.typeCode, size: typeInfo.size });
+      case '>=':
+        acc.push({ op: 'compare', kind: 'ge', typeCode: typeInfo.typeCode, size: typeInfo.size });
         break;
-      case "<=":
-        acc.push({ op: "compare", kind: "le", typeCode: typeInfo.typeCode, size: typeInfo.size });
+      case '<=':
+        acc.push({ op: 'compare', kind: 'le', typeCode: typeInfo.typeCode, size: typeInfo.size });
         break;
       default:
-        acc.push({ op: "nop" });
+        acc.push({ op: 'nop' });
         break;
     }
   }
@@ -526,209 +523,209 @@ export class NWScriptIRBuilder {
     this.lowerExpression(un.value as SemanticExpressionNode, acc);
     const typeCode = NWScriptIRBuilder.getUnaryTypeCode(un.type, (un as any).datatype || (un.value as any)?.datatype);
     switch (un.type) {
-      case "neg":
-        acc.push({ op: "unary", kind: "neg", typeCode });
+      case 'neg':
+        acc.push({ op: 'unary', kind: 'neg', typeCode });
         break;
-      case "not":
-        acc.push({ op: "unary", kind: "not", typeCode });
+      case 'not':
+        acc.push({ op: 'unary', kind: 'not', typeCode });
         break;
       default:
-        acc.push({ op: "nop" });
+        acc.push({ op: 'nop' });
         break;
     }
   }
 
   private lowerIncDec(id: SemanticIncDecNode, acc: IRInstruction[]) {
     const vr = id.value as any;
-    if (vr && vr.type === "variable_reference") {
+    if (vr && vr.type === 'variable_reference') {
       const name = vr.name;
       const isPost = (id as any).postFix ?? (id as any).postfix;
-      if (id.type === "inc") {
-        acc.push({ op: "inc", varName: name, isGlobal: vr.is_global, postfix: isPost });
+      if (id.type === 'inc') {
+        acc.push({ op: 'inc', varName: name, isGlobal: vr.is_global, postfix: isPost });
       } else {
-        acc.push({ op: "dec", varName: name, isGlobal: vr.is_global, postfix: isPost });
+        acc.push({ op: 'dec', varName: name, isGlobal: vr.is_global, postfix: isPost });
       }
     } else {
-      acc.push({ op: "nop" });
+      acc.push({ op: 'nop' });
     }
   }
 
   private lowerIf(node: SemanticIfNode, acc: IRInstruction[]) {
-    const lblElse = this.newLabel("else");
-    const lblEnd = this.newLabel("endif");
+    const lblElse = this.newLabel('else');
+    const lblEnd = this.newLabel('endif');
     this.lowerExpression(node.condition as SemanticExpressionNode, acc);
-    acc.push({ op: "jz", target: lblElse });
+    acc.push({ op: 'jz', target: lblElse });
     this.lowerStatements(node.statements as SemanticStatementNode[], acc);
-    acc.push({ op: "jmp", target: lblEnd });
-    acc.push({ op: "label", name: lblElse });
+    acc.push({ op: 'jmp', target: lblEnd });
+    acc.push({ op: 'label', name: lblElse });
     if (node.elseIfs && node.elseIfs.length) {
       for (const ei of node.elseIfs) {
-        const lblNext = this.newLabel("elseif_next");
+        const lblNext = this.newLabel('elseif_next');
         this.lowerExpression(ei.condition as SemanticExpressionNode, acc);
-        acc.push({ op: "jz", target: lblNext });
+        acc.push({ op: 'jz', target: lblNext });
         this.lowerStatements(ei.statements as SemanticStatementNode[], acc);
-        acc.push({ op: "jmp", target: lblEnd });
-        acc.push({ op: "label", name: lblNext });
+        acc.push({ op: 'jmp', target: lblEnd });
+        acc.push({ op: 'label', name: lblNext });
       }
     }
     if (node.else) {
       this.lowerStatements((node.else as SemanticElseNode).statements as SemanticStatementNode[], acc);
     }
-    acc.push({ op: "label", name: lblEnd });
+    acc.push({ op: 'label', name: lblEnd });
   }
 
   private lowerWhile(node: SemanticWhileNode, acc: IRInstruction[]) {
-    const lblStart = this.newLabel("while_start");
-    const lblEnd = this.newLabel("while_end");
+    const lblStart = this.newLabel('while_start');
+    const lblEnd = this.newLabel('while_end');
     this.continueLabels.push(lblStart);
     this.breakLabels.push(lblEnd);
-    acc.push({ op: "label", name: lblStart });
+    acc.push({ op: 'label', name: lblStart });
     this.lowerExpression(node.condition as SemanticExpressionNode, acc);
-    acc.push({ op: "jz", target: lblEnd });
+    acc.push({ op: 'jz', target: lblEnd });
     this.lowerStatements(node.statements as SemanticStatementNode[], acc);
-    acc.push({ op: "jmp", target: lblStart });
-    acc.push({ op: "label", name: lblEnd });
+    acc.push({ op: 'jmp', target: lblStart });
+    acc.push({ op: 'label', name: lblEnd });
     this.continueLabels.pop();
     this.breakLabels.pop();
   }
 
   private lowerDoWhile(node: SemanticDoWhileNode, acc: IRInstruction[]) {
-    const lblStart = this.newLabel("do_start");
-    const lblCond = this.newLabel("do_cond");
-    const lblEnd = this.newLabel("do_end");
+    const lblStart = this.newLabel('do_start');
+    const lblCond = this.newLabel('do_cond');
+    const lblEnd = this.newLabel('do_end');
     this.continueLabels.push(lblCond);
     this.breakLabels.push(lblEnd);
-    acc.push({ op: "label", name: lblStart });
+    acc.push({ op: 'label', name: lblStart });
     this.lowerStatements(node.statements as SemanticStatementNode[], acc);
-    acc.push({ op: "label", name: lblCond });
+    acc.push({ op: 'label', name: lblCond });
     this.lowerExpression(node.condition as SemanticExpressionNode, acc);
-    acc.push({ op: "jnz", target: lblStart });
-    acc.push({ op: "label", name: lblEnd });
+    acc.push({ op: 'jnz', target: lblStart });
+    acc.push({ op: 'label', name: lblEnd });
     this.continueLabels.pop();
     this.breakLabels.pop();
   }
 
   private lowerFor(node: SemanticForNode, acc: IRInstruction[]) {
-    const lblStart = this.newLabel("for_start");
-    const lblEnd = this.newLabel("for_end");
-    const lblInc = this.newLabel("for_inc");
+    const lblStart = this.newLabel('for_start');
+    const lblEnd = this.newLabel('for_end');
+    const lblInc = this.newLabel('for_inc');
     this.continueLabels.push(lblInc);
     this.breakLabels.push(lblEnd);
     // initializer
     if (node.initializer) {
       this.lowerExpression(node.initializer as any, acc);
     }
-    acc.push({ op: "label", name: lblStart });
+    acc.push({ op: 'label', name: lblStart });
     // condition
     if (node.condition) {
       this.lowerExpression(node.condition as SemanticExpressionNode, acc);
-      acc.push({ op: "jz", target: lblEnd });
+      acc.push({ op: 'jz', target: lblEnd });
     }
     // body
     this.lowerStatements(node.statements as SemanticStatementNode[], acc);
-    acc.push({ op: "label", name: lblInc });
+    acc.push({ op: 'label', name: lblInc });
     // incrementor
     if (node.incrementor) {
       this.lowerExpression(node.incrementor as SemanticExpressionNode, acc);
     }
-    acc.push({ op: "jmp", target: lblStart });
-    acc.push({ op: "label", name: lblEnd });
+    acc.push({ op: 'jmp', target: lblStart });
+    acc.push({ op: 'label', name: lblEnd });
     this.continueLabels.pop();
     this.breakLabels.pop();
   }
 
   private lowerSwitch(node: SemanticSwitchNode, acc: IRInstruction[]) {
-    const lblEnd = this.newLabel("switch_end");
+    const lblEnd = this.newLabel('switch_end');
     this.breakLabels.push(lblEnd);
     const caseLabels = node.cases.map((_c, i) => this.newLabel(`case_${i}`));
-    const defaultLabel = node.default ? this.newLabel("default") : lblEnd;
+    const defaultLabel = node.default ? this.newLabel('default') : lblEnd;
     this.lowerExpression(node.condition as SemanticExpressionNode, acc);
     for (let i = 0; i < node.cases.length; i++) {
       this.lowerExpression(node.cases[i].value as SemanticExpressionNode, acc);
-      acc.push({ op: "compare", kind: "eq" });
-      acc.push({ op: "jnz", target: caseLabels[i] });
+      acc.push({ op: 'compare', kind: 'eq' });
+      acc.push({ op: 'jnz', target: caseLabels[i] });
     }
-    acc.push({ op: "jmp", target: defaultLabel });
+    acc.push({ op: 'jmp', target: defaultLabel });
     for (let i = 0; i < node.cases.length; i++) {
-      acc.push({ op: "label", name: caseLabels[i] });
+      acc.push({ op: 'label', name: caseLabels[i] });
       this.lowerStatements(node.cases[i].statements as SemanticStatementNode[], acc);
       if (!node.cases[i].fallthrough) {
-        acc.push({ op: "jmp", target: lblEnd });
+        acc.push({ op: 'jmp', target: lblEnd });
       }
     }
     if (node.default) {
-      acc.push({ op: "label", name: defaultLabel });
+      acc.push({ op: 'label', name: defaultLabel });
       this.lowerStatements(node.default.statements as SemanticStatementNode[], acc);
-      acc.push({ op: "jmp", target: lblEnd });
+      acc.push({ op: 'jmp', target: lblEnd });
     }
-    acc.push({ op: "label", name: lblEnd });
+    acc.push({ op: 'label', name: lblEnd });
     this.breakLabels.pop();
   }
 
   private lowerBreak(_node: SemanticBreakNode, acc: IRInstruction[]) {
     const target = this.breakLabels[this.breakLabels.length - 1];
     if (target) {
-      acc.push({ op: "jmp", target });
+      acc.push({ op: 'jmp', target });
     } else {
-      acc.push({ op: "nop" });
+      acc.push({ op: 'nop' });
     }
   }
 
   private lowerContinue(_node: SemanticContinueNode, acc: IRInstruction[]) {
     const target = this.continueLabels[this.continueLabels.length - 1];
     if (target) {
-      acc.push({ op: "jmp", target });
+      acc.push({ op: 'jmp', target });
     } else {
-      acc.push({ op: "nop" });
+      acc.push({ op: 'nop' });
     }
   }
 
   private lowerExpression(expr: SemanticExpressionNode, acc: IRInstruction[]) {
     switch (expr.type) {
-      case "literal":
+      case 'literal':
         this.lowerLiteral(expr as SemanticLiteralNode, acc);
         break;
-      case "array_literal":
+      case 'array_literal':
         this.lowerArrayLiteral(expr as SemanticArrayLiteralNode, acc);
         break;
-      case "variable_reference":
+      case 'variable_reference':
         this.lowerVarRef(expr as SemanticVariableReferenceNode, acc);
         break;
-      case "function_call":
+      case 'function_call':
         this.lowerFunctionCall(expr as SemanticFunctionCallNode, acc);
         break;
-      case "property":
+      case 'property':
         this.lowerProperty(expr as SemanticPropertyNode, acc);
         break;
-      case "index":
+      case 'index':
         this.lowerIndex(expr as SemanticIndexNode, acc);
         break;
-      case "assign":
+      case 'assign':
         this.lowerAssign(expr as SemanticAssignNode, acc);
         break;
-      case "array_literal":
+      case 'array_literal':
         this.lowerArrayLiteral(expr as SemanticArrayLiteralNode, acc);
         break;
-      case "add":
-      case "sub":
-      case "mul":
-      case "div":
-      case "mod":
+      case 'add':
+      case 'sub':
+      case 'mul':
+      case 'div':
+      case 'mod':
         this.lowerBinary(expr as SemanticBinaryNode, acc);
         break;
-      case "compare":
+      case 'compare':
         this.lowerCompare(expr as SemanticCompareNode, acc);
         break;
-      case "neg":
-      case "not":
+      case 'neg':
+      case 'not':
         this.lowerUnary(expr as SemanticUnaryNode, acc);
         break;
-      case "inc":
-      case "dec":
+      case 'inc':
+      case 'dec':
         this.lowerIncDec(expr as SemanticIncDecNode, acc);
         break;
       default:
-        acc.push({ op: "nop" });
+        acc.push({ op: 'nop' });
         break;
     }
   }
@@ -751,16 +748,16 @@ export class NWScriptIRBuilder {
         // vector: three float slots
         for (let i = 0; i < 3; i++) {
           acc.push({
-            op: "rsadd",
-            type: { kind: "datatype", value: "float", unary: 0x04 },
+            op: 'rsadd',
+            type: { kind: 'datatype', value: 'float', unary: 0x04 },
           });
         }
       } else {
         acc.push({
-          op: "rsadd",
+          op: 'rsadd',
           type: {
-            kind: "datatype",
-            value: retDt?.value ?? "int",
+            kind: 'datatype',
+            value: retDt?.value ?? 'int',
             unary: retDt?.unary ?? 0x03,
           },
         });
@@ -770,13 +767,13 @@ export class NWScriptIRBuilder {
     // Emit arguments (reverse order), with action-type trampoline handling
     for (const arg of reversedArgs) {
       const dt = (arg as any).datatype;
-      if (dt && dt.value === "action") {
-        const afterLabel = this.newLabel("action_after");
-        acc.push({ op: "store_state", bStackSize: 0, stackSize: 0 }); // computed at emit
-        acc.push({ op: "jmp", target: afterLabel });
+      if (dt && dt.value === 'action') {
+        const afterLabel = this.newLabel('action_after');
+        acc.push({ op: 'store_state', bStackSize: 0, stackSize: 0 }); // computed at emit
+        acc.push({ op: 'jmp', target: afterLabel });
         this.lowerExpression(arg as SemanticExpressionNode, acc);
-        acc.push({ op: "return" }); // end of trampoline
-        acc.push({ op: "label", name: afterLabel });
+        acc.push({ op: 'return' }); // end of trampoline
+        acc.push({ op: 'label', name: afterLabel });
       } else {
         this.lowerExpression(arg as SemanticExpressionNode, acc);
       }
@@ -784,7 +781,7 @@ export class NWScriptIRBuilder {
 
     if (isEngine) {
       acc.push({
-        op: "action",
+        op: 'action',
         id: call.action_id ?? 0,
         argc: reversedArgs.length,
         returnSize: retSize,
@@ -793,10 +790,10 @@ export class NWScriptIRBuilder {
       // ACTION pops args internally; SP change accounted via returnSize/argSize in encoder
     } else {
       const targetLabel = `fn_${call.name}`;
-      acc.push({ op: "jsr", target: targetLabel });
+      acc.push({ op: 'jsr', target: targetLabel });
       // Script calls: pop args only; return stays in preallocated slot
       if (argSize > 0) {
-        acc.push({ op: "movsp", delta: -argSize });
+        acc.push({ op: 'movsp', delta: -argSize });
       }
     }
   }
@@ -807,35 +804,31 @@ export class NWScriptIRBuilder {
     // In NWScript, most types are 4-byte stack slots (int, float, string ref, object ref).
     // Vectors are 12 bytes; structs unknown -> sum of fields handled elsewhere.
     const val = dt.value ?? dt;
-    if (val === "vector") return 12;
+    if (val === 'vector') return 12;
     return 4;
   }
 
   private static getStatementSize(expr: SemanticExpressionNode): number {
     switch (expr.type) {
-      case "literal":
+      case 'literal':
         return NWScriptIRBuilder.getTypeSize((expr as SemanticLiteralNode).datatype);
-      case "array_literal": {
+      case 'array_literal': {
         const arr = expr as SemanticArrayLiteralNode;
         return arr.elements.reduce(
           (sum, el) => sum + NWScriptIRBuilder.getStatementSize(el as SemanticExpressionNode),
           0
         );
       }
-      case "variable_reference":
+      case 'variable_reference':
         return NWScriptIRBuilder.getTypeSize((expr as SemanticVariableReferenceNode).datatype);
-      case "property":
+      case 'property':
         return NWScriptIRBuilder.getTypeSize((expr as SemanticPropertyNode).datatype);
-      case "index":
+      case 'index':
         return NWScriptIRBuilder.getTypeSize((expr as any).datatype);
-      case "assign":
-        return NWScriptIRBuilder.getStatementSize(
-          (expr as SemanticAssignNode).right as SemanticExpressionNode
-        );
-      case "function_call":
-        return NWScriptIRBuilder.getTypeSize(
-          (expr as SemanticFunctionCallNode).function_reference?.returntype
-        );
+      case 'assign':
+        return NWScriptIRBuilder.getStatementSize((expr as SemanticAssignNode).right as SemanticExpressionNode);
+      case 'function_call':
+        return NWScriptIRBuilder.getTypeSize((expr as SemanticFunctionCallNode).function_reference?.returntype);
       default:
         return 4;
     }
@@ -898,14 +891,14 @@ export class NWScriptIRBuilder {
           builder.lowerExpression(g.value as any, initInstrs);
         } else {
           initInstrs.push({
-            op: "loadconst",
-            type: { kind: "datatype", value: g.datatype.value, unary: g.datatype.unary ?? 0x03 },
+            op: 'loadconst',
+            type: { kind: 'datatype', value: g.datatype.value, unary: g.datatype.unary ?? 0x03 },
             value: 0,
           });
         }
         let pcInit = 0;
         for (const ii of initInstrs) {
-          if (ii.op === "label") continue;
+          if (ii.op === 'label') continue;
           const enc = this.encodeInstruction(
             ii,
             {},
@@ -968,9 +961,7 @@ export class NWScriptIRBuilder {
 
     // Fix JSR displacement to jump to the first function block (immediately after stub)
     const stubLen = globalStub.reduce((n, b) => n + b.length, 0);
-    const jsrPos = globalStub
-      .map((b, i) => ({ b, i }))
-      .find((x) => x.b === jsr)?.i ?? -1;
+    const jsrPos = globalStub.map((b, i) => ({ b, i })).find((x) => x.b === jsr)?.i ?? -1;
     if (jsrPos >= 0) {
       const offsetBeforeJsr = globalStub.slice(0, jsrPos).reduce((n, b) => n + b.length, 0);
       const disp = stubLen - (offsetBeforeJsr + jsr.length);
@@ -1000,30 +991,33 @@ export class NWScriptIRBuilder {
     for (const stmt of stmts) {
       if (!stmt) continue;
       switch (stmt.type) {
-        case "variable":
+        case 'variable':
           bucket.push(stmt as SemanticVariableNode);
           break;
-        case "variableList": {
+        case 'variableList': {
           const vars = (stmt as SemanticVariableListNode).variables || [];
           bucket.push(...vars);
           break;
         }
-        case "block":
+        case 'block':
           this.collectLocals((stmt as SemanticBlockNode).statements as SemanticStatementNode[], bucket);
           break;
-        case "if":
+        case 'if':
           this.collectLocals((stmt as SemanticIfNode).statements as SemanticStatementNode[], bucket);
           for (const ei of (stmt as SemanticIfNode).elseIfs || []) {
             this.collectLocals(ei.statements as SemanticStatementNode[], bucket);
           }
           if ((stmt as SemanticIfNode).else) {
-            this.collectLocals(((stmt as SemanticIfNode).else as SemanticElseNode).statements as SemanticStatementNode[], bucket);
+            this.collectLocals(
+              ((stmt as SemanticIfNode).else as SemanticElseNode).statements as SemanticStatementNode[],
+              bucket
+            );
           }
           break;
-        case "while":
-        case "do":
-        case "for":
-        case "switch":
+        case 'while':
+        case 'do':
+        case 'for':
+        case 'switch':
           // Traverse nested statements for locals
           this.collectLocals((stmt as any).statements as SemanticStatementNode[], bucket);
           break;
@@ -1114,7 +1108,7 @@ export class NWScriptIRBuilder {
     const labels: IRLabelMap = {};
     let pc = 0;
     for (const instr of fn.instructions) {
-      if (instr.op === "label") {
+      if (instr.op === 'label') {
         labels[instr.name] = pc;
         continue;
       }
@@ -1125,47 +1119,47 @@ export class NWScriptIRBuilder {
 
   private static estimateInstructionSize(instr: IRInstruction, _structs: Record<string, IRStructLayout>): number {
     switch (instr.op) {
-      case "label":
+      case 'label':
         return 0;
-      case "rsadd":
+      case 'rsadd':
         return 2;
-      case "movsp":
+      case 'movsp':
         return 6;
-      case "nop":
+      case 'nop':
         return 1;
-      case "loadconst":
-        if (instr.type.value === "string" && typeof instr.value === "string") {
+      case 'loadconst':
+        if (instr.type.value === 'string' && typeof instr.value === 'string') {
           return instr.value.length + 4; // matches CONST string len (base 6 + len -2)
         }
-        if (instr.type.unary === 0x07 || instr.type.value === "vector") {
+        if (instr.type.unary === 0x07 || instr.type.value === 'vector') {
           return 6 * 3;
         }
         return 6;
-      case "store_state":
+      case 'store_state':
         return 6;
-      case "loadvar":
-      case "storevar":
-      case "loadfield":
-      case "storefield":
-      case "loadindex":
-      case "storeindex":
-      case "cpdownsp":
+      case 'loadvar':
+      case 'storevar':
+      case 'loadfield':
+      case 'storefield':
+      case 'loadindex':
+      case 'storeindex':
+      case 'cpdownsp':
         return 8;
-      case "binop":
-      case "compare":
-      case "logic":
-      case "unary":
-      case "inc":
-      case "dec":
+      case 'binop':
+      case 'compare':
+      case 'logic':
+      case 'unary':
+      case 'inc':
+      case 'dec':
         return 2;
-      case "jsr":
-      case "jmp":
-      case "jz":
-      case "jnz":
+      case 'jsr':
+      case 'jmp':
+      case 'jz':
+      case 'jnz':
         return 6;
-      case "action":
+      case 'action':
         return 5;
-      case "return":
+      case 'return':
         return 2;
       default:
         return 2;
@@ -1195,7 +1189,7 @@ export class NWScriptIRBuilder {
     }
     const entrySp = sp;
     for (const instr of fn.instructions) {
-      if (instr.op === "label") {
+      if (instr.op === 'label') {
         continue;
       }
       const buf = this.encodeInstruction(
@@ -1244,14 +1238,14 @@ export class NWScriptIRBuilder {
     let nextSp = sp;
     let nextBp = bp;
     switch (instr.op) {
-      case "rsadd": {
+      case 'rsadd': {
         const buf = allocBuffer(2);
         buf.writeInt8(OP_RSADD, 0);
         buf.writeInt8(instr.type.unary, 1);
         nextSp += 4;
         return { buffer: buf, nextSp, nextBp };
       }
-      case "movsp": {
+      case 'movsp': {
         const buf = allocBuffer(6);
         buf.writeInt8(OP_MOVSP, 0);
         buf.writeInt8(0x00, 1);
@@ -1259,8 +1253,8 @@ export class NWScriptIRBuilder {
         nextSp += instr.delta;
         return { buffer: buf, nextSp, nextBp };
       }
-      case "loadconst": {
-        if (instr.type.unary === 0x07 || instr.type.value === "vector") {
+      case 'loadconst': {
+        if (instr.type.unary === 0x07 || instr.type.value === 'vector') {
           // Encode as three floats if possible
           const vals = Array.isArray(instr.value) ? instr.value : [0, 0, 0];
           const buffers: Uint8Array[] = [];
@@ -1268,25 +1262,23 @@ export class NWScriptIRBuilder {
             const b = allocBuffer(6);
             b.writeInt8(OP_CONST, 0);
             b.writeInt8(0x04, 1); // float
-            b.writeFloatBE(typeof vals[i] === "number" ? vals[i] : 0, 2);
+            b.writeFloatBE(typeof vals[i] === 'number' ? vals[i] : 0, 2);
             buffers.push(b);
             nextSp += 4;
           }
           return { buffer: concatBuffers(buffers), nextSp, nextBp };
         }
         const buf = allocBuffer(
-          instr.type.value === "string" && typeof instr.value === "string"
-            ? instr.value.length + 4
-            : 6
+          instr.type.value === 'string' && typeof instr.value === 'string' ? instr.value.length + 4 : 6
         );
         buf.writeInt8(OP_CONST, 0);
         buf.writeInt8(instr.type.unary, 1);
-        if (instr.type.value === "string" && typeof instr.value === "string") {
+        if (instr.type.value === 'string' && typeof instr.value === 'string') {
           buf.writeInt16BE(instr.value.length, 2);
           for (let i = 0; i < instr.value.length; i++) {
             buf.writeInt8(instr.value.charCodeAt(i), 4 + i);
           }
-        } else if (instr.type.value === "float") {
+        } else if (instr.type.value === 'float') {
           buf.writeFloatBE(Number(instr.value ?? 0), 2);
         } else {
           buf.writeInt32BE(Number(instr.value ?? 0), 2);
@@ -1294,7 +1286,7 @@ export class NWScriptIRBuilder {
         nextSp += NWScriptIRBuilder.getTypeSize(instr.type);
         return { buffer: buf, nextSp, nextBp };
       }
-      case "loadvar": {
+      case 'loadvar': {
         const { slot, isGlobal } = this.resolveVarOffset(instr.varName, stack, globals);
         const size = instr.size ?? slot?.size ?? 4;
         const buf = allocBuffer(8);
@@ -1314,7 +1306,7 @@ export class NWScriptIRBuilder {
         nextSp += size;
         return { buffer: buf, nextSp, nextBp };
       }
-      case "storevar": {
+      case 'storevar': {
         const { slot, isGlobal } = this.resolveVarOffset(instr.varName, stack, globals);
         const size = instr.size ?? slot?.size ?? 4;
         const buf = allocBuffer(8);
@@ -1333,20 +1325,20 @@ export class NWScriptIRBuilder {
         }
         return { buffer: buf, nextSp, nextBp };
       }
-      case "binop": {
+      case 'binop': {
         const buf = allocBuffer(2);
         let opcode = OP_ADD;
         switch (instr.kind) {
-          case "sub":
+          case 'sub':
             opcode = OP_SUB;
             break;
-          case "mul":
+          case 'mul':
             opcode = OP_MUL;
             break;
-          case "div":
+          case 'div':
             opcode = OP_DIV;
             break;
-          case "mod":
+          case 'mod':
             opcode = OP_MODII;
             break;
           default:
@@ -1358,24 +1350,24 @@ export class NWScriptIRBuilder {
         nextSp += -4 - 4 + 4;
         return { buffer: buf, nextSp, nextBp };
       }
-      case "compare": {
+      case 'compare': {
         const isTT = instr.typeCode === 0x24;
         const buf = allocBuffer(isTT ? 4 : 2);
         let opcode = OP_EQUAL;
         switch (instr.kind) {
-          case "ne":
+          case 'ne':
             opcode = OP_NEQUAL;
             break;
-          case "gt":
+          case 'gt':
             opcode = OP_GT;
             break;
-          case "lt":
+          case 'lt':
             opcode = OP_LT;
             break;
-          case "ge":
+          case 'ge':
             opcode = OP_GEQ;
             break;
-          case "le":
+          case 'le':
             opcode = OP_LEQ;
             break;
           default:
@@ -1390,33 +1382,33 @@ export class NWScriptIRBuilder {
         nextSp += -4 - 4 + 4;
         return { buffer: buf, nextSp, nextBp };
       }
-      case "logic": {
+      case 'logic': {
         const buf = allocBuffer(2);
-        const opcode = instr.kind === "and" ? OP_LOGANDII : OP_LOGORII;
+        const opcode = instr.kind === 'and' ? OP_LOGANDII : OP_LOGORII;
         buf.writeInt8(opcode, 0);
         buf.writeInt8(instr.typeCode ?? 0x20, 1);
         nextSp += -4 - 4 + 4;
         return { buffer: buf, nextSp, nextBp };
       }
-      case "unary": {
+      case 'unary': {
         const buf = allocBuffer(2);
-        const opcode = instr.kind === "not" ? OP_NOTI : OP_NEG;
+        const opcode = instr.kind === 'not' ? OP_NOTI : OP_NEG;
         buf.writeInt8(opcode, 0);
         buf.writeInt8(instr.typeCode ?? 0x20, 1);
         // operand consumed, result pushes 4
         nextSp += -4 + 4;
         return { buffer: buf, nextSp, nextBp };
       }
-      case "inc":
-      case "dec": {
+      case 'inc':
+      case 'dec': {
         const buf = allocBuffer(2);
-        const opcode = instr.op === "inc" ? OP_INCISP : OP_DECISP;
+        const opcode = instr.op === 'inc' ? OP_INCISP : OP_DECISP;
         buf.writeInt8(opcode, 0);
         buf.writeInt8(0x03, 1);
         // inc/dec leaves stack unchanged
         return { buffer: buf, nextSp, nextBp };
       }
-      case "loadfield": {
+      case 'loadfield': {
         const layout =
           (instr.parent && structLayouts[instr.parent]) ||
           (instr.type.value && structLayouts[instr.type.value]) ||
@@ -1434,7 +1426,7 @@ export class NWScriptIRBuilder {
         nextSp += fieldSize;
         return { buffer: buf, nextSp, nextBp };
       }
-      case "storefield": {
+      case 'storefield': {
         const layout =
           (instr.parent && structLayouts[instr.parent]) ||
           (instr.type.value && structLayouts[instr.type.value]) ||
@@ -1451,12 +1443,13 @@ export class NWScriptIRBuilder {
         buf.writeInt16BE(fieldSize, 6);
         return { buffer: buf, nextSp, nextBp };
       }
-      case "loadindex":
-      case "storeindex": {
-        const vecSize = instr.type.unary === 0x07 || instr.type.value === "vector" ? 12 : 4;
-        const eltSize = instr.type.unary === 0x07 || instr.type.value === "vector" ? 4 : instr.type.unary === 0x04 ? 4 : 4;
+      case 'loadindex':
+      case 'storeindex': {
+        const vecSize = instr.type.unary === 0x07 || instr.type.value === 'vector' ? 12 : 4;
+        const eltSize =
+          instr.type.unary === 0x07 || instr.type.value === 'vector' ? 4 : instr.type.unary === 0x04 ? 4 : 4;
         const idx = instr.indexLiteral ?? 0;
-        if (instr.op === "loadindex") {
+        if (instr.op === 'loadindex') {
           const buf = allocBuffer(8);
           buf.writeInt8(OP_CPTOPSP, 0);
           buf.writeInt8(0x01, 1);
@@ -1477,7 +1470,7 @@ export class NWScriptIRBuilder {
           return { buffer: buf, nextSp, nextBp };
         }
       }
-      case "cpdownsp": {
+      case 'cpdownsp': {
         const buf = allocBuffer(8);
         buf.writeInt8(OP_CPDOWNSP, 0);
         buf.writeInt8(0x01, 1);
@@ -1485,7 +1478,7 @@ export class NWScriptIRBuilder {
         buf.writeInt16BE(instr.size, 6);
         return { buffer: buf, nextSp, nextBp };
       }
-      case "jsr": {
+      case 'jsr': {
         const buf = allocBuffer(6);
         buf.writeInt8(OP_JSR, 0);
         const target = labels[instr.target] ?? 0;
@@ -1493,18 +1486,18 @@ export class NWScriptIRBuilder {
         buf.writeInt32BE(disp, 2);
         return { buffer: buf, nextSp, nextBp };
       }
-      case "jmp":
-      case "jz":
-      case "jnz": {
+      case 'jmp':
+      case 'jz':
+      case 'jnz': {
         const buf = allocBuffer(6);
-        const opcode = instr.op === "jmp" ? OP_JMP : instr.op === "jz" ? OP_JZ : OP_JNZ;
+        const opcode = instr.op === 'jmp' ? OP_JMP : instr.op === 'jz' ? OP_JZ : OP_JNZ;
         buf.writeInt8(opcode, 0);
         const target = labels[instr.target] ?? 0;
         const disp = target - (pc + buf.length);
         buf.writeInt32BE(disp, 2);
         return { buffer: buf, nextSp, nextBp };
       }
-      case "action": {
+      case 'action': {
         const buf = allocBuffer(5);
         buf.writeInt8(OP_ACTION, 0);
         buf.writeInt8(0x00, 1);
@@ -1513,11 +1506,11 @@ export class NWScriptIRBuilder {
         nextSp += instr.returnSize - instr.argSize;
         return { buffer: buf, nextSp, nextBp };
       }
-      case "store_state": {
+      case 'store_state': {
         // Size globals: globals offsets are negative; capture total span
         const minGlobal = Math.min(0, ...Object.values(globals || {}).map((g) => g.offset));
         const bStackSize = (instr as any).bStackSize ?? -minGlobal;
-        const stackSize = (instr as any).stackSize ?? (sp - entrySp);
+        const stackSize = (instr as any).stackSize ?? sp - entrySp;
         const buf = allocBuffer(6);
         buf.writeInt8(OP_STORE_STATE, 0);
         buf.writeInt8(0x00, 1);
@@ -1525,7 +1518,7 @@ export class NWScriptIRBuilder {
         buf.writeInt16BE(stackSize, 4);
         return { buffer: buf, nextSp, nextBp };
       }
-      case "return": {
+      case 'return': {
         const bufs: Uint8Array[] = [];
         // Restore BP
         {
@@ -1549,7 +1542,7 @@ export class NWScriptIRBuilder {
         nextBp = 0;
         return { buffer: concatBuffers(bufs), nextSp, nextBp };
       }
-      case "nop":
+      case 'nop':
       default: {
         const buf = allocBuffer(1);
         buf.writeInt8(OP_NOP, 0);
@@ -1559,19 +1552,19 @@ export class NWScriptIRBuilder {
   }
 
   private static getTypeCodeFromNode(dt: any, fallback: number): number {
-    if (!dt || typeof dt !== "object") return fallback;
+    if (!dt || typeof dt !== 'object') return fallback;
     const val = dt.value ?? dt;
     switch (val) {
-      case "int":
+      case 'int':
         return 0x20; // II
-      case "float":
+      case 'float':
         return 0x21; // FF
-      case "object":
+      case 'object':
         return 0x22; // OO
-      case "string":
+      case 'string':
         return 0x23; // SS
-      case "vector":
-        return 0x3A; // VV
+      case 'vector':
+        return 0x3a; // VV
       default:
         // engine/struct types default to int-size compare/add variants
         return fallback;
@@ -1582,18 +1575,18 @@ export class NWScriptIRBuilder {
     const l = left?.value ?? left;
     const r = right?.value ?? right;
     // Mixed numeric cases
-    if (op === "mul" || op === "div") {
-      if (l === "vector" && r === "float") return 0x3B; // VF
-      if (l === "float" && r === "vector") return 0x3C; // FV
+    if (op === 'mul' || op === 'div') {
+      if (l === 'vector' && r === 'float') return 0x3b; // VF
+      if (l === 'float' && r === 'vector') return 0x3c; // FV
     }
-    if (l === "vector" && r === "vector") return 0x3A; // VV
-    if (l === "int" && r === "float") return 0x25; // IF
-    if (l === "float" && r === "int") return 0x26; // FI
-    if (l === "float" && r === "float") return 0x21; // FF
-    if (l === "string" && r === "string") return 0x23; // SS
-    if (l === "object" && r === "object") return 0x22; // OO
-    if (typeof left?.unary === "number" && left.unary >= 0x30 && left.unary <= 0x39) return left.unary; // engine
-    if (typeof right?.unary === "number" && right.unary >= 0x30 && right.unary <= 0x39) return right.unary;
+    if (l === 'vector' && r === 'vector') return 0x3a; // VV
+    if (l === 'int' && r === 'float') return 0x25; // IF
+    if (l === 'float' && r === 'int') return 0x26; // FI
+    if (l === 'float' && r === 'float') return 0x21; // FF
+    if (l === 'string' && r === 'string') return 0x23; // SS
+    if (l === 'object' && r === 'object') return 0x22; // OO
+    if (typeof left?.unary === 'number' && left.unary >= 0x30 && left.unary <= 0x39) return left.unary; // engine
+    if (typeof right?.unary === 'number' && right.unary >= 0x30 && right.unary <= 0x39) return right.unary;
     return 0x20; // default int/int
   }
 
@@ -1602,29 +1595,27 @@ export class NWScriptIRBuilder {
     const r = right?.value ?? right;
     const base = dt?.value ?? dt;
     // Engine type support
-    if (typeof dt?.unary === "number" && dt.unary >= 0x30 && dt.unary <= 0x39) return { typeCode: dt.unary };
-    if (typeof left?.unary === "number" && left.unary >= 0x30 && left.unary <= 0x39)
-      return { typeCode: left.unary };
-    if (typeof right?.unary === "number" && right.unary >= 0x30 && right.unary <= 0x39)
+    if (typeof dt?.unary === 'number' && dt.unary >= 0x30 && dt.unary <= 0x39) return { typeCode: dt.unary };
+    if (typeof left?.unary === 'number' && left.unary >= 0x30 && left.unary <= 0x39) return { typeCode: left.unary };
+    if (typeof right?.unary === 'number' && right.unary >= 0x30 && right.unary <= 0x39)
       return { typeCode: right.unary };
 
     // Struct/vector => TT with size
-    if (l === "vector" || r === "vector" || base === "vector") return { typeCode: 0x24, size: 12 };
-    if (base === "struct") return { typeCode: 0x24, size: dt?.size ?? 0 };
+    if (l === 'vector' || r === 'vector' || base === 'vector') return { typeCode: 0x24, size: 12 };
+    if (base === 'struct') return { typeCode: 0x24, size: dt?.size ?? 0 };
 
     // Standard types
-    if (l === "float" || r === "float" || base === "float") return { typeCode: 0x21 };
-    if (l === "object" || r === "object" || base === "object") return { typeCode: 0x22 };
-    if (l === "string" || r === "string" || base === "string") return { typeCode: 0x23 };
+    if (l === 'float' || r === 'float' || base === 'float') return { typeCode: 0x21 };
+    if (l === 'object' || r === 'object' || base === 'object') return { typeCode: 0x22 };
+    if (l === 'string' || r === 'string' || base === 'string') return { typeCode: 0x23 };
 
     return { typeCode: 0x20 };
   }
 
   private static getUnaryTypeCode(op: string, dt: any): number {
     const val = dt?.value ?? dt;
-    if (op === "not") return 0x03; // NOTI uses int
-    if (val === "float") return 0x04; // NEGF
+    if (op === 'not') return 0x03; // NOTI uses int
+    if (val === 'float') return 0x04; // NEGF
     return 0x03; // default int
   }
 }
-

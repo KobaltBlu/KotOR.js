@@ -1,16 +1,15 @@
-import * as THREE from "three";
-import type { AudioEmitter } from "@/audio/AudioEmitter";
-import { AudioEngineMode } from "@/enums/audio/AudioEngineMode";
-import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
-import { AmbientAudioEmitter } from "@/audio/AmbientAudioEmitter";
-import { EAXPresets } from "@/audio/EAXPresets";
-import { BackgroundMusicMode } from "@/enums/audio/BackgroundMusicMode";
-import { BackgroundMusicState } from "@/enums/audio/BackgroundMusicState";
-import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
-import { ReverbEngine } from "@/audio/ReverbEngine";
+import * as THREE from 'three';
+import type { AudioEmitter } from '@/audio/AudioEmitter';
+import { AudioEngineMode } from '@/enums/audio/AudioEngineMode';
+import { IAreaAudioProperties } from '@/interface/area/IAreaAudioProperties';
+import { AmbientAudioEmitter } from '@/audio/AmbientAudioEmitter';
+import { EAXPresets } from '@/audio/EAXPresets';
+import { BackgroundMusicMode } from '@/enums/audio/BackgroundMusicMode';
+import { BackgroundMusicState } from '@/enums/audio/BackgroundMusicState';
+import { AudioEngineChannel } from '@/enums/audio/AudioEngineChannel';
+import { ReverbEngine } from '@/audio/ReverbEngine';
 
 class AudioChannel {
-
   audioCtx: AudioContext;
 
   /* the last gain value before the SFX channel was muted */
@@ -18,69 +17,78 @@ class AudioChannel {
 
   #gain: number;
 
-  #channel: AudioEngineChannel;
-
   #gainNode: GainNode;
 
   muted: boolean = false;
 
-  constructor(channel: AudioEngineChannel, audioCtx: AudioContext){
+  constructor(channel: AudioEngineChannel, audioCtx: AudioContext) {
     this.audioCtx = audioCtx;
-    this.#channel = channel;
     this.#gain = 0;
     this.#gainCached = 0;
     this.#gainNode = audioCtx.createGain();
   }
 
-  getGain(){
+  getGain() {
     return this.#gain;
   }
 
-  setGain(value: number){
+  setGain(value: number) {
     this.#gain = value;
-    if(this.muted){ return; }
+    if (this.muted) {
+      return;
+    }
     this.#gainNode.gain.value = value;
   }
 
-  getGainNode(){
+  getGainNode() {
     return this.#gainNode;
   }
 
-  mute(){
-    if(this.muted){ return; }
+  mute() {
+    if (this.muted) {
+      return;
+    }
     this.muted = true;
     this.#gainCached = this.#gain;
     this.#gainNode.gain.value = 0;
     this.getGainNode().disconnect();
   }
 
-  unmute(){
-    if(!this.muted){ return; }
+  unmute() {
+    if (!this.muted) {
+      return;
+    }
     this.muted = false;
     this.#gainNode.gain.value = this.#gainCached;
-    this.getGainNode().connect( this.audioCtx.destination );
+    this.getGainNode().connect(this.audioCtx.destination);
   }
 }
 
-type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | 'BATTLE' | 'BATTLE_STINGER' | 'DIALOG' | 'AMBIENT_DAY' | 'AMBIENT_NIGHT'
+type BackgroundAudioType =
+  | 'BACKGROUND_MUSIC_DAY'
+  | 'BACKGROUND_MUSIC_NIGHT'
+  | 'BATTLE'
+  | 'BATTLE_STINGER'
+  | 'DIALOG'
+  | 'AMBIENT_DAY'
+  | 'AMBIENT_NIGHT';
 
 /**
  * AudioEngine class.
- * 
+ *
  * The AudioEngine class manages audio levels and the AudioEmitters that are added to it.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AudioEngine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class AudioEngine {
-
   static focused: boolean = true;
-  
+
   static engines: AudioEngine[] = [];
-  
+
   static loopBGM = true;
 
   static sfxChannel: AudioChannel;
@@ -130,48 +138,47 @@ export class AudioEngine {
   reverbEngine: ReverbEngine;
   reverbEnabled: boolean = false;
 
-  static get GAIN_MUSIC(){
+  static get GAIN_MUSIC() {
     return AudioEngine.musicChannel.getGain();
   }
 
-  static get GAIN_VO(){
+  static get GAIN_VO() {
     return AudioEngine.voChannel.getGain();
   }
 
-  static get GAIN_SFX(){
+  static get GAIN_SFX() {
     return AudioEngine.sfxChannel.getGain();
   }
 
-  static get GAIN_MOVIE(){
+  static get GAIN_MOVIE() {
     return AudioEngine.movieChannel.getGain();
   }
 
-  static get GAIN_GUI(){
+  static get GAIN_GUI() {
     return AudioEngine.guiChannel.getGain();
   }
 
-  static set GAIN_MUSIC(value){
+  static set GAIN_MUSIC(value) {
     AudioEngine.musicChannel.setGain(value);
   }
 
-  static set GAIN_VO(value){
+  static set GAIN_VO(value) {
     AudioEngine.voChannel.setGain(value);
   }
 
-  static set GAIN_SFX(value){
+  static set GAIN_SFX(value) {
     AudioEngine.sfxChannel.setGain(value);
   }
 
-  static set GAIN_GUI(value){
+  static set GAIN_GUI(value) {
     AudioEngine.guiChannel.setGain(value);
   }
 
-  static set GAIN_MOVIE(value){
+  static set GAIN_MOVIE(value) {
     AudioEngine.movieChannel.setGain(value);
   }
 
-  constructor () {
-
+  constructor() {
     // this.reverbLF = new Reverb(this.audioCtx);
     // this.reverbHF = new Reverb(this.audioCtx);
     // this.reverbLF.filterType = 'highpass';
@@ -237,15 +244,15 @@ export class AudioEngine {
 
     this.areaMusicDayAudioEmitter.addEventListener('ended', () => {
       this.bgmState = BackgroundMusicState.ENDED;
-      if(AudioEngine.loopBGM){
+      if (AudioEngine.loopBGM) {
         this.bgmTimer = this.bgmLoopTime;
       }
     });
 
     this.battleMusicAudioEmitter.addEventListener('stop', () => {
-      if(this.battleStingerLoaded){
+      if (this.battleStingerLoaded) {
         this.battleStingerAudioEmitter.play();
-      }else{
+      } else {
         this.areaMusicDayAudioEmitter.play();
       }
     });
@@ -258,35 +265,34 @@ export class AudioEngine {
     this.dialogMusicAudioEmitter.addEventListener('ended', () => {
       this.bgmState = BackgroundMusicState.ENDED;
       this.bgmMode = BackgroundMusicMode.AREA;
-      if(AudioEngine.loopBGM){
+      if (AudioEngine.loopBGM) {
         this.bgmTimer = this.bgmLoopTime;
       }
     });
 
     AudioEngine.engines.push(this);
-
   }
 
-  setReverbState(eaxEnabled = false){
-    if(eaxEnabled == this.reverbEnabled) return;
+  setReverbState(eaxEnabled = false) {
+    if (eaxEnabled == this.reverbEnabled) return;
     this.reverbEnabled = eaxEnabled;
     //reset the sfx and vo channels destinations
     AudioEngine.sfxChannel.getGainNode().disconnect();
     AudioEngine.voChannel.getGainNode().disconnect();
-    if(eaxEnabled){
+    if (eaxEnabled) {
       //connect the sfx and vo channels to the reverb engine
       this.reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
       this.reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
-    }else{
+    } else {
       //disconnect the sfx and vo channels from the reverb engine
       AudioEngine.sfxChannel.getGainNode().connect(this.audioCtx.destination);
       AudioEngine.voChannel.getGainNode().connect(this.audioCtx.destination);
     }
   }
 
-  setReverbProfile(index = 0){
+  setReverbProfile(index = 0) {
     console.log('setReverbProfile:', index);
-    if(index == -1){
+    if (index == -1) {
       this.setReverbState(false);
       return;
     }
@@ -294,75 +300,77 @@ export class AudioEngine {
     this.reverbEngine.loadPreset(index);
     return;
 
-    const software_mode = (this.mode == AudioEngineMode.Software);
-    if(software_mode){
-      console.warn('setReverbProfile:', 'Reverb can\'t be set because Force Software mode is on');
+    const software_mode = this.mode == AudioEngineMode.Software;
+    if (software_mode) {
+      console.warn('setReverbProfile:', "Reverb can't be set because Force Software mode is on");
     }
 
-    if(index >= 0){
-      let data = EAXPresets.PresetFromIndex(index);
+    if (index >= 0) {
+      const data = EAXPresets.PresetFromIndex(index);
       console.log('setReverbProfile:', data);
-      
+
       this.setReverbState(!software_mode);
-    }else{
+    } else {
       this.setReverbState(false);
     }
   }
 
-  update ( delta: number, position = new THREE.Vector3(), rotation = new THREE.Euler(), forward = new THREE.Vector3() ) {
+  update(delta: number, position = new THREE.Vector3(), rotation = new THREE.Euler(), forward = new THREE.Vector3()) {
     // Set listener position using modern AudioParam properties
-    if(typeof this.audioCtx.listener.positionX !== 'undefined'){
+    if (typeof this.audioCtx.listener.positionX !== 'undefined') {
       this.audioCtx.listener.positionX.value = position.x;
       this.audioCtx.listener.positionY.value = position.y;
       this.audioCtx.listener.positionZ.value = position.z;
-    }else{
+    } else {
       this.audioCtx.listener.setPosition(position.x, position.y, position.z);
     }
 
     // Set listener orientation using modern AudioParam properties
-    if(typeof this.audioCtx.listener.forwardX !== 'undefined'){
+    if (typeof this.audioCtx.listener.forwardX !== 'undefined') {
       this.audioCtx.listener.forwardX.value = forward.x;
       this.audioCtx.listener.forwardY.value = forward.y;
       this.audioCtx.listener.forwardZ.value = forward.z;
       this.audioCtx.listener.upX.value = 0;
       this.audioCtx.listener.upY.value = 0;
       this.audioCtx.listener.upZ.value = 1;
-    }else{
+    } else {
       this.audioCtx.listener.setOrientation(forward.x, forward.y, forward.z, 0, 0, 1);
     }
 
     // Update reverb engine 3D positioning
-    this.reverbEngine.updateListener(
-      [position.x, position.y, position.z],
-      [rotation.x, rotation.y, rotation.z]
-    );
+    this.reverbEngine.updateListener([position.x, position.y, position.z], [rotation.x, rotation.y, rotation.z]);
 
     //Handle the background music loop
-    if(this.areaMusicLoaded && this.bgmState == BackgroundMusicState.ENDED && this.bgmMode == BackgroundMusicMode.AREA){
-      if(this.bgmTimer > 0 && AudioEngine.loopBGM){
+    if (
+      this.areaMusicLoaded &&
+      this.bgmState == BackgroundMusicState.ENDED &&
+      this.bgmMode == BackgroundMusicMode.AREA
+    ) {
+      if (this.bgmTimer > 0 && AudioEngine.loopBGM) {
         this.bgmTimer -= delta * 1000;
-        if(this.bgmTimer <= 0){
+        if (this.bgmTimer <= 0) {
           this.bgmTimer = 0;
           this.areaMusicDayAudioEmitter.play();
           this.bgmState = BackgroundMusicState.PLAYING;
         }
       }
     }
-
   }
 
-  addEmitter(emitter: AudioEmitter){
+  addEmitter(emitter: AudioEmitter) {
     this.emitters.push(emitter);
   }
 
-  removeEmitter(emitter: AudioEmitter){
+  removeEmitter(emitter: AudioEmitter) {
     const index = this.emitters.indexOf(emitter);
-    if(index == -1){ return; }
+    if (index == -1) {
+      return;
+    }
     this.emitters.splice(index, 1);
   }
 
-  setAudioBuffer(type: BackgroundAudioType, data: ArrayBuffer, name: string){
-    switch(type){
+  setAudioBuffer(type: BackgroundAudioType, data: ArrayBuffer, name: string) {
+    switch (type) {
       case 'BACKGROUND_MUSIC_DAY':
         this.areaMusicDayAudioEmitter.setData(data);
         this.areaMusicDayAudioEmitter.name = name;
@@ -401,7 +409,7 @@ export class AudioEngine {
     }
   }
 
-  setAreaAudioProperties(props: IAreaAudioProperties){
+  setAreaAudioProperties(props: IAreaAudioProperties) {
     this.areaProperies = props;
     this.bgmLoopTime = props.music.delay;
     this.areaMusicLoaded = false;
@@ -415,7 +423,7 @@ export class AudioEngine {
    * Destroy the AudioEngine
    * call when an area is unloaded
    */
-  destroy(){
+  destroy() {
     this.reset();
     this.audioCtx.close();
   }
@@ -423,84 +431,96 @@ export class AudioEngine {
   /**
    * Reset the AudioEngine
    */
-  reset(){
+  reset() {
     //Clean up the emitters
-    for(let i = 0; i < this.emitters.length; i++)
-      this.emitters[i].destroy();
+    for (let i = 0; i < this.emitters.length; i++) this.emitters[i].destroy();
 
     this.emitters = [];
 
     //Clean up the background music emitters
     this.areaMusicDayAudioEmitter.dispose();
+    this.areaMusicNightAudioEmitter.dispose();
     this.battleMusicAudioEmitter.dispose();
     this.battleStingerAudioEmitter.dispose();
     this.dialogMusicAudioEmitter.dispose();
+
+    // Reset BGM state so main menu / next module can play cleanly
+    this.bgmState = BackgroundMusicState.UNLOADED;
+    this.bgmMode = BackgroundMusicMode.NONE;
+    this.bgmTimer = 0;
+    this.areaMusicLoaded = false;
+    this.areaMusicNightLoaded = false;
+    this.battleMusicLoaded = false;
+    this.battleStingerLoaded = false;
+    this.dialogMusicLoaded = false;
+    this.ambientLoaded = false;
+    this.ambientNightLoaded = false;
   }
 
-  static GetAudioEngine(){
-    if(!this.engines.length) new AudioEngine();
+  static GetAudioEngine() {
+    if (!this.engines.length) new AudioEngine();
     return this.engines[0];
   }
 
-  static ToggleMute(){
+  static ToggleMute() {
     console.warn('ToggleMute is unimplemented');
   }
 
   static Mute(channel: AudioEngineChannel = AudioEngineChannel.ALL) {
-    if((channel & AudioEngineChannel.SFX) == AudioEngineChannel.SFX){
+    if ((channel & AudioEngineChannel.SFX) == AudioEngineChannel.SFX) {
       AudioEngine.sfxChannel.mute();
     }
 
-    if((channel & AudioEngineChannel.MUSIC) == AudioEngineChannel.MUSIC){
+    if ((channel & AudioEngineChannel.MUSIC) == AudioEngineChannel.MUSIC) {
       AudioEngine.musicChannel.mute();
     }
 
-    if((channel & AudioEngineChannel.VO) == AudioEngineChannel.VO){
+    if ((channel & AudioEngineChannel.VO) == AudioEngineChannel.VO) {
       AudioEngine.voChannel.mute();
     }
 
-    if((channel & AudioEngineChannel.GUI) == AudioEngineChannel.GUI){
+    if ((channel & AudioEngineChannel.GUI) == AudioEngineChannel.GUI) {
       AudioEngine.guiChannel.mute();
     }
 
-    if((channel & AudioEngineChannel.MOVIE) == AudioEngineChannel.MOVIE){
+    if ((channel & AudioEngineChannel.MOVIE) == AudioEngineChannel.MOVIE) {
       AudioEngine.movieChannel.mute();
     }
   }
 
   static Unmute(channel: AudioEngineChannel = AudioEngineChannel.ALL) {
-    if((channel & AudioEngineChannel.SFX) == AudioEngineChannel.SFX){
+    if ((channel & AudioEngineChannel.SFX) == AudioEngineChannel.SFX) {
       AudioEngine.sfxChannel.unmute();
     }
 
-    if((channel & AudioEngineChannel.MUSIC) == AudioEngineChannel.MUSIC){
+    if ((channel & AudioEngineChannel.MUSIC) == AudioEngineChannel.MUSIC) {
       AudioEngine.musicChannel.unmute();
     }
 
-    if((channel & AudioEngineChannel.VO) == AudioEngineChannel.VO){
+    if ((channel & AudioEngineChannel.VO) == AudioEngineChannel.VO) {
       AudioEngine.voChannel.unmute();
     }
 
-    if((channel & AudioEngineChannel.GUI) == AudioEngineChannel.GUI){
+    if ((channel & AudioEngineChannel.GUI) == AudioEngineChannel.GUI) {
       AudioEngine.guiChannel.unmute();
     }
 
-    if((channel & AudioEngineChannel.MOVIE) == AudioEngineChannel.MOVIE){
+    if ((channel & AudioEngineChannel.MOVIE) == AudioEngineChannel.MOVIE) {
       AudioEngine.movieChannel.unmute();
     }
   }
 
-  static OnWindowFocusChange(focused: boolean){
-    if(focused == AudioEngine.focused) return;
+  static OnWindowFocusChange(focused: boolean) {
+    if (focused == AudioEngine.focused) return;
     AudioEngine.focused = focused;
-    if(!focused){
+    if (!focused) {
       // Disconnect all channels
       AudioEngine.sfxChannel.getGainNode().disconnect();
       AudioEngine.musicChannel.getGainNode().disconnect();
       AudioEngine.voChannel.getGainNode().disconnect();
       AudioEngine.movieChannel.getGainNode().disconnect();
       AudioEngine.guiChannel.getGainNode().disconnect();
-    }else{
+    } else {
       AudioEngine.engines[0].reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
       AudioEngine.engines[0].reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
       AudioEngine.musicChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
@@ -508,5 +528,4 @@ export class AudioEngine {
       AudioEngine.guiChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
     }
   }
-
 }

@@ -1,12 +1,12 @@
-import { BitReaderLE } from "@/video/BitReaderLE";
+import { BitReaderLE } from '@/video/BitReaderLE';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const FFTCtor = require("fft.js");
+const FFTCtor = require('fft.js');
 
 /**
  * BinkAudioDCTDecoder class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BinkAudioDCTDecoder.ts
  * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
  * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
@@ -14,16 +14,12 @@ const FFTCtor = require("fft.js");
  */
 
 export const WMA_CRITICAL_FREQS: number[] = [
-  100, 200, 300, 400, 510, 630, 770, 920,
-  1080, 1270, 1480, 1720, 2000, 2320, 2700, 3150,
-  3700, 4400, 5300, 6400, 7700, 9500, 12000, 15500,
-  24500,
+  100, 200, 300, 400, 510, 630, 770, 920, 1080, 1270, 1480, 1720, 2000, 2320, 2700, 3150, 3700, 4400, 5300, 6400, 7700,
+  9500, 12000, 15500, 24500,
 ];
 
 // rle lengths table from FFmpeg
-const rle_length_tab: number[] = [
-  2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 32, 64,
-];
+const rle_length_tab: number[] = [2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 32, 64];
 
 export interface BinkAudioDCTConfig {
   sampleRate: number;
@@ -40,7 +36,7 @@ export class BinkAudioDCTDecoder {
   readonly frameLenBits: number;
   readonly frameLen: number;
   readonly overlapLen: number; // frame_len/16
-  readonly blockSize: number;  // (frame_len - overlap_len) * min(2, channels)
+  readonly blockSize: number; // (frame_len - overlap_len) * min(2, channels)
   readonly root: number;
   readonly numBands: number;
   readonly bands: number[]; // length numBands+1, with bands[numBands]=frameLen
@@ -65,10 +61,12 @@ export class BinkAudioDCTDecoder {
 
     // frame_len_bits
     let frame_len_bits: number;
-    if (sampleRate < 22050) frame_len_bits = 9; else if (sampleRate < 44100) frame_len_bits = 10; else frame_len_bits = 11;
+    if (sampleRate < 22050) frame_len_bits = 9;
+    else if (sampleRate < 44100) frame_len_bits = 10;
+    else frame_len_bits = 11;
     this.frameLenBits = frame_len_bits;
     this.frameLen = 1 << frame_len_bits; // e.g., 2048 for 44.1 kHz
-    this.overlapLen = this.frameLen >> 4;  // /16
+    this.overlapLen = this.frameLen >> 4; // /16
     this.blockSize = (this.frameLen - this.overlapLen) * Math.min(2, channels);
 
     // scaling root for quantization table (matches FFmpeg)
@@ -120,9 +118,7 @@ export class BinkAudioDCTDecoder {
   decodePacket(pkt: Uint8Array): DecodedBinkAudioDCTPacket {
     const { channels } = this.cfg;
     const samplesPerBlock = this.frameLen - this.overlapLen;
-    const reportedBytes = pkt.length >= 4
-      ? (pkt[0] | (pkt[1] << 8) | (pkt[2] << 16) | (pkt[3] << 24)) >>> 0
-      : 0;
+    const reportedBytes = pkt.length >= 4 ? (pkt[0] | (pkt[1] << 8) | (pkt[2] << 16) | (pkt[3] << 24)) >>> 0 : 0;
     const expectedSampleCount = Math.max(0, Math.floor(reportedBytes / (2 * channels)));
 
     if (expectedSampleCount === 0) {
@@ -185,7 +181,7 @@ export class BinkAudioDCTDecoder {
       // Read band quant selectors (numBands bytes)
       for (let i = 0; i < this.numBands; i++) {
         if (br.bitsLeft() < 8) throw new Error('bitstream underrun: band quant');
-        const v = br.readBits(8) & 0xFF;
+        const v = br.readBits(8) & 0xff;
         quant[i] = this.quantTable[Math.min(v, 95)];
       }
 
@@ -260,7 +256,7 @@ export class BinkAudioDCTDecoder {
     if (br.bitsLeft() < 1 + 5 + 23) throw new RangeError('bitstream underrun: readFloat');
     const power = br.readBits(5);
     const mant = br.readBits(23);
-    let f = (Math as any).ldexp ? (Math as any).ldexp(mant, power - 23) : (mant * Math.pow(2, power - 23));
+    let f = (Math as any).ldexp ? (Math as any).ldexp(mant, power - 23) : mant * Math.pow(2, power - 23);
     if (br.readBit()) f = -f;
     return f;
   }
@@ -281,7 +277,7 @@ export class BinkAudioDCTDecoder {
   private idctIIIFFT(X: Float32Array, out: Float32Array): void {
     const N = this.frameLen;
     const fftIn = this.fftIn;
-    for (let i = 0; i < (this.fftSize << 1); i++) fftIn[i] = 0;
+    for (let i = 0; i < this.fftSize << 1; i++) fftIn[i] = 0;
 
     // Build complex sequence C[k] = X[k] * exp(i*pi*k/(2N)), zero-padded to 2N.
     for (let k = 0; k < N; k++) {
@@ -296,7 +292,8 @@ export class BinkAudioDCTDecoder {
     for (let n = 0; n < N; n++) {
       const re = this.fftOut[n << 1];
       let v = re * this.fftScale;
-      if (v > 1) v = 1; else if (v < -1) v = -1;
+      if (v > 1) v = 1;
+      else if (v < -1) v = -1;
       out[n] = v;
     }
   }
@@ -311,7 +308,8 @@ export class BinkAudioDCTDecoder {
         sum += X[k] * Math.cos(phi * k);
       }
       let v = sum * scale;
-      if (v > 1) v = 1; else if (v < -1) v = -1;
+      if (v > 1) v = 1;
+      else if (v < -1) v = -1;
       out[n] = v;
     }
   }
@@ -343,7 +341,7 @@ export class BinkAudioDCTDecoder {
   private idctIIIFFTWithScale(X: Float32Array, out: Float32Array, scale: number): void {
     const N = this.frameLen;
     const fftIn = this.fftIn;
-    for (let i = 0; i < (this.fftSize << 1); i++) fftIn[i] = 0;
+    for (let i = 0; i < this.fftSize << 1; i++) fftIn[i] = 0;
     for (let k = 0; k < N; k++) {
       const v = X[k];
       const off = k << 1;

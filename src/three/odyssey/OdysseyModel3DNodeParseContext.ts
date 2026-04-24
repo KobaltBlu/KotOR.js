@@ -1,7 +1,7 @@
-import type { IOdysseyModelLoaderOptions } from "@/interface/odyssey";
-import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
-import type { OdysseyModel } from "@/odyssey/OdysseyModel";
-import type { Object3D } from "three";
+import type { IOdysseyModelLoaderOptions } from '@/interface/odyssey';
+import type { OdysseyModel3D } from '@/three/odyssey/OdysseyModel3D';
+import type { OdysseyModel } from '@/odyssey/OdysseyModel';
+import type { Object3D } from 'three';
 
 /**
  * Mutable parse-time flags (not part of {@link IOdysseyModelLoaderOptions}) so loader options
@@ -21,13 +21,13 @@ export interface OdysseyModel3DParseBuilders {
     odysseyModel: OdysseyModel3D,
     parentNode: Object3D,
     odysseyNode: any,
-    options: IOdysseyModelLoaderOptions,
+    options: IOdysseyModelLoaderOptions
   ) => void;
   NodeLightBuilder: (
     odysseyModel: OdysseyModel3D,
     parentNode: Object3D,
     odysseyNode: any,
-    options: IOdysseyModelLoaderOptions,
+    options: IOdysseyModelLoaderOptions
   ) => any;
   FromMDL: (model: OdysseyModel, options?: IOdysseyModelLoaderOptions) => Promise<OdysseyModel3D>;
 }
@@ -44,7 +44,7 @@ export interface NodeParseContext {
 
 export function createNodeParseContext(
   options: IOdysseyModelLoaderOptions,
-  builders: OdysseyModel3DParseBuilders,
+  builders: OdysseyModel3DParseBuilders
 ): NodeParseContext {
   return {
     options,

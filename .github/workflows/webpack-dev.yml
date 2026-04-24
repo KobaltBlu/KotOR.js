@@ -1,42 +1,59 @@
-name: NodeJS with Webpack - DEV
+name: Deploy Webpack DEV Bundle
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and artifact upload only (skip S3 sync)
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  build:
+  deploy-dev:
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [22.x]
+    permissions:
+      contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '22'
           cache: npm
 
-      - name: Build
-        run: |
-          npm install
-          npm run webpack:prod
+      - name: Install dependencies
+        run: npm ci
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Build webpack dev bundle
+        run: npm run webpack:dev
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-dev
+          path: dist
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Configure AWS credentials
+        if: ${{ !inputs.dry_run }}
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         with:
           aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
-      - name: Upload To S3 Bucket
+      - name: Sync bundle to DEV S3 bucket
+        if: ${{ !inputs.dry_run }}
         run: |
-          aws s3 sync dist s3://${{ secrets.AWS_BUCKET }} --delete --acl public-read
+          aws s3 sync dist "s3://${{ secrets.AWS_BUCKET }}" --delete
 
       - name: Invalidate CloudFront Cache
+        if: ${{ !inputs.dry_run }}
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_DEV }} \

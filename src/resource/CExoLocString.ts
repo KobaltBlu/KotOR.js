@@ -1,17 +1,16 @@
-import { TLKManager } from "@/managers/TLKManager";
-import { CExoLocSubString } from "@/resource/CExoLocSubString";
+import { TLKManager } from '@/managers/TLKManager';
+import { CExoLocSubString } from '@/resource/CExoLocSubString';
 
 /**
  * CExoLocString class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CExoLocString.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CExoLocString {
-
   RESREF: number;
   strings: CExoLocSubString[] = [];
 
@@ -20,11 +19,10 @@ export class CExoLocString {
     this.strings = [];
   }
 
-  addSubString(subString: CExoLocSubString|string, index = -1) {
-    if(index == -1)
-      index = this.strings.length;
+  addSubString(subString: CExoLocSubString | string, index = -1) {
+    if (index == -1) index = this.strings.length;
 
-    if( !(subString instanceof CExoLocSubString) ){
+    if (!(subString instanceof CExoLocSubString)) {
       subString = new CExoLocSubString(0, subString.toString());
     }
 
@@ -57,14 +55,12 @@ export class CExoLocString {
     return this.strings.length;
   }
 
-  getValue(){
-    if(this.strings.length){
+  getValue() {
+    if (this.strings.length) {
       return this.strings[0].str;
-    }else{
-      if(this.RESREF > -1)
-        return TLKManager.TLKStrings[this.RESREF].Value;
-      else
-        return '';
+    } else {
+      if (this.RESREF > -1) return TLKManager.TLKStrings[this.RESREF].Value;
+      else return '';
     }
   }
 }

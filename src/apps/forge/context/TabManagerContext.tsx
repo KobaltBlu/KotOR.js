@@ -1,16 +1,15 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
-import { TabState } from "@/apps/forge/states/tabs";
-
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { EditorTabManager } from '@/apps/forge/managers/EditorTabManager';
+import { TabState } from '@/apps/forge/states/tabs';
 
 export interface TabManagerProviderValues {
   manager: [EditorTabManager, React.Dispatch<any>];
   tabs: [TabState[], React.Dispatch<any>];
-  selectedTab: [TabState|undefined, React.Dispatch<any>];
+  selectedTab: [TabState | undefined, React.Dispatch<any>];
 }
 export const TabManagerContext = createContext<TabManagerProviderValues>({} as any);
 
-export function useTabManager(){
+export function useTabManager() {
   return useContext(TabManagerContext);
 }
 
@@ -23,10 +22,9 @@ export const TabManagerProvider = (props: TabManagerProviderProps) => {
   const managerPrime = props.manager as EditorTabManager;
   const [manager, setManager] = useState<EditorTabManager>(managerPrime);
   const [tabs, setTabs] = useState<TabState[]>(managerPrime.tabs);
-  const [selectedTab, setSelectedTab] = useState<TabState|undefined>(managerPrime.currentTab);
+  const [selectedTab, setSelectedTab] = useState<TabState | undefined>(managerPrime.currentTab);
 
-  useEffect(() => {
-  }, []);
+  useEffect(() => {}, []);
 
   useEffect(() => {
     // if(selectedTab){
@@ -40,9 +38,5 @@ export const TabManagerProvider = (props: TabManagerProviderProps) => {
     selectedTab: [selectedTab, setSelectedTab],
   };
 
-  return (
-    <TabManagerContext.Provider value={providerValue}>
-      {props.children}
-    </TabManagerContext.Provider>
-  );
+  return <TabManagerContext.Provider value={providerValue}>{props.children}</TabManagerContext.Provider>;
 };

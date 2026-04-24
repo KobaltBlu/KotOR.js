@@ -1,4 +1,4 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from '@/resource/TwoDAObject';
 
 /**
  * One row of `animations.2da` (see `research/2da-csv/animations.csv`).
@@ -14,8 +14,8 @@ export class SWAnimation {
   /** Row index in the 2DA (`__index`). */
   index: number = 0;
   /** Animation resref / name (column `name`). */
-  name: string = "";
-  nameLower: string = "";
+  name: string = '';
+  nameLower: string = '';
 
   stationary: boolean = false;
   pause: boolean = false;
@@ -38,28 +38,28 @@ export class SWAnimation {
 
   /** True if the 2DA cell is non-zero after numeric normalization. */
   private static flag(row: any, column: string): boolean {
-    return TwoDAObject.normalizeValue(row[column], "number", 0) !== 0;
+    return TwoDAObject.normalizeValue(row[column], 'number', 0) !== 0;
   }
 
   apply2DA(row: any): void {
-    this.index = TwoDAObject.normalizeValue(row.__index, "number", 0);
-    this.name = TwoDAObject.normalizeValue(row.name, "string", "");
+    this.index = TwoDAObject.normalizeValue(row.__index, 'number', 0);
+    this.name = TwoDAObject.normalizeValue(row.name, 'string', '');
     this.nameLower = this.name.toLowerCase();
 
-    this.stationary = SWAnimation.flag(row, "stationary");
-    this.pause = SWAnimation.flag(row, "pause");
-    this.walking = SWAnimation.flag(row, "walking");
-    this.running = SWAnimation.flag(row, "running");
-    this.looping = SWAnimation.flag(row, "looping");
-    this.fireforget = SWAnimation.flag(row, "fireforget");
-    this.overlay = SWAnimation.flag(row, "overlay");
-    this.playoutofplace = SWAnimation.flag(row, "playoutofplace");
-    this.dialog = SWAnimation.flag(row, "dialog");
-    this.damage = SWAnimation.flag(row, "damage");
-    this.parry = SWAnimation.flag(row, "parry");
-    this.dodge = SWAnimation.flag(row, "dodge");
-    this.attack = SWAnimation.flag(row, "attack");
-    this.hideequippeditems = SWAnimation.flag(row, "hideequippeditems");
+    this.stationary = SWAnimation.flag(row, 'stationary');
+    this.pause = SWAnimation.flag(row, 'pause');
+    this.walking = SWAnimation.flag(row, 'walking');
+    this.running = SWAnimation.flag(row, 'running');
+    this.looping = SWAnimation.flag(row, 'looping');
+    this.fireforget = SWAnimation.flag(row, 'fireforget');
+    this.overlay = SWAnimation.flag(row, 'overlay');
+    this.playoutofplace = SWAnimation.flag(row, 'playoutofplace');
+    this.dialog = SWAnimation.flag(row, 'dialog');
+    this.damage = SWAnimation.flag(row, 'damage');
+    this.parry = SWAnimation.flag(row, 'parry');
+    this.dodge = SWAnimation.flag(row, 'dodge');
+    this.attack = SWAnimation.flag(row, 'attack');
+    this.hideequippeditems = SWAnimation.flag(row, 'hideequippeditems');
   }
 
   static From2DA(row: any): SWAnimation {

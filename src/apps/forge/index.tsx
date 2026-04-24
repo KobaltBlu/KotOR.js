@@ -1,47 +1,46 @@
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
+﻿import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 (window as any).monaco = monaco;
-import React, { useEffect, useState } from "react";
-import ReactDOM from "react-dom/client";
+import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom/client';
+
 import 'bootstrap';
-import "@/apps/forge/app.scss";
-import { AppProvider, useApp } from "@/apps/forge/context/AppContext";
-import * as KotOR from "@/apps/forge/KotOR";
-import { App } from "@/apps/forge/App";
-import { Launcher } from "@/apps/launcher/context/Launcher";
+import '@/apps/forge/app.scss';
+import { AppProvider, useApp } from '@/apps/forge/context/AppContext';
+import * as KotOR from '@/apps/forge/KotOR';
+import { App } from '@/apps/forge/App';
+import { Launcher } from '@/apps/launcher/context/Launcher';
 
 const query = new URLSearchParams(window.location.search);
 
-switch(query.get('key')){ 
+switch (query.get('key')) {
   case 'kotor':
   case 'tsl':
-
-  break;
+    break;
   default:
     query.set('key', 'kotor');
-  break;
+    break;
 }
 
 const loadReactApplication = () => {
-  const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
-  ( async () => {
+  const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+  (async () => {
     root.render(
       // <React.StrictMode>
-        <AppProvider>
-          <App />
-        </AppProvider>
+      <AppProvider>
+        <App />
+      </AppProvider>
       // </React.StrictMode>
     );
   })();
-}
+};
 
-( async () => {
+(async () => {
   await KotOR.ConfigClient.Init();
   await Launcher.InitProfiles();
   const getProfile = () => {
-    const rawKey = query.get("key");
+    const rawKey = query.get('key');
     const validKeys = Object.keys(Launcher.AppProfiles || {});
-    const key =
-      rawKey && validKeys.includes(rawKey) ? rawKey : "kotor";
+    const key = rawKey && validKeys.includes(rawKey) ? rawKey : 'kotor';
     return KotOR.ConfigClient.get(`Profiles.${key}`);
   };
 
@@ -55,33 +54,41 @@ const loadReactApplication = () => {
 const plChangeCallback = (e: any) => {
   // document.pointerLockElement = this.element;
   // console.log('ModelViewerControls', e);
-  if(document.pointerLockElement instanceof HTMLCanvasElement) {
+  if (document.pointerLockElement instanceof HTMLCanvasElement) {
     //console.log('The pointer lock status is now locked');
-    document.body.addEventListener("mousemove", plMouseMove, true);
+    document.body.addEventListener('mousemove', plMouseMove, true);
     KotOR.Mouse.Dragging = true;
   } else {
     //console.log('The pointer lock status is now unlocked');
-    document.body.removeEventListener("mousemove", plMouseMove, true);
+    document.body.removeEventListener('mousemove', plMouseMove, true);
     //this.plMoveEvent = undefined;
     KotOR.Mouse.Dragging = false;
     //document.removeEventListener('pointerlockchange', this.plEvent, true);
   }
-}
+};
 
 const plMouseMove = (event: any) => {
-  if(KotOR.Mouse.Dragging && (event.movementX || event.movementY)){
-    let range = 1000;
+  if (KotOR.Mouse.Dragging && (event.movementX || event.movementY)) {
+    const range = 1000;
     //console.log(event.movementX, event.movementY);
-    if(event.movementX > -range && event.movementX < range){
+    if (event.movementX > -range && event.movementX < range) {
       KotOR.Mouse.OffsetX = event.movementX || 0;
-    }else{console.log('x', event.movementX)}
-    if(event.movementY > -range && event.movementY < range){
-      KotOR.Mouse.OffsetY = (event.movementY || 0)*-1.0;
-    }else{console.log('y', event.movementY)}
+    } else {
+      console.log('x', event.movementX);
+    }
+    if (event.movementY > -range && event.movementY < range) {
+      KotOR.Mouse.OffsetY = (event.movementY || 0) * -1.0;
+    } else {
+      console.log('y', event.movementY);
+    }
   }
-}
+};
 
 document.addEventListener('pointerlockchange', plChangeCallback, true);
-document.addEventListener('pointerlockerror', (e) => {
-  console.error(e);
-}, true);
+document.addEventListener(
+  'pointerlockerror',
+  (e) => {
+    console.error(e);
+  },
+  true
+);

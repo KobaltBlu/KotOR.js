@@ -1,22 +1,21 @@
-import { IScreenResolution } from "@/interface/graphics/IScreenResolution";
+import { IScreenResolution } from '@/interface/graphics/IScreenResolution';
 
 /**
  * ResolutionManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ResolutionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ResolutionManager {
-
   public static vpScaleFactor: number = 1;
   public static hpScaleFactor: number = 1;
 
-  public static windowResolution: {width: number; height: number;} = {
+  public static windowResolution: { width: number; height: number } = {
     width: 0,
-    height: 0
+    height: 0,
   };
 
   private static resolutionsGenerated: boolean = false;
@@ -26,56 +25,57 @@ export class ResolutionManager {
     height: 1,
     ratio: 1.33,
     isDynamicRes: true,
-    getName: function(){ return this.label }
+    getName: function () {
+      return this.label;
+    },
   };
   static availableResolutions: IScreenResolution[] = [];
 
   public static get screenResolution(): IScreenResolution {
     return this.#_screenResolution;
-  };
+  }
 
   public static set screenResolution(res: IScreenResolution) {
     const isChanging = this.#_screenResolution != res;
     const oldRes = this.#_screenResolution;
     this.#_screenResolution = res;
-    if(isChanging){
+    if (isChanging) {
       this.processEventListener('onChange', res, oldRes);
     }
+  }
+
+  static #eventListeners: { [key: string]: Function[] } = {
+    onChange: [],
+    onResize: [],
   };
 
-
-  static #eventListeners: {[key: string]: Function[]} = {
-    'onChange': [],
-    'onResize': []
-  };
-
-  static addEventListener(key: string, func: Function){
+  static addEventListener(key: string, func: Function) {
     const el = this.#eventListeners[key];
-    if(Array.isArray(el)){
+    if (Array.isArray(el)) {
       const canPush = el.indexOf(func) == -1;
-      if(canPush){
+      if (canPush) {
         el.push(func);
       }
     }
   }
 
-  static removeEventListener(key: string, func: Function){
+  static removeEventListener(key: string, func: Function) {
     const el = this.#eventListeners[key];
-    if(Array.isArray(el)){
+    if (Array.isArray(el)) {
       const idx = el.indexOf(func);
       const removeAll = typeof func === 'undefined';
-      if(removeAll){
+      if (removeAll) {
         this.#eventListeners[key] = [];
-      }else if(idx >= 0){
+      } else if (idx >= 0) {
         el.splice(idx, 1);
       }
     }
   }
 
-  static processEventListener(key: string, ...args: any[]){
+  static processEventListener(key: string, ...args: any[]) {
     const el = this.#eventListeners[key];
-    if(Array.isArray(el)){
-      for(let i = 0, len = el.length; i < len; i++){
+    if (Array.isArray(el)) {
+      for (let i = 0, len = el.length; i < len; i++) {
         el[i](...args);
       }
     }
@@ -109,13 +109,13 @@ export class ResolutionManager {
     const scaleX = window.innerWidth / this.getViewportWidth();
     const scaleY = window.innerHeight / this.getViewportHeight();
 
-    const xExceeds = (this.getViewportWidth() * scaleX) > window.innerWidth;
-    const yExceeds = (this.getViewportHeight() * scaleY) > window.innerHeight;
+    const xExceeds = this.getViewportWidth() * scaleX > window.innerWidth;
+    const yExceeds = this.getViewportHeight() * scaleY > window.innerHeight;
 
     this.vpScaleFactor = 1.0;
     this.hpScaleFactor = 1.0;
 
-    if(!this.screenResolution.isDynamicRes){
+    if (!this.screenResolution.isDynamicRes) {
       this.vpScaleFactor = scaleY;
       this.hpScaleFactor = scaleX;
       // if(!xExceeds && !yExceeds){
@@ -128,15 +128,17 @@ export class ResolutionManager {
     }
   }
 
-  static getSupportedResolutions(){
-    if(!this.resolutionsGenerated){
+  static getSupportedResolutions() {
+    if (!this.resolutionsGenerated) {
       this.availableResolutions.push({
         label: 'Auto Resolution',
         width: 1,
         height: 1,
         ratio: 1,
         isDynamicRes: true,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       //4:3
@@ -146,7 +148,9 @@ export class ResolutionManager {
         height: 480,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -155,7 +159,9 @@ export class ResolutionManager {
         height: 600,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -164,7 +170,9 @@ export class ResolutionManager {
         height: 720,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -173,7 +181,9 @@ export class ResolutionManager {
         height: 768,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -182,7 +192,9 @@ export class ResolutionManager {
         height: 1024,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -191,7 +203,9 @@ export class ResolutionManager {
         height: 1200,
         ratio: 1.33,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       //16:9
@@ -201,7 +215,9 @@ export class ResolutionManager {
         height: 720,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -210,7 +226,9 @@ export class ResolutionManager {
         height: 900,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -219,7 +237,9 @@ export class ResolutionManager {
         height: 1080,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -228,7 +248,9 @@ export class ResolutionManager {
         height: 1152,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -237,7 +259,9 @@ export class ResolutionManager {
         height: 1620,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -246,7 +270,9 @@ export class ResolutionManager {
         height: 1728,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -255,7 +281,9 @@ export class ResolutionManager {
         height: 2160,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -264,7 +292,9 @@ export class ResolutionManager {
         height: 2304,
         ratio: 1.78,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
 
       this.availableResolutions.push({
@@ -273,15 +303,15 @@ export class ResolutionManager {
         height: 1440,
         ratio: 2.39,
         isDynamicRes: false,
-        getName: function(){ return this.label }
+        getName: function () {
+          return this.label;
+        },
       });
       this.resolutionsGenerated = true;
     }
 
     return this.availableResolutions;
-
   }
-
 }
 
 window.addEventListener('resize', () => {

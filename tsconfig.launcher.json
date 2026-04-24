@@ -5,17 +5,9 @@
     "target": "ESNext",
     "module": "commonjs",
     "declaration": false,
-    "noImplicitAny": true,
-    "removeComments": true,
-    "experimentalDecorators": true,
-    "rootDir": ".",
-    "sourceMap": false,
-    "listFiles": false,
-    "newLine": "LF",
-    "noEmitOnError": true,
-    "strictNullChecks": false,
     "esModuleInterop": true,
-    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
     "jsx": "react",
     "paths": {
       "@/*": [
@@ -32,7 +24,30 @@
       "dom",
       "WebWorker"
     ],
+    "listFiles": false,
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "newLine": "LF",
+    "noEmitOnError": true,
+    "noImplicitAny": true,
     "outDir": "dist",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "removeComments": true,
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "strict": false,
+    "strictNullChecks": false,
+    "target": "ESNext",
+    "types": [
+      "@types/wicg-file-system-access",
+      "node",
+      "offscreencanvas"
+    ]
   },
   "include": [
     "src/apps/launcher/**/*.ts",

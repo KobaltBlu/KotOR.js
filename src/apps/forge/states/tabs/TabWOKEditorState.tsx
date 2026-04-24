@@ -1,23 +1,23 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import * as KotOR from '@/apps/forge/KotOR';
 import * as THREE from 'three';
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { TabWOKEditor } from "@/apps/forge/components/tabs/tab-wok-editor/TabWOKEditor";
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from '@/apps/forge/UI3DRenderer';
+import { TabWOKEditor } from '@/apps/forge/components/tabs/tab-wok-editor/TabWOKEditor';
 
 export enum TabWOKEditorControlMode {
   FACE = 0,
   VERTEX = 1,
   EDGE = 2,
   PAINT = 3,
-};
+}
 
 /**
  * Get the complementary color of a given hex color
- * @param hexColor 
- * @returns 
+ * @param hexColor
+ * @returns
  */
 const getComplementaryColor = (hexColor: number) => {
   // Extract RGB components from 0xRRGGBB
@@ -34,7 +34,7 @@ const getComplementaryColor = (hexColor: number) => {
   const complementary = (invertedR << 16) | (invertedG << 8) | invertedB;
 
   return complementary;
-}
+};
 
 export class TabWOKEditorState extends TabState {
   tabName: string = `WOK`;
@@ -50,7 +50,7 @@ export class TabWOKEditorState extends TabState {
   faceHelperMaterial: THREE.MeshBasicMaterial;
   wireMaterial: THREE.MeshBasicMaterial;
   wireframe: THREE.Mesh<THREE.BufferGeometry, THREE.MeshBasicMaterial>;
-  selectColor = new THREE.Color(0x607D8B);
+  selectColor = new THREE.Color(0x607d8b);
 
   vertexHelperGeometry = new THREE.BoxGeometry(1, 1, 1, 1, 1);
   vertexHelpersGroup: THREE.Group = new THREE.Group();
@@ -87,27 +87,29 @@ export class TabWOKEditorState extends TabState {
   private _isDragging: boolean = false;
   private _paintStrokeActive: boolean = false;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
-    
-    this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
-    this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
-    this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
-    this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
 
-    const grid1 = new THREE.GridHelper( 250, 26, 0x00FF00 );
+    this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
+    this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry(2500, 2500, 100, 100));
+    this.groundMaterial = new THREE.LineBasicMaterial({ color: this.groundColor, linewidth: 2 });
+    this.groundMesh = new THREE.LineSegments(this.groundGeometry, this.groundMaterial);
+
+    const grid1 = new THREE.GridHelper(250, 26, 0x00ff00);
     grid1.rotation.x = -Math.PI / 2;
 
     // center line
-    const grid2 = new THREE.GridHelper( 250, 2, 0xFF0000 );
+    const grid2 = new THREE.GridHelper(250, 2, 0xff0000);
     grid2.rotation.x = -Math.PI / 2;
     // (grid2.material as THREE.Material).depthFunc = THREE.AlwaysDepth;
 
-    (grid2.material as THREE.Material).onBeforeCompile = function ( shader ) {
+    (grid2.material as THREE.Material).onBeforeCompile = function (shader) {
       // Emulate GL_POLYGON_OFFSET_LINE
-      shader.vertexShader = shader.vertexShader.replace( '<worldpos_vertex>', '<worldpos_vertex>\ngl_Position.z -= 0.0001;' );
+      shader.vertexShader = shader.vertexShader.replace(
+        '<worldpos_vertex>',
+        '<worldpos_vertex>\ngl_Position.z -= 0.0001;'
+      );
     };
-    
 
     this.faceHelperGeometry = new THREE.BufferGeometry();
     this.faceHelperGeometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0, 0, 0, 0], 3));
@@ -115,7 +117,7 @@ export class TabWOKEditorState extends TabState {
     this.faceHelperMaterial = new THREE.MeshBasicMaterial();
     this.faceHelperMaterial.wireframe = true;
     this.faceHelperMaterial.visible = false;
-    this.faceHelperMesh = new THREE.Mesh(this.faceHelperGeometry, this.faceHelperMaterial)
+    this.faceHelperMesh = new THREE.Mesh(this.faceHelperGeometry, this.faceHelperMaterial);
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
@@ -128,7 +130,10 @@ export class TabWOKEditorState extends TabState {
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseDown', this.onMouseDown.bind(this));
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseUp', this.onMouseUp.bind(this));
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onMouseMove', this.onMouseMove.bind(this));
-    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', this.syncPaintCursor.bind(this));
+    this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>(
+      'onCanvasAttached',
+      this.syncPaintCursor.bind(this)
+    );
 
     if (this.ui3DRenderer.transformControls) {
       this.ui3DRenderer.transformControls.addEventListener('dragging-changed', this.onDraggingChanged.bind(this));
@@ -147,26 +152,24 @@ export class TabWOKEditorState extends TabState {
       {
         description: 'Odyssey Walk Mesh File',
         accept: {
-          'application/octet-stream': ['.wok']
-        }
+          'application/octet-stream': ['.wok'],
+        },
       },
       {
         description: 'Odyssey Door Walk Mesh File',
         accept: {
-          'application/octet-stream': ['.dwk']
-        }
+          'application/octet-stream': ['.dwk'],
+        },
       },
       {
         description: 'Odyssey Placeable Walk Mesh File',
         accept: {
-          'application/octet-stream': ['.pwk']
-        }
-      }
+          'application/octet-stream': ['.pwk'],
+        },
+      },
     ];
 
-    this.addEventListener('onKeyUp', (e: KeyboardEvent) => {
-      
-    });
+    this.addEventListener('onKeyUp', (e: KeyboardEvent) => {});
   }
 
   private onDraggingChanged(event: any): void {
@@ -246,7 +249,12 @@ export class TabWOKEditorState extends TabState {
     }
     this.wok.edges.forEach((edge) => {
       arrowPosition.copy(edge.center_point).sub(this.walkmeshRootOffset);
-      const arrowHelper = new THREE.ArrowHelper(edge.normal, arrowPosition, 0.5, getComplementaryColor(edge.face.color.getHex()));
+      const arrowHelper = new THREE.ArrowHelper(
+        edge.normal,
+        arrowPosition,
+        0.5,
+        getComplementaryColor(edge.face.color.getHex())
+      );
       arrowHelper.layers.set(2);
       this.edgeNormalHelpersGroup.add(arrowHelper);
     });
@@ -257,7 +265,12 @@ export class TabWOKEditorState extends TabState {
     }
     this.wok.faces.forEach((face) => {
       faceArrowPosition.copy(face.centroid).sub(this.walkmeshRootOffset);
-      const arrowHelper = new THREE.ArrowHelper(face.normal, faceArrowPosition, 0.5, getComplementaryColor(face.color.getHex()));
+      const arrowHelper = new THREE.ArrowHelper(
+        face.normal,
+        faceArrowPosition,
+        0.5,
+        getComplementaryColor(face.color.getHex())
+      );
       arrowHelper.layers.set(2);
       this.faceNormalHelpersGroup.add(arrowHelper);
     });
@@ -276,7 +289,11 @@ export class TabWOKEditorState extends TabState {
       this._wokCrossTmp2.copy(v1).sub(v2);
       this._wokCrossTmp1.cross(this._wokCrossTmp2);
       face.normal.copy(this._wokCrossTmp1).normalize();
-      face.centroid.copy(v1).add(v2).add(v3).multiplyScalar(1 / 3);
+      face.centroid
+        .copy(v1)
+        .add(v2)
+        .add(v3)
+        .multiplyScalar(1 / 3);
     }
   }
 
@@ -310,17 +327,17 @@ export class TabWOKEditorState extends TabState {
     this.syncNormalArrowHelperTransforms();
   }
 
-  public openFile(file?: EditorFile){
-    return new Promise<KotOR.OdysseyWalkMesh>( (resolve, reject) => {
-      if(!file && this.file instanceof EditorFile){
+  public openFile(file?: EditorFile) {
+    return new Promise<KotOR.OdysseyWalkMesh>((resolve, reject) => {
+      if (!file && this.file instanceof EditorFile) {
         file = this.file;
       }
-  
-      if(file instanceof EditorFile){
-        if(this.file != file) this.file = file;
+
+      if (file instanceof EditorFile) {
+        if (this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
-  
-        file.readFile().then( (response) => {
+
+        file.readFile().then((response) => {
           console.log(response.buffer);
           this.wok = new KotOR.OdysseyWalkMesh(new KotOR.BinaryReader(response.buffer));
           this.wok.material.visible = true;
@@ -329,9 +346,13 @@ export class TabWOKEditorState extends TabState {
           this.wok.material.transparent = true;
           this.ui3DRenderer.selectable.add(this.wok.mesh);
 
-          
-
-          this.wireMaterial = new THREE.MeshBasicMaterial( { color: 0x000000, wireframe: true, transparent: true, wireframeLinewidth: 1, depthTest: false } );
+          this.wireMaterial = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            wireframe: true,
+            transparent: true,
+            wireframeLinewidth: 1,
+            depthTest: false,
+          });
           this.wireframe = new THREE.Mesh(this.wok.geometry, this.wireMaterial);
           this.wireframe.visible = this.wireframeVisible;
           this.ui3DRenderer.unselectable.add(this.wireframe);
@@ -341,7 +362,7 @@ export class TabWOKEditorState extends TabState {
           /**
            * Center the mesh and wireframe if the walkmesh type is AABB
            */
-          if(this.wok.header.walkMeshType == KotOR.OdysseyWalkMeshType.AABB){
+          if (this.wok.header.walkMeshType == KotOR.OdysseyWalkMeshType.AABB) {
             this.wok.box.getCenter(this.walkmeshRootOffset);
             this.walkmeshRootOffset.z = this.wok.getMinZ();
             this.wok.mesh.position.sub(this.walkmeshRootOffset);
@@ -371,58 +392,58 @@ export class TabWOKEditorState extends TabState {
     });
   }
 
-  onSelect(object: THREE.Object3D | undefined){
+  onSelect(object: THREE.Object3D | undefined) {
     this.ui3DRenderer.selectionBox.visible = false;
 
-    if(!this.wok) return;
+    if (!this.wok) return;
 
-    switch(this.controlMode){
+    switch (this.controlMode) {
       case TabWOKEditorControlMode.FACE:
-        if(object === this.wok.mesh){
+        if (object === this.wok.mesh) {
           // UI3DRenderer passes the object, not the intersection. Perform raycast to get face.
           this.ui3DRenderer.raycaster.setFromCamera(KotOR.Mouse.Vector, this.ui3DRenderer.camera);
           const intersects = this.ui3DRenderer.raycaster.intersectObject(this.wok.mesh);
-          if(intersects.length && intersects[0].face){
+          if (intersects.length && intersects[0].face) {
             const face = intersects[0].face;
             const f_idx = Math.floor(face.a / 3);
             const odysseyFace: KotOR.OdysseyFace3 = this.wok.faces[f_idx];
             this.selectFace(odysseyFace);
-          }else{
+          } else {
             this.selectFace(undefined);
           }
-        }else{
+        } else {
           this.selectFace(undefined);
         }
-      break;
+        break;
       case TabWOKEditorControlMode.VERTEX:
-        if(object && object !== this.wok.mesh){
+        if (object && object !== this.wok.mesh) {
           const helperIndex = this.vertexHelpersGroup.children.indexOf(object);
-          if(helperIndex >= 0) this.selectVertex(helperIndex);
-        }else{
+          if (helperIndex >= 0) this.selectVertex(helperIndex);
+        } else {
           this.selectVertex(-1);
         }
-      break;
+        break;
       case TabWOKEditorControlMode.EDGE:
-        if(object === this.wok.mesh){
+        if (object === this.wok.mesh) {
           this.ui3DRenderer.raycaster.setFromCamera(KotOR.Mouse.Vector, this.ui3DRenderer.camera);
           const intersects = this.ui3DRenderer.raycaster.intersectObject(this.wok.mesh);
-          if(intersects.length && intersects[0].point){
+          if (intersects.length && intersects[0].point) {
             const point = intersects[0].point;
             const face = intersects[0].face;
             const f_idx = Math.floor(face!.a / 3);
             const closestEdgeIndex = this.findClosestEdgeToPoint(point, f_idx);
-            if(closestEdgeIndex >= 0) this.selectEdge(closestEdgeIndex);
+            if (closestEdgeIndex >= 0) this.selectEdge(closestEdgeIndex);
             else this.selectEdge(-1);
-          }else{
+          } else {
             this.selectEdge(-1);
           }
-        }else if(object && this.edgeIndexByHelper.has(object as THREE.Mesh)){
+        } else if (object && this.edgeIndexByHelper.has(object as THREE.Mesh)) {
           const edgeIndex = this.edgeIndexByHelper.get(object as THREE.Mesh)!;
           this.selectEdge(edgeIndex);
-        }else{
+        } else {
           this.selectEdge(-1);
         }
-      break;
+        break;
       case TabWOKEditorControlMode.PAINT:
         break;
     }
@@ -437,7 +458,10 @@ export class TabWOKEditorState extends TabState {
     }
     if (this.wok) {
       const sel = this.ui3DRenderer.selectable;
-      const needsMesh = mode === TabWOKEditorControlMode.FACE || mode === TabWOKEditorControlMode.EDGE || mode === TabWOKEditorControlMode.PAINT;
+      const needsMesh =
+        mode === TabWOKEditorControlMode.FACE ||
+        mode === TabWOKEditorControlMode.EDGE ||
+        mode === TabWOKEditorControlMode.PAINT;
       const needsVertexHelpers = mode === TabWOKEditorControlMode.VERTEX;
       const needsEdgeHelpers = mode === TabWOKEditorControlMode.EDGE;
       if (needsMesh && !sel.children.includes(this.wok.mesh)) sel.add(this.wok.mesh);
@@ -452,7 +476,8 @@ export class TabWOKEditorState extends TabState {
 
   private syncPaintCursor(): void {
     if (this.ui3DRenderer.canvas) {
-      this.ui3DRenderer.canvas.style.cursor = this.controlMode === TabWOKEditorControlMode.PAINT ? 'crosshair' : 'default';
+      this.ui3DRenderer.canvas.style.cursor =
+        this.controlMode === TabWOKEditorControlMode.PAINT ? 'crosshair' : 'default';
     }
   }
 
@@ -528,10 +553,7 @@ export class TabWOKEditorState extends TabState {
     if (!this.wok || this.controlMode !== TabWOKEditorControlMode.PAINT) return;
     const ndc = this.getMouseNDC(event);
     if (!ndc) return;
-    this.ui3DRenderer.raycaster.setFromCamera(
-      new THREE.Vector2(ndc.x, ndc.y),
-      this.ui3DRenderer.camera
-    );
+    this.ui3DRenderer.raycaster.setFromCamera(new THREE.Vector2(ndc.x, ndc.y), this.ui3DRenderer.camera);
     const intersects = this.ui3DRenderer.raycaster.intersectObject(this.wok.mesh);
     if (intersects.length && intersects[0].face) {
       const face = intersects[0].face;
@@ -585,7 +607,7 @@ export class TabWOKEditorState extends TabState {
 
   private updateCameraFocus(): void {
     this.box3 = new THREE.Box3();
-    if(!this.wok) return;
+    if (!this.wok) return;
     this.box3.setFromObject(this.wok.mesh);
     this.box3.getCenter(this._orbitFocusScratch);
     this.ui3DRenderer.orbitControls.target.copy(this._orbitFocusScratch);
@@ -608,90 +630,84 @@ export class TabWOKEditorState extends TabState {
     }
   }
 
-  animate(delta: number = 0){
-
+  animate(delta: number = 0) {
     this.vertexHelpersGroup.visible = false;
     this.edgeHelpersGroup.visible = false;
     this.ui3DRenderer.transformControls.visible = false;
     this.faceHelperMesh.visible = false;
 
-    switch(this.controlMode){
+    switch (this.controlMode) {
       case TabWOKEditorControlMode.FACE:
         this.selectVertex(-1);
 
-
-      break;
+        break;
       case TabWOKEditorControlMode.VERTEX:
         this.selectFace(undefined);
         this.vertexHelpersGroup.visible = true;
 
-        if(!this.ui3DRenderer.transformControls.object)
-          this.ui3DRenderer.transformControls.visible = false;
-        else
-          this.ui3DRenderer.transformControls.visible = true;
+        if (!this.ui3DRenderer.transformControls.object) this.ui3DRenderer.transformControls.visible = false;
+        else this.ui3DRenderer.transformControls.visible = true;
 
         const selectedVertex = this.wok.vertices[this.selectedVertexIndex];
-        if(selectedVertex){
+        if (selectedVertex) {
           const selectedVertexHelper = this.vertexHelpers[this.selectedVertexIndex];
           const expectedLocal = this._vertexSyncScratch.copy(selectedVertex).sub(this.walkmeshRootOffset);
           const vertexNeedsUpdate = selectedVertexHelper.position.distanceToSquared(expectedLocal) > 1e-10;
-          if(vertexNeedsUpdate){
+          if (vertexNeedsUpdate) {
             const position = this.wok.geometry.attributes.position as THREE.BufferAttribute;
             selectedVertex.copy(selectedVertexHelper.position).add(this.walkmeshRootOffset);
-            for(let i = 0; i < this.wok.faces.length; i++){
+            for (let i = 0; i < this.wok.faces.length; i++) {
               const face = this.wok.faces[i];
-              if(face.a == this.selectedVertexIndex){
-                position.setX( (i * 3) + 0, selectedVertex.x);
-                position.setY( (i * 3) + 0, selectedVertex.y);
-                position.setZ( (i * 3) + 0, selectedVertex.z);
+              if (face.a == this.selectedVertexIndex) {
+                position.setX(i * 3 + 0, selectedVertex.x);
+                position.setY(i * 3 + 0, selectedVertex.y);
+                position.setZ(i * 3 + 0, selectedVertex.z);
               }
 
-              if(face.b == this.selectedVertexIndex){
-                position.setX( (i * 3) + 1, selectedVertex.x);
-                position.setY( (i * 3) + 1, selectedVertex.y);
-                position.setZ( (i * 3) + 1, selectedVertex.z);
+              if (face.b == this.selectedVertexIndex) {
+                position.setX(i * 3 + 1, selectedVertex.x);
+                position.setY(i * 3 + 1, selectedVertex.y);
+                position.setZ(i * 3 + 1, selectedVertex.z);
               }
 
-              if(face.c == this.selectedVertexIndex){
-                position.setX( (i * 3) + 2, selectedVertex.x);
-                position.setY( (i * 3) + 2, selectedVertex.y);
-                position.setZ( (i * 3) + 2, selectedVertex.z);
+              if (face.c == this.selectedVertexIndex) {
+                position.setX(i * 3 + 2, selectedVertex.x);
+                position.setY(i * 3 + 2, selectedVertex.y);
+                position.setZ(i * 3 + 2, selectedVertex.z);
               }
             }
             position.needsUpdate = true;
             this.syncNormalHelperArrowsFromWalkmesh();
           }
-
         }
 
-      break;
+        break;
       case TabWOKEditorControlMode.EDGE:
         this.selectVertex(-1);
         this.selectFace(undefined);
         this.edgeHelpersGroup.visible = true;
-      break;
+        break;
       case TabWOKEditorControlMode.PAINT:
         this.selectVertex(-1);
-      break;
+        break;
     }
-    
   }
 
-  buildVertexHelpers(){
-    while(this.vertexHelpers.length){
+  buildVertexHelpers() {
+    while (this.vertexHelpers.length) {
       const helper = this.vertexHelpers.splice(this.vertexHelpers.length - 1, 1)[0];
       helper.removeFromParent();
     }
-    for(let i = 0; i < this.wok.vertices.length; i++){
-      const helper = new THREE.Mesh(this.vertexHelperGeometry, new THREE.MeshBasicMaterial({color: 0x000000}));
+    for (let i = 0; i < this.wok.vertices.length; i++) {
+      const helper = new THREE.Mesh(this.vertexHelperGeometry, new THREE.MeshBasicMaterial({ color: 0x000000 }));
       this.vertexHelpers.push(helper);
       this.vertexHelpersGroup.add(helper);
     }
     this.alignVertexHelpers();
   }
 
-  alignVertexHelpers(){
-    for(let i = 0; i < this.wok.vertices.length; i++){
+  alignVertexHelpers() {
+    for (let i = 0; i < this.wok.vertices.length; i++) {
       const vertex = this.wok.vertices[i];
       const helper = this.vertexHelpers[i];
       helper.position.copy(vertex).sub(this.walkmeshRootOffset);
@@ -699,9 +715,9 @@ export class TabWOKEditorState extends TabState {
     }
   }
 
-  buildEdgeHelpers(){
+  buildEdgeHelpers() {
     this.edgeIndexByHelper.clear();
-    while(this.edgeHelpers.length){
+    while (this.edgeHelpers.length) {
       const helper = this.edgeHelpers.pop()!;
       helper.removeFromParent();
     }
@@ -709,12 +725,9 @@ export class TabWOKEditorState extends TabState {
     const up = new THREE.Vector3(0, 1, 0);
     this.wok.edges.forEach((edge, edgeIndex) => {
       const length = edge.line.distance();
-      if(length < 0.001) return;
+      if (length < 0.001) return;
       dir.copy(edge.line.end).sub(edge.line.start).normalize();
-      const helper = new THREE.Mesh(
-        this.edgeHelperGeometry,
-        new THREE.MeshBasicMaterial({ color: 0x000000 })
-      );
+      const helper = new THREE.Mesh(this.edgeHelperGeometry, new THREE.MeshBasicMaterial({ color: 0x000000 }));
       helper.scale.set(1, length, 1);
       helper.position.copy(edge.center_point).sub(this.walkmeshRootOffset);
       helper.quaternion.setFromUnitVectors(up, dir);
@@ -725,13 +738,13 @@ export class TabWOKEditorState extends TabState {
     });
   }
 
-  selectEdge(index: number = -1){
+  selectEdge(index: number = -1) {
     this.selectedEdgeIndex = index;
-    for(let i = 0; i < this.edgeHelpers.length; i++){
+    for (let i = 0; i < this.edgeHelpers.length; i++) {
       const helper = this.edgeHelpers[i];
       const material = helper.material as THREE.MeshBasicMaterial;
       const edgeIdx = this.edgeIndexByHelper.get(helper);
-      material.color.setHex(edgeIdx === index ? 0xFFFFFF : 0x000000);
+      material.color.setHex(edgeIdx === index ? 0xffffff : 0x000000);
     }
     this.processEventListener('onEdgeSelected', [index >= 0 ? this.wok.edges.get(index) : undefined]);
   }
@@ -745,19 +758,19 @@ export class TabWOKEditorState extends TabState {
     }
   }
 
-  resetFaceColors(){
+  resetFaceColors() {
     const color = this.wok.geometry.attributes.color as THREE.BufferAttribute;
-    for(let i = 0; i < this.wok.faces.length; i++){
+    for (let i = 0; i < this.wok.faces.length; i++) {
       const face = this.wok.faces[i];
       const index = i * 3;
       color.setX(index, face.color.r);
       color.setY(index, face.color.g);
       color.setZ(index, face.color.b);
-      
+
       color.setX(index + 1, face.color.r);
       color.setY(index + 1, face.color.g);
       color.setZ(index + 1, face.color.b);
-      
+
       color.setX(index + 2, face.color.r);
       color.setY(index + 2, face.color.g);
       color.setZ(index + 2, face.color.b);
@@ -765,10 +778,10 @@ export class TabWOKEditorState extends TabState {
     color.needsUpdate = true;
   }
 
-  selectFace(face?: KotOR.OdysseyFace3){
+  selectFace(face?: KotOR.OdysseyFace3) {
     this.resetFaceColors();
     this.selectedFaceIndex = -1;
-    if(face){
+    if (face) {
       const position = this.wok.geometry.attributes.position as THREE.BufferAttribute;
       const h_position = this.faceHelperGeometry.attributes.position as THREE.BufferAttribute;
       const color = this.wok.geometry.attributes.color as THREE.BufferAttribute;
@@ -777,26 +790,26 @@ export class TabWOKEditorState extends TabState {
       color.setX(index, this.selectColor.r);
       color.setY(index, this.selectColor.g);
       color.setZ(index, this.selectColor.b);
-      
+
       color.setX(index + 1, this.selectColor.r);
       color.setY(index + 1, this.selectColor.g);
       color.setZ(index + 1, this.selectColor.b);
-      
+
       color.setX(index + 2, this.selectColor.r);
       color.setY(index + 2, this.selectColor.g);
       color.setZ(index + 2, this.selectColor.b);
 
-      h_position.setX(0, position.getX(index) );
-      h_position.setY(0, position.getY(index) );
-      h_position.setZ(0, position.getZ(index) );
+      h_position.setX(0, position.getX(index));
+      h_position.setY(0, position.getY(index));
+      h_position.setZ(0, position.getZ(index));
 
-      h_position.setX(1, position.getX(index + 1) );
-      h_position.setY(1, position.getY(index + 1) );
-      h_position.setZ(1, position.getZ(index + 1) );
+      h_position.setX(1, position.getX(index + 1));
+      h_position.setY(1, position.getY(index + 1));
+      h_position.setZ(1, position.getZ(index + 1));
 
-      h_position.setX(2, position.getX(index + 2) );
-      h_position.setY(2, position.getY(index + 2) );
-      h_position.setZ(2, position.getZ(index + 2) );
+      h_position.setX(2, position.getX(index + 2));
+      h_position.setY(2, position.getY(index + 2));
+      h_position.setZ(2, position.getZ(index + 2));
 
       h_position.needsUpdate = true;
       this.faceHelperGeometry.computeBoundingSphere();
@@ -839,17 +852,17 @@ export class TabWOKEditorState extends TabState {
     }
   }
 
-  selectVertex(index: number = -1){
+  selectVertex(index: number = -1) {
     this.selectedVertexIndex = index;
     this.ui3DRenderer.transformControls.detach();
-    for(let i = 0; i < this.vertexHelpersGroup.children.length; i++){
+    for (let i = 0; i < this.vertexHelpersGroup.children.length; i++) {
       const helper = this.vertexHelpersGroup.children[i] as THREE.Mesh;
       const material = helper.material as THREE.MeshBasicMaterial;
-      if(i == index){
-        material.color.setHex(0xFFFFFF);
+      if (i == index) {
+        material.color.setHex(0xffffff);
         this.ui3DRenderer.transformControls.attach(helper);
         this.ui3DRenderer.transformControls.size = 0.5;
-      }else{
+      } else {
         material.color.setHex(0x000000);
       }
     }
@@ -860,5 +873,4 @@ export class TabWOKEditorState extends TabState {
     this.syncWireframeGeometry();
     return buffer;
   }
-
 }

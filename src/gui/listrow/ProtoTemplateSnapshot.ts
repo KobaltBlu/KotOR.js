@@ -1,5 +1,5 @@
-import type { GUIControl } from "@/gui/GUIControl";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
+import type { GUIControl } from '@/gui/GUIControl';
+import { GUIControlType } from '@/enums/gui/GUIControlType';
 
 /**
  * Immutable snapshot of PROTOITEM-derived styling the listbox uses when building rows.

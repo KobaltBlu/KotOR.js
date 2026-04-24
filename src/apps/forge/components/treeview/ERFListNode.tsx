@@ -1,8 +1,8 @@
-import React, { useState, useCallback, memo, useMemo } from "react";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
+import React, { useState, useCallback, memo, useMemo } from 'react';
+import { FileBrowserNode } from '@/apps/forge/FileBrowserNode';
+import { FileTypeManager } from '@/apps/forge/FileTypeManager';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { ListItemNode } from '@/apps/forge/components/treeview/ListItemNode';
 
 export interface ERFListNodeProps {
   node: FileBrowserNode;
@@ -21,42 +21,48 @@ export const ERFListNode = memo(function ResourceListNode(props: ERFListNodeProp
   const hasChildren = isFolder && node.nodes.length > 0;
 
   const handleToggle = useCallback(() => {
-    setOpenState(prev => !prev);
+    setOpenState((prev) => !prev);
   }, []);
 
   const handleClick = useCallback(() => {
-    if (typeof onSelect === 'function'){
+    if (typeof onSelect === 'function') {
       onSelect(node);
     }
   }, [node, onSelect]);
 
   const handleDoubleClick = useCallback(() => {
-    if(typeof onDoubleClick === 'function'){
+    if (typeof onDoubleClick === 'function') {
       onDoubleClick(node);
     }
   }, [node, onDoubleClick]);
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    console.log('Context menu for:', node.name);
-    // Add context menu logic here
-    if(typeof onContextMenu === 'function'){
-      onContextMenu(e, node);
-    }
-  }, [node, onContextMenu]);
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      console.log('Context menu for:', node.name);
+      // Add context menu logic here
+      if (typeof onContextMenu === 'function') {
+        onContextMenu(e, node);
+      }
+    },
+    [node, onContextMenu]
+  );
 
-  const handleSelect = useCallback((nodeId: string) => {
-    if (onSelect) {
-      onSelect(node);
-    }
-  }, [node, onSelect]);
+  const handleSelect = useCallback(
+    (nodeId: string) => {
+      if (onSelect) {
+        onSelect(node);
+      }
+    },
+    [node, onSelect]
+  );
 
   // Memoize child nodes to prevent unnecessary re-renders
   const childNodes = useMemo(() => {
     if (!openState || !hasChildren) return null;
     return node.nodes.map((child: FileBrowserNode) => (
-      <ResourceListNode 
-        key={child.id} 
-        node={child} 
+      <ResourceListNode
+        key={child.id}
+        node={child}
         depth={depth + 1}
         isSelected={false}
         onSelect={onSelect}

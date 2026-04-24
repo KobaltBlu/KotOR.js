@@ -1,4 +1,4 @@
-import type { GUIProtoItem } from "@/gui/GUIProtoItem";
+import type { GUIProtoItem } from '@/gui/GUIProtoItem';
 
 export type GUIProtoItemCtor = new (...args: any[]) => GUIProtoItem;
 

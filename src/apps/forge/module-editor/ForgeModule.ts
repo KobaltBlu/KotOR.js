@@ -1,28 +1,41 @@
-import type { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
-import * as KotOR from "@/apps/forge/KotOR";
-import type { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import type { ForgeArea } from '@/apps/forge/module-editor/ForgeArea';
+import * as KotOR from '@/apps/forge/KotOR';
+import type { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
 
-type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
+type ModuleScriptKeys =
+  | 'Mod_OnAcquirItem'
+  | 'Mod_OnActvtItem'
+  | 'Mod_OnClientEntr'
+  | 'Mod_OnClientLeav'
+  | 'Mod_OnHeartbeat'
+  | 'Mod_OnModLoad'
+  | 'Mod_OnModStart'
+  | 'Mod_OnPlrDeath'
+  | 'Mod_OnPlrDying'
+  | 'Mod_OnPlrLvlUp'
+  | 'Mod_OnPlrRest'
+  | 'Mod_OnSpawnBtnDn'
+  | 'Mod_OnUnAqreItem'
+  | 'Mod_OnUsrDefined';
 
 export class ForgeModule {
-
   ifo: KotOR.GFFObject;
   context: UI3DRenderer;
 
   area: ForgeArea;
   areas: ForgeArea[] = [];
   entryArea: string = 'm01aa';
-  entryDirectionX: number = 0.00;
-  entryDirectionY: number = 1.00;
-  entryX: number = 0.00;
-  entryY: number = 0.00;
-  entryZ: number = 0.00;
-  
+  entryDirectionX: number = 0.0;
+  entryDirectionY: number = 1.0;
+  entryX: number = 0.0;
+  entryY: number = 0.0;
+  entryZ: number = 0.0;
+
   scriptResRefs: Map<ModuleScriptKeys, string> = new Map<ModuleScriptKeys, string>();
 
   timeManager: KotOR.ModuleTimeManager = new KotOR.ModuleTimeManager();
 
-  archives: (KotOR.RIMObject|KotOR.ERFObject)[] = [];
+  archives: (KotOR.RIMObject | KotOR.ERFObject)[] = [];
   customTokens: Map<number, string>;
   transition: any;
   transWP: string;
@@ -48,8 +61,8 @@ export class ForgeModule {
   expansionPack: number = 0;
 
   /**
-   * Arbitrarily generated 16-byte number sequence assigned when toolset creates a new module. It is never
-   * modified afterward by toolset. The game saves out 32 bytes instead of 16. Applications other than the toolset
+   * Arbitrarily generated 16-byte number sequence assigned when a module is created. It is never
+   * modified afterward by the editor. The game saves out 32 bytes instead of 16. Other applications
    * can set this to all null bytes when creating a new IFO file.
    */
   id: Uint8Array = new Uint8Array(16);
@@ -70,7 +83,7 @@ export class ForgeModule {
   voId: string = 'm1an';
 
   /**
-   * Module version. Is always set to 3. 
+   * Module version. Is always set to 3.
    */
   version: number = 3;
 
@@ -83,28 +96,28 @@ export class ForgeModule {
    * ResRef of movie in 'movies' folder to play when starting module
    */
   startMovie: string = '';
-  
-  /** 
+
+  /**
    * @deprecated Deprecated: since NWN
    */
   expansionList: any[] = [];
 
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
   globalVariableList: any[] = [];
 
-  /** 
+  /**
    * @deprecated Obsolete: since NWN
    */
   hak: string = '';
 
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
   cutSceneList: any[] = [];
 
-  /** 
+  /**
    * always set to 2
    * @deprecated Deprecated: since NWN
    */
@@ -112,25 +125,25 @@ export class ForgeModule {
 
   isSaveGame: boolean = false;
 
-  constructor(ifo: KotOR.GFFObject = new KotOR.GFFObject()){
+  constructor(ifo: KotOR.GFFObject = new KotOR.GFFObject()) {
     this.setFromIFO(ifo);
   }
 
-  setContext(context: UI3DRenderer){
+  setContext(context: UI3DRenderer) {
     this.context = context;
     this.context.setModule(this);
     this.area.setContext(context);
   }
 
-  setFromIFO(ifo: KotOR.GFFObject){
+  setFromIFO(ifo: KotOR.GFFObject) {
     this.ifo = ifo;
   }
 
-  async load(){
+  async load() {
     await this.area.load();
   }
 
-  exportToIFO(){
+  exportToIFO() {
     const ifo = new KotOR.GFFObject();
     ifo.FileType = 'IFO ';
 
@@ -153,7 +166,9 @@ export class ForgeModule {
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_DawnHour', this.dawnHour));
 
     // Mod_Description
-    const modDescriptionField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Mod_Description'))!;
+    const modDescriptionField = ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Mod_Description')
+    )!;
     modDescriptionField.setCExoLocString(this.description);
 
     // Mod_DuskHour
@@ -188,7 +203,9 @@ export class ForgeModule {
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_IsSaveGame', this.isSaveGame ? 1 : 0));
 
     // Mod_MinPerHour
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_MinPerHour', this.timeManager.minutesPerHour));
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_MinPerHour', this.timeManager.minutesPerHour)
+    );
 
     // Mod_Name
     const modNameField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Mod_Name'))!;
@@ -198,20 +215,48 @@ export class ForgeModule {
     modNameField.setCExoLocString(this.name);
 
     // Event Handler Scripts (all RESREF)
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnAcquirItem', this.scriptResRefs.get('Mod_OnAcquirItem') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnActvtItem', this.scriptResRefs.get('Mod_OnActvtItem') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnClientEntr', this.scriptResRefs.get('Mod_OnClientEntr') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnClientLeav', this.scriptResRefs.get('Mod_OnClientLeav') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnHeartbeat', this.scriptResRefs.get('Mod_OnHeartbeat') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnModLoad', this.scriptResRefs.get('Mod_OnModLoad') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnModStart', this.scriptResRefs.get('Mod_OnModStart') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnPlrDeath', this.scriptResRefs.get('Mod_OnPlrDeath') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnPlrDying', this.scriptResRefs.get('Mod_OnPlrDying') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnPlrLvlUp', this.scriptResRefs.get('Mod_OnPlrLvlUp') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnPlrRest', this.scriptResRefs.get('Mod_OnPlrRest') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnSpawnBtnDn', this.scriptResRefs.get('Mod_OnSpawnBtnDn') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnUnAqreItem', this.scriptResRefs.get('Mod_OnUnAqreItem') || ''));
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnUsrDefined', this.scriptResRefs.get('Mod_OnUsrDefined') || ''));
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnAcquirItem', this.scriptResRefs.get('Mod_OnAcquirItem') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnActvtItem', this.scriptResRefs.get('Mod_OnActvtItem') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnClientEntr', this.scriptResRefs.get('Mod_OnClientEntr') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnClientLeav', this.scriptResRefs.get('Mod_OnClientLeav') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnHeartbeat', this.scriptResRefs.get('Mod_OnHeartbeat') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnModLoad', this.scriptResRefs.get('Mod_OnModLoad') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnModStart', this.scriptResRefs.get('Mod_OnModStart') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnPlrDeath', this.scriptResRefs.get('Mod_OnPlrDeath') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnPlrDying', this.scriptResRefs.get('Mod_OnPlrDying') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnPlrLvlUp', this.scriptResRefs.get('Mod_OnPlrLvlUp') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnPlrRest', this.scriptResRefs.get('Mod_OnPlrRest') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnSpawnBtnDn', this.scriptResRefs.get('Mod_OnSpawnBtnDn') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnUnAqreItem', this.scriptResRefs.get('Mod_OnUnAqreItem') || '')
+    );
+    ifo.RootNode.addField(
+      new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnUsrDefined', this.scriptResRefs.get('Mod_OnUsrDefined') || '')
+    );
 
     // Start Date/Time
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_StartDay', this.timeManager.day));
@@ -234,5 +279,4 @@ export class ForgeModule {
 
     return ifo;
   }
-
 }

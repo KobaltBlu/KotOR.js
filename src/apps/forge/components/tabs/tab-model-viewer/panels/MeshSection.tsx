@@ -1,6 +1,6 @@
-import React from "react";
-import { SectionContainer } from "@/apps/forge/components/SectionContainer";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { SectionContainer } from '@/apps/forge/components/SectionContainer';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface MeshSectionProps {
   modelNode: KotOR.OdysseyModelNodeMesh;
@@ -12,7 +12,8 @@ function colorHex(c: { r: number; g: number; b: number }): string {
 }
 
 export const MeshSection: React.FC<MeshSectionProps> = ({ modelNode }) => {
-  const vertCount = modelNode.verticesCount ?? modelNode.vertices?.length / 3 ?? 0;
+  const fromVertArray = modelNode.vertices != null ? modelNode.vertices.length / 3 : undefined;
+  const vertCount = modelNode.verticesCount ?? fromVertArray ?? 0;
   const faceCount = modelNode.faces?.length ?? 0;
   const uvChannels = modelNode.textureCount ?? 0;
 

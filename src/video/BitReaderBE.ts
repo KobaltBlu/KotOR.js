@@ -1,8 +1,8 @@
 /**
  * BitReaderBE class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BitReaderBE.ts
  * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
  * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
@@ -26,7 +26,7 @@ export class BitReaderBE {
 
   align32(): void {
     const mis = this.bitPos & 31;
-    if (mis) this.bitPos += (32 - mis);
+    if (mis) this.bitPos += 32 - mis;
   }
 
   skipBits(n: number): void {
@@ -75,11 +75,13 @@ export class BitReaderBE {
   }
 
   // Return absolute bit position (for debugging)
-  getBitPos(): number { return this.bitPos; }
+  getBitPos(): number {
+    return this.bitPos;
+  }
 
   // Debug helper: dump next n bits (LSB-first) as hex string without advancing
   dumpNextBits(n: number): string {
-    const k = Math.min(Math.max(n|0, 0), 32);
+    const k = Math.min(Math.max(n | 0, 0), 32);
     const v = this.peekBits(k);
     const bytes = Math.ceil(k / 8);
     return '0x' + v.toString(16).padStart(bytes * 2, '0');

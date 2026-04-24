@@ -1,16 +1,16 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import * as KotOR from '@/apps/forge/KotOR';
 import * as THREE from 'three';
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabUTSEditor } from "@/apps/forge/components/tabs/tab-uts-editor/TabUTSEditor";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { TabUTSEditor } from '@/apps/forge/components/tabs/tab-uts-editor/TabUTSEditor';
+import { ForgeSound } from '@/apps/forge/module-editor/ForgeSound';
 
 export class TabUTSEditorState extends TabState {
   tabName: string = `UTS`;
   sound: ForgeSound = new ForgeSound();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.sound.blueprint;
   }
@@ -21,7 +21,7 @@ export class TabUTSEditorState extends TabState {
 
   audioEmitter: KotOR.AudioEmitter;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
     this.setContentView(<TabUTSEditor tab={this}></TabUTSEditor>);
@@ -30,9 +30,9 @@ export class TabUTSEditorState extends TabState {
       {
         description: 'Odyssey Sound Blueprint',
         accept: {
-          'application/octet-stream': ['.uts']
-        }
-      }
+          'application/octet-stream': ['.uts'],
+        },
+      },
     ];
 
     this.addEventListener('onTabRemoved', (tab: TabState) => {
@@ -40,18 +40,18 @@ export class TabUTSEditorState extends TabState {
     });
   }
 
-  public openFile(file?: EditorFile){
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
-      if(!file && this.file instanceof EditorFile){
+  public openFile(file?: EditorFile) {
+    return new Promise<KotOR.GFFObject>((resolve, reject) => {
+      if (!file && this.file instanceof EditorFile) {
         file = this.file;
       }
-  
-      if(file instanceof EditorFile){
-        if(this.file != file) this.file = file;
+
+      if (file instanceof EditorFile) {
+        if (this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-  
-        file.readFile().then( (response) => {
+
+        file.readFile().then((response) => {
           this.sound = new ForgeSound(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
@@ -60,9 +60,9 @@ export class TabUTSEditorState extends TabState {
     });
   }
 
-  async initializeAudioEmitter(){
-    const type = !!this.sound.positional ? KotOR.AudioEmitterType.POSITIONAL : KotOR.AudioEmitterType.GLOBAL;
-    if(this.audioEmitter){
+  async initializeAudioEmitter() {
+    const type = this.sound.positional ? KotOR.AudioEmitterType.POSITIONAL : KotOR.AudioEmitterType.GLOBAL;
+    if (this.audioEmitter) {
       this.audioEmitter.destroy();
     }
     this.audioEmitter = new KotOR.AudioEmitter(KotOR.AudioEngine.GetAudioEngine(), KotOR.AudioEngineChannel.SFX);
@@ -91,27 +91,27 @@ export class TabUTSEditorState extends TabState {
     await this.audioEmitter.load();
   }
 
-  removeSound(index: number){
+  removeSound(index: number) {
     this.sound.soundResRefs.splice(index, 1);
     this.processEventListener('onSoundChange', [this]);
   }
 
-  addSound(sound: string){
+  addSound(sound: string) {
     this.sound.soundResRefs.push(sound);
     this.processEventListener('onSoundChange', [this]);
   }
 
-  moveSoundUp(index: number){
-    if(index > 0){
+  moveSoundUp(index: number) {
+    if (index > 0) {
       const sound = this.sound.soundResRefs[index];
       this.sound.soundResRefs.splice(index, 1);
       this.sound.soundResRefs.splice(index - 1, 0, sound);
       this.processEventListener('onSoundChange', [this]);
     }
   }
-  
-  moveSoundDown(index: number){
-    if(index < this.sound.soundResRefs.length - 1){
+
+  moveSoundDown(index: number) {
+    if (index < this.sound.soundResRefs.length - 1) {
       const sound = this.sound.soundResRefs[index];
       this.sound.soundResRefs.splice(index, 1);
       this.sound.soundResRefs.splice(index + 1, 0, sound);
@@ -119,7 +119,7 @@ export class TabUTSEditorState extends TabState {
     }
   }
 
-  calculatePriority(){
+  calculatePriority() {
     this.sound.calculatePriority();
   }
 
@@ -131,34 +131,33 @@ export class TabUTSEditorState extends TabState {
     super.hide();
   }
 
-  animate(delta: number = 0){
+  animate(delta: number = 0) {
     //todo
   }
 
-  startEmitter(){
-    if(this.audioEmitter){
+  startEmitter() {
+    if (this.audioEmitter) {
       this.audioEmitter.stop();
     }
     this.initializeAudioEmitter();
   }
 
-  stopEmitter(){
-    if(this.audioEmitter){
+  stopEmitter() {
+    if (this.audioEmitter) {
       this.audioEmitter.stop();
     }
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(!!resref && ext == 'uts'){
+    if (!!resref && ext == 'uts') {
       this.sound.templateResRef = resref;
       this.updateFile();
       return this.sound.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
   }
-  
-  updateFile(){
+
+  updateFile() {
     this.sound.exportToBlueprint();
   }
-
 }

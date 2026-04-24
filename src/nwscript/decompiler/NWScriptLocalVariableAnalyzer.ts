@@ -1,8 +1,8 @@
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import type { NWScript } from "@/nwscript/NWScript";
-import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_MOVSP, OP_NEG, OP_ACTION } from "@/nwscript/NWScriptOPCodes";
+import type { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
+import type { NWScript } from '@/nwscript/NWScript';
+import type { NWScriptGlobalInit } from '@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer';
+import { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
+import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_MOVSP, OP_NEG, OP_ACTION } from '@/nwscript/NWScriptOPCodes';
 
 /**
  * Represents a detected local variable initialization
@@ -19,9 +19,9 @@ export interface NWScriptLocalInit {
  * Analyzes local variable initializations from the instruction stream.
  * Detects the pattern: RSADD -> CONST -> CPDOWNSP -> MOVSP (for initialized)
  * or RSADD -> MOVSP (for uninitialized)
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptLocalVariableAnalyzer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -52,8 +52,7 @@ export class NWScriptLocalVariableAnalyzer {
     }
 
     // Get instructions sorted by address
-    const sortedInstructions = Array.from(this.script.instructions.values())
-      .sort((a, b) => a.address - b.address);
+    const sortedInstructions = Array.from(this.script.instructions.values()).sort((a, b) => a.address - b.address);
 
     // Track all RSADD instructions to find uninitialized ones later
     const allRSADD: NWScriptInstruction[] = [];
@@ -61,14 +60,14 @@ export class NWScriptLocalVariableAnalyzer {
     // First pass: Look for initialization patterns (RSADD -> CONST -> CPDOWNSP -> MOVSP)
     for (const rsadd of sortedInstructions) {
       if (rsadd.code !== OP_RSADD) continue;
-      
+
       // Skip if this is a global variable initialization
       if (this.globalInitAddresses.has(rsadd.address)) {
         continue;
       }
-      
+
       allRSADD.push(rsadd);
-      
+
       if (this.processedAddresses.has(rsadd.address)) continue;
 
       // Follow the instruction chain to find the pattern
@@ -97,7 +96,7 @@ export class NWScriptLocalVariableAnalyzer {
       }
       if (!current || current.code !== OP_CPDOWNSP) continue;
       const cpdownsp = current;
-      
+
       // Check if there's an ACTION call between CONST and CPDOWNSP
       // If so, this CONST is a parameter to the function, not the initializer value
       // We should still detect the variable but not set an initializer
@@ -115,7 +114,7 @@ export class NWScriptLocalVariableAnalyzer {
       // For local variables, CPDOWNSP writes to a negative offset from current SP
       // The offset is typically -8 (writing to the space reserved by RSADD)
       const cpdownspOffset = cpdownsp.offset;
-      const cpdownspOffsetSigned = cpdownspOffset > 0x7FFFFFFF ? cpdownspOffset - 0x100000000 : cpdownspOffset;
+      const cpdownspOffsetSigned = cpdownspOffset > 0x7fffffff ? cpdownspOffset - 0x100000000 : cpdownspOffset;
       if (cpdownspOffsetSigned !== -8 || cpdownsp.size !== 4) continue;
 
       // Find MOVSP
@@ -129,7 +128,7 @@ export class NWScriptLocalVariableAnalyzer {
       // Check MOVSP offset
       // MOVSP FFFFFFFC means offset -4 (cleaning up the stack)
       const movspOffset = movsp.offset;
-      const movspOffsetSigned = movspOffset > 0x7FFFFFFF ? movspOffset - 0x100000000 : movspOffset;
+      const movspOffsetSigned = movspOffset > 0x7fffffff ? movspOffset - 0x100000000 : movspOffset;
       if (movspOffsetSigned !== -4) continue;
 
       // Extract initialization
@@ -141,14 +140,14 @@ export class NWScriptLocalVariableAnalyzer {
         // may differ due to stack pointer movement between variable declarations
         const cpdownspOffset = cpdownsp.offset;
         init.offset = cpdownspOffset; // Override with actual CPDOWNSP offset
-        
+
         // If there's an ACTION call, this is a function call assignment, not a constant initialization
         // Clear the initializer but mark as having an initializer (the expression will be built elsewhere)
         if (hasAction) {
           init.initialValue = undefined;
           init.hasInitializer = true; // Has initializer (function call), but value is undefined
         }
-        
+
         this.localInits.push(init);
         // Mark all instructions as processed
         this.processedAddresses.add(rsadd.address);
@@ -169,14 +168,14 @@ export class NWScriptLocalVariableAnalyzer {
       let hasWrite = false;
       let cpdownspInstr: NWScriptInstruction | null = null;
       let current = rsadd.nextInstr;
-      
+
       // Look ahead for CPDOWNSP with offset -8 (writing to reserved space)
       // Limit search to reasonable distance (e.g., 100 instructions)
       let searchLimit = 0;
       while (current && searchLimit < 100) {
         if (current.code === OP_CPDOWNSP) {
           const offset = current.offset;
-          const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
+          const offsetSigned = offset > 0x7fffffff ? offset - 0x100000000 : offset;
           // Check if it writes to offset -8 (the space reserved by RSADD)
           if (offsetSigned === -8 && current.size === 4) {
             hasWrite = true;
@@ -193,9 +192,9 @@ export class NWScriptLocalVariableAnalyzer {
       if (hasWrite && cpdownspInstr) {
         // Work backwards from CPDOWNSP to find what expression was on the stack
         // Look for ACTION (function call) or other expressions before CPDOWNSP
-        let exprStart = rsadd.nextInstr;
-        let exprEnd = cpdownspInstr.prevInstr;
-        
+        const exprStart = rsadd.nextInstr;
+        const exprEnd = cpdownspInstr.prevInstr;
+
         // Check if there's an ACTION call before CPDOWNSP
         let actionInstr: NWScriptInstruction | null = null;
         current = exprEnd;
@@ -206,7 +205,7 @@ export class NWScriptLocalVariableAnalyzer {
           }
           current = current.prevInstr;
         }
-        
+
         // If we found an ACTION call, this is a function call assignment
         // We can't extract the full expression here (that's done by StatementBuilder),
         // but we can mark it as initialized
@@ -214,11 +213,20 @@ export class NWScriptLocalVariableAnalyzer {
           // Determine data type from RSADD type
           let dataType: NWScriptDataType;
           switch (rsadd.type) {
-            case 3: dataType = NWScriptDataType.INTEGER; break;
-            case 4: dataType = NWScriptDataType.FLOAT; break;
-            case 5: dataType = NWScriptDataType.STRING; break;
-            case 6: dataType = NWScriptDataType.OBJECT; break;
-            default: continue; // Skip unknown types
+            case 3:
+              dataType = NWScriptDataType.INTEGER;
+              break;
+            case 4:
+              dataType = NWScriptDataType.FLOAT;
+              break;
+            case 5:
+              dataType = NWScriptDataType.STRING;
+              break;
+            case 6:
+              dataType = NWScriptDataType.OBJECT;
+              break;
+            default:
+              continue; // Skip unknown types
           }
 
           // Find MOVSP after CPDOWNSP
@@ -227,7 +235,7 @@ export class NWScriptLocalVariableAnalyzer {
           while (current && current.address < cpdownspInstr.address + 20) {
             if (current.code === OP_MOVSP) {
               const movspOffset = current.offset;
-              const movspOffsetSigned = movspOffset > 0x7FFFFFFF ? movspOffset - 0x100000000 : movspOffset;
+              const movspOffsetSigned = movspOffset > 0x7fffffff ? movspOffset - 0x100000000 : movspOffset;
               if (movspOffsetSigned === -4) {
                 movspInstr = current;
                 break;
@@ -243,14 +251,14 @@ export class NWScriptLocalVariableAnalyzer {
             // Use the actual CPDOWNSP offset (typically -8) as the variable offset
             // This is what CPTOPSP will use to read the variable
             const cpdownspOffset = cpdownspInstr.offset;
-            const cpdownspOffsetSigned = cpdownspOffset > 0x7FFFFFFF ? cpdownspOffset - 0x100000000 : cpdownspOffset;
-            
+            const cpdownspOffsetSigned = cpdownspOffset > 0x7fffffff ? cpdownspOffset - 0x100000000 : cpdownspOffset;
+
             this.localInits.push({
               offset: cpdownspOffset, // Use the actual CPTOPSP offset (unsigned for map key)
               dataType: dataType,
               initialValue: undefined, // Expression will be extracted elsewhere
               hasInitializer: true, // Has initializer (function call result)
-              instructionAddress: rsadd.address
+              instructionAddress: rsadd.address,
             });
 
             // Mark instructions as processed
@@ -258,7 +266,7 @@ export class NWScriptLocalVariableAnalyzer {
             this.processedAddresses.add(actionInstr.address);
             this.processedAddresses.add(cpdownspInstr.address);
             this.processedAddresses.add(movspInstr.address);
-            
+
             // Mark all instructions between RSADD and MOVSP as part of this initialization
             current = rsadd.nextInstr;
             while (current && current.address < movspInstr.address) {
@@ -274,11 +282,20 @@ export class NWScriptLocalVariableAnalyzer {
         // Determine data type from RSADD type
         let dataType: NWScriptDataType;
         switch (rsadd.type) {
-          case 3: dataType = NWScriptDataType.INTEGER; break;
-          case 4: dataType = NWScriptDataType.FLOAT; break;
-          case 5: dataType = NWScriptDataType.STRING; break;
-          case 6: dataType = NWScriptDataType.OBJECT; break;
-          default: continue; // Skip unknown types
+          case 3:
+            dataType = NWScriptDataType.INTEGER;
+            break;
+          case 4:
+            dataType = NWScriptDataType.FLOAT;
+            break;
+          case 5:
+            dataType = NWScriptDataType.STRING;
+            break;
+          case 6:
+            dataType = NWScriptDataType.OBJECT;
+            break;
+          default:
+            continue; // Skip unknown types
         }
 
         // For uninitialized variables, we cannot determine the offset statically
@@ -291,7 +308,7 @@ export class NWScriptLocalVariableAnalyzer {
           dataType: dataType,
           initialValue: undefined,
           hasInitializer: false,
-          instructionAddress: rsadd.address
+          instructionAddress: rsadd.address,
         });
 
         // Mark RSADD as processed
@@ -314,17 +331,26 @@ export class NWScriptLocalVariableAnalyzer {
     // Determine data type from RSADD type
     let dataType: NWScriptDataType;
     switch (rsadd.type) {
-      case 3: dataType = NWScriptDataType.INTEGER; break;
-      case 4: dataType = NWScriptDataType.FLOAT; break;
-      case 5: dataType = NWScriptDataType.STRING; break;
-      case 6: dataType = NWScriptDataType.OBJECT; break;
-      default: return null;
+      case 3:
+        dataType = NWScriptDataType.INTEGER;
+        break;
+      case 4:
+        dataType = NWScriptDataType.FLOAT;
+        break;
+      case 5:
+        dataType = NWScriptDataType.STRING;
+        break;
+      case 6:
+        dataType = NWScriptDataType.OBJECT;
+        break;
+      default:
+        return null;
     }
 
     // Extract value from CONST instruction
     let initialValue: any;
     let hasInitializer = true;
-    
+
     switch (constInstr.type) {
       case 3: // INTEGER
         initialValue = constInstr.integer;
@@ -360,7 +386,10 @@ export class NWScriptLocalVariableAnalyzer {
     }
 
     // For objects, if the value is 0, 1, or undefined after processing, treat as no initializer
-    if (dataType === NWScriptDataType.OBJECT && (initialValue === 0 || initialValue === 1 || initialValue === undefined)) {
+    if (
+      dataType === NWScriptDataType.OBJECT &&
+      (initialValue === 0 || initialValue === 1 || initialValue === undefined)
+    ) {
       hasInitializer = false;
       initialValue = undefined;
     }
@@ -373,7 +402,7 @@ export class NWScriptLocalVariableAnalyzer {
       dataType: dataType,
       initialValue: initialValue,
       hasInitializer: hasInitializer,
-      instructionAddress: rsadd.address
+      instructionAddress: rsadd.address,
     };
   }
 
@@ -395,7 +424,6 @@ export class NWScriptLocalVariableAnalyzer {
    * Get the initialization for a specific offset
    */
   getInitForOffset(offset: number): NWScriptLocalInit | null {
-    return this.localInits.find(init => init.offset === offset) || null;
+    return this.localInits.find((init) => init.offset === offset) || null;
   }
 }
-

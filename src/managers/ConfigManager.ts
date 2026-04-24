@@ -1,36 +1,39 @@
 import * as fs from 'fs';
-import { DeepObject } from "@/utility/DeepObject";
+import { DeepObject } from '@/utility/DeepObject';
 
 /**
  * ConfigManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ConfigManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class ConfigManager{
+export class ConfigManager {
   listeners: any = {};
   options: any;
 
-  constructor(json_path: string){
-
+  constructor(json_path: string) {
     let _settings: any = {};
     this.listeners = {};
 
-    try{
+    try {
       //console.log('ConfigManager', json_path);
-      try{
+      try {
         _settings = JSON.parse(fs.readFileSync(json_path, 'utf-8'));
-      }catch(e){ console.error('ConfigManager', e); }
+      } catch (e) {
+        console.error('ConfigManager', e);
+      }
       //console.log('ConfigManager', json_path, _settings);
-    }catch(e){ console.error('ConfigManager', e); }
+    } catch (e) {
+      console.error('ConfigManager', e);
+    }
 
     this.options = DeepObject.Merge(defaults, _settings);
     this.cache();
 
-    if(typeof _settings == 'object'){
+    if (typeof _settings == 'object') {
       // this.Save(null, true);
     }
 
@@ -54,20 +57,22 @@ export class ConfigManager{
 
     //Attempt to create the projects directory if it doesn't exist
     if (!fs.existsSync(this.get('Projects_Directory'))) {
-      try{
+      try {
         fs.mkdirSync(this.get('Projects_Directory'));
-      }catch(e){
-        console.warn('ConfigManager', 'Failed to create the projects directory: "'+this.get('Projects_Directory')+'"', e);
+      } catch (e) {
+        console.warn(
+          'ConfigManager',
+          'Failed to create the projects directory: "' + this.get('Projects_Directory') + '"',
+          e
+        );
       }
     }
-
   }
-  
+
   _cache: any = {};
 
   //https://gomakethings.com/getting-the-differences-between-two-objects-with-vanilla-js/
-  diff(obj1: any, obj2:any, key: string = '', diffs: any[] = []){
-
+  diff(obj1: any, obj2: any, key: string = '', diffs: any[] = []) {
     // Make sure an object to compare is provided
     if (!obj2 || Object.prototype.toString.call(obj2) !== '[object Object]') {
       return obj1;
@@ -78,24 +83,22 @@ export class ConfigManager{
     // Compare our objects
     for (_key in obj1) {
       if (obj1.hasOwnProperty(_key)) {
-        this._compare(obj1[_key], obj2[_key], key ? key+'.'+_key : _key, diffs);
+        this._compare(obj1[_key], obj2[_key], key ? key + '.' + _key : _key, diffs);
       }
     }
 
     return diffs;
-
   }
 
-  cache(){
+  cache() {
     this._cache = JSON.parse(JSON.stringify(this.options));
   }
 
   //https://gomakethings.com/getting-the-differences-between-two-objects-with-vanilla-js/
-  _compare(item1: any, item2: any, key: any, diffs: any[]){
-
+  _compare(item1: any, item2: any, key: any, diffs: any[]) {
     // Get the object type
-    let type1 = Object.prototype.toString.call(item1);
-    let type2 = Object.prototype.toString.call(item2);
+    const type1 = Object.prototype.toString.call(item1);
+    const type2 = Object.prototype.toString.call(item2);
 
     // If type2 is undefined it has been removed
     if (type2 === '[object Undefined]') {
@@ -107,14 +110,14 @@ export class ConfigManager{
       this.diff(item1, item2, key, diffs);
       return;
     }
-    
+
     // If an array, compare
     if (type1 === '[object Array]') {
       if (!this._arraysMatch(item1, item2)) {
         diffs.push({
           key: key,
           value: item1,
-          old: item2
+          old: item2,
         });
       }
       return;
@@ -125,47 +128,42 @@ export class ConfigManager{
       diffs.push({
         key: key,
         value: item1,
-        old: item2
+        old: item2,
       });
       return;
     }
-
   }
 
   //https://gomakethings.com/getting-the-differences-between-two-objects-with-vanilla-js/
-  _arraysMatch(arr1: any[], arr2: any[]){
-
+  _arraysMatch(arr1: any[], arr2: any[]) {
     // Check if the arrays are the same length
     if (arr1.length !== arr2.length) return false;
-  
+
     // Check if all items exist and are in the same order
-    for (var i = 0; i < arr1.length; i++) {
+    for (let i = 0; i < arr1.length; i++) {
       if (arr1[i] !== arr2[i]) return false;
     }
-  
+
     // Otherwise, return true
     return true;
-  
   }
 
-  get(path: string = '', defaultValue?:any){
-    if(Array.isArray(path))
-      path = path.join('.');
+  get(path: string = '', defaultValue?: any) {
+    if (Array.isArray(path)) path = path.join('.');
 
-    let parts = path.split('.');
+    const parts = path.split('.');
     let property = this.options;
-    for(let i = 0, len = parts.length; i < len; i++){
-      if(typeof property[parts[i]] != 'undefined'){
+    for (let i = 0, len = parts.length; i < len; i++) {
+      if (typeof property[parts[i]] != 'undefined') {
         property = property[parts[i]];
-      }else{
+      } else {
         property = undefined;
         break;
       }
     }
 
-    if(property != this.options){
-      if(property == null || property == 'null')
-        return defaultValue;
+    if (property != this.options) {
+      if (property == null || property == 'null') return defaultValue;
 
       return property;
     }
@@ -174,51 +172,57 @@ export class ConfigManager{
   }
 
   set(path = '', value = ''): any {
-    if(Array.isArray(path))
-      path = path.join('.');
+    if (Array.isArray(path)) path = path.join('.');
 
-    if(typeof value == 'string' || typeof value == 'number' || typeof value == 'boolean' || typeof value == 'object' || Array.isArray(value)){
-      let parts = path.split('.');
+    if (
+      typeof value == 'string' ||
+      typeof value == 'number' ||
+      typeof value == 'boolean' ||
+      typeof value == 'object' ||
+      Array.isArray(value)
+    ) {
+      const parts = path.split('.');
       let scope = this.options;
-      let i = 0, len = Math.max(parts.length-1, 0);
-      for(i = 0; i < len; i++){
-        if(scope[parts[i]]){
+      let i = 0,
+        len = Math.max(parts.length - 1, 0);
+      for (i = 0; i < len; i++) {
+        if (scope[parts[i]]) {
           scope = scope[parts[i]];
         }
-        
-        if(typeof scope == 'undefined'){
+
+        if (typeof scope == 'undefined') {
           console.warn('ConfigManager.set', 'Invalid property', path);
           return undefined;
         }
       }
 
-      if(scope[parts[i]] == this.options){
+      if (scope[parts[i]] == this.options) {
         return undefined;
       }
 
-      if(typeof scope[parts[len]] == 'undefined'){
+      if (typeof scope[parts[len]] == 'undefined') {
         scope[parts[len]] = {};
       }
 
-      if(typeof scope[parts[len]] != 'undefined'){
-        let _old = JSON.parse(JSON.stringify(scope[parts[len]]));
+      if (typeof scope[parts[len]] != 'undefined') {
+        const _old = JSON.parse(JSON.stringify(scope[parts[len]]));
         scope[parts[len]] = value;
-        if(_old != value){
+        if (_old != value) {
           this.triggerEvent(path, value, _old);
           this.save(null, true);
         }
       }
-    }else{
+    } else {
       console.warn('ConfigManager.set', 'Invalid value type', typeof value, value);
     }
   }
 
-  triggerEvent(path: string, value: any, old: any){
-    let listener = this.listeners[path];
-    if(Array.isArray(listener)){
-      for(let i = 0, len = listener.length; i < len; i++){
-        let callback = listener[i];
-        if(typeof callback == 'function'){
+  triggerEvent(path: string, value: any, old: any) {
+    const listener = this.listeners[path];
+    if (Array.isArray(listener)) {
+      for (let i = 0, len = listener.length; i < len; i++) {
+        const callback = listener[i];
+        if (typeof callback == 'function') {
           callback(path, value, old);
         }
       }
@@ -228,17 +232,18 @@ export class ConfigManager{
 
   //Add an EventListener for a property path
   //EventListeners can have multiple callbacks per property
-  on(path: string = '', callback?: Function){
-    if(path){
+  on(path: string = '', callback?: Function) {
+    if (path) {
       let listenerObject = this.listeners[path];
-      if(typeof listenerObject == 'object'){
-        let index = listenerObject.indexOf(callback);
-        if(index == -1){ //Don't let the same callback be applied twice
-          listenerObject.push( callback );
+      if (typeof listenerObject == 'object') {
+        const index = listenerObject.indexOf(callback);
+        if (index == -1) {
+          //Don't let the same callback be applied twice
+          listenerObject.push(callback);
         }
-      }else{
+      } else {
         listenerObject = [];
-        listenerObject.push( callback );
+        listenerObject.push(callback);
         this.listeners[path] = listenerObject;
       }
     }
@@ -246,19 +251,19 @@ export class ConfigManager{
 
   //Remove an EventListener for a property path
   //EventListeners can have multiple callbacks per property
-  off(path = '', callback?: Function){
-    if(path){
-      let listenerObject = this.listeners[path];
-      if(typeof listenerObject == 'object'){
-        let index = listenerObject.indexOf(callback);
-        if(index >= 0){
+  off(path = '', callback?: Function) {
+    if (path) {
+      const listenerObject = this.listeners[path];
+      if (typeof listenerObject == 'object') {
+        const index = listenerObject.indexOf(callback);
+        if (index >= 0) {
           listenerObject.splice(index, 1);
         }
       }
     }
   }
 
-  getRecentFiles(): any[]{
+  getRecentFiles(): any[] {
     // switch(GameKey){
     //   case 'KOTOR':
     //     return this.options.Games.KOTOR.recent_files;
@@ -268,7 +273,7 @@ export class ConfigManager{
     return [];
   }
 
-  getRecentProjects(): any[]{
+  getRecentProjects(): any[] {
     // switch(GameKey){
     //   case 'KOTOR':
     //     return this.options.Games.KOTOR.recent_projects;
@@ -278,34 +283,29 @@ export class ConfigManager{
     return [];
   }
 
-  save(onSave?: Function, silent?: boolean){
+  save(onSave?: Function, silent?: boolean) {
     //NotificationManager.Notify(NotificationManager.Types.INFO, 'Saving Configuration');
     //Write out the settings to the settings.json file in the home directory
     //console.log('ConfigManager.save');
 
-    try{
-      fs.writeFile('settings.json',
-        JSON.stringify(this.options, null, "\t"),
-        (err) => {
-          if(err){
-            console.error('ConfigManager.Save', err);
-            return;
-          }
-
-          if(typeof onSave === 'function'){
-            onSave();
-          }
+    try {
+      fs.writeFile('settings.json', JSON.stringify(this.options, null, '\t'), (err) => {
+        if (err) {
+          console.error('ConfigManager.Save', err);
+          return;
         }
-      );
-    }catch(e){
+
+        if (typeof onSave === 'function') {
+          onSave();
+        }
+      });
+    } catch (e) {
       console.error('ConfigManager.save', e);
     }
 
     //console.log('ConfigManager.save', 'Updating other processes.');
     // ipcRenderer.send('config-changed', JSON.parse(JSON.stringify(this.options)));
-
   }
-
 }
 
 const defaults: any = {
@@ -314,22 +314,20 @@ const defaults: any = {
     KOTOR: {
       Location: null,
       recent_files: [],
-      recent_projects: []
+      recent_projects: [],
     },
     TSL: {
       Location: null,
       recent_files: [],
-      recent_projects: []
-    }
+      recent_projects: [],
+    },
   },
   Launcher: {
     selected_profile: null,
     width: 1200,
-    height: 600
+    height: 600,
   },
-  Profiles: {
-
-  },
+  Profiles: {},
   Game: {
     show_application_menu: false,
     debug: {
@@ -346,39 +344,39 @@ const defaults: any = {
       waypoint_geometry_show: false,
       is_shipping_build: true,
       disable_intro_movies: false,
-    }
+    },
   },
   Theme: {
     NSS: {
       keywords: {
-        color: "#ffb800",
-        fontSize: "inherit"
+        color: '#ffb800',
+        fontSize: 'inherit',
       },
       methods: {
-        color: "#1d7fd9",
-        fontSize: "inherit"
+        color: '#1d7fd9',
+        fontSize: 'inherit',
       },
       constants: {
-        color: "#9648ba",
-        fontSize: "inherit"
-      }
+        color: '#9648ba',
+        fontSize: 'inherit',
+      },
     },
     GFF: {
       struct: {
         label: {
-          color: "#FFF",
-          fontSize: "inherit"
+          color: '#FFF',
+          fontSize: 'inherit',
         },
-        "color": "#8476a2"
+        color: '#8476a2',
       },
       field: {
         label: {
-          color: "#FFF",
-          fontSize: "inherit"
+          color: '#FFF',
+          fontSize: 'inherit',
         },
-        "color": "#337a9c"
-      }
-    }
+        color: '#337a9c',
+      },
+    },
   },
   look_in_override: false,
   Editor: {
@@ -386,39 +384,39 @@ const defaults: any = {
     Module: {
       Helpers: {
         creature: {
-          visible: false
+          visible: false,
         },
         door: {
-          visible: false
+          visible: false,
         },
         encounter: {
-          visible: false
+          visible: false,
         },
         placeable: {
-          visible: false
+          visible: false,
         },
         merchant: {
-          visible: false
+          visible: false,
         },
         sound: {
-          visible: false
+          visible: false,
         },
         trigger: {
-          visible: false
+          visible: false,
         },
         waypoint: {
-          visible: false
+          visible: false,
         },
-      }
-    }
+      },
+    },
   },
   Panes: {
-    left: {open: true},
-    right: {open: true},
-    top: {open: false},
-    bottom: {open: false}
+    left: { open: true },
+    right: { open: true },
+    top: { open: false },
+    bottom: { open: false },
   },
-  Projects_Directory: null,//path.join(app.getAppPath(), 'projects'),
+  Projects_Directory: null, //path.join(app.getAppPath(), 'projects'),
   recent_projects: [],
-  recent_files: []
+  recent_files: [],
 };

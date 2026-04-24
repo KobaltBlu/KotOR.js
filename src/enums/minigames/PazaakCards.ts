@@ -1,8 +1,8 @@
 /**
  * Pazaak Cards enum.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file PazaakCards.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -38,7 +38,5 @@ export enum PazaakCards {
   MAIN_CARD_7 = 107,
   MAIN_CARD_8 = 108,
   MAIN_CARD_9 = 109,
-  MAIN_CARD_10 = 110
-};
-  
-  
+  MAIN_CARD_10 = 110,
+}

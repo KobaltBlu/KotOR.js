@@ -1,76 +1,76 @@
-import React from "react";
-import { KotORModal } from "@/apps/game/components/modal/modal";
-import { useApp } from "@/apps/game/context/AppContext";
-import { ApplicationEnvironment } from "@/apps/game/KotOR";
-import GrantAccessInfo from "@/apps/common/components/grantAccess/GrantAccessInfo";
+import React from 'react';
+import { KotORModal } from '@/apps/game/components/modal/modal';
+import { useApp } from '@/apps/game/context/AppContext';
+import { ApplicationEnvironment } from '@/apps/game/KotOR';
+import GrantAccessInfo from '@/apps/common/components/grantAccess/GrantAccessInfo';
 
 export const ModalGrantAccess = () => {
   const appContext = useApp();
   const [appState] = appContext.appState;
 
   const onCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
-    console.log("File System: access denied");
-    alert("You must grant access to your local game directory to continue.");
+    console.log('File System: access denied');
+    alert('You must grant access to your local game directory to continue.');
     window.close();
-  }
-  
+  };
+
   const showBrowserDirectoryPicker = async () => {
-    let handle = await window.showDirectoryPicker({
-      mode: "readwrite"
+    const handle = await window.showDirectoryPicker({
+      mode: 'readwrite',
     });
-    if(!handle) return;
+    if (!handle) return;
 
     if (!(await appState.validateDirectoryHandle(handle))) {
       return;
     }
 
     return handle;
-  }
+  };
 
   const showElectronDirectoryPicker = async () => {
-    try{
-      const directory = await(window as any).electron.locate_game_directory(appState.appProfile);
-      if(directory){
+    try {
+      const directory = await (window as any).electron.locate_game_directory(appState.appProfile);
+      if (directory) {
         appState.attachDirectoryPath(directory);
         return directory;
       }
-    }catch(e){
+    } catch (e) {
       appState.attachDirectoryPath('');
       console.error(e);
-      alert("Unable to access your local game directory. Please try again.");
+      alert('Unable to access your local game directory. Please try again.');
     }
     return;
-  }
+  };
 
   const onOk = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    console.log("File System: access granted");
+    console.log('File System: access granted');
 
     // Electron
-    if(appState.env == ApplicationEnvironment.ELECTRON){
+    if (appState.env == ApplicationEnvironment.ELECTRON) {
       await showElectronDirectoryPicker();
       return;
     }
 
     // Browser
-    if(appState.env == ApplicationEnvironment.BROWSER){
+    if (appState.env == ApplicationEnvironment.BROWSER) {
       const handle = await showBrowserDirectoryPicker();
-      if(!handle){
-        console.log("File System: access denied");
-        alert("Unable to access your local game directory. Please try again.");
+      if (!handle) {
+        console.log('File System: access denied');
+        alert('Unable to access your local game directory. Please try again.');
         return;
       }
       appState.attachDirectoryHandle(handle);
     }
-  }
+  };
 
   return (
-    <KotORModal 
-      title="Grant Access" 
-      show={true} 
+    <KotORModal
+      title="Grant Access"
+      show={true}
       className="forge-style-modal"
-      onCancel={onCancel} 
-      onOk={onOk} 
-      cancelText="QUIT" 
+      onCancel={onCancel}
+      onOk={onOk}
+      cancelText="QUIT"
       okText="GRANT ACCESS"
     >
       <GrantAccessInfo />

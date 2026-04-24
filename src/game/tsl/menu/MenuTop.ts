@@ -1,21 +1,20 @@
-import { GameState } from "@/GameState";
-import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import { MenuTop as K1_MenuTop } from "@/game/kotor/KOTOR";
+import { GameState } from '@/GameState';
+import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from '@/gui';
+import { TextureLoader } from '@/loaders';
+import type { ModuleCreature } from '@/module/ModuleCreature';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import { MenuTop as K1_MenuTop } from '@/game/kotor/KOTOR';
 
 /**
  * MenuTop class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuTop.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuTop extends K1_MenuTop {
-
   declare LBLH_EQU: GUIControl;
   declare LBLH_INV: GUIControl;
   declare LBLH_CHA: GUIControl;
@@ -56,7 +55,7 @@ export class MenuTop extends K1_MenuTop {
   declare PB_VIT1: GUIProgressBar;
   declare PB_FORCE1: GUIProgressBar;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'top_p';
     this.background = '';
@@ -65,9 +64,8 @@ export class MenuTop extends K1_MenuTop {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       this.LBLH_OPT.widget.position.z = 5;
       this.LBLH_MAP.widget.position.z = 5;
       this.LBLH_JOU.widget.position.z = 5;
@@ -129,15 +127,15 @@ export class MenuTop extends K1_MenuTop {
         this.manager.MenuEquipment.open();
       });
 
-      this.BTN_CHANGE2.addEventListener('click', (e) => {
+      this.BTN_CHANGE2.addEventListener('click', (_e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
       });
 
-      this.BTN_CHANGE3.addEventListener('click', (e) => {
+      this.BTN_CHANGE3.addEventListener('click', (_e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
       });
 
-      GameState.PartyManager.AddEventListener('change', (pm: ModuleCreature) => {
+      GameState.PartyManager.AddEventListener('change', (_pm: ModuleCreature) => {
         this.UpdatePartyUI();
       });
 
@@ -193,14 +191,14 @@ export class MenuTop extends K1_MenuTop {
   UpdatePartyUI() {
     for (let i = 0; i < GameState.PartyManager.MaxSize; i++) {
       const partyMember = GameState.PartyManager.party[i];
-      if(!partyMember){
+      if (!partyMember) {
         this.TogglePartyMember(i, false);
         continue;
       }
       const portTextureRef = partyMember.getPortraitResRef();
-      
+
       this.TogglePartyMember(i, true);
-      let pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
+      const pmBG = this.getControlByName('LBL_CHAR' + (i + 1));
       if (pmBG.getFillTextureName() != portTextureRef) {
         pmBG.setFillTextureName(portTextureRef);
         TextureLoader.Load(portTextureRef).then((texture: OdysseyTexture) => {
@@ -208,8 +206,12 @@ export class MenuTop extends K1_MenuTop {
         });
       }
       if (i == 0) {
-        (this.getControlByName('PB_VIT' + (i + 1)) as GUIProgressBar).setProgress(partyMember.getHP() / partyMember.getMaxHP() * 100);
-        (this.getControlByName('PB_FORCE' + (i + 1)) as GUIProgressBar).setProgress(partyMember.getFP() / partyMember.getMaxFP() * 100);
+        (this.getControlByName('PB_VIT' + (i + 1)) as GUIProgressBar).setProgress(
+          (partyMember.getHP() / partyMember.getMaxHP()) * 100
+        );
+        (this.getControlByName('PB_FORCE' + (i + 1)) as GUIProgressBar).setProgress(
+          (partyMember.getFP() / partyMember.getMaxFP()) * 100
+        );
       }
     }
   }
@@ -238,7 +240,7 @@ export class MenuTop extends K1_MenuTop {
           this.LBL_TOP_CLASS1LEVEL?.show();
           // this.LBL_TOP_CLASS1.extent.top = 98;
           // this.LBL_TOP_CLASS1.recalculate();
-        }else{
+        } else {
           this.LBL_TOP_CLASS1?.hide();
           this.LBL_TOP_CLASS1LEVEL?.hide();
         }
@@ -248,35 +250,45 @@ export class MenuTop extends K1_MenuTop {
           this.LBL_TOP_CLASS2LEVEL?.setText(character.classes[1].level);
           this.LBL_TOP_CLASS2?.show();
           this.LBL_TOP_CLASS2LEVEL?.show();
-        }else{
+        } else {
           this.LBL_TOP_CLASS2?.hide();
           this.LBL_TOP_CLASS2LEVEL?.hide();
         }
 
-      break;
+        break;
       default:
         if (!bVisible) {
           this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
           this.getControlByName('LBL_CHAR' + (nth + 1)).hide();
           this.getControlByName('BTN_CHANGE' + (nth + 1)).hide();
         } else {
-          if(character.canLevelUp()){
+          if (character.canLevelUp()) {
             this.getControlByName('LBL_LEVELUP' + (nth + 1)).show();
-          }else{
+          } else {
             this.getControlByName('LBL_LEVELUP' + (nth + 1)).hide();
           }
           this.getControlByName('LBL_CHAR' + (nth + 1)).show();
           this.getControlByName('BTN_CHANGE' + (nth + 1)).show();
         }
-      break;
+        break;
     }
   }
 
   CloseAllOtherMenus() {
-    let currentMenu = this.manager.GetCurrentMenu();
-    if (currentMenu == this.manager.MenuAbilities || currentMenu == this.manager.MenuInventory || currentMenu == this.manager.MenuJournal || currentMenu == this.manager.MenuMap || currentMenu == this.manager.MenuMessages || currentMenu == this.manager.MenuFeedback || currentMenu == this.manager.MenuOptions || currentMenu == this.manager.MenuCharacter || currentMenu == this.manager.MenuPartySelection || currentMenu == this.manager.MenuEquipment) {
+    const currentMenu = this.manager.GetCurrentMenu();
+    if (
+      currentMenu == this.manager.MenuAbilities ||
+      currentMenu == this.manager.MenuInventory ||
+      currentMenu == this.manager.MenuJournal ||
+      currentMenu == this.manager.MenuMap ||
+      currentMenu == this.manager.MenuMessages ||
+      currentMenu == this.manager.MenuFeedback ||
+      currentMenu == this.manager.MenuOptions ||
+      currentMenu == this.manager.MenuCharacter ||
+      currentMenu == this.manager.MenuPartySelection ||
+      currentMenu == this.manager.MenuEquipment
+    ) {
       currentMenu.close();
     }
   }
-  
 }

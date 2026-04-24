@@ -1,10 +1,10 @@
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { ITwoDAAnimation } from '@/interface/twoDA/ITwoDAAnimation';
 
 /**
  * IOverlayAnimationState interface.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file IOverlayAnimationState.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

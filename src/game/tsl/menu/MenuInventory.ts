@@ -1,10 +1,10 @@
-import { GameState } from "@/GameState";
-import { ModuleCreatureArmorSlot } from "@/enums";
-import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
-import { TextureLoader } from "@/loaders/TextureLoader";
-import type { ModuleItem } from "@/module/ModuleItem";
-import { MenuInventory as K1_MenuInventory } from "@/game/kotor/KOTOR";
-import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
+import { GameState } from '@/GameState';
+import { ModuleCreatureArmorSlot } from '@/enums';
+import type { GUILabel, GUIButton, GUIListBox } from '@/gui';
+import { TextureLoader } from '@/loaders/TextureLoader';
+import type { ModuleItem } from '@/module/ModuleItem';
+import { MenuInventory as K1_MenuInventory } from '@/game/kotor/KOTOR';
+import { GUIInventoryItem } from '@/game/tsl/gui/GUIInventoryItem';
 
 enum InventoryFilter {
   DATAPADS = 1,
@@ -13,20 +13,19 @@ enum InventoryFilter {
   USEABLE = 8,
   QUESTS = 16,
   MISC = 32,
-  ALL = -1
-};
+  ALL = -1,
+}
 
 /**
  * MenuInventory class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuInventory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuInventory extends K1_MenuInventory {
-
   declare LBL_BAR6: GUILabel;
   declare LBL_FILTER: GUILabel;
   declare LBL_INV: GUILabel;
@@ -51,7 +50,7 @@ export class MenuInventory extends K1_MenuInventory {
 
   filter: InventoryFilter = InventoryFilter.ALL;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'inventory_p';
     this.background = 'blackfill';
@@ -60,13 +59,18 @@ export class MenuInventory extends K1_MenuInventory {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
       });
       this._button_b = this.BTN_EXIT;
+
+      this.BTN_USEITEM.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.useSelectedItem();
+      });
 
       this.BTN_ALL.addEventListener('click', (e) => {
         this.filter = InventoryFilter.ALL;
@@ -114,7 +118,17 @@ export class MenuInventory extends K1_MenuInventory {
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();
-      }
+      };
+      this.LB_ITEMS.onActivated = () => {
+        this.useSelectedItem();
+      };
+
+      this.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.useSelectedItem();
+        }
+      });
 
       this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.offset.x = 0;
@@ -132,43 +146,51 @@ export class MenuInventory extends K1_MenuInventory {
     this.BTN_MISC.pulsing = this.filter == InventoryFilter.MISC;
   }
 
-  filterInventory(){
+  filterInventory() {
     this.LB_ITEMS.clearItems();
-    let inventory = GameState.InventoryManager.inventory.slice().filter( (item) => {
-      switch(this.filter){
+    const inventory = GameState.InventoryManager.inventory.slice().filter((item) => {
+      switch (this.filter) {
         case InventoryFilter.DATAPADS:
           return item.plot || item.baseItem.itemClass.toLocaleLowerCase() == 'i_datapad';
         case InventoryFilter.WEAPONS:
-          return (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.LEFTHAND) == ModuleCreatureArmorSlot.LEFTHAND || 
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.RIGHTHAND) == ModuleCreatureArmorSlot.RIGHTHAND;
+          return (
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.LEFTHAND) == ModuleCreatureArmorSlot.LEFTHAND ||
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.RIGHTHAND) == ModuleCreatureArmorSlot.RIGHTHAND
+          );
         case InventoryFilter.ARMOR:
-          return (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMOR) == ModuleCreatureArmorSlot.ARMOR || 
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.HEAD) == ModuleCreatureArmorSlot.HEAD || 
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMS) == ModuleCreatureArmorSlot.ARMS || 
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.BELT) == ModuleCreatureArmorSlot.BELT || 
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.IMPLANT) == ModuleCreatureArmorSlot.IMPLANT;
+          return (
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMOR) == ModuleCreatureArmorSlot.ARMOR ||
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.HEAD) == ModuleCreatureArmorSlot.HEAD ||
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMS) == ModuleCreatureArmorSlot.ARMS ||
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.BELT) == ModuleCreatureArmorSlot.BELT ||
+            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.IMPLANT) == ModuleCreatureArmorSlot.IMPLANT
+          );
         case InventoryFilter.USEABLE:
-          return item.baseItem.itemClass.toLocaleLowerCase() == 'i_medeqpmnt' ||
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_drdrepeqp';
+          return (
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_medeqpmnt' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_drdrepeqp'
+          );
         case InventoryFilter.QUESTS:
           return item.plot || item.baseItem.itemClass.toLocaleLowerCase() == 'p_pltuseitm';
         case InventoryFilter.MISC:
-          return item.baseItem.itemClass.toLocaleLowerCase() == 'i_adrnaline' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_cmbtshot' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_collarlgt' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_Progspike' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_secspike' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_torch' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_upgrade' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_adhsvgren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_cryobgren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_firegren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_flashgren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_fraggren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_poisngren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_sonicgren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_stungren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_glowrod';
+          return (
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_adrnaline' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_cmbtshot' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_collarlgt' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_Progspike' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_secspike' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_torch' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_upgrade' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'w_adhsvgren' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'w_cryobgren' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'w_firegren' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'w_flashgren' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'w_fraggren' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'w_poisngren' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'w_sonicgren' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'w_stungren' ||
+            item.baseItem.itemClass.toLocaleLowerCase() == 'i_glowrod'
+          );
       }
       return true;
     });
@@ -183,5 +205,4 @@ export class MenuInventory extends K1_MenuInventory {
     this.filter = InventoryFilter.ALL;
     this.updateFilterButton();
   }
-  
 }

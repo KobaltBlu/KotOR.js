@@ -1,0 +1,8 @@
+{
+  "extends": "./extensions/kotor-forge-vscode/tsconfig.webview.json",
+  "compilerOptions": { "noEmit": true },
+  "include": [
+    "extensions/kotor-forge-vscode/src/webview/**/*.ts",
+    "extensions/kotor-forge-vscode/src/webview/**/*.tsx"
+  ]
+}

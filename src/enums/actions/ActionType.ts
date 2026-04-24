@@ -1,8 +1,8 @@
 /**
  * ActionType enum.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionType.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -11,7 +11,7 @@
 export enum ActionType {
   /** Invalid action type */
   ActionInvalid = -1,
-  
+
   /** Move creature to a specific point */
   ActionMoveToPoint = 0x01,
   /** Check if creature can move to an object */
@@ -31,15 +31,15 @@ export enum ActionType {
   /** Make creature drop an item */
   ActionDropItem = 0x09,
   /** Check if creature can move to a point */
-  ActionCheckMoveToPoint = 0x0A,
+  ActionCheckMoveToPoint = 0x0a,
   /** Make creature unequip an item */
-  ActionUnequipItem = 0x0B,
+  ActionUnequipItem = 0x0b,
   /** Perform physical attacks */
-  ActionPhysicalAttacks = 0x0C,
+  ActionPhysicalAttacks = 0x0c,
   /** Make creature speak */
-  ActionSpeak = 0x0E,
+  ActionSpeak = 0x0e,
   /** Cast a spell */
-  ActionCastSpell = 0x0F,
+  ActionCastSpell = 0x0f,
   /** Wait for the end of combat round */
   ActionWaitForEndOfRound = 0x10,
   /** Check if creature can move to object within radius */
@@ -61,17 +61,17 @@ export enum ActionType {
   /** Disarm a mine */
   ActionDisarmMine = 0x19,
   /** Recover a mine */
-  ActionRecoverMine = 0x1A,
+  ActionRecoverMine = 0x1a,
   /** Flag a mine */
-  ActionFlagMine = 0x1B,
+  ActionFlagMine = 0x1b,
   /** Examine a mine */
-  ActionExamineMine = 0x1C,
+  ActionExamineMine = 0x1c,
   /** Set a mine */
-  ActionSetMine = 0x1D,
+  ActionSetMine = 0x1d,
   /** Wait for specified duration */
-  ActionWait = 0x1E,
+  ActionWait = 0x1e,
   /** Pause dialog */
-  ActionPauseDialog = 0x1F,
+  ActionPauseDialog = 0x1f,
   /** Resume dialog */
   ActionResumeDialog = 0x20,
   /** Speak using string reference */
@@ -93,17 +93,17 @@ export enum ActionType {
   /** Use Animal Empathy skill */
   ActionAnimalEmpathy = 0x29,
   /** Rest */
-  ActionRest = 0x2A,
+  ActionRest = 0x2a,
   /** Perform taunt action */
-  ActionTaunt = 0x2B,
+  ActionTaunt = 0x2b,
   /** Check if creature can move away from location */
-  ActionCheckMoveAwayFromLocation = 0x2C,
+  ActionCheckMoveAwayFromLocation = 0x2c,
   /** Perform random walk */
-  ActionRandomWalk = 0x2D,
+  ActionRandomWalk = 0x2d,
   /** Cast spell using an item */
-  ActionItemCastSpell = 0x2E,
+  ActionItemCastSpell = 0x2e,
   /** Set whether creature is commandable */
-  ActionSetCommandable = 0x2F,
+  ActionSetCommandable = 0x2f,
   /** Make creature jump to object */
   ActionJumpToObject = 0x30,
   /** Change creature facing to point */
@@ -123,17 +123,17 @@ export enum ActionType {
   /** Perform healing action */
   ActionHeal = 0x38,
   /** Check if creature can force follow object */
-  ActionCheckForceFollowObject = 0x3A,
+  ActionCheckForceFollowObject = 0x3a,
   /** Make creature follow leader */
-  ActionFollowLeader = 0x3D,
+  ActionFollowLeader = 0x3d,
   /** Wait in area */
-  ActionAreaWait = 0x3C,
+  ActionAreaWait = 0x3c,
   /** Make party follow leader */
-  ActionPartyFollowLeader = 0x3D,
+  ActionPartyFollowLeader = 0x3d,
   /** Display bark string */
-  ActionBarkString = 0x3E,
+  ActionBarkString = 0x3e,
   /** Enter combat mode */
-  ActionCombat = 0x3F,
+  ActionCombat = 0x3f,
   /** Check if creature can move to follow within radius */
   ActionCheckMoveToFollowRadius = 0x40,
   /** Surrender to enemies */

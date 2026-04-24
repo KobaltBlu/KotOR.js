@@ -1,22 +1,21 @@
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
-import type { ModuleCreature } from "@/module";
-import { TextureLoader } from "@/loaders";
-import { TalentFeat } from "@/talents";
-import { GameState } from "@/GameState";
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
+import { GUIFeatItem } from '@/game/kotor/gui/GUIFeatItem';
+import type { ModuleCreature } from '@/module';
+import { TextureLoader } from '@/loaders';
+import { TalentFeat } from '@/talents';
+import { GameState } from '@/GameState';
 
 /**
  * CharGenFeats class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenFeats.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenFeats extends GameMenu {
-
   MAIN_TITLE_LBL: GUILabel;
   SUB_TITLE_LBL: GUILabel;
   DESC_LBL: GUILabel;
@@ -32,7 +31,7 @@ export class CharGenFeats extends GameMenu {
 
   creature: ModuleCreature;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'ftchrgen';
     this.background = '1600x1200back';
@@ -41,7 +40,7 @@ export class CharGenFeats extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       resolve();
     });
@@ -56,16 +55,16 @@ export class CharGenFeats extends GameMenu {
     TextureLoader.LoadQueue();
   }
 
-  setCreature(creature: ModuleCreature){
+  setCreature(creature: ModuleCreature) {
     this.creature = creature;
   }
 
   addGrantedFeats() {
     const featCount = GameState.SWRuleSet.featCount;
-    let granted = [];
+    const granted = [];
     for (let i = 0; i < featCount; i++) {
       const feat = GameState.SWRuleSet.feats[i];
-      if(this.creature){
+      if (this.creature) {
         const mainClass = this.creature.getMainClass();
         if (mainClass && feat.constant != '****') {
           if (mainClass.isFeatAvailable(feat)) {
@@ -86,10 +85,10 @@ export class CharGenFeats extends GameMenu {
   buildFeatList() {
     const feats = GameState.SWRuleSet.feats;
     const featCount = GameState.SWRuleSet.featCount;
-    let list = [];
-    if(this.creature){
+    const list = [];
+    if (this.creature) {
       const mainClass = this.creature.getMainClass();
-      if(mainClass){
+      if (mainClass) {
         for (let i = 0; i < featCount; i++) {
           const feat = feats[i];
           if (feat.constant != '****') {
@@ -103,7 +102,7 @@ export class CharGenFeats extends GameMenu {
         }
       }
     }
-    let groups = [];
+    const groups = [];
     for (let i = 0; i < list.length; i++) {
       const feat = list[i];
       const group = [];
@@ -125,8 +124,7 @@ export class CharGenFeats extends GameMenu {
       }
       groups.push(group);
     }
-    groups.sort((groupa, groupb) => groupa[0].toolsCategories > groupb[0].toolsCategories ? 1 : -1);
+    groups.sort((groupa, groupb) => (groupa[0].toolsCategories > groupb[0].toolsCategories ? 1 : -1));
     console.log(groups);
   }
-  
 }

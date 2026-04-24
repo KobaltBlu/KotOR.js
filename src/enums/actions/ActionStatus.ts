@@ -1,8 +1,8 @@
 /**
  * ActionStatus enum.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionStatus.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -23,4 +23,4 @@ export enum ActionStatus {
 
   /** Indicates that the action is waiting to be executed */
   WAITING = 4,
-};
+}

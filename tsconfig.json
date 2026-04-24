@@ -17,6 +17,13 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowJs": true,
+    "baseUrl": ".",
+    "declaration": false,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "forceConsistentCasingInFileNames": true,
+    "ignoreDeprecations": "5.0",
+    "isolatedModules": true,
     "jsx": "react",
     "paths": {
       "@/*": [
@@ -34,7 +41,32 @@
       "dom",
       "WebWorker"
     ],
+    "listFiles": true,
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "newLine": "LF",
+    "noEmitOnError": true,
+    "noImplicitAny": true,
     "outDir": "dist",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "removeComments": true,
+    "rootDir": ".",
+    "skipLibCheck": true,
+    "sourceMap": false,
+    "strict": false,
+    "strictNullChecks": false,
+    "target": "ESNext",
+    "types": [
+      "@types/wicg-file-system-access",
+      "jest",
+      "node",
+      "offscreencanvas",
+      "user-agent-data-types"
+    ]
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/index.d.ts"],
   "exclude": ["node_modules", "src/**/*.spec.ts"]

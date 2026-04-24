@@ -1,5 +1,5 @@
-import React from "react";
-import { useApp } from "@/apps/launcher/context/AppContext";
+import React from 'react';
+import { useApp } from '@/apps/launcher/context/AppContext';
 
 export interface ProfilePromoItemProps {
   element: any;
@@ -7,7 +7,7 @@ export interface ProfilePromoItemProps {
   onDoubleClick?: (element: any) => void;
 }
 
-export const WebviewPromoItem = function(props: ProfilePromoItemProps){
+export const WebviewPromoItem = function (props: ProfilePromoItemProps) {
   const element: any = props.element;
   const appContext = useApp();
 
@@ -16,5 +16,4 @@ export const WebviewPromoItem = function(props: ProfilePromoItemProps){
       <iframe src={element.url} width="646" height="190" />
     </div>
   );
-
-}
+};

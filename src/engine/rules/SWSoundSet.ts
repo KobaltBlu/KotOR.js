@@ -1,5 +1,5 @@
-import { TLKManager } from "@/managers/TLKManager";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TLKManager } from '@/managers/TLKManager';
+import { TwoDAObject } from '@/resource/TwoDAObject';
 
 export class SWSoundSet {
   id: number;
@@ -9,11 +9,13 @@ export class SWSoundSet {
   gender: number;
   type: number;
 
-  getName(){
+  getName() {
     return this.strref != -1 ? TLKManager.GetStringById(this.strref).Value : this.label;
   }
 
-  static From2DA(row: any = {}){
+  static From2DA(
+    row: import('@/resource/TwoDAObject').ITwoDARowData | Record<string, string | number> = {}
+  ): SWSoundSet {
     const soundSet = new SWSoundSet();
     soundSet.id = TwoDAObject.normalizeValue(row.__index, 'number', -1);
     soundSet.label = TwoDAObject.normalizeValue(row.label, 'string', '');

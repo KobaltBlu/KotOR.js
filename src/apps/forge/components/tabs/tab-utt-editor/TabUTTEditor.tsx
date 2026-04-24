@@ -1,15 +1,14 @@
-import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import { TabUTTEditorState } from "@/apps/forge/states/tabs";
-import * as KotOR from "@/apps/forge/KotOR";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import React, { useState, useEffect, useCallback } from 'react';
+import { BaseTabProps } from '@/apps/forge/interfaces/BaseTabProps';
+import { TabUTTEditorState } from '@/apps/forge/states/tabs';
+import * as KotOR from '@/apps/forge/KotOR';
+import { FormField } from '@/apps/forge/components/form-field/FormField';
+import { CExoLocStringEditor } from '@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor';
+import { ForgeCheckbox } from '@/apps/forge/components/forge-checkbox/forge-checkbox';
+import { SubTab, SubTabHost } from '@/apps/forge/components/SubTabHost';
+import { ForgeTrigger } from '@/apps/forge/module-editor/ForgeTrigger';
 
-export const TabUTTEditor = function(props: BaseTabProps){
-
+export const TabUTTEditor = function (props: BaseTabProps) {
   const tab: TabUTTEditorState = props.tab as TabUTTEditorState;
 
   const [autoRemoveKey, setAutoRemoveKey] = useState<boolean>(false);
@@ -72,32 +71,52 @@ export const TabUTTEditor = function(props: BaseTabProps){
   }, [tab]);
 
   // Helper functions using ForgeTrigger methods
-  const onUpdateNumberField = (setter: (value: number) => void, property: keyof ForgeTrigger, parser: (value: number) => number = (v) => v) => 
-    tab.trigger.createNumberFieldHandler(setter, property, tab.trigger, tab, parser);
-  
-  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeTrigger) => 
+  const onUpdateNumberField = (
+    setter: (value: number) => void,
+    property: keyof ForgeTrigger,
+    parser: (value: number) => number = (v) => v
+  ) => tab.trigger.createNumberFieldHandler(setter, property, tab.trigger, tab, parser);
+
+  const onUpdateByteField = (setter: (value: number) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createByteFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateWordField = (setter: (value: number) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createWordFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
+
+  const _onUpdateBooleanField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createBooleanFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateResRefField = (setter: (value: string) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createResRefFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateCExoStringField = (setter: (value: string) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createCExoStringFieldHandler(setter, property, tab.trigger, tab);
-  
-  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeTrigger) => 
+
+  const onUpdateCExoLocStringField = (setter: (value: KotOR.CExoLocString) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createCExoLocStringFieldHandler(setter, property, tab.trigger, tab);
 
-  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) => 
+  const onUpdateForgeCheckboxField = (setter: (value: boolean) => void, property: keyof ForgeTrigger) =>
     tab.trigger.createForgeCheckboxFieldHandler(setter, property, tab.trigger, tab);
 
+  const scriptSuggestions = useMemo(() => {
+    const keyObject = KotOR.KEYManager?.Key;
+    if (!keyObject?.keys?.length) {
+      return [] as string[];
+    }
+
+    const ncsType = KotOR.ResourceTypes['ncs'];
+    const names = keyObject.keys
+      .filter((entry: KotOR.IKEYEntry) => entry.resType === ncsType)
+      .map((entry: KotOR.IKEYEntry) => String(entry.resRef || '').toLowerCase())
+      .filter((name: string) => name.length > 0);
+
+    return Array.from(new Set(names)).sort();
+  }, []);
+
+  const scriptSuggestionListId = 'utt-script-suggestions';
+
   useEffect(() => {
-    if(!tab) return;
+    if (!tab) return;
     onTriggerChange();
     tab.addEventListener('onEditorFileLoad', onTriggerChange);
     tab.addEventListener('onEditorFileChange', onTriggerChange);
@@ -117,11 +136,19 @@ export const TabUTTEditor = function(props: BaseTabProps){
         <>
           <table style={{ width: '100%' }}>
             <tbody>
-              <FormField label="Name" info="Localized label shown in toolset lists.">
-                <CExoLocStringEditor value={localizedName} onChange={onUpdateCExoLocStringField(setLocalizedName, 'localizedName')} />
+              <FormField label="Name" info="Localized label shown in editor lists.">
+                <CExoLocStringEditor
+                  value={localizedName}
+                  onChange={onUpdateCExoLocStringField(setLocalizedName, 'localizedName')}
+                />
               </FormField>
               <FormField label="Template ResRef" info="Internal ResRef (max 16 chars, lowercase).">
-                <input type="text" value={templateResRef} onChange={onUpdateResRefField(setTemplateResRef, 'templateResRef')} maxLength={16} />
+                <input
+                  type="text"
+                  value={templateResRef}
+                  onChange={onUpdateResRefField(setTemplateResRef, 'templateResRef')}
+                  maxLength={16}
+                />
               </FormField>
               <FormField label="Tag" info="Unique identifier (max 32 chars).">
                 <input type="text" value={tag} onChange={onUpdateResRefField(setTag, 'tag')} maxLength={32} />
@@ -139,31 +166,61 @@ export const TabUTTEditor = function(props: BaseTabProps){
               <FormField label="Faction" info="Faction index controlling hostility.">
                 <input type="number" value={faction} onChange={onUpdateByteField(setFaction, 'faction')} />
               </FormField>
-              <FormField label="Palette ID" info="Palette folder identifier in toolset.">
+              <FormField label="Palette ID" info="Palette folder identifier used by the editor.">
                 <input type="number" value={paletteID} onChange={onUpdateByteField(setPaletteID, 'paletteID')} />
               </FormField>
               <FormField label="Cursor" info="Index into cursors.2da.">
-                <input type="number" min={0} max={255} value={cursor} onChange={onUpdateByteField(setCursor, 'cursor')} />
+                <input
+                  type="number"
+                  min={0}
+                  max={255}
+                  value={cursor}
+                  onChange={onUpdateByteField(setCursor, 'cursor')}
+                />
               </FormField>
               <FormField label="Highlight Height" info="Height in meters for trigger highlight glow.">
-                <input type="number" step="0.1" value={highlightHeight} onChange={onUpdateNumberField(setHighlightHeight, 'highlightHeight')} />
+                <input
+                  type="number"
+                  step="0.1"
+                  value={highlightHeight}
+                  onChange={onUpdateNumberField(setHighlightHeight, 'highlightHeight')}
+                />
               </FormField>
               <FormField label="Load Screen ID" info="loadscreeen.2da row used for area transitions.">
-                <input type="number" min={0} value={loadScreenID} onChange={onUpdateWordField(setLoadScreenID, 'loadScreenID')} />
+                <input
+                  type="number"
+                  min={0}
+                  value={loadScreenID}
+                  onChange={onUpdateWordField(setLoadScreenID, 'loadScreenID')}
+                />
               </FormField>
               <FormField label="Key Name" info="Optional required key tag for area transitions.">
-                <input type="text" value={keyName} onChange={onUpdateResRefField(setKeyName, 'keyName')} maxLength={32} />
+                <input
+                  type="text"
+                  value={keyName}
+                  onChange={onUpdateResRefField(setKeyName, 'keyName')}
+                  maxLength={32}
+                />
               </FormField>
               <FormField label="Auto Remove Key" info="Removes key item after transition.">
-                <ForgeCheckbox label="Enabled" value={autoRemoveKey} onChange={onUpdateForgeCheckboxField(setAutoRemoveKey, 'autoRemoveKey')} />
+                <ForgeCheckbox
+                  label="Enabled"
+                  value={autoRemoveKey}
+                  onChange={onUpdateForgeCheckboxField(setAutoRemoveKey, 'autoRemoveKey')}
+                />
               </FormField>
               <FormField label="Portrait ID" info="Index into portraits.2da for UI portrait.">
-                <input type="number" min={0} value={portraitId} onChange={onUpdateWordField(setPortraitId, 'portraitId')} />
+                <input
+                  type="number"
+                  min={0}
+                  value={portraitId}
+                  onChange={onUpdateWordField(setPortraitId, 'portraitId')}
+                />
               </FormField>
             </tbody>
           </table>
         </>
-      )
+      ),
     },
     {
       id: 'scripts',
@@ -172,33 +229,80 @@ export const TabUTTEditor = function(props: BaseTabProps){
       headerTitle: 'Scripts',
       content: (
         <>
+          <datalist id={scriptSuggestionListId}>
+            {scriptSuggestions.map((name) => (
+              <option key={`utt-script-${name}`} value={name} />
+            ))}
+          </datalist>
           <table style={{ width: '100%' }}>
             <tbody>
               <FormField label="On Click" info="ResRef of script executed when clicked.">
-                <input type="text" value={onClick} onChange={onUpdateResRefField(setOnClick, 'onClick')} maxLength={16} />
+                <input
+                  type="text"
+                  value={onClick}
+                  onChange={onUpdateResRefField(setOnClick, 'onClick')}
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                />
               </FormField>
               <FormField label="On Heartbeat" info="ResRef of ScriptOnHeartbeat.">
-                <input type="text" value={onHeartbeat} onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')} maxLength={16} />
+                <input
+                  type="text"
+                  value={onHeartbeat}
+                  onChange={onUpdateResRefField(setOnHeartbeat, 'onHeartbeat')}
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                />
               </FormField>
               <FormField label="On Enter" info="ResRef of ScriptOnEnter.">
-                <input type="text" value={onEnter} onChange={onUpdateResRefField(setOnEnter, 'onEnter')} maxLength={16} />
+                <input
+                  type="text"
+                  value={onEnter}
+                  onChange={onUpdateResRefField(setOnEnter, 'onEnter')}
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                />
               </FormField>
               <FormField label="On Exit" info="ResRef of ScriptOnExit.">
-                <input type="text" value={onExit} onChange={onUpdateResRefField(setOnExit, 'onExit')} maxLength={16} />
+                <input
+                  type="text"
+                  value={onExit}
+                  onChange={onUpdateResRefField(setOnExit, 'onExit')}
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                />
               </FormField>
               <FormField label="On User Defined" info="ResRef of ScriptOnUserDefine.">
-                <input type="text" value={onUserDefined} onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')} maxLength={16} />
+                <input
+                  type="text"
+                  value={onUserDefined}
+                  onChange={onUpdateResRefField(setOnUserDefined, 'onUserDefined')}
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                />
               </FormField>
               <FormField label="On Disarm" info="ResRef executed when trap is disarmed.">
-                <input type="text" value={onDisarm} onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')} maxLength={16} />
+                <input
+                  type="text"
+                  value={onDisarm}
+                  onChange={onUpdateResRefField(setOnDisarm, 'onDisarm')}
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                />
               </FormField>
               <FormField label="On Trap Triggered" info="ResRef fired when trap trips.">
-                <input type="text" value={onTrapTriggered} onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')} maxLength={16} />
+                <input
+                  type="text"
+                  value={onTrapTriggered}
+                  onChange={onUpdateResRefField(setOnTrapTriggered, 'onTrapTriggered')}
+                  maxLength={16}
+                  list={scriptSuggestionListId}
+                />
               </FormField>
             </tbody>
           </table>
         </>
-      )
+      ),
     },
     {
       id: 'trap',
@@ -210,34 +314,59 @@ export const TabUTTEditor = function(props: BaseTabProps){
           <table style={{ width: '100%' }}>
             <tbody>
               <FormField label="Trap Flag" info="Marks trigger as trap for engine.">
-                <ForgeCheckbox label="Enabled" value={trapFlag} onChange={onUpdateForgeCheckboxField(setTrapFlag, 'trapFlag')} />
+                <ForgeCheckbox
+                  label="Enabled"
+                  value={trapFlag}
+                  onChange={onUpdateForgeCheckboxField(setTrapFlag, 'trapFlag')}
+                />
               </FormField>
               <FormField label="Trap Type" info="Index into traps.2da.">
                 <input type="number" min={0} value={trapType} onChange={onUpdateByteField(setTrapType, 'trapType')} />
               </FormField>
               <FormField label="Disarm DC" info="Base DC to disarm (1-250).">
-                <input type="number" min={0} max={255} value={disarmDC} onChange={onUpdateByteField(setDisarmDC, 'disarmDC')} />
+                <input
+                  type="number"
+                  min={0}
+                  max={255}
+                  value={disarmDC}
+                  onChange={onUpdateByteField(setDisarmDC, 'disarmDC')}
+                />
               </FormField>
               <FormField label="Trap Detect DC" info="DC to detect trap.">
-                <input type="number" min={0} value={trapDetectDC} onChange={onUpdateByteField(setTrapDetectDC, 'trapDetectDC')} />
+                <input
+                  type="number"
+                  min={0}
+                  value={trapDetectDC}
+                  onChange={onUpdateByteField(setTrapDetectDC, 'trapDetectDC')}
+                />
               </FormField>
               <FormField label="Trap Detectable" info="Whether trap can be detected.">
-                <ForgeCheckbox label="Enabled" value={trapDetectable} onChange={onUpdateForgeCheckboxField(setTrapDetectable, 'trapDetectable')} />
+                <ForgeCheckbox
+                  label="Enabled"
+                  value={trapDetectable}
+                  onChange={onUpdateForgeCheckboxField(setTrapDetectable, 'trapDetectable')}
+                />
               </FormField>
               <FormField label="Trap Disarmable" info="Allows trap to be disarmed.">
-                <ForgeCheckbox label="Enabled" value={trapDisarmable} onChange={onUpdateForgeCheckboxField(setTrapDisarmable, 'trapDisarmable')} />
+                <ForgeCheckbox
+                  label="Enabled"
+                  value={trapDisarmable}
+                  onChange={onUpdateForgeCheckboxField(setTrapDisarmable, 'trapDisarmable')}
+                />
               </FormField>
               <FormField label="Trap One Shot" info="Trap is removed after firing.">
-                <ForgeCheckbox label="Enabled" value={trapOneShot} onChange={onUpdateForgeCheckboxField(setTrapOneShot, 'trapOneShot')} />
+                <ForgeCheckbox
+                  label="Enabled"
+                  value={trapOneShot}
+                  onChange={onUpdateForgeCheckboxField(setTrapOneShot, 'trapOneShot')}
+                />
               </FormField>
             </tbody>
           </table>
         </>
-      )
-    }
+      ),
+    },
   ];
 
-  return (
-    <SubTabHost tabs={tabs} defaultTab="basic" />
-  );
-}
+  return <SubTabHost tabs={tabs} defaultTab="basic" />;
+};

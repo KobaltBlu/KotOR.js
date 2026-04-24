@@ -1,0 +1,64 @@
+.dlg-graph-view {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-primary, #1e1e1e);
+  cursor: grab;
+  user-select: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.dlg-graph-svg {
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 50%;
+}
+
+.dlg-graph-edge {
+  pointer-events: none;
+}
+
+.dlg-graph-node {
+  cursor: pointer;
+  outline: none;
+
+  &:hover .dlg-graph-node__rect {
+    stroke: var(--accent-color, #4da6ff);
+    stroke-width: 2;
+  }
+}
+
+.dlg-graph-node__rect {
+  fill: var(--bg-secondary, #2a2a2a);
+  stroke: var(--border-color, #444);
+  stroke-width: 1;
+  transition: stroke 0.15s, fill 0.15s;
+
+  &--selected {
+    fill: var(--accent-bg, #264f78);
+    stroke: var(--accent-color, #4da6ff);
+    stroke-width: 2;
+  }
+}
+
+.dlg-graph-node--starting .dlg-graph-node__rect {
+  fill: var(--dlg-starting-bg, #2d3a2d);
+}
+
+.dlg-graph-node--entry .dlg-graph-node__rect {
+  fill: var(--dlg-entry-bg, #2a2d3a);
+}
+
+.dlg-graph-node--reply .dlg-graph-node__rect {
+  fill: var(--dlg-reply-bg, #3a2d2a);
+}
+
+.dlg-graph-node__label {
+  fill: var(--text-primary, #e0e0e0);
+  font-size: 12px;
+  font-family: var(--font-sans, system-ui, sans-serif);
+  pointer-events: none;
+}

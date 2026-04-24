@@ -1,7 +1,7 @@
-import { ArrayLiteralNode, CallNode, IndexNode, LiteralNode } from "@/nwscript/compiler/ASTTypes";
-import type { Token } from "@/nwscript/compiler/NWScriptToken";
+import { ArrayLiteralNode, CallNode, IndexNode, LiteralNode } from '@/nwscript/compiler/ASTTypes';
+import type { Token } from '@/nwscript/compiler/NWScriptToken';
 
-export type SourceInfo = Token["source"] | undefined;
+export type SourceInfo = Token['source'] | undefined;
 
 export interface AnnotatedNode {
   type: string;
@@ -10,7 +10,7 @@ export interface AnnotatedNode {
 
 // Program-level
 export interface SemanticProgramNode extends AnnotatedNode {
-  type: "program";
+  type: 'program';
   statements: SemanticStatementNode[];
   functions: SemanticFunctionNode[];
   structs: SemanticStructNode[];
@@ -35,7 +35,7 @@ export interface SemanticScope {
 
 // Data types
 export interface SemanticDataType {
-  type: "datatype";
+  type: 'datatype';
   value: string;
   unary: number;
   engine_type?: boolean;
@@ -44,7 +44,7 @@ export interface SemanticDataType {
 
 // Structs
 export interface SemanticStructNode extends AnnotatedNode {
-  type: "struct";
+  type: 'struct';
   name: string;
   properties: SemanticStructPropertyNode[];
   is_global: boolean;
@@ -52,26 +52,27 @@ export interface SemanticStructNode extends AnnotatedNode {
 }
 
 export interface SemanticStructPropertyNode extends AnnotatedNode {
-  type: "property";
+  type: 'property';
   name: string;
   datatype: SemanticDataType;
 }
 
 // Functions
 export interface SemanticFunctionNode extends AnnotatedNode {
-  type: "function";
+  type: 'function';
   name: string;
   header_only: boolean;
   defined?: boolean;
   called?: boolean;
   callIndex?: number;
+  is_engine_action?: boolean;
   returntype: SemanticDataType;
   arguments: SemanticArgumentNode[];
   statements: SemanticStatementNode[];
 }
 
 export interface SemanticArgumentNode extends AnnotatedNode {
-  type: "argument";
+  type: 'argument';
   name: string;
   datatype: SemanticDataType;
   value?: SemanticExpressionNode; // default value
@@ -80,7 +81,7 @@ export interface SemanticArgumentNode extends AnnotatedNode {
 
 // Variables
 export interface SemanticVariableNode extends AnnotatedNode {
-  type: "variable";
+  type: 'variable';
   name: string;
   declare: boolean;
   is_const: boolean;
@@ -94,7 +95,7 @@ export interface SemanticVariableNode extends AnnotatedNode {
 }
 
 export interface SemanticVariableListNode extends AnnotatedNode {
-  type: "variableList";
+  type: 'variableList';
   is_const: boolean;
   declare: boolean;
   datatype: SemanticDataType;
@@ -105,7 +106,7 @@ export interface SemanticVariableListNode extends AnnotatedNode {
 
 // Expressions / calls / props
 export interface SemanticVariableReferenceNode extends AnnotatedNode {
-  type: "variable_reference";
+  type: 'variable_reference';
   name: string;
   datatype?: SemanticDataType;
   is_global?: boolean;
@@ -113,7 +114,7 @@ export interface SemanticVariableReferenceNode extends AnnotatedNode {
 }
 
 export interface SemanticFunctionCallNode extends AnnotatedNode {
-  type: "function_call";
+  type: 'function_call';
   name: string;
   arguments: SemanticExpressionNode[];
   function_reference?: SemanticFunctionNode | EngineActionRef;
@@ -125,10 +126,11 @@ export interface EngineActionRef {
   name: string;
   returntype: SemanticDataType;
   arguments: SemanticArgumentNode[];
+  is_engine_action?: boolean;
 }
 
 export interface SemanticPropertyNode extends AnnotatedNode {
-  type: "property";
+  type: 'property';
   left: SemanticExpressionNode;
   name: string;
   datatype?: SemanticDataType;
@@ -139,12 +141,12 @@ export interface SemanticPropertyNode extends AnnotatedNode {
 
 // Control flow
 export interface SemanticBlockNode extends AnnotatedNode {
-  type: "block";
+  type: 'block';
   statements: SemanticStatementNode[];
 }
 
 export interface SemanticIfNode extends AnnotatedNode {
-  type: "if";
+  type: 'if';
   condition: SemanticExpressionNode;
   statements: SemanticStatementNode[];
   elseIfs: SemanticElseIfNode[];
@@ -152,30 +154,30 @@ export interface SemanticIfNode extends AnnotatedNode {
 }
 
 export interface SemanticElseIfNode extends AnnotatedNode {
-  type: "elseif";
+  type: 'elseif';
   condition: SemanticExpressionNode;
   statements: SemanticStatementNode[];
 }
 
 export interface SemanticElseNode extends AnnotatedNode {
-  type: "else";
+  type: 'else';
   statements: SemanticStatementNode[];
 }
 
 export interface SemanticWhileNode extends AnnotatedNode {
-  type: "while";
+  type: 'while';
   condition: SemanticExpressionNode;
   statements: SemanticStatementNode[];
 }
 
 export interface SemanticDoWhileNode extends AnnotatedNode {
-  type: "do";
+  type: 'do';
   condition: SemanticExpressionNode;
   statements: SemanticStatementNode[];
 }
 
 export interface SemanticForNode extends AnnotatedNode {
-  type: "for";
+  type: 'for';
   initializer: SemanticVariableNode | SemanticVariableListNode | SemanticExpressionNode | null;
   condition: SemanticExpressionNode | null;
   incrementor: SemanticExpressionNode | null;
@@ -183,14 +185,14 @@ export interface SemanticForNode extends AnnotatedNode {
 }
 
 export interface SemanticSwitchNode extends AnnotatedNode {
-  type: "switch";
+  type: 'switch';
   condition: SemanticExpressionNode;
   cases: SemanticCaseNode[];
   default: SemanticDefaultNode | null;
 }
 
 export interface SemanticCaseNode extends AnnotatedNode {
-  type: "case";
+  type: 'case';
   condition: SemanticExpressionNode;
   value: SemanticExpressionNode;
   statements: SemanticStatementNode[];
@@ -198,54 +200,66 @@ export interface SemanticCaseNode extends AnnotatedNode {
 }
 
 export interface SemanticDefaultNode extends AnnotatedNode {
-  type: "default";
+  type: 'default';
   statements: SemanticStatementNode[];
 }
 
 // Returns / break / continue
 export interface SemanticReturnNode extends AnnotatedNode {
-  type: "return";
+  type: 'return';
   value: SemanticExpressionNode | null;
 }
 
-export interface SemanticBreakNode extends AnnotatedNode { type: "break"; }
-export interface SemanticContinueNode extends AnnotatedNode { type: "continue"; }
+export interface SemanticBreakNode extends AnnotatedNode {
+  type: 'break';
+}
+export interface SemanticContinueNode extends AnnotatedNode {
+  type: 'continue';
+}
 
 // Arithmetic / logical / unary / inc/dec
 export interface SemanticCompareNode extends AnnotatedNode {
-  type: "compare";
+  type: 'compare';
   left: SemanticExpressionNode;
   right: SemanticExpressionNode;
-  operator: { type: "operator"; value: string };
+  operator: { type: 'operator'; value: string };
   datatype: SemanticDataType;
 }
 
 export interface SemanticBinaryNode extends AnnotatedNode {
-  type: "add" | "sub" | "mul" | "div" | "mod" | "incor" | "xor" | "booland" | "assign" | "compare";
+  type: 'add' | 'sub' | 'mul' | 'div' | 'mod' | 'incor' | 'xor' | 'booland' | 'assign' | 'compare';
   left: SemanticExpressionNode;
   right: SemanticExpressionNode;
-  operator?: { type: "operator"; value: string };
+  operator?: { type: 'operator'; value: string };
   datatype?: SemanticDataType;
 }
 
 export interface SemanticUnaryNode extends AnnotatedNode {
-  type: "not" | "neg" | "comp";
+  type: 'not' | 'neg' | 'comp';
   value: SemanticExpressionNode;
   datatype?: SemanticDataType;
 }
 
 export interface SemanticIncDecNode extends AnnotatedNode {
-  type: "inc" | "dec";
+  type: 'inc' | 'dec';
   value: SemanticExpressionNode;
   postFix?: boolean;
   datatype?: SemanticDataType;
   is_global?: boolean;
-  variable_reference?: SemanticVariableNode | SemanticStructPropertyNode | SemanticStructNode | SemanticArgumentNode | undefined;
+  variable_reference?:
+    | SemanticVariableNode
+    | SemanticStructPropertyNode
+    | SemanticStructNode
+    | SemanticArgumentNode
+    | undefined;
 }
 
 // Literals / arrays / index / call / property reuse existing shapes but typed as SemanticExpressionNode
 export type SemanticLiteralNode = LiteralNode & { datatype: SemanticDataType };
-export type SemanticArrayLiteralNode = ArrayLiteralNode & { datatype: SemanticDataType; elements: SemanticExpressionNode[] };
+export type SemanticArrayLiteralNode = ArrayLiteralNode & {
+  datatype: SemanticDataType;
+  elements: SemanticExpressionNode[];
+};
 export type SemanticIndexNode = IndexNode & { left: SemanticExpressionNode; index: SemanticExpressionNode };
 export type SemanticCallNode = CallNode & { callee: SemanticExpressionNode; arguments: SemanticExpressionNode[] };
 
@@ -265,10 +279,10 @@ export type SemanticExpressionNode =
   | SemanticBinaryNode;
 
 export interface SemanticAssignNode extends AnnotatedNode {
-  type: "assign";
+  type: 'assign';
   left: SemanticExpressionNode;
   right: SemanticExpressionNode;
-  operator: { type: "operator"; value: string };
+  operator: { type: 'operator'; value: string };
   datatype?: SemanticDataType;
 }
 

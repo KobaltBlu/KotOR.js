@@ -1,17 +1,15 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabScriptInspector } from "@/apps/forge/components/tabs/tab-script-inspector/TabScriptInspector";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { TabScriptInspector } from '@/apps/forge/components/tabs/tab-script-inspector/TabScriptInspector';
 
 export class TabScriptInspectorState extends TabState {
-
   tabName: string = `NCS Viewer`;
   code: string = ``;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
     this.setContentView(<TabScriptInspector tab={this} parentTab={options.parentTab}></TabScriptInspector>);
   }
-
 }

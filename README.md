@@ -1,4 +1,5 @@
 # KotOR.js
+
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-323330?style=for-the-badge&logo=javascript&logoColor=F7DF1E)
 ![THREE JS](https://img.shields.io/badge/ThreeJs-black?style=for-the-badge&logo=three.js&logoColor=white)
@@ -13,24 +14,28 @@
 
 KotOR.js is a TypeScript-based reimplementation of the Odyssey Game Engine that powered the original Star Wars: Knights of the Old Republic (KotOR) and its sequel, KotOR II: The Sith Lords (TSL). The project aims to support the complete feature set of the original engine. While still in the early stages of development, many systems are already online in some form or fashion.
 
-In addition to the game engine, the project includes an early attempt at a modding suite called KotOR Forge. 
+In addition to the game engine, the project includes an early attempt at a modding suite called KotOR Forge.
 
 ## Technologies
-- The code has been re-written in TypeScript and compiles down into JavaScript. 
-- THREE.js is used for the base of the rendering engine. 
-- Electron is used to package and publish a desktop application. 
 
-[Discussion Thread](https://deadlystream.com/topic/6608-wip-kotor-js-a-game-engine-for-k1-k2-written-in-javascript/)  
+- The code has been re-written in TypeScript and compiles down into JavaScript.
+- THREE.js is used for the base of the rendering engine.
+- Electron is used to package and publish a desktop application.
+
+[Discussion Thread](https://deadlystream.com/topic/6608-wip-kotor-js-a-game-engine-for-k1-k2-written-in-javascript/)
 [KotOR.js Youtube Channel](https://www.youtube.com/channel/UC7b4RL2mj0WJ7fEvbJePDbA)
 
 [![OpenKotOR Discord](https://discordapp.com/api/guilds/739590575359262792/widget.png?style=banner2)](https://discord.gg/QxjqVAuN8T)
 
 ## Supported Games
+
 The following games are currently supported:
+
 - [x] [Star Wars: Knights of the Old Republic (PC)](https://en.wikipedia.org/wiki/Star_Wars:_Knights_of_the_Old_Republic)
 - [x] [Star Wars: Knights of the Old Republic II The Sith Lords (PC)](https://en.wikipedia.org/wiki/Star_Wars_Knights_of_the_Old_Republic_II:_The_Sith_Lords)
 
 ## Requirements
+
 You will need a valid copy of either KotOR I or KotOR II installed on your system if you want to use KotOR.js to interface with the files of either game. No game files are distributed with this project.
 
 ## Web Compatibility (NEW)
@@ -39,18 +44,38 @@ You will need a valid copy of either KotOR I or KotOR II installed on your syste
 
 The recent transition to TypeScript has brought many improvements to the codebase, including Chrome support. When the project is compiled, the contents of the `dist` folder can be uploaded to a web server. The only requirement is that the site must be accessed from behind a valid SSL certificate. Using the latest version of Chrome is recommended.
 
-
 [![Demo Icon]][Demo Link]
 
 [Demo Link]: https://play.swkotor.net/ 'Online Playable Demo'
 [Demo Icon]: https://img.shields.io/badge/Online_Playable_Demo-37a779?style=for-the-badge&logoColor=white&logo=google-chrome
 
-## Getting Started (Developer)
+## Getting Started
 
 ### Prerequisites
-1. Download and install [Node.js / npm](https://www.npmjs.com/get-npm).
-2. Clone the KotOR.js repository.
-3. Install dependencies:
+
+Before you begin, ensure you have the following installed:
+
+- **Node.js**: Version 18.x or higher (LTS recommended)
+  - Check your version: `node --version`
+  - Download: [nodejs.org](https://nodejs.org/)
+- **npm**: Version 9.x or higher (comes with Node.js)
+  - Check your version: `npm --version`
+- **Git**: Latest version
+  - Check your version: `git --version`
+  - Download: [git-scm.com](https://git-scm.com/)
+- **A valid copy of KotOR I or KotOR II** (for testing game functionality)
+  - No game files are distributed with this project.  No BioWare, LucasArts, nor Disney trademarked content will ever be distributed with this project.
+
+### Quick Start (Developer)
+
+1. **Clone the repository**:
+
+```bash
+git clone https://github.com/KobaltBlu/KotOR.js.git
+cd KotOR.js
+```
+
+1. **Install dependencies**:
 
 ```bash
 npm install
@@ -64,75 +89,89 @@ npm install
 This compiles the TypeScript and launches the Electron desktop window. Run this if you just want to play/test the game locally.
 
 ```bash
-npm run start
+npm start
 ```
 
-> **Hot-reload variant:** Watches for TypeScript changes and auto-restarts Electron on save:
-> ```bash
-> npm run start-watch
-> ```
+1. **Enjoy!** The Electron application should launch automatically.
 
----
+### Available Scripts
 
-#### Option B — Browser / web dev (Webpack + local server)
-Use this when you're working on the web frontend (Launcher, Game, Forge, Debugger views) and want to open them in Chrome.
+#### Development
 
-**Step 1 — Build and watch for changes** (keeps running, recompiles on save):
-```bash
-npm run webpack:dev-watch
-```
-This compiles five bundles in parallel to the `dist/` folder:
-- `KotOR.js` — core engine library
-- `dist/launcher/` — game launcher UI
-- `dist/game/` — in-browser game client
-- `dist/forge/` — KotOR Forge modding tool
-- `dist/debugger/` — script debugger
+- `npm start` - Compile main process and start Electron application
+- `npm run dev` - Watch main process and auto-restart Electron on changes
+- `npm run watch` - Build web bundle in watch mode (auto-rebuild on changes)
+- `npm run build:web:dev` - Build web bundle once in development mode
 
-**Step 2 — Serve the output** (in a separate terminal):
-```bash
-npm run serve
-```
-Starts a static file server at **http://localhost:8080**. Then open one of these in Chrome:
+#### Building
 
-| URL | What it is |
-|---|---|
-| http://localhost:8080 | Redirects to Launcher |
-| http://localhost:8080/launcher/ | Game Launcher |
-| http://localhost:8080/game/?key=kotor | KotOR I in-browser |
-| http://localhost:8080/game/?key=tsl | KotOR II in-browser |
-| http://localhost:8080/forge/ | KotOR Forge modding tool |
-| http://localhost:8080/debugger/ | Script debugger |
+- `npm run build` - Full production build (webpack + Electron)
+- `npm run build:dev` - Full development build (faster, for local run)
+- `npm run build:web` - Production webpack bundle only
+- `npm run build:electron` - Compile Electron main process only
+- `npm run pack` - Build and package Electron app (electron-builder)
 
-**Shortcut — run both at once:**
-```bash
-npm run dev
-```
-Runs `webpack:dev-watch` and `serve` in parallel with a single command.
+#### Testing
 
----
+- `npm test` - Run all tests with coverage
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:quick` - Run tests without coverage (faster)
 
-#### Option C — VS Code launch configurations
-If you're using VS Code, press **F5** (Run & Debug) and pick a configuration. VS Code will automatically start the `serve: dist` background task and open Chrome pointed at the right URL:
+#### Code Quality
 
-- **KotOR Launcher** — opens the launcher at localhost:8080
-- **KotOR** — opens the KotOR I game client
-- **TSL** — opens the KotOR II game client
-- **KotOR Forge** — opens the Forge modding tool
-- **KotOR Debugger** — opens the script debugger
+- `npm run lint` - Run ESLint
 
-> Make sure you've already run `npm run webpack:dev-watch` (or `npm run dev`) so `dist/` has been built before pressing F5.
+#### Documentation
 
----
+- `npm run typedoc` - Generate API documentation
 
-### Other Commands
+### Development Workflow
 
-| Command | What it does |
-|---|---|
-| `npm run webpack:dev` | One-shot development build (no watch) |
-| `npm run webpack:prod` | Production build (minified, no source maps) |
-| `npm run electron:compile` | Compile only the Electron main process TypeScript |
-| `npm run test` | Run the Jest test suite |
-| `npm run typedoc` | Generate API docs into the `wiki/` folder |
+For a typical development session:
+
+1. **Terminal 1**: Run `npm run watch` to automatically rebuild the web bundle on file changes
+2. **Terminal 2**: Run `npm start` to launch the Electron application (or `npm run dev` for main-process watch + auto-restart)
+3. **Make changes** in the `src/` directory
+4. **Test your changes** - the application will reload automatically
+5. **Run tests** before committing: `npm test`
+6. **Check code quality**: `npm run lint`
+
+Other useful commands: `npm run clean` (remove `dist/`), `npm run rebuild` (clean + build).
+
+### Project Structure
+
+The project is organized into several major components:
+
+- **Core Engine** (`src/engine/`, `src/module/`) - Game engine systems
+- **Applications** (`src/apps/`) - Launcher, Game, Forge, Debugger
+- **Resource System** (`src/resource/`, `src/loaders/`) - File format parsers
+- **Rendering** (`src/three/`, `src/shaders/`) - THREE.js rendering system
+- **Scripting** (`src/nwscript/`) - NWScript interpreter
+
+For detailed information, see [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
+
+### Contributing
+
+We welcome contributions! Please read:
+
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Comprehensive contribution guidelines
+- **[SETUP.md](SETUP.md)** - Detailed setup instructions and troubleshooting
+- **[DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)** - Quick command reference
+
+Key topics covered:
+
+- Development setup and workflow
+- Coding standards and best practices
+- Testing requirements
+- Pull request process
+- Code of conduct
+
+### Getting Help
+
+- **Discord**: [OpenKotOR Discord Server](https://discord.gg/QxjqVAuN8T)
+- **Discussion Thread**: [DeadlyStream Forum](https://deadlystream.com/topic/6608-wip-kotor-js-a-game-engine-for-k1-k2-written-in-javascript/)
+- **GitHub Issues**: For bug reports and feature requests
+- **Documentation**: Check the `wiki/` directory for API docs (generate with `npm run typedoc`)
 
 ## Screenshots
 
@@ -152,19 +191,26 @@ If you're using VS Code, press **F5** (Run & Debug) and pick a configuration. VS
 
 | **KotOR.js (2023) - In Browser Demo** | **KotOR JS - Combat Animations Progress Jan 2021** | **KotOR Forge - WIP: Lip Sync Editor Jan 2019** |
 |:---:|:---:|:---:|
-| [![KotOR.js (2023) - In Browser Demo](https://img.youtube.com/vi/ZT_9vKRC1t8/0.jpg)](https://www.youtube.com/watch?v=ZT_9vKRC1t8) | [![KotOR JS - Combat Animations Progress Jan 2021](https://img.youtube.com/vi/4oQ8nj_zO-w/0.jpg)](https://www.youtube.com/watch?v=4oQ8nj_zO-w) | [![KotOR Forge - WIP: Lip Sync Editor Jan 2019](https://img.youtube.com/vi/4s4uTyP5yqA/0.jpg)](https://www.youtube.com/watch?v=4s4uTyP5yqA) 
-| **KotOR JS - Lighting & Lipsync Progress Nov 2018** | **KotOR JS : TSL - Gameplay Compilation Sep 2018** | **KotOR JS: The Endar Spire Sep 2018** 
+| [![KotOR.js (2023) - In Browser Demo](https://img.youtube.com/vi/ZT_9vKRC1t8/0.jpg)](https://www.youtube.com/watch?v=ZT_9vKRC1t8) | [![KotOR JS - Combat Animations Progress Jan 2021](https://img.youtube.com/vi/4oQ8nj_zO-w/0.jpg)](https://www.youtube.com/watch?v=4oQ8nj_zO-w) | [![KotOR Forge - WIP: Lip Sync Editor Jan 2019](https://img.youtube.com/vi/4s4uTyP5yqA/0.jpg)](https://www.youtube.com/watch?v=4s4uTyP5yqA)
+| **KotOR JS - Lighting & Lipsync Progress Nov 2018** | **KotOR JS : TSL - Gameplay Compilation Sep 2018** | **KotOR JS: The Endar Spire Sep 2018**
 | [![KotOR JS - Lighting & Lipsync Progress Nov 2018](https://img.youtube.com/vi/2SATn5W2sb4/0.jpg)](https://www.youtube.com/watch?v=2SATn5W2sb4) | [![KotOR JS : TSL - Gameplay Compilation Sep 2018](https://img.youtube.com/vi/IpP6BQJ5ZBQ/0.jpg)](https://www.youtube.com/watch?v=IpP6BQJ5ZBQ) | [![KotOR JS: The Endar Spire](https://img.youtube.com/vi/y2UzOH5bcAQ/0.jpg)](https://www.youtube.com/watch?v=y2UzOH5bcAQ)
 
 </div>
 
 ## Influences & Credits
 
-Without these people below I couldn't have gotten this far.  
-[xoreos](https://xoreos.org/)  
-[The KotOR Modding Community](https://deadlystream.com/)   
-  
+Without these people below I couldn't have gotten this far.
+[xoreos](https://xoreos.org/)
+[The KotOR Modding Community](https://deadlystream.com/)
+
 And many many more!
+
+## Documentation
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines and development workflow
+- [SETUP.md](SETUP.md) - Detailed setup instructions
+- [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Project structure overview
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Code of conduct
 
 ## License
 

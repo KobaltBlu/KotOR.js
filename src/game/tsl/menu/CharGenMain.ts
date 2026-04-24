@@ -1,17 +1,16 @@
-import { LBL_3DView, type GUILabel } from "@/gui";
-import { CharGenMain as K1_CharGenMain } from "@/game/kotor/KOTOR";
+import { LBL_3DView, type GUILabel } from '@/gui';
+import { CharGenMain as K1_CharGenMain } from '@/game/kotor/KOTOR';
 
 /**
  * CharGenMain class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenMain.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenMain extends K1_CharGenMain {
-
   declare LBL_BAR1: GUILabel;
   declare LBL_STATSBACK: GUILabel;
   declare LBL_STATSBORDER: GUILabel;
@@ -47,7 +46,7 @@ export class CharGenMain extends K1_CharGenMain {
   declare LBL_VIT_NAME: GUILabel;
   declare LBL_DEF_NAME: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'maincg_p';
     this.background = '';
@@ -56,7 +55,7 @@ export class CharGenMain extends K1_CharGenMain {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.tGuiPanel.getFill().position.z = -0.5;
 
@@ -69,8 +68,7 @@ export class CharGenMain extends K1_CharGenMain {
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
 
       this.Init3D();
-      resolve(); 
+      resolve();
     });
   }
-  
 }

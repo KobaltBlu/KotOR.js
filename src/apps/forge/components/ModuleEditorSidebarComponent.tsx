@@ -1,25 +1,25 @@
-import React, { useEffect, useState, ChangeEvent, useCallback } from "react";
-import { TabModuleEditorState } from "@/apps/forge/states/tabs";
-import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import React, { useEffect, useState, ChangeEvent, useCallback } from 'react';
+import { TabModuleEditorState } from '@/apps/forge/states/tabs';
+import { SceneGraphTreeView } from '@/apps/forge/components/SceneGraphTreeView';
+import { ForgeGameObject } from '@/apps/forge/module-editor/ForgeGameObject';
 import * as THREE from 'three';
-import { ModalBlueprintBrowserState, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
-import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
-import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { ModalBlueprintBrowserState, BlueprintType } from '@/apps/forge/states/modal/ModalBlueprintBrowserState';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
+import { ForgeCreature } from '@/apps/forge/module-editor/ForgeCreature';
+import { ForgeDoor } from '@/apps/forge/module-editor/ForgeDoor';
+import { ForgeEncounter } from '@/apps/forge/module-editor/ForgeEncounter';
+import { ForgeItem } from '@/apps/forge/module-editor/ForgeItem';
+import { ForgePlaceable } from '@/apps/forge/module-editor/ForgePlaceable';
+import { ForgeSound } from '@/apps/forge/module-editor/ForgeSound';
+import { ForgeStore } from '@/apps/forge/module-editor/ForgeStore';
+import { ForgeTrigger } from '@/apps/forge/module-editor/ForgeTrigger';
+import { ForgeWaypoint } from '@/apps/forge/module-editor/ForgeWaypoint';
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import "@/apps/forge/components/ModuleEditorSidebarComponent.scss";
+import * as KotOR from '@/apps/forge/KotOR';
+import { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
+import '@/apps/forge/components/ModuleEditorSidebarComponent.scss';
 
-export const ModuleEditorSidebarComponent = function(props: any){
+export const ModuleEditorSidebarComponent = function (props: any) {
   const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
 
   const [selectedTab, setSelectedTab] = useState<string>('object-properties');
@@ -32,7 +32,7 @@ export const ModuleEditorSidebarComponent = function(props: any){
     };
 
     tab.addEventListener('onSelectionChanged', onSelectionChanged);
-    
+
     // Set initial selection
     setSelectedGameObject(tab.selectedGameObject);
 
@@ -52,7 +52,9 @@ export const ModuleEditorSidebarComponent = function(props: any){
       <div className="tab-host">
         <div className="tabs">
           <ul className="tabs-menu tabs-flex-wrap">
-            <li className={`btn btn-tab ${selectedTab == 'object-properties' ? 'active' : ''}`}><a onClick={ () => setSelectedTab('object-properties') }>Properties</a></li>
+            <li className={`btn btn-tab ${selectedTab == 'object-properties' ? 'active' : ''}`}>
+              <a onClick={() => setSelectedTab('object-properties')}>Properties</a>
+            </li>
           </ul>
         </div>
         <div className="tab-container">
@@ -63,7 +65,7 @@ export const ModuleEditorSidebarComponent = function(props: any){
       </div>
     </div>
   );
-}
+};
 
 /**
  * Property definition for GIT instance properties
@@ -74,7 +76,16 @@ interface GITPropertyDef {
   /** Display label */
   label: string;
   /** Property type */
-  type: 'number' | 'string' | 'boolean' | 'CExoLocString' | 'position' | 'rotation' | 'quaternion' | 'vector3' | 'array';
+  type:
+    | 'number'
+    | 'string'
+    | 'boolean'
+    | 'CExoLocString'
+    | 'position'
+    | 'rotation'
+    | 'quaternion'
+    | 'vector3'
+    | 'array';
   /** GFF field label (for reference) */
   gitFieldLabel?: string;
   /** Optional nested property path (e.g., 'position.x') */
@@ -85,15 +96,15 @@ interface GITPropertyDef {
  * Get the blueprint type for a game object based on its class type
  */
 function getBlueprintTypeForGameObject(gameObject: ForgeGameObject): BlueprintType | null {
-  if(gameObject instanceof ForgeCreature) return 'utc';
-  if(gameObject instanceof ForgeDoor) return 'utd';
-  if(gameObject instanceof ForgeEncounter) return 'ute';
-  if(gameObject instanceof ForgeItem) return 'uti';
-  if(gameObject instanceof ForgePlaceable) return 'utp';
-  if(gameObject instanceof ForgeStore) return 'utm';
-  if(gameObject instanceof ForgeSound) return 'uts';
-  if(gameObject instanceof ForgeTrigger) return 'utt';
-  if(gameObject instanceof ForgeWaypoint) return 'utw';
+  if (gameObject instanceof ForgeCreature) return 'utc';
+  if (gameObject instanceof ForgeDoor) return 'utd';
+  if (gameObject instanceof ForgeEncounter) return 'ute';
+  if (gameObject instanceof ForgeItem) return 'uti';
+  if (gameObject instanceof ForgePlaceable) return 'utp';
+  if (gameObject instanceof ForgeStore) return 'utm';
+  if (gameObject instanceof ForgeSound) return 'uts';
+  if (gameObject instanceof ForgeTrigger) return 'utt';
+  if (gameObject instanceof ForgeWaypoint) return 'utw';
   return null;
 }
 
@@ -112,7 +123,7 @@ function getGITPropertyDefinitions(gameObject: ForgeGameObject): GITPropertyDef[
   );
 
   // Class-specific properties
-  switch(className){
+  switch (className) {
     case 'ForgeRoom':
       props = [];
       props.push(
@@ -133,7 +144,12 @@ function getGITPropertyDefinitions(gameObject: ForgeGameObject): GITPropertyDef[
         { propertyName: 'linkedToFlags', label: 'Linked To Flags', type: 'number', gitFieldLabel: 'LinkedToFlags' },
         { propertyName: 'linkedToModule', label: 'Linked To Module', type: 'string', gitFieldLabel: 'LinkedToModule' },
         { propertyName: 'tag', label: 'Tag', type: 'string', gitFieldLabel: 'Tag' },
-        { propertyName: 'transitionDestin', label: 'Transition Destination', type: 'string', gitFieldLabel: 'TransitionDestin' }
+        {
+          propertyName: 'transitionDestin',
+          label: 'Transition Destination',
+          type: 'string',
+          gitFieldLabel: 'TransitionDestin',
+        }
       );
       break;
 
@@ -146,9 +162,7 @@ function getGITPropertyDefinitions(gameObject: ForgeGameObject): GITPropertyDef[
       break;
 
     case 'ForgeTrigger':
-      props.push(
-        { propertyName: 'vertices', label: 'Vertices', type: 'array', gitFieldLabel: 'Geometry' }
-      );
+      props.push({ propertyName: 'vertices', label: 'Vertices', type: 'array', gitFieldLabel: 'Geometry' });
       break;
 
     case 'ForgeWaypoint':
@@ -164,15 +178,16 @@ function getGITPropertyDefinitions(gameObject: ForgeGameObject): GITPropertyDef[
       break;
 
     case 'ForgeStore':
-      props.push(
-        { propertyName: 'resref', label: 'ResRef', type: 'string', gitFieldLabel: 'ResRef' }
-      );
+      props.push({ propertyName: 'resref', label: 'ResRef', type: 'string', gitFieldLabel: 'ResRef' });
       break;
 
     case 'ForgeSound':
-      props.push(
-        { propertyName: 'generatedType', label: 'Generated Type', type: 'number', gitFieldLabel: 'GeneratedType' }
-      );
+      props.push({
+        propertyName: 'generatedType',
+        label: 'Generated Type',
+        type: 'number',
+        gitFieldLabel: 'GeneratedType',
+      });
       break;
 
     case 'ForgeCamera':
@@ -204,7 +219,10 @@ function getGITPropertyDefinitions(gameObject: ForgeGameObject): GITPropertyDef[
  * Component for editing GIT instance properties of a selected game object
  * This edits the class properties directly, not GFF fields
  */
-const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObject | undefined; tab: TabModuleEditorState }){
+const GITInstancePropertiesEditor = function (props: {
+  gameObject: ForgeGameObject | undefined;
+  tab: TabModuleEditorState;
+}) {
   const { gameObject, tab } = props;
   const [selectedObject, setSelectedObject] = useState<ForgeGameObject | undefined>(gameObject);
 
@@ -212,7 +230,7 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
     setSelectedObject(gameObject);
   }, [gameObject]);
 
-  if(!selectedObject){
+  if (!selectedObject) {
     return (
       <div className="git-instance-properties-editor__empty-state">
         No object selected. Select a game object to edit its GIT instance properties.
@@ -230,10 +248,7 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
         </div>
         <ul className="git-instance-properties-editor__list">
           {propertyDefs.map((prop, index) => (
-            <li 
-              key={index}
-              className="git-instance-properties-editor__list-item"
-            >
+            <li key={index} className="git-instance-properties-editor__list-item">
               <PropertyEditor propertyDef={prop} gameObject={selectedObject} tab={tab} />
             </li>
           ))}
@@ -241,22 +256,26 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
       </div>
     </div>
   );
-}
+};
 
 /**
  * Component for editing a single property on a ForgeGameObject
  */
-const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject: ForgeGameObject; tab: TabModuleEditorState }){
+const PropertyEditor = function (props: {
+  propertyDef: GITPropertyDef;
+  gameObject: ForgeGameObject;
+  tab: TabModuleEditorState;
+}) {
   const { propertyDef, gameObject, tab } = props;
   const propertyName = propertyDef.propertyName;
   const nestedPath = propertyDef.nestedPath;
 
   // Get current value
   const getValue = (): any => {
-    if(nestedPath){
+    if (nestedPath) {
       const parts = nestedPath.split('.');
       let value: any = gameObject;
-      for(const part of parts){
+      for (const part of parts) {
         value = value?.[part];
       }
       return value;
@@ -268,13 +287,13 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
 
   // Update value
   const updateValue = (newValue: any) => {
-    if(nestedPath){
+    if (nestedPath) {
       const parts = nestedPath.split('.');
-      if(parts.length === 2){
+      if (parts.length === 2) {
         // Handle nested like position.x or rotation.z
         const [objProp, subProp] = parts;
         const obj = (gameObject as any)[objProp];
-        if(obj){
+        if (obj) {
           // For position/rotation which are references to container properties,
           // we update the reference directly, then trigger property change
           obj[subProp] = newValue;
@@ -289,13 +308,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
     tab.updateFile();
   };
 
-  switch(propertyDef.type){
+  switch (propertyDef.type) {
     case 'number':
       return (
         <div className="property-editor-row">
-          <label className="property-editor-label property-editor-label--ellipsis">
-            {propertyDef.label}:
-          </label>
+          <label className="property-editor-label property-editor-label--ellipsis">{propertyDef.label}:</label>
           <input
             type="number"
             value={currentValue || 0}
@@ -309,10 +326,10 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       // Check if this is a ResRef field that should have a browse button
       const isResRefField = propertyDef.gitFieldLabel === 'TemplateResRef' || propertyDef.gitFieldLabel === 'ResRef';
       const blueprintType = isResRefField ? getBlueprintTypeForGameObject(gameObject) : null;
-      
+
       const handleBrowseClick = () => {
-        if(!blueprintType) return;
-        
+        if (!blueprintType) return;
+
         const modal = new ModalBlueprintBrowserState(blueprintType, (blueprint) => {
           // Update the property with the selected blueprint's resref
           const sanitized = gameObject.sanitizeResRef(blueprint.resref);
@@ -321,20 +338,16 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
         modal.attachToModalManager(ForgeState.modalManager);
         modal.open();
       };
-      
+
       return (
         <div className="property-editor-row">
-          <label className="property-editor-label property-editor-label--ellipsis">
-            {propertyDef.label}:
-          </label>
+          <label className="property-editor-label property-editor-label--ellipsis">{propertyDef.label}:</label>
           <div className="property-editor-input-group">
             <input
               type="text"
               value={currentValue || ''}
               onChange={(e) => {
-                const value = isResRefField
-                  ? gameObject.sanitizeResRef(e.target.value)
-                  : e.target.value;
+                const value = isResRefField ? gameObject.sanitizeResRef(e.target.value) : e.target.value;
                 updateValue(value);
               }}
               className="property-editor-input"
@@ -355,9 +368,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
     case 'boolean':
       return (
         <div className="property-editor-row">
-          <label className="property-editor-label property-editor-label--ellipsis">
-            {propertyDef.label}:
-          </label>
+          <label className="property-editor-label property-editor-label--ellipsis">{propertyDef.label}:</label>
           <input
             type="checkbox"
             checked={currentValue || false}
@@ -372,14 +383,12 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       return (
         <>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} X:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} X:</label>
             <input
               type="number"
               value={currentValue?.x || 0}
               onChange={(e) => {
-                if(currentValue){
+                if (currentValue) {
                   currentValue.x = parseFloat(e.target.value) || 0;
                   gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
                   tab.updateFile();
@@ -389,14 +398,12 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             />
           </div>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} Y:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} Y:</label>
             <input
               type="number"
               value={currentValue?.y || 0}
               onChange={(e) => {
-                if(currentValue){
+                if (currentValue) {
                   currentValue.y = parseFloat(e.target.value) || 0;
                   gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
                   tab.updateFile();
@@ -406,14 +413,12 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             />
           </div>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} Z:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} Z:</label>
             <input
               type="number"
               value={currentValue?.z || 0}
               onChange={(e) => {
-                if(currentValue){
+                if (currentValue) {
                   currentValue.z = parseFloat(e.target.value) || 0;
                   gameObject.setProperty('position' as keyof ForgeGameObject, currentValue);
                   tab.updateFile();
@@ -426,18 +431,16 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       );
 
     case 'rotation':
-      if(nestedPath === 'rotation.z'){
+      if (nestedPath === 'rotation.z') {
         // Rotation is a reference to container.rotation, so we update it directly
         return (
           <div className="property-editor-row">
-            <label className="property-editor-label property-editor-label--ellipsis">
-              {propertyDef.label}:
-            </label>
+            <label className="property-editor-label property-editor-label--ellipsis">{propertyDef.label}:</label>
             <input
               type="number"
               value={gameObject.rotation?.z || 0}
               onChange={(e) => {
-                if(gameObject.rotation){
+                if (gameObject.rotation) {
                   gameObject.rotation.z = parseFloat(e.target.value) || 0;
                   gameObject.setProperty('rotation' as keyof ForgeGameObject, gameObject.rotation);
                   tab.updateFile();
@@ -452,9 +455,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       return (
         <>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} X:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} X:</label>
             <input
               type="number"
               value={currentValue?.x || 0}
@@ -467,9 +468,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             />
           </div>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} Y:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} Y:</label>
             <input
               type="number"
               value={currentValue?.y || 0}
@@ -482,9 +481,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             />
           </div>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} Z:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} Z:</label>
             <input
               type="number"
               value={currentValue?.z || 0}
@@ -503,9 +500,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       return (
         <>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} X:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} X:</label>
             <input
               type="number"
               value={currentValue?.x || 0}
@@ -518,9 +513,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             />
           </div>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} Y:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} Y:</label>
             <input
               type="number"
               value={currentValue?.y || 0}
@@ -533,9 +526,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             />
           </div>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} Z:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} Z:</label>
             <input
               type="number"
               value={currentValue?.z || 0}
@@ -548,9 +539,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             />
           </div>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} W:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} W:</label>
             <input
               type="number"
               value={currentValue?.w || 0}
@@ -569,9 +558,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       return (
         <>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} X:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} X:</label>
             <input
               type="number"
               value={currentValue?.x || 0}
@@ -584,9 +571,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             />
           </div>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} Y:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} Y:</label>
             <input
               type="number"
               value={currentValue?.y || 0}
@@ -599,9 +584,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             />
           </div>
           <div className="property-editor-row">
-            <label className="property-editor-label">
-              {propertyDef.label} Z:
-            </label>
+            <label className="property-editor-label">{propertyDef.label} Z:</label>
             <input
               type="number"
               value={currentValue?.z || 0}
@@ -619,9 +602,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
     case 'CExoLocString':
       return (
         <div className="property-editor-row">
-          <label className="property-editor-label property-editor-label--ellipsis">
-            {propertyDef.label}:
-          </label>
+          <label className="property-editor-label property-editor-label--ellipsis">{propertyDef.label}:</label>
           <div className="property-editor-message property-editor-message--italic">
             CExoLocString editing not yet implemented. Use the blueprint editor for complex string types.
           </div>
@@ -631,9 +612,7 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
     case 'array':
       return (
         <div className="property-editor-row">
-          <label className="property-editor-label property-editor-label--ellipsis">
-            {propertyDef.label}:
-          </label>
+          <label className="property-editor-label property-editor-label--ellipsis">{propertyDef.label}:</label>
           <div className="property-editor-message">
             {propertyDef.propertyName === 'vertices' && (
               <span>Vertices: {Array.isArray(currentValue) ? currentValue.length : 0} points</span>
@@ -641,9 +620,12 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
             {propertyDef.propertyName === 'spawnPointList' && (
               <span>Spawn Points: {Array.isArray(currentValue) ? currentValue.length : 0} points</span>
             )}
-            {!propertyDef.propertyName || (propertyDef.propertyName !== 'vertices' && propertyDef.propertyName !== 'spawnPointList') && (
-              <span className="property-editor-message--italic">Array editing not yet implemented. Use specialized editors for complex array types.</span>
-            )}
+            {!propertyDef.propertyName ||
+              (propertyDef.propertyName !== 'vertices' && propertyDef.propertyName !== 'spawnPointList' && (
+                <span className="property-editor-message--italic">
+                  Array editing not yet implemented. Use specialized editors for complex array types.
+                </span>
+              ))}
           </div>
         </div>
       );
@@ -651,13 +633,11 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
     default:
       return (
         <div className="property-editor-row">
-          <label className="property-editor-label property-editor-label--ellipsis">
-            {propertyDef.label}:
-          </label>
+          <label className="property-editor-label property-editor-label--ellipsis">{propertyDef.label}:</label>
           <div className="property-editor-message property-editor-message--italic">
             Editing for this property type is not yet implemented.
           </div>
         </div>
       );
   }
-}
+};

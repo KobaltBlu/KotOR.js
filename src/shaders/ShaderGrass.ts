@@ -1,22 +1,21 @@
-import * as THREE from "three";
-import { Shader } from "@/shaders/Shader";
+import * as THREE from 'three';
+import { Shader } from '@/shaders/Shader';
 
 /**
  * ShaderGrass class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ShaderGrass.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ShaderGrass extends Shader {
-
-  constructor(){
+  constructor() {
     super();
     this.name = 'grass';
     this.uniforms = THREE.UniformsUtils.merge([
-      THREE.UniformsLib["common"],
+      THREE.UniformsLib['common'],
       {
         map: { value: null },
         lightMap: { value: null },
@@ -28,9 +27,9 @@ export class ShaderGrass extends Shader {
         alphaTest: { value: 1 },
         // Fade distance uniforms
         fadeStartDistance: { value: 50.0 }, // Distance where fade starts
-        fadeEndDistance: { value: 100.0 },  // Distance where grass becomes invisible
-        useDistanceFade: { value: true }    // Toggle for distance fade
-      }
+        fadeEndDistance: { value: 100.0 }, // Distance where grass becomes invisible
+        useDistanceFade: { value: true }, // Toggle for distance fade
+      },
     ]) as any;
     this.vertex = `
     #include <common>
@@ -289,7 +288,6 @@ export class ShaderGrass extends Shader {
       gl_FragColor = vec4( texelColor.rgb, texelColor.a );
     }`;
   }
-
 }
 
 // ShaderGrass.Init();

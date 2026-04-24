@@ -1,7 +1,7 @@
-import type { GUIListBox } from "@/gui/GUIListBox";
-import type { GUIControl } from "@/gui/GUIControl";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
-import { applyProtoTemplateSkin } from "@/gui/listrow/applyProtoTemplateSkin";
+import type { GUIListBox } from '@/gui/GUIListBox';
+import type { GUIControl } from '@/gui/GUIControl';
+import { GUIControlType } from '@/enums/gui/GUIControlType';
+import { applyProtoTemplateSkin } from '@/gui/listrow/applyProtoTemplateSkin';
 
 export interface GUIListItemCallbacks {
   onClick?: (e: unknown, ...args: unknown[]) => void;
@@ -17,7 +17,7 @@ export function createDefaultLabelOrProtoItemRow(
   protoTemplate: GUIControl,
   node: unknown,
   scale: boolean,
-  options: GUIListItemCallbacks,
+  options: GUIListItemCallbacks
 ): GUIControl {
   const menu = list.menu;
   const ctrl = new menu.factory.GUIProtoItem(menu, protoTemplate.control, list, scale);
@@ -37,8 +37,8 @@ export function createDefaultLabelOrProtoItemRow(
   ctrl.setHighlightColor(ctrl.defaultHighlightColor.r, ctrl.defaultHighlightColor.g, ctrl.defaultHighlightColor.b);
   ctrl.setBorderColor(ctrl.defaultColor.r, ctrl.defaultColor.g, ctrl.defaultColor.b);
 
-  if (typeof options.onClick === "function") {
-    ctrl.addEventListener("click", (e: unknown) => {
+  if (typeof options.onClick === 'function') {
+    ctrl.addEventListener('click', (e: unknown) => {
       (e as { stopPropagation?: () => void }).stopPropagation?.();
       list.select(ctrl);
       options.onClick!(node, ctrl);
@@ -52,7 +52,7 @@ export function createDefaultCheckBoxRow(
   protoTemplate: GUIControl,
   node: unknown,
   scale: boolean,
-  options: GUIListItemCallbacks,
+  options: GUIListItemCallbacks
 ): GUIControl {
   const menu = list.menu;
   const ctrl = new menu.factory.GUICheckBox(menu, protoTemplate.control, list, scale);
@@ -67,16 +67,16 @@ export function createDefaultCheckBoxRow(
   ctrl.setText(node as any);
   list.itemGroup.add(widget);
 
-  if (typeof options.onClick === "function") {
-    ctrl.addEventListener("click", (e: unknown) => {
+  if (typeof options.onClick === 'function') {
+    ctrl.addEventListener('click', (e: unknown) => {
       (e as { stopPropagation?: () => void }).stopPropagation?.();
       list.select(ctrl);
       options.onClick!(node, ctrl);
     });
   }
 
-  if (typeof options.onValueChanged === "function") {
-    ctrl.addEventListener("valueChanged", (e: unknown) => {
+  if (typeof options.onValueChanged === 'function') {
+    ctrl.addEventListener('valueChanged', (e: unknown) => {
       (e as { stopPropagation?: () => void }).stopPropagation?.();
       options.onValueChanged!(node, ctrl);
     });
@@ -89,7 +89,7 @@ export function createDefaultButtonRow(
   protoTemplate: GUIControl,
   node: { getName: () => string },
   scale: boolean,
-  options: GUIListItemCallbacks,
+  options: GUIListItemCallbacks
 ): GUIControl | undefined {
   const menu = list.menu;
   let ctrl: GUIControl;
@@ -112,8 +112,8 @@ export function createDefaultButtonRow(
 
     list.itemGroup.add(widget);
 
-    if (typeof options.onClick === "function") {
-      ctrl.addEventListener("click", (e: unknown) => {
+    if (typeof options.onClick === 'function') {
+      ctrl.addEventListener('click', (e: unknown) => {
         (e as { stopPropagation?: () => void }).stopPropagation?.();
         list.select(ctrl);
         options.onClick!(node, ctrl);
@@ -132,7 +132,7 @@ export function createDefaultListRowByProtoType(
   type: number,
   node: any,
   scale: boolean,
-  options: GUIListItemCallbacks,
+  options: GUIListItemCallbacks
 ): GUIControl | undefined {
   switch (type) {
     case GUIControlType.Label:
@@ -143,7 +143,7 @@ export function createDefaultListRowByProtoType(
     case GUIControlType.Button:
       return createDefaultButtonRow(list, protoTemplate, node, scale, options);
     default:
-      console.error("GUIListBox.addItem", "Unknown ControlType", type);
+      console.error('GUIListBox.addItem', 'Unknown ControlType', type);
       return undefined;
   }
 }
