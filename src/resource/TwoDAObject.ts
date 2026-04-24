@@ -1,6 +1,71 @@
 import { BinaryReader } from '@/utility/binary/BinaryReader';
 import { GameFileSystem } from '@/utility/GameFileSystem';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
+import {
+  objectToTOML,
+  objectToXML,
+  objectToYAML,
+  tomlToObject,
+  xmlToObject,
+  yamlToObject,
+} from '@/utility/FormatSerialization';
+
+export type WriteTwoDAFormat = '2da' | 'csv' | 'json';
+
+export interface TwoDAJSONRow {
+  label: string;
+  cells: string[];
+}
+
+export interface TwoDAJSONData {
+  headers: string[];
+  rows: TwoDAJSONRow[];
+}
+
+/**
+ * Opaque view of a 2DA row; keeps {@link TwoDAObject} in sync on mutation.
+ */
+export class TwoDARow {
+  private row: Record<string, string>;
+
+  constructor(
+    private owner: TwoDAObject,
+    row: Record<string, string>
+  ) {
+    this.row = row;
+  }
+
+  label(): string {
+    return String(this.row.__rowlabel ?? '');
+  }
+
+  getString(column: string): string {
+    return String(this.row[column] ?? '****');
+  }
+
+  getInteger(column: string, defaultValue = 0): number {
+    const value = this.getString(column);
+    if (value === '****') {
+      return defaultValue;
+    }
+    const parsed = Number.parseInt(value, 10);
+    return Number.isNaN(parsed) ? defaultValue : parsed;
+  }
+
+  hasString(column: string): boolean {
+    return Object.prototype.hasOwnProperty.call(this.row, column);
+  }
+
+  updateValues(values: Record<string, string | number>): void {
+    Object.keys(values).forEach((column) => {
+      if (column === '__index' || column === '__rowlabel') {
+        return;
+      }
+      this.row[column] = String(values[column]);
+    });
+    this.owner.syncCounts();
+  }
+}
 
 /**
  * TwoDAObject class.

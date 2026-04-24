@@ -4,6 +4,14 @@ import type { ModuleArea, ModuleRoom } from '@/module';
 import { BitWise } from '@/utility/BitWise';
 import { GameFileSystem } from '@/utility/GameFileSystem';
 import type { IVISRoom } from '@/interface/module/IVISRoom';
+import {
+  objectToTOML,
+  objectToXML,
+  objectToYAML,
+  tomlToObject,
+  xmlToObject,
+  yamlToObject,
+} from '@/utility/FormatSerialization';
 
 enum VISReadMode {
   ROOM = 0,

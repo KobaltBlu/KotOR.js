@@ -6,6 +6,14 @@ import { GameFileSystem } from '@/utility/GameFileSystem';
 import { IBIFResource } from '@/interface/resource/IBIFResource';
 import { IBIFEntry } from '@/interface/resource/IBIFEntry';
 import { IKEYEntry } from '@/interface/resource/IKEYEntry';
+import {
+  objectToTOML,
+  objectToXML,
+  objectToYAML,
+  tomlToObject,
+  xmlToObject,
+  yamlToObject,
+} from '@/utility/FormatSerialization';
 
 /**
  * KEYObject class.

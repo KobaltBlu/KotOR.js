@@ -1,10 +1,19 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 import { GameFileSystem } from '@/utility/GameFileSystem';
 import { ResourceTypes } from '@/resource/ResourceTypes';
 import { IRIMResource } from '@/interface/resource/IRIMResource';
 import { IRIMHeader } from '@/interface/resource/IRIMHeader';
+import {
+  objectToTOML,
+  objectToXML,
+  objectToYAML,
+  tomlToObject,
+  xmlToObject,
+  yamlToObject,
+} from '@/utility/FormatSerialization';
 
 const RIM_HEADER_LENGTH = 160;
 const DEFAULT_RIM_RESOURCES_OFFSET = 120;

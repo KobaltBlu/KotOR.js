@@ -23,7 +23,7 @@ import {
   controllerTypeToAscii,
   prepareFloat,
   quaternionToAxisAngleFromXYZW,
-} from './odysseyModelAsciiHelpers';
+} from '@/odyssey/export/odysseyModelAsciiHelpers';
 
 export {
   classificationToAscii,
@@ -32,7 +32,7 @@ export {
   quaternionToAxisAngleFromXYZW,
   roundDec,
   truncateDec,
-} from './odysseyModelAsciiHelpers';
+} from '@/odyssey/export/odysseyModelAsciiHelpers';
 
 const NL = '\r\n';
 

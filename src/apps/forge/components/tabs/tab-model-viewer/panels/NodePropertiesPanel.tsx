@@ -1,14 +1,14 @@
 import React from 'react';
 import * as KotOR from '@/apps/forge/KotOR';
 import { TabModelViewerState } from '@/apps/forge/states/tabs';
-import { TransformSection } from './TransformSection';
-import { MeshSection } from './MeshSection';
-import { MaterialTextureSection } from './MaterialTextureSection';
-import { LightSection } from './LightSection';
-import { EmitterSection } from './EmitterSection';
-import { SkinSection } from './SkinSection';
-import { DanglySection } from './DanglySection';
-import { AnimationControllersSection } from './AnimationControllersSection';
+import { AnimationControllersSection } from '@/apps/forge/components/tabs/tab-model-viewer/panels/AnimationControllersSection';
+import { DanglySection } from '@/apps/forge/components/tabs/tab-model-viewer/panels/DanglySection';
+import { EmitterSection } from '@/apps/forge/components/tabs/tab-model-viewer/panels/EmitterSection';
+import { LightSection } from '@/apps/forge/components/tabs/tab-model-viewer/panels/LightSection';
+import { MaterialTextureSection } from '@/apps/forge/components/tabs/tab-model-viewer/panels/MaterialTextureSection';
+import { MeshSection } from '@/apps/forge/components/tabs/tab-model-viewer/panels/MeshSection';
+import { SkinSection } from '@/apps/forge/components/tabs/tab-model-viewer/panels/SkinSection';
+import { TransformSection } from '@/apps/forge/components/tabs/tab-model-viewer/panels/TransformSection';
 
 export interface NodePropertiesPanelProps {
   node: KotOR.OdysseyObject3D;

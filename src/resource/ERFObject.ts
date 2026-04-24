@@ -7,6 +7,14 @@ import { IERFLanguage } from '@/interface/resource/IERFLanguage';
 import { IERFKeyEntry } from '@/interface/resource/IERFKeyEntry';
 import { IERFResource } from '@/interface/resource/IERFResource';
 import { IERFObjectHeader } from '@/interface/resource/IERFObjectHeader';
+import {
+  objectToTOML,
+  objectToXML,
+  objectToYAML,
+  tomlToObject,
+  xmlToObject,
+  yamlToObject,
+} from '@/utility/FormatSerialization';
 
 const ERF_HEADER_SIZE = 160;
 

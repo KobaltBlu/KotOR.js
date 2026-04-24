@@ -4,6 +4,14 @@ import { KEYManager } from '@/managers/KEYManager';
 import { GameFileSystem } from '@/utility/GameFileSystem';
 import { IResourceDiskInfo } from '@/interface/resource/IResourceDiskInfo';
 import { IBIFResource } from '@/interface/resource/IBIFResource';
+import {
+  objectToTOML,
+  objectToXML,
+  objectToYAML,
+  tomlToObject,
+  xmlToObject,
+  yamlToObject,
+} from '@/utility/FormatSerialization';
 
 const BIF_HEADER_SIZE = 20;
 

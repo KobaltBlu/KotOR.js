@@ -1,6 +1,15 @@
 import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 import { TLKString } from '@/resource/TLKString';
 import { GameFileSystem } from '@/utility/GameFileSystem';
+import {
+  objectToTOML,
+  objectToXML,
+  objectToYAML,
+  tomlToObject,
+  xmlToObject,
+  yamlToObject,
+} from '@/utility/FormatSerialization';
 
 /**
  * TLKObject class.

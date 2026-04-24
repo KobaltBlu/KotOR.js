@@ -29,13 +29,13 @@ import {
   asciiControllerBaseToType,
   axisAngleToQuaternion,
   parseControllerKeyHeader,
-} from './odysseyModelAsciiParseMaps';
+} from '@/odyssey/export/odysseyModelAsciiParseMaps';
 import {
   MdlAsciiParseError,
   MdlAsciiTokenStream,
   tokenizeMdlAscii,
   type AsciiToken,
-} from './odysseyModelAsciiTokenizer';
+} from '@/odyssey/export/odysseyModelAsciiTokenizer';
 
 const FN_PTR_PC_K1_MODEL = 4273776;
 

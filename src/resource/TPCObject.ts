@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 import { TXI } from '@/resource/TXI';
 // @ts-ignore
 import * as dxtJs from 'dxt-js';
