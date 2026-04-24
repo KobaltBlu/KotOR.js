@@ -1,5 +1,4 @@
-﻿import React, { useCallback, useEffect, useState } from "react"
-
+import React, { useCallback, useEffect, useState } from "react"
 import "@/apps/forge/components/forge-checkbox/forge-checkbox.scss"
 import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
 

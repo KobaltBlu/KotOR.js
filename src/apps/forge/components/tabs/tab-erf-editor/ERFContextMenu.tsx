@@ -1,9 +1,8 @@
 import React from 'react';
-
-import { ContextMenuItem } from '@/apps/forge/components/common/ContextMenu';
-import { EditorFile } from '@/apps/forge/EditorFile';
-import { FileTypeManager } from '@/apps/forge/FileTypeManager';
-import * as KotOR from '@/apps/forge/KotOR';
+import { ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
+import * as KotOR from "@/apps/forge/KotOR";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { EditorFile } from "@/apps/forge/EditorFile";
 const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
 
 import * as fs from "fs";

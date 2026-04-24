@@ -1,58 +1,6 @@
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
 import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BinaryWriter } from '@/utility/binary/BinaryWriter';
-import { GameFileSystem } from '@/utility/GameFileSystem';
-
-export type WriteTwoDAFormat = '2da' | 'csv' | 'json';
-
-export interface TwoDAJSONRow {
-  label: string;
-  cells: string[];
-}
-
-export interface TwoDAJSONData {
-  headers: string[];
-  rows: TwoDAJSONRow[];
-}
-
-export class TwoDARow {
-  private row: Record<string, string>;
-
-  constructor(private owner: TwoDAObject, row: Record<string, string>) {
-    this.row = row;
-  }
-
-  label(): string {
-    return String(this.row.__rowlabel ?? '');
-  }
-
-  getString(column: string): string {
-    return String(this.row[column] ?? '****');
-  }
-
-  getInteger(column: string, defaultValue = 0): number {
-    const value = this.getString(column);
-    if (value === '****') {
-      return defaultValue;
-    }
-    const parsed = Number.parseInt(value, 10);
-    return Number.isNaN(parsed) ? defaultValue : parsed;
-  }
-
-  hasString(column: string): boolean {
-    return Object.prototype.hasOwnProperty.call(this.row, column);
-  }
-
-  updateValues(values: Record<string, string | number>): void {
-    Object.keys(values).forEach((column) => {
-      if (column === '__index' || column === '__rowlabel') {
-        return;
-      }
-      this.row[column] = String(values[column]);
-    });
-    this.owner.syncCounts();
-  }
-}
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 
 /**
  * TwoDAObject class.
@@ -264,9 +212,18 @@ export class TwoDAObject {
    * @returns The CSV string
    */
   toCSV(): string {
+    const quoteIfNeeded = (v: any): string => {
+      if(v == null) return '';
+      const s = String(v);
+      if(s.includes(',') || s.includes('"') || s.includes('\n') || s.includes('\r')){
+        return '"' + s.replace(/"/g, '""') + '"';
+      }
+      return s;
+    };
+
     let csv = '';
     for(let i = 0; i < this.columns.length; i++){
-      csv += i === 0 ? '' : this.columns[i];
+      csv += quoteIfNeeded(this.columns[i]);
       if(i < this.columns.length - 1) csv += ',';
     }
     csv += '\n';
@@ -275,12 +232,74 @@ export class TwoDAObject {
       const index = indexes[i];
       const row = this.rows[index];
       for(let j = 0; j < this.columns.length; j++){
-        csv += row[this.columns[j]];
+        csv += quoteIfNeeded(row[this.columns[j]]);
         if(j < this.columns.length - 1) csv += ',';
       }
       csv += '\n';
     }
     return csv;
+  }
+
+  /**
+   * Parse a CSV string and populate this instance's columns and rows.
+   * Handles RFC-4180 quoting (values containing commas or double-quotes).
+   * @param csv - The CSV string to parse
+   * @returns A new TwoDAObject populated from the CSV data
+   */
+  static fromCSV(csv: string): TwoDAObject {
+    const obj = new TwoDAObject(undefined);
+
+    const parseCSVLine = (line: string): string[] => {
+      const result: string[] = [];
+      let current = '';
+      let inQuotes = false;
+      for(let i = 0; i < line.length; i++){
+        const ch = line[i];
+        if(ch === '"'){
+          if(inQuotes && i + 1 < line.length && line[i + 1] === '"'){
+            current += '"';
+            i++;
+          }else{
+            inQuotes = !inQuotes;
+          }
+        }else if(ch === ',' && !inQuotes){
+          result.push(current);
+          current = '';
+        }else{
+          current += ch;
+        }
+      }
+      result.push(current);
+      return result;
+    };
+
+    // Normalise line endings
+    const lines = csv.split('\n').map(l => l.endsWith('\r') ? l.slice(0, -1) : l);
+    let lineIdx = 0;
+
+    while(lineIdx < lines.length && lines[lineIdx].trim() === '') lineIdx++;
+    if(lineIdx >= lines.length) return obj;
+
+    const headers = parseCSVLine(lines[lineIdx++]);
+    obj.columns = headers;
+    obj.ColumnCount = Math.max(0, headers.length - 1);
+
+    let rowIdx = 0;
+    while(lineIdx < lines.length){
+      const line = lines[lineIdx++];
+      if(line.trim() === '') continue;
+      const cells = parseCSVLine(line);
+      const row: any = { __index: rowIdx };
+      for(let j = 0; j < headers.length; j++){
+        row[headers[j]] = cells[j] !== undefined ? cells[j] : '****';
+      }
+      obj.rows[rowIdx] = row;
+      rowIdx++;
+    }
+
+    obj.RowCount = rowIdx;
+    obj.CellCount = obj.ColumnCount * obj.RowCount;
+    return obj;
   }
 
   /**

@@ -1,6 +1,11 @@
 # Dependencies
 node_modules/
-package-lock.json
+release/
+/settings.json
+crash.log
+npm-debug.log
+*.gypi
+backup/
 
 # Build outputs
 dist/
@@ -83,4 +88,5 @@ research/
 extensions/
 .npm-cache/
 .vscode/mcp.json
+.vscode/chrome-debug-profile/
 agentdecompile_projects/

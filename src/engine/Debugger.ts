@@ -1,9 +1,9 @@
-import { DebuggerState } from "@/enums/server/DebuggerState";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import { NWScriptStack } from "@/nwscript/NWScriptStack";
 import { IPCMessage } from "@/server/ipc/IPCMessage";
 import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
+import { DebuggerState } from "@/enums/server/DebuggerState";
+import { NWScriptStack } from "@/nwscript/NWScriptStack";
 
 /**
  * Debugger class.

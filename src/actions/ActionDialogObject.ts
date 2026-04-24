@@ -1,4 +1,3 @@
-import { Action } from "@/actions/Action";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
@@ -11,6 +10,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { DLGObject } from "@/resource/DLGObject";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionDialogObject class.

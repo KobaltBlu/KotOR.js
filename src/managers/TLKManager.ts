@@ -1,5 +1,5 @@
-import { TLKObject } from "@/resource/TLKObject";
 import { TLKString } from "@/resource/TLKString";
+import { TLKObject } from "@/resource/TLKObject";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**

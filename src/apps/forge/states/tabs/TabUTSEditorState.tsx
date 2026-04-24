@@ -1,12 +1,11 @@
 import React from "react";
-import * as THREE from 'three';
-
-import { TabUTSEditor } from "@/apps/forge/components/tabs/tab-uts-editor/TabUTSEditor";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import * as KotOR from "@/apps/forge/KotOR";
+import * as THREE from 'three';
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabUTSEditor } from "@/apps/forge/components/tabs/tab-uts-editor/TabUTSEditor";
+import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
 
 export class TabUTSEditorState extends TabState {
   tabName: string = `UTS`;

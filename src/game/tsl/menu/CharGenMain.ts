@@ -1,4 +1,3 @@
-﻿import * as THREE from "three";
 import { LBL_3DView, type GUILabel } from "@/gui";
 import { CharGenMain as K1_CharGenMain } from "@/game/kotor/KOTOR";
 

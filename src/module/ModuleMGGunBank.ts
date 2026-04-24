@@ -1,4 +1,4 @@
-﻿import { ModuleObject } from "@/module/ModuleObject";
+import { ModuleObject } from "@/module/ModuleObject";
 import { GameState } from "@/GameState";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { MDLLoader } from "@/loaders";

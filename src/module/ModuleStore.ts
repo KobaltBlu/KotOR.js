@@ -1,14 +1,14 @@
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { ResourceLoader } from "@/loaders";
-import { ModuleItem } from "@/module/ModuleItem";
 import { ModuleObject } from "@/module/ModuleObject";
+import { ModuleItem } from "@/module/ModuleItem";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameState } from "@/GameState";
 // import { ModuleObjectManager } from "@/managers";
 
 /**

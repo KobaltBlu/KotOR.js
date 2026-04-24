@@ -1,37 +1,36 @@
-import { AudioEmitter } from "@/audio/AudioEmitter";
-import { AudioEngine } from "@/audio/AudioEngine";
-import { GameEffectFactory } from "@/effects/GameEffectFactory";
-import { SWBodyBag } from "@/engine/rules/SWBodyBag";
-import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { ModulePlaceableAnimState } from "@/enums/module/ModulePlaceableAnimState";
-import { ModulePlaceableObjectSound } from "@/enums/module/ModulePlaceableObjectSound";
-import { ModulePlaceableState } from "@/enums/module/ModulePlaceableState";
-import { SkillType } from "@/enums/nwscript/SkillType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { SSFType } from "@/enums/resource/SSFType";
-import { GameState } from "@/GameState";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
-import { MDLLoader, ResourceLoader } from "@/loaders";
-import type { ModuleItem } from "@/module/ModuleItem";
-import { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleRoom } from "@/module/ModuleRoom";
-import { OdysseyWalkMesh } from "@/odyssey";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { ModulePlaceableAnimState } from "@/enums/module/ModulePlaceableAnimState";
+import { ModulePlaceableState } from "@/enums/module/ModulePlaceableState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { SSFType } from "@/enums/resource/SSFType";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyModel, OdysseyWalkMesh } from "@/odyssey";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { DLGObject } from "@/resource/DLGObject";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
-import { coerceGFFToNumber } from "@/resource/GFFStruct";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { MDLLoader, ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { OdysseyModel3D } from "@/three/odyssey";
+import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
 // import { TwoDAManager, InventoryManager, AppearanceManager, MenuManager, ModuleObjectManager, FactionManager } from "@/managers";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleItem } from "@/module/ModuleItem";
+import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import { ModulePlaceableObjectSound } from "@/enums/module/ModulePlaceableObjectSound";
+import { SWBodyBag } from "@/engine/rules/SWBodyBag";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
@@ -395,7 +394,10 @@ export class ModulePlaceable extends ModuleObject {
   retrieveInventory(){
     while(this.inventory.length){
       const item = this.inventory.pop();
-      GameState.InventoryManager.addItem(item);
+      const stackSize = item.getStackSize();
+      for(let i = 0; i < stackSize; i++){
+        GameState.InventoryManager.addItem(item);
+      }
     }
     const instance = this.scripts[ModuleObjectScript.PlaceableOnInvDisturbed];
     if(!instance){ return; }

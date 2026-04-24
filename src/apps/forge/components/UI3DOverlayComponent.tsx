@@ -1,4 +1,6 @@
 import React, { useState } from "react"
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce"
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import * as THREE from 'three';
 
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce"

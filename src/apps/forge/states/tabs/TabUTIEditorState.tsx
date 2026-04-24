@@ -1,13 +1,12 @@
 import React from "react";
-import * as THREE from "three";
-
-import { TabUTIEditor } from "@/apps/forge/components/tabs/tab-uti-editor/TabUTIEditor";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import * as KotOR from "@/apps/forge/KotOR";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabUTIEditor } from "@/apps/forge/components/tabs/tab-uti-editor/TabUTIEditor";
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import * as THREE from "three";
+import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
 
 export interface ItemPropertyEntry {
   chanceAppear: number;

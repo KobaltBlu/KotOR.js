@@ -1,8 +1,8 @@
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
-import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * ControlPTCountController class.
@@ -29,7 +29,7 @@ export class ControlPTCountController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.controlPTCount = next.value;
+      manager.modelNode.emitter.controlPTCount = OdysseyController.lerp1(last, next, fl);
     }
   }
 

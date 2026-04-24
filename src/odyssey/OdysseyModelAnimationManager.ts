@@ -1,12 +1,11 @@
 import * as THREE from "three";
-
-import { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyModelAnimationManagerState";
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
-import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyModelAnimationManagerState";
 
 /**
  * OdysseyModelAnimationManager class.
@@ -358,7 +357,11 @@ export class OdysseyModelAnimationManager {
       state = this.createAnimationState();
     }
     if(!node) return;
-    this.modelNode = this.model.nodes.get(node.name);
+    if (node.sourceNodeUUID) {
+      this.modelNode = this.model.nodesByUUID.get(node.sourceNodeUUID);
+    } else {
+      this.modelNode = this.model.nodes.get(node.name);
+    }
 
     if(!this.modelNode) return;
 

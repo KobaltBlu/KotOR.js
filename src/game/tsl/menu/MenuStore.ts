@@ -1,8 +1,8 @@
-import { MenuStore as K1_MenuStore } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import { ModuleItem, ModuleStore } from "@/module";
+import { MenuStore as K1_MenuStore } from "@/game/kotor/KOTOR";
 
 /**
  * MenuStore class.

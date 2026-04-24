@@ -1,13 +1,13 @@
-import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
-import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
-import { GUIItemEquipped } from "@/gui/protoitem/GUIItemEquipped";
-import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
 import { TextureLoader } from "@/loaders";
-import type { ModuleCreature } from "@/module/ModuleCreature";
+import { GUIItemEquipped } from "@/gui/protoitem/GUIItemEquipped";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
  * MenuEquipment class.
@@ -219,7 +219,8 @@ export class MenuEquipment extends GameMenu {
         }
       });
 
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
+      this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
         this.updateSelected(item);
       }

@@ -1,10 +1,9 @@
 import React, { createRef, useEffect, useRef, useState } from "react";
-
+import { AppProvider, AppProviderValues, useApp } from "@/apps/launcher/context/AppContext";
 import { GalleryPromoItem } from "@/apps/launcher/components/PromoItems/GalleryPromoItem";
 import { VideoPromoItem } from "@/apps/launcher/components/PromoItems/VideoPromoItem";
 import { WebviewPromoItem } from "@/apps/launcher/components/PromoItems/WebviewPromoItem";
 import { YTVideoPromoItem } from "@/apps/launcher/components/PromoItems/YTVideoPromoItem";
-import { AppProvider, AppProviderValues, useApp } from "@/apps/launcher/context/AppContext";
 
 export interface ProfilePromoItemProps {
   element: any;

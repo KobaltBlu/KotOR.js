@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-
 import { KotORModal } from "@/apps/game/components/modal/modal";
 import { useApp } from "@/apps/game/context/AppContext";
 import { EULA_VERSION, EULA_DATE, EULA } from "@/apps/game/eula";
@@ -37,6 +36,7 @@ export const ModalEULA = () => {
     <KotORModal 
       title="EULA" 
       show={showEULAModal} 
+      className="forge-style-modal eula-modal"
       onCancel={onCancel} 
       onOk={onOk}
     >

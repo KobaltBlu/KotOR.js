@@ -1,11 +1,10 @@
 import * as THREE from 'three';
-
-import { IOdysseyAnimationEvent } from '@/interface/odyssey/IOdysseyAnimationEvent';
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import { TwoDAManager } from "@/managers/TwoDAManager";
-import type { OdysseyModel } from '@/odyssey/OdysseyModel';
-import { OdysseyModelAnimationNode } from '@/odyssey/OdysseyModelAnimationNode';
-import { OdysseyModelUtility } from '@/odyssey/OdysseyModelUtility';
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
+import type { OdysseyModel } from "@/odyssey/OdysseyModel";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { IOdysseyAnimationEvent } from "@/interface/odyssey/IOdysseyAnimationEvent";
 
 /**
  * OdysseyModelAnimation class.
@@ -31,6 +30,8 @@ export class OdysseyModelAnimation {
   unknown4: Uint8Array;
   length: number;
   transition: number;
+  /** Aurora `animroot` field (32 chars in MDL); legacy alias `modelName`. */
+  animRoot: string = '';
   modelName: string;
   events: IOdysseyAnimationEvent[] = [];
   nodes: OdysseyModelAnimationNode[] = [];
@@ -67,7 +68,8 @@ export class OdysseyModelAnimation {
     //Animation
     this.length = this.odysseyModel.mdlReader.readSingle();
     this.transition = this.odysseyModel.mdlReader.readSingle();
-    this.modelName = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'').toLowerCase();
+    this.animRoot = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'').toLowerCase();
+    this.modelName = this.animRoot;
 
     const _eventsDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
     //anim.events = OdysseyModelUtility.ReadArrayFloats(this.mdlReader, this.fileHeader.ModelDataOffset + _eventsDef.offset, _eventsDef.count);
@@ -112,7 +114,8 @@ export class OdysseyModelAnimation {
     const anim = new OdysseyModelAnimation();
     anim.rootNode = original.rootNode;
     anim.nodes = original.nodes;
-    anim.modelName = original.ModelName;
+    anim.modelName = original.ModelName ?? original.modelName;
+    anim.animRoot = original.animRoot ?? anim.modelName ?? '';
     anim.events = original.events;
     anim.name = original.name?.toLowerCase().trim() || '';
     anim.length = original.length;

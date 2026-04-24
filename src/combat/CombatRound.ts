@@ -1,4 +1,4 @@
-﻿import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { Dice } from "@/utility/Dice";
 import { OdysseyModelAnimation } from "@/odyssey";
@@ -17,10 +17,11 @@ import { DamageType } from "@/enums/combat/DamageType";
 import { DiceType } from "@/enums/combat/DiceType";
 import { TextSprite3D } from "@/engine/TextSprite3D";
 import { BitWise } from "@/utility/BitWise";
-import { GameState } from "@/GameState";
 import { CombatAttackData } from "@/combat/CombatAttackData";
 import type { CombatRoundAction } from "@/combat/CombatRoundAction";
-import { getCombatMessageText, COMBAT_MESSAGE_DURATION_MS } from "@/combat/CombatMessageTLK";
+import { GameState } from "@/GameState";
+import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
+import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 
 /**
  * CombatRound class.

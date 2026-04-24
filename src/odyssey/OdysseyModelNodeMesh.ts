@@ -1,14 +1,13 @@
 import * as THREE from "three";
-
 import { OdysseyModelEngine } from "@/enums/odyssey/OdysseyModelEngine";
 import { OdysseyModelMDXFlag } from "@/enums/odyssey/OdysseyModelMDXFlag";
 import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
-import type { OdysseyModel } from "@/odyssey/OdysseyModel";
+import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import type { OdysseyModel } from "@/odyssey/OdysseyModel";
 import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
 import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
-import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 
 const mdlStringCleaner = (str: string = ''): string => {
   const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();
@@ -28,6 +27,8 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   vertices: any[];
   normals: number[];
   colors: number[];
+  /** Vertex color index list (ASCII / MDLedit); optional. */
+  colorIndices?: number[];
   tvectors: number[][];
   texCords: any[][];
   tangents: any[][];
@@ -80,6 +81,9 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   tangent4: { tangents: any[]; bitangents: any[]; normals: any[]; computed: any[]; };
   faceArrayDefinition: IOdysseyArrayDefinition;
   vertexCoordinatesOffset: number;
+
+  /** Mesh inverted counter from MDL (Aurora `inv_count`). */
+  meshInvertedCounter: number = 0;
 
   //MDX
   MDXDataSize: number;
@@ -367,7 +371,7 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
         this.faces[i].b = this.odysseyModel.mdlReader.readUInt16();
         this.faces[i].c = this.odysseyModel.mdlReader.readUInt16();
         this.faces[i].surfacemat = OdysseyModelUtility.SURFACEMATERIALS[this.faces[i].materialIndex];
-        // this.faces[i].color = (OdysseyWalkMesh.TILECOLORS[this.faces[i].materialIndex] || OdysseyWalkMesh.TILECOLORS[0]).color.clone();
+        this.faces[i].color = OdysseyWalkMesh.colorForMaterialIndex(this.faces[i].materialIndex);
 
         this.indices.push(this.faces[i].a, this.faces[i].b, this.faces[i].c);
 
@@ -378,6 +382,17 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
           this.texCords[1][i] = ([this.tvectors[1][this.faces[i].a], this.tvectors[1][this.faces[i].b], this.tvectors[1][this.faces[i].c]]);
 
       }
+
+      if (this.odysseyModel.modelHeader.smoothingGroupsInFile && this.faceArrayDefinition.count > 0) {
+        for (let i = 0; i < this.faceArrayDefinition.count; i++) {
+          this.faces[i].smoothingGroup = this.odysseyModel.mdlReader.readUInt32();
+        }
+      }
+    }
+
+    if (this.InvertedCountArrayDef?.count > 0) {
+      this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.InvertedCountArrayDef.offset);
+      this.meshInvertedCounter = this.odysseyModel.mdlReader.readUInt32();
     }
 
     this.odysseyModel.mdlReader.position = cachedPosition;

@@ -1,5 +1,4 @@
 import * as THREE from "three";
-
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIButton, GUILabel } from "@/gui";

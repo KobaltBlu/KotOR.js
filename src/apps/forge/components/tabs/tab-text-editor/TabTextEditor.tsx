@@ -1,14 +1,14 @@
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import React, { useState, useRef, useEffect } from "react";
 import MonacoEditor from "react-monaco-editor";
-
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import TabManager from "@/apps/forge/components/tabs/TabManager";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { TabTextEditorState } from "@/apps/forge/states/tabs";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
+import TabManager from "@/apps/forge/components/tabs/TabManager";
+import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
 export const TabTextEditor = function(props: any){
   const tab: TabTextEditorState = props.tab;

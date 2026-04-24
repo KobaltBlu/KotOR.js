@@ -1,3 +1,21 @@
+import * as KotOR from "@/apps/forge/KotOR";
+import type { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { AreaMap } from "@/module/AreaMap";
+import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeMiniGame } from "@/apps/forge/module-editor/ForgeMiniGame";
+import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
+import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
+import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
+import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
+import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
+import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
+import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
+import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
+import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
 import * as THREE from 'three';
 
 import * as KotOR from "@/apps/forge/KotOR";

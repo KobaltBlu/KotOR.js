@@ -1,10 +1,10 @@
-import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
-import { EngineMode, GameEngineType } from "@/enums/engine";
-import { EngineState } from "@/enums/engine/EngineState";
 import * as KOTOR from "@/game/kotor/KOTOR";
 import * as TSL from "@/game/tsl/TSL";
 import { GameState } from "@/GameState";
+import { EngineMode, GameEngineType } from "@/enums/engine";
 import type { GUIControl, GameMenu } from "@/gui";
+import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
+import { EngineState } from "@/enums/engine/EngineState";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
 /**
@@ -158,30 +158,15 @@ export class MenuManager {
     return MenuManager.activeMenus[MenuManager.activeMenus.length-1];
   }
 
-  static CyclePrimaryMenu(direction: number){
-    const menus: GameMenu[] = [
-      MenuManager.MenuMessages,
-      MenuManager.MenuJournal,
-      MenuManager.MenuMap,
-      MenuManager.MenuOptions,
-      MenuManager.MenuCharacter,
-      MenuManager.MenuAbilities,
-      MenuManager.MenuInventory,
-      MenuManager.MenuEquipment
-    ].filter(Boolean);
-
-    if(!menus.length || !MenuManager.MenuTop){ return; }
-
-    const current = MenuManager.GetCurrentMenu();
-    let index = menus.indexOf(current);
-    if(index < 0){
-      index = direction >= 0 ? 0 : menus.length - 1;
-    }else{
-      index = (index + (direction >= 0 ? 1 : -1) + menus.length) % menus.length;
+  /** Topmost menu for input: overlay modals above the regular menu stack. */
+  static GetForegroundMenu(): GameMenu | undefined {
+    if(MenuManager.activeModals.length){
+      return MenuManager.activeModals[MenuManager.activeModals.length - 1];
     }
-
-    MenuManager.MenuTop.CloseAllOtherMenus();
-    menus[index].open();
+    if(MenuManager.activeMenus.length){
+      return MenuManager.activeMenus[MenuManager.activeMenus.length - 1];
+    }
+    return undefined;
   }
 
   static Resize(){

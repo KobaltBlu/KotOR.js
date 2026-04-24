@@ -1,3 +1,5 @@
+import { RIMObject } from "@/resource/RIMObject";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 import * as path from "path";
 
 import { RIMObject } from "@/resource/RIMObject";

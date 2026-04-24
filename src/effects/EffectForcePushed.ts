@@ -1,4 +1,4 @@
-﻿import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import * as THREE from 'three';
 import { GameState } from "@/GameState";

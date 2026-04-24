@@ -1,7 +1,5 @@
-﻿import React, { useEffect, useRef, useState } from "react";
-import { useLoadingConsole } from "@/apps/common/context/LoadingConsoleContext";
-import type { LoadingConsoleEntry } from "@/apps/common/context/LoadingConsoleContext";
-import '@/apps/common/components/loadingScreen/LoadingScreen.scss';
+import React, { useEffect, useRef, useState } from "react";
+import "@/apps/common/components/loadingScreen/LoadingScreen.scss";
 
 export interface ILoadingScreenProps {
   active?: boolean;

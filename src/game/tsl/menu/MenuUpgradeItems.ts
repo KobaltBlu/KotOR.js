@@ -1,5 +1,5 @@
-import { MenuUpgradeItems as K1_MenuUpgradeItems } from "@/game/kotor/KOTOR";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { MenuUpgradeItems as K1_MenuUpgradeItems } from "@/game/kotor/KOTOR";
 
 /**
  * MenuUpgradeItems class.

@@ -1,21 +1,21 @@
+import React from "react";
+import { TabTextEditor } from "@/apps/forge/components/tabs/tab-text-editor/TabTextEditor";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+// import { NWScriptCompiler } from "@/nwscript/NWScriptCompiler";
+import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState } from "@/apps/forge/states/tabs";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import React from "react";
 
-import { TabTextEditor } from "@/apps/forge/components/tabs/tab-text-editor/TabTextEditor";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-// import { NWScriptCompiler } from "@/nwscript/NWScriptCompiler";
-
 import * as KotOR from "@/apps/forge/KotOR";
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
-import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
-import { TabScriptCompileLogState, TabScriptErrorLogState, TabScriptInspectorState } from "@/apps/forge/states/tabs";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { SemanticFunctionNode } from "@/nwscript/compiler/ASTSemanticTypes";
 import { NWScriptCompiler } from "@/nwscript/compiler/NWScriptCompiler";
-import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
+import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
+import { SemanticFunctionNode } from "@/nwscript/compiler/ASTSemanticTypes";
 
 export class TabTextEditorState extends TabState {
 
@@ -509,4 +509,5 @@ export class TabTextEditorState extends TabState {
       // }
   }
 
+  
 }

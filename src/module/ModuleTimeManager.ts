@@ -1,4 +1,4 @@
-﻿import { ModuleCalendar } from "@/module/ModuleCalendar";
+import { ModuleCalendar } from "@/module/ModuleCalendar";
 import { GFFObject } from "@/resource/GFFObject";
 
 /**

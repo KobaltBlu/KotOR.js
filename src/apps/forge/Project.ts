@@ -1,16 +1,17 @@
 import { EditorFile } from "@/apps/forge/EditorFile";
+import { DeepObject } from "@/utility/DeepObject";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabModuleEditorState, TabQuickStartState } from "@/apps/forge/states/tabs";
+
+import * as KotOR from "@/apps/forge/KotOR";
 import { ProjectType } from "@/apps/forge/enum/ProjectType";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
 import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
-import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
 import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabModuleEditorState, TabQuickStartState } from "@/apps/forge/states/tabs";
-import { DeepObject } from "@/utility/DeepObject";
 
 const DIR_FORGE = '.forge';
 const DIR_BLUEPRINTS = 'blueprints';

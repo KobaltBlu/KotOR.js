@@ -1,14 +1,14 @@
 import * as THREE from "three";
-
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { TextureType } from "@/enums/loaders/TextureType";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
+import { TextureType } from "@/enums/loaders/TextureType";
 import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
 import { TextureLoader } from "@/loaders";
 import { ShaderManager } from "@/managers/ShaderManager";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
 
 /**
  * GUIProgressBar class.
@@ -30,6 +30,7 @@ export class GUIProgressBar extends GUIControl {
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUIProgressBar;
+    this.setControlType(GUIControlType.Progress);
 
     this.startFromLeft = ( control.hasField('STARTFROMLEFT') ? control.getFieldByLabel('STARTFROMLEFT')?.getValue() : 0 );
     this.curValue = ( control.hasField('CURVALUE') ? control.getFieldByLabel('CURVALUE')?.getValue() : 0 );

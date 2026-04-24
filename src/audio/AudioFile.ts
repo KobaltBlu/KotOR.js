@@ -1,10 +1,10 @@
-import { ADPCMDecoder } from "@/audio/ADPCMDecoder";
-import { AudioFileAudioType } from "@/enums/audio/AudioFileAudioType";
-import { AudioFileWaveEncoding } from "@/enums/audio/AudioFileWaveEncoding";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { AudioFileAudioType } from "@/enums/audio/AudioFileAudioType";
+import { AudioFileWaveEncoding } from "@/enums/audio/AudioFileWaveEncoding";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { Utility } from "@/utility/Utility";
+import { ADPCMDecoder } from "@/audio/ADPCMDecoder";
 
 //Header Tests
 const fakeHeaderTest = [0xFF, 0xF3, 0x60, 0xC4];
@@ -318,6 +318,10 @@ export class AudioFile {
   }
 
   getExportableData(){
+    if (!this.isProcessed && this.data instanceof Uint8Array && this.data.length > 0) {
+      this.reader = new BinaryReader(this.data);
+      this.processFile();
+    }
 
     switch(this.audioType){
       case AudioFileAudioType.WAVE:
@@ -343,6 +347,12 @@ export class AudioFile {
           case AudioFileWaveEncoding.PCM:
             return this.reader.buffer;
           break;
+          default:
+            // Unknown / extended WAV codec — still export raw file bytes
+            if (this.reader?.buffer?.length) {
+              return new Uint8Array(this.reader.buffer);
+            }
+          break;
         }
       break;
       case AudioFileAudioType.MP3:
@@ -350,6 +360,12 @@ export class AudioFile {
       break;
     }
 
+    if (this.data instanceof Uint8Array && this.data.length > 0) {
+      return new Uint8Array(this.data);
+    }
+    if (this.reader?.buffer?.length) {
+      return new Uint8Array(this.reader.buffer);
+    }
     return new Uint8Array(0);
 
   }

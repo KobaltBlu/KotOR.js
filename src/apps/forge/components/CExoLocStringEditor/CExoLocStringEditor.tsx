@@ -1,7 +1,6 @@
-﻿import React, { useState, useEffect } from "react";
-
-import { TLKSearchModal } from "@/apps/forge/components/TLKSearchModal";
+import React, { useState, useEffect } from "react";
 import * as KotOR from "@/apps/forge/KotOR";
+import { TLKSearchModal } from "@/apps/forge/components/TLKSearchModal";
 import "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor.scss";
 
 export interface CExoLocStringEditorProps {

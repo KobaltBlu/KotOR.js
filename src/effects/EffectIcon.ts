@@ -1,7 +1,7 @@
 import { GameEffect } from "@/effects/GameEffect";
+import { GameState } from "@/GameState";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
 import { IEffectIconListItem } from "@/interface/module/IEffectIconListItem";
 import { TextureLoader } from "@/loaders";
 // import { TwoDAManager } from "@/managers";

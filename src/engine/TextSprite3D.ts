@@ -1,4 +1,4 @@
-﻿import * as THREE from "three";
+import * as THREE from "three";
 import type { ModuleArea, ModuleObject } from "@/module";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { IGUIControlText } from "@/interface/gui/IGUIControlText";

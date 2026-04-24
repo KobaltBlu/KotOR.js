@@ -1,4 +1,4 @@
-﻿import * as THREE from "three";
+import * as THREE from "three";
 import { GFFObject } from "@/resource/GFFObject";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { ResourceTypes } from "@/resource/ResourceTypes";
@@ -14,8 +14,7 @@ import { BitWise } from "@/utility/BitWise";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { Mouse } from "@/controls/Mouse";
 import { KeyMapper } from "@/controls";
-import type { GUIProtoItem } from "@/gui/GUIProtoItem";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { shouldSuppressGameMenuHoverForListRow } from "@/gui/listrow/listRowHover";
 
 /**
  * GameMenu class.
@@ -317,10 +316,7 @@ export class GameMenu {
     if(!BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIControl))
       return false;
 
-    if(BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIProtoItem) && (
-      typeof (control as GUIProtoItem).list.GUIProtoItemClass !== 'undefined' &&
-      control.type !== GUIControlType.Label && control.type !== GUIControlType.ProtoItem
-    )){
+    if(shouldSuppressGameMenuHoverForListRow(control)){
       return false;
     }
 
@@ -408,12 +404,26 @@ export class GameMenu {
   }
 
   triggerControllerDUpPress(){
+    if(
+      this.selectedControl &&
+      BitWise.InstanceOfObject(this.selectedControl.objectType, GUIControlTypeMask.GUIListBox)
+    ){
+      (this.selectedControl as GUIControl & { directionalNavigate(dir: string): void }).directionalNavigate('up');
+      return;
+    }
     if(this.manager.activeGUIElement){
       //this.manager.activeGUIElement.click();
     }
   }
 
   triggerControllerDDownPress(){
+    if(
+      this.selectedControl &&
+      BitWise.InstanceOfObject(this.selectedControl.objectType, GUIControlTypeMask.GUIListBox)
+    ){
+      (this.selectedControl as GUIControl & { directionalNavigate(dir: string): void }).directionalNavigate('down');
+      return;
+    }
     if(this.manager.activeGUIElement){
       //this.manager.activeGUIElement.click();
     }
@@ -494,7 +504,7 @@ export class GameMenu {
   }
 
   gameStringParse(text: string){
-    text = text.split('##')[0].replaceAll(/\{.*\}/ig, '').trim();
+    text = text.split('##')[0].replaceAll(/\{.*?\}/ig, '').trim();
     text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
     text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
     text = text.replace(/<LastName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('LastName')?.getValue());

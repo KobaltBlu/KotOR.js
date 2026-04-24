@@ -1,8 +1,8 @@
+import { GameState } from "@/GameState";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
 // import { ModuleObjectManager } from "@/managers/ModuleObjectManager";
 import type { Module, ModuleObject } from "@/module";
 import { GFFField } from "@/resource/GFFField";

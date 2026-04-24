@@ -1,5 +1,4 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-
 import { ProfilePromoItem } from "@/apps/launcher/components/ProfilePromoItem";
 import { useApp } from "@/apps/launcher/context/AppContext";
 

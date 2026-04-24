@@ -1,7 +1,7 @@
-import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
 import type { GUIListBox, GUIButton } from "@/gui";
 import { TalentFeat } from "@/talents";
+import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "@/game/kotor/KOTOR";
 
 /**
  * CharGenQuickOrCustom class.
@@ -84,7 +84,7 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
         //Game.CharGenMain.Hide();
 
         try{
-          GameState.CharGenManager.selectedCreature.model.parent.remove(GameState.CharGenManager.selectedCreature.model);
+          GameState.CharGenManager.selectedCreature.model.removeFromParent();
         }catch(e){}
 
         // this.manager.CharGenClass.getControlByName('_3D_MODEL'+(CharGenManager.selectedClass+1))

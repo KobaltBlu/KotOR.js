@@ -1,10 +1,10 @@
-import { ModuleCreatureArmorSlot } from "@/enums";
-import { MenuInventory as K1_MenuInventory } from "@/game/kotor/KOTOR";
-import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
 import { GameState } from "@/GameState";
+import { ModuleCreatureArmorSlot } from "@/enums";
 import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
 import { TextureLoader } from "@/loaders/TextureLoader";
 import type { ModuleItem } from "@/module/ModuleItem";
+import { MenuInventory as K1_MenuInventory } from "@/game/kotor/KOTOR";
+import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
 
 enum InventoryFilter {
   DATAPADS = 1,
@@ -115,7 +115,7 @@ export class MenuInventory extends K1_MenuInventory {
         this.updateFilterButton();
       });
 
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();

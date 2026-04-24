@@ -1,14 +1,13 @@
+import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
-
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import * as KotOR from "@/apps/forge/KotOR";
-import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 export enum CameraView {
   Top = 'top',
@@ -109,6 +108,11 @@ export class UI3DRenderer extends EventListenerModel {
   time: number;
   deltaTime: number;
   deltaTimeFixed: number = 0;
+
+  /**
+   * Dangly mesh wind preview (0–2, matches ARE WindPower). Used when this renderer is OdysseyModel3D context (e.g. model viewer); overrides module.area wind when set.
+   */
+  windowPower: number = 1;
 
   canvas?: HTMLCanvasElement;
   width: number = 640;
@@ -880,6 +884,17 @@ export class UI3DRenderer extends EventListenerModel {
 
     this.sceneGraphManager.rebuild();
   }
+
+  /** Swap a replaced OdysseyModel3D instance in the Forge registry (e.g. after rebuildFromSourceModel). */
+  replaceOdysseyModelInRegistry(prev: KotOR.OdysseyModel3D, next: KotOR.OdysseyModel3D): void {
+    const index = this.odysseyModels.indexOf(prev);
+    if (index >= 0) {
+      this.odysseyModels[index] = next;
+    } else if (this.odysseyModels.indexOf(next) < 0) {
+      this.odysseyModels.push(next);
+    }
+    this.sceneGraphManager.rebuild();
+  }
   
   attachCamera(camera: THREE.PerspectiveCamera){
     camera.userData.heler = new THREE.CameraHelper( camera );
@@ -1124,7 +1139,9 @@ export class UI3DRenderer extends EventListenerModel {
     });
     if(this.renderer){
       this.renderer.clear();
-      // this.selectionBox.update();
+      if (this.selectionBox.visible) {
+        this.selectionBox.update();
+      }
 
       const delta = this.clock.getDelta();
       this.time += delta;

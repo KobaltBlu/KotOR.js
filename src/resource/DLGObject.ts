@@ -1,21 +1,20 @@
-import * as THREE from "three";
-
-import { AudioEngine } from "@/audio/AudioEngine";
-import { AudioLoader } from "@/audio/AudioLoader";
-import { ModuleObjectType } from "@/enums";
-import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
 import { GameState } from "@/GameState";
-import { IDLGStuntActor } from "@/interface/dialog/IDLGStuntActor";
-import { MDLLoader, ResourceLoader } from "@/loaders";
 import type { ModuleCreature, ModuleObject } from "@/module";
-import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
 import { DLGNode } from "@/resource/DLGNode";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
-import { OdysseyModel3D } from "@/three/odyssey";
+import * as THREE from "three";
+import { IDLGStuntActor } from "@/interface/dialog/IDLGStuntActor";
+import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 // import { NWScript } from "@/nwscript/NWScript";
+import { MDLLoader, ResourceLoader } from "@/loaders";
 import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { AudioEngine } from "@/audio/AudioEngine";
 
 export interface DLGObjectScripts {
   onEndConversationAbort: NWScriptInstance,

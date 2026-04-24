@@ -1,4 +1,4 @@
-﻿import type { GameMenu } from "@/gui/GameMenu";
+import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
 import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
@@ -9,7 +9,7 @@ import { GameState } from "@/GameState";
 import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
 // import { ShaderManager } from "@/managers";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import type { GUIControlEvent } from "@/gui/GUIControlEvent";
+import { GUIControlType } from "@/enums/gui/GUIControlType";
 
 /**
  * GUICheckBox class.
@@ -32,6 +32,7 @@ export class GUICheckBox extends GUIControl{
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUICheckBox;
+    this.setControlType(GUIControlType.CheckBox);
 
     this.value = 0;
 

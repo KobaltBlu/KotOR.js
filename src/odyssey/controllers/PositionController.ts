@@ -1,9 +1,9 @@
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * PositionController class.

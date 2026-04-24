@@ -1,7 +1,9 @@
-﻿import { DeepObject } from "@/utility/DeepObject";
+import { DeepObject } from "@/utility/DeepObject";
 import * as swKotOR from "@/game/kotor/swkotor-config";
 import * as swKotOR2 from "@/game/tsl/swkotor2-config";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 
 /**
  * INIConfig class.

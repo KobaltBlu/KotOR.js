@@ -1,4 +1,4 @@
-import type { GameMenu } from "@/gui/GameMenu";
+import type { GFFStruct } from "@/resource/GFFStruct";
 import { GUIButton } from "@/gui/GUIButton";
 import { GUICheckBox } from "@/gui/GUICheckBox";
 import { GUIControl } from "@/gui/GUIControl";
@@ -8,7 +8,7 @@ import { GUIProgressBar } from "@/gui/GUIProgressBar";
 import { GUIProtoItem } from "@/gui/GUIProtoItem";
 import { GUIScrollBar } from "@/gui/GUIScrollBar";
 import { GUISlider } from "@/gui/GUISlider";
-import type { GFFStruct } from "@/resource/GFFStruct";
+import type { GameMenu } from "@/gui/GameMenu";
 
 /**
  * GUIControlFactory class.

@@ -1,10 +1,10 @@
-import { MenuAbilities as K1_MenuAbilities } from "@/game/kotor/KOTOR";
-import { GUICreatureSkill } from "@/game/tsl/gui/GUICreatureSkill";
-import { GUIFeatItem } from "@/game/tsl/gui/GUIFeatItem";
-import { GUISpellItem } from "@/game/tsl/gui/GUISpellItem";
 import { GameState } from "@/GameState";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import { MenuAbilities as K1_MenuAbilities } from "@/game/kotor/KOTOR";
+import { GUICreatureSkill } from "@/game/tsl/gui/GUICreatureSkill";
+import { GUISpellItem } from "@/game/tsl/gui/GUISpellItem";
+import { GUIFeatItem } from "@/game/tsl/gui/GUIFeatItem";
 import { type TalentFeat } from "@/talents/TalentFeat";
 
 enum AbilityFilter {
@@ -217,7 +217,7 @@ export class MenuAbilities extends K1_MenuAbilities {
 
     switch(this.filter){
       case AbilityFilter.SKILLS:
-        this.LB_ABILITY.GUIProtoItemClass = GUICreatureSkill;
+        this.LB_ABILITY.setProtoBuilder(GUICreatureSkill);
         this.LB_ABILITY.padding = 0;
         this.LB_DESC.show();
         this.LBL_BONUS.show();
@@ -241,7 +241,7 @@ export class MenuAbilities extends K1_MenuAbilities {
         this.LBL_INFOBG.show();
       break;
       case AbilityFilter.FEATS:
-        this.LB_ABILITY.GUIProtoItemClass = GUIFeatItem;
+        this.LB_ABILITY.setProtoBuilder(GUIFeatItem);
         this.LB_ABILITY.padding = 5.5;
         this.LB_DESC_FEATS.show();
         this.LBL_BONUS.hide();

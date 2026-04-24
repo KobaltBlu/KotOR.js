@@ -1,22 +1,19 @@
 import { ModuleObject } from "@/module/ModuleObject";
 import { AudioEmitter } from "@/audio/AudioEmitter";
 import { AudioEngine } from "@/audio/AudioEngine";
-// import { ModuleObjectManager } from "@/managers";
-import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
-import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
-
-const log = createScopedLogger(LogScope.Module);
-import { AudioGeneratedType } from "@/enums/audio/AudioGeneratedType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { MDLLoader, ResourceLoader } from "@/loaders";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { MDLLoader, ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+// import { ModuleObjectManager } from "@/managers";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { GameState } from "@/GameState";
 import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
+import { AudioGeneratedType } from "@/enums/audio/AudioGeneratedType";
 
 /**
 * ModuleSound class.

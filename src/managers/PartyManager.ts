@@ -1,8 +1,17 @@
+import { GameState } from "@/GameState";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
 import * as path from "path";
 
 import * as THREE from "three";
-
+import EngineLocation from "@/engine/EngineLocation";
 import { CurrentGame } from "@/engine/CurrentGame";
+import { ModuleCreature } from "@/module/ModuleCreature";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { ResourceLoader } from "@/loaders";
 import { GameEngineType, UIIconTimerType } from "@/enums/engine";
 import { PartyManagerEvent } from "@/types/PartyManagerEvent";
@@ -10,21 +19,11 @@ import { ModulePlayer } from "@/module/ModulePlayer";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { JournalEntry } from "@/engine/JournalEntry";
 import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
-import EngineLocation from "@/engine/EngineLocation";
 import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
 import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
 import { type SWPortrait } from "@/engine/rules/SWPortrait";
-import { PazaakCards } from "@/enums/minigames/PazaakCards";
-import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { ModuleCreature } from "@/module/ModuleCreature";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { OdysseyModel3D } from "@/three/odyssey";
 import { BitWise } from "@/utility/BitWise";
 
 export interface CurrentMember {

@@ -1,8 +1,8 @@
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
-import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * ParticleRotationController class.
@@ -22,11 +22,22 @@ export class ParticleRotationController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    
+    if(manager.modelNode.emitter){
+      const em = manager.modelNode.emitter;
+      em.angle = data.value ?? 0;
+      em.material.uniforms.rotate.value = em.angle;
+      em.material.uniformsNeedUpdate = true;
+    }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    
+    if(manager.modelNode.emitter){
+      const em = manager.modelNode.emitter;
+      const v = OdysseyController.lerp1(last, next, fl);
+      em.angle = v;
+      em.material.uniforms.rotate.value = v;
+      em.material.uniformsNeedUpdate = true;
+    }
   }
 
 }

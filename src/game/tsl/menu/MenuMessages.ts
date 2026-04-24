@@ -1,5 +1,5 @@
-import { MenuMessages as K1_MenuMessages } from "@/game/kotor/KOTOR";
 import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { MenuMessages as K1_MenuMessages } from "@/game/kotor/KOTOR";
 
 enum MessageType {
   DIALOG = 1,

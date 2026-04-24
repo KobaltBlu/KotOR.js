@@ -1,14 +1,13 @@
-﻿import React, { useState, useCallback, memo } from "react";
-
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import React, { useState, useCallback, memo } from "react";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import * as KotOR from "@/apps/forge/KotOR";
 import { Project } from "@/apps/forge/Project";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { RecentProject } from "@/apps/forge/RecentProject";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { RecentProject } from "@/apps/forge/RecentProject";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import * as KotOR from "@/apps/forge/KotOR";
 import "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart.scss";
 import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
 

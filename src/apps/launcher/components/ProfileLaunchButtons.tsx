@@ -1,9 +1,8 @@
-import React, { useState } from "react";
-
-import { useApp } from "@/apps/launcher/context/AppContext";
+import React, { useEffect, useMemo, useState } from "react";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { ConfigClient } from "@/utility/ConfigClient";
+import { useApp } from "@/apps/launcher/context/AppContext";
 
 export interface ProfileLaunchButtonsProps {
   profile: any
@@ -13,17 +12,28 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   const profile = props.profile;
   const appContext = useApp();
   const [profileCategoriesValue, setProfileCategories] = appContext.profileCategories;
+  const isForge = profile.name == "KotOR Forge";
 
   const [render, rerender] = useState(false);
   const [selectValue, setSelectValue] = useState<any>("js");
   const [forgeSelectValue, setForgeSelectValue] = useState<any>();
+  const forgeCompatibleProfiles = useMemo(
+    () => (profileCategoriesValue?.game?.profiles || []).filter((p: any) => p.isForgeCompatible),
+    [profileCategoriesValue?.game?.profiles]
+  );
+
+  useEffect(() => {
+    if (!isForge || !forgeCompatibleProfiles.length) return;
+    if (forgeSelectValue == null || forgeSelectValue === "") {
+      setForgeSelectValue(forgeCompatibleProfiles[0].key);
+    }
+  }, [isForge, forgeCompatibleProfiles, forgeSelectValue]);
+
   const isLocateRequired = (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON && !!profile.locate_required) && !profile.directory
 
   const launchLabel = profile.category == 'game' ? 'PLAY' : 'OPEN';
 
   const hasExecutableSupport = (ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON && profile.executable) ? true: false;
-
-  const isForge = (profile.name == 'KotOR Forge');
 
   const onSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectValue(e.target.value);
@@ -73,10 +83,9 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
   const btnLaunch = () => {
     const clean_profile = Object.assign({}, profile);
     if(isForge){
-      const clean_game_profile = Object.assign({}, profileCategoriesValue?.game?.profiles.find( (p: any) => {
-        return p.key == forgeSelectValue;
-      }));
-      console.log('s', forgeSelectValue, clean_game_profile);
+      const effectiveGameKey = forgeSelectValue || forgeCompatibleProfiles[0]?.key;
+      let clean_game_profile = Object.assign({}, forgeCompatibleProfiles.find( (p: any) => p.key == effectiveGameKey));
+      if (!clean_game_profile?.key) return;
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         clean_profile.key = clean_game_profile.key;
         window.electron.launchProfile(clean_profile);
@@ -113,11 +122,8 @@ export const ProfileLaunchButtons = function(props: ProfileLaunchButtonsProps) {
             </select>
           </div> : isForge ? (
             <div className="launch-select">
-              <select className="select" onChange={onForgeSelectChange} value={forgeSelectValue}>
-                {(
-                  profileCategoriesValue?.game?.profiles || [])
-                  .filter( (p: any) => p.isForgeCompatible )
-                  .map((p: any, index: number) => {
+              <select className="select" onChange={onForgeSelectChange} value={forgeSelectValue ?? forgeCompatibleProfiles[0]?.key ?? ""}>
+                {forgeCompatibleProfiles.map((p: any, index: number) => {
                     return (
                       <option key={p.name} value={p.key}>{p.name}</option>
                     )

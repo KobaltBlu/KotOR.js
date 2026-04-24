@@ -1,17 +1,17 @@
 import { CombatAttackDamage } from "@/combat/CombatAttackDamage";
-import { EffectDamage } from "@/effects";
-import { AttackResult } from "@/enums/combat/AttackResult";
-import { CombatFeatType } from "@/enums/combat/CombatFeatType";
-import { DamageType } from "@/enums/combat/DamageType";
-import { DiceType } from "@/enums/combat/DiceType";
-import { WeaponType } from "@/enums/combat/WeaponType";
-import { WeaponWield } from "@/enums/combat/WeaponWield";
-import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { DamageType } from "@/enums/combat/DamageType";
+import { EffectDamage } from "@/effects";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { AttackResult } from "@/enums/combat/AttackResult";
 import { TalentFeat } from "@/talents";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { Dice } from "@/utility/Dice";
+import { DiceType } from "@/enums/combat/DiceType";
+import { WeaponType } from "@/enums/combat/WeaponType";
 
 /**
  * CombatAttackData class.

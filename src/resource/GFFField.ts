@@ -1,7 +1,7 @@
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import type { IGFFFieldJSON } from "@/interface/resource/IGFFFieldJSON";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { GFFStruct } from "@/resource/GFFStruct";
+import type { IGFFFieldJSON } from "@/interface/resource/IGFFFieldJSON";
 
 /**
  * Represents a field within a GFF (Generic File Format) structure.

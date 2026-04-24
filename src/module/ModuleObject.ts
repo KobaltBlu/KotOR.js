@@ -1,8 +1,8 @@
-﻿import * as THREE from "three";
+import * as THREE from "three";
 import type { Action } from "@/actions/Action";
 import { ActionQueue } from "@/actions/ActionQueue";
 import { AudioEmitter } from "@/audio/AudioEmitter";
-import { CollisionData } from "@/engine/CollisionData";
+import { CollisionManager } from "@/engine/CollisionManager";
 import { CombatData } from "@/combat/CombatData";
 import type { EffectLink } from "@/effects";
 import type { GameEffect } from "@/effects/GameEffect";
@@ -27,7 +27,7 @@ import { LIPObject } from "@/resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
 import { Utility } from "@/utility/Utility";
 import { ComputedPath } from "@/engine/pathfinding";
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleItem, ModuleRoom } from ".";
+import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from "@/module";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { DLGObject } from "@/resource/DLGObject";
 import { Faction } from "@/engine/Faction";
@@ -51,6 +51,8 @@ import { CombatActionType, EngineDebugType, ModuleObjectScript, ModuleTriggerTyp
 import type { SWPortrait } from "@/engine/rules/SWPortrait";
 import type { IHeardString } from "@/interface/dialog/IHeardString";
 import type { SWRange } from "@/engine/rules/SWRange";
+import { TURN_SPEED_SLOW } from "@/engine/TurnSpeeds";
+
 
 /**
 * ModuleObject class.

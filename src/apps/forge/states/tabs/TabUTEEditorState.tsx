@@ -1,12 +1,11 @@
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import * as KotOR from "@/apps/forge/KotOR";
 import React from "react";
-
-import { TabUTEEditor } from "@/apps/forge/components/tabs/tab-ute-editor/TabUTEEditor";
 import { EditorFile } from "@/apps/forge/EditorFile";
+import { TabUTEEditor } from "@/apps/forge/components/tabs/tab-ute-editor/TabUTEEditor";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { EncounterDifficulty } from "@/apps/forge/interfaces/EncounterDifficulty";
-import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
 
 export class TabUTEEditorState extends TabState {
   tabName: string = `UTE`;

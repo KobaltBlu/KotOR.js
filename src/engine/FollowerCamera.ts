@@ -1,13 +1,12 @@
 import * as THREE from "three";
-
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { MiniGameType } from "@/enums/engine/MiniGameType";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
-import { ResolutionManager } from "@/managers/ResolutionManager";
-import type { ModuleArea, ModuleMGPlayer, ModuleObject } from "@/module";
-import { BitWise } from "@/utility/BitWise";
+import { EngineMode } from "@/enums/engine/EngineMode";
 import { Utility } from "@/utility/Utility";
+import type { ModuleArea, ModuleMGPlayer, ModuleObject } from "@/module";
+import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ResolutionManager } from "@/managers/ResolutionManager";
 
 const HALF_PI = Math.PI / 2;
 const EASE_THRESHOLD = Math.PI/2;
@@ -113,15 +112,15 @@ export class FollowerCamera {
     }
 
     const appearance = followee.creatureAppearance;
-    const followeeHeight = appearance.height + FollowerCamera.DEBUG_OFFSET;
+    const followeeHeight = 1.6 + FollowerCamera.DEBUG_OFFSET;//appearance.height + FollowerCamera.DEBUG_OFFSET;
 
     let offsetHeight = 0;
 
     if(GameState.Mode == EngineMode.MINIGAME){
       offsetHeight = 1;
     }else{
-      if(followee.getAppearance().cameraheightoffset > 0 || followee.getAppearance().cameraheightoffset < 0){
-        offsetHeight = followee.getAppearance().cameraheightoffset;
+      if(followee && appearance && (appearance.cameraheightoffset > 0 || appearance.cameraheightoffset < 0)){
+        offsetHeight = appearance.cameraheightoffset;
       }
     }
 

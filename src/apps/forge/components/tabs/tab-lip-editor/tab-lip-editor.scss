@@ -1,0 +1,397 @@
+@import "../../../styles/_variables.scss";
+
+// =============================================================================
+// East sidebar
+// =============================================================================
+
+.lip-sidebar {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  .section-content {
+    padding: $spacing-sm $spacing-md;
+  }
+
+  .section-content-slim {
+    padding: 0;
+  }
+}
+
+// Stacked label + input pairs inside sidebar sections
+.lip-sidebar__field-row {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.lip-sidebar__label {
+  flex: 0 0 52px;
+  font-size: $font-size-small;
+  color: $text-tertiary;
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.lip-sidebar__number-input {
+  flex: 1;
+  font-size: $font-size-small;
+  min-width: 0;
+}
+
+.lip-sidebar__select {
+  flex: 1;
+  font-size: $font-size-small;
+  min-width: 0;
+}
+
+.lip-sidebar__btn-row {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+}
+
+.lip-sidebar__btn {
+  display: flex;
+  align-items: center;
+  font-size: $font-size-small;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.lip-sidebar__hint {
+  margin: $spacing-sm 0 0;
+  font-size: $font-size-small;
+  color: $text-quaternary;
+  line-height: 1.4;
+}
+
+// Audio section
+.lip-sidebar__field-row--audio {
+  align-items: center;
+  gap: $spacing-sm;
+  margin-bottom: $spacing-sm;
+}
+
+.lip-sidebar__audio-icon {
+  flex-shrink: 0;
+  font-size: 13px;
+
+  &--active  { color: $primary-blue-lighter; }
+  &--missing { color: $text-quaternary; }
+}
+
+.lip-sidebar__audio-name {
+  flex: 1;
+  font-size: $font-size-small;
+  color: $text-primary;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: monospace;
+}
+
+.lip-sidebar__audio-none {
+  color: $text-quaternary;
+  font-style: italic;
+  font-family: inherit;
+}
+
+// Scene graph tree host
+.lip-sidebar-tree-host {
+  max-height: 240px;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  .forgeTreeView {
+    height: auto !important;
+    overflow: visible !important;
+  }
+}
+
+// =============================================================================
+// South dock (toolbar + timeline)
+// =============================================================================
+
+.lip-keyframe-dock {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+// =============================================================================
+// Toolbar
+// =============================================================================
+
+.lip-toolbar {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: $spacing-md;
+  padding: $spacing-xs $spacing-md;
+  background: $bg-darker;
+  border-bottom: 1px solid $border-tertiary;
+  user-select: none;
+  z-index: 2;
+  min-height: 42px;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+    flex: 0 1 260px;
+    min-width: 0;
+  }
+
+  &__center {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex: 1;
+    justify-content: center;
+  }
+
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex: 0 1 auto;
+    justify-content: flex-end;
+  }
+}
+
+// Clock readout
+.lip-toolbar__clock {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: monospace;
+  font-size: $font-size-small;
+  white-space: nowrap;
+  color: $text-primary;
+
+  .lip-toolbar__clock-time {
+    color: $primary-blue-lighter;
+    font-weight: bold;
+  }
+
+  .lip-toolbar__clock-sep {
+    color: $text-quaternary;
+    font-size: 0.65rem;
+    line-height: 1;
+  }
+
+  .lip-toolbar__clock-dur {
+    color: $text-tertiary;
+  }
+}
+
+// Shape dropdown
+.lip-toolbar__shape-select {
+  font-size: $font-size-small;
+  width: 100%;
+  max-width: 12rem;
+  min-width: 0;
+}
+
+// Icon button groups
+.lip-toolbar__btn-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid $border-tertiary;
+  border-radius: 4px;
+
+  &--add {
+    background: rgba($primary-blue-dark, 0.15);
+    border-color: rgba($primary-blue-dark, 0.35);
+  }
+}
+
+// Individual toolbar icon buttons
+.lip-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: $text-tertiary;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color $transition-fast, background $transition-fast;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+    color: $text-secondary;
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  &--play {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+    color: $primary-blue-lighter;
+    border-radius: 50%;
+    background: rgba($primary-blue-darker, 0.3);
+    border: 1px solid rgba($primary-blue, 0.35);
+
+    &:hover:not(:disabled) {
+      background: rgba($primary-blue-darker, 0.55);
+      color: $primary-blue-lightest;
+    }
+  }
+
+  &--add {
+    color: $tsl-primary-light;
+
+    &:hover:not(:disabled) {
+      background: rgba($tsl-primary-dark, 0.25);
+      color: $tsl-primary-lighter;
+    }
+  }
+}
+
+// =============================================================================
+// Timeline
+// =============================================================================
+
+.lip-keyframe-dock-timeline {
+  flex: 1;
+  min-height: 96px;
+  position: relative;
+}
+
+// Override absolute positioning that the shared keyframe-bar global rule applies,
+// so the bar fills the flex child correctly.
+.lip-keyframe-dock .keyframe-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+// ── Ruler, waveform, keyframe strip ──────────────────────────────────────────
+.lip-keyframe-dock .keyframe-bar {
+
+  // Waveform and keyframe strip share the same vertical band below the ruler
+  .lip-keyframe-wave {
+    position: absolute;
+    top: 25px;
+    left: 0;
+    bottom: 0;
+    // Width is driven by inline style (audio duration × zoom); no min-width override
+    // Semi-transparent so keyframe diamonds on the layer above remain readable
+    background: rgba($bg-dark, 0.6);
+    pointer-events: none;  // click-through to the keyframe bar beneath
+
+    canvas {
+      display: block;
+      width: auto;
+      height: 100%;
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0.55;  // let the waveform sit back visually under the diamonds
+    }
+
+    // Shown when no WAV is available
+    .lip-keyframe-wave__empty {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: $spacing-xs;
+      font-size: $font-size-small;
+      color: $text-quaternary;
+      pointer-events: none;
+      letter-spacing: 0.02em;
+
+      i {
+        opacity: 0.5;
+      }
+    }
+  }
+
+  // Keyframe strip overlaps the waveform — same top, transparent background
+  .keyframe-track {
+    top: 25px;
+    background: transparent;
+
+    .keyframe {
+      z-index: 1;
+    }
+  }
+
+  .lip-phoneme-marker {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba($primary-blue, 0.35);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  // Seeker spans full visible height
+  .keyframe-track-seeker {
+    top: 0;
+  }
+
+  // Duration drag handle
+  .lip-duration-handle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    transform: translateX(-50%);
+    cursor: col-resize;
+    z-index: 20;
+    display: flex;
+    align-items: stretch;
+
+    // Visible bar
+    &::before {
+      content: '';
+      display: block;
+      width: 2px;
+      margin: 0 auto;
+      background: rgba($primary-blue, 0.7);
+      border-radius: 1px;
+      transition: background $transition-fast, width $transition-fast;
+    }
+
+    // Wider invisible hit-area on each side
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      left: -4px;
+      right: -4px;
+    }
+
+    &:hover::before,
+    &:active::before {
+      background: $primary-blue;
+      width: 3px;
+    }
+  }
+}

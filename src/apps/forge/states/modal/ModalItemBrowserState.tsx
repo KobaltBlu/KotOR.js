@@ -1,9 +1,7 @@
 import React from "react";
-
 import { ModalItemBrowser } from "@/apps/forge/components/modal/ModalItemBrowser";
-import { InstallationRegistry } from "@/apps/forge/data/InstallationRegistry";
-import * as KotOR from "@/apps/forge/KotOR";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export interface UTIItem {
   resref: string;

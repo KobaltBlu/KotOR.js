@@ -1,3 +1,4 @@
+import type { ModuleObject } from "@/module/ModuleObject";
 import type * as THREE from "three";
 
 import type { ModuleObject } from "@/module/ModuleObject";

@@ -1,8 +1,8 @@
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
-import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * CombineTimeController class.
@@ -22,11 +22,15 @@ export class CombineTimeController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.combineTime = data.value;
+    }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.combineTime = OdysseyController.lerp1(last, next, fl);
+    }
   }
 
 }

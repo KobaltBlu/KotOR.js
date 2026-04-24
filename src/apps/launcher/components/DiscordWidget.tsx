@@ -1,8 +1,4 @@
 import React, { useState, useEffect } from 'react';
-
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Default);
 import "@/apps/launcher/styles/DiscordWidget.scss";
 
 interface DiscordMember {

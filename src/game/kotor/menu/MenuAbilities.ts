@@ -1,11 +1,5 @@
-﻿import { GameMenu } from "@/gui";
+import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { GameState } from "@/GameState";
-import { GUICreatureSkill } from "@/game/tsl/gui/GUICreatureSkill";
-import { GUISpellItem } from "@/game/tsl/gui/GUISpellItem";
-import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { TalentFeat } from "@/talents/TalentFeat";
 
 enum AbilityFilter {
   SKILLS = 1,

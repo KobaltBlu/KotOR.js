@@ -1,5 +1,5 @@
-import { JournalEntry } from "@/engine/JournalEntry";
 import { GameState } from "@/GameState";
+import { JournalEntry } from "@/engine/JournalEntry";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
@@ -65,6 +65,8 @@ export class MenuJournal extends GameMenu {
         this.close();
       });
       this._button_b = this.BTN_EXIT;
+      
+      this.LB_ITEMS.protoItem.extent.height = 41;
       this.LB_ITEMS.onSelected = (item: JournalEntry) => {
         this.selected = item;
         this.UpdateSelected();

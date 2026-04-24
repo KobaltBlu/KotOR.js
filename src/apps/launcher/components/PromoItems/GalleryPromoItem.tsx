@@ -1,5 +1,4 @@
 import React, { createRef, useEffect, useState } from "react";
-
 import { useApp } from "@/apps/launcher/context/AppContext";
 import { useProfile } from "@/apps/launcher/context/ProfileContext";
 

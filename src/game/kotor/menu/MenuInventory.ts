@@ -1,10 +1,10 @@
 
-import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
-import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import { TextureLoader } from "@/loaders";
 import { ModuleItem } from "@/module";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { GameState } from "@/GameState";
 
 /**
  * MenuInventory class.
@@ -53,12 +53,8 @@ export class MenuInventory extends GameMenu {
       });
       this._button_b = this.BTN_EXIT;
 
-      this.BTN_USEITEM.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.useSelectedItem();
-      });
-
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
+      this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();
@@ -157,6 +153,7 @@ export class MenuInventory extends GameMenu {
   show() {
     super.show();
     this.manager.MenuTop.LBLH_INV.onHoverIn();
+    this.selectedControl = this.LB_ITEMS;
     this.filterInventory();
     this.updateCharacterStats();
     this.updatePartyMemberButtons();

@@ -1,10 +1,9 @@
 import * as THREE from "three";
-
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyModelAABBNode } from "@/interface/odyssey/IOdysseyModelAABBNode";
-import type { OdysseyModel } from "@/odyssey/OdysseyModel";
-import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
+import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import type { OdysseyModel } from "@/odyssey/OdysseyModel";
 import { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 
 /**

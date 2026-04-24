@@ -1,17 +1,18 @@
-import { ModalChangeGameState } from "@/apps/forge/components/modal/ModalChangeGame";
 import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
 import { MenuTopItem } from "@/apps/forge/MenuTopItem";
 import { Project } from "@/apps/forge/Project";
+import { ModalChangeGameState } from "@/apps/forge/components/modal/ModalChangeGame";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
 import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { TabTextEditorState } from "@/apps/forge/states/tabs/TabTextEditorState";
 import { TabUTCEditorState } from "@/apps/forge/states/tabs/TabUTCEditorState";
 import { TabUTDEditorState } from "@/apps/forge/states/tabs/TabUTDEditorState";
 import { TabUTPEditorState } from "@/apps/forge/states/tabs/TabUTPEditorState";
 
+import * as KotOR from "@/apps/forge/KotOR";
+import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
+import { TabTextEditorState } from "@/apps/forge/states/tabs/TabTextEditorState";
+import { TabLIPEditorState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorState";
 
 
 export class MenuTopState {
@@ -247,9 +248,9 @@ export class MenuTopState {
     this.menuItemLabelEngineResource = new MenuTopItem({type: 'title', name: 'Engine Resource'});
 
     this.menuItemNewLIP = new MenuTopItem({
-      name: 'Lip Sync File', 
-      onClick: function(menuItem: MenuTopItem){
-        // Forge.tabManager.AddTab(new LIPEditorTab(new EditorFile({ resref: 'new_lip', reskey: ResourceTypes.lip })));
+      name: 'Lip Sync File (.lip)',
+      onClick: function(){
+        ForgeState.tabManager.addTab(new TabLIPEditorState());
       }
     });
 

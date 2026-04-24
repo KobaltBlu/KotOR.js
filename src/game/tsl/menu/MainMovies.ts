@@ -1,8 +1,8 @@
-import { MainMovies as K1_MainMovies } from "@/game/kotor/KOTOR";
-import { GUIMovieItem } from "@/game/tsl/gui/GUIMovieItem";
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
 import { TwoDAObject } from "@/resource/TwoDAObject";
+import { MainMovies as K1_MainMovies } from "@/game/kotor/KOTOR";
+import { GUIMovieItem } from "@/game/tsl/gui/GUIMovieItem";
 
 interface MovieItem {
   name: string;
@@ -80,8 +80,9 @@ export class MainMovies extends K1_MainMovies {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      // this.LB_MOVIES.GUIProtoItemClass = GUIMovieItem;
+      this.LB_MOVIES.protoItem.extent.height = 64;
       this.LB_MOVIES.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
+      this.LB_MOVIES.protoItem.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
       this.LB_MOVIES.onClicked = (movie: GUIMovieItemTsl, control: any, index: number) => {
         console.log(movie);
         this.selected = movie;

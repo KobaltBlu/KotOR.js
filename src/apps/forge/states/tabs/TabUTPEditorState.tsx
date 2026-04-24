@@ -1,14 +1,13 @@
 import React from "react";
-import * as THREE from 'three';
-
-import { TabUTPEditor } from "@/apps/forge/components/tabs/tab-utp-editor/TabUTPEditor";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import * as KotOR from "@/apps/forge/KotOR";
+import * as THREE from 'three';
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabUTPEditor } from "@/apps/forge/components/tabs/tab-utp-editor/TabUTPEditor";
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
 
 export class TabUTPEditorState extends TabState {
   tabName: string = `UTP`;

@@ -1,3 +1,8 @@
+import { GameEventType } from "@/enums/events/GameEventType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { GameEvent } from "@/events/GameEvent";
 import * as THREE from "three";
 
 import { GameEventType } from "@/enums/events/GameEventType";

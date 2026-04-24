@@ -9,15 +9,15 @@ import { GameState } from "@/GameState";
 import type { IPerceptionInfo } from "@/interface/engine/IPerceptionInfo";
 import type { INWScriptStoreState } from "@/interface/nwscript/INWScriptStoreState";
 import type { ModuleObject } from "@/module";
+import type { DLGObject } from "@/resource/DLGObject";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import type { TalentObject, TalentSpell } from "@/talents";
 import type { NWScript } from "@/nwscript/NWScript";
 import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import { NWScriptStack } from "@/nwscript/NWScriptStack";
 import type { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
 import type { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
-import type { DLGObject } from "@/resource/DLGObject";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
-import type { TalentObject, TalentSpell } from "@/talents";
 
 /**
  * NWScriptInstance class.

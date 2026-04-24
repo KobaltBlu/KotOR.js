@@ -1,11 +1,11 @@
-import { Action } from "@/actions/Action";
+import { GameState } from "@/GameState";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionTakeItem class.

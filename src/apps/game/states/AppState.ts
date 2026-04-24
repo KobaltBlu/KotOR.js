@@ -1,4 +1,5 @@
 import * as KotOR from "@/apps/game/KotOR";
+import { Launcher } from "@/apps/launcher/context/Launcher";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 
 export class AppState {
@@ -11,26 +12,18 @@ export class AppState {
 
   /**
    * getProfile
+   * Seeds Profiles.* from built-in launcher definitions when IndexedDB has never seen the launcher
+   * (direct navigation to game.html?key=kotor, etc.).
    */
   static async getProfile(){
     const query = new URLSearchParams(window.location.search);
     await KotOR.ConfigClient.Init();
-    const key = query.get('key') || 'kotor';
-    const profile = KotOR.ConfigClient.get(`Profiles.${key}`);
-    if(profile) return profile;
-    // No profile found in ConfigClient — return a minimal default so the app can render.
-    // This happens when accessing the game URL directly without going through the launcher.
-    console.warn(`AppState.getProfile: no profile found for key "${key}", using defaults.`);
-    return {
-      key,
-      name: key === 'tsl' ? 'KotOR II' : 'KotOR',
-      full_name: key === 'tsl'
-        ? 'Star Wars Knights of the Old Republic II: The Sith Lords'
-        : 'Star Wars: Knights of the Old Republic',
-      launch: {
-        args: { gameChoice: key === 'tsl' ? 2 : 1 }
-      }
-    };
+    await Launcher.InitProfiles();
+    const rawKey = query.get("key");
+    const validKeys = Object.keys(Launcher.AppProfiles || {});
+    const key =
+      rawKey && validKeys.includes(rawKey) ? rawKey : "kotor";
+    return KotOR.ConfigClient.get(`Profiles.${key}`);
   }
 
   /**

@@ -113,6 +113,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
       case 'nss': return 'fa-file-code';
       case 'ncs': return 'fa-file-code';
       case 'dlg': return 'fa-file-code';
+      case 'res': return 'fa-file-code';
       case 'utc': return 'fa-file-code';
       case 'utd': return 'fa-file-code';
       case 'ute': return 'fa-file-code';
@@ -130,6 +131,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
       case 'erf': return 'fa-file-archive';
       case 'rim': return 'fa-file-archive';
       case 'mod': return 'fa-file-archive';
+      case 'sav': return 'fa-file-archive';
       case 'hak': return 'fa-file-archive';
       case 'nwm': return 'fa-file-archive';
       default: return 'fa-file';
@@ -168,6 +170,91 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
     }
   }, [onContextMenu]);
 
+  const getVisibleNodeElements = (currentElement: HTMLElement): HTMLElement[] => {
+    const treeRoot = currentElement.closest('.forgeTreeView');
+    if (!treeRoot) return [];
+    const all = Array.from(treeRoot.querySelectorAll('.tree-node-content')) as HTMLElement[];
+    return all.filter((el) => el.offsetParent !== null);
+  };
+
+  const focusNodeAtIndex = (nodes: HTMLElement[], index: number) => {
+    if (index < 0 || index >= nodes.length) return;
+    nodes[index].focus();
+  };
+
+  const focusParentNode = (currentElement: HTMLElement) => {
+    const parentLi = currentElement.closest('ul.tree-children')?.closest('li.tree-item');
+    const parentNode = parentLi?.querySelector(':scope > .tree-node-content') as HTMLElement | null;
+    if (parentNode) {
+      parentNode.focus();
+    }
+  };
+
+  const focusFirstChildNode = (currentElement: HTMLElement) => {
+    const currentLi = currentElement.closest('li.tree-item');
+    const firstChild = currentLi?.querySelector(':scope > ul.tree-children.expanded > li.tree-item > .tree-node-content') as HTMLElement | null;
+    if (firstChild) {
+      firstChild.focus();
+    }
+  };
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentElement = e.currentTarget as HTMLElement;
+    const visibleNodes = getVisibleNodeElements(currentElement);
+    const currentIndex = visibleNodes.indexOf(currentElement);
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        focusNodeAtIndex(visibleNodes, currentIndex + 1);
+      break;
+      case 'ArrowUp':
+        e.preventDefault();
+        focusNodeAtIndex(visibleNodes, currentIndex - 1);
+      break;
+      case 'ArrowRight':
+        e.preventDefault();
+        if (hasChildren && !isExpanded && onToggle) {
+          onToggle();
+        } else if (hasChildren && isExpanded) {
+          focusFirstChildNode(currentElement);
+        }
+      break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        if (hasChildren && isExpanded && onToggle) {
+          onToggle();
+        } else {
+          focusParentNode(currentElement);
+        }
+      break;
+      case 'Home':
+        e.preventDefault();
+        focusNodeAtIndex(visibleNodes, 0);
+      break;
+      case 'End':
+        e.preventDefault();
+        focusNodeAtIndex(visibleNodes, visibleNodes.length - 1);
+      break;
+      case 'Enter':
+        e.preventDefault();
+        if (onDoubleClick) {
+          onDoubleClick();
+        } else if (onClick) {
+          onClick();
+        }
+      break;
+      case ' ':
+        e.preventDefault();
+        if (onClick) {
+          onClick();
+        }
+      break;
+      default:
+      break;
+    }
+  }, [hasChildren, isExpanded, onToggle, onClick]);
+
   const fileTypeClass = getFileTypeClass(name);
   const iconClass = getIcon();
 
@@ -182,6 +269,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         onContextMenu={handleContextMenu}
+        onKeyDown={handleKeyDown}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         tabIndex={0}

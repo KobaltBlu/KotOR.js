@@ -1,11 +1,13 @@
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { MenuContainerMode } from "@/enums/gui/MenuContainerMode";
 import { GameState } from "@/GameState";
+import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameMenu, GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import { TextureLoader } from "@/loaders";
 import type { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "@/module";
+import { MenuContainerMode } from "@/enums/gui/MenuContainerMode";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 
+const STR_ITEMS_AVAILABLE = 392;
+const STR_CONTAINER_INVENTORY = 393;
 const STR_SWITCH_TO = 47884;
 const STR_GET_ITEMS = 38542;
 const STR_GIVE_ITEMS = 38543;
@@ -29,6 +31,7 @@ export class MenuContainer extends GameMenu {
   BTN_CANCEL: GUIButton;
   container: ModuleObject;
   mode: MenuContainerMode = MenuContainerMode.TAKE_ITEMS;
+  selectedItem: ModuleItem;
 
   constructor(){
     super();
@@ -55,6 +58,10 @@ export class MenuContainer extends GameMenu {
 
       this.BTN_OK.addEventListener('click', (e) => {
         e.stopPropagation();
+        const selectedItem = this.selectedItem;
+        if(!selectedItem){
+          return;
+        }
         if(this.mode == MenuContainerMode.TAKE_ITEMS){
           this.LB_ITEMS.clearItems();
           if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
@@ -66,7 +73,22 @@ export class MenuContainer extends GameMenu {
           }
           this.close();
         }else{
-
+          if(selectedItem.getStackSize() <= 0){
+            return;
+          }
+          const willRemoveFromInventory = selectedItem.getStackSize() <= 1;
+          GameState.InventoryManager.removeItem(selectedItem, 1);
+          const newItem = selectedItem.clone();
+          newItem.setStackSize(1);
+          this.container.addItem(newItem);
+          if(willRemoveFromInventory){
+            this.LB_ITEMS.removeItemByNode(selectedItem);
+            return;
+          }
+          const control = this.LB_ITEMS.getListElementByNode(selectedItem);
+          if(control){
+            control.needsUpdate = true;
+          }
         }
       });
       this._button_a = this.BTN_OK;
@@ -86,11 +108,7 @@ export class MenuContainer extends GameMenu {
       this._button_x = this.BTN_GIVEITEMS;
 
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
-        if(this.mode == MenuContainerMode.TAKE_ITEMS){
-
-        }else{
-          
-        }
+        this.selectedItem = item;
       }
 
       resolve();
@@ -121,11 +139,16 @@ export class MenuContainer extends GameMenu {
     this.setMode(MenuContainerMode.TAKE_ITEMS);
   }
 
+  getSelectedContainer(){
+    return this.mode == MenuContainerMode.TAKE_ITEMS ? this.container : GameState.InventoryManager;
+  }
+
   setMode(mode: MenuContainerMode){
     this.mode = mode;
-
+    this.selectedItem = null;
     switch(this.mode){
       case MenuContainerMode.TAKE_ITEMS:
+        this.LBL_MESSAGE.setText(GameState.TLKManager.GetStringById(STR_CONTAINER_INVENTORY).Value);
         this.BTN_OK.setText(GameState.TLKManager.GetStringById(STR_GET_ITEMS).Value);
         this.BTN_GIVEITEMS.setText(
           GameState.TLKManager.GetStringById(STR_SWITCH_TO).Value + ' ' +
@@ -133,6 +156,7 @@ export class MenuContainer extends GameMenu {
         )
       break;
       case MenuContainerMode.GIVE_ITEMS:
+        this.LBL_MESSAGE.setText(GameState.TLKManager.GetStringById(STR_ITEMS_AVAILABLE).Value);
         this.BTN_OK.setText(GameState.TLKManager.GetStringById(STR_GIVE_ITEMS).Value);
         this.BTN_GIVEITEMS.setText(
           GameState.TLKManager.GetStringById(STR_SWITCH_TO).Value + ' ' +
@@ -142,15 +166,19 @@ export class MenuContainer extends GameMenu {
     }
 
     //Update list items
-    this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+    this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
     this.LB_ITEMS.clearItems();
-    if (this.container instanceof GameState.Module.ModuleArea.ModuleCreature || this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
-      const inventory = this.container.getInventory();
+    if (typeof this.getSelectedContainer()?.inventory === 'object') {
+      const inventory = this.getSelectedContainer().inventory;
       for (let i = 0; i < inventory.length; i++) {
         const item = inventory[i];
         this.LB_ITEMS.addItem(item);
+        if(!this.selectedItem){
+          this.selectedItem = item;
+        }
       }
       TextureLoader.LoadQueue();
+      this.LB_ITEMS.selectItem(this.selectedItem);
     }
 
   }

@@ -1,17 +1,17 @@
 import React, { useCallback, useEffect, useState } from "react";
 
 // import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { TabERFEditorState } from "@/apps/forge/states/tabs";
+import * as KotOR from "@/apps/forge/KotOR";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
+import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { ERFListNode } from "@/apps/forge/components/treeview/ERFListNode";
 import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
 import { createERFContextMenuItems } from "@/apps/forge/components/tabs/tab-erf-editor/ERFContextMenu";
-import { ERFListNode } from "@/apps/forge/components/treeview/ERFListNode";
-import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabERFEditorState } from "@/apps/forge/states/tabs";
 
 const MENU_ID = 'context-tab-erf-editor-entry';
 

@@ -1,10 +1,9 @@
 import * as THREE from "three";
-
-import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
+import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
 
 /**
 * AreaMap class.

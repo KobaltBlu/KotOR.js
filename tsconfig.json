@@ -1,5 +1,21 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "moduleResolution": "node",
+    "target": "ESNext",
+    "module": "commonjs",
+    "declaration": false,
+    "noImplicitAny": true,
+    "removeComments": true,
+    "experimentalDecorators": true,
+    "rootDir": ".",
+    "sourceMap": false,
+    "listFiles": true,
+    "newLine": "LF",
+    "noEmitOnError": true,
+    "strictNullChecks": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
     "allowJs": true,
     "baseUrl": ".",
     "declaration": false,
@@ -9,6 +25,17 @@
     "ignoreDeprecations": "5.0",
     "isolatedModules": true,
     "jsx": "react",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "types": [
+      "@types/wicg-file-system-access",
+      "user-agent-data-types",
+      "node",
+      "offscreencanvas",
+    ],
     "lib": [
       "ESNext",
       "dom",
@@ -41,15 +68,6 @@
       "user-agent-data-types"
     ]
   },
-  "exclude": [
-    "node_modules",
-    "src/**/*.spec.ts",
-    ".history"
-  ],
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/types",
-    "src/index.d.ts"
-  ]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/index.d.ts"],
+  "exclude": ["node_modules", "src/**/*.spec.ts"]
 }

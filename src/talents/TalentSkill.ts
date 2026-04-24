@@ -1,9 +1,9 @@
+import { GameState } from "@/GameState";
 import { ActionUnlockObject } from "@/actions/ActionUnlockObject";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { TalentObjectType } from "@/enums/engine/TalentObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";

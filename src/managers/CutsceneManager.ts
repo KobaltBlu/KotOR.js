@@ -1,23 +1,22 @@
-import * as THREE from "three";
-
-import { AudioEmitter } from "@/audio/AudioEmitter";
-import { AudioEngine } from "@/audio/AudioEngine";
-import { AudioLoader } from "@/audio/AudioLoader";
-import { CameraMode } from "@/enums/dialog/CameraMode";
-import { ConversationState } from "@/enums/dialog/ConversationState";
-import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
-import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
-import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
 import { EngineMode } from "@/enums/engine/EngineMode";
-import { DLGNode } from "@/resource/DLGNode";
 import { DLGObject } from "@/resource/DLGObject";
+import { DLGNode } from "@/resource/DLGNode";
 import type { ModuleCreature, ModuleObject } from "@/module";
+import { ConversationState } from "@/enums/dialog/ConversationState";
 import { GameState } from "@/GameState";
+import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
+import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
 import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
+import * as THREE from "three";
+import { CameraMode } from "@/enums/dialog/CameraMode";
 import { ICameraState } from "@/interface/dialog/ICameraState";
+import { AudioEmitter } from "@/audio/AudioEmitter";
 import { ICameraParticipant } from "@/interface/dialog/ICameraParticipant";
 
 const ENTRY_DELAY = 3000;

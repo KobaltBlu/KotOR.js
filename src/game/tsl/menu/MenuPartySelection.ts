@@ -1,4 +1,3 @@
-import { MenuPartySelection as K1_MenuPartySelection } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
 import { LBL_3DView } from "@/gui";
 import type { GUILabel, GUICheckBox, GUIButton } from "@/gui";
@@ -7,8 +6,9 @@ import { ModuleCreature } from "@/module";
 import { NWScript } from "@/nwscript/NWScript";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { OdysseyModel } from "@/odyssey";
-import { OdysseyModel3D } from "@/three/odyssey";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { MenuPartySelection as K1_MenuPartySelection } from "@/game/kotor/KOTOR";
 
 /**
  * MenuPartySelection class.

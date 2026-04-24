@@ -1,7 +1,7 @@
+import { GameState } from "@/GameState";
 import type { INIConfig } from "@/engine/INIConfig";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { EngineState } from "@/enums/engine/EngineState";
-import { GameState } from "@/GameState";
 
 /**
  * AutoPauseManager class.

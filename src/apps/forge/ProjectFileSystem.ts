@@ -1,11 +1,10 @@
-import * as fs from "fs";
-import * as path from "path";
-
 import { EditorFile } from "@/apps/forge/EditorFile";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 import * as KotOR from "@/apps/forge/KotOR";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabProjectExplorerState } from "@/apps/forge/states/tabs";
+import * as path from "path";
+import * as fs from "fs";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
 

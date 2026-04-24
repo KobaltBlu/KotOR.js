@@ -1,8 +1,7 @@
-﻿import React, { useState, useEffect } from "react";
-import { Button, Modal } from "react-bootstrap";
-
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import React, { useState, useEffect } from "react";
 import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { Button, Modal } from "react-bootstrap";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ModalBlueprintBrowserState } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
 import "@/apps/forge/components/modal/ModalBlueprintBrowser.scss";
 

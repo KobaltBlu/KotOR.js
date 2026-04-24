@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react"
-
-import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
-import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import { TabUTIEditorState, TabUTPEditorState } from "@/apps/forge/states/tabs";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import * as KotOR from "@/apps/forge/KotOR";
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
 import {
   sanitizeResRef,
   clampByte,
@@ -19,12 +18,10 @@ import {
   createCExoLocStringFieldHandler,
   createForgeCheckboxFieldHandler
 } from "@/apps/forge/helpers/UTxEditorHelpers";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgePlaceable, PlaceableItemEntry } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalInventoryBrowserState } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
-import { TabUTIEditorState, TabUTPEditorState } from "@/apps/forge/states/tabs";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
 
 export const TabUTPEditor = function(props: BaseTabProps){
 

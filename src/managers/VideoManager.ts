@@ -1,9 +1,8 @@
 import * as THREE from "three";
-
-import { AudioEngine } from "@/audio/AudioEngine";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { GameState } from "@/GameState";
 import { BIKObject } from "@/resource/BIKObject";
+import { GameState } from "@/GameState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { AudioEngine } from "@/audio/AudioEngine";
 import { YUVFrame } from "@/video/binkvideo";
 
 /**

@@ -1,46 +1,11 @@
 import { EditorFile } from "@/apps/forge/EditorFile";
 import { EventListenerModel } from "@/apps/forge/EventListenerModel";
 import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
-import {
-  TabAREEditorState,
-  TabBIKPlayerState,
-  TabBinaryViewerState,
-  TabDiffToolState,
-  TabDLGEditorState,
-  TabERFEditorState,
-  TabFACEditorState,
-  TabGFFEditorState,
-  TabGITEditorState,
-  TabGUIEditorState,
-  TabIFOEditorState,
-  TabImageViewerState,
-  TabJRLEditorState,
-  TabLIPEditorState,
-  TabLTREditorState,
-  TabModelViewerState,
-  TabModuleEditorState,
-  TabPTHEditorState,
-  TabQuickStartState,
-  TabSAVEditorState,
-  TabSSFEditorState,
-  TabState,
-  TabTextEditorState,
-  TabTLKEditorState,
-  TabTwoDAEditorState,
-  TabUTCEditorState,
-  TabUTDEditorState,
-  TabUTEEditorState,
-  TabUTIEditorState,
-  TabUTMEditorState,
-  TabUTPEditorState,
-  TabUTSEditorState,
-  TabUTTEditorState,
-  TabUTWEditorState,
-  TabVISEditorState,
-  TabWOKEditorState,
+import { 
+  TabBIKPlayerState, TabGFFEditorState, TabImageViewerState, TabModelViewerState, 
+  TabModuleEditorState, TabQuickStartState, TabTwoDAEditorState, 
+  TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabState
 } from "@/apps/forge/states/tabs";
-import { TabReferenceFinderState } from "@/apps/forge/states/tabs/TabReferenceFinderState";
-import { TabScriptFindReferencesState } from "@/apps/forge/states/tabs/TabScriptFindReferencesState";
 
 export type TabManagerEventListenerTypes =
   'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide';

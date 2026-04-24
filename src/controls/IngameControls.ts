@@ -1,28 +1,24 @@
-﻿import * as THREE from "three";
+import * as THREE from "three";
 import { GameState } from "@/GameState";
 import type { GUIControl, GUIListBox, GUIScrollBar } from "@/gui";
 import { Utility } from "@/utility/Utility";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { EngineState } from "@/enums/engine/EngineState";
-import type { ModuleObject } from "@/module";
-import { Module } from "@/module";
 import { KeyMapAction } from "@/enums/controls/KeyMapAction";
 import { MiniGameType } from "@/enums/engine/MiniGameType";
 import { FollowerCamera } from "@/engine/FollowerCamera";
-// import { AutoPauseManager, CursorManager, MenuManager, PartyManager } from "@/managers";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
-import { MouseState } from "@/enums/controls/MouseState";
 import { Keyboard } from "@/controls/Keyboard";
 import { GamePad } from "@/controls/GamePad";
 import { Mouse } from "@/controls/Mouse";
 import { KeyMapper } from "@/controls/KeyMapper";
 import { AnalogInput } from "@/controls/AnalogInput";
 import { TGAObject } from "@/resource/TGAObject";
-import { SaveGame } from "@/engine/SaveGame";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 
 /**
  * IngameControls class.
@@ -68,6 +64,25 @@ export class IngameControls {
       if(GameState.MenuManager.activeGUIElement){
         if(typeof GameState.MenuManager.activeGUIElement.onKeyDown === 'function'){
           GameState.MenuManager.activeGUIElement.onKeyDown(e);
+        }
+      }
+
+      const ae = GameState.MenuManager.activeGUIElement as { editable?: boolean } | undefined;
+      const editingTextField = !!(ae && ae.editable === true);
+
+      if(
+        !editingTextField &&
+        (GameState.Mode == EngineMode.GUI || GameState.Mode == EngineMode.DIALOG) &&
+        (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'UpArrow' || e.code === 'DownArrow')
+      ){
+        const fg = GameState.MenuManager.GetForegroundMenu();
+        if(fg){
+          if(e.code === 'ArrowUp' || e.code === 'UpArrow'){
+            fg.triggerControllerDUpPress();
+          }else{
+            fg.triggerControllerDDownPress();
+          }
+          e.preventDefault();
         }
       }
 

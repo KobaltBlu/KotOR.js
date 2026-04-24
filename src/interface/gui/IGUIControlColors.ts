@@ -19,4 +19,6 @@ export interface IGUIControlColors {
 
     TEXT: THREE.Color;
     TEXT_HIGHLIGHT: THREE.Color;
+
+    LOCKED: THREE.Color;
 }

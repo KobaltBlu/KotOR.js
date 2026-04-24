@@ -1,10 +1,9 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-
-import { LightboxComponent } from "@/apps/launcher/components/LightboxComponenet";
-import { ProfileLaunchButtons } from "@/apps/launcher/components/ProfileLaunchButtons";
-import { ProfilePromoItems } from "@/apps/launcher/components/ProfilePromoItems";
 import { useApp } from "@/apps/launcher/context/AppContext";
+import { ProfilePromoItems } from "@/apps/launcher/components/ProfilePromoItems";
+import { LightboxComponent } from "@/apps/launcher/components/LightboxComponenet";
 import { ProfileProvider, useProfile } from "@/apps/launcher/context/ProfileContext";
+import { ProfileLaunchButtons } from "@/apps/launcher/components/ProfileLaunchButtons";
 
 export interface ProfileTabContentProps {
   profile: any;

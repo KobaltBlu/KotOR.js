@@ -1,2 +1,2 @@
-export * from '@/server/ipc/IPCMessage';
-export * from '@/server/ipc/IPCMessageParam';
+export * from "@/server/ipc/IPCMessage";
+export * from "@/server/ipc/IPCMessageParam";

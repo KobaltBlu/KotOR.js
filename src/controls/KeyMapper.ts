@@ -1,4 +1,4 @@
-﻿
+
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { AnalogInput } from "@/controls/AnalogInput";
 import { GamePad } from "@/controls/GamePad";

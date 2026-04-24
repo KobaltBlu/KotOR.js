@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react"
-
 import { useApp } from "@/apps/debugger/context/AppContext";
 import * as KotOR from "@/apps/debugger/KotOR";
 import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";

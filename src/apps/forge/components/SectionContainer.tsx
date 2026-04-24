@@ -1,26 +1,39 @@
-import React from "react";
-
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Forge);
+import React, { useState } from "react"
 
 export interface SectionContainerProps {
   name: string;
   slim?: boolean;
   children?: React.ReactNode;
+  slim?: boolean;
+  collapsible?: boolean;
+  defaultOpen?: boolean;
 }
 
-export const SectionContainer: React.FC<SectionContainerProps> = (props) => {
-  log.trace('SectionContainer render', props.name);
-  const slim = props.slim === true;
+export const SectionContainer = function(props: SectionContainerProps){
+  const slim = props.slim ? true : false;
+  const collapsible = props.collapsible ?? false;
+  const [open, setOpen] = useState<boolean>(props.defaultOpen ?? true);
+
+  const handleHeaderClick = () => {
+    if (collapsible) setOpen(!open);
+  };
+
   return (
-    <div className="section">
-      <div className="section-header">
+    <div className={`section ${collapsible && !open ? 'section-collapsed' : ''}`}>
+      <div
+        className={`section-header ${collapsible ? 'section-header-collapsible' : ''}`}
+        onClick={handleHeaderClick}
+      >
+        {collapsible && (
+          <span className={`section-collapse-arrow ${open ? 'open' : ''}`}>&#9656;</span>
+        )}
         {props.name}
       </div>
-      <div className={`section-content ${slim ? 'section-content-slim' : ''}`}>
-        {props.children}
-      </div>
+      {(!collapsible || open) && (
+        <div className={`section-content ${slim ? 'section-content-slim' : ''}`}>
+          {props.children}
+        </div>
+      )}
     </div>
   )
 }

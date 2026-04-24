@@ -1,6 +1,6 @@
 ﻿import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useEffect, useRef, useState } from "react";
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import "@/apps/forge/styles/UI3DToolPalette.scss";
 
 /**

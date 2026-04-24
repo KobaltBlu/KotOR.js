@@ -1,5 +1,5 @@
-import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export class ForgeRoom extends ForgeGameObject {
 

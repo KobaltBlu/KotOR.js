@@ -1,8 +1,8 @@
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
-import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * LifeExpController class.
@@ -29,7 +29,7 @@ export class LifeExpController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.lifeExp = next.value;//Math.ceil(last.value + fl * (next.value - last.value));
+      manager.modelNode.emitter.lifeExp = Math.ceil(OdysseyController.lerp1(last, next, fl));
     }
   }
 

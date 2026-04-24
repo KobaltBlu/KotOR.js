@@ -1,10 +1,10 @@
 import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
+import { GFFStruct } from "@/resource/GFFStruct";
 import { EventActivateItem } from "@/nwscript/events/EventActivateItem";
 import { EventConversation } from "@/nwscript/events/EventConversation";
 import { EventSpellCastAt } from "@/nwscript/events/EventSpellCastAt";
 import { EventUserDefined } from "@/nwscript/events/EventUserDefined";
 import { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
-import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * NWScriptEventFactory class.

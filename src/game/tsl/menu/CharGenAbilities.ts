@@ -1,7 +1,7 @@
-import { CharGenAttribute } from "@/enums/chargen/CharGenAttribute";
-import { CharGenAbilities as K1_CharGenAbilities } from "@/game/kotor/KOTOR";
-import { GameState } from "@/GameState";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { CharGenAbilities as K1_CharGenAbilities } from "@/game/kotor/KOTOR";
+import { CharGenAttribute } from "@/enums/chargen/CharGenAttribute";
+import { GameState } from "@/GameState";
 
 /**
  * CharGenAbilities class.

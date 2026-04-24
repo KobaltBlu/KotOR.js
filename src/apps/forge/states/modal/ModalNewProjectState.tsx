@@ -1,3 +1,7 @@
+import React from "react";
+import { ModalNewProject } from "@/apps/forge/components/modal/ModalNewProject";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import * as KotOR from "@/apps/forge/KotOR";
 import path from "path";
 
 import React from "react";

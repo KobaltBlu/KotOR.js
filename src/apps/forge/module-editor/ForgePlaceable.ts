@@ -1,10 +1,5 @@
-import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-
-export interface PlaceableItemEntry {
-  inventoryRes: string;
-  droppable: boolean;
-}
+import * as KotOR from "@/apps/forge/KotOR";
 
 export class ForgePlaceable extends ForgeGameObject {
 

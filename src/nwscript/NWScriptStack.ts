@@ -5,11 +5,11 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 // import { ModuleObjectManager } from "@/managers";
 // import { ModuleObject } from "@/module";
-import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
-import { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 // import { TalentFeat, TalentSkill, TalentSpell } from "@/talents";
+import { NWScriptEventFactory } from "@/nwscript/events/NWScriptEventFactory";
+import { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
 
 const STACK_PACKET_CONSTANTS = {
   STACK_ELEMENT_SIZE: 8,

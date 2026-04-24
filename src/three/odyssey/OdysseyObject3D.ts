@@ -1,7 +1,6 @@
 import * as THREE from "three";
-
-import type { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import type { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import type { OdysseyEmitter3D } from "@/three/odyssey/OdysseyEmitter3D";
 import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
@@ -18,6 +17,7 @@ import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 export class OdysseyObject3D extends THREE.Object3D {
   odysseyModel: OdysseyModel3D;
   odysseyModelNode: OdysseyModelNode;
+  sourceNodeUUID: string;
   NodeType: number;
   isWalkmesh: boolean;
   controllers: Map<number, OdysseyController>;
@@ -40,6 +40,7 @@ export class OdysseyObject3D extends THREE.Object3D {
   
   emitter: OdysseyEmitter3D;
   light: THREE.Light | OdysseyLight3D;
+  mesh: THREE.Mesh | THREE.SkinnedMesh;
 
   constructor( node: OdysseyModelNode = undefined ){
     super();

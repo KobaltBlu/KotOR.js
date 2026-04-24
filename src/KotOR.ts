@@ -39,8 +39,6 @@ export * from "@/resource/CExoLocString";
 export * from "@/resource/CExoLocSubString";
 export * from "@/resource/BIFObject";
 export * from "@/resource/BIKObject";
-export * from "@/resource/DLGObject";
-export * from "@/resource/DLGNode";
 export * from "@/resource/ERFObject";
 export * from "@/resource/GFFObject";
 export * from "@/resource/GFFStruct";
@@ -76,6 +74,5 @@ export * from "@/engine/menu/ActionMenuManager";
 export * from "@/actions/ActionFactory";
 export * from "@/effects/GameEffectFactory";
 export * from "@/events/GameEventFactory";
-
 
 

@@ -1,5 +1,5 @@
-import { bink_tree_bits, bink_tree_lens } from '@/video/binkdata';
 import { BitReaderLE } from '@/video/BitReaderLE';
+import { bink_tree_bits, bink_tree_lens } from '@/video/binkdata';
 
 /**
  * VLC class.

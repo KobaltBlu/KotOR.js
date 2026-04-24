@@ -1,13 +1,13 @@
-import { GameEffectFactory } from "@/effects/GameEffectFactory";
-import { AreaOfEffectShape } from "@/enums/module/AreaOfEffectShape";
-import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { ModuleObject } from "@/module/ModuleObject";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
+import { ModuleObject } from "@/module/ModuleObject";
+import { AreaOfEffectShape } from "@/enums/module/AreaOfEffectShape";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import { GameState } from "@/GameState";
 
 /**
  * ModuleAreaOfEffect class.

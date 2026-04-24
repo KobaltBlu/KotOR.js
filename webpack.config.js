@@ -8,6 +8,9 @@ const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const webpack = require('webpack');
 const WebpackBar = require('webpackbar');
 
+/** Matches tsconfig.json paths: "@/*" -> "src/*" */
+const srcPath = path.resolve(__dirname, 'src');
+
 // Read version from package.json
 const packageJson = require('./package.json');
 const version = packageJson.version;
@@ -112,7 +115,7 @@ const libraryConfig = (name, color) => ({
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx',
-          target: 'es2019',
+          target: 'esnext',
           tsconfig: 'tsconfig.json',
         },
         exclude: /node_modules/,
@@ -163,7 +166,7 @@ const libraryConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': srcPath,
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -215,7 +218,7 @@ const launcherConfig = (name, color) => ({
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx',
-          target: 'es2019',
+          target: 'esnext',
           tsconfig: 'tsconfig.launcher.json',
         },
         exclude: /node_modules/,
@@ -251,7 +254,7 @@ const launcherConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': srcPath,
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -301,7 +304,7 @@ const gameConfig = (name, color) => ({
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx',
-          target: 'es2019',
+          target: 'esnext',
           tsconfig: 'tsconfig.game.json',
         },
         exclude: /node_modules/,
@@ -336,7 +339,7 @@ const gameConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': srcPath,
       three: path.resolve('./node_modules/three')
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -347,7 +350,7 @@ const gameConfig = (name, color) => ({
   externals: {
     fs: 'window.fs',
     three: 'THREE',
-    '../../KotOR': 'KotOR',
+    '@/apps/game/KotOR': 'KotOR',
   },
   output: {
     filename: '[name].js',
@@ -397,7 +400,7 @@ const forgeConfig = (name, color) => ({
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx',
-          target: 'es2019',
+          target: 'esnext',
           tsconfig: 'tsconfig.forge.json',
         },
         exclude: /node_modules/,
@@ -438,7 +441,7 @@ const forgeConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': srcPath,
       three: path.resolve('./node_modules/three'),
       '@kotor': path.resolve('./src'),
       '@forge': path.resolve('./src/apps/forge'),
@@ -451,7 +454,8 @@ const forgeConfig = (name, color) => ({
   externals: {
     fs: 'window.fs',
     three: 'THREE',
-    '../../KotOR': 'KotOR',
+    '@/apps/forge/KotOR': 'KotOR',
+    '@/KotOR': 'KotOR',
   },
   output: {
     filename: '[name].js',
@@ -500,7 +504,7 @@ const debuggerConfig = (name, color) => ({
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx',
-          target: 'es2019',
+          target: 'esnext',
           tsconfig: 'tsconfig.debugger.json',
         },
         exclude: /node_modules/,
@@ -535,7 +539,7 @@ const debuggerConfig = (name, color) => ({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
+      '@': srcPath,
       three: path.resolve('./node_modules/three'),
     },
     extensions: ['.tsx', '.ts', '.js'],
@@ -546,7 +550,7 @@ const debuggerConfig = (name, color) => ({
   externals: {
     fs: 'window.fs',
     three: 'THREE',
-    '../../KotOR': 'KotOR',
+    '@/apps/debugger/KotOR': 'KotOR',
   },
   output: {
     filename: '[name].js',

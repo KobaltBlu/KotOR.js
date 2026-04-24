@@ -55,6 +55,24 @@
       margin-left: initial;
     }
   }
+
+  button.keyframe-control-icon {
+    margin-left: 15px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: inherit;
+    line-height: inherit;
+    &:nth-child(1) {
+      margin-left: initial;
+    }
+    &:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+  }
 }
 
 .keyframe-bar {
@@ -64,7 +82,8 @@
   left: 0;
   right: 0;
   background: #30303D;
-  overflow-x: scroll;
+  overflow-x: auto;
+  overflow-y: auto;
   user-select: none;
 
   .keyframe-time-track {
@@ -144,4 +163,129 @@
       border-top: 20px solid #5bc0de;
     }
   }
+}
+
+.mvp-keyframe-dock {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.mvp-keyframe-dock-timeline {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.mvp-keyframe-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #171a1f;
+  border-bottom: 1px solid #262b33;
+  user-select: none;
+  min-height: 42px;
+
+  &__left,
+  &__center,
+  &__right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__left {
+    flex: 0 1 60%;
+    min-width: 0;
+  }
+
+  &__center {
+    flex: 1;
+    justify-content: center;
+  }
+
+  &__right {
+    flex: 0 1 auto;
+    justify-content: flex-end;
+  }
+
+  &__btn-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 4px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #2e3540;
+    border-radius: 4px;
+  }
+
+  &__clock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: monospace;
+    font-size: 12px;
+    color: #93a2b5;
+  }
+
+  &__loop {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #9ca3af;
+    margin: 0;
+  }
+}
+
+.mvp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #d1d7e0;
+  }
+
+  &--play {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    color: #75b8ff;
+    background: rgba(20, 55, 95, 0.35);
+    border: 1px solid rgba(79, 146, 220, 0.45);
+  }
+
+  &--edit {
+    width: auto;
+    min-width: 50px;
+    padding: 0 10px;
+    font-size: 12px;
+    border: 1px solid #2e3540;
+    background: rgba(0, 0, 0, 0.2);
+  }
+
+  &--edit.is-active {
+    color: #bfe0ff;
+    border-color: #4c86bf;
+    background: rgba(49, 96, 150, 0.3);
+  }
+}
+
+.mvp-keyframe-dock .keyframe-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }

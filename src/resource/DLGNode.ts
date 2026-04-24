@@ -1,4 +1,4 @@
-﻿import { AudioEmitter } from "@/audio";
+import { AudioEmitter } from "@/audio";
 import { DLGNodeType } from "@/enums/dialog/DLGNodeType";
 import { DLGNodeEngineType } from "@/enums/dialog/DLGNodeEngineType";
 import { GameState } from "@/GameState";
@@ -6,7 +6,7 @@ import { IDLGNodeScriptParams } from "@/interface/dialog/IDLGNodeScriptParams";
 // import { DialogMessageEntry, DialogMessageManager, FadeOverlayManager, JournalManager, ModuleObjectManager } from "@/managers";
 import type { ModuleCreature, ModuleObject } from "@/module";
 // import { NWScript } from "@/nwscript/NWScript";
-import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { LIPObject } from "@/resource/LIPObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { DialogMessageEntry } from "@/engine/DialogMessageEntry";
@@ -14,6 +14,13 @@ import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
 import type { DLGObject } from "@/resource/DLGObject";
+
+class DummyScriptInstance extends NWScriptInstance {
+  name: string = 'SWG_DUMMY_SCRIPT';
+  run(caller?: any, scriptVar?: number): false | 0 | 1 {
+    return false;
+  }
+}
 
 /**
  * DLGNode class.
@@ -806,7 +813,7 @@ export class DLGNode {
 
   getCompiledString(): string {
     let text = this.text;
-    text = text.split('##')[0].replaceAll(/\{.*\}/ig, '').trim();
+    text = text.split('##')[0].replaceAll(/\{.*?\}/ig, '').trim();
     //if(this.speaker instanceof ModuleCreature){
       text = text.replace(/<FullName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());
       text = text.replace(/<FirstName>/gm, GameState.PartyManager.ActualPlayerTemplate?.getFieldByLabel('FirstName')?.getValue());

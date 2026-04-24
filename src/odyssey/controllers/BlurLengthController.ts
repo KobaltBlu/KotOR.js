@@ -1,8 +1,8 @@
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
-import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * BlurLengthController class.
@@ -22,11 +22,22 @@ export class BlurLengthController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    
+    if(manager.modelNode.emitter){
+      const em = manager.modelNode.emitter;
+      em.blurLength = data.value;
+      em.material.uniforms.blurLength.value = data.value;
+      em.material.uniformsNeedUpdate = true;
+    }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    
+    if(manager.modelNode.emitter){
+      const em = manager.modelNode.emitter;
+      const v = OdysseyController.lerp1(last, next, fl);
+      em.blurLength = v;
+      em.material.uniforms.blurLength.value = v;
+      em.material.uniformsNeedUpdate = true;
+    }
   }
 
 }

@@ -1,15 +1,14 @@
 import * as THREE from "three";
-
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyControllerFrameGeneric } from "@/interface";
-import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
-import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
-import { type OdysseyController } from "@/odyssey/controllers/OdysseyController";
-import { OdysseyControllerFactory } from "@/odyssey/controllers/OdysseyControllerFactory";
 import { OdysseyModel } from "@/odyssey/OdysseyModel";
 import { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
+import { type OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import { OdysseyControllerFactory } from "@/odyssey/controllers/OdysseyControllerFactory";
+import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
 import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { IOdysseyControllerFrameGeneric } from "@/interface";
       
 // Constants for quaternion decompression
 const QUAT_X_MASK = 0x07ff;        // 11 bits for X component
@@ -155,10 +154,13 @@ export class OdysseyModelNode {
       
       const tmpQuat = new THREE.Quaternion();
 
+      // Always set so OdysseyControllerFactory can build emitter-specific controllers (SizeStart, etc.).
+      // When geometry is already parsed, prefer its nodeType so flags match the mesh instance.
+      controller.nodeType = this.nodeType;
       if(this.odysseyModel.nodes.has(this.name)){
         controller.nodeType = this.nodeType = this.odysseyModel.nodes.get(this.name).nodeType;
       }
-    
+
       if(controller.frameCount != -1){
 
         if(this instanceof OdysseyModelAnimationNode || this instanceof OdysseyModelNode){

@@ -1,9 +1,8 @@
 import * as THREE from "three";
-
-import { BinaryHeap } from "@/engine/pathfinding/BinaryHeap";
 import { PathPoint } from "@/engine/pathfinding/PathPoint";
-import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
+import { GameState } from "@/GameState";
+import { BinaryHeap } from "@/engine/pathfinding/BinaryHeap";
 
 export class ComputedPath {
   owner: ModuleObject;

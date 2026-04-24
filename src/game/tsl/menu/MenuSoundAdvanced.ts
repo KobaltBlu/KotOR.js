@@ -1,5 +1,5 @@
-import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from "@/game/kotor/KOTOR";
 import type { GUILabel, GUIListBox, GUICheckBox, GUIButton } from "@/gui";
+import { MenuSoundAdvanced as K1_MenuSoundAdvanced } from "@/game/kotor/KOTOR";
 
 /**
  * MenuSoundAdvanced class.
@@ -48,6 +48,7 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
         this.close();
       });
       this._button_b = this.BTN_BACK;
+      this.selectedControl = this.LB_DESC;
       resolve();
     });
   }

@@ -1,11 +1,10 @@
 ﻿import React from "react";
 import ReactDOM from "react-dom/client";
-
-import '@/apps/debugger/app.scss';
+import "@/apps/debugger/app.scss";
 import { App } from "@/apps/debugger/App";
 import { AppProvider } from "@/apps/debugger/context/AppContext";
-import { DebugApp } from "@/apps/debugger/DebugApp";
 import { DebuggerState } from "@/apps/debugger/states/DebuggerState";
+import { DebugApp } from "@/apps/debugger/DebugApp";
 
 const params = new URLSearchParams(window.location.search);
 const uuid = params.get('uuid');

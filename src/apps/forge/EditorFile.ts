@@ -1,14 +1,13 @@
 import * as fs from "fs";
-
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
 import { Project } from "@/apps/forge/Project";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/KotOR";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 
 export type EditorFileEventListenerTypes =
   'onNameChanged'|'onSaveStateChanged'|'onSaved'
@@ -37,6 +36,11 @@ export class EditorFile extends EventListenerModel {
 
   buffer: Uint8Array = new Uint8Array(0);
   buffer2?: Uint8Array; //for dual file types like mdl/mdx
+  /**
+   * Set when the path ends with `.mdl.ascii`: Aurora MDL as text only (no `.mdx`).
+   * Skips paired MDX loading in {@link readFile}.
+   */
+  mdlAsciiOnly: boolean = false;
   gffObject?: KotOR.GFFObject;
   isBlueprint: boolean = false;
   
@@ -112,6 +116,7 @@ export class EditorFile extends EventListenerModel {
 
     this.buffer = options.buffer || new Uint8Array(0);
     this.buffer2 = options.buffer2;
+    this.mdlAsciiOnly = !!options.mdlAsciiOnly;
     this.path = options.path;
     this.path2 = options.path2;
     this.ext = options.ext;
@@ -201,10 +206,13 @@ export class EditorFile extends EventListenerModel {
           this.location = FileLocationType.LOCAL;
           this.path = pathname;
           this.resref = path_obj.name;
-          if(!this.reskey){
+          if (path_obj.ext === "mdl.ascii") {
+            this.mdlAsciiOnly = true;
+            this.reskey = KotOR.ResourceTypes.mdl;
+          } else if (!this.reskey) {
             this.reskey = KotOR.ResourceTypes[path_obj.ext];
           }
-    
+
           this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
         break;
         default:
@@ -228,12 +236,13 @@ export class EditorFile extends EventListenerModel {
 
   async readFile(): Promise<EditorFileReadResponse> {
     return new Promise<EditorFileReadResponse>( async (resolve, reject) => {
-      if(this.reskey == KotOR.ResourceTypes.mdl || this.reskey == KotOR.ResourceTypes.mdx){
-        //Mdl / Mdx Special Loader
-        resolve(
-          await this.readMdlMdxFile()
-        );
-      }else{
+      if (this.reskey == KotOR.ResourceTypes.mdl || this.reskey == KotOR.ResourceTypes.mdx) {
+        if (this.mdlAsciiOnly) {
+          resolve(await this.readMdlAsciiOnlyFile());
+        } else {
+          resolve(await this.readMdlMdxFile());
+        }
+      } else {
         //Common Loader
         if(this.buffer instanceof Uint8Array && this.buffer.length){
           resolve({
@@ -357,6 +366,58 @@ export class EditorFile extends EventListenerModel {
   
         }
       }
+    });
+  }
+
+  /**
+   * Load a single on-disk file (`*.mdl.ascii`) with no MDX; used by the model viewer for ASCII exports.
+   */
+  async readMdlAsciiOnlyFile(): Promise<EditorFileReadResponse> {
+    return new Promise<EditorFileReadResponse>(async (resolve, reject) => {
+      if (this.buffer instanceof Uint8Array && this.buffer.length) {
+        resolve({ buffer: this.buffer });
+        return;
+      }
+      if (!this.path) {
+        resolve({ buffer: new Uint8Array(0) });
+        return;
+      }
+      if (this.protocol !== EditorFileProtocol.FILE) {
+        resolve({ buffer: new Uint8Array(0) });
+        return;
+      }
+      try {
+        if (this.useGameFileSystem) {
+          this.buffer = await KotOR.GameFileSystem.readFile(this.path);
+        } else if (this.useProjectFileSystem) {
+          this.buffer = await ProjectFileSystem.readFile(this.path);
+        } else if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
+          await new Promise<void>((res, rej) => {
+            fs.readFile(this.path, (err, buf) => {
+              if (err) {
+                rej(err);
+                return;
+              }
+              this.buffer = new Uint8Array(buf);
+              res();
+            });
+          });
+        } else if (this.handle) {
+          let granted = (await this.handle.queryPermission({ mode: "read" })) === "granted";
+          if (!granted) {
+            granted = (await this.handle.requestPermission({ mode: "read" })) === "granted";
+          }
+          if (!granted) {
+            resolve({ buffer: new Uint8Array(0) });
+            return;
+          }
+          const file = await this.handle.getFile();
+          this.buffer = new Uint8Array(await file.arrayBuffer());
+        }
+      } catch (e) {
+        console.error("EditorFile.readMdlAsciiOnlyFile", e);
+      }
+      resolve({ buffer: this.buffer ?? new Uint8Array(0) });
     });
   }
 
@@ -547,7 +608,10 @@ export class EditorFile extends EventListenerModel {
   }
 
   getFilename(){
-    return this.resref+'.'+this.ext;
+    if (this.mdlAsciiOnly) {
+      return `${this.resref}.mdl.ascii`;
+    }
+    return this.resref + "." + this.ext;
   }
 
   getPrettyPath(){

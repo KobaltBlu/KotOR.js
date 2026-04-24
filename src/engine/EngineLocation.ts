@@ -1,7 +1,6 @@
 import * as THREE from "three";
-
-import { GameState } from "@/GameState";
 import type { ModuleArea } from "@/module";
+import { GameState } from "@/GameState";
 
 /**
  * EngineLocation class.

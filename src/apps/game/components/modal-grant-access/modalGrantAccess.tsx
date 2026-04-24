@@ -1,8 +1,8 @@
 import React from "react";
-
 import { KotORModal } from "@/apps/game/components/modal/modal";
 import { useApp } from "@/apps/game/context/AppContext";
 import { ApplicationEnvironment } from "@/apps/game/KotOR";
+import GrantAccessInfo from "@/apps/common/components/grantAccess/GrantAccessInfo";
 
 export const ModalGrantAccess = () => {
   const appContext = useApp();
@@ -67,12 +67,13 @@ export const ModalGrantAccess = () => {
     <KotORModal 
       title="Grant Access" 
       show={true} 
+      className="forge-style-modal"
       onCancel={onCancel} 
       onOk={onOk} 
       cancelText="QUIT" 
       okText="GRANT ACCESS"
     >
-      <span>Please grant this application access to your game install directory to continue.</span>
+      <GrantAccessInfo />
     </KotORModal>
   );
 };

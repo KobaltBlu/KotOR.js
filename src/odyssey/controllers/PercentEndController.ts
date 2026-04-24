@@ -1,9 +1,9 @@
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * PercentEndController class.
@@ -23,10 +23,16 @@ export class PercentEndController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, _data: IOdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.percentEnd = data.value;
+    }
   }
 
-  animate(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.percentEnd = OdysseyController.lerp1(last, next, fl);
+    }
   }
 
 }

@@ -9,8 +9,8 @@ import type { ModuleObject } from "@/module";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { TwoDAObject } from "@/resource/TwoDAObject";
-import { TalentObject } from "@/talents/TalentObject";
 import { BitWise } from "@/utility/BitWise";
+import { TalentObject } from "@/talents/TalentObject";
 
 const FEAT_PENALTY_DURATION = CombatRound.ROUND_LENGTH;
 

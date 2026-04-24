@@ -1,26 +1,6 @@
-import { TLKString } from "@/resource/TLKString";
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
-import { GameFileSystem } from "@/utility/GameFileSystem";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-
-export interface TLKJSONEntry {
-  index: number;
-  flags: number;
-  value: string;
-  soundResRef: string;
-  volumeVariance: number;
-  pitchVariance: number;
-  soundLength: number;
-}
-
-export interface TLKJSONData {
-  fileType: string;
-  fileVersion: string;
-  languageId: number;
-  stringCount: number;
-  entries: TLKJSONEntry[];
-}
+import { TLKString } from "@/resource/TLKString";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * TLKObject class.

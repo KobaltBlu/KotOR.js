@@ -1,9 +1,9 @@
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 
 /**
  * XSizeController class.
@@ -23,11 +23,17 @@ export class XSizeController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, _data: IOdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.size.x = data.value * 0.01;
+    }
   }
 
-  animate(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
-    
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
+    if(manager.modelNode.emitter){
+      const v = OdysseyController.lerp1(last, next, fl);
+      manager.modelNode.emitter.size.x = v * 0.01;
+    }
   }
 
 }

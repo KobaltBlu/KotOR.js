@@ -1,20 +1,17 @@
-import * as THREE from 'three';
-
-import { Action } from "@/actions/Action";
 import { CombatRound } from "@/combat/CombatRound";
-import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import { ModuleObjectType, SSFType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { AttackResult } from "@/enums/combat/AttackResult";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
-
+import { Action } from "@/actions/Action";
+import * as THREE from 'three';
+import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 
 /**
  * ActionPhysicalAttacks class.

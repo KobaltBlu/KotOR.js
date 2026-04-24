@@ -1,7 +1,7 @@
-import { AudioEngine } from "@/audio/AudioEngine";
-import { AudioLoader } from "@/audio/AudioLoader";
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioLoader } from "@/audio/AudioLoader";
 
 const GAIN_RAMP_TIME = 0.25;
 const PRIORITY_GROUP_DEFAULT = 23;

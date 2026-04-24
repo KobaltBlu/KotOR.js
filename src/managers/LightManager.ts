@@ -1,7 +1,6 @@
 import * as THREE from "three";
-
-import type { ModuleObject } from "@/module";
 import { OdysseyLight3D } from "@/three/odyssey";
+import type { ModuleObject } from "@/module";
 
 interface IOdysseyAnimatedLightUniformStruct {
   position: THREE.Vector3;

@@ -1,8 +1,7 @@
 import React from "react";
-
 import { ModalBlueprintBrowser } from "@/apps/forge/components/modal/ModalBlueprintBrowser";
-import * as KotOR from "@/apps/forge/KotOR";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export type BlueprintType = 'utc' | 'utd' | 'ute' | 'uti' | 'utp' | 'utm' | 'uts' | 'utt' | 'utw';
 

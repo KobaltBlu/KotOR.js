@@ -1,5 +1,4 @@
 import type * as THREE from "three";
-
 import type { TextureType } from "@/enums/loaders/TextureType";
 
 /**

@@ -1,9 +1,9 @@
-import { MenuTop as K1_MenuTop } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
 import type { GUIControl, GUIButton, GUILabel, GUIProgressBar } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { MenuTop as K1_MenuTop } from "@/game/kotor/KOTOR";
 
 /**
  * MenuTop class.

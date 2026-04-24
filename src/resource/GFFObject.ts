@@ -1,13 +1,10 @@
-﻿import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import type { IGFFFieldJSON } from "@/interface/resource/IGFFFieldJSON";
-import type { IGFFStructJSON } from "@/interface/resource/IGFFStructJSON";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { CExoLocSubString } from "@/resource/CExoLocSubString";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from "@/utility/FormatSerialization";
 import * as path from "path";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 

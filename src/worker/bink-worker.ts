@@ -22,9 +22,9 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { BinkAudioDCTDecoder } from '@/audio/binkaudio_dct';
 import { BinkDemuxer } from '@/video/bink-demuxer';
 import { BinkVideoDecoder, YUVFrame } from '@/video/binkvideo';
+import { BinkAudioDCTDecoder } from '@/audio/binkaudio_dct';
 
 // ── Types shared with main thread ──────────────────────────────────────────
 
@@ -77,22 +77,12 @@ const YUV_TO_RGB_R = [298, 0, 409];    // [Y, U, V] coefficients for R
 const YUV_TO_RGB_G = [298, -100, -208]; // [Y, U, V] coefficients for G
 const YUV_TO_RGB_B = [298, 516, 0];    // [Y, U, V] coefficients for B
 
-// Reusable RGBA buffer to avoid allocations
-let rgbaBuffer: Uint8Array | null = null;
-let rgbaBufferSize = 0;
-
 function yuvToRGBA(yuv: YUVFrame): ArrayBuffer {
   const { width, height, y, u, v, linesizeY, linesizeU, linesizeV } = yuv;
   const pixelCount = width * height;
   const requiredSize = pixelCount * 4;
-
-  // Resize buffer if needed
-  if (!rgbaBuffer || rgbaBufferSize < requiredSize) {
-    rgbaBuffer = new Uint8Array(requiredSize);
-    rgbaBufferSize = requiredSize;
-  }
-
-  const rgba = rgbaBuffer.subarray(0, requiredSize);
+  const result = new ArrayBuffer(requiredSize);
+  const rgba = new Uint8Array(result);
   const rgba32 = new Uint32Array(rgba.buffer, rgba.byteOffset, pixelCount);
 
   // Pre-compute constants
@@ -168,9 +158,6 @@ function yuvToRGBA(yuv: YUVFrame): ArrayBuffer {
     }
   }
 
-  // Ensure we return a regular ArrayBuffer, not SharedArrayBuffer
-  const result = new ArrayBuffer(requiredSize);
-  new Uint8Array(result).set(rgba.subarray(0, requiredSize));
   return result;
 }
 

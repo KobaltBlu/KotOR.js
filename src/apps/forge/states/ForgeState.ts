@@ -1,20 +1,20 @@
 import { EditorFile } from "@/apps/forge/EditorFile";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
-import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import type { IForgeHostAdapter } from "@/apps/forge/ForgeHostAdapter";
-import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
-import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
-import * as KotOR from '@/apps/forge/KotOR';
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
 import { Project } from "@/apps/forge/Project";
-import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
-import { MenuTopState } from "@/apps/forge/states/MenuTopState";
-import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
 import { TabProjectExplorerState } from "@/apps/forge/states/tabs/TabProjectExplorerState";
 import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
 import { TabResourceExplorerState } from "@/apps/forge/states/tabs/TabResourceExplorerState";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
+import { MenuTopState } from "@/apps/forge/states/MenuTopState";
+
+import * as KotOR from "@/apps/forge/KotOR";
 import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
 import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
 import { RecentProject } from "@/apps/forge/RecentProject";
@@ -200,6 +200,10 @@ export class ForgeState {
 
         TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
           ForgeState.loaderHide();
+          const perfMonitor = (KotOR.GameState as any)?.PerformanceMonitor;
+          if(perfMonitor && typeof perfMonitor.toString === 'function'){
+            console.log(perfMonitor.toString());
+          }
           // ScriptEditorTab.InitNWScriptLanguage();
           resolve();
         });

@@ -1,9 +1,9 @@
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 
 /**
  * TargetSizeController class.
@@ -31,7 +31,7 @@ export class TargetSizeController extends OdysseyController {
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.targetSize = next.value;
+      manager.modelNode.emitter.targetSize = OdysseyController.lerp1(last, next, fl);
     }
   }
 

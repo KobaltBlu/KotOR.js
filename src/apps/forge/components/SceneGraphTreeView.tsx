@@ -1,28 +1,35 @@
-import React, { useState, useCallback, memo, useMemo, useEffect } from "react";
-
+import React, { useState, useCallback, memo, useMemo, useEffect, CSSProperties } from "react";
+import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "@/apps/forge/SceneGraphNode";
+import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
 import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { SceneGraphTreeViewManager } from "@/apps/forge/managers/SceneGraphTreeViewManager";
-import { SceneGraphNode, SceneGraphNodeEventListenerTypes } from "@/apps/forge/SceneGraphNode";
 
-export const SceneGraphTreeView = function (props: any) {
-  const manager: SceneGraphTreeViewManager = props.manager;
+export interface SceneGraphTreeViewProps {
+  manager: SceneGraphTreeViewManager;
+  /** Overrides default 350px list height (e.g. side panels with their own scroll host). */
+  listStyle?: CSSProperties;
+}
+
+export const SceneGraphTreeView = function (props: SceneGraphTreeViewProps) {
+  const manager = props.manager;
+  const listStyle = props.listStyle;
   const [nodes, setNodes] = useState<SceneGraphNode[]>([]);
 
-  const onBuild = useCallback((nodes: SceneGraphNode[]) => {
-    setNodes([...nodes]);
-  }, [manager]);
+  const onBuild = useCallback((built: SceneGraphNode[]) => {
+    setNodes([...built]);
+  }, []);
 
   useEffect( () => {
     if(!manager){ return; }
     manager.addEventListener('onBuild', onBuild);
+    // onBuild may have run before this component mounted (e.g. UI3DRenderer setCanvas); sync roots now.
+    setNodes([...(manager.parentNodes ?? [])]);
     return () => {
       manager.removeEventListener('onBuild', onBuild);
     }
-  }, [manager]);
+  }, [manager, onBuild]);
   return (
-    <ForgeTreeView style={{ height: '350px', overflow: 'auto'}}>
+    <ForgeTreeView style={listStyle ?? { height: '350px', overflow: 'auto'}}>
     {
       nodes.map( (node: SceneGraphNode) => {
         return (
@@ -40,6 +47,7 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
   const depth: number = props.depth || 0;
   const [nodes, setNodes] = useState<SceneGraphNode[]>([...node.nodes]);
   const [openState, setOpenState] = useState<boolean>(node.open);
+  const [isSelected, setIsSelected] = useState<boolean>(node.selected);
   const [render, rerender] = useState<boolean>(false);
 
   const onNameChange = useCallback(() => {
@@ -54,20 +62,27 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
     setNodes([...node.nodes]);
   }, [node]);
 
+  const onSelectStateChange = useCallback(() => {
+    setIsSelected(node.selected);
+  }, [node]);
+
   useEffect( () => {
     // Initialize state from current node.nodes
     setNodes([...node.nodes]);
     setOpenState(node.open);
+    setIsSelected(node.selected);
     
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onNameChange', onNameChange);
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onExpandStateChange', onExpandStateChange);
     node.addEventListener<SceneGraphNodeEventListenerTypes>('onNodesChange', onNodesChange);
+    node.addEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', onSelectStateChange);
     return () => {
       node.removeEventListener<SceneGraphNodeEventListenerTypes>('onNameChange', onNameChange);
       node.removeEventListener<SceneGraphNodeEventListenerTypes>('onExpandStateChange', onExpandStateChange);
       node.removeEventListener<SceneGraphNodeEventListenerTypes>('onNodesChange', onNodesChange);
+      node.removeEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', onSelectStateChange);
     }
-  }, [node, onNameChange, onExpandStateChange, onNodesChange]);
+  }, [node, onNameChange, onExpandStateChange, onNodesChange, onSelectStateChange]);
 
   const handleClick = useCallback(() => {
     if(typeof node.onClick === 'function'){
@@ -119,7 +134,7 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
       name={node.name}
       hasChildren={hasChildren}
       isExpanded={openState}
-      isSelected={false}
+      isSelected={isSelected}
       depth={depth}
       icon={node.icon}
       iconType={hasChildren ? 'folder' : 'file'}

@@ -1,15 +1,15 @@
-import { JournalCategory } from "@/engine/JournalCategory";
-import { JournalEntry } from "@/engine/JournalEntry";
-import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { ResourceLoader } from "@/loaders";
-import { TwoDAManager } from "@/managers/TwoDAManager";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TwoDAManager } from "@/managers/TwoDAManager";
+import { JournalCategory } from "@/engine/JournalCategory";
+import { JournalEntry } from "@/engine/JournalEntry";
+import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { GameState } from "@/GameState";
 
 /**
  * JournalManager class.

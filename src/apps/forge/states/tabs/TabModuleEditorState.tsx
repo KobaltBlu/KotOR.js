@@ -1,28 +1,27 @@
 import React from "react";
-import * as THREE from 'three';
-
-import { TabModuleEditor } from "@/apps/forge/components/tabs/tab-module-editor/TabModuleEditor";
+import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "@/apps/forge/UI3DRenderer";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from '@/apps/forge/KotOR';
+import { TabState } from "@/apps/forge/states/tabs";
+import * as THREE from 'three';
+import * as KotOR from "@/apps/forge/KotOR";
+import { Project } from "@/apps/forge/Project";
 import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
-import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
+import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { TabModuleEditor } from "@/apps/forge/components/tabs/tab-module-editor/TabModuleEditor";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
+import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
 import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
-import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
 import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
 import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
 import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
 import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
-import { Project } from "@/apps/forge/Project";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { ModalBlueprintBrowserState, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { TabState } from "@/apps/forge/states/tabs";
-import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "@/apps/forge/UI3DRenderer";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
 
 export enum TabModuleEditorControlMode {
   SELECT = 0,

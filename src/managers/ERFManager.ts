@@ -1,7 +1,6 @@
-import * as path from 'path';
-
-import { ERFObject } from "@/resource/ERFObject";
 import { AsyncLoop } from "@/utility/AsyncLoop";
+import * as path from 'path';
+import { ERFObject } from "@/resource/ERFObject";
 
 /**
  * ERFManager class.

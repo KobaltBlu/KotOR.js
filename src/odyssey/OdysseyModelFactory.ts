@@ -1,3 +1,4 @@
+import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
 import { OdysseyModelNodeAABB } from "@/odyssey/OdysseyModelNodeAABB";
@@ -8,7 +9,6 @@ import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
 import { OdysseyModelNodeReference } from "@/odyssey/OdysseyModelNodeReference";
 import { OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
 import { OdysseyModelNodeSkin } from "@/odyssey/OdysseyModelNodeSkin";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
 
 /**
  * OdysseyModelFactory class.

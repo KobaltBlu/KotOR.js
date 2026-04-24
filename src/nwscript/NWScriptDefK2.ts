@@ -1,9 +1,8 @@
-﻿import { ModuleObjectScript, ModuleObjectType } from "@/enums";
+import { ModuleObjectScript, ModuleObjectType } from "@/enums";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { GameState } from "@/GameState";
 import type { ModuleCreature, ModuleObject } from "@/module";
-import { TalentSpell } from "@/talents";
 import { BitWise } from "@/utility/BitWise";
 import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { NWScriptDef } from "@/nwscript/NWScriptDef";

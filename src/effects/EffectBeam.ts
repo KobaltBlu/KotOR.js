@@ -1,7 +1,7 @@
 import { GameEffect } from "@/effects/GameEffect";
+import { GameState } from "@/GameState";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { GameState } from "@/GameState";
 import { MDLLoader } from "@/loaders";
 // import { TwoDAManager } from "@/managers/TwoDAManager";
 import { OdysseyModel } from "@/odyssey";

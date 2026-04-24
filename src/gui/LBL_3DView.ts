@@ -1,9 +1,8 @@
 import * as THREE from "three";
-
 import { GameState } from "@/GameState";
-import type { GUIControl } from "@/gui/GUIControl";
 import type { LightManager } from "@/managers";
 import { OdysseyModel3D } from "@/three/odyssey";
+import type { GUIControl } from "@/gui/GUIControl";
 
 /**
  * LBL_3DView class.

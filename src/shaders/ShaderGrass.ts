@@ -1,5 +1,4 @@
 import * as THREE from "three";
-
 import { Shader } from "@/shaders/Shader";
 
 /**
@@ -24,6 +23,7 @@ export class ShaderGrass extends Shader {
         time: { value: 0 },
         ambientColor: { value: new THREE.Color() },
         windPower: { value: 0 },
+        planeHeightJitter: { value: 0.0 },
         playerPosition: { value: new THREE.Vector3() },
         alphaTest: { value: 1 },
         // Fade distance uniforms
@@ -31,7 +31,7 @@ export class ShaderGrass extends Shader {
         fadeEndDistance: { value: 100.0 },  // Distance where grass becomes invisible
         useDistanceFade: { value: true }    // Toggle for distance fade
       }
-    ]) as Record<string, THREE.IUniform>;
+    ]) as any;
     this.vertex = `
     #include <common>
     #include <uv_pars_vertex>
@@ -46,6 +46,7 @@ export class ShaderGrass extends Shader {
 
     //wind
     uniform float windPower;
+    uniform float planeHeightJitter;
     attribute float constraint;
 
     //grassUV
@@ -80,8 +81,9 @@ export class ShaderGrass extends Shader {
       return fract(sin(x * 12345.6789) * 98765.4321);
     }
 
-    float pickQuadrant(float instanceID) {
-      float r = rand01(instanceID);
+    float pickQuadrant(float instanceID, float quadIndex) {
+      // Per-plane variation: each crossed plane in an instance gets its own weighted pick.
+      float r = rand01((instanceID * 17.0) + (quadIndex * 101.0));
 
       float t0 = probability.x;
       float t1 = t0 + probability.y;
@@ -135,7 +137,7 @@ export class ShaderGrass extends Shader {
       //uv (THREE.js)
       #include <uv_vertex>
 
-      float uvFrameIndex = pickQuadrant((vInstanceID * 3.0) + quadIdx);
+      float uvFrameIndex = pickQuadrant(vInstanceID, quadIdx);
 
       //BEGIN: SpriteSheet Calculations
       float framesX = 2.0;
@@ -155,6 +157,10 @@ export class ShaderGrass extends Shader {
 
       //begin_vertex (THREE.js)
       #include <begin_vertex>
+
+      // Subtle per-plane height variation to break perfectly even blade tops.
+      float planeHeightOffset = (rand01((vInstanceID * 29.0) + (quadIdx * 113.0)) - 0.5) * planeHeightJitter;
+      transformed.z += planeHeightOffset;
 
       mat3 rotationComponent = mat3(instanceMatrix);
 
@@ -252,7 +258,7 @@ export class ShaderGrass extends Shader {
     #endif
     void main() {
       vec2 uvTransform = vec2(
-        vSpriteSheet.x + (vSpriteSheet.z * vUv.x), 
+        vSpriteSheet.x + (vSpriteSheet.z * (1.0 - vUv.x)), 
         vSpriteSheet.y + (vSpriteSheet.w * vUv.y)
       );
       vec4 texelColor = texture2D( map, uvTransform );

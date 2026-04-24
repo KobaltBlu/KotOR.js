@@ -1,3 +1,12 @@
+import { GUIButton, GUIListBox, GUIProtoItem } from "@/gui";
+import { GameState } from "@/GameState";
+import { GameEngineType } from "@/enums/engine";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { TextureLoader } from "@/loaders";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GUIControl } from "@/gui/GUIControl";
+import { GameMenu } from "@/gui/GameMenu";
 import * as THREE from "three";
 
 import { GameEngineType } from "@/enums/engine";

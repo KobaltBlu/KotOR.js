@@ -1,9 +1,9 @@
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import {
   OP_CPDOWNBP, OP_CPTOPBP, OP_CPDOWNSP, OP_CPTOPSP, OP_MOVSP,
   OP_DECIBP, OP_INCIBP, OP_DECISP, OP_INCISP
-} from '@/nwscript/NWScriptOPCodes';
+} from "@/nwscript/NWScriptOPCodes";
 
 /**
  * Tracks variable usage during NCS-to-NSS conversion.

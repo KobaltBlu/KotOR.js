@@ -1,6 +1,6 @@
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { MenuJournal as K1_MenuJournal } from "@/game/kotor/KOTOR";
 import { GUIJournalItem } from "@/game/tsl/gui/GUIJournalItem";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 enum JournalSort {
   RECIEVED = 0,
@@ -56,7 +56,7 @@ export class MenuJournal extends K1_MenuJournal {
         this.manager.MenuMessages.open();
       });
       
-      this.LB_ITEMS.GUIProtoItemClass = GUIJournalItem;
+      this.LB_ITEMS.setProtoBuilder(GUIJournalItem);
       this.LB_ITEMS.onSelect = (node: any) => {
         console.log(node);
       };

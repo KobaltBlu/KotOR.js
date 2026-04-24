@@ -1,4 +1,4 @@
-﻿import type { GameMenu } from "@/gui/GameMenu";
+import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
@@ -7,17 +7,17 @@ import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { GameState } from "@/GameState";
 import { GameEngineType } from "@/enums/engine";
 import { Mouse } from "@/controls/Mouse";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIProtoItem } from "@/gui/GUIProtoItem";
 import type { GUIScrollBar } from "@/gui/GUIScrollBar";
 import { GUIControlEvent } from "@/gui/GUIControlEvent";
-
-interface GUIListItemCallbacks {
-  onClick?: (e: GUIControlEvent, ...args: any) => void;
-  onValueChanged?: (e: GUIControlEvent, ...args: any) => void;
-  onHover?: (e: GUIControlEvent, ...args: any) => void;
-}
+import { getExistingListRowIndex } from "@/gui/listrow/listRowAddItem";
+import { measureListRowHeight } from "@/gui/listrow/listRowMeasure";
+import {
+  createDefaultListRowByProtoType,
+  type GUIListItemCallbacks,
+} from "@/gui/listrow/defaultListRows";
+import { applyCustomProtoRowSkin } from "@/gui/listrow/applyProtoTemplateSkin";
 
 /**
  * GUIListBox class.
@@ -35,7 +35,9 @@ interface GUIListItemCallbacks {
  */
 export class GUIListBox extends GUIControl {
   listItems: any[];
+  /** Vertical scroll offset in pixels (content scrolled up). */
   scroll: number;
+  /** Maximum scroll offset in pixels (total content height minus viewport). */
   maxScroll: number;
   GUIProtoItemClass: typeof GUIProtoItem;
   onSelected: (node: any, control: GUIControl, index: number) => void;
@@ -63,7 +65,9 @@ export class GUIListBox extends GUIControl {
   // Height caching for performance
   private itemHeightCache = new Map<number, number>();
   private cacheDirty = true;
-  
+  /** When false and no row animation, RTT can skip a frame (see {@link markListRttDirty}). */
+  private listRttDirty = true;
+
   static hexTextures: Map<string, OdysseyTexture>;
   static InitTextures: () => void;
 
@@ -97,11 +101,11 @@ export class GUIListBox extends GUIControl {
 
     if(this.hasScrollBar){
       this.scrollbar = new this.menu.factory.GUIScrollBar(this.menu, this._scrollbar, this, this.scale);
-      this.scrollbar.setList( this );
-      //this.widget.add(this.scrollbar.createControl());
+      // scrollWrapper must exist before setList: setList → update → updateList → updateScrollbarVisibility uses scrollWrapper.
       this.scrollWrapper = new THREE.Group();
-      this.scrollWrapper.add(this.scrollbar.createControl())
+      this.scrollWrapper.add(this.scrollbar.createControl());
       this.scene.add(this.scrollWrapper);
+      this.scrollbar.setList(this);
     }
 
     this.itemGroup = new THREE.Group();
@@ -109,7 +113,7 @@ export class GUIListBox extends GUIControl {
     this.itemGroup.position.set(0, 0, 0);
 
     const shrinkWidth = this.scrollbar ? this.scrollbar.extent.width/2 : 0;
-    this.itemGroup.position.x += this.isScrollBarLeft() ? shrinkWidth : shrinkWidth * -1;
+    this.itemGroup.position.x += this.isScrollBarLeft() ? shrinkWidth : (shrinkWidth) * -1;
 
     let extent = this.getOuterSize();
     this.width = extent.width;
@@ -122,18 +126,19 @@ export class GUIListBox extends GUIControl {
     );
     this.camera.position.z = 100;
 
-    this.texture = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat });
-		//this.tDepth = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat } );
+    this.texture = new THREE.WebGLRenderTarget(this.width, this.height, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+      type: THREE.UnsignedByteType,
+    });
     this.clearColor = new THREE.Color(0x000000);
 
-    this.targetMaterial = new THREE.MeshBasicMaterial()
-    this.targetMaterial.blending = THREE.CustomBlending;
-
-    this.targetMaterial.blendEquation = THREE.AddEquation;
-    this.targetMaterial.blendSrc = THREE.OneFactor;
-    this.targetMaterial.blendDst = THREE.OneMinusSrcColorFactor;
-    //this.targetMaterial.blendSrcAlpha = THREE.OneFactor;
-    //this.targetMaterial.blendDstAlpha = THREE.OneMinusSrcAlphaFactor;
+    this.targetMaterial = new THREE.MeshBasicMaterial();
+    this.targetMaterial.blending = THREE.NormalBlending;
+    this.targetMaterial.transparent = true;
+    this.targetMaterial.depthWrite = false;
+    this.targetMaterial.depthTest = true;
 
     this.targetGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
     this.targetMesh = new THREE.Mesh(this.targetGeometry, this.targetMaterial);
@@ -171,21 +176,37 @@ export class GUIListBox extends GUIControl {
     if(!this.isVisible())
       return;
 
+    const wantsAnimated = this.children.some(c =>
+      c.pulsing || (c.hover && c.isClickable()),
+    );
+    if (!wantsAnimated && !this.listRttDirty) {
+      return;
+    }
+    if (!wantsAnimated) {
+      this.listRttDirty = false;
+    }
     this.render();
   }
 
+  markListRttDirty(): void {
+    this.listRttDirty = true;
+  }
+
   render(){
-    let oldClearColor = new THREE.Color()
+    const oldClearColor = new THREE.Color();
     this.menu.context.renderer.getClearColor(oldClearColor);
-    this.menu.context.renderer.setClearColor(this.clearColor, 1);
+    const oldClearAlpha =
+      typeof (this.menu.context.renderer as any).getClearAlpha === 'function'
+        ? (this.menu.context.renderer as any).getClearAlpha()
+        : 1;
+    this.menu.context.renderer.setClearColor(this.clearColor, 0);
     this.menu.context.renderer.setRenderTarget(this.texture);
-    this.menu.context.renderer.clear(true);
+    this.menu.context.renderer.clear(true, true, true);
     this.menu.context.renderer.render(this.scene, this.camera);
     (this.texture as any).needsUpdate = true;
     this.menu.context.renderer.setRenderTarget(null);
-    this.targetMaterial.transparent = true;
     this.targetMaterial.needsUpdate = true;
-    this.menu.context.renderer.setClearColor(oldClearColor, 1);
+    this.menu.context.renderer.setClearColor(oldClearColor, oldClearAlpha);
   }
 
   calculatePosition(){
@@ -207,24 +228,28 @@ export class GUIListBox extends GUIControl {
     }
     this.listItems = [];
     this.children = [];
+    this.scroll = 0;
+    this.maxScroll = 0;
     this.invalidateHeightCache();
     this.updateScrollbarVisibility();
     this.render();
   }
 
   removeItemByIndex(index = -1){
-    if(index >= 0 && this.children.length > index){
-      let node = this.children.splice(index, 1)[0];
-      node.widget.parent.remove(node.widget);
+    if(index >= 0 && index < this.children.length){
+      const removed = this.children[index];
+      removed.widget.parent.remove(removed.widget);
+      this.children.splice(index, 1);
+      if(index < this.listItems.length){
+        this.listItems.splice(index, 1);
+      }
 
-      //Select a new item if the one removed was selected
-      if(this.selectedItem == node){
-        //new select index
-        index = index--;
-        if(index < 0)
-          index = 0;
-
-        this.select(this.children[index]);
+      if(this.selectedItem === removed){
+        this.selectedItem = undefined;
+        if(this.children.length > 0){
+          const newIndex = Math.min(index, this.children.length - 1);
+          this.select(this.children[newIndex]);
+        }
       }
 
       this.invalidateHeightCache();
@@ -237,114 +262,42 @@ export class GUIListBox extends GUIControl {
     return this.protoItem.type;
   }
 
-  addItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): GUIControl {
-    let control = this.protoItem;
-    let type = control.type;
-    
-    let ctrl: GUIControl;
-    let widget: THREE.Object3D;
+  /** Registers the custom list row presenter (same as assigning {@link GUIProtoItemClass}). */
+  setProtoBuilder(ctor: typeof GUIProtoItem): void {
+    this.GUIProtoItemClass = ctor;
+  }
 
-    let idx = this.listItems.indexOf(node);
-    if(idx == -1 || typeof node === 'string'){
-      this.listItems.push(node);
-    }else{
-      return this.children[idx];
+  addItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): GUIControl {
+    const control = this.protoItem;
+    const type = control.type;
+
+    let ctrl: GUIControl;
+    let idx: number;
+
+    const existingIdx = getExistingListRowIndex(this.listItems, node);
+    if (existingIdx !== -1) {
+      return this.children[existingIdx];
     }
+    this.listItems.push(node);
 
     if(typeof this.GUIProtoItemClass === 'undefined'){
-      switch(type){
-        case GUIControlType.Label:
-        case GUIControlType.ProtoItem:
-          ctrl = new this.menu.factory.GUIProtoItem(this.menu, control.control, this, this.scale);
-          ctrl.guiFont = this.protoItem.guiFont;
-          ctrl.text.texture = this.protoItem.text.texture;
-          ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
-          ctrl.isProtoItem = false;
-          ctrl.offset = this.offset;
-          ctrl.node = node;
-          ctrl.setList( this );
-          idx = this.children.push(ctrl) - 1;
-
-          widget = ctrl.createControl();
-          ctrl.setText(node);
-          ctrl.buildText();
-
-          this.itemGroup.add(widget);
-          
-          if(typeof options.onClick === 'function'){
-            ctrl.addEventListener('click', (e) => {
-              e.stopPropagation();
-              this.select(ctrl);
-              options.onClick(node, ctrl);
-            });
-          }
-        break;
-        case GUIControlType.CheckBox:
-          ctrl = new this.menu.factory.GUICheckBox(this.menu, control.control, this, this.scale);
-          ctrl.guiFont = this.protoItem.guiFont;
-          ctrl.text.texture = this.protoItem.text.texture;
-          ctrl.text.material.uniforms.map.value = this.protoItem.text.material.uniforms.map.value;
-          ctrl.isProtoItem = false;
-          ctrl.offset = this.offset;
-          ctrl.node = node;
-          ctrl.setList( this );
-          idx = this.children.push(ctrl) - 1;
-
-          widget = ctrl.createControl();
-          ctrl.setText(node);
-          this.itemGroup.add(widget);
-          
-          if(typeof options.onClick === 'function'){
-            ctrl.addEventListener('click', (e) => {
-              e.stopPropagation();
-              this.select(ctrl);
-              options.onClick(node, ctrl);
-            });
-          }
-          
-          if(typeof options.onValueChanged === 'function'){
-            ctrl.addEventListener('valueChanged', (e) => {
-              e.stopPropagation();
-              options.onValueChanged(node, ctrl);
-            });
-          }
-        break;
-        case GUIControlType.Button:
-          try{
-            ctrl = new this.menu.factory.GUIButton(this.menu, control.control, this, this.scale);
-            ctrl.guiFont = this.protoItem.guiFont;
-            ctrl.isProtoItem = false;
-            ctrl.offset = this.offset;
-            ctrl.node = node;
-            ctrl.setList( this );
-            idx = this.children.push(ctrl) - 1;
-
-            ctrl.highlight.color = new THREE.Color(0.83203125, 1, 0.83203125);
-            ctrl.border.color = new THREE.Color(0, 0.658823549747467, 0.9803921580314636);
-
-            widget = ctrl.createControl();
-            ctrl.setText(node.getName());
-
-            this.itemGroup.add(widget);
-          
-            if(typeof options.onClick === 'function'){
-              ctrl.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.select(ctrl);
-                options.onClick(node, ctrl);
-              });
-            }
-          }catch(e){
-            console.log(e);
-          }
-        break;
-        default:
-          console.error('GUIListBox.add', 'Unknown ControlType', type);
-        break;
+      const created = createDefaultListRowByProtoType(
+        this,
+        this.protoItem,
+        type,
+        node,
+        this.scale,
+        options,
+      );
+      if(!created){
+        this.listItems.pop();
+        return undefined as any;
       }
+      ctrl = created;
+      idx = this.children.push(ctrl) - 1;
     }else{
       ctrl = new this.GUIProtoItemClass(this.menu, control.control, this, this.scale);
-      ctrl.guiFont = this.protoItem.guiFont;
+      applyCustomProtoRowSkin(ctrl, this.protoItem);
       ctrl.isProtoItem = true;
       ctrl.offset = this.offset;
       ctrl.node = node;
@@ -354,7 +307,7 @@ export class GUIListBox extends GUIControl {
       ctrl.highlight.color = ctrl.defaultHighlightColor.clone();
       ctrl.border.color = ctrl.defaultColor.clone();
       
-      widget = ctrl.createControl();
+      const widget = ctrl.createControl();
 
       this.itemGroup.add(widget);
           
@@ -430,6 +383,11 @@ export class GUIListBox extends GUIControl {
         if(!bWasItemSelected && typeof this.onSelected === 'function')
           this.onSelected(control.node, control, this.children.indexOf(control));
       }
+        
+      if(control instanceof GUIControl && typeof this.onClicked === 'function')
+        this.onClicked(control.node, control, this.children.indexOf(control));
+
+      this.markListRttDirty();
     }catch(e){
       console.error(e);
     }
@@ -466,67 +424,86 @@ export class GUIListBox extends GUIControl {
     }
   }
 
+  getListElementByNode(node: any): GUIControl | undefined {
+    return this.children.find(c => c.node === node) as GUIControl | undefined;
+  }
+
+  getListElementByIndex(index: number): GUIControl | undefined {
+    return this.children[index] as GUIControl | undefined;
+  }
+
+  removeItemByNode(node: any){
+    const index = this.listItems.indexOf(node);
+    if(index >= 0){
+      this.removeItemByIndex(index);
+    }
+  }
+
+  rebuildItems() {
+    const items = this.listItems.slice();
+    this.clearItems();
+    for(let i = 0; i < items.length; i++){
+      this.addItem(items[i]);
+    }
+  }
+
   listMarginTop = 0;
   listMarginBottom = 0;
   listItemMarginTop = 0;
   listItemMarginBottom = 0;
 
+  /** Height of the inner list area between border vertical insets (matches scrollable viewport). */
+  getViewportInnerHeight(): number {
+    const visibleTop = this.extent.height / 2;// - this.border.inneroffsety;
+    const visibleBottom = -this.extent.height / 2;// + this.border.inneroffsety;
+    return visibleTop - visibleBottom;
+  }
+
   updateList(){
-    if(!this.children.length) return;
-    
-    // Calculate visible area bounds
-    const visibleTop = this.extent.height / 2 - this.border.inneroffsety;
-    const visibleBottom = -this.extent.height / 2 + this.border.inneroffsety;
-    const visibleHeight = visibleTop - visibleBottom;
-    
-    // Calculate scroll bounds using consistent height calculation
-    const itemHeight = this.getItemHeight(this.children[0]);
-    this.maxScroll = Math.max(0, this.children.length - Math.floor(visibleHeight / itemHeight));
-    
-    if(this.scroll > this.maxScroll){
-      this.scroll = this.maxScroll;
+    if(!this.children.length){
+      this.maxScroll = 0;
+      this.scroll = 0;
+      this.updateScrollbarVisibility();
+      this.updateScrollbarThumb();
+      this.calculateBox();
+      this.markListRttDirty();
+      return;
     }
 
-    // Position items consistently
-    let currentY = visibleTop - this.listMarginTop;
-    
+    const visibleTop = this.extent.height / 2;// - this.border.inneroffsety;
+    const visibleBottom = -this.extent.height / 2;// + this.border.inneroffsety;
+    const visibleHeight = visibleTop - visibleBottom;
+
+    const heights: number[] = [];
     for (let i = 0; i < this.children.length; i++) {
-      const node = this.children[i];
-      const height = this.getItemHeight(node);
-      
-      // Calculate item position
-      const itemY = currentY - (i - this.scroll) * itemHeight - height / 2 - this.listItemMarginTop;
-      node.widget.position.y = itemY;
-      node.updateBounds();
-      // currentY -= this.listItemMarginBottom;
-      // currentY -= this.listItemMarginTop;
+      heights.push(this.getItemHeight(this.children[i]));
     }
-    
+
+    const prefix: number[] = [0];
+    for (let i = 0; i < heights.length; i++) {
+      prefix.push(prefix[i] + heights[i] + this.padding);
+    }
+
+    const totalContentHeight = prefix[heights.length] + this.padding;
+    this.maxScroll = Math.max(0, totalContentHeight - visibleHeight);
+
+    this.scroll = Math.max(0, Math.min(this.scroll, this.maxScroll));
+
+    const topBase = visibleTop - this.padding;
+
+    for (let i = 0; i < this.children.length; i++) {
+      const height = heights[i];
+      const itemY = topBase - prefix[i] - height / 2 + this.scroll;
+      this.children[i].widget.position.y = itemY;
+      this.children[i].updateBounds();
+    }
+
+    this.cacheDirty = false;
+
     this.updateScrollbarVisibility();
     this.updateScrollbarThumb();
     this.calculateBox();
-    this.cullOffscreen();
-  }
-
-  cullOffscreen(){
-    return;
-    let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3())
-    this.minY = parentPos.y + this.extent.height/2;
-    this.maxY = parentPos.y - this.extent.height/2;
-
-    let nodePadding = 0;//(this.getNodeHeight()/2);
-
-    let nodes = this.itemGroup.children;
-    for(let i = 0; i < nodes.length; i++){
-      let control = nodes[i].userData.control;
-      let nodePos = control.updateWorldPosition(); //getWorldPosition(nodes[i].control.worldPosition);
-      let nodeTop = nodePos.y + control.extent.height/2 - nodePadding;
-      let nodeBottom = nodePos.y - control.extent.height/2 + nodePadding;
-      let height = nodeBottom - nodeTop;
-      let nodeCenter = nodeTop + height/2;
-      let inside = ( (nodeTop < this.minY && nodeBottom > this.maxY) || (nodeCenter < this.minY && nodeCenter > this.maxY) );
-      nodes[i].visible = inside;
-    }
+    this.markListRttDirty();
   }
 
   isScrollBarLeft(){
@@ -536,77 +513,63 @@ export class GUIListBox extends GUIControl {
     return false;
   }
 
+  /** Returns the raw drawn height of the row widget — no padding included. Padding is applied by the caller as part of slot pitch. */
   getNodeHeight(node?: GUIControl): number {
-    let height = 0;
-    
-    if(!node){
-      if(this.hasProtoItem && this.protoItem.control.hasField('EXTENT')){
-        let extent = this.protoItem.control.getFieldByLabel('EXTENT').getChildStructs()[0];
-        height += extent.getFieldByLabel('HEIGHT').getValue() || 0;
-      }
-
-      if(this.hasProtoItem && this.protoItem.control.hasField('BORDER')){
-        let border = this.protoItem.control.getFieldByLabel('BORDER').getChildStructs()[0];
-        height += (border.getFieldByLabel('DIMENSION').getValue() || 0) / 2;
-      }
-
-      if(!this.hasProtoItem){
-        console.warn('GUIListBox.getNodeHeight', 'No proto item found', `${this.menu.gui_resref}.gui`, this.name);
-      }
-    } else {
-      let control = node;
-      let cHeight = (node.extent.height + (node.getBorderSize()/2));
-
-      if(control.text.geometry){
-        control.text.geometry.computeBoundingBox();
-        let tSize = new THREE.Vector3();
-        control.text.geometry.boundingBox.getSize(tSize);
-        if(tSize.y > cHeight){
-          cHeight = tSize.y;
-        }
-      }
-      height = cHeight + this.padding; // FIX: Use the calculated height!
+    if (!node) {
+      console.warn('GUIListBox.getNodeHeight', 'No proto item found', `${this.menu.gui_resref}.gui`, this.name);
+      return 0;
     }
 
+    let cHeight = node.extent.height;
+
+    if (node.text.geometry) {
+      node.text.geometry.computeBoundingBox();
+      const tSize = new THREE.Vector3();
+      node.text.geometry.boundingBox.getSize(tSize);
+      if (tSize.y > cHeight) {
+        cHeight = tSize.y;
+      }
+    }
+
+    return cHeight;
+  }
+
+  /** Total virtual content height matching the scroll range used in {@link updateList}. Used by the scrollbar for thumb sizing. */
+  getContentHeight(): number {
+    if (!this.children.length) return 0;
+    let height = 0;
+    for (let i = 0; i < this.children.length; i++) {
+      height += this.getItemHeight(this.children[i]) + this.padding;
+    }
+    height += this.padding; // trailing padding after last row
     return height;
   }
 
-  getContentHeight(){
-    let height = this.border.inneroffsety * 2;//this.padding * 2;
-    for(let i = 0; i < this.children.length; i++){
-      let control = this.children[i];
-      // let node = this.listItems[i];
-
-      // let cHeight = (control.extent.height + (control.getBorderSize()/2));
-
-      // if(control.text.geometry){
-      //   control.text.geometry.computeBoundingBox();
-      //   //let tSize = new THREE.Box3();
-      //   let tSize = control.text.geometry.boundingBox.getSize(new THREE.Vector3());
-      //   if(tSize.y > cHeight){
-      //     cHeight = tSize.y;
-      //   }
-      // }
-      height += control.extent.height + this.padding;
+  /** Pixels per arrow/wheel step; scrollbar thumb uses the same quanta when dragging. */
+  getScrollStep(): number {
+    if(!this.children.length){
+      return 24;
     }
-    return height;
+    return Math.max(8, this.getItemHeight(this.children[0]) + this.padding);
   }
 
   scrollUp(){
-    this.scroll -= 1;
-    if(this.scroll <= 0)
+    const step = this.getScrollStep();
+    this.scroll -= step;
+    if(this.scroll <= 0){
       this.scroll = 0;
+    }
 
-    this.updateScrollbarThumb();
     this.updateList();
   }
 
-  scrollDown(){    
-    this.scroll += 1;
-    if(this.scroll >= this.maxScroll)
+  scrollDown(){
+    const step = this.getScrollStep();
+    this.scroll += step;
+    if(this.scroll > this.maxScroll){
       this.scroll = this.maxScroll;
+    }
 
-    this.updateScrollbarThumb();
     this.updateList();
   }
 
@@ -632,23 +595,22 @@ export class GUIListBox extends GUIControl {
       }
     }
 
-    if(this.scrollbar.box.containsPoint(Mouse.positionUI)){
-      controls.push(this.scrollbar);
-      //controls = controls.concat( this.scrollbar.getActiveControls() );
+    if(this.scrollbar){
+      if(this.scrollbar.box.containsPoint(Mouse.positionUI)){
+        controls.push(this.scrollbar);
+      }
+
+      if(this.scrollbar.upArrow?.userData?.box?.containsPoint(Mouse.positionUI)){
+        controls.push(this.scrollbar);
+      }
+
+      if(this.scrollbar.downArrow?.userData?.box?.containsPoint(Mouse.positionUI)){
+        controls.push(this.scrollbar);
+      }
+
+      controls = controls.concat(this.scrollbar.getActiveControls());
     }
 
-    if(this.scrollbar.upArrow.userData.box.containsPoint(Mouse.positionUI)){
-      controls.push(this.scrollbar);
-      //controls = controls.concat( this.scrollbar.getActiveControls() );
-    }
-
-    if(this.scrollbar.downArrow.userData.box.containsPoint(Mouse.positionUI)){
-      controls.push(this.scrollbar);
-      //controls = controls.concat( this.scrollbar.getActiveControls() );
-    }
-
-    controls = controls.concat( this.scrollbar.getActiveControls() );
-    
     return controls;
   }
 
@@ -695,7 +657,10 @@ export class GUIListBox extends GUIControl {
   }
 
   directionalNavigate(direction = ''){
-    let maxItems = this.children.length;
+    const maxItems = this.children.length;
+    if(maxItems <= 0){
+      return;
+    }
     let index = this.children.indexOf(this.selectedItem);
     switch(direction){
       case 'up':
@@ -728,11 +693,7 @@ export class GUIListBox extends GUIControl {
     
     let height = 0;
     
-    if (node instanceof GUIProtoItem) {
-      height = node.getItemHeight();
-    } else {
-      height = this.getNodeHeight(node);
-    }
+    height = measureListRowHeight(this, node);
     
     this.itemHeightCache.set(nodeIndex, height);
     return height;
@@ -744,9 +705,18 @@ export class GUIListBox extends GUIControl {
     this.itemHeightCache.clear();
   }
 
+  /** Row text wrapped / extent changed — height cache must clear or rows stay overlapped. */
+  relayoutAfterRowHeightChange(){
+    this.invalidateHeightCache();
+    this.updateList();
+    if(this.scrollbar){
+      this.scrollbar.update();
+    }
+  }
+
   // Update scrollbar visibility based on content height
   private updateScrollbarVisibility(){
-    if(!this.scrollbar || !this.hasScrollBar) return;
+    if(!this.scrollbar || !this.hasScrollBar || !this.scrollWrapper) return;
     
     // Calculate if scrolling is needed
     // maxScroll > 0 means there are more items than can fit in the visible area
@@ -768,10 +738,16 @@ export class GUIListBox extends GUIControl {
 
   // Update scrollbar thumb position
   private updateScrollbarThumb(){
-    if(!this.scrollbar || this.maxScroll <= 0) return;
-    
-    const scrollThumbOffset = (this.scrollbar.extent.height - this.scrollbar.thumb.scale.y);
+    if(!this.scrollbar) return;
+    if(this.maxScroll <= 0){
+      this.scrollbar.scrollPos = 0;
+      return;
+    }
+
     const scrollPercent = this.scroll / this.maxScroll;
+    this.scrollbar.scrollPos = scrollPercent;
+
+    const scrollThumbOffset = (this.scrollbar.extent.height - this.scrollbar.thumb.scale.y);
     const maxThumbY = scrollThumbOffset / 2;
     const minThumbY = -maxThumbY;
     
@@ -823,5 +799,6 @@ GUIListBox.InitTextures = function(){
       GUIListBox.hexTextures.set(texture?.name, texture);
     });
   }
+
 }
 

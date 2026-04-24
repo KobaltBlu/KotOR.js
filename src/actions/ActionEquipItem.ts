@@ -1,4 +1,3 @@
-import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import type { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
@@ -6,6 +5,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { BitWise } from "@/utility/BitWise";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionEquipItem class.

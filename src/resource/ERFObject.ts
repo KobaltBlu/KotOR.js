@@ -2,13 +2,12 @@ import * as path from "path";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { GameFileSystem } from "@/utility/GameFileSystem";
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { IERFLanguage } from "@/interface/resource/IERFLanguage";
 import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
 import { IERFResource } from "@/interface/resource/IERFResource";
 import { IERFObjectHeader } from "@/interface/resource/IERFObjectHeader";
-
+  
 const ERF_HEADER_SIZE = 160;
 
 /**

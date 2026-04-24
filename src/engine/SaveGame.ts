@@ -1,4 +1,4 @@
-﻿import * as path from "path";
+import * as path from "path";
 import { GFFObject } from "@/resource/GFFObject";
 import { TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
@@ -638,10 +638,14 @@ export class SaveGame {
    * customSave.SAVEGAMENAME = 'My Adventure';
    * console.log(customSave.getFullName()); // "Game1 - My Adventure"
    */
-  getFullName(): string{
-    if(this.getSaveName() != ''){
-      return this.folderName.split(' - ')[1] + ' - ' + this.getSaveName();
-    }else{
+  getFullName(){
+    if(this.getIsQuickSave()) {
+      return GameState.TLKManager.GetStringById(47991).Value + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M`;
+    } else if(this.getIsAutoSave()) {
+      return GameState.TLKManager.GetStringById(1593).Value + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M`;
+    } else if(this.getSaveName() != '') {
+      return this.folderName.split(' - ')[1] + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M\n` + this.getSaveName();
+    } else {
       return this.folderName.split(' - ')[1];
     }
   }

@@ -1,4 +1,7 @@
 export * from "@/odyssey/OdysseyModel";
+export * from "@/odyssey/export/odysseyModelAscii";
+export { parseOdysseyModelAscii } from "@/odyssey/export/odysseyModelAsciiParser";
+export { preprocessMdlAscii, tokenizeMdlAscii, MdlAsciiTokenStream, MdlAsciiParseError } from "@/odyssey/export/odysseyModelAsciiTokenizer";
 export * from "@/odyssey/OdysseyModelNode";
 export * from "@/odyssey/OdysseyModelNodeMesh";
 export * from "@/odyssey/OdysseyModelAnimation";

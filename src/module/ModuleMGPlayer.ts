@@ -1,4 +1,4 @@
-﻿import { ModuleObject } from "@/module/ModuleObject";
+import { ModuleObject } from "@/module/ModuleObject";
 import { GFFObject } from "@/resource/GFFObject";
 import * as THREE from "three";
 import { GameState } from "@/GameState";

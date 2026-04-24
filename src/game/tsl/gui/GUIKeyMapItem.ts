@@ -1,13 +1,12 @@
-import * as THREE from "three";
-
-import { Keymap } from "@/controls";
+import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "@/gui";
 import { GameEngineType } from "@/enums/engine";
 import { GameState } from "@/GameState";
-import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import { GFFStruct } from "@/resource/GFFStruct";
-import type { TalentSkill } from "@/talents/TalentSkill";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import * as THREE from "three";
+import type { TalentSkill } from "@/talents/TalentSkill";
+import { Keymap } from "@/controls";
 
 /**
  * GUIKeyMapItem class.

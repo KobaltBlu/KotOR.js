@@ -1,7 +1,6 @@
 
 import * as THREE from "three";
 import { Pass, FullScreenQuad } from "three/examples/jsm/postprocessing/Pass";
-
 import { OdysseyShader } from "@/shaders/pass/OdysseyShader";
 
 //Extend the default THREE.FilmPass shader pass

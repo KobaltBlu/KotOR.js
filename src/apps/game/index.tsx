@@ -2,9 +2,8 @@
 import React from "react";
 import * as KotOR from "@/apps/game/KotOR";
 import { AppProvider } from "@/apps/game/context/AppContext";
-import { LoadingConsoleProvider } from "@/apps/game/context/LoadingConsoleProvider";
 import { GameApp } from "@/apps/game/app";
-import '@/apps/game/app.scss';
+import "@/apps/game/app.scss";
 
 window.addEventListener('beforeunload', (e) => {
   try{

@@ -1,4 +1,5 @@
 import { GameEventType } from "@/enums/events/GameEventType";
+import { GFFStruct } from "@/resource/GFFStruct";
 import { EventApplyEffect } from "@/events/EventApplyEffect";
 import { EventAquireItem } from "@/events/EventAquireItem";
 import { EventAreaTransition } from "@/events/EventAreaTransition";
@@ -26,7 +27,6 @@ import { EventSummonCreature } from "@/events/EventSummonCreature";
 import { EventTimedEvent } from "@/events/EventTimedEvent";
 import { EventUnlockObject } from "@/events/EventUnlockObject";
 import type { GameEvent } from "@/events/GameEvent";
-import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * GameEventFactory class.

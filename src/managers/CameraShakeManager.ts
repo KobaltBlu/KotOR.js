@@ -1,6 +1,5 @@
 
 import * as THREE from "three";
-
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameState } from "@/GameState";
 import { TwoDAManager } from "@/managers/TwoDAManager";

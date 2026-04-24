@@ -1,4 +1,3 @@
-﻿import * as THREE from "three";
 import { GameState } from "@/GameState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameMenu } from "@/gui";

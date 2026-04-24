@@ -1,5 +1,4 @@
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-
 import { LYTObject } from "@/resource/LYTObject";
 
 /**

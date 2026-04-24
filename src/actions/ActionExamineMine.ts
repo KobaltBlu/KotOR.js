@@ -1,19 +1,12 @@
-import { Action } from "@/actions/Action";
 import { GameState } from "@/GameState";
-import { ModuleTriggerType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { SkillType } from "@/enums/nwscript/SkillType";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleObject } from "@/module/ModuleObject";
-import type { ModulePlaceable } from "@/module/ModulePlaceable";
-import type { ModuleTrigger } from "@/module/ModuleTrigger";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionExamineMine class.

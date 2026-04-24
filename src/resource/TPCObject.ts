@@ -1,15 +1,13 @@
+import * as THREE from 'three';
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { TXI } from "@/resource/TXI";
 // @ts-ignore
 import * as dxtJs from "dxt-js";
-import * as THREE from 'three';
-
-import { ENCODING } from '@/enums/graphics/tpc/Encoding';
-import { PixelFormat } from '@/enums/graphics/tpc/PixelFormat';
-import { ITPCHeader } from '@/interface/resource/ITPCHeader';
-import { ITPCObjectOptions } from '@/interface/resource/ITPCObjectOptions';
-import { TXI } from '@/resource/TXI';
-import { OdysseyCompressedTexture } from '@/three/odyssey/OdysseyCompressedTexture';
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { BinaryWriter } from '@/utility/binary/BinaryWriter';
+import { PixelFormat } from "@/enums/graphics/tpc/PixelFormat";
+import { ENCODING } from "@/enums/graphics/tpc/Encoding";
+import { OdysseyCompressedTexture } from "@/three/odyssey/OdysseyCompressedTexture";
+import { ITPCHeader } from "@/interface/resource/ITPCHeader";
+import { ITPCObjectOptions } from "@/interface/resource/ITPCObjectOptions";
 
 const TPCHeaderLength = 128;
 export type WriteTPCFormat = 'tpc' | 'tga' | 'dds' | 'bmp';

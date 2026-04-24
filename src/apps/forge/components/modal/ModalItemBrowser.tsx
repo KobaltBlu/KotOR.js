@@ -1,10 +1,9 @@
-﻿import React, { useState, useEffect } from "react";
-import { Button, Modal } from "react-bootstrap";
-
-import { LazyTextureCanvas } from "@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import React, { useState, useEffect } from "react";
 import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
+import { Button, Modal } from "react-bootstrap";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
+import { LazyTextureCanvas } from "@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas";
 import "@/apps/forge/components/modal/ModalItemBrowser.scss";
 
 export const ModalItemBrowser = (props: BaseModalProps) => {

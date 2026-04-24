@@ -1,32 +1,27 @@
-import { EffectDisguise } from "@/effects/EffectDisguise";
+import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BaseItem } from "@/engine/BaseItem";
-import { ItemProperty } from "@/engine/ItemProperty";
-import type { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
-import { ActionParameterType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@/enums";
-import { CombatFeatType } from "@/enums/combat/CombatFeatType";
-import { WeaponType } from "@/enums/combat/WeaponType";
+import { EffectDisguise } from "@/effects/EffectDisguise";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { WeaponType } from "@/enums/combat/WeaponType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleItemProperty } from "@/enums/module/ModuleItemProperty";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { MDLLoader, ResourceLoader } from "@/loaders";
-import type { ModuleCreature } from "@/module/ModuleCreature";
-import { ModuleObject } from "@/module/ModuleObject";
-import { CExoLocString } from "@/resource/CExoLocString";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { MDLLoader, ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { TalentSpell } from "@/talents";
 import { OdysseyModel3D } from "@/three/odyssey";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-
-const log = createScopedLogger(LogScope.Game);
+import { ItemProperty } from "@/engine/ItemProperty";
+import { GameState } from "@/GameState";
+import { ActionParameterType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@/enums";
+import type { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
 
 /**
 * ModuleItem class.
@@ -118,6 +113,9 @@ export class ModuleItem extends ModuleObject {
   clone(): ModuleItem {
     const nItem = new ModuleItem(this.template);
     nItem.initProperties();
+    if(nItem.template){
+      nItem.template.getFieldByLabel('StackSize')?.setValue(1);
+    }
     nItem.stackSize = 1;
     return nItem;
   }

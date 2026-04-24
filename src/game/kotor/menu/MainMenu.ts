@@ -1,4 +1,3 @@
-﻿import * as THREE from "three";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { CurrentGame } from "@/engine/CurrentGame";
 import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
@@ -9,6 +8,8 @@ import { MDLLoader, TextureLoader } from "@/loaders";
 import { OdysseyModel } from "@/odyssey";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { AudioEngine } from "@/audio/AudioEngine";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 
 /**
  * MainMenu class.

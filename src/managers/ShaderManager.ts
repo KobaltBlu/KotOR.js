@@ -1,7 +1,7 @@
 ﻿import * as THREE from "three";
 
 import {shadertoy_perlin} from "@/shaders/chunks/ShaderToyPerlin";
-(THREE.ShaderChunk as Record<string, string>).shadertoy_perlin = shadertoy_perlin;
+THREE.ShaderChunk.shadertoy_perlin = shadertoy_perlin;
 
 import { Shader } from "@/shaders/Shader";
 import { ShaderOdysseyEmitter } from "@/shaders/ShaderOdysseyEmitter";

@@ -1,15 +1,12 @@
-import * as THREE from "three";
-
-import { GameEngineType } from "@/enums/engine";
-import { MapMode } from "@/enums/engine/MapMode";
-import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
 import { GameState } from "@/GameState";
-import type { GUIControl, GUILabel } from "@/gui";
-import { TextureLoader } from "@/loaders";
 import { AreaMap, ModuleWaypoint } from "@/module";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-
-
+import type { GUIControl, GUILabel } from "@/gui";
+import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
+import { MapMode } from "@/enums/engine/MapMode";
+import * as THREE from "three";
+import { GameEngineType } from "@/enums/engine";
+import { TextureLoader } from "@/loaders";
 // import { ShaderManager, MenuManager, PartyManager } from "@/managers";
 
 const FOG_SIZE = 64;

@@ -1,6 +1,16 @@
-import { CreatureClass } from "@/combat/CreatureClass";
+import { GameState } from "@/GameState";
 import type { INIConfig } from "@/engine/INIConfig";
+import { CreatureClass } from "@/combat/CreatureClass";
+import { TalentFeat } from "@/talents/TalentFeat";
+import { TalentSpell } from "@/talents/TalentSpell";
+import { TalentSkill } from "@/talents/TalentSkill";
+import { SWRace } from "@/engine/rules/SWRace";
+import { SWEffectIcon } from "@/engine/rules/SWEffectIcon";
+import { SWItemPropsDef } from "@/engine/rules/SWItemPropsDef";
 import { PazaakDeck } from "@/engine/minigames/PazaakDeck";
+import { SWXPTableEntry } from "@/engine/rules/SWXPTableEntry";
+import { SWPortrait } from "@/engine/rules/SWPortrait";
+import { SWFeatGain } from "@/engine/rules/SWFeatGain";
 import { SWSpellGain } from "@/engine/rules/SWSpellGain";
 import { SWEXPTable } from "@/engine/rules/SWEXPTable";
 import { SWDifficulty } from "@/engine/rules/SWDifficulty";
@@ -21,18 +31,9 @@ import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
 import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
 import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
 import { SWCostTable } from "@/engine/rules/SWCostTable";
-import { SWEffectIcon } from "@/engine/rules/SWEffectIcon";
-import { SWFeatGain } from "@/engine/rules/SWFeatGain";
 import { SWFootStep } from "@/engine/rules/SWFootStep";
-import { SWItemPropsDef } from "@/engine/rules/SWItemPropsDef";
-import { SWPortrait } from "@/engine/rules/SWPortrait";
-import { SWRace } from "@/engine/rules/SWRace";
 import { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
-import { SWXPTableEntry } from "@/engine/rules/SWXPTableEntry";
-import { GameState } from "@/GameState";
-import { TalentFeat } from "@/talents/TalentFeat";
-import { TalentSkill } from "@/talents/TalentSkill";
-import { TalentSpell } from "@/talents/TalentSpell";
+import { SWAnimation } from "@/engine/rules/SWAnimation";
 
 /**
  * SWRuleSet class.
@@ -126,6 +127,9 @@ export class SWRuleSet {
 
   static weaponSounds: SWWeaponSound[] = [];
   static weaponSoundCount: number = 0;
+
+  static animations: SWAnimation[] = [];
+  static animationCount: number = 0;
 
   static Init(){
 
@@ -520,6 +524,18 @@ export class SWRuleSet {
       SWRuleSet.placeableAppearances = new Array(SWRuleSet.placeableAppearanceCount);
       for(let i = 0; i < placeableAppearances.RowCount; i++){
         SWRuleSet.placeableAppearances[i] = SWPlaceableAppearance.From2DA(placeableAppearances.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Animations
+     */
+    const animations = GameState.TwoDAManager.datatables.get('animations');
+    if(animations){
+      SWRuleSet.animationCount = animations.RowCount;
+      SWRuleSet.animations = new Array(SWRuleSet.animationCount);
+      for(let i = 0; i < animations.RowCount; i++){
+        SWRuleSet.animations[i] = SWAnimation.From2DA(animations.rows[i]);
       }
     }
   }

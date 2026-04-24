@@ -1,4 +1,6 @@
-import { BitReaderLE } from '@/video/BitReaderLE';
+import { BitReaderLE } from "@/video/BitReaderLE";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const FFTCtor = require("fft.js");
 
 /**
  * BinkAudioDCTDecoder class.
@@ -46,6 +48,17 @@ export class BinkAudioDCTDecoder {
 
   private first = true;
   private previous: Float32Array[]; // [ch][overlapLen]
+  private readonly blockOut: Float32Array[];
+  private readonly coeffs: Float32Array;
+  private readonly quant: Float32Array;
+  private readonly useFFTIdct = true;
+  private readonly fftSize: number;
+  private readonly fftCos: Float64Array;
+  private readonly fftSin: Float64Array;
+  private readonly fftScale: number;
+  private readonly fft: any;
+  private readonly fftIn: Float64Array;
+  private readonly fftOut: Float64Array;
 
   constructor(private cfg: BinkAudioDCTConfig) {
     const { sampleRate, channels } = cfg;
@@ -83,6 +96,23 @@ export class BinkAudioDCTDecoder {
 
     this.previous = new Array(channels);
     for (let ch = 0; ch < channels; ch++) this.previous[ch] = new Float32Array(this.overlapLen);
+    this.blockOut = new Array(channels);
+    for (let ch = 0; ch < channels; ch++) this.blockOut[ch] = new Float32Array(this.frameLen);
+    this.coeffs = new Float32Array(this.frameLen);
+    this.quant = new Float32Array(25);
+
+    this.fftSize = this.frameLen << 1;
+    this.fftCos = new Float64Array(this.frameLen);
+    this.fftSin = new Float64Array(this.frameLen);
+    for (let k = 0; k < this.frameLen; k++) {
+      const theta = (Math.PI * k) / (this.frameLen << 1);
+      this.fftCos[k] = Math.cos(theta);
+      this.fftSin[k] = Math.sin(theta);
+    }
+    this.fft = new FFTCtor(this.fftSize);
+    this.fftIn = this.fft.createComplexArray();
+    this.fftOut = this.fft.createComplexArray();
+    this.fftScale = this.calibrateFFTScale();
   }
 
   // Decode one Bink Audio DCT packet payload (including leading reported size field)
@@ -127,15 +157,14 @@ export class BinkAudioDCTDecoder {
 
   private decodeBlock(br: BitReaderLE): Float32Array[] {
     const { channels } = this.cfg;
-    const out: Float32Array[] = new Array(channels);
-    for (let ch = 0; ch < channels; ch++) out[ch] = new Float32Array(this.frameLen);
+    const out = this.blockOut;
 
     // Bink 'i' -> not version_b
     const version_b = false;
 
     // Local buffer for frequency coefficients per channel
-    const coeffs = new Float32Array(this.frameLen);
-    const quant = new Float32Array(25);
+    const coeffs = this.coeffs;
+    const quant = this.quant;
 
     // Per FFmpeg: if (use_dct) skip 2 bits ONCE per block (before channel loop)
     if (br.bitsLeft() < 2) throw new RangeError('bitstream underrun: dct header');
@@ -203,8 +232,7 @@ export class BinkAudioDCTDecoder {
 
       // Transform to time domain (DCT-based inverse). FFmpeg uses av_tx DCT with coeffs[0] scaled.
       coeffs[0] /= 0.5; // multiply by 2 (undo 0.5 factor for k=0)
-      const td = this.idctIII(coeffs); // returns frameLen samples
-      out[ch].set(td);
+      this.idctIII(coeffs, out[ch]); // writes frameLen samples
     }
 
     // Align to 32 bits after finishing the block (all channels decoded)
@@ -237,34 +265,92 @@ export class BinkAudioDCTDecoder {
     return f;
   }
 
-  // Naive IDCT-III (inverse of DCT-II) of length N=this.frameLen (O(N^2)).
-  // We expect coeffs[0] to have been pre-doubled (coeffs[0] /= 0.5) before calling.
-  // x[n] = (1/N) * sum_{k=0..N-1} X[k] * cos(pi/N * k * (n + 0.5))
-  private _cosTable?: Float32Array; // stores cos(pi/N * k * (n+0.5)) laid out as [n*N + k]
-  private idctIII(X: Float32Array): Float32Array {
-    const N = this.frameLen;
-    if (!this._cosTable) {
-      // Precompute cos((pi/N) * k * (n + 0.5))
-      const tab = new Float32Array(N * N);
-      const piOverN = Math.PI / N;
-      for (let n = 0; n < N; n++) {
-        const phi = (n + 0.5) * piOverN;
-        for (let k = 0; k < N; k++) tab[n * N + k] = Math.cos(phi * k);
+  // FFT-accelerated IDCT-III with dense reference fallback.
+  private idctIII(X: Float32Array, out: Float32Array): void {
+    if (this.useFFTIdct) {
+      try {
+        this.idctIIIFFT(X, out);
+        return;
+      } catch {
+        // Fallback to exact implementation if FFT backend fails.
       }
-      this._cosTable = tab;
     }
-    const out = new Float32Array(N);
-    const tab = this._cosTable!;
-    const scale = 1 / N; // FFmpeg uses 1/N for the DCT path
+    this.idctIIIReference(X, out);
+  }
+
+  private idctIIIFFT(X: Float32Array, out: Float32Array): void {
+    const N = this.frameLen;
+    const fftIn = this.fftIn;
+    for (let i = 0; i < (this.fftSize << 1); i++) fftIn[i] = 0;
+
+    // Build complex sequence C[k] = X[k] * exp(i*pi*k/(2N)), zero-padded to 2N.
+    for (let k = 0; k < N; k++) {
+      const v = X[k];
+      const off = k << 1;
+      fftIn[off] = v * this.fftCos[k];
+      fftIn[off + 1] = v * this.fftSin[k];
+    }
+
+    this.fft.inverseTransform(this.fftOut, fftIn);
+
     for (let n = 0; n < N; n++) {
-      let sum = 0;
-      const base = n * N;
-      for (let k = 0; k < N; k++) sum += X[k] * tab[base + k];
-      let v = sum * scale;
-      // Safety: clamp to [-1, 1] to avoid clipping artifacts in WebAudio
+      const re = this.fftOut[n << 1];
+      let v = re * this.fftScale;
       if (v > 1) v = 1; else if (v < -1) v = -1;
       out[n] = v;
     }
-    return out;
+  }
+
+  private idctIIIReference(X: Float32Array, out: Float32Array): void {
+    const N = this.frameLen;
+    const scale = 1 / N;
+    for (let n = 0; n < N; n++) {
+      let sum = 0;
+      const phi = ((n + 0.5) * Math.PI) / N;
+      for (let k = 0; k < N; k++) {
+        sum += X[k] * Math.cos(phi * k);
+      }
+      let v = sum * scale;
+      if (v > 1) v = 1; else if (v < -1) v = -1;
+      out[n] = v;
+    }
+  }
+
+  private calibrateFFTScale(): number {
+    const N = this.frameLen;
+    const test = new Float32Array(N);
+    const outRef = new Float32Array(N);
+    const outFFT = new Float32Array(N);
+    test[0] = 2;
+    test[1] = 0.5;
+    this.idctIIIReference(test, outRef);
+
+    const scaleCandidates = [1, 1 / N, 1 / this.fftSize, 2 / N];
+    let best = scaleCandidates[0];
+    let bestErr = Number.POSITIVE_INFINITY;
+    for (const candidate of scaleCandidates) {
+      this.idctIIIFFTWithScale(test, outFFT, candidate);
+      let err = 0;
+      for (let i = 0; i < N; i++) err += Math.abs(outFFT[i] - outRef[i]);
+      if (err < bestErr) {
+        bestErr = err;
+        best = candidate;
+      }
+    }
+    return best;
+  }
+
+  private idctIIIFFTWithScale(X: Float32Array, out: Float32Array, scale: number): void {
+    const N = this.frameLen;
+    const fftIn = this.fftIn;
+    for (let i = 0; i < (this.fftSize << 1); i++) fftIn[i] = 0;
+    for (let k = 0; k < N; k++) {
+      const v = X[k];
+      const off = k << 1;
+      fftIn[off] = v * this.fftCos[k];
+      fftIn[off + 1] = v * this.fftSin[k];
+    }
+    this.fft.inverseTransform(this.fftOut, fftIn);
+    for (let n = 0; n < N; n++) out[n] = this.fftOut[n << 1] * scale;
   }
 }

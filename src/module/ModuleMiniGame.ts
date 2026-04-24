@@ -1,11 +1,10 @@
-﻿import { GameState } from "@/GameState";
+import { GameState } from "@/GameState";
 import { MiniGameType } from "@/enums/engine/MiniGameType";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
-import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
 import type { ModuleMGPlayer } from "@/module/ModuleMGPlayer";
 import type { ModuleMGTrack } from "@/module/ModuleMGTrack";

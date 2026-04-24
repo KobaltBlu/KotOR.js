@@ -1,6 +1,6 @@
-import { GameEffect } from "@/effects/GameEffect";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameState } from "@/GameState";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameEffect } from "@/effects/GameEffect";
 
 /**
  * EffectPoison class.

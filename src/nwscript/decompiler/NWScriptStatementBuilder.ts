@@ -1,15 +1,15 @@
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { NWScriptANDChainDetector } from "@/nwscript/decompiler/NWScriptANDChainDetector";
-import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
 import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
-import type { NWScriptControlStructure } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
-import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
-import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
-import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
-import { NWScriptORChainDetector } from "@/nwscript/decompiler/NWScriptORChainDetector";
-import { NWScriptStackSimulator } from "@/nwscript/decompiler/NWScriptStackSimulator";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
 import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import { OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_RETN, OP_ACTION, OP_JZ, OP_JNZ, OP_CPDOWNSP, OP_RSADD, OP_MOVSP } from '@/nwscript/NWScriptOPCodes';
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import type { NWScriptControlStructure } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
+import { NWScriptStackSimulator } from "@/nwscript/decompiler/NWScriptStackSimulator";
+import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
+import { NWScriptORChainDetector } from "@/nwscript/decompiler/NWScriptORChainDetector";
+import { NWScriptANDChainDetector } from "@/nwscript/decompiler/NWScriptANDChainDetector";
+import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
+import { OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_RETN, OP_ACTION, OP_JZ, OP_JNZ, OP_CPDOWNSP, OP_RSADD, OP_MOVSP } from "@/nwscript/NWScriptOPCodes";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 
 /**
  * Represents a high-level statement in the decompiled code

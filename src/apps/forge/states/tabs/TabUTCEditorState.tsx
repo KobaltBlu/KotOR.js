@@ -1,13 +1,12 @@
 import React from "react";
-import * as THREE from 'three';
-
-import { TabUTCEditor } from "@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import * as KotOR from "@/apps/forge/KotOR";
+import * as THREE from 'three';
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { TabUTCEditor } from "@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor";
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
 
 export class TabUTCEditorState extends TabState {
   tabName: string = `UTC`;

@@ -25,7 +25,8 @@
 
   &.controller {
     .track-label {
-      text-indent: 13.5px;
+      /* text-indent: 13.5px; */
+      padding-left: 30px;
       color: #337ab7;
     }
   }

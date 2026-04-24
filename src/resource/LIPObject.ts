@@ -1,13 +1,13 @@
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { ILIPHeader } from "@/interface/resource/ILIPHeader";
 import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
-import { ResourceLoader } from "@/loaders";
-import { OdysseyModelAnimation } from "@/odyssey";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { OdysseyModel3D } from "@/three/odyssey";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { ResourceLoader } from "@/loaders";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyModelAnimation } from "@/odyssey";
 
 /**
  * LIPObject class.
@@ -149,8 +149,35 @@ export class LIPObject {
     return keyframe;
   }
 
+  removeKeyFrame(keyframe: ILIPKeyFrame): boolean {
+    const i = this.keyframes.indexOf(keyframe);
+    if (i < 0) return false;
+    this.keyframes.splice(i, 1);
+    this.reIndexKeyframes();
+    return true;
+  }
+
   update(delta = 0, model: OdysseyModel3D){
     if(model){
+
+      if (!this.keyframes.length) {
+        if (this.elapsed >= this.duration) {
+          if (model.userData.moduleObject)
+            model.userData.moduleObject.lipObject = undefined;
+          if (this.anim) {
+            for (let i = 0; i < this.anim.nodes.length; i++) {
+              let modelNode: any = model.animNodeCache[this.anim.nodes[i].name];
+              if (typeof modelNode != 'undefined') {
+                modelNode.lipping = false;
+              }
+            }
+          }
+        } else {
+          this.elapsed += delta;
+        }
+        this.lastTime = this.elapsed;
+        return;
+      }
 
       let lastFrame = 0;
       const framesLen = this.keyframes.length;

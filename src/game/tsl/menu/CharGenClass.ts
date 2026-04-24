@@ -1,4 +1,3 @@
-﻿import * as THREE from "three";
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIButton } from "@/gui";
 import { TextureLoader } from "@/loaders";
@@ -170,6 +169,8 @@ export class CharGenClass extends K1_CharGenClass {
         (control.getFill().material as THREE.ShaderMaterial).transparent = true;
         (control.getFill().material as THREE.ShaderMaterial).blending = 1;
       }
+
+      this.captureBaseExtents();
 
       resolve();  
     });

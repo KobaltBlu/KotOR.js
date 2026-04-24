@@ -1,5 +1,5 @@
-import { MenuSaveName as K1_MenuSaveName } from "@/game/kotor/KOTOR";
 import type { GUIButton, GUILabel } from "@/gui";
+import { MenuSaveName as K1_MenuSaveName } from "@/game/kotor/KOTOR";
 
 /**
  * MenuSaveName class.

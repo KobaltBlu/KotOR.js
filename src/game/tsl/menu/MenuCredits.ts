@@ -1,5 +1,5 @@
-import { MenuCredits as K1_MenuCredits } from "@/game/kotor/KOTOR";
 import type { GUIListBox } from "@/gui";
+import { MenuCredits as K1_MenuCredits } from "@/game/kotor/KOTOR";
 
 /**
  * MenuCredits class.

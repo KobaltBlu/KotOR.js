@@ -1,5 +1,5 @@
-import { MenuScriptSelect as K1_MenuScriptSelect } from "@/game/kotor/KOTOR";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { MenuScriptSelect as K1_MenuScriptSelect } from "@/game/kotor/KOTOR";
 
 /**
  * MenuScriptSelect class.

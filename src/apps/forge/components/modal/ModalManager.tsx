@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
 
 export const ModalManager = function(props: any){

@@ -1,10 +1,10 @@
-import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
-import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
+import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
 import type { ModuleCreature } from "@/module";
+import { TextureLoader } from "@/loaders";
 import { TalentFeat } from "@/talents";
+import { GameState } from "@/GameState";
 
 /**
  * CharGenFeats class.
@@ -50,7 +50,7 @@ export class CharGenFeats extends GameMenu {
   show() {
     super.show();
     this.addGrantedFeats();
-    this.LB_FEATS.GUIProtoItemClass = GUIFeatItem;
+    this.LB_FEATS.setProtoBuilder(GUIFeatItem);
     this.LB_FEATS.clearItems();
     this.buildFeatList();
     TextureLoader.LoadQueue();

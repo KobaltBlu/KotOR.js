@@ -1,13 +1,12 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react"
-
+import React, { useState, useEffect, useCallback } from "react"
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import { TabUTTEditorState } from "@/apps/forge/states/tabs";
+import * as KotOR from "@/apps/forge/KotOR";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
-import { TabUTTEditorState } from "@/apps/forge/states/tabs";
 
 export const TabUTTEditor = function(props: BaseTabProps){
 

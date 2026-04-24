@@ -1,4 +1,4 @@
-﻿import * as THREE from "three";
+import * as THREE from "three";
 import { Anchor } from "@/enums/gui/Anchor";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
 import { IDPadTarget } from "@/interface/gui/IDPadTarget";
@@ -13,7 +13,7 @@ import { TextureLoader } from "@/loaders";
 import { TextureType } from "@/enums/loaders/TextureType";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { GameEngineType } from "@/enums/engine";
-import { mergeBufferGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { KeyMapper, Mouse } from "@/controls";
 import { IGUIControlColors } from "@/interface/gui/IGUIControlColors";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
@@ -25,6 +25,8 @@ import { GUIFont } from "@/gui/GUIFont";
 import { GUIControlEvent } from "@/gui/GUIControlEvent";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { KeyMapAction } from "@/enums/controls/KeyMapAction";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -58,6 +60,7 @@ export class GUIControl {
     BORDER_HIGHLIGHT_HOVER: new THREE.Color(1, 1, 1),
     TEXT: new THREE.Color(1, 1, 1),
     TEXT_HIGHLIGHT: new THREE.Color(1, 1, 1),
+    LOCKED: new THREE.Color(1, 0, 0),
   };
 
   id: number = 0;
@@ -99,9 +102,18 @@ export class GUIControl {
 
   defaultColor: THREE.Color;
   defaultHighlightColor: THREE.Color;
+  defaultLockedColor: THREE.Color;
 
   allowClick: boolean = true;
   disableSelection: boolean = false;
+  disableHover: boolean = false;
+  /** When set on a list row, overrides GameMenu hover suppression for custom PROTOITEM presenters. */
+  listRowSuppressGameMenuHover?: boolean;
+  /**
+   * List rows: when false, wrapped text does not mutate extent / trigger list relayout from {@link alignText}
+   * (composite rows like inventory set this on the row root).
+   */
+  listRowAlignExtentToWrappedText = true;
 
   onClick?: Function;
   onMouseMove?: Function;
@@ -161,6 +173,9 @@ export class GUIControl {
 
   userData: any = {};
 
+  /** When true, the control will be rebuilt on the next update. */
+  needsUpdate: boolean = false;
+  
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl|undefined, scale: boolean = false){
 
     this.menu = menu;
@@ -187,10 +202,12 @@ export class GUIControl {
 
     this.defaultColor = new THREE.Color(0.0, 0.658824, 0.980392);
     this.defaultHighlightColor = new THREE.Color(1, 1, 0);
+    this.defaultLockedColor = new THREE.Color(1, 0, 0);
 
     if(GameState.GameKey == GameEngineType.TSL){
       this.defaultColor = new THREE.Color(0.10196078568697, 0.69803923368454, 0.549019634723663);
       this.defaultHighlightColor = new THREE.Color(0.800000011920929, 0.800000011920929, 0.6980392336845398);
+      this.defaultLockedColor = new THREE.Color(1, 0, 0);
     }
 
     this.allowClick = true;
@@ -526,140 +543,263 @@ export class GUIControl {
     }
   }
 
+  setExtentTop(top: number){
+    this.extent.top = top;
+    if(this.control.hasField('EXTENT')){
+      const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
+      if(extent){
+        extent.getFieldByLabel('TOP')?.setValue(top);
+      }
+    }
+  }
+
+  setExtentLeft(left: number){
+    this.extent.left = left;
+    if(this.control.hasField('EXTENT')){
+      const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
+      if(extent){
+        extent.getFieldByLabel('LEFT')?.setValue(left);
+      }
+    }
+  }
+
+  setExtentWidth(width: number){
+    this.extent.width = width;
+    if(this.control.hasField('EXTENT')){
+      const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
+      if(extent){
+        extent.getFieldByLabel('WIDTH')?.setValue(width);
+      }
+    }
+  }
+
+  setExtentHeight(height: number){
+    this.extent.height = height;
+    if(this.control.hasField('EXTENT')){
+      const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
+      if(extent){
+        extent.getFieldByLabel('HEIGHT')?.setValue(height);
+      }
+    }
+  }
+
+  setControlType(type: number){
+    this.type = type;
+    if(this.control.hasField('CONTROLTYPE')){
+      this.control.getFieldByLabel('CONTROLTYPE')?.setValue(type);
+    }else{
+      this.control.addField(new GFFField(GFFDataType.INT, 'CONTROLTYPE', type));
+    }
+  }
+
+  /**
+   * Re-applies data from {@link control} after GFF edits in Forge (no full menu rebuild).
+   * Safe to call after mutating fields on this control's `GFFStruct`.
+   */
+  syncFromGFFPartial(): void {
+    this.initProperties();
+    this.calculatePosition();
+    this.resizeControl();
+    if(this.hasText && this.text.texture){
+      this.buildText();
+    }
+  }
+
+  buildDefaultControl(){
+    const control = new GFFStruct();
+    //build the default control structure
+    const extent = new GFFStruct();
+    extent.addField(new GFFField(GFFDataType.INT, 'TOP', 0));
+    extent.addField(new GFFField(GFFDataType.INT, 'LEFT', 0));
+    extent.addField(new GFFField(GFFDataType.INT, 'WIDTH', 0));
+    extent.addField(new GFFField(GFFDataType.INT, 'HEIGHT', 0));
+    control.addField(new GFFField(GFFDataType.STRUCT, 'EXTENT', extent));
+    //build the default border structure
+    const border = new GFFStruct();
+    border.addField(new GFFField(GFFDataType.VECTOR, 'COLOR', this.defaultColor));
+    border.addField(new GFFField(GFFDataType.INT, 'DIMENSION', 0));
+    border.addField(new GFFField(GFFDataType.INT, 'CORNER', 0));
+    border.addField(new GFFField(GFFDataType.INT, 'EDGE', 0));
+    border.addField(new GFFField(GFFDataType.RESREF, 'FILL', ''));
+    border.addField(new GFFField(GFFDataType.INT, 'FILLSTYLE', 0));
+    border.addField(new GFFField(GFFDataType.INT, 'INNEROFFSET', 0)); 
+    if(GameState.GameKey == GameEngineType.TSL){
+      border.addField(new GFFField(GFFDataType.INT, 'INNEROFFSETY', 0));
+    }
+    border.addField(new GFFField(GFFDataType.BYTE, 'PULSING', 0));
+    control.addField(new GFFField(GFFDataType.STRUCT, 'BORDER', border));
+    //build the default text structure
+    const text = new GFFStruct();
+    text.addField(new GFFField(GFFDataType.RESREF, 'FONT', ''));
+    text.addField(new GFFField(GFFDataType.DWORD, 'STRREF', 0));
+    text.addField(new GFFField(GFFDataType.INT, 'ALIGNMENT', GUIControlAlignment.HorizontalCenter | GUIControlAlignment.VerticalCenter));
+    text.addField(new GFFField(GFFDataType.BYTE, 'PULSING', 0));
+    text.addField(new GFFField(GFFDataType.VECTOR, 'COLOR', this.defaultColor));
+    control.addField(new GFFField(GFFDataType.STRUCT, 'TEXT', text));
+    //build the default highlight structure
+    const highlight = new GFFStruct();
+    highlight.addField(new GFFField(GFFDataType.VECTOR, 'COLOR', this.defaultHighlightColor));
+    highlight.addField(new GFFField(GFFDataType.INT, 'DIMENSION', 0));
+    highlight.addField(new GFFField(GFFDataType.INT, 'CORNER', 0));
+    highlight.addField(new GFFField(GFFDataType.RESREF, 'EDGE', ''));
+    highlight.addField(new GFFField(GFFDataType.RESREF, 'FILL', ''));
+    highlight.addField(new GFFField(GFFDataType.INT, 'FILLSTYLE', 0));
+    highlight.addField(new GFFField(GFFDataType.INT, 'INNEROFFSET', 0));
+    if(GameState.GameKey == GameEngineType.TSL){
+      highlight.addField(new GFFField(GFFDataType.INT, 'INNEROFFSETY', 0));
+    }
+    highlight.addField(new GFFField(GFFDataType.BYTE, 'PULSING', 0));
+    control.addField(new GFFField(GFFDataType.STRUCT, 'HILIGHT', highlight));
+    //build the default moveTo structure
+    const moveTo = new GFFStruct();
+    moveTo.addField(new GFFField(GFFDataType.INT, 'DOWN', -1));
+    moveTo.addField(new GFFField(GFFDataType.INT, 'LEFT', -1));
+    moveTo.addField(new GFFField(GFFDataType.INT, 'RIGHT', -1));
+    moveTo.addField(new GFFField(GFFDataType.INT, 'UP', -1));
+    control.addField(new GFFField(GFFDataType.STRUCT, 'MOVETO', moveTo));
+    //build the default control structure
+    control.addField(new GFFField(GFFDataType.INT, 'TYPE', 0));
+    control.addField(new GFFField(GFFDataType.RESREF, 'TAG', ''));
+    control.addField(new GFFField(GFFDataType.INT, 'ID', 0));
+    control.addField(new GFFField(GFFDataType.INT, 'Obj_Locked', 0));
+    control.addField(new GFFField(GFFDataType.CEXOSTRING, 'Obj_Parent', ''));
+    control.addField(new GFFField(GFFDataType.INT, 'Obj_ParentID', this.parent?.id || -1));
+    return control;
+  }
+
   initProperties(){
-    if(this.control instanceof GFFStruct){
-      let control = this.control;
+    if(!(this.control instanceof GFFStruct)){
+      this.control = this.buildDefaultControl();
+    }
 
-      this.type = ( control.hasField('CONTROLTYPE') ? control.getFieldByLabel('CONTROLTYPE')?.getValue() : -1 );
-      this.widget.name = this.name = ( control.hasField('TAG') ? control.getFieldByLabel('TAG')?.getValue() : -1 );
-      this.id = ( control.hasField('ID') ? control.getFieldByLabel('ID')?.getValue() : -1 );
-      this.objectLocked = ( control.hasField('Obj_Locked') ? control.getFieldByLabel('Obj_Locked')?.getValue() : -1 );
-      this.objectParent = ( control.hasField('Obj_Parent') ? control.getFieldByLabel('Obj_Parent')?.getValue() : -1 );
-      this.objectParentId = ( control.hasField('Obj_ParentID') ? control.getFieldByLabel('Obj_ParentID')?.getValue() : -1 );
+    const control = this.control;
+    this.type = ( control.hasField('CONTROLTYPE') ? control.getFieldByLabel('CONTROLTYPE')?.getValue() : -1 );
+    this.widget.name = this.name = ( control.hasField('TAG') ? control.getFieldByLabel('TAG')?.getValue() : -1 );
+    this.id = ( control.hasField('ID') ? control.getFieldByLabel('ID')?.getValue() : -1 );
+    this.objectLocked = ( control.hasField('Obj_Locked') ? control.getFieldByLabel('Obj_Locked')?.getValue() : -1 );
+    this.objectParent = ( control.hasField('Obj_Parent') ? control.getFieldByLabel('Obj_Parent')?.getValue() : -1 );
+    this.objectParentId = ( control.hasField('Obj_ParentID') ? control.getFieldByLabel('Obj_ParentID')?.getValue() : -1 );
 
-      this.padding = ( control.hasField('PADDING') ? control.getFieldByLabel('PADDING')?.getValue() : 0 );
+    this.padding = ( control.hasField('PADDING') ? control.getFieldByLabel('PADDING')?.getValue() : 0 );
 
-      //Extent
-      this.hasExtent = control.hasField('EXTENT');
-      if(this.hasExtent){
-        let extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
-        if(extent){
-          this.extent.top = extent.getFieldByLabel('TOP')?.getValue();
-          this.extent.left = extent.getFieldByLabel('LEFT')?.getValue();
-          this.extent.width = extent.getFieldByLabel('WIDTH')?.getValue();
-          this.extent.height = extent.getFieldByLabel('HEIGHT')?.getValue();
-        }
+    //Extent
+    this.hasExtent = control.hasField('EXTENT');
+    if(this.hasExtent){
+      let extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
+      if(extent){
+        this.extent.top = extent.getFieldByLabel('TOP')?.getValue();
+        this.extent.left = extent.getFieldByLabel('LEFT')?.getValue();
+        this.extent.width = extent.getFieldByLabel('WIDTH')?.getValue();
+        this.extent.height = extent.getFieldByLabel('HEIGHT')?.getValue();
       }
+    }
 
-      //Border
-      this.hasBorder = control.hasField('BORDER');
-      if(this.hasBorder){
-        let border = control.getFieldByLabel('BORDER')?.getChildStructs()[0];
-        if(border){
-          if(border.hasField('COLOR')){
-            let color = border.getFieldByLabel('COLOR')?.getVector();
-            if(color && (color.x * color.y * color.z) < 1 ){
-              if(this.border.color && this.border.fill.material){
-                this.border.color.setRGB(color.x, color.y, color.z);
-                this.border.fill.material.uniforms.diffuse.value.set(this.border.color);
-              }
+    //Border
+    this.hasBorder = control.hasField('BORDER');
+    if(this.hasBorder){
+      let border = control.getFieldByLabel('BORDER')?.getChildStructs()[0];
+      if(border){
+        if(border.hasField('COLOR')){
+          let color = border.getFieldByLabel('COLOR')?.getVector();
+          if(color && (color.x * color.y * color.z) < 1 ){
+            if(this.border.color && this.border.fill.material){
+              this.border.color.setRGB(color.x, color.y, color.z);
+              this.border.fill.material.uniforms.diffuse.value.set(this.border.color);
             }
           }
-
-          if(typeof this.border.color === 'undefined'){
-            this.border.color = new THREE.Color(1, 1, 1); //this.defaultColor;
-          }
-
-          this.border.dimension = border.getFieldByLabel('DIMENSION')?.getValue() || 0;
-          this.border.corner = border.getFieldByLabel('CORNER')?.getValue();
-          this.border.edge = border.getFieldByLabel('EDGE')?.getValue();
-          this.border.fill.texture = border.getFieldByLabel('FILL')?.getValue();
-          this.border.fillstyle = border.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
-          this.border.inneroffset = this.border.inneroffsety = border.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
-
-          if(border.hasField('INNEROFFSETY'))
-            this.border.inneroffsety = border.getFieldByLabel('INNEROFFSETY')?.getValue();
-
-          this.border.pulsing = border.getFieldByLabel('PULSING')?.getValue() || 0;
         }
 
+        if(typeof this.border.color === 'undefined'){
+          this.border.color = new THREE.Color(1, 1, 1); //this.defaultColor;
+        }
+  
+        this.border.dimension = border.getFieldByLabel('DIMENSION')?.getValue() || 0;
+        this.border.corner = border.getFieldByLabel('CORNER')?.getValue();
+        this.border.edge = border.getFieldByLabel('EDGE')?.getValue();
+        this.border.fill.texture = border.getFieldByLabel('FILL')?.getValue();
+        this.border.fillstyle = border.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
+        this.border.inneroffset = this.border.inneroffsety = border.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
+
+        if(border.hasField('INNEROFFSETY'))
+          this.border.inneroffsety = border.getFieldByLabel('INNEROFFSETY')?.getValue();
+
+        this.border.pulsing = border.getFieldByLabel('PULSING')?.getValue() || 0;
       }
 
-      //Text
-      this.hasText = control.hasField('TEXT');
-      if(this.hasText){
-        let text = control.getFieldByLabel('TEXT')?.getChildStructs()[0];
-        if(text){
-          this.text.font = text.getFieldByLabel('FONT')?.getValue();
-          this.text.strref = text.getFieldByLabel('STRREF')?.getValue();
-          this.text.text = ( text.hasField('TEXT') ? this.menu.gameStringParse(text.getFieldByLabel('TEXT')?.getValue()) : '' );
-          if(this.text.text == ''){
-            this.text.text = this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref]?.Value || '');
-          }
-          this.text.alignment = text.getFieldByLabel('ALIGNMENT')?.getValue();
-          this.text.pulsing = text.getFieldByLabel('PULSING')?.getValue();
+    }
 
-          if(this.text.font == 'fnt_d16x16'){
-            this.text.font = 'fnt_d16x16b';
-          }
+    //Text
+    this.hasText = control.hasField('TEXT');
+    if(this.hasText){
+      let text = control.getFieldByLabel('TEXT')?.getChildStructs()[0];
+      if(text){
+        this.text.font = text.getFieldByLabel('FONT')?.getValue();
+        this.text.strref = text.getFieldByLabel('STRREF')?.getValue();
+        this.text.text = ( text.hasField('TEXT') ? this.menu.gameStringParse(text.getFieldByLabel('TEXT')?.getValue()) : '' );
+        if(this.text.text == ''){
+          this.text.text = this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref]?.Value || '');
+        }
+        this.text.alignment = text.getFieldByLabel('ALIGNMENT')?.getValue();
+        this.text.pulsing = text.getFieldByLabel('PULSING')?.getValue();
 
-          if(text.hasField('COLOR')){
-            let color = text.getFieldByLabel('COLOR')?.getVector();
-            if(color) this.text.color.setRGB(color.x, color.y, color.z)
-          }
+        if(this.text.font == 'fnt_d16x16'){
+          this.text.font = 'fnt_d16x16b';
+        }
 
-          if(typeof this.text.color === 'undefined'){
-            this.text.color = this.defaultColor.clone();
-          }
+        if(text.hasField('COLOR')){
+          let color = text.getFieldByLabel('COLOR')?.getVector();
+          if(color) this.text.color.setRGB(color.x, color.y, color.z)
+        }
+
+        if(typeof this.text.color === 'undefined'){
+          this.text.color = this.defaultColor.clone();
         }
       }
+    }
 
-      //Highlight
-      this.hasHighlight = control.hasField('HILIGHT');
-      if(this.hasHighlight){
-        let highlight = control.getFieldByLabel('HILIGHT')?.getChildStructs()[0];
-        if(highlight){
-          if(highlight.hasField('COLOR')){
-            let color = highlight.getFieldByLabel('COLOR')?.getVector();
-            if(color && (color.x * color.y * color.z) < 1 ){
-              if(this.highlight.color && this.highlight.fill.material){
-                this.highlight.color.setRGB(color.x, color.y, color.z);
-                this.highlight.fill.material.uniforms.diffuse.value.set(this.highlight.color);
-              }
+    //Highlight
+    this.hasHighlight = control.hasField('HILIGHT');
+    if(this.hasHighlight){
+      let highlight = control.getFieldByLabel('HILIGHT')?.getChildStructs()[0];
+      if(highlight){
+        if(highlight.hasField('COLOR')){
+          let color = highlight.getFieldByLabel('COLOR')?.getVector();
+          if(color && (color.x * color.y * color.z) < 1 ){
+            if(this.highlight.color && this.highlight.fill.material){
+              this.highlight.color.setRGB(color.x, color.y, color.z);
+              this.highlight.fill.material.uniforms.diffuse.value.set(this.highlight.color);
             }
           }
-
-          if(typeof this.highlight.color === 'undefined'){
-            this.highlight.color = new THREE.Color(1, 1, 1); //this.defaultColor;
-          }
-
-          this.highlight.dimension = highlight.getFieldByLabel('DIMENSION')?.getValue() || 0;
-          this.highlight.corner = highlight.getFieldByLabel('CORNER')?.getValue() || '';
-          this.highlight.edge = highlight.getFieldByLabel('EDGE')?.getValue() || '';
-          this.highlight.fill.texture = highlight.getFieldByLabel('FILL')?.getValue() || '';
-          this.highlight.fillstyle = highlight.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
-          this.highlight.inneroffset = this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
-
-          if(highlight.hasField('INNEROFFSETY'))
-            this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSETY')?.getValue();
-
-          this.highlight.pulsing = highlight.getFieldByLabel('PULSING')?.getValue() || 0;
         }
-      }
-
-      //Moveto
-      this.hasMoveTo = control.hasField('MOVETO');
-      if(this.hasMoveTo){
-        let moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
-        if(moveTo){
-          this.moveTo.down = moveTo.getFieldByLabel('DOWN')?.getValue();
-          this.moveTo.left = moveTo.getFieldByLabel('LEFT')?.getValue();
-          this.moveTo.right = moveTo.getFieldByLabel('RIGHT')?.getValue();
-          this.moveTo.up = moveTo.getFieldByLabel('UP')?.getValue();
+  
+        if(typeof this.highlight.color === 'undefined'){
+          this.highlight.color = new THREE.Color(1, 1, 1); //this.defaultColor;
         }
+
+        this.highlight.dimension = highlight.getFieldByLabel('DIMENSION')?.getValue() || 0;
+        this.highlight.corner = highlight.getFieldByLabel('CORNER')?.getValue() || '';
+        this.highlight.edge = highlight.getFieldByLabel('EDGE')?.getValue() || '';
+        this.highlight.fill.texture = highlight.getFieldByLabel('FILL')?.getValue() || '';
+        this.highlight.fillstyle = highlight.getFieldByLabel('FILLSTYLE')?.getValue() || 0;
+        this.highlight.inneroffset = this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSET')?.getValue() || 0;
+
+        if(highlight.hasField('INNEROFFSETY'))
+          this.highlight.inneroffsety = highlight.getFieldByLabel('INNEROFFSETY')?.getValue();
+
+        this.highlight.pulsing = highlight.getFieldByLabel('PULSING')?.getValue() || 0;
       }
-    }else if(typeof this.control !== 'undefined'){
-      //TODO
+    }
+
+    //Moveto
+    this.hasMoveTo = control.hasField('MOVETO');
+    if(this.hasMoveTo){
+      let moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
+      if(moveTo){
+        this.moveTo.down = moveTo.getFieldByLabel('DOWN')?.getValue();
+        this.moveTo.left = moveTo.getFieldByLabel('LEFT')?.getValue();
+        this.moveTo.right = moveTo.getFieldByLabel('RIGHT')?.getValue();
+        this.moveTo.up = moveTo.getFieldByLabel('UP')?.getValue();
+      }
     }
   }
 
@@ -873,7 +1013,7 @@ export class GUIControl {
   onHoverOut(){
     this.hover = false;
     this.mouseOver = false;
-    if(this.disableSelection){
+    if(this.disableSelection || this.disableHover){
       return;
     }
 
@@ -892,11 +1032,12 @@ export class GUIControl {
 
     this.processEventListener('mouseOut');
     this.setTooltipVisible(false);
+    this.list?.markListRttDirty?.();
   }
 
   onHoverIn(){
     this.mouseOver = true;
-    if(this.disableSelection){
+    if(this.disableSelection || this.disableHover){
       this.hover = false;
       return;
     }
@@ -926,7 +1067,8 @@ export class GUIControl {
 
     this.processEventListener('hover');
     this.processEventListener('mouseIn');
-
+    this.list?.markListRttDirty?.();
+    
     // this.setTooltipVisible(true);
   }
 
@@ -1138,8 +1280,8 @@ export class GUIControl {
 
     if(this.border.fill.material)
       this.border.fill.material.uniforms.opacity.value = 1 * opacity;
-
-    if(this.disableSelection){
+    
+    if(this.disableSelection || this.disableHover){
       this.hideHighlight();
     }
   }
@@ -1546,11 +1688,8 @@ export class GUIControl {
   }
 
   getInnerSize(){
-    let width = this.extent.width - this.border.dimension;
-    if(width < this.border.dimension) width = this.border.dimension;
-
-    let height = this.extent.height - this.border.dimension;
-    if(height < this.border.dimension) height = this.border.dimension;
+    let width = Math.max(0, this.extent.width - (this.border.dimension || this.highlight.dimension));
+    let height = Math.max(0, this.extent.height - (this.border.dimension || this.highlight.dimension));
 
     return {
       width: width,
@@ -1620,7 +1759,7 @@ export class GUIControl {
   getShrinkWidth() {
     let shrinkWidth = 0;
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
-      shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2);
+      shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2) - ((this as any).padding * 2);
     }
     return shrinkWidth;
   }
@@ -1630,8 +1769,8 @@ export class GUIControl {
     let inner = this.getInnerSize();
 
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
-      inner.width += this.parent.border.inneroffset * 2;
-      inner.width = Math.min(this.extent.width, inner.width);
+      // innerW += this.parent.border.inneroffset * 2;
+      innerW = Math.min(this.extent.width, innerW);
     }
 
     let top = 0, left = 0, width = 0, height = 0;
@@ -1707,8 +1846,16 @@ export class GUIControl {
   }
 
   getHighlightExtent(side: string){
-    let extent = this.getControlExtent();
-    let inner = this.getInnerSize();
+    const shrinkWidth = this.getShrinkWidth();
+    const highlightSize = Math.min(this.getHightlightSize(), this.extent.width / 2, this.extent.height / 2);
+
+    let innerW = Math.max(0, this.extent.width - highlightSize);
+    let innerH = Math.max(0, this.extent.height - highlightSize);
+
+    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
+      // innerW += this.parent.border.inneroffset * 2;
+      innerW = Math.min(this.extent.width, innerW);
+    }
 
     let top = 0, left = 0, width = 0, height = 0;
 
@@ -2045,6 +2192,15 @@ export class GUIControl {
     }
   }
 
+  setTextAlignment(alignment: number){
+    this.text.alignment = alignment;
+    if(this.control.hasField('TEXT')){
+      this.control.getFieldByLabel('TEXT')?.getFieldByLabel('ALIGNMENT')?.setValue(alignment);
+    }else{
+      this.control.addField(new GFFField(GFFDataType.INT, 'ALIGNMENT', alignment));
+    }
+  }
+
   updateTextGeometry(text: string){
 
     if(!(this.text.texture instanceof THREE.Texture))
@@ -2088,11 +2244,17 @@ export class GUIControl {
       break;
     }
 
-    if(BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox) && this.type == GUIControlType.Label){
-      // this.widget.userData.text.position.x -= (this.parent.scrollbar.extent.width) + (this.parent.scrollbar.border.dimension * 2);
+    // ProtoItem rows (e.g. Messages dialog list) wrap text like Labels; without this, extent.height stays at
+    // the single-line template height and list rows overlap after buildGeometry.
+    if(
+      this.listRowAlignExtentToWrappedText &&
+      BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox) &&
+      this.list &&
+      (this.type == GUIControlType.Label || this.type == GUIControlType.ProtoItem)
+    ){
       this.extent.height = this.textSize.y;
       this.resizeControl();
-      this.list.updateList();
+      this.list.relayoutAfterRowHeightChange();
     }
 
   }

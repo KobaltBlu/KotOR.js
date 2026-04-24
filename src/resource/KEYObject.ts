@@ -1,13 +1,11 @@
 import * as path from 'path';
-
-import { IBIFEntry } from '@/interface/resource/IBIFEntry';
-import { IBIFResource } from '@/interface/resource/IBIFResource';
-import { IKEYEntry } from '@/interface/resource/IKEYEntry';
-import { BIFManager } from '@/managers/BIFManager';
-import { BIFObject } from '@/resource/BIFObject';
-import { BinaryReader } from '@/utility/binary/BinaryReader';
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
-import { GameFileSystem } from '@/utility/GameFileSystem';
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BIFObject } from "@/resource/BIFObject";
+import { BIFManager } from "@/managers/BIFManager";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { IBIFResource } from "@/interface/resource/IBIFResource";
+import { IBIFEntry } from "@/interface/resource/IBIFEntry";
+import { IKEYEntry } from "@/interface/resource/IKEYEntry";
 
 /**
  * KEYObject class.

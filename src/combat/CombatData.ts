@@ -1,11 +1,11 @@
-import { ModuleObjectType } from "@/enums";
-import { ActionType } from "@/enums/actions/ActionType";
-import { AttackResult } from "@/enums/combat/AttackResult";
-import { WeaponType } from "@/enums/combat/WeaponType";
-import { ICombatAction } from "@/interface/combat/ICombatAction";
 import type { ModuleCreature, ModuleObject } from "@/module";
 import type { TalentFeat, TalentSpell } from "@/talents";
+import { ICombatAction } from "@/interface/combat/ICombatAction";
+import { AttackResult } from "@/enums/combat/AttackResult";
+import { ActionType } from "@/enums/actions/ActionType";
+import { WeaponType } from "@/enums/combat/WeaponType";
 import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums";
 
 /**
  * CombatData class.

@@ -1,11 +1,9 @@
-import * as path from 'path';
-
-import { IBIFResource } from "@/interface/resource/IBIFResource";
-import { IResourceDiskInfo } from "@/interface/resource/IResourceDiskInfo";
-import { KEYManager } from "@/managers/KEYManager";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
+import * as path from 'path';
+import { KEYManager } from "@/managers/KEYManager";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { IResourceDiskInfo } from "@/interface/resource/IResourceDiskInfo";
+import { IBIFResource } from "@/interface/resource/IBIFResource";
 
 const BIF_HEADER_SIZE = 20;
 

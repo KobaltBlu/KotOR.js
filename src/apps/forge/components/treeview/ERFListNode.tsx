@@ -1,9 +1,8 @@
 import React, { useState, useCallback, memo, useMemo } from "react";
-
-import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
-import { EditorFile } from "@/apps/forge/EditorFile";
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
 
 export interface ERFListNodeProps {
   node: FileBrowserNode;

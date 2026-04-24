@@ -1,6 +1,6 @@
 
-import { ModuleObjectType } from "@/enums";
 import { GameState } from "@/GameState";
+import { ModuleObjectType } from "@/enums";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFStruct } from "@/resource/GFFStruct";

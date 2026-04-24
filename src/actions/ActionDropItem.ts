@@ -1,9 +1,9 @@
 import { Action } from "@/actions/Action";
-import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionDropItem class.

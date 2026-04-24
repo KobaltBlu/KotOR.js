@@ -1,3 +1,4 @@
+import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { OdysseyModelEngine } from "@/enums/odyssey/OdysseyModelEngine";
 import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
@@ -8,7 +9,6 @@ import { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import { OdysseyModelFactory } from "@/odyssey/OdysseyModelFactory";
 import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
 import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
 
 const mdlStringCleaner = (str: string = ''): string => {
   const cleaned = str.replace(/\0[\s\S]*$/g,'').toLowerCase().trim();
@@ -45,6 +45,13 @@ export class OdysseyModel {
 
   namesArrayDefinition: IOdysseyArrayDefinition;
   nameOffsetsArray: number[] = [];
+  private changeListeners: Set<(event: OdysseyModelChangeEvent) => void> = new Set();
+
+  /** Banner / optional geometry fields preserved when loading from {@link OdysseyModel.fromAscii}. */
+  asciiCompressQuaternions?: number;
+  asciiHeadLink?: number;
+  /** MDLedit `layoutposition` (beginmodelgeom). */
+  asciiLayoutPosition?: { x: number; y: number; z: number };
   
   constructor( mdlReader: BinaryReader, mdxReader: BinaryReader ){
 
@@ -104,7 +111,9 @@ export class OdysseyModel {
     
     this.modelHeader.classification = this.mdlReader.readByte();
     this.modelHeader.subClassification = this.mdlReader.readByte();
-    this.modelHeader.smoothing = !!this.mdlReader.readByte(); //Unknown
+    const smoothingByte = this.mdlReader.readByte();
+    this.modelHeader.smoothing = !!smoothingByte; // legacy name; also MDLedit `nUnknown`
+    this.modelHeader.smoothingGroupsInFile = smoothingByte === 1;
     this.modelHeader.fogged = !!this.mdlReader.readByte();
     this.modelHeader.childModelCount = this.mdlReader.readUInt32(); //Unkown
 
@@ -206,4 +215,89 @@ export class OdysseyModel {
     const mdxReader = new BinaryReader(mdx_buffer);
     return new OdysseyModel(mdlReader, mdxReader);
   }
+
+  addChangeListener(listener: (event: OdysseyModelChangeEvent) => void): () => void {
+    this.changeListeners.add(listener);
+    return () => this.removeChangeListener(listener);
+  }
+
+  removeChangeListener(listener: (event: OdysseyModelChangeEvent) => void): void {
+    this.changeListeners.delete(listener);
+  }
+
+  emitChange(event: OdysseyModelChangeEvent): void {
+    this.changeListeners.forEach((listener) => {
+      try {
+        listener(event);
+      } catch (e) {
+        console.error("OdysseyModel.emitChange listener error", e);
+      }
+    });
+  }
+
+  markMetaChanged(field?: string): void {
+    this.emitChange({
+      kind: "model.meta",
+      model: this,
+      field,
+    });
+  }
+
+  markControllerKeyframesChanged(nodeUUID: string, animationName?: string): void {
+    this.emitChange({
+      kind: "controller.keyframes",
+      model: this,
+      nodeUUID,
+      animationName,
+    });
+  }
+
+  markNodeMaterialChanged(nodeUUID: string): void {
+    this.emitChange({
+      kind: "node.material",
+      model: this,
+      nodeUUID,
+    });
+  }
+
+  markNodeGeometryChanged(nodeUUID: string): void {
+    this.emitChange({
+      kind: "node.geometry",
+      model: this,
+      nodeUUID,
+    });
+  }
+
+  markNodeHierarchyChanged(nodeUUID: string): void {
+    this.emitChange({
+      kind: "node.hierarchy",
+      model: this,
+      nodeUUID,
+    });
+  }
+
+  markNodeTransformChanged(nodeUUID: string): void {
+    this.emitChange({
+      kind: "node.transform",
+      model: this,
+      nodeUUID,
+    });
+  }
+  
+}
+
+export type OdysseyModelChangeKind =
+  | "node.transform"
+  | "controller.keyframes"
+  | "node.material"
+  | "node.geometry"
+  | "node.hierarchy"
+  | "model.meta";
+
+export interface OdysseyModelChangeEvent {
+  kind: OdysseyModelChangeKind;
+  model: OdysseyModel;
+  nodeUUID?: string;
+  animationName?: string;
+  field?: string;
 }

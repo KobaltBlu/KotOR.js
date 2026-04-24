@@ -1,5 +1,4 @@
 import * as fs from "fs";
-
 import * as KotOR from "@/apps/forge/KotOR";
 declare const dialog: any;
 
@@ -308,7 +307,7 @@ export const supportedFilePickerTypes: any[] = [
   {
     description: 'All Supported Formats', 
     accept: {
-      'application/*': ['.2da', '.tpc', '.tga', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.phn', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
+      'application/*': ['.2da', '.tpc', '.tga', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.phn', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdl.ascii', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
     }
   },
   {
@@ -494,7 +493,7 @@ export const supportedFileDialogTypes: any[] = [
   {name: 'MOD File', extensions: ['mod']},
   {name: 'ERF File', extensions: ['erf']},
   {name: 'RIM File', extensions: ['rim']},
-  {name: 'Model File', extensions: ['mdl', 'mdx', 'wok', 'pwk', 'dwk']},
+  {name: 'Model File', extensions: ['mdl', 'mdl.ascii', 'mdx', 'wok', 'pwk', 'dwk']},
   {name: 'Module File', extensions: ['git', 'ifo']},
   {name: 'Area File', extensions: ['are']},
   {name: 'Path File', extensions: ['pth']},

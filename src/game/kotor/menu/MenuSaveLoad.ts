@@ -1,7 +1,6 @@
-﻿import * as THREE from "three";
 import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
 import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
+import { GameMenu, ListRowRegistry } from "@/gui";
 import { GUISaveGameItem } from "@/game/kotor/gui/GUISaveGameItem";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { TextureLoader } from "@/loaders";
@@ -64,8 +63,9 @@ export class MenuSaveLoad extends GameMenu {
       });
       this._button_b = this.BTN_BACK;
 
-      this.LB_GAMES.GUIProtoItemClass = GUISaveGameItem;
-      this.LB_GAMES.listMarginTop = 5;
+      // LIST
+      this.LB_GAMES.setProtoBuilder(GUISaveGameItem);
+      ListRowRegistry.register("kotor.MenuSaveLoad.LB_GAMES", GUISaveGameItem);
       this.LB_GAMES.onSelected = (save: SaveGame) => {
         this.selected = save;
         this.UpdateSelected();

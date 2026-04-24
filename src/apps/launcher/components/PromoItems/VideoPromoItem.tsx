@@ -1,5 +1,4 @@
 import React, { useRef } from "react";
-
 import { useApp } from "@/apps/launcher/context/AppContext";
 
 export interface ProfilePromoItemProps {

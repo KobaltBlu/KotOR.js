@@ -4,10 +4,11 @@ import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 
 import 'bootstrap';
-import '@/apps/forge/app.scss';
-import { App } from '@/apps/forge/App';
-import { AppProvider, useApp } from '@/apps/forge/context/AppContext';
+import "@/apps/forge/app.scss";
+import { AppProvider, useApp } from "@/apps/forge/context/AppContext";
 import * as KotOR from "@/apps/forge/KotOR";
+import { App } from "@/apps/forge/App";
+import { Launcher } from "@/apps/launcher/context/Launcher";
 
 const query = new URLSearchParams(window.location.search);
 
@@ -35,21 +36,21 @@ const loadReactApplication = () => {
 }
 
 ( async () => {
-  try {
-    await KotOR.ConfigClient.Init();
-    const getProfile = () => KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
-    const profile = getProfile();
-    if (profile) {
-      KotOR.ApplicationProfile.SetProfile(profile);
-      KotOR.ApplicationProfile.InitEnvironment();
-    }
-    document.body.classList.add(KotOR.ApplicationProfile.GameKey || query.get('key') || 'kotor');
-  } catch (e) {
-    console.error('Forge init error, starting with defaults', e);
-    document.body.classList.add('kotor');
-  } finally {
-    loadReactApplication();
-  }
+  await KotOR.ConfigClient.Init();
+  await Launcher.InitProfiles();
+  const getProfile = () => {
+    const rawKey = query.get("key");
+    const validKeys = Object.keys(Launcher.AppProfiles || {});
+    const key =
+      rawKey && validKeys.includes(rawKey) ? rawKey : "kotor";
+    return KotOR.ConfigClient.get(`Profiles.${key}`);
+  };
+
+  KotOR.ApplicationProfile.SetProfile(getProfile());
+  KotOR.ApplicationProfile.InitEnvironment();
+
+  document.body.classList.add(KotOR.ApplicationProfile.GameKey);
+  loadReactApplication();
 })();
 
 const plChangeCallback = (e: any) => {

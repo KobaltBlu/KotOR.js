@@ -1,16 +1,15 @@
 import * as THREE from "three";
-
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { NWScriptTypes } from "@/enums/nwscript/NWScriptTypes";
-import { GameState } from "@/GameState";
 import { INWScriptDefAction } from "@/interface/nwscript/INWScriptDefAction";
 // import { ModuleObjectManager } from "@/managers/ModuleObjectManager";
-import type { INWScriptStoreState } from "@/interface/nwscript/INWScriptStoreState";
-import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import { NWScriptStack } from "@/nwscript/NWScriptStack";
+import { NWScriptTypes } from "@/enums/nwscript/NWScriptTypes";
 import { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
+import { NWScriptStack } from "@/nwscript/NWScriptStack";
+import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
+import type { INWScriptStoreState } from "@/interface/nwscript/INWScriptStoreState";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { GameState } from "@/GameState";
 
 /**
  * CALL_CPDOWNSP

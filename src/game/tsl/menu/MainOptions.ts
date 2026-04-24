@@ -1,6 +1,6 @@
-import { MainOptions as K1_MainOptions } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
 import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
+import { MainOptions as K1_MainOptions } from "@/game/kotor/KOTOR";
 
 /**
  * MainOptions class.

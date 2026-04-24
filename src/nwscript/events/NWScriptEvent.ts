@@ -1,12 +1,12 @@
 import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 import { GameState } from "@/GameState";
-import { EventActivateItem } from "@/nwscript/events/EventActivateItem";
 import { EventConversation } from "@/nwscript/events/EventConversation";
 import { EventSpellCastAt } from "@/nwscript/events/EventSpellCastAt";
 import { EventUserDefined } from "@/nwscript/events/EventUserDefined";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
+import { EventActivateItem } from "@/nwscript/events/EventActivateItem";
 // import { ModuleObjectManager } from "@/managers";
 
 /**

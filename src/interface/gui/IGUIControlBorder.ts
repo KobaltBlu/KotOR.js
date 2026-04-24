@@ -1,4 +1,3 @@
-﻿import * as THREE from "three";
 import type { IGUIControlBorderFill } from "@/interface/gui/IGUIControlBorderFill";
 
 /**

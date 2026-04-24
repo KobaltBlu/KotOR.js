@@ -1,16 +1,15 @@
 import * as THREE from "three";
-
-import { Mouse } from "@/controls/Mouse";
-import { EngineMode, GameEngineType } from "@/enums/engine";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
 import { TextureLoader } from "@/loaders";
-import type { MenuManager } from "@/managers/MenuManager";
+import { Mouse } from "@/controls/Mouse";
 import type { ModuleObject } from "@/module";
-import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { EngineMode, GameEngineType } from "@/enums/engine";
+import type { MenuManager } from "@/managers/MenuManager";
+import { GameState } from "@/GameState";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 
 /**
  * Manages the in-game cursor, reticles, and selection/hover logic.

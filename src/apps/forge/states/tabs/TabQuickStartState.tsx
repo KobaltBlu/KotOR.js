@@ -1,8 +1,7 @@
 import React from "react";
-
 import {TabQuickStart} from "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabState } from "@/apps/forge/states/tabs";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 
 export class TabQuickStartState extends TabState {
 

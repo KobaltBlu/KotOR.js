@@ -1,5 +1,5 @@
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { TextureLoader } from "@/loaders";

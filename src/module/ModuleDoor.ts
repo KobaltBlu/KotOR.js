@@ -1,4 +1,4 @@
-﻿import { ModuleObject } from "@/module/ModuleObject";
+import { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleRoom } from "@/module/ModuleRoom";
 import { AudioEmitter } from "@/audio/AudioEmitter";
 import { GameState } from "@/GameState";

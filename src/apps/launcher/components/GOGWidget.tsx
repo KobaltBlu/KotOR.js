@@ -1,8 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Default);
 import "@/apps/launcher/styles/GOGWidget.scss";
 
 // Types and Interfaces

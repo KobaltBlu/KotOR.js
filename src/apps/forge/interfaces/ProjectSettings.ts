@@ -1,5 +1,5 @@
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { ProjectType } from "@/apps/forge/enum/ProjectType";
 
 type OpenFilesList = string[];
 

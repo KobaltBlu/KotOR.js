@@ -1,12 +1,9 @@
-import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
 // import { ResolutionManager } from "@/managers";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
-
-const log = createScopedLogger(LogScope.Module);
 import * as THREE from "three";
 
 /**

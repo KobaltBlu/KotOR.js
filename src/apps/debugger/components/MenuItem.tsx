@@ -1,6 +1,5 @@
 import React, { ComponentProps, ReactEventHandler, useState } from "react";
 import { Container, Dropdown, Nav, NavDropdown, Navbar } from 'react-bootstrap';
-
 import { useEffectOnce } from "@/apps/debugger/helpers/UseEffectOnce";
 
 export const MenuItem = function(props: any){

@@ -1,5 +1,5 @@
-import { CharGenFeats as K1_CharGenFeats } from "@/game/kotor/KOTOR";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { CharGenFeats as K1_CharGenFeats } from "@/game/kotor/KOTOR";
 
 /**
  * CharGenFeats class.

@@ -1,11 +1,11 @@
 // import { FactionManager } from "@/managers";
-import { Reputation } from "@/engine/Reputation";
-import { ReputationConstant } from "@/enums/engine/ReputationConstant";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
 import { ModuleCreature, ModuleObject, ModulePlayer } from "@/module";
-import { GFFField } from "@/resource/GFFField";
+import { Reputation } from "@/engine/Reputation";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { ReputationConstant } from "@/enums/engine/ReputationConstant";
+import { GameState } from "@/GameState";
 
 /**
  * Faction class.

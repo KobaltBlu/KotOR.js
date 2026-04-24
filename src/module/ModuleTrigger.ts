@@ -1,25 +1,19 @@
 import { ModuleObject } from "@/module/ModuleObject";
 import { GFFObject } from "@/resource/GFFObject";
-
 import * as THREE from "three";
-
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { GameState } from "@/GameState";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleDoorAnimState, SignalEventType } from "@/enums";
-import { EngineMode } from "@/enums/engine/EngineMode";
-
-
-const log = createScopedLogger(LogScope.Module);
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { MDLLoader, ResourceLoader } from "@/loaders";
-import { GFFField } from "@/resource/GFFField";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
-import { ConfigClient } from "@/utility/ConfigClient";
-import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 
 const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks

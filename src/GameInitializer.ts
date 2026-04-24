@@ -1,20 +1,11 @@
 import * as path from "path";
-
-import { ActionFactory } from "@/actions/ActionFactory";
-import { GamePad, KeyMapper } from "@/controls";
-import { GameEffectFactory } from "@/effects/GameEffectFactory";
-import { CurrentGame } from "@/engine/CurrentGame";
-import { INIConfig } from "@/engine/INIConfig";
-import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
-import { SWRuleSet } from "@/engine/rules/SWRuleSet";
-import { SaveGame } from "@/engine/SaveGame";
-import { CacheScope } from "@/enums";
-import { GameEngineType } from "@/enums/engine";
 import { GameState } from "@/GameState";
 import { ERFObject } from "@/resource/ERFObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { RIMObject } from "@/resource/RIMObject";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { GamePad, KeyMapper } from "@/controls";
+import { CurrentGame } from "@/engine/CurrentGame";
 import { ConfigClient } from "@/utility/ConfigClient";
 import { 
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager, 
@@ -23,11 +14,20 @@ import {
   VideoManager,
   LegalScreenManager
 } from "@/managers";
+import { SWRuleSet } from "@/engine/rules/SWRuleSet";
 import { ResourceLoader } from "@/loaders";
+import { GameEngineType } from "@/enums/engine";
+import { SaveGame } from "@/engine/SaveGame";
 import { Module } from "@/module/Module";
 import { NWScript } from "@/nwscript/NWScript";
+
 import { TalentObject, TalentFeat, TalentSkill, TalentSpell } from "@/talents";
+import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
+import { ActionFactory } from "@/actions/ActionFactory";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import { GameEventFactory } from "@/events/GameEventFactory";
+import { INIConfig } from "@/engine/INIConfig";
+import { CacheScope } from "@/enums";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 
 /**

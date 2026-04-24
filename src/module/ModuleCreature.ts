@@ -1,4 +1,4 @@
-﻿import { GFFObject } from "@/resource/GFFObject";
+import { GFFObject } from "@/resource/GFFObject";
 import * as THREE from "three";
 import { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleItem } from "@/module/ModuleItem";
@@ -51,24 +51,12 @@ import { CombatActionType } from "@/enums/combat/CombatActionType";
 import { CombatRoundAction } from "@/combat";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import type { Action } from "@/actions/Action";
-import type { EffectLink } from "@/effects";
-import type { GameEffect } from "@/effects/GameEffect";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";
 import { TextSprite3D } from "@/engine/TextSprite3D";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { ExperienceType } from "@/enums/engine/ExperienceType";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
-
-/** Entry for a slot around a creature that another object can claim (e.g. for formation). */
-export interface TargetPositionEntry {
-  angle: number;
-  object: ModuleObject | undefined;
-  cos: number;
-  sin: number;
-  owner: ModuleCreature;
-  targetVector: THREE.Vector3;
-}
 
 /**
 * ModuleCreature class.

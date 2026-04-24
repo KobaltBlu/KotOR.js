@@ -1,5 +1,4 @@
 import * as THREE from "three";
-
 import {Shader} from "@/shaders/Shader";
 
 /**

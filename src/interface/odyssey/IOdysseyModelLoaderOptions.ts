@@ -20,12 +20,11 @@ export interface IOdysseyModelLoaderOptions {
   useTweakColor?: boolean,
   tweakColor?: number,
   isForceShield?: boolean,
-  isChildrenDynamic?: boolean,
   parseChildren?: boolean,
   isHologram?: boolean,
-  /** Caller context (e.g. ModuleArea, placeable) for resource resolution. */
-  context?: import("@/interface/engine/IGameContext").IGameContext;
-  /** Called when the model has finished loading. Passes the loaded model when successful. */
-  onComplete?: (model?: import("@/three/odyssey/OdysseyModel3D").OdysseyModel3D) => void;
-  editorMode?: boolean;
+  context?: any,
+  onComplete?: Function,
+  editorMode?: boolean,
+  /** When true, AABB/walkmesh geometry from the MDL is parented into the scene (Forge preview). Defaults from editorMode. Runtime uses WOK; leave false for game loads. */
+  attachMdlAabbMesh?: boolean,
 }

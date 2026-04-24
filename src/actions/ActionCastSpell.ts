@@ -8,8 +8,8 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GameState } from "@/GameState";
 // import { TalentSpell } from "@/talents/TalentSpell";
-import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
+import type { ModuleObject } from "@/module/ModuleObject";
 
 /**
  * ActionCastSpell class.

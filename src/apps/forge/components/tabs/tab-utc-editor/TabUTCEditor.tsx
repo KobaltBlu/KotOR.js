@@ -1,21 +1,19 @@
-import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import React, { useCallback, useEffect, useMemo, useState } from "react"
-
+import React, { useCallback, useEffect, useState } from "react"
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import { TabUTCEditorState } from "@/apps/forge/states/tabs";
+import type{ CreatureClassEntry, ForgeCreature, KnownSpellEntry, SpecialAbilityEntry } from "@/apps/forge/module-editor/ForgeCreature";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { SubTabHost, SubTab } from "@/apps/forge/components/SubTabHost";
+import * as KotOR from "@/apps/forge/KotOR";
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
+import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
-import { SubTabHost, SubTab } from "@/apps/forge/components/SubTabHost";
-import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
-import * as KotOR from "@/apps/forge/KotOR";
-import type{ CreatureClassEntry, ForgeCreature, InventoryItemEntry, KnownSpellEntry, SpecialAbilityEntry } from "@/apps/forge/module-editor/ForgeCreature";
-import { ModalInventoryBrowserState } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
-import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
-import { TabUTCEditorState } from "@/apps/forge/states/tabs";
-import '@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor.scss';
+import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import "@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor.scss";
 
 export const TabUTCEditor = function(props: BaseTabProps){
 

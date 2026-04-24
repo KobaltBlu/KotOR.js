@@ -1,7 +1,9 @@
-import { EffectAbilityDecrease } from "@/effects/EffectAbilityDecrease";
-import { EffectAbilityIncrease } from "@/effects/EffectAbilityIncrease";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GFFStruct } from "@/resource/GFFStruct";
 import { EffectACDecrease } from "@/effects/EffectACDecrease";
 import { EffectACIncrease } from "@/effects/EffectACIncrease";
+import { EffectAbilityDecrease } from "@/effects/EffectAbilityDecrease";
+import { EffectAbilityIncrease } from "@/effects/EffectAbilityIncrease";
 import { EffectAreaOfEffect } from "@/effects/EffectAreaOfEffect";
 import { EffectAssuredDeflection } from "@/effects/EffectAssuredDeflection";
 import { EffectAssuredHit } from "@/effects/EffectAssuredHit";
@@ -27,8 +29,6 @@ import { EffectFeat } from "@/effects/EffectFeat";
 import { EffectForceFizzle } from "@/effects/EffectForceFizzle";
 import { EffectForceJump } from "@/effects/EffectForceJump";
 import { EffectForcePushed } from "@/effects/EffectForcePushed";
-import { EffectForceResistanceDecrease } from "@/effects/EffectForceResistanceDecrease";
-import { EffectForceResistanceIncrease } from "@/effects/EffectForceResistanceIncrease";
 import { EffectForceResisted } from "@/effects/EffectForceResisted";
 import { EffectForceShield } from "@/effects/EffectForceShield";
 import { EffectHaste } from "@/effects/EffectHaste";
@@ -56,9 +56,9 @@ import { EffectSpellImmunity } from "@/effects/EffectSpellImmunity";
 import { EffectTemporaryForce } from "@/effects/EffectTemporaryForce";
 import { EffectTemporaryHitPoints } from "@/effects/EffectTemporaryHitPoints";
 import { EffectVisualEffect } from "@/effects/EffectVisualEffect";
+import { EffectForceResistanceIncrease } from "@/effects/EffectForceResistanceIncrease";
+import { EffectForceResistanceDecrease } from "@/effects/EffectForceResistanceDecrease";
 import { GameEffect } from "@/effects/GameEffect";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * GameEffectFactory class.

@@ -1,6 +1,6 @@
 import { BinkAudioPacket, BinkAudioTrackInfo, BinkFormatError, BinkFrame, BinkFrameIndexEntry, BinkHeader, BinkVideoInfo, BINK_AUD_FLAGS, BINK_FLAGS, Rational } from '@/video/binktypes';
-import { BitReaderLE } from '@/video/BitReaderLE';
 import { readFourCCLE, readU16LE, readU32LE } from '@/video/uint';
+import { BitReaderLE } from '@/video/BitReaderLE';
 import { readTree } from '@/video/vlc';
 
 function isSMUS(tag: string): boolean {

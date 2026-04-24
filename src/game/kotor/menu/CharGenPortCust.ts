@@ -1,13 +1,11 @@
-import * as THREE from "three";
-
-import { CharGenClasses } from "@/game/CharGenClasses";
-import { GameState } from "@/GameState";
 import { GameMenu, LBL_3DView } from "@/gui";
 import type { GUILabel, GUIButton } from "@/gui";
 import { TextureLoader } from "@/loaders";
-import { OdysseyModel3D } from "@/three/odyssey";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-
+import { OdysseyModel3D } from "@/three/odyssey";
+import { CharGenClasses } from "@/game/CharGenClasses";
+import * as THREE from "three";
+import { GameState } from "@/GameState";
 
 /**
  * CharGenPortCust class.

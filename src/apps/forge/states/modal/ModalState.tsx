@@ -1,5 +1,4 @@
 import React from "react";
-
 import { EventListenerModel } from "@/apps/forge/EventListenerModel";
 import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
 

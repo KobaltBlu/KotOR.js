@@ -1,4 +1,3 @@
-﻿import * as THREE from "three";
 import { GameMenu, LBL_3DView } from "@/gui";
 import type { GUILabel } from "@/gui";
 import { TextureLoader } from "@/loaders";
@@ -130,8 +129,8 @@ export class CharGenMain extends GameMenu {
     this.OLD_LBL?.hide();
     this.NEW_LBL?.hide();
     try {
-      GameState.CharGenManager.selectedCreature.model.parent.remove(GameState.CharGenManager.selectedCreature.model);
-    } catch (e: unknown) {
+      GameState.CharGenManager.selectedCreature.model.removeFromParent();
+    } catch (e: any) {
     }
     this._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
     GameState.CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;

@@ -1,13 +1,21 @@
-import * as THREE from "three";
-
-import { Mouse } from "@/controls/Mouse";
-import { Anchor } from "@/enums/gui/Anchor";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControl } from "@/gui/GUIControl";
-import type { GUIListBox } from "@/gui/GUIListBox";
-import { ResolutionManager } from "@/managers/ResolutionManager";
 import type { GFFStruct } from "@/resource/GFFStruct";
+import * as THREE from "three";
+import { Anchor } from "@/enums/gui/Anchor";
+import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
+import { ResolutionManager } from "@/managers/ResolutionManager";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import { Mouse } from "@/controls/Mouse";
+
+// build a normalized unit rect, scale to extent
+const points = [
+  new THREE.Vector3(-0.5, -0.5, 0),
+  new THREE.Vector3( 0.5, -0.5, 0),
+  new THREE.Vector3( 0.5,  0.5, 0),
+  new THREE.Vector3(-0.5,  0.5, 0),
+  new THREE.Vector3(-0.5, -0.5, 0), // close loop
+];
 
 /**
  * GUIProtoItem class.
@@ -20,11 +28,22 @@ import type { GFFStruct } from "@/resource/GFFStruct";
  */
 export class GUIProtoItem extends GUIControl{
 
+  static debugExtentLine: THREE.Line;
+  static debugGeom = new THREE.BufferGeometry().setFromPoints(points);
+  static debugMaterial  = new THREE.LineBasicMaterial({ color: 0x00ffff, depthTest: false });
+
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUIProtoItem;
     this.zOffset = 2;
     this.isProtoItem = false;
+
+    if(this.parent && this.parent.objectType & GUIControlTypeMask.GUIListBox){
+      const list = this.parent as GUIListBox;
+      this.extent.width = list.extent.width
+        - (list.scrollbar ? list.scrollbar.extent.width : 0)
+        - list.padding * 2;
+    }
 
     this.onSelect = () => {
       this.onSelectStateChanged();
@@ -37,6 +56,17 @@ export class GUIProtoItem extends GUIControl{
     this.addEventListener('mouseOut', (e) => {
       this.onSelectStateChanged();
     })
+  }
+
+  createControl(){
+    const widget = super.createControl();
+
+    GUIProtoItem.debugExtentLine = new THREE.Line(GUIProtoItem.debugGeom, GUIProtoItem.debugMaterial);
+    GUIProtoItem.debugExtentLine.scale.set(this.extent.width, this.extent.height, 1);
+    GUIProtoItem.debugExtentLine.position.z = 50; // above all UI layers
+    GUIProtoItem.debugExtentLine.visible = true;//GameState.debug[EngineDebugType.GUI_PROTO_EXTENTS];
+    // this.widget.add(GUIProtoItem.debugExtentLine);
+    return widget;
   }
 
   onSelectStateChanged(){
@@ -91,13 +121,17 @@ export class GUIProtoItem extends GUIControl{
   }
 
   getItemHeight(){
-    let height = (this.extent.height + (this.getBorderSize()/2));
+    let height = (this.extent.height);
+    if((this.objectType & GUIControlTypeMask.GUIButton)){
+      return height;
+    }
 
     if(this.text.geometry){
       this.text.geometry.computeBoundingBox();
-      const tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
+      const tSize = new THREE.Vector3();
+      this.text.geometry.boundingBox.getSize(tSize);
       if(tSize.y > height){
-        height = tSize.y/2;
+        height = tSize.y;
       }
     }
 

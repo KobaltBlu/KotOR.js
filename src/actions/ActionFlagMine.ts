@@ -1,4 +1,3 @@
-import { Action } from "@/actions/Action";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
@@ -6,6 +5,7 @@ import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
 import { BitWise } from "@/utility/BitWise";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionFlagMine class.

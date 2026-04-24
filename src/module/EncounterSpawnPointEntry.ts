@@ -1,3 +1,6 @@
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
 
 import { GFFDataType } from "@/enums/resource/GFFDataType";

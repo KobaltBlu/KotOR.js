@@ -1,4 +1,4 @@
-﻿import { GameState } from "@/GameState";
+import { GameState } from "@/GameState";
 import { GFFObject } from "@/resource/GFFObject";
 import type { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";

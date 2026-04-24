@@ -1,17 +1,14 @@
 import * as path from "path";
-
-import * as THREE from 'three';
-
-import { GameEngineType } from '@/enums/engine';
-import { PixelFormat } from '@/enums/graphics/tpc/PixelFormat';
-import { TXIBlending } from '@/enums/graphics/txi/TXIBlending';
-import { TXIPROCEDURETYPE } from '@/enums/graphics/txi/TXIPROCEDURETYPE';
-import { TextureType } from '@/enums/loaders/TextureType';
-import { ITextureLoaderQueuedRef } from '@/interface/loaders/ITextureLoaderQueuedRef';
-import { TGALoader } from '@/loaders/TGALoader';
-import { TPCLoader } from '@/loaders/TPCLoader';
-import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
-import { GameFileSystem } from '@/utility/GameFileSystem';
+import { PixelFormat } from "@/enums/graphics/tpc/PixelFormat";
+import { TextureType } from "@/enums/loaders/TextureType";
+import { ITextureLoaderQueuedRef } from "@/interface/loaders/ITextureLoaderQueuedRef";
+import { TXIBlending } from "@/enums/graphics/txi/TXIBlending";
+import { TPCLoader } from "@/loaders/TPCLoader";
+import { TGALoader } from "@/loaders/TGALoader";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
+import { GameEngineType } from "@/enums/engine";
 
 type onProgressCallback = (ref: ITextureLoaderQueuedRef, index: number, total: number) => void;
 
@@ -352,6 +349,7 @@ export class TextureLoader {
 
     return new Promise<void>( async (resolve, reject) => {
       try{
+        let hasAnimatedBumpCycle = false;
         //ENVMAP
         if(texture.txi.envMapTexture){
           const envmap: OdysseyTexture = await TextureLoader.Load(texture.txi.envMapTexture, TextureLoader.NOCACHE);
@@ -412,7 +410,8 @@ export class TextureLoader {
               if(bumpMap.txi.procedureType){
                 switch(bumpMap.txi.procedureType){
                   case TXIPROCEDURETYPE.CYCLE:
-                    tex.material.defines.CYCLE = '';
+                    hasAnimatedBumpCycle = true;
+                    tex.material.defines.CYCLE_BUMP = '';
                   break;
                   case TXIPROCEDURETYPE.RANDOM:
                     tex.material.defines.RANDOM = '';
@@ -426,25 +425,25 @@ export class TextureLoader {
                 }
               }
 
-              if(tex.material.uniforms.animationVector){
+              if(tex.material.uniforms.animationVectorBump){
                 if(bumpMap.txi.numx){
-                  tex.material.uniforms.animationVector.value.x = bumpMap.txi.numx;
-                  bumpMap.repeat.x = 1 / tex.material.uniforms.animationVector.value.x;
+                  tex.material.uniforms.animationVectorBump.value.x = bumpMap.txi.numx;
+                  bumpMap.repeat.x = 1 / tex.material.uniforms.animationVectorBump.value.x;
                   bumpMap.updateMatrix();
                 }
 
                 if(bumpMap.txi.numy){
-                  tex.material.uniforms.animationVector.value.y = bumpMap.txi.numy;
-                  bumpMap.repeat.y = 1 / tex.material.uniforms.animationVector.value.y;
+                  tex.material.uniforms.animationVectorBump.value.y = bumpMap.txi.numy;
+                  bumpMap.repeat.y = 1 / tex.material.uniforms.animationVectorBump.value.y;
                   bumpMap.updateMatrix();
                 }
 
                 if(bumpMap.txi.numx && bumpMap.txi.numy){
-                  tex.material.uniforms.animationVector.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
+                  tex.material.uniforms.animationVectorBump.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
                 }
 
                 if(bumpMap.txi.fps){
-                  tex.material.uniforms.animationVector.value.w = bumpMap.txi.fps;
+                  tex.material.uniforms.animationVectorBump.value.w = bumpMap.txi.fps;
                 }
               }
             }
@@ -499,7 +498,8 @@ export class TextureLoader {
               //tex.material.uniforms.displacementMap.value = tex.material.uniforms.bumpMap.value;
               //tex.material.uniforms.displacementScale.value = tex.material.uniforms.bumpScale.value;
               tex.material.uniforms.reflectivity.value = 1;
-              tex.material.transparent = true;
+              //transparent is set to false because we are using additive blending
+              tex.material.transparent = false;
               tex.material.premultipliedAlpha = false;
               tex.material.needsUpdate = true;
 
@@ -508,10 +508,10 @@ export class TextureLoader {
               tex.material.uniforms.waterAlpha.value = texture.txi.waterAlpha;
               // tex.material.uniforms.waterTransform.value = bumpMap.matrix;
 
-              tex.material.uniforms.animationVector.value.x = bumpMap.txi.numx;
-              tex.material.uniforms.animationVector.value.y = bumpMap.txi.numy;
-              tex.material.uniforms.animationVector.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
-              tex.material.uniforms.animationVector.value.w = bumpMap.txi.fps;
+              tex.material.uniforms.animationVectorBump.value.x = bumpMap.txi.numx;
+              tex.material.uniforms.animationVectorBump.value.y = bumpMap.txi.numy;
+              tex.material.uniforms.animationVectorBump.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
+              tex.material.uniforms.animationVectorBump.value.w = bumpMap.txi.fps;
             }
 
           }
@@ -529,7 +529,12 @@ export class TextureLoader {
           if(texture.txi.procedureType){
             switch(texture.txi.procedureType){
               case TXIPROCEDURETYPE.CYCLE:
-                tex.material.defines.CYCLE = '';
+                // If bump cycle animation is active, let bump drive animation alone.
+                if(!hasAnimatedBumpCycle){
+                  tex.material.defines.CYCLE_MAP = '';
+                }else if(tex.material.defines.hasOwnProperty('CYCLE_MAP')){
+                  delete tex.material.defines.CYCLE_MAP;
+                }
               break;
               case TXIPROCEDURETYPE.RANDOM:
                 tex.material.defines.RANDOM = '';
@@ -543,25 +548,25 @@ export class TextureLoader {
             }
           }
     
-          if(tex.material.uniforms.animationVector){
+          if(tex.material.uniforms.animationVectorMap){
             if(texture.txi.numx){
-              tex.material.uniforms.animationVector.value.x = texture.txi.numx;
-              texture.repeat.x = 1 / tex.material.uniforms.animationVector.value.x;
+              tex.material.uniforms.animationVectorMap.value.x = texture.txi.numx;
+              texture.repeat.x = 1 / tex.material.uniforms.animationVectorMap.value.x;
               texture.updateMatrix();
             }
       
             if(texture.txi.numy){
-              tex.material.uniforms.animationVector.value.y = texture.txi.numy;
-              texture.repeat.y = 1 / tex.material.uniforms.animationVector.value.y;
+              tex.material.uniforms.animationVectorMap.value.y = texture.txi.numy;
+              texture.repeat.y = 1 / tex.material.uniforms.animationVectorMap.value.y;
               texture.updateMatrix();
             }
       
             if(texture.txi.numx && texture.txi.numy){
-              tex.material.uniforms.animationVector.value.z = texture.txi.numx * texture.txi.numy;
+              tex.material.uniforms.animationVectorMap.value.z = texture.txi.numx * texture.txi.numy;
             }
       
             if(texture.txi.fps){
-              tex.material.uniforms.animationVector.value.w = texture.txi.fps;
+              tex.material.uniforms.animationVectorMap.value.w = texture.txi.fps;
             }
           }
         }
@@ -578,10 +583,8 @@ export class TextureLoader {
         //BLENDING
         switch(texture.txi.blending){
           case TXIBlending.ADDITIVE:
-            tex.material.transparent = true;
+            tex.material.transparent = false;
             tex.material.blending = THREE['AdditiveBlending'];
-            //tex.material.alphaTest = 0;//0.5;
-            //tex.material.side = THREE.DoubleSide; //DoubleSide is causing issues with windows in TSL and elsewhere
           break;
           case TXIBlending.PUNCHTHROUGH:
             tex.material.transparent = false;
@@ -591,6 +594,10 @@ export class TextureLoader {
         }
 
         //tex.material.transparent = true;
+        tex.material.dispatchEvent({
+          type: 'txi',
+          txi: texture.txi,
+        });
         resolve();
       }catch(e){
         console.error('TextureLoader.parseTXI', e);

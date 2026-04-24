@@ -1,19 +1,18 @@
-import * as THREE from "three";
-
-import { KeyMapAction, ModuleObjectType } from "@/enums";
-import { AutoPauseState } from "@/enums/engine/AutoPauseState";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { EngineState } from "@/enums/engine/EngineState";
-import { Anchor } from "@/enums/gui/Anchor";
-import { SSFType } from "@/enums/resource/SSFType";
 import { GameState } from "@/GameState";
+import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameMenu, LBL_MapView } from "@/gui";
 import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
 import { TextureLoader } from "@/loaders";
-import type { ModuleObject } from "@/module/ModuleObject";
-import { TalentObject } from "@/talents";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import * as THREE from "three";
+import { Anchor } from "@/enums/gui/Anchor";
+import { SSFType } from "@/enums/resource/SSFType";
+import { TalentObject } from "@/talents";
+import { EngineState } from "@/enums/engine/EngineState";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { BitWise } from "@/utility/BitWise";
+import { KeyMapAction, ModuleObjectType } from "@/enums";
+import type { ModuleObject } from "@/module/ModuleObject";
 
 const TLK_TOOLTIP_FULL_HEALTH = 42498;
 

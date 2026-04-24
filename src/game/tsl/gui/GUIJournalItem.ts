@@ -1,6 +1,6 @@
+import type { SaveGame } from "@/engine/SaveGame";
 import { JournalCategory } from "@/engine/JournalCategory";
 import { JournalEntry } from "@/engine/JournalEntry";
-import type { SaveGame } from "@/engine/SaveGame";
 import { GUIProtoItem } from "@/gui";
 import type { GameMenu, GUIControl } from "@/gui";
 import { GFFStruct } from "@/resource/GFFStruct";

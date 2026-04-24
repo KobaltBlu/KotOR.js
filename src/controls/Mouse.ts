@@ -1,4 +1,4 @@
-﻿import * as THREE from "three";
+import * as THREE from "three";
 import type { GUIControl } from "@/gui";
 import { ResolutionManager } from "@/managers/ResolutionManager";
 import { MouseState } from "@/enums/controls/MouseState";

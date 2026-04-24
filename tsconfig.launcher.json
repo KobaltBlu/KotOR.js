@@ -1,11 +1,24 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "moduleResolution": "node",
+    "target": "ESNext",
+    "module": "commonjs",
     "declaration": false,
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "types": [
+      "@types/wicg-file-system-access",
+      "node",
+      "offscreencanvas",
+    ],
     "lib": [
       "ESNext",
       "dom",
@@ -36,13 +49,13 @@
       "offscreencanvas"
     ]
   },
-  "exclude": [
-    "node_modules",
-    "src/**/*.spec.ts"
-  ],
   "include": [
-    "src/apps/launcher/launcher.tsx",
+    "src/apps/launcher/**/*.ts",
+    "src/apps/launcher/**/*.tsx",
+    "src/apps/common/**/*.ts",
+    "src/apps/common/**/*.tsx",
     "src/types",
     "src/index.d.ts"
-  ]
+  ],
+  "exclude": ["node_modules", "src/**/*.spec.ts"]
 }

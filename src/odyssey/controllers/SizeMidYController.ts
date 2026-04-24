@@ -1,9 +1,9 @@
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 
 /**
  * SizeMidYController class.
@@ -23,10 +23,21 @@ export class SizeMidYController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, _data: IOdysseyControllerFrameGeneric){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.sizesY[1] = data.value;
+      manager.modelNode.emitter.material.uniforms.scaleY.value.y = data.value;
+      manager.modelNode.emitter.material.uniformsNeedUpdate = true;
+    }
   }
 
-  animate(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
+  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
+    if(manager.modelNode.emitter){
+      const v = ((next.value - last.value) * fl + last.value);
+      manager.modelNode.emitter.sizesY[1] = v;
+      manager.modelNode.emitter.material.uniforms.scaleY.value.y = v;
+      manager.modelNode.emitter.material.uniformsNeedUpdate = true;
+    }
   }
 
 }

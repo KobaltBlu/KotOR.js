@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Button, Modal } from "react-bootstrap";
-
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+
 import * as KotOR from "@/apps/forge/KotOR";
 
 export const ModalChangeGame = function(props: any){

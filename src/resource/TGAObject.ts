@@ -1,8 +1,7 @@
-import { ITGAHeader } from "@/interface/graphics/tga/ITGAHeader";
-import { ITGAObjectOptions } from "@/interface/graphics/tga/ITGAObjectOptions";
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
-import { objectToTOML, objectToXML, objectToYAML, tomlToObject, xmlToObject, yamlToObject } from '@/utility/FormatSerialization';
+import { ITGAObjectOptions } from "@/interface/graphics/tga/ITGAObjectOptions";
+import { ITGAHeader } from "@/interface/graphics/tga/ITGAHeader";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**

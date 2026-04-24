@@ -1,5 +1,5 @@
-import { ResourceLoader } from "@/loaders/ResourceLoader";
 import { OdysseyModel } from "@/odyssey";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 
 /**

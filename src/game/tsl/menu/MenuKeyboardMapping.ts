@@ -1,7 +1,7 @@
-﻿import { GameState } from "@/GameState";
+import { GameState } from "@/GameState";
 import { KeyInput } from "@/controls/KeyInput";
 import { KeyCodeToLanguage0, KeyMapper, Keymap, language0ToKeyCode } from "@/controls/KeyMapper";
-import type { GUILabel, GUIListBox, GUIButton, GUIControl } from "@/gui";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
 import { MenuKeyboardMapping as K1_MenuKeyboardMapping } from "@/game/kotor/KOTOR";
 import { GUIKeyMapItem } from "@/game/tsl/gui/GUIKeyMapItem";
 
@@ -72,7 +72,7 @@ export class MenuKeyboardMapping extends K1_MenuKeyboardMapping {
         this.updateList();
       });
 
-      this.LST_EventList.GUIProtoItemClass = GUIKeyMapItem;
+      this.LST_EventList.setProtoBuilder(GUIKeyMapItem);
       this.LST_EventList.border.inneroffset = 5;
       this.LST_EventList.border.inneroffsety = 5;
       this.LST_EventList.onSelected = (node: Keymap, control: GUIControl, _index?: number) => {

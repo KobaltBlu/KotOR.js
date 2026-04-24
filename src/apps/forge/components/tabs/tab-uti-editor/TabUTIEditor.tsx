@@ -1,18 +1,14 @@
 import React, { useState, useCallback, useEffect } from "react";
-
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { TabUTIEditorState, ItemPropertyEntry } from "@/apps/forge/states/tabs";
+import * as KotOR from "@/apps/forge/KotOR";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import { FormField } from "@/apps/forge/components/form-field/FormField";
-import { LazyTextureCanvas } from "@/apps/forge/components/LazyTextureCanvas/LazyTextureCanvas";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalInventoryBrowserState } from "@/apps/forge/states/modal/ModalInventoryBrowserState";
-import { TabUTIEditorState, ItemPropertyEntry } from "@/apps/forge/states/tabs";
+import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
 
 export const TabUTIEditor = function(props: BaseTabProps){
 

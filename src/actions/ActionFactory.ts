@@ -1,14 +1,13 @@
-import type { Action } from "@/actions/Action";
+import { ActionType } from "@/enums/actions/ActionType";
+import { GFFStruct } from "@/resource/GFFStruct";
+
+import { ActionCombat } from "@/actions/ActionCombat"; 
 import { ActionCastSpell } from "@/actions/ActionCastSpell"; 
 import { ActionCloseDoor } from "@/actions/ActionCloseDoor"; 
-import { ActionCombat } from "@/actions/ActionCombat"; 
 import { ActionDialogObject } from "@/actions/ActionDialogObject"; 
-import { ActionDisarmMine } from "@/actions/ActionDisarmMine";
 import { ActionDoCommand } from "@/actions/ActionDoCommand";
 import { ActionDropItem } from "@/actions/ActionDropItem";
 import { ActionEquipItem } from "@/actions/ActionEquipItem";
-import { ActionExamineMine } from "@/actions/ActionExamineMine";
-import { ActionFlagMine } from "@/actions/ActionFlagMine";
 import { ActionFollowLeader } from "@/actions/ActionFollowLeader";
 import { ActionGiveItem } from "@/actions/ActionGiveItem";
 import { ActionItemCastSpell } from "@/actions/ActionItemCastSpell";
@@ -32,10 +31,12 @@ import { ActionPickUpItem } from "@/actions/ActionPickUpItem";
 import { ActionForceFollowObject } from "@/actions/ActionForceFollowObject";
 import { ActionSpeakStrRef } from "@/actions/ActionSpeakStrRef";
 import { ActionSetMine } from "@/actions/ActionSetMine";
+import { ActionFlagMine } from "@/actions/ActionFlagMine";
 import { ActionRecoverMine } from "@/actions/ActionRecoverMine";
+import { ActionDisarmMine } from "@/actions/ActionDisarmMine";
+import { ActionExamineMine } from "@/actions/ActionExamineMine";
 import { ActionSpeak } from "@/actions/ActionSpeak";
-import { ActionType } from "@/enums/actions/ActionType";
-import { GFFStruct } from "@/resource/GFFStruct";
+import type { Action } from "@/actions/Action";
 
 /**
  * ActionFactory class.

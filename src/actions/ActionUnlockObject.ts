@@ -1,21 +1,21 @@
-import { Action } from "@/actions/Action";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import { SignalEventType } from "@/enums/events/SignalEventType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import { ModuleItemProperty } from "@/enums/module/ModuleItemProperty";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { SkillType } from "@/enums/nwscript/SkillType";
-import { SSFType } from "@/enums/resource/SSFType";
 import { GameState } from "@/GameState";
+import { SSFType } from "@/enums/resource/SSFType";
+import { Utility } from "@/utility/Utility";
+import { Action } from "@/actions/Action";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 // import type { ModulePlaceable } from "@/module/ModulePlaceable";
 // import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
-import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { ModuleItemProperty } from "@/enums/module/ModuleItemProperty";
+import { SignalEventType } from "@/enums/events/SignalEventType";
 
 /**
  * ActionUnlockObject class.
