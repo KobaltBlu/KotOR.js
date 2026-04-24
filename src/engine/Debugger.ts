@@ -62,9 +62,9 @@ export class Debugger {
     if (typeof message == 'string') {
       this.broadcastChannel.postMessage(message);
     } else {
-    /**
-     * Complex messages are sent as binary data.
-     */
+      /**
+       * Complex messages are sent as binary data.
+       */
       this.broadcastChannel.postMessage(message.toBuffer());
     }
   }

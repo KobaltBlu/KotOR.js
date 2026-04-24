@@ -387,15 +387,15 @@ export class PazaakManager {
         actionStatus = ActionStatus.COMPLETE;
       }
     } else if (action.type == PazaakActionType.PLAY_GUI_SOUND) {
-    /**
-     * Play a GUI sound
-     */
+      /**
+       * Play a GUI sound
+       */
       GameState.guiAudioEmitter.playSoundFireAndForget(this.GetActionPropertyAsString(0, 0));
       actionStatus = ActionStatus.COMPLETE;
     } else if (action.type == PazaakActionType.BEGIN_ROUND) {
-    /**
-     * Begin the round
-     */
+      /**
+       * Begin the round
+       */
       console.log(`PazaakManager: Begin round... Player starts first.`);
       this.TurnMode = PazaakTurnMode.PLAYER;
       for (let i = 0; i < this.Tables.length; i++) {
@@ -409,9 +409,9 @@ export class PazaakManager {
       this.AddActionFront(this.TurnMode, PazaakActionType.BEGIN_TURN, [PazaakTurnMode.PLAYER]);
       actionStatus = ActionStatus.COMPLETE;
     } else if (action.type == PazaakActionType.BEGIN_TURN) {
-    /**
-     * Begin the turn
-     */
+      /**
+       * Begin the turn
+       */
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       console.log(`PazaakManager: Begin turn ${tableIndex == 0 ? `Player` : `Opponent`}`);
       const table = this.Tables[tableIndex];
@@ -419,21 +419,21 @@ export class PazaakManager {
       if (table.stand) {
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
       } else {
-      /**
-       * Draw a card from the main deck
-       */
+        /**
+         * Draw a card from the main deck
+         */
         this.AddActionFront(tableIndex, PazaakActionType.DRAW_CARD, [tableIndex]);
         this.AddActionFront(tableIndex, PazaakActionType.WAIT, [0.5, 0]);
         this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_startturn']);
       }
       actionStatus = ActionStatus.COMPLETE;
     } else if (action.type == PazaakActionType.END_TURN) {
-    /**
-     * End the turn
-     * end early if the player busted
-     * if it was the players turn, begin the opponent's turn
-     * else end the round
-     */
+      /**
+       * End the turn
+       * end early if the player busted
+       * if it was the players turn, begin the opponent's turn
+       * else end the round
+       */
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const bStanding = this.GetActionPropertyAsNumber(0, 1) == 1;
       console.log(
@@ -471,10 +471,10 @@ export class PazaakManager {
       }
       actionStatus = ActionStatus.COMPLETE;
     } else if (action.type == PazaakActionType.END_ROUND) {
-    /**
-     * End the round
-     * queue up the next round or end the game
-     */
+      /**
+       * End the round
+       * queue up the next round or end the game
+       */
       //calculate the result of the round
       const playerPoints = this.Tables[PazaakTurnMode.PLAYER].points;
       const opponentPoints = this.Tables[PazaakTurnMode.OPPONENT].points;
@@ -553,9 +553,9 @@ export class PazaakManager {
       }
       actionStatus = ActionStatus.COMPLETE;
     } else if (action.type == PazaakActionType.DRAW_CARD) {
-    /**
-     * Draw a random card from the main deck
-     */
+      /**
+       * Draw a random card from the main deck
+       */
       this.TurnState = PazaakTurnState.DRAW_CARD;
       let cardDrawn = false;
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
@@ -615,19 +615,19 @@ export class PazaakManager {
       if (table.points == this.TargetPoints) {
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
       } else if (table.points > this.TargetPoints) {
-      /**
-       * If the player has more than 20 points, they will end their turn because they busted
-       */
+        /**
+         * If the player has more than 20 points, they will end their turn because they busted
+         */
         this.AddActionFront(tableIndex, PazaakActionType.END_ROUND);
       } else if (!cardDrawn) {
-      /**
-       * If the player has no space left on the table, they will end their turn
-       */
+        /**
+         * If the player has no space left on the table, they will end their turn
+         */
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex]);
       } else {
-      /**
-       * If the player has cards to draw, draw a card
-       */
+        /**
+         * If the player has cards to draw, draw a card
+         */
         if (tableIndex == 1) {
           this.AddActionFront(tableIndex, PazaakActionType.AI_DETERMINE_MOVE, [tableIndex]);
         }
@@ -636,9 +636,9 @@ export class PazaakManager {
       }
       actionStatus = ActionStatus.COMPLETE;
     } else if (action.type == PazaakActionType.PLAY_HAND_CARD) {
-    /**
-     * Play a hand card
-     */
+      /**
+       * Play a hand card
+       */
       this.TurnState = PazaakTurnState.PLAY_HAND_CARD;
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const handIndex = this.GetActionPropertyAsNumber(0, 1);
@@ -686,9 +686,9 @@ export class PazaakManager {
 
       actionStatus = ActionStatus.COMPLETE;
     } else if (action.type == PazaakActionType.AI_DETERMINE_MOVE) {
-    /**
-     * AI determines a move
-     */
+      /**
+       * AI determines a move
+       */
       console.log(`PazaakManager: AI determining move...`);
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const aiTable = this.Tables[tableIndex];
@@ -749,9 +749,9 @@ export class PazaakManager {
           this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 1]);
         }
       } else if (aiTable.points > 20) {
-      /**
-       * If the AI has more than 20 points, they will end their turn because they busted
-       */
+        /**
+         * If the AI has more than 20 points, they will end their turn because they busted
+         */
         //if the AI has more than 20 points,
         // they will play a hand card to try to get just under or equal to 20
         // but not less than 18
@@ -765,39 +765,39 @@ export class PazaakManager {
           this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 1]);
         }
       } else if (aiTable.points < 18) {
-      /**
-       * If the AI has less than 18 points, they will play a hand card
-       */
+        /**
+         * If the AI has less than 18 points, they will play a hand card
+         */
         //if the AI has less than 15 points, they will end their turn
         //this is to prevent the AI from playing a card that will cause them to use up all their hand cards too early
         if (aiTable.points < 15) {
           this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
         } else if (bestCardIndex != -1) {
-        /**
-         * If the AI has a valid card to play, play it
-         */
+          /**
+           * If the AI has a valid card to play, play it
+           */
           this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [
             tableIndex,
             bestCardIndex,
             bestCardFlipped ? 1 : 0,
           ]);
         } else {
-        /**
-         * If the AI has no valid cards to play, end their turn in hopes of not busting after the next draw
-         */
+          /**
+           * If the AI has no valid cards to play, end their turn in hopes of not busting after the next draw
+           */
           this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
         }
       } else {
-      /**
-       * If the AI has between 18 and 20 points, they will auto stand to end their turn
-       */
+        /**
+         * If the AI has between 18 and 20 points, they will auto stand to end their turn
+         */
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
       }
       actionStatus = ActionStatus.COMPLETE;
     } else if (action.type == PazaakActionType.SHOW_MESSAGE) {
-    /**
-     * Show a message
-     */
+      /**
+       * Show a message
+       */
       const tlkId = this.GetActionPropertyAsNumber(0, 0);
       GameState.MenuManager.InGameConfirm.fromStringRef(tlkId);
       actionStatus = ActionStatus.COMPLETE;

@@ -1084,9 +1084,9 @@ export class NWScriptCompiler {
           this.writeACTION(0x00, statement.action_id, statement.arguments.length, returnSize, argumentsDataSize)
         );
       } else {
-      /**
-       * LOCAL FUNCTION CALL
-       */
+        /**
+         * LOCAL FUNCTION CALL
+         */
         const funcRef = this.program?.functions.find((f: any) => f.name == statement.function_reference.name) as
           | CompilerFunctionNode
           | undefined;

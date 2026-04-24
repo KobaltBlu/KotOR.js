@@ -124,9 +124,9 @@ export class VISObject {
         this.readContext.currentRoom.rooms.push(line);
         this.readContext.linkedRoomCount++;
       } else {
-      /**
-       * ParentRoom parse logic
-       */
+        /**
+         * ParentRoom parse logic
+         */
         // console.log(`VISObject.read: Parent Room: ${line}`);
         //If we are still in CHILD_ROOMS mode and the current line is a room.
         //Push the currentRoom to the rooms array and reset the current room var

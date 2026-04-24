@@ -2436,9 +2436,9 @@ export class ModuleCreature extends ModuleObject {
         }
         alignmentShifted = 3;
       } else {
-      /**
-       * Shifted to LIGHT
-       */
+        /**
+         * Shifted to LIGHT
+         */
         this.goodEvil += value;
         if (this.goodEvil > 50) {
           this.goodEvil = 50;
@@ -2446,15 +2446,15 @@ export class ModuleCreature extends ModuleObject {
         alignmentShifted = 2;
       }
     } else if (alignment == 2) {
-    /**
-     * Shift light
-     */
+      /**
+       * Shift light
+       */
       this.goodEvil += value;
       alignmentShifted = 2;
     } else if (alignment == 3) {
-    /**
-     * Shift dark
-     */
+      /**
+       * Shift dark
+       */
       this.goodEvil -= value;
       alignmentShifted = 3;
     }
