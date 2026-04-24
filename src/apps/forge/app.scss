@@ -2,17 +2,17 @@
 // MODULE LOADS (@use first; then CSS imports)
 // =============================================================================
 
-@use "styles/variables" as *;
-@use "styles/bootstrap-theme-overlay" as *;
-@use "styles/layout-default" as *;
-@use "styles/layout-custom" as *;
+@use "./styles/variables" as *;
+@use "./styles/bootstrap-theme-overlay" as *;
+@use "./styles/layout-default" as *;
+@use "./styles/layout-custom" as *;
 @use "../game/styles/grant-access-modal" as *;
-@use "styles/component-keyframe" as *;
-@use "styles/tab-manager" as *;
-@use "styles/tabs/tab-gff-editor" as *;
-@use "styles/audio-player" as *;
-@use "styles/keyframe-track" as *;
-@use "styles/UI3DToolPalette" as *;
+@use "./styles/component-keyframe" as *;
+@use "./styles/tab-manager" as *;
+@use "./styles/tabs/tab-gff-editor" as *;
+@use "./styles/audio-player" as *;
+@use "./styles/keyframe-track" as *;
+@use "./styles/UI3DToolPalette" as *;
 @use "components/tabs/tab-wok-editor/TabWOKEditor" as *;
 @use "@fortawesome/fontawesome-free/scss/variables" with ($font-path: "fonts");
 @use "@fortawesome/fontawesome-free/scss/fontawesome" as *;

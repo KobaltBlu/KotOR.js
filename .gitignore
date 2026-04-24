@@ -50,6 +50,12 @@ wiki/
 Thumbs.db
 Desktop.ini
 
+# Windows: a file named `NUL` at repo root breaks `git add` (reserved device name).
+/NUL
+
+# Local vendored trees (not part of the main source tree)
+vendor/
+
 # Project specific
 settings.json
 projects/

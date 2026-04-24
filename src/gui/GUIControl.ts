@@ -1802,7 +1802,7 @@ export class GUIControl {
 
     if (BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)) {
       // innerW += this.parent.border.inneroffset * 2;
-      innerW = Math.min(this.extent.width, innerW);
+      inner.width = Math.min(this.extent.width, inner.width);
     }
 
     let top = 0,
@@ -1891,17 +1891,12 @@ export class GUIControl {
       innerW = Math.min(this.extent.width, innerW);
     }
 
+    const inner = { width: innerW, height: innerH };
+
     let top = 0,
       left = 0,
       width = 0,
       height = 0;
-
-    if (BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)) {
-      inner.width += this.parent.border.inneroffset * 2;
-      inner.width = Math.min(this.extent.width, inner.width);
-    }
-
-    let shrinkWidth = this.getShrinkWidth();
 
     switch (side) {
       case 'top':

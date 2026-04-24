@@ -1,4 +1,4 @@
-@import "../../../styles/variables";
+@use "../../../styles/variables" as wokv;
 
 .wok-sidebar {
   .section-content {
@@ -21,7 +21,7 @@
   }
 
   .wok-prop-label {
-    color: $text-secondary;
+    color: wokv.$text-secondary;
     flex-shrink: 0;
   }
 
@@ -76,7 +76,7 @@
 
   .wok-hint {
     font-size: 0.85em;
-    color: $text-secondary;
+    color: wokv.$text-secondary;
     font-style: italic;
     padding: 4px 0;
   }

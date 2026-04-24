@@ -4,7 +4,7 @@
 // Load after bootstrap/dist/css/bootstrap.css to apply our dark theme.
 // Uses our variables so we don't compile Bootstrap's Sass (avoids deprecation warnings).
 
-@use "variables" as *;
+@use "./_variables" as *;
 
 body {
   background-color: $bg-primary;

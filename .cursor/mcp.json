@@ -1,16 +1,3 @@
 {
-  "mcpServers": {
-    "agdec-http": {
-      "url": "http://170.9.241.140:8080/mcp/",
-      "headers": {
-        "User-Agent": "PyKotorAgent/1.0",
-        "X-Agent-Version": "1.0",
-        "X-Agent-Server-Username": "th3w1zard1",
-        "X-Agent-Server-Password": "c3ll0h3r0327",
-        "X-Agent-Server-Repository": "Odyssey",
-        "X-Ghidra-Server-Host": "170.9.241.140",
-        "X-Ghidra-Server-Port": "13100"
-      }
-    }
-  }
+  "mcpServers": {}
 }
