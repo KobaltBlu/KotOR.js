@@ -224,6 +224,9 @@ todos:
   - id: post-exec-mark-plan
     content: mark execution in Status + frontmatter
     status: completed
+  - id: provision-atomic-declarative
+    content: "Immutable OS provision: config/rpm-ostree/layers.list, config/flatpak lists, scripts/apply-atomic-provision.sh, install-atomic-provision-service.sh, config/systemd/kinoite-atomic-ostree.service, PROVISION (not docs-only)"
+    status: completed
 isProject: false
 ---
 
