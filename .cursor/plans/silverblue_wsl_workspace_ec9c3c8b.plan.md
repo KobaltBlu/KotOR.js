@@ -235,7 +235,7 @@ isProject: false
 
 ## Status
 
-- **Materialized** — the sibling workspace **`G:\workspaces\Kinoite`** holds the **executed** tree: `docs/kinoite-wsl2.md`, `WORKSPACE_STATUS.md`, `docs/plan-frontmatter-coverage.md` (all frontmatter `todos` here → files there), and **`imports/*`** (winget + inventory **gitignored** except a committed **`CAPTURE-MANIFEST-*.txt`** per run; full evidence is re-captured with **`scripts/run-full-plan-capture.ps1`**). Set optional **`KINOITE_WORKSPACE_ROOT`** (see **KotOR.js** `AGENTS.md`) so tooling resolves the same path. **Phase B (VirtualBox ISO)** and **Phase C (bare metal)** *install* steps are **on machine**, checklisted in that repo’s `docs/migration-baremetal-checklist.md` / `docs/virtualbox-*.md` + `docs/phases-definition-of-done.md` — not a second copy of “done” inside this plan file.
+- **Materialized** — the sibling workspace **`G:\workspaces\Kinoite`** holds the **executed** tree: `docs/kinoite-wsl2.md`, `WORKSPACE_STATUS.md`, `docs/plan-frontmatter-coverage.md` (all frontmatter `todos` here → files there), and **`imports/*`** (winget + inventory **gitignored** except a small committed **`CAPTURE-MANIFEST-*.txt`**; full evidence re-capture: **`G:\workspaces\Kinoite\scripts\run-full-plan-capture.ps1`**). Set optional **`KINOITE_WORKSPACE_ROOT`** (see **KotOR.js** `AGENTS.md`) so tooling resolves the same path. **Phase B** (VirtualBox ISO) and **Phase C** (bare metal) *install* steps are **on machine**; the repo’s **procedures** for B/C are in `docs/virtualbox-*.md`, `docs/migration-baremetal-checklist.md`, `docs/firmware-and-secure-boot.md`, `docs/atomic-updates-rollback.md`, `docs/power-and-battery.md`, + **`docs/phases-definition-of-done.md`** — not a second copy of “done” inside this file.
 - This document **replaces** the version that used **“Fedora WSL (classic) as Phase A”**; that is **not** this plan’s Phase A.
 
 ---
@@ -439,18 +439,25 @@ sudo systemctl reboot
 ```text
 Kinoite/
   README.md
+  WORKSPACE_STATUS.md                # host execution log + latest manifest stamp
   .gitignore
   docs/
     kinoite-wsl2.md                    # Phase A: import, rpm-ostree, Plasma, caveats
     kinoite-vs-atomic-desktops.md
-    strategy-phaseA-kinoite-wsl2.md    # optional, or merge into README
-    app-mapping.md                     # TSV from plan table + `winget export` (on execution)
-    keep-windows.md                    # workloads with no Kinoite parity (3ds Max, some anti-cheats, etc.)
+    strategy-phaseA-kinoite-wsl2.md
+    app-mapping.md
+    keep-windows.md
+    plan-frontmatter-coverage.md
+    plan-stipulated-file-tree.md
+    phases-definition-of-done.md
+    windows11-daily-driver-baseline.md
     virtualbox-kinoite-fallback.md
-    (… other topic docs from prior plans …)
+    (… other topic docs: audio, print, network, games, 3D, M365, …)
   config/
   scripts/
-  imports/
+    import-kinoite-rootfs-to-wsl.ps1
+    run-full-plan-capture.ps1         # one-shot: winget, CIM+WSL, Start Menu, events, WSL verify, CAPTURE-MANIFEST
+  imports/                             # bulk .txt/.json gitignored except CAPTURE-MANIFEST-*.txt + README.md
 ```
 
 ---
@@ -478,7 +485,7 @@ same Kinoite commands"]
 
 ## Event / reliability (optional)
 
-Optional **PowerShell** exports to **`imports/`** — see TODOs.
+**Implemented in `G:\workspaces\Kinoite`:** **`scripts/run-full-plan-capture.ps1`** writes reliability and application-log samples to **`imports/`** (e.g. **`reliability-events-sample-*.txt`**, **`application-error-sample-*.txt`**, indexed in **`CAPTURE-MANIFEST-*.txt`**). **Standalone** scripts in the same folder: **`inv-reliability-sample.ps1`**, **`sample-event-logs.ps1`**. If **`Get-WinEvent`** is denied, the capture run still records the error in the **reliability** file.
 
 ---
 
