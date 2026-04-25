@@ -153,6 +153,10 @@ describe('Module', () => {
 - [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Project structure
 - Discord: [OpenKotOR](https://discord.gg/QxjqVAuN8T)
 
+## Optional: Fedora Kinoite workspace (out-of-tree)
+
+**Not** required to build, test, or run KotOR.js. On some Windows hosts a sibling tree holds Fedora **Kinoite in WSL2** docs, inventories, and provisioning scripts—see **[AGENTS.md](AGENTS.md)** (*Fedora Kinoite workspace*), **`.cursor/plans/silverblue_wsl_workspace_ec9c3c8b.plan.md`**, and `KINOITE_WORKSPACE_ROOT` there.
+
 ## Keyboard Shortcuts (VS Code)
 
 - `Ctrl+Shift+P` - Command palette
