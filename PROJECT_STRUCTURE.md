@@ -12,6 +12,8 @@ KotOR.js is a TypeScript-based reimplementation of the Odyssey Game Engine. The 
 - **Rendering**: THREE.js-based rendering system
 - **Scripting**: NWScript interpreter
 
+Some contributors also use **Cursor/AI** workflows and (on certain Windows machines) a separate **documentation-only** tree for **Fedora Kinoite in WSL2** — that work is **out of this repository**; see **[AGENTS.md](AGENTS.md)** and **[DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md)**. Nothing under `KotOR.js/` below is required to build or run the engine.
+
 ## Root Directory
 
 ```sh
