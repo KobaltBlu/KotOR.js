@@ -361,6 +361,10 @@ describe('GameState', () => {
 
 ## Documentation
 
+### AI agents and Cursor (optional)
+
+[AGENTS.md](AGENTS.md) is the project’s **agent/IDE** checklist (pre-flight, CI expectations, and an optional out-of-tree **Fedora Kinoite / WSL2** doc workspace on some Windows machines). It does not replace the sections below for **human** contribution workflow.
+
 ### Code Documentation
 
 - Document all public APIs with JSDoc
