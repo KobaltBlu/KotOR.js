@@ -12,7 +12,7 @@ Thank you for your interest in contributing to KotOR.js! This document provides 
 - [Coding Standards](#coding-standards)
 - [ESLint and type safety](#eslint-and-type-safety)
 - [Testing](#testing)
-- [Documentation](#documentation)
+- [Documentation](#documentation) ([AI agents & optional Kinoite](#ai-agents-and-cursor-optional))
 - [Submitting Changes](#submitting-changes)
 - [Pull Request Process](#pull-request-process)
 - [Issue Reporting](#issue-reporting)

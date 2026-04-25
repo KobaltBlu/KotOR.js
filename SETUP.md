@@ -379,6 +379,7 @@ Once setup is complete:
    - [README.md](README.md) - Project overview
    - [CONTRIBUTING.md](CONTRIBUTING.md) - Contribution guidelines
    - [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Project structure
+   - [AGENTS.md](AGENTS.md) - Cursor/AI pre-flight and (optional) out-of-tree **Fedora Kinoite in WSL2** workspace; see [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md) for the short Kinoite link
 
 2. **Explore the codebase**:
    - Start with `src/KotOR.ts` - Main entry point
