@@ -223,7 +223,7 @@ todos:
     status: completed
   - id: post-exec-mark-plan
     content: mark execution in Status + frontmatter
-    status: cancelled
+    status: completed
 isProject: false
 ---
 
@@ -235,7 +235,7 @@ isProject: false
 
 ## Status
 
-- **Materialized** — the sibling workspace **`G:\workspaces\Kinoite`** holds the **executed** tree: `docs/kinoite-wsl2.md`, `WORKSPACE_STATUS.md`, `docs/plan-frontmatter-coverage.md` (all frontmatter `todos` here → files there), and **gitignored** `imports/*` (winget + inventory). Set optional **`KINOITE_WORKSPACE_ROOT`** (see **KotOR.js** `AGENTS.md`) so tooling resolves the same path. **Phase B (VirtualBox ISO)** and **Phase C (bare metal)** *install* steps are **on machine**, checklisted in that repo’s `docs/migration-baremetal-checklist.md` / `docs/virtualbox-*.md` + `docs/phases-definition-of-done.md` — not a second copy of “done” inside this plan file.
+- **Materialized** — the sibling workspace **`G:\workspaces\Kinoite`** holds the **executed** tree: `docs/kinoite-wsl2.md`, `WORKSPACE_STATUS.md`, `docs/plan-frontmatter-coverage.md` (all frontmatter `todos` here → files there), and **`imports/*`** (winget + inventory **gitignored** except a committed **`CAPTURE-MANIFEST-*.txt`** per run; full evidence is re-captured with **`scripts/run-full-plan-capture.ps1`**). Set optional **`KINOITE_WORKSPACE_ROOT`** (see **KotOR.js** `AGENTS.md`) so tooling resolves the same path. **Phase B (VirtualBox ISO)** and **Phase C (bare metal)** *install* steps are **on machine**, checklisted in that repo’s `docs/migration-baremetal-checklist.md` / `docs/virtualbox-*.md` + `docs/phases-definition-of-done.md` — not a second copy of “done” inside this plan file.
 - This document **replaces** the version that used **“Fedora WSL (classic) as Phase A”**; that is **not** this plan’s Phase A.
 
 ---
