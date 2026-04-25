@@ -211,6 +211,8 @@ And many many more!
 - [SETUP.md](SETUP.md) - Detailed setup instructions
 - [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md) - Project structure overview
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Code of conduct
+- [AGENTS.md](AGENTS.md) - Cursor/AI agent notes, CI expectations, and optional out-of-tree **Fedora Kinoite (WSL2)** workspace
+- [DEVELOPER_QUICK_REFERENCE.md](DEVELOPER_QUICK_REFERENCE.md) - Common npm commands; includes a short Kinoite cross-link
 
 ## License
 
