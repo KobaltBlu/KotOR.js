@@ -13,6 +13,10 @@ KotOR.js is a TypeScript reimplementation of the Odyssey Game Engine (Star Wars:
 
 All frontends are bundled through Webpack 5 (`webpack.config.js`) and esbuild-loader.
 
+### Fedora Kinoite workspace (optional)
+
+Atomic-desktop **WSL2 / daily-driver** documentation and scripts for this machine live **outside** this repository (not a submodule), typically **`G:\workspaces\Kinoite`**. Agents may set **`KINOITE_WORKSPACE_ROOT`** to that path for tooling. The authoritative Phase A doc is **`$KINOITE_WORKSPACE_ROOT/docs/kinoite-wsl2.md`**; the spec that originated the workspace is **`.cursor/plans/silverblue_wsl_workspace_ec9c3c8b.plan.md`** here. This does not change KotOR.js build or test commands.
+
 ### Agent mission and quality bar
 
 When working in this repo, optimize for:
