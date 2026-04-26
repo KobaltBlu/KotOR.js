@@ -44,7 +44,7 @@ export class OdysseyModel {
   nodes: Map<string, OdysseyModelNode> = new Map();
 
   namesArrayDefinition: IOdysseyArrayDefinition;
-  nameOffsetsArray: number[] = [];
+  nameOffsetsArray: Uint32Array;
   private changeListeners: Set<(event: OdysseyModelChangeEvent) => void> = new Set();
 
   /** Banner / optional geometry fields preserved when loading from {@link OdysseyModel.fromAscii}. */
@@ -142,7 +142,7 @@ export class OdysseyModel {
     this.geometryHeader.mdxOffset = this.mdlReader.readUInt32();
 
     this.namesArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.mdlReader);
-    this.nameOffsetsArray = OdysseyModelUtility.ReadArray(this.mdlReader, this.fileHeader.modelDataOffset + this.namesArrayDefinition.offset, this.namesArrayDefinition.count);
+    this.nameOffsetsArray = OdysseyModelUtility.ReadArrayUInt32s(this.mdlReader, this.fileHeader.modelDataOffset + this.namesArrayDefinition.offset, this.namesArrayDefinition.count);
 
     this.names = OdysseyModelUtility.ReadStrings(this.mdlReader, this.nameOffsetsArray, this.fileHeader.modelDataOffset);
     for(let i = 0, namesLen = this.names.length; i < namesLen; i++){
@@ -159,7 +159,7 @@ export class OdysseyModel {
      * Animations
      */
 
-    const animOffsets = OdysseyModelUtility.ReadArray(mdlReader, this.fileHeader.modelDataOffset + this.modelHeader.animationArrayDefinition.offset, this.modelHeader.animationArrayDefinition.count);
+    const animOffsets = OdysseyModelUtility.ReadArrayUInt32s(mdlReader, this.fileHeader.modelDataOffset + this.modelHeader.animationArrayDefinition.offset, this.modelHeader.animationArrayDefinition.count);
     for (let i = 0; i < this.modelHeader.animationArrayDefinition.count; i++){
       this.readAnimation( this.fileHeader.modelDataOffset + animOffsets[i] );
     }

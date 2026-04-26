@@ -35,7 +35,7 @@ export class OdysseyModelNode {
   nodeType: OdysseyModelNodeType;
   odysseyModel: OdysseyModel;
   children: OdysseyModelNode[] = [];
-  childOffsets: number[] = [];
+  childOffsets: Uint32Array;
   controllers: Map<OdysseyModelControllerType, OdysseyController> = new Map();
 
   roomStatic: boolean = true;
@@ -123,18 +123,18 @@ export class OdysseyModelNode {
 
     //Node Children
     this.childArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.childOffsets = OdysseyModelUtility.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.childArrayDefinition.offset, this.childArrayDefinition.count);
+    this.childOffsets = OdysseyModelUtility.ReadArrayUInt32s(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.childArrayDefinition.offset, this.childArrayDefinition.count);
 
     //Node Controllers
     this.controllerArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
     this.controllerDataArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
     const controllerData = OdysseyModelUtility.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.controllerDataArrayDefinition.offset, this.controllerDataArrayDefinition.count);
-    const controllerData2 = OdysseyModelUtility.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.controllerDataArrayDefinition.offset, this.controllerDataArrayDefinition.count);
+    const controllerData2 = OdysseyModelUtility.ReadArrayUInt32s(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.controllerDataArrayDefinition.offset, this.controllerDataArrayDefinition.count);
 
     this.controllers = this.readBinaryNodeControllers(this.odysseyModel.fileHeader.modelDataOffset + this.controllerArrayDefinition.offset, this.controllerArrayDefinition.count, controllerData, controllerData2);
   }
 
-  readBinaryNodeControllers(offset: number, count: number, data: number[], data2: number[]){
+  readBinaryNodeControllers(offset: number, count: number, data: Float32Array, data2: Uint32Array){
     const pos = this.odysseyModel.mdlReader.position;
     this.odysseyModel.mdlReader.seek(offset);
 

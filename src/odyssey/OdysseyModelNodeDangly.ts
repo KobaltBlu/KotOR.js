@@ -19,7 +19,7 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
   danglyTightness: number;
   danglyPeriod: number;
   danglyMDLOffset: number;
-  constraints: number[];
+  constraints: Float32Array;
   danglyVec4: number[];
   contraintArrayDefinition: IOdysseyArrayDefinition;
 
