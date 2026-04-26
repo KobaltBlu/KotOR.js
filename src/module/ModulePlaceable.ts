@@ -29,6 +29,7 @@ import type { ModuleItem } from "@/module/ModuleItem";
 import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { ModulePlaceableObjectSound } from "@/enums/module/ModulePlaceableObjectSound";
+import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { SWBodyBag } from "@/engine/rules/SWBodyBag";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
@@ -160,6 +161,7 @@ export class ModulePlaceable extends ModuleObject {
     try{
       this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
       this.audioEmitter.maxDistance = 50;
+      this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.ROOM_SOUNDS);
       this.audioEmitter.load();
     }catch(e){
       console.error('AudioEmitter failed to create on object', e);

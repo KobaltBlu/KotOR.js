@@ -29,6 +29,7 @@ import { AudioEngine } from "@/audio/AudioEngine";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";.3
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
@@ -159,6 +160,7 @@ export class ModuleDoor extends ModuleObject {
       this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
       this.audioEmitter.maxDistance = 50;
       this.audioEmitter.type = AudioEmitterType.POSITIONAL;
+      this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.ROOM_SOUNDS);
       this.audioEmitter.load();
     }catch(e){
       console.error('AudioEmitter failed to create on object', e);

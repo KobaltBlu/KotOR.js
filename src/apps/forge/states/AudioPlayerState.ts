@@ -5,6 +5,8 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
 
 declare const dialog: any;
 
@@ -75,6 +77,7 @@ export class AudioPlayerState {
   static analyserData: Uint8Array;
   static source: AudioBufferSourceNode;
   static gainNode: GainNode;
+  static volume: number = 0.25;
   static loading: boolean;
   static position: number;
   static startedAt: number;
@@ -329,7 +332,7 @@ export class AudioPlayerState {
 
   private static async loadGameMusicResRef(resRef: string, displayTitle: string): Promise<void> {
     const filePath = path.join('streammusic', `${resRef}.wav`);
-    const buffer = await GameFileSystem.readFile(filePath);
+    const buffer = await KotOR.GameFileSystem.readFile(filePath);
     AudioPlayerState.file = undefined;
     AudioPlayerState.audioFile = new KotOR.AudioFile(buffer);
     AudioPlayerState.audioFile.filename = `${displayTitle} (${resRef})`;
@@ -502,13 +505,22 @@ export class AudioPlayerState {
 
     if(!AudioPlayerState.gainNode){
       AudioPlayerState.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();
-      AudioPlayerState.gainNode.gain.value = 0.25;
+      AudioPlayerState.gainNode.gain.value = AudioPlayerState.volume;
     }
 
     if(!AudioPlayerState.source){
       AudioPlayerState.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
     }
 
+  }
+
+  static SetVolume(volume: number): void {
+    volume = Math.max(0, Math.min(1, volume));
+    AudioPlayerState.volume = volume;
+    if(AudioPlayerState.gainNode){
+      AudioPlayerState.gainNode.gain.value = volume;
+    }
+    AudioPlayerState.ProcessEventListener('onVolume', [volume]);
   }
 
   static Play(){

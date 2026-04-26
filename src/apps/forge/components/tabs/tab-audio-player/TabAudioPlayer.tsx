@@ -24,8 +24,8 @@ const VISUAL_MAX_H = 320;
 export const TabAudioPlayer = function (props: BaseTabProps) {
   const tab = props.tab as TabAudioPlayerState;
 
-  const requestRef = useRef<number>();
-  const previousTimeRef = useRef<number>();
+  const requestRef = useRef<number | undefined>(undefined);
+  const previousTimeRef = useRef<number | undefined>(undefined);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const visualRef = useRef<HTMLDivElement>(null);
@@ -37,6 +37,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const [duration, setDuration] = useState<number>(0);
   const [currentTimeString, setCurrentTimeString] = useState<string>("0:00");
   const [durationString, setDurationString] = useState<string>("0:00");
+  const [volume, setVolume] = useState<number>(AudioPlayerState.volume ?? 0.25);
   const [file, setFile] = useState<KotOR.AudioFile>();
   const [visualId, setVisualId] = useState<TabAudioVisualId>("spectrum");
   const [ost, setOst] = useState<AudioPlayerOstStatePayload>(() => ({
@@ -87,6 +88,10 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   };
 
   const onLoop = () => {};
+
+  const onVolume = (v: number) => {
+    setVolume(v);
+  };
 
   const onOpen = (f: KotOR.AudioFile) => {
     if (!f) {
@@ -147,6 +152,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
     AudioPlayerState.AddEventListener("onStop", onStop);
     AudioPlayerState.AddEventListener("onLoop", onLoop);
     AudioPlayerState.AddEventListener("onOpen", onOpen);
+    AudioPlayerState.AddEventListener("onVolume", onVolume);
     syncOstFromState();
     AudioPlayerState.AddEventListener("onOstState", onOstState);
 
@@ -158,6 +164,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
       AudioPlayerState.RemoveEventListener("onStop", onStop);
       AudioPlayerState.RemoveEventListener("onLoop", onLoop);
       AudioPlayerState.RemoveEventListener("onOpen", onOpen);
+      AudioPlayerState.RemoveEventListener("onVolume", onVolume);
       AudioPlayerState.RemoveEventListener("onOstState", onOstState);
       cancelAnimationFrame(requestRef.current as number);
     };
@@ -196,6 +203,16 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
     AudioPlayerState.Pause();
     void AudioPlayerState.ExportAudio();
   };
+
+  const onVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    AudioPlayerState.SetVolume(parseFloat(e.target.value));
+  };
+
+  const volumeIcon =
+    volume === 0 ? "fa-volume-xmark"
+    : volume < 0.33 ? "fa-volume-low"
+    : volume < 0.66 ? "fa-volume-low"
+    : "fa-volume-high";
 
   const animate = (time: number = 0) => {
     const context = contextRef.current;
@@ -338,6 +355,26 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
               {durationString}
             </span>
           </div>
+        </div>
+
+        <div className="forge-tab-audio__volume" aria-label="Volume">
+          <i
+            className={`fa-solid ${volumeIcon} forge-tab-audio__volume-icon`}
+            aria-hidden
+          />
+          <input
+            className="forge-tab-audio__volume-slider"
+            type="range"
+            step="0.01"
+            min={0}
+            max={1}
+            value={volume}
+            aria-label="Volume"
+            onChange={onVolumeChange}
+          />
+          <span className="forge-tab-audio__volume-label">
+            {Math.round(volume * 100)}%
+          </span>
         </div>
 
         <div className="forge-tab-audio__rule" aria-hidden />

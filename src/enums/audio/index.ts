@@ -6,3 +6,4 @@ export * from "@/enums/audio/AudioFileWaveEncoding";
 export * from "@/enums/audio/AudioGeneratedType";
 export * from "@/enums/audio/BackgroundMusicMode";
 export * from "@/enums/audio/BackgroundMusicState";
+export * from "@/enums/audio/AudioPriorityGroup";

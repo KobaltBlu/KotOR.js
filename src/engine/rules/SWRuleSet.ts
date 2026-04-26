@@ -34,6 +34,7 @@ import { SWCostTable } from "@/engine/rules/SWCostTable";
 import { SWFootStep } from "@/engine/rules/SWFootStep";
 import { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
 import { SWAnimation } from "@/engine/rules/SWAnimation";
+import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 
 /**
  * SWRuleSet class.
@@ -130,6 +131,18 @@ export class SWRuleSet {
 
   static animations: SWAnimation[] = [];
   static animationCount: number = 0;
+
+  static getPriorityGroupById(id: number = AudioPriorityGroup.DEFAULT): SWPriorityGroup {
+    if(Number.isFinite(id) && SWRuleSet.priorityGroups[id]){
+      return SWRuleSet.priorityGroups[id];
+    }
+
+    if(SWRuleSet.priorityGroups[AudioPriorityGroup.DEFAULT]){
+      return SWRuleSet.priorityGroups[AudioPriorityGroup.DEFAULT];
+    }
+
+    return SWRuleSet.priorityGroups[0];
+  }
 
   static Init(){
 

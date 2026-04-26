@@ -27,7 +27,7 @@ export class SWPriorityGroup {
   maxplaying: number = -1;
   
   /** 0 if sound may be interrupted, 1 if sound may not be interrupted */
-  interrpt: number = 0;
+  interrupt: number = 0;
   
   /** When stopping the sound, number of milliseconds of fadeout */
   fadetime: number = 0;
@@ -43,6 +43,7 @@ export class SWPriorityGroup {
 
   static From2DA(row: any = {}){
     const group = new SWPriorityGroup();
+    console.log(row);
 
     group.id = parseInt(row.__index);
 
@@ -58,8 +59,8 @@ export class SWPriorityGroup {
     if(row.hasOwnProperty('maxplaying'))
       group.maxplaying = TwoDAObject.normalizeValue(row.maxplaying, 'number', 0) as number;
     
-    if(row.hasOwnProperty('interrpt'))
-      group.interrpt = TwoDAObject.normalizeValue(row.interrpt, 'number', 0) as number;
+    if(row.hasOwnProperty('interrupt'))
+      group.interrupt = TwoDAObject.normalizeValue(row.interrupt, 'number', 0) as number;
     
     if(row.hasOwnProperty('fadetime'))
       group.fadetime = TwoDAObject.normalizeValue(row.fadetime, 'number', 0) as number;

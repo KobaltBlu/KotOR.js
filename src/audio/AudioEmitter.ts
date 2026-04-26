@@ -2,6 +2,7 @@ import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { AudioLoader } from "@/audio/AudioLoader";
+import { GameState } from "@/GameState";
 
 const GAIN_RAMP_TIME = 0.25;
 const PRIORITY_GROUP_DEFAULT = 23;
@@ -54,6 +55,7 @@ export class AudioEmitter {
   elevation: number = 0;
 
   priority: number = PRIORITY_GROUP_DEFAULT;
+  priorityGroupVolume: number = 127;
 
   currentSound: AudioBufferSourceNode = undefined;
   buffers: Map<string, AudioBuffer> = new Map<string, AudioBuffer>();
@@ -113,6 +115,12 @@ export class AudioEmitter {
     return;
     this.disabled = disabled;
     this.gainNode.gain.linearRampToValueAtTime(disabled ? 0 : 1, this.engine.audioCtx.currentTime + GAIN_RAMP_TIME);
+  }
+
+  setPriorityGroupId(priorityGroupId: number): void {
+    this.priority = priorityGroupId;
+    const priorityGroup = GameState.SWRuleSet.getPriorityGroupById(priorityGroupId);
+    this.priorityGroupVolume = Math.max(0, Math.min(127, priorityGroup?.volume ?? 127));
   }
 
   async load(): Promise<void> {
