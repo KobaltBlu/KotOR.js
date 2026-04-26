@@ -75,8 +75,8 @@ export class AudioLoader {
     }
   }
 
-  static async LoadStreamWave (ResRef: string) {
-    const snd = ResourceLoader.getResource(ResourceTypes['wav'], ResRef);
+  static async LoadStreamWave (resRef: string) {
+    const snd = ResourceLoader.getResource(ResourceTypes['wav'], resRef);
     if(!!snd){
       try{
         const buffer = await GameFileSystem.readFile(snd.file);
