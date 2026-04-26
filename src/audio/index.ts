@@ -1,4 +1,3 @@
-export * from "@/audio/ADPCMBlock";
 export * from "@/audio/ADPCMDecoder";
 export * from "@/audio/AudioEmitter";
 export * from "@/audio/AudioEngine";

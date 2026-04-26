@@ -186,7 +186,7 @@ export class AudioFile {
           bytesPerSec: 176400,
           bits: 16,
           channels: this.header.channels
-        }, adpcm.pcm);
+        }, new Uint8Array(adpcm.pcm.buffer));
 
         return decompiled;
       }else if(this.header.format == AudioFileWaveEncoding.PCM){
