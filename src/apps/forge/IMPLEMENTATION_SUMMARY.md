@@ -84,21 +84,21 @@ All previously stub/fallback editors have been replaced with fully functional sp
 - **State**: `ModalUpdateCheckState.tsx`
 - **Component**: `ModalUpdateCheck.tsx` with status/result UI
 - **Features**: Silent/visible check, version comparison, download links, release notes, "Check Again" button
-- **Integration**: Help → Check for Updates menu item in `MenuTopState.tsx`
+- **Integration**: Help -> Check for Updates menu item in `MenuTopState.tsx`
 - **Styles**: `ModalUpdateCheck.scss`
 
 ### ✅ Patcher Project Modal
 - **State**: `ModalPatcherProjectState.tsx` with file list and config generation
 - **Component**: `ModalPatcherProject.tsx` with project builder UI
 - **Features**: Project name/path, add/remove files, generate INI config, export project
-- **Integration**: Project → Patcher Project menu item
+- **Integration**: Project -> Patcher Project menu item
 - **Styles**: `ModalPatcherProject.scss`
 
 ### ✅ Settings Modal
 - **State**: `ModalSettingsState.tsx` with ConfigClient persistence
 - **Component**: `ModalSettings.tsx` with tabbed settings (Installations, Editor, Updates, Appearance)
 - **Features**: KotOR I/II paths, GFF specialized toggle, auto-save, font size, update channel, theme
-- **Integration**: File → Settings menu item
+- **Integration**: File -> Settings menu item
 - **Styles**: `ModalSettings.scss`
 
 ### ✅ Improved Resource Comparison
@@ -109,7 +109,7 @@ All previously stub/fallback editors have been replaced with fully functional sp
 - **State**: `TabDiffToolState.tsx`
 - **Component**: `TabDiffTool.tsx` with left/right file selection
 - **Features**: Select two files, clear selections, launch comparison modal, single-instance tab
-- **Integration**: View → Diff Tool menu item
+- **Integration**: View -> Diff Tool menu item
 - **Styles**: `TabDiffTool.scss`
 
 ### ✅ BIF Resource Save Flow Documentation

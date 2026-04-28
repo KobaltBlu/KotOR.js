@@ -76,7 +76,7 @@ let audioTrackIndex = 0;
 let audioSampleRate = 0;
 let audioChannels = 0;
 
-// ── YUV → RGBA conversion (done in worker to keep main thread free) ───────
+// ── YUV -> RGBA conversion (done in worker to keep main thread free) ───────
 
 // Pre-computed lookup table for clamping values to 0-255 range
 // Maps input values from -512 to 511 (indices 0-1023) to clamped 0-255 range

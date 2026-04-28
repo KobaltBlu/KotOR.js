@@ -1,25 +1,33 @@
-import { GameState } from '@/GameState';
-import { ActionParameterType } from '@/enums/actions/ActionParameterType';
-import { ActionStatus } from '@/enums/actions/ActionStatus';
-import { ActionType } from '@/enums/actions/ActionType';
-import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
-import type { ModuleObject } from '@/module/ModuleObject';
-import { BitWise } from '@/utility/BitWise';
-import { Utility } from '@/utility/Utility';
-import { Action } from '@/actions/Action';
+import { GameState } from "@/GameState";
+import { ModuleTriggerType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleDoor } from "@/module/ModuleDoor";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModulePlaceable } from "@/module/ModulePlaceable";
+import type { ModuleTrigger } from "@/module/ModuleTrigger";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionExamineMine class.
- *
+ * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- *
+ * 
  * @file ActionExamineMine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
 export class ActionExamineMine extends Action {
-  constructor(actionId: number = -1, groupId: number = -1) {
+
+  constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionExamineMine;
 
@@ -28,6 +36,7 @@ export class ActionExamineMine extends Action {
   }
 
   update(delta?: number): ActionStatus {
+
     this.target = this.getParameter<ModuleObject>(0);
     if (!this.target) {
       return ActionStatus.FAILED;
@@ -86,11 +95,7 @@ export class ActionExamineMine extends Action {
       detectDC = Math.max(1, rawDisarmDC - 7);
       trapType = trap.trapType ?? 0;
       trapDisarmable = trap.trapDisarmable ?? false;
-      if (
-        trap.creatorId !== undefined &&
-        trap.creatorId !== ModuleObjectConstant.OBJECT_INVALID &&
-        trap.creatorId === ownerCreature.id
-      ) {
+      if (trap.creatorId !== undefined && trap.creatorId !== ModuleObjectConstant.OBJECT_INVALID && trap.creatorId === ownerCreature.id) {
         isCreatorTrap = true;
       }
     } else if (BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)) {
@@ -109,7 +114,7 @@ export class ActionExamineMine extends Action {
       return ActionStatus.FAILED;
     }
 
-    const detected = isCreatorTrap || skillRank + d20Roll >= detectDC;
+    const detected = isCreatorTrap || (skillRank + d20Roll >= detectDC);
 
     let difficulty: number;
     if (!trapDisarmable || rawDisarmDC > 35) {
@@ -149,4 +154,5 @@ export class ActionExamineMine extends Action {
 
     return ActionStatus.COMPLETE;
   }
+
 }

@@ -820,7 +820,7 @@ export class SaveGame {
    * Saves the current game state to this save game.
    *
    * Order matches CServerExoAppInternal::StallEventSaveGame (reva): StoreCurrentModule
-   * (module.save() → gameinprogress), CSWPartyTable::Save, CSWGlobalVariableTable::Save,
+   * (module.save() -> gameinprogress), CSWPartyTable::Save, CSWGlobalVariableTable::Save,
    * SavePrimaryPlayerInfo (if any), savenfo.res (NFO), then CERFFile::ImportFiles from
    * GAMEINPROGRESS into SAVEGAME.sav. CServerExoAppInternal::SaveGame does CreateDirectory
    * (or CleanDirectory), optional disk-space check (HasEnoughDiskSpaceForSaveGame), then

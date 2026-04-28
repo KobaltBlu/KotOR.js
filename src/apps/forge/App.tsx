@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import * as fs from 'fs';
 import * as nodePath from 'path';
 import TabManager from '@/apps/forge/components/tabs/TabManager';
@@ -13,6 +13,7 @@ import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
 import { useApp } from '@/apps/forge/context/AppContext';
 import { ModalManager } from '@/apps/forge/components/modal/ModalManager';
 import { LoadingScreen } from '@/apps/common/components/loadingScreen/LoadingScreen';
+import { CommandPalette } from '@/apps/forge/components/CommandPalette';
 import { FileTypeManager } from '@/apps/forge/FileTypeManager';
 import { ForgeFileSystem } from '@/apps/forge/ForgeFileSystem';
 import { pathParse } from '@/apps/forge/helpers/PathParse';
@@ -27,6 +28,7 @@ export const App = (props: any) => {
   const [loadingScreenMessage] = appContext.loadingScreenMessage;
   const [loadingScreenBackgroundURL] = appContext.loadingScreenBackgroundURL;
   const [loadingScreenLogoURL] = appContext.loadingScreenLogoURL;
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounter = useRef(0);
 
@@ -75,6 +77,17 @@ export const App = (props: any) => {
       //Deconstructor
     };
   });
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   const onDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -336,6 +349,7 @@ export const App = (props: any) => {
           </LayoutContainerProvider>
         </div>
         <ModalChangeGame></ModalChangeGame>
+        <CommandPalette show={showCommandPalette} onHide={() => setShowCommandPalette(false)} />
         {isDragOver && (
           <div className="drag-drop-overlay">
             <div className="drag-drop-overlay__content">

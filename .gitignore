@@ -83,6 +83,11 @@ eslint-compact.txt
 eslint-moduleobject.json
 module-creature-errors.txt
 module-creature-eslint-errors.txt
+
+# KotOR Forge VS Code extension build artifacts (tracked under extensions/)
+extensions/kotor-forge-vscode/server/out/
+extensions/kotor-forge-vscode/kotor-forge-0.1.0.vsix
+
 # src/**/*.js
 dist/
 debug.log

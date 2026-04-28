@@ -186,10 +186,10 @@ todos:
     content: "Settings panels: Application, Git, Misc, Module Designer, Env Vars"
     status: completed
   - id: utils-script-compiler
-    content: ScriptCompiler.ts, NSS→NCS
+    content: ScriptCompiler.ts, NSS->NCS
     status: completed
   - id: utils-script-decompiler
-    content: NCS→NSS (NWScript.decompile)
+    content: NCS->NSS (NWScript.decompile)
     status: completed
   - id: utils-reference-search-config
     content: ReferenceSearchConfig.ts, GFF fields
@@ -216,7 +216,7 @@ todos:
     content: HelpContents.ts, HELP_FOLDERS
     status: completed
   - id: help-wiki-mapping
-    content: "EditorWikiMapping.ts: editor → help doc"
+    content: "EditorWikiMapping.ts: editor -> help doc"
     status: completed
   - id: help-tutorials
     content: "Help tutorials: markdown + images"

@@ -1,46 +1,15 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
-    "moduleResolution": "node",
-    "target": "ESNext",
-    "module": "commonjs",
-    "declaration": false,
-    "noImplicitAny": true,
-    "removeComments": true,
-    "experimentalDecorators": true,
-    "rootDir": ".",
-    "sourceMap": false,
-    "listFiles": true,
-    "newLine": "LF",
-    "noEmitOnError": true,
-    "strictNullChecks": false,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "allowJs": true,
     "baseUrl": ".",
     "declaration": false,
     "esModuleInterop": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
-    "ignoreDeprecations": "5.0",
+    "ignoreDeprecations": "6.0",
     "isolatedModules": true,
     "jsx": "react",
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    },
-    "types": [
-      "@types/wicg-file-system-access",
-      "user-agent-data-types",
-      "node",
-      "offscreencanvas",
-    ],
-    "lib": [
-      "ESNext",
-      "dom",
-      "WebWorker"
-    ],
+    "lib": ["ESNext", "dom", "WebWorker"],
     "listFiles": true,
     "module": "Node16",
     "moduleResolution": "node16",
@@ -49,9 +18,7 @@
     "noImplicitAny": true,
     "outDir": "dist",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
     "removeComments": true,
     "rootDir": ".",
@@ -68,6 +35,6 @@
       "user-agent-data-types"
     ]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/index.d.ts"],
-  "exclude": ["node_modules", "src/**/*.spec.ts"]
+  "exclude": ["node_modules", "src/**/*.spec.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/index.d.ts"]
 }
