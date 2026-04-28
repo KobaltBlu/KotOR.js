@@ -1633,7 +1633,6 @@ export class ModuleObject {
 
   /**
    * Set feedback text displayed when object is selected (DisplayFeedBackText).
-   * Reversed from CSWCObject::SetFeedbackInfo (0x0063d2d0).
    */
   setFeedbackInfo(text: string) {
     this.feedbackInfo = text;

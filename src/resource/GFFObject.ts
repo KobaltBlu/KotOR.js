@@ -16,6 +16,9 @@ import {
   yamlToObject,
 } from '@/utility/FormatSerialization';
 
+/** On-disk GFF V3.2 header: 4+4 type/version plus twelve little-endian 32-bit fields. */
+export const GFF_V32_HEADER_SIZE = 56;
+
 export type GFFObjectOnCompleteCallback = (gff: GFFObject) => void;
 
 /**
@@ -155,8 +158,7 @@ export class GFFObject {
   }
 
   parse(binary: Uint8Array, onComplete?: Function) {
-    const GFF_HEADER_SIZE = 56;
-    if (!binary || binary.length < GFF_HEADER_SIZE) {
+    if (!binary || binary.length < GFF_V32_HEADER_SIZE) {
       throw new Error('Invalid GFF header');
     }
 
@@ -189,7 +191,7 @@ export class GFFObject {
       if (
         !Number.isInteger(offset) ||
         !Number.isInteger(size) ||
-        offset < GFF_HEADER_SIZE ||
+        offset < GFF_V32_HEADER_SIZE ||
         size < 0 ||
         offset + size > binary.length
       ) {
@@ -765,7 +767,7 @@ export class GFFObject {
     };
 
     //Write the Structs data
-    _header.StructOffset = 56;
+    _header.StructOffset = GFF_V32_HEADER_SIZE;
     bw.position = _header.StructOffset;
     bw.write(this.BWStructs.buffer);
 

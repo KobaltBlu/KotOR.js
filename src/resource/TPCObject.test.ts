@@ -1,11 +1,18 @@
 import { ENCODING } from '@/enums/graphics/tpc/Encoding';
-import { detectTPCFormat, isTPCBuffer, readTPCFromBuffer, TPCObject, writeTPCToBuffer } from '@/resource/TPCObject';
+import {
+  detectTPCFormat,
+  isTPCBuffer,
+  readTPCFromBuffer,
+  TPCObject,
+  TPC_FILE_HEADER_SIZE,
+  writeTPCToBuffer,
+} from '@/resource/TPCObject';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
 describe('TPCObject', () => {
   /** Minimal valid TPC: uncompressed RGBA 2x2, one mipmap, no TXI. */
   function makeMinimalTPC(): Uint8Array {
-    const headerLen = 128;
+    const headerLen = TPC_FILE_HEADER_SIZE;
     const dataSize = 2 * 2 * 4; // 16 bytes RGBA 2x2
     const total = headerLen + dataSize + 1; // +1 for null TXI
     const bw = new BinaryWriter(new Uint8Array(total));
@@ -15,7 +22,7 @@ describe('TPCObject', () => {
     bw.writeUInt16(2);
     bw.writeByte(ENCODING.RGBA);
     bw.writeByte(1);
-    for (let i = 0; i < 114; i++) bw.writeByte(0);
+    for (let i = 0; i < TPC_FILE_HEADER_SIZE - 14; i++) bw.writeByte(0);
     for (let i = 0; i < dataSize; i++) bw.writeByte(0);
     bw.writeByte(0);
     return bw.buffer;
@@ -35,7 +42,7 @@ describe('TPCObject', () => {
     const buf = makeMinimalTPC();
     const tpc = new TPCObject({ file: buf, filename: 'test', pack: 0 });
     const out = tpc.toBuffer();
-    expect(out.length).toBeGreaterThanOrEqual(128);
+    expect(out.length).toBeGreaterThanOrEqual(TPC_FILE_HEADER_SIZE);
     const tpc2 = new TPCObject({ file: out, filename: 'test2', pack: 0 });
     expect(tpc2.header.width).toBe(tpc.header.width);
     expect(tpc2.header.height).toBe(tpc.header.height);
@@ -54,8 +61,8 @@ describe('TPCObject', () => {
     const buf = makeMinimalTPC();
     expect(isTPCBuffer(buf)).toBe(true);
     expect(isTPCBuffer(new Uint8Array(50))).toBe(false);
-    expect(isTPCBuffer(new Uint8Array(128))).toBe(false);
-    const badEnc = new Uint8Array(128);
+    expect(isTPCBuffer(new Uint8Array(TPC_FILE_HEADER_SIZE))).toBe(false);
+    const badEnc = new Uint8Array(TPC_FILE_HEADER_SIZE);
     badEnc[8] = 2;
     badEnc[9] = 0;
     badEnc[10] = 2;
@@ -131,7 +138,7 @@ describe('TPCObject', () => {
     const blockW = (w + 3) >> 2;
     const blockH = (h + 3) >> 2;
     const dataSize = blockW * blockH * 8;
-    const dds = new Uint8Array(128 + dataSize);
+    const dds = new Uint8Array(TPC_FILE_HEADER_SIZE + dataSize);
     const v = new DataView(dds.buffer);
     v.setUint32(0, 0x20534444, true);
     v.setUint32(4 + 0, 124, true);
@@ -229,7 +236,7 @@ describe('TPCObject', () => {
     expect(tpc.header.height).toBe(height);
     expect(tpc.header.compressed).toBe(false);
     expect(tpc.header.encoding).toBe(ENCODING.BGRA);
-    expect(tpc.file.slice(128, 132)).toEqual(pixels.slice(0, 4));
+    expect(tpc.file.slice(TPC_FILE_HEADER_SIZE, TPC_FILE_HEADER_SIZE + 4)).toEqual(pixels.slice(0, 4));
   });
 
   it('readTPCFromBuffer loads standard DDS BGR payload and converts it to RGB ordering', () => {
@@ -251,7 +258,9 @@ describe('TPCObject', () => {
     expect(tpc.header.height).toBe(height);
     expect(tpc.header.compressed).toBe(false);
     expect(tpc.header.encoding).toBe(ENCODING.RGB);
-    expect(tpc.file.slice(128, 131)).toEqual(new Uint8Array([0x30, 0x20, 0x10]));
+    expect(tpc.file.slice(TPC_FILE_HEADER_SIZE, TPC_FILE_HEADER_SIZE + 3)).toEqual(
+      new Uint8Array([0x30, 0x20, 0x10])
+    );
   });
 
   it('readTPCFromBuffer loads BMP 24bpp and returns TPCObject', () => {
@@ -374,7 +383,7 @@ describe('TPCObject', () => {
 
   it('TGA round-trip preserves dimensions and pixel byte count for uncompressed RGBA', () => {
     // Build a TPC with known non-zero pixel data
-    const headerLen = 128;
+    const headerLen = TPC_FILE_HEADER_SIZE;
     const w = 2,
       h = 2;
     const dataSize = w * h * 4;
@@ -461,7 +470,7 @@ describe('TPCObject', () => {
     // Equivalent: RGBA uncompressed TPC preserves raw pixel bytes through round-trip.
     const w = 2,
       h = 2;
-    const headerLen = 128;
+    const headerLen = TPC_FILE_HEADER_SIZE;
     const dataSize = w * h * 4;
     const total = headerLen + dataSize + 1;
     const bw = new BinaryWriter(new Uint8Array(total));
@@ -481,8 +490,8 @@ describe('TPCObject', () => {
     const tpc2 = new TPCObject({ file: outBuf, filename: 'pix2', pack: 0 });
     expect(tpc2.getDataLength()).toBe(dataSize);
     // Verify pixel bytes are preserved (comparing raw data region)
-    const data1 = tpc1.file.slice(128, 128 + dataSize);
-    const data2 = tpc2.file.slice(128, 128 + dataSize);
+    const data1 = tpc1.file.slice(TPC_FILE_HEADER_SIZE, TPC_FILE_HEADER_SIZE + dataSize);
+    const data2 = tpc2.file.slice(TPC_FILE_HEADER_SIZE, TPC_FILE_HEADER_SIZE + dataSize);
     expect(data2).toEqual(data1);
   });
 });
@@ -490,7 +499,7 @@ describe('TPCObject', () => {
 // --- Helper: build a minimal DXT1-compressed TPC buffer ---
 
 function makeDXT1Buffer(w: number, h: number): Uint8Array {
-  const headerLen = 128;
+  const headerLen = TPC_FILE_HEADER_SIZE;
   const blocksX = Math.max(1, (w + 3) >> 2);
   const blocksY = Math.max(1, (h + 3) >> 2);
   const dataSize = blocksX * blocksY * 8; // DXT1: 8 bytes per block
@@ -511,7 +520,7 @@ function makeDXT1Buffer(w: number, h: number): Uint8Array {
 // --- Helper: build a minimal DXT5-compressed TPC buffer ---
 
 function makeDXT5Buffer(w: number, h: number): Uint8Array {
-  const headerLen = 128;
+  const headerLen = TPC_FILE_HEADER_SIZE;
   const blocksX = Math.max(1, (w + 3) >> 2);
   const blocksY = Math.max(1, (h + 3) >> 2);
   const dataSize = blocksX * blocksY * 16; // DXT5: 16 bytes per block
@@ -532,7 +541,7 @@ function makeDXT5Buffer(w: number, h: number): Uint8Array {
 // --- Helper: build a DXT1-compressed TPC buffer with N mipmaps ---
 
 function makeDXT1BufferMipmapped(w: number, h: number, mipmaps: number): Uint8Array {
-  const headerLen = 128;
+  const headerLen = TPC_FILE_HEADER_SIZE;
   const blocksX = Math.max(1, (w + 3) >> 2);
   const blocksY = Math.max(1, (h + 3) >> 2);
   const mip0Size = blocksX * blocksY * 8; // DXT1: 8 bytes per block
@@ -561,7 +570,7 @@ function makeDXT1BufferMipmapped(w: number, h: number, mipmaps: number): Uint8Ar
 // --- Helper: build an uncompressed RGBA TPC buffer ---
 
 function makeUncompressedRGBA(w: number, h: number): Uint8Array {
-  const headerLen = 128;
+  const headerLen = TPC_FILE_HEADER_SIZE;
   const dataSize = w * h * 4;
   const total = headerLen + dataSize + 1;
   const bw = new BinaryWriter(new Uint8Array(total));

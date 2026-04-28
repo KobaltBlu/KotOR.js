@@ -13,6 +13,12 @@ import {
 } from '@/utility/FormatSerialization';
 
 /**
+ * Uncompressed true-color TGA (type 2) header size used by this reader: image id, map type,
+ * image type, 4th byte, then origin, size, bpp, descriptor (18 bytes), then raw pixels.
+ */
+export const TGA_UNCOMPRESSED_HEADER_SIZE = 18;
+
+/**
  * TGAObject class.
  *
  * Class representing a TGA texture file in memory.
@@ -90,6 +96,7 @@ export class TGAObject {
       ID: 0,
       ColorMapType: 0,
       FileType: 2,
+      hasColorMap: false,
       ColorMapIndex: 0,
       offsetX: 0,
       offsetY: 0,
@@ -97,6 +104,7 @@ export class TGAObject {
       height: 1,
       bitsPerPixel: 32,
       imageDescriptor: 0,
+      pixelDataOffset: 0,
     } as ITGAHeader;
 
     if (this.file instanceof Uint8Array && !!this.file.length) {
@@ -106,8 +114,7 @@ export class TGAObject {
       Header.ColorMapType = reader.readByte();
       Header.FileType = reader.readByte();
 
-      //Simple color map detection (May not be adequate)
-      Header.hasColorMap = Header.ColorMapType === 0 ? false : true;
+      Header.hasColorMap = Header.ColorMapType !== 0;
       Header.ColorMapIndex = reader.readByte();
 
       if (Header.hasColorMap) {
@@ -129,7 +136,6 @@ export class TGAObject {
 
   getPixelData(onLoad?: Function) {
     const reader = new BinaryReader(this.file);
-    console.log('TGAObject', this.header);
     reader.seek(this.header.pixelDataOffset);
 
     //32bpp RGBA

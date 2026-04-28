@@ -1,36 +1,19 @@
-# Reva: Item Cast Spell (Combat Round)
+# Item cast spell (combat round) (observed original game behavior)
 
 ## Overview
 
-When an item cast spell action is scheduled in the combat round, the original engine queues an ActionItemCastSpell (action type 0x3f / 63 = ActionCombat) to execute it. The combat round's AddSWItemSpellAction populates the round action with item id, active property index, target position, and target object.
+When an item cast spell action is scheduled in the combat round, the original engine queues a combat-round processor (`ActionCombat`) to run the round. `AddSWItemSpellAction` fills the round action with the item id, active property index, target position, target object, and related combat parameters.
 
-## Reva Reference: AddSWItemSpellAction
+## Parameters (observed)
 
-**Binary:** k1_win_gog_swkotor.exe  
-**Address:** 0x004d3a90  
-**Signature:** `void CSWSCombatRound::AddSWItemSpellAction(CSWSCombatRound *this, ulong param_1, int param_2, int param_3, Vector param_4, ulong param_5, int param_6, int param_7)`
+- Item object id
+- Active property index and related item fields for the property being used
+- Target position (for example movement or aim point)
+- Target object id
+- Projectile path and attack-feat / spell execution parameters as used by the round builder
 
-### Parameters
+The round action type corresponds to item cast spell; the round runner then dispatches to the correct action implementation (including attack, cast spell, item cast spell) as the round advances.
 
-- **param_1** – Item object id (field27_0x64)
-- **param_2** – Active property index (field28_0x68)
-- **param_3** – (field29_0x6c)
-- **param_4** – Target position (move_to_position)
-- **param_5** – Target object id (field19_0x44)
-- **param_6** – Projectile path (passed as param_7 to AddSWItemSpellAction)
-- **param_7** – (attack_feat_, passed as param_6)
+## KotOR.js
 
-### Round Action
-
-- `action_type = 10` (ITEM_CAST_SPELL)
-- Round action is added via AddAction for combat execution
-
-## Reva Reference: AddItemCastSpellActions
-
-**Address:** 0x004f8c70
-
-When param_9 == 0 (combat mode), calls AddSWItemSpellAction then adds Action 0x3f (ActionCombat) to execute the round. The ActionCombat processes scheduled actions and dispatches to the appropriate action type (Attack, CastSpell, ItemCastSpell, etc.).
-
-## KotOR.js Mapping
-
-ActionCombat.update() processes CombatRoundAction and creates the corresponding Action (ActionPhysicalAttacks, ActionCastSpell, ActionItemCastSpell, etc.). For ITEM_CAST_SPELL, create ActionItemCastSpell with params matching ModuleItem.useItemOnObject: target, area, position, spell id, caster level, delay, projectile path, item.
+`ActionCombat.update()` processes `CombatRoundAction` and creates the corresponding `Action` (`ActionPhysicalAttacks`, `ActionCastSpell`, `ActionItemCastSpell`, etc.). For item cast spell, build `ActionItemCastSpell` with parameters aligned with `ModuleItem.useItemOnObject`: target, area, position, spell id, caster level, delay, projectile path, and item.

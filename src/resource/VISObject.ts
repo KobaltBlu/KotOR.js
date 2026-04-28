@@ -27,10 +27,9 @@ interface IReadContext {
 /**
  * VISObject class.
  *
- * Class representing a Extra Texture Information file in memory.
+ * Per-area visibility between rooms: which child rooms a parent can see.
  *
- * CHILD_ROOMS are rooms that are visible from the parent room. The engine will not
- * render rooms that are not present in this list when you are standing in a parent room
+ * Child room names are listed under each parent; rooms omitted here are not drawn from that parent.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -91,15 +90,7 @@ export class VISObject {
 
     this.resetReadContext();
 
-    /**
-     * VIS Object File Format
-     * [Parent Room]
-     *  - room_name number_of_child_rooms
-     *  - regex: ^([^\s]+)[\s|\t](\d+)\n
-     * [Child Room]
-     *  - child_room_name
-     *  - regex: ^\s{2}([^\s]+)\n
-     */
+    // Parent line: "roomname childcount" (whitespace-separated). Child lines: room names, often two spaces indented.
 
     for (let i = 0; i < lineCount; i++) {
       const line = lines[i].trim();

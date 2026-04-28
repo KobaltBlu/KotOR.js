@@ -1,43 +1,27 @@
-# Reva: GetIsLinkImmune (ExecuteCommandGetIsLinkImmune)
+# GetIsLinkImmune (observed original game behavior)
 
 ## Overview
 
-`ExecuteCommandGetIsLinkImmune` (0x005458d0) tests whether a creature is immune to a (possibly linked) effect. Returns 1 if immune, 0 otherwise. Reversed from CSWVirtualMachineCommands, CSWSCreatureStats::GetEffectLinkImmunity, and CSWSCreatureStats::GetEffectImmunity.
+`GetIsLinkImmune` returns whether a creature is immune to a (possibly linked) effect—any link in the chain that is blocked by an immunity causes a true result.
 
-## NWScript Signature
+## NWScript
 
-```c
-int GetIsLinkImmune(object oCreature, effect eEffect);
-// Stack: pop object, pop effect
-// Returns: 1 if target is immune to any effect in the link; 0 otherwise
-```
+`int GetIsLinkImmune(object oCreature, effect eEffect);`
 
-## ExecuteCommandGetIsLinkImmune Logic
+## Evaluation (observed)
 
-1. StackPopObject → object id
-2. StackPopEngineStructure(0) → effect
-3. GetGameObject(object_id)
-4. If object has AsSWSCreature: iVar4 = CSWSCreatureStats::GetEffectLinkImmunity(creature->creature_stats, effect)
-5. StackPushInteger(iVar4)
-6. Return
+1. Resolve the creature and the effect.
+2. For a linked effect, recurse on sub-effects; for a simple effect, use the `gameeffects` 2DA to map effect type to immunity columns and test `GetEffectImmunity` for each applicable column.
+3. Return 1 if any path reports immunity, else 0.
 
-## GetEffectLinkImmunity (0x005a6a90)
+## GetEffectImmunity (observed)
 
-Recursive: if the effect is EffectLink, recurse on linked_effect_1 and linked_effect_2. For non-link effects, uses gameeffects 2DA to map effect type to immunity type columns; for each column with value != 0, calls GetEffectImmunity(creature_stats, column_index, null). If any returns 1, return 1. Skips EFFECT_TYPES that are link/invalid.
+- Walk the creature’s active effects.
+- Find `EffectImmunity`-style effects with the right immunity type and optional race/alignment filters.
+- Return 1 when a matching immunity effect is found.
 
-## GetEffectImmunity (0x005a6960)
+## KotOR.js
 
-GetEffectImmunity(creature_stats, immunityTypeIndex, versusCreature):
-- Iterates creature's effects
-- Looks for EffectImmunity (type 0x16)
-- EffectImmunity intList[0]=immunity type, intList[1]=race filter, intList[2]=alignment filter
-- Match: (intList[0] == immunityTypeIndex or intList[0] == IMMUNITY_ALL) and race/alignment filters
-- Returns 1 if matching EffectImmunity found, 0 otherwise
-
-## KotOR.js Mapping
-
-- EffectLink: recurse on effect1 and effect2
-- EffectVisualEffect: return 0 (not blocked by immunities per NWScript comment)
-- Other effects: gameeffects 2DA maps effect type → immunity columns; check creature.getEffectImmunity(immunityType)
-- ModuleCreature.getEffectImmunity(immunityType, versus?): iterate effects for EffectImmunity matching immunityType
-- ModuleCreature.getEffectLinkImmunity(effect): recursive helper
+- Recurse on `EffectLink` children; treat `EffectVisualEffect` as not blocked by this check where NWScript rules say so.
+- Use `gameeffects` 2DA to map effect type to immunity types; call `getEffectImmunity` on the creature.
+- `ModuleCreature.getEffectLinkImmunity(effect)` implements the recursive behavior.

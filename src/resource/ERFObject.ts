@@ -16,6 +16,7 @@ import {
   yamlToObject,
 } from '@/utility/FormatSerialization';
 
+/** Fixed CERF-style header size (one block read before the localized and key tables). */
 const ERF_HEADER_SIZE = 160;
 
 /**
@@ -197,7 +198,7 @@ export class ERFObject {
       this.parseHeader(header);
       header = new Uint8Array(0);
 
-      //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
+      // Read from the file start through the end of the key/resource list tables (data follows).
       this.erfDataOffset = this.header.offsetToResourceList + this.header.entryCount * 8;
       header = new Uint8Array(this.erfDataOffset);
       await GameFileSystem.read(fd, header, 0, this.erfDataOffset, 0);
@@ -220,7 +221,7 @@ export class ERFObject {
     this.reader = new BinaryReader(header);
     this.parseHeader(header);
     header = new Uint8Array(0);
-    //Enlarge the buffer to the include the entire structre up to the beginning of the image file data
+    // Read from the file start through the end of the key/resource list tables (data follows).
     this.erfDataOffset = this.header.offsetToResourceList + this.header.entryCount * 8;
     header = new Uint8Array(this.buffer.slice(0, this.erfDataOffset));
     this.parseStructures(header);

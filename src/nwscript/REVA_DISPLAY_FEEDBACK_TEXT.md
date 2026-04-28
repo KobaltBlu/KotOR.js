@@ -1,42 +1,32 @@
-# Reva: DisplayFeedBackText (ExecuteCommandDisplayFeedBackText)
+# DisplayFeedBackText (observed original game behavior)
 
 ## Overview
 
-`ExecuteCommandDisplayFeedBackText` (0x00530170) displays a feedback string for an object. The string comes from FeedBackText.2da row `nTextConstant`, column `StrRef` (TLK string ID). Reversed from CSWVirtualMachineCommands and CSWCObject::SetFeedbackInfo.
+The `DisplayFeedBackText` script command shows a feedback string for an object. The string is taken from `FeedBackText.2da`: row index `nTextConstant`, column `StrRef` (TLK string id).
 
-## Signature
+## NWScript API
 
-```c
-DisplayFeedBackText(object oObject, int nTextConstant);
-// Stack: pop object id, pop nTextConstant (row index in FeedBackText.2da)
-```
+`DisplayFeedBackText(object oObject, int nTextConstant);`
 
-## Logic (Reva)
+## Logic (observed)
 
-1. StackPopObject → object id (client-converted)
-2. StackPopInteger → nTextConstant (row index)
-3. Get object via CClientExoApp::GetGameObject
-4. If object has AsSWCObject:
-   - C2DA::GetINTEntry(feedbacktext, nTextConstant, "StrRef", &strref)
-   - If strref == 0: SetFeedbackInfo(object, "BAD STRREF")
-   - Else: CTlkTable::GetSimpleString(strref) → string, SetFeedbackInfo(object, string)
-
-## SetFeedbackInfo (0x0063d2d0)
-
-Stores the feedback string in the object (field57_0xe8) and sets display timing/color fields. The string is shown when the object is selected (target UI / reticle label).
+1. Resolve the target object.
+2. Read `nTextConstant` as a row index into `FeedBackText.2da`.
+3. Look up the `StrRef` column for that row; resolve the string via the TLK table.
+4. If the string reference is invalid, a placeholder error string may be shown; otherwise the text is stored on the object for feedback UI (for example, selection / reticle label when the object is targeted).
 
 ## FeedBackText.2da
 
-- Row index = nTextConstant
-- Column "StrRef" = TLK string ID
+- Row index = `nTextConstant`
+- Column `StrRef` = TLK string id
 - TLK lookup yields the displayed text
 
-## KotOR.js Mapping
+## KotOR.js mapping
 
-- Object: ModuleObjectManager.GetObjectById or args[0]
-- 2DA: GameState.TwoDAManager.datatables.get('feedbacktext')
-- Row: feedbacktext.rows[nTextConstant] or getRowByIndex(nTextConstant)
-- StrRef: row['StrRef'] or row['strref']
-- TLK: GameState.TLKManager.GetStringById(strref)?.Value
-- Storage: ModuleObject.feedbackInfo, ModuleObject.setFeedbackInfo(text)
-- Display: InGameOverlay target UI uses feedbackInfo ?? getName() for LBL_NAME
+- Object: `ModuleObjectManager.GetObjectById` or `args[0]`
+- 2DA: `GameState.TwoDAManager.datatables.get('feedbacktext')`
+- Row: `feedbacktext.rows[nTextConstant]` or `getRowByIndex(nTextConstant)`
+- StrRef: `row['StrRef']` or `row['strref']`
+- TLK: `GameState.TLKManager.GetStringById(strref)?.Value`
+- Storage: `ModuleObject.feedbackInfo`, `ModuleObject.setFeedbackInfo(text)`
+- Display: in-game overlay target UI uses `feedbackInfo ?? getName()` for `LBL_NAME`

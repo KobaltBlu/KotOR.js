@@ -115,6 +115,25 @@ describe('LTRObject', () => {
       // readBuffer sets this.buffer = new Uint8Array(0) at the end
       expect(ltr.buffer.length).toBe(0);
     });
+
+    it('rejects wrong file type or version', () => {
+      const bad = new Uint8Array(64);
+      bad.set(new TextEncoder().encode('xxxx'), 0);
+      bad.set(new TextEncoder().encode('V1.0'), 4);
+      bad[8] = 2;
+      expect(() => new LTRObject(bad)).toThrow('Tried to save or load an unsupported or corrupted file.');
+
+      const badVer = buildLtrBuffer(2, 0.5);
+      badVer.set(new TextEncoder().encode('LTR '), 0);
+      badVer.set(new TextEncoder().encode('V2.0'), 4);
+      expect(() => new LTRObject(badVer)).toThrow('Tried to save or load an unsupported or corrupted file.');
+    });
+
+    it('rejects truncated buffers', () => {
+      const buf = buildLtrBuffer(2, 0.5);
+      const short = buf.slice(0, 20);
+      expect(() => new LTRObject(short)).toThrow('Tried to save or load an unsupported or corrupted file.');
+    });
   });
 
   // -------------------------------------------------------------------------

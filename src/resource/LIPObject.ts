@@ -9,6 +9,11 @@ import { GameFileSystem } from '@/utility/GameFileSystem';
 import { OdysseyModel3D } from '@/three/odyssey';
 import { OdysseyModelAnimation } from '@/odyssey';
 
+/** LIP V1.0: fourCC, version, duration (float), keyframe count, then (float time, byte shape) per key. */
+export const LIP_V10_HEADER_SIZE = 16;
+
+export const LIP_V10_KEYFRAME_STRIDE = 5;
+
 /**
  * LIPObject class.
  *
@@ -38,7 +43,7 @@ export class LIPObject {
 
   constructor(file: string | Uint8Array, onComplete?: Function) {
     this.file = file;
-    this.HeaderSize = 16;
+    this.HeaderSize = LIP_V10_HEADER_SIZE;
 
     this.duration = 1;
 
@@ -90,7 +95,7 @@ export class LIPObject {
 
   readBinary(buffer: Uint8Array, onComplete?: Function) {
     if (buffer instanceof Uint8Array) {
-      if (buffer.length < 16) {
+      if (buffer.length < LIP_V10_HEADER_SIZE) {
         throw new Error('Tried to save or load an unsupported or corrupted file.');
       }
 
@@ -107,12 +112,12 @@ export class LIPObject {
       this.duration = reader.readSingle();
       const entryCount = reader.readUInt32();
 
-      if (16 + entryCount * 5 > buffer.length) {
+      if (LIP_V10_HEADER_SIZE + entryCount * LIP_V10_KEYFRAME_STRIDE > buffer.length) {
         reader.dispose();
         throw new Error('Tried to save or load an unsupported or corrupted file.');
       }
 
-      this.lipDataOffset = 16;
+      this.lipDataOffset = LIP_V10_HEADER_SIZE;
       reader.seek(this.lipDataOffset);
 
       for (let i = 0; i < entryCount; i++) {

@@ -1,4 +1,4 @@
-import { TLKObject } from '@/resource/TLKObject';
+import { TLKObject, TLK_V30_HEADER_SIZE, TLK_V30_INDEX_ENTRY_SIZE } from '@/resource/TLKObject';
 import { TLKString } from '@/resource/TLKString';
 
 describe('TLKObject', () => {
@@ -13,7 +13,7 @@ describe('TLKObject', () => {
       new TLKString(0, '', 0, 0, 0, 10, 0, 'qrstuvwxyz'),
     ];
     tlk.StringCount = tlk.TLKStrings.length;
-    tlk.StringEntriesOffset = 20 + tlk.StringCount * 40;
+    tlk.StringEntriesOffset = TLK_V30_HEADER_SIZE + tlk.StringCount * TLK_V30_INDEX_ENTRY_SIZE;
     return tlk;
   }
 

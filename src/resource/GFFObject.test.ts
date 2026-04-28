@@ -4,7 +4,7 @@ import { GFFDataType } from '@/enums/resource/GFFDataType';
 import { CExoLocString } from '@/resource/CExoLocString';
 import { CExoLocSubString } from '@/resource/CExoLocSubString';
 import { GFFField } from '@/resource/GFFField';
-import { GFFObject } from '@/resource/GFFObject';
+import { GFFObject, GFF_V32_HEADER_SIZE } from '@/resource/GFFObject';
 import { GFFStruct } from '@/resource/GFFStruct';
 
 function buildVendorStyleGff(): GFFObject {
@@ -175,7 +175,8 @@ describe('GFFObject', () => {
   it('rejects truncated or invalid binary headers', () => {
     // parse() is called directly because the constructor swallows errors (uses callbacks).
     const a = new GFFObject();
-    expect(() => a.parse(new Uint8Array(12))).toThrow('Invalid GFF header');
+    expect(GFF_V32_HEADER_SIZE).toBe(56);
+    expect(() => a.parse(new Uint8Array(GFF_V32_HEADER_SIZE - 1))).toThrow('Invalid GFF header');
 
     const valid = buildVendorStyleGff().getExportBuffer();
     const invalidVersion = valid.slice();

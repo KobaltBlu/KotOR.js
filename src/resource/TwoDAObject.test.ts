@@ -1,4 +1,12 @@
-import { detectTwoDAFormat, readTwoDAFromBuffer, TwoDAObject, writeTwoDAToBuffer } from '@/resource/TwoDAObject';
+import {
+  detectTwoDAFormat,
+  isTwoDAFileVersion,
+  readTwoDAFromBuffer,
+  TwoDAObject,
+  TWO_DA_FILE_TYPE,
+  TWO_DA_VERSION_EXPORT,
+  writeTwoDAToBuffer,
+} from '@/resource/TwoDAObject';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
 const CSV_TEST_DATA = ',col1,col2,col3\n10,abc,def,ghi\n1,def,ghi,123\n2,123,,abc';
@@ -12,13 +20,13 @@ const JSON_TEST_DATA = {
 };
 
 describe('TwoDAObject', () => {
-  function makeMinimal2DA(): Uint8Array {
+  function makeMinimal2DA(version: 'V2.b' | 'V2.0' = TWO_DA_VERSION_EXPORT): Uint8Array {
     const bw = new BinaryWriter();
-    bw.writeChars('2DA ');
-    bw.writeChars('V2.b');
-    bw.writeByte(0x0a);
+    bw.writeChars(TWO_DA_FILE_TYPE);
+    bw.writeChars(version);
+    bw.writeByte('\n'.charCodeAt(0));
     bw.writeChars('col1\t');
-    bw.writeByte(0x00);
+    bw.writeByte(0);
     bw.writeUInt32(2);
     bw.writeChars('0\t');
     bw.writeChars('1\t');
@@ -40,6 +48,28 @@ describe('TwoDAObject', () => {
     expect(two.RowCount).toBe(2);
     expect(two.getHeight()).toBe(2);
     expect(two.getWidth()).toBe(1);
+  });
+
+  it('accepts V2.0 binary 2DAs the same as V2.b', () => {
+    const data = makeMinimal2DA('V2.0');
+    const two = new TwoDAObject(data);
+    expect(two.FileVersion).toBe('V2.0');
+    expect(two.RowCount).toBe(2);
+    expect(detectTwoDAFormat(data)).toBe('2da');
+  });
+
+  it('rejects wrong file type or version', () => {
+    const bad = new Uint8Array(64);
+    const enc = new TextEncoder();
+    bad.set(enc.encode('xxxx'), 0);
+    bad.set(enc.encode('V2.b'), 4);
+    expect(() => new TwoDAObject(bad)).toThrow('Tried to save or load an unsupported or corrupted file.');
+
+    const bw = new BinaryWriter();
+    bw.writeChars(TWO_DA_FILE_TYPE);
+    bw.writeChars('V9.9');
+    bw.writeByte(10);
+    expect(() => new TwoDAObject(bw.buffer)).toThrow('Tried to save or load an unsupported or corrupted file.');
   });
 
   it('getRow returns TwoDARow with getString/getInteger', () => {
@@ -357,6 +387,12 @@ describe('TwoDAObject', () => {
   it('detectTwoDAFormat returns 2da for binary header', () => {
     const buf = makeMinimal2DA();
     expect(detectTwoDAFormat(buf)).toBe('2da');
+  });
+
+  it('isTwoDAFileVersion matches supported version strings only', () => {
+    expect(isTwoDAFileVersion('V2.b')).toBe(true);
+    expect(isTwoDAFileVersion('V2.0')).toBe(true);
+    expect(isTwoDAFileVersion('V3.0')).toBe(false);
   });
 
   it('detectTwoDAFormat returns csv when comma in first 256 bytes', () => {

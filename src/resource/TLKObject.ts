@@ -11,6 +11,12 @@ import {
   yamlToObject,
 } from '@/utility/FormatSerialization';
 
+/** Talk table (TLK) V3.0: file type and version, language id, string count, string data offset. */
+export const TLK_V30_HEADER_SIZE = 20;
+
+/** One index row: flags, sound resref (16), variances, string offset, lengths (40 bytes). */
+export const TLK_V30_INDEX_ENTRY_SIZE = 40;
+
 /**
  * TLKObject class.
  *
@@ -42,8 +48,7 @@ export class TLKObject {
     this.FileVersion = 'V3.0';
     this.LanguageID = 0;
     this.StringCount = 0;
-    this.StringEntriesOffset = 20;
-    console.log('TLKObject', 'Opening TLK');
+    this.StringEntriesOffset = TLK_V30_HEADER_SIZE;
     if (typeof this.file === 'string' && this.file.length > 0) {
       this.LoadFromDisk(this.file, onProgress)
         .then(() => {
@@ -66,10 +71,9 @@ export class TLKObject {
   LoadFromBuffer(buffer: Uint8Array, onProgress?: Function) {
     return new Promise<void>((resolve, reject) => {
       try {
-        if (buffer.length < 20) {
+        if (buffer.length < TLK_V30_HEADER_SIZE) {
           throw new Error('Tried to save or load an unsupported or corrupted file.');
         }
-        console.log('TLKObject', 'Reading');
         this.reader = new BinaryReader(buffer);
         this.reader.seek(0);
 
@@ -79,7 +83,7 @@ export class TLKObject {
         this.StringCount = this.reader.readUInt32();
         this.StringEntriesOffset = this.reader.readUInt32();
 
-        const entryTableEnd = 20 + this.StringCount * 40;
+        const entryTableEnd = TLK_V30_HEADER_SIZE + this.StringCount * TLK_V30_INDEX_ENTRY_SIZE;
         if (
           this.FileType !== 'TLK ' ||
           this.FileVersion !== 'V3.0' ||
@@ -89,7 +93,7 @@ export class TLKObject {
           throw new Error('Tried to save or load an unsupported or corrupted file.');
         }
 
-        this.reader.seek(20);
+        this.reader.seek(TLK_V30_HEADER_SIZE);
         for (let i = 0, len = this.StringCount; i < len; i++) {
           const flags = this.reader.readUInt32();
           const soundResRef = this.reader.readChars(16).replace(/\0[\s\S]*$/g, '');
@@ -123,7 +127,6 @@ export class TLKObject {
 
           if (typeof onProgress == 'function') onProgress(i + 1, this.StringCount);
         }
-        console.log('TLKObject', 'Done');
         resolve();
       } catch (e) {
         reject(e);
@@ -242,7 +245,7 @@ export class TLKObject {
       );
     });
     this.StringCount = this.TLKStrings.length;
-    this.StringEntriesOffset = 20 + this.StringCount * 40;
+    this.StringEntriesOffset = TLK_V30_HEADER_SIZE + this.StringCount * TLK_V30_INDEX_ENTRY_SIZE;
   }
 
   static fromJSON(json: string | TLKJSONData): TLKObject {
@@ -301,9 +304,7 @@ export class TLKObject {
    */
   toBuffer(): Uint8Array {
     const stringCount = this.TLKStrings.length;
-    const headerSize = 20;
-    const entrySize = 40;
-    const stringEntriesOffset = headerSize + stringCount * entrySize;
+    const stringEntriesOffset = TLK_V30_HEADER_SIZE + stringCount * TLK_V30_INDEX_ENTRY_SIZE;
 
     let stringDataSize = 0;
     const stringLengths: number[] = [];

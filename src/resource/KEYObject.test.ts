@@ -185,11 +185,23 @@ describe('KEYObject', () => {
     );
   });
 
-  // --- Vendor-derived: xoreos reference data (byte-exact golden blob) ---
+  it('rejects file shorter than the KEY header or with tables outside the buffer', () => {
+    expect(() => new KEYObject().loadBuffer(new Uint8Array(32))).toThrow(
+      'Tried to save or load an unsupported or corrupted file.'
+    );
+    const b = new Uint8Array(64);
+    b.set(new TextEncoder().encode('KEY '), 0);
+    b.set(new TextEncoder().encode('V1  '), 4);
+    const v = new DataView(b.buffer);
+    v.setUint32(8, 1, true);
+    v.setUint32(12, 0, true);
+    v.setUint32(16, 100, true);
+    v.setUint32(20, 0, true);
+    expect(() => new KEYObject().loadBuffer(b)).toThrow('Tried to save or load an unsupported or corrupted file.');
+  });
 
-  it('parses xoreos-style KEY V1 reference binary', () => {
-    // Exact byte sequence from xoreos-tools keyfile.cpp test reference:
-    // 1 BIF ("data\\xoreos.bif", filesize=76), 1 resource ("ozymandias", TXT, resId=1)
+  it('parses a minimal KEY V1 byte fixture (one BIF, one key entry)', () => {
+    // 1 BIF (data\xoreos.bif, file size 76), 1 resource (ozymandias, TXT, resId 1)
     const keyData = new Uint8Array([
       // Header: "KEY " + "V1  "
       0x4b, 0x45, 0x59, 0x20, 0x56, 0x31, 0x20, 0x20,
@@ -217,7 +229,6 @@ describe('KEYObject', () => {
     expect(key.fileType).toBe('KEY ');
     expect(key.FileVersion).toBe('V1  ');
     expect(key.bifs).toHaveLength(1);
-    // KEYObject normalises path separators; on Windows it becomes data\xoreos.bif
     expect(key.bifs[0].filename).toContain('xoreos.bif');
     expect(key.bifs[0].fileSize).toBe(76);
     expect(key.keys).toHaveLength(1);
@@ -359,6 +370,35 @@ describe('KEYObject', () => {
   });
 
   // --- BIF/resource index helpers with edge values ---
+
+  it('strips the two high bits of key entry resId (30-bit value)', () => {
+    const writer = new BinaryWriter();
+    // Header: 4×8 uint32s + 32 bytes reserved = 64 bytes, then 0 BIF entries → key table.
+    const bifTableOff = 64;
+    const keyCount = 1;
+    const keyTableOff = bifTableOff;
+    const rawResId = 0xc0000003;
+    const masked = rawResId & 0x3fffffff;
+
+    writer.writeChars('KEY ');
+    writer.writeChars('V1  ');
+    writer.writeUInt32(0);
+    writer.writeUInt32(keyCount);
+    writer.writeUInt32(bifTableOff);
+    writer.writeUInt32(keyTableOff);
+    writer.writeUInt32(2020);
+    writer.writeUInt32(1);
+    writer.writeBytes(new Uint8Array(32));
+    const resrefBytes = new Uint8Array(16);
+    new TextEncoder().encodeInto('n', resrefBytes);
+    writer.writeBytes(resrefBytes);
+    writer.writeUInt16(ResourceTypes.mdl);
+    writer.writeUInt32(rawResId);
+
+    const key = new KEYObject();
+    key.loadBuffer(writer.buffer);
+    expect(key.keys[0].resId).toBe(masked);
+  });
 
   it('getBIFIndex and getBIFResourceIndex handle zero and max values', () => {
     expect(KEYObject.getBIFIndex(0)).toBe(0);

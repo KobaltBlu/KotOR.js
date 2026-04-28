@@ -1,38 +1,18 @@
-# Reva: SWMG_SetSpeedBlurEffect (ExecuteCommandSWMG_SetSpeedBlurEffect)
+# SWMG_SetSpeedBlurEffect (observed original game behavior)
 
 ## Overview
 
-`ExecuteCommandSWMG_SetSpeedBlurEffect` (0x00543550) turns the speed blur (motion blur) effect on or off and sets the frame accumulation ratio. Reversed from CSWVirtualMachineCommands, AurEnableSpeedBlur, AurDisableSpeedBlur, AurSetSpeedBlurRatio.
+`SWMG_SetSpeedBlurEffect` enables or disables the speed (motion) blur post-process and can set the frame accumulation ratio. The client toggles a global “speed blur enabled” flag, sets the accumulation ratio when provided, and the motion-blur pass uses that ratio (default about 0.75 when the engine applies its default in the related path).
 
-## NWScript Signature
+## NWScript
 
-```c
-void SWMG_SetSpeedBlurEffect(int bEnabled, float fRatio = 0.75f);
-// bEnabled: TRUE = on, FALSE = off
-// fRatio: frame accumulation ratio (optional, applied only when paramCount > 1)
-```
+`void SWMG_SetSpeedBlurEffect(int bEnabled, float fRatio = 0.75f);`
 
-## ExecuteCommandSWMG_SetSpeedBlurEffect Logic
+- `bEnabled`: non-zero turns the effect on, zero turns it off.
+- Optional `fRatio`: when present, sets the accumulation ratio used by the motion-blur update.
 
-1. StackPopInteger → bEnabled (stored in local_4)
-2. If paramCount > 1: StackPopFloat → fRatio, AurSetSpeedBlurRatio(fRatio)
-3. If bEnabled == 0: AurDisableSpeedBlur(), return
-4. Else: AurEnableSpeedBlur(), return
+## KotOR.js
 
-## AurEnableSpeedBlur (0x0044f0a0)
-
-Sets global `enableSpeedBlur = 1`.
-
-## AurDisableSpeedBlur (0x0044f0b0)
-
-Sets global `enableSpeedBlur = 0`.
-
-## AurSetSpeedBlurRatio (0x0044f130)
-
-Sets global `accumulationRatio = param_1`. Used by UpdateMotionBlur; default 0.75 (0x3f400000) in ApplyMotionBlur.
-
-## KotOR.js Mapping
-
-- enableSpeedBlur → AfterimagePass.enabled
-- accumulationRatio → AfterimagePass uniform 'damp' (higher = more ghosting/motion blur)
-- AfterimagePass inserted after RenderPass in EffectComposer when initialized
+- `enableSpeedBlur` → `AfterimagePass.enabled`
+- `accumulationRatio` → `AfterimagePass` uniform `damp` (higher = stronger ghosting)
+- `AfterimagePass` is chained in the effect composer when initialized

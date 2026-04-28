@@ -60,6 +60,12 @@ Standard commands are documented in `DEVELOPER_QUICK_REFERENCE.md` and `README.m
 - **Electron renders black on headless VMs**: Launcher uses a transparent frameless window and can render black without GPU compositing.
 - **Game files required for full gameplay testing**: Game Client and major Forge flows require proprietary KotOR data files. Agents must not claim full gameplay coverage when those assets are unavailable.
 
+### Forge and agent parity
+
+KotOR.js does **not** ship an in-app LLM inside Forge. **Coding agents** (e.g. Cursor) share the **git workspace** and can use normal tools (`read_file`, terminal, `grep`) on **saved** files. Forge also keeps per-tab **in-memory** buffers (`EditorFile`); if you edit the same path with an agent while a tab has **unsaved** changes, **disk and UI can disagree**—see [docs/agent-native/CAPABILITY_MAP.md](docs/agent-native/CAPABILITY_MAP.md).
+
+**Safe automation patterns:** `npm test`, `npm run lint`, `npm run format:check`, and file edits **after** the user saves (or with agreement on who owns the buffer). **Not exposed as agent APIs today:** tab switch, close tab, Save inside Forge, or archive-specific open flows as single calls.
+
 ### Cloud VM: reliable UI validation path
 
 Use web-mode launcher validation instead of Electron for headless/manual checks:
@@ -141,3 +147,16 @@ Every non-trivial change should include:
 2. Exact commands run and their outcome.
 3. Any environment/test limitations and why.
 4. For UI work, walkthrough artifacts (video and/or screenshots).
+
+## Learned User Preferences
+
+- On long audits or multi-file refactors, the user may ask to batch `npm` runs (install, lint, test, webpack) instead of after every small edit; still meet the Testing policy before declaring the overall task done unless they narrow the bar for that pass.
+- Use `@/` path aliases for imports across the TypeScript tree (not `from './` or `from '..'`); ESLint enforces this where configured (`.eslintrc.yml`). For Forge tab modules, import `TabState` from `@/apps/forge/states/tabs/TabState` rather than the tabs barrel so initialization order stays safe while paths stay `@/`-based.
+
+## Learned Workspace Facts
+
+- The agdec **`user-agdec-http`** server may accept **`execute-script`** while **`get-function`** / full decompilation fails when the remote decompiler process does not start; do not assume decompilation-backed parity is always available in-session.
+- Do not paste or commit Ghidra server credentials or `uvx` one-liners with embedded passwords; use private env vars or a gitignored runbook (see `.cursor/k1-binary-exe-coverage-model.md` §2b for placeholder-based CLI patterns).
+- For commentary in `src/`, follow `.cursorrules`: neutral product-language for original-game behavior; avoid Ghidra-style names, addresses, or other tooling-specific references in comments.
+
+(Index: `.cursor/hooks/state/continual-learning-index.json`.)

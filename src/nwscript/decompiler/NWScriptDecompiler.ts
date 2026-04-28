@@ -115,19 +115,19 @@ export class NWScriptDecompiler {
       return header + '\n\n' + nssSource;
     } catch (error) {
       console.error('Decompilation error:', error);
-      return `// Error during decompilation: ${error instanceof Error ? error.message : String(error)}`;
+      return `// Error while reconstructing NSS: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 
   /**
-   * Generate header comment for decompiled code
+   * Generate header comment for output NSS
    */
   private generateHeader(): string {
     const lines: string[] = [];
-    lines.push('// Decompiled NSS source');
+    lines.push('// NSS source (reconstructed from compiled script)');
     lines.push(`// Original script: ${this.script.name || 'unknown'}`);
     lines.push('//');
-    lines.push('// NOTE: This is decompiled code. Variable names and structure');
+    lines.push('// NOTE: Reconstructed from bytecode. Variable names and structure');
     lines.push('// may not match the original source exactly.');
     lines.push('//');
     return lines.join('\n');

@@ -4,9 +4,9 @@
 
 The NWScript decompiler detects OR chain patterns (e.g. `GetGlobalBoolean("X") || GetGlobalBoolean("Y")`) and simplifies them. The OR chain detector uses `NWScriptExpressionBuilder` to process bytecode instructions; the expression builder needs global and local variable mappings to emit symbolic names (e.g. `K_PAZAAK_WON`) instead of raw calls (e.g. `GetGlobalBoolean(123)`).
 
-## Reva Note
+## Note (original game vs. KotOR.js)
 
-Reva (reverse-engineered swkotor.exe) does not contain NWScript decompiler logic. The game runs compiled NWScript bytecode; decompilation is a KotOR.js/Forge editor feature. There is no Reva equivalent to reference. This implementation mirrors the existing `NWScriptANDChainDetector` pattern, which already uses `setGlobalVariables` and `setLocalVariables` for correct variable name resolution.
+The original game client runs compiled NWScript bytecode only; it does not ship a script-to-source tool. NCS-to-NSS reconstruction in KotOR.js is an editor/debugging feature. This implementation mirrors the existing `NWScriptANDChainDetector` pattern, which already uses `setGlobalVariables` and `setLocalVariables` for correct variable name resolution.
 
 ## KotOR.js Implementation
 

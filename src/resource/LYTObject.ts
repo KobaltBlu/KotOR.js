@@ -3,11 +3,6 @@ import { ILayoutDoorHook } from '@/interface/resource/ILayoutDoorHook';
 import { ILayoutObstacle } from '@/interface/resource/ILayoutObstacle';
 import { ILayoutTrack } from '@/interface/resource/ILayoutTrack';
 import * as THREE from 'three';
-
-import { ILayoutDoorHook } from '@/interface/resource/ILayoutDoorHook';
-import { ILayoutObstacle } from '@/interface/resource/ILayoutObstacle';
-import { ILayoutRoom } from '@/interface/resource/ILayoutRoom';
-import { ILayoutTrack } from '@/interface/resource/ILayoutTrack';
 import {
   objectToTOML,
   objectToXML,
@@ -16,6 +11,8 @@ import {
   xmlToObject,
   yamlToObject,
 } from '@/utility/FormatSerialization';
+
+export const LYT_MAXLAYOUT_ASCII = '#MAXLAYOUT ASCII';
 
 /**
  * LYTObject class.
@@ -65,7 +62,7 @@ export class LYTObject {
       }
 
       // Token types
-      if (line === '#MAXLAYOUT ASCII') {
+      if (line === LYT_MAXLAYOUT_ASCII) {
         tokens.push({ type: 'HEADER', value: line, line: lineNum });
       } else if (line.startsWith('filedependancy ')) {
         const value = line.substring('filedependancy '.length);

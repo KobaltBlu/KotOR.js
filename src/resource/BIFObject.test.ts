@@ -43,7 +43,7 @@ describe('BIFObject', () => {
     return bifBuf;
   }
 
-  /** Build a BIF buffer containing multiple resources (vendor-style multi-entry). */
+  /** Build a BIF with multiple index rows and matching payload blocks. */
   function makeMultiResourceBif(entries: { id: number; resType: number; payload: Uint8Array }[]): Uint8Array {
     const headerSize = 20;
     const tableSize = entries.length * 16;

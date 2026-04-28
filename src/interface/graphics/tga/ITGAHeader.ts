@@ -13,7 +13,7 @@ export interface ITGAHeader {
   ColorMapType: number;
   FileType: number;
 
-  //Simple color map detection (May not be adequate)
+  /** Set from the color-map type field (nonzero means a color map is present). */
   hasColorMap: boolean;
   ColorMapIndex: number;
 

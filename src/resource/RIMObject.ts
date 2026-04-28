@@ -16,6 +16,8 @@ import {
 } from '@/utility/FormatSerialization';
 
 const RIM_HEADER_LENGTH = 160;
+/** RIM V1.0: each resource list row is 32 bytes (resRef, type, id, offset, size), matching the key-table layout. */
+const RIM_KEY_ENTRY_SIZE = 32;
 const DEFAULT_RIM_RESOURCES_OFFSET = 120;
 
 /**
@@ -116,8 +118,8 @@ export class RIMObject {
       throw new Error('Tried to save or load an unsupported or corrupted file.');
     }
 
-    //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
-    this.rimDataOffset = this.header.resourcesOffset + this.header.resourceCount * 34;
+    // Read from the file header through the end of the resource list (packaged data starts after this).
+    this.rimDataOffset = this.header.resourcesOffset + this.header.resourceCount * RIM_KEY_ENTRY_SIZE;
     if (this.rimDataOffset > buffer.length) {
       throw new Error('Tried to save or load an unsupported or corrupted file.');
     }
@@ -169,8 +171,8 @@ export class RIMObject {
       throw new Error('Tried to save or load an unsupported or corrupted file.');
     }
 
-    //Enlarge the buffer to the include the entire structre up to the beginning of the file data block
-    this.rimDataOffset = this.header.resourcesOffset + this.header.resourceCount * 34;
+    // Read from the file header through the end of the resource list (packaged data starts after this).
+    this.rimDataOffset = this.header.resourcesOffset + this.header.resourceCount * RIM_KEY_ENTRY_SIZE;
     if (this.rimDataOffset > RIM_HEADER_LENGTH && this.rimDataOffset < this.header.resourcesOffset) {
       throw new Error('Tried to save or load an unsupported or corrupted file.');
     }
@@ -360,7 +362,7 @@ export class RIMObject {
   private buildExportBufferFromResources(resources: Array<IRIMResource & { data: Uint8Array }>): Uint8Array {
     const writer = new BinaryWriter();
     const headerSize = DEFAULT_RIM_RESOURCES_OFFSET;
-    const entrySize = 32;
+    const entrySize = RIM_KEY_ENTRY_SIZE;
 
     this.header.fileType = this.header.fileType || 'RIM ';
     this.header.fileVersion = this.header.fileVersion || 'V1.0';

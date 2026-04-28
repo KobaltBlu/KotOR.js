@@ -15,6 +15,22 @@ import {
   yamlToObject,
 } from '@/utility/FormatSerialization';
 
+/** Chitin.key V1.0: signature, version, two counts, two table offsets, build time, 32 reserved bytes. */
+export const KEY_V1_HEADER_SIZE = 64;
+
+/** BIF file table: file size, name offset, name length, drive flags. */
+export const KEY_V1_BIF_TABLE_ROW_SIZE = 12;
+
+/** Key table: resref (16), res type (2), packed resource id (4). */
+export const KEY_V1_KEY_TABLE_ROW_SIZE = 22;
+
+/** Stored id field keeps only the lower 30 bits (packing in the upper two bits is ignored for lookup). */
+export const KEY_V1_RESOURCE_ID_MASK = 0x3fffffff;
+
+export const KEY_PACKED_BIF_INDEX_SHIFT = 20;
+
+export const KEY_PACKED_ENTRY_INDEX_MASK = 0x3fff;
+
 /**
  * KEYObject class.
  *
@@ -47,6 +63,10 @@ export class KEYObject {
   }
 
   loadBuffer(buffer: Uint8Array): void {
+    if (buffer.length < KEY_V1_HEADER_SIZE) {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
+
     this.reader = new BinaryReader(buffer);
 
     this.fileType = this.reader.readChars(4);
@@ -63,6 +83,18 @@ export class KEYObject {
     this.buildDay = this.reader.readUInt32();
     this.reserved = this.reader.readBytes(32);
 
+    const fileTableSize = this.bifCount * KEY_V1_BIF_TABLE_ROW_SIZE;
+    const keyTableSize = this.keyCount * KEY_V1_KEY_TABLE_ROW_SIZE;
+    if (
+      this.offsetToFileTable > buffer.length ||
+      this.offsetToFileTable + fileTableSize > buffer.length ||
+      this.offsetToKeyTable > buffer.length ||
+      this.offsetToKeyTable + keyTableSize > buffer.length
+    ) {
+      this.reader.dispose();
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
+
     this.bifs = [];
     this.keys = [];
 
@@ -77,13 +109,15 @@ export class KEYObject {
     }
 
     for (let i = 0; i < this.bifCount; i++) {
-      this.reader.seek(this.bifs[i].filenameOffset);
-      this.bifs[i].filename = this.reader
-        .readChars(this.bifs[i].filenameSize)
-        .replace(/\0[\s\S]*$/g, '')
-        .toLocaleString()
-        .split('\\')
-        .join(path.sep);
+      const o = this.bifs[i].filenameOffset;
+      const s = this.bifs[i].filenameSize;
+      if (o + s > buffer.length) {
+        this.reader.dispose();
+        throw new Error('Tried to save or load an unsupported or corrupted file.');
+      }
+      this.reader.seek(o);
+      const raw = this.reader.readChars(s).replace(/\0[\s\S]*$/g, '');
+      this.bifs[i].filename = raw.split(/[/\\]+/).filter(Boolean).join(path.sep);
     }
 
     this.reader.seek(this.offsetToKeyTable);
@@ -91,7 +125,7 @@ export class KEYObject {
       this.keys[i] = {
         resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g, ''),
         resType: this.reader.readUInt16(),
-        resId: this.reader.readUInt32(),
+        resId: this.reader.readUInt32() & KEY_V1_RESOURCE_ID_MASK,
       } as IKEYEntry;
     }
   }
@@ -161,11 +195,11 @@ export class KEYObject {
   }
 
   static getBIFIndex(ResID: number = 0): number {
-    return ResID >> 20;
+    return (ResID & KEY_V1_RESOURCE_ID_MASK) >> KEY_PACKED_BIF_INDEX_SHIFT;
   }
 
   static getBIFResourceIndex(ResID: number = 0): number {
-    return ResID & 0x3fff;
+    return (ResID & KEY_V1_RESOURCE_ID_MASK) & KEY_PACKED_ENTRY_INDEX_MASK;
   }
 
   toJSON(): {

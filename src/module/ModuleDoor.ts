@@ -473,21 +473,8 @@ export class ModuleDoor extends ModuleObject {
 
   /**
    * Determines which side of the door the interacting object is on.
-   * Reversed from Reva: CSWSDoor::OpenDoor @ 0x00589c70 (k1_win_gog_swkotor.exe)
-   *
-   * Original logic (decompiled):
-   *   bVar5 = 2;  // default SIDE_2
-   *   pCVar1 = CServerExoApp::GetGameObject(AppManager->server, param_1);
-   *   if (pCVar1 != 0) {
-   *     pCVar2 = (*pCVar1->vtable->AsSWSObject)(pCVar1);
-   *     // Dot product: (creature_pos - door_pos) Â· door_orientation
-   *     if (0 < (pos.x - door.x)*orient.x + (pos.y - door.y)*orient.y + (pos.z - door.z)*orient.z)
-   *       bVar5 = 1;  // SIDE_1
-   *   }
-   *   SetOpenState(this, bVar5, 1);
-   *
-   * CSWSObject has Vector orientation at +0x9C (GFF Orientation / facing direction).
-   * KotOR.js uses getRotationFromBearing() for the 2D forward vector (cos Î¸, sin Î¸, 0).
+   * Uses a dot product of the vector from door to interactor with the door forward
+   * from {@link getRotationFromBearing} (2D bearing as x/y/z in plane).
    *
    * @param object - The ModuleObject that interacted (opener, damager). If null/this, uses combatData.lastDamager.
    * @returns SIDE_1 if object is in the positive orientation direction, SIDE_2 otherwise.
@@ -1387,31 +1374,33 @@ export class ModuleDoor extends ModuleObject {
   animationConstantToAnimation(animation_constant = 10000): ITwoDAAnimation {
     const animations2DA = GameState.TwoDAManager.datatables.get('animations');
     if (animations2DA) {
+      const row = (idx: number): ITwoDAAnimation => animations2DA.rows[idx] as unknown as ITwoDAAnimation;
       switch (animation_constant) {
         case ModuleDoorAnimState.DEFAULT: //10000, //327 -
-          return animations2DA.rows[327];
+          return row(327);
         case ModuleDoorAnimState.OPENED1: //10050, //331 -
-          return animations2DA.rows[331];
+          return row(331);
         case ModuleDoorAnimState.OPENED2: //10051, //332 -
-          return animations2DA.rows[332];
+          return row(332);
         case ModuleDoorAnimState.CLOSED: //10022, //333 -
-          return animations2DA.rows[333];
+          return row(333);
         case ModuleDoorAnimState.OPENING1: //10052, //334 -
-          return animations2DA.rows[334];
+          return row(334);
         case ModuleDoorAnimState.OPENING2: //10053, //335 -
-          return animations2DA.rows[335];
+          return row(335);
         case ModuleDoorAnimState.CLOSING1: //10054, //336 -
-          return animations2DA.rows[336];
+          return row(336);
         case ModuleDoorAnimState.CLOSING2: //10055, //337 -
-          return animations2DA.rows[337];
+          return row(337);
         case ModuleDoorAnimState.BUSTED: //10153, //366 -
-          return animations2DA.rows[366];
+          return row(366);
         case ModuleDoorAnimState.TRANS: //10269, //344 -
-          return animations2DA.rows[344];
+          return row(344);
       }
 
       return super.animationConstantToAnimation(animation_constant);
     }
+    return super.animationConstantToAnimation(animation_constant);
   }
 
   static GenerateTemplate() {

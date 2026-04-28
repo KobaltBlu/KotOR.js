@@ -20,17 +20,11 @@ import { NWScriptInstance } from '@/nwscript/NWScriptInstance';
  * action ID â†’ actionsMap[instruction.action]. Behavior must match the original
  * engine for script compatibility.
  *
- * REVA / Ghidra TARGET (prefix k2_ in Reva)
- * -----------------------------------------
- * Reverse-engineering reference: swkotor2.exe within the Reva Ghidra project.
- * Program path in Reva: /k2_win_gog_aspyr_swkotor2.exe or
- * /k2_win_gog_legacypc_swkotor2.exe (use k2_ prefix when referring to the K2
- * binary in Reva). CSWVirtualMachineCommands::InitializeCommands (0x0077b530)
- * allocates a table of 0x36d (877) function pointers; table[action_id] =
- * *(base + action_id * 4). Action ID = byte_offset / 4 (e.g. offset 0xcd8 â†’
- * action 822 = ExecuteCommandForceHeartbeat). K2-only IDs 772..876 map to
- * offsets 0xC10..0xDB0. Named ExecuteCommand* and FUN_* in Ghidra implement
- * each command; comments below document canonical, reversed behavior for 1:1 parity.
+ * ENGINE TABLE
+ * ------------
+ * The stock KotOR II (swkotor2.exe) build uses a fixed command table: one
+ * pointer per action ID 0..876. Indices 0..771 align with KotOR I; 772..876
+ * are TSL-only. Comments document intended in-game behavior for 1:1 script parity.
  *
  * INHERITANCE
  * -----------
@@ -5956,7 +5950,7 @@ NWScriptDefK2.Actions = {
   },
   772: {
     comment:
-      '772 (TSL-only). Reva k2_: swkotor2.exe slot 0xC10. FAK-OEI 12/15/2003. Get the number of components for an item in pieces.',
+      '772 (TSL-only). FAK-OEI 12/15/2003. Get the number of components for an item in pieces.',
     name: 'GetItemComponentPieceValue',
     type: NWScriptDataType.INTEGER,
     args: [],
@@ -5964,7 +5958,7 @@ NWScriptDefK2.Actions = {
   },
   773: {
     comment:
-      '773 (TSL-only). Reva k2_: swkotor2.exe slot 0xC14. FAK-OEI 12/15/2003. Start the GUI for Chemical Workshop.',
+      '773 (TSL-only). FAK-OEI 12/15/2003. Start the GUI for Chemical Workshop.',
     name: 'ShowChemicalUpgradeScreen',
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
@@ -5972,7 +5966,7 @@ NWScriptDefK2.Actions = {
   },
   774: {
     comment:
-      '774 (TSL-only). Reva k2_: swkotor2.exe slot 0xC18. FAK-OEI 12/15/2003. Get the number of chemicals for an item.',
+      '774 (TSL-only). FAK-OEI 12/15/2003. Get the number of chemicals for an item.',
     name: 'GetChemicals',
     type: NWScriptDataType.INTEGER,
     args: [],
@@ -5987,14 +5981,14 @@ NWScriptDefK2.Actions = {
   },
   776: {
     comment:
-      '776 (TSL-only). Reva k2_: swkotor2.exe slot 0xC20. DJS-OEI 12/30/2003. Get the number of Force Points that were required to\ncast this spell. This includes modifiers such as Room Force\nRatings and the Force Body power. Return value on error: 0',
+      '776 (TSL-only). DJS-OEI 12/30/2003. Get the number of Force Points that were required to\ncast this spell. This includes modifiers such as Room Force\nRatings and the Force Body power. Return value on error: 0',
     name: 'GetSpellForcePointCost',
     type: NWScriptDataType.INTEGER,
     args: [],
     action: undefined,
   },
   777: {
-    comment: '777 (TSL-only). Reva k2_: swkotor2.exe slot 0xC24. DJS-OEI 1/2/2004. Create a Fury effect.',
+    comment: '777 (TSL-only). DJS-OEI 1/2/2004. Create a Fury effect.',
     name: 'EffectFury',
     type: NWScriptDataType.EFFECT,
     args: [],
@@ -6280,14 +6274,14 @@ NWScriptDefK2.Actions = {
     action: undefined,
   },
   806: {
-    comment: '806 (TSL-only). QueueMovie: queue movie for PlayMovieQueue. Target: swkotor2.exe (Reva k2_*).',
+    comment: '806 (TSL-only). QueueMovie: queue a movie for PlayMovieQueue.',
     name: 'QueueMovie',
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
     action: undefined,
   },
   807: {
-    comment: '807 (TSL-only). PlayMovieQueue: play queued movies. Target: swkotor2.exe (Reva k2_*).',
+    comment: '807 (TSL-only). PlayMovieQueue: play the queued movie list.',
     name: 'PlayMovieQueue',
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
@@ -6705,7 +6699,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function (this: NWScriptInstance) {
-      // Engine: FUN_007b0f50 toggles caller's weapon set (Config 1/2). No-op until ModuleCreature supports weapon-set toggle.
+      // Original game toggles the caller between weapon set 1 and 2. No-op until ModuleCreature supports weapon-set toggle.
     },
   },
   854: {

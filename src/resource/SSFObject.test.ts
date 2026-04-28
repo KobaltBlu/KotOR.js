@@ -1,16 +1,16 @@
-import { SSFObject } from '@/resource/SSFObject';
+import { SSFObject, SSF_STRREF_SLOT_COUNT, SSF_V11_HEADER_SIZE } from '@/resource/SSFObject';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
 describe('SSFObject', () => {
   function makeSSFBuffer(
-    soundRefs: number[] = new Array(28).fill(0xffffffff),
+    soundRefs: number[] = new Array(SSF_STRREF_SLOT_COUNT).fill(0xffffffff),
     options: { fileType?: string; fileVersion?: string } = {}
   ): Uint8Array {
     const { fileType = 'SSF ', fileVersion = 'V1.1' } = options;
-    const bw = new BinaryWriter(new Uint8Array(12 + soundRefs.length * 4));
+    const bw = new BinaryWriter(new Uint8Array(SSF_V11_HEADER_SIZE + soundRefs.length * 4));
     bw.writeChars(fileType);
     bw.writeChars(fileVersion);
-    bw.writeUInt32(12);
+    bw.writeUInt32(SSF_V11_HEADER_SIZE);
     for (let i = 0; i < soundRefs.length; i++) bw.writeUInt32(soundRefs[i]);
     return bw.buffer;
   }
@@ -66,10 +66,10 @@ describe('SSFObject', () => {
   });
 
   it('pads to 28 slots when file has fewer entries', () => {
-    const bw = new BinaryWriter(new Uint8Array(12 + 4 * 5));
+    const bw = new BinaryWriter(new Uint8Array(SSF_V11_HEADER_SIZE + 4 * 5));
     bw.writeChars('SSF ');
     bw.writeChars('V1.1');
-    bw.writeUInt32(12);
+    bw.writeUInt32(SSF_V11_HEADER_SIZE);
     for (let i = 0; i < 5; i++) bw.writeUInt32(0);
     const ssf = new SSFObject(bw.buffer);
     expect(ssf.sound_refs).toHaveLength(28);
@@ -87,6 +87,22 @@ describe('SSFObject', () => {
       'Tried to save or load an unsupported or corrupted file.'
     );
     expect(() => new SSFObject(new Uint8Array(4))).toThrow('Tried to save or load an unsupported or corrupted file.');
+  });
+
+  it('rejects nonstandard strref table offset or misaligned tail', () => {
+    const badOffset = new BinaryWriter(new Uint8Array(SSF_V11_HEADER_SIZE + 4));
+    badOffset.writeChars('SSF ');
+    badOffset.writeChars('V1.1');
+    badOffset.writeUInt32(0);
+    badOffset.writeUInt32(0);
+    expect(() => new SSFObject(badOffset.buffer)).toThrow('Tried to save or load an unsupported or corrupted file.');
+
+    const oneBytePastHeader = new BinaryWriter(new Uint8Array(SSF_V11_HEADER_SIZE + 1));
+    oneBytePastHeader.writeChars('SSF ');
+    oneBytePastHeader.writeChars('V1.1');
+    oneBytePastHeader.writeUInt32(SSF_V11_HEADER_SIZE);
+    oneBytePastHeader.writeUInt8(0x00);
+    expect(() => new SSFObject(oneBytePastHeader.buffer)).toThrow('Tried to save or load an unsupported or corrupted file.');
   });
 
   it('toBuffer round-trip preserves all 28 vendor slot values', () => {
@@ -150,11 +166,8 @@ describe('SSFObject', () => {
     expect(ssf.sound_refs.every((r) => r === -1)).toBe(true);
   });
 
-  // --- Vendor-derived: parse exact 40-entry binary from test_ssf.py ---
-
-  it('parses exact 40-entry vendor binary and truncates to 28 named slots', () => {
-    // Inlined BINARY_TEST_DATA from test_ssf.py
-    // b"SSF V1.1\x0c\x00\x00\x00" + 28 StrRefs (123075..123048) + 12 × 0xFFFFFFFF
+  it('parses 40 strref values in file, keeps first 28 for the game soundset', () => {
+    // b"SSF " + "V1.1" + offset 12, then 28 strrefs (123075..123048) + 12×0xFFFFFFFF
     const bytes: number[] = [
       // Header: "SSF " + "V1.1"
       0x53, 0x53, 0x46, 0x20, 0x56, 0x31, 0x2e, 0x31,

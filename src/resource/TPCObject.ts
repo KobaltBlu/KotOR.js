@@ -10,7 +10,9 @@ import { OdysseyCompressedTexture } from '@/three/odyssey/OdysseyCompressedTextu
 import { ITPCHeader } from '@/interface/resource/ITPCHeader';
 import { ITPCObjectOptions } from '@/interface/resource/ITPCObjectOptions';
 
-const TPCHeaderLength = 128;
+/** On-disk TPC header (fixed 128 bytes before pixel data; many fields are zero in practice). */
+export const TPC_FILE_HEADER_SIZE = 128;
+
 export type WriteTPCFormat = 'tpc' | 'tga' | 'dds' | 'bmp';
 
 /**
@@ -40,7 +42,7 @@ export class TPCObject {
 
     const options = { ..._default, ...args };
 
-    this.file = options.file ?? new Uint8Array(TPCHeaderLength);
+    this.file = options.file ?? new Uint8Array(TPC_FILE_HEADER_SIZE);
     this.filename = options.filename ?? '';
     this.pack = options.pack ?? 0;
     this.header = this.readHeader();
@@ -49,7 +51,7 @@ export class TPCObject {
 
   getTXIData(): string {
     try {
-      const _txiOffset = this.getDataLength() + TPCHeaderLength;
+      const _txiOffset = this.getDataLength() + TPC_FILE_HEADER_SIZE;
       const _txiDataLength = this.file.length - _txiOffset;
 
       if (_txiDataLength > 0) {
@@ -111,7 +113,7 @@ export class TPCObject {
     dds.width = this.header.width;
     dds.height = this.header.height;
 
-    let dataOffset = TPCHeaderLength;
+    let dataOffset = TPC_FILE_HEADER_SIZE;
 
     //Detect Animated Textures
     if (this.txi.procedureType == 1) {
@@ -290,7 +292,7 @@ export class TPCObject {
   readHeader(): ITPCHeader {
     // Parse header
     const Header: ITPCHeader = {} as ITPCHeader;
-    const Reader = new BinaryReader(this.file.slice(0, TPCHeaderLength));
+    const Reader = new BinaryReader(this.file.slice(0, TPC_FILE_HEADER_SIZE));
     Reader.seek(0);
     Header.dataSize = Reader.readUInt32();
     Header.alphaTest = Reader.readSingle();
@@ -495,10 +497,10 @@ export class TPCObject {
     writer.writeUInt16(this.header.height);
     writer.writeByte(this.header.encoding);
     writer.writeByte(this.header.mipMapCount);
-    while (writer.position < TPCHeaderLength) {
+    while (writer.position < TPC_FILE_HEADER_SIZE) {
       writer.writeByte(0);
     }
-    const data = this.file.slice(TPCHeaderLength, TPCHeaderLength + dataLength);
+    const data = this.file.slice(TPC_FILE_HEADER_SIZE, TPC_FILE_HEADER_SIZE + dataLength);
     writer.writeBytes(data.length ? data : new Uint8Array(dataLength));
     const txiBytes = this.txi.toBuffer();
     if (txiBytes.length) {
@@ -511,7 +513,7 @@ export class TPCObject {
   toTGABuffer(): Uint8Array {
     const width = this.header.width;
     const height = this.header.height;
-    const rawPixelData = this.file.slice(TPCHeaderLength, TPCHeaderLength + width * height * 4);
+    const rawPixelData = this.file.slice(TPC_FILE_HEADER_SIZE, TPC_FILE_HEADER_SIZE + width * height * 4);
     const pixelData = new Uint8Array(width * height * 4);
     pixelData.set(rawPixelData.slice(0, pixelData.length));
     const out = new Uint8Array(18 + pixelData.length);
@@ -533,7 +535,7 @@ export class TPCObject {
   toDDSBuffer(): Uint8Array {
     const width = this.header.width;
     const height = this.header.height;
-    const payload = this.file.slice(TPCHeaderLength, TPCHeaderLength + this.getDataLength());
+    const payload = this.file.slice(TPC_FILE_HEADER_SIZE, TPC_FILE_HEADER_SIZE + this.getDataLength());
     const writer = new BinaryWriter();
     writer.writeUInt32(0x20534444);
     writer.writeUInt32(124);
@@ -578,7 +580,7 @@ export class TPCObject {
     view.setUint16(26, 1, true);
     view.setUint16(28, 24, true);
     view.setUint32(30, 0, true);
-    const rgba = this.file.slice(TPCHeaderLength, TPCHeaderLength + width * height * 4);
+    const rgba = this.file.slice(TPC_FILE_HEADER_SIZE, TPC_FILE_HEADER_SIZE + width * height * 4);
     let offset = 54;
     for (let y = height - 1; y >= 0; y--) {
       for (let x = 0; x < width; x++) {
@@ -617,7 +619,7 @@ function makeTPCBuffer(
   writer.writeUInt16(height);
   writer.writeByte(encoding);
   writer.writeByte(mipMapCount);
-  while (writer.position < TPCHeaderLength) {
+  while (writer.position < TPC_FILE_HEADER_SIZE) {
     writer.writeByte(0);
   }
   writer.writeBytes(data);
@@ -819,7 +821,7 @@ function parseDDS(buffer: Uint8Array): {
 }
 
 export function isTPCBuffer(buffer: Uint8Array): boolean {
-  if (!buffer || buffer.length < TPCHeaderLength) {
+  if (!buffer || buffer.length < TPC_FILE_HEADER_SIZE) {
     return false;
   }
   try {

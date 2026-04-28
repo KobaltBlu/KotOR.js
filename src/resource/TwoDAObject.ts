@@ -10,6 +10,26 @@ import {
   yamlToObject,
 } from '@/utility/FormatSerialization';
 
+export const TWO_DA_FILE_TYPE = '2DA ';
+
+export const TWO_DA_VERSION_EXPORT = 'V2.b';
+
+const TWO_DA_VERSIONS_RECOGNIZED = new Set<string>([TWO_DA_VERSION_EXPORT, 'V2.0']);
+
+/** Type + version label (8 bytes) before the column name list. */
+export const TWO_DA_TYPE_VERSION_SIZE = 8;
+
+/** The byte after the version is a single line break before column names. */
+const TWO_DA_NEWLINE_AFTER_HEADER = 1;
+
+const byteLF = '\n'.charCodeAt(0);
+const byteHT = '\t'.charCodeAt(0);
+const byteNUL = 0;
+
+export function isTwoDAFileVersion(v: string): boolean {
+  return TWO_DA_VERSIONS_RECOGNIZED.has(v);
+}
+
 export type WriteTwoDAFormat = '2da' | 'csv' | 'json';
 
 export interface TwoDAJSONRow {
@@ -95,8 +115,8 @@ export class TwoDAObject {
    */
   constructor(file: Uint8Array | string | undefined = undefined, onComplete?: Function) {
     this.file = file;
-    this.FileType = '2DA ';
-    this.FileVersion = 'V2.b';
+    this.FileType = TWO_DA_FILE_TYPE;
+    this.FileVersion = TWO_DA_VERSION_EXPORT;
     this.columns = ['__rowlabel'];
     this.ColumnCount = 0;
     this.RowCount = 0;
@@ -135,13 +155,18 @@ export class TwoDAObject {
     this.FileType = br.readChars(4);
     this.FileVersion = br.readChars(4);
 
-    br.position += 1; //0x0A = Newline (Skip)
+    if (this.FileType !== TWO_DA_FILE_TYPE || !isTwoDAFileVersion(this.FileVersion)) {
+      throw new Error('Tried to save or load an unsupported or corrupted file.');
+    }
+
+    // Skip the line break after the version; column names follow as tab-delimited, null-terminated text.
+    br.position += TWO_DA_NEWLINE_AFTER_HEADER;
 
     let str = '';
     let ch;
     this.columns = ['__rowlabel'];
-    while ((ch = br.readChar()).charCodeAt(0) != 0) {
-      if (ch.charCodeAt(0) != 9) {
+    while ((ch = br.readChar()).charCodeAt(0) != byteNUL) {
+      if (ch.charCodeAt(0) != byteHT) {
         str = str + ch;
       } else {
         this.columns.push(str);
@@ -158,7 +183,7 @@ export class TwoDAObject {
       let rowIndex = '';
       let c;
 
-      while ((c = br.readChar()).charCodeAt(0) != 9) {
+      while ((c = br.readChar()).charCodeAt(0) != byteHT) {
         rowIndex = rowIndex + c;
       }
 
@@ -192,7 +217,7 @@ export class TwoDAObject {
         let token = '';
         let c;
 
-        while ((c = br.readChar()).charCodeAt(0) != 0) token = token + c;
+        while ((c = br.readChar()).charCodeAt(0) != byteNUL) token = token + c;
 
         if (token == '') token = '****';
 
@@ -212,16 +237,16 @@ export class TwoDAObject {
   toExportBuffer(): Uint8Array {
     try {
       const bw = new BinaryWriter();
-      bw.writeChars('2DA ');
-      bw.writeChars('V2.b');
-      bw.writeByte(0x0a); //NewLine
+      bw.writeChars(TWO_DA_FILE_TYPE);
+      bw.writeChars(TWO_DA_VERSION_EXPORT);
+      bw.writeByte(byteLF);
 
       for (let i = 1; i < this.columns.length; i++) {
         bw.writeChars(this.columns[i]);
-        bw.writeByte(0x09); //HT Delineate Column Entry
+        bw.writeByte(byteHT);
       }
 
-      bw.writeByte(0x00); //Null Terminate Columns List
+      bw.writeByte(byteNUL);
 
       const indexes = Object.keys(this.rows)
         .map((value) => Number.parseInt(value, 10))
@@ -231,7 +256,7 @@ export class TwoDAObject {
 
       for (let i = 0; i < indexes.length; i++) {
         bw.writeChars(this.getRowLabel(indexes[i]));
-        bw.writeByte(0x09); //HT Delineate Row Index Entry
+        bw.writeByte(byteHT);
       }
 
       const valuesWriter = new BinaryWriter();
@@ -761,10 +786,13 @@ export function detectTwoDAFormat(buffer: Uint8Array): WriteTwoDAFormat | 'inval
   if (!buffer || buffer.length < 4) {
     return 'invalid';
   }
-  const head = new TextDecoder().decode(buffer.slice(0, Math.min(256, buffer.length))).trimStart();
-  if (buffer.length >= 8 && head.startsWith('2DA V2.b')) {
-    return '2da';
+  if (buffer.length >= TWO_DA_TYPE_VERSION_SIZE) {
+    const dec = new TextDecoder();
+    if (dec.decode(buffer.slice(0, 4)) === TWO_DA_FILE_TYPE && isTwoDAFileVersion(dec.decode(buffer.slice(4, 8)))) {
+      return '2da';
+    }
   }
+  const head = new TextDecoder().decode(buffer.slice(0, Math.min(256, buffer.length))).trimStart();
   if (head.startsWith('{') || head.startsWith('[')) {
     return 'json';
   }

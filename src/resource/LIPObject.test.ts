@@ -3,7 +3,7 @@ import * as os from 'os';
 import * as path from 'path';
 
 import { ApplicationEnvironment } from '@/enums/ApplicationEnvironment';
-import { LIPObject } from '@/resource/LIPObject';
+import { LIPObject, LIP_V10_HEADER_SIZE, LIP_V10_KEYFRAME_STRIDE } from '@/resource/LIPObject';
 import { ApplicationProfile } from '@/utility/ApplicationProfile';
 import { BinaryWriter } from '@/utility/binary/BinaryWriter';
 
@@ -143,8 +143,7 @@ describe('LIPObject', () => {
     const source = makeLipBuffer();
     const lip = parseLip(source);
     const exported = lip.toExportBuffer();
-    // Header: 8 (type+version) + 4 (duration) + 4 (count) = 16; each keyframe = 5 bytes
-    expect(exported.length).toBe(16 + lip.keyframes.length * 5);
+    expect(exported.length).toBe(LIP_V10_HEADER_SIZE + lip.keyframes.length * LIP_V10_KEYFRAME_STRIDE);
   });
 
   it('round-trips after addKeyFrame mutation', () => {

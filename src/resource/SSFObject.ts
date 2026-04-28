@@ -10,6 +10,12 @@ import {
   yamlToObject,
 } from '@/utility/FormatSerialization';
 
+/** Sound set (SSF) V1.1: type, version, then byte offset to the strref list (immediately after header). */
+export const SSF_V11_HEADER_SIZE = 12;
+
+/** KotOR uses 28 strref slots per soundset. */
+export const SSF_STRREF_SLOT_COUNT = 28;
+
 /**
  * SSFObject class.
  *
@@ -45,21 +51,32 @@ export class SSFObject {
     this.sound_refs = [];
 
     if (this.data instanceof Uint8Array) {
-      if (this.data.length < 12) {
+      if (this.data.length < SSF_V11_HEADER_SIZE) {
         throw new Error('Tried to save or load an unsupported or corrupted file.');
       }
 
       const reader = new BinaryReader(this.data);
       this.FileType = reader.readChars(4);
       this.FileVersion = reader.readChars(4);
-      const unknown = reader.readUInt32(); //Always 12?
+      const strrefTableOffset = reader.readUInt32();
 
       if (this.FileType !== 'SSF ' || this.FileVersion !== 'V1.1') {
         reader.dispose();
         throw new Error('Tried to save or load an unsupported or corrupted file.');
       }
 
-      const soundCount = (this.data.length - 12) / 4;
+      if (strrefTableOffset !== SSF_V11_HEADER_SIZE) {
+        reader.dispose();
+        throw new Error('Tried to save or load an unsupported or corrupted file.');
+      }
+
+      const payload = this.data.length - SSF_V11_HEADER_SIZE;
+      if (payload < 0 || payload % 4 !== 0) {
+        reader.dispose();
+        throw new Error('Tried to save or load an unsupported or corrupted file.');
+      }
+
+      const soundCount = payload / 4;
       for (let i = 0; i < soundCount; i++) {
         this.sound_refs.push(reader.readUInt32() & 0xffffffff);
       }
@@ -72,21 +89,21 @@ export class SSFObject {
   }
 
   ensure28Slots(): void {
-    while (this.sound_refs.length < 28) {
+    while (this.sound_refs.length < SSF_STRREF_SLOT_COUNT) {
       this.sound_refs.push(-1);
     }
-    if (this.sound_refs.length > 28) {
-      this.sound_refs = this.sound_refs.slice(0, 28);
+    if (this.sound_refs.length > SSF_STRREF_SLOT_COUNT) {
+      this.sound_refs = this.sound_refs.slice(0, SSF_STRREF_SLOT_COUNT);
     }
   }
 
   toBuffer(): Uint8Array {
     this.ensure28Slots();
-    const writer = new BinaryWriter(new Uint8Array(12 + 28 * 4));
+    const writer = new BinaryWriter(new Uint8Array(SSF_V11_HEADER_SIZE + SSF_STRREF_SLOT_COUNT * 4));
     writer.writeChars(this.FileType || 'SSF ');
     writer.writeChars(this.FileVersion || 'V1.1');
-    writer.writeUInt32(12);
-    for (let i = 0; i < 28; i++) {
+    writer.writeUInt32(SSF_V11_HEADER_SIZE);
+    for (let i = 0; i < SSF_STRREF_SLOT_COUNT; i++) {
       writer.writeUInt32(this.sound_refs[i] < 0 ? 0xffffffff : this.sound_refs[i]);
     }
     return writer.buffer;

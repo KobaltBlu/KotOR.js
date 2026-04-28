@@ -42,6 +42,18 @@ export const MP3_HEADER_SKIP = 58;
 const SFX_HEADER = SFX_MAGIC;
 const RIFF_HEADER = RIFF_MAGIC;
 
+function bytesMatchAt(haystack: Uint8Array, offset: number, needle: Uint8Array): boolean {
+  if (haystack.length < offset + needle.length) {
+    return false;
+  }
+  for (let i = 0; i < needle.length; i++) {
+    if (haystack[offset + i] !== needle[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * WAV resource data.
  * For playback use AudioFile; use WAVObject for read/edit/save of WAV resources.
@@ -85,13 +97,7 @@ export class WAVObject {
     }
 
     if (match(flag, RIFF_HEADER)) {
-      if (
-        buffer.length >= VO_HEADER_LEN + 4 &&
-        buffer[VO_HEADER_LEN] === 0x52 &&
-        buffer[VO_HEADER_LEN + 1] === 0x49 &&
-        buffer[VO_HEADER_LEN + 2] === 0x46 &&
-        buffer[VO_HEADER_LEN + 3] === 0x46
-      ) {
+      if (buffer.length >= VO_HEADER_LEN + 4 && bytesMatchAt(buffer, VO_HEADER_LEN, RIFF_MAGIC)) {
         this.wavType = WAVType.VO;
         const after = buffer.slice(VO_HEADER_LEN);
         this.parseRiffWave(after);
@@ -335,13 +341,7 @@ export function detectAudioFormat(data: Uint8Array): [DeobfuscationResult, numbe
   if (data.length < 12) return [DeobfuscationResult.STANDARD, 0];
   if (matchBytes(data, SFX_MAGIC)) return [DeobfuscationResult.SFX_HEADER, SFX_HEADER_LEN];
   if (matchBytes(data, RIFF_HEADER)) {
-    if (
-      data.length >= VO_HEADER_LEN + 4 &&
-      data[VO_HEADER_LEN] === 0x52 &&
-      data[VO_HEADER_LEN + 1] === 0x49 &&
-      data[VO_HEADER_LEN + 2] === 0x46 &&
-      data[VO_HEADER_LEN + 3] === 0x46
-    ) {
+    if (data.length >= VO_HEADER_LEN + 4 && bytesMatchAt(data, VO_HEADER_LEN, RIFF_MAGIC)) {
       return [DeobfuscationResult.STANDARD, VO_HEADER_LEN];
     }
     const riffSize = data[4] | (data[5] << 8) | (data[6] << 16) | (data[7] << 24);

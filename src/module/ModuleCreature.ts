@@ -996,7 +996,6 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Pacify creatures in the area that are targeting this creature.
-   * Reversed from CSWSCreature::PacifyCreature (0x004fd960).
    * Clears their combat state and hostile actions vs this creature.
    */
   pacifyCreature() {
@@ -1340,7 +1339,6 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Get the nearest perceived hostile creature within range.
-   * Reversed from CSWSCreature::GetNearestEnemy (0x004f2de0).
    * @param maxRange Maximum distance to consider (e.g. 30.0 for Rest/SetExcitedState).
    * @param excludeId Object ID to exclude (ModuleObjectConstant.OBJECT_INVALID to exclude none).
    * @returns Nearest hostile ModuleCreature or undefined if none.

@@ -13,6 +13,7 @@ import {
   yamlToObject,
 } from '@/utility/FormatSerialization';
 
+/** Fixed header: signature and version (8), variable and fixed entry counts (8), offset to the variable index table (4) — 20 bytes total. */
 const BIF_HEADER_SIZE = 20;
 
 /**
@@ -100,6 +101,7 @@ export class BIFObject {
     this.variableTableSize = this.variableResourceCount * this.variableTableRowSize;
     this.resources = [];
 
+    // Variable index: one row per entry; each row is four little-endian dwords (id, data offset, size, type id).
     this.reader.seek(this.variableTableOffset);
     for (let i = 0; i < this.variableResourceCount; i++) {
       this.resources.push({
@@ -130,7 +132,6 @@ export class BIFObject {
     this.variableTableRowSize = 16;
     this.variableTableSize = this.variableResourceCount * this.variableTableRowSize;
 
-    //Read variable tabs blocks
     const variableTable: Uint8Array = new Uint8Array(this.variableTableSize);
     await GameFileSystem.read(fd, variableTable, 0, this.variableTableSize, this.variableTableOffset);
     this.reader.reuse(variableTable);

@@ -66,12 +66,11 @@ import { TalkVolume } from '@/enums/engine/TalkVolume';
  * action ID; the VM dispatches to actionsMap[instruction.action]. The logic here
  * must match the original engine behavior so compiled scripts run correctly.
  *
- * CANONICAL SOURCES / REVA (prefix k1_ in Reva)
- * ---------------------------------------------
- * - Binary: swkotor.exe (KotOR I). In Reva/Ghidra the project path is
- *   /k1_win_gog_swkotor.exe (use k1_ prefix when referring to the K1 binary).
- *   The engine implements each command via an internal ExecuteCommand* (or
- *   equivalent) dispatch; comments below document the intended, canonical behavior.
+ * CANONICAL SOURCES
+ * -----------------
+ * - Binary: the KotOR I Windows release (swkotor.exe). The VM dispatches each
+ *   command index the same way as the original game; comments document intended
+ *   behavior and return semantics.
  * - NCS: Compiled scripts use action IDs 0..771 for KotOR I. Each entry in
  *   NWScriptDefK1.Actions corresponds to exactly one engine command index.
  *

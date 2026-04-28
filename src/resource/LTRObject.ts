@@ -8,13 +8,14 @@ import {
   yamlToObject,
 } from '@/utility/FormatSerialization';
 
+/** Header: 4-byte type, 4-byte version, 1-byte letter-table width. Remaining bytes are 32-bit floats. */
 const LTR_HEADER_LENGTH = 9;
 
 /**
  * LTRObject class
  *
  * Class representing a LTR file in memory.
- * uses Markov Chains to generate random names for character generation ingame
+ * Markov letter tables for random name generation in character creation.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -45,7 +46,9 @@ export class LTRObject {
       this.openFile(this.file);
     } else if (data instanceof Uint8Array) {
       this.buffer = data;
-      this.readBuffer(this.buffer);
+      if (data.length > 0) {
+        this.readBuffer(this.buffer);
+      }
     }
   }
 
@@ -53,13 +56,24 @@ export class LTRObject {
 
   readBuffer(data: Uint8Array) {
     if (data instanceof Uint8Array) {
+      if (data.length < LTR_HEADER_LENGTH) {
+        throw new Error('Tried to save or load an unsupported or corrupted file.');
+      }
       const br = new BinaryReader(data);
 
       this.fileType = br.readChars(4);
       this.fileVersion = br.readChars(4);
       this.charCount = br.readByte();
 
-      br.seek(LTR_HEADER_LENGTH);
+      if (this.fileType !== 'LTR ' || this.fileVersion !== 'V1.0') {
+        throw new Error('Tried to save or load an unsupported or corrupted file.');
+      }
+
+      const n = this.charCount;
+      const numFloats = n * 3 + n * n * 3 + n * n * n * 3;
+      if (data.length < LTR_HEADER_LENGTH + numFloats * 4) {
+        throw new Error('Tried to save or load an unsupported or corrupted file.');
+      }
 
       //Single Markov Chains
       this.singleArray[0] = [];
@@ -94,7 +108,7 @@ export class LTRObject {
         }
       }
 
-      //Tripple Markov Chains
+      // Triple Markov chains
       for (let i = 0; i < this.charCount; i++) {
         this.tripleArray[i] = [];
         for (let j = 0; j < this.charCount; j++) {

@@ -1,18 +1,13 @@
 ﻿/**
- * Combat message TLK string IDs and fallbacks.
- *
- * Reva: CSWGuiMainInterface::SetCombatMessage @ 0x00687700 (k1_win_gog_swkotor.exe)
- * - Uses TLK string ID (param_1) to set combat_mode_message_label text
- * - Special IDs: 0xbaf3 (47859) purple, 0xa5ec/0xa5ed/0xa5ee (42476-42478) green, 0xbc50 (48208) clear/default
- *
- * KotOR 1 dialog.tlk combat strings - IDs may vary; fallbacks used when TLK returns empty.
+ * Combat message TLK string references and string fallbacks for the UI.
+ * String IDs are resolved from `dialog.tlk`; if empty, the paired fallback text is shown.
  */
 import { AttackResult } from '@/enums/combat/AttackResult';
 
 /** Duration to show combat message before auto-hiding (ms). Matches round feedback timing. */
 export const COMBAT_MESSAGE_DURATION_MS = 2500;
 
-/** TLK ID for "clear" / no message (Reva: 0xbc50 = 48208) */
+/** TLK strref in KotOR 1 `dialog.tlk` used to clear the combat message line. */
 export const TLK_COMBAT_CLEAR = 48208;
 
 /** AttackResult -> { tlkId, fallback } for combat menu display */
