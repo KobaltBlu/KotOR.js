@@ -4,7 +4,7 @@ This file tracks subsystem coverage against the reference program `/K1/k1_win_go
 
 **Iteration lists**
 - Thematic: [`.cursor/k1-iteration-todos.md`](k1-iteration-todos.md) (P0→P1→P2, MCP batches, quality gates).
-- **Per TypeScript file:** [`.cursor/k1-iteration-todos-exhaustive.md`](k1-iteration-todos-exhaustive.md) — one row per `src` `.ts` / `.tsx` (**1490**; `verify_k1_iteration_exhaustive.py` = full coverage; regen in `.cursor/scripts/`). **TS outside `src/` (e.g. `extensions/`):** [k1-iteration-todos-repo-ts-outside-src.md](k1-iteration-todos-repo-ts-outside-src.md) — **36** `EXT-####` rows, default **[N/A]** to retail EXE.
+- **Per TypeScript file:** [`.cursor/k1-iteration-todos-exhaustive.md`](k1-iteration-todos-exhaustive.md) — one row per `src` `.ts` / `.tsx` (**1492** as of last regen; `verify_k1_iteration_exhaustive.py` = full coverage; regen in `.cursor/scripts/`). **TS outside `src/` (e.g. `extensions/`):** [k1-iteration-todos-repo-ts-outside-src.md](k1-iteration-todos-repo-ts-outside-src.md) — **36** `EXT-####` rows, default **[N/A]** to retail EXE.
 - **Optional (UI only):** [`.cursor/k1-iteration-todos-optional-assets.md`](k1-iteration-todos-optional-assets.md) — `.scss` + `.html` in `src/` (91; no EXE symbol mandate).
 - **Non-TS code in `src/`:** ~**167** `*.py` (mostly `tests/holocron/**`) + `*.pyc` + binary fixtures — **N/A** to K1 `swkotor.exe` per-line; see table in [`.cursor/k1-iteration-todos.md`](k1-iteration-todos.md). **MCP P0 resource anchor:** `CExoResFile` / `CERFFile` (packed resources in original client).
 - **Binary function inventory (tens of thousands in Ghidra) vs 1490 TS files:** the exhaustive `SRC-####` list does **not** map one-to-one to every decompiled function. For a no-omission bar *vs the retail EXE*, follow [`.cursor/k1-binary-exe-coverage-model.md`](k1-binary-exe-coverage-model.md) (private manifest + domain map + N/A register) **in addition to** per-file and MCP batch work.
@@ -40,7 +40,7 @@ The original plan in [`.cursor/plans/k1_swkotor_re_audit_b357eb25.plan.md`](plan
 
 **Bootstrap (done):** project lists `/K1` with `k1_win_gog_swkotor.exe`; `program_path` for MCP = that file.
 
-**Status:** matrix expanded; **per-row completion** = items in [`.cursor/k1-iteration-todos.md`](k1-iteration-todos.md), not a single “deep-validate” sample.
+**Status:** matrix expanded; **per-row completion** = items in [`.cursor/k1-iteration-todos.md`](k1-iteration-todos.md), not a single “deep-validate” sample. **Last process pass (agdec alignment continuation, 2026-04-28):** `npm run k1:exhaustive` wired to `verify_k1_iteration_exhaustive.py`; private binary manifest + MCP-B01–B05 discovery captured under `docs/private/` (gitignored); remaining MCP-B06+ searches may need retry if the HTTP MCP returns invalid-parameter errors mid-session.
 
 **MCP order:** `user-agdec-http` first, `user-agdec-mcp` second, CLI last (see plan).
 

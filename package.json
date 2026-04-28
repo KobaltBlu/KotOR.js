@@ -49,7 +49,11 @@
     "webpack:dev": "cross-env NODE_ENV=development webpack",
     "webpack:dev-watch": "cross-env NODE_ENV=development webpack --watch",
     "webpack:dev:verbose": "cross-env NODE_ENV=development webpack --progress --stats verbose",
-    "webpack:prod": "cross-env NODE_ENV=production webpack"
+    "webpack:prod": "cross-env NODE_ENV=production webpack",
+    "k1:exhaustive": "python .cursor/scripts/verify_k1_iteration_exhaustive.py",
+    "k1:exhaustive:all": "python .cursor/scripts/verify_k1_iteration_exhaustive.py",
+    "k1:exhaustive:summary": "python .cursor/scripts/verify_k1_src_batch_ranges.py",
+    "k1:src-batches:verify": "python .cursor/scripts/verify_k1_src_batch_ranges.py"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",

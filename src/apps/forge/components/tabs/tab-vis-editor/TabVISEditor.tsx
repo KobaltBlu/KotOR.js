@@ -97,7 +97,7 @@ export const TabVISEditor = function (props: BaseTabProps) {
                           onClick={() => tab.selectRoom(visibleRoom)}
                           title="Go to this room"
                         >
-                          ->
+                          {'->'}
                         </button>
                       </div>
                     ))}

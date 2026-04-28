@@ -4,12 +4,12 @@
 
 **Companion lists**
 
-- **Per file:** [k1-iteration-todos-exhaustive.md](k1-iteration-todos-exhaustive.md) (count must match; `verify_k1_iteration_exhaustive.py`)
+- **Per file:** [k1-iteration-todos-exhaustive.md](k1-iteration-todos-exhaustive.md) (must match on-disk `src/**/*.ts|tsx` count; verify script enforces this)
 - **Thematic + 29 top-level trees:** [k1-iteration-todos.md](k1-iteration-todos.md)
 
 **Rule:** Each row is a folder that **directly** holds one or more `.ts`/`.tsx` files. When iterating K1 ↔ `k1_win_gog_swkotor.exe`, either validate every file in that folder (via the per-file list) or mark the whole folder **[N/A]** in private notes with one reason (e.g. Forge-only UI, holocron harness).
 
-**Verify:** `python .cursor/scripts/diff_exhaustive_src_subdirs.py` (must exit 0), or `python .cursor/scripts/verify_k1_iteration_exhaustive.py` for both axes + footer check.
+**Verify:** `python .cursor/scripts/diff_exhaustive_src_subdirs.py` (must exit 0).
 
 ---
 
@@ -118,7 +118,7 @@
 - [ ] SUBDIR-0103: `src/controls/` — **8** file(s) directly here
 - [ ] SUBDIR-0104: `src/effects/` — **61** file(s) directly here
 - [ ] SUBDIR-0105: `src/electron/` — **6** file(s) directly here
-- [ ] SUBDIR-0106: `src/engine/` — **26** file(s) directly here
+- [ ] SUBDIR-0106: `src/engine/` — **28** file(s) directly here
 - [ ] SUBDIR-0107: `src/engine/menu/` — **3** file(s) directly here
 - [ ] SUBDIR-0108: `src/engine/minigames/` — **2** file(s) directly here
 - [ ] SUBDIR-0109: `src/engine/pathfinding/` — **4** file(s) directly here

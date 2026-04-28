@@ -4,7 +4,7 @@
 
 **Hard rule:** Do not edit gameplay-parity `src/` (combat, module, nwscript, resource, engine rules, save I/O, etc.) without **first** running discovery against `/K1/k1_win_gog_swkotor.exe` and, when hits land on the code path you are changing, following up with at least one deep inspection (function or structure). Put symbol-level notes in chat or private/PR notes, not in `src/` comments. JSDoc that **states** new client behavior counts as a parity claim and needs the same research pass.
 
-**`SRC-####` row = one physical file — closure:** There are **1490** source files and **1490** rows. Marking a subsystem “done” in the P0 list does not replace checking off each `SRC-####` (or the parent `SUBDIR-####` when closing a whole folder in one shot with the same evidence theme). The **same** set is what `tsconfig` includes, ESLint/Prettier run on, and the exhaustive file list enumerates; see [k1-iteration-axes.md](k1-iteration-axes.md) **Tooling uses the same @src set**.
+**`SRC-####` row = one physical file — closure:** There are **1492** source files and **1492** rows. Marking a subsystem “done” in the P0 list does not replace checking off each `SRC-####` (or the parent `SUBDIR-####` when closing a whole folder in one shot with the same evidence theme). The **same** set is what `tsconfig` includes, ESLint/Prettier run on, and the exhaustive file list enumerates; see [k1-iteration-axes.md](k1-iteration-axes.md) **Tooling uses the same @src set**.
 
 **Definition of “done” per item:** (1) batched `search-everything` (or equivalent) with query themes logged; (2) at least one `get-function` + `get-references` (or `execute-script`) on a representative **hot** symbol when hits warrant code changes; (3) TS/tests updated if mismatch; (4) `format:check` / `lint` / targeted `npm test` for touched paths. Jest: use path args or `--runTestsByPath` (Context7: `/jestjs/jest` CLI) — on Windows prefer `/` in paths or escaped `\\`.
 
@@ -12,23 +12,23 @@
 
 **Plan note:** The original plan YAML “completed” items are **bootstrap** (matrix, one deep sample). **This file** is the high-level work breakdown.
 
-**Index of *all* axes (1490 + 200 + 91 + 36 + inventory):** [`.cursor/k1-iteration-axes.md`](k1-iteration-axes.md) — use this to prove nothing under `src/` is outside the contract. **TypeScript outside `src/` (satellite, e.g. VS Code):** [`.cursor/k1-iteration-todos-repo-ts-outside-src.md`](k1-iteration-todos-repo-ts-outside-src.md) (**36** `EXT-####` rows; verify: `python .cursor/scripts/diff_repo_ts_outside_src.py` — not part of retail EXE 1:1 work).
+**Index of *all* axes (1492 + 200 + 91 + 36 + inventory):** [`.cursor/k1-iteration-axes.md`](k1-iteration-axes.md) — use this to prove nothing under `src/` is outside the contract. **TypeScript outside `src/` (satellite, e.g. VS Code):** [`.cursor/k1-iteration-todos-repo-ts-outside-src.md`](k1-iteration-todos-repo-ts-outside-src.md) (**36** `EXT-####` rows; verify: `python .cursor/scripts/diff_repo_ts_outside_src.py` — not part of retail EXE 1:1 work).
 
-**TypeScript (mandatory, canonical):** one row per `src/**/*.ts` and `src/**/*.tsx` — [`.cursor/k1-iteration-todos-exhaustive.md`](k1-iteration-todos-exhaustive.md) (**1490** as of last regen; **single verify:** `python .cursor/scripts/verify_k1_iteration_exhaustive.py` — must exit 0; or run `diff_exhaustive_src.py` alone; regen: `python .cursor/scripts/regenerate_exhaustive_src_checklist.py`).
+**TypeScript (mandatory, canonical):** one row per `src/**/*.ts` and `src/**/*.tsx` — [`.cursor/k1-iteration-todos-exhaustive.md`](k1-iteration-todos-exhaustive.md) (**1492** as of last regen; **single verify:** `python .cursor/scripts/verify_k1_iteration_exhaustive.py` — must exit 0; or run `diff_exhaustive_src.py` alone; regen: `python .cursor/scripts/regenerate_exhaustive_src_checklist.py`).
 
-**TypeScript (mandatory, directory axis):** one row per folder under `src/` that **directly** contains ≥1 `.ts`/`.tsx` — [`.cursor/k1-iteration-todos-exhaustive-subdirs.md`](k1-iteration-todos-exhaustive-subdirs.md) (**200** as of last regen; verify: `python .cursor/scripts/diff_exhaustive_src_subdirs.py` — must exit 0; regen: `python .cursor/scripts/regenerate_exhaustive_src_subdirs.py`). Use with the **1490** file list so no path is skipped.
+**TypeScript (mandatory, directory axis):** one row per folder under `src/` that **directly** contains ≥1 `.ts`/`.tsx` — [`.cursor/k1-iteration-todos-exhaustive-subdirs.md`](k1-iteration-todos-exhaustive-subdirs.md) (**200** as of last regen; verify: `python .cursor/scripts/diff_exhaustive_src_subdirs.py` — must exit 0; regen: `python .cursor/scripts/regenerate_exhaustive_src_subdirs.py`). Use with the **1492** file list so no path is skipped.
 
-**By-directory map (no extra files, same 1490):** [`.cursor/k1-src-directory-coverage.md`](k1-src-directory-coverage.md) — per-folder file counts and **P0/P1** mapping hints. Regenerate the table with `python .cursor/scripts/regenerate_k1_src_directory_coverage.py`. Use with the per-file `SRC-####` list; anything not a gameplay analogue gets **[N/A]** in private notes.
+**By-directory map (no extra files, same 1492):** [`.cursor/k1-src-directory-coverage.md`](k1-src-directory-coverage.md) — per-folder file counts and **P0/P1** mapping hints. Regenerate the table with `python .cursor/scripts/regenerate_k1_src_directory_coverage.py`. Use with the per-file `SRC-####` list; anything not a gameplay analogue gets **[N/A]** in private notes.
 
 **Non-TypeScript in `src/` (optional, UI/markup only):** [`.cursor/k1-iteration-todos-optional-assets.md`](k1-iteration-todos-optional-assets.md) — **91** `.scss` + `.html` (regen: `python .cursor/scripts/regenerate_optional_non_ts_src.py`). These are **not** required to have direct symbol matches in the retail EXE; treat as layout/theming/Forge surface.
 
-**Nothing in `src/` escapes tracking:** the **only** authoritative per-file parity grid for TypeScript is the **1490** `SRC-####` rows plus the **200** `SUBDIR-####` rows (folder axis). Optional UI assets add **91** `AST-####` rows. Everything below is **inventory-only** (no per-file checkbox yet) so agents do not assume “only TS exists”.
+**Nothing in `src/` escapes tracking:** the **only** authoritative per-file parity grid for TypeScript is the **1492** `SRC-####` rows plus the **200** `SUBDIR-####` rows (folder axis). Optional UI assets add **91** `AST-####` rows. Everything below is **inventory-only** (no per-file checkbox yet) so agents do not assume “only TS exists”.
 
 **Non-TypeScript / non-checkbox extensions under `src/` (snapshot counts — re-measure after big adds):**
 
 | Extension / kind | ~files | K1 `k1_win_gog_swkotor.exe` iteration policy |
 |--------------------|--------|---------------------------------------------|
-| `.ts` / `.tsx` | **1490** | **Mandatory** — exhaustive list + MCP or **[N/A]** per row |
+| `.ts` / `.tsx` | **1492** | **Mandatory** — exhaustive list + MCP or **[N/A]** per row |
 | `.scss` / `.html` | **91** | Optional `AST-####` list; screen/layout parity, not disassembly |
 | `.pyc` | ~261 | Bytecache — remove from VCS or gitignore; **N/A** |
 | `.py` | ~167 | Mostly `tests/holocron/**`; harness/CLI — **N/A** to retail EXE unless you open a separate Python↔tool checklist |
@@ -64,13 +64,13 @@
 
 **P0 EXE ↔ resource stack (for MCP):** the original client’s packed-file layer is centered on **`CExoResFile`** and related `CERFFile` / GFF types. When validating `BIFObject`, `ERFObject`, `KEYObject`, and `GFF*`, use **`search-symbols` / `get-function`** on those class names first, then follow callers into `ReadResource` / `LoadHeader` and map behavior to the TS `resource/` + `managers/` types — still with **neutral** `src/` comments (no symbol addresses).
 
-Use the **1490** TS list so **no** `.ts`/`.tsx` file is skipped without **N/A** in private notes (TSL, Electron, holocron-only, pure editor, etc.).
+Use the **1492** TS list so **no** `.ts`/`.tsx` file is skipped without **N/A** in private notes (TSL, Electron, holocron-only, pure editor, etc.).
 
 ---
 
 ## Exhaustive top-level `src/` directories (29 trees)
 
-Every TypeScript file under `src/` belongs to exactly one of these folders. **File-level** work is still the **1490** rows in [`k1-iteration-todos-exhaustive.md`](k1-iteration-todos-exhaustive.md); this block is a **second axis** so no subsystem is forgotten when mapping to `k1_win_gog_swkotor.exe`. Mark a row done only when **all** `.ts`/`.tsx` under that tree are either validated against K1 behavior or explicitly **[N/A]** with reason in private notes.
+Every TypeScript file under `src/` belongs to exactly one of these folders. **File-level** work is still the **1492** rows in [`k1-iteration-todos-exhaustive.md`](k1-iteration-todos-exhaustive.md); this block is a **second axis** so no subsystem is forgotten when mapping to `k1_win_gog_swkotor.exe`. Mark a row done only when **all** `.ts`/`.tsx` under that tree are either validated against K1 behavior or explicitly **[N/A]** with reason in private notes.
 
 - [ ] **SRC-DIR-actions** — script `Action*` queue items vs engine action service (**MCP-B06**)
 - [ ] **SRC-DIR-apps** — Forge / launcher / game shell / debugger (**P2-APP**; gameplay rules only where they mirror K1)
@@ -254,7 +254,7 @@ Track completion of these **query batches** against `k1_win_gog_swkotor.exe` (lo
 
 ## Binary (retail EXE) function inventory — O(10⁴) decompiled functions
 
-**Not optional** for a “no omissions vs RE / agdec” bar. **Independent** of the 1490 `SRC-####` file list. Canonical model: [k1-binary-exe-coverage-model.md](k1-binary-exe-coverage-model.md).
+**Not optional** for a “no omissions vs RE / agdec” bar. **Independent** of the 1492 `SRC-####` file list. Canonical model: [k1-binary-exe-coverage-model.md](k1-binary-exe-coverage-model.md).
 
 - [ ] BINARY-01: **Private** full function manifest (or full-program export) for `k1_win_gog_swkotor.exe` with **count**, **inclusion rules** (e.g. unlabeled `FUN_*`, thunks, import stubs), and **content hash** in private notes only — obtain via `agentdecompile://list-functions`, `ghidra://analysis-dump`, `export`, or `execute-script` (see model doc; HTTP `search-everything` is bounded and is **not** a full inventory)
 - [ ] BINARY-02: **Domain partition** of the manifest (game engine, NWScript, resource I/O, combat/module, render/audio, imports/CRT/duplicate, etc.); each domain is a coverage unit, not every leaf function
@@ -262,4 +262,4 @@ Track completion of these **query batches** against `k1_win_gog_swkotor.exe` (lo
 - [ ] BINARY-04: **Map domains** to [k1-client-alignment-matrix.md](k1-client-alignment-matrix.md) rows and `src/` areas; track triage % or explicit **N/A**
 - [ ] BINARY-05: **Cross-check** `SRC-####` / MCP-B closure: private ledgers tie work to a **domain** and/or **anchor** symbol — file-only “done” is insufficient for EXE-wide completeness
 
-**Total checkboxes (full surface):** ~100+ thematic rows **+ 29** `SRC-DIR-*` top-level directory rows in **this** file; **1490** `SRC-####` per-file rows; **200** `SUBDIR-####` folder rows; **91** optional `AST-####` asset rows; **17** MCP-B01–B17 batch rows; **5** BINARY-01–BINARY-05; P0/P1/P2 + **QG-00**–QG-04 (and META) rows above; **36** optional `EXT-####` (repo TypeScript **outside** `src/`). See [k1-iteration-axes.md](k1-iteration-axes.md) for the full index. The **1490** `SRC-####` set is the complete contract for **TypeScript file** coverage; **BINARY-** rows are the contract for **retail EXE function surface** vs decompilation. `EXT-####` is tool/editor tracking with default **[N/A]** to the EXE. Check off as you go; split any row into sub-rows if a subsystem has multiple top call sites (e.g. one per `Module*` class family).
+**Total checkboxes (full surface):** ~100+ thematic rows **+ 29** `SRC-DIR-*` top-level directory rows in **this** file; **1492** `SRC-####` per-file rows; **200** `SUBDIR-####` folder rows; **91** optional `AST-####` asset rows; **17** MCP-B01–B17 batch rows; **5** BINARY-01–BINARY-05; P0/P1/P2 + **QG-00**–QG-04 (and META) rows above; **36** optional `EXT-####` (repo TypeScript **outside** `src/`). See [k1-iteration-axes.md](k1-iteration-axes.md) for the full index. The **1492** `SRC-####` set is the complete contract for **TypeScript file** coverage; **BINARY-** rows are the contract for **retail EXE function surface** vs decompilation. `EXT-####` is tool/editor tracking with default **[N/A]** to the EXE. Check off as you go; split any row into sub-rows if a subsystem has multiple top call sites (e.g. one per `Module*` class family).
