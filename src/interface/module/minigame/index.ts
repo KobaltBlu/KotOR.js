@@ -1,1 +1,1 @@
-export * from "@/interface/module/minigame/IModelListItem";
+export * from '@/interface/module/minigame/IModelListItem';

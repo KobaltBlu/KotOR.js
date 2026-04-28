@@ -1,14 +1,14 @@
-import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
-import { CombatActionType } from "@/enums/combat/CombatActionType";
-import { TalentFeat, TalentSpell } from "@/talents";
-import { AttackResult } from "@/enums/combat/AttackResult";
-import { ProjectilePath } from "@/enums/combat/ProjectilePath";
-import { OdysseyModelAnimation } from "@/odyssey";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
-import { SpellCastInstance } from "@/combat/SpellCastInstance";
-import { CombatFeatType } from "@/enums/combat/CombatFeatType";
-import { BitWise } from "@/utility/BitWise";
-import { ModuleObjectType } from "@/enums";
+import type { ModuleCreature, ModuleItem, ModuleObject } from '@/module';
+import { CombatActionType } from '@/enums/combat/CombatActionType';
+import { TalentFeat, TalentSpell } from '@/talents';
+import { AttackResult } from '@/enums/combat/AttackResult';
+import { ProjectilePath } from '@/enums/combat/ProjectilePath';
+import { OdysseyModelAnimation } from '@/odyssey';
+import { ITwoDAAnimation } from '@/interface/twoDA/ITwoDAAnimation';
+import { SpellCastInstance } from '@/combat/SpellCastInstance';
+import { CombatFeatType } from '@/enums/combat/CombatFeatType';
+import { BitWise } from '@/utility/BitWise';
+import { ModuleObjectType } from '@/enums';
 
 export class CombatRoundAction {
   owner: ModuleObject;
@@ -53,13 +53,13 @@ export class CombatRoundAction {
 
   equipInstant: boolean = false;
 
-  constructor(owner?: ModuleObject){
+  constructor(owner?: ModuleObject) {
     this.owner = owner;
     this.iconResRef = 'i_attack';
   }
 
-  setFeat(feat: TalentFeat){
-    if(!feat){
+  setFeat(feat: TalentFeat) {
+    if (!feat) {
       this.featId = -1;
       this.feat = undefined;
       return;
@@ -69,8 +69,8 @@ export class CombatRoundAction {
     this.iconResRef = feat.icon;
   }
 
-  setSpell(spell: TalentSpell){
-    if(!spell){
+  setSpell(spell: TalentSpell) {
+    if (!spell) {
       this.spellId = -1;
       this.spell = undefined;
       return;
@@ -84,78 +84,77 @@ export class CombatRoundAction {
     this.spellInstance = spellInstance;
   }
 
-  calculateAttackAnimation(){
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
+  calculateAttackAnimation() {
+    if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
 
     const owner: ModuleCreature = this.owner as any;
     let attackKey = owner.getCombatAnimationAttackType();
-    let weaponWield = owner.getCombatAnimationWeaponType();
+    const weaponWield = owner.getCombatAnimationWeaponType();
     let attackType = 1;
     let isMelee = true;
     let isRanged = false;
 
-    if(attackKey == 'b'){
+    if (attackKey == 'b') {
       isMelee = false;
       isRanged = true;
     }
 
-    if(this.feat){
-      if(attackKey == 'm'){
+    if (this.feat) {
+      if (attackKey == 'm') {
         attackKey = 'f';
-        switch(this.feat.id){
+        switch (this.feat.id) {
           case CombatFeatType.CRITICAL_STRIKE:
           case CombatFeatType.IMPROVED_CRITICAL_STRIKE:
           case CombatFeatType.MASTER_CRITICAL_STRIKE:
             attackType = 1;
-          break;
+            break;
           case CombatFeatType.FLURRY:
           case CombatFeatType.IMPROVED_FLURRY:
           case CombatFeatType.MASTER_FLURRY:
             attackType = 2;
-          break;
+            break;
           case CombatFeatType.POWER_ATTACK:
           case CombatFeatType.IMPROVED_POWER_ATTACK:
           case CombatFeatType.MASTER_POWER_ATTACK:
             attackType = 3;
-          break;
+            break;
         }
-      }else if(attackKey == 'b'){
-        switch(this.feat.id){
+      } else if (attackKey == 'b') {
+        switch (this.feat.id) {
           case CombatFeatType.RAPID_SHOT:
           case CombatFeatType.IMPROVED_RAPID_SHOT:
           case CombatFeatType.MASTER_RAPID_SHOT:
             attackType = 2;
-          break;
+            break;
           case CombatFeatType.SNIPER_SHOT:
           case CombatFeatType.IMPROVED_SNIPER_SHOT:
           case CombatFeatType.MASTER_SNIPER_SHOT:
             attackType = 3;
-          break;
+            break;
           case CombatFeatType.POWER_BLAST:
           case CombatFeatType.IMPROVED_POWER_BLAST:
           case CombatFeatType.MASTER_POWER_BLAST:
             attackType = 4;
-          break;
+            break;
         }
       }
     }
 
     //Get random basic melee attack in combat with another melee creature that is targeting you
-    if(attackKey == 'm' && BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+    if (attackKey == 'm' && BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)) {
       const target: ModuleCreature = this.target as any;
-      if(owner.isDuelingObject(target)){
+      if (owner.isDuelingObject(target)) {
         attackKey = 'c';
-        attackType = Math.round(Math.random()*4)+1;
+        attackType = Math.round(Math.random() * 4) + 1;
       }
     }
-    
-    let animation = attackKey+weaponWield+'a'+attackType;
-    if(this.isCutsceneAttack){
+
+    let animation = attackKey + weaponWield + 'a' + attackType;
+    if (this.isCutsceneAttack) {
       animation = this.animationName;
     }
 
     this.animationName = animation;
     this.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(animation);
   }
-
 }

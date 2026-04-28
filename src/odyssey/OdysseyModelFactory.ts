@@ -1,20 +1,20 @@
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-import { OdysseyModelNodeAABB } from "@/odyssey/OdysseyModelNodeAABB";
-import { OdysseyModelNodeDangly } from "@/odyssey/OdysseyModelNodeDangly";
-import { OdysseyModelNodeEmitter } from "@/odyssey/OdysseyModelNodeEmitter";
-import { OdysseyModelNodeLight } from "@/odyssey/OdysseyModelNodeLight";
-import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
-import { OdysseyModelNodeReference } from "@/odyssey/OdysseyModelNodeReference";
-import { OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
-import { OdysseyModelNodeSkin } from "@/odyssey/OdysseyModelNodeSkin";
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { OdysseyModelNodeType } from '@/enums/odyssey/OdysseyModelNodeType';
+import { OdysseyModelNode } from '@/odyssey/OdysseyModelNode';
+import { OdysseyModelNodeAABB } from '@/odyssey/OdysseyModelNodeAABB';
+import { OdysseyModelNodeDangly } from '@/odyssey/OdysseyModelNodeDangly';
+import { OdysseyModelNodeEmitter } from '@/odyssey/OdysseyModelNodeEmitter';
+import { OdysseyModelNodeLight } from '@/odyssey/OdysseyModelNodeLight';
+import { OdysseyModelNodeMesh } from '@/odyssey/OdysseyModelNodeMesh';
+import { OdysseyModelNodeReference } from '@/odyssey/OdysseyModelNodeReference';
+import { OdysseyModelNodeSaber } from '@/odyssey/OdysseyModelNodeSaber';
+import { OdysseyModelNodeSkin } from '@/odyssey/OdysseyModelNodeSkin';
 
 /**
  * OdysseyModelFactory class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyModelFactory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,8 +30,7 @@ export class OdysseyModelFactory {
   static OdysseyModelNodeSkin: typeof OdysseyModelNodeSkin = OdysseyModelNodeSkin;
   static OdysseyModelNodeSaber: typeof OdysseyModelNodeSaber = OdysseyModelNodeSaber;
 
-  public static ReadNode(parent: OdysseyModelNode, mdlReader: BinaryReader)
-  {
+  public static ReadNode(parent: OdysseyModelNode, mdlReader: BinaryReader) {
     //Read the node type so we can know what type of node we are dealing with
     const NodeType = mdlReader.readUInt16();
     mdlReader.position -= 2;
@@ -40,27 +39,26 @@ export class OdysseyModelFactory {
 
     if ((NodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
       node = new OdysseyModelNodeEmitter(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+    } else if ((NodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
       node = new OdysseyModelNodeLight(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
+    } else if ((NodeType & OdysseyModelNodeType.Skin) == OdysseyModelNodeType.Skin) {
       node = new OdysseyModelNodeSkin(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly) {
+    } else if ((NodeType & OdysseyModelNodeType.Dangly) == OdysseyModelNodeType.Dangly) {
       node = new OdysseyModelNodeDangly(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber) {
+    } else if ((NodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber) {
       node = new OdysseyModelNodeSaber(parent);
-    }else if ((NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) {
+    } else if ((NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) {
       node = new OdysseyModelNodeAABB(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Anim) == OdysseyModelNodeType.Anim) {
+    } else if ((NodeType & OdysseyModelNodeType.Anim) == OdysseyModelNodeType.Anim) {
       mdlReader.position += 0x38;
-    }else if ((NodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
+    } else if ((NodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
       node = new OdysseyModelNodeMesh(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference) {
+    } else if ((NodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference) {
       node = new OdysseyModelNodeReference(parent);
-    }else{
+    } else {
       node = new OdysseyModelNode(parent);
     }
 
     return node;
   }
-
 }

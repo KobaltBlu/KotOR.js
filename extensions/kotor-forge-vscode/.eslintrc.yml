@@ -1,0 +1,109 @@
+# Standalone config so plugins resolve only from extension node_modules
+# (extending ../../.eslintrc.yml caused "couldn't determine plugin @typescript-eslint uniquely")
+root: true
+ignorePatterns:
+  - "server/out/**"
+  - "dist/**"
+  - "webpack.config.js"
+extends:
+  - eslint:recommended
+  - plugin:import/recommended
+  - plugin:import/typescript
+parser: "@typescript-eslint/parser"
+parserOptions:
+  ecmaVersion: 2022
+  sourceType: module
+  ecmaFeatures:
+    jsx: true
+  project: "tsconfig.eslint.json"
+plugins:
+  - "@typescript-eslint"
+  - import
+env:
+  node: true
+  browser: true
+  es2022: true
+settings:
+  import/core-modules:
+    - "@vscode/debugadapter"
+    - "@vscode/debugprotocol"
+    - "vscode"
+    - "vscode-languageclient/node"
+  import/parsers:
+    "@typescript-eslint/parser": [".ts", ".tsx"]
+  import/resolver:
+    node:
+      extensions:
+        - .d.ts
+        - .js
+        - .jsx
+        - .ts
+        - .tsx
+  import/internal-regex: "^(@forge|@kotor)/"
+
+rules:
+  "@typescript-eslint/explicit-function-return-type": off
+  "@typescript-eslint/no-extraneous-class": off
+  "@typescript-eslint/no-explicit-any": error
+  "@typescript-eslint/no-unsafe-argument": error
+  "@typescript-eslint/no-unsafe-assignment": error
+  "@typescript-eslint/no-unsafe-call": error
+  "@typescript-eslint/no-unsafe-member-access": error
+  "@typescript-eslint/no-unsafe-return": error
+  "@typescript-eslint/no-unused-vars":
+    - warn
+    - argsIgnorePattern: "^_"
+      varsIgnorePattern: "^_"
+  no-console: error
+  no-debugger: warn
+  no-unused-vars: off
+  no-case-declarations: warn
+  no-async-promise-executor: warn
+  no-extra-semi: warn
+  no-empty: warn
+  no-constant-condition: warn
+  no-prototype-builtins: warn
+  no-fallthrough: warn
+  no-useless-escape: warn
+  no-cond-assign: warn
+  no-redeclare: warn
+  prefer-const: warn
+  no-var: warn
+  import/no-duplicates: warn
+  import/order:
+    - warn
+    - groups:
+        - builtin
+        - external
+        - index
+        - internal
+        - parent
+        - sibling
+      newlines-between: always
+      alphabetize:
+        order: asc
+        caseInsensitive: true
+  import/no-unresolved:
+    - warn
+    - ignore:
+        - "^\\./"
+        - "^\\.\\./"
+        - "^@forge/"
+        - "^@kotor/"
+        - "^@vscode/"
+        - "^path$"
+        - "^vscode-languageclient"
+        - "^vscode$"
+
+globals:
+  Thenable: readonly
+
+overrides:
+  - files:
+      - "src/webview/**/*.ts"
+      - "src/webview/**/*.tsx"
+    parserOptions:
+      # Use extension tsconfig.webview.json (relative to this config file)
+      project: "./tsconfig.webview.json"
+    rules:
+      no-console: off

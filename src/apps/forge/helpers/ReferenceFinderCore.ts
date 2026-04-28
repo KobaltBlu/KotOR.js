@@ -1,10 +1,3 @@
-import { GFFObject } from "../../../resource/GFFObject";
-import { GFFField } from "../../../resource/GFFField";
-import { GFFStruct } from "../../../resource/GFFStruct";
-import { GFFDataType } from "../../../enums/resource/GFFDataType";
-import { KEYManager } from "../../../managers/KEYManager";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { KEYObject } from "../../../resource/KEYObject";
 import {
   getScriptFieldsForType,
   getTagFieldsForType,
@@ -14,7 +7,17 @@ import {
   TAG_FIELD_TYPES,
   TEMPLATE_RESREF_FIELD_TYPES,
   CONVERSATION_FIELD_TYPES,
-} from "../data/ReferenceSearchConfig";
+} from '@/apps/forge/data/ReferenceSearchConfig';
+import { GFFDataType } from '@/enums/resource/GFFDataType';
+import { KEYManager } from '@/managers/KEYManager';
+import { GFFField } from '@/resource/GFFField';
+import { GFFObject } from '@/resource/GFFObject';
+import { GFFStruct } from '@/resource/GFFStruct';
+import { KEYObject } from '@/resource/KEYObject';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { createScopedLogger, LogScope } from '@/utility/Logger';
+
+const log = createScopedLogger(LogScope.Forge);
 
 export interface ReferenceFileResource {
   resRef: string;
@@ -56,29 +59,26 @@ export interface TextReferenceMatch {
   lineText: string;
 }
 
-const DEFAULT_STRING_FIELD_TYPES = new Set<GFFDataType>([
-  GFFDataType.CEXOSTRING,
-  GFFDataType.RESREF,
-]);
+const DEFAULT_STRING_FIELD_TYPES = new Set<GFFDataType>([GFFDataType.CEXOSTRING, GFFDataType.RESREF]);
 
 const DEFAULT_RESREF_FIELD_TYPES = new Set<GFFDataType>([GFFDataType.RESREF]);
 const GFF_EXTENSIONS = new Set<string>([
-  "ARE",
-  "DLG",
-  "FAC",
-  "GIT",
-  "IFO",
-  "JRL",
-  "UTC",
-  "UTD",
-  "UTE",
-  "UTI",
-  "UTM",
-  "UTP",
-  "UTS",
-  "UTT",
-  "UTW",
-  "GFF",
+  'ARE',
+  'DLG',
+  'FAC',
+  'GIT',
+  'IFO',
+  'JRL',
+  'UTC',
+  'UTD',
+  'UTE',
+  'UTI',
+  'UTM',
+  'UTP',
+  'UTS',
+  'UTT',
+  'UTW',
+  'GFF',
 ]);
 
 const gffCache = new Map<string, GFFObject | null>();
@@ -87,38 +87,42 @@ const MAX_CACHE_ENTRIES = 50;
 const MAX_GFF_CACHE_BYTES = 1 * 1024 * 1024;
 
 function setCacheValue<T>(cache: Map<string, T>, key: string, value: T): void {
+  log.trace('ReferenceFinderCore.setCacheValue', key?.slice(0, 40), cache.size);
   if (cache.has(key)) {
     cache.delete(key);
   }
   cache.set(key, value);
   if (cache.size > MAX_CACHE_ENTRIES) {
-    const oldestKey = cache.keys().next().value;
-    if (oldestKey) {
+    const keys = Array.from(cache.keys());
+    const oldestKey: string | undefined = keys[0];
+    if (oldestKey !== undefined) {
       cache.delete(oldestKey);
+      log.trace('ReferenceFinderCore.setCacheValue evicted', oldestKey?.slice(0, 30));
     }
   }
 }
 
 function getResourceCacheKey(resource: ReferenceFileResource): string {
-  return `${resource.containerPath ?? ""}::${resource.resRef.toLowerCase()}::${resource.resType}`;
+  return `${resource.containerPath ?? ''}::${resource.resRef.toLowerCase()}::${resource.resType}`;
 }
 
 async function getResourceBuffer(resource: ReferenceFileResource): Promise<Uint8Array> {
   const key = getResourceCacheKey(resource);
+  log.trace('ReferenceFinderCore.getResourceBuffer', resource.resRef, resource.extension);
   if (bufferCache.has(key)) {
+    log.trace('ReferenceFinderCore.getResourceBuffer cache hit');
     return bufferCache.get(key) as Uint8Array;
   }
   const buffer = await resource.getData();
   if (buffer && buffer.length <= 10 * 1024 * 1024) {
     setCacheValue(bufferCache, key, buffer);
   }
+  log.trace('ReferenceFinderCore.getResourceBuffer size', buffer?.length ?? 0);
   return buffer;
 }
 
-export function countOccurrencesInBuffer(
-  buffer: Uint8Array,
-  needle: Uint8Array
-): number {
+export function countOccurrencesInBuffer(buffer: Uint8Array, needle: Uint8Array): number {
+  log.trace('ReferenceFinderCore.countOccurrencesInBuffer', buffer?.length, needle?.length);
   if (!buffer?.length || !needle?.length) return 0;
   if (needle.length > buffer.length) return 0;
 
@@ -133,11 +137,8 @@ export function countOccurrencesInBuffer(
   return count;
 }
 
-export function countOccurrencesInText(
-  text: string,
-  query: string,
-  caseSensitive: boolean
-): number {
+export function countOccurrencesInText(text: string, query: string, caseSensitive: boolean): number {
+  log.trace('ReferenceFinderCore.countOccurrencesInText', query?.slice(0, 20), caseSensitive);
   if (!text || !query) return 0;
   const haystack = caseSensitive ? text : text.toLowerCase();
   const needle = caseSensitive ? query : query.toLowerCase();
@@ -145,6 +146,7 @@ export function countOccurrencesInText(
 
   let count = 0;
   let idx = 0;
+  // eslint-disable-next-line no-constant-condition -- intentional loop with break
   while (true) {
     idx = haystack.indexOf(needle, idx);
     if (idx === -1) break;
@@ -155,21 +157,28 @@ export function countOccurrencesInText(
 }
 
 export function getWordAtIndex(text: string, index: number): string {
-  if (!text || index < 0 || index >= text.length) return "";
-  const left = text.slice(0, index + 1);
-  const right = text.slice(index);
-  const leftMatch = left.match(/[A-Za-z0-9_]+$/);
-  const rightMatch = right.match(/^[A-Za-z0-9_]+/);
-  const leftPart = leftMatch ? leftMatch[0] : "";
-  const rightPart = rightMatch ? rightMatch[0] : "";
-  const word = `${leftPart}${rightPart}`;
-  return word.trim();
+  if (!text || index < 0 || index >= text.length) return '';
+  const current = text.charAt(index);
+  if (!/[A-Za-z0-9_]/.test(current)) return '';
+
+  let start = index;
+  let end = index;
+
+  while (start > 0 && /[A-Za-z0-9_]/.test(text.charAt(start - 1))) {
+    start--;
+  }
+
+  while (end + 1 < text.length && /[A-Za-z0-9_]/.test(text.charAt(end + 1))) {
+    end++;
+  }
+
+  return text.slice(start, end + 1).trim();
 }
 
 export function findAllReferencesInText(text: string, token: string): TextReferenceMatch[] {
   if (!text || !token) return [];
-  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(`\\b${escaped}\\b`, "g");
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`\\b${escaped}\\b`, 'g');
 
   const matches: TextReferenceMatch[] = [];
   const lines = text.split(/\r?\n/);
@@ -191,12 +200,7 @@ function normalizeSearchValue(value: string, caseSensitive: boolean): string {
   return caseSensitive ? value : value.toLowerCase();
 }
 
-function isValueMatch(
-  value: string,
-  searchValue: string,
-  partialMatch: boolean,
-  caseSensitive: boolean
-): boolean {
+function isValueMatch(value: string, searchValue: string, partialMatch: boolean, caseSensitive: boolean): boolean {
   const normalizedValue = normalizeSearchValue(value, caseSensitive);
   const normalizedSearch = normalizeSearchValue(searchValue, caseSensitive);
   if (!normalizedSearch.length) return false;
@@ -208,10 +212,10 @@ function isValueMatch(
 
 function globToRegExp(pattern: string): RegExp {
   const escaped = pattern
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*/g, ".*")
-    .replace(/\?/g, ".");
-  return new RegExp(`^${escaped}$`, "i");
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*/g, '.*')
+    .replace(/\?/g, '.');
+  return new RegExp(`^${escaped}$`, 'i');
 }
 
 function shouldSearchResource(
@@ -236,15 +240,15 @@ function shouldSearchResource(
 function getGffFieldValue(field: GFFField): string | null {
   const value = field.getValue();
   if (value === null || value === undefined) return null;
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return value.toString();
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number') return value.toString();
   return null;
 }
 
 function walkGffStruct(
   struct: GFFStruct,
   onField: (field: GFFField, fieldPath: string) => void,
-  pathPrefix: string = ""
+  pathPrefix: string = ''
 ): void {
   const fields = struct.getFields?.() || [];
   for (const field of fields) {
@@ -268,15 +272,19 @@ function walkGffStruct(
 async function searchGffForValue(
   resource: ReferenceFileResource,
   searchValue: string,
-  options: Required<Pick<ReferenceFinderOptions, "partialMatch" | "caseSensitive">> & {
+  options: Required<Pick<ReferenceFinderOptions, 'partialMatch' | 'caseSensitive'>> & {
     fieldNames?: Set<string> | null;
     fieldTypes: Set<GFFDataType>;
     fileType: string;
     logger?: (message: string) => void;
   }
 ): Promise<ReferenceSearchResult[]> {
+  log.trace('ReferenceFinderCore.searchGffForValue', resource.resRef, resource.extension, searchValue?.slice(0, 20));
   const buffer = await getResourceBuffer(resource);
-  if (!buffer?.length) return [];
+  if (!buffer?.length) {
+    log.trace('ReferenceFinderCore.searchGffForValue no buffer');
+    return [];
+  }
 
   const cacheKey = getResourceCacheKey(resource);
   let gff = gffCache.get(cacheKey);
@@ -286,13 +294,18 @@ async function searchGffForValue(
       if (buffer.length <= MAX_GFF_CACHE_BYTES) {
         setCacheValue(gffCache, cacheKey, gff);
       }
+      log.trace('ReferenceFinderCore.searchGffForValue parsed GFF');
     } catch {
       setCacheValue(gffCache, cacheKey, null);
+      log.trace('ReferenceFinderCore.searchGffForValue parse failed');
       return [];
     }
   }
 
-  if (!gff || !gff.RootNode) return [];
+  if (!gff || !gff.RootNode) {
+    log.trace('ReferenceFinderCore.searchGffForValue no RootNode');
+    return [];
+  }
 
   const results: ReferenceSearchResult[] = [];
   walkGffStruct(gff.RootNode, (field, fieldPath) => {
@@ -321,17 +334,14 @@ async function searchGffForValue(
   return results;
 }
 
-function findStringOffsetsInBuffer(
-  buffer: Uint8Array,
-  searchValue: string,
-  caseSensitive: boolean
-): number[] {
+function findStringOffsetsInBuffer(buffer: Uint8Array, searchValue: string, caseSensitive: boolean): number[] {
   if (!buffer?.length || !searchValue?.length) return [];
-  const text = new TextDecoder("latin1").decode(buffer);
+  const text = new TextDecoder('latin1').decode(buffer);
   const haystack = caseSensitive ? text : text.toLowerCase();
   const needle = caseSensitive ? searchValue : searchValue.toLowerCase();
   const offsets: number[] = [];
   let index = 0;
+  // eslint-disable-next-line no-constant-condition -- intentional loop with break
   while (true) {
     index = haystack.indexOf(needle, index);
     if (index === -1) break;
@@ -344,7 +354,7 @@ function findStringOffsetsInBuffer(
 async function searchNcsForString(
   resource: ReferenceFileResource,
   searchValue: string,
-  options: Required<Pick<ReferenceFinderOptions, "partialMatch" | "caseSensitive">> & {
+  options: Required<Pick<ReferenceFinderOptions, 'partialMatch' | 'caseSensitive'>> & {
     logger?: (message: string) => void;
   }
 ): Promise<ReferenceSearchResult[]> {
@@ -355,24 +365,24 @@ async function searchNcsForString(
     const offsets = findStringOffsetsInBuffer(buffer, searchValue, options.caseSensitive);
     return offsets.map((offset) => ({
       fileResource: resource,
-      fieldPath: "(NCS bytecode)",
+      fieldPath: '(NCS bytecode)',
       matchedValue: searchValue,
-      fileType: "NCS",
+      fileType: 'NCS',
       byteOffset: offset,
     }));
   }
 
-  const text = new TextDecoder("latin1").decode(buffer);
-  const haystack = options.caseSensitive ? text : text.toLowerCase();
-  const needle = options.caseSensitive ? searchValue : searchValue.toLowerCase();
-  if (!needle.length) return [];
+  const text = new TextDecoder('latin1').decode(buffer);
+  const _haystack = options.caseSensitive ? text : text.toLowerCase();
+  const _needle = options.caseSensitive ? searchValue : searchValue.toLowerCase();
+  if (!_needle.length) return [];
 
-  const offsets = findStringOffsetsInBuffer(buffer, needle, true);
+  const offsets = findStringOffsetsInBuffer(buffer, _needle, true);
   return offsets.map((offset) => ({
     fileResource: resource,
-    fieldPath: "(NCS bytecode)",
-    matchedValue: text.substr(offset, needle.length),
-    fileType: "NCS",
+    fieldPath: '(NCS bytecode)',
+    matchedValue: text.substr(offset, _needle.length),
+    fileType: 'NCS',
     byteOffset: offset,
   }));
 }
@@ -382,6 +392,7 @@ export async function findResrefReferences(
   resref: string,
   options: ReferenceFinderResrefOptions = {}
 ): Promise<ReferenceSearchResult[]> {
+  log.trace('ReferenceFinderCore.findResrefReferences', resref?.slice(0, 24), resources.length);
   const {
     partialMatch = false,
     caseSensitive = false,
@@ -394,7 +405,10 @@ export async function findResrefReferences(
     logger,
   } = options;
 
-  if (!resref?.trim()) return [];
+  if (!resref?.trim()) {
+    log.trace('ReferenceFinderCore.findResrefReferences empty resref');
+    return [];
+  }
 
   const results: ReferenceSearchResult[] = [];
   for (const resource of resources) {
@@ -403,7 +417,8 @@ export async function findResrefReferences(
     }
 
     const fileType = resource.extension.toUpperCase();
-    if (fileType === "NCS" && searchNcs) {
+    if (fileType === 'NCS' && searchNcs) {
+      log.trace('ReferenceFinderCore.findResrefReferences NCS', resource.resRef);
       results.push(
         ...(await searchNcsForString(resource, resref, {
           partialMatch,
@@ -414,7 +429,7 @@ export async function findResrefReferences(
       continue;
     }
 
-    if (fileType === "NCS") {
+    if (fileType === 'NCS') {
       continue;
     }
 
@@ -423,8 +438,7 @@ export async function findResrefReferences(
     }
 
     const namesForType = fieldNamesForType?.(fileType);
-    const effectiveFieldNames =
-      namesForType != null && namesForType.size > 0 ? namesForType : fieldNames;
+    const effectiveFieldNames = namesForType != null && namesForType.size > 0 ? namesForType : fieldNames;
 
     results.push(
       ...(await searchGffForValue(resource, resref, {
@@ -438,6 +452,7 @@ export async function findResrefReferences(
     );
   }
 
+  log.debug('ReferenceFinderCore.findResrefReferences done', results.length);
   return results;
 }
 
@@ -449,6 +464,7 @@ export async function findFieldValueReferences(
     fieldTypes?: Set<GFFDataType> | null;
   } = {}
 ): Promise<ReferenceSearchResult[]> {
+  log.trace('ReferenceFinderCore.findFieldValueReferences', searchValue?.slice(0, 24), resources.length);
   const {
     partialMatch = false,
     caseSensitive = false,
@@ -459,14 +475,17 @@ export async function findFieldValueReferences(
     logger,
   } = options;
 
-  if (!searchValue?.trim()) return [];
+  if (!searchValue?.trim()) {
+    log.trace('ReferenceFinderCore.findFieldValueReferences empty searchValue');
+    return [];
+  }
 
   const results: ReferenceSearchResult[] = [];
   for (const resource of resources) {
     if (!shouldSearchResource(resource, filePattern, fileTypes)) {
       continue;
     }
-    if (resource.extension.toUpperCase() === "NCS") {
+    if (resource.extension.toUpperCase() === 'NCS') {
       continue;
     }
 
@@ -486,6 +505,7 @@ export async function findFieldValueReferences(
     );
   }
 
+  log.debug('ReferenceFinderCore.findFieldValueReferences done', results.length);
   return results;
 }
 
@@ -494,9 +514,11 @@ export async function findScriptReferences(
   scriptResref: string,
   options: ReferenceFinderResrefOptions = {}
 ): Promise<ReferenceSearchResult[]> {
+  log.trace('ReferenceFinderCore.findScriptReferences', scriptResref?.slice(0, 24), resources.length);
   const useConfig = options.fieldNames === undefined || options.fieldNames === null;
   const scriptFieldTypes = options.fieldTypes ?? SCRIPT_FIELD_TYPES;
   if (!useConfig) {
+    log.trace('ReferenceFinderCore.findScriptReferences useConfig false, findResrefReferences');
     return findResrefReferences(resources, scriptResref, {
       ...options,
       fieldTypes: scriptFieldTypes,
@@ -507,7 +529,7 @@ export async function findScriptReferences(
   for (const resource of resources) {
     const fileType = resource.extension.toUpperCase();
     const fieldNames = getScriptFieldsForType(fileType);
-    if (fileType === "DLG") {
+    if (fileType === 'DLG') {
       results.push(
         ...(await findResrefReferences([resource], scriptResref, {
           ...options,
@@ -516,7 +538,7 @@ export async function findScriptReferences(
           searchNcs: options.searchNcs ?? true,
         }))
       );
-    } else if (fileType === "NCS" && (options.searchNcs ?? true)) {
+    } else if (fileType === 'NCS' && (options.searchNcs ?? true)) {
       results.push(
         ...(await findResrefReferences([resource], scriptResref, {
           ...options,
@@ -525,7 +547,7 @@ export async function findScriptReferences(
           searchNcs: true,
         }))
       );
-    } else if (fieldNames.size > 0 || fileType === "NCS") {
+    } else if (fieldNames.size > 0 || fileType === 'NCS') {
       results.push(
         ...(await findResrefReferences([resource], scriptResref, {
           ...options,
@@ -545,7 +567,8 @@ export async function findTagReferences(
   options: ReferenceFinderOptions & { fieldNamesForType?: (fileType: string) => Set<string> | null } = {}
 ): Promise<ReferenceSearchResult[]> {
   const fieldNamesForType =
-    (options as { fieldNamesForType?: (fileType: string) => Set<string> | null }).fieldNamesForType ?? getTagFieldsForType;
+    (options as { fieldNamesForType?: (fileType: string) => Set<string> | null }).fieldNamesForType ??
+    getTagFieldsForType;
   const results: ReferenceSearchResult[] = [];
   for (const resource of resources) {
     const fileType = resource.extension.toUpperCase();
@@ -609,7 +632,7 @@ export async function findStrRefReferences(
   strRef: number | string,
   options: ReferenceFinderOptions = {}
 ): Promise<ReferenceSearchResult[]> {
-  const searchValue = typeof strRef === "number" ? strRef.toString() : strRef;
+  const searchValue = typeof strRef === 'number' ? strRef.toString() : strRef;
   return findFieldValueReferences(resources, searchValue, {
     ...options,
     fieldTypes: new Set([GFFDataType.STRREF]),
@@ -620,15 +643,13 @@ export function createKeyResources(): ReferenceFileResource[] {
   const keys = KEYManager.Key?.keys || [];
   const resources: ReferenceFileResource[] = [];
   for (const key of keys) {
-    const extension = ResourceTypes.getKeyByValue(key.resType) || "";
+    const extension = ResourceTypes.getKeyByValue(key.resType) || '';
     resources.push({
       resRef: key.resRef,
       resType: key.resType,
       extension,
       containerPath:
-        key?.resId != null
-          ? KEYManager.Key?.bifs?.[KEYObject.getBIFIndex(key.resId)]?.filename
-          : undefined,
+        key?.resId != null ? KEYManager.Key?.bifs?.[KEYObject.getBIFIndex(key.resId)]?.filename : undefined,
       getData: async () => KEYManager.Key.getFileBuffer(key),
     });
   }

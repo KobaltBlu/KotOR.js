@@ -52,7 +52,7 @@ jobs:
         run: |
           aws s3 sync dist "s3://${{ secrets.AWS_BUCKET }}" --delete
 
-      - name: Invalidate DEV CloudFront cache
+      - name: Invalidate CloudFront Cache
         if: ${{ !inputs.dry_run }}
         run: |
           aws cloudfront create-invalidation \

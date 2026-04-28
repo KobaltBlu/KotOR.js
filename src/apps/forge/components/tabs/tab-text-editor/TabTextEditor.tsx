@@ -1,17 +1,16 @@
-import React, { useState, useRef, useEffect } from "react";
-import MonacoEditor from "react-monaco-editor";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabTextEditorState } from "@/apps/forge/states/tabs";
-import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
-import { TabManagerProvider } from "@/apps/forge/context/TabManagerContext";
-import TabManager from "@/apps/forge/components/tabs/TabManager";
-import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { TabTextEditorSidebar } from "./TabTextEditorSidebar";
-import './TabTextEditor.scss';
+import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
+import React, { useState, useRef, useEffect } from 'react';
+import MonacoEditor from 'react-monaco-editor';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { TabTextEditorState } from '@/apps/forge/states/tabs';
+import { LayoutContainer } from '@/apps/forge/components/LayoutContainer/LayoutContainer';
+import { LayoutContainerProvider } from '@/apps/forge/context/LayoutContainerContext';
+import { TabManagerProvider } from '@/apps/forge/context/TabManagerContext';
+import TabManager from '@/apps/forge/components/tabs/TabManager';
+import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
 
-export const TabTextEditor = function(props: any){
+export const TabTextEditor = function (props: any) {
   const tab: TabTextEditorState = props.tab;
 
   // const [width, setWidth] = useState<any>(`100%`);
@@ -23,14 +22,13 @@ export const TabTextEditor = function(props: any){
 
   const options: monacoEditor.editor.IEditorOptions = {
     automaticLayout: true,
-    glyphMargin: true
   };
 
   const diffOptions: monacoEditor.editor.IDiffEditorOptions = {
     automaticLayout: true,
     readOnly: false,
     originalEditable: false,
-    enableSplitViewResizing: true
+    enableSplitViewResizing: true,
   };
 
   const onChange = (newValue: any, e: any) => {
@@ -39,7 +37,7 @@ export const TabTextEditor = function(props: any){
   };
 
   const onDiffEditorChange = () => {
-    if(tab.diffEditor) {
+    if (tab.diffEditor) {
       const modifiedEditor = tab.diffEditor.getModifiedEditor();
       const modifiedText = modifiedEditor.getValue();
       tab.setCode(modifiedText);
@@ -47,63 +45,40 @@ export const TabTextEditor = function(props: any){
   };
 
   const editorDidMount = (editor: monacoEditor.editor.IStandaloneCodeEditor, monaco: typeof monacoEditor) => {
-    console.log('editorDidMount', editor, monaco)
+    console.log('editorDidMount', editor, monaco);
     tab.setEditor(editor);
     tab.setMonaco(monaco);
     tab.triggerLinterTimeout();
 
     // Ensure cursor is at the beginning with no selection when editor mounts
-    if(editor && monaco) {
+    if (editor && monaco) {
       setTimeout(() => {
         editor.setPosition({ lineNumber: 1, column: 1 });
         editor.setSelection(new monaco.Selection(1, 1, 1, 1));
       }, 0);
     }
 
-    // Register custom handler for smart comment continuation (// and block)
+    // Register custom handler for smart comment continuation
     if (editor && monaco) {
+      // Use onKeyDown to intercept Enter key in comments
       const disposable = editor.onKeyDown((e: monacoEditor.IKeyboardEvent) => {
-        if (e.keyCode !== monaco.KeyCode.Enter) return;
-        const position = editor.getPosition();
-        if (!position) return;
-        const model = editor.getModel();
-        if (!model) return;
-        const lineContent = model.getLineContent(position.lineNumber);
-        const trimmed = lineContent.trimStart();
-        const leadingWhitespace = lineContent.slice(0, lineContent.length - trimmed.length);
-        // // comment: continue with same indent and "// "
-        if (trimmed.startsWith("//")) {
-          e.preventDefault();
-          e.stopPropagation();
-          const insert = "\n" + leadingWhitespace + "// ";
-          editor.executeEdits("comment-continuation", [{ range: editor.getSelection()!, text: insert }]);
-          editor.setPosition({ lineNumber: position.lineNumber + 1, column: leadingWhitespace.length + 4 });
-          return;
-        }
-        // Block comment line ( * or * at start after indent): continue with " * "
-        if (trimmed.startsWith("*") || (trimmed.startsWith("/*") || trimmed.startsWith("*/"))) {
-          const match = lineContent.match(/^(\s*)(\*?\s*)/);
-          if (match) {
-            e.preventDefault();
-            e.stopPropagation();
-            const prefix = match[1] + "* ";
-            const insert = "\n" + prefix;
-            editor.executeEdits("comment-continuation", [{ range: editor.getSelection()!, text: insert }]);
-            editor.setPosition({ lineNumber: position.lineNumber + 1, column: prefix.length + 1 });
-          }
+        if (e.keyCode === monaco.KeyCode.Enter) {
+          // @stub
         }
       });
+
+      // Store disposable for cleanup if needed
       (editor as any)._nwscriptCommentDisposable = disposable;
     }
   };
 
   const onEditorFileLoad = () => {
     setCode(tab.code);
-    if(tab.isDiffMode && tab.modifiedModel) {
+    if (tab.isDiffMode && tab.modifiedModel) {
       tab.modifiedModel.setValue(tab.code);
     }
     // Reset cursor position to beginning to prevent auto-selection
-    if(tab.editor && tab.monaco) {
+    if (tab.editor && tab.monaco) {
       setTimeout(() => {
         tab.editor.setPosition({ lineNumber: 1, column: 1 });
         tab.editor.setSelection(new tab.monaco.Selection(1, 1, 1, 1));
@@ -113,14 +88,14 @@ export const TabTextEditor = function(props: any){
 
   const onDiffModeChanged = () => {
     setIsDiffMode(tab.isDiffMode);
-    if(tab.isDiffMode) {
+    if (tab.isDiffMode) {
       // Wait for next render to create diff editor
       setTimeout(() => {
         createDiffEditor();
       }, 0);
     } else {
       // Clean up diff editor
-      if(tab.diffEditor) {
+      if (tab.diffEditor) {
         tab.diffEditor.dispose();
         tab.diffEditor = null as any;
       }
@@ -128,21 +103,21 @@ export const TabTextEditor = function(props: any){
   };
 
   const createDiffEditor = () => {
-    if(!tab.monaco || !diffEditorContainerRef.current || !tab.isDiffMode) return;
+    if (!tab.monaco || !diffEditorContainerRef.current || !tab.isDiffMode) return;
 
-    if(tab.diffEditor) {
+    if (tab.diffEditor) {
       tab.diffEditor.dispose();
     }
 
     const diffEditor = tab.monaco.editor.createDiffEditor(diffEditorContainerRef.current, {
       ...diffOptions,
-      theme: tab.getTheme()
+      theme: tab.getTheme(),
     });
 
-    if(tab.originalModel && tab.modifiedModel) {
+    if (tab.originalModel && tab.modifiedModel) {
       diffEditor.setModel({
         original: tab.originalModel,
-        modified: tab.modifiedModel
+        modified: tab.modifiedModel,
       });
     }
 
@@ -158,12 +133,12 @@ export const TabTextEditor = function(props: any){
     });
   };
 
-  useEffectOnce( () => {
+  useEffectOnce(() => {
     tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
     tab.addEventListener('onDiffModeChanged', onDiffModeChanged);
 
     // Create diff editor if already in diff mode
-    if(tab.isDiffMode && tab.monaco) {
+    if (tab.isDiffMode && tab.monaco) {
       setTimeout(() => {
         createDiffEditor();
       }, 100);
@@ -172,22 +147,22 @@ export const TabTextEditor = function(props: any){
     return () => {
       tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
       tab.removeEventListener('onDiffModeChanged', onDiffModeChanged);
-      if(tab.diffEditor) {
+      if (tab.diffEditor) {
         tab.diffEditor.dispose();
       }
-    }
+    };
   });
 
   // Update diff editor when code changes externally
   useEffect(() => {
-    if(tab.isDiffMode && tab.modifiedModel && tab.code !== tab.modifiedModel.getValue()) {
+    if (tab.isDiffMode && tab.modifiedModel && tab.code !== tab.modifiedModel.getValue()) {
       tab.modifiedModel.setValue(tab.code);
     }
   }, [tab.code, tab.isDiffMode]);
 
   // Update editor options when tabSize changes
   useEffect(() => {
-    if(tab.editor) {
+    if (tab.editor) {
       tab.updateTabSize();
     }
   }, [tab.tabSize]);
@@ -218,7 +193,7 @@ export const TabTextEditor = function(props: any){
     else if (isCtrlOrCmd && event.key === 'f' && event.shiftKey) {
       event.preventDefault();
       event.stopPropagation();
-      if(tab.editor && tab.monaco) {
+      if (tab.editor && tab.monaco) {
         tab.editor.getAction('editor.action.formatDocument')?.run();
       }
     }
@@ -231,7 +206,6 @@ export const TabTextEditor = function(props: any){
     };
   });
 
-
   const menuItems: MenuItem[] = [
     {
       label: 'File',
@@ -240,52 +214,37 @@ export const TabTextEditor = function(props: any){
           label: 'Save',
           onClick: () => {
             tab.save();
-          }
+          },
         },
         {
           label: 'Save As',
           onClick: () => {
             tab.saveAs();
-          }
+          },
         },
         {
-          separator: true
+          separator: true,
         },
         {
           label: 'Compile',
           onClick: () => {
             tab.compile();
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     {
       label: 'Edit',
       children: [
         {
-          label: 'Find References',
-          onClick: () => {
-            tab.findAllReferencesInFile();
-          }
-        },
-        {
-          label: 'Find References in Installation...',
-          onClick: () => {
-            tab.findReferencesInInstallation();
-          }
-        },
-        {
-          separator: true
-        },
-        {
           label: 'Format Document',
           onClick: () => {
-            if(tab.editor && tab.monaco) {
+            if (tab.editor && tab.monaco) {
               tab.editor.getAction('editor.action.formatDocument')?.run();
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     },
     {
       label: 'View',
@@ -293,15 +252,15 @@ export const TabTextEditor = function(props: any){
         {
           label: 'Toggle Diff Mode',
           onClick: () => {
-            if(tab.isDiffMode) {
+            if (tab.isDiffMode) {
               tab.switchToRegularMode();
             } else {
               tab.switchToDiffMode();
             }
-          }
+          },
         },
         {
-          separator: true
+          separator: true,
         },
         {
           label: 'Tab Size',
@@ -313,7 +272,7 @@ export const TabTextEditor = function(props: any){
                 setTimeout(() => {
                   tab.setTabSize(2);
                 }, 0);
-              }
+              },
             },
             {
               label: '4 Spaces',
@@ -321,7 +280,7 @@ export const TabTextEditor = function(props: any){
                 setTimeout(() => {
                   tab.setTabSize(4);
                 }, 0);
-              }
+              },
             },
             {
               label: '8 Spaces',
@@ -329,12 +288,12 @@ export const TabTextEditor = function(props: any){
                 setTimeout(() => {
                   tab.setTabSize(8);
                 }, 0);
-              }
-            }
-          ]
+              },
+            },
+          ],
         },
         {
-          separator: true
+          separator: true,
         },
         {
           label: 'Language',
@@ -347,10 +306,10 @@ export const TabTextEditor = function(props: any){
                   forceUpdate({});
                 }, 0);
               },
-              checked: tab.manualLanguageId === null
+              checked: tab.manualLanguageId === null,
             },
             {
-              separator: true
+              separator: true,
             },
             {
               label: 'Plain Text',
@@ -360,7 +319,7 @@ export const TabTextEditor = function(props: any){
                   forceUpdate({});
                 }, 0);
               },
-              checked: tab.manualLanguageId === 'plaintext'
+              checked: tab.manualLanguageId === 'plaintext',
             },
             {
               label: 'NWScript',
@@ -370,7 +329,7 @@ export const TabTextEditor = function(props: any){
                   forceUpdate({});
                 }, 0);
               },
-              checked: tab.manualLanguageId === 'nwscript'
+              checked: tab.manualLanguageId === 'nwscript',
             },
             {
               label: 'LYT (Layout)',
@@ -380,12 +339,12 @@ export const TabTextEditor = function(props: any){
                   forceUpdate({});
                 }, 0);
               },
-              checked: tab.manualLanguageId === 'lyt'
-            }
-          ]
-        }
-      ]
-    }
+              checked: tab.manualLanguageId === 'lyt',
+            },
+          ],
+        },
+      ],
+    },
   ];
 
   const southContent = (
@@ -394,19 +353,25 @@ export const TabTextEditor = function(props: any){
     </TabManagerProvider>
   );
 
-  const westContent = (
-    <TabTextEditorSidebar tab={tab} />
-  );
-
   return (
     <>
       <LayoutContainerProvider>
-        <LayoutContainer southContent={southContent} westContent={westContent} westSize={280}>
-          <div className="forge-text-editor__root">
+        <LayoutContainer southContent={southContent}>
+          <div style={{ position: 'relative', width: '100%', height: '100%' }}>
             <MenuBar items={menuItems} />
-            <div className="forge-text-editor__content">
+            <div
+              style={{
+                position: 'absolute',
+                top: '24px',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100%',
+                height: 'calc(100% - 24px)',
+              }}
+            >
               {isDiffMode ? (
-                <div ref={diffEditorContainerRef} className="forge-text-editor__diff-container"></div>
+                <div ref={diffEditorContainerRef} style={{ width: '100%', height: '100%' }}></div>
               ) : (
                 <MonacoEditor
                   width="100%"
@@ -424,5 +389,5 @@ export const TabTextEditor = function(props: any){
         </LayoutContainer>
       </LayoutContainerProvider>
     </>
-  )
-}
+  );
+};

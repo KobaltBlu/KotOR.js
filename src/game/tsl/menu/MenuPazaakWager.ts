@@ -1,5 +1,5 @@
-import type { GUILabel, GUIButton } from "@/gui";
-import { MenuPazaakWager as K1_MenuPazaakWager } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton } from '@/gui';
+import { MenuPazaakWager as K1_MenuPazaakWager } from '@/game/kotor/KOTOR';
 
 /**
  * MenuPazaakWager class.
@@ -11,7 +11,6 @@ import { MenuPazaakWager as K1_MenuPazaakWager } from "@/game/kotor/KOTOR";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuPazaakWager extends K1_MenuPazaakWager {
-
   declare LBL_BG: GUILabel;
   declare LBL_TITLE: GUILabel;
   declare LBL_MAXIMUM: GUILabel;
@@ -22,7 +21,7 @@ export class MenuPazaakWager extends K1_MenuPazaakWager {
   declare BTN_MORE: GUIButton;
   declare LBL_WAGERVAL: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'pazaakwager_p';
     this.background = '';
@@ -40,5 +39,4 @@ export class MenuPazaakWager extends K1_MenuPazaakWager {
   hide(): void {
     super.hide();
   }
-
 }

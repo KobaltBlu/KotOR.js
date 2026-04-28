@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import "@/apps/forge/components/info-bubble/info-bubble.scss";
+import '@/apps/forge/components/info-bubble/info-bubble.scss';
 
 interface InfoBubbleProps {
   content: string;
@@ -14,7 +14,7 @@ export const InfoBubble: React.FC<InfoBubbleProps> = ({
   position = 'top',
   maxWidth = 300,
   className = '',
-  children
+  children,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [bubblePosition, setBubblePosition] = useState({ top: 0, left: 0 });
@@ -28,7 +28,7 @@ export const InfoBubble: React.FC<InfoBubbleProps> = ({
     const bubbleRect = bubbleRef.current.getBoundingClientRect();
     const viewport = {
       width: window.innerWidth,
-      height: window.innerHeight
+      height: window.innerHeight,
     };
 
     let top = 0;
@@ -37,18 +37,18 @@ export const InfoBubble: React.FC<InfoBubbleProps> = ({
     switch (position) {
       case 'top':
         top = triggerRect.top - bubbleRect.height - 8;
-        left = triggerRect.left + (triggerRect.width / 2) - (bubbleRect.width / 2);
+        left = triggerRect.left + triggerRect.width / 2 - bubbleRect.width / 2;
         break;
       case 'bottom':
         top = triggerRect.bottom + 8;
-        left = triggerRect.left + (triggerRect.width / 2) - (bubbleRect.width / 2);
+        left = triggerRect.left + triggerRect.width / 2 - bubbleRect.width / 2;
         break;
       case 'left':
-        top = triggerRect.top + (triggerRect.height / 2) - (bubbleRect.height / 2);
+        top = triggerRect.top + triggerRect.height / 2 - bubbleRect.height / 2;
         left = triggerRect.left - bubbleRect.width - 8;
         break;
       case 'right':
-        top = triggerRect.top + (triggerRect.height / 2) - (bubbleRect.height / 2);
+        top = triggerRect.top + triggerRect.height / 2 - bubbleRect.height / 2;
         left = triggerRect.right + 8;
         break;
     }
@@ -71,10 +71,10 @@ export const InfoBubble: React.FC<InfoBubbleProps> = ({
       updatePosition();
       const handleResize = () => updatePosition();
       const handleScroll = () => updatePosition();
-      
+
       window.addEventListener('resize', handleResize);
       window.addEventListener('scroll', handleScroll);
-      
+
       return () => {
         window.removeEventListener('resize', handleResize);
         window.removeEventListener('scroll', handleScroll);
@@ -91,7 +91,7 @@ export const InfoBubble: React.FC<InfoBubbleProps> = ({
   };
 
   return (
-    <div 
+    <div
       ref={triggerRef}
       className={`info-bubble-trigger ${className}`}
       onMouseEnter={handleMouseEnter}
@@ -105,12 +105,10 @@ export const InfoBubble: React.FC<InfoBubbleProps> = ({
           style={{
             top: bubblePosition.top,
             left: bubblePosition.left,
-            maxWidth: maxWidth
+            maxWidth: maxWidth,
           }}
         >
-          <div className="info-bubble__content">
-            {content}
-          </div>
+          <div className="info-bubble__content">{content}</div>
           <div className={`info-bubble__arrow info-bubble__arrow--${position}`} />
         </div>
       )}

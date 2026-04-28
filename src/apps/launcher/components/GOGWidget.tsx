@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import "@/apps/launcher/styles/GOGWidget.scss";
+import '@/apps/launcher/styles/GOGWidget.scss';
 
 // Types and Interfaces
 export enum ContentType {
   GAME = 0,
-  MOVIE = 1
+  MOVIE = 1,
 }
 
 export interface GOGProduct {
@@ -44,12 +44,12 @@ export interface GOGWidgetProps {
 }
 
 // Utility functions
-const CURRENCY_EXCEPTIONS_FORMATTING = ["RUB", "CNY"];
+const CURRENCY_EXCEPTIONS_FORMATTING = ['RUB', 'CNY'];
 
 const formatPrice = (price: number, currency: string): string => {
   // GOG API returns prices in cents, so we need to convert to dollars
   const priceInDollars = price / 100;
-  
+
   if (CURRENCY_EXCEPTIONS_FORMATTING.includes(currency)) {
     return priceInDollars.toString();
   }
@@ -57,7 +57,7 @@ const formatPrice = (price: number, currency: string): string => {
 };
 
 const calculateDiscountPercent = (basePrice: number, finalPrice: number): number => {
-  return 100 - Math.ceil(100 * finalPrice / basePrice);
+  return 100 - Math.ceil((100 * finalPrice) / basePrice);
 };
 
 const isPriceDiscounted = (basePrice: number, finalPrice: number): boolean => {
@@ -66,31 +66,52 @@ const isPriceDiscounted = (basePrice: number, finalPrice: number): boolean => {
 
 const generateImageUrl = (template: string, formatter?: string): string => {
   if (!template) return '';
-  return template.replace("_{formatter}", formatter ? "_" + formatter : "");
+  return template.replace('_{formatter}', formatter ? '_' + formatter : '');
 };
 
 const generateBackgroundUrl = (template: string, formatter?: string): string => {
   if (!template) return '';
   const extension = template.match(/.jpg|.png/);
   if (!extension) return template;
-  return template.replace(extension[0], formatter ? "_" + formatter + extension[0] : extension[0]);
+  return template.replace(extension[0], formatter ? '_' + formatter + extension[0] : extension[0]);
 };
 
-// API functions
-const fetchProductData = async (productId: string): Promise<any> => {
+/** GOG API product response shape (external API - structure from gog.com) */
+interface GOGProductApiResponse {
+  _embedded?: {
+    product?: {
+      title?: string;
+      isAvailableForSale?: boolean;
+      isPreorder?: boolean;
+      _links?: { image?: { href?: string }; prices?: { href?: string } };
+    };
+    supportedOperatingSystems?: Array<{ operatingSystem?: { name?: string } }>;
+  };
+  _links?: { store?: { href?: string }; backgroundImage?: { href?: string } };
+}
+
+/** GOG API price response shape (external API) */
+interface GOGPriceApiResponse {
+  _embedded?: {
+    prices?: Array<{ basePrice?: string | number; finalPrice?: string | number; currency?: { code?: string } }>;
+  };
+}
+
+// API functions - fetch from external gog.com API
+const fetchProductData = async (productId: string): Promise<GOGProductApiResponse> => {
   const response = await fetch(`https://api.gog.com/v1/games/${productId}?locale=en-US`);
   if (!response.ok) {
     throw new Error(`Failed to fetch product data: ${response.status} ${response.statusText}`);
   }
-  return response.json();
+  return response.json() as Promise<GOGProductApiResponse>;
 };
 
-const fetchPriceData = async (distributorId: string, productId: string): Promise<any> => {
+const fetchPriceData = async (distributorId: string, productId: string): Promise<GOGPriceApiResponse> => {
   const response = await fetch(`https://api.gog.com/widget/${distributorId}/${productId}/prices`);
   if (!response.ok) {
     throw new Error(`Failed to fetch price data: ${response.status} ${response.statusText}`);
   }
-  return response.json();
+  return response.json() as Promise<GOGPriceApiResponse>;
 };
 
 // Main GOGWidget Component
@@ -102,7 +123,7 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
   showPrice = true,
   showDiscount = true,
   imageFormatter = '',
-  backgroundFormatter = ''
+  backgroundFormatter: _backgroundFormatter = '',
 }) => {
   const [product, setProduct] = useState<GOGProduct | null>(null);
   const [priceData, setPriceData] = useState<GOGPriceData | null>(null);
@@ -116,7 +137,7 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
       setError(null);
 
       const productResponse = await fetchProductData(productId);
-      
+
       if (!productResponse || !productResponse._embedded || !productResponse._embedded.product) {
         throw new Error('Invalid product data received');
       }
@@ -133,13 +154,14 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
         currency: '',
         basePrice: 0,
         finalPrice: 0,
-        supportedOs: productResponse._embedded?.supportedOperatingSystems?.map((os: any) => 
-          os.operatingSystem?.name || 'Unknown'
-        ) || [],
+        supportedOs:
+          productResponse._embedded?.supportedOperatingSystems?.map((os) => os.operatingSystem?.name || 'Unknown') ||
+          [],
         imageFormatterTemplate: productData._links?.image?.href || '',
         backgroundFormatterTemplate: productResponse._links?.backgroundImage?.href || '',
         getImage: (formatter?: string) => generateImageUrl(productData._links?.image?.href || '', formatter),
-        getBackground: (formatter?: string) => generateBackgroundUrl(productResponse._links?.backgroundImage?.href || '', formatter)
+        getBackground: (formatter?: string) =>
+          generateBackgroundUrl(productResponse._links?.backgroundImage?.href || '', formatter),
       };
 
       setProduct(newProduct);
@@ -147,32 +169,43 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
       // Load price data
       try {
         const priceResponse = await fetchPriceData(`52756712356612660`, productId);
-        
-        if (priceResponse && priceResponse._embedded && priceResponse._embedded.prices && priceResponse._embedded.prices.length > 0) {
+
+        if (
+          priceResponse &&
+          priceResponse._embedded &&
+          priceResponse._embedded.prices &&
+          priceResponse._embedded.prices.length > 0
+        ) {
           const price = priceResponse._embedded.prices[0];
           const basePrice = parseInt(price.basePrice) || 0;
           const finalPrice = parseInt(price.finalPrice) || 0;
           const currency = price.currency?.code || 'USD';
-          
+
           setPriceData({
             basePrice,
             finalPrice,
             currency,
-            discount: isPriceDiscounted(basePrice, finalPrice) ? calculateDiscountPercent(basePrice, finalPrice) : undefined
+            discount: isPriceDiscounted(basePrice, finalPrice)
+              ? calculateDiscountPercent(basePrice, finalPrice)
+              : undefined,
           });
 
           // Update product with price info
-          setProduct(prev => prev ? {
-            ...prev,
-            basePrice,
-            finalPrice,
-            currency
-          } : null);
+          setProduct((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  basePrice,
+                  finalPrice,
+                  currency,
+                }
+              : null
+          );
         } else {
-          console.warn('No price data found in response:', priceResponse);
+          log.warn('No price data found in response:', priceResponse);
         }
       } catch (priceError) {
-        console.warn('Failed to load price data:', priceError);
+        log.warn('Failed to load price data:', priceError);
         // Don't fail the entire widget if price loading fails
       }
 
@@ -229,8 +262,8 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
         {/* Product Image */}
         {product.imageFormatterTemplate && (
           <div className="gog-widget__image">
-            <img 
-              src={product.getImage ? product.getImage(imageFormatter) : product.imageFormatterTemplate} 
+            <img
+              src={product.getImage ? product.getImage(imageFormatter) : product.imageFormatterTemplate}
               alt={product.title}
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
@@ -242,7 +275,7 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
         {/* Product Info */}
         <div className="gog-widget__content">
           <h3 className="gog-widget__title">{product.title}</h3>
-          
+
           {/* Operating Systems */}
           {product.supportedOs.length > 0 && (
             <div className="gog-widget__os">
@@ -284,24 +317,22 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
                         {formatPrice(priceData.finalPrice, priceData.currency)} {priceData.currency}
                       </span>
                       {showDiscount && priceData.discount && (
-                        <span className="gog-widget__discount">
-                          -{priceData.discount}%
-                        </span>
+                        <span className="gog-widget__discount">-{priceData.discount}%</span>
                       )}
                     </div>
                   </>
                 ) : (
                   <div className="gog-widget__price-final">
                     <span className="gog-widget__price">
-                      {priceData.basePrice === 0 ? 'Free' : `${formatPrice(priceData.finalPrice, priceData.currency)} ${priceData.currency}`}
+                      {priceData.basePrice === 0
+                        ? 'Free'
+                        : `${formatPrice(priceData.finalPrice, priceData.currency)} ${priceData.currency}`}
                     </span>
                   </div>
                 )
               ) : (
                 <div className="gog-widget__price-final">
-                  <span className="gog-widget__price gog-widget__price--unavailable">
-                    Price not available
-                  </span>
+                  <span className="gog-widget__price gog-widget__price--unavailable">Price not available</span>
                 </div>
               )}
             </div>
@@ -309,7 +340,7 @@ export const GOGWidget: React.FC<GOGWidgetProps> = ({
 
           {/* Store Link */}
           {product.storeUri && (
-            <button 
+            <button
               className="gog-widget__store-button"
               onClick={handleStoreClick}
               disabled={!product.isAvailableForSale && !product.isPreorder}

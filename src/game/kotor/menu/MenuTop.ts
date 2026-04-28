@@ -1,17 +1,16 @@
-import { GameMenu } from "@/gui";
-import type { GUIControl, GUIButton } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUIControl, GUIButton } from '@/gui';
 
 /**
  * MenuTop class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuTop.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuTop extends GameMenu {
-
   LBLH_ABI: GUIControl;
   LBLH_CHA: GUIControl;
   LBLH_EQU: GUIControl;
@@ -29,7 +28,7 @@ export class MenuTop extends GameMenu {
   BTN_MAP: GUIButton;
   BTN_OPT: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'top';
     this.background = '';
@@ -38,8 +37,8 @@ export class MenuTop extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();
         this.CloseAllOtherMenus();
@@ -107,10 +106,18 @@ export class MenuTop extends GameMenu {
   }
 
   CloseAllOtherMenus() {
-    let currentMenu = this.manager.GetCurrentMenu();
-    if (currentMenu == this.manager.MenuAbilities || currentMenu == this.manager.MenuInventory || currentMenu == this.manager.MenuJournal || currentMenu == this.manager.MenuMap || currentMenu == this.manager.MenuMessages || currentMenu == this.manager.MenuOptions || currentMenu == this.manager.MenuCharacter || currentMenu == this.manager.MenuEquipment) {
+    const currentMenu = this.manager.GetCurrentMenu();
+    if (
+      currentMenu == this.manager.MenuAbilities ||
+      currentMenu == this.manager.MenuInventory ||
+      currentMenu == this.manager.MenuJournal ||
+      currentMenu == this.manager.MenuMap ||
+      currentMenu == this.manager.MenuMessages ||
+      currentMenu == this.manager.MenuOptions ||
+      currentMenu == this.manager.MenuCharacter ||
+      currentMenu == this.manager.MenuEquipment
+    ) {
       currentMenu.close();
     }
   }
-  
 }

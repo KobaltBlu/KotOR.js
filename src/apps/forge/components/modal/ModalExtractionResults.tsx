@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
-import { Button, Modal } from "react-bootstrap";
-import { ModalExtractionResultsState } from "@/apps/forge/states/modal/ModalExtractionResultsState";
+import React, { useEffect, useState } from 'react';
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import { Button, Modal } from 'react-bootstrap';
+import { ModalExtractionResultsState } from '@/apps/forge/states/modal/ModalExtractionResultsState';
 
 export const ModalExtractionResults = (props: BaseModalProps) => {
   const modal = props.modal as ModalExtractionResultsState;
@@ -33,35 +33,59 @@ export const ModalExtractionResults = (props: BaseModalProps) => {
         <Modal.Title>Extraction Results</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p><strong>Model:</strong> {results.modelName}</p>
         <p>
-          <strong>Models:</strong> {results.modelCount} ({results.modelCount * 2} files)
-          &nbsp;&bull;&nbsp;
+          <strong>Model:</strong> {results.modelName}
+        </p>
+        <p>
+          <strong>Models:</strong> {results.modelCount} ({results.modelCount * 2} files) &nbsp;&bull;&nbsp;
           <strong>Textures:</strong> {results.textureCount}
           &nbsp;&bull;&nbsp;
           <strong>Exported:</strong> {exported} files
           {skipped > 0 && (
-            <>&nbsp;&bull;&nbsp;<strong style={{color: '#f0ad4e'}}>Skipped:</strong> {skipped}</>
+            <>
+              &nbsp;&bull;&nbsp;<strong style={{ color: '#f0ad4e' }}>Skipped:</strong> {skipped}
+            </>
           )}
           {failed > 0 && (
-            <>&nbsp;&bull;&nbsp;<strong style={{color: '#d9534f'}}>Failed:</strong> {failed}</>
+            <>
+              &nbsp;&bull;&nbsp;<strong style={{ color: '#d9534f' }}>Failed:</strong> {failed}
+            </>
           )}
         </p>
 
-        <div style={{ maxHeight: '300px', overflowY: 'auto', border: '1px solid #444', borderRadius: '4px', padding: '8px', backgroundColor: '#1a1a1a', fontSize: '12px', fontFamily: 'monospace' }}>
+        <div
+          style={{
+            maxHeight: '300px',
+            overflowY: 'auto',
+            border: '1px solid #444',
+            borderRadius: '4px',
+            padding: '8px',
+            backgroundColor: '#1a1a1a',
+            fontSize: '12px',
+            fontFamily: 'monospace',
+          }}
+        >
           {results.exportedFiles.map((file, i) => (
-            <div key={`ok-${i}`} style={{ color: '#5cb85c' }}>{file}</div>
+            <div key={`ok-${i}`} style={{ color: '#5cb85c' }}>
+              {file}
+            </div>
           ))}
           {results.skippedFiles.map((file, i) => (
-            <div key={`skip-${i}`} style={{ color: '#f0ad4e' }}>SKIPPED: {file}</div>
+            <div key={`skip-${i}`} style={{ color: '#f0ad4e' }}>
+              SKIPPED: {file}
+            </div>
           ))}
           {results.failedFiles.map((file, i) => (
-            <div key={`fail-${i}`} style={{ color: '#d9534f' }}>MISSING: {file}</div>
+            <div key={`fail-${i}`} style={{ color: '#d9534f' }}>
+              MISSING: {file}
+            </div>
           ))}
         </div>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="primary" onClick={handleClose}>Close</Button>
+        <Button variant="primary" onClick={handleClose}>
+          Close
+        </Button>
       </Modal.Footer>
     </Modal>
   );

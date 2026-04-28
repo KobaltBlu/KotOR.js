@@ -1,21 +1,20 @@
-import { AudioEngine } from "@/audio/AudioEngine";
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton, GUISlider } from "@/gui";
+import { AudioEngine } from '@/audio/AudioEngine';
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton, GUISlider } from '@/gui';
 
 const DEFAULT_GAIN = 0.75;
 
 /**
  * MenuSound class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuSound.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuSound extends GameMenu {
-
   LBL_TITLE: GUILabel;
   SLI_MUSIC: GUISlider;
   LBL_MUSIC: GUILabel;
@@ -30,7 +29,7 @@ export class MenuSound extends GameMenu {
   BTN_BACK: GUIButton;
   BTN_ADVANCED: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optsound';
     this.background = '1600x1200back';
@@ -39,7 +38,7 @@ export class MenuSound extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     this.BTN_BACK.addEventListener('click', (e) => {
       e.stopPropagation();
       GameState.iniConfig.save();
@@ -55,26 +54,26 @@ export class MenuSound extends GameMenu {
     this.BTN_DEFAULT.addEventListener('click', (e) => {
       e.stopPropagation();
       AudioEngine.GAIN_GUI = DEFAULT_GAIN;
-      this.SLI_MUSIC.setValue(AudioEngine.GAIN_MUSIC = DEFAULT_GAIN);
-      this.SLI_VO.setValue(AudioEngine.GAIN_VO = DEFAULT_GAIN);
-      this.SLI_FX.setValue(AudioEngine.GAIN_SFX = DEFAULT_GAIN);
-      this.SLI_MOVIE.setValue(AudioEngine.GAIN_MOVIE = DEFAULT_GAIN);
+      this.SLI_MUSIC.setValue((AudioEngine.GAIN_MUSIC = DEFAULT_GAIN));
+      this.SLI_VO.setValue((AudioEngine.GAIN_VO = DEFAULT_GAIN));
+      this.SLI_FX.setValue((AudioEngine.GAIN_SFX = DEFAULT_GAIN));
+      this.SLI_MOVIE.setValue((AudioEngine.GAIN_MOVIE = DEFAULT_GAIN));
     });
 
-    this.SLI_MUSIC.onValueChanged = (value: any) => {
+    this.SLI_MUSIC.onValueChanged = (value: number) => {
       AudioEngine.GAIN_MUSIC = value;
     };
 
-    this.SLI_VO.onValueChanged = (value: any) => {
+    this.SLI_VO.onValueChanged = (value: number) => {
       AudioEngine.GAIN_VO = value;
     };
 
-    this.SLI_FX.onValueChanged = (value: any) => {
+    this.SLI_FX.onValueChanged = (value: number) => {
       AudioEngine.GAIN_SFX = value;
       AudioEngine.GAIN_GUI = value;
     };
 
-    this.SLI_MOVIE.onValueChanged = (value: any) => {
+    this.SLI_MOVIE.onValueChanged = (value: number) => {
       AudioEngine.GAIN_MOVIE = value;
     };
 
@@ -83,52 +82,52 @@ export class MenuSound extends GameMenu {
     this.SLI_FX.attachINIProperty('Sound Options.Sound Effects Volume');
     this.SLI_MOVIE.attachINIProperty('Sound Options.Movie Volume');
 
-    this.LBL_MUSIC.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+    this.LBL_MUSIC.addEventListener('hover', () => {
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_MUSIC.getHintText())
+      this.LB_DESC.addItem(this.LBL_MUSIC.getHintText());
     });
 
-    this.SLI_MUSIC.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+    this.SLI_MUSIC.addEventListener('hover', () => {
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_MUSIC.getHintText())
+      this.LB_DESC.addItem(this.LBL_MUSIC.getHintText());
     });
 
-    this.LBL_VO.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+    this.LBL_VO.addEventListener('hover', () => {
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_VO.getHintText())
+      this.LB_DESC.addItem(this.LBL_VO.getHintText());
     });
 
-    this.SLI_VO.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+    this.SLI_VO.addEventListener('hover', () => {
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_VO.getHintText())
+      this.LB_DESC.addItem(this.LBL_VO.getHintText());
     });
 
-    this.LBL_FX.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+    this.LBL_FX.addEventListener('hover', () => {
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_FX.getHintText())
+      this.LB_DESC.addItem(this.LBL_FX.getHintText());
     });
 
-    this.SLI_FX.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+    this.SLI_FX.addEventListener('hover', () => {
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_FX.getHintText())
+      this.LB_DESC.addItem(this.LBL_FX.getHintText());
     });
 
-    this.LBL_MOVIE.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+    this.LBL_MOVIE.addEventListener('hover', () => {
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
+      this.LB_DESC.addItem(this.LBL_MOVIE.getHintText());
     });
 
-    this.SLI_MOVIE.addEventListener( 'hover', () => {
-      //console.log(this.LBL_MUSIC.getHintText());
+    this.SLI_MOVIE.addEventListener('hover', () => {
+      //log.info(this.LBL_MUSIC.getHintText());
       this.LB_DESC.clearItems();
-      this.LB_DESC.addItem(this.LBL_MOVIE.getHintText())
+      this.LB_DESC.addItem(this.LBL_MOVIE.getHintText());
     });
   }
 
@@ -139,5 +138,4 @@ export class MenuSound extends GameMenu {
     this.SLI_FX.setValue(AudioEngine.GAIN_SFX);
     this.SLI_MOVIE.setValue(AudioEngine.GAIN_MOVIE);
   }
-  
 }

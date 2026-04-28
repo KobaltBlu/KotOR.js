@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { BaseModalProps } from "../../interfaces/modal/BaseModalProps";
-import { Modal, Button, Form, FormCheck } from "react-bootstrap";
-import { ModalExtractOptionsState } from "../../states/modal/ModalExtractOptionsState";
+import React, { useEffect, useState } from 'react';
+import { Modal, Button, Form, FormCheck } from 'react-bootstrap';
+
+import { BaseModalProps } from '@/apps/forge/interfaces/modal/BaseModalProps';
+import { ModalExtractOptionsState } from '@/apps/forge/states/modal/ModalExtractOptionsState';
 
 /**
- * Dialog for configuring extraction options (ported from Holocron ExtractOptionsDialog).
+ * Dialog for configuring extraction options.
  * Options: TPC decompile, TPC TXI extract, MDL decompile, MDL texture extract.
  */
 export const ModalExtractOptions = (props: BaseModalProps) => {
@@ -19,11 +20,11 @@ export const ModalExtractOptions = (props: BaseModalProps) => {
   const onShow = () => setShow(true);
 
   useEffect(() => {
-    modal.addEventListener("onHide", onHide);
-    modal.addEventListener("onShow", onShow);
+    modal.addEventListener('onHide', onHide);
+    modal.addEventListener('onShow', onShow);
     return () => {
-      modal.removeEventListener("onHide", onHide);
-      modal.removeEventListener("onShow", onShow);
+      modal.removeEventListener('onHide', onHide);
+      modal.removeEventListener('onShow', onShow);
     };
   }, [modal]);
 

@@ -1,17 +1,16 @@
-import type { GUILabel, GUIButton } from "@/gui";
-import { MenuPazaakGame as K1_MenuPazaakGame } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton } from '@/gui';
+import { MenuPazaakGame as K1_MenuPazaakGame } from '@/game/kotor/KOTOR';
 
 /**
  * MenuPazaakGame class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuPazaakGame.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuPazaakGame extends K1_MenuPazaakGame {
-
   declare LBL_NPCSIDEDECK: GUILabel;
   declare LBL_PLRSIDEDECK: GUILabel;
   declare BTN_NPC0: GUIButton;
@@ -94,7 +93,7 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
   declare BTN_FLIP3: GUIButton;
   declare BTN_FORFEITGAME: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'pazaakgame_p';
     this.background = '';
@@ -103,8 +102,8 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
@@ -112,5 +111,4 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
   hide(): void {
     super.hide();
   }
-  
 }

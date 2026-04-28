@@ -3,7 +3,7 @@
  * convert to RGB in fragment shader. No CPU-side pixel loop.
  */
 
-import type { YUVFrame } from "@/video/binkvideo";
+import type { YUVFrame } from '@/video/binkvideo';
 
 const VERTEX_SHADER = `
   attribute vec2 a_position;
@@ -82,11 +82,7 @@ function createProgram(gl: WebGLRenderingContext): WebGLProgram | null {
   return program;
 }
 
-function createTexture(
-  gl: WebGLRenderingContext,
-  width: number,
-  height: number
-): WebGLTexture | null {
+function createTexture(gl: WebGLRenderingContext, width: number, height: number): WebGLTexture | null {
   const tex = gl.createTexture();
   if (!tex) return null;
   gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -110,7 +106,7 @@ export function ensureYUVWebGL(
   const { width, height, linesizeY, linesizeU, linesizeV } = frame;
   const chromaH = (height + 1) >> 1;
 
-  const gl = canvas.getContext("webgl", { alpha: false, premultipliedAlpha: false });
+  const gl = canvas.getContext('webgl', { alpha: false, premultipliedAlpha: false });
   if (!gl) return null;
 
   if (prev && prev.width === width && prev.height === height && prev.linesizeY === linesizeY) {
@@ -182,11 +178,11 @@ export function drawYUVFrame(state: YUVWebGLState, frame: YUVFrame): void {
   const yScaleX = width / linesizeY;
   const uvScaleX = (width >> 1) / linesizeU;
 
-  const locYTex = gl.getUniformLocation(program, "u_yTex");
-  const locUTex = gl.getUniformLocation(program, "u_uTex");
-  const locVTex = gl.getUniformLocation(program, "u_vTex");
-  const locYScale = gl.getUniformLocation(program, "u_yScale");
-  const locUVScale = gl.getUniformLocation(program, "u_uvScale");
+  const locYTex = gl.getUniformLocation(program, 'u_yTex');
+  const locUTex = gl.getUniformLocation(program, 'u_uTex');
+  const locVTex = gl.getUniformLocation(program, 'u_vTex');
+  const locYScale = gl.getUniformLocation(program, 'u_yScale');
+  const locUVScale = gl.getUniformLocation(program, 'u_uvScale');
 
   gl.uniform1i(locYTex, 0);
   gl.uniform1i(locUTex, 1);
@@ -194,8 +190,8 @@ export function drawYUVFrame(state: YUVWebGLState, frame: YUVFrame): void {
   gl.uniform2f(locYScale, yScaleX, 1);
   gl.uniform2f(locUVScale, uvScaleX, 1);
 
-  const posLoc = gl.getAttribLocation(program, "a_position");
-  const uvLoc = gl.getAttribLocation(program, "a_texCoord");
+  const posLoc = gl.getAttribLocation(program, 'a_position');
+  const uvLoc = gl.getAttribLocation(program, 'a_texCoord');
 
   gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
   gl.bufferData(gl.ARRAY_BUFFER, QUAD_POSITIONS, gl.STATIC_DRAW);

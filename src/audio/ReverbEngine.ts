@@ -1,10 +1,10 @@
-import { EAXPresets } from "@/audio/EAXPresets";
+import { EAXPresets } from '@/audio/EAXPresets';
 
 /**
  * ReverbEngine class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ReverbEngine.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -49,7 +49,7 @@ export class ReverbEngine {
   private decayHFRatio: number = 1.0;
   private decayLFRatio: number = 1.0;
   private cachedWetGain: number = 0;
-  
+
   // Missing EAX features
   private reflectionsPan: [number, number, number] = [0, 0, 0];
   private lateReverbPan: [number, number, number] = [0, 0, 0];
@@ -64,7 +64,7 @@ export class ReverbEngine {
   private listenerOrientation: [number, number, number] = [0, 0, 1];
 
   constructor(context: AudioContext) {
-    console.log("Initializing ReverbEngine");
+    console.log('Initializing ReverbEngine');
     this.context = context;
     this.currentPreset = 0;
 
@@ -82,17 +82,17 @@ export class ReverbEngine {
     this.latePanner = context.createStereoPanner();
 
     this.hfFilter = context.createBiquadFilter();
-    this.hfFilter.type = "lowshelf";
+    this.hfFilter.type = 'lowshelf';
     this.hfFilter.frequency.value = 5000;
     this.hfFilter.gain.value = 0;
 
     this.lfFilter = context.createBiquadFilter();
-    this.lfFilter.type = "highshelf";
+    this.lfFilter.type = 'highshelf';
     this.lfFilter.frequency.value = 250;
     this.lfFilter.gain.value = 0;
 
     this.airAbsorptionFilter = context.createBiquadFilter();
-    this.airAbsorptionFilter.type = "lowpass";
+    this.airAbsorptionFilter.type = 'lowpass';
     this.airAbsorptionFilter.frequency.value = 5000;
     this.airAbsorptionFilter.Q.value = 0.5;
 
@@ -100,14 +100,18 @@ export class ReverbEngine {
     this.echoGain = context.createGain();
 
     this.lfo = context.createOscillator();
-    this.lfo.type = "sine";
+    this.lfo.type = 'sine';
     this.lfoGain = context.createGain();
     this.lfo.connect(this.lfoGain);
     this.lfoGain.connect(this.lateDelay.delayTime);
     this.lfo.start();
 
     this.earlyReflections.connect(this.earlyGain).connect(this.earlyPanner).connect(this.convolver);
-    this.convolver.connect(this.hfFilter).connect(this.lfFilter).connect(this.airAbsorptionFilter).connect(this.wetGain);
+    this.convolver
+      .connect(this.hfFilter)
+      .connect(this.lfFilter)
+      .connect(this.airAbsorptionFilter)
+      .connect(this.wetGain);
     this.wetGain.connect(this.lateDelay).connect(this.lateGain).connect(this.latePanner).connect(this.output);
     this.dryGain.connect(this.output);
     this.output.connect(context.destination);
@@ -132,7 +136,7 @@ export class ReverbEngine {
    * Load preset and apply all parameters with correct EAX mapping
    */
   loadPreset(index: number) {
-    console.log("Loading preset:", index);
+    console.log('Loading preset:', index);
     if (this.currentPreset === index) return;
 
     const preset = EAXPresets.PresetFromIndex(index);
@@ -172,14 +176,13 @@ export class ReverbEngine {
     this.wetGain.gain.value = reverbLevel;
     this.cachedWetGain = reverbLevel;
     this.dryGain.gain.value = 1.0 - preset.gain;
-
   }
 
   /**
    * Generate proper EAX impulse response with early reflections and late reverb
    */
   private generateEAXImpulse(preset: any): AudioBuffer {
-    console.log("Generating EAX impulse for preset");
+    console.log('Generating EAX impulse for preset');
     const sampleRate = this.context.sampleRate;
     const length = Math.ceil(preset.decayTime * sampleRate);
     const buffer = this.context.createBuffer(2, length, sampleRate);
@@ -280,7 +283,7 @@ export class ReverbEngine {
    * Connect audio source into the engine - proper EAX routing
    */
   connectSource(source: AudioNode) {
-    console.log("Connecting source to ReverbEngine");
+    console.log('Connecting source to ReverbEngine');
     source.connect(this.earlyReflections);
     source.connect(this.dryGain);
   }
@@ -304,7 +307,7 @@ export class ReverbEngine {
       lateGain: this.lateGain.gain.value,
       hfFilterFreq: this.hfFilter.frequency.value,
       lfFilterFreq: this.lfFilter.frequency.value,
-      airAbsorptionFreq: this.airAbsorptionFilter.frequency.value
+      airAbsorptionFreq: this.airAbsorptionFilter.frequency.value,
     };
   }
 
@@ -332,9 +335,7 @@ export class ReverbEngine {
    * Calculate proper 3D positioning using EAX-style spatial processing
    */
   calculate3DPosition(relativePos: [number, number, number], channel: number) {
-    const distance = Math.sqrt(
-      relativePos[0] ** 2 + relativePos[1] ** 2 + relativePos[2] ** 2
-    );
+    const distance = Math.sqrt(relativePos[0] ** 2 + relativePos[1] ** 2 + relativePos[2] ** 2);
     if (distance < 0.01) return 1.0;
 
     const orientX = this.listenerOrientation[0];
@@ -360,7 +361,7 @@ export class ReverbEngine {
    * Calculate channel gain using EAX-style HRTF simulation
    */
   calculateChannelGain(azimuth: number, elevation: number, distance: number, channel: number) {
-    const azimuthDeg = (azimuth * 180 / Math.PI + 360) % 360;
+    const azimuthDeg = ((azimuth * 180) / Math.PI + 360) % 360;
     const headShadow = this.calculateHeadShadow(azimuthDeg, channel);
     const distanceAttenuation = this.calculateDistanceAttenuation(distance);
     const elevationFilter = this.calculateElevationFilter(elevation);
@@ -377,7 +378,7 @@ export class ReverbEngine {
       return 1.0;
     } else {
       const shadowAngle = Math.abs(azimuthDeg - (isLeftChannel ? 0 : 360));
-      const shadowFactor = Math.cos(shadowAngle * Math.PI / 180) * 0.3 + 0.7;
+      const shadowFactor = Math.cos((shadowAngle * Math.PI) / 180) * 0.3 + 0.7;
       return Math.max(0.1, shadowFactor);
     }
   }
@@ -396,7 +397,7 @@ export class ReverbEngine {
   }
 
   calculateElevationFilter(elevation: number) {
-    const elevationDeg = elevation * 180 / Math.PI;
+    const elevationDeg = (elevation * 180) / Math.PI;
 
     if (elevationDeg > 45) {
       return 1.1;
@@ -410,5 +411,4 @@ export class ReverbEngine {
   calculatePanFactor(pan: [number, number, number], channel: number) {
     return this.calculate3DPosition(pan, channel);
   }
-
 }

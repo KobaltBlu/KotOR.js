@@ -1,6 +1,6 @@
-import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
-import * as KotOR from "@/apps/forge/KotOR";
-import { ItemPropertyEntry } from "@/apps/forge/states/tabs/TabUTIEditorState";
+import { ForgeGameObject } from '@/apps/forge/module-editor/ForgeGameObject';
+import * as KotOR from '@/apps/forge/KotOR';
+import { ItemPropertyEntry } from '@/apps/forge/states/tabs/TabUTIEditorState';
 
 export class ForgeItem extends ForgeGameObject {
   //GIT Instance Properties
@@ -9,6 +9,7 @@ export class ForgeItem extends ForgeGameObject {
   //Blueprint Properties
   addCost: number = 0;
   baseItem: number = 0;
+  bodyVariation: number = 0;
   charges: number = 0;
   comment: string = '';
   cost: number = 0;
@@ -23,6 +24,7 @@ export class ForgeItem extends ForgeGameObject {
   stackSize: number = 1;
   stolen: boolean = false;
   tag: string = '';
+  textureVariation: number = 1;
   upgradeLevel: number = 0;
 
   // Model data
@@ -30,26 +32,26 @@ export class ForgeItem extends ForgeGameObject {
   modelLoading: boolean = false;
   kBaseItem: any = {};
 
-  constructor(buffer?: Uint8Array){
+  constructor(buffer?: Uint8Array) {
     super();
-    if(buffer){
+    if (buffer) {
       this.loadFromBuffer(buffer);
     }
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
-    if(property === 'baseItem'){
+  onPropertyChange(property: string, newValue: any, oldValue: any) {
+    if (property === 'baseItem') {
       this.loadBaseItem();
-      if(newValue !== oldValue){
+      if (newValue !== oldValue) {
         this.loadModel();
       }
     }
-    if(property === 'modelVariation'){
+    if (property === 'modelVariation') {
       this.loadModel();
     }
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
+    if (property === 'templateResRef') {
+      if (newValue !== oldValue) {
         this.loadBlueprint().then(() => {
           this.load();
         });
@@ -57,57 +59,64 @@ export class ForgeItem extends ForgeGameObject {
     }
   }
 
-  loadFromBuffer(buffer: Uint8Array){
+  loadFromBuffer(buffer: Uint8Array) {
     this.blueprint = new KotOR.GFFObject(buffer);
     this.loadFromBlueprint();
   }
 
-  loadFromBlueprint(){
-    if(!this.blueprint) return;
+  loadFromBlueprint() {
+    if (!this.blueprint) return;
     const root = this.blueprint.RootNode;
-    if(!root) return;
+    if (!root) return;
 
-    if(root.hasField('AddCost')){
+    if (root.hasField('AddCost')) {
       this.addCost = root.getFieldByLabel('AddCost').getValue() || 0;
     }
-    if(root.hasField('BaseItem')){
+    if (root.hasField('BaseItem')) {
       this.baseItem = root.getFieldByLabel('BaseItem').getValue() || 0;
     }
-    if(root.hasField('Charges')){
+    if (root.hasField('BodyVariation')) {
+      this.bodyVariation = root.getFieldByLabel('BodyVariation').getValue() || 0;
+    }
+    if (root.hasField('Charges')) {
       this.charges = root.getFieldByLabel('Charges').getValue() || 0;
     }
-    if(root.hasField('Comment')){
+    if (root.hasField('Comment')) {
       this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
-    if(root.hasField('Cost')){
+    if (root.hasField('Cost')) {
       this.cost = root.getFieldByLabel('Cost').getValue() || 0;
     }
-    if(root.hasField('DescIdentified')){
+    if (root.hasField('DescIdentified')) {
       this.descIdentified = root.getFieldByLabel('DescIdentified').getCExoLocString() || new KotOR.CExoLocString();
     }
-    if(root.hasField('Description')){
+    if (root.hasField('Description')) {
       this.description = root.getFieldByLabel('Description').getCExoLocString() || new KotOR.CExoLocString();
     }
-    if(root.hasField('Identified')){
-      this.identified = root.getFieldByLabel('Identified').getValue() !== undefined ? !!root.getFieldByLabel('Identified').getValue() : true;
+    if (root.hasField('Identified')) {
+      this.identified =
+        root.getFieldByLabel('Identified').getValue() !== undefined
+          ? !!root.getFieldByLabel('Identified').getValue()
+          : true;
     }
-    if(root.hasField('LocalizedName')){
+    if (root.hasField('LocalizedName')) {
       this.locName = root.getFieldByLabel('LocalizedName').getCExoLocString() || new KotOR.CExoLocString();
     }
-    if(root.hasField('ModelVariation')){
+    if (root.hasField('ModelVariation')) {
       this.modelVariation = root.getFieldByLabel('ModelVariation').getValue() || 1;
     }
-    if(root.hasField('PaletteID')){
+    if (root.hasField('PaletteID')) {
       this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
-    if(root.hasField('Plot')){
-      this.plot = root.getFieldByLabel('Plot').getValue() || false;
+    if (root.hasField('Plot')) {
+      this.plot = !!root.getFieldByLabel('Plot').getValue();
     }
-    if(root.hasField('PropertiesList')){
+    if (root.hasField('PropertiesList')) {
       const propertiesField = root.getFieldByLabel('PropertiesList');
       const structs = propertiesField?.getChildStructs() || [];
       this.properties = structs.map((struct: KotOR.GFFStruct) => {
-        const getValue = (label: string, defaultValue = 0) => struct.hasField(label) ? struct.getFieldByLabel(label).getValue() ?? defaultValue : defaultValue;
+        const getValue = (label: string, defaultValue = 0) =>
+          struct.hasField(label) ? (struct.getFieldByLabel(label).getValue() ?? defaultValue) : defaultValue;
         return {
           chanceAppear: getValue('ChanceAppear', 100),
           costTable: getValue('CostTable', 0),
@@ -116,22 +125,26 @@ export class ForgeItem extends ForgeGameObject {
           param1Value: getValue('Param1Value', 0),
           propertyName: getValue('PropertyName', 0),
           subtype: getValue('Subtype', 0),
+          upgradeType: struct.hasField('UpgradeType') ? getValue('UpgradeType', 0) : undefined,
         } as ItemPropertyEntry;
       });
     }
-    if(root.hasField('StackSize')){
+    if (root.hasField('StackSize')) {
       this.stackSize = root.getFieldByLabel('StackSize').getValue() || 1;
     }
-    if(root.hasField('Stolen')){
-      this.stolen = root.getFieldByLabel('Stolen').getValue() || false;
+    if (root.hasField('Stolen')) {
+      this.stolen = !!root.getFieldByLabel('Stolen').getValue();
     }
-    if(root.hasField('Tag')){
+    if (root.hasField('Tag')) {
       this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
-    if(root.hasField('TemplateResRef')){
+    if (root.hasField('TemplateResRef')) {
       this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
     }
-    if(root.hasField('UpgradeLevel')){
+    if (root.hasField('TextureVar')) {
+      this.textureVariation = root.getFieldByLabel('TextureVar').getValue() || 1;
+    }
+    if (root.hasField('UpgradeLevel')) {
       this.upgradeLevel = root.getFieldByLabel('UpgradeLevel').getValue() || 0;
     }
   }
@@ -141,72 +154,90 @@ export class ForgeItem extends ForgeGameObject {
     this.blueprint.FileType = 'UTI ';
     this.blueprint.RootNode.type = -1;
     const root = this.blueprint.RootNode;
-    if(!root) return this.blueprint;
-    
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'AddCost', this.addCost) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.INT, 'BaseItem', this.baseItem) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Charges', this.charges) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Cost', this.cost) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'DescIdentified', this.descIdentified) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Identified', this.identified ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocalizedName', this.locName) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'ModelVariation', this.modelVariation) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Plot', this.plot ? 1 : 0) );
+    if (!root) return this.blueprint;
 
-    const propertiesField = root.addField( new KotOR.GFFField(KotOR.GFFDataType.LIST, 'PropertiesList') );
-    if(propertiesField){
-      for(const property of this.properties){
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'AddCost', this.addCost));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'BaseItem', this.baseItem));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'BodyVariation', this.bodyVariation));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Charges', this.charges));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Comment', this.comment));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Cost', this.cost));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'DescIdentified', this.descIdentified));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Description', this.description));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Identified', this.identified ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'LocalizedName', this.locName));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'ModelVariation', this.modelVariation));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'PaletteID', this.paletteID));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Plot', this.plot ? 1 : 0));
+
+    const propertiesField = root.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'PropertiesList'));
+    if (propertiesField) {
+      for (const property of this.properties) {
         const struct = new KotOR.GFFStruct();
-        struct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'ChanceAppear', property.chanceAppear) );
-        struct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'CostTable', property.costTable) );
-        struct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'CostValue', property.costValue) );
-        struct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Param1', property.param1) );
-        struct.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Param1Value', property.param1Value) );
-        struct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'PropertyName', property.propertyName) );
-        struct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Subtype', property.subtype) );
+        struct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'ChanceAppear', property.chanceAppear));
+        struct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'CostTable', property.costTable));
+        struct.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'CostValue', property.costValue));
+        struct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Param1', property.param1));
+        struct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Param1Value', property.param1Value));
+        struct.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'PropertyName', property.propertyName));
+        struct.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Subtype', property.subtype));
+        if (property.upgradeType !== undefined) {
+          struct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'UpgradeType', property.upgradeType));
+        }
         propertiesField.addChildStruct(struct);
       }
     }
 
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'StackSize', this.stackSize) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Stolen', this.stolen ? 1 : 0) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag) );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || '') );
-    root.addField( new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'UpgradeLevel', this.upgradeLevel || 0) );
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'StackSize', this.stackSize));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Stolen', this.stolen ? 1 : 0));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef || ''));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'TextureVar', this.textureVariation));
+    root.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'UpgradeLevel', this.upgradeLevel || 0));
 
     return this.blueprint;
   }
 
-  loadBaseItem(){
-    if(!this.baseItem){ 
+  loadBaseItem() {
+    if (!this.baseItem) {
       this.kBaseItem = {};
       return this.kBaseItem;
     }
-    const twodaObject = KotOR.TwoDAManager.datatables.get('baseitems');
-    if(!twodaObject) return;
-    return this.kBaseItem = twodaObject.getRowByIndex(this.baseItem);
+    const twodaObject = InstallationRegistry.get2DASync(InstallationRegistry.BASEITEMS);
+    if (!twodaObject) return;
+    return (this.kBaseItem = twodaObject.getRowByIndex(this.baseItem));
   }
 
-  stringCleaner(str: string = ''){
-    return str.replace(/\0[\s\S]*$/g,'').trim().toLowerCase();
+  getIconResRef(): string {
+    const itemclass = this.stringCleaner(this.kBaseItem?.itemclass || '');
+    if (!itemclass) {
+      return '';
+    }
+    return `i${itemclass}_${('000' + this.modelVariation).slice(-3)}`;
   }
 
-  nthStringConverter(name = '', nth = 1){
-    let value = nth.toString();
+  stringCleaner(str: string = '') {
+    return str
+      .replace(/\0[\s\S]*$/g, '')
+      .trim()
+      .toLowerCase();
+  }
+
+  nthStringConverter(name = '', nth = 1) {
+    const value = nth.toString();
     name = name.substr(0, name.length - value.length);
     return name + value;
   }
 
-  async loadModel(){
-    if(this.model){
+  async loadModel() {
+    if (this.model) {
       this.model.removeFromParent();
-      try{ this.model.dispose(); }catch(e){}
+      try {
+        this.model.dispose();
+      } catch (e) {}
     }
 
-    if(!this.baseItem){ 
+    if (!this.baseItem) {
       this.model = new KotOR.OdysseyModel3D();
       return this.model;
     }
@@ -214,29 +245,29 @@ export class ForgeItem extends ForgeGameObject {
     const itemclass = this.stringCleaner(this.kBaseItem.itemclass);
     let defaultModel = this.stringCleaner(this.kBaseItem.defaultmodel);
 
-    if(defaultModel != 'i_null'){
+    if (defaultModel != 'i_null') {
       defaultModel = this.nthStringConverter(defaultModel, this.modelVariation);
-      if(!parseInt(defaultModel.substr(-3))){
-        defaultModel = itemclass+'_'+(('000'+this.modelVariation).substr(-3));
+      if (!parseInt(defaultModel.substr(-3))) {
+        defaultModel = itemclass + '_' + ('000' + this.modelVariation).substr(-3);
       }
     }
 
-    try{
+    try {
       this.modelLoading = true;
       this.processEventListener('onModelChange', [this]);
       const mdl = await KotOR.MDLLoader.loader.load(defaultModel);
       const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
-        lighting: true
+        lighting: true,
       });
       this.model = model;
-      if(this.context && this.context.scene){
+      if (this.context && this.context.scene) {
         this.context.scene.add(this.model);
       }
       this.modelLoading = false;
       this.processEventListener('onModelChange', [this]);
       return this.model;
-    }catch(e){
+    } catch (e) {
       console.error(e);
       this.model = new KotOR.OdysseyModel3D();
       this.modelLoading = false;
@@ -245,7 +276,8 @@ export class ForgeItem extends ForgeGameObject {
     }
   }
 
-  async load(){
+  async load() {
+    await InstallationRegistry.get2DA(InstallationRegistry.BASEITEMS);
     this.loadBaseItem();
     await this.loadModel();
     this.updateBoundingBox();
@@ -263,7 +295,7 @@ export class ForgeItem extends ForgeGameObject {
     return instance;
   }
 
-  setGITInstance(strt: KotOR.GFFStruct){
+  setGITInstance(strt: KotOR.GFFStruct) {
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
     this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
     this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
@@ -272,5 +304,4 @@ export class ForgeItem extends ForgeGameObject {
     this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
     this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
   }
-
 }

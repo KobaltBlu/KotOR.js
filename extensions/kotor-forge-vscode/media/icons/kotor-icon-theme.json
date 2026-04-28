@@ -1,0 +1,27 @@
+{
+  "hidesExplorerArrows": false,
+  "fileExtensions": {
+    "nss": "./nwscript.svg",
+    "ncs": "./nwscript.svg",
+    "utc": "./gff.svg",
+    "utd": "./gff.svg",
+    "utp": "./gff.svg",
+    "uti": "./gff.svg",
+    "ute": "./gff.svg",
+    "uts": "./gff.svg",
+    "utt": "./gff.svg",
+    "utw": "./gff.svg",
+    "utm": "./gff.svg",
+    "gff": "./gff.svg",
+    "are": "./gff.svg",
+    "git": "./gff.svg",
+    "ifo": "./gff.svg",
+    "jrl": "./gff.svg",
+    "fac": "./gff.svg",
+    "gui": "./gff.svg",
+    "2da": "./2da.svg",
+    "dlg": "./dlg.svg",
+    "mdl": "./mdl.svg",
+    "mdx": "./mdl.svg"
+  }
+}

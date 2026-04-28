@@ -1,5 +1,5 @@
 /**
- * Forge constants – limits and defaults (Holocron-aligned where applicable).
+ * Forge constants – limits and defaults.
  */
 
 /** Maximum number of recent files in the File menu. */

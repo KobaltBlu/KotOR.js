@@ -1,15 +1,15 @@
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
-import type { OdysseyModel } from "@/odyssey/OdysseyModel";
-import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
-import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { OdysseyModelNodeType } from '@/enums/odyssey/OdysseyModelNodeType';
+import { IOdysseyArrayDefinition } from '@/interface/odyssey/IOdysseyArrayDefinition';
+import type { OdysseyModel } from '@/odyssey/OdysseyModel';
+import type { OdysseyModelNode } from '@/odyssey/OdysseyModelNode';
+import { OdysseyModelNodeMesh } from '@/odyssey/OdysseyModelNodeMesh';
+import { OdysseyModelUtility } from '@/odyssey/OdysseyModelUtility';
 
 /**
  * OdysseyModelNodeDangly class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyModelNodeDangly.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -23,12 +23,12 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
   danglyVec4: number[];
   contraintArrayDefinition: IOdysseyArrayDefinition;
 
-  constructor(parent: OdysseyModelNode){
+  constructor(parent: OdysseyModelNode) {
     super(parent);
     this.type |= OdysseyModelNodeType.Dangly;
   }
 
-  readBinary(odysseyModel: OdysseyModel){
+  readBinary(odysseyModel: OdysseyModel) {
     super.readBinary(odysseyModel);
 
     this.contraintArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
@@ -38,19 +38,21 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
     this.danglyPeriod = this.odysseyModel.mdlReader.readSingle();
 
     this.danglyMDLOffset = this.odysseyModel.mdlReader.readUInt32();
-    
-    this.constraints = OdysseyModelUtility.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.contraintArrayDefinition.offset, this.contraintArrayDefinition.count);
+
+    this.constraints = OdysseyModelUtility.ReadArrayFloats(
+      this.odysseyModel.mdlReader,
+      this.odysseyModel.fileHeader.modelDataOffset + this.contraintArrayDefinition.offset,
+      this.contraintArrayDefinition.count
+    );
     this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.danglyMDLOffset);
     this.danglyVec4 = [];
-    for(let i = 0; i < this.contraintArrayDefinition.count; i++){
+    for (let i = 0; i < this.contraintArrayDefinition.count; i++) {
       this.danglyVec4.push(
-        this.odysseyModel.mdlReader.readSingle(), 
-        this.odysseyModel.mdlReader.readSingle(), 
-        this.odysseyModel.mdlReader.readSingle(), 
+        this.odysseyModel.mdlReader.readSingle(),
+        this.odysseyModel.mdlReader.readSingle(),
+        this.odysseyModel.mdlReader.readSingle(),
         this.constraints[i]
       );
     }
-
   }
-
 }

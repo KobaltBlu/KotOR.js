@@ -1,9 +1,8 @@
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { ProfilePromoItem } from "@/apps/launcher/components/ProfilePromoItem";
-import { useApp } from "@/apps/launcher/context/AppContext";
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { ProfilePromoItem } from '@/apps/launcher/components/ProfilePromoItem';
+import { useApp } from '@/apps/launcher/context/AppContext';
 
-
-export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
+export const ProfilePromoItems = forwardRef(function (props: any, ref: any) {
   const appContext = useApp();
   const profile: any = props.profile;
   const tabRef: any = props.tabRef;
@@ -23,16 +22,16 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
 
   // Memoized scroll update functions
   const updateScroll = useCallback(() => {
-    if(!tabRef.current || !promoElementsRef.current){
+    if (!tabRef.current || !promoElementsRef.current) {
       return;
     }
-    
+
     const max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
     canScroll.current = max < 0;
   }, [tabRef, promoElementsRef]);
 
   const updateScrollButtons = useCallback(() => {
-    if(!tabRef.current || !promoElementsRef.current){
+    if (!tabRef.current || !promoElementsRef.current) {
       scrollLeftVisable.current = false;
       scrollRightVisable.current = false;
       canScroll.current = false;
@@ -42,16 +41,16 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
     const max = tabRef.current.clientWidth - promoElementsRef.current.clientWidth;
     scrollLeftVisable.current = false;
     scrollRightVisable.current = false;
-    
-    if(canScroll.current){
-      if(scrollOffset.current < 0){
+
+    if (canScroll.current) {
+      if (scrollOffset.current < 0) {
         scrollLeftVisable.current = true;
       }
-      if(scrollOffset.current > max){
+      if (scrollOffset.current > max) {
         scrollRightVisable.current = true;
       }
     }
-    
+
     setScrollL(scrollLeftVisable.current);
     setScrollR(scrollRightVisable.current);
     setMarginLeft(scrollOffset.current);
@@ -63,20 +62,22 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
     updateScrollButtons();
   }, [updateScroll, updateScrollButtons]);
 
-  useImperativeHandle(ref, () => ({
-    recalculate() {
-      // console.warn(`recalculate: ${profile.name} promo`);
-      updateScrollAndButtons();
-    }
-  }), [updateScrollAndButtons]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      recalculate() {
+        // console.warn(`recalculate: ${profile.name} promo`);
+        updateScrollAndButtons();
+      },
+    }),
+    [updateScrollAndButtons]
+  );
 
   const onBtnPromoLeft = useCallback(() => {
     updateScroll();
-    if(!canScroll.current)
-      return;
+    if (!canScroll.current) return;
 
-    if(!tabRef.current || !promoElementsRef.current)
-      return;
+    if (!tabRef.current || !promoElementsRef.current) return;
 
     const offset = scrollOffset.current + promoElementWidthValue;
     scrollOffset.current = offset >= 0 ? 0 : offset;
@@ -85,11 +86,9 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
 
   const onBtnPromoRight = useCallback(() => {
     updateScroll();
-    if(!canScroll.current)
-      return;
+    if (!canScroll.current) return;
 
-    if(!tabRef.current || !promoElementsRef.current)
-      return;
+    if (!tabRef.current || !promoElementsRef.current) return;
 
     const max = Math.abs(tabRef.current.clientWidth - promoElementsRef.current.clientWidth);
     const offset = scrollOffset.current - promoElementWidthValue;
@@ -125,7 +124,7 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
 
     // Also observe individual promo items if they exist
     const promoItems = promoElementsRef.current.querySelectorAll('.promo-element');
-    promoItems.forEach(item => {
+    promoItems.forEach((item) => {
       if (resizeObserverRef.current) {
         resizeObserverRef.current.observe(item);
       }
@@ -151,19 +150,29 @@ export const ProfilePromoItems = forwardRef(function(props: any, ref: any){
   }, [updateScrollAndButtons]);
 
   return (
-    <div className={`promo-elements ${scrollL ? 'scroll-left': ''} ${scrollR ? 'scroll-right' : ''}`} >
-      <div className="promo-elements-left" onClick={onBtnPromoLeft}><i className="fas fa-chevron-left"></i></div>
-      <div ref={promoElementsRef} className="promo-elements-container" style={{ marginLeft: marginLeft, position: 'absolute' }}>
-        {
-          profile.elements.map( (element: any, i: number) => {
-            return (
-              <ProfilePromoItem element={element} key={`profile-proto-item-${i}`} onClick={props.onClick} onDoubleClick={props.onDoubleClick}></ProfilePromoItem>
-            )
-          })
-        }
+    <div className={`promo-elements ${scrollL ? 'scroll-left' : ''} ${scrollR ? 'scroll-right' : ''}`}>
+      <div className="promo-elements-left" onClick={onBtnPromoLeft}>
+        <i className="fas fa-chevron-left"></i>
       </div>
-      <div className="promo-elements-right" onClick={onBtnPromoRight}><i className="fas fa-chevron-right"></i></div>
+      <div
+        ref={promoElementsRef}
+        className="promo-elements-container"
+        style={{ marginLeft: marginLeft, position: 'absolute' }}
+      >
+        {profile.elements.map((element: any, i: number) => {
+          return (
+            <ProfilePromoItem
+              element={element}
+              key={`profile-proto-item-${i}`}
+              onClick={props.onClick}
+              onDoubleClick={props.onDoubleClick}
+            ></ProfilePromoItem>
+          );
+        })}
+      </div>
+      <div className="promo-elements-right" onClick={onBtnPromoRight}>
+        <i className="fas fa-chevron-right"></i>
+      </div>
     </div>
   );
-
 });

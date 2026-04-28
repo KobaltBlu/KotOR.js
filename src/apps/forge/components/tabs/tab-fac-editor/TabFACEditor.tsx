@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from "react";
-import { TabFACEditorState } from "../../../states/tabs";
-import { MenuBar, MenuItem } from "../../common/MenuBar";
-import * as KotOR from "../../../KotOR";
-import "./TabFACEditor.scss";
+import React, { useState, useEffect } from 'react';
+
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
+import type { GFFFieldValue } from '@/apps/forge/interfaces/GFFFormField';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabFACEditorState } from '@/apps/forge/states/tabs';
+import '@/apps/forge/components/tabs/tab-fac-editor/TabFACEditor.scss';
 
 interface BaseTabProps {
   tab: TabFACEditorState;
 }
 
-export const TabFACEditor = function(props: BaseTabProps){
+export const TabFACEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabFACEditorState;
   const [fac, setFac] = useState(tab.fac);
   const [selectedFaction, setSelectedFaction] = useState(tab.selectedFaction);
@@ -35,12 +37,12 @@ export const TabFACEditor = function(props: BaseTabProps){
       label: 'File',
       children: [
         { label: 'Save', onClick: () => tab.save() },
-        { label: 'Save As', onClick: () => tab.saveAs() }
-      ]
-    }
+        { label: 'Save As', onClick: () => tab.saveAs() },
+      ],
+    },
   ];
 
-  if(!fac){
+  if (!fac) {
     return (
       <div className="forge-fac-editor">
         <MenuBar items={menuItems} />
@@ -89,8 +91,8 @@ export const TabFACEditor = function(props: BaseTabProps){
             <div className="forge-fac-editor__no-selection">
               <p>Select a faction to view and edit its properties.</p>
               <p className="help-text">
-                Factions define reputation relationships between NPC groups.
-                Each faction has a name, parent faction, and reputation values with other factions.
+                Factions define reputation relationships between NPC groups. Each faction has a name, parent faction,
+                and reputation values with other factions.
               </p>
             </div>
           )}
@@ -109,13 +111,14 @@ interface FactionPropertiesProps {
 const FactionProperties = (props: FactionPropertiesProps) => {
   const { faction, allFactions, onUpdate } = props;
 
-  const getFieldValue = (label: string, defaultVal: any = '') => {
-    return faction.getFieldByLabel(label)?.getValue() ?? defaultVal;
+  const getFieldValue = (label: string, defaultVal: GFFFieldValue = ''): GFFFieldValue => {
+    const v = faction.getFieldByLabel(label)?.getValue();
+    return (v === undefined || v === null ? defaultVal : v) as GFFFieldValue;
   };
 
-  const setFieldValue = (label: string, value: any) => {
+  const setFieldValue = (label: string, value: GFFFieldValue) => {
     const field = faction.getFieldByLabel(label);
-    if(field){
+    if (field) {
       field.setValue(value);
       onUpdate();
     }
@@ -166,15 +169,19 @@ const FactionProperties = (props: FactionPropertiesProps) => {
         {reputations.length === 0 ? (
           <p className="no-data">No reputation relationships defined.</p>
         ) : (
-          reputations.map((rep, index) => {
-            const targetID = rep.getFieldByLabel('FactionID')?.getValue() || 0;
-            const repValue = rep.getFieldByLabel('FactionRep')?.getValue() || 50;
+          reputations.map((rep: KotOR.GFFStruct, index: number) => {
+            const targetID = (rep.getFieldByLabel('FactionID')?.getValue() as number | undefined) ?? 0;
+            const repValue = (rep.getFieldByLabel('FactionRep')?.getValue() as number | undefined) ?? 50;
             const targetFaction = allFactions[targetID];
-            const targetName = targetFaction?.getFieldByLabel('FactionName')?.getValue() || `Faction ${targetID}`;
+            const targetName =
+              (targetFaction?.getFieldByLabel('FactionName')?.getValue() as string | undefined) ??
+              `Faction ${targetID}`;
 
             return (
               <div key={index} className="reputation-item">
-                <span className="rep-target">{targetName} (ID: {targetID})</span>
+                <span className="rep-target">
+                  {targetName} (ID: {targetID})
+                </span>
                 <input
                   title="Reputation Value"
                   placeholder="Reputation Value"
@@ -183,7 +190,7 @@ const FactionProperties = (props: FactionPropertiesProps) => {
                   value={repValue}
                   onChange={(e) => {
                     const field = rep.getFieldByLabel('FactionRep');
-                    if(field){
+                    if (field) {
                       field.setValue(parseInt(e.target.value) || 50);
                       onUpdate();
                     }
@@ -202,10 +209,10 @@ const FactionProperties = (props: FactionPropertiesProps) => {
 };
 
 function getReputationDescription(value: number): string {
-  if(value >= 90) return 'Friendly';
-  if(value >= 70) return 'Ally';
-  if(value >= 50) return 'Neutral';
-  if(value >= 30) return 'Unfriendly';
-  if(value >= 10) return 'Hostile';
+  if (value >= 90) return 'Friendly';
+  if (value >= 70) return 'Ally';
+  if (value >= 50) return 'Neutral';
+  if (value >= 30) return 'Unfriendly';
+  if (value >= 10) return 'Hostile';
   return 'Enemy';
 }

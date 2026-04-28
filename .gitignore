@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-package-lock.json
 release/
 /settings.json
 crash.log
@@ -51,6 +50,12 @@ wiki/
 Thumbs.db
 Desktop.ini
 
+# Windows: a file named `NUL` at repo root breaks `git add` (reserved device name).
+/NUL
+
+# Local vendored trees (not part of the main source tree)
+vendor/
+
 # Project specific
 settings.json
 projects/
@@ -70,8 +75,19 @@ scratch/
 *.temp
 .cache/
 .history/
+
+# Lint output files
+eslint-creature.txt
+eslint-compact.txt
+.tmp_lint_batch.txt
+eslint-moduleobject.json
+module-creature-errors.txt
+module-creature-eslint-errors.txt
+
+# KotOR Forge VS Code extension build artifacts (tracked under extensions/)
 extensions/kotor-forge-vscode/server/out/
 extensions/kotor-forge-vscode/kotor-forge-0.1.0.vsix
+
 # src/**/*.js
 dist/
 debug.log

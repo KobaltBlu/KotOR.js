@@ -1,9 +1,8 @@
-import { ActionStatus } from "@/enums/actions/ActionStatus";
-import { ActionType } from "@/enums/actions/ActionType";
-import { Action } from "@/actions/Action";
+import { ActionStatus } from '@/enums/actions/ActionStatus';
+import { ActionType } from '@/enums/actions/ActionType';
+import { Action } from '@/actions/Action';
 
-enum ActionPlayAnimationType
-{
+enum ActionPlayAnimationType {
   LOOPING = 0,
   FIRE_AND_FORGET = 1,
   TIMED = 2,
@@ -11,9 +10,9 @@ enum ActionPlayAnimationType
 
 /**
  * ActionPlayAnimation class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionPlayAnimation.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -28,7 +27,7 @@ export class ActionPlayAnimation extends Action {
   bInitialized: boolean;
   animationType: ActionPlayAnimationType;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionPlayAnimation;
 
@@ -37,51 +36,51 @@ export class ActionPlayAnimation extends Action {
     // 1 - float: speed
     // 2 - float: duration
     // 3 - int: unknown
-    
   }
 
   update(delta: number = 0): ActionStatus {
-    if(this.overlayAnimation)
-      return ActionStatus.FAILED;
+    if (this.overlayAnimation) return ActionStatus.FAILED;
 
-    
-    if(!this.bInitialized){
+    if (!this.bInitialized) {
       this.animation = this.getParameter<number>(0);
       this.speed = this.getParameter<number>(1);
       this.time = this.getParameter<number>(2);
       this.elapsed = 0;
-      this.animationType = this.time == -1 ? ActionPlayAnimationType.LOOPING : this.time == 0 ? ActionPlayAnimationType.FIRE_AND_FORGET : ActionPlayAnimationType.TIMED;
+      this.animationType =
+        this.time == -1
+          ? ActionPlayAnimationType.LOOPING
+          : this.time == 0
+            ? ActionPlayAnimationType.FIRE_AND_FORGET
+            : ActionPlayAnimationType.TIMED;
     }
 
-    if(this.animation >= 10000){
+    if (this.animation >= 10000) {
       this.owner.setAnimationState(this.animation);
       this.animationLength = this.owner.getAnimationLength(this.animation);
-    }else{
+    } else {
       console.error('ActionPlayAnimation Invalid animation', this.owner.getName(), this.animation, this);
       return ActionStatus.FAILED;
     }
-    
+
     this.bInitialized = true;
 
     //If the time is -1, the animation will loop until the next animation is applied
-    if(this.animationType == ActionPlayAnimationType.LOOPING){
+    if (this.animationType == ActionPlayAnimationType.LOOPING) {
       return ActionStatus.COMPLETE;
     }
     //If the time is 0, the animation will play once
-    else if(this.animationType == ActionPlayAnimationType.FIRE_AND_FORGET)
-    {
+    else if (this.animationType == ActionPlayAnimationType.FIRE_AND_FORGET) {
       this.elapsed += delta;
-      if(this.elapsed >= this.animationLength){
+      if (this.elapsed >= this.animationLength) {
         this.elapsed = 0;
         return ActionStatus.COMPLETE;
       }
       return ActionStatus.IN_PROGRESS;
     }
     //If the time is greater than 0, the animation will play for the specified time
-    else if(this.animationType == ActionPlayAnimationType.TIMED)
-    {
+    else if (this.animationType == ActionPlayAnimationType.TIMED) {
       this.elapsed += delta;
-      if(this.elapsed >= this.time){
+      if (this.elapsed >= this.time) {
         this.elapsed = 0;
         return ActionStatus.COMPLETE;
       }
@@ -90,5 +89,4 @@ export class ActionPlayAnimation extends Action {
 
     return ActionStatus.FAILED;
   }
-
 }

@@ -1,10 +1,6 @@
-import * as fs from "fs";
-import * as KotOR from "@/apps/forge/KotOR";
-/** Electron dialog when ENV is ELECTRON; provided by preload. */
-declare const dialog: {
-  showOpenDialog: (options: { title?: string; defaultPath?: string; buttonLabel?: string; filters?: { name: string; extensions: string[] }[]; properties?: string[]; message?: string; securityScopedBookmarks?: boolean }) => Promise<{ canceled?: boolean; filePaths?: string[] }>;
-  showSaveDialog: (options?: { title?: string; defaultPath?: string; buttonLabel?: string; filters?: { name: string; extensions: string[] }[] }) => Promise<{ canceled?: boolean; filePath?: string }>;
-};
+import * as fs from 'fs';
+import * as KotOR from '@/apps/forge/KotOR';
+declare const dialog: any;
 
 export enum ForgeFileSystemResponseType {
   FILE_PATH_STRING = 0,
@@ -13,7 +9,7 @@ export enum ForgeFileSystemResponseType {
 
 export interface ForgeFileSystemResponse {
   type: ForgeFileSystemResponseType;
-  handles?: FileSystemFileHandle[]|FileSystemDirectoryHandle[];
+  handles?: FileSystemFileHandle[] | FileSystemDirectoryHandle[];
   paths?: string[];
   multiple?: boolean;
 }
@@ -36,7 +32,7 @@ interface ShowOpenDirectoryDialogOptions {
     };
   }[];
   multiple?: boolean;
-  startIn?: string|FileSystemHandle;
+  startIn?: string | FileSystemHandle;
 
   /**
    * Electron arguments
@@ -48,194 +44,216 @@ interface ShowOpenDirectoryDialogOptions {
     name: string;
     extensions: string[];
   }[];
-  properties?: ('openDirectory' | 'createDirectory' | 'multiSelections' | 'showHiddenFiles' | 'promptToCreate' | 'noResolveAliases' | 'treatPackageAsDirectory' | 'dontAddToRecent')[];
+  properties?: (
+    | 'openDirectory'
+    | 'createDirectory'
+    | 'multiSelections'
+    | 'showHiddenFiles'
+    | 'promptToCreate'
+    | 'noResolveAliases'
+    | 'treatPackageAsDirectory'
+    | 'dontAddToRecent'
+  )[];
   message?: string;
   securityScopedBookmarks?: boolean;
 }
 
 export class ForgeFileSystem {
   static OpenFile(options: OpenFileOptions = {}): Promise<ForgeFileSystemResponse> {
-    options = Object.assign({
-      multiple: false,
-      ext: []
-    }, options);
-    return new Promise( (resolve, reject) => {
-      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-        dialog.showOpenDialog({
-          title: 'Open File',
-          filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
-          properties: ['createDirectory', 'openFile'],
-        }).then( (result: { canceled?: boolean; filePaths?: string[] }) => {
-          if(!result.canceled){
-            if(result.filePaths?.length){
+    options = Object.assign(
+      {
+        multiple: false,
+        ext: [],
+      },
+      options
+    );
+    return new Promise((resolve, reject) => {
+      if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
+        dialog
+          .showOpenDialog({
+            title: 'Open File',
+            filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
+            properties: ['createDirectory', 'openFile'],
+          })
+          .then((result: any) => {
+            if (!result.canceled) {
+              if (result.filePaths.length) {
+                resolve({
+                  type: ForgeFileSystemResponseType.FILE_PATH_STRING,
+                  paths: result.filePaths as string[],
+                  multiple: options.multiple,
+                });
+                return;
+              }
+            }
+            resolve({
+              type: ForgeFileSystemResponseType.FILE_PATH_STRING,
+              paths: [],
+              multiple: options.multiple,
+            });
+            // console.log(result.canceled);
+            // console.log(result.filePaths);
+          })
+          .catch((e: any) => {
+            console.error(e);
+            resolve({
+              type: ForgeFileSystemResponseType.FILE_PATH_STRING,
+              paths: [],
+              multiple: options.multiple,
+            });
+          });
+      } else {
+        window
+          .showOpenFilePicker({
+            types: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
+            multiple: false,
+          })
+          .then((handles: FileSystemFileHandle[]) => {
+            if (handles.length) {
               resolve({
-                type: ForgeFileSystemResponseType.FILE_PATH_STRING,
-                paths: result.filePaths as string[],
+                type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
+                handles: handles,
                 multiple: options.multiple,
               });
               return;
             }
-          }
-          resolve({
-            type: ForgeFileSystemResponseType.FILE_PATH_STRING,
-            paths: [],
-            multiple: options.multiple,
-          });
-          // console.log(result.canceled);
-          // console.log(result.filePaths);
-        }).catch( (e: unknown) => {
-          console.error(e);
-          resolve({
-            type: ForgeFileSystemResponseType.FILE_PATH_STRING,
-            paths: [],
-            multiple: options.multiple,
-          });
-        })
-      }else{
-        window.showOpenFilePicker({
-          types: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
-          multiple: options.multiple ?? false,
-        }).then( (handles: FileSystemFileHandle | FileSystemFileHandle[]) => {
-          const arr = Array.isArray(handles) ? handles : (handles ? [handles] : []);
-          if(arr.length){
             resolve({
               type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
-              handles: arr,
+              handles: [],
               multiple: options.multiple,
             });
-            return;
-          }
-          resolve({
-            type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
-            handles: [],
-            multiple: options.multiple,
+          })
+          .catch((e: any) => {
+            console.error(e);
+            resolve({
+              type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
+              handles: [],
+              multiple: options.multiple,
+            });
           });
-        }).catch((e: unknown) => {
-          console.error(e);
-          resolve({
-            type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
-            handles: [],
-            multiple: options.multiple,
-          });
-        });
       }
     });
   }
 
-  static async OpenFileBuffer( options: OpenFileOptions = {} ): Promise<Uint8Array> {
-    options = Object.assign({
-      multiple: false,
-      exts: []
-    }, options);
-    try{
-      const response = await ForgeFileSystem.OpenFile(options);
-      return await ForgeFileSystem.ReadFileBufferFromResponse(response);
-    }catch(e: unknown){
-      console.error(e);
-    }
-    return new Uint8Array(0);
-  }
-
-  /** Read file contents from an OpenFile dialog response (Electron path or browser handle). */
-  static async ReadFileBufferFromResponse(response: ForgeFileSystemResponse): Promise<Uint8Array> {
+  static async OpenFileBuffer(options: OpenFileOptions = {}): Promise<Uint8Array> {
+    options = Object.assign(
+      {
+        multiple: false,
+        exts: [],
+      },
+      options
+    );
     try {
-      if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
-        if (response.paths && response.paths.length > 0) {
-          const buf = await fs.promises.readFile(response.paths[0]);
-          return new Uint8Array(buf);
+      const response = await ForgeFileSystem.OpenFile();
+      if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
+        if (Array.isArray(response.paths)) {
+          fs.readFile(response.paths[0], (err, buffer) => {
+            if (err) throw err;
+            return new Uint8Array(buffer);
+          });
         }
       } else {
-        if (response.handles && response.handles.length > 0) {
-          const handle = response.handles[0] as FileSystemFileHandle;
+        if (Array.isArray(response.handles)) {
+          const [handle] = response.handles as FileSystemFileHandle[];
           const file = await handle.getFile();
-          const ab = await file.arrayBuffer();
-          return new Uint8Array(ab);
+          return new Uint8Array(await file.arrayBuffer());
         }
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       console.error(e);
     }
     return new Uint8Array(0);
   }
 
   static OpenDirectory(options: OpenFileOptions = {}): Promise<ForgeFileSystemResponse> {
-    options = Object.assign({
-      multiple: false,
-      exts: []
-    }, options);
+    options = Object.assign(
+      {
+        multiple: false,
+        exts: [],
+      },
+      options
+    );
     options.multiple = false;
-    return new Promise( (resolve, reject) => {
-      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-        dialog.showOpenDialog({
-          title: 'Open Directory',
-          // filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
-          properties: ['createDirectory', 'openDirectory'],
-        }).then( (result: any) => {
-          if(!result.canceled){
-            if(result.filePaths.length){
+    return new Promise((resolve, reject) => {
+      if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
+        dialog
+          .showOpenDialog({
+            title: 'Open Directory',
+            // filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
+            properties: ['createDirectory', 'openDirectory'],
+          })
+          .then((result: any) => {
+            if (!result.canceled) {
+              if (result.filePaths.length) {
+                resolve({
+                  type: ForgeFileSystemResponseType.FILE_PATH_STRING,
+                  paths: result.filePaths as string[],
+                  multiple: false,
+                });
+                return;
+              }
+            }
+            resolve({
+              type: ForgeFileSystemResponseType.FILE_PATH_STRING,
+              paths: [],
+              multiple: false,
+            });
+            // console.log(result.canceled);
+            // console.log(result.filePaths);
+          })
+          .catch((e: any) => {
+            console.error(e);
+            resolve({
+              type: ForgeFileSystemResponseType.FILE_PATH_STRING,
+              paths: [],
+              multiple: options.multiple,
+            });
+          });
+      } else {
+        window
+          .showDirectoryPicker({
+            types: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
+            multiple: false,
+            mode: 'readwrite',
+          })
+          .then((handle: FileSystemDirectoryHandle) => {
+            if (handle) {
               resolve({
-                type: ForgeFileSystemResponseType.FILE_PATH_STRING,
-                paths: result.filePaths as string[],
+                type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
+                handles: [handle as any],
                 multiple: false,
               });
               return;
             }
-          }
-          resolve({
-            type: ForgeFileSystemResponseType.FILE_PATH_STRING,
-            paths: [],
-            multiple: false,
-          });
-          // console.log(result.canceled);
-          // console.log(result.filePaths);
-        }).catch( (e: unknown) => {
-          console.error(e);
-          resolve({
-            type: ForgeFileSystemResponseType.FILE_PATH_STRING,
-            paths: [],
-            multiple: options.multiple,
-          });
-        })
-      }else{
-        window.showDirectoryPicker({
-          mode: "readwrite" as FileSystemPermissionMode,
-        }).then( (handle: FileSystemDirectoryHandle) => {
-          if(handle){
             resolve({
               type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
-              handles: [handle],
-              multiple: false,
+              handles: [],
+              multiple: options.multiple,
             });
-            return;
-          }
-          resolve({
-            type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
-            handles: [],
-            multiple: options.multiple,
+          })
+          .catch((e: any) => {
+            console.error(e);
+            resolve({
+              type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
+              handles: [],
+              multiple: options.multiple,
+            });
           });
-        }).catch((e: unknown) => {
-          console.error(e);
-          resolve({
-            type: ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE,
-            handles: [],
-            multiple: options.multiple,
-          });
-        });
       }
     });
   }
 
-  static GetFilteredFilePickerTypes(ext: string[] = []){
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-      if(ext.length){
-        return supportedFileDialogTypes.filter( (element: { extensions: string[] }) => {
-          return element.extensions.some( (extension: string)=> ext.includes(extension) )
+  static GetFilteredFilePickerTypes(ext: string[] = []) {
+    if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
+      if (ext.length) {
+        return supportedFileDialogTypes.filter((element: any) => {
+          return element.extensions.some((extension: string) => ext.includes(extension));
         });
-      }else{
+      } else {
         return supportedFileDialogTypes;
       }
-    }else{
-      if(ext.length){
+    } else {
+      if (ext.length) {
         // return supportedFilePickerTypes.filter( (element: any) => {
         //   return element.accept['application/*'].some( (extension: string)=> ext.includes(extension.substring(1)) )
         // });
@@ -243,21 +261,24 @@ export class ForgeFileSystem {
           {
             description: 'File',
             accept: {
-              'application/*': ext
-            }
+              'application/*': ext,
+            },
           },
-        ]
-      }else{
-        return supportedFilePickerTypes
+        ];
+      } else {
+        return supportedFilePickerTypes;
       }
     }
   }
 
-  static async showOpenDirectoryDialog( options: ShowOpenDirectoryDialogOptions = {} ){
-    const responseType = KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON ? ForgeFileSystemResponseType.FILE_PATH_STRING : ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE;
+  static async showOpenDirectoryDialog(options: ShowOpenDirectoryDialogOptions = {}) {
+    const responseType =
+      KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON
+        ? ForgeFileSystemResponseType.FILE_PATH_STRING
+        : ForgeFileSystemResponseType.FILE_SYSTEM_HANDLE;
     let cancelled = false;
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-      try{
+    if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
+      try {
         const result = await dialog.showOpenDialog({
           title: options.title,
           defaultPath: options.defaultPath,
@@ -269,36 +290,36 @@ export class ForgeFileSystem {
         });
         console.log('result', result);
         cancelled = !!result.canceled;
-        if(!cancelled){
-          if(result.filePaths.length){
+        if (!cancelled) {
+          if (result.filePaths.length) {
             return {
               type: responseType,
               path: result.filePaths[0],
-              handle: undefined as unknown as FileSystemDirectoryHandle,
+              handle: undefined,
             };
           }
         }
-      }catch(e){
+      } catch (e) {
         console.error(e);
         cancelled = true;
       }
     }
 
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
-      try{
+    if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER) {
+      try {
         const result = await window.showDirectoryPicker({
-          mode: (options.mode || "readwrite") as FileSystemPermissionMode,
+          mode: options.mode || 'readwrite',
         });
         console.log('result', result);
 
-        if(result){
+        if (result) {
           return {
             type: responseType,
             path: result.name,
-            handle: result as FileSystemDirectoryHandle,
+            handle: result,
           };
         }
-      }catch(e){
+      } catch (e) {
         console.error(e);
         cancelled = true;
       }
@@ -306,177 +327,210 @@ export class ForgeFileSystem {
     return {
       cancelled: cancelled,
       type: responseType,
-      path: undefined as string | undefined,
-      handle: undefined as FileSystemDirectoryHandle | undefined,
+      path: undefined,
+      handle: undefined,
     };
   }
-
 }
 
-(window as Window & { ForgeFileSystem?: typeof ForgeFileSystem }).ForgeFileSystem = ForgeFileSystem
+(window as any).ForgeFileSystem = ForgeFileSystem;
 
 export const supportedFilePickerTypes: any[] = [
   {
     description: 'All Supported Formats',
     accept: {
-      'application/*': ['.2da', '.tpc', '.tga', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.phn', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
-    }
+      'application/*': [
+        '.2da',
+        '.tpc',
+        '.tga',
+        '.wav',
+        '.mp3',
+        '.bik',
+        '.gff',
+        '.utc',
+        '.utd',
+        '.utp',
+        '.utm',
+        '.uts',
+        '.utt',
+        '.utw',
+        '.lip',
+        '.phn',
+        '.mod',
+        '.nss',
+        '.ncs',
+        '.erf',
+        '.rim',
+        '.git',
+        '.are',
+        '.ifo',
+        '.mdl',
+        '.mdl.ascii',
+        '.mdx',
+        '.wok',
+        '.pwk',
+        '.dwk',
+        '.lyt',
+        '.vis',
+        '.pth',
+      ],
+    },
   },
   {
     description: 'TPC Image',
     accept: {
-      'application/*': ['.tpc']
-    }
+      'application/*': ['.tpc'],
+    },
   },
   {
     description: 'TGA Image',
     accept: {
-      'application/*': ['.tga']
-    }
+      'application/*': ['.tga'],
+    },
   },
   {
     description: '.GFF',
     accept: {
-      'application/*': ['.gff']
-    }
+      'application/*': ['.gff'],
+    },
   },
   {
     description: 'Creature Template',
     accept: {
-      'application/*': ['.utc']
-    }
+      'application/*': ['.utc'],
+    },
   },
   {
     description: 'Door Template',
     accept: {
-      'application/*': ['.utd']
-    }
+      'application/*': ['.utd'],
+    },
   },
   {
     description: 'Placeable Template',
     accept: {
-      'application/*': ['.utp']
-    }
+      'application/*': ['.utp'],
+    },
   },
   {
     description: 'Merchant Template',
     accept: {
-      'application/*': ['.utm']
-    }
+      'application/*': ['.utm'],
+    },
   },
   {
     description: 'Sound Template',
     accept: {
-      'application/*': ['.uts']
-    }
+      'application/*': ['.uts'],
+    },
   },
   {
     description: 'Trigger Template',
     accept: {
-      'application/*': ['.utt']
-    }
+      'application/*': ['.utt'],
+    },
   },
   {
     description: 'Waypoint Template',
     accept: {
-      'application/*': ['.utw']
-    }
+      'application/*': ['.utw'],
+    },
   },
   {
     description: 'LIP Animation',
     accept: {
-      'application/*': ['.lip']
-    }
+      'application/*': ['.lip'],
+    },
   },
   {
     description: 'PHN File',
     accept: {
-      'application/*': ['.phn']
-    }
+      'application/*': ['.phn'],
+    },
   },
   {
     description: 'Audio File',
     accept: {
-      'application/*': ['.wav', '.mp3']
-    }
+      'application/*': ['.wav', '.mp3'],
+    },
   },
   {
     description: 'Video File',
     accept: {
-      'application/*': ['.bik']
-    }
+      'application/*': ['.bik'],
+    },
   },
   {
     description: 'MOD File',
     accept: {
-      'application/*': ['.mod']
-    }
+      'application/*': ['.mod'],
+    },
   },
   {
     description: 'ERF File',
     accept: {
-      'application/*': ['.erf']
-    }
+      'application/*': ['.erf'],
+    },
   },
   {
     description: 'RIM File',
     accept: {
-      'application/*': ['.rim']
-    }
+      'application/*': ['.rim'],
+    },
   },
   {
     description: 'Model File',
     accept: {
-      'application/*': ['.mdl', '.wok', '.pwk', '.dwk']
-    }
+      'application/*': ['.mdl', '.wok', '.pwk', '.dwk'],
+    },
   },
   {
     description: 'Module File',
     accept: {
-      'application/*': ['.git', '.ifo']
-    }
+      'application/*': ['.git', '.ifo'],
+    },
   },
   {
     description: 'Area File',
     accept: {
-      'application/*': ['.are']
-    }
+      'application/*': ['.are'],
+    },
   },
   {
     description: 'Path File',
     accept: {
-      'application/*': ['.pth']
-    }
+      'application/*': ['.pth'],
+    },
   },
   {
     description: 'Script Source File',
     accept: {
-      'application/*': ['.ncs']
-    }
+      'application/*': ['.ncs'],
+    },
   },
   {
     description: 'Script Compiled File',
     accept: {
-      'application/*': ['.nss']
-    }
+      'application/*': ['.nss'],
+    },
   },
   {
     description: 'VIS File',
     accept: {
-      'application/*': ['.vis']
-    }
+      'application/*': ['.vis'],
+    },
   },
   {
     description: 'Layout File',
     accept: {
-      'application/*': ['.lyt']
-    }
+      'application/*': ['.lyt'],
+    },
   },
   {
     description: '2D Array File',
     accept: {
-      'application/*': ['.2da']
-    }
+      'application/*': ['.2da'],
+    },
   },
   // {
   //   description: 'All Formats',
@@ -487,32 +541,68 @@ export const supportedFilePickerTypes: any[] = [
 ];
 
 export const supportedFileDialogTypes: any[] = [
-  {name: 'All Supported Formats', extensions: ['2da', 'tpc', 'tga', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'phn', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
-  {name: 'TPC Image', extensions: ['tpc']},
-  {name: 'TGA Image', extensions: ['tga']},
-  {name: 'GFF', extensions: ['gff']},
-  {name: 'Creature Template', extensions: ['utc']},
-  {name: 'Door Template', extensions: ['utd']},
-  {name: 'Placeable Template', extensions: ['utp']},
-  {name: 'Merchant Template', extensions: ['utm']},
-  {name: 'Sound Template', extensions: ['uts']},
-  {name: 'Trigger Template', extensions: ['utt']},
-  {name: 'Waypoint Template', extensions: ['utw']},
-  {name: 'LIP Animation', extensions: ['lip']},
-  {name: 'PHN File', extensions: ['phn']},
-  {name: 'Audio File', extensions: ['wav', 'mp3']},
-  {name: 'Video File', extensions: ['bik']},
-  {name: 'MOD File', extensions: ['mod']},
-  {name: 'ERF File', extensions: ['erf']},
-  {name: 'RIM File', extensions: ['rim']},
-  {name: 'Model File', extensions: ['mdl', 'mdx', 'wok', 'pwk', 'dwk']},
-  {name: 'Module File', extensions: ['git', 'ifo']},
-  {name: 'Area File', extensions: ['are']},
-  {name: 'Path File', extensions: ['pth']},
-  {name: 'Script Source File', extensions: ['ncs']},
-  {name: 'Script Compiled File', extensions: ['nss']},
-  {name: 'VIS File', extensions: ['vis']},
-  {name: 'Layout File', extensions: ['lyt']},
-  {name: '2D Array File', extensions: ['2da']},
-  {name: 'All Formats', extensions: ['*']},
+  {
+    name: 'All Supported Formats',
+    extensions: [
+      '2da',
+      'tpc',
+      'tga',
+      'wav',
+      'mp3',
+      'bik',
+      'gff',
+      'utc',
+      'utd',
+      'utp',
+      'utm',
+      'uts',
+      'utt',
+      'utw',
+      'lip',
+      'phn',
+      'mod',
+      'nss',
+      'ncs',
+      'erf',
+      'rim',
+      'git',
+      'are',
+      'ifo',
+      'mdl',
+      'mdx',
+      'wok',
+      'pwk',
+      'dwk',
+      'lyt',
+      'vis',
+      'pth',
+    ],
+  },
+  { name: 'TPC Image', extensions: ['tpc'] },
+  { name: 'TGA Image', extensions: ['tga'] },
+  { name: 'GFF', extensions: ['gff'] },
+  { name: 'Creature Template', extensions: ['utc'] },
+  { name: 'Door Template', extensions: ['utd'] },
+  { name: 'Placeable Template', extensions: ['utp'] },
+  { name: 'Merchant Template', extensions: ['utm'] },
+  { name: 'Sound Template', extensions: ['uts'] },
+  { name: 'Trigger Template', extensions: ['utt'] },
+  { name: 'Waypoint Template', extensions: ['utw'] },
+  { name: 'LIP Animation', extensions: ['lip'] },
+  { name: 'PHN File', extensions: ['phn'] },
+  { name: 'Audio File', extensions: ['wav', 'mp3'] },
+  { name: 'Video File', extensions: ['bik'] },
+  { name: 'MOD File', extensions: ['mod'] },
+  { name: 'ERF File', extensions: ['erf'] },
+  { name: 'RIM File', extensions: ['rim'] },
+  { name: 'Model File', extensions: ['mdl', 'mdl.ascii', 'mdx', 'wok', 'pwk', 'dwk'] },
+  { name: 'Module File', extensions: ['git', 'ifo'] },
+  { name: 'Area File', extensions: ['are'] },
+  { name: 'Path File', extensions: ['pth'] },
+  { name: 'Script Source File', extensions: ['ncs'] },
+  { name: 'Script Compiled File', extensions: ['nss'] },
+  { name: 'VIS File', extensions: ['vis'] },
+  { name: 'Layout File', extensions: ['lyt'] },
+  { name: '2D Array File', extensions: ['2da'] },
+  { name: 'All Formats', extensions: ['*'] },
 ];

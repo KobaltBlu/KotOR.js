@@ -1,14 +1,29 @@
-import type { NWScriptASTNode, NWScriptProgramNode, NWScriptFunctionNode, NWScriptBlockNode, NWScriptIfNode, NWScriptIfElseNode, NWScriptWhileNode, NWScriptDoWhileNode, NWScriptForNode, NWScriptExpressionStatementNode, NWScriptAssignmentNode, NWScriptReturnNode, NWScriptVariableDeclarationNode, NWScriptGlobalVariableDeclarationNode } from "@/nwscript/decompiler/NWScriptAST";
-import { NWScriptASTNodeType } from "@/nwscript/decompiler/NWScriptAST";
-import type { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type {
+  NWScriptASTNode,
+  NWScriptProgramNode,
+  NWScriptFunctionNode,
+  NWScriptBlockNode,
+  NWScriptIfNode,
+  NWScriptIfElseNode,
+  NWScriptWhileNode,
+  NWScriptDoWhileNode,
+  NWScriptForNode,
+  NWScriptExpressionStatementNode,
+  NWScriptAssignmentNode,
+  NWScriptReturnNode,
+  NWScriptVariableDeclarationNode,
+  NWScriptGlobalVariableDeclarationNode,
+} from '@/nwscript/decompiler/NWScriptAST';
+import { NWScriptASTNodeType } from '@/nwscript/decompiler/NWScriptAST';
+import type { NWScriptExpression } from '@/nwscript/decompiler/NWScriptExpression';
+import { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
 
 /**
  * Generates NSS source code from an Abstract Syntax Tree.
- * This is the final step in the decompilation pipeline.
- * 
+ * This is the final step in the NCS-to-NSS conversion pipeline.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptASTCodeGenerator.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -52,7 +67,7 @@ export class NWScriptASTCodeGenerator {
   private generateGlobalVariableDeclaration(decl: NWScriptGlobalVariableDeclarationNode): string {
     const typeName = this.getTypeName(decl.dataType);
     const name = decl.name;
-    
+
     if (decl.initializer) {
       return `${typeName} ${name} = ${decl.initializer.toNSS()};`;
     } else {
@@ -68,7 +83,7 @@ export class NWScriptASTCodeGenerator {
 
     // Function signature
     const returnTypeName = this.getTypeName(func.returnType);
-    const params = func.parameters.map(p => `${this.getTypeName(p.type)} ${p.name}`).join(', ');
+    const params = func.parameters.map((p) => `${this.getTypeName(p.type)} ${p.name}`).join(', ');
     lines.push(`${returnTypeName} ${func.name}(${params})`);
     lines.push('{');
 
@@ -85,7 +100,7 @@ export class NWScriptASTCodeGenerator {
     // Function body
     const bodyLines = this.generateBlock(func.body);
     if (bodyLines.length > 0) {
-      lines.push(...bodyLines.map(line => this.indent() + line));
+      lines.push(...bodyLines.map((line) => this.indent() + line));
     } else {
       // Empty function body
       lines.push(this.indent() + '// Empty');
@@ -103,7 +118,7 @@ export class NWScriptASTCodeGenerator {
   private generateVariableDeclaration(decl: NWScriptVariableDeclarationNode): string {
     const typeName = this.getTypeName(decl.dataType);
     const name = decl.name;
-    
+
     if (decl.initializer) {
       return `${typeName} ${name} = ${decl.initializer.toNSS()};`;
     } else {
@@ -214,21 +229,21 @@ export class NWScriptASTCodeGenerator {
   private generateIf(ifNode: NWScriptIfNode): string[] {
     const lines: string[] = [];
     const condition = ifNode.condition.toNSS();
-    
+
     lines.push(`if (${condition})`);
     lines.push('{');
-    
+
     this.indentLevel++;
     const bodyLines = this.generateBlock(ifNode.thenBody);
     if (bodyLines.length > 0) {
-      lines.push(...bodyLines.map(line => this.indent() + line));
+      lines.push(...bodyLines.map((line) => this.indent() + line));
     } else {
       lines.push(this.indent() + '// Empty');
     }
     this.indentLevel--;
-    
+
     lines.push('}');
-    
+
     return lines;
   }
 
@@ -238,34 +253,34 @@ export class NWScriptASTCodeGenerator {
   private generateIfElse(ifElseNode: NWScriptIfElseNode): string[] {
     const lines: string[] = [];
     const condition = ifElseNode.condition.toNSS();
-    
+
     lines.push(`if (${condition})`);
     lines.push('{');
-    
+
     this.indentLevel++;
     const thenLines = this.generateBlock(ifElseNode.thenBody);
     if (thenLines.length > 0) {
-      lines.push(...thenLines.map(line => this.indent() + line));
+      lines.push(...thenLines.map((line) => this.indent() + line));
     } else {
       lines.push(this.indent() + '// Empty');
     }
     this.indentLevel--;
-    
+
     lines.push('}');
     lines.push('else');
     lines.push('{');
-    
+
     this.indentLevel++;
     const elseLines = this.generateBlock(ifElseNode.elseBody);
     if (elseLines.length > 0) {
-      lines.push(...elseLines.map(line => this.indent() + line));
+      lines.push(...elseLines.map((line) => this.indent() + line));
     } else {
       lines.push(this.indent() + '// Empty');
     }
     this.indentLevel--;
-    
+
     lines.push('}');
-    
+
     return lines;
   }
 
@@ -275,21 +290,21 @@ export class NWScriptASTCodeGenerator {
   private generateWhile(whileNode: NWScriptWhileNode): string[] {
     const lines: string[] = [];
     const condition = whileNode.condition.toNSS();
-    
+
     lines.push(`while (${condition})`);
     lines.push('{');
-    
+
     this.indentLevel++;
     const bodyLines = this.generateBlock(whileNode.body);
     if (bodyLines.length > 0) {
-      lines.push(...bodyLines.map(line => this.indent() + line));
+      lines.push(...bodyLines.map((line) => this.indent() + line));
     } else {
       lines.push(this.indent() + '// Empty');
     }
     this.indentLevel--;
-    
+
     lines.push('}');
-    
+
     return lines;
   }
 
@@ -299,21 +314,21 @@ export class NWScriptASTCodeGenerator {
   private generateDoWhile(doWhileNode: NWScriptDoWhileNode): string[] {
     const lines: string[] = [];
     const condition = doWhileNode.condition.toNSS();
-    
+
     lines.push('do');
     lines.push('{');
-    
+
     this.indentLevel++;
     const bodyLines = this.generateBlock(doWhileNode.body);
     if (bodyLines.length > 0) {
-      lines.push(...bodyLines.map(line => this.indent() + line));
+      lines.push(...bodyLines.map((line) => this.indent() + line));
     } else {
       lines.push(this.indent() + '// Empty');
     }
     this.indentLevel--;
-    
+
     lines.push(`} while (${condition});`);
-    
+
     return lines;
   }
 
@@ -322,7 +337,7 @@ export class NWScriptASTCodeGenerator {
    */
   private generateFor(forNode: NWScriptForNode): string[] {
     const lines: string[] = [];
-    
+
     let init = '';
     if (forNode.init) {
       const initLines = this.generateStatement(forNode.init);
@@ -330,9 +345,9 @@ export class NWScriptASTCodeGenerator {
         init = initLines[0].replace(/;$/, ''); // Remove trailing semicolon
       }
     }
-    
+
     const condition = forNode.condition ? forNode.condition.toNSS() : '';
-    
+
     let increment = '';
     if (forNode.increment) {
       const incLines = this.generateStatement(forNode.increment);
@@ -340,22 +355,22 @@ export class NWScriptASTCodeGenerator {
         increment = incLines[0].replace(/;$/, ''); // Remove trailing semicolon
       }
     }
-    
+
     lines.push(`for (${init}; ${condition}; ${increment})`);
     lines.push('{');
-    
+
     this.indentLevel++;
     const bodyLines = this.generateBlock(forNode.body);
     if (bodyLines.length > 0) {
-      lines.push(...bodyLines.map(line => this.indent() + line));
+      lines.push(...bodyLines.map((line) => this.indent() + line));
     } else {
       // Empty body - add empty line or comment
       lines.push(this.indent() + '// Empty');
     }
     this.indentLevel--;
-    
+
     lines.push('}');
-    
+
     return lines;
   }
 
@@ -386,4 +401,3 @@ export class NWScriptASTCodeGenerator {
     return this.indentString.repeat(this.indentLevel);
   }
 }
-

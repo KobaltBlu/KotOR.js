@@ -1,7 +1,9 @@
-import React from "react";
-import { TabState } from ".";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { TabScriptFindReferences } from "../../components/tabs/tab-script-find-references/TabScriptFindReferences";
+﻿import React from 'react';
+
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+
+import { TabScriptFindReferences } from '@/apps/forge/components/tabs/tab-script-find-references/TabScriptFindReferences';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
 
 export interface TextReferenceMatch {
   line: number;
@@ -11,26 +13,24 @@ export interface TextReferenceMatch {
 }
 
 export class TabScriptFindReferencesState extends TabState {
-  tabName: string = " REFERENCES ";
+  tabName: string = ' REFERENCES ';
   results: TextReferenceMatch[] = [];
-  searchTerm: string = "";
+  searchTerm: string = '';
 
   constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
-    this.setContentView(
-      <TabScriptFindReferences tab={this} parentTab={options.parentTab}></TabScriptFindReferences>
-    );
+    this.setContentView(<TabScriptFindReferences tab={this} parentTab={options.parentTab}></TabScriptFindReferences>);
   }
 
   setResults(searchTerm: string, results: TextReferenceMatch[] = []) {
     this.searchTerm = searchTerm;
     this.results = results;
     if (!this.results.length) {
-      this.setTabName(" REFERENCES ");
+      this.setTabName(' REFERENCES ');
     } else {
       this.setTabName(` REFERENCES (${this.results.length}) `);
     }
-    this.processEventListener("onSetResults", [this.results]);
+    this.processEventListener('onSetResults', [this.results]);
   }
 }

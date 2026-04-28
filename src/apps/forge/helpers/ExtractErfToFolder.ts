@@ -4,10 +4,9 @@
  * Electron only (uses path and fs).
  */
 
-import type { ERFObject } from "../../../resource/ERFObject";
-import type { IERFKeyEntry } from "../../../interface/resource/IERFKeyEntry";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import type { ExtractOptions } from "../data/ExtractOptions";
+import type { ExtractOptions } from '@/apps/forge/data/ExtractOptions';
+import type { ERFObject } from '@/resource/ERFObject';
+import { ResourceTypes } from '@/resource/ResourceTypes';
 
 export interface ExtractErfToFolderOptions {
   erf: ERFObject;
@@ -25,7 +24,9 @@ export interface ExtractErfToFolderOptions {
  * Extract all top-level resources from an ERF to a folder.
  * In Electron uses outputPath as filesystem path; in browser would need directory handle (not implemented here).
  */
-export async function extractErfToFolder(options: ExtractErfToFolderOptions): Promise<{ count: number; errors: string[] }> {
+export async function extractErfToFolder(
+  options: ExtractErfToFolderOptions
+): Promise<{ count: number; errors: string[] }> {
   const { erf, outputPath, outputDirHandle, filterTypes, extractOptions: _extractOptions } = options;
   // extractOptions (TPC/MDL decompile) reserved for future use
   const keyList = erf.keyList;
@@ -36,17 +37,17 @@ export async function extractErfToFolder(options: ExtractErfToFolderOptions): Pr
   const errors: string[] = [];
   let count = 0;
 
-  const useFs = outputPath && typeof process !== "undefined" && process.versions?.node != null;
-  const useHandle = outputDirHandle && typeof outputDirHandle.getFileHandle === "function";
+  const useFs = outputPath && typeof process !== 'undefined' && process.versions?.node != null;
+  const useHandle = outputDirHandle && typeof outputDirHandle.getFileHandle === 'function';
 
   if (!useFs && !useHandle) {
     throw new Error(
-      "Extract to folder requires Electron (outputPath) or browser with File System Access (outputDirHandle)."
+      'Extract to folder requires Electron (outputPath) or browser with File System Access (outputDirHandle).'
     );
   }
 
   if (useFs && outputPath) {
-    const fsMod = await import("fs");
+    const fsMod = await import('fs');
     await fsMod.promises.mkdir(outputPath, { recursive: true });
   }
 
@@ -58,20 +59,20 @@ export async function extractErfToFolder(options: ExtractErfToFolderOptions): Pr
       const buffer = await erf.getResourceBufferByResRef(key.resRef, key.resType);
       if (!buffer || buffer.length === 0) continue;
 
-      if (useFs) {
-        const pathMod = await import("path");
-        const fsMod = await import("fs");
-        const filePath = pathMod.join(outputPath!, filename);
+      if (useFs && outputPath) {
+        const pathMod = await import('path');
+        const fsMod = await import('fs');
+        const filePath = pathMod.join(outputPath, filename);
         await fsMod.promises.writeFile(filePath, Buffer.from(buffer));
-      } else if (useHandle) {
-        const handle = await outputDirHandle!.getFileHandle(filename, { create: true });
+      } else if (useHandle && outputDirHandle) {
+        const handle = await outputDirHandle.getFileHandle(filename, { create: true });
         const writable = await (handle as FileSystemFileHandle).createWritable();
         await writable.write(new Blob([buffer as BlobPart]));
         await writable.close();
       }
       count++;
     } catch (e: unknown) {
-      errors.push(`${filename}: ${e instanceof Error ? e.message : "Failed"}`);
+      errors.push(`${filename}: ${e instanceof Error ? e.message : 'Failed'}`);
     }
   }
 

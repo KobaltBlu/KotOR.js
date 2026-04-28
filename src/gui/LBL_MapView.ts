@@ -1,24 +1,24 @@
-import { GameState } from "@/GameState";
-import { AreaMap, ModuleWaypoint } from "@/module";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
-import type { GUIControl, GUILabel } from "@/gui";
-import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
-import { MapMode } from "@/enums/engine/MapMode";
-import * as THREE from "three";
-import { GameEngineType } from "@/enums/engine";
-import { TextureLoader } from "@/loaders";
+import { GameState } from '@/GameState';
+import { AreaMap, ModuleWaypoint } from '@/module';
+import { OdysseyTexture } from '@/three/odyssey/OdysseyTexture';
+import type { GUIControl, GUILabel } from '@/gui';
+import { MapNorthAxis } from '@/enums/engine/MapNorthAxis';
+import { MapMode } from '@/enums/engine/MapMode';
+import * as THREE from 'three';
+import { GameEngineType } from '@/enums/engine';
+import { TextureLoader } from '@/loaders';
 // import { ShaderManager, MenuManager, PartyManager } from "@/managers";
 
 const FOG_SIZE = 64;
-const FOG_SIZE_HALF = FOG_SIZE/2;
+const FOG_SIZE_HALF = FOG_SIZE / 2;
 
 const planeGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
 
 /**
  * LBL_MapView class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LBL_MapView.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -74,9 +74,7 @@ export class LBL_MapView {
   mousePosition: THREE.Vector2 = new THREE.Vector2(0, 0);
   globalLight: THREE.AmbientLight;
 
-  constructor(
-    LBL_MAPVIEW: GUILabel,
-  ) {
+  constructor(LBL_MAPVIEW: GUILabel) {
     this.LBL_MAPVIEW = LBL_MAPVIEW;
 
     this.visible = true;
@@ -84,31 +82,39 @@ export class LBL_MapView {
     this.viewportFrustum = new THREE.Frustum();
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.OrthographicCamera( 
+    this.camera = new THREE.OrthographicCamera(
       this.width / -2,
       this.width / 2,
       this.height / 2,
       this.height / -2,
-      1, 1000
+      1,
+      1000
     );
 
-    this.texture = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
-    this.tDepth = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat } );
+    this.texture = new THREE.WebGLRenderTarget(this.width, this.height, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.NearestFilter,
+    });
+    this.tDepth = new THREE.WebGLRenderTarget(this.width, this.height, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+    });
     this.clearColor = new THREE.Color(0x000000);
 
     this.currentCamera = this.camera;
     this.camera.position.z = 100;
 
-    this.globalLight = new THREE.AmbientLight(0x7F7F7F);
+    this.globalLight = new THREE.AmbientLight(0x7f7f7f);
     this.globalLight.position.x = 0;
     this.globalLight.position.y = 0;
     this.globalLight.position.z = 0;
-    this.globalLight.intensity  = 1;
+    this.globalLight.intensity = 1;
     this.scene.add(this.globalLight);
 
     //MAP
     const mapPlaneMaterial = new THREE.MeshBasicMaterial({
-      color: 0xFFFFFF
+      color: 0xffffff,
     });
 
     this.mapPlane = new THREE.Mesh(planeGeometry, mapPlaneMaterial);
@@ -116,12 +122,15 @@ export class LBL_MapView {
     this.mapGroup.add(this.mapPlane);
 
     //FOG
+    const odysseyFowShader = GameState.ShaderManager.Shaders.get('odyssey-fow')!;
+    // @ts-expect-error - merge return type inference fails with getUniforms()
+    const odysseyFowUniforms: Record<string, THREE.IUniform> = THREE.UniformsUtils.merge([
+      odysseyFowShader.getUniforms(),
+    ]);
     const fogPlaneMaterial = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([
-        GameState.ShaderManager.Shaders.get('odyssey-fow').getUniforms()
-      ]),
-      vertexShader: GameState.ShaderManager.Shaders.get('odyssey-fow').getVertex(),
-      fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-fow').getFragment(),
+      uniforms: odysseyFowUniforms,
+      vertexShader: odysseyFowShader.getVertex(),
+      fragmentShader: odysseyFowShader.getFragment(),
     });
     fogPlaneMaterial.defines.USE_MAP = '';
     fogPlaneMaterial.defines.USE_UV = '';
@@ -134,7 +143,7 @@ export class LBL_MapView {
 
     //ARROW
     const arrowPlaneMaterial = new THREE.MeshBasicMaterial({
-      color: 0xFFFFFF,
+      color: 0xffffff,
       transparent: true,
     });
 
@@ -144,11 +153,11 @@ export class LBL_MapView {
     this.scene.add(this.arrowPlane);
 
     const pmCircleMaterial = new THREE.MeshBasicMaterial({
-      color: 0xFF7F50,
+      color: 0xff7f50,
       transparent: true,
     });
 
-    for(let i = 0; i < 2; i++){
+    for (let i = 0; i < 2; i++) {
       const pmCircle = new THREE.Mesh(planeGeometry, pmCircleMaterial);
       pmCircle.scale.set(16, 16, 1);
       this.partyGroup.add(pmCircle);
@@ -177,27 +186,27 @@ export class LBL_MapView {
     });
   }
 
-  setControl(control: GUIControl){
+  setControl(control: GUIControl) {
     this.control = control;
-    if(!this.control) return;
+    if (!this.control) return;
 
     this.control.setFillTexture(this.texture.texture);
 
     const material = this.control.getFill().material;
-    if(material instanceof THREE.ShaderMaterial){
-      material.uniforms.diffuse.value.setHex(0xFFFFFF);
+    if (material instanceof THREE.ShaderMaterial) {
+      material.uniforms.diffuse.value.setHex(0xffffff);
     }
   }
 
-  setVisible(bVisible: boolean){
+  setVisible(bVisible: boolean) {
     this.visible = bVisible;
   }
 
-  setMode(mode: MapMode){
+  setMode(mode: MapMode) {
     this.mode = mode;
   }
 
-  setSize(width = 0, height = 0){
+  setSize(width = 0, height = 0) {
     this.width = width;
     this.height = height;
     this.texture.setSize(this.width, this.height);
@@ -205,7 +214,7 @@ export class LBL_MapView {
     this.updateRatio();
   }
 
-  updateRatio(){
+  updateRatio() {
     this.texture.setSize(this.width, this.height);
     this.camera.left = this.width / -2;
     this.camera.right = this.width / 2;
@@ -214,9 +223,9 @@ export class LBL_MapView {
     this.camera.updateProjectionMatrix();
   }
 
-  setTexture(texture: OdysseyTexture){
+  setTexture(texture: OdysseyTexture) {
     this.mapTexture = texture;
-    if(!this.mapTexture) return;
+    if (!this.mapTexture) return;
 
     this.mapTexture.wrapS = THREE.RepeatWrapping;
     this.mapTexture.wrapT = THREE.RepeatWrapping;
@@ -227,28 +236,31 @@ export class LBL_MapView {
     this.mapPlane.scale.set(textureSize.width, textureSize.height, 1);
 
     const scaleSize = this.getMapTextureScaleSize();
-    this.mapGroup.position.x = textureSize.width/2;
-    this.mapGroup.position.y = textureSize.height/2;
+    this.mapGroup.position.x = textureSize.width / 2;
+    this.mapGroup.position.y = textureSize.height / 2;
 
     this.fogPlane.scale.set(scaleSize.width, scaleSize.height, 1);
     this.fogPlane.position.z = 5;
-    this.fogPlane.position.x = scaleSize.width/2;
-    this.fogPlane.position.y = scaleSize.height/2;
+    this.fogPlane.position.x = scaleSize.width / 2;
+    this.fogPlane.position.y = scaleSize.height / 2;
   }
 
-  setAreaMap(areaMap: AreaMap){
+  setAreaMap(areaMap: AreaMap) {
     this.areaMap = areaMap;
-    if(!this.areaMap) return;
+    if (!this.areaMap) return;
 
     (this.fogPlane.material as THREE.ShaderMaterial).uniforms.alphaMap.value = this.areaMap.fogAlphaTexture;
-    (this.fogPlane.material as THREE.ShaderMaterial).uniforms.mapRes.value.set(this.areaMap.mapResX+1, this.areaMap.mapResY+1);
+    (this.fogPlane.material as THREE.ShaderMaterial).uniforms.mapRes.value.set(
+      this.areaMap.mapResX + 1,
+      this.areaMap.mapResY + 1
+    );
 
-    if(this.mode == MapMode.FULLMAP){
+    if (this.mode == MapMode.FULLMAP) {
       this.areaMap.addEventListener('mapNoteAdded', (note: ModuleWaypoint) => {
         const noteMaterial = new THREE.MeshBasicMaterial({
           map: this.noteTexture,
           transparent: true,
-          color: this.LBL_MAPVIEW.defaultColor
+          color: this.LBL_MAPVIEW.defaultColor,
         });
 
         const noteMesh = new THREE.Mesh(planeGeometry, noteMaterial);
@@ -258,22 +270,18 @@ export class LBL_MapView {
 
         const scaleSize = this.getMapTextureScaleSize();
         const mapPos = this.areaMap.toMapCoordinates(note.position.x, note.position.y);
-        noteMesh.position.set(
-          (scaleSize.width * mapPos.x) + 4,
-          (scaleSize.height * mapPos.y) + 4, 
-          10
-        );
+        noteMesh.position.set(scaleSize.width * mapPos.x + 4, scaleSize.height * mapPos.y + 4, 10);
         noteMesh.scale.set(this.mapNoteSize * this.mapNoteDefaultScale, this.mapNoteSize * this.mapNoteDefaultScale, 1);
-        if(!this.mapNoteSelected) this.mapNoteSelected = note;
+        if (!this.mapNoteSelected) this.mapNoteSelected = note;
       });
 
       this.areaMap.addEventListener('mapNoteRemoved', (note: ModuleWaypoint) => {
         let i = this.mapNotes.length;
-        while(i--){
+        while (i--) {
           const mesh = this.mapNotes[i];
-          if(!mesh) continue;
+          if (!mesh) continue;
 
-          if(mesh.userData.moduleObject == note){
+          if (mesh.userData.moduleObject == note) {
             mesh.removeFromParent();
             (mesh.material as THREE.MeshBasicMaterial).dispose();
             this.mapNotes.splice(i, 1);
@@ -283,18 +291,24 @@ export class LBL_MapView {
     }
   }
 
-  updateMousePosition(x: number = 0, y: number = 0){
+  updateMousePosition(x: number = 0, y: number = 0) {
     this.mousePosition.set(x, y);
   }
 
-  onClick(){
-    for(let i = 0, len = this.mapNotes.length; i < len; i++){
+  onClick() {
+    for (let i = 0, len = this.mapNotes.length; i < len; i++) {
       const mesh = this.mapNotes[i];
       const note = mesh.userData.moduleObject;
-      if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
-        this.bounds.min.set(mesh.position.x - (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y - (this.mapNoteDefaultScale*this.mapNoteSize/2));
-        this.bounds.max.set(mesh.position.x + (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y + (this.mapNoteDefaultScale*this.mapNoteSize/2));
-        if(this.bounds.containsPoint(this.mousePosition)){
+      if (this.areaMap.isMapPositionExplored(note.position.x, note.position.y)) {
+        this.bounds.min.set(
+          mesh.position.x - (this.mapNoteDefaultScale * this.mapNoteSize) / 2,
+          mesh.position.y - (this.mapNoteDefaultScale * this.mapNoteSize) / 2
+        );
+        this.bounds.max.set(
+          mesh.position.x + (this.mapNoteDefaultScale * this.mapNoteSize) / 2,
+          mesh.position.y + (this.mapNoteDefaultScale * this.mapNoteSize) / 2
+        );
+        if (this.bounds.containsPoint(this.mousePosition)) {
           this.mapNoteSelected = note;
           return note;
         }
@@ -302,111 +316,108 @@ export class LBL_MapView {
     }
   }
 
-  updateFog(){
-    if(!this.areaMap) return;
+  updateFog() {
+    if (!this.areaMap) return;
   }
 
-  render(delta: number = 0){
-    if(!this.visible || !this.control)
-      return;
+  render(delta: number = 0) {
+    if (!this.visible || !this.control) return;
 
-    if(!this.currentCamera) this.currentCamera = this.camera;
+    if (!this.currentCamera) this.currentCamera = this.camera;
 
-    if(this.currentCamera){
-      this.frustumMat4.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse )
+    if (this.currentCamera) {
+      this.frustumMat4.multiplyMatrices(this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse);
       this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
     }
 
     this.updateFog();
 
     const scaleSize = this.getMapTextureScaleSize();
-    
+
     this.areaMap.revealPosition(this.position.x, this.position.y);
     const mapPos = this.areaMap.toMapCoordinates(this.position.x, this.position.y);
-    this.currentCamera.position.x = (scaleSize.width * mapPos.x);
-    this.currentCamera.position.y = (scaleSize.height * mapPos.y);
-    const minX = this.width/2;
-    const maxX = Math.max(this.width/2, 440 - this.width/2)
+    this.currentCamera.position.x = scaleSize.width * mapPos.x;
+    this.currentCamera.position.y = scaleSize.height * mapPos.y;
+    const minX = this.width / 2;
+    const maxX = Math.max(this.width / 2, 440 - this.width / 2);
 
-    if(this.currentCamera.position.x < minX){
+    if (this.currentCamera.position.x < minX) {
       this.currentCamera.position.x = minX;
     }
 
-    if(this.currentCamera.position.x > maxX){
+    if (this.currentCamera.position.x > maxX) {
       this.currentCamera.position.x = maxX;
     }
 
-    const maxY = Math.max(this.height/2, 256 - this.height/2);
-    const minY = this.height/2;
+    const maxY = Math.max(this.height / 2, 256 - this.height / 2);
+    const minY = this.height / 2;
 
-    if(this.currentCamera.position.y < minY){
+    if (this.currentCamera.position.y < minY) {
       this.currentCamera.position.y = minY;
     }
 
-    if(this.currentCamera.position.y > maxY){
+    if (this.currentCamera.position.y > maxY) {
       this.currentCamera.position.y = maxY;
     }
 
-    if(this.arrowPlane){
-      this.arrowPlane.position.set(
-        (scaleSize.width * mapPos.x) + 4,
-        (scaleSize.height * mapPos.y) + 4, 
-        10
-      );
+    if (this.arrowPlane) {
+      this.arrowPlane.position.set(scaleSize.width * mapPos.x + 4, scaleSize.height * mapPos.y + 4, 10);
       this.arrowPlane.rotation.set(0, 0, this.arrowAngle);
-      if(this.mode == MapMode.FULLMAP){
-        (this.arrowPlane.material as THREE.MeshBasicMaterial).opacity = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
+      if (this.mode == MapMode.FULLMAP) {
+        (this.arrowPlane.material as THREE.MeshBasicMaterial).opacity = 1 - 0.5 * GameState.MenuManager.pulseOpacity;
       }
     }
 
-    for(let i = 0; i < 2; i++){
-      const pm = GameState.PartyManager.party[i+1];
+    for (let i = 0; i < 2; i++) {
+      const pm = GameState.PartyManager.party[i + 1];
       const mesh = this.partyGroup.children[i];
-      if(this.mode == MapMode.MINIMAP){
+      if (this.mode == MapMode.MINIMAP) {
         mesh.visible = false;
         continue;
       }
 
-      if(pm){
+      if (pm) {
         mesh.visible = true;
         const pos = this.areaMap.toMapCoordinates(pm.position.x, pm.position.y);
-        mesh.position.set(
-          (scaleSize.width * pos.x) + 4,
-          (scaleSize.height * pos.y) + 4, 
-          9
-        );
-      }else{
+        mesh.position.set(scaleSize.width * pos.x + 4, scaleSize.height * pos.y + 4, 9);
+      } else {
         mesh.visible = false;
       }
     }
 
-    if(this.mode == MapMode.FULLMAP){
-      for(let i = 0, len = this.mapNotes.length; i < len; i++){
+    if (this.mode == MapMode.FULLMAP) {
+      for (let i = 0, len = this.mapNotes.length; i < len; i++) {
         const mesh = this.mapNotes[i];
         const material = mesh.material as THREE.MeshBasicMaterial;
         const note = mesh.userData.moduleObject;
         mesh.visible = note.mapNoteEnabled;
-        if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
-          this.bounds.min.set(mesh.position.x - (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y - (this.mapNoteDefaultScale*this.mapNoteSize/2));
-          this.bounds.max.set(mesh.position.x + (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y + (this.mapNoteDefaultScale*this.mapNoteSize/2));
+        if (this.areaMap.isMapPositionExplored(note.position.x, note.position.y)) {
+          this.bounds.min.set(
+            mesh.position.x - (this.mapNoteDefaultScale * this.mapNoteSize) / 2,
+            mesh.position.y - (this.mapNoteDefaultScale * this.mapNoteSize) / 2
+          );
+          this.bounds.max.set(
+            mesh.position.x + (this.mapNoteDefaultScale * this.mapNoteSize) / 2,
+            mesh.position.y + (this.mapNoteDefaultScale * this.mapNoteSize) / 2
+          );
 
-          if(this.mapNoteSelected == note){
+          if (this.mapNoteSelected == note) {
             material.color.copy(this.LBL_MAPVIEW.defaultHighlightColor);
-            mesh.scale.set(this.mapNoteSize*this.mapNodeHoverScale, this.mapNoteSize*this.mapNodeHoverScale, 1);
-          }else if(this.bounds.containsPoint(this.mousePosition)){
+            mesh.scale.set(this.mapNoteSize * this.mapNodeHoverScale, this.mapNoteSize * this.mapNodeHoverScale, 1);
+          } else if (this.bounds.containsPoint(this.mousePosition)) {
             material.color.copy(this.LBL_MAPVIEW.defaultHighlightColor);
-            mesh.scale.set(this.mapNoteSize*this.mapNoteDefaultScale, this.mapNoteSize*this.mapNoteDefaultScale, 1);
-          }else{
+            mesh.scale.set(this.mapNoteSize * this.mapNoteDefaultScale, this.mapNoteSize * this.mapNoteDefaultScale, 1);
+          } else {
             material.color.copy(this.LBL_MAPVIEW.defaultColor);
-            mesh.scale.set(this.mapNoteSize*this.mapNoteDefaultScale, this.mapNoteSize*this.mapNoteDefaultScale, 1);
+            mesh.scale.set(this.mapNoteSize * this.mapNoteDefaultScale, this.mapNoteSize * this.mapNoteDefaultScale, 1);
           }
-        }else{
+        } else {
           mesh.visible = false;
         }
       }
     }
 
-    let oldClearColor = new THREE.Color();
+    const oldClearColor = new THREE.Color();
     GameState.renderer.getClearColor(oldClearColor);
     GameState.renderer.setClearColor(this.clearColor, 1);
     GameState.renderer.setRenderTarget(this.texture);
@@ -416,26 +427,25 @@ export class LBL_MapView {
     GameState.renderer.setRenderTarget(null);
     GameState.renderer.setClearColor(oldClearColor, 1);
 
-    if(this.control){
-      let material = this.control.getFill().material;
-      if(material instanceof THREE.Material){
-        if(material instanceof THREE.ShaderMaterial){
+    if (this.control) {
+      const material = this.control.getFill().material;
+      if (material instanceof THREE.Material) {
+        if (material instanceof THREE.ShaderMaterial) {
           material.uniforms.map.value = this.texture.texture;
-        }else if(material instanceof THREE.MeshBasicMaterial){
+        } else if (material instanceof THREE.MeshBasicMaterial) {
           material.map = this.texture.texture;
         }
         material.transparent = true;
         material.needsUpdate = true;
       }
     }
-
   }
 
-  getMapTextureScaleSize(): { width: number, height: number } {
+  getMapTextureScaleSize(): { width: number; height: number } {
     let width = 440;
     let height = 256;
 
-    if(GameState.GameKey == GameEngineType.TSL){
+    if (GameState.GameKey == GameEngineType.TSL) {
       width = 512;
       height = 256;
     }
@@ -443,49 +453,49 @@ export class LBL_MapView {
     return { width: width, height: height };
   }
 
-  getMapTextureSize(): { width: number, height: number } {
+  getMapTextureSize(): { width: number; height: number } {
     let texWidth = 512;
     let texHeight = 256;
 
-    if(this.mapTexture.mipmaps.length){
+    if (this.mapTexture.mipmaps.length) {
       texWidth = this.mapTexture.mipmaps[0].width;
       texHeight = this.mapTexture.mipmaps[0].height;
-    }else if(this.mapTexture.source.data){
-      texWidth = this.mapTexture.source.data.width;
-      texHeight = this.mapTexture.source.data.height;
+    } else if (this.mapTexture.source.data) {
+      const data = this.mapTexture.source.data as { width: number; height: number };
+      texWidth = data.width;
+      texHeight = data.height;
     }
 
     return { width: texWidth, height: texHeight };
   }
 
-  setPosition(x: number, y: number){
+  setPosition(x: number, y: number) {
     this.position.set(x, y, 0);
   }
 
-  setRotation(angle: number = 0){
+  setRotation(angle: number = 0) {
     this.arrowAngle = angle;
-    switch(this.areaMap.northAxis){
+    switch (this.areaMap.northAxis) {
       case MapNorthAxis.NORTH:
         {
           this.arrowAngle = angle;
         }
-      break;
+        break;
       case MapNorthAxis.SOUTH:
         {
-          this.arrowAngle = angle + (Math.PI / 2);
+          this.arrowAngle = angle + Math.PI / 2;
         }
-      break;
+        break;
       case MapNorthAxis.EAST:
         {
-          this.arrowAngle = angle + (Math.PI / 2);
+          this.arrowAngle = angle + Math.PI / 2;
         }
-      break;
+        break;
       case MapNorthAxis.WEST:
         {
-          this.arrowAngle = angle - (Math.PI / 2);
+          this.arrowAngle = angle - Math.PI / 2;
         }
-      break;
+        break;
     }
   }
-
 }

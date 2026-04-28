@@ -1,35 +1,31 @@
-import { GameEffect } from "@/effects/GameEffect";
-import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameEffect } from '@/effects/GameEffect';
+import { GameEffectType } from '@/enums/effects/GameEffectType';
 
 /**
  * EffectSavingThrowIncrease class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EffectSavingThrowIncrease.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectSavingThrowIncrease extends GameEffect {
-  constructor(){
+  constructor() {
     super();
     this.type = GameEffectType.EffectSavingThrowIncrease;
-    
+
     //intList[0] : amount
     //intList[1] : SAVING_THROW_*
     //intList[2] : SAVING_THROW_TYPE_*
     //intList[3] : racialtypes.2da rowcount
-
   }
 
-  onApply(){
-    if(this.applied)
-      return;
+  onApply() {
+    if (this.applied) return;
 
     super.onApply();
 
     this.applied = true;
   }
-
 }
-

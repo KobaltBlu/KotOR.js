@@ -1,5 +1,5 @@
-import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
-import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
+import { IPCMessageType } from '@/enums/server/ipc/IPCMessageType';
+import { IPCMessageParam } from '@/server/ipc/IPCMessageParam';
 
 /**
  * Represents an IPCMessage.
@@ -30,16 +30,16 @@ export class IPCMessage {
    */
   paramCount: number = 0;
 
-  constructor(type: IPCMessageType, subType: number = 0){
+  constructor(type: IPCMessageType, subType: number = 0) {
     this.type = type;
     this.subType = subType;
   }
-  
+
   /**
    * Adds a parameter to the IPCMessage.
    * @param param The parameter to add.
    */
-  addParam(param: IPCMessageParam){
+  addParam(param: IPCMessageParam) {
     this.#params.push(param);
     this.dataSize += param.size;
     this.paramCount++;
@@ -65,7 +65,7 @@ export class IPCMessage {
     view.setUint16(2, this.subType, true);
     view.setUint16(4, this.paramCount, true);
     let offset = IPCMessage.HeaderSize;
-    for(let i = 0; i < this.#params.length; i++){
+    for (let i = 0; i < this.#params.length; i++) {
       const param = this.#params[i];
       buffer.set(param.toBuffer(), offset);
       offset += param.size;
@@ -83,7 +83,7 @@ export class IPCMessage {
     const message = new IPCMessage(view.getUint16(0, true) as IPCMessageType, view.getUint16(2, true));
     const paramCount = view.getUint16(4, true);
     let offset = IPCMessage.HeaderSize;
-    for(let i = 0; i < paramCount; i++){
+    for (let i = 0; i < paramCount; i++) {
       /**
        * Extract the data size from the buffer.
        */

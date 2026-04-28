@@ -1,16 +1,15 @@
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { TwoDAObject } from '@/resource/TwoDAObject';
 
 /**
  * SWEffectIcon class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SWEffectIcon.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class SWEffectIcon {
-
   id: number = -1;
   label: string = '';
   iconresref: string = '';
@@ -18,27 +17,26 @@ export class SWEffectIcon {
   description: number = -1;
   priority: number = 0;
 
-  static From2DA(row: any = {}){
+  static From2DA(
+    row: import('@/resource/TwoDAObject').ITwoDARowData | Record<string, string | number> = {}
+  ): SWEffectIcon {
     const effectIcon = new SWEffectIcon();
 
     effectIcon.id = parseInt(row.__index);
 
-    if(row.hasOwnProperty('label'))
-      effectIcon.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
-    
-    if(row.hasOwnProperty('iconresref'))
+    if (Object.hasOwn(row, 'label')) effectIcon.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
+
+    if (Object.hasOwn(row, 'iconresref'))
       effectIcon.iconresref = TwoDAObject.normalizeValue(row.iconresref, 'string', '') as string;
-    
-    if(row.hasOwnProperty('good'))
-      effectIcon.good = TwoDAObject.normalizeValue(row.good, 'number', 0) as number;
-    
-    if(row.hasOwnProperty('description'))
+
+    if (Object.hasOwn(row, 'good')) effectIcon.good = TwoDAObject.normalizeValue(row.good, 'number', 0) as number;
+
+    if (Object.hasOwn(row, 'description'))
       effectIcon.description = TwoDAObject.normalizeValue(row.description, 'number', -1) as number;
-    
-    if(row.hasOwnProperty('priority'))
+
+    if (Object.hasOwn(row, 'priority'))
       effectIcon.priority = TwoDAObject.normalizeValue(row.priority, 'number', 0) as number;
 
     return effectIcon;
   }
-
 }

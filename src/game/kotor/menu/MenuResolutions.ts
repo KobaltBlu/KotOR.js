@@ -1,19 +1,18 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { IScreenResolution } from "@/interface/graphics/IScreenResolution";
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
+import { IScreenResolution } from '@/interface/graphics/IScreenResolution';
 
 /**
  * MenuResolutions class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuResolutions.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuResolutions extends GameMenu {
-
   BTN_OK: GUIButton;
   BTN_CANCEL: GUIButton;
   LB_RESOLUTIONS: GUIListBox;
@@ -22,7 +21,7 @@ export class MenuResolutions extends GameMenu {
   activeResolution: IScreenResolution;
   supportedResolutions: IScreenResolution[] = [];
 
-  constructor(){
+  constructor() {
     super();
     this.isOverlayGUI = true;
     this.gui_resref = 'optresolution';
@@ -32,7 +31,7 @@ export class MenuResolutions extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -50,7 +49,7 @@ export class MenuResolutions extends GameMenu {
       this.LB_RESOLUTIONS.onSelected = (res: IScreenResolution) => {
         console.log('LB_RESOLUTIONS', res);
         this.activeResolution = res;
-      }
+      };
       resolve();
     });
   }
@@ -61,13 +60,12 @@ export class MenuResolutions extends GameMenu {
     this.activeResolution = this.supportedResolutions[0];
     this.LB_RESOLUTIONS.clearItems();
 
-    for(let i = 0; i < this.supportedResolutions.length; i++){
+    for (let i = 0; i < this.supportedResolutions.length; i++) {
       const res = this.supportedResolutions[i];
-      this.LB_RESOLUTIONS.addItem( res );
+      this.LB_RESOLUTIONS.addItem(res);
     }
 
     this.LB_RESOLUTIONS.setSelectedIndex(this.supportedResolutions.indexOf(this.activeResolution));
     this.tGuiPanel.widget.position.z = 10;
   }
-  
 }

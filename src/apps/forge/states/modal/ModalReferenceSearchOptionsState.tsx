@@ -1,7 +1,8 @@
-import React from "react";
-import { ModalState } from "./ModalState";
-import { ModalReferenceSearchOptions } from "../../components/modal/ModalReferenceSearchOptions";
-import { getAllSearchableFileTypes } from "../../data/ReferenceSearchConfig";
+import React from 'react';
+
+import { ModalReferenceSearchOptions } from '@/apps/forge/components/modal/ModalReferenceSearchOptions';
+import { getAllSearchableFileTypes } from '@/apps/forge/data/ReferenceSearchConfig';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
 
 export interface ReferenceSearchOptionsStateDefaults {
   defaultPartialMatch?: boolean;
@@ -19,8 +20,8 @@ export interface ReferenceSearchOptionsStateValues {
 }
 
 export class ModalReferenceSearchOptionsState extends ModalState {
-  title: string = "Reference Search Options";
-  /** File types from ReferenceSearchConfig (Holocron-aligned). */
+  title: string = 'Reference Search Options';
+  /** File types from ReferenceSearchConfig. */
   fileTypeOptions: string[] = getAllSearchableFileTypes();
 
   #partialMatch: boolean;
@@ -47,7 +48,7 @@ export class ModalReferenceSearchOptionsState extends ModalState {
 
   setPartialMatch(value: boolean): void {
     this.#partialMatch = value;
-    this.processEventListener("onOptionsChanged", [this.getOptions()]);
+    this.processEventListener('onOptionsChanged', [this.getOptions()]);
   }
 
   getCaseSensitive(): boolean {
@@ -56,7 +57,7 @@ export class ModalReferenceSearchOptionsState extends ModalState {
 
   setCaseSensitive(value: boolean): void {
     this.#caseSensitive = value;
-    this.processEventListener("onOptionsChanged", [this.getOptions()]);
+    this.processEventListener('onOptionsChanged', [this.getOptions()]);
   }
 
   getFilePattern(): string | null {
@@ -65,7 +66,7 @@ export class ModalReferenceSearchOptionsState extends ModalState {
 
   setFilePattern(value: string | null): void {
     this.#filePattern = value && value.trim().length ? value : null;
-    this.processEventListener("onOptionsChanged", [this.getOptions()]);
+    this.processEventListener('onOptionsChanged', [this.getOptions()]);
   }
 
   toggleFileType(type: string): void {
@@ -74,12 +75,12 @@ export class ModalReferenceSearchOptionsState extends ModalState {
     } else {
       this.#selectedFileTypes.add(type);
     }
-    this.processEventListener("onOptionsChanged", [this.getOptions()]);
+    this.processEventListener('onOptionsChanged', [this.getOptions()]);
   }
 
   setFileTypes(types: Set<string> | null): void {
     this.#selectedFileTypes = new Set(types ?? []);
-    this.processEventListener("onOptionsChanged", [this.getOptions()]);
+    this.processEventListener('onOptionsChanged', [this.getOptions()]);
   }
 
   getFileTypes(): Set<string> | null {

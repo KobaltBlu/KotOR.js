@@ -13,6 +13,10 @@ KotOR.js is a TypeScript reimplementation of the Odyssey Game Engine (Star Wars:
 
 All frontends are bundled through Webpack 5 (`webpack.config.js`) and esbuild-loader.
 
+### Fedora Kinoite workspace (optional)
+
+Atomic-desktop **WSL2 / daily-driver** documentation and scripts for this machine live **outside** this repository (not a submodule), typically **`G:\workspaces\Kinoite`**. Agents may set **`KINOITE_WORKSPACE_ROOT`** to that path for tooling. The authoritative Phase A doc is **`$KINOITE_WORKSPACE_ROOT/docs/kinoite-wsl2.md`**; a **plan lines vs on-disk files** table is **`$KINOITE_WORKSPACE_ROOT/docs/plan-stipulated-file-tree.md`**. The spec that originated the workspace is **`.cursor/plans/silverblue_wsl_workspace_ec9c3c8b.plan.md`** here. On that host, **`$KINOITE_WORKSPACE_ROOT/scripts/run-full-plan-capture.ps1`** re-runs winget, WSL, and optional inventories; **`imports/CAPTURE-MANIFEST-*.txt`** (small, committed) is the run index, while large exports under **`imports/**` stay gitignored except the manifest and **`imports/README.md`**. **On the Linux (Kinoite) side,** `$KINOITE_WORKSPACE_ROOT/PROVISION` and **`scripts/apply-atomic-provision.sh`** (optional **`scripts/install-atomic-provision-service.sh`** + **`config/systemd/kinoite-atomic-ostree.service`**) are the **declarative** `rpm-ostree` + Flathub path (`config/rpm-ostree/layers.list`, `config/flatpak/*.list`); all **75** plan frontmatter `todos` (including `provision-atomic-declarative`) map in **`$KINOITE_WORKSPACE_ROOT/docs/plan-frontmatter-coverage.md`** (Appendix **C** = ordered `id` list). After editing the plan’s `todos`, run **`$KINOITE_WORKSPACE_ROOT/scripts/verify-plan-frontmatter-coverage.ps1`** so every `id` is still covered. The base image remains **immutable** — layers and Flatpaks are the editable provision path. A **runnable** KDE/Plasma stack under WSLg (default **non-root** user, WSLg `DISPLAY`/`WAYLAND`, **`plasmashell` actually running**) is a **separate** bar, tracked in **`$KINOITE_WORKSPACE_ROOT/docs/kde-wsl2-runtime-verification.md`** and **`WORKSPACE_STATUS.md`**; it is **not** the same as exhaustive plan-id coverage or a passing **`verify-plan-frontmatter-coverage.ps1`**, and you should not assume **windows-mcp** / **desktop-commander** (or similar) exist in a given agent session. This does not change KotOR.js build or test commands.
+
 ### Agent mission and quality bar
 
 When working in this repo, optimize for:
@@ -55,6 +59,12 @@ Standard commands are documented in `DEVELOPER_QUICK_REFERENCE.md` and `README.m
 - **ESLint uses legacy config mode**: The project uses `.eslintrc.yml` with ESLint 9. The lint scripts set `ESLINT_USE_FLAT_CONFIG=false` automatically.
 - **Electron renders black on headless VMs**: Launcher uses a transparent frameless window and can render black without GPU compositing.
 - **Game files required for full gameplay testing**: Game Client and major Forge flows require proprietary KotOR data files. Agents must not claim full gameplay coverage when those assets are unavailable.
+
+### Forge and agent parity
+
+KotOR.js does **not** ship an in-app LLM inside Forge. **Coding agents** (e.g. Cursor) share the **git workspace** and can use normal tools (`read_file`, terminal, `grep`) on **saved** files. Forge also keeps per-tab **in-memory** buffers (`EditorFile`); if you edit the same path with an agent while a tab has **unsaved** changes, **disk and UI can disagree**—see [docs/agent-native/CAPABILITY_MAP.md](docs/agent-native/CAPABILITY_MAP.md).
+
+**Safe automation patterns:** `npm test`, `npm run lint`, `npm run format:check`, and file edits **after** the user saves (or with agreement on who owns the buffer). **Not exposed as agent APIs today:** tab switch, close tab, Save inside Forge, or archive-specific open flows as single calls.
 
 ### Cloud VM: reliable UI validation path
 
@@ -137,3 +147,16 @@ Every non-trivial change should include:
 2. Exact commands run and their outcome.
 3. Any environment/test limitations and why.
 4. For UI work, walkthrough artifacts (video and/or screenshots).
+
+## Learned User Preferences
+
+- On long audits or multi-file refactors, the user may ask to batch `npm` runs (install, lint, test, webpack) instead of after every small edit; still meet the Testing policy before declaring the overall task done unless they narrow the bar for that pass.
+- Use `@/` path aliases for imports across the TypeScript tree (not `from './` or `from '..'`); ESLint enforces this where configured (`.eslintrc.yml`). For Forge tab modules, import `TabState` from `@/apps/forge/states/tabs/TabState` rather than the tabs barrel so initialization order stays safe while paths stay `@/`-based.
+
+## Learned Workspace Facts
+
+- The agdec **`user-agdec-http`** server may accept **`execute-script`** while **`get-function`** / full decompilation fails when the remote decompiler process does not start; do not assume decompilation-backed parity is always available in-session.
+- Do not paste or commit Ghidra server credentials or `uvx` one-liners with embedded passwords; use private env vars or a gitignored runbook (see `.cursor/k1-binary-exe-coverage-model.md` §2b for placeholder-based CLI patterns).
+- For commentary in `src/`, follow `.cursorrules`: neutral product-language for original-game behavior; avoid Ghidra-style names, addresses, or other tooling-specific references in comments.
+
+(Index: `.cursor/hooks/state/continual-learning-index.json`.)

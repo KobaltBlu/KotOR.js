@@ -1,15 +1,15 @@
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import { IPCMessage } from "@/server/ipc/IPCMessage";
-import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
-import { DebuggerState } from "@/enums/server/DebuggerState";
-import { NWScriptStack } from "@/nwscript/NWScriptStack";
+import { NWScriptInstance } from '@/nwscript/NWScriptInstance';
+import { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
+import { IPCMessage } from '@/server/ipc/IPCMessage';
+import { IPCMessageParam } from '@/server/ipc/IPCMessageParam';
+import { DebuggerState } from '@/enums/server/DebuggerState';
+import { NWScriptStack } from '@/nwscript/NWScriptStack';
 
 /**
  * Debugger class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Debugger.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -52,22 +52,19 @@ export class Debugger {
    * Sends a message to the debugger.
    * @param message The message to send.
    */
-  static send(message: IPCMessage|string) {
-    if(!this.window || !this.broadcastChannel) {
+  static send(message: IPCMessage | string) {
+    if (!this.window || !this.broadcastChannel) {
       return;
     }
     /**
      * Debug string messages are sent as-is.
      */
-    if(typeof message == 'string')
-    {
+    if (typeof message == 'string') {
       this.broadcastChannel.postMessage(message);
-    }
-    /**
-     * Complex messages are sent as binary data.
-     */
-    else
-    {
+    } else {
+      /**
+       * Complex messages are sent as binary data.
+       */
       this.broadcastChannel.postMessage(message.toBuffer());
     }
   }
@@ -76,24 +73,24 @@ export class Debugger {
    * Opens the debugger window.
    */
   static open() {
-    if(this.window) { 
+    if (this.window) {
       this.window.focus();
       return;
     }
 
     this.window = window.open(`../debugger/index.html?uuid=${this.uuid}`, '_blank', 'width=1600,height=1200');
-    if(this.window) {
+    if (this.window) {
       console.log(`Debugger window opened: ${this.uuid}`);
       this.broadcastChannel = new BroadcastChannel(`debugger-${this.uuid}`);
       this.broadcastChannel.onmessage = (event: MessageEvent) => {
-        if(typeof event.data == 'string') {
-          if(event.data == 'close') {
+        if (typeof event.data == 'string') {
+          if (event.data == 'close') {
             Debugger.close();
           }
           return;
         }
-        
-        if(event.data?.constructor == Uint8Array){
+
+        if (event.data?.constructor == Uint8Array) {
           const msg = IPCMessage.fromBuffer(event.data);
           this.dispatchEvent('message', msg);
         }
@@ -113,7 +110,7 @@ export class Debugger {
       this.window.close();
     }
     this.window = null;
-    if(this.broadcastChannel) {
+    if (this.broadcastChannel) {
       this.broadcastChannel.close();
     }
     this.broadcastChannel = null;
@@ -126,11 +123,11 @@ export class Debugger {
    * @param listener The listener to add.
    */
   static addEventListener(event: string, listener: any) {
-    if(!Array.isArray(this.#eventListener[event])) {
+    if (!Array.isArray(this.#eventListener[event])) {
       this.#eventListener[event] = [];
     }
     const index = this.#eventListener[event].indexOf(listener);
-    if(index == -1) {
+    if (index == -1) {
       this.#eventListener[event].push(listener);
     }
   }
@@ -141,11 +138,11 @@ export class Debugger {
    * @param listener The listener to remove.
    */
   static removeEventListener(event: string, listener: any) {
-    if(!Array.isArray(this.#eventListener[event])) {
+    if (!Array.isArray(this.#eventListener[event])) {
       this.#eventListener[event] = [];
     }
     const index = this.#eventListener[event].indexOf(listener);
-    if(index >= 0) {
+    if (index >= 0) {
       this.#eventListener[event].splice(index, 1);
     }
   }
@@ -156,7 +153,7 @@ export class Debugger {
    * @param args The arguments to pass to the event.
    */
   static dispatchEvent(event: string, ...args: any) {
-    if(!Array.isArray(this.#eventListener[event])) {
+    if (!Array.isArray(this.#eventListener[event])) {
       return;
     }
     this.#eventListener[event].forEach((listener: any) => listener(...args));

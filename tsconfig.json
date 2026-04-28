@@ -7,43 +7,34 @@
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
     "ignoreDeprecations": "6.0",
+    "isolatedModules": true,
     "jsx": "react",
-    "lib": [
-      "ESNext",
-      "dom",
-      "WebWorker"
-    ],
+    "lib": ["ESNext", "dom", "WebWorker"],
     "listFiles": true,
-    "module": "commonjs",
-    "moduleResolution": "node",
+    "module": "Node16",
+    "moduleResolution": "node16",
     "newLine": "LF",
     "noEmitOnError": true,
     "noImplicitAny": true,
+    "outDir": "dist",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     },
     "removeComments": true,
     "rootDir": ".",
     "skipLibCheck": true,
     "sourceMap": false,
+    "strict": false,
     "strictNullChecks": false,
     "target": "ESNext",
     "types": [
       "@types/wicg-file-system-access",
-      "user-agent-data-types",
+      "jest",
       "node",
-      "offscreencanvas"
+      "offscreencanvas",
+      "user-agent-data-types"
     ]
   },
-  "exclude": [
-    "node_modules",
-    "src/**/*.spec.ts"
-  ],
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx",
-    "src/index.d.ts"
-  ]
+  "exclude": ["node_modules", "src/**/*.spec.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/index.d.ts"]
 }

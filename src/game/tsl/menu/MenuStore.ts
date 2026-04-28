@@ -1,20 +1,19 @@
-import { GameState } from "@/GameState";
-import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import { ModuleItem, ModuleStore } from "@/module";
-import { MenuStore as K1_MenuStore } from "@/game/kotor/KOTOR";
+import { GameState } from '@/GameState';
+import type { GUILabel, GUIListBox, GUIButton } from '@/gui';
+import { TextureLoader } from '@/loaders';
+import { ModuleItem, ModuleStore } from '@/module';
+import { MenuStore as K1_MenuStore } from '@/game/kotor/KOTOR';
 
 /**
  * MenuStore class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuStore.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuStore extends K1_MenuStore {
-
   declare LBL_BAR5: GUILabel;
   declare LB_INVITEMS: GUIListBox;
   declare LB_DESCRIPTION: GUIListBox;
@@ -41,7 +40,7 @@ export class MenuStore extends K1_MenuStore {
   declare BTN_ARMOR: GUIButton;
   declare BTN_MISC: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'store_p';
     this.background = '';
@@ -50,8 +49,8 @@ export class MenuStore extends K1_MenuStore {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_Cancel.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -65,34 +64,32 @@ export class MenuStore extends K1_MenuStore {
 
       this.BTN_Accept.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(!this.sellMode){
-          if(this.LB_SHOPITEMS.selectedItem.node instanceof ModuleItem){
-            let item = this.LB_SHOPITEMS.selectedItem.node;
+        if (!this.sellMode) {
+          if (this.LB_SHOPITEMS.selectedItem.node instanceof ModuleItem) {
+            const item = this.LB_SHOPITEMS.selectedItem.node;
             //Buy Mode
-            let price = this.getItemBuyPrice(item);
-            if(GameState.PartyManager.Gold >= price){
+            const price = this.getItemBuyPrice(item);
+            if (GameState.PartyManager.Gold >= price) {
               GameState.PartyManager.AddGold(-price);
               this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
               GameState.InventoryManager.addItem(item.template, true);
-              if(!item.isInfinite()){
+              if (!item.isInfinite()) {
                 item.setStackSize(item.getStackSize() - 1);
 
-                if(item.getStackSize() <= 0){
+                if (item.getStackSize() <= 0) {
                   //Remove this item from the store if there are no more of them in stock
-                  let idx = this.storeObject.getInventory().indexOf(item);
-                  if(idx >= 0){
+                  const idx = this.storeObject.getInventory().indexOf(item);
+                  if (idx >= 0) {
                     this.storeObject.getInventory().splice(idx, 1);
                     this.LB_SHOPITEMS.removeItemByIndex(idx);
                   }
                 }
-
               }
             }
-          }else{
+          } else {
             //You do not have enough credits message here
           }
-
-        }else{
+        } else {
           //Sell Mode
           this.LBL_CREDITS_VALUE.setText((GameState.PartyManager.Gold || 0).toString());
         }
@@ -109,7 +106,8 @@ export class MenuStore extends K1_MenuStore {
     return item.cost + item.cost * this.storeObject.getMarkDown();
   }
 
-  open(){ //storeObject: ModuleStore, creature: ModuleCreature, bonusMarkUp = 0, bonusMarkDown = 0) {
+  open() {
+    //storeObject: ModuleStore, creature: ModuleCreature, bonusMarkUp = 0, bonusMarkDown = 0) {
     // this.storeObject = storeObject;
     // this.creature = creature;
     // this.bonusMarkUp = bonusMarkUp;
@@ -130,16 +128,16 @@ export class MenuStore extends K1_MenuStore {
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.LB_INVITEMS.clearItems();
-        let inv = GameState.InventoryManager.getSellableInventory();
+        const inv = GameState.InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
-          this.LB_INVITEMS.addItem(inv[i], { 
-            onClick: (e, item: any) => {
+          this.LB_INVITEMS.addItem(inv[i], {
+            onClick: (e: MouseEvent, item: ModuleItem) => {
               this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
               this.LB_DESCRIPTION.clearItems();
               this.LB_DESCRIPTION.addItem(item.getDescription());
               this.LB_DESCRIPTION.updateList();
               this.LB_DESCRIPTION.show();
-            } 
+            },
           });
         }
         this.LB_INVITEMS.select(this.LB_INVITEMS.children[0]);
@@ -150,16 +148,16 @@ export class MenuStore extends K1_MenuStore {
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.LB_SHOPITEMS.clearItems();
-        let inv = this.storeObject.getInventory();
+        const inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
-          this.LB_SHOPITEMS.addItem(inv[i], { 
-            onClick: (e, item: any) => {
+          this.LB_SHOPITEMS.addItem(inv[i], {
+            onClick: (e: MouseEvent, item: ModuleItem) => {
               this.LBL_COST_VALUE.setText(this.getItemBuyPrice(item));
               this.LB_DESCRIPTION.clearItems();
               this.LB_DESCRIPTION.addItem(item.getDescription());
               this.LB_DESCRIPTION.updateList();
               this.LB_DESCRIPTION.show();
-            } 
+            },
           });
         }
         this.LB_SHOPITEMS.select(this.LB_SHOPITEMS.children[0]);
@@ -171,5 +169,4 @@ export class MenuStore extends K1_MenuStore {
       this.close();
     }
   }
-  
 }

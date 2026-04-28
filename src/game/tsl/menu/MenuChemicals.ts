@@ -1,17 +1,16 @@
-import { GameMenu } from "@/gui";
-import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUILabel, GUIListBox, GUIButton } from '@/gui';
 
 /**
  * MenuChemicals class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuChemicals.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuChemicals extends GameMenu {
-
   declare LBL_BAR2: GUILabel;
   declare LB_DESCRIPTIONINV: GUIListBox;
   declare LBL_BAR1: GUILabel;
@@ -36,7 +35,7 @@ export class MenuChemicals extends GameMenu {
   declare LBL_RELATEDSKILL: GUILabel;
   declare LBL_BAR3: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'chemical_p';
     this.background = '';
@@ -45,10 +44,9 @@ export class MenuChemicals extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
-  
 }

@@ -1,13 +1,13 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
-import { LoadingScreenProvider } from "@/apps/forge/context/LoadingScreenContext";
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
+import { EditorTabManager } from '@/apps/forge/managers/EditorTabManager';
+import { LoadingScreenProvider } from '@/apps/forge/context/LoadingScreenContext';
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface AppProviderValues {
   // someValue: [any, React.Dispatch<any>];
-  tabManager: [EditorTabManager|undefined, React.Dispatch<any>];
+  tabManager: [EditorTabManager | undefined, React.Dispatch<any>];
   appReady: [boolean, React.Dispatch<any>];
   showGrantModal: [boolean, React.Dispatch<any>];
   showLoadingScreen: [boolean, React.Dispatch<any>];
@@ -17,7 +17,7 @@ export interface AppProviderValues {
 }
 export const AppContext = createContext<AppProviderValues>({} as any);
 
-export function useApp(){
+export function useApp() {
   return useContext(AppContext);
 }
 
@@ -32,19 +32,19 @@ export const AppProvider = (props: any) => {
 
   const onLoadingScreenMessage = (message: string) => {
     setLoadingScreenMessage(message);
-  }
+  };
   const onLoadingScreenShow = () => {
     setShowLoadingScreen(true);
-  }
+  };
   const onLoadingScreenHide = () => {
     setShowLoadingScreen(false);
-  }
+  };
   const onLoadingScreenInit = (backgroundURL: string, logoURL: string) => {
     setLoadingScreenBackgroundURL(backgroundURL);
     setLoadingScreenLogoURL(logoURL);
-  }
+  };
 
-  useEffect(() => { 
+  useEffect(() => {
     // ForgeState.tabManager = tabManager;
     ForgeState.addEventListener('on-loader-message', onLoadingScreenMessage);
     ForgeState.addEventListener('on-loader-show', onLoadingScreenShow);
@@ -70,9 +70,7 @@ export const AppProvider = (props: any) => {
 
   return (
     <AppContext.Provider value={providerValue}>
-      <LoadingScreenProvider>
-        {props.children}
-      </LoadingScreenProvider>
+      <LoadingScreenProvider>{props.children}</LoadingScreenProvider>
     </AppContext.Provider>
   );
 };

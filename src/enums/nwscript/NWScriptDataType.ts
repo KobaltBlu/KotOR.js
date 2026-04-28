@@ -1,8 +1,8 @@
 /**
  * NWScriptDataType enum.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptDataType.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -21,5 +21,5 @@ export enum NWScriptDataType {
   TALENT = 0x13,
   VECTOR = 0x14,
   STRUCTURE = 0x24,
-  ACTION = 0xFF,
+  ACTION = 0xff,
 }

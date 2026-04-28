@@ -1,5 +1,5 @@
 /**
- * SaveDestination – where to save a resource (ported from Holocron BifSaveOption).
+ * SaveDestination – where to save a resource.
  * Used by save flow: MOD, Override, or RIM.
  */
 

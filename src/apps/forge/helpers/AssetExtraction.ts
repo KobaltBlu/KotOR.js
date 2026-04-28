@@ -1,16 +1,15 @@
-import * as KotOR from "@/apps/forge/KotOR";
-import * as fs from "fs";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { TXI } from "@/resource/TXI";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { ModalExtractionResultsState, ExtractionResults } from "@/apps/forge/states/modal/ModalExtractionResultsState";
-import { ModalExtractionProgressState } from "@/apps/forge/states/modal/ModalExtractionProgressState";
+import * as KotOR from '@/apps/forge/KotOR';
+import * as fs from 'fs';
+import * as path from 'path';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { TXI } from '@/resource/TXI';
+import { ForgeState } from '@/apps/forge/states/ForgeState';
+import { ModalExtractionResultsState, ExtractionResults } from '@/apps/forge/states/modal/ModalExtractionResultsState';
+import { ModalExtractionProgressState } from '@/apps/forge/states/modal/ModalExtractionProgressState';
 
 declare const dialog: any;
 
-export type ExportTarget =
-  | { type: 'electron'; path: string }
-  | { type: 'browser'; handle: FileSystemDirectoryHandle };
+export type ExportTarget = { type: 'electron'; path: string } | { type: 'browser'; handle: FileSystemDirectoryHandle };
 
 interface CollectedAssets {
   models: Set<string>;
@@ -50,7 +49,16 @@ export async function fileExists(filename: string, target: ExportTarget): Promis
     });
   } else {
     try {
-      await target.handle.getFileHandle(filename);
+      const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
+      const parts = normalized.split('/').filter(Boolean);
+      const fileName = parts.pop();
+      if (!fileName) return false;
+
+      let dirHandle = target.handle;
+      for (const segment of parts) {
+        dirHandle = await dirHandle.getDirectoryHandle(segment);
+      }
+      await dirHandle.getFileHandle(fileName);
       return true;
     } catch {
       return false;
@@ -60,14 +68,29 @@ export async function fileExists(filename: string, target: ExportTarget): Promis
 
 export async function writeFile(filename: string, buffer: Uint8Array, target: ExportTarget): Promise<void> {
   if (target.type === 'electron') {
+    const fullpath = path.join(target.path, filename);
+    const dirpath = path.dirname(fullpath);
+    await fs.promises.mkdir(dirpath, { recursive: true });
     await new Promise<void>((resolve, reject) => {
-      fs.writeFile(`${target.path}/${filename}`, buffer, (err) => {
+      fs.writeFile(fullpath, buffer, (err) => {
         if (err) reject(err);
         else resolve();
       });
     });
   } else {
-    const fileHandle = await target.handle.getFileHandle(filename, { create: true });
+    const normalized = filename.replace(/\\/g, '/').replace(/^\/+/, '');
+    const parts = normalized.split('/').filter(Boolean);
+    const fileName = parts.pop();
+    if (!fileName) {
+      throw new Error(`Invalid filename '${filename}'`);
+    }
+
+    let dirHandle = target.handle;
+    for (const segment of parts) {
+      dirHandle = await dirHandle.getDirectoryHandle(segment, { create: true });
+    }
+
+    const fileHandle = await dirHandle.getFileHandle(fileName, { create: true });
     const ws: FileSystemWritableFileStream = await fileHandle.createWritable();
     await ws.write(buffer as any);
     await ws.close();
@@ -120,6 +143,8 @@ export async function collectModelAssets(
   allTextures: Set<string>,
   primaryMdl?: Uint8Array,
   primaryMdx?: Uint8Array,
+  /** When the open file is `*.mdl.ascii` (no MDX), use the already-parsed model from the viewer. */
+  primaryOdysseyModel?: KotOR.OdysseyModel
 ): Promise<void> {
   resref = resref.toLowerCase().trim();
   if (!resref || visited.has(resref)) return;
@@ -128,7 +153,10 @@ export async function collectModelAssets(
 
   let odysseyModel: KotOR.OdysseyModel | undefined;
   try {
-    if (primaryMdl && primaryMdx) {
+    const primaryParsedName = primaryOdysseyModel?.geometryHeader?.modelName?.toLowerCase().trim() ?? '';
+    if (primaryOdysseyModel && primaryParsedName === resref) {
+      odysseyModel = primaryOdysseyModel;
+    } else if (primaryMdl && primaryMdx && primaryMdl.length && primaryMdx.length) {
       odysseyModel = new KotOR.OdysseyModel(new BinaryReader(primaryMdl), new BinaryReader(primaryMdx));
     } else {
       odysseyModel = await KotOR.MDLLoader.loader.load(resref);
@@ -165,14 +193,18 @@ async function loadTxiForTexture(resref: string): Promise<TXI | undefined> {
       const tpc = new KotOR.TPCObject({ filename: resref, file: result.buffer, pack: result.pack || 0 });
       return tpc.txi;
     }
-  } catch (e) { /* not a TPC */ }
+  } catch (e) {
+    /* not a TPC */
+  }
 
   try {
     const txiBuffer = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes['txi'], resref);
     if (txiBuffer?.length) {
       return new TXI(txiBuffer);
     }
-  } catch (e) { /* no TXI */ }
+  } catch (e) {
+    /* no TXI */
+  }
 
   return undefined;
 }
@@ -209,13 +241,17 @@ export async function collectTxiReferencedTextures(allTextures: Set<string>): Pr
   }
 }
 
-export async function fetchTextureBuffer(resref: string): Promise<{ filename: string; buffer: Uint8Array; txi?: Uint8Array } | undefined> {
+export async function fetchTextureBuffer(
+  resref: string
+): Promise<{ filename: string; buffer: Uint8Array; txi?: Uint8Array } | undefined> {
   try {
     const result = await KotOR.TextureLoader.tpcLoader.findTPC(resref);
     if (result?.buffer?.length) {
       return { filename: `${resref}.tpc`, buffer: result.buffer };
     }
-  } catch (e) { /* TPC not found, try TGA */ }
+  } catch (e) {
+    /* TPC not found, try TGA */
+  }
 
   try {
     const buffer = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes['tga'], resref);
@@ -223,10 +259,14 @@ export async function fetchTextureBuffer(resref: string): Promise<{ filename: st
       let txi: Uint8Array | undefined;
       try {
         txi = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes['txi'], resref);
-      } catch (e) { /* no TXI companion */ }
+      } catch (e) {
+        /* no TXI companion */
+      }
       return { filename: `${resref}.tga`, buffer, txi };
     }
-  } catch (e) { /* TGA not found either */ }
+  } catch (e) {
+    /* TGA not found either */
+  }
 
   return undefined;
 }
@@ -258,7 +298,7 @@ export async function exportCollectedAssets(
   allTextures: Set<string>,
   target: ExportTarget,
   fetchModelBuffersOverride?: (resref: string) => Promise<{ mdl: Uint8Array; mdx: Uint8Array } | undefined>,
-  onProgress?: ProgressCallback,
+  onProgress?: ProgressCallback
 ): Promise<{ exportedFiles: string[]; skippedFiles: string[]; failedFiles: string[] }> {
   const exportedFiles: string[] = [];
   const skippedFiles: string[] = [];

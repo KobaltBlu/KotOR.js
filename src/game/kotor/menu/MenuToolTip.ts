@@ -1,21 +1,20 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIControl, GUILabel } from "@/gui";
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIControl, GUILabel } from '@/gui';
 
 /**
  * MenuToolTip class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuToolTip.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuToolTip extends GameMenu {
-
   tooltip: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'tooltip8x6';
     this.background = '';
@@ -25,8 +24,8 @@ export class MenuToolTip extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       this.addEventListener('resize', () => {
         this.width = GameState.ResolutionManager.getViewportWidth();
         this.height = GameState.ResolutionManager.getViewportHeight();
@@ -42,7 +41,7 @@ export class MenuToolTip extends GameMenu {
   currentControl: GUIControl;
 
   showToolTip(text: string, x: number = 0, y: number = 0, control: GUIControl) {
-    if(this.isVisible()) return;
+    if (this.isVisible()) return;
     this.currentControl = control;
     this.width = GameState.ResolutionManager.getViewportWidth();
     this.height = GameState.ResolutionManager.getViewportHeight();
@@ -52,8 +51,8 @@ export class MenuToolTip extends GameMenu {
     this.tooltip.extent.width = 99999;
     this.tooltip.setText(text);
     const textSize = this.tooltip.getTextSize();
-    const width = textSize.x + (this.padding * 2);
-    const height = textSize.y + (this.padding * 2);
+    const width = textSize.x + this.padding * 2;
+    const height = textSize.y + this.padding * 2;
     const maxX = this.width - width;
     const maxY = this.height - height;
     x += 16;
@@ -80,5 +79,4 @@ export class MenuToolTip extends GameMenu {
   hideToolTip() {
     this.hide();
   }
-  
 }

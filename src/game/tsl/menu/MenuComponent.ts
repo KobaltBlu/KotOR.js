@@ -1,17 +1,16 @@
-import { GameMenu } from "@/gui";
-import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { GameMenu } from '@/gui';
+import type { GUILabel, GUIListBox, GUIButton } from '@/gui';
 
 /**
  * MenuComponent class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuComponent.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuComponent extends GameMenu {
-
   declare LBL_BAR2: GUILabel;
   declare LB_DESCRIPTIONINV: GUIListBox;
   declare LBL_BAR1: GUILabel;
@@ -42,7 +41,7 @@ export class MenuComponent extends GameMenu {
   declare BTN_Cancel: GUIButton;
   declare LBL_BAR3: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'component_p';
     this.background = '';
@@ -51,10 +50,9 @@ export class MenuComponent extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
-  
 }
