@@ -125,7 +125,7 @@ export class GameMenu {
 
     await this.menuControlInitializer();
 
-    await TextureLoader.LoadQueue();
+    // await TextureLoader.LoadQueue();
     GameState.PerformanceMonitor.stop(this.constructor.name+'.buildMenu');
     return this;
   }
