@@ -1,6 +1,5 @@
 import { BinaryReader } from "@/utility/binary/BinaryReader";
 import { TLKString } from "@/resource/TLKString";
-import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * TLKObject class.
@@ -15,120 +14,86 @@ import { GameFileSystem } from "@/utility/GameFileSystem";
  */
 export class TLKObject {
 
-  file: Uint8Array|string;
-  reader: BinaryReader;
-  TLKStrings: TLKString[];
+  TLKStrings: TLKString[] = [];
 
-  onSuccess: Function;
-  onProgress: Function
   FileType: string;
   FileVersion: string;
   LanguageID: number;
   StringCount: number;
   StringEntriesOffset: number;
 
-  constructor(file: Uint8Array|string = '', onSuccess?: Function, onProgress?: Function){
-    this.file = file;
-    this.TLKStrings = [];
-    console.log('TLKObject', 'Opening TLK');
-    if(typeof this.file === 'string'){
-      this.LoadFromDisk(this.file, onProgress).then( () => {
-        if(typeof onSuccess === 'function') onSuccess();
-      }).catch( () => {
-        if(typeof onSuccess === 'function') onSuccess();
-      });
-    }else if(file instanceof Uint8Array){
-      this.LoadFromBuffer(this.file, onProgress).then( () => {
-        if(typeof onSuccess === 'function') onSuccess();
-      }).catch( () => {
-        if(typeof onSuccess === 'function') onSuccess();
-      });
-    }
-  }
+  /**
+   * Parses a dialog.tlk buffer in two sequential passes:
+   *   Pass 1 — reads all 40-byte DataElement records with no random seeks.
+   *   Pass 2 — decodes string values from the string-data section using
+   *             Uint8Array.subarray() (zero-copy views) and a single TextDecoder.
+   *
+   * The BinaryReader and raw buffer are released immediately after parsing.
+   */
+  loadFromBuffer(buffer: Uint8Array): void {
+    const reader = new BinaryReader(buffer);
+    reader.seek(0);
 
-  LoadFromBuffer( buffer: Uint8Array, onProgress?: Function ){
-    return new Promise<void>( (resolve, reject) => {
-      try{
-        console.log('TLKObject', 'Reading');
-        this.reader = new BinaryReader(buffer);
-        this.reader.seek(0);
-        
-        this.FileType = this.reader.readChars(4);
-        this.FileVersion = this.reader.readChars(4);
-        this.LanguageID = this.reader.readUInt32();
-        this.StringCount = this.reader.readUInt32();
-        this.StringEntriesOffset = this.reader.readUInt32();
-        this.reader.seek(20);
-        for(let i = 0, len = this.StringCount; i < len; i++) {
-          this.TLKStrings[i] = new TLKString(
-            this.reader.readUInt32(), //flags
-            this.reader.readChars(16).replace(/\0[\s\S]*$/g,''), //SoundResRef
-            this.reader.readUInt32(), //VolumeVariance
-            this.reader.readUInt32(), //PitchVariance
-            this.StringEntriesOffset + this.reader.readUInt32(), //StringOffset
-            this.reader.readUInt32(), //StringLength
-            this.reader.readUInt32(), //SoundLength
-            null
-          );
+    this.FileType             = reader.readChars(4);
+    this.FileVersion          = reader.readChars(4);
+    this.LanguageID           = reader.readUInt32();
+    this.StringCount          = reader.readUInt32();
+    this.StringEntriesOffset  = reader.readUInt32();
 
-          let pos = this.reader.tell();
-          this.reader.seek(this.TLKStrings[i].StringOffset);
-          //console.log(this.TLKStrings[i].StringOffset);
-          this.TLKStrings[i].Value = this.reader.readChars(this.TLKStrings[i].StringLength).replace(/\0[\s\S]*$/g,'');
-          this.reader.seek(pos);
+    // Pass 1: read all DataElement records sequentially (40 bytes each, no seeks)
+    reader.seek(20);
+    const records: {
+      flags: number;
+      soundResRef: string;
+      volVar: number;
+      pitchVar: number;
+      strOffset: number;
+      strLen: number;
+      sndLen: number;
+    }[] = new Array(this.StringCount);
 
-          if(typeof onProgress == 'function')
-            onProgress(i+1, this.StringCount);
-        }
-        console.log('TLKObject', 'Done');
-        resolve();
-      }catch(e){
-        reject(e);
-      }
-    })
-  }
-
-  LoadFromDisk( resource_path: string, onProgress?: Function ){
-    return new Promise<void>( (resolve, reject) => {
-      GameFileSystem.readFile(resource_path).then((buffer) => {
-        this.LoadFromBuffer(buffer, onProgress).then( () => {
-          resolve();
-        }).catch( () => {
-          reject();
-        });
-      }).catch((err) => {
-        reject();
-      })
-    });
-  }
-
-  GetStringById(id: number, onReturn?: Function): string {
-    if(this.TLKStrings[id] != null){
-      if(this.TLKStrings[id].Value == null){
-        this.TLKStrings[id].GetValue(this.reader, onReturn);
-      }else{
-        if(onReturn != null)
-          onReturn(this.TLKStrings[id].Value);
-      }
+    for(let i = 0; i < this.StringCount; i++){
+      records[i] = {
+        flags:       reader.readUInt32(),
+        soundResRef: reader.readChars(16).replace(/\0[\s\S]*$/g, ''),
+        volVar:      reader.readUInt32(),
+        pitchVar:    reader.readUInt32(),
+        strOffset:   reader.readUInt32(),
+        strLen:      reader.readUInt32(),
+        sndLen:      reader.readUInt32(),
+      };
     }
 
-    try{
-      return this.TLKStrings[id].Value;
-    }catch(e){
-      return '';
+    // Pass 2: decode string values using zero-copy subarray views
+    const strSection = buffer.subarray(this.StringEntriesOffset);
+    const decoder = new TextDecoder('latin1');
+
+    this.TLKStrings = new Array(this.StringCount);
+    for(let i = 0; i < this.StringCount; i++){
+      const r = records[i];
+      const value = r.strLen > 0
+        ? decoder.decode(strSection.subarray(r.strOffset, r.strOffset + r.strLen)).replace(/\0[\s\S]*$/g, '')
+        : '';
+      this.TLKStrings[i] = new TLKString(
+        r.flags,
+        r.soundResRef,
+        r.volVar,
+        r.pitchVar,
+        this.StringEntriesOffset + r.strOffset,
+        r.strLen,
+        r.sndLen,
+        value
+      );
     }
+    // Release the reader and buffer — all values are eagerly loaded.
+  }
+
+  GetStringById(id: number): string {
+    return this.TLKStrings[id]?.Value ?? '';
   }
 
   AddTLKString(tlkString: TLKString){
     this.TLKStrings.push(tlkString);
-  }
-
-  Search( term = '' ){
-    return this.TLKStrings.filter( (tlk) => {
-      if(tlk.Value.indexOf(term) >= 0){
-        return true;
-      }
-    }).map( tlk => { return {tlk: tlk, value: tlk.Value, index: this.TLKStrings.indexOf(tlk)} });
   }
 
 }
