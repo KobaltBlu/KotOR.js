@@ -161,9 +161,9 @@ export class GameInitializer {
     await KotOR.KEYManager.Load('chitin.key');
     KotOR.PerformanceMonitor.stop('keys');
 
-    KotOR.PerformanceMonitor.start('globalcache');
-    await KotOR.ResourceLoader.InitGlobalCache();
-    KotOR.PerformanceMonitor.stop('globalcache');
+    // KotOR.PerformanceMonitor.start('globalcache');
+    KotOR.ResourceLoader.InitGlobalCache();
+    // KotOR.PerformanceMonitor.stop('globalcache');
 
     GameInitializer.SetLoadingMessage("Loading Game Resources");
     KotOR.PerformanceMonitor.start('gameresources');
@@ -248,12 +248,15 @@ export class GameInitializer {
       GameInitializer.LoadOverride(), 
       GameInitializer.LoadRIMs(), 
       GameInitializer.Load2DAs(), 
-      GameInitializer.LoadTexturePacks(), 
+      GameInitializer.LoadTexturePacks()
+    ];
+    await Promise.all(promises);
+    const nonBlockingPromises = [
       GameInitializer.LoadGameAudioResources('streammusic'), 
       GameInitializer.LoadGameAudioResources('streamsounds'), 
       GameInitializer.LoadGameAudioResources(KotOR.GameState.GameKey != KotOR.GameEngineType.TSL ? 'streamwaves' : 'streamvoice')
     ];
-    await Promise.all(promises);
+    Promise.all(nonBlockingPromises);
   }
 
   static async LoadRIMs(){
