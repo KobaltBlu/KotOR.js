@@ -15,6 +15,7 @@ import {
   xmlToObject,
   yamlToObject,
 } from '@/utility/FormatSerialization';
+import { normalizeResRefFromArchiveSlot, RESREF_FIXED_SLOT_BYTES } from '@/resource/resRefLayout';
 
 /** Fixed CERF-style header size (one block read before the localized and key tables). */
 const ERF_HEADER_SIZE = 160;
@@ -168,11 +169,7 @@ export class ERFObject {
 
     for (let i = 0; i < this.header.entryCount; i++) {
       let key: IERFKeyEntry = {} as IERFKeyEntry;
-      key.resRef = this.reader
-        .readChars(16)
-        .replace(/\0[\s\S]*$/g, '')
-        .trim()
-        .toLowerCase();
+      key.resRef = normalizeResRefFromArchiveSlot(this.reader.readChars(RESREF_FIXED_SLOT_BYTES)).trim().toLowerCase();
       key.resId = this.reader.readUInt32();
       key.resType = this.reader.readUInt16();
       key.unused = this.reader.readUInt16();

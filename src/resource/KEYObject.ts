@@ -14,6 +14,7 @@ import {
   xmlToObject,
   yamlToObject,
 } from '@/utility/FormatSerialization';
+import { normalizeResRefFromArchiveSlot, RESREF_FIXED_SLOT_BYTES } from '@/resource/resRefLayout';
 
 /** Chitin.key V1.0: signature, version, two counts, two table offsets, build time, 32 reserved bytes. */
 export const KEY_V1_HEADER_SIZE = 64;
@@ -117,13 +118,16 @@ export class KEYObject {
       }
       this.reader.seek(o);
       const raw = this.reader.readChars(s).replace(/\0[\s\S]*$/g, '');
-      this.bifs[i].filename = raw.split(/[/\\]+/).filter(Boolean).join(path.sep);
+      this.bifs[i].filename = raw
+        .split(/[/\\]+/)
+        .filter(Boolean)
+        .join(path.sep);
     }
 
     this.reader.seek(this.offsetToKeyTable);
     for (let i = 0; i < this.keyCount; i++) {
       this.keys[i] = {
-        resRef: this.reader.readChars(16).replace(/\0[\s\S]*$/g, ''),
+        resRef: normalizeResRefFromArchiveSlot(this.reader.readChars(RESREF_FIXED_SLOT_BYTES)),
         resType: this.reader.readUInt16(),
         resId: this.reader.readUInt32() & KEY_V1_RESOURCE_ID_MASK,
       } as IKEYEntry;
@@ -199,7 +203,7 @@ export class KEYObject {
   }
 
   static getBIFResourceIndex(ResID: number = 0): number {
-    return (ResID & KEY_V1_RESOURCE_ID_MASK) & KEY_PACKED_ENTRY_INDEX_MASK;
+    return ResID & KEY_V1_RESOURCE_ID_MASK & KEY_PACKED_ENTRY_INDEX_MASK;
   }
 
   toJSON(): {

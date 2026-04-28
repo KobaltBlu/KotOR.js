@@ -14,6 +14,7 @@ import {
   xmlToObject,
   yamlToObject,
 } from '@/utility/FormatSerialization';
+import { normalizeResRefFromArchiveSlot, RESREF_FIXED_SLOT_BYTES } from '@/resource/resRefLayout';
 
 const RIM_HEADER_LENGTH = 160;
 /** RIM V1.0: each resource list row is 32 bytes (resRef, type, id, offset, size), matching the key-table layout. */
@@ -130,11 +131,7 @@ export class RIMObject {
     const resourceCount = this.header.resourceCount;
     for (let i = 0; i < resourceCount; i++) {
       this.addResource({
-        resRef: this.reader
-          .readChars(16)
-          .replace(/\0[\s\S]*$/g, '')
-          .trim()
-          .toLowerCase(),
+        resRef: normalizeResRefFromArchiveSlot(this.reader.readChars(RESREF_FIXED_SLOT_BYTES)).trim().toLowerCase(),
         resType: this.reader.readUInt16(),
         unused: this.reader.readUInt16(),
         resId: this.reader.readUInt32(),
@@ -184,11 +181,7 @@ export class RIMObject {
     const resourceCount = this.header.resourceCount;
     for (let i = 0; i < resourceCount; i++) {
       this.addResource({
-        resRef: this.reader
-          .readChars(16)
-          .replace(/\0[\s\S]*$/g, '')
-          .trim()
-          .toLowerCase(),
+        resRef: normalizeResRefFromArchiveSlot(this.reader.readChars(RESREF_FIXED_SLOT_BYTES)).trim().toLowerCase(),
         resType: this.reader.readUInt16(),
         unused: this.reader.readUInt16(),
         resId: this.reader.readUInt32(),

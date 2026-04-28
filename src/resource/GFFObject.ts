@@ -15,6 +15,7 @@ import {
   xmlToObject,
   yamlToObject,
 } from '@/utility/FormatSerialization';
+import { clampResRefForGffWrite, readGffResRefPayload, RESREF_GFF_MAX_PAYLOAD } from '@/resource/resRefLayout';
 
 /** On-disk GFF V3.2 header: 4+4 type/version plus twelve little-endian 32-bit fields. */
 export const GFF_V32_HEADER_SIZE = 56;
@@ -33,6 +34,7 @@ export type GFFObjectOnCompleteCallback = (gff: GFFObject) => void;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GFFObject {
+  static readonly RESREF_MAX_LENGTH = RESREF_GFF_MAX_PAYLOAD;
   BWStructs: BinaryWriter;
   BWFields: BinaryWriter;
   BWFieldData: BinaryWriter;
@@ -503,12 +505,10 @@ export class GFFObject {
   */
   //Gets data from the FieldDataHeader
   getRESREF(offset: number) {
-    let RESREF = '';
     let OriginalPos = this.reader.tell(); //Store the original position of the reader object
     this.reader.seek(this.FieldDataOffset + offset);
 
-    let length = this.reader.readByte(); // Get the length of the string
-    if (length != 0) RESREF = this.reader.readChars(length);
+    const RESREF = readGffResRefPayload(this.reader);
 
     this.reader.seek(OriginalPos); //Return the reader position to the original
     return RESREF;
@@ -682,7 +682,7 @@ export class GFFObject {
       //Update the TemplateResRef field if it exists
       let templateResRef = this.RootNode.getFieldByLabel('TemplateResRef');
       if (templateResRef instanceof GFFField) {
-        fileInfo.name = templateResRef.value = fileInfo.name.substr(0, 16);
+        fileInfo.name = templateResRef.value = clampResRefForGffWrite(fileInfo.name);
         //fileInfo.base = fileInfo.name + '.'+this.FileType.substr(0, 3).toLowerCase();
         fileInfo.base = fileInfo.name + fileInfo.ext;
       }
@@ -955,6 +955,7 @@ export class GFFObject {
             this.BWFieldData.writeSingle(field.getOrientation().w);
             break;
           case GFFDataType.RESREF:
+            field.value = clampResRefForGffWrite(field.value);
             this.BWFields.writeUInt32(this.BWFieldData.position);
             this.BWFieldData.writeByte(field.value.length);
             this.BWFieldData.writeChars(field.value);

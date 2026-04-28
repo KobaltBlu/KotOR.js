@@ -2,6 +2,7 @@ import { GFFDataType } from '@/enums/resource/GFFDataType';
 import { CExoLocString } from '@/resource/CExoLocString';
 import { GFFStruct } from '@/resource/GFFStruct';
 import type { IGFFFieldJSON } from '@/interface/resource/IGFFFieldJSON';
+import { clampResRefForGffWrite } from '@/resource/resRefLayout';
 
 /**
  * Represents a field within a GFF (Generic File Format) structure.
@@ -104,8 +105,11 @@ export class GFFField {
 
     switch (this.type) {
       case GFFDataType.CEXOSTRING:
+        if (typeof this.value !== 'string') this.value = '';
+        break;
       case GFFDataType.RESREF:
         if (typeof this.value !== 'string') this.value = '';
+        this.value = clampResRefForGffWrite(this.value);
         break;
       case GFFDataType.CEXOLOCSTRING:
         this.value = 0;
@@ -435,7 +439,7 @@ export class GFFField {
 
         if (typeof val !== 'string') val = val.toString();
 
-        this.value = val;
+        this.value = clampResRefForGffWrite(val);
         break;
       case GFFDataType.CEXOSTRING:
         if (!val) val = '';

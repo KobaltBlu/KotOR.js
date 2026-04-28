@@ -10,6 +10,7 @@ import {
   xmlToObject,
   yamlToObject,
 } from '@/utility/FormatSerialization';
+import { normalizeResRefFromArchiveSlot, RESREF_FIXED_SLOT_BYTES } from '@/resource/resRefLayout';
 
 /** Talk table (TLK) V3.0: file type and version, language id, string count, string data offset. */
 export const TLK_V30_HEADER_SIZE = 20;
@@ -96,7 +97,7 @@ export class TLKObject {
         this.reader.seek(TLK_V30_HEADER_SIZE);
         for (let i = 0, len = this.StringCount; i < len; i++) {
           const flags = this.reader.readUInt32();
-          const soundResRef = this.reader.readChars(16).replace(/\0[\s\S]*$/g, '');
+          const soundResRef = normalizeResRefFromArchiveSlot(this.reader.readChars(RESREF_FIXED_SLOT_BYTES));
           const volumeVariance = this.reader.readUInt32();
           const pitchVariance = this.reader.readUInt32();
           const stringOffset = this.reader.readUInt32();

@@ -188,4 +188,13 @@ describe('GFFObject', () => {
     const c = new GFFObject();
     expect(() => c.parse(truncated)).toThrow('Invalid GFF');
   });
+
+  it('clamps RESREF fields to 16 bytes', () => {
+    const gff = new GFFObject();
+    gff.FileType = 'GFF ';
+    gff.RootNode.addField(new GFFField(GFFDataType.RESREF, 'resref').setValue('1234567890abcdefghijkl'));
+
+    const parsed = new GFFObject(gff.getExportBuffer());
+    expect(parsed.RootNode.getFieldByLabel('resref')?.getValue()).toBe('1234567890abcdef');
+  });
 });
