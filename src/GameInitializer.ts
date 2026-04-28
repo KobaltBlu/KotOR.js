@@ -311,23 +311,12 @@ export class GameInitializer {
     }).filter(function(file_obj){
       return file_obj.ext == 'mod';
     });
-    for(let i = 0, len = modules.length; i < len; i++){
-      const module_obj = modules[i];
-      switch(module_obj.ext){
-        case 'mod':
-          const mod = new ERFObject(path.join(data_dir, module_obj.filename));
-          await mod.load();
-          if(mod instanceof ERFObject){
-            mod.group = 'Lips';
-            ERFManager.addERF(module_obj.name, mod);
-          }
-        break;
-        default:
-          console.warn('GameInitializer.LoadLips: Encountered incorrect filetype');
-          console.log(module_obj);
-        break;
-      }
-    }
+    await Promise.all(modules.map(async (module_obj) => {
+      const mod = new ERFObject(path.join(data_dir, module_obj.filename));
+      await mod.load();
+      mod.group = 'Lips';
+      ERFManager.addERF(module_obj.name, mod);
+    }));
     PerformanceMonitor.stop('GameInitializer.LoadLips');
   }
 
@@ -348,31 +337,28 @@ export class GameInitializer {
         return file_obj.ext == 'rim' || file_obj.ext == 'mod';
       });
 
-      for(let i = 0, len = modules.length; i < len; i++){
-        const module_obj = modules[i];
+      await Promise.all(modules.map(async (module_obj) => {
         switch(module_obj.ext){
-          case 'rim':
+          case 'rim': {
             const rim = new RIMObject(path.join(data_dir, module_obj.filename));
             await rim.load();
-            if(rim instanceof RIMObject){
-              rim.group = 'Module';
-              RIMManager.addRIM(module_obj.name, rim);
-            }
-          break;
-          case 'mod':
+            rim.group = 'Module';
+            RIMManager.addRIM(module_obj.name, rim);
+            break;
+          }
+          case 'mod': {
             const mod = new ERFObject(path.join(data_dir, module_obj.filename));
             await mod.load();
-            if(mod instanceof ERFObject){
-              mod.group = 'Module';
-              ERFManager.addERF(module_obj.name, mod);
-            }
-          break;
+            mod.group = 'Module';
+            ERFManager.addERF(module_obj.name, mod);
+            break;
+          }
           default:
             console.warn('GameInitializer.LoadModules: Encountered incorrect filetype');
             console.log(module_obj);
-          break;
+            break;
         }
-      }
+      }));
     }catch(e){
       console.warn('GameInitializer.LoadModules: Failed to load modules');
       console.error(e);
@@ -450,21 +436,19 @@ export class GameInitializer {
     PerformanceMonitor.start('GameInitializer.LoadOverride');
     try{
       const files = await GameFileSystem.readdir('Override', {recursive: false});
-      for(let i = 0, len = files.length; i < len; i++){
-        let f = files[i];
-        let _parsed = path.parse(f);
-        let ext = _parsed.ext.substr(1,  _parsed.ext.length)?.toLocaleLowerCase();
-        const resId = ResourceTypes[ext];
+      const validOverrideFiles = files
+        .map(f => {
+          const _parsed = path.parse(f);
+          const ext = _parsed.ext.substr(1, _parsed.ext.length)?.toLocaleLowerCase();
+          return { f, _parsed, resId: ResourceTypes[ext] };
+        })
+        .filter(({ resId }) => typeof resId !== 'undefined');
 
-        if(typeof resId === 'undefined'){
-          continue;
-        }
-
+      await Promise.all(validOverrideFiles.map(async ({ f, _parsed, resId }) => {
         const buffer = await GameFileSystem.readFile(f);
-        if(!buffer || !buffer.length){ continue; }
-
+        if(!buffer || !buffer.length) return;
         ResourceLoader.setCache(CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
-      }
+      }));
     }catch(e){
       console.warn('GameInitializer.LoadOverride: Failed to load override');
       console.error(e);

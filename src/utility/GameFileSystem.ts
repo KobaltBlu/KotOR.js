@@ -36,8 +36,8 @@ export class GameFileSystem {
 
   private static normalizePath(filepath: string){
     filepath = filepath.trim();
-    filepath.replace(/^\/+/, '').replace(/\/+$/, '');
-    filepath.replace(/^\\+/, '').replace(/\\+$/, '');
+    filepath = filepath.replace(/^\/+/, '').replace(/\/+$/, '');
+    filepath = filepath.replace(/^\\+/, '').replace(/\\+$/, '');
     return filepath;
   }
 
@@ -549,60 +549,81 @@ export class GameFileSystem {
       const dirs = filepath.length ? filepath.split('/') : [];
       const cacheKey = dirs.join('/');
       if(this.directoryCache.has(cacheKey)){
-        return this.directoryCache.get(cacheKey)!;
+        const cached = this.directoryCache.get(cacheKey)!;
+        if(!parent) return cached;
+        // for parent=true we need the second-to-last handle; fall through to traverse
       }
-      let lastDirectoryHandle = ApplicationProfile.directoryHandle;
-      let currentDirHandle = ApplicationProfile.directoryHandle;
-      let found = false;
-      for(let i = 0, len = dirs.length; i < len; i++){
-        lastDirectoryHandle = currentDirHandle;
-        // currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i]);
-        found = false;
-        for await (const entry of currentDirHandle.values()) {
-          if(entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()){
-            found = true;
-            currentDirHandle = entry as FileSystemDirectoryHandle;
-            break;
+      if(!parent && this.directoryInflight.has(cacheKey)){
+        return this.directoryInflight.get(cacheKey)!;
+      }
+      const promise = (async () => {
+        let lastDirectoryHandle = ApplicationProfile.directoryHandle;
+        let currentDirHandle = ApplicationProfile.directoryHandle;
+        let found = false;
+        for(let i = 0, len = dirs.length; i < len; i++){
+          lastDirectoryHandle = currentDirHandle;
+          found = false;
+          for await (const entry of currentDirHandle.values()) {
+            if(entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()){
+              found = true;
+              currentDirHandle = entry as FileSystemDirectoryHandle;
+              break;
+            }
+          }
+          if(!found){
+            this.directoryInflight.delete(cacheKey);
+            throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
           }
         }
-        if(!found){
-          throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
-        }
+        this.directoryCache.set(cacheKey, currentDirHandle);
+        this.directoryInflight.delete(cacheKey);
+        return !parent ? currentDirHandle : lastDirectoryHandle;
+      })();
+      if(!parent){
+        this.directoryInflight.set(cacheKey, promise);
       }
-      this.directoryCache.set(cacheKey, currentDirHandle);
-      return !parent ? currentDirHandle : lastDirectoryHandle;
+      return promise;
     }
     return;
   }
 
   static directoryCache: Map<string, FileSystemDirectoryHandle> = new Map();
+  static directoryInflight: Map<string, Promise<FileSystemDirectoryHandle>> = new Map();
 
   private static async resolveFilePathDirectoryHandle(filepath: string): Promise<FileSystemDirectoryHandle> {
     if(ApplicationProfile.directoryHandle){
       const dirs = filepath.split('/');
-      const filename = dirs.pop();
+      dirs.pop(); // remove filename
       const cacheKey = dirs.join('/');
       if(this.directoryCache.has(cacheKey)){
         return this.directoryCache.get(cacheKey)!;
       }
-      let currentDirHandle = ApplicationProfile.directoryHandle;
-      let found = false;
-      for(let i = 0, len = dirs.length; i < len; i++){
-        // currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i]);
-        found = false;
-        for await (const entry of currentDirHandle.values()) {
-          if(entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()){
-            found = true;
-            currentDirHandle = entry as FileSystemDirectoryHandle;
-            break;
+      if(this.directoryInflight.has(cacheKey)){
+        return this.directoryInflight.get(cacheKey)!;
+      }
+      const promise = (async () => {
+        let currentDirHandle = ApplicationProfile.directoryHandle;
+        let found = false;
+        for(let i = 0, len = dirs.length; i < len; i++){
+          found = false;
+          for await (const entry of currentDirHandle.values()) {
+            if(entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()){
+              found = true;
+              currentDirHandle = entry as FileSystemDirectoryHandle;
+              break;
+            }
+          }
+          if(!found){
+            this.directoryInflight.delete(cacheKey);
+            throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
           }
         }
-        if(!found){
-          throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
-        }
-      }
-      this.directoryCache.set(cacheKey, currentDirHandle);
-      return currentDirHandle;
+        this.directoryCache.set(cacheKey, currentDirHandle);
+        this.directoryInflight.delete(cacheKey);
+        return currentDirHandle;
+      })();
+      this.directoryInflight.set(cacheKey, promise);
+      return promise;
     }
     return;
   }

@@ -38,14 +38,14 @@ export class RIMManager {
         return file_obj.ext == 'rim';
       });
 
-      for(let i = 0, len = rims.length; i < len; i++){
+      await Promise.all(rims.map(async (rimObj) => {
         try{
-          const rim = await RIMManager.LoadRIMObject(rims[i]);
+          const rim = await RIMManager.LoadRIMObject(rimObj);
           rim.group = 'RIMs';
-        }catch(e){ 
+        }catch(e){
           console.error(e);
         }
-      }
+      }));
     }catch(err){
       console.warn('RIMManager.Load', err);
     }
