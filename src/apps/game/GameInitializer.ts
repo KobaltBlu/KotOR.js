@@ -247,8 +247,6 @@ export class GameInitializer {
     const promises = [
       GameInitializer.LoadOverride(), 
       GameInitializer.LoadRIMs(), 
-      GameInitializer.LoadModules(), 
-      GameInitializer.LoadLips(), 
       GameInitializer.Load2DAs(), 
       GameInitializer.LoadTexturePacks(), 
       GameInitializer.LoadGameAudioResources('streammusic'), 
@@ -265,76 +263,6 @@ export class GameInitializer {
     KotOR.PerformanceMonitor.start('RIMManager.Load');
     await KotOR.RIMManager.Load();
     KotOR.PerformanceMonitor.stop('RIMManager.Load');
-  }
-
-  static async LoadLips(){
-    KotOR.PerformanceMonitor.start('GameInitializer.LoadLips');
-    const data_dir = 'lips';
-    const filenames = await KotOR.GameFileSystem.readdir(data_dir);
-    const modules = filenames.map(function(file) {
-      const filename = file.split(path.sep).pop() as string;
-      const args = filename.split('.');
-      return {
-        ext: args[1].toLowerCase(), 
-        name: args[0], 
-        filename: filename
-      };
-    }).filter(function(file_obj){
-      return file_obj.ext == 'mod';
-    });
-    await Promise.all(modules.map(async (module_obj) => {
-      const mod = new KotOR.ERFObject(path.join(data_dir, module_obj.filename));
-      await mod.load();
-      mod.group = 'Lips';
-      KotOR.ERFManager.addERF(module_obj.name, mod);
-    }));
-    KotOR.PerformanceMonitor.stop('GameInitializer.LoadLips');
-  }
-
-  static async LoadModules(){
-    let data_dir = 'modules';
-    KotOR.PerformanceMonitor.start('GameInitializer.LoadModules');
-    try{
-      const filenames = await KotOR.GameFileSystem.readdir(data_dir);
-      const modules = filenames.map(function(file) {
-        const filename = file.split(path.sep).pop() as string;
-        const args = filename.split('.');
-        return {
-          ext: args[1].toLowerCase(), 
-          name: args[0], 
-          filename: filename
-        };
-      }).filter(function(file_obj){
-        return file_obj.ext == 'rim' || file_obj.ext == 'mod';
-      });
-
-      await Promise.all(modules.map(async (module_obj) => {
-        switch(module_obj.ext){
-          case 'rim': {
-            const rim = new KotOR.RIMObject(path.join(data_dir, module_obj.filename));
-            await rim.load();
-            rim.group = 'Module';
-            KotOR.RIMManager.addRIM(module_obj.name, rim);
-            break;
-          }
-          case 'mod': {
-            const mod = new KotOR.ERFObject(path.join(data_dir, module_obj.filename));
-            await mod.load();
-            mod.group = 'Module';
-            KotOR.ERFManager.addERF(module_obj.name, mod);
-            break;
-          }
-          default:
-            console.warn('GameInitializer.LoadModules: Encountered incorrect filetype');
-            console.log(module_obj);
-            break;
-        }
-      }));
-    }catch(e){
-      console.warn('GameInitializer.LoadModules: Failed to load modules');
-      console.error(e);
-    }
-    KotOR.PerformanceMonitor.stop('GameInitializer.LoadModules');
   }
 
   static async Load2DAs(){
