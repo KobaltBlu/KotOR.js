@@ -143,11 +143,11 @@ Verify/regen: `npm run k1:exhaustive` / `k1:exhaustive:all`, `[python .cursor/sc
 **Definition of done** for almost every todo (adapt wording per ID):
 
 1. **Discovery:** batched `search-everything` (or `search-symbols`) with **queries** logged (private/PR notes — not tool dumps in `src/` comments).
-2. **Deep:** at least one `**get-function**` (or `decompile-function`) on a **hot** symbol **when hits warrant** changes; `**execute-script**` only for bulk enumeration / custom Ghidra API passes ([AGENTS.md](AGENTS.md), MCP schemas).
+2. **Deep:** at least one `**get-function`** (or `decompile-function`) on a **hot** symbol **when hits warrant** changes; `**execute-script`** only for bulk enumeration / custom Ghidra API passes ([AGENTS.md](AGENTS.md), MCP schemas).
 3. **TS/tests:** implement only what evidence supports; extend Jest where parsers/runtime touched.
 4. **Hygiene:** no new disallowed `src/` comment patterns ([.cursorrules](.cursorrules)); sweep touched files.
 5. **K1 vs TSL:** `[N/A K1]` with one-line reason in **private** notes when applicable ([.cursor/k1-iteration-todos.md](.cursor/k1-iteration-todos.md)).
-6. **Validation:** for edits in the todo, run the smallest **meaningful** subset of `format:check` / `lint` / `npm test -- --runTestsByPath …` / `webpack:dev` per [AGENTS.md](AGENTS.md). Full-repo gates appear where `**qg-***` todos say so.
+6. **Validation:** for edits in the todo, run the smallest **meaningful** subset of `format:check` / `lint` / `npm test -- --runTestsByPath …` / `webpack:dev` per [AGENTS.md](AGENTS.md). Full-repo gates appear where `**qg-`*** todos say so.
 
 **Fallback order:** `user-agdec-http` → stdio `user-agdec-mcp` → `uvx` CLI with **env-only** credentials ([k1-binary-exe-coverage-model.md](.cursor/k1-binary-exe-coverage-model.md) §2b).
 
@@ -199,7 +199,7 @@ For each `src-batch-kkk`:
 
 1. Open [.cursor/k1-iteration-todos-exhaustive.md](.cursor/k1-iteration-todos-exhaustive.md); locate the range.
 2. Run **batched** `search-everything` **queries** themed per top-level folder ([folder→batch table](.cursor/k1-iteration-todos.md) “Default map”).
-3. `**get-function**` on shortlisted symbols tied to **behavior claims** in those files.
+3. `**get-function`** on shortlisted symbols tied to **behavior claims** in those files.
 4. Align TS/tests; mark **[N/A]** in private notes for Forge/Electron/harness-only rows where appropriate.
 5. Mini-validation for touched paths.
 
@@ -232,7 +232,7 @@ Default **N/A to retail EXE** for editor-only rows unless a row claims gameplay 
 
 ---
 
-## Phase G — `SRC-DIR-*` top-level trees (29 todos)
+## Phase G — `SRC-DIR-`* top-level trees (29 todos)
 
 One todo per checkbox in [k1-iteration-todos.md](.cursor/k1-iteration-todos.md) (lines 75–104):
 
@@ -276,7 +276,7 @@ The **detailed** P0/P1/P2 checklists in [k1-iteration-todos.md](.cursor/k1-itera
 | `meta-03`    | **META-03** — legacy disallowed phrasing on **touched** or sweep scope                                                                                                                                                                              |
 | `meta-04`    | **META-04** — closure ledger complete (SRC/SUBDIR/MCP/BINARY links)                                                                                                                                                                                 |
 | `meta-05`    | **META-05** — `verify_k1_iteration_exhaustive.py` after any big `src/` moves                                                                                                                                                                        |
-| `qg-00`      | **QG-00** — `k1:exhaustive:all` when checklists or `src/**` file set changed                                                                                                                                                                        |
+| `qg-00`      | **QG-00** — `k1:exhaustive:all` when checklists or `src/`** file set changed                                                                                                                                                                        |
 | `qg-01`      | `npm run format:check`                                                                                                                                                                                                                              |
 | `qg-02`      | `npm run lint`                                                                                                                                                                                                                                      |
 | `qg-03`      | `npm test` (full or policy from AGENTS.md)                                                                                                                                                                                                          |
@@ -307,7 +307,7 @@ flowchart TD
 
 
 
-**Parallelism:** You may **interleave** `mcp-b`** with `src-batch-**` **only** if private logs tie queries to file batches; strict linear order above minimizes gaps.
+**Parallelism:** You may **interleave** `mcp-b`** with `src-batch-`** **only** if private logs tie queries to file batches; strict linear order above minimizes gaps.
 
 **Continue discipline:** After each user message **continue**, execute **the next single todo ID** in order **unless** you are rewinding for a failed `qg-00`/verification.
 
