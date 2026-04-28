@@ -5,7 +5,6 @@ export * from "@/utility/polyfills";
 export * from "@/audio";
 export * from "@/module";
 export * from "@/gui";
-export * from "@/GameInitializer";
 export * from "@/GameState";
 export * from "@/managers";
 
@@ -61,6 +60,7 @@ export * from "@/three/odyssey";
 
 export * from "@/utility/ApplicationProfile";
 export * from "@/utility/GameFileSystem";
+export * from "@/utility/PerformanceMonitor";
 export * from "@/utility/Utility";
 export * from "@/engine/TextSprite3D";
 

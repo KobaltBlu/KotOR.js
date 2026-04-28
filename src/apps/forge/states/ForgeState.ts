@@ -15,6 +15,7 @@ import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
 import { MenuTopState } from "@/apps/forge/states/MenuTopState";
 
 import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
 import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
 import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
 import { RecentProject } from "@/apps/forge/RecentProject";
@@ -125,10 +126,10 @@ export class ForgeState {
       ForgeState.loaderInit(KotOR.ApplicationProfile.profile.background, KotOR.ApplicationProfile.profile.logo);
       ForgeState.loaderShow();
       KotOR.GameState.GameKey = KotOR.ApplicationProfile.GameKey;
-      KotOR.GameInitializer.AddEventListener('on-loader-message', (message: string) => {
+      ForgeInitializer.AddEventListener('on-loader-message', (message: string) => {
         ForgeState.loaderMessage(message);
       });
-      KotOR.GameInitializer.Init(KotOR.ApplicationProfile.GameKey).then( async () => {
+      ForgeInitializer.Init(KotOR.ApplicationProfile.GameKey).then( async () => {
         await this.initNWScriptParser();
         KotOR.OdysseyWalkMesh.Init();
         KotOR.AudioEngine.GetAudioEngine();

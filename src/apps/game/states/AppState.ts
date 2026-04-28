@@ -1,6 +1,7 @@
 import * as KotOR from "@/apps/game/KotOR";
 import { Launcher } from "@/apps/launcher/context/Launcher";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { GameInitializer } from "@/apps/game/GameInitializer";
 
 export class AppState {
   static eulaAccepted: boolean = false;
@@ -88,7 +89,7 @@ export class AppState {
    */
   static async loadGameDirectory(){
     AppState.loaderShow();
-    KotOR.GameInitializer.SetLoadingMessage('Locating Game Directory...');
+    GameInitializer.SetLoadingMessage('Locating Game Directory...');
   
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       if(await KotOR.GameFileSystem.exists('chitin.key')){
@@ -177,17 +178,17 @@ export class AppState {
     AppState.loaderShow();
     KotOR.GameState.GameKey = AppState.gameKey;
     KotOR.TextureLoader.GameKey = KotOR.GameState.GameKey;
-    KotOR.GameInitializer.AddEventListener('on-loader-message', (message: string) => {
+    GameInitializer.AddEventListener('on-loader-message', (message: string) => {
       AppState.loaderMessage(message);
     });
-    KotOR.GameInitializer.AddEventListener('on-loader-show', () => {
+    GameInitializer.AddEventListener('on-loader-show', () => {
       AppState.loaderShow();
     });
-    KotOR.GameInitializer.AddEventListener('on-loader-hide', () => {
+    GameInitializer.AddEventListener('on-loader-hide', () => {
       AppState.loaderHide();
     });
 
-    await KotOR.GameInitializer.Init(AppState.gameKey);
+    await GameInitializer.Init(AppState.gameKey);
 
     console.log('loaded')
     KotOR.GUIListBox.InitTextures();
