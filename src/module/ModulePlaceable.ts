@@ -198,8 +198,9 @@ export class ModulePlaceable extends ModuleObject {
         }
       }
 
-      if(this.model.visible)
+      if(this.model.visible && !this.static){
         this.model.update(delta);
+      }
 
       this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z);
     }

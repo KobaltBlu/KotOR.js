@@ -3818,15 +3818,15 @@ export class ModuleObject {
       if(this.forceVector){
         this.forceVector = undefined;
       }
-      if(this.position){
-        this.position = undefined;
-      }
-      if(this.rotation){
-        this.rotation = undefined;
-      }
-      if(this.quaternion){
-        this.quaternion = undefined;
-      }
+      // if(this.position){
+      //   this.position = undefined;
+      // }
+      // if(this.rotation){
+      //   this.rotation = undefined;
+      // }
+      // if(this.quaternion){
+      //   this.quaternion = undefined;
+      // }
       if(this.box){
         this.box = undefined;
       }
@@ -3842,6 +3842,8 @@ export class ModuleObject {
 
       if(this.area){
         this.area.detachObject(this);
+      }else if (GameState.module.area){
+        GameState.module.area.detachObject(this);
       }
 
       //Clear references to prevent circular references

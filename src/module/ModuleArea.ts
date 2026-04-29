@@ -971,6 +971,9 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < rooms.childStructs.length; i++ ){
       let strt = rooms.childStructs[i];
       const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
+      if(!roomName || roomName == '****'){
+        continue;
+      }
       const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
       const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
       const room = new ModuleRoom(roomName, this);
@@ -1221,6 +1224,9 @@ export class ModuleArea extends ModuleObject {
       let sortedRooms = [];
       for(let i = 0; i < this.layout.rooms.length; i++){
         let roomLYT = this.layout.rooms[i];
+        if(!roomLYT.name || roomLYT.name == '****'){
+          continue;
+        }
         for(let r = 0; r != this.rooms.length; r++ ){
           let room = this.rooms[r];
           if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
