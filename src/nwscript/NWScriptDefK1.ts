@@ -3022,6 +3022,9 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
       console.log("DestroyObject", args[0], args[1], args[2], args[3]);
+      if(!args[0]){
+        return;
+      }
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
         args[0].setWillDestroy(true);
         args[0].setDelayUntilDestroy(args[1]);
@@ -8463,7 +8466,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: async function(this: NWScriptInstance, args: [number]){
-      await GameState.VideoManager.playMovieQueue(args[0] === 1);
+      for(const movie of GameState.VideoManager.movieQueue){
+        movie.skippable = args[0] === NW_TRUE;
+      }
+      await GameState.VideoManager.playMovieQueue();
     }
   },
   771:{
