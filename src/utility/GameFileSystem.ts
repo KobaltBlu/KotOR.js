@@ -5,6 +5,8 @@ import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
 declare const dialog: any;
 
+const webHandleHasRemove = typeof (FileSystemFileHandle.prototype as any).remove === 'function'
+
 const spleep = (time: number = 0) => {
   return new Promise( (resolve, reject) => {
     setTimeout(resolve, time);
@@ -263,72 +265,53 @@ export class GameFileSystem {
     });
   }
 
-  private static async readdir_fs(resource_path: string = '', opts: IGameFileSystemReadDirOptions = {},  files: any[] = [], depthState?: any) {
+  private static async readdir_fs(resource_path: string = '', opts: IGameFileSystemReadDirOptions = {}, files: any[] = [], depthState?: any): Promise<string[]> {
     if(typeof depthState === 'undefined'){
-      depthState = {
-        'folder': resource_path,
-        depth: 0
-      }
-    }else{
-      depthState.depth++;
+      depthState = { folder: resource_path, depth: 0 };
     }
-    return new Promise<string[]>( async (resolve, reject) => {
-      try{
-        let dir_path = path.join(ApplicationProfile.directory, resource_path);
-        
-        if(!(await this.isFSDirectory(resource_path))){
+    const currentDepth: number = depthState.depth;
+    const dir_path = path.join(ApplicationProfile.directory, resource_path);
+
+    return new Promise<string[]>((resolve, reject) => {
+      fs.readdir(dir_path, { withFileTypes: true }, async (err, dir_files: fs.Dirent[]) => {
+        if(err){
+          // resource_path is a file, not a directory
           if(!opts.list_dirs){
             files.push(resource_path);
           }
           resolve(files);
           return;
-        }else{
-          if((depthState.depth < 1) || !!opts.recursive ){
-            // let dir_base = path.join(ApplicationProfile.directory, resource_path);
-            fs.readdir(dir_path, {withFileTypes: true}, async (err, dir_files: fs.Dirent[]) => {
-              if(err){
-                console.error(err);
-                reject(err);
-                return;
-              }
-              let file: fs.Dirent;
-              let file_path = '';
-              let is_dir = false;
-              if(!!opts.list_dirs && depthState.depth){
-                files.push(resource_path);
-              }
-              for(let i = 0, len = dir_files.length; i < len; i++){
-                file = dir_files[i];
-                file_path = path.join(resource_path, file.name);
-                is_dir = (await this.isFSDirectory(file_path));
-                try{
-                  if(!!is_dir){
-                    if(!!opts.recursive){
-                      await this.readdir_fs(file_path, opts, files, depthState);
-                    }else{
-                      files.push(path.join(file_path));
-                    }
-                  }else{
-                    if(!opts.list_dirs){
-                      files.push(path.join(file_path));
-                    }else{
-                      //don't push a file when we are only listing directories
-                    }
-                  }
-                }catch(e){
-                  console.error(e);
-                  // reject(e);
-                }
-              }
-              resolve(files);
-            });
-          }else{
-            resolve(files);
-          }
         }
-      }catch(e){
+
+        if(!!opts.list_dirs && currentDepth > 0){
+          files.push(resource_path);
+        }
+
+        if(currentDepth < 1 || !!opts.recursive){
+          const subdirPromises: Promise<string[]>[] = [];
+          for(const file of dir_files){
+            const file_path = path.join(resource_path, file.name);
+            if(file.isDirectory()){
+              if(!!opts.recursive){
+                const subFiles: string[] = [];
+                subdirPromises.push(
+                  this.readdir_fs(file_path, opts, subFiles, { ...depthState, depth: currentDepth + 1 })
+                );
+              }else{
+                files.push(file_path);
+              }
+            }else{
+              if(!opts.list_dirs){
+                files.push(file_path);
+              }
+            }
+          }
+          const subResults = await Promise.all(subdirPromises);
+          for(const subFiles of subResults) files.push(...subFiles);
+        }
+
         resolve(files);
-      }
+      });
     });
   }
 
@@ -336,38 +319,34 @@ export class GameFileSystem {
     return new Promise<boolean>( async (resolve, reject) => {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-        fs.mkdir(path.join(ApplicationProfile.directory, dirPath), { recursive: !!opts.recursive }, async (err) => {
+        fs.mkdir(path.join(ApplicationProfile.directory, dirPath), { recursive: !!opts.recursive }, (err) => {
           if(err){
             console.error(err);
-            resolve(false)
+            resolve(false);
             return;
           }
-          await spleep(100);
-          resolve(true)
-          return;
+          resolve(true);
         });
       }else{
         if(dirPath.length){
-          const dirs = dirPath.length ? dirPath.split(path.sep) : [];
+          const dirs = dirPath.split(path.sep);
           const cacheKey = dirs.join('/');
           if(this.directoryCache.has(cacheKey)){
-            return this.directoryCache.get(cacheKey)!;
+            resolve(true);
+            return;
           }
           try{
-            let currentDirHandle = ApplicationProfile.directoryHandle; 
-            for(let i = 0, len = dirs.length; i < len; i++){
-              const isTargetDirectory = (i == dirs.length-1);
-              const canCreate = (isTargetDirectory || !!opts.recursive);
+            let currentDirHandle = ApplicationProfile.directoryHandle;
+            for(let i = 0; i < dirs.length; i++){
+              const canCreate = (i === dirs.length - 1) || !!opts.recursive;
               currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: canCreate });
-              console.log('handle', currentDirHandle, isTargetDirectory, canCreate);
-              if(!currentDirHandle && !isTargetDirectory){
+              if(!currentDirHandle){
                 resolve(false);
                 return;
               }
-              this.directoryCache.set(cacheKey, currentDirHandle);
+              const partialKey = dirs.slice(0, i + 1).join('/');
+              this.directoryCache.set(partialKey, currentDirHandle);
             }
-            console.log('mkdir', currentDirHandle);
-            await spleep(1000);
             resolve(true);
           }catch(e){
             console.error(e);
@@ -392,6 +371,7 @@ export class GameFileSystem {
           {
             recursive: opts.recursive
           } as fs.RmDirOptions, 
+          //@ts-ignore
           async (err) => {
             if(err){
               console.error(err);
@@ -499,10 +479,18 @@ export class GameFileSystem {
         }
       })
     }else{
-      if(handleOrPath instanceof FileSystemFileHandle){
-        let file = await handleOrPath.getFile();
-        //@ts-expect-error
-        file.remove();
+      if(handleOrPath instanceof FileSystemFileHandle && webHandleHasRemove){
+        //@ts-ignore
+        await handleOrPath.remove();
+        return;
+      }
+      if(typeof handleOrPath === 'string'){
+        const normalized = this.normalizePath(handleOrPath);
+        const details = path.parse(normalized);
+        const parentHandle = await this.resolveFilePathDirectoryHandle(normalized);
+        if(parentHandle) await parentHandle.removeEntry(details.base);
+      }else{
+        throw new Error('unlink: supply a path string in web mode, not a FileSystemFileHandle');
       }
     }
   }
@@ -528,19 +516,11 @@ export class GameFileSystem {
     }
   }
 
-  static async showSaveFileDialog(){
+  static async showSaveFileDialog(): Promise<FileSystemFileHandle | undefined> {
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
-
+      return undefined;
     }else{
-      // const opts = {
-      //   types: [{
-      //     description: 'Text file',
-      //     accept: {'text/plain': ['.txt']},
-      //   }],
-      // };
-      let fileHandle = await window.showSaveFilePicker({
-        // d
-      });
+      return await window.showSaveFilePicker({});
     }
   }
 
@@ -559,21 +539,31 @@ export class GameFileSystem {
       const promise = (async () => {
         let lastDirectoryHandle = ApplicationProfile.directoryHandle;
         let currentDirHandle = ApplicationProfile.directoryHandle;
-        let found = false;
         for(let i = 0, len = dirs.length; i < len; i++){
           lastDirectoryHandle = currentDirHandle;
-          found = false;
-          for await (const entry of currentDirHandle.values()) {
-            if(entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()){
-              found = true;
-              currentDirHandle = entry as FileSystemDirectoryHandle;
-              break;
+          const partialKey = dirs.slice(0, i + 1).join('/');
+          if(this.directoryCache.has(partialKey)){
+            currentDirHandle = this.directoryCache.get(partialKey)!;
+            continue;
+          }
+          try{
+            currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: false });
+          }catch{
+            // Fallback: case-insensitive scan for case-sensitive FSAPI
+            let found = false;
+            for await (const entry of currentDirHandle.values()){
+              if(entry.kind === 'directory' && entry.name.toLowerCase() === dirs[i].toLowerCase()){
+                currentDirHandle = entry as FileSystemDirectoryHandle;
+                found = true;
+                break;
+              }
+            }
+            if(!found){
+              this.directoryInflight.delete(cacheKey);
+              throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
             }
           }
-          if(!found){
-            this.directoryInflight.delete(cacheKey);
-            throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
-          }
+          this.directoryCache.set(partialKey, currentDirHandle);
         }
         this.directoryCache.set(cacheKey, currentDirHandle);
         this.directoryInflight.delete(cacheKey);
@@ -603,20 +593,30 @@ export class GameFileSystem {
       }
       const promise = (async () => {
         let currentDirHandle = ApplicationProfile.directoryHandle;
-        let found = false;
         for(let i = 0, len = dirs.length; i < len; i++){
-          found = false;
-          for await (const entry of currentDirHandle.values()) {
-            if(entry.kind == 'directory' && entry.name.toLowerCase() == dirs[i].toLowerCase()){
-              found = true;
-              currentDirHandle = entry as FileSystemDirectoryHandle;
-              break;
+          const partialKey = dirs.slice(0, i + 1).join('/');
+          if(this.directoryCache.has(partialKey)){
+            currentDirHandle = this.directoryCache.get(partialKey)!;
+            continue;
+          }
+          try{
+            currentDirHandle = await currentDirHandle.getDirectoryHandle(dirs[i], { create: false });
+          }catch{
+            // Fallback: case-insensitive scan for case-sensitive FSAPI
+            let found = false;
+            for await (const entry of currentDirHandle.values()){
+              if(entry.kind === 'directory' && entry.name.toLowerCase() === dirs[i].toLowerCase()){
+                currentDirHandle = entry as FileSystemDirectoryHandle;
+                found = true;
+                break;
+              }
+            }
+            if(!found){
+              this.directoryInflight.delete(cacheKey);
+              throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
             }
           }
-          if(!found){
-            this.directoryInflight.delete(cacheKey);
-            throw new Error(`Failed to resolve file path directory handle: Filepath: ${filepath} | Current Directory: ${dirs[i]} | Index: ${i}`);
-          }
+          this.directoryCache.set(partialKey, currentDirHandle);
         }
         this.directoryCache.set(cacheKey, currentDirHandle);
         this.directoryInflight.delete(cacheKey);
