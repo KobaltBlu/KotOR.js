@@ -12,7 +12,7 @@ import { ConfigClient } from "@/utility/ConfigClient";
 import { MDLLoader, ResourceLoader } from "@/loaders";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { ModuleDoorAnimState, SignalEventType } from "@/enums";
+import { ActionParameterType, ModuleDoorAnimState, ModuleObjectConstant, SignalEventType } from "@/enums";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 
@@ -412,6 +412,34 @@ export class ModuleTrigger extends ModuleObject {
       this.lastObjectExited = object;
       this.onExit(object);
     }
+  }
+
+  /**
+   * Action dialog object
+   * This is used to start a conversation with the trigger, Since the trigger is not a creature it cannot start a conversation itself
+   * @param target 
+   * @param dialogResRef 
+   * @param ignoreStartRange 
+   * @param bPrivate 
+   * @param nConvoType 
+   * @param clearable 
+   */
+  actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false ){
+    const action = new GameState.ActionFactory.ActionDialogObject();
+    action.setParameter(0, ActionParameterType.DWORD, target.id);
+    action.setParameter(1, ActionParameterType.STRING, dialogResRef);
+    action.setParameter(2, ActionParameterType.INT, bPrivate ? 1 : 0);
+    action.setParameter(3, ActionParameterType.INT, nConvoType);
+    action.setParameter(4, ActionParameterType.INT, ignoreStartRange ? 1 : 0);
+    action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+    action.clearable = clearable;
+    console.log('ModuleTrigger.actionDialogObject', action);
+    const player = GameState.getCurrentPlayer();
+    if(!player){
+      console.warn('ModuleTrigger.actionDialogObject: Player not found');
+      return;
+    }
+    player.actionQueue.add(action);
   }
 
   onEnter(object?: ModuleObject){
