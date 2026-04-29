@@ -572,13 +572,6 @@ export class GFFObject {
 
     //console.log('GetExportBuffer', this);
 
-    this.BWStructs = new BinaryWriter();
-    this.BWFields = new BinaryWriter();
-    this.BWFieldData = new BinaryWriter();
-    this.BWLabels = new BinaryWriter();
-    this.BWFieldIndicies = new BinaryWriter();
-    this.BWListIndicies = new BinaryWriter();
-
     this.exportedLabels = [];
     this.exportedStructs = [];
     this.exportedFields = [];
@@ -589,7 +582,68 @@ export class GFFObject {
 
     let bw = new BinaryWriter();
 
-    this.walkStruct(this.RootNode);
+    const labelMap = new Map<string, number>();
+    this.walkStruct(this.RootNode, labelMap);
+
+    // Calculate exact byte sizes for each section so BinaryWriters can be
+    // pre-allocated once, avoiding repeated buffer copies during export.
+    let structsSize = this.exportedStructs.length * 12;
+    let fieldsSize  = this.exportedFields.length * 12;
+    let labelsSize  = this.exportedLabels.length * 16;
+
+    let fieldIndicesSize = 0;
+    let listIndicesSize  = 0;
+    let fieldDataSize    = 0;
+
+    for(let i = 0; i < this.exportedStructs.length; i++){
+      const s = this.exportedStructs[i];
+      if(s.getFields().length > 1)
+        fieldIndicesSize += s.getFields().length * 4;
+    }
+
+    for(let i = 0; i < this.exportedFields.length; i++){
+      const field = this.exportedFields[i];
+      switch(field.getType()){
+        case GFFDataType.LIST:
+          if(field.getChildStructs().length > 0)
+            listIndicesSize += 4 + field.getChildStructs().length * 4;
+          break;
+        case GFFDataType.CEXOLOCSTRING:{
+          fieldDataSize += 12;
+          const strs = field.getCExoLocString().getStrings();
+          for(let j = 0; j < strs.length; j++)
+            fieldDataSize += 8 + strs[j].getString().length;
+          break;
+        }
+        case GFFDataType.CEXOSTRING:
+          fieldDataSize += 4 + (field.value as string).length;
+          break;
+        case GFFDataType.RESREF:
+          fieldDataSize += 1 + (field.value as string).length;
+          break;
+        case GFFDataType.DOUBLE:
+        case GFFDataType.DWORD64:
+        case GFFDataType.INT64:
+          fieldDataSize += 8;
+          break;
+        case GFFDataType.ORIENTATION:
+          fieldDataSize += 16;
+          break;
+        case GFFDataType.VECTOR:
+          fieldDataSize += 12;
+          break;
+        case GFFDataType.VOID:
+          fieldDataSize += 4 + field.getVoid().length;
+          break;
+      }
+    }
+
+    this.BWStructs       = new BinaryWriter(new Uint8Array(structsSize));
+    this.BWFields        = new BinaryWriter(new Uint8Array(fieldsSize));
+    this.BWLabels        = new BinaryWriter(new Uint8Array(labelsSize));
+    this.BWFieldIndicies = new BinaryWriter(new Uint8Array(fieldIndicesSize));
+    this.BWListIndicies  = new BinaryWriter(new Uint8Array(listIndicesSize));
+    this.BWFieldData     = new BinaryWriter(new Uint8Array(fieldDataSize));
 
     for(let i = 0; i < this.exportedStructs.length; i++){
       this.exportStruct(this.exportedStructs[i]);
@@ -691,7 +745,7 @@ export class GFFObject {
     return bw.buffer;
   }
 
-  walkStruct(struct: GFFStruct){
+  walkStruct(struct: GFFStruct, labelMap: Map<string, number>){
     if(struct instanceof GFFStruct){
       struct.index = this.StructCount;
       this.exportedStructs[struct.index] = struct;
@@ -704,13 +758,17 @@ export class GFFObject {
         this.exportedFields[field.index] = field;
         this.FieldCount++;
 
-        let labelSearchIndex = this.exportedLabels.indexOf(field.getLabel());
-        field.labelIndex = labelSearchIndex >= 0 ? labelSearchIndex : this.exportedLabels.push(field.getLabel()) - 1;   
+        let labelSearchIndex = labelMap.get(field.getLabel());
+        if(labelSearchIndex === undefined){
+          labelSearchIndex = this.exportedLabels.push(field.getLabel()) - 1;
+          labelMap.set(field.getLabel(), labelSearchIndex);
+        }
+        field.labelIndex = labelSearchIndex;
 
         let childStructs = field.getChildStructs() || [];
         let childStructCount = childStructs.length;
         for(let j = 0; j < childStructCount; j++){
-          this.walkStruct(childStructs[j]);
+          this.walkStruct(childStructs[j], labelMap);
         }
       }
     }
