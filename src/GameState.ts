@@ -31,6 +31,7 @@ import { IGameStateGroups } from "@/interface/engine/IGameStateGroups";
 import { ITextureLoaderQueuedRef } from "@/interface/loaders/ITextureLoaderQueuedRef";
 
 import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "@/enums/engine";
 import { TextureType } from "@/enums/loaders/TextureType";
 
@@ -193,7 +194,6 @@ export class GameState implements EngineContext {
   static maxSelectableDistanceSquared = GameState.maxSelectableDistance * GameState.maxSelectableDistance;
 
   static delta: number = 0;
-  static clampedDelta: number = 0;
 
   static SaveGame: SaveGame;
   
@@ -213,16 +213,6 @@ export class GameState implements EngineContext {
   static stats: Stats;
 
   static lightManager: LightManager;
-
-  static limiter: { 
-    fps: number; 
-    fpsInterval: number; 
-    startTime: number; 
-    now: number; 
-    then: number; 
-    elapsed: number; 
-    setFPS: (fps?: number) => void; 
-  };
 
   static visible: boolean;
 
@@ -538,7 +528,7 @@ export class GameState implements EngineContext {
       alpha: true,
       preserveDrawingBuffer: false
     }) as THREE.WebGLRenderer;
-
+    
     
     GameState.renderer.autoClear = false;
     GameState.renderer.setSize( GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight() );
@@ -555,21 +545,6 @@ export class GameState implements EngineContext {
     GameState.clock = new THREE.Clock();
     GameState.stats = Stats();
     GameState.stats.showPanel(undefined);
-
-    GameState.limiter = {
-      fps : 30,
-      fpsInterval: 1000/30,
-      startTime: Date.now(),
-      now: 0,
-      then: 0,
-      elapsed: 0,
-      setFPS: function(fps = 30){
-        this.fps = fps;
-        this.fpsInterval = 1000 / this.fps;
-      }
-    };
-
-    GameState.limiter.then = GameState.limiter.startTime;
 
     GameState.visible = true;
 
@@ -733,8 +708,8 @@ export class GameState implements EngineContext {
     GameState.composer.addPass(GameState.renderPass);
     // GameState.composer.addPass(GameState.bokehPass);
     // GameState.composer.addPass(GameState.renderPassAA);
-    GameState.composer.addPass(GameState.odysseyShaderPass);
-    GameState.composer.addPass(GameState.bloomPass);
+    // GameState.composer.addPass(GameState.odysseyShaderPass);
+    // GameState.composer.addPass(GameState.bloomPass);
 
     GameState.composer.addPass(GameState.renderPassGUI);
     GameState.composer.addPass(GameState.copyPass);
@@ -782,11 +757,13 @@ export class GameState implements EngineContext {
       GameState.guiAudioEmitter = new AudioEmitter(audioEngine, AudioEngineChannel.GUI);
       GameState.guiAudioEmitter.maxDistance = 100;
       GameState.guiAudioEmitter.volume = 127;
+      GameState.guiAudioEmitter.setPriorityGroupId(AudioPriorityGroup.GUI);
       GameState.guiAudioEmitter.load();
     
       GameState.audioEmitter = new AudioEmitter(audioEngine);
       GameState.audioEmitter.maxDistance = 50;
       GameState.audioEmitter.type = AudioEmitterType.GLOBAL;
+      GameState.audioEmitter.setPriorityGroupId(AudioPriorityGroup.SCRIPTED_PLAYSOUND);
       GameState.audioEmitter.load();
 
       /**
@@ -844,9 +821,6 @@ export class GameState implements EngineContext {
         undefined,
         TextureType.TEXTURE
       );
-      PerformanceMonitor.start('TextureLoader.LoadQueue');
-      await TextureLoader.LoadQueue();
-      PerformanceMonitor.stop('TextureLoader.LoadQueue');
 
       if(GameState.GameKey == GameEngineType.KOTOR){
         GameState.VideoManager.queueMovie('leclogo', true);
@@ -969,6 +943,7 @@ export class GameState implements EngineContext {
     this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
     this.audioEmitter.maxDistance = 50;
     this.audioEmitter.type = AudioEmitterType.GLOBAL;
+    this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.UNMASKABLE_SOUND);
     this.audioEmitter.load();
   }
 
@@ -1051,37 +1026,38 @@ export class GameState implements EngineContext {
       GameState.scene.visible = true;
       
       AudioEngine.Unmute();
+      VideoManager.playMovieQueue( async () => {
+        const runSpawnScripts = !GameState.isLoadingSave;
+        GameState.isLoadingSave = false;
 
-      const runSpawnScripts = !GameState.isLoadingSave;
-      GameState.isLoadingSave = false;
+        GameState.ResetModuleAudio();
 
-      GameState.ResetModuleAudio();
+        GameState.MenuManager.InGameOverlay.recalculatePosition();
+        GameState.MenuManager.InGameOverlay.open();
 
-      GameState.MenuManager.InGameOverlay.recalculatePosition();
-      GameState.MenuManager.InGameOverlay.open();
+        GameState.renderer.compile(GameState.scene, GameState.currentCamera);
+        GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
+        
+        console.log('ModuleArea.initAreaObjects');
+        GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
+        await GameState.module.area.initAreaObjects(runSpawnScripts);
+        console.log('ModuleArea: ready to play');
+        GameState.module.readyToProcessEvents = true;
 
-      GameState.renderer.compile(GameState.scene, GameState.currentCamera);
-      GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
-      
-      console.log('ModuleArea.initAreaObjects');
-      GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
-      await GameState.module.area.initAreaObjects(runSpawnScripts);
-      console.log('ModuleArea: ready to play');
-      GameState.module.readyToProcessEvents = true;
-
-      if(GameState.Mode == EngineMode.INGAME){
-        const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
-        if(anyCanLevel){
-          GameState.audioEmitter.playSound('gui_level');
+        if(GameState.Mode == EngineMode.INGAME){
+          const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
+          if(anyCanLevel){
+            GameState.audioEmitter.playSound('gui_level');
+          }
         }
-      }
 
-      //Reveal the area
-      GameState.MenuManager.LoadScreen.close();
-      if(!GameState.holdWorldFadeInForDialog){
-        GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
-      }
-      GameState.module.area.musicBackgroundPlay();
+        //Reveal the area
+        GameState.MenuManager.LoadScreen.close();
+        if(!GameState.holdWorldFadeInForDialog){
+          GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
+        }
+        GameState.module.area.musicBackgroundPlay();
+      });
     }catch(e){
       console.error(e);
       throw e;
@@ -1186,21 +1162,13 @@ export class GameState implements EngineContext {
     
     requestAnimationFrame( GameState.Update );
 
-    // if(GameState.Debugger.showFPS && GameState.stats.m){
-      // GameState.stats.showPanel(GameState.Debugger.showFPS);
-    // }
-
     GameState.forwardVector.set(0, 0, -1);
 
-    let delta = GameState.clock.getDelta();
+    const delta = GameState.clock.getDelta();
     GameState.processEventListener('beforeRender', [delta]);
     GameState.delta = delta;
     GameState.deltaTime += delta;
     GameState.deltaTimeFixed += (1/60);
-    GameState.clampedDelta = Math.max(0, Math.min(delta, 0.016666666666666666 * 5));
-
-    GameState.limiter.now = Date.now();
-    GameState.limiter.elapsed = GameState.limiter.now - GameState.limiter.then;
 
     /**
      * Pause the main loop if the debugger is active
@@ -1383,7 +1351,7 @@ export class GameState implements EngineContext {
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
     GameState.renderPass.camera = GameState.currentCamera;
-    //GameState.renderPassAA.camera = GameState.currentCamera;
+    GameState.renderPassAA.camera = GameState.currentCamera;
     GameState.bokehPass.camera = GameState.currentCamera;
 
     GameState.composer.render(delta);
