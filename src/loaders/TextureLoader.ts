@@ -32,6 +32,8 @@ export class TextureLoader {
   static particles: any = {};
   static queue: ITextureLoaderQueuedRef[] = [];
   static Anisotropy = 8;
+  static loadInflight: Map<string, Promise<OdysseyTexture>> = new Map();
+  static pendingSubscribers: Map<string, ITextureLoaderQueuedRef[]> = new Map();
 
   static GameKey: GameEngineType;
   
@@ -47,24 +49,32 @@ export class TextureLoader {
 
   static async Load(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {
     resRef = resRef.toLowerCase();
-    if(TextureLoader.textures.has(resRef) || TextureLoader.guiTextures.has(resRef) && !noCache){
-      return (TextureLoader.textures.has(resRef) ? TextureLoader.textures.get(resRef) : TextureLoader.guiTextures.has(resRef) ? TextureLoader.guiTextures.get(resRef) : undefined)
+    if(!noCache && (TextureLoader.textures.has(resRef) || TextureLoader.guiTextures.has(resRef))){
+      return TextureLoader.textures.get(resRef) ?? TextureLoader.guiTextures.get(resRef);
     }
+    if(TextureLoader.loadInflight.has(resRef)){
+      return TextureLoader.loadInflight.get(resRef);
+    }
+    const loadPromise = TextureLoader._load(resRef, noCache).finally(() => {
+      TextureLoader.loadInflight.delete(resRef);
+    });
+    TextureLoader.loadInflight.set(resRef, loadPromise);
+    return loadPromise;
+  }
 
+  private static async _load(resRef: string, noCache: boolean): Promise<OdysseyTexture> {
     const tga = await TextureLoader.tgaLoader.fetch(resRef);
     if(!!tga){
       tga.anisotropy = TextureLoader.Anisotropy;
       tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
-
       if(!noCache) TextureLoader.textures.set(resRef, tga);
       return tga;
     }
-    
+
     const texture = await TextureLoader.tpcLoader.fetch(resRef);
     if(!!texture){
       texture.anisotropy = TextureLoader.Anisotropy;
       texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-
       if(!noCache){
         if(texture.pack === 0){
           TextureLoader.guiTextures.set(resRef, texture);
@@ -72,7 +82,6 @@ export class TextureLoader {
           TextureLoader.textures.set(resRef, texture);
         }
       }
-      
       return texture;
     }
 
@@ -128,22 +137,32 @@ export class TextureLoader {
     if(typeof name == 'string' && name.length){
       name = name.toLowerCase();
       const obj = { name: name, material: material, type: type, fallback: fallback, onLoad: onLoad } as ITextureLoaderQueuedRef;
-      if(TextureLoader.textures.has(name)){
+      const cached = TextureLoader.textures.get(name) ?? TextureLoader.guiTextures.get(name);
+      if(cached){
         TextureLoader.UpdateMaterial(obj);
         if(typeof onLoad == 'function')
-          onLoad(TextureLoader.textures.get(name), obj)
+          onLoad(cached, obj);
+      }else if(type === TextureType.TEXTURE && TextureLoader.pendingSubscribers.has(name)){
+        TextureLoader.pendingSubscribers.get(name).push(obj);
       }else{
+        if(type === TextureType.TEXTURE)
+          TextureLoader.pendingSubscribers.set(name, [obj]);
         TextureLoader.queue.push(obj);
       }
     }else if(Array.isArray(name)){
       for(let i = 0, len = name.length; i < len; i++){
         const texName = name[i].toLowerCase();
         const obj = { name: texName, material: material, type: type, fallback: fallback, onLoad: onLoad } as ITextureLoaderQueuedRef;
-        if(TextureLoader.textures.has(texName)){
+        const cached = TextureLoader.textures.get(texName) ?? TextureLoader.guiTextures.get(texName);
+        if(cached){
           TextureLoader.UpdateMaterial(obj);
           if(typeof onLoad == 'function')
-            onLoad(TextureLoader.textures.get(texName), obj)
+            onLoad(cached, obj);
+        }else if(type === TextureType.TEXTURE && TextureLoader.pendingSubscribers.has(texName)){
+          TextureLoader.pendingSubscribers.get(texName).push(obj);
         }else{
+          if(type === TextureType.TEXTURE)
+            TextureLoader.pendingSubscribers.set(texName, [obj]);
           TextureLoader.queue.push(obj);
         }
       }
@@ -159,9 +178,18 @@ export class TextureLoader {
   }
 
   static async LoadQueue(onProgress?: onProgressCallback){
-    let queue = TextureLoader.queue.slice(0);
+    const queue = TextureLoader.queue.slice(0);
+    const subscriberMap = TextureLoader.pendingSubscribers;
     TextureLoader.queue = [];
-    const promises = queue.map(tex => TextureLoader.UpdateMaterial(tex));
+    TextureLoader.pendingSubscribers = new Map();
+
+    const promises = queue.map(async (primaryTex) => {
+      await TextureLoader.UpdateMaterial(primaryTex);
+      const allSubs = subscriberMap.get(primaryTex.name);
+      if(allSubs && allSubs.length > 1){
+        await Promise.all(allSubs.slice(1).map(sub => TextureLoader.UpdateMaterial(sub)));
+      }
+    });
     await Promise.all(promises);
     for(let i = 0; i < queue.length; i++){
       if(typeof onProgress == 'function'){
