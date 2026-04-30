@@ -255,23 +255,27 @@ export class DLGNode {
   }
 
   updateJournal(){
+    const speaker = this.speaker || (this.nodeType == DLGNodeType.REPLY ? GameState.getCurrentPlayer() : this.speaker);
     if(this.quest){
       const allowOverrideHigher = false;
       GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
     }
+    if(!this.text || this.text.length == 0 || this.isContinueDialog()){
+      console.warn(`No text found for ${this.text} on ${this.speaker?.getName()}. not saving to journal`);
+      return;
+    }
     try{
-      console.log('saving', this.speaker.getName(), this.text);
-      if(this.nodeType == DLGNodeType.ENTRY){
-        GameState.DialogMessageManager.AddEntry(
-          new DialogMessageEntry(
-            this.speaker.getName(), this.text
-          )
-        )
-      }else{
-        if(this.text.length){
-
-        }
+      if(!speaker){
+        console.error(`No speaker found for ${this.text}`);
+        console.log(this);
+        return;
       }
+      console.log('saving', speaker.getName(), this.text);
+      GameState.DialogMessageManager.AddEntry(
+        new DialogMessageEntry(
+          speaker.getName(), this.text
+        )
+      )
     }catch(e){
       console.error(e);
     }
