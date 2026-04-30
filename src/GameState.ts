@@ -965,6 +965,7 @@ export class GameState implements EngineContext {
         return;
       }
       GameState.loadingModule = true;
+      await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
       GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
       /**
        * Set the game mode to loading
@@ -975,7 +976,6 @@ export class GameState implements EngineContext {
       GameState.UnloadModule();
 
       GameState.MenuManager.LoadScreen.setProgress(0);
-      await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
       GameState.MenuManager.LoadScreen.showRandomHint();
       GameState.MenuManager.LoadScreen.open();
 
@@ -983,12 +983,12 @@ export class GameState implements EngineContext {
       
       GameState.VideoEffectManager.SetVideoEffect(-1);
       GameState.ModuleObjectManager.playerSelectableObjects = [];
-      GameState.VideoManager.queueMovie(sMovie1);
-      GameState.VideoManager.queueMovie(sMovie2);
-      GameState.VideoManager.queueMovie(sMovie3);
-      GameState.VideoManager.queueMovie(sMovie4);
-      GameState.VideoManager.queueMovie(sMovie5);
-      GameState.VideoManager.queueMovie(sMovie6);
+      GameState.VideoManager.queueMovie(sMovie1, true);
+      GameState.VideoManager.queueMovie(sMovie2, true);
+      GameState.VideoManager.queueMovie(sMovie3, true);
+      GameState.VideoManager.queueMovie(sMovie4, true);
+      GameState.VideoManager.queueMovie(sMovie5, true);
+      GameState.VideoManager.queueMovie(sMovie6, true);
       GameState.SetEngineMode(EngineMode.LOADING);
       
       if(GameState.module){
@@ -1233,7 +1233,6 @@ export class GameState implements EngineContext {
     }
 
     AudioEngine.GetAudioEngine().update(delta, GameState.currentCamera.position, GameState.currentCamera.rotation, GameState.forwardVector);
-    GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
     GameState.Render(delta);
 
@@ -1258,10 +1257,10 @@ export class GameState implements EngineContext {
   }
 
   static UpdateGUI(delta: number = 0){
+    //NOP
   }
 
   static UpdateIngame(delta: number = 0){
-
     //Get Selectable Objects In Range
     GameState.ModuleObjectManager.TickSelectableObjects(delta);
 
@@ -1297,6 +1296,7 @@ export class GameState implements EngineContext {
     GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.module.area.updateRoomAnimatedLights(delta);
+    GameState.CameraShakeManager.update(delta, GameState.currentCamera);
     
     //Handle the visibility of the PAUSE overlay
     if(GameState.State == EngineState.PAUSED && GameState.MenuManager.InGameOverlay.isVisible()){
@@ -1326,6 +1326,7 @@ export class GameState implements EngineContext {
     GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
     GameState.lightManager.update(delta, GameState.currentCamera);
     GameState.module.area.updateRoomAnimatedLights(delta);
+    GameState.CameraShakeManager.update(delta, GameState.currentCamera);
     
     //Handle the visibility of the PAUSE overlay
     if(GameState.State == EngineState.PAUSED && GameState.MenuManager.InGameOverlay.isVisible()){
@@ -1347,6 +1348,7 @@ export class GameState implements EngineContext {
     GameState.FadeOverlayManager.Update(delta);
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.module.area.updateRoomAnimatedLights(delta);
+    GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
     //Handle the visibility of the PAUSE overlay
     if(GameState.State == EngineState.PAUSED && GameState.MenuManager.InGameOverlay.isVisible()){
@@ -1383,6 +1385,7 @@ export class GameState implements EngineContext {
     GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.module.area.updateRoomAnimatedLights(delta);
+    GameState.CameraShakeManager.update(delta, GameState.currentCamera);
   }
 
   static UpdateLegal(delta: number = 0){
