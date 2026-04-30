@@ -261,7 +261,7 @@ export class DLGNode {
       GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
     }
     if(!this.text || this.text.length == 0 || this.isContinueDialog()){
-      console.warn(`No text found for ${this.text} on ${this.speaker?.getName()}. not saving to journal`);
+      console.warn(`No text found for ${this.text} on ${this.speaker?.getName()}. not saving to journal`, this.isContinueDialog());
       return;
     }
     try{
