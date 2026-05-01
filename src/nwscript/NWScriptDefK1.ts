@@ -40,6 +40,8 @@ import { AudioEngine } from "@/audio/AudioEngine";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { CreatureClassType } from "@/enums/nwscript/CreatureClassType";
 import { TalkVolume } from "@/enums/engine/TalkVolume";
+import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
+import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 
 /**
  * NWScriptDefK1 class.
@@ -4620,7 +4622,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [ModuleObject, string]){
-      console.log('[SendMessageToPC]', args[1]);
+      const entry = new FeedbackMessageEntry();
+      entry.message = args[1];
+      entry.color = FeebackMessageColor.INFO;
+      entry.type = 0;
+      GameState.FeedbackMessageManager.AddEntry(entry);
     }
   },
   375:{
