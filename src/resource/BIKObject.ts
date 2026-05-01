@@ -98,7 +98,7 @@ export class BIKObject {
    */
   private initializeWorker(buffer: ArrayBuffer): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.worker = new Worker('/bink-worker.js', { type: 'module' });
+      this.worker = new Worker('../bink-worker.js', { type: 'module' });
       this.workerReady = false;
       this.header = null;
       this.frameBuffer.clear();
