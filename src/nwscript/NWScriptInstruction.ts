@@ -150,6 +150,7 @@ const OP_CALL_MAP: Map<number, (this: NWScriptInstance, instruction: NWScriptIns
 ]);
 /**
  * NWScriptInstruction class.
+ * One decoded opcode plus operands; dispatch targets NWScriptInstructionSet handlers using the same numeric codes as stock bytecode.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

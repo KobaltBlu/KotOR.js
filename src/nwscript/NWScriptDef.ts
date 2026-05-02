@@ -2,6 +2,7 @@ import type { INWScriptDefAction } from '@/interface/nwscript/INWScriptDefAction
 
 /**
  * NWScriptDef class.
+ * Registry filled per game with engine command handlers keyed by ACTION ID (see NWScriptDefK1 / NWScriptDefK2).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

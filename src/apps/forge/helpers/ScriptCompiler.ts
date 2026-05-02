@@ -1,6 +1,7 @@
 /**
  * Forge script compilation and conversion helper.
  * Wraps NWScriptParser + NWScriptCompiler to compile NSS → NCS, and NWScript for NCS → NSS.
+ * Emitted bytecode targets the same NWScript VM bytecode layout as the stock game toolchain.
  */
 
 import type { CompilerProgramNode } from '@/nwscript/compiler/CompilerNodeTypes';

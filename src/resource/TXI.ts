@@ -5,11 +5,14 @@ import { TXITexType } from '@/enums/graphics/txi/TXITexType';
 /**
  * TXI class.
  *
+ * Text texture-info (.txi) sidecar format parsed here; the stock Win32 client treats .txi as resource kind 2022
+ * on the Aurora-style texture path.
+ *
  * Class representing a Extra Texture Information file in memory.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * @file TwoDAObject.ts
+ * @file TXI.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */

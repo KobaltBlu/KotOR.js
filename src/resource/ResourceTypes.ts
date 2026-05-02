@@ -1,6 +1,10 @@
 /**
  * ResourceTypes.
  *
+ * Numeric IDs are KotOR-style resource kinds as used by the stock Win32 client.
+ * Spot-checked against type metadata in the stock Win32 binary for NSS 2009, NCS 2010, 2DA 2017, SSF 2060,
+ * DDS 2033, TXI 2022, LYT 3000, MDX 3008; not every extension in this table is exercised by KotOR I.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
  * @file ResourceTypes.ts

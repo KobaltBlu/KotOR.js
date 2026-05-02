@@ -10,7 +10,11 @@ import { OdysseyCompressedTexture } from '@/three/odyssey/OdysseyCompressedTextu
 import { ITPCHeader } from '@/interface/resource/ITPCHeader';
 import { ITPCObjectOptions } from '@/interface/resource/ITPCObjectOptions';
 
-/** On-disk TPC header (fixed 128 bytes before pixel data; many fields are zero in practice). */
+/**
+ * On-disk .tpc header (fixed 128 bytes before pixel data; many fields are zero in practice).
+ * Distinct from standalone DDS (resource type 2033) and TGA (resource type 3) in stock KotOR I;
+ * this container format is what tooling and this runtime use for bundled texture payloads.
+ */
 export const TPC_FILE_HEADER_SIZE = 128;
 
 export type WriteTPCFormat = 'tpc' | 'tga' | 'dds' | 'bmp';

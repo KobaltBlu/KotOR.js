@@ -9,7 +9,10 @@ import { GameFileSystem } from '@/utility/GameFileSystem';
 import { OdysseyModel3D } from '@/three/odyssey';
 import { OdysseyModelAnimation } from '@/odyssey';
 
-/** LIP V1.0: fourCC, version, duration (float), keyframe count, then (float time, byte shape) per key. */
+/**
+ * LIP V1.0: fourCC, version, duration (float), keyframe count, then (float time, byte shape) per key.
+ * Resource kind 3004 (.lip) in the KotOR enumeration.
+ */
 export const LIP_V10_HEADER_SIZE = 16;
 
 export const LIP_V10_KEYFRAME_STRIDE = 5;
@@ -131,10 +134,11 @@ export class LIPObject {
   }
 
   addKeyFrame(time: number = 0, shape: number = 0) {
+    const normalizedShape = (shape | 0) & (LIPObject.MAX_LIP_SHAPES - 1);
     const keyframe: ILIPKeyFrame = {
       uuid: crypto.randomUUID(),
       time: time,
-      shape: shape,
+      shape: normalizedShape,
     } as ILIPKeyFrame;
     this.keyframes.push(keyframe);
     this.reIndexKeyframes();

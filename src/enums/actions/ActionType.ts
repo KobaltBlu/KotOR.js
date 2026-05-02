@@ -1,5 +1,6 @@
 /**
  * ActionType enum.
+ * Creature action-queue command ids used by AI and script-triggered actions.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

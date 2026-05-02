@@ -2,6 +2,7 @@ import { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
 
 /**
  * NWScriptStackVariable class.
+ * Typed value on the script stack; corresponds to a discriminated slot in the stock VM stack model.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

@@ -13,7 +13,10 @@ import {
 /** Sound set (SSF) V1.1: type, version, then byte offset to the strref list (immediately after header). */
 export const SSF_V11_HEADER_SIZE = 12;
 
-/** KotOR uses 28 strref slots per soundset. */
+/**
+ * KotOR uses 28 strref slots per sound set file (game data convention).
+ * Stock KotOR I loads these under resource type ID 2060 (.ssf).
+ */
 export const SSF_STRREF_SLOT_COUNT = 28;
 
 /**
@@ -172,7 +175,7 @@ export class SSFObject {
   }
 
   GetSoundResRef(type = -1) {
-    if (type > -1 && type < 28) {
+    if (type > -1 && type < SSF_STRREF_SLOT_COUNT) {
       const tlk = TLKManager.TLKStrings[this.sound_refs[type]];
       if (tlk) {
         return tlk.SoundResRef;

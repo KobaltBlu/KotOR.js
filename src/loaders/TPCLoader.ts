@@ -11,6 +11,8 @@ import { TextureLoaderState } from '@/loaders/TextureLoaderState';
 /**
  * TPCLoader class.
  *
+ * Resolves .tpc (resource kind 3007) from packed archives before decoding via {@link TPCObject}.
+ *
  * TPCLoader class is used to decode the TPC image format found in the game archives.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -23,7 +25,7 @@ export class TPCLoader {
   async findTPC(resRef: string): Promise<IFindTPCResult> {
     resRef = resRef.toLocaleLowerCase();
 
-    let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResourceInfo(resRef, ResourceTypes['tpc']);
+    let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResourceInfo(resRef, ResourceTypes.tpc);
     if (erfResource) {
       const buffer = await ERFManager.ERFs.get('swpc_tex_gui').getResourceBuffer(erfResource);
       return { pack: 0, buffer: buffer };
@@ -45,14 +47,14 @@ export class TPCLoader {
         break;
     }
 
-    erfResource = activeTexturePack.getResourceInfo(resRef, ResourceTypes['tpc']);
+    erfResource = activeTexturePack.getResourceInfo(resRef, ResourceTypes.tpc);
     if (erfResource) {
       const buffer = await activeTexturePack.getResourceBuffer(erfResource);
       return { pack: TextureLoaderState.TextureQuality || 2, buffer: buffer };
     }
 
     //Check in BIF files
-    const resKey = KEYManager.Key.getFileKey(resRef, ResourceTypes['tpc']);
+    const resKey = KEYManager.Key.getFileKey(resRef, ResourceTypes.tpc);
     if (resKey) {
       const buffer = await KEYManager.Key.getFileBuffer(resKey);
       return { pack: TextureLoaderState.TextureQuality || 2, buffer: buffer };
@@ -125,11 +127,11 @@ export class TPCLoader {
   };
 
   loadFromArchive( archive: string, tex: string, onComplete?: Function, onError?: Function ){
-    let resKey = ERFManager.ERFs.get(archive).getResource(tex, ResourceTypes['tpc']);
+    let resKey = ERFManager.ERFs.get(archive).getResource(tex, ResourceTypes.tpc);
     if(resKey instanceof Object){
   
       if (typeof onComplete === 'function') {
-        ERFManager.ERFs.get(archive).getResourceBufferByResRef(tex, ResourceTypes['tpc']).then((buffer: Uint8Array) => {
+        ERFManager.ERFs.get(archive).getResourceBufferByResRef(tex, ResourceTypes.tpc).then((buffer: Uint8Array) => {
           onComplete(
             new TPCObject({
               filename: tex,

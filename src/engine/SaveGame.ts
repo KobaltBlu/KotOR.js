@@ -14,6 +14,7 @@ import EngineLocation from '@/engine/EngineLocation';
 import { GameFileSystem } from '@/utility/GameFileSystem';
 import { ResourceTypes } from '@/KotOR';
 import { exists } from 'fs';
+import { SAVEGAME_FOLDER_NAME_REGEX, SAVEGAME_FOLDER_REGEX_VALIDATOR } from '@/engine/saveGameFolderPatterns';
 
 const winEpoch = new Date('01-01-1601 UTC').getTime();
 
@@ -92,9 +93,9 @@ export class SaveGame {
   static base_directory: string = 'Saves';
 
   /** Regular expression to validate save game folder names */
-  static FolderRegexValidator: RegExp = /^(\d+) - (Game\d+)$|^(000000) - (QUICKSAVE)$|^(000001) - (AUTOSAVE)$/;
+  static FolderRegexValidator: RegExp = SAVEGAME_FOLDER_REGEX_VALIDATOR;
   /** Regular expression to match valid save game folder name patterns */
-  static FolderNameRegex: RegExp = /^(\d+) - (QUICKSAVE|AUTOSAVE|Game\d+)$/;
+  static FolderNameRegex: RegExp = SAVEGAME_FOLDER_NAME_REGEX;
   /** The next available save ID for new saves */
   static NEXT_SAVE_ID: number = 1;
   /** The ERF object containing the save game data */

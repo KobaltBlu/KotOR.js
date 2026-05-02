@@ -126,6 +126,7 @@ const concatBuffers = (buffers: ByteArray[]) => {
 
 /**
  * NWScriptCompiler class.
+ * Emits compiled script bytecode using the same NWScript opcode and ACTION conventions as the stock game VM consumes.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

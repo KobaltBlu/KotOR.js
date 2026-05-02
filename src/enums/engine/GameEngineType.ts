@@ -1,5 +1,6 @@
 /**
  * GameEngineType enum.
+ * Selects KotOR I vs TSL rules/data paths in this codebase (not an integer exe export).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

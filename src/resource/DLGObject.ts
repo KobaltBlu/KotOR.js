@@ -24,6 +24,8 @@ export interface DLGObjectScripts {
 /**
  * DLGObject class.
  *
+ * Conversation (.dlg) data is GFF-backed (resource kind 2029); graph logic sits on top of {@link GFFObject} parse/export.
+ *
  * Class representing a DLG file in memory.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

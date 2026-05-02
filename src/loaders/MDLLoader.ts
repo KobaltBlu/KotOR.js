@@ -31,6 +31,8 @@ const ModelCache: ModelCacheInterface = {
 /**
  * Resource type ID for MDL (Model) files.
  *
+ * Native client uses resource kind 2002 for MDL plus 3008 for MDX companions.
+ *
  * @constant {number}
  */
 const resMDL: number = ResourceTypes['mdl'];

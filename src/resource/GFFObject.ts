@@ -17,8 +17,14 @@ import {
 } from '@/utility/FormatSerialization';
 import { clampResRefForGffWrite, readGffResRefPayload, RESREF_GFF_MAX_PAYLOAD } from '@/resource/resRefLayout';
 
-/** On-disk GFF V3.2 header: 4+4 type/version plus twelve little-endian 32-bit fields. */
+/** On-disk GFF header: 4-byte type, 4-byte version, then twelve little-endian uint32 fields (56 bytes total). */
 export const GFF_V32_HEADER_SIZE = 56;
+
+/**
+ * Four-character file version token read from header offset 4.
+ * Observed game runtime accepts only `V3.2` for GFF resources (same wire layout as this parser).
+ */
+export const GFF_SUPPORTED_FILE_VERSION = 'V3.2' as const;
 
 export type GFFObjectOnCompleteCallback = (gff: GFFObject) => void;
 
@@ -181,7 +187,7 @@ export class GFFObject {
     this.ListIndicesOffset = this.reader.readUInt32();
     this.ListIndicesCount = this.reader.readUInt32();
 
-    if (this.FileVersion !== 'V3.2') {
+    if (this.FileVersion !== GFF_SUPPORTED_FILE_VERSION) {
       throw new Error(`Unsupported GFF version: ${this.FileVersion}`);
     }
 

@@ -3,6 +3,7 @@ import type { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
 /**
  * Represents a basic block in the control flow graph.
  * A basic block is a sequence of instructions with no branches except at the end.
+ * Used only by the NCS→NSS recovery pipeline, not by in-game VM execution.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

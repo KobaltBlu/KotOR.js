@@ -4,6 +4,8 @@ import { ResourceLoader } from '@/loaders/ResourceLoader';
 /**
  * TemplateLoader class.
  *
+ * Loads blueprint templates as GFF (same on-disk family as {@link GFFObject}).
+ *
  * This should be used for loading game templates like UTC, UTP, UTD, etc.
  * These assets can be found in the current module, in the games' override
  * folder, or in the games templates.bif

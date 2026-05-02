@@ -2,6 +2,7 @@ import type { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
 
 /**
  * INWScriptDefAction interface.
+ * Describes one engine command binding (signature + optional TS handler) used by NWScriptDef tables.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

@@ -11,6 +11,8 @@ import type { INWScriptStoreState } from '@/interface/nwscript/INWScriptStoreSta
 import type { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
 import { GameState } from '@/GameState';
 
+/** Per-opcode implementations; stack effects mirror the stock NWScript VM operations referenced by NWScriptInstruction. */
+
 /**
  * CALL_CPDOWNSP
  *

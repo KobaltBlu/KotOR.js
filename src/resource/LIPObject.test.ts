@@ -102,6 +102,21 @@ describe('LIPObject', () => {
     expect(lip.keyframes.map((keyframe) => keyframe.shape)).toEqual([0, 5, 10]);
   });
 
+  it('masks lip shape bytes to the 0..15 phoneme index range', () => {
+    const lip = parseLip(
+      makeLipBuffer([
+        { time: 0.1, shape: 17 },
+        { time: 0.2, shape: 31 },
+      ])
+    );
+    expect(lip.keyframes[0].shape).toBe(1);
+    expect(lip.keyframes[1].shape).toBe(15);
+
+    lip.addKeyFrame(0.35, 259);
+    const at035 = lip.keyframes.find((k) => Math.abs(k.time - 0.35) < 1e-5);
+    expect(at035?.shape).toBe(3);
+  });
+
   it('rejects invalid headers and truncated keyframe payloads', () => {
     const lip = new LIPObject(new Uint8Array(0));
 

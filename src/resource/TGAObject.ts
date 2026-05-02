@@ -15,6 +15,7 @@ import {
 /**
  * Uncompressed true-color TGA (type 2) header size used by this reader: image id, map type,
  * image type, 4th byte, then origin, size, bpp, descriptor (18 bytes), then raw pixels.
+ * Matches the standalone TGA resource path (resource kind 3) used by the original PC client.
  */
 export const TGA_UNCOMPRESSED_HEADER_SIZE = 18;
 

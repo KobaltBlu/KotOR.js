@@ -154,6 +154,11 @@ Every non-trivial change should include:
 - Use `@/` path aliases for imports across the TypeScript tree (not `from './` or `from '..'`); ESLint enforces this where configured (`.eslintrc.yml`). For Forge tab modules, import `TabState` from `@/apps/forge/states/tabs/TabState` rather than the tabs barrel so initialization order stays safe while paths stay `@/`-based.
 - For very large plan documents with many todo items, the user may want **one todo item per assistant response**, moving on when they send **continue** (or similar), with the plan front-loaded as complete as possible.
 - When a **subagent result is already visible** in the UI, do not re-summarize it unless the user asks or multi-task synthesis is required.
+- For **agdec-http / alignment-map** work:
+  - **Rotate binaries:** do not run MCP only against `k1_win_gog_swkotor.exe`. Each investigation pass should pick a **different** `program_path` from the shared Odyssey project (e.g. KotOR I vs II builds the server lists—vary deliberately or pseudo-randomly so coverage is not K1-Windows-exclusive).
+  - **Verify before writing the map:** confirm anchors with **`user-agdec-http`** (or another working MCP path) **first**; only then edit `MANUAL_SEEDS` in `scripts/build-src-agdec-alignment-map.mjs` and run `npm run alignment-map:generate`. Do not regenerate `docs/agent-native/src-agdec-alignment-map.json` on guesswork.
+  - **No mandatory agentdecompile-first:** HTTP MCP is the default verification surface per `.cursor/k1-binary-exe-coverage-model.md` §2b; do not assume you must pre-verify via CLI/agentdecompile before trusting MCP results when MCP is healthy.
+  - Prefer **type/class anchors** on alternate builds; keep **address-bearing** `agdec_refs` tied to the binary that produced those addresses unless re-validated elsewhere.
 
 ## Learned Workspace Facts
 

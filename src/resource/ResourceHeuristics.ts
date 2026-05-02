@@ -1,6 +1,7 @@
 /**
  * Resource type heuristics.
  * Resolve resource type from file extension or buffer content for use in loaders and Forge.
+ * Keys align with ResourceTypes IDs used when resolving archives and streams.
  *
  * @file ResourceHeuristics.ts
  */

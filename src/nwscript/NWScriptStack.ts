@@ -18,6 +18,7 @@ const STACK_PACKET_CONSTANTS = {
 
 /**
  * NWScriptStack class.
+ * Mirrors the stock VM stack contract (pointer, base pointer, typed slots) using explicit variables instead of raw engine stack buffers.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

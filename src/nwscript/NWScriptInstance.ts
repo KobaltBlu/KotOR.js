@@ -21,6 +21,7 @@ import type { NWScriptSubroutine } from '@/nwscript/NWScriptSubroutine';
 
 /**
  * NWScriptInstance class.
+ * Runtime context for one loaded script (bytecode map, stack, caller); parallels per-script state the stock client tracks for VM execution.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

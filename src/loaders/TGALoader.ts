@@ -9,6 +9,8 @@ import { GameFileSystem } from '@/utility/GameFileSystem';
 /**
  * TGALoader class.
  *
+ * Loads standalone .tga assets (resource kind 3) from game storage; often paired with {@link TXI} metadata.
+ *
  * This TGALoader class is a modified version of the standard one that comes with THREE.js.
  * The modifications include KotOR related stuff like TXI support.
  *

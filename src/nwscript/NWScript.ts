@@ -43,6 +43,7 @@ import { NWScriptDefK1 } from '@/nwscript/NWScriptDefK1';
 
 /**
  * NWScript class.
+ * Executes compiled script bytecode (.ncs) aimed at the same VM shape as the stock client (native VM pairs script resources with the NCS helper type).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

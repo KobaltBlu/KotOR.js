@@ -4,7 +4,7 @@ import { GFFDataType } from '@/enums/resource/GFFDataType';
 import { CExoLocString } from '@/resource/CExoLocString';
 import { CExoLocSubString } from '@/resource/CExoLocSubString';
 import { GFFField } from '@/resource/GFFField';
-import { GFFObject, GFF_V32_HEADER_SIZE } from '@/resource/GFFObject';
+import { GFFObject, GFF_SUPPORTED_FILE_VERSION, GFF_V32_HEADER_SIZE } from '@/resource/GFFObject';
 import { GFFStruct } from '@/resource/GFFStruct';
 
 function buildVendorStyleGff(): GFFObject {
@@ -179,10 +179,18 @@ describe('GFFObject', () => {
     expect(() => a.parse(new Uint8Array(GFF_V32_HEADER_SIZE - 1))).toThrow('Invalid GFF header');
 
     const valid = buildVendorStyleGff().getExportBuffer();
+    expect(GFF_SUPPORTED_FILE_VERSION).toBe('V3.2');
+
     const invalidVersion = valid.slice();
     invalidVersion.set(Uint8Array.from(Buffer.from('V9.9', 'latin1')), 4);
     const b = new GFFObject();
     expect(() => b.parse(invalidVersion)).toThrow('Unsupported GFF version: V9.9');
+
+    // Same on-disk layout as V3.2, but observed runtime accepts only the V3.2 version token for GFF.
+    const legacyStyleVersion = valid.slice();
+    legacyStyleVersion.set(Uint8Array.from(Buffer.from('V3.0', 'latin1')), 4);
+    const d = new GFFObject();
+    expect(() => d.parse(legacyStyleVersion)).toThrow('Unsupported GFF version: V3.0');
 
     const truncated = valid.slice(0, valid.length - 1);
     const c = new GFFObject();

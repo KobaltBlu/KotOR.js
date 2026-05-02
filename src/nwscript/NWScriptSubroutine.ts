@@ -3,6 +3,7 @@ import { EventTimedEvent } from '@/events';
 
 /**
  * NWScriptSubroutine class.
+ * Call-frame bookkeeping (return PC, deferred commands) layered on top of NWScriptInstance execution.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

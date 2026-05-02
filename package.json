@@ -11,6 +11,7 @@
     "build:electron": "tsc --project tsconfig.electron.json",
     "build:web": "cross-env NODE_ENV=development webpack",
     "build:web:prod": "cross-env NODE_ENV=production webpack",
+    "alignment-map:generate": "node scripts/build-src-agdec-alignment-map.mjs",
     "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
     "dev": "run-p webpack:dev-watch serve",
     "electron:build": "npm run webpack:prod && npm run electron:compile && electron-builder build --publish=never",

@@ -11,6 +11,7 @@ import { EventActivateItem } from '@/nwscript/events/EventActivateItem';
 
 /**
  * NWScriptEvent class.
+ * Parameter lists for script callbacks; typically populated from saved GFF Event structures.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

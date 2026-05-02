@@ -56,21 +56,21 @@ import { CreatureClassType } from '@/enums/nwscript/CreatureClassType';
 import { TalkVolume } from '@/enums/engine/TalkVolume';
 
 /**
- * NWScriptDefK1 â€” KotOR I NWScript engine command table (1:1 with swkotor.exe).
+ * NWScriptDefK1 - KotOR I NWScript engine command table (matches KotOR I PC script dispatch).
  *
  * PURPOSE
  * --------
  * This map is the canonical NWScript engine command table for Star Wars: KotOR I.
  * The numeric key of each entry is the ACTION ID emitted by the NCS compiler and
- * consumed by the VM: the bytecode uses opcode OP_ACTION (0x04) followed by a UInt16
- * action ID; the VM dispatches to actionsMap[instruction.action]. The logic here
- * must match the original engine behavior so compiled scripts run correctly.
+ * consumed by the VM: the bytecode uses opcode OP_ACTION (0x05; see NWScriptOPCodes)
+ * followed by a UInt16 action ID; OP_CONST is separate (0x04). The VM dispatches to
+ * actionsMap[instruction.action]. The logic here must match observed game behavior so
+ * compiled scripts run correctly.
  *
  * CANONICAL SOURCES
  * -----------------
- * - Binary: the KotOR I Windows release (swkotor.exe). The VM dispatches each
- *   command index the same way as the original game; comments document intended
- *   behavior and return semantics.
+ * - Native VM dispatch for KotOR I PC builds; comments document intended behavior and
+ *   return semantics.
  * - NCS: Compiled scripts use action IDs 0..771 for KotOR I. Each entry in
  *   NWScriptDefK1.Actions corresponds to exactly one engine command index.
  *
@@ -79,8 +79,8 @@ import { TalkVolume } from '@/enums/engine/TalkVolume';
  * - Each entry's `comment` documents: action ID, parameter semantics, return value,
  *   and error behavior so it is clear we are matching the original logic.
  *
- * COMPLETENESS (1:1 with swkotor.exe)
- * -----------------------------------
+ * COMPLETENESS
+ * ------------
  * All action IDs 0..771 have a callable handler; no entry uses action: undefined.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

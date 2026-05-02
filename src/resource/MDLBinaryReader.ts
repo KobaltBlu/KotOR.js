@@ -1,6 +1,7 @@
-﻿/**
+/**
  * Binary MDL/MDX reader for KotOR.
  * Parses binary MDL (and optional MDX) into MDL data structures.
+ * Intended for the same on-disk MDL payload shape the stock client loads as model resources (see MDLLoader).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * @file MDLBinaryReader.ts

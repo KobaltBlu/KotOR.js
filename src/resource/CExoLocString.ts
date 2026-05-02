@@ -4,6 +4,8 @@ import { CExoLocSubString } from '@/resource/CExoLocSubString';
 /**
  * CExoLocString class.
  *
+ * Localized string container (TLK strref plus language/gender substrings). Matches the engine’s logical ExoLocString role used on creatures and placeables.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
  * @file CExoLocString.ts

@@ -13,6 +13,8 @@ import { GameFileSystem } from '@/utility/GameFileSystem';
 /**
  * ResourceLoader class.
  *
+ * Layered KEY/RIM/ERF lookup and caching; mirrors how the stock client resolves archives before decoding concrete resource kinds.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
  * @file ResourceLoader.ts

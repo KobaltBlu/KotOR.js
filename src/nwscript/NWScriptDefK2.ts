@@ -10,21 +10,21 @@ import { NWScriptDefK1 } from '@/nwscript/NWScriptDefK1';
 import { NWScriptInstance } from '@/nwscript/NWScriptInstance';
 
 /**
- * NWScriptDefK2 â€” KotOR II (TSL) NWScript engine command table (1:1 with swkotor2.exe).
+ * NWScriptDefK2 - KotOR II (TSL) NWScript engine command table (matches TSL PC script dispatch).
  *
  * PURPOSE
  * --------
  * This map is the canonical NWScript engine command table for Star Wars: KotOR II
  * (The Sith Lords). Action IDs 0..771 are shared with KotOR I (NWScriptDefK1);
- * indices 772..876 are TSL-only. The VM uses the same dispatch: OP_ACTION + UInt16
- * action ID â†’ actionsMap[instruction.action]. Behavior must match the original
- * engine for script compatibility.
+ * indices 772..876 are TSL-only. The VM uses the same dispatch: OP_ACTION (0x05) plus
+ * UInt16 action ID, then actionsMap[instruction.action]. Behavior must match observed
+ * game behavior for script compatibility.
  *
  * ENGINE TABLE
  * ------------
- * The stock KotOR II (swkotor2.exe) build uses a fixed command table: one
- * pointer per action ID 0..876. Indices 0..771 align with KotOR I; 772..876
- * are TSL-only. Comments document intended in-game behavior for 1:1 script parity.
+ * The stock KotOR II PC build uses a fixed command table: one pointer per action ID
+ * 0..876. Indices 0..771 align with KotOR I; 772..876 are TSL-only. Comments document
+ * intended in-game behavior for script parity.
  *
  * INHERITANCE
  * -----------
@@ -33,10 +33,10 @@ import { NWScriptInstance } from '@/nwscript/NWScriptInstance';
  * so shared commands (0..771) use K1 implementations and K2-only (772..876)
  * use the entries defined here.
  *
- * COMPLETENESS (1:1 with swkotor2.exe)
- * ------------------------------------
+ * COMPLETENESS
+ * ------------
  * A second loop stubs any remaining 772..876 with action === undefined using
- * type-appropriate return values (VOIDâ†’no-op, INTâ†’0, OBJECTâ†’undefined, etc.).
+ * type-appropriate return values (VOID to no-op, INT to 0, OBJECT to undefined, etc.).
  * At runtime every action ID 0..876 has a callable handler; the VM never
  * invokes undefined. K1 (NWScriptDefK1) has all 0..771 implemented.
  *
@@ -5949,24 +5949,21 @@ NWScriptDefK2.Actions = {
     action: undefined,
   },
   772: {
-    comment:
-      '772 (TSL-only). FAK-OEI 12/15/2003. Get the number of components for an item in pieces.',
+    comment: '772 (TSL-only). FAK-OEI 12/15/2003. Get the number of components for an item in pieces.',
     name: 'GetItemComponentPieceValue',
     type: NWScriptDataType.INTEGER,
     args: [],
     action: undefined,
   },
   773: {
-    comment:
-      '773 (TSL-only). FAK-OEI 12/15/2003. Start the GUI for Chemical Workshop.',
+    comment: '773 (TSL-only). FAK-OEI 12/15/2003. Start the GUI for Chemical Workshop.',
     name: 'ShowChemicalUpgradeScreen',
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: undefined,
   },
   774: {
-    comment:
-      '774 (TSL-only). FAK-OEI 12/15/2003. Get the number of chemicals for an item.',
+    comment: '774 (TSL-only). FAK-OEI 12/15/2003. Get the number of chemicals for an item.',
     name: 'GetChemicals',
     type: NWScriptDataType.INTEGER,
     args: [],

@@ -16,7 +16,8 @@ export enum EdgeType {
 }
 
 /**
- * Represents an edge in the control flow graph with metadata
+ * Represents an edge in the control flow graph with metadata.
+ * Decompiler graph bookkeeping only.
  */
 export class NWScriptEdge {
   /**

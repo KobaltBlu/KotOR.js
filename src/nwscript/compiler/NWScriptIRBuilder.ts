@@ -206,6 +206,8 @@ const concatBuffers = (buffers: Uint8Array[]) => {
  * This builder currently creates IR function shells and preserves the
  * entry labels; you can extend `lowerFunction` to emit detailed IR from
  * statements/expressions.
+ *
+ * IR is an intermediate toward NWScript VM bytecode layout, not a shipped engine artifact.
  */
 export class NWScriptIRBuilder {
   private tempId = 0;

@@ -3,6 +3,7 @@ import type { NWScriptInstruction } from '@/nwscript/NWScriptInstruction';
 
 /**
  * INWScriptStoreState interface.
+ * Saved execution slice for STORE_STATE-related deferral (stack + instruction + owning script instance).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

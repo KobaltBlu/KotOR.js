@@ -7,6 +7,7 @@ import { OP_JMP, OP_JSR, OP_JZ, OP_JNZ, OP_RETN, OP_STORE_STATE, OP_STORE_STATEA
 /**
  * Control Flow Graph for NWScript decompilation.
  * Represents the control flow structure of a compiled NCS script.
+ * Built from jump and store-state opcodes that define VM control transfer.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
