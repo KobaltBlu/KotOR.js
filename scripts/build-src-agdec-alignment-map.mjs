@@ -4,6 +4,7 @@
  *
  * Usage: node scripts/build-src-agdec-alignment-map.mjs
  *
+ * Anchor discovery: prefer inspect-memory / read-bytes / disassembly-scoped search-everything / get-references / execute-script (findBytes)—not search-symbols as primary (see .cursor/k1-binary-exe-coverage-model.md §2a).
  * When HTTP MCP tools fail, mirror lookups with agentdecompile-cli (see .cursor/k1-binary-exe-coverage-model.md §2b for env-based server URL; never commit credentials):
  *   uvx --refresh --from git+https://github.com/bolabaden/agentdecompile agentdecompile-cli --server-url "<URL>" list project-files
  */
@@ -20,7 +21,7 @@ const MANUAL_SEEDS = {
   'src/resource/GFFObject.ts': {
     status: 'partial',
     notes:
-      'Header parse + table validation reviewed vs CResGFF::OnResourceServiced (0x00410740); CreateGFFFile (0x00411260). V3.2-only gate matches packed compare at header+4. Full export/buildStruct stack not exhaustively traced.',
+      'Header parse + table validation reviewed vs CResGFF::OnResourceServiced (0x00410740); CreateGFFFile (0x00411260). V3.2-only gate matches packed compare at header+4. K1 GOG + Win32 Amazon + Xbox default.xbe + macOS bundle (__cstring) + TSL Win32 (Steam / GOG Aspyr / CD 1.0 / CD 1.0b) NUL-terminated V3.2 literal VAs verified via read-bytes / execute-script (findBytes); Win PE uses .rdata; XBE/Mac use platform section names and different image bases. Full export/buildStruct stack not exhaustively traced.',
     agdec_refs: [
       {
         kind: 'function',
@@ -49,8 +50,59 @@ const MANUAL_SEEDS = {
       {
         kind: 'string_literal',
         program_path: '/K1/k1_win_gog_swkotor.exe',
-        address: '0x0078d3cc',
+        address: '0x0073e2c8',
         text: 'V3.2',
+        layout_note:
+          'Pointer to this string also stored at 0x0078d3cc (DATA); xrefs include OnResourceServiced / CreateGFFFile sites.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_steam_aspyr_swkotor2.exe',
+        address: '0x0099c43c',
+        text: 'V3.2',
+        layout_note: 'NUL-terminated in .rdata; first occurrence from ASCII scan (Steam Aspyr survey).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_gog_aspyr_swkotor2.exe',
+        address: '0x0099794c',
+        text: 'V3.2',
+        layout_note: 'First NUL-terminated V3.2 in .rdata (GOG Aspyr); same embedded-table tail pattern as Steam survey.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_CD_1.0b_swkotor2.exe',
+        address: '0x007b6290',
+        text: 'V3.2',
+        layout_note: 'First NUL-terminated V3.2 in .rdata (Win CD 1.0b); pointers/immediate tail layout differs from digital builds.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_CD_1.0_swkotor2.exe',
+        address: '0x007b6290',
+        text: 'V3.2',
+        layout_note: 'Same first-hit VA as CD 1.0b (segments + execute-script survey agree).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_win_amazongames_swkotor.exe',
+        address: '0x00882ed4',
+        text: 'V3.2',
+        layout_note: 'First NUL-terminated V3.2 in .rdata (Amazon Games Win32 build).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_xbox_default.xbe',
+        address: '0x003e6650',
+        text: 'V3.2',
+        layout_note: 'First NUL-terminated V3.2 in .rdata (XBE mapped image; inspect-memory segments).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_mac_swkotor.app',
+        address: '0x003d79fc',
+        text: 'V3.2',
+        layout_note: 'In __cstring (Mach-O); first-hit execute-script + read-bytes survey.',
       },
     ],
   },
@@ -85,7 +137,8 @@ const MANUAL_SEEDS = {
   },
   'src/resource/TLKObject.ts': {
     status: 'partial',
-    notes: 'TLK V3.0 token compare path (not GFF); FetchInternal references V3.0 literal.',
+    notes:
+      'TLK V3.0 token compare path (not GFF); K1 GOG CTlkTable::FetchInternal READ-ref verified against NUL-terminated literal VA (see string_literal). K1 Amazon + Xbox + macOS __cstring + TSL Steam / GOG Aspyr / CD 1.0 / CD 1.0b add parallel literals (verify FetchInternal xrefs per SKU when extending). Prior K1 GOG seed pointed at .data pointer slot, not string bytes.',
     agdec_refs: [
       {
         kind: 'function',
@@ -96,21 +149,120 @@ const MANUAL_SEEDS = {
       {
         kind: 'string_literal',
         program_path: '/K1/k1_win_gog_swkotor.exe',
-        address: '0x0078d3ec',
+        address: '0x0073ecd4',
         text: 'V3.0',
+        layout_note: 'Pointer at 0x0078d3ec (DATA); instruction xref READ inside FetchInternal.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_steam_aspyr_swkotor2.exe',
+        address: '0x0099c490',
+        text: 'V3.0',
+        layout_note: 'NUL-terminated; followed by embedded "TLK " token table material in .rdata (read-bytes survey).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_gog_aspyr_swkotor2.exe',
+        address: '0x009979a0',
+        text: 'V3.0',
+        layout_note: 'NUL-terminated; same TLK-table tail pattern as Steam Aspyr survey.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_CD_1.0b_swkotor2.exe',
+        address: '0x007b6c9c',
+        text: 'V3.0',
+        layout_note: 'NUL-terminated in .rdata (CD 1.0b); following bytes differ from digital Aspyr builds.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_CD_1.0_swkotor2.exe',
+        address: '0x007b6c9c',
+        text: 'V3.0',
+        layout_note: 'Same VA as CD 1.0b first-hit survey.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_win_amazongames_swkotor.exe',
+        address: '0x00883150',
+        text: 'V3.0',
+        layout_note: 'NUL-terminated; followed by Invalid STRREF diagnostic text (read-bytes survey).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_xbox_default.xbe',
+        address: '0x003f43b4',
+        text: 'V3.0',
+        layout_note: 'NUL-terminated in .rdata; first-hit execute-script (near CACHE:/MODULES cluster).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_mac_swkotor.app',
+        address: '0x003d7940',
+        text: 'V3.0',
+        layout_note: 'In __cstring after RIM leak fragment (read-bytes @ 0x003d7934).',
       },
     ],
   },
   'src/resource/BIFObject.ts': {
     status: 'partial',
     notes:
-      'On-disk header BIFF + V1 + var/fixed counts + var table offset (20 bytes) and 16-byte variable index rows match documented Aurora BIF. Native archive reader not fully disassembly-traced; GetResObject uses BIF type string for resource dispatch.',
+      'On-disk header BIFF + V1 + var/fixed counts + var table offset (20 bytes) and 16-byte variable index rows match documented Aurora BIF. Native archive reader not fully disassembly-traced; GetResObject uses BIF type string for resource dispatch. K1 Xbox: BIF\\0DIR\\0ERF\\0 after CACHE: stub (read-bytes @ 0x003f4328); DATA xref from GetResObject @ 0x001403d2. K1 macOS: BIF\\0ERF\\0DIR\\0 after CD0: (read-bytes @ 0x003d78e8); DATA xref from GetResObject @ 0x0038e2ce. K1 Amazon: after RIM leak / %s%03d, cluster BIF\\0ERF\\0DIR\\0 @ 0x00882dd8; DATA xref FUN_0062afd0 @ 0x0062b121. TSL Steam: ERF\\0BIF\\0 after RIM leak; DATA xref FUN_00712970 @ 0x00712a56. TSL GOG: DIR\\0ERF\\0BIF\\0; DATA xref FUN_0061c2d0 @ 0x0061c3b6. TSL Win CD 1.0 / 1.0b: BIF\\0DIR\\0ERF\\0 (read-bytes @ 0x007b5868); Ghidra may show no DATA xrefs on CD builds.',
     agdec_refs: [
       {
         kind: 'string_literal',
         program_path: '/K1/k1_win_gog_swkotor.exe',
         address: '0x0073d8dc',
         text: 'BIF',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_steam_aspyr_swkotor2.exe',
+        address: '0x0099c3dc',
+        text: 'BIF',
+        layout_note: 'Adjacent ERF literal @ 0x0099c3d8 (same .rdata cluster as "%03d" / RIM leak message).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_gog_aspyr_swkotor2.exe',
+        address: '0x009978a4',
+        text: 'BIF',
+        layout_note: 'Follows DIR\\0 and ERF\\0 @ 0x00997898 (read-bytes); DATA ref @ 0x0061c3b6 in FUN_0061c2d0.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_CD_1.0b_swkotor2.exe',
+        address: '0x007b587c',
+        text: 'BIF',
+        layout_note: 'RIM leak message → BIF\\0DIR\\0ERF\\0… cluster (read-bytes @ 0x007b5868); order differs from Aspyr digital.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_CD_1.0_swkotor2.exe',
+        address: '0x007b587c',
+        text: 'BIF',
+        layout_note: 'Same leak-cluster VA as CD 1.0b (read-bytes @ 0x007b5868).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_win_amazongames_swkotor.exe',
+        address: '0x00882de4',
+        text: 'BIF',
+        layout_note: 'Cluster read-bytes @ 0x00882dd8; DATA ref @ 0x0062b121 in FUN_0062afd0.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_xbox_default.xbe',
+        address: '0x003f433c',
+        text: 'BIF',
+        layout_note: 'K1 GOG order BIF\\0DIR\\0ERF\\0 (read-bytes @ 0x003f4328); DATA ref GetResObject @ 0x001403d2.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_mac_swkotor.app',
+        address: '0x003d7900',
+        text: 'BIF',
+        layout_note: 'Amazon-style BIF\\0ERF\\0DIR\\0 (read-bytes @ 0x003d78e8); DATA ref GetResObject @ 0x0038e2ce.',
       },
       {
         kind: 'function',
@@ -154,7 +306,7 @@ const MANUAL_SEEDS = {
   'src/resource/ERFObject.ts': {
     status: 'partial',
     notes:
-      'parseHeader matches CERFHeader (160 bytes) on CERFFile: file_type, version, language_count, localized_string_size, entry_count, offsets to localized/key/resource sections, build_year/day, description_str_ref, 116-byte reserved. Accepts ERF/MOD/SAV with V1.0 like native archives. Key/resource row layouts vs CERF types not fully traced in this pass.',
+      'parseHeader matches CERFHeader (160 bytes) on CERFFile: file_type, version, language_count, localized_string_size, entry_count, offsets to localized/key/resource sections, build_year/day, description_str_ref, 116-byte reserved. Accepts ERF/MOD/SAV with V1.0 like native archives. Key/resource row layouts vs CERF types not fully traced in this pass. K1 Xbox ERF @ 0x003f4344 (DATA xref GetResObject @ 0x00140309). K1 macOS ERF @ 0x003d7904 (DATA xref GetResObject @ 0x0038e2f1). K1 Amazon ERF @ 0x00882de8 (FUN_0062afd0 @ 0x0062b096). TSL Steam @ 0x0099c3d8; TSL GOG @ 0x009978a0; TSL CD 1.0 / 1.0b @ 0x007b5884 (read-bytes @ 0x007b5868).',
     agdec_refs: [
       {
         kind: 'data_type',
@@ -170,6 +322,55 @@ const MANUAL_SEEDS = {
         address: '0x0073d8e4',
         text: 'ERF',
         note: 'Referenced from CExoResMan::GetResObject (push @ 0x00407589)',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_steam_aspyr_swkotor2.exe',
+        address: '0x0099c3d8',
+        text: 'ERF',
+        layout_note: 'Packed with BIF @ 0x0099c3dc; cluster verified read-bytes @ 0x0099c3b0.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_gog_aspyr_swkotor2.exe',
+        address: '0x009978a0',
+        text: 'ERF',
+        layout_note: 'Between DIR\\0 and BIF\\0 (see read-bytes @ 0x00997898).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_CD_1.0b_swkotor2.exe',
+        address: '0x007b5884',
+        text: 'ERF',
+        layout_note: 'After BIF\\0DIR\\0 in leak-adjacent cluster (read-bytes @ 0x007b5868).',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/TSL/k2_win_CD_1.0_swkotor2.exe',
+        address: '0x007b5884',
+        text: 'ERF',
+        layout_note: 'Same VA as CD 1.0b leak-cluster survey.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_win_amazongames_swkotor.exe',
+        address: '0x00882de8',
+        text: 'ERF',
+        layout_note: 'Between BIF\\0 and DIR\\0 (read-bytes @ 0x00882dd8); DATA ref @ 0x0062b096 in FUN_0062afd0.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_xbox_default.xbe',
+        address: '0x003f4344',
+        text: 'ERF',
+        layout_note: 'After BIF\\0DIR\\0 (read-bytes @ 0x003f4328); DATA ref GetResObject @ 0x00140309.',
+      },
+      {
+        kind: 'string_literal',
+        program_path: '/K1/k1_mac_swkotor.app',
+        address: '0x003d7904',
+        text: 'ERF',
+        layout_note: 'Between BIF\\0 and DIR\\0 (read-bytes @ 0x003d78e8); DATA ref GetResObject @ 0x0038e2f1.',
       },
       {
         kind: 'function',
@@ -457,29 +658,45 @@ const MANUAL_SEEDS = {
   'src/engine/BinaryAnalysis.ts': {
     status: 'partial',
     notes:
-      'PE section spans and string-table bookmarks for K1/TSL Win32 builds; derived from binary survey (same program paths as MCP default K1 exe + TSL CD build). Addresses should be revalidated when comparing against other retail variants.',
+      'PE spans from inspect-memory (K1 GOG, TSL CD 1.0b, TSL Steam Aspyr, TSL GOG Aspyr). OpenGL proc-name anchors verified earlier (read-bytes K1; strings TSL CD). TS exports TSL_BINARY_LAYOUT=Steam, TSL_GOG_ASPYR_BINARY_LAYOUT, TSL_CD_10B_BINARY_LAYOUT.',
     agdec_refs: [
       {
         kind: 'program_layout',
         program_path: '/K1/k1_win_gog_swkotor.exe',
-        regions_note: 'K1_BINARY_LAYOUT: .text 0x00401000–0x0073CFFF, .rdata from 0x0073D000, etc.',
+        regions_note:
+          'GOG: Headers 00400000–00400fff; .text 00401000–0073cfff; .rdata 0073d000–0078cfff; .data 0078d000–007a3fff + uninit.; .rsrc 00836000–0086cfff.',
       },
       {
         kind: 'program_layout',
         program_path: '/TSL/k2_win_CD_1.0b_swkotor2.exe',
-        regions_note: 'TSL_BINARY_LAYOUT: .text 0x00401000–0x009857FF, expanded vs K1',
+        regions_note:
+          'CD 1.0b: Headers 00400000–00400bff; .text 00401000–007b4fff; .rdata 007b5000–0080b7ff; .data 0080c000–008ba037; .rsrc 008bb000–008f19ff.',
+      },
+      {
+        kind: 'program_layout',
+        program_path: '/TSL/k2_win_steam_aspyr_swkotor2.exe',
+        regions_note:
+          'Steam Aspyr: Headers 00400000–004003ff; .text 00401000–009857ff; .rdata 00986000–009f31ff; .data 009f4000–00a81f3b; .rsrc 00a82000–00ab8bff — matches TSL_BINARY_LAYOUT in TS.',
+      },
+      {
+        kind: 'program_layout',
+        program_path: '/TSL/k2_win_gog_aspyr_swkotor2.exe',
+        regions_note:
+          'GOG Aspyr: .text 00401000–00984bff; .rdata 00985000–009f1dff; .data 009f2000–00a7865b; .rsrc 00a79000–00aafbff — matches TSL_GOG_ASPYR_BINARY_LAYOUT in TS.',
       },
       {
         kind: 'address_marker',
         program_path: '/K1/k1_win_gog_swkotor.exe',
         address: '0x0078B146',
-        label: 'STRING_TABLE_START',
+        label: 'RDATA_OPENGL_PROC_NAME_SAMPLE',
+        layout_note: 'ASCII chain glEnable / glBlendFunc… inside .rdata; not section base.',
       },
       {
         kind: 'address_marker',
         program_path: '/TSL/k2_win_CD_1.0b_swkotor2.exe',
-        address: '0x009F17A2',
-        label: 'STRING_TABLE_START',
+        address: '0x00809C96',
+        label: 'RDATA_OPENGL_PROC_NAME_SAMPLE',
+        layout_note: '`glEnable` literal VA in .rdata (strings search); replaces invalid out-of-image bookmark.',
       },
     ],
   },
@@ -1521,7 +1738,8 @@ const MANUAL_SEEDS = {
   },
   'src/enums/odyssey/OdysseyModelAnimationManagerState.ts': {
     status: 'partial',
-    notes: 'Runtime animation manager states for the TS model viewer; MDX-side animation chunks drive authoritative playback.',
+    notes:
+      'Runtime animation manager states for the TS model viewer; MDX-side animation chunks drive authoritative playback.',
     agdec_refs: [
       { kind: 'class', program_path: '/K1/k1_win_gog_swkotor.exe', name: 'CResMDX' },
       { kind: 'class', program_path: '/K1/k1_win_gog_swkotor.exe', name: 'CAurObject' },

@@ -23,6 +23,19 @@
 
 **Bounded searches are not a full inventory:** `search-everything` (HTTP) uses `limit`, `per_scope_limit`, and `max_functions_scan` — fine for **batched discovery**, not for “list all N functions” in one call. **`search-symbols`** is paginated (`offset` / `limit`).
 
+### 2a) Prefer signatures and binary layout over symbol-name search
+
+**Do not treat `search-symbols` as the default mapper from TypeScript to the executable.** Name substring search yields fuzzy collisions and skips evidence about layout.
+
+**Preferred MCP moves (HTTP `user-agdec-http`):**
+
+1. **`inspect-memory`** — `segments` / `blocks` to ground image layout; `read` / **`read-bytes`** to verify magic bytes, headers, and structure-sized regions at candidate VAs.
+2. **`search-everything`** — narrow **`scopes`** (e.g. **`disassembly`** with an explicit instruction budget, **`strings`**, data-bearing scopes) for instruction patterns and stable literals—not open-ended symbol greps.
+3. **`get-references`** — expand from a **verified** address, thunk, or defined data item (incoming/outgoing refs).
+4. **`execute-script`** — Ghidra Python/Java API (`findBytes`, iterators over defined data/code units) for masked byte signatures and bulk scans when no single tool exposes the pattern.
+
+Reserve **`search-symbols`** for cases where you already know an **exact** label and need pagination—not exploratory subsystem mapping.
+
 **Bulk / enumeration paths (typical):**
 
 - **MCP resources (stdio server):** e.g. `agentdecompile://list-functions` and `ghidra://analysis-dump` (resource names `Functions` / `Analysis_Dump` in the **user-agdec-mcp** server’s `resources/*.json` when that server is installed in Cursor) — *URI availability depends on how the stdio server is connected in your IDE; nothing under `mcps/` is committed in this repository.*

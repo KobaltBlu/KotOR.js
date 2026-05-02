@@ -9,8 +9,8 @@
  * KEY FINDINGS:
  * - Both binaries are 32-bit x86 Windows executables using Odyssey game engine
  * - K1: 172 functions, 350 imports, 4.2MB binary, .text @ 0x00401000-0x0073CFFF (3.39MB)
- * - TSL: 175 functions,352 imports, 6.8MB binary, .text @ 0x00401000-0x009857FF (5.5MB)
- * - TSL code is 60% larger, adds Steam support and extended game systems
+ * - TSL layout varies by SKU (CD vs digital): `TSL_BINARY_LAYOUT` below matches one surveyed slice; Win CD 1.0b has a shorter .text (~007b4fff) per MCP segment maps.
+ * - TSL digital builds can be larger (.text into ~0x00985xxx); Steam/Aspyr paths extend imports (e.g. SteamAPI)
  * - Critical entry point: Both start at 0x00401000 (identical base)
  * - Memory layout is mostly preserved between versions (favorable for RE)
  */
@@ -57,20 +57,50 @@ export const K1_BINARY_LAYOUT: BinaryLayout = {
   totalSize: 0x008c3000, // ~4.2 MB
 };
 
-// TSL Binary Layout (binary survey — revalidate per retail build)
+// TSL Win32 Steam Aspyr — verified with inspect-memory on /TSL/k2_win_steam_aspyr_swkotor2.exe (shared Ghidra project).
+// Default `getLayout(TSL)` uses this; GOG Aspyr and Win CD 1.0b use different VA spans (see below).
 export const TSL_BINARY_LAYOUT: BinaryLayout = {
   version: GameVersion.TSL,
   baseAddress: 0x00400000,
   textStart: 0x00401000,
-  textEnd: 0x009857ff, // +2.1MB vs K1
+  textEnd: 0x009857ff,
   rdataStart: 0x00986000,
   rdataEnd: 0x009f31ff,
   dataStart: 0x009f4000,
   dataEnd: 0x00a81f3b,
   rsrcStart: 0x00a82000,
   rsrcEnd: 0x00ab8bff,
-  // NO bindStart/bindEnd in TSL
-  totalSize: 0x00ab8c00, // ~6.8MB
+  totalSize: 0x00ab8c00,
+};
+
+// TSL Win32 GOG Aspyr — shorter .text tail and shifted .rdata/.data/.rsrc vs Steam (inspect-memory on /TSL/k2_win_gog_aspyr_swkotor2.exe).
+export const TSL_GOG_ASPYR_BINARY_LAYOUT: BinaryLayout = {
+  version: GameVersion.TSL,
+  baseAddress: 0x00400000,
+  textStart: 0x00401000,
+  textEnd: 0x00984bff,
+  rdataStart: 0x00985000,
+  rdataEnd: 0x009f1dff,
+  dataStart: 0x009f2000,
+  dataEnd: 0x00a7865b,
+  rsrcStart: 0x00a79000,
+  rsrcEnd: 0x00aafbff,
+  totalSize: 0x00aafc00,
+};
+
+/** Win CD 1.0b — compact layout; use with STRING_TABLES TSL row and CD-specific bookmarks. */
+export const TSL_CD_10B_BINARY_LAYOUT: BinaryLayout = {
+  version: GameVersion.TSL,
+  baseAddress: 0x00400000,
+  textStart: 0x00401000,
+  textEnd: 0x007b4fff,
+  rdataStart: 0x007b5000,
+  rdataEnd: 0x0080b7ff,
+  dataStart: 0x0080c000,
+  dataEnd: 0x008ba037,
+  rsrcStart: 0x008bb000,
+  rsrcEnd: 0x008f19ff,
+  totalSize: 0x008f2000,
 };
 
 /**
@@ -175,16 +205,18 @@ export interface StringTableInfo {
 
 export const STRING_TABLES: StringTableInfo[] = [
   {
-    startAddress: 0x0078b146,
+    startAddress: 0x0073d000,
     endAddress: 0x0078cfff,
     version: GameVersion.K1,
-    description: 'K1 string/import name table (350 imports, 393 strings)',
+    description:
+      'K1 GOG Win32: full .rdata span (import/OpenGL literals and other readonly data); verified via segment map.',
   },
   {
-    startAddress: 0x009f17a2,
-    endAddress: 0x009f31ff,
+    startAddress: 0x007b5000,
+    endAddress: 0x0080b7ff,
     version: GameVersion.TSL,
-    description: 'TSL string/import name table (352 imports, 397 strings, +Steam support)',
+    description:
+      'TSL Win32 CD 1.0b: full .rdata span; digital/Steam builds use different section bounds—see `TSL_BINARY_LAYOUT`.',
   },
 ];
 
@@ -362,12 +394,13 @@ export const BINARY_REFERENCES: BinaryReference[] = [
     sourceAnalysis: 'Binary structure analysis',
   },
   {
-    label: 'STRING_TABLE_START',
+    label: 'RDATA_OPENGL_PROC_NAME_ANCHOR',
     address: 0x0078b146,
     version: GameVersion.K1,
     category: 'Data',
-    description: 'Import function name strings; 350 function names + resource references',
-    sourceAnalysis: 'Binary string table survey',
+    description:
+      'K1 GOG Win32: sample VA inside .rdata OpenGL import-name chain (e.g. glEnable); verified via raw bytes. Not the base of all readonly strings.',
+    sourceAnalysis: 'inspect-memory segments + read-bytes (agdec-http)',
   },
   {
     label: 'CODE_SECTION_START',
@@ -378,12 +411,13 @@ export const BINARY_REFERENCES: BinaryReference[] = [
     sourceAnalysis: 'Binary structure analysis',
   },
   {
-    label: 'STRING_TABLE_START',
-    address: 0x009f17a2,
+    label: 'RDATA_OPENGL_PROC_NAME_ANCHOR',
+    address: 0x00809c96,
     version: GameVersion.TSL,
     category: 'Data',
-    description: 'Import function name strings; 352 function names (adds SteamAPI)',
-    sourceAnalysis: 'Binary string table survey',
+    description:
+      'TSL Win32 CD 1.0b: `glEnable` string in .rdata (within 007b5000–0080b7ff). Replaced prior bookmark that fell outside this SKU mapped image.',
+    sourceAnalysis: 'inspect-memory segments + search-everything strings scope (agdec-http)',
   },
 ];
 
@@ -445,6 +479,8 @@ export default {
   BinaryLayout,
   K1_BINARY_LAYOUT,
   TSL_BINARY_LAYOUT,
+  TSL_GOG_ASPYR_BINARY_LAYOUT,
+  TSL_CD_10B_BINARY_LAYOUT,
   CRITICAL_IMPORTS,
   STRING_TABLES,
   FunctionGroup,

@@ -159,6 +159,7 @@ Every non-trivial change should include:
   - **Verify before writing the map:** confirm anchors with **`user-agdec-http`** (or another working MCP path) **first**; only then edit `MANUAL_SEEDS` in `scripts/build-src-agdec-alignment-map.mjs` and run `npm run alignment-map:generate`. Do not regenerate `docs/agent-native/src-agdec-alignment-map.json` on guesswork.
   - **No mandatory agentdecompile-first:** HTTP MCP is the default verification surface per `.cursor/k1-binary-exe-coverage-model.md` §2b; do not assume you must pre-verify via CLI/agentdecompile before trusting MCP results when MCP is healthy.
   - Prefer **type/class anchors** on alternate builds; keep **address-bearing** `agdec_refs` tied to the binary that produced those addresses unless re-validated elsewhere.
+  - **Binary-first anchoring:** avoid **`search-symbols`** as the primary discovery path (noisy substring matching on names). Prefer **`inspect-memory`** (segments/blocks/read), **`read-bytes`** for magic/layout verification, **`search-everything`** scoped to **disassembly** or **strings**/data as appropriate, **`get-references`** from a verified address or import, and **`execute-script`** (e.g. Ghidra **`findBytes`** / masked scans) for opcode or byte signatures. See `.cursor/k1-binary-exe-coverage-model.md` §2a.
 
 ## Learned Workspace Facts
 
