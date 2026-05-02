@@ -152,11 +152,13 @@ Every non-trivial change should include:
 
 - On long audits or multi-file refactors, the user may ask to batch `npm` runs (install, lint, test, webpack) instead of after every small edit; still meet the Testing policy before declaring the overall task done unless they narrow the bar for that pass.
 - Use `@/` path aliases for imports across the TypeScript tree (not `from './` or `from '..'`); ESLint enforces this where configured (`.eslintrc.yml`). For Forge tab modules, import `TabState` from `@/apps/forge/states/tabs/TabState` rather than the tabs barrel so initialization order stays safe while paths stay `@/`-based.
+- For very large plan documents with many todo items, the user may want **one todo item per assistant response**, moving on when they send **continue** (or similar), with the plan front-loaded as complete as possible.
+- When a **subagent result is already visible** in the UI, do not re-summarize it unless the user asks or multi-task synthesis is required.
 
 ## Learned Workspace Facts
 
 - The agdec **`user-agdec-http`** server may accept **`execute-script`** while **`get-function`** / full decompilation fails when the remote decompiler process does not start; do not assume decompilation-backed parity is always available in-session.
 - Do not paste or commit Ghidra server credentials or `uvx` one-liners with embedded passwords; use private env vars or a gitignored runbook (see `.cursor/k1-binary-exe-coverage-model.md` §2b for placeholder-based CLI patterns).
-- For commentary in `src/`, follow `.cursorrules`: neutral product-language for original-game behavior; avoid Ghidra-style names, addresses, or other tooling-specific references in comments.
+- For commentary in `src/`, follow `.cursorrules`: neutral product-language for original-game behavior; avoid tooling product names, hex or code addresses, and disassembly-style labels in comments (not only a single tool’s naming style).
 
 (Index: `.cursor/hooks/state/continual-learning-index.json`.)
