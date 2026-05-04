@@ -39,7 +39,6 @@ const cssRule = {
     {
       loader: 'css-loader',
       options: {
-        url: false,
         sourceMap: !isProd
       }
     }
