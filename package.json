@@ -13,7 +13,10 @@
     "dev": "run-p webpack:dev-watch serve",
     "electron:watch": "tsc-watch --project tsconfig.electron.json",
     "electron:compile": "tsc --project tsconfig.electron.json",
-    "electron:build": "npm run webpack:prod && electron:compile && electron-builder build --publish=never",
+    "electron:build": "npm run webpack:prod && npm run electron:compile && npm run electron:icon && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npx --yes electron-builder build --publish=never",
+    "electron:release": "npm run webpack:prod && npm run electron:compile && npm run electron:icon && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npx --yes electron-builder build --publish=never",
+    "electron:icon": "npx --yes electron-icon-builder --input=src/assets/icon-256.png --output=src/assets/icons",
+    "generate-manifest": "node scripts/generate-manifest.js",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
     "test": "jest --verbose --coverage --no-cache ./src/tests"
   },
@@ -66,6 +69,7 @@
     "sass-loader": "^16.0.6",
     "scss": "^0.2.4",
     "scss-loader": "^0.0.1",
+    "serve": "^14.2.4",
     "stream-browserify": "^3.0.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.4",
@@ -78,8 +82,7 @@
     "user-agent-data-types": "^0.4.2",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
-    "webpackbar": "^7.0.0",
-    "serve": "^14.2.4"
+    "webpackbar": "^7.0.0"
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^7.1.0",
@@ -91,6 +94,7 @@
     "bootstrap": "^5.3.8",
     "jest": "^30.2.0",
     "monaco-editor": "^0.52.0",
+    "p-limit": "^7.3.0",
     "three": "^0.149.0",
     "ts-jest": "^29.4.6"
   }

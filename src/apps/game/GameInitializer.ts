@@ -1,5 +1,8 @@
 import * as path from "path";
 import * as KotOR from "@/apps/game/KotOR";
+import pLimit from "p-limit";
+
+const fsLimit = pLimit(16);
 
 /**
  * GameInitializer class.
@@ -291,14 +294,14 @@ export class GameInitializer {
         return file_obj.ext == 'erf';
       });
 
-      await Promise.all(erfs.map(async (_erf) => {
+      await Promise.all(erfs.map((_erf) => fsLimit(async () => {
         const erf = new KotOR.ERFObject(path.join(data_dir, _erf.filename));
         await erf.load();
         if(erf instanceof KotOR.ERFObject){
           erf.group = 'Textures';
           KotOR.ERFManager.addERF(_erf.name, erf);
         }
-      }));
+      })));
     }catch(e){
       console.warn('GameInitializer.LoadTexturePacks: Failed to load texture packs');
       console.error(e);
@@ -346,11 +349,11 @@ export class GameInitializer {
         })
         .filter(({ resId }) => typeof resId !== 'undefined');
 
-      await Promise.all(validOverrideFiles.map(async ({ f, _parsed, resId }) => {
+      await Promise.all(validOverrideFiles.map(({ f, _parsed, resId }) => fsLimit(async () => {
         const buffer = await KotOR.GameFileSystem.readFile(f);
         if(!buffer || !buffer.length) return;
         KotOR.ResourceLoader.setCache(KotOR.CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
-      }));
+      })));
     }catch(e){
       console.warn('GameInitializer.LoadOverride: Failed to load override');
       console.error(e);
