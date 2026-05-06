@@ -23,18 +23,22 @@ const concatenate = (resultConstructor: any, ...arrays: any) => {
 export class TabImageViewerState extends TabState {
 
   tabName: string = `Image Viewer`;
-  image: KotOR.TPCObject|KotOR.TGAObject|ForgePNGImage;
+  image: KotOR.TPCObject|KotOR.TGAObject|ForgeRasterImage;
   workingData: Uint8Array;
   bitsPerPixel: number;
+  private forcedExportExt?: 'tga' | 'png' | 'jpg' | 'tpc';
 
-  private static isPNGImage(image: any): image is ForgePNGImage {
-    return !!image && image.kind === 'png';
+  private static isRasterImage(image: any): image is ForgeRasterImage {
+    return !!image && (image.kind === 'png' || image.kind === 'jpg' || image.kind === 'jpeg');
   }
 
-  private static decodePNG(buffer: Uint8Array): Promise<ForgePNGImage> {
-    return new Promise<ForgePNGImage>((resolve, reject) => {
+  private static decodeImage(buffer: Uint8Array, kind: 'png'|'jpg'|'jpeg'): Promise<ForgeRasterImage> {
+    return new Promise<ForgeRasterImage>((resolve, reject) => {
       try{
-        const blob = new Blob([buffer], { type: 'image/png' });
+        const mimeType = kind === 'png' ? 'image/png' : 'image/jpeg';
+        const blobPart = new ArrayBuffer(buffer.byteLength);
+        new Uint8Array(blobPart).set(buffer);
+        const blob = new Blob([blobPart], { type: mimeType });
         const objectURL = URL.createObjectURL(blob);
         const img = new Image();
         img.onload = () => {
@@ -47,14 +51,14 @@ export class TabImageViewerState extends TabState {
             const ctx = canvas.getContext('2d');
             if(!ctx){
               URL.revokeObjectURL(objectURL);
-              reject(new Error('Failed to get 2d canvas context for PNG decode'));
+              reject(new Error(`Failed to get 2d canvas context for ${kind.toUpperCase()} decode`));
               return;
             }
             ctx.drawImage(img, 0, 0, width, height);
             const rgba = ctx.getImageData(0, 0, width, height).data;
             URL.revokeObjectURL(objectURL);
             resolve({
-              kind: 'png',
+              kind,
               header: {
                 width,
                 height,
@@ -69,7 +73,7 @@ export class TabImageViewerState extends TabState {
         };
         img.onerror = () => {
           URL.revokeObjectURL(objectURL);
-          reject(new Error('Failed to decode PNG image'));
+          reject(new Error(`Failed to decode ${kind.toUpperCase()} image`));
         };
         img.src = objectURL;
       }catch(e){
@@ -78,7 +82,7 @@ export class TabImageViewerState extends TabState {
     });
   }
 
-  private static getSaveTypeForExtension(ext: string){
+  private static getSaveTypeForExtension(ext: string): any{
     switch(ext.toLowerCase()){
       case 'tpc':
         return {
@@ -99,6 +103,13 @@ export class TabImageViewerState extends TabState {
           description: 'PNG Image File',
           accept: {
             'image/*': ['.png']
+          }
+        };
+      case 'jpg':
+        return {
+          description: 'JPG Image File',
+          accept: {
+            'image/*': ['.jpg']
           }
         };
       default:
@@ -122,27 +133,40 @@ export class TabImageViewerState extends TabState {
     this.saveTypes = [
       TabImageViewerState.getSaveTypeForExtension('tpc'),
       TabImageViewerState.getSaveTypeForExtension('tga'),
-      TabImageViewerState.getSaveTypeForExtension('png')
+      TabImageViewerState.getSaveTypeForExtension('png'),
+      TabImageViewerState.getSaveTypeForExtension('jpg')
     ];
   }
 
-  async exportAs(ext: 'tga' | 'png' | 'tpc'){
+  async exportAs(ext: 'tga' | 'png' | 'jpg' | 'tpc'){
     const saveType = TabImageViewerState.getSaveTypeForExtension(ext);
     if(!saveType){
       return false;
     }
 
     const previousSaveTypes = this.saveTypes;
+    const previousForcedExportExt = this.forcedExportExt;
+    const previousFileExt = this.file?.ext;
     this.saveTypes = [saveType];
+    this.forcedExportExt = ext;
+    if(this.file){
+      // Ensure Save As suggests the requested export extension instead of the
+      // source file extension (e.g. opening .png then exporting .tga).
+      this.file.ext = ext;
+    }
     try{
       return await this.saveAs();
     }finally{
+      this.forcedExportExt = previousForcedExportExt;
       this.saveTypes = previousSaveTypes;
+      if(this.file){
+        this.file.ext = previousFileExt;
+      }
     }
   }
 
   openFile(file?: EditorFile){
-    return new Promise<KotOR.TPCObject|KotOR.TGAObject|ForgePNGImage>( (resolve, reject) => {
+    return new Promise<KotOR.TPCObject|KotOR.TGAObject|ForgeRasterImage>( (resolve, reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
@@ -157,7 +181,13 @@ export class TabImageViewerState extends TabState {
               this.image = new KotOR.TPCObject({file: response.buffer, filename: file.resref+'.tpc' });
             break;
             case 'png':
-              this.image = await TabImageViewerState.decodePNG(response.buffer);
+              this.image = await TabImageViewerState.decodeImage(response.buffer, 'png');
+            break;
+            case 'jpg':
+              this.image = await TabImageViewerState.decodeImage(response.buffer, 'jpg');
+            break;
+            case 'jpeg':
+              this.image = await TabImageViewerState.decodeImage(response.buffer, 'jpeg');
             break;
           }
           
@@ -208,7 +238,7 @@ export class TabImageViewerState extends TabState {
           imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
         }
         resolve(imagePixels);
-      }else if(TabImageViewerState.isPNGImage(this.image)){
+      }else if(TabImageViewerState.isRasterImage(this.image)){
         resolve(new Uint8Array(this.image.pixelData));
       }else{
         this.image.getPixelData( (buffer: Uint8Array) => {
@@ -306,7 +336,7 @@ export class TabImageViewerState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    const normalizedExt = (ext || '').replace('.', '').toLowerCase();
+    const normalizedExt = (this.forcedExportExt || ext || '').replace('.', '').toLowerCase();
 
     if(normalizedExt == 'tga'){
       const tga = new KotOR.TGAObject();
@@ -328,7 +358,10 @@ export class TabImageViewerState extends TabState {
       return tga.toExportBuffer();
     }
 
-    if(normalizedExt == 'png'){
+    if(normalizedExt == 'png' || normalizedExt == 'jpg' || normalizedExt == 'jpeg'){
+      if(!this.image || !this.image.header){
+        return new Uint8Array(0);
+      }
       const width = this.image.header.width;
       const height = this.image.header.height;
       let pixelData = await this.getPixelData();
@@ -342,9 +375,7 @@ export class TabImageViewerState extends TabState {
           pixelData = TabImageViewerState.TGAGrayFix(pixelData);
         }
         TabImageViewerState.FlipY(pixelData, width, height);
-      }
-
-      if(this.image instanceof KotOR.TGAObject){
+      } else if(this.image instanceof KotOR.TGAObject){
         switch(bitsPerPixel){
           case 32:
             pixelData = TabImageViewerState.TGAColorFix(pixelData);
@@ -358,6 +389,8 @@ export class TabImageViewerState extends TabState {
           break;
         }
         TabImageViewerState.FlipY(pixelData, width, height);
+      } else {
+        pixelData = this.image.pixelData;
       }
 
       const canvas = document.createElement('canvas');
@@ -371,14 +404,14 @@ export class TabImageViewerState extends TabState {
       imageData.data.set(pixelData);
       ctx.putImageData(imageData, 0, 0);
 
-      const dataURL = canvas.toDataURL('image/png');
-      const base64 = dataURL.split(',')[1] || '';
-      const binary = atob(base64);
-      const output = new Uint8Array(binary.length);
-      for(let i = 0; i < binary.length; i++){
-        output[i] = binary.charCodeAt(i);
+      const outputMime = normalizedExt == 'png' ? 'image/png' : 'image/jpeg';
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((value) => resolve(value), outputMime, 0.92);
+      });
+      if(!blob){
+        return new Uint8Array(0);
       }
-      return output;
+      return new Uint8Array(await blob.arrayBuffer());
     }
     
     return super.getExportBuffer(resref, ext);
@@ -386,8 +419,8 @@ export class TabImageViewerState extends TabState {
 
 }
 
-interface ForgePNGImage {
-  kind: 'png';
+export interface ForgeRasterImage {
+  kind: 'png'|'jpg'|'jpeg';
   header: {
     width: number;
     height: number;

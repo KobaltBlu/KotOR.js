@@ -90,6 +90,8 @@ export class FileTypeManager {
       case 'tpc':
       case 'tga':
       case 'png':
+      case 'jpg':
+      case 'jpeg':
         ForgeState.tabManager.addTab(new TabImageViewerState({editorFile: res}));
       break;
       case 'utc':

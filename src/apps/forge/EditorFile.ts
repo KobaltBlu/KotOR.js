@@ -166,10 +166,12 @@ export class EditorFile extends EventListenerModel {
     this.path = filepath;
     if(typeof this.path === 'string'){
       this.path = filepath.replace(/\\/g, "/");
-      const url = new URL(filepath);
+      const hasProtocol = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(this.path);
+      const parsedURL = hasProtocol ? new URL(this.path) : null;
+      const searchParams = parsedURL ? parsedURL.searchParams : new URLSearchParams();
 
-      this.protocol = url.protocol as EditorFileProtocol;
-      let pathname = url.pathname.replace(/%20/g, " ");
+      this.protocol = (parsedURL ? parsedURL.protocol : EditorFileProtocol.FILE) as EditorFileProtocol;
+      let pathname = (parsedURL ? parsedURL.pathname : this.path).replace(/%20/g, " ");
 
       //remove excess slashes on both ends
       pathname = pathname.replace(/^\/+|\/+$/g, '');
@@ -201,12 +203,12 @@ export class EditorFile extends EventListenerModel {
           this.location = FileLocationType.ARCHIVE;
           this.archive_path = pathname;
 
-          if(url.searchParams.has('resref')){
-            this.resref = url.searchParams.get('resref');
+          if(searchParams.has('resref')){
+            this.resref = searchParams.get('resref');
           }
 
-          if(url.searchParams.has('restype')){
-            const ext = url.searchParams.get('restype') as string;
+          if(searchParams.has('restype')){
+            const ext = searchParams.get('restype') as string;
             this.ext = KotOR.ResourceTypes.getKeyByValue( ext );
 
             if(!this.reskey){
@@ -234,7 +236,7 @@ export class EditorFile extends EventListenerModel {
             || (path_obj.ext ? path_obj.ext.toLowerCase() : this.ext);
         break;
         default:
-          console.warn('Unhandled Protocol', this.protocol, url);
+          console.warn('Unhandled Protocol', this.protocol, filepath);
         break;
       }
       console.log('setPath', this);

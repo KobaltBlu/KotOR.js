@@ -318,7 +318,7 @@ export const supportedFilePickerTypes: any[] = [
   {
     description: 'All Supported Formats', 
     accept: {
-      'application/*': ['.2da', '.tpc', '.tga', '.png', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.phn', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdl.ascii', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
+      'application/*': ['.2da', '.tpc', '.tga', '.png', '.jpg', '.jpeg', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.phn', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdl.ascii', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
     }
   },
   {
@@ -337,6 +337,12 @@ export const supportedFilePickerTypes: any[] = [
     description: 'PNG Image', 
     accept: {
       'application/*': ['.png']
+    }
+  },
+  {
+    description: 'JPG Image', 
+    accept: {
+      'application/*': ['.jpg', '.jpeg']
     }
   },
   {
@@ -492,10 +498,11 @@ export const supportedFilePickerTypes: any[] = [
 ];
 
 export const supportedFileDialogTypes: any[] = [
-  {name: 'All Supported Formats', extensions: ['2da', 'tpc', 'tga', 'png', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'phn', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
+  {name: 'All Supported Formats', extensions: ['2da', 'tpc', 'tga', 'png', 'jpg', 'jpeg', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'phn', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
   {name: 'TPC Image', extensions: ['tpc']},
   {name: 'TGA Image', extensions: ['tga']},
   {name: 'PNG Image', extensions: ['png']},
+  {name: 'JPG Image', extensions: ['jpg', 'jpeg']},
   {name: 'GFF', extensions: ['gff']},
   {name: 'Creature Template', extensions: ['utc']},
   {name: 'Door Template', extensions: ['utd']},

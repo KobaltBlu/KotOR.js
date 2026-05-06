@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabImageViewerState } from "@/apps/forge/states/tabs";
+import { ForgeRasterImage, TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
@@ -23,7 +23,7 @@ export const TabImageViewer = function(props: BaseTabProps){
     return value;
   };
 
-  const setPixelData = (image: KotOR.TPCObject|KotOR.TGAObject) => {
+  const setPixelData = (image: KotOR.TPCObject|KotOR.TGAObject|ForgeRasterImage) => {
     rerender(!render);
     if(canvasRef.current){
       const canvas = canvasRef.current;
@@ -151,6 +151,12 @@ export const TabImageViewer = function(props: BaseTabProps){
           label: 'Export PNG',
           onClick: () => {
             void tab.exportAs('png');
+          }
+        },
+        {
+          label: 'Export JPG',
+          onClick: () => {
+            void tab.exportAs('jpg');
           }
         },
         {
