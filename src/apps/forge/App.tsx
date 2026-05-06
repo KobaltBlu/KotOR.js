@@ -17,6 +17,8 @@ import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
+import forgeIcon from "@/assets/icons/icon.png";
 import * as KotOR from "@/KotOR";
 
 export const App = (props: any) => {
@@ -317,6 +319,21 @@ export const App = (props: any) => {
     </div>
   );
 
+  const renderMainTabsEmptyState = () => {
+    return (
+      <div className="tab-manager-empty-state">
+        <img className="tab-manager-empty-state__logo" src={forgeIcon} alt="Forge logo" />
+        <button
+          type="button"
+          className="tab-manager-empty-state__quick-start-btn"
+          onClick={() => ForgeState.tabManager.addTab(new TabQuickStartState())}
+        >
+          Open Start Page
+        </button>
+      </div>
+    );
+  };
+
   return (
     <>
       <div
@@ -332,7 +349,7 @@ export const App = (props: any) => {
           <LayoutContainerProvider>
             <LayoutContainer westContent={westContent}>
               <TabManagerProvider manager={ForgeState.tabManager}>
-                <TabManager></TabManager>
+                <TabManager renderEmptyState={renderMainTabsEmptyState}></TabManager>
               </TabManagerProvider>
             </LayoutContainer>
           </LayoutContainerProvider>

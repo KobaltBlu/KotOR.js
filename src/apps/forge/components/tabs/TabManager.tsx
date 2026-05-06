@@ -1,12 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import TabButton from "@/apps/forge/components/tabs/TabButton";
-import { TabManagerProvider, useTabManager } from "@/apps/forge/context/TabManagerContext";
+import { useTabManager } from "@/apps/forge/context/TabManagerContext";
 import { TabState } from "@/apps/forge/states/tabs";
 
-import * as KotOR from "@/apps/forge/KotOR";
-
 export interface TabManagerProps {
-  // manager: EditorTabManager
+  renderEmptyState?: () => React.ReactNode;
 }
 
 export const TabManager = function(props: TabManagerProps){
@@ -58,6 +56,8 @@ export const TabManager = function(props: TabManagerProps){
     }
   })
 
+  const hasTabs = tabs.length > 0;
+
   return (
     <div id="tabs-container">
       <div className="tabManager">
@@ -69,6 +69,7 @@ export const TabManager = function(props: TabManagerProps){
           }
         </ul>
         <div ref={tabsContainerRef} className="tabs tab-content">
+          {!hasTabs && typeof props.renderEmptyState === 'function' && props.renderEmptyState()}
           {
             tabs.map( (tab: any) => {
               return (
