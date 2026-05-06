@@ -23,9 +23,60 @@ const concatenate = (resultConstructor: any, ...arrays: any) => {
 export class TabImageViewerState extends TabState {
 
   tabName: string = `Image Viewer`;
-  image: KotOR.TPCObject|KotOR.TGAObject;
+  image: KotOR.TPCObject|KotOR.TGAObject|ForgePNGImage;
   workingData: Uint8Array;
   bitsPerPixel: number;
+
+  private static isPNGImage(image: any): image is ForgePNGImage {
+    return !!image && image.kind === 'png';
+  }
+
+  private static decodePNG(buffer: Uint8Array): Promise<ForgePNGImage> {
+    return new Promise<ForgePNGImage>((resolve, reject) => {
+      try{
+        const blob = new Blob([buffer], { type: 'image/png' });
+        const objectURL = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          try{
+            const width = img.naturalWidth || img.width;
+            const height = img.naturalHeight || img.height;
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if(!ctx){
+              URL.revokeObjectURL(objectURL);
+              reject(new Error('Failed to get 2d canvas context for PNG decode'));
+              return;
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+            const rgba = ctx.getImageData(0, 0, width, height).data;
+            URL.revokeObjectURL(objectURL);
+            resolve({
+              kind: 'png',
+              header: {
+                width,
+                height,
+                bitsPerPixel: 32,
+              },
+              pixelData: new Uint8Array(rgba),
+            });
+          }catch(e){
+            URL.revokeObjectURL(objectURL);
+            reject(e);
+          }
+        };
+        img.onerror = () => {
+          URL.revokeObjectURL(objectURL);
+          reject(new Error('Failed to decode PNG image'));
+        };
+        img.src = objectURL;
+      }catch(e){
+        reject(e);
+      }
+    });
+  }
 
   private static getSaveTypeForExtension(ext: string){
     switch(ext.toLowerCase()){
@@ -91,13 +142,13 @@ export class TabImageViewerState extends TabState {
   }
 
   openFile(file?: EditorFile){
-    return new Promise<KotOR.TPCObject|KotOR.TGAObject>( (resolve, reject) => {
+    return new Promise<KotOR.TPCObject|KotOR.TGAObject|ForgePNGImage>( (resolve, reject) => {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
-        file.readFile().then( (response) => {
+        file.readFile().then( async (response) => {
           switch(file?.ext){
             case 'tga':
               this.image = new KotOR.TGAObject({file: response.buffer, filename: file.resref+'.tga' });
@@ -105,11 +156,14 @@ export class TabImageViewerState extends TabState {
             case 'tpc':
               this.image = new KotOR.TPCObject({file: response.buffer, filename: file.resref+'.tpc' });
             break;
+            case 'png':
+              this.image = await TabImageViewerState.decodePNG(response.buffer);
+            break;
           }
           
           resolve(this.image);
           this.processEventListener('onEditorFileLoad');
-        });
+        }).catch(reject);
       }
     });
 
@@ -154,6 +208,8 @@ export class TabImageViewerState extends TabState {
           imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
         }
         resolve(imagePixels);
+      }else if(TabImageViewerState.isPNGImage(this.image)){
+        resolve(new Uint8Array(this.image.pixelData));
       }else{
         this.image.getPixelData( (buffer: Uint8Array) => {
           resolve(new Uint8Array(buffer));
@@ -328,4 +384,14 @@ export class TabImageViewerState extends TabState {
     return super.getExportBuffer(resref, ext);
   }
 
+}
+
+interface ForgePNGImage {
+  kind: 'png';
+  header: {
+    width: number;
+    height: number;
+    bitsPerPixel: number;
+  };
+  pixelData: Uint8Array;
 }
