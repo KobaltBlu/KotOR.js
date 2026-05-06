@@ -64,6 +64,8 @@ export interface SemanticFunctionNode extends AnnotatedNode {
   header_only: boolean;
   defined?: boolean;
   called?: boolean;
+  /** Lexical declaration order among script subroutines (0-based); used for nwn-compatible emission ordering. */
+  declarationOrder?: number;
   callIndex?: number;
   returntype: SemanticDataType;
   arguments: SemanticArgumentNode[];
