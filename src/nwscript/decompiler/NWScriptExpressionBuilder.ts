@@ -2,14 +2,16 @@ import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
+import type { JsrUserRoutineMeta } from "@/nwscript/decompiler/NWScriptArgumentStackLayout";
 import {
   OP_CONST, OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
   OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ,
   OP_LOGANDII, OP_LOGORII, OP_BOOLANDII, OP_INCORII, OP_EXCORII,
   OP_SHLEFTII, OP_SHRIGHTII, OP_USHRIGHTII,
   OP_NEG, OP_COMPI, OP_NOTI,
-  OP_CPTOPBP, OP_CPTOPSP
+  OP_CPTOPBP, OP_CPTOPSP, OP_JSR,
 } from "@/nwscript/NWScriptOPCodes";
+import { nwscriptDecompilerDebug } from "@/nwscript/decompiler/NWScriptDecompilerDebug";
 
 /**
  * Builds expressions from stack-based instructions.
@@ -36,6 +38,9 @@ export class NWScriptExpressionBuilder {
    * Function parameters (for mapping CPTOPBP offsets to parameter names)
    */
   private functionParameters: Map<number, { name: string, dataType: NWScriptDataType }> = new Map();
+
+  /** CPTOPSP-only parameters keyed by CPTOPSP signed operand */
+  private cptopspParameterOperands: Map<number, { name: string; dataType: NWScriptDataType }> = new Map();
   
   /**
    * Global variables (for mapping CPTOPBP positive offsets to global variable names)
@@ -66,6 +71,19 @@ export class NWScriptExpressionBuilder {
    * Current stack pointer (for calculating source positions in CPTOPSP)
    */
   private stackPointer: number = 0;
+
+  /** Callee entry PC → caller-side dword slots cleared when JSR returns (parameter spill). */
+  private jsrCalleeArgSlotsByEntryPc: Map<number, number> = new Map();
+
+  private jsrUserRoutineMetaByEntryPc: Map<number, JsrUserRoutineMeta> = new Map();
+
+  setJsrCalleeArgSlotsByEntryPc(map: Map<number, number>): void {
+    this.jsrCalleeArgSlotsByEntryPc = map;
+  }
+
+  setJsrUserRoutineMetaByEntryPc(map: Map<number, JsrUserRoutineMeta>): void {
+    this.jsrUserRoutineMetaByEntryPc = map;
+  }
 
   /**
    * Process an instruction and update the expression stack
@@ -115,7 +133,10 @@ export class NWScriptExpressionBuilder {
       case OP_CPTOPBP:
       case OP_CPTOPSP:
         return this.handleVariableRead(instruction);
-      
+
+      case OP_JSR:
+        return this.handleJsr(instruction);
+
       default:
         // Other instructions don't produce expressions directly
         return null;
@@ -325,25 +346,25 @@ export class NWScriptExpressionBuilder {
    * Handle ACTION (function call)
    */
   private handleAction(instruction: NWScriptInstruction): NWScriptExpression | null {
-    if (!instruction.actionDefinition) {
+    const actionDef = instruction.actionDefinition;
+    const rawArgCount = instruction.argCount ?? 0;
+    const argCount = Math.min(Math.max(rawArgCount, 0), 48);
+
+    if (!actionDef) {
+      for (let i = 0; i < argCount && this.expressionStack.length > 0; i++) {
+        this.expressionStack.pop();
+        this.stackPointer -= 4;
+      }
       return null;
     }
 
-    const actionDef = instruction.actionDefinition;
-    const argCount = instruction.argCount || 0;
-    const args: NWScriptExpression[] = [];
+    const popped: NWScriptExpression[] = [];
 
-    // Pop arguments from stack
-    // In NWScript, arguments appear to be pushed in forward order (first arg first)
-    // So when we pop them, we get them in reverse order (last arg first)
-    // We use push to collect them, then reverse to get correct order
     for (let i = 0; i < argCount && this.expressionStack.length > 0; i++) {
-      args.unshift(this.expressionStack.pop()!);
-      // args.push(this.expressionStack.pop()!); // Push to array (will be in reverse order)
+      popped.push(this.expressionStack.pop()!);
+      this.stackPointer -= 4;
     }
-    
-    // Reverse to get correct argument order (first arg first)
-    args.reverse();
+    const args = popped.reverse();
 
     const functionName = actionDef.name || `Action_${instruction.action}`;
     const returnType = actionDef.type || NWScriptDataType.VOID;
@@ -356,6 +377,43 @@ export class NWScriptExpressionBuilder {
     }
     
     return expr;
+  }
+
+  /**
+   * Match {@link NWScriptStackSimulator}: pop caller argument expressions after JSR;
+   * for analyzed user subs, build a {@link NWScriptExpression.functionCall} like {@link #handleAction}.
+   */
+  private handleJsr(instruction: NWScriptInstruction): NWScriptExpression | null {
+    if (instruction.offset === undefined) {
+      return null;
+    }
+    const targetPc = instruction.address + instruction.offset;
+    const slots = this.jsrCalleeArgSlotsByEntryPc.get(targetPc) ?? 0;
+    const meta = this.jsrUserRoutineMetaByEntryPc.get(targetPc);
+
+    if (meta) {
+      const popped: NWScriptExpression[] = [];
+      let n = Math.min(slots, this.expressionStack.length);
+      while (n > 0 && this.expressionStack.length > 0) {
+        popped.push(this.expressionStack.pop()!);
+        this.stackPointer -= 4;
+        n--;
+      }
+      const args = popped.reverse();
+      const expr = NWScriptExpression.functionCall(meta.name, args, meta.returnType);
+      if (meta.returnType !== NWScriptDataType.VOID) {
+        this.expressionStack.push(expr);
+      }
+      return expr;
+    }
+
+    let guard = slots;
+    while (guard > 0 && this.expressionStack.length > 0) {
+      this.expressionStack.pop();
+      this.stackPointer -= 4;
+      guard--;
+    }
+    return null;
   }
 
   /**
@@ -399,47 +457,59 @@ export class NWScriptExpressionBuilder {
       
       // First, try to resolve using the dynamic stack position map (stack-aware)
       const varIndex = this.variableStackPositions.get(sourceStackPos);
-      console.log(`[ExpressionBuilder.handleVariableRead] CPTOPSP: SP=${this.stackPointer}, offset=${offsetSigned}, sourcePos=${sourceStackPos}, varIndex=${varIndex}`);
-      if (varIndex !== undefined && this.localVariableInits[varIndex]) {
-        // Found variable using stack-aware resolution
+      nwscriptDecompilerDebug(`[ExpressionBuilder.handleVariableRead] CPTOPSP: SP=${this.stackPointer}, offset=${offsetSigned}, sourcePos=${sourceStackPos}, varIndex=${varIndex}`);
+      if (varIndex !== undefined) {
         const init = this.localVariableInits[varIndex];
         varName = `localVar_${varIndex}`;
-        dataType = init.dataType;
-        console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using stack-aware resolution`);
+        dataType = init?.dataType ?? NWScriptDataType.INTEGER;
+        nwscriptDecompilerDebug(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using stack-aware resolution`);
       } else {
         // Stack-aware fallback: Check all variable positions with tolerance
         // The stack may have grown between RSADD and CPTOPSP, so check all recorded positions
         let foundVar = false;
+        let tolBestIdx: number | undefined;
+        let tolBestDist = Number.POSITIVE_INFINITY;
         for (const [varPos, idx] of this.variableStackPositions.entries()) {
           const distance = Math.abs(sourceStackPos - varPos);
-          // Allow tolerance (±8 bytes) since the stack may have grown
-          if (distance <= 8 && this.localVariableInits[idx]) {
-            const init = this.localVariableInits[idx];
-            varName = `localVar_${idx}`;
-            dataType = init.dataType;
-            foundVar = true;
-            break;
+          if (distance > 28) {
+            continue;
           }
+          if (
+            tolBestIdx === undefined ||
+            distance < tolBestDist ||
+            (distance === tolBestDist && idx < tolBestIdx)
+          ) {
+            tolBestDist = distance;
+            tolBestIdx = idx;
+          }
+        }
+        if (tolBestIdx !== undefined) {
+          const init = this.localVariableInits[tolBestIdx];
+          varName = `localVar_${tolBestIdx}`;
+          dataType = init?.dataType ?? NWScriptDataType.INTEGER;
+          foundVar = true;
         }
         
         if (!foundVar) {
-          // Last resort: Fallback to static offset-based mapping (for backward compatibility)
-          // This should rarely be needed if stack-aware tracking is working correctly
-          const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
-          if (this.localVariables.has(offsetUnsigned)) {
-            // Use mapped local variable name from static mapping
-            const localVar = this.localVariables.get(offsetUnsigned)!;
-            varName = localVar.name;
-            dataType = localVar.dataType;
-            console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using static offset mapping (offset=${offsetUnsigned.toString(16)})`);
+          const spParam = this.cptopspParameterOperands.get(offsetSigned);
+          if (spParam) {
+            varName = spParam.name;
+            dataType = spParam.dataType;
           } else {
-            // Generate a generic name as absolute last resort
-            varName = this.generateVariableName(false, offset);
-            dataType = NWScriptDataType.INTEGER; // Default, could be improved
-            console.log(`[ExpressionBuilder.handleVariableRead] Generated generic name: ${varName}`);
+            const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
+            if (this.localVariables.has(offsetUnsigned)) {
+              const localVar = this.localVariables.get(offsetUnsigned)!;
+              varName = localVar.name;
+              dataType = localVar.dataType;
+              nwscriptDecompilerDebug(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using static offset mapping (offset=${offsetUnsigned.toString(16)})`);
+            } else {
+              varName = this.generateVariableName(false, offset);
+              dataType = NWScriptDataType.INTEGER;
+              nwscriptDecompilerDebug(`[ExpressionBuilder.handleVariableRead] Generated generic name: ${varName}`);
+            }
           }
         } else {
-          console.log(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using fallback tolerance search`);
+          nwscriptDecompilerDebug(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using fallback tolerance search`);
         }
       }
     }
@@ -555,6 +625,7 @@ export class NWScriptExpressionBuilder {
     this.expressionStack = [];
     this.variableCounter = 0;
     this.functionParameters.clear();
+    this.cptopspParameterOperands.clear();
   }
 
   /**
@@ -562,11 +633,16 @@ export class NWScriptExpressionBuilder {
    */
   setFunctionParameters(parameters: NWScriptFunctionParameter[]): void {
     this.functionParameters.clear();
+    this.cptopspParameterOperands.clear();
     for (const param of parameters) {
-      this.functionParameters.set(param.offset, { name: param.name, dataType: param.dataType });
+      if (param.resolvedViaSpOperand) {
+        this.cptopspParameterOperands.set(param.offset, { name: param.name, dataType: param.dataType });
+      } else {
+        this.functionParameters.set(param.offset, { name: param.name, dataType: param.dataType });
+      }
     }
   }
-  
+
   /**
    * Set global variables for variable name mapping
    * Maps BP offsets (positive) to global variable names

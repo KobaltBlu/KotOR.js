@@ -7,6 +7,14 @@ import { NWScriptGlobalVariableAnalyzer } from "@/nwscript/decompiler/NWScriptGl
 import { NWScriptLocalVariableAnalyzer } from "@/nwscript/decompiler/NWScriptLocalVariableAnalyzer";
 import { NWScriptControlNodeToASTConverter } from "@/nwscript/decompiler/NWScriptControlNodeToASTConverter";
 import { NWScriptAST } from "@/nwscript/decompiler/NWScriptAST";
+import type { NWScriptProgramNode } from "@/nwscript/decompiler/NWScriptAST";
+import { nwscriptDecompilerDebug, nwscriptDecompilerDebugEnabled } from "@/nwscript/decompiler/NWScriptDecompilerDebug";
+import { applyNwscriptDecompilerCleanup } from "@/nwscript/decompiler/NWScriptDecompilerCleanupPass";
+
+/** Result of {@link NWScriptDecompiler.buildProgramAst} (phases through AST + cleanup, no NSS emit). */
+export type NWScriptBuildProgramAstResult =
+  | { ok: true; ast: NWScriptProgramNode }
+  | { ok: false; error: string };
 
 /**
  * Main decompiler orchestrator.
@@ -34,92 +42,110 @@ export class NWScriptDecompiler {
 
   /**
    * Decompile the script from NCS to NSS
-   * 
-   * Pipeline (Option A - ControlNode-First):
-   * CFG -> StructureBuilder -> Variable Analyzers -> Function Analyzer -> 
-   * ControlNode Tree -> AST Converter -> Code Generator
+   *
+   * Pipeline (Option A — ControlNode-first), loosely mirroring NCSDecomp phases:
+   * CFG (positions + edges + unreachability) ≈ SetPositions / SetDestinations / SetDeadCode;
+   * Natural loops use dominance back edges plus procedure-local backward unconditional {@code JMP}
+   * hints when entry dominance misses a latch (see {@link NWScriptControlFlowGraph.procedureLatchEdges});
+   * {@link NWScriptFunctionAnalyzer} ≈ prototype + arity; structure builder ≈ control recovery;
+   * AST + cleanup hook ≈ MainPass + CleanupPass.
    */
-  decompile(): string {
+  /**
+   * Run decompilation through the NWScript AST (CFG → structure → ControlNode → AST + cleanup).
+   * Does not run the code generator; use for tests and tooling that care about tree shape.
+   */
+  buildProgramAst(): NWScriptBuildProgramAstResult {
     try {
-      // Phase 1: Build Control Flow Graph
-      if (!this.script.instructions || this.script.instructions.size === 0) {
-        return '// Error: No instructions found';
+      return this.runPhasesThroughAst();
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      console.error("Decompilation error (AST build):", error);
+      return { ok: false, error: msg };
+    }
+  }
+
+  decompile(): string {
+    const astResult = this.buildProgramAst();
+    if (astResult.ok === false) {
+      if (astResult.error === "No instructions found") {
+        return "// Error: No instructions found";
       }
-
-      console.log('Building control flow graph...');
-      this.cfg = new NWScriptControlFlowGraph(this.script);
-      this.cfg.build();
-      console.log('CFG built successfully');
-
-      if (!this.cfg.entryBlock) {
-        return '// Error: No entry block found';
+      if (astResult.error === "No entry block found") {
+        return "// Error: No entry block found";
       }
+      return `// Error during decompilation: ${astResult.error}`;
+    }
 
-      // console.log(JSON.stringify(this.cfg.toJSON(), null, 2));
-
-      // Phase 2: Analyze global variable initializations
-      console.log('Analyzing global variables...');
-      this.globalVarAnalyzer = new NWScriptGlobalVariableAnalyzer(this.script, this.cfg);
-      const globalInits = this.globalVarAnalyzer.analyze();
-      // console.log(`Found ${globalInits.length} global variables`);
-      // console.log(JSON.stringify(globalInits, null, 2));
-
-      // Phase 3: Analyze local variable initializations
-      console.log('Analyzing local variables...');
-      this.localVarAnalyzer = new NWScriptLocalVariableAnalyzer(this.script, globalInits);
-      const localInits = this.localVarAnalyzer.analyze();
-      // console.log(`Found ${localInits.length} local variables`);
-      // console.log(JSON.stringify(localInits, null, 2));
-
-      // Phase 4: Analyze Functions
-      console.log('Analyzing functions...');
-      this.functionAnalyzer = new NWScriptFunctionAnalyzer(this.cfg, globalInits);
-      const functions = this.functionAnalyzer.analyze();
-      // console.log(`Found ${functions.length} functions`);
-      // console.log(JSON.stringify(functions, null, 2));
-
-      // Phase 5: Build Control Structures and ControlNode Tree
-      console.log('Building control structures...');
-      this.structureBuilder = new NWScriptControlStructureBuilder(this.cfg);
-      this.structureBuilder.analyze();
-      // console.log(JSON.stringify(this.structureBuilder.toJSON(), null, 2));
-      
-      // Use the main function's entry block, not the CFG entry block
-      // The CFG entry block is the JSR caller, but we need the actual function entry block
-      const mainFunction = functions.find(f => f.isMain);
-      const functionEntryBlock = mainFunction?.entryBlock || this.cfg.entryBlock;
-      console.log(`[Decompiler] Building ControlNode tree from function entry block ${functionEntryBlock.id} (CFG entry block is ${this.cfg.entryBlock.id})`);
-      
-      const controlNodeTree = this.structureBuilder.buildProcedure(functionEntryBlock);
-      console.log('ControlNode tree built successfully');
-      console.log(`[Decompiler] CFG has ${this.cfg.blocks.size} blocks`);
-      console.log(`[Decompiler] Main function has ${mainFunction?.bodyBlocks.length || 0} body blocks`);
-      console.log(`[Decompiler] ControlNode tree type: ${controlNodeTree.type}`);
-
-      // Phase 6: Convert ControlNode Tree to AST
-      console.log('Converting ControlNode tree to AST...');
-      this.astConverter = new NWScriptControlNodeToASTConverter(
-        this.cfg,
-        functions,
-        globalInits,
-        localInits
-      );
-      const ast = this.astConverter.convertToAST(controlNodeTree, this.structureBuilder);
-      console.log('AST built successfully');
-      console.log('AST JSON:', JSON.stringify(NWScriptAST.toJSON(ast), null, 2));
-
-      // Phase 7: Generate NSS Code from AST
-      console.log('Generating NSS source code...');
+    try {
+      nwscriptDecompilerDebug("Generating NSS source code...");
       this.codeGenerator = new NWScriptASTCodeGenerator();
-      const nssSource = this.codeGenerator.generate(ast);
-
-      // Add header comment
+      const nssSource = this.codeGenerator.generate(astResult.ast);
       const header = this.generateHeader();
       return header + '\n\n' + nssSource;
     } catch (error) {
       console.error('Decompilation error:', error);
       return `// Error during decompilation: ${error instanceof Error ? error.message : String(error)}`;
     }
+  }
+
+  /**
+   * Phases 1–6 shared by {@link decompile} and {@link buildProgramAst}.
+   */
+  private runPhasesThroughAst(): NWScriptBuildProgramAstResult {
+    if (!this.script.instructions || this.script.instructions.size === 0) {
+      return { ok: false, error: 'No instructions found' };
+    }
+
+    nwscriptDecompilerDebug('Building control flow graph...');
+    this.cfg = new NWScriptControlFlowGraph(this.script);
+    this.cfg.build();
+    nwscriptDecompilerDebug('CFG built successfully');
+
+    if (!this.cfg.entryBlock) {
+      return { ok: false, error: 'No entry block found' };
+    }
+
+    nwscriptDecompilerDebug('Analyzing global variables...');
+    this.globalVarAnalyzer = new NWScriptGlobalVariableAnalyzer(this.script, this.cfg);
+    const globalInits = this.globalVarAnalyzer.analyze();
+
+    nwscriptDecompilerDebug('Analyzing local variables...');
+    this.localVarAnalyzer = new NWScriptLocalVariableAnalyzer(this.script, globalInits);
+    const localInits = this.localVarAnalyzer.analyze();
+
+    nwscriptDecompilerDebug('Analyzing functions...');
+    this.functionAnalyzer = new NWScriptFunctionAnalyzer(this.cfg, globalInits);
+    const functions = this.functionAnalyzer.analyze();
+
+    nwscriptDecompilerDebug('Building control structures...');
+    this.structureBuilder = new NWScriptControlStructureBuilder(this.cfg);
+    this.structureBuilder.analyze();
+
+    const mainFunction = functions.find(f => f.isMain);
+    const functionEntryBlock = mainFunction?.entryBlock || this.cfg.entryBlock;
+    nwscriptDecompilerDebug(`[Decompiler] Building ControlNode tree from function entry block ${functionEntryBlock.id} (CFG entry block is ${this.cfg.entryBlock.id})`);
+
+    const controlNodeTree = this.structureBuilder.buildProcedure(functionEntryBlock);
+    nwscriptDecompilerDebug('ControlNode tree built successfully');
+    nwscriptDecompilerDebug(`[Decompiler] CFG has ${this.cfg.blocks.size} blocks`);
+    nwscriptDecompilerDebug(`[Decompiler] Main function has ${mainFunction?.bodyBlocks.length || 0} body blocks`);
+    nwscriptDecompilerDebug(`[Decompiler] ControlNode tree type: ${controlNodeTree.type}`);
+
+    nwscriptDecompilerDebug('Converting ControlNode tree to AST...');
+    this.astConverter = new NWScriptControlNodeToASTConverter(
+      this.cfg,
+      functions,
+      globalInits,
+      localInits
+    );
+    const ast = this.astConverter.convertToAST(controlNodeTree, this.structureBuilder);
+    applyNwscriptDecompilerCleanup(ast, { cfg: this.cfg, functions });
+    nwscriptDecompilerDebug('AST built successfully');
+    if (nwscriptDecompilerDebugEnabled()) {
+      console.log('AST JSON:', JSON.stringify(NWScriptAST.toJSON(ast), null, 2));
+    }
+
+    return { ok: true, ast };
   }
 
   /**
