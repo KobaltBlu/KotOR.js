@@ -1,4 +1,5 @@
 import * as fs from "fs";
+import * as path from "path";
 import * as KotOR from "@/apps/forge/KotOR";
 declare const dialog: any;
 
@@ -297,6 +298,16 @@ export class ForgeFileSystem {
       path: undefined,
       handle: undefined,
     };
+  }
+
+  /** Electron only: writes bytes to an absolute filesystem path. */
+  static async writeUint8ArrayToPath(fullPath: string, data: Uint8Array): Promise<void> {
+    if(KotOR.ApplicationProfile.ENV != KotOR.ApplicationEnvironment.ELECTRON){
+      throw new Error('writeUint8ArrayToPath is only supported in Electron');
+    }
+    const buf = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+    await fs.promises.mkdir(path.dirname(fullPath), { recursive: true });
+    await fs.promises.writeFile(fullPath, buf);
   }
 
 }

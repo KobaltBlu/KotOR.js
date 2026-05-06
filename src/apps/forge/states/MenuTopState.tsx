@@ -13,6 +13,8 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
 import { TabTextEditorState } from "@/apps/forge/states/tabs/TabTextEditorState";
 import { TabLIPEditorState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorState";
+import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompile";
+import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
 
 
 export class MenuTopState {
@@ -54,6 +56,7 @@ export class MenuTopState {
   static menuItemView: MenuTopItem;
   static menuItemStartPage: MenuTopItem;
   static menuItemOpenModuleEditor: MenuTopItem;
+  static menuItemCompileAllProjectNss: MenuTopItem;
   static menuItemRecentFiles: MenuTopItem;
   static menuItemAudio: MenuTopItem;
 
@@ -341,6 +344,25 @@ export class MenuTopState {
       }
     });
 
+    this.menuItemCompileAllProjectNss = new MenuTopItem({
+      name: 'Compile all NSS',
+      onClick: async () => {
+        if(!ForgeState.project){
+          alert('Open a project folder first (Project Explorer).');
+          return;
+        }
+        ForgeState.loaderShow();
+        try {
+          const outcome = await compileAllNssInProject();
+          const modal = new ModalBulkNssCompileResultsState(outcome);
+          modal.attachToModalManager(ForgeState.modalManager);
+          modal.open();
+        }finally{
+          ForgeState.loaderHide();
+        }
+      },
+    });
+
     this.menuItemAudio.items.push(
       new MenuTopItem({
         name: 'No Reverb',
@@ -402,6 +424,7 @@ export class MenuTopState {
 
     this.menuItemProject.items.push(
       this.menuItemOpenModuleEditor,
+      this.menuItemCompileAllProjectNss,
     );
 
     this.menuItemView.items.push(

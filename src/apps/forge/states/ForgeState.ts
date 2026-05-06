@@ -185,6 +185,10 @@ export class ForgeState {
           ForgeState.saveOpenTabsState();
         });
 
+        // Tabs restored or default quick start are added before listeners exist; persist once so
+        // open_tabs (including Start Page) matches the real tab strip after load.
+        ForgeState.saveOpenTabsState();
+
         ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
         ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
         ForgeState.resourceExplorerTab.show();
@@ -534,7 +538,6 @@ export class ForgeState {
   }
 
   static saveOpenTabsState(){
-    return;
     try{
       const states: TabStoreState[] = ForgeState.tabManager.tabs.map( (state) => {
         return {

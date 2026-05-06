@@ -53,6 +53,7 @@ export class Project {
     ForgeFileSystem.OpenDirectory().then( async (response) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         if(response.paths && response.paths.length){
+          ProjectFileSystem.clearDirectoryCache();
           const projectPath = response.paths[0];
           ProjectFileSystem.rootDirectoryPath = projectPath;
           ForgeState.project = new Project();
@@ -65,6 +66,7 @@ export class Project {
         }
       }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
         if(response.handles && response.handles.length){
+          ProjectFileSystem.clearDirectoryCache();
           const handle = response.handles[0] as FileSystemDirectoryHandle;
           ProjectFileSystem.rootDirectoryHandle = handle;
           console.log('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
