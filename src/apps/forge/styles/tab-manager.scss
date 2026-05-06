@@ -183,6 +183,7 @@
         right: 0;
         bottom: 0;
         backdrop-filter: grayscale(100%) contrast(110%) opacity(0.25);
+        pointer-events: none;
       }
 
       & > .row {
