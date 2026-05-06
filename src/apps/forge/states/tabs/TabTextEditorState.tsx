@@ -61,6 +61,11 @@ export class TabTextEditorState extends TabState {
       case 'nss':
       case 'ncs':
         return 'nwscript';
+      case 'json':
+        // `json` is the only extra Monaco language registered via
+        // MonacoWebpackPlugin in webpack/Forge.js; other extensions fall back
+        // to plaintext until additional languages are added to the bundle.
+        return 'json';
       default:
         return 'plaintext';
     }

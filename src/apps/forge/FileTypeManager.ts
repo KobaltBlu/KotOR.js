@@ -28,14 +28,18 @@ export class FileTypeManager {
 
   static onOpenResource(res: EditorFile|string){
 
-    let ext = 'NA';
-
     if(typeof res === 'string'){
       res = new EditorFile({path: res});
-      ext = ResourceTypes.getKeyByValue(res.reskey);
-    }else{
-      ext = ResourceTypes.getKeyByValue(res.reskey);
     }
+
+    // Prefer the canonical ResourceTypes spelling when available, but fall back
+    // to the EditorFile's raw ext so non-engine types (json, tsv, bat, ps1, ...)
+    // still reach the dispatch switch instead of being lost as 'NA'.
+    const ext = (
+      ResourceTypes.getKeyByValue(res.reskey)
+      || (typeof res.ext === 'string' ? res.ext : '')
+      || 'NA'
+    ).toLowerCase();
 
     //Update the opened files list
     ForgeState.addRecentFile(res);
@@ -141,12 +145,11 @@ export class FileTypeManager {
         // }
       break;
       default:
-        // NotificationManager.Notify(NotificationManager.Types.WARNING, `File Type: (${ext}) not yet supported`);
-        // console.warn('FileTypeManager.onOpenResource', 'Unknown FileType', ext, res);
-        
-        // if(ForgeState.Project instanceof Project){
-        //   ForgeState.Project.removeFromOpenFileList({editorFile: res});
-        // }
+        // Permissive fallback: open any unhandled file in the text editor so
+        // arbitrary text formats (json, tsv, csv, bat, cmd, ps1, sh, ini, cfg,
+        // log, md, yml, yaml, toml, xml, html, css, js, ts, ...) are usable in
+        // Forge. Binary files opened this way will render as garbled text.
+        ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
       break;
     }
 

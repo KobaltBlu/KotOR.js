@@ -114,6 +114,13 @@ export class EditorFile extends EventListenerModel {
       useProjectFileSystem: false,
     }, options);
 
+    // Captured before the reskey/ext setters cross-trample each other; used as
+    // a last-resort fallback so non-engine extensions (tsv, bat, ps1, ...) are
+    // not lost when ResourceTypes has no entry for them.
+    const rawOptionsExt = typeof options.ext === 'string' && options.ext.length
+      ? options.ext.toLowerCase()
+      : null;
+
     this.buffer = options.buffer || new Uint8Array(0);
     this.buffer2 = options.buffer2;
     this.mdlAsciiOnly = !!options.mdlAsciiOnly;
@@ -133,11 +140,17 @@ export class EditorFile extends EventListenerModel {
     if(!this.ext && this.reskey){
       this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
     }
+    if(!this.ext && rawOptionsExt){
+      this.ext = rawOptionsExt;
+    }
 
     this.setPath(this.path);
 
     if(!this.ext && this.reskey){
       this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
+    }
+    if(!this.ext && rawOptionsExt){
+      this.ext = rawOptionsExt;
     }
 
     if(this.location == FileLocationType.OTHER)
@@ -213,7 +226,12 @@ export class EditorFile extends EventListenerModel {
             this.reskey = KotOR.ResourceTypes[path_obj.ext];
           }
 
-          this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
+          // Prefer the canonical ext spelling derived from ResourceTypes; if the
+          // parsed extension is not registered as an engine resource (e.g. tsv,
+          // bat, ps1, json variants outside the table), fall back to the raw
+          // extension so dispatchers and tab titles still see it.
+          this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey)
+            || (path_obj.ext ? path_obj.ext.toLowerCase() : this.ext);
         break;
         default:
           console.warn('Unhandled Protocol', this.protocol, url);
