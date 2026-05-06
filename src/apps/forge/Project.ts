@@ -12,6 +12,7 @@ import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
 import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
 import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
 
 const DIR_FORGE = '.forge';
 const DIR_BLUEPRINTS = 'blueprints';
@@ -191,7 +192,7 @@ export class Project {
         ForgeState.tabManager.removeTab(quickStart);
       }
 
-      await KotOR.GameInitializer.Init(this.settings.game);
+      await ForgeInitializer.Init(this.settings.game);
       //This is where we initialize ProjectType specific operations
       if(!deferInit){
         await this.initializeProject();
