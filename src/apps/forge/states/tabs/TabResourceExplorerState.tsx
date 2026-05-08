@@ -5,7 +5,7 @@ import * as path from "path";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { AsyncLoop } from "@/utility/AsyncLoop";
 import * as KotOR from "@/apps/forge/KotOR";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { EditorFile } from "@/apps/forge/EditorFile";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
 
@@ -146,7 +146,12 @@ export class TabResourceExplorerState extends TabState {
                 name: (`${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`),
                 type: 'resource',
                 data: {
-                  path: `${ EditorFileProtocol.BIF }//game.dir/${bif.file}?resref=${resref}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`
+                  path: EditorFile.referenceURIForArchiveResource(
+                    'bif',
+                    bif.file,
+                    resref,
+                    KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
+                  )
                 },
               })
             );
@@ -215,7 +220,12 @@ export class TabResourceExplorerState extends TabState {
               name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
               type: 'resource',
               data: {
-                path: `${ EditorFileProtocol.RIM }//game.dir/${rim.resource_path}?resref=${resref}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
+                path: EditorFile.referenceURIForArchiveResource(
+                  'rim',
+                  rim.resource_path,
+                  resref,
+                  KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
+                ),
               },
             }));
           }
@@ -302,7 +312,12 @@ export class TabResourceExplorerState extends TabState {
               name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
               type: 'resource',
               data: {
-                path: `${ rim instanceof KotOR.RIMObject ? EditorFileProtocol.RIM : EditorFileProtocol.ERF }//game.dir/${rim.resource_path}?resref=${resref}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
+                path: EditorFile.referenceURIForArchiveResource(
+                  rim instanceof KotOR.RIMObject ? 'rim' : 'erf',
+                  rim.resource_path,
+                  resref,
+                  KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
+                ),
               }
             }));
           }
@@ -388,7 +403,12 @@ export class TabResourceExplorerState extends TabState {
 							name: `${resRef}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
 							type: 'resource',
 							data: {
-								path: `${ rim instanceof KotOR.RIMObject ? EditorFileProtocol.RIM : EditorFileProtocol.ERF }//game.dir/${rim.resource_path}?resref=${resRef}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
+								path: EditorFile.referenceURIForArchiveResource(
+                  rim instanceof KotOR.RIMObject ? 'rim' : 'erf',
+                  rim.resource_path,
+                  resRef,
+                  KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
+                ),
 							}
 						}));
 					}
@@ -460,7 +480,12 @@ export class TabResourceExplorerState extends TabState {
               name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
               type: 'resource',
               data: {
-                path: `${EditorFileProtocol.ERF}//game.dir/${erf.resource_path}?resref=${resref}&restype=${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
+                path: EditorFile.referenceURIForArchiveResource(
+                  'erf',
+                  erf.resource_path,
+                  resref,
+                  KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
+                ),
               },
             }));
           }
@@ -527,7 +552,7 @@ export class TabResourceExplorerState extends TabState {
             new FileBrowserNode({
               name: newfile.trim(),
               type: 'resource',
-              data: { path: `${EditorFileProtocol.FILE}//game.dir/${files[i]}` },
+              data: { path: EditorFile.referenceURIForGameRelative(files[i]) },
               nodes: [],
             })
           );
@@ -668,7 +693,7 @@ export class TabResourceExplorerState extends TabState {
         type: 'resource',
         data: {
           path: archivePath
-            ? `${EditorFileProtocol.ERF}//game.dir/${archivePath}?resref=${resource.resRef}&restype=${restype}`
+            ? EditorFile.referenceURIForArchiveResource('erf', archivePath, resource.resRef, restype)
             : undefined,
         },
       }));

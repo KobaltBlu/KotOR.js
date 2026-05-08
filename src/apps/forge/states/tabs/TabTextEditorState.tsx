@@ -168,6 +168,7 @@ export class TabTextEditorState extends TabState {
             this.nwScript = new KotOR.NWScript(this.ncs);
             this.nwScript.name = file?.getFilename().split('.')[0] || '';
             this.code = this.nwScript.decompile(this.ncs);
+            this.getSouthTabManager().getTabByType('TabScriptInspectorState')?.show();
             this.triggerLinterTimeout();
             this.processEventListener('onEditorFileLoad');
             resolve();

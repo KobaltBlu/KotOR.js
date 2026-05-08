@@ -17,4 +17,5 @@ export interface EditorFileOptions {
   location?: FileLocationType;
   useGameFileSystem?: boolean;
   useProjectFileSystem?: boolean;
+  useSystemFileSystem?: boolean;
 }

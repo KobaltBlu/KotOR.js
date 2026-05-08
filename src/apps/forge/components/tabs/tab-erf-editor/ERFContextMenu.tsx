@@ -80,7 +80,7 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
               newFile.handle = newHandle;
               console.log('handle', newHandle.name, newHandle);
               try{
-                newFile.setPath(`file://system.dir/${newHandle.name}`);
+                newFile.setPath(EditorFile.referenceURIForSystemVirtualName(newHandle.name));
                 const saveBuffer = new Uint8Array(newFile.buffer)
                 const ws: FileSystemWritableFileStream = await newHandle.createWritable();
                 await ws.write(saveBuffer || new Uint8Array(0));

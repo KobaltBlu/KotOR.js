@@ -15,8 +15,8 @@ import { ModalManager } from "@/apps/forge/components/modal/ModalManager";
 import { LoadingScreen } from "@/apps/common/components/loadingScreen/LoadingScreen";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import { EditorFile } from "@/apps/forge/EditorFile";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
 import forgeIcon from "@/assets/icons/icon.png";
 import * as KotOR from "@/KotOR";
@@ -213,7 +213,7 @@ export const App = (props: any) => {
       for (const handle of otherHandles) {
         const parsed = pathParse(handle.name);
         FileTypeManager.onOpenFile({
-          path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`,
+          path: EditorFile.referenceURIForSystemVirtualName(handle.name),
           handle: handle,
           filename: handle.name,
           resref: parsed.name,
@@ -235,8 +235,8 @@ export const App = (props: any) => {
         if (batchMdx) {
           pairedMdxHandles.add(batchMdx);
           FileTypeManager.onOpenFile({
-            path: `${EditorFileProtocol.FILE}//system.dir/${mdlHandle.name}`,
-            path2: `${EditorFileProtocol.FILE}//system.dir/${batchMdx.name}`,
+            path: EditorFile.referenceURIForSystemVirtualName(mdlHandle.name),
+            path2: EditorFile.referenceURIForSystemVirtualName(batchMdx.name),
             handle: mdlHandle,
             handle2: batchMdx,
             filename: mdlHandle.name,
@@ -253,8 +253,8 @@ export const App = (props: any) => {
           if (Array.isArray(mdxResponse.handles) && mdxResponse.handles.length > 0) {
             const [mdxHandle] = mdxResponse.handles as FileSystemFileHandle[];
             FileTypeManager.onOpenFile({
-              path: `${EditorFileProtocol.FILE}//system.dir/${mdlHandle.name}`,
-              path2: `${EditorFileProtocol.FILE}//system.dir/${mdxHandle.name}`,
+              path: EditorFile.referenceURIForSystemVirtualName(mdlHandle.name),
+              path2: EditorFile.referenceURIForSystemVirtualName(mdxHandle.name),
               handle: mdlHandle,
               handle2: mdxHandle,
               filename: mdlHandle.name,
@@ -264,7 +264,7 @@ export const App = (props: any) => {
           } else {
             // User cancelled – open MDL alone
             FileTypeManager.onOpenFile({
-              path: `${EditorFileProtocol.FILE}//system.dir/${mdlHandle.name}`,
+              path: EditorFile.referenceURIForSystemVirtualName(mdlHandle.name),
               handle: mdlHandle,
               filename: mdlHandle.name,
               resref: parsed.name,
@@ -289,8 +289,8 @@ export const App = (props: any) => {
         if (Array.isArray(mdlResponse.handles) && mdlResponse.handles.length > 0) {
           const [mdlHandle] = mdlResponse.handles as FileSystemFileHandle[];
           FileTypeManager.onOpenFile({
-            path: `${EditorFileProtocol.FILE}//system.dir/${mdlHandle.name}`,
-            path2: `${EditorFileProtocol.FILE}//system.dir/${mdxHandle.name}`,
+            path: EditorFile.referenceURIForSystemVirtualName(mdlHandle.name),
+            path2: EditorFile.referenceURIForSystemVirtualName(mdxHandle.name),
             handle: mdlHandle,
             handle2: mdxHandle,
             filename: mdlHandle.name,
@@ -300,7 +300,7 @@ export const App = (props: any) => {
         } else {
           // User cancelled – open MDX alone
           FileTypeManager.onOpenFile({
-            path: `${EditorFileProtocol.FILE}//system.dir/${mdxHandle.name}`,
+            path: EditorFile.referenceURIForSystemVirtualName(mdxHandle.name),
             handle: mdxHandle,
             filename: mdxHandle.name,
             resref: parsed.name,

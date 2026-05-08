@@ -271,6 +271,9 @@ export class TabState extends EventListenerModel {
 
   remove(){
     this.visible = false;
+    if(ForgeState.project && this.file instanceof EditorFile){
+      ForgeState.project.removeFromOpenFileList(this.file);
+    }
     this.#tabManager.removeTab(this);
     this.processEventListener('onTabRemoved', [this]);
   }
@@ -470,7 +473,7 @@ export class TabState extends EventListenerModel {
             currentFile.handle = newHandle;
             try{
               const pathInfo = pathParse(newHandle.name);
-              currentFile.setPath(`file://system.dir/${newHandle.name}`);
+              currentFile.setPath(EditorFile.referenceURIForSystemVirtualName(newHandle.name));
               const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
               const ws: FileSystemWritableFileStream = await newHandle.createWritable();
               await ws.write(saveBuffer as any || new Uint8Array(0) as any);

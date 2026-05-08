@@ -138,7 +138,7 @@ export class EditorTabManager extends EventListenerModel {
 
   restoreTabState(tabState: TabStoreState) {
     if(tabState.file){
-      tabState.file = Object.assign(new EditorFile(), tabState.file);
+      tabState.file = EditorFile.revive(tabState.file as Partial<EditorFile>);
       console.log('file', tabState.file);
     }
     switch(tabState.type){

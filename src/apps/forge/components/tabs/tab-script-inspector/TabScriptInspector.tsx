@@ -12,10 +12,21 @@ export const TabScriptInspector = function(props: any){
 
   const offset = 13;
 
-  const onCompile = () => {
-    // console.log('onCompile');
+  const refreshInstructions = () => {
+    if(!parentTab?.ncs?.length){
+      setInstructions([]);
+      return;
+    }
     const script = new KotOR.NWScript(parentTab.ncs);
     setInstructions([...script.instructions.values()]);
+  };
+
+  const onCompile = () => {
+    refreshInstructions();
+  };
+
+  const onEditorFileLoad = () => {
+    refreshInstructions();
   };
 
   const onCopyAssemblyToClipboard = async () => {
@@ -44,8 +55,12 @@ export const TabScriptInspector = function(props: any){
 
   useEffectOnce( () => {
     parentTab.addEventListener('onCompile', onCompile);
+    parentTab.addEventListener('onEditorFileLoad', onEditorFileLoad);
+    // Populate when opening an existing .ncs (no compile event fired).
+    refreshInstructions();
     return () => {
       parentTab.removeEventListener('onCompile', onCompile);
+      parentTab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
     }
   });
 

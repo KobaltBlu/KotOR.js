@@ -1,5 +1,5 @@
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
+import { EditorFile } from "@/apps/forge/EditorFile";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 
 /**
@@ -74,7 +74,7 @@ function insertFileRelPath(root: FileBrowserNode, norm: string): void {
       type: "resource",
       canOrphan: true,
       data: {
-        path: `${EditorFileProtocol.FILE}//project.dir/${norm}`,
+        path: EditorFile.referenceURIForProjectRelative(norm),
         relPath: norm,
       },
     })

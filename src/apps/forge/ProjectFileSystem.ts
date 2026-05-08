@@ -1,6 +1,5 @@
 import { EditorFile } from "@/apps/forge/EditorFile";
 import * as KotOR from "@/apps/forge/KotOR";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabProjectExplorerState } from "@/apps/forge/states/tabs";
 import * as path from "path";
@@ -48,7 +47,7 @@ export class ProjectFileSystem {
   static async openEditorFile(resource: string): Promise<EditorFile> {
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
       return new EditorFile({
-        path: `${EditorFileProtocol.FILE}//project.dir/${resource}`,
+        path: EditorFile.referenceURIForProjectRelative(resource),
         useProjectFileSystem: true,
       });
     }else{
@@ -58,7 +57,7 @@ export class ProjectFileSystem {
       //   useProjectFileSystem: true,
       // });
       return new EditorFile({
-        path: `${EditorFileProtocol.FILE}//project.dir/${resource}`,
+        path: EditorFile.referenceURIForProjectRelative(resource),
         useProjectFileSystem: true,
       });
     }

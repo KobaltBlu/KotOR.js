@@ -2,7 +2,6 @@ import * as fs from "fs";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
 import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
-import { Project } from "@/apps/forge/Project";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { EventListenerModel } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/KotOR";
@@ -23,6 +22,14 @@ export interface EditorFileReadResponse {
   buffer2?: Uint8Array;
 }
 
+/**
+ * Forge resolves resources via self-describing **reference URIs** (not raw OS paths everywhere).
+ *
+ * **Output:** Call {@link EditorFile.toReferenceURI} for stable equality and `.forge/settings.json` `open_files`.
+ * **Input:** Prefer {@link EditorFile.fromReference} / {@link EditorFile.revive}.
+ *
+ * **`getPath`** returns a shorthand (bare relative fragment or legacy `archive?res.ext`). Use `toReferenceURI()` for persistence and dedupe.
+ */
 export class EditorFile extends EventListenerModel {
 
   protocol: EditorFileProtocol;
@@ -112,6 +119,7 @@ export class EditorFile extends EventListenerModel {
       location: FileLocationType.OTHER,
       useGameFileSystem: false,
       useProjectFileSystem: false,
+      useSystemFileSystem: false,
     }, options);
 
     // Captured before the reskey/ext setters cross-trample each other; used as
@@ -136,6 +144,7 @@ export class EditorFile extends EventListenerModel {
     this.handle2 = options.handle2;
     this.useGameFileSystem = !!options.useGameFileSystem;
     this.useProjectFileSystem = !!options.useProjectFileSystem;
+    this.useSystemFileSystem = !!options.useSystemFileSystem;
 
     if(!this.ext && this.reskey){
       this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
@@ -252,6 +261,190 @@ export class EditorFile extends EventListenerModel {
       return this.archive_path + '?' + this.resref + '.' + this.ext;
     }
     return undefined;
+  }
+
+  /** Normalize a path segment inside `game.dir` / `project.dir` / archive-relative parts. */
+  static normalizeReferenceSegment(seg: string): string {
+    return String(seg ?? '').trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  }
+
+  static referenceURIForProjectRelative(rel: string): string {
+    const r = EditorFile.normalizeReferenceSegment(rel);
+    return `${EditorFileProtocol.FILE}//project.dir/${r}`;
+  }
+
+  static referenceURIForGameRelative(rel: string): string {
+    const r = EditorFile.normalizeReferenceSegment(rel);
+    return `${EditorFileProtocol.FILE}//game.dir/${r}`;
+  }
+
+  static referenceURIForSystemVirtualName(fileName: string): string {
+    const r = EditorFile.normalizeReferenceSegment(fileName);
+    return `${EditorFileProtocol.FILE}//system.dir/${r}`;
+  }
+
+  static referenceURIForArchiveResource(
+    scheme: 'bif' | 'rim' | 'erf',
+    archiveRel: string,
+    resref: string,
+    restype: string,
+  ): string {
+    const arch = EditorFile.normalizeReferenceSegment(archiveRel);
+    return `${scheme}://game.dir/${arch}?resref=${resref}&restype=${restype}`;
+  }
+
+  /** Map protocol enum/string to persisted archive scheme (`mod`/`.sav` archives use `erf`). */
+  private static persistedArchiveSchemeFromProtocol(protocolLike: EditorFileProtocol | string | undefined): 'bif' | 'rim' | 'erf' {
+    const raw = String(protocolLike ?? '').replace(/:/g, '').toLowerCase();
+    if(raw === 'bif'){
+      return 'bif';
+    }
+    if(raw === 'rim'){
+      return 'rim';
+    }
+    return 'erf';
+  }
+
+  /** `file:///C:/foo` style for Electron absolute paths; bare Unix absolute → `file://`. */
+  static diskPathToFileURI(diskPath: string): string | undefined {
+    const n = String(diskPath ?? '').trim().replace(/\\/g, '/');
+    if(!n.length){
+      return undefined;
+    }
+    if(/^[a-zA-Z]:/.test(n)){
+      return `file:///${n}`;
+    }
+    if(n.startsWith('/')){
+      return `file://${n}`;
+    }
+    return undefined;
+  }
+
+  /**
+   * Canonical self-describing reference for Forge lists and `.forge/settings.json`.
+   * **Not** the same string as {@link getPath}.
+   */
+  toReferenceURI(): string | undefined {
+    if(this.archive_path && this.resref != null && this.ext != null){
+      const scheme = EditorFile.persistedArchiveSchemeFromProtocol(this.protocol);
+      const arch = EditorFile.normalizeReferenceSegment(String(this.archive_path));
+      return `${scheme}://game.dir/${arch}?resref=${String(this.resref)}&restype=${String(this.ext)}`;
+    }
+
+    if(typeof this.path !== 'string' || !this.path.length){
+      return undefined;
+    }
+
+    if(this.protocol === EditorFileProtocol.FILE || !this.archive_path){
+      const rel = EditorFile.normalizeReferenceSegment(this.path);
+      if(this.useProjectFileSystem){
+        return `${EditorFileProtocol.FILE}//project.dir/${rel}`;
+      }
+      if(this.useGameFileSystem){
+        return `${EditorFileProtocol.FILE}//game.dir/${rel}`;
+      }
+      if(this.useSystemFileSystem){
+        return `${EditorFileProtocol.FILE}//system.dir/${rel}`;
+      }
+      const disk = EditorFile.diskPathToFileURI(this.path);
+      if(disk){
+        return disk;
+      }
+    }
+
+    return undefined;
+  }
+
+  static fromReference(uri: string): EditorFile {
+    return new EditorFile({ path: uri.trim() });
+  }
+
+  /**
+   * Rebuild state from persisted JSON/tab blobs: prefer composing a reference URI then `setPath`.
+   */
+  static referenceStringFromPlain(plain: Partial<EditorFile> & EditorFileOptions): string | undefined {
+    const p = plain.path;
+    if(typeof p === 'string' && /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(p.trim())){
+      return p.trim();
+    }
+
+    const ap = plain.archive_path;
+    if(ap != null && plain.resref != null && plain.ext != null){
+      const scheme = EditorFile.persistedArchiveSchemeFromProtocol((plain as EditorFile).protocol ?? EditorFileProtocol.ERF);
+      return EditorFile.referenceURIForArchiveResource(
+        scheme,
+        String(ap),
+        String(plain.resref),
+        String(plain.ext),
+      );
+    }
+
+    if(typeof p === 'string' && p.length){
+      const rel = EditorFile.normalizeReferenceSegment(p);
+      if(plain.useProjectFileSystem){
+        return EditorFile.referenceURIForProjectRelative(rel);
+      }
+      if(plain.useGameFileSystem){
+        return EditorFile.referenceURIForGameRelative(rel);
+      }
+      if(plain.useSystemFileSystem){
+        return EditorFile.referenceURIForSystemVirtualName(rel);
+      }
+      const disk = EditorFile.diskPathToFileURI(p);
+      if(disk){
+        return disk;
+      }
+    }
+
+    return undefined;
+  }
+
+  private static overlayHydratedTransientState(target: EditorFile, src: Partial<EditorFile>): void {
+    if(src.buffer instanceof Uint8Array){
+      target.buffer = src.buffer;
+    }
+    if(src.buffer2 instanceof Uint8Array){
+      target.buffer2 = src.buffer2;
+    }
+    if(src.handle){
+      target.handle = src.handle;
+    }
+    if(src.handle2){
+      target.handle2 = src.handle2;
+    }
+    if(src.gffObject){
+      target.gffObject = src.gffObject;
+    }
+    if(typeof src.isBlueprint === 'boolean'){
+      target.isBlueprint = src.isBlueprint;
+    }
+    if(typeof src.path2 === 'string' && src.path2.length){
+      target.path2 = src.path2.replace(/\\/g, '/');
+    }
+    if(src.mdlAsciiOnly){
+      target.mdlAsciiOnly = true;
+    }
+  }
+
+  static revive(plain: Partial<EditorFile> | EditorFileOptions | Record<string, unknown>): EditorFile {
+    const p = plain as Partial<EditorFile> & EditorFileOptions;
+    const ref = EditorFile.referenceStringFromPlain(p);
+    if(ref){
+      const f = EditorFile.fromReference(ref);
+      EditorFile.overlayHydratedTransientState(f, p);
+      return f;
+    }
+    return EditorFile.From(p as EditorFile);
+  }
+
+  /** Allowed reference schemes for persisted `open_files` (strict). */
+  static isValidForgePersistedReference(uri: string): boolean {
+    const t = typeof uri === 'string' ? uri.trim() : '';
+    if(!t.length || !/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(t)){
+      return false;
+    }
+    const scheme = t.split(':')[0].toLowerCase();
+    return scheme === 'file' || scheme === 'bif' || scheme === 'rim' || scheme === 'erf' || scheme === 'mod';
   }
 
   async readFile(): Promise<EditorFileReadResponse> {

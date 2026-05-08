@@ -8,7 +8,6 @@ import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
-import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
 import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
@@ -120,7 +119,15 @@ export class ForgeState {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         KotOR.ApplicationProfile.directory = KotOR.ApplicationProfile.profile.directory;
       }else{
-        KotOR.ApplicationProfile.directoryHandle = KotOR.ApplicationProfile.profile.directory_handle;
+        const profileHandle = KotOR.ApplicationProfile.profile?.directory_handle as FileSystemDirectoryHandle | undefined;
+        if(profileHandle instanceof FileSystemDirectoryHandle){
+          KotOR.ApplicationProfile.directoryHandle = profileHandle;
+        }else if(KotOR.ApplicationProfile.directoryHandle instanceof FileSystemDirectoryHandle){
+          // Keep the active granted handle and mirror it onto the profile object.
+          KotOR.ApplicationProfile.profile.directory_handle = KotOR.ApplicationProfile.directoryHandle;
+        }else{
+          KotOR.ApplicationProfile.directoryHandle = undefined as any;
+        }
       }
       console.log('loading game...')
       ForgeState.loaderInit(KotOR.ApplicationProfile.profile.background, KotOR.ApplicationProfile.profile.logo);
@@ -277,7 +284,7 @@ export class ForgeState {
   static getRecentFiles(): EditorFile[] {
     if(Array.isArray(KotOR.ConfigClient.options.recent_files)){
       KotOR.ConfigClient.options.recent_files = KotOR.ConfigClient.options.recent_files.map( (file: any) => {
-        return Object.assign(new EditorFile(), file);
+        return EditorFile.revive(file as Partial<EditorFile>);
       });
     }else{
       KotOR.ConfigClient.options.recent_files = [];
@@ -287,8 +294,7 @@ export class ForgeState {
 
   static addRecentFile(file: EditorFile){
     try{
-      //Update the opened files list
-      let file_path = file.getPath();
+      let file_path = file.toReferenceURI();
       if(file_path){
         this.removeRecentFile(file);
 
@@ -310,10 +316,10 @@ export class ForgeState {
 
   static removeRecentFile(file: EditorFile){
     if(!file) return;
-    let file_path = file.getPath();
+    let file_path = file.toReferenceURI();
     if(file_path){
-      const index = ForgeState.recentFiles.findIndex( (file: EditorFile) => {
-        return file.getPath() == file_path;
+      const index = ForgeState.recentFiles.findIndex( (f: EditorFile) => {
+        return f.toReferenceURI() == file_path;
       })
       if (index >= 0) {
         ForgeState.recentFiles.splice(index, 1);
@@ -479,8 +485,8 @@ export class ForgeState {
             }).then( (result: any) => {
               let file_path2 = result.filePaths[0];
               FileTypeManager.onOpenFile({
-                path: file_path, 
-                path2: file_path2, 
+                path: EditorFile.diskPathToFileURI(file_path) || file_path.replace(/\\/g, '/'),
+                path2: EditorFile.diskPathToFileURI(file_path2) || String(file_path2).replace(/\\/g, '/'),
                 filename: parsed.base, 
                 resref: parsed.name, 
                 ext: parsed.ext
@@ -488,7 +494,7 @@ export class ForgeState {
             });
           }else{
             FileTypeManager.onOpenFile({
-              path: file_path, 
+              path: EditorFile.diskPathToFileURI(file_path) || file_path.replace(/\\/g, '/'),
               filename: parsed.base, 
               resref: parsed.name, 
               ext: parsed.ext
@@ -513,8 +519,8 @@ export class ForgeState {
             document.title = originalTitle;
 
             FileTypeManager.onOpenFile({
-              path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
-              path2: `${EditorFileProtocol.FILE}//system.dir/${mdxHandle.name}`, 
+              path: EditorFile.referenceURIForSystemVirtualName(handle.name),
+              path2: EditorFile.referenceURIForSystemVirtualName(mdxHandle.name),
               handle: handle, 
               handle2: mdxHandle, 
               filename: handle.name, 
@@ -525,7 +531,7 @@ export class ForgeState {
 
           }else{
             FileTypeManager.onOpenFile({
-              path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
+              path: EditorFile.referenceURIForSystemVirtualName(handle.name),
               handle: handle, 
               filename: handle.name, 
               resref: parsed.name, 
@@ -540,10 +546,15 @@ export class ForgeState {
   static saveOpenTabsState(){
     try{
       const states: TabStoreState[] = ForgeState.tabManager.tabs.map( (state) => {
+        const f = state.file as EditorFile;
+        const ref = f?.toReferenceURI?.();
+        const filePlain = ref && f
+          ? Object.assign({}, f as object, { path: ref } as Partial<EditorFile>)
+          : f;
         return {
           type: state.type,
-          file: state.file
-        }
+          file: filePlain as EditorFile,
+        };
       });
       KotOR.ConfigClient.set('open_tabs', states);
     }catch(e){
