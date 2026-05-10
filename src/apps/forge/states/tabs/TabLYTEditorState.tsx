@@ -9,6 +9,12 @@ import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import { TabLYTEditor } from "@/apps/forge/components/tabs/tab-lyt-editor/TabLYTEditor";
 import { ILayoutRoom } from "@/interface/resource/ILayoutRoom";
 import {
+  DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY,
+  ModelViewerLayerKey,
+  ModelViewerLayerVisibility,
+  TabModelViewerState,
+} from "@/apps/forge/states/tabs/TabModelViewerState";
+import {
   promptForDirectory,
   collectModelAssets,
   collectTxiReferencedTextures,
@@ -32,6 +38,8 @@ export class TabLYTEditorState extends TabState {
   code: string = '';
   roomEntries: LYTRoomEntry[] = [];
   selectedRoomIndex: number = -1;
+  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY };
+  groundGridGroup: THREE.Group = new THREE.Group();
 
   editor: monacoEditor.editor.IStandaloneCodeEditor;
   monaco: typeof monacoEditor;
@@ -56,8 +64,9 @@ export class TabLYTEditorState extends TabState {
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.setCameraFocusMode(CameraFocusMode.SELECTABLE);
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
-    this.ui3DRenderer.scene.add(grid1);
-    this.ui3DRenderer.scene.add(grid2);
+    this.groundGridGroup.add(grid1);
+    this.groundGridGroup.add(grid2);
+    this.ui3DRenderer.scene.add(this.groundGridGroup);
     this.ui3DRenderer.group.light_helpers.visible = false;
 
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
@@ -175,6 +184,8 @@ export class TabLYTEditorState extends TabState {
             context: this.ui3DRenderer,
             manageLighting: true,
             mergeStatic: false,
+            disableMatrixUpdate: false,
+            editorMode: true
           });
           if (model) {
             model.position.copy(room.position);
@@ -196,7 +207,41 @@ export class TabLYTEditorState extends TabState {
       this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);
     }
 
+    this.refreshModelViewerLayers();
     this.processEventListener('onRoomsLoaded', [this.roomEntries]);
+  }
+
+  refreshModelViewerLayers(): void {
+    TabModelViewerState.applyModelViewerLayers(undefined, this.modelViewerLayerVisibility, {
+      groundMesh: this.groundGridGroup,
+      lightHelpers: this.ui3DRenderer.group.light_helpers,
+    });
+
+    for (let i = 0; i < this.roomEntries.length; i++) {
+      const model = this.roomEntries[i].model;
+      if (!model) continue;
+      TabModelViewerState.applyModelViewerLayers(model, this.modelViewerLayerVisibility);
+      model.visible = this.modelViewerLayerVisibility.layout;
+    }
+
+    this.ui3DRenderer.render();
+  }
+
+  setLayerVisibility(key: ModelViewerLayerKey, visible: boolean): void {
+    if (this.modelViewerLayerVisibility[key] === visible) return;
+    this.modelViewerLayerVisibility[key] = visible;
+    this.refreshModelViewerLayers();
+    this.processEventListener('onModelViewerLayersChange', [this]);
+  }
+
+  toggleLayerVisibility(key: ModelViewerLayerKey): void {
+    this.setLayerVisibility(key, !this.modelViewerLayerVisibility[key]);
+  }
+
+  setWindPower(power: 0 | 1 | 2): void {
+    if (this.ui3DRenderer.windowPower === power) return;
+    this.ui3DRenderer.windowPower = power;
+    this.processEventListener('onModelViewerLayersChange', [this]);
   }
 
   private disposeRooms(): void {

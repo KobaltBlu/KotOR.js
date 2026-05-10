@@ -294,6 +294,8 @@ export class TabLIPEditorState extends TabState {
           context: this.ui3DRenderer,
           castShadow: true,
           receiveShadow: true,
+          disableMatrixUpdate: false,
+          editorMode: true
         }).then((model: KotOR.OdysseyModel3D) => {
 
           if(this.head instanceof THREE.Object3D){

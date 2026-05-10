@@ -1,20 +1,34 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import MonacoEditor from "react-monaco-editor";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { TabLYTEditorState, LYTRoomEntry } from "@/apps/forge/states/tabs/TabLYTEditorState";
+import { ModelViewerLayerKey } from "@/apps/forge/states/tabs";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { UI3DRendererView, MenuItem } from "@/apps/forge/components/UI3DRendererView";
 import { CameraView } from "@/apps/forge/UI3DRenderer";
 import { Form } from "react-bootstrap";
 import { SectionContainer } from "@/apps/forge/components/SectionContainer";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 
+const MODEL_VIEWER_LAYER_LABELS: Record<ModelViewerLayerKey, string> = {
+  lights: 'Lights',
+  emitters: 'Emitters',
+  walkmeshes: 'Walkmeshes (AABB)',
+  trimesh: 'Static meshes',
+  skin: 'Skin meshes',
+  dangly: 'Dangly meshes',
+  saber: 'Lightsaber meshes',
+  childModels: 'Child / reference models',
+  layout: 'Layout (rooms)',
+  ground: 'Ground grid',
+};
+
 export const TabLYTEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabLYTEditorState;
   const [code, setCode] = useState<string>(tab.code);
+  const [layerMenuGen, setLayerMenuGen] = useState(0);
 
   const onEditorFileLoad = () => {
     setCode(tab.code);
@@ -32,6 +46,12 @@ export const TabLYTEditor = function (props: BaseTabProps) {
       tab.removeEventListener('onCodeChanged', onCodeChanged);
     };
   });
+
+  useEffect(() => {
+    const onLayers = () => setLayerMenuGen((g) => g + 1);
+    tab.addEventListener('onModelViewerLayersChange', onLayers);
+    return () => tab.removeEventListener('onModelViewerLayersChange', onLayers);
+  }, [tab]);
 
   const onMonacoChange = (newValue: string) => {
     setCode(newValue);
@@ -51,7 +71,13 @@ export const TabLYTEditor = function (props: BaseTabProps) {
     tabSize: 2,
   };
 
-  const menuItems: MenuItem[] = [
+  const layerToggle = (key: ModelViewerLayerKey): MenuItem => ({
+    label: MODEL_VIEWER_LAYER_LABELS[key],
+    checked: tab.modelViewerLayerVisibility[key],
+    onClick: () => tab.toggleLayerVisibility(key),
+  });
+
+  const menuItems: MenuItem[] = useMemo(() => [
     {
       label: 'File',
       children: [
@@ -72,6 +98,31 @@ export const TabLYTEditor = function (props: BaseTabProps) {
       label: 'View',
       children: [
         {
+          label: 'Wind Power',
+          children: [
+            { label: 'Off (0)', checked: tab.ui3DRenderer.windowPower === 0, onClick: () => tab.setWindPower(0) },
+            { label: 'Weak (1)', checked: tab.ui3DRenderer.windowPower === 1, onClick: () => tab.setWindPower(1) },
+            { label: 'Strong (2)', checked: tab.ui3DRenderer.windowPower === 2, onClick: () => tab.setWindPower(2) },
+          ],
+        },
+        {
+          label: 'Show',
+          children: [
+            layerToggle('lights'),
+            layerToggle('emitters'),
+            layerToggle('walkmeshes'),
+            { separator: true },
+            layerToggle('trimesh'),
+            layerToggle('skin'),
+            layerToggle('dangly'),
+            layerToggle('saber'),
+            { separator: true },
+            layerToggle('childModels'),
+            layerToggle('layout'),
+            layerToggle('ground'),
+          ],
+        },
+        {
           label: 'Camera',
           children: [
             { label: 'Fit Camera to Scene', onClick: () => tab.ui3DRenderer.fitCameraToScene() },
@@ -88,7 +139,7 @@ export const TabLYTEditor = function (props: BaseTabProps) {
         },
       ],
     },
-  ];
+  ], [tab, layerMenuGen]);
 
   const eastPanel = <LYTSidebarComponent tab={tab} />;
 

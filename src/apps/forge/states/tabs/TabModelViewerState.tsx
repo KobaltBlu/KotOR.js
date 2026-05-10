@@ -394,6 +394,7 @@ export class TabModelViewerState extends TabState {
             // manageLighting: false,
             context: this.ui3DRenderer,
             editorMode: true, 
+            disableMatrixUpdate: false,
             onComplete: (model: KotOR.OdysseyModel3D) => {
               this.model = model;
               model.addEventListener('odysseyInstanceReplaced', this.onOdysseyInstanceReplaced as any);
@@ -617,6 +618,7 @@ export class TabModelViewerState extends TabState {
               context: this.ui3DRenderer,
               editorMode: true,
               mergeStatic: false,
+              disableMatrixUpdate: false
             });
             if(model){
               model.position.copy( room.position )

@@ -191,6 +191,9 @@ export class ForgeState {
         ForgeState.tabManager.addEventListener('onTabRemoved', () => {
           ForgeState.saveOpenTabsState();
         });
+        ForgeState.tabManager.addEventListener('onTabsReordered', () => {
+          ForgeState.saveOpenTabsState();
+        });
 
         // Tabs restored or default quick start are added before listeners exist; persist once so
         // open_tabs (including Start Page) matches the real tab strip after load.

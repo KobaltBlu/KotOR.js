@@ -80,7 +80,9 @@ export class ForgeRoom extends ForgeGameObject {
       context: this.context,
       castShadow: false,
       receiveShadow: true,
-      mergeStatic: true
+      mergeStatic: true,
+      disableMatrixUpdate: false,
+      editorMode: true
     });
 
     //Remove the old model

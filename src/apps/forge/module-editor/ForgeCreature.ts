@@ -408,6 +408,8 @@ export class ForgeCreature extends ForgeGameObject {
         textureVar: bodyTexture,
         isHologram: false,
         context: this.context,
+        disableMatrixUpdate: false,
+        editorMode: true
       });
     }catch(e){
       this.model = new KotOR.OdysseyModel3D();
@@ -441,6 +443,8 @@ export class ForgeCreature extends ForgeGameObject {
         receiveShadow: true,
         isHologram: false,
         textureVar: headTexture,
+        disableMatrixUpdate: false,
+        editorMode: true
       });
       this.model.attachHead(head);
 

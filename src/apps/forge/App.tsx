@@ -32,6 +32,10 @@ export const App = (props: any) => {
   const [loadingScreenLogoURL] = appContext.loadingScreenLogoURL;
   const [isDragOver, setIsDragOver] = useState(false);
   const dragCounter = useRef(0);
+  const isFileDragEvent = (e: React.DragEvent<HTMLDivElement>) => {
+    const types = e.dataTransfer?.types;
+    return !!types && Array.from(types).includes('Files');
+  };
 
 
   const onUserGrant = () => {
@@ -79,6 +83,9 @@ export const App = (props: any) => {
   });
 
   const onDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!isFileDragEvent(e)) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     dragCounter.current++;
@@ -88,6 +95,9 @@ export const App = (props: any) => {
   }, []);
 
   const onDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!isFileDragEvent(e)) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     dragCounter.current--;
@@ -97,12 +107,18 @@ export const App = (props: any) => {
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!isFileDragEvent(e)) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = 'open' as any || 'copy';
+    e.dataTransfer.dropEffect = 'copy';
   }, []);
 
   const onDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isFileDragEvent(e)) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     dragCounter.current = 0;

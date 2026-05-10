@@ -27,4 +27,5 @@ export interface IOdysseyModelLoaderOptions {
   editorMode?: boolean,
   /** When true, AABB/walkmesh geometry from the MDL is parented into the scene (Forge preview). Defaults from editorMode. Runtime uses WOK; leave false for game loads. */
   attachMdlAabbMesh?: boolean,
+  disableMatrixUpdate?: boolean,
 }

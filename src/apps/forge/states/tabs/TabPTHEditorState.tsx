@@ -6,6 +6,12 @@ import { CameraFocusMode, GroupType, ObjectType, UI3DRenderer, UI3DRendererEvent
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
+import {
+  DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY,
+  ModelViewerLayerKey,
+  ModelViewerLayerVisibility,
+  TabModelViewerState,
+} from "@/apps/forge/states/tabs/TabModelViewerState";
 
 const POINT_OFFSET_HEIGHT = 1;
 
@@ -27,6 +33,7 @@ export class TabPTHEditorState extends TabState {
   layout: KotOR.LYTObject;
   layoutModels: KotOR.OdysseyModel3D[] = [];
   walkmeshes: KotOR.OdysseyWalkMesh[] = [];
+  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY };
 
   controlMode: TabPTHEditorControlMode = TabPTHEditorControlMode.SELECT;
   selectedPointIndex: number = -1;
@@ -275,7 +282,7 @@ export class TabPTHEditorState extends TabState {
       const model = this.layoutModels[i];
       
       if(model.wok && model.wok.mesh){
-        // model.updateMatrixWorld(true);
+        model.updateMatrixWorld(true);
         
         // Get walkable faces
         const tempBox = new THREE.Box3();
@@ -603,13 +610,15 @@ export class TabPTHEditorState extends TabState {
             context: this.ui3DRenderer,
             manageLighting: true,
             mergeStatic: true,
+            disableMatrixUpdate: false,
+            editorMode: true
           });
           if(model){
             model.position.copy(room.position);
             
             // Load walkmesh for the room
             try {
-              const wokBuffer = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.wok, room.name);
+              const wokBuffer = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.wok, room.name.toLowerCase());
               if(wokBuffer && wokBuffer.length > 0){
                 const wok = new KotOR.OdysseyWalkMesh(new KotOR.BinaryReader(wokBuffer));
                 model.wok = wok;
@@ -635,6 +644,44 @@ export class TabPTHEditorState extends TabState {
 
     // Update point Z positions based on walkmesh raycasting
     await this.updatePointsFromWalkmesh();
+    this.refreshModelViewerLayers();
+  }
+
+  refreshModelViewerLayers(): void {
+    TabModelViewerState.applyModelViewerLayers(undefined, this.modelViewerLayerVisibility, {
+      layoutGroup: this.ui3DRenderer.group.rooms,
+      lightHelpers: this.ui3DRenderer.group.light_helpers,
+    });
+
+    for (let i = 0; i < this.layoutModels.length; i++) {
+      TabModelViewerState.applyModelViewerLayers(this.layoutModels[i], this.modelViewerLayerVisibility);
+    }
+
+    for (let i = 0; i < this.walkmeshes.length; i++) {
+      const walkmesh = this.walkmeshes[i];
+      if (walkmesh?.mesh) {
+        walkmesh.mesh.visible = this.modelViewerLayerVisibility.walkmeshes;
+      }
+    }
+
+    this.ui3DRenderer.render();
+  }
+
+  setLayerVisibility(key: ModelViewerLayerKey, visible: boolean): void {
+    if (this.modelViewerLayerVisibility[key] === visible) return;
+    this.modelViewerLayerVisibility[key] = visible;
+    this.refreshModelViewerLayers();
+    this.processEventListener('onModelViewerLayersChange', [this]);
+  }
+
+  toggleLayerVisibility(key: ModelViewerLayerKey): void {
+    this.setLayerVisibility(key, !this.modelViewerLayerVisibility[key]);
+  }
+
+  setWindPower(power: 0 | 1 | 2): void {
+    if (this.ui3DRenderer.windowPower === power) return;
+    this.ui3DRenderer.windowPower = power;
+    this.processEventListener('onModelViewerLayersChange', [this]);
   }
 
   private async updatePointsFromWalkmesh(): Promise<void> {

@@ -227,7 +227,9 @@ export class ForgeItem extends ForgeGameObject {
       const mdl = await KotOR.MDLLoader.loader.load(defaultModel);
       const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
-        lighting: true
+        lighting: true,
+        disableMatrixUpdate: false,
+        editorMode: true
       });
       this.model = model;
       if(this.context && this.context.scene){

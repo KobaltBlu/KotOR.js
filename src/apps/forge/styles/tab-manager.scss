@@ -72,14 +72,39 @@
 
       }
 
+      .dirty-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-left: 0;
+        margin-right: 6px;
+        background: #8f8f8f;
+        vertical-align: middle;
+      }
+
       &:hover {
         color: #CCC;
+        .dirty-dot {
+          background: #b5b5b5;
+        }
       }
 
       &:focus, &:hover, &:active {
         border-top: none;
         border-bottom: none;
         border-right: none;
+      }
+
+      &.active,
+      &.current {
+        .dirty-dot {
+          background: #e5e5e5;
+        }
+      }
+
+      &.drag-over {
+        box-shadow: inset 3px 0 0 #128EC7;
       }
 
     }

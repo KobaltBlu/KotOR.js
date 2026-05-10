@@ -8,13 +8,14 @@ import {
 } from "@/apps/forge/states/tabs";
 
 export type TabManagerEventListenerTypes =
-  'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide';
+  'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide'|'onTabsReordered';
 
 export interface TabManagerEventListeners {
   onTabAdded: Function[],
   onTabRemoved: Function[],
   onTabShow: Function[],
   onTabHide: Function[],
+  onTabsReordered: Function[],
 }
 
 export class EditorTabManager extends EventListenerModel {
@@ -96,6 +97,27 @@ export class EditorTabManager extends EventListenerModel {
 
     this.processEventListener('onTabRemoved');
 
+  }
+
+  moveTab(fromIndex: number, toIndex: number){
+    if(!Number.isInteger(fromIndex) || !Number.isInteger(toIndex)){
+      return false;
+    }
+    const maxIndex = this.tabs.length - 1;
+    if(fromIndex < 0 || toIndex < 0 || fromIndex > maxIndex || toIndex > maxIndex){
+      return false;
+    }
+    if(fromIndex === toIndex){
+      return false;
+    }
+
+    const [tab] = this.tabs.splice(fromIndex, 1);
+    if(!tab){
+      return false;
+    }
+    this.tabs.splice(toIndex, 0, tab);
+    this.processEventListener('onTabsReordered', [fromIndex, toIndex, tab]);
+    return true;
   }
 
   //Checks the supplied resource ID against all open tabs and returns tab if it is found

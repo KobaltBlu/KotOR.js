@@ -171,6 +171,13 @@ export class TabState extends EventListenerModel {
     }
     
     this.#_onKeyDown = (e: KeyboardEvent) => {
+      if((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'w'){
+        if(this.isClosable){
+          e.preventDefault();
+          this.remove();
+          return;
+        }
+      }
       if ((e.ctrlKey || e.metaKey) && !e.altKey && this.shouldHandleUndoKeyboard(e)) {
         if (e.key === 'z') {
           e.preventDefault();
@@ -208,11 +215,7 @@ export class TabState extends EventListenerModel {
   editorFileUpdated(){
     if(this.file instanceof EditorFile){
       console.log('editor file updated', this.file.resref, this.file.ext, this.file)
-      if(this.file.unsaved_changes){
-        this.setTabName(`${this.file.resref}.${this.file.ext} *`);
-      }else{
-        this.setTabName(`${this.file.resref}.${this.file.ext}`);
-      }
+      this.setTabName(`${this.file.resref}.${this.file.ext}`);
     }
   }
 
