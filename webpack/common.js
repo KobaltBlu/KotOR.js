@@ -20,13 +20,19 @@ const scssRule = {
       loader: 'css-loader',
       options: {
         url: false,
-        sourceMap: !isProd
+        sourceMap: !isProd,
+        modules: {
+          auto: /\.module\.(scss|sass|css)$/i,
+        },
       }
     },
     {
       loader: 'sass-loader',
       options: {
-        sourceMap: !isProd
+        sourceMap: !isProd,
+        sassOptions: {
+          loadPaths: [path.join(srcPath, 'apps/forge/styles')],
+        },
       }
     }
   ]
