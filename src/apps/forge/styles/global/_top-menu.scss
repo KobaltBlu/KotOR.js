@@ -1,0 +1,295 @@
+// =============================================================================
+// TOP MENU & NAVIGATION
+// =============================================================================
+
+.top-menu {
+  z-index: $z-index-dropdown;
+  -webkit-app-region: drag;
+  background: $bg-primary;
+  height: $header-height;
+  border-bottom: $border-width solid $bg-darkest;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+
+  .menu-accent {
+    margin: initial;
+    height: 19px;
+  }
+
+  &.navbar {
+    background: $bg-primary !important;
+    border-color: $bg-darkest;
+    border-radius: 0;
+  }
+
+  .navbar-nav {
+    .nav-item {
+      a {
+        -webkit-app-region: no-drag;
+        @include text-shadow-light;
+        color: $text-white;
+        background: $bg-primary;
+        border-right: $border-width-thick solid $border-accent;
+      }
+    }
+
+    .dropdown-item {
+      -webkit-app-region: no-drag;
+      a {
+        -webkit-app-region: no-drag;
+        @include text-shadow-light;
+        color: $text-white;
+        background: $bg-primary;
+        border-right: $border-width-thick solid $border-accent;
+      }
+    }
+  }
+
+  #app-title {
+    display: none;
+  }
+}
+
+.navbar-brand, .navbar-nav > li > a {
+  @include text-shadow-light;
+  color: $text-white;
+  background: $bg-primary;
+  border-right: $border-width-thick solid $border-accent;
+}
+
+.nav .open > a, .nav .open > a:focus, .nav .open > a:hover {
+  background-color: $primary-blue;
+  border-color: $primary-blue;
+  color: $text-white;
+}
+
+.navbar-default .navbar-nav > .open > a, 
+.navbar-default .navbar-nav > .open > a:focus, 
+.navbar-default .navbar-nav > .open > a:hover {
+  color: $text-white;
+  background-color: $primary-blue-light;
+  background-image: initial;
+}
+
+.navbar-default .navbar-nav > li > a:focus, 
+.navbar-default .navbar-nav > li > a:hover {
+  color: $text-light;
+  background-color: transparent;
+}
+
+.navbar-nav {
+  > li {
+    .dropdown-menu {
+      flex-direction: column;
+    }
+  }
+}
+
+.open > .dropdown-menu {
+  display: flex;
+}
+
+.dropdown-menu {
+  background-color: $bg-primary;
+  background-image: initial;
+
+  .divider {
+    background-color: $bg-darker;
+  }
+
+  > li > a:focus, 
+  > li > a:hover {
+    background-image: initial;
+    background-color: $primary-blue-light;
+  }
+
+  &.side {
+    margin-top: -$spacing-sm;
+    left: 100%;
+    top: 0;
+  }
+
+  li.title {
+    padding: $spacing-sm;
+    background: $bg-quaternary;
+  }
+}
+
+// Desktop-style cascading submenu behavior for Forge top menu.
+.top-menu {
+  .forge-menu-submenu {
+    > .dropdown-menu {
+      top: 0;
+      left: 100%;
+      margin-top: -1px;
+    }
+
+    > .dropdown-toggle::after {
+      float: right;
+      margin-top: 0.5em;
+      transform: rotate(-90deg);
+    }
+  }
+
+  .forge-menu-title {
+    color: $text-light;
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.8;
+    pointer-events: none;
+  }
+}
+
+li.dropdown > a:hover + .dropdown-menu.side, 
+li.dropdown > a + .dropdown-menu.side:hover {
+  display: block;
+}
+
+li > a > .dropdown-item-name-wrapper {
+  display: flex;
+  flex-direction: row;
+
+  > .dropdown-item-name {
+    flex: 1;
+  }
+
+  > .dropdown-item-more {
+    display: none;
+  }
+
+  > .dropdown-item-action {
+    padding-left: 50px;
+    font-weight: normal;
+    font-size: smaller;
+  }
+}
+
+li.dropdown > a > .dropdown-item-name-wrapper > .dropdown-item-more {
+  display: inline;
+}
+
+.navbar-nav > li.dropdown > a > .dropdown-item-name-wrapper {
+  > .dropdown-item-more {
+    display: none;
+  }
+
+  > .dropdown-item-action {
+    padding-left: 0;
+  }
+}
+
+// =============================================================================
+// MENU ACCENT
+// =============================================================================
+
+.menu-accent {
+  width: calc(75% + 20px);
+  margin: auto;
+  left: calc(25% / 2);
+
+  &::after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-top: 10px solid $border-accent-dark;
+    border-right: 10px solid transparent;
+    display: inline-block;
+    vertical-align: top;
+  }
+
+  &::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-top: 10px solid $border-accent-dark;
+    border-left: 10px solid transparent;
+    display: inline-block;
+    vertical-align: top;
+  }
+
+  .inner {
+    width: calc(100% - 20px);
+    height: 10px;
+    background: $border-accent-dark;
+    display: inline-block;
+    vertical-align: top;
+  }
+}
+
+.modal-content .menu-accent {
+  margin-top: -10px;
+}
+
+// =============================================================================
+// TOP NAVIGATION
+// =============================================================================
+
+ul.topnav {
+  li {
+    float: left; 
+    -webkit-app-region: no-drag;
+
+    a {
+      display: inline-block;
+      color: $text-secondary;
+      text-align: center;
+      padding: 14px 16px;
+      text-decoration: none;
+      transition: $transition-normal;
+      font-size: $font-size-larger;
+      cursor: pointer;
+
+      &:hover {
+        background-color: $hover-bg-dark;
+      }
+    }
+  }
+
+  li.icon {
+    display: none;
+  }
+}
+
+.top-menu .navbar-nav > li > a {
+  padding-top: $spacing-sm;
+  padding-bottom: $spacing-sm;
+  line-height: 30px;
+}
+
+.top-menu > b {
+  padding: 10px 15px;
+  padding-top: $spacing-sm;
+  padding-bottom: 0px;
+  line-height: 30px;
+}
+
+.top-menu .navbar-nav > li > ul.dropdown-menu > li.title {
+  padding: 10px 15px;
+  padding-top: 2px;
+  padding-bottom: 1px;
+  line-height: 30px;
+}
+
+// =============================================================================
+// CONTEXT MENU
+// =============================================================================
+
+.context-menu {
+  display: block;
+  z-index: $z-index-dropdown;
+  position: fixed;
+  top: 75px;
+  border-radius: $border-radius;
+  padding: $spacing-sm;
+  background: $bg-primary;
+
+  > ul { 
+    list-style: none;
+    padding: 0;
+
+    > li {
+      cursor: pointer;
+    }
+  }
+}

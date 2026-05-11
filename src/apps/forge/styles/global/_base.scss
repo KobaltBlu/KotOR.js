@@ -1,0 +1,113 @@
+// =============================================================================
+// BASE STYLES
+// =============================================================================
+
+html, body, #root {
+  height: 100vh;
+  width: 100vw;
+}
+
+:focus {
+  outline: -webkit-focus-ring-color auto 0px;
+}
+
+body {
+  border-radius: $border-radius;
+  overflow: hidden;
+  background: $bg-secondary;
+  font-family: $font-family-primary;
+  color: $text-primary;
+  font-size: $font-size-base;
+}
+
+#app {
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.drag-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.6);
+  border: 3px dashed rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  border-radius: $border-radius;
+
+  &__content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    color: rgba(255, 255, 255, 0.85);
+
+    i {
+      font-size: 48px;
+      opacity: 0.9;
+    }
+
+    span {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+  }
+}
+
+#container {
+  position: absolute;
+  top: $header-height;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: initial;
+}
+
+// =============================================================================
+// LOADING SCREEN
+// =============================================================================
+
+.no-js #loader { 
+  display: none;  
+}
+
+.js #loader { 
+  display: block; 
+  position: absolute; 
+  left: 100px; 
+  top: 0; 
+}
+
+.se-pre-con {
+  position: fixed;
+  left: 0px;
+  top: 35px;
+  width: 100%;
+  height: 100%;
+  z-index: $z-index-modal;
+  background: $bg-primary;
+}
+
+.loading-screen {
+  display: none;
+}
+
+#loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  .loading-container .loading-message {
+    text-align: center;
+    position: relative;
+    display: block;
+  }
+}

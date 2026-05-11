@@ -4,6 +4,8 @@ import { useTabManager } from "@/apps/forge/context/TabManagerContext";
 import { TabState } from "@/apps/forge/states/tabs";
 import { ContextMenuItem, useContextMenu } from "@/apps/forge/components/common/ContextMenu";
 
+import "./TabManager.scss";
+
 export interface TabManagerProps {
   renderEmptyState?: () => React.ReactNode;
 }

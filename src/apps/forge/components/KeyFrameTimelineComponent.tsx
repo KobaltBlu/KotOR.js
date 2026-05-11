@@ -8,6 +8,8 @@ import {
 } from "@/apps/forge/states/tabs";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
+import "@/apps/forge/components/KeyFrameTimelineComponent.scss";
+
 function formatTimelineClock(totalSeconds: number): string {
   if (!isFinite(totalSeconds) || totalSeconds < 0) totalSeconds = 0;
   const m = Math.floor(totalSeconds / 60);

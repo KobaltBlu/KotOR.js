@@ -8,6 +8,8 @@ import { TwoDAEditorRow } from "@/apps/forge/components/TwoDAEditorRow";
 import { TwoDAEditorColumnHeader } from "@/apps/forge/components/TwoDAEditorColumnHeader";
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
+import "@/apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor.scss";
+
 import * as KotOR from "@/apps/forge/KotOR";
 
 export const TabTwoDAEditor = function(props: BaseTabProps){

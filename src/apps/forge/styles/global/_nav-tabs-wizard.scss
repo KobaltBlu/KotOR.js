@@ -1,0 +1,77 @@
+// =============================================================================
+// TABS
+// =============================================================================
+
+.nav-tabs {
+  border-bottom: $border-width solid $primary-blue-lighter;
+
+  > li {
+    &.active > a, 
+    &.active > a:focus, 
+    &.active > a:hover {
+      color: $text-primary;
+      cursor: default;
+      background-color: $primary-blue;
+      border: $border-width solid $primary-blue-lighter;
+      border-bottom-color: transparent;
+    }
+
+    > a:hover {
+      border-color: $primary-blue-lighter $primary-blue-lighter $primary-blue-lighter;
+      color: $text-white;
+      cursor: pointer;
+    }
+  }
+}
+
+.nav > li > a:focus, 
+.nav > li > a:hover {
+  text-decoration: none;
+  background-color: $primary-blue;
+}
+
+// =============================================================================
+// WIZARD MODAL
+// =============================================================================
+
+.navbar.navbar-sidebar-wizard {
+  background: $bg-quinary;
+  color: $text-primary;
+  border-radius: 0px;
+
+  li {
+    width: 100%;
+    float: left;
+  }
+
+  a {
+    color: $text-primary;
+
+    &:hover, 
+    &:focus {
+      background: $primary-blue-dark;
+    }
+  }
+}
+
+.navbar.navbar-sidebar-wizard-horizontal {
+  background: $bg-quinary;
+  color: $text-primary;
+  border-radius: 0px;
+  padding: 0;
+  margin-bottom: 0;
+  min-height: auto;
+
+  li {
+    display: inline-block;
+  }
+
+  a {
+    color: $text-primary;
+  }
+}
+
+.navbar.navbar-sidebar-wizard-horizontal a:hover, 
+.navbar.navbar-sidebar-wizard a:focus {
+  // background: $primary-blue-dark;
+}

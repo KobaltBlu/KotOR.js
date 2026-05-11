@@ -2,7 +2,7 @@
 // INFO BUBBLE COMPONENT STYLES
 // =============================================================================
 
-@import "../../styles/variables";
+@use "tokens" as *;
 
 .info-bubble-trigger {
   position: relative;

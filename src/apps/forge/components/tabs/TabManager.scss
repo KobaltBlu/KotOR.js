@@ -1,3 +1,4 @@
+@use "tokens" as *;
 
 //Tab Manager
 
@@ -326,8 +327,3 @@
 .tab-container {
   position: relative;
 }
-
-@import "./tabs/tab-image-viewer";
-@import "./tabs/tab-twoda-editor";
-@import "./tabs/tab-script-error-log";
-

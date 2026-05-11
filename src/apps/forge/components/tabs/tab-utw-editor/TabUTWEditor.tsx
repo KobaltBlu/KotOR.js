@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from "react"
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
 import { TabUTWEditorState } from "@/apps/forge/states/tabs";
-import "@/apps/forge/styles/tabs/tab-uts-editor.scss";
+import "@/apps/forge/components/tabs/tab-uts-editor/tab-uts-editor.scss";
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
 import * as KotOR from "@/apps/forge/KotOR";

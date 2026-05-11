@@ -1,0 +1,602 @@
+// =============================================================================
+// HORIZONTAL RULE
+// =============================================================================
+
+hr {
+  border-top: $border-width solid $border-quaternary;
+}
+
+// =============================================================================
+// MARQUEE
+// =============================================================================
+
+.marquee {
+  margin: 0 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  box-sizing: border-box;
+
+  span {
+    display: inline-block;
+    text-indent: 0;
+    animation: marquee 30s linear infinite;
+
+    &:hover {
+      animation-play-state: paused;
+    }
+  }
+}
+
+@keyframes marquee {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(-100%, 0); }
+}
+
+// =============================================================================
+// RANGE INPUTS
+// =============================================================================
+
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  margin: 0.7px 0;
+  border-radius: $border-radius-large;
+  background: transparent;
+
+  &:focus {
+    outline: none;
+  }
+
+  &::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 16px;
+    cursor: pointer;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px $bg-darkest;
+    background: #484d4d;
+    border-radius: $border-radius-large;
+    border: 0px solid #010101;
+  }
+
+  &.large::-webkit-slider-runnable-track {
+    height: 32px;
+  }
+
+  &::-webkit-slider-thumb {
+    box-shadow: 0px 0px 1px $error-dark, 0px 0px 0px $error-darker;
+    border: 0px solid $error;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #258CE4;
+    cursor: pointer;
+    -webkit-appearance: none;
+    margin-top: -0.7px;
+  }
+
+  &.large::-webkit-slider-thumb {
+    height: 32px;
+    width: 32px;
+  }
+
+  &:focus::-webkit-slider-runnable-track {
+    background: #545a5a;
+  }
+
+  &:disabled {
+    &::-webkit-slider-runnable-track {
+      background: $bg-secondary;
+    }
+    
+    &::-webkit-slider-thumb {
+      background: #555;
+    }
+  }
+}
+
+input[type="range"].volume:before {
+  font-family: $font-family-fa;
+  content: "\f6a8";
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  line-height: 24px;
+  font-style: normal;
+  font-weight: 400;
+}
+
+// =============================================================================
+// UTILITY CLASSES
+// =============================================================================
+
+.gray {
+  filter: grayscale(100%);
+}
+
+.vertical-align {
+  display: -ms-flexbox;
+  display: -webkit-flex;
+  display: flex;
+  -ms-flex-align: center;
+  -webkit-align-items: center;
+  -webkit-box-align: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.noselect {
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none;   /* Chrome/Safari/Opera */
+  user-select: none;           /* Non-prefixed version, currently not supported by any browser */
+}
+
+// =============================================================================
+// DROPDOWN SUBMENU
+// =============================================================================
+
+.dropdown-submenu {
+  position: relative;
+
+  > a:after {
+    content: "\e258";
+    float: right;
+    border: none;
+    font-family: 'Glyphicons Halflings';
+  }
+
+  > .dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: 0px;
+    margin-left: 0px;
+  }
+}
+
+// =============================================================================
+// LIST GROUPS
+// =============================================================================
+
+.list-group-item {
+  &.list-group-header {
+    background-color: $primary-blue;
+    color: $text-white;
+    padding: 0;
+
+    span {
+      padding: 10px 0 10px $spacing-md;
+      cursor: pointer;
+    }
+  }
+
+  background-color: $bg-secondary;
+  border: $border-width solid $border-tertiary;
+
+  &:hover {
+    background-color: $hover-bg-light;
+    border: $border-width solid $primary-blue;
+    z-index: 1;
+  }
+}
+
+.my-list-group li.list-group-item {
+  background-color: #073348;
+  border-color: #07628e;
+  cursor: pointer;
+
+  &.selected {
+    background-color: #07628e;
+  }
+}
+
+// =============================================================================
+// FILE BROWSER
+// =============================================================================
+
+.file-browser {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  &-list {
+    position: absolute;
+    top: 42px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow-y: scroll;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  &-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 42px;
+    background-color: $primary-blue;
+    color: $text-white;
+    padding-left: 0;
+
+    span {
+      display: inline-flex; 
+      width: 33.33%;
+      padding: 10px 0 10px $spacing-md;
+      cursor: pointer;
+    }
+  }
+
+  &-item {
+    position: relative;
+    display: block;
+    margin-bottom: -1px;
+    background-color: $bg-secondary;
+    border: $border-width solid $border-tertiary;
+    user-select: none;
+
+    &.selected {
+      background-color: $hover-bg-light;
+      border: $border-width solid $primary-blue;
+      z-index: 2;
+
+      span {
+        border-right: $border-width solid $primary-blue;
+      }
+    }
+    
+    &:hover, 
+    &:focus {
+      z-index: 1;
+      cursor: pointer;
+    }
+
+    span {
+      padding: 10px 0 10px $spacing-md;
+      display: inline-flex; 
+      width: 33.33%;
+      border-right: $border-width solid $border-tertiary;
+    }
+  }
+}
+
+// =============================================================================
+// SCROLLBARS
+// =============================================================================
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  -webkit-border-radius: $border-radius;
+  border-radius: $border-radius;
+  background: $scrollbar-track;
+}
+
+::-webkit-scrollbar-button {
+  height: 0;
+  width: 0;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  -webkit-border-radius: $border-radius;
+  border-radius: $border-radius;
+  background: $scrollbar-thumb;
+
+  &:window-inactive {
+    background: $scrollbar-thumb-inactive;
+  }
+}
+
+// =============================================================================
+// FLOAT UI
+// =============================================================================
+
+.float-ui {
+  position: absolute !important;
+  top: 150px;
+  left: $spacing-xl;
+  background: $bg-dark;
+  width: 30px;
+  text-align: center;
+
+  .float-ui-header {
+    background: $primary-blue-darker;
+    height: $spacing-xl;
+  }
+
+  .float-ui-content ul {
+    list-style: none;
+    margin: 0;
+    padding: $spacing-sm;
+  }
+}
+
+// =============================================================================
+// APPEARANCE BLOCK
+// =============================================================================
+
+.appearance-block {
+  border-radius: $border-radius-large;
+
+  &.selected {
+    outline: $border-width-thick solid $success;
+  }
+
+  img {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  &.selected::after {
+    content: "\2713 ";
+    position: absolute;
+    padding: 2px 7px;
+    top: -10px;
+    right: -10px;
+    border-radius: 50%;
+    background: $success-light;
+    color: black;
+    font-size: 14pt;
+    box-shadow: 0px 0px 10px $success-dark;
+  }
+}
+
+// =============================================================================
+// OBJECT PROPERTIES
+// =============================================================================
+
+#object-properties {
+  input[type=text] {
+    margin: 0;
+    font-size: $font-size-small;
+    padding: 2px;
+    border-radius: 0px;
+    border: $border-width solid $secondary-cyan-light;
+  }
+
+  button.btn.btn-default {
+    padding: 2px;
+    border: $border-width solid $primary-blue-lighter;
+    border-radius: 0;
+    font-size: $font-size-small;
+    margin: 0;
+  }
+}
+
+// =============================================================================
+// CHECKERBOARD
+// =============================================================================
+
+.checkerboard {
+  background-color: $text-white;
+  background-image: 
+    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.25, $checkerboard-light), color-stop(.25, rgba(255, 255, 255, 0))), 
+    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.25, $checkerboard-light), color-stop(.25, transparent)), 
+    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(.75, transparent), color-stop(.75, $checkerboard-light)), 
+    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(.75, transparent), color-stop(.75, $checkerboard-light));
+  background-color: $bg-secondary;
+  background-image: 
+    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.25, $checkerboard-dark), color-stop(0.25, rgb(255 255 255 / 0%))), 
+    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(0.25, $checkerboard-dark), color-stop(0.25, transparent)), 
+    -webkit-gradient(linear, 0 100%, 100% 0, color-stop(0.75, transparent), color-stop(0.75, $checkerboard-dark)), 
+    -webkit-gradient(linear, 0 0, 100% 100%, color-stop(0.75, transparent), color-stop(0.75, $checkerboard-dark));
+  background-size: 64px 64px;
+  -webkit-background-size: 64px 64px;
+  background-position: 0 0, 32px 0, 32px -32px, 0px 32px;
+}
+
+// =============================================================================
+// INFO PANE
+// =============================================================================
+
+.info-pane {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background: $bg-overlay;
+  padding: $spacing-md;
+  border-top-right-radius: $border-radius-large;
+}
+
+.info-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  background: $bg-overlay;
+  color: $text-white;
+}
+
+// =============================================================================
+// WINDOW PANE
+// =============================================================================
+
+.windowpane {
+  display: block;
+  position: absolute;
+  background: $bg-quaternary;
+  width: 250px;
+
+  .windowpane-title {
+    display: block;
+    min-height: $spacing-xl;
+    width: 100%;
+    background: $primary-blue;
+    cursor: all-scroll;
+    padding: $spacing-sm;
+  }
+
+  .windowpane-content {
+    display: block;
+    width: 100%;
+    padding: $spacing-sm;
+
+    .title {
+      color: $text-accent;
+    }
+
+    select {
+      width: 100%;
+    }
+
+    .section-header {
+      background: $bg-darker;
+      display: block;
+      padding: $spacing-sm $spacing-md;
+      margin: $spacing-md -$spacing-sm;
+      margin-bottom: $spacing-sm;
+      font-size: larger;
+
+      &.first {
+        margin-top: -$spacing-sm;
+      }
+    }
+
+    .tab-host {
+      margin: -$spacing-sm;
+    }
+
+    .tab-container {
+      padding: $spacing-md;
+    }
+  }
+}
+
+// =============================================================================
+// SECTIONS
+// =============================================================================
+
+.section {
+  display: block;
+
+  .section-header {
+    background: $border-secondary;
+    padding: 2.5px $spacing-sm;
+    border-bottom: $border-width-thick solid $border-accent-darkest;
+    font-weight: bold;
+
+    &-collapsible {
+      cursor: pointer;
+      user-select: none;
+
+      &:hover {
+        background: lighten($border-secondary, 5%);
+      }
+    }
+  }
+
+  .section-collapse-arrow {
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 10px;
+    transition: transform 0.15s ease;
+
+    &.open {
+      transform: rotate(90deg);
+    }
+  }
+
+  &-collapsed .section-header {
+    border-bottom-color: transparent;
+  }
+
+  .section-content {
+    display: block;
+    position: relative;
+    padding: $spacing-sm;
+
+    &-slim {
+      padding: 0;
+    }
+  }
+}
+
+// =============================================================================
+// CEXOLOCSTRING
+// =============================================================================
+
+.CExoLocString-holder .btn-edit-holder {
+  font-size: 14pt;
+  padding: 0;
+  vertical-align: middle;
+  padding-top: 4.5pt;
+}
+
+// =============================================================================
+// ANIMATIONS
+// =============================================================================
+
+.alert-warning.shake {
+  animation: shake $transition-slow cubic-bezier(.36,.07,.19,.97) both;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+@keyframes shake {
+  10%, 90% {
+    transform: translate3d(-1px, 0, 0);
+  }
+
+  20%, 80% {
+    transform: translate3d(2px, 0, 0);
+  }
+
+  30%, 50%, 70% {
+    transform: translate3d(-4px, 0, 0);
+  }
+
+  40%, 60% {
+    transform: translate3d(4px, 0, 0);
+  }
+}
+
+// =============================================================================
+// NOTIFICATIONS
+// =============================================================================
+
+.notify-holder {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  padding: $spacing-md;
+  z-index: $z-index-notification;
+}
+
+// =============================================================================
+// TAB HOST
+// =============================================================================
+
+.tab-host {
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar-header {
+  border-bottom: $border-width solid #0006;
+  margin-bottom: $spacing-md;
+  padding-top: 2px;
+  background: rgb(0 0 0 / 40%);
+  padding-left: $spacing-sm;
+}
+
+.button-group {
+  display: flex;
+  justify-content: space-evenly;
+  align-content: center;
+  padding: $spacing-md;
+  flex-wrap: wrap;
+
+  button {
+    margin-bottom: $spacing-sm;
+    margin-left: 0;
+  }
+}

@@ -7,7 +7,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
-import "@/apps/forge/styles/tabs/tab-ute-editor.scss";
+import "@/apps/forge/components/tabs/tab-ute-editor/TabUTEEditor.scss";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost/SubTabHost";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
 

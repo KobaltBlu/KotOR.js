@@ -3,6 +3,8 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeAudioOstControls } from "@/apps/forge/components/ForgeAudioOstControls";
 
+import "@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer.scss";
+
 export const AudioPlayer = function () {
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);

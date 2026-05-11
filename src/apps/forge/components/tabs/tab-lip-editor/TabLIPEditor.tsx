@@ -12,6 +12,7 @@ import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { TabLIPEditorOptions } from "@/apps/forge/components/tabs/tab-lip-editor/TabLIPEditorOptions";
 
 import "@/apps/forge/components/tabs/tab-lip-editor/tab-lip-editor.scss";
+import "@/apps/forge/components/KeyFrameTimelineComponent.scss";
 
 function formatTimelineMmSs(totalSeconds: number): string {
   const s = Math.floor(totalSeconds % 60);

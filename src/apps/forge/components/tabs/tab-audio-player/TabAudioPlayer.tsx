@@ -18,6 +18,8 @@ import {
 } from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
 import * as KotOR from "@/KotOR";
 
+import "@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer.scss";
+
 const VISUAL_MIN_H = 168;
 const VISUAL_MAX_H = 320;
 

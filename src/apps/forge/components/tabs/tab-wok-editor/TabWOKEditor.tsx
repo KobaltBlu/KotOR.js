@@ -12,6 +12,8 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { SectionContainer } from "@/apps/forge/components/SectionContainer";
 import { Button, ButtonGroup, Form } from "react-bootstrap";
 
+import "@/apps/forge/components/tabs/tab-wok-editor/TabWOKEditor.scss";
+
 export const TabWOKEditor = function(props: BaseTabProps) {
   const tab: TabWOKEditorState = props.tab as TabWOKEditorState;
   const [walkmesh, setWalkmesh] = useState<KotOR.OdysseyWalkMesh>();

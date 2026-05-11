@@ -11,6 +11,8 @@ import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
 import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
 import { createGFFContextMenuItems } from "@/apps/forge/components/tabs/tab-gff-editor/GFFContextMenu";
 
+import "@/apps/forge/components/tabs/tab-gff-editor/TabGFFEditor.scss";
+
 export const TabGFFEditor = function(props: BaseTabProps){
 
   const tab: TabGFFEditorState = props.tab as TabGFFEditorState;

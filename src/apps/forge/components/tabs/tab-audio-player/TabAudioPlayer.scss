@@ -2,6 +2,8 @@
 // Forge mini player (navbar)
 // =============================================================================
 
+@use "tokens" as *;
+
 .forge-mini-player {
   display: flex;
   align-items: stretch;

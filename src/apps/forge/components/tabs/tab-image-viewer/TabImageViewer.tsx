@@ -5,6 +5,8 @@ import { ForgeRasterImage, TabImageViewerState } from "@/apps/forge/states/tabs/
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
+import "@/apps/forge/components/tabs/tab-image-viewer/TabImageViewer.scss";
+
 import * as KotOR from "@/apps/forge/KotOR";
 
 export const TabImageViewer = function(props: BaseTabProps){
