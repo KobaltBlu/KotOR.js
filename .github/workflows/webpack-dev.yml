@@ -25,6 +25,9 @@ jobs:
           npm install
           npm run webpack:prod
 
+      - name: Generate Manifest
+        run: npm run generate-manifest
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:

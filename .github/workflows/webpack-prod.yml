@@ -25,6 +25,9 @@ jobs:
           npm install
           npm run webpack:prod
 
+      - name: Generate Manifest
+        run: npm run generate-manifest
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -35,7 +38,6 @@ jobs:
       - name: Upload To S3 Bucket
         run: |
           aws s3 sync dist s3://${{ secrets.AWS_BUCKET_PROD }} --delete --acl public-read
-
       - name: Invalidate CloudFront Cache
         run: |
           aws cloudfront create-invalidation \
