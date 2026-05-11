@@ -67,7 +67,7 @@ export class EditorFile extends EventListenerModel {
   };
 
   set unsaved_changes(value){
-    this._unsaved_changes = ( value || (this.location == FileLocationType.OTHER) ) ? true : false;
+    this._unsaved_changes = !!value;
     this.processEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', [this]);
     if(!this.unsaved_changes) ForgeState.addRecentFile(this);
   }
@@ -139,7 +139,6 @@ export class EditorFile extends EventListenerModel {
     this.reskey = options.reskey;
     this.archive_path = options.archive_path;
     this.location = options.location;
-    this.unsaved_changes = false;
     this.handle = options.handle;
     this.handle2 = options.handle2;
     this.useGameFileSystem = !!options.useGameFileSystem;
@@ -162,8 +161,14 @@ export class EditorFile extends EventListenerModel {
       this.ext = rawOptionsExt;
     }
 
-    if(this.location == FileLocationType.OTHER)
-      this.unsaved_changes = true;
+    // Only mark in-memory/untitled files dirty by default.
+    // Files loaded from disk/archive should start clean.
+    const isUntitledInMemoryFile =
+      this.location == FileLocationType.OTHER &&
+      !this.path &&
+      !this.archive_path &&
+      !this.handle;
+    this.unsaved_changes = isUntitledInMemoryFile;
 
   }
 
