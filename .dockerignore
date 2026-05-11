@@ -1,0 +1,14 @@
+.git
+.github
+.cursor
+node_modules
+dist
+coverage
+wiki
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+docker-compose*.yml

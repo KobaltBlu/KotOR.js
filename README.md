@@ -124,6 +124,33 @@ If you're using VS Code, press **F5** (Run & Debug) and pick a configuration. VS
 
 ---
 
+### Docker
+
+This project can be containerized as a static web app.
+
+Build the image:
+
+```bash
+docker build -t kotor-js-web .
+```
+
+Run it:
+
+```bash
+docker run --rm -p 8080:80 kotor-js-web
+```
+
+Then open:
+
+- `http://localhost:8080/` (Launcher)
+
+Notes:
+
+- The Docker image uses a multi-stage build (`node:alpine` -> `nginx:alpine`).
+- It runs the same production build as local web output: `npm run webpack:prod`.
+
+---
+
 ### Other Commands
 
 | Command | What it does |
