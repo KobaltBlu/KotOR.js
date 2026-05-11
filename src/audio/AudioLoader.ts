@@ -53,26 +53,57 @@ export class AudioLoader {
           throw e;
         }
       }else{
-        return await this.LoadStreamSound( resRef);
+        const fromDisk = await AudioLoader.loadWavFromGamePaths(resRef);
+        if (fromDisk) {
+          return fromDisk;
+        }
+        throw new Error(`LoadSound: could not resolve "${resRef}" (streamsounds / streamwaves / streamvoice / Override)`);
       }
 
     }
 
   }
 
-  static async LoadStreamSound (resRef: string) {
-    try{
-      const file = path.join('streamsounds', resRef+'.wav');
-      console.log('AudioLoader.LoadStreamSound : file', file);
-      const buffer = await GameFileSystem.readFile(file);
-      const af = new AudioFile(buffer);
-      const data = await af.getPlayableByteStream();
-      return data;
-    }catch(e){
-      console.log(`AudioLoader.LoadStreamSound : read`);
-      console.error(e);
-      throw e;
+  /**
+   * Loose WAVs: SFX in streamsounds; creature VO often in streamwaves (K1) or streamvoice (TSL).
+   * Also tries Override (mods / loose files).
+   */
+  static async loadWavFromGamePaths(resRef: string): Promise<Uint8Array | undefined> {
+    const ref = (resRef || "").trim().toLowerCase();
+    if (!ref) return undefined;
+
+    const subdirs = ["streamsounds", "streamwaves", "streamvoice"];
+    for (const sub of subdirs) {
+      try {
+        const file = path.join(sub, `${ref}.wav`);
+        const buffer = await GameFileSystem.readFile(file);
+        if (!buffer?.length) continue;
+        const af = new AudioFile(buffer);
+        return await af.getPlayableByteStream();
+      } catch {
+        /* try next */
+      }
     }
+
+    try {
+      const fromOverride = await ResourceLoader.searchOverride(ResourceTypes["wav"], ref);
+      if (fromOverride?.length) {
+        const af = new AudioFile(fromOverride);
+        return await af.getPlayableByteStream();
+      }
+    } catch {
+      /* ignore */
+    }
+
+    return undefined;
+  }
+
+  static async LoadStreamSound (resRef: string) {
+    const data = await AudioLoader.loadWavFromGamePaths(resRef);
+    if (data) {
+      return data;
+    }
+    throw new Error(`LoadStreamSound: could not read "${resRef}.wav" from streamsounds / streamwaves / streamvoice / Override`);
   }
 
   static async LoadStreamWave (resRef: string) {
