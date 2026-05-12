@@ -1,9 +1,17 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import MonacoEditor from "react-monaco-editor";
+import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
+import * as THREE from "three";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ForgeRasterImage, TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { TXI } from "@/resource/TXI";
+import { TXIBlending } from "@/enums/graphics/txi/TXIBlending";
+import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
 
 import "@/apps/forge/components/tabs/tab-image-viewer/TabImageViewer.scss";
 
@@ -16,8 +24,32 @@ export const TabImageViewer = function(props: BaseTabProps){
   const [canvasScale, setCanvasScale] = useState<number>(1);
   const [canvasWidth, setCanvasWidth] = useState<number>(512);
   const [canvasHeight, setCanvasHeight] = useState<number>(512);
+  const [preview3D, setPreview3D] = useState<boolean>(false);
+  const [txiDraft, setTxiDraft] = useState<string>("");
+  const [txiApplied, setTxiApplied] = useState<string>("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const preview3DContextRef = useRef<UI3DRenderer>(new UI3DRenderer());
+  const previewPlaneRef = useRef<THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial> | null>(null);
+  const previewTextureRef = useRef<THREE.CanvasTexture | null>(null);
+  const previewMaterialRef = useRef<THREE.ShaderMaterial | null>(null);
+  const previewEnvMapRef = useRef<KotOR.OdysseyTexture | null>(null);
+  const txiEditorOptions: monacoEditor.editor.IEditorOptions = {
+    automaticLayout: true,
+    minimap: { enabled: false },
+    scrollBeyondLastLine: false,
+    wordWrap: "off",
+    lineNumbers: "on",
+    fontSize: 12,
+  };
+
+  const TXI_DIRECTIVES = new Set([
+    "proceduretype","mipmap","filter","defaultwidth","defaultheight","downsamplemin","downsamplemax",
+    "decal","blending","compresstexture","isbumpmap","islightmap","cube","bumpmapscaling",
+    "bumpmaptexture","bumpyshinytexture","envmaptexture","wateralpha","numx","numy","fps",
+    "numchars","fontheight","baselineheight","texturewidth","spacingr","spacingb","caretindent",
+    "upperleftcoords","lowerrightcoords",
+  ]);
   
   const clampScale = (value: number) => {
     if(value < 0.25) return 0.25;
@@ -60,13 +92,6 @@ export const TabImageViewer = function(props: BaseTabProps){
 
           let imageData = ctx.getImageData(0, 0, width, height);
           if(image instanceof KotOR.TPCObject){
-
-            if(tab.bitsPerPixel == 24)
-              tab.workingData = TabImageViewerState.PixelDataToRGBA(tab.workingData, width, height);
-
-            if(tab.bitsPerPixel == 8)
-              tab.workingData = TabImageViewerState.TGAGrayFix(tab.workingData);
-
             //FlipY
             TabImageViewerState.FlipY(tab.workingData, width, height);
 
@@ -137,7 +162,239 @@ export const TabImageViewer = function(props: BaseTabProps){
 
   const onEditorFileLoad = () => {
     setPixelData(tab.image);
+    const nextTXI = tab.getTXIText();
+    setTxiDraft(nextTXI);
+    setTxiApplied(nextTXI);
   };
+
+  const validateTXI = (text: string): string[] => {
+    const issues: string[] = [];
+    const lines = text.split(/\r?\n/);
+    for(let i = 0; i < lines.length; i++){
+      const raw = lines[i];
+      const line = raw.trim();
+      if(!line || line.startsWith("//") || line.startsWith("#")) continue;
+      const [directiveRaw, ...rest] = line.split(/\s+/);
+      const directive = directiveRaw.toLowerCase();
+      if(!TXI_DIRECTIVES.has(directive)){
+        issues.push(`Line ${i + 1}: Unknown directive "${directiveRaw}"`);
+        continue;
+      }
+      if((directive === "upperleftcoords" || directive === "lowerrightcoords") && rest.length){
+        const n = Number.parseInt(rest[0], 10);
+        if(!Number.isFinite(n) || n < 0){
+          issues.push(`Line ${i + 1}: "${directive}" requires non-negative point count`);
+        }
+      }
+    }
+    return issues;
+  };
+
+  const txiIssues = validateTXI(txiDraft);
+  const txiDirty = txiDraft !== txiApplied;
+
+  const onApplyTXI = () => {
+    tab.applyTXIText(txiDraft);
+    setTxiApplied(txiDraft);
+  };
+
+  const onRevertTXI = () => {
+    setTxiDraft(txiApplied);
+  };
+
+  useEffectOnce(() => {
+    const context = preview3DContextRef.current;
+    const onBeforeRender = (delta: number) => {
+      const mesh = previewPlaneRef.current;
+      const material = previewMaterialRef.current;
+      const texture = previewTextureRef.current;
+      if(!mesh || !material || !texture){
+        return;
+      }
+      if(material.uniforms.time){
+        material.uniforms.time.value += delta;
+      }
+      mesh.rotation.y += delta * 0.5;
+      mesh.rotation.x = Math.sin(material.uniforms.time?.value || 0) * 0.12;
+      texture.needsUpdate = true;
+    };
+    context.addEventListener("onBeforeRender", onBeforeRender);
+    return () => {
+      context.removeEventListener("onBeforeRender", onBeforeRender);
+      if(previewEnvMapRef.current){
+        previewEnvMapRef.current.dispose();
+        previewEnvMapRef.current = null;
+      }
+      context.destroy();
+    };
+  });
+
+  useEffect(() => {
+    const context = preview3DContextRef.current;
+    const sourceCanvas = canvasRef.current;
+    if(!sourceCanvas){
+      return;
+    }
+
+    let texture = previewTextureRef.current;
+    if(!texture){
+      texture = new THREE.CanvasTexture(sourceCanvas);
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      previewTextureRef.current = texture;
+    }
+    texture.needsUpdate = true;
+    texture.updateMatrix();
+
+    let material = previewMaterialRef.current;
+    if(!material){
+      const uniforms = THREE.UniformsUtils.clone((THREE.ShaderLib as any).odyssey.uniforms);
+      uniforms.map.value = texture;
+      uniforms.uvTransform.value = texture.matrix;
+      uniforms.time.value = 0;
+      uniforms.opacity.value = 1.0;
+      uniforms.diffuse.value = new THREE.Color(1, 1, 1);
+      uniforms.tweakColor.value = new THREE.Color(1, 1, 1);
+
+      material = new THREE.ShaderMaterial({
+        fragmentShader: (THREE.ShaderLib as any).odyssey.fragmentShader,
+        vertexShader: (THREE.ShaderLib as any).odyssey.vertexShader,
+        uniforms,
+        side: THREE.DoubleSide,
+        lights: true,
+        fog: false,
+        transparent: false,
+      });
+      material.defines = material.defines || {};
+      material.defines.AURORA = "";
+      material.defines.USE_UV = "";
+      material.defines.USE_MAP = "";
+      previewMaterialRef.current = material;
+    } else {
+      material.uniforms.map.value = texture;
+      material.uniforms.uvTransform.value = texture.matrix;
+    }
+
+    let mesh = previewPlaneRef.current;
+    const planeAspect = canvasWidth > 0 && canvasHeight > 0 ? canvasWidth / canvasHeight : 1;
+    const planeW = Math.max(1, planeAspect);
+    const planeH = Math.max(1, 1 / Math.max(planeAspect, 0.0001));
+    if(!mesh){
+      mesh = new THREE.Mesh(new THREE.PlaneGeometry(planeW, planeH), material);
+      previewPlaneRef.current = mesh;
+      context.attachObject(mesh, false);
+    } else {
+      const nextGeo = new THREE.PlaneGeometry(planeW, planeH);
+      mesh.geometry.dispose();
+      mesh.geometry = nextGeo;
+      mesh.material = material;
+    }
+
+    const parsedTXI = new TXI(txiApplied || "");
+    material.blending = THREE.NormalBlending;
+    material.transparent = false;
+    material.alphaTest = 0;
+    delete material.defines.CYCLE_MAP;
+    delete material.defines.WATER;
+    delete material.defines.USE_ENVMAP;
+    delete material.defines.ENVMAP_TYPE_CUBE;
+    delete material.defines.ENVMAP_MODE_REFLECTION;
+    delete material.defines.ENVMAP_BLENDING_ADD;
+    if(material.uniforms.envMap){
+      material.uniforms.envMap.value = null;
+    }
+
+    if(parsedTXI.blending === TXIBlending.ADDITIVE){
+      material.blending = THREE.AdditiveBlending;
+      material.transparent = true;
+    } else if(parsedTXI.blending === TXIBlending.PUNCHTHROUGH){
+      material.alphaTest = 0.5;
+      material.transparent = false;
+    }
+
+    if(parsedTXI.procedureType === TXIPROCEDURETYPE.CYCLE){
+      material.defines.CYCLE_MAP = "";
+      if(material.uniforms.animationVectorMap){
+        material.uniforms.animationVectorMap.value.set(
+          parsedTXI.numx || 1,
+          parsedTXI.numy || 1,
+          (parsedTXI.numx || 1) * (parsedTXI.numy || 1),
+          parsedTXI.fps || 1,
+        );
+      }
+      texture.repeat.x = parsedTXI.numx ? (1 / parsedTXI.numx) : 1;
+      texture.repeat.y = parsedTXI.numy ? (1 / parsedTXI.numy) : 1;
+      texture.updateMatrix();
+      material.uniforms.uvTransform.value = texture.matrix;
+    } else if(parsedTXI.procedureType === TXIPROCEDURETYPE.WATER){
+      material.defines.WATER = "";
+      if(material.uniforms.waterAlpha){
+        material.uniforms.waterAlpha.value = Number.isFinite(parsedTXI.waterAlpha as number) ? parsedTXI.waterAlpha : 0.8;
+      }
+      texture.repeat.set(1, 1);
+      texture.updateMatrix();
+      material.uniforms.uvTransform.value = texture.matrix;
+    } else {
+      texture.repeat.set(1, 1);
+      texture.updateMatrix();
+      material.uniforms.uvTransform.value = texture.matrix;
+    }
+
+    material.needsUpdate = true;
+
+    let cancelled = false;
+    const envMapTexture = typeof parsedTXI.envMapTexture === "string" ? parsedTXI.envMapTexture.trim() : "";
+    if(envMapTexture){
+      void KotOR.TextureLoader.Load(envMapTexture, KotOR.TextureLoader.NOCACHE).then((envMap: KotOR.OdysseyTexture) => {
+        if(cancelled || !previewMaterialRef.current){
+          envMap?.dispose?.();
+          return;
+        }
+
+        const currentMaterial = previewMaterialRef.current;
+        if(previewEnvMapRef.current && previewEnvMapRef.current !== envMap){
+          previewEnvMapRef.current.dispose();
+        }
+        previewEnvMapRef.current = envMap;
+
+        envMap.wrapS = envMap.wrapT = THREE.RepeatWrapping;
+        envMap.updateMatrix();
+        if(currentMaterial.uniforms.envMap){
+          currentMaterial.uniforms.envMap.value = envMap;
+        }
+        (currentMaterial as any).envMap = envMap;
+        currentMaterial.defines.USE_ENVMAP = "";
+        currentMaterial.defines.ENVMAP_TYPE_CUBE = "";
+        currentMaterial.defines.ENVMAP_MODE_REFLECTION = "";
+        currentMaterial.defines.ENVMAP_BLENDING_ADD = "";
+        currentMaterial.uniformsNeedUpdate = true;
+        currentMaterial.needsUpdate = true;
+      }).catch(() => {
+        // Keep rendering without envmap if referenced texture is missing.
+      });
+    } else if(previewEnvMapRef.current){
+      previewEnvMapRef.current.dispose();
+      previewEnvMapRef.current = null;
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [txiApplied, canvasWidth, canvasHeight, render]);
+
+  useEffect(() => {
+    const context = preview3DContextRef.current;
+    if(preview3D){
+      context.clearColor = new THREE.Color(0x0d1118);
+      context.camera.position.set(0, 0, 2.25);
+      context.camera.lookAt(0, 0, 0);
+      context.orbitControls.target.set(0, 0, 0);
+      context.orbitControls.update();
+      context.enabled = true;
+      context.render();
+    } else {
+      context.enabled = false;
+    }
+  }, [preview3D]);
 
   const menuItems: MenuItem[] = [
     {
@@ -192,16 +449,44 @@ export const TabImageViewer = function(props: BaseTabProps){
   const eastContent = (
     (tab.image instanceof KotOR.TPCObject) ? (
       <div className="txi-pane">
-        {
-          Object.entries(tab.image.txi).map( (element: [string, any]) => {
-            return (
-              <div className="txi-element" key={element[0]}>
-                <span className="txi-property">{element[0]}</span>
-                <span className="txi-value">{element[1]}</span>
-              </div>
-            )
-          })
-        }
+        <div className="txi-pane__toolbar">
+          <button
+            type="button"
+            className="txi-pane__btn"
+            disabled={!txiDirty || txiIssues.length > 0}
+            onClick={onApplyTXI}
+          >
+            Apply TXI
+          </button>
+          <button
+            type="button"
+            className="txi-pane__btn txi-pane__btn--secondary"
+            disabled={!txiDirty}
+            onClick={onRevertTXI}
+          >
+            Revert
+          </button>
+          <span className="txi-pane__status">
+            {txiIssues.length ? `${txiIssues.length} issue(s)` : (txiDirty ? "Unsaved changes" : "Clean")}
+          </span>
+        </div>
+        <div className="txi-pane__editor">
+          <MonacoEditor
+            width="100%"
+            height="100%"
+            language="txi"
+            theme="txi-dark"
+            value={txiDraft}
+            options={txiEditorOptions}
+            onChange={(value) => setTxiDraft(value || "")}
+          />
+        </div>
+        <div className="txi-pane__issues">
+          {txiIssues.slice(0, 8).map((issue, index) => (
+            <div key={`txi-issue-${index}`} className="txi-pane__issue">{issue}</div>
+          ))}
+          {txiIssues.length > 8 ? <div className="txi-pane__issue">...and {txiIssues.length - 8} more</div> : null}
+        </div>
       </div>
     ) : (
       <></>
@@ -219,15 +504,27 @@ export const TabImageViewer = function(props: BaseTabProps){
             <button type="button" className="tab-image-viewer-menubar__btn" onClick={zoomIn}>+</button>
             <button type="button" className="tab-image-viewer-menubar__btn" onClick={zoomReset}>100%</button>
             <button type="button" className="tab-image-viewer-menubar__btn" onClick={zoomFit}>Fit</button>
+            <button
+              type="button"
+              className="tab-image-viewer-menubar__btn"
+              onClick={() => setPreview3D((v) => !v)}
+            >
+              {preview3D ? "2D" : "3D"}
+            </button>
             <span className="tab-image-viewer-menubar__readout">{Math.round(canvasScale * 100)}%</span>
           </div>
           <div className="tab-image-viewer-menubar__group">
             <span className="tab-image-viewer-menubar__meta">{canvasWidth}x{canvasHeight}</span>
           </div>
         </div>
-        <div ref={containerRef} className="tab-image-viewer-viewport">
+        <div ref={containerRef} className="tab-image-viewer-viewport" style={{display: preview3D ? "none" : "flex"}}>
           <canvas ref={canvasRef} className="checkerboard tab-image-viewer-canvas" style={{width: `${canvasWidth}px`, height: `${canvasHeight}px`, transform: `scale(${canvasScale})`}} />
         </div>
+        {preview3D ? (
+          <div className="tab-image-viewer-viewport tab-image-viewer-viewport--3d">
+            <UI3DRendererView context={preview3DContextRef.current} />
+          </div>
+        ) : null}
       </LayoutContainer>
     </>
   );

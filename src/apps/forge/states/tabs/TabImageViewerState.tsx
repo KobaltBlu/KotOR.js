@@ -5,6 +5,13 @@ import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import * as KotOR from "@/apps/forge/KotOR";
 import { PixelManager } from "@/utility/PixelManager";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { ENCODING } from "@/enums/graphics/tpc/Encoding";
+import { PixelFormat } from "@/enums/graphics/tpc/PixelFormat";
+import type { ITPCHeader } from "@/interface/resource/ITPCHeader";
+import { TXI } from "@/resource/TXI";
+// @ts-ignore
+import * as dxtJs from "dxt-js";
 
 const concatenate = (resultConstructor: any, ...arrays: any) => {
   let totalLength = 0;
@@ -20,6 +27,20 @@ const concatenate = (resultConstructor: any, ...arrays: any) => {
   return result;
 }
 
+const TPC_HEADER_LENGTH = 128;
+
+type TPCExportPolicy = {
+  alphaPolicy: "opaque-threshold" | "strict-alpha";
+  opaqueAlphaThreshold: number;
+  mipPolicy: "full-chain" | "single-level";
+};
+
+const TPC_EXPORT_POLICY: TPCExportPolicy = {
+  alphaPolicy: "opaque-threshold",
+  opaqueAlphaThreshold: 250,
+  mipPolicy: "full-chain",
+};
+
 export class TabImageViewerState extends TabState {
 
   tabName: string = `Image Viewer`;
@@ -27,6 +48,7 @@ export class TabImageViewerState extends TabState {
   workingData: Uint8Array;
   bitsPerPixel: number;
   private forcedExportExt?: 'tga' | 'png' | 'jpg' | 'tpc';
+  private txiText: string = "";
 
   private static isRasterImage(image: any): image is ForgeRasterImage {
     return !!image && (image.kind === 'png' || image.kind === 'jpg' || image.kind === 'jpeg');
@@ -179,6 +201,7 @@ export class TabImageViewerState extends TabState {
             break;
             case 'tpc':
               this.image = new KotOR.TPCObject({file: response.buffer, filename: file.resref+'.tpc' });
+              this.txiText = this.image.txi?.info || "";
             break;
             case 'png':
               this.image = await TabImageViewerState.decodeImage(response.buffer, 'png');
@@ -335,6 +358,190 @@ export class TabImageViewerState extends TabState {
     }
   }
 
+  getTXIText(): string {
+    if(this.image instanceof KotOR.TPCObject){
+      return this.txiText || this.image.txi?.info || "";
+    }
+    return "";
+  }
+
+  setTXIText(text: string): void {
+    this.txiText = text || "";
+  }
+
+  applyTXIText(text: string): void {
+    this.txiText = text || "";
+    if(this.image instanceof KotOR.TPCObject){
+      this.image.txi = new TXI(this.txiText);
+    }
+  }
+
+  private static hasMeaningfulAlpha(pixelData: Uint8Array, policy: TPCExportPolicy): boolean {
+    if(policy.alphaPolicy === "strict-alpha"){
+      for(let i = 3; i < pixelData.length; i += 4){
+        if(pixelData[i] < 255){
+          return true;
+        }
+      }
+      return false;
+    }
+
+    for(let i = 3; i < pixelData.length; i += 4){
+      if(pixelData[i] < policy.opaqueAlphaThreshold){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static generateMipDimensions(width: number, height: number, policy: TPCExportPolicy){
+    const count = policy.mipPolicy === "single-level"
+      ? 1
+      : KotOR.TPCObject.generateMipMapCountForDimensions(width, height);
+
+    const levels: { width: number; height: number }[] = [];
+    let w = width;
+    let h = height;
+    for(let i = 0; i < count; i++){
+      levels.push({ width: w, height: h });
+      w = Math.max(w >> 1, 1);
+      h = Math.max(h >> 1, 1);
+    }
+    return levels;
+  }
+
+  private static resizeRGBA(pixelData: Uint8Array, srcW: number, srcH: number, dstW: number, dstH: number): Uint8Array {
+    if(srcW === dstW && srcH === dstH){
+      return new Uint8Array(pixelData);
+    }
+    const srcCanvas = document.createElement("canvas");
+    srcCanvas.width = srcW;
+    srcCanvas.height = srcH;
+    const srcCtx = srcCanvas.getContext("2d");
+    if(!srcCtx){
+      return new Uint8Array(pixelData);
+    }
+    const srcImage = srcCtx.createImageData(srcW, srcH);
+    srcImage.data.set(pixelData);
+    srcCtx.putImageData(srcImage, 0, 0);
+
+    const dstCanvas = document.createElement("canvas");
+    dstCanvas.width = dstW;
+    dstCanvas.height = dstH;
+    const dstCtx = dstCanvas.getContext("2d");
+    if(!dstCtx){
+      return new Uint8Array(pixelData);
+    }
+    dstCtx.imageSmoothingEnabled = true;
+    dstCtx.imageSmoothingQuality = "high";
+    dstCtx.drawImage(srcCanvas, 0, 0, srcW, srcH, 0, 0, dstW, dstH);
+    return new Uint8Array(dstCtx.getImageData(0, 0, dstW, dstH).data);
+  }
+
+  private async getRGBAForExport(width: number, height: number): Promise<Uint8Array> {
+    let pixelData = await this.getPixelData();
+    const bitsPerPixel = this.image?.header?.bitsPerPixel || 32;
+
+    if(this.image instanceof KotOR.TPCObject){
+      // TPC decode path returns RGBA-converted buffers for all encodings.
+      TabImageViewerState.FlipY(pixelData, width, height);
+      return pixelData;
+    }
+
+    if(this.image instanceof KotOR.TGAObject){
+      switch(bitsPerPixel){
+        case 32:
+          pixelData = TabImageViewerState.TGAColorFix(pixelData);
+        break;
+        case 24:
+          pixelData = TabImageViewerState.RGBToRGBA(pixelData, width, height);
+          pixelData = TabImageViewerState.TGAColorFix(pixelData);
+        break;
+        case 8:
+          pixelData = TabImageViewerState.TGAGrayFix(pixelData);
+        break;
+      }
+      TabImageViewerState.FlipY(pixelData, width, height);
+      return pixelData;
+    }
+
+    return new Uint8Array(pixelData);
+  }
+
+  private async buildTPCExportBuffer(): Promise<Uint8Array> {
+    if(!this.image || !this.image.header){
+      return new Uint8Array(0);
+    }
+
+    const width = this.image.header.width;
+    const height = this.image.header.height;
+    const level0RGBA = await this.getRGBAForExport(width, height);
+    const hasAlpha = TabImageViewerState.hasMeaningfulAlpha(level0RGBA, TPC_EXPORT_POLICY);
+    const encoding = hasAlpha ? ENCODING.RGBA : ENCODING.RGB;
+    const dxtFormat = hasAlpha ? dxtJs.flags.DXT5 : dxtJs.flags.DXT1;
+
+    const mipLevels = TabImageViewerState.generateMipDimensions(width, height, TPC_EXPORT_POLICY);
+    const compressedLevels: Uint8Array[] = [];
+
+    for(const level of mipLevels){
+      const rgba = TabImageViewerState.resizeRGBA(level0RGBA, width, height, level.width, level.height);
+      const compressed = dxtJs.compress(rgba, level.width, level.height, dxtFormat);
+      const expectedLength = KotOR.TPCObject.getCompressedMipByteLength(level.width, level.height, encoding);
+      if(compressed.length !== expectedLength){
+        console.warn("TPC export mip byte-size mismatch", {
+          expectedLength,
+          actualLength: compressed.length,
+          width: level.width,
+          height: level.height,
+        });
+      }
+      compressedLevels.push(new Uint8Array(compressed));
+    }
+
+    const mipMapCount = compressedLevels.length;
+    const minDataSize = encoding == ENCODING.RGB ? 8 : 16;
+    const dataSize = KotOR.TPCObject.getCompressedMipByteLength(width, height, encoding);
+
+    const header: ITPCHeader = {
+      dataSize,
+      alphaTest: 1.0,
+      width,
+      height,
+      encoding,
+      mipMapCount,
+      bytesPerPixel: 4,
+      bitsPerPixel: 32,
+      minDataSize,
+      compressed: true,
+      hasAlpha,
+      format: hasAlpha ? PixelFormat.DXT5 : PixelFormat.DXT1,
+      isCubemap: false,
+      faces: 1,
+    };
+
+    const writer = new BinaryWriter(new Uint8Array(0));
+    writer.writeUInt32(header.dataSize);
+    writer.writeSingle(header.alphaTest);
+    writer.writeUInt16(header.width);
+    writer.writeUInt16(header.height);
+    writer.writeUInt8(header.encoding);
+    writer.writeUInt8(header.mipMapCount);
+    while(writer.tell() < TPC_HEADER_LENGTH){
+      writer.writeUInt8(0);
+    }
+
+    for(const mip of compressedLevels){
+      writer.writeBytes(mip);
+    }
+
+    const txiText = this.getTXIText().trim();
+    if(txiText.length){
+      writer.writeStringNullTerminated(`${txiText}\n`);
+    }
+
+    return writer.buffer;
+  }
+
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     const normalizedExt = (this.forcedExportExt || ext || '').replace('.', '').toLowerCase();
 
@@ -364,34 +571,7 @@ export class TabImageViewerState extends TabState {
       }
       const width = this.image.header.width;
       const height = this.image.header.height;
-      let pixelData = await this.getPixelData();
-      const bitsPerPixel = this.image.header.bitsPerPixel;
-
-      if(this.image instanceof KotOR.TPCObject){
-        if(bitsPerPixel == 24){
-          pixelData = TabImageViewerState.PixelDataToRGBA(pixelData, width, height);
-        }
-        if(bitsPerPixel == 8){
-          pixelData = TabImageViewerState.TGAGrayFix(pixelData);
-        }
-        TabImageViewerState.FlipY(pixelData, width, height);
-      } else if(this.image instanceof KotOR.TGAObject){
-        switch(bitsPerPixel){
-          case 32:
-            pixelData = TabImageViewerState.TGAColorFix(pixelData);
-          break;
-          case 24:
-            pixelData = TabImageViewerState.RGBToRGBA(pixelData, width, height);
-            pixelData = TabImageViewerState.TGAColorFix(pixelData);
-          break;
-          case 8:
-            pixelData = TabImageViewerState.TGAGrayFix(pixelData);
-          break;
-        }
-        TabImageViewerState.FlipY(pixelData, width, height);
-      } else {
-        pixelData = this.image.pixelData;
-      }
+      const pixelData = await this.getRGBAForExport(width, height);
 
       const canvas = document.createElement('canvas');
       canvas.width = width;
@@ -412,6 +592,10 @@ export class TabImageViewerState extends TabState {
         return new Uint8Array(0);
       }
       return new Uint8Array(await blob.arrayBuffer());
+    }
+
+    if(normalizedExt == 'tpc'){
+      return this.buildTPCExportBuffer();
     }
     
     return super.getExportBuffer(resref, ext);
