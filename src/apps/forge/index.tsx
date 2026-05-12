@@ -1,5 +1,6 @@
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api.js';
 (window as any).monaco = monaco;
+import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
 import React, { useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
 import 'bootstrap';
@@ -8,6 +9,8 @@ import { AppProvider, useApp } from "@/apps/forge/context/AppContext";
 import * as KotOR from "@/apps/forge/KotOR";
 import { App } from "@/apps/forge/App";
 import { Launcher } from "@/apps/launcher/context/Launcher";
+
+TXILanguageService.initTXILanguage();
 
 const query = new URLSearchParams(window.location.search);
 

@@ -17,6 +17,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
 import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
 import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
+import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
 import { RecentProject } from "@/apps/forge/RecentProject";
 
 export class ForgeState {
@@ -265,6 +266,7 @@ export class ForgeState {
           this.nwScriptParser = new NWScriptParser(textDecoder.decode(this.nwscript_nss));
           NWScriptLanguageService.initNWScriptLanguage();
           LYTLanguageService.initLYTLanguage();
+          TXILanguageService.initTXILanguage();
           resolve();
         }
       ).catch( (e) => {console.error(e)});

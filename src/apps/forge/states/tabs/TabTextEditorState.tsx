@@ -17,6 +17,7 @@ import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
 import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
+import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
 import { SemanticFunctionNode } from "@/nwscript/compiler/ASTSemanticTypes";
 import { compileNssSource, resolveIncludesForNss } from "@/apps/forge/helpers/ForgeNWScriptCompile";
 
@@ -58,13 +59,14 @@ export class TabTextEditorState extends TabState {
     switch(ext){
       case 'lyt':
         return 'lyt';
+      case 'txi':
+        return 'txi';
       case 'nss':
       case 'ncs':
         return 'nwscript';
       case 'json':
-        // `json` is the only extra Monaco language registered via
-        // MonacoWebpackPlugin in webpack/Forge.js; other extensions fall back
-        // to plaintext until additional languages are added to the bundle.
+        // `json` is registered via MonacoWebpackPlugin in webpack/Forge.js;
+        // `txi` / `lyt` / `nwscript` are registered at runtime in ForgeState.initNWScriptParser / language services.
         return 'json';
       default:
         return 'plaintext';
@@ -103,6 +105,8 @@ export class TabTextEditorState extends TabState {
     switch(langId){
       case 'lyt':
         return 'lyt-dark';
+      case 'txi':
+        return 'txi-dark';
       case 'nwscript':
         return 'nwscript-dark';
       default:
