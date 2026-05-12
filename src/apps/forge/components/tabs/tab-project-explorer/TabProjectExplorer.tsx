@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { TabProjectExplorerState } from "@/apps/forge/states/tabs";
+import { TabGFFEditorState, TabProjectExplorerState } from "@/apps/forge/states/tabs";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
@@ -11,6 +11,7 @@ import { Project } from "@/apps/forge/Project";
 import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompile";
 import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
 import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
+import { ContextMenuItem, useContextMenu } from "@/apps/forge/components/common/ContextMenu";
 
 function folderExpanded(expanded: Record<string, boolean>, relKey: string): boolean {
   if (expanded[relKey] !== undefined) return expanded[relKey] as boolean;
@@ -22,8 +23,9 @@ function ExplorerTreeBranch(props: {
   expanded: Record<string, boolean>;
   setExpanded: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   depth: number;
+  onResourceContextMenu?: (event: React.MouseEvent, node: FileBrowserNode) => void;
 }) {
-  const { node, expanded, setExpanded, depth } = props;
+  const { node, expanded, setExpanded, depth, onResourceContextMenu } = props;
 
   if (node.type === "resource") {
     const resPath = node.data?.path as string | undefined;
@@ -35,6 +37,11 @@ function ExplorerTreeBranch(props: {
         hasChildren={false}
         isExpanded={false}
         iconType="file"
+        onContextMenu={(e) => {
+          if (resPath && typeof onResourceContextMenu === "function") {
+            onResourceContextMenu(e, node);
+          }
+        }}
         onDoubleClick={() => {
           if (!resPath) return;
           FileTypeManager.onOpenResource(
@@ -78,6 +85,7 @@ function ExplorerTreeBranch(props: {
               expanded={expanded}
               setExpanded={setExpanded}
               depth={depth + 1}
+              onResourceContextMenu={onResourceContextMenu}
             />
           ))
         : null}
@@ -90,6 +98,73 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
   const [bulkRunning, setBulkRunning] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ "": true });
+  const { showContextMenu, ContextMenuComponent } = useContextMenu("dark");
+
+  const onResourceContextMenu = useCallback(
+    (event: React.MouseEvent, node: FileBrowserNode) => {
+      const nodeExt = (node.name?.split(".").pop() || "").toLowerCase();
+      const gffLikeExtensions = new Set([
+        "are",
+        "bic",
+        "dlg",
+        "fac",
+        "git",
+        "gff",
+        "ifo",
+        "jrl",
+        "res",
+        "utc",
+        "utd",
+        "ute",
+        "uti",
+        "utm",
+        "utp",
+        "uts",
+        "utt",
+        "utw",
+      ]);
+      const canOpenWithGff =
+        node.type === "resource" && !!node.data?.path && gffLikeExtensions.has(nodeExt);
+      const canOpenWithHex = node.type === "resource" && !!node.data?.path;
+
+      const items: ContextMenuItem[] = [];
+      if (canOpenWithGff) {
+        items.push({
+          id: "open-with-gff",
+          label: "Open with GFF",
+          onClick: () => {
+            ForgeState.tabManager.addTab(
+              new TabGFFEditorState({
+                editorFile: new EditorFile({
+                  path: node.data!.path,
+                  useProjectFileSystem: true,
+                }),
+              }),
+            );
+          },
+        });
+      }
+      if (canOpenWithHex) {
+        if (items.length) {
+          items.push({ id: "sep-open-with-hex", separator: true });
+        }
+        items.push({
+          id: "open-with-hex",
+          label: "Open in hex editor",
+          onClick: () => {
+            FileTypeManager.openHexEditor({
+              path: node.data!.path,
+              useProjectFileSystem: true,
+            });
+          },
+        });
+      }
+      if (items.length) {
+        showContextMenu(event.clientX, event.clientY, items);
+      }
+    },
+    [showContextMenu],
+  );
 
   useEffectOnce(() => {
     const tab = props.tab as TabProjectExplorerState;
@@ -191,10 +266,12 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
               expanded={expanded}
               setExpanded={setExpanded}
               depth={0}
+              onResourceContextMenu={onResourceContextMenu}
             />
           ))}
         </ForgeTreeView>
       </div>
+      {ContextMenuComponent}
     </div>
   );
 };

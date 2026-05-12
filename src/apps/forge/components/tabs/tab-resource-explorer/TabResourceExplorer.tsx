@@ -136,6 +136,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
     ]);
     const canOpenWithGff = node.type === 'resource' && !!node.data?.path && gffLikeExtensions.has(nodeExt);
     const canOpenWithSsf = node.type === 'resource' && !!node.data?.path && nodeExt === 'ssf';
+    const canOpenWithHex = node.type === 'resource' && !!node.data?.path;
 
     const items: ContextMenuItem[] = [
       {
@@ -187,6 +188,22 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
             }));
           },
         }
+      );
+    }
+
+    if (canOpenWithHex) {
+      items.push(
+        { id: 'sep-open-with-hex', separator: true },
+        {
+          id: 'open-with-hex',
+          label: 'Open in hex editor',
+          onClick: () => {
+            FileTypeManager.openHexEditor({
+              path: node.data!.path,
+              useGameFileSystem: true,
+            });
+          },
+        },
       );
     }
 

@@ -3,10 +3,11 @@ import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { 
-  TabBIKPlayerState, TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabLIPEditorState, TabLYTEditorState, TabModelViewerState, TabPTHEditorState, TabSSFEditorState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState, 
+  TabBIKPlayerState, TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabHexEditorState, TabImageViewerState, TabLIPEditorState, TabLYTEditorState, TabModelViewerState, TabPTHEditorState, TabSSFEditorState, TabTextEditorState, TabTwoDAEditorState, TabUTCEditorState, 
   TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState 
 } from "@/apps/forge/states/tabs";
 import { ResourceTypes } from "@/KotOR";
+import { sniffBufferLooksLikeBinary } from "@/apps/forge/helpers/sniffBufferLooksLikeBinary";
 
 /**
  * FileTypeManager class.
@@ -20,6 +21,13 @@ import { ResourceTypes } from "@/KotOR";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class FileTypeManager {
+
+  /** Open the resource in a raw hex view (does not change extension routing). */
+  static openHexEditor(options: EditorFileOptions): void {
+    ForgeState.tabManager.addTab(
+      new TabHexEditorState({ editorFile: new EditorFile(options) }),
+    );
+  }
 
   static onOpenFile(options: EditorFileOptions){
     FileTypeManager.onOpenResource(new EditorFile(options));
@@ -57,6 +65,13 @@ export class FileTypeManager {
         ForgeState.tabManager.addTab(new TabSSFEditorState({editorFile: res}));
       break;
       case 'dlg':
+      case 'bic':
+      case 'jrl':
+      case 'ifo':
+      case 'are':
+      case 'git':
+      case 'res':
+      case 'fac':
         ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
       break;
       case 'lip':
@@ -122,13 +137,6 @@ export class FileTypeManager {
       case 'pth':
         ForgeState.tabManager.addTab(new TabPTHEditorState({editorFile: res}));
       break;
-      case 'ifo': 
-      case 'are': 
-      case 'git': 
-      case 'res': 
-      case 'fac': 
-        ForgeState.tabManager.addTab(new TabGFFEditorState({editorFile: res}));
-      break;
       case 'bik':
         ForgeState.tabManager.addTab(new TabBIKPlayerState({editorFile: res}));
       break;
@@ -138,10 +146,25 @@ export class FileTypeManager {
         AudioPlayerState.OpenAudio(res);
       break;
       default:
-        ForgeState.tabManager.addTab(new TabTextEditorState({editorFile: res}));
+        void FileTypeManager.openUnknownExtensionWithSniff(res);
       break;
     }
 
+  }
+
+  /** Unknown extension: sniff bytes; binary → hex tab, else text editor. */
+  private static async openUnknownExtensionWithSniff(res: EditorFile): Promise<void> {
+    try {
+      const { buffer } = await res.readFile();
+      if (sniffBufferLooksLikeBinary(buffer)) {
+        ForgeState.tabManager.addTab(new TabHexEditorState({ editorFile: res }));
+      } else {
+        ForgeState.tabManager.addTab(new TabTextEditorState({ editorFile: res }));
+      }
+    } catch (e) {
+      console.warn("FileTypeManager.openUnknownExtensionWithSniff", e);
+      ForgeState.tabManager.addTab(new TabTextEditorState({ editorFile: res }));
+    }
   }
 
 }

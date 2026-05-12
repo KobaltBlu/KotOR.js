@@ -10,6 +10,7 @@ export * from "@/apps/forge/states/tabs/TabQuickStartState";
 export * from "@/apps/forge/states/tabs/TabResourceExplorerState";
 export * from "@/apps/forge/states/tabs/TabTwoDAEditorState";
 export * from "@/apps/forge/states/tabs/TabSSFEditorState";
+export * from "@/apps/forge/states/tabs/tab-hex-editor/TabHexEditorState";
 export * from "@/apps/forge/states/tabs/TabUTCEditorState";
 export * from "@/apps/forge/states/tabs/TabUTDEditorState";
 export * from "@/apps/forge/states/tabs/TabUTEEditorState";
