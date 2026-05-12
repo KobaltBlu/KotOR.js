@@ -5,7 +5,6 @@ import { MenuItem } from "@/apps/forge/components/MenuItem";
 import { MenuTopState } from "@/apps/forge/states/MenuTopState";
 import { MenuTopItem } from "@/apps/forge/MenuTopItem";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { AudioPlayer } from "@/apps/forge/components/AudioPlayer";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 
 export interface MenuTopProps {
@@ -77,9 +76,6 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
         <Navbar.Collapse id="basic-navbar-nav" className="flex-grow-1">
           <Nav className="me-auto">
             {menuItems}
-          </Nav>
-          <Nav className="ms-auto flex-row align-items-center">
-            <AudioPlayer />
           </Nav>
         </Navbar.Collapse>
       </Container>

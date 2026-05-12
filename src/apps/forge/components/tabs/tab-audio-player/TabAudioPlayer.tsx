@@ -49,22 +49,27 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
     total: 0,
     shuffle: false,
     queuePosition: 0,
+    queueLabels: [],
   }));
 
   let animationFrame: number;
 
   const syncOstFromState = () => {
-    const active = AudioPlayerState.ostMode && AudioPlayerState.ostTracks.length > 0;
+    const pl = AudioPlayerState.playlist;
+    const order = AudioPlayerState.playOrder;
+    const active =
+      AudioPlayerState.ostMode && pl.length > 0 && order.length > 0;
     const physical = AudioPlayerState.getCurrentOstPhysicalIndex();
     const entry =
-      active && physical >= 0 ? AudioPlayerState.ostTracks[physical] : undefined;
+      physical >= 0 && physical < pl.length ? pl[physical] : undefined;
     setOst({
       active,
-      label: entry?.displayName ?? entry?.label ?? "",
+      label: entry?.title ?? "",
       trackIndex: physical,
-      total: AudioPlayerState.ostTracks.length,
+      total: pl.length,
       shuffle: AudioPlayerState.ostShuffle,
-      queuePosition: active ? AudioPlayerState.ostPlayCursor + 1 : 0,
+      queuePosition: order.length > 0 ? AudioPlayerState.playCursor + 1 : 0,
+      queueLabels: pl.map((e) => e.title),
     });
   };
 
@@ -254,7 +259,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const seekDisabled = duration <= 0;
   const title = file?.filename?.trim() || "No file loaded";
   const ostPosition =
-    ost.active && ost.total > 0
+    ost.total > 0
       ? `${ost.queuePosition} / ${ost.total}${ost.shuffle ? " · shuffle" : ""}`
       : "";
   const ostMetaTitle =
@@ -307,11 +312,95 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
               <span className="forge-tab-audio__meta-ost-pos">{ostPosition}</span>
             ) : null}
           </p>
+        ) : !ost.active && ost.queueLabels.length > 1 ? (
+          <p className="forge-tab-audio__meta-queue">
+            <span className="forge-tab-audio__meta-queue-badge">Queue</span>
+            <span className="forge-tab-audio__meta-queue-pos">
+              {ost.queuePosition} / {ost.total}
+              {ost.shuffle ? " · shuffle" : ""}
+            </span>
+          </p>
         ) : null}
         <p className="forge-tab-audio__meta-hint">
-          Use the deck below for transport, export, and the ambientmusic.2da soundtrack
-          (playlist, shuffle, skip).
+          Build a WAV/MP3 playlist below, or use the disc control for the ambientmusic.2da
+          soundtrack (same queue UI). Skip buttons appear when two or more tracks are queued.
         </p>
+      </div>
+
+      <div className="forge-tab-audio__playlist">
+        <div className="forge-tab-audio__playlist-head">
+          <span className="forge-tab-audio__playlist-title">Playlist</span>
+          <div className="forge-tab-audio__playlist-actions">
+            <button
+              type="button"
+              className="forge-tab-audio__playlist-btn"
+              title="Append WAV/MP3 files to the queue"
+              onClick={() => {
+                void AudioPlayerState.promptAppendAudioToPlaylist();
+              }}
+            >
+              <i className="fa-solid fa-plus" aria-hidden />
+              <span>Add files…</span>
+            </button>
+            <button
+              type="button"
+              className="forge-tab-audio__playlist-btn"
+              disabled={ost.active || !ost.queueLabels.length}
+              title={
+                ost.active
+                  ? "Stop OST before editing the queue"
+                  : "Remove all queued files"
+              }
+              onClick={() => {
+                AudioPlayerState.clearManualPlaylist();
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        {ost.queueLabels.length ? (
+          <ul className="forge-tab-audio__playlist-list">
+            {ost.queueLabels.map((title, idx) => (
+              <li
+                key={`pl-${idx}-${title}`}
+                className={`forge-tab-audio__playlist-row${
+                  idx === ost.trackIndex ? " forge-tab-audio__playlist-row--active" : ""
+                }`}
+              >
+                <button
+                  type="button"
+                  className="forge-tab-audio__playlist-play"
+                  title="Play this track"
+                  onClick={() => {
+                    void AudioPlayerState.seekPlaylistToPhysicalIndex(idx);
+                  }}
+                >
+                  <span className="forge-tab-audio__playlist-index">{idx + 1}</span>
+                  <span className="forge-tab-audio__playlist-name">{title}</span>
+                </button>
+                {!ost.active ? (
+                  <button
+                    type="button"
+                    className="forge-tab-audio__playlist-remove"
+                    title="Remove from queue"
+                    aria-label={`Remove ${title}`}
+                    onClick={() => {
+                      AudioPlayerState.removePlaylistPhysicalIndex(idx);
+                    }}
+                  >
+                    <i className="fa-solid fa-xmark" aria-hidden />
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="forge-tab-audio__playlist-empty">
+            No files in the queue. Add WAV/MP3 from disk, or start the ambient soundtrack — both
+            use this playlist.
+          </p>
+        )}
       </div>
 
       <div className="forge-tab-audio__deck">
@@ -337,22 +426,23 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
         </div>
 
         <div className="forge-tab-audio__timeline">
-          <input
-            className="forge-tab-audio__seek"
-            type="range"
-            step="0.01"
-            min={0}
-            max={duration || 0}
-            value={Math.min(currentTime, duration || 0)}
-            disabled={seekDisabled}
-            aria-label="Playback position"
-            onChange={onTrackBarChange}
-          />
-          <div className="forge-tab-audio__time-row">
-            <span className="forge-tab-audio__time">{currentTimeString}</span>
-            <span className="forge-tab-audio__time-sep" aria-hidden>
-              /
+          <div className="forge-tab-audio__timeline-main">
+            <span className="forge-tab-audio__time forge-tab-audio__time--current">
+              {currentTimeString}
             </span>
+            <div className="forge-tab-audio__seek-wrap">
+              <input
+                className="forge-tab-audio__seek"
+                type="range"
+                step="0.01"
+                min={0}
+                max={duration || 0}
+                value={Math.min(currentTime, duration || 0)}
+                disabled={seekDisabled}
+                aria-label="Playback position"
+                onChange={onTrackBarChange}
+              />
+            </div>
             <span className="forge-tab-audio__time forge-tab-audio__time--dim">
               {durationString}
             </span>

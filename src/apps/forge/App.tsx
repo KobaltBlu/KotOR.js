@@ -18,6 +18,7 @@ import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
+import { ForgeFloatingMiniPlayer } from "@/apps/forge/components/ForgeFloatingMiniPlayer";
 import forgeIcon from "@/assets/icons/icon.png";
 import * as KotOR from "@/KotOR";
 
@@ -371,6 +372,7 @@ export const App = (props: any) => {
           </LayoutContainerProvider>
         </div>
         <ModalChangeGame></ModalChangeGame>
+        <ForgeFloatingMiniPlayer />
         {isDragOver && (
           <div className="drag-drop-overlay">
             <div className="drag-drop-overlay__content">

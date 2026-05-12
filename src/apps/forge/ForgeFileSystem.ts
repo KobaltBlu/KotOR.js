@@ -58,10 +58,14 @@ export class ForgeFileSystem {
     }, options);
     return new Promise( (resolve, reject) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        const properties: ('createDirectory' | 'openFile' | 'multiSelections')[] = ['createDirectory', 'openFile'];
+        if (options.multiple) {
+          properties.push('multiSelections');
+        }
         dialog.showOpenDialog({
           title: 'Open File',
           filters: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
-          properties: ['createDirectory', 'openFile'],
+          properties,
         }).then( (result: any) => {
           if(!result.canceled){
             if(result.filePaths.length){
@@ -91,7 +95,7 @@ export class ForgeFileSystem {
       }else{
         window.showOpenFilePicker({
           types: ForgeFileSystem.GetFilteredFilePickerTypes(options.ext),
-          multiple: false,
+          multiple: !!options.multiple,
         }).then( (handles: FileSystemFileHandle[]) => {
           if(handles.length){
             resolve({

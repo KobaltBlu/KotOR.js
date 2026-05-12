@@ -7,34 +7,66 @@ import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerStat
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
 
 declare const dialog: any;
 
 export type AudioPlayerEventListenerTypes =
-  'onPlay'|'onPause'|'onStop'|'onLoad'|'onVolume'|'onLoop'|'onOpen'|'onOstState';
+  | "onPlay"
+  | "onPause"
+  | "onStop"
+  | "onLoad"
+  | "onVolume"
+  | "onLoop"
+  | "onOpen"
+  | "onOstState"
+  | "onFloatingMiniPlayerPrefs";
 
 export interface TabManagerEventListeners {
-  onPlay: Function[],
-  onPause: Function[],
-  onStop: Function[],
-  onLoad: Function[],
-  onVolume: Function[],
-  onLoop: Function[],
-  onOpen: Function[],
-  onOstState: Function[],
+  onPlay: Function[];
+  onPause: Function[];
+  onStop: Function[];
+  onLoad: Function[];
+  onVolume: Function[];
+  onLoop: Function[];
+  onOpen: Function[];
+  onOstState: Function[];
+  onFloatingMiniPlayerPrefs: Function[];
 }
 
 export type AudioPlayerOstStatePayload = {
   active: boolean;
   /** Resolved track title (TLK from Description, or DisplayName, or row label). */
   label: string;
-  /** Row index in the ambientmusic playlist (table order). -1 when OST is off. */
+  /** Index into `playlist` / `queueLabels` for the current track, or -1. */
   trackIndex: number;
   total: number;
   shuffle: boolean;
   /** 1-based position in the current play order. */
   queuePosition: number;
+  /** Titles in playlist table order (ambient OST or manual queue). */
+  queueLabels: string[];
 };
+
+export type AudioPlaylistStreamEntry = {
+  type: "stream_music";
+  id: string;
+  title: string;
+  resRef: string;
+  label: string;
+  /** Index in `getAmbientMusicPlaylistEntries()` order. */
+  ambientPhysicalIndex: number;
+};
+
+export type AudioPlaylistEditorEntry = {
+  type: "editor_file";
+  id: string;
+  title: string;
+  file: EditorFile;
+};
+
+export type AudioPlaylistEntry = AudioPlaylistStreamEntry | AudioPlaylistEditorEntry;
 
 export type AmbientMusicOstEntry = {
   resRef: string;
@@ -70,7 +102,25 @@ export class AudioPlayerState {
     onLoop: [],
     onOpen: [],
     onOstState: [],
+    onFloatingMiniPlayerPrefs: [],
   };
+
+  /** localStorage: user hid the floating mini player until respawned from the Audio menu. */
+  static readonly FLOATING_MINI_LS_DISMISSED = "forge.miniPlayer.dismissed";
+  /** localStorage: JSON `{ left, top }` for last floating position. */
+  static readonly FLOATING_MINI_LS_BOUNDS = "forge.miniPlayer.bounds";
+
+  /**
+   * Clears the floating mini player “dismissed” flag and notifies listeners so the widget shows again.
+   */
+  static showFloatingMiniPlayer(): void {
+    try {
+      localStorage.removeItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED);
+    } catch {
+      /* ignore */
+    }
+    AudioPlayerState.ProcessEventListener("onFloatingMiniPlayerPrefs", []);
+  }
   
   static analyser: AnalyserNode;
   static analyserBufferLength: number; 
@@ -86,13 +136,14 @@ export class AudioPlayerState {
   static loop: boolean;
   static loopId: NodeJS.Timeout;
 
-  /** When true, advancing to the next `ambientmusic.2da` row after a track ends. */
+  /** When true, queue was built from `ambientmusic.2da` (streammusic). */
   static ostMode: boolean = false;
-  static ostTracks: AmbientMusicOstEntry[] = [];
-  /** Permutation of `0..ostTracks.length-1` — play order (shuffled or sequential). */
-  static ostPlayOrder: number[] = [];
-  static ostPlayCursor: number = 0;
-  /** User preference: next `startAmbientMusicOst` / rebuild uses shuffled order. */
+  /** Unified queue: OST stream entries and/or user-picked editor files. */
+  static playlist: AudioPlaylistEntry[] = [];
+  /** Permutation of `0..playlist.length-1` — play order (shuffled or sequential). */
+  static playOrder: number[] = [];
+  static playCursor: number = 0;
+  /** Shuffle play order for OST and manual playlists. */
   static ostShuffle: boolean = false;
   private static ostStarting: boolean = false;
 
@@ -105,43 +156,44 @@ export class AudioPlayerState {
     }
   }
 
-  private static rebuildOstPlayOrder(): void {
-    const n = AudioPlayerState.ostTracks.length;
+  private static rebuildPlayOrder(): void {
+    const n = AudioPlayerState.playlist.length;
     if (!n) {
-      AudioPlayerState.ostPlayOrder = [];
+      AudioPlayerState.playOrder = [];
       return;
     }
     const order = Array.from({ length: n }, (_, i) => i);
     if (AudioPlayerState.ostShuffle) {
       AudioPlayerState.shuffleInPlace(order);
     }
-    AudioPlayerState.ostPlayOrder = order;
+    AudioPlayerState.playOrder = order;
   }
 
   /**
-   * Sets shuffle preference. When OST is active, rebuilds play order and keeps the current track.
+   * Sets shuffle preference. Rebuilds play order and keeps the current track when possible.
    */
   static setOstShuffle(shuffle: boolean): void {
     AudioPlayerState.ostShuffle = shuffle;
-    if (!AudioPlayerState.ostMode || !AudioPlayerState.ostTracks.length || !AudioPlayerState.ostPlayOrder.length) {
+    if (!AudioPlayerState.playlist.length || !AudioPlayerState.playOrder.length) {
       AudioPlayerState.emitOstState();
       return;
     }
-    const physical = AudioPlayerState.ostPlayOrder[AudioPlayerState.ostPlayCursor];
-    AudioPlayerState.rebuildOstPlayOrder();
-    let nextCursor = AudioPlayerState.ostPlayOrder.indexOf(physical);
+    const physical = AudioPlayerState.playOrder[AudioPlayerState.playCursor];
+    AudioPlayerState.rebuildPlayOrder();
+    let nextCursor = AudioPlayerState.playOrder.indexOf(physical);
     if (nextCursor < 0) {
       nextCursor = 0;
     }
-    AudioPlayerState.ostPlayCursor = nextCursor;
+    AudioPlayerState.playCursor = nextCursor;
     AudioPlayerState.emitOstState();
   }
 
+  /** Physical index into `playlist` for the track currently loaded in the play order. */
   static getCurrentOstPhysicalIndex(): number {
-    if (!AudioPlayerState.ostMode || !AudioPlayerState.ostPlayOrder.length) {
+    if (!AudioPlayerState.playOrder.length || !AudioPlayerState.playlist.length) {
       return -1;
     }
-    return AudioPlayerState.ostPlayOrder[AudioPlayerState.ostPlayCursor];
+    return AudioPlayerState.playOrder[AudioPlayerState.playCursor];
   }
 
   static AddEventListener(type: AudioPlayerEventListenerTypes, cb: Function){
@@ -190,9 +242,17 @@ export class AudioPlayerState {
     AudioPlayerState.ProcessEventListener(type, args);
   }
 
+  /**
+   * Opens or focuses the full Audio Player tab (`TabAudioPlayerState`, single-instance).
+   * Does not change the current track or queue.
+   */
+  static openAudioPlayerTab(): void {
+    ForgeState.tabManager.addTab(new TabAudioPlayerState());
+  }
+
   static OpenAudio(file: EditorFile){
     AudioPlayerState.clearOstMode();
-    ForgeState.tabManager.addTab(new TabAudioPlayerState());
+    AudioPlayerState.openAudioPlayerTab();
     AudioPlayerState.Reset();
     AudioPlayerState.Stop();
     
@@ -299,29 +359,33 @@ export class AudioPlayerState {
   }
 
   static emitOstState(): void {
-    const active = AudioPlayerState.ostMode && AudioPlayerState.ostTracks.length > 0;
+    const pl = AudioPlayerState.playlist;
+    const order = AudioPlayerState.playOrder;
+    const ostActive =
+      AudioPlayerState.ostMode && pl.length > 0 && order.length > 0;
     const physical =
-      active && AudioPlayerState.ostPlayOrder.length > 0
-        ? AudioPlayerState.ostPlayOrder[AudioPlayerState.ostPlayCursor]
-        : -1;
+      order.length > 0 ? order[AudioPlayerState.playCursor] : -1;
     const entry =
-      active && physical >= 0 ? AudioPlayerState.ostTracks[physical] : undefined;
+      physical >= 0 && physical < pl.length ? pl[physical] : undefined;
+    const label = entry ? entry.title : "";
+    const queueLabels = pl.map((e) => e.title);
     const payload: AudioPlayerOstStatePayload = {
-      active,
-      label: entry?.displayName ?? entry?.label ?? '',
+      active: ostActive,
+      label,
       trackIndex: physical,
-      total: AudioPlayerState.ostTracks.length,
+      total: pl.length,
       shuffle: AudioPlayerState.ostShuffle,
-      queuePosition: active ? AudioPlayerState.ostPlayCursor + 1 : 0,
+      queuePosition: order.length > 0 ? AudioPlayerState.playCursor + 1 : 0,
+      queueLabels,
     };
-    AudioPlayerState.ProcessEventListener('onOstState', [payload]);
+    AudioPlayerState.ProcessEventListener("onOstState", [payload]);
   }
 
   static clearOstMode(): void {
     AudioPlayerState.ostMode = false;
-    AudioPlayerState.ostTracks = [];
-    AudioPlayerState.ostPlayOrder = [];
-    AudioPlayerState.ostPlayCursor = 0;
+    AudioPlayerState.playlist = [];
+    AudioPlayerState.playOrder = [];
+    AudioPlayerState.playCursor = 0;
     AudioPlayerState.emitOstState();
   }
 
@@ -331,33 +395,53 @@ export class AudioPlayerState {
   }
 
   private static async loadGameMusicResRef(resRef: string, displayTitle: string): Promise<void> {
-    const filePath = path.join('streammusic', `${resRef}.wav`);
+    const filePath = path.join("streammusic", `${resRef}.wav`);
     const buffer = await KotOR.GameFileSystem.readFile(filePath);
     AudioPlayerState.file = undefined;
     AudioPlayerState.audioFile = new KotOR.AudioFile(buffer);
     AudioPlayerState.audioFile.filename = `${displayTitle} (${resRef})`;
     AudioPlayerState.buffer = null;
-    AudioPlayerState.ProcessEventListener('onOpen', [AudioPlayerState.audioFile]);
+    AudioPlayerState.ProcessEventListener("onOpen", [AudioPlayerState.audioFile]);
+    AudioPlayerState.emitOstState();
+  }
+
+  private static async loadEditorFileForPlayback(file: EditorFile): Promise<void> {
+    const response = await file.readFile();
+    if (!response.buffer) {
+      throw new Error("Audio Buffer is undefined");
+    }
+    AudioPlayerState.file = file;
+    AudioPlayerState.audioFile = new KotOR.AudioFile(response.buffer);
+    AudioPlayerState.audioFile.filename = `${file.resref}.${file.ext}`;
+    AudioPlayerState.buffer = null;
+    AudioPlayerState.ProcessEventListener("onOpen", [AudioPlayerState.audioFile]);
     AudioPlayerState.emitOstState();
   }
 
   /**
-   * Tries the track at `ostPlayCursor`; on missing file, advances in play order up to one full pass.
+   * Tries the track at `playCursor`; on missing file, advances in play order up to one full pass.
    */
-  private static async loadOstTrackAtIndexWithRetry(attempts = 0): Promise<boolean> {
-    const n = AudioPlayerState.ostTracks.length;
-    if (!n || !AudioPlayerState.ostPlayOrder.length || attempts >= n) {
+  private static async loadPlaylistCursorWithRetry(attempts = 0): Promise<boolean> {
+    const n = AudioPlayerState.playlist.length;
+    if (!n || !AudioPlayerState.playOrder.length || attempts >= n) {
       return false;
     }
-    const physical = AudioPlayerState.ostPlayOrder[AudioPlayerState.ostPlayCursor];
-    const t = AudioPlayerState.ostTracks[physical];
+    const physical = AudioPlayerState.playOrder[AudioPlayerState.playCursor];
+    const t = AudioPlayerState.playlist[physical];
+    if (!t) {
+      return false;
+    }
     try {
-      await AudioPlayerState.loadGameMusicResRef(t.resRef, t.displayName);
+      if (t.type === "stream_music") {
+        await AudioPlayerState.loadGameMusicResRef(t.resRef, t.title);
+      } else {
+        await AudioPlayerState.loadEditorFileForPlayback(t.file);
+      }
       return true;
     } catch (e) {
-      console.warn('Ambient OST: could not load', t.resRef, e);
-      AudioPlayerState.ostPlayCursor = (AudioPlayerState.ostPlayCursor + 1) % n;
-      return AudioPlayerState.loadOstTrackAtIndexWithRetry(attempts + 1);
+      console.warn("Playlist: could not load track", t, e);
+      AudioPlayerState.playCursor = (AudioPlayerState.playCursor + 1) % n;
+      return AudioPlayerState.loadPlaylistCursorWithRetry(attempts + 1);
     }
   }
 
@@ -367,20 +451,29 @@ export class AudioPlayerState {
     }
     const entries = AudioPlayerState.getAmbientMusicPlaylistEntries();
     if (!entries.length) {
-      console.warn('Ambient OST: no tracks in ambientmusic.2da (or table not loaded). Open a project / game assets first.');
+      console.warn(
+        "Ambient OST: no tracks in ambientmusic.2da (or table not loaded). Open a project / game assets first.",
+      );
       return;
     }
     AudioPlayerState.ostStarting = true;
     try {
-      AudioPlayerState.ostTracks = entries;
+      AudioPlayerState.playlist = entries.map((t, i) => ({
+        type: "stream_music" as const,
+        id: `ambient-${i}-${t.resRef}`,
+        title: t.displayName,
+        resRef: t.resRef,
+        label: t.label,
+        ambientPhysicalIndex: i,
+      }));
       AudioPlayerState.ostMode = true;
-      AudioPlayerState.rebuildOstPlayOrder();
-      AudioPlayerState.ostPlayCursor = 0;
+      AudioPlayerState.rebuildPlayOrder();
+      AudioPlayerState.playCursor = 0;
       AudioPlayerState.Reset();
       AudioPlayerState.Stop();
-      const ok = await AudioPlayerState.loadOstTrackAtIndexWithRetry();
+      const ok = await AudioPlayerState.loadPlaylistCursorWithRetry();
       if (!ok) {
-        console.warn('Ambient OST: no streammusic files could be loaded.');
+        console.warn("Ambient OST: no streammusic files could be loaded.");
         AudioPlayerState.clearOstMode();
         return;
       }
@@ -392,24 +485,26 @@ export class AudioPlayerState {
   }
 
   static async skipOst(delta: number): Promise<void> {
-    if (!AudioPlayerState.ostMode || !AudioPlayerState.ostTracks.length) {
+    if (!AudioPlayerState.playOrder.length) {
       return;
     }
-    const n = AudioPlayerState.ostTracks.length;
-    AudioPlayerState.ostPlayCursor =
-      (AudioPlayerState.ostPlayCursor + delta + n) % n;
+    const n = AudioPlayerState.playOrder.length;
+    AudioPlayerState.playCursor =
+      (AudioPlayerState.playCursor + delta + n) % n;
     AudioPlayerState.Stop();
-    const ok = await AudioPlayerState.loadOstTrackAtIndexWithRetry();
+    const ok = await AudioPlayerState.loadPlaylistCursorWithRetry();
     if (ok) {
       AudioPlayerState.Play();
-    } else {
+    } else if (AudioPlayerState.ostMode) {
       AudioPlayerState.stopAmbientMusicOst();
+    } else {
+      AudioPlayerState.emitOstState();
     }
   }
 
   /**
-   * Jump to a track by its index in the ambientmusic playlist (same order as `getAmbientMusicPlaylistEntries`).
-   * Starts OST if it is not active.
+   * Jump to a playlist row by physical index (0..playlist.length-1).
+   * When OST is off and the row is an ambient stream entry, starts OST from the full table.
    */
   static async seekOstToPhysicalIndex(physicalIndex: number): Promise<void> {
     const entries = AudioPlayerState.getAmbientMusicPlaylistEntries();
@@ -423,18 +518,25 @@ export class AudioPlayerState {
     if (!AudioPlayerState.ostMode) {
       AudioPlayerState.ostStarting = true;
       try {
-        AudioPlayerState.ostTracks = entries;
+        AudioPlayerState.playlist = entries.map((t, i) => ({
+          type: "stream_music" as const,
+          id: `ambient-${i}-${t.resRef}`,
+          title: t.displayName,
+          resRef: t.resRef,
+          label: t.label,
+          ambientPhysicalIndex: i,
+        }));
         AudioPlayerState.ostMode = true;
-        AudioPlayerState.rebuildOstPlayOrder();
-        AudioPlayerState.ostPlayCursor = Math.max(
+        AudioPlayerState.rebuildPlayOrder();
+        AudioPlayerState.playCursor = Math.max(
           0,
-          AudioPlayerState.ostPlayOrder.indexOf(physicalIndex)
+          AudioPlayerState.playOrder.indexOf(physicalIndex),
         );
         AudioPlayerState.Reset();
         AudioPlayerState.Stop();
-        const ok = await AudioPlayerState.loadOstTrackAtIndexWithRetry();
+        const ok = await AudioPlayerState.loadPlaylistCursorWithRetry();
         if (!ok) {
-          console.warn('Ambient OST: no streammusic files could be loaded.');
+          console.warn("Ambient OST: no streammusic files could be loaded.");
           AudioPlayerState.clearOstMode();
           return;
         }
@@ -446,18 +548,193 @@ export class AudioPlayerState {
       return;
     }
 
-    const pos = AudioPlayerState.ostPlayOrder.indexOf(physicalIndex);
+    const pos = AudioPlayerState.playOrder.indexOf(physicalIndex);
     if (pos < 0) {
       return;
     }
-    AudioPlayerState.ostPlayCursor = pos;
+    AudioPlayerState.playCursor = pos;
     AudioPlayerState.Stop();
-    const ok = await AudioPlayerState.loadOstTrackAtIndexWithRetry();
+    const ok = await AudioPlayerState.loadPlaylistCursorWithRetry();
     if (ok) {
       AudioPlayerState.Play();
     } else {
       AudioPlayerState.stopAmbientMusicOst();
     }
+  }
+
+  /**
+   * Jump to a track in the current queue by its index in `playlist` (manual or OST).
+   */
+  static async seekPlaylistToPhysicalIndex(physicalIndex: number): Promise<void> {
+    if (
+      physicalIndex < 0 ||
+      physicalIndex >= AudioPlayerState.playlist.length ||
+      !AudioPlayerState.playOrder.length
+    ) {
+      return;
+    }
+    const pos = AudioPlayerState.playOrder.indexOf(physicalIndex);
+    if (pos < 0) {
+      return;
+    }
+    AudioPlayerState.playCursor = pos;
+    AudioPlayerState.Stop();
+    const ok = await AudioPlayerState.loadPlaylistCursorWithRetry();
+    if (ok) {
+      AudioPlayerState.Play();
+    } else if (AudioPlayerState.ostMode) {
+      AudioPlayerState.stopAmbientMusicOst();
+    } else {
+      AudioPlayerState.emitOstState();
+    }
+  }
+
+  static appendEditorFilesToPlaylist(files: EditorFile[]): void {
+    if (!files.length) {
+      return;
+    }
+    if (AudioPlayerState.ostMode) {
+      AudioPlayerState.clearOstMode();
+      AudioPlayerState.Stop();
+    }
+    for (const file of files) {
+      const id = `ed-${file.resref}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      AudioPlayerState.playlist.push({
+        type: "editor_file",
+        id,
+        title: file.getFilename(),
+        file,
+      });
+    }
+    AudioPlayerState.rebuildPlayOrder();
+    if (AudioPlayerState.playCursor >= AudioPlayerState.playOrder.length) {
+      AudioPlayerState.playCursor = 0;
+    }
+    AudioPlayerState.emitOstState();
+  }
+
+  static removePlaylistPhysicalIndex(physicalIndex: number): void {
+    if (
+      physicalIndex < 0 ||
+      physicalIndex >= AudioPlayerState.playlist.length
+    ) {
+      return;
+    }
+    const playingPhys = AudioPlayerState.getCurrentOstPhysicalIndex();
+    const playingId =
+      playingPhys >= 0 && playingPhys < AudioPlayerState.playlist.length
+        ? AudioPlayerState.playlist[playingPhys].id
+        : undefined;
+    const wasCurrent = playingPhys === physicalIndex;
+    AudioPlayerState.playlist.splice(physicalIndex, 1);
+    if (!AudioPlayerState.playlist.length) {
+      if (AudioPlayerState.ostMode) {
+        AudioPlayerState.clearOstMode();
+      } else {
+        AudioPlayerState.playOrder = [];
+        AudioPlayerState.playCursor = 0;
+      }
+      AudioPlayerState.Stop();
+      AudioPlayerState.emitOstState();
+      return;
+    }
+    AudioPlayerState.rebuildPlayOrder();
+    if (playingId) {
+      const np = AudioPlayerState.playlist.findIndex((e) => e.id === playingId);
+      AudioPlayerState.playCursor =
+        np >= 0 ? AudioPlayerState.playOrder.indexOf(np) : 0;
+    } else {
+      AudioPlayerState.playCursor = Math.min(
+        AudioPlayerState.playCursor,
+        AudioPlayerState.playOrder.length - 1,
+      );
+    }
+    AudioPlayerState.emitOstState();
+    if (wasCurrent) {
+      AudioPlayerState.Stop();
+      void AudioPlayerState.loadPlaylistCursorWithRetry().then((ok) => {
+        if (ok) {
+          AudioPlayerState.Play();
+        } else if (AudioPlayerState.ostMode) {
+          AudioPlayerState.stopAmbientMusicOst();
+        }
+      });
+    }
+  }
+
+  static clearManualPlaylist(): void {
+    if (AudioPlayerState.ostMode) {
+      return;
+    }
+    if (!AudioPlayerState.playlist.length) {
+      return;
+    }
+    AudioPlayerState.playlist = [];
+    AudioPlayerState.playOrder = [];
+    AudioPlayerState.playCursor = 0;
+    AudioPlayerState.Stop();
+    AudioPlayerState.emitOstState();
+  }
+
+  static async promptAppendAudioToPlaylist(): Promise<void> {
+    const res = await ForgeFileSystem.OpenFile({
+      ext: [".wav", ".mp3"],
+      multiple: true,
+    });
+    const files: EditorFile[] = [];
+    if (res.type === ForgeFileSystemResponseType.FILE_PATH_STRING && res.paths?.length) {
+      for (const p of res.paths) {
+        files.push(
+          new EditorFile({
+            path: p,
+            useSystemFileSystem: true,
+          }),
+        );
+      }
+    } else if (res.handles?.length) {
+      for (const h of res.handles as FileSystemFileHandle[]) {
+        const parsed = pathParse(h.name);
+        files.push(
+          new EditorFile({
+            path: EditorFile.referenceURIForSystemVirtualName(h.name),
+            handle: h,
+            filename: h.name,
+            resref: parsed.name,
+            ext: parsed.ext,
+          }),
+        );
+      }
+    }
+    if (!files.length) {
+      return;
+    }
+    AudioPlayerState.appendEditorFilesToPlaylist(files);
+  }
+
+  private static currentPlaylistEntryMatchesBuffer(): boolean {
+    if (!AudioPlayerState.playlist.length || !AudioPlayerState.playOrder.length) {
+      return true;
+    }
+    const physical = AudioPlayerState.playOrder[AudioPlayerState.playCursor];
+    const ent = AudioPlayerState.playlist[physical];
+    if (!ent || !AudioPlayerState.audioFile) {
+      return false;
+    }
+    if (ent.type === "editor_file") {
+      return AudioPlayerState.file === ent.file;
+    }
+    const fn = AudioPlayerState.audioFile.filename || "";
+    return fn.includes(`(${ent.resRef})`);
+  }
+
+  private static async ensurePlaylistEntryLoaded(): Promise<boolean> {
+    if (!AudioPlayerState.playlist.length || !AudioPlayerState.playOrder.length) {
+      return true;
+    }
+    if (AudioPlayerState.currentPlaylistEntryMatchesBuffer() && AudioPlayerState.buffer) {
+      return true;
+    }
+    return AudioPlayerState.loadPlaylistCursorWithRetry();
   }
 
   static GetAudioBuffer(onBuffered?: Function){
@@ -525,55 +802,74 @@ export class AudioPlayerState {
 
   static Play(){
     AudioPlayerState.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
-    if(!AudioPlayerState.loading){
-      AudioPlayerState.GetAudioBuffer((data: any) => {
-        if(AudioPlayerState.source){
-          AudioPlayerState.loading = false;
-          let offset = AudioPlayerState.pausedAt;
-          AudioPlayerState.source.buffer = AudioPlayerState.buffer;
-          AudioPlayerState.analyser = KotOR.AudioEngine.GetAudioEngine().audioCtx.createAnalyser();
-          AudioPlayerState.analyser.fftSize = 128; 
-          AudioPlayerState.source.connect(AudioPlayerState.analyser);
-          AudioPlayerState.analyser.connect(AudioPlayerState.gainNode);
-          AudioPlayerState.gainNode.connect(KotOR.AudioEngine.voChannel.getGainNode());
-          AudioPlayerState.source.loop = false;
-          AudioPlayerState.source.start(0, offset);
-
-          AudioPlayerState.analyserBufferLength = AudioPlayerState.analyser.frequencyBinCount; 
-          AudioPlayerState.analyserData = new Uint8Array(AudioPlayerState.analyserBufferLength);
-
-          AudioPlayerState.startedAt = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - offset;
-          AudioPlayerState.pausedAt = 0;
-          AudioPlayerState.playing = true;
-
-          AudioPlayerState.source.onended = () => {
-            const advanceOst =
-              AudioPlayerState.ostMode && AudioPlayerState.ostTracks.length > 0;
-            AudioPlayerState.Stop();
-            if (advanceOst) {
-              const n = AudioPlayerState.ostTracks.length;
-              AudioPlayerState.ostPlayCursor =
-                (AudioPlayerState.ostPlayCursor + 1) % n;
-              void AudioPlayerState.loadOstTrackAtIndexWithRetry().then((ok) => {
-                if (ok && AudioPlayerState.ostMode) {
-                  AudioPlayerState.Play();
-                } else if (!ok) {
-                  AudioPlayerState.stopAmbientMusicOst();
-                }
-              });
-              return;
-            }
-            if(AudioPlayerState.loop){
-              AudioPlayerState.ProcessEventListener('onLoop');
-              AudioPlayerState.Play();
-            }
-          };
-
-          AudioPlayerState.ResumeLoop();
-          AudioPlayerState.ProcessEventListener('onPlay');
-        }
-      });
+    if(AudioPlayerState.loading){
+      return;
     }
+    void AudioPlayerState.ensurePlaylistEntryLoaded().then((ready) => {
+      if (!ready && AudioPlayerState.playOrder.length > 0) {
+        return;
+      }
+      if (!AudioPlayerState.loading) {
+        AudioPlayerState.GetAudioBuffer((data: any) => {
+          if (AudioPlayerState.source) {
+            AudioPlayerState.loading = false;
+            let offset = AudioPlayerState.pausedAt;
+            AudioPlayerState.source.buffer = AudioPlayerState.buffer;
+            AudioPlayerState.analyser =
+              KotOR.AudioEngine.GetAudioEngine().audioCtx.createAnalyser();
+            AudioPlayerState.analyser.fftSize = 128;
+            AudioPlayerState.source.connect(AudioPlayerState.analyser);
+            AudioPlayerState.analyser.connect(AudioPlayerState.gainNode);
+            AudioPlayerState.gainNode.connect(
+              KotOR.AudioEngine.voChannel.getGainNode(),
+            );
+            AudioPlayerState.source.loop = false;
+            AudioPlayerState.source.start(0, offset);
+
+            AudioPlayerState.analyserBufferLength =
+              AudioPlayerState.analyser.frequencyBinCount;
+            AudioPlayerState.analyserData = new Uint8Array(
+              AudioPlayerState.analyserBufferLength,
+            );
+
+            AudioPlayerState.startedAt =
+              KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - offset;
+            AudioPlayerState.pausedAt = 0;
+            AudioPlayerState.playing = true;
+
+            AudioPlayerState.source.onended = () => {
+              AudioPlayerState.Stop();
+              if (AudioPlayerState.loop && !AudioPlayerState.ostMode) {
+                AudioPlayerState.ProcessEventListener("onLoop");
+                AudioPlayerState.Play();
+                return;
+              }
+              const qn = AudioPlayerState.playOrder.length;
+              const advanceQueue =
+                qn > 0 && (AudioPlayerState.ostMode || qn > 1);
+              if (advanceQueue) {
+                AudioPlayerState.playCursor =
+                  (AudioPlayerState.playCursor + 1) % qn;
+                void AudioPlayerState.loadPlaylistCursorWithRetry().then((ok) => {
+                  if (
+                    ok &&
+                    (AudioPlayerState.ostMode ||
+                      AudioPlayerState.playOrder.length > 0)
+                  ) {
+                    AudioPlayerState.Play();
+                  } else if (AudioPlayerState.ostMode) {
+                    AudioPlayerState.stopAmbientMusicOst();
+                  }
+                });
+              }
+            };
+
+            AudioPlayerState.ResumeLoop();
+            AudioPlayerState.ProcessEventListener("onPlay");
+          }
+        });
+      }
+    });
   }
 
   static ResumeLoop(){
