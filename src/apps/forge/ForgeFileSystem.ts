@@ -225,17 +225,37 @@ export class ForgeFileSystem {
       }
     }else{
       if(ext.length){
-        // return supportedFilePickerTypes.filter( (element: any) => {
-        //   return element.accept['application/*'].some( (extension: string)=> ext.includes(extension.substring(1)) )
-        // });
-        return [
-          {
-            description: 'File',
-            accept: {
-              'application/*': ext
-            }
-          },
-        ]
+        const normalized = [
+          ...new Set(
+            ext.map((e) => {
+              const t = e.trim().toLowerCase();
+              return t.startsWith('.') ? t : `.${t}`;
+            }),
+          ),
+        ];
+        const textExts = new Set(['.txt', '.lyt', '.nss', '.vis', '.txi', '.pth']);
+        const accept: Record<string, string[]> = {};
+        const octet: string[] = [];
+        const plain: string[] = [];
+        const png: string[] = [];
+        const jpeg: string[] = [];
+        const wav: string[] = [];
+        const mp3: string[] = [];
+        for (const d of normalized) {
+          if (textExts.has(d)) plain.push(d);
+          else if (d === '.png') png.push(d);
+          else if (d === '.jpg' || d === '.jpeg') jpeg.push(d);
+          else if (d === '.wav') wav.push(d);
+          else if (d === '.mp3') mp3.push(d);
+          else octet.push(d);
+        }
+        if (plain.length) accept['text/plain'] = plain;
+        if (png.length) accept['image/png'] = png;
+        if (jpeg.length) accept['image/jpeg'] = jpeg;
+        if (wav.length) accept['audio/wav'] = wav;
+        if (mp3.length) accept['audio/mpeg'] = mp3;
+        if (octet.length) accept['application/octet-stream'] = octet;
+        return [{ description: 'File', accept }];
       }else{
         return supportedFilePickerTypes
       }
@@ -316,215 +336,304 @@ export class ForgeFileSystem {
 
 export const supportedFilePickerTypes: any[] = [
   {
-    description: 'All Supported Formats', 
+    description: "All Supported Formats",
     accept: {
-      'application/*': ['.2da', '.tpc', '.tga', '.png', '.jpg', '.jpeg', '.wav', '.mp3', '.bik', '.gff', '.utc', '.utd', '.utp', '.utm', '.uts', '.utt', '.utw', '.lip', '.phn', '.mod', '.nss', '.ncs', '.erf', '.rim', '.git', '.are', '.ifo', '.mdl', '.mdl.ascii', '.mdx', '.wok', '.pwk', '.dwk', '.lyt', '.vis', '.pth']
-    }
+      "application/octet-stream": [
+        ".2da",
+        ".are",
+        ".bic",
+        ".bik",
+        ".dlg",
+        ".dwk",
+        ".erf",
+        ".fac",
+        ".git",
+        ".gff",
+        ".gui",
+        ".ifo",
+        ".jrl",
+        ".lip",
+        ".mdl",
+        ".mdl.ascii",
+        ".mdx",
+        ".mod",
+        ".ncs",
+        ".phn",
+        ".pwk",
+        ".res",
+        ".rim",
+        ".sav",
+        ".ssf",
+        ".tga",
+        ".tpc",
+        ".utc",
+        ".utd",
+        ".ute",
+        ".uti",
+        ".utm",
+        ".utp",
+        ".uts",
+        ".utt",
+        ".utw",
+        ".wok",
+      ],
+      "text/plain": [".txt", ".lyt", ".nss", ".vis", ".txi", ".pth"],
+      "image/png": [".png"],
+      "image/jpeg": [".jpg", ".jpeg"],
+      "audio/wav": [".wav"],
+      "audio/mpeg": [".mp3"],
+    },
   },
   {
-    description: 'TPC Image', 
+    description: "TPC Image",
     accept: {
-      'application/*': ['.tpc']
-    }
+      "application/octet-stream": [".tpc"],
+    },
   },
   {
-    description: 'TGA Image', 
+    description: "TGA Image",
     accept: {
-      'application/*': ['.tga']
-    }
+      "application/octet-stream": [".tga"],
+    },
   },
   {
-    description: 'PNG Image', 
+    description: "PNG Image",
     accept: {
-      'application/*': ['.png']
-    }
+      "image/png": [".png"],
+    },
   },
   {
-    description: 'JPG Image', 
+    description: "JPG Image",
     accept: {
-      'application/*': ['.jpg', '.jpeg']
-    }
+      "image/jpeg": [".jpg", ".jpeg"],
+    },
   },
   {
-    description: '.GFF', 
+    description: "GFF / Blueprint",
     accept: {
-      'application/*': ['.gff']
-    }
+      "application/octet-stream": [".gff", ".dlg", ".bic", ".jrl", ".res", ".fac", ".are", ".git", ".ifo"],
+    },
   },
   {
-    description: 'Creature Template', 
+    description: "Creature Template",
     accept: {
-      'application/*': ['.utc']
-    }
+      "application/octet-stream": [".utc"],
+    },
   },
   {
-    description: 'Door Template', 
+    description: "Door Template",
     accept: {
-      'application/*': ['.utd']
-    }
+      "application/octet-stream": [".utd"],
+    },
   },
   {
-    description: 'Placeable Template', 
+    description: "Placeable Template",
     accept: {
-      'application/*': ['.utp']
-    }
+      "application/octet-stream": [".utp"],
+    },
   },
   {
-    description: 'Merchant Template', 
+    description: "Merchant Template",
     accept: {
-      'application/*': ['.utm']
-    }
+      "application/octet-stream": [".utm"],
+    },
   },
   {
-    description: 'Sound Template', 
+    description: "Sound Template",
     accept: {
-      'application/*': ['.uts']
-    }
+      "application/octet-stream": [".uts"],
+    },
   },
   {
-    description: 'Trigger Template', 
+    description: "Trigger Template",
     accept: {
-      'application/*': ['.utt']
-    }
+      "application/octet-stream": [".utt"],
+    },
   },
   {
-    description: 'Waypoint Template', 
+    description: "Encounter Template",
     accept: {
-      'application/*': ['.utw']
-    }
+      "application/octet-stream": [".ute"],
+    },
   },
   {
-    description: 'LIP Animation', 
+    description: "Item Template",
     accept: {
-      'application/*': ['.lip']
-    }
+      "application/octet-stream": [".uti"],
+    },
   },
   {
-    description: 'PHN File', 
+    description: "Waypoint Template",
     accept: {
-      'application/*': ['.phn']
-    }
+      "application/octet-stream": [".utw"],
+    },
   },
   {
-    description: 'Audio File', 
+    description: "LIP Animation",
     accept: {
-      'application/*': ['.wav', '.mp3']
-    }
+      "application/octet-stream": [".lip"],
+    },
   },
   {
-    description: 'Video File', 
+    description: "PHN File",
     accept: {
-      'application/*': ['.bik']
-    }
+      "application/octet-stream": [".phn"],
+    },
   },
   {
-    description: 'MOD File', 
+    description: "Audio File",
     accept: {
-      'application/*': ['.mod']
-    }
+      "audio/wav": [".wav"],
+      "audio/mpeg": [".mp3"],
+    },
   },
   {
-    description: 'ERF File', 
+    description: "Video File",
     accept: {
-      'application/*': ['.erf']
-    }
+      "application/octet-stream": [".bik"],
+    },
   },
   {
-    description: 'RIM File', 
+    description: "MOD File",
     accept: {
-      'application/*': ['.rim']
-    }
+      "application/octet-stream": [".mod"],
+    },
   },
   {
-    description: 'Model File', 
+    description: "ERF File",
     accept: {
-      'application/*': ['.mdl', '.wok', '.pwk', '.dwk']
-    }
+      "application/octet-stream": [".erf", ".sav"],
+    },
   },
   {
-    description: 'Module File', 
+    description: "RIM File",
     accept: {
-      'application/*': ['.git', '.ifo']
-    }
+      "application/octet-stream": [".rim"],
+    },
   },
   {
-    description: 'Area File', 
+    description: "Model File",
     accept: {
-      'application/*': ['.are']
-    }
+      "application/octet-stream": [".mdl", ".mdl.ascii", ".mdx", ".wok", ".pwk", ".dwk"],
+    },
   },
   {
-    description: 'Path File', 
+    description: "Module File",
     accept: {
-      'application/*': ['.pth']
-    }
+      "application/octet-stream": [".git", ".ifo"],
+    },
   },
   {
-    description: 'Script Source File', 
+    description: "Area File",
     accept: {
-      'application/*': ['.ncs']
-    }
+      "application/octet-stream": [".are"],
+    },
   },
   {
-    description: 'Script Compiled File', 
+    description: "Path File",
     accept: {
-      'application/*': ['.nss']
-    }
+      "text/plain": [".pth"],
+    },
   },
   {
-    description: 'VIS File', 
+    description: "Script Source (NSS)",
     accept: {
-      'application/*': ['.vis']
-    }
+      "text/plain": [".nss"],
+    },
   },
   {
-    description: 'Layout File', 
+    description: "Script Compiled (NCS)",
     accept: {
-      'application/*': ['.lyt']
-    }
+      "application/octet-stream": [".ncs"],
+    },
   },
   {
-    description: '2D Array File', 
+    description: "VIS File",
     accept: {
-      'application/*': ['.2da']
-    }
+      "text/plain": [".vis"],
+    },
   },
-  // {
-  //   description: 'All Formats', 
-  //   accept: {
-  //     'application/*': ['.*']
-  //   }
-  // },
+  {
+    description: "Texture Info (TXI)",
+    accept: {
+      "text/plain": [".txi"],
+    },
+  },
+  {
+    description: "Plain Text",
+    accept: {
+      "text/plain": [".txt"],
+    },
+  },
+  {
+    description: "Sound Set (SSF)",
+    accept: {
+      "application/octet-stream": [".ssf"],
+    },
+  },
+  {
+    description: "GUI File",
+    accept: {
+      "application/octet-stream": [".gui"],
+    },
+  },
+  {
+    description: "Layout File",
+    accept: {
+      "text/plain": [".lyt"],
+    },
+  },
+  {
+    description: "2D Array File",
+    accept: {
+      "application/octet-stream": [".2da"],
+    },
+  },
 ];
 
 export const supportedFileDialogTypes: any[] = [
-  {name: 'All Supported Formats', extensions: ['2da', 'tpc', 'tga', 'png', 'jpg', 'jpeg', 'wav', 'mp3', 'bik', 'gff', 'utc', 'utd', 'utp', 'utm', 'uts', 'utt', 'utw', 'lip', 'phn', 'mod', 'nss', 'ncs', 'erf', 'rim', 'git', 'are', 'ifo', 'mdl', 'mdx', 'wok', 'pwk', 'dwk', 'lyt', 'vis', 'pth']},
+  {
+    name: 'All Supported Formats',
+    extensions: [
+      '2da', 'are', 'bic', 'bik', 'dlg', 'dwk', 'erf', 'fac', 'git', 'gff', 'gui', 'ifo',
+      'jpg', 'jpeg', 'jrl', 'lip', 'lyt', 'mdl', 'mdl.ascii', 'mdx', 'mod', 'mp3', 'ncs',
+      'nss', 'phn', 'png', 'pth', 'pwk', 'res', 'rim', 'sav', 'ssf', 'tga', 'tpc', 'txi',
+      'txt', 'utc', 'utd', 'ute', 'uti', 'utm', 'utp', 'uts', 'utt', 'utw', 'vis', 'wav',
+      'wok',
+    ],
+  },
   {name: 'TPC Image', extensions: ['tpc']},
   {name: 'TGA Image', extensions: ['tga']},
   {name: 'PNG Image', extensions: ['png']},
   {name: 'JPG Image', extensions: ['jpg', 'jpeg']},
-  {name: 'GFF', extensions: ['gff']},
+  {name: 'GFF / Blueprint', extensions: ['gff', 'dlg', 'bic', 'jrl', 'res', 'fac', 'are', 'git', 'ifo']},
   {name: 'Creature Template', extensions: ['utc']},
   {name: 'Door Template', extensions: ['utd']},
   {name: 'Placeable Template', extensions: ['utp']},
   {name: 'Merchant Template', extensions: ['utm']},
   {name: 'Sound Template', extensions: ['uts']},
   {name: 'Trigger Template', extensions: ['utt']},
+  {name: 'Encounter Template', extensions: ['ute']},
+  {name: 'Item Template', extensions: ['uti']},
   {name: 'Waypoint Template', extensions: ['utw']},
   {name: 'LIP Animation', extensions: ['lip']},
   {name: 'PHN File', extensions: ['phn']},
   {name: 'Audio File', extensions: ['wav', 'mp3']},
   {name: 'Video File', extensions: ['bik']},
   {name: 'MOD File', extensions: ['mod']},
-  {name: 'ERF File', extensions: ['erf']},
+  {name: 'ERF File', extensions: ['erf', 'sav']},
   {name: 'RIM File', extensions: ['rim']},
   {name: 'Model File', extensions: ['mdl', 'mdl.ascii', 'mdx', 'wok', 'pwk', 'dwk']},
   {name: 'Module File', extensions: ['git', 'ifo']},
   {name: 'Area File', extensions: ['are']},
   {name: 'Path File', extensions: ['pth']},
-  {name: 'Script Source File', extensions: ['ncs']},
-  {name: 'Script Compiled File', extensions: ['nss']},
+  {name: 'Script Source (NSS)', extensions: ['nss']},
+  {name: 'Script Compiled (NCS)', extensions: ['ncs']},
   {name: 'VIS File', extensions: ['vis']},
+  {name: 'Texture Info (TXI)', extensions: ['txi']},
+  {name: 'Plain Text', extensions: ['txt']},
+  {name: 'Sound Set (SSF)', extensions: ['ssf']},
+  {name: 'GUI File', extensions: ['gui']},
   {name: 'Layout File', extensions: ['lyt']},
   {name: '2D Array File', extensions: ['2da']},
   {name: 'All Formats', extensions: ['*']},
