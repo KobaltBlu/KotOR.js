@@ -30,22 +30,27 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
     total: 0,
     shuffle: false,
     queuePosition: 0,
+    queueLabels: [],
   }));
   const [ostMenuOpen, setOstMenuOpen] = useState(false);
   const [ostMenuTracks, setOstMenuTracks] = useState<AmbientMusicOstEntry[]>([]);
 
   const syncOstFromState = () => {
-    const active = AudioPlayerState.ostMode && AudioPlayerState.ostTracks.length > 0;
+    const pl = AudioPlayerState.playlist;
+    const order = AudioPlayerState.playOrder;
+    const active =
+      AudioPlayerState.ostMode && pl.length > 0 && order.length > 0;
     const physical = AudioPlayerState.getCurrentOstPhysicalIndex();
     const entry =
-      active && physical >= 0 ? AudioPlayerState.ostTracks[physical] : undefined;
+      physical >= 0 && physical < pl.length ? pl[physical] : undefined;
     setOst({
       active,
-      label: entry?.displayName ?? entry?.label ?? "",
+      label: entry?.title ?? "",
       trackIndex: physical,
-      total: AudioPlayerState.ostTracks.length,
+      total: pl.length,
       shuffle: AudioPlayerState.ostShuffle,
-      queuePosition: active ? AudioPlayerState.ostPlayCursor + 1 : 0,
+      queuePosition: order.length > 0 ? AudioPlayerState.playCursor + 1 : 0,
+      queueLabels: pl.map((e) => e.title),
     });
   };
 
@@ -85,18 +90,21 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
   };
 
   const ostPosition =
-    ost.active && ost.total > 0
+    ost.total > 0
       ? `${ost.queuePosition} / ${ost.total}${ost.shuffle ? " · shuffle" : ""}`
       : "";
   const ostTitle = ost.active
     ? `Ambient soundtrack: ${ost.label}${ostPosition ? ` (${ostPosition})` : ""}`
-    : "Play all music from ambientmusic.2da (auto-advance)";
+    : ost.total > 1
+      ? `Playlist${ostPosition ? `: ${ostPosition}` : ""}`
+      : "Play all music from ambientmusic.2da (auto-advance)";
 
   const onOstShuffleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     AudioPlayerState.setOstShuffle(e.target.checked);
   };
 
-  const nowPlayingTitle = ost.active && ost.label ? ost.label : "";
+  const nowPlayingTitle =
+    ost.label && (ost.active || ost.total > 1) ? ost.label : "";
   const nowClass =
     inlineNowVariant === "navbar"
       ? "forge-audio-ost__now forge-audio-ost__now--navbar"
@@ -104,11 +112,15 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
 
   const rootClass = ["forge-audio-ost", className].filter(Boolean).join(" ");
 
+  const useQueueList = ost.queueLabels.length > 0;
+
   return (
     <div className={rootClass}>
       {showInlineNowPlaying && nowPlayingTitle ? (
         <div className={nowClass} title={ostTitle}>
-          <span className="forge-audio-ost__now-badge">OST</span>
+          <span className="forge-audio-ost__now-badge">
+            {ost.active ? "OST" : "Queue"}
+          </span>
           <span className="forge-audio-ost__now-title">{nowPlayingTitle}</span>
         </div>
       ) : null}
@@ -126,14 +138,29 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
             as="button"
             type="button"
             className="forge-audio-ost__icon-btn forge-audio-ost__dropdown-toggle"
-            title="Ambient music playlist (ambientmusic.2da)"
-            aria-label="Open ambient music playlist"
+            title={useQueueList ? "Open playlist" : "Ambient music (ambientmusic.2da)"}
+            aria-label={useQueueList ? "Open playlist" : "Open ambient music playlist"}
           >
             <i className="fa-solid fa-list-ul" />
           </Dropdown.Toggle>
-          <Dropdown.Menu className="forge-mini-player__menu" renderOnMount>
+          <Dropdown.Menu
+            className="forge-mini-player__menu"
+            renderOnMount
+            popperConfig={{
+              strategy: "fixed",
+              modifiers: [
+                {
+                  name: "preventOverflow",
+                  options: {
+                    padding: 8,
+                    rootBoundary: "viewport",
+                  },
+                },
+              ],
+            }}
+          >
             <Dropdown.Header className="forge-mini-player__menu-header">
-              Ambient music
+              {useQueueList ? "Playlist" : "Ambient music"}
             </Dropdown.Header>
             <div
               className="forge-mini-player__shuffle-row"
@@ -149,7 +176,21 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
                 Shuffle
               </label>
             </div>
-            {ostMenuTracks.length === 0 ? (
+            {useQueueList ? (
+              ost.queueLabels.map((title, idx) => (
+                <Dropdown.Item
+                  key={`pl-${idx}-${title}`}
+                  className="forge-mini-player__menu-item"
+                  active={ost.trackIndex === idx}
+                  title={title}
+                  onClick={() => {
+                    void AudioPlayerState.seekPlaylistToPhysicalIndex(idx);
+                  }}
+                >
+                  <span className="text-truncate d-block">{title}</span>
+                </Dropdown.Item>
+              ))
+            ) : ostMenuTracks.length === 0 ? (
               <Dropdown.ItemText className="forge-mini-player__menu-empty">
                 No tracks — load game assets and ambientmusic.2da
               </Dropdown.ItemText>
@@ -186,13 +227,13 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
           <i className="fa-solid fa-compact-disc" />
         </button>
 
-        {ost.active ? (
-          <div className="forge-audio-ost__ost-skip" role="group" aria-label="OST track">
+        {ost.total > 1 ? (
+          <div className="forge-audio-ost__ost-skip" role="group" aria-label="Playlist track">
             <button
               type="button"
               className="forge-audio-ost__icon-btn forge-audio-ost__icon-btn--compact"
               title="Previous track"
-              aria-label="Previous ambient track"
+              aria-label="Previous playlist track"
               onClick={onOstPrev}
             >
               <i className="fa-solid fa-backward-step" />
@@ -201,7 +242,7 @@ export const ForgeAudioOstControls = function (props: ForgeAudioOstControlsProps
               type="button"
               className="forge-audio-ost__icon-btn forge-audio-ost__icon-btn--compact"
               title="Next track"
-              aria-label="Next ambient track"
+              aria-label="Next playlist track"
               onClick={onOstNext}
             >
               <i className="fa-solid fa-forward-step" />

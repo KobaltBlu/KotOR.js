@@ -15,6 +15,7 @@ import { TabTextEditorState } from "@/apps/forge/states/tabs/TabTextEditorState"
 import { TabLIPEditorState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorState";
 import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompile";
 import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
+import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 
 
 export class MenuTopState {
@@ -59,6 +60,7 @@ export class MenuTopState {
   static menuItemCompileAllProjectNss: MenuTopItem;
   static menuItemRecentFiles: MenuTopItem;
   static menuItemAudio: MenuTopItem;
+  static activeReverbProfile: number = -1;
 
   static #eventListeners: any = {};
 
@@ -433,30 +435,57 @@ export class MenuTopState {
 
   }
 
+  static setActiveReverbProfile(profileIndex: number){
+    this.activeReverbProfile = profileIndex;
+    KotOR.AudioEngine.GetAudioEngine().setReverbProfile(profileIndex);
+    this.buildAudioMenuItems();
+  }
+
   static buildAudioMenuItems(){
     this.menuItemAudio.items = [];
     this.menuItemAudio.items.push(
       new MenuTopItem({
-        name: 'No Reverb',
+        name: 'Show mini audio player',
         onClick: () => {
-          KotOR.AudioEngine.GetAudioEngine().setReverbProfile(-1);
+          AudioPlayerState.showFloatingMiniPlayer();
         }
       })
     );
+
+    const reverbItems: MenuTopItem[] = [];
+    reverbItems.push(
+      new MenuTopItem({
+        name: 'No Reverb',
+        checked: this.activeReverbProfile === -1,
+        onClick: () => {
+          this.setActiveReverbProfile(-1);
+        }
+      })
+    );
+    reverbItems.push(new MenuTopItem({ type: 'separator' }));
 
     const eaxPresets = Object.values(KotOR.TwoDAManager.datatables.get('soundeax')?.rows || {});
     for(let i = 0; i < eaxPresets.length; i++){
       const eaxPreset = eaxPresets[i] as any;
       if(eaxPreset.label == 23) break;
-      this.menuItemAudio.items.push(
+      reverbItems.push(
         new MenuTopItem({
           name: eaxPreset.label,
+          checked: this.activeReverbProfile === i,
           onClick: () => {
-            KotOR.AudioEngine.GetAudioEngine().setReverbProfile(i);
+            this.setActiveReverbProfile(i);
           }
         })
       );
     }
+
+    this.menuItemAudio.items.push(
+      new MenuTopItem({
+        name: 'Reverb',
+        items: reverbItems
+      })
+    );
+
     this.triggerEventListener('onMenuTopItemsUpdated');
   }
 

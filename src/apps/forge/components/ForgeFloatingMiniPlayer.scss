@@ -1,0 +1,88 @@
+@use "tokens" as *;
+
+.forge-floating-mini-player {
+  position: fixed;
+  z-index: 3000;
+  max-width: calc(100vw - 16px);
+  -webkit-app-region: no-drag;
+  cursor: default;
+  /* No `filter` here: it creates a containing block for `position: fixed` descendants
+     (playlist Popper menu), which then clips or mis-positions vs the viewport. */
+
+  &__chrome {
+    display: flex;
+    flex-direction: column;
+    border-radius: 10px;
+    border: 1px solid rgba($border-primary, 0.75);
+    background: rgba($bg-darker, 0.97);
+    overflow: visible;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  }
+
+  &__handle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px 2px 8px;
+    min-height: 28px;
+    background: rgba(0, 0, 0, 0.35);
+    border-bottom: 1px solid rgba($border-primary, 0.45);
+    user-select: none;
+  }
+
+  &__handle-drag {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    padding: 4px 4px 4px 0;
+    cursor: grab;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  &__handle-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: $text-quaternary;
+  }
+
+  &__dismiss {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: $text-quaternary;
+    cursor: pointer;
+    transition:
+      background 0.12s ease,
+      color 0.12s ease;
+
+    &:hover {
+      background: rgba($warning, 0.15);
+      color: $text-secondary;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $primary-blue-lighter;
+      outline-offset: 1px;
+    }
+
+    .fa-solid {
+      font-size: 12px;
+    }
+  }
+
+  &__body {
+    padding: 2px 0 4px;
+  }
+}

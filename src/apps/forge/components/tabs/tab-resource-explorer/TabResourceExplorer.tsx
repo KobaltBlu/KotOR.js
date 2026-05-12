@@ -12,7 +12,7 @@ import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/
 import { promptForDirectory, fileExists, writeFile } from "@/apps/forge/helpers/AssetExtraction";
 import { createProgressModal, showExtractionResults } from "@/apps/forge/helpers/AssetExtraction";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabGFFEditorState } from "@/apps/forge/states/tabs";
+import { TabGFFEditorState, TabSSFEditorState } from "@/apps/forge/states/tabs";
 
 
 export interface TabResourceExplorerProps extends BaseTabProps {
@@ -135,6 +135,8 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
       'utc', 'utd', 'ute', 'uti', 'utm', 'utp', 'uts', 'utt', 'utw'
     ]);
     const canOpenWithGff = node.type === 'resource' && !!node.data?.path && gffLikeExtensions.has(nodeExt);
+    const canOpenWithSsf = node.type === 'resource' && !!node.data?.path && nodeExt === 'ssf';
+    const canOpenWithHex = node.type === 'resource' && !!node.data?.path;
 
     const items: ContextMenuItem[] = [
       {
@@ -168,6 +170,40 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
             }));
           },
         }
+      );
+    }
+
+    if (canOpenWithSsf) {
+      items.push(
+        { id: 'sep-open-with-ssf', separator: true },
+        {
+          id: 'open-with-ssf',
+          label: 'Open with Sound Set Editor',
+          onClick: () => {
+            ForgeState.tabManager.addTab(new TabSSFEditorState({
+              editorFile: new EditorFile({
+                path: node.data.path,
+                useGameFileSystem: true,
+              }),
+            }));
+          },
+        }
+      );
+    }
+
+    if (canOpenWithHex) {
+      items.push(
+        { id: 'sep-open-with-hex', separator: true },
+        {
+          id: 'open-with-hex',
+          label: 'Open in hex editor',
+          onClick: () => {
+            FileTypeManager.openHexEditor({
+              path: node.data!.path,
+              useGameFileSystem: true,
+            });
+          },
+        },
       );
     }
 

@@ -26,6 +26,14 @@ export const MenuItem = function(props: any){
     }
   }
 
+  const renderItemName = () => {
+    return (
+      <span className="dropdown-item-name-wrapper">
+        <span className="dropdown-item-name">{item.checked ? "✓ " : ""}{item.name}</span>
+      </span>
+    );
+  };
+
   if(item.type === 'separator' || item.type === 'sep'){
     return (
       <Dropdown.Divider></Dropdown.Divider>
@@ -50,11 +58,11 @@ export const MenuItem = function(props: any){
     );
   }else if(parent){
     return (
-      <NavDropdown.Item onClick={onClick}>{item.name}</NavDropdown.Item>
+      <NavDropdown.Item onClick={onClick}>{renderItemName()}</NavDropdown.Item>
     );
   }else{
     return (
-      <Nav.Link onClick={onClick}>{item.name}</Nav.Link>
+      <Nav.Link onClick={onClick}>{renderItemName()}</Nav.Link>
     );
   }
 }
