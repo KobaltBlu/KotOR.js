@@ -198,6 +198,7 @@ export class TabImageViewerState extends TabState {
           switch(file?.ext){
             case 'tga':
               this.image = new KotOR.TGAObject({file: response.buffer, filename: file.resref+'.tga' });
+              this.txiText = "";
             break;
             case 'tpc':
               this.image = new KotOR.TPCObject({file: response.buffer, filename: file.resref+'.tpc' });
@@ -205,12 +206,15 @@ export class TabImageViewerState extends TabState {
             break;
             case 'png':
               this.image = await TabImageViewerState.decodeImage(response.buffer, 'png');
+              this.txiText = "";
             break;
             case 'jpg':
               this.image = await TabImageViewerState.decodeImage(response.buffer, 'jpg');
+              this.txiText = "";
             break;
             case 'jpeg':
               this.image = await TabImageViewerState.decodeImage(response.buffer, 'jpeg');
+              this.txiText = "";
             break;
           }
           
@@ -359,10 +363,13 @@ export class TabImageViewerState extends TabState {
   }
 
   getTXIText(): string {
-    if(this.image instanceof KotOR.TPCObject){
-      return this.txiText || this.image.txi?.info || "";
+    if(this.txiText){
+      return this.txiText;
     }
-    return "";
+    if(this.image instanceof KotOR.TPCObject){
+      return this.image.txi?.info || "";
+    }
+    return this.txiText || "";
   }
 
   setTXIText(text: string): void {
