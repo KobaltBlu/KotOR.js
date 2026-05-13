@@ -43,7 +43,6 @@ export class SWPriorityGroup {
 
   static From2DA(row: any = {}){
     const group = new SWPriorityGroup();
-    console.log(row);
 
     group.id = parseInt(row.__index);
 
