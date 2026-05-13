@@ -105,17 +105,22 @@ export class AudioPlayerState {
     onFloatingMiniPlayerPrefs: [],
   };
 
-  /** localStorage: user hid the floating mini player until respawned from the Audio menu. */
+  /**
+   * localStorage: floating mini player visibility.
+   * - `"0"` — user opted in (visible) via Audio menu “Show mini audio player”.
+   * - `"1"` — user dismissed / hid from the mini player chrome.
+   * - absent — hidden by default (Forge startup).
+   */
   static readonly FLOATING_MINI_LS_DISMISSED = "forge.miniPlayer.dismissed";
   /** localStorage: JSON `{ left, top }` for last floating position. */
   static readonly FLOATING_MINI_LS_BOUNDS = "forge.miniPlayer.bounds";
 
   /**
-   * Clears the floating mini player “dismissed” flag and notifies listeners so the widget shows again.
+   * Opts the floating mini player in (visible) and notifies listeners.
    */
   static showFloatingMiniPlayer(): void {
     try {
-      localStorage.removeItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED);
+      localStorage.setItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED, "0");
     } catch {
       /* ignore */
     }

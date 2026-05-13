@@ -11,9 +11,10 @@ const MARGIN = 10;
 
 function readDismissedFromStorage(): boolean {
   try {
-    return localStorage.getItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED) === "1";
+    // Hidden unless user explicitly opted in (`"0"`). `"1"` = dismissed from chrome.
+    return localStorage.getItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED) !== "0";
   } catch {
-    return false;
+    return true;
   }
 }
 
@@ -54,7 +55,7 @@ function setDismissedInStorage(dismissed: boolean): void {
     if (dismissed) {
       localStorage.setItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED, "1");
     } else {
-      localStorage.removeItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED);
+      localStorage.setItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED, "0");
     }
   } catch {
     /* ignore */
