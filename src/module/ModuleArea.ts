@@ -940,7 +940,7 @@ export class ModuleArea extends ModuleObject {
     this.moon.diffuseColor = this.are.getFieldByLabel('MoonDiffuseColor').getValue();
     this.moon.fogColor = this.are.getFieldByLabel('MoonFogColor').getValue();
     this.moon.fogFar = this.are.getFieldByLabel('MoonFogFar').getValue();
-    this.moon.fogFar = this.are.getFieldByLabel('MoonFogNear').getValue();
+    this.moon.fogNear = this.are.getFieldByLabel('MoonFogNear').getValue();
     this.moon.fogOn = !!this.are.getFieldByLabel('MoonFogOn').getValue();
     this.moon.shadows = !!this.are.getFieldByLabel('MoonShadows').getValue();
     this.areaName = this.are.getFieldByLabel('Name').getCExoLocString();
