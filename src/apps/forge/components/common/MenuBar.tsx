@@ -167,7 +167,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
               borderLeft: 'none',
               boxShadow: '2px 2px 8px rgba(0, 0, 0, 0.5)',
               minWidth: '150px',
-              zIndex: 1000,
+              zIndex: 20,
             }}
             onMouseEnter={() => {
               cancelPendingSubmenuClose();
@@ -195,7 +195,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
         borderBottom: '1px solid #555',
         display: 'flex',
         alignItems: 'center',
-        zIndex: 100,
+        zIndex: 10,
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
@@ -257,7 +257,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
                   border: '1px solid #555',
                   boxShadow: '2px 2px 8px rgba(0, 0, 0, 0.5)',
                   minWidth: '150px',
-                  zIndex: 1000,
+                  zIndex: 20,
                 }}
               >
                 {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, item.label))}

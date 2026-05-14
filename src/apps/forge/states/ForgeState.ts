@@ -12,6 +12,7 @@ import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
 import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
 import { MenuTopState } from "@/apps/forge/states/MenuTopState";
+import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
@@ -147,6 +148,9 @@ export class ForgeState {
         KotOR.AudioEngine.GAIN_MOVIE = 0.75;
         KotOR.AudioEngine.GAIN_GUI = 0.75;
         MenuTopState.buildAudioMenuItems();
+        AudioPlayerState.AddEventListener("onFloatingMiniPlayerPrefs", () => {
+          MenuTopState.buildAudioMenuItems();
+        });
         //ConfigClient.get('Game.debug.light_helpers') ? true : false
         // KotOR.LightManager.toggleLightHelpers();
         // KotOR.AudioEngine.GetAudioEngine() = new KotOR.AudioEngine();

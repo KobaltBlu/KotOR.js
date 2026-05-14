@@ -217,6 +217,7 @@ export const ForgeFloatingMiniPlayer = function () {
   const onDismiss = () => {
     setDismissed(true);
     setDismissedInStorage(true);
+    AudioPlayerState.ProcessEventListener("onFloatingMiniPlayerPrefs", []);
   };
 
   const onDragPointerDown = (e: React.PointerEvent) => {

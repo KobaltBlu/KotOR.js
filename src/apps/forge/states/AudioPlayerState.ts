@@ -126,6 +126,32 @@ export class AudioPlayerState {
     }
     AudioPlayerState.ProcessEventListener("onFloatingMiniPlayerPrefs", []);
   }
+
+  /** Hides the floating mini player (same effect as the mini player dismiss control). */
+  static hideFloatingMiniPlayer(): void {
+    try {
+      localStorage.setItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED, "1");
+    } catch {
+      /* ignore */
+    }
+    AudioPlayerState.ProcessEventListener("onFloatingMiniPlayerPrefs", []);
+  }
+
+  static isFloatingMiniPlayerVisible(): boolean {
+    try {
+      return localStorage.getItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED) === "0";
+    } catch {
+      return false;
+    }
+  }
+
+  static toggleFloatingMiniPlayer(): void {
+    if (AudioPlayerState.isFloatingMiniPlayerVisible()) {
+      AudioPlayerState.hideFloatingMiniPlayer();
+    } else {
+      AudioPlayerState.showFloatingMiniPlayer();
+    }
+  }
   
   static analyser: AnalyserNode;
   static analyserBufferLength: number; 

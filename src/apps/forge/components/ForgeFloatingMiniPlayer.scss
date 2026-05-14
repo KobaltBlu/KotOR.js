@@ -2,7 +2,8 @@
 
 .forge-floating-mini-player {
   position: fixed;
-  z-index: 3000;
+  /* Above `.top-menu` / dropdown layer (~4000); below modals (9999). */
+  z-index: 5000;
   max-width: calc(100vw - 16px);
   -webkit-app-region: no-drag;
   cursor: default;

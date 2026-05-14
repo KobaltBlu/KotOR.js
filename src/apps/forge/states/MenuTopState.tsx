@@ -445,11 +445,12 @@ export class MenuTopState {
     this.menuItemAudio.items = [];
     this.menuItemAudio.items.push(
       new MenuTopItem({
-        name: 'Show mini audio player',
+        name: 'Mini Audio Player',
+        checked: AudioPlayerState.isFloatingMiniPlayerVisible(),
         onClick: () => {
-          AudioPlayerState.showFloatingMiniPlayer();
-        }
-      })
+          AudioPlayerState.toggleFloatingMiniPlayer();
+        },
+      }),
     );
 
     const reverbItems: MenuTopItem[] = [];
@@ -467,7 +468,7 @@ export class MenuTopState {
     const eaxPresets = Object.values(KotOR.TwoDAManager.datatables.get('soundeax')?.rows || {});
     for(let i = 0; i < eaxPresets.length; i++){
       const eaxPreset = eaxPresets[i] as any;
-      if(eaxPreset.label == 23) break;
+      if(eaxPreset.label == 22) break;
       reverbItems.push(
         new MenuTopItem({
           name: eaxPreset.label,
