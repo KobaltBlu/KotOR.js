@@ -16,5 +16,6 @@ export * from "@/interface/resource/ILIPKeyFrame";
 export * from "@/interface/resource/IResourceCacheScopes";
 export * from "@/interface/resource/IRIMHeader";
 export * from "@/interface/resource/IRIMResource";
+export * from "@/interface/resource/IZIPStoredEntry";
 export * from "@/enums/resource/SSFType";
 export * from "@/interface/resource/ITPCHeader";
