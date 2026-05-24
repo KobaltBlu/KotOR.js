@@ -175,6 +175,33 @@ export class GUIControl {
 
   /** When true, the control will be rebuilt on the next update. */
   needsUpdate: boolean = false;
+
+  /** Counts outstanding texture loads started by initTextures() and subclass overrides. */
+  private _pendingTextureCount: number = 0;
+
+  /** True when all texture slots queued by this control have finished loading. */
+  get isTextureReady(): boolean {
+    return this._pendingTextureCount === 0;
+  }
+
+  /** Called when _pendingTextureCount reaches zero. Override in subclasses for sequenced secondary loads. */
+  protected onTexturesReady(): void {
+    this.invalidateListRtt();
+  }
+
+  /** Increment pending texture count before an enQueue; call this helper to decrement and fire onTexturesReady when done. */
+  protected _beginTextureLoad(): void {
+    this._pendingTextureCount++;
+  }
+
+  protected _endTextureLoad(): void {
+    if (this._pendingTextureCount > 0) {
+      this._pendingTextureCount--;
+    }
+    if (this._pendingTextureCount === 0) {
+      this.onTexturesReady();
+    }
+  }
   
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl|undefined, scale: boolean = false){
 
@@ -836,9 +863,11 @@ export class GUIControl {
 
     if(this.border.edge != ''){
       this.border.edge_material.visible = false;
+      this._beginTextureLoad();
       TextureLoader.enQueue(this.border.edge, this.border.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
           console.log('initTextures', this.border.edge, texture);
+          this._endTextureLoad();
           return;
         }
 
@@ -854,7 +883,7 @@ export class GUIControl {
         this.border.edge_material.visible = true;
         if(typeof this.borderEnabled == 'undefined')
           this.borderEnabled = true;
-        this.invalidateListRtt();
+        this._endTextureLoad();
       });
     }else{
       this.border.edge_material.visible = false;
@@ -863,9 +892,11 @@ export class GUIControl {
 
     if(this.border.corner != ''){
       this.border.corner_material.visible = false;
+      this._beginTextureLoad();
       TextureLoader.enQueue(this.border.corner, this.border.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
           console.log('initTextures', this.border.corner, texture);
+          this._endTextureLoad();
           return;
         }
 
@@ -881,7 +912,7 @@ export class GUIControl {
         this.border.corner_material.visible = true;
         if(typeof this.borderEnabled == 'undefined')
           this.borderEnabled = true;
-        this.invalidateListRtt();
+        this._endTextureLoad();
       });
     }else{
       this.border.corner_material.visible = false;
@@ -890,9 +921,11 @@ export class GUIControl {
 
     if(this.border.fill.texture != ''){
       this.border.fill.material.visible = false;
+      this._beginTextureLoad();
       TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!(texture)){
           this.border.fill.material.visible = false;
+          this._endTextureLoad();
           return;
         }
 
@@ -906,7 +939,7 @@ export class GUIControl {
         this.border.fill.material.visible = true;
         if(typeof this.borderFillEnabled == 'undefined')
           this.borderFillEnabled = true;
-        this.invalidateListRtt();
+        this._endTextureLoad();
       });
     }else{
       this.border.fill.material.visible = false;
@@ -919,9 +952,11 @@ export class GUIControl {
 
     if(this.highlight.edge != ''){
       this.highlight.edge_material.visible = false;
+      this._beginTextureLoad();
       TextureLoader.enQueue(this.highlight.edge, this.highlight.edge_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
           console.log('initTextures', this.highlight.edge, texture);
+          this._endTextureLoad();
           return;
         }
 
@@ -937,7 +972,7 @@ export class GUIControl {
         this.highlight.edge_material.visible = true;
         if(typeof this.highlightEnabled == 'undefined')
           this.highlightEnabled = true;
-        this.invalidateListRtt();
+        this._endTextureLoad();
       });
     }else{
       this.highlight.edge_material.visible = false;
@@ -946,9 +981,11 @@ export class GUIControl {
 
     if(this.highlight.corner != ''){
       this.highlight.corner_material.visible = false;
+      this._beginTextureLoad();
       TextureLoader.enQueue(this.highlight.corner, this.highlight.corner_material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
           console.log('initTextures', this.highlight.corner, texture);
+          this._endTextureLoad();
           return;
         }
 
@@ -964,7 +1001,7 @@ export class GUIControl {
         this.highlight.corner_material.visible = true;
         if(typeof this.highlightEnabled == 'undefined')
           this.highlightEnabled = true;
-        this.invalidateListRtt();
+        this._endTextureLoad();
       });
     }else{
       this.highlight.corner_material.visible = false;
@@ -974,6 +1011,7 @@ export class GUIControl {
     if(this.highlight.fill.material){
       if(this.highlight.fill.texture != ''){
         this.highlight.fill.material.visible = false;
+        this._beginTextureLoad();
         TextureLoader.enQueue(this.highlight.fill.texture, this.highlight.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           if(this.highlight.fill.material){
             if(!(texture)){
@@ -988,9 +1026,9 @@ export class GUIControl {
               texture.needsUpdate = true;
               this.highlight.fill.material.visible = true;
               this.highlightFillEnabled = true;
-              this.invalidateListRtt();
             }
           }
+          this._endTextureLoad();
         });
       }else{
         this.highlight.fill.material.visible = false;
@@ -1004,9 +1042,11 @@ export class GUIControl {
 
     if(this.text.font != ''){
       this.text.material.visible = false;
+      this._beginTextureLoad();
       TextureLoader.enQueue(this.text.font, this.text.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!texture){
           console.log('initTextures', this.text.font, texture);
+          this._endTextureLoad();
           return;
         }
 
@@ -1023,6 +1063,7 @@ export class GUIControl {
         this.guiFont = new GUIFont(texture);
         this.onFontTextureLoaded();
         this.text.material.visible = true;
+        this._endTextureLoad();
       });
     }else{
       this.text.material.visible = false;

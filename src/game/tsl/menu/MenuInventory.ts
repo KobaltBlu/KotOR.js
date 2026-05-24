@@ -170,12 +170,7 @@ export class MenuInventory extends K1_MenuInventory {
       }
       return true;
     });
-    this.LB_ITEMS.beginContentLoad();
-    this.LB_ITEMS.clearItems();
-    for (let i = 0; i < inventory.length; i++) {
-      this.LB_ITEMS.addItem(inventory[i]);
-    }
-    void this.LB_ITEMS.finishContentLoad();
+    this.LB_ITEMS.setItems(inventory);
   }
 
   show() {

@@ -105,10 +105,7 @@ export class MainMovies extends K1_MainMovies {
       }
 
       this.movieList.sort((a, b) => a.order - b.order);
-      for(const movie of this.movieList){
-        this.LB_MOVIES.addItem(new GUIMovieItemTsl(movie));
-      }
-      this.LB_MOVIES.updateList();
+      this.LB_MOVIES.setItems(this.movieList.map(m => new GUIMovieItemTsl(m)));
 
       this.LBL_UNLOCKED_VALUE.setText(`${this.movieList.length} / ${this.movieList.length}`);
 

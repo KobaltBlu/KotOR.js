@@ -48,7 +48,7 @@ export class MenuContainer extends GameMenu {
 
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.LB_ITEMS.clearItems();
+        this.LB_ITEMS.setItems([]);
         if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
           this.container.close(GameState.PartyManager.party[0]);
         }
@@ -63,7 +63,7 @@ export class MenuContainer extends GameMenu {
           return;
         }
         if(this.mode == MenuContainerMode.TAKE_ITEMS){
-          this.LB_ITEMS.clearItems();
+          this.LB_ITEMS.setItems([]);
           if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
             this.container.retrieveInventory();
             this.container.close(GameState.PartyManager.party[0]);
@@ -168,21 +168,13 @@ export class MenuContainer extends GameMenu {
     //Update list items
     this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
     if (typeof this.getSelectedContainer()?.inventory === 'object') {
-      this.LB_ITEMS.beginContentLoad();
-      this.LB_ITEMS.clearItems();
       const inventory = this.getSelectedContainer().inventory;
-      for (let i = 0; i < inventory.length; i++) {
-        const item = inventory[i];
-        this.LB_ITEMS.addItem(item);
-        if(!this.selectedItem){
-          this.selectedItem = item;
-        }
+      if (!this.selectedItem && inventory.length > 0) {
+        this.selectedItem = inventory[0];
       }
-      void this.LB_ITEMS.finishContentLoad().then(() => {
-        this.LB_ITEMS.selectItem(this.selectedItem);
-      });
+      this.LB_ITEMS.setItems(inventory, { selectIndex: inventory.indexOf(this.selectedItem) } as any);
     } else {
-      this.LB_ITEMS.clearItems();
+      this.LB_ITEMS.setItems([]);
     }
 
   }

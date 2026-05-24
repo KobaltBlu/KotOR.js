@@ -251,19 +251,19 @@ export class MenuEquipment extends GameMenu {
    */
   updateListHover(slot: number) {
     if (slot) {
-      this.LB_ITEMS.beginContentLoad();
-      this.LB_ITEMS.clearItems();
-      let inv = GameState.InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
-      let currentPC = GameState.PartyManager.party[0];
-      this.LB_ITEMS.addItem(new GUIItemNone());
-      if(currentPC.GetItemInSlot(slot)){
-        this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(slot)));
-      }
+      const inv = GameState.InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
+      const currentPC = GameState.PartyManager.party[0];
+      this.LB_ITEMS.mutate(tx => {
+        tx.clear();
+        tx.add(new GUIItemNone());
+        if(currentPC.GetItemInSlot(slot)){
+          tx.add(new GUIItemEquipped(currentPC.GetItemInSlot(slot)));
+        }
+        for (let i = 0; i < inv.length; i++) {
+          tx.add(inv[i]);
+        }
+      });
       this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
-      for (let i = 0; i < inv.length; i++) {
-        this.LB_ITEMS.addItem(inv[i]);
-      }
-      void this.LB_ITEMS.finishContentLoad();
     }
   }
 
@@ -331,18 +331,18 @@ export class MenuEquipment extends GameMenu {
     this.updateSelected(null);
     const currentPC = GameState.PartyManager.party[0];
     if (this.slot) {
-      this.LB_ITEMS.beginContentLoad();
-      this.LB_ITEMS.clearItems();
       const inv = GameState.InventoryManager.getInventory(this.slot, currentPC);
-      this.LB_ITEMS.addItem(new GUIItemNone());
-      if(currentPC.GetItemInSlot(this.slot)){
-        this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)))
-      }
+      this.LB_ITEMS.mutate(tx => {
+        tx.clear();
+        tx.add(new GUIItemNone());
+        if(currentPC.GetItemInSlot(this.slot)){
+          tx.add(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)));
+        }
+        for (let i = 0; i < inv.length; i++) {
+          tx.add(inv[i]);
+        }
+      });
       this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
-      for (let i = 0; i < inv.length; i++) {
-        this.LB_ITEMS.addItem(inv[i]);
-      }
-      void this.LB_ITEMS.finishContentLoad();
     }
   }
 
@@ -358,7 +358,7 @@ export class MenuEquipment extends GameMenu {
     } else if(item instanceof GUIItemEquipped) {
       description = item.node.getDescription();
     }
-    this.LB_DESC.setSingleItemDescription(description);
+    this.LB_DESC.setItem(description);
   }
 
   /**
@@ -466,8 +466,8 @@ export class MenuEquipment extends GameMenu {
     if (!currentPC) {
       return;
     }
-    this.LB_DESC.setSingleItemDescription('');
-    this.LB_ITEMS.clearItems();
+    this.LB_DESC.setItem(null);
+    this.LB_ITEMS.setItems([]);
     this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
     this.LBL_DEF?.setText(currentPC.getAC());
     if(this.LBL_PORTRAIT.getFillTextureName() != currentPC.getPortraitResRef()){

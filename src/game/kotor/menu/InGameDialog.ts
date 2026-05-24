@@ -70,20 +70,17 @@ export class InGameDialog extends GameMenu {
   }
 
   setReplies(replies: DLGNode[]) {
-    this.LB_REPLIES.clearItems();
-    for (let i = 0; i < replies.length; i++) {
-      const reply = replies[i];
-      if(reply.isContinueDialog()){ continue; }
-      this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString());
-    }
-    this.LB_REPLIES.updateList();
+    const texts = replies
+      .filter(r => !r.isContinueDialog())
+      .map((r, i) => (i + 1) + '. ' + r.getCompiledString());
+    this.LB_REPLIES.setItems(texts);
   }
 
   setDialogMode(state: ConversationState) {
     if(state == ConversationState.LISTENING_TO_SPEAKER){
       this.LBL_MESSAGE.setText(GameState.CutsceneManager.lastSpokenString);
       this.LB_REPLIES.hide();
-      this.LB_REPLIES.clearItems();
+      this.LB_REPLIES.setItems([]);
       this.updateTextPosition(true);
     }else{
       this.updateTextPosition(false);

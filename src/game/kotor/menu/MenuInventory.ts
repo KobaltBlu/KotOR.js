@@ -85,18 +85,13 @@ export class MenuInventory extends GameMenu {
 
   UpdateSelected(){
     if(this.selected instanceof ModuleItem){
-      this.LB_DESCRIPTION?.setSingleItemDescription(this.selected.getDescription());
+      this.LB_DESCRIPTION?.setItem(this.selected.getDescription());
     }
   }
 
   filterInventory(){
-    this.LB_ITEMS.beginContentLoad();
-    this.LB_ITEMS.clearItems();
-    let inv = GameState.InventoryManager.getNonQuestInventory();
-    for (let i = 0; i < inv.length; i++) {
-      this.LB_ITEMS.addItem(inv[i]);
-    }
-    void this.LB_ITEMS.finishContentLoad();
+    const inv = GameState.InventoryManager.getNonQuestInventory();
+    this.LB_ITEMS.setItems(inv);
   }
 
   updateCharacterStats(){

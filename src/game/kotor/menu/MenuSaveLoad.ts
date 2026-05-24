@@ -177,14 +177,10 @@ export class MenuSaveLoad extends GameMenu {
   }
 
   reloadSaves(){
-    this.LB_GAMES.clearItems();
     const saves = this.getSaveGames();
-    for (const save of saves) {
-      this.LB_GAMES.addItem(save);
-    }
+    this.LB_GAMES.setItems(saves, { selectIndex: 0 } as any);
     this.selected = saves[0];
     this.UpdateSelected();
-    this.LB_GAMES.updateList();
   }
 
   UpdateSelected() {

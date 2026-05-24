@@ -60,8 +60,7 @@ export class MenuAutoPause extends GameMenu {
       };
 
       this.CB_ENDROUND.addEventListener('hover', () => {
-        this.LB_DETAILS.clearItems();
-        this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(END_ROUND_DESC)?.Value);
+        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(END_ROUND_DESC)?.Value);
       });
 
       this.CB_ENEMYSIGHTED.onValueChanged = () => {
@@ -73,8 +72,7 @@ export class MenuAutoPause extends GameMenu {
       };
       
       this.CB_ENEMYSIGHTED.addEventListener('hover', () => {
-        this.LB_DETAILS.clearItems();
-        this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(ENEMY_SIGHTED_DESC)?.Value);
+        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(ENEMY_SIGHTED_DESC)?.Value);
       });
 
       this.CB_MINESIGHTED.onValueChanged = () => {
@@ -86,8 +84,7 @@ export class MenuAutoPause extends GameMenu {
       };
       
       this.CB_MINESIGHTED.addEventListener('hover', () => {
-        this.LB_DETAILS.clearItems();
-        this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(MINE_SIGHTED_DESC)?.Value);
+        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(MINE_SIGHTED_DESC)?.Value);
       });
 
       this.CB_PARTYKILLED.onValueChanged = () => {
@@ -99,8 +96,7 @@ export class MenuAutoPause extends GameMenu {
       };
       
       this.CB_PARTYKILLED.addEventListener('hover', () => {
-        this.LB_DETAILS.clearItems();
-        this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(PARTY_KILLED_DESC)?.Value);
+        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(PARTY_KILLED_DESC)?.Value);
       });
 
       this.CB_ACTIONMENU.onValueChanged = () => {
@@ -112,8 +108,7 @@ export class MenuAutoPause extends GameMenu {
       };
       
       this.CB_ACTIONMENU.addEventListener('hover', () => {
-        this.LB_DETAILS.clearItems();
-        this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(ACTION_MENU_DESC)?.Value);
+        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(ACTION_MENU_DESC)?.Value);
       });
 
       this.CB_TRIGGERS.onValueChanged = () => {
@@ -125,8 +120,7 @@ export class MenuAutoPause extends GameMenu {
       };
       
       this.CB_TRIGGERS.addEventListener('hover', () => {
-        this.LB_DETAILS.clearItems();
-        this.LB_DETAILS.addItem(GameState.TLKManager.GetStringById(NEW_TARGET_DESC)?.Value);
+        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(NEW_TARGET_DESC)?.Value);
       });
 
       this.BTN_BACK.addEventListener('click', (e) => {

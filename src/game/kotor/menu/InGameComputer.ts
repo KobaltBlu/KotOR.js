@@ -82,23 +82,16 @@ export class InGameComputer extends GameMenu {
   }
 
   setReplies(replies: DLGNode[]) {
-    this.LB_REPLIES.clearItems();
-    for (let i = 0; i < replies.length; i++) {
-      const reply = replies[i];
-      if(reply.isContinueDialog()){ continue; }
-      this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString());
-    }
-    this.LB_REPLIES.updateList();
+    const texts = replies
+      .filter(r => !r.isContinueDialog())
+      .map((r, i) => (i + 1) + '. ' + r.getCompiledString());
+    this.LB_REPLIES.setItems(texts);
     this.LB_REPLIES.show();
   }
 
   setEntry(entry: DLGNode) {
     this.currentEntry = entry;
-    this.LB_MESSAGE.clearItems();
-    if (!!entry.getCompiledString()) {
-      this.LB_MESSAGE.addItem(entry.getCompiledString());
-    }
-    this.LB_MESSAGE.updateList();
+    this.LB_MESSAGE.setItem(entry.getCompiledString() || null);
     this.LB_MESSAGE.show();
   }
 

@@ -62,10 +62,9 @@ export class MainMusic extends GameMenu {
 
       const table = GameState.TwoDAManager.datatables.get('musictable');
       for(let i = 0; i < table.RowCount; i++){
-        const row = table.getRowByIndex(i);
-        this.LB_MUSIC.addItem(row);
-        this.musicList.push(row);
+        this.musicList.push(table.getRowByIndex(i));
       }
+      this.LB_MUSIC.setItems(this.musicList);
 
       this.LBL_TRACKNUM.setText(`${0} / ${table.RowCount}`);
 

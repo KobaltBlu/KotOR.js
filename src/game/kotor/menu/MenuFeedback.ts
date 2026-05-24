@@ -51,7 +51,21 @@ export class MenuFeedback extends GameMenu {
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
-      const CB_HIDE_UNEQ = this.LB_OPTIONS.addItem(GameState.TLKManager.GetStringById(LBL_HIDE_UNEQ).Value) as GUICheckBox;
+      let CB_HIDE_UNEQ: GUICheckBox, CB_TUT_POPUPS: GUICheckBox, CB_SUBS: GUICheckBox,
+          CB_MAP: GUICheckBox, CB_FNUMBERS: GUICheckBox, CB_STATUS: GUICheckBox,
+          CB_HIDE_MENU: GUICheckBox, CB_TOOLTIPS: GUICheckBox;
+
+      this.LB_OPTIONS.mutate(tx => {
+        CB_HIDE_UNEQ = tx.add(GameState.TLKManager.GetStringById(LBL_HIDE_UNEQ).Value) as GUICheckBox;
+        CB_TUT_POPUPS = tx.add(GameState.TLKManager.GetStringById(LBL_TUT_POPUPS).Value) as GUICheckBox;
+        CB_SUBS = tx.add(GameState.TLKManager.GetStringById(LBL_SUBS).Value) as GUICheckBox;
+        CB_MAP = tx.add(GameState.TLKManager.GetStringById(LBL_MAP).Value) as GUICheckBox;
+        CB_FNUMBERS = tx.add(GameState.TLKManager.GetStringById(LBL_FNUMBERS).Value) as GUICheckBox;
+        CB_STATUS = tx.add(GameState.TLKManager.GetStringById(LBL_STATUS).Value) as GUICheckBox;
+        CB_HIDE_MENU = tx.add(GameState.TLKManager.GetStringById(LBL_HIDE_MENU).Value) as GUICheckBox;
+        CB_TOOLTIPS = tx.add(GameState.TLKManager.GetStringById(LBL_TOOLTIPS).Value) as GUICheckBox;
+      });
+
       CB_HIDE_UNEQ.attachINIProperty('Game Options.Hide Unequippable');
       CB_HIDE_UNEQ.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Game Options.Hide Unequippable') == 1){
@@ -61,7 +75,6 @@ export class MenuFeedback extends GameMenu {
         }
       };
 
-      const CB_TUT_POPUPS = this.LB_OPTIONS.addItem(GameState.TLKManager.GetStringById(LBL_TUT_POPUPS).Value) as GUICheckBox;
       CB_TUT_POPUPS.attachINIProperty('Game Options.Tutorial Popups');
       CB_TUT_POPUPS.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Game Options.Tutorial Popups') == 1){
@@ -71,7 +84,6 @@ export class MenuFeedback extends GameMenu {
         }
       };
 
-      const CB_SUBS = this.LB_OPTIONS.addItem(GameState.TLKManager.GetStringById(LBL_SUBS).Value) as GUICheckBox;
       CB_SUBS.attachINIProperty('Game Options.Subtitles');
       CB_SUBS.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Game Options.Subtitles') == 1){
@@ -81,7 +93,6 @@ export class MenuFeedback extends GameMenu {
         }
       };
 
-      const CB_MAP = this.LB_OPTIONS.addItem(GameState.TLKManager.GetStringById(LBL_MAP).Value) as GUICheckBox;
       CB_MAP.attachINIProperty('Game Options.Mini Map');
       CB_MAP.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Game Options.Mini Map') == 1){
@@ -91,7 +102,6 @@ export class MenuFeedback extends GameMenu {
         }
       };
 
-      const CB_FNUMBERS = this.LB_OPTIONS.addItem(GameState.TLKManager.GetStringById(LBL_FNUMBERS).Value) as GUICheckBox;
       CB_FNUMBERS.attachINIProperty('Game Options.Floating Numbers');
       CB_FNUMBERS.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Game Options.Floating Numbers') == 1){
@@ -101,7 +111,6 @@ export class MenuFeedback extends GameMenu {
         }
       };
 
-      const CB_STATUS = this.LB_OPTIONS.addItem(GameState.TLKManager.GetStringById(LBL_STATUS).Value) as GUICheckBox;
       CB_STATUS.attachINIProperty('Game Options.Status Summary');
       CB_STATUS.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Game Options.Status Summary') == 1){
@@ -111,7 +120,6 @@ export class MenuFeedback extends GameMenu {
         }
       };
 
-      const CB_HIDE_MENU = this.LB_OPTIONS.addItem(GameState.TLKManager.GetStringById(LBL_HIDE_MENU).Value) as GUICheckBox;
       CB_HIDE_MENU.attachINIProperty('Game Options.Hide InGame GUI');
       CB_HIDE_MENU.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Game Options.Hide InGame GUI') == 1){
@@ -121,7 +129,6 @@ export class MenuFeedback extends GameMenu {
         }
       };
 
-      const CB_TOOLTIPS = this.LB_OPTIONS.addItem(GameState.TLKManager.GetStringById(LBL_TOOLTIPS).Value) as GUICheckBox;
       CB_TOOLTIPS.attachINIProperty('Game Options.Enable Tooltips');
       CB_TOOLTIPS.onValueChanged = () => {
         if(GameState.iniConfig.getProperty('Game Options.Enable Tooltips') == 1){

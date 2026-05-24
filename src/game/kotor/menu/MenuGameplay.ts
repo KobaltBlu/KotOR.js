@@ -95,27 +95,27 @@ export class MenuGameplay extends GameMenu {
       
 
       this.BTN_DIFFICULTY.addEventListener( 'hover', () => {
-        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[42265].Value);
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42265].Value);
       });
       
       this.CB_LEVELUP.addEventListener( 'hover', () => {
-        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[42266].Value);
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42266].Value);
       });
       
       this.CB_INVERTCAM.addEventListener( 'hover', () => {
-        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[48697].Value);
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48697].Value);
       });
       
       this.CB_AUTOSAVE.addEventListener( 'hover', () => {
-        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[38038].Value);
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[38038].Value);
       });  
       
       this.CB_REVERSE.addEventListener( 'hover', () => {
-        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[48699].Value);
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48699].Value);
       });
       
       this.CB_DISABLEMOVE.addEventListener( 'hover', () => {
-        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[42484].Value);
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42484].Value);
       });
       resolve();
     });
