@@ -2691,4 +2691,9 @@ export class GUIControl {
     output.radius = length / 2
   }
 
+  setDepthMode(mode: THREE.DepthModes) {
+    this.border.fill.material.depthFunc = mode;
+    this.highlight.fill.material.depthFunc = mode;
+  }
+
 }
