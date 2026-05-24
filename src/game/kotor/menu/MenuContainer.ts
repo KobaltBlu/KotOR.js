@@ -167,8 +167,9 @@ export class MenuContainer extends GameMenu {
 
     //Update list items
     this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
-    this.LB_ITEMS.clearItems();
     if (typeof this.getSelectedContainer()?.inventory === 'object') {
+      this.LB_ITEMS.beginContentLoad();
+      this.LB_ITEMS.clearItems();
       const inventory = this.getSelectedContainer().inventory;
       for (let i = 0; i < inventory.length; i++) {
         const item = inventory[i];
@@ -177,8 +178,11 @@ export class MenuContainer extends GameMenu {
           this.selectedItem = item;
         }
       }
-      TextureLoader.LoadQueue();
-      this.LB_ITEMS.selectItem(this.selectedItem);
+      void this.LB_ITEMS.finishContentLoad().then(() => {
+        this.LB_ITEMS.selectItem(this.selectedItem);
+      });
+    } else {
+      this.LB_ITEMS.clearItems();
     }
 
   }

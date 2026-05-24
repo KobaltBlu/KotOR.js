@@ -78,7 +78,7 @@ export class MenuStore extends GameMenu {
   show() {
     super.show();
     if (BitWise.InstanceOfObject(this.storeObject, ModuleObjectType.ModuleStore)) {
-      this.LB_DESCRIPTION.clearItems();
+      this.LB_DESCRIPTION.setSingleItemDescription('');
       this.LB_DESCRIPTION.hide();
       this.LB_INVITEMS.hide();
       this.LB_SHOPITEMS.hide();
@@ -87,40 +87,41 @@ export class MenuStore extends GameMenu {
         this.LBL_COST.setText(GameState.TLKManager.GetStringById(41945).Value);
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32130).Value);
+        this.LB_INVITEMS.beginContentLoad();
         this.LB_INVITEMS.clearItems();
         let inv = GameState.InventoryManager.getSellableInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_INVITEMS.addItem(inv[i], { onClick: (e, item: ModuleItem) => {
             this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
-            this.LB_DESCRIPTION.clearItems();
-            this.LB_DESCRIPTION.addItem(item.getDescription());
-            this.LB_DESCRIPTION.updateList();
+            this.LB_DESCRIPTION.setSingleItemDescription(item.getDescription());
             this.LB_DESCRIPTION.show();
           }});
         }
-        this.LB_INVITEMS.select(this.LB_INVITEMS.children[0]);
-        this.LB_INVITEMS.show();
+        void this.LB_INVITEMS.finishContentLoad().then(() => {
+          this.LB_INVITEMS.select(this.LB_INVITEMS.children[0]);
+          this.LB_INVITEMS.show();
+        });
       } else {
         this.BTN_Examine.setText(GameState.TLKManager.GetStringById(41938).Value);
         this.LBL_COST.setText(GameState.TLKManager.GetStringById(41943).Value);
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32132).Value);
+        this.LB_SHOPITEMS.beginContentLoad();
         this.LB_SHOPITEMS.clearItems();
         let inv = this.storeObject.getInventory();
         for (let i = 0; i < inv.length; i++) {
           this.LB_SHOPITEMS.addItem(inv[i], { onClick: (e, item: ModuleItem) => {
             this.LBL_COST_VALUE.setText(this.getItemBuyPrice(item));
-            this.LB_DESCRIPTION.clearItems();
-            this.LB_DESCRIPTION.addItem(item.getDescription());
-            this.LB_DESCRIPTION.updateList();
+            this.LB_DESCRIPTION.setSingleItemDescription(item.getDescription());
             this.LB_DESCRIPTION.show();
           }});
         }
-        this.LB_SHOPITEMS.select(this.LB_SHOPITEMS.children[0]);
-        this.LB_SHOPITEMS.show();
+        void this.LB_SHOPITEMS.finishContentLoad().then(() => {
+          this.LB_SHOPITEMS.select(this.LB_SHOPITEMS.children[0]);
+          this.LB_SHOPITEMS.show();
+        });
       }
       this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
-      TextureLoader.LoadQueue();
     } else {
       this.close();
     }

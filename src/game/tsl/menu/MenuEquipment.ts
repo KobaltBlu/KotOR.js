@@ -517,7 +517,7 @@ export class MenuEquipment extends K1_MenuEquipment {
     const currentPC = GameState.PartyManager.party[this.currentNPCIndex];
     if(!currentPC) return;
 
-    this.LB_DESC?.clearItems();
+    this.LB_DESC?.setSingleItemDescription('');
     this.LB_ITEMS?.clearItems();
 
     this.LBL_TITLE?.setText(currentPC.getName());

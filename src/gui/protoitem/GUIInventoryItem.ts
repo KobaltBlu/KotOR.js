@@ -109,13 +109,15 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.iconMaterial.visible = false;
       this.iconSprite = new THREE.Sprite( this.iconMaterial );
       //console.log(this.node.getIcon());
-      TextureLoader.Load(this.node.getIcon()).then((texture: OdysseyTexture) => {
+      const iconPromise = TextureLoader.Load(this.node.getIcon()).then((texture: OdysseyTexture) => {
         if(texture){
           this.iconMaterial.map = texture;
           this.iconMaterial.needsUpdate = true;
           this.iconMaterial.visible = true;
+          this.invalidateListRtt();
         }
       });
+      this.list?.trackContentLoadAsync(iconPromise);
 
       this.spriteGroup = new THREE.Group();
       this.iconSprite.scale.x = iconWidth * 0.90;

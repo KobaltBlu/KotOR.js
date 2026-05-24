@@ -210,8 +210,8 @@ export class MenuAbilities extends K1_MenuAbilities {
     this.LB_DESC.hide();
     this.LB_DESC_FEATS.hide();
 
-    this.LB_DESC.clearItems();
-    this.LB_DESC_FEATS.clearItems();
+    this.LB_DESC.setSingleItemDescription('');
+    this.LB_DESC_FEATS.setSingleItemDescription('');
     this.LB_ABILITY.clearItems();
     let items = this.getFilteredItems();
 

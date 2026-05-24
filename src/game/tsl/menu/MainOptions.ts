@@ -68,28 +68,23 @@ export class MainOptions extends K1_MainOptions {
       });
 
       this.BTN_GAMEPLAY.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42273].Value)
+        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[42273].Value);
       });
 
       this.BTN_FEEDBACK.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[136314].Value)
+        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[136314].Value);
       });
 
       this.BTN_AUTOPAUSE.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42275].Value)
+        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[42275].Value);
       });
 
       this.BTN_GRAPHICS.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48687].Value)
+        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[48687].Value);
       });
 
       this.BTN_SOUND.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48688].Value)
+        this.LB_DESC.setSingleItemDescription(GameState.TLKManager.TLKStrings[48688].Value);
       });
 
       resolve();

@@ -464,6 +464,24 @@ export class GUIControl {
 
   setList(list: GUIListBox){
     this.list = list;
+    for (let i = 0; i < this.children.length; i++) {
+      const child = this.children[i];
+      if (child && child !== list && child !== list.scrollbar) {
+        child.setList(list);
+      }
+    }
+  }
+
+  /** Marks the owning {@link GUIListBox} RTT dirty after async border/highlight textures load. */
+  invalidateListRtt(): void {
+    let control: GUIControl | undefined = this;
+    while (control) {
+      if (control.list) {
+        control.list.markListRttDirty();
+        return;
+      }
+      control = control.parent as GUIControl | undefined;
+    }
   }
 
   initInputListeners(){
@@ -836,6 +854,7 @@ export class GUIControl {
         this.border.edge_material.visible = true;
         if(typeof this.borderEnabled == 'undefined')
           this.borderEnabled = true;
+        this.invalidateListRtt();
       });
     }else{
       this.border.edge_material.visible = false;
@@ -862,6 +881,7 @@ export class GUIControl {
         this.border.corner_material.visible = true;
         if(typeof this.borderEnabled == 'undefined')
           this.borderEnabled = true;
+        this.invalidateListRtt();
       });
     }else{
       this.border.corner_material.visible = false;
@@ -869,7 +889,6 @@ export class GUIControl {
     }
 
     if(this.border.fill.texture != ''){
-      this.border.fill.material.transparent = true;
       this.border.fill.material.visible = false;
       TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
         if(!(texture)){
@@ -887,6 +906,7 @@ export class GUIControl {
         this.border.fill.material.visible = true;
         if(typeof this.borderFillEnabled == 'undefined')
           this.borderFillEnabled = true;
+        this.invalidateListRtt();
       });
     }else{
       this.border.fill.material.visible = false;
@@ -917,6 +937,7 @@ export class GUIControl {
         this.highlight.edge_material.visible = true;
         if(typeof this.highlightEnabled == 'undefined')
           this.highlightEnabled = true;
+        this.invalidateListRtt();
       });
     }else{
       this.highlight.edge_material.visible = false;
@@ -943,6 +964,7 @@ export class GUIControl {
         this.highlight.corner_material.visible = true;
         if(typeof this.highlightEnabled == 'undefined')
           this.highlightEnabled = true;
+        this.invalidateListRtt();
       });
     }else{
       this.highlight.corner_material.visible = false;
@@ -951,7 +973,6 @@ export class GUIControl {
 
     if(this.highlight.fill.material){
       if(this.highlight.fill.texture != ''){
-        this.highlight.fill.material.transparent = true;
         this.highlight.fill.material.visible = false;
         TextureLoader.enQueue(this.highlight.fill.texture, this.highlight.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
           if(this.highlight.fill.material){
@@ -967,6 +988,7 @@ export class GUIControl {
               texture.needsUpdate = true;
               this.highlight.fill.material.visible = true;
               this.highlightFillEnabled = true;
+              this.invalidateListRtt();
             }
           }
         });
@@ -1081,6 +1103,9 @@ export class GUIControl {
 
   onFontTextureLoaded(){
     this.buildText();
+    if (this.list) {
+      this.invalidateListRtt();
+    }
   }
 
   resizeControl(){

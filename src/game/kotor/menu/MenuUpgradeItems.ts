@@ -79,16 +79,13 @@ export class MenuUpgradeItems extends GameMenu {
 
   setSelected(item: ModuleItem) {
     this.selected = item;
-    this.LB_DESCRIPTION.clearItems();
-    if(item){
-      this.LB_DESCRIPTION.addItem(item.getDescription());
-    }
+    this.LB_DESCRIPTION.setSingleItemDescription(item ? item.getDescription() : '');
   }
 
   open() {
     super.open();
     this.LB_ITEMS.clearItems();
-    this.LB_DESCRIPTION.clearItems();
+    this.LB_DESCRIPTION.setSingleItemDescription('');
     this.selected = undefined;
 
     const inventory = GameState.InventoryManager.getInventory();

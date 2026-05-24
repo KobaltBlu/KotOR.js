@@ -67,6 +67,9 @@ export class GUIListBox extends GUIControl {
   private cacheDirty = true;
   /** When false and no row animation, RTT can skip a frame (see {@link markListRttDirty}). */
   private listRttDirty = true;
+  /** While > 0, RTT is not baked or shown until {@link publishContent}. */
+  private contentLoadDepth = 0;
+  private pendingContentLoadAsync: Promise<unknown>[] = [];
 
   static hexTextures: Map<string, OdysseyTexture>;
   static InitTextures: () => void;
@@ -172,6 +175,10 @@ export class GUIListBox extends GUIControl {
     if(!this.isVisible())
       return;
 
+    if (this.contentLoadDepth > 0) {
+      return;
+    }
+
     const wantsAnimated = this.children.some(c =>
       c.pulsing || (c.hover && c.isClickable()),
     );
@@ -186,6 +193,71 @@ export class GUIListBox extends GUIControl {
 
   markListRttDirty(): void {
     this.listRttDirty = true;
+  }
+
+  get isContentLoadSuppressed(): boolean {
+    return this.contentLoadDepth > 0;
+  }
+
+  beginContentLoad(): void {
+    this.contentLoadDepth++;
+    if (this.contentLoadDepth === 1) {
+      this.pendingContentLoadAsync = [];
+      this.targetMesh.visible = false;
+    }
+  }
+
+  trackContentLoadAsync(promise: Promise<unknown>): void {
+    if (this.contentLoadDepth > 0) {
+      this.pendingContentLoadAsync.push(promise);
+    }
+  }
+
+  endContentLoad(): void {
+    if (this.contentLoadDepth <= 0) {
+      return;
+    }
+    this.contentLoadDepth--;
+    if (this.contentLoadDepth === 0) {
+      this.publishContent();
+    }
+  }
+
+  async finishContentLoad(): Promise<void> {
+    await TextureLoader.LoadQueue();
+    if (this.pendingContentLoadAsync.length) {
+      await Promise.all(this.pendingContentLoadAsync);
+    }
+    this.contentLoadDepth = 0;
+    this.publishContent();
+  }
+
+  setSingleItemDescription(text: string): void {
+    this.beginContentLoad();
+    this.clearItems();
+    if (text) {
+      this.addItem(text);
+    }
+    void this.finishContentLoad();
+  }
+
+  publishContent(): void {
+    this.updateList();
+    if (this.scrollbar) {
+      this.scrollbar.update();
+    }
+    this.updateScrollbarVisibility();
+    this.listRttDirty = false;
+    this.render();
+    this.targetMesh.visible = true;
+  }
+
+  refreshAfterTextures(): void {
+    if (this.contentLoadDepth > 0) {
+      this.markListRttDirty();
+      return;
+    }
+    this.markListRttDirty();
   }
 
   render(){
@@ -226,9 +298,14 @@ export class GUIListBox extends GUIControl {
     this.children = [];
     this.scroll = 0;
     this.maxScroll = 0;
+    if (this.scrollbar) {
+      this.scrollbar.scrollPos = 0;
+    }
     this.invalidateHeightCache();
     this.updateScrollbarVisibility();
-    this.render();
+    if (this.contentLoadDepth <= 0) {
+      this.render();
+    }
   }
 
   removeItemByIndex(index = -1){
@@ -304,6 +381,7 @@ export class GUIListBox extends GUIControl {
       ctrl.border.color = ctrl.defaultColor.clone();
       
       const widget = ctrl.createControl();
+      ctrl.setList(this);
 
       this.itemGroup.add(widget);
           
