@@ -41,7 +41,8 @@ export class OdysseyModelNode {
   roomStatic: boolean = true;
   position: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   quaternion: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
-  supernode: number;
+  nodeNumber: number;
+  nameIndex: number;
   nodePosition: number;
   name: string;
   padding: number;
@@ -91,14 +92,14 @@ export class OdysseyModelNode {
 
     this.nodeType = this.odysseyModel.mdlReader.readUInt16();  
 
-    this.supernode = this.odysseyModel.mdlReader.readUInt16();
-    this.nodePosition = this.odysseyModel.mdlReader.readUInt16();
+    this.nodeNumber = this.odysseyModel.mdlReader.readUInt16();
+    this.nameIndex = this.odysseyModel.mdlReader.readUInt16();
     this.padding = this.odysseyModel.mdlReader.readUInt16();
     this.offsetToRoot = this.odysseyModel.mdlReader.readUInt32();
     this.offsetToParent = this.odysseyModel.mdlReader.readUInt32();
 
-    if (this.nodePosition < this.odysseyModel.names.length){
-      this.name = this.odysseyModel.names[this.nodePosition].replace(/\0[\s\S]*$/g,'').toLowerCase();
+    if (this.nameIndex < this.odysseyModel.names.length){
+      this.name = this.odysseyModel.names[this.nameIndex].replace(/\0[\s\S]*$/g,'').toLowerCase();
     }else{
       this.name = '';
     }

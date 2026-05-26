@@ -535,7 +535,7 @@ export function exportOdysseyModelAscii(model: OdysseyModel, options: ExportOdys
   const headLink =
     model.asciiHeadLink !== undefined
       ? model.asciiHeadLink
-      : model.geometryHeader.rootNodeOffset !== model.geometryHeader.rootNodeOffset2
+      : model.geometryHeader.rootNodeOffset !== model.modelHeader.animRootOffset
         ? 1
         : 0;
   const compress =
