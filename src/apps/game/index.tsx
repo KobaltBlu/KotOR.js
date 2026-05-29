@@ -10,18 +10,35 @@ declare const module: {
   hot?: {
     accept: (dependencies?: string | string[], callback?: () => void) => void;
     dispose: (callback: () => void) => void;
+    addStatusHandler: (callback: (status: string) => void) => void;
   };
 };
 
-let reactRoot: ReactDOM.Root | null = null;
-
-window.addEventListener('beforeunload', () => {
-  try {
-    KotOR.GameState.Debugger.close();
-  } catch (e) {
-    console.error(e);
+declare global {
+  interface Window {
+    __KOTOR_GAME_REACT_ROOT__?: ReactDOM.Root;
+    __KOTOR_GAME_BEFOREUNLOAD__?: boolean;
+    __KOTOR_HMR_STATUS_HANDLER__?: boolean;
   }
-});
+}
+
+if (!window.__KOTOR_GAME_BEFOREUNLOAD__) {
+  window.__KOTOR_GAME_BEFOREUNLOAD__ = true;
+  window.addEventListener('beforeunload', () => {
+    try {
+      KotOR.GameState.Debugger.close();
+    } catch (e) {
+      console.error(e);
+    }
+  });
+}
+
+function getOrCreateReactRoot(rootElement: HTMLElement): ReactDOM.Root {
+  if (!window.__KOTOR_GAME_REACT_ROOT__) {
+    window.__KOTOR_GAME_REACT_ROOT__ = ReactDOM.createRoot(rootElement);
+  }
+  return window.__KOTOR_GAME_REACT_ROOT__;
+}
 
 function mountApp(): void {
   const rootElement = document.getElementById("root") as HTMLElement | null;
@@ -29,9 +46,7 @@ function mountApp(): void {
     return;
   }
 
-  if (!reactRoot) {
-    reactRoot = ReactDOM.createRoot(rootElement);
-  }
+  const reactRoot = getOrCreateReactRoot(rootElement);
 
   reactRoot.render(
     <AppProvider>
@@ -52,6 +67,16 @@ if (typeof module !== 'undefined' && module.hot) {
   module.hot.dispose(() => {
     HotReloadManager.preserveSession();
   });
+
+  if (!window.__KOTOR_HMR_STATUS_HANDLER__) {
+    window.__KOTOR_HMR_STATUS_HANDLER__ = true;
+    module.hot.addStatusHandler((status) => {
+      if (status === 'abort' || status === 'fail') {
+        console.warn('[HMR] Hot update failed — performing full reload');
+        window.location.reload();
+      }
+    });
+  }
 
   module.hot.accept(() => {
     console.log('[HMR] Game client module updated — preserving session');
