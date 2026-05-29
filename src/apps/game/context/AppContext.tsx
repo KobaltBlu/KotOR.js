@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { AppState } from "@/apps/game/states/AppState";
 import * as KotOR from "@/apps/game/KotOR";
 import { HotReloadManager } from "@/dev/HotReloadManager";
+import { ILoaderProgress } from "@/apps/common/loader/LoaderProgress";
 
 export interface AppProviderValues {
   appState: [typeof AppState];
@@ -14,6 +15,7 @@ export interface AppProviderValues {
   showPerformanceMonitor: [boolean, React.Dispatch<boolean>];
   showLoadingScreen: [boolean, React.Dispatch<boolean>];
   loadingScreenMessage: [string, React.Dispatch<string>];
+  loadingScreenProgress: [ILoaderProgress | null, React.Dispatch<ILoaderProgress | null>];
   loadingScreenBackgroundURL: [string, React.Dispatch<string>];
   loadingScreenLogoURL: [string, React.Dispatch<string>];
 }
@@ -34,6 +36,7 @@ export const AppProvider = (props: any) => {
 
   const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(true);
   const [loadingScreenMessage, setLoadingScreenMessage] = useState<string>('Loading...');
+  const [loadingScreenProgress, setLoadingScreenProgress] = useState<ILoaderProgress | null>(null);
   const [loadingScreenBackgroundURL, setLoadingScreenBackgroundURL] = useState<string>('');
   const [loadingScreenLogoURL, setLoadingScreenLogoURL] = useState<string>('');
 
@@ -80,6 +83,14 @@ export const AppProvider = (props: any) => {
 
   const onLoadingScreenMessage = (message: string) => {
     setLoadingScreenMessage(message);
+    setLoadingScreenProgress(null);
+  }
+
+  const onLoadingScreenProgress = (progress: ILoaderProgress | null) => {
+    setLoadingScreenProgress(progress);
+    if(progress?.message){
+      setLoadingScreenMessage(progress.message);
+    }
   }
 
   useEffect(() => { 
@@ -92,6 +103,7 @@ export const AppProvider = (props: any) => {
     AppState.addEventListener('on-loader-hide', onLoadingScreenHide);
     AppState.addEventListener('on-loader-init', onLoadingScreenInit);
     AppState.addEventListener('on-loader-message', onLoadingScreenMessage);
+    AppState.addEventListener('on-loader-progress', onLoadingScreenProgress);
 
     if (skipBootstrap) {
       setAppReady(true);
@@ -112,6 +124,7 @@ export const AppProvider = (props: any) => {
       AppState.removeEventListener('on-loader-hide', onLoadingScreenHide);
       AppState.removeEventListener('on-loader-init', onLoadingScreenInit);
       AppState.removeEventListener('on-loader-message', onLoadingScreenMessage);
+      AppState.removeEventListener('on-loader-progress', onLoadingScreenProgress);
     }
   }, []);
 
@@ -133,6 +146,7 @@ export const AppProvider = (props: any) => {
     showPerformanceMonitor: [showPerformanceMonitor, setShowPerformanceMonitor],
     showLoadingScreen: [showLoadingScreen, setShowLoadingScreen],
     loadingScreenMessage: [loadingScreenMessage, setLoadingScreenMessage],
+    loadingScreenProgress: [loadingScreenProgress, setLoadingScreenProgress],
     loadingScreenBackgroundURL: [loadingScreenBackgroundURL, setLoadingScreenBackgroundURL],
     loadingScreenLogoURL: [loadingScreenLogoURL, setLoadingScreenLogoURL],
   };
