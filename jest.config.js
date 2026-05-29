@@ -6,7 +6,11 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
-    "^.+.ts?$": ["ts-jest", {}],
+    "^.+.ts?$": ["ts-jest", {
+      tsconfig: {
+        types: ['jest', 'node'],
+      },
+    }],
   },
   testMatch: ['**/*.test.ts'],
   coverageDirectory: './coverage',
