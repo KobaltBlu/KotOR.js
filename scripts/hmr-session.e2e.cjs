@@ -124,10 +124,11 @@ async function killProcess(child) {
     return;
   }
   child.kill('SIGTERM');
-  await wait(2000);
+  await wait(500);
   if (!child.killed) {
     child.kill('SIGKILL');
   }
+  await wait(200);
 }
 
 async function resolveBrowserExecutable() {
@@ -264,11 +265,11 @@ async function main() {
       probeValue: after.probeValue,
     });
   } finally {
-    await fs.writeFile(PROBE_FILE, originalProbe, 'utf8').catch(() => {});
     if (browser) {
       await browser.close().catch(() => {});
     }
     await killProcess(server);
+    await fs.writeFile(PROBE_FILE, originalProbe, 'utf8').catch(() => {});
   }
 }
 
