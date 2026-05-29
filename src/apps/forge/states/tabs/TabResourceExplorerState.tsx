@@ -1,16 +1,16 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { TabResourceExplorer } from "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer";
-import * as path from "path";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { AsyncLoop } from "@/utility/AsyncLoop";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { TabResourceExplorer } from '@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer';
+import * as path from 'path';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { AsyncLoop } from '@/utility/AsyncLoop';
+import * as KotOR from '@/apps/forge/KotOR';
 import { EditorFile } from "@/apps/forge/EditorFile";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { ForgeState } from '@/apps/forge/states/ForgeState';
+import { FileBrowserNode } from '@/apps/forge/FileBrowserNode';
+import { LoaderProgressTracker } from '@/apps/common/loader/LoaderProgress';
 
 export class TabResourceExplorerState extends TabState {
-
   static Resources: FileBrowserNode[] = [];
   static readonly ARCHIVE_RESOURCE_TYPES = new Set(['sav', 'mod', 'erf']);
   resourceNodes: FileBrowserNode[] = [];
@@ -18,65 +18,80 @@ export class TabResourceExplorerState extends TabState {
 
   onReload?: Function;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
     this.isClosable = false;
 
     this.setContentView(
       <TabResourceExplorer tab={this} nodes={TabResourceExplorerState.Resources}></TabResourceExplorer>
     );
-
   }
 
-  reload(){
-    if(typeof this.onReload === 'function'){
+  reload() {
+    if (typeof this.onReload === 'function') {
       this.onReload();
     }
   }
 
-  getBifSounds(){
-    const folderNode = TabResourceExplorerState.Resources.find( (node: FileBrowserNode) => node.name.toLocaleLowerCase() == 'bifs' );
-    if(!folderNode){
+  getBifSounds() {
+    const folderNode = TabResourceExplorerState.Resources.find(
+      (node: FileBrowserNode) => node.name.toLocaleLowerCase() == 'bifs'
+    );
+    if (!folderNode) {
       return [];
     }
-    const soundNodes = folderNode.nodes.find( (node: FileBrowserNode) => node.type == 'group' && node.name.toLocaleLowerCase() === 'sounds' );
-    if(!soundNodes){
+    const soundNodes = folderNode.nodes.find(
+      (node: FileBrowserNode) => node.type == 'group' && node.name.toLocaleLowerCase() === 'sounds'
+    );
+    if (!soundNodes) {
       return [];
     }
-    return soundNodes.nodes.filter( (node: FileBrowserNode) => node.type == 'resource' && node.name.toLocaleLowerCase().endsWith('.wav') );
+    return soundNodes.nodes.filter(
+      (node: FileBrowserNode) => node.type == 'resource' && node.name.toLocaleLowerCase().endsWith('.wav')
+    );
   }
 
-  getStreamSounds(){
-    const folderNode = TabResourceExplorerState.Resources.find( (node: FileBrowserNode) => node.name.toLocaleLowerCase() == 'streamsounds' );
-    if(!folderNode){
+  getStreamSounds() {
+    const folderNode = TabResourceExplorerState.Resources.find(
+      (node: FileBrowserNode) => node.name.toLocaleLowerCase() == 'streamsounds'
+    );
+    if (!folderNode) {
       return [];
     }
-    return folderNode.nodes.filter( (node: FileBrowserNode) => node.type == 'resource' && node.name.toLocaleLowerCase().endsWith('.wav') );
+    return folderNode.nodes.filter(
+      (node: FileBrowserNode) => node.type == 'resource' && node.name.toLocaleLowerCase().endsWith('.wav')
+    );
   }
 
-  static async GenerateResourceList( state: TabResourceExplorerState ){
-    ForgeState.loaderMessage('Loading [BIFs]...');
-    const bifs      = await TabResourceExplorerState.LoadBifs();
-    ForgeState.loaderMessage('Loading [RIMs]...');
-    const rims      = await TabResourceExplorerState.LoadRims();
-    ForgeState.loaderMessage('Loading [Modules]...');
-    const modules   = await TabResourceExplorerState.LoadModules();
-    ForgeState.loaderMessage('Loading [LIPs]...');
-    const lips      = await TabResourceExplorerState.LoadLips();
-    ForgeState.loaderMessage('Loading [Textures]...');
-    const textures  = await TabResourceExplorerState.LoadTextures();
-    ForgeState.loaderMessage('Loading [StreamWaves]...');
-    const waves     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamWaves');   //KOTOR
-    ForgeState.loaderMessage('Loading [StreamSounds]...');
-    const sounds    = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamSounds');  //KOTOR & TSL
-    ForgeState.loaderMessage('Loading [StreamMusic]...');
-    const music     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamMusic');   //KOTOR & TSL
-    ForgeState.loaderMessage('Loading [StreamVoice]...');
-    const voice     = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamVoice');   //TSL
-    ForgeState.loaderMessage('Loading [Override]...');
-    const override  = await TabResourceExplorerState.LoadFolderForFileBrowser('Override');      //KOTOR & TSL
-    ForgeState.loaderMessage('Loading [Saves]...');
-    const saves     = await TabResourceExplorerState.LoadSaves();                                //KOTOR & TSL
+  static async GenerateResourceList(state: TabResourceExplorerState) {
+    const tracker = new LoaderProgressTracker(
+      (progress) => ForgeState.loaderProgress(progress),
+      'Building resource explorer...',
+    );
+    tracker.begin(
+      TabResourceExplorerState.countBifs() +
+        TabResourceExplorerState.countRims() +
+        TabResourceExplorerState.countModules() +
+        TabResourceExplorerState.countLips() +
+        TabResourceExplorerState.countTextures(),
+    );
+
+    tracker.setMessage('Loading [BIFs]...');
+    const bifs = await TabResourceExplorerState.LoadBifs(tracker);
+    tracker.setMessage('Loading [RIMs]...');
+    const rims = await TabResourceExplorerState.LoadRims(tracker);
+    tracker.setMessage('Loading [Modules]...');
+    const modules = await TabResourceExplorerState.LoadModules(tracker);
+    tracker.setMessage('Loading [LIPs]...');
+    const lips = await TabResourceExplorerState.LoadLips(tracker);
+    tracker.setMessage('Loading [Textures]...');
+    const textures = await TabResourceExplorerState.LoadTextures(tracker);
+    const waves = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamWaves', tracker);
+    const sounds = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamSounds', tracker);
+    const music = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamMusic', tracker);
+    const voice = await TabResourceExplorerState.LoadFolderForFileBrowser('StreamVoice', tracker);
+    const override = await TabResourceExplorerState.LoadFolderForFileBrowser('Override', tracker);
+    const saves = await TabResourceExplorerState.LoadSaves(tracker);
 
     bifs.sort();
     rims.sort();
@@ -88,23 +103,80 @@ export class TabResourceExplorerState extends TabState {
     // music.sort();
     // voice.sort();
 
-    TabResourceExplorerState.Resources.push( 
-      ...[
-        bifs, rims, modules, lips, textures, waves, sounds, music, voice, override
-        , saves
-      ].filter((node: FileBrowserNode) => (node instanceof FileBrowserNode && node.nodes.length)) 
+    TabResourceExplorerState.Resources.push(
+      ...[bifs, rims, modules, lips, textures, waves, sounds, music, voice, override, saves].filter(
+        (node: FileBrowserNode) => node instanceof FileBrowserNode && node.nodes.length
+      )
     );
     state.reload();
     ForgeState.loaderHide();
     return TabResourceExplorerState.Resources;
   }
 
-  static LoadBifs() {
-    return new Promise<FileBrowserNode>( (resolve, reject) => {
-      let bifs: KotOR.BIFObject[] = [];
-      KotOR.BIFManager.bifs.forEach( (bif: KotOR.BIFObject) => {
+  static countBifs(): number {
+    let count = 0;
+    KotOR.BIFManager.bifs.forEach(() => {
+      count++;
+    });
+    return count;
+  }
+
+  static countRims(): number {
+    let count = 0;
+    KotOR.RIMManager.RIMs.forEach((rim: KotOR.RIMObject) => {
+      if (rim.group == 'RIMs') {
+        count++;
+      }
+    });
+    return count;
+  }
+
+  static countModules(): number {
+    let count = 0;
+    KotOR.RIMManager.RIMs.forEach((rim: KotOR.RIMObject) => {
+      if (rim.group == 'Module') {
+        count++;
+      }
+    });
+    KotOR.ERFManager.ERFs.forEach((erf: KotOR.ERFObject) => {
+      if (erf.group == 'Module') {
+        count++;
+      }
+    });
+    return count;
+  }
+
+  static countLips(): number {
+    let count = 0;
+    KotOR.RIMManager.RIMs.forEach((rim: KotOR.RIMObject) => {
+      if (rim.group == 'Lips') {
+        count++;
+      }
+    });
+    KotOR.ERFManager.ERFs.forEach((erf: KotOR.ERFObject) => {
+      if (erf.group == 'Lips') {
+        count++;
+      }
+    });
+    return count;
+  }
+
+  static countTextures(): number {
+    let count = 0;
+    KotOR.ERFManager.ERFs.forEach((erf: KotOR.ERFObject) => {
+      if (erf.group == 'Textures') {
+        count++;
+      }
+    });
+    return count;
+  }
+
+  static LoadBifs(tracker?: LoaderProgressTracker) {
+    return new Promise<FileBrowserNode>((resolve, reject) => {
+      const bifs: KotOR.BIFObject[] = [];
+      KotOR.BIFManager.bifs.forEach((bif: KotOR.BIFObject) => {
         bifs.push(bif);
-      })
+      });
 
       const bifList: FileBrowserNode = new FileBrowserNode({
         name: 'BIFs',
@@ -113,13 +185,14 @@ export class TabResourceExplorerState extends TabState {
         canOrphan: false,
       });
 
-      let bifLoader = new AsyncLoop({
+      const bifLoader = new AsyncLoop({
         array: bifs,
         onLoop: (bif: KotOR.BIFObject, asyncLoop: AsyncLoop) => {
-          let name = bif.file.split(path.sep).pop()?.split('.')[0];
-          let subTypes: {[key: string]: FileBrowserNode} = {};
+          const name = bif.file.split(path.sep).pop()?.split('.')[0];
+          tracker?.itemStart(name || bif.file);
+          const subTypes: { [key: string]: FileBrowserNode } = {};
 
-          let node: FileBrowserNode = new FileBrowserNode({
+          const node: FileBrowserNode = new FileBrowserNode({
             name: name,
             type: 'group',
             nodes: [],
@@ -129,8 +202,8 @@ export class TabResourceExplorerState extends TabState {
           bifList.addChildNode(node);
 
           for (let i = 0; i < bif.resources.length; i++) {
-            let resource = bif.resources[i];
-            let resref = KotOR.KEYManager.Key.getFileLabel(resource.Id);
+            const resource = bif.resources[i];
+            const resref = KotOR.KEYManager.Key.getFileLabel(resource.Id);
 
             if (subTypes[resource.resType] == undefined) {
               subTypes[resource.resType] = new FileBrowserNode({
@@ -143,7 +216,7 @@ export class TabResourceExplorerState extends TabState {
 
             subTypes[resource.resType].addChildNode(
               new FileBrowserNode({
-                name: (`${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`),
+                name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
                 type: 'resource',
                 data: {
                   path: EditorFile.referenceURIForArchiveResource(
@@ -151,19 +224,20 @@ export class TabResourceExplorerState extends TabState {
                     bif.file,
                     resref,
                     KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
-                  )
+                  ),
                 },
               })
             );
           }
 
+          tracker?.itemComplete();
           asyncLoop.next();
         },
       });
       bifLoader.iterate(() => {
-        for(let i = 0; i < bifList.nodes.length; i++){
+        for (let i = 0; i < bifList.nodes.length; i++) {
           const bif = bifList.nodes[i];
-          if(bif.nodes.length == 1 && bif.nodes[0].type == 'group'){
+          if (bif.nodes.length == 1 && bif.nodes[0].type == 'group') {
             bif.nodes = bif.nodes[0].nodes;
           }
         }
@@ -172,14 +246,14 @@ export class TabResourceExplorerState extends TabState {
     });
   }
 
-  static LoadRims() {
-		return new Promise<FileBrowserNode>( (resolve, reject) => {
-      let rims: KotOR.RIMObject[] = [];
-      KotOR.RIMManager.RIMs.forEach( (rim: KotOR.RIMObject) => {
-        if(rim.group == "RIMs"){
+  static LoadRims(tracker?: LoaderProgressTracker) {
+    return new Promise<FileBrowserNode>((resolve, reject) => {
+      const rims: KotOR.RIMObject[] = [];
+      KotOR.RIMManager.RIMs.forEach((rim: KotOR.RIMObject) => {
+        if (rim.group == 'RIMs') {
           rims.push(rim);
         }
-      })
+      });
 
       const rimList: FileBrowserNode = new FileBrowserNode({
         name: 'RIMs',
@@ -188,13 +262,14 @@ export class TabResourceExplorerState extends TabState {
         canOrphan: false,
       });
 
-      let rimLoader = new AsyncLoop({
+      const rimLoader = new AsyncLoop({
         array: rims,
         onLoop: (rim: KotOR.RIMObject, asyncLoop: AsyncLoop) => {
-          let name = rim.resource_path.split(path.sep).pop()?.split('.')[0];
-          let subTypes: {[key: string]: FileBrowserNode} = {};
+          const name = rim.resource_path.split(path.sep).pop()?.split('.')[0];
+          tracker?.itemStart(name || rim.resource_path);
+          const subTypes: { [key: string]: FileBrowserNode } = {};
 
-          let node: FileBrowserNode = new FileBrowserNode({
+          const node: FileBrowserNode = new FileBrowserNode({
             name: name,
             type: 'group',
             nodes: [],
@@ -204,8 +279,8 @@ export class TabResourceExplorerState extends TabState {
           rimList.addChildNode(node);
 
           for (let i = 0; i < rim.resources.length; i++) {
-            let resource = rim.resources[i];
-            let resref = resource.resRef;
+            const resource = rim.resources[i];
+            const resref = resource.resRef;
 
             if (subTypes[resource.resType] == undefined) {
               subTypes[resource.resType] = new FileBrowserNode({
@@ -216,58 +291,65 @@ export class TabResourceExplorerState extends TabState {
               node.addChildNode(subTypes[resource.resType]);
             }
 
-            subTypes[resource.resType].addChildNode(new FileBrowserNode({
-              name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
-              type: 'resource',
-              data: {
-                path: EditorFile.referenceURIForArchiveResource(
-                  'rim',
-                  rim.resource_path,
-                  resref,
-                  KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
-                ),
-              },
-            }));
+            subTypes[resource.resType].addChildNode(
+              new FileBrowserNode({
+                name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
+                type: 'resource',
+                data: {
+                  path: EditorFile.referenceURIForArchiveResource(
+                    'rim',
+                    rim.resource_path,
+                    resref,
+                    KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
+                  ),
+                },
+              })
+            );
           }
 
+          tracker?.itemComplete();
           asyncLoop.next();
         },
       });
       rimLoader.iterate(() => {
-        for(let i = 0; i < rimList.nodes.length; i++){
+        for (let i = 0; i < rimList.nodes.length; i++) {
           const rim = rimList.nodes[i];
-          if(rim.nodes.length == 1 && rim.nodes[0].type == 'group'){
+          if (rim.nodes.length == 1 && rim.nodes[0].type == 'group') {
             rim.nodes = rim.nodes[0].nodes;
           }
         }
         resolve(rimList);
       });
     });
-	}
-	
-  static LoadModules() {
-		return new Promise<FileBrowserNode>( (resolve, reject) => {
+  }
+
+  static LoadModules(tracker?: LoaderProgressTracker) {
+    return new Promise<FileBrowserNode>((resolve, reject) => {
       let modules: any[] = [];
 
-      KotOR.RIMManager.RIMs.forEach( (rim: KotOR.RIMObject) => {
-        if(rim.group == "Module"){
+      KotOR.RIMManager.RIMs.forEach((rim: KotOR.RIMObject) => {
+        if (rim.group == 'Module') {
           modules.push(rim);
         }
       });
 
-      KotOR.ERFManager.ERFs.forEach( (erf: KotOR.ERFObject) => {
-        if(erf.group == "Module"){
+      KotOR.ERFManager.ERFs.forEach((erf: KotOR.ERFObject) => {
+        if (erf.group == 'Module') {
           modules.push(erf);
         }
       });
-      
+
       //Sort the array by filename
-      modules = modules.sort( (a: KotOR.ERFObject|KotOR.RIMObject, b: KotOR.ERFObject|KotOR.RIMObject) => {
-        let nameA = a.resource_path.split(path.sep).pop() || '';
-        let nameB = b.resource_path.split(path.sep).pop() || '';
-        
-        if (nameA < nameB) { return -1; }
-        if (nameA > nameB) { return 1; }
+      modules = modules.sort((a: KotOR.ERFObject | KotOR.RIMObject, b: KotOR.ERFObject | KotOR.RIMObject) => {
+        const nameA = a.resource_path.split(path.sep).pop() || '';
+        const nameB = b.resource_path.split(path.sep).pop() || '';
+
+        if (nameA < nameB) {
+          return -1;
+        }
+        if (nameA > nameB) {
+          return 1;
+        }
         return 0;
       });
 
@@ -278,13 +360,14 @@ export class TabResourceExplorerState extends TabState {
         canOrphan: false,
       });
 
-      let rimLoader = new AsyncLoop({
+      const rimLoader = new AsyncLoop({
         array: modules,
-        onLoop: (rim: KotOR.RIMObject|KotOR.ERFObject, asyncLoop: AsyncLoop) => {
-          let name = rim.resource_path.split(path.sep).pop();
-          let subTypes: {[key: string]: FileBrowserNode} = {};
+        onLoop: (rim: KotOR.RIMObject | KotOR.ERFObject, asyncLoop: AsyncLoop) => {
+          const name = rim.resource_path.split(path.sep).pop();
+          tracker?.itemStart(name || rim.resource_path);
+          const subTypes: { [key: string]: FileBrowserNode } = {};
 
-          let node: FileBrowserNode = new FileBrowserNode({
+          const node: FileBrowserNode = new FileBrowserNode({
             name: name,
             type: 'group',
             nodes: [],
@@ -293,11 +376,11 @@ export class TabResourceExplorerState extends TabState {
 
           rimList.addChildNode(node);
 
-          let files = ((rim as any)?.keyList ? (rim as any).keyList : rim.resources as any);
+          const files = (rim as any)?.keyList ? (rim as any).keyList : (rim.resources as any);
 
           for (let i = 0; i < files.length; i++) {
-            let resource = files[i];
-            let resref = resource.resRef;
+            const resource = files[i];
+            const resref = resource.resRef;
 
             if (subTypes[resource.resType] == undefined) {
               subTypes[resource.resType] = new FileBrowserNode({
@@ -308,27 +391,30 @@ export class TabResourceExplorerState extends TabState {
               node.addChildNode(subTypes[resource.resType]);
             }
 
-            subTypes[resource.resType].addChildNode(new FileBrowserNode({
-              name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
-              type: 'resource',
-              data: {
-                path: EditorFile.referenceURIForArchiveResource(
-                  rim instanceof KotOR.RIMObject ? 'rim' : 'erf',
-                  rim.resource_path,
-                  resref,
-                  KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
-                ),
-              }
-            }));
+            subTypes[resource.resType].addChildNode(
+              new FileBrowserNode({
+                name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
+                type: 'resource',
+                data: {
+                  path: EditorFile.referenceURIForArchiveResource(
+                    rim instanceof KotOR.RIMObject ? 'rim' : 'erf',
+                    rim.resource_path,
+                    resref,
+                    KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
+                  ),
+                },
+              })
+            );
           }
 
+          tracker?.itemComplete();
           asyncLoop.next();
         },
       });
       rimLoader.iterate(() => {
-        for(let i = 0; i < rimList.nodes.length; i++){
+        for (let i = 0; i < rimList.nodes.length; i++) {
           const rim = rimList.nodes[i];
-          if(rim.nodes.length == 1 && rim.nodes[0].type == 'group'){
+          if (rim.nodes.length == 1 && rim.nodes[0].type == 'group') {
             rim.nodes = rim.nodes[0].nodes;
           }
         }
@@ -336,104 +422,112 @@ export class TabResourceExplorerState extends TabState {
       });
     });
   }
-	
-  static LoadLips() {
-		return new Promise<FileBrowserNode>( (resolve, reject) => {
-			let modules: any[] = [];
 
-			KotOR.RIMManager.RIMs.forEach( (rim: KotOR.RIMObject) => {
-				if(rim.group == "Lips"){
-					modules.push(rim);
-				}
-			});
+  static LoadLips(tracker?: LoaderProgressTracker) {
+    return new Promise<FileBrowserNode>((resolve, reject) => {
+      let modules: any[] = [];
 
-			KotOR.ERFManager.ERFs.forEach( (erf: KotOR.ERFObject) => {
-				if(erf.group == "Lips"){
-					modules.push(erf);
-				}
-			});
-			
-			//Sort the array by filename
-			modules = modules.sort( (a: KotOR.ERFObject|KotOR.RIMObject, b: KotOR.ERFObject|KotOR.RIMObject) => {
-				let nameA = a.resource_path.split(path.sep).pop() || '';
-				let nameB = b.resource_path.split(path.sep).pop() || '';
-				
-				if (nameA < nameB) { return -1; }
-				if (nameA > nameB) { return 1; }
-				return 0;
-			});
+      KotOR.RIMManager.RIMs.forEach((rim: KotOR.RIMObject) => {
+        if (rim.group == 'Lips') {
+          modules.push(rim);
+        }
+      });
 
-			const rimList: FileBrowserNode = new FileBrowserNode({
-				name: 'LIPs',
-				type: 'group',
-				nodes: [],
-				canOrphan: false,
-			});
+      KotOR.ERFManager.ERFs.forEach((erf: KotOR.ERFObject) => {
+        if (erf.group == 'Lips') {
+          modules.push(erf);
+        }
+      });
 
-			let rimLoader = new AsyncLoop({
-				array: modules,
-				onLoop: (rim: KotOR.RIMObject|KotOR.ERFObject, asyncLoop: AsyncLoop) => {
-					let name = rim.resource_path.split(path.sep).pop();
-					let subTypes: {[key: string]: FileBrowserNode} = {};
+      //Sort the array by filename
+      modules = modules.sort((a: KotOR.ERFObject | KotOR.RIMObject, b: KotOR.ERFObject | KotOR.RIMObject) => {
+        const nameA = a.resource_path.split(path.sep).pop() || '';
+        const nameB = b.resource_path.split(path.sep).pop() || '';
 
-					let node: FileBrowserNode = new FileBrowserNode({
-						name: name,
-						type: 'group',
-						nodes: [],
-						canOrphan: false,
-					});
+        if (nameA < nameB) {
+          return -1;
+        }
+        if (nameA > nameB) {
+          return 1;
+        }
+        return 0;
+      });
 
-					rimList.addChildNode(node);
+      const rimList: FileBrowserNode = new FileBrowserNode({
+        name: 'LIPs',
+        type: 'group',
+        nodes: [],
+        canOrphan: false,
+      });
 
-					let files = ((rim as any)?.keyList ? (rim as any).keyList : rim.resources as any);
+      const rimLoader = new AsyncLoop({
+        array: modules,
+        onLoop: (rim: KotOR.RIMObject | KotOR.ERFObject, asyncLoop: AsyncLoop) => {
+          const name = rim.resource_path.split(path.sep).pop();
+          tracker?.itemStart(name || rim.resource_path);
+          const subTypes: { [key: string]: FileBrowserNode } = {};
 
-					for (let i = 0; i < files.length; i++) {
-						let resource = files[i];
-						let resRef = resource.resRef;
+          const node: FileBrowserNode = new FileBrowserNode({
+            name: name,
+            type: 'group',
+            nodes: [],
+            canOrphan: false,
+          });
 
-						if (subTypes[resource.resType] == undefined) {
-							subTypes[resource.resType] = new FileBrowserNode({
-								name: KotOR.ResourceTypes.getKeyByValue(resource.resType),
-								type: 'group',
-							});
-							node.addChildNode(subTypes[resource.resType]);
-						}
+          rimList.addChildNode(node);
 
-						subTypes[resource.resType].addChildNode(new FileBrowserNode({
-							name: `${resRef}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
-							type: 'resource',
-							data: {
-								path: EditorFile.referenceURIForArchiveResource(
-                  rim instanceof KotOR.RIMObject ? 'rim' : 'erf',
-                  rim.resource_path,
-                  resRef,
-                  KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
-                ),
-							}
-						}));
-					}
+          const files = (rim as any)?.keyList ? (rim as any).keyList : (rim.resources as any);
 
-					asyncLoop.next();
-				},
-			});
-			rimLoader.iterate(() => {
-        for(let i = 0; i < rimList.nodes.length; i++){
+          for (let i = 0; i < files.length; i++) {
+            const resource = files[i];
+            const resRef = resource.resRef;
+
+            if (subTypes[resource.resType] == undefined) {
+              subTypes[resource.resType] = new FileBrowserNode({
+                name: KotOR.ResourceTypes.getKeyByValue(resource.resType),
+                type: 'group',
+              });
+              node.addChildNode(subTypes[resource.resType]);
+            }
+
+            subTypes[resource.resType].addChildNode(
+              new FileBrowserNode({
+                name: `${resRef}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
+                type: 'resource',
+                data: {
+                  path: EditorFile.referenceURIForArchiveResource(
+                    rim instanceof KotOR.RIMObject ? 'rim' : 'erf',
+                    rim.resource_path,
+                    resRef,
+                    KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
+                  ),
+                },
+              })
+            );
+          }
+
+          tracker?.itemComplete();
+          asyncLoop.next();
+        },
+      });
+      rimLoader.iterate(() => {
+        for (let i = 0; i < rimList.nodes.length; i++) {
           const rim = rimList.nodes[i];
-          if(rim.nodes.length == 1 && rim.nodes[0].type == 'group'){
+          if (rim.nodes.length == 1 && rim.nodes[0].type == 'group') {
             rim.nodes = rim.nodes[0].nodes;
           }
         }
-				resolve(rimList);
-			});
-		});
+        resolve(rimList);
+      });
+    });
   }
-	
-  static LoadTextures() {
-    return new Promise<FileBrowserNode>( (resolve, reject) => {
-      let texture_packs: any[] = [];
 
-      KotOR.ERFManager.ERFs.forEach( (erf: KotOR.ERFObject) => {
-        if(erf.group == "Textures"){
+  static LoadTextures(tracker?: LoaderProgressTracker) {
+    return new Promise<FileBrowserNode>((resolve, reject) => {
+      const texture_packs: any[] = [];
+
+      KotOR.ERFManager.ERFs.forEach((erf: KotOR.ERFObject) => {
+        if (erf.group == 'Textures') {
           texture_packs.push(erf);
         }
       });
@@ -445,13 +539,14 @@ export class TabResourceExplorerState extends TabState {
         canOrphan: false,
       });
 
-      let erfLoader = new AsyncLoop({
+      const erfLoader = new AsyncLoop({
         array: texture_packs,
         onLoop: (erf: KotOR.ERFObject, asyncLoop: AsyncLoop) => {
-          let name = erf.resource_path.split(path.sep).pop();
-          let subTypes: {[key: string]: FileBrowserNode} = {};
+          const name = erf.resource_path.split(path.sep).pop();
+          tracker?.itemStart(name || erf.resource_path);
+          const subTypes: { [key: string]: FileBrowserNode } = {};
 
-          let node: FileBrowserNode = new FileBrowserNode({
+          const node: FileBrowserNode = new FileBrowserNode({
             name: name,
             type: 'group',
             nodes: [],
@@ -460,12 +555,12 @@ export class TabResourceExplorerState extends TabState {
 
           erfList.addChildNode(node);
 
-          let files = erf.keyList;
+          const files = erf.keyList;
 
           for (let i = 0; i < files.length; i++) {
-            let resource = files[i];
-            let resref = resource.resRef;
-            let letter = resref[0].toLowerCase();
+            const resource = files[i];
+            const resref = resource.resRef;
+            const letter = resref[0].toLowerCase();
 
             if (subTypes[letter] == undefined) {
               subTypes[letter] = new FileBrowserNode({
@@ -476,20 +571,23 @@ export class TabResourceExplorerState extends TabState {
               node.addChildNode(subTypes[letter]);
             }
 
-            subTypes[letter].addChildNode(new FileBrowserNode({
-              name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
-              type: 'resource',
-              data: {
-                path: EditorFile.referenceURIForArchiveResource(
-                  'erf',
-                  erf.resource_path,
-                  resref,
-                  KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
-                ),
-              },
-            }));
+            subTypes[letter].addChildNode(
+              new FileBrowserNode({
+                name: `${resref}.${KotOR.ResourceTypes.getKeyByValue(resource.resType)}`,
+                type: 'resource',
+                data: {
+                  path: EditorFile.referenceURIForArchiveResource(
+                    'erf',
+                    erf.resource_path,
+                    resref,
+                    KotOR.ResourceTypes.getKeyByValue(resource.resType) as string,
+                  ),
+                },
+              })
+            );
           }
 
+          tracker?.itemComplete();
           asyncLoop.next();
         },
       });
@@ -499,94 +597,97 @@ export class TabResourceExplorerState extends TabState {
     });
   }
 
-	static LoadFolderForFileBrowser(folder_name = '') {
-    return new Promise<FileBrowserNode>( (resolve, reject) => {
+  static LoadFolderForFileBrowser(folder_name = '', tracker?: LoaderProgressTracker) {
+    tracker?.setMessage(`Loading [${folder_name}]...`);
+    return new Promise<FileBrowserNode>((resolve, reject) => {
       //Load StreamWaves
-      let folder: FileBrowserNode =  new FileBrowserNode({ 
-        name: folder_name, 
-        type: 'group', 
-        nodes: [] 
+      const folder: FileBrowserNode = new FileBrowserNode({
+        name: folder_name,
+        type: 'group',
+        nodes: [],
       });
-      KotOR.GameFileSystem.exists(folder_name).then((exists: boolean) => {
-        if(!exists){
-          resolve(folder);
-          return;
-        }
-        return KotOR.GameFileSystem.readdir(folder_name, { recursive: true });
-      }).then((files: string[] | void) => {
-        if(!Array.isArray(files)){
-          return;
-        }
-        (folder.nodes as any)._indexes = {};
+      KotOR.GameFileSystem.exists(folder_name)
+        .then((exists: boolean) => {
+          if (!exists) {
+            resolve(folder);
+            return;
+          }
+          return KotOR.GameFileSystem.readdir(folder_name, { recursive: true });
+        })
+        .then((files: string[] | void) => {
+          if (!Array.isArray(files)) {
+            return;
+          }
+          tracker?.addTotal(files.length);
+          (folder.nodes as any)._indexes = {};
 
-        for (let i = 0; i < files.length; i++) {
-          let file = files[i];
-          let parts = file.split(path.sep);
-          parts.shift();
+          for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const parts = file.split(path.sep);
+            parts.shift();
 
-          let newfile = parts.pop() || '';
-          let targetFolder = folder;
+            const newfile = parts.pop() || '';
+            tracker?.itemStart(newfile.trim() || file);
+            let targetFolder = folder;
 
-          for (let i = 0; i < parts.length; i++) {
-            if (
-              typeof (targetFolder.nodes as any)._indexes[parts[i]] ===
-              'undefined'
-            ) {
-              //Push the new folder and get the index
-              let index =
-                targetFolder.addChildNode( new FileBrowserNode({
-                  name: parts[i].trim(),
-                  type: 'group',
-                  nodes: [],
-                })) - 1;
-              (targetFolder.nodes as any)._indexes[parts[i]] = index;
-              targetFolder = targetFolder.nodes[index];
-              (targetFolder.nodes as any)._indexes = {};
-            } else {
-              let index = (targetFolder.nodes as any)._indexes[parts[i]];
-              targetFolder = targetFolder.nodes[index];
+            for (let i = 0; i < parts.length; i++) {
+              if (typeof (targetFolder.nodes as any)._indexes[parts[i]] === 'undefined') {
+                //Push the new folder and get the index
+                const index =
+                  targetFolder.addChildNode(
+                    new FileBrowserNode({
+                      name: parts[i].trim(),
+                      type: 'group',
+                      nodes: [],
+                    })
+                  ) - 1;
+                (targetFolder.nodes as any)._indexes[parts[i]] = index;
+                targetFolder = targetFolder.nodes[index];
+                (targetFolder.nodes as any)._indexes = {};
+              } else {
+                const index = (targetFolder.nodes as any)._indexes[parts[i]];
+                targetFolder = targetFolder.nodes[index];
+              }
             }
+
+            targetFolder.addChildNode(
+              new FileBrowserNode({
+                name: newfile.trim(),
+                type: 'resource',
+                data: { path: EditorFile.referenceURIForGameRelative(files[i]) },
+                nodes: [],
+              })
+            );
+
+            tracker?.itemComplete();
           }
 
-          targetFolder.addChildNode( 
-            new FileBrowserNode({
-              name: newfile.trim(),
-              type: 'resource',
-              data: { path: EditorFile.referenceURIForGameRelative(files[i]) },
-              nodes: [],
-            })
-          );
+          folder.nodes.sort((a: any, b: any) => {
+            const compareType = a.type == 'group' && b.type != 'group' ? -1 : 1;
+            const compareName = a.name.localeCompare(b.name);
 
-          /*targetFolder.nodeList.sort( (a, b) => {
-            return a.type == 'group' ? 0 : 1;
-          });*/
-        }
+            return compareType || compareName;
+          });
 
-        folder.nodes.sort((a: any, b: any) => {
-          let compareType =
-            a.type == 'group' && b.type != 'group' ? -1 : 1;
-          let compareName = a.name.localeCompare(b.name);
-
-          return compareType || compareName;
+          resolve(folder);
+        })
+        .catch((err: any) => {
+          // Optional folders (e.g. StreamVoice on K1) may not exist in some installs.
+          // Keep explorer loading resilient and skip missing folders quietly.
+          const errMsg = String(err?.message || err || '');
+          const isMissingDir =
+            errMsg.toLowerCase().includes('failed to resolve directory inside game folder') ||
+            errMsg.toLowerCase().includes('failed to resolve file path directory handle');
+          if (!isMissingDir) {
+            console.error(err);
+          }
+          resolve(folder);
         });
-
-        resolve(folder);
-      }).catch( (err: any) => {
-        // Optional folders (e.g. StreamVoice on K1) may not exist in some installs.
-        // Keep explorer loading resilient and skip missing folders quietly.
-        const errMsg = String(err?.message || err || '');
-        const isMissingDir =
-          errMsg.toLowerCase().includes('failed to resolve directory inside game folder') ||
-          errMsg.toLowerCase().includes('failed to resolve file path directory handle');
-        if(!isMissingDir){
-          console.error(err);
-        }
-        resolve(folder)
-      }); 
     });
-	}
+  }
 
-  static LoadSaves() {
+  static LoadSaves(tracker?: LoaderProgressTracker) {
+    tracker?.setMessage('Loading [Saves]...');
     return new Promise<FileBrowserNode>(async (resolve) => {
       const savesRoot: FileBrowserNode = new FileBrowserNode({
         name: 'Saves',
@@ -598,8 +699,10 @@ export class TabResourceExplorerState extends TabState {
       try {
         const files = await KotOR.GameFileSystem.readdir('Saves', { recursive: true });
         const saveArchives = files.filter((filepath: string) => filepath.toLowerCase().endsWith('savegame.sav'));
+        tracker?.addTotal(saveArchives.length);
 
         for (const savePath of saveArchives) {
+          tracker?.itemStart(savePath.split(path.sep).pop() || savePath);
           try {
             const erf = new KotOR.ERFObject(savePath);
             await erf.load();
@@ -625,6 +728,8 @@ export class TabResourceExplorerState extends TabState {
             }
           } catch (e) {
             console.error('LoadSaves: failed to load save archive', savePath, e);
+          } finally {
+            tracker?.itemComplete();
           }
         }
 
@@ -671,32 +776,36 @@ export class TabResourceExplorerState extends TabState {
 
       const isNestedArchiveType = TabResourceExplorerState.ARCHIVE_RESOURCE_TYPES.has(restype.toLowerCase());
       if (isNestedArchiveType) {
-        subTypes[resource.resType].addChildNode(new FileBrowserNode({
-          name: `${resource.resRef}.${restype}`,
-          type: 'group',
-          data: {
-            lazyArchive: {
-              resRef: resource.resRef,
-              resType: resource.resType,
-              parentArchivePath: archivePath,
-              parentArchiveBuffer: archiveBuffer,
+        subTypes[resource.resType].addChildNode(
+          new FileBrowserNode({
+            name: `${resource.resRef}.${restype}`,
+            type: 'group',
+            data: {
+              lazyArchive: {
+                resRef: resource.resRef,
+                resType: resource.resType,
+                parentArchivePath: archivePath,
+                parentArchiveBuffer: archiveBuffer,
+              },
+              lazyLoaded: false,
             },
-            lazyLoaded: false,
-          },
-          nodes: [],
-        }));
+            nodes: [],
+          })
+        );
         continue;
       }
 
-      subTypes[resource.resType].addChildNode(new FileBrowserNode({
-        name: `${resource.resRef}.${restype}`,
-        type: 'resource',
-        data: {
-          path: archivePath
-            ? EditorFile.referenceURIForArchiveResource('erf', archivePath, resource.resRef, restype)
-            : undefined,
-        },
-      }));
+      subTypes[resource.resType].addChildNode(
+        new FileBrowserNode({
+          name: `${resource.resRef}.${restype}`,
+          type: 'resource',
+          data: {
+            path: archivePath
+              ? EditorFile.referenceURIForArchiveResource('erf', archivePath, resource.resRef, restype)
+              : undefined,
+          },
+        })
+      );
     }
 
     return archiveNode;
@@ -745,5 +854,4 @@ export class TabResourceExplorerState extends TabState {
       node.data.lazyLoaded = true;
     }
   }
-
 }
