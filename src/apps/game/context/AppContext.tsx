@@ -85,7 +85,6 @@ export const AppProvider = (props: any) => {
   useEffect(() => { 
     const skipBootstrap = HotReloadManager.shouldSkipBootstrap();
 
-    window.addEventListener('keypress', onKeyPress);
     AppState.addEventListener('on-preload', onPreload);
     AppState.addEventListener('on-ready', onAppReady);  
     AppState.addEventListener('on-game-loaded', onGameLoaded);
@@ -106,7 +105,6 @@ export const AppProvider = (props: any) => {
     }
 
     return () => {
-      window.removeEventListener('keypress', onKeyPress);
       AppState.removeEventListener('on-preload', onPreload);
       AppState.removeEventListener('on-ready', onAppReady);
       AppState.removeEventListener('on-game-loaded', onGameLoaded);
