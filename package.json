@@ -11,6 +11,9 @@
     "webpack:prod": "cross-env NODE_ENV=production webpack",
     "serve": "serve ./dist -p 8080 --no-clipboard --config ../serve.json",
     "dev": "run-p webpack:dev-watch serve",
+    "dev:hmr": "run-p webpack:dev-kotor-watch webpack:serve-hmr",
+    "webpack:dev-kotor-watch": "cross-env NODE_ENV=development webpack --watch --config webpack/kotor-watch.config.js",
+    "webpack:serve-hmr": "cross-env NODE_ENV=development webpack serve --config webpack/Game.hmr.js",
     "electron:watch": "tsc-watch --project tsconfig.electron.json",
     "electron:compile": "tsc --project tsconfig.electron.json",
     "electron:build": "npm run webpack:prod && npm run electron:compile && npm run electron:icon && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npx --yes electron-builder build --publish=never",
@@ -18,7 +21,8 @@
     "electron:icon": "npx --yes electron-icon-builder --input=src/assets/icon-256.png --output=src/assets/icons",
     "generate-manifest": "node scripts/generate-manifest.js",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
-    "test": "jest --verbose --coverage --no-cache"
+    "test": "jest --verbose --coverage --no-cache",
+    "test:hmr-e2e": "node scripts/hmr-session.e2e.cjs"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
@@ -57,6 +61,7 @@
     "monaco-editor-webpack-plugin": "^7.1.1",
     "npm-run-all": "^4.1.5",
     "path-browserify": "^1.0.1",
+    "puppeteer-core": "^24.43.1",
     "raw-loader": "^4.0.2",
     "react": "^19.2.3",
     "react-bootstrap": "^2.10.10",
@@ -83,6 +88,7 @@
     "user-agent-data-types": "^0.4.2",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.4",
     "webpackbar": "^7.0.0"
   },
   "dependencies": {

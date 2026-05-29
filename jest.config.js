@@ -6,12 +6,15 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   transform: {
-    "^.+.ts?$": ["ts-jest", {
+    "^.+\\.ts?$": ["ts-jest", {
       tsconfig: {
         types: ['jest', 'node'],
+        lib: ['ES2021'],
       },
+      isolatedModules: true,
     }],
   },
+  testMatch: ['**/*.test.ts'],
   testPathIgnorePatterns: [
     '/node_modules/',
     '<rootDir>/src/tests/',
