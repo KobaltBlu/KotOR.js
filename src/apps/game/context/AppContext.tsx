@@ -72,6 +72,7 @@ export const AppProvider = (props: any) => {
 
   const onLoadingScreenHide = () => {
     setShowLoadingScreen(false);
+    setLoadingScreenProgress(null);
   }
 
   const onLoadingScreenInit = (backgroundURL: string, logoURL: string, message?: string) => {
