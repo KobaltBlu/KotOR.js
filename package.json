@@ -21,7 +21,7 @@
     "electron:icon": "npx --yes electron-icon-builder --input=src/assets/icon-256.png --output=src/assets/icons",
     "generate-manifest": "node scripts/generate-manifest.js",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
-    "test": "jest --verbose --coverage --no-cache ./src/tests"
+    "test": "jest --verbose --coverage --no-cache"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
