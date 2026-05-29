@@ -110,6 +110,16 @@ npm run dev
 ```
 Runs `webpack:dev-watch` and `serve` in parallel with a single command.
 
+**Option B2 — Hot reload while playing (preserves game session):**
+```bash
+npm run dev:hmr
+```
+Runs `webpack:dev-kotor-watch` (engine + workers only) and a **webpack-dev-server** with HMR for the game client. Open **http://localhost:8080/game/?key=kotor**, load into the game, then edit TypeScript under `src/` — successful hot updates keep the live Three.js scene and `GameState` intact instead of forcing a full page reload.
+
+> The HMR server inlines the engine module graph for hot-swap; `webpack:dev-kotor-watch` rebuilds `dist/KotOR.js` and workers without overwriting the HMR game bundle.
+
+> `npm run dev` remains the classic watch + static serve flow. Use `dev:hmr` when iterating on gameplay or engine logic in-browser.
+
 ---
 
 #### Option C — VS Code launch configurations

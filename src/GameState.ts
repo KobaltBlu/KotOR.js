@@ -149,6 +149,7 @@ export class GameState implements EngineContext {
   static iniConfig: INIConfig;
   
   static Ready = false;
+  static hmrLoopGeneration = 0;
   
   static CameraDebugZoom = 1;
   
@@ -1164,9 +1165,22 @@ export class GameState implements EngineContext {
 
   static forwardVector = new THREE.Vector3(0, 0, );
 
+  static hmrInvalidateLoop(): void {
+    GameState.hmrLoopGeneration += 1;
+  }
+
+  static hmrIsSessionActive(): boolean {
+    return GameState.Ready;
+  }
+
   static Update(){
-    
-    requestAnimationFrame( GameState.Update );
+    const loopGeneration = GameState.hmrLoopGeneration;
+    requestAnimationFrame(() => {
+      if (loopGeneration !== GameState.hmrLoopGeneration) {
+        return;
+      }
+      GameState.Update();
+    });
 
     GameState.forwardVector.set(0, 0, -1);
 
