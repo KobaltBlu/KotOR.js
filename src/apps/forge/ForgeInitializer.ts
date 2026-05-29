@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as KotOR from "@/apps/forge/KotOR";
+import { ILoaderProgress } from '@/apps/common/loader/LoaderProgress';
 
 /**
  * ForgeInitializer class.
@@ -92,7 +93,7 @@ export class ForgeInitializer {
     ForgeInitializer.ProcessEventListener('on-loader-progress', [null]);
   }
 
-  static SetLoadingProgress(progress: import('@/apps/common/loader/LoaderProgress').ILoaderProgress) {
+  static SetLoadingProgress(progress: ILoaderProgress) {
     ForgeInitializer.ProcessEventListener('on-loader-progress', [progress]);
   }
 
