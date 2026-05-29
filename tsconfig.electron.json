@@ -1,6 +1,10 @@
 { 
   "compilerOptions": {
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["src/*"]
+    },
     "target": "ES6",
     "module": "CommonJS",
     "moduleResolution": "node",
