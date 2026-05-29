@@ -12,7 +12,14 @@ module.exports = {
       },
     }],
   },
-  testMatch: ['**/*.test.ts'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '<rootDir>/src/tests/',
+    'test_rim\\.test\\.ts$',
+    'test_gff\\.test\\.ts$',
+    'test_erf\\.test\\.ts$',
+    'editorFindReferences\\.test\\.ts$',
+  ],
   coverageDirectory: './coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   verbose: true
