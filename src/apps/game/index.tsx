@@ -58,8 +58,21 @@ function mountApp(): void {
   );
 }
 
+/** Game UI modules whose updates remount React while GameState stays live. */
+const UI_HMR_BOUNDARIES = [
+  '@/apps/game/app',
+  '@/apps/game/context/AppContext',
+] as const;
+
+function onUiHotApplied(): void {
+  console.log('[HMR] Game UI module updated — remounting while preserving session');
+  HotReloadManager.onHotAccept();
+  installHmrTestBridge();
+  mountApp();
+}
+
 function onProbeHotApplied(): void {
-  console.log('[HMR] Game client module updated — preserving session');
+  console.log('[HMR] Game client probe updated — preserving session');
   HotReloadManager.onHotAccept();
   window.__KOTOR_HMR_PROBE_VALUE__ = require('@/dev/HmrTestProbe').HMR_PROBE as number;
   installHmrTestBridge();
@@ -90,7 +103,16 @@ if (typeof module !== 'undefined' && module.hot) {
     });
   }
 
+  module.hot.accept([...UI_HMR_BOUNDARIES], () => {
+    onUiHotApplied();
+  });
+
   module.hot.accept(['@/dev/HmrTestProbe'], () => {
     onProbeHotApplied();
+  });
+
+  // Entry boundary: index.tsx / app.scss edits remount without full page reload.
+  module.hot.accept(() => {
+    onUiHotApplied();
   });
 }
