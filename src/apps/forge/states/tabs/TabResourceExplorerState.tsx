@@ -5,7 +5,7 @@ import * as path from 'path';
 import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
 import { AsyncLoop } from '@/utility/AsyncLoop';
 import * as KotOR from '@/apps/forge/KotOR';
-import { EditorFile } from "@/apps/forge/EditorFile";
+import { EditorFile } from '@/apps/forge/EditorFile';
 import { ForgeState } from '@/apps/forge/states/ForgeState';
 import { FileBrowserNode } from '@/apps/forge/FileBrowserNode';
 import { LoaderProgressTracker } from '@/apps/common/loader/LoaderProgress';
@@ -109,7 +109,6 @@ export class TabResourceExplorerState extends TabState {
       )
     );
     state.reload();
-    ForgeState.loaderHide();
     return TabResourceExplorerState.Resources;
   }
 

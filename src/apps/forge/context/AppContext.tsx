@@ -46,10 +46,10 @@ export const AppProvider = (props: any) => {
   };
   const onLoadingScreenShow = () => {
     setShowLoadingScreen(true);
-  }
+  };
   const onLoadingScreenHide = () => {
     setShowLoadingScreen(false);
-  }
+  };
   const onLoadingScreenInit = (backgroundURL: string, logoURL: string) => {
     setLoadingScreenBackgroundURL(backgroundURL);
     setLoadingScreenLogoURL(logoURL);
