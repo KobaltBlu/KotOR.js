@@ -1,6 +1,7 @@
 jest.mock('@/GameState', () => {
   const GameState = {
     Ready: false,
+    clock: { getDelta: jest.fn(() => 0) },
     hmrLoopGeneration: 0,
     hmrInvalidateLoop: jest.fn(() => {
       GameState.hmrLoopGeneration += 1;
@@ -20,6 +21,7 @@ describe('HotReloadManager', () => {
   beforeEach(() => {
     HotReloadManager.resetForTests();
     mockedGameState.Ready = false;
+    mockedGameState.clock = { getDelta: jest.fn(() => 0) };
     mockedGameState.hmrLoopGeneration = 0;
     jest.clearAllMocks();
   });
@@ -50,6 +52,17 @@ describe('HotReloadManager', () => {
     HotReloadManager.onHotAccept();
 
     expect(HotReloadManager.getHotAcceptCount()).toBe(2);
+  });
+
+  it('onHotAccept does not call Update when clock is uninitialized', () => {
+    mockedGameState.Ready = true;
+    mockedGameState.clock = undefined;
+
+    HotReloadManager.onHotAccept();
+
+    expect(HotReloadManager.getHotAcceptCount()).toBe(1);
+    expect(mockedGameState.hmrInvalidateLoop).toHaveBeenCalled();
+    expect(mockedGameState.Update).not.toHaveBeenCalled();
   });
 
   it('preserveSession records whether a live session existed', () => {

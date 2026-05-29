@@ -4,6 +4,8 @@ import * as KotOR from "@/apps/game/KotOR";
 import { AppProvider } from "@/apps/game/context/AppContext";
 import { GameApp } from "@/apps/game/app";
 import { HotReloadManager } from "@/dev/HotReloadManager";
+import { installHmrTestBridge } from "@/dev/HmrTestBridge";
+import { HMR_PROBE } from "@/dev/HmrTestProbe";
 import "@/apps/game/app.scss";
 
 declare const module: {
@@ -19,6 +21,7 @@ declare global {
     __KOTOR_GAME_REACT_ROOT__?: ReactDOM.Root;
     __KOTOR_GAME_BEFOREUNLOAD__?: boolean;
     __KOTOR_HMR_STATUS_HANDLER__?: boolean;
+    __KOTOR_HMR_PROBE_VALUE__?: number;
   }
 }
 
@@ -55,7 +58,16 @@ function mountApp(): void {
   );
 }
 
+function onProbeHotApplied(): void {
+  console.log('[HMR] Game client module updated — preserving session');
+  HotReloadManager.onHotAccept();
+  window.__KOTOR_HMR_PROBE_VALUE__ = require('@/dev/HmrTestProbe').HMR_PROBE as number;
+  installHmrTestBridge();
+}
+
 function bootstrap(): void {
+  window.__KOTOR_HMR_PROBE_VALUE__ = HMR_PROBE;
+  installHmrTestBridge();
   mountApp();
 }
 
@@ -78,9 +90,7 @@ if (typeof module !== 'undefined' && module.hot) {
     });
   }
 
-  module.hot.accept(() => {
-    console.log('[HMR] Game client module updated — preserving session');
-    HotReloadManager.onHotAccept();
-    mountApp();
+  module.hot.accept(['@/dev/HmrTestProbe'], () => {
+    onProbeHotApplied();
   });
 }

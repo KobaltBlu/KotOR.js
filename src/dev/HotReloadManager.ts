@@ -16,7 +16,8 @@ export class HotReloadManager {
     hotAcceptCount += 1;
     sessionPreserved = GameState.hmrIsSessionActive();
     GameState.hmrInvalidateLoop();
-    if (GameState.hmrIsSessionActive()) {
+    // Simulated/dev-only sessions may set Ready without running full Init() (no clock yet).
+    if (GameState.hmrIsSessionActive() && GameState.clock) {
       GameState.Update();
     }
   }

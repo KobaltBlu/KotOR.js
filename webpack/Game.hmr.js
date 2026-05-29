@@ -29,7 +29,8 @@ module.exports = {
   devServer: {
     hot: true,
     port: DEV_PORT,
-    host: 'localhost',
+    // Bind IPv4 explicitly so Puppeteer/curl using 127.0.0.1 can reach the server.
+    host: '0.0.0.0',
     open: ['/game/?key=kotor'],
     static: [
       {

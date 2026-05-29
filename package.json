@@ -21,7 +21,8 @@
     "electron:icon": "npx --yes electron-icon-builder --input=src/assets/icon-256.png --output=src/assets/icons",
     "generate-manifest": "node scripts/generate-manifest.js",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
-    "test": "jest --verbose --coverage --no-cache"
+    "test": "jest --verbose --coverage --no-cache",
+    "test:hmr-e2e": "node scripts/hmr-session.e2e.cjs"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
@@ -59,6 +60,7 @@
     "monaco-editor-webpack-plugin": "^7.1.1",
     "npm-run-all": "^4.1.5",
     "path-browserify": "^1.0.1",
+    "puppeteer-core": "^24.43.1",
     "raw-loader": "^4.0.2",
     "react": "^19.2.3",
     "react-bootstrap": "^2.10.10",
