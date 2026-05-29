@@ -235,28 +235,25 @@ export class TabImageViewerState extends TabState {
 
         const width = tpc.header.width;
         const height = tpc.header.height;
-        const mipmapCount = 1;
 
         if(!tpc.txi.procedureType){
           if(tpc.header.faces > 1){
-            for ( let face = 0; face < tpc.header.faces; face ++ ) {
-              for ( let i = 0; i < 1; i++ ) {
-                const mipmap = dds.mipmaps[face + (i * dds.mipmapCount)];
-                if(tpc.header.faces == 6){
-                  switch(face){
-                    case 3:
-                      mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height);
-                    break;
-                    case 1:
-                      mipmap.data = PixelManager.Rotate90deg(mipmap.data, 4, width, height);
-                    break;
-                    case 0:
-                      mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height), 4, width, height);
-                    break;
-                  }
+            for ( let face = 0; face < tpc.header.faces; face++ ) {
+              const mipmap = dds.mipmaps[face * dds.mipmapCount];
+              if(tpc.header.faces == 6){
+                switch(face){
+                  case 3:
+                    mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height);
+                  break;
+                  case 1:
+                    mipmap.data = PixelManager.Rotate90deg(mipmap.data, 4, width, height);
+                  break;
+                  case 0:
+                    mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height), 4, width, height);
+                  break;
                 }
-                imagePixels = concatenate(Uint8Array, imagePixels, mipmap.data);
               }
+              imagePixels = concatenate(Uint8Array, imagePixels, Uint8Array.from(mipmap.data));
             }
           }else{
             imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
