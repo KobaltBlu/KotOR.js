@@ -16,10 +16,6 @@ export class BIFManager {
   static bifs: Map<number, BIFObject> = new Map();
   static bifIndexes: Map<string, number> = new Map();
 
-  static Load(onComplete?: Function){
-
-  }
-
   static LoadBIFResource(resource: IBIFResource, onComplete?: Function){
     if(resource){
       const bif: BIFObject = BIFManager.bifs.get( KEYObject.getBIFIndex(resource.Id) )

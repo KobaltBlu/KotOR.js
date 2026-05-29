@@ -55,7 +55,7 @@ export class RIMManager {
   static async LoadRIMObject( rimObj: IRIMObject ){
     const rim = new RIMObject(rimObj.filename);
     await rim.load();
-    RIMManager.RIMs.set(rimObj.name, rim);
+    RIMManager.addRIM(rimObj.name, rim);
     return rim;
   }
 
