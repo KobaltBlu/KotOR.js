@@ -13,6 +13,7 @@ module.exports = {
     }],
   },
   testMatch: ['**/*.test.ts'],
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/src/tests/'],
   coverageDirectory: './coverage',
   coverageReporters: ['text', 'lcov', 'html'],
   verbose: true
