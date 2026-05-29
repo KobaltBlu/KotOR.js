@@ -3,6 +3,19 @@ import * as fs from "fs";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
+import {
+  devGameClose,
+  devGameExists,
+  devGameOpen,
+  devGameRead,
+  devGameReadFile,
+  devGameReaddir,
+  devGameVirtualMkdir,
+  devGameVirtualRmdir,
+  devGameVirtualWrite,
+  isDevGameFileBackendActive,
+  isDevGameFileHandle,
+} from "@/dev/DevGameFileBackend";
 declare const dialog: any;
 
 const webHandleHasRemove = typeof (FileSystemFileHandle.prototype as any).remove === 'function'
@@ -45,6 +58,9 @@ export class GameFileSystem {
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
   static async open(filepath: string, mode: 'r'|'w' = 'r'): Promise<any> {
+    if (isDevGameFileBackendActive()) {
+      return devGameOpen(filepath, mode);
+    }
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return new Promise<number>( (resolve, reject) => {
         fs.open(path.join(ApplicationProfile.directory, filepath), (err, fd) => {
@@ -78,6 +94,12 @@ export class GameFileSystem {
   }
 
   static async read(handle: FileSystemFileHandle|number, output: Uint8Array, offset: number, length: number, position: number){
+    if (isDevGameFileBackendActive()) {
+      if (!isDevGameFileHandle(handle)) {
+        throw new Error('DevGameFileHandle expected but one was not supplied!');
+      }
+      return devGameRead(handle, output, offset, length, position);
+    }
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return new Promise<Uint8Array>( (resolve, reject) => {
         fs.read(handle as number, output, offset, length, position, (err, bytes, buffer) => {
@@ -104,6 +126,12 @@ export class GameFileSystem {
   }
 
   static async close(handle: FileSystemFileHandle|number){
+    if (isDevGameFileBackendActive()) {
+      if (isDevGameFileHandle(handle)) {
+        return devGameClose(handle);
+      }
+      return;
+    }
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return new Promise<void>( (resolve, reject) => {
         fs.close(handle as number, () => {
@@ -119,6 +147,9 @@ export class GameFileSystem {
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
   static async readFile(filepath: string, options: any = {}): Promise<Uint8Array> {
     // console.log('readFile', filepath);
+    if (isDevGameFileBackendActive()) {
+      return devGameReadFile(filepath);
+    }
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return new Promise<Uint8Array>( (resolve, reject) => {
         fs.readFile(path.join(ApplicationProfile.directory, filepath), options, (err, buffer) => {
@@ -137,6 +168,10 @@ export class GameFileSystem {
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
   static async writeFile(filepath: string, data: Uint8Array): Promise<boolean> {
+    if (isDevGameFileBackendActive()) {
+      devGameVirtualWrite(filepath, data);
+      return true;
+    }
     return new Promise<boolean>( async (resolve, reject) => {
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         fs.writeFile(path.join(ApplicationProfile.directory, filepath), data, (err) => {
@@ -175,6 +210,9 @@ export class GameFileSystem {
   static async readdir(
     dirpath: string, options: IGameFileSystemReadDirOptions = {}, files: any[] = []
   ): Promise<string[]> {
+    if (isDevGameFileBackendActive()) {
+      return devGameReaddir(dirpath, options);
+    }
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return await this.readdir_fs(dirpath, options, files);
     }else{
@@ -316,6 +354,9 @@ export class GameFileSystem {
   }
 
   static async mkdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}){
+    if (isDevGameFileBackendActive()) {
+      return devGameVirtualMkdir(dirPath, !!opts.recursive);
+    }
     return new Promise<boolean>( async (resolve, reject) => {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
@@ -362,6 +403,9 @@ export class GameFileSystem {
   }
 
   static async rmdir(dirPath: string, opts: IGameFileSystemReadDirOptions = {}){
+    if (isDevGameFileBackendActive()) {
+      return devGameVirtualRmdir(dirPath, !!opts.recursive);
+    }
     return new Promise<boolean>( async (resolve, reject) => {
       dirPath = dirPath.trim();
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
@@ -415,6 +459,10 @@ export class GameFileSystem {
 
   static exists(dirOrFilePath: string): Promise<boolean> {
     return new Promise<boolean>( async (resolve, reject) => {
+      if (isDevGameFileBackendActive()) {
+        resolve(await devGameExists(dirOrFilePath));
+        return;
+      }
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         fs.stat(path.join(ApplicationProfile.directory, dirOrFilePath), (err, stats) => {
           if(err){

@@ -11,6 +11,12 @@ declare global {
       getLoopGeneration(): number;
       getProbeValue(): number;
       activateSession(): void;
+      snapshotSession(): {
+        ready: boolean;
+        module: string | null;
+        area: string | null;
+        player: { x: number; y: number; z: number } | null;
+      };
     };
   }
 }
@@ -35,6 +41,20 @@ export function installHmrTestBridge(): void {
     getProbeValue: () => getProbeValue(),
     activateSession: () => {
       KotOR.GameState.Ready = true;
+    },
+    snapshotSession: () => {
+      const player = KotOR.GameState.PartyManager?.party?.[0]
+        || KotOR.GameState.PartyManager?.Player;
+      return {
+        ready: KotOR.GameState.Ready,
+        module: KotOR.GameState.module?.name ?? null,
+        area: KotOR.GameState.module?.area?.name ?? null,
+        player: player ? {
+          x: player.position.x,
+          y: player.position.y,
+          z: player.position.z,
+        } : null,
+      };
     },
   };
 }

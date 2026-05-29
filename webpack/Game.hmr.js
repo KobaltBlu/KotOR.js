@@ -14,6 +14,8 @@ const {
 } = require('./common');
 
 const DEV_PORT = Number(process.env.KOTOR_DEV_PORT || 8080);
+const KOTOR_DEV_GAME_DIR = process.env.KOTOR_DEV_GAME_DIR || '';
+const { createDevGameFsMiddleware } = require('./dev-game-fs-middleware');
 
 /**
  * Game client dev server with HMR. Inlines the KotOR engine module graph so
@@ -51,6 +53,17 @@ module.exports = {
     client: {
       overlay: true,
     },
+    setupMiddlewares: (middlewares, devServer) => {
+      if (KOTOR_DEV_GAME_DIR) {
+        middlewares.unshift({
+          name: 'kotor-dev-game-fs',
+          middleware: createDevGameFsMiddleware(KOTOR_DEV_GAME_DIR),
+        });
+        // eslint-disable-next-line no-console
+        console.log(`[KotOR dev] Serving game files from ${KOTOR_DEV_GAME_DIR}`);
+      }
+      return middlewares;
+    },
   },
   module: {
     rules: [
@@ -73,6 +86,9 @@ module.exports = {
     new webpack.HotModuleReplacementPlugin(),
     makeWebpackBar('Game HMR', 'cyan'),
     makeDefinePlugin(),
+    new webpack.DefinePlugin({
+      'process.env.KOTOR_DEV_GAME_DIR': JSON.stringify(KOTOR_DEV_GAME_DIR),
+    }),
     new HtmlWebpackPlugin({
       filename: 'index.html',
       template: 'src/apps/game/index.hmr.html',

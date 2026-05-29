@@ -4,6 +4,7 @@ import { ResourceTypes } from "@/resource/ResourceTypes";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { isDevGameFileBackendActive } from "@/dev/DevGameFileBackend";
 import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
 
 /**
@@ -62,6 +63,15 @@ export class CurrentGame {
   static async CleanGameInProgressFolder(create: boolean = true): Promise<boolean> {
     console.log(`CurrentGame.CleanGameInProgressFolder`, `Cleaning...`);
     try{
+      if (isDevGameFileBackendActive()) {
+        if (await GameFileSystem.exists(CurrentGame.gameinprogress_dir)) {
+          await GameFileSystem.rmdir(CurrentGame.gameinprogress_dir, { recursive: true });
+        }
+        if (create) {
+          await GameFileSystem.mkdir(CurrentGame.gameinprogress_dir);
+        }
+        return true;
+      }
       if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
         console.log(`CurrentGame.CleanGameInProgressFolder`, `Mode: ELECTRON`);
         let rm_response: boolean;

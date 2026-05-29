@@ -3,6 +3,7 @@ import { Launcher } from "@/apps/launcher/context/Launcher";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { GameInitializer } from "@/apps/game/GameInitializer";
 import { ILoaderProgress } from '@/apps/common/loader/LoaderProgress';
+import { isDevGameFileBackendActive } from '@/dev/DevGameFileBackend';
 
 export class AppState {
   static eulaAccepted: boolean = false;
@@ -62,6 +63,11 @@ export class AppState {
     }, eulaState[AppState.gameKey]);
     eulaState[AppState.gameKey] = gameEULAConfig;
     AppState.eulaAccepted = !!gameEULAConfig.accepted;
+    if (isDevGameFileBackendActive()) {
+      AppState.eulaAccepted = true;
+      gameEULAConfig.accepted = true;
+      eulaState[AppState.gameKey] = gameEULAConfig;
+    }
     window.localStorage.setItem('acceptEULA', JSON.stringify(eulaState));
 
     AppState.loaderShow();
@@ -101,6 +107,18 @@ export class AppState {
       }
       alert('Unable to locate chitin.key in the selected directory. Please try again.');
     }else{
+      if (isDevGameFileBackendActive()) {
+        if (await KotOR.GameFileSystem.exists('chitin.key')) {
+          AppState.directoryLocated = true;
+          AppState.processEventListener('on-preload', []);
+          AppState.beginGame();
+          return;
+        }
+        alert('Unable to locate chitin.key via KOTOR_DEV_GAME_DIR. Check webpack serve env.');
+        AppState.directoryLocated = false;
+        AppState.processEventListener('on-preload', []);
+        return;
+      }
       if(KotOR.ApplicationProfile.directoryHandle){
         const validated = await AppState.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
         if(validated && await KotOR.GameFileSystem.exists('chitin.key')){
@@ -121,6 +139,9 @@ export class AppState {
    * - Used for Electron and Browser
    */
   static async checkGameDirectory(){
+    if (isDevGameFileBackendActive()) {
+      return KotOR.GameFileSystem.exists('chitin.key');
+    }
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       if(await KotOR.GameFileSystem.exists('chitin.key')){
         return true;
