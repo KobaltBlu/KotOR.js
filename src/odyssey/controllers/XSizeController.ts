@@ -1,24 +1,24 @@
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
-import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from '@/odyssey/controllers/OdysseyController';
+import type { OdysseyModelAnimation } from '@/odyssey/OdysseyModelAnimation';
+import type { OdysseyModelAnimationManager } from '@/odyssey/OdysseyModelAnimationManager';
+import { OdysseyModelControllerType } from '@/enums/odyssey/OdysseyModelControllerType';
+import { IOdysseyControllerFrameGeneric } from '@/interface/odyssey/controller/IOdysseyControllerFrameGeneric';
+import { IOdysseyControllerGeneric } from '@/interface/odyssey/controller/IOdysseyControllerGeneric';
 
 /**
  * XSizeController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file XSizeController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class XSizeController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.XSize;
 
-  constructor( controller: IOdysseyControllerGeneric ){
+  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
+  constructor(controller: IOdysseyControllerGeneric) {
     super(controller);
   }
 
@@ -34,5 +34,4 @@ export class XSizeController extends OdysseyController {
       manager.modelNode.emitter.size.x = v * 0.01;
     }
   }
-
 }

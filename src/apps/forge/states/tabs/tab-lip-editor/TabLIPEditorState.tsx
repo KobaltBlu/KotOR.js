@@ -54,7 +54,6 @@ export interface LIPUndoSnapshot {
 }
 
 export class TabLIPEditorState extends TabState {
-
   tabName: string = `LIP Editor`;
 
   //Lip
@@ -66,7 +65,7 @@ export class TabLIPEditorState extends TabState {
   preview_gain: number = 0.5;
   audio_buffer: AudioBuffer|undefined;
   playbackRate: number = 1;
-  
+
   utilitiesTabManager: EditorTabManager = new EditorTabManager();
   lipOptionsTab: TabLIPEditorOptionsState;
 
@@ -75,7 +74,7 @@ export class TabLIPEditorState extends TabState {
   seeking: boolean;
   scrubbing: boolean = false;
   preScrubbingPlayState: boolean = false;
-  scrubbingTimeout: NodeJS.Timeout|number;
+  scrubbingTimeout: NodeJS.Timeout | number;
   current_head: string = DEFAULT_HEAD;
   audio_name: string;
   timed_phonemes: TimedPhonemeResult|undefined;
@@ -89,7 +88,7 @@ export class TabLIPEditorState extends TabState {
   min_timeline_zoom: number = 50;
   timeline_zoom: number = 250;
 
-  scrubDuration: number|undefined;
+  scrubDuration: number | undefined;
 
   head: KotOR.OdysseyModel3D;
   head_hook: THREE.Object3D = new THREE.Object3D();
@@ -104,14 +103,14 @@ export class TabLIPEditorState extends TabState {
     open: true,
   });
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
     this.isClosable = true;
 
-    if(this.file){
+    if (this.file) {
       this.tabName = this.file.getFilename();
     }
-    
+
     //Audio
     this.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();
     this.gainNode.gain.value = this.preview_gain;
@@ -130,7 +129,7 @@ export class TabLIPEditorState extends TabState {
     this.ui3DRenderer.sceneGraphManager.rebuild();
 
     this.lipOptionsTab = new TabLIPEditorOptionsState({
-      parentTab: this
+      parentTab: this,
     });
 
     this.utilitiesTabManager.addTab(this.lipOptionsTab);
@@ -141,9 +140,9 @@ export class TabLIPEditorState extends TabState {
       {
         description: 'Odyssey Lipsync File',
         accept: {
-          'application/octet-stream': ['.lip']
-        }
-      }
+          'application/octet-stream': ['.lip'],
+        },
+      },
     ];
   }
 
@@ -218,26 +217,29 @@ export class TabLIPEditorState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-      if(file instanceof EditorFile){
-        if(this.file != file) this.file = file;
-        file.readFile().then( (response) => {
-          new KotOR.LIPObject(response.buffer, (lip: any) => {
-            this.lip = lip;
+      if (file instanceof EditorFile) {
+        if (this.file != file) this.file = file;
+        file
+          .readFile()
+          .then((response) => {
+            new KotOR.LIPObject(response.buffer, (lip: any) => {
+              this.lip = lip;
 
-            if(typeof this.lip.file != 'string')
-              this.lip.file = this.file.resref + '.' + KotOR.ResourceTypes.getKeyByValue(this.file.reskey);
+              if (typeof this.lip.file != 'string')
+                this.lip.file = this.file.resref + '.' + KotOR.ResourceTypes.getKeyByValue(this.file.reskey);
 
-            this.setDuration(this.lip.duration);
+              this.setDuration(this.lip.duration);
 
-            if(this.lip.keyframes.length){
-              this.selectKeyFrame(this.lip.keyframes[0]);
-            }
-            this.reloadKeyFrames();
-            this.processEventListener<TabLIPEditorStateEventListenerTypes>('onLIPLoaded', [this.lip]);
+              if (this.lip.keyframes.length) {
+                this.selectKeyFrame(this.lip.keyframes[0]);
+              }
+              this.reloadKeyFrames();
+              this.processEventListener<TabLIPEditorStateEventListenerTypes>('onLIPLoaded', [this.lip]);
 
-            this.loadSound(this.file.resref).then( () => {
-              this.loadHead(this.current_head).then( () => {
-                resolve(this.lip);
+              this.loadSound(this.file.resref).then(() => {
+                this.loadHead(this.current_head).then(() => {
+                  resolve(this.lip);
+                });
               });
             });
           });
@@ -350,6 +352,71 @@ export class TabLIPEditorState extends TabState {
       }, (error: any) => {
         finishLoad(undefined, error);
       });
+    }
+    this.tabName = this.file.getFilename();
+
+    // Reset to a clean blank LIP (no keyframes, 1 s default duration).
+    this.lip = new KotOR.LIPObject(new Uint8Array(0), () => {
+      // LIPObject seeds one keyframe when given an empty buffer; clear it so
+      // the editor opens genuinely blank.
+      this.lip.keyframes = [];
+      this.lip.duration = 1;
+    });
+    this.lip.file = `${this.file.resref}.lip`;
+
+    this.selected_frame = undefined;
+    this.file.unsaved_changes = true;
+
+    this.setDuration(this.lip.duration);
+    this.reloadKeyFrames();
+    this.processEventListener<TabLIPEditorStateEventListenerTypes>('onLIPLoaded', [this.lip]);
+
+    return this.loadHead(this.current_head);
+  }
+
+  loadHead(model_name = DEFAULT_HEAD) {
+    return new Promise<void>((resolve, reject) => {
+      const resolved = this.resolvePreviewHead(model_name || DEFAULT_HEAD);
+      if (this.current_head === resolved && this.head instanceof THREE.Object3D) {
+        this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadChange', []);
+        resolve();
+        return;
+      }
+      KotOR.MDLLoader.loader
+        .load(resolved)
+        .then((mdl: KotOR.OdysseyModel) => {
+          this.current_head = resolved;
+          localStorage.setItem('lip_head', this.current_head);
+          KotOR.OdysseyModel3D.FromMDL(mdl, {
+            context: this.ui3DRenderer,
+            castShadow: true,
+            receiveShadow: true,
+          })
+            .then((model: KotOR.OdysseyModel3D) => {
+              if (this.head instanceof THREE.Object3D) {
+                this.head.parent?.remove(this.head);
+              }
+
+              this.head = model;
+              this.head_hook.add(this.head);
+              this.box3.setFromObject(this.head);
+
+              this.head.animations.sort((a: any, b: any) =>
+                a.name.toLowerCase() > b.name.toLowerCase() ? 1 : b.name.toLowerCase() > a.name.toLowerCase() ? -1 : 0
+              );
+              this.head.playAnimation('tlknorm', true);
+
+              this.head.userData.moduleObject = {
+                lipObject: this.lip,
+              };
+
+              this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadLoad', [model]);
+              this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadChange', []);
+              resolve();
+            })
+            .catch(resolve);
+        })
+        .catch(resolve);
     });
   }
 
@@ -450,44 +517,44 @@ export class TabLIPEditorState extends TabState {
 
   animate(delta: number = 0){
     delta *= this.playbackRate;
-    if(this.head){
+    if (this.head) {
       this.head.update(delta);
 
-      if(this.ui3DRenderer){
-        let center: THREE.Vector3 = new THREE.Vector3;
+      if (this.ui3DRenderer) {
+        const center: THREE.Vector3 = new THREE.Vector3();
         this.box3.getCenter(center);
-        let size: THREE.Vector3 = new THREE.Vector3;
+        const size: THREE.Vector3 = new THREE.Vector3();
         this.box3.getSize(size);
         //Center the object to 0
         this.head.position.set(-center.x, -center.y, -center.z);
         this.ui3DRenderer.camera.position.z = 0;
         this.ui3DRenderer.camera.position.y = size.x + size.y + size.z;
-        this.ui3DRenderer.camera.lookAt(new THREE.Vector3)
+        this.ui3DRenderer.camera.lookAt(new THREE.Vector3());
       }
     }
 
-    if(this.lip instanceof KotOR.LIPObject && this.head instanceof KotOR.OdysseyModel3D){
+    if (this.lip instanceof KotOR.LIPObject && this.head instanceof KotOR.OdysseyModel3D) {
       const last_time = this.lip.elapsed;
 
       this.updateLip(0);
 
-      if(this.playing || this.poseFrame){
+      if (this.playing || this.poseFrame) {
         this.updateLip(delta);
-        if(typeof this.scrubDuration === 'number'){
+        if (typeof this.scrubDuration === 'number') {
           this.scrubDuration -= delta;
-          if(this.scrubDuration <= 0){
+          if (this.scrubDuration <= 0) {
             this.scrubDuration = undefined;
             this.pause();
           }
         }
       }
 
-      if(this.poseFrame){
+      if (this.poseFrame) {
         this.poseFrame = false;
         this.lip.elapsed = last_time;
       }
 
-      if(this.lip.elapsed > this.lip.duration){
+      if (this.lip.elapsed > this.lip.duration) {
         this.lip.elapsed = this.lip.duration;
         this.stop();
       }
@@ -496,43 +563,42 @@ export class TabLIPEditorState extends TabState {
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onAnimate', [delta]);
   }
 
-  updateLip(delta = 0){
-    if(this.lip instanceof KotOR.LIPObject && this.head instanceof KotOR.OdysseyModel3D){
+  updateLip(delta = 0) {
+    if (this.lip instanceof KotOR.LIPObject && this.head instanceof KotOR.OdysseyModel3D) {
       this.lip.update(delta, this.head);
     }
   }
 
-  private resetAudio(){
-    try{
+  private resetAudio() {
+    try {
       this.source.disconnect();
       this.source.stop(0);
-    }catch(e){ }
+    } catch (e) {}
   }
 
-  play(duration: number|undefined = undefined){
-
+  play(duration: number | undefined = undefined) {
     this.resetAudio();
     this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
-    
-    try{
+
+    try {
       this.source.buffer = this.audio_buffer;
       this.source.connect(this.gainNode);
       this.gainNode.connect(KotOR.AudioEngine.GetAudioEngine().audioCtx.destination);
       this.source.loop = false;
       this.source.playbackRate.value = this.playbackRate;
 
-      if(this.lip instanceof KotOR.LIPObject){
+      if (this.lip instanceof KotOR.LIPObject) {
         this.source.start(0, this.lip.elapsed, duration);
-      }else{
+      } else {
         this.source.start(0, 0, duration);
       }
-    }catch(e){}
-    
+    } catch (e) {}
+
     this.poseFrame = true;
     this.playing = true;
     this.scrubDuration = duration;
-    if(this.lip instanceof KotOR.LIPObject){
-      if(this.lip.elapsed >= this.lip.duration){
+    if (this.lip instanceof KotOR.LIPObject) {
+      if (this.lip.elapsed >= this.lip.duration) {
         this.lip.elapsed = 0;
       }
     }
@@ -540,65 +606,64 @@ export class TabLIPEditorState extends TabState {
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onPlay');
   }
 
-  pause(){
+  pause() {
     this.resetAudio();
     this.playing = false;
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onPause');
   }
 
-  stop(){
+  stop() {
     this.pause();
-    if(this.lip instanceof KotOR.LIPObject){
+    if (this.lip instanceof KotOR.LIPObject) {
       this.lip.elapsed = 0;
     }
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onStop');
   }
 
-  seek(time: number = 0){
-
-    let was_playing = this.playing;
+  seek(time: number = 0) {
+    const was_playing = this.playing;
     this.pause();
 
-    if(this.lip instanceof KotOR.LIPObject){
-      if(time > this.lip.duration) time = this.lip.duration;
-      if(time < 0) time = 0;
+    if (this.lip instanceof KotOR.LIPObject) {
+      if (time > this.lip.duration) time = this.lip.duration;
+      if (time < 0) time = 0;
       this.lip.elapsed = time;
       this.poseFrame = true;
     }
 
-    if(was_playing) this.play();
+    if (was_playing) this.play();
   }
 
-  seekAudio(time: number){
-    if(this.source){
-      try{
+  seekAudio(time: number) {
+    if (this.source) {
+      try {
         this.source.start(0, time);
-      }catch(e){
+      } catch (e) {
         console.error(e);
       }
     }
   }
 
-  keyframeTrackZoomIn(){
+  keyframeTrackZoomIn() {
     this.timeline_zoom += 25;
 
-    if(this.timeline_zoom > this.max_timeline_zoom){
+    if (this.timeline_zoom > this.max_timeline_zoom) {
       this.timeline_zoom = this.max_timeline_zoom;
     }
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFrameTrackZoomIn', [this]);
   }
 
-  keyframeTrackZoomOut(){
+  keyframeTrackZoomOut() {
     this.timeline_zoom -= 25;
 
-    if(this.timeline_zoom < this.min_timeline_zoom){
+    if (this.timeline_zoom < this.min_timeline_zoom) {
       this.timeline_zoom = this.min_timeline_zoom;
     }
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFrameTrackZoomOut', [this]);
   }
 
-  selectKeyFrame(keyframe: ILIPKeyFrame){
-    if(this.lip.keyframes.indexOf(keyframe) == -1) return;
+  selectKeyFrame(keyframe: ILIPKeyFrame) {
+    if (this.lip.keyframes.indexOf(keyframe) == -1) return;
     this.selected_frame = keyframe;
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFrameSelect', [keyframe]);
   }
@@ -628,11 +693,11 @@ export class TabLIPEditorState extends TabState {
     let index = this.lip.keyframes.indexOf(this.selected_frame as ILIPKeyFrame);
     if(index == -1){
       this.selectKeyFrame(this.lip.keyframes[0]);
-    }else{
+    } else {
       index++;
-      if(index < 0) index = 0;
-      if(index >= this.lip.keyframes.length){
-        index = this.lip.keyframes.length-1;
+      if (index < 0) index = 0;
+      if (index >= this.lip.keyframes.length) {
+        index = this.lip.keyframes.length - 1;
       }
       this.selectKeyFrame(this.lip.keyframes[index]);
     }
@@ -643,11 +708,11 @@ export class TabLIPEditorState extends TabState {
     let index = this.lip.keyframes.indexOf(this.selected_frame as ILIPKeyFrame);
     if(index == -1){
       this.selectKeyFrame(this.lip.keyframes[0]);
-    }else{
+    } else {
       index--;
-      if(index < 0) index = 0;
-      if(index >= this.lip.keyframes.length){
-        index = this.lip.keyframes.length-1;
+      if (index < 0) index = 0;
+      if (index >= this.lip.keyframes.length) {
+        index = this.lip.keyframes.length - 1;
       }
       this.selectKeyFrame(this.lip.keyframes[index]);
     }
@@ -661,7 +726,7 @@ export class TabLIPEditorState extends TabState {
     return newFrame;
   }
 
-  reloadKeyFrames(){
+  reloadKeyFrames() {
     this.keyframesSceneGraphNode.setNodes(this.getKeyframesAsSceneGraphNodes());
     this.ui3DRenderer.sceneGraphManager.rebuild();
     this.processEventListener<TabLIPEditorStateEventListenerTypes>('onKeyFramesChange');
@@ -683,8 +748,8 @@ export class TabLIPEditorState extends TabState {
         data: frame,
         onClick: (node: SceneGraphNode) => {
           this.selectKeyFrame(node.data);
-        }
-      })
+        },
+      });
     });
   }
 
@@ -695,7 +760,7 @@ export class TabLIPEditorState extends TabState {
   }
 
   importPHN(): void {
-    ForgeFileSystem.OpenFileBuffer({ext: ['phn']}).then( (buffer: Uint8Array ) => {
+    ForgeFileSystem.OpenFileBuffer({ ext: ['phn'] }).then((buffer: Uint8Array) => {
       const textDecoder = new TextDecoder();
       let data = textDecoder.decode(buffer);
       let eoh = data.indexOf('END OF HEADER');
@@ -742,7 +807,7 @@ export class TabLIPEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(this.lip){
+    if (this.lip) {
       return this.lip.toExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
@@ -753,5 +818,4 @@ export class TabLIPEditorState extends TabState {
     this.ui3DRenderer.removeEventListener('onBeforeRender', this.animate);
     this.ui3DRenderer.destroy();
   }
-
 }

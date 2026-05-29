@@ -1,25 +1,25 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import * as KotOR from '@/apps/forge/KotOR';
 import * as THREE from 'three';
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabUTDEditor } from "@/apps/forge/components/tabs/tab-utd-editor/TabUTDEditor";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
-import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
-import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { TabUTDEditor } from '@/apps/forge/components/tabs/tab-utd-editor/TabUTDEditor';
+import { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
+import { UI3DRendererView } from '@/apps/forge/components/UI3DRendererView';
+import { ForgeDoor } from '@/apps/forge/module-editor/ForgeDoor';
 
 export class TabUTDEditorState extends TabState {
   tabName: string = `UTD`;
   door: ForgeDoor = new ForgeDoor();
-  
+
   get blueprint(): KotOR.GFFObject {
     return this.door.blueprint;
   }
 
   ui3DRenderer: UI3DRenderer;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
@@ -31,24 +31,24 @@ export class TabUTDEditorState extends TabState {
       {
         description: 'Odyssey Door File',
         accept: {
-          'application/octet-stream': ['.utd']
-        }
-      }
+          'application/octet-stream': ['.utd'],
+        },
+      },
     ];
   }
 
-  public openFile(file?: EditorFile){
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
-      if(!file && this.file instanceof EditorFile){
+  public openFile(file?: EditorFile) {
+    return new Promise<KotOR.GFFObject>((resolve, reject) => {
+      if (!file && this.file instanceof EditorFile) {
         file = this.file;
       }
-  
-      if(file instanceof EditorFile){
-        if(this.file != file) this.file = file;
+
+      if (file instanceof EditorFile) {
+        if (this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-  
-        file.readFile().then( async (response) => {
+
+        file.readFile().then(async (response) => {
           this.door = new ForgeDoor(response.buffer);
           this.door.setContext(this.ui3DRenderer);
           await this.door.load();
@@ -65,8 +65,8 @@ export class TabUTDEditorState extends TabState {
   size: THREE.Vector3 = new THREE.Vector3();
   origin: THREE.Vector3 = new THREE.Vector3();
 
-  updateCameraFocus(){
-    if(!this.door.model) return;
+  updateCameraFocus() {
+    if (!this.door.model) return;
 
     this.door.model.position.set(0, 0, 0);
     this.box3.setFromObject(this.door.model);
@@ -94,8 +94,8 @@ export class TabUTDEditorState extends TabState {
     this.ui3DRenderer.enabled = false;
   }
 
-  animate(delta: number = 0){
-    if(this.door.model){
+  animate(delta: number = 0) {
+    if (this.door.model) {
       this.door.model.update(delta);
       //rotate the object in the viewport
       this.door.model.rotation.z += delta;
@@ -103,15 +103,15 @@ export class TabUTDEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(!!resref && ext == 'utd'){
+    if (!!resref && ext == 'utd') {
       this.door.templateResRef = resref;
       this.updateFile();
       return this.door.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
   }
-  
-  updateFile(){
+
+  updateFile() {
     this.door.exportToBlueprint();
   }
 }

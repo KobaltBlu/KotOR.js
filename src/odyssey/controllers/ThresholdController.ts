@@ -1,24 +1,24 @@
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
-import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from '@/odyssey/controllers/OdysseyController';
+import type { OdysseyModelAnimation } from '@/odyssey/OdysseyModelAnimation';
+import type { OdysseyModelAnimationManager } from '@/odyssey/OdysseyModelAnimationManager';
+import { OdysseyModelControllerType } from '@/enums/odyssey/OdysseyModelControllerType';
+import { IOdysseyControllerFrameGeneric } from '@/interface/odyssey/controller/IOdysseyControllerFrameGeneric';
+import { IOdysseyControllerGeneric } from '@/interface/odyssey/controller/IOdysseyControllerGeneric';
 
 /**
  * ThresholdController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ThresholdController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ThresholdController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.Threshold;
 
-  constructor( controller: IOdysseyControllerGeneric ){
+  /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
+  constructor(controller: IOdysseyControllerGeneric) {
     super(controller);
   }
 
@@ -33,5 +33,4 @@ export class ThresholdController extends OdysseyController {
       manager.modelNode.emitter.threshold = OdysseyController.lerp1(last, next, fl);
     }
   }
-
 }

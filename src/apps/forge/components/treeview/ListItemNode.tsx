@@ -1,5 +1,5 @@
-import React, { useState, useCallback, memo } from "react";
-import "@/apps/forge/components/treeview/ForgeTreeView.scss";
+import React, { useState, useCallback, memo } from 'react';
+import '@/apps/forge/components/treeview/ForgeTreeView.scss';
 
 export interface ListItemNodeProps {
   // Core node data
@@ -12,22 +12,24 @@ export interface ListItemNodeProps {
   isLoading?: boolean;
   hasContextMenu?: boolean;
   depth?: number;
-  
+
   // Visual properties
   icon?: string;
   iconType?: 'folder' | 'file' | 'expanded';
   fileType?: string;
-  
+  /** Optional URL for a resource-type icon; when set, shown instead of the Font Awesome fallback for files. */
+  iconImageUrl?: string;
+
   // Event handlers
   onToggle?: () => void;
   onClick?: () => void;
   onDoubleClick?: () => void;
   onContextMenu?: (event: React.MouseEvent) => void;
   onSelect?: (nodeId: string) => void;
-  
+
   // Data attributes for external use
-  dataAttributes?: Record<string, any>;
-  
+  dataAttributes?: Record<string, string | number | boolean | undefined>;
+
   // Children
   children?: React.ReactNode;
 }
@@ -39,23 +41,26 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
     hasChildren = false,
     isExpanded = false,
     isSelected = false,
-    isFocused = false,
-    isLoading = false,
-    hasContextMenu = false,
-    depth = 0,
+    isFocused: _isFocused = false,
+    isLoading: _isLoading = false,
+    hasContextMenu: _hasContextMenu = false,
+    depth: _depth = 0,
     icon,
     iconType = 'file',
-    fileType,
+    fileType: _fileType,
+    iconImageUrl,
     onToggle,
     onClick,
     onDoubleClick,
     onContextMenu,
     onSelect,
     dataAttributes = {},
-    children
+    children,
   } = props;
 
   const [isHovered, setIsHovered] = useState(false);
+  const [iconImageError, setIconImageError] = useState(false);
+  const showIconImage = iconImageUrl && !iconImageError;
 
   // Get file extension for icon styling
   const getFileExtension = (name: string): string => {
@@ -79,11 +84,11 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
     if (icon) {
       return icon;
     }
-    
+
     if (iconType === 'folder') {
       return isExpanded ? 'fa-folder-open' : 'fa-folder';
     }
-    
+
     if (!name) return 'fa-file';
     const ext = getFileExtension(name);
     switch (ext) {
@@ -133,37 +138,139 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
     }
   };
 
-  const handleToggle = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (hasChildren && onToggle) {
-      onToggle();
-    }
-  }, [hasChildren, onToggle]);
+  const handleToggle = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (hasChildren && onToggle) {
+        onToggle();
+      }
+    },
+    [hasChildren, onToggle]
+  );
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onClick) {
-      onClick();
-    }
-    // if (onSelect) {
-    //   onSelect(id);
-    // }
-  }, [id, onClick, onSelect]);
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (onClick) {
+        onClick();
+      }
+      // if (onSelect) {
+      //   onSelect(id);
+      // }
+    },
+    [id, onClick, onSelect]
+  );
 
-  const handleDoubleClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onDoubleClick) {
-      onDoubleClick();
-    }
-  }, [onDoubleClick]);
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (onDoubleClick) {
+        onDoubleClick();
+      }
+    },
+    [onDoubleClick]
+  );
 
-  const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onContextMenu) {
-      onContextMenu(e);
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (onContextMenu) {
+        onContextMenu(e);
+      }
+    },
+    [onContextMenu]
+  );
+
+  const getVisibleNodeElements = (currentElement: HTMLElement): HTMLElement[] => {
+    const treeRoot = currentElement.closest('.forgeTreeView');
+    if (!treeRoot) return [];
+    const all = Array.from(treeRoot.querySelectorAll('.tree-node-content')) as HTMLElement[];
+    return all.filter((el) => el.offsetParent !== null);
+  };
+
+  const focusNodeAtIndex = (nodes: HTMLElement[], index: number) => {
+    if (index < 0 || index >= nodes.length) return;
+    nodes[index].focus();
+  };
+
+  const focusParentNode = (currentElement: HTMLElement) => {
+    const parentLi = currentElement.closest('ul.tree-children')?.closest('li.tree-item');
+    const parentNode = parentLi?.querySelector(':scope > .tree-node-content') as HTMLElement | null;
+    if (parentNode) {
+      parentNode.focus();
     }
-  }, [onContextMenu]);
+  };
+
+  const focusFirstChildNode = (currentElement: HTMLElement) => {
+    const currentLi = currentElement.closest('li.tree-item');
+    const firstChild = currentLi?.querySelector(
+      ':scope > ul.tree-children.expanded > li.tree-item > .tree-node-content'
+    ) as HTMLElement | null;
+    if (firstChild) {
+      firstChild.focus();
+    }
+  };
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const currentElement = e.currentTarget as HTMLElement;
+      const visibleNodes = getVisibleNodeElements(currentElement);
+      const currentIndex = visibleNodes.indexOf(currentElement);
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          focusNodeAtIndex(visibleNodes, currentIndex + 1);
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          focusNodeAtIndex(visibleNodes, currentIndex - 1);
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          if (hasChildren && !isExpanded && onToggle) {
+            onToggle();
+          } else if (hasChildren && isExpanded) {
+            focusFirstChildNode(currentElement);
+          }
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (hasChildren && isExpanded && onToggle) {
+            onToggle();
+          } else {
+            focusParentNode(currentElement);
+          }
+          break;
+        case 'Home':
+          e.preventDefault();
+          focusNodeAtIndex(visibleNodes, 0);
+          break;
+        case 'End':
+          e.preventDefault();
+          focusNodeAtIndex(visibleNodes, visibleNodes.length - 1);
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (onDoubleClick) {
+            onDoubleClick();
+          } else if (onClick) {
+            onClick();
+          }
+          break;
+        case ' ':
+          e.preventDefault();
+          if (onClick) {
+            onClick();
+          }
+          break;
+        default:
+          break;
+      }
+    },
+    [hasChildren, isExpanded, onToggle, onClick]
+  );
 
   const getVisibleNodeElements = (currentElement: HTMLElement): HTMLElement[] => {
     const treeRoot = currentElement.closest('.forgeTreeView');
@@ -254,12 +361,12 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
   const iconClass = getIcon();
 
   return (
-    <li 
+    <li
       className={`tree-item ${fileTypeClass} ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''}`}
       {...dataAttributes}
     >
       {/* Node content wrapper - arrow, icon, and label */}
-      <div 
+      <div
         className="tree-node-content"
         onClick={handleClick}
         onDoubleClick={handleDoubleClick}
@@ -271,7 +378,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
       >
         {/* Expand/Collapse Arrow for folders */}
         {hasChildren && (
-          <span 
+          <span
             className={`tree-arrow ${isExpanded ? 'expanded' : ''}`}
             onClick={handleToggle}
             role="button"
@@ -279,24 +386,24 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
             title={isExpanded ? 'Collapse' : 'Expand'}
           />
         )}
-        
-        {/* Icon */}
+
+        {/* Icon: image or Font Awesome fallback */}
         <span className={`tree-icon ${iconType}`}>
-          <i className={`fa-solid ${iconClass}`} />
+          {showIconImage ? (
+            <img src={iconImageUrl} alt="" className="tree-icon-img" onError={() => setIconImageError(true)} />
+          ) : (
+            <i className={`fa-solid ${iconClass}`} />
+          )}
         </span>
-        
+
         {/* Label */}
         <span className="tree-label" title={name}>
           {name}
         </span>
       </div>
-      
+
       {/* Children - flows to next line */}
-      {hasChildren && children && (
-        <ul className={`tree-children ${isExpanded ? 'expanded' : ''}`}>
-          {children}
-        </ul>
-      )}
+      {hasChildren && children && <ul className={`tree-children ${isExpanded ? 'expanded' : ''}`}>{children}</ul>}
     </li>
   );
 });

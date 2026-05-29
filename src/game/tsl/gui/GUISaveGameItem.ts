@@ -6,22 +6,21 @@ import { GFFStruct } from "@/resource/GFFStruct";
 
 const toPaddedDigit = (num: number, len = 2) => {
   return new String(num).padStart(len, '0');
-}
+};
 
 /**
  * GUISaveGameItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUISaveGameItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUISaveGameItem extends GUIProtoItem {
-
   declare node: SaveGame;
 
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false) {
     super(menu, control, parent, scale);
   }
 
@@ -48,5 +47,4 @@ export class GUISaveGameItem extends GUIProtoItem {
     }
     return this.widget;
   }
-
 }

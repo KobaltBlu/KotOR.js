@@ -1,6 +1,6 @@
-import React from "react";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import { ModalExtractionProgress } from "@/apps/forge/components/modal/ModalExtractionProgress";
+import React from 'react';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
+import { ModalExtractionProgress } from '@/apps/forge/components/modal/ModalExtractionProgress';
 
 export class ModalExtractionProgressState extends ModalState {
   title: string = 'Extracting Assets';

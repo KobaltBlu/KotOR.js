@@ -7,15 +7,14 @@ import { GameState } from "@/GameState";
 
 /**
  * MenuInventory class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuInventory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuInventory extends GameMenu {
-
   LB_ITEMS: GUIListBox;
   LBL_INV: GUILabel;
   LBL_CREDITS_VALUE: GUILabel;
@@ -34,7 +33,7 @@ export class MenuInventory extends GameMenu {
 
   selected: ModuleItem;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'inventory';
     this.background = '1600x1200back';
@@ -43,7 +42,7 @@ export class MenuInventory extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
@@ -57,26 +56,36 @@ export class MenuInventory extends GameMenu {
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();
-      }
+      };
+      this.LB_ITEMS.onActivated = () => {
+        this.useSelectedItem();
+      };
+
+      this.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.useSelectedItem();
+        }
+      });
 
       this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.offset.x = 0;
 
       this.BTN_CHANGE1.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.party.length > 0){
+        if (GameState.PartyManager.party.length > 0) {
           GameState.PartyManager.SwitchLeaderAtIndex(1);
         }
       });
       this.BTN_CHANGE2.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.party.length > 1){
+        if (GameState.PartyManager.party.length > 1) {
           GameState.PartyManager.SwitchLeaderAtIndex(2);
         }
       });
 
       GameState.PartyManager.AddEventListener('change', () => {
-        if(!this.isVisible()) return;
+        if (!this.isVisible()) return;
         this.updateCharacterStats();
       });
       resolve();
@@ -94,30 +103,36 @@ export class MenuInventory extends GameMenu {
     this.LB_ITEMS.setItems(inv);
   }
 
-  updateCharacterStats(){
+  updateCharacterStats() {
     const currentPC = GameState.PartyManager.party[0];
     if (!currentPC) {
       return;
     }
     this.LBL_VIT?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
     this.LBL_DEF?.setText(currentPC.getAC());
-    if(this.LBL_PORT.getFillTextureName() != currentPC.getPortraitResRef()){
+    if (this.LBL_PORT.getFillTextureName() != currentPC.getPortraitResRef()) {
       this.LBL_PORT.setFillTextureName(currentPC.getPortraitResRef());
     }
     this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold);
   }
 
-  updatePartyMemberButtons(){
+  updatePartyMemberButtons() {
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-      if (i == 0) { continue; }
+      if (i == 0) {
+        continue;
+      }
 
       const btn_change = this.getControlByName('BTN_CHANGE' + i);
-      if(!btn_change){ continue; }
+      if (!btn_change) {
+        continue;
+      }
 
       const partyMember = GameState.PartyManager.party[i];
-      if(!partyMember){ continue; }
+      if (!partyMember) {
+        continue;
+      }
 
       const portraitResRef = partyMember.getPortraitResRef();
       btn_change.show();
@@ -143,6 +158,4 @@ export class MenuInventory extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_CHAR.click();
   }
-  
 }
-

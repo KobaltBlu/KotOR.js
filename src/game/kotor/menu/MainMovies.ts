@@ -1,7 +1,7 @@
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { TwoDAObject } from "@/resource/TwoDAObject";
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
+import { TwoDAObject } from '@/resource/TwoDAObject';
 
 interface MovieItem {
   name: string;
@@ -22,7 +22,6 @@ interface MovieItem {
 }
 
 class GUIMovieItem implements MovieItem {
-
   name: string;
   strrefname: number;
   strefdesc: number;
@@ -30,7 +29,7 @@ class GUIMovieItem implements MovieItem {
   played: boolean;
   order: number;
 
-  constructor(movie: MovieItem){
+  constructor(movie: MovieItem) {
     this.name = movie.name;
     this.strrefname = movie.strrefname;
     this.strefdesc = movie.strefdesc;
@@ -46,22 +45,21 @@ class GUIMovieItem implements MovieItem {
 
 /**
  * MainMovies class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMovies.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MainMovies extends GameMenu {
-
   LBL_TITLE: GUILabel;
   LB_MOVIES: GUIListBox;
   BTN_BACK: GUIButton;
 
   movieList: MovieItem[] = [];
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'titlemovie';
     this.background = '1600x1200back';
@@ -70,8 +68,8 @@ export class MainMovies extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -84,7 +82,7 @@ export class MainMovies extends GameMenu {
         GameState.VideoManager.playMovie(movie.name, true);
       };
       const moviesTable = GameState.TwoDAManager.datatables.get('movies');
-      for(let i = 0; i < moviesTable.RowCount; i++){
+      for (let i = 0; i < moviesTable.RowCount; i++) {
         const row = moviesTable.getRowByIndex(i);
         const movieItem: MovieItem = {
           name: TwoDAObject.normalizeValue(row.__rowlabel, 'string', ''),
@@ -102,10 +100,9 @@ export class MainMovies extends GameMenu {
     });
   }
 
-  show(){
+  show() {
     super.show();
     this.LB_MOVIES.setItems(this.movieList.map(m => new GUIMovieItem(m)));
     this.LB_MOVIES.show();
   }
-  
 }

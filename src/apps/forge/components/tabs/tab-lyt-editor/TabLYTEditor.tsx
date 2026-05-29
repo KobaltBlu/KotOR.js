@@ -239,9 +239,7 @@ const LYTSidebarComponent = function (props: { tab: TabLYTEditorState }) {
               {entry.lytRoom.name}
             </div>
           ))}
-          {rooms.length === 0 && (
-            <div style={{ padding: '6px', color: '#888' }}>No rooms</div>
-          )}
+          {rooms.length === 0 && <div style={{ padding: '6px', color: '#888' }}>No rooms</div>}
         </div>
       </SectionContainer>
 

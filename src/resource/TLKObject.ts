@@ -3,11 +3,11 @@ import { TLKString } from "@/resource/TLKString";
 
 /**
  * TLKObject class.
- * 
+ *
  * Class representing a Talk Table file in memory.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TLKObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -92,7 +92,31 @@ export class TLKObject {
     return this.TLKStrings[id]?.Value ?? '';
   }
 
-  AddTLKString(tlkString: TLKString){
+  size(): number {
+    return this.TLKStrings.length;
+  }
+
+  string(id: number): string {
+    return this.GetStringById(id);
+  }
+
+  sound(id: number): string {
+    return this.TLKStrings[id]?.SoundResRef ?? '';
+  }
+
+  batch(ids: number[]): Record<number, [string, string]> {
+    const entries: Record<number, [string, string]> = {};
+    ids.forEach((id) => {
+      entries[id] = [this.string(id), this.sound(id)];
+    });
+    return entries;
+  }
+
+  language(): number {
+    return this.LanguageID;
+  }
+
+  AddTLKString(tlkString: TLKString) {
     this.TLKStrings.push(tlkString);
   }
 

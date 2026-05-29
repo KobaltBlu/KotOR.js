@@ -8,13 +8,12 @@ import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
 import { buildProjectExplorerTree } from "@/apps/forge/helpers/ProjectExplorerTree";
 
 export class TabProjectExplorerState extends TabState {
-
   tabName: string = `Project`;
   onReload?: Function;
   static Resources: FileBrowserNode[] = [];
   resourceNodes: FileBrowserNode[] = [];
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
     // this.singleInstance = true;
     this.isClosable = false;
@@ -22,14 +21,13 @@ export class TabProjectExplorerState extends TabState {
     this.setContentView(<TabProjectExplorer tab={this}></TabProjectExplorer>);
   }
 
-  reload(){
-    if(typeof this.onReload === 'function'){
+  reload() {
+    if (typeof this.onReload === 'function') {
       this.onReload();
     }
   }
 
-  static async GenerateResourceList( state: TabProjectExplorerState ){
-
+  static async GenerateResourceList(state: TabProjectExplorerState) {
     ForgeState.loaderShow();
     await TabProjectExplorerState.LoadFiles();
 

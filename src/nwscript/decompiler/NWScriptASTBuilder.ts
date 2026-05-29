@@ -1,14 +1,19 @@
-import type { NWScriptControlFlowGraph } from "@/nwscript/decompiler/NWScriptControlFlowGraph";
-import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
-import type { NWScriptControlStructure } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
-import type { NWScriptFunction } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
-import type { NWScriptStatement } from "@/nwscript/decompiler/NWScriptStatementBuilder";
-import type { NWScriptProcessedBlock } from "@/nwscript/decompiler/NWScriptStatementBuilder";
-import { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
-import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
-import type { NWScriptLocalInit } from "@/nwscript/decompiler/NWScriptLocalVariableAnalyzer";
-import { ControlStructureType } from "@/nwscript/decompiler/NWScriptControlStructureBuilder";
-import { NWScriptAST, NWScriptASTNodeType, type NWScriptASTNode, type NWScriptASTNodeUnion } from "@/nwscript/decompiler/NWScriptAST";
+import type { NWScriptControlFlowGraph } from '@/nwscript/decompiler/NWScriptControlFlowGraph';
+import type { NWScriptBasicBlock } from '@/nwscript/decompiler/NWScriptBasicBlock';
+import type { NWScriptControlStructure } from '@/nwscript/decompiler/NWScriptControlStructureBuilder';
+import type { NWScriptFunction } from '@/nwscript/decompiler/NWScriptFunctionAnalyzer';
+import type { NWScriptStatement } from '@/nwscript/decompiler/NWScriptStatementBuilder';
+import type { NWScriptProcessedBlock } from '@/nwscript/decompiler/NWScriptStatementBuilder';
+import { NWScriptExpression } from '@/nwscript/decompiler/NWScriptExpression';
+import type { NWScriptGlobalInit } from '@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer';
+import type { NWScriptLocalInit } from '@/nwscript/decompiler/NWScriptLocalVariableAnalyzer';
+import { ControlStructureType } from '@/nwscript/decompiler/NWScriptControlStructureBuilder';
+import {
+  NWScriptAST,
+  NWScriptASTNodeType,
+  type NWScriptASTNode,
+  type NWScriptASTNodeUnion,
+} from '@/nwscript/decompiler/NWScriptAST';
 import type {
   NWScriptProgramNode,
   NWScriptFunctionNode,
@@ -27,16 +32,16 @@ import type {
   NWScriptBreakNode,
   NWScriptContinueNode,
   NWScriptVariableDeclarationNode,
-  NWScriptGlobalVariableDeclarationNode
-} from "@/nwscript/decompiler/NWScriptAST";
-import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+  NWScriptGlobalVariableDeclarationNode,
+} from '@/nwscript/decompiler/NWScriptAST';
+import { NWScriptDataType } from '@/enums/nwscript/NWScriptDataType';
 
 /**
  * Builds an Abstract Syntax Tree (AST) from control structures and statements.
  * Combines the output of StructureBuilder and StatementBuilder into a unified tree.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptASTBuilder.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -48,27 +53,27 @@ export class NWScriptASTBuilder {
   private processedBlocks: Map<NWScriptBasicBlock, NWScriptProcessedBlock>;
   private globalInits: NWScriptGlobalInit[];
   private localInits: NWScriptLocalInit[];
-  
+
   /**
    * Map from blocks to statements (for quick lookup)
    */
   private blockStatements: Map<NWScriptBasicBlock, NWScriptStatement[]> = new Map();
-  
+
   /**
    * Map from structures to their AST nodes (for tracking)
    */
   private structureToASTNode: Map<NWScriptControlStructure, NWScriptASTNode> = new Map();
-  
+
   /**
    * Set of blocks that are part of structures (to avoid duplicate processing)
    */
   private structureBlocks: Set<NWScriptBasicBlock> = new Set();
-  
+
   /**
    * Function that provides condition expressions (from StatementBuilder)
    */
   private getConditionExpression?: (structure: NWScriptControlStructure) => NWScriptExpression | null;
-  
+
   /**
    * Function that extracts conditions from blocks (from StatementBuilder)
    */
@@ -92,7 +97,7 @@ export class NWScriptASTBuilder {
     this.localInits = localInits;
     this.getConditionExpression = getConditionExpression;
     this.getConditionFromBlock = getConditionFromBlock;
-    
+
     this.buildBlockStatementsMap();
     this.buildStructureBlocksSet();
   }
@@ -103,19 +108,19 @@ export class NWScriptASTBuilder {
   build(): NWScriptProgramNode {
     // Build global variable declarations
     const globalVars = this.buildGlobalVariableDeclarations();
-    
+
     // Build function nodes
     const functionNodes = this.buildFunctionNodes();
-    
+
     // Build main body (if there's code outside functions)
     const mainBody = this.buildMainBody();
-    
+
     // Create program node
     const program = NWScriptAST.createProgram(globalVars, functionNodes, mainBody);
-    
+
     // Build parent relationships
     NWScriptAST.buildParentRelationships(program);
-    
+
     return program;
   }
 
@@ -134,11 +139,11 @@ export class NWScriptASTBuilder {
    */
   private buildStructureBlocksSet(): void {
     this.structureBlocks.clear();
-    
+
     const addStructureBlocks = (structure: NWScriptControlStructure) => {
       this.structureBlocks.add(structure.headerBlock);
-      structure.bodyBlocks.forEach(b => this.structureBlocks.add(b));
-      structure.elseBlocks?.forEach(b => this.structureBlocks.add(b));
+      structure.bodyBlocks.forEach((b) => this.structureBlocks.add(b));
+      structure.elseBlocks?.forEach((b) => this.structureBlocks.add(b));
       if (structure.exitBlock) {
         this.structureBlocks.add(structure.exitBlock);
       }
@@ -148,12 +153,12 @@ export class NWScriptASTBuilder {
       if (structure.incrementBlock) {
         this.structureBlocks.add(structure.incrementBlock);
       }
-      
+
       // Recursively handle nested structures
-      structure.nestedStructures.forEach(nested => addStructureBlocks(nested));
+      structure.nestedStructures.forEach((nested) => addStructureBlocks(nested));
     };
-    
-    this.structures.forEach(structure => addStructureBlocks(structure));
+
+    this.structures.forEach((structure) => addStructureBlocks(structure));
   }
 
   /**
@@ -161,7 +166,7 @@ export class NWScriptASTBuilder {
    */
   private buildGlobalVariableDeclarations(): NWScriptGlobalVariableDeclarationNode[] {
     const declarations: NWScriptGlobalVariableDeclarationNode[] = [];
-    
+
     for (let i = 0; i < this.globalInits.length; i++) {
       const init = this.globalInits[i];
       // Only create initializer if hasInitializer is true AND initialValue is defined
@@ -173,18 +178,18 @@ export class NWScriptASTBuilder {
           ? this.valueToExpression(init.initialValue, init.dataType)
           : undefined
       );
-      
+
       // Set location if available
       if (init.instructionAddress !== undefined) {
         decl.location = {
           startAddress: init.instructionAddress,
-          endAddress: init.instructionAddress // Will be updated if we have instruction size
+          endAddress: init.instructionAddress, // Will be updated if we have instruction size
         };
       }
-      
+
       declarations.push(decl);
     }
-    
+
     return declarations;
   }
 
@@ -193,20 +198,20 @@ export class NWScriptASTBuilder {
    */
   private buildFunctionNodes(): NWScriptFunctionNode[] {
     const functionNodes: NWScriptFunctionNode[] = [];
-    
+
     for (const func of this.functions) {
       // Build local variable declarations
       const locals = this.buildLocalVariableDeclarations(func);
-      
+
       // Build function body
       const body = this.buildFunctionBody(func);
-      
+
       // Convert function parameters to AST format (dataType -> type)
-      const astParameters = (func.parameters || []).map(param => ({
+      const astParameters = (func.parameters || []).map((param) => ({
         name: param.name,
-        type: param.dataType
+        type: param.dataType,
       }));
-      
+
       // Create function node
       const funcNode = NWScriptAST.createFunction(
         func.name || `function_${func.entryBlock.startInstruction.address}`,
@@ -216,22 +221,22 @@ export class NWScriptASTBuilder {
         locals,
         func.entryBlock
       );
-      
+
       // Set location
       if (func.entryBlock) {
         funcNode.location = {
           startBlock: func.entryBlock,
           endBlock: func.returnBlock || undefined,
           startAddress: func.entryBlock.startInstruction.address,
-          endAddress: func.returnBlock 
+          endAddress: func.returnBlock
             ? func.returnBlock.endInstruction.address + func.returnBlock.endInstruction.instructionSize
-            : undefined
+            : undefined,
         };
       }
-      
+
       functionNodes.push(funcNode);
     }
-    
+
     return functionNodes;
   }
 
@@ -241,16 +246,16 @@ export class NWScriptASTBuilder {
    */
   private buildLocalVariableDeclarations(func: NWScriptFunction): NWScriptVariableDeclarationNode[] {
     const declarations: NWScriptVariableDeclarationNode[] = [];
-    
+
     // Build set of global initialization addresses to exclude
     const globalInitAddresses = new Set<number>();
     for (const globalInit of this.globalInits) {
       globalInitAddresses.add(globalInit.instructionAddress);
     }
-    
+
     // Find local inits that belong to this function
     const funcBlocks = new Set(func.bodyBlocks);
-    
+
     // Build map of RSADD addresses to assignment statements
     // This allows us to merge declarations with assignments
     const assignmentMap = new Map<number, NWScriptExpression>();
@@ -269,15 +274,15 @@ export class NWScriptASTBuilder {
         }
       }
     }
-    
+
     for (let i = 0; i < this.localInits.length; i++) {
       const init = this.localInits[i];
-      
+
       // Skip if this is actually a global variable initialization
       if (globalInitAddresses.has(init.instructionAddress)) {
         continue;
       }
-      
+
       // Check if this local init is within the function's blocks
       if (init.instructionAddress !== undefined) {
         const block = this.cfg.getBlockForAddress(init.instructionAddress);
@@ -285,7 +290,7 @@ export class NWScriptASTBuilder {
           // OPTIMIZATION: Check if there's an assignment statement for this variable
           // If so, use it as the initializer instead of the constant value
           let initializer: NWScriptExpression | undefined = undefined;
-          
+
           if (init.hasInitializer) {
             // First, check if there's an assignment statement (for nested ACTION calls, etc.)
             const assignmentExpr = assignmentMap.get(init.instructionAddress);
@@ -296,23 +301,19 @@ export class NWScriptASTBuilder {
               initializer = this.valueToExpression(init.initialValue, init.dataType);
             }
           }
-          
-          const decl = NWScriptAST.createVariableDeclaration(
-            `localVar_${i}`,
-            init.dataType,
-            initializer
-          );
-          
+
+          const decl = NWScriptAST.createVariableDeclaration(`localVar_${i}`, init.dataType, initializer);
+
           decl.location = {
             startAddress: init.instructionAddress,
-            endAddress: init.instructionAddress // Will be updated if we have instruction size
+            endAddress: init.instructionAddress, // Will be updated if we have instruction size
           };
-          
+
           declarations.push(decl);
         }
       }
     }
-    
+
     return declarations;
   }
 
@@ -325,19 +326,19 @@ export class NWScriptASTBuilder {
     const processedBlocks = new Set<NWScriptBasicBlock>();
     const isVoidFunction = func.returnType === NWScriptDataType.VOID;
     let hasEncounteredReturn = false;
-    
+
     // CRITICAL FIX: Sort blocks by CFG execution order (topological order)
     // This ensures statements are generated in the correct execution order
     const bodyBlockSet = new Set(func.bodyBlocks);
     const allOrderedBlocks = this.cfg.getTopologicalOrder();
-    const orderedBodyBlocks = allOrderedBlocks.filter(block => bodyBlockSet.has(block));
-    
+    const orderedBodyBlocks = allOrderedBlocks.filter((block) => bodyBlockSet.has(block));
+
     // Process blocks in execution order, handling control structures
     for (const block of orderedBodyBlocks) {
       if (processedBlocks.has(block)) {
         continue;
       }
-      
+
       // Check if we've already encountered a return statement
       // If so, check if this block is reachable after that return
       if (hasEncounteredReturn) {
@@ -365,7 +366,7 @@ export class NWScriptASTBuilder {
           }
         }
       }
-      
+
       // Check if this block is part of a control structure
       const structure = this.findStructureForBlock(block);
       if (structure && !this.structureToASTNode.has(structure)) {
@@ -388,7 +389,7 @@ export class NWScriptASTBuilder {
               continue;
             }
           }
-          
+
           // Check if this is a return statement
           if (stmt.type === 'return') {
             hasEncounteredReturn = true;
@@ -397,7 +398,7 @@ export class NWScriptASTBuilder {
               continue;
             }
           }
-          
+
           const astNode = this.statementToASTNode(stmt);
           if (astNode) {
             statements.push(astNode);
@@ -406,7 +407,7 @@ export class NWScriptASTBuilder {
         processedBlocks.add(block);
       }
     }
-    
+
     return NWScriptAST.createBlock(statements);
   }
 
@@ -417,32 +418,32 @@ export class NWScriptASTBuilder {
     if (!this.cfg.entryBlock) {
       return undefined;
     }
-    
+
     // Check if entry block is part of a function
     for (const func of this.functions) {
       if (func.entryBlock === this.cfg.entryBlock) {
         return undefined; // Entry is a function, no main body
       }
     }
-    
+
     // Build statements from entry block and following blocks
     const statements: NWScriptASTNode[] = [];
     const processedBlocks = new Set<NWScriptBasicBlock>();
     const visited = new Set<NWScriptBasicBlock>();
-    
+
     const processBlock = (block: NWScriptBasicBlock) => {
       if (visited.has(block) || processedBlocks.has(block)) {
         return;
       }
       visited.add(block);
-      
+
       // Check if this block is part of a function
       for (const func of this.functions) {
         if (func.bodyBlocks.includes(block)) {
           return; // Skip function blocks
         }
       }
-      
+
       // Check if this block is part of a control structure
       const structure = this.findStructureForBlock(block);
       if (structure && !this.structureToASTNode.has(structure)) {
@@ -461,15 +462,15 @@ export class NWScriptASTBuilder {
         }
         processedBlocks.add(block);
       }
-      
+
       // Process successors
       for (const successor of block.successors) {
         processBlock(successor);
       }
     };
-    
+
     processBlock(this.cfg.entryBlock);
-    
+
     return statements.length > 0 ? NWScriptAST.createBlock(statements) : undefined;
   }
 
@@ -489,27 +490,31 @@ export class NWScriptASTBuilder {
    * Check if a block is part of a structure (including nested)
    * Uses a visited set to prevent infinite recursion
    */
-  private blockInStructure(block: NWScriptBasicBlock, structure: NWScriptControlStructure, visited: Set<NWScriptControlStructure> = new Set()): boolean {
+  private blockInStructure(
+    block: NWScriptBasicBlock,
+    structure: NWScriptControlStructure,
+    visited: Set<NWScriptControlStructure> = new Set()
+  ): boolean {
     // Prevent infinite recursion by tracking visited structures
     if (visited.has(structure)) {
       return false;
     }
     visited.add(structure);
-    
+
     if (structure.headerBlock === block) return true;
     if (structure.bodyBlocks.includes(block)) return true;
     if (structure.elseBlocks?.includes(block)) return true;
     if (structure.exitBlock === block) return true;
     if (structure.conditionBlock === block) return true;
     if (structure.incrementBlock === block) return true;
-    
+
     // Check nested structures (pass visited set to prevent cycles)
     for (const nested of structure.nestedStructures) {
       if (this.blockInStructure(block, nested, visited)) {
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -525,36 +530,36 @@ export class NWScriptASTBuilder {
     if (structure.exitBlock) {
       processedBlocks.add(structure.exitBlock);
     }
-    
+
     // Get condition expression
     let condition: NWScriptExpression | null = null;
     if (this.getConditionExpression) {
       condition = this.getConditionExpression(structure);
     }
-    
+
     // If no condition and we need one, try to extract it
     if (!condition && structure.headerBlock.conditionInstruction) {
       // Try to build condition from header block
       condition = this.extractConditionFromBlock(structure.headerBlock);
     }
-    
+
     switch (structure.type) {
       case ControlStructureType.IF:
       case ControlStructureType.IF_ELSE:
         return this.buildIfStructure(structure, condition, processedBlocks);
-      
+
       case ControlStructureType.WHILE:
         return this.buildWhileStructure(structure, condition, processedBlocks);
-      
+
       case ControlStructureType.DO_WHILE:
         return this.buildDoWhileStructure(structure, condition, processedBlocks);
-      
+
       case ControlStructureType.FOR:
         return this.buildForStructure(structure, condition, processedBlocks);
-      
+
       case ControlStructureType.SWITCH:
         return this.buildSwitchStructure(structure, processedBlocks);
-      
+
       default:
         return null;
     }
@@ -580,35 +585,36 @@ export class NWScriptASTBuilder {
         return null;
       }
     }
-    
+
     // Build then body
     const thenBody = this.buildStructureBody(structure.bodyBlocks, processedBlocks, structure);
-    
+
     // Build else body (if present)
-    const elseBody = structure.elseBlocks && structure.elseBlocks.length > 0
-      ? this.buildStructureBody(structure.elseBlocks, processedBlocks, structure)
-      : undefined;
-    
+    const elseBody =
+      structure.elseBlocks && structure.elseBlocks.length > 0
+        ? this.buildStructureBody(structure.elseBlocks, processedBlocks, structure)
+        : undefined;
+
     // Use createIf which handles both if and if-else
-    const ifNode = elseBody 
-      ? NWScriptAST.createIf(condition, thenBody, elseBody, structure.headerBlock) as NWScriptIfElseNode
-      : NWScriptAST.createIf(condition, thenBody, undefined, structure.headerBlock) as NWScriptIfNode;
-    
+    const ifNode = elseBody
+      ? (NWScriptAST.createIf(condition, thenBody, elseBody, structure.headerBlock) as NWScriptIfElseNode)
+      : (NWScriptAST.createIf(condition, thenBody, undefined, structure.headerBlock) as NWScriptIfNode);
+
     // Handle nested structures
     if (structure.nestedStructures.length > 0) {
       this.addNestedStructures(ifNode, structure, processedBlocks);
     }
-    
+
     // Set location
     ifNode.location = {
       startBlock: structure.headerBlock,
       endBlock: structure.exitBlock,
       startAddress: structure.headerBlock.startInstruction.address,
-      endAddress: structure.exitBlock 
+      endAddress: structure.exitBlock
         ? structure.exitBlock.endInstruction.address + structure.exitBlock.endInstruction.instructionSize
-        : undefined
+        : undefined,
     };
-    
+
     return ifNode;
   }
 
@@ -623,25 +629,25 @@ export class NWScriptASTBuilder {
     if (!condition) {
       condition = NWScriptExpression.constant(1, NWScriptDataType.INTEGER);
     }
-    
+
     const body = this.buildStructureBody(structure.bodyBlocks, processedBlocks, structure);
     const whileNode = NWScriptAST.createWhile(condition, body, structure.headerBlock);
-    
+
     // Handle nested structures
     if (structure.nestedStructures.length > 0) {
       this.addNestedStructures(whileNode, structure, processedBlocks);
     }
-    
+
     // Set location
     whileNode.location = {
       startBlock: structure.headerBlock,
       endBlock: structure.exitBlock,
       startAddress: structure.headerBlock.startInstruction.address,
-      endAddress: structure.exitBlock 
+      endAddress: structure.exitBlock
         ? structure.exitBlock.endInstruction.address + structure.exitBlock.endInstruction.instructionSize
-        : undefined
+        : undefined,
     };
-    
+
     return whileNode;
   }
 
@@ -656,25 +662,25 @@ export class NWScriptASTBuilder {
     if (!condition) {
       condition = NWScriptExpression.constant(1, NWScriptDataType.INTEGER);
     }
-    
+
     const body = this.buildStructureBody(structure.bodyBlocks, processedBlocks, structure);
     const doWhileNode = NWScriptAST.createDoWhile(body, condition, structure.headerBlock);
-    
+
     // Handle nested structures
     if (structure.nestedStructures.length > 0) {
       this.addNestedStructures(doWhileNode, structure, processedBlocks);
     }
-    
+
     // Set location
     doWhileNode.location = {
       startBlock: structure.headerBlock,
       endBlock: structure.exitBlock,
       startAddress: structure.headerBlock.startInstruction.address,
-      endAddress: structure.exitBlock 
+      endAddress: structure.exitBlock
         ? structure.exitBlock.endInstruction.address + structure.exitBlock.endInstruction.instructionSize
-        : undefined
+        : undefined,
     };
-    
+
     return doWhileNode;
   }
 
@@ -702,7 +708,7 @@ export class NWScriptASTBuilder {
         }
       }
     }
-    
+
     // Build increment statement (if present)
     let increment: NWScriptASTNode | undefined = undefined;
     if (structure.incrementBlock) {
@@ -714,25 +720,25 @@ export class NWScriptASTBuilder {
         }
       }
     }
-    
+
     const body = this.buildStructureBody(structure.bodyBlocks, processedBlocks, structure);
     const forNode = NWScriptAST.createFor(body, init, condition || undefined, increment, structure.headerBlock);
-    
+
     // Handle nested structures
     if (structure.nestedStructures.length > 0) {
       this.addNestedStructures(forNode, structure, processedBlocks);
     }
-    
+
     // Set location
     forNode.location = {
       startBlock: structure.headerBlock,
       endBlock: structure.exitBlock,
       startAddress: structure.headerBlock.startInstruction.address,
-      endAddress: structure.exitBlock 
+      endAddress: structure.exitBlock
         ? structure.exitBlock.endInstruction.address + structure.exitBlock.endInstruction.instructionSize
-        : undefined
+        : undefined,
     };
-    
+
     return forNode;
   }
 
@@ -748,20 +754,20 @@ export class NWScriptASTBuilder {
     const expression = NWScriptExpression.constant(0, NWScriptDataType.INTEGER);
     const cases: NWScriptSwitchCaseNode[] = [];
     const body = this.buildStructureBody(structure.bodyBlocks, processedBlocks, structure);
-    
+
     // For now, create a simple switch with no cases
     const switchNode = NWScriptAST.createSwitch(expression, cases, undefined, structure.headerBlock);
-    
+
     // Set location
     switchNode.location = {
       startBlock: structure.headerBlock,
       endBlock: structure.exitBlock,
       startAddress: structure.headerBlock.startInstruction.address,
-      endAddress: structure.exitBlock 
+      endAddress: structure.exitBlock
         ? structure.exitBlock.endInstruction.address + structure.exitBlock.endInstruction.instructionSize
-        : undefined
+        : undefined,
     };
-    
+
     return switchNode;
   }
 
@@ -775,27 +781,25 @@ export class NWScriptASTBuilder {
     parentStructure?: NWScriptControlStructure
   ): NWScriptBlockNode {
     const statements: NWScriptASTNode[] = [];
-    
+
     // CRITICAL FIX: Sort blocks by CFG execution order (topological order)
     // This ensures statements are generated in the correct execution order
     const blockSet = new Set(blocks);
     const allOrderedBlocks = this.cfg.getTopologicalOrder();
-    const orderedBlocks = allOrderedBlocks.filter(block => blockSet.has(block));
-    
+    const orderedBlocks = allOrderedBlocks.filter((block) => blockSet.has(block));
+
     for (const block of orderedBlocks) {
       if (processedBlocks.has(block)) {
         continue;
       }
-      
+
       // Check if this block is part of a nested structure
       const nestedStructure = this.findStructureForBlock(block);
       if (nestedStructure && nestedStructure !== parentStructure) {
         // Check if this nested structure is actually nested within the parent
         // (not just a different top-level structure)
-        const isNested = parentStructure 
-          ? this.isStructureNestedIn(nestedStructure, parentStructure)
-          : false;
-        
+        const isNested = parentStructure ? this.isStructureNestedIn(nestedStructure, parentStructure) : false;
+
         if (isNested || !parentStructure) {
           // This is a nested structure - build it
           if (!this.structureToASTNode.has(nestedStructure)) {
@@ -808,7 +812,7 @@ export class NWScriptASTBuilder {
           continue; // Skip processing this block as a regular statement
         }
       }
-      
+
       // Regular block - convert statements
       // Exclude structure blocks (header, exit) but include body blocks
       // The header block's condition is extracted separately, and its statements
@@ -822,7 +826,12 @@ export class NWScriptASTBuilder {
           }
         }
         processedBlocks.add(block);
-      } else if (block === blocks[0] && parentStructure && block !== parentStructure.headerBlock && block !== parentStructure.exitBlock) {
+      } else if (
+        block === blocks[0] &&
+        parentStructure &&
+        block !== parentStructure.headerBlock &&
+        block !== parentStructure.exitBlock
+      ) {
         // Special case: first block in body that's marked as structure block
         // but isn't the header or exit - might be a condition block for loops
         const blockStatements = this.blockStatements.get(block) || [];
@@ -835,7 +844,7 @@ export class NWScriptASTBuilder {
         processedBlocks.add(block);
       }
     }
-    
+
     return NWScriptAST.createBlock(statements);
   }
 
@@ -860,22 +869,26 @@ export class NWScriptASTBuilder {
   /**
    * Check if a structure is nested within another structure
    */
-  private isStructureNestedIn(nested: NWScriptControlStructure, parent: NWScriptControlStructure, visited: Set<NWScriptControlStructure> = new Set()): boolean {
+  private isStructureNestedIn(
+    nested: NWScriptControlStructure,
+    parent: NWScriptControlStructure,
+    visited: Set<NWScriptControlStructure> = new Set()
+  ): boolean {
     // Prevent infinite recursion
     if (visited.has(parent)) {
       return false;
     }
     visited.add(parent);
-    
+
     // Check if nested structure's blocks are all within parent structure
     const parentBlocks = new Set<NWScriptBasicBlock>();
     parentBlocks.add(parent.headerBlock);
-    parent.bodyBlocks.forEach(b => parentBlocks.add(b));
-    parent.elseBlocks?.forEach(b => parentBlocks.add(b));
+    parent.bodyBlocks.forEach((b) => parentBlocks.add(b));
+    parent.elseBlocks?.forEach((b) => parentBlocks.add(b));
     if (parent.exitBlock) parentBlocks.add(parent.exitBlock);
     if (parent.conditionBlock) parentBlocks.add(parent.conditionBlock);
     if (parent.incrementBlock) parentBlocks.add(parent.incrementBlock);
-    
+
     // Check if nested structure's header is in parent
     if (!parentBlocks.has(nested.headerBlock)) {
       // Check nested structures of parent
@@ -886,13 +899,13 @@ export class NWScriptASTBuilder {
       }
       return false;
     }
-    
+
     // Check if all nested structure's blocks are in parent
     if (!parentBlocks.has(nested.headerBlock)) return false;
-    if (!nested.bodyBlocks.every(b => parentBlocks.has(b))) return false;
-    if (nested.elseBlocks && !nested.elseBlocks.every(b => parentBlocks.has(b))) return false;
+    if (!nested.bodyBlocks.every((b) => parentBlocks.has(b))) return false;
+    if (nested.elseBlocks && !nested.elseBlocks.every((b) => parentBlocks.has(b))) return false;
     if (nested.exitBlock && !parentBlocks.has(nested.exitBlock)) return false;
-    
+
     return true;
   }
 
@@ -918,29 +931,25 @@ export class NWScriptASTBuilder {
           return NWScriptAST.createExpressionStatement(stmt.expression);
         }
         return null;
-      
+
       case 'assignment':
         if (stmt.variableName && stmt.expression) {
-          return NWScriptAST.createAssignment(
-            stmt.variableName,
-            stmt.expression,
-            stmt.isGlobal || false
-          );
+          return NWScriptAST.createAssignment(stmt.variableName, stmt.expression, stmt.isGlobal || false);
         }
         return null;
-      
+
       case 'return':
         return NWScriptAST.createReturn(stmt.expression || undefined);
-      
+
       case 'block':
         if (stmt.statements) {
           const blockStatements = stmt.statements
-            .map(s => this.statementToASTNode(s))
+            .map((s) => this.statementToASTNode(s))
             .filter((n): n is NWScriptASTNode => n !== null);
           return NWScriptAST.createBlock(blockStatements);
         }
         return null;
-      
+
       // Control structures in statements are handled separately
       case 'if':
       case 'while':
@@ -948,7 +957,7 @@ export class NWScriptASTBuilder {
       case 'for':
         // These should be handled by structure builder, not here
         return null;
-      
+
       default:
         return null;
     }
@@ -961,12 +970,12 @@ export class NWScriptASTBuilder {
     if (!block.conditionInstruction) {
       return null;
     }
-    
+
     // Use StatementBuilder's method if available
     if (this.getConditionFromBlock) {
       return this.getConditionFromBlock(block);
     }
-    
+
     // Fallback: return null (don't use placeholder constant)
     return null;
   }
@@ -978,4 +987,3 @@ export class NWScriptASTBuilder {
     return NWScriptExpression.constant(value, dataType);
   }
 }
-

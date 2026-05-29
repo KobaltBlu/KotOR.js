@@ -41,9 +41,9 @@ const odyssey_envmap_fragment = `
   #elif defined( ENVMAP_BLENDING_ADD )
     outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a); //odyssey uses the alpha of the texture to blend the envmap
   #endif
-#endif`
+#endif`;
 
-THREE.ShaderChunk.meshodyssey_vert = `
+(THREE.ShaderChunk as Record<string, string>).meshodyssey_vert = `
 #define PHONG
 varying vec3 vViewPosition;
 #include <common>
@@ -84,7 +84,7 @@ void main() {
   #include <fog_vertex>
 }`;
 
-THREE.ShaderChunk.meshodyssey_frag = `
+(THREE.ShaderChunk as Record<string, string>).meshodyssey_frag = `
 #define PHONG
 
 uniform vec3 diffuse;
@@ -159,16 +159,15 @@ void main() {
 
 /**
  * ShaderOdysseyModel class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ShaderOdysseyModel.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ShaderOdysseyModel extends Shader {
-
-  constructor(){
+  constructor() {
     super();
 
     this.name = 'odyssey';
@@ -630,5 +629,4 @@ export class ShaderOdysseyModel extends Shader {
     ];
 
   }
-
 }

@@ -20,7 +20,16 @@ const A4 = -5352;
 // Inline: ((unsigned)X * Y) >> 11 — no function call
 function idct_col(dest: Int32Array, src: Int32Array, dOff: number, sOff: number): void {
   // Check if AC terms in this column are zero
-  if ((src[sOff + 8] | src[sOff + 16] | src[sOff + 24] | src[sOff + 32] | src[sOff + 40] | src[sOff + 56] | src[sOff + 48]) === 0) {
+  if (
+    (src[sOff + 8] |
+      src[sOff + 16] |
+      src[sOff + 24] |
+      src[sOff + 32] |
+      src[sOff + 40] |
+      src[sOff + 56] |
+      src[sOff + 48]) ===
+    0
+  ) {
     const v = src[sOff + 0];
     dest[dOff + 0] = v;
     dest[dOff + 8] = v;
@@ -45,19 +54,19 @@ function idct_col(dest: Int32Array, src: Int32Array, dOff: number, sOff: number)
   const a0 = s0 + s4;
   const a1 = s0 - s4;
   const a2 = s2 + s6;
-  const a3 = ((Math.imul(A1 >>> 0, (s2 - s6) | 0) >> 11) | 0);
+  const a3 = (Math.imul(A1 >>> 0, (s2 - s6) | 0) >> 11) | 0;
   const a4 = s5 + s3;
   const a5 = s5 - s3;
   const a6 = s1 + s7;
   const a7 = s1 - s7;
   const b0 = a4 + a6;
-  const b1 = ((Math.imul(A3 >>> 0, (a5 + a7) | 0) >> 11) | 0);
+  const b1 = (Math.imul(A3 >>> 0, (a5 + a7) | 0) >> 11) | 0;
   const b2 = ((Math.imul(A4 >>> 0, a5 | 0) >> 11) | 0) - b0 + b1;
   const b3 = ((Math.imul(A1 >>> 0, (a6 - a4) | 0) >> 11) | 0) - b2;
   const b4 = ((Math.imul(A2 >>> 0, a7 | 0) >> 11) | 0) + b3 - b1;
 
-  dest[dOff + 0]  = a0 + a2 + b0;
-  dest[dOff + 8]  = a1 + a3 - a2 + b2;
+  dest[dOff + 0] = a0 + a2 + b0;
+  dest[dOff + 8] = a1 + a3 - a2 + b2;
   dest[dOff + 16] = a1 - a3 + a2 + b3;
   dest[dOff + 24] = a0 - a2 - b4;
   dest[dOff + 32] = a0 - a2 + b4;
@@ -80,37 +89,43 @@ function idct_row_put(dest: Uint8Array, destStride: number, src: Int32Array, sOf
   const a0 = s0 + s4;
   const a1 = s0 - s4;
   const a2 = s2 + s6;
-  const a3 = ((Math.imul(A1 >>> 0, (s2 - s6) | 0) >> 11) | 0);
+  const a3 = (Math.imul(A1 >>> 0, (s2 - s6) | 0) >> 11) | 0;
   const a4 = s5 + s3;
   const a5 = s5 - s3;
   const a6 = s1 + s7;
   const a7 = s1 - s7;
   const b0 = a4 + a6;
-  const b1 = ((Math.imul(A3 >>> 0, (a5 + a7) | 0) >> 11) | 0);
+  const b1 = (Math.imul(A3 >>> 0, (a5 + a7) | 0) >> 11) | 0;
   const b2 = ((Math.imul(A4 >>> 0, a5 | 0) >> 11) | 0) - b0 + b1;
   const b3 = ((Math.imul(A1 >>> 0, (a6 - a4) | 0) >> 11) | 0) - b2;
   const b4 = ((Math.imul(A2 >>> 0, a7 | 0) >> 11) | 0) + b3 - b1;
 
   const base = row * destStride;
-  dest[base + 0] = ((a0 + a2 + b0 + 0x7F) >> 8) & 0xFF;
-  dest[base + 1] = ((a1 + a3 - a2 + b2 + 0x7F) >> 8) & 0xFF;
-  dest[base + 2] = ((a1 - a3 + a2 + b3 + 0x7F) >> 8) & 0xFF;
-  dest[base + 3] = ((a0 - a2 - b4 + 0x7F) >> 8) & 0xFF;
-  dest[base + 4] = ((a0 - a2 + b4 + 0x7F) >> 8) & 0xFF;
-  dest[base + 5] = ((a1 - a3 + a2 - b3 + 0x7F) >> 8) & 0xFF;
-  dest[base + 6] = ((a1 + a3 - a2 - b2 + 0x7F) >> 8) & 0xFF;
-  dest[base + 7] = ((a0 + a2 - b0 + 0x7F) >> 8) & 0xFF;
+  dest[base + 0] = ((a0 + a2 + b0 + 0x7f) >> 8) & 0xff;
+  dest[base + 1] = ((a1 + a3 - a2 + b2 + 0x7f) >> 8) & 0xff;
+  dest[base + 2] = ((a1 - a3 + a2 + b3 + 0x7f) >> 8) & 0xff;
+  dest[base + 3] = ((a0 - a2 - b4 + 0x7f) >> 8) & 0xff;
+  dest[base + 4] = ((a0 - a2 + b4 + 0x7f) >> 8) & 0xff;
+  dest[base + 5] = ((a1 - a3 + a2 - b3 + 0x7f) >> 8) & 0xff;
+  dest[base + 6] = ((a1 + a3 - a2 - b2 + 0x7f) >> 8) & 0xff;
+  dest[base + 7] = ((a0 + a2 - b0 + 0x7f) >> 8) & 0xff;
 }
 
-function clamp8(x: number): number { return x < 0 ? 0 : x > 255 ? 255 : x; }
+function clamp8(x: number): number {
+  return x < 0 ? 0 : x > 255 ? 255 : x;
+}
 
 // Reusable buffers for IDCT operations to avoid allocations
 class IDCTBuffers {
   private static temp = new Int32Array(64);
   private static out = new Int32Array(8);
 
-  static getTemp(): Int32Array { return this.temp; }
-  static getOut(): Int32Array { return this.out; }
+  static getTemp(): Int32Array {
+    return this.temp;
+  }
+  static getOut(): Int32Array {
+    return this.out;
+  }
 }
 
 // Public API mirroring FFmpeg's BinkDSPContext
@@ -147,24 +162,24 @@ export function idctAdd(dest: Uint8Array, destStride: number, block: Int32Array)
     const a0 = s0 + s4;
     const a1 = s0 - s4;
     const a2 = s2 + s6;
-    const a3 = ((Math.imul(A1 >>> 0, (s2 - s6) | 0) >> 11) | 0);
+    const a3 = (Math.imul(A1 >>> 0, (s2 - s6) | 0) >> 11) | 0;
     const a4 = s5 + s3;
     const a5 = s5 - s3;
     const a6 = s1 + s7;
     const a7 = s1 - s7;
     const b0 = a4 + a6;
-    const b1 = ((Math.imul(A3 >>> 0, (a5 + a7) | 0) >> 11) | 0);
+    const b1 = (Math.imul(A3 >>> 0, (a5 + a7) | 0) >> 11) | 0;
     const b2 = ((Math.imul(A4 >>> 0, a5 | 0) >> 11) | 0) - b0 + b1;
     const b3 = ((Math.imul(A1 >>> 0, (a6 - a4) | 0) >> 11) | 0) - b2;
     const b4 = ((Math.imul(A2 >>> 0, a7 | 0) >> 11) | 0) + b3 - b1;
-    out[0] = (a0 + a2 + b0 + 0x7F) >> 8;
-    out[1] = (a1 + a3 - a2 + b2 + 0x7F) >> 8;
-    out[2] = (a1 - a3 + a2 + b3 + 0x7F) >> 8;
-    out[3] = (a0 - a2 - b4 + 0x7F) >> 8;
-    out[4] = (a0 - a2 + b4 + 0x7F) >> 8;
-    out[5] = (a1 - a3 + a2 - b3 + 0x7F) >> 8;
-    out[6] = (a1 + a3 - a2 - b2 + 0x7F) >> 8;
-    out[7] = (a0 + a2 - b0 + 0x7F) >> 8;
+    out[0] = (a0 + a2 + b0 + 0x7f) >> 8;
+    out[1] = (a1 + a3 - a2 + b2 + 0x7f) >> 8;
+    out[2] = (a1 - a3 + a2 + b3 + 0x7f) >> 8;
+    out[3] = (a0 - a2 - b4 + 0x7f) >> 8;
+    out[4] = (a0 - a2 + b4 + 0x7f) >> 8;
+    out[5] = (a1 - a3 + a2 - b3 + 0x7f) >> 8;
+    out[6] = (a1 + a3 - a2 - b2 + 0x7f) >> 8;
+    out[7] = (a0 + a2 - b0 + 0x7f) >> 8;
     for (let c = 0; c < 8; c++) {
       const v = (dest[base + c] + out[c]) | 0;
       dest[base + c] = Math.max(0, Math.min(255, v));
@@ -188,7 +203,8 @@ export function scaleBlock(src: Uint8Array, dst: Uint8Array, dstStride: number):
 }
 
 export function addPixels8(pixels: Uint8Array, block: Int16Array, lineSize: number): void {
-  let p = 0; let b = 0;
+  let p = 0;
+  let b = 0;
   for (let i = 0; i < 8; i++) {
     for (let j = 0; j < 8; j++) {
       const idx = p + j;

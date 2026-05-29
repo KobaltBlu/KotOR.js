@@ -1,9 +1,17 @@
-import React from "react";
-import { TabTwoDAEditor } from "@/apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { TabTwoDAEditor } from '@/apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import * as KotOR from '@/apps/forge/KotOR';
+
+interface TwoDASnapshot {
+  columns: string[];
+  rows: any;
+  ColumnCount: number;
+  RowCount: number;
+  CellCount: number;
+}
 
 interface TwoDASnapshot {
   columns: string[];
@@ -27,15 +35,15 @@ export class TabTwoDAEditorState extends TabState {
       {
         description: '2-Dimensional Array',
         accept: {
-          'application/octet-stream': ['.2da']
-        }
+          'application/octet-stream': ['.2da'],
+        },
       },
       {
         description: 'Comma-separated values',
         accept: {
-          'text/csv': ['.csv']
-        }
-      }
+          'text/csv': ['.csv'],
+        },
+      },
     ];
   }
 
@@ -90,7 +98,7 @@ export class TabTwoDAEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(ext == 'csv'){
+    if (ext == 'csv') {
       const textEncoder = new TextEncoder();
       return textEncoder.encode(this.twoDAObject.toCSV());
     }

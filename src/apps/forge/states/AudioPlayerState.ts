@@ -85,7 +85,6 @@ export type AudioPlayerStopOptions = {
 };
 
 export class AudioPlayerState {
-  
   // this.gainNode = AudioEngine.GetAudioEngine().audioCtx.createGain();
   // this.gainNode.gain.value = 0.25;
   // this.source = AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
@@ -154,7 +153,7 @@ export class AudioPlayerState {
   }
   
   static analyser: AnalyserNode;
-  static analyserBufferLength: number; 
+  static analyserBufferLength: number;
   static analyserData: Uint8Array;
   static source: AudioBufferSourceNode;
   static gainNode: GainNode;
@@ -233,43 +232,43 @@ export class AudioPlayerState {
       let index = ev.indexOf(cb);
       if(index == -1){
         ev.push(cb);
-      }else{
+      } else {
         console.warn('Event Listener: Already added', type);
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static RemoveEventListener(type: AudioPlayerEventListenerTypes, cb: Function){
-    if(Array.isArray(AudioPlayerState.eventListeners[type])){
-      let ev = AudioPlayerState.eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index >= 0){
+  static RemoveEventListener(type: AudioPlayerEventListenerTypes, cb: Function) {
+    if (Array.isArray(AudioPlayerState.eventListeners[type])) {
+      const ev = AudioPlayerState.eventListeners[type];
+      const index = ev.indexOf(cb);
+      if (index >= 0) {
         ev.splice(index, 1);
-      }else{
+      } else {
         console.warn('Event Listener: Already removed', type);
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static ProcessEventListener(type: AudioPlayerEventListenerTypes, args: any[] = []){
-    if(Array.isArray(AudioPlayerState.eventListeners[type])){
-      let ev = AudioPlayerState.eventListeners[type];
-      for(let i = 0; i < ev.length; i++){
+  static ProcessEventListener(type: AudioPlayerEventListenerTypes, args: any[] = []) {
+    if (Array.isArray(AudioPlayerState.eventListeners[type])) {
+      const ev = AudioPlayerState.eventListeners[type];
+      for (let i = 0; i < ev.length; i++) {
         const callback = ev[i];
-        if(typeof callback === 'function'){
+        if (typeof callback === 'function') {
           callback(...args);
         }
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', type);
     }
   }
 
-  static TriggerEventListener(type: AudioPlayerEventListenerTypes, args: any[] = []){
+  static TriggerEventListener(type: AudioPlayerEventListenerTypes, args: any[] = []) {
     AudioPlayerState.ProcessEventListener(type, args);
   }
 
@@ -286,27 +285,26 @@ export class AudioPlayerState {
     AudioPlayerState.openAudioPlayerTab();
     AudioPlayerState.Reset();
     AudioPlayerState.Stop();
-    
+
     AudioPlayerState.file = file;
-    if(file instanceof EditorFile){
-      file.readFile().then( (response) => {
-        try{
-          if(!response.buffer ){
+    if (file instanceof EditorFile) {
+      file.readFile().then((response) => {
+        try {
+          if (!response.buffer) {
             throw new Error('Audio Buffer is undefined');
           }
           AudioPlayerState.audioFile = new KotOR.AudioFile(response.buffer);
-          AudioPlayerState.audioFile.filename = file.resref+'.'+file.ext;
-          if(AudioPlayerState.isPlaying()){
+          AudioPlayerState.audioFile.filename = file.resref + '.' + file.ext;
+          if (AudioPlayerState.isPlaying()) {
             AudioPlayerState.Stop();
           }
-          if(AudioPlayerState.buffer){
+          if (AudioPlayerState.buffer) {
             AudioPlayerState.buffer = null;
           }
           AudioPlayerState.Play();
           // AudioPlayerState.Show();
           AudioPlayerState.ProcessEventListener('onOpen', [AudioPlayerState.audioFile]);
-        }
-        catch (e) {
+        } catch (e) {
           console.error(e);
           //AudioPlayerState.Hide();
         }
@@ -792,10 +790,245 @@ export class AudioPlayerState {
         }catch( e ){
 
         }
+      }
+    }
+    const dnCol = row.displayname ?? row.DisplayName;
+    if (dnCol != null && dnCol !== '****') {
+      const s = KotOR.TwoDAObject.normalizeValue(dnCol, 'string', '') as string;
+      if (s && String(s).trim() !== '') {
+        let t = String(s).trim();
+        if ((t.startsWith('"') && t.endsWith('"')) || (t.startsWith("'") && t.endsWith("'"))) {
+          t = t.slice(1, -1);
+        }
+        return t;
+      }
+    }
+    const rl = String(rowLabel || '').trim();
+    if (rl) {
+      return rl;
+    }
+    return resRef;
+  }
+
+  /**
+   * Rows from `ambientmusic.2da` with a non-empty `resource` (not ****), in table order.
+   */
+  static getAmbientMusicPlaylistEntries(): AmbientMusicOstEntry[] {
+    const twoda = KotOR.TwoDAManager.datatables.get('ambientmusic') as KotOR.TwoDAObject | undefined;
+    if (!twoda?.rows || typeof twoda.RowCount !== 'number') {
+      return [];
+    }
+    const out: AmbientMusicOstEntry[] = [];
+    for (let i = 0; i < twoda.RowCount; i++) {
+      const row = twoda.rows[i];
+      if (!row) {
+        continue;
+      }
+      const raw = row.resource;
+      if (raw == null || raw === '****') {
+        continue;
+      }
+      const resRef = String(raw).trim();
+      if (!resRef) {
+        continue;
+      }
+      const label = row.__rowlabel != null && String(row.__rowlabel).length ? String(row.__rowlabel) : resRef;
+      const displayName = AudioPlayerState.resolveAmbientMusicDisplayName(row, label, resRef);
+      out.push({ resRef, label, displayName });
+    }
+    return out;
+  }
+
+  static emitOstState(): void {
+    const active = AudioPlayerState.ostMode && AudioPlayerState.ostTracks.length > 0;
+    const physical =
+      active && AudioPlayerState.ostPlayOrder.length > 0
+        ? AudioPlayerState.ostPlayOrder[AudioPlayerState.ostPlayCursor]
+        : -1;
+    const entry = active && physical >= 0 ? AudioPlayerState.ostTracks[physical] : undefined;
+    const payload: AudioPlayerOstStatePayload = {
+      active,
+      label: entry?.displayName ?? entry?.label ?? '',
+      trackIndex: physical,
+      total: AudioPlayerState.ostTracks.length,
+      shuffle: AudioPlayerState.ostShuffle,
+      queuePosition: active ? AudioPlayerState.ostPlayCursor + 1 : 0,
+    };
+    AudioPlayerState.ProcessEventListener('onOstState', [payload]);
+  }
+
+  static clearOstMode(): void {
+    AudioPlayerState.ostMode = false;
+    AudioPlayerState.ostTracks = [];
+    AudioPlayerState.ostPlayOrder = [];
+    AudioPlayerState.ostPlayCursor = 0;
+    AudioPlayerState.emitOstState();
+  }
+
+  static stopAmbientMusicOst(): void {
+    AudioPlayerState.clearOstMode();
+    AudioPlayerState.Stop();
+  }
+
+  private static async loadGameMusicResRef(resRef: string, displayTitle: string): Promise<void> {
+    const filePath = path.join('streammusic', `${resRef}.wav`);
+    const buffer = await GameFileSystem.readFile(filePath);
+    AudioPlayerState.file = undefined;
+    AudioPlayerState.audioFile = new KotOR.AudioFile(buffer);
+    AudioPlayerState.audioFile.filename = `${displayTitle} (${resRef})`;
+    AudioPlayerState.buffer = null;
+    AudioPlayerState.ProcessEventListener('onOpen', [AudioPlayerState.audioFile]);
+    AudioPlayerState.emitOstState();
+  }
+
+  /**
+   * Tries the track at `ostPlayCursor`; on missing file, advances in play order up to one full pass.
+   */
+  private static async loadOstTrackAtIndexWithRetry(attempts = 0): Promise<boolean> {
+    const n = AudioPlayerState.ostTracks.length;
+    if (!n || !AudioPlayerState.ostPlayOrder.length || attempts >= n) {
+      return false;
+    }
+    const physical = AudioPlayerState.ostPlayOrder[AudioPlayerState.ostPlayCursor];
+    const t = AudioPlayerState.ostTracks[physical];
+    try {
+      await AudioPlayerState.loadGameMusicResRef(t.resRef, t.displayName);
+      return true;
+    } catch (e) {
+      console.warn('Ambient OST: could not load', t.resRef, e);
+      AudioPlayerState.ostPlayCursor = (AudioPlayerState.ostPlayCursor + 1) % n;
+      return AudioPlayerState.loadOstTrackAtIndexWithRetry(attempts + 1);
+    }
+  }
+
+  static async startAmbientMusicOst(): Promise<void> {
+    if (AudioPlayerState.ostStarting) {
+      return;
+    }
+    const entries = AudioPlayerState.getAmbientMusicPlaylistEntries();
+    if (!entries.length) {
+      console.warn(
+        'Ambient OST: no tracks in ambientmusic.2da (or table not loaded). Open a project / game assets first.'
+      );
+      return;
+    }
+    AudioPlayerState.ostStarting = true;
+    try {
+      AudioPlayerState.ostTracks = entries;
+      AudioPlayerState.ostMode = true;
+      AudioPlayerState.rebuildOstPlayOrder();
+      AudioPlayerState.ostPlayCursor = 0;
+      AudioPlayerState.Reset();
+      AudioPlayerState.Stop();
+      const ok = await AudioPlayerState.loadOstTrackAtIndexWithRetry();
+      if (!ok) {
+        console.warn('Ambient OST: no streammusic files could be loaded.');
+        AudioPlayerState.clearOstMode();
+        return;
+      }
+      AudioPlayerState.emitOstState();
+      AudioPlayerState.Play();
+    } finally {
+      AudioPlayerState.ostStarting = false;
+    }
+  }
+
+  static async skipOst(delta: number): Promise<void> {
+    if (!AudioPlayerState.ostMode || !AudioPlayerState.ostTracks.length) {
+      return;
+    }
+    const n = AudioPlayerState.ostTracks.length;
+    AudioPlayerState.ostPlayCursor = (AudioPlayerState.ostPlayCursor + delta + n) % n;
+    AudioPlayerState.Stop();
+    const ok = await AudioPlayerState.loadOstTrackAtIndexWithRetry();
+    if (ok) {
+      AudioPlayerState.Play();
+    } else {
+      AudioPlayerState.stopAmbientMusicOst();
+    }
+  }
+
+  /**
+   * Jump to a track by its index in the ambientmusic playlist (same order as `getAmbientMusicPlaylistEntries`).
+   * Starts OST if it is not active.
+   */
+  static async seekOstToPhysicalIndex(physicalIndex: number): Promise<void> {
+    const entries = AudioPlayerState.getAmbientMusicPlaylistEntries();
+    if (physicalIndex < 0 || physicalIndex >= entries.length) {
+      return;
+    }
+    if (AudioPlayerState.ostStarting) {
+      return;
+    }
+
+    if (!AudioPlayerState.ostMode) {
+      AudioPlayerState.ostStarting = true;
+      try {
+        AudioPlayerState.ostTracks = entries;
+        AudioPlayerState.ostMode = true;
+        AudioPlayerState.rebuildOstPlayOrder();
+        AudioPlayerState.ostPlayCursor = Math.max(0, AudioPlayerState.ostPlayOrder.indexOf(physicalIndex));
+        AudioPlayerState.Reset();
+        AudioPlayerState.Stop();
+        const ok = await AudioPlayerState.loadOstTrackAtIndexWithRetry();
+        if (!ok) {
+          console.warn('Ambient OST: no streammusic files could be loaded.');
+          AudioPlayerState.clearOstMode();
+          return;
+        }
+        AudioPlayerState.emitOstState();
+        AudioPlayerState.Play();
+      } finally {
+        AudioPlayerState.ostStarting = false;
+      }
+      return;
+    }
+
+    const pos = AudioPlayerState.ostPlayOrder.indexOf(physicalIndex);
+    if (pos < 0) {
+      return;
+    }
+    AudioPlayerState.ostPlayCursor = pos;
+    AudioPlayerState.Stop();
+    const ok = await AudioPlayerState.loadOstTrackAtIndexWithRetry();
+    if (ok) {
+      AudioPlayerState.Play();
+    } else {
+      AudioPlayerState.stopAmbientMusicOst();
+    }
+  }
+
+  static GetAudioBuffer(onBuffered?: Function) {
+    if (AudioPlayerState.buffer == null) {
+      AudioPlayerState.audioFile.getPlayableByteStream().then((data: Uint8Array) => {
+        try {
+          const ab = (
+            data.byteOffset === 0 && data.byteLength === data.buffer.byteLength
+              ? data.buffer
+              : data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+          ) as ArrayBuffer;
+          KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(
+            ab,
+            (buffer: any) => {
+              AudioPlayerState.buffer = buffer;
+              if (typeof onBuffered === 'function') onBuffered(AudioPlayerState.buffer);
+            },
+            (error: any) => {
+              console.error('decodeAudioData error', error);
+
+              // AudioPlayerState.buffer = pcm.toAudioBuffer(data);
+              console.log(
+                'Caught PCM error converting ADPCM to PCM',
+                AudioPlayerState.buffer,
+                AudioPlayerState.buffer instanceof AudioBuffer
+              );
+              if (typeof onBuffered === 'function') onBuffered(AudioPlayerState.buffer);
+            }
+          );
+        } catch (e) {}
       });
-    }else{
-      if(onBuffered != null)
-        onBuffered(AudioPlayerState.buffer);
+    } else {
+      if (onBuffered != null) onBuffered(AudioPlayerState.buffer);
     }
   }
 
@@ -803,7 +1036,7 @@ export class AudioPlayerState {
     return AudioPlayerState.playing;
   }
 
-  static Reset(){
+  static Reset() {
     AudioPlayerState.position = 0;
     AudioPlayerState.startedAt = 0;
     AudioPlayerState.pausedAt = 0;
@@ -811,15 +1044,14 @@ export class AudioPlayerState {
     AudioPlayerState.loading = false;
     AudioPlayerState.loop = false;
 
-    if(!AudioPlayerState.gainNode){
+    if (!AudioPlayerState.gainNode) {
       AudioPlayerState.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();
       AudioPlayerState.gainNode.gain.value = AudioPlayerState.volume;
     }
 
-    if(!AudioPlayerState.source){
+    if (!AudioPlayerState.source) {
       AudioPlayerState.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
     }
-
   }
 
   static SetVolume(volume: number): void {
@@ -903,18 +1135,18 @@ export class AudioPlayerState {
     });
   }
 
-  static ResumeLoop(){
+  static ResumeLoop() {
     // AudioPlayerState.loopId = global.setInterval(() => {
     //   //
     // }, 100);
   }
 
-  static StopLoop(){
+  static StopLoop() {
     clearInterval(AudioPlayerState.loopId);
   }
 
-  static Pause(){
-    let elapsed = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
+  static Pause() {
+    const elapsed = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
     AudioPlayerState.pausedAt = elapsed;
     AudioPlayerState.ProcessEventListener('onPause');
     AudioPlayerState.Stop({ emitStopEvent: false });
@@ -930,7 +1162,9 @@ export class AudioPlayerState {
         AudioPlayerState.source.disconnect();
         AudioPlayerState.source.stop(0);
       }
-    }catch(e){ console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
     AudioPlayerState.pausedAt = 0;
     AudioPlayerState.startedAt = 0;
     AudioPlayerState.playing = false;
@@ -1047,16 +1281,16 @@ export class AudioPlayerState {
         defaultPath: af.filename,
         properties: ['createDirectory'],
         filters: [
-          {name: 'Wave File', extensions: ['wav']},
-          {name: 'MP3 File', extensions: ['mp3']}
-        ]
+          { name: 'Wave File', extensions: ['wav'] },
+          { name: 'MP3 File', extensions: ['mp3'] },
+        ],
       });
 
       if(!payload.canceled && typeof payload.filePath != 'undefined'){
         await fs.promises.writeFile(payload.filePath, exportData);
         console.log('AudioFile Saved', payload.filePath);
       }
-    }else{
+    } else {
       showSaveFilePicker({
         suggestedName: af.filename,
         types: [{
@@ -1073,35 +1307,34 @@ export class AudioPlayerState {
           await writable.close();
           console.log('AudioFile Saved', handle.name);
         }
-      })
+      });
     }
   }
 
   static GetCurrentTime(): number {
-    try{
-      if(AudioPlayerState.pausedAt) {
+    try {
+      if (AudioPlayerState.pausedAt) {
         return AudioPlayerState.pausedAt;
       }
-      if(AudioPlayerState.startedAt) {
+      if (AudioPlayerState.startedAt) {
         return KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
       }
-    }catch(e){ }
+    } catch (e) {}
     return 0;
   }
 
   static GetDuration() {
-    try{
+    try {
       return AudioPlayerState.buffer.duration;
-    }catch(e){ }
+    } catch (e) {}
     return 0;
   }
 
-  static SecondsToTimeString(time: number){
-    time = time | 0
-    let h = Math.floor(time / 3600);
-    let m = Math.floor(time % 3600 / 60);
-    let s = Math.floor(time % 3600 % 60);
-    return ((h > 0 ? h + ":" + (m < 10 ? "0" : "") : "") + m + ":" + (s < 10 ? "0" : "") + s);
+  static SecondsToTimeString(time: number) {
+    time = time | 0;
+    const h = Math.floor(time / 3600);
+    const m = Math.floor((time % 3600) / 60);
+    const s = Math.floor((time % 3600) % 60);
+    return (h > 0 ? h + ':' + (m < 10 ? '0' : '') : '') + m + ':' + (s < 10 ? '0' : '') + s;
   }
-
 }

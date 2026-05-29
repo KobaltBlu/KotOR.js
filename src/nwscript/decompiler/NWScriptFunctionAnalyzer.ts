@@ -32,9 +32,9 @@ export interface NWScriptFunctionParameter {
 /**
  * Analyzes functions and subroutines in the control flow graph.
  * Identifies function boundaries, parameters, and return types.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptFunctionAnalyzer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -68,17 +68,17 @@ export class NWScriptFunctionAnalyzer {
         let count = 0;
         while (current && count < 5) {
           this.initAddresses.add(current.address);
-          if (current.code === 0x1B) break; // MOVSP
+          if (current.code === 0x1b) break; // MOVSP
           current = current.nextInstr;
           count++;
         }
       }
     }
-    
+
     // Identify nested call code (between STORE_STATE+JMP and JMP target)
     this.identifyNestedCallCode();
   }
-  
+
   /**
    * Identify all addresses that are part of nested call code
    * Inlined thunk bytes live between STORE_STATE's JMP instruction's linear successor and the JMP target.
@@ -123,33 +123,33 @@ export class NWScriptFunctionAnalyzer {
     // Identify all subroutines (JSR targets)
     // Use a Set to track processed entry addresses to avoid duplicates
     const processedAddresses = new Set<number>();
-    
+
     for (const [entryAddress, entryBlock] of this.cfg.subroutineEntries) {
       // Skip if we've already processed this entry address
       if (processedAddresses.has(entryAddress)) {
         continue;
       }
-      
+
       // Skip if this is the main function's entry address (already processed)
       if (this.mainFunction && this.mainFunction.entryBlock.startInstruction.address === entryAddress) {
         continue;
       }
-      
+
       // Skip if this is a STORE_STATE JMP target (not a real function)
       if (this.cfg.storeStateJmpTargets.has(entryAddress)) {
         continue;
       }
-      
+
       // Skip if this is a callback entry (created by STORE_STATE, not a real function)
       if (this.cfg.callbackEntries.has(entryAddress)) {
         continue;
       }
-      
+
       // Skip if this is the global init function (contains only global variable initializations)
       if (this.globalInitFunctionAddress !== null && entryAddress === this.globalInitFunctionAddress) {
         continue;
       }
-      
+
       const func = this.analyzeSubroutine(entryBlock, entryAddress);
       if (func) {
         // Only add if we don't already have a function at this entry address
@@ -175,7 +175,7 @@ export class NWScriptFunctionAnalyzer {
    * In NWScript, the entry point can be:
    * 1. A single JSR -> void main()
    * 2. RSADD + JSR -> int StartingConditional()
-   * 
+   *
    * Special case: If we see SAVEBP -> JSR -> RESTOREBP -> MOVSP -> RETN pattern,
    * the JSR target is for global variable initialization, and we need to find
    * the next JSR that points to the actual main/StartingConditional function.
@@ -189,13 +189,13 @@ export class NWScriptFunctionAnalyzer {
     // This is the ONLY place where RSADD indicates StartingConditional. After the entry JSR,
     // all RSADD patterns are either global variable initializations or part of normal
     // function definitions (RSADD + JSR = function with return type).
-    
+
     // Search through entry block for first RSADD and JSR
     // The entry block may start with T (0x42) instruction, so we need to search
     // Pattern: [T] [RSADD] JSR RETN
     let entryRSADD: NWScriptInstruction | null = null;
     let firstJSR: NWScriptInstruction | null = null;
-    
+
     let current = this.cfg.entryBlock.startInstruction;
     while (current && current.address <= this.cfg.entryBlock.endInstruction.address) {
       // Check for RSADD (must come before JSR if present)
@@ -210,38 +210,38 @@ export class NWScriptFunctionAnalyzer {
       }
       current = current.nextInstr;
     }
-    
+
     if (!firstJSR) {
       return null;
     }
-    
+
     const firstJSRTarget = firstJSR.address + firstJSR.offset;
     const firstJSRBlock = this.cfg.getBlockForAddress(firstJSRTarget);
-    
+
     if (!firstJSRBlock) {
       return null;
     }
-    
+
     // Check if first JSR target contains SAVEBP -> JSR pattern
     // If yes, it's a global init function, and we need to find the second JSR
     let hasGlobals = false;
     let realMainJSRTarget: number | null = null;
     let isStartingConditional = false;
-    
+
     // Search for SAVEBP -> JSR pattern in first JSR target
     const visited = new Set<NWScriptBasicBlock>();
     const queue: NWScriptBasicBlock[] = [firstJSRBlock];
-    
+
     while (queue.length > 0 && !hasGlobals) {
       const block = queue.shift()!;
       if (visited.has(block)) continue;
       visited.add(block);
-      
+
       for (const instr of block.instructions) {
         if (instr.code === OP_SAVEBP) {
           // Found SAVEBP - now search for JSR that comes after it
           // JSR might be in the same block or a successor block
-          
+
           // First check within the same block
           let foundJSR = false;
           let next = instr.nextInstr;
@@ -260,17 +260,17 @@ export class NWScriptFunctionAnalyzer {
             }
             next = next.nextInstr;
           }
-          
+
           // If not found in same block, search successor blocks
           if (!foundJSR) {
             const jsrSearchVisited = new Set<NWScriptBasicBlock>();
             const jsrSearchQueue: NWScriptBasicBlock[] = Array.from(block.successors);
-            
+
             while (jsrSearchQueue.length > 0 && !foundJSR) {
               const succBlock = jsrSearchQueue.shift()!;
               if (jsrSearchVisited.has(succBlock)) continue;
               jsrSearchVisited.add(succBlock);
-              
+
               // Check if this block contains JSR after SAVEBP
               for (const succInstr of succBlock.instructions) {
                 if (succInstr.code === OP_JSR && succInstr.offset !== undefined && succInstr.address > instr.address) {
@@ -286,12 +286,12 @@ export class NWScriptFunctionAnalyzer {
                   break;
                 }
               }
-              
+
               // Continue searching if we haven't found JSR yet
               if (!foundJSR) {
                 for (const succSucc of succBlock.successors) {
                   if (!jsrSearchVisited.has(succSucc)) {
-                    const hasRetn = succSucc.instructions.some(i => i.code === OP_RETN);
+                    const hasRetn = succSucc.instructions.some((i) => i.code === OP_RETN);
                     if (!hasRetn) {
                       jsrSearchQueue.push(succSucc);
                     }
@@ -300,16 +300,16 @@ export class NWScriptFunctionAnalyzer {
               }
             }
           }
-          
+
           if (hasGlobals) break;
         }
       }
-      
+
       // Continue searching if we haven't found SAVEBP yet
       if (!hasGlobals) {
         for (const successor of block.successors) {
           if (!visited.has(successor)) {
-            const hasRetn = successor.instructions.some(instr => instr.code === OP_RETN);
+            const hasRetn = successor.instructions.some((instr) => instr.code === OP_RETN);
             if (!hasRetn) {
               queue.push(successor);
             }
@@ -317,17 +317,17 @@ export class NWScriptFunctionAnalyzer {
         }
       }
     }
-    
+
     // Determine the actual main/StartingConditional function
     let jsrInstruction: NWScriptInstruction | null = null;
     let mainEntryBlock: NWScriptBasicBlock | null = null;
     let mainEntryAddress: number | null = null;
-    
+
     if (hasGlobals) {
       // First JSR is global init, second JSR (after SAVEBP) is real main/StartingConditional
       // Store the global init function address so we can exclude it from subroutines
       this.globalInitFunctionAddress = firstJSRTarget;
-      
+
       if (realMainJSRTarget !== null) {
         mainEntryBlock = this.cfg.getBlockForAddress(realMainJSRTarget);
         if (mainEntryBlock) {
@@ -346,15 +346,15 @@ export class NWScriptFunctionAnalyzer {
       jsrInstruction = firstJSR;
       isStartingConditional = entryRSADD !== null;
     }
-    
+
     if (!mainEntryBlock || mainEntryAddress === null) {
       return null;
     }
-    
+
     // Use the determined main/StartingConditional entry
     const entryBlock = mainEntryBlock;
     const entryAddress = mainEntryAddress;
-    
+
     // Collect all blocks reachable from entry that aren't part of subroutines
     const bodyBlocks = this.collectFunctionBody(entryBlock);
     const returnBlock = this.findReturnBlock(entryBlock, bodyBlocks);
@@ -368,11 +368,21 @@ export class NWScriptFunctionAnalyzer {
     let returnType: NWScriptDataType;
     if (entryRSADD) {
       switch (entryRSADD.type) {
-        case 3: returnType = NWScriptDataType.INTEGER; break;
-        case 4: returnType = NWScriptDataType.FLOAT; break;
-        case 5: returnType = NWScriptDataType.STRING; break;
-        case 6: returnType = NWScriptDataType.OBJECT; break;
-        default: returnType = isStartingConditional ? NWScriptDataType.INTEGER : NWScriptDataType.VOID; break;
+        case 3:
+          returnType = NWScriptDataType.INTEGER;
+          break;
+        case 4:
+          returnType = NWScriptDataType.FLOAT;
+          break;
+        case 5:
+          returnType = NWScriptDataType.STRING;
+          break;
+        case 6:
+          returnType = NWScriptDataType.OBJECT;
+          break;
+        default:
+          returnType = isStartingConditional ? NWScriptDataType.INTEGER : NWScriptDataType.VOID;
+          break;
       }
     } else {
       returnType = isStartingConditional ? NWScriptDataType.INTEGER : NWScriptDataType.VOID;
@@ -390,7 +400,7 @@ export class NWScriptFunctionAnalyzer {
       parameters: parameters,
       returnType: returnType,
       isMain: true,
-      jsrInstruction: jsrInstruction
+      jsrInstruction: jsrInstruction,
     };
   }
 
@@ -404,7 +414,7 @@ export class NWScriptFunctionAnalyzer {
     let foundJSR = false;
     let foundRESTOREBP = false;
     let foundMOVSP = false;
-    
+
     // Look for the pattern in the block's instructions
     while (current && current.address <= block.endInstruction.address) {
       if (!foundSAVEBP && current.code === OP_SAVEBP) {
@@ -419,23 +429,26 @@ export class NWScriptFunctionAnalyzer {
         // Found the complete pattern
         return true;
       }
-      
+
       // If we've started the pattern but hit something unexpected, reset
-      if (foundSAVEBP && current.code !== OP_SAVEBP && 
-          current.code !== OP_JSR && 
-          current.code !== OP_RESTOREBP && 
-          current.code !== OP_MOVSP && 
-          current.code !== OP_RETN &&
-          !foundRESTOREBP) {
+      if (
+        foundSAVEBP &&
+        current.code !== OP_SAVEBP &&
+        current.code !== OP_JSR &&
+        current.code !== OP_RESTOREBP &&
+        current.code !== OP_MOVSP &&
+        current.code !== OP_RETN &&
+        !foundRESTOREBP
+      ) {
         // Reset if we haven't found RESTOREBP yet
         foundSAVEBP = false;
         foundJSR = false;
       }
-      
+
       current = current.nextInstr;
       if (!current) break;
     }
-    
+
     return false;
   }
 
@@ -450,12 +463,12 @@ export class NWScriptFunctionAnalyzer {
 
     // Collect function body blocks
     const bodyBlocks = this.collectFunctionBody(entryBlock);
-    
+
     // If no body blocks collected and no JSR, this might not be a valid function
     if (bodyBlocks.length === 0 && !jsrInstruction) {
       return null;
     }
-    
+
     // Find return block
     const returnBlock = this.findReturnBlock(entryBlock, bodyBlocks);
 
@@ -478,7 +491,7 @@ export class NWScriptFunctionAnalyzer {
       parameters: parameters,
       returnType: returnType,
       isMain: false,
-      jsrInstruction: jsrInstruction
+      jsrInstruction: jsrInstruction,
     };
   }
 
@@ -487,9 +500,11 @@ export class NWScriptFunctionAnalyzer {
    */
   private findJSRInstruction(targetAddress: number): NWScriptInstruction | null {
     for (const instruction of this.cfg.script.instructions.values()) {
-      if (instruction.code === OP_JSR &&
-          instruction.offset !== undefined &&
-          instruction.address + instruction.offset === targetAddress) {
+      if (
+        instruction.code === OP_JSR &&
+        instruction.offset !== undefined &&
+        instruction.address + instruction.offset === targetAddress
+      ) {
         return instruction;
       }
     }
@@ -522,9 +537,11 @@ export class NWScriptFunctionAnalyzer {
 
       // Don't follow into other functions
       // But allow STORE_STATE+JMP targets (they're part of the same function, not separate functions)
-      if (current !== entryBlock && 
-          this.cfg.subroutineEntries.has(current.startInstruction.address) &&
-          !this.cfg.storeStateJmpTargets.has(current.startInstruction.address)) {
+      if (
+        current !== entryBlock &&
+        this.cfg.subroutineEntries.has(current.startInstruction.address) &&
+        !this.cfg.storeStateJmpTargets.has(current.startInstruction.address)
+      ) {
         continue;
       }
 
@@ -547,8 +564,10 @@ export class NWScriptFunctionAnalyzer {
 
           // Check if this is another function entry
           // But allow STORE_STATE+JMP targets (they're part of the same function)
-          if (this.cfg.subroutineEntries.has(successor.startInstruction.address) &&
-              !this.cfg.storeStateJmpTargets.has(successor.startInstruction.address)) {
+          if (
+            this.cfg.subroutineEntries.has(successor.startInstruction.address) &&
+            !this.cfg.storeStateJmpTargets.has(successor.startInstruction.address)
+          ) {
             continue;
           }
 
@@ -559,7 +578,7 @@ export class NWScriptFunctionAnalyzer {
 
     return bodyBlocks;
   }
-  
+
   /**
    * Check if a block is part of nested call code (between STORE_STATE+JMP and JMP target)
    */
@@ -578,25 +597,31 @@ export class NWScriptFunctionAnalyzer {
    */
   private isInitializationBlock(block: NWScriptBasicBlock): boolean {
     // Check if all instructions in the block are initialization instructions
-    let allInit = true;
+    const allInit = true;
     let hasNonInit = false;
 
     for (const instruction of block.instructions) {
       if (this.initAddresses.has(instruction.address)) {
         // This is an init instruction
-      } else if (instruction.code !== OP_RSADD && 
-                 instruction.code !== 0x04 && // CONST
-                 instruction.code !== 0x01 && // CPDOWNSP
-                 instruction.code !== 0x1B && // MOVSP
-                 instruction.code !== 0x19) { // NEG
+      } else if (
+        instruction.code !== OP_RSADD &&
+        instruction.code !== 0x04 && // CONST
+        instruction.code !== 0x01 && // CPDOWNSP
+        instruction.code !== 0x1b && // MOVSP
+        instruction.code !== 0x19
+      ) {
+        // NEG
         hasNonInit = true;
         break;
       }
     }
 
     // If block has only initialization instructions, it's an init block
-    return !hasNonInit && block.instructions.length > 0 && 
-           block.instructions.some(instr => this.initAddresses.has(instr.address));
+    return (
+      !hasNonInit &&
+      block.instructions.length > 0 &&
+      block.instructions.some((instr) => this.initAddresses.has(instr.address))
+    );
   }
 
   /**
@@ -634,8 +659,8 @@ export class NWScriptFunctionAnalyzer {
         if (instruction.code === OP_CPTOPBP && instruction.offset !== undefined) {
           const offset = instruction.offset;
           // Convert to signed 32-bit integer
-          const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
-          
+          const offsetSigned = offset > 0x7fffffff ? offset - 0x100000000 : offset;
+
           // Negative offsets are function parameters (accessed relative to BP)
           if (offsetSigned < 0) {
             if (this.globalCptopbpOffsets.has(offsetSigned)) {
@@ -646,7 +671,7 @@ export class NWScriptFunctionAnalyzer {
             if (instruction.type === 4) dataType = NWScriptDataType.FLOAT;
             else if (instruction.type === 5) dataType = NWScriptDataType.STRING;
             else if (instruction.type === 6) dataType = NWScriptDataType.OBJECT;
-            
+
             const existing = parameterOffsets.get(offsetSigned);
             if (existing) {
               existing.count++;
@@ -661,28 +686,28 @@ export class NWScriptFunctionAnalyzer {
         }
       }
     }
-    
+
     // Convert offsets to sorted parameter list
     // Parameters are accessed with negative offsets relative to BP
     // We need to sort them by offset (most negative = first parameter, least negative = last parameter)
     const sortedOffsets = Array.from(parameterOffsets.keys()).sort((a, b) => a - b); // Ascending (most negative first)
-    
+
     const parameters: NWScriptFunctionParameter[] = [];
     for (let i = 0; i < sortedOffsets.length; i++) {
       const offset = sortedOffsets[i];
       const info = parameterOffsets.get(offset)!;
-      
+
       // Parameter index (0 = first parameter, accessed with most negative offset)
       const paramIndex = i;
-      
+
       // Generate parameter name based on type
       const typePrefix = this.getTypePrefix(info.dataType);
       const paramName = `${typePrefix}Param${paramIndex + 1}`; // param1, param2, param3, etc.
-      
+
       parameters.push({
         name: paramName,
         dataType: info.dataType,
-        offset: offset
+        offset: offset,
       });
     }
     
@@ -854,17 +879,22 @@ export class NWScriptFunctionAnalyzer {
       };
     });
   }
-  
+
   /**
    * Get type prefix for parameter naming
    */
   private getTypePrefix(dataType: NWScriptDataType): string {
     switch (dataType) {
-      case NWScriptDataType.INTEGER: return 'int';
-      case NWScriptDataType.FLOAT: return 'float';
-      case NWScriptDataType.STRING: return 'string';
-      case NWScriptDataType.OBJECT: return 'object';
-      default: return 'int';
+      case NWScriptDataType.INTEGER:
+        return 'int';
+      case NWScriptDataType.FLOAT:
+        return 'float';
+      case NWScriptDataType.STRING:
+        return 'string';
+      case NWScriptDataType.OBJECT:
+        return 'object';
+      default:
+        return 'int';
     }
   }
 
@@ -900,7 +930,7 @@ export class NWScriptFunctionAnalyzer {
   private assignFunctionNames(): void {
     // Get all functions except main, sorted by entry address
     const subroutines = Array.from(this.functions.values())
-      .filter(func => !func.isMain)
+      .filter((func) => !func.isMain)
       .sort((a, b) => a.entryBlock.startInstruction.address - b.entryBlock.startInstruction.address);
 
     // Assign names: sub1, sub2, sub3, etc.
@@ -930,5 +960,3 @@ export class NWScriptFunctionAnalyzer {
     return this.functions.get(entryAddress) || null;
   }
 }
-
-

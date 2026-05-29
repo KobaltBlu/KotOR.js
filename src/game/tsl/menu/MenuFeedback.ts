@@ -1,7 +1,7 @@
-import { GameState } from "@/GameState";
-import { FeedbackOption } from "@/enums/engine/FeedbackOption";
-import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from "@/gui";
-import { MenuFeedback as K1_MenuFeedback } from "@/game/kotor/KOTOR";
+import { GameState } from '@/GameState';
+import { FeedbackOption } from '@/enums/engine/FeedbackOption';
+import type { GUILabel, GUIListBox, GUIButton, GUICheckBox } from '@/gui';
+import { MenuFeedback as K1_MenuFeedback } from '@/game/kotor/KOTOR';
 
 const LBL_HIDE_UNEQ = 42279;
 const LBL_TUT_POPUPS = 42280;
@@ -11,7 +11,6 @@ const LBL_FNUMBERS = 42285;
 const LBL_STATUS = 42450;
 const LBL_HIDE_MENU = 48693;
 const LBL_TOOLTIPS = 48696;
-
 
 const DESC_HIDE_UNEQ = 42286;
 const DESC_TUT_POPUPS = 42287;
@@ -24,15 +23,14 @@ const DESC_TOOLTIPS = 48703;
 
 /**
  * MenuFeedback class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuFeedback.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuFeedback extends K1_MenuFeedback {
-
   declare LBL_TITLE: GUILabel;
   declare LB_DESC: GUIListBox;
   declare LB_OPTIONS: GUIListBox;
@@ -42,7 +40,7 @@ export class MenuFeedback extends K1_MenuFeedback {
   declare BTN_BACK: GUIButton;
   declare BTN_DEFAULT: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optfeedback_p';
     this.background = 'blackfill';
@@ -51,7 +49,7 @@ export class MenuFeedback extends K1_MenuFeedback {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
       let CB_HIDE_UNEQ: GUICheckBox, CB_TUT_POPUPS: GUICheckBox, CB_SUBS: GUICheckBox,
@@ -71,72 +69,72 @@ export class MenuFeedback extends K1_MenuFeedback {
 
       CB_HIDE_UNEQ.attachINIProperty('Game Options.Hide Unequippable');
       CB_HIDE_UNEQ.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Game Options.Hide Unequippable') == 1){
+        if (GameState.iniConfig.getProperty('Game Options.Hide Unequippable') == 1) {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.HideUnequippable, true);
-        }else{
+        } else {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.HideUnequippable, false);
         }
       };
 
       CB_TUT_POPUPS.attachINIProperty('Game Options.Tutorial Popups');
       CB_TUT_POPUPS.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Game Options.Tutorial Popups') == 1){
+        if (GameState.iniConfig.getProperty('Game Options.Tutorial Popups') == 1) {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.TutorialPopups, true);
-        }else{
+        } else {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.TutorialPopups, false);
         }
       };
 
       CB_SUBS.attachINIProperty('Game Options.Subtitles');
       CB_SUBS.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Game Options.Subtitles') == 1){
+        if (GameState.iniConfig.getProperty('Game Options.Subtitles') == 1) {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.Subtitles, true);
-        }else{
+        } else {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.Subtitles, false);
         }
       };
 
       CB_MAP.attachINIProperty('Game Options.Mini Map');
       CB_MAP.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Game Options.Mini Map') == 1){
+        if (GameState.iniConfig.getProperty('Game Options.Mini Map') == 1) {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.MiniMap, true);
-        }else{
+        } else {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.MiniMap, false);
         }
       };
 
       CB_FNUMBERS.attachINIProperty('Game Options.Floating Numbers');
       CB_FNUMBERS.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Game Options.Floating Numbers') == 1){
+        if (GameState.iniConfig.getProperty('Game Options.Floating Numbers') == 1) {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.FloatingNumbers, true);
-        }else{
+        } else {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.FloatingNumbers, false);
         }
       };
 
       CB_STATUS.attachINIProperty('Game Options.Status Summary');
       CB_STATUS.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Game Options.Status Summary') == 1){
+        if (GameState.iniConfig.getProperty('Game Options.Status Summary') == 1) {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.StatusSummary, true);
-        }else{
+        } else {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.StatusSummary, false);
         }
       };
 
       CB_HIDE_MENU.attachINIProperty('Game Options.Hide InGame GUI');
       CB_HIDE_MENU.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Game Options.Hide InGame GUI') == 1){
+        if (GameState.iniConfig.getProperty('Game Options.Hide InGame GUI') == 1) {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.HideQuickMenuButtons, true);
-        }else{
+        } else {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.HideQuickMenuButtons, false);
         }
       };
 
       CB_TOOLTIPS.attachINIProperty('Game Options.Enable Tooltips');
       CB_TOOLTIPS.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Game Options.Enable Tooltips') == 1){
+        if (GameState.iniConfig.getProperty('Game Options.Enable Tooltips') == 1) {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.EnableToolTips, true);
-        }else{
+        } else {
           GameState.FeedbackMessageManager.SetFeedbackTypeEnabled(FeedbackOption.EnableToolTips, false);
         }
       };
@@ -168,5 +166,4 @@ export class MenuFeedback extends K1_MenuFeedback {
   show() {
     super.show();
   }
-  
 }

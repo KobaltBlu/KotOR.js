@@ -10,9 +10,9 @@ import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
 import "@/apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor.scss";
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from '@/apps/forge/KotOR';
 
-export const TabTwoDAEditor = function(props: BaseTabProps){
+export const TabTwoDAEditor = function (props: BaseTabProps) {
   const [twoDAObject, setTwoDAObject] = useState<KotOR.TwoDAObject>();
   const [selectedRowIndex, setSelectedRowIndex] = useState<number>(-1);
   const [dataVersion, setDataVersion] = useState<number>(0);

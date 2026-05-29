@@ -1,16 +1,16 @@
-import React, { useEffect, useRef, useState } from "react";
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
-import { TabBIKPlayerState } from "@/apps/forge/states/tabs/TabBIKPlayerState";
-import { ensureYUVWebGL, drawYUVFrame, type YUVWebGLState } from "@/apps/forge/components/tabs/tab-bik-player/yuvWebGL";
+import React, { useEffect, useRef, useState } from 'react';
+import { BaseTabProps } from '@/apps/forge/interfaces/BaseTabProps';
+import { TabBIKPlayerState } from '@/apps/forge/states/tabs/TabBIKPlayerState';
+import { ensureYUVWebGL, drawYUVFrame, type YUVWebGLState } from '@/apps/forge/components/tabs/tab-bik-player/yuvWebGL';
 
 /** Format seconds as M:SS or H:MM:SS. */
 function formatTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
+  if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
-  if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  return `${m}:${s.toString().padStart(2, "0")}`;
+  if (h > 0) return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 export const TabBIKPlayer = function (props: BaseTabProps) {
@@ -98,38 +98,50 @@ export const TabBIKPlayer = function (props: BaseTabProps) {
   };
 
   return (
-    <div className="tab-bik-player" style={{ display: "flex", flexDirection: "column", height: "100%", overflow: "auto" }}>
-      <div style={{ flex: "1", minHeight: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "#0a0a0a" }}>
+    <div
+      className="tab-bik-player"
+      style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'auto' }}
+    >
+      <div
+        style={{
+          flex: '1',
+          minHeight: 200,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#0a0a0a',
+        }}
+      >
         <canvas
           ref={canvasRef}
           width={videoSize?.w ?? 640}
           height={videoSize?.h ?? 480}
-          style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
         />
       </div>
-      <div className="tab-bik-player-controls" style={{ padding: "8px 12px", background: "#1a1a1a", borderTop: "1px solid #333", display: "flex", alignItems: "center", gap: "12px" }}>
-        <span
-          className="btn-play"
-          title="Replay"
-          style={{ cursor: "pointer", fontSize: "18px" }}
-          onClick={onReplay}
-        >
+      <div
+        className="tab-bik-player-controls"
+        style={{
+          padding: '8px 12px',
+          background: '#1a1a1a',
+          borderTop: '1px solid #333',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+        }}
+      >
+        <span className="btn-play" title="Replay" style={{ cursor: 'pointer', fontSize: '18px' }} onClick={onReplay}>
           <i className="fa-solid fa-play"></i>
         </span>
-        <span
-          className="btn-stop"
-          title="Stop"
-          style={{ cursor: "pointer", fontSize: "18px" }}
-          onClick={onStop}
-        >
+        <span className="btn-stop" title="Stop" style={{ cursor: 'pointer', fontSize: '18px' }} onClick={onStop}>
           <i className="fa-solid fa-stop"></i>
         </span>
-        <span style={{ color: "#aaa", fontSize: "13px" }}>
+        <span style={{ color: '#aaa', fontSize: '13px' }}>
           {formatTime(playbackTime)} / {formatTime(totalTime)}
         </span>
-        <span style={{ color: "#666", fontSize: "12px" }}>
-          {isPlaying ? "Playing" : "Stopped"}
-          {videoSize ? ` · ${videoSize.w}×${videoSize.h}` : ""}
+        <span style={{ color: '#666', fontSize: '12px' }}>
+          {isPlaying ? 'Playing' : 'Stopped'}
+          {videoSize ? ` · ${videoSize.w}×${videoSize.h}` : ''}
         </span>
       </div>
     </div>

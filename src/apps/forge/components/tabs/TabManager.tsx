@@ -10,8 +10,7 @@ export interface TabManagerProps {
   renderEmptyState?: () => React.ReactNode;
 }
 
-export const TabManager = function(props: TabManagerProps){
-
+export const TabManager = function (props: TabManagerProps) {
   const tabManagerContext = useTabManager();
   const [manager, setTabManager] = tabManagerContext.manager;
   const [tabs, setTabs] = tabManagerContext.tabs;
@@ -181,7 +180,6 @@ export const TabManager = function(props: TabManagerProps){
       {ContextMenuComponent}
     </div>
   );
-
-}
+};
 
 export default TabManager;

@@ -1,23 +1,22 @@
-import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
-import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from "@/odyssey";
-import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from '@/odyssey/controllers/OdysseyController';
+import type { OdysseyModelAnimation, OdysseyModelAnimationManager } from '@/odyssey';
+import { OdysseyModelControllerType } from '@/enums/odyssey/OdysseyModelControllerType';
+import { IOdysseyControllerFrameGeneric } from '@/interface/odyssey/controller/IOdysseyControllerFrameGeneric';
+import { IOdysseyControllerGeneric } from '@/interface/odyssey/controller/IOdysseyControllerGeneric';
 
 /**
  * CombineTimeController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CombineTimeController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CombineTimeController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.CombineTime;
 
-  constructor( controller: IOdysseyControllerGeneric){
+  constructor(controller: IOdysseyControllerGeneric) {
     super(controller);
   }
 
@@ -32,5 +31,4 @@ export class CombineTimeController extends OdysseyController {
       manager.modelNode.emitter.combineTime = OdysseyController.lerp1(last, next, fl);
     }
   }
-
 }

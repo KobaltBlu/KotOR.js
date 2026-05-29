@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 export interface MenuItem {
   label?: string;
@@ -58,6 +58,49 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
     if (item.onClick) {
       item.onClick();
     }
+  }, []);
+
+  const scheduleSubmenuClose = useCallback(
+    (path: string) => {
+      cancelPendingSubmenuClose();
+      submenuCloseTimerRef.current = setTimeout(() => {
+        submenuCloseTimerRef.current = null;
+        setOpenSubmenu((prev) => (prev === path ? null : prev));
+      }, SUBMENU_CLOSE_DELAY_MS);
+    },
+    [cancelPendingSubmenuClose]
+  );
+
+  useEffect(() => {
+    return () => cancelPendingSubmenuClose();
+  }, [cancelPendingSubmenuClose]);
+
+  const handleMenuClick = useCallback(
+    (label?: string) => {
+      setOpenMenu((prev) => (prev === label ? null : (label ?? null)));
+      setOpenSubmenu(null);
+      cancelPendingSubmenuClose();
+    },
+    [cancelPendingSubmenuClose]
+  );
+
+  const handleItemClick = useCallback(
+    (item: MenuItem) => {
+      if (item.children) {
+        return; // Don't close menu if it has children
+      }
+      if (item.onClick) {
+        item.onClick();
+      }
+      setOpenMenu(null);
+      setOpenSubmenu(null);
+      cancelPendingSubmenuClose();
+    },
+    [cancelPendingSubmenuClose]
+  );
+
+  const closeAllMenus = useCallback(() => {
+    cancelPendingSubmenuClose();
     setOpenMenu(null);
     setOpenSubmenu(null);
     cancelPendingSubmenuClose();
@@ -145,9 +188,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
           }}
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {item.checked && (
-              <span style={{ fontSize: '12px', color: '#4EC9B0' }}>✓</span>
-            )}
+            {item.checked && <span style={{ fontSize: '12px', color: '#4EC9B0' }}>✓</span>}
             <span>{item.label}</span>
           </span>
           {hasChildren ? (
@@ -175,7 +216,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
             }}
             onMouseLeave={() => scheduleSubmenuClose(itemPath)}
           >
-            {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, itemPath))}
+            {(item.children ?? []).map((child, childIndex) => renderMenuItem(child, childIndex, itemPath))}
           </div>
         )}
       </div>
@@ -269,4 +310,3 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items }) => {
     </div>
   );
 };
-

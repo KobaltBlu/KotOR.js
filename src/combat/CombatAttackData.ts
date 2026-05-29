@@ -1,23 +1,23 @@
-import { CombatAttackDamage } from "@/combat/CombatAttackDamage";
-import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
-import { CExoLocString } from "@/resource/CExoLocString";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { DamageType } from "@/enums/combat/DamageType";
-import { EffectDamage } from "@/effects";
-import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
-import { AttackResult } from "@/enums/combat/AttackResult";
-import { TalentFeat } from "@/talents";
-import { CombatFeatType } from "@/enums/combat/CombatFeatType";
-import { WeaponWield } from "@/enums/combat/WeaponWield";
-import { Dice } from "@/utility/Dice";
-import { DiceType } from "@/enums/combat/DiceType";
-import { WeaponType } from "@/enums/combat/WeaponType";
+import { CombatAttackDamage } from '@/combat/CombatAttackDamage';
+import type { ModuleCreature, ModuleItem, ModuleObject } from '@/module';
+import { CExoLocString } from '@/resource/CExoLocString';
+import { GFFStruct } from '@/resource/GFFStruct';
+import { DamageType } from '@/enums/combat/DamageType';
+import { EffectDamage } from '@/effects';
+import { GameEffectDurationType } from '@/enums/effects/GameEffectDurationType';
+import { AttackResult } from '@/enums/combat/AttackResult';
+import { TalentFeat } from '@/talents';
+import { CombatFeatType } from '@/enums/combat/CombatFeatType';
+import { WeaponWield } from '@/enums/combat/WeaponWield';
+import { Dice } from '@/utility/Dice';
+import { DiceType } from '@/enums/combat/DiceType';
+import { WeaponType } from '@/enums/combat/WeaponType';
 
 /**
  * CombatAttackData class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CombatAttackData.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -156,9 +156,9 @@ export class CombatAttackData {
   /**
    * Constructor for the CombatAttackData class
    */
-  constructor(){
+  constructor() {
     this.damageList = new Array(15);
-    for(let i = 0; i < 15; i++){
+    for (let i = 0; i < 15; i++) {
       this.damageList[i] = new CombatAttackDamage();
     }
   }
@@ -169,68 +169,71 @@ export class CombatAttackData {
    * @param isCritial - Whether the attack is a critical hit
    * @param feat - The feat that is being used for the attack
    */
-  calculateDamage(creature: ModuleCreature, isCritial: boolean = false, feat?: TalentFeat){
+  calculateDamage(creature: ModuleCreature, isCritial: boolean = false, feat?: TalentFeat) {
     /**
      * Unarmed Strike
      */
-    if(!this.attackWeapon){
+    if (!this.attackWeapon) {
       const damageMultiplier = isCritial ? 2.0 : 1.0;
       const nDamage = Dice.roll(1, DiceType.d4);
       this.damageList[DamageType.BLUDGEONING].addDamage(nDamage * damageMultiplier);
 
       return;
-    };
+    }
 
     const damageMultiplier = isCritial ? this.attackWeapon.baseItem.criticalHitMultiplier : 1.0;
 
-    if(!creature.isSimpleCreature()){
-      this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getBaseDamage() * damageMultiplier);
-      if(this.attackWeapon.hasDamageBonus()){
-        this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(this.attackWeapon.getDamageBonus() * damageMultiplier);
+    if (!creature.isSimpleCreature()) {
+      this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(
+        this.attackWeapon.getBaseDamage() * damageMultiplier
+      );
+      if (this.attackWeapon.hasDamageBonus()) {
+        this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(
+          this.attackWeapon.getDamageBonus() * damageMultiplier
+        );
       }
 
-      if( 
-        creature.getHasFeat(CombatFeatType.POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.POWER_BLAST)
-      ){
+      if (creature.getHasFeat(CombatFeatType.POWER_ATTACK) || creature.getHasFeat(CombatFeatType.POWER_BLAST)) {
         this.damageList[DamageType.BASE].addDamage(5 * damageMultiplier);
       }
 
-      if( 
-        creature.getHasFeat(CombatFeatType.IMPROVED_POWER_ATTACK) || 
+      if (
+        creature.getHasFeat(CombatFeatType.IMPROVED_POWER_ATTACK) ||
         creature.getHasFeat(CombatFeatType.IMPROVED_POWER_BLAST)
-      ){
+      ) {
         this.damageList[DamageType.BASE].addDamage(8 * damageMultiplier);
       }
 
-      if( 
-        creature.getHasFeat(CombatFeatType.MASTER_POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.MASTER_POWER_BLAST) 
-      ){
+      if (
+        creature.getHasFeat(CombatFeatType.MASTER_POWER_ATTACK) ||
+        creature.getHasFeat(CombatFeatType.MASTER_POWER_BLAST)
+      ) {
         this.damageList[DamageType.BASE].addDamage(10 * damageMultiplier);
       }
 
-      let specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
-      if(specBonus > 0){
+      const specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
+      if (specBonus > 0) {
         this.damageList[DamageType.BASE].addDamage(specBonus * damageMultiplier);
       }
-
-    }else{
-      this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getMonsterDamage() * damageMultiplier);
-      if(this.attackWeapon.hasDamageBonus()){
-        this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(this.attackWeapon.getDamageBonus() * damageMultiplier);
+    } else {
+      this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(
+        this.attackWeapon.getMonsterDamage() * damageMultiplier
+      );
+      if (this.attackWeapon.hasDamageBonus()) {
+        this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(
+          this.attackWeapon.getDamageBonus() * damageMultiplier
+        );
       }
     }
 
     //Add strength MOD to melee damage
-    if(this.attackWeapon.getWeaponType() == WeaponType.PIERCING){
-      this.damageList[DamageType.PHYSICAL].addDamage( Math.floor(( creature.getSTR() - 10) / 2) );
+    if (this.attackWeapon.getWeaponType() == WeaponType.PIERCING) {
+      this.damageList[DamageType.PHYSICAL].addDamage(Math.floor((creature.getSTR() - 10) / 2));
     }
 
-    if(this.getTotalDamage() >= this.reactObject.getHP()){
+    if (this.getTotalDamage() >= this.reactObject.getHP()) {
       this.killingBlow = true;
     }
-
   }
 
   /**
@@ -241,35 +244,37 @@ export class CombatAttackData {
    */
   calculateWeaponSpecBonus(creature: ModuleCreature, weapon: ModuleItem): number {
     let bonus = 0;
-    if(!creature){ return; }
-    
-    switch(weapon.getWeaponWield()){
+    if (!creature) {
+      return;
+    }
+
+    switch (weapon.getWeaponWield()) {
       case WeaponWield.BLASTER_PISTOL:
-        if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_BLASTER)){
+        if (creature.getHasFeat(CombatFeatType.WEAPON_SPEC_BLASTER)) {
           bonus += 2;
         }
-      break;
+        break;
       case WeaponWield.BLASTER_RIFLE:
-        if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_BLASTER_RIFLE)){
+        if (creature.getHasFeat(CombatFeatType.WEAPON_SPEC_BLASTER_RIFLE)) {
           bonus += 2;
         }
-      break;
+        break;
       case WeaponWield.BLASTER_HEAVY:
-        if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_HEAVY_WEAPONS)){
+        if (creature.getHasFeat(CombatFeatType.WEAPON_SPEC_HEAVY_WEAPONS)) {
           bonus += 2;
         }
-      break;
+        break;
       case WeaponWield.ONE_HANDED_SWORD:
       case WeaponWield.TWO_HANDED_SWORD:
       case WeaponWield.STUN_BATON:
-        if(weapon.baseItemId == 8 || weapon.baseItemId == 9 || weapon.baseItemId == 10){
-          if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_LIGHTSABER)){
+        if (weapon.baseItemId == 8 || weapon.baseItemId == 9 || weapon.baseItemId == 10) {
+          if (creature.getHasFeat(CombatFeatType.WEAPON_SPEC_LIGHTSABER)) {
             bonus += 2;
           }
-        }else if(creature.getHasFeat(CombatFeatType.WEAPON_SPEC_MELEE_WEAPONS)){
+        } else if (creature.getHasFeat(CombatFeatType.WEAPON_SPEC_MELEE_WEAPONS)) {
           bonus += 2;
         }
-      break;
+        break;
     }
     return bonus;
   }
@@ -279,12 +284,12 @@ export class CombatAttackData {
    * @param owner - The owner of the damage effect
    * @param target - The target creature to apply the damage effect to
    */
-  applyDamageEffectToCreature(owner: ModuleCreature, target: ModuleCreature){
-    if(!target) return;
+  applyDamageEffectToCreature(owner: ModuleCreature, target: ModuleCreature) {
+    if (!target) return;
     const damageEffect = new EffectDamage();
     damageEffect.setCreator(owner);
 
-    for(let i = 0; i < 15; i++){
+    for (let i = 0; i < 15; i++) {
       const damage = this.damageList[i];
       damageEffect.setInt(i, damage.damageValue);
     }
@@ -298,9 +303,9 @@ export class CombatAttackData {
    */
   getTotalDamage(): number {
     let amount = 0;
-    for(let i = 0; i < this.damageList.length; i++){
+    for (let i = 0; i < this.damageList.length; i++) {
       const damage = this.damageList[i];
-      if(damage.damageValue > 0){
+      if (damage.damageValue > 0) {
         amount += damage.damageValue;
       }
     }
@@ -310,12 +315,12 @@ export class CombatAttackData {
   /**
    * Reset the combat attack data
    */
-  reset(){
+  reset() {
     this.killingBlow = false;
     this.reactObject = undefined;
     this.attackWeapon = undefined;
     this.attackResult = AttackResult.MISS;
-    for(let i = 0; i < this.damageList.length; i++){
+    for (let i = 0; i < this.damageList.length; i++) {
       this.damageList[i].reset();
     }
   }
@@ -325,10 +330,9 @@ export class CombatAttackData {
    * @param structIdx - The index of the struct
    * @returns The GFF struct
    */
-  toStruct(structIdx: number = -1){
+  toStruct(structIdx: number = -1) {
     const struct = new GFFStruct(structIdx);
 
     return struct;
   }
-
 }

@@ -9,14 +9,16 @@ import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
 
 /**
  * GUIInventoryItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIInventoryItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIInventoryItem extends GUIProtoItem {
+  buttonLabel: GUIButton;
+  buttonIcon: GUIButton;
 
   buttonLabel: GUIButton;
   buttonIcon: GUIButton;
@@ -38,10 +40,10 @@ export class GUIInventoryItem extends GUIProtoItem {
     this.listRowAlignExtentToWrappedText = false;
   }
 
-  buildFill(){}
-  buildBorder(){}
-  buildHighlight(){}
-  buildText(){}
+  buildFill() {}
+  buildBorder() {}
+  buildHighlight() {}
+  buildText() {}
 
   createControl(){
     try{
@@ -139,7 +141,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       }
 
       this.onSelect = () => {
-        if(this.selected){
+        if (this.selected) {
           this.showHighlight();
           this.hideBorder();
           this.pulsing = true;
@@ -186,11 +188,10 @@ export class GUIInventoryItem extends GUIProtoItem {
       this._loadIcon();
 
       return this.widget;
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
     return this.widget;
-
   }
 
   update(delta: number){

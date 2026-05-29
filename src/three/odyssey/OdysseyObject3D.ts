@@ -1,15 +1,15 @@
-import * as THREE from "three";
-import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-import type { OdysseyController } from "@/odyssey/controllers/OdysseyController";
-import type { OdysseyEmitter3D } from "@/three/odyssey/OdysseyEmitter3D";
-import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
-import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
+import * as THREE from 'three';
+import type { OdysseyModelNode } from '@/odyssey/OdysseyModelNode';
+import type { OdysseyController } from '@/odyssey/controllers/OdysseyController';
+import type { OdysseyEmitter3D } from '@/three/odyssey/OdysseyEmitter3D';
+import type { OdysseyLight3D } from '@/three/odyssey/OdysseyLight3D';
+import type { OdysseyModel3D } from '@/three/odyssey/OdysseyModel3D';
 
 /**
  * OdysseyObject3D class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyObject3D.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -31,80 +31,77 @@ export class OdysseyObject3D extends THREE.Object3D {
   wasOffscreen: boolean = false;
   box: THREE.Box3;
   transitionState: {
-    position: THREE.Vector3,
-    quaternion: THREE.Quaternion,
+    position: THREE.Vector3;
+    quaternion: THREE.Quaternion;
   };
-  
+
   head: any;
   lipping: boolean = false;
-  
+
   emitter: OdysseyEmitter3D;
   light: THREE.Light | OdysseyLight3D;
   mesh: THREE.Mesh | THREE.SkinnedMesh;
 
-  constructor( node: OdysseyModelNode = undefined ){
+  constructor(node: OdysseyModelNode = undefined) {
     super();
     this.odysseyModelNode = node;
-    if(node){
+    if (node) {
       this.controllers = node?.controllers;
     }
     this.controllerCache = {};
     this.transitionState = {
-      position: new THREE.Vector3,
-      quaternion: new THREE.Quaternion,
+      position: new THREE.Vector3(),
+      quaternion: new THREE.Quaternion(),
     };
   }
-  
-  getControllerByType(type = -1){
+
+  getControllerByType(type = -1) {
     return this.controllers.get(type);
   }
 
   disableMatrixUpdate() {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
 
   dispose() {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
 
   update(delta: number) {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
 
   playAnimation(arg0: any, aLooping: boolean, arg2?: Function) {
-    throw new Error("Method not implemented.");
+    throw new Error('Method not implemented.');
   }
 
-  traverseIgnore( ignoreName: string = '', callback?: Function ){
+  traverseIgnore(ignoreName: string = '', callback?: Function) {
+    if (this.name == ignoreName) return;
 
-    if(this.name == ignoreName)
-      return;
-  
-    if(typeof callback == 'function')
-      callback( this );
-  
-    var children = this.children;
-  
-    for ( var i = 0, l = children.length; i < l; i ++ ) {
-      if(typeof (children[ i ] as any).traverseIgnore === 'function'){
-        (children[ i ] as any).traverseIgnore( ignoreName, callback );
+    if (typeof callback == 'function') callback(this);
+
+    const children = this.children;
+
+    for (let i = 0, l = children.length; i < l; i++) {
+      if (typeof (children[i] as any).traverseIgnore === 'function') {
+        (children[i] as any).traverseIgnore(ignoreName, callback);
       }
     }
-  
   }
 
   static getUUIDs(object: THREE.Object3D): string[] {
     const uuids: string[] = [];
 
-    if(!object){ return uuids; }
+    if (!object) {
+      return uuids;
+    }
 
     uuids.push(object.uuid);
 
-    for(let i = 0, len = object.children.length; i < len; i++){
+    for (let i = 0, len = object.children.length; i < len; i++) {
       uuids.push(...OdysseyObject3D.getUUIDs(object.children[i]));
     }
 
     return uuids;
   }
-  
 }

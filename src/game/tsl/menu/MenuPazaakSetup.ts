@@ -1,17 +1,16 @@
-import type { GUILabel, GUIButton } from "@/gui";
-import { MenuPazaakSetup as K1_MenuPazaakSetup } from "@/game/kotor/KOTOR";
+import type { GUILabel, GUIButton } from '@/gui';
+import { MenuPazaakSetup as K1_MenuPazaakSetup } from '@/game/kotor/KOTOR';
 
 /**
  * MenuPazaakSetup class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuPazaakSetup.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuPazaakSetup extends K1_MenuPazaakSetup {
-
   declare LBL_TITLE: GUILabel;
   declare BTN_AVAIL00: GUIButton;
   declare BTN_AVAIL01: GUIButton;
@@ -111,7 +110,7 @@ export class MenuPazaakSetup extends K1_MenuPazaakSetup {
   declare BTN_CLEARCARDS: GUIButton;
   declare LBL_HELP: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'pazaaksetup_p';
     this.background = '';
@@ -120,8 +119,8 @@ export class MenuPazaakSetup extends K1_MenuPazaakSetup {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    if (skipInit) return;
+    return new Promise<void>((resolve, _reject) => {
       resolve();
     });
   }
@@ -133,5 +132,4 @@ export class MenuPazaakSetup extends K1_MenuPazaakSetup {
   hide(): void {
     super.hide();
   }
-  
 }

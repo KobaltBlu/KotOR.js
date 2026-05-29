@@ -12,6 +12,7 @@
   font-size: 13px;
   padding: 4px 0;
   color: $text-primary;
+  -webkit-user-select: none;
   user-select: none;
   margin-top: 5px;
   margin-left: 5px;
@@ -176,7 +177,7 @@
   // High contrast mode support
   @media (prefers-contrast: high) {
     border-width: 2px;
-    
+
     .context-menu-item {
       &:hover {
         background: $primary-blue;

@@ -1,29 +1,221 @@
 {
-  "version": "0.2.0",
+  "compounds": [
+    {
+      "name": "Extension: Watch + Launch",
+      "configurations": [
+        "Launch Extension (watch mode)"
+      ],
+      "presentation": {
+        "group": "1-extension",
+        "order": 5
+      },
+      "stopAll": true
+    }
+  ],
   "configurations": [
     {
-      "type": "chrome",
-      "request": "launch",
       "name": "KotOR Launcher",
-      "url": "http://localhost:8080/launcher/index.html",
-      "webRoot": "${workspaceFolder}/dist",
-      "preLaunchTask": "serve: dist"
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "dist", "-l", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build web for serve (root)",
+      "serverReadyAction": {
+        "pattern": "Serving!|Local:.*http://|localhost:8080",
+        "uriFormat": "http://localhost:8080/launcher/index.html",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/dist"
+      },
+      "presentation": {
+        "group": "2-browser",
+        "order": 1
+      }
     },
     {
-      "type": "chrome",
+      "name": "KotOR Launcher (watch)",
+      "type": "node",
       "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "dist", "-l", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Watch web verbose (root)",
+      "serverReadyAction": {
+        "pattern": "Serving!|Local:.*http://|localhost:8080",
+        "uriFormat": "http://localhost:8080/launcher/index.html",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/dist"
+      },
+      "presentation": {
+        "group": "2-browser",
+        "order": 2
+      }
+    },
+    {
+      "name": "KotOR Launcher (clean build)",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "dist", "-l", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Clean and build web (root)",
+      "serverReadyAction": {
+        "pattern": "Serving!|Local:.*http://|localhost:8080",
+        "uriFormat": "http://localhost:8080/launcher/index.html",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/dist"
+      },
+      "presentation": {
+        "group": "2-browser",
+        "order": 3
+      }
+    },
+    {
       "name": "KotOR",
-      "url": "http://localhost:8080/game/index.html?key=kotor",
-      "webRoot": "${workspaceFolder}/dist",
-      "preLaunchTask": "serve: dist"
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "dist", "-l", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build web for serve (root)",
+      "serverReadyAction": {
+        "pattern": "Serving!|Local:.*http://|localhost:8080",
+        "uriFormat": "http://localhost:8080/game/index.html?key=kotor",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/dist"
+      },
+      "presentation": {
+        "group": "2-browser",
+        "order": 4
+      }
     },
     {
-      "type": "chrome",
-      "request": "launch",
       "name": "TSL",
-      "url": "http://localhost:8080/game/index.html?key=tsl",
-      "webRoot": "${workspaceFolder}/dist",
-      "preLaunchTask": "serve: dist"
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "serve", "dist", "-l", "8080"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Build web for serve (root)",
+      "serverReadyAction": {
+        "pattern": "Serving!|Local:.*http://|localhost:8080",
+        "uriFormat": "http://localhost:8080/game/index.html?key=tsl",
+        "action": "debugWithChrome",
+        "webRoot": "${workspaceFolder}/dist"
+      },
+      "presentation": {
+        "group": "2-browser",
+        "order": 5
+      }
+    },
+    {
+      "name": "Attach to Extension Host",
+      "outFiles": [
+        "${workspaceFolder}/extensions/kotor-forge-vscode/dist/**/*.js",
+        "${workspaceFolder}/extensions/kotor-forge-vscode/server/out/**/*.js"
+      ],
+      "presentation": {
+        "group": "1-extension",
+        "order": 4
+      },
+      "request": "attach",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "smartStep": true,
+      "type": "node"
+    },
+    {
+      "name": "Launch Extension",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/extensions/kotor-forge-vscode",
+        "--disable-extensions"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/extensions/kotor-forge-vscode/dist/**/*.js",
+        "${workspaceFolder}/extensions/kotor-forge-vscode/server/out/**/*.js"
+      ],
+      "preLaunchTask": "Compile KotOR Forge extension",
+      "presentation": {
+        "group": "1-extension",
+        "order": 1
+      },
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "timeout": 60000,
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "smartStep": true,
+      "type": "extensionHost"
+    },
+    {
+      "name": "Launch Extension (with other extensions)",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/extensions/kotor-forge-vscode"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/extensions/kotor-forge-vscode/dist/**/*.js",
+        "${workspaceFolder}/extensions/kotor-forge-vscode/server/out/**/*.js"
+      ],
+      "preLaunchTask": "Compile KotOR Forge extension",
+      "presentation": {
+        "group": "1-extension",
+        "order": 2
+      },
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "timeout": 60000,
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "smartStep": true,
+      "type": "extensionHost"
+    },
+    {
+      "name": "Launch Extension (watch mode)",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}/extensions/kotor-forge-vscode",
+        "--disable-extensions"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/extensions/kotor-forge-vscode/dist/**/*.js",
+        "${workspaceFolder}/extensions/kotor-forge-vscode/server/out/**/*.js"
+      ],
+      "preLaunchTask": "Dev: Prepare KotOR Forge extension (server + watch)",
+      "presentation": {
+        "group": "1-extension",
+        "order": 3
+      },
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "timeout": 60000,
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "smartStep": true,
+      "type": "extensionHost"
+    },
+    {
+      "name": "Electron (root, with watch)",
+      "request": "launch",
+      "type": "node",
+      "runtimeExecutable": "npx",
+      "args": ["--yes", "electron", "${workspaceFolder}/main"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "Watch web verbose (root)",
+      "presentation": { "group": "2-electron", "order": 1 },
+      "skipFiles": ["<node_internals>/**", "**/node_modules/**"]
     },
     {
       "type": "chrome",
@@ -31,7 +223,11 @@
       "name": "KotOR Forge",
       "url": "http://localhost:8080/forge/index.html",
       "webRoot": "${workspaceFolder}/dist",
-      "preLaunchTask": "serve: dist"
+      "preLaunchTask": "Build web for serve (root)",
+      "presentation": {
+        "group": "2-browser",
+        "order": 6
+      }
     },
     {
       "type": "chrome",
@@ -39,15 +235,12 @@
       "name": "KotOR Debugger",
       "url": "http://localhost:8080/debugger/index.html",
       "webRoot": "${workspaceFolder}/dist",
-      "preLaunchTask": "serve: dist"
+      "preLaunchTask": "Build web for serve (root)",
+      "presentation": {
+        "group": "2-browser",
+        "order": 7
+      }
     }
   ],
-  "compounds": [
-    {
-      "name": "Dev: Watch + Serve (Launcher)",
-      "configurations": ["KotOR Launcher"],
-      "preLaunchTask": "webpack: dev-watch",
-      "stopAll": true
-    }
-  ]
+  "version": "0.2.0"
 }

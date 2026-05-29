@@ -1,12 +1,15 @@
-import React from "react";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+import React from 'react';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
 
 /**
  * Sanitizes a string to be a valid ResRef (max 16 chars, lowercase, alphanumeric + underscore only)
  */
 export const sanitizeResRef = (value: string): string => {
-  return value.substring(0, 16).toLowerCase().replace(/[^a-z0-9_]/g, '');
+  return value
+    .substring(0, 16)
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '');
 };
 
 /**
@@ -20,7 +23,7 @@ export const clampByte = (value: number): number => {
  * Clamps a number to valid WORD range (1-65535)
  */
 export const clampWord = (value: number): number => {
-  return Math.max(1, Math.min(0xFFFF, value || 1));
+  return Math.max(1, Math.min(0xffff, value || 1));
 };
 
 /**
@@ -56,7 +59,6 @@ export const createNumberArrayFieldHandler = <T extends TabState>(
     tab.updateFile();
   };
 };
-
 
 /**
  * Creates a handler for updating BYTE fields (0-255)
@@ -156,4 +158,3 @@ export const createCExoLocStringFieldHandler = <T extends TabState>(
     tab.updateFile();
   };
 };
-

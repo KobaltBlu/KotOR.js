@@ -1,4 +1,4 @@
-export * from "@/apps/forge/states/tabs/TabState";
+export * from '@/apps/forge/states/tabs/TabState';
 
 export * from "@/apps/forge/states/tabs/TabGFFEditorState";
 export * from "@/apps/forge/states/tabs/TabGUIEditorState";
@@ -27,9 +27,9 @@ export * from "@/apps/forge/states/tabs/TabPTHEditorState";
 export * from "@/apps/forge/states/tabs/TabLYTEditorState";
 export * from "@/apps/forge/states/tabs/TabBIKPlayerState";
 
-export * from "@/apps/forge/states/tabs/TabScriptErrorLogState";
-export * from "@/apps/forge/states/tabs/TabScriptCompileLogState";
-export * from "@/apps/forge/states/tabs/TabScriptInspectorState";
+export * from '@/apps/forge/states/tabs/TabScriptErrorLogState';
+export * from '@/apps/forge/states/tabs/TabScriptCompileLogState';
+export * from '@/apps/forge/states/tabs/TabScriptInspectorState';
 
-export * from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorState";
-export * from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorOptionsState";
+export * from '@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorState';
+export * from '@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorOptionsState';

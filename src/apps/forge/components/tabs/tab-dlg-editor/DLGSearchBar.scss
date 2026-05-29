@@ -1,0 +1,222 @@
+// DLG Search Bar Styles
+
+.dlg-search-bar {
+  background: var(--bg-secondary, #252525);
+  border-bottom: 1px solid var(--border-color, #444);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dlg-search-input-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-primary, #1e1e1e);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+
+  &:focus-within {
+    border-color: var(--accent-color, #4da6ff);
+  }
+}
+
+.dlg-search-icon {
+  font-size: 1rem;
+  color: var(--text-secondary, #aaa);
+  flex-shrink: 0;
+}
+
+.dlg-search-input {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-primary, #e0e0e0);
+  font-size: 0.9rem;
+  outline: none;
+  font-family: inherit;
+
+  &::placeholder {
+    color: var(--text-secondary, #666);
+  }
+}
+
+.dlg-search-option {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.85rem;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+
+  input[type="checkbox"] {
+    cursor: pointer;
+  }
+
+  &:hover {
+    color: var(--text-primary, #e0e0e0);
+  }
+}
+
+.dlg-search-navigation {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+
+  button {
+    background: none;
+    border: none;
+    color: var(--text-secondary, #aaa);
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    font-size: 0.75rem;
+    border-radius: 3px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background: var(--bg-hover, #3a3a3a);
+      color: var(--text-primary, #e0e0e0);
+    }
+  }
+
+  .dlg-search-count {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #aaa);
+    min-width: 3rem;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+  }
+}
+
+.dlg-search-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #aaa);
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: var(--bg-hover, #3a3a3a);
+    color: var(--text-primary, #e0e0e0);
+  }
+}
+
+.dlg-search-results,
+.dlg-goto-suggestions {
+  max-height: 300px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.dlg-search-result,
+.dlg-goto-suggestion {
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-primary, #1e1e1e);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+
+  &:hover {
+    background: var(--bg-hover, #2a2a2a);
+  }
+
+  &.active {
+    background: var(--accent-bg, #264f78);
+    border-color: var(--accent-color, #4da6ff);
+  }
+}
+
+.dlg-search-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.dlg-search-result-type,
+.dlg-goto-suggestion-type {
+  color: var(--accent-color, #4da6ff);
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+}
+
+.dlg-search-result-match {
+  color: var(--text-secondary, #aaa);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+.dlg-search-result-text,
+.dlg-goto-suggestion-text {
+  color: var(--text-primary, #e0e0e0);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dlg-goto-suggestion {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+
+  .dlg-goto-suggestion-type {
+    flex-shrink: 0;
+  }
+
+  .dlg-goto-suggestion-text {
+    flex: 1;
+  }
+}
+
+// Scrollbar styling
+.dlg-search-results::-webkit-scrollbar,
+.dlg-goto-suggestions::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dlg-search-results::-webkit-scrollbar-track,
+.dlg-goto-suggestions::-webkit-scrollbar-track {
+  background: var(--scrollbar-track, #1e1e1e);
+}
+
+.dlg-search-results::-webkit-scrollbar-thumb,
+.dlg-goto-suggestions::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, #555);
+  border-radius: 4px;
+
+  &:hover {
+    background: var(--scrollbar-thumb-hover, #666);
+  }
+}

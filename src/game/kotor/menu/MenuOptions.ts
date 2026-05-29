@@ -1,22 +1,21 @@
-import { EngineState } from "@/enums/engine/EngineState";
-import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
-import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
-import { Module } from "@/module";
-import { NWScript } from "@/nwscript/NWScript";
+import { EngineState } from '@/enums/engine/EngineState';
+import { MenuSaveLoadMode } from '@/enums/gui/MenuSaveLoadMode';
+import { GameState } from '@/GameState';
+import { GameMenu } from '@/gui';
+import type { GUIListBox, GUILabel, GUIButton } from '@/gui';
+import { Module } from '@/module';
+import { NWScript } from '@/nwscript/NWScript';
 
 /**
  * MenuOptions class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuOptions.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuOptions extends GameMenu {
-
   BTN_LOADGAME: GUIButton;
   BTN_SAVEGAME: GUIButton;
   BTN_GAMEPLAY: GUIButton;
@@ -29,7 +28,7 @@ export class MenuOptions extends GameMenu {
   LB_DESC: GUIListBox;
   BTN_EXIT: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optionsingame';
     this.background = '1600x1200back';
@@ -38,10 +37,9 @@ export class MenuOptions extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     this.childMenu = this.manager.MenuTop;
-    return new Promise<void>((resolve, reject) => {
-      
+    return new Promise<void>((resolve, _reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -111,15 +109,15 @@ export class MenuOptions extends GameMenu {
         GameState.MenuManager.InGameConfirm.showConfirmDialog(42348, () => {
           GameState.UnloadModule();
           GameState.State = EngineState.RUNNING;
-                
-          if(GameState.module instanceof Module){
+
+          if (GameState.module instanceof Module) {
             GameState.module.dispose();
             GameState.module = undefined;
           }
-  
+
           //Remove all cached scripts and kill all running instances
           NWScript.Reload();
-  
+
           //Resets all keys to their default state
           GameState.controls.initKeys();
           this.manager.MainMenu.Start();
@@ -220,5 +218,4 @@ export class MenuOptions extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_EQU.click();
   }
-  
 }

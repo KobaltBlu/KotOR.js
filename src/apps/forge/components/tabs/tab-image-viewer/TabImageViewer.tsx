@@ -14,10 +14,9 @@ import { OdysseyMaterialBuilder } from "@/three/odyssey/OdysseyMaterialBuilder";
 
 import "@/apps/forge/components/tabs/tab-image-viewer/TabImageViewer.scss";
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from '@/apps/forge/KotOR';
 
-export const TabImageViewer = function(props: BaseTabProps){
-
+export const TabImageViewer = function (props: BaseTabProps) {
   const tab = props.tab as TabImageViewerState;
   const [render, rerender] = useState<boolean>(false);
   const [canvasScale, setCanvasScale] = useState<number>(1);
@@ -58,12 +57,12 @@ export const TabImageViewer = function(props: BaseTabProps){
 
   const setPixelData = (image: KotOR.TPCObject|KotOR.TGAObject|ForgeRasterImage) => {
     rerender(!render);
-    if(canvasRef.current){
+    if (canvasRef.current) {
       const canvas = canvasRef.current;
-      tab.getPixelData().then( (pixelData) => {
+      tab.getPixelData().then((pixelData) => {
         console.log('pixel data', pixelData);
-        let ctx = canvas.getContext('2d');
-        if(ctx){
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
           // let data = pixelData;
           tab.workingData = pixelData;
 
@@ -72,11 +71,11 @@ export const TabImageViewer = function(props: BaseTabProps){
 
           //If the image is a TPC we will need to times the height by the number of faces
           //to correct the height incase we have a cubemap
-          if(image instanceof KotOR.TPCObject){
-            if(image.txi.procedureType == 1){
+          if (image instanceof KotOR.TPCObject) {
+            if (image.txi.procedureType == 1) {
               width = image.header.width;
               height = image.header.height;
-            }else{
+            } else {
               height = image.header.height * ((image.header as any).faces || 1);
             }
           }
@@ -93,27 +92,24 @@ export const TabImageViewer = function(props: BaseTabProps){
           if(image instanceof KotOR.TPCObject){
             //FlipY
             TabImageViewerState.FlipY(tab.workingData, width, height);
-
           }
 
-          if(image instanceof KotOR.TGAObject){
-            
-            switch(tab.bitsPerPixel){
+          if (image instanceof KotOR.TGAObject) {
+            switch (tab.bitsPerPixel) {
               case 32:
                 tab.workingData = TabImageViewerState.TGAColorFix(tab.workingData);
-              break;
+                break;
               case 24:
                 //HTML Canvas requires 32bpp pixel data so we will need to add an alpha channel
                 tab.workingData = TabImageViewerState.RGBToRGBA(tab.workingData, width, height);
                 tab.workingData = TabImageViewerState.TGAColorFix(tab.workingData);
-              break;
+                break;
               case 8:
                 tab.workingData = TabImageViewerState.TGAGrayFix(tab.workingData);
-              break;
+                break;
             }
 
             TabImageViewerState.FlipY(tab.workingData, width, height);
-
           }
 
           //Set the preview image to opaque
@@ -124,7 +120,7 @@ export const TabImageViewer = function(props: BaseTabProps){
         }
       });
     }
-  }
+  };
 
   const onMouseWheel = useCallback((e: WheelEvent) => {
     if(!e.ctrlKey){
@@ -356,7 +352,7 @@ export const TabImageViewer = function(props: BaseTabProps){
     }
     return () => {
       tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
-    }
+    };
   });
 
   useEffect(() => {
@@ -364,7 +360,7 @@ export const TabImageViewer = function(props: BaseTabProps){
       containerRef.current.addEventListener('wheel', onMouseWheel, { passive: false });
     }
     return () => {
-      if(containerRef.current){
+      if (containerRef.current) {
         containerRef.current.removeEventListener('wheel', onMouseWheel);
       }
     }
@@ -414,8 +410,7 @@ export const TabImageViewer = function(props: BaseTabProps){
       </div>
     ) : (
       <></>
-    )
-  );
+    );
 
   return (
     <>
@@ -452,5 +447,4 @@ export const TabImageViewer = function(props: BaseTabProps){
       </LayoutContainer>
     </>
   );
-
-}
+};

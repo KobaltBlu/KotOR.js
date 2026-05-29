@@ -1,44 +1,43 @@
-import * as THREE from "three";
+﻿import * as THREE from 'three';
 
-import {shadertoy_perlin} from "@/shaders/chunks/ShaderToyPerlin";
+import { shadertoy_perlin } from '@/shaders/chunks/ShaderToyPerlin';
 THREE.ShaderChunk.shadertoy_perlin = shadertoy_perlin;
 
-import { Shader } from "@/shaders/Shader";
-import { ShaderOdysseyEmitter } from "@/shaders/ShaderOdysseyEmitter";
-import { ShaderAuroraGUI } from "@/shaders/ShaderAuroraGUI";
-import { ShaderOdysseyModel } from "@/shaders/ShaderOdysseyModel";
-import { ShaderGrass } from "@/shaders/ShaderGrass";
-import { ShaderGUIVoid } from "@/shaders/ShaderGUIVoid";
-import { ShaderGUIBackground } from "@/shaders/ShaderGUIBackground";
-import { ShaderFogOfWar } from "@/shaders/ShaderFogOfWar";
-
+import { Shader } from '@/shaders/Shader';
+import { ShaderOdysseyEmitter } from '@/shaders/ShaderOdysseyEmitter';
+import { ShaderAuroraGUI } from '@/shaders/ShaderAuroraGUI';
+import { ShaderOdysseyModel } from '@/shaders/ShaderOdysseyModel';
+import { ShaderGrass } from '@/shaders/ShaderGrass';
+import { ShaderGUIVoid } from '@/shaders/ShaderGUIVoid';
+import { ShaderGUIBackground } from '@/shaders/ShaderGUIBackground';
+import { ShaderFogOfWar } from '@/shaders/ShaderFogOfWar';
 
 /**
  * ShaderManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ShaderManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ShaderManager {
-
   static Shaders: Map<string, Shader> = new Map();
 
-  static AddShader(shader: Shader){
+  static AddShader(shader: Shader) {
     THREE.ShaderLib[shader.name] = {
       fragmentShader: shader.getFragment(),
       vertexShader: shader.getVertex(),
-      uniforms: THREE.UniformsUtils.merge(shader.getUniforms())
+      uniforms: THREE.UniformsUtils.merge(
+        (Array.isArray(shader.getUniforms()) ? shader.getUniforms() : [shader.getUniforms()]) as {
+          [uniform: string]: THREE.IUniform;
+        }[]
+      ),
     };
     ShaderManager.Shaders.set(shader.name, shader);
   }
 
-  static Init(){
-    
-  }
-
+  static Init() {}
 }
 
 ShaderManager.AddShader(new ShaderGrass());

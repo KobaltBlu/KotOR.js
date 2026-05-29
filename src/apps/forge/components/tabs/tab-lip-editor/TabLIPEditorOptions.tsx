@@ -10,7 +10,7 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { Button, Form } from "react-bootstrap";
 import { SectionContainer } from "@/apps/forge/components/SectionContainer";
 
-import * as KotOR from "@/apps/forge/KotOR";
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface TabLIPEditorOptionsProps {
   tab: TabLIPEditorOptionsState;

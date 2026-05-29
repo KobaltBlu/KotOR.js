@@ -19,9 +19,9 @@ export type NWScriptBuildProgramAstResult =
 /**
  * Main decompiler orchestrator.
  * Coordinates all decompilation phases to convert NCS bytecode to NSS source.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptDecompiler.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -84,7 +84,7 @@ export class NWScriptDecompiler {
       return header + '\n\n' + nssSource;
     } catch (error) {
       console.error('Decompilation error:', error);
-      return `// Error during decompilation: ${error instanceof Error ? error.message : String(error)}`;
+      return `// Error while reconstructing NSS: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 
@@ -153,10 +153,10 @@ export class NWScriptDecompiler {
    */
   private generateHeader(): string {
     const lines: string[] = [];
-    lines.push('// Decompiled NSS source');
+    lines.push('// NSS source (reconstructed from compiled script)');
     lines.push(`// Original script: ${this.script.name || 'unknown'}`);
     lines.push('//');
-    lines.push('// NOTE: This is decompiled code. Variable names and structure');
+    lines.push('// NOTE: Reconstructed from bytecode. Variable names and structure');
     lines.push('// may not match the original source exactly.');
     lines.push('//');
     return lines.join('\n');

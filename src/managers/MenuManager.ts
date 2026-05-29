@@ -1,17 +1,17 @@
-import * as KOTOR from "@/game/kotor/KOTOR";
-import * as TSL from "@/game/tsl/TSL";
-import { GameState } from "@/GameState";
-import { EngineMode, GameEngineType } from "@/enums/engine";
-import type { GUIControl, GameMenu } from "@/gui";
-import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
-import { EngineState } from "@/enums/engine/EngineState";
-import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
+import * as KOTOR from '@/game/kotor/KOTOR';
+import * as TSL from '@/game/tsl/TSL';
+import { GameState } from '@/GameState';
+import { EngineMode, GameEngineType } from '@/enums/engine';
+import type { GUIControl, GameMenu } from '@/gui';
+import { ActionMenuManager } from '@/engine/menu/ActionMenuManager';
+import { EngineState } from '@/enums/engine/EngineState';
+import { PerformanceMonitor } from '@/utility/PerformanceMonitor';
 
 /**
  * MenuManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -86,76 +86,72 @@ export class MenuManager {
   static MenuUpgradeItems: KOTOR.MenuUpgradeItems;
   static MenuUpgradeSelect: KOTOR.MenuUpgradeSelect;
 
-  static Init(){
-
+  static Init() {
     MenuManager.activeMenus = [];
     MenuManager.activeModals = [];
     MenuManager.pulse = 0;
     MenuManager.pulseOpacity = 1;
-
   }
 
-  static Add(menu: GameMenu){
-    if(!menu) return;
+  static Add(menu: GameMenu) {
+    if (!menu) return;
 
     MenuManager.MenuToolTip.hide();
-    
-    if(!menu.isOverlayGUI){
+
+    if (!menu.isOverlayGUI) {
       //Hide the current top most menu in the list before adding the new Menu
-      if(MenuManager.activeMenus.length)
-        MenuManager.activeMenus[MenuManager.activeMenus.length-1].hide();
+      if (MenuManager.activeMenus.length) MenuManager.activeMenus[MenuManager.activeMenus.length - 1].hide();
 
       const idx = MenuManager.activeMenus.indexOf(menu);
-      if(idx >= 0)
-        MenuManager.activeMenus.splice(idx, 1);
-      
+      if (idx >= 0) MenuManager.activeMenus.splice(idx, 1);
+
       MenuManager.activeMenus.push(menu);
-  
+
       MenuManager.Resize();
-    }else{
-      if(MenuManager.activeModals.indexOf(menu) == -1)
-        MenuManager.activeModals.push(menu);
+    } else {
+      if (MenuManager.activeModals.indexOf(menu) == -1) MenuManager.activeModals.push(menu);
     }
   }
 
-  static Remove(menu: GameMenu){
-    if(!menu) return;
+  static Remove(menu: GameMenu) {
+    if (!menu) return;
 
-    if(!menu.isOverlayGUI){
+    if (!menu.isOverlayGUI) {
       const mIdx = MenuManager.activeMenus.indexOf(menu);
-      if(mIdx >= 0)
-        MenuManager.activeMenus.splice(mIdx, 1);
+      if (mIdx >= 0) MenuManager.activeMenus.splice(mIdx, 1);
 
       //Reshow the new top most menu in the list
-      if(MenuManager.activeMenus.length)
-        MenuManager.GetCurrentMenu().show();
+      if (MenuManager.activeMenus.length) MenuManager.GetCurrentMenu().show();
 
       MenuManager.Resize();
 
-      if((!MenuManager.activeMenus.length || MenuManager.activeMenus[MenuManager.activeMenus.length-1].engineMode != EngineMode.GUI) && GameState.Mode !== EngineMode.MOVIE){
+      if (
+        (!MenuManager.activeMenus.length ||
+          MenuManager.activeMenus[MenuManager.activeMenus.length - 1].engineMode != EngineMode.GUI) &&
+        GameState.Mode !== EngineMode.MOVIE
+      ) {
         GameState.RestoreEnginePlayMode();
       }
-    }else{
+    } else {
       const mIdx = MenuManager.activeModals.indexOf(menu);
-      if(mIdx >= 0)
-        MenuManager.activeModals.splice(mIdx, 1);
+      if (mIdx >= 0) MenuManager.activeModals.splice(mIdx, 1);
     }
   }
 
-  static ClearMenus(){
-    while(MenuManager.activeMenus.length){
+  static ClearMenus() {
+    while (MenuManager.activeMenus.length) {
       MenuManager.activeMenus[0].close();
     }
-    while(MenuManager.activeModals.length){
+    while (MenuManager.activeModals.length) {
       MenuManager.activeModals[0].close();
     }
-    if(GameState.Mode == EngineMode.LOADING){
+    if (GameState.Mode == EngineMode.LOADING) {
       GameState.MenuManager.LoadScreen.open();
     }
   }
 
-  static GetCurrentMenu(){
-    return MenuManager.activeMenus[MenuManager.activeMenus.length-1];
+  static GetCurrentMenu() {
+    return MenuManager.activeMenus[MenuManager.activeMenus.length - 1];
   }
 
   /** Topmost menu for input: overlay modals above the regular menu stack. */
@@ -175,7 +171,7 @@ export class MenuManager {
     }
   }
 
-  static Update(delta = 0){
+  static Update(delta = 0) {
     GameState.CursorManager.updateCursor();
     GameState.CursorManager.cursor.material.depthTest = false;
     GameState.CursorManager.cursor.material.depthWrite = false;
@@ -201,37 +197,36 @@ export class MenuManager {
     //   MenuManager.pulseOpacity = 1 - this.pulse;
     // }
 
-    if(GameState.Mode == EngineMode.INGAME && MenuManager.InGameOverlay.bVisible){
+    if (GameState.Mode == EngineMode.INGAME && MenuManager.InGameOverlay.bVisible) {
       MenuManager.InGameOverlay.update(delta);
     }
 
-    if(GameState.Mode == EngineMode.INGAME && GameState.State == EngineState.PAUSED){
+    if (GameState.Mode == EngineMode.INGAME && GameState.State == EngineState.PAUSED) {
       MenuManager.InGamePause.update(delta);
     }
 
-    let activeMenus = MenuManager.activeMenus;
-    for(let i = 0, len = activeMenus.length; i < len; i++){
+    const activeMenus = MenuManager.activeMenus;
+    for (let i = 0, len = activeMenus.length; i < len; i++) {
       activeMenus[i].update(delta);
     }
 
-    let activeModals = MenuManager.activeModals;
-    for(let i = 0, len = activeModals.length; i < len; i++){
+    const activeModals = MenuManager.activeModals;
+    for (let i = 0, len = activeModals.length; i < len; i++) {
       activeModals[i].update(delta);
     }
 
-    if(GameState.scene_gui.children.indexOf(GameState.scene_cursor_holder) != GameState.scene_gui.children.length){
+    if (GameState.scene_gui.children.indexOf(GameState.scene_cursor_holder) != GameState.scene_gui.children.length) {
       GameState.scene_cursor_holder.remove(GameState.scene_gui);
       GameState.scene_gui.add(GameState.scene_cursor_holder);
     }
-
   }
 
   static async GameMenuLoader(menuConstructor: any): Promise<GameMenu> {
-    PerformanceMonitor.start(menuConstructor.name+'.GameMenuLoader');
+    PerformanceMonitor.start(menuConstructor.name + '.GameMenuLoader');
     const menu: GameMenu = new menuConstructor();
     menu.manager = MenuManager;
     await menu.load();
-    PerformanceMonitor.stop(menuConstructor.name+'.GameMenuLoader');
+    PerformanceMonitor.stop(menuConstructor.name + '.GameMenuLoader');
     return menu;
   }  
   
@@ -332,7 +327,7 @@ export class MenuManager {
           KOTOR.MenuKeyboardEntry, KOTOR.InGameConfirm,
         ];
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
@@ -396,14 +391,14 @@ export class MenuManager {
           KOTOR.CharGenQuickPanel, KOTOR.CharGenSkills,
         ];
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
 
   static #ingameMenusLoaded = false;
-  static async LoadInGameMenus(){
-    if(MenuManager.#ingameMenusLoaded) return;
+  static async LoadInGameMenus() {
+    if (MenuManager.#ingameMenusLoaded) return;
     MenuManager.#ingameMenusLoaded = true;
     ActionMenuManager.InitActionMenuPanels();
     try{
@@ -557,14 +552,13 @@ export class MenuManager {
       MenuManager.MenuMap.childMenu = GameState.MenuManager.MenuTop;
       MenuManager.MenuAbilities.childMenu = GameState.MenuManager.MenuTop;
 
-      if(GameState.GameKey == GameEngineType.TSL){
+      if (GameState.GameKey == GameEngineType.TSL) {
         MenuManager.MenuPartySelection.childMenu = GameState.MenuManager.MenuTop;
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
-
 }
 
 MenuManager.Init();

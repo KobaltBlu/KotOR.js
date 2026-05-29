@@ -1,7 +1,7 @@
-import React from "react";
-import { ModalBlueprintBrowser } from "@/apps/forge/components/modal/ModalBlueprintBrowser";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
-import * as KotOR from "@/apps/forge/KotOR";
+import React from 'react';
+import { ModalBlueprintBrowser } from '@/apps/forge/components/modal/ModalBlueprintBrowser';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export type BlueprintType = 'utc' | 'utd' | 'ute' | 'uti' | 'utp' | 'utm' | 'uts' | 'utt' | 'utw';
 
@@ -12,15 +12,15 @@ export interface BlueprintItem {
 }
 
 const BLUEPRINT_TYPE_LABELS: Record<BlueprintType, string> = {
-  'utc': 'Creatures',
-  'utd': 'Doors',
-  'ute': 'Encounters',
-  'uti': 'Items',
-  'utp': 'Placeables',
-  'utm': 'Stores',
-  'uts': 'Sounds',
-  'utt': 'Triggers',
-  'utw': 'Waypoints',
+  utc: 'Creatures',
+  utd: 'Doors',
+  ute: 'Encounters',
+  uti: 'Items',
+  utp: 'Placeables',
+  utm: 'Stores',
+  uts: 'Sounds',
+  utt: 'Triggers',
+  utw: 'Waypoints',
 };
 
 export class ModalBlueprintBrowserState extends ModalState {
@@ -33,7 +33,10 @@ export class ModalBlueprintBrowserState extends ModalState {
   searchQuery: string = '';
   onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void;
 
-  constructor(blueprintType: BlueprintType, onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void) {
+  constructor(
+    blueprintType: BlueprintType,
+    onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void
+  ) {
     super();
     this.selectedBlueprintType = blueprintType;
     this.title = `Blueprint Browser - ${BLUEPRINT_TYPE_LABELS[blueprintType]}`;
@@ -45,7 +48,7 @@ export class ModalBlueprintBrowserState extends ModalState {
 
   async loadBlueprints() {
     const type = this.selectedBlueprintType;
-    
+
     if (ModalBlueprintBrowserState.cacheLoaded.get(type)) {
       const cached = ModalBlueprintBrowserState.blueprintCache.get(type) || [];
       this.items = cached.slice(0);
@@ -59,16 +62,14 @@ export class ModalBlueprintBrowserState extends ModalState {
     try {
       const items: BlueprintItem[] = [];
       const resType = KotOR.ResourceTypes[type];
-      
+
       if (!resType) {
         console.error(`Unknown blueprint type: ${type}`);
         return;
       }
 
       // Get all blueprint files from KEYManager
-      const blueprintKeys = KotOR.KEYManager.Key.keys.filter(
-        (key: KotOR.IKEYEntry) => key.resType === resType
-      );
+      const blueprintKeys = KotOR.KEYManager.Key.keys.filter((key: KotOR.IKEYEntry) => key.resType === resType);
 
       // Load and parse each blueprint file
       for (const key of blueprintKeys) {
@@ -116,7 +117,7 @@ export class ModalBlueprintBrowserState extends ModalState {
           items.push({
             resref: key.resRef,
             localizedName,
-            gff
+            gff,
           });
         } catch (error) {
           console.error(`Failed to load ${type}: ${key.resRef}`, error);
@@ -135,9 +136,10 @@ export class ModalBlueprintBrowserState extends ModalState {
 
   setSearchQuery(query: string) {
     this.searchQuery = query.toLowerCase();
-    this.filteredItems = this.items.filter(item => 
-      item.resref.toLowerCase().includes(this.searchQuery) ||
-      item.localizedName.toLowerCase().includes(this.searchQuery)
+    this.filteredItems = this.items.filter(
+      (item) =>
+        item.resref.toLowerCase().includes(this.searchQuery) ||
+        item.localizedName.toLowerCase().includes(this.searchQuery)
     );
     this.processEventListener('onSearchChanged', [this]);
   }
@@ -149,4 +151,3 @@ export class ModalBlueprintBrowserState extends ModalState {
     this.close();
   }
 }
-

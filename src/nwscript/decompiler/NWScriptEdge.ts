@@ -1,4 +1,4 @@
-import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptBasicBlock } from '@/nwscript/decompiler/NWScriptBasicBlock';
 
 /**
  * Represents an edge type in the control flow graph
@@ -12,7 +12,7 @@ export enum EdgeType {
   RETURN = 'return',
   BACK_EDGE = 'back_edge',
   FORWARD_EDGE = 'forward_edge',
-  CROSS_EDGE = 'cross_edge'
+  CROSS_EDGE = 'cross_edge',
 }
 
 /**
@@ -80,4 +80,3 @@ export class NWScriptEdge {
     return `${this.from.id} -> ${this.to.id} [${this.type}]`;
   }
 }
-

@@ -3,4 +3,5 @@ export interface CreatureListEntry {
   resref: string;
   cr: number;
   singleSpawn: boolean;
+  guaranteedCount?: number;
 }

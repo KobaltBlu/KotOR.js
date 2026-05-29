@@ -1,6 +1,6 @@
 import React from 'react';
-import { ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
-import * as KotOR from "@/apps/forge/KotOR";
+import { ContextMenuItem } from '@/apps/forge/components/common/ContextMenu';
+import * as KotOR from '@/apps/forge/KotOR';
 
 export interface GFFContextMenuProps {
   struct: KotOR.GFFStruct;
@@ -15,17 +15,8 @@ export interface GFFContextMenuProps {
 }
 
 export const createGFFContextMenuItems = (props: GFFContextMenuProps): ContextMenuItem[] => {
-  const {
-    struct,
-    onFieldAdded,
-    onStructCut,
-    onStructCopy,
-    onFieldPaste,
-    onStructDelete,
-    onNew,
-    onOpen,
-    onClose
-  } = props;
+  const { struct, onFieldAdded, onStructCut, onStructCopy, onFieldPaste, onStructDelete, onNew, onOpen, onClose } =
+    props;
 
   const fieldTypes = [
     { label: 'BYTE', type: KotOR.GFFDataType.BYTE },
@@ -54,7 +45,7 @@ export const createGFFContextMenuItems = (props: GFFContextMenuProps): ContextMe
     onClick: () => {
       struct.addField(new KotOR.GFFField(fieldType.type, 'New Field [Untitled]', 0));
       onFieldAdded();
-    }
+    },
   }));
 
   return [
@@ -64,26 +55,26 @@ export const createGFFContextMenuItems = (props: GFFContextMenuProps): ContextMe
       id: 'cut',
       label: 'Cut',
       onClick: onStructCut,
-      disabled: !onStructCut
+      disabled: !onStructCut,
     },
     {
       id: 'copy',
       label: 'Copy',
       onClick: onStructCopy,
-      disabled: !onStructCopy
+      disabled: !onStructCopy,
     },
     {
       id: 'paste',
       label: 'Paste',
       onClick: onFieldPaste,
-      disabled: !onFieldPaste
+      disabled: !onFieldPaste,
     },
     { id: 'separator-2', separator: true },
     {
       id: 'delete',
       label: 'Delete',
       onClick: onStructDelete,
-      disabled: !onStructDelete
-    }
+      disabled: !onStructDelete,
+    },
   ];
 };

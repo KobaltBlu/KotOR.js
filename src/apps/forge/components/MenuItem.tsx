@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Dropdown, Nav, NavDropdown } from 'react-bootstrap';
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 
-export const MenuItem = function(props: any){
+export const MenuItem = function (props: any) {
   const item = props.item;
   const parent = props.parent;
 
@@ -10,21 +10,23 @@ export const MenuItem = function(props: any){
 
   const onRebuild = () => {
     rerender(!render);
-    if(parent) parent.rebuild();
+    if (parent) parent.rebuild();
   };
 
-  useEffectOnce( () => { //constructor
+  useEffectOnce(() => {
+    //constructor
     item.addEventListener('onRebuild', onRebuild);
-    return () => { //deconstructor
+    return () => {
+      //deconstructor
       item.removeEventListener('onRebuild', onRebuild);
-    }
+    };
   });
 
   const onClick = (e: React.MouseEvent<HTMLElement, MouseEvent>) => {
-    if(typeof item.onClick === 'function'){
+    if (typeof item.onClick === 'function') {
       item.onClick(e, item);
     }
-  }
+  };
 
   const renderItemName = () => {
     return (
@@ -65,4 +67,4 @@ export const MenuItem = function(props: any){
       <Nav.Link onClick={onClick}>{renderItemName()}</Nav.Link>
     );
   }
-}
+};

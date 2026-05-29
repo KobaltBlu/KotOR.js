@@ -1,10 +1,16 @@
-name: NodeJS with Webpack - PROD
+name: Deploy Webpack PROD Bundle
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build and artifact upload only (skip S3 sync)
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  build:
+  deploy-prod:
     runs-on: ubuntu-latest
 
     strategy:
@@ -12,18 +18,17 @@ jobs:
         node-version: [26.x]
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: '22'
           cache: npm
 
-      - name: Build
-        run: |
-          npm install
-          npm run webpack:prod
+      - name: Install dependencies
+        run: npm ci
 
       - name: Generate Manifest
         run: npm run generate-manifest
@@ -33,12 +38,14 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
-      - name: Upload To S3 Bucket
+      - name: Sync bundle to PROD S3 bucket
+        if: ${{ !inputs.dry_run }}
         run: |
           aws s3 sync dist s3://${{ secrets.AWS_BUCKET_PROD }} --delete --acl public-read
       - name: Invalidate CloudFront Cache
+        if: ${{ !inputs.dry_run }}
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.AWS_CLOUDFRONT_DISTRIBUTION_ID_PROD }} \

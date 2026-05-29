@@ -7,15 +7,14 @@ import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControll
 
 /**
  * OdysseyController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.INVALID;
   uuid: string = crypto.randomUUID();
 
@@ -24,7 +23,7 @@ export class OdysseyController {
   frameCount: number;
   data: IOdysseyControllerFrameGeneric[] = [];
 
-  constructor( controller: IOdysseyControllerGeneric ){
+  constructor(controller: IOdysseyControllerGeneric) {
     Object.assign(this, controller);
 
     this.vec3 = new THREE.Vector3(0, 0, 0);
@@ -40,12 +39,15 @@ export class OdysseyController {
     
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    
-  }
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric) {}
 
-  update(){
+  animate(
+    manager: OdysseyModelAnimationManager,
+    anim: OdysseyModelAnimation,
+    last: IOdysseyControllerFrameGeneric,
+    next: IOdysseyControllerFrameGeneric,
+    fl: number = 0
+  ) {}
 
-  }
-
+  update() {}
 }

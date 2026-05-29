@@ -23,10 +23,20 @@ import { RecentProject } from "@/apps/forge/RecentProject";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
-  static project: Project
+  static project: Project;
   // static loader: LoadingScreen = new KotOR.LoadingScreen();
   static modalManager: ModalManagerState = new ModalManagerState();
   static tabManager: EditorTabManager = new EditorTabManager();
+  /** When set (e.g. by VS Code webview), save and optional edit notifications delegate to the host. */
+  static hostAdapter: IForgeHostAdapter | null = null;
+
+  static setHostAdapter(adapter: IForgeHostAdapter | null): void {
+    ForgeState.hostAdapter = adapter;
+  }
+
+  static getHostAdapter(): IForgeHostAdapter | null {
+    return ForgeState.hostAdapter;
+  }
   static explorerTabManager: EditorTabManager = new EditorTabManager();
   static projectExplorerTab: TabProjectExplorerState = new TabProjectExplorerState();
   static resourceExplorerTab: TabResourceExplorerState = new TabResourceExplorerState();
@@ -40,46 +50,46 @@ export class ForgeState {
   static nwScriptParser: NWScriptParser;
 
   static addEventListener<T>(type: T, cb: Function): void {
-    if(!Array.isArray(this.#eventListeners[type])){
+    if (!Array.isArray(this.#eventListeners[type])) {
       this.#eventListeners[type] = [];
     }
-    if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index == -1){
+    if (Array.isArray(this.#eventListeners[type])) {
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
+      if (index == -1) {
         ev.push(cb);
-      }else{
+      } else {
         console.warn('Event Listener: Already added', type);
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', type);
     }
   }
 
   static removeEventListener<T>(type: T, cb: Function): void {
-    if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      let index = ev.indexOf(cb);
-      if(index >= 0){
+    if (Array.isArray(this.#eventListeners[type])) {
+      const ev = this.#eventListeners[type];
+      const index = ev.indexOf(cb);
+      if (index >= 0) {
         ev.splice(index, 1);
-      }else{
+      } else {
         console.warn('Event Listener: Already removed', type);
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', type);
     }
   }
 
   static processEventListener<T>(type: T, args: any[] = []): void {
-    if(Array.isArray(this.#eventListeners[type])){
-      let ev = this.#eventListeners[type];
-      for(let i = 0; i < ev.length; i++){
+    if (Array.isArray(this.#eventListeners[type])) {
+      const ev = this.#eventListeners[type];
+      for (let i = 0; i < ev.length; i++) {
         const callback = ev[i];
-        if(typeof callback === 'function'){
+        if (typeof callback === 'function') {
           callback(...args);
         }
       }
-    }else{
+    } else {
       console.warn('Event Listener: Unsupported', type);
     }
   }
@@ -116,9 +126,9 @@ export class ForgeState {
     ForgeState.processEventListener('on-loader-message', [message]);
   }
 
-  static async InitializeApp(): Promise<void>{
-    return new Promise( (resolve, reject) => {
-      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+  static async InitializeApp(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
         KotOR.ApplicationProfile.directory = KotOR.ApplicationProfile.profile.directory;
       }else{
         const profileHandle = KotOR.ApplicationProfile.profile?.directory_handle as FileSystemDirectoryHandle | undefined;
@@ -131,7 +141,7 @@ export class ForgeState {
           KotOR.ApplicationProfile.directoryHandle = undefined as any;
         }
       }
-      console.log('loading game...')
+      console.log('loading game...');
       ForgeState.loaderInit(KotOR.ApplicationProfile.profile.background, KotOR.ApplicationProfile.profile.logo);
       ForgeState.loaderShow();
       KotOR.GameState.GameKey = KotOR.ApplicationProfile.GameKey;
@@ -157,35 +167,35 @@ export class ForgeState {
 
         ForgeState.recentFiles = ForgeState.getRecentFiles();
         ForgeState.recentProjects = ForgeState.getRecentProjects();
-        
+
         // Restore handles from IndexedDB for browser projects
-        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
+        if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER) {
           const { get } = await import('idb-keyval');
-          for(const proj of ForgeState.recentProjects){
-            if(!proj.handle && proj.name){
+          for (const proj of ForgeState.recentProjects) {
+            if (!proj.handle && proj.name) {
               const handleKey = `project_handle_${proj.getIdentifier()}`;
               try {
                 const handle = await get(handleKey);
-                if(handle instanceof FileSystemDirectoryHandle){
+                if (handle instanceof FileSystemDirectoryHandle) {
                   proj.handle = handle;
                 }
-              } catch(e) {
+              } catch (e) {
                 console.warn('Failed to restore handle for project:', proj.getDisplayName(), e);
               }
             }
           }
         }
-        
+
         this.processEventListener('onRecentProjectsUpdated', []);
         this.processEventListener('onRecentFilesUpdated', []);
-        
+
         const tabStates: TabStoreState[] = KotOR.ConfigClient.get('open_tabs', []);
-        if(tabStates.length){
-          for(let i = 0; i < tabStates.length; i++){
+        if (tabStates.length) {
+          for (let i = 0; i < tabStates.length; i++) {
             const tabState = tabStates[i];
             this.tabManager.restoreTabState(tabState);
           }
-        }else{
+        } else {
           ForgeState.tabManager.addTab(new TabQuickStartState());
         }
 
@@ -208,7 +218,7 @@ export class ForgeState {
         ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
         ForgeState.resourceExplorerTab.show();
 
-        TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
+        TabResourceExplorerState.GenerateResourceList(ForgeState.resourceExplorerTab).then((resourceList) => {
           ForgeState.loaderHide();
           const perfMonitor = (KotOR.GameState as any)?.PerformanceMonitor;
           if(perfMonitor && typeof perfMonitor.toString === 'function'){
@@ -221,50 +231,49 @@ export class ForgeState {
     });
   }
 
-  static async VerifyGameDirectory(onVerified: Function, onError: Function){
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+  static async VerifyGameDirectory(onVerified: Function, onError: Function) {
+    if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
       // let validated = await KotOR.GameFileSystem.validateDirectory(KotOR.ApplicationProfile.rootDirectory);
-      if(await KotOR.GameFileSystem.exists('chitin.key')){
+      if (await KotOR.GameFileSystem.exists('chitin.key')) {
         onVerified();
-      }else{
-        try{
-          let dir = await (window as any).dialog.locateDirectoryDialog();
-          if(dir){
+      } else {
+        try {
+          const dir = await (window as any).dialog.locateDirectoryDialog();
+          if (dir) {
             KotOR.ApplicationProfile.profile.directory = dir;
             onVerified();
-          }else{
+          } else {
             console.error('no directory');
           }
-
-        }catch(e: any){
+        } catch (e: any) {
           console.error(e);
         }
       }
-    }else{
-      if(KotOR.ApplicationProfile.directoryHandle){
-        let validated = await KotOR.GameFileSystem.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
-        if(validated){
+    } else {
+      if (KotOR.ApplicationProfile.directoryHandle) {
+        const validated = await KotOR.GameFileSystem.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
+        if (validated) {
           onVerified();
-        }else{
+        } else {
           onError();
         }
-      }else{
+      } else {
         onError();
       }
     }
   }
 
-  static InitManagers(){
+  static InitManagers() {
     // ForgeState.tabManager = new EditorTabManager();
     // ForgeState.explorerTabManager = new EditorTabManager();
     // ForgeState.projectExplorerTab = new ProjectExplorerTab();
     // ForgeState.resourceExplorerTab = new ResourceExplorerTab();
   }
 
-  static initNWScriptParser(){
-    return new Promise<void>( (resolve, reject) => {
-      KotOR.ResourceLoader.loadResource( KotOR.ResourceTypes.nss, 'nwscript').then(
-        (nss: Uint8Array) => {
+  static initNWScriptParser() {
+    return new Promise<void>((resolve, reject) => {
+      KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.nss, 'nwscript')
+        .then((nss: Uint8Array) => {
           this.nwscript_nss = nss;
           const textDecoder = new TextDecoder();
           this.nwScriptParser = new NWScriptParser(textDecoder.decode(this.nwscript_nss));
@@ -272,19 +281,21 @@ export class ForgeState {
           LYTLanguageService.initLYTLanguage();
           TXILanguageService.initTXILanguage();
           resolve();
-        }
-      ).catch( (e) => {console.error(e)});
+        })
+        .catch((e) => {
+          console.error(e);
+        });
     });
   }
 
   static getRecentProjects(): RecentProject[] {
-    if(Array.isArray(KotOR.ConfigClient.options.recent_projects)){
+    if (Array.isArray(KotOR.ConfigClient.options.recent_projects)) {
       // Convert stored objects to RecentProject instances
       KotOR.ConfigClient.options.recent_projects = KotOR.ConfigClient.options.recent_projects
         .filter((proj: any) => proj && (proj.path || proj.handle || proj.name))
         .map((proj: any) => RecentProject.From(proj))
         .slice(0, 10);
-    }else{
+    } else {
       KotOR.ConfigClient.options.recent_projects = [];
     }
     return KotOR.ConfigClient.options.recent_projects as RecentProject[];
@@ -295,7 +306,7 @@ export class ForgeState {
       KotOR.ConfigClient.options.recent_files = KotOR.ConfigClient.options.recent_files.map( (file: any) => {
         return EditorFile.revive(file as Partial<EditorFile>);
       });
-    }else{
+    } else {
       KotOR.ConfigClient.options.recent_files = [];
     }
     return KotOR.ConfigClient.options.recent_files as EditorFile[];
@@ -313,12 +324,12 @@ export class ForgeState {
         this.saveState();
 
         //Notify the project we have opened a new file
-        if(ForgeState.project instanceof Project){
+        if (ForgeState.project instanceof Project) {
           ForgeState.project.addToOpenFileList(file);
         }
         this.processEventListener('onRecentFilesUpdated', [file]);
       }
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
@@ -338,35 +349,38 @@ export class ForgeState {
     this.saveState();
   }
 
-  static async addRecentProject(projectPathOrHandle: string | FileSystemDirectoryHandle, handle?: FileSystemDirectoryHandle){
-    try{
+  static async addRecentProject(
+    projectPathOrHandle: string | FileSystemDirectoryHandle,
+    handle?: FileSystemDirectoryHandle
+  ) {
+    try {
       let project: RecentProject | null = null;
 
-      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+      if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
         // For Electron, projectPathOrHandle is a string path
-        if(typeof projectPathOrHandle === 'string' && projectPathOrHandle){
+        if (typeof projectPathOrHandle === 'string' && projectPathOrHandle) {
           const normalizedPath = projectPathOrHandle.replace(/\\/g, '/');
           project = new RecentProject({ path: normalizedPath });
         }
       } else {
         // For Browser, projectPathOrHandle could be a handle or a string name
-        if(projectPathOrHandle instanceof FileSystemDirectoryHandle){
-          project = new RecentProject({ 
+        if (projectPathOrHandle instanceof FileSystemDirectoryHandle) {
+          project = new RecentProject({
             handle: projectPathOrHandle,
-            name: projectPathOrHandle.name 
+            name: projectPathOrHandle.name,
           });
-        } else if(handle instanceof FileSystemDirectoryHandle){
-          project = new RecentProject({ 
+        } else if (handle instanceof FileSystemDirectoryHandle) {
+          project = new RecentProject({
             handle: handle,
-            name: typeof projectPathOrHandle === 'string' ? projectPathOrHandle : handle.name 
+            name: typeof projectPathOrHandle === 'string' ? projectPathOrHandle : handle.name,
           });
-        } else if(typeof projectPathOrHandle === 'string'){
+        } else if (typeof projectPathOrHandle === 'string') {
           // Fallback: just store the name if handle is not available
           project = new RecentProject({ name: projectPathOrHandle });
         }
       }
 
-      if(!project) return;
+      if (!project) return;
 
       // Remove if already exists (by identifier)
       await this.removeRecentProject(project);
@@ -375,7 +389,7 @@ export class ForgeState {
       ForgeState.recentProjects.unshift(project);
 
       // Limit to 10 most recent
-      if(ForgeState.recentProjects.length > 10){
+      if (ForgeState.recentProjects.length > 10) {
         ForgeState.recentProjects = ForgeState.recentProjects.slice(0, 10);
       }
 
@@ -385,10 +399,10 @@ export class ForgeState {
       KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
         const serialized: any = {
           path: proj.path,
-          name: proj.name
+          name: proj.name,
         };
         // Store handle separately in IndexedDB if available
-        if(proj.handle){
+        if (proj.handle) {
           const handleKey = `project_handle_${proj.getIdentifier()}`;
           // Store handle in IndexedDB (idb-keyval handles FileSystemDirectoryHandle)
           set(handleKey, proj.handle).catch((e) => {
@@ -401,33 +415,31 @@ export class ForgeState {
 
       this.saveState();
       this.processEventListener('onRecentProjectsUpdated', [project]);
-    }catch(e){
+    } catch (e) {
       console.error('Error adding recent project:', e);
     }
   }
 
-  static async removeRecentProject(projectOrIdentifier: RecentProject | string){
-    if(!projectOrIdentifier) return;
-    
+  static async removeRecentProject(projectOrIdentifier: RecentProject | string) {
+    if (!projectOrIdentifier) return;
+
     let index = -1;
-    if(projectOrIdentifier instanceof RecentProject){
+    if (projectOrIdentifier instanceof RecentProject) {
       const identifier = projectOrIdentifier.getIdentifier();
       index = ForgeState.recentProjects.findIndex((proj: RecentProject) => {
         return proj.getIdentifier() === identifier;
       });
     } else {
-      const normalized = typeof projectOrIdentifier === 'string' 
-        ? projectOrIdentifier.replace(/\\/g, '/') 
-        : '';
+      const normalized = typeof projectOrIdentifier === 'string' ? projectOrIdentifier.replace(/\\/g, '/') : '';
       index = ForgeState.recentProjects.findIndex((proj: RecentProject) => {
         return proj.getIdentifier()?.replace(/\\/g, '/') === normalized;
       });
     }
-    
-    if(index >= 0){
+
+    if (index >= 0) {
       const removed = ForgeState.recentProjects[index];
       // Clean up stored handle if it exists
-      if(removed.handle){
+      if (removed.handle) {
         const handleKey = `project_handle_${removed.getIdentifier()}`;
         const { del } = await import('idb-keyval');
         del(handleKey).catch((e) => {
@@ -439,9 +451,9 @@ export class ForgeState {
       KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
         const serialized: any = {
           path: proj.path,
-          name: proj.name
+          name: proj.name,
         };
-        if(proj.handle){
+        if (proj.handle) {
           const handleKey = `project_handle_${proj.getIdentifier()}`;
           set(handleKey, proj.handle).catch((e) => {
             console.warn('Failed to store handle in IndexedDB:', e);
@@ -455,32 +467,27 @@ export class ForgeState {
     }
   }
 
-  static saveState(){
-    try{
+  static saveState() {
+    try {
       KotOR.ConfigClient.save(null as any, true); //Save the configuration silently
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
 
-  static switchGame(profile: any = {}){
+  static switchGame(profile: any = {}) {
     //TODO
-
     //check if the new profile is different from the current profile
-
     //check for open unsaved work
-
     //save the current forge state
-
     //switch to the new profile
-
     //give the use back control of the application
   }
 
-  static openFile(){
-    ForgeFileSystem.OpenFile().then( async (response: ForgeFileSystemResponse) => {
-      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-        if(Array.isArray(response.paths)){
+  static openFile() {
+    ForgeFileSystem.OpenFile().then(async (response: ForgeFileSystemResponse) => {
+      if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON) {
+        if (Array.isArray(response.paths)) {
           const file_path = response.paths[0];
           const parsed = pathParse(file_path);
           if(parsed.ext == 'mdl'){
@@ -500,8 +507,7 @@ export class ForgeState {
                 resref: parsed.name, 
                 ext: parsed.ext
               });
-            });
-          }else{
+          } else {
             FileTypeManager.onOpenFile({
               path: EditorFile.diskPathToFileURI(file_path) || file_path.replace(/\\/g, '/'),
               filename: parsed.base, 
@@ -510,13 +516,12 @@ export class ForgeState {
             });
           }
         }
-      }else{
-        if(Array.isArray(response.handles)){
+      } else {
+        if (Array.isArray(response.handles)) {
           const [handle] = response.handles as FileSystemFileHandle[];
           const parsed = pathParse(handle.name);
 
-          if(parsed.ext == 'mdl'){
-
+          if (parsed.ext == 'mdl') {
             const originalTitle = document.title;
             document.title = `Open MDX File (${parsed.name}.mdx)`;
 
@@ -536,9 +541,7 @@ export class ForgeState {
               resref: parsed.name, 
               ext: parsed.ext
             });
-
-
-          }else{
+          } else {
             FileTypeManager.onOpenFile({
               path: EditorFile.referenceURIForSystemVirtualName(handle.name),
               handle: handle, 
@@ -566,16 +569,15 @@ export class ForgeState {
         };
       });
       KotOR.ConfigClient.set('open_tabs', states);
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
   }
-
 }
 (window as any).ForgeState = ForgeState;
 (window as any).ProjectFileSystem = ProjectFileSystem;
 
-window.addEventListener('beforeunload', (event) => { 
+window.addEventListener('beforeunload', (event) => {
   console.log('Saving Editor Config');
   ForgeState.saveOpenTabsState();
 });

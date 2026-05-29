@@ -3,5 +3,5 @@ export enum ModulePlaceableObjectSound {
   CLOSED = 2,
   DESTROYED = 3,
   USED = 4,
-  LOCKED = 5
+  LOCKED = 5,
 }

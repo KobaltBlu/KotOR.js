@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, memo } from "react";
+import React, { useState, useCallback, useMemo, memo } from 'react';
 import { Container, Nav, Navbar } from 'react-bootstrap';
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { MenuItem } from "@/apps/forge/components/MenuItem";
@@ -19,18 +19,18 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
   // Memoize the recent files update logic
   const updateRecentFilesMenuItem = useCallback(() => {
     MenuTopState.menuItemRecentFiles.items = [];
-    
+
     ForgeState.recentFiles.forEach((file) => {
       MenuTopState.menuItemRecentFiles.items.push(
         new MenuTopItem({
           name: `${file.getFilename()} ${file.getPrettyPath()}`,
           onClick: (menuItem: MenuTopItem) => {
             FileTypeManager.onOpenResource(file);
-          }
+          },
         })
       );
     });
-    
+
     MenuTopState.menuItemRecentFiles.rebuild();
   }, []);
 
@@ -57,14 +57,10 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
   });
 
   // Memoize menu items rendering
-  const menuItems = useMemo(() => (
-    items.map((item) => (
-      <MenuItem 
-        key={`menu-item-${item.uuid}`} 
-        item={item}
-      />
-    ))
-  ), [items]);
+  const menuItems = useMemo(
+    () => items.map((item) => <MenuItem key={`menu-item-${item.uuid}`} item={item} />),
+    [items]
+  );
 
   return (
     <Navbar className={`top-menu ${className}`.trim()} expand="lg">

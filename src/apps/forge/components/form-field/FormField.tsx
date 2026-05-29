@@ -1,12 +1,16 @@
-import React from "react";
-import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
-
+import React from 'react';
+import { InfoBubble } from '@/apps/forge/components/info-bubble/info-bubble';
 
 // Helper component for form fields with info bubbles
-export const FormField = ({ label, info, children, className = '' }: { 
-  label: string; 
-  info: string; 
-  children: React.ReactNode; 
+export const FormField = ({
+  label,
+  info,
+  children,
+  className = '',
+}: {
+  label: string;
+  info: string;
+  children: React.ReactNode;
   className?: string;
 }) => (
   <tr className={className}>

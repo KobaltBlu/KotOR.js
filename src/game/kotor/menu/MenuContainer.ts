@@ -1,10 +1,10 @@
-import { GameState } from "@/GameState";
-import { EngineMode } from "@/enums/engine/EngineMode";
-import { GameMenu, GUILabel, GUIListBox, GUIButton } from "@/gui";
-import { TextureLoader } from "@/loaders";
-import type { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from "@/module";
-import { MenuContainerMode } from "@/enums/gui/MenuContainerMode";
-import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { GameState } from '@/GameState';
+import { EngineMode } from '@/enums/engine/EngineMode';
+import { GameMenu, GUILabel, GUIListBox, GUIButton } from '@/gui';
+import { TextureLoader } from '@/loaders';
+import type { ModuleCreature, ModuleItem, ModuleObject, ModulePlaceable } from '@/module';
+import { MenuContainerMode } from '@/enums/gui/MenuContainerMode';
+import { GUIInventoryItem } from '@/gui/protoitem/GUIInventoryItem';
 
 const STR_ITEMS_AVAILABLE = 392;
 const STR_CONTAINER_INVENTORY = 393;
@@ -14,15 +14,14 @@ const STR_GIVE_ITEMS = 38543;
 
 /**
  * MenuContainer class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuContainer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuContainer extends GameMenu {
-
   engineMode: EngineMode = EngineMode.INGAME;
   LBL_MESSAGE: GUILabel;
   LB_ITEMS: GUIListBox;
@@ -33,7 +32,7 @@ export class MenuContainer extends GameMenu {
   mode: MenuContainerMode = MenuContainerMode.TAKE_ITEMS;
   selectedItem: ModuleItem;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'container';
     this.background = '';
@@ -43,9 +42,8 @@ export class MenuContainer extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
-
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
         this.LB_ITEMS.setItems([]);
@@ -67,7 +65,7 @@ export class MenuContainer extends GameMenu {
           if(this.container instanceof GameState.Module.ModuleArea.ModulePlaceable){
             this.container.retrieveInventory();
             this.container.close(GameState.PartyManager.party[0]);
-          }else if(this.container instanceof GameState.Module.ModuleArea.ModuleCreature){
+          } else if (this.container instanceof GameState.Module.ModuleArea.ModuleCreature) {
             this.container.retrieveInventory();
             //this.container.close(Game.player);
           }
@@ -96,13 +94,13 @@ export class MenuContainer extends GameMenu {
       this.BTN_GIVEITEMS.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        switch(this.mode){
+        switch (this.mode) {
           case MenuContainerMode.TAKE_ITEMS:
             this.setMode(MenuContainerMode.GIVE_ITEMS);
-          break;
+            break;
           case MenuContainerMode.GIVE_ITEMS:
             this.setMode(MenuContainerMode.TAKE_ITEMS);
-          break;
+            break;
         }
       });
       this._button_x = this.BTN_GIVEITEMS;
@@ -120,13 +118,11 @@ export class MenuContainer extends GameMenu {
     if (onClosed && this.container instanceof GameState.Module.ModuleArea.ModulePlaceable) {
       try {
         this.container.close(GameState.getCurrentPlayer());
-      } catch (e: any) {
-
-      }
+      } catch (e: unknown) {}
     }
   }
 
-  AttachContainer(object: ModuleObject){
+  AttachContainer(object: ModuleObject) {
     this.container = object;
   }
 
@@ -151,18 +147,20 @@ export class MenuContainer extends GameMenu {
         this.LBL_MESSAGE.setText(GameState.TLKManager.GetStringById(STR_CONTAINER_INVENTORY).Value);
         this.BTN_OK.setText(GameState.TLKManager.GetStringById(STR_GET_ITEMS).Value);
         this.BTN_GIVEITEMS.setText(
-          GameState.TLKManager.GetStringById(STR_SWITCH_TO).Value + ' ' +
-          GameState.TLKManager.GetStringById(STR_GIVE_ITEMS).Value
-        )
-      break;
+          GameState.TLKManager.GetStringById(STR_SWITCH_TO).Value +
+            ' ' +
+            GameState.TLKManager.GetStringById(STR_GIVE_ITEMS).Value
+        );
+        break;
       case MenuContainerMode.GIVE_ITEMS:
         this.LBL_MESSAGE.setText(GameState.TLKManager.GetStringById(STR_ITEMS_AVAILABLE).Value);
         this.BTN_OK.setText(GameState.TLKManager.GetStringById(STR_GIVE_ITEMS).Value);
         this.BTN_GIVEITEMS.setText(
-          GameState.TLKManager.GetStringById(STR_SWITCH_TO).Value + ' ' +
-          GameState.TLKManager.GetStringById(STR_GET_ITEMS).Value
-        )
-      break;
+          GameState.TLKManager.GetStringById(STR_SWITCH_TO).Value +
+            ' ' +
+            GameState.TLKManager.GetStringById(STR_GET_ITEMS).Value
+        );
+        break;
     }
 
     //Update list items
@@ -176,7 +174,5 @@ export class MenuContainer extends GameMenu {
     } else {
       this.LB_ITEMS.setItems([]);
     }
-
   }
-  
 }

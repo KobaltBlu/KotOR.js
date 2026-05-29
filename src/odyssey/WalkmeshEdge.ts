@@ -1,13 +1,13 @@
-import * as THREE from "three";
-import { OdysseyFace3 } from "@/three/odyssey";
-import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
-import { OdysseyWalkMeshType } from "@/enums/odyssey/OdysseyWalkMeshType";
+import * as THREE from 'three';
+import { OdysseyFace3 } from '@/three/odyssey';
+import { OdysseyWalkMesh } from '@/odyssey/OdysseyWalkMesh';
+import { OdysseyWalkMeshType } from '@/enums/odyssey/OdysseyWalkMeshType';
 
 /**
  * WalkmeshEdge class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file WalkmeshEdge.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -25,31 +25,31 @@ export class WalkmeshEdge {
   index: number = -1;
   exportable: boolean = true;
 
-  constructor(transition = -1){
+  constructor(transition = -1) {
     this.transition = transition;
   }
 
   //index into the walkable face adjacency array
-  setIndex(index: number){
+  setIndex(index: number) {
     this.index = index;
   }
 
-  setFace(face: OdysseyFace3){
+  setFace(face: OdysseyFace3) {
     this.face = face;
-    if(!face) return;
+    if (!face) return;
     face.perimeter[this.index == 0 ? 'a' : this.index == 1 ? 'b' : 'c'] = true;
   }
 
-  setSide(side: number){
+  setSide(side: number) {
     this.side = side;
   }
 
-  setWalkmesh(walkmesh: OdysseyWalkMesh){
+  setWalkmesh(walkmesh: OdysseyWalkMesh) {
     this.walkmesh = walkmesh;
   }
 
-  update(){
-    if(!this.walkmesh){
+  update() {
+    if (!this.walkmesh) {
       return;
     }
 
@@ -58,14 +58,14 @@ export class WalkmeshEdge {
     const verts = Array.isArray(this.walkmesh.vertices) ? this.walkmesh.vertices : [];
     const vert1 = verts[this.vertIdx1];
     const vert2 = verts[this.vertIdx2];
-    this.line.start.set( vert1.x, vert1.y, vert1.z );
-    this.line.end.set( vert2.x, vert2.y, vert2.z );
+    this.line.start.set(vert1.x, vert1.y, vert1.z);
+    this.line.end.set(vert2.x, vert2.y, vert2.z);
 
     this.updateNormal();
   }
 
   isAABB(): boolean {
-    if(!this.walkmesh){
+    if (!this.walkmesh) {
       return false;
     }
     return this.walkmesh.header.walkMeshType == OdysseyWalkMeshType.AABB;
@@ -80,7 +80,7 @@ export class WalkmeshEdge {
    * @returns void
    */
   updateNormal(): void {
-    if(!(this.line instanceof THREE.Line3)){
+    if (!(this.line instanceof THREE.Line3)) {
       return;
     }
     // Calculate edge midpoint
@@ -89,17 +89,17 @@ export class WalkmeshEdge {
     // Calculate edge direction vector
     const dx = this.line.end.x - this.line.start.x;
     const dy = this.line.end.y - this.line.start.y;
-    
+
     // Calculate perpendicular vector (rotate 90 degrees in XY plane)
     this.normal.set(-dy, dx, 0).normalize();
 
-    if(!this.face || !this.face.centroid){
+    if (!this.face || !this.face.centroid) {
       return;
     }
 
     // Get vector from centroid to edge midpoint
     this.#tmpVector1.copy(this.center_point).sub(this.face.centroid);
-    
+
     // If normal points towards centroid, flip it
     if (this.normal.dot(this.#tmpVector1) < 0) {
       this.normal.multiplyScalar(this.isAABB() ? 1 : -1);

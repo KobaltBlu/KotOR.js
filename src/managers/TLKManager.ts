@@ -1,6 +1,6 @@
-import { TLKString } from "@/resource/TLKString";
-import { TLKObject } from "@/resource/TLKObject";
-import { GameFileSystem } from "@/utility/GameFileSystem";
+import { TLKString } from '@/resource/TLKString';
+import { TLKObject } from '@/resource/TLKObject';
+import { GameFileSystem } from '@/utility/GameFileSystem';
 
 export interface TLKSearchOptions {
   /** Case-insensitive text matching. Default: `true`. */
@@ -18,15 +18,14 @@ export interface TLKSearchResult {
 
 /**
  * TLKManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TLKManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class TLKManager {
-
   static TLKStrings: TLKString[] = [];
   static TLKObject: TLKObject;
 

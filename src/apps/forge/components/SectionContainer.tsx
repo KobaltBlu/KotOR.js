@@ -2,6 +2,7 @@ import React, { useState } from "react"
 
 export interface SectionContainerProps {
   name: string;
+  slim?: boolean;
   children?: React.ReactNode;
   slim?: boolean;
   collapsible?: boolean;

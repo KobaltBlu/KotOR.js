@@ -15,17 +15,17 @@ import * as dxtJs from "dxt-js";
 
 const concatenate = (resultConstructor: any, ...arrays: any) => {
   let totalLength = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     totalLength += arr.length;
   }
-  let result = new resultConstructor(totalLength);
+  const result = new resultConstructor(totalLength);
   let offset = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     result.set(arr, offset);
     offset += arr.length;
   }
   return result;
-}
+};
 
 const TPC_HEADER_LENGTH = 128;
 
@@ -42,7 +42,6 @@ const TPC_EXPORT_POLICY: TPCExportPolicy = {
 };
 
 export class TabImageViewerState extends TabState {
-
   tabName: string = `Image Viewer`;
   image: KotOR.TPCObject|KotOR.TGAObject|ForgeRasterImage;
   workingData: Uint8Array;
@@ -139,13 +138,40 @@ export class TabImageViewerState extends TabState {
     }
   }
 
+  private static getSaveTypeForExtension(ext: string) {
+    switch (ext.toLowerCase()) {
+      case 'tpc':
+        return {
+          description: 'Compressed Odyssey Image File',
+          accept: {
+            'image/*': ['.tpc'],
+          },
+        };
+      case 'tga':
+        return {
+          description: 'TGA Image File',
+          accept: {
+            'image/*': ['.tga'],
+          },
+        };
+      case 'png':
+        return {
+          description: 'PNG Image File',
+          accept: {
+            'image/*': ['.png'],
+          },
+        };
+      default:
+        return undefined;
+    }
+  }
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
     // this.singleInstance = true;
     this.isClosable = true;
 
-    if(this.file){
+    if (this.file) {
       this.tabName = this.file.getFilename();
     }
 
@@ -217,18 +243,17 @@ export class TabImageViewerState extends TabState {
               this.txiText = "";
             break;
           }
-          
+
           resolve(this.image);
           this.processEventListener('onEditorFileLoad');
         }).catch(reject);
       }
     });
-
   }
 
-  getPixelData(): Promise<Uint8Array>{
-    return new Promise<Uint8Array>( (resolve, reject) => {
-      if(this.image instanceof KotOR.TPCObject){
+  getPixelData(): Promise<Uint8Array> {
+    return new Promise<Uint8Array>((resolve, reject) => {
+      if (this.image instanceof KotOR.TPCObject) {
         const tpc = this.image;
         const dds = tpc.getDDS(false);
         let imagePixels = new Uint8Array(0);
@@ -255,10 +280,10 @@ export class TabImageViewerState extends TabState {
               }
               imagePixels = concatenate(Uint8Array, imagePixels, Uint8Array.from(mipmap.data));
             }
-          }else{
+          } else {
             imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
           }
-        }else{
+        } else {
           imagePixels = concatenate(Uint8Array, imagePixels, dds.mipmaps[0].data);
         }
         resolve(imagePixels);
@@ -267,16 +292,16 @@ export class TabImageViewerState extends TabState {
       }else{
         this.image.getPixelData( (buffer: Uint8Array) => {
           resolve(new Uint8Array(buffer));
-        })
+        });
       }
     });
   }
 
-  static FlipY(pixelData: Uint8Array, width = 1, height = 1){
+  static FlipY(pixelData: Uint8Array, width = 1, height = 1) {
     let offset = 0;
-    let stride = width * 4;
+    const stride = width * 4;
 
-    let unFlipped = Uint8Array.from(pixelData);
+    const unFlipped = Uint8Array.from(pixelData);
 
     for (let pos = unFlipped.length - stride; pos >= 0; pos -= stride) {
       pixelData.set(unFlipped.slice(pos, pos + stride), offset);
@@ -284,18 +309,19 @@ export class TabImageViewerState extends TabState {
     }
   }
 
-  static FlipX(pixelData: Uint8Array, width = 1, height = 1){
-    let unFlipped = Uint8Array.from(pixelData);
+  static FlipX(pixelData: Uint8Array, width = 1, height = 1) {
+    const unFlipped = Uint8Array.from(pixelData);
 
     for (let i = 0; i < pixelData.length; i++) {
-      pixelData[i] = (unFlipped[i - 2 * (i % width) + width - 1]);
+      pixelData[i] = unFlipped[i - 2 * (i % width) + width - 1];
     }
   }
 
-  static PixelDataToRGBA(pixelData: Uint8Array, width = 1, height = 1){
-    let data = new Uint8Array(pixelData.length);
-    let n = 4 * width * height;
-    let s = 0, d = 0;
+  static PixelDataToRGBA(pixelData: Uint8Array, width = 1, height = 1) {
+    const data = new Uint8Array(pixelData.length);
+    const n = 4 * width * height;
+    let s = 0,
+      d = 0;
     while (d < n) {
       data[d++] = pixelData[s++];
       data[d++] = pixelData[s++];
@@ -305,10 +331,11 @@ export class TabImageViewerState extends TabState {
     return data;
   }
 
-  static RGBToRGBA(pixelData: Uint8Array, width = 1, height = 1){
-    let data = new Uint8Array(4 * width * height);
-    let n = 4 * width * height;
-    let s = 0, d = 0;
+  static RGBToRGBA(pixelData: Uint8Array, width = 1, height = 1) {
+    const data = new Uint8Array(4 * width * height);
+    const n = 4 * width * height;
+    let s = 0,
+      d = 0;
     while (d < n) {
       data[d++] = pixelData[s++];
       data[d++] = pixelData[s++];
@@ -318,23 +345,22 @@ export class TabImageViewerState extends TabState {
     return data;
   }
 
-  static BGRAtoRGBA(pixelData: Uint8Array){
+  static BGRAtoRGBA(pixelData: Uint8Array) {
     for (let i = 0; i < pixelData.length; i += 4) {
-      pixelData[i    ] = pixelData[i + 2]; // red
+      pixelData[i] = pixelData[i + 2]; // red
       pixelData[i + 1] = pixelData[i + 1]; // green
-      pixelData[i + 2] = pixelData[i    ]; // blue
+      pixelData[i + 2] = pixelData[i]; // blue
       pixelData[i + 3] = pixelData[i + 3]; // alpha
     }
   }
 
-  static TGAGrayFix(pixelData: Uint8Array){
-    let fixed = new Uint8Array(pixelData.length * 4);
+  static TGAGrayFix(pixelData: Uint8Array) {
+    const fixed = new Uint8Array(pixelData.length * 4);
     for (let i = 0; i < pixelData.length; i++) {
+      const color = pixelData[i];
+      const offset = i * 4;
 
-      let color = pixelData[i];
-      let offset = i * 4;
-
-      fixed[offset    ] = color; // red
+      fixed[offset] = color; // red
       fixed[offset + 1] = color; // green
       fixed[offset + 2] = color; // blue
       fixed[offset + 3] = 255; // alpha
@@ -342,19 +368,19 @@ export class TabImageViewerState extends TabState {
     return fixed;
   }
 
-  static TGAColorFix(pixelData: Uint8Array){
-    let fixed = Uint8Array.from(pixelData);
+  static TGAColorFix(pixelData: Uint8Array) {
+    const fixed = Uint8Array.from(pixelData);
     for (let i = 0; i < pixelData.length; i += 4) {
-      fixed[i + 2] = pixelData[i    ]; // red
+      fixed[i + 2] = pixelData[i]; // red
       fixed[i + 1] = pixelData[i + 1]; // green
-      fixed[i    ] = pixelData[i + 2]; // blue
+      fixed[i] = pixelData[i + 2]; // blue
       fixed[i + 3] = pixelData[i + 3]; // alpha
     }
     return fixed;
   }
 
-  static PreviewAlphaFix(pixelData: Uint8Array){
-    for (let i = 0; i < pixelData.length; i += 4){
+  static PreviewAlphaFix(pixelData: Uint8Array) {
+    for (let i = 0; i < pixelData.length; i += 4) {
       pixelData[i + 3] = 255;
     }
   }

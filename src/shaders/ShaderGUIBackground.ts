@@ -1,18 +1,19 @@
-import { Shader } from "@/shaders/Shader";
-import * as THREE from "three";
+import { Shader } from '@/shaders/Shader';
+import * as THREE from 'three';
+
+import { Shader } from '@/shaders/Shader';
 
 /**
  * ShaderGUIBackground class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ShaderGUIBackground.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ShaderGUIBackground extends Shader {
-
-  constructor(){
+  constructor() {
     super();
     this.name = 'background-gui';
     this.fragment = `
@@ -63,9 +64,8 @@ export class ShaderGUIBackground extends Shader {
       {
         u_time: { value: 0.0 },
         u_resolution: { value: new THREE.Vector2(1600, 1200) },
-        map: { value: null }
-      }
-    ])
+        map: { value: null },
+      },
+    ]) as Record<string, THREE.IUniform>;
   }
-
 }

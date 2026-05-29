@@ -1,5 +1,12 @@
 {
   "recommendations": [
+<<<<<<< HEAD
+=======
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+    "orta.vscode-jest",
+>>>>>>> origin/master
     "ritwickdey.LiveServer"
   ]
 }

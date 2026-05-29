@@ -1,22 +1,21 @@
-import { EngineState } from "@/enums/engine/EngineState";
-import { MenuSaveLoadMode } from "@/enums/gui/MenuSaveLoadMode";
-import { GameState } from "@/GameState";
-import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
-import { Module } from "@/module";
-import { NWScript } from "@/nwscript/NWScript";
-import { MenuOptions as K1_MenuOptions } from "@/game/kotor/KOTOR";
+import { EngineState } from '@/enums/engine/EngineState';
+import { MenuSaveLoadMode } from '@/enums/gui/MenuSaveLoadMode';
+import { GameState } from '@/GameState';
+import type { GUIButton, GUILabel, GUIListBox } from '@/gui';
+import { Module } from '@/module';
+import { NWScript } from '@/nwscript/NWScript';
+import { MenuOptions as K1_MenuOptions } from '@/game/kotor/KOTOR';
 
 /**
  * MenuOptions class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuOptions.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuOptions extends K1_MenuOptions {
-
   declare BTN_SAVEGAME: GUIButton;
   declare BTN_GAMEPLAY: GUIButton;
   declare BTN_QUIT: GUIButton;
@@ -34,7 +33,7 @@ export class MenuOptions extends K1_MenuOptions {
   declare BTN_LOADGAME: GUIButton;
   declare LB_DESC: GUIListBox;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optionsingame_p';
     this.background = 'blackfill';
@@ -43,9 +42,8 @@ export class MenuOptions extends K1_MenuOptions {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
-
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -92,8 +90,8 @@ export class MenuOptions extends K1_MenuOptions {
         GameState.MenuManager.InGameConfirm.showConfirmDialog(42348, () => {
           GameState.UnloadModule();
           GameState.State = EngineState.RUNNING;
-                
-          if(GameState.module instanceof Module){
+
+          if (GameState.module instanceof Module) {
             GameState.module.dispose();
             GameState.module = undefined;
           }
@@ -147,5 +145,4 @@ export class MenuOptions extends K1_MenuOptions {
     super.show();
     this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42300].Value);
   }
-  
 }

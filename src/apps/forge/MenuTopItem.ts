@@ -1,9 +1,8 @@
-import { EventListenerModel } from "@/apps/forge/EventListenerModel";
-
+import { EventListenerModel } from '@/apps/forge/EventListenerModel';
 
 export type MenuTopItemOnClickType = (menuItem: MenuTopItem) => void;
 
-export type MenuTopItemType = 'item'|'separator'|'title';
+export type MenuTopItemType = 'item' | 'separator' | 'title';
 
 export interface MenuTopItemProps {
   name?: string;
@@ -14,7 +13,6 @@ export interface MenuTopItemProps {
 }
 
 export class MenuTopItem extends EventListenerModel {
-
   uuid: string = crypto.randomUUID();
   name: string = ``;
   type: MenuTopItemType = 'item';
@@ -24,7 +22,7 @@ export class MenuTopItem extends EventListenerModel {
   //User Events
   onClick: MenuTopItemOnClickType;
 
-  constructor( props: MenuTopItemProps = {} as MenuTopItemProps ){
+  constructor(props: MenuTopItemProps = {} as MenuTopItemProps) {
     super();
     props = Object.assign({
       name: ``,
@@ -41,8 +39,7 @@ export class MenuTopItem extends EventListenerModel {
 
   }
 
-  rebuild(){
+  rebuild() {
     this.processEventListener('onRebuild', []);
   }
-
 }

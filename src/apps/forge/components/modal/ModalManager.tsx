@@ -1,9 +1,9 @@
-import React, { useState } from "react";
-import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
-import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import React, { useState } from 'react';
+import { ModalManagerState } from '@/apps/forge/states/modal/ModalManagerState';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import { ModalState } from '@/apps/forge/states/modal/ModalState';
 
-export const ModalManager = function(props: any){
+export const ModalManager = function (props: any) {
   const manager: ModalManagerState = props.manager;
 
   const [modals, setModals] = useState<ModalState[]>([]);
@@ -28,26 +28,26 @@ export const ModalManager = function(props: any){
     setModals([...manager.modals]);
   };
 
-  useEffectOnce( () => { //constructor
+  useEffectOnce(() => {
+    //constructor
     manager.addEventListener('onModalAdded', onModalAdded);
     manager.addEventListener('onModalRemoved', onModalRemoved);
     manager.addEventListener('onModalShow', onModalShow);
     manager.addEventListener('onModalHide', onModalHide);
-    return () => { //destructor
+    return () => {
+      //destructor
       manager.removeEventListener('onModalAdded', onModalAdded);
       manager.removeEventListener('onModalRemoved', onModalRemoved);
       manager.removeEventListener('onModalShow', onModalShow);
       manager.removeEventListener('onModalHide', onModalHide);
-    }
+    };
   });
 
   return (
     <>
-      {
-        modals.map( (modal: ModalState) => {
-          return modal.getView();
-        })
-      }
+      {modals.map((modal: ModalState) => {
+        return modal.getView();
+      })}
     </>
-  )
+  );
 };

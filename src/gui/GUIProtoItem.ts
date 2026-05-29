@@ -1,12 +1,21 @@
-import type { GameMenu } from "@/gui/GameMenu";
-import { GUIControl } from "@/gui/GUIControl";
-import type { GFFStruct } from "@/resource/GFFStruct";
-import * as THREE from "three";
-import { Anchor } from "@/enums/gui/Anchor";
-import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { ResolutionManager } from "@/managers/ResolutionManager";
-import type { GUIListBox } from "@/gui/GUIListBox";
-import { Mouse } from "@/controls/Mouse";
+import type { GameMenu } from '@/gui/GameMenu';
+import { GUIControl } from '@/gui/GUIControl';
+import type { GFFStruct } from '@/resource/GFFStruct';
+import * as THREE from 'three';
+import { Anchor } from '@/enums/gui/Anchor';
+import { GUIControlTypeMask } from '@/enums/gui/GUIControlTypeMask';
+import { ResolutionManager } from '@/managers/ResolutionManager';
+import type { GUIListBox } from '@/gui/GUIListBox';
+import { Mouse } from '@/controls/Mouse';
+
+// build a normalized unit rect, scale to extent
+const points = [
+  new THREE.Vector3(-0.5, -0.5, 0),
+  new THREE.Vector3(0.5, -0.5, 0),
+  new THREE.Vector3(0.5, 0.5, 0),
+  new THREE.Vector3(-0.5, 0.5, 0),
+  new THREE.Vector3(-0.5, -0.5, 0), // close loop
+];
 
 // build a normalized unit rect, scale to extent
 const points = [
@@ -19,14 +28,17 @@ const points = [
 
 /**
  * GUIProtoItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIProtoItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class GUIProtoItem extends GUIControl{
+export class GUIProtoItem extends GUIControl {
+  static debugExtentLine: THREE.Line;
+  static debugGeom = new THREE.BufferGeometry().setFromPoints(points);
+  static debugMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff, depthTest: false });
 
   static debugExtentLine: THREE.Line;
   static debugGeom = new THREE.BufferGeometry().setFromPoints(points);
@@ -51,11 +63,11 @@ export class GUIProtoItem extends GUIControl{
 
     this.addEventListener('mouseIn', (e) => {
       this.onSelectStateChanged();
-    })
+    });
 
     this.addEventListener('mouseOut', (e) => {
       this.onSelectStateChanged();
-    })
+    });
   }
 
   createControl(){
@@ -77,7 +89,7 @@ export class GUIProtoItem extends GUIControl{
       this.text.color.copy(this.defaultHighlightColor);
       this.text.material.uniforms.diffuse.value = this.text.color;
       this.text.material.needsUpdate = true;
-    }else{
+    } else {
       this.hideHighlight();
       this.showBorder();
       this.pulsing = false;
@@ -87,14 +99,14 @@ export class GUIProtoItem extends GUIControl{
     }
   }
 
-  buildText(){
+  buildText() {
     super.buildText();
-    this.text.color.copy( this.selected ? this.defaultHighlightColor : this.defaultColor );
+    this.text.color.copy(this.selected ? this.defaultHighlightColor : this.defaultColor);
     this.text.material.uniforms.diffuse.value = this.text.color;
     this.text.material.needsUpdate = true;
   }
 
-  calculatePosition(){
+  calculatePosition() {
     /*let posX = ((this.list.extent.width - this.extent.width)/2) - this.list.border.inneroffset;
 
     if(!this.list.isScrollBarLeft()){
@@ -126,7 +138,7 @@ export class GUIProtoItem extends GUIControl{
       return height;
     }
 
-    if(this.text.geometry){
+    if (this.text.geometry) {
       this.text.geometry.computeBoundingBox();
       const tSize = new THREE.Vector3();
       this.text.geometry.boundingBox.getSize(tSize);
@@ -138,23 +150,22 @@ export class GUIProtoItem extends GUIControl{
     return height;
   }
 
-  calculateBox(){
-    let worldPosition = this.parent.widget.position.clone();
+  calculateBox() {
+    const worldPosition = this.parent.widget.position.clone();
     //console.log('worldPos', worldPosition);
-    this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
-    this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
-    this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
-    this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
-    
-    for(let i = 0; i < this.children.length; i++){
+    this.box.min.x = this.widget.position.x - this.extent.width / 2 + worldPosition.x;
+    this.box.min.y = this.widget.position.y - this.extent.height / 2 + worldPosition.y;
+    this.box.max.x = this.widget.position.x + this.extent.width / 2 + worldPosition.x;
+    this.box.max.y = this.widget.position.y + this.extent.height / 2 + worldPosition.y;
+
+    for (let i = 0; i < this.children.length; i++) {
       this.children[i].updateBounds();
     }
   }
 
-  directionalNavigate(direction = ''){
-    if(this.list){
+  directionalNavigate(direction = '') {
+    if (this.list) {
       this.list.directionalNavigate(direction);
     }
   }
-
 }

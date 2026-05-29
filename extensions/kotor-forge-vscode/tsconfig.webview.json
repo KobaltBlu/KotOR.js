@@ -1,0 +1,47 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "composite": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "outDir": "out",
+    "rootDir": "../..",
+    "paths": {
+      "@forge/*": [
+        "../../src/apps/forge/*"
+      ],
+      "@kotor/*": [
+        "../../src/*"
+      ],
+      "@kotor/KotOR": [
+        "../../src/KotOR"
+      ],
+      "@/*": [
+        "../../src/*"
+      ]
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": false,
+    "target": "ES2020"
+  },
+  "exclude": [
+    "node_modules"
+  ],
+  "include": [
+    "src/webview/**/*.ts",
+    "src/webview/**/*.tsx",
+    "../../src/**/*.ts",
+    "../../src/**/*.tsx"
+  ]
+}

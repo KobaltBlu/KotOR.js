@@ -1,35 +1,35 @@
-import * as THREE from "three";
-import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { GameState } from "@/GameState";
-import { NWScript } from "@/nwscript/NWScript";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { GFFField } from "@/resource/GFFField";
-import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
-import { ResourceTypes } from "@/resource/ResourceTypes";
-import { OdysseyFace3 } from "@/three/odyssey";
-import { ConfigClient } from "@/utility/ConfigClient";
-import { ResourceLoader } from "@/loaders";
+import * as THREE from 'three';
+import { GFFDataType } from '@/enums/resource/GFFDataType';
+import { GameState } from '@/GameState';
+import { NWScript } from '@/nwscript/NWScript';
+import { NWScriptInstance } from '@/nwscript/NWScriptInstance';
+import { GFFField } from '@/resource/GFFField';
+import { GFFObject } from '@/resource/GFFObject';
+import { GFFStruct } from '@/resource/GFFStruct';
+import { ResourceTypes } from '@/resource/ResourceTypes';
+import { OdysseyFace3 } from '@/three/odyssey';
+import { ConfigClient } from '@/utility/ConfigClient';
+import { ResourceLoader } from '@/loaders';
 // import { ModuleObjectManager, PartyManager, FactionManager } from "@/managers";
-import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { ModuleObject } from "@/module/ModuleObject";
-import { EncounterCreatureEntry } from "@/module/EncounterCreatureEntry";
-import { EncounterSpawnPointEntry } from "@/module/EncounterSpawnPointEntry";
-import { EncounterSpawnEntry } from "@/module/EncounterSpawnEntry";
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
+import { ModuleObject } from '@/module/ModuleObject';
+import { EncounterCreatureEntry } from '@/module/EncounterCreatureEntry';
+import { EncounterSpawnPointEntry } from '@/module/EncounterSpawnPointEntry';
+import { EncounterSpawnEntry } from '@/module/EncounterSpawnEntry';
+import { ModuleObjectScript } from '@/enums/module/ModuleObjectScript';
 
 /**
-* ModuleEncounter class.
-* 
-* Class representing an encounter found in module areas.
-* 
-* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
-* @file ModuleEncounter.ts
-* @author KobaltBlu <https://github.com/KobaltBlu>
-* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
-* @memberof KotOR
-*/
+ * ModuleEncounter class.
+ *
+ * Class representing an encounter found in module areas.
+ *
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ *
+ * @file ModuleEncounter.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @memberof KotOR
+ */
 export class ModuleEncounter extends ModuleObject {
   creatureList: EncounterCreatureEntry[];
   spawnPointList: EncounterSpawnPointEntry[];
@@ -64,15 +64,15 @@ export class ModuleEncounter extends ModuleObject {
   areaListMaxSize: any;
   spawnPoolActive: any;
 
-  constructor ( gff = new GFFObject() ) {
+  constructor(gff = new GFFObject()) {
     super(gff);
     this.objectType |= ModuleObjectType.ModuleEncounter;
     this.template = gff;
-    this.vertices = []; 
+    this.vertices = [];
 
     this.creatureList = [];
 
-    this.spawnPointList = [];  
+    this.spawnPointList = [];
 
     this.spawnList = [];
 
@@ -94,31 +94,29 @@ export class ModuleEncounter extends ModuleObject {
       onExhausted: undefined,
       onExit: undefined,
       onHeartbeat: undefined,
-      onUserDefined: undefined
+      onUserDefined: undefined,
     };
 
     this.objectsInside = [];
     this.objectsInsideIdx = 0;
     this.lastObjectEntered = null;
     this.lastObjectExited = null;
-
   }
 
-  update(delta = 0){
-    
+  update(delta = 0) {
     super.update(delta);
-    
+
     this.getCurrentRoom();
-    
+
     //Check Module Creatures
-    let creatureLen = GameState.module.area.creatures.length;
-    for(let i = 0; i < creatureLen; i++){
-      let creature = GameState.module.area.creatures[i];
-      let pos = creature.position.clone();
-      if(this.box.containsPoint(pos)){
-        if(this.objectsInside.indexOf(creature) == -1){
+    const creatureLen = GameState.module.area.creatures.length;
+    for (let i = 0; i < creatureLen; i++) {
+      const creature = GameState.module.area.creatures[i];
+      const pos = creature.position.clone();
+      if (this.box.containsPoint(pos)) {
+        if (this.objectsInside.indexOf(creature) == -1) {
           this.objectsInside.push(creature);
-          if(this.isHostile(creature)){
+          if (this.isHostile(creature)) {
             creature.lastTriggerEntered = this;
             this.lastObjectEntered = creature;
 
@@ -126,10 +124,10 @@ export class ModuleEncounter extends ModuleObject {
             this.triggered = true;
           }
         }
-      }else{
-        if(this.objectsInside.indexOf(creature) >= 0){
+      } else {
+        if (this.objectsInside.indexOf(creature) >= 0) {
           this.objectsInside.splice(this.objectsInside.indexOf(creature), 1);
-          if(this.isHostile(creature)){
+          if (this.isHostile(creature)) {
             creature.lastTriggerExited = this;
             this.lastObjectExited = creature;
             this.onExit(creature);
@@ -139,15 +137,15 @@ export class ModuleEncounter extends ModuleObject {
     }
 
     //Check Party Members
-    let partyLen = GameState.PartyManager.party.length;
-    for(let i = 0; i < partyLen; i++){
-      let partymember = GameState.PartyManager.party[i];
-      let pos = partymember.position.clone();
-      
-      if(this.box.containsPoint(pos)){
-        if(this.objectsInside.indexOf(partymember) == -1){
+    const partyLen = GameState.PartyManager.party.length;
+    for (let i = 0; i < partyLen; i++) {
+      const partymember = GameState.PartyManager.party[i];
+      const pos = partymember.position.clone();
+
+      if (this.box.containsPoint(pos)) {
+        if (this.objectsInside.indexOf(partymember) == -1) {
           this.objectsInside.push(partymember);
-          if(this.isHostile(partymember)){
+          if (this.isHostile(partymember)) {
             partymember.lastTriggerEntered = this;
             this.lastObjectEntered = partymember;
 
@@ -155,10 +153,10 @@ export class ModuleEncounter extends ModuleObject {
             this.triggered = true;
           }
         }
-      }else{
-        if(this.objectsInside.indexOf(partymember) >= 0){
+      } else {
+        if (this.objectsInside.indexOf(partymember) >= 0) {
           this.objectsInside.splice(this.objectsInside.indexOf(partymember), 1);
-          if(this.isHostile(partymember)){
+          if (this.isHostile(partymember)) {
             partymember.lastTriggerExited = this;
             this.lastObjectExited = partymember;
 
@@ -169,61 +167,76 @@ export class ModuleEncounter extends ModuleObject {
     }
 
     this.mesh.visible = ConfigClient.get('Game.debug.trigger_geometry_show') ? true : false;
-
   }
 
-  onEnter(object: ModuleObject){
+  onEnter(object: ModuleObject) {
     const nwscript = this.scripts[ModuleObjectScript.EncounterOnEntered];
-    if(!nwscript){ return; }
+    if (!nwscript) {
+      return;
+    }
     const instance = nwscript.newInstance();
     instance.enteringObject = object;
     instance.run(this, 0);
   }
 
-  onExit(object: ModuleObject){
+  onExit(object: ModuleObject) {
     const nwscript = this.scripts[ModuleObjectScript.EncounterOnExit];
-    if(!nwscript){ return; }
+    if (!nwscript) {
+      return;
+    }
     const instance = nwscript.newInstance();
     instance.exitingObject = object;
     instance.run(this, 0);
   }
 
-  load(){
-    if(this.getTemplateResRef()){
+  load() {
+    if (this.getTemplateResRef()) {
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['ute'], this.getTemplateResRef());
-      if(buffer){
+      if (buffer) {
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();
         this.loadScripts();
-        try{ this.buildGeometry(); }catch(e){console.error(e)}
+        try {
+          this.buildGeometry();
+        } catch (e) {
+          console.error(e);
+        }
         //this.initObjectsInside();
-      }else{
+      } else {
         console.error('Failed to load ModuleTrigger template');
-        if(this.template instanceof GFFObject){
+        if (this.template instanceof GFFObject) {
           this.initProperties();
           this.loadScripts();
-          try{ this.buildGeometry(); }catch(e){console.error(e)}
+          try {
+            this.buildGeometry();
+          } catch (e) {
+            console.error(e);
+          }
         }
       }
-    }else{
+    } else {
       //We already have the template (From SAVEGAME)
       this.initProperties();
       this.loadScripts();
-      try{ this.buildGeometry(); }catch(e){console.error(e)}
+      try {
+        this.buildGeometry();
+      } catch (e) {
+        console.error(e);
+      }
     }
   }
 
-  buildGeometry(){
-    let trigGeom = this.getGeometry();
+  buildGeometry() {
+    const trigGeom = this.getGeometry();
 
-    let material = new THREE.MeshBasicMaterial({
-      color: new THREE.Color( 0xFFFFFF ),
-      side: THREE.DoubleSide
+    const material = new THREE.MeshBasicMaterial({
+      color: new THREE.Color(0xffffff),
+      side: THREE.DoubleSide,
     });
 
-    this.mesh = new THREE.Mesh( trigGeom, material );
+    this.mesh = new THREE.Mesh(trigGeom, material);
     this.mesh.position.copy(this.position);
     this.box.setFromObject(this.mesh);
     this.box.min.z -= 100;
@@ -234,22 +247,22 @@ export class ModuleEncounter extends ModuleObject {
     GameState.group.triggers.add(this.mesh);
   }
 
-  getGeometry(){
-    let trigGeom = new THREE.BufferGeometry();
-    let vertices = this.vertices.slice();
-    let faces: any[] = [];
+  getGeometry() {
+    const trigGeom = new THREE.BufferGeometry();
+    const vertices = this.vertices.slice();
+    const faces: any[] = [];
 
-    try{
-      let holes: any = [];
-      let triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
-      for( let i = 0; i < triangles.length; i++ ){
-        faces.push( new OdysseyFace3( triangles[i][0], triangles[i][1], triangles[i][2] ));
+    try {
+      const holes: any = [];
+      const triangles = THREE.ShapeUtils.triangulateShape(vertices, holes);
+      for (let i = 0; i < triangles.length; i++) {
+        faces.push(new OdysseyFace3(triangles[i][0], triangles[i][1], triangles[i][2]));
       }
-    }catch(e){
+    } catch (e) {
       console.error('ModuleTrigger', 'Failed to generate faces', {
         trigger: this,
-        error: e
-      })
+        error: e,
+      });
     }
 
     // trigGeom.computeFaceNormals();
@@ -259,7 +272,7 @@ export class ModuleEncounter extends ModuleObject {
     return trigGeom;
   }
 
-  loadScripts(){
+  loadScripts() {
     const scriptKeys = [
       ModuleObjectScript.EncounterOnEntered,
       ModuleObjectScript.EncounterOnExhausted,
@@ -269,15 +282,21 @@ export class ModuleEncounter extends ModuleObject {
     ];
 
     const scriptsNode = this.template?.RootNode;
-    if(!scriptsNode){ return; }
-    for(const scriptKey of scriptKeys){
-      if(scriptsNode.hasField(scriptKey)){
+    if (!scriptsNode) {
+      return;
+    }
+    for (const scriptKey of scriptKeys) {
+      if (scriptsNode.hasField(scriptKey)) {
         const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
-        if(!resRef){ continue; }
+        if (!resRef) {
+          continue;
+        }
         const nwscript = GameState.NWScript.Load(resRef);
-        if(!nwscript){ 
-          console.warn(`ModuleEncounter.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-          continue; 
+        if (!nwscript) {
+          console.warn(
+            `ModuleEncounter.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`
+          );
+          continue;
         }
         nwscript.caller = this;
         this.scripts[scriptKey] = nwscript;
@@ -285,24 +304,23 @@ export class ModuleEncounter extends ModuleObject {
     }
   }
 
-  initProperties(){
-    
-    if(!this.initialized){
-      if(this.template.RootNode.hasField('ObjectId')){
+  initProperties() {
+    if (!this.initialized) {
+      if (this.template.RootNode.hasField('ObjectId')) {
         this.id = this.template.getFieldByLabel('ObjectId').getValue();
-      }else if(this.template.RootNode.hasField('ID')){
+      } else if (this.template.RootNode.hasField('ID')) {
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
-      
+
       GameState.ModuleObjectManager.AddObjectById(this);
 
-      if(this.template.RootNode.hasField('Geometry')){
+      if (this.template.RootNode.hasField('Geometry')) {
         this.geometry = this.template.getFieldByLabel('Geometry').getChildStructs();
 
         //Push verticies
-        for(let i = 0; i < this.geometry.length; i++){
-          let tgv = this.geometry[i];
-          this.vertices[i] = new THREE.Vector3( 
+        for (let i = 0; i < this.geometry.length; i++) {
+          const tgv = this.geometry[i];
+          this.vertices[i] = new THREE.Vector3(
             tgv.getFieldByLabel('X').getValue(),
             tgv.getFieldByLabel('Y').getValue(),
             tgv.getFieldByLabel('Z').getValue()
@@ -310,251 +328,258 @@ export class ModuleEncounter extends ModuleObject {
         }
       }
 
-      if(this.template.RootNode.hasField('SWVarTable')){
-        let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      if (this.template.RootNode.hasField('SWVarTable')) {
+        const localBools = this.template.RootNode.getFieldByLabel('SWVarTable')
+          .getChildStructs()[0]
+          .getFieldByLabel('BitArray')
+          .getChildStructs();
         //console.log(localBools);
-        for(let i = 0; i < localBools.length; i++){
-          let data = localBools[i].getFieldByLabel('Variable').getValue();
-          for(let bit = 0; bit < 32; bit++){
-            this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+        for (let i = 0; i < localBools.length; i++) {
+          const data = localBools[i].getFieldByLabel('Variable').getValue();
+          for (let bit = 0; bit < 32; bit++) {
+            this._locals.Booleans[bit + i * 32] = (data >> bit) % 2 != 0;
           }
         }
       }
 
-      if(this.template.RootNode.hasField('CreatureList')){
-        let creatures = this.template.RootNode.getFieldByLabel('CreatureList').getChildStructs();
+      if (this.template.RootNode.hasField('CreatureList')) {
+        const creatures = this.template.RootNode.getFieldByLabel('CreatureList').getChildStructs();
         let entry = undefined;
-        for(let i = 0, len = creatures.length; i < len; i++){
+        for (let i = 0, len = creatures.length; i < len; i++) {
           entry = EncounterCreatureEntry.FromStruct(creatures[i]);
-          if(entry instanceof EncounterCreatureEntry){
+          if (entry instanceof EncounterCreatureEntry) {
             this.creatureList.push(entry);
           }
         }
       }
 
-      if(this.template.RootNode.hasField('SpawnPointList')){
-        let spawnPoints = this.template.RootNode.getFieldByLabel('SpawnPointList').getChildStructs();
+      if (this.template.RootNode.hasField('SpawnPointList')) {
+        const spawnPoints = this.template.RootNode.getFieldByLabel('SpawnPointList').getChildStructs();
         let entry = undefined;
-        for(let i = 0, len = spawnPoints.length; i < len; i++){
+        for (let i = 0, len = spawnPoints.length; i < len; i++) {
           entry = EncounterSpawnPointEntry.FromStruct(spawnPoints[i]);
-          if(entry instanceof EncounterSpawnPointEntry){
+          if (entry instanceof EncounterSpawnPointEntry) {
             this.spawnPointList.push(entry);
           }
         }
       }
 
-      if(this.template.RootNode.hasField('SpawnList')){
-        let spawns = this.template.RootNode.getFieldByLabel('SpawnList').getChildStructs();
+      if (this.template.RootNode.hasField('SpawnList')) {
+        const spawns = this.template.RootNode.getFieldByLabel('SpawnList').getChildStructs();
         let entry = undefined;
-        for(let i = 0, len = spawns.length; i < len; i++){
+        for (let i = 0, len = spawns.length; i < len; i++) {
           entry = EncounterSpawnEntry.FromStruct(spawns[i]);
-          if(entry instanceof EncounterSpawnEntry){
+          if (entry instanceof EncounterSpawnEntry) {
             this.spawnList.push(entry);
           }
         }
       }
 
-      if(this.template.RootNode.hasField('Active'))
-        this.active = this.template.getFieldByLabel('Active').getValue();
+      if (this.template.RootNode.hasField('Active')) this.active = this.template.getFieldByLabel('Active').getValue();
 
-      if(this.template.RootNode.hasField('AreaPoints'))
+      if (this.template.RootNode.hasField('AreaPoints'))
         this.areaPoints = this.template.getFieldByLabel('AreaPoints').getValue();
 
-      if(this.template.RootNode.hasField('Difficulty'))
+      if (this.template.RootNode.hasField('Difficulty'))
         this.difficulty = this.template.getFieldByLabel('Difficulty').getValue();
 
-      if(this.template.RootNode.hasField('DifficultyIndex'))
+      if (this.template.RootNode.hasField('DifficultyIndex'))
         this.difficultyIndex = this.template.getFieldByLabel('DifficultyIndex').getValue();
 
-      if(this.template.RootNode.hasField('Faction')){
+      if (this.template.RootNode.hasField('Faction')) {
         this.factionId = this.template.getFieldByLabel('Faction').getValue();
-        if((this.factionId & 0xFFFFFFFF) == -1){
+        if ((this.factionId & 0xffffffff) == -1) {
           this.factionId = 0;
         }
       }
       this.faction = GameState.FactionManager.factions.get(this.factionId);
 
-      if(this.template.RootNode.hasField('LocalizedName'))
+      if (this.template.RootNode.hasField('LocalizedName'))
         this.localizedName = this.template.getFieldByLabel('LocalizedName').getValue();
 
-      if(this.template.RootNode.hasField('MaxCreatures'))
+      if (this.template.RootNode.hasField('MaxCreatures'))
         this.maxCreatures = this.template.getFieldByLabel('MaxCreatures').getValue();
 
-      if(this.template.RootNode.hasField('PaletteID'))
+      if (this.template.RootNode.hasField('PaletteID'))
         this.paletteId = this.template.getFieldByLabel('PaletteID').getValue();
 
-      if(this.template.RootNode.hasField('PlayerOnly'))
+      if (this.template.RootNode.hasField('PlayerOnly'))
         this.playerOnly = this.template.getFieldByLabel('PlayerOnly').getValue();
 
-      if(this.template.RootNode.hasField('RecCreatures'))
+      if (this.template.RootNode.hasField('RecCreatures'))
         this.recCreatures = this.template.getFieldByLabel('RecCreatures').getValue();
 
-      if(this.template.RootNode.hasField('Reset'))
-        this.reset = this.template.getFieldByLabel('Reset').getValue();
+      if (this.template.RootNode.hasField('Reset')) this.reset = this.template.getFieldByLabel('Reset').getValue();
 
-      if(this.template.RootNode.hasField('ResetTime'))
+      if (this.template.RootNode.hasField('ResetTime'))
         this.resetTime = this.template.getFieldByLabel('ResetTime').getValue();
 
-      if(this.template.RootNode.hasField('Respawns'))
+      if (this.template.RootNode.hasField('Respawns'))
         this.respawns = this.template.getFieldByLabel('Respawns').getValue();
 
-      if(this.template.RootNode.hasField('SpawnOption'))
+      if (this.template.RootNode.hasField('SpawnOption'))
         this.spawnOption = this.template.getFieldByLabel('SpawnOption').getValue();
 
-      if(this.template.RootNode.hasField('Tag'))
-        this.tag = this.template.getFieldByLabel('Tag').getValue();
-  
-      if(this.template.RootNode.hasField('TemplateResRef'))
+      if (this.template.RootNode.hasField('Tag')) this.tag = this.template.getFieldByLabel('Tag').getValue();
+
+      if (this.template.RootNode.hasField('TemplateResRef'))
         this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
 
-      if(this.template.RootNode.hasField('XPosition'))
+      if (this.template.RootNode.hasField('XPosition'))
         this.position.x = this.template.getFieldByLabel('XPosition').getValue();
 
-      if(this.template.RootNode.hasField('YPosition'))
+      if (this.template.RootNode.hasField('YPosition'))
         this.position.y = this.template.getFieldByLabel('YPosition').getValue();
-  
-      if(this.template.RootNode.hasField('ZPosition'))
+
+      if (this.template.RootNode.hasField('ZPosition'))
         this.position.z = this.template.getFieldByLabel('ZPosition').getValue();
 
-      if(this.template.RootNode.hasField('Commandable'))
+      if (this.template.RootNode.hasField('Commandable'))
         this.commandable = this.template.getFieldByLabel('Commandable').getValue();
 
-      if(this.template.RootNode.hasField('NumberSpawned'))
+      if (this.template.RootNode.hasField('NumberSpawned'))
         this.numberSpawned = this.template.getFieldByLabel('NumberSpawned').getValue();
 
-      if(this.template.RootNode.hasField('HeartbeatDay'))
+      if (this.template.RootNode.hasField('HeartbeatDay'))
         this.heartbeatDay = this.template.getFieldByLabel('HeartbeatDay').getValue();
 
-      if(this.template.RootNode.hasField('HeartbeatTime'))
+      if (this.template.RootNode.hasField('HeartbeatTime'))
         this.heartbeatTime = this.template.getFieldByLabel('HeartbeatTime').getValue();
 
-      if(this.template.RootNode.hasField('LastSpawnDay'))
+      if (this.template.RootNode.hasField('LastSpawnDay'))
         this.lastSpawnDay = this.template.getFieldByLabel('LastSpawnDay').getValue();
 
-      if(this.template.RootNode.hasField('LastSpawnTime'))
+      if (this.template.RootNode.hasField('LastSpawnTime'))
         this.lastSpawnTime = this.template.getFieldByLabel('LastSpawnTime').getValue();
 
-      if(this.template.RootNode.hasField('LastEntered'))
+      if (this.template.RootNode.hasField('LastEntered'))
         this.lastEntered = this.template.getFieldByLabel('LastEntered').getValue();
 
-      if(this.template.RootNode.hasField('LastLeft'))
+      if (this.template.RootNode.hasField('LastLeft'))
         this.lastLeft = this.template.getFieldByLabel('LastLeft').getValue();
 
-      if(this.template.RootNode.hasField('Started'))
+      if (this.template.RootNode.hasField('Started'))
         this.started = this.template.getFieldByLabel('Started').getValue();
 
-      if(this.template.RootNode.hasField('Exhausted'))
+      if (this.template.RootNode.hasField('Exhausted'))
         this.exhausted = this.template.getFieldByLabel('Exhausted').getValue();
-        
-      if(this.template.RootNode.hasField('CurrentSpawns'))
+
+      if (this.template.RootNode.hasField('CurrentSpawns'))
         this.currentSpawns = this.template.getFieldByLabel('CurrentSpawns').getValue();
-    
-      if(this.template.RootNode.hasField('CustomScriptId'))
+
+      if (this.template.RootNode.hasField('CustomScriptId'))
         this.customScriptId = this.template.getFieldByLabel('CustomScriptId').getValue();
 
-      if(this.template.RootNode.hasField('AreaListMaxSize'))
+      if (this.template.RootNode.hasField('AreaListMaxSize'))
         this.areaListMaxSize = this.template.getFieldByLabel('AreaListMaxSize').getValue();
 
-      if(this.template.RootNode.hasField('SpawnPoolActive'))
+      if (this.template.RootNode.hasField('SpawnPoolActive'))
         this.spawnPoolActive = this.template.getFieldByLabel('SpawnPoolActive').getValue();
 
       this.initialized = true;
     }
-
   }
 
   destroy(): void {
     super.destroy();
   }
 
-  save(){
-    let gff = new GFFObject();
+  save() {
+    const gff = new GFFObject();
     gff.FileType = 'UTE ';
 
-    let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Reset') ).setValue( this.reset );
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'ResetTime') ).setValue(this.resetTime);
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Respawns') ).setValue(this.respawns);
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'SpawnOption') ).setValue(this.spawnOption);
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'MaxCreatures') ).setValue(this.maxCreatures);
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'RecCreatures') ).setValue(this.recCreatures);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PlayerOnly') ).setValue( this.playerOnly );
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Faction') ).setValue( this.faction ? this.faction.id : this.factionId );
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'DifficultyIndex') ).setValue( this.difficultyIndex );
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Difficulty') ).setValue( this.difficulty );
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(this.localizedName);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    const actionList = gff.RootNode.addField(this.actionQueueToActionList());
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Commandable')).setValue(this.commandable);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Active')).setValue(this.active);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Reset')).setValue(this.reset);
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'ResetTime')).setValue(this.resetTime);
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'Respawns')).setValue(this.respawns);
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'SpawnOption')).setValue(this.spawnOption);
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'MaxCreatures')).setValue(this.maxCreatures);
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'RecCreatures')).setValue(this.recCreatures);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PlayerOnly')).setValue(this.playerOnly);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Faction')).setValue(
+      this.faction ? this.faction.id : this.factionId
+    );
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'DifficultyIndex')).setValue(this.difficultyIndex);
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'Difficulty')).setValue(this.difficulty);
+    gff.RootNode.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName')).setValue(this.localizedName);
+    gff.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'Tag')).setValue(this.tag);
 
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'NumberSpawned') ).setValue(this.numberSpawned);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'HeartbeatDay') ).setValue(this.heartbeatDay);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'HeartbeatTime') ).setValue(this.heartbeatTime);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'LastSpawnDay') ).setValue(this.lastSpawnDay);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'LastSpawnTime') ).setValue(this.lastSpawnTime);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Started') ).setValue(this.started);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Exhausted') ).setValue(this.exhausted);
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CurrentSpawns') ).setValue(this.currentSpawns);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'SpawnPoolActive') ).setValue(this.spawnPoolActive);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'LastEntered') ).setValue(this.lastEntered);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'LastLeft') ).setValue(this.lastLeft);
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CustomScriptId') ).setValue(this.customScriptId);
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'AreaListMaxSize') ).setValue(this.areaListMaxSize);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'AreaPoints') ).setValue(this.areaPoints);
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'NumberSpawned')).setValue(this.numberSpawned);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'HeartbeatDay')).setValue(this.heartbeatDay);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'HeartbeatTime')).setValue(this.heartbeatTime);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'LastSpawnDay')).setValue(this.lastSpawnDay);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'LastSpawnTime')).setValue(this.lastSpawnTime);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Started')).setValue(this.started);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Exhausted')).setValue(this.exhausted);
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'CurrentSpawns')).setValue(this.currentSpawns);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'SpawnPoolActive')).setValue(this.spawnPoolActive);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'LastEntered')).setValue(this.lastEntered);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'LastLeft')).setValue(this.lastLeft);
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'CustomScriptId')).setValue(this.customScriptId);
+    gff.RootNode.addField(new GFFField(GFFDataType.INT, 'AreaListMaxSize')).setValue(this.areaListMaxSize);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'AreaPoints')).setValue(this.areaPoints);
 
-    let creatureList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'CreatureList') );
+    const creatureList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'CreatureList'));
     let creature = undefined;
-    for(let i = 0; i < this.creatureList.length; i++){
+    for (let i = 0; i < this.creatureList.length; i++) {
       creature = this.creatureList[i].save();
-      if(creature)
-        creatureList.addChildStruct( creature );
+      if (creature) creatureList.addChildStruct(creature);
     }
 
-    let spawnPointList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpawnPointList') );
+    const spawnPointList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'SpawnPointList'));
     let spawnPoint = undefined;
-    for(let i = 0; i < this.spawnPointList.length; i++){
+    for (let i = 0; i < this.spawnPointList.length; i++) {
       spawnPoint = this.spawnPointList[i].save();
-      if(spawnPoint)
-        spawnPointList.addChildStruct( spawnPoint );
+      if (spawnPoint) spawnPointList.addChildStruct(spawnPoint);
     }
 
-    if(this.spawnList.length){
-      let spawnList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpawnList') );
+    if (this.spawnList.length) {
+      const spawnList = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'SpawnList'));
       let spawn = undefined;
-      for(let i = 0; i < this.spawnList.length; i++){
+      for (let i = 0; i < this.spawnList.length; i++) {
         spawn = this.spawnList[i].save();
-        if(spawn)
-          spawnList.addChildStruct( spawn );
+        if (spawn) spawnList.addChildStruct(spawn);
       }
     }
 
-    let geometry = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Geometry') );
-    for(let i = 0; i < this.vertices.length; i++){
-      let vertStruct = new GFFStruct();
-      vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.vertices[i].x);
-      vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'Y') ).setValue(this.vertices[i].y);
-      vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'Z') ).setValue(this.vertices[i].z);
+    const geometry = gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'Geometry'));
+    for (let i = 0; i < this.vertices.length; i++) {
+      const vertStruct = new GFFStruct();
+      vertStruct.addField(new GFFField(GFFDataType.FLOAT, 'X')).setValue(this.vertices[i].x);
+      vertStruct.addField(new GFFField(GFFDataType.FLOAT, 'Y')).setValue(this.vertices[i].y);
+      vertStruct.addField(new GFFField(GFFDataType.FLOAT, 'Z')).setValue(this.vertices[i].z);
       geometry.addChildStruct(vertStruct);
     }
 
     //SWVarTable
-    let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
+    const swVarTable = gff.RootNode.addField(new GFFField(GFFDataType.STRUCT, 'SWVarTable'));
+    swVarTable.addChildStruct(this.getSWVarTableSaveStruct());
 
     //Scripts
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnEntered) ).setValue(this.scripts[ModuleObjectScript.EncounterOnEntered]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnExit) ).setValue(this.scripts[ModuleObjectScript.EncounterOnExit]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnExhausted) ).setValue(this.scripts[ModuleObjectScript.EncounterOnExhausted]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnHeartbeat) ).setValue(this.scripts[ModuleObjectScript.EncounterOnHeartbeat]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.EncounterOnUserDefined]?.name || '');
+    gff.RootNode.addField(new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnEntered)).setValue(
+      this.scripts[ModuleObjectScript.EncounterOnEntered]?.name || ''
+    );
+    gff.RootNode.addField(new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnExit)).setValue(
+      this.scripts[ModuleObjectScript.EncounterOnExit]?.name || ''
+    );
+    gff.RootNode.addField(new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnExhausted)).setValue(
+      this.scripts[ModuleObjectScript.EncounterOnExhausted]?.name || ''
+    );
+    gff.RootNode.addField(new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnHeartbeat)).setValue(
+      this.scripts[ModuleObjectScript.EncounterOnHeartbeat]?.name || ''
+    );
+    gff.RootNode.addField(new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnUserDefined)).setValue(
+      this.scripts[ModuleObjectScript.EncounterOnUserDefined]?.name || ''
+    );
 
-    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
+    gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'VarTable'));
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'XPosition')).setValue(this.position.x);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'YPosition')).setValue(this.position.y);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'ZPosition')).setValue(this.position.z);
 
     this.template = gff;
     return gff;
   }
-
 }

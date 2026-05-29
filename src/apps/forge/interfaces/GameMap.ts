@@ -1,4 +1,4 @@
 export interface GameMap {
-  name: string, 
-  module: string
+  name: string;
+  module: string;
 }

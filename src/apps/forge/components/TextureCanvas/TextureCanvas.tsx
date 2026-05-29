@@ -1,21 +1,21 @@
-import React, { useEffect, useRef, useState } from "react";
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
-import { PixelManager } from "@/utility/PixelManager";
+import React, { useEffect, useRef, useState } from 'react';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabImageViewerState } from '@/apps/forge/states/tabs/TabImageViewerState';
+import { PixelManager } from '@/utility/PixelManager';
 
 const concatenate = (resultConstructor: any, ...arrays: any) => {
   let totalLength = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     totalLength += arr.length;
   }
-  let result = new resultConstructor(totalLength);
+  const result = new resultConstructor(totalLength);
   let offset = 0;
-  for (let arr of arrays) {
+  for (const arr of arrays) {
     result.set(arr, offset);
     offset += arr.length;
   }
   return result;
-}
+};
 
 const getPixelData = async (image: KotOR.TPCObject | KotOR.TGAObject): Promise<Uint8Array> => {
   return new Promise<Uint8Array>((resolve, reject) => {
@@ -32,17 +32,32 @@ const getPixelData = async (image: KotOR.TPCObject | KotOR.TGAObject): Promise<U
         if (tpc.header.faces > 1) {
           for (let face = 0; face < tpc.header.faces; face++) {
             for (let i = 0; i < 1; i++) {
-              const mipmap = dds.mipmaps[face + (i * dds.mipmapCount)];
+              const mipmap = dds.mipmaps[face + i * dds.mipmapCount];
               if (tpc.header.faces == 6) {
                 switch (face) {
                   case 3:
-                    mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height);
+                    mipmap.data = PixelManager.Rotate90deg(
+                      PixelManager.Rotate90deg(mipmap.data, 4, width, height),
+                      4,
+                      width,
+                      height
+                    );
                     break;
                   case 1:
                     mipmap.data = PixelManager.Rotate90deg(mipmap.data, 4, width, height);
                     break;
                   case 0:
-                    mipmap.data = PixelManager.Rotate90deg(PixelManager.Rotate90deg(PixelManager.Rotate90deg(mipmap.data, 4, width, height), 4, width, height), 4, width, height);
+                    mipmap.data = PixelManager.Rotate90deg(
+                      PixelManager.Rotate90deg(
+                        PixelManager.Rotate90deg(mipmap.data, 4, width, height),
+                        4,
+                        width,
+                        height
+                      ),
+                      4,
+                      width,
+                      height
+                    );
                     break;
                 }
               }
@@ -72,13 +87,7 @@ export interface TextureCanvasProps {
   onClick?: () => void;
 }
 
-export const TextureCanvas: React.FC<TextureCanvasProps> = ({
-  texture,
-  width,
-  height,
-  className = "",
-  onClick
-}) => {
+export const TextureCanvas: React.FC<TextureCanvasProps> = ({ texture, width, height, className = '', onClick }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [textureLoaded, setTextureLoaded] = useState<boolean>(false);
 
@@ -98,7 +107,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
         const tpcObject = new KotOR.TPCObject({
           file: result.buffer,
           filename: texture + '.tpc',
-          pack: result.pack
+          pack: result.pack,
         });
 
         if (!tpcObject || !canvasRef.current) return;
@@ -156,11 +165,15 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
         TabImageViewerState.FlipY(processedData, textureWidth, textureHeight);
 
         // Create ImageData and draw to canvas
-        let imageData = ctx.createImageData(textureWidth, textureHeight);
+        const imageData = ctx.createImageData(textureWidth, textureHeight);
         imageData.data.set(processedData);
 
         // If scaling is needed, draw to a temporary canvas first, then scale
-        if (width !== undefined && height !== undefined && (canvasWidth !== textureWidth || canvasHeight !== textureHeight)) {
+        if (
+          width !== undefined &&
+          height !== undefined &&
+          (canvasWidth !== textureWidth || canvasHeight !== textureHeight)
+        ) {
           // Create temporary canvas for original size
           const tempCanvas = document.createElement('canvas');
           tempCanvas.width = textureWidth;
@@ -194,7 +207,7 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
   };
 
   return (
-    <div 
+    <div
       className={`iSlot texture-canvas ${className} ${onClick ? 'clickable' : ''}`}
       onClick={onClick ? handleClick : undefined}
       style={onClick ? { cursor: 'pointer' } : {}}
@@ -203,4 +216,3 @@ export const TextureCanvas: React.FC<TextureCanvasProps> = ({
     </div>
   );
 };
-

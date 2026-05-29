@@ -50,26 +50,26 @@ export const KeyFrameTimelineComponent = function(props: any){
     setExpandedNodes({});
   };
 
-  const onKeyFrameTrackZoomIn = function(){
+  const onKeyFrameTrackZoomIn = function () {
     setTimelineZoom(tab.timelineZoom);
   };
 
-  const onKeyFrameTrackZoomOut = function(){
+  const onKeyFrameTrackZoomOut = function () {
     setTimelineZoom(tab.timelineZoom);
   };
 
-  const onAnimationChange = function(){
+  const onAnimationChange = function () {
     setCurrentAnimation(tab.currentAnimation);
     setSelectedAnimationIndex(tab.selectedAnimationIndex);
   };
 
-  const onLoopChange = function(){
+  const onLoopChange = function () {
     setLooping(tab.looping);
   };
 
-  const onAnimate = function(){
+  const onAnimate = function () {
     updateSeekerPosition();
-  }
+  };
 
   const onKeyframeEditorChange = function(){
     setKeyframeEditorEnabled(tab.keyframeEditorEnabled);
@@ -85,17 +85,18 @@ export const KeyFrameTimelineComponent = function(props: any){
 
   const onPlay = function(){
     setPaused(false);
-  }
+  };
 
-  const onPause = function(){
+  const onPause = function () {
     setPaused(true);
-  }
+  };
 
   const panelObserver = new ResizeObserver((elements: ResizeObserverEntry[]) => {
     setPanelHeight(keyframeWindowRef.current?.clientHeight || 0);
   });
 
-  useEffectOnce( () => { //constructor
+  useEffectOnce(() => {
+    //constructor
     tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
     tab.addEventListener('onKeyFrameTrackZoomIn', onKeyFrameTrackZoomIn);
     tab.addEventListener('onKeyFrameTrackZoomOut', onKeyFrameTrackZoomOut);
@@ -126,7 +127,7 @@ export const KeyFrameTimelineComponent = function(props: any){
 
   useEffect( () => {
     setPanelHeight(keyframeWindowRef.current?.clientHeight || 0);
-    if(keyframeWindowRef?.current) panelObserver.observe(keyframeWindowRef?.current);
+    if (keyframeWindowRef?.current) panelObserver.observe(keyframeWindowRef?.current);
   }, [keyframeWindowRef.current]);
 
   useEffect(() => {
@@ -158,23 +159,40 @@ export const KeyFrameTimelineComponent = function(props: any){
   })();
   const trackContentHeight = Math.max(trackContentRows * 27, Math.max(panelHeight - 25, 54));
 
-  const onBtnZoomIn = function(){
+  const timestamps: JSX.Element[] = [];
+  const trackContentRows = (() => {
+    const grouped = new Map<string, number>();
+    for (let i = 0; i < tracks.length; i++) {
+      const n = tracks[i].nodeName;
+      grouped.set(n, (grouped.get(n) || 0) + 1);
+    }
+    let rows = 0;
+    for (const [nodeName, controllerCount] of grouped.entries()) {
+      rows += 1; // node row
+      const expanded = expandedNodes[nodeName] !== false;
+      if (expanded) rows += controllerCount;
+    }
+    return Math.max(rows, 1);
+  })();
+  const trackContentHeight = Math.max(trackContentRows * 27, Math.max(panelHeight - 25, 54));
+
+  const onBtnZoomIn = function () {
     tab.keyframeTrackZoomIn();
   };
 
-  const onBtnZoomOut = function(){
+  const onBtnZoomOut = function () {
     tab.keyframeTrackZoomOut();
   };
 
-  const onBtnPlayPause = function(){
-    if(paused){
+  const onBtnPlayPause = function () {
+    if (paused) {
       tab.play();
-    }else{
+    } else {
       tab.pause();
     }
   };
 
-  const onBtnStop = function(){
+  const onBtnStop = function () {
     tab.stopAnimation();
   };
 
@@ -185,10 +203,10 @@ export const KeyFrameTimelineComponent = function(props: any){
   const onCheckboxLoopChange = function(e: React.ChangeEvent<HTMLInputElement>){
     tab.setLooping(e.target.checked);
     setLooping(e.target.checked);
-  }
+  };
 
   const onSelectAnimationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    let index = parseInt(e.target.value);
+    const index = parseInt(e.target.value);
     tab.setAnimationByIndex(index);
     setTracks(tab.getEditableTracks());
   }
@@ -206,9 +224,14 @@ export const KeyFrameTimelineComponent = function(props: any){
   };
 
   const updateSeekerPosition = () => {
-    const seekPosition = (tab.getCurrentAnimationElapsed() * tab.timelineZoom);
+    const seekPosition = tab.getCurrentAnimationElapsed() * tab.timelineZoom;
     setSeekPositionLeft(seekPosition);
-  }
+  };
+
+  const isKeyframeEvent = (e: React.MouseEvent<HTMLElement>): boolean => {
+    const target = e.target as HTMLElement | null;
+    return !!target?.closest('.keyframe');
+  };
 
   const isKeyframeEvent = (e: React.MouseEvent<HTMLElement>): boolean => {
     const target = e.target as HTMLElement | null;
@@ -224,25 +247,25 @@ export const KeyFrameTimelineComponent = function(props: any){
     if(waveformCanvasRef.current && waveformCanvasRef.current.parentElement){
 
       //Update the lips elapsed time based on the seekbar position
-      let position = getTimelinePixelPositionRelativeToMouseEvent(e);
-      let time = getTimelinePixelPositionAsTime(position);
+      const position = getTimelinePixelPositionRelativeToMouseEvent(e);
+      const time = getTimelinePixelPositionAsTime(position);
       tab.seek(time);
-      
-      const seekPosition = (tab.getCurrentAnimationElapsed() * tab.timelineZoom);
+
+      const seekPosition = tab.getCurrentAnimationElapsed() * tab.timelineZoom;
       setSeekPositionLeft(seekPosition);
     }
-  }
+  };
 
   const onMouseMoveKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isKeyframeEvent(e) && !tab.dragging_frame) return;
     let position = getTimelinePixelPositionRelativeToMouseEvent(e);
     let time = getTimelinePixelPositionAsTime(position);
-    if(tab.scrubbing){
+    if (tab.scrubbing) {
       tab.seek(time);
-      
-      const seekPosition = (tab.getCurrentAnimationElapsed() * tab.timelineZoom);
+
+      const seekPosition = tab.getCurrentAnimationElapsed() * tab.timelineZoom;
       setSeekPositionLeft(seekPosition);
-    
+
       tab.pause();
       clearTimeout(tab.scrubbingTimeout);
     }
@@ -251,7 +274,7 @@ export const KeyFrameTimelineComponent = function(props: any){
       keyframeDragMovedRef.current = true;
       tab.updateKey(tab.dragging_frame.trackId, tab.dragging_frame.keyIndex, { time }, { captureUndo: false });
     }
-  }
+  };
 
   const onMouseDownKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isKeyframeEvent(e)) return;
@@ -260,13 +283,13 @@ export const KeyFrameTimelineComponent = function(props: any){
     keyframeDragMovedRef.current = false;
     tab.scrubbing = true;
     tab.pause();
-  }
+  };
 
   const onMouseUpKeyFrameWindow = (e: React.MouseEvent<HTMLDivElement>) => {
     clearTimeout(tab.scrubbingTimeout);
-    if(tab.scrubbing){
+    if (tab.scrubbing) {
       tab.pause();
-      const seekPosition = (tab.getCurrentAnimationElapsed() * tab.timelineZoom);
+      const seekPosition = tab.getCurrentAnimationElapsed() * tab.timelineZoom;
       setSeekPositionLeft(seekPosition);
     }
     tab.scrubbing = false;
@@ -308,55 +331,60 @@ export const KeyFrameTimelineComponent = function(props: any){
   }
 
   const getTimelinePixelPositionRelativeToMouseEvent = (e: React.MouseEvent<HTMLDivElement>) => {
-    if(waveformCanvasRef.current && waveformCanvasRef.current.parentElement){
+    if (waveformCanvasRef.current && waveformCanvasRef.current.parentElement) {
       const keyframeWindowElement = waveformCanvasRef.current.parentElement;
       const bRect = keyframeWindowElement.getBoundingClientRect();
 
-      let maxPixels = (tab.getCurrentAnimationLength() * tab.timelineZoom);
-      
-      let position = (e.pageX - 200 - bRect.left + keyframeWindowElement.scrollLeft);
-      if(position < 0) return 0;
-      if(position > maxPixels) return maxPixels;
+      const maxPixels = tab.getCurrentAnimationLength() * tab.timelineZoom;
+
+      const position = e.pageX - 200 - bRect.left + keyframeWindowElement.scrollLeft;
+      if (position < 0) return 0;
+      if (position > maxPixels) return maxPixels;
       return position;
     }
     return 0;
-  }
+  };
 
   const getTimelinePixelPositionAsTime = (position: number = 0) => {
-    let percentage = position / (tab.getCurrentAnimationLength() * tab.timelineZoom);
-    let time = tab.getCurrentAnimationLength() * percentage;
-    if(time < 0) return 0;
-    if(time > tab.getCurrentAnimationLength()) return tab.getCurrentAnimationLength();
+    const percentage = position / (tab.getCurrentAnimationLength() * tab.timelineZoom);
+    const time = tab.getCurrentAnimationLength() * percentage;
+    if (time < 0) return 0;
+    if (time > tab.getCurrentAnimationLength()) return tab.getCurrentAnimationLength();
     return time;
   };
 
-  if(currentAnimation){
+  if (currentAnimation) {
     //Build timeline second markers
     let factor = 10;
 
-    if(timelineZoom < 250){
+    if (timelineZoom < 250) {
       factor = 30;
     }
 
-    if(timelineZoom <= 150){
+    if (timelineZoom <= 150) {
       factor = 60;
     }
 
-    let nthTime = factor/60;
-    let count = Math.ceil(Math.ceil(currentAnimation.length) / nthTime);
+    const nthTime = factor / 60;
+    const count = Math.ceil(Math.ceil(currentAnimation.length) / nthTime);
 
-    for(let i = 0; i <= count; i++){
+    for (let i = 0; i <= count; i++) {
       let s = factor * i;
-      const time = (s-(s%=60))/60+(9<s?':':':0')+s;
+      const time = (s - (s %= 60)) / 60 + (9 < s ? ':' : ':0') + s;
       timestamps.push(
-        <span key={time} style={{
-          position: 'absolute',
-          left: timelineOffset + ((nthTime * i) * timelineZoom),
-          width: 30,
-          marginLeft: -15,
-          textAlign: 'center'
-        }}>{ (s-(s%=60))/60+(9<s?':':':0')+s }</span>
-      )
+        <span
+          key={time}
+          style={{
+            position: 'absolute',
+            left: timelineOffset + nthTime * i * timelineZoom,
+            width: 30,
+            marginLeft: -15,
+            textAlign: 'center',
+          }}
+        >
+          {(s - (s %= 60)) / 60 + (9 < s ? ':' : ':0') + s}
+        </span>
+      );
     }
   }
 
@@ -365,11 +393,13 @@ export const KeyFrameTimelineComponent = function(props: any){
       <div className="mvp-keyframe-toolbar">
         <div className="mvp-keyframe-toolbar__left">
           <Form.Select onChange={onSelectAnimationChange} value={selectedAnimationIndex}>
-            {
-              animations.map( (animation, index) => {
-                return <option key={`${index}-${animation.name}`} value={index}>{animation.name}</option>
-              })
-            }
+            {animations.map((animation, index) => {
+              return (
+                <option key={`${index}-${animation.name}`} value={index}>
+                  {animation.name}
+                </option>
+              );
+            })}
           </Form.Select>
           <label className="mvp-keyframe-toolbar__loop">
             <i className="fa-solid fa-rotate"></i>
@@ -427,6 +457,7 @@ export const KeyFrameTimelineComponent = function(props: any){
       </div>
     </div>
   );
+};
 
 }
 
@@ -488,7 +519,7 @@ const TrackTreeTimelineComponent = function(props: any) {
       })}
     </>
   );
-}
+};
 
 const TrackTimelineComponent = function(props: any) {
   const track: ModelViewerEditableTrack = props.track;
@@ -537,5 +568,4 @@ const TrackTimelineComponent = function(props: any) {
       </div>
     </div>
   );
-
-}
+};

@@ -1,0 +1,169 @@
+.forge-diff-tool {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0f1116;
+  color: #d8e0ef;
+
+  .diff-tool-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .diff-tool-header {
+    margin-bottom: 2rem;
+    text-align: center;
+
+    h3 {
+      margin: 0 0 0.5rem 0;
+      color: #8aa4ff;
+    }
+
+    p {
+      color: #b8c2d8;
+      margin: 0;
+    }
+  }
+
+  .diff-tool-panels {
+    display: flex;
+    gap: 2rem;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .diff-panel {
+    flex: 1;
+    background: #181c25;
+    border: 1px solid #2a3142;
+    border-radius: 8px;
+    padding: 1.5rem;
+
+    h4 {
+      margin: 0 0 1rem 0;
+      color: #8aa4ff;
+      font-size: 1.1rem;
+    }
+
+    .file-selector {
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .selected-file {
+      width: 100%;
+      padding: 1rem;
+      background: #20283a;
+      border: 1px solid #2a3142;
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+
+      .file-name {
+        font-weight: 600;
+        color: #d8e0ef;
+        font-size: 1rem;
+      }
+
+      .file-path {
+        font-size: 0.8rem;
+        color: #b8c2d8;
+        word-break: break-all;
+      }
+
+      .btn-clear {
+        margin-top: 0.5rem;
+        padding: 0.4rem 1rem;
+        background: #ff6b6b;
+        border: none;
+        border-radius: 4px;
+        color: white;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: background 0.2s;
+
+        &:hover {
+          background: #ff5252;
+        }
+      }
+    }
+
+    .no-file {
+      text-align: center;
+
+      p {
+        color: #b8c2d8;
+        margin-bottom: 1rem;
+      }
+
+      .btn-select {
+        padding: 0.75rem 1.5rem;
+        background: #2a4db0;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.2s;
+
+        &:hover {
+          background: #365ad1;
+        }
+      }
+    }
+  }
+
+  .diff-separator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    color: #8aa4ff;
+
+    .separator-line {
+      width: 2px;
+      height: 30px;
+      background: #2a3142;
+    }
+
+    .separator-text {
+      font-weight: 700;
+      font-size: 1.2rem;
+    }
+  }
+
+  .diff-tool-actions {
+    text-align: center;
+
+    .btn-compare {
+      padding: 1rem 3rem;
+      background: #2a4db0;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 700;
+      transition: all 0.3s;
+
+      &:hover:not(:disabled) {
+        background: #365ad1;
+        transform: scale(1.05);
+      }
+
+      &:disabled {
+        background: #4a4a4a;
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+    }
+  }
+}

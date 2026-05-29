@@ -1,5 +1,6 @@
-import { contextBridge, ipcRenderer, shell } from "electron";
-import * as fs from "fs";
+import * as fs from 'fs';
+
+import { contextBridge, ipcRenderer, shell } from 'electron';
 
 const query = new URLSearchParams(window.location.search);
 
@@ -10,6 +11,9 @@ contextBridge.exposeInMainWorld(
       return new Promise((resolve, reject) => {
         ipcRenderer.invoke('locate-game-directory', profile).then((response) => {
           resolve(response);
+        })
+        .catch((e: unknown) => {
+          reject(e);
         });
       })
     },
@@ -29,11 +33,10 @@ contextBridge.exposeInMainWorld(
           resolve(response);
         }).catch((e) => {
           reject(e);
-        })
-      });
-    }
-  }
-)
+        });
+    });
+  },
+});
 
 contextBridge.exposeInMainWorld(
   'fs', 

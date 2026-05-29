@@ -11,15 +11,14 @@ const STR_SLOT_DISABLED = 125554; //You cannot equip or remove an item from this
 
 /**
  * MenuEquipment class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuEquipment.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuEquipment extends K1_MenuEquipment {
-
   declare LBL_BACK1: GUILabel;
   declare LBL_INV_WEAP_R2: GUILabel;
   declare LBL_INV_WEAP_L2: GUILabel;
@@ -117,11 +116,11 @@ export class MenuEquipment extends K1_MenuEquipment {
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.equipmentSelectionActive){
+        if (this.equipmentSelectionActive) {
           this.slot = null;
           this.equipmentSelectionActive = false;
           this.updateList();
-        }else{
+        } else {
           this.close();
         }
       });
@@ -291,9 +290,23 @@ export class MenuEquipment extends K1_MenuEquipment {
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
       this.LB_ITEMS.padding = 2;
-      this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
+      this.LB_ITEMS.onSelected = (item: ModuleItem | GUIItemEquipped | GUIItemNone) => {
         this.updateSelected(item);
-      }
+      };
+
+      this.BTN_PREVNPC.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 1) {
+          GameState.PartyManager.SwitchLeaderAtIndex(GameState.PartyManager.party.length - 1);
+        }
+      });
+
+      this.BTN_NEXTNPC.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 1) {
+          GameState.PartyManager.SwitchLeaderAtIndex(1);
+        }
+      });
 
       this.BTN_PREVNPC.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -317,7 +330,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           currentPC.equipment.RIGHTHAND = undefined;
           currentPC.equipment.RIGHTHAND2 = undefined;
 
-          if(right_1) right_1.destroy();
+          if (right_1) right_1.destroy();
 
           if(right_1) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND2, right_1).then(() => { this.updateSlotIcons(true); });
           if(right_2) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND,  right_2).then(() => { this.updateSlotIcons(true); });
@@ -327,7 +340,7 @@ export class MenuEquipment extends K1_MenuEquipment {
           currentPC.equipment.LEFTHAND = undefined;
           currentPC.equipment.LEFTHAND2 = undefined;
 
-          if(left_1) left_1.destroy();
+          if (left_1) left_1.destroy();
 
           if(left_1) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left_1).then(() => { this.updateSlotIcons(true); });
           if(left_2) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND,  left_2).then(() => { this.updateSlotIcons(true); });
@@ -385,7 +398,7 @@ export class MenuEquipment extends K1_MenuEquipment {
       this.LBL_TOHIT.hide();
       this.LBL_TOHITL.hide();
       this.LBL_TOHITR.hide();
-      
+
       this.LBL_INV_WEAP_L2.hide();
       this.LBL_INV_WEAP_R2.hide();
       this.BTN_INV_WEAP_L2.hide();

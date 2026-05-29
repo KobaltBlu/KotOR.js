@@ -13,8 +13,7 @@ export interface TabButtonProps {
   dragStateClassName?: string;
 }
 
-export const TabButton = function(props: TabButtonProps) {
-
+export const TabButton = function (props: TabButtonProps) {
   const tab: TabState = props.tab;
   const index = props.index;
   const [tabName, setTabName] = useState<string>(tab.tabName);
@@ -22,8 +21,8 @@ export const TabButton = function(props: TabButtonProps) {
   //tabManager
   const tabManager = useTabManager();
   const [selectedTab, setSelectedTab] = tabManager.selectedTab;
-  
-  useEffect( () => {
+
+  useEffect(() => {
     // console.log('tabName', tab.tabName);
   }, [tabName]);
 
@@ -42,13 +41,13 @@ export const TabButton = function(props: TabButtonProps) {
     e.preventDefault();
     tab.show();
     setSelectedTab(tab);
-  }
+  };
 
   const onTabCloseClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     //TODO: Handle unsaved changes modal
     e.stopPropagation();
     tab.remove();
-  }
+  };
 
   return (
     <li
@@ -63,16 +62,15 @@ export const TabButton = function(props: TabButtonProps) {
     >
       {tab.file?.unsaved_changes ? (<span className="dirty-dot" aria-hidden="true"></span>) : (<></>)}
       <a>{tabName}</a>&nbsp;
-      {(
-        tab.isClosable ? (
-          <button type="button" className="close" onClick={onTabCloseClick}>
-            <span className="fa-solid fa-xmark"></span>
-          </button>
-        ) : (<></>)
+      {tab.isClosable ? (
+        <button type="button" className="close" onClick={onTabCloseClick}>
+          <span className="fa-solid fa-xmark"></span>
+        </button>
+      ) : (
+        <></>
       )}
     </li>
   );
-
-}
+};
 
 export default TabButton;

@@ -7,10 +7,10 @@ import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
 import { SectionContainer } from "@/apps/forge/components/SectionContainer";
 import { NodePropertiesPanel } from "@/apps/forge/components/tabs/tab-model-viewer/panels/NodePropertiesPanel";
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import * as KotOR from '@/apps/forge/KotOR';
+import { UI3DRenderer } from '@/apps/forge/UI3DRenderer';
 
-export const ModelViewerSidebarComponent = function(props: any){
+export const ModelViewerSidebarComponent = function (props: any) {
   const tab: TabModelViewerState = props.tab as TabModelViewerState;
 
   const [layouts, setLayouts] = useState<KotOR.IKEYEntry[]>([]);
@@ -59,10 +59,8 @@ export const ModelViewerSidebarComponent = function(props: any){
   useEffectOnce( () => {
     let keys: KotOR.IKEYEntry[] = [];
     let res_list = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['lyt']);
-    res_list.forEach( (res, index) => {
-      keys.push(
-        KotOR.KEYManager.Key.getFileKeyByRes(res)
-      );
+    res_list.forEach((res, index) => {
+      keys.push(KotOR.KEYManager.Key.getFileKeyByRes(res));
     });
     setLayouts(keys);
 
@@ -85,9 +83,9 @@ export const ModelViewerSidebarComponent = function(props: any){
     };
   });
 
-  const onCameraSpeedChange = function(e: React.ChangeEvent<HTMLInputElement>){
+  const onCameraSpeedChange = function (e: React.ChangeEvent<HTMLInputElement>) {
     let value = parseFloat(e.target.value);
-    if(isNaN(value)) value = 10;
+    if (isNaN(value)) value = 10;
     setCameraSpeed(value);
     UI3DRenderer.CameraMoveSpeed = value;
   };
@@ -119,7 +117,7 @@ export const ModelViewerSidebarComponent = function(props: any){
   };
 
   const onBtnLoadLayout = (e: React.MouseEvent<HTMLButtonElement>) => {
-    tab.loadLayout( layouts.find( key => key.resId == selectedLayout ) );
+    tab.loadLayout(layouts.find((key) => key.resId == selectedLayout));
   };
 
   const onBtnDisposeLayout = (e: React.MouseEvent<HTMLButtonElement>) => {

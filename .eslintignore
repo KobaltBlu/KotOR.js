@@ -1,0 +1,16 @@
+# Build / compiled output
+extensions/kotor-forge-vscode/server/out/
+extensions/kotor-forge-vscode/dist/
+dist/
+build/
+release/
+coverage/
+src/tests/
+
+# Config / generated / non-TypeScript
+main.js
+jest.config.js
+webpack.config.js
+
+# Third-party code
+vendor/

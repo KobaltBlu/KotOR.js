@@ -1,16 +1,16 @@
-import * as THREE from "three";
-import { IOdysseyModelFlare } from "@/interface/odyssey/IOdysseyModelFlare";
-import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
-import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
-import type { OdysseyModel } from "@/odyssey/OdysseyModel";
-import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import * as THREE from 'three';
+import { IOdysseyModelFlare } from '@/interface/odyssey/IOdysseyModelFlare';
+import { OdysseyModelNodeType } from '@/enums/odyssey/OdysseyModelNodeType';
+import { IOdysseyArrayDefinition } from '@/interface/odyssey/IOdysseyArrayDefinition';
+import { OdysseyModelNode } from '@/odyssey/OdysseyModelNode';
+import type { OdysseyModel } from '@/odyssey/OdysseyModel';
+import { OdysseyModelUtility } from '@/odyssey/OdysseyModelUtility';
 
 /**
  * OdysseyModelNodeLight class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyModelNodeLight.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -28,7 +28,7 @@ export class OdysseyModelNodeLight extends OdysseyModelNode {
     sizes: [],
     positions: [],
     colorShifts: [],
-    textures: []
+    textures: [],
   };
   color: THREE.Color;
   radius: number = 1;
@@ -41,17 +41,17 @@ export class OdysseyModelNodeLight extends OdysseyModelNode {
   flareColorShiftsArrayDefinition: IOdysseyArrayDefinition;
   flareTexturesArrayDefinition: IOdysseyArrayDefinition;
 
-  constructor(parent: OdysseyModelNode){
+  constructor(parent: OdysseyModelNode) {
     super(parent);
     this.type |= OdysseyModelNodeType.Light;
   }
 
-  readBinary(odysseyModel: OdysseyModel){
+  readBinary(odysseyModel: OdysseyModel) {
     super.readBinary(odysseyModel);
 
     this.flare.radius = this.odysseyModel.mdlReader.readSingle();
 
-    this.odysseyModel.mdlReader.skip(0x0C); //Unknown UInt32 array
+    this.odysseyModel.mdlReader.skip(0x0c); //Unknown UInt32 array
 
     this.flareSizesArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
     this.flarePositionsArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
@@ -66,47 +66,59 @@ export class OdysseyModelNodeLight extends OdysseyModelNode {
     this.generateFlareFlag = this.odysseyModel.mdlReader.readUInt32();
     this.fadingLightFlag = this.odysseyModel.mdlReader.readUInt32();
 
-    if(this.flareTexturesArrayDefinition.count){
+    if (this.flareTexturesArrayDefinition.count) {
       //FlareTextures are stored as follows offset1,offset2,string1,string2
-      for(let i = 0; i < this.flareTexturesArrayDefinition.count; i++){
+      for (let i = 0; i < this.flareTexturesArrayDefinition.count; i++) {
         //Seek to the location of the textures offset value
-        this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.flareTexturesArrayDefinition.offset + (4*i));
+        this.odysseyModel.mdlReader.seek(
+          this.odysseyModel.fileHeader.modelDataOffset + this.flareTexturesArrayDefinition.offset + 4 * i
+        );
         //Read out the offset value
-        let stringOffset = this.odysseyModel.mdlReader.readUInt32();
+        const stringOffset = this.odysseyModel.mdlReader.readUInt32();
         //Seek the reader to where the beginning of the flare texture name should be located
         this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + stringOffset);
         //Read the string and push it to the textures array
-        this.flare.textures.push(this.odysseyModel.mdlReader.readString().replace(/\0[\s\S]*$/g,'').trim().toLowerCase());
+        this.flare.textures.push(
+          this.odysseyModel.mdlReader
+            .readString()
+            .replace(/\0[\s\S]*$/g, '')
+            .trim()
+            .toLowerCase()
+        );
       }
     }
 
-    if(this.flareSizesArrayDefinition.count){
-      this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.flareSizesArrayDefinition.offset);
-      for(let i = 0; i < this.flareSizesArrayDefinition.count; i++){
-        this.flare.sizes.push(this.odysseyModel.mdlReader.readSingle())
+    if (this.flareSizesArrayDefinition.count) {
+      this.odysseyModel.mdlReader.seek(
+        this.odysseyModel.fileHeader.modelDataOffset + this.flareSizesArrayDefinition.offset
+      );
+      for (let i = 0; i < this.flareSizesArrayDefinition.count; i++) {
+        this.flare.sizes.push(this.odysseyModel.mdlReader.readSingle());
       }
     }
 
-    if(this.flarePositionsArrayDefinition.count){
-      this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.flarePositionsArrayDefinition.offset);
-      for(let i = 0; i < this.flarePositionsArrayDefinition.count; i++){
-        this.flare.positions.push(this.odysseyModel.mdlReader.readSingle())
+    if (this.flarePositionsArrayDefinition.count) {
+      this.odysseyModel.mdlReader.seek(
+        this.odysseyModel.fileHeader.modelDataOffset + this.flarePositionsArrayDefinition.offset
+      );
+      for (let i = 0; i < this.flarePositionsArrayDefinition.count; i++) {
+        this.flare.positions.push(this.odysseyModel.mdlReader.readSingle());
       }
     }
 
-    if(this.flareColorShiftsArrayDefinition.count){
-      this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + this.flareColorShiftsArrayDefinition.offset);
-      for(let i = 0; i < this.flareColorShiftsArrayDefinition.count; i++){
+    if (this.flareColorShiftsArrayDefinition.count) {
+      this.odysseyModel.mdlReader.seek(
+        this.odysseyModel.fileHeader.modelDataOffset + this.flareColorShiftsArrayDefinition.offset
+      );
+      for (let i = 0; i < this.flareColorShiftsArrayDefinition.count; i++) {
         this.flare.colorShifts.push(
           new THREE.Color(
-            this.odysseyModel.mdlReader.readSingle(), 
-            this.odysseyModel.mdlReader.readSingle(), 
+            this.odysseyModel.mdlReader.readSingle(),
+            this.odysseyModel.mdlReader.readSingle(),
             this.odysseyModel.mdlReader.readSingle()
           )
         );
       }
     }
-
   }
-
 }

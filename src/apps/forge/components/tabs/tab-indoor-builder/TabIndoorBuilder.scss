@@ -1,0 +1,118 @@
+.indoor-canvas-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #14141a;
+}
+
+.indoor-canvas {
+  width: 100%;
+  height: 100%;
+  cursor: default;
+}
+
+.indoor-panel {
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #d6d6d6;
+  font-size: 12px;
+}
+
+.indoor-panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.indoor-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 11px;
+  color: #9aa4b2;
+}
+
+.indoor-select,
+.indoor-input {
+  background: #1c1e24;
+  color: #f1f1f1;
+  border: 1px solid #2a2d36;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.indoor-component-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+}
+
+.indoor-component-button {
+  background: #1b1e26;
+  border: 1px solid #2a2f3b;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+}
+
+.indoor-component-button.active {
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 1px rgba(74, 144, 226, 0.6);
+}
+
+.indoor-component-button img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 4px;
+  background: #0d0f14;
+}
+
+.indoor-component-button span {
+  font-size: 10px;
+  text-align: center;
+}
+
+.indoor-button {
+  background: #252a34;
+  color: #f1f1f1;
+  border: 1px solid #2f3542;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.indoor-button.active {
+  background: #2f4f6f;
+  border-color: #4a90e2;
+}
+
+.indoor-button-row {
+  display: flex;
+  gap: 6px;
+}
+
+.indoor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #15171d;
+  border-bottom: 1px solid #2a2f3b;
+}
+
+.indoor-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}

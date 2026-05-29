@@ -3,13 +3,13 @@ import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabState, TabStateEventListenerTypes, TabStateEventListeners } from "@/apps/forge/states/tabs";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
-import React from "react";
-import { TabModelViewer } from "@/apps/forge/components/tabs/tab-model-viewer/TabModelViewer";
-import { UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
-import { EditorFile } from "@/apps/forge/EditorFile";
-import { BinaryReader } from "@/utility/binary/BinaryReader";
-import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
-import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
+import React from 'react';
+import { TabModelViewer } from '@/apps/forge/components/tabs/tab-model-viewer/TabModelViewer';
+import { UI3DRenderer, UI3DRendererEventListenerTypes } from '@/apps/forge/UI3DRenderer';
+import { EditorFile } from '@/apps/forge/EditorFile';
+import { BinaryReader } from '@/utility/binary/BinaryReader';
+import { SceneGraphNode } from '@/apps/forge/SceneGraphNode';
+import { UI3DOverlayComponent } from '@/apps/forge/components/UI3DOverlayComponent';
 import {
   promptForDirectory,
   collectModelAssets,
@@ -145,12 +145,11 @@ export interface TabModelViewerStateEventListeners extends TabStateEventListener
 }
 
 export class TabModelViewerState extends TabState {
-
   tabName: string = `Model Viewer`;
 
   model: KotOR.OdysseyModel3D;
   odysseyModel: KotOR.OdysseyModel;
-  
+
   mdl: Uint8Array;
   mdx: Uint8Array;
 
@@ -190,7 +189,7 @@ export class TabModelViewerState extends TabState {
   layoutSceneGraphNode: SceneGraphNode;
   layout: KotOR.LYTObject;
   currentAnimationState: any = {
-    elapsed: 0
+    elapsed: 0,
   };
   scrubbing: boolean = false;
   scrubbingTimeout: NodeJS.Timeout;
@@ -235,22 +234,57 @@ export class TabModelViewerState extends TabState {
 
   modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY };
 
-  constructor(options: BaseTabStateOptions = {}){
+  /** When OdysseyModel3D.rebuildFromSourceModel swaps instances, rebind viewer state and Forge registry. */
+  private readonly onOdysseyInstanceReplaced = (event: THREE.Event): void => {
+    const next = (event as THREE.Event & { next?: KotOR.OdysseyModel3D; previous?: KotOR.OdysseyModel3D }).next;
+    const prev = (event as THREE.Event & { next?: KotOR.OdysseyModel3D; previous?: KotOR.OdysseyModel3D }).previous;
+    if (!next) return;
+    if (prev) {
+      prev.removeEventListener('odysseyInstanceReplaced', this.onOdysseyInstanceReplaced as any);
+    }
+    this.model = next;
+    next.addEventListener('odysseyInstanceReplaced', this.onOdysseyInstanceReplaced as any);
+    this.ui3DRenderer.replaceOdysseyModelInRegistry(prev ?? (event.target as KotOR.OdysseyModel3D), next);
+
+    this.animations = this.model.odysseyAnimations.slice(0).sort((a, b) => a.name.localeCompare(b.name));
+    if (this.animations.length) {
+      this.selectedAnimationIndex = Math.min(this.selectedAnimationIndex, this.animations.length - 1);
+      this.currentAnimation = this.animations[this.selectedAnimationIndex];
+      this.model.animationManager.currentAnimation = this.currentAnimation;
+      this.model.animationManager.currentAnimationState = this.currentAnimationState;
+    }
+
+    next.emitters.map((emitter) => {
+      emitter.referenceNode = this.ui3DRenderer.referenceNode as any;
+    });
+
+    this.ui3DRenderer.sceneGraphManager.rebuild();
+    TabModelViewerState.applyModelViewerLayers(this.model, this.modelViewerLayerVisibility, {
+      layoutGroup: this.layout_group,
+      groundMesh: this.groundMesh,
+      lightHelpers: this.ui3DRenderer.group.light_helpers,
+    });
+    this.processEventListener<TabModelViewerStateEventListenerTypes>('onKeyframeEditorChange', [this]);
+  };
+
+  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY };
+
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
     // this.singleInstance = true;
     this.isClosable = true;
 
-    if(this.file){
+    if (this.file) {
       this.tabName = this.file.getFilename();
     }
 
     // Geometry
     this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
-    this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
-    this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
-    this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
+    this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry(2500, 2500, 100, 100));
+    this.groundMaterial = new THREE.LineBasicMaterial({ color: this.groundColor, linewidth: 2 });
+    this.groundMesh = new THREE.LineSegments(this.groundGeometry, this.groundMaterial);
     // this.unselectable.add( this.groundMesh );
-    
+
     this.ui3DRenderer = new UI3DRenderer();
     this.bindTransformControlsEvents();
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => this.bindTransformControlsEvents());
@@ -266,7 +300,7 @@ export class TabModelViewerState extends TabState {
     this.ui3DRenderer.scene.add(this.layout_group);
 
     this.layoutSceneGraphNode = new SceneGraphNode({
-      name: 'Layout'
+      name: 'Layout',
     });
 
     this.ui3DRenderer.sceneGraphManager.sceneNode.addChildNode(this.layoutSceneGraphNode);
@@ -370,12 +404,12 @@ export class TabModelViewerState extends TabState {
       if(!file && this.file instanceof EditorFile){
         file = this.file;
       }
-  
-      if(file instanceof EditorFile){
-        if(this.file != file) this.file = file;
+
+      if (file instanceof EditorFile) {
+        if (this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
-  
-        file.readFile().then( (response) => {
+
+        file.readFile().then((response) => {
           this.mdl = response.buffer;
           this.mdx = (response.buffer2 as Buffer) ?? new Uint8Array(0);
           const head = new TextDecoder("utf-8", { fatal: false }).decode(
@@ -400,7 +434,7 @@ export class TabModelViewerState extends TabState {
               model.addEventListener('odysseyInstanceReplaced', this.onOdysseyInstanceReplaced as any);
               this.ui3DRenderer.attachObject(this.model, true);
 
-              this.animations = this.model.odysseyAnimations.slice(0).sort( (a, b) => {
+              this.animations = this.model.odysseyAnimations.slice(0).sort((a, b) => {
                 return a.name.localeCompare(b.name);
               });
 
@@ -408,12 +442,12 @@ export class TabModelViewerState extends TabState {
               this.currentAnimation = this.animations[this.selectedAnimationIndex];
               this.paused = true;
 
-              model.emitters.map( (emitter) => {
+              model.emitters.map((emitter) => {
                 emitter.referenceNode = this.ui3DRenderer.referenceNode as any;
-              })
+              });
 
-              if(model.camerahook){
-                const camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+              if (model.camerahook) {
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
                 camera.name = model.name;
                 model.camerahook.add(camera);
                 this.ui3DRenderer.attachCamera(camera);
@@ -430,7 +464,7 @@ export class TabModelViewerState extends TabState {
               this.processEventListener('onEditorFileLoad', [this]);
               this.processEventListener<TabModelViewerStateEventListenerTypes>('onKeyframeEditorChange', [this]);
               resolve(this.model);
-            }
+            },
           });
         });
       }
@@ -448,27 +482,27 @@ export class TabModelViewerState extends TabState {
     this.ui3DRenderer.enabled = false;
   }
 
-  animate(delta: number = 0){
-    if(this.model){
-      if(this.currentAnimation != this.model.animationManager.currentAnimation){
+  animate(delta: number = 0) {
+    if (this.model) {
+      if (this.currentAnimation != this.model.animationManager.currentAnimation) {
         this.model.animationManager.currentAnimation = this.currentAnimation;
         this.model.animationManager.currentAnimationState = this.currentAnimationState;
       }
       const cachedAnimationState = this.model.animationManager.currentAnimationState;
-      if(!this.paused){
+      if (!this.paused) {
         const elapsed = this.currentAnimationState.elapsed;
         this.model.update(delta);
         let cElapsed = this.model.animationManager.currentAnimationState.elapsed;
-        if(isNaN(cElapsed)) cElapsed = elapsed;
-        if(cElapsed < elapsed && !this.looping) cElapsed = elapsed;
-      }else{
+        if (isNaN(cElapsed)) cElapsed = elapsed;
+        if (cElapsed < elapsed && !this.looping) cElapsed = elapsed;
+      } else {
         const elapsed = this.model.animationManager.currentAnimationState.elapsed;
         this.model.update(delta);
-        if(!isNaN(elapsed)){
+        if (!isNaN(elapsed)) {
           this.model.animationManager.currentAnimationState.elapsed = elapsed;
         }
       }
-      if(!this.model.animationManager.currentAnimationState){
+      if (!this.model.animationManager.currentAnimationState) {
         this.model.animationManager.currentAnimationState = cachedAnimationState;
       }
       this.currentAnimationState = this.model.animationManager.currentAnimationState;
@@ -483,33 +517,31 @@ export class TabModelViewerState extends TabState {
     this.processEventListener('onAnimate', [delta]);
   }
 
-  
-
-  keyframeTrackZoomIn(){
+  keyframeTrackZoomIn() {
     this.timelineZoom += 25;
 
-    if(this.timelineZoom > this.max_timeline_zoom){
+    if (this.timelineZoom > this.max_timeline_zoom) {
       this.timelineZoom = this.max_timeline_zoom;
     }
     this.processEventListener<TabModelViewerStateEventListenerTypes>('onKeyFrameTrackZoomIn', [this]);
   }
 
-  keyframeTrackZoomOut(){
+  keyframeTrackZoomOut() {
     this.timelineZoom -= 25;
 
-    if(this.timelineZoom < this.min_timeline_zoom){
+    if (this.timelineZoom < this.min_timeline_zoom) {
       this.timelineZoom = this.min_timeline_zoom;
     }
     this.processEventListener<TabModelViewerStateEventListenerTypes>('onKeyFrameTrackZoomOut', [this]);
   }
 
-  setAnimationByIndex(index: number = 0){
+  setAnimationByIndex(index: number = 0) {
     this.selectedAnimationIndex = index;
     const animation = this.animations[index];
-    if(animation){
+    if (animation) {
       this.model.playAnimation(animation, this.looping);
       this.currentAnimation = animation;
-    }else{
+    } else {
       this.selectedAnimationIndex = 0;
       this.currentAnimation = this.animations[0];
     }
@@ -520,17 +552,17 @@ export class TabModelViewerState extends TabState {
     this.processEventListener<TabModelViewerStateEventListenerTypes>('onKeyframeEditorChange', [this]);
   }
 
-  getCurrentAnimationLength(){
-    if(!this.currentAnimation) return 0;
+  getCurrentAnimationLength() {
+    if (!this.currentAnimation) return 0;
     return this.currentAnimation.length;
   }
 
-  getCurrentAnimationElapsed(){
-    if(!this.currentAnimationState) return 0;
+  getCurrentAnimationElapsed() {
+    if (!this.currentAnimationState) return 0;
     return this.currentAnimationState.elapsed;
   }
 
-  playAnimation(){
+  playAnimation() {
     // if(!this.currentAnimation){
     //   this.pause();
     //   return;
@@ -543,42 +575,42 @@ export class TabModelViewerState extends TabState {
     // this.play();
   }
 
-  stopAnimation(){
+  stopAnimation() {
     this.model.stopAnimation();
     this.pause();
   }
 
-  play(){
-    if(!this.currentAnimation) return;
+  play() {
+    if (!this.currentAnimation) return;
 
     this.paused = false;
-    if(this.currentAnimation != this.model.animationManager.currentAnimation){
+    if (this.currentAnimation != this.model.animationManager.currentAnimation) {
       this.model.playAnimation(this.currentAnimation, this.looping);
     }
     this.processEventListener('onPlay');
   }
 
-  pause(){
+  pause() {
     this.paused = true;
     this.processEventListener('onPause');
   }
 
-  stop(){
+  stop() {
     this.paused = true;
     this.stopAnimation();
   }
 
-  seek(time: number = 0){
-    if(this.currentAnimation && this.currentAnimationState){
-      if(time < 0) time = 0;
-      if(time > this.currentAnimation.length) time = this.currentAnimation.length;
+  seek(time: number = 0) {
+    if (this.currentAnimation && this.currentAnimationState) {
+      if (time < 0) time = 0;
+      if (time > this.currentAnimation.length) time = this.currentAnimation.length;
       this.currentAnimationState.elapsed = time;
     }
   }
 
-  setLooping(loop: boolean = false){
+  setLooping(loop: boolean = false) {
     this.looping = loop;
-    if(this.currentAnimation){
+    if (this.currentAnimation) {
       this.model.playAnimation(this.currentAnimation, this.looping);
     }
     this.processEventListener('onLoopChange', [this.looping]);
@@ -598,30 +630,30 @@ export class TabModelViewerState extends TabState {
     super.destroy();
   }
 
-  loadLayout(key?: KotOR.IKEYEntry){
+  loadLayout(key?: KotOR.IKEYEntry) {
     this.disposeLayout();
-    if(key) {
+    if (key) {
       // this.layoutSceneGraphNode
-      return new Promise<void>( async (resolve, reject) => {
+      return new Promise<void>(async (resolve, reject) => {
         const data = await KotOR.KEYManager.Key.getFileBuffer(key);
         // this.tab.tabLoader.SetMessage(`Loading: Layout...`);
         // this.tab.tabLoader.Show();
         const lyt = new KotOR.LYTObject(data);
         this.layout = lyt;
-        for(let i = 0, len = this.layout.rooms.length; i < len; i++){
-          let room = this.layout.rooms[i];
+        for (let i = 0, len = this.layout.rooms.length; i < len; i++) {
+          const room = this.layout.rooms[i];
           // this.tabLoader.SetMessage(`Loading: ${room.name}`);
-          let mdl = await KotOR.MDLLoader.loader.load(room.name);
-          if(mdl){
-            let model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
+          const mdl = await KotOR.MDLLoader.loader.load(room.name);
+          if (mdl) {
+            const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
               // manageLighting: false,
               context: this.ui3DRenderer,
               editorMode: true,
               mergeStatic: false,
               disableMatrixUpdate: false
             });
-            if(model){
-              model.position.copy( room.position )
+            if (model) {
+              model.position.copy(room.position);
               this.layout_group.add(model);
             }
           }
@@ -629,42 +661,43 @@ export class TabModelViewerState extends TabState {
             new SceneGraphNode({
               name: room.name,
             })
-          )
+          );
         }
         this.ui3DRenderer.sceneGraphManager.rebuild();
-        KotOR.TextureLoader.LoadQueue().then(() => {
-          if(this.ui3DRenderer.renderer)
-            this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);
-          // this.tab.tabLoader.Hide();
-          resolve();
-        }, (texObj: KotOR.ITextureLoaderQueuedRef) => {
-          if(texObj.material){
-            if(texObj.material instanceof THREE.ShaderMaterial){
-              if(texObj.material.uniforms.map.value){
-                // this.tabLoader.SetMessage(`Initializing Texture: ${texObj.name}`);
-                console.log('iniTexture', texObj.name);
+        KotOR.TextureLoader.LoadQueue().then(
+          () => {
+            if (this.ui3DRenderer.renderer)
+              this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);
+            // this.tab.tabLoader.Hide();
+            resolve();
+          },
+          (texObj: KotOR.ITextureLoaderQueuedRef) => {
+            if (texObj.material) {
+              if (texObj.material instanceof THREE.ShaderMaterial) {
+                if (texObj.material.uniforms.map.value) {
+                  // this.tabLoader.SetMessage(`Initializing Texture: ${texObj.name}`);
+                  console.log('iniTexture', texObj.name);
 
-                if(this.ui3DRenderer.renderer)
-                  this.ui3DRenderer.renderer.initTexture(texObj.material.uniforms.map.value);
+                  if (this.ui3DRenderer.renderer)
+                    this.ui3DRenderer.renderer.initTexture(texObj.material.uniforms.map.value);
+                }
               }
             }
           }
-        });
+        );
       });
     }
   }
 
-  
-
-  disposeLayout(){
+  disposeLayout() {
     this.layoutSceneGraphNode.setNodes([]);
     this.ui3DRenderer.sceneGraphManager.rebuild();
-    try{
-      if(this.layout_group.children.length){
+    try {
+      if (this.layout_group.children.length) {
         let modelIndex = this.layout_group.children.length - 1;
-        while(modelIndex >= 0){
-          let model = this.layout_group.children[modelIndex] as KotOR.OdysseyModel3D;
-          if(model){
+        while (modelIndex >= 0) {
+          const model = this.layout_group.children[modelIndex] as KotOR.OdysseyModel3D;
+          if (model) {
             model.dispose();
             this.layout_group.remove(model);
           }
@@ -672,17 +705,17 @@ export class TabModelViewerState extends TabState {
         }
       }
       // this.modelViewSideBarComponent.buildNodeTree();
-    }catch(e){
+    } catch (e) {
       console.error(e);
     }
     // this.layout = undefined;
   }
 
-  setRandomReferencePosition(spread: number = 1){
+  setRandomReferencePosition(spread: number = 1) {
     this.ui3DRenderer.referenceNode.position.set(
-      (Math.random()-0.5*2) * spread,
-      (Math.random()-0.5*2) * spread,
-      (Math.random()-0.5*2) * spread
+      (Math.random() - 0.5 * 2) * spread,
+      (Math.random() - 0.5 * 2) * spread,
+      (Math.random() - 0.5 * 2) * spread
     );
   }
 
@@ -1232,18 +1265,24 @@ export class TabModelViewerState extends TabState {
     };
 
     const { exportedFiles, skippedFiles, failedFiles } = await exportCollectedAssets(
-      allModels, allTextures, target, overrideFetch,
-      (cur, tot, msg) => progress.setProgress(cur, tot, msg),
+      allModels,
+      allTextures,
+      target,
+      overrideFetch,
+      (cur, tot, msg) => progress.setProgress(cur, tot, msg)
     );
 
-    showExtractionResults({
-      modelName,
-      modelCount: allModels.size,
-      textureCount: allTextures.size,
-      exportedFiles,
-      skippedFiles,
-      failedFiles,
-    }, progress);
+    showExtractionResults(
+      {
+        modelName,
+        modelCount: allModels.size,
+        textureCount: allTextures.size,
+        exportedFiles,
+        skippedFiles,
+        failedFiles,
+      },
+      progress
+    );
   }
 
   async exportOdysseyModelAscii(): Promise<void> {

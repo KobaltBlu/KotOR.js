@@ -14,19 +14,19 @@ export interface UI3DRendererViewProps {
   showMenuBar?: boolean;
 }
 
-export const UI3DRendererView = function(props: UI3DRendererViewProps){
+export const UI3DRendererView = function (props: UI3DRendererViewProps) {
   const canvasRef: React.RefObject<HTMLCanvasElement> = useRef<HTMLCanvasElement>() as any;
   const context = props.context;
 
   useEffectOnce(() => {
-    if(!(props.context instanceof UI3DRenderer)){
+    if (!(props.context instanceof UI3DRenderer)) {
       props.context = new UI3DRenderer(canvasRef.current as any);
     }
     return () => {
-      if(props.context){
+      if (props.context) {
         // props.context.destroy();
       }
-    }
+    };
   });
 
   // Refs do not trigger re-renders; [canvasRef.current] in deps never re-fires after the canvas mounts.
@@ -61,19 +61,19 @@ export const UI3DRendererView = function(props: UI3DRendererViewProps){
           ],
         },
       ],
-    }
+    },
   ];
 
   const menuItems = props.menuItems || defaultMenuItems;
 
   return (
-    <div className="UI3DRendererView-container" style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,}}>
+    <div className="UI3DRendererView-container" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
       {props.showMenuBar && <MenuBar items={menuItems} />}
-      <canvas 
-        ref={canvasRef} 
-        className="UI3DRendererView-canvas" 
-        tabIndex={1} 
-        style={{ 
+      <canvas
+        ref={canvasRef}
+        className="UI3DRendererView-canvas"
+        tabIndex={1}
+        style={{
           position: 'absolute',
           top: props.showMenuBar ? '24px' : 0,
           left: 0,
@@ -81,10 +81,9 @@ export const UI3DRendererView = function(props: UI3DRendererViewProps){
           bottom: 0,
           width: '100%',
           height: 'calc(100% - ' + (props.showMenuBar ? '24px' : '0') + ')',
-        }} 
+        }}
       />
       {props.children}
     </div>
   );
-
-}
+};

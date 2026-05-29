@@ -1,15 +1,15 @@
-import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
-import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import React from 'react';
+import { TabState } from '@/apps/forge/states/tabs/TabState';
+import BaseTabStateOptions from '@/apps/forge/interfaces/BaseTabStateOptions';
 
-import * as KotOR from "@/apps/forge/KotOR";
-import { TabAudioPlayer } from "@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer";
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabAudioPlayer } from '@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer';
 
 export class TabAudioPlayerState extends TabState {
   tabName: string = `Audio Player`;
   singleInstance: boolean = true;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
     this.setContentView(<TabAudioPlayer tab={this}></TabAudioPlayer>);
     this.openFile();
@@ -36,9 +36,7 @@ export class TabAudioPlayerState extends TabState {
     // ];
   }
 
-  public openFile(file?: any){
-    return new Promise<any>( (resolve, reject) => {
-      
-    });
+  public openFile(file?: any) {
+    return new Promise<any>((resolve, reject) => {});
   }
 }

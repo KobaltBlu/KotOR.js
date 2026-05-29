@@ -1,14 +1,13 @@
 /**
  * CExoLocSubString class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CExoLocSubString.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CExoLocSubString {
-
   language: number;
   gender: number;
   StringID: number;
@@ -30,7 +29,7 @@ export class CExoLocSubString {
   }
 
   GetStringID() {
-    return (this.language * 2) + this.gender;
+    return this.language * 2 + this.gender;
   }
 
   getString() {
@@ -49,10 +48,9 @@ export class CExoLocSubString {
     this.str = str;
   }
 
-  setStringID(StringID = 0){
+  setStringID(StringID = 0) {
     this.StringID = StringID;
     this.language = Math.floor(StringID / 2);
     this.gender = StringID % 2;
   }
-
 }

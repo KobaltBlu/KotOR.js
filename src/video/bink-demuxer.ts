@@ -1,4 +1,15 @@
-import { BinkAudioPacket, BinkAudioTrackInfo, BinkFormatError, BinkFrame, BinkFrameIndexEntry, BinkHeader, BinkVideoInfo, BINK_AUD_FLAGS, BINK_FLAGS, Rational } from '@/video/binktypes';
+import {
+  BinkAudioPacket,
+  BinkAudioTrackInfo,
+  BinkFormatError,
+  BinkFrame,
+  BinkFrameIndexEntry,
+  BinkHeader,
+  BinkVideoInfo,
+  BINK_AUD_FLAGS,
+  BINK_FLAGS,
+  Rational,
+} from '@/video/binktypes';
 import { readFourCCLE, readU16LE, readU32LE } from '@/video/uint';
 import { BitReaderLE } from '@/video/BitReaderLE';
 import { readTree } from '@/video/vlc';
@@ -13,9 +24,9 @@ function isBink2(tag: string): boolean {
 
 /**
  * BinkDemuxer class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BinkDemuxer.ts
  * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
  * @author KobaltBlu <https://github.com/KobaltBlu> (Modified for KotOR JS)
@@ -73,37 +84,49 @@ export class BinkDemuxer {
     const versionChar = codecTag.charAt(3);
     off += 4;
 
-    const file_size_le = readU32LE(view, off); off += 4; // ffmpeg adds 8 to get file size; we'll keep raw
-    const frames = readU32LE(view, off); off += 4;
+    const file_size_le = readU32LE(view, off);
+    off += 4; // ffmpeg adds 8 to get file size; we'll keep raw
+    const frames = readU32LE(view, off);
+    off += 4;
     if (frames > 1_000_000) throw new BinkFormatError('Too many frames (header corrupt)');
 
-    const maxFrameSize = readU32LE(view, off); off += 4;
-    const _largestCheck = readU32LE(view, off); off += 4; // skipped by ffmpeg
+    const maxFrameSize = readU32LE(view, off);
+    off += 4;
+    const _largestCheck = readU32LE(view, off);
+    off += 4; // skipped by ffmpeg
 
-    const width = readU32LE(view, off); off += 4;
-    const height = readU32LE(view, off); off += 4;
+    const width = readU32LE(view, off);
+    off += 4;
+    const height = readU32LE(view, off);
+    off += 4;
     if (width <= 0 || height <= 0 || width > 7680 || height > 4800) {
       throw new BinkFormatError(`Invalid resolution ${width}x${height}`);
     }
 
-    const fps_num = readU32LE(view, off); off += 4;
-    const fps_den = readU32LE(view, off); off += 4;
+    const fps_num = readU32LE(view, off);
+    off += 4;
+    const fps_den = readU32LE(view, off);
+    off += 4;
     if (fps_num === 0 || fps_den === 0) throw new BinkFormatError('Invalid fps');
 
     const fps: Rational = { num: fps_num, den: fps_den };
 
     // 4-byte extradata (flags)
-    const extradataFlags = readU32LE(view, off); off += 4;
+    const extradataFlags = readU32LE(view, off);
+    off += 4;
     const hasAlpha = (extradataFlags & BINK_FLAGS.ALPHA) !== 0;
     const grayscale = (extradataFlags & BINK_FLAGS.GRAY) !== 0;
 
-    const numAudioTracks = readU32LE(view, off); off += 4;
+    const numAudioTracks = readU32LE(view, off);
+    off += 4;
 
     const signatureLE = codecTag.substring(0, 3); // 'BIK' or 'KB2'
 
     // Conditional skip of unknown 4-byte field for late revisions
-    if ((signatureLE === 'BIK' && versionChar === 'k') ||
-        (signatureLE === 'KB2' && (versionChar === 'i' || versionChar === 'j' || versionChar === 'k'))) {
+    if (
+      (signatureLE === 'BIK' && versionChar === 'k') ||
+      (signatureLE === 'KB2' && (versionChar === 'i' || versionChar === 'j' || versionChar === 'k'))
+    ) {
       off += 4;
     }
 
@@ -115,8 +138,10 @@ export class BinkDemuxer {
 
       // Per-track params
       for (let i = 0; i < numAudioTracks; i++) {
-        const sampleRate = readU16LE(view, off); off += 2;
-        const flags = readU16LE(view, off); off += 2;
+        const sampleRate = readU16LE(view, off);
+        off += 2;
+        const flags = readU16LE(view, off);
+        off += 2;
         const stereo = (flags & BINK_AUD_FLAGS.STEREO) !== 0;
         const useDCT = (flags & BINK_AUD_FLAGS.USE_DCT) !== 0;
         const prefer16 = (flags & BINK_AUD_FLAGS.PREFER_16BITS) !== 0;
@@ -129,14 +154,16 @@ export class BinkDemuxer {
       }
       // Track IDs
       for (let i = 0; i < numAudioTracks; i++) {
-        const id = readU32LE(view, off); off += 4;
+        const id = readU32LE(view, off);
+        off += 4;
         audioTracks[i].id = id;
       }
     }
 
     // Frame index table
     const index: BinkFrameIndexEntry[] = [];
-    let next_pos = readU32LE(view, off); off += 4;
+    let next_pos = readU32LE(view, off);
+    off += 4;
     let next_keyframe_flag = 1; // first frame is keyframe
     for (let i = 0; i < frames; i++) {
       let pos = next_pos;
@@ -145,10 +172,12 @@ export class BinkDemuxer {
         next_pos = (file_size_le + 8) >>> 0; // end sentinel
         next_keyframe_flag = 0;
       } else {
-        next_pos = readU32LE(view, off); off += 4;
+        next_pos = readU32LE(view, off);
+        off += 4;
         next_keyframe_flag = next_pos & 1;
       }
-      pos &= ~1; const cleanNext = next_pos & ~1;
+      pos &= ~1;
+      const cleanNext = next_pos & ~1;
       if (cleanNext <= pos) throw new BinkFormatError('Invalid frame index table ordering');
       index.push({ pos, size: cleanNext - pos, keyframe: !!keyframe });
     }
@@ -178,7 +207,13 @@ export class BinkDemuxer {
 
   // Lightweight structural check: does this payload look like a Bink1 video packet header?
   // We read the same sequence of trees as PlaneContext.readAllTrees() for one plane (no row data).
-  public validateVideoHeader(pkt: Uint8Array, versionChar: string, hasAlpha: boolean, width: number, height: number): boolean {
+  public validateVideoHeader(
+    pkt: Uint8Array,
+    versionChar: string,
+    hasAlpha: boolean,
+    width: number,
+    height: number
+  ): boolean {
     try {
       const br = new BitReaderLE(pkt);
       // For revisions >= 'i', a 32-bit pad precedes the planes block
@@ -199,15 +234,22 @@ export class BinkDemuxer {
       // RUN
       readTree(br);
       // Additionally, read first row's bundle lengths (t) to ensure we actually have data for a row
-      const av_log2_ts = (x: number) => { let r = 0; while (x >>> 1) { x >>>= 1; r++; } return r; };
+      const av_log2_ts = (x: number) => {
+        let r = 0;
+        while (x >>> 1) {
+          x >>>= 1;
+          r++;
+        }
+        return r;
+      };
       const widthAligned = (width + 7) & ~7;
       const bw = (width + 7) >> 3;
-      const blen  = av_log2_ts((widthAligned >> 3) + 511) + 1;
+      const blen = av_log2_ts((widthAligned >> 3) + 511) + 1;
       const sblen = av_log2_ts((widthAligned >> 4) + 511) + 1;
-      const clen  = av_log2_ts(bw * 64 + 511) + 1;
-      const patlen= av_log2_ts((bw << 3) + 511) + 1;
+      const clen = av_log2_ts(bw * 64 + 511) + 1;
+      const patlen = av_log2_ts((bw << 3) + 511) + 1;
       const mvlen = av_log2_ts((widthAligned >> 3) + 511) + 1;
-      const runlen= av_log2_ts(bw * 48 + 511) + 1;
+      const runlen = av_log2_ts(bw * 48 + 511) + 1;
       // Order: BLOCK_TYPES, SUB_BLOCK_TYPES, COLORS, PATTERN, X_OFF, Y_OFF, INTRA_DC, INTER_DC, RUN
       br.readBits(blen);
       br.readBits(sblen);
@@ -232,7 +274,7 @@ export class BinkDemuxer {
     }
     const entry = h.index[frameIndex];
     const base = entry.pos + h.video.smushSkips; // account for SMUS wrapper
-    let off = base;
+    const off = base;
     const end = base + entry.size;
 
     const audio: BinkAudioPacket[] = [];
@@ -245,20 +287,50 @@ export class BinkDemuxer {
     // If caller forces video-first, skip audio-first attempt entirely
     if (opts?.forceVideoFirst) {
       const allVideoForced = this.bytes.subarray(off, end);
-      if (this.validateVideoHeader(allVideoForced, h.video.versionChar, h.video.hasAlpha, h.video.width, h.video.height)) {
+      if (
+        this.validateVideoHeader(allVideoForced, h.video.versionChar, h.video.hasAlpha, h.video.width, h.video.height)
+      ) {
         for (let t = 0; t < trackCount; t++) {
-          audio.push({ trackIndex: t, offset: off, size: 0, data: new Uint8Array(), ptsSamples: this.trackPtsSamples[t] | 0 });
+          audio.push({
+            trackIndex: t,
+            offset: off,
+            size: 0,
+            data: new Uint8Array(),
+            ptsSamples: this.trackPtsSamples[t] | 0,
+          });
         }
-        const video = { offset: off, size: end - off, keyframe: h.index[frameIndex].keyframe, data: allVideoForced, pts: frameIndex };
+        const video = {
+          offset: off,
+          size: end - off,
+          keyframe: h.index[frameIndex].keyframe,
+          data: allVideoForced,
+          pts: frameIndex,
+        };
         return { frameIndex, audio, video };
       }
       // Forced but invalid: emit no-op video
       for (let t = 0; t < trackCount; t++) {
-        audio.push({ trackIndex: t, offset: off, size: 0, data: new Uint8Array(), ptsSamples: this.trackPtsSamples[t] | 0 });
+        audio.push({
+          trackIndex: t,
+          offset: off,
+          size: 0,
+          data: new Uint8Array(),
+          ptsSamples: this.trackPtsSamples[t] | 0,
+        });
       }
       // eslint-disable-next-line no-console
       console.warn('[BINK][DEMUX] Forced video-first invalid; emitting video-noop for frame', frameIndex);
-      return { frameIndex, audio, video: { offset: end, size: 0, keyframe: h.index[frameIndex].keyframe, data: new Uint8Array(), pts: frameIndex } };
+      return {
+        frameIndex,
+        audio,
+        video: {
+          offset: end,
+          size: 0,
+          keyframe: h.index[frameIndex].keyframe,
+          data: new Uint8Array(),
+          pts: frameIndex,
+        },
+      };
     }
 
     // Attempt strict audio-first
@@ -270,9 +342,16 @@ export class BinkDemuxer {
 
     if (trackCount > 0) {
       for (let t = 0; t < trackCount; t++) {
-        if (tempOff + 4 > end) { afParsed = false; break; }
-        const audioSize = readU32LE(this.view, tempOff); tempOff += 4;
-        if (audioSize < 0 || audioSize > (end - tempOff)) { afParsed = false; break; }
+        if (tempOff + 4 > end) {
+          afParsed = false;
+          break;
+        }
+        const audioSize = readU32LE(this.view, tempOff);
+        tempOff += 4;
+        if (audioSize < 0 || audioSize > end - tempOff) {
+          afParsed = false;
+          break;
+        }
         const pktOffset = tempOff;
         const data = this.bytes.subarray(pktOffset, pktOffset + Math.max(0, audioSize));
         const pts = tempPts[t] | 0;
@@ -296,17 +375,35 @@ export class BinkDemuxer {
         // Audio-only frame: commit audio, no video payload
         for (const a of tempAudio) audio.push(a);
         this.trackPtsSamples = tempPts;
-        const video = { offset: end, size: 0, keyframe: h.index[frameIndex].keyframe, data: new Uint8Array(), pts: frameIndex };
+        const video = {
+          offset: end,
+          size: 0,
+          keyframe: h.index[frameIndex].keyframe,
+          data: new Uint8Array(),
+          pts: frameIndex,
+        };
         return { frameIndex, audio, video };
       }
       if (rem > 0) {
         const candidate = this.bytes.subarray(off + totalAudioBytes, end);
-        const valid = this.validateVideoHeader(candidate, h.video.versionChar, h.video.hasAlpha, h.video.width, h.video.height);
+        const valid = this.validateVideoHeader(
+          candidate,
+          h.video.versionChar,
+          h.video.hasAlpha,
+          h.video.width,
+          h.video.height
+        );
         if (valid) {
           // Accept audio-first; commit audio and PTS
           for (const a of tempAudio) audio.push(a);
           this.trackPtsSamples = tempPts;
-          const video = { offset: off + totalAudioBytes, size: rem, keyframe: h.index[frameIndex].keyframe, data: candidate, pts: frameIndex };
+          const video = {
+            offset: off + totalAudioBytes,
+            size: rem,
+            keyframe: h.index[frameIndex].keyframe,
+            data: candidate,
+            pts: frameIndex,
+          };
           return { frameIndex, audio, video };
         }
       }
@@ -322,9 +419,21 @@ export class BinkDemuxer {
     const allVideo = this.bytes.subarray(off, end);
     if (this.validateVideoHeader(allVideo, h.video.versionChar, h.video.hasAlpha, h.video.width, h.video.height)) {
       for (let t = 0; t < trackCount; t++) {
-        audio.push({ trackIndex: t, offset: off, size: 0, data: new Uint8Array(), ptsSamples: this.trackPtsSamples[t] | 0 });
+        audio.push({
+          trackIndex: t,
+          offset: off,
+          size: 0,
+          data: new Uint8Array(),
+          ptsSamples: this.trackPtsSamples[t] | 0,
+        });
       }
-      const video = { offset: off, size: end - off, keyframe: h.index[frameIndex].keyframe, data: allVideo, pts: frameIndex };
+      const video = {
+        offset: off,
+        size: end - off,
+        keyframe: h.index[frameIndex].keyframe,
+        data: allVideo,
+        pts: frameIndex,
+      };
       return { frameIndex, audio, video };
     }
 
@@ -334,12 +443,28 @@ export class BinkDemuxer {
       this.trackPtsSamples = tempPts;
     } else {
       for (let t = 0; t < trackCount; t++) {
-        audio.push({ trackIndex: t, offset: off, size: 0, data: new Uint8Array(), ptsSamples: this.trackPtsSamples[t] | 0 });
+        audio.push({
+          trackIndex: t,
+          offset: off,
+          size: 0,
+          data: new Uint8Array(),
+          ptsSamples: this.trackPtsSamples[t] | 0,
+        });
       }
     }
     // eslint-disable-next-line no-console
-    console.warn('[BINK][DEMUX] Unrecognized frame layout; treating as video-noop to preserve sync (frame', frameIndex, ').');
-    const video = { offset: end, size: 0, keyframe: h.index[frameIndex].keyframe, data: new Uint8Array(), pts: frameIndex };
+    console.warn(
+      '[BINK][DEMUX] Unrecognized frame layout; treating as video-noop to preserve sync (frame',
+      frameIndex,
+      ').'
+    );
+    const video = {
+      offset: end,
+      size: 0,
+      keyframe: h.index[frameIndex].keyframe,
+      data: new Uint8Array(),
+      pts: frameIndex,
+    };
     return { frameIndex, audio, video };
   }
 

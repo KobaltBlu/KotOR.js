@@ -19,8 +19,10 @@ export const SceneGraphTreeView = function (props: SceneGraphTreeViewProps) {
     setNodes([...built]);
   }, []);
 
-  useEffect( () => {
-    if(!manager){ return; }
+  useEffect(() => {
+    if (!manager) {
+      return;
+    }
     manager.addEventListener('onBuild', onBuild);
     // onBuild may have run before this component mounted (e.g. UI3DRenderer setCanvas); sync roots now.
     setNodes([...(manager.parentNodes ?? [])]);
@@ -39,7 +41,7 @@ export const SceneGraphTreeView = function (props: SceneGraphTreeViewProps) {
     }
     </ForgeTreeView>
   );
-}
+};
 
 export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props: any) {
   const manager: SceneGraphTreeViewManager = props.manager;
@@ -85,13 +87,13 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
   }, [node, onNameChange, onExpandStateChange, onNodesChange, onSelectStateChange]);
 
   const handleClick = useCallback(() => {
-    if(typeof node.onClick === 'function'){
+    if (typeof node.onClick === 'function') {
       node.onClick(node);
     }
   }, [node]);
 
   const handleToggle = useCallback(() => {
-    setOpenState(prev => !prev);
+    setOpenState((prev) => !prev);
   }, []);
 
   const handleDoubleClick = useCallback(() => {
@@ -102,22 +104,20 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
     // Add context menu logic if needed
   }, []);
 
-  const handleSelect = useCallback((nodeId: string) => {
-    if(typeof node.onClick === 'function'){
-      node.onClick(node);
-    }
-  }, [node]);
+  const handleSelect = useCallback(
+    (nodeId: string) => {
+      if (typeof node.onClick === 'function') {
+        node.onClick(node);
+      }
+    },
+    [node]
+  );
 
   // Memoize child nodes to prevent unnecessary re-renders
   const childNodes = useMemo(() => {
     if (!openState || !nodes.length) return null;
     return nodes.map((child: SceneGraphNode) => (
-      <SceneGraphTreeViewNode 
-        key={child.id} 
-        node={child} 
-        manager={manager}
-        depth={depth + 1}
-      />
+      <SceneGraphTreeViewNode key={child.id} node={child} manager={manager} depth={depth + 1} />
     ));
   }, [openState, nodes, manager, depth]);
 

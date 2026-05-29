@@ -1,4 +1,4 @@
-export * from "@/effects/GameEffect";
+export * from '@/effects/GameEffect';
 
 export * from "@/effects/EffectAbilityDecrease";
 export * from "@/effects/EffectAbilityIncrease";
