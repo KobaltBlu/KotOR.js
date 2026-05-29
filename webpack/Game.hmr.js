@@ -78,7 +78,11 @@ module.exports = {
       template: 'src/apps/game/index.hmr.html',
     }),
     new CopyPlugin({
-      patterns: [{ from: 'src/assets/icons/icon.ico', to: 'favicon.ico' }],
+      patterns: [
+        { from: 'src/assets/icons/icon.ico', to: 'favicon.ico' },
+        // Served from devServer static root (dist/) — required on fresh clones / CI without a prod build.
+        { from: 'node_modules/three/build/three.min.js', to: '../three.min.js' },
+      ],
     }),
   ],
   resolve: commonResolve,

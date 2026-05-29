@@ -148,12 +148,24 @@ async function resolveBrowserExecutable() {
   throw new Error('No Chromium executable found. Set PUPPETEER_EXECUTABLE_PATH.');
 }
 
+async function ensureDistAssets() {
+  const threeDest = path.join(ROOT, 'dist/three.min.js');
+  if (!fsSync.existsSync(threeDest)) {
+    await fs.mkdir(path.dirname(threeDest), { recursive: true });
+    await fs.copyFile(
+      path.join(ROOT, 'node_modules/three/build/three.min.js'),
+      threeDest,
+    );
+  }
+}
+
 async function main() {
   const originalProbe = await fs.readFile(PROBE_FILE, 'utf8');
   let server;
   let browser;
 
   try {
+    await ensureDistAssets();
     server = startDevServer();
     server.stdout.on('data', (chunk) => process.stdout.write(chunk));
     server.stderr.on('data', (chunk) => process.stderr.write(chunk));
