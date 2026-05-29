@@ -41,7 +41,7 @@ export class InGameComputer extends K1_InGameComputer {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.LB_MESSAGE.clearItems();
+      this.LB_MESSAGE.setItem(null);
       this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
       this.LB_REPLIES.onSelected = (entry: any, control: any, index: number) => {
         GameState.CutsceneManager.selectReplyAtIndex(index);

@@ -151,6 +151,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   speed_max: number = 0;
   xangle: number = 0;
   zangle: number = 0;
+  //@ts-ignore
   mesh: THREE.Points|THREE.Mesh;
   speed: number = 0;
 

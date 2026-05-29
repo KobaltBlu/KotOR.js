@@ -67,6 +67,12 @@ export class GUIListBox extends GUIControl {
   private cacheDirty = true;
   /** When false and no row animation, RTT can skip a frame (see {@link markListRttDirty}). */
   private listRttDirty = true;
+  /** While > 0, targetMesh is hidden and RTT publish is suppressed. Set via mutate(); cleared by commit(). */
+  private mutationDepth = 0;
+  /** When true, update() will publish as soon as all children report isTextureReady. */
+  private pendingPublish = false;
+  /** Incremented each commit(); frame-tick publish checks this to ignore stale commits from rapid hover. */
+  private publishGeneration = 0;
 
   static hexTextures: Map<string, OdysseyTexture>;
   static InitTextures: () => void;
@@ -172,6 +178,20 @@ export class GUIListBox extends GUIControl {
     if(!this.isVisible())
       return;
 
+    if (this.mutationDepth > 0) {
+      return;
+    }
+
+    // Frame-tick publish: wait until all row controls report their textures ready
+    if (this.pendingPublish) {
+      const allReady = this.children.every(c => c.isTextureReady);
+      if (allReady) {
+        this.pendingPublish = false;
+        this._doPublish();
+      }
+      return;
+    }
+
     const wantsAnimated = this.children.some(c =>
       c.pulsing || (c.hover && c.isClickable()),
     );
@@ -186,6 +206,141 @@ export class GUIListBox extends GUIControl {
 
   markListRttDirty(): void {
     this.listRttDirty = true;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Mutation API — the only public way to change list contents
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Replace the entire list with `nodes`, then publish the RTT once all row
+   * textures are ready. Uses `getItemOptions` for per-row callbacks or
+   * `itemOptions` as a shared fallback. Selects `selectIndex` after publish.
+   */
+  setItems(nodes: readonly any[], options: GUIListItemCallbacks & {
+    getItemOptions?: (node: any, index: number) => GUIListItemCallbacks;
+    selectIndex?: number;
+  } = {} as any): void {
+    const { getItemOptions, selectIndex, ...sharedOpts } = options as any;
+    this.mutate((tx) => {
+      tx.clear();
+      for (let i = 0; i < nodes.length; i++) {
+        tx.add(nodes[i], getItemOptions ? getItemOptions(nodes[i], i) : sharedOpts);
+      }
+    });
+    if (typeof selectIndex === 'number' && selectIndex >= 0) {
+      // Applied after commit; children are populated during mutate
+      if (this.children[selectIndex]) {
+        this.select(this.children[selectIndex]);
+      }
+    }
+  }
+
+  /**
+   * Replace the list with zero or one row. Passing `null`/`undefined`/empty
+   * string clears the list. Accepts the same node types as {@link setItems}.
+   */
+  setItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): void {
+    const nodes = (node != null && node !== '') ? [node] : [];
+    this.setItems(nodes, options);
+  }
+
+  /**
+   * Low-level escape hatch for custom multi-step builds (e.g. equipment slot
+   * lists with mixed node types). The transaction object provides `clear` and
+   * `add` that operate under mutation suppression; `commit` fires automatically
+   * when `fn` returns.
+   */
+  mutate(fn: (tx: { clear(): void; add(node: any, options?: GUIListItemCallbacks): GUIControl }) => void): void {
+    this.mutationDepth++;
+    if (this.mutationDepth === 1) {
+      this.targetMesh.visible = false;
+    }
+    const tx = {
+      clear: () => this._clearItems(),
+      add: (node: any, opts?: GUIListItemCallbacks) => this._addItem(node, opts ?? {} as GUIListItemCallbacks),
+    };
+    fn(tx);
+    this._commit();
+  }
+
+  /**
+   * Append items without clearing first. Used for incremental additions such
+   * as dialog reply rows or music playlist rows.
+   */
+  appendItems(nodes: readonly any[], options: GUIListItemCallbacks & {
+    getItemOptions?: (node: any, index: number) => GUIListItemCallbacks;
+  } = {} as any): void {
+    const { getItemOptions, ...sharedOpts } = options as any;
+    this.mutate((tx) => {
+      for (let i = 0; i < nodes.length; i++) {
+        tx.add(nodes[i], getItemOptions ? getItemOptions(nodes[i], i) : sharedOpts);
+      }
+    });
+  }
+
+  /** Append a single item without clearing first. */
+  appendItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): void {
+    this.appendItems([node], options);
+  }
+
+  /** Remove a row by its node object and re-publish. */
+  removeItem(node: any): void {
+    const index = this.listItems.indexOf(node);
+    if (index >= 0) {
+      this.removeItemAt(index);
+    }
+  }
+
+  /** Remove a row by index and re-publish. */
+  removeItemAt(index: number): void {
+    if (index >= 0 && index < this.children.length) {
+      const removed = this.children[index];
+      removed.widget.parent?.remove(removed.widget);
+      this.children.splice(index, 1);
+      if (index < this.listItems.length) {
+        this.listItems.splice(index, 1);
+      }
+      if (this.selectedItem === removed) {
+        this.selectedItem = undefined;
+        if (this.children.length > 0) {
+          this.select(this.children[Math.min(index, this.children.length - 1)]);
+        }
+      }
+      this.invalidateHeightCache();
+      this.updateList();
+      this.updateScrollbarVisibility();
+      this.markListRttDirty();
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Internal implementation
+  // ---------------------------------------------------------------------------
+
+  private _commit(): void {
+    this.mutationDepth = 0;
+    this.publishGeneration++;
+    this.pendingPublish = true;
+    // Scrollbar reset after clear
+    if (this.scrollbar) {
+      this.scrollbar.scrollPos = 0;
+    }
+  }
+
+  private _doPublish(): void {
+    this.updateList();
+    if (this.scrollbar) {
+      this.scrollbar.update();
+    }
+    this.updateScrollbarVisibility();
+    this.listRttDirty = false;
+    this.render();
+    this.targetMesh.visible = true;
+  }
+
+  refreshAfterTextures(): void {
+    this.markListRttDirty();
   }
 
   render(){
@@ -218,7 +373,7 @@ export class GUIListBox extends GUIControl {
 
   }
 
-  clearItems(){
+  private _clearItems(){
     for (let i = this.itemGroup.children.length - 1; i >= 0; i--) {
       this.itemGroup.remove(this.itemGroup.children[i]);
     }
@@ -228,30 +383,10 @@ export class GUIListBox extends GUIControl {
     this.maxScroll = 0;
     this.invalidateHeightCache();
     this.updateScrollbarVisibility();
-    this.render();
   }
 
   removeItemByIndex(index = -1){
-    if(index >= 0 && index < this.children.length){
-      const removed = this.children[index];
-      removed.widget.parent.remove(removed.widget);
-      this.children.splice(index, 1);
-      if(index < this.listItems.length){
-        this.listItems.splice(index, 1);
-      }
-
-      if(this.selectedItem === removed){
-        this.selectedItem = undefined;
-        if(this.children.length > 0){
-          const newIndex = Math.min(index, this.children.length - 1);
-          this.select(this.children[newIndex]);
-        }
-      }
-
-      this.invalidateHeightCache();
-      this.updateList();
-      this.updateScrollbarVisibility();
-    }
+    this.removeItemAt(index);
   }
 
   getProtoItemType(){
@@ -263,7 +398,7 @@ export class GUIListBox extends GUIControl {
     this.GUIProtoItemClass = ctor;
   }
 
-  addItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): GUIControl {
+  private _addItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): GUIControl {
     const control = this.protoItem;
     const type = control.type;
 
@@ -304,6 +439,7 @@ export class GUIListBox extends GUIControl {
       ctrl.border.color = ctrl.defaultColor.clone();
       
       const widget = ctrl.createControl();
+      ctrl.setList(this);
 
       this.itemGroup.add(widget);
           
@@ -324,12 +460,6 @@ export class GUIListBox extends GUIControl {
     }
 
     this.invalidateHeightCache();
-    this.updateList();
-    if(this.scrollbar) {
-      this.scrollbar.update();
-    }
-    // Update scrollbar visibility after adding item
-    this.updateScrollbarVisibility();
 
     return this.children[idx];
   }
@@ -411,18 +541,11 @@ export class GUIListBox extends GUIControl {
   }
 
   removeItemByNode(node: any){
-    const index = this.listItems.indexOf(node);
-    if(index >= 0){
-      this.removeItemByIndex(index);
-    }
+    this.removeItem(node);
   }
 
   rebuildItems() {
-    const items = this.listItems.slice();
-    this.clearItems();
-    for(let i = 0; i < items.length; i++){
-      this.addItem(items[i]);
-    }
+    this.setItems(this.listItems.slice());
   }
 
   listMarginTop = 0;

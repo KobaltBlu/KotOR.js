@@ -98,21 +98,13 @@ export class MainMovies extends GameMenu {
       }
 
       this.movieList.sort((a, b) => a.order - b.order);
-      for(const movie of this.movieList){
-        this.LB_MOVIES.addItem(new GUIMovieItem(movie));
-      }
-      this.LB_MOVIES.updateList();
       resolve();
     });
   }
 
   show(){
     super.show();
-    this.LB_MOVIES.clearItems();
-    for(const movie of this.movieList){
-      this.LB_MOVIES.addItem(new GUIMovieItem(movie));
-    }
-    this.LB_MOVIES.updateList();
+    this.LB_MOVIES.setItems(this.movieList.map(m => new GUIMovieItem(m)));
     this.LB_MOVIES.show();
   }
   

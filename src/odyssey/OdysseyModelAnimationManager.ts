@@ -206,7 +206,7 @@ export class OdysseyModelAnimationManager {
       for(let i = 0, nl = anim.nodes.length; i < nl; i++){
         node = anim.nodes[i];
         if(this.trans){
-          this.updateAnimationNode(this.lastAnimation, this.lastAnimation.nodes.find( n => n.nodePosition == node.nodePosition ), this.lastAnimationState, false);
+          this.updateAnimationNode(this.lastAnimation, this.lastAnimation.nodes.find( n => n.nodeNumber == node.nodeNumber ), this.lastAnimationState, false);
         }
         this.updateAnimationNode(anim, node, state, this.trans);
       }

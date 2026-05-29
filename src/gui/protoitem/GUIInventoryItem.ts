@@ -30,6 +30,9 @@ export class GUIInventoryItem extends GUIProtoItem {
   iconMaterial: THREE.SpriteMaterial;
   iconSprite: THREE.Sprite;
 
+  /** True once the async icon texture load has been queued. */
+  private _iconLoadStarted = false;
+
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.listRowAlignExtentToWrappedText = false;
@@ -108,14 +111,6 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.iconMaterial.transparent = true;
       this.iconMaterial.visible = false;
       this.iconSprite = new THREE.Sprite( this.iconMaterial );
-      //console.log(this.node.getIcon());
-      TextureLoader.Load(this.node.getIcon()).then((texture: OdysseyTexture) => {
-        if(texture){
-          this.iconMaterial.map = texture;
-          this.iconMaterial.needsUpdate = true;
-          this.iconMaterial.visible = true;
-        }
-      });
 
       this.spriteGroup = new THREE.Group();
       this.iconSprite.scale.x = iconWidth * 0.90;
@@ -186,6 +181,10 @@ export class GUIInventoryItem extends GUIProtoItem {
 
       //StackCount Text
       _buttonIconWidget.add(this.spriteGroup);
+
+      // initTextures() can finish in the constructor before node is set; queue icon load here.
+      this._loadIcon();
+
       return this.widget;
     }catch(e){
       console.error(e);
@@ -215,6 +214,32 @@ export class GUIInventoryItem extends GUIProtoItem {
       }
     }
     this.needsUpdate = false;
+  }
+
+  protected onTexturesReady(): void {
+    this._loadIcon();
+  }
+
+  /** Loads item icon after template textures; safe to call from onTexturesReady or createControl. */
+  private _loadIcon(): void {
+    if (!this.node || !this.iconMaterial || this._iconLoadStarted) {
+      return;
+    }
+    const iconName = this.node.getIcon();
+    if (!iconName) {
+      this.invalidateListRtt();
+      return;
+    }
+    this._iconLoadStarted = true;
+    this._beginTextureLoad();
+    TextureLoader.Load(iconName).then((texture: OdysseyTexture) => {
+      if (texture) {
+        this.iconMaterial.map = texture;
+        this.iconMaterial.needsUpdate = true;
+        this.iconMaterial.visible = true;
+      }
+      this._endTextureLoad();
+    });
   }
 
 }

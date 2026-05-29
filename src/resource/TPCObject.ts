@@ -172,15 +172,14 @@ export class TPCObject {
             byteArray = rawBuffer;
           }
   			} else {
-          if(this.header.encoding == ENCODING.RGB){
-            dataLength = Math.max(this.header.minDataSize, width * height * 0.5);
-            dataLength = Math.max(this.header.minDataSize, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * this.header.minDataSize);
-          }else if(this.header.encoding == ENCODING.RGBA){
-            dataLength = Math.max(this.header.minDataSize, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * this.header.minDataSize);
-          }
+          dataLength = Math.max(
+            this.header.minDataSize,
+            TPCObject.getCompressedMipByteLength(width, height, this.header.encoding)
+          );
           byteArray = this.file.slice(dataOffset, dataOffset + dataLength);
           if(!compressMipMaps){
-            byteArray = dxtJs.decompress(byteArray, width, height, this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5 );
+            const dxtFlag = this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5;
+            byteArray = Uint8Array.from(dxtJs.decompress(byteArray, width, height, dxtFlag));
           }
   			}
 

@@ -35,4 +35,9 @@ export interface IOdysseyModelHeader {
   smoothingGroupsInFile: boolean;
 
   superModelName: string;
+
+  animRootOffset: number;
+  headerPaddingAC: number;
+  mdxSize: number;
+  mdxOffset: number;
 }

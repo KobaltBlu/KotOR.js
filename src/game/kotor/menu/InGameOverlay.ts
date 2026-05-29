@@ -185,6 +185,7 @@ export class InGameOverlay extends GameMenu {
       //this.TB_STEALTH.hideBorder();
       //this.TB_PAUSE.hideBorder();
       //this.TB_SOLO.hideBorder();
+      this.LBL_MENUBG.setDepthMode(2);
 
       this.LBL_LIGHTSHIFT?.hide();
       this.LBL_DARKSHIFT?.hide();

@@ -79,27 +79,16 @@ export class MenuUpgradeItems extends GameMenu {
 
   setSelected(item: ModuleItem) {
     this.selected = item;
-    this.LB_DESCRIPTION.clearItems();
-    if(item){
-      this.LB_DESCRIPTION.addItem(item.getDescription());
-    }
+    this.LB_DESCRIPTION.setItem(item ? item.getDescription() : null);
   }
 
   open() {
     super.open();
-    this.LB_ITEMS.clearItems();
-    this.LB_DESCRIPTION.clearItems();
+    this.LB_DESCRIPTION.setItem(null);
     this.selected = undefined;
 
-    const inventory = GameState.InventoryManager.getInventory();
-    for(let i = 0, len = inventory.length; i < len; i++){
-      const item = inventory[i];
-
-      if(!this.checkItem(item)){
-        continue;
-      }
-      this.LB_ITEMS.addItem(item);
-    }
+    const inventory = GameState.InventoryManager.getInventory().filter(item => this.checkItem(item));
+    this.LB_ITEMS.setItems(inventory);
   }
   
 }

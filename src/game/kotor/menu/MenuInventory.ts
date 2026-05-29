@@ -1,7 +1,6 @@
 
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
-import { TextureLoader } from "@/loaders";
 import { ModuleItem } from "@/module";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import { GameState } from "@/GameState";
@@ -86,18 +85,13 @@ export class MenuInventory extends GameMenu {
 
   UpdateSelected(){
     if(this.selected instanceof ModuleItem){
-      this.LB_DESCRIPTION?.clearItems();
-      this.LB_DESCRIPTION?.addItem(this.selected.getDescription());
+      this.LB_DESCRIPTION?.setItem(this.selected.getDescription());
     }
   }
 
   filterInventory(){
-    this.LB_ITEMS.clearItems();
-    let inv = GameState.InventoryManager.getNonQuestInventory();
-    for (let i = 0; i < inv.length; i++) {
-      this.LB_ITEMS.addItem(inv[i]);
-    }
-    TextureLoader.LoadQueue();
+    const inv = GameState.InventoryManager.getNonQuestInventory();
+    this.LB_ITEMS.setItems(inv);
   }
 
   updateCharacterStats(){

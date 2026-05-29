@@ -176,7 +176,7 @@ function createAsciiShell(): OdysseyModel {
   m.nodes = new Map();
   m.animations = [];
   m.namesArrayDefinition = { offset: 0, count: 0, count2: 0 };
-  m.nameOffsetsArray = [];
+  m.nameOffsetsArray = new Uint32Array(0);
   return m;
 }
 
@@ -473,8 +473,8 @@ function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAs
     } else if (w === "constraints" && mesh instanceof OdysseyModelNodeDangly) {
       const nc = s.takeInt();
       const dang = mesh as OdysseyModelNodeDangly;
-      dang.constraints = [];
-      for (let i = 0; i < nc; i++) dang.constraints.push(s.takeNumber());
+        dang.constraints = new Float32Array(0);
+      for (let i = 0; i < nc; i++) dang.constraints[i] = s.takeNumber();
     } else if (w === "aabb" && mesh instanceof OdysseyModelNodeAABB) {
       const aabb = mesh as OdysseyModelNodeAABB;
       const root = parseAabbPreorder(s, aabb.faces ?? []);
@@ -810,7 +810,7 @@ function parseKeyedList(
       }
     } else if (type === OdysseyModelControllerType.Scale) {
       frames.push({ time, value: vals[0] ?? 0 } as IOdysseyControllerFrameGeneric);
-    } else if (spec.bezier && type !== OdysseyModelControllerType.Position && type !== OdysseyModelControllerType.Orientation) {
+    } else if (spec.bezier && type !== OdysseyModelControllerType.Position && type !== OdysseyModelControllerType.Orientation && type !== OdysseyModelControllerType.Scale) {
       if (defaultCols === 3) {
         frames.push({
           time,
@@ -986,13 +986,12 @@ function parseGeometry(model: OdysseyModel, s: MdlAsciiTokenStream): void {
       node.name = nodeName;
       node.setType(nodeKindToType(kind));
       const ni = model.names.indexOf(nodeName);
-      node.nodePosition = ni >= 0 ? ni : 0;
-      node.supernode = 0;
+      node.nameIndex = ni >= 0 ? ni : 0;
       node.padding = 0;
       node.offsetToRoot = 0;
       node.offsetToParent = 0;
       node.childArrayDefinition = { offset: 0, count: 0, count2: 0 };
-      node.childOffsets = [];
+      node.childOffsets = new Uint32Array(0);
       node.controllerArrayDefinition = { offset: 0, count: 0, count2: 0 };
       node.controllerDataArrayDefinition = { offset: 0, count: 0, count2: 0 };
       let parentName = "null";
