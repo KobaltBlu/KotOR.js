@@ -44,6 +44,20 @@ describe('LoaderProgressTracker', () => {
       total: 4,
     });
   });
+
+  it('updates message via setMessage without changing counts', () => {
+    const emissions: ILoaderProgress[] = [];
+    const tracker = new LoaderProgressTracker((p) => emissions.push(p), 'Phase one');
+
+    tracker.begin(5);
+    tracker.setMessage('Loading BIFs');
+
+    expect(emissions[emissions.length - 1]).toEqual({
+      message: 'Loading BIFs',
+      completed: 0,
+      total: 5,
+    });
+  });
 });
 
 describe('formatLoaderEta', () => {
@@ -54,6 +68,10 @@ describe('formatLoaderEta', () => {
   it('formats seconds and minutes', () => {
     expect(formatLoaderEta(45)).toBe('45s remaining');
     expect(formatLoaderEta(125)).toBe('2m 5s remaining');
+  });
+
+  it('formats hours', () => {
+    expect(formatLoaderEta(3665)).toBe('1h 1m remaining');
   });
 
   it('returns empty string for invalid input', () => {
