@@ -89,6 +89,11 @@ export class ForgeInitializer {
 
   static SetLoadingMessage(message: string){
     ForgeInitializer.ProcessEventListener('on-loader-message', [message]);
+    ForgeInitializer.ProcessEventListener('on-loader-progress', [null]);
+  }
+
+  static SetLoadingProgress(progress: import('@/apps/common/loader/LoaderProgress').ILoaderProgress) {
+    ForgeInitializer.ProcessEventListener('on-loader-progress', [progress]);
   }
 
   static async Init(game: KotOR.GameEngineType){

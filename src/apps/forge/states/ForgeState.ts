@@ -16,6 +16,7 @@ import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
+import { ILoaderProgress } from '@/apps/common/loader/LoaderProgress';
 import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
 import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
 import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
@@ -114,6 +115,12 @@ export class ForgeState {
    */
   static loaderMessage(message: string): void {
     ForgeState.processEventListener('on-loader-message', [message]);
+    ForgeState.processEventListener('on-loader-progress', [null]);
+  }
+
+  static loaderProgress(progress: ILoaderProgress): void {
+    ForgeState.processEventListener('on-loader-message', [progress.message]);
+    ForgeState.processEventListener('on-loader-progress', [progress]);
   }
 
   static async InitializeApp(): Promise<void>{
@@ -137,6 +144,13 @@ export class ForgeState {
       KotOR.GameState.GameKey = KotOR.ApplicationProfile.GameKey;
       ForgeInitializer.AddEventListener('on-loader-message', (message: string) => {
         ForgeState.loaderMessage(message);
+      });
+      ForgeInitializer.AddEventListener('on-loader-progress', (progress: ILoaderProgress | null) => {
+        if (progress) {
+          ForgeState.loaderProgress(progress);
+        } else {
+          ForgeState.processEventListener('on-loader-progress', [null]);
+        }
       });
       ForgeInitializer.Init(KotOR.ApplicationProfile.GameKey).then( async () => {
         await this.initNWScriptParser();

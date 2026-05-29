@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as KotOR from "@/apps/game/KotOR";
 import pLimit from "p-limit";
+import { ILoaderProgress, LoaderProgressTracker } from '@/apps/common/loader/LoaderProgress';
 
 const fsLimit = pLimit(16);
 
@@ -92,6 +93,11 @@ export class GameInitializer {
 
   static SetLoadingMessage(message: string){
     GameInitializer.ProcessEventListener('on-loader-message', [message]);
+    GameInitializer.ProcessEventListener('on-loader-progress', [null]);
+  }
+
+  static SetLoadingProgress(progress: ILoaderProgress) {
+    GameInitializer.ProcessEventListener('on-loader-progress', [progress]);
   }
 
   static async Init(game: KotOR.GameEngineType){
@@ -246,14 +252,32 @@ export class GameInitializer {
   }
 
   static async LoadGameResources(){
-    GameInitializer.SetLoadingMessage("Loading Assets");
-    const promises = [
-      GameInitializer.LoadOverride(), 
-      GameInitializer.LoadRIMs(), 
-      GameInitializer.Load2DAs(), 
-      GameInitializer.LoadTexturePacks()
-    ];
-    await Promise.all(promises);
+    const tracker = new LoaderProgressTracker(
+      (progress) => GameInitializer.SetLoadingProgress(progress),
+      'Loading Assets',
+    );
+    tracker.begin(4, 'Loading Assets');
+
+    tracker.setMessage('Loading Override...');
+    tracker.itemStart('Override');
+    await GameInitializer.LoadOverride();
+    tracker.itemComplete();
+
+    tracker.setMessage('Loading RIMs...');
+    tracker.itemStart('RIMs');
+    await GameInitializer.LoadRIMs();
+    tracker.itemComplete();
+
+    tracker.setMessage('Loading 2DA tables...');
+    tracker.itemStart('2DA');
+    await GameInitializer.Load2DAs();
+    tracker.itemComplete();
+
+    tracker.setMessage('Loading texture packs...');
+    tracker.itemStart('TexturePacks');
+    await GameInitializer.LoadTexturePacks();
+    tracker.itemComplete();
+
     const nonBlockingPromises = [
       GameInitializer.LoadGameAudioResources('streammusic'), 
       GameInitializer.LoadGameAudioResources('streamsounds'), 

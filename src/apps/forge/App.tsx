@@ -29,6 +29,7 @@ export const App = (props: any) => {
   const [showGrantModal, setShowGrantModal] = appContext.showGrantModal;
   const [showLoadingScreen] = appContext.showLoadingScreen;
   const [loadingScreenMessage] = appContext.loadingScreenMessage;
+  const [loadingScreenProgress] = appContext.loadingScreenProgress;
   const [loadingScreenBackgroundURL] = appContext.loadingScreenBackgroundURL;
   const [loadingScreenLogoURL] = appContext.loadingScreenLogoURL;
   const [isDragOver, setIsDragOver] = useState(false);
@@ -384,7 +385,13 @@ export const App = (props: any) => {
       </div>
       <ModalManager manager={ForgeState.modalManager}></ModalManager>
       <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
-      <LoadingScreen active={showLoadingScreen} message={loadingScreenMessage} backgroundURL={loadingScreenBackgroundURL} logoURL={loadingScreenLogoURL} />
+      <LoadingScreen
+        active={showLoadingScreen}
+        message={loadingScreenMessage}
+        progress={loadingScreenProgress}
+        backgroundURL={loadingScreenBackgroundURL}
+        logoURL={loadingScreenLogoURL}
+      />
     </>
   );
 

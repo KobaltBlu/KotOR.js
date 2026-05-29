@@ -40,7 +40,52 @@
     font-family: sans-serif;
     text-align: center;
   }
-  
+  .loading-message {
+    max-width: min(90vw, 900px);
+    margin: 0 auto;
+    padding: 0 16px;
+    box-sizing: border-box;
+  }
+
+  .loading-message-text {
+    color: #fff;
+    font-size: 18pt;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 12px;
+  }
+
+  .loading-progress {
+    font-size: 11pt;
+  }
+
+  .loading-progress-track {
+    height: 8px;
+    border: 1px solid rgba(33, 135, 231, 0.9);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    box-shadow: 0 0 12px rgba(33, 135, 231, 0.35);
+  }
+
+  .loading-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, rgba(0, 183, 229, 0.95), rgba(33, 135, 231, 0.95));
+    transition: width 0.15s ease-out;
+  }
+
+  .loading-progress-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 8px;
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 10pt;
+    font-variant-numeric: tabular-nums;
+  }
+
   .background {
     display: block;
     position: absolute;

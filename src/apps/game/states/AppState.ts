@@ -2,6 +2,7 @@ import * as KotOR from "@/apps/game/KotOR";
 import { Launcher } from "@/apps/launcher/context/Launcher";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { GameInitializer } from "@/apps/game/GameInitializer";
+import { ILoaderProgress } from '@/apps/common/loader/LoaderProgress';
 
 export class AppState {
   static eulaAccepted: boolean = false;
@@ -161,6 +162,12 @@ export class AppState {
    */
   static loaderMessage(message: string): void {
     AppState.processEventListener('on-loader-message', [message]);
+    AppState.processEventListener('on-loader-progress', [null]);
+  }
+
+  static loaderProgress(progress: ILoaderProgress): void {
+    AppState.processEventListener('on-loader-message', [progress.message]);
+    AppState.processEventListener('on-loader-progress', [progress]);
   }
 
   /**
@@ -180,6 +187,13 @@ export class AppState {
     KotOR.TextureLoader.GameKey = KotOR.GameState.GameKey;
     GameInitializer.AddEventListener('on-loader-message', (message: string) => {
       AppState.loaderMessage(message);
+    });
+    GameInitializer.AddEventListener('on-loader-progress', (progress: ILoaderProgress | null) => {
+      if (progress) {
+        AppState.loaderProgress(progress);
+      } else {
+        AppState.processEventListener('on-loader-progress', [null]);
+      }
     });
     GameInitializer.AddEventListener('on-loader-show', () => {
       AppState.loaderShow();

@@ -4,6 +4,7 @@ import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
 import { LoadingScreenProvider } from "@/apps/forge/context/LoadingScreenContext";
 
 import * as KotOR from "@/apps/forge/KotOR";
+import { ILoaderProgress } from '@/apps/common/loader/LoaderProgress';
 
 export interface AppProviderValues {
   // someValue: [any, React.Dispatch<any>];
@@ -12,6 +13,7 @@ export interface AppProviderValues {
   showGrantModal: [boolean, React.Dispatch<any>];
   showLoadingScreen: [boolean, React.Dispatch<any>];
   loadingScreenMessage: [string, React.Dispatch<any>];
+  loadingScreenProgress: [ILoaderProgress | null, React.Dispatch<ILoaderProgress | null>];
   loadingScreenBackgroundURL: [string, React.Dispatch<any>];
   loadingScreenLogoURL: [string, React.Dispatch<any>];
 }
@@ -27,12 +29,21 @@ export const AppProvider = (props: any) => {
   const [showGrantModal, setShowGrantModal] = useState<boolean>(false);
   const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(false);
   const [loadingScreenMessage, setLoadingScreenMessage] = useState<string>('');
+  const [loadingScreenProgress, setLoadingScreenProgress] = useState<ILoaderProgress | null>(null);
   const [loadingScreenBackgroundURL, setLoadingScreenBackgroundURL] = useState<string>('');
   const [loadingScreenLogoURL, setLoadingScreenLogoURL] = useState<string>('');
 
   const onLoadingScreenMessage = (message: string) => {
     setLoadingScreenMessage(message);
-  }
+    setLoadingScreenProgress(null);
+  };
+
+  const onLoadingScreenProgress = (progress: ILoaderProgress | null) => {
+    setLoadingScreenProgress(progress);
+    if (progress?.message) {
+      setLoadingScreenMessage(progress.message);
+    }
+  };
   const onLoadingScreenShow = () => {
     setShowLoadingScreen(true);
   }
@@ -47,11 +58,13 @@ export const AppProvider = (props: any) => {
   useEffect(() => { 
     // ForgeState.tabManager = tabManager;
     ForgeState.addEventListener('on-loader-message', onLoadingScreenMessage);
+    ForgeState.addEventListener('on-loader-progress', onLoadingScreenProgress);
     ForgeState.addEventListener('on-loader-show', onLoadingScreenShow);
     ForgeState.addEventListener('on-loader-hide', onLoadingScreenHide);
     ForgeState.addEventListener('on-loader-init', onLoadingScreenInit);
     return () => {
       ForgeState.removeEventListener('on-loader-message', onLoadingScreenMessage);
+      ForgeState.removeEventListener('on-loader-progress', onLoadingScreenProgress);
       ForgeState.removeEventListener('on-loader-show', onLoadingScreenShow);
       ForgeState.removeEventListener('on-loader-hide', onLoadingScreenHide);
       ForgeState.removeEventListener('on-loader-init', onLoadingScreenInit);
@@ -64,6 +77,7 @@ export const AppProvider = (props: any) => {
     showGrantModal: [showGrantModal, setShowGrantModal],
     showLoadingScreen: [showLoadingScreen, setShowLoadingScreen],
     loadingScreenMessage: [loadingScreenMessage, setLoadingScreenMessage],
+    loadingScreenProgress: [loadingScreenProgress, setLoadingScreenProgress],
     loadingScreenBackgroundURL: [loadingScreenBackgroundURL, setLoadingScreenBackgroundURL],
     loadingScreenLogoURL: [loadingScreenLogoURL, setLoadingScreenLogoURL],
   };
