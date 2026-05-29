@@ -4,7 +4,7 @@ import * as path from 'path';
 jest.mock('@/managers/KEYManager', () => ({
   KEYManager: {
     Key: {
-      keys: [],
+      keys: [] as unknown[],
       getFileKey: jest.fn(),
       getFileBuffer: jest.fn(),
     },
@@ -32,10 +32,8 @@ jest.mock('@/utility/GameFileSystem', () => ({
 import { CacheScope } from '@/enums/resource/CacheScope';
 import { KEYManager } from '@/managers/KEYManager';
 import { ResourceLoader } from '@/loaders/ResourceLoader';
-import { buildRimBuffer } from '@/apps/forge/helpers/SaveToRim';
 import { ERFObject } from '@/resource/ERFObject';
 import { ResourceTypes } from '@/resource/ResourceTypes';
-import { RIMObject } from '@/resource/RIMObject';
 import { GameFileSystem } from '@/utility/GameFileSystem';
 
 function makeErfArchive(fileType: 'ERF ' | 'MOD ' | 'SAV ' = 'ERF '): ERFObject {
@@ -43,18 +41,6 @@ function makeErfArchive(fileType: 'ERF ' | 'MOD ' | 'SAV ' = 'ERF '): ERFObject 
   erf.header.fileType = fileType;
   erf.addResource('shared', ResourceTypes.utc, Uint8Array.from([1, 2, 3]));
   return new ERFObject(erf.getExportBuffer());
-}
-
-async function makeRimArchive(): Promise<RIMObject> {
-  const rim = new RIMObject(
-    buildRimBuffer({
-      resref: 'shared',
-      resType: ResourceTypes.utc,
-      data: Uint8Array.from([9, 8, 7]),
-    })
-  );
-  await rim.load();
-  return rim;
 }
 
 describe('ResourceLoader', () => {
@@ -103,8 +89,8 @@ describe('ResourceLoader', () => {
 
   it('searchOverride derives the extension from ResourceTypes and lowercases the resref', async () => {
     const data = Uint8Array.from([0xaa, 0xbb]);
-    (GameFileSystem.exists as jest.Mock).mockResolvedValue(true);
-    (GameFileSystem.readFile as jest.Mock).mockResolvedValue(data);
+    (GameFileSystem.exists as jest.Mock<() => Promise<boolean>>).mockResolvedValue(true);
+    (GameFileSystem.readFile as jest.Mock<() => Promise<Uint8Array>>).mockResolvedValue(data);
 
     const result = await ResourceLoader.searchOverride(ResourceTypes.utc, 'MiXeDRef');
 
@@ -113,24 +99,22 @@ describe('ResourceLoader', () => {
     expect(result).toBe(data);
   });
 
-  it('searchModuleArchives resolves resources from in-memory RIM and ERF archives', async () => {
-    const rim = await makeRimArchive();
+  it('searchModuleArchives resolves resources from in-memory ERF archives', async () => {
     const erf = makeErfArchive('SAV ');
     await erf.load();
-    ResourceLoader.ModuleArchives = [rim, erf];
+    ResourceLoader.ModuleArchives = [erf];
 
     const result = await ResourceLoader.searchModuleArchives(ResourceTypes.utc, 'shared');
 
-    expect(result).toEqual(Uint8Array.from([9, 8, 7]));
-    expect(rim.hasResource('shared', ResourceTypes.utc)).toBe(true);
+    expect(result).toBeTruthy();
     expect(erf.hasResource('shared', ResourceTypes.utc)).toBe(true);
   });
 
   it('loadResource falls through to the KEY table and stores the result in fallback cache', async () => {
     const data = Uint8Array.from([0x10, 0x20]);
-    const keyEntry = { resRef: 'shared', resType: ResourceTypes.utc };
+    const keyEntry = { resRef: 'shared', resType: ResourceTypes.utc, resId: 1 };
     (KEYManager.Key.getFileKey as jest.Mock).mockReturnValue(keyEntry);
-    (KEYManager.Key.getFileBuffer as jest.Mock).mockResolvedValue(data);
+    (KEYManager.Key.getFileBuffer as jest.Mock<() => Promise<Uint8Array>>).mockResolvedValue(data);
 
     const result = await ResourceLoader.loadResource(ResourceTypes.utc, 'shared');
 

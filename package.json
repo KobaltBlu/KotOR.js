@@ -52,6 +52,7 @@
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.6.5",
     "idb-keyval": "^6.2.2",
+    "jest-util": "^30.3.0",
     "mini-css-extract-plugin": "^2.9.4",
     "monaco-editor-webpack-plugin": "^7.1.1",
     "npm-run-all": "^4.1.5",
