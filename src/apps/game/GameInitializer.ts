@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as KotOR from "@/apps/game/KotOR";
 import pLimit from "p-limit";
+import { ILoaderProgress, LoaderProgressTracker } from "@/apps/common/loader/LoaderProgress";
 
 const fsLimit = pLimit(16);
 
@@ -92,6 +93,11 @@ export class GameInitializer {
 
   static SetLoadingMessage(message: string){
     GameInitializer.ProcessEventListener('on-loader-message', [message]);
+    GameInitializer.ProcessEventListener('on-loader-progress', [null]);
+  }
+
+  static SetLoadingProgress(progress: ILoaderProgress){
+    GameInitializer.ProcessEventListener('on-loader-progress', [progress]);
   }
 
   static async Init(game: KotOR.GameEngineType){
@@ -246,12 +252,26 @@ export class GameInitializer {
   }
 
   static async LoadGameResources(){
-    GameInitializer.SetLoadingMessage("Loading Assets");
+    const tracker = new LoaderProgressTracker(
+      (progress) => GameInitializer.SetLoadingProgress(progress),
+      'Loading Assets',
+    );
+
+    const overrideFiles = await GameInitializer.listOverrideFiles();
+    const rimFiles = await GameInitializer.listRimFiles();
+    const twoDAResources = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['2da']);
+    const texturePackErfs = await GameInitializer.listTexturePackErfs();
+
+    tracker.begin(
+      overrideFiles.length + rimFiles.length + twoDAResources.length + texturePackErfs.length,
+      'Loading Assets',
+    );
+
     const promises = [
-      GameInitializer.LoadOverride(), 
-      GameInitializer.LoadRIMs(), 
-      GameInitializer.Load2DAs(), 
-      GameInitializer.LoadTexturePacks()
+      GameInitializer.LoadOverride(tracker, overrideFiles),
+      GameInitializer.LoadRIMs(tracker, rimFiles),
+      GameInitializer.Load2DAs(tracker, twoDAResources),
+      GameInitializer.LoadTexturePacks(tracker, texturePackErfs),
     ];
     await Promise.all(promises);
     const nonBlockingPromises = [
@@ -262,44 +282,124 @@ export class GameInitializer {
     Promise.all(nonBlockingPromises);
   }
 
-  static async LoadRIMs(){
-    if(KotOR.GameState.GameKey == KotOR.GameEngineType.TSL){
-      return;
-    }
-    KotOR.PerformanceMonitor.start('RIMManager.Load');
-    await KotOR.RIMManager.Load();
-    KotOR.PerformanceMonitor.stop('RIMManager.Load');
-  }
-
-  static async Load2DAs(){
-    KotOR.PerformanceMonitor.start('GameInitializer.Load2DAs');
-    await KotOR.GameState.TwoDAManager.Load2DATables();
-    KotOR.PerformanceMonitor.stop('GameInitializer.Load2DAs');
-  }
-
-  static async LoadTexturePacks(){
-    KotOR.PerformanceMonitor.start('GameInitializer.LoadTexturePacks');
-    const data_dir = 'TexturePacks';
+  static async listOverrideFiles(){
     try{
-      const filenames = await KotOR.GameFileSystem.readdir(data_dir)
-      const erfs = filenames.map(function(file) {
+      const files = await KotOR.GameFileSystem.readdir('Override', {recursive: false});
+      return files
+        .map((f) => {
+          const _parsed = path.parse(f);
+          const ext = _parsed.ext.substr(1, _parsed.ext.length)?.toLocaleLowerCase();
+          return { f, _parsed, resId: KotOR.ResourceTypes[ext] };
+        })
+        .filter(({ resId }) => typeof resId !== 'undefined');
+    }catch(e){
+      return [];
+    }
+  }
+
+  static async listRimFiles(){
+    if(KotOR.GameState.GameKey == KotOR.GameEngineType.TSL){
+      return [] as { ext: string; name: string; filename: string }[];
+    }
+    try{
+      const filenames = await KotOR.GameFileSystem.readdir('rims');
+      return filenames.map(function(file: string) {
         const filename = file.split(path.sep).pop() as string;
         const args = filename.split('.');
         return {
-          ext: args[1].toLowerCase(), 
-          name: args[0], 
-          filename: filename
+          ext: args[1].toLowerCase(),
+          name: args[0],
+          filename: path.join('rims', filename),
+        };
+      }).filter(function(file_obj){
+        return file_obj.ext == 'rim';
+      });
+    }catch(e){
+      return [];
+    }
+  }
+
+  static async listTexturePackErfs(){
+    const data_dir = 'TexturePacks';
+    try{
+      const filenames = await KotOR.GameFileSystem.readdir(data_dir);
+      return filenames.map(function(file) {
+        const filename = file.split(path.sep).pop() as string;
+        const args = filename.split('.');
+        return {
+          ext: args[1].toLowerCase(),
+          name: args[0],
+          filename: filename,
         };
       }).filter(function(file_obj){
         return file_obj.ext == 'erf';
       });
+    }catch(e){
+      return [];
+    }
+  }
 
-      await Promise.all(erfs.map((_erf) => fsLimit(async () => {
-        const erf = new KotOR.ERFObject(path.join(data_dir, _erf.filename));
-        await erf.load();
-        if(erf instanceof KotOR.ERFObject){
-          erf.group = 'Textures';
-          KotOR.ERFManager.addERF(_erf.name, erf);
+  static async LoadRIMs(tracker?: LoaderProgressTracker, rims?: { ext: string; name: string; filename: string }[]){
+    const rimFiles = rims ?? await GameInitializer.listRimFiles();
+    if(!rimFiles.length){
+      return;
+    }
+    KotOR.PerformanceMonitor.start('RIMManager.Load');
+    await Promise.all(rimFiles.map((rimObj) => fsLimit(async () => {
+      tracker?.itemStart(path.basename(rimObj.filename));
+      try{
+        const rim = await KotOR.RIMManager.LoadRIMObject(rimObj);
+        rim.group = 'RIMs';
+      }catch(e){
+        console.error(e);
+      }finally{
+        tracker?.itemComplete();
+      }
+    })));
+    KotOR.PerformanceMonitor.stop('RIMManager.Load');
+  }
+
+  static async Load2DAs(tracker?: LoaderProgressTracker, resources?: ReturnType<typeof KotOR.KEYManager.Key.getFilesByResType>){
+    const twoDAResources = resources ?? KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['2da']);
+    KotOR.PerformanceMonitor.start('GameInitializer.Load2DAs');
+    KotOR.TwoDAManager.datatables = new Map();
+    await Promise.all(twoDAResources.map((res) => fsLimit(async () => {
+      const key = KotOR.KEYManager.Key.getFileKeyByRes(res);
+      if(!key){
+        tracker?.itemComplete();
+        return;
+      }
+      tracker?.itemStart(`${key.resRef}.2da`);
+      try{
+        const d = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes['2da'], key.resRef);
+        KotOR.TwoDAManager.datatables.set(key.resRef, new KotOR.TwoDAObject(d));
+      }catch(e){
+        console.error(e);
+      }finally{
+        tracker?.itemComplete();
+      }
+    })));
+    KotOR.PerformanceMonitor.stop('GameInitializer.Load2DAs');
+  }
+
+  static async LoadTexturePacks(tracker?: LoaderProgressTracker, erfs?: { ext: string; name: string; filename: string }[]){
+    const texturePackErfs = erfs ?? await GameInitializer.listTexturePackErfs();
+    KotOR.PerformanceMonitor.start('GameInitializer.LoadTexturePacks');
+    const data_dir = 'TexturePacks';
+    try{
+      await Promise.all(texturePackErfs.map((_erf) => fsLimit(async () => {
+        tracker?.itemStart(_erf.filename);
+        try{
+          const erf = new KotOR.ERFObject(path.join(data_dir, _erf.filename));
+          await erf.load();
+          if(erf instanceof KotOR.ERFObject){
+            erf.group = 'Textures';
+            KotOR.ERFManager.addERF(_erf.name, erf);
+          }
+        }catch(e){
+          console.error(e);
+        }finally{
+          tracker?.itemComplete();
         }
       })));
     }catch(e){
@@ -337,22 +437,22 @@ export class GameInitializer {
     KotOR.PerformanceMonitor.stop(`GameInitializer.LoadGameAudioResources[${folder}]`);
   }
 
-  static async LoadOverride(){
+  static async LoadOverride(tracker?: LoaderProgressTracker, validOverrideFiles?: Awaited<ReturnType<typeof GameInitializer.listOverrideFiles>>){
+    const overrideFiles = validOverrideFiles ?? await GameInitializer.listOverrideFiles();
     KotOR.PerformanceMonitor.start('GameInitializer.LoadOverride');
     try{
-      const files = await KotOR.GameFileSystem.readdir('Override', {recursive: false});
-      const validOverrideFiles = files
-        .map(f => {
-          const _parsed = path.parse(f);
-          const ext = _parsed.ext.substr(1, _parsed.ext.length)?.toLocaleLowerCase();
-          return { f, _parsed, resId: KotOR.ResourceTypes[ext] };
-        })
-        .filter(({ resId }) => typeof resId !== 'undefined');
-
-      await Promise.all(validOverrideFiles.map(({ f, _parsed, resId }) => fsLimit(async () => {
-        const buffer = await KotOR.GameFileSystem.readFile(f);
-        if(!buffer || !buffer.length) return;
-        KotOR.ResourceLoader.setCache(KotOR.CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
+      await Promise.all(overrideFiles.map(({ f, _parsed, resId }) => fsLimit(async () => {
+        tracker?.itemStart(path.basename(f));
+        try{
+          const buffer = await KotOR.GameFileSystem.readFile(f);
+          if(buffer && buffer.length){
+            KotOR.ResourceLoader.setCache(KotOR.CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
+          }
+        }catch(e){
+          console.error(e);
+        }finally{
+          tracker?.itemComplete();
+        }
       })));
     }catch(e){
       console.warn('GameInitializer.LoadOverride: Failed to load override');

@@ -1,5 +1,9 @@
 import * as path from "path";
 import * as KotOR from "@/apps/forge/KotOR";
+import pLimit from "p-limit";
+import { ILoaderProgress, LoaderProgressTracker } from "@/apps/common/loader/LoaderProgress";
+
+const fsLimit = pLimit(16);
 
 /**
  * ForgeInitializer class.
@@ -89,6 +93,11 @@ export class ForgeInitializer {
 
   static SetLoadingMessage(message: string){
     ForgeInitializer.ProcessEventListener('on-loader-message', [message]);
+    ForgeInitializer.ProcessEventListener('on-loader-progress', [null]);
+  }
+
+  static SetLoadingProgress(progress: ILoaderProgress){
+    ForgeInitializer.ProcessEventListener('on-loader-progress', [progress]);
   }
 
   static async Init(game: KotOR.GameEngineType){
@@ -243,93 +252,207 @@ export class ForgeInitializer {
   }
 
   static async LoadGameResources(){
-    ForgeInitializer.SetLoadingMessage("Loading Assets");
+    const tracker = new LoaderProgressTracker(
+      (progress) => ForgeInitializer.SetLoadingProgress(progress),
+      'Loading Assets',
+    );
+
+    const overrideFiles = await ForgeInitializer.listOverrideFiles();
+    const rimFiles = await ForgeInitializer.listRimFiles();
+    const moduleFiles = await ForgeInitializer.listModuleFiles();
+    const lipModules = await ForgeInitializer.listLipModules();
+    const twoDAResources = KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['2da']);
+    const texturePackErfs = await ForgeInitializer.listTexturePackErfs();
+
+    tracker.begin(
+      overrideFiles.length + rimFiles.length + moduleFiles.length + lipModules.length + twoDAResources.length + texturePackErfs.length,
+      'Loading Assets',
+    );
+
     const promises = [
-      ForgeInitializer.LoadOverride(), 
-      ForgeInitializer.LoadRIMs(), 
-      ForgeInitializer.LoadModules(), 
-      ForgeInitializer.LoadLips(), 
-      ForgeInitializer.Load2DAs(), 
-      ForgeInitializer.LoadTexturePacks(), 
-      ForgeInitializer.LoadGameAudioResources('streammusic'), 
-      ForgeInitializer.LoadGameAudioResources('streamsounds'), 
-      ForgeInitializer.LoadGameAudioResources(KotOR.GameState.GameKey != KotOR.GameEngineType.TSL ? 'streamwaves' : 'streamvoice')
+      ForgeInitializer.LoadOverride(tracker, overrideFiles),
+      ForgeInitializer.LoadRIMs(tracker, rimFiles),
+      ForgeInitializer.LoadModules(tracker, moduleFiles),
+      ForgeInitializer.LoadLips(tracker, lipModules),
+      ForgeInitializer.Load2DAs(tracker, twoDAResources),
+      ForgeInitializer.LoadTexturePacks(tracker, texturePackErfs),
+      ForgeInitializer.LoadGameAudioResources('streammusic'),
+      ForgeInitializer.LoadGameAudioResources('streamsounds'),
+      ForgeInitializer.LoadGameAudioResources(KotOR.GameState.GameKey != KotOR.GameEngineType.TSL ? 'streamwaves' : 'streamvoice'),
     ];
     await Promise.all(promises);
   }
 
-  static async LoadRIMs(){
-    if(KotOR.GameState.GameKey == KotOR.GameEngineType.TSL){
-      return;
-    }
-    KotOR.PerformanceMonitor.start('RIMManager.Load');
-    await KotOR.RIMManager.Load();
-    KotOR.PerformanceMonitor.stop('RIMManager.Load');
-  }
-
-  static async LoadLips(){
-    KotOR.PerformanceMonitor.start('ForgeInitializer.LoadLips');
-    const data_dir = 'lips';
-    const filenames = await KotOR.GameFileSystem.readdir(data_dir);
-    const modules = filenames.map(function(file) {
-      const filename = file.split(path.sep).pop() as string;
-      const args = filename.split('.');
-      return {
-        ext: args[1].toLowerCase(), 
-        name: args[0], 
-        filename: filename
-      };
-    }).filter(function(file_obj){
-      return file_obj.ext == 'mod';
-    });
-    await Promise.all(modules.map(async (module_obj) => {
-      const mod = new KotOR.ERFObject(path.join(data_dir, module_obj.filename));
-      await mod.load();
-      mod.group = 'Lips';
-      KotOR.ERFManager.addERF(module_obj.name, mod);
-    }));
-    KotOR.PerformanceMonitor.stop('ForgeInitializer.LoadLips');
-  }
-
-  static async LoadModules(){
-    let data_dir = 'modules';
-    KotOR.PerformanceMonitor.start('ForgeInitializer.LoadModules');
+  static async listOverrideFiles(){
     try{
-      const filenames = await KotOR.GameFileSystem.readdir(data_dir);
-      const modules = filenames.map(function(file) {
+      const files = await KotOR.GameFileSystem.readdir('Override', {recursive: false});
+      return files
+        .map((f) => {
+          const _parsed = path.parse(f);
+          const ext = _parsed.ext.substr(1, _parsed.ext.length)?.toLocaleLowerCase();
+          return { f, _parsed, resId: KotOR.ResourceTypes[ext] };
+        })
+        .filter(({ resId }) => typeof resId !== 'undefined');
+    }catch(e){
+      return [];
+    }
+  }
+
+  static async listRimFiles(){
+    if(KotOR.GameState.GameKey == KotOR.GameEngineType.TSL){
+      return [] as { ext: string; name: string; filename: string }[];
+    }
+    try{
+      const filenames = await KotOR.GameFileSystem.readdir('rims');
+      return filenames.map(function(file: string) {
         const filename = file.split(path.sep).pop() as string;
         const args = filename.split('.');
         return {
-          ext: args[1].toLowerCase(), 
-          name: args[0], 
-          filename: filename
+          ext: args[1].toLowerCase(),
+          name: args[0],
+          filename: path.join('rims', filename),
+        };
+      }).filter(function(file_obj){
+        return file_obj.ext == 'rim';
+      });
+    }catch(e){
+      return [];
+    }
+  }
+
+  static async listModuleFiles(){
+    const data_dir = 'modules';
+    try{
+      const filenames = await KotOR.GameFileSystem.readdir(data_dir);
+      return filenames.map(function(file) {
+        const filename = file.split(path.sep).pop() as string;
+        const args = filename.split('.');
+        return {
+          ext: args[1].toLowerCase(),
+          name: args[0],
+          filename: filename,
         };
       }).filter(function(file_obj){
         return file_obj.ext == 'rim' || file_obj.ext == 'mod';
       });
+    }catch(e){
+      return [];
+    }
+  }
 
-      await Promise.all(modules.map(async (module_obj) => {
-        switch(module_obj.ext){
-          case 'rim': {
-            const rim = new KotOR.RIMObject(path.join(data_dir, module_obj.filename));
-            await rim.load();
-            rim.group = 'Module';
-            KotOR.RIMManager.addRIM(module_obj.name, rim);
-            break;
+  static async listLipModules(){
+    const data_dir = 'lips';
+    try{
+      const filenames = await KotOR.GameFileSystem.readdir(data_dir);
+      return filenames.map(function(file) {
+        const filename = file.split(path.sep).pop() as string;
+        const args = filename.split('.');
+        return {
+          ext: args[1].toLowerCase(),
+          name: args[0],
+          filename: filename,
+        };
+      }).filter(function(file_obj){
+        return file_obj.ext == 'mod';
+      });
+    }catch(e){
+      return [];
+    }
+  }
+
+  static async listTexturePackErfs(){
+    const data_dir = 'TexturePacks';
+    try{
+      const filenames = await KotOR.GameFileSystem.readdir(data_dir);
+      return filenames.map(function(file) {
+        const filename = file.split(path.sep).pop() as string;
+        const args = filename.split('.');
+        return {
+          ext: args[1].toLowerCase(),
+          name: args[0],
+          filename: filename,
+        };
+      }).filter(function(file_obj){
+        return file_obj.ext == 'erf';
+      });
+    }catch(e){
+      return [];
+    }
+  }
+
+  static async LoadRIMs(tracker?: LoaderProgressTracker, rims?: { ext: string; name: string; filename: string }[]){
+    const rimFiles = rims ?? await ForgeInitializer.listRimFiles();
+    if(!rimFiles.length){
+      return;
+    }
+    KotOR.PerformanceMonitor.start('RIMManager.Load');
+    await Promise.all(rimFiles.map((rimObj) => fsLimit(async () => {
+      tracker?.itemStart(path.basename(rimObj.filename));
+      try{
+        const rim = await KotOR.RIMManager.LoadRIMObject(rimObj);
+        rim.group = 'RIMs';
+      }catch(e){
+        console.error(e);
+      }finally{
+        tracker?.itemComplete();
+      }
+    })));
+    KotOR.PerformanceMonitor.stop('RIMManager.Load');
+  }
+
+  static async LoadLips(tracker?: LoaderProgressTracker, modules?: { ext: string; name: string; filename: string }[]){
+    const lipModules = modules ?? await ForgeInitializer.listLipModules();
+    KotOR.PerformanceMonitor.start('ForgeInitializer.LoadLips');
+    const data_dir = 'lips';
+    await Promise.all(lipModules.map((module_obj) => fsLimit(async () => {
+      tracker?.itemStart(module_obj.filename);
+      try{
+        const mod = new KotOR.ERFObject(path.join(data_dir, module_obj.filename));
+        await mod.load();
+        mod.group = 'Lips';
+        KotOR.ERFManager.addERF(module_obj.name, mod);
+      }catch(e){
+        console.error(e);
+      }finally{
+        tracker?.itemComplete();
+      }
+    })));
+    KotOR.PerformanceMonitor.stop('ForgeInitializer.LoadLips');
+  }
+
+  static async LoadModules(tracker?: LoaderProgressTracker, modules?: { ext: string; name: string; filename: string }[]){
+    const moduleFiles = modules ?? await ForgeInitializer.listModuleFiles();
+    let data_dir = 'modules';
+    KotOR.PerformanceMonitor.start('ForgeInitializer.LoadModules');
+    try{
+      await Promise.all(moduleFiles.map((module_obj) => fsLimit(async () => {
+        tracker?.itemStart(module_obj.filename);
+        try{
+          switch(module_obj.ext){
+            case 'rim': {
+              const rim = new KotOR.RIMObject(path.join(data_dir, module_obj.filename));
+              await rim.load();
+              rim.group = 'Module';
+              KotOR.RIMManager.addRIM(module_obj.name, rim);
+              break;
+            }
+            case 'mod': {
+              const mod = new KotOR.ERFObject(path.join(data_dir, module_obj.filename));
+              await mod.load();
+              mod.group = 'Module';
+              KotOR.ERFManager.addERF(module_obj.name, mod);
+              break;
+            }
+            default:
+              console.warn('ForgeInitializer.LoadModules: Encountered incorrect filetype');
+              break;
           }
-          case 'mod': {
-            const mod = new KotOR.ERFObject(path.join(data_dir, module_obj.filename));
-            await mod.load();
-            mod.group = 'Module';
-            KotOR.ERFManager.addERF(module_obj.name, mod);
-            break;
-          }
-          default:
-            console.warn('ForgeInitializer.LoadModules: Encountered incorrect filetype');
-            console.log(module_obj);
-            break;
+        }catch(e){
+          console.error(e);
+        }finally{
+          tracker?.itemComplete();
         }
-      }));
+      })));
     }catch(e){
       console.warn('ForgeInitializer.LoadModules: Failed to load modules');
       console.error(e);
@@ -337,37 +460,49 @@ export class ForgeInitializer {
     KotOR.PerformanceMonitor.stop('ForgeInitializer.LoadModules');
   }
 
-  static async Load2DAs(){
+  static async Load2DAs(tracker?: LoaderProgressTracker, resources?: ReturnType<typeof KotOR.KEYManager.Key.getFilesByResType>){
+    const twoDAResources = resources ?? KotOR.KEYManager.Key.getFilesByResType(KotOR.ResourceTypes['2da']);
     KotOR.PerformanceMonitor.start('ForgeInitializer.Load2DAs');
-    await KotOR.GameState.TwoDAManager.Load2DATables();
+    KotOR.TwoDAManager.datatables = new Map();
+    await Promise.all(twoDAResources.map((res) => fsLimit(async () => {
+      const key = KotOR.KEYManager.Key.getFileKeyByRes(res);
+      if(!key){
+        tracker?.itemComplete();
+        return;
+      }
+      tracker?.itemStart(`${key.resRef}.2da`);
+      try{
+        const d = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes['2da'], key.resRef);
+        KotOR.TwoDAManager.datatables.set(key.resRef, new KotOR.TwoDAObject(d));
+      }catch(e){
+        console.error(e);
+      }finally{
+        tracker?.itemComplete();
+      }
+    })));
     KotOR.PerformanceMonitor.stop('ForgeInitializer.Load2DAs');
   }
 
-  static async LoadTexturePacks(){
+  static async LoadTexturePacks(tracker?: LoaderProgressTracker, erfs?: { ext: string; name: string; filename: string }[]){
+    const texturePackErfs = erfs ?? await ForgeInitializer.listTexturePackErfs();
     KotOR.PerformanceMonitor.start('ForgeInitializer.LoadTexturePacks');
     const data_dir = 'TexturePacks';
     try{
-      const filenames = await KotOR.GameFileSystem.readdir(data_dir)
-      const erfs = filenames.map(function(file) {
-        const filename = file.split(path.sep).pop() as string;
-        const args = filename.split('.');
-        return {
-          ext: args[1].toLowerCase(), 
-          name: args[0], 
-          filename: filename
-        };
-      }).filter(function(file_obj){
-        return file_obj.ext == 'erf';
-      });
-
-      await Promise.all(erfs.map(async (_erf) => {
-        const erf = new KotOR.ERFObject(path.join(data_dir, _erf.filename));
-        await erf.load();
-        if(erf instanceof KotOR.ERFObject){
-          erf.group = 'Textures';
-          KotOR.ERFManager.addERF(_erf.name, erf);
+      await Promise.all(texturePackErfs.map((_erf) => fsLimit(async () => {
+        tracker?.itemStart(_erf.filename);
+        try{
+          const erf = new KotOR.ERFObject(path.join(data_dir, _erf.filename));
+          await erf.load();
+          if(erf instanceof KotOR.ERFObject){
+            erf.group = 'Textures';
+            KotOR.ERFManager.addERF(_erf.name, erf);
+          }
+        }catch(e){
+          console.error(e);
+        }finally{
+          tracker?.itemComplete();
         }
-      }));
+      })));
     }catch(e){
       console.warn('ForgeInitializer.LoadTexturePacks: Failed to load texture packs');
       console.error(e);
@@ -403,23 +538,23 @@ export class ForgeInitializer {
     KotOR.PerformanceMonitor.stop(`ForgeInitializer.LoadGameAudioResources[${folder}]`);
   }
 
-  static async LoadOverride(){
+  static async LoadOverride(tracker?: LoaderProgressTracker, validOverrideFiles?: Awaited<ReturnType<typeof ForgeInitializer.listOverrideFiles>>){
+    const overrideFiles = validOverrideFiles ?? await ForgeInitializer.listOverrideFiles();
     KotOR.PerformanceMonitor.start('ForgeInitializer.LoadOverride');
     try{
-      const files = await KotOR.GameFileSystem.readdir('Override', {recursive: false});
-      const validOverrideFiles = files
-        .map(f => {
-          const _parsed = path.parse(f);
-          const ext = _parsed.ext.substr(1, _parsed.ext.length)?.toLocaleLowerCase();
-          return { f, _parsed, resId: KotOR.ResourceTypes[ext] };
-        })
-        .filter(({ resId }) => typeof resId !== 'undefined');
-
-      await Promise.all(validOverrideFiles.map(async ({ f, _parsed, resId }) => {
-        const buffer = await KotOR.GameFileSystem.readFile(f);
-        if(!buffer || !buffer.length) return;
-        KotOR.ResourceLoader.setCache(KotOR.CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
-      }));
+      await Promise.all(overrideFiles.map(({ f, _parsed, resId }) => fsLimit(async () => {
+        tracker?.itemStart(path.basename(f));
+        try{
+          const buffer = await KotOR.GameFileSystem.readFile(f);
+          if(buffer && buffer.length){
+            KotOR.ResourceLoader.setCache(KotOR.CacheScope.OVERRIDE, resId, _parsed.name.toLocaleLowerCase(), buffer);
+          }
+        }catch(e){
+          console.error(e);
+        }finally{
+          tracker?.itemComplete();
+        }
+      })));
     }catch(e){
       console.warn('ForgeInitializer.LoadOverride: Failed to load override');
       console.error(e);
