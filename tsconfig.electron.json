@@ -1,4 +1,4 @@
-{ 
+{
   "compilerOptions": {
     "baseUrl": ".",
     "ignoreDeprecations": "6.0",
@@ -13,15 +13,14 @@
     "experimentalDecorators": true,
     "removeComments": false,
     "noImplicitAny": false,
-    // "suppressImplicitAnyIndexErrors": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": [
       "electron",
-      "node",
+      "node"
     ],
     "outDir": "dist/electron"
   },
-  "exclude": [ "node_modules" ],
+  "exclude": ["node_modules"],
   "include": ["src/electron/index.ts", "src/electron/preload.ts"]
 }
