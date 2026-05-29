@@ -11,6 +11,9 @@
     "webpack:prod": "cross-env NODE_ENV=production webpack",
     "serve": "serve ./dist -p 8080 --no-clipboard --config ../serve.json",
     "dev": "run-p webpack:dev-watch serve",
+    "dev:hmr": "run-p webpack:dev-kotor-watch webpack:serve-hmr",
+    "webpack:dev-kotor-watch": "cross-env NODE_ENV=development webpack --watch --config webpack/kotor-watch.config.js",
+    "webpack:serve-hmr": "cross-env NODE_ENV=development webpack serve --config webpack/Game.hmr.js",
     "electron:watch": "tsc-watch --project tsconfig.electron.json",
     "electron:compile": "tsc --project tsconfig.electron.json",
     "electron:build": "npm run webpack:prod && npm run electron:compile && npm run electron:icon && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npx --yes electron-builder build --publish=never",
@@ -82,6 +85,7 @@
     "user-agent-data-types": "^0.4.2",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.4",
     "webpackbar": "^7.0.0"
   },
   "dependencies": {

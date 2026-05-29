@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { AppState } from "@/apps/game/states/AppState";
 import * as KotOR from "@/apps/game/KotOR";
+import { HotReloadManager } from "@/dev/HotReloadManager";
 
 export interface AppProviderValues {
   appState: [typeof AppState];
@@ -82,6 +83,8 @@ export const AppProvider = (props: any) => {
   }
 
   useEffect(() => { 
+    const skipBootstrap = HotReloadManager.shouldSkipBootstrap();
+
     window.addEventListener('keypress', onKeyPress);
     AppState.addEventListener('on-preload', onPreload);
     AppState.addEventListener('on-ready', onAppReady);  
@@ -90,7 +93,18 @@ export const AppProvider = (props: any) => {
     AppState.addEventListener('on-loader-hide', onLoadingScreenHide);
     AppState.addEventListener('on-loader-init', onLoadingScreenInit);
     AppState.addEventListener('on-loader-message', onLoadingScreenMessage);
-    AppState.initApp();
+
+    if (skipBootstrap) {
+      setAppReady(true);
+      setGameKey(AppState.gameKey);
+      setGameLoaded(KotOR.GameState.Ready);
+      setShowLoadingScreen(false);
+      setShowEULAModal(false);
+      setShowGrantModal(false);
+    } else {
+      AppState.initApp();
+    }
+
     return () => {
       window.removeEventListener('keypress', onKeyPress);
       AppState.removeEventListener('on-preload', onPreload);
