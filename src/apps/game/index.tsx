@@ -1,8 +1,6 @@
 import ReactDOM from "react-dom/client";
 import React from "react";
 import * as KotOR from "@/apps/game/KotOR";
-import { AppProvider } from "@/apps/game/context/AppContext";
-import { GameApp } from "@/apps/game/app";
 import { HotReloadManager } from "@/dev/HotReloadManager";
 import { installHmrTestBridge } from "@/dev/HmrTestBridge";
 import { HMR_PROBE } from "@/dev/HmrTestProbe";
@@ -50,6 +48,8 @@ function mountApp(): void {
   }
 
   const reactRoot = getOrCreateReactRoot(rootElement);
+  const { AppProvider } = require('@/apps/game/context/AppContext') as typeof import('@/apps/game/context/AppContext');
+  const { GameApp } = require('@/apps/game/app') as typeof import('@/apps/game/app');
 
   reactRoot.render(
     <AppProvider>
