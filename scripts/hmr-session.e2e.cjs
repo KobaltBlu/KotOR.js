@@ -115,20 +115,34 @@ function startDevServer() {
         NODE_ENV: 'development',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
+      detached: process.platform !== 'win32',
     },
   );
 }
 
 async function killProcess(child) {
-  if (!child || child.killed) {
+  if (!child || !child.pid) {
     return;
   }
-  child.kill('SIGTERM');
-  await wait(500);
-  if (!child.killed) {
-    child.kill('SIGKILL');
+  if (child.stdout) {
+    child.stdout.destroy();
   }
-  await wait(200);
+  if (child.stderr) {
+    child.stderr.destroy();
+  }
+  if (process.platform !== 'win32') {
+    try {
+      process.kill(-child.pid, 'SIGKILL');
+      return;
+    } catch {
+      // Fall through to direct child kill.
+    }
+  }
+  try {
+    child.kill('SIGKILL');
+  } catch {
+    // Process already exited.
+  }
 }
 
 async function resolveBrowserExecutable() {
@@ -273,7 +287,11 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error('HMR session preservation E2E failed:', error);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('HMR session preservation E2E failed:', error);
+    process.exit(1);
+  });
