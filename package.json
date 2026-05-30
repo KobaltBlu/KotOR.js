@@ -135,7 +135,7 @@
     "@types/jest": "^30.0.0",
     "axios": "^1.15.0",
     "bootstrap": "^5.3.8",
-    "fast-xml-parser": "^5.3.6",
+    "fast-xml-parser": "^5.7.0",
     "jest": "^30.3.0",
     "monaco-editor": "^0.52.0",
     "three": "^0.149.0",
