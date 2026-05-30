@@ -12,6 +12,8 @@ import { GameEngineType } from '@/enums/engine';
 
 type onProgressCallback = (ref: ITextureLoaderQueuedRef, index: number, total: number) => void;
 
+/** Client-side texture pipeline: .tpc bundles and standalone .tga, matching stock asset kinds (3007 / 3). */
+
 /**
  * TextureLoader class.
  *

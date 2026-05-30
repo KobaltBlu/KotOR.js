@@ -128,6 +128,9 @@ export type EngineConstant = {
   type: string;
 };
 
+/**
+ * Parses NSS into semantic compiler nodes for NSS→NCS; Forge/toolchain surface aligned with NWScript language rules.
+ */
 export class NWScriptParser {
   regex_define = /#define[\s+]?([A-Za-z_][A-Za-z0-9_]+)\s+((?:[1-9](?:[0-9]+)?)|(?:[A-Za-z_][A-Za-z0-9_]+))/g;
 
