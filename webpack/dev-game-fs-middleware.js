@@ -7,6 +7,12 @@ const path = require('path');
  */
 function createDevGameFsMiddleware(gameDir) {
   const root = path.resolve(gameDir);
+  let realRoot;
+  try {
+    realRoot = fs.realpathSync(root);
+  } catch {
+    realRoot = root;
+  }
 
   function resolveSafe(relativePath) {
     const normalized = String(relativePath || '')
@@ -16,7 +22,18 @@ function createDevGameFsMiddleware(gameDir) {
     if (full !== root && !full.startsWith(root + path.sep)) {
       return null;
     }
-    return full;
+    try {
+      const realFull = fs.realpathSync(full);
+      if (realFull !== realRoot && !realFull.startsWith(realRoot + path.sep)) {
+        return null;
+      }
+      return realFull;
+    } catch (err) {
+      if (err && err.code === 'ENOENT') {
+        return full;
+      }
+      return null;
+    }
   }
 
   return (req, res, next) => {
