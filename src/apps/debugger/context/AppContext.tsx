@@ -1,10 +1,10 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import * as KotOR from "../KotOR";
-import { DebuggerState } from "../states/DebuggerState";
-import { IPCMessage } from "../../../server/ipc/IPCMessage";
-import { IPCMessageType } from "../../../enums/server/ipc/IPCMessageType";
-import { IPCMessageParam } from "../../../server/ipc/IPCMessageParam";
-import { IPCDataType } from "../../../enums/server/ipc/IPCDataType";
+import * as KotOR from "@/apps/debugger/KotOR";
+import { DebuggerState } from "@/apps/debugger/states/DebuggerState";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import { IPCMessageParam } from "@/server/ipc/IPCMessageParam";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
 
 export interface AppProviderValues {
   stateRef: React.MutableRefObject<DebuggerState>;

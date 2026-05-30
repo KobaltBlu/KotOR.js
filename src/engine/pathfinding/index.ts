@@ -1,3 +1,3 @@
-export * from "./PathPoint";
-export * from "./BinaryHeap";
-export * from "./ComputedPath";
+export * from "@/engine/pathfinding/PathPoint";
+export * from "@/engine/pathfinding/BinaryHeap";
+export * from "@/engine/pathfinding/ComputedPath";

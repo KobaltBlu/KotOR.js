@@ -1,5 +1,5 @@
-import { GameMenu } from "../../../gui";
-import type { GUIControl, GUIButton } from "../../../gui";
+import { GameMenu } from "@/gui";
+import type { GUIControl, GUIButton } from "@/gui";
 
 /**
  * MenuTop class.

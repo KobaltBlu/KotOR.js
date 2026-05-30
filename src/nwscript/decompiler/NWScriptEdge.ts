@@ -1,4 +1,4 @@
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
 
 /**
  * Represents an edge type in the control flow graph

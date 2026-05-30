@@ -1,7 +1,7 @@
 import React from "react";
-import { TabLIPEditorOptions } from "../../../components/tabs/tab-lip-editor/TabLIPEditorOptions";
-import { TabState } from "../TabState";
-import { SceneGraphNode } from "../../../SceneGraphNode";
+import { TabLIPEditorOptions } from "@/apps/forge/components/tabs/tab-lip-editor/TabLIPEditorOptions";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
 
 export class TabLIPEditorOptionsState extends TabState {
 

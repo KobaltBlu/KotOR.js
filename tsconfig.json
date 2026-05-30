@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "moduleResolution": "node",
     "target": "ESNext",
     "module": "commonjs",
@@ -17,6 +18,11 @@
     "skipLibCheck": true,
     "allowJs": true,
     "jsx": "react",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
     "types": [
       "@types/wicg-file-system-access",
       "user-agent-data-types",
@@ -30,6 +36,6 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/KotOR.ts", "src/types", "src/index.d.ts"],
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/index.d.ts"],
   "exclude": ["node_modules", "src/**/*.spec.ts"]
 }

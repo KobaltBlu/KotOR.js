@@ -1,9 +1,9 @@
-import { PazaakCards } from "../../enums/minigames/PazaakCards";
-import { PazaakHandSlots } from "../../enums/minigames/PazaakHandSlots";
-import { PazaakSideDeckSlots } from "../../enums/minigames/PazaakSideDeckSlots";
-import { PazaakTableSlots } from "../../enums/minigames/PazaakTableSlots";
-import { PazaakTurnState } from "../../enums/minigames/PazaakTurnState";
-import { IPazaakCard } from "./IPazaakCard";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
+import { PazaakHandSlots } from "@/enums/minigames/PazaakHandSlots";
+import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
+import { PazaakTableSlots } from "@/enums/minigames/PazaakTableSlots";
+import { PazaakTurnState } from "@/enums/minigames/PazaakTurnState";
+import { IPazaakCard } from "@/interface/minigames/IPazaakCard";
 
 export interface IPazaakTable {
   /**

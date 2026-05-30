@@ -1,9 +1,9 @@
-import { GameEffect } from "./GameEffect";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { AppearanceManager } from "../managers/AppearanceManager";
-import type { ModuleCreature } from "../module";
-import { BitWise } from "../utility/BitWise";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { AppearanceManager } from "@/managers/AppearanceManager";
+import type { ModuleCreature } from "@/module";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * EffectDisguise class.
@@ -45,8 +45,7 @@ export class EffectDisguise extends GameEffect {
         const creature = this.object as ModuleCreature;
         creature.pm_Appearance = creature.appearance;
         creature.pm_IsDisguised = true;
-        creature.appearance = this.getInt(0);
-        creature.creatureAppearance = disguise_appearance;
+        creature.setAppearance(this.getInt(0));
         console.log('Disguise applying', creature, this);
         creature.loadModel().then( () => {
           console.log('Disguise applied', creature, this);
@@ -61,7 +60,7 @@ export class EffectDisguise extends GameEffect {
       if(creature.pm_IsDisguised){
         creature.appearance = creature.pm_Appearance;
         creature.pm_IsDisguised = false;
-        creature.creatureAppearance = AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+        creature.setAppearance(creature.appearance);
       }
       console.log('Disguise removing', creature, this);
       creature.loadModel().then( () => {

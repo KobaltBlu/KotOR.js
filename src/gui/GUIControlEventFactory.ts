@@ -1,4 +1,4 @@
-import { GUIControlEvent } from "./GUIControlEvent";
+import { GUIControlEvent } from "@/gui/GUIControlEvent";
 
 /**
  * GUIControlEventFactory class.

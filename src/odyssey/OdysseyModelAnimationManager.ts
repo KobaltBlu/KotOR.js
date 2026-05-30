@@ -1,11 +1,11 @@
 import * as THREE from "three";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import type { OdysseyModelAnimation } from "./OdysseyModelAnimation";
-import type { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
-import { OdysseyController } from "./controllers/OdysseyController";
-import { IOdysseyControllerFrameGeneric } from "../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelAnimationManagerState } from "../enums/odyssey/OdysseyModelAnimationManagerState";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelAnimationManagerState } from "@/enums/odyssey/OdysseyModelAnimationManagerState";
 
 /**
  * OdysseyModelAnimationManager class.
@@ -206,7 +206,7 @@ export class OdysseyModelAnimationManager {
       for(let i = 0, nl = anim.nodes.length; i < nl; i++){
         node = anim.nodes[i];
         if(this.trans){
-          this.updateAnimationNode(this.lastAnimation, this.lastAnimation.nodes.find( n => n.nodePosition == node.nodePosition ), this.lastAnimationState, false);
+          this.updateAnimationNode(this.lastAnimation, this.lastAnimation.nodes.find( n => n.nodeNumber == node.nodeNumber ), this.lastAnimationState, false);
         }
         this.updateAnimationNode(anim, node, state, this.trans);
       }
@@ -357,7 +357,11 @@ export class OdysseyModelAnimationManager {
       state = this.createAnimationState();
     }
     if(!node) return;
-    this.modelNode = this.model.nodes.get(node.name);
+    if (node.sourceNodeUUID) {
+      this.modelNode = this.model.nodesByUUID.get(node.sourceNodeUUID);
+    } else {
+      this.modelNode = this.model.nodes.get(node.name);
+    }
 
     if(!this.modelNode) return;
 

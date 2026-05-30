@@ -1,10 +1,10 @@
-import type { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import type { NWScriptInstruction } from "./NWScriptInstruction";
-import { NWScriptExpression, NWScriptExpressionType } from "./NWScriptExpression";
-import { NWScriptExpressionBuilder } from "./NWScriptExpressionBuilder";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { OP_EQUAL, OP_LOGORII, OP_JZ, OP_JNZ } from './NWScriptOPCodes';
-import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
+import type { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
+import { NWScriptExpressionBuilder } from "@/nwscript/decompiler/NWScriptExpressionBuilder";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { OP_EQUAL, OP_LOGORII, OP_JZ, OP_JNZ } from "@/nwscript/NWScriptOPCodes";
+import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
 
 /**
  * Detects and simplifies OR chains in NWScript bytecode.
@@ -21,12 +21,22 @@ import type { NWScriptFunctionParameter } from "./NWScriptFunctionAnalyzer";
  */
 export class NWScriptORChainDetector {
   private functionParameters: NWScriptFunctionParameter[] = [];
+  private globalVariables: Map<number, { name: string; dataType: NWScriptDataType }> = new Map();
+  private localVariables: Map<number, { name: string; dataType: NWScriptDataType }> = new Map();
 
   /**
    * Set function parameters for proper variable name mapping
    */
   setFunctionParameters(parameters: NWScriptFunctionParameter[]): void {
     this.functionParameters = parameters;
+  }
+
+  setGlobalVariables(globals: Map<number, { name: string; dataType: NWScriptDataType }>): void {
+    this.globalVariables = globals;
+  }
+
+  setLocalVariables(locals: Map<number, { name: string; dataType: NWScriptDataType }>): void {
+    this.localVariables = locals;
   }
 
   /**
@@ -74,6 +84,8 @@ export class NWScriptORChainDetector {
     // Track the expression builder state
     const exprBuilder = new NWScriptExpressionBuilder();
     exprBuilder.setFunctionParameters(this.functionParameters);
+    exprBuilder.setGlobalVariables(this.globalVariables);
+    exprBuilder.setLocalVariables(this.localVariables);
     
     // Track JZ instructions and their conditions
     const jzConditions = new Map<number, NWScriptExpression>();
@@ -144,14 +156,12 @@ export class NWScriptORChainDetector {
       if (!e) return;
       
       if (e.type === NWScriptExpressionType.LOGICAL && e.operator === '||') {
-        // Recursively collect from left and right of OR expression
         collect(e.left);
         collect(e.right);
-      } else if (e.type === NWScriptExpressionType.COMPARISON) {
-        // This is a comparison - add it to the list
+      } else {
+        /** Leaves include COMPARISON and parenthesized `(a&&b)` OR arms (LOGICAL `&&`) */
         comparisons.push(e);
       }
-      // For other types, don't collect (they're not part of the OR chain)
     };
     
     collect(expr);

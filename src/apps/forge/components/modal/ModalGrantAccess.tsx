@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useEffectOnce } from "../../helpers/UseEffectOnce";
-import { ForgeState } from "../../states/ForgeState";
-import { useApp } from "../../context/AppContext";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { useApp } from "@/apps/forge/context/AppContext";
+import GrantAccessInfo from "@/apps/common/components/grantAccess/GrantAccessInfo";
 
-import * as KotOR from "../../KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export interface ModalGrantAccessProps {
   onUserGrant: Function,
@@ -21,11 +22,6 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
   
 
   useEffectOnce( () => {
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
-      // KotOR.GameFileSystem.
-      setShowGrantModal(true);
-    }
-    
     return () => {
       //Deconstructor
     }
@@ -35,6 +31,7 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
     let handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
     if(handle){
       KotOR.ApplicationProfile.directoryHandle = handle;
+      KotOR.ApplicationProfile.profile.directory_handle = handle;
       KotOR.ConfigClient.set(`Profiles.${KotOR.ApplicationProfile.profile.key}.directory_handle`, handle);
       
 
@@ -60,7 +57,7 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
       <div className="modal-grant-access">
         <div className="modal-content-wrapper">
           <h1>Grant Access</h1>
-          <p>Please grant this application access to your game install directory to continue.</p>
+          <GrantAccessInfo />
         </div>
         <div className="modal-button-wrapper">
           <button id="btn-grant-access" className="modal-button grant" onClick={onBtnGrant}>Grant Access</button>

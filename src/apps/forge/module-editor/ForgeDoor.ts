@@ -1,5 +1,5 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export class ForgeDoor extends ForgeGameObject {
   linkedTo: string = '';
@@ -384,7 +384,9 @@ export class ForgeDoor extends ForgeGameObject {
       const mdl = await KotOR.MDLLoader.loader.load(modelName);
       const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
-        lighting: true
+        lighting: true,
+        disableMatrixUpdate: false,
+        editorMode: true
       });
       this.model = model;
     }catch(e){

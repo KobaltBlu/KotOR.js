@@ -1,8 +1,8 @@
 import * as THREE from "three";
-import { OdysseyModel3D } from "../three/odyssey";
-import { OdysseyModelNode } from "./OdysseyModelNode";
-import type { OdysseyModelAnimation } from "./OdysseyModelAnimation";
-import type { OdysseyModel } from "./OdysseyModel";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModel } from "@/odyssey/OdysseyModel";
 
 /**
  * OdysseyModelAnimationNode class.
@@ -19,6 +19,7 @@ export class OdysseyModelAnimationNode extends OdysseyModelNode {
   children: OdysseyModelAnimationNode[] = [];
   modelNodeCache: any = {};
   animation: OdysseyModelAnimation;
+  sourceNodeUUID: string;
 
   constructor(animation?: OdysseyModelAnimation){
     super(undefined);

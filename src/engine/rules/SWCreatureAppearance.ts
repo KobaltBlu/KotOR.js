@@ -1,5 +1,5 @@
-import { TwoDAObject } from "../../resource/TwoDAObject";
-import { Utility } from "../../utility/Utility";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+import { Utility } from "@/utility/Utility";
 
 /**
  * SWCreatureAppearance class.
@@ -387,7 +387,7 @@ export class SWCreatureAppearance {
     if(row.hasOwnProperty('freelookeffect'))
       appearance.freelookeffect = TwoDAObject.normalizeValue(row.freelookeffect, 'number', -1);
     if(row.hasOwnProperty('cameraheightoffset'))
-      appearance.cameraheightoffset = TwoDAObject.normalizeValue(row.cameraheightoffset, 'number', -1);
+      appearance.cameraheightoffset = TwoDAObject.normalizeValue(row.cameraheightoffset, 'number', 0);
     if(row.hasOwnProperty('deathfx'))
       appearance.deathfx = TwoDAObject.normalizeValue(row.deathfx, 'number', -1);
     if(row.hasOwnProperty('deathfxnode'))

@@ -1,5 +1,5 @@
-import { BinaryReader } from "../../utility/binary/BinaryReader";
-import { IPCDataType } from "../../enums/server/ipc/IPCDataType";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
 
 /**
  * Represents an IPCMessageParam.

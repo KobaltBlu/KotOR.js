@@ -4,29 +4,30 @@ import * as fs from "fs";
 const query = new URLSearchParams(window.location.search);
 
 contextBridge.exposeInMainWorld(
-  'dialog', {
-    locateDirectoryDialog: (profile) => {
-      return new Promise( (resolve, reject) => {
-        ipcRenderer.invoke('locate-game-directory', profile).then( (response) => {
+  'dialog', 
+  {
+    locateDirectoryDialog: (profile: any) => {
+      return new Promise((resolve, reject) => {
+        ipcRenderer.invoke('locate-game-directory', profile).then((response) => {
           resolve(response);
         });
       })
     },
-    showOpenDialog: (...args) => {
-      return new Promise( (resolve, reject) => {
-        ipcRenderer.invoke('open-file-dialog', args).then( (response) => {
+    showOpenDialog: (...args: any[]) => {
+      return new Promise((resolve, reject) => {
+        ipcRenderer.invoke('open-file-dialog', args).then((response) => {
           resolve(response);
-        }).catch( (e) => {
+        }).catch((e) => {
           reject(e);
         })
       });
     },
-    showSaveDialog: (...args) => {
-      return new Promise( (resolve, reject) => {
+    showSaveDialog: (...args: any[]) => {
+      return new Promise((resolve, reject) => {
         console.log('save-file-dialog', args);
-        ipcRenderer.invoke('save-file-dialog', args).then( (response) => {
+        ipcRenderer.invoke('save-file-dialog', args).then((response) => {
           resolve(response);
-        }).catch( (e) => {
+        }).catch((e) => {
           reject(e);
         })
       });
@@ -35,50 +36,106 @@ contextBridge.exposeInMainWorld(
 )
 
 contextBridge.exposeInMainWorld(
-  'fs', {
-    open: (...args) => {
+  'fs', 
+  {
+    open: (...args: any[]) => {
       return (fs as any).open(...args);
     },
-    close: (...args) => {
+    close: (...args: any[]) => {
       return (fs as any).close(...args);
     },
-    read: (...args) => {
+    read: (...args: any[]) => {
       return (fs as any).read(...args);
     },
-    readFile: (...args) => {
+    readFile: (...args: any[]) => {
       return (fs as any).readFile(...args);
     },
-    writeFile: (...args) => {
+    writeFile: (...args: any[]) => {
       return (fs as any).writeFile(...args);
     },
-    createReadStream: (...args) => {
+    createReadStream: (...args: any[]) => {
       return (fs as any).createReadStream(...args);
     },
-    createWriteStream: (...args) => {
+    createWriteStream: (...args: any[]) => {
       return (fs as any).createWriteStream(...args);
     },
-    readdir: (...args) => {
-      return (fs as any).readdir(...args);
+    readdir: (path: string, options: any, callback?: Function) => {
+      const cb = typeof options === 'function' ? options : callback;
+      const opts = typeof options === 'function' ? {} : options;
+      (fs as any).readdir(path, opts, (err: any, files: any[]) => {
+        if (err) { cb(err, null); return; }
+        const serialized = files.map((file: any) => {
+          // withFileTypes returns Dirent objects; plain strings need no wrapping
+          if (typeof file === 'string') return file;
+          return {
+            name: file.name,
+            isDirectory: () => file.isDirectory(),
+            isFile: () => file.isFile(),
+            isSymbolicLink: () => file.isSymbolicLink(),
+            isBlockDevice: () => file.isBlockDevice(),
+            isCharacterDevice: () => file.isCharacterDevice(),
+            isFIFO: () => file.isFIFO(),
+            isSocket: () => file.isSocket(),
+          };
+        });
+        cb(null, serialized);
+      });
     },
-    mkdir: (...args) => {
+    mkdir: (...args: any[]) => {
       return (fs as any).mkdir(...args);
     },
-    mkdirSync: (...args) => {
+    mkdirSync: (...args: any[]) => {
       return (fs as any).mkdirSync(...args);
     },
-    rmdir: (...args) => {
+    rmdir: (...args: any[]) => {
       return (fs as any).rmdir(...args);
     },
-    rmdirSync: (...args) => {
+    rmdirSync: (...args: any[]) => {
       return (fs as any).rmdirSync(...args);
     },
-    stat: (...args) => {
-      return (fs as any).stat(...args);
+    stat: (path: string, callback: Function) => {
+      (fs as any).stat(path, (err: any, stats: any) => {
+        if (err) { callback(err, null); return; }
+        callback(null, {
+          // plain properties
+          dev: stats.dev, ino: stats.ino, mode: stats.mode,
+          nlink: stats.nlink, uid: stats.uid, gid: stats.gid,
+          size: stats.size, blksize: stats.blksize, blocks: stats.blocks,
+          atimeMs: stats.atimeMs, mtimeMs: stats.mtimeMs,
+          ctimeMs: stats.ctimeMs, birthtimeMs: stats.birthtimeMs,
+          atime: stats.atime, mtime: stats.mtime,
+          ctime: stats.ctime, birthtime: stats.birthtime,
+          // methods re-exposed as new closures
+          isDirectory: () => stats.isDirectory(),
+          isFile: () => stats.isFile(),
+          isSymbolicLink: () => stats.isSymbolicLink(),
+          isBlockDevice: () => stats.isBlockDevice(),
+          isCharacterDevice: () => stats.isCharacterDevice(),
+          isFIFO: () => stats.isFIFO(),
+          isSocket: () => stats.isSocket(),
+        });
+      });
     },
-    statSync: (...args) => {
-      return (fs as any).statSync(...args);
+    statSync: (path: string) => {
+      const stats = (fs as any).statSync(path);
+      return {
+        dev: stats.dev, ino: stats.ino, mode: stats.mode,
+        nlink: stats.nlink, uid: stats.uid, gid: stats.gid,
+        size: stats.size, blksize: stats.blksize, blocks: stats.blocks,
+        atimeMs: stats.atimeMs, mtimeMs: stats.mtimeMs,
+        ctimeMs: stats.ctimeMs, birthtimeMs: stats.birthtimeMs,
+        atime: stats.atime, mtime: stats.mtime,
+        ctime: stats.ctime, birthtime: stats.birthtime,
+        isDirectory: () => stats.isDirectory(),
+        isFile: () => stats.isFile(),
+        isSymbolicLink: () => stats.isSymbolicLink(),
+        isBlockDevice: () => stats.isBlockDevice(),
+        isCharacterDevice: () => stats.isCharacterDevice(),
+        isFIFO: () => stats.isFIFO(),
+        isSocket: () => stats.isSocket(),
+      };
     },
-    exists: (...args) => {
+    exists: (...args: any[]) => {
       return (fs as any).exists(...args);
     },
     constants: fs.constants
@@ -90,23 +147,23 @@ contextBridge.exposeInMainWorld(
     isMac: () => {
       process.platform === 'darwin'
     },
-    minimize: (profile) => {
-      return new Promise( (resolve, reject) => {
-        ipcRenderer.invoke('win-minimize', profile).then( (response) => {
+    minimize: (profile: any) => {
+      return new Promise((resolve, reject) => {
+        ipcRenderer.invoke('win-minimize', profile).then((response) => {
           resolve(response);
         });
       })
     },
-    maximize: (profile) => {
-      return new Promise( (resolve, reject) => {
-        ipcRenderer.invoke('win-maximize', profile).then( (response) => {
+    maximize: (profile: any) => {
+      return new Promise((resolve, reject) => {
+        ipcRenderer.invoke('win-maximize', profile).then((response) => {
           resolve(response);
         });
       })
     },
-    locate_game_directory: (profile) => {
-      return new Promise( (resolve, reject) => {
-        ipcRenderer.invoke('locate-game-directory', profile).then( (response) => {
+    locate_game_directory: (profile: any) => {
+      return new Promise((resolve, reject) => {
+        ipcRenderer.invoke('locate-game-directory', profile).then((response) => {
           resolve(response);
         });
       })
@@ -114,7 +171,7 @@ contextBridge.exposeInMainWorld(
     launchProfile: (profile: any) => {
       ipcRenderer.send('launch_profile', profile);
     },
-    openExternal: (src, options) => {
+    openExternal: (src: string, options: any) => {
       shell.openExternal(src, options);
     },
   }

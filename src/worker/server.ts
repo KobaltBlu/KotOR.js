@@ -3,7 +3,7 @@
  * This is a stub for the eventual server worker that will be used to handle the game server logic.
  */
 
-import { IPCMessage } from "../server/ipc/IPCMessage";
+import { IPCMessage } from "@/server/ipc/IPCMessage";
 
 /**
  * Odyssey Server

@@ -1,4 +1,4 @@
-import type EngineLocation from "../../engine/EngineLocation";
+import type EngineLocation from "@/engine/EngineLocation";
 
 export interface EngineGlobalBoolean {
   name: string;

@@ -1,5 +1,5 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export class ForgeRoom extends ForgeGameObject {
 
@@ -80,7 +80,9 @@ export class ForgeRoom extends ForgeGameObject {
       context: this.context,
       castShadow: false,
       receiveShadow: true,
-      mergeStatic: true
+      mergeStatic: true,
+      disableMatrixUpdate: false,
+      editorMode: true
     });
 
     //Remove the old model

@@ -1,10 +1,10 @@
-import { TabState } from "./TabState";
-import * as KotOR from "../../KotOR";
+import { TabState } from "@/apps/forge/states/tabs/TabState";
+import * as KotOR from "@/apps/forge/KotOR";
 import React from "react";
-import { EditorFile } from "../../EditorFile";
-import { TabUTTEditor } from "../../components/tabs/tab-utt-editor/TabUTTEditor";
-import BaseTabStateOptions from "../../interfaces/BaseTabStateOptions";
-import { ForgeTrigger } from "../../module-editor/ForgeTrigger";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { TabUTTEditor } from "@/apps/forge/components/tabs/tab-utt-editor/TabUTTEditor";
+import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
+import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
 
 export class TabUTTEditorState extends TabState {
   tabName: string = `UTT`;

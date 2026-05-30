@@ -1,12 +1,12 @@
-import { GameState } from "../GameState";
-import type { ModuleCreature, ModuleObject, ModuleRoom } from "../module";
-import { OdysseyWalkMesh, WalkmeshEdge } from "../odyssey";
+import { GameState } from "@/GameState";
+import type { ModuleCreature, ModuleObject, ModuleRoom } from "@/module";
+import { OdysseyWalkMesh, WalkmeshEdge } from "@/odyssey";
 import * as THREE from "three";
-import { Utility } from "../utility/Utility";
-import { OdysseyFace3 } from "../three/odyssey";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { EngineDebugType } from "../enums/engine/EngineDebugType";
+import { Utility } from "@/utility/Utility";
+import { OdysseyFace3 } from "@/three/odyssey";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { EngineDebugType } from "@/enums/engine/EngineDebugType";
 
 // =============================================
 // TYPE DEFINITIONS

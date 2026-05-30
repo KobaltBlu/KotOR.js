@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import type { GUIButton, GUIListBox, GUILabel } from "../../../gui";
-import { IScreenResolution } from "../../../interface/graphics/IScreenResolution";
-import { MenuResolutions as K1_MenuResolutions } from "../../kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUIButton, GUIListBox, GUILabel } from "@/gui";
+import { IScreenResolution } from "@/interface/graphics/IScreenResolution";
+import { MenuResolutions as K1_MenuResolutions } from "@/game/kotor/KOTOR";
 
 /**
  * MenuResolutions class.
@@ -56,14 +56,9 @@ export class MenuResolutions extends K1_MenuResolutions {
     super.show();
     this.supportedResolutions = GameState.ResolutionManager.getSupportedResolutions();
     this.activeResolution = this.supportedResolutions[0];
-    this.LB_RESOLUTIONS.clearItems();
-
-    for(let i = 0; i < this.supportedResolutions.length; i++){
-      const res = this.supportedResolutions[i];
-      this.LB_RESOLUTIONS.addItem( res );
-    }
-
-    this.LB_RESOLUTIONS.setSelectedIndex(this.supportedResolutions.indexOf(this.activeResolution));
+    this.LB_RESOLUTIONS.setItems(this.supportedResolutions, {
+      selectIndex: 0,
+    } as any);
     this.tGuiPanel.widget.position.z = 10;
   }
   

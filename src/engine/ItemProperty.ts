@@ -1,12 +1,12 @@
-import { GameState } from "../GameState";
-import { ModuleItemCostTable } from "../enums/module/ModuleItemCostTable";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { Dice } from "../utility/Dice";
-import { SWItemPropsDef } from "./rules/SWItemPropsDef";
-import { SWCostTable } from "./rules/SWCostTable";
-import { TwoDAObject } from "../resource/TwoDAObject";
+import { GameState } from "@/GameState";
+import { ModuleItemCostTable } from "@/enums/module/ModuleItemCostTable";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { Dice } from "@/utility/Dice";
+import { SWItemPropsDef } from "@/engine/rules/SWItemPropsDef";
+import { SWCostTable } from "@/engine/rules/SWCostTable";
+import { TwoDAObject } from "@/resource/TwoDAObject";
 
 class SWSubTypeBase {
   id: number;

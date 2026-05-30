@@ -1,7 +1,7 @@
 import React from "react";
-import { ModalNewProject } from "../../components/modal/ModalNewProject";
-import { ModalState } from "./ModalState";
-import * as KotOR from "../../KotOR";
+import { ModalNewProject } from "@/apps/forge/components/modal/ModalNewProject";
+import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import * as KotOR from "@/apps/forge/KotOR";
 import path from "path";
 
 type GameModule = {

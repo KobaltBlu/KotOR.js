@@ -1,8 +1,8 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { useApp } from "../context/AppContext";
-import { CommunityProvider, useCommunity } from "../context/CommunityContext";
-import { ProfilePromoItems } from "./ProfilePromoItems";
-import { LightboxComponent } from "./LightboxComponenet";
+import { useApp } from "@/apps/launcher/context/AppContext";
+import { CommunityProvider, useCommunity } from "@/apps/launcher/context/CommunityContext";
+import { ProfilePromoItems } from "@/apps/launcher/components/ProfilePromoItems";
+import { LightboxComponent } from "@/apps/launcher/components/LightboxComponenet";
 
 export interface CommunityTabContentProps {};
 

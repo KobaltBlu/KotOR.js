@@ -1,9 +1,9 @@
-import { OdysseyController } from "./OdysseyController";
-import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
 
 /**
  * SizeEndYController class.
@@ -23,11 +23,20 @@ export class SizeEndYController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.sizesY[2] = data.value;
+      manager.modelNode.emitter.material.uniforms.scaleY.value.z = data.value;
+      manager.modelNode.emitter.material.uniformsNeedUpdate = true;
+    }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    
+    if(manager.modelNode.emitter){
+      const v = ((next.value - last.value) * fl + last.value);
+      manager.modelNode.emitter.sizesY[2] = v;
+      manager.modelNode.emitter.material.uniforms.scaleY.value.z = v;
+      manager.modelNode.emitter.material.uniformsNeedUpdate = true;
+    }
   }
 
 }

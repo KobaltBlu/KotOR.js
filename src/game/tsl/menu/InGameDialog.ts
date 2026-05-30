@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox } from "../../../gui";
-import { ITwoDAAnimation } from "../../../interface";
-import { InGameDialog as K1_InGameDialog } from "../../kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIListBox } from "@/gui";
+import { ITwoDAAnimation } from "@/interface";
+import { InGameDialog as K1_InGameDialog } from "@/game/kotor/KOTOR";
 import * as THREE from "three";
 
 /**

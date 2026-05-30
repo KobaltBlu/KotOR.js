@@ -1,8 +1,8 @@
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
-import type { ModuleCreature } from "../../../module";
-import { CharGenAttribute } from "../../../enums/chargen/CharGenAttribute";
-import { GameMenu } from "../../../gui";
-import { GameState } from "../../../GameState";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import type { ModuleCreature } from "@/module";
+import { CharGenAttribute } from "@/enums/chargen/CharGenAttribute";
+import { GameMenu } from "@/gui";
+import { GameState } from "@/GameState";
 
 /**
  * CharGenAbilities class.

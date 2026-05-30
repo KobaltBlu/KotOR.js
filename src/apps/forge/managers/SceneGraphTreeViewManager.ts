@@ -1,11 +1,11 @@
-import { EventListenerModel } from "../EventListenerModel";
-import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "../KotOR";
-import { SceneGraphNode } from "../SceneGraphNode";
-import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
-import { ForgeEncounter } from "../module-editor/ForgeEncounter";
-import { ForgeGameObject } from "../module-editor/ForgeGameObject";
-import { ForgeRoom } from "../module-editor/ForgeRoom";
-import { ForgeTrigger } from "../module-editor/ForgeTrigger";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { OdysseyModelNode, OdysseyModelNodeType, OdysseyObject3D } from "@/apps/forge/KotOR";
+import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
+import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
 
 export interface IModuleGroupNode {
   key: GroupType;
@@ -38,7 +38,33 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
   attachUI3DRenderer(context: UI3DRenderer){
     this.context = context;
     this.context.addEventListener('onModuleSet', this.rebuild.bind(this));
+    this.context.addEventListener('onSelect', (object: any) => {
+      this.syncSelection(object);
+    });
     this.rebuild();
+  }
+
+  syncSelection(object: any){
+    const resolved = this.resolveOdysseyObject(object);
+    this.sceneNode.traverseChildren((node: SceneGraphNode) => {
+      if (node.data != null && node.data === resolved) {
+        if (!node.selected) node.select();
+      } else {
+        if (node.selected) node.deselect();
+      }
+    });
+  }
+
+  private resolveOdysseyObject(object: any): any {
+    if (!object) return undefined;
+    let current = object;
+    while (current) {
+      if (current instanceof OdysseyObject3D && current.odysseyModelNode) {
+        return current;
+      }
+      current = current.parent;
+    }
+    return object;
   }
 
   rebuild(){
@@ -331,7 +357,10 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
         },
       });
 
-      processNode(model.children[0] as OdysseyObject3D, modelNode);
+      const rootNode = model.getRootOdysseyNode?.();
+      if (rootNode) {
+        processNode(rootNode, modelNode);
+      }
 
       this.objectsNode.addChildNode(modelNode);
     }

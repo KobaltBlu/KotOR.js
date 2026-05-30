@@ -1,11 +1,11 @@
-import { ModuleObject } from "./ModuleObject";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ILayoutObstacle } from "../interface/resource/ILayoutObstacle";
-import { NWScript } from "../nwscript/NWScript";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFObject } from "../resource/GFFObject";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import { GameState } from "../GameState";
+import { ModuleObject } from "@/module/ModuleObject";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ILayoutObstacle } from "@/interface/resource/ILayoutObstacle";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFObject } from "@/resource/GFFObject";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { GameState } from "@/GameState";
 
 /**
 * ModuleMGObstacle class.

@@ -1,14 +1,14 @@
 import * as THREE from "three";
-import { OdysseyModelControllerType } from "../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModel } from "./OdysseyModel";
-import { OdysseyModelAnimationNode } from "./OdysseyModelAnimationNode";
-import { type OdysseyController } from "./controllers/OdysseyController";
-import { OdysseyControllerFactory } from "./controllers/OdysseyControllerFactory";
-import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
-import { OdysseyModelUtility } from "./OdysseyModelUtility";
-import { IOdysseyControllerGeneric } from "../interface/odyssey/controller/IOdysseyControllerGeneric";
-import { IOdysseyControllerFrameGeneric } from "../interface";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { OdysseyModel } from "@/odyssey/OdysseyModel";
+import { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
+import { type OdysseyController } from "@/odyssey/controllers/OdysseyController";
+import { OdysseyControllerFactory } from "@/odyssey/controllers/OdysseyControllerFactory";
+import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { IOdysseyControllerFrameGeneric } from "@/interface";
       
 // Constants for quaternion decompression
 const QUAT_X_MASK = 0x07ff;        // 11 bits for X component
@@ -35,13 +35,14 @@ export class OdysseyModelNode {
   nodeType: OdysseyModelNodeType;
   odysseyModel: OdysseyModel;
   children: OdysseyModelNode[] = [];
-  childOffsets: number[] = [];
+  childOffsets: Uint32Array;
   controllers: Map<OdysseyModelControllerType, OdysseyController> = new Map();
 
   roomStatic: boolean = true;
   position: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   quaternion: THREE.Quaternion = new THREE.Quaternion(0, 0, 0, 1);
-  supernode: number;
+  nodeNumber: number;
+  nameIndex: number;
   nodePosition: number;
   name: string;
   padding: number;
@@ -91,14 +92,14 @@ export class OdysseyModelNode {
 
     this.nodeType = this.odysseyModel.mdlReader.readUInt16();  
 
-    this.supernode = this.odysseyModel.mdlReader.readUInt16();
-    this.nodePosition = this.odysseyModel.mdlReader.readUInt16();
+    this.nodeNumber = this.odysseyModel.mdlReader.readUInt16();
+    this.nameIndex = this.odysseyModel.mdlReader.readUInt16();
     this.padding = this.odysseyModel.mdlReader.readUInt16();
     this.offsetToRoot = this.odysseyModel.mdlReader.readUInt32();
     this.offsetToParent = this.odysseyModel.mdlReader.readUInt32();
 
-    if (this.nodePosition < this.odysseyModel.names.length){
-      this.name = this.odysseyModel.names[this.nodePosition].replace(/\0[\s\S]*$/g,'').toLowerCase();
+    if (this.nameIndex < this.odysseyModel.names.length){
+      this.name = this.odysseyModel.names[this.nameIndex].replace(/\0[\s\S]*$/g,'').toLowerCase();
     }else{
       this.name = '';
     }
@@ -123,18 +124,18 @@ export class OdysseyModelNode {
 
     //Node Children
     this.childArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
-    this.childOffsets = OdysseyModelUtility.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.childArrayDefinition.offset, this.childArrayDefinition.count);
+    this.childOffsets = OdysseyModelUtility.ReadArrayUInt32s(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.childArrayDefinition.offset, this.childArrayDefinition.count);
 
     //Node Controllers
     this.controllerArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
     this.controllerDataArrayDefinition = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
     const controllerData = OdysseyModelUtility.ReadArrayFloats(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.controllerDataArrayDefinition.offset, this.controllerDataArrayDefinition.count);
-    const controllerData2 = OdysseyModelUtility.ReadArray(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.controllerDataArrayDefinition.offset, this.controllerDataArrayDefinition.count);
+    const controllerData2 = OdysseyModelUtility.ReadArrayUInt32s(this.odysseyModel.mdlReader, this.odysseyModel.fileHeader.modelDataOffset + this.controllerDataArrayDefinition.offset, this.controllerDataArrayDefinition.count);
 
     this.controllers = this.readBinaryNodeControllers(this.odysseyModel.fileHeader.modelDataOffset + this.controllerArrayDefinition.offset, this.controllerArrayDefinition.count, controllerData, controllerData2);
   }
 
-  readBinaryNodeControllers(offset: number, count: number, data: number[], data2: number[]){
+  readBinaryNodeControllers(offset: number, count: number, data: Float32Array, data2: Uint32Array){
     const pos = this.odysseyModel.mdlReader.position;
     this.odysseyModel.mdlReader.seek(offset);
 
@@ -154,10 +155,13 @@ export class OdysseyModelNode {
       
       let tmpQuat = new THREE.Quaternion();
 
+      // Always set so OdysseyControllerFactory can build emitter-specific controllers (SizeStart, etc.).
+      // When geometry is already parsed, prefer its nodeType so flags match the mesh instance.
+      controller.nodeType = this.nodeType;
       if(this.odysseyModel.nodes.has(this.name)){
         controller.nodeType = this.nodeType = this.odysseyModel.nodes.get(this.name).nodeType;
       }
-    
+
       if(controller.frameCount != -1){
 
         if(this instanceof OdysseyModelAnimationNode || this instanceof OdysseyModelNode){

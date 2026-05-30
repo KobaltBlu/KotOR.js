@@ -1,4 +1,4 @@
-@import "../../styles/variables";
+@use "tokens" as *;
 
 .cexoloc-editor {
   margin-bottom: $spacing-md;

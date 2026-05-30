@@ -32,7 +32,7 @@ import type {
   SemanticCallNode,
   SemanticExpressionNode,
   SemanticStatementNode,
-} from "./ASTSemanticTypes";
+} from "@/nwscript/compiler/ASTSemanticTypes";
 
 type WithCompilerMeta<T> = T & { block_start?: number; block_end?: number };
 
@@ -54,6 +54,8 @@ export type CompilerFunctionNode = SemanticFunctionNode & {
   returnStackPointer?: number;
   argumentsStackPointer?: number;
   retn_jmp?: number;
+  /** Opcode byte indices of return `JMP`; patched to arg MOVSP if the function has params, else to RETN (`retn_jmp`). */
+  pendingReturnTailJmpStarts?: number[];
   block?: CompilerBlockNode;
   statements: CompilerStatementNode[];
   arguments: CompilerArgumentNode[];
@@ -106,6 +108,9 @@ export type CompilerWhileNode = WithCompilerMeta<SemanticWhileNode> & {
   condition_start?: number;
   condition_end?: number;
   preStatementsSPCache?: number;
+  pendingLoopBreakJmpSites?: number[];
+  /** `continue`: forward JMP patched to bytecode just before backward JMP at loop footer (CNsc layout). */
+  pendingWhileContinueFwdJmpSites?: number[];
   statements: CompilerStatementNode[];
   condition: CompilerExpressionNode;
 };
@@ -117,6 +122,7 @@ export type CompilerDoWhileNode = WithCompilerMeta<SemanticDoWhileNode> & {
   preStatementsSPCache?: number;
   statements_start?: number;
   statements_end?: number;
+  pendingLoopBreakJmpSites?: number[];
   statements: CompilerStatementNode[];
   condition: CompilerExpressionNode;
 };
@@ -130,6 +136,8 @@ export type CompilerForNode = WithCompilerMeta<SemanticForNode> & {
   statements_start?: number;
   statements_end?: number;
   preStatementsSPCache?: number;
+  pendingLoopBreakJmpSites?: number[];
+  pendingContinueJmpSites?: number[];
   initializer: CompilerVariableNode | CompilerVariableListNode | CompilerExpressionNode | null;
   condition: CompilerExpressionNode | null;
   incrementor: CompilerExpressionNode | null;
@@ -140,6 +148,10 @@ export type CompilerSwitchNode = WithCompilerMeta<SemanticSwitchNode> & {
   cases: CompilerCaseNode[];
   default: CompilerDefaultNode | null;
   condition: CompilerExpressionNode;
+  switchBreakTarget?: number;
+  pendingSwitchBreakJmpSites?: number[];
+  /** Stack bytes taken by evaluating the switch discriminant until shared MOVSP (nwn `continue` leaves this on stack across loop-jump patches). */
+  discriminatorStackBytes?: number;
 };
 
 export type CompilerCaseNode = WithCompilerMeta<SemanticCaseNode> & {

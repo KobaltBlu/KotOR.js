@@ -1,6 +1,6 @@
-import { VideoEffect } from "../engine/VideoEffect";
-import { GameState } from "../GameState";
-import type { TwoDAObject } from "../resource/TwoDAObject";
+import { VideoEffect } from "@/engine/VideoEffect";
+import { GameState } from "@/GameState";
+import type { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * VideoEffectManager class.

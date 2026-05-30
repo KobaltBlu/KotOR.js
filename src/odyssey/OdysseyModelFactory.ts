@@ -1,14 +1,15 @@
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { OdysseyModelNode } from "./OdysseyModelNode";
-import { OdysseyModelNodeAABB } from "./OdysseyModelNodeAABB";
-import { OdysseyModelNodeDangly } from "./OdysseyModelNodeDangly";
-import { OdysseyModelNodeEmitter } from "./OdysseyModelNodeEmitter";
-import { OdysseyModelNodeLight } from "./OdysseyModelNodeLight";
-import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
-import { OdysseyModelNodeReference } from "./OdysseyModelNodeReference";
-import { OdysseyModelNodeSaber } from "./OdysseyModelNodeSaber";
-import { OdysseyModelNodeSkin } from "./OdysseyModelNodeSkin";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import { OdysseyModelNodeAABB } from "@/odyssey/OdysseyModelNodeAABB";
+import { OdysseyModelNodeAnimMesh } from "@/odyssey/OdysseyModelNodeAnimMesh";
+import { OdysseyModelNodeDangly } from "@/odyssey/OdysseyModelNodeDangly";
+import { OdysseyModelNodeEmitter } from "@/odyssey/OdysseyModelNodeEmitter";
+import { OdysseyModelNodeLight } from "@/odyssey/OdysseyModelNodeLight";
+import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
+import { OdysseyModelNodeReference } from "@/odyssey/OdysseyModelNodeReference";
+import { OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
+import { OdysseyModelNodeSkin } from "@/odyssey/OdysseyModelNodeSkin";
 
 /**
  * OdysseyModelFactory class.
@@ -22,6 +23,7 @@ import { OdysseyModelNodeSkin } from "./OdysseyModelNodeSkin";
 export class OdysseyModelFactory {
   static OdysseyModelNode: typeof OdysseyModelNode = OdysseyModelNode;
   static OdysseyModelNodeAABB: typeof OdysseyModelNodeAABB = OdysseyModelNodeAABB;
+  static OdysseyModelNodeAnimMesh: typeof OdysseyModelNodeAnimMesh = OdysseyModelNodeAnimMesh;
   static OdysseyModelNodeDangly: typeof OdysseyModelNodeDangly = OdysseyModelNodeDangly;
   static OdysseyModelNodeEmitter: typeof OdysseyModelNodeEmitter = OdysseyModelNodeEmitter;
   static OdysseyModelNodeLight: typeof OdysseyModelNodeLight = OdysseyModelNodeLight;
@@ -50,8 +52,11 @@ export class OdysseyModelFactory {
       node = new OdysseyModelNodeSaber(parent);
     }else if ((NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) {
       node = new OdysseyModelNodeAABB(parent);
-    }else if ((NodeType & OdysseyModelNodeType.Anim) == OdysseyModelNodeType.Anim) {
-      mdlReader.position += 0x38;
+    }else if (
+      (NodeType & OdysseyModelNodeType.Anim) == OdysseyModelNodeType.Anim &&
+      (NodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh
+    ) {
+      node = new OdysseyModelNodeAnimMesh(parent);
     }else if ((NodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
       node = new OdysseyModelNodeMesh(parent);
     }else if ((NodeType & OdysseyModelNodeType.Reference) == OdysseyModelNodeType.Reference) {

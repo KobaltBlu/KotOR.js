@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { ModuleCreature, ModulePlaceable } from "../../../module";
-import { MenuContainer as K1_MenuContainer } from "../../kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { ModuleCreature, ModulePlaceable } from "@/module";
+import { MenuContainer as K1_MenuContainer } from "@/game/kotor/KOTOR";
 
 /**
  * MenuContainer class.
@@ -33,7 +33,7 @@ export class MenuContainer extends K1_MenuContainer {
     return new Promise<void>((resolve, reject) => {
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.LB_ITEMS.clearItems();
+        this.LB_ITEMS.setItems([]);
         if(this.container instanceof ModulePlaceable){
           this.container.close(GameState.PartyManager.party[0]);
         }
@@ -43,7 +43,7 @@ export class MenuContainer extends K1_MenuContainer {
 
       this.BTN_OK.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.LB_ITEMS.clearItems();
+        this.LB_ITEMS.setItems([]);
         if(this.container instanceof ModulePlaceable){
           this.container.retrieveInventory();
           this.container.close(GameState.PartyManager.party[0]);

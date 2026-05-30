@@ -1,4 +1,4 @@
-import * as KotOR from "../KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
 
 export class ForgeMGGunBullet {
   // Basic properties

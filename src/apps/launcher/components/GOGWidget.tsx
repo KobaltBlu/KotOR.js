@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import '../styles/GOGWidget.scss';
+import "@/apps/launcher/styles/GOGWidget.scss";
 
 // Types and Interfaces
 export enum ContentType {
