@@ -123,7 +123,7 @@
     "user-agent-data-types": "^0.4.2",
     "webpack": "^5.104.1",
     "webpack-cli": "^7.0.2",
-    "webpack-dev-server": "^5.2.3",
+    "webpack-dev-server": "^5.2.4",
     "webpackbar": "^7.0.0"
   },
   "dependencies": {
