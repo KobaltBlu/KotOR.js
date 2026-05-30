@@ -116,6 +116,14 @@ npm run dev:hmr
 ```
 Runs `webpack:dev-kotor-watch` (engine + workers only) and a **webpack-dev-server** with HMR for the game client. Open **http://localhost:8080/game/?key=kotor**, load into the game, then edit TypeScript under `src/` — successful hot updates keep the live Three.js scene and `GameState` intact instead of forcing a full page reload.
 
+Point the dev server at a local KOTOR I install (Steam/GOG) so the browser can read `chitin.key` and game assets without the File System Access picker:
+
+```bash
+KOTOR_DEV_GAME_DIR=/path/to/swkotor KOTOR_DEV_PORT=8095 npm run dev:hmr
+```
+
+Then open **http://localhost:8095/game/?key=kotor** (port defaults to `8080` when `KOTOR_DEV_PORT` is unset). `webpack/dev-game-fs-middleware.js` serves files from `KOTOR_DEV_GAME_DIR` under `/__kotor_dev_fs`.
+
 > The HMR server inlines the engine module graph for hot-swap; `webpack:dev-kotor-watch` rebuilds `dist/KotOR.js` and workers without overwriting the HMR game bundle.
 
 > `npm run dev` remains the classic watch + static serve flow. Use `dev:hmr` when iterating on gameplay or engine logic in-browser.
