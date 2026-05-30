@@ -125,17 +125,13 @@ export class ResourceLoader {
       throw new Error(`Invalid resRef ${resRef}`);
     }
 
+    resRef = resRef.toLowerCase();
+
     //Resource Cache
     let data = ResourceLoader.getCache(resId, resRef);
     if(data){
       return data;
     }
-
-    // data = await this.searchLocal(resId, resRef);
-    // if(data){
-    //   ResourceLoader.setCache(null, resId, resRef, data);
-    //   return data;
-    // }
 
     data = await this.searchKeyTable(resId, resRef);
     if(data){
@@ -149,10 +145,20 @@ export class ResourceLoader {
       return data;
     }
 
-    //Resource Not Found
-    if(!data){
-      throw new Error(`Resource not found: ResRef: ${resRef} ResId: ${resId}`);
+    data = await this.searchModules(resId, resRef);
+    if(data){
+      ResourceLoader.setCache(null, resId, resRef, data);
+      return data;
     }
+
+    data = await this.searchOverride(resId, resRef);
+    if(data){
+      ResourceLoader.setCache(null, resId, resRef, data);
+      return data;
+    }
+
+    //Resource Not Found
+    throw new Error(`Resource not found: ResRef: ${resRef} ResId: ${resId}`);
 
   }
 
@@ -183,6 +189,7 @@ export class ResourceLoader {
   }
 
   static getCache(resId: number, resRef: string): Uint8Array {
+    resRef = resRef.toLowerCase();
     if(ResourceLoader.CacheScopes[CacheScope.OVERRIDE].get(resId).has(resRef)){
       return ResourceLoader.CacheScopes[CacheScope.OVERRIDE].get(resId).get(resRef);
     }

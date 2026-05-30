@@ -141,7 +141,7 @@ export class BIFObject {
     const len = KEYManager.Key.keys.length;
     for(let i = 0; i < len; i++){
       let key = KEYManager.Key.keys[i];
-      if(key.resRef == resRef && key.resType == ResType){
+      if(key.resRef.toLowerCase() == resRef.toLowerCase() && key.resType == ResType){
         for(let j = 0; j != this.resources.length; j++){
           let res = this.resources[j];
           if(res.Id == key.resId && res.resType == ResType){

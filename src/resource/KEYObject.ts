@@ -70,7 +70,9 @@ export class KEYObject {
 
     for(let i = 0; i < this.bifCount; i++){
       this.reader.seek(this.bifs[i].filenameOffset);
-      this.bifs[i].filename = this.reader.readChars(this.bifs[i].filenameSize).replace(/\0[\s\S]*$/g,'').toLocaleString().split('\\').join(path.sep);
+      this.bifs[i].filename = this.reader.readChars(this.bifs[i].filenameSize)
+        .replace(/\0[\s\S]*$/g,'')
+        .replace(/\\/g, path.sep);
     }
 
     this.reader.seek(this.offsetToKeyTable);
@@ -86,6 +88,7 @@ export class KEYObject {
     this._keyByRefType = new Map();
     for(let i = 0; i < this.keys.length; i++){
       const key = this.keys[i];
+      key.resRef = key.resRef.toLowerCase();
       this._keyByResIdType.set(`${key.resId}:${key.resType}`, key);
       this._keyByRefType.set(`${key.resRef}:${key.resType}`, key);
     }
@@ -103,7 +106,7 @@ export class KEYObject {
   }
 
   getFileKey(ResRef: string, ResType: number): IKEYEntry | null {
-    return this._keyByRefType.get(`${ResRef}:${ResType}`) ?? null;
+    return this._keyByRefType.get(`${ResRef.toLowerCase()}:${ResType}`) ?? null;
   }
 
   getFileKeyByRes(Res: IBIFResource): IKEYEntry {

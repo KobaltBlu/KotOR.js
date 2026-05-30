@@ -158,8 +158,10 @@ export class RIMObject {
       await this.readHeaderFromFileDecriptor(fd);
     }catch(e){
       console.error('RIM Header Read', e);
+      throw e;
+    }finally{
+      await GameFileSystem.close(fd);
     }
-    await GameFileSystem.close(fd);
   }
 
   getResourceInfo(resRef: string, resType: number): IRIMResource|undefined {

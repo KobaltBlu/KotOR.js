@@ -160,9 +160,11 @@ export class GameFileSystem {
     }else{
       const file = await this.open(filepath);
       if(!file) throw new Error('Failed to read file');
-      
-      let handle = await file.getFile();
-      return new Uint8Array( await handle.arrayBuffer() );
+      if (isDevGameFileHandle(file)) {
+        return devGameReadFile(filepath);
+      }
+      const handle = await file.getFile();
+      return new Uint8Array(await handle.arrayBuffer());
     }
   }
 
