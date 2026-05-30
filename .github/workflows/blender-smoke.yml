@@ -1,0 +1,74 @@
+name: Blender Smoke Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      install_blender:
+        description: Install Blender from apt before smoke test
+        type: boolean
+        required: false
+        default: true
+      kotorblender_repo:
+        description: 'Optional owner/repo to clone (example: KobaltBlu/kotorblender)'
+        type: string
+        required: false
+      kotorblender_ref:
+        description: Optional git ref for kotorblender checkout
+        type: string
+        required: false
+      kotorblender_module:
+        description: 'Python addon module name (default: kotorblender)'
+        type: string
+        required: false
+        default: kotorblender
+  schedule:
+    - cron: '0 9 * * 1'
+
+concurrency:
+  group: blender-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Blender
+        if: ${{ github.event_name == 'schedule' || inputs.install_blender }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y blender
+
+      - name: Verify Blender is available
+        run: blender --version
+
+      - name: Checkout optional kotorblender repository
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.kotorblender_repo != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.kotorblender_repo }}
+          ref: ${{ inputs.kotorblender_ref || '' }}
+          path: external/kotorblender
+
+      - name: Run Blender smoke script
+        env:
+          BLENDER_SMOKE_OUTPUT_DIR: ${{ runner.temp }}/kotor_blender_smoke
+          KOTORBLENDER_PATH: ${{ github.event_name == 'workflow_dispatch' && inputs.kotorblender_repo != '' && format('{0}/{1}', github.workspace, 'external/kotorblender') || '' }}
+          KOTORBLENDER_MODULE: ${{ github.event_name == 'workflow_dispatch' && inputs.kotorblender_module || 'kotorblender' }}
+        run: |
+          blender --background --factory-startup --python scripts/ci/blender_smoke.py
+
+      - name: Upload smoke logs/artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blender-smoke-artifacts
+          path: ${{ runner.temp }}/kotor_blender_smoke
+          if-no-files-found: ignore
+          retention-days: 7

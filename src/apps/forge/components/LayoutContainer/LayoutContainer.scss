@@ -4,7 +4,7 @@
 // Extracted from app.scss and related layout files for better organization
 
 // Import variables
-@import "../../styles/variables";
+@use "../../styles/variables" as *;
 
 // =============================================================================
 // LAYOUT CONTAINER BASE

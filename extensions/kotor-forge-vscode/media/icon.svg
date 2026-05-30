@@ -1,0 +1,17 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="128" height="128" rx="16" fill="#0078d4"/>
+
+  <!-- K -->
+  <path d="M 25 30 L 40 30 L 40 55 L 60 35 L 78 35 L 55 58 L 80 85 L 62 85 L 40 62 L 40 85 L 25 85 Z" fill="#ffffff"/>
+
+  <!-- Lightsaber effect -->
+  <rect x="85" y="40" width="4" height="50" rx="2" fill="#00ff00" opacity="0.8"/>
+  <rect x="92" y="35" width="4" height="60" rx="2" fill="#ff0000" opacity="0.8"/>
+
+  <!-- Glow effect -->
+  <circle cx="64" cy="64" r="50" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.2"/>
+
+  <!-- Text at bottom -->
+  <text x="64" y="110" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#ffffff" text-anchor="middle">FORGE</text>
+</svg>

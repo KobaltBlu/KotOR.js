@@ -1,8 +1,8 @@
 /**
  * CombatFeatType enum.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CombatFeatType.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -191,7 +191,7 @@ export enum CombatFeatType {
   MASTERCRAFT_WEAPONS_I = 176,
   MASTERCRAFT_WEAPONS_II = 177,
   MASTERCRAFT_WEAPONS_III = 178,
-  MASTERCRAFT_ARMOR_I =  179,
+  MASTERCRAFT_ARMOR_I = 179,
   MASTERCRAFT_ARMOR_II = 180,
   MASTERCRAFT_ARMOR_III = 181,
   DROID_INTERFACE = 182,

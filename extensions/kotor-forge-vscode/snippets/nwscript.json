@@ -1,0 +1,75 @@
+{
+  "Main entry point": {
+    "prefix": "main",
+    "body": [
+      "void main()",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "Main entry point for NWScript"
+  },
+  "GetPC": {
+    "prefix": "GetPC",
+    "body": ["GetPC($0)"],
+    "description": "Get the player character object"
+  },
+  "Switch statement": {
+    "prefix": "switch",
+    "body": [
+      "switch (${1:expression})",
+      "{",
+      "\tcase ${2:value}:",
+      "\t\t$0",
+      "\t\tbreak;",
+      "\tdefault:",
+      "\t\tbreak;",
+      "}"
+    ],
+    "description": "Switch statement"
+  },
+  "If then else": {
+    "prefix": "ifelse",
+    "body": [
+      "if (${1:condition})",
+      "{",
+      "\t$2",
+      "}",
+      "else",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "If-else block"
+  },
+  "For loop": {
+    "prefix": "for",
+    "body": [
+      "for (${1:i} = ${2:0}; ${1:i} < ${3:count}; ${1:i}++)",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "For loop"
+  },
+  "While loop": {
+    "prefix": "while",
+    "body": [
+      "while (${1:condition})",
+      "{",
+      "\t$0",
+      "}"
+    ],
+    "description": "While loop"
+  },
+  "ApplyEffectToObject": {
+    "prefix": "ApplyEffectToObject",
+    "body": ["ApplyEffectToObject(DURATION_TYPE_${1:PERMANENT}, Effect${2:VisualEffect}(${3:VFX_IMP_HEAD_ACID}), ${4:oTarget});"],
+    "description": "Apply effect to object"
+  },
+  "GetFirstObjectInArea": {
+    "prefix": "GetFirstObjectInArea",
+    "body": ["object o = GetFirstObjectInArea(${1:area});", "while (GetIsObjectValid(o))", "{", "\t$0", "\to = GetNextObjectInArea();", "}"],
+    "description": "Iterate objects in area"
+  }
+}

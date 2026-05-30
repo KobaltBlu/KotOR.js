@@ -1,23 +1,19 @@
-import * as path from "path";
-import { ApplicationProfile } from "../utility/ApplicationProfile";
+import { VideoManager } from '@/managers/VideoManager';
 
-/**
- * VideoPlayer class.
- * 
- * The VideoPlayer class. 
- * This class is incomplete and will be updated in the future.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
- * @file VideoPlayer.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
- */
 export class VideoPlayer {
-
-  static async Load(resref = ''): Promise<void> {
-    //todo: implement
-    return;
+  static async Load(movieName: string): Promise<void> {
+    await VideoManager.playMovie(movieName);
   }
 
+  static IsMoviePlaying(): boolean {
+    return VideoManager.isMoviePlaying();
+  }
+
+  static QueueMovie(movieName: string, skippable: boolean = false): void {
+    VideoManager.queueMovie(movieName, skippable);
+  }
+
+  static async PlayMovieQueue(onComplete?: Function): Promise<void> {
+    await VideoManager.playMovieQueue(onComplete);
+  }
 }

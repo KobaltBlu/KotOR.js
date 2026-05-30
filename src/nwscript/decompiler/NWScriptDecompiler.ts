@@ -1,19 +1,19 @@
-import type { NWScript } from "../NWScript";
-import { NWScriptControlFlowGraph } from "./NWScriptControlFlowGraph";
-import { NWScriptControlStructureBuilder } from "./NWScriptControlStructureBuilder";
-import { NWScriptFunctionAnalyzer } from "./NWScriptFunctionAnalyzer";
-import { NWScriptASTCodeGenerator } from "./NWScriptASTCodeGenerator";
-import { NWScriptGlobalVariableAnalyzer } from "./NWScriptGlobalVariableAnalyzer";
-import { NWScriptLocalVariableAnalyzer } from "./NWScriptLocalVariableAnalyzer";
-import { NWScriptControlNodeToASTConverter } from "./NWScriptControlNodeToASTConverter";
-import { NWScriptAST } from "./NWScriptAST";
+import type { NWScript } from '@/nwscript/NWScript';
+import { NWScriptControlFlowGraph } from '@/nwscript/decompiler/NWScriptControlFlowGraph';
+import { NWScriptControlStructureBuilder } from '@/nwscript/decompiler/NWScriptControlStructureBuilder';
+import { NWScriptFunctionAnalyzer } from '@/nwscript/decompiler/NWScriptFunctionAnalyzer';
+import { NWScriptASTCodeGenerator } from '@/nwscript/decompiler/NWScriptASTCodeGenerator';
+import { NWScriptGlobalVariableAnalyzer } from '@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer';
+import { NWScriptLocalVariableAnalyzer } from '@/nwscript/decompiler/NWScriptLocalVariableAnalyzer';
+import { NWScriptControlNodeToASTConverter } from '@/nwscript/decompiler/NWScriptControlNodeToASTConverter';
+import { NWScriptAST } from '@/nwscript/decompiler/NWScriptAST';
 
 /**
  * Main decompiler orchestrator.
  * Coordinates all decompilation phases to convert NCS bytecode to NSS source.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptDecompiler.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -34,9 +34,9 @@ export class NWScriptDecompiler {
 
   /**
    * Decompile the script from NCS to NSS
-   * 
+   *
    * Pipeline (Option A - ControlNode-First):
-   * CFG -> StructureBuilder -> Variable Analyzers -> Function Analyzer -> 
+   * CFG -> StructureBuilder -> Variable Analyzers -> Function Analyzer ->
    * ControlNode Tree -> AST Converter -> Code Generator
    */
   decompile(): string {
@@ -83,13 +83,15 @@ export class NWScriptDecompiler {
       this.structureBuilder = new NWScriptControlStructureBuilder(this.cfg);
       this.structureBuilder.analyze();
       // console.log(JSON.stringify(this.structureBuilder.toJSON(), null, 2));
-      
+
       // Use the main function's entry block, not the CFG entry block
       // The CFG entry block is the JSR caller, but we need the actual function entry block
-      const mainFunction = functions.find(f => f.isMain);
+      const mainFunction = functions.find((f) => f.isMain);
       const functionEntryBlock = mainFunction?.entryBlock || this.cfg.entryBlock;
-      console.log(`[Decompiler] Building ControlNode tree from function entry block ${functionEntryBlock.id} (CFG entry block is ${this.cfg.entryBlock.id})`);
-      
+      console.log(
+        `[Decompiler] Building ControlNode tree from function entry block ${functionEntryBlock.id} (CFG entry block is ${this.cfg.entryBlock.id})`
+      );
+
       const controlNodeTree = this.structureBuilder.buildProcedure(functionEntryBlock);
       console.log('ControlNode tree built successfully');
       console.log(`[Decompiler] CFG has ${this.cfg.blocks.size} blocks`);
@@ -98,12 +100,7 @@ export class NWScriptDecompiler {
 
       // Phase 6: Convert ControlNode Tree to AST
       console.log('Converting ControlNode tree to AST...');
-      this.astConverter = new NWScriptControlNodeToASTConverter(
-        this.cfg,
-        functions,
-        globalInits,
-        localInits
-      );
+      this.astConverter = new NWScriptControlNodeToASTConverter(this.cfg, functions, globalInits, localInits);
       const ast = this.astConverter.convertToAST(controlNodeTree, this.structureBuilder);
       console.log('AST built successfully');
       console.log('AST JSON:', JSON.stringify(NWScriptAST.toJSON(ast), null, 2));
@@ -118,19 +115,19 @@ export class NWScriptDecompiler {
       return header + '\n\n' + nssSource;
     } catch (error) {
       console.error('Decompilation error:', error);
-      return `// Error during decompilation: ${error instanceof Error ? error.message : String(error)}`;
+      return `// Error while reconstructing NSS: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
 
   /**
-   * Generate header comment for decompiled code
+   * Generate header comment for output NSS
    */
   private generateHeader(): string {
     const lines: string[] = [];
-    lines.push('// Decompiled NSS source');
+    lines.push('// NSS source (reconstructed from compiled script)');
     lines.push(`// Original script: ${this.script.name || 'unknown'}`);
     lines.push('//');
-    lines.push('// NOTE: This is decompiled code. Variable names and structure');
+    lines.push('// NOTE: Reconstructed from bytecode. Variable names and structure');
     lines.push('// may not match the original source exactly.');
     lines.push('//');
     return lines.join('\n');

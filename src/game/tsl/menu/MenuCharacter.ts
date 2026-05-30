@@ -1,22 +1,21 @@
-import { GameState } from "../../../GameState";
-import { LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton, GUISlider } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import { OdysseyModel } from "../../../odyssey";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { MenuCharacter as K1_MenuCharacter } from "../../kotor/KOTOR";
+import { GameState } from '@/GameState';
+import { LBL_3DView } from '@/gui';
+import type { GUILabel, GUIButton, GUISlider } from '@/gui';
+import { MDLLoader, TextureLoader } from '@/loaders';
+import { OdysseyModel } from '@/odyssey';
+import { OdysseyModel3D } from '@/three/odyssey';
+import { MenuCharacter as K1_MenuCharacter } from '@/game/kotor/KOTOR';
 
 /**
  * MenuCharacter class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuCharacter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuCharacter extends K1_MenuCharacter {
-
   declare LBL_BAR6: GUILabel;
   declare LBL_STATSBORDER: GUILabel;
   declare LBL_MORE_BACK: GUILabel;
@@ -73,7 +72,7 @@ export class MenuCharacter extends K1_MenuCharacter {
   declare BTN_LEVELUP: GUIButton;
   declare LBL_FORCEMASTERY: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'character_p';
     this.background = 'blackfill';
@@ -82,7 +81,7 @@ export class MenuCharacter extends K1_MenuCharacter {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -92,93 +91,104 @@ export class MenuCharacter extends K1_MenuCharacter {
 
       this.BTN_AUTO.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.getCurrentPlayer().canLevelUp()){
+        if (GameState.getCurrentPlayer().canLevelUp()) {
           GameState.getCurrentPlayer().autoLevelUp();
           this.updateCharacterStats(GameState.getCurrentPlayer());
         }
       });
       this._button_y = this.BTN_AUTO;
 
-      MDLLoader.loader.load('charmain_light').then((mdl: OdysseyModel) => {
-        OdysseyModel3D.FromMDL(mdl, {
-          context: this._3dView,
-          // manageLighting: false,
-        }).then((model: OdysseyModel3D) => {
-          try{
-            this._3dView = new LBL_3DView();
-            this._3dView.visible = true;
-            this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
-            this._3dView.camera.updateProjectionMatrix();
-            (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
-            (this.LBL_3DCHAR.getFill().material as any).transparent = false;
-            this._3dView.setControl(this.LBL_3DCHAR);
-            (this.LBL_3DCHAR.getFill().material as any).visible = true;
+      this.BTN_CHANGE1?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 1) {
+          GameState.PartyManager.SwitchLeaderAtIndex(1);
+          this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+          this.updateCharacterStats(GameState.PartyManager.party[0]);
+          this.updatePartyMemberPortraitButtons();
+        }
+      });
+      this.BTN_CHANGE2?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 2) {
+          GameState.PartyManager.SwitchLeaderAtIndex(2);
+          this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+          this.updateCharacterStats(GameState.PartyManager.party[0]);
+          this.updatePartyMemberPortraitButtons();
+        }
+      });
 
-            this._3dViewModel = model;
-            this._3dView.addModel(this._3dViewModel);
-            
-            this._3dView.camera.position.copy(model.camerahook.position);
-            this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
-          }catch(e){
-            console.error(e);
-            resolve();
-            return;
-          }
+      GameState.PartyManager.AddEventListener('change', () => {
+        if (!this.bVisible) return;
+        this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+        this.updateCharacterStats(GameState.PartyManager.party[0]);
+        this.updatePartyMemberPortraitButtons();
+      });
 
-          TextureLoader.LoadQueue().then(() => {
-            this._3dViewModel.playAnimation(0, true);
-            resolve();
-          });
-        }).catch( (e: any) => {
+      MDLLoader.loader
+        .load('charmain_light')
+        .then((mdl: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            context: this._3dView,
+            // manageLighting: false,
+          })
+            .then((model: OdysseyModel3D) => {
+              try {
+                this._3dView = new LBL_3DView();
+                this._3dView.visible = true;
+                this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
+                this._3dView.camera.updateProjectionMatrix();
+                (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
+                (this.LBL_3DCHAR.getFill().material as any).transparent = false;
+                this._3dView.setControl(this.LBL_3DCHAR);
+                (this.LBL_3DCHAR.getFill().material as any).visible = true;
+
+                this._3dViewModel = model;
+                this._3dView.addModel(this._3dViewModel);
+
+                this._3dView.camera.position.copy(model.camerahook.position);
+                this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+              } catch (e) {
+                console.error(e);
+                resolve();
+                return;
+              }
+
+              TextureLoader.LoadQueue().then(() => {
+                this._3dViewModel.playAnimation(0, true);
+                resolve();
+              });
+            })
+            .catch((e: unknown) => {
+              console.error(e);
+              resolve();
+            });
+        })
+        .catch((e: unknown) => {
           console.error(e);
           resolve();
         });
-      }).catch( (e: any) => {
-        console.error(e);
-        resolve();
-      });
     });
   }
 
   update(delta: number) {
     super.update(delta);
-    if (!this.bVisible)
-      return;
-    if (this.char)
-      this.char.update(delta);
+    if (!this.bVisible) return;
+    if (this.char) this.char.update(delta);
     try {
       this._3dView.render(delta);
       (this.LBL_3DCHAR.getFill().material as any).needsUpdate = true;
-    } catch (e: any) { }
+    } catch (_e: unknown) {}
   }
 
   show() {
     super.show();
-    try{
+    try {
       this.recalculatePosition();
       this.updateCharacterPortrait(GameState.PartyManager.party[0]);
       this.updateCharacterStats(GameState.PartyManager.party[0]);
-      
-      this.BTN_CHANGE1?.hide();
-      this.BTN_CHANGE2?.hide();
-      for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-        let partyMember = GameState.PartyManager.party[i];
-        const portraitResRef = partyMember.getPortraitResRef();
-        if (!i) {
-          
-        } else {
-          const BTN_CHANGE = this.getControlByName('BTN_CHANGE' + i);
-          if(BTN_CHANGE){
-            BTN_CHANGE.show();
-            if (BTN_CHANGE.getFillTextureName() != portraitResRef) {
-              BTN_CHANGE.setFillTextureName(portraitResRef);
-            }
-          }
-        }
-      }
-    }catch(e){
+      this.updatePartyMemberPortraitButtons();
+    } catch (e) {
       console.error(e);
     }
   }
-  
 }

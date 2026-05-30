@@ -1,4 +1,4 @@
-@import '../../../styles/_variables.scss';
+@use '../../../styles/variables' as *;
 .feat-row {
   display: flex;
   gap: 10px;
@@ -74,6 +74,10 @@
 // =============================================================================
 // INVENTORY SLOTS
 // =============================================================================
+
+.utc-inventory-table {
+  font-size: 0.85rem;
+}
 
 .iSlots {
   width: 200px;

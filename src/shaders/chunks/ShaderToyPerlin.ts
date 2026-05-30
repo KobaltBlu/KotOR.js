@@ -1,4 +1,3 @@
-
 export const shadertoy_perlin = `
 /* https://www.shadertoy.com/view/XsX3zB
 *

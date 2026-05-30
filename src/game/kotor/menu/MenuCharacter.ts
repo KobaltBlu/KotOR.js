@@ -1,23 +1,22 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton, GUISlider, GUIControl } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import type { ModuleCreature, ModuleItem } from "../../../module";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import * as THREE from "three";
-import { OdysseyModel } from "../../../odyssey";
+import { GameState } from '@/GameState';
+import { GameMenu, LBL_3DView } from '@/gui';
+import type { GUILabel, GUIButton, GUISlider, GUIControl } from '@/gui';
+import { MDLLoader, TextureLoader } from '@/loaders';
+import type { ModuleCreature, ModuleItem } from '@/module';
+import { OdysseyModel3D } from '@/three/odyssey';
+import * as THREE from 'three';
+import { OdysseyModel } from '@/odyssey';
 
 /**
  * MenuCharacter class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuCharacter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuCharacter extends GameMenu {
-
   LBL_3DCHAR: GUILabel;
   BTN_3DCHAR: GUIButton;
   LBL_ADORN: GUILabel;
@@ -88,7 +87,7 @@ export class MenuCharacter extends GameMenu {
   _3dView: LBL_3DView;
   char: OdysseyModel3D;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'character';
     this.background = '1600x1200back';
@@ -97,7 +96,7 @@ export class MenuCharacter extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
       this.SLD_ALIGN.setVertical();
@@ -111,80 +110,102 @@ export class MenuCharacter extends GameMenu {
 
       this.BTN_AUTO.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.getCurrentPlayer().canLevelUp()){
+        if (GameState.getCurrentPlayer().canLevelUp()) {
           GameState.getCurrentPlayer().autoLevelUp();
           this.updateCharacterStats(GameState.getCurrentPlayer());
         }
       });
       this._button_y = this.BTN_AUTO;
 
-      MDLLoader.loader.load('charrec_light').then((mdl: OdysseyModel) => {
-          
-        //this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
-        this._3dView = new LBL_3DView(this.LBL_3DCHAR.extent.width, this.LBL_3DCHAR.extent.height);
-        this._3dView.setControl(this.LBL_3DCHAR);
-        this._3dView.visible = true;
+      this.BTN_CHANGE1?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 1) {
+          GameState.PartyManager.SwitchLeaderAtIndex(1);
+          this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+          this.updateCharacterStats(GameState.PartyManager.party[0]);
+          this.updatePartyMemberPortraitButtons();
+        }
+      });
+      this.BTN_CHANGE2?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 2) {
+          GameState.PartyManager.SwitchLeaderAtIndex(2);
+          this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+          this.updateCharacterStats(GameState.PartyManager.party[0]);
+          this.updatePartyMemberPortraitButtons();
+        }
+      });
 
-        this.LBL_GOOD1?.hide();
-        this.LBL_GOOD2?.hide();
-        this.LBL_GOOD3?.hide();
-        this.LBL_GOOD4?.hide();
-        this.LBL_GOOD5?.hide();
-        this.LBL_GOOD6?.hide();
-        this.LBL_GOOD7?.hide();
-        this.LBL_GOOD8?.hide();
-        this.LBL_GOOD9?.hide();
-        this.LBL_GOOD10?.hide();
-        this.LBL_MORE?.hide();
+      GameState.PartyManager.AddEventListener('change', () => {
+        if (!this.bVisible) return;
+        this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+        this.updateCharacterStats(GameState.PartyManager.party[0]);
+        this.updatePartyMemberPortraitButtons();
+      });
 
-        this.BTN_AUTO?.hide();
-        this.BTN_LEVELUP?.hide();
-        
-        OdysseyModel3D.FromMDL(mdl, {
-          // manageLighting: false,
-          context: this._3dView
-        }).then((model: OdysseyModel3D) => {
-          //console.log('Model Loaded', model);
-          this._3dViewModel = model;
-          this._3dView.addModel(this._3dViewModel);
-          
-          this._3dView.camera.position.copy(
-            model.camerahook.position
-          );
+      MDLLoader.loader
+        .load('charrec_light')
+        .then((mdl: OdysseyModel) => {
+          //this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
+          this._3dView = new LBL_3DView(this.LBL_3DCHAR.extent.width, this.LBL_3DCHAR.extent.height);
+          this._3dView.setControl(this.LBL_3DCHAR);
+          this._3dView.visible = true;
 
-          this._3dView.camera.quaternion.copy(
-            model.camerahook.quaternion
-          );
+          this.LBL_GOOD1?.hide();
+          this.LBL_GOOD2?.hide();
+          this.LBL_GOOD3?.hide();
+          this.LBL_GOOD4?.hide();
+          this.LBL_GOOD5?.hide();
+          this.LBL_GOOD6?.hide();
+          this.LBL_GOOD7?.hide();
+          this.LBL_GOOD8?.hide();
+          this.LBL_GOOD9?.hide();
+          this.LBL_GOOD10?.hide();
+          this.LBL_MORE?.hide();
 
-          TextureLoader.LoadQueue().then(() => {
-            this.LBL_3DCHAR.setFillTexture(this.LBL_3DCHAR.getFillTexture());
-            this._3dViewModel.playAnimation(0, true);
-            resolve();
-          });
+          this.BTN_AUTO?.hide();
+          this.BTN_LEVELUP?.hide();
 
-        }).catch((e: any) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            // manageLighting: false,
+            context: this._3dView,
+          })
+            .then((model: OdysseyModel3D) => {
+              //console.log('Model Loaded', model);
+              this._3dViewModel = model;
+              this._3dView.addModel(this._3dViewModel);
+
+              this._3dView.camera.position.copy(model.camerahook.position);
+
+              this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+
+              TextureLoader.LoadQueue().then(() => {
+                this.LBL_3DCHAR.setFillTexture(this.LBL_3DCHAR.getFillTexture());
+                this._3dViewModel.playAnimation(0, true);
+                resolve();
+              });
+            })
+            .catch((_e: unknown) => {
+              resolve();
+            });
+        })
+        .catch((_e: unknown) => {
           resolve();
         });
-      }).catch((e: any) => {
-        resolve();
-      });
     });
   }
 
   update(delta = 0) {
     super.update(delta);
-    if (!this.bVisible)
-      return;
-    if (this.char)
-      this.char.update(delta);
+    if (!this.bVisible) return;
+    if (this.char) this.char.update(delta);
     try {
       this._3dView.render(delta);
-    } catch (e: any) {
-    }
+    } catch (e: unknown) {}
   }
 
   updateCharacterStats(character: ModuleCreature) {
-    if(!character) return;
+    if (!character) return;
     this.LBL_CLASS1?.hide();
     this.LBL_LEVEL1?.hide();
     this.LBL_CLASS2?.hide();
@@ -192,7 +213,7 @@ export class MenuCharacter extends GameMenu {
     if (character.classes[0]) {
       this.LBL_LEVEL1?.setText(character.classes[0].level);
       this.LBL_LEVEL1?.show();
-      if(this.LBL_CLASS1){
+      if (this.LBL_CLASS1) {
         this.LBL_CLASS1.setText(character.classes[0].getName());
         this.LBL_CLASS1.show();
         this.LBL_CLASS1.extent.top = 98;
@@ -221,7 +242,11 @@ export class MenuCharacter extends GameMenu {
     this.LBL_WIS_MOD?.setText(Math.floor((character.getWIS() - 10) / 2));
     this.LBL_CHA_MOD?.setText(Math.floor((character.getCHA() - 10) / 2));
     this.LBL_EXPERIENCE_STAT?.setText(character.experience.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','));
-    this.LBL_NEEDED_XP?.setText(GameState.TwoDAManager.datatables.get('exptable').rows[character.getTotalClassLevel()].xp.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
+    this.LBL_NEEDED_XP?.setText(
+      GameState.TwoDAManager.datatables
+        .get('exptable')
+        .rows[character.getTotalClassLevel()].xp.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    );
     if (character.canLevelUp()) {
       this.BTN_AUTO?.show();
     } else {
@@ -229,20 +254,17 @@ export class MenuCharacter extends GameMenu {
     }
   }
 
-  show() {
-    super.show();
-    this.manager.MenuTop.LBLH_CHA.onHoverIn();
-    this.recalculatePosition();
-    this.SLD_ALIGN?.setValue(0.5);
-    this.updateCharacterPortrait(GameState.PartyManager.party[0]);
-    this.updateCharacterStats(GameState.PartyManager.party[0]);
+  /**
+   * Refresh the party member portrait buttons (BTN_CHANGE1, BTN_CHANGE2) to match current party order.
+   */
+  updatePartyMemberPortraitButtons() {
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
     let btn_change: GUIControl;
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       btn_change = this.getControlByName('BTN_CHANGE' + i);
-      if(btn_change){
-        let partyMember = GameState.PartyManager.party[i];
+      if (btn_change) {
+        const partyMember = GameState.PartyManager.party[i];
         const portraitResRef = partyMember.getPortraitResRef();
         if (i) {
           btn_change.show();
@@ -254,20 +276,31 @@ export class MenuCharacter extends GameMenu {
     }
   }
 
-  updateCharacterPortrait( creature: ModuleCreature ){
-    if(!creature) return;
+  show() {
+    super.show();
+    this.manager.MenuTop.LBLH_CHA.onHoverIn();
+    this.recalculatePosition();
+    this.SLD_ALIGN?.setValue(0.5);
+    this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+    this.updateCharacterStats(GameState.PartyManager.party[0]);
+    this.updatePartyMemberPortraitButtons();
+  }
 
-    this.SLD_ALIGN?.setValue(creature.getGoodEvil()/100);
+  updateCharacterPortrait(creature: ModuleCreature) {
+    if (!creature) return;
+
+    this.SLD_ALIGN?.setValue(creature.getGoodEvil() / 100);
+
+    const portraitAttachRoot = this._3dViewModel?.getRootOdysseyNode?.() || this._3dViewModel;
 
     if (this.char) {
-      this._3dViewModel.children[0].children[0].remove(this.char);
+      this.char.removeFromParent();
     }
-    if(creature){
+    if (creature) {
       this._3dView.camera.position.z = 1;
-      let objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
-      let clone = creature;
-      objectCreature.appearance = clone.appearance;
-      objectCreature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(objectCreature.appearance);
+      const objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
+      const clone = creature;
+      objectCreature.setAppearance(clone.appearance);
       if (clone.equipment.ARMOR) {
         objectCreature.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(clone.equipment.ARMOR.template);
       }
@@ -312,13 +345,13 @@ export class MenuCharacter extends GameMenu {
       } else if (clone.goodEvil >= 0) {
         this._3dViewModel.playAnimation('evil');
       }
-      objectCreature.loadModel().then( (model: OdysseyModel3D) => {
+      objectCreature.loadModel().then((model: OdysseyModel3D) => {
         model.position.set(0, 0, 0);
         model.rotation.x = -Math.PI / 2;
         model.rotation.z = Math.PI;
         model.box = new THREE.Box3().setFromObject(model);
         this.char = model;
-        this._3dViewModel.children[0].children[0].add(this.char);
+        portraitAttachRoot?.add(this.char);
         TextureLoader.LoadQueue().then(() => {
           if (clone.goodEvil >= 95) {
             this.char.playAnimation('good', true);
@@ -373,5 +406,4 @@ export class MenuCharacter extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_ABI.click();
   }
-  
 }

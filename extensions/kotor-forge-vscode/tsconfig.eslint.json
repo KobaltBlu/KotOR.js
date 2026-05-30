@@ -1,0 +1,8 @@
+{
+  "extends": "./server/tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["server/src/**/*.ts"],
+  "exclude": ["node_modules", "server/out", ".history"]
+}

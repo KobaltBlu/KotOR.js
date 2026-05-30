@@ -1,8 +1,8 @@
 /**
  * DLGNodeEngineType enum.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file DLGNodeEngineType.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -10,5 +10,5 @@
  */
 export enum DLGNodeEngineType {
   K1 = 0,
-  K2 = 1
-};
+  K2 = 1,
+}
