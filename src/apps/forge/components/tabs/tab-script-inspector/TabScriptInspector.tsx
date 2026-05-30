@@ -1,9 +1,9 @@
 import React, { useState } from "react";
-import * as KotOR from "../../../KotOR";
-import { TabTextEditorState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "../../../../../nwscript/NWScriptOPCodes";
-import { MenuBar, MenuItem } from "../../common/MenuBar";
+import * as KotOR from "@/apps/forge/KotOR";
+import { TabTextEditorState } from "@/apps/forge/states/tabs";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "@/nwscript/NWScriptOPCodes";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
 export const TabScriptInspector = function(props: any){
   const parentTab: TabTextEditorState = props.parentTab;
@@ -12,10 +12,21 @@ export const TabScriptInspector = function(props: any){
 
   const offset = 13;
 
-  const onCompile = () => {
-    // console.log('onCompile');
+  const refreshInstructions = () => {
+    if(!parentTab?.ncs?.length){
+      setInstructions([]);
+      return;
+    }
     const script = new KotOR.NWScript(parentTab.ncs);
     setInstructions([...script.instructions.values()]);
+  };
+
+  const onCompile = () => {
+    refreshInstructions();
+  };
+
+  const onEditorFileLoad = () => {
+    refreshInstructions();
   };
 
   const onCopyAssemblyToClipboard = async () => {
@@ -44,8 +55,12 @@ export const TabScriptInspector = function(props: any){
 
   useEffectOnce( () => {
     parentTab.addEventListener('onCompile', onCompile);
+    parentTab.addEventListener('onEditorFileLoad', onEditorFileLoad);
+    // Populate when opening an existing .ncs (no compile event fired).
+    refreshInstructions();
     return () => {
       parentTab.removeEventListener('onCompile', onCompile);
+      parentTab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
     }
   });
 

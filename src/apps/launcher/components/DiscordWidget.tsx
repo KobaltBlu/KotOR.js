@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../styles/DiscordWidget.scss';
+import "@/apps/launcher/styles/DiscordWidget.scss";
 
 interface DiscordMember {
   id: string;

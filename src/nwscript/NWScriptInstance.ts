@@ -1,23 +1,23 @@
-import type EngineLocation from "../engine/EngineLocation";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { DebuggerState } from "../enums/server/DebuggerState";
-import { IPCDataType } from "../enums/server/ipc/IPCDataType";
-import { IPCMessageType } from "../enums/server/ipc/IPCMessageType";
-import type { EventTimedEvent } from "../events";
-import { GameState } from "../GameState";
-import type { IPerceptionInfo } from "../interface/engine/IPerceptionInfo";
-import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
-import type { ModuleObject } from "../module";
-import type { DLGObject } from "../resource/DLGObject";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import type { TalentObject, TalentSpell } from "../talents";
-import type { NWScript } from "./NWScript";
-import type { NWScriptInstruction } from "./NWScriptInstruction";
-import { NWScriptStack } from "./NWScriptStack";
-import type { NWScriptStackVariable } from "./NWScriptStackVariable";
-import type { NWScriptSubroutine } from "./NWScriptSubroutine";
+import type EngineLocation from "@/engine/EngineLocation";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { DebuggerState } from "@/enums/server/DebuggerState";
+import { IPCDataType } from "@/enums/server/ipc/IPCDataType";
+import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
+import type { EventTimedEvent } from "@/events";
+import { GameState } from "@/GameState";
+import type { IPerceptionInfo } from "@/interface/engine/IPerceptionInfo";
+import type { INWScriptStoreState } from "@/interface/nwscript/INWScriptStoreState";
+import type { ModuleObject } from "@/module";
+import type { DLGObject } from "@/resource/DLGObject";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import type { TalentObject, TalentSpell } from "@/talents";
+import type { NWScript } from "@/nwscript/NWScript";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { NWScriptStack } from "@/nwscript/NWScriptStack";
+import type { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
+import type { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
 
 /**
  * NWScriptInstance class.

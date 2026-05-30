@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "moduleResolution": "node",
     "target": "ESNext",
     "module": "commonjs",
@@ -16,6 +17,11 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "jsx": "react",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
     "types": [
       "@types/wicg-file-system-access",
       "node",
@@ -28,6 +34,13 @@
     ],
     "outDir": "dist",
   },
-  "include": ["src/apps/game/game.tsx", "src/types", "src/index.d.ts"],
+  "include": [
+    "src/apps/game/**/*.ts",
+    "src/apps/game/**/*.tsx",
+    "src/apps/common/**/*.ts",
+    "src/apps/common/**/*.tsx",
+    "src/types",
+    "src/index.d.ts"
+  ],
   "exclude": ["node_modules", "src/**/*.spec.ts"]
 }

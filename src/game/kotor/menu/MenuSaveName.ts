@@ -1,5 +1,5 @@
-import { GameMenu } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
+import { GameMenu } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuSaveName class.
@@ -21,6 +21,7 @@ export class MenuSaveName extends GameMenu {
 
   constructor(){
     super();
+    this.isOverlayGUI = true;
     this.gui_resref = 'savename';
     this.background = '';
     this.voidFill = false;
@@ -33,8 +34,8 @@ export class MenuSaveName extends GameMenu {
       this.EDITBOX.setEditable(true);
 
       this.BTN_OK.addEventListener('click', () => {
-        // if(typeof this.onSave == 'function')
-        //   this.onSave(this.EDITBOX.getValue())
+      if(typeof this.onSave == 'function')
+          this.onSave(this.EDITBOX.getValue())
 
         this.close();
       });

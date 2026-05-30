@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useState } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTIEditorState, TabUTPEditorState } from "../../../states/tabs";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import * as KotOR from "../../../KotOR";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
-import { ForgePlaceable } from "../../../module-editor/ForgePlaceable";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import { TabUTIEditorState, TabUTPEditorState } from "@/apps/forge/states/tabs";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import * as KotOR from "@/apps/forge/KotOR";
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
 import {
   sanitizeResRef,
   clampByte,
@@ -17,11 +17,11 @@ import {
   createCExoStringFieldHandler,
   createCExoLocStringFieldHandler,
   createForgeCheckboxFieldHandler
-} from "../../../helpers/UTxEditorHelpers";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "../../SubTabHost";
-import { FormField } from "../../form-field/FormField";
-import { InfoBubble } from "../../info-bubble/info-bubble";
+} from "@/apps/forge/helpers/UTxEditorHelpers";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
 
 export const TabUTPEditor = function(props: BaseTabProps){
 

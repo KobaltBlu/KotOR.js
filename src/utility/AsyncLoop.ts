@@ -1,4 +1,4 @@
-import { IAsyncLoopOptions } from "../interface/utility/IAsyncLoopOptions";
+import { IAsyncLoopOptions } from "@/interface/utility/IAsyncLoopOptions";
 
 /**
  * AsyncLoop class.

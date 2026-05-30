@@ -1,5 +1,5 @@
-import { AnalogInput } from "./AnalogInput";
-import { KeyInput } from "./KeyInput";
+import { AnalogInput } from "@/controls/AnalogInput";
+import { KeyInput } from "@/controls/KeyInput";
 
 /**
  * GamePad class.
@@ -155,8 +155,8 @@ export class GamePad {
       }
     }
 
-    global.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
-    global.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
+    globalThis.addEventListener("gamepadconnected", function(e) { gamepadHandler(e, true); }, false);
+    globalThis.addEventListener("gamepaddisconnected", function(e) { gamepadHandler(e, false); }, false);
   }
 
 

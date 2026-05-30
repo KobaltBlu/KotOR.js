@@ -1,12 +1,12 @@
 import * as path from "path";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { ResourceTypes } from "./ResourceTypes";
-import { IERFLanguage } from "../interface/resource/IERFLanguage";
-import { IERFKeyEntry } from "../interface/resource/IERFKeyEntry";
-import { IERFResource } from "../interface/resource/IERFResource";
-import { IERFObjectHeader } from "../interface/resource/IERFObjectHeader";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { IERFLanguage } from "@/interface/resource/IERFLanguage";
+import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
+import { IERFResource } from "@/interface/resource/IERFResource";
+import { IERFObjectHeader } from "@/interface/resource/IERFObjectHeader";
   
 const ERF_HEADER_SIZE = 160;
 
@@ -35,6 +35,9 @@ export class ERFObject {
   erfDataOffset: number;
   group: string = 'erf';
   type: string = 'erf';
+
+  private _resourceIndex: Map<string, IERFResource> = new Map();
+  #fd: any;
 
   constructor(file?: string|Uint8Array){
     this.localizedStrings = [];
@@ -116,6 +119,12 @@ export class ERFObject {
       this.resources.push(resource);
     }
     this.reader.dispose();
+
+    this._resourceIndex = new Map();
+    for(let i = 0; i < this.keyList.length; i++){
+      const key = this.keyList[i];
+      this._resourceIndex.set(`${key.resRef}:${key.resType}`, this.resources[key.resId]);
+    }
   }
 
   async loadFromDisk(): Promise<void> {
@@ -151,23 +160,25 @@ export class ERFObject {
     header = new Uint8Array(0);
   }
 
-  getResource(resRef: string, resType: number): IERFResource{
-    resRef = resRef.toLowerCase();
-    for(let i = 0; i < this.keyList.length; i++){
-      let key = this.keyList[i];
-      if (key.resRef == resRef && key.resType == resType) {
-        return this.resources[key.resId];
-      }
-    };
-    return undefined;
+  getResourceInfo(resRef: string, resType: number): IERFResource {
+    return this._resourceIndex.get(`${resRef.toLowerCase()}:${resType}`);
+  }
+
+  async getFileDescription(): Promise<any> {
+    if(this.#fd) return this.#fd;
+    this.#fd = await GameFileSystem.open(this.resource_path, 'r');
+    return this.#fd;
+  }
+
+  async dispose(): Promise<void> {
+    if(this.#fd){
+      await GameFileSystem.close(this.#fd);
+      this.#fd = undefined;
+    }
   }
 
   async getResourceBuffer(resource: IERFResource): Promise<Uint8Array> {
-    if (typeof resource == 'undefined') {
-      return new Uint8Array(0);
-    }
-
-    if(!resource.size){
+    if(typeof resource == 'undefined' || !resource.size){
       return new Uint8Array(0);
     }
 
@@ -177,16 +188,19 @@ export class ERFObject {
       buffer.set(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
       return buffer;
     }else{
-      const fd = await GameFileSystem.open(this.resource_path, 'r');
+      const fd = await this.getFileDescription();
       await GameFileSystem.read(fd, buffer, 0, buffer.length, resource.offset);
-      await GameFileSystem.close(fd);
     }
 
     return buffer;
   }
 
+  hasResource(resRef: string, resType: number): boolean {
+    return this.getResourceInfo(resRef, resType) !== undefined;
+  }
+
   async getResourceBufferByResRef(resRef: string, resType: number): Promise<Uint8Array> {
-    const resource = this.getResource(resRef, resType);
+    const resource = this.getResourceInfo(resRef, resType);
     if (typeof resource === 'undefined') {
       console.error('getResourceBufferByResRef', resRef, resType, resource);
       return new Uint8Array(0);
@@ -211,7 +225,7 @@ export class ERFObject {
       return new Uint8Array(0);
     }
 
-    const resource = this.getResource(resref, restype);
+    const resource = this.getResourceInfo(resref, restype);
     if(!resource){
       return new Uint8Array(0);
     }

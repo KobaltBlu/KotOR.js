@@ -1,17 +1,17 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton, GUISlider, GUIControl } from "../../../gui";
-import { MDLLoader, TextureLoader } from "../../../loaders";
-import type { ModuleCreature, ModuleItem } from "../../../module";
-import { OdysseyModel3D } from "../../../three/odyssey";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton, GUISlider, GUIControl } from "@/gui";
+import { MDLLoader, TextureLoader } from "@/loaders";
+import type { ModuleCreature, ModuleItem } from "@/module";
+import { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
-import { OdysseyModel } from "../../../odyssey";
+import { OdysseyModel } from "@/odyssey";
 
 /**
  * MenuCharacter class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuCharacter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -118,8 +118,34 @@ export class MenuCharacter extends GameMenu {
       });
       this._button_y = this.BTN_AUTO;
 
+      this.BTN_CHANGE1?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 1) {
+          GameState.PartyManager.SwitchLeaderAtIndex(1);
+          this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+          this.updateCharacterStats(GameState.PartyManager.party[0]);
+          this.updatePartyMemberPortraitButtons();
+        }
+      });
+      this.BTN_CHANGE2?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (GameState.PartyManager.party.length > 2) {
+          GameState.PartyManager.SwitchLeaderAtIndex(2);
+          this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+          this.updateCharacterStats(GameState.PartyManager.party[0]);
+          this.updatePartyMemberPortraitButtons();
+        }
+      });
+
+      GameState.PartyManager.AddEventListener('change', () => {
+        if (!this.bVisible) return;
+        this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+        this.updateCharacterStats(GameState.PartyManager.party[0]);
+        this.updatePartyMemberPortraitButtons();
+      });
+
       MDLLoader.loader.load('charrec_light').then((mdl: OdysseyModel) => {
-          
+
         //this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
         this._3dView = new LBL_3DView(this.LBL_3DCHAR.extent.width, this.LBL_3DCHAR.extent.height);
         this._3dView.setControl(this.LBL_3DCHAR);
@@ -139,7 +165,7 @@ export class MenuCharacter extends GameMenu {
 
         this.BTN_AUTO?.hide();
         this.BTN_LEVELUP?.hide();
-        
+
         OdysseyModel3D.FromMDL(mdl, {
           // manageLighting: false,
           context: this._3dView
@@ -147,7 +173,7 @@ export class MenuCharacter extends GameMenu {
           //console.log('Model Loaded', model);
           this._3dViewModel = model;
           this._3dView.addModel(this._3dViewModel);
-          
+
           this._3dView.camera.position.copy(
             model.camerahook.position
           );
@@ -229,20 +255,17 @@ export class MenuCharacter extends GameMenu {
     }
   }
 
-  show() {
-    super.show();
-    this.manager.MenuTop.LBLH_CHA.onHoverIn();
-    this.recalculatePosition();
-    this.SLD_ALIGN?.setValue(0.5);
-    this.updateCharacterPortrait(GameState.PartyManager.party[0]);
-    this.updateCharacterStats(GameState.PartyManager.party[0]);
+  /**
+   * Refresh the party member portrait buttons (BTN_CHANGE1, BTN_CHANGE2) to match current party order.
+   */
+  updatePartyMemberPortraitButtons() {
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
     let btn_change: GUIControl;
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
       btn_change = this.getControlByName('BTN_CHANGE' + i);
-      if(btn_change){
-        let partyMember = GameState.PartyManager.party[i];
+      if (btn_change) {
+        const partyMember = GameState.PartyManager.party[i];
         const portraitResRef = partyMember.getPortraitResRef();
         if (i) {
           btn_change.show();
@@ -254,20 +277,31 @@ export class MenuCharacter extends GameMenu {
     }
   }
 
+  show() {
+    super.show();
+    this.manager.MenuTop.LBLH_CHA.onHoverIn();
+    this.recalculatePosition();
+    this.SLD_ALIGN?.setValue(0.5);
+    this.updateCharacterPortrait(GameState.PartyManager.party[0]);
+    this.updateCharacterStats(GameState.PartyManager.party[0]);
+    this.updatePartyMemberPortraitButtons();
+  }
+
   updateCharacterPortrait( creature: ModuleCreature ){
     if(!creature) return;
 
     this.SLD_ALIGN?.setValue(creature.getGoodEvil()/100);
 
+    const portraitAttachRoot = this._3dViewModel?.getRootOdysseyNode?.() || this._3dViewModel;
+
     if (this.char) {
-      this._3dViewModel.children[0].children[0].remove(this.char);
+      this.char.removeFromParent();
     }
     if(creature){
       this._3dView.camera.position.z = 1;
       let objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
       let clone = creature;
-      objectCreature.appearance = clone.appearance;
-      objectCreature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(objectCreature.appearance);
+      objectCreature.setAppearance(clone.appearance);
       if (clone.equipment.ARMOR) {
         objectCreature.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(clone.equipment.ARMOR.template);
       }
@@ -318,7 +352,7 @@ export class MenuCharacter extends GameMenu {
         model.rotation.z = Math.PI;
         model.box = new THREE.Box3().setFromObject(model);
         this.char = model;
-        this._3dViewModel.children[0].children[0].add(this.char);
+        portraitAttachRoot?.add(this.char);
         TextureLoader.LoadQueue().then(() => {
           if (clone.goodEvil >= 95) {
             this.char.playAnimation('good', true);
@@ -373,5 +407,5 @@ export class MenuCharacter extends GameMenu {
   triggerControllerBumperRPress() {
     this.manager.MenuTop.BTN_ABI.click();
   }
-  
+
 }

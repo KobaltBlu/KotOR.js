@@ -1,61 +1,61 @@
-import { GameState } from "../GameState";
-import { GFFObject } from "../resource/GFFObject";
-import type { OdysseyFace3 } from "../three/odyssey/OdysseyFace3";
-import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
-import { AreaMap } from "./AreaMap";
-import { AreaWeather } from "./AreaWeather";
+import { GameState } from "@/GameState";
+import { GFFObject } from "@/resource/GFFObject";
+import type { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
+import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
+import { AreaMap } from "@/module/AreaMap";
+import { AreaWeather } from "@/module/AreaWeather";
 import * as THREE from "three";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { NWScript } from "../nwscript/NWScript";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { LYTObject } from "../resource/LYTObject";
-import { Utility } from "../utility/Utility";
-import EngineLocation from "../engine/EngineLocation";
-import { OdysseyWalkMesh } from "../odyssey/OdysseyWalkMesh";
-import type { WalkmeshEdge } from "../odyssey/WalkmeshEdge";
-import { AudioLoader } from "../audio/AudioLoader";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { CExoLocString } from "../resource/CExoLocString";
-import { VISObject } from "../resource/VISObject";
-import { ITextureLoaderQueuedRef } from "../interface/loaders/ITextureLoaderQueuedRef";
-import { FollowerCamera } from "../engine/FollowerCamera";
-// import { MenuManager, TwoDAManager, PartyManager, ModuleObjectManager } from "../managers";
-import { ResourceLoader, TextureLoader } from "../loaders";
-import { IAreaAudioProperties } from "../interface/area/IAreaAudioProperties";
-import { AudioEngine } from "../audio";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
-import { IAmbientSource } from "../interface/area/IAmbientSource";
-import { IGrassProperties } from "../interface/area/IGrassProperties";
-import { SpellCastInstance } from "../combat/SpellCastInstance";
-import { TextSprite3D } from "../engine/TextSprite3D";
-import { ModuleObject } from "./ModuleObject";
-import { ModuleAreaOfEffect } from "./ModuleAreaOfEffect";
-import { ModuleCamera } from "./ModuleCamera";
-import { ModuleCreature } from "./ModuleCreature";
-import { ModuleDoor } from "./ModuleDoor";
-import { ModuleEncounter } from "./ModuleEncounter";
-import { ModuleItem } from "./ModuleItem";
-import { ModuleMGEnemy } from "./ModuleMGEnemy";
-import { ModuleMGObstacle } from "./ModuleMGObstacle";
-import { ModuleWaypoint } from "./ModuleWaypoint";
-import { ModuleTrigger } from "./ModuleTrigger";
-import { ModuleStore } from "./ModuleStore";
-import { ModuleSound } from "./ModuleSound";
-import { ModuleRoom } from "./ModuleRoom";
-import { ModulePlayer } from "./ModulePlayer";
-import { ModulePlaceable } from "./ModulePlaceable";
-import { ModulePath } from "./ModulePath";
-import { ModuleMiniGame } from "./ModuleMiniGame";
-import { ModuleMGTrack } from "./ModuleMGTrack";
-import { ModuleMGPlayer } from "./ModuleMGPlayer";
-import type { Module } from "./Module";
-import { IVISRoom } from "../interface/module/IVISRoom";
-import { BackgroundMusicMode } from "../enums/audio/BackgroundMusicMode";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScript } from "@/nwscript/NWScript";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { LYTObject } from "@/resource/LYTObject";
+import { Utility } from "@/utility/Utility";
+import EngineLocation from "@/engine/EngineLocation";
+import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
+import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { VISObject } from "@/resource/VISObject";
+import { ITextureLoaderQueuedRef } from "@/interface/loaders/ITextureLoaderQueuedRef";
+import { FollowerCamera } from "@/engine/FollowerCamera";
+// import { MenuManager, TwoDAManager, PartyManager, ModuleObjectManager } from "@/managers";
+import { ResourceLoader, TextureLoader } from "@/loaders";
+import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
+import { AudioEngine } from "@/audio";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { BitWise } from "@/utility/BitWise";
+import { IAmbientSource } from "@/interface/area/IAmbientSource";
+import { IGrassProperties } from "@/interface/area/IGrassProperties";
+import { SpellCastInstance } from "@/combat/SpellCastInstance";
+import { TextSprite3D } from "@/engine/TextSprite3D";
+import { ModuleObject } from "@/module/ModuleObject";
+import { ModuleAreaOfEffect } from "@/module/ModuleAreaOfEffect";
+import { ModuleCamera } from "@/module/ModuleCamera";
+import { ModuleCreature } from "@/module/ModuleCreature";
+import { ModuleDoor } from "@/module/ModuleDoor";
+import { ModuleEncounter } from "@/module/ModuleEncounter";
+import { ModuleItem } from "@/module/ModuleItem";
+import { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
+import { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
+import { ModuleWaypoint } from "@/module/ModuleWaypoint";
+import { ModuleTrigger } from "@/module/ModuleTrigger";
+import { ModuleStore } from "@/module/ModuleStore";
+import { ModuleSound } from "@/module/ModuleSound";
+import { ModuleRoom } from "@/module/ModuleRoom";
+import { ModulePlayer } from "@/module/ModulePlayer";
+import { ModulePlaceable } from "@/module/ModulePlaceable";
+import { ModulePath } from "@/module/ModulePath";
+import { ModuleMiniGame } from "@/module/ModuleMiniGame";
+import { ModuleMGTrack } from "@/module/ModuleMGTrack";
+import { ModuleMGPlayer } from "@/module/ModuleMGPlayer";
+import type { Module } from "@/module/Module";
+import { IVISRoom } from "@/interface/module/IVISRoom";
+import { BackgroundMusicMode } from "@/enums/audio/BackgroundMusicMode";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -940,7 +940,7 @@ export class ModuleArea extends ModuleObject {
     this.moon.diffuseColor = this.are.getFieldByLabel('MoonDiffuseColor').getValue();
     this.moon.fogColor = this.are.getFieldByLabel('MoonFogColor').getValue();
     this.moon.fogFar = this.are.getFieldByLabel('MoonFogFar').getValue();
-    this.moon.fogFar = this.are.getFieldByLabel('MoonFogNear').getValue();
+    this.moon.fogNear = this.are.getFieldByLabel('MoonFogNear').getValue();
     this.moon.fogOn = !!this.are.getFieldByLabel('MoonFogOn').getValue();
     this.moon.shadows = !!this.are.getFieldByLabel('MoonShadows').getValue();
     this.areaName = this.are.getFieldByLabel('Name').getCExoLocString();
@@ -971,6 +971,9 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < rooms.childStructs.length; i++ ){
       let strt = rooms.childStructs[i];
       const roomName = this.are.getFieldByLabel('RoomName', strt.getFields()).getValue().toLowerCase();
+      if(!roomName || roomName == '****'){
+        continue;
+      }
       const envAudio = this.are.getFieldByLabel('EnvAudio', strt.getFields()).getValue();
       const ambientScale = this.are.getFieldByLabel('AmbientScale', strt.getFields()).getValue();
       const room = new ModuleRoom(roomName, this);
@@ -1221,6 +1224,9 @@ export class ModuleArea extends ModuleObject {
       let sortedRooms = [];
       for(let i = 0; i < this.layout.rooms.length; i++){
         let roomLYT = this.layout.rooms[i];
+        if(!roomLYT.name || roomLYT.name == '****'){
+          continue;
+        }
         for(let r = 0; r != this.rooms.length; r++ ){
           let room = this.rooms[r];
           if(room.roomName.toLowerCase() == roomLYT.name.toLowerCase()){
@@ -1360,7 +1366,7 @@ export class ModuleArea extends ModuleObject {
 
       try { await this.loadDoors(); } catch(e){ console.error(e); }
 
-      this.doorWalkmeshes = this.doors.filter( (d) => { return d?.collisionData?.walkmesh}).map( (d) => { return d.collisionData.walkmesh; });
+      this.doorWalkmeshes = this.doors.filter( (d) => { return d?.collisionManager?.walkmesh}).map( (d) => { return d.collisionManager.walkmesh; });
 
       try { await this.loadStores(); } catch(e){ console.error(e); }
 
@@ -1569,8 +1575,8 @@ export class ModuleArea extends ModuleObject {
         //Reset the players actions between modules
         GameState.PartyManager.Player.clearAllActions();
         GameState.PartyManager.Player.force = 0;
-        GameState.PartyManager.Player.collisionData.groundFace = undefined;
-        GameState.PartyManager.Player.collisionData.lastGroundFace = undefined;
+        GameState.PartyManager.Player.collisionManager.groundFace = undefined;
+        GameState.PartyManager.Player.collisionManager.lastGroundFace = undefined;
         GameState.PartyManager.Player.load();
         try{
           const model = await GameState.PartyManager.Player.loadModel();
@@ -1655,9 +1661,9 @@ export class ModuleArea extends ModuleObject {
       const room = this.rooms[i];
       const model = await room.loadModel();
       if(model instanceof OdysseyModel3D){
-        if(room.collisionData.walkmesh instanceof OdysseyWalkMesh){
-          GameState.walkmeshList.push( room.collisionData.walkmesh.mesh );
-          GameState.group.room_walkmeshes.add( room.collisionData.walkmesh.mesh );
+        if(room.collisionManager.walkmesh instanceof OdysseyWalkMesh){
+          GameState.walkmeshList.push( room.collisionManager.walkmesh.mesh );
+          GameState.group.room_walkmeshes.add( room.collisionManager.walkmesh.mesh );
         }
 
         if(typeof model.walkmesh != 'undefined'){
@@ -1698,11 +1704,11 @@ export class ModuleArea extends ModuleObject {
           const should_link = room2_links_to_room1 || room1_links_to_room2;
           //console.log('room', room1.roomName, room2.roomName, should_link);
           if(should_link && !room1.linkedRooms.has(room2.roomName)){
-            room1.linkedRooms.set(room2.roomName, room2);
+            room1.addLinkedRoom(room2);
           }
 
           if(should_link && !room2.linkedRooms.has(room1.roomName)){
-            room2.linkedRooms.set(room1.roomName, room1);
+            room2.addLinkedRoom(room1);
           }
         }
       }
@@ -1729,7 +1735,7 @@ export class ModuleArea extends ModuleObject {
 
         try{
           model.userData.walkmesh = dwk;
-          door.collisionData.walkmesh = dwk;
+          door.collisionManager.setWalkmesh(dwk);
           GameState.walkmeshList.push( dwk.mesh );
 
           if(dwk.mesh instanceof THREE.Object3D){
@@ -1782,6 +1788,7 @@ export class ModuleArea extends ModuleObject {
         pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
         pwk.mesh.geometry.applyMatrix4(pwk.mat4);
         pwk.updateMatrix();
+        pwk.buildEdgeNormalHelpers();
         //pwk.mesh.position.copy(plc.position);
         GameState.group.room_walkmeshes.add( pwk.mesh );
       }

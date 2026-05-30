@@ -1,15 +1,15 @@
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { GameState } from "../../../GameState";
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel } from "../../../gui";
-import { ModuleObject } from "../../../module";
-import { DLGObject } from "../../../resource/DLGObject";
-import { DLGNode } from "../../../resource/DLGNode";
-import { DLGConversationType } from "../../../enums/dialog/DLGConversationType";
-import { DLGCameraAngle } from "../../../enums/dialog/DLGCameraAngle";
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { ConversationState } from "../../../enums/dialog/ConversationState";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { GameState } from "@/GameState";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel } from "@/gui";
+import { ModuleObject } from "@/module";
+import { DLGObject } from "@/resource/DLGObject";
+import { DLGNode } from "@/resource/DLGNode";
+import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
+import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { ConversationState } from "@/enums/dialog/ConversationState";
 
 /**
  * InGameComputer class.
@@ -82,23 +82,16 @@ export class InGameComputer extends GameMenu {
   }
 
   setReplies(replies: DLGNode[]) {
-    this.LB_REPLIES.clearItems();
-    for (let i = 0; i < replies.length; i++) {
-      const reply = replies[i];
-      if(reply.isContinueDialog()){ continue; }
-      this.LB_REPLIES.addItem(this.LB_REPLIES.children.length + 1 + '. ' + reply.getCompiledString());
-    }
-    this.LB_REPLIES.updateList();
+    const texts = replies
+      .filter(r => !r.isContinueDialog())
+      .map((r, i) => (i + 1) + '. ' + r.getCompiledString());
+    this.LB_REPLIES.setItems(texts);
     this.LB_REPLIES.show();
   }
 
   setEntry(entry: DLGNode) {
     this.currentEntry = entry;
-    this.LB_MESSAGE.clearItems();
-    if (!!entry.getCompiledString()) {
-      this.LB_MESSAGE.addItem(entry.getCompiledString());
-    }
-    this.LB_MESSAGE.updateList();
+    this.LB_MESSAGE.setItem(entry.getCompiledString() || null);
     this.LB_MESSAGE.show();
   }
 

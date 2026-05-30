@@ -1,9 +1,9 @@
-import { GameState } from "../GameState";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-// import { ResolutionManager } from "../managers";
-import { GFFField } from "../resource/GFFField";
-import { GFFObject } from "../resource/GFFObject";
-import { GFFStruct } from "../resource/GFFStruct";
+import { GameState } from "@/GameState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+// import { ResolutionManager } from "@/managers";
+import { GFFField } from "@/resource/GFFField";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
 
 /**

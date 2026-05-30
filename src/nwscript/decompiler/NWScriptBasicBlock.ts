@@ -1,4 +1,4 @@
-import type { NWScriptInstruction } from "../NWScriptInstruction";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 
 /**
  * Represents a basic block in the control flow graph.

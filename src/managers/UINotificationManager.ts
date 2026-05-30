@@ -1,4 +1,4 @@
-import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
+import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 
 const UI_TIMER_DURATION = 10;
 

@@ -1,18 +1,18 @@
 import * as path from "path";
-import { GFFObject } from "../resource/GFFObject";
-import { TextureLoader } from "../loaders";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { CurrentGame } from "./CurrentGame";
-import { GFFField } from "../resource/GFFField";
-import { GameState } from "../GameState";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { ERFObject } from "../resource/ERFObject";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { Utility } from "../utility/Utility";
-import EngineLocation from "./EngineLocation";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { ResourceTypes } from "../KotOR";
+import { GFFObject } from "@/resource/GFFObject";
+import { TextureLoader } from "@/loaders";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { GFFField } from "@/resource/GFFField";
+import { GameState } from "@/GameState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { ERFObject } from "@/resource/ERFObject";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { Utility } from "@/utility/Utility";
+import EngineLocation from "@/engine/EngineLocation";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { ResourceTypes } from "@/KotOR";
 import { exists } from "fs";
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
@@ -634,9 +634,13 @@ export class SaveGame {
    * console.log(customSave.getFullName()); // "Game1 - My Adventure"
    */
   getFullName(){
-    if(this.getSaveName() != ''){
-      return this.folderName.split(' - ')[1] + ' - ' + this.getSaveName();
-    }else{
+    if(this.getIsQuickSave()) {
+      return GameState.TLKManager.GetStringById(47991).Value + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M`;
+    } else if(this.getIsAutoSave()) {
+      return GameState.TLKManager.GetStringById(1593).Value + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M`;
+    } else if(this.getSaveName() != '') {
+      return this.folderName.split(' - ')[1] + ' - ' + `${this.getHoursPlayed()}H ${this.getMinutesPlayed()}M\n` + this.getSaveName();
+    } else {
       return this.folderName.split(' - ')[1];
     }
   }
@@ -884,6 +888,16 @@ export class SaveGame {
     const tga = await GameState.GetScreenShot();
     await tga.export( path.join( save_dir, 'Screen.tga'));
 
+    const newEntry = new SaveGame(save_dir_name);
+    const existingIndex = SaveGame.saves.findIndex(s => s.getSaveNumber() === save_id);
+
+    if (existingIndex >= 0) {
+      SaveGame.saves[existingIndex] = newEntry;  // overwrite case
+  } else {
+      SaveGame.AddSaveGame(newEntry);            // new save case
+            }
+    await newEntry.loadNFO();
+    
     //Save Complete
     GameState.MenuManager.LoadScreen.setProgress(100);
     GameState.MenuManager.LoadScreen.close();
@@ -1080,6 +1094,28 @@ export class SaveGame {
     }
   }
 
+  /**
+   * Deletes a save game from disk and removes it from the in-memory save list.
+   *
+   * Used by the Save/Load UI (and any other systems) to implement KotOR-style delete.
+   */
+  static async DeleteSave(save: SaveGame): Promise<void> {
+    if (!(save instanceof SaveGame)) return;
+    if (!save.directory) return;
+    await GameFileSystem.rmdir(save.directory, { recursive: true });
+    SaveGame.saves = SaveGame.saves.filter(s => s !== save);
+  }
+
+  /**
+   * Overwrites an existing save slot without prompting for a new name (vanilla KotOR behavior).
+   */
+  static async OverwriteSave(save: SaveGame): Promise<void> {
+    if (!(save instanceof SaveGame)) return;
+    const replaceId = save.getSaveNumber();
+    const existingName = save.getSaveName();
+    await SaveGame.SaveCurrentGame(existingName, replaceId);
+  }
+  
   /** The directory path for the current save game (used internally) */
   static directory: string;
 

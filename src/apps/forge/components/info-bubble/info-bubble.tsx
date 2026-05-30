@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import './info-bubble.scss';
+import "@/apps/forge/components/info-bubble/info-bubble.scss";
 
 interface InfoBubbleProps {
   content: string;

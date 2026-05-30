@@ -1,12 +1,12 @@
-import { TPCObject } from "../resource/TPCObject";
+import { TPCObject } from "@/resource/TPCObject";
 import * as path from "path";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import { ERFManager } from "../managers/ERFManager";
-import { KEYManager } from "../managers/KEYManager";
-import { OdysseyCompressedTexture } from "../three/odyssey";
-import { IFindTPCResult } from "../interface/graphics/IFindTPCResult";
-import { TextureLoaderState } from "./TextureLoaderState";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { ERFManager } from "@/managers/ERFManager";
+import { KEYManager } from "@/managers/KEYManager";
+import { OdysseyCompressedTexture } from "@/three/odyssey";
+import { IFindTPCResult } from "@/interface/graphics/IFindTPCResult";
+import { TextureLoaderState } from "@/loaders/TextureLoaderState";
 
 /**
  * TPCLoader class.
@@ -24,7 +24,7 @@ export class TPCLoader {
   async findTPC( resRef: string ): Promise<IFindTPCResult> {
     resRef = resRef.toLocaleLowerCase();
   
-    let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResource(resRef, ResourceTypes['tpc']);
+    let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResourceInfo(resRef, ResourceTypes['tpc']);
     if(erfResource){
       const buffer = await ERFManager.ERFs.get('swpc_tex_gui').getResourceBuffer(erfResource);
       return { pack: 0, buffer: buffer };
@@ -46,7 +46,7 @@ export class TPCLoader {
       break;
     }
   
-    erfResource = activeTexturePack.getResource(resRef, ResourceTypes['tpc']);
+    erfResource = activeTexturePack.getResourceInfo(resRef, ResourceTypes['tpc']);
     if(erfResource){
       const buffer = await activeTexturePack.getResourceBuffer(erfResource);
       return { pack: TextureLoaderState.TextureQuality || 2, buffer: buffer };

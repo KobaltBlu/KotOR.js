@@ -1,13 +1,13 @@
 import React, { useEffect, useCallback, useRef, useState } from "react";
-import { BaseTabProps } from "../../../interfaces/BaseTabProps";
-import { LayoutContainerProvider } from "../../../context/LayoutContainerContext";
-import { LayoutContainer } from "../../LayoutContainer/LayoutContainer";
-import { TabModuleEditorState, GameObjectType, TabModuleEditorControlMode } from "../../../states/tabs";
-import { UI3DRendererView } from "../../UI3DRendererView";
-import { UI3DOverlayComponent } from "../../UI3DOverlayComponent";
-import { ModuleEditorSidebarComponent } from "../../ModuleEditorSidebarComponent";
-import { useContextMenu, ContextMenuItem } from "../../common/ContextMenu";
-import { UI3DToolPalette, Tool, SubTool } from "../../UI3DToolPalette";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
+import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
+import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
+import { TabModuleEditorState, GameObjectType, TabModuleEditorControlMode } from "@/apps/forge/states/tabs";
+import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
+import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
+import { ModuleEditorSidebarComponent } from "@/apps/forge/components/ModuleEditorSidebarComponent";
+import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
+import { UI3DToolPalette, Tool, SubTool } from "@/apps/forge/components/UI3DToolPalette";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
   faArrowPointer, 
@@ -26,7 +26,7 @@ import {
   faLocationPin
 } from "@fortawesome/free-solid-svg-icons";
 
-import * as KotOR from "../../../KotOR";
+import * as KotOR from "@/apps/forge/KotOR";
 
 // Extended interface for game object items with icons (for context menu)
 interface GameObjectMenuItem extends ContextMenuItem {

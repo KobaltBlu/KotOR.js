@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { GUIProtoItem } from "../../../gui";
-import type { GameMenu, GUIControl } from "../../../gui";
-import { GFFStruct } from "../../../resource/GFFStruct";
+import { GameState } from "@/GameState";
+import { GUIProtoItem } from "@/gui";
+import type { GameMenu, GUIControl } from "@/gui";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * GUIMovieItem class.
@@ -18,7 +18,6 @@ export class GUIMovieItem extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
-    this.extent.height = 63;
   }
 
   createControl(){

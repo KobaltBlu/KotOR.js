@@ -1,30 +1,23 @@
 import React, { useEffect, useMemo, useState } from "react";
 import ReactDOM from "react-dom/client";
-import './app.scss';
-import { AppProvider, useApp } from "./context/AppContext";
+import "@/apps/launcher/app.scss";
+import { AppProvider, useApp } from "@/apps/launcher/context/AppContext";
 
-import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
-import { ConfigClient } from "../../utility/ConfigClient";
-import { CategoryMenuItem } from "./components/CategoryMenuItem";
-import { ProfileTabContent } from "./components/ProfileTabContent";
-import { ApplicationProfile } from "../../utility/ApplicationProfile";
-import { Launcher } from "./context/Launcher";
-import { CommunityTabContent } from "./components/CommunityTabContent";
-import { GOGWidget } from "./components/GOGWidget";
-import DiscordWidget from "./components/DiscordWidget";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { ConfigClient } from "@/utility/ConfigClient";
+import { CategoryMenuItem } from "@/apps/launcher/components/CategoryMenuItem";
+import { ProfileTabContent } from "@/apps/launcher/components/ProfileTabContent";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
+import { Launcher } from "@/apps/launcher/context/Launcher";
+import { CommunityTabContent } from "@/apps/launcher/components/CommunityTabContent";
+import { GOGWidget } from "@/apps/launcher/components/GOGWidget";
+import DiscordWidget from "@/apps/launcher/components/DiscordWidget";
 
 (window as any).Launcher = Launcher;
 
 (window as any).ConfigClient = ConfigClient;
 
-if(window.location.origin === 'file://'){
-  ApplicationProfile.ENV = ApplicationEnvironment.ELECTRON;
-  ApplicationProfile.isMac = window.electron.isMac();
-}else{
-  ApplicationProfile.ENV = ApplicationEnvironment.BROWSER;
-  let menuTopRight = document.getElementById('launcher-menu-top-right');
-  if(menuTopRight) menuTopRight.style.display = 'none';
-}
+ApplicationProfile.InitEnvironment();
 
 const App = function() {
   const appContext = useApp();
@@ -34,10 +27,9 @@ const App = function() {
   const [profileCategoriesValue, setProfilesCategories] = appContext.profileCategories;
   const [backgroundImageValue, setBackgroundImage] = appContext.backgroundImage;
   const [discordWidgetOpen, setDiscordWidgetOpen] = appContext.discordWidgetOpen;
+  const [showMenuTopRight, setShowMenuTopRight] = useState(ApplicationProfile.ENV != ApplicationEnvironment.BROWSER);
 
   const [selectedTab, setSelectedTab] = useState('apps');
-
-  const [showMenuTopRight, setShowMenuTopRight] = useState(false);
 
   let tabRefs: React.RefObject<any>[] = Array(Object.values(profileCategoriesValue).reduce((acc, cat: any) => {
     return acc + cat.profiles.length;
@@ -119,7 +111,7 @@ const App = function() {
     return () => {
       // console.log('destruct');
       window.removeEventListener('resize', onResize);
-      window.removeEventListener('resize', onFocus);
+      window.removeEventListener('focus', onFocus);
       document.removeEventListener('fullscreenchange', onFullscreenChange);
       clearTimeout(resizeEndTimeout);
     }

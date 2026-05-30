@@ -1,8 +1,8 @@
 import * as THREE from "three";
-import { GUIControlAlignment } from "../enums/gui/GUIControlAlignment";
-import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { createQuadElements as createIndicies } from "../utility/QuadIndices";
+import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+import { TXI } from "@/resource/TXI";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
 
 interface Line {
   chars: GUIFontChar[];
@@ -96,7 +96,7 @@ export class GUIFont {
         }
       }
 
-      if(newLine.chars){
+      if(newLine.chars.length > 0){
         lines2.push(newLine);
       }
       lineY -= this.height;
@@ -182,8 +182,8 @@ export class GUIFont {
     if(geometry){
       geometry.index = new THREE.BufferAttribute( indices, 1 ).setUsage( THREE.StaticDrawUsage );
 
-      const posAttribute = new THREE.BufferAttribute( new Float32Array(positions), 2 ).setUsage( THREE.StaticDrawUsage );
-      const uvAttribute = new THREE.BufferAttribute( new Float32Array(uvs), 2 ).setUsage( THREE.StaticDrawUsage );
+      const posAttribute = new THREE.BufferAttribute( positions, 2 ).setUsage( THREE.StaticDrawUsage );
+      const uvAttribute = new THREE.BufferAttribute( uvs, 2 ).setUsage( THREE.StaticDrawUsage );
       geometry.setAttribute( 'position', posAttribute );
       geometry.setAttribute( 'uv', uvAttribute );
 

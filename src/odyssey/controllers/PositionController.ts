@@ -1,9 +1,9 @@
-import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { OdysseyController } from "./OdysseyController";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * PositionController class.
@@ -32,7 +32,7 @@ export class PositionController extends OdysseyController {
         anim._position.copy(manager.modelNode.controllers.get(OdysseyModelControllerType.Position).data[0] as any);
       // }
 
-      if(anim.name.indexOf('CUT') > -1 && manager.modelNode.name == 'cutscenedummy'){
+      if(anim.name.indexOf('cut') > -1 && manager.modelNode.name == 'cutscenedummy'){
         anim._position.sub(manager.model.parent.position);
       }
 
@@ -63,7 +63,7 @@ export class PositionController extends OdysseyController {
 
     if(manager.modelNode.controllerHelpers.hasPosition){
       anim._position.copy(manager.modelNode.controllerHelpers.position.data[0]);
-      if(anim.name.indexOf('CUT') > -1 && manager.modelNode.name == 'cutscenedummy'){
+      if(anim.name.indexOf('cut') > -1 && manager.modelNode.name == 'cutscenedummy'){
         anim._position.sub(manager.model.parent.position);
       }
     }

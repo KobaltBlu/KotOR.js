@@ -1,6 +1,6 @@
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { FadeOverlayState } from "../enums/engine/FadeOverlayState";
+import { GameState } from "@/GameState";
+import { FadeOverlayState } from "@/enums/engine/FadeOverlayState";
 
 /**
  * FadeOverlayManager class.
@@ -25,9 +25,12 @@ export class FadeOverlayManager {
   static holdForScript: boolean;
   /* Fade Geometry */
 
+  /** renderOrder so video player (9999991+) can always draw on top of the fade */
+  static readonly FADE_RENDER_ORDER = 9999990;
+
   static Initialize(){
     FadeOverlayManager.plane.position.z = 499;
-    FadeOverlayManager.plane.renderOrder = Infinity;
+    FadeOverlayManager.plane.renderOrder = FadeOverlayManager.FADE_RENDER_ORDER;
     FadeOverlayManager.material.visible = false;
     GameState.scene_gui.add( FadeOverlayManager.plane );
   }

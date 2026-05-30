@@ -1,4 +1,4 @@
-import type { KeyInput } from "../../controls/KeyInput";
+import type { KeyInput } from "@/controls/KeyInput";
 
 /**
  * KeyboardKeyActions interface.

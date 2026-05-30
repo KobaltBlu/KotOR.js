@@ -1,6 +1,6 @@
 import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { ProfilePromoItem } from "./ProfilePromoItem";
-import { useApp } from "../context/AppContext";
+import { ProfilePromoItem } from "@/apps/launcher/components/ProfilePromoItem";
+import { useApp } from "@/apps/launcher/context/AppContext";
 
 
 export const ProfilePromoItems = forwardRef(function(props: any, ref: any){

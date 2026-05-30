@@ -1,2 +1,2 @@
-export * from "./INWScriptDefAction";
-export * from "./INWScriptStoreState";
+export * from "@/interface/nwscript/INWScriptDefAction";
+export * from "@/interface/nwscript/INWScriptStoreState";

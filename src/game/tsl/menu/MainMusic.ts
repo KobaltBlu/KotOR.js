@@ -1,8 +1,8 @@
-import { GameState } from "../../../GameState";
-import { AudioLoader } from "../../../audio/AudioLoader";
-import { GameMenu } from "../../../gui/GameMenu";
-import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "../../../gui";
-import { GUIMusicItem } from "../gui/GUIMusicItem";
+import { GameState } from "@/GameState";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { GameMenu } from "@/gui/GameMenu";
+import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "@/gui";
+import { GUIMusicItem } from "@/game/tsl/gui/GUIMusicItem";
 
 /**
  * MainMusic class.
@@ -53,7 +53,7 @@ export class MainMusic extends GameMenu {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.LB_MUSIC.GUIProtoItemClass = GUIMusicItem;
+      this.LB_MUSIC.setProtoBuilder(GUIMusicItem);
       
       this.audioCtx = new (global.AudioContext || (global as any).webkitAudioContext)();
       this.musicGain = this.audioCtx.createGain();
@@ -62,10 +62,9 @@ export class MainMusic extends GameMenu {
 
       const table = GameState.TwoDAManager.datatables.get('musictable');
       for(let i = 0; i < table.RowCount; i++){
-        const row = table.getRowByIndex(i);
-        this.LB_MUSIC.addItem(row);
-        this.musicList.push(row);
+        this.musicList.push(table.getRowByIndex(i));
       }
+      this.LB_MUSIC.setItems(this.musicList);
 
       this.LBL_TRACKNUM.setText(`${0} / ${table.RowCount}`);
 

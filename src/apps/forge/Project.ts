@@ -1,17 +1,18 @@
-import { EditorFile } from "./EditorFile";
-import { DeepObject } from "../../utility/DeepObject";
-import { ForgeState } from "./states/ForgeState";
-import { TabModuleEditorState, TabQuickStartState } from "./states/tabs";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { DeepObject } from "@/utility/DeepObject";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabModuleEditorState, TabQuickStartState } from "@/apps/forge/states/tabs";
 
-import * as KotOR from "./KotOR";
-import { ProjectType } from "./enum/ProjectType";
-import { FileTypeManager } from "./FileTypeManager";
-import { ProjectFileSystem } from "./ProjectFileSystem";
-import { ForgeFileSystem } from "./ForgeFileSystem";
-import { ProjectSettings } from "./interfaces/ProjectSettings";
-import { ForgeArea } from "./module-editor/ForgeArea";
-import { ForgeModule } from "./module-editor/ForgeModule";
-import { ForgeRoom } from "./module-editor/ForgeRoom";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ProjectType } from "@/apps/forge/enum/ProjectType";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
+import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
+import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
+import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
+import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
 
 const DIR_FORGE = '.forge';
 const DIR_BLUEPRINTS = 'blueprints';
@@ -53,27 +54,25 @@ export class Project {
     ForgeFileSystem.OpenDirectory().then( async (response) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         if(response.paths && response.paths.length){
+          ProjectFileSystem.clearDirectoryCache();
           const projectPath = response.paths[0];
           ProjectFileSystem.rootDirectoryPath = projectPath;
-          ForgeState.project = new Project();
-          const loaded = await ForgeState.project.load();
-          if(loaded){
+          const project = new Project();
+          await project.open();
+          if(ForgeState.project instanceof Project){
             await ProjectFileSystem.initializeProjectExplorer();
-            // Add to recent projects with path
-            ForgeState.addRecentProject(projectPath);
           }
         }
       }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
         if(response.handles && response.handles.length){
+          ProjectFileSystem.clearDirectoryCache();
           const handle = response.handles[0] as FileSystemDirectoryHandle;
           ProjectFileSystem.rootDirectoryHandle = handle;
           console.log('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
-          ForgeState.project = new Project();
-          const loaded = await ForgeState.project.load();
-          if(loaded){
+          const project = new Project();
+          await project.open();
+          if(ForgeState.project instanceof Project){
             await ProjectFileSystem.initializeProjectExplorer();
-            // Add to recent projects with handle
-            await ForgeState.addRecentProject(handle);
           }
         }
       }
@@ -167,6 +166,16 @@ export class Project {
       }
 
       this.settings = DeepObject.Merge(defaults, this.settings);
+
+      const rawOpen = Array.isArray(this.settings.open_files)
+        ? (this.settings.open_files as unknown[]).filter((entry) => typeof entry === 'string') as string[]
+        : [];
+      const sanitized = this.sanitizePersistedOpenFilesReferences(rawOpen);
+      if(JSON.stringify(sanitized) !== JSON.stringify(rawOpen)){
+        this.settings.open_files = sanitized;
+        await this.saveSettings();
+      }
+
       return true;
     }catch(e){
       console.error('Project.loadSettings: Failed to load settings file', e);
@@ -189,7 +198,7 @@ export class Project {
         ForgeState.tabManager.removeTab(quickStart);
       }
 
-      await KotOR.GameInitializer.Init(this.settings.game);
+      await ForgeInitializer.Init(this.settings.game);
       //This is where we initialize ProjectType specific operations
       if(!deferInit){
         await this.initializeProject();
@@ -227,9 +236,14 @@ export class Project {
     }
     console.log('Project Init');
 
-    //Reopen files
     for(let i = 0, len = this.settings.open_files.length; i < len; i++){
-      FileTypeManager.onOpenResource(this.settings.open_files[i]);
+      const uri = String(this.settings.open_files[i] ?? '').trim();
+      if(!uri.length){ continue }
+      if(!EditorFile.isValidForgePersistedReference(uri)){
+        console.warn('Project.initializeProject: skipping invalid open_files entry', uri);
+        continue;
+      }
+      FileTypeManager.onOpenResource(uri);
     }
 
   }
@@ -272,30 +286,51 @@ export class Project {
     return files;
   }
 
+  /** Keep only canonical Forge references; persists when the sanitized list differs from disk. */
+  private sanitizePersistedOpenFilesReferences(entries: string[]): string[]{
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for(let i = 0; i < entries.length; i++){
+      const t = String(entries[i] ?? '').trim();
+      if(!t.length){
+        continue;
+      }
+      if(!EditorFile.isValidForgePersistedReference(t)){
+        console.warn(`Project.settings: dropping invalid open_files entry (${t}).`);
+        continue;
+      }
+      if(seen.has(t)){
+        continue;
+      }
+      seen.add(t);
+      out.push(t);
+    }
+    return out;
+  }
+
   addToOpenFileList(editor_file: EditorFile){
     if(editor_file instanceof EditorFile){
-      if(editor_file.getPath()){
-        let index = this.settings.open_files.indexOf(editor_file.getPath());
-        if(index == -1){
-          this.settings.open_files.push(editor_file.getPath());
-          this.saveSettings();
-        }
-      }else{
-        //TODO Handle In Memory EditorFiles
+      const ref = editor_file.toReferenceURI();
+      if(!EditorFile.isValidForgePersistedReference(ref || '')){ return }
+
+      const beforeJson = JSON.stringify(this.settings.open_files);
+      const next = [...this.settings.open_files.filter((entry: string) => entry !== ref), ref];
+      this.settings.open_files = next;
+      if(JSON.stringify(this.settings.open_files) !== beforeJson){
+        this.saveSettings();
       }
     }
   }
 
   removeFromOpenFileList(editor_file: EditorFile){
     if(editor_file instanceof EditorFile){
-      if(editor_file.getPath()){
-        let index = this.settings.open_files.indexOf(editor_file.getPath());
-        if(index >= 0){
-          this.settings.open_files.splice(index, 1);
-          this.saveSettings();
-        }
-      }else{
-        //TODO Handle In Memory EditorFiles
+      const ref = editor_file.toReferenceURI();
+      if(!ref?.length){ return }
+
+      const before = this.settings.open_files.length;
+      this.settings.open_files = this.settings.open_files.filter((entry: string) => entry !== ref);
+      if(this.settings.open_files.length !== before){
+        this.saveSettings();
       }
     }
   }

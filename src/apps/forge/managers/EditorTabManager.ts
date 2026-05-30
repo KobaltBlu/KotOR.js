@@ -1,35 +1,31 @@
-import { EditorFile } from "../EditorFile";
-import { EventListenerModel } from "../EventListenerModel";
-import { TabStoreState } from "../interfaces/TabStoreState";
-import {
-  TabGFFEditorState, TabGUIEditorState, TabImageViewerState, TabModelViewerState,
-  TabModuleEditorState, TabQuickStartState, TabHelpState, TabTwoDAEditorState,
-  TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabUTEEditorState, TabUTSEditorState, TabUTMEditorState, TabUTTEditorState, TabUTWEditorState, TabUTIEditorState,
-  TabBinaryViewerState, TabAREEditorState, TabIFOEditorState, TabJRLEditorState, TabSSFEditorState, TabTLKEditorState, TabFACEditorState, TabLTREditorState,
-  TabDLGEditorState, TabGITEditorState, TabSAVEditorState, TabVISEditorState, TabState,
-  TabERFEditorState, TabTextEditorState, TabLIPEditorState, TabPTHEditorState, TabWOKEditorState, TabDiffToolState,
-} from "../states/tabs";
-
-import { TabReferenceFinderState } from "../states/tabs/TabReferenceFinderState";
-import { TabScriptFindReferencesState } from "../states/tabs/TabScriptFindReferencesState";
-import { GetNewTabID } from "./TabIdGenerator";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
+import { 
+  TabBIKPlayerState, TabGFFEditorState, TabHexEditorState, TabImageViewerState, TabModelViewerState, 
+  TabModuleEditorState, TabQuickStartState, TabSSFEditorState, TabTwoDAEditorState, 
+  TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabState
+} from "@/apps/forge/states/tabs";
 
 export type TabManagerEventListenerTypes =
-  'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide';
+  'onTabAdded'|'onTabRemoved'|'onTabShow'|'onTabHide'|'onTabsReordered';
 
 export interface TabManagerEventListeners {
   onTabAdded: Function[],
   onTabRemoved: Function[],
   onTabShow: Function[],
   onTabHide: Function[],
+  onTabsReordered: Function[],
 }
 
 export class EditorTabManager extends EventListenerModel {
   currentTab?: TabState;
   tabs: TabState[] = [];
 
+  static __tabId: number = 0;
+
   static GetNewTabID(): number {
-    return GetNewTabID();
+    return EditorTabManager.__tabId++;
   }
 
   constructor(){
@@ -103,6 +99,27 @@ export class EditorTabManager extends EventListenerModel {
 
   }
 
+  moveTab(fromIndex: number, toIndex: number){
+    if(!Number.isInteger(fromIndex) || !Number.isInteger(toIndex)){
+      return false;
+    }
+    const maxIndex = this.tabs.length - 1;
+    if(fromIndex < 0 || toIndex < 0 || fromIndex > maxIndex || toIndex > maxIndex){
+      return false;
+    }
+    if(fromIndex === toIndex){
+      return false;
+    }
+
+    const [tab] = this.tabs.splice(fromIndex, 1);
+    if(!tab){
+      return false;
+    }
+    this.tabs.splice(toIndex, 0, tab);
+    this.processEventListener('onTabsReordered', [fromIndex, toIndex, tab]);
+    return true;
+  }
+
   //Checks the supplied resource ID against all open tabs and returns tab if it is found
   isResourceIdOpenInTab(resID: number){
 
@@ -143,7 +160,7 @@ export class EditorTabManager extends EventListenerModel {
 
   restoreTabState(tabState: TabStoreState) {
     if(tabState.file){
-      tabState.file = Object.assign(new EditorFile(), tabState.file);
+      tabState.file = EditorFile.revive(tabState.file as Partial<EditorFile>);
       console.log('file', tabState.file);
     }
     switch(tabState.type){
@@ -151,9 +168,6 @@ export class EditorTabManager extends EventListenerModel {
         this.addTab(
           new TabQuickStartState({editorFile: tabState.file})
         );
-      break;
-      case 'TabHelpState':
-        this.addTab(new TabHelpState());
       break;
       case 'TabImageViewerState':
         this.addTab(
@@ -180,6 +194,16 @@ export class EditorTabManager extends EventListenerModel {
           new TabTwoDAEditorState({editorFile: tabState.file})
         );
       break;
+      case 'TabSSFEditorState':
+        this.addTab(
+          new TabSSFEditorState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabHexEditorState':
+        this.addTab(
+          new TabHexEditorState({editorFile: tabState.file})
+        );
+      break;
       case 'TabUTCEditorState':
         this.addTab(
           new TabUTCEditorState({editorFile: tabState.file})
@@ -195,137 +219,10 @@ export class EditorTabManager extends EventListenerModel {
           new TabUTPEditorState({editorFile: tabState.file})
         );
       break;
-      case 'TabBinaryViewerState':
+      case 'TabBIKPlayerState':
         this.addTab(
-          new TabBinaryViewerState({editorFile: tabState.file})
+          new TabBIKPlayerState({editorFile: tabState.file})
         );
-      break;
-      case 'TabAREEditorState':
-        this.addTab(
-          new TabAREEditorState({editorFile: tabState.file})
-        );
-      break;
-      case 'TabIFOEditorState':
-        this.addTab(
-          new TabIFOEditorState({editorFile: tabState.file})
-        );
-      break;
-      case 'TabJRLEditorState':
-        this.addTab(
-          new TabJRLEditorState({editorFile: tabState.file})
-        );
-      break;
-      case 'TabSSFEditorState':
-        this.addTab(
-          new TabSSFEditorState({editorFile: tabState.file})
-        );
-      break;
-      case 'TabTLKEditorState':
-        this.addTab(
-          new TabTLKEditorState({editorFile: tabState.file})
-        );
-      break;
-      case 'TabFACEditorState':
-        this.addTab(
-          new TabFACEditorState({editorFile: tabState.file})
-        );
-      break;
-      case 'TabLTREditorState':
-        this.addTab(
-          new TabLTREditorState({editorFile: tabState.file})
-        );
-      break;
-      case 'TabDLGEditorState':
-        this.addTab(
-          new TabDLGEditorState({editorFile: tabState.file})
-        );
-      break;
-      case 'TabGITEditorState':
-        this.addTab(
-          new TabGITEditorState({editorFile: tabState.file})
-        );
-      break;
-      case 'TabSAVEditorState':
-        this.addTab(
-          new TabSAVEditorState({editorFile: tabState.file})
-        );
-      break;
-      case 'TabVISEditorState':
-        this.addTab(
-          new TabVISEditorState({editorFile: tabState.file})
-        );
-      break;
-
-      case 'TabReferenceFinderState':
-        this.addTab(
-          new TabReferenceFinderState()
-        );
-      break;
-      case 'TabScriptFindReferencesState':
-        this.addTab(new TabScriptFindReferencesState());
-      break;
-      case 'TabERFEditorState':
-        this.addTab(
-          new TabERFEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabTextEditorState':
-        this.addTab(
-          new TabTextEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabLIPEditorState':
-        this.addTab(
-          new TabLIPEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabPTHEditorState':
-        this.addTab(
-          new TabPTHEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabUTEEditorState':
-        this.addTab(
-          new TabUTEEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabUTSEditorState':
-        this.addTab(
-          new TabUTSEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabUTMEditorState':
-        this.addTab(
-          new TabUTMEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabUTTEditorState':
-        this.addTab(
-          new TabUTTEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabUTWEditorState':
-        this.addTab(
-          new TabUTWEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabUTIEditorState':
-        this.addTab(
-          new TabUTIEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabGUIEditorState':
-        this.addTab(
-          new TabGUIEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabWOKEditorState':
-        this.addTab(
-          new TabWOKEditorState({ editorFile: tabState.file })
-        );
-      break;
-      case 'TabDiffToolState':
-        this.addTab(new TabDiffToolState());
       break;
     }
   }

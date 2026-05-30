@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import { JournalEntry } from "../../../engine/JournalEntry";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GameState } from "@/GameState";
+import { JournalEntry } from "@/engine/JournalEntry";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 enum JournalSort {
   RECIEVED = 0,
@@ -65,6 +65,8 @@ export class MenuJournal extends GameMenu {
         this.close();
       });
       this._button_b = this.BTN_EXIT;
+      
+      this.LB_ITEMS.protoItem.extent.height = 41;
       this.LB_ITEMS.onSelected = (item: JournalEntry) => {
         this.selected = item;
         this.UpdateSelected();
@@ -111,9 +113,7 @@ export class MenuJournal extends GameMenu {
   }
 
   UpdateSelected(){
-    this.LBL_ITEM_DESCRIPTION.clearItems();
-    if(this.selected)
-      this.LBL_ITEM_DESCRIPTION.addItem(this.selected.getEntryText());
+    this.LBL_ITEM_DESCRIPTION.setItem(this.selected ? this.selected.getEntryText() : null);
   }
 
   GetQuestModeBTNLabel(): string {
@@ -169,12 +169,8 @@ export class MenuJournal extends GameMenu {
   }
 
   updateList(){
-    this.LB_ITEMS.clearItems();
-    this.LBL_ITEM_DESCRIPTION.clearItems();
-    const entries = this.getFilteredEntries();
-    for(let i = 0; i < entries.length; i++){
-      this.LB_ITEMS.addItem(entries[i]);
-    }
+    this.LBL_ITEM_DESCRIPTION.setItem(null);
+    this.LB_ITEMS.setItems(this.getFilteredEntries());
   }
 
   getFilteredEntries(){

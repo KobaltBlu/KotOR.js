@@ -1,10 +1,10 @@
-import { GameState } from "../GameState";
-import { OdysseyModel } from "../odyssey";
-import { OdysseyModel3D } from "../three/odyssey";
-import { ModuleArea } from "./ModuleArea";
-import { WeatherCondition } from "../enums/module/WeatherCondition";
+import { GameState } from "@/GameState";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { ModuleArea } from "@/module/ModuleArea";
+import { WeatherCondition } from "@/enums/module/WeatherCondition";
 import * as THREE from "three";
-import { MDLLoader } from "../loaders";
+import { MDLLoader } from "@/loaders";
 
 /**
 * AreaWeather class.

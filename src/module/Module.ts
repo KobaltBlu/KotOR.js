@@ -1,30 +1,32 @@
 import * as THREE from "three";
 import * as path from "path";
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { GameEffect } from "../effects";
-import EngineLocation from "../engine/EngineLocation";
-import { GameState } from "../GameState";
-import { CExoLocString } from "../resource/CExoLocString";
-import { GFFObject } from "../resource/GFFObject";
-// import { NWScript } from "../nwscript/NWScript";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { ERFObject } from "../resource/ERFObject";
-import { CurrentGame } from "../engine/CurrentGame";
-import { RIMObject } from "../resource/RIMObject";
-import { GFFStruct } from "../resource/GFFStruct";
-import { GameEventFactory } from "../events/GameEventFactory";
-import { ResourceLoader, TextureLoader } from "../loaders";
-import { AudioEngine } from "../audio/AudioEngine";
-import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-import { IModuleScripts } from "../interface/module/IModuleScripts";
-import { IAreaListItem } from "../interface/area/IAreaListItem";
-import type { GameEvent } from "../events/GameEvent";
-import { ModuleArea } from "./ModuleArea";
-import { ModuleTimeManager } from "./ModuleTimeManager";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { GameEffect } from "@/effects";
+import EngineLocation from "@/engine/EngineLocation";
+import { GameState } from "@/GameState";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { GFFObject } from "@/resource/GFFObject";
+// import { NWScript } from "@/nwscript/NWScript";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { ERFObject } from "@/resource/ERFObject";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { RIMObject } from "@/resource/RIMObject";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { GameEventFactory } from "@/events/GameEventFactory";
+import { ResourceLoader, TextureLoader } from "@/loaders";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
+import { IModuleScripts } from "@/interface/module/IModuleScripts";
+import { IAreaListItem } from "@/interface/area/IAreaListItem";
+import type { GameEvent } from "@/events/GameEvent";
+import { ModuleArea } from "@/module/ModuleArea";
+import { ModuleTimeManager } from "@/module/ModuleTimeManager";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
@@ -66,6 +68,7 @@ export class Module {
   customTokens: Map<number, string>;
   transition: any;
   transWP: string;
+  lastItemAcquired: any = undefined;
 
   /**
    * List of Areas in the module
@@ -368,6 +371,7 @@ export class Module {
     object.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
     object.audioEmitter.maxDistance = 50;
     object.audioEmitter.type = AudioEmitterType.POSITIONAL;
+    object.audioEmitter.setPriorityGroupId(AudioPriorityGroup.NORMAL_SPELL_EFFECTS);
     object.audioEmitter.load();
     object.audioEmitter.setPosition(lLocation.position.x, lLocation.position.y, lLocation.position.z);
 
@@ -435,11 +439,11 @@ export class Module {
       
       GameState.ModuleObjectManager.ResetPlayerId();
 
-      if(this.area.sun.fogOn && this.area.sun.fogColor){
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.sun.fogColor.toString(16)));
-      }else{
-        GameState.globalLight.color.setHex(parseInt('0x'+this.area.dynamicAmbientColor.toString(16)));
-      }
+      GameState.globalLight.color.setRGB(
+        (this.area.dynamicAmbientColor & 0xFF) / 255,
+        (this.area.dynamicAmbientColor >> 8 & 0xFF) / 255,
+        (this.area.dynamicAmbientColor >> 16 & 0xFF) / 255
+      );
       
       GameState.globalLight.color.setRGB(
         THREE.MathUtils.clamp(GameState.globalLight.color.r, 0.2, 1),
@@ -807,9 +811,11 @@ export class Module {
       }
 
       //Locate the module's dialog MOD file (TSL)
+      if(GameState.GameKey == GameEngineType.TSL){
       archive = await Module.GetModuleDLG(modName);
-      if(archive instanceof ERFObject){
-        archives.push(archive);
+        if(archive instanceof ERFObject){
+          archives.push(archive);
+        }
       }
     }catch(e){
       console.error(e);

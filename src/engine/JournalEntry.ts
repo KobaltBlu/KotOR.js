@@ -1,9 +1,9 @@
-import { GameState } from "../GameState";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { JournalCategory } from "./JournalCategory";
-import { JournalCategoryEntry } from "./JournalCategoryEntry";
+import { GameState } from "@/GameState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { JournalCategory } from "@/engine/JournalCategory";
+import { JournalCategoryEntry } from "@/engine/JournalCategoryEntry";
 
 /**
  * JournalEntry class.

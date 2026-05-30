@@ -1,17 +1,17 @@
-import { GameState } from "../GameState";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { ResourceLoader } from "../loaders/ResourceLoader";
-import type { ModuleObject } from "../module/ModuleObject";
-import type { ModuleTrigger } from "../module/ModuleTrigger";
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { BitWise } from "../utility/BitWise";
-import { Utility } from "../utility/Utility";
-import { Action } from "./Action";
+import { GameState } from "@/GameState";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import type { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleTrigger } from "@/module/ModuleTrigger";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionRecoverMine class.

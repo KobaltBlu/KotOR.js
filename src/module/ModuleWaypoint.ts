@@ -1,15 +1,15 @@
-import { ModuleObject } from "./ModuleObject";
-import { GFFObject } from "../resource/GFFObject";
+import { ModuleObject } from "@/module/ModuleObject";
+import { GFFObject } from "@/resource/GFFObject";
 import * as THREE from "three";
-import { OdysseyModel3D } from "../three/odyssey";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { GFFField } from "../resource/GFFField";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFStruct } from "../resource/GFFStruct";
-import { CExoLocString } from "../resource/CExoLocString";
-import { ResourceLoader } from "../loaders";
-import { GameState } from "../GameState";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { CExoLocString } from "@/resource/CExoLocString";
+import { ResourceLoader } from "@/loaders";
+import { GameState } from "@/GameState";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 
 /**
 * ModuleWaypoint class.

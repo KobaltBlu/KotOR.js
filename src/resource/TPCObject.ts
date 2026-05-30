@@ -1,13 +1,13 @@
 import * as THREE from 'three';
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { TXI } from './TXI';
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { TXI } from "@/resource/TXI";
 // @ts-ignore
 import * as dxtJs from "dxt-js";
-import { PixelFormat } from '../enums/graphics/tpc/PixelFormat';
-import { ENCODING } from '../enums/graphics/tpc/Encoding';
-import { OdysseyCompressedTexture } from '../three/odyssey/OdysseyCompressedTexture';
-import { ITPCHeader } from '../interface/resource/ITPCHeader';
-import { ITPCObjectOptions } from '../interface/resource/ITPCObjectOptions';
+import { PixelFormat } from "@/enums/graphics/tpc/PixelFormat";
+import { ENCODING } from "@/enums/graphics/tpc/Encoding";
+import { OdysseyCompressedTexture } from "@/three/odyssey/OdysseyCompressedTexture";
+import { ITPCHeader } from "@/interface/resource/ITPCHeader";
+import { ITPCObjectOptions } from "@/interface/resource/ITPCObjectOptions";
 
 const TPCHeaderLength = 128;
 
@@ -151,19 +151,35 @@ export class TPCObject {
               byteArray[d++] = rawBuffer[s++];
               byteArray[d++] = 255;
             }
+          }else if(this.header.encoding == ENCODING.GRAY){
+            byteArray = new Uint8Array(rawBuffer.length * 4);
+            for(let p = 0, d = 0; p < rawBuffer.length; p++){
+              const v = rawBuffer[p];
+              byteArray[d++] = v;
+              byteArray[d++] = v;
+              byteArray[d++] = v;
+              byteArray[d++] = 255;
+            }
+          }else if(this.header.encoding == ENCODING.BGRA){
+            byteArray = new Uint8Array(rawBuffer.length);
+            for(let p = 0; p < rawBuffer.length; p += 4){
+              byteArray[p    ] = rawBuffer[p + 2];
+              byteArray[p + 1] = rawBuffer[p + 1];
+              byteArray[p + 2] = rawBuffer[p    ];
+              byteArray[p + 3] = rawBuffer[p + 3];
+            }
           }else{
             byteArray = rawBuffer;
           }
   			} else {
-          if(this.header.encoding == ENCODING.RGB){
-            dataLength = Math.max(this.header.minDataSize, width * height * 0.5);
-            dataLength = Math.max(this.header.minDataSize, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * this.header.minDataSize);
-          }else if(this.header.encoding == ENCODING.RGBA){
-            dataLength = Math.max(this.header.minDataSize, Math.floor((width + 3) / 4) * Math.floor((height + 3) / 4) * this.header.minDataSize);
-          }
+          dataLength = Math.max(
+            this.header.minDataSize,
+            TPCObject.getCompressedMipByteLength(width, height, this.header.encoding)
+          );
           byteArray = this.file.slice(dataOffset, dataOffset + dataLength);
           if(!compressMipMaps){
-            byteArray = dxtJs.decompress(byteArray, width, height, this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5 );
+            const dxtFlag = this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5;
+            byteArray = Uint8Array.from(dxtJs.decompress(byteArray, width, height, dxtFlag));
           }
   			}
 
@@ -287,6 +303,28 @@ export class TPCObject {
     return mips;
   }
 
+  static generateMipMapCountForDimensions(width = 0, height = 0){
+    let nWidth = Math.max(1, width | 0);
+    let nHeight = Math.max(1, height | 0);
+    let mips = 0;
+    while(true){
+      mips += 1;
+      if(nWidth === 1 && nHeight === 1){
+        break;
+      }
+      nWidth = Math.max(nWidth >> 1, 1);
+      nHeight = Math.max(nHeight >> 1, 1);
+    }
+    return mips;
+  }
+
+  static getCompressedMipByteLength(width: number, height: number, encoding: ENCODING){
+    const blockBytes = encoding == ENCODING.RGB ? 8 : 16;
+    const blockW = Math.max(1, Math.floor((width + 3) / 4));
+    const blockH = Math.max(1, Math.floor((height + 3) / 4));
+    return blockW * blockH * blockBytes;
+  }
+
   readHeader(): ITPCHeader {
 
     // Parse header
@@ -320,24 +358,32 @@ export class TPCObject {
         case ENCODING.GRAY:
           Header.hasAlpha = false;
           Header.format = PixelFormat.R8G8B8;
+          Header.bytesPerPixel = 1;
+          Header.bitsPerPixel = 8;
           Header.minDataSize = 1;
           Header.dataSize = Header.width * Header.height;
         break;
         case ENCODING.RGB:
           Header.hasAlpha = false;
           Header.format = PixelFormat.R8G8B8;
+          Header.bytesPerPixel = 3;
+          Header.bitsPerPixel = 24;
           Header.minDataSize = 3;
           Header.dataSize = Header.width * Header.height * 3;
         break;
         case ENCODING.RGBA:
           Header.hasAlpha = true;
           Header.format = PixelFormat.R8G8B8A8;
+          Header.bytesPerPixel = 4;
+          Header.bitsPerPixel = 32;
           Header.minDataSize = 4;
           Header.dataSize = Header.width * Header.height * 4;
         break;
         case ENCODING.BGRA:
           Header.hasAlpha = true;
           Header.format = PixelFormat.B8G8R8A8;
+          Header.bytesPerPixel = 4;
+          Header.bitsPerPixel = 32;
           Header.minDataSize = 4;
           Header.dataSize = Header.width * Header.height * 4;
         break;
@@ -352,6 +398,8 @@ export class TPCObject {
           Header.compressed = true;
           Header.hasAlpha = false;
           Header.format = PixelFormat.DXT1;
+          Header.bytesPerPixel = 4;
+          Header.bitsPerPixel = 32;
           Header.minDataSize = 8;
         break;
         case ENCODING.RGBA:
@@ -359,6 +407,8 @@ export class TPCObject {
           Header.compressed = true;
           Header.hasAlpha = true;
           Header.format = PixelFormat.DXT5;
+          Header.bytesPerPixel = 4;
+          Header.bitsPerPixel = 32;
           Header.minDataSize = 16;
         break;
         default:

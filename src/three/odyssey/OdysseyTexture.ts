@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { TXI } from "../../resource/TXI";
+import { TXI } from "@/resource/TXI";
 
 /**
  * OdysseyTexture class.

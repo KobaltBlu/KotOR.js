@@ -142,7 +142,10 @@ $border-width-thick: 2px;
 // Z-INDEX VARIABLES
 // =============================================================================
 
-$z-index-dropdown: 99;
+// Main Forge menu bar + dropdowns (must sit above tab content `MenuBar` and similar chrome, which use z-index ~100+).
+$z-index-dropdown: 4000;
+/** Floating chrome (mini audio player) — above top menu / dropdowns, below modals. */
+$z-index-floating-chrome: 5000;
 $z-index-modal: 9999;
 $z-index-notification: 99999999;
 

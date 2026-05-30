@@ -1,12 +1,11 @@
-import { EditorFile } from "./EditorFile";
-import * as KotOR from "./KotOR";
-import { EditorFileProtocol } from "./enum/EditorFileProtocol";
-import { ForgeState } from "./states/ForgeState";
-import { TabProjectExplorerState } from "./states/tabs";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabProjectExplorerState } from "@/apps/forge/states/tabs";
 import * as path from "path";
 import * as fs from "fs";
-import { ApplicationEnvironment } from "../../enums/ApplicationEnvironment";
-import { IGameFileSystemReadDirOptions } from "../../interface/filesystem/IGameFileSystemReadDirOptions";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
 
 const spleep = (time: number = 0) => {
   return new Promise( (resolve, reject) => {
@@ -14,11 +13,27 @@ const spleep = (time: number = 0) => {
   });
 }
 
+/** Project-relative path for File System Access API (forward slashes, no leading slash). */
+function normalizeWebProjectRelativeDir(rel: string): string {
+  return rel.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+}
+
+function posixJoinRel(dirbase: string, segment: string): string {
+  const base = normalizeWebProjectRelativeDir(dirbase);
+  if (!base) return segment;
+  return `${base}/${segment}`;
+}
+
 export class ProjectFileSystem {
 
   static rootDirectoryHandle: FileSystemDirectoryHandle;
   static rootDirectoryPath: string;
   static directoryCache: Map<string, FileSystemDirectoryHandle> = new Map();
+
+  /** Call when switching projects so stale handles are not reused. */
+  static clearDirectoryCache(): void {
+    this.directoryCache.clear();
+  }
 
   static initializeProjectExplorer() {
     return new Promise<void>( (resolve, reject) => {
@@ -32,7 +47,7 @@ export class ProjectFileSystem {
   static async openEditorFile(resource: string): Promise<EditorFile> {
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
       return new EditorFile({
-        path: `${EditorFileProtocol.FILE}//project.dir/${resource}`,
+        path: EditorFile.referenceURIForProjectRelative(resource),
         useProjectFileSystem: true,
       });
     }else{
@@ -42,7 +57,7 @@ export class ProjectFileSystem {
       //   useProjectFileSystem: true,
       // });
       return new EditorFile({
-        path: `${EditorFileProtocol.FILE}//project.dir/${resource}`,
+        path: EditorFile.referenceURIForProjectRelative(resource),
         useProjectFileSystem: true,
       });
     }
@@ -76,7 +91,8 @@ export class ProjectFileSystem {
           const dirs = dirPath.length ? dirPath.split(path.sep) : [];
           const cacheKey = dirs.join('/');
           if(this.directoryCache.has(cacheKey)){
-            return this.directoryCache.get(cacheKey)!;
+            resolve(true);
+            return;
           }
           try{
             let currentDirHandle = this.rootDirectoryHandle; 
@@ -113,7 +129,10 @@ export class ProjectFileSystem {
       }
       return new Promise<Uint8Array>( (resolve, reject) => {
         fs.readFile(path.join(this.rootDirectoryPath, filepath), options, (err, buffer) => {
-          if(err) reject(undefined);
+          if(err){
+            reject(err);
+            return;
+          }
           resolve(new Uint8Array(buffer));
         })
       });
@@ -230,9 +249,11 @@ export class ProjectFileSystem {
               return;
             }
           }
-        }catch(e){
-          console.log(dirOrFilePath);
-          console.error(e);
+        }catch(e: any){
+          if(e?.name !== 'NotFoundError'){
+            console.log(dirOrFilePath);
+            console.error(e);
+          }
           resolve(false);
           return;
         }
@@ -426,10 +447,11 @@ export class ProjectFileSystem {
     try{
       let dirHandle: FileSystemDirectoryHandle | undefined;
       if(typeof pathOrHandle === 'string'){
-        const dirPath = pathOrHandle as string;
-        dirHandle = await this.resolvePathDirectoryHandleProject(dirPath);
-        if(!dirHandle) throw new Error('Failed to locate directory inside project folder: '+dirPath);
-        dirbase = dirHandle.name;
+        const dirPathNorm = normalizeWebProjectRelativeDir(String(pathOrHandle as string));
+        dirHandle = await this.resolvePathDirectoryHandleProject(dirPathNorm);
+        if(!dirHandle) throw new Error('Failed to locate directory inside project folder: '+dirPathNorm);
+        // Paths must be relative to project root — not dirHandle.name (that repeats the picked folder segment).
+        dirbase = dirPathNorm;
       } else {
         dirHandle = pathOrHandle;
       }
@@ -452,18 +474,18 @@ export class ProjectFileSystem {
             if (opts.recursive) {
               directoryEntries.push(entry);
             } else {
-              files.push(path.join(dirbase, entry.name));
+              files.push(posixJoinRel(dirbase, entry.name));
             }
           }
         }
 
         for (const fileName of fileEntries) {
-          files.push(path.join(dirbase, fileName));
+          files.push(posixJoinRel(dirbase, fileName));
         }
 
         if (opts.recursive && directoryEntries.length > 0) {
           const subdirPromises = directoryEntries.map(async (entry) => {
-            const newdirbase = path.join(dirbase, entry.name);
+            const newdirbase = posixJoinRel(dirbase, entry.name);
             const subdirFiles: string[] = [];
             await this.readdir_web_project(entry, opts, subdirFiles, newdirbase);
             return subdirFiles;

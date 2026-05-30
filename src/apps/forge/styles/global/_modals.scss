@@ -1,0 +1,32 @@
+// =============================================================================
+// MODALS
+// =============================================================================
+
+.modal-content {
+  background-color: $bg-secondary;
+  height: 100%;
+  border-radius: 0;
+  padding: $spacing-md;
+}
+
+.modal-header {
+  border-bottom: $border-width solid $bg-darker;
+}
+
+.modal-footer {
+  border-top: $border-width solid $bg-darker;
+}
+
+.modal-backdrop {
+  background-color: $bg-overlay-dark;
+}
+
+.modal-buttons-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  margin-top: $spacing-lg;
+  padding-top: $spacing-md;
+  border-top: $border-width solid $border-secondary;
+}

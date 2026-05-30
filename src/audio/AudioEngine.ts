@@ -1,15 +1,17 @@
 import * as THREE from "three";
-import type { AudioEmitter } from "./AudioEmitter";
-import { AudioEngineMode } from "../enums/audio/AudioEngineMode";
-import { IAreaAudioProperties } from "../interface/area/IAreaAudioProperties";
-import { AmbientAudioEmitter } from "./AmbientAudioEmitter";
-import { EAXPresets } from "./EAXPresets";
-import { BackgroundMusicMode } from "../enums/audio/BackgroundMusicMode";
-import { BackgroundMusicState } from "../enums/audio/BackgroundMusicState";
-import { AudioEngineChannel } from "../enums/audio/AudioEngineChannel";
-import { ReverbEngine } from "./ReverbEngine";
+import type { AudioEmitter } from "@/audio/AudioEmitter";
+import { AudioEngineMode } from "@/enums/audio/AudioEngineMode";
+import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
+import { AmbientAudioEmitter } from "@/audio/AmbientAudioEmitter";
+import { EAXPresets } from "@/audio/EAXPresets";
+import { BackgroundMusicMode } from "@/enums/audio/BackgroundMusicMode";
+import { BackgroundMusicState } from "@/enums/audio/BackgroundMusicState";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { ReverbEngine } from "@/audio/ReverbEngine";
 
 class AudioChannel {
+
+  audioCtx: AudioContext;
 
   /* the last gain value before the SFX channel was muted */
   #gainCached: number;
@@ -23,6 +25,7 @@ class AudioChannel {
   muted: boolean = false;
 
   constructor(channel: AudioEngineChannel, audioCtx: AudioContext){
+    this.audioCtx = audioCtx;
     this.#channel = channel;
     this.#gain = 0;
     this.#gainCached = 0;
@@ -35,6 +38,7 @@ class AudioChannel {
 
   setGain(value: number){
     this.#gain = value;
+    this.#gainCached = this.#gain;
     if(this.muted){ return; }
     this.#gainNode.gain.value = value;
   }
@@ -46,14 +50,15 @@ class AudioChannel {
   mute(){
     if(this.muted){ return; }
     this.muted = true;
-    this.#gainCached = this.#gain;
     this.#gainNode.gain.value = 0;
+    this.getGainNode().disconnect();
   }
 
   unmute(){
     if(!this.muted){ return; }
     this.muted = false;
     this.#gainNode.gain.value = this.#gainCached;
+    this.getGainNode().connect( this.audioCtx.destination );
   }
 }
 
@@ -210,8 +215,6 @@ export class AudioEngine {
     this.battleMusicAudioEmitter.setDestination(AudioEngine.musicChannel.getGainNode());
     this.battleStingerAudioEmitter.setDestination(AudioEngine.musicChannel.getGainNode());
     this.dialogMusicAudioEmitter.setDestination(AudioEngine.musicChannel.getGainNode());
-
-    this.ambientAudioDayEmitter.setVolume(0.5);
 
     this.areaMusicDayAudioEmitter.addEventListener('play', () => {
       this.bgmMode = BackgroundMusicMode.AREA;

@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import type { OdysseyWalkMesh } from "../../odyssey/OdysseyWalkMesh";
-import type { SurfaceMaterial } from "../../engine/SurfaceMaterial";
-import { IAdjacentWalkableFaces } from "../../interface/odyssey";
+import type { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
+import type { SurfaceMaterial } from "@/engine/SurfaceMaterial";
+import { IAdjacentWalkableFaces } from "@/interface/odyssey";
 
 /**
  * OdysseyFace3 class.
@@ -85,6 +85,9 @@ export class OdysseyFace3 {
 	 * @default 0
 	 */
 	materialIndex: number;
+
+	/** MDL face smoothing group (optional; present when model header requests smoothing groups). */
+	smoothingGroup?: number;
 
 	perimeter = {
 		a: false, b: false, c: false

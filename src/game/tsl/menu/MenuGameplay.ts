@@ -1,7 +1,7 @@
-import { GameState } from "../../../GameState";
-import type { SWDifficulty } from "../../../engine/rules/SWDifficulty";
-import type { GUILabel, GUICheckBox, GUIButton, GUIListBox } from "../../../gui";
-import { MenuGameplay as K1_MenuGameplay } from "../../kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { SWDifficulty } from "@/engine/rules/SWDifficulty";
+import type { GUILabel, GUICheckBox, GUIButton, GUIListBox } from "@/gui";
+import { MenuGameplay as K1_MenuGameplay } from "@/game/kotor/KOTOR";
 
 /**
  * MenuGameplay class.
@@ -116,38 +116,31 @@ export class MenuGameplay extends K1_MenuGameplay {
       
 
       this.BTN_DIFFICULTY.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42265].Value)
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42265].Value);
       });
       
       this.CB_LEVELUP.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42266].Value)
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42266].Value);
       });
       
       this.CB_INVERTCAM.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48697].Value)
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48697].Value);
       });
       
       this.CB_AUTOSAVE.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[38038].Value)
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[38038].Value);
       });
       
       this.CB_REVERSE_INGAME.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[106490].Value)
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[106490].Value);
       });
       
       this.CB_REVERSE.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[48699].Value)
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48699].Value);
       });
       
       this.CB_DISABLEMOVE.addEventListener( 'hover', () => {
-        this.LB_DESC.clearItems();
-        this.LB_DESC.addItem(GameState.TLKManager.TLKStrings[42484].Value)
+        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42484].Value);
       });
 
 

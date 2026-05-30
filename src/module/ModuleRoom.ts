@@ -1,24 +1,24 @@
-import { ModuleObject } from "./ModuleObject";
-import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from ".";
+import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleArea, ModuleCreature, ModuleDoor, ModuleEncounter, ModulePlaceable, ModuleSound, ModuleTrigger } from "@/module";
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { OdysseyFace3, OdysseyModel3D } from "../three/odyssey";
-import { Utility } from "../utility/Utility";
-import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "../odyssey";
-import { BinaryReader } from "../utility/binary/BinaryReader";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { MDLLoader, ResourceLoader, TextureLoader } from "../loaders";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import { GFFStruct } from "../resource/GFFStruct";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
+import { GameState } from "@/GameState";
+import { OdysseyFace3, OdysseyModel3D } from "@/three/odyssey";
+import { Utility } from "@/utility/Utility";
+import { OdysseyModelNodeAABB, OdysseyWalkMesh } from "@/odyssey";
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { MDLLoader, ResourceLoader, TextureLoader } from "@/loaders";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils";
-// import { ShaderManager } from "../managers";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { BitWise } from "../utility/BitWise";
-import { VISObject } from "../resource/VISObject";
-import { IVISRoom } from "../interface";
-import { EngineMode } from "../enums/engine/EngineMode";
+// import { ShaderManager } from "@/managers";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { BitWise } from "@/utility/BitWise";
+import { VISObject } from "@/resource/VISObject";
+import { IVISRoom } from "@/interface";
+import { EngineMode } from "@/enums/engine/EngineMode";
 
 /**
 * ModuleRoom class.
@@ -49,6 +49,7 @@ export class ModuleRoom extends ModuleObject {
   linkedRoomData: IVISRoom[] = [];
   linkedRoomNames: string[] = [];
   linkedRooms: Map<string, ModuleRoom> = new Map<string, ModuleRoom>();
+  linkedRoomsArray: ModuleRoom[] = [];
 
   constructor( roomName: string, area: ModuleArea ){
     super();
@@ -206,7 +207,7 @@ export class ModuleRoom extends ModuleObject {
     }
 
     if(showLinkedRooms){
-      const linkedRooms = Array.from(this.linkedRooms.values());
+      const linkedRooms = this.linkedRoomsArray;
       for(let i = 0, rLen = linkedRooms.length; i < rLen; i++){
         const room = linkedRooms[i];
         if(room.grass){
@@ -219,11 +220,15 @@ export class ModuleRoom extends ModuleObject {
     }
 
     //Add the walkmesh back to the scene
-    if(this.collisionData.walkmesh && !this.collisionData.walkmesh.mesh.parent){
-      GameState.group.room_walkmeshes.add(this.collisionData.walkmesh.mesh);
-    }else if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh.parent){
-      this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
-      GameState.group.room_walkmeshes.add(this.collisionData.walkmesh.mesh);
+    if(this.collisionManager.walkmesh && !this.collisionManager.walkmesh.mesh.parent){
+      GameState.group.room_walkmeshes.add(this.collisionManager.walkmesh.mesh);
+    }else if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh.parent){
+      this.collisionManager.walkmesh.mesh.removeFromParent();
+      GameState.group.room_walkmeshes.add(this.collisionManager.walkmesh.mesh);
+    }
+
+    if(this.collisionManager.walkmesh){
+      this.collisionManager.walkmesh.buildEdgeNormalHelpers();
     }
 
     for(let i = 0, sLen = this.sounds.length; i < sLen; i++){
@@ -241,7 +246,7 @@ export class ModuleRoom extends ModuleObject {
     }
 
     if(hideLinkedRooms){
-      const linkedRooms = Array.from(this.linkedRooms.values());
+      const linkedRooms = this.linkedRoomsArray;
       for(let i = 0, rLen = linkedRooms.length; i < rLen; i++){
         if(typeof linkedRooms[i].model != 'object'){
           continue;
@@ -251,8 +256,8 @@ export class ModuleRoom extends ModuleObject {
     }
     
     //Remove the walkmesh back to the scene
-    if(this.collisionData.walkmesh && this.collisionData.walkmesh.mesh.parent){
-      this.collisionData.walkmesh.mesh.parent.remove(this.collisionData.walkmesh.mesh);
+    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh.parent){
+      this.collisionManager.walkmesh.mesh.removeFromParent();
     }
 
     for(let i = 0, sLen = this.sounds.length; i < sLen; i++){
@@ -266,7 +271,26 @@ export class ModuleRoom extends ModuleObject {
    */
   linkRooms(){
     for(let i = 0, iLen = this.linkedRoomData.length; i < iLen; i++){
-      this.linkedRooms.set(this.linkedRoomData[i].name, this.area.visObject.getRoomByName(this.linkedRoomData[i].name));
+      const room = this.area.visObject.getRoomByName(this.linkedRoomData[i].name);
+      if(!room){ 
+        console.warn('ModuleRoom.linkRooms: Linked room not found', this.linkedRoomData[i].name);
+        continue; 
+      }
+      this.addLinkedRoom(room);
+    }
+  }
+
+  addLinkedRoom(room: ModuleRoom){
+    this.linkedRooms.set(room.roomName, room);
+    if(this.linkedRoomsArray.indexOf(room) >= 0) return;
+    this.linkedRoomsArray.push(room);
+  }
+
+  removeLinkedRoom(room: ModuleRoom){
+    this.linkedRooms.delete(room.roomName);
+    const index = this.linkedRoomsArray.indexOf(room);
+    if(index >= 0){
+      this.linkedRoomsArray.splice(index, 1);
     }
   }
 
@@ -310,11 +334,11 @@ export class ModuleRoom extends ModuleObject {
 
     //Load the walkmesh
     try{
-      if(!(this.collisionData.walkmesh instanceof OdysseyWalkMesh)){
+      if(!(this.collisionManager.walkmesh instanceof OdysseyWalkMesh)){
         const wok = await this.loadWalkmesh(this.roomName);
         if(wok){
-          this.collisionData.walkmesh = wok;
-          this.collisionData.walkmesh.mesh.position.z += 0.001;
+          this.collisionManager.setWalkmesh(wok);
+          wok.mesh.position.z += 0.001;
         }
       }
     }catch(e){
@@ -365,10 +389,19 @@ export class ModuleRoom extends ModuleObject {
       return;
     }
 
-    if(!aabb.grassFaces.length){
+    const grassFaces = this.getGrassFaces(aabb);
+    if(!grassFaces.length){
       // console.warn('ModuleRoom.buildGrass: No grass faces found for room', this.roomName);
       return;
     }
+
+    const grassProbability = new THREE.Vector4(
+      this.area.grass.probability.lowerLeft,
+      this.area.grass.probability.lowerRight,
+      this.area.grass.probability.upperLeft,
+      this.area.grass.probability.upperRight
+    );
+    this.normalizeGrassProbability(grassProbability);
 
     // Pre-calculate grass blade geometry once
     const grassGeometry = this.createGrassBladeGeometry();
@@ -396,14 +429,10 @@ export class ModuleRoom extends ModuleObject {
           time: { value: 0 },
           ambientColor: { value: new THREE.Color().setHex(parseInt('0x'+(this.area.sun.fogColor).toString(16))) },
           windPower: { value: this.area.windPower },
+          planeHeightJitter: { value: 0.05 },
           playerPosition: { value: new THREE.Vector3 },
           alphaTest: { value: this.area.alphaTest },
-          probability: { value: new THREE.Vector4(
-            this.area.grass.probability.lowerLeft,
-            this.area.grass.probability.lowerRight,
-            this.area.grass.probability.upperLeft,
-            this.area.grass.probability.upperRight
-          ) },
+          probability: { value: grassProbability },
           // Fade distance uniforms
           fadeStartDistance: { value: 25.0 },
           fadeEndDistance: { value: 100.0 },
@@ -420,7 +449,7 @@ export class ModuleRoom extends ModuleObject {
     });
 
     // Pre-calculate face data and grass counts
-    const faceData = this.precalculateFaceData(aabb, density);
+    const faceData = this.precalculateFaceData(aabb, grassFaces, density);
     const totalGrassCount = faceData.totalGrassCount;
     
     if(totalGrassCount === 0){
@@ -456,12 +485,25 @@ export class ModuleRoom extends ModuleObject {
     // Pre-cache model data for UV calculation
     const pos = aabb.vertices;
     const uv2 = aabb.tvectors[1];
+    const faceIndexByRef = new Map<OdysseyFace3, number>();
+    for(let i = 0; i < aabb.faces.length; i++){
+      faceIndexByRef.set(aabb.faces[i], i);
+    }
+    const grassFaceIndexSet = new Set<number>();
+    for(let i = 0; i < grassFaces.length; i++){
+      const idx = faceIndexByRef.get(grassFaces[i]);
+      if(typeof idx === 'number'){
+        grassFaceIndexSet.add(idx);
+      }
+    }
+    const edgePadding = this.area.grass.quadSize * 0.5;
+    const maxPlacementAttempts = 8;
 
     let instanceIndex = 0;
     
     // Process each face
-    for(let k = 0; k < aabb.grassFaces.length; k++){
-      const face = aabb.grassFaces[k];
+    for(let k = 0; k < grassFaces.length; k++){
+      const face = grassFaces[k];
       const grassCount = faceData.faceGrassCounts[k];
       
       if(grassCount < 1) continue;
@@ -479,24 +521,46 @@ export class ModuleRoom extends ModuleObject {
       uvA.set(uv2[tvI1], uv2[tvI1 + 1]);
       uvB.set(uv2[tvI2], uv2[tvI2 + 1]);
       uvC.set(uv2[tvI3], uv2[tvI3 + 1]);
+      const blockedEdgeAB = this.isBlockedGrassEdge(face, 0, grassFaceIndexSet);
+      const blockedEdgeBC = this.isBlockedGrassEdge(face, 1, grassFaceIndexSet);
+      const blockedEdgeCA = this.isBlockedGrassEdge(face, 2, grassFaceIndexSet);
 
       // Generate grass instances for this face
       for(let j = 0; j < grassCount; j++){
-        // Generate random barycentric coordinates
-        let a = Math.random();
-        let b = Math.random();
+        let accepted = false;
+        let a = 0;
+        let b = 0;
+        let c = 0;
 
-        if (a + b > 1) {
-          a = 1 - a;
-          b = 1 - b;
+        for(let attempt = 0; attempt < maxPlacementAttempts; attempt++){
+          // Generate random barycentric coordinates
+          a = Math.random();
+          b = Math.random();
+
+          if (a + b > 1) {
+            a = 1 - a;
+            b = 1 - b;
+          }
+
+          c = 1 - a - b;
+
+          // Calculate position
+          tmpVec3.x = (a * FA.x) + (b * FB.x) + (c * FC.x);
+          tmpVec3.y = (a * FA.y) + (b * FB.y) + (c * FC.y);
+          tmpVec3.z = (a * FA.z) + (b * FB.z) + (c * FC.z);
+
+          // Keep blades away from edges that border non-grass faces.
+          if(blockedEdgeAB && this.pointToSegmentDistance(tmpVec3, FA, FB) < edgePadding) continue;
+          if(blockedEdgeBC && this.pointToSegmentDistance(tmpVec3, FB, FC) < edgePadding) continue;
+          if(blockedEdgeCA && this.pointToSegmentDistance(tmpVec3, FC, FA) < edgePadding) continue;
+
+          accepted = true;
+          break;
         }
 
-        const c = 1 - a - b;
-
-        // Calculate position
-        tmpVec3.x = (a * FA.x) + (b * FB.x) + (c * FC.x);
-        tmpVec3.y = (a * FA.y) + (b * FB.y) + (c * FC.y);
-        tmpVec3.z = (a * FA.z) + (b * FB.z) + (c * FC.z);
+        if(!accepted){
+          continue;
+        }
 
         // Set matrix
         objForMatrix.rotation.z = Math.floor(Math.random() * 360);
@@ -522,6 +586,7 @@ export class ModuleRoom extends ModuleObject {
       }
     }
     
+    this.grass.count = instanceIndex;
     this.grass.instanceMatrix.needsUpdate = true;
     geometry.setAttribute('instanceID', new THREE.InstancedBufferAttribute(instanceIndices, 1));
     geometry.setAttribute('lightmapUV', new THREE.InstancedBufferAttribute(lightmapUV, 2));
@@ -531,6 +596,56 @@ export class ModuleRoom extends ModuleObject {
 
     // Load textures asynchronously
     this.loadGrassTextures(grass_material, lm_texture);
+  }
+
+  /**
+   * Resolve grass-eligible faces, preferring runtime walkmesh surfacemat data.
+   */
+  private getGrassFaces(aabb: OdysseyModelNodeAABB): OdysseyFace3[] {
+    return aabb.grassFaces;
+  }
+
+  private isBlockedGrassEdge(face: OdysseyFace3, edgeIndex: number, grassFaceIndexSet: Set<number>): boolean {
+    const adjacentFaceIndex = face.adjacent?.[edgeIndex];
+    if(typeof adjacentFaceIndex !== 'number' || adjacentFaceIndex < 0){
+      return true;
+    }
+    return !grassFaceIndexSet.has(adjacentFaceIndex);
+  }
+
+  private readonly _edgeTmp = new THREE.Vector3();
+  private readonly _pointTmp = new THREE.Vector3();
+  private readonly _closestTmp = new THREE.Vector3();
+
+  private pointToSegmentDistance(point: THREE.Vector3, segA: THREE.Vector3, segB: THREE.Vector3): number {
+    this._edgeTmp.subVectors(segB, segA);
+    this._pointTmp.subVectors(point, segA);
+    const edgeLenSq = this._edgeTmp.lengthSq();
+    if(edgeLenSq <= 0){
+      return point.distanceTo(segA);
+    }
+    const t = Math.max(0, Math.min(1, this._pointTmp.dot(this._edgeTmp) / edgeLenSq));
+    this._closestTmp.copy(segA).addScaledVector(this._edgeTmp, t);
+    return point.distanceTo(this._closestTmp);
+  }
+
+  /**
+   * Supports both [0..1] and percentage-style [0..100] probability values.
+   */
+  private normalizeGrassProbability(probability: THREE.Vector4): void {
+    probability.x = Math.max(0, probability.x);
+    probability.y = Math.max(0, probability.y);
+    probability.z = Math.max(0, probability.z);
+    probability.w = Math.max(0, probability.w);
+
+    let total = probability.x + probability.y + probability.z + probability.w;
+    if(total <= 0){
+      probability.set(0.25, 0.25, 0.25, 0.25);
+      return;
+    }
+
+    // If authors use percentage values (e.g. 25,25,25,25), normalize to 1.0.
+    probability.divideScalar(total);
   }
 
   /**
@@ -576,7 +691,7 @@ export class ModuleRoom extends ModuleObject {
   /**
    * Pre-calculate face data and grass counts
    */
-  private precalculateFaceData(aabb: OdysseyModelNodeAABB, density: number): { totalGrassCount: number, faceGrassCounts: number[] } {
+  private precalculateFaceData(aabb: OdysseyModelNodeAABB, grassFaces: OdysseyFace3[], density: number): { totalGrassCount: number, faceGrassCounts: number[] } {
     const faceGrassCounts: number[] = [];
     let totalGrassCount = 0;
     
@@ -584,8 +699,8 @@ export class ModuleRoom extends ModuleObject {
     const FB = new THREE.Vector3();
     const FC = new THREE.Vector3();
     
-    for(let i = 0; i < aabb.grassFaces.length; i++){
-      const face = aabb.grassFaces[i];
+    for(let i = 0; i < grassFaces.length; i++){
+      const face = grassFaces[i];
 
       FA.set(aabb.vertices[face.a * 3], aabb.vertices[(face.a * 3) + 1], aabb.vertices[(face.a * 3) + 2]);
       FB.set(aabb.vertices[face.b * 3], aabb.vertices[(face.b * 3) + 1], aabb.vertices[(face.b * 3) + 2]);
@@ -724,17 +839,17 @@ export class ModuleRoom extends ModuleObject {
 
   findWalkableFace( object?: ModuleObject ) : OdysseyFace3 {
     let face;
-    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject) && this.collisionData.walkmesh){
-      for(let j = 0, jl = this.collisionData.walkmesh.walkableFaces.length; j < jl; j++){
-        face = this.collisionData.walkmesh.walkableFaces[j];
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject) && this.collisionManager.walkmesh){
+      for(let j = 0, jl = this.collisionManager.walkmesh.walkableFaces.length; j < jl; j++){
+        face = this.collisionManager.walkmesh.walkableFaces[j];
         if(face.triangle.containsPoint(object.position)){
-          object.collisionData.groundFace = face;
-          object.collisionData.lastGroundFace = object.collisionData.groundFace;
-          object.collisionData.surfaceId = object.collisionData.groundFace.walkIndex;
+          object.collisionManager.groundFace = face;
+          object.collisionManager.lastGroundFace = object.collisionManager.groundFace;
+          object.collisionManager.surfaceId = object.collisionManager.groundFace.walkIndex;
           object.room = this;
 
-          face.triangle.closestPointToPoint(object.position, object.collisionData.wm_c_point);
-          object.position.z = object.collisionData.wm_c_point.z + .005;
+          face.triangle.closestPointToPoint(object.position, object.collisionManager.wm_c_point);
+          object.position.z = object.collisionManager.wm_c_point.z + .005;
           return face;
         }
       }
@@ -745,11 +860,11 @@ export class ModuleRoom extends ModuleObject {
   destroy(): void {
     super.destroy();
       
-    if(this.collisionData.walkmesh)
-      this.collisionData.walkmesh.dispose();
+    if(this.collisionManager.walkmesh)
+      this.collisionManager.walkmesh.dispose();
 
     try{
-      let wmIdx = GameState.walkmeshList.indexOf(this.collisionData.walkmesh.mesh);
+      let wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
       GameState.walkmeshList.splice(wmIdx, 1);
     }catch(e){
       console.error(e);

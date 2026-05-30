@@ -1,6 +1,6 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton } from "../../../gui";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 
 /**
  * MenuMessages class.
@@ -53,20 +53,11 @@ export class MenuMessages extends GameMenu {
   show() {
     super.show();
     this.manager.MenuTop.LBLH_MSG.onHoverIn();
-    this.LB_MESSAGES.clearItems();
-    this.LB_DIALOG.clearItems();
-
     const dlg_entries = GameState.DialogMessageManager.Entries.slice(0).reverse();
-    for(let i = 0; i < dlg_entries.length; i++){
-      const entry = dlg_entries[i];
-      this.LB_DIALOG.addItem( `${entry.speaker}: ${entry.message}` );
-    }
+    this.LB_DIALOG.setItems(dlg_entries.map(e => `${e.speaker}: ${e.message}`));
 
     const fb_entries = GameState.FeedbackMessageManager.Entries.slice(0).reverse();
-    for(let i = 0; i < fb_entries.length; i++){
-      const entry = fb_entries[i];
-      this.LB_MESSAGES.addItem( `${entry.message}` );
-    }
+    this.LB_MESSAGES.setItems(fb_entries.map(e => `${e.message}`));
 
     this.updateListVisibility();
 

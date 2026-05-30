@@ -1,0 +1,167 @@
+// =============================================================================
+// TSL THEME OVERRIDES
+// =============================================================================
+
+.TSL {
+  .menu-accent .inner {
+    background: $tsl-primary;
+  }
+
+  .menu-accent::before, 
+  .menu-accent::after {
+    border-top-color: $tsl-primary;
+  }
+
+  .navbar-brand, 
+  .navbar-nav > li > a {
+    background: $bg-primary;
+    border-right: $border-width-thick solid $tsl-primary-darkest;
+  }
+
+  .nav .open > a, 
+  .nav .open > a:focus, 
+  .nav .open > a:hover {
+    background-color: $tsl-primary;
+    border-color: $tsl-primary;
+    color: $text-white;
+  }
+
+  .dropdown-menu > li > a:focus, 
+  .dropdown-menu > li > a:hover {
+    background-color: $tsl-primary-dark;
+  }
+
+  .ball, 
+  .ball1 {
+    border-bottom-color: rgba($tsl-primary, 0.9);
+    border-right-color: rgba($tsl-primary, 0.9);
+  }
+
+  .ball {
+    box-shadow: 0 0 35px $tsl-primary;
+  }
+
+  .ball1 {
+    box-shadow: 0 0 15px $tsl-primary;
+  }
+
+  a {
+    color: $tsl-primary;
+
+    &:focus, 
+    &:hover {
+      color: $tsl-primary-light;
+    }
+  }
+
+  .form-control, 
+  pre, 
+  input[type=text], 
+  input[type=number], 
+  input[type=cexolocstring], 
+  textarea {
+    color: $text-primary;
+    background: $tsl-primary;
+    @include gradient-tsl;
+    border: $border-width-thick solid $tsl-primary;
+    @include box-shadow-form;
+  }
+
+  select {
+    @include gradient-tsl;
+    border: $border-width-thick solid $tsl-primary;
+    outline-color: $tsl-primary;
+    @include box-shadow-form;
+
+    &:focus {
+      border-color: $tsl-primary-light;
+      outline: none;
+    }
+  }
+
+  button[disabled], 
+  html input[disabled], 
+  textarea[disabled] {
+    background: rgb(49, 68, 63);
+    border: $border-width-thick solid $tsl-primary;
+  }
+
+  fieldset {
+    border: $border-width-thick solid $tsl-primary;
+  }
+
+  button, 
+  .btn-default {
+    background: $tsl-primary-dark;
+    border: $border-width-thick solid $tsl-primary;
+    text-shadow: 0 1px 0 $tsl-primary-darker;
+
+    &:focus, 
+    &:hover {
+      background-color: rgb(12, 143, 110);
+      border-color: $tsl-primary-lighter;
+    }
+
+    &.active, 
+    &:active {
+      background-color: rgb(12, 143, 110);
+      border-color: $tsl-primary-lighter;
+    }
+
+    &.active.focus, 
+    &.active:focus, 
+    &.active:hover, 
+    &:active.focus, 
+    &:active:focus, 
+    &:active:hover, 
+    .open > .dropdown-toggle.focus, 
+    .open > .dropdown-toggle:focus, 
+    .open > .dropdown-toggle:hover {
+      background-color: rgb(12, 143, 110);
+      border-color: $tsl-primary-lighter;
+    }
+  }
+
+  button.close {
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 0;
+    cursor: pointer;
+    background: 0 0;
+    border: 0;
+  }
+
+  .css-treeview label::before {
+    color: $tsl-primary;
+  }
+
+  .tree-container > label {
+    background: $tsl-primary-dark;
+  }
+
+  .windowpane .windowpane-title {
+    background: $tsl-primary-dark;
+  }
+
+  .windowpane-content .title {
+    color: $tsl-primary;
+  }
+
+  .tabs-menu li.current {
+    border-left: 3px solid $tsl-primary-dark;
+  }
+
+  .navbar.navbar-sidebar-wizard-horizontal a:hover, 
+  .navbar.navbar-sidebar-wizard a:focus {
+    // background: $tsl-primary;
+  }
+
+  .nav > li > a:focus, 
+  .nav > li > a:hover {
+    background-color: $tsl-primary;
+  }
+
+  .navbar.navbar-sidebar-wizard-horizontal a {
+    color: $text-primary;
+  }
+}

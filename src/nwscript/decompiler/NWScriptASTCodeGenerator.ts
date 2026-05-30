@@ -1,7 +1,7 @@
-import type { NWScriptASTNode, NWScriptProgramNode, NWScriptFunctionNode, NWScriptBlockNode, NWScriptIfNode, NWScriptIfElseNode, NWScriptWhileNode, NWScriptDoWhileNode, NWScriptForNode, NWScriptExpressionStatementNode, NWScriptAssignmentNode, NWScriptReturnNode, NWScriptVariableDeclarationNode, NWScriptGlobalVariableDeclarationNode } from "./NWScriptAST";
-import { NWScriptASTNodeType } from "./NWScriptAST";
-import type { NWScriptExpression } from "./NWScriptExpression";
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import type { NWScriptASTNode, NWScriptProgramNode, NWScriptFunctionNode, NWScriptBlockNode, NWScriptIfNode, NWScriptIfElseNode, NWScriptWhileNode, NWScriptDoWhileNode, NWScriptForNode, NWScriptExpressionStatementNode, NWScriptAssignmentNode, NWScriptReturnNode, NWScriptVariableDeclarationNode, NWScriptGlobalVariableDeclarationNode, NWScriptSwitchNode, NWScriptSwitchCaseNode } from "@/nwscript/decompiler/NWScriptAST";
+import { NWScriptASTNodeType } from "@/nwscript/decompiler/NWScriptAST";
+import type { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 
 /**
  * Generates NSS source code from an Abstract Syntax Tree.
@@ -86,9 +86,6 @@ export class NWScriptASTCodeGenerator {
     const bodyLines = this.generateBlock(func.body);
     if (bodyLines.length > 0) {
       lines.push(...bodyLines.map(line => this.indent() + line));
-    } else {
-      // Empty function body
-      lines.push(this.indent() + '// Empty');
     }
 
     this.indentLevel--;
@@ -169,12 +166,31 @@ export class NWScriptASTCodeGenerator {
         lines.push(...this.generateFor(node as NWScriptForNode));
         break;
 
+      case NWScriptASTNodeType.BREAK:
+        lines.push('break;');
+        break;
+
+      case NWScriptASTNodeType.CONTINUE:
+        lines.push('continue;');
+        break;
+
+      case NWScriptASTNodeType.SWITCH:
+        lines.push(...this.generateSwitch(node as NWScriptSwitchNode));
+        break;
+
+      case NWScriptASTNodeType.EMPTY:
+        break;
+
       case NWScriptASTNodeType.BLOCK:
         lines.push(...this.generateBlock(node as NWScriptBlockNode));
         break;
 
+      case NWScriptASTNodeType.SWITCH_CASE:
+      case NWScriptASTNodeType.SWITCH_DEFAULT:
+        lines.push(`// misplaced ${node.type} node`);
+        break;
+
       default:
-        // Unknown statement type
         lines.push('// Unknown statement type: ' + node.type);
         break;
     }
@@ -359,6 +375,36 @@ export class NWScriptASTCodeGenerator {
     return lines;
   }
 
+  private generateSwitch(switchNode: NWScriptSwitchNode): string[] {
+    const lines: string[] = [];
+    lines.push(`switch (${switchNode.expression.toNSS()})`);
+    lines.push('{');
+
+    this.indentLevel++;
+    for (const c of switchNode.cases) {
+      lines.push(this.indent() + `case ${c.value.toNSS()}:`);
+      this.indentLevel++;
+      const bodyLines = this.generateBlock(c.body);
+      if (bodyLines.length > 0) {
+        lines.push(...bodyLines.map((line) => this.indent() + line));
+      }
+      this.indentLevel--;
+    }
+    if (switchNode.defaultCase) {
+      lines.push(this.indent() + 'default:');
+      this.indentLevel++;
+      const defLines = this.generateBlock(switchNode.defaultCase.body);
+      if (defLines.length > 0) {
+        lines.push(...defLines.map((line) => this.indent() + line));
+      }
+      this.indentLevel--;
+    }
+    this.indentLevel--;
+
+    lines.push('}');
+    return lines;
+  }
+
   /**
    * Get type name as string
    */
@@ -374,6 +420,16 @@ export class NWScriptASTCodeGenerator {
         return 'object';
       case NWScriptDataType.VOID:
         return 'void';
+      case NWScriptDataType.VECTOR:
+        return 'vector';
+      case NWScriptDataType.EFFECT:
+        return 'effect';
+      case NWScriptDataType.EVENT:
+        return 'event';
+      case NWScriptDataType.LOCATION:
+        return 'location';
+      case NWScriptDataType.TALENT:
+        return 'talent';
       default:
         return 'unknown';
     }

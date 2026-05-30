@@ -1,23 +1,23 @@
-import { EngineMode } from "../enums/engine/EngineMode";
-import { DLGObject } from "../resource/DLGObject";
-import { DLGNode } from "../resource/DLGNode";
-import type { ModuleCreature, ModuleObject } from "../module";
-import { ConversationState } from "../enums/dialog/ConversationState";
-import { GameState } from "../GameState";
-import { DLGConversationType } from "../enums/dialog/DLGConversationType";
-import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
-import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { AudioLoader } from "../audio/AudioLoader";
-import { AudioEngine } from "../audio/AudioEngine";
-import { CutsceneMode } from "../enums/dialog/CutsceneMode";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { DLGObject } from "@/resource/DLGObject";
+import { DLGNode } from "@/resource/DLGNode";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import { ConversationState } from "@/enums/dialog/ConversationState";
+import { GameState } from "@/GameState";
+import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
+import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
+import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
 import * as THREE from "three";
-import { CameraMode } from "../enums/dialog/CameraMode";
-import { ICameraState } from "../interface/dialog/ICameraState";
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { ICameraParticipant } from "../interface/dialog/ICameraParticipant";
+import { CameraMode } from "@/enums/dialog/CameraMode";
+import { ICameraState } from "@/interface/dialog/ICameraState";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { ICameraParticipant } from "@/interface/dialog/ICameraParticipant";
 
 const ENTRY_DELAY = 3000;
 const HALF_PI = Math.PI / 2;
@@ -125,6 +125,7 @@ export class CutsceneManager {
     //bark entry
     const isBarkDialog = this.startingEntry.isBarkDialog();
     if (isBarkDialog) {
+      this.dialog.loadBackgroundMusic()
       this.cutsceneMode = CutsceneMode.BARK;
       GameState.MenuManager.InGameBark.bark(this.startingEntry);
       this.startingEntry.runScripts();
@@ -144,32 +145,29 @@ export class CutsceneManager {
       this.listener = this.dialog.listener = GameState.PartyManager.party[0];
     }
 
-    if(this.dialog.getConversationType() == DLGConversationType.CONVERSATION){
+    if(this.dialog.getConversationType() != DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameDialog.canLetterbox = true;
     }
 
     console.log(`CutsceneManager.startConversation: ${this.dialog.getConversationType() ? 'Computer' : 'Conversation'}`);
 
     GameState.holdWorldFadeInForDialog = (this.cutsceneMode == CutsceneMode.ANIMATED);
-    this.dialog.loadStuntCamera().then(() => {
-      console.log('CutsceneManager.startConversation: loadStuntCamera');
-      this.dialog.loadStuntActors().then(() => {
-        console.log('CutsceneManager.startConversation: loadStuntActors');
-        this.dialog.loadBackgroundMusic().then(() => {
-          console.log('CutsceneManager.startConversation: loadBackgroundMusic');
-          switch (this.dialog.getConversationType()) {
-            case DLGConversationType.COMPUTER:
-              console.log('CutsceneManager.startConversation: Computer');
-              GameState.MenuManager.InGameComputer.open();
-              break;
-            default:
-              console.log('CutsceneManager.startConversation: Conversation');
-              GameState.MenuManager.InGameDialog.open();
-              break;
-          }
-          this.showEntry(this.startingEntry);
-        });
-      });
+    Promise.all([
+      this.dialog.loadStuntCamera(),
+      this.dialog.loadStuntActors(),
+      this.dialog.loadBackgroundMusic()
+    ]).then(() => {
+      switch (this.dialog.getConversationType()) {
+        case DLGConversationType.COMPUTER:
+          console.log('CutsceneManager.startConversation: Computer');
+          GameState.MenuManager.InGameComputer.open();
+          break;
+        default:
+          console.log('CutsceneManager.startConversation: Conversation');
+          GameState.MenuManager.InGameDialog.open();
+          break;
+      }
+      this.showEntry(this.startingEntry);
     });
   }
 
@@ -224,6 +222,16 @@ export class CutsceneManager {
       GameState.MenuManager.InGameComputer.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
     }else{
       GameState.MenuManager.InGameDialog.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
+    }
+
+    if(BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)){
+      const creature = this.currentEntry.speaker as ModuleCreature;
+      creature.lookAt(this.currentEntry.listener);
+    }
+    
+    if(BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)){
+      const creature = this.currentEntry.listener as ModuleCreature;
+      creature.lookAt(this.currentEntry.speaker);
     }
 
     entry.updateJournal();
@@ -408,7 +416,7 @@ export class CutsceneManager {
       this.ended = true;
     }
     this.audioEmitter.stop();
-    if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
+    if(this.dialog?.getConversationType() == DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameComputer.close();
       // GameState.MenuManager.InGameComputerCam.close();
       GameState.MenuManager.InGameComputerCam.hide();
@@ -1149,18 +1157,18 @@ export class CutsceneManager {
     const aabbFaces: any[] = [];
     
     // Add room walkmesh faces
-    if (speaker.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+    if (speaker.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
       aabbFaces.push({
         object: speaker.room,
-        faces: speaker.room.collisionData.walkmesh.faces
+        faces: speaker.room.collisionManager.walkmesh.faces
       });
     }
 
     if (listener.room !== speaker.room) {
-      if (listener.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+      if (listener.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
         aabbFaces.push({
           object: listener.room,
-          faces: listener.room.collisionData.walkmesh.faces
+          faces: listener.room.collisionManager.walkmesh.faces
         });
       }
     }
@@ -1168,10 +1176,10 @@ export class CutsceneManager {
     // Add door walkmesh faces (closed doors only)
     for (let j = 0, jl = area.doors.length; j < jl; j++) {
       const door = area.doors[j];
-      if (door?.collisionData?.walkmesh && !door.isOpen()) {
+      if (door?.collisionManager?.walkmesh && !door.isOpen()) {
         aabbFaces.push({
           object: door,
-          faces: door.collisionData.walkmesh.faces
+          faces: door.collisionManager.walkmesh.faces
         });
       }
     }
@@ -1179,7 +1187,7 @@ export class CutsceneManager {
     // Test for collisions
     for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
       const castableFaces = aabbFaces[k];
-      const intersects = castableFaces.object.collisionData.walkmesh.raycast(raycaster, castableFaces.faces) || [];
+      const intersects = castableFaces.object.collisionManager.walkmesh.raycast(raycaster, castableFaces.faces) || [];
       
       if (intersects.length > 0) {
         // Check if any intersection is close to the camera position
@@ -1226,18 +1234,18 @@ export class CutsceneManager {
     const aabbFaces: any[] = [];
     
     // Add room walkmesh faces
-    if (speaker.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+    if (speaker.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
       aabbFaces.push({
         object: speaker.room,
-        faces: speaker.room.collisionData.walkmesh.faces
+        faces: speaker.room.collisionManager.walkmesh.faces
       });
     }
 
     if (listener.room !== speaker.room) {
-      if (listener.room?.collisionData?.walkmesh?.aabbNodes?.length) {
+      if (listener.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
         aabbFaces.push({
           object: listener.room,
-          faces: listener.room.collisionData.walkmesh.faces
+          faces: listener.room.collisionManager.walkmesh.faces
         });
       }
     }
@@ -1245,10 +1253,10 @@ export class CutsceneManager {
     // Add door walkmesh faces (closed doors only)
     for (let j = 0, jl = area.doors.length; j < jl; j++) {
       const door = area.doors[j];
-      if (door?.collisionData?.walkmesh && !door.isOpen()) {
+      if (door?.collisionManager?.walkmesh && !door.isOpen()) {
         aabbFaces.push({
           object: door,
-          faces: door.collisionData.walkmesh.faces
+          faces: door.collisionManager.walkmesh.faces
         });
       }
     }
@@ -1258,7 +1266,7 @@ export class CutsceneManager {
     
     for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
       const castableFaces = aabbFaces[k];
-      const intersects = castableFaces.object.collisionData.walkmesh.raycast(raycaster, castableFaces.faces) || [];
+      const intersects = castableFaces.object.collisionManager.walkmesh.raycast(raycaster, castableFaces.faces) || [];
       
       if (intersects.length > 0) {
         for (let i = 0; i < intersects.length; i++) {

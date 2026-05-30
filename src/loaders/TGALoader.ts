@@ -1,10 +1,10 @@
 import * as path from "path";
-import { ResourceLoader } from "./ResourceLoader";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { TXI } from "../resource/TXI";
-import { OdysseyTexture } from "../three/odyssey/OdysseyTexture";
-import type { TextureLoader } from "./TextureLoader";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { TXI } from "@/resource/TXI";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import type { TextureLoader } from "@/loaders/TextureLoader";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * TGALoader class.
@@ -30,7 +30,7 @@ export class TGALoader {
 		
 		try{
 			const buffer = await ResourceLoader.loadResource(ResourceTypes.tga, resRef);
-			if(!buffer){
+			if(!buffer || buffer.length == 0){
 				return undefined
 			}
 
@@ -46,7 +46,7 @@ export class TGALoader {
 			try{
 				const txiBuffer = await ResourceLoader.loadResource(ResourceTypes.txi, resRef);
 
-				if(typeof txiBuffer !== 'undefined'){
+				if(typeof txiBuffer !== 'undefined' && txiBuffer.length > 0){
 					texture.txi = new TXI(txiBuffer);
 					return texture;
 				}

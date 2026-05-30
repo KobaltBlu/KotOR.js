@@ -1,62 +1,63 @@
-import { GFFObject } from "../resource/GFFObject";
+import { GFFObject } from "@/resource/GFFObject";
 import * as THREE from "three";
-import { ModuleObject } from "./ModuleObject";
-import type { ModuleItem } from "./ModuleItem";
-import type { ModuleRoom } from "./ModuleRoom";
+import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleRoom } from "@/module/ModuleRoom";
 
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { CreatureClass } from "../combat/CreatureClass";
-import { EffectRacialType } from "../effects";
-import { GameEffectType } from "../enums/effects/GameEffectType";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GameState } from "../GameState";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { MDLLoader, ResourceLoader } from "../loaders";
-import { ResourceTypes } from "../resource/ResourceTypes";
-import { SSFObject } from "../resource/SSFObject";
-import { TalentFeat } from "../talents/TalentFeat";
-import { TalentObject } from "../talents/TalentObject";
-import { TalentSkill } from "../talents/TalentSkill";
-import { TalentSpell } from "../talents/TalentSpell";
-import { OdysseyModel3D, OdysseyObject3D } from "../three/odyssey";
-import { OdysseyModel, OdysseyModelAnimation } from "../odyssey";
-import { ModuleCreatureArmorSlot } from "../enums/module/ModuleCreatureArmorSlot";
-import { LIPObject } from "../resource/LIPObject";
-import { Utility } from "../utility/Utility";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { SSFType } from "../enums/resource/SSFType";
-import { ActionType } from "../enums/actions/ActionType";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import EngineLocation from "../engine/EngineLocation";
-import { AttackResult } from "../enums/combat/AttackResult";
-// import { ICombatAction } from "../interface/combat/ICombatAction";
-import { DLGObject } from "../resource/DLGObject";
-import { ITwoDAAnimation } from "../interface/twoDA/ITwoDAAnimation";
-import { SWCreatureAppearance } from "../engine/rules/SWCreatureAppearance";
-import { ICreatureAnimationState } from "../interface/animation/ICreatureAnimationState";
-import { IOverlayAnimationState } from "../interface/animation/IOverlayAnimationState";
-import { WeaponWield } from "../enums/combat/WeaponWield";
-import { AutoPauseState } from "../enums/engine/AutoPauseState";
-import { AudioEngine } from "../audio/AudioEngine";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { GameEffectDurationType } from "../enums/effects/GameEffectDurationType";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { PerceptionType } from "../enums/engine/PerceptionType";
-import { AudioEmitterType } from "../enums/audio/AudioEmitterType";
-import { CombatActionType } from "../enums/combat/CombatActionType";
-import { CombatRoundAction } from "../combat";
-import { GameEffectFactory } from "../effects/GameEffectFactory";
-import type { Action } from "../actions/Action";
-import { ModuleTriggerType } from "../enums/module/ModuleTriggerType";
-import { EngineDebugType } from "../enums/engine/EngineDebugType";
-import { TextSprite3D } from "../engine/TextSprite3D";
-import { UIIconTimerType } from "../enums/engine/UIIconTimerType";
-import { ExperienceType } from "../enums/engine/ExperienceType";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { CreatureClass } from "@/combat/CreatureClass";
+import { EffectRacialType } from "@/effects";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { MDLLoader, ResourceLoader } from "@/loaders";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { SSFObject } from "@/resource/SSFObject";
+import { TalentFeat } from "@/talents/TalentFeat";
+import { TalentObject } from "@/talents/TalentObject";
+import { TalentSkill } from "@/talents/TalentSkill";
+import { TalentSpell } from "@/talents/TalentSpell";
+import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
+import { OdysseyModel, OdysseyModelAnimation } from "@/odyssey";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { LIPObject } from "@/resource/LIPObject";
+import { Utility } from "@/utility/Utility";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { SSFType } from "@/enums/resource/SSFType";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import EngineLocation from "@/engine/EngineLocation";
+import { AttackResult } from "@/enums/combat/AttackResult";
+// import { ICombatAction } from "@/interface/combat/ICombatAction";
+import { DLGObject } from "@/resource/DLGObject";
+import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
+import { ICreatureAnimationState } from "@/interface/animation/ICreatureAnimationState";
+import { IOverlayAnimationState } from "@/interface/animation/IOverlayAnimationState";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { PerceptionType } from "@/enums/engine/PerceptionType";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
+import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
+import { CombatActionType } from "@/enums/combat/CombatActionType";
+import { CombatRoundAction } from "@/combat";
+import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import type { Action } from "@/actions/Action";
+import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import { TextSprite3D } from "@/engine/TextSprite3D";
+import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { ExperienceType } from "@/enums/engine/ExperienceType";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 /**
 * ModuleCreature class.
@@ -174,6 +175,27 @@ export class ModuleCreature extends ModuleObject {
   animSpeed: number;
   selectedNPC: number;
   creatureAppearance: SWCreatureAppearance;
+
+  /**
+   * Head tracking enabled
+   */
+  headTrackingEnabled: boolean = true;
+  /**
+   * Head tracking angle
+   */
+  headTrackingAngle: number = 0;
+  /**
+   * Head tracking pitch
+   */
+  headTrackingPitch: number = 0;
+  /**
+   * Head max horizontal angle
+   */
+  headMaxHorizontalAngle: number = Math.PI / 6;
+  /**
+   * Head max vertical angle
+   */
+  headMaxVerticalAngle: number = Math.PI / 3;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -334,7 +356,7 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.combatActionTimer = 3; 
     this.combatData.combatState = false;
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
-    this.collisionData.blockingTimer = 0;
+    this.collisionManager.blockingTimer = 0;
 
     this.fp_push_played = false;
     this.fp_land_played = false;
@@ -372,11 +394,13 @@ export class ModuleCreature extends ModuleObject {
       this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
       this.audioEmitter.maxDistance = 50;
       this.audioEmitter.type = AudioEmitterType.POSITIONAL;
+      this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.COMBAT);
       this.audioEmitter.load();
 
       this.footstepEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
       this.footstepEmitter.maxDistance = 50;
       this.footstepEmitter.type = AudioEmitterType.POSITIONAL;
+      this.footstepEmitter.setPriorityGroupId(AudioPriorityGroup.MEDIUM_AND_SMALL_CREATURE_FOOTSTEPS);
       this.footstepEmitter.load();
     }catch(e){
       console.error('AudioEmitter failed to create on object', e);
@@ -387,6 +411,10 @@ export class ModuleCreature extends ModuleObject {
   update( delta = 0 ){
     
     super.update(delta);
+
+    if(this.willDestroy || this.destroyed){
+      return;
+    }
 
     if(this.audioEmitter){
       this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
@@ -646,16 +674,18 @@ export class ModuleCreature extends ModuleObject {
             }
           }
         }
+
+        this.updateHeadTracking(delta);
       }
 
-      if(this.collisionData.blockingObject != this.collisionData.lastBlockingObject){
-        this.collisionData.lastBlockingObject = this.collisionData.blockingObject;
+      if(this.collisionManager.blockingObject != this.collisionManager.lastBlockingObject){
+        this.collisionManager.lastBlockingObject = this.collisionManager.blockingObject;
         //console.log('blocking script', this.blocking);
         this.onBlocked();
       }
 
       if(this.forceVector.length())
-        this.collisionData.updateCollision(delta);
+        this.collisionManager.updateCollision(delta);
 
       this.updatePerceptionList(delta);
       this.updateListeningPatterns();
@@ -668,22 +698,38 @@ export class ModuleCreature extends ModuleObject {
       }
 
       this.turning = 0;
-      if(this.facingAnim){//this.facing != this.rotation.z){
-        this.facingTweenTime += 10*delta;
-        if(this.facingTweenTime >= 1){
-          this.rotation.z = this.facing;
+      if(this.facingAnim){
+        const current = Utility.NormalizeRadian(this.rotation.z);
+        const target = this.facing;
+        const remaining = Utility.NormalizeRadian(target - current);
+        const step = this.facingSpeed * delta;
+        if(Math.abs(remaining) <= step){
+          this.rotation.z = target;
+          this.wasFacing = target;
           this.facingAnim = false;
         }else{
-          let oldFacing = Utility.NormalizeRadian(this.rotation.z);
-          this.rotation.z = Utility.interpolateAngle(this.wasFacing, this.facing, this.facingTweenTime);
-          let diff = oldFacing - Utility.NormalizeRadian(this.rotation.z);
-          this.turning = Math.sign(Utility.NormalizeRadian(oldFacing - Utility.NormalizeRadian(this.rotation.z)));
-          if(diff < 0.0000001 || diff > -0.0000001){
-              this.facingAnim = false;
-              this.rotation.z = Utility.interpolateAngle(this.wasFacing, this.facing, 1);
-              this.wasFacing = this.facing;
-          }
+          this.rotation.z = Utility.NormalizeRadian(current + Math.sign(remaining) * step);
+          this.turning = Math.sign(remaining);
         }
+      }
+
+      // Stationary turn animations (body turn when idle/pause/ready; not head look)
+      const stationaryTurnStates = [
+        ModuleCreatureAnimState.IDLE,
+        ModuleCreatureAnimState.PAUSE,
+        ModuleCreatureAnimState.READY,
+        ModuleCreatureAnimState.TURN_LEFT,
+        ModuleCreatureAnimState.TURN_RIGHT
+      ];
+      if(this.turning !== 0 && stationaryTurnStates.includes(this.animationState.index)){
+        const wantTurnLeft = this.turning < 0;
+        if(wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_LEFT){
+          this.setAnimationState(ModuleCreatureAnimState.TURN_LEFT);
+        }else if(!wantTurnLeft && this.animationState.index !== ModuleCreatureAnimState.TURN_RIGHT){
+          this.setAnimationState(ModuleCreatureAnimState.TURN_RIGHT);
+        }
+      }else if(this.turning === 0 && (this.animationState.index === ModuleCreatureAnimState.TURN_LEFT || this.animationState.index === ModuleCreatureAnimState.TURN_RIGHT)){
+        this.setAnimationState(this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE);
       }
 
       //Update equipment
@@ -780,7 +826,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateActionQueue(delta = 0){
-    if(this.isDebilitated())
+    if(this.isDebilitated() && this.area.module.readyToProcessEvents)
       return;
 
     if(!GameState.module.readyToProcessEvents)
@@ -790,18 +836,22 @@ export class ModuleCreature extends ModuleObject {
     this.actionQueue.process( delta );
     this.action = this.actionQueue[0];
     if(!(this.action)){
+      const currentPlayer = GameState.getCurrentPlayer();
       if(
         !this.combatData.combatState && 
         this.isPartyMember() && 
-        this != GameState.getCurrentPlayer()
+        this != currentPlayer && 
+        !this.facingAnim
       ){
-        this.setFacing(
-          Math.atan2(
-            this.position.y - GameState.getCurrentPlayer().position.y,
-            this.position.x - GameState.getCurrentPlayer().position.x
-          ) + Math.PI/2,
-          false
-        );
+        this.lookAtObject = currentPlayer;
+        const targetFacing = Math.atan2(
+          this.position.y - currentPlayer.position.y,
+          this.position.x - currentPlayer.position.x
+        ) + Math.PI/2;
+        const diff = Math.abs(Utility.NormalizeRadian(targetFacing - this.rotation.z));
+        if(diff > Math.PI / 6){
+          this.setFacing(targetFacing, false);
+        }
       }
     }
 
@@ -844,9 +894,6 @@ export class ModuleCreature extends ModuleObject {
     }
 
     this.perceptionTimer = 0;
-
-    //if(!Engine.Flags.CombatEnabled)
-    //  return;
 
     //Check modules creatures
     let creatureLen = GameState.module.area.creatures.length;
@@ -1147,12 +1194,12 @@ export class ModuleCreature extends ModuleObject {
 
   randomWalk(){
 
-    if(this.room && this.room.collisionData.walkmesh){
+    if(this.room && this.room.collisionManager.walkmesh){
       let run = false;
       let maxDistance = 1.5
       let position = new THREE.Vector3();
 
-      const faces = this.room.collisionData.walkmesh.walkableFaces;
+      const faces = this.room.collisionManager.walkmesh.walkableFaces;
       const face = faces[Math.floor(Math.random()*faces.length)];
       if(face){
         position.copy(face.centroid);
@@ -1806,9 +1853,36 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
+  private getFootstepPriorityGroup(): AudioPriorityGroup {
+    if(this === GameState.getCurrentPlayer()){
+      return AudioPriorityGroup.PLAYER_FOOTSTEPS;
+    }
+
+    // Simple creatures route to creature footstep groups.
+    if(this.isSimpleCreature()){
+      return AudioPriorityGroup.MEDIUM_AND_SMALL_CREATURE_FOOTSTEPS;
+    }
+
+    return AudioPriorityGroup.MEDIUM_AND_SMALL_CREATURE_FOOTSTEPS;
+  }
+
+  private getSoundSetPriorityGroup(): AudioPriorityGroup {
+    if(this === GameState.getCurrentPlayer()){
+      return AudioPriorityGroup.PLAYER_CHAT;
+    }
+
+    // Prefer creature vocal groups for non-humanoid simple creatures.
+    if(this.isSimpleCreature()){
+      return AudioPriorityGroup.MEDIUM_AND_SMALL_CREATURE_VOCALIZATIONS;
+    }
+
+    return AudioPriorityGroup.NON_PLAYER_CHAT;
+  }
+
   playEvent(event: THREE.Event){
     this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z);
     this.footstepEmitter.setPosition(this.position.x, this.position.y, this.position.z);
+    this.footstepEmitter.setPriorityGroupId(this.getFootstepPriorityGroup());
     
     const appearance = this.creatureAppearance;
     const rhSounds = this.equipment.RIGHTHAND?.weaponSound;
@@ -1824,7 +1898,7 @@ export class ModuleCreature extends ModuleObject {
       case 'snd_footstep':
         if(footstepSounds){
           const isRolling = footstepSounds.isRolling();
-          footstepSoundResRef = isRolling ? footstepSounds.getRollingResRef() : footstepSounds.getSurfaceSoundResRef(this.collisionData.surfaceId);
+          footstepSoundResRef = isRolling ? footstepSounds.getRollingResRef() : footstepSounds.getSurfaceSoundResRef(this.collisionManager.surfaceId);
           footstepIsLooping = isRolling;
         }
       break;
@@ -1860,6 +1934,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     if(rhWeaponSoundResRef){
+      this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.COMBAT);
       this.audioEmitter.playSoundFireAndForget(rhWeaponSoundResRef);
     }
   }
@@ -2000,6 +2075,70 @@ export class ModuleCreature extends ModuleObject {
         false
       );
     }
+  }
+
+  lookAt(oObject: ModuleObject){
+    this.lookAtObject = oObject;
+  }
+
+  static readonly HEAD_TRACKING_H_SPEED = Math.PI * 2;
+  static readonly HEAD_TRACKING_V_SPEED = Math.PI * 0.25;
+  lookAtPosition: THREE.Vector3 = new THREE.Vector3();
+
+  updateHeadTracking(delta: number){
+    if(!this.lookAtObject) return;
+    if(this.lookAtObject === this || this.lookAtObject.isDead()){
+      this.lookAtObject = undefined;
+      return;
+    }
+    if(!(this.model instanceof OdysseyModel3D) || !this.model.hturn_g || !this.headTrackingEnabled) return;
+
+    let targetYaw = 0;
+    let targetPitch = 0;
+
+    const reticle = this.lookAtObject.getReticleNode();
+    if(reticle){
+      this.lookAtPosition.copy(reticle.getWorldPosition(this.lookAtPosition));
+    }else if(this.lookAtObject.position){
+      this.lookAtPosition.copy(this.lookAtObject.position);
+    }else{
+      this.lookAtObject = undefined;
+      return;
+    }
+    const dx = this.lookAtPosition.x - this.position.x;
+    const dy = this.lookAtPosition.y - this.position.y;
+    const dz = this.lookAtPosition.z - (this.position.z + this.getCameraHeight());
+    const horizontalDist = Math.sqrt(dx * dx + dy * dy);
+
+    const worldAngleToTarget = Math.atan2(dy, dx);
+    const bodyFacing = this.rotation.z + Math.PI / 2;
+    const relativeYaw = Utility.NormalizeRadian(worldAngleToTarget - bodyFacing);
+    const relativePitch = Math.atan2(dz, horizontalDist);
+
+    if(Math.abs(relativeYaw) <= this.headMaxHorizontalAngle){
+      targetYaw = relativeYaw;
+      targetPitch = THREE.MathUtils.clamp(relativePitch, -this.headMaxVerticalAngle, this.headMaxVerticalAngle);
+    }
+
+    const stepH = ModuleCreature.HEAD_TRACKING_H_SPEED * delta;
+    const stepV = ModuleCreature.HEAD_TRACKING_V_SPEED * delta;
+
+    const yawDiff = Utility.NormalizeRadian(targetYaw - this.headTrackingAngle);
+    if(Math.abs(yawDiff) <= stepH){
+      this.headTrackingAngle = targetYaw;
+    }else{
+      this.headTrackingAngle += Math.sign(yawDiff) * stepH;
+    }
+
+    const pitchDiff = targetPitch - this.headTrackingPitch;
+    if(Math.abs(pitchDiff) <= stepV){
+      this.headTrackingPitch = targetPitch;
+    }else{
+      this.headTrackingPitch += Math.sign(pitchDiff) * stepV;
+    }
+
+    this.model.hturn_g.rotation.z = Math.abs(this.headTrackingAngle) > 0.001 ? this.headTrackingAngle : 0;
+    this.model.hturn_g.rotation.x = Math.abs(this.headTrackingPitch) > 0.001 ? this.headTrackingPitch : 0;
   }
 
   onClick(callee: ModuleObject){
@@ -3450,6 +3589,16 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
+  setAppearance(appearance: number){
+    this.appearance = appearance;
+    this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
+    if(!this.creatureAppearance) return;
+
+    this.headTrackingEnabled = this.creatureAppearance.headtrack !== 0;
+    this.headMaxHorizontalAngle = (this.creatureAppearance.head_arc_h * Math.PI) / 180;
+    this.headMaxVerticalAngle = (this.creatureAppearance.head_arc_v * Math.PI) / 180;
+  }
+
   initProperties(){
     try{
       this.classes = [];
@@ -3471,8 +3620,7 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('Appearance_Type')){
-        this.appearance = this.template.getFieldByLabel('Appearance_Type').getValue();
-        this.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(this.appearance);
+        this.setAppearance(this.template.getFieldByLabel('Appearance_Type').getValue());
       }
 
       if(this.template.RootNode.hasField('BodyBag'))
@@ -3928,8 +4076,24 @@ export class ModuleCreature extends ModuleObject {
     }
     const resref = this.ssf.GetSoundResRef(type).replace(/\0.*$/g,'');
     if(resref != ''){
-      if(this.audioEmitter)
+      if(this.audioEmitter){
+        this.audioEmitter.setPriorityGroupId(this.getSoundSetPriorityGroup());
         this.audioEmitter.playSoundFireAndForget(resref);
+      }
+    }
+  }
+
+  updateDestroyFade(delta: number = 0): void {
+    super.updateDestroyFade(delta);
+    if(this.noFadeOnDestroy || this.destroyed) return;
+    if(this.timeSinceDestroyStarted >= this.delayUntilFade){
+      const fadeElapsed = this.timeSinceDestroyStarted - this.delayUntilFade;
+      const opacity = Math.max(0, 1 - (fadeElapsed / ModuleObject.FADE_TIME));
+      Object.values(this.equipment).forEach(item => {
+        if(item && item.model instanceof OdysseyModel3D){
+          item.model.setOpacity(opacity);
+        }
+      });
     }
   }
 
@@ -3937,7 +4101,7 @@ export class ModuleCreature extends ModuleObject {
     super.destroy();
     if(this.head instanceof OdysseyModel3D){
       if(this.head.parent instanceof THREE.Object3D){
-        this.head.parent.remove(this.model);
+        this.head.removeFromParent();
       }
       this.head.dispose();
       this.head = undefined;

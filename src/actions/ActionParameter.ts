@@ -1,9 +1,9 @@
-import { GameState } from "../GameState";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
+import { GameState } from "@/GameState";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * Represents a parameter for game actions in the engine.

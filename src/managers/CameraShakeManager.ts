@@ -1,8 +1,8 @@
 
 import * as THREE from "three";
-import { EngineMode } from "../enums/engine/EngineMode";
-import { GameState } from "../GameState";
-import { TwoDAManager } from "./TwoDAManager";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameState } from "@/GameState";
+import { TwoDAManager } from "@/managers/TwoDAManager";
 
 interface RumbleSample {
   magnitude: number;

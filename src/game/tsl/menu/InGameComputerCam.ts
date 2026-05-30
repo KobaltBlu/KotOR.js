@@ -1,5 +1,5 @@
-import type { GUILabel } from "../../../gui";
-import { InGameComputerCam as K1_InGameComputerCam } from "../../kotor/KOTOR";
+import type { GUILabel } from "@/gui";
+import { InGameComputerCam as K1_InGameComputerCam } from "@/game/kotor/KOTOR";
 
 /**
  * InGameComputerCam class.
