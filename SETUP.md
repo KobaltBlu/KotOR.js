@@ -167,8 +167,10 @@ cd KotOR.js
 ### 2. Install Dependencies
 
 ```bash
-npm install
+npm ci
 ```
+
+For a clean install from the lockfile (same as CI), use `npm ci` above. You can use `npm install` instead if you are not matching CI exactly.
 
 This will:
 
