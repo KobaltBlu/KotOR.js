@@ -11,10 +11,7 @@ import {
   yamlToObject,
 } from '@/utility/FormatSerialization';
 
-/**
- * KotOR WAV type: VO = voice (streamwaves), SFX = sound effects (streammusic with 470-byte header).
- * Wraps standard RIFF/WAVE payloads after stripping KotOR-specific prefixes (resource kind 4 .wav in data files).
- */
+/** KotOR WAV type: VO = voice (streamwaves), SFX = sound effects (streammusic with 470-byte header). */
 export enum WAVType {
   VO = 1,
   SFX = 2,

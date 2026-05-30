@@ -8,10 +8,7 @@ import {
   yamlToObject,
 } from '@/utility/FormatSerialization';
 
-/**
- * Header: 4-byte type, 4-byte version, 1-byte letter-table width. Remaining bytes are 32-bit floats.
- * Resource kind 2036 (.ltr) in the KotOR enumeration.
- */
+/** Header: 4-byte type, 4-byte version, 1-byte letter-table width. Remaining bytes are 32-bit floats. */
 const LTR_HEADER_LENGTH = 9;
 
 /**

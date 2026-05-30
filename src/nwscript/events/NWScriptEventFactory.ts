@@ -8,7 +8,6 @@ import { NWScriptEvent } from '@/nwscript/events/NWScriptEvent';
 
 /**
  * NWScriptEventFactory class.
- * Builds concrete event objects from GFF Event structs (EventType + typed parameter lists).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

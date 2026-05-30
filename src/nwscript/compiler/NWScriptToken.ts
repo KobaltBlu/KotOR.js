@@ -1,4 +1,3 @@
-/** Lexer output types for NSS compilation (not a runtime VM structure). */
 export type TokenType = 'eof' | 'name' | 'int' | 'float' | 'string' | 'hex' | 'keyword' | 'op' | 'punct' | 'comment';
 
 export interface SourceSpan {

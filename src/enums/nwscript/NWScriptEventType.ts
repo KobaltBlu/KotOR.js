@@ -1,6 +1,5 @@
 /**
  * NWScriptEventType enum.
- * Discriminators for GFF Event payloads and NWScriptEvent subclasses.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

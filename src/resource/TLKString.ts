@@ -2,7 +2,6 @@ import { BinaryReader } from '@/utility/binary/BinaryReader';
 
 /**
  * TLKString class.
- * One talk-table row after header parsing; field layout follows the TLK format consumed alongside TLKObject.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

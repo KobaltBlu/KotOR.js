@@ -14,8 +14,6 @@ import {
 
 export const LYT_MAXLAYOUT_ASCII = '#MAXLAYOUT ASCII';
 
-/** Area layout text format (.lyt); resource kind 3000 in the KotOR enumeration. */
-
 /**
  * LYTObject class.
  *

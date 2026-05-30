@@ -2,8 +2,7 @@ import { BinaryReader } from '@/utility/binary/BinaryReader';
 
 /**
  * Fixed-width on-disk size for a ResRef in key tables, RIM/ERF rows, and TLK sound slots
- * (16-byte char storage, null-padded). Matches original-engine fixed-slot ResRef layout used
- * alongside {@link RESREF_GFF_MAX_PAYLOAD}-byte logical caps in GFF payloads.
+ * (char array, null-padded).
  */
 export const RESREF_FIXED_SLOT_BYTES = 16;
 

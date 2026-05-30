@@ -11,7 +11,6 @@ import { NWScriptAST } from '@/nwscript/decompiler/NWScriptAST';
 /**
  * Main decompiler orchestrator.
  * Coordinates all decompilation phases to convert NCS bytecode to NSS source.
- * Operates on the same decoded bytecode stream the stock VM would execute; not a runtime subsystem in the original client.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
