@@ -9,32 +9,27 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * EventDecrementStackSize class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventDecrementStackSize.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EventDecrementStackSize extends GameEvent {
-
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
     this.type = GameEventType.EventDecrementStackSize;
-
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
-      
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
     }
   }
 
-  execute(){
-    
-  }
+  execute() {}
 
   export(){
     const struct = new GFFStruct( 0xABCD );
@@ -48,6 +43,4 @@ export class EventDecrementStackSize extends GameEvent {
 
     return struct;
   }
-
 }
-

@@ -9,7 +9,7 @@ import { DebuggerState } from "@/apps/debugger/states/DebuggerState";
 
 const params = new URLSearchParams(window.location.search);
 const uuid = params.get('uuid');
-if(!uuid) throw new Error('UUID is required');
+if (!uuid) throw new Error('UUID is required');
 
 const appState = new DebuggerState(uuid);
 DebugApp.appState = appState;
@@ -17,18 +17,18 @@ DebugApp.appState = appState;
 window.appState = DebugApp.appState;
 
 const loadReactApplication = () => {
-  const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
-  ( async () => {
+  const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+  (async () => {
     root.render(
       // <React.StrictMode>
-        <AppProvider appState={DebugApp.appState}>
-          <App />
-        </AppProvider>
+      <AppProvider appState={DebugApp.appState}>
+        <App />
+      </AppProvider>
       // </React.StrictMode>
     );
   })();
-}
+};
 
-( async () => {
+(async () => {
   loadReactApplication();
 })();

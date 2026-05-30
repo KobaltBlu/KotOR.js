@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface LightboxComponentProps {
   active: boolean;
@@ -8,7 +8,7 @@ export interface LightboxComponentProps {
   src: string;
 }
 
-export const LightboxComponent = function(props: LightboxComponentProps){
+export const LightboxComponent = function (props: LightboxComponentProps) {
   const { active, onClose, type, src } = props;
 
   const contentRef = useRef<HTMLDivElement>(null);
@@ -75,16 +75,18 @@ export const LightboxComponent = function(props: LightboxComponentProps){
 
   return (
     <div id="lightbox" className={`lightbox ${active ? 'active' : ''}`}>
-      <div 
+      <div
         className="lightbox-content-wrapper"
         style={{
           width: `${lightboxDimensions.width}px`,
           height: `${lightboxDimensions.height}px`,
           maxWidth: '90vw',
-          maxHeight: '80vh'
+          maxHeight: '80vh',
         }}
       >
-        <div className="lightbox-close" onClick={onClose}><i className="fa-solid fa-circle-xmark"></i></div>
+        <div className="lightbox-close" onClick={onClose}>
+          <i className="fa-solid fa-circle-xmark"></i>
+        </div>
         <div className="lightbox-content">
           <div ref={contentRef} style={{ textAlign: 'center', width: '100%', height: '100%' }}>
             {type === 'ytvideo' ? (
@@ -108,7 +110,7 @@ export const LightboxComponent = function(props: LightboxComponentProps){
                   width: '100%',
                   height: '100%',
                   objectFit: 'contain',
-                  display: 'block'
+                  display: 'block',
                 }}
               />
             )}

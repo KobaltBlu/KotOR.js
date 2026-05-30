@@ -10,15 +10,15 @@ const log = createScopedLogger(LogScope.Forge);
 import "@/apps/forge/components/modal/ModalBlueprintBrowser.scss";
 
 const BLUEPRINT_TYPE_LABELS: Record<string, string> = {
-  'utc': 'creatures',
-  'utd': 'doors',
-  'ute': 'encounters',
-  'uti': 'items',
-  'utp': 'placeables',
-  'utm': 'stores',
-  'uts': 'sounds',
-  'utt': 'triggers',
-  'utw': 'waypoints',
+  utc: 'creatures',
+  utd: 'doors',
+  ute: 'encounters',
+  uti: 'items',
+  utp: 'placeables',
+  utm: 'stores',
+  uts: 'sounds',
+  utt: 'triggers',
+  utw: 'waypoints',
 };
 
 export const ModalBlueprintBrowser = (props: BaseModalProps) => {
@@ -173,4 +173,3 @@ export const ModalBlueprintBrowser = (props: BaseModalProps) => {
     </Modal>
   );
 };
-

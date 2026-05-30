@@ -7,15 +7,14 @@ import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimati
 
 /**
  * P2PBezier3Controller class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file P2PBezier3Controller.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class P2PBezier3Controller extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.P2P_Bezier3;
 
   /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
@@ -28,6 +27,4 @@ export class P2PBezier3Controller extends OdysseyController {
 
   animate(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
   }
-
 }
-

@@ -9,32 +9,29 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * EventBroadcastAOO class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventBroadcastAOO.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EventBroadcastAOO extends GameEvent {
   value: number = 0;
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
     this.type = GameEventType.EventBroadcastAOO; //Attack Of Opportunity
-
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
       this.value = struct.getFieldByLabel('Value').getValue();
     }
   }
 
-  execute(){
-    
-  }
+  execute() {}
 
   saveEventData(){
     const struct = new GFFStruct(0x3333);
@@ -55,6 +52,4 @@ export class EventBroadcastAOO extends GameEvent {
 
     return struct;
   }
-
 }
-

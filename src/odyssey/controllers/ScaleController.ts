@@ -7,15 +7,14 @@ import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimati
 
 /**
  * ScaleController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ScaleController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ScaleController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.Scale;
 
   /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
@@ -31,16 +30,21 @@ export class ScaleController extends OdysseyController {
       }
       // manager.modelNode.scale.setScalar( ( (_offsetScale + data.value) * manager.model.Scale ) || 0.00000001 );
       //manager.modelNode.scale.setScalar( ( (data.value + offsetScale) * manager.model.Scale ) || 0.00000001 );
-      manager.modelNode.scale.setScalar( ( (data.value) * manager.model.Scale ) || 0.00000001 );
+      manager.modelNode.scale.setScalar(data.value * manager.model.Scale || 0.00000001);
       manager.modelNode.updateMatrix();
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    if(manager && manager.modelNode){
-      manager.modelNode.scale.lerp( manager._vec3.setScalar( ( (next.value) * manager.model.Scale) || 0.000000001 ), fl);
+  animate(
+    manager: OdysseyModelAnimationManager,
+    anim: OdysseyModelAnimation,
+    last: IOdysseyControllerFrameGeneric,
+    next: IOdysseyControllerFrameGeneric,
+    fl: number = 0
+  ) {
+    if (manager && manager.modelNode) {
+      manager.modelNode.scale.lerp(manager._vec3.setScalar(next.value * manager.model.Scale || 0.000000001), fl);
       manager.modelNode.updateMatrix();
     }
   }
-
 }

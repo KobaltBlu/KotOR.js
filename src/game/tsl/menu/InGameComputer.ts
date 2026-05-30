@@ -6,9 +6,9 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /**
  * InGameComputer class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameComputer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -16,7 +16,6 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 const log = createScopedLogger(LogScope.Game);
 
 export class InGameComputer extends K1_InGameComputer {
-
   declare LBL_REP_UNITS: GUILabel;
   declare LBL_REP_SKILL: GUILabel;
   declare LBL_COMP_SPIKES: GUILabel;
@@ -34,7 +33,7 @@ export class InGameComputer extends K1_InGameComputer {
   declare LBL_BAR5: GUILabel;
   declare LBL_BAR6: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'computer_p';
     this.background = 'black';
@@ -43,15 +42,18 @@ export class InGameComputer extends K1_InGameComputer {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LB_MESSAGE.clearItems();
-      this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
+      this.LB_MESSAGE.setTextColor(
+        this.LB_MESSAGE.defaultColor.r,
+        this.LB_MESSAGE.defaultColor.g,
+        this.LB_MESSAGE.defaultColor.b
+      );
       this.LB_REPLIES.onSelected = (entry: any, control: any, index: number) => {
         GameState.CutsceneManager.selectReplyAtIndex(index);
-      }
+      };
       resolve();
     });
   }
-  
 }

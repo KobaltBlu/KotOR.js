@@ -11,15 +11,14 @@ import type { ITwoDARowData } from "@/resource/TwoDAObject";
 
 /**
  * Faction class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Faction.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class Faction {
-
   id = 0;
   label = '';
   global = 0;
@@ -28,9 +27,9 @@ export class Faction {
 
   reputations: Reputation[] = [];
 
-  addMember( creature: ModuleCreature ){
-    if(creature instanceof ModuleCreature){
-      if(this.creatures.indexOf(creature) == -1){
+  addMember(creature: ModuleCreature) {
+    if (creature instanceof ModuleCreature) {
+      if (this.creatures.indexOf(creature) == -1) {
         this.creatures.push(creature);
       }
     }
@@ -45,9 +44,9 @@ export class Faction {
     }
   }
 
-  initReputations( value = ReputationConstant.FRIENDLY ){
+  initReputations(value = ReputationConstant.FRIENDLY) {
     this.reputations = [];
-    for(let i = 0; i < GameState.FactionManager.FACTION_COUNT; i++){
+    for (let i = 0; i < GameState.FactionManager.FACTION_COUNT; i++) {
       this.reputations[i] = new Reputation(this.id, i, value);
     }
   }
@@ -85,7 +84,7 @@ export class Faction {
     return undefined;
   }
 
-  getWeakestMember(bMustBeVisible = false){
+  getWeakestMember(bMustBeVisible = false) {
     // if(oTarget instanceof ModuleCreature){
       let lowerCR = Infinity;
       let cLowestCR = 0;
@@ -100,12 +99,13 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+    }
+    return currentCreature;
     // }
     return undefined;
   }
 
-  getStrongestMember(bMustBeVisible = false){
+  getStrongestMember(bMustBeVisible = false) {
     // if(oTarget instanceof ModuleCreature){
       let highestCR = -Infinity;
       let cHighestCR = 0;
@@ -120,12 +120,13 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+    }
+    return currentCreature;
     // }
     return undefined;
   }
 
-  getMostDamagedMember(bMustBeVisible = false){
+  getMostDamagedMember(bMustBeVisible = false) {
     // if(oTarget instanceof ModuleCreature){
       let lowestHP = Infinity;
       let cLowestHP = 0;
@@ -140,12 +141,13 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+    }
+    return currentCreature;
     // }
     return undefined;
   }
 
-  getLeastDamagedMember(bMustBeVisible = false){
+  getLeastDamagedMember(bMustBeVisible = false) {
     // if(oTarget instanceof ModuleCreature){
       let highestHP = -Infinity;
       let cHighestHP = 0;
@@ -160,12 +162,13 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+    }
+    return currentCreature;
     // }
     return undefined;
   }
 
-  getWorstACMember(bMustBeVisible = false){
+  getWorstACMember(bMustBeVisible = false) {
     // if(oTarget instanceof ModuleCreature){
       let ac = Infinity;
       let cAC = 0;
@@ -180,12 +183,13 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+    }
+    return currentCreature;
     // }
     return undefined;
   }
 
-  getBestACMember(bMustBeVisible = false){
+  getBestACMember(bMustBeVisible = false) {
     // if(oTarget instanceof ModuleCreature){
       let ac = -Infinity;
       let cAC = 0;
@@ -200,25 +204,26 @@ export class Faction {
           }
         }
       }
-      return currentCreature; 
+    }
+    return currentCreature;
     // }
     return undefined;
   }
 
-  getMemberGold(){
+  getMemberGold() {
     let gold = 0;
     let creature;
-    for(let i = 0, len = this.creatures.length; i < len; i++){
+    for (let i = 0, len = this.creatures.length; i < len; i++) {
       creature = this.creatures[i];
-      if(creature.faction == this){
+      if (creature.faction == this) {
         gold += creature.getGold();
       }
     }
     return gold;
   }
 
-  getAverageReputation(oTarget: ModuleObject){
-    if(oTarget instanceof ModuleCreature){
+  getAverageReputation(oTarget: ModuleObject) {
+    if (oTarget instanceof ModuleCreature) {
       let totalRep = 0;
       let totalCreatures = 0;
       for(let i = 0, len = this.creatures.length; i < len; i++){
@@ -228,12 +233,12 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalRep / totalCreatures); 
+      return Math.floor(totalRep / totalCreatures);
     }
     return -1;
   }
 
-  getAverageGoodEvilAlignment(){
+  getAverageGoodEvilAlignment() {
     // if(oTarget instanceof ModuleCreature){
       let totalGoodEvil = 0;
       let totalCreatures = 0;
@@ -244,12 +249,13 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalGoodEvil / totalCreatures); 
+    }
+    return Math.floor(totalGoodEvil / totalCreatures);
     // }
     return -1;
   }
 
-  getAverageLevel(){
+  getAverageLevel() {
     // if(oTarget instanceof ModuleCreature){
       let totalLevel = 0;
       let totalCreatures = 0;
@@ -260,12 +266,13 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalLevel / totalCreatures); 
+    }
+    return Math.floor(totalLevel / totalCreatures);
     // }
     return -1;
   }
 
-  getAverageExperience(){
+  getAverageExperience() {
     // if(oTarget instanceof ModuleCreature){
       let totalExp = 0;
       let totalCreatures = 0;
@@ -276,12 +283,13 @@ export class Faction {
           totalCreatures++;
         }
       }
-      return Math.floor(totalExp / totalCreatures); 
+    }
+    return Math.floor(totalExp / totalCreatures);
     // }
     return -1;
   }
 
-  getMostFrequestClass(){
+  getMostFrequestClass() {
     // if(oTarget instanceof ModuleCreature){
       const classCount = new Map();
       for(let i = 0, len = this.creatures.length; i < len; i++){
@@ -302,15 +310,16 @@ export class Faction {
             count = c[1];
           }
         }
-        return typeof bestClass == 'number' ? bestClass : -1; 
-      }else{
-        return -1;
       }
+      return typeof bestClass == 'number' ? bestClass : -1;
+    } else {
+      return -1;
+    }
     // }
     return -1;
   }
 
-  getFactionMemberByIndex(index = 0, isPCOnly = false){
+  getFactionMemberByIndex(index = 0, isPCOnly = false) {
     let cIdx = 0;
     for(let i = 0, len = this.creatures.length; i < len; i++){
       const creature = this.creatures[i];
@@ -327,45 +336,39 @@ export class Faction {
   toStruct(structIdx: number){
     const struct = new GFFStruct(structIdx);
 
-    struct.addField( new GFFField(GFFDataType.WORD, 'FactionGlobal') ).setValue(this.global);
-    struct.addField( new GFFField(GFFDataType.CEXOSTRING, 'FactionName') ).setValue(this.label);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'FactionParentID') ).setValue(this.parentId);
+    struct.addField(new GFFField(GFFDataType.WORD, 'FactionGlobal')).setValue(this.global);
+    struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'FactionName')).setValue(this.label);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'FactionParentID')).setValue(this.parentId);
 
     return struct;
   }
 
-  static From2DARow( row: any = undefined ){
-    if(typeof row === 'object'){
-      let faction = new Faction();
+  static From2DARow(row: any = undefined) {
+    if (typeof row === 'object') {
+      const faction = new Faction();
       faction.id = row.__index;
       faction.label = row.label;
       faction.global = 1;
 
-
-
       return faction;
     }
     return undefined;
   }
 
-  static FromStruct( struct: GFFStruct ){
-    if( struct instanceof GFFStruct ){
-      let faction = new Faction();
+  static FromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
+      const faction = new Faction();
 
       faction.id = struct.getType();
 
-      if(struct.hasField('FactionGlobal'))
-        faction.global = struct.getFieldByLabel('FactionGlobal').getValue();
+      if (struct.hasField('FactionGlobal')) faction.global = struct.getFieldByLabel('FactionGlobal').getValue();
 
-      if(struct.hasField('FactionName'))
-        faction.label = struct.getFieldByLabel('FactionName').getValue();
+      if (struct.hasField('FactionName')) faction.label = struct.getFieldByLabel('FactionName').getValue();
 
-      if(struct.hasField('FactionParentID'))
-        faction.parentId = struct.getFieldByLabel('FactionParentID').getValue();
+      if (struct.hasField('FactionParentID')) faction.parentId = struct.getFieldByLabel('FactionParentID').getValue();
 
       return faction;
     }
     return undefined;
   }
-
 }

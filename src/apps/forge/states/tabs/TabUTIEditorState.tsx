@@ -20,6 +20,7 @@ export interface ItemPropertyEntry {
   param1Value: number;
   propertyName: number;
   subtype: number;
+  upgradeType?: number;
 }
 
 export class TabUTIEditorState extends TabState {
@@ -40,7 +41,15 @@ export class TabUTIEditorState extends TabState {
 
   ui3DRenderer: UI3DRenderer;
 
-  constructor(options: BaseTabStateOptions = {}){
+  private bindItemEvents(item: ForgeItem) {
+    item.addEventListener('onPropertyChange', (property: string, newValue: any, oldValue: any) => {
+      if (property === 'baseItem' || property === 'modelVariation') {
+        this.processEventListener('onModelChange', [this]);
+      }
+    });
+  }
+
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
     this.ui3DRenderer = new UI3DRenderer();
@@ -51,32 +60,38 @@ export class TabUTIEditorState extends TabState {
       {
         description: 'Odyssey Item Blueprint',
         accept: {
-          'application/octet-stream': ['.uti']
-        }
-      }
+          'application/octet-stream': ['.uti'],
+        },
+      },
     ];
-    
-    this.item.addEventListener('onPropertyChange', (property: string, newValue: any, oldValue: any) => {
-      if(property === 'baseItem' || property === 'modelVariation'){
-        this.processEventListener('onModelChange', [this]);
-      }
-    });
+
+    this.bindItemEvents(this.item);
   }
 
-  public openFile(file?: EditorFile){
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
-      if(!file && this.file instanceof EditorFile){
+  async importFromBuffer(buffer: Uint8Array): Promise<void> {
+    this.item = new ForgeItem(buffer);
+    this.item.setContext(this.ui3DRenderer);
+    this.bindItemEvents(this.item);
+    await this.item.load();
+    this.ui3DRenderer.attachObject(this.item.container, false);
+    this.processEventListener('onEditorFileChange', [this]);
+  }
+
+  public openFile(file?: EditorFile) {
+    return new Promise<KotOR.GFFObject>((resolve, reject) => {
+      if (!file && this.file instanceof EditorFile) {
         file = this.file;
       }
-  
-      if(file instanceof EditorFile){
-        if(this.file != file) this.file = file;
+
+      if (file instanceof EditorFile) {
+        if (this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-  
-        file.readFile().then( async (response) => {
+
+        file.readFile().then(async (response) => {
           this.item = new ForgeItem(response.buffer);
           this.item.setContext(this.ui3DRenderer);
+          this.bindItemEvents(this.item);
           await this.item.load();
           this.ui3DRenderer.attachObject(this.item.container, false);
           this.processEventListener('onEditorFileLoad', [this]);
@@ -91,8 +106,8 @@ export class TabUTIEditorState extends TabState {
   size: THREE.Vector3 = new THREE.Vector3();
   origin: THREE.Vector3 = new THREE.Vector3();
 
-  updateCameraFocus(){
-    if(!this.item.model) return;
+  updateCameraFocus() {
+    if (!this.item.model) return;
 
     this.item.model.position.set(0, 0, 0);
     this.box3.setFromObject(this.item.model);
@@ -104,11 +119,11 @@ export class TabUTIEditorState extends TabState {
     this.item.model.position.set(-this.center.x, -this.center.y, -this.center.z);
     this.ui3DRenderer.camera.position.z = 0;
     this.ui3DRenderer.camera.position.y = this.size.x + this.size.y;
-    this.ui3DRenderer.camera.lookAt(this.origin)
+    this.ui3DRenderer.camera.lookAt(this.origin);
   }
 
-  animate(delta: number){
-    if(this.item.model){
+  animate(delta: number) {
+    if (this.item.model) {
       this.item.model.update(delta);
       //rotate the object in the viewport
       this.item.model.rotation.z += delta;
@@ -116,7 +131,7 @@ export class TabUTIEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(!!resref && ext == 'uti'){
+    if (!!resref && ext == 'uti') {
       this.item.templateResRef = resref;
       this.updateFile();
       return this.item.blueprint.getExportBuffer();
@@ -140,4 +155,3 @@ export class TabUTIEditorState extends TabState {
     this.item.exportToBlueprint();
   }
 }
-

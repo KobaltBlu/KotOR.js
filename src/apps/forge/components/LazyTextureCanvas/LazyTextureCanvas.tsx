@@ -9,12 +9,7 @@ interface LazyTextureCanvasProps {
   className?: string;
 }
 
-export const LazyTextureCanvas: React.FC<LazyTextureCanvasProps> = ({
-  texture,
-  width,
-  height,
-  className
-}) => {
+export const LazyTextureCanvas: React.FC<LazyTextureCanvasProps> = ({ texture, width, height, className }) => {
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -35,7 +30,7 @@ export const LazyTextureCanvas: React.FC<LazyTextureCanvasProps> = ({
       },
       {
         // Start loading when item is 100px away from viewport
-        rootMargin: '100px'
+        rootMargin: '100px',
       }
     );
 
@@ -47,34 +42,30 @@ export const LazyTextureCanvas: React.FC<LazyTextureCanvasProps> = ({
   }, []);
 
   return (
-    <div 
-      ref={containerRef} 
-      className={className} 
-      style={{ 
-        width: width || 64, 
+    <div
+      ref={containerRef}
+      className={className}
+      style={{
+        width: width || 64,
         height: height || 64,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
       }}
     >
       {isVisible ? (
-        <TextureCanvas
-          texture={texture}
-          width={width}
-          height={height}
-        />
+        <TextureCanvas texture={texture} width={width} height={height} />
       ) : (
-        <div 
-          className="item-browser-icon-placeholder" 
-          style={{ 
-            width: '100%', 
+        <div
+          className="item-browser-icon-placeholder"
+          style={{
+            width: '100%',
             height: '100%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#999',
-            fontSize: '1.5rem'
+            fontSize: '1.5rem',
           }}
         >
           ...
@@ -83,4 +74,3 @@ export const LazyTextureCanvas: React.FC<LazyTextureCanvasProps> = ({
     </div>
   );
 };
-

@@ -4,6 +4,5 @@ export enum PazaakTurnState {
   PLAY_HAND_CARD = 1,
   END_TURN = 2,
   WAITING = 3,
-  STAND = 4
+  STAND = 4,
 }
-

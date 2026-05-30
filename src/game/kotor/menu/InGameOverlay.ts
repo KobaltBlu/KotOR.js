@@ -44,20 +44,19 @@ const preloadTexturesMap = new Map<string, OdysseyTexture>();
 const ARROW_SCALE = 32;
 const ARROW_SCALE_HALF = ARROW_SCALE / 2;
 const ARROW_DIR_LEFT = 0;
-const ARROW_DIR_DOWN = Math.PI/2;
+const ARROW_DIR_DOWN = Math.PI / 2;
 const ARROW_DIR_RIGHT = Math.PI;
 
 /**
  * InGameOverlay class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameOverlay.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class InGameOverlay extends GameMenu {
-
   engineMode: EngineMode = EngineMode.INGAME;
   LBL_CMBTMODEMSG: GUILabel;
   LBL_COMBATBG2: GUILabel;
@@ -168,11 +167,12 @@ export class InGameOverlay extends GameMenu {
   BTN_TARGETDOWN2: GUIButton;
   LBL_TARGET2: GUIButton;
   miniMap: LBL_MapView;
+  private stealthSkillIndex: number = -1;
 
   namePlateArrow: THREE.Mesh;
   namePlateArrowMaterial: THREE.MeshBasicMaterial;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'mipc28x6';
     this.background = '';
@@ -183,7 +183,7 @@ export class InGameOverlay extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>(async (resolve, reject) => {
       this.tGuiPanel.widget.userData.fill.visible = false;
       //this.TB_STEALTH.hideBorder();
@@ -229,7 +229,6 @@ export class InGameOverlay extends GameMenu {
       this.LBL_DEBILATATED3?.hide();
       this.LBL_DISABLE3?.hide();
 
-
       this.LBL_ACTIONDESC?.hide();
       this.LBL_ACTIONDESCBG?.hide();
 
@@ -242,124 +241,122 @@ export class InGameOverlay extends GameMenu {
       this.LBL_CMBTMODEMSG?.hide();
       //this.BTN_CLEARALL.hideBorder();
 
-
       this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuMessages.open();
-      }).setKeymapAction(KeyMapAction.Messages).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_MESSAGES].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.Messages)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_MESSAGES].Value);
 
       this.BTN_JOU.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuJournal.open();
-      }).setKeymapAction(KeyMapAction.Quests).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_QUEST].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.Quests)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_QUEST].Value);
 
       this.BTN_MAP.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuMap.open();
-      }).setKeymapAction(KeyMapAction.Map).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_MAP].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.Map)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_MAP].Value);
 
       this.BTN_OPT.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuOptions.open();
-      }).setKeymapAction(KeyMapAction.Options).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_OPTIONS].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.Options)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_OPTIONS].Value);
 
       this.BTN_CHAR.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuCharacter.open();
-      }).setKeymapAction(KeyMapAction.Character).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_CHARACTER].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.Character)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_CHARACTER].Value);
 
       this.BTN_ABI.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuAbilities.open();
-      }).setKeymapAction(KeyMapAction.SkillsAndFeats).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_ABILITIES].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.SkillsAndFeats)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_ABILITIES].Value);
 
       this.BTN_INV.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuInventory.open();
-      }).setKeymapAction(KeyMapAction.Inventory).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_INVENTORY].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.Inventory)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_INVENTORY].Value);
 
       this.BTN_EQU.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuEquipment.open();
-      }).setKeymapAction(KeyMapAction.Equip).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_EQUIPMENT].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.Equip)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_EQUIPMENT].Value);
 
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        if(GameState.State == EngineState.PAUSED){
+        if (GameState.State == EngineState.PAUSED) {
           GameState.AutoPauseManager.Unpause();
-        }else{
+        } else {
           GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
         }
-
-      }).setKeymapAction(KeyMapAction.Pause).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_PAUSE].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.Pause)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_PAUSE].Value);
 
       this.TB_SOLO.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.SOLOMODE = !GameState.SOLOMODE;
-      }).setKeymapAction(KeyMapAction.PartyActive).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_SOLOMODE].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.PartyActive)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_SOLOMODE].Value);
 
       this.TB_STEALTH.addEventListener('click', (e) => {
         e.stopPropagation();
-      }).setKeymapAction(KeyMapAction.STEALTH).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_STEALTH].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.STEALTH)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_STEALTH].Value);
 
       this.BTN_CHAR1.addEventListener('click', (e) => {
-        if(GameState.PartyManager.party[0].canLevelUp()){
+        if (GameState.PartyManager.party[0].canLevelUp()) {
           this.manager.MenuCharacter.open();
-        }else{
+        } else {
           this.manager.MenuEquipment.open();
         }
       });
 
       this.BTN_CHAR2.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(2);
-        switch(Math.floor(Math.random() * (4 - 1) + 1)){
+        switch (Math.floor(Math.random() * (4 - 1) + 1)) {
           case 2:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
-          break;
+            break;
           case 3:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
-          break;
+            break;
           default:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
-          break;
+            break;
         }
       });
 
       this.BTN_CHAR3.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
-        switch(Math.floor(Math.random() * (4 - 1) + 1)){
+        switch (Math.floor(Math.random() * (4 - 1) + 1)) {
           case 2:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_2);
-          break;
+            break;
           case 3:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_3);
-          break;
+            break;
           default:
             GameState.PartyManager.party[0].playSoundSet(SSFType.SELECT_1);
-          break;
+            break;
         }
       });
 
@@ -390,46 +387,42 @@ export class InGameOverlay extends GameMenu {
         GameState.getCurrentPlayer().clearCombatActionAtIndex(2);
       });
 
-      for(let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++){
-
-        this.getControlByName('LBL_TARGET'+i).addEventListener('click', (e) => {
+      for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
+        this.getControlByName('LBL_TARGET' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.onTargetMenuAction(i);
         });
 
-        this.getControlByName('BTN_TARGETUP'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_TARGETUP' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
           this.UpdateTargetUIIcon(i);
         });
 
-        this.getControlByName('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_TARGETDOWN' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);
         });
-
       }
 
-      for(let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++){
-
-        this.getControlByName('LBL_ACTION'+i).addEventListener('click', (e) => {
+      for (let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++) {
+        this.getControlByName('LBL_ACTION' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.onSelfMenuAction(i);
         });
 
-        this.getControlByName('BTN_ACTIONUP'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_ACTIONUP' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
           this.UpdateSelfUIIcon(i);
         });
 
-        this.getControlByName('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
+        this.getControlByName('BTN_ACTIONDOWN' + i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
           this.UpdateSelfUIIcon(i);
         });
-
       }
 
       this.BTN_ACTION0.setKeymapAction(KeyMapAction.PersonalPowerAct).setTooltipText(
@@ -448,19 +441,23 @@ export class InGameOverlay extends GameMenu {
       this.BTN_MINIMAP.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuMap.open();
-      }).setKeymapAction(KeyMapAction.Map).setTooltipText(
-        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_MAP].Value
-      );
+      })
+        .setKeymapAction(KeyMapAction.Map)
+        .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_MAP].Value);
 
-      for(const texture of preloadTextures){
+      for (const texture of preloadTextures) {
         const tex = await TextureLoader.Load(texture);
         preloadTexturesMap.set(texture, tex);
       }
 
-      const arrowGeometry = new THREE.PlaneGeometry( 1, 1, 1 );
-      const arrowMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff, transparent: false, blending: THREE.AdditiveBlending } );
+      const arrowGeometry = new THREE.PlaneGeometry(1, 1, 1);
+      const arrowMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: false,
+        blending: THREE.AdditiveBlending,
+      });
       arrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
-      this.namePlateArrow = new THREE.Mesh( arrowGeometry, arrowMaterial );
+      this.namePlateArrow = new THREE.Mesh(arrowGeometry, arrowMaterial);
       this.namePlateArrow.scale.x = 32;
       this.namePlateArrow.scale.y = 32;
       this.namePlateArrow.position.z = 5;
@@ -485,7 +482,37 @@ export class InGameOverlay extends GameMenu {
     this.LBL_QUEUE3?.show();
   }
 
+  /** Combat message auto-clear timer handle */
+  private _combatMessageClearTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * Set and show the combat message (hit/miss/crit etc.).
+   * Reva: CGuiInGame::SetCombatMessage -> CSWGuiMainInterface::SetCombatMessage (combat_mode_message_label)
+   *
+   * @param text - Message text to display
+   * @param durationMs - How long to show before auto-hiding (default 2500)
+   */
+  setCombatMessage(text: string, durationMs = 2500) {
+    if (!text?.trim()) return;
+    if (this._combatMessageClearTimer) {
+      clearTimeout(this._combatMessageClearTimer);
+      this._combatMessageClearTimer = null;
+    }
+    this.LBL_CMBTMODEMSG?.setText(text);
+    this.LBL_CMBTMSGBG?.show();
+    this.LBL_CMBTMODEMSG?.show();
+    this._combatMessageClearTimer = setTimeout(() => {
+      this.LBL_CMBTMSGBG?.hide();
+      this.LBL_CMBTMODEMSG?.hide();
+      this._combatMessageClearTimer = null;
+    }, durationMs);
+  }
+
   hideCombatUI() {
+    if (this._combatMessageClearTimer) {
+      clearTimeout(this._combatMessageClearTimer);
+      this._combatMessageClearTimer = null;
+    }
     this.BTN_CLEARALL?.hide();
     this.BTN_CLEARONE?.hide();
     this.LBL_COMBATBG1?.hide();
@@ -560,7 +587,10 @@ export class InGameOverlay extends GameMenu {
   }
 
   _canShowTargetUI() {
-    if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) && GameState.CursorManager.selectedObject.isDead())
+    if (
+      BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) &&
+      GameState.CursorManager.selectedObject.isDead()
+    )
       return false;
     return (
       !this.manager.MenuContainer.bVisible &&
@@ -631,14 +661,14 @@ export class InGameOverlay extends GameMenu {
   reticleScreenPosition: THREE.Vector3 = new THREE.Vector3();
   updateArrow(selectedObject: ModuleObject) {
     this.namePlateArrow.visible = !!selectedObject;
-    if(!selectedObject) return;
-    
-    const viewportXMin = -GameState.ResolutionManager.getViewportWidth()/2 + ARROW_SCALE_HALF;
-    const viewportXMax = GameState.ResolutionManager.getViewportWidth()/2 - ARROW_SCALE_HALF;
-    const viewportYMin2 = -GameState.ResolutionManager.getViewportHeight()/2 + ARROW_SCALE_HALF;
-    const viewportYMax2 = GameState.ResolutionManager.getViewportHeight()/2 - ARROW_SCALE_HALF;
-    const viewportYMin = -240/2 + ARROW_SCALE_HALF;
-    const viewportYMax = 240/2 - ARROW_SCALE_HALF;
+    if (!selectedObject) return;
+
+    const viewportXMin = -GameState.ResolutionManager.getViewportWidth() / 2 + ARROW_SCALE_HALF;
+    const viewportXMax = GameState.ResolutionManager.getViewportWidth() / 2 - ARROW_SCALE_HALF;
+    const viewportYMin2 = -GameState.ResolutionManager.getViewportHeight() / 2 + ARROW_SCALE_HALF;
+    const viewportYMax2 = GameState.ResolutionManager.getViewportHeight() / 2 - ARROW_SCALE_HALF;
+    const viewportYMin = -240 / 2 + ARROW_SCALE_HALF;
+    const viewportYMax = 240 / 2 - ARROW_SCALE_HALF;
     const offLeft = this.reticleScreenPosition.x <= viewportXMin;
     const offRight = this.reticleScreenPosition.x >= viewportXMax;
     const offTop = this.reticleScreenPosition.y <= viewportYMin2;
@@ -646,7 +676,7 @@ export class InGameOverlay extends GameMenu {
     const offScreen = offLeft || offRight || offTop || offBottom;
 
     const isOnScreen = GameState.viewportFrustum.containsPoint(this.reticlePosition);
-    if(isOnScreen){
+    if (isOnScreen) {
       this.namePlateArrow.visible = false;
       return;
     }
@@ -654,11 +684,11 @@ export class InGameOverlay extends GameMenu {
     this.namePlateArrow.position.x = Math.min(Math.max(this.reticleScreenPosition.x, viewportXMin), viewportXMax);
     this.namePlateArrow.position.y = -Math.min(Math.max(this.reticleScreenPosition.y, viewportYMin), viewportYMax);
     this.namePlateArrow.position.y += 50;
-    if(offLeft){
+    if (offLeft) {
       this.namePlateArrow.rotation.z = ARROW_DIR_LEFT;
-    }else if(offRight){
+    } else if (offRight) {
       this.namePlateArrow.rotation.z = ARROW_DIR_RIGHT;
-    }else{
+    } else {
       this.namePlateArrow.rotation.z = ARROW_DIR_DOWN;
     }
     this.namePlateArrow.scale.x = 32;
@@ -685,11 +715,17 @@ export class InGameOverlay extends GameMenu {
     }
 
     if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
-      if (GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
+      if (
+        GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) &&
+        this.PB_HEALTH.getFillTextureName() == 'friend_bar'
+      ) {
         this.PB_HEALTH.setFillTextureName('enemy_bar');
         this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('enemy_bar'));
         this.namePlateArrowMaterial.map = preloadTexturesMap.get('hostilearrow');
-      } else if (!GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
+      } else if (
+        !GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) &&
+        this.PB_HEALTH.getFillTextureName() == 'enemy_bar'
+      ) {
         this.PB_HEALTH.setFillTextureName('friend_bar');
         this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('friend_bar'));
         this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
@@ -701,12 +737,17 @@ export class InGameOverlay extends GameMenu {
         this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
       }
     }
-    if (this.manager.InGameOverlay.LBL_NAME.text.text != GameState.CursorManager.selectedObject.getName()) {
-      this.LBL_NAME.setText(GameState.CursorManager.selectedObject.getName(), 25);
+    const displayName = GameState.CursorManager.selectedObject.getDisplayName();
+    if (this.manager.InGameOverlay.LBL_NAME.text.text != displayName) {
+      this.LBL_NAME.setText(displayName, 25);
     }
-    let health = 100 * Math.min(Math.max(GameState.CursorManager.selectedObject.getHP() / GameState.CursorManager.selectedObject.getMaxHP(), 0), 1);
-    if (health > 100)
-      health = 100;
+    let health =
+      100 *
+      Math.min(
+        Math.max(GameState.CursorManager.selectedObject.getHP() / GameState.CursorManager.selectedObject.getMaxHP(), 0),
+        1
+      );
+    if (health > 100) health = 100;
     this.PB_HEALTH.setProgress(health);
     const maxBoundsX = GameState.ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
     const maxBoundsX2 = GameState.ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
@@ -726,7 +767,7 @@ export class InGameOverlay extends GameMenu {
     this.reticleScreenPosition.y = -(this.reticleScreenPosition.y * heightHalf);
     this.reticleScreenPosition.z = 0;
     this.updateArrow(GameState.CursorManager.selectedObject);
-    
+
     this.targetScreenPosition.add(this.reticleScreenPosition);
     if (this.targetScreenPosition.x > maxBoundsX) {
       this.targetScreenPosition.x = maxBoundsX;
@@ -761,9 +802,9 @@ export class InGameOverlay extends GameMenu {
     this.LBL_NAMEBG.recalculate();
     this.PB_HEALTH.recalculate();
     this.LBL_HEALTHBG.recalculate();
-    if (!!GameState.ActionMenuManager.targetActionCount()) {
+    if (GameState.ActionMenuManager.targetActionCount()) {
       for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
-        let xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
+        const xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
         this.getControlByName('BTN_TARGET' + i).scale = false;
         this.getControlByName('BTN_TARGET' + i).extent.left = this.targetScreenPosition.x + xPos;
         this.getControlByName('BTN_TARGET' + i).extent.top = this.targetScreenPosition.y;
@@ -778,7 +819,8 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('BTN_TARGETUP' + i).anchor = Anchor.User;
         this.getControlByName('BTN_TARGETDOWN' + i).scale = false;
         this.getControlByName('BTN_TARGETDOWN' + i).extent.left = this.targetScreenPosition.x + xPos;
-        this.getControlByName('BTN_TARGETDOWN' + i).extent.top = this.targetScreenPosition.y + (this.getControlByName('BTN_TARGET' + i).extent.height / 2 + 12);
+        this.getControlByName('BTN_TARGETDOWN' + i).extent.top =
+          this.targetScreenPosition.y + (this.getControlByName('BTN_TARGET' + i).extent.height / 2 + 12);
         this.getControlByName('BTN_TARGETDOWN' + i).widget.rotation.z = Math.PI;
         this.getControlByName('BTN_TARGETDOWN' + i).anchor = Anchor.User;
         this.UpdateTargetUIIcon(i);
@@ -788,11 +830,11 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('LBL_TARGET' + i).recalculate();
         this.getControlByName('BTN_TARGET' + i)?.show();
         this.getControlByName('LBL_TARGET' + i)?.show();
-        
-        if(GameState.ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1){
+
+        if (GameState.ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1) {
           this.getControlByName('BTN_TARGETUP' + i)?.hide();
           this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
-        }else{
+        } else {
           this.getControlByName('BTN_TARGETUP' + i)?.show();
           this.getControlByName('BTN_TARGETDOWN' + i)?.show();
         }
@@ -812,11 +854,11 @@ export class InGameOverlay extends GameMenu {
       this.UpdateSelfUIIcon(i);
       this.getControlByName('BTN_ACTIONUP' + i).recalculate();
       this.getControlByName('BTN_ACTIONDOWN' + i).recalculate();
-        
-      if(GameState.ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1){
+
+      if (GameState.ActionMenuManager.ActionPanels.selfPanels[i].actions.length <= 1) {
         this.getControlByName('BTN_ACTIONUP' + i)?.hide();
         this.getControlByName('BTN_ACTIONDOWN' + i)?.hide();
-      }else{
+      } else {
         this.getControlByName('BTN_ACTIONUP' + i)?.show();
         this.getControlByName('BTN_ACTIONDOWN' + i)?.show();
       }
@@ -825,22 +867,22 @@ export class InGameOverlay extends GameMenu {
 
   /**
    * Update HUD Notification Icons
-   * 
-   * @param delta 
+   *
+   * @param delta
    */
-  UpdateHUDNotificationIcons(delta = 0){
-    if(GameState.UINotificationManager.bNotificationSoundQueued){
+  UpdateHUDNotificationIcons(delta = 0) {
+    if (GameState.UINotificationManager.bNotificationSoundQueued) {
       GameState.UINotificationManager.bNotificationSoundQueued = false;
       GameState.guiAudioEmitter.playSoundFireAndForget('gui_quest');
     }
     /**
      * Item Lost
      */
-    if(GameState.UINotificationManager.ItemLostTimer > 0){
+    if (GameState.UINotificationManager.ItemLostTimer > 0) {
       this.LBL_ITEMLOST.show();
       this.LBL_ITEMLOST.pulsing = true;
       GameState.UINotificationManager.ItemLostTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.ItemLostTimer = 0;
       this.LBL_ITEMLOST.hide();
     }
@@ -848,11 +890,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Item Received
      */
-    if(GameState.UINotificationManager.ItemReceivedTimer > 0){
+    if (GameState.UINotificationManager.ItemReceivedTimer > 0) {
       this.LBL_ITEMRCVD.show();
       this.LBL_ITEMRCVD.pulsing = true;
       GameState.UINotificationManager.ItemReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.ItemReceivedTimer = 0;
       this.LBL_ITEMRCVD.hide();
     }
@@ -860,11 +902,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Credits Received
      */
-    if(GameState.UINotificationManager.CreditsReceivedTimer > 0){
-      this.LBL_CASH.show();   
+    if (GameState.UINotificationManager.CreditsReceivedTimer > 0) {
+      this.LBL_CASH.show();
       this.LBL_CASH.pulsing = true;
       GameState.UINotificationManager.CreditsReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.CreditsReceivedTimer = 0;
       this.LBL_CASH.hide();
     }
@@ -872,11 +914,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Journal Entry Added
      */
-    if(GameState.UINotificationManager.JournalEntryAddedTimer > 0){
+    if (GameState.UINotificationManager.JournalEntryAddedTimer > 0) {
       this.LBL_JOURNAL.show();
       this.LBL_JOURNAL.pulsing = true;
       GameState.UINotificationManager.JournalEntryAddedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.JournalEntryAddedTimer = 0;
       this.LBL_JOURNAL.hide();
     }
@@ -884,11 +926,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Light Shift
      */
-    if(GameState.UINotificationManager.LightShiftTimer > 0){
+    if (GameState.UINotificationManager.LightShiftTimer > 0) {
       this.LBL_LIGHTSHIFT.show();
       this.LBL_LIGHTSHIFT.pulsing = true;
       GameState.UINotificationManager.LightShiftTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.LightShiftTimer = 0;
       this.LBL_LIGHTSHIFT.hide();
     }
@@ -896,11 +938,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Dark Shift
      */
-    if(GameState.UINotificationManager.DarkShiftTimer > 0){
+    if (GameState.UINotificationManager.DarkShiftTimer > 0) {
       this.LBL_DARKSHIFT.show();
       this.LBL_DARKSHIFT.pulsing = true;
       GameState.UINotificationManager.DarkShiftTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.DarkShiftTimer = 0;
       this.LBL_DARKSHIFT.hide();
     }
@@ -908,11 +950,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Plot XP Received
      */
-    if(GameState.UINotificationManager.PlotXPReceivedTimer > 0){
+    if (GameState.UINotificationManager.PlotXPReceivedTimer > 0) {
       this.LBL_PLOTXP.show();
       this.LBL_PLOTXP.pulsing = true;
       GameState.UINotificationManager.PlotXPReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.PlotXPReceivedTimer = 0;
       this.LBL_PLOTXP.hide();
     }
@@ -920,11 +962,11 @@ export class InGameOverlay extends GameMenu {
     /**
      * Stealth XP Received
      */
-    if(GameState.UINotificationManager.StealthXPReceivedTimer > 0){
+    if (GameState.UINotificationManager.StealthXPReceivedTimer > 0) {
       this.LBL_STEALTHXP.show();
       this.LBL_STEALTHXP.pulsing = true;
       GameState.UINotificationManager.StealthXPReceivedTimer -= delta;
-    }else{
+    } else {
       GameState.UINotificationManager.StealthXPReceivedTimer = 0;
       this.LBL_STEALTHXP.hide();
     }
@@ -932,12 +974,33 @@ export class InGameOverlay extends GameMenu {
 
   update(delta = 0) {
     super.update(delta);
-    if (!this.bVisible)
-      return;
+    if (!this.bVisible) return;
 
-    if (GameState.module.area.miniGame) { return; }
+    if (GameState.module.area.miniGame) {
+      return;
+    }
 
     const oPC = GameState.getCurrentPlayer();
+    if (this.stealthSkillIndex < 0) {
+      this.stealthSkillIndex = GameState.SWRuleSet.skills.findIndex(
+        (skill) => (skill.label || '').toLowerCase() === 'stealth'
+      );
+    }
+    if (this.TB_SOLO) {
+      if (GameState.PartyManager.party.length > 1) {
+        this.TB_SOLO.show();
+      } else {
+        this.TB_SOLO.hide();
+      }
+    }
+    if (this.TB_STEALTH) {
+      const canStealth = this.stealthSkillIndex >= 0 && oPC?.getHasSkill(this.stealthSkillIndex);
+      if (canStealth) {
+        this.TB_STEALTH.show();
+      } else {
+        this.TB_STEALTH.hide();
+      }
+    }
     GameState.ActionMenuManager.SetPC(oPC);
     GameState.ActionMenuManager.SetTarget(GameState.CursorManager.selectedObject);
     GameState.ActionMenuManager.UpdateMenuActions();
@@ -974,8 +1037,12 @@ export class InGameOverlay extends GameMenu {
           pmBG.setFillTexture(texture);
         });
       }
-      (this.getControlByName('PB_VIT' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0), 1) * 100);
-      (this.getControlByName('PB_FORCE' + (id + 1)) as GUIProgressBar).setProgress(Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0), 1) * 100);
+      (this.getControlByName('PB_VIT' + (id + 1)) as GUIProgressBar).setProgress(
+        Math.min(Math.max(partyMember.getHP() / partyMember.getMaxHP(), 0), 1) * 100
+      );
+      (this.getControlByName('PB_FORCE' + (id + 1)) as GUIProgressBar).setProgress(
+        Math.min(Math.max(partyMember.getFP() / partyMember.getMaxFP(), 0), 1) * 100
+      );
       if (partyMember.isDebilitated()) {
         this.getControlByName('LBL_DEBILATATED' + (id + 1))?.show();
       } else {

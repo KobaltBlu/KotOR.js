@@ -7,18 +7,16 @@ import { ScriptInstanceWindow } from "@/apps/debugger/components/ScriptInstanceW
 
 
 export const ScriptDebugger = () => {
-
-  const westContent = (
-    <ScriptBrowserWindow />
-  );
+  const westContent = <ScriptBrowserWindow />;
 
   return (
-  <div className="script-debugger app-container">
-    <MenuTop />
-    <div id="container" className="script-debugger-container">
-      <LayoutContainer westContent={westContent} westSize={250} southContent={<></>}>
-        <ScriptInstanceWindow />
-      </LayoutContainer>
+    <div className="script-debugger app-container">
+      <MenuTop />
+      <div id="container" className="script-debugger-container">
+        <LayoutContainer westContent={westContent} westSize={250} southContent={<></>}>
+          <ScriptInstanceWindow />
+        </LayoutContainer>
+      </div>
     </div>
-  </div>);
-}
+  );
+};

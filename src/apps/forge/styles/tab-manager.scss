@@ -1,3 +1,7 @@
+@use "./_variables" as *;
+@use "./tabs/tab-image-viewer" as *;
+@use "./tabs/tab-twoda-editor" as *;
+@use "./tabs/tab-script-error-log" as *;
 
 //Tab Manager
 
@@ -182,6 +186,7 @@
         left: 0;
         right: 0;
         bottom: 0;
+        -webkit-backdrop-filter: grayscale(100%) contrast(110%) opacity(0.25);
         backdrop-filter: grayscale(100%) contrast(110%) opacity(0.25);
       }
 
@@ -253,8 +258,4 @@
 .tab-container {
   position: relative;
 }
-
-@import "./tabs/tab-image-viewer";
-@import "./tabs/tab-twoda-editor";
-@import "./tabs/tab-script-error-log";
 

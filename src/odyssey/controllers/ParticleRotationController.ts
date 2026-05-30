@@ -7,15 +7,14 @@ import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * ParticleRotationController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ParticleRotationController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ParticleRotationController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.ParticleRot;
 
   /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
@@ -28,5 +27,4 @@ export class ParticleRotationController extends OdysseyController {
 
   animate(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
   }
-
 }

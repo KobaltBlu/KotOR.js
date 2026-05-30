@@ -33,7 +33,7 @@ export class ActionUnlockObject extends Action {
   usedItem: boolean;
   oItem: ModuleItem;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionUnlockObject;
     this.timer = 1.5;
@@ -48,10 +48,16 @@ export class ActionUnlockObject extends Action {
     this.target = this.getParameter<ModuleObject>(0);
     this.oItem = this.getParameter<ModuleItem>(1);
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable))
+    if (
+      !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) &&
+      !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)
+    )
       return ActionStatus.FAILED;
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModulePlaceable)){
+    if (
+      BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleDoor) ||
+      BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModulePlaceable)
+    ) {
       return ActionStatus.FAILED;
     }
 
@@ -71,13 +77,19 @@ export class ActionUnlockObject extends Action {
       actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
       actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
       actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 1.5 );
+      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 1.5);
       actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
       actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
       this.owner.actionQueue.addFront(actionMoveToTarget);
 
       return ActionStatus.IN_PROGRESS;
-    }else{
+    } else {
+      if (this.oItem && !this.usedItem) {
+        for (let i = 0, len = this.oItem.properties.length; i < len; i++) {
+          const property = this.oItem.properties[i];
+          if (!property.isUseable()) {
+            continue;
+          }
 
       if(this.oItem && !this.usedItem){
         for(let i = 0, len = this.oItem.properties.length; i < len; i++){
@@ -104,24 +116,27 @@ export class ActionUnlockObject extends Action {
       if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
         this.owner.setFacingObject( this.target );
 
-      if(this.timer == undefined){
+      if (BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
+        this.owner.setFacingObject(this.target);
+
+      if (this.timer == undefined) {
         this.timer = 1.5;
         this.target.audioEmitter.playSound('gui_lockpick');
       }
 
-      if(!this.owner.isSimpleCreature()){
-        if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)){
+      if (!this.owner.isSimpleCreature()) {
+        if (BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)) {
           this.owner.setAnimationState(ModuleCreatureAnimState.UNLOCK_DOOR);
-        }else{
+        } else {
           this.owner.setAnimationState(ModuleCreatureAnimState.UNLOCK_CONTAINER);
         }
       }
 
       this.timer -= delta;
 
-      if(this.timer <= 0){
+      if (this.timer <= 0) {
         const unlocked = (this.target as any).attemptUnlock(this.owner);
-        if(!unlocked){
+        if (!unlocked) {
           const event = new GameState.GameEventFactory.EventSignalEvent();
           event.setCaller(this.getOwner());
           event.setObject(this.target);
@@ -132,15 +147,14 @@ export class ActionUnlockObject extends Action {
         }
         return ActionStatus.COMPLETE;
       }
-      
-      if(this.oItem){
+
+      if (this.oItem) {
         //If we have more charges, reduce the charges count by 1
-        if(this.oItem.charges > 1){
+        if (this.oItem.charges > 1) {
           this.oItem.charges -= 1;
         }
         //If we are out of charges remove the item from the owners inventory
-        else
-        {
+        else {
           this.owner.removeItem(this.oItem, 1);
         }
       }
@@ -151,5 +165,4 @@ export class ActionUnlockObject extends Action {
 
     return ActionStatus.FAILED;
   }
-
 }

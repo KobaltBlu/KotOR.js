@@ -9,32 +9,27 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * EventItemOnHitSpellImpact class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventItemOnHitSpellImpact.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EventItemOnHitSpellImpact extends GameEvent {
-
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
     this.type = GameEventType.EventItemOnHitSpellImpact;
-
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
-      
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
     }
   }
 
-  execute(){
-    
-  }
+  execute() {}
 
   export(){
     const struct = new GFFStruct( 0xABCD );
@@ -43,12 +38,14 @@ export class EventItemOnHitSpellImpact extends GameEvent {
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
     const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
     //eventData.addChildStruct( this.script.saveEventSituation() );
-    struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( BitWise.InstanceOfObject(this.script.object, ModuleObjectType.ModuleObject) ? this.script.caller.id : 2130706432 );
-    struct.addField( new GFFField(GFFDataType.DWORD, 'Time') ).setValue(this.time);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'EventId')).setValue(this.id);
+    struct
+      .addField(new GFFField(GFFDataType.DWORD, 'ObjectId'))
+      .setValue(
+        BitWise.InstanceOfObject(this.script.object, ModuleObjectType.ModuleObject) ? this.script.caller.id : 2130706432
+      );
+    struct.addField(new GFFField(GFFDataType.DWORD, 'Time')).setValue(this.time);
 
     return struct;
   }
-
 }
-

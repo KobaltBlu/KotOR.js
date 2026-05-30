@@ -10,44 +10,40 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * EventApplyEffect class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventApplyEffect.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EventApplyEffect extends GameEvent {
   effect: GameEffect;
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
     this.type = GameEventType.EventApplyEffect;
 
     this.effect = undefined;
-
   }
 
-  setEffect(effect: GameEffect){
-    if(effect instanceof GameEffect){
+  setEffect(effect: GameEffect) {
+    if (effect instanceof GameEffect) {
       this.effect = effect;
     }
   }
 
-  getEffect(){
+  getEffect() {
     return this.effect;
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
-      
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
     }
   }
 
-  execute(){
-    
-  }
+  execute() {}
 
   export(){
     const struct = new GFFStruct( 0xABCD );
@@ -58,14 +54,16 @@ export class EventApplyEffect extends GameEvent {
     if(this.effect instanceof GameEffect){
       const effectStruct = this.effect.save();
       effectStruct.setType(0x1111);
-      eventData.addChildStruct( effectStruct );
+      eventData.addChildStruct(effectStruct);
     }
-    struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( BitWise.InstanceOfObject(this.script.object, ModuleObjectType.ModuleObject) ? this.script.caller.id : 2130706432 );
-    struct.addField( new GFFField(GFFDataType.DWORD, 'Time') ).setValue(this.time);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'EventId')).setValue(this.id);
+    struct
+      .addField(new GFFField(GFFDataType.DWORD, 'ObjectId'))
+      .setValue(
+        BitWise.InstanceOfObject(this.script.object, ModuleObjectType.ModuleObject) ? this.script.caller.id : 2130706432
+      );
+    struct.addField(new GFFField(GFFDataType.DWORD, 'Time')).setValue(this.time);
 
     return struct;
   }
-
 }
-

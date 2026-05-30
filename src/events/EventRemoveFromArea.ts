@@ -9,32 +9,29 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * EventRemoveFromArea class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventRemoveFromArea.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EventRemoveFromArea extends GameEvent {
   value: number = 0;
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
     this.type = GameEventType.EventRemoveFromArea;
-
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
       this.value = struct.getFieldByLabel('Value').getValue();
     }
   }
 
-  execute(){
-    
-  }
+  execute() {}
 
   saveEventData(){
     const struct = new GFFStruct(0x9999);
@@ -55,6 +52,4 @@ export class EventRemoveFromArea extends GameEvent {
 
     return struct;
   }
-
 }
-

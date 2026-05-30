@@ -38,31 +38,30 @@ export class ActionParameter {
    * The value stored in this parameter
    * @remarks Can be a number for basic types or an NWScriptInstance for script situations
    */
-  value: number|string;
+  value: number | string;
 
   scriptInstance: NWScriptInstance;
 
   /**
    * Creates a new ActionParameter instance
-   * 
+   *
    * @param type - The parameter type from ActionParameterType enum
    * @param value - Initial value for the parameter
    * @throws {Error} If the parameter type is invalid
    */
-  constructor(type = 0, value: any = 0){
+  constructor(type = 0, value: any = 0) {
     this.type = type;
-    if(value instanceof NWScriptInstance){
+    if (value instanceof NWScriptInstance) {
       this.scriptInstance = value;
-    }else{
+    } else {
       this.value = value;
     }
 
-    switch(this.type){
-
+    switch (this.type) {
     }
 
-    if(!this.type){
-      throw 'ActionParameter: Invalid Type ('+type+')';
+    if (!this.type) {
+      throw 'ActionParameter: Invalid Type (' + type + ')';
     }
   }
 
@@ -91,66 +90,68 @@ export class ActionParameter {
    * }
    * ```
    */
-  static FromStruct( struct: GFFStruct ){
-    if(!(struct instanceof GFFStruct)){
+  static FromStruct(struct: GFFStruct) {
+    if (!(struct instanceof GFFStruct)) {
       return undefined;
     }
 
     const type = struct.getFieldByLabel('Type').getValue();
     let value = undefined;
-    switch(type){
+    switch (type) {
       case ActionParameterType.INT:
       case ActionParameterType.FLOAT:
       case ActionParameterType.DWORD:
       case ActionParameterType.STRING:
         value = struct.getFieldByLabel('Value').getValue();
-      break;
+        break;
       case ActionParameterType.SCRIPT_SITUATION:
-        let scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
-        let script = new GameState.NWScript();
+        const scriptParamStructs = struct.getFieldByLabel('Value').getChildStructs()[0];
+        const script = new GameState.NWScript();
         script.name = scriptParamStructs.getFieldByLabel('Name').getValue();
         script.init(
           scriptParamStructs.getFieldByLabel('Code').getVoid(),
           scriptParamStructs.getFieldByLabel('CodeSize').getValue()
         );
-    
-        let scriptInstance = script.newInstance();
+
+        const scriptInstance = script.newInstance();
         scriptInstance.isStoreState = true;
-        scriptInstance.offset = scriptInstance.address = scriptParamStructs.getFieldByLabel('InstructionPtr').getValue();
-    
-        let stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
+        scriptInstance.offset = scriptInstance.address = scriptParamStructs
+          .getFieldByLabel('InstructionPtr')
+          .getValue();
+
+        const stackStruct = scriptParamStructs.getFieldByLabel('Stack').getChildStructs()[0];
         scriptInstance.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
 
         value = scriptInstance;
-      break;
+        break;
       default:
-        throw 'ActionParameter.FromStruct: Invalid Type ('+type+')';
+        throw 'ActionParameter.FromStruct: Invalid Type (' + type + ')';
     }
     return new ActionParameter(type, value);
   }
 
-  toStruct(){
+  toStruct() {
     const struct = new GFFStruct(1);
-    switch(this.type){
+    switch (this.type) {
       case ActionParameterType.INT:
         struct.addField(new GFFField(GFFDataType.INT, 'Value', this.value));
-      break;
+        break;
       case ActionParameterType.FLOAT:
         struct.addField(new GFFField(GFFDataType.FLOAT, 'Value', this.value));
-      break;
+        break;
       case ActionParameterType.DWORD:
         struct.addField(new GFFField(GFFDataType.DWORD, 'Value', this.value));
-      break;
+        break;
       case ActionParameterType.STRING:
         struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Value', this.value));
-      break;
+        break;
       case ActionParameterType.SCRIPT_SITUATION:
-        struct.addField(new GFFField(GFFDataType.STRUCT, 'Value')).addChildStruct(
-          this.scriptInstance.saveEventSituation()
-        );
-      break;
+        struct
+          .addField(new GFFField(GFFDataType.STRUCT, 'Value'))
+          .addChildStruct(this.scriptInstance.saveEventSituation());
+        break;
       default:
-        throw 'ActionParameter.FromStruct: Invalid Type ('+this.type+')';
+        throw 'ActionParameter.FromStruct: Invalid Type (' + this.type + ')';
     }
 
     return struct;

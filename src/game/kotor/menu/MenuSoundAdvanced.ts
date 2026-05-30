@@ -8,15 +8,14 @@ import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 /**
  * MenuSoundAdvanced class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuSoundAdvanced.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuSoundAdvanced extends GameMenu {
-
   LBL_TITLE: GUILabel;
   LB_DESC: GUIListBox;
   BTN_DEFAULT: GUIButton;
@@ -27,7 +26,7 @@ export class MenuSoundAdvanced extends GameMenu {
   BTN_EAXRIGHT: GUIButton;
   BTN_CANCEL: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'optsoundadv';
     this.background = '1600x1200back';
@@ -48,17 +47,17 @@ export class MenuSoundAdvanced extends GameMenu {
       }
     };
 
-    this.BTN_BACK.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.close();
+      this.BTN_BACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.close();
+      });
+      this._button_b = this.BTN_BACK;
+      this.selectedControl = this.LB_DESC;
+      resolve();
     });
-    this._button_b = this.BTN_BACK;
-    resolve();
-  });
-}
+  }
 
-show() {
-  super.show();
-}
-  
+  show() {
+    super.show();
+  }
 }

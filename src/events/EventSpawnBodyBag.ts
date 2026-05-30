@@ -9,36 +9,34 @@ import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * EventSpawnBodyBag class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventSpawnBodyBag.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EventSpawnBodyBag extends GameEvent {
-
   bodyBagId = 0;
-  position = new THREE.Vector3;
+  position = new THREE.Vector3();
 
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
     this.type = GameEventType.EventSpawnBodyBag;
-
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
-      this.bodyBagId  = struct.getFieldByLabel('BodyBagId').getValue();
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
+      this.bodyBagId = struct.getFieldByLabel('BodyBagId').getValue();
       this.position.x = struct.getFieldByLabel('PositionX').getValue();
       this.position.y = struct.getFieldByLabel('PositionY').getValue();
       this.position.z = struct.getFieldByLabel('PositionZ').getValue();
     }
   }
 
-  execute(){
+  execute() {}
 
   }
 
@@ -64,6 +62,4 @@ export class EventSpawnBodyBag extends GameEvent {
 
     return struct;
   }
-
 }
-

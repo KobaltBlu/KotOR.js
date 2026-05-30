@@ -1,0 +1,190 @@
+import * as vscode from 'vscode';
+
+import { LogScope, createScopedLogger } from './logger';
+
+const log = createScopedLogger(LogScope.Document);
+
+/**
+ * Document edit for undo/redo support
+ */
+export interface KotorDocumentEdit {
+  readonly label: string;
+  readonly data: Uint8Array;
+  undo(): void;
+  redo(): void;
+}
+
+/**
+ * Custom document for KotOR binary files
+ */
+export class KotorDocument implements vscode.CustomDocument {
+  static async create(
+    uri: vscode.Uri,
+    backupId: string | undefined,
+    delegate: {
+      getFileData(): Promise<Uint8Array>;
+    }
+  ): Promise<KotorDocument | PromiseLike<KotorDocument>> {
+    log.trace(`create() entered uri=${uri.toString()} backupId=${backupId ?? 'undefined'}`);
+    const dataFile = typeof backupId === 'string' ? vscode.Uri.parse(backupId) : uri;
+    log.debug(`create() reading from dataFile=${dataFile.toString()}`);
+    let fileData: Uint8Array;
+    try {
+      fileData = await KotorDocument.readFile(dataFile);
+      log.trace(`create() read ${fileData.length} bytes`);
+    } catch (err) {
+      log.error(`create() readFile failed uri=${dataFile.toString()}: ${err}`);
+      throw err;
+    }
+    const doc = new KotorDocument(uri, fileData, delegate);
+    log.info(`create() returning KotorDocument uri=${uri.fsPath} bytes=${fileData.length}`);
+    return doc;
+  }
+
+  private static async readFile(uri: vscode.Uri): Promise<Uint8Array> {
+    log.trace(`readFile() uri=${uri.toString()} scheme=${uri.scheme}`);
+    if (uri.scheme === 'untitled') {
+      log.debug('readFile() untitled scheme, returning empty buffer');
+      return new Uint8Array();
+    }
+    const data = await vscode.workspace.fs.readFile(uri);
+    log.trace(`readFile() read ${data.length} bytes from ${uri.fsPath}`);
+    return data;
+  }
+
+  private readonly _uri: vscode.Uri;
+
+  private _documentData: Uint8Array;
+  private _edits: Array<KotorDocumentEdit> = [];
+  private _savedEdits: Array<KotorDocumentEdit> = [];
+
+  private readonly _delegate: {
+    getFileData(): Promise<Uint8Array>;
+  };
+
+  private constructor(
+    uri: vscode.Uri,
+    initialContent: Uint8Array,
+    delegate: {
+      getFileData(): Promise<Uint8Array>;
+    }
+  ) {
+    this._uri = uri;
+    this._documentData = initialContent;
+    this._delegate = delegate;
+    log.trace(`KotorDocument constructed uri=${uri.fsPath} initialBytes=${initialContent.length}`);
+  }
+
+  public get uri() {
+    return this._uri;
+  }
+
+  public get documentData(): Uint8Array {
+    return this._documentData;
+  }
+
+  private readonly _onDidDispose = new vscode.EventEmitter<void>();
+  public readonly onDidDispose = this._onDidDispose.event;
+
+  private readonly _onDidChangeDocument = new vscode.EventEmitter<{
+    readonly content?: Uint8Array;
+    readonly edits: readonly KotorDocumentEdit[];
+  }>();
+  public readonly onDidChangeContent = this._onDidChangeDocument.event;
+
+  private readonly _onDidChange = new vscode.EventEmitter<{
+    readonly label: string;
+    undo(): void;
+    redo(): void;
+  }>();
+  public readonly onDidChange = this._onDidChange.event;
+
+  dispose(): void {
+    log.trace(`dispose() uri=${this._uri.fsPath} editsCount=${this._edits.length}`);
+    this._onDidDispose.fire();
+    this._onDidDispose.dispose();
+    this._onDidChangeDocument.dispose();
+    this._onDidChange.dispose();
+    log.debug(`dispose() completed for ${this._uri.fsPath}`);
+  }
+
+  /**
+   * Called by VS Code when the user edits the document in the webview
+   */
+  makeEdit(edit: KotorDocumentEdit) {
+    log.debug(`makeEdit() uri=${this._uri.fsPath} label=${edit.label} dataLength=${edit.data?.length ?? 0}`);
+    this._edits.push(edit);
+    this._onDidChange.fire({
+      label: edit.label,
+      undo: async () => {
+        this._edits.pop();
+        edit.undo();
+      },
+      redo: async () => {
+        this._edits.push(edit);
+        edit.redo();
+      }
+    });
+  }
+
+  /**
+   * Called by VS Code when saving the document
+   */
+  async save(cancellation: vscode.CancellationToken): Promise<void> {
+    log.trace(`save() uri=${this._uri.fsPath}`);
+    await this.saveAs(this.uri, cancellation);
+    this._savedEdits = Array.from(this._edits);
+    log.debug(`save() completed uri=${this._uri.fsPath} savedEditsCount=${this._savedEdits.length}`);
+  }
+
+  /**
+   * Called by VS Code when saving the document to a different location
+   */
+  async saveAs(targetResource: vscode.Uri, cancellation: vscode.CancellationToken): Promise<void> {
+    log.trace(`saveAs() uri=${this._uri.fsPath} target=${targetResource.fsPath}`);
+    const fileData = await this._delegate.getFileData();
+    log.trace(`saveAs() getFileData returned ${fileData.length} bytes`);
+    if (cancellation.isCancellationRequested) {
+      log.warn(`saveAs() cancelled for ${targetResource.fsPath}`);
+      return;
+    }
+    await vscode.workspace.fs.writeFile(targetResource, fileData);
+    log.debug(`saveAs() wrote ${fileData.length} bytes to ${targetResource.fsPath}`);
+  }
+
+  /**
+   * Called by VS Code when reverting the document
+   */
+  async revert(_cancellation: vscode.CancellationToken): Promise<void> {
+    log.trace(`revert() uri=${this._uri.fsPath}`);
+    const diskContent = await KotorDocument.readFile(this.uri);
+    this._documentData = diskContent;
+    this._edits = this._savedEdits;
+    this._onDidChangeDocument.fire({
+      content: diskContent,
+      edits: this._edits
+    });
+    log.debug(`revert() completed uri=${this._uri.fsPath} diskBytes=${diskContent.length}`);
+  }
+
+  /**
+   * Called by VS Code for backup/hot exit
+   */
+  async backup(destination: vscode.Uri, cancellation: vscode.CancellationToken): Promise<vscode.CustomDocumentBackup> {
+    log.trace(`backup() uri=${this._uri.fsPath} destination=${destination.toString()}`);
+    await this.saveAs(destination, cancellation);
+    log.debug(`backup() created backup id=${destination.toString()}`);
+    return {
+      id: destination.toString(),
+      delete: async () => {
+        try {
+          log.trace(`backup.delete() deleting ${destination.toString()}`);
+          await vscode.workspace.fs.delete(destination);
+          log.trace(`backup.delete() completed`);
+        } catch (err) {
+          log.warn(`backup.delete() failed: ${err}`);
+        }
+      }
+    };
+  }
+}

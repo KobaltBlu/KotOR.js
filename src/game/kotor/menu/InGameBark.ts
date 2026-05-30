@@ -16,15 +16,14 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * InGameBark class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file InGameBark.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class InGameBark extends GameMenu {
-
   engineMode: EngineMode = EngineMode.INGAME;
   LBL_BARKTEXT: GUILabel;
   isOverlayGUI = true;
@@ -36,7 +35,7 @@ export class InGameBark extends GameMenu {
 
   audioNode: AudioBufferSourceNode;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'barkbubble';
     this.background = '';
@@ -45,7 +44,7 @@ export class InGameBark extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LBL_BARKTEXT.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -57,9 +56,8 @@ export class InGameBark extends GameMenu {
       resolve();
     });
   }
-  
-  bark(entry: any) {
 
+  bark(entry: any) {
     const outText = this.gameStringParse(entry.text);
     console.log('bark', entry, outText);
 
@@ -68,7 +66,7 @@ export class InGameBark extends GameMenu {
     }
 
     //reset the last audioNode
-    if(this.audioNode){
+    if (this.audioNode) {
       this.audioNode.onended = undefined;
     }
 
@@ -79,11 +77,13 @@ export class InGameBark extends GameMenu {
     this.LBL_BARKTEXT.text.geometry.boundingBox?.getSize(size);
     this.tGuiPanel.extent.height = Math.ceil(size.y) + 14;
     this.tGuiPanel.resizeControl();
-    this.tGuiPanel.widget.position.x = -GameState.ResolutionManager.getViewportWidth() / 2 + this.tGuiPanel.extent.width / 2 + 10;
-    this.tGuiPanel.widget.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
+    this.tGuiPanel.widget.position.x =
+      -GameState.ResolutionManager.getViewportWidth() / 2 + this.tGuiPanel.extent.width / 2 + 10;
+    this.tGuiPanel.widget.position.y =
+      GameState.ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
     this.LBL_BARKTEXT.setText(entry.text);
 
-    if (!!entry.getVoiceResRef()?.length) {
+    if (entry.getVoiceResRef()?.length) {
       this.bHasAudio = true;
       this.bAudioPlayed = false;
       console.log('lip', entry.getVoiceResRef());
@@ -92,16 +92,19 @@ export class InGameBark extends GameMenu {
           entry.speaker.setLIP(lip);
         }
       });
-      GameState.CutsceneManager.audioEmitter.playStreamWave(entry.getVoiceResRef()).then((audioNode) => {
-        this.audioNode = audioNode;
-        this.bHasAudio = true;
-        audioNode.onended = () => {
+      GameState.CutsceneManager.audioEmitter
+        .playStreamWave(entry.getVoiceResRef())
+        .then((audioNode) => {
+          this.audioNode = audioNode;
+          this.bHasAudio = true;
+          audioNode.onended = () => {
+            this.bAudioPlayed = true;
+          };
+        })
+        .catch((e) => {
+          this.bHasAudio = false;
           this.bAudioPlayed = true;
-        };
-      }).catch((e) => {
-        this.bHasAudio = false;
-        this.bAudioPlayed = true;
-      });
+        });
     } else {
       this.bAudioPlayed = true;
       this.bHasAudio = false;
@@ -109,45 +112,48 @@ export class InGameBark extends GameMenu {
     }
   }
 
-  barkFromString(text: string){
+  barkFromString(text: string) {
     const entry = new DLGNode();
     entry.nodeType = DLGNodeType.ENTRY;
     entry.text = text;
     this.bark(entry);
   }
 
-  barkFromStringRef(strRef: number){
+  barkFromStringRef(strRef: number) {
     const tlkString = GameState.TLKManager.GetStringById(strRef);
-    if(!tlkString){ return; }
+    if (!tlkString) {
+      return;
+    }
     const entry = new DLGNode();
     entry.nodeType = DLGNodeType.ENTRY;
     entry.text = tlkString.Value;
     this.bark(entry);
   }
 
-  update(delta = 0){
+  update(delta = 0) {
     super.update(delta);
-    if(this.bHasAudio){
-      if(this.bAudioPlayed){
+    if (this.bHasAudio) {
+      if (this.bAudioPlayed) {
         this.close();
       }
-    }else{
+    } else {
       this.barkTimer -= delta;
-      if(this.barkTimer < 0){ this.barkTimer = 0; }
-      if(!this.barkTimer){ 
+      if (this.barkTimer < 0) {
+        this.barkTimer = 0;
+      }
+      if (!this.barkTimer) {
         this.close();
-      }else{
+      } else {
         this.show();
       }
     }
   }
 
-  close(){
+  close() {
     super.close();
-    if(this.audioNode){
+    if (this.audioNode) {
       this.audioNode.onended = undefined;
       this.audioNode = undefined;
     }
   }
-  
 }

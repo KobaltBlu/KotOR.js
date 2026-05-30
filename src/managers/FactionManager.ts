@@ -29,27 +29,26 @@ const REPUTATION_STATUS = {
 
 /**
  * FactionManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file FactionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class FactionManager {
-
   static FACTION_COUNT = 0;
   static factions = new Map<number, Faction>();
 
-  static Init(){
+  static Init() {
     FactionManager.FACTION_COUNT = 0;
     FactionManager.factions.clear();
   }
 
-  static AddCreatureToFaction( creature: ModuleObject ){
-    if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
+  static AddCreatureToFaction(creature: ModuleObject) {
+    if (BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)) {
       FactionManager.RemoveCreatureFromFaction(creature);
-      if(creature.faction){
+      if (creature.faction) {
         creature.faction.addMember(creature as ModuleCreature);
       }
     }
@@ -64,9 +63,9 @@ export class FactionManager {
     }
   }
 
-  static GetFactionLeader( creature: ModuleObject ){
-    if(BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)){
-      if(creature.faction.id == 0){
+  static GetFactionLeader(creature: ModuleObject) {
+    if (BitWise.InstanceOf(creature?.objectType, ModuleObjectType.ModuleCreature)) {
+      if (creature.faction.id == 0) {
         return GameState.PartyManager.party[0];
       }else{
         const faction = FactionManager.GetCreatureFaction(creature);
@@ -78,49 +77,51 @@ export class FactionManager {
     return undefined;
   }
 
-  static GetCreatureFaction(oSource: ModuleObject){
-    if(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleCreature)){
+  static GetCreatureFaction(oSource: ModuleObject) {
+    if (BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleCreature)) {
       return oSource.faction;
     }
 
     return undefined;
   }
 
-  static GetFactionByLabel( label = '' ){
+  static GetFactionByLabel(label = '') {
     label = label.toLocaleLowerCase();
     let faction;
     for (const key of FactionManager.factions.keys()) {
       faction = FactionManager.factions.get(key);
-      if(faction.label.toLocaleLowerCase() == label){
+      if (faction.label.toLocaleLowerCase() == label) {
         return faction;
       }
     }
     return undefined;
   }
 
-  static SetFactionReputation(oSource: ModuleObject, oTarget: ModuleObject, value = 50){
-
-    if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
+  static SetFactionReputation(oSource: ModuleObject, oTarget: ModuleObject, value = 50) {
+    if (
+      !BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject) ||
+      !BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)
+    )
       return false;
 
-    if(oSource.faction == oTarget.faction)
-      return false;
+    if (oSource.faction == oTarget.faction) return false;
 
     value = Math.max(0, Math.min(value, ReputationConstant.FRIENDLY));
-    if(oSource.faction && oTarget.faction){
+    if (oSource.faction && oTarget.faction) {
       oSource.faction.setReputation(oTarget.faction.id, value);
       return true;
     }
     return false;
   }
 
-  static AdjustFactionReputation(oSource: ModuleObject, oTarget: ModuleObject, value = 50){
-
-    if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
+  static AdjustFactionReputation(oSource: ModuleObject, oTarget: ModuleObject, value = 50) {
+    if (
+      !BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject) ||
+      !BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)
+    )
       return false;
 
-    if(oSource.faction == oTarget.faction)
-      return false;
+    if (oSource.faction == oTarget.faction) return false;
 
     value = Math.max(-100, Math.min(value, 100));
     const fac1 = oSource.faction;
@@ -149,7 +150,10 @@ export class FactionManager {
     // -> 0-10 means oSource is hostile to oTarget
     // -> 11-89 means oSource is neutral to oTarget
     // -> 90-100 means oSource is friendly to oTarget
-    if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
+    if (
+      !BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject) ||
+      !BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)
+    )
       return 0;
 
     if(oSource.faction){
@@ -179,7 +183,6 @@ export class FactionManager {
           faction.initReputations(ReputationConstant.FRIENDLY);
         }
       }
-    
 
       //Set all faction reputations to their default values
       FactionManager.factions.forEach( (faction1, faction1_id) => {
@@ -189,24 +192,28 @@ export class FactionManager {
           const _2DARep = twoDA_row[faction2.label.toLocaleLowerCase()];
           const reputation = !isNaN(parseInt(_2DARep)) ? parseInt(_2DARep) : 0;
 
-          if(faction1_id == 0){ //First row is a special case [player faction]
-            if(faction2_id == 0){ //targeting the [player faction] again
+          if (faction1_id == 0) {
+            //First row is a special case [player faction]
+            if (faction2_id == 0) {
+              //targeting the [player faction] again
               //hardcode the value to friendly
               faction1.reputations[faction2_id].reputation = ReputationConstant.FRIENDLY;
-            }else{
+            } else {
               //set the reputation value found in the 2da column for the target faction
               faction1.reputations[faction2_id].reputation = reputation;
             }
-          }else{
-            if(faction2_id == 0){ //this faction info exists back in the player faction
+          } else {
+            if (faction2_id == 0) {
+              //this faction info exists back in the player faction
               //copy over the reference object from the other faction
               //this will allow us to update both values at the same time in the future
               faction1.reputations[faction2_id] = faction2.reputations[faction1_id];
-            }else{
-              if(faction1_id == faction2_id){ //targeting itself
+            } else {
+              if (faction1_id == faction2_id) {
+                //targeting itself
                 //set the reputation value found in the 2da column for this faction
                 faction1.reputations[faction2_id].reputation = reputation;
-              }else{
+              } else {
                 //copy over the reference object from the other faction
                 //this will allow us to update both values at the same time in the future
                 faction1.reputations[faction2_id] = faction2.reputations[faction1_id];
@@ -215,7 +222,6 @@ export class FactionManager {
               }
             }
           }
-
         }
       });
     }
@@ -331,5 +337,4 @@ export class FactionManager {
       }
     });
   }
-
 }

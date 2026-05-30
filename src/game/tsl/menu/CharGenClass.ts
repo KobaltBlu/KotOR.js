@@ -8,15 +8,14 @@ import { OdysseyModel3D } from "@/three/odyssey";
 
 /**
  * CharGenClass class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenClass.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenClass extends K1_CharGenClass {
-
   declare _3D_MODEL2: GUILabel;
   declare LBL_CHAR_GEN: GUILabel;
   declare LBL_CLASS: GUILabel;
@@ -36,7 +35,7 @@ export class CharGenClass extends K1_CharGenClass {
   declare BTN_SEL5: GUIButton;
   cgmain_light: OdysseyModel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'classsel_p';
     this.background = '';
@@ -46,7 +45,7 @@ export class CharGenClass extends K1_CharGenClass {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -55,7 +54,7 @@ export class CharGenClass extends K1_CharGenClass {
 
       this.BTN_SEL1.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 0;
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -72,7 +71,7 @@ export class CharGenClass extends K1_CharGenClass {
 
       this.BTN_SEL2.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 1;
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -89,7 +88,7 @@ export class CharGenClass extends K1_CharGenClass {
 
       this.BTN_SEL3.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 2;
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -106,7 +105,7 @@ export class CharGenClass extends K1_CharGenClass {
 
       this.BTN_SEL4.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 3;
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -123,7 +122,7 @@ export class CharGenClass extends K1_CharGenClass {
 
       this.BTN_SEL5.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 4;
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -140,7 +139,7 @@ export class CharGenClass extends K1_CharGenClass {
 
       this.BTN_SEL6.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
+        if (this.selecting) return;
         this.selecting = true;
         GameState.CharGenManager.selectedClass = 5;
         const template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
@@ -170,8 +169,9 @@ export class CharGenClass extends K1_CharGenClass {
         (control.getFill().material as THREE.ShaderMaterial).blending = 1;
       }
 
-      resolve();  
+      this.captureBaseExtents();
+
+      resolve();
     });
   }
-  
 }

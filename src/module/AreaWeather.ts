@@ -13,19 +13,18 @@ const log = createScopedLogger(LogScope.Module);
 import { MDLLoader } from "@/loaders";
 
 /**
-* AreaWeather class.
-* 
-* Class representing the logic that powers area weather.
-* 
-* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
-* @file AreaWeather.ts
-* @author KobaltBlu <https://github.com/KobaltBlu>
-* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
-* @memberof KotOR
-*/
+ * AreaWeather class.
+ *
+ * Class representing the logic that powers area weather.
+ *
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ *
+ * @file AreaWeather.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @memberof KotOR
+ */
 export class AreaWeather {
-
   area: ModuleArea;
   model: OdysseyModel3D;
   chanceSnow: number = 0;
@@ -34,16 +33,16 @@ export class AreaWeather {
   currentWeather: WeatherCondition = WeatherCondition.CLEAR;
   started: boolean = false;
 
-  constructor(area: ModuleArea){
+  constructor(area: ModuleArea) {
     this.area = area;
   }
 
   /**
    * Update the weather model to animate the weather effect
    */
-  update(delta: number = 0){
-    if(this.model){
-      this.model.position.copy( GameState.getCurrentPlayer().position ).add( new THREE.Vector3(0,0,3) );
+  update(delta: number = 0) {
+    if (this.model) {
+      this.model.position.copy(GameState.getCurrentPlayer().position).add(new THREE.Vector3(0, 0, 3));
       this.model.update(delta);
     }
   }
@@ -69,7 +68,7 @@ export class AreaWeather {
    * @returns string
    */
   getWeatherModelName(): string {
-    switch(this.getWeatherCondition()){
+    switch (this.getWeatherCondition()) {
       case WeatherCondition.SNOW:
         return 'fx_snow';
       case WeatherCondition.RAIN:
@@ -83,14 +82,14 @@ export class AreaWeather {
   /**
    * Load the weather model
    */
-  async load(){
+  async load() {
     this.currentWeather = this.getWeatherCondition();
     const weatherModelName = this.getWeatherModelName();
-    try{
-      if(weatherModelName){
+    try {
+      if (weatherModelName) {
         const mdl = await MDLLoader.loader.load(weatherModelName);
         const model = await OdysseyModel3D.FromMDL(mdl, {
-          context: GameState
+          context: GameState,
         });
         this.model = model;
         GameState.group.weather_effects.add(model);
@@ -103,12 +102,11 @@ export class AreaWeather {
   /**
    * Destroy the weather model
    */
-  destroy(){
-    if(this.model){
+  destroy() {
+    if (this.model) {
       this.model.remove();
       this.model.dispose();
       this.model = undefined;
     }
   }
-
 }

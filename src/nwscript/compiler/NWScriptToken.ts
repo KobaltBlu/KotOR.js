@@ -1,14 +1,4 @@
-export type TokenType =
-  | "eof"
-  | "name"
-  | "int"
-  | "float"
-  | "string"
-  | "hex"
-  | "keyword"
-  | "op"
-  | "punct"
-  | "comment";
+export type TokenType = 'eof' | 'name' | 'int' | 'float' | 'string' | 'hex' | 'keyword' | 'op' | 'punct' | 'comment';
 
 export interface SourceSpan {
   first_line: number;

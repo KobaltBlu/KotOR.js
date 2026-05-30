@@ -10,9 +10,9 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionJumpToPoint class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionJumpToPoint.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -23,7 +23,7 @@ export class ActionJumpToPoint extends Action {
   z: number;
   facing: number;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionJumpToPoint;
 
@@ -42,7 +42,6 @@ export class ActionJumpToPoint extends Action {
     // 5 - float: 20.0? maybe max safe distance check radius
     // 6 - float: rotation x
     // 7 - float: rotation y
-    
   }
 
   update(_delta: number = 0): ActionStatus {
@@ -55,12 +54,9 @@ export class ActionJumpToPoint extends Action {
     this.y = this.getParameter<number>(1);
     this.z = this.getParameter<number>(2);
 
-    this.facing = -Math.atan2(
-      this.getParameter<number>(6),
-      this.getParameter<number>(7)
-    );
+    this.facing = -Math.atan2(this.getParameter<number>(6), this.getParameter<number>(7));
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if (BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
       this.owner.setPosition(new THREE.Vector3(this.x, this.y, this.z));
       this.owner.setFacing(this.facing, false, TURN_SPEED_FAST);
       this.owner.collisionManager.groundFace = undefined;
@@ -72,5 +68,4 @@ export class ActionJumpToPoint extends Action {
 
     return ActionStatus.FAILED;
   }
-
 }

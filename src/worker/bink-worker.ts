@@ -1,6 +1,6 @@
 /**
  * BinkWorker class.
- * 
+ *
  * Web Worker for Bink file decoding.
  *
  * Handles demuxing, video decode (YUV->RGBA), and audio decode off the main thread.
@@ -14,17 +14,17 @@
  *   { type: 'ready',  header: BinkWorkerHeader }
  *   { type: 'frame',  frameIndex, video?, audio? }
  *   { type: 'error',  message: string }
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BinkWorker.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { BinkDemuxer } from '../video/bink-demuxer';
-import { BinkVideoDecoder, YUVFrame } from '../video/binkvideo';
-import { BinkAudioDCTDecoder } from '../audio/binkaudio_dct';
+import { BinkDemuxer } from '@/video/bink-demuxer';
+import { BinkVideoDecoder, YUVFrame } from '@/video/binkvideo';
+import { BinkAudioDCTDecoder } from '@/audio/binkaudio_dct';
 
 // ── Types shared with main thread ──────────────────────────────────────────
 
@@ -49,7 +49,21 @@ export type WorkerRequest =
 
 export type WorkerResponse =
   | { type: 'ready'; header: BinkWorkerHeader }
-  | { type: 'frame'; frameIndex: number; video: ({ rgba: ArrayBuffer; width: number; height: number } | { yuv: YUVFrame }) | null; audio: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; frameLen: number; overlapLen: number; isFirst: boolean; ptsSamples: number } | null }
+  | {
+      type: 'frame';
+      frameIndex: number;
+      video: ({ rgba: ArrayBuffer; width: number; height: number } | { yuv: YUVFrame }) | null;
+      audio: {
+        pcm: ArrayBuffer[];
+        sampleRate: number;
+        channels: number;
+        sampleCount: number;
+        frameLen: number;
+        overlapLen: number;
+        isFirst: boolean;
+        ptsSamples: number;
+      } | null;
+    }
   | { type: 'error'; message: string };
 
 // ── Worker state ───────────────────────────────────────────────────────────
@@ -62,7 +76,7 @@ let audioTrackIndex = 0;
 let audioSampleRate = 0;
 let audioChannels = 0;
 
-// ── YUV → RGBA conversion (done in worker to keep main thread free) ───────
+// ── YUV -> RGBA conversion (done in worker to keep main thread free) ───────
 
 // Pre-computed lookup table for clamping values to 0-255 range
 // Maps input values from -512 to 511 (indices 0-1023) to clamped 0-255 range
@@ -73,26 +87,16 @@ for (let i = 0; i < 1024; i++) {
 }
 
 // Pre-compute YUV to RGB coefficients for better performance
-const YUV_TO_RGB_R = [298, 0, 409];    // [Y, U, V] coefficients for R
+const YUV_TO_RGB_R = [298, 0, 409]; // [Y, U, V] coefficients for R
 const YUV_TO_RGB_G = [298, -100, -208]; // [Y, U, V] coefficients for G
-const YUV_TO_RGB_B = [298, 516, 0];    // [Y, U, V] coefficients for B
-
-// Reusable RGBA buffer to avoid allocations
-let rgbaBuffer: Uint8Array | null = null;
-let rgbaBufferSize = 0;
+const YUV_TO_RGB_B = [298, 516, 0]; // [Y, U, V] coefficients for B
 
 function yuvToRGBA(yuv: YUVFrame): ArrayBuffer {
   const { width, height, y, u, v, linesizeY, linesizeU, linesizeV } = yuv;
   const pixelCount = width * height;
   const requiredSize = pixelCount * 4;
-
-  // Resize buffer if needed
-  if (!rgbaBuffer || rgbaBufferSize < requiredSize) {
-    rgbaBuffer = new Uint8Array(requiredSize);
-    rgbaBufferSize = requiredSize;
-  }
-
-  const rgba = rgbaBuffer.subarray(0, requiredSize);
+  const result = new ArrayBuffer(requiredSize);
+  const rgba = new Uint8Array(result);
   const rgba32 = new Uint32Array(rgba.buffer, rgba.byteOffset, pixelCount);
 
   // Pre-compute constants
@@ -124,8 +128,10 @@ function yuvToRGBA(yuv: YUVFrame): ArrayBuffer {
       const v1 = v[vRow + ((i + 2) >>> 1)];
 
       // Convert YUV to RGB using lookup table
-      const d0 = u0 - 128, d1 = u1 - 128;
-      const e0 = v0 - 128, e1 = v1 - 128;
+      const d0 = u0 - 128,
+        d1 = u1 - 128;
+      const e0 = v0 - 128,
+        e1 = v1 - 128;
 
       // Calculate RGB values with clamping
       const r0 = CLAMP_TABLE[((YUV_TO_RGB_R[0] * y0 + YUV_TO_RGB_R[2] * e0 + 128) >>> 8) + 512];
@@ -144,10 +150,10 @@ function yuvToRGBA(yuv: YUVFrame): ArrayBuffer {
       const b3 = CLAMP_TABLE[((YUV_TO_RGB_B[0] * y3 + YUV_TO_RGB_B[1] * d1 + 128) >>> 8) + 512];
 
       // Write 32-bit RGBA values for better performance
-      rgba32[baseOff] = (r0) | (g0 << 8) | (b0 << 16) | (255 << 24);
-      rgba32[baseOff + 1] = (r1) | (g1 << 8) | (b1 << 16) | (255 << 24);
-      rgba32[baseOff + 2] = (r2) | (g2 << 8) | (b2 << 16) | (255 << 24);
-      rgba32[baseOff + 3] = (r3) | (g3 << 8) | (b3 << 16) | (255 << 24);
+      rgba32[baseOff] = r0 | (g0 << 8) | (b0 << 16) | (255 << 24);
+      rgba32[baseOff + 1] = r1 | (g1 << 8) | (b1 << 16) | (255 << 24);
+      rgba32[baseOff + 2] = r2 | (g2 << 8) | (b2 << 16) | (255 << 24);
+      rgba32[baseOff + 3] = r3 | (g3 << 8) | (b3 << 16) | (255 << 24);
     }
 
     pixelIndex += width;
@@ -157,20 +163,21 @@ function yuvToRGBA(yuv: YUVFrame): ArrayBuffer {
       const yv = y[yRow + i];
       const uu = u[uRow + (i >>> 1)];
       const vv = v[vRow + (i >>> 1)];
-      const d = uu - 128, e = vv - 128;
+      const d = uu - 128,
+        e = vv - 128;
 
       const r = CLAMP_TABLE[((YUV_TO_RGB_R[0] * yv + YUV_TO_RGB_R[2] * e + 128) >>> 8) + 512];
       const g = CLAMP_TABLE[((YUV_TO_RGB_G[0] * yv + YUV_TO_RGB_G[1] * d + YUV_TO_RGB_G[2] * e + 128) >>> 8) + 512];
       const b = CLAMP_TABLE[((YUV_TO_RGB_B[0] * yv + YUV_TO_RGB_B[1] * d + 128) >>> 8) + 512];
 
-      const off = ((j * width + i) << 2); // * 4
-      rgba[off] = r; rgba[off + 1] = g; rgba[off + 2] = b; rgba[off + 3] = 255;
+      const off = (j * width + i) << 2; // * 4
+      rgba[off] = r;
+      rgba[off + 1] = g;
+      rgba[off + 2] = b;
+      rgba[off + 3] = 255;
     }
   }
 
-  // Ensure we return a regular ArrayBuffer, not SharedArrayBuffer
-  const result = new ArrayBuffer(requiredSize);
-  new Uint8Array(result).set(rgba.subarray(0, requiredSize));
   return result;
 }
 
@@ -182,7 +189,6 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 
   try {
     switch (msg.type) {
-
       case 'init': {
         demuxer = new BinkDemuxer(msg.buffer);
         const h = demuxer.getHeader();
@@ -193,7 +199,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 
         // Set up audio decoder for the first DCT audio track (if any)
         audioDec = null;
-        const dctTrack = h.audioTracks.find(t => t.useDCT);
+        const dctTrack = h.audioTracks.find((t) => t.useDCT);
         if (dctTrack) {
           audioTrackIndex = h.audioTracks.indexOf(dctTrack);
           audioSampleRate = dctTrack.sampleRate;
@@ -214,7 +220,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
           fpsNum: v.fps.num,
           fpsDen: v.fps.den,
           hasAlpha: v.hasAlpha,
-          audioTracks: h.audioTracks.map(t => ({
+          audioTracks: h.audioTracks.map((t) => ({
             sampleRate: t.sampleRate,
             stereo: t.stereo,
             useDCT: t.useDCT,
@@ -238,8 +244,8 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
         try {
           frame = demuxer.getFrame(frameIndex);
         } catch {
-          try { 
-            frame = demuxer.getFrame(frameIndex, { forceVideoFirst: true }); 
+          try {
+            frame = demuxer.getFrame(frameIndex, { forceVideoFirst: true });
           } catch {
             // Can't demux — send null video, reuse last
             worker.postMessage({ type: 'frame', frameIndex, video: null, audio: null } satisfies WorkerResponse);
@@ -261,7 +267,8 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
             const rgba = yuvToRGBA(yuv);
             videoPayload = { rgba, width: yuv.width, height: yuv.height };
             transfers.push(rgba as ArrayBuffer);
-          } else { // 'yuv'
+          } else {
+            // 'yuv'
             // Create a copy of the YUV frame for transfer
             const yCopy = new Uint8Array(yuv.y.length);
             const uCopy = new Uint8Array(yuv.u.length);
@@ -278,7 +285,7 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
               v: vCopy,
               linesizeY: yuv.linesizeY,
               linesizeU: yuv.linesizeU,
-              linesizeV: yuv.linesizeV
+              linesizeV: yuv.linesizeV,
             };
             videoPayload = { yuv: yuvCopy };
             transfers.push(yCopy.buffer as ArrayBuffer, uCopy.buffer as ArrayBuffer, vCopy.buffer as ArrayBuffer);
@@ -288,18 +295,28 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
 
         // lTime = performance.now();
         // ── Audio ──────────────────────────────────────────────────────
-        let audioPayload: { pcm: ArrayBuffer[]; sampleRate: number; channels: number; frameLen: number; overlapLen: number; isFirst: boolean; ptsSamples: number } | null = null;
+        let audioPayload: {
+          pcm: ArrayBuffer[];
+          sampleRate: number;
+          channels: number;
+          sampleCount: number;
+          frameLen: number;
+          overlapLen: number;
+          isFirst: boolean;
+          ptsSamples: number;
+        } | null = null;
 
         if (audioDec && frame.audio.length > audioTrackIndex) {
           const pkt = frame.audio[audioTrackIndex];
           if (pkt.size >= 4) {
             try {
-              const pcmChans = audioDec.decodePacket(pkt.data);
-              const buffers = pcmChans.map(ch => ch.buffer as ArrayBuffer);
+              const decoded = audioDec.decodePacket(pkt.data);
+              const buffers = decoded.pcm.map((ch) => ch.buffer as ArrayBuffer);
               audioPayload = {
                 pcm: buffers,
                 sampleRate: audioSampleRate,
                 channels: audioChannels,
+                sampleCount: decoded.sampleCount,
                 frameLen: audioDec.frameLen,
                 overlapLen: audioDec.overlapLen,
                 isFirst: audioIsFirst,
@@ -307,8 +324,12 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
               };
               // Transfer the Float32Array buffers
               for (const b of buffers) transfers.push(b);
-              audioIsFirst = false;
-            } catch { /* skip audio for this frame */ }
+              if (decoded.sampleCount > 0) {
+                audioIsFirst = false;
+              }
+            } catch {
+              /* skip audio for this frame */
+            }
           }
           // console.log(`Audio decode time: ${performance.now() - lTime}ms`);
         }

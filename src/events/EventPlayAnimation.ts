@@ -9,33 +9,30 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * EventPlayAnimation class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventPlayAnimation.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EventPlayAnimation extends GameEvent {
   value: number = 0;
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
     this.type = GameEventType.EventPlayAnimation;
     this.value = 0; //animation id
-
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
       this.value = struct.getFieldByLabel('Value').getValue();
     }
   }
 
-  execute(){
-    
-  }
+  execute() {}
 
   saveEventData(){
     const struct = new GFFStruct(0x3333);
@@ -56,6 +53,4 @@ export class EventPlayAnimation extends GameEvent {
 
     return struct;
   }
-
 }
-

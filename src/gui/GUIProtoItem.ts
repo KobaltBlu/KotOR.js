@@ -16,20 +16,28 @@ import { Mouse } from "@/controls/Mouse";
 
 /**
  * GUIProtoItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUIProtoItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class GUIProtoItem extends GUIControl{
+export class GUIProtoItem extends GUIControl {
+  static debugExtentLine: THREE.Line;
+  static debugGeom = new THREE.BufferGeometry().setFromPoints(points);
+  static debugMaterial = new THREE.LineBasicMaterial({ color: 0x00ffff, depthTest: false });
 
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false) {
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUIProtoItem;
     this.zOffset = 2;
     this.isProtoItem = false;
+
+    if (this.parent && this.parent.objectType & GUIControlTypeMask.GUIListBox) {
+      const list = this.parent as GUIListBox;
+      this.extent.width = list.extent.width - (list.scrollbar ? list.scrollbar.extent.width : 0) - list.padding * 2;
+    }
 
     this.onSelect = () => {
       this.onSelectStateChanged();
@@ -37,22 +45,33 @@ export class GUIProtoItem extends GUIControl{
 
     this.addEventListener('mouseIn', (e) => {
       this.onSelectStateChanged();
-    })
+    });
 
     this.addEventListener('mouseOut', (e) => {
       this.onSelectStateChanged();
-    })
+    });
   }
 
-  onSelectStateChanged(){
-    if(this.selected || this.hover){
+  createControl() {
+    const widget = super.createControl();
+
+    GUIProtoItem.debugExtentLine = new THREE.Line(GUIProtoItem.debugGeom, GUIProtoItem.debugMaterial);
+    GUIProtoItem.debugExtentLine.scale.set(this.extent.width, this.extent.height, 1);
+    GUIProtoItem.debugExtentLine.position.z = 50; // above all UI layers
+    GUIProtoItem.debugExtentLine.visible = true; //GameState.debug[EngineDebugType.GUI_PROTO_EXTENTS];
+    // this.widget.add(GUIProtoItem.debugExtentLine);
+    return widget;
+  }
+
+  onSelectStateChanged() {
+    if (this.selected || this.hover) {
       this.showHighlight();
       this.hideBorder();
       this.pulsing = true;
       this.text.color.copy(this.defaultHighlightColor);
       this.text.material.uniforms.diffuse.value = this.text.color;
       this.text.material.needsUpdate = true;
-    }else{
+    } else {
       this.hideHighlight();
       this.showBorder();
       this.pulsing = false;
@@ -62,14 +81,14 @@ export class GUIProtoItem extends GUIControl{
     }
   }
 
-  buildText(){
+  buildText() {
     super.buildText();
-    this.text.color.copy( this.selected ? this.defaultHighlightColor : this.defaultColor );
+    this.text.color.copy(this.selected ? this.defaultHighlightColor : this.defaultColor);
     this.text.material.uniforms.diffuse.value = this.text.color;
     this.text.material.needsUpdate = true;
   }
 
-  calculatePosition(){
+  calculatePosition() {
     /*let posX = ((this.list.extent.width - this.extent.width)/2) - this.list.border.inneroffset;
 
     if(!this.list.isScrollBarLeft()){
@@ -95,10 +114,13 @@ export class GUIProtoItem extends GUIControl{
     this.calculateBox();*/
   }
 
-  getItemHeight(){
-    let height = (this.extent.height + (this.getBorderSize()/2));
+  getItemHeight() {
+    let height = this.extent.height;
+    if (this.objectType & GUIControlTypeMask.GUIButton) {
+      return height;
+    }
 
-    if(this.text.geometry){
+    if (this.text.geometry) {
       this.text.geometry.computeBoundingBox();
       const tSize = this.text.geometry.boundingBox.getSize(new THREE.Vector3);
       if(tSize.y > height){
@@ -122,10 +144,9 @@ export class GUIProtoItem extends GUIControl{
     }
   }
 
-  directionalNavigate(direction = ''){
-    if(this.list){
+  directionalNavigate(direction = '') {
+    if (this.list) {
       this.list.directionalNavigate(direction);
     }
   }
-
 }

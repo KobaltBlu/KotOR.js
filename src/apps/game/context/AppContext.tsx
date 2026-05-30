@@ -22,7 +22,7 @@ export interface AppProviderValues {
 }
 export const AppContext = createContext<AppProviderValues>({} as any);
 
-export function useApp(){
+export function useApp() {
   return useContext(AppContext);
 }
 
@@ -46,49 +46,49 @@ export const AppProvider = (props: any) => {
     setGameKey(AppState.gameKey);
     setShowEULAModal(!AppState.eulaAccepted);
     setShowGrantModal(AppState.eulaAccepted && !AppState.directoryLocated);
-  }
+  };
 
   const onPreload = () => {
     log.debug('onPreload', AppState.eulaAccepted, AppState.directoryLocated);
     setShowEULAModal(!AppState.eulaAccepted);
     setShowGrantModal(AppState.eulaAccepted && !AppState.directoryLocated);
-  }
+  };
 
   const onGameLoaded = () => {
     setGameLoaded(true);
-  }
+  };
 
   const onKeyPress = (e: KeyboardEvent) => {
-    if(e.key === '`'){
+    if (e.key === '`') {
       e.preventDefault();
       e.stopPropagation();
       setShowCheatConsole(!showCheatConsole);
       return false;
     }
-  }
+  };
 
   const onLoadingScreenShow = () => {
     setShowLoadingScreen(true);
-  }
+  };
 
   const onLoadingScreenHide = () => {
     setShowLoadingScreen(false);
-  }
+  };
 
   const onLoadingScreenInit = (backgroundURL: string, logoURL: string, message?: string) => {
     setLoadingScreenMessage(message || 'Loading...');
     setLoadingScreenBackgroundURL(backgroundURL);
     setLoadingScreenLogoURL(logoURL);
-  }
+  };
 
   const onLoadingScreenMessage = (message: string) => {
     setLoadingScreenMessage(message);
-  }
+  };
 
-  useEffect(() => { 
+  useEffect(() => {
     window.addEventListener('keypress', onKeyPress);
     AppState.addEventListener('on-preload', onPreload);
-    AppState.addEventListener('on-ready', onAppReady);  
+    AppState.addEventListener('on-ready', onAppReady);
     AppState.addEventListener('on-game-loaded', onGameLoaded);
     AppState.addEventListener('on-loader-show', onLoadingScreenShow);
     AppState.addEventListener('on-loader-hide', onLoadingScreenHide);
@@ -104,14 +104,14 @@ export const AppProvider = (props: any) => {
       AppState.removeEventListener('on-loader-hide', onLoadingScreenHide);
       AppState.removeEventListener('on-loader-init', onLoadingScreenInit);
       AppState.removeEventListener('on-loader-message', onLoadingScreenMessage);
-    }
+    };
   }, []);
 
   useEffect(() => {
     window.addEventListener('keypress', onKeyPress);
     return () => {
       window.removeEventListener('keypress', onKeyPress);
-    }
+    };
   }, [gameLoaded, showCheatConsole, appReady]);
 
   const providerValue: AppProviderValues = {
@@ -129,9 +129,5 @@ export const AppProvider = (props: any) => {
     loadingScreenLogoURL: [loadingScreenLogoURL, setLoadingScreenLogoURL],
   };
 
-  return (
-    <AppContext.Provider value={providerValue}>
-      {appReady && props.children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={providerValue}>{appReady && props.children}</AppContext.Provider>;
 };

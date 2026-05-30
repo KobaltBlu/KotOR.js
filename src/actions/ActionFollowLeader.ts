@@ -23,13 +23,12 @@ import { Utility } from "@/utility/Utility";
 export class ActionFollowLeader extends Action {
   path_realtime: boolean;
 
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionFollowLeader;
 
     //PARAMS
     // No Params
-
   }
 
   update(_delta: number = 0): ActionStatus {
@@ -43,23 +42,23 @@ export class ActionFollowLeader extends Action {
 
       const follow_destination = GameState.PartyManager.GetFollowPosition(this.owner as any);
       const distance = Utility.Distance2D(this.owner.position, this.target.position.clone());
-      if(distance > 5){
+      if (distance > 5) {
         this.path_realtime = true;
         // (this.owner as any).openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
         actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, follow_destination.x);
         actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, follow_destination.y);
         actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, follow_destination.z);
         actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
         actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
         actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 4.5 );
+        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 4.5);
         actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
         actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
         this.owner.actionQueue.addFront(actionMoveToTarget);
 
         return ActionStatus.IN_PROGRESS;
-      }else{
+      } else {
         this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
         this.owner.force = 0;
         this.owner.speed = 0;
@@ -69,5 +68,4 @@ export class ActionFollowLeader extends Action {
     }
     return ActionStatus.FAILED;
   }
-
 }

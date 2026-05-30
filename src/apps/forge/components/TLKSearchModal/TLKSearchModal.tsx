@@ -15,12 +15,7 @@ interface TLKSearchResult {
   text: string;
 }
 
-export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
-  isOpen,
-  onClose,
-  onSelect,
-  currentResref
-}) => {
+export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({ isOpen, onClose, onSelect, currentResref }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<TLKSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -131,7 +126,9 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
               <div className="tlk-search-empty-state">
                 <i className="fa-solid fa-magnifying-glass"></i>
                 <p>Enter a search term to find TLK strings</p>
-                <small>Search across all {KotOR.TLKManager.TLKStrings.length.toLocaleString()} strings in the talk table</small>
+                <small>
+                  Search across all {KotOR.TLKManager.TLKStrings.length.toLocaleString()} strings in the talk table
+                </small>
               </div>
             )}
 
@@ -171,4 +168,3 @@ export const TLKSearchModal: React.FC<TLKSearchModalProps> = ({
     </div>
   );
 };
-

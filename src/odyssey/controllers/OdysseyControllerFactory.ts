@@ -31,76 +31,139 @@ import { SizeStartController } from "@/odyssey/controllers/SizeStartController";
  */
 /* eslint-disable @typescript-eslint/no-extraneous-class */
 export class OdysseyControllerFactory {
+  static From(controller: IOdysseyControllerGeneric) {
+    if (!(typeof controller === 'object')) return;
 
-  static From( controller: IOdysseyControllerGeneric ){
-
-    if(!(typeof controller === 'object'))
-      return;
-
-    switch(controller.type){
-      case 8://Position
+    switch (controller.type) {
+      case OdysseyModelControllerType.Position:
         return new PositionController(controller);
-      case 20://Orientation
+      case OdysseyModelControllerType.Orientation:
         return new OrientationController(controller);
-      case 36://Scale
+      case OdysseyModelControllerType.Scale:
         return new ScaleController(controller);
     }
-    
-    if((controller.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
-      switch(controller.type){
-        case 100://SelfIllumColor
+
+    if ((controller.nodeType & OdysseyModelNodeType.Mesh) == OdysseyModelNodeType.Mesh) {
+      switch (controller.type) {
+        case OdysseyModelControllerType.SelfIllumColor:
           return new SelfIllumColorController(controller);
-        case 132://Alpha
+        case OdysseyModelControllerType.Alpha:
           return new AlphaController(controller);
       }
     }
 
-    if((controller.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
-      switch(controller.type){
-        case 76://Color
+    if ((controller.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+      switch (controller.type) {
+        case OdysseyModelControllerType.Color:
           return new ColorController(controller);
-        case 88://Radius
+        case OdysseyModelControllerType.Radius:
           return new RadiusController(controller);
-        case 140://Multiplier
+        case OdysseyModelControllerType.Multiplier:
           return new MultiplierController(controller);
       }
     }
 
-    if((controller.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
-      switch(controller.type){
-        case 80://AlphaEnd
+    if ((controller.nodeType & OdysseyModelNodeType.Emitter) == OdysseyModelNodeType.Emitter) {
+      switch (controller.type) {
+        case OdysseyModelControllerType.AlphaEnd:
           return new AlphaEndController(controller);
-        case 84://AlphaStart
+        case OdysseyModelControllerType.AlphaStart:
           return new AlphaStartController(controller);
-        case 88://BirthRate
+        case OdysseyModelControllerType.BirthRate:
           return new BirthRateController(controller);
-        case 380://ColorEnd
-          return new ColorEndController(controller);
-        case 392://ColorStart
-          return new ColorStartController(controller);
-        case 108://FrameEnd
+        case OdysseyModelControllerType.Bounce_Co:
+          return new BounceCoefficientController(controller);
+        case OdysseyModelControllerType.CombineTime:
+          return new CombineTimeController(controller);
+        case OdysseyModelControllerType.Drag:
+          return new DragController(controller);
+        case OdysseyModelControllerType.FPS:
+          return new FPSController(controller);
+        case OdysseyModelControllerType.FrameEnd:
           return new FrameEndController(controller);
-        case 112://FrameStart
+        case OdysseyModelControllerType.FrameStart:
           return new FrameStartController(controller);
-        case 120://LifeExp
+        case OdysseyModelControllerType.Gravity:
+          return new GravityController(controller);
+        case OdysseyModelControllerType.LifeExp:
           return new LifeExpController(controller);
-        case 124://Mass
+        case OdysseyModelControllerType.Mass:
           return new MassController(controller);
-        case 144://SizeStart
+        case OdysseyModelControllerType.P2P_Bezier2:
+          return new P2PBezier2Controller(controller);
+        case OdysseyModelControllerType.P2P_Bezier3:
+          return new P2PBezier3Controller(controller);
+        case OdysseyModelControllerType.ParticleRot:
+          return new ParticleRotationController(controller);
+        case OdysseyModelControllerType.RandomVelocity:
+          return new RandomVelocityController(controller);
+        case OdysseyModelControllerType.SizeStart:
           return new SizeStartController(controller);
-        case 232://SizeMid
+        case OdysseyModelControllerType.SizeMid:
           return new SizeMidController(controller);
-        case 148://SizeEnd
+        case OdysseyModelControllerType.SizeEnd:
           return new SizeEndController(controller);
-        case 216://AlphaMid
+        case OdysseyModelControllerType.SizeStart_Y:
+          return new SizeStartYController(controller);
+        case OdysseyModelControllerType.SizeEnd_Y:
+          return new SizeEndYController(controller);
+        case OdysseyModelControllerType.SizeMid_Y:
+          return new SizeMidYController(controller);
+        case OdysseyModelControllerType.Spread:
+          return new SpreadController(controller);
+        case OdysseyModelControllerType.Threshold:
+          return new ThresholdController(controller);
+        case OdysseyModelControllerType.Velocity:
+          return new VelocityController(controller);
+        case OdysseyModelControllerType.XSize:
+          return new XSizeController(controller);
+        case OdysseyModelControllerType.YSize:
+          return new YSizeController(controller);
+        case OdysseyModelControllerType.BlurLength:
+          return new BlurLengthController(controller);
+        case OdysseyModelControllerType.LightningDelay:
+          return new LightningDelayController(controller);
+        case OdysseyModelControllerType.LightningRadius:
+          return new LightningRadiusController(controller);
+        case OdysseyModelControllerType.LightningScale:
+          return new LightningScaleController(controller);
+        case OdysseyModelControllerType.LightningSubDiv:
+          return new LightningSubDivController(controller);
+        case OdysseyModelControllerType.LightningZigZag:
+          return new LightningZigZagController(controller);
+        case OdysseyModelControllerType.AlphaMid:
           return new AlphaMidController(controller);
-        case 284://ColorMid
+        case OdysseyModelControllerType.PercentStart:
+          return new PercentStartController(controller);
+        case OdysseyModelControllerType.PercentMid:
+          return new PercentMidController(controller);
+        case OdysseyModelControllerType.PercentEnd:
+          return new PercentEndController(controller);
+        case OdysseyModelControllerType.RandomBirthRate:
+          return new RandomBirthRateController(controller);
+        case OdysseyModelControllerType.TargetSize:
+          return new TargetSizeController(controller);
+        case OdysseyModelControllerType.ControlPTCount:
+          return new ControlPTCountController(controller);
+        case OdysseyModelControllerType.ControlPTRadius:
+          return new ControlPTRadiusController(controller);
+        case OdysseyModelControllerType.ControlPTDelay:
+          return new ControlPTDelayController(controller);
+        case OdysseyModelControllerType.TangentSpread:
+          return new TangentSpreadController(controller);
+        case OdysseyModelControllerType.TangentLength:
+          return new TangentLengthController(controller);
+        case OdysseyModelControllerType.ColorMid:
           return new ColorMidController(controller);
+        case OdysseyModelControllerType.ColorEnd:
+          return new ColorEndController(controller);
+        case OdysseyModelControllerType.ColorStart:
+          return new ColorStartController(controller);
+        case OdysseyModelControllerType.Detonate:
+          return new DetonateController(controller);
       }
     }
 
     return new OdysseyController(controller);
-
   }
-
 }

@@ -71,7 +71,7 @@ export const UI3DToolPalette: React.FC<UI3DToolPaletteProps> = ({
   activeToolId,
   onToolChange,
   className = '',
-  style = {}
+  style = {},
 }) => {
   const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null);
   const submenuRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -161,7 +161,9 @@ export const UI3DToolPalette: React.FC<UI3DToolPaletteProps> = ({
                 ${hasSubTools ? 'tool-palette-item-with-submenu' : ''}
                 ${isSubmenuOpen ? 'submenu-open' : ''}
                 ${tool.disabled ? 'disabled' : ''}
-              `.trim().replace(/\s+/g, ' ')}
+              `
+                .trim()
+                .replace(/\s+/g, ' ')}
               onClick={(e) => handleToolClick(tool, e)}
             >
               <a title={tool.title || tool.label}>

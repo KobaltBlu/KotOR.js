@@ -1,11 +1,22 @@
-import React, { useState } from "react";
-import * as KotOR from "../../../KotOR";
-import { TabTextEditorState } from "../../../states/tabs";
-import { useEffectOnce } from "../../../helpers/UseEffectOnce";
-import { OP_CONST, OP_CPDOWNBP, OP_CPDOWNSP, OP_CPTOPBP, OP_CPTOPSP, OP_JMP, OP_JNZ, OP_JSR, OP_JZ, OP_MOVSP } from "../../../../../nwscript/NWScriptOPCodes";
-import { MenuBar, MenuItem } from "../../common/MenuBar";
+import React, { useState } from 'react';
+import * as KotOR from '@/apps/forge/KotOR';
+import { TabTextEditorState } from '@/apps/forge/states/tabs';
+import { useEffectOnce } from '@/apps/forge/helpers/UseEffectOnce';
+import {
+  OP_CONST,
+  OP_CPDOWNBP,
+  OP_CPDOWNSP,
+  OP_CPTOPBP,
+  OP_CPTOPSP,
+  OP_JMP,
+  OP_JNZ,
+  OP_JSR,
+  OP_JZ,
+  OP_MOVSP,
+} from '@/nwscript/NWScriptOPCodes';
+import { MenuBar, MenuItem } from '@/apps/forge/components/common/MenuBar';
 
-export const TabScriptInspector = function(props: any){
+export const TabScriptInspector = function (props: any) {
   const parentTab: TabTextEditorState = props.parentTab;
 
   const [instructions, setInstructions] = useState<KotOR.NWScriptInstruction[]>([]);
@@ -42,11 +53,11 @@ export const TabScriptInspector = function(props: any){
     }
   };
 
-  useEffectOnce( () => {
+  useEffectOnce(() => {
     parentTab.addEventListener('onCompile', onCompile);
     return () => {
       parentTab.removeEventListener('onCompile', onCompile);
-    }
+    };
   });
 
   const menuItems: MenuItem[] = [
@@ -56,14 +67,17 @@ export const TabScriptInspector = function(props: any){
         {
           label: 'Copy Assembly to Clipboard',
           onClick: onCopyAssemblyToClipboard,
-          disabled: instructions.length === 0
-        }
-      ]
-    }
+          disabled: instructions.length === 0,
+        },
+      ],
+    },
   ];
 
   return (
-    <div className="tab-pane-content scroll-y log-list bg-dark" style={{ position: 'relative', width: '100%', height: '100%' }}>
+    <div
+      className="tab-pane-content scroll-y log-list bg-dark"
+      style={{ position: 'relative', width: '100%', height: '100%' }}
+    >
       <MenuBar items={menuItems} />
       <div style={{
         position: 'absolute',
@@ -92,30 +106,41 @@ export const TabScriptInspector = function(props: any){
               const type_hex = instruction.type_hex.toUpperCase();
               let value = ``;
 
-              if(instruction.code == OP_CONST){
-                switch(instruction.type){
+              if (instruction.code == OP_CONST) {
+                switch (instruction.type) {
                   case 3:
                     value = (instruction as any).integer;
-                  break;
+                    break;
                   case 4:
                     value = (instruction as any).float;
-                  break;
+                    break;
                   case 5:
                     value = `"${(instruction as any).string}"`;
-                  break;
+                    break;
                   case 6:
                     value = (instruction as any).object;
-                  break;
+                    break;
                   case 12:
                     value = ``;
-                  break;
+                    break;
                   default:
                     console.warn('CONST', instruction.type, instruction);
-                  break;
+                    break;
                 }
-              }else if(instruction.code == OP_MOVSP || instruction.code == OP_JMP || instruction.code == OP_JSR || instruction.code == OP_JZ || instruction.code == OP_JNZ){
+              } else if (
+                instruction.code == OP_MOVSP ||
+                instruction.code == OP_JMP ||
+                instruction.code == OP_JSR ||
+                instruction.code == OP_JZ ||
+                instruction.code == OP_JNZ
+              ) {
                 value = `${(instruction as any).offset}`;
-              }else if(instruction.code == OP_CPTOPSP || instruction.code == OP_CPDOWNSP || instruction.code == OP_CPDOWNBP || instruction.code == OP_CPTOPBP){
+              } else if (
+                instruction.code == OP_CPTOPSP ||
+                instruction.code == OP_CPDOWNSP ||
+                instruction.code == OP_CPDOWNBP ||
+                instruction.code == OP_CPTOPBP
+              ) {
                 value = `${(instruction as any).offset}, ${(instruction as any).size}`;
               }
 
@@ -128,13 +153,11 @@ export const TabScriptInspector = function(props: any){
                   <td>{KotOR.NWScriptByteCode[instruction.code]}</td>
                   <td>{instruction.toAssemblyString()}</td>
                 </tr>
-              )
-            })
-          }
-        </tbody>
-      </table>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
-  )
-}
-
+  );
+};

@@ -7,15 +7,14 @@ import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * ControlPTRadiusController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ControlPTRadiusController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ControlPTRadiusController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.ControlPTRadius;
 
   /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
@@ -23,8 +22,8 @@ export class ControlPTRadiusController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    if(manager.modelNode.emitter){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric) {
+    if (manager.modelNode.emitter) {
       manager.modelNode.emitter.controlPTRadius = data.value;
     }
   }
@@ -34,5 +33,4 @@ export class ControlPTRadiusController extends OdysseyController {
       manager.modelNode.emitter.controlPTRadius = next.value;
     }
   }
-
 }

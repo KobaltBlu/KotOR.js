@@ -4,41 +4,46 @@ import { TwoDAManager } from "@/managers/TwoDAManager";
 
 /**
  * GlobalVariableManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GlobalVariableManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GlobalVariableManager {
-
   static Globals: IEngineGlobals = {
-    Boolean   : new Map(), 
-    Number    : new Map(), 
-    String    : new Map(), 
-    Location  : new Map(), 
+    Boolean: new Map(),
+    Number: new Map(),
+    String: new Map(),
+    Location: new Map(),
   };
-  
-  public static Init(){
-    let _initGlobals = TwoDAManager.datatables.get('globalcat').rows;
-    for (let key in _initGlobals) {
-      if (_initGlobals.hasOwnProperty(key)) {
-        let globItem = _initGlobals[key];
 
-        switch(globItem.type){
+  public static Init() {
+    const _initGlobals = TwoDAManager.datatables.get('globalcat').rows;
+    for (const key in _initGlobals) {
+      if (_initGlobals.hasOwnProperty(key)) {
+        const globItem = _initGlobals[key];
+
+        switch (globItem.type) {
           case 'Boolean':
-            GlobalVariableManager.Globals.Boolean.set(globItem.name.toLowerCase(), {name: globItem.name, value: false});
-          break;
+            GlobalVariableManager.Globals.Boolean.set(globItem.name.toLowerCase(), {
+              name: globItem.name,
+              value: false,
+            });
+            break;
           case 'Location':
-            GlobalVariableManager.Globals.Location.set(globItem.name.toLowerCase(), {name: globItem.name, value: new EngineLocation()});
-          break;
+            GlobalVariableManager.Globals.Location.set(globItem.name.toLowerCase(), {
+              name: globItem.name,
+              value: new EngineLocation(),
+            });
+            break;
           case 'Number':
-            GlobalVariableManager.Globals.Number.set(globItem.name.toLowerCase(), {name: globItem.name, value: 0});
-          break;
+            GlobalVariableManager.Globals.Number.set(globItem.name.toLowerCase(), { name: globItem.name, value: 0 });
+            break;
           case 'String':
-            GlobalVariableManager.Globals.String.set(globItem.name.toLowerCase(), {name: globItem.name, value: ''});
-          break;
+            GlobalVariableManager.Globals.String.set(globItem.name.toLowerCase(), { name: globItem.name, value: '' });
+            break;
         }
       }
     }
@@ -98,7 +103,6 @@ export class GlobalVariableManager {
     const key = GlobalVariableManager.Globals.Location.get(name.toLocaleLowerCase());
     if(key) return key.value;
 
-    return new EngineLocation;
+    return new EngineLocation();
   }
-
 }

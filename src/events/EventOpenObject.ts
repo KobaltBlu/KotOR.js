@@ -9,32 +9,27 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * EventOpenObject class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventOpenObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EventOpenObject extends GameEvent {
-
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
     this.type = GameEventType.EventOpenObject;
-
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
-      
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
     }
   }
 
-  execute(){
-    
-  }
+  execute() {}
 
   export(){
     const struct = new GFFStruct( 0xABCD );
@@ -48,6 +43,4 @@ export class EventOpenObject extends GameEvent {
 
     return struct;
   }
-
 }
-

@@ -5,9 +5,9 @@ import type { ModuleArea } from "@/module";
 
 /**
  * EngineLocation class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EngineLocation.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -18,26 +18,26 @@ export default class EngineLocation {
   area: ModuleArea;
   facing: number;
 
-  constructor(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, area: ModuleArea = GameState.module?.area){
+  constructor(x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0, area: ModuleArea = GameState.module?.area) {
     this.position = new THREE.Vector3(x, y, z);
     this.rotation = new THREE.Vector3(rx, ry, rz);
     this.area = area;
     this.updateFacing();
   }
 
-  getPosition(){
+  getPosition() {
     return this.position;
   }
 
-  setPosition(x = 0, y = 0, z = 0){
+  setPosition(x = 0, y = 0, z = 0) {
     this.position.set(x, y, z);
   }
 
-  getRotation(){
+  getRotation() {
     return this.rotation;
   }
 
-  setRotation(rx = 0, ry = 0, rz = 0){
+  setRotation(rx = 0, ry = 0, rz = 0) {
     this.rotation.set(rx, ry, rz);
     this.updateFacing();
   }
@@ -49,12 +49,12 @@ export default class EngineLocation {
   }
 
   //Bearing is facing in degrees
-  getBearing(){
+  getBearing() {
     return this.facing * 180;
   }
 
   //Set the facing value and then update the rotation values
-  setFacing( facing = 0 ){
+  setFacing(facing = 0) {
     this.facing = 0;
     const theta = facing;
 
@@ -64,26 +64,25 @@ export default class EngineLocation {
   }
 
   //Bearing is facing in radians
-  getFacing(){
+  getFacing() {
     return this.facing;
   }
 
   //Use the rotation values to update the facing value
-  updateFacing(){
+  updateFacing() {
     this.facing = -Math.atan2(this.rotation.y, this.rotation.x);
   }
 
-  getArea(){
+  getArea() {
     return this.area;
   }
 
-  setArea(area: ModuleArea){
+  setArea(area: ModuleArea) {
     this.area = area;
   }
 
   //HACK
-  getModel(){
+  getModel() {
     return this;
   }
-
 }

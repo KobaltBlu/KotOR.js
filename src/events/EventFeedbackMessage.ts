@@ -9,9 +9,9 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * EventFeedbackMessage class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventFeedbackMessage.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -23,7 +23,7 @@ export class EventFeedbackMessage extends GameEvent {
   objectList: any[] = [];
   stringList: any[] = [];
 
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
@@ -33,18 +33,14 @@ export class EventFeedbackMessage extends GameEvent {
     this.floatList = [];
     this.objectList = [];
     this.stringList = [];
-
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
-      
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
     }
   }
 
-  execute(){
-    
-  }
+  execute() {}
 
   saveMessageData(){
     const struct = new GFFStruct(0xCCCC);
@@ -97,6 +93,4 @@ export class EventFeedbackMessage extends GameEvent {
 
     return struct;
   }
-
 }
-

@@ -12,15 +12,14 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * MainMenu class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMenu.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MainMenu extends K1_MainMenu {
-
   declare LBL_3DVIEW: GUILabel;
   declare LB_MODULES: GUIListBox;
   declare LBL_GAMELOGO: GUILabel;
@@ -37,7 +36,7 @@ export class MainMenu extends K1_MainMenu {
 
   bgMusicResRef: string = 'mus_sion';
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'mainmenu8x6_p';
     this.background = '';
@@ -47,7 +46,7 @@ export class MainMenu extends K1_MainMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.LB_MODULES.hide();
       this.LBL_NEWCONTENT.hide();
@@ -83,15 +82,17 @@ export class MainMenu extends K1_MainMenu {
         e.stopPropagation();
         if (ApplicationProfile.ENV === ApplicationEnvironment.ELECTRON) {
           window.close();
-        }else{
-          if(window.opener){
+        } else {
+          if (window.opener) {
             window.close();
             return;
           }
-          alert('To exit the game in your browser, close this tab or window. For the best experience, open the game from the KotOR.js launcher so Exit Game works from the menu.');
+          alert(
+            'To exit the game in your browser, close this tab or window. For the best experience, open the game from the KotOR.js launcher so Exit Game works from the menu.'
+          );
         }
       });
-      
+
       (this.tGuiPanel.widget.userData.fill as any).visible = false;
 
       this._3dView = new LBL_3DView();
@@ -113,23 +114,42 @@ export class MainMenu extends K1_MainMenu {
           this._3dView.camera.position.copy(model.camerahook.position);
           this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
-          this._3dView.addModel(this._3dViewModel);
-          TextureLoader.LoadQueue().then(() => {
-            this._3dViewModel.playAnimation(0, true);
-            resolve();
-          });
-        }).catch(resolve);
-      }).catch(resolve);
+      MDLLoader.loader
+        .load('mainmenu01')
+        .then((mdl: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            // manageLighting: false,
+            context: this._3dView,
+          })
+            .then((model: OdysseyModel3D) => {
+              console.log('Model Loaded', model);
+              this._3dViewModel = model;
+
+              this._3dView.camera.position.copy(model.camerahook.position);
+              this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+
+              this._3dView.addModel(this._3dViewModel);
+              TextureLoader.LoadQueue().then(() => {
+                this._3dViewModel.playAnimation(0, true);
+                resolve();
+              });
+            })
+            .catch(resolve);
+        })
+        .catch(resolve);
     });
   }
 
   update(delta = 0) {
-    this._3dView.render(delta);
+    super.update(delta);
+    // _3dView is set asynchronously in MDLLoader.load('mainmenu01').then(...); guard so we don't throw before it's ready
+    if (this._3dView) {
+      this._3dView.render(delta);
+    }
   }
 
   show() {
     super.show();
     GameState.AlphaTest = 0.5;
   }
-    
 }

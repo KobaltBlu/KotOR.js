@@ -7,15 +7,14 @@ import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimati
 
 /**
  * XSizeController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file XSizeController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class XSizeController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.XSize;
 
   /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
@@ -29,5 +28,4 @@ export class XSizeController extends OdysseyController {
   animate(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
     
   }
-
 }

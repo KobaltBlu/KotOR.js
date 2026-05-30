@@ -26,7 +26,7 @@ export class TabUTMEditorState extends TabState {
     this.store.itemList = value;
   }
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
     this.setContentView(<TabUTMEditor tab={this}></TabUTMEditor>);
@@ -35,24 +35,24 @@ export class TabUTMEditorState extends TabState {
       {
         description: 'Odyssey Store Blueprint',
         accept: {
-          'application/octet-stream': ['.utm']
-        }
-      }
+          'application/octet-stream': ['.utm'],
+        },
+      },
     ];
   }
 
-  public openFile(file?: EditorFile){
-    return new Promise<KotOR.GFFObject>( (resolve, reject) => {
-      if(!file && this.file instanceof EditorFile){
+  public openFile(file?: EditorFile) {
+    return new Promise<KotOR.GFFObject>((resolve, reject) => {
+      if (!file && this.file instanceof EditorFile) {
         file = this.file;
       }
-  
-      if(file instanceof EditorFile){
-        if(this.file != file) this.file = file;
+
+      if (file instanceof EditorFile) {
+        if (this.file != file) this.file = file;
         this.file.isBlueprint = true;
         this.tabName = this.file.getFilename();
-  
-        file.readFile().then( (response) => {
+
+        file.readFile().then((response) => {
           this.store = new ForgeStore(response.buffer);
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
@@ -69,12 +69,12 @@ export class TabUTMEditorState extends TabState {
     super.hide();
   }
 
-  animate(delta: number = 0){
+  animate(delta: number = 0) {
     //todo
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(!!resref && ext == 'utm'){
+    if (!!resref && ext == 'utm') {
       this.store.templateResRef = resref;
       this.store.resref = resref;
       this.updateFile();
@@ -82,13 +82,12 @@ export class TabUTMEditorState extends TabState {
     }
     return super.getExportBuffer(resref, ext);
   }
-  
-  updateFile(){
+
+  updateFile() {
     this.store.exportToBlueprint();
-    if(this.file){
+    if (this.file) {
       this.file.buffer = this.store.blueprint.getExportBuffer();
       this.processEventListener('onEditorFileChange', [this]);
     }
   }
 }
-

@@ -16,34 +16,30 @@ const log = createScopedLogger(LogScope.Action);
 
 /**
  * ActionCloseDoor class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionCloseDoor.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionCloseDoor extends Action {
-
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionCloseDoor;
 
     //PARAMS
     // 0 - dword: door object id
     // 1 - int : always zero?
-
   }
 
   update(_delta: number = 0): ActionStatus {
 
     this.target = this.getParameter<ModuleObject>(0);
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor))
-      return ActionStatus.FAILED;
+    if (!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)) return ActionStatus.FAILED;
 
-    if(!(this.target as ModuleDoor).isOpen())
-      return ActionStatus.FAILED;
+    if (!(this.target as ModuleDoor).isOpen()) return ActionStatus.FAILED;
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       const distance = Utility.Distance2D(this.owner.position, this.target.position);
@@ -58,30 +54,28 @@ export class ActionCloseDoor extends Action {
         actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
         actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
         actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 2 );
+        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 2);
         actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
         actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
         this.owner.actionQueue.addFront(actionMoveToTarget);
 
         return ActionStatus.IN_PROGRESS;
-      }else{
+      } else {
         this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
         this.owner.force = 0;
         this.owner.speed = 0;
         //console.log(action.object);
 
-        this.owner.setFacingObject( this.target );
-        
+        this.owner.setFacingObject(this.target);
+
         (this.target as ModuleDoor).closeDoor(this.owner);
         return ActionStatus.COMPLETE;
-        
       }
-    }else{
+    } else {
       (this.target as ModuleDoor).closeDoor(this.owner);
       return ActionStatus.COMPLETE;
     }
 
     return ActionStatus.FAILED;
   }
-
 }

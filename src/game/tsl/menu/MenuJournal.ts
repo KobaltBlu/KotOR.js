@@ -14,15 +14,14 @@ enum JournalSort {
 
 /**
  * MenuJournal class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuJournal.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuJournal extends K1_MenuJournal {
-
   declare LB_ITEMS: GUIListBox;
   declare LBL_TITLE: GUILabel;
   declare LBL_ITEM_DESCRIPTION: GUIListBox;
@@ -39,7 +38,7 @@ export class MenuJournal extends K1_MenuJournal {
   declare BTN_MESSAGES: GUIButton;
   declare BTN_EXIT: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'journal_p';
     this.background = 'blackfill';
@@ -55,11 +54,11 @@ export class MenuJournal extends K1_MenuJournal {
 
       this.BTN_MESSAGES.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.close()
+        this.close();
         this.manager.MenuMessages.open();
       });
-      
-      this.LB_ITEMS.GUIProtoItemClass = GUIJournalItem;
+
+      this.LB_ITEMS.setProtoBuilder(GUIJournalItem);
       this.LB_ITEMS.onSelect = (node: any) => {
         console.log(node);
       };
@@ -95,5 +94,4 @@ export class MenuJournal extends K1_MenuJournal {
   show() {
     super.show();
   }
-  
 }

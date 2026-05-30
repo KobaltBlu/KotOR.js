@@ -7,15 +7,14 @@ import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * MassController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MassController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MassController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.Mass;
   
   /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
@@ -23,8 +22,8 @@ export class MassController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    if(manager.modelNode.emitter){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric) {
+    if (manager.modelNode.emitter) {
       manager.modelNode.emitter.mass = data.value;
       manager.modelNode.emitter.attributeChanged('mass');
     }
@@ -36,5 +35,4 @@ export class MassController extends OdysseyController {
       manager.modelNode.emitter.attributeChanged('mass');
     }
   }
-
 }

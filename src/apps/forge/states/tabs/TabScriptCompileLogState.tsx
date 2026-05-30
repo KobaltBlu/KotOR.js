@@ -7,11 +7,10 @@ import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 
 
 export class TabScriptCompileLogState extends TabState {
-
   tabName: string = `Compile Log`;
   code: string = ``;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
     this.setContentView(<TabScriptCompileLog tab={this} parentTab={options.parentTab}></TabScriptCompileLog>);

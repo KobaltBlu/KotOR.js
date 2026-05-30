@@ -9,14 +9,12 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 const log = createScopedLogger(LogScope.Forge);
 
 export class TabScriptInspectorState extends TabState {
-
   tabName: string = `NCS Viewer`;
   code: string = ``;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
 
     this.setContentView(<TabScriptInspector tab={this} parentTab={options.parentTab}></TabScriptInspector>);
   }
-
 }

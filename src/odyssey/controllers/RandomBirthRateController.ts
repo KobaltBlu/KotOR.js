@@ -7,15 +7,14 @@ import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimati
 
 /**
  * RandomBirthRateController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file RandomBirthRateController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class RandomBirthRateController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.RandomBirthRate;
 
   /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
@@ -23,8 +22,8 @@ export class RandomBirthRateController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    if(manager.modelNode.emitter){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric) {
+    if (manager.modelNode.emitter) {
       manager.modelNode.emitter.birthRateRandom = data.value;
     }
   }
@@ -34,5 +33,4 @@ export class RandomBirthRateController extends OdysseyController {
       manager.modelNode.emitter.birthRateRandom = next.value;
     }
   }
-
 }

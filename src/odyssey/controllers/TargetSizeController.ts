@@ -7,15 +7,14 @@ import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimati
 
 /**
  * TargetSizeController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TargetSizeController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class TargetSizeController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.TargetSize;
 
   /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
@@ -23,8 +22,8 @@ export class TargetSizeController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    if(manager.modelNode.emitter){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric) {
+    if (manager.modelNode.emitter) {
       manager.modelNode.emitter.targetSize = data.value;
     }
   }
@@ -34,5 +33,4 @@ export class TargetSizeController extends OdysseyController {
       manager.modelNode.emitter.targetSize = next.value;
     }
   }
-
 }

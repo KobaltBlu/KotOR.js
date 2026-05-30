@@ -6,5 +6,5 @@ export default interface BaseTabStateOptions {
   enableLayoutContainers?: boolean;
   closeable?: boolean;
   singleInstance?: boolean;
-  parentTab?: TabState
+  parentTab?: TabState;
 }

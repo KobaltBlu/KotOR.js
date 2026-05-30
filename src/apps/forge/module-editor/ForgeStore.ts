@@ -24,17 +24,17 @@ export class ForgeStore extends ForgeGameObject {
   onOpenStore: string = '';
   tag: string = '';
 
-  constructor(buffer?: Uint8Array){
+  constructor(buffer?: Uint8Array) {
     super();
-    if(buffer){
+    if (buffer) {
       this.loadFromBuffer(buffer);
     }
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
+  onPropertyChange(property: string, newValue: any, oldValue: any) {
+    if (property === 'templateResRef') {
+      if (newValue !== oldValue) {
         this.loadBlueprint().then(() => {
           this.load();
         });
@@ -42,53 +42,57 @@ export class ForgeStore extends ForgeGameObject {
     }
   }
 
-  loadFromBuffer(buffer: Uint8Array){
+  loadFromBuffer(buffer: Uint8Array) {
     this.blueprint = new KotOR.GFFObject(buffer);
     this.loadFromBlueprint();
   }
 
-  loadFromBlueprint(){
-    if(!this.blueprint) return;
+  loadFromBlueprint() {
+    if (!this.blueprint) return;
     const root = this.blueprint.RootNode;
-    if(!root) return;
+    if (!root) return;
 
-    if(root.hasField('BuySellFlag')){
+    if (root.hasField('BuySellFlag')) {
       this.buySellFlag = root.getFieldByLabel('BuySellFlag').getValue() || 0;
     }
-    if(root.hasField('Comment')){
+    if (root.hasField('Comment')) {
       this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
-    if(root.hasField('ID')){
+    if (root.hasField('ID')) {
       this.id = root.getFieldByLabel('ID').getValue() || 0;
     }
-    if(root.hasField('ItemList')){
+    if (root.hasField('ItemList')) {
       const itemListField = root.getFieldByLabel('ItemList');
       const structs = itemListField.getChildStructs() || [];
       this.itemList = structs.map((struct: KotOR.GFFStruct) => {
         return {
           inventoryRes: struct.hasField('InventoryRes') ? struct.getFieldByLabel('InventoryRes').getValue() || '' : '',
           reposPosX: struct.hasField('Repos_PosX') ? struct.getFieldByLabel('Repos_PosX').getValue() || 0 : 0,
-          reposPosY: struct.hasField('Repos_Posy') ? struct.getFieldByLabel('Repos_Posy').getValue() || 0 : 0,
+          reposPosY: struct.hasField('Repos_PosY')
+            ? struct.getFieldByLabel('Repos_PosY').getValue() || 0
+            : struct.hasField('Repos_Posy')
+              ? struct.getFieldByLabel('Repos_Posy').getValue() || 0
+              : 0,
         } as StoreItemEntry;
       });
     }
-    if(root.hasField('LocName')){
+    if (root.hasField('LocName')) {
       this.locName = root.getFieldByLabel('LocName').getCExoLocString() || new KotOR.CExoLocString();
     }
-    if(root.hasField('MarkDown')){
+    if (root.hasField('MarkDown')) {
       this.markDown = root.getFieldByLabel('MarkDown').getValue() || 0;
     }
-    if(root.hasField('MarkUp')){
+    if (root.hasField('MarkUp')) {
       this.markUp = root.getFieldByLabel('MarkUp').getValue() || 0;
     }
-    if(root.hasField('OnOpenStore')){
+    if (root.hasField('OnOpenStore')) {
       this.onOpenStore = root.getFieldByLabel('OnOpenStore').getValue() || '';
     }
-    if(root.hasField('ResRef')){
+    if (root.hasField('ResRef')) {
       this.templateResRef = root.getFieldByLabel('ResRef').getValue() || '';
       this.resref = this.templateResRef;
     }
-    if(root.hasField('Tag')){
+    if (root.hasField('Tag')) {
       this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
   }
@@ -109,9 +113,9 @@ export class ForgeStore extends ForgeGameObject {
       if(itemListField){
         const itemStruct = new KotOR.GFFStruct(0);
         const item = this.itemList[i];
-        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'InventoryRes', item.inventoryRes || '') );
-        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_PosX', item.reposPosX || 0) );
-        itemStruct.addField( new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_Posy', item.reposPosY || 0) );
+        itemStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'InventoryRes', item.inventoryRes || ''));
+        itemStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_PosX', item.reposPosX || 0));
+        itemStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Repos_PosY', item.reposPosY || 0));
         itemListField.addChildStruct(itemStruct);
       }
     }
@@ -126,7 +130,7 @@ export class ForgeStore extends ForgeGameObject {
     return this.blueprint;
   }
 
-  async load(){
+  async load() {
     this.updateBoundingBox();
   }
 
@@ -141,7 +145,7 @@ export class ForgeStore extends ForgeGameObject {
     return instance;
   }
 
-  setGITInstance(strt: KotOR.GFFStruct){
+  setGITInstance(strt: KotOR.GFFStruct) {
     this.resref = strt.getFieldByLabel('ResRef').getValue() as string;
     this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
     this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
@@ -149,5 +153,4 @@ export class ForgeStore extends ForgeGameObject {
     this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
     this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
   }
-
 }

@@ -19,17 +19,17 @@ import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 import { createScopedLogger, LogScope } from "@/utility/Logger";
 
 /**
-* ModuleSound class.
-* 
-* Class representing sound emitters found in modules areas.
-* 
-* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
-* @file ModuleSound.ts
-* @author KobaltBlu <https://github.com/KobaltBlu>
-* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
-* @memberof KotOR
-*/
+ * ModuleSound class.
+ *
+ * Class representing sound emitters found in modules areas.
+ *
+ * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ *
+ * @file ModuleSound.ts
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * @memberof KotOR
+ */
 export class ModuleSound extends ModuleObject {
   audioEngine: AudioEngine;
   soundType: AudioEmitterType = AudioEmitterType.GLOBAL;
@@ -112,8 +112,7 @@ export class ModuleSound extends ModuleObject {
    */
   priority: number = 0;
 
-  constructor ( gff: GFFObject, audioEngine?: AudioEngine ) {
-
+  constructor(gff: GFFObject, audioEngine?: AudioEngine) {
     super(gff);
     this.objectType |= ModuleObjectType.ModuleSound;
 
@@ -142,14 +141,13 @@ export class ModuleSound extends ModuleObject {
     this.volume = 0;
     this.volumeVariation = 0;
     this.priority = 0;
-
   }
 
-  load(){
-    if(this.getTemplateResRef()){
+  load() {
+    if (this.getTemplateResRef()) {
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uts'], this.getTemplateResRef());
-      if(buffer){
+      if (buffer) {
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();
@@ -159,34 +157,34 @@ export class ModuleSound extends ModuleObject {
           this.initProperties();
         }
       }
-    }else{
+    } else {
       //We already have the template (From SAVEGAME)
       this.initProperties();
     }
   }
 
   getPreviewModelResRef(): string {
-    if(this.random){
+    if (this.random) {
       return 'gi_sound_rndm';
-    }else if(this.positional){
+    } else if (this.positional) {
       return 'gi_sound_pos';
     }
     return 'gi_sound_area';
   }
 
-  async loadModel ( ) {
+  async loadModel() {
     const modelName = this.getPreviewModelResRef();
     const mdl = await MDLLoader.loader.load(modelName);
     const model = await OdysseyModel3D.FromMDL(mdl, {
-      context: GameState.context
+      context: GameState.context,
     });
     this.model = model;
     return model;
   }
 
-  async loadSound(){
-    const type = !!this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
-    if(this.audioEmitter){
+  async loadSound() {
+    const type = this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
+    if (this.audioEmitter) {
       this.audioEmitter.destroy();
     }
     this.audioEmitter = new AudioEmitter(this.audioEngine, AudioEngineChannel.SFX);
@@ -217,7 +215,7 @@ export class ModuleSound extends ModuleObject {
 
   setVolume(volume: number): ModuleSound {
     this.volume = Math.max(0, Math.min(127, volume));
-    if(this.audioEmitter){
+    if (this.audioEmitter) {
       this.audioEmitter.setVolume(this.volume);
     }
     return this;
@@ -227,7 +225,7 @@ export class ModuleSound extends ModuleObject {
     this.position.x = x;
     this.position.y = y;
     this.position.z = z;
-    if(this.audioEmitter){
+    if (this.audioEmitter) {
       this.audioEmitter.setPosition(x, y, z);
     }
     return this;
@@ -235,7 +233,7 @@ export class ModuleSound extends ModuleObject {
 
   setPitchVariation(pitchVariation: number = 1.0): ModuleSound {
     this.pitchVariation = Math.max(0, Math.min(2.0, pitchVariation));
-    if(this.audioEmitter){
+    if (this.audioEmitter) {
       this.audioEmitter.playbackRateVariation = this.pitchVariation;
     }
     return this;
@@ -247,7 +245,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   start(): ModuleSound {
-    if(this.audioEmitter){
+    if (this.audioEmitter) {
       this.audioEmitter.start();
     }
     return this;
@@ -256,129 +254,120 @@ export class ModuleSound extends ModuleObject {
   stop(fadeTime: number = 0): ModuleSound {
     fadeTime = Math.max(0, fadeTime);
 
-    if(this.audioEmitter){
+    if (this.audioEmitter) {
       this.audioEmitter.stop(fadeTime);
     }
     return this;
   }
 
-  initProperties(){
-    
-    if(!this.initialized){
-      if(this.template.RootNode.hasField('ObjectId')){
-        this.id = this.template.getFieldByLabel('ObjectId').getValue();
-      }else if(this.template.RootNode.hasField('ID')){
-        this.id = this.template.getFieldByLabel('ID').getValue();
+  initProperties() {
+    if (!this.initialized) {
+      if (this.template.RootNode.hasField('ObjectId')) {
+        this.id = this.template.getNumberByLabel('ObjectId');
+      } else if (this.template.RootNode.hasField('ID')) {
+        this.id = this.template.getNumberByLabel('ID');
       }
-      
+
       GameState.ModuleObjectManager.AddObjectById(this);
     }
 
-    if(this.template.RootNode.hasField('LocName'))
+    if (this.template.RootNode.hasField('LocName'))
       this.name = this.template.getFieldByLabel('LocName').getCExoLocString().getValue();
 
-    if(this.template.RootNode.hasField('Active'))
-      this.active = !!this.template.getFieldByLabel('Active').getValue()
+    if (this.template.RootNode.hasField('Active')) this.active = this.template.getBooleanByLabel('Active');
 
-    if(this.template.RootNode.hasField('Priority'))
-      this.priority = this.template.getFieldByLabel('Priority').getValue()
+    if (this.template.RootNode.hasField('Priority')) this.priority = this.template.getNumberByLabel('Priority');
 
-    if(this.template.RootNode.hasField('Commandable'))
-      this.commandable = !!this.template.getFieldByLabel('Commandable').getValue()
+    if (this.template.RootNode.hasField('Commandable'))
+      this.commandable = this.template.getBooleanByLabel('Commandable');
 
-    if(this.template.RootNode.hasField('FixedVariance'))
-      this.fixedVariance = this.template.getFieldByLabel('FixedVariance').getValue()
+    if (this.template.RootNode.hasField('FixedVariance'))
+      this.fixedVariance = this.template.getNumberByLabel('FixedVariance');
 
-    if(this.template.RootNode.hasField('GeneratedType'))
-      this.generatedType = this.template.getFieldByLabel('GeneratedType').getValue()
+    if (this.template.RootNode.hasField('GeneratedType'))
+      this.generatedType = this.template.getNumberByLabel('GeneratedType');
 
-    if(this.template.RootNode.hasField('Hours'))
-      this.hours = this.template.getFieldByLabel('Hours').getValue()
+    if (this.template.RootNode.hasField('Hours')) this.hours = this.template.getNumberByLabel('Hours');
 
-    if(this.template.RootNode.hasField('Interval'))
-      this.interval = this.template.getFieldByLabel('Interval').getValue();
+    if (this.template.RootNode.hasField('Interval')) this.interval = this.template.getNumberByLabel('Interval');
 
-    if(this.template.RootNode.hasField('IntervalVrtn'))
-      this.intervalVariation = this.template.getFieldByLabel('IntervalVrtn').getValue();
+    if (this.template.RootNode.hasField('IntervalVrtn'))
+      this.intervalVariation = this.template.getNumberByLabel('IntervalVrtn');
 
-    if(this.template.RootNode.hasField('Looping'))
-      this.looping = this.template.getFieldByLabel('Looping').getValue();
+    if (this.template.RootNode.hasField('Looping')) this.looping = this.template.getNumberByLabel('Looping');
 
-    if(this.template.RootNode.hasField('MaxDistance'))
-      this.maxDistance = this.template.getFieldByLabel('MaxDistance').getValue();
-      
-    if(this.template.RootNode.hasField('MinDistance'))
-      this.minDistance = this.template.getFieldByLabel('MinDistance').getValue();
+    if (this.template.RootNode.hasField('MaxDistance'))
+      this.maxDistance = this.template.getNumberByLabel('MaxDistance');
 
-    if(this.template.RootNode.hasField('PitchVariation'))
-      this.pitchVariation = this.template.getFieldByLabel('PitchVariation').getValue();
+    if (this.template.RootNode.hasField('MinDistance'))
+      this.minDistance = this.template.getNumberByLabel('MinDistance');
 
-    if(this.template.RootNode.hasField('Positional'))
-      this.positional = !!this.template.getFieldByLabel('Positional').getValue();
+    if (this.template.RootNode.hasField('PitchVariation'))
+      this.pitchVariation = this.template.getNumberByLabel('PitchVariation');
 
-    if(this.template.RootNode.hasField('Random'))
-      this.random = this.template.getFieldByLabel('Random').getValue();
+    if (this.template.RootNode.hasField('Positional')) this.positional = this.template.getBooleanByLabel('Positional');
 
-    if(this.template.RootNode.hasField('RandomPosition'))
-      this.randomPosition = !!this.template.getFieldByLabel('RandomPosition').getValue();
+    if (this.template.RootNode.hasField('Random')) this.random = this.template.getNumberByLabel('Random');
 
-    if(this.template.RootNode.hasField('RandomRangeX'))
-      this.randomRangeX = this.template.getFieldByLabel('RandomRangeX').getValue();
+    if (this.template.RootNode.hasField('RandomPosition'))
+      this.randomPosition = this.template.getBooleanByLabel('RandomPosition');
 
-    if(this.template.RootNode.hasField('RandomRangeY'))
-      this.randomRangeY = this.template.getFieldByLabel('RandomRangeY').getValue();
+    if (this.template.RootNode.hasField('RandomRangeX'))
+      this.randomRangeX = this.template.getNumberByLabel('RandomRangeX');
 
-    if(this.template.RootNode.hasField('Sounds')){
+    if (this.template.RootNode.hasField('RandomRangeY'))
+      this.randomRangeY = this.template.getNumberByLabel('RandomRangeY');
+
+    if (this.template.RootNode.hasField('Sounds')) {
       const sounds = this.template.getFieldByLabel('Sounds').getChildStructs();
-      for(let i = 0; i < sounds.length; i++){
-        this.soundResRefs.push(sounds[i].getFieldByLabel('Sound').getValue());
+      for (let i = 0; i < sounds.length; i++) {
+        this.soundResRefs.push(sounds[i].getStringByLabel('Sound'));
       }
     }
 
-    if(this.template.RootNode.hasField('Tag'))
-      this.tag = this.template.getFieldByLabel('Tag').getValue();
+    if (this.template.RootNode.hasField('Tag')) this.tag = this.template.getStringByLabel('Tag');
 
-    if(this.template.RootNode.hasField('TemplateResRef'))
-      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+    if (this.template.RootNode.hasField('TemplateResRef'))
+      this.templateResRef = this.template.getStringByLabel('TemplateResRef');
 
-    if(this.template.RootNode.hasField('Times'))
-      this.times = this.template.getFieldByLabel('Times').getValue();
+    if (this.template.RootNode.hasField('Times')) this.times = this.template.getNumberByLabel('Times');
 
-    if(this.template.RootNode.hasField('Volume'))
-      this.volume = this.template.getFieldByLabel('Volume').getValue();
+    if (this.template.RootNode.hasField('Volume')) this.volume = this.template.getNumberByLabel('Volume');
 
-    if(this.template.RootNode.hasField('VolumeVrtn'))
-      this.volumeVariation = this.template.getFieldByLabel('VolumeVrtn').getValue();
+    if (this.template.RootNode.hasField('VolumeVrtn'))
+      this.volumeVariation = this.template.getNumberByLabel('VolumeVrtn');
 
-    if(this.template.RootNode.hasField('XPosition'))
-      this.position.x = this.template.RootNode.getFieldByLabel('XPosition').getValue();
+    if (this.template.RootNode.hasField('XPosition'))
+      this.position.x = this.template.RootNode.getNumberByLabel('XPosition');
 
-    if(this.template.RootNode.hasField('YPosition'))
-      this.position.y = this.template.RootNode.getFieldByLabel('YPosition').getValue();
+    if (this.template.RootNode.hasField('YPosition'))
+      this.position.y = this.template.RootNode.getNumberByLabel('YPosition');
 
-    if(this.template.RootNode.hasField('ZPosition'))
-      this.position.z = this.template.RootNode.getFieldByLabel('ZPosition').getValue();
+    if (this.template.RootNode.hasField('ZPosition'))
+      this.position.z = this.template.RootNode.getNumberByLabel('ZPosition');
 
-    if(this.template.RootNode.hasField('Elevation'))
-      this.elevation = this.template.RootNode.getFieldByLabel('Elevation').getValue();
+    if (this.template.RootNode.hasField('Elevation'))
+      this.elevation = this.template.RootNode.getNumberByLabel('Elevation');
 
-    if(this.template.RootNode.hasField('SWVarTable')){
-      let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+    if (this.template.RootNode.hasField('SWVarTable')) {
+      const localBools = this.template.RootNode.getFieldByLabel('SWVarTable')
+        .getChildStructs()[0]
+        .getFieldByLabel('BitArray')
+        .getChildStructs();
+      for (let i = 0; i < localBools.length; i++) {
+        const data = localBools[i].getNumberByLabel('Variable');
+        for (let bit = 0; bit < 32; bit++) {
+          this._locals.Booleans[bit + i * 32] = (data >> bit) % 2 != 0;
         }
       }
     }
 
     this.soundType = AudioEmitterType.GLOBAL;
-    if(this.positional){
+    if (this.positional) {
       this.soundType = this.randomPosition ? AudioEmitterType.RANDOM : AudioEmitterType.POSITIONAL;
     }
-    
-    this.initialized = true;
 
+    this.initialized = true;
   }
 
   save(){
@@ -386,26 +375,26 @@ export class ModuleSound extends ModuleObject {
     gff.FileType = 'UTS ';
     gff.RootNode.type = 6;
 
-    gff.RootNode.addField( this.actionQueueToActionList() );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Continuous') ).setValue(this.continuous ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'FixedVariance') ).setValue(this.fixedVariance);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'GeneratedType') ).setValue(this.generatedType);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Hours') ).setValue(this.hours);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Interval') ).setValue(this.interval);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'IntervalVrtn') ).setValue(this.intervalVariation);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Looping') ).setValue(this.looping ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MaxDistance') ).setValue(this.maxDistance);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MinDistance') ).setValue(this.minDistance);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'PitchVariation') ).setValue(this.pitchVariation);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Positional') ).setValue(this.positional ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Random') ).setValue(this.random ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'RandomPosition') ).setValue(this.randomPosition ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeX') ).setValue(this.randomRangeX);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeY') ).setValue(this.randomRangeY);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Priority') ).setValue(this.priority);
+    gff.RootNode.addField(this.actionQueueToActionList());
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Active')).setValue(this.active ? 1 : 0);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Commandable')).setValue(this.commandable ? 1 : 0);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Continuous')).setValue(this.continuous ? 1 : 0);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'FixedVariance')).setValue(this.fixedVariance);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'GeneratedType')).setValue(this.generatedType);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Hours')).setValue(this.hours);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'Interval')).setValue(this.interval);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'IntervalVrtn')).setValue(this.intervalVariation);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Looping')).setValue(this.looping ? 1 : 0);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'MaxDistance')).setValue(this.maxDistance);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'MinDistance')).setValue(this.minDistance);
+    gff.RootNode.addField(new GFFField(GFFDataType.DWORD, 'ObjectId')).setValue(this.id);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'PitchVariation')).setValue(this.pitchVariation);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Positional')).setValue(this.positional ? 1 : 0);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Random')).setValue(this.random ? 1 : 0);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'RandomPosition')).setValue(this.randomPosition ? 1 : 0);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'RandomRangeX')).setValue(this.randomRangeX);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'RandomRangeY')).setValue(this.randomRangeY);
+    gff.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Priority')).setValue(this.priority);
     //SWVarTable
     const swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
@@ -418,15 +407,17 @@ export class ModuleSound extends ModuleObject {
       sounds.addChildStruct(soundStruct);
     }
 
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Times') ).setValue(this.times);
-    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Volume') ).setValue(Math.max(0, Math.min(127, this.volume)));
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'VolumeVrtn') ).setValue(Math.max(0, Math.min(127, this.volumeVariation)));
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Elevation') ).setValue(this.elevation);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
+    gff.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'Tag')).setValue(this.tag);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Times')).setValue(this.times);
+    gff.RootNode.addField(new GFFField(GFFDataType.LIST, 'VarTable'));
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Volume')).setValue(Math.max(0, Math.min(127, this.volume)));
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'VolumeVrtn')).setValue(
+      Math.max(0, Math.min(127, this.volumeVariation))
+    );
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'Elevation')).setValue(this.elevation);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'XPosition')).setValue(this.position.x);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'YPosition')).setValue(this.position.y);
+    gff.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'ZPosition')).setValue(this.position.z);
 
     this.template = gff;
     return gff;
@@ -435,5 +426,4 @@ export class ModuleSound extends ModuleObject {
   destroy(): void {
     super.destroy();
   }
-
 }

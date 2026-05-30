@@ -7,6 +7,7 @@ export interface KotORModalProps {
   children: React.ReactNode;
   show: boolean;
   title: string;
+  className?: string;
   enableCancel?: boolean;
   enableOk?: boolean;
   cancelText?: string;
@@ -38,7 +39,7 @@ export const KotORModal = ({
   const handleCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     // setIsVisible(false);
-    if(typeof onCancel === "function") {
+    if (typeof onCancel === 'function') {
       onCancel(e);
     }
   };
@@ -46,7 +47,7 @@ export const KotORModal = ({
   const handleOk = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     // setIsVisible(false);
-    if(typeof onOk === "function") {
+    if (typeof onOk === 'function') {
       onOk(e);
     }
   };
@@ -61,6 +62,6 @@ export const KotORModal = ({
           {enableOk && <button className="modal-button" onClick={handleOk}>{okText}</button>}
         </div>
       </div>
-    </div>
+    )
   );
 };

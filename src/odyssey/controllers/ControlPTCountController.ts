@@ -7,15 +7,14 @@ import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * ControlPTCountController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ControlPTCountController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ControlPTCountController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.ControlPTCount;
 
   /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
@@ -23,8 +22,8 @@ export class ControlPTCountController extends OdysseyController {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    if(manager.modelNode.emitter){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric) {
+    if (manager.modelNode.emitter) {
       manager.modelNode.emitter.controlPTCount = data.value;
     }
   }
@@ -34,5 +33,4 @@ export class ControlPTCountController extends OdysseyController {
       manager.modelNode.emitter.controlPTCount = next.value;
     }
   }
-
 }

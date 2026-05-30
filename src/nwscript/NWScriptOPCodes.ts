@@ -1,4 +1,3 @@
-
 //OPCodes & NCS info: http://web.archive.org/web/20040530002709/http://www.torlack.com/index.html?topics=nwndata_ncs
 
 // CPDOWNSP - Copy Down Stack Pointer
@@ -66,7 +65,7 @@ export const OP_EXCORII = 0x09;
 // Compute the boolean AND of two integers.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
-export const OP_BOOLANDII = 0x0A;
+export const OP_BOOLANDII = 0x0a;
 
 // EQUALxx - Test for Logical Equality
 // EQUALII - Test for Logical Equality Two Integers
@@ -81,7 +80,7 @@ export const OP_BOOLANDII = 0x0A;
 // Test the two operand for logical equality.  This operator supports the comparison or all the basic types and then engine types as long as both operands have the same type.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
-export const OP_EQUAL = 0x0B;
+export const OP_EQUAL = 0x0b;
 
 // NEQUALxx - Test for Logical Inequality
 // NEQUALII - Test for Logical Inequality Two Integers
@@ -96,7 +95,7 @@ export const OP_EQUAL = 0x0B;
 // Test the two operand for logical inequality.  This operator supports the comparison or all the basic types and then engine types as long as both operands have the same type.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
-export const OP_NEQUAL = 0x0C;
+export const OP_NEQUAL = 0x0c;
 
 // GEQxx - Test for Greater Than or Equal
 // GEQII - Test for Greater Than or Equal Two Integers
@@ -104,7 +103,7 @@ export const OP_NEQUAL = 0x0C;
 // Test the two operand for logically greater than or equal.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
-export const OP_GEQ = 0x0D;
+export const OP_GEQ = 0x0d;
 
 // GTxx - Test for Greater Than
 // GTII - Test for Greater Than Two Integers
@@ -112,7 +111,7 @@ export const OP_GEQ = 0x0D;
 // Test the two operand for logically greater than.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
-export const OP_GT = 0x0E;
+export const OP_GT = 0x0e;
 
 // LTxx - Test for Less Than
 // LTII - Test for Less Than Two Integers
@@ -120,7 +119,7 @@ export const OP_GT = 0x0E;
 // Test the two operand for logically less than.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
-export const OP_LT = 0x0F;
+export const OP_LT = 0x0f;
 
 // LEQxx - Test for Less Than or Equal
 // LEQII - Test for Less Than or Equal Two Integers
@@ -166,7 +165,7 @@ export const OP_ADD = 0x14;
 // SUBFI - Subtract a Float and Integer Values
 // SUBFF - Subtract Two Float Values
 // SUBVV - Subtract Two Vector Values
-// Subtract the two operands. 
+// Subtract the two operands.
 
 // The value of SP is increased by the size of the result while decreased by the size of both operands.
 export const OP_SUB = 0x15;
@@ -212,37 +211,37 @@ export const OP_NEG = 0x19;
 // Computes the one's complement of a value.
 
 // The value of SP remains unchanged since the operand and result are of the same size.
-export const OP_COMPI = 0x1A;
+export const OP_COMPI = 0x1a;
 
 // MOVSP - Adjust the Stack Pointer
 // Add the value specified in the instruction to the stack pointer.
 
 // The value of SP is adjusted by the value specified.
-export const OP_MOVSP = 0x1B;
+export const OP_MOVSP = 0x1b;
 
 // STORE_STATEALL - Store the Current State of the Stack (Obsolete)
 // Obsolete instruction to store the state of the stack and save a pointer to a block of code to later be used as an "action" argument.  This byte code is always followed by a JMP and then a block of code to be executed by a later function such as a DelayCommand.
 
 // The value of SP remains unchanged.
-export const OP_STORE_STATEALL = 0x1C;
+export const OP_STORE_STATEALL = 0x1c;
 
 // JMP - Jump to a New Location
 // Change the current execution address to the relative address given in the instruction.
 
 // The value of SP remains unchanged.
-export const OP_JMP = 0x1D;
+export const OP_JMP = 0x1d;
 
 // JSR - Jump to Subroutine
 // Jump to the subroutine at the relative address given in the instruction.  If the routine returns a value, the RSADDx instruction should first be used to allocate space for the return value.  Then all arguments to the subroutine should be pushed in reverse order.
 
 // The value of SP remains unchanged.  The return value is NOT placed on the stack.
-export const OP_JSR = 0x1E;
+export const OP_JSR = 0x1e;
 
 // JZ - Jump if Top of Stack is Zero
 // Change the current execution address to the relative address given in the instruction if the integer on the top of the stack is zero.
 
 // The value of SP is decremented by the size of the integer.
-export const OP_JZ = 0x1F;
+export const OP_JZ = 0x1f;
 
 // RETN - Return from a JSR
 // Return from a JSR.  All arguments used to invoke the subroutine should be removed prior to the RETN.  This leaves any return value on the top of the stack.  The return value must be allocated by the caller prior to invoking the subroutine.
@@ -308,25 +307,25 @@ export const OP_INCIBP = 0x29;
 // Save the current value of the base pointer and set BP to the current stack position.
 
 // The value of SP remains unchanged.
-export const OP_SAVEBP = 0x2A;
+export const OP_SAVEBP = 0x2a;
 
 // RESTOREBP - Restored the BP
 // Restore the BP from a previous SAVEBP instruction.
 
 // The value of SP remains unchanged.
-export const OP_RESTOREBP = 0x2B;
+export const OP_RESTOREBP = 0x2b;
 
 // STORE_STATE - Store the Current Stack State
 // Store the state of the stack and save a pointer to a block of code to later be used as an "action" argument.  This byte code is always followed by a JMP and then a block of code to be executed by a later function such as a DelayCommand.
 
 // The value of SP remains unchanged.
-export const OP_STORE_STATE = 0x2C;
+export const OP_STORE_STATE = 0x2c;
 
 // NOP - No-operation
 // Perform no program function.  This opcode is used as a placeholder for the debugger.
 
 // The value of SP remains unchanged.
-export const OP_NOP = 0x2D;
+export const OP_NOP = 0x2d;
 
 // T - Program Size
 // This byte code isn't a real instruction and is always found at offset 8 in the NCS file.

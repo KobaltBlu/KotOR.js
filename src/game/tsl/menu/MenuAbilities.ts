@@ -13,7 +13,7 @@ const log = createScopedLogger(LogScope.Game);
 enum AbilityFilter {
   SKILLS = 1,
   POWERS = 2,
-  FEATS = 3
+  FEATS = 3,
 }
 
 /**
@@ -26,7 +26,6 @@ enum AbilityFilter {
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuAbilities extends K1_MenuAbilities {
-
   declare LB_DESC_FEATS: GUIListBox;
   declare LBL_BAR6: GUILabel;
   declare LBL_BAR1: GUILabel;
@@ -53,7 +52,7 @@ export class MenuAbilities extends K1_MenuAbilities {
 
   filter: AbilityFilter = AbilityFilter.SKILLS;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'abilities_p';
     this.background = '1600x1200back';
@@ -98,7 +97,7 @@ export class MenuAbilities extends K1_MenuAbilities {
   }
 
   getFilteredItems(): any[] {
-    switch(this.filter){
+    switch (this.filter) {
       case AbilityFilter.SKILLS:
         return GameState.PartyManager.party[0].skills.slice();
       case AbilityFilter.POWERS:
@@ -132,7 +131,7 @@ export class MenuAbilities extends K1_MenuAbilities {
         }
         // this.LB_FEATS.addItem(group);
       }
-      if(group && group.length){
+      if (group && group.length) {
         groups.push(group);
       }
     }
@@ -157,18 +156,28 @@ export class MenuAbilities extends K1_MenuAbilities {
       const usertype = parseInt(spell.usertype);
 
       //skip unsupported spells
-      if(allowedTypes.indexOf(usertype) == -1){ continue; }
+      if (allowedTypes.indexOf(usertype) == -1) {
+        continue;
+      }
 
-      if(!GameState.PartyManager.party[0].getHasSpell(id) && unknownSpells.indexOf(id) == -1){ continue; }
+      if (!GameState.PartyManager.party[0].getHasSpell(id) && unknownSpells.indexOf(id) == -1) {
+        continue;
+      }
 
       allowedSpells.push(spell);
     }
 
     console.log('allowedSpells', allowedSpells);
 
-    const rootSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 0; });
-    const midSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 1; });
-    const endSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 2; });
+    const rootSpells: any[] = allowedSpells.filter((spell) => {
+      return parseInt(spell.forcepriority) === 0;
+    });
+    const midSpells: any[] = allowedSpells.filter((spell) => {
+      return parseInt(spell.forcepriority) === 1;
+    });
+    const endSpells: any[] = allowedSpells.filter((spell) => {
+      return parseInt(spell.forcepriority) === 2;
+    });
 
     const mapSpells = new Map<number, any[]>();
 
@@ -178,8 +187,8 @@ export class MenuAbilities extends K1_MenuAbilities {
       const group = [spell];
 
       //MID SPELL
-      const midSpell = midSpells.find( (curSpell) => {
-        const prereqs = curSpell.prerequisites.split('_').map((id:string) => parseInt(id));
+      const midSpell = midSpells.find((curSpell) => {
+        const prereqs = curSpell.prerequisites.split('_').map((id: string) => parseInt(id));
         return prereqs[0] == id && GameState.PartyManager.party[0].getHasSpell(curSpell.__index);
       });
 
@@ -188,13 +197,13 @@ export class MenuAbilities extends K1_MenuAbilities {
       }
 
       //END SPELL
-      const endSpell = endSpells.find( (curSpell) => {
-        const prereqs = curSpell.prerequisites.split('_').map((id:string) => parseInt(id));
+      const endSpell = endSpells.find((curSpell) => {
+        const prereqs = curSpell.prerequisites.split('_').map((id: string) => parseInt(id));
         return prereqs[0] == id && GameState.PartyManager.party[0].getHasSpell(curSpell.__index);
       });
 
-      if(endSpell){ 
-        group[parseInt(endSpell.forcepriority)] = endSpell; 
+      if (endSpell) {
+        group[parseInt(endSpell.forcepriority)] = endSpell;
       }
 
       mapSpells.set(id, group);
@@ -205,7 +214,7 @@ export class MenuAbilities extends K1_MenuAbilities {
     return groups;
   }
 
-  updateFilter(){
+  updateFilter() {
     console.log('updateFilter');
 
     this.LB_ABILITY.show();
@@ -218,9 +227,9 @@ export class MenuAbilities extends K1_MenuAbilities {
     this.LB_ABILITY.clearItems();
     const items = this.getFilteredItems();
 
-    switch(this.filter){
+    switch (this.filter) {
       case AbilityFilter.SKILLS:
-        this.LB_ABILITY.GUIProtoItemClass = GUICreatureSkill;
+        this.LB_ABILITY.setProtoBuilder(GUICreatureSkill);
         this.LB_ABILITY.padding = 0;
         this.LB_DESC.show();
         this.LBL_BONUS.show();
@@ -230,7 +239,7 @@ export class MenuAbilities extends K1_MenuAbilities {
         this.LBL_SKILLRANK.show();
         this.LBL_RANKVAL.show();
         this.LBL_INFOBG.show();
-      break;
+        break;
       case AbilityFilter.POWERS:
         this.LB_ABILITY.GUIProtoItemClass = GUISpellItem;
         this.LB_ABILITY.padding = 5.5;
@@ -242,9 +251,9 @@ export class MenuAbilities extends K1_MenuAbilities {
         this.LBL_SKILLRANK.show();
         this.LBL_RANKVAL.show();
         this.LBL_INFOBG.show();
-      break;
+        break;
       case AbilityFilter.FEATS:
-        this.LB_ABILITY.GUIProtoItemClass = GUIFeatItem;
+        this.LB_ABILITY.setProtoBuilder(GUIFeatItem);
         this.LB_ABILITY.padding = 5.5;
         this.LB_DESC_FEATS.show();
         this.LBL_BONUS.hide();
@@ -254,17 +263,16 @@ export class MenuAbilities extends K1_MenuAbilities {
         this.LBL_SKILLRANK.hide();
         this.LBL_RANKVAL.hide();
         this.LBL_INFOBG.hide();
-      break;
+        break;
     }
-    
+
     console.log(this.filter);
     console.log(this.LB_ABILITY.GUIProtoItemClass);
 
-    for(let i = 0; i < items.length; i++){
+    for (let i = 0; i < items.length; i++) {
       this.LB_ABILITY.addItem(items[i]);
     }
     this.LB_ABILITY.updateList();
-
   }
 
 }

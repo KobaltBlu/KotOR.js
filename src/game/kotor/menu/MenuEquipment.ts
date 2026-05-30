@@ -14,15 +14,14 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * MenuEquipment class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuEquipment.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuEquipment extends GameMenu {
-
   LBL_CANTEQUIP: GUILabel;
   LBL_ATTACK_INFO: GUILabel;
   LBL_TOHITR: GUILabel;
@@ -70,7 +69,7 @@ export class MenuEquipment extends GameMenu {
   equipmentSelectionActive: boolean;
   selectedItem: ModuleItem;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'equip';
     this.background = '1600x1200back';
@@ -79,13 +78,13 @@ export class MenuEquipment extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     this.childMenu = this.manager.MenuTop;
     return new Promise<void>((resolve, reject) => {
       this.defaultControl = this.BTN_INV_BODY;
 
       // this.LB_ITEMS.offset.x = 0;
-      
+
       this.LB_DESC.hide();
       this.LBL_CANTEQUIP.hide();
 
@@ -111,11 +110,11 @@ export class MenuEquipment extends GameMenu {
       this.BTN_BACK = this.getControlByName('BTN_BACK');
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.equipmentSelectionActive){
+        if (this.equipmentSelectionActive) {
           this.slot = null;
           this.equipmentSelectionActive = false;
           this.updateList();
-        }else{
+        } else {
           this.close();
         }
       });
@@ -209,8 +208,8 @@ export class MenuEquipment extends GameMenu {
           const currentPC = GameState.PartyManager.party[0];
           if(this.selectedItem instanceof GUIItemNone){
             currentPC.unequipSlot(this.slot);
-          }else if(this.selectedItem instanceof ModuleItem){
-            currentPC.equipItem(this.slot, this.selectedItem).then( () => {
+          } else if (this.selectedItem instanceof ModuleItem) {
+            currentPC.equipItem(this.slot, this.selectedItem).then(() => {
               this.updateSlotIcons();
             });
           }
@@ -222,26 +221,27 @@ export class MenuEquipment extends GameMenu {
         }
       });
 
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
-      this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
+      this.LB_ITEMS.padding = 5;
+      this.LB_ITEMS.onSelected = (item: ModuleItem | GUIItemEquipped | GUIItemNone) => {
         this.updateSelected(item);
-      }
+      };
 
       this.BTN_CHANGE1.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.party.length > 0){
+        if (GameState.PartyManager.party.length > 0) {
           GameState.PartyManager.SwitchLeaderAtIndex(1);
         }
       });
       this.BTN_CHANGE2.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.party.length > 1){
+        if (GameState.PartyManager.party.length > 1) {
           GameState.PartyManager.SwitchLeaderAtIndex(2);
         }
       });
 
       GameState.PartyManager.AddEventListener('change', (pm: ModuleCreature) => {
-        if(!this.isVisible()) return;
+        if (!this.isVisible()) return;
         this.updateCharacterStats();
       });
       resolve();
@@ -257,10 +257,10 @@ export class MenuEquipment extends GameMenu {
       const inv = GameState.InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
       const currentPC = GameState.PartyManager.party[0];
       this.LB_ITEMS.addItem(new GUIItemNone());
-      if(currentPC.GetItemInSlot(slot)){
+      if (currentPC.GetItemInSlot(slot)) {
         this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(slot)));
       }
-      this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
+      this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length - 1]);
       for (let i = 0; i < inv.length; i++) {
         this.LB_ITEMS.addItem(inv[i]);
         TextureLoader.LoadQueue();
@@ -335,10 +335,10 @@ export class MenuEquipment extends GameMenu {
     if (this.slot) {
       const inv = GameState.InventoryManager.getInventory(this.slot, currentPC);
       this.LB_ITEMS.addItem(new GUIItemNone());
-      if(currentPC.GetItemInSlot(this.slot)){
-        this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)))
+      if (currentPC.GetItemInSlot(this.slot)) {
+        this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)));
       }
-      this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
+      this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length - 1]);
       for (let i = 0; i < inv.length; i++) {
         this.LB_ITEMS.addItem(inv[i]);
         TextureLoader.LoadQueue();
@@ -349,13 +349,13 @@ export class MenuEquipment extends GameMenu {
   /**
    * Update the selected item.
    */
-  updateSelected(item: ModuleItem|GUIItemEquipped|GUIItemNone) {
+  updateSelected(item: ModuleItem | GUIItemEquipped | GUIItemNone) {
     this.LB_DESC.clearItems();
     this.selectedItem = undefined;
     if (item instanceof ModuleItem) {
       this.selectedItem = item;
       this.LB_DESC.addItem(this.selectedItem.getDescription());
-    } else if(item instanceof GUIItemEquipped) {
+    } else if (item instanceof GUIItemEquipped) {
       this.LB_DESC.addItem(item.node.getDescription());
     }
   }
@@ -365,7 +365,7 @@ export class MenuEquipment extends GameMenu {
    */
   updateSlotIcons(force: boolean = false) {
     const currentPC = GameState.PartyManager.party[0];
-    if(!currentPC) return;
+    if (!currentPC) return;
 
     if (currentPC.getRace() == 6) {
       const implant = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.IMPLANT);
@@ -373,7 +373,6 @@ export class MenuEquipment extends GameMenu {
         const icon = 'i' + implant.baseItem.itemClass + '_' + ('000' + implant.getModelVariation()).slice(-3);
         if (force || this.LBL_INV_IMPLANT.getFillTextureName() != icon) {
           this.LBL_INV_IMPLANT.setFillTextureName(icon);
-
         }
       } else if (force || this.LBL_INV_IMPLANT.getFillTextureName() != 'iimplant') {
         this.LBL_INV_IMPLANT.setFillTextureName('iimplant');
@@ -451,14 +450,13 @@ export class MenuEquipment extends GameMenu {
         this.LBL_INV_WEAP_R.setFillTextureName('iweap_r');
       }
     } else {
-
     }
   }
 
   /**
    * Update the character stats.
    */
-  updateCharacterStats(){
+  updateCharacterStats() {
     this.selectedControl = this.defaultControl;
     this.equipmentSelectionActive = false;
     const currentPC = GameState.PartyManager.party[0];
@@ -469,7 +467,7 @@ export class MenuEquipment extends GameMenu {
     this.LB_ITEMS.clearItems();
     this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
     this.LBL_DEF?.setText(currentPC.getAC());
-    if(this.LBL_PORTRAIT.getFillTextureName() != currentPC.getPortraitResRef()){
+    if (this.LBL_PORTRAIT.getFillTextureName() != currentPC.getPortraitResRef()) {
       this.LBL_PORTRAIT.setFillTextureName(currentPC.getPortraitResRef());
     }
     this.updateSlotIcons(true);
@@ -479,17 +477,23 @@ export class MenuEquipment extends GameMenu {
   /**
    * Update the party member buttons.
    */
-  updatePartyMemberButtons(){
+  updatePartyMemberButtons() {
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
-      if (i == 0) { continue; }
-      
+      if (i == 0) {
+        continue;
+      }
+
       const btn_change = this.getControlByName('BTN_CHANGE' + i);
-      if(!btn_change){ continue; }
+      if (!btn_change) {
+        continue;
+      }
 
       const partyMember = GameState.PartyManager.party[i];
-      if(!partyMember){ continue; }
+      if (!partyMember) {
+        continue;
+      }
 
       btn_change.show();
       const portraitResRef = partyMember.getPortraitResRef();
@@ -672,5 +676,4 @@ export class MenuEquipment extends GameMenu {
       this.LB_DESC.scrollDown();
     }
   }
-  
 }

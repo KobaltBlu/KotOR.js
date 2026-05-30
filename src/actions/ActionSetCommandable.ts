@@ -5,22 +5,20 @@ import { ActionType } from "@/enums/actions/ActionType";
 
 /**
  * ActionSetCommandable class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionSetCommandable.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionSetCommandable extends Action {
-
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionSetCommandable;
 
     //PARAMS
     // 0 - int: commandable value
-    
   }
 
   update(_delta: number = 0): ActionStatus {
@@ -30,5 +28,4 @@ export class ActionSetCommandable extends Action {
     }
     return ActionStatus.FAILED;
   }
-
 }

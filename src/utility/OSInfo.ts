@@ -2,7 +2,7 @@
 /// <reference types="user-agent-data-types" />
 /**
  * Utility class for detecting operating system information.
- * 
+ *
  * @class OSInfo
  * @category Utilities
  * @static
@@ -18,7 +18,7 @@ export class OSInfo {
     LINUX: 'Linux',
     ANDROID: 'Android',
     IOS: 'iOS',
-    UNKNOWN: 'Unknown'
+    UNKNOWN: 'Unknown',
   } as const;
 
   /**
@@ -29,12 +29,12 @@ export class OSInfo {
     X64: 'x64',
     ARM: 'ARM',
     ARM64: 'ARM64',
-    UNKNOWN: 'Unknown'
+    UNKNOWN: 'Unknown',
   } as const;
 
   /**
    * Gets the current operating system platform.
-   * 
+   *
    * @returns {string} The detected platform name
    * @public
    * @static
@@ -43,7 +43,7 @@ export class OSInfo {
     // Try using modern userAgentData API first
     if (navigator.userAgentData) {
       const platform = navigator.userAgentData.platform.toLowerCase();
-      
+
       if (platform.includes('win')) return this.Platform.WINDOWS;
       if (platform.includes('mac')) return this.Platform.MACOS;
       if (platform.includes('linux')) return this.Platform.LINUX;
@@ -53,7 +53,7 @@ export class OSInfo {
 
     // Fallback to userAgent string
     const userAgent = navigator.userAgent.toLowerCase();
-    
+
     if (userAgent.includes('win')) return this.Platform.WINDOWS;
     if (userAgent.includes('mac')) return this.Platform.MACOS;
     if (userAgent.includes('linux')) return this.Platform.LINUX;
@@ -65,7 +65,7 @@ export class OSInfo {
 
   /**
    * Gets the system architecture.
-   * 
+   *
    * @returns {string} The detected architecture
    * @public
    * @static
@@ -83,7 +83,7 @@ export class OSInfo {
 
   /**
    * Checks if the current platform is Windows.
-   * 
+   *
    * @returns {boolean} True if Windows
    * @public
    * @static
@@ -94,7 +94,7 @@ export class OSInfo {
 
   /**
    * Checks if the current platform is macOS.
-   * 
+   *
    * @returns {boolean} True if macOS
    * @public
    * @static
@@ -105,7 +105,7 @@ export class OSInfo {
 
   /**
    * Checks if the current platform is Linux.
-   * 
+   *
    * @returns {boolean} True if Linux
    * @public
    * @static
@@ -116,7 +116,7 @@ export class OSInfo {
 
   /**
    * Checks if the current platform is Android.
-   * 
+   *
    * @returns {boolean} True if Android
    * @public
    * @static
@@ -127,7 +127,7 @@ export class OSInfo {
 
   /**
    * Checks if the current platform is iOS.
-   * 
+   *
    * @returns {boolean} True if iOS
    * @public
    * @static
@@ -138,7 +138,7 @@ export class OSInfo {
 
   /**
    * Checks if the current platform is mobile (Android or iOS).
-   * 
+   *
    * @returns {boolean} True if mobile platform
    * @public
    * @static
@@ -149,7 +149,7 @@ export class OSInfo {
 
   /**
    * Checks if the current platform is desktop (Windows, macOS, or Linux).
-   * 
+   *
    * @returns {boolean} True if desktop platform
    * @public
    * @static
@@ -160,7 +160,7 @@ export class OSInfo {
 
   /**
    * Gets the operating system version information if available.
-   * 
+   *
    * @returns {string | null} Version information or null if not available
    * @public
    * @static
@@ -193,7 +193,7 @@ export class OSInfo {
 
   /**
    * Gets a complete object containing all OS information.
-   * 
+   *
    * @returns {Object} Object containing platform, architecture, and version info
    * @public
    * @static
@@ -210,7 +210,7 @@ export class OSInfo {
       architecture: this.getArchitecture(),
       version: this.getVersion(),
       isMobile: this.isMobile(),
-      isDesktop: this.isDesktop()
+      isDesktop: this.isDesktop(),
     };
   }
 }

@@ -1,0 +1,157 @@
+.forge-ltr-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #0f1116;
+  color: #d8e0ef;
+
+  &__loading {
+    padding: 2rem;
+    text-align: center;
+    color: #b8c2d8;
+  }
+
+  &__content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+}
+
+.ltr-info {
+  margin-bottom: 2rem;
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: #8aa4ff;
+  }
+
+  p {
+    color: #b8c2d8;
+    margin-bottom: 1rem;
+  }
+}
+
+.ltr-details {
+  background: #181c25;
+  border: 1px solid #2a3142;
+  border-radius: 4px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  .detail-item {
+    display: flex;
+    gap: 0.75rem;
+
+    label {
+      font-weight: 600;
+      color: #8aa4ff;
+      min-width: 150px;
+    }
+
+    span {
+      color: #d8e0ef;
+    }
+  }
+}
+
+.name-generator {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background: #181c25;
+  border: 1px solid #2a3142;
+  border-radius: 4px;
+
+  h4 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: #8aa4ff;
+  }
+
+  .help-text {
+    color: #b8c2d8;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+
+  .generator-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+
+    .btn-generate {
+      padding: 0.75rem 1.5rem;
+      background: #2a4db0;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: background 0.2s;
+
+      &:hover {
+        background: #365ad1;
+      }
+
+      &:active {
+        background: #1f3d8f;
+      }
+    }
+  }
+}
+
+.generated-names {
+  h5 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    color: #d8e0ef;
+  }
+
+  .names-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .name-item {
+    padding: 0.6rem;
+    background: #20283a;
+    border: 1px solid #2a3142;
+    border-radius: 4px;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #8aa4ff;
+    cursor: pointer;
+    transition: all 0.2s;
+
+    &:hover {
+      background: #293550;
+      border-color: #8aa4ff;
+    }
+  }
+}
+
+.ltr-notice {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #20283a;
+  border-left: 3px solid #8aa4ff;
+  border-radius: 4px;
+
+  p {
+    margin: 0;
+    color: #b8c2d8;
+    font-size: 0.9rem;
+  }
+
+  strong {
+    color: #8aa4ff;
+  }
+}

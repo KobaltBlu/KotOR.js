@@ -13,15 +13,14 @@ const log = createScopedLogger(LogScope.Game);
 
 /**
  * CharGenMain class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenMain.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class CharGenMain extends GameMenu {
-
   LBL_VIT: GUILabel;
   LBL_DEF: GUILabel;
   OLD_FORT_LBL: GUILabel;
@@ -69,7 +68,7 @@ export class CharGenMain extends GameMenu {
   _3dView: LBL_3DView;
   _3dViewModel: OdysseyModel3D;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'maincg';
     this.background = '1600x1200back';
@@ -78,7 +77,7 @@ export class CharGenMain extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.tGuiPanel.getFill().position.z = -0.5;
 
@@ -91,7 +90,7 @@ export class CharGenMain extends GameMenu {
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
 
       this.Init3D();
-      resolve(); 
+      resolve();
     });
   }
 
@@ -105,20 +104,19 @@ export class CharGenMain extends GameMenu {
         this._3dViewModel.playAnimation(0, true);
       },
       // manageLighting: false,
-      context: this._3dView
+      context: this._3dView,
     });
   }
 
   update(delta = 0) {
     super.update(delta);
-    if (!this.bVisible)
-      return;
+    if (!this.bVisible) return;
     try {
       let modelControl = this.MODEL_LBL;
       GameState.CharGenManager.selectedCreature.update(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
     }
   }
@@ -150,11 +148,8 @@ export class CharGenMain extends GameMenu {
     this.LBL_NAME.setText(GameState.CharGenManager.selectedCreature.firstName);
     this.LBL_CLASS.setText(
       GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.selectedClass].strings.name].Value
-    )
+    );
   }
 
-  updateAttributes() {
-
-  }
-  
+  updateAttributes() {}
 }

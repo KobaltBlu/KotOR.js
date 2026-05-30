@@ -7,15 +7,14 @@ import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * BounceCoefficientController class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BounceCoefficientController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class BounceCoefficientController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.Bounce_Co;
 
   /* eslint-disable-next-line @typescript-eslint/no-useless-constructor -- pass controller to parent */
@@ -30,5 +29,4 @@ export class BounceCoefficientController extends OdysseyController {
   animate(_manager: OdysseyModelAnimationManager, _anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, _fl: number = 0){
     
   }
-
 }

@@ -15,11 +15,11 @@ interface IOdysseyAnimatedLightUniformStruct {
 
 /**
  * LightManager class.
- * 
- * The LightManager class is currently used for dynamic lighting on objects like doors, placeables, creatures, and more. 
- * 
+ *
+ * The LightManager class is currently used for dynamic lighting on objects like doors, placeables, creatures, and more.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LightManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -46,7 +46,7 @@ export class LightManager {
 
   context: any;
 
-  init(context: any){
+  init(context: any) {
     this.context = context;
     LightManager.MAXLIGHTS = 8; //NumDynamicLights row in videoquality.2da
     LightManager.MAXSHADOWLIGHTS = 3; //NumShadowCastingLights row in videoquality.2da
@@ -55,8 +55,8 @@ export class LightManager {
     this.clearLights();
   }
 
-  clearLights(){
-    //Each loop this will hold a counter per model that is trying to display lights. 
+  clearLights() {
+    //Each loop this will hold a counter per model that is trying to display lights.
     //When that model has shown a max of 3 lights the rest will be ignored for that loop
     this.modelLightCounter = {};
     this.shadowLightCounter = {};
@@ -67,20 +67,19 @@ export class LightManager {
     this.shadow_pool = [];
 
     //Clear lights
-    while (this.context.group.lights.children.length){
+    while (this.context.group.lights.children.length) {
       this.context.group.lights.remove(this.context.group.lights.children[0]);
     }
 
     //Clear light helpers
-    while (this.context.group.light_helpers.children.length){
+    while (this.context.group.light_helpers.children.length) {
       this.context.group.light_helpers.remove(this.context.group.light_helpers.children[0]);
     }
 
     //Clear shadow lights
-    while (this.context.group.shadow_lights.children.length){
+    while (this.context.group.shadow_lights.children.length) {
       this.context.group.shadow_lights.remove(this.context.group.shadow_lights.children[0]);
     }
-
 
     //Point Lights
     for(let i = 0; i < LightManager.MAXLIGHTS; i++){
@@ -94,9 +93,8 @@ export class LightManager {
       helper.color = light.color;
       light.userData.helper = helper;
 
-      this.light_pool.push( light );
-      this.context.group.light_helpers.add( helper );
-
+      this.light_pool.push(light);
+      this.context.group.light_helpers.add(helper);
     }
 
     //Shadow Lights
@@ -112,9 +110,8 @@ export class LightManager {
       helper.color = light.color;
       light.userData.helper = helper;
 
-      this.shadow_pool.push( light );
-      this.context.group.light_helpers.add( helper );
-
+      this.shadow_pool.push(light);
+      this.context.group.light_helpers.add(helper);
     }
 
     //Ambient Lights
@@ -130,13 +127,12 @@ export class LightManager {
       this.ambient_light_pool.push( amb_light );
       this.context.group.light_helpers.add( helper );
     }*/
-    
   }
 
   //Add a OdysseyLight3D to the LightManager
-  addLight(light: OdysseyLight3D){
+  addLight(light: OdysseyLight3D) {
     //return;
-    if(light){
+    if (light) {
       //this.lights[light.priority].push(light);
       this.lights.push(light);
       light.getWorldPosition(light.worldPosition);
@@ -151,21 +147,21 @@ export class LightManager {
       if(idx >= 0){
         this.lights.splice(idx, 1);
         //If the light is currently attached to an active light, remove the reference so it will be reassigned
-        for(let i = 0; i < this.light_pool.length; i++){
-          if(this.light_pool[i].userData.odysseyLight == light)
-            this.light_pool[i].userData.odysseyLight = undefined;
+        for (let i = 0; i < this.light_pool.length; i++) {
+          if (this.light_pool[i].userData.odysseyLight == light) this.light_pool[i].userData.odysseyLight = undefined;
         }
         //If the light is currently attached to an active shadow light, remove the reference so it will be reassigned
-        for(let i = 0; i < this.shadow_pool.length; i++){
-          if(this.shadow_pool[i].userData.odysseyLight == light)
-            this.shadow_pool[i].userData.odysseyLight = undefined;
+        for (let i = 0; i < this.shadow_pool.length; i++) {
+          if (this.shadow_pool[i].userData.odysseyLight == light) this.shadow_pool[i].userData.odysseyLight = undefined;
         }
       }
     }
   }
 
-  getFrameLights(){
+  getFrameLights() {}
 
+  update(delta = 0, target: THREE.Camera | ModuleObject) {
+    if (!target) return;
 
 
   }
@@ -181,21 +177,20 @@ export class LightManager {
 
     //This object is to store the amount of lights that have tried to spawn per parent object
     //Since only 3 lights can be on at any given time per object only the first 3 that try to spawn will do so
-    //This is reset every tick like so 
+    //This is reset every tick like so
     this.modelLightCounter = {};
     this.updateDynamicLights(delta);
 
     //This object is to store the amount of lights that have tried to spawn per parent object
     //Since only 3 lights can be on at any given time per object only the first 3 that try to spawn will do so
-    //This is reset every tick like so 
+    //This is reset every tick like so
     //this.modelLightCounter = {};
     //this.updateShadowLights(delta);
-
   }
 
-  updateDynamicLights(delta = 0){
+  updateDynamicLights(delta = 0) {
     this.animatedLights = [];
-    this.tmpLights = [];//this.lights.slice();
+    this.tmpLights = []; //this.lights.slice();
     //let ambientLights = this.lights.filter(light => light.odysseyModel.visible && (light.isAmbient || (light.odysseyModelNode.radius*light.odysseyModelNode.multiplier) > 50));
     //let shadowLights = this.lights.filter(light => light.odysseyModel.visible && light.castShadow);
     const fadingLights = this.lights.filter(light => light.odysseyModel.visible);
@@ -206,7 +201,7 @@ export class LightManager {
 
     //this.tmpLights = this.tmpLights.concat(ambientLights, fadingLights);
     //this.tmpLights = this.tmpLights.concat(fadingLights);
-    
+
     //Attempt to reclaim lights that are no longer used
     this.lightsShown = new Set<string>();
     this.reclaimLights(delta);
@@ -216,23 +211,18 @@ export class LightManager {
     this.new_lights_spawned = 0;
 
     //Get the lights that are trying to spawn this frame
-    for( let i = 0, il = fadingLights.length; i < il; i++ ){
+    for (let i = 0, il = fadingLights.length; i < il; i++) {
+      const light = fadingLights[i];
 
       const light = fadingLights[i];
 
-      if(!this.canShowLight(light))
-        continue;
+      if (this.new_lights_spawned >= LightManager.MAXLIGHTS) break;
 
-      if(this.new_lights_spawned >= LightManager.MAXLIGHTS)
-        break;
-      
-
-      if(this.new_lights_uuids.indexOf(light.uuid) == -1){
+      if (this.new_lights_uuids.indexOf(light.uuid) == -1) {
         this.new_lights.push(light);
         this.new_lights_uuids.push(light.uuid);
         this.new_lights_spawned++;
       }
-      
     }
 
     //Last ditch effort to make sure lights don't get duplicated
@@ -246,11 +236,9 @@ export class LightManager {
     //log.info(this.new_lights_uuids, this.new_lights.length);
     
     //Try to update lights with the pool of reclaimed lights
-    for( let i = 0, il = this.new_lights.length; i < il; i++ ){
-
+    for (let i = 0, il = this.new_lights.length; i < il; i++) {
       //Break the loop if we have already meet our maximum light count
-      if(this.spawned >= LightManager.MAXLIGHTS)
-        break;
+      if (this.spawned >= LightManager.MAXLIGHTS) break;
 
       const odysseyLight = this.new_lights[i];
       let lightNode = undefined;//this.light_pool[this.spawned];
@@ -261,15 +249,12 @@ export class LightManager {
         }
       }
 
-
       //The only way this wouldn't be true is if we have a different number of lights in our light_pool than the
       //engine maximum light number which should be 8 most of the time.
       //The number of allocated lights should always match MAXLIGHTS.
-      if(lightNode){
-        
+      if (lightNode) {
         //If the light isn't already being shown
-        if(!this.lightsShown.has(odysseyLight.uuid)){
-
+        if (!this.lightsShown.has(odysseyLight.uuid)) {
           /////////////////////////////////////
           // LIGHT SHADOWS NEED OPTIMIZATION
           // SEE COMMENT BELOW
@@ -293,41 +278,41 @@ export class LightManager {
           //   lightNode.userData.helper.material.opacity = 1;
           //   //lightNode.distance = Infinity;
           // }else{
-            lightNode.userData.isPointLight = true;
-            lightNode.userData.isAmbientLight = false;
-            lightNode.type = 'PointLight';
+          lightNode.userData.isPointLight = true;
+          lightNode.userData.isAmbientLight = false;
+          lightNode.type = 'PointLight';
 
-            if(odysseyLight.isFading){
-              lightNode.intensity = 0;
-            }else{
-              lightNode.intensity = 1;
-            }
-            
-            lightNode.distance = odysseyLight.getRadius();
+          if (odysseyLight.isFading) {
+            lightNode.intensity = 0;
+          } else {
+            lightNode.intensity = 1;
+          }
+
+          lightNode.distance = odysseyLight.getRadius();
           // }
 
           //Set Common Light Properties
-          odysseyLight.position.set(0, 0, 0)
-          odysseyLight.getWorldPosition(lightNode.position)
+          odysseyLight.position.set(0, 0, 0);
+          odysseyLight.getWorldPosition(lightNode.position);
           lightNode.color.r = odysseyLight.color.r;
           lightNode.color.g = odysseyLight.color.g;
           lightNode.color.b = odysseyLight.color.b;
           lightNode.decay = LightManager.DECAY;
-          
+
           lightNode.updateMatrix();
           lightNode.userData.odysseyLight = odysseyLight;
           lightNode.userData.animated = odysseyLight.isAnimated ? 1 : 0;
           lightNode.userData.lightUUID = odysseyLight.uuid;
           this.lightsShown.add(odysseyLight.uuid);
 
-          if(lightNode.userData.lensFlare != odysseyLight.userData.lensFlare){
-            while(lightNode.children.length){
+          if (lightNode.userData.lensFlare != odysseyLight.userData.lensFlare) {
+            while (lightNode.children.length) {
               lightNode.remove(lightNode.children[0]);
             }
           }
-          
+
           lightNode.userData.lensFlare = odysseyLight.userData.lensFlare;
-          if(lightNode.userData.lensFlare){
+          if (lightNode.userData.lensFlare) {
             lightNode.add(lightNode.userData.lensFlare);
           }
 
@@ -335,12 +320,10 @@ export class LightManager {
           this.spawned++;
           lightNode.userData.reclaimed = false;
         }
-
       }
-      
     }
-		// artist-friendly light intensity scaling factor
-		const scaleFactor = ( this.context?.renderer?.physicallyCorrectLights !== true ) ? Math.PI : 1;
+    // artist-friendly light intensity scaling factor
+    const scaleFactor = this.context?.renderer?.physicallyCorrectLights !== true ? Math.PI : 1;
 
     let animatedLightsNeedUpdate = false;
     let animatedLightIndex = 0;
@@ -356,13 +339,22 @@ export class LightManager {
       
       const animatedLight: IOdysseyAnimatedLightUniformStruct = {
         position: lightNode.position,
-        color: lightNode.color.clone().copy(lightNode.color).multiplyScalar( lightNode.intensity * scaleFactor ),
+        color: lightNode.color
+          .clone()
+          .copy(lightNode.color)
+          .multiplyScalar(lightNode.intensity * scaleFactor),
         distance: lightNode.distance,
-        decay: lightNode.decay
+        decay: lightNode.decay,
       };
 
       const currentAnimatedLight = this.animatedLights[animatedLightIndex];
-      if(currentAnimatedLight && currentAnimatedLight.position.equals(animatedLight.position) && currentAnimatedLight.color.equals(animatedLight.color) && currentAnimatedLight.distance === animatedLight.distance && currentAnimatedLight.decay === animatedLight.decay){
+      if (
+        currentAnimatedLight &&
+        currentAnimatedLight.position.equals(animatedLight.position) &&
+        currentAnimatedLight.color.equals(animatedLight.color) &&
+        currentAnimatedLight.distance === animatedLight.distance &&
+        currentAnimatedLight.decay === animatedLight.decay
+      ) {
         continue;
       }
       this.animatedLights[animatedLightIndex] = animatedLight;
@@ -371,40 +363,38 @@ export class LightManager {
     }
     const diffLightCount = !!(this.animatedLights.length - animatedLightIndex);
     this.animatedLights.length = animatedLightIndex;
-    if(animatedLightsNeedUpdate || diffLightCount){
+    if (animatedLightsNeedUpdate || diffLightCount) {
       this.animatedLightsCacheID++;
     }
   }
-  
+
   /**
    * Try to reclaim unused lights and update spawned fading lights
-   * @param delta 
+   * @param delta
    */
-  reclaimLights(delta = 0){
-
+  reclaimLights(delta = 0) {
     this.spawned = 0;
 
     const lightsUsed: Set<string> = new Set<string>();
 
     const maxLights = LightManager.MAXLIGHTS;
-    for(let i = 0; i < maxLights; i++){
-      
+    for (let i = 0; i < maxLights; i++) {
       //Get the THREE Light Object from the light_pool
       const lightNode = this.light_pool[i];
       if(!lightNode){ continue; }
       
       //Get the assigned OdysseyLight3D
       const odysseyLight = lightNode.userData.odysseyLight as OdysseyLight3D;
-      if(!odysseyLight){
-        if(!lightNode.userData.reclaimed){ 
-          this.reclaimLight(lightNode); 
+      if (!odysseyLight) {
+        if (!lightNode.userData.reclaimed) {
+          this.reclaimLight(lightNode);
         }
         continue;
       }
 
-      if(odysseyLight.isFading){
+      if (odysseyLight.isFading) {
         //FADINGLIGHT
-        if(!lightsUsed.has(odysseyLight.uuid) && odysseyLight.isOnScreen(this.context.viewportFrustum)){
+        if (!lightsUsed.has(odysseyLight.uuid) && odysseyLight.isOnScreen(this.context.viewportFrustum)) {
           lightsUsed.add(odysseyLight.uuid);
           //odysseyLight.getWorldPosition(lightNode.position);
           //lightNode.distance = odysseyLight.getRadius();
@@ -412,16 +402,16 @@ export class LightManager {
           //lightNode.color.g = odysseyLight.color.g;
           //lightNode.color.b = odysseyLight.color.b;
           //The light is still active so update as needed
-          if(lightNode.intensity < odysseyLight.maxIntensity){
-            lightNode.intensity += 2*delta;
+          if (lightNode.intensity < odysseyLight.maxIntensity) {
+            lightNode.intensity += 2 * delta;
           }
 
-          if(lightNode.intensity > odysseyLight.maxIntensity){
+          if (lightNode.intensity > odysseyLight.maxIntensity) {
             lightNode.intensity = odysseyLight.maxIntensity;
           }
 
           //Animate the light helper properties (This gives a visual aid when debugging lights)
-          lightNode.userData.helper.material.opacity = lightNode.intensity/odysseyLight.maxIntensity;
+          lightNode.userData.helper.material.opacity = lightNode.intensity / odysseyLight.maxIntensity;
           lightNode.userData.helper.material.transparent = true;
 
           lightNode.userData.reclaimed = false;
@@ -430,22 +420,21 @@ export class LightManager {
           //This may not be a very efficient way of managing the array. I belive the combo of unshift and splice[0] can be pretty slow
           //this.light_pool.unshift(this.light_pool.splice(i, 1)[0]);
           this.spawned++;
-          
-        }else{
+        } else {
           lightNode.userData.reclaimed = false;
           //The light is no longer active so fade out and reclaim so this light can be reused
-          lightNode.intensity -= 2*delta;
+          lightNode.intensity -= 2 * delta;
 
-          if(lightNode.intensity < 0 || !odysseyLight.isOnScreen(this.context.viewportFrustum)){
+          if (lightNode.intensity < 0 || !odysseyLight.isOnScreen(this.context.viewportFrustum)) {
             lightNode.intensity = 0;
             lightNode.userData.reclaimed = true;
           }
 
           //Animate the light helper properties (This gives a visual aid when debugging lights)
-          lightNode.userData.helper.material.opacity = lightNode.intensity/odysseyLight.maxIntensity;
+          lightNode.userData.helper.material.opacity = lightNode.intensity / odysseyLight.maxIntensity;
           lightNode.userData.helper.material.transparent = true;
 
-          if(!lightsUsed.has(odysseyLight.uuid) && lightNode.intensity > 0){
+          if (!lightsUsed.has(odysseyLight.uuid) && lightNode.intensity > 0) {
             lightsUsed.add(odysseyLight.uuid);
             //The light hasn't completed it's fadeout yet
 
@@ -454,19 +443,17 @@ export class LightManager {
             //This may not be a very efficient way of managing the array. I belive the combo of unshift and splice[0] can be pretty slow
             //this.light_pool.unshift(this.light_pool.splice(i, 1)[0]);
             this.spawned++;
-          }else{
+          } else {
             this.reclaimLight(lightNode);
           }
-
         }
-        
+
         lightNode.color.r = odysseyLight.color.r;
         lightNode.color.g = odysseyLight.color.g;
         lightNode.color.b = odysseyLight.color.b;
         // odysseyLight.maxIntensity = 0.5;//odysseyLight.getIntensity();
-        
-      }else{
-        if(!lightsUsed.has(odysseyLight.uuid) && odysseyLight.isOnScreen(this.context.viewportFrustum)){
+      } else {
+        if (!lightsUsed.has(odysseyLight.uuid) && odysseyLight.isOnScreen(this.context.viewportFrustum)) {
           lightsUsed.add(odysseyLight.uuid);
           //This light is not a fading light so it can be instantly turned off and reclaimed
           // odysseyLight.getWorldPosition(lightNode.position)
@@ -474,7 +461,7 @@ export class LightManager {
           // lightNode.color.g = odysseyLight.color.g;
           // lightNode.color.b = odysseyLight.color.b;
           // lightNode.decay = 1;
-          
+
           // lightNode.updateMatrix();
           // lightNode.userData.animated = odysseyLight.isAnimated ? 1 : 0;
           lightNode.intensity = 1;
@@ -484,13 +471,11 @@ export class LightManager {
           lightNode.userData.helper.material.transparent = false;
           this.light_pool.unshift(this.light_pool.splice(i, 1)[0]);
           lightNode.userData.reclaimed = false;
-        }else{
+        } else {
           this.reclaimLight(lightNode);
         }
       }
-
     }
-
   }
 
   /**
@@ -498,11 +483,13 @@ export class LightManager {
    * @param lightNode
    * @returns void
    */
-  reclaimLight(lightNode: THREE.Light){
-    if(!lightNode){ return; }
+  reclaimLight(lightNode: THREE.Light) {
+    if (!lightNode) {
+      return;
+    }
 
     //This light is not a fading light so it can be instantly turned off and reclaimed
-    lightNode.position.set(0,0,0);
+    lightNode.position.set(0, 0, 0);
     lightNode.intensity = 0;
     //Reset the light helper properties
     lightNode.userData.lightUUID = undefined;
@@ -523,34 +510,28 @@ export class LightManager {
     this.new_lights_spawned = 0;
 
     //Get the lights that are trying to spawn this frame
-    for( let i = 0, il = shadowLights.length; i < il; i++ ){
+    for (let i = 0, il = shadowLights.length; i < il; i++) {
+      const odysseyLight = shadowLights[i];
 
       const odysseyLight = shadowLights[i];
 
-      if(!this.canShowLight(odysseyLight))
-        continue;
+      if (this.new_lights_spawned >= LightManager.MAXSHADOWLIGHTS) break;
 
-      if(this.new_lights_spawned >= LightManager.MAXSHADOWLIGHTS)
-        break;
-
-      if(this.new_lights_uuids.indexOf(odysseyLight.uuid) == -1){
+      if (this.new_lights_uuids.indexOf(odysseyLight.uuid) == -1) {
         this.new_lights.push(odysseyLight);
         this.new_lights_uuids.push(odysseyLight.uuid);
         this.new_lights_spawned++;
       }
-      
     }
-    
+
     //Attempt to reclaim lights that are no longer used
     this.lightsShown = new Set<string>();
     this.reclaimShadowLights(delta);
-    
-    //Try to update lights with the pool of reclaimed lights
-    for( let i = 0, il = this.new_lights.length; i < il; i++ ){
 
+    //Try to update lights with the pool of reclaimed lights
+    for (let i = 0, il = this.new_lights.length; i < il; i++) {
       //Break the loop if we have already meet our maximum light count
-      if(this.spawned_shadow >= LightManager.MAXSHADOWLIGHTS)
-        break;
+      if (this.spawned_shadow >= LightManager.MAXSHADOWLIGHTS) break;
 
       const odysseyLight = this.new_lights[i];
       const lightNode = this.shadow_pool[this.spawned_shadow];
@@ -558,11 +539,9 @@ export class LightManager {
       //The only way this wouldn't be true is if we have a different number of lights in our shadow_pool than the
       //engine maximum light number which should be 8 most of the time.
       //The number of allocated lights should always match MAXLIGHTS.
-      if(lightNode){
-        
+      if (lightNode) {
         //If the light isn't already being shown
-        if(!this.lightsShown.has(odysseyLight.uuid)){
-
+        if (!this.lightsShown.has(odysseyLight.uuid)) {
           //Set Light Properties By Type
           // if(odysseyLight.isAmbient && odysseyLight.getRadius() > 150){
           //   //Ambient light flags don't seem to reliably point to a usage of THREE.AmbientLight per se as some game modules seem to produce PointLight effects in the original game
@@ -575,26 +554,26 @@ export class LightManager {
           //   lightNode.userData.helper.material.opacity = 1;
           //   //lightNode.distance = Infinity;
           // }else{
-            lightNode.userData.isPointLight = true;
-            lightNode.userData.isAmbientLight = false;
-            lightNode.type = 'PointLight';
+          lightNode.userData.isPointLight = true;
+          lightNode.userData.isAmbientLight = false;
+          lightNode.type = 'PointLight';
 
-            if(odysseyLight.isFading){
-              lightNode.intensity = 0;
-            }else{
-              lightNode.intensity = 1;//light.getIntensity();
-            }
-            
-            lightNode.distance = odysseyLight.getRadius();
+          if (odysseyLight.isFading) {
+            lightNode.intensity = 0;
+          } else {
+            lightNode.intensity = 1; //light.getIntensity();
+          }
+
+          lightNode.distance = odysseyLight.getRadius();
           // }
 
           //Set Common Light Properties
-          odysseyLight.getWorldPosition(lightNode.position)
+          odysseyLight.getWorldPosition(lightNode.position);
           lightNode.color.r = odysseyLight.color.r;
           lightNode.color.g = odysseyLight.color.g;
           lightNode.color.b = odysseyLight.color.b;
           lightNode.decay = LightManager.DECAY;
-          
+
           lightNode.updateMatrix();
           lightNode.userData.odysseyLight = odysseyLight;
           lightNode.userData.animated = odysseyLight.isAnimated ? 1 : 0;
@@ -604,9 +583,7 @@ export class LightManager {
           //Increment the spawn count
           this.spawned_shadow++;
         }
-
       }
-      
     }
 
     for( let i = 0, il = this.shadow_pool.length; i < il; i++ ){
@@ -620,32 +597,33 @@ export class LightManager {
       }
     }
   }
-  
-  //Try to reclaim unused shadow lights and update spawned fading lights
-  reclaimShadowLights(delta = 0){
 
+  //Try to reclaim unused shadow lights and update spawned fading lights
+  reclaimShadowLights(delta = 0) {
     this.spawned_shadow = 0;
 
-    for(let i = 0, il = LightManager.MAXSHADOWLIGHTS; i < il; i++){
-      
+    for (let i = 0, il = LightManager.MAXSHADOWLIGHTS; i < il; i++) {
       //Get the THREE Light Object from the shadow_pool
       const lightNode = this.shadow_pool[i];
       const odysseyLight = lightNode.userData.odysseyLight as OdysseyLight3D;
 
-      if(odysseyLight && odysseyLight.isFading){
+      if (odysseyLight && odysseyLight.isFading) {
         //FADINGLIGHT
-        if(this.new_lights_uuids.indexOf(odysseyLight.uuid) >= 0 && odysseyLight.isOnScreen(this.context.viewportFrustum)){
+        if (
+          this.new_lights_uuids.indexOf(odysseyLight.uuid) >= 0 &&
+          odysseyLight.isOnScreen(this.context.viewportFrustum)
+        ) {
           //The light is still active so update as needed
-          if(lightNode.intensity < odysseyLight.maxIntensity){
-            lightNode.intensity += 2*delta;
+          if (lightNode.intensity < odysseyLight.maxIntensity) {
+            lightNode.intensity += 2 * delta;
           }
 
-          if(lightNode.intensity > odysseyLight.maxIntensity){
+          if (lightNode.intensity > odysseyLight.maxIntensity) {
             lightNode.intensity = odysseyLight.maxIntensity;
           }
 
           //Animate the light helper properties (This gives a visual aid when debugging lights)
-          lightNode.userData.helper.material.opacity = lightNode.intensity/odysseyLight.maxIntensity;
+          lightNode.userData.helper.material.opacity = lightNode.intensity / odysseyLight.maxIntensity;
           lightNode.userData.helper.material.transparent = true;
 
           lightNode.userData.reclaimed = false;
@@ -654,20 +632,19 @@ export class LightManager {
           //This may not be a very efficient way of managing the array. I belive the combo of unshift and splice[0] can be pretty slow
           this.shadow_pool.unshift(this.shadow_pool.splice(i, 1)[0]);
           this.spawned_shadow++;
-          
-        }else{
+        } else {
           //The light is no longer active so fade out and reclaim so this light can be reused
-          lightNode.intensity -= 2*delta;
+          lightNode.intensity -= 2 * delta;
 
-          if(lightNode.intensity < 0 || !odysseyLight.isOnScreen(this.context.viewportFrustum)){
+          if (lightNode.intensity < 0 || !odysseyLight.isOnScreen(this.context.viewportFrustum)) {
             lightNode.intensity = 0;
           }
 
           //Animate the light helper properties (This gives a visual aid when debugging lights)
-          lightNode.userData.helper.material.opacity = lightNode.intensity/odysseyLight.maxIntensity;
+          lightNode.userData.helper.material.opacity = lightNode.intensity / odysseyLight.maxIntensity;
           lightNode.userData.helper.material.transparent = true;
 
-          if(lightNode.intensity > 0){
+          if (lightNode.intensity > 0) {
             //The light hasn't completed it's fadeout yet
 
             this.lightsShown.add(odysseyLight.uuid);
@@ -675,37 +652,33 @@ export class LightManager {
             //This may not be a very efficient way of managing the array. I belive the combo of unshift and splice[0] can be pretty slow
             this.shadow_pool.unshift(this.shadow_pool.splice(i, 1)[0]);
             this.spawned_shadow++;
-          }else{
+          } else {
             //Reclaim the light
-            lightNode.position.set(0,0,0);
+            lightNode.position.set(0, 0, 0);
             lightNode.intensity = 0;
             //Reset the light helper properties
             lightNode.userData.helper.material.opacity = 0;
             lightNode.userData.helper.material.transparent = true;
           }
-
         }
 
         lightNode.color.r = odysseyLight.color.r;
         lightNode.color.g = odysseyLight.color.g;
         lightNode.color.b = odysseyLight.color.b;
         // odysseyLight.maxIntensity = 0.5;//lightNode.light.getIntensity();
-        
-      }else{
+      } else {
         //This light is not a fading light so it can be instantly turned off and reclaimed
-        lightNode.position.set(0,0,0);
+        lightNode.position.set(0, 0, 0);
         lightNode.intensity = 0;
         //Reset the light helper properties
         lightNode.userData.helper.material.opacity = 0;
         lightNode.userData.helper.material.transparent = true;
       }
-
     }
-
   }
 
   //Sort lights by distance and priority
-  sortLights (a: OdysseyLight3D, b: OdysseyLight3D){
+  sortLights(a: OdysseyLight3D, b: OdysseyLight3D) {
     if (b.isAnimated < a.isAnimated) return -1;
     if (b.isAnimated > a.isAnimated) return 1;
 
@@ -717,43 +690,38 @@ export class LightManager {
 
     if (a.cameraDistance < b.cameraDistance) return -1;
     if (a.cameraDistance > b.cameraDistance) return 1;
-    
+
     return 0;
   }
 
   //Check to see if the model that owns the light has already met it's limit of three active lights
-  canShowLight(light: OdysseyLight3D){
+  canShowLight(light: OdysseyLight3D) {
+    if (this.lightsShown.has(light.uuid)) return false;
 
-    if(this.lightsShown.has(light.uuid))
-      return false;
-
-    if(!light || !light.isOnScreen(this.context.viewportFrustum) || !light.odysseyModel.visible)
-      return false;
+    if (!light || !light.isOnScreen(this.context.viewportFrustum) || !light.odysseyModel.visible) return false;
 
     //if(light.isDynamic == 1)
     //  return false;
 
-    if(typeof this.modelLightCounter[light.parentUUID] === 'undefined'){
+    if (typeof this.modelLightCounter[light.parentUUID] === 'undefined') {
       this.modelLightCounter[light.parentUUID] = 1;
       return true;
-    }else{
+    } else {
       this.modelLightCounter[light.parentUUID]++;
-      if(this.modelLightCounter[light.parentUUID] < 3){
+      if (this.modelLightCounter[light.parentUUID] < 3) {
         return true;
-      }else{
+      } else {
         return false;
       }
     }
-
   }
 
   //Toggle the visbility of the light helpers ingame
-  toggleLightHelpers(){
+  toggleLightHelpers() {
     this.context.group.light_helpers.visible = !this.context.group.light_helpers.visible;
   }
 
-  setLightHelpersVisible(on = false){
+  setLightHelpersVisible(on = false) {
     this.context.group.light_helpers.visible = on ? true : false;
   }
-
 }

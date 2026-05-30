@@ -11,7 +11,7 @@ export class TabAudioPlayerState extends TabState {
   tabName: string = `Audio Player`;
   singleInstance: boolean = true;
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
     this.setContentView(<TabAudioPlayer tab={this}></TabAudioPlayer>);
     this.openFile();
@@ -38,9 +38,7 @@ export class TabAudioPlayerState extends TabState {
     // ];
   }
 
-  public openFile(file?: any){
-    return new Promise<any>( (resolve, reject) => {
-      
-    });
+  public openFile(file?: any) {
+    return new Promise<any>((resolve, reject) => {});
   }
 }

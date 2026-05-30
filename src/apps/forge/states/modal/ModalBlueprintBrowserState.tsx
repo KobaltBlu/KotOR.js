@@ -16,15 +16,15 @@ export interface BlueprintItem {
 }
 
 const BLUEPRINT_TYPE_LABELS: Record<BlueprintType, string> = {
-  'utc': 'Creatures',
-  'utd': 'Doors',
-  'ute': 'Encounters',
-  'uti': 'Items',
-  'utp': 'Placeables',
-  'utm': 'Stores',
-  'uts': 'Sounds',
-  'utt': 'Triggers',
-  'utw': 'Waypoints',
+  utc: 'Creatures',
+  utd: 'Doors',
+  ute: 'Encounters',
+  uti: 'Items',
+  utp: 'Placeables',
+  utm: 'Stores',
+  uts: 'Sounds',
+  utt: 'Triggers',
+  utw: 'Waypoints',
 };
 
 export class ModalBlueprintBrowserState extends ModalState {
@@ -37,7 +37,10 @@ export class ModalBlueprintBrowserState extends ModalState {
   searchQuery: string = '';
   onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void;
 
-  constructor(blueprintType: BlueprintType, onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void) {
+  constructor(
+    blueprintType: BlueprintType,
+    onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void
+  ) {
     super();
     this.selectedBlueprintType = blueprintType;
     this.title = `Blueprint Browser - ${BLUEPRINT_TYPE_LABELS[blueprintType]}`;
@@ -70,9 +73,7 @@ export class ModalBlueprintBrowserState extends ModalState {
       }
 
       // Get all blueprint files from KEYManager
-      const blueprintKeys = KotOR.KEYManager.Key.keys.filter(
-        (key: KotOR.IKEYEntry) => key.resType === resType
-      );
+      const blueprintKeys = KotOR.KEYManager.Key.keys.filter((key: KotOR.IKEYEntry) => key.resType === resType);
 
       // Load and parse each blueprint file
       for (const key of blueprintKeys) {
@@ -120,7 +121,7 @@ export class ModalBlueprintBrowserState extends ModalState {
           items.push({
             resref: key.resRef,
             localizedName,
-            gff
+            gff,
           });
         } catch (error) {
           log.error(`Failed to load ${type}: ${key.resRef}`, error);
@@ -153,4 +154,3 @@ export class ModalBlueprintBrowserState extends ModalState {
     this.close();
   }
 }
-

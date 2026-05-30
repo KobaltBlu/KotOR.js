@@ -7,6 +7,8 @@ export interface EditorFileOptions {
   handle2?: FileSystemFileHandle;
   buffer?: Uint8Array;
   buffer2?: Uint8Array;
+  /** True for `*.mdl.ascii` on disk: text MDL only, no MDX companion. */
+  mdlAsciiOnly?: boolean;
   resref?: string;
   reskey?: number;
   filename?: string;

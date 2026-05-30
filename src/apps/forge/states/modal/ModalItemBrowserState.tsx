@@ -40,8 +40,9 @@ export class ModalItemBrowserState extends ModalState {
     }
 
     try {
+      await InstallationRegistry.get2DA(InstallationRegistry.BASEITEMS);
       const items: UTIItem[] = [];
-      
+
       // Get all UTI files from KEYManager
       const utiKeys = KotOR.KEYManager.Key.keys.filter(
         (key: KotOR.IKEYEntry) => key.resType === KotOR.ResourceTypes['uti']
@@ -84,12 +85,12 @@ export class ModalItemBrowserState extends ModalState {
 
           // Get icon from baseitem
           if (baseItem > 0) {
-            const baseitems2DA = KotOR.TwoDAManager.datatables.get('baseitems');
+            const baseitems2DA = InstallationRegistry.get2DASync(InstallationRegistry.BASEITEMS);
             if (baseitems2DA) {
               const baseItemRow = baseitems2DA.getRowByIndex(baseItem);
               if (baseItemRow) {
                 iconResRef = (baseItemRow['itemclass'] || '').toLowerCase();
-                iconResRef = `i${iconResRef}_${("000" + modelVariation).slice(-3)}`;
+                iconResRef = `i${iconResRef}_${('000' + modelVariation).slice(-3)}`;
               }
             }
           }
@@ -104,7 +105,7 @@ export class ModalItemBrowserState extends ModalState {
             baseItem,
             localizedName,
             iconResRef,
-            gff
+            gff,
           });
         } catch (error) {
           log.error(`Failed to load UTI: ${key.resRef}`, error);
@@ -123,9 +124,10 @@ export class ModalItemBrowserState extends ModalState {
 
   setSearchQuery(query: string) {
     this.searchQuery = query.toLowerCase();
-    this.filteredItems = this.items.filter(item => 
-      item.resref.toLowerCase().includes(this.searchQuery) ||
-      item.localizedName.toLowerCase().includes(this.searchQuery)
+    this.filteredItems = this.items.filter(
+      (item) =>
+        item.resref.toLowerCase().includes(this.searchQuery) ||
+        item.localizedName.toLowerCase().includes(this.searchQuery)
     );
     this.processEventListener('onSearchChanged', [this]);
   }
@@ -137,4 +139,3 @@ export class ModalItemBrowserState extends ModalState {
     this.close();
   }
 }
-

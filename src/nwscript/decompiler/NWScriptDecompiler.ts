@@ -19,7 +19,7 @@ const log = createScopedLogger(LogScope.NWScript);
  * Coordinates analysis phases to convert NCS bytecode to NSS source.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptDecompiler.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -40,9 +40,9 @@ export class NWScriptDecompiler {
 
   /**
    * Decompile the script from NCS to NSS
-   * 
+   *
    * Pipeline (Option A - ControlNode-First):
-   * CFG -> StructureBuilder -> Variable Analyzers -> Function Analyzer -> 
+   * CFG -> StructureBuilder -> Variable Analyzers -> Function Analyzer ->
    * ControlNode Tree -> AST Converter -> Code Generator
    */
   decompile(): string {
@@ -92,7 +92,7 @@ export class NWScriptDecompiler {
       
       // Use the main function's entry block, not the CFG entry block
       // The CFG entry block is the JSR caller, but we need the actual function entry block
-      const mainFunction = functions.find(f => f.isMain);
+      const mainFunction = functions.find((f) => f.isMain);
       const functionEntryBlock = mainFunction?.entryBlock || this.cfg.entryBlock;
       log.info(`[Decompiler] Building ControlNode tree from function entry block ${functionEntryBlock.id} (CFG entry block is ${this.cfg.entryBlock.id})`);
       

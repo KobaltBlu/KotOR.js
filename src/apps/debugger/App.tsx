@@ -9,7 +9,8 @@ export const App = () => {
   
 
   return (
-  <div>
-    <ScriptDebugger />
-  </div>);
-}
+    <div>
+      <ScriptDebugger />
+    </div>
+  );
+};

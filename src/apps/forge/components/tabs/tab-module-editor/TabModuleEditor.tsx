@@ -13,10 +13,12 @@ import {
   faMusic,
   faStore,
   faTriangleExclamation,
-  faLocationPin
-} from "@fortawesome/free-solid-svg-icons";
+  faLocationPin,
+} from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import React, { useEffect, useCallback, useRef, useState } from 'react';
 
-import * as KotOR from "../../../KotOR";
+import * as KotOR from '@/apps/forge/KotOR';
 
 // Extended interface for game object items with icons (for context menu)
 interface GameObjectMenuItem extends ContextMenuItem {
@@ -34,7 +36,7 @@ const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[]
     iconColor: '#ff6b6b',
     onClick: () => {
       tab.setGameObjectControlOptions(GameObjectType.CAMERA, '', KotOR.ResourceTypes.NA);
-    }
+    },
   },
   {
     id: 'add-creature',
@@ -43,7 +45,7 @@ const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[]
     iconColor: '#4ecdc4',
     onClick: () => {
       tab.openBlueprintBrowserForType('utc');
-    }
+    },
   },
   {
     id: 'add-door',
@@ -52,7 +54,7 @@ const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[]
     iconColor: '#ffe66d',
     onClick: () => {
       tab.openBlueprintBrowserForType('utd');
-    }
+    },
   },
   {
     id: 'add-encounter',
@@ -61,7 +63,7 @@ const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[]
     iconColor: '#ff6b9d',
     onClick: () => {
       tab.openBlueprintBrowserForType('ute');
-    }
+    },
   },
   {
     id: 'add-item',
@@ -70,7 +72,7 @@ const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[]
     iconColor: '#95e1d3',
     onClick: () => {
       tab.openBlueprintBrowserForType('uti');
-    }
+    },
   },
   {
     id: 'add-placeable',
@@ -79,7 +81,7 @@ const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[]
     iconColor: '#a8e6cf',
     onClick: () => {
       tab.openBlueprintBrowserForType('utp');
-    }
+    },
   },
   {
     id: 'add-store',
@@ -88,7 +90,7 @@ const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[]
     iconColor: '#ffd93d',
     onClick: () => {
       tab.openBlueprintBrowserForType('utm');
-    }
+    },
   },
   {
     id: 'add-sound',
@@ -97,7 +99,7 @@ const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[]
     iconColor: '#6c5ce7',
     onClick: () => {
       tab.openBlueprintBrowserForType('uts');
-    }
+    },
   },
   {
     id: 'add-trigger',
@@ -106,7 +108,7 @@ const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[]
     iconColor: '#feca57',
     onClick: () => {
       tab.openBlueprintBrowserForType('utt');
-    }
+    },
   },
   {
     id: 'add-waypoint',
@@ -115,19 +117,19 @@ const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[]
     iconColor: '#48dbfb',
     onClick: () => {
       tab.openBlueprintBrowserForType('utw');
-    }
-  }
+    },
+  },
 ];
 
 // Convert game object items to SubTool format for tool palette
 const getGameObjectSubTools = (tab: TabModuleEditorState): SubTool[] => {
   const items = getGameObjectTypeItems(tab);
-  return items.map(item => ({
+  return items.map((item) => ({
     id: item.id,
     label: item.label || '',
     icon: item.icon,
     iconColor: item.iconColor,
-    onClick: item.onClick || (() => {})
+    onClick: item.onClick || (() => {}),
   }));
 };
 
@@ -147,7 +149,7 @@ const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorCont
       active: controlMode === TabModuleEditorControlMode.SELECT,
       onClick: () => {
         tab.setControlMode(TabModuleEditorControlMode.SELECT);
-      }
+      },
     },
     {
       id: 'translate',
@@ -158,7 +160,7 @@ const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorCont
       active: controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL,
       onClick: () => {
         tab.setControlMode(TabModuleEditorControlMode.TRANSFORM_CONTROL);
-      }
+      },
     },
     {
       id: 'rotate',
@@ -169,7 +171,7 @@ const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorCont
       active: controlMode === TabModuleEditorControlMode.ROTATE_CONTROL,
       onClick: () => {
         tab.setControlMode(TabModuleEditorControlMode.ROTATE_CONTROL);
-      }
+      },
     },
     {
       id: 'add-game-object',
@@ -178,12 +180,12 @@ const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorCont
       iconColor: 'cyan',
       title: 'Add Game Object',
       active: controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT,
-      subTools: gameObjectSubTools
-    }
+      subTools: gameObjectSubTools,
+    },
   ];
 };
 
-export const TabModuleEditor = function(props: BaseTabProps){
+export const TabModuleEditor = function (props: BaseTabProps) {
   const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -202,7 +204,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
 
   const onModuleLoaded = () => {
     console.log('module loaded');
-  }
+  };
 
   useEffect(() => {
     tab.addEventListener('onModuleLoaded', onModuleLoaded);
@@ -225,7 +227,8 @@ export const TabModuleEditor = function(props: BaseTabProps){
 
     const handleMouseDown = (e: MouseEvent) => {
       // Track right mouse button down
-      if (e.button === 2) { // Right mouse button
+      if (e.button === 2) {
+        // Right mouse button
         rightMouseDownPos = { x: e.clientX, y: e.clientY };
         isRightDragging = false;
       }
@@ -260,11 +263,11 @@ export const TabModuleEditor = function(props: BaseTabProps){
         {
           id: 'add-game-object',
           label: 'Add Game Object',
-          submenu: gameObjectTypeItems
-        }
+          submenu: gameObjectTypeItems,
+        },
       ];
 
-      if(tab.selectedGameObject){
+      if (tab.selectedGameObject) {
         contextMenuItems.push({
           id: 'selected-game-object',
           label: 'Selected Object',
@@ -275,23 +278,23 @@ export const TabModuleEditor = function(props: BaseTabProps){
               onClick: () => {
                 tab.module?.area?.detachObject(tab.selectedGameObject!);
                 tab.selectGameObject(undefined);
-              }
+              },
             },
             {
               id: 'focus-game-object',
               label: 'Focus',
               onClick: () => {
                 tab.ui3DRenderer.lookAtObject(tab.selectedGameObject?.container!);
-              }
+              },
             },
             {
               id: 'duplicate-game-object',
               label: 'Duplicate',
               onClick: () => {
                 tab.cloneGameObject(tab.selectedGameObject!);
-              }
-            }
-          ]
+              },
+            },
+          ],
         });
       }
 
@@ -338,9 +341,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
     };
   }, [tab, showContextMenu]);
 
-  const eastPanel = (
-    <ModuleEditorSidebarComponent tab={tab} />
-  );
+  const eastPanel = <ModuleEditorSidebarComponent tab={tab} />;
 
   return (
     <LayoutContainerProvider>
@@ -351,11 +352,15 @@ export const TabModuleEditor = function(props: BaseTabProps){
             <UI3DToolPalette
               tools={createTools(tab, controlMode)}
               activeToolId={
-                controlMode === TabModuleEditorControlMode.SELECT ? 'select' :
-                controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL ? 'translate' :
-                controlMode === TabModuleEditorControlMode.ROTATE_CONTROL ? 'rotate' :
-                controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT ? 'add-game-object' :
-                undefined
+                controlMode === TabModuleEditorControlMode.SELECT
+                  ? 'select'
+                  : controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL
+                    ? 'translate'
+                    : controlMode === TabModuleEditorControlMode.ROTATE_CONTROL
+                      ? 'rotate'
+                      : controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT
+                        ? 'add-game-object'
+                        : undefined
               }
               onToolChange={(_toolId) => {
                 // Tool change is handled by onClick in the tool definition
@@ -366,6 +371,5 @@ export const TabModuleEditor = function(props: BaseTabProps){
         {ContextMenuComponent}
       </LayoutContainer>
     </LayoutContainerProvider>
-  )
-}
-
+  );
+};

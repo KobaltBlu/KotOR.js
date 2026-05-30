@@ -1,2 +1,1 @@
-export * from "./TLKSearchModal";
-
+export * from '@/apps/forge/components/TLKSearchModal/TLKSearchModal';

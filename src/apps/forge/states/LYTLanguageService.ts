@@ -1,19 +1,18 @@
-import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import { LYTObject } from "../../../resource/LYTObject";
+import * as monacoEditor from 'monaco-editor/esm/vs/editor/editor.api';
+import { LYTObject } from '@/resource/LYTObject';
 
 /**
  * LYTLanguageService class.
- * 
+ *
  * Provides language support for LYT (Layout) files in Monaco Editor.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LYTLanguageService.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class LYTLanguageService {
-
   static initLYTLanguage() {
     // Register a new language
     monacoEditor.languages.register({ id: 'lyt' });
@@ -26,7 +25,7 @@ export class LYTLanguageService {
         'trackcount',
         'obstaclecount',
         'doorhookcount',
-        'filedependancy'
+        'filedependancy',
       ],
 
       tokenizer: {
@@ -42,19 +41,19 @@ export class LYTLanguageService {
           [/^\s+trackcount\s+/, 'keyword'],
           [/^\s+obstaclecount\s+/, 'keyword'],
           [/^\s+doorhookcount\s+/, 'keyword'],
-          
+
           // Numbers
           [/0[xX][0-9a-fA-F]+/, 'number.hex'],
           [/[+-]?[0-9]+\.[0-9]+([eE][\-+]?[0-9]+)?/, 'number.float'],
           [/[+-]?[0-9]+/, 'number'],
-          
+
           // Identifiers (room names, door names, etc.)
           [/[a-zA-Z_][a-zA-Z0-9_]*/, 'identifier'],
-          
+
           // Whitespace
           [/[ \t\r\n]+/, ''],
         ],
-      }
+      },
     };
 
     monacoEditor.languages.setMonarchTokensProvider('lyt', tokenConfig);
@@ -62,12 +61,12 @@ export class LYTLanguageService {
     monacoEditor.languages.setLanguageConfiguration('lyt', {
       comments: {
         lineComment: '//',
-        blockComment: ['/*', '*/']
+        blockComment: ['/*', '*/'],
       },
       brackets: [
         ['{', '}'],
         ['[', ']'],
-        ['(', ')']
+        ['(', ')'],
       ],
       autoClosingPairs: [
         { open: '[', close: ']' },
@@ -93,8 +92,8 @@ export class LYTLanguageService {
         { token: 'number.hex', foreground: 'D7BA7D' },
       ],
       colors: {
-        'editor.foreground': '#FFFFFF'
-      }
+        'editor.foreground': '#FFFFFF',
+      },
     });
 
     // Register diagnostics provider for linting
@@ -110,10 +109,12 @@ export class LYTLanguageService {
           const formatted = decoder.decode(lyt.export());
 
           if (formatted !== text) {
-            return [{
-              range: model.getFullModelRange(),
-              text: formatted
-            }];
+            return [
+              {
+                range: model.getFullModelRange(),
+                text: formatted,
+              },
+            ];
           }
           return [];
         } catch (error) {
@@ -121,7 +122,7 @@ export class LYTLanguageService {
           log.warn('LYT formatting failed:', error);
           return [];
         }
-      }
+      },
     });
   }
 
@@ -140,78 +141,76 @@ export class LYTLanguageService {
 
       // Additional validation: check if roomcount matches actual rooms
       const lines = text.split('\n');
-      for(let i = 0; i < lines.length; i++){
+      for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        if(line.startsWith('   roomcount ')){
+        if (line.startsWith('   roomcount ')) {
           const expectedCount = parseInt(line.substring('   roomcount '.length).trim());
-          if(!isNaN(expectedCount) && lyt.rooms.length !== expectedCount){
+          if (!isNaN(expectedCount) && lyt.rooms.length !== expectedCount) {
             markers.push({
               severity: monacoEditor.MarkerSeverity.Warning,
               startLineNumber: i + 1,
               startColumn: 1,
               endLineNumber: i + 1,
               endColumn: line.length + 1,
-              message: `Room count mismatch: declared ${expectedCount}, found ${lyt.rooms.length}`
+              message: `Room count mismatch: declared ${expectedCount}, found ${lyt.rooms.length}`,
             });
           }
-        } else if(line.startsWith('   doorhookcount ')){
+        } else if (line.startsWith('   doorhookcount ')) {
           const expectedCount = parseInt(line.substring('   doorhookcount '.length).trim());
-          if(!isNaN(expectedCount) && lyt.doorhooks.length !== expectedCount){
+          if (!isNaN(expectedCount) && lyt.doorhooks.length !== expectedCount) {
             markers.push({
               severity: monacoEditor.MarkerSeverity.Warning,
               startLineNumber: i + 1,
               startColumn: 1,
               endLineNumber: i + 1,
               endColumn: line.length + 1,
-              message: `Doorhook count mismatch: declared ${expectedCount}, found ${lyt.doorhooks.length}`
+              message: `Doorhook count mismatch: declared ${expectedCount}, found ${lyt.doorhooks.length}`,
             });
           }
-        } else if(line.startsWith('   trackcount ')){
+        } else if (line.startsWith('   trackcount ')) {
           const expectedCount = parseInt(line.substring('   trackcount '.length).trim());
-          if(!isNaN(expectedCount) && lyt.tracks.length !== expectedCount){
+          if (!isNaN(expectedCount) && lyt.tracks.length !== expectedCount) {
             markers.push({
               severity: monacoEditor.MarkerSeverity.Warning,
               startLineNumber: i + 1,
               startColumn: 1,
               endLineNumber: i + 1,
               endColumn: line.length + 1,
-              message: `Track count mismatch: declared ${expectedCount}, found ${lyt.tracks.length}`
+              message: `Track count mismatch: declared ${expectedCount}, found ${lyt.tracks.length}`,
             });
           }
-        } else if(line.startsWith('   obstaclecount ')){
+        } else if (line.startsWith('   obstaclecount ')) {
           const expectedCount = parseInt(line.substring('   obstaclecount '.length).trim());
-          if(!isNaN(expectedCount) && lyt.obstacles.length !== expectedCount){
+          if (!isNaN(expectedCount) && lyt.obstacles.length !== expectedCount) {
             markers.push({
               severity: monacoEditor.MarkerSeverity.Warning,
               startLineNumber: i + 1,
               startColumn: 1,
               endLineNumber: i + 1,
               endColumn: line.length + 1,
-              message: `Obstacle count mismatch: declared ${expectedCount}, found ${lyt.obstacles.length}`
+              message: `Obstacle count mismatch: declared ${expectedCount}, found ${lyt.obstacles.length}`,
             });
           }
         }
       }
-      
     } catch (error: any) {
       // Parse error occurred
       const message = error?.message || 'Parse error';
-      
+
       // Try to extract line number from error message
       const lineMatch = message.match(/line (\d+)/i);
       const lineNumber = lineMatch ? parseInt(lineMatch[1]) : 1;
-      
+
       markers.push({
         severity: monacoEditor.MarkerSeverity.Error,
         startLineNumber: lineNumber,
         startColumn: 1,
         endLineNumber: lineNumber,
         endColumn: 1000, // End of line
-        message: message
+        message: message,
       });
     }
 
     return markers;
   }
-
 }

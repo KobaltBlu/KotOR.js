@@ -19,16 +19,15 @@ export const GameApp = () => {
   const [loadingScreenLogoURL] = appContext.loadingScreenLogoURL;
   return (
     <>
-      {showEULAModal && (
-        <ModalEULA />
-      )}
-      {showGrantModal && (
-        <ModalGrantAccess />
-      )}
-      {gameLoaded && showCheatConsole && (
-        <CheatConsole />
-      )}
-      <LoadingScreen active={showLoadingScreen} message={loadingScreenMessage} backgroundURL={loadingScreenBackgroundURL} logoURL={loadingScreenLogoURL} />
+      {showEULAModal && <ModalEULA />}
+      {showGrantModal && <ModalGrantAccess />}
+      {gameLoaded && showCheatConsole && <CheatConsole />}
+      <LoadingScreen
+        active={showLoadingScreen}
+        message={loadingScreenMessage}
+        backgroundURL={loadingScreenBackgroundURL}
+        logoURL={loadingScreenLogoURL}
+      />
     </>
-  )
-}
+  );
+};

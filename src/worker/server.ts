@@ -13,7 +13,6 @@ const log = createScopedLogger(LogScope.Manager);
  * This is the main class for the server worker.
  */
 class OdysseyServer {
-
   /**
    * Handle Message From Client
    * This is the message handler for the server worker.
@@ -30,27 +29,26 @@ class OdysseyServer {
     log.info('Odyssey Server: IPC Message Sent');
     postMessage(msg.toBuffer());
   }
-
 }
 
 /**
  * Message Handler
  * This is the message handler for the server worker.
  */
-onmessage = function (e: MessageEvent){
-  if(e.data?.constructor === Uint8Array ){
+onmessage = function (e: MessageEvent) {
+  if (e.data?.constructor === Uint8Array) {
     const msg = IPCMessage.fromBuffer(e.data);
     OdysseyServer.HandleMessageFromClient(msg);
     return;
   }
 
-  if(typeof e.data === 'string'){
+  if (typeof e.data === 'string') {
     console.log('Odyssey Server: Debug Message Received', e.data);
     return;
   }
 
   console.log('Odyssey Server: Unknown Message Received', e.data);
-}
+};
 
 /**
  * Debug Message

@@ -17,7 +17,7 @@ export class TabERFEditorState extends TabState {
 
   files: FileBrowserNode[] = [];
 
-  constructor(options: BaseTabStateOptions = {}){
+  constructor(options: BaseTabStateOptions = {}) {
     super(options);
     this.setContentView(<TabERFEditor tab={this}></TabERFEditor>);
     this.openFile();
@@ -25,20 +25,22 @@ export class TabERFEditorState extends TabState {
       {
         description: 'Encapsulated Resource File (ERF)',
         accept: {
-          'application/octet-stream': ['.erf']
-        }
-      }
+          'application/octet-stream': ['.erf'],
+        },
+      },
     ];
   }
 
-  public async openFile(file?: EditorFile){
-    if(!file && this.file instanceof EditorFile){
+  public async openFile(file?: EditorFile) {
+    if (!file && this.file instanceof EditorFile) {
       file = this.file;
     }
 
-    if(!(file instanceof EditorFile)){ return undefined; }
-    if(this.file != file){
-      this.file = file; 
+    if (!(file instanceof EditorFile)) {
+      return undefined;
+    }
+    if (this.file != file) {
+      this.file = file;
     }
 
     this.tabName = this.file.getFilename();
@@ -52,25 +54,25 @@ export class TabERFEditorState extends TabState {
     return this.erf;
   }
 
-  async buildFileBrowser(archive: KotOR.ERFObject, parent?: FileBrowserNode){
+  async buildFileBrowser(archive: KotOR.ERFObject, parent?: FileBrowserNode) {
     const isRoot = !parent;
-    if(!parent){
+    if (!parent) {
       parent = new FileBrowserNode({
         name: 'ERF',
         type: 'group',
         data: {
           archive: archive,
-        }
+        },
       });
       this.files.push(parent);
     }
 
     const moduleNode = new FileBrowserNode({
       name: 'Modules',
-      type: 'group'
+      type: 'group',
     });
 
-    for(const key of archive.keyList){
+    for (const key of archive.keyList) {
       const isERF = arfArchiveTypes.includes(key.resType);
       const node = new FileBrowserNode({
         name: `${key.resRef}.${KotOR.ResourceTypes.getKeyByValue(key.resType)}`,
@@ -78,18 +80,18 @@ export class TabERFEditorState extends TabState {
         data: {
           archive: archive,
           resource: key,
-        }
+        },
       });
-      if(isERF){
+      if (isERF) {
         const erf = new KotOR.ERFObject(await archive.getResourceBufferByResRef(key.resRef, key.resType));
         await erf.load();
         this.buildFileBrowser(erf, node);
         moduleNode.addChildNode(node);
-      }else{
+      } else {
         parent.addChildNode(node);
       }
     }
-    if(isRoot){
+    if (isRoot) {
       parent.addChildNode(moduleNode);
     }
     return parent;

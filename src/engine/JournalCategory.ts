@@ -7,9 +7,9 @@ import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * JournalCategory class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file JournalCategory.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -24,9 +24,9 @@ export class JournalCategory {
   tag: string = '';
 
   getEntryById(id: number = 0): JournalCategoryEntry {
-    return this.entries.find( (entry) => {
+    return this.entries.find((entry) => {
       return entry.id == id;
-    }) as any
+    }) as any;
   }
 
   toStruct(id: number = 0): GFFStruct {
@@ -42,24 +42,21 @@ export class JournalCategory {
 
   static FromStruct(struct: GFFStruct): JournalCategory {
     const category = new JournalCategory();
-    if(struct instanceof GFFStruct){
-      if(struct.hasField('Comment'))    category.comment     = struct.getFieldByLabel('Comment')?.getValue();
-      if(struct.hasField('Name'))       category.name        = struct.getFieldByLabel('Name')?.getCExoLocString();
-      if(struct.hasField('PlanetID'))   category.planet_id   = struct.getFieldByLabel('PlanetID')?.getValue();
-      if(struct.hasField('PlotIndex'))  category.plot_index  = struct.getFieldByLabel('PlotIndex')?.getValue();
-      if(struct.hasField('Priority'))   category.priority    = struct.getFieldByLabel('Priority')?.getValue();
-      if(struct.hasField('Tag'))        category.tag         = struct.getFieldByLabel('Tag')?.getValue();
+    if (struct instanceof GFFStruct) {
+      if (struct.hasField('Comment')) category.comment = struct.getFieldByLabel('Comment')?.getValue();
+      if (struct.hasField('Name')) category.name = struct.getFieldByLabel('Name')?.getCExoLocString();
+      if (struct.hasField('PlanetID')) category.planet_id = struct.getFieldByLabel('PlanetID')?.getValue();
+      if (struct.hasField('PlotIndex')) category.plot_index = struct.getFieldByLabel('PlotIndex')?.getValue();
+      if (struct.hasField('Priority')) category.priority = struct.getFieldByLabel('Priority')?.getValue();
+      if (struct.hasField('Tag')) category.tag = struct.getFieldByLabel('Tag')?.getValue();
 
-      if(struct.hasField('EntryList')){
+      if (struct.hasField('EntryList')) {
         const categories = struct.getFieldByLabel('EntryList').getChildStructs();
-        for(let i = 0; i < categories.length; i++){
-          category.entries.push(
-            JournalCategoryEntry.FromStruct(categories[i])
-          );
+        for (let i = 0; i < categories.length; i++) {
+          category.entries.push(JournalCategoryEntry.FromStruct(categories[i]));
         }
       }
     }
     return category;
   }
-
 }

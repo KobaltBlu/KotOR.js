@@ -12,6 +12,7 @@ import "@/apps/forge/styles/tabs/tab-uts-editor.scss";
 
 export const TabUTWEditor = function(props: BaseTabProps){
 
+export const TabUTWEditor = function (props: BaseTabProps) {
   const tab: TabUTWEditorState = props.tab as TabUTWEditorState;
   const [selectedTab, setSelectedTab] = useState<string>('basic');
   const [_appearance, setAppearance] = useState<number>(0);
@@ -62,7 +63,7 @@ export const TabUTWEditor = function(props: BaseTabProps){
     tab.waypoint.createForgeCheckboxFieldHandler(setter, property, tab.waypoint, tab);
 
   useEffect(() => {
-    if(!tab) return;
+    if (!tab) return;
     onWaypointChange();
     tab.addEventListener('onEditorFileLoad', onWaypointChange);
     tab.addEventListener('onEditorFileChange', onWaypointChange);

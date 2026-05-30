@@ -65,13 +65,13 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         // For Electron, use the stored path
         const projectPath = recentProject.path;
-        if(!projectPath){
+        if (!projectPath) {
           throw new Error('Project path not available');
         }
         ProjectFileSystem.rootDirectoryPath = projectPath;
         const project = new Project();
         const loaded = await project.load();
-        if(loaded){
+        if (loaded) {
           await project.open();
           await ProjectFileSystem.initializeProjectExplorer();
         } else {
@@ -79,12 +79,12 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
           ForgeState.removeRecentProject(recentProject);
           alert('Failed to open project. It may have been moved or deleted.');
         }
-      } else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
+      } else if (KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER) {
         // For browser, try to restore the handle from storage
         let handle = recentProject.handle;
 
         // If handle is not in memory, try to restore from IndexedDB
-        if(!handle && recentProject.name){
+        if (!handle && recentProject.name) {
           const handleKey = `project_handle_${recentProject.getIdentifier()}`;
           try {
             const { get } = await import('idb-keyval');
@@ -96,12 +96,12 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
 
         if(handle instanceof FileSystemDirectoryHandle){
           // Verify handle is still valid
-          try{
+          try {
             await handle.queryPermission({ mode: 'read' });
             ProjectFileSystem.rootDirectoryHandle = handle;
             const project = new Project();
             const loaded = await project.load();
-            if(loaded){
+            if (loaded) {
               await project.open();
               await ProjectFileSystem.initializeProjectExplorer();
               // Update the stored handle in case it changed
@@ -109,7 +109,7 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
             } else {
               throw new Error('Project failed to load');
             }
-          } catch(permError){
+          } catch (permError) {
             // Handle permission denied or invalid - request new access
             log.warn('Handle permission denied or invalid, requesting new access:', permError);
             Project.OpenByDirectory();
@@ -119,9 +119,9 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
           Project.OpenByDirectory();
         }
       }
-      
+
       ForgeState.loaderHide();
-    } catch(e){
+    } catch (e) {
       console.error('Error opening recent project:', e);
       ForgeState.loaderHide();
       // Remove invalid project from recent list
@@ -211,11 +211,7 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
           {files.length > 0 ? (
             <ul className="recent-items-list">
               {files.map((file) => (
-                <li
-                  key={file.path}
-                  className="recent-item"
-                  onClick={(e) => onClickRecentFile(e, file)}
-                >
+                <li key={file.path} className="recent-item" onClick={(e) => onClickRecentFile(e, file)}>
                   <i className="fa-solid fa-file item-icon" />
                   <div className="item-content">
                     <div className="item-name">{file.getFilename()}</div>
@@ -243,4 +239,3 @@ export const TabQuickStart = memo(function TabQuickStart(_props: BaseTabProps) {
     </div>
   );
 });
-

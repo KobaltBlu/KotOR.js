@@ -13,7 +13,6 @@ import { TXI } from "@/resource/TXI";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyTexture extends THREE.Texture {
-
   txi: TXI = new TXI('');
   header: any;
   pack: number = 0;
@@ -26,12 +25,23 @@ export class OdysseyTexture extends THREE.Texture {
     wrapT?: THREE.Wrapping,
     magFilter?: THREE.TextureFilter,
     minFilter?: THREE.TextureFilter,
-    format?: THREE.PixelFormat|THREE.CompressedPixelFormat,
+    format?: THREE.PixelFormat | THREE.CompressedPixelFormat,
     type?: THREE.TextureDataType,
     anisotropy?: number,
-    encoding?: THREE.TextureEncoding,
-  ){
-    super(image, mapping, wrapS, wrapT, magFilter, minFilter, format as THREE.PixelFormat, type, anisotropy, encoding);
+    colorSpace?: THREE.ColorSpace
+  ) {
+    super(
+      image,
+      mapping,
+      wrapS,
+      wrapT,
+      magFilter as THREE.MagnificationTextureFilter,
+      minFilter,
+      format as THREE.PixelFormat,
+      type,
+      anisotropy,
+      colorSpace
+    );
     this.txi = new TXI();
   }
 }

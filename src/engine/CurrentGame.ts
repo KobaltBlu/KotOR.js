@@ -12,9 +12,9 @@ import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
 
 /**
  * CurrentGame class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CurrentGame.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -36,10 +36,11 @@ export class CurrentGame {
             }
           }
           resolve(false);
-        }).catch( (e) => {
+        })
+        .catch((e) => {
           resolve(false);
         });
-    });  
+    });
   }
 
   static GetModuleRim( name = ''){
@@ -59,7 +60,6 @@ export class CurrentGame {
         // log.error('CurrentGame', 'GetModuleRim', name, e);
         reject(err);
       }
-      
     });
   }
 
@@ -126,15 +126,27 @@ export class CurrentGame {
     }
   }
 
-  static async ExtractERFToGameInProgress( erf: ERFObject ){
-    if(!(erf instanceof ERFObject)) return;
-    await Promise.all(erf.keyList.map(async (erf_key) => {
-      await erf.exportRawResource( CurrentGame.gameinprogress_dir, erf_key.resRef, erf_key.resType);
-    }));
+  static async InitGameInProgressFolder(create: boolean = false): Promise<boolean> {
+    try {
+      await CurrentGame.CleanGameInProgressFolder(create);
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
   }
 
-  static async WriteFile( filename: string, buffer: Uint8Array){
-    try{
+  static async ExtractERFToGameInProgress(erf: ERFObject) {
+    if (!(erf instanceof ERFObject)) return;
+    await Promise.all(
+      erf.keyList.map(async (erf_key) => {
+        await erf.exportRawResource(CurrentGame.gameinprogress_dir, erf_key.resRef, erf_key.resType);
+      })
+    );
+  }
+
+  static async WriteFile(filename: string, buffer: Uint8Array) {
+    try {
       await GameFileSystem.writeFile(path.join(CurrentGame.gameinprogress_dir, filename), buffer);
     }catch(e){
       log.error(e);
@@ -145,14 +157,14 @@ export class CurrentGame {
     const sav = new ERFObject();
     try{
       const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
-      for(let i = 0; i < files.length; i++){
+      for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const file_path = path.join( file );
+        const file_path = path.join(file);
         const file_info = path.parse(file);
         const ext = file_info.ext.split('.').pop();
-        if(typeof ResourceTypes[ext] != 'undefined'){
-          try{
-            const data = await GameFileSystem.readFile( file_path);
+        if (typeof ResourceTypes[ext] != 'undefined') {
+          try {
+            const data = await GameFileSystem.readFile(file_path);
             sav.addResource(file_info.name, ResourceTypes[ext], data);
           }catch(e){
             log.error(e);
@@ -164,5 +176,4 @@ export class CurrentGame {
       log.error(e);
     }
   }
-
 }

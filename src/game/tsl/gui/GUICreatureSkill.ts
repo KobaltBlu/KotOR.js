@@ -13,29 +13,28 @@ import type { TalentSkill } from "@/talents/TalentSkill";
 
 /**
  * GUICreatureSkill class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUICreatureSkill.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUICreatureSkill extends GUIProtoItem {
-
   declare node: TalentSkill;
 
-  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
+  constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false) {
     super(menu, control, parent, scale);
     this.extent.height = 43.5;
   }
 
-  buildFill(){}
-  buildBorder(){}
-  buildHighlight(){}
-  buildText(){}
+  buildFill() {}
+  buildBorder() {}
+  buildHighlight() {}
+  buildText() {}
 
-  createControl(){
-    try{
+  createControl() {
+    try {
       super.createControl();
       //Create the actual control elements below
 
@@ -77,23 +76,23 @@ export class GUICreatureSkill extends GUIProtoItem {
       this.children.push(buttonIcon);
 
       const _buttonIconWidget = buttonIcon.createControl();
-      _buttonIconWidget.position.x = -(protoWidth/2 - buttonIcon.extent.width/2);
+      _buttonIconWidget.position.x = -(protoWidth / 2 - buttonIcon.extent.width / 2);
       _buttonIconWidget.position.y = 0;
       _buttonIconWidget.position.z = this.zIndex + 1;
 
       this.widget.add(_buttonIconWidget);
 
-      this.widget.userData.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      this.widget.userData.iconMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
       this.widget.userData.iconMaterial.transparent = true;
       this.widget.userData.iconSprite = new THREE.Sprite( this.widget.userData.iconMaterial );
       //log.info(this.node.getIcon());
       TextureLoader.Load(this.node.getIcon()).then((texture: OdysseyTexture) => {
-        if(texture){
+        if (texture) {
           this.widget.userData.iconMaterial.map = texture;
           this.widget.userData.iconMaterial.needsUpdate = true;
         }
       });
-      
+
       this.widget.userData.spriteGroup = new THREE.Group();
       //this.widget.spriteGroup.position.x = -(protoWidth/2)-(52/2); //HACK
       //this.widget.spriteGroup.position.y -= 4;
@@ -101,46 +100,49 @@ export class GUICreatureSkill extends GUIProtoItem {
       this.widget.userData.iconSprite.scale.y = iconHeight * 0.5;
       this.widget.userData.iconSprite.position.z = 2;
 
-      this.widget.userData.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      this.widget.userData.hexMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
       this.widget.userData.hexMaterial.transparent = true;
-      this.widget.userData.hexSprite = new THREE.Sprite( this.widget.userData.hexMaterial );
-      this.widget.userData.hexSprite.scale.x = 
-      this.widget.userData.hexSprite.scale.y = iconWidth;
+      this.widget.userData.hexSprite = new THREE.Sprite(this.widget.userData.hexMaterial);
+      this.widget.userData.hexSprite.scale.x = this.widget.userData.hexSprite.scale.y = iconWidth;
       this.widget.userData.hexSprite.position.z = 1;
 
-      this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);  
+      this.widget.userData.spriteGroup.add(this.widget.userData.hexSprite);
       this.widget.userData.spriteGroup.add(this.widget.userData.iconSprite);
 
       this.widget.userData.hexMaterial.map = GUIListBox.hexTextures.get('uibit_eqp_itm1');
       this.widget.userData.hexMaterial.needsUpdate = true;
 
       this.onSelect = () => {
-        if(this.selected){
+        if (this.selected) {
           this.showHighlight();
           this.hideBorder();
           this.pulsing = true;
           this.text.color.copy(this.defaultColor);
           this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
-  
+
           buttonLabel.showHighlight();
           buttonLabel.hideBorder();
           this.widget.userData.hexMaterial.color.copy(this.defaultHighlightColor);
-          buttonLabel.setHighlightColor(this.defaultHighlightColor.r, this.defaultHighlightColor.g, this.defaultHighlightColor.b);
+          buttonLabel.setHighlightColor(
+            this.defaultHighlightColor.r,
+            this.defaultHighlightColor.g,
+            this.defaultHighlightColor.b
+          );
           buttonLabel.pulsing = true;
           buttonIcon.pulsing = true;
 
           buttonLabel.text.color.copy(this.defaultHighlightColor);
           buttonLabel.text.material.uniforms.diffuse.value = buttonLabel.text.color;
           buttonLabel.text.material.needsUpdate = true;
-        }else{
+        } else {
           this.hideHighlight();
           this.showBorder();
           this.pulsing = false;
           this.text.color.copy(this.defaultColor);
           this.text.material.uniforms.diffuse.value = this.text.color;
           this.text.material.needsUpdate = true;
-  
+
           buttonLabel.hideHighlight();
           buttonLabel.showBorder();
           this.widget.userData.hexMaterial.color.copy(this.defaultColor);
@@ -162,7 +164,5 @@ export class GUICreatureSkill extends GUIProtoItem {
       log.error(e);
     }
     return this.widget;
-
   }
-
 }

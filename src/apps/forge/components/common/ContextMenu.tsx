@@ -19,12 +19,12 @@ export interface ContextMenuProps {
   theme?: 'light' | 'dark' | 'auto';
 }
 
-export const ContextMenu: React.FC<ContextMenuProps> = ({ 
-  items, 
-  onClose, 
-  className = '', 
+export const ContextMenu: React.FC<ContextMenuProps> = ({
+  items,
+  onClose,
+  className = '',
   style = {},
-  theme = 'auto'
+  theme = 'auto',
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const [_hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -37,8 +37,8 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     if (theme === 'auto') {
       // Check if dark mode is preferred or if body has dark class
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const hasDarkClass = document.body.classList.contains('dark-theme') || 
-                          document.documentElement.classList.contains('dark-theme');
+      const hasDarkClass =
+        document.body.classList.contains('dark-theme') || document.documentElement.classList.contains('dark-theme');
       return hasDarkClass || prefersDark ? 'dark-theme' : 'light-theme';
     }
     return theme === 'dark' ? 'dark-theme' : 'light-theme';
@@ -61,7 +61,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
       const rect = menu.getBoundingClientRect();
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      
+
       // Parse position values, handling both numbers and strings
       const parsePosition = (value: string | number | undefined): number => {
         if (typeof value === 'number') return value;
@@ -71,7 +71,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
         }
         return 0;
       };
-      
+
       let adjustedX = parsePosition(style.left);
       let adjustedY = parsePosition(style.top);
 
@@ -141,27 +141,18 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
     ...style,
     ...(adjustedPosition && {
       left: adjustedPosition.x,
-      top: adjustedPosition.y
-    })
+      top: adjustedPosition.y,
+    }),
   };
 
   const themeClass = getThemeClass();
   const animationClass = isVisible ? 'context-menu-enter-active' : 'context-menu-enter';
 
   return (
-    <div 
-      ref={menuRef}
-      className={`context-menu ${themeClass} ${animationClass} ${className}`}
-      style={defaultStyle}
-    >
+    <div ref={menuRef} className={`context-menu ${themeClass} ${animationClass} ${className}`} style={defaultStyle}>
       {items.map((item, index) => {
         if (item.separator) {
-          return (
-            <div 
-              key={`separator-${index}`}
-              className="context-menu-separator"
-            />
-          );
+          return <div key={`separator-${index}`} className="context-menu-separator" />;
         }
 
         return (
@@ -187,28 +178,17 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
             tabIndex={item.disabled ? -1 : 0}
           >
             <span>{item.label || ''}</span>
-            {item.shortcut && (
-              <span className="shortcut">
-                {item.shortcut}
-              </span>
-            )}
-            {item.submenu && item.submenu.length > 0 && (
-              <span className="submenu-arrow">▶</span>
-            )}
+            {item.shortcut && <span className="shortcut">{item.shortcut}</span>}
+            {item.submenu && item.submenu.length > 0 && <span className="submenu-arrow">▶</span>}
             {hoveredSubmenu === item.id && item.submenu && item.submenu.length > 0 && (
-              <div 
+              <div
                 className="context-menu-submenu"
                 onMouseEnter={() => setHoveredSubmenu(item.id)}
                 onMouseLeave={() => setHoveredSubmenu(null)}
               >
                 {item.submenu.map((subItem, subIndex) => {
                   if (subItem.separator) {
-                    return (
-                      <div 
-                        key={`sub-separator-${subIndex}`}
-                        className="context-menu-separator"
-                      />
-                    );
+                    return <div key={`sub-separator-${subIndex}`} className="context-menu-separator" />;
                   }
                   return (
                     <div
@@ -220,11 +200,7 @@ export const ContextMenu: React.FC<ContextMenuProps> = ({
                       tabIndex={subItem.disabled ? -1 : 0}
                     >
                       <span>{subItem.label || ''}</span>
-                      {subItem.shortcut && (
-                        <span className="shortcut">
-                          {subItem.shortcut}
-                        </span>
-                      )}
+                      {subItem.shortcut && <span className="shortcut">{subItem.shortcut}</span>}
                     </div>
                   );
                 })}
@@ -248,42 +224,40 @@ export const useContextMenu = (theme: 'light' | 'dark' | 'auto' = 'auto') => {
     visible: false,
     x: 0,
     y: 0,
-    items: []
-  })
+    items: [],
+  });
 
   const showContextMenu = (x: number, y: number, items: ContextMenuItem[]) => {
     setContextMenu({
       visible: true,
       x,
       y,
-      items
+      items,
     });
   };
 
   const hideContextMenu = () => {
-    setContextMenu(prev => ({
+    setContextMenu((prev) => ({
       ...prev,
       visible: false,
     }));
   };
 
-  const ContextMenuComponent = (
-    contextMenu.visible ? (
-      <ContextMenu
-        items={contextMenu.items}
-        onClose={hideContextMenu}
-        theme={theme}
-        style={{
-          top: contextMenu.y,
-          left: contextMenu.x
-        }}
-      />
-    ) : null
-  );
+  const ContextMenuComponent = contextMenu.visible ? (
+    <ContextMenu
+      items={contextMenu.items}
+      onClose={hideContextMenu}
+      theme={theme}
+      style={{
+        top: contextMenu.y,
+        left: contextMenu.x,
+      }}
+    />
+  ) : null;
 
   return {
     showContextMenu,
     hideContextMenu,
-    ContextMenuComponent
+    ContextMenuComponent,
   };
 };

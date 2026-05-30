@@ -85,14 +85,7 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
   };
 
   return (
-    <Modal
-      show={show}
-      onHide={handleHide}
-      backdrop="static"
-      keyboard={false}
-      size="lg"
-      className="modal-item-browser"
-    >
+    <Modal show={show} onHide={handleHide} backdrop="static" keyboard={false} size="lg" className="modal-item-browser">
       <Modal.Header closeButton>
         <Modal.Title>{modal.title}</Modal.Title>
       </Modal.Header>
@@ -128,11 +121,7 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
                 >
                   <div className="item-browser-icon">
                     {item.iconResRef ? (
-                      <LazyTextureCanvas
-                        texture={item.iconResRef}
-                        width={64}
-                        height={64}
-                      />
+                      <LazyTextureCanvas texture={item.iconResRef} width={64} height={64} />
                     ) : (
                       <div className="item-browser-icon-placeholder">?</div>
                     )}
@@ -153,4 +142,3 @@ export const ModalItemBrowser = (props: BaseModalProps) => {
     </Modal>
   );
 };
-

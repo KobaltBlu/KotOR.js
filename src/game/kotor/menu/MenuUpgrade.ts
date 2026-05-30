@@ -4,15 +4,14 @@ import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 
 /**
  * MenuUpgrade class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuUpgrade.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuUpgrade extends GameMenu {
-
   LB_ITEMS: GUIListBox;
   LBL_DESCBG_LS: GUILabel;
   LB_DESC_LS: GUIListBox;
@@ -43,7 +42,7 @@ export class MenuUpgrade extends GameMenu {
   LB_DESC: GUIListBox;
   BTN_BACK: GUIButton;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'upgrade';
     this.background = '1600x1200back';
@@ -52,9 +51,9 @@ export class MenuUpgrade extends GameMenu {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
@@ -63,5 +62,4 @@ export class MenuUpgrade extends GameMenu {
       resolve();
     });
   }
-  
 }

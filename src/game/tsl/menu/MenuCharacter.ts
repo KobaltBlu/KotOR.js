@@ -19,7 +19,6 @@ const log = createScopedLogger(LogScope.Game);
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuCharacter extends K1_MenuCharacter {
-
   declare LBL_BAR6: GUILabel;
   declare LBL_STATSBORDER: GUILabel;
   declare LBL_MORE_BACK: GUILabel;
@@ -76,7 +75,7 @@ export class MenuCharacter extends K1_MenuCharacter {
   declare BTN_LEVELUP: GUIButton;
   declare LBL_FORCEMASTERY: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.gui_resref = 'character_p';
     this.background = 'blackfill';
@@ -85,7 +84,7 @@ export class MenuCharacter extends K1_MenuCharacter {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -95,7 +94,7 @@ export class MenuCharacter extends K1_MenuCharacter {
 
       this.BTN_AUTO.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.getCurrentPlayer().canLevelUp()){
+        if (GameState.getCurrentPlayer().canLevelUp()) {
           GameState.getCurrentPlayer().autoLevelUp();
           this.updateCharacterStats(GameState.getCurrentPlayer());
         }
@@ -128,57 +127,60 @@ export class MenuCharacter extends K1_MenuCharacter {
         this.updatePartyMemberPortraitButtons();
       });
 
-      MDLLoader.loader.load('charmain_light').then((mdl: OdysseyModel) => {
-        OdysseyModel3D.FromMDL(mdl, {
-          context: this._3dView,
-          // manageLighting: false,
-        }).then((model: OdysseyModel3D) => {
-          try{
-            this._3dView = new LBL_3DView();
-            this._3dView.visible = true;
-            this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
-            this._3dView.camera.updateProjectionMatrix();
-            (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
-            (this.LBL_3DCHAR.getFill().material as any).transparent = false;
-            this._3dView.setControl(this.LBL_3DCHAR);
-            (this.LBL_3DCHAR.getFill().material as any).visible = true;
+      MDLLoader.loader
+        .load('charmain_light')
+        .then((mdl: OdysseyModel) => {
+          OdysseyModel3D.FromMDL(mdl, {
+            context: this._3dView,
+            // manageLighting: false,
+          })
+            .then((model: OdysseyModel3D) => {
+              try {
+                this._3dView = new LBL_3DView();
+                this._3dView.visible = true;
+                this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
+                this._3dView.camera.updateProjectionMatrix();
+                (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
+                (this.LBL_3DCHAR.getFill().material as any).transparent = false;
+                this._3dView.setControl(this.LBL_3DCHAR);
+                (this.LBL_3DCHAR.getFill().material as any).visible = true;
 
-            this._3dViewModel = model;
-            this._3dView.addModel(this._3dViewModel);
+                this._3dViewModel = model;
+                this._3dView.addModel(this._3dViewModel);
 
-            this._3dView.camera.position.copy(model.camerahook.position);
-            this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
-          }catch(e){
-            console.error(e);
-            resolve();
-            return;
-          }
+                this._3dView.camera.position.copy(model.camerahook.position);
+                this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+              } catch (e) {
+                console.error(e);
+                resolve();
+                return;
+              }
 
-          TextureLoader.LoadQueue().then(() => {
-            this._3dViewModel.playAnimation(0, true);
-            resolve();
-          });
-        }).catch( (e: any) => {
+              TextureLoader.LoadQueue().then(() => {
+                this._3dViewModel.playAnimation(0, true);
+                resolve();
+              });
+            })
+            .catch((e: unknown) => {
+              console.error(e);
+              resolve();
+            });
+        })
+        .catch((e: unknown) => {
           console.error(e);
           resolve();
         });
-      }).catch( (e: any) => {
-        console.error(e);
-        resolve();
-      });
     });
   }
 
   update(delta: number) {
     super.update(delta);
-    if (!this.bVisible)
-      return;
-    if (this.char)
-      this.char.update(delta);
+    if (!this.bVisible) return;
+    if (this.char) this.char.update(delta);
     try {
       this._3dView.render(delta);
       (this.LBL_3DCHAR.getFill().material as any).needsUpdate = true;
-    } catch (e: any) { }
+    } catch (_e: unknown) {}
   }
 
   show() {
@@ -192,5 +194,4 @@ export class MenuCharacter extends K1_MenuCharacter {
       console.error(e);
     }
   }
-
 }

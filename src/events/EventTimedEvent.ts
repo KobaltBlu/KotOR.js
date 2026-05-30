@@ -11,9 +11,9 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * EventTimedEvent class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EventTimedEvent.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -21,7 +21,7 @@ import { BitWise } from "@/utility/BitWise";
 export class EventTimedEvent extends GameEvent {
   offset: number;
 
-  constructor(){
+  constructor() {
     super();
 
     //Event Type
@@ -34,35 +34,36 @@ export class EventTimedEvent extends GameEvent {
     this.offset = 0;
   }
 
-  setInstructionPtr(ptr = 0){
+  setInstructionPtr(ptr = 0) {
     this.offset = ptr;
   }
 
-  setNWScript(script: NWScriptInstance){
-    if(!script){ return; }
+  setNWScript(script: NWScriptInstance) {
+    if (!script) {
+      return;
+    }
     this.script = script;
   }
 
-  eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
-      let nwscript = new GameState.NWScript();
+  eventDataFromStruct(struct: GFFStruct) {
+    if (struct instanceof GFFStruct) {
+      const nwscript = new GameState.NWScript();
       nwscript.name = struct.getFieldByLabel('Name').getValue();
-      nwscript.init(
-        struct.getFieldByLabel('Code').getVoid(),
-        struct.getFieldByLabel('CodeSize').getValue()
-      );
+      nwscript.init(struct.getFieldByLabel('Code').getVoid(), struct.getFieldByLabel('CodeSize').getValue());
 
       this.script = nwscript.newInstance();
       this.script.isStoreState = true;
 
-      let stackStruct = struct.getFieldByLabel('Stack').getChildStructs()[0];
+      const stackStruct = struct.getFieldByLabel('Stack').getChildStructs()[0];
       this.script.stack = GameState.NWScript.NWScriptStack.FromActionStruct(stackStruct);
       this.offset = struct.getFieldByLabel('InstructionPtr').getValue();
     }
   }
 
-  execute(){
-    if(!this.script){ return; }
+  execute() {
+    if (!this.script) {
+      return;
+    }
     this.script.setCaller(this.getCaller());
     this.script.seekTo(this.offset);
     this.script.runScript();
@@ -81,6 +82,4 @@ export class EventTimedEvent extends GameEvent {
 
     return struct;
   }
-
 }
-

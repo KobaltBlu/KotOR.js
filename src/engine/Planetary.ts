@@ -27,8 +27,7 @@ export class Planetary {
 
   static models: Map<string, OdysseyModel> = new Map();
 
-  static async Init(){
-
+  static async Init() {
     Planetary.planets = [];
     Planetary.selectedIndex = -1;
     const planetary2DA = GameState.TwoDAManager.datatables.get('planetary');
@@ -37,10 +36,10 @@ export class Planetary {
     for(let i = 0; i < planetary2DA.RowCount; i++){
       const planet = new Planet(planetList[i]);
       Planetary.planets.push(planet);
-      if(planet.model != '****' && planet.model){
-        try{
+      if (planet.model != '****' && planet.model) {
+        try {
           const mdl = await MDLLoader.loader.load(planet.model);
-          if(mdl){
+          if (mdl) {
             Planetary.models.set(planet.model, mdl);
           }
         }catch(e){
@@ -48,26 +47,24 @@ export class Planetary {
         }
       }
     }
-
   }
 
-  static SetSelectedPlanet( index = 0 ){
+  static SetSelectedPlanet(index = 0) {
     Planetary.selectedIndex = index;
     Planetary.selected = Planetary.planets[index];
   }
 
-  static SetPlanetAvailable(index: number, bState: boolean){
+  static SetPlanetAvailable(index: number, bState: boolean) {
     Planetary.planets[index].enabled = bState;
   }
 
-  static SetPlanetSelectable(index: number, bState: boolean){
+  static SetPlanetSelectable(index: number, bState: boolean) {
     Planetary.planets[index].selectable = bState;
   }
 
-  static GetPlanetByGUITag(sTag = ''): Planet{
-
-    for(let i = 0; i < Planetary.planets.length; i++){
-      if(Planetary.planets[i].guitag?.toLowerCase() === sTag.toLowerCase()){
+  static GetPlanetByGUITag(sTag = ''): Planet {
+    for (let i = 0; i < Planetary.planets.length; i++) {
+      if (Planetary.planets[i].guitag?.toLowerCase() === sTag.toLowerCase()) {
         return Planetary.planets[i];
       }
     }
@@ -82,7 +79,7 @@ export class Planetary {
   static SaveStruct(){
     const struct = new GFFStruct();
 
-    struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapNumPnts') ).setValue(Planetary.planets.length);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'GlxyMapNumPnts')).setValue(Planetary.planets.length);
 
     let planetMask = 0
     for(let i = 0; i < Planetary.planets.length; i++){
@@ -92,12 +89,11 @@ export class Planetary {
       }
       planetMask = planetMask >>> 0;
     }
-    struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapPlntMsk') ).setValue(planetMask);
-    struct.addField( new GFFField(GFFDataType.INT, 'GlxyMapSelPnt') ).setValue(Planetary.selectedIndex);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'GlxyMapPlntMsk')).setValue(planetMask);
+    struct.addField(new GFFField(GFFDataType.INT, 'GlxyMapSelPnt')).setValue(Planetary.selectedIndex);
 
     return struct;
   }
-
 }
 
 export class Planet {
@@ -112,25 +108,25 @@ export class Planet {
   selectable: boolean;
   lockedOutReason: number = -1;
 
-  constructor(_2da: any = {}){
+  constructor(_2da: any = {}) {
     this.id = parseInt(TwoDAObject.cellParser(_2da.__rowlabel));
     this.label = TwoDAObject.cellParser(_2da.label);
-    this.name = parseInt( TwoDAObject.cellParser(_2da.name) );
-    this.description = parseInt( TwoDAObject.cellParser(_2da.description) );
+    this.name = parseInt(TwoDAObject.cellParser(_2da.name));
+    this.description = parseInt(TwoDAObject.cellParser(_2da.description));
     this.icon = TwoDAObject.cellParser(_2da.icon);
     this.model = TwoDAObject.cellParser(_2da.model);
     this.guitag = TwoDAObject.cellParser(_2da.guitag);
-    this.lockedOutReason = TwoDAObject.normalizeValue(_2da.lockedoutreason,'number', -1);
+    this.lockedOutReason = TwoDAObject.normalizeValue(_2da.lockedoutreason, 'number', -1);
 
     this.enabled = false;
     this.selectable = false;
   }
 
-  getId(){
+  getId() {
     return this.id;
   }
 
-  getLabel(){
+  getLabel() {
     return this.label;
   }
 
@@ -139,18 +135,15 @@ export class Planet {
   }
 
   getDescription(): string {
-    if(this.description)
-      return GameState.TLKManager.TLKStrings[this.description].Value;
-    else
-      return '';
+    if (this.description) return GameState.TLKManager.TLKStrings[this.description].Value;
+    else return '';
   }
 
-  getIcon(){
+  getIcon() {
     return this.icon;
   }
 
-  getModel(){
+  getModel() {
     return this.model;
   }
-
 }

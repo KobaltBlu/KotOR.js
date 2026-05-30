@@ -3,7 +3,12 @@ import React, { useCallback, useEffect, useState } from "react"
 import "@/apps/forge/components/forge-checkbox/forge-checkbox.scss"
 import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
 
-export const ForgeCheckbox = function(props: { label: string, info?: string, value: boolean, onChange: (value: boolean) => void }) {
+export const ForgeCheckbox = function (props: {
+  label: string;
+  info?: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+}) {
   const [value, setValue] = useState<boolean>(props.value);
   const [info, setInfo] = useState<string>(props.info || '');
 
@@ -19,14 +24,22 @@ export const ForgeCheckbox = function(props: { label: string, info?: string, val
 
   return (
     <div className="forge-checkbox">
-      {info && <InfoBubble content={info} position="right">
-        <input type="checkbox" className="ui" checked={value} />
-        <label className="checkbox-label" onClick={(e) => onChange(e)}>{props.label}</label>
-      </InfoBubble>}
-      {!info && <>
-        <input type="checkbox" className="ui" checked={value} />
-        <label className="checkbox-label" onClick={(e) => onChange(e)}>{props.label}</label>
-      </>}
+      {info && (
+        <InfoBubble content={info} position="right">
+          <input type="checkbox" className="ui" checked={value} />
+          <label className="checkbox-label" onClick={(e) => onChange(e)}>
+            {props.label}
+          </label>
+        </InfoBubble>
+      )}
+      {!info && (
+        <>
+          <input type="checkbox" className="ui" checked={value} />
+          <label className="checkbox-label" onClick={(e) => onChange(e)}>
+            {props.label}
+          </label>
+        </>
+      )}
     </div>
   );
-}
+};

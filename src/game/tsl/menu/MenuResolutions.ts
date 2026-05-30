@@ -8,21 +8,20 @@ import { MenuResolutions as K1_MenuResolutions } from "@/game/kotor/KOTOR";
 
 /**
  * MenuResolutions class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuResolutions.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuResolutions extends K1_MenuResolutions {
-
   declare BTN_OK: GUIButton;
   declare BTN_CANCEL: GUIButton;
   declare LB_RESOLUTIONS: GUIListBox;
   declare LBL_RESOLUTION: GUILabel;
 
-  constructor(){
+  constructor() {
     super();
     this.isOverlayGUI = true;
     this.gui_resref = 'optresolution_p';
@@ -32,7 +31,7 @@ export class MenuResolutions extends K1_MenuResolutions {
 
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
-    if(skipInit) return;
+    if (skipInit) return;
     return new Promise<void>((resolve, reject) => {
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -50,7 +49,7 @@ export class MenuResolutions extends K1_MenuResolutions {
       this.LB_RESOLUTIONS.onSelected = (res: IScreenResolution) => {
         log.info('LB_RESOLUTIONS', res);
         this.activeResolution = res;
-      }
+      };
       resolve();
     });
   }
@@ -61,13 +60,12 @@ export class MenuResolutions extends K1_MenuResolutions {
     this.activeResolution = this.supportedResolutions[0];
     this.LB_RESOLUTIONS.clearItems();
 
-    for(let i = 0; i < this.supportedResolutions.length; i++){
+    for (let i = 0; i < this.supportedResolutions.length; i++) {
       const res = this.supportedResolutions[i];
-      this.LB_RESOLUTIONS.addItem( res );
+      this.LB_RESOLUTIONS.addItem(res);
     }
 
     this.LB_RESOLUTIONS.setSelectedIndex(this.supportedResolutions.indexOf(this.activeResolution));
     this.tGuiPanel.widget.position.z = 10;
   }
-  
 }

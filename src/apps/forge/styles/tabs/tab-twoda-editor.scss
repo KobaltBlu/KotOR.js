@@ -1,79 +1,177 @@
 
-/* TWODA TAB */
+/* TWODA EDITOR - scoped to the tab pane class set by TabManager */
 
-table.twoda {
-  white-space: nowrap;
-}
+.TabTwoDAEditorState {
 
-table.twoda > thead > tr > th {
-  padding: 5px;
-  background-color: #265c8c;
-  border-right: 1px solid #192631;
-  position: sticky;
-  top: 0;
-}
+  /* -----------------------------------------------------------------------
+   * TABLE AREA  (directly below the 24px MenuBar)
+   * --------------------------------------------------------------------- */
 
-table.twoda > thead > tr > th:nth-child(1) {
-  left: 0;
-  z-index: 1;
-}
+  .twoda-table-area {
+    position: absolute;
+    top: 24px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    overflow: auto;
+  }
 
-table.twoda > tbody > tr:nth-child(odd) > td {
-  background: #212121;
-}
 
-table.twoda > tbody > tr > td {
-  padding: 5px;
-  border: 1px solid #192631;
-  transition: .25s ease-in-out all;
-}
+  /* -----------------------------------------------------------------------
+   * TABLE
+   * --------------------------------------------------------------------- */
 
-table.twoda > tbody > tr > td:nth-child(1) {
-  background: #212121;
-  position: sticky;
-  left: 0;
-}
+  table.twoda {
+    white-space: nowrap;
+    border-collapse: collapse;
+  }
 
-table.twoda > tbody > tr > td:nth-child(1):before {
-  content: '';
-  display: block;
-  height: 100%;
-  width: 1px;
-  position: absolute;
-  top: 0;
-  left: -1px;
-  background: #192631;
-}
+  table.twoda > thead > tr > th {
+    padding: 5px 8px;
+    background-color: #265c8c;
+    border-right: 1px solid #192631;
+    position: sticky;
+    top: 0;
+    font-size: 12px;
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+  }
 
-table.twoda > tbody > tr.focus > td:nth-child(1):before {
-  background: #337ab7;
-}
+  table.twoda > thead > tr > th:nth-child(1) {
+    left: 0;
+    z-index: 1;
+  }
 
-table.twoda > tbody > tr.focus > td {
-  background: #1f2e3c;
-  border: 1px solid #337ab7!important;
-}
+  .twoda-col-label {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 6px;
+  }
 
-table.twoda > tbody > tr.focus-before > td {
-  border-bottom: 1px solid #337ab7!important;
-}
+  .twoda-col-resize-handle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 5px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 2;
 
-table.twoda > tbody > tr.focus-after > td {
-  border-top: 1px solid #337ab7!important;
-}
+    &::after {
+      content: '';
+      display: block;
+      width: 2px;
+      height: 100%;
+      margin-left: 2px;
+      background: transparent;
+      transition: background 0.15s;
+    }
 
-table.twoda.fixed {
-  position: absolute;
-  top:0;
-  left:0;
-}
+    &:hover::after,
+    &:active::after {
+      background: rgba(255, 255, 255, 0.35);
+    }
+  }
 
-/* HEX Values */
-table.twoda > tbody > tr > td[data-value^="0x"] {
-  color: #00dada;
-}
+  table.twoda > tbody > tr:nth-child(odd) > td {
+    background: #212121;
+  }
 
-/* NULL Values */
-table.twoda > tbody > tr > td[data-value="****"] {
-  color: #a00000;
+  table.twoda > tbody > tr > td {
+    padding: 0;
+    border: 1px solid #192631;
+    transition: background .15s ease-in-out, border-color .15s ease-in-out;
+  }
+
+  table.twoda > tbody > tr > td:nth-child(1) {
+    background: #212121;
+    position: sticky;
+    left: 0;
+  }
+
+  table.twoda > tbody > tr > td:nth-child(1):before {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 1px;
+    position: absolute;
+    top: 0;
+    left: -1px;
+    background: #192631;
+  }
+
+  table.twoda > tbody > tr.focus > td:nth-child(1):before {
+    background: #337ab7;
+  }
+
+  table.twoda > tbody > tr.focus > td {
+    background: #1f2e3c;
+    border: 1px solid #337ab7 !important;
+  }
+
+  table.twoda > tbody > tr.focus-before > td {
+    border-bottom: 1px solid #337ab7 !important;
+  }
+
+  table.twoda > tbody > tr.focus-after > td {
+    border-top: 1px solid #337ab7 !important;
+  }
+
+  table.twoda.fixed {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+
+  /* -----------------------------------------------------------------------
+   * INPUTS INSIDE CELLS
+   * --------------------------------------------------------------------- */
+
+  table.twoda > tbody > tr > td > input {
+    display: block;
+    width: 100%;
+    min-width: 60px;
+    padding: 4px 6px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: inherit;
+    font-size: 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    cursor: default;
+    box-sizing: border-box;
+
+    &:focus {
+      cursor: text;
+      background: rgba(255, 255, 255, 0.04);
+    }
+  }
+
+  table.twoda > tbody > tr > td.cell-rowlabel > input {
+    color: #777;
+    cursor: default;
+
+    &:focus {
+      cursor: default;
+    }
+  }
+
+
+  /* -----------------------------------------------------------------------
+   * VALUE COLOUR CODING
+   * --------------------------------------------------------------------- */
+
+  /* HEX Values */
+  table.twoda > tbody > tr > td[data-value^="0x"] {
+    color: #00dada;
+  }
+
+  /* NULL Values */
+  table.twoda > tbody > tr > td[data-value="****"] {
+    color: #a00000;
+  }
+
 }

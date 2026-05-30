@@ -67,9 +67,30 @@ export class ActionDisarmMine extends Action {
           return ActionStatus.FAILED;
         }
 
-        //todo: disarm skill check
+        if(!trap.trapDisarmable){
+          return ActionStatus.FAILED;
+        }
 
-        trap.destroy();
+        const ownerCreature = this.owner as ModuleCreature;
+        let disarmSuccess = false;
+
+        if(trap.creatorId !== undefined && trap.creatorId !== ModuleObjectConstant.OBJECT_INVALID && trap.creatorId === ownerCreature.id){
+          disarmSuccess = true;
+        }else{
+          const disarmDC = Math.max(1, trap.trapDisarmDC || trap.trapDetectDC || 1);
+          if(disarmDC > 35){
+            return ActionStatus.FAILED;
+          }
+          const skillRank = ownerCreature.getSkillLevel(SkillType.DEMOLITIONS);
+          const d20Roll = Math.floor(Math.random() * 20) + 1;
+          disarmSuccess = (skillRank + d20Roll) >= disarmDC;
+        }
+
+        if(disarmSuccess){
+          trap.destroy();
+        }else{
+          return ActionStatus.FAILED;
+        }
       }
 
       return ActionStatus.COMPLETE;

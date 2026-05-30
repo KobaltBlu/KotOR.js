@@ -1,8 +1,8 @@
 /**
  * BinkTypes class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BinkTypes.ts
  * @see https://github.com/FFmpeg/FFmpeg/blob/release/3.4/libavcodec/bink.h
  * @autthor Lachjames <https://github.com/Lachjames> (Ported from FFmpeg)
@@ -78,16 +78,19 @@ export interface BinkFrame {
 }
 
 export class BinkFormatError extends Error {
-  constructor(message: string) { super(message); this.name = 'BinkFormatError'; }
+  constructor(message: string) {
+    super(message);
+    this.name = 'BinkFormatError';
+  }
 }
 
 export const BINK_FLAGS = {
   ALPHA: 0x0010_0000,
-  GRAY:  0x0002_0000,
+  GRAY: 0x0002_0000,
 } as const;
 
 export const BINK_AUD_FLAGS = {
   PREFER_16BITS: 0x4000,
-  STEREO:        0x2000,
-  USE_DCT:       0x1000,
+  STEREO: 0x2000,
+  USE_DCT: 0x1000,
 } as const;

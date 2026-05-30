@@ -6,8 +6,8 @@ import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 const DEFAULT_OFFSET_Z = 0.01;
 const TRIGGER_MATERIAL = new THREE.MeshBasicMaterial({
-  color: 0xFF0000,
-  side: THREE.DoubleSide
+  color: 0xff0000,
+  side: THREE.DoubleSide,
 });
 
 export class ForgeTrigger extends ForgeGameObject {
@@ -15,7 +15,7 @@ export class ForgeTrigger extends ForgeGameObject {
     new THREE.Vector3(-0.5, -0.5, DEFAULT_OFFSET_Z),
     new THREE.Vector3(0.5, -0.5, DEFAULT_OFFSET_Z),
     new THREE.Vector3(0.5, 0.5, DEFAULT_OFFSET_Z),
-    new THREE.Vector3(-0.5, 0.5, DEFAULT_OFFSET_Z)
+    new THREE.Vector3(-0.5, 0.5, DEFAULT_OFFSET_Z),
   ];
 
   //GIT Instance Properties
@@ -59,17 +59,17 @@ export class ForgeTrigger extends ForgeGameObject {
   vertexHelperSize: number = 0.125;
   selectedVertexIndex: number = -1;
 
-  constructor(buffer?: Uint8Array){
+  constructor(buffer?: Uint8Array) {
     super();
-    if(buffer){
+    if (buffer) {
       this.loadFromBuffer(buffer);
     }
     this.addEventListener('onPropertyChange', this.onPropertyChange.bind(this));
   }
 
-  onPropertyChange(property: string, newValue: any, oldValue: any){
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
+  onPropertyChange(property: string, newValue: any, oldValue: any) {
+    if (property === 'templateResRef') {
+      if (newValue !== oldValue) {
         this.loadBlueprint().then(() => {
           this.load();
         });
@@ -77,95 +77,99 @@ export class ForgeTrigger extends ForgeGameObject {
     }
   }
 
-  loadFromBuffer(buffer: Uint8Array){
+  loadFromBuffer(buffer: Uint8Array) {
     this.blueprint = new KotOR.GFFObject(buffer);
     this.loadFromBlueprint();
   }
 
-  loadFromBlueprint(){
-    if(!this.blueprint) return;
+  loadFromBlueprint() {
+    if (!this.blueprint) return;
     const root = this.blueprint.RootNode;
-    if(!root) return;
+    if (!root) return;
 
-    if(root.hasField('AutoRemoveKey')){
-      this.autoRemoveKey = root.getFieldByLabel('AutoRemoveKey').getValue() || false;
+    if (root.hasField('AutoRemoveKey')) {
+      this.autoRemoveKey = !!root.getFieldByLabel('AutoRemoveKey').getValue();
     }
-    if(root.hasField('Comment')){
+    if (root.hasField('Comment')) {
       this.comment = root.getFieldByLabel('Comment').getValue() || '';
     }
-    if(root.hasField('Cursor')){
+    if (root.hasField('Cursor')) {
       this.cursor = root.getFieldByLabel('Cursor').getValue() || 0;
     }
-    if(root.hasField('DisarmDC')){
+    if (root.hasField('DisarmDC')) {
       this.disarmDC = root.getFieldByLabel('DisarmDC').getValue() || 0;
     }
-    if(root.hasField('Faction')){
+    if (root.hasField('Faction')) {
       this.faction = root.getFieldByLabel('Faction').getValue() || 0;
     }
-    if(root.hasField('HighlightHeight')){
+    if (root.hasField('HighlightHeight')) {
       this.highlightHeight = root.getFieldByLabel('HighlightHeight').getValue() || 0;
     }
-    if(root.hasField('KeyName')){
+    if (root.hasField('KeyName')) {
       this.keyName = root.getFieldByLabel('KeyName').getValue() || '';
     }
-    if(root.hasField('LoadScreenID')){
+    if (root.hasField('LoadScreenID')) {
       this.loadScreenID = root.getFieldByLabel('LoadScreenID').getValue() || 0;
     }
-    if(root.hasField('LocalizedName')){
+    if (root.hasField('LocalizedName')) {
       this.localizedName = root.getFieldByLabel('LocalizedName').getCExoLocString() || new KotOR.CExoLocString();
     }
-    if(root.hasField('OnClick')){
+    if (root.hasField('OnClick')) {
       this.onClick = root.getFieldByLabel('OnClick').getValue() || '';
     }
-    if(root.hasField('OnDisarm')){
+    if (root.hasField('OnDisarm')) {
       this.onDisarm = root.getFieldByLabel('OnDisarm').getValue() || '';
     }
-    if(root.hasField('OnTrapTriggered')){
+    if (root.hasField('OnTrapTriggered')) {
       this.onTrapTriggered = root.getFieldByLabel('OnTrapTriggered').getValue() || '';
     }
-    if(root.hasField('PaletteID')){
+    if (root.hasField('PaletteID')) {
       this.paletteID = root.getFieldByLabel('PaletteID').getValue() || 0;
     }
-    if(root.hasField('PortraitId')){
+    if (root.hasField('PortraitId')) {
       this.portraitId = root.getFieldByLabel('PortraitId').getValue() || 0;
     }
-    if(root.hasField('ScriptOnHeartbeat')){
+    if (root.hasField('ScriptOnHeartbeat')) {
       this.onHeartbeat = root.getFieldByLabel('ScriptOnHeartbeat').getValue() || '';
+    } else if (root.hasField('ScriptHeartbeat')) {
+      this.onHeartbeat = root.getFieldByLabel('ScriptHeartbeat').getValue() || '';
     }
-    if(root.hasField('ScriptOnEnter')){
+    if (root.hasField('ScriptOnEnter')) {
       this.onEnter = root.getFieldByLabel('ScriptOnEnter').getValue() || '';
     }
-    if(root.hasField('ScriptOnExit')){
+    if (root.hasField('ScriptOnExit')) {
       this.onExit = root.getFieldByLabel('ScriptOnExit').getValue() || '';
     }
-    if(root.hasField('ScriptOnUserDefine')){
+    if (root.hasField('ScriptOnUserDefine')) {
       this.onUserDefined = root.getFieldByLabel('ScriptOnUserDefine').getValue() || '';
+    } else if (root.hasField('ScriptUserDefine')) {
+      this.onUserDefined = root.getFieldByLabel('ScriptUserDefine').getValue() || '';
     }
-    if(root.hasField('Tag')){
+    if (root.hasField('Tag')) {
       this.tag = root.getFieldByLabel('Tag').getValue() || '';
     }
-    if(root.hasField('TemplateResRef')){
+    if (root.hasField('TemplateResRef')) {
       this.templateResRef = root.getFieldByLabel('TemplateResRef').getValue() || '';
     }
-    if(root.hasField('TrapDetectDC')){
+    if (root.hasField('TrapDetectDC')) {
       this.trapDetectDC = root.getFieldByLabel('TrapDetectDC').getValue() || 0;
     }
-    if(root.hasField('TrapDetectable')){
-      this.trapDetectable = root.getFieldByLabel('TrapDetectable').getValue() || false;
+    if (root.hasField('TrapDetectable')) {
+      this.trapDetectable = !!root.getFieldByLabel('TrapDetectable').getValue();
     }
-    if(root.hasField('TrapDisarmable')){
-      this.trapDisarmable = root.getFieldByLabel('TrapDisarmable').getValue() || false;
+    if (root.hasField('TrapDisarmable')) {
+      this.trapDisarmable = !!root.getFieldByLabel('TrapDisarmable').getValue();
     }
-    if(root.hasField('TrapFlag')){
-      this.trapFlag = root.getFieldByLabel('TrapFlag').getValue() || false;
+    if (root.hasField('TrapFlag')) {
+      this.trapFlag = !!root.getFieldByLabel('TrapFlag').getValue();
     }
-    if(root.hasField('TrapOneShot')){
-      this.trapOneShot = root.getFieldByLabel('TrapOneShot').getValue() || false;
+    if (root.hasField('TrapOneShot')) {
+      this.trapOneShot = !!root.getFieldByLabel('TrapOneShot').getValue();
     }
-    if(root.hasField('TrapType')){
+    if (root.hasField('TrapType')) {
       this.trapType = root.getFieldByLabel('TrapType').getValue() || 0;
     }
-    if(root.hasField('Type')){
+    if (root.hasField('Type')) {
       this.t_type = root.getFieldByLabel('Type').getValue() || 0;
     }
   }
@@ -208,22 +212,25 @@ export class ForgeTrigger extends ForgeGameObject {
     return this.blueprint;
   }
 
-  buildGeometry(){
-    if(!this.bufferGeometry){
+  buildGeometry() {
+    if (!this.bufferGeometry) {
       this.bufferGeometry = new THREE.BufferGeometry();
     }
     const vertices = this.vertices.slice();
     const holes: THREE.Vector2[][] = [];
-    const triangles = THREE.ShapeUtils.triangulateShape ( vertices, holes );
+    const triangles = THREE.ShapeUtils.triangulateShape(vertices, holes);
     this.bufferGeometry.setIndex(triangles.flat());
-    this.bufferGeometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices.map( (v: THREE.Vector3) => v.toArray() ).flat(), 3 ) );
+    this.bufferGeometry.setAttribute(
+      'position',
+      new THREE.Float32BufferAttribute(vertices.map((v: THREE.Vector3) => v.toArray()).flat(), 3)
+    );
     this.bufferGeometry.computeVertexNormals();
     this.bufferGeometry.computeBoundingSphere();
   }
 
-  async load(){
+  async load() {
     this.buildGeometry();
-    if(!this.mesh){
+    if (!this.mesh) {
       this.mesh = new THREE.Mesh(this.bufferGeometry, TRIGGER_MATERIAL);
       this.container.add(this.mesh);
     }
@@ -231,16 +238,16 @@ export class ForgeTrigger extends ForgeGameObject {
 
     // Initialize vertex helpers group
     this.vertexHelpersGroup.visible = false;
-    if(!this.container.children.includes(this.vertexHelpersGroup)){
+    if (!this.container.children.includes(this.vertexHelpersGroup)) {
       this.container.add(this.vertexHelpersGroup);
     }
   }
 
-  buildVertexHelpers(){
+  buildVertexHelpers() {
     // Clear existing helpers
-    while(this.vertexHelpers.length > 0){
+    while (this.vertexHelpers.length > 0) {
       const helper = this.vertexHelpers.pop();
-      if(helper){
+      if (helper) {
         helper.removeFromParent();
         helper.geometry.dispose();
         (helper.material as THREE.Material).dispose();
@@ -248,7 +255,7 @@ export class ForgeTrigger extends ForgeGameObject {
     }
 
     // Create helpers for each vertex
-    for(let i = 0; i < this.vertices.length; i++){
+    for (let i = 0; i < this.vertices.length; i++) {
       const vertex = this.vertices[i];
       const helper = new THREE.Mesh(
         this.vertexHelperGeometry,
@@ -266,38 +273,38 @@ export class ForgeTrigger extends ForgeGameObject {
     }
   }
 
-  showVertexHelpers(show: boolean = true){
+  showVertexHelpers(show: boolean = true) {
     this.vertexHelpersGroup.visible = show;
-    if(show && this.vertexHelpers.length === 0){
+    if (show && this.vertexHelpers.length === 0) {
       this.buildVertexHelpers();
     }
   }
 
-  selectVertex(index: number = -1){
+  selectVertex(index: number = -1) {
     this.selectedVertexIndex = index;
     // Update vertex helper colors
-    for(let i = 0; i < this.vertexHelpers.length; i++){
+    for (let i = 0; i < this.vertexHelpers.length; i++) {
       const helper = this.vertexHelpers[i];
       const material = helper.material as THREE.MeshBasicMaterial;
-      if(i === index){
-        material.color.setHex(0xFFFFFF);
+      if (i === index) {
+        material.color.setHex(0xffffff);
       } else {
         material.color.setHex(0x000000);
       }
     }
   }
 
-  updateVertexFromHelper(vertexIndex: number, helper: THREE.Mesh){
-    if(vertexIndex >= 0 && vertexIndex < this.vertices.length){
+  updateVertexFromHelper(vertexIndex: number, helper: THREE.Mesh) {
+    if (vertexIndex >= 0 && vertexIndex < this.vertices.length) {
       const vertex = this.vertices[vertexIndex];
       const localPos = helper.position.clone();
 
       // Update vertex position if it changed
-      if(!vertex.equals(localPos)){
+      if (!vertex.equals(localPos)) {
         vertex.copy(localPos);
         // Rebuild geometry with new vertex positions
         this.buildGeometry();
-        if(this.mesh){
+        if (this.mesh) {
           this.mesh.geometry = this.bufferGeometry;
         }
       }
@@ -306,7 +313,7 @@ export class ForgeTrigger extends ForgeGameObject {
 
   update(_delta: number = 0){
     // Update vertex positions from helpers
-    if(this.vertexHelpers.length > 0 && this.vertices.length === this.vertexHelpers.length){
+    if (this.vertexHelpers.length > 0 && this.vertices.length === this.vertexHelpers.length) {
       let geometryNeedsUpdate = false;
 
       for(let i = 0; i < this.vertices.length; i++){
@@ -317,7 +324,7 @@ export class ForgeTrigger extends ForgeGameObject {
           const localPos = helper.position.clone();
 
           // Update vertex position if it changed
-          if(!vertex.equals(localPos)){
+          if (!vertex.equals(localPos)) {
             vertex.copy(localPos);
             geometryNeedsUpdate = true;
           }
@@ -325,9 +332,9 @@ export class ForgeTrigger extends ForgeGameObject {
       }
 
       // Rebuild geometry if any vertices changed
-      if(geometryNeedsUpdate){
+      if (geometryNeedsUpdate) {
         this.buildGeometry();
-        if(this.mesh){
+        if (this.mesh) {
           this.mesh.geometry = this.bufferGeometry;
         }
       }
@@ -337,7 +344,7 @@ export class ForgeTrigger extends ForgeGameObject {
   getGITInstance(): KotOR.GFFStruct {
     const instance = new KotOR.GFFStruct(1);
     const geometryField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Geometry'));
-    for(let i = 0, len = this.vertices.length; i < len; i++){
+    for (let i = 0, len = this.vertices.length; i < len; i++) {
       const geometryStruct = new KotOR.GFFStruct(3);
       geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointX', this.vertices[i].x));
       geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointY', this.vertices[i].y));
@@ -354,16 +361,16 @@ export class ForgeTrigger extends ForgeGameObject {
     return instance;
   }
 
-  setGITInstance(strt: KotOR.GFFStruct){
+  setGITInstance(strt: KotOR.GFFStruct) {
     this.vertices = [];
     const geometryField = strt.getFieldByLabel('Geometry');
-    if(geometryField){
-      for(let i = 0, len = geometryField.getChildStructs().length; i < len; i++){
+    if (geometryField) {
+      for (let i = 0, len = geometryField.getChildStructs().length; i < len; i++) {
         const geometryStruct = geometryField.getChildStructs()[i];
         this.vertices.push(
           new THREE.Vector3(
-            geometryStruct.getFieldByLabel('PointX').getValue() as number, 
-            geometryStruct.getFieldByLabel('PointY').getValue() as number, 
+            geometryStruct.getFieldByLabel('PointX').getValue() as number,
+            geometryStruct.getFieldByLabel('PointY').getValue() as number,
             geometryStruct.getFieldByLabel('PointZ').getValue() as number
           )
         );
@@ -377,5 +384,4 @@ export class ForgeTrigger extends ForgeGameObject {
     this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
     this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
   }
-
 }

@@ -17,27 +17,31 @@ import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class AlphaMidController extends OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.AlphaMid;
 
-  constructor( controller: IOdysseyControllerGeneric ){
+  constructor(controller: IOdysseyControllerGeneric) {
     super(controller);
   }
 
-  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    if(manager.modelNode.emitter){
+  setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric) {
+    if (manager.modelNode.emitter) {
       manager.modelNode.emitter.opacity[1] = data.value;
       manager.modelNode.emitter.material.uniforms.opacity.value.fromArray(manager.modelNode.emitter.opacity);
       manager.modelNode.emitter.material.uniformsNeedUpdate = true;
     }
   }
 
-  animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    if(manager.modelNode.emitter){
-      manager.modelNode.emitter.opacity[1] = ((next.value - last.value) * fl + last.value);
+  animate(
+    manager: OdysseyModelAnimationManager,
+    anim: OdysseyModelAnimation,
+    last: IOdysseyControllerFrameGeneric,
+    next: IOdysseyControllerFrameGeneric,
+    fl: number = 0
+  ) {
+    if (manager.modelNode.emitter) {
+      manager.modelNode.emitter.opacity[1] = (next.value - last.value) * fl + last.value;
       manager.modelNode.emitter.material.uniforms.opacity.value.fromArray(manager.modelNode.emitter.opacity);
       manager.modelNode.emitter.material.uniformsNeedUpdate = true;
     }
   }
-
 }

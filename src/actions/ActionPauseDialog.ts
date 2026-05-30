@@ -6,16 +6,15 @@ import { GameState } from "@/GameState";
 
 /**
  * ActionPauseDialog class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionPauseDialog.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionPauseDialog extends Action {
-
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionPauseDialog;
   }
@@ -24,5 +23,4 @@ export class ActionPauseDialog extends Action {
     GameState.CutsceneManager.paused = true;
     return ActionStatus.COMPLETE;
   }
-
 }

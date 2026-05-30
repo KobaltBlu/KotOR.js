@@ -19,8 +19,7 @@ import { BitWise } from "@/utility/BitWise";
  */
 
 export class ActionFlagMine extends Action {
-
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionFlagMine;
 
@@ -29,12 +28,11 @@ export class ActionFlagMine extends Action {
   }
 
   update(delta?: number): ActionStatus {
-
     this.target = this.getParameter<ModuleObject>(0);
 
-    if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)){
+    if (BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)) {
       const trap: ModuleTrigger = this.target as any;
-      if(trap.type != ModuleTriggerType.TRAP){
+      if (trap.type != ModuleTriggerType.TRAP) {
         return ActionStatus.FAILED;
       }
 

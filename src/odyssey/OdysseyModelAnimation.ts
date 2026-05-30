@@ -10,11 +10,11 @@ import { OdysseyModelUtility } from '@/odyssey/OdysseyModelUtility';
 
 /**
  * OdysseyModelAnimation class.
- * 
+ *
  * The OdysseyModelAnimation class holds the values used in animations.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyModelAnimation.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -32,15 +32,17 @@ export class OdysseyModelAnimation {
   unknown4: Uint8Array;
   length: number;
   transition: number;
+  /** Aurora `animroot` field (32 chars in MDL); legacy alias `modelName`. */
+  animRoot: string = '';
   modelName: string;
   events: IOdysseyAnimationEvent[] = [];
   nodes: OdysseyModelAnimationNode[] = [];
   rootNode: OdysseyModelAnimationNode;
   type: string;
-  
+
   odysseyModel: OdysseyModel;
 
-  constructor(){
+  constructor() {
     this.type = 'OdysseyModelAnimation';
     this.rootNode = new OdysseyModelAnimationNode();
 
@@ -48,14 +50,14 @@ export class OdysseyModelAnimation {
     this._quaternion = new THREE.Quaternion();
   }
 
-  readBinary(odysseyModel: OdysseyModel){
+  readBinary(odysseyModel: OdysseyModel) {
     this.odysseyModel = odysseyModel;
 
     //GeometryHeader
     this.functionPointer0 = this.odysseyModel.mdlReader.readUInt32(); //4Byte Function pointer
     this.functionPointer1 = this.odysseyModel.mdlReader.readUInt32(); //4Byte Function pointer
 
-    this.name = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.name = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g, '');
     this.rootNodeOffset = this.odysseyModel.mdlReader.readUInt32();
     this.nodeCount = this.odysseyModel.mdlReader.readUInt32();
 
@@ -68,7 +70,11 @@ export class OdysseyModelAnimation {
     //Animation
     this.length = this.odysseyModel.mdlReader.readSingle();
     this.transition = this.odysseyModel.mdlReader.readSingle();
-    this.modelName = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'').toLowerCase();
+    this.animRoot = this.odysseyModel.mdlReader
+      .readChars(32)
+      .replace(/\0[\s\S]*$/g, '')
+      .toLowerCase();
+    this.modelName = this.animRoot;
 
     const _eventsDef = OdysseyModelUtility.ReadArrayDefinition(this.odysseyModel.mdlReader);
     //anim.events = OdysseyModelUtility.ReadArrayFloats(this.mdlReader, this.fileHeader.ModelDataOffset + _eventsDef.offset, _eventsDef.count);
@@ -78,9 +84,9 @@ export class OdysseyModelAnimation {
     if (_eventsDef.count > 0) {
       this.odysseyModel.mdlReader.seek(this.odysseyModel.fileHeader.modelDataOffset + _eventsDef.offset);
       for (let i = 0; i < _eventsDef.count; i++) {
-        this.events[i] = { 
-          length: this.odysseyModel.mdlReader.readSingle(), 
-          name: this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'') 
+        this.events[i] = {
+          length: this.odysseyModel.mdlReader.readSingle(),
+          name: this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g, ''),
         };
       }
     }
@@ -88,10 +94,9 @@ export class OdysseyModelAnimation {
     //Animation Node
     this.nodes = [];
     this.rootNode = this.readAnimationNode(this.odysseyModel.fileHeader.modelDataOffset + this.rootNodeOffset);
-
   }
 
-  readAnimationNode(offset: number){
+  readAnimationNode(offset: number) {
     this.odysseyModel.mdlReader.seek(offset);
 
     const node = new OdysseyModelAnimationNode(this);
@@ -101,19 +106,18 @@ export class OdysseyModelAnimation {
     //Child Animation Nodes
     const len = node.childOffsets.length;
     for (let i = 0; i < len; i++) {
-      node.children.push(
-        this.readAnimationNode( this.odysseyModel.fileHeader.modelDataOffset + node.childOffsets[i] )
-      );
+      node.children.push(this.readAnimationNode(this.odysseyModel.fileHeader.modelDataOffset + node.childOffsets[i]));
     }
 
     return node;
   }
 
-  static From(original: any){
+  static From(original: any) {
     const anim = new OdysseyModelAnimation();
     anim.rootNode = original.rootNode;
     anim.nodes = original.nodes;
-    anim.modelName = original.ModelName;
+    anim.modelName = original.ModelName ?? original.modelName;
+    anim.animRoot = original.animRoot ?? anim.modelName ?? '';
     anim.events = original.events;
     anim.name = original.name?.toLowerCase().trim() || '';
     anim.length = original.length;
@@ -122,9 +126,9 @@ export class OdysseyModelAnimation {
     return anim;
   }
 
-  getDamageDelay(){
-    for(let i = 0, len = this.events.length; i < len; i++){
-      if(this.events[i].name == 'Hit'){
+  getDamageDelay() {
+    for (let i = 0, len = this.events.length; i < len; i++) {
+      if (this.events[i].name == 'Hit') {
         return this.events[i].length;
       }
     }
@@ -133,14 +137,13 @@ export class OdysseyModelAnimation {
 
   static GetAnimation2DA(name = ''): ITwoDAAnimation {
     const animations2DA = TwoDAManager.datatables.get('animations');
-    if(animations2DA){
-      for(let i = 0, len = animations2DA.RowCount; i < len; i++){
-        if(animations2DA.rows[i].name.toLowerCase() == name.toLowerCase()){
+    if (animations2DA) {
+      for (let i = 0, len = animations2DA.RowCount; i < len; i++) {
+        if (animations2DA.rows[i].name.toLowerCase() == name.toLowerCase()) {
           return animations2DA.rows[i];
         }
       }
     }
     return undefined;
   }
-
 }

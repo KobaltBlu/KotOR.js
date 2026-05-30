@@ -16,7 +16,6 @@ import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimati
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class OdysseyController {
-
   type: OdysseyModelControllerType = OdysseyModelControllerType.INVALID;
   uuid: string = crypto.randomUUID();
 
@@ -25,7 +24,7 @@ export class OdysseyController {
   frameCount: number;
   data: IOdysseyControllerFrameGeneric[] = [];
 
-  constructor( controller: IOdysseyControllerGeneric ){
+  constructor(controller: IOdysseyControllerGeneric) {
     Object.assign(this, controller);
 
     this.vec3 = new THREE.Vector3(0, 0, 0);
@@ -39,8 +38,13 @@ export class OdysseyController {
 
   }
 
-  update(){
+  animate(
+    manager: OdysseyModelAnimationManager,
+    anim: OdysseyModelAnimation,
+    last: IOdysseyControllerFrameGeneric,
+    next: IOdysseyControllerFrameGeneric,
+    fl: number = 0
+  ) {}
 
-  }
-
+  update() {}
 }

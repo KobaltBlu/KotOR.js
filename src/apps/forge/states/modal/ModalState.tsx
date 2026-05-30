@@ -7,7 +7,6 @@ import { createScopedLogger, LogScope } from "@/utility/Logger";
 const log = createScopedLogger(LogScope.Forge);
 
 export class ModalState extends EventListenerModel {
-
   static NEXT_ID: number = 0;
 
   id: number;
@@ -18,53 +17,51 @@ export class ModalState extends EventListenerModel {
   #manager: ModalManagerState;
   #modalView: JSX.Element = (<></>);
 
-  constructor(){
+  constructor() {
     super();
     this.id = ++ModalState.NEXT_ID;
-
   }
 
-  setView(view: JSX.Element){
+  setView(view: JSX.Element) {
     this.#modalView = view;
   }
 
-  getView(){
+  getView() {
     return this.#modalView;
   }
 
-  attachToModalManager(manager: ModalManagerState){
+  attachToModalManager(manager: ModalManagerState) {
     this.#manager = manager;
-    if(!this.#manager.hasModal(this)){
+    if (!this.#manager.hasModal(this)) {
       this.#manager.addModal(this);
     }
     this.processEventListener('onAttach', [this]);
   }
 
-  hide(){
+  hide() {
     this.visible = false;
     this.processEventListener('onHide', [this]);
   }
 
-  show(){
+  show() {
     this.visible = true;
     this.processEventListener('onShow', [this]);
   }
 
-  open(){
+  open() {
     this.show();
     this.processEventListener('onOpen', [this]);
   }
 
-  close(){
+  close() {
     this.hide();
     this.processEventListener('onClose', [this]);
-    this.#manager.removeModal(this);
+    this.#manager?.removeModal(this);
   }
 
-  destroy(){
+  destroy() {
     this.close();
-    this.#manager.removeModal(this);
+    this.#manager?.removeModal(this);
     this.processEventListener('onDestory', [this]);
   }
-
 }

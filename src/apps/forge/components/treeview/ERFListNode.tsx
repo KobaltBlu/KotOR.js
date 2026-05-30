@@ -23,17 +23,17 @@ export const ERFListNode = memo(function ResourceListNode(props: ERFListNodeProp
   const hasChildren = isFolder && node.nodes.length > 0;
 
   const handleToggle = useCallback(() => {
-    setOpenState(prev => !prev);
+    setOpenState((prev) => !prev);
   }, []);
 
   const handleClick = useCallback(() => {
-    if (typeof onSelect === 'function'){
+    if (typeof onSelect === 'function') {
       onSelect(node);
     }
   }, [node, onSelect]);
 
   const handleDoubleClick = useCallback(() => {
-    if(typeof onDoubleClick === 'function'){
+    if (typeof onDoubleClick === 'function') {
       onDoubleClick(node);
     }
   }, [node, onDoubleClick]);

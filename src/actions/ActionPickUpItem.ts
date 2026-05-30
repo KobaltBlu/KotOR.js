@@ -6,16 +6,15 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * ActionPickUpItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionPickUpItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionPickUpItem extends Action {
-
-  constructor( actionId: number = -1, groupId: number = -1 ){
+  constructor(actionId: number = -1, groupId: number = -1) {
     super(actionId, groupId);
     this.type = ActionType.ActionPickUpItem;
 
@@ -27,7 +26,7 @@ export class ActionPickUpItem extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+    if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
       return ActionStatus.FAILED;
     }
 
@@ -35,5 +34,4 @@ export class ActionPickUpItem extends Action {
 
     return ActionStatus.COMPLETE;
   }
-
 }
