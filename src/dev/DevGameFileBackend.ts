@@ -218,7 +218,9 @@ export async function devGameOpen(filePath: string, mode: 'r' | 'w' = 'r'): Prom
     ensureVirtualParentDirs(normalized);
     return new DevGameFileHandle(normalized, 'w');
   }
-  await loadFileBytes(normalized);
+  if (!(await devGameExists(normalized))) {
+    throw new Error(`DevGameFileBackend open failed: ${normalized}`);
+  }
   return new DevGameFileHandle(normalized, 'r');
 }
 

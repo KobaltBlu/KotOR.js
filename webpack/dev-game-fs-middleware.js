@@ -17,6 +17,8 @@ function createDevGameFsMiddleware(gameDir) {
   function resolveSafe(relativePath) {
     const normalized = String(relativePath || '')
       .replace(/\\/g, '/')
+      .replace(/\.\.\//g, '')
+      .replace(/\.\./g, '')
       .replace(/^\/+/, '');
     const full = path.resolve(root, normalized);
     if (full !== root && !full.startsWith(root + path.sep)) {

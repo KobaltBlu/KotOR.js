@@ -72,7 +72,7 @@ export class KEYObject {
       this.reader.seek(this.bifs[i].filenameOffset);
       this.bifs[i].filename = this.reader.readChars(this.bifs[i].filenameSize)
         .replace(/\0[\s\S]*$/g,'')
-        .replace(/\\/g, path.sep);
+        .replace(/\\/g, '/');
     }
 
     this.reader.seek(this.offsetToKeyTable);
