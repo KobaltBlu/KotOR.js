@@ -476,7 +476,7 @@ export class BinaryAnalyzer {
 
 export default {
   GameVersion,
-  BinaryLayout,
+  // BinaryLayout is a type-only export; omit from runtime default export.
   K1_BINARY_LAYOUT,
   TSL_BINARY_LAYOUT,
   TSL_GOG_ASPYR_BINARY_LAYOUT,
