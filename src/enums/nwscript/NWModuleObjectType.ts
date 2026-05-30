@@ -7,6 +7,8 @@
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  * @enum
+ *
+ * Bitmasks for script object-type queries; align with the native game-object header discriminator used on module instances.
  */
 export enum NWModuleObjectType {
   CREATURE = 1,

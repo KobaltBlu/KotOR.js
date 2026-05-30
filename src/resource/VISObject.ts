@@ -24,6 +24,8 @@ interface IReadContext {
   linkedRoomCount: number;
 }
 
+/** Room visibility graph text format (.vis); resource kind 3001 in the KotOR enumeration. */
+
 /**
  * VISObject class.
  *

@@ -19,6 +19,7 @@ type DecodedAudioPacket = {
  * BIKObject class.
  * Decodes and streams BIK video/audio. Does not own any Three.js state;
  * VideoManager owns planes and textures and pulls current frame via getCurrentFrame().
+ * Stock resource kind for .bik is 2063; this path decodes in a worker instead of the stock native codec path.
  *
  * @file BIKObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

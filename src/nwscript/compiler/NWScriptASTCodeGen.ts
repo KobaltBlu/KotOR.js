@@ -38,6 +38,7 @@ export interface CodeGenOptions {
   insertSpaces?: boolean;
 }
 
+/** Prints concrete NSS parse nodes back to source text (debug / round-trip). */
 export class NWScriptASTCodeGen {
   private tabSize: number;
   private insertSpaces: boolean;

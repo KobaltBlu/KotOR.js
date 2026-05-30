@@ -96,6 +96,7 @@ function span(line: number, col: number, line2: number, col2: number): SourceSpa
   };
 }
 
+/** Tokenizes NSS source for the in-repo NSS→NCS compiler. */
 export class NWScriptLexer {
   private src: string;
   private i = 0;

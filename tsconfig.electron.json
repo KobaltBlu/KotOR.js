@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "rootDir": "src/electron",
     "target": "ES6",
     "module": "CommonJS",
     "moduleResolution": "node",
