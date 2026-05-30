@@ -36,7 +36,7 @@ import {
   BinaryOpNode,
   ArgumentNode,
   DataTypeNode,
-} from "./ASTTypes";
+} from "@/nwscript/compiler/ASTTypes";
 
 export interface CodeGenOptions {
   tabSize?: number;

@@ -1,5 +1,5 @@
-import { GameEffect } from "./GameEffect";
-import { GameEffectType } from "../enums/effects/GameEffectType";
+import { GameEffect } from "@/effects/GameEffect";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
 
 /**
  * EffectAttackDecrease class.

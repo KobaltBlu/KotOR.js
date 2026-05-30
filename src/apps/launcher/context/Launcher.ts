@@ -1,9 +1,9 @@
 
 
-import * as swKotOR from "../profiles/kotor";
-import * as swKotOR2 from "../profiles/tsl";
-import * as swForge from "../profiles/forge";
-import { ConfigClient } from "../../../utility/ConfigClient";
+import * as swKotOR from "@/apps/launcher/profiles/kotor";
+import * as swKotOR2 from "@/apps/launcher/profiles/tsl";
+import * as swForge from "@/apps/launcher/profiles/forge";
+import { ConfigClient } from "@/utility/ConfigClient";
 
 export class Launcher {
 

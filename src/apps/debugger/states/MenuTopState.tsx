@@ -1,8 +1,8 @@
-import { IPCDataType, IPCMessageType, IPCMessageTypeDebug } from "../../../enums/server";
-import { IPCMessage, IPCMessageParam } from "../../../server";
-import { DebugApp } from "../DebugApp";
-import { EngineDebugType } from "../../../enums/engine/EngineDebugType";
-import { MenuTopItem } from "../MenuTopItem";
+import { IPCDataType, IPCMessageType, IPCMessageTypeDebug } from "@/enums/server";
+import { IPCMessage, IPCMessageParam } from "@/server";
+import { DebugApp } from "@/apps/debugger/DebugApp";
+import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import { MenuTopItem } from "@/apps/debugger/MenuTopItem";
 
 
 export class MenuTopState {

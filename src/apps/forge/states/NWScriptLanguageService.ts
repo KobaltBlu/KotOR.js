@@ -1,14 +1,14 @@
-import { EditorFile } from "../EditorFile";
-import { FileTypeManager } from "../FileTypeManager";
-import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
-import { NWScriptASTBuilder } from "../../../nwscript/compiler/NWScriptASTBuilder";
-import { NWScriptASTCodeGen } from "../../../nwscript/compiler/NWScriptASTCodeGen";
-import { ForgeState } from "./ForgeState";
-import * as KotOR from '../KotOR';
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { NWScriptASTBuilder } from "@/nwscript/compiler/NWScriptASTBuilder";
+import { NWScriptASTCodeGen } from "@/nwscript/compiler/NWScriptASTCodeGen";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import * as KotOR from "@/apps/forge/KotOR";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import type { TabState } from "./tabs/TabState";
-import { FunctionNode, StructNode, VariableListNode, VariableNode } from "../../../nwscript/compiler/ASTTypes";
-import type { TabTextEditorState } from "./tabs/TabTextEditorState";
+import type { TabState } from "@/apps/forge/states/tabs/TabState";
+import { FunctionNode, StructNode, VariableListNode, VariableNode } from "@/nwscript/compiler/ASTTypes";
+import type { TabTextEditorState } from "@/apps/forge/states/tabs/TabTextEditorState";
 
 // Format NWScript code using AST
 function formatNWScript(code: string, options: monacoEditor.languages.FormattingOptions = { tabSize: 2, insertSpaces: true }): string {

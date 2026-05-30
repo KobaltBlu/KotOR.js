@@ -1,14 +1,14 @@
-import { GameState } from "../../../GameState";
-import { GameMenu, LBL_MapView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { NWScript } from "../../../nwscript/NWScript";
-import { NWScriptInstance } from "../../../nwscript/NWScriptInstance";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { MapMode } from "../../../enums/engine/MapMode";
-import { Mouse } from "../../../controls";
-import type { ModuleWaypoint } from "../../../module";
-import { CExoLocString } from "../../../resource/CExoLocString";
+import { GameState } from "@/GameState";
+import { GameMenu, LBL_MapView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { NWScript } from "@/nwscript/NWScript";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { MapMode } from "@/enums/engine/MapMode";
+import { Mouse } from "@/controls";
+import type { ModuleWaypoint } from "@/module";
+import { CExoLocString } from "@/resource/CExoLocString";
 
 /**
  * MenuMap class.

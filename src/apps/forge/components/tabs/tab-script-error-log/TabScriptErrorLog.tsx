@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from "react"
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api"
-import { useEffectOnce } from "../../../helpers/UseEffectOnce"
-import { TabScriptErrorLogState, TabTextEditorState } from "../../../states/tabs";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce"
+import { TabScriptErrorLogState, TabTextEditorState } from "@/apps/forge/states/tabs";
+
+import "@/apps/forge/components/tabs/tab-script-error-log/TabScriptErrorLog.scss";
 
 export const TabScriptErrorLog = function(props: any){
   const tab: TabScriptErrorLogState = props.tab;

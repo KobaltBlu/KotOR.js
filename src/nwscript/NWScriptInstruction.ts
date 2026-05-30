@@ -1,6 +1,6 @@
-import { NWScriptInstructionInfo } from "./NWScriptInstructionInfo";
-import type { NWScriptInstance } from "./NWScriptInstance";
-import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
+import { NWScriptInstructionInfo } from "@/nwscript/NWScriptInstructionInfo";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { INWScriptDefAction } from "@/interface/nwscript/INWScriptDefAction";
 
 import {
   OP_CPDOWNSP, OP_RSADD, OP_CPTOPSP, OP_CONST, OP_ACTION, OP_LOGANDII, OP_LOGORII, OP_INCORII, OP_EXCORII,
@@ -8,7 +8,7 @@ import {
   OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII, OP_NEG, OP_COMPI, OP_MOVSP, OP_STORE_STATEALL, OP_JMP, OP_JSR,
   OP_JZ, OP_RETN, OP_DESTRUCT, OP_NOTI, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP,
   OP_SAVEBP, OP_RESTOREBP, OP_STORE_STATE, OP_NOP, OP_T
-} from './NWScriptOPCodes';
+} from "@/nwscript/NWScriptOPCodes";
 
 import {
   CALL_CPDOWNSP, CALL_RSADD, CALL_CPTOPSP, CALL_CONST, CALL_ACTION, CALL_LOGANDII, CALL_LOGORII, CALL_INCORII, CALL_EXCORII,
@@ -16,8 +16,8 @@ import {
   CALL_ADD, CALL_SUB, CALL_MUL, CALL_DIV, CALL_MOD, CALL_NEG, CALL_COMPI, CALL_MOVSP, CALL_STORE_STATEALL, CALL_JMP,   CALL_JSR,
   CALL_JZ, CALL_RETN, CALL_DESTRUCT, CALL_NOTI, CALL_DECISP, CALL_INCISP, CALL_JNZ, CALL_CPDOWNBP, CALL_CPTOPBP, CALL_DECIBP, CALL_INCIBP,
   CALL_SAVEBP, CALL_RESTOREBP, CALL_STORE_STATE, CALL_NOP
-} from './NWScriptInstructionSet';
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
+} from "@/nwscript/NWScriptInstructionSet";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 
 const OP_CALL_MAP: Map<number, ( this: NWScriptInstance, instruction: NWScriptInstruction ) => void> = new Map([
   [OP_CPDOWNSP, CALL_CPDOWNSP],

@@ -1,20 +1,20 @@
-import { GameState } from "../GameState";
-import { PazaakCards } from "../enums/minigames/PazaakCards";
-import { PazaakHandSlots } from "../enums/minigames/PazaakHandSlots";
-import { PazaakSideDeckSlots } from "../enums/minigames/PazaakSideDeckSlots";
-import { PazaakTableSlots } from "../enums/minigames/PazaakTableSlots";
-import { PazaakTurnMode } from "../enums/minigames/PazaakTurnMode";
-import { PazaakTurnState } from "../enums/minigames/PazaakTurnState";
-import { IPTPazaakCard } from "../interface/minigames/IPTPazaakCard";
-import { IPazaakTable } from "../interface/minigames/IPazaakTable";
-import { ModuleCreature } from "../module/ModuleCreature";
-import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { PazaakConfig as PazaakConfig_TSL } from "../game/tsl/minigames/mg-pazaak-config";
-import { PazaakConfig as PazaakConfig_KOTOR } from "../game/kotor/minigames/mg-pazaak-config";
-import { GameEngineType } from "../enums/engine/GameEngineType";
-import { IPazaakCard } from "../interface/minigames/IPazaakCard";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import type { PazaakDeck } from "../engine/minigames/PazaakDeck";
+import { GameState } from "@/GameState";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
+import { PazaakHandSlots } from "@/enums/minigames/PazaakHandSlots";
+import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
+import { PazaakTableSlots } from "@/enums/minigames/PazaakTableSlots";
+import { PazaakTurnMode } from "@/enums/minigames/PazaakTurnMode";
+import { PazaakTurnState } from "@/enums/minigames/PazaakTurnState";
+import { IPTPazaakCard } from "@/interface/minigames/IPTPazaakCard";
+import { IPazaakTable } from "@/interface/minigames/IPazaakTable";
+import { ModuleCreature } from "@/module/ModuleCreature";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { PazaakConfig as PazaakConfig_TSL } from "@/game/tsl/minigames/mg-pazaak-config";
+import { PazaakConfig as PazaakConfig_KOTOR } from "@/game/kotor/minigames/mg-pazaak-config";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { IPazaakCard } from "@/interface/minigames/IPazaakCard";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import type { PazaakDeck } from "@/engine/minigames/PazaakDeck";
 
 const MSG_CONFIRM_SIDE_DECK = 32322;
 const MSG_YOU_WIN = 32334;
@@ -144,7 +144,7 @@ export class PazaakManager {
       swapValueCards: new Map<PazaakHandSlots, boolean>()
     }
   ];
-  
+
   static TurnMode: PazaakTurnMode = PazaakTurnMode.PLAYER;
   static Actions: IPazaakAction[] = [];
   static TargetWins: number = 3;
@@ -358,13 +358,25 @@ export class PazaakManager {
     }
   }
 
+  /**
+   * Cancel the Pazaak game from the wager/setup screen.
+   */
+  static CancelPazaak(){
+    if(GameState.MenuManager?.MenuPazaakWager?.bVisible){
+      GameState.MenuManager.MenuPazaakWager.close();
+    }
+    if(GameState.MenuManager?.MenuPazaakSetup?.bVisible){
+      GameState.MenuManager.MenuPazaakSetup.close();
+    }
+  }
+
   static ProcessActionQueue(delta: number){
     if(this.Actions.length == 0){
       return;
     }
 
     const action = this.Actions[0];
-    let actionStatus: ActionStatus = ActionStatus.IN_PROGRESS;  
+    let actionStatus: ActionStatus = ActionStatus.IN_PROGRESS;
     /**
      * Wait for a specified amount of time
      */
@@ -423,7 +435,7 @@ export class PazaakManager {
     }
     /**
      * End the turn
-     * end early if the player busted 
+     * end early if the player busted
      * if it was the players turn, begin the opponent's turn
      * else end the round
      */
@@ -625,7 +637,7 @@ export class PazaakManager {
        */
       else{
         if(tableIndex == 1){
-          this.AddActionFront(tableIndex, PazaakActionType.AI_DETERMINE_MOVE, [tableIndex]);  
+          this.AddActionFront(tableIndex, PazaakActionType.AI_DETERMINE_MOVE, [tableIndex]);
         }
         this.AddActionFront(tableIndex, PazaakActionType.WAIT, [1, 0]);
         this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_drawmain']);
@@ -641,7 +653,7 @@ export class PazaakManager {
       const handIndex = this.GetActionPropertyAsNumber(0, 1);
       const flipped = this.GetActionPropertyAsNumber(0, 2) == 1;
       console.log(`PazaakManager: Play hand card ${tableIndex == 0 ? 'Player' : 'Opponent'} ${handIndex} ${flipped ? 'flipped' : 'not flipped'}`);
-      
+
       const table = this.Tables[tableIndex];
       const cardIndex = table.handCards.get(handIndex);
       if(cardIndex == PazaakCards.INVALID){
@@ -687,7 +699,7 @@ export class PazaakManager {
       const tableIndex = this.GetActionPropertyAsNumber(0, 0);
       const aiTable = this.Tables[tableIndex];
       const playerTable = this.Tables[PazaakTurnMode.PLAYER];
-      
+
       /**
        * Find the best card to play next
        */
@@ -719,7 +731,7 @@ export class PazaakManager {
           bestCardFlipped = true;
         }
       }
-      
+
       /**
        * If the AI has 20 points, they will stand to end their turn
        * there is no better move at this point
@@ -728,8 +740,8 @@ export class PazaakManager {
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 1]);
       }
       /**
-       * The AI will stand on 19 or 18 
-       * unless they have a better card to play that will put them equal to 20 
+       * The AI will stand on 19 or 18
+       * unless they have a better card to play that will put them equal to 20
        * to consolidate their potential win
        */
       if((aiTable.points == 19 || aiTable.points == 18)){
@@ -743,8 +755,8 @@ export class PazaakManager {
        * If the AI has more than 20 points, they will end their turn because they busted
        */
       else if(aiTable.points > 20){
-        //if the AI has more than 20 points, 
-        // they will play a hand card to try to get just under or equal to 20 
+        //if the AI has more than 20 points,
+        // they will play a hand card to try to get just under or equal to 20
         // but not less than 18
         if(bestCardIndex != -1 && scoreAfterBestCard >= 18){
           this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [tableIndex, bestCardIndex, bestCardFlipped ? 1 : 0]);
@@ -777,7 +789,7 @@ export class PazaakManager {
       /**
        * If the AI has between 18 and 20 points, they will auto stand to end their turn
        */
-      else 
+      else
       {
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
       }
@@ -850,7 +862,7 @@ export class PazaakManager {
     for(let i = 0; i < tableCount; i++){
       const table = this.Tables[i];
       const sideDeck = !i ? this.PlayerSideDeck : this.OpponentSideDeck;
-      
+
       //Copy the side decks to the player and opponent tables
       for(let j = 0; j < PazaakSideDeckSlots.MAX_SLOTS; j++){
         table.sideDeck.set(j, sideDeck.get(j));
@@ -880,7 +892,7 @@ export class PazaakManager {
         //Get a random side deck card
         const sideCardIndex = Math.floor(Math.random() * availableSideDeckCards.length);
         const randomSideDeckCard = availableSideDeckCards[sideCardIndex];
-        
+
         //Add the card to the player's hand
         table.handCards.set(j, randomSideDeckCard);
         //Set the card to not flipped

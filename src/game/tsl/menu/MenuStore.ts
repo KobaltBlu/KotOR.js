@@ -1,8 +1,8 @@
-import { GameState } from "../../../GameState";
-import type { GUILabel, GUIListBox, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { ModuleItem, ModuleStore } from "../../../module";
-import { MenuStore as K1_MenuStore } from "../../kotor/KOTOR";
+import { GameState } from "@/GameState";
+import type { GUILabel, GUIListBox, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { ModuleItem, ModuleStore } from "@/module";
+import { MenuStore as K1_MenuStore } from "@/game/kotor/KOTOR";
 
 /**
  * MenuStore class.
@@ -120,7 +120,7 @@ export class MenuStore extends K1_MenuStore {
   show() {
     super.show();
     if (this.storeObject instanceof ModuleStore) {
-      this.LB_DESCRIPTION.clearItems();
+      this.LB_DESCRIPTION.setItem(null);
       this.LB_DESCRIPTION.hide();
       this.LB_INVITEMS.hide();
       this.LB_SHOPITEMS.hide();
@@ -129,44 +129,37 @@ export class MenuStore extends K1_MenuStore {
         this.LBL_COST.setText(GameState.TLKManager.GetStringById(41945).Value);
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32130).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32130).Value);
-        this.LB_INVITEMS.clearItems();
-        let inv = GameState.InventoryManager.getSellableInventory();
-        for (let i = 0; i < inv.length; i++) {
-          this.LB_INVITEMS.addItem(inv[i], { 
-            onClick: (e, item: any) => {
+        const inv = GameState.InventoryManager.getSellableInventory();
+        this.LB_INVITEMS.setItems(inv, {
+          getItemOptions: (item: any) => ({
+            onClick: () => {
               this.LBL_COST_VALUE.setText(this.getItemSellPrice(item));
-              this.LB_DESCRIPTION.clearItems();
-              this.LB_DESCRIPTION.addItem(item.getDescription());
-              this.LB_DESCRIPTION.updateList();
+              this.LB_DESCRIPTION.setItem(item.getDescription());
               this.LB_DESCRIPTION.show();
-            } 
-          });
-        }
-        this.LB_INVITEMS.select(this.LB_INVITEMS.children[0]);
+            }
+          }),
+          selectIndex: 0,
+        } as any);
         this.LB_INVITEMS.show();
       } else {
         this.BTN_Examine.setText(GameState.TLKManager.GetStringById(41938).Value);
         this.LBL_COST.setText(GameState.TLKManager.GetStringById(41943).Value);
         this.LBL_BUYSELL.setText(GameState.TLKManager.GetStringById(32132).Value);
         this.BTN_Accept.setText(GameState.TLKManager.GetStringById(32132).Value);
-        this.LB_SHOPITEMS.clearItems();
-        let inv = this.storeObject.getInventory();
-        for (let i = 0; i < inv.length; i++) {
-          this.LB_SHOPITEMS.addItem(inv[i], { 
-            onClick: (e, item: any) => {
+        const inv = this.storeObject.getInventory();
+        this.LB_SHOPITEMS.setItems(inv, {
+          getItemOptions: (item: any) => ({
+            onClick: () => {
               this.LBL_COST_VALUE.setText(this.getItemBuyPrice(item));
-              this.LB_DESCRIPTION.clearItems();
-              this.LB_DESCRIPTION.addItem(item.getDescription());
-              this.LB_DESCRIPTION.updateList();
+              this.LB_DESCRIPTION.setItem(item.getDescription());
               this.LB_DESCRIPTION.show();
-            } 
-          });
-        }
-        this.LB_SHOPITEMS.select(this.LB_SHOPITEMS.children[0]);
+            }
+          }),
+          selectIndex: 0,
+        } as any);
         this.LB_SHOPITEMS.show();
       }
       this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold || 0);
-      TextureLoader.LoadQueue();
     } else {
       this.close();
     }

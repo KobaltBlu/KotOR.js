@@ -1,0 +1,173 @@
+@use "tokens" as *;
+
+.tab-image-viewer-menubar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 10px;
+  // background: linear-gradient(180deg, $bg-primary 0%, $bg-darker 100%);
+  border-top: 1px solid $border-accent;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.05) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.45);
+  z-index: 2;
+
+  &__group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $text-secondary;
+    font-weight: 600;
+    opacity: 0.9;
+  }
+
+  &__btn {
+    height: 24px;
+    min-width: 28px;
+    padding: 0 8px;
+    border: $border-width-thick solid $secondary-cyan;
+    border-radius: 4px;
+    background: $primary-blue-dark;
+    color: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    text-shadow: 0 1px 0 $secondary-cyan-darker;
+    transition: background $transition-fast ease, color $transition-fast ease, border-color $transition-fast ease;
+
+    &:hover {
+      background: $primary-blue-dark;
+      border-color: $primary-blue-lighter;
+      color: $text-white;
+    }
+
+    &:active {
+      background: $primary-blue-dark;
+      border-color: $secondary-cyan;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $primary-blue-lighter;
+      outline-offset: 1px;
+    }
+  }
+
+  &__readout,
+  &__meta {
+    font-size: 12px;
+    color: $text-secondary;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    background: rgba($bg-darkest, 0.55);
+    border: 1px solid $border-secondary;
+    border-radius: 4px;
+    padding: 2px 8px;
+  }
+}
+
+.tab-image-viewer-viewport {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: 0;
+  bottom: 38px;
+  overflow: scroll;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tab-image-viewer-viewport--3d {
+  overflow: hidden;
+  background:
+    radial-gradient(120% 100% at 20% 20%, rgba($primary-blue-dark, 0.18) 0%, rgba($bg-darkest, 0.92) 55%),
+    linear-gradient(180deg, rgba($bg-primary, 0.9), rgba($bg-darkest, 0.98));
+
+  canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+}
+
+.tab-image-viewer-canvas {
+  box-shadow: 0 0 25px 5px #00000047
+}
+
+.txi-pane {
+  display: flex;
+  flex-direction: column;
+
+  height: 100%;
+  min-height: 0;
+  border-left: 1px solid $border-secondary;
+  background: rgba($bg-darkest, 0.55);
+
+  &__toolbar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border-bottom: 1px solid $border-secondary;
+  }
+
+  &__btn {
+    height: 24px;
+    padding: 0 8px;
+    border: 1px solid rgba($border-primary, 0.9);
+    border-radius: 4px;
+    background: rgba($primary-blue-dark, 0.65);
+    color: $text-white;
+    font-size: 11px;
+    cursor: pointer;
+
+    &--secondary {
+      background: rgba($bg-tertiary, 0.65);
+      color: $text-secondary;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+  }
+
+  &__status {
+    margin-left: auto;
+    font-size: 11px;
+    color: $text-quaternary;
+  }
+
+  &__editor {
+    flex: 1 1 auto;
+    min-height: 160px;
+    border-bottom: 1px solid $border-secondary;
+    background: rgba($bg-primary, 0.72);
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  &__issues {
+    max-height: 130px;
+    overflow: auto;
+    padding: 8px 10px 10px;
+    font-size: 11px;
+    color: $warning;
+  }
+
+  &__issue {
+    margin-bottom: 4px;
+  }
+}

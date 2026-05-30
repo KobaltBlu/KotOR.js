@@ -1,10 +1,9 @@
 
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { ModuleItem } from "../../../module";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
-import { GameState } from "../../../GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
+import { ModuleItem } from "@/module";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { GameState } from "@/GameState";
 
 /**
  * MenuInventory class.
@@ -53,7 +52,8 @@ export class MenuInventory extends GameMenu {
       });
       this._button_b = this.BTN_EXIT;
 
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
+      this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.onSelected = (item: ModuleItem) => {
         this.selected = item;
         this.UpdateSelected();
@@ -85,18 +85,13 @@ export class MenuInventory extends GameMenu {
 
   UpdateSelected(){
     if(this.selected instanceof ModuleItem){
-      this.LB_DESCRIPTION?.clearItems();
-      this.LB_DESCRIPTION?.addItem(this.selected.getDescription());
+      this.LB_DESCRIPTION?.setItem(this.selected.getDescription());
     }
   }
 
   filterInventory(){
-    this.LB_ITEMS.clearItems();
-    let inv = GameState.InventoryManager.getNonQuestInventory();
-    for (let i = 0; i < inv.length; i++) {
-      this.LB_ITEMS.addItem(inv[i]);
-    }
-    TextureLoader.LoadQueue();
+    const inv = GameState.InventoryManager.getNonQuestInventory();
+    this.LB_ITEMS.setItems(inv);
   }
 
   updateCharacterStats(){
@@ -135,6 +130,7 @@ export class MenuInventory extends GameMenu {
   show() {
     super.show();
     this.manager.MenuTop.LBLH_INV.onHoverIn();
+    this.selectedControl = this.LB_ITEMS;
     this.filterInventory();
     this.updateCharacterStats();
     this.updatePartyMemberButtons();

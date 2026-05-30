@@ -1,5 +1,5 @@
-import { WalkmeshEdge } from "../../odyssey/WalkmeshEdge";
-import { OdysseyFace3 } from "../../three/odyssey";
+import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
+import { OdysseyFace3 } from "@/three/odyssey";
 
 export interface IAdjacentWalkableFaces {
 	a: OdysseyFace3|WalkmeshEdge;

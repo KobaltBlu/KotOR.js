@@ -1,9 +1,9 @@
 import * as THREE from "three";
-import { GameState } from "../GameState";
-import { ActionParameterType, ActionStatus, ActionType, ModuleObjectType } from "../enums";
-import type { ModuleCreature } from "../module/ModuleCreature";
-import { BitWise } from "../utility/BitWise";
-import { Action } from "./Action";
+import { GameState } from "@/GameState";
+import { ActionParameterType, ActionStatus, ActionType, ModuleObjectType } from "@/enums";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { BitWise } from "@/utility/BitWise";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionRandomWalk class.

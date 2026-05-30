@@ -1,5 +1,7 @@
-import * as KotOR from "../KotOR";
-import { ApplicationEnvironment } from "../../../enums/ApplicationEnvironment";
+import * as KotOR from "@/apps/game/KotOR";
+import { Launcher } from "@/apps/launcher/context/Launcher";
+import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
+import { GameInitializer } from "@/apps/game/GameInitializer";
 
 export class AppState {
   static eulaAccepted: boolean = false;
@@ -11,11 +13,18 @@ export class AppState {
 
   /**
    * getProfile
+   * Seeds Profiles.* from built-in launcher definitions when IndexedDB has never seen the launcher
+   * (direct navigation to game.html?key=kotor, etc.).
    */
   static async getProfile(){
     const query = new URLSearchParams(window.location.search);
     await KotOR.ConfigClient.Init();
-    return KotOR.ConfigClient.get(`Profiles.${query.get('key')}`);
+    await Launcher.InitProfiles();
+    const rawKey = query.get("key");
+    const validKeys = Object.keys(Launcher.AppProfiles || {});
+    const key =
+      rawKey && validKeys.includes(rawKey) ? rawKey : "kotor";
+    return KotOR.ConfigClient.get(`Profiles.${key}`);
   }
 
   /**
@@ -29,7 +38,8 @@ export class AppState {
     }
 
     AppState.appProfile = await AppState.getProfile();
-    KotOR.ApplicationProfile.InitEnvironment(AppState.appProfile);
+    KotOR.ApplicationProfile.SetProfile(AppState.appProfile);
+    KotOR.ApplicationProfile.InitEnvironment();
 
     document.title = `${AppState.appProfile?.full_name ? AppState.appProfile?.full_name : 'N/A' }`;
     
@@ -79,7 +89,7 @@ export class AppState {
    */
   static async loadGameDirectory(){
     AppState.loaderShow();
-    KotOR.GameInitializer.SetLoadingMessage('Locating Game Directory...');
+    GameInitializer.SetLoadingMessage('Locating Game Directory...');
   
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       if(await KotOR.GameFileSystem.exists('chitin.key')){
@@ -168,20 +178,19 @@ export class AppState {
     AppState.loaderShow();
     KotOR.GameState.GameKey = AppState.gameKey;
     KotOR.TextureLoader.GameKey = KotOR.GameState.GameKey;
-    KotOR.GameInitializer.AddEventListener('on-loader-message', (message: string) => {
+    GameInitializer.AddEventListener('on-loader-message', (message: string) => {
       AppState.loaderMessage(message);
     });
-    KotOR.GameInitializer.AddEventListener('on-loader-show', () => {
+    GameInitializer.AddEventListener('on-loader-show', () => {
       AppState.loaderShow();
     });
-    KotOR.GameInitializer.AddEventListener('on-loader-hide', () => {
+    GameInitializer.AddEventListener('on-loader-hide', () => {
       AppState.loaderHide();
     });
 
-    await KotOR.GameInitializer.Init(AppState.gameKey);
+    await GameInitializer.Init(AppState.gameKey);
 
     console.log('loaded')
-    KotOR.GameState.OpeningMoviesComplete = true;
     KotOR.GUIListBox.InitTextures();
     KotOR.OdysseyWalkMesh.Init();
     KotOR.GameState.setDOMElement(document.getElementById('renderer-container') as HTMLElement);

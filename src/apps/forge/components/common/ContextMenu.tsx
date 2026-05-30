@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import './ContextMenu.scss';
+import "@/apps/forge/components/common/ContextMenu.scss";
 import { createPortal } from 'react-dom';
 
 export interface ContextMenuItem {

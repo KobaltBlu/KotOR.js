@@ -1,4 +1,4 @@
-import { WalkmeshEdge } from "./WalkmeshEdge";
+import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 
 /**
  * WalkmeshPerimeter class.

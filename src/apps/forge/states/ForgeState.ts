@@ -1,23 +1,25 @@
-import { EditorFile } from "../EditorFile";
-import { Project } from "../Project";
-import { EditorTabManager } from "../managers/EditorTabManager";
-import { TabProjectExplorerState } from "./tabs/TabProjectExplorerState";
-import { TabQuickStartState } from "./tabs/TabQuickStartState";
-import { TabResourceExplorerState } from "./tabs/TabResourceExplorerState";
-import { ProjectFileSystem } from "../ProjectFileSystem";
-import { ForgeFileSystem, ForgeFileSystemResponse } from "../ForgeFileSystem";
-import { pathParse } from "../helpers/PathParse";
-import { FileTypeManager } from "../FileTypeManager";
-import { EditorFileProtocol } from "../enum/EditorFileProtocol";
-import { TabStoreState } from "../interfaces/TabStoreState";
-import { NWScriptParser } from "../../../nwscript/compiler/NWScriptParser";
-import { ModalManagerState } from "./modal/ModalManagerState";
-import { MenuTopState } from "./MenuTopState";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { Project } from "@/apps/forge/Project";
+import { EditorTabManager } from "@/apps/forge/managers/EditorTabManager";
+import { TabProjectExplorerState } from "@/apps/forge/states/tabs/TabProjectExplorerState";
+import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
+import { TabResourceExplorerState } from "@/apps/forge/states/tabs/TabResourceExplorerState";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
+import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
+import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
+import { MenuTopState } from "@/apps/forge/states/MenuTopState";
+import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 
-import * as KotOR from '../KotOR';
-import { NWScriptLanguageService } from "./NWScriptLanguageService";
-import { LYTLanguageService } from "./LYTLanguageService";
-import { RecentProject } from "../RecentProject";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
+import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageService";
+import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
+import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
+import { RecentProject } from "@/apps/forge/RecentProject";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -119,16 +121,24 @@ export class ForgeState {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         KotOR.ApplicationProfile.directory = KotOR.ApplicationProfile.profile.directory;
       }else{
-        KotOR.ApplicationProfile.directoryHandle = KotOR.ApplicationProfile.profile.directory_handle;
+        const profileHandle = KotOR.ApplicationProfile.profile?.directory_handle as FileSystemDirectoryHandle | undefined;
+        if(profileHandle instanceof FileSystemDirectoryHandle){
+          KotOR.ApplicationProfile.directoryHandle = profileHandle;
+        }else if(KotOR.ApplicationProfile.directoryHandle instanceof FileSystemDirectoryHandle){
+          // Keep the active granted handle and mirror it onto the profile object.
+          KotOR.ApplicationProfile.profile.directory_handle = KotOR.ApplicationProfile.directoryHandle;
+        }else{
+          KotOR.ApplicationProfile.directoryHandle = undefined as any;
+        }
       }
       console.log('loading game...')
       ForgeState.loaderInit(KotOR.ApplicationProfile.profile.background, KotOR.ApplicationProfile.profile.logo);
       ForgeState.loaderShow();
       KotOR.GameState.GameKey = KotOR.ApplicationProfile.GameKey;
-      KotOR.GameInitializer.AddEventListener('on-loader-message', (message: string) => {
+      ForgeInitializer.AddEventListener('on-loader-message', (message: string) => {
         ForgeState.loaderMessage(message);
       });
-      KotOR.GameInitializer.Init(KotOR.ApplicationProfile.GameKey).then( async () => {
+      ForgeInitializer.Init(KotOR.ApplicationProfile.GameKey).then( async () => {
         await this.initNWScriptParser();
         KotOR.OdysseyWalkMesh.Init();
         KotOR.AudioEngine.GetAudioEngine();
@@ -138,6 +148,9 @@ export class ForgeState {
         KotOR.AudioEngine.GAIN_MOVIE = 0.75;
         KotOR.AudioEngine.GAIN_GUI = 0.75;
         MenuTopState.buildAudioMenuItems();
+        AudioPlayerState.AddEventListener("onFloatingMiniPlayerPrefs", () => {
+          MenuTopState.buildAudioMenuItems();
+        });
         //ConfigClient.get('Game.debug.light_helpers') ? true : false
         // KotOR.LightManager.toggleLightHelpers();
         // KotOR.AudioEngine.GetAudioEngine() = new KotOR.AudioEngine();
@@ -183,6 +196,13 @@ export class ForgeState {
         ForgeState.tabManager.addEventListener('onTabRemoved', () => {
           ForgeState.saveOpenTabsState();
         });
+        ForgeState.tabManager.addEventListener('onTabsReordered', () => {
+          ForgeState.saveOpenTabsState();
+        });
+
+        // Tabs restored or default quick start are added before listeners exist; persist once so
+        // open_tabs (including Start Page) matches the real tab strip after load.
+        ForgeState.saveOpenTabsState();
 
         ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
         ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
@@ -190,6 +210,10 @@ export class ForgeState {
 
         TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
           ForgeState.loaderHide();
+          const perfMonitor = (KotOR.GameState as any)?.PerformanceMonitor;
+          if(perfMonitor && typeof perfMonitor.toString === 'function'){
+            console.log(perfMonitor.toString());
+          }
           // ScriptEditorTab.InitNWScriptLanguage();
           resolve();
         });
@@ -246,6 +270,7 @@ export class ForgeState {
           this.nwScriptParser = new NWScriptParser(textDecoder.decode(this.nwscript_nss));
           NWScriptLanguageService.initNWScriptLanguage();
           LYTLanguageService.initLYTLanguage();
+          TXILanguageService.initTXILanguage();
           resolve();
         }
       ).catch( (e) => {console.error(e)});
@@ -268,7 +293,7 @@ export class ForgeState {
   static getRecentFiles(): EditorFile[] {
     if(Array.isArray(KotOR.ConfigClient.options.recent_files)){
       KotOR.ConfigClient.options.recent_files = KotOR.ConfigClient.options.recent_files.map( (file: any) => {
-        return Object.assign(new EditorFile(), file);
+        return EditorFile.revive(file as Partial<EditorFile>);
       });
     }else{
       KotOR.ConfigClient.options.recent_files = [];
@@ -278,8 +303,7 @@ export class ForgeState {
 
   static addRecentFile(file: EditorFile){
     try{
-      //Update the opened files list
-      let file_path = file.getPath();
+      let file_path = file.toReferenceURI();
       if(file_path){
         this.removeRecentFile(file);
 
@@ -301,10 +325,10 @@ export class ForgeState {
 
   static removeRecentFile(file: EditorFile){
     if(!file) return;
-    let file_path = file.getPath();
+    let file_path = file.toReferenceURI();
     if(file_path){
-      const index = ForgeState.recentFiles.findIndex( (file: EditorFile) => {
-        return file.getPath() == file_path;
+      const index = ForgeState.recentFiles.findIndex( (f: EditorFile) => {
+        return f.toReferenceURI() == file_path;
       })
       if (index >= 0) {
         ForgeState.recentFiles.splice(index, 1);
@@ -470,8 +494,8 @@ export class ForgeState {
             }).then( (result: any) => {
               let file_path2 = result.filePaths[0];
               FileTypeManager.onOpenFile({
-                path: file_path, 
-                path2: file_path2, 
+                path: EditorFile.diskPathToFileURI(file_path) || file_path.replace(/\\/g, '/'),
+                path2: EditorFile.diskPathToFileURI(file_path2) || String(file_path2).replace(/\\/g, '/'),
                 filename: parsed.base, 
                 resref: parsed.name, 
                 ext: parsed.ext
@@ -479,7 +503,7 @@ export class ForgeState {
             });
           }else{
             FileTypeManager.onOpenFile({
-              path: file_path, 
+              path: EditorFile.diskPathToFileURI(file_path) || file_path.replace(/\\/g, '/'),
               filename: parsed.base, 
               resref: parsed.name, 
               ext: parsed.ext
@@ -504,8 +528,8 @@ export class ForgeState {
             document.title = originalTitle;
 
             FileTypeManager.onOpenFile({
-              path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
-              path2: `${EditorFileProtocol.FILE}//system.dir/${mdxHandle.name}`, 
+              path: EditorFile.referenceURIForSystemVirtualName(handle.name),
+              path2: EditorFile.referenceURIForSystemVirtualName(mdxHandle.name),
               handle: handle, 
               handle2: mdxHandle, 
               filename: handle.name, 
@@ -516,7 +540,7 @@ export class ForgeState {
 
           }else{
             FileTypeManager.onOpenFile({
-              path: `${EditorFileProtocol.FILE}//system.dir/${handle.name}`, 
+              path: EditorFile.referenceURIForSystemVirtualName(handle.name),
               handle: handle, 
               filename: handle.name, 
               resref: parsed.name, 
@@ -529,13 +553,17 @@ export class ForgeState {
   }
 
   static saveOpenTabsState(){
-    return;
     try{
       const states: TabStoreState[] = ForgeState.tabManager.tabs.map( (state) => {
+        const f = state.file as EditorFile;
+        const ref = f?.toReferenceURI?.();
+        const filePlain = ref && f
+          ? Object.assign({}, f as object, { path: ref } as Partial<EditorFile>)
+          : f;
         return {
           type: state.type,
-          file: state.file
-        }
+          file: filePlain as EditorFile,
+        };
       });
       KotOR.ConfigClient.set('open_tabs', states);
     }catch(e){

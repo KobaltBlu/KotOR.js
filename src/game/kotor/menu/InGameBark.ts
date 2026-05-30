@@ -1,14 +1,14 @@
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu } from "../../../gui";
-import type { GUILabel } from "../../../gui";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameMenu } from "@/gui";
+import type { GUILabel } from "@/gui";
 import * as THREE from "three";
-import { ResourceLoader } from "../../../loaders";
-import { ResourceTypes } from "../../../resource/ResourceTypes";
-import { LIPObject } from "../../../resource/LIPObject";
-import { GameState } from "../../../GameState";
-import { DLGNodeType, ModuleObjectType } from "../../../enums";
-import { BitWise } from "../../../utility/BitWise";
-import { DLGNode } from "../../../resource/DLGNode";
+import { ResourceLoader } from "@/loaders";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { LIPObject } from "@/resource/LIPObject";
+import { GameState } from "@/GameState";
+import { DLGNodeType, ModuleObjectType } from "@/enums";
+import { BitWise } from "@/utility/BitWise";
+import { DLGNode } from "@/resource/DLGNode";
 
 /**
  * InGameBark class.

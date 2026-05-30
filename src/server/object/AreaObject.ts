@@ -1,4 +1,4 @@
-import { GameObject } from "./GameObject";
+import { GameObject } from "@/server/object/GameObject";
 
 export class AreaObject extends GameObject {
   

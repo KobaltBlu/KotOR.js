@@ -1,9 +1,11 @@
 import * as path from 'path';
-import { BinaryReader } from '../utility/binary/BinaryReader';
-import { GameFileSystem } from '../utility/GameFileSystem';
-import { ResourceTypes } from './ResourceTypes';
-import { IRIMResource } from '../interface/resource/IRIMResource';
-import { IRIMHeader } from '../interface/resource/IRIMHeader';
+import { BinaryReader } from "@/utility/binary/BinaryReader";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { Endians } from "@/enums/resource/Endians";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import { ResourceTypes } from "@/resource/ResourceTypes";
+import { IRIMResource } from "@/interface/resource/IRIMResource";
+import { IRIMHeader } from "@/interface/resource/IRIMHeader";
 
 const RIM_HEADER_LENGTH = 160;
 
@@ -160,7 +162,7 @@ export class RIMObject {
     await GameFileSystem.close(fd);
   }
 
-  getResource(resRef: string, resType: number): IRIMResource {
+  getResourceInfo(resRef: string, resType: number): IRIMResource|undefined {
     let typeMap = this.resourceMap.get(resType);
     if(!typeMap){
       return undefined;
@@ -182,18 +184,23 @@ export class RIMObject {
         const fd = await this.getFileDescription();
         const buffer = new Uint8Array(resource.size);
         await GameFileSystem.read(fd, buffer, 0, buffer.length, resource.offset);
-        await GameFileSystem.close(fd);
+        // await GameFileSystem.close(fd);
         return buffer;
       }
     }
     catch (e) {
+      console.log(`getResourceBuffer: ${this.resource_path} ${resource.resRef} ${ResourceTypes.getKeyByValue(resource.resType)} ${resource.offset} ${resource.size}`);
       console.error(e);
     }
     return new Uint8Array(0);
   }
 
+  hasResource(resRef: string, resType: number): boolean {
+    return this.getResourceInfo(resRef, resType) !== undefined;
+  }
+
   async getResourceBufferByResRef(resRef: string = '', resType: number = 0x000F): Promise<Uint8Array> {
-    const resource = this.getResource(resRef, resType);
+    const resource = this.getResourceInfo(resRef, resType);
     if(!resource){
       return;
     }
@@ -207,7 +214,15 @@ export class RIMObject {
       return this.#fd;
     }
     this.#fd = await GameFileSystem.open(this.resource_path, 'r');
+    console.log(`getFileDescription: ${this.resource_path} ${this.#fd}`);
     return this.#fd;
+  }
+
+  async dispose(){
+    if(this.#fd){
+      await GameFileSystem.close(this.#fd);
+      this.#fd = undefined;
+    }
   }
 
   async exportRawResource(directory: string, resref: string, restype = 0x000F): Promise<Uint8Array> {
@@ -215,7 +230,7 @@ export class RIMObject {
       return new Uint8Array(0);
     }
 
-    const resource = this.getResource(resref, restype);
+    const resource = this.getResourceInfo(resref, restype);
     if(!resource){
       return new Uint8Array(0);
     }
@@ -234,6 +249,55 @@ export class RIMObject {
       );
       return buffer;
     }
+  }
+
+  /**
+   * Build a new RIM archive in memory
+   */
+  static buildFromResourceEntries(entries: { resRef: string; resType: number; data: Uint8Array }[]): Uint8Array {
+    const HEADER_RES_TABLE_OFFSET = 160;
+    const n = entries.length;
+    const indexBytes = n * 34;
+    let dataCursor = HEADER_RES_TABLE_OFFSET + indexBytes;
+    const rows: { resRef: string; resType: number; resId: number; offset: number; size: number; data: Uint8Array }[] = [];
+    for(let i = 0; i < n; i++){
+      const e = entries[i];
+      const resRef = String(e.resRef || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9_]/g, '')
+        .slice(0, 16);
+      const data = e.data;
+      rows.push({
+        resRef,
+        resType: e.resType | 0,
+        resId: i,
+        offset: dataCursor,
+        size: data.byteLength,
+        data
+      });
+      dataCursor += data.byteLength;
+    }
+    const writer = new BinaryWriter(new Uint8Array(dataCursor), Endians.LITTLE);
+    writer.writeString('RIM ');
+    writer.writeString('V1.0');
+    writer.writeUInt32(0);
+    writer.writeUInt32(n);
+    writer.writeUInt32(HEADER_RES_TABLE_OFFSET);
+    while(writer.tell() < HEADER_RES_TABLE_OFFSET){
+      writer.writeUInt8(0);
+    }
+    for(const r of rows){
+      writer.writeString(r.resRef.padEnd(16, '\0').substring(0, 16));
+      writer.writeUInt16(r.resType & 0xffff);
+      writer.writeUInt16(0);
+      writer.writeUInt32(r.resId >>> 0);
+      writer.writeUInt32(r.offset >>> 0);
+      writer.writeUInt32(r.size >>> 0);
+    }
+    for(const r of rows){
+      writer.writeBytes(r.data);
+    }
+    return writer.buffer.subarray(0, writer.tell());
   }
 
 }

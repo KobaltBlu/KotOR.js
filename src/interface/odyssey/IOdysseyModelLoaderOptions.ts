@@ -20,10 +20,12 @@ export interface IOdysseyModelLoaderOptions {
   useTweakColor?: boolean,
   tweakColor?: number,
   isForceShield?: boolean,
-  isChildrenDynamic?: boolean,
   parseChildren?: boolean,
   isHologram?: boolean,
   context?: any,
   onComplete?: Function,
   editorMode?: boolean,
+  /** When true, AABB/walkmesh geometry from the MDL is parented into the scene (Forge preview). Defaults from editorMode. Runtime uses WOK; leave false for game loads. */
+  attachMdlAabbMesh?: boolean,
+  disableMatrixUpdate?: boolean,
 }

@@ -1,13 +1,13 @@
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { GUIItemEquipped } from "../../../gui/protoitem/GUIItemEquipped";
-import { GUIInventoryItem } from "../../../gui/protoitem/GUIInventoryItem";
-import { GUIItemNone } from "../../../gui/protoitem/GUIItemNone";
-import { ModuleCreatureArmorSlot } from "../../../enums/module/ModuleCreatureArmorSlot";
-import { ModuleItem } from "../../../module/ModuleItem";
-import type { ModuleCreature } from "../../../module/ModuleCreature";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { GUIItemEquipped } from "@/gui/protoitem/GUIItemEquipped";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
+import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
  * MenuEquipment class.
@@ -219,7 +219,8 @@ export class MenuEquipment extends GameMenu {
         }
       });
 
-      this.LB_ITEMS.GUIProtoItemClass = GUIInventoryItem;
+      this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
+      this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
         this.updateSelected(item);
       }
@@ -250,18 +251,19 @@ export class MenuEquipment extends GameMenu {
    */
   updateListHover(slot: number) {
     if (slot) {
-      this.LB_ITEMS.clearItems();
-      let inv = GameState.InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
-      let currentPC = GameState.PartyManager.party[0];
-      this.LB_ITEMS.addItem(new GUIItemNone());
-      if(currentPC.GetItemInSlot(slot)){
-        this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(slot)));
-      }
+      const inv = GameState.InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
+      const currentPC = GameState.PartyManager.party[0];
+      this.LB_ITEMS.mutate(tx => {
+        tx.clear();
+        tx.add(new GUIItemNone());
+        if(currentPC.GetItemInSlot(slot)){
+          tx.add(new GUIItemEquipped(currentPC.GetItemInSlot(slot)));
+        }
+        for (let i = 0; i < inv.length; i++) {
+          tx.add(inv[i]);
+        }
+      });
       this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
-      for (let i = 0; i < inv.length; i++) {
-        this.LB_ITEMS.addItem(inv[i]);
-        TextureLoader.LoadQueue();
-      }
     }
   }
 
@@ -325,21 +327,22 @@ export class MenuEquipment extends GameMenu {
       this.LBL_TXTBAR?.hide();
       this.LBL_SELECTTITLE?.setText('');
     }
-    this.LB_ITEMS.clearItems();
     this.selectedItem = null;
     this.updateSelected(null);
     const currentPC = GameState.PartyManager.party[0];
     if (this.slot) {
       const inv = GameState.InventoryManager.getInventory(this.slot, currentPC);
-      this.LB_ITEMS.addItem(new GUIItemNone());
-      if(currentPC.GetItemInSlot(this.slot)){
-        this.LB_ITEMS.addItem(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)))
-      }
+      this.LB_ITEMS.mutate(tx => {
+        tx.clear();
+        tx.add(new GUIItemNone());
+        if(currentPC.GetItemInSlot(this.slot)){
+          tx.add(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)));
+        }
+        for (let i = 0; i < inv.length; i++) {
+          tx.add(inv[i]);
+        }
+      });
       this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
-      for (let i = 0; i < inv.length; i++) {
-        this.LB_ITEMS.addItem(inv[i]);
-        TextureLoader.LoadQueue();
-      }
     }
   }
 
@@ -347,14 +350,15 @@ export class MenuEquipment extends GameMenu {
    * Update the selected item.
    */
   updateSelected(item: ModuleItem|GUIItemEquipped|GUIItemNone) {
-    this.LB_DESC.clearItems();
     this.selectedItem = undefined;
+    let description = '';
     if (item instanceof ModuleItem) {
       this.selectedItem = item;
-      this.LB_DESC.addItem(this.selectedItem.getDescription());
+      description = this.selectedItem.getDescription();
     } else if(item instanceof GUIItemEquipped) {
-      this.LB_DESC.addItem(item.node.getDescription());
+      description = item.node.getDescription();
     }
+    this.LB_DESC.setItem(description);
   }
 
   /**
@@ -462,8 +466,8 @@ export class MenuEquipment extends GameMenu {
     if (!currentPC) {
       return;
     }
-    this.LB_DESC.clearItems();
-    this.LB_ITEMS.clearItems();
+    this.LB_DESC.setItem(null);
+    this.LB_ITEMS.setItems([]);
     this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
     this.LBL_DEF?.setText(currentPC.getAC());
     if(this.LBL_PORTRAIT.getFillTextureName() != currentPC.getPortraitResRef()){

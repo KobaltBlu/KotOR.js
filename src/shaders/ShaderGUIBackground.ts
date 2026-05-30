@@ -1,4 +1,4 @@
-import { Shader } from "./Shader";
+import { Shader } from "@/shaders/Shader";
 import * as THREE from "three";
 
 /**

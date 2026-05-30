@@ -1,5 +1,5 @@
-import type { GUIButton, GUIControl, GUILabel } from "../../../gui";
-import { MenuLevelUp as K1_MenuLevelUp } from "../../kotor/KOTOR";
+import type { GUIButton, GUIControl, GUILabel } from "@/gui";
+import { MenuLevelUp as K1_MenuLevelUp } from "@/game/kotor/KOTOR";
 
 /**
  * MenuLevelUp class.

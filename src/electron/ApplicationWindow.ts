@@ -54,12 +54,14 @@ export class ApplicationWindow {
     queryString.set('key', profile.key);
 
     // and load the index.html of the app.
-    this.browserWindow.loadURL(`file://${Main.ApplicationPath}/dist/${profile.launch.path}?${queryString.toString()}`);
+    this.browserWindow.loadFile(
+      path.join(Main.ApplicationPath, 'dist', profile.launch.path),
+      { query: Object.fromEntries(queryString.entries()) }
+    );
     this.browserWindow.setMenuBarVisibility(false);
 
     // Emitted when the window is closed.
-    this.browserWindow.on('closed', (event) => {
-      event.preventDefault();
+    this.browserWindow.on('closed', () => {
       WindowManager.createLauncherWindow();
       WindowManager.removeWindow(this);
     });

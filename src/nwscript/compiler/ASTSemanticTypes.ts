@@ -1,5 +1,5 @@
-import { ArrayLiteralNode, CallNode, IndexNode, LiteralNode } from "./ASTTypes";
-import type { Token } from "./NWScriptToken";
+import { ArrayLiteralNode, CallNode, IndexNode, LiteralNode } from "@/nwscript/compiler/ASTTypes";
+import type { Token } from "@/nwscript/compiler/NWScriptToken";
 
 export type SourceInfo = Token["source"] | undefined;
 
@@ -64,6 +64,8 @@ export interface SemanticFunctionNode extends AnnotatedNode {
   header_only: boolean;
   defined?: boolean;
   called?: boolean;
+  /** Lexical declaration order among script subroutines (0-based); used for nwn-compatible emission ordering. */
+  declarationOrder?: number;
   callIndex?: number;
   returntype: SemanticDataType;
   arguments: SemanticArgumentNode[];

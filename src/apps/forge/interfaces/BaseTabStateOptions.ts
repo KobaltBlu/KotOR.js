@@ -1,5 +1,5 @@
-import { EditorFile } from "../EditorFile";
-import { TabState } from "../states/tabs";
+import { EditorFile } from "@/apps/forge/EditorFile";
+import { TabState } from "@/apps/forge/states/tabs";
 
 export default interface BaseTabStateOptions {
   editorFile?: EditorFile;

@@ -1,4 +1,4 @@
-import { OdysseyTexture } from "../../three/odyssey/OdysseyTexture";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
  * IEffectIconListItem interface.

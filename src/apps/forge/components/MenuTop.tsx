@@ -1,12 +1,11 @@
 import React, { useState, useCallback, useMemo, memo } from "react";
 import { Container, Nav, Navbar } from 'react-bootstrap';
-import { useEffectOnce } from "../helpers/UseEffectOnce";
-import { MenuItem } from "./MenuItem";
-import { MenuTopState } from "../states/MenuTopState";
-import { MenuTopItem } from "../MenuTopItem";
-import { ForgeState } from "../states/ForgeState";
-import { AudioPlayer } from "./AudioPlayer";
-import { FileTypeManager } from "../FileTypeManager";
+import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
+import { MenuItem } from "@/apps/forge/components/MenuItem";
+import { MenuTopState } from "@/apps/forge/states/MenuTopState";
+import { MenuTopItem } from "@/apps/forge/MenuTopItem";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 
 export interface MenuTopProps {
   className?: string;
@@ -74,10 +73,9 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
       </div>
       <Container fluid>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
-        <Navbar.Collapse id="basic-navbar-nav">
+        <Navbar.Collapse id="basic-navbar-nav" className="flex-grow-1">
           <Nav className="me-auto">
             {menuItems}
-            <AudioPlayer />
           </Nav>
         </Navbar.Collapse>
       </Container>

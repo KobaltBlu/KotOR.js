@@ -1,19 +1,19 @@
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { ActionParameterType } from "../enums/actions/ActionParameterType";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectConstant } from "../enums/module/ModuleObjectConstant";
-import { GameState } from "../GameState";
-import { ICombatAction } from "../interface/combat/ICombatAction";
-// import { ModuleObjectManager, PartyManager } from "../managers";
-import { type ModuleCreature, type ModuleObject } from "../module";
-// import type { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GFFStruct } from "../resource/GFFStruct";
-import { BitWise } from "../utility/BitWise";
-import { ActionParameter } from "./ActionParameter";
-import { ActionQueue } from "./ActionQueue";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { GameState } from "@/GameState";
+import { ICombatAction } from "@/interface/combat/ICombatAction";
+// import { ModuleObjectManager, PartyManager } from "@/managers";
+import { type ModuleCreature, type ModuleObject } from "@/module";
+// import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { BitWise } from "@/utility/BitWise";
+import { ActionParameter } from "@/actions/ActionParameter";
+import { ActionQueue } from "@/actions/ActionQueue";
 import * as THREE from "three";
-import { ComputedPath } from "../engine/pathfinding/ComputedPath";
+import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
 
 /**
  * Base class for all game actions in the engine.

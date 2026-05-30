@@ -1,4 +1,4 @@
-import { NWScriptDataType } from "../../enums/nwscript/NWScriptDataType";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 
 /**
  * Represents an expression in NWScript decompilation.
@@ -129,7 +129,14 @@ export class NWScriptExpression {
         if (this.dataType === NWScriptDataType.STRING) {
           return `"${this.value}"`;
         } else if (this.dataType === NWScriptDataType.FLOAT) {
-          return this.value.toString();
+          const n = typeof this.value === "number" ? this.value : parseFloat(String(this.value));
+          if (!Number.isFinite(n)) {
+            return "0.0f";
+          }
+          // NSS float literals must not look like ints (re-parse assigns them as int).
+          const s = String(n);
+          const base = s.includes(".") || s.toLowerCase().includes("e") ? s : `${n}.0`;
+          return base.endsWith("f") ? base : `${base}f`;
         } else if (this.dataType === NWScriptDataType.INTEGER) {
           return this.value.toString();
         } else if (this.dataType === NWScriptDataType.OBJECT && this.value === 0) {

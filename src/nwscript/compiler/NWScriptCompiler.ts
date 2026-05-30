@@ -4,7 +4,7 @@ import {
   OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII, OP_NEG, OP_COMPI, OP_MOVSP, OP_STORE_STATEALL, OP_JMP,   OP_JSR,
   OP_JZ, OP_RETN, OP_DESTRUCT, OP_NOTI, OP_DECISP, OP_INCISP, OP_JNZ, OP_CPDOWNBP, OP_CPTOPBP, OP_DECIBP, OP_INCIBP,
   OP_SAVEBP, OP_RESTOREBP, OP_STORE_STATE, OP_NOP, OP_T
-} from '../NWScriptOPCodes';
+} from "@/nwscript/NWScriptOPCodes";
 import {
   CompilerProgramNode,
   CompilerFunctionNode,
@@ -21,7 +21,7 @@ import {
   CompilerSwitchNode,
   CompilerCaseNode,
   CompilerDefaultNode,
-} from './CompilerNodeTypes';
+} from "@/nwscript/compiler/CompilerNodeTypes";
 
 const NWEngineTypeUnaryTypeOffset = 0x10;
 const NWEngineTypeBinaryTypeOffset = 0x30;
@@ -114,6 +114,17 @@ export class NWScriptCompiler {
   basePointerWriting: boolean;
   functionBlockStartOffset: any;
   errors: { type: string, message: string, statement: any, offender: any }[] = [];
+
+  /** Deferred JSR displacements — patched after bytecode layout is finalized (opcode start byte → callee). */
+  private jsrFixups: Array<{ jmpSite: number; callee: CompilerFunctionNode }> = [];
+  /** Switch dispatcher JNZ: both offsets are absolute byte indices in concatBuffers(compilePass) (nwn ForwardResolve-style). */
+  private switchJzFixups: Array<{ jzSite: number; targetPc: number }> = [];
+  /** Jumps that exit case/default blocks to shared MOVSP at end of switch. */
+  private switchExitJmpFixups: Array<{ jmpSite: number; exitPc: number }> = [];
+  /** Deferred OP_JZ/OP_JMP rel32 patched in applyBranchFixups (instrStart/targetPc absolute in compilePass bytecode). */
+  private rel32BranchFixups: Array<{ instrStart: number; targetPc: number }> = [];
+
+  private static readonly REL32_SENTINEL = 0x7fffffff;
 
   constructor(ast: CompilerProgramNode){
 
@@ -251,10 +262,157 @@ export class NWScriptCompiler {
     this.basePointerWriting = false;
     this._silent = false;
     this.freezeBytesWritten = false;
+    this.jsrFixups = [];
+    this.switchJzFixups = [];
+    this.switchExitJmpFixups = [];
+    this.rel32BranchFixups = [];
+  }
+
+  private enqueueRel32BranchFixup(instrStart: number, targetPc: number): void {
+    if (this.freezeBytesWritten) return;
+    this.rel32BranchFixups.push({ instrStart, targetPc });
+  }
+
+  /** Resolve break jump sites targeting this loop tail (MOVSP/footer), nwn ForwardResolve(szEnd)-style. */
+  private drainPendingLoopBreakFixups(loopStmt: any, loopExitOpcodePc: number): void {
+    const sites = loopStmt.pendingLoopBreakJmpSites as number[] | undefined;
+    if (!sites?.length) return;
+    for (const jmpInstrStart of sites) {
+      this.enqueueRel32BranchFixup(jmpInstrStart, loopExitOpcodePc);
+    }
+    sites.length = 0;
+  }
+
+  /** Deferred OP_JMP to for-loop increment (body may compile `continue` before increment PC exists). */
+  private drainPendingContinueFixups(forStmt: any, incrementOpcodePc: number): void {
+    const sites = forStmt.pendingContinueJmpSites as number[] | undefined;
+    if (!sites?.length) return;
+    for (const jmpInstrStart of sites) {
+      this.enqueueRel32BranchFixup(jmpInstrStart, incrementOpcodePc);
+    }
+    sites.length = 0;
+  }
+
+  /** Forward `continue` patch target: byte before backward JMP to while condition top. */
+  private drainPendingWhileContinueFwdFixups(whileStmt: any, footerBeforeBackjmpPc: number): void {
+    const sites = whileStmt.pendingWhileContinueFwdJmpSites as number[] | undefined;
+    if (!sites?.length) return;
+    for (const jmpInstrStart of sites) {
+      this.enqueueRel32BranchFixup(jmpInstrStart, footerBeforeBackjmpPc);
+    }
+    sites.length = 0;
+  }
+
+  /** Patch NWScript RELATIVE jump offset (instructions at opcode byte `instrStart`; int32 displacement at +2). */
+  private patchInstructionDisplacement(program: ByteArray, instrStart: number, displacement: number): void {
+    if (instrStart + 6 > program.length) return;
+    const dv =
+      typeof DataView !== "undefined"
+        ? new DataView(program.buffer, program.byteOffset + instrStart, 6)
+        : null;
+    if (dv) {
+      dv.setInt32(2, displacement, false);
+    } else if (typeof Buffer !== "undefined" && Buffer.isBuffer(program)) {
+      (program as any).writeInt32BE(displacement, instrStart + 2);
+    }
+  }
+
+  /** Apply deferred JSR and switch dispatcher / exit jumps. */
+  private applyBranchFixups(program: Uint8Array): void {
+    for (const f of this.jsrFixups) {
+      const target = f.callee.blockOffset ?? 0;
+      this.patchInstructionDisplacement(program, f.jmpSite, target - f.jmpSite);
+    }
+    for (const z of this.switchJzFixups) {
+      this.patchInstructionDisplacement(program, z.jzSite, z.targetPc - z.jzSite);
+    }
+    for (const j of this.switchExitJmpFixups) {
+      this.patchInstructionDisplacement(program, j.jmpSite, j.exitPc - j.jmpSite);
+    }
+    for (const r of this.rel32BranchFixups) {
+      this.patchInstructionDisplacement(program, r.instrStart, r.targetPc - r.instrStart);
+    }
   }
 
   /**
-   * Compile the global block
+   * Traverse statements/expressions for script function calls (non-engine).
+   * Cycle-safe: uses a WeakSet so cyclic AST/metadata links cannot recurse forever.
+   */
+  private gatherCalledScriptFunctionNamesFromNode(node: any, sink: Set<string>): void {
+    this.gatherCalledScriptFunctionNamesFromNodeInner(node, sink, new WeakSet<object>());
+  }
+
+  private gatherCalledScriptFunctionNamesFromNodeInner(
+    node: any,
+    sink: Set<string>,
+    visited: WeakSet<object>,
+  ): void {
+    if (node === null || node === undefined) return;
+    if (Array.isArray(node)) {
+      if (visited.has(node)) return;
+      visited.add(node);
+      for (const el of node) this.gatherCalledScriptFunctionNamesFromNodeInner(el, sink, visited);
+      return;
+    }
+    if (typeof node !== "object") return;
+    if (visited.has(node)) return;
+    visited.add(node);
+    if (node.type === "function_call" && typeof node.name === "string") {
+      const isEngine =
+        (typeof node.action_id === "number" && node.action_id >= 0) ||
+        !!(node.function_reference && (node.function_reference as any).is_engine_action);
+      if (!isEngine) sink.add(node.name);
+    }
+    for (const k of Object.keys(node)) {
+      const v = (node as any)[k];
+      if (typeof v === "object" && v !== null) this.gatherCalledScriptFunctionNamesFromNodeInner(v, sink, visited);
+    }
+  }
+
+  /**
+   * Worklist transitive closure over script-defined function calls reachable from entry + globals.
+   */
+  private reachableScriptCalleeNames(funcMain: CompilerFunctionNode): Set<string> {
+    const byName = new Map<string, CompilerFunctionNode>();
+    for (const f of this.program?.functions ?? []) {
+      byName.set(f.name, f);
+    }
+
+    let globalRoots: CompilerStatementNode[] = [];
+    if (this.program) {
+      globalRoots = this.program.statements.filter( (s: any) =>
+        (((s.type == "variable" || s.type == "variableList") && s.is_const == false) || s.type == "struct")
+      );
+    }
+
+    const work: string[] = [];
+    const addNamesFrom = (node: any): void => {
+      const sink = new Set<string>();
+      this.gatherCalledScriptFunctionNamesFromNode(node, sink);
+      for (const n of sink) if (byName.has(n)) work.push(n);
+    };
+
+    addNamesFrom(funcMain.statements);
+    addNamesFrom(funcMain.arguments);
+    for (const gs of globalRoots) addNamesFrom(gs);
+
+    const reachable = new Set<string>();
+    while (work.length) {
+      const n = work.pop()!;
+      if (reachable.has(n)) continue;
+      reachable.add(n);
+      const fn = byName.get(n);
+      if (!fn) continue;
+      addNamesFrom(fn.statements);
+      addNamesFrom(fn.arguments);
+    }
+    return reachable;
+  }
+
+  /**
+   * Global-variable loader emitted before user main/StartingConditional: SAVEBP, optional RSADD(int)
+   * for StartingConditional results, JSR into the script entry, RESTOREBP, MOVSP clears globals, RETN.
+   * Ordering follows CNscCodeGenerator #globals epilogue semantics.
    */
   compileGlobal(buffers: ByteArray[] = [], returnInt: boolean = false): ByteArray[] {
     if(!this.program){
@@ -292,8 +450,7 @@ export class NWScriptCompiler {
   }
 
   compilePass(funcMain: CompilerFunctionNode, returnInt: boolean = false): ByteArray[] {
-    console.log('compilePass: Begin');
-    const buffers: ByteArray[] = [new Uint8Array(0)];
+    const buffers: ByteArray[] = [];
     if(!this.program){
       console.error('compilePass: program is undefined');
       return buffers;
@@ -307,18 +464,25 @@ export class NWScriptCompiler {
     if(returnInt){
       buffers.push( this.writeRSADD(NWCompileDataTypes.I) );
     }
-    buffers.push( 
+    buffers.push(
       this.writeJSR(
-        this.getInstructionLength(OP_JSR) + 
-        this.getInstructionLength(OP_RETN)
-      ) 
+        this.getInstructionLength(OP_JSR) +
+          this.getInstructionLength(OP_RETN)
+      )
     );
     buffers.push( this.writeRETN() );
 
     this.compileGlobal(buffers, returnInt);
 
     const functions = this.program.functions as unknown as CompilerFunctionNode[];
-    const subroutines = functions.filter( (f: any) => f.called ).sort( (a: any, b: any) => a.callIndex - b.callIndex );
+    const reachable = this.reachableScriptCalleeNames(funcMain);
+    const subroutines = functions
+      .filter( (f: any) => f.called && reachable.has(f.name))
+      .sort(
+        (a: any, b: any) =>
+          (typeof a.callIndex === 'number' ? a.callIndex : 999999) -
+          (typeof b.callIndex === 'number' ? b.callIndex : 999999),
+      );
 
     funcMain.blockOffset = this.bytesWritten;
     buffers.push( this.compileFunction( funcMain ) );
@@ -333,7 +497,6 @@ export class NWScriptCompiler {
     }
 
     this.scopePop();
-    console.log('compilePass: End');
     return buffers;
   }
 
@@ -345,13 +508,10 @@ export class NWScriptCompiler {
       console.error('CompileStart: program is undefined');
       return new Uint8Array(0);
     }
-    
-    console.log('CompileStart: Begin');
+    const pass = this.compilePass(funcMain, returnInt);
 
-    const pass1 = this.compilePass(funcMain, returnInt);
-    const pass2 = this.compilePass(funcMain, returnInt);
-
-    const program = concatBuffers(pass2);
+    const program = concatBuffers(pass);
+    this.applyBranchFixups(program);
 
     const NCS_Header = new Uint8Array(8);
     NCS_Header[0] = 0x4E; // N
@@ -364,7 +524,6 @@ export class NWScriptCompiler {
     NCS_Header[7] = 0x30; // 0
     
     const T = this.writeT(program.length + 13);
-    console.log('CompileStart: Complete');
     return concatBuffers([NCS_Header, T, program]);
   }
 
@@ -391,6 +550,11 @@ export class NWScriptCompiler {
       }
     }
     throw 'Invalid datatype object ' + datatype;
+  }
+
+  /** STORE_STATE operand: BP-relative stack bytes (see CNscCodeGenerator::CodeSTORE_STATE). */
+  private getStoreStateSpDepthBytes(): number {
+    return this.stackPointer;
   }
 
   getStatementDataTypeSize( statement: any ){
@@ -435,6 +599,7 @@ export class NWScriptCompiler {
         case 'sub':           return this.compileSub( statement );
         case 'mul':           return this.compileMul( statement );
         case 'div':           return this.compileDiv( statement );
+        case 'mod':           return this.compileMod( statement );
         case 'neg':           return this.compileNEG( statement );
         case 'not':           return this.compileNOT( statement );
         case 'inc':           return this.compileINC( statement );
@@ -480,15 +645,22 @@ export class NWScriptCompiler {
       if(value.type == 'variable') { return value.datatype || value?.variable_reference?.datatype || value?.variable_reference?.datatype; }
       if(value.type == 'variableList') { return value.datatype }
       if(value.type == 'argument') return value.datatype;
-      if(value.type == 'property') return value.datatype;
+      if(value.type == 'property')
+        return value.property_reference?.datatype || value.datatype;
       if(value.type == 'function_call') return value.function_reference.returntype;
       if(value.type == 'add') return this.getDataType(value.left);
       if(value.type == 'sub') return this.getDataType(value.left);
       if(value.type == 'mul') return this.getDataType(value.left);
       if(value.type == 'div') return this.getDataType(value.left);
+      if(value.type == 'mod') return this.getDataType(value.left);
+      if(value.type == 'xor') return this.getDataType(value.left);
+      if(value.type == 'incor') return this.getDataType(value.left);
+      if(value.type == 'booland') return this.getDataType(value.left);
+      if(value.type == 'shift') return this.getDataType(value.left);
       if(value.type == 'compare') return this.getDataType(value.left);
       if(value.type == 'not') return this.getDataType(value.value);
       if(value.type == 'neg') return this.getDataType(value.value);
+      if(value.type == 'comp') return this.getDataType(value.value);
       if(value.type == 'inc') return this.getDataType(value.value);
       if(value.type == 'dec') return this.getDataType(value.value);
     }
@@ -555,6 +727,10 @@ export class NWScriptCompiler {
         if(statement.declare === true){
           statement.stackPointer = this.stackPointer;
           statement.is_global = this.basePointerWriting;
+          /** `const` scalars carry no runtime stack slot — matches BioWare toolchain (literal folded at references). */
+          if(statement.is_const && statement.datatype.value != 'vector' && statement.datatype.value != 'struct'){
+            return concatBuffers(buffers);
+          }
           if(statement.datatype.value == 'vector'){
             buffers.push( this.writeRSADD( NWCompileDataTypes.F ) );
             buffers.push( this.writeRSADD( NWCompileDataTypes.F ) );
@@ -589,7 +765,10 @@ export class NWScriptCompiler {
                 buffers.push( this.writeCPTOPBP( varRef.stackPointer - this.basePointer, this.getDataTypeStackLength(statement.datatype) ) );
               }
             }else if(varRef){
-              if(varRef.is_engine_constant){
+              const localConstLit = varRef.is_const ? this.getConstLocalLiteral(varRef) : undefined;
+              if(localConstLit){
+                buffers.push( this.compileLiteral(localConstLit) );
+              }else if(varRef.is_engine_constant){
                 const lit = this.getConstantLiteral(varRef);
                 if(lit){
                   buffers.push( this.compileLiteral( lit ) );
@@ -627,6 +806,17 @@ export class NWScriptCompiler {
       }
       const left = statement.left;
       const right = statement.right;
+      const opVal: string =
+        typeof statement.operator?.value === 'string' ? statement.operator.value : '=';
+
+      if(opVal !== '='){
+        const compoundBuf =
+          left.type === 'variable_reference'
+            ? this.compileCompoundAssignVariable(statement, opVal)
+            : this.compileCompoundAssignProperty(statement, opVal);
+        return compoundBuf;
+      }
+
       if(left.type == 'property'){
         const varRef = left.left.variable_reference;
         const isGlobal = varRef?.is_global;
@@ -654,6 +844,158 @@ export class NWScriptCompiler {
     return concatBuffers(buffers);
   }
 
+  /**
+   * Compound assign RHS bytecode using the same emitter as binary ops (load left + load right + op).
+   */
+  private compileCompoundAssignRhsBytecode( statement: any, opVal: string ): Uint8Array {
+    const lo = statement.left;
+    const ro = statement.right;
+    switch (opVal) {
+      case '+=':
+        return this.compileAdd({ type: 'add', left: lo, right: ro, operator: { type: 'operator', value: '+' } });
+      case '-=':
+        return this.compileSub({ type: 'sub', left: lo, right: ro, operator: { type: 'operator', value: '-' } });
+      case '*=':
+        return this.compileMul({ type: 'mul', left: lo, right: ro, operator: { type: 'operator', value: '*' } });
+      case '/=':
+        return this.compileDiv({ type: 'div', left: lo, right: ro, operator: { type: 'operator', value: '/' } });
+      case '%=':
+        return this.compileMod({ type: 'mod', left: lo, right: ro, operator: { type: 'operator', value: '%' } });
+      case '|=':
+        return this.compileINCOR({ type: 'incor', left: lo, right: ro, operator: { type: 'operator', value: '|' } });
+      case '^=':
+        return this.compileEXCOR({ type: 'xor', left: lo, right: ro, operator: { type: 'operator', value: '^' } });
+      case '&=':
+        return this.compileBOOLAND({ type: 'booland', left: lo, right: ro, operator: { type: 'operator', value: '&' } });
+      default:
+        console.error(`compileCompoundAssignRhsBytecode: unsupported compound op ${ opVal }`);
+        return new Uint8Array(0);
+    }
+  }
+
+  /**
+   * Compound assign for scalar locals/globals: CPTOP dup, RHS, arithmetic, store, peel.
+   */
+  private compileCompoundAssignVariable( statement: any, opVal: string ): Uint8Array {
+    const buffers: Uint8Array[] = [];
+    const varRef = statement.left.variable_reference;
+    const ds = this.getDataTypeStackLength(statement.datatype);
+
+    try {
+      const ldu = this.getDataType(statement.left).unary;
+      const rdu = this.getDataType(statement.right).unary;
+
+      let useDupPattern = true;
+      if (opVal === '+=' || opVal === '-=' || opVal === '|=' || opVal === '^=' || opVal === '&='){
+        useDupPattern = ldu === NWCompileDataTypes.I && rdu === NWCompileDataTypes.I;
+      } else if (opVal === '*=' || opVal === '/='){
+        useDupPattern =
+          (ldu === NWCompileDataTypes.I && rdu === NWCompileDataTypes.I) ||
+          (ldu === NWCompileDataTypes.I && rdu === NWCompileDataTypes.F) ||
+          (ldu === NWCompileDataTypes.F && rdu === NWCompileDataTypes.I) ||
+          (ldu === NWCompileDataTypes.F && rdu === NWCompileDataTypes.F);
+      } else if (opVal === '%='){
+        useDupPattern = ldu === NWCompileDataTypes.I && rdu === NWCompileDataTypes.I;
+      } else{
+        useDupPattern = false;
+      }
+
+      const saveLen = buffers.length;
+
+      if(useDupPattern){
+        if(varRef.is_global){
+          buffers.push(this.writeCPTOPBP(varRef.stackPointer - this.basePointer, ds));
+        }else{
+          buffers.push(this.writeCPTOPSP(varRef.stackPointer - this.stackPointer, ds));
+        }
+        buffers.push(this.compileStatement(statement.right) as Uint8Array);
+
+        let opEmitted = false;
+        switch (opVal) {
+          case '+=':
+            if(ldu===NWCompileDataTypes.I&&rdu===NWCompileDataTypes.I){ buffers.push(this.writeADD(NWCompileDataTypes.II)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.I&&rdu===NWCompileDataTypes.F){ buffers.push(this.writeADD(NWCompileDataTypes.IF)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.F&&rdu===NWCompileDataTypes.I){ buffers.push(this.writeADD(NWCompileDataTypes.FI)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.F&&rdu===NWCompileDataTypes.F){ buffers.push(this.writeADD(NWCompileDataTypes.FF)); opEmitted = true; }
+            break;
+          case '-=':
+            if(ldu===NWCompileDataTypes.I&&rdu===NWCompileDataTypes.I){ buffers.push(this.writeSUB(NWCompileDataTypes.II)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.I&&rdu===NWCompileDataTypes.F){ buffers.push(this.writeSUB(NWCompileDataTypes.IF)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.F&&rdu===NWCompileDataTypes.I){ buffers.push(this.writeSUB(NWCompileDataTypes.FI)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.F&&rdu===NWCompileDataTypes.F){ buffers.push(this.writeSUB(NWCompileDataTypes.FF)); opEmitted = true; }
+            break;
+          case '*=':
+            if(ldu===NWCompileDataTypes.I&&rdu===NWCompileDataTypes.I){ buffers.push(this.writeMUL(NWCompileDataTypes.II)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.I&&rdu===NWCompileDataTypes.F){ buffers.push(this.writeMUL(NWCompileDataTypes.IF)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.F&&rdu===NWCompileDataTypes.I){ buffers.push(this.writeMUL(NWCompileDataTypes.FI)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.F&&rdu===NWCompileDataTypes.F){ buffers.push(this.writeMUL(NWCompileDataTypes.FF)); opEmitted = true; }
+            break;
+          case '/=':
+            if(ldu===NWCompileDataTypes.I&&rdu===NWCompileDataTypes.I){ buffers.push(this.writeDIV(NWCompileDataTypes.II)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.I&&rdu===NWCompileDataTypes.F){ buffers.push(this.writeDIV(NWCompileDataTypes.IF)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.F&&rdu===NWCompileDataTypes.I){ buffers.push(this.writeDIV(NWCompileDataTypes.FI)); opEmitted = true; }
+            else if(ldu===NWCompileDataTypes.F&&rdu===NWCompileDataTypes.F){ buffers.push(this.writeDIV(NWCompileDataTypes.FF)); opEmitted = true; }
+            break;
+          case '%=':
+            buffers.push(this.writeMODII());
+            opEmitted = true;
+            break;
+          case '|=':
+            buffers.push(this.writeINCORII());
+            opEmitted = true;
+            break;
+          case '^=':
+            buffers.push(this.writeEXCORII());
+            opEmitted = true;
+            break;
+          case '&=':
+            buffers.push(this.writeBOOLANDII());
+            opEmitted = true;
+            break;
+        }
+        if(!opEmitted){
+          while(buffers.length > saveLen) buffers.pop();
+          buffers.push(this.compileCompoundAssignRhsBytecode(statement, opVal));
+        }
+      }else{
+        buffers.push(this.compileCompoundAssignRhsBytecode(statement, opVal));
+      }
+    }catch{
+      buffers.length = 0;
+      buffers.push(this.compileCompoundAssignRhsBytecode(statement, opVal));
+    }
+
+    if(varRef.is_global){
+      buffers.push(this.writeCPDOWNBP(varRef.stackPointer - this.basePointer, ds));
+    }else{
+      buffers.push(this.writeCPDOWNSP(varRef.stackPointer - this.stackPointer, ds));
+    }
+    if(!this.getCurrentScope()?.consumingValue){
+      buffers.push(this.writeMOVSP(-ds));
+    }
+    return concatBuffers(buffers);
+  }
+
+  /** Property compound: evaluate full binary LHS/RHS bytecode then store slot (prior behavior). */
+  private compileCompoundAssignProperty( statement: any, opVal: string ): Uint8Array {
+    const buffers: Uint8Array[] = [];
+    const left = statement.left;
+    const varRef = left.left.variable_reference;
+    const isGlobal = varRef?.is_global;
+    const propRef = left.property_reference;
+    const ds = this.getDataTypeStackLength(statement.datatype);
+    buffers.push(this.compileCompoundAssignRhsBytecode(statement, opVal));
+    if(isGlobal){
+      buffers.push(this.writeCPDOWNBP((varRef.stackPointer - this.basePointer) + propRef.offsetPointer, ds));
+    }else{
+      buffers.push(this.writeCPDOWNSP((varRef.stackPointer - this.stackPointer) + propRef.offsetPointer, ds));
+    }
+    if(!this.getCurrentScope()?.consumingValue){
+      buffers.push(this.writeMOVSP(-ds));
+    }
+    return concatBuffers(buffers);
+  }
+
   // Normalize an engine constant into a literal node the emitter understands.
   // Returns undefined if it cannot be resolved as a literal.
   getConstantLiteral(constant: any){
@@ -668,6 +1010,14 @@ export class NWScriptCompiler {
         value: constant.value
       };
     }
+    return undefined;
+  }
+
+  /** Local `const int/float/string` initializer from the binding node (semantic pass materializes literal RHS). */
+  private getConstLocalLiteral(declBinding: any): any | undefined {
+    if(!declBinding?.is_const || !declBinding.value) return undefined;
+    const v = declBinding.value;
+    if(v.type === 'literal') return v;
     return undefined;
   }
 
@@ -773,12 +1123,13 @@ export class NWScriptCompiler {
       console.warn(`${this.scope.block.name}: stack offset is less than 0, this should not happen: ${stackOffset}`);
     }
 
-    //Jump to the end of the current executing block
-    const jmpOffset = ( this.scope.block.retn_jmp || 0 ) - ( this.scope.bytes_written + 0 );
-    buffers.push( this.writeJMP( this.scope.block.retn_jmp ? jmpOffset : 0x7FFFFFFF ) );
+    //Jump to unified function tail: RETN for no-arg procs, or arg MOVSP for subroutines with parameters (see compileFunction).
+    const jmpInstrStart = this.bytesWritten;
+    buffers.push( this.writeJMP( NWScriptCompiler.REL32_SENTINEL ) );
+    (this.scope.block as CompilerFunctionNode).pendingReturnTailJmpStarts!.push(jmpInstrStart);
 
     //clear the return data off the stack
-    // - This is ignored because of the previous JMP, but this is how nwnnsscomp does things
+    // - This is ignored because of the previous JMP
     if(nReturnDataSize){
       buffers.push( this.writeMOVSP(-nReturnDataSize) );
     }
@@ -793,6 +1144,7 @@ export class NWScriptCompiler {
     const buffers: Uint8Array[] = [];
     this.scopePush( new NWScriptScope() );
     this.scope.block = block;
+    block.pendingReturnTailJmpStarts = [];
     
     //store the position of the stack pointer so it can be restored at the end of this block
     const storeSP = this.stackPointer;
@@ -820,7 +1172,9 @@ export class NWScriptCompiler {
     }
     block.returnStackPointer = -(nArgumentDataSize + nReturnDataSize);
 
-    block.preStatementsStackPointer = nArgumentDataSize;
+    // Frame base = simulated SP after caller prelude (e.g. StartingConditional thunk RSADDI) and argument slots.
+    // Do not add nReturnDataSize again here — the entry thunk already reserved the int return word on the stack.
+    block.preStatementsStackPointer = this.stackPointer;
 
     //byte offset to the end of this function block
     block.block_start_jmp = this.scope.bytes_written;
@@ -850,16 +1204,24 @@ export class NWScriptCompiler {
       console.warn(`${block.name}: stack offset is less than 0, this should not happen: ${stackOffset}`);
     }
 
-    //byte offset to the end of this function block
-    block.retn_jmp = this.scope.bytes_written;
+    const afterLocalsOpcodePc = this.bytesWritten;
 
     //clear arguments off the stack after the jmp marker because RETURN statements don't clear the arguments off the stack it is done here
     if(nArgumentDataSize){
       buffers.push( this.writeMOVSP(-nArgumentDataSize) );
     }
 
-    //Close out this function block with a RETN statement
+    const retnOpcodePc = this.bytesWritten;
     buffers.push( this.writeRETN() );
+
+    /** No-arg functions: patches return JMPs to RETN (skips epilogue MOVSP). With args, jump to arg MOVSP. */
+    const returnTailTargetPc = nArgumentDataSize > 0 ? afterLocalsOpcodePc : retnOpcodePc;
+    block.retn_jmp = retnOpcodePc;
+
+    for(const instrStart of block.pendingReturnTailJmpStarts ?? []){
+      this.enqueueRel32BranchFixup(instrStart, returnTailTargetPc);
+    }
+    block.pendingReturnTailJmpStarts = [];
 
     block.blockSize = concatBuffers(buffers).length;
 
@@ -903,7 +1265,12 @@ export class NWScriptCompiler {
         }
 
         if(arg_ref.datatype.value == 'action'){
-          buffers.push( this.writeSTORE_STATE( this.basePointer, this.stackPointer ) );
+          buffers.push(
+            this.writeSTORE_STATE(
+              this.basePointer,
+              this.getStoreStateSpDepthBytes(),
+            ),
+          );
           buffers.push(
             this.writeJMP( 
               this.getInstructionLength(OP_JMP) + 
@@ -936,8 +1303,11 @@ export class NWScriptCompiler {
       else
       { 
         const funcRef = this.program?.functions.find( (f: any) => f.name == statement.function_reference.name ) as CompilerFunctionNode | undefined;
-        const jsrOffset = ((funcRef?.blockOffset || 0) - (this.bytesWritten || 0)) || 0x7FFFFFFF;
-        buffers.push( this.writeJSR(jsrOffset) );
+        const jmpSite = this.bytesWritten;
+        buffers.push( this.writeJSR( 0 ) );
+        if(funcRef && !this.freezeBytesWritten){
+          this.jsrFixups.push({ jmpSite, callee: funcRef });
+        }
         this.stackPointer -= argumentsDataSize;
       }
 
@@ -957,7 +1327,7 @@ export class NWScriptCompiler {
     if(statement && statement.type == 'block'){
       statement.block_start = this.scope.bytes_written;
 
-      // statement.preStatementsSPCache = this.stackPointer;
+      statement.preStatementsSPCache = this.stackPointer;
       for(let i = 0; i < statement.statements.length; i++){
         const stmt = statement.statements[i];
         if(stmt && typeof stmt === 'object'){
@@ -966,15 +1336,11 @@ export class NWScriptCompiler {
         buffers.push( this.compileStatement( stmt ) as Uint8Array );
       }
 
-      /**
-       * I no longer believe that a block needs to clean up the stack
-       * This is from my obervations of anonymous blocks in switch cases inside GN_GetGrenadeTalent
-       * and other places.
-       */
-      // const stackElementsToRemove = this.stackPointer - statement.preStatementsSPCache;
-      // if(stackElementsToRemove){
-      //   buffers.push( this.writeMOVSP( -stackElementsToRemove ) );
-      // }
+      const stackElementsToRemove = this.stackPointer - statement.preStatementsSPCache;
+      if(stackElementsToRemove > 0){
+        buffers.push( this.writeMOVSP( -stackElementsToRemove ) );
+      }
+
       statement.block_end = this.scope.bytes_written;
     }
     return concatBuffers(buffers);
@@ -1092,9 +1458,42 @@ export class NWScriptCompiler {
     return concatBuffers(buffers);
   }
 
+  compileMod( statement: any ){
+    const buffers: Uint8Array[] = [];
+    if(statement && statement.type == 'mod'){
+      buffers.push( this.compileStatement(statement.left) as Uint8Array );
+      buffers.push( this.compileStatement(statement.right) as Uint8Array );
+      if(this.getDataType(statement.left).unary == NWCompileDataTypes.I && this.getDataType(statement.right).unary == NWCompileDataTypes.I){
+        buffers.push( this.writeMODII() );
+      }else{
+        // NSS modulus is int/int only (semantic pass enforces); fall through otherwise
+      }
+    }
+    return concatBuffers(buffers);
+  }
+
   compileCompare( statement: any ){
     const buffers: Uint8Array[] = [];
     if(statement && statement.type == 'compare'){
+      /** Deferred rel32 patches for logical && / || short-circuit JZ placeholders. */
+      let logicalAndJZSite = -1;
+      let logicalOrJZLeftSite = -1;
+      let logicalOrJZRightSite = -1;
+      const R = NWScriptCompiler.REL32_SENTINEL;
+
+      const inferUnaryNode = (node: any): number | undefined => {
+        if(!node) return undefined;
+        if(node.datatype?.unary !== undefined) return node.datatype.unary;
+        const dt = this.getDataType(node);
+        if(dt?.unary !== undefined) return dt.unary;
+        if(node.type === 'literal' && node.datatype?.unary !== undefined) return node.datatype.unary;
+        return undefined;
+      };
+      let lGuess = inferUnaryNode(statement.left);
+      let rGuess = inferUnaryNode(statement.right);
+      if(!lGuess && rGuess === NWCompileDataTypes.I) lGuess = NWCompileDataTypes.I;
+      if(!rGuess && lGuess === NWCompileDataTypes.I) rGuess = NWCompileDataTypes.I;
+
       const leftBuf = this.compileStatement(statement.left) as Uint8Array;
       buffers.push( leftBuf );
 
@@ -1119,30 +1518,29 @@ export class NWScriptCompiler {
 
       if(statement.type == 'compare'){
         if(statement.operator.value == '||'){
-          buffers.push( this.writeCPTOPSP(-4) );
-          buffers.push( this.writeJZ( statement.jz_1 ? statement.jz_1 - this.scope.bytes_written : 0x7FFFFFFF ) );
-          buffers.push( this.writeCPTOPSP(-4) );
-          buffers.push( this.writeJZ( statement.jz_2 ? statement.jz_2 - this.scope.bytes_written : 0x7FFFFFFF ) );
-          statement.jz_1 = this.scope.bytes_written;
+          if(lGuess == NWCompileDataTypes.I && rGuess === NWCompileDataTypes.I){
+            buffers.push( this.writeCPTOPSP(-4) );
+            logicalOrJZLeftSite = this.bytesWritten;
+            buffers.push( this.writeJZ(R) );
+            buffers.push( this.writeCPTOPSP(-4) );
+            logicalOrJZRightSite = this.bytesWritten;
+            buffers.push( this.writeJZ(R) );
+            statement.jz_1 = this.scope.bytes_written;
+            this.enqueueRel32BranchFixup(logicalOrJZLeftSite, this.bytesWritten);
+          }
         }else if(statement.operator.value == '&&'){
-          buffers.push( this.writeCPTOPSP(-4) );
-          buffers.push( this.writeJZ( statement.jz_2 ? statement.jz_2 - this.scope.bytes_written : 0x7FFFFFFF ) );
+          if(lGuess == NWCompileDataTypes.I && rGuess === NWCompileDataTypes.I){
+            buffers.push( this.writeCPTOPSP(-4) );
+            logicalAndJZSite = this.bytesWritten;
+            buffers.push( this.writeJZ(R) );
+          }
         }
       }
 
       buffers.push( this.compileStatement(statement.right) as Uint8Array );
 
-      const inferUnary = (node: any): number | undefined => {
-        if(!node) return undefined;
-        if(node.datatype?.unary !== undefined) return node.datatype.unary;
-        const dt = this.getDataType(node);
-        if(dt?.unary !== undefined) return dt.unary;
-        if(node.type === 'literal' && node.datatype?.unary !== undefined) return node.datatype.unary;
-        return undefined;
-      };
-
-      let lUnary = inferUnary(statement.left);
-      let rUnary = inferUnary(statement.right);
+      let lUnary = inferUnaryNode(statement.left);
+      let rUnary = inferUnaryNode(statement.right);
 
       // Fallback: if one side is int and the other is unknown, assume int
       if(!lUnary && rUnary === NWCompileDataTypes.I) lUnary = NWCompileDataTypes.I;
@@ -1192,6 +1590,9 @@ export class NWScriptCompiler {
         if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
           buffers.push( this.writeLOGANDII() );
           statement.jz_2 = this.scope.bytes_written;
+          if(logicalAndJZSite >= 0){
+            this.enqueueRel32BranchFixup(logicalAndJZSite, this.bytesWritten);
+          }
         }else{
           //ERROR: unsupported datatypes to compare
           console.error('Unsupported: LOGANDII datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
@@ -1199,7 +1600,11 @@ export class NWScriptCompiler {
       }else if(statement.operator.value == '||'){
         if(lUnary == NWCompileDataTypes.I && rUnary == NWCompileDataTypes.I){
           statement.jz_2 = this.scope.bytes_written;
+          const logOrOpcodePc = this.bytesWritten;
           buffers.push( this.writeLOGORII() );
+          if(logicalOrJZRightSite >= 0){
+            this.enqueueRel32BranchFixup(logicalOrJZRightSite, logOrOpcodePc);
+          }
         }else{
           //ERROR: unsupported datatypes to compare
           console.error('Unsupported: LOGORII datatypes', this.getDataType(statement.left), this.getDataType(statement.right) );
@@ -1250,33 +1655,38 @@ export class NWScriptCompiler {
     const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'if'){
-      // Build chain: if + elseIfs + else, drop any null/undefined
       const ifelses: any[] = ([] as any[]).concat([statement], statement.elseIfs || [], statement.else || []).filter(Boolean);
+
+      let pendingJZ: number | undefined;
+      const jmpSitesToMerge: number[] = [];
+      const S = NWScriptCompiler.REL32_SENTINEL;
 
       for(let i = 0; i < ifelses.length; i++){
         const ifelse = ifelses[i];
 
-        //Compile the condition statements (support single or array)
+        // False-target of previous elseif/if must jump here (including start of final `else` body — not straight to merge).
+        if (pendingJZ !== undefined) {
+          this.enqueueRel32BranchFixup(pendingJZ, this.bytesWritten);
+          pendingJZ = undefined;
+        }
+
         const conds = Array.isArray(ifelse.condition) ? ifelse.condition : (ifelse.condition ? [ifelse.condition] : []);
         for(let j = 0; j < conds.length; j++){
           buffers.push( this.compileStatement( conds[j] ) as Uint8Array );
         }
-        
-        //the offset prior to writing the JZ statement
+
         ifelse.jz_start = this.scope.bytes_written;
 
-        //write the JZ statement
-        if(ifelse.type != 'else'){
-          //jump to next ifelse or else statement if condition is false
-          buffers.push( this.writeJZ(ifelse.jz ? ifelse.jz : 0x7FFFFFFF) ); 
+        if(ifelse.type !== 'else'){
+          const jzInstrStart = this.bytesWritten;
+          buffers.push( this.writeJZ(S) );
+          pendingJZ = jzInstrStart;
         }
 
-        //the offset prior to writing the statements
         ifelse.block_start = this.scope.bytes_written;
 
         const sp_cache = this.stackPointer;
 
-        //Compile if statements
         for(let j = 0; j < ifelse.statements.length; j++){
           buffers.push( this.compileStatement( ifelse.statements[j] ) as Uint8Array );
         }
@@ -1285,34 +1695,40 @@ export class NWScriptCompiler {
         if(sp_offset){
           buffers.push( this.writeMOVSP(-sp_offset) );
         }
-        
-        //the offset prior to writing the JMP statement
-        ifelse.jmp_start = this.scope.bytes_written;
-        //write the JMP statement
-        if(ifelse.type != 'else'){
-          buffers.push( this.writeJMP( ifelses[i].jmp ? ifelses[i].jmp : 0x7FFFFFFF ) ); //jump to the end of the else if chain
+
+        if(ifelse.type !== 'else'){
+          ifelse.jmp_start = this.scope.bytes_written;
+          const jmpInstrStart = this.bytesWritten;
+          buffers.push( this.writeJMP(S) );
+          jmpSitesToMerge.push(jmpInstrStart);
         }
 
-        //the offset that marks the end of this ifelse block
         ifelse.block_end = this.scope.bytes_written;
 
-        if(ifelse.type != 'else'){
+        if(ifelse.type !== 'else'){
           if(!ifelse.jz){
             ifelse.jz = ifelse.block_end - ifelse.jz_start;
           }
         }
       }
 
-      //Calculate JMP offsets
+      const mergePc = this.bytesWritten;
+      if(pendingJZ !== undefined){
+        this.enqueueRel32BranchFixup(pendingJZ, mergePc);
+      }
+      for(const jmpInstrStart of jmpSitesToMerge){
+        this.enqueueRel32BranchFixup(jmpInstrStart, mergePc);
+      }
+
       for(let i = 0; i < ifelses.length; i++){
         ifelses[i].end_of_if_else_block = this.scope.bytes_written;
-        if(!ifelses[i].jmp){
+        if(ifelses[i].type !== 'else' && !ifelses[i].jmp && typeof ifelses[i].jmp_start === 'number'){
           ifelses[i].jmp = ifelses[i].end_of_if_else_block - ifelses[i].jmp_start;
         }
       }
 
     }
-    
+
     return concatBuffers(buffers);
   }
 
@@ -1320,34 +1736,45 @@ export class NWScriptCompiler {
     const buffers: Uint8Array[] = [];
 
     if(statement && statement.type == 'switch'){
+      const nested_state = new NWScriptNestedState( statement );
+      this.scope.addNestedState( nested_state );
 
       statement.block_start = this.scope.bytes_written;
+      statement.pendingSwitchBreakJmpSites = [];
 
       const switchCondition = statement.condition;
-      const has_default = statement.default && statement.default.type == 'default' ? true : false;
-      
-      //save the pointer to the switch varaible location on the stack
+      const has_default = !!(statement.default && statement.default.type == 'default');
+
       const switch_condition_sp = this.stackPointer;
-      //push the switch variable onto the stack
       buffers.push( this.compileStatement(switchCondition) as Uint8Array );
-      
+      statement.preStatementsSPCache = this.stackPointer;
+      statement.discriminatorStackBytes = this.stackPointer - switch_condition_sp;
+
+      /** Opcode starts of dispatcher JNZs; pairs 1:1 with caseBodyAbsPcs (both in bytesWritten space). */
+      const jnzDispatchSites: number[] = [];
+
       for(let i = 0; i < statement.cases.length; i++){
         const _case = statement.cases[i];
         buffers.push( this.writeCPTOPSP( (switch_condition_sp - this.stackPointer), 0x04) );
         buffers.push( this.compileStatement( _case.value ) as Uint8Array );
         buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
-        buffers.push( this.writeJNZ( _case.block_start ? _case.block_start - this.scope.bytes_written : 0x7FFFFFFF ) );
+        const jnzSite = this.bytesWritten;
+        buffers.push( this.writeJNZ( 0x7FFFFFFF ) );
+        jnzDispatchSites.push(jnzSite);
       }
 
-      if(has_default){
-        buffers.push( this.writeJMP( statement.default.block_start - this.scope.bytes_written ) );
-      }else{
-        buffers.push( this.writeJMP( statement.block_end - this.scope.bytes_written ) );
-      }
+      /**
+       * dispatcher ladder, then fence JMP (to cleanup if no default; to default if present),
+       * then numbered case bodies, then default block, then MOVSP cleanup.
+       */
+      const exitJumpsToCleanup: number[] = [];
+      const fenceJmpSite = this.bytesWritten;
+      buffers.push( this.writeJMP( 0x7FFFFFFF ) );
 
-      //Compile the case statements
+      const caseBodyAbsPcs: number[] = [];
       for(let i = 0; i < statement.cases.length; i++){
         const _case = statement.cases[i];
+        caseBodyAbsPcs.push(this.bytesWritten);
         _case.block_start = this.scope.bytes_written;
 
         for(let j = 0; j < _case.statements.length; j++){
@@ -1355,32 +1782,65 @@ export class NWScriptCompiler {
         }
 
         if(!_case.fallthrough){
-          buffers.push( this.writeJMP( statement.block_end - this.scope.bytes_written ) );
+          /** Last explicit case exit before MOVSP skips redundant jmp when no default (nwn merges into MOVSP). */
+          const elideExitJmp = !has_default && i === statement.cases.length - 1;
+          if(!elideExitJmp){
+            const jmpSite = this.bytesWritten;
+            buffers.push( this.writeJMP( 0x7FFFFFFF ) );
+            exitJumpsToCleanup.push(jmpSite);
+          }
         }
 
         _case.block_end = this.scope.bytes_written;
       }
 
-      //Compile the default statements
+      let defaultEntryPc = 0;
       if(has_default){
         const _default = statement.default;
+        defaultEntryPc = this.bytesWritten;
         _default.block_start = this.scope.bytes_written;
 
         for(let i = 0; i < _default.statements.length; i++){
           buffers.push( this.compileStatement( _default.statements[i] ) as Uint8Array );
         }
 
-        buffers.push( this.writeJMP( statement.block_end - this.scope.bytes_written ) );
+        /** Default sits immediately before shared MOVSP; nwn omits jmp-to-next-instruction tail. */
 
         _default.block_end = this.scope.bytes_written;
       }
 
-      //mark the end of the switch block
       statement.block_end = this.scope.bytes_written;
 
-      //clear the switch variable off the stack
-      buffers.push( this.writeMOVSP( -4 ) );
-      
+      const exitCleanupPc = this.bytesWritten;
+      const pendingBreaks = statement.pendingSwitchBreakJmpSites as number[] | undefined;
+      if (pendingBreaks?.length) {
+        for (const jmpInstrStart of pendingBreaks) {
+          this.enqueueRel32BranchFixup(jmpInstrStart, exitCleanupPc);
+        }
+        pendingBreaks.length = 0;
+      }
+
+      buffers.push( this.writeMOVSP( -(statement.discriminatorStackBytes ?? 4) ) );
+      statement.switchBreakTarget = this.scope.bytes_written;
+
+      for(let i = 0; i < jnzDispatchSites.length; i++){
+        if(!this.freezeBytesWritten){
+          this.switchJzFixups.push({ jzSite: jnzDispatchSites[i], targetPc: caseBodyAbsPcs[i] });
+        }
+      }
+      if(!this.freezeBytesWritten){
+        this.switchExitJmpFixups.push({
+          jmpSite: fenceJmpSite,
+          exitPc: has_default ? defaultEntryPc : exitCleanupPc,
+        });
+      }
+      for(const jmpSite of exitJumpsToCleanup){
+        if(!this.freezeBytesWritten){
+          this.switchExitJmpFixups.push({ jmpSite, exitPc: exitCleanupPc });
+        }
+      }
+
+      this.scope.removeNestedState( nested_state );
     }
     return concatBuffers(buffers);
   }
@@ -1391,6 +1851,8 @@ export class NWScriptCompiler {
     if(statement && statement.type == 'do'){
       const nested_state = new NWScriptNestedState( statement );
       this.scope.addNestedState( nested_state );
+
+      statement.pendingLoopBreakJmpSites = [];
 
       statement.block_start = this.scope.bytes_written;
       statement.preStatementsSPCache = this.stackPointer;
@@ -1436,6 +1898,8 @@ export class NWScriptCompiler {
       statement.condition_end = this.scope.bytes_written;
 
       statement.block_end = this.scope.bytes_written;
+      const loopExitOpc = this.bytesWritten;
+      this.drainPendingLoopBreakFixups(statement, loopExitOpc);
       this.scope.removeNestedState( nested_state );
     }
     
@@ -1452,19 +1916,19 @@ export class NWScriptCompiler {
       //Cache the byte offset of the beginning of this code block
       statement.block_start = this.scope.bytes_written;
 
+      statement.pendingLoopBreakJmpSites = [];
+      statement.pendingWhileContinueFwdJmpSites = [];
+
       statement.continue_start = this.scope.bytes_written;
 
-      //Compile the while condition statements (support single)
       const conds = Array.isArray(statement.condition) ? statement.condition : (statement.condition ? [statement.condition] : []);
       for(let i = 0; i < conds.length; i++){
         buffers.push( this.compileStatement( conds[i] ) as Uint8Array );
         if(i) buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
       }
 
-      //If the condition is false Jump out of the loop
-      buffers.push( 
-        this.writeJZ( statement.block_end ? (statement.block_end - this.scope.bytes_written) : 0x7FFFFFFF )
-      );
+      const jzInstrStart = this.bytesWritten;
+      buffers.push( this.writeJZ(NWScriptCompiler.REL32_SENTINEL) );
       
       //Cache the current stack pointer
       statement.preStatementsSPCache = this.stackPointer;
@@ -1484,7 +1948,10 @@ export class NWScriptCompiler {
         buffers.push( this.writeMOVSP( -stackElementsToRemove ) );
       }
 
-      //JMP back to the beginning of the DO-While statement
+      const footerBeforeBackjmpPc = this.bytesWritten;
+      this.drainPendingWhileContinueFwdFixups(statement, footerBeforeBackjmpPc);
+
+      //JMP back to the beginning of the while-condition
       buffers.push( 
         this.writeJMP( 
           -(this.scope.bytes_written - statement.block_start)
@@ -1492,6 +1959,9 @@ export class NWScriptCompiler {
       );
 
       statement.block_end = this.scope.bytes_written;
+      const loopExitOpc = this.bytesWritten;
+      this.enqueueRel32BranchFixup(jzInstrStart, loopExitOpc);
+      this.drainPendingLoopBreakFixups(statement, loopExitOpc);
       this.scope.removeNestedState( nested_state );
     }
     
@@ -1508,6 +1978,8 @@ export class NWScriptCompiler {
       //Cache the byte offset of the beginning of this code block
       statement.block_start = this.scope.bytes_written;
 
+      statement.pendingLoopBreakJmpSites = [];
+      statement.pendingContinueJmpSites = [];
       //Begin initializer
       statement.initializer_start = this.scope.bytes_written;
 
@@ -1523,18 +1995,14 @@ export class NWScriptCompiler {
 
       //Begin condition
       statement.condition_start = this.scope.bytes_written;
-      statement.continue_start = this.scope.bytes_written;
 
       const conds = Array.isArray(statement.condition) ? statement.condition : (statement.condition ? [statement.condition] : []);
       for(let i = 0; i < conds.length; i++){
         buffers.push( this.compileStatement( conds[i] ) as Uint8Array );
         if(i) buffers.push( this.writeEQUAL(NWCompileDataTypes.II) );
       }
-      buffers.push( 
-        this.writeJZ( 
-          statement.block_end ? (statement.block_end - this.scope.bytes_written) : 0x7FFFFFFF 
-        )
-      );
+      const jzInstrStart = this.bytesWritten;
+      buffers.push( this.writeJZ(NWScriptCompiler.REL32_SENTINEL) );
 
       statement.condition_end = this.scope.bytes_written;
       //End condition
@@ -1560,8 +2028,10 @@ export class NWScriptCompiler {
 
 
 
-      //Begin incrementor
+      //Begin incrementor (`continue` patched after PC known — body runs before increment is emitted).
+      const incrementOpcodePc = this.bytesWritten;
       statement.incrementor_start = this.scope.bytes_written;
+      this.drainPendingContinueFixups(statement, incrementOpcodePc);
 
       if(statement.incrementor && typeof statement.incrementor === 'object'){
         (statement.incrementor as any).statement_context = 'statement';
@@ -1578,10 +2048,28 @@ export class NWScriptCompiler {
       );
 
       statement.block_end = this.scope.bytes_written;
+      const loopExitOpc = this.bytesWritten;
+      this.enqueueRel32BranchFixup(jzInstrStart, loopExitOpc);
+      this.drainPendingLoopBreakFixups(statement, loopExitOpc);
       this.scope.removeNestedState( nested_state );
     }
     
     return concatBuffers(buffers);
+  }
+
+  /** Switch discriminants still live (nested after target loop until shared MOVSP). `continue` → loop increment. */
+  private sumAliveSwitchDiscriminatorBytesAfterLoop(activeLoop: NWScriptNestedState): number {
+    const nests = this.scope.nested_states;
+    const loopIdx = nests.indexOf(activeLoop);
+    if (loopIdx < 0) return 0;
+    let sum = 0;
+    for (let i = loopIdx + 1; i < nests.length; i++) {
+      const st = nests[i].statement;
+      if (st?.type === 'switch') {
+        sum += typeof st.discriminatorStackBytes === 'number' ? st.discriminatorStackBytes : 4;
+      }
+    }
+    return sum;
   }
 
   compileContinue( statement: CompilerContinueNode ){
@@ -1593,7 +2081,13 @@ export class NWScriptCompiler {
 
     const active_loop = this.scope.getTopContinueableNestedState();
     if(active_loop){
-      const stackOffset = this.stackPointer - active_loop.statement.preStatementsSPCache;
+      const lp = active_loop.statement.preStatementsSPCache;
+      const keptSwitchTemps =
+        lp !== undefined && typeof lp === 'number'
+          ? this.sumAliveSwitchDiscriminatorBytesAfterLoop(active_loop)
+          : 0;
+      const rawOffset = lp !== undefined && typeof lp === 'number' ? this.stackPointer - lp : 0;
+      const stackOffset = Math.max(0, rawOffset - keptSwitchTemps);
       if(stackOffset){
         buffers.push( this.writeMOVSP( -stackOffset ) );
         //return the stack pointer to it's previous state so that the outer loop is not affected
@@ -1601,11 +2095,24 @@ export class NWScriptCompiler {
       }else{
         //console.log('noting to remove')
       }
-      buffers.push( 
-        this.writeJMP( 
-          active_loop.statement.continue_start ? -(this.scope.bytes_written - active_loop.statement.continue_start) : 0x7FFFFFFF 
-        )
-      );  
+      if (active_loop.statement.type === "for") {
+        const jmpInstrStart = this.bytesWritten;
+        buffers.push(this.writeJMP(NWScriptCompiler.REL32_SENTINEL));
+        const pend = (active_loop.statement.pendingContinueJmpSites ??= []);
+        pend.push(jmpInstrStart);
+      } else if (active_loop.statement.type === "while") {
+        const jmpInstrStart = this.bytesWritten;
+        buffers.push(this.writeJMP(NWScriptCompiler.REL32_SENTINEL));
+        const pend = (active_loop.statement.pendingWhileContinueFwdJmpSites ??= []);
+        pend.push(jmpInstrStart);
+      } else {
+        const cs = active_loop.statement.continue_start;
+        buffers.push(
+          this.writeJMP(
+            typeof cs === "number" ? -(this.scope.bytes_written - cs) : NWScriptCompiler.REL32_SENTINEL,
+          ),
+        );
+      }  
     }else{
       //console.log('no active loop');
       //can't use continue outside of a loop
@@ -1623,23 +2130,27 @@ export class NWScriptCompiler {
     }
     statement.block_start = this.scope.bytes_written;
 
-    const active_loop = this.scope.getTopContinueableNestedState();
-    if(active_loop){
-      const stackOffset = this.stackPointer - active_loop.statement.preStatementsSPCache;
-      if(stackOffset){
+    const target = this.scope.getTopBreakableLoopOrSwitch();
+    if(target){
+      const stackOffset = this.stackPointer - target.statement.preStatementsSPCache;
+      if(stackOffset > 0){
         buffers.push( this.writeMOVSP( -stackOffset ) );
-        //return the stack pointer to it's previous state so that the outer loop is not affected
         this.stackPointer += stackOffset;
-      }else{
-        //console.log('noting to remove')
+      }else if(stackOffset < 0){
+        console.warn('break: stack offset is negative, unusual', stackOffset);
       }
-      buffers.push( 
-        this.writeJMP( 
-          active_loop.statement.block_end ? -(this.scope.bytes_written - active_loop.statement.block_end) : 0x7FFFFFFF 
-        )
-      );  
+
+      const S = NWScriptCompiler.REL32_SENTINEL;
+      const jmpInstrStart = this.bytesWritten;
+      buffers.push( this.writeJMP(S) );
+      if(target.statement.type === 'switch'){
+        const pend = (target.statement.pendingSwitchBreakJmpSites ??= []);
+        pend.push(jmpInstrStart);
+      }else{
+        const pend = (target.statement.pendingLoopBreakJmpSites ??= []);
+        pend.push(jmpInstrStart);
+      }
     }else{
-      //console.log('no active loop');
       //can't use break outside of a loop
     }
 
@@ -1662,10 +2173,10 @@ export class NWScriptCompiler {
       const varRef = statement.variable_reference;
       if(varRef.is_global){
         if(!statement.postfix){
-          buffers.push( 
-            this.writeINCIBP( 
-              varRef.stackPointer - this.stackPointer
-            ) 
+          buffers.push(
+            this.writeINCIBP(
+              varRef.stackPointer - this.basePointer
+            )
           );
         }
         buffers.push( 
@@ -1675,10 +2186,12 @@ export class NWScriptCompiler {
           )
         );
         if(statement.postfix){
-          buffers.push( 
-            this.writeINCIBP( 
-              varRef.stackPointer - this.basePointer
-            ) 
+          const ibpOffset =
+            varRef.stackPointer -
+            this.basePointer -
+            this.getDataTypeStackLength(varRef.datatype);
+          buffers.push(
+            this.writeINCIBP( ibpOffset )
           );
         }
       }else{
@@ -2596,6 +3109,13 @@ class NWScriptScope {
 
   getTopContinueableNestedState( ){
     return this.nested_states.slice(0).reverse().find( s => { return (s.statement.type == 'for' || s.statement.type == 'while' || s.statement.type == 'do') } );
+  }
+
+  /** Break resolves to the nearest enclosing loop or switch (NWScript semantics). */
+  getTopBreakableLoopOrSwitch( ){
+    return this.nested_states.slice(0).reverse().find( s =>
+      s.statement.type == 'for' || s.statement.type == 'while' || s.statement.type == 'do' || s.statement.type == 'switch'
+    );
   }
 
   getTopBreakableNestedState( ){

@@ -1,8 +1,8 @@
 import React from 'react';
-import { ContextMenuItem } from '../../common/ContextMenu';
-import * as KotOR from '../../../KotOR';
-import { FileTypeManager } from '../../../FileTypeManager';
-import { EditorFile } from '../../../EditorFile';
+import { ContextMenuItem } from "@/apps/forge/components/common/ContextMenu";
+import * as KotOR from "@/apps/forge/KotOR";
+import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { EditorFile } from "@/apps/forge/EditorFile";
 const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
 
 import * as fs from "fs";
@@ -80,7 +80,7 @@ export const createERFContextMenuItems = (props: ERFContextMenuProps): ContextMe
               newFile.handle = newHandle;
               console.log('handle', newHandle.name, newHandle);
               try{
-                newFile.setPath(`file://system.dir/${newHandle.name}`);
+                newFile.setPath(EditorFile.referenceURIForSystemVirtualName(newHandle.name));
                 const saveBuffer = new Uint8Array(newFile.buffer)
                 const ws: FileSystemWritableFileStream = await newHandle.createWritable();
                 await ws.write(saveBuffer || new Uint8Array(0));

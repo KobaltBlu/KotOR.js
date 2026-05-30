@@ -1,6 +1,6 @@
-import { ForgeGameObject } from "./ForgeGameObject";
-import * as KotOR from "../KotOR";
-import { ItemPropertyEntry } from "../states/tabs/TabUTIEditorState";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
+import { ItemPropertyEntry } from "@/apps/forge/states/tabs/TabUTIEditorState";
 
 export class ForgeItem extends ForgeGameObject {
   //GIT Instance Properties
@@ -227,7 +227,9 @@ export class ForgeItem extends ForgeGameObject {
       const mdl = await KotOR.MDLLoader.loader.load(defaultModel);
       const model = await KotOR.OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
-        lighting: true
+        lighting: true,
+        disableMatrixUpdate: false,
+        editorMode: true
       });
       this.model = model;
       if(this.context && this.context.scene){

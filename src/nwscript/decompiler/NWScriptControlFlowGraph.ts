@@ -1,10 +1,10 @@
-import type { NWScript } from "../NWScript";
-import type { NWScriptInstruction } from "../NWScriptInstruction";
-import { NWScriptBasicBlock } from "./NWScriptBasicBlock";
-import { NWScriptEdge, EdgeType } from "./NWScriptEdge";
+import type { NWScript } from "@/nwscript/NWScript";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { NWScriptBasicBlock } from "@/nwscript/decompiler/NWScriptBasicBlock";
+import { NWScriptEdge, EdgeType } from "@/nwscript/decompiler/NWScriptEdge";
 import {
   OP_JMP, OP_JSR, OP_JZ, OP_JNZ, OP_RETN, OP_STORE_STATE, OP_STORE_STATEALL
-} from '../NWScriptOPCodes';
+} from "@/nwscript/NWScriptOPCodes";
 
 /**
  * Control Flow Graph for NWScript decompilation.
@@ -102,6 +102,14 @@ export class NWScriptControlFlowGraph {
   backEdges: Set<NWScriptEdge> = new Set();
 
   /**
+   * Unconditional backward {@code JMP} edges inside a procedure region that are **not**
+   * classified as {@link backEdges} because global dominance from script entry can miss the
+   * latch (e.g. JSR/RET merges before the loop header). Used only for {@link identifyNaturalLoops};
+   * they are not required to satisfy {@code dominates(to, from)}.
+   */
+  procedureLatchEdges: Set<NWScriptEdge> = new Set();
+
+  /**
    * Critical edges (from has multiple successors, to has multiple predecessors)
    */
   criticalEdges: Set<NWScriptEdge> = new Set();
@@ -188,6 +196,7 @@ export class NWScriptControlFlowGraph {
     this.orderedEdges = [];
     this.edgeMap.clear();
     this.backEdges.clear();
+    this.procedureLatchEdges.clear();
     this.criticalEdges.clear();
     this.blockDepths.clear();
     this.naturalLoops.clear();
@@ -227,21 +236,23 @@ export class NWScriptControlFlowGraph {
     // Step 4: Identify entry and exit blocks
     this.identifyEntryAndExitBlocks();
 
-    // Step 5: Compute dominators (for loop detection and decompilation)
-    // Note: Loop identification is done by NWScriptControlStructureBuilder, not here
+    // Step 5: Build typed edge list (must precede dominators/post-dominators — getEdge/edgeMap drive intra-procedural walks)
+    this.buildEdges();
+
+    // Step 6: Compute dominators (for loop detection and decompilation)
     this.computeDominators();
 
-    // Step 6: Compute post-dominators (for merge point detection and unreachable code)
+    // Step 7: Compute post-dominators (for merge point detection and unreachable code)
     this.computePostDominators();
 
-    // Step 7: Identify unreachable code
+    // Step 8: Identify unreachable code
     this.identifyUnreachableCode();
-
-    // Step 8: Build edge information with types
-    this.buildEdges();
 
     // Step 9: Identify back edges
     this.identifyBackEdges();
+
+    // Step 9b: Procedure-local backward unconditional JMPs not caught by dominance (NCSDecomp-style latch hints)
+    this.populateProcedureLatchEdges();
 
     // Step 10: Identify critical edges
     this.identifyCriticalEdges();
@@ -312,6 +323,8 @@ export class NWScriptControlFlowGraph {
    * 
    * CRITICAL: The `type` field of STORE_STATE is the offset to the callback entry point.
    * Callback entry = STORE_STATE_address + instruction.type
+   *
+   * Thunk linear span policy: align with {@link NWScriptStoreStateThunkSkip.computeInlinedThunkSkipAddresses}.
    */
   private identifyStoreStateJmpTargets(): void {
     this.storeStateJmpTargets.clear();
@@ -1063,6 +1076,39 @@ export class NWScriptControlFlowGraph {
       }
     }
 
+    // Procedure latch edges (not dominance-classified; must be backward unconditional JMP)
+    for (const edge of this.procedureLatchEdges) {
+      if (this.backEdges.has(edge)) {
+        errors.push(
+          `CFG Validation Error: Edge ${edge.from.id}->${edge.to.id} must not appear in both backEdges and procedureLatchEdges`
+        );
+      }
+      if (edge.type !== EdgeType.JUMP) {
+        errors.push(
+          `CFG Validation Error: Procedure latch edge ${edge.from.id}->${edge.to.id} must be JUMP (got ${edge.type})`
+        );
+        continue;
+      }
+      const last = edge.from.endInstruction;
+      if (!last || last.code !== OP_JMP || last.offset === undefined) {
+        errors.push(
+          `CFG Validation Error: Procedure latch edge ${edge.from.id}->${edge.to.id} must end with OP_JMP`
+        );
+        continue;
+      }
+      const targetPc = last.address + last.offset;
+      if (edge.to.startInstruction.address !== targetPc) {
+        errors.push(
+          `CFG Validation Error: Procedure latch JMP target mismatch ${edge.from.id}->${edge.to.id}`
+        );
+      }
+      if (targetPc >= edge.from.startInstruction.address) {
+        errors.push(
+          `CFG Validation Error: Procedure latch edge ${edge.from.id}->${edge.to.id} must jump backward in PC`
+        );
+      }
+    }
+
     // Validate natural loops
     for (const [header, loopBlocks] of this.naturalLoops) {
       if (!header.isLoopHeader) {
@@ -1090,7 +1136,41 @@ export class NWScriptControlFlowGraph {
    * Get the basic block containing a specific instruction address
    */
   getBlockForAddress(address: number): NWScriptBasicBlock | null {
-    return this.instructionToBlock.get(address) || null;
+    const mapped = this.instructionToBlock.get(address);
+    if (mapped) {
+      return mapped;
+    }
+    for (const b of this.blocks.values()) {
+      if (b.containsAddress(address)) {
+        return b;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Topological order of blocks reachable from {@code entry} (post-order reversed).
+   * Use for procedure-local linearization; {@link getTopologicalOrder} starts at script entry only.
+   */
+  getTopologicalOrderFromEntry(entry: NWScriptBasicBlock): NWScriptBasicBlock[] {
+    const visited = new Set<NWScriptBasicBlock>();
+    const result: NWScriptBasicBlock[] = [];
+
+    const visit = (block: NWScriptBasicBlock) => {
+      if (visited.has(block)) {
+        return;
+      }
+      visited.add(block);
+
+      for (const successor of block.successors) {
+        visit(successor);
+      }
+
+      result.push(block);
+    };
+
+    visit(entry);
+    return result.reverse();
   }
 
   /**
@@ -1263,16 +1343,114 @@ export class NWScriptControlFlowGraph {
   }
 
   /**
-   * Identify back edges (edges where target dominates source)
+   * Forward-reachable blocks from {@code start} (successor closure).
+   */
+  private forwardReachableFrom(start: NWScriptBasicBlock): Set<NWScriptBasicBlock> {
+    const region = new Set<NWScriptBasicBlock>();
+    const queue: NWScriptBasicBlock[] = [start];
+    while (queue.length > 0) {
+      const b = queue.shift()!;
+      if (region.has(b)) {
+        continue;
+      }
+      region.add(b);
+      for (const succ of b.successors) {
+        if (!region.has(succ)) {
+          queue.push(succ);
+        }
+      }
+    }
+    return region;
+  }
+
+  /**
+   * Region for dominance when recovering loops inside a subroutine: forward closure from its
+   * entry plus immediate {@link EdgeType.CALL} predecessors (JSR sites).
+   */
+  private procedureRegionForEntry(entry: NWScriptBasicBlock): Set<NWScriptBasicBlock> {
+    const region = this.forwardReachableFrom(entry);
+    for (const p of entry.predecessors) {
+      const e = this.getEdge(p, entry);
+      if (e && e.type === EdgeType.CALL) {
+        region.add(p);
+      }
+    }
+    return region;
+  }
+
+  /**
+   * Collect unconditional {@code OP_JMP} edges that jump to a PC **before** the latch block start,
+   * with both endpoints in the same {@link procedureRegionForEntry} for some script or subroutine
+   * root. Used for tests and for {@link procedureLatchEdges} / natural loop recovery when whole-graph
+   * dominance misses the latch.
+   */
+  collectProcedureBackwardUnconditionalJumpEdges(): NWScriptEdge[] {
+    const out: NWScriptEdge[] = [];
+    const roots = new Map<number, NWScriptBasicBlock>();
+    if (this.entryBlock) {
+      roots.set(this.entryBlock.id, this.entryBlock);
+    }
+    for (const [, block] of this.subroutineEntries) {
+      roots.set(block.id, block);
+    }
+    for (const root of roots.values()) {
+      const region = this.procedureRegionForEntry(root);
+      for (const edge of this.edges) {
+        if (!region.has(edge.from) || !region.has(edge.to)) {
+          continue;
+        }
+        if (edge.type !== EdgeType.JUMP) {
+          continue;
+        }
+        const last = edge.from.endInstruction;
+        if (!last || last.code !== OP_JMP || last.offset === undefined) {
+          continue;
+        }
+        const targetPc = last.address + last.offset;
+        if (edge.to.startInstruction.address !== targetPc) {
+          continue;
+        }
+        if (targetPc >= edge.from.startInstruction.address) {
+          continue;
+        }
+        out.push(edge);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Count {@link collectProcedureBackwardUnconditionalJumpEdges} (test / diagnostic oracle).
+   */
+  countBackwardUnconditionalJmpsInProcedureRegions(): number {
+    return this.collectProcedureBackwardUnconditionalJumpEdges().length;
+  }
+
+  /**
+   * Fill {@link procedureLatchEdges} with backward unconditional JMPs in procedure regions that
+   * were not marked as dominance {@link backEdges}.
+   */
+  private populateProcedureLatchEdges(): void {
+    this.procedureLatchEdges.clear();
+    for (const edge of this.collectProcedureBackwardUnconditionalJumpEdges()) {
+      if (!edge.isBackEdge) {
+        this.procedureLatchEdges.add(edge);
+      }
+    }
+  }
+
+  /**
+   * Identify back edges (edges where target dominates source).
    */
   private identifyBackEdges(): void {
     this.backEdges.clear();
 
     for (const edge of this.edges) {
-      // A back edge is one where the target dominates the source
       if (this.dominates(edge.to, edge.from)) {
         edge.isBackEdge = true;
         this.backEdges.add(edge);
+      } else {
+        edge.isBackEdge = false;
       }
     }
   }
@@ -1323,7 +1501,14 @@ export class NWScriptControlFlowGraph {
   private identifyNaturalLoops(): void {
     this.naturalLoops.clear();
 
-    for (const backEdge of this.backEdges) {
+    const seenEdge = new Set<string>();
+    const absorb = (backEdge: NWScriptEdge): void => {
+      const key = `${backEdge.from.id}->${backEdge.to.id}`;
+      if (seenEdge.has(key)) {
+        return;
+      }
+      seenEdge.add(key);
+
       const header = backEdge.to;
       const tail = backEdge.from;
 
@@ -1337,6 +1522,13 @@ export class NWScriptControlFlowGraph {
 
       // Add all blocks that can reach tail without going through header
       this.addLoopBlocks(header, tail, loopBlocks);
+    };
+
+    for (const backEdge of this.backEdges) {
+      absorb(backEdge);
+    }
+    for (const latchEdge of this.procedureLatchEdges) {
+      absorb(latchEdge);
     }
   }
 
@@ -1596,6 +1788,7 @@ export class NWScriptControlFlowGraph {
     this.edges.delete(edge);
     this.edgeMap.delete(edgeKey);
     this.backEdges.delete(edge);
+    this.procedureLatchEdges.delete(edge);
     this.criticalEdges.delete(edge);
 
     return true;
@@ -2072,6 +2265,12 @@ export class NWScriptControlFlowGraph {
           type: e.type
         })),
 
+        procedureLatchEdges: Array.from(this.procedureLatchEdges).map(e => ({
+          fromBlockId: e.from.id,
+          toBlockId: e.to.id,
+          type: e.type
+        })),
+
         // Critical edges
         criticalEdges: Array.from(this.criticalEdges).map(e => ({
           fromBlockId: e.from.id,
@@ -2154,14 +2353,14 @@ export class NWScriptControlFlowGraph {
     }
 
     for (const block of this.blocks.values()) {
-      // For each predecessor of block
+      const blockIdom = this.getImmediateDominator(block);
       for (const pred of block.predecessors) {
-        let runner = pred;
-        // Walk up the dominator tree until we reach block's immediate dominator
-        while (runner !== block && runner !== this.getImmediateDominator(block)) {
-          if (runner) {
-            this.dominanceFrontiers.get(runner)!.add(block);
+        let runner: NWScriptBasicBlock | null = pred;
+        while (runner) {
+          if (runner === block || runner === blockIdom) {
+            break;
           }
+          this.dominanceFrontiers.get(runner)!.add(block);
           runner = this.getImmediateDominator(runner);
         }
       }
@@ -2715,7 +2914,9 @@ export class NWScriptControlFlowGraph {
   }
 
   /**
-   * Get intra-procedural predecessors (excluding RETURN edges)
+   * Intra-procedural predecessors for dominance and similar walks.
+   * Includes {@link EdgeType.RETURN} (JSR → linear successor): those edges must be predecessors
+   * or dominators break for all code after the first subroutine call.
    * @param block The block to get predecessors for
    * @param excludeCall Whether to also exclude CALL edges (default: false)
    */
@@ -2724,9 +2925,6 @@ export class NWScriptControlFlowGraph {
     for (const pred of this.getOrderedPredecessors(block)) {
       const edge = this.getEdge(pred, block);
       if (edge) {
-        if (edge.type === EdgeType.RETURN) {
-          continue; // Skip return edges
-        }
         if (excludeCall && edge.type === EdgeType.CALL) {
           continue; // Skip call edges if requested
         }
@@ -2765,11 +2963,9 @@ export class NWScriptControlFlowGraph {
   }
 
   /**
-   * Check if CFG is reducible
-   * A reducible CFG can be reduced to a single node by repeatedly:
-   * - Removing self-loops
-   * - Merging nodes with single predecessor
-   * - Removing nodes with no predecessors (except entry)
+   * Check if CFG is reducible (diagnostic / exploratory; not used by the decompiler pipeline).
+   * The reduction phase below uses placeholder merge logic — do not rely on this result for
+   * correctness decisions until the merge step is fully implemented.
    */
   isReducible(): boolean {
     // A CFG is reducible if all loops are natural loops (have a single entry point)

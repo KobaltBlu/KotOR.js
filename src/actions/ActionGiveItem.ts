@@ -1,10 +1,10 @@
-import { GameState } from "../GameState";
-import { ActionStatus } from "../enums/actions/ActionStatus";
-import { ActionType } from "../enums/actions/ActionType";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import type { ModuleObject, ModuleItem } from "../module";
-import { BitWise } from "../utility/BitWise";
-import { Action } from "./Action";
+import { GameState } from "@/GameState";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import type { ModuleObject, ModuleItem } from "@/module";
+import { BitWise } from "@/utility/BitWise";
+import { Action } from "@/actions/Action";
 
 /**
  * ActionGiveItem class.

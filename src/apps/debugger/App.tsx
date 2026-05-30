@@ -1,6 +1,6 @@
 import React from "react"
-import { useApp } from "./context/AppContext";
-import { ScriptDebugger } from "./components/ScriptDebugger";
+import { useApp } from "@/apps/debugger/context/AppContext";
+import { ScriptDebugger } from "@/apps/debugger/components/ScriptDebugger";
 
 
 export const App = () => {

@@ -1,11 +1,11 @@
-import type { GameEffect } from "../effects";
-import { GameEventType } from "../enums/events/GameEventType";
-import { GFFDataType } from "../enums/resource/GFFDataType";
-import { GFFField } from "../resource/GFFField";
-import { GFFStruct } from "../resource/GFFStruct";
-import { GameEvent } from "./GameEvent";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
+import type { GameEffect } from "@/effects";
+import { GameEventType } from "@/enums/events/GameEventType";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { GameEvent } from "@/events/GameEvent";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 
 /**
  * EventRemoveEffect class.

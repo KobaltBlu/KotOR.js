@@ -1,23 +1,23 @@
-import { EngineMode } from "../enums/engine/EngineMode";
-import { DLGObject } from "../resource/DLGObject";
-import { DLGNode } from "../resource/DLGNode";
-import type { ModuleCreature, ModuleObject } from "../module";
-import { ConversationState } from "../enums/dialog/ConversationState";
-import { GameState } from "../GameState";
-import { DLGConversationType } from "../enums/dialog/DLGConversationType";
-import { DLGCameraAngle } from "../enums/dialog/DLGCameraAngle";
-import { OdysseyModel3D } from "../three/odyssey/OdysseyModel3D";
-import { ModuleCreatureAnimState } from "../enums/module/ModuleCreatureAnimState";
-import { BitWise } from "../utility/BitWise";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { AudioLoader } from "../audio/AudioLoader";
-import { AudioEngine } from "../audio/AudioEngine";
-import { CutsceneMode } from "../enums/dialog/CutsceneMode";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { DLGObject } from "@/resource/DLGObject";
+import { DLGNode } from "@/resource/DLGNode";
+import type { ModuleCreature, ModuleObject } from "@/module";
+import { ConversationState } from "@/enums/dialog/ConversationState";
+import { GameState } from "@/GameState";
+import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
+import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
+import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { AudioLoader } from "@/audio/AudioLoader";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
 import * as THREE from "three";
-import { CameraMode } from "../enums/dialog/CameraMode";
-import { ICameraState } from "../interface/dialog/ICameraState";
-import { AudioEmitter } from "../audio/AudioEmitter";
-import { ICameraParticipant } from "../interface/dialog/ICameraParticipant";
+import { CameraMode } from "@/enums/dialog/CameraMode";
+import { ICameraState } from "@/interface/dialog/ICameraState";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { ICameraParticipant } from "@/interface/dialog/ICameraParticipant";
 
 const ENTRY_DELAY = 3000;
 const HALF_PI = Math.PI / 2;
@@ -125,6 +125,7 @@ export class CutsceneManager {
     //bark entry
     const isBarkDialog = this.startingEntry.isBarkDialog();
     if (isBarkDialog) {
+      this.dialog.loadBackgroundMusic()
       this.cutsceneMode = CutsceneMode.BARK;
       GameState.MenuManager.InGameBark.bark(this.startingEntry);
       this.startingEntry.runScripts();
@@ -144,32 +145,29 @@ export class CutsceneManager {
       this.listener = this.dialog.listener = GameState.PartyManager.party[0];
     }
 
-    if(this.dialog.getConversationType() == DLGConversationType.CONVERSATION){
+    if(this.dialog.getConversationType() != DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameDialog.canLetterbox = true;
     }
 
     console.log(`CutsceneManager.startConversation: ${this.dialog.getConversationType() ? 'Computer' : 'Conversation'}`);
 
     GameState.holdWorldFadeInForDialog = (this.cutsceneMode == CutsceneMode.ANIMATED);
-    this.dialog.loadStuntCamera().then(() => {
-      console.log('CutsceneManager.startConversation: loadStuntCamera');
-      this.dialog.loadStuntActors().then(() => {
-        console.log('CutsceneManager.startConversation: loadStuntActors');
-        this.dialog.loadBackgroundMusic().then(() => {
-          console.log('CutsceneManager.startConversation: loadBackgroundMusic');
-          switch (this.dialog.getConversationType()) {
-            case DLGConversationType.COMPUTER:
-              console.log('CutsceneManager.startConversation: Computer');
-              GameState.MenuManager.InGameComputer.open();
-              break;
-            default:
-              console.log('CutsceneManager.startConversation: Conversation');
-              GameState.MenuManager.InGameDialog.open();
-              break;
-          }
-          this.showEntry(this.startingEntry);
-        });
-      });
+    Promise.all([
+      this.dialog.loadStuntCamera(),
+      this.dialog.loadStuntActors(),
+      this.dialog.loadBackgroundMusic()
+    ]).then(() => {
+      switch (this.dialog.getConversationType()) {
+        case DLGConversationType.COMPUTER:
+          console.log('CutsceneManager.startConversation: Computer');
+          GameState.MenuManager.InGameComputer.open();
+          break;
+        default:
+          console.log('CutsceneManager.startConversation: Conversation');
+          GameState.MenuManager.InGameDialog.open();
+          break;
+      }
+      this.showEntry(this.startingEntry);
     });
   }
 
@@ -224,6 +222,16 @@ export class CutsceneManager {
       GameState.MenuManager.InGameComputer.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
     }else{
       GameState.MenuManager.InGameDialog.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
+    }
+
+    if(BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)){
+      const creature = this.currentEntry.speaker as ModuleCreature;
+      creature.lookAt(this.currentEntry.listener);
+    }
+    
+    if(BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)){
+      const creature = this.currentEntry.listener as ModuleCreature;
+      creature.lookAt(this.currentEntry.speaker);
     }
 
     entry.updateJournal();

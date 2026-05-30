@@ -1,9 +1,9 @@
-import { OdysseyModelNodeType } from "../enums/odyssey/OdysseyModelNodeType";
-import { IOdysseyArrayDefinition } from "../interface/odyssey/IOdysseyArrayDefinition";
-import type { OdysseyModel } from "./OdysseyModel";
-import type { OdysseyModelNode } from "./OdysseyModelNode";
-import { OdysseyModelNodeMesh } from "./OdysseyModelNodeMesh";
-import { OdysseyModelUtility } from "./OdysseyModelUtility";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
+import type { OdysseyModel } from "@/odyssey/OdysseyModel";
+import type { OdysseyModelNode } from "@/odyssey/OdysseyModelNode";
+import { OdysseyModelNodeMesh } from "@/odyssey/OdysseyModelNodeMesh";
+import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
 
 /**
  * OdysseyModelNodeDangly class.
@@ -19,7 +19,7 @@ export class OdysseyModelNodeDangly extends OdysseyModelNodeMesh {
   danglyTightness: number;
   danglyPeriod: number;
   danglyMDLOffset: number;
-  constraints: number[];
+  constraints: Float32Array;
   danglyVec4: number[];
   contraintArrayDefinition: IOdysseyArrayDefinition;
 

@@ -1,4 +1,4 @@
-import { EventListenerModel } from "./EventListenerModel";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
 
 export interface SceneGraphNodeOptions {
   uuid?: string;
@@ -96,6 +96,11 @@ export class SceneGraphNode extends EventListenerModel {
 
   select(){
     this.selected = true;
+    this.processEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', [this.name]);
+  }
+
+  deselect(){
+    this.selected = false;
     this.processEventListener<SceneGraphNodeEventListenerTypes>('onSelectStateChange', [this.name]);
   }
 

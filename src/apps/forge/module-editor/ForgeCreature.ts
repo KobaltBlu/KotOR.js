@@ -1,6 +1,6 @@
-import * as KotOR from "../KotOR";
-import { GroupType, type UI3DRenderer } from "../UI3DRenderer";
-import { ForgeGameObject } from "./ForgeGameObject";
+import * as KotOR from "@/apps/forge/KotOR";
+import { GroupType, type UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
 interface EngineItem {
   baseItem: KotOR.SWBaseItem | undefined;
@@ -408,6 +408,8 @@ export class ForgeCreature extends ForgeGameObject {
         textureVar: bodyTexture,
         isHologram: false,
         context: this.context,
+        disableMatrixUpdate: false,
+        editorMode: true
       });
     }catch(e){
       this.model = new KotOR.OdysseyModel3D();
@@ -441,6 +443,8 @@ export class ForgeCreature extends ForgeGameObject {
         receiveShadow: true,
         isHologram: false,
         textureVar: headTexture,
+        disableMatrixUpdate: false,
+        editorMode: true
       });
       this.model.attachHead(head);
 

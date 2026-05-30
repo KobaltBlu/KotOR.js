@@ -1,9 +1,9 @@
-import { BinaryWriter } from "../utility/binary/BinaryWriter";
-import { ModuleObjectType } from "../enums";
-import type { ModuleArea, ModuleRoom } from "../module";
-import { BitWise } from "../utility/BitWise";
-import { GameFileSystem } from "../utility/GameFileSystem";
-import type { IVISRoom } from "../interface/module/IVISRoom";
+import { BinaryWriter } from "@/utility/binary/BinaryWriter";
+import { ModuleObjectType } from "@/enums";
+import type { ModuleArea, ModuleRoom } from "@/module";
+import { BitWise } from "@/utility/BitWise";
+import { GameFileSystem } from "@/utility/GameFileSystem";
+import type { IVISRoom } from "@/interface/module/IVISRoom";
 
 enum VISReadMode {
   ROOM = 0,

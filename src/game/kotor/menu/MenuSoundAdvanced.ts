@@ -1,7 +1,7 @@
-import { AudioEngine } from "../../../audio/AudioEngine";
-import { GameState } from "../../../GameState";
-import { GameMenu } from "../../../gui";
-import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "../../../gui";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { GameState } from "@/GameState";
+import { GameMenu } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 
 /**
  * MenuSoundAdvanced class.
@@ -50,6 +50,7 @@ export class MenuSoundAdvanced extends GameMenu {
       this.close();
     });
     this._button_b = this.BTN_BACK;
+    this.selectedControl = this.LB_DESC;
     resolve();
   });
 }

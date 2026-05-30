@@ -1,4 +1,4 @@
-import { GUIControl } from "../../gui";
+import { GUIControl } from "@/gui";
 
 /**
  * IDPadTarget interface.

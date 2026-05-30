@@ -1,4 +1,4 @@
-import type { ActionMenuItem } from "./ActionMenuItem";
+import type { ActionMenuItem } from "@/engine/menu/ActionMenuItem";
 
 /**
  * ActionMenuPanel class.

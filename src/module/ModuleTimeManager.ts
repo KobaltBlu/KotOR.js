@@ -1,5 +1,5 @@
-import { ModuleCalendar } from "./ModuleCalendar";
-import { GFFObject } from "../resource/GFFObject";
+import { ModuleCalendar } from "@/module/ModuleCalendar";
+import { GFFObject } from "@/resource/GFFObject";
 
 /**
 * ModuleTimeManager class.

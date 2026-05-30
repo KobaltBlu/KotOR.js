@@ -1,15 +1,15 @@
 import * as THREE from "three";
-import { NWScriptDataType } from "../enums/nwscript/NWScriptDataType";
-import { INWScriptDefAction } from "../interface/nwscript/INWScriptDefAction";
-// import { ModuleObjectManager } from "../managers/ModuleObjectManager";
-import type { NWScriptInstance } from "./NWScriptInstance";
-import { NWScriptTypes } from "../enums/nwscript/NWScriptTypes";
-import { NWScriptSubroutine } from "./NWScriptSubroutine";
-import { NWScriptStack } from "./NWScriptStack";
-import { NW_FALSE, NW_TRUE } from "./NWScriptConstants";
-import type { INWScriptStoreState } from "../interface/nwscript/INWScriptStoreState";
-import type { NWScriptInstruction } from "./NWScriptInstruction";
-import { GameState } from "../GameState";
+import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import { INWScriptDefAction } from "@/interface/nwscript/INWScriptDefAction";
+// import { ModuleObjectManager } from "@/managers/ModuleObjectManager";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { NWScriptTypes } from "@/enums/nwscript/NWScriptTypes";
+import { NWScriptSubroutine } from "@/nwscript/NWScriptSubroutine";
+import { NWScriptStack } from "@/nwscript/NWScriptStack";
+import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
+import type { INWScriptStoreState } from "@/interface/nwscript/INWScriptStoreState";
+import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
+import { GameState } from "@/GameState";
 
 /**
  * CALL_CPDOWNSP

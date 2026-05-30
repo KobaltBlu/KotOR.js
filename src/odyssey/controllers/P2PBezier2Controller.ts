@@ -1,9 +1,9 @@
-import { OdysseyModelControllerType } from "../../enums/odyssey/OdysseyModelControllerType";
-import { IOdysseyControllerFrameGeneric } from "../../interface/odyssey/controller/IOdysseyControllerFrameGeneric";
-import { IOdysseyControllerGeneric } from "../../interface/odyssey/controller/IOdysseyControllerGeneric";
-import type { OdysseyModelAnimation } from "../OdysseyModelAnimation";
-import type { OdysseyModelAnimationManager } from "../OdysseyModelAnimationManager";
-import { OdysseyController } from "./OdysseyController";
+import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
+import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
+import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
+import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { OdysseyController } from "@/odyssey/controllers/OdysseyController";
 
 /**
  * P2PBezier2Controller class.
@@ -23,11 +23,15 @@ export class P2PBezier2Controller extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.p2pBezier2 = data.value;
+    }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    
+    if(manager.modelNode.emitter){
+      manager.modelNode.emitter.p2pBezier2 = OdysseyController.lerp1(last, next, fl);
+    }
   }
 
 }

@@ -1,4 +1,4 @@
-import type { IOdysseyArrayDefinition } from "./IOdysseyArrayDefinition";
+import type { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
 
 /**
  * IOdysseyGeometryHeader interface.
@@ -13,10 +13,6 @@ import type { IOdysseyArrayDefinition } from "./IOdysseyArrayDefinition";
 export interface IOdysseyGeometryHeader {
   unknown2ArrayDefinition: IOdysseyArrayDefinition;
   unknown1ArrayDefinition: IOdysseyArrayDefinition;
-  mdxOffset: number;
-  mdxLength: number;
-  padding: number;
-  rootNodeOffset2: number;
   functionPointer0: number;
   functionPointer1: number;
   modelName: string;

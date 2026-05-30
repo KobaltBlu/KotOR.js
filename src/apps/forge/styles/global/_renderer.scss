@@ -1,0 +1,34 @@
+// =============================================================================
+// RENDERER
+// =============================================================================
+
+#renderer-container {
+  overflow: hidden;
+  padding: 0;
+
+  #render-stats {
+    position: absolute;
+    top: $spacing-sm;
+    left: $spacing-sm;
+    color: $error;
+  }
+}
+
+#renderCanvas {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.editor-3d-preview {
+  box-shadow: 0 0 50px inset $shadow-dark;
+}
+
+div#editor-content {
+  border-left: $border-width solid $border-primary;
+}
+
+.container {
+  border-right: $border-width solid $border-secondary;
+}

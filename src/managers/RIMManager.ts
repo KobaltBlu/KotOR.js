@@ -1,5 +1,5 @@
-import { RIMObject } from "../resource/RIMObject";
-import { GameFileSystem } from "../utility/GameFileSystem";
+import { RIMObject } from "@/resource/RIMObject";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 import * as path from "path";
 
 interface IRIMObject {
@@ -38,14 +38,14 @@ export class RIMManager {
         return file_obj.ext == 'rim';
       });
 
-      for(let i = 0, len = rims.length; i < len; i++){
+      await Promise.all(rims.map(async (rimObj) => {
         try{
-          const rim = await RIMManager.LoadRIMObject(rims[i]);
+          const rim = await RIMManager.LoadRIMObject(rimObj);
           rim.group = 'RIMs';
-        }catch(e){ 
+        }catch(e){
           console.error(e);
         }
-      }
+      }));
     }catch(err){
       console.warn('RIMManager.Load', err);
     }
@@ -55,7 +55,7 @@ export class RIMManager {
   static async LoadRIMObject( rimObj: IRIMObject ){
     const rim = new RIMObject(rimObj.filename);
     await rim.load();
-    RIMManager.RIMs.set(rimObj.name, rim);
+    RIMManager.addRIM(rimObj.name, rim);
     return rim;
   }
 

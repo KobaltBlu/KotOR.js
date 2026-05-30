@@ -1,5 +1,5 @@
-import { PixelManager } from "../utility/PixelManager";
-import { TPCObject } from "../resource/TPCObject";
+import { PixelManager } from "@/utility/PixelManager";
+import { TPCObject } from "@/resource/TPCObject";
 
 function concatenate (resultConstructor: any, ...arrays: any) {
   let totalLength = 0;

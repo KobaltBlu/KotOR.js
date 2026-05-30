@@ -1,11 +1,11 @@
-import { GameMenu, LBL_3DView } from "../../../gui";
-import type { GUILabel, GUIButton } from "../../../gui";
-import { TextureLoader } from "../../../loaders";
-import { OdysseyTexture } from "../../../three/odyssey/OdysseyTexture";
-import { OdysseyModel3D } from "../../../three/odyssey";
-import { CharGenClasses } from "../../CharGenClasses";
+import { GameMenu, LBL_3DView } from "@/gui";
+import type { GUILabel, GUIButton } from "@/gui";
+import { TextureLoader } from "@/loaders";
+import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { CharGenClasses } from "@/game/CharGenClasses";
 import * as THREE from "three";
-import { GameState } from "../../../GameState";
+import { GameState } from "@/GameState";
 
 /**
  * CharGenPortCust class.
@@ -64,7 +64,7 @@ export class CharGenPortCust extends GameMenu {
       }else{
         creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[--idx];
       }
-      creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+      creature.setAppearance(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
         const port = GameState.SWRuleSet.portraits[i];
@@ -109,7 +109,7 @@ export class CharGenPortCust extends GameMenu {
       }else{
         creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[++idx];
       }
-      creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+      creature.setAppearance(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
         const port = GameState.SWRuleSet.portraits[i];
@@ -149,7 +149,7 @@ export class CharGenPortCust extends GameMenu {
         //Restore previous appearance
         creature.appearance = this.appearance;
         creature.portraitId = this.portraitId;
-        creature.creatureAppearance = GameState.AppearanceManager.GetCreatureAppearanceById(creature.appearance);
+        creature.setAppearance(creature.appearance);
         creature.loadModel().then( (model: OdysseyModel3D) => {
           model.rotation.z = -Math.PI/2;
           this.exiting = false;

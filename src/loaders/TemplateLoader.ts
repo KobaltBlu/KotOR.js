@@ -1,5 +1,5 @@
-import { GFFObject } from "../resource/GFFObject";
-import { ResourceLoader } from "./ResourceLoader";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceLoader } from "@/loaders/ResourceLoader";
 
 /**
  * TemplateLoader class.

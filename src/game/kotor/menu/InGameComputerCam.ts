@@ -1,6 +1,6 @@
-import { EngineMode } from "../../../enums/engine/EngineMode";
-import { GameMenu } from "../../../gui";
-import type { GUILabel } from "../../../gui";
+import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameMenu } from "@/gui";
+import type { GUILabel } from "@/gui";
 
 /**
  * InGameComputerCam class.

@@ -1,5 +1,5 @@
-import type { OdysseyModelClass } from "../../enums/odyssey/OdysseyModelClass";
-import type { IOdysseyArrayDefinition } from "./IOdysseyArrayDefinition";
+import type { OdysseyModelClass } from "@/enums/odyssey/OdysseyModelClass";
+import type { IOdysseyArrayDefinition } from "@/interface/odyssey/IOdysseyArrayDefinition";
 
 /**
  * IOdysseyModelHeader interface.
@@ -30,6 +30,14 @@ export interface IOdysseyModelHeader {
   boundingMaxZ: number;
   radius: number;
   scale: number;
-  
+
+  /** When true, per-face smoothing group uint32s follow the face array in the MDL (matches MDLedit `nUnknown == 1`). */
+  smoothingGroupsInFile: boolean;
+
   superModelName: string;
+
+  animRootOffset: number;
+  headerPaddingAC: number;
+  mdxSize: number;
+  mdxOffset: number;
 }

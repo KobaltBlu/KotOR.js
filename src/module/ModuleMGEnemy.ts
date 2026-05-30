@@ -1,16 +1,16 @@
-import { ModuleObject } from "./ModuleObject";
-import { GFFObject } from "../resource/GFFObject";
+import { ModuleObject } from "@/module/ModuleObject";
+import { GFFObject } from "@/resource/GFFObject";
 import * as THREE from "three";
-import { OdysseyModel3D } from "../three/odyssey";
-import { NWScriptInstance } from "../nwscript/NWScriptInstance";
-import { GameState } from "../GameState";
-import { OdysseyModel, OdysseyModelAnimationManager } from "../odyssey";
-import { NWScript } from "../nwscript/NWScript";
-import { IModelListItem } from "../interface/module/minigame/IModelListItem";
-import { ModuleObjectType } from "../enums/module/ModuleObjectType";
-import { MDLLoader } from "../loaders";
-import { ModuleMGGunBank } from "./ModuleMGGunBank";
-import { ModuleObjectScript } from "../enums/module/ModuleObjectScript";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GameState } from "@/GameState";
+import { OdysseyModel, OdysseyModelAnimationManager } from "@/odyssey";
+import { NWScript } from "@/nwscript/NWScript";
+import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { MDLLoader } from "@/loaders";
+import { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 
 /**
 * ModuleMGEnemy class.

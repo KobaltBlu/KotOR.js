@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react"
-import { BaseTabProps } from "../../../interfaces/BaseTabProps"
-import { TabUTMEditorState } from "../../../states/tabs/TabUTMEditorState";
-import * as KotOR from "../../../KotOR";
-import { FormField } from "../../form-field/FormField";
-import { CExoLocStringEditor } from "../../CExoLocStringEditor/CExoLocStringEditor";
-import { ForgeCheckbox } from "../../forge-checkbox/forge-checkbox";
-import { SubTab, SubTabHost } from "../../SubTabHost";
-import { ForgeStore, StoreItemEntry } from "../../../module-editor/ForgeStore";
-import { ModalItemBrowserState } from "../../../states/modal/ModalItemBrowserState";
-import { ForgeState } from "../../../states/ForgeState";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import { TabUTMEditorState } from "@/apps/forge/states/tabs/TabUTMEditorState";
+import * as KotOR from "@/apps/forge/KotOR";
+import { FormField } from "@/apps/forge/components/form-field/FormField";
+import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
+import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
+import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
+import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 
 export const TabUTMEditor = function(props: BaseTabProps){
 

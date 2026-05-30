@@ -1,11 +1,11 @@
-import type { ModuleObject } from "../module";
-import type { TalentSpell } from "../talents";
+import type { ModuleObject } from "@/module";
+import type { TalentSpell } from "@/talents";
 import * as THREE from "three";
-import { OdysseyModel3D } from "../three/odyssey";
-// import { NWScript } from "../nwscript/NWScript";
-import { OdysseyModel } from "../odyssey";
-import { GameState } from "../GameState";
-import { MDLLoader } from "../loaders";
+import { OdysseyModel3D } from "@/three/odyssey";
+// import { NWScript } from "@/nwscript/NWScript";
+import { OdysseyModel } from "@/odyssey";
+import { GameState } from "@/GameState";
+import { MDLLoader } from "@/loaders";
 
 /**
  * SpellCastInstance class.

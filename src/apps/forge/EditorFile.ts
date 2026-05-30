@@ -1,13 +1,12 @@
 import * as fs from "fs";
-import { ForgeState } from "./states/ForgeState";
-import { FileLocationType } from "./enum/FileLocationType";
-import { EditorFileOptions } from "./interfaces/EditorFileOptions";
-import { Project } from "./Project";
-import { pathParse } from "./helpers/PathParse";
-import { EventListenerModel } from "./EventListenerModel";
-import * as KotOR from "../../KotOR";
-import { ProjectFileSystem } from "./ProjectFileSystem";
-import { EditorFileProtocol } from "./enum/EditorFileProtocol";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
+import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
+import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { EventListenerModel } from "@/apps/forge/EventListenerModel";
+import * as KotOR from "@/KotOR";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { EditorFileProtocol } from "@/apps/forge/enum/EditorFileProtocol";
 
 export type EditorFileEventListenerTypes =
   'onNameChanged'|'onSaveStateChanged'|'onSaved'
@@ -23,6 +22,14 @@ export interface EditorFileReadResponse {
   buffer2?: Uint8Array;
 }
 
+/**
+ * Forge resolves resources via self-describing **reference URIs** (not raw OS paths everywhere).
+ *
+ * **Output:** Call {@link EditorFile.toReferenceURI} for stable equality and `.forge/settings.json` `open_files`.
+ * **Input:** Prefer {@link EditorFile.fromReference} / {@link EditorFile.revive}.
+ *
+ * **`getPath`** returns a shorthand (bare relative fragment or legacy `archive?res.ext`). Use `toReferenceURI()` for persistence and dedupe.
+ */
 export class EditorFile extends EventListenerModel {
 
   protocol: EditorFileProtocol;
@@ -36,6 +43,11 @@ export class EditorFile extends EventListenerModel {
 
   buffer: Uint8Array = new Uint8Array(0);
   buffer2?: Uint8Array; //for dual file types like mdl/mdx
+  /**
+   * Set when the path ends with `.mdl.ascii`: Aurora MDL as text only (no `.mdx`).
+   * Skips paired MDX loading in {@link readFile}.
+   */
+  mdlAsciiOnly: boolean = false;
   gffObject?: KotOR.GFFObject;
   isBlueprint: boolean = false;
   
@@ -55,7 +67,7 @@ export class EditorFile extends EventListenerModel {
   };
 
   set unsaved_changes(value){
-    this._unsaved_changes = ( value || (this.location == FileLocationType.OTHER) ) ? true : false;
+    this._unsaved_changes = !!value;
     this.processEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', [this]);
     if(!this.unsaved_changes) ForgeState.addRecentFile(this);
   }
@@ -107,10 +119,19 @@ export class EditorFile extends EventListenerModel {
       location: FileLocationType.OTHER,
       useGameFileSystem: false,
       useProjectFileSystem: false,
+      useSystemFileSystem: false,
     }, options);
+
+    // Captured before the reskey/ext setters cross-trample each other; used as
+    // a last-resort fallback so non-engine extensions (tsv, bat, ps1, ...) are
+    // not lost when ResourceTypes has no entry for them.
+    const rawOptionsExt = typeof options.ext === 'string' && options.ext.length
+      ? options.ext.toLowerCase()
+      : null;
 
     this.buffer = options.buffer || new Uint8Array(0);
     this.buffer2 = options.buffer2;
+    this.mdlAsciiOnly = !!options.mdlAsciiOnly;
     this.path = options.path;
     this.path2 = options.path2;
     this.ext = options.ext;
@@ -118,14 +139,17 @@ export class EditorFile extends EventListenerModel {
     this.reskey = options.reskey;
     this.archive_path = options.archive_path;
     this.location = options.location;
-    this.unsaved_changes = false;
     this.handle = options.handle;
     this.handle2 = options.handle2;
     this.useGameFileSystem = !!options.useGameFileSystem;
     this.useProjectFileSystem = !!options.useProjectFileSystem;
+    this.useSystemFileSystem = !!options.useSystemFileSystem;
 
     if(!this.ext && this.reskey){
       this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
+    }
+    if(!this.ext && rawOptionsExt){
+      this.ext = rawOptionsExt;
     }
 
     this.setPath(this.path);
@@ -133,9 +157,18 @@ export class EditorFile extends EventListenerModel {
     if(!this.ext && this.reskey){
       this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
     }
+    if(!this.ext && rawOptionsExt){
+      this.ext = rawOptionsExt;
+    }
 
-    if(this.location == FileLocationType.OTHER)
-      this.unsaved_changes = true;
+    // Only mark in-memory/untitled files dirty by default.
+    // Files loaded from disk/archive should start clean.
+    const isUntitledInMemoryFile =
+      this.location == FileLocationType.OTHER &&
+      !this.path &&
+      !this.archive_path &&
+      !this.handle;
+    this.unsaved_changes = isUntitledInMemoryFile;
 
   }
 
@@ -147,10 +180,12 @@ export class EditorFile extends EventListenerModel {
     this.path = filepath;
     if(typeof this.path === 'string'){
       this.path = filepath.replace(/\\/g, "/");
-      const url = new URL(filepath);
+      const hasProtocol = /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(this.path);
+      const parsedURL = hasProtocol ? new URL(this.path) : null;
+      const searchParams = parsedURL ? parsedURL.searchParams : new URLSearchParams();
 
-      this.protocol = url.protocol as EditorFileProtocol;
-      let pathname = url.pathname.replace(/%20/g, " ");
+      this.protocol = (parsedURL ? parsedURL.protocol : EditorFileProtocol.FILE) as EditorFileProtocol;
+      let pathname = (parsedURL ? parsedURL.pathname : this.path).replace(/%20/g, " ");
 
       //remove excess slashes on both ends
       pathname = pathname.replace(/^\/+|\/+$/g, '');
@@ -182,12 +217,12 @@ export class EditorFile extends EventListenerModel {
           this.location = FileLocationType.ARCHIVE;
           this.archive_path = pathname;
 
-          if(url.searchParams.has('resref')){
-            this.resref = url.searchParams.get('resref');
+          if(searchParams.has('resref')){
+            this.resref = searchParams.get('resref');
           }
 
-          if(url.searchParams.has('restype')){
-            const ext = url.searchParams.get('restype') as string;
+          if(searchParams.has('restype')){
+            const ext = searchParams.get('restype') as string;
             this.ext = KotOR.ResourceTypes.getKeyByValue( ext );
 
             if(!this.reskey){
@@ -200,14 +235,22 @@ export class EditorFile extends EventListenerModel {
           this.location = FileLocationType.LOCAL;
           this.path = pathname;
           this.resref = path_obj.name;
-          if(!this.reskey){
+          if (path_obj.ext === "mdl.ascii") {
+            this.mdlAsciiOnly = true;
+            this.reskey = KotOR.ResourceTypes.mdl;
+          } else if (!this.reskey) {
             this.reskey = KotOR.ResourceTypes[path_obj.ext];
           }
-    
-          this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey);
+
+          // Prefer the canonical ext spelling derived from ResourceTypes; if the
+          // parsed extension is not registered as an engine resource (e.g. tsv,
+          // bat, ps1, json variants outside the table), fall back to the raw
+          // extension so dispatchers and tab titles still see it.
+          this.ext = KotOR.ResourceTypes.getKeyByValue(this.reskey)
+            || (path_obj.ext ? path_obj.ext.toLowerCase() : this.ext);
         break;
         default:
-          console.warn('Unhandled Protocol', this.protocol, url);
+          console.warn('Unhandled Protocol', this.protocol, filepath);
         break;
       }
       console.log('setPath', this);
@@ -225,14 +268,199 @@ export class EditorFile extends EventListenerModel {
     return undefined;
   }
 
+  /** Normalize a path segment inside `game.dir` / `project.dir` / archive-relative parts. */
+  static normalizeReferenceSegment(seg: string): string {
+    return String(seg ?? '').trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  }
+
+  static referenceURIForProjectRelative(rel: string): string {
+    const r = EditorFile.normalizeReferenceSegment(rel);
+    return `${EditorFileProtocol.FILE}//project.dir/${r}`;
+  }
+
+  static referenceURIForGameRelative(rel: string): string {
+    const r = EditorFile.normalizeReferenceSegment(rel);
+    return `${EditorFileProtocol.FILE}//game.dir/${r}`;
+  }
+
+  static referenceURIForSystemVirtualName(fileName: string): string {
+    const r = EditorFile.normalizeReferenceSegment(fileName);
+    return `${EditorFileProtocol.FILE}//system.dir/${r}`;
+  }
+
+  static referenceURIForArchiveResource(
+    scheme: 'bif' | 'rim' | 'erf',
+    archiveRel: string,
+    resref: string,
+    restype: string,
+  ): string {
+    const arch = EditorFile.normalizeReferenceSegment(archiveRel);
+    return `${scheme}://game.dir/${arch}?resref=${resref}&restype=${restype}`;
+  }
+
+  /** Map protocol enum/string to persisted archive scheme (`mod`/`.sav` archives use `erf`). */
+  private static persistedArchiveSchemeFromProtocol(protocolLike: EditorFileProtocol | string | undefined): 'bif' | 'rim' | 'erf' {
+    const raw = String(protocolLike ?? '').replace(/:/g, '').toLowerCase();
+    if(raw === 'bif'){
+      return 'bif';
+    }
+    if(raw === 'rim'){
+      return 'rim';
+    }
+    return 'erf';
+  }
+
+  /** `file:///C:/foo` style for Electron absolute paths; bare Unix absolute → `file://`. */
+  static diskPathToFileURI(diskPath: string): string | undefined {
+    const n = String(diskPath ?? '').trim().replace(/\\/g, '/');
+    if(!n.length){
+      return undefined;
+    }
+    if(/^[a-zA-Z]:/.test(n)){
+      return `file:///${n}`;
+    }
+    if(n.startsWith('/')){
+      return `file://${n}`;
+    }
+    return undefined;
+  }
+
+  /**
+   * Canonical self-describing reference for Forge lists and `.forge/settings.json`.
+   * **Not** the same string as {@link getPath}.
+   */
+  toReferenceURI(): string | undefined {
+    if(this.archive_path && this.resref != null && this.ext != null){
+      const scheme = EditorFile.persistedArchiveSchemeFromProtocol(this.protocol);
+      const arch = EditorFile.normalizeReferenceSegment(String(this.archive_path));
+      return `${scheme}://game.dir/${arch}?resref=${String(this.resref)}&restype=${String(this.ext)}`;
+    }
+
+    if(typeof this.path !== 'string' || !this.path.length){
+      return undefined;
+    }
+
+    if(this.protocol === EditorFileProtocol.FILE || !this.archive_path){
+      const rel = EditorFile.normalizeReferenceSegment(this.path);
+      if(this.useProjectFileSystem){
+        return `${EditorFileProtocol.FILE}//project.dir/${rel}`;
+      }
+      if(this.useGameFileSystem){
+        return `${EditorFileProtocol.FILE}//game.dir/${rel}`;
+      }
+      if(this.useSystemFileSystem){
+        return `${EditorFileProtocol.FILE}//system.dir/${rel}`;
+      }
+      const disk = EditorFile.diskPathToFileURI(this.path);
+      if(disk){
+        return disk;
+      }
+    }
+
+    return undefined;
+  }
+
+  static fromReference(uri: string): EditorFile {
+    return new EditorFile({ path: uri.trim() });
+  }
+
+  /**
+   * Rebuild state from persisted JSON/tab blobs: prefer composing a reference URI then `setPath`.
+   */
+  static referenceStringFromPlain(plain: Partial<EditorFile> & EditorFileOptions): string | undefined {
+    const p = plain.path;
+    if(typeof p === 'string' && /^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(p.trim())){
+      return p.trim();
+    }
+
+    const ap = plain.archive_path;
+    if(ap != null && plain.resref != null && plain.ext != null){
+      const scheme = EditorFile.persistedArchiveSchemeFromProtocol((plain as EditorFile).protocol ?? EditorFileProtocol.ERF);
+      return EditorFile.referenceURIForArchiveResource(
+        scheme,
+        String(ap),
+        String(plain.resref),
+        String(plain.ext),
+      );
+    }
+
+    if(typeof p === 'string' && p.length){
+      const rel = EditorFile.normalizeReferenceSegment(p);
+      if(plain.useProjectFileSystem){
+        return EditorFile.referenceURIForProjectRelative(rel);
+      }
+      if(plain.useGameFileSystem){
+        return EditorFile.referenceURIForGameRelative(rel);
+      }
+      if(plain.useSystemFileSystem){
+        return EditorFile.referenceURIForSystemVirtualName(rel);
+      }
+      const disk = EditorFile.diskPathToFileURI(p);
+      if(disk){
+        return disk;
+      }
+    }
+
+    return undefined;
+  }
+
+  private static overlayHydratedTransientState(target: EditorFile, src: Partial<EditorFile>): void {
+    if(src.buffer instanceof Uint8Array){
+      target.buffer = src.buffer;
+    }
+    if(src.buffer2 instanceof Uint8Array){
+      target.buffer2 = src.buffer2;
+    }
+    if(src.handle){
+      target.handle = src.handle;
+    }
+    if(src.handle2){
+      target.handle2 = src.handle2;
+    }
+    if(src.gffObject){
+      target.gffObject = src.gffObject;
+    }
+    if(typeof src.isBlueprint === 'boolean'){
+      target.isBlueprint = src.isBlueprint;
+    }
+    if(typeof src.path2 === 'string' && src.path2.length){
+      target.path2 = src.path2.replace(/\\/g, '/');
+    }
+    if(src.mdlAsciiOnly){
+      target.mdlAsciiOnly = true;
+    }
+  }
+
+  static revive(plain: Partial<EditorFile> | EditorFileOptions | Record<string, unknown>): EditorFile {
+    const p = plain as Partial<EditorFile> & EditorFileOptions;
+    const ref = EditorFile.referenceStringFromPlain(p);
+    if(ref){
+      const f = EditorFile.fromReference(ref);
+      EditorFile.overlayHydratedTransientState(f, p);
+      return f;
+    }
+    return EditorFile.From(p as EditorFile);
+  }
+
+  /** Allowed reference schemes for persisted `open_files` (strict). */
+  static isValidForgePersistedReference(uri: string): boolean {
+    const t = typeof uri === 'string' ? uri.trim() : '';
+    if(!t.length || !/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(t)){
+      return false;
+    }
+    const scheme = t.split(':')[0].toLowerCase();
+    return scheme === 'file' || scheme === 'bif' || scheme === 'rim' || scheme === 'erf' || scheme === 'mod';
+  }
+
   async readFile(): Promise<EditorFileReadResponse> {
     return new Promise<EditorFileReadResponse>( async (resolve, reject) => {
-      if(this.reskey == KotOR.ResourceTypes.mdl || this.reskey == KotOR.ResourceTypes.mdx){
-        //Mdl / Mdx Special Loader
-        resolve(
-          await this.readMdlMdxFile()
-        );
-      }else{
+      if (this.reskey == KotOR.ResourceTypes.mdl || this.reskey == KotOR.ResourceTypes.mdx) {
+        if (this.mdlAsciiOnly) {
+          resolve(await this.readMdlAsciiOnlyFile());
+        } else {
+          resolve(await this.readMdlMdxFile());
+        }
+      } else {
         //Common Loader
         if(this.buffer instanceof Uint8Array && this.buffer.length){
           resolve({
@@ -270,7 +498,7 @@ export class EditorFile extends EventListenerModel {
               case EditorFileProtocol.RIM:
                 const rim = new KotOR.RIMObject(this.archive_path);
                 rim.load().then( (archive: KotOR.RIMObject) => {
-                  archive.getResourceBuffer(archive.getResource(this.resref, this.reskey)).then( (buffer: Uint8Array) => {
+                  archive.getResourceBuffer(archive.getResourceInfo(this.resref, this.reskey)).then( (buffer: Uint8Array) => {
                     this.buffer = buffer;
                     resolve({
                       buffer: this.buffer,
@@ -356,6 +584,58 @@ export class EditorFile extends EventListenerModel {
   
         }
       }
+    });
+  }
+
+  /**
+   * Load a single on-disk file (`*.mdl.ascii`) with no MDX; used by the model viewer for ASCII exports.
+   */
+  async readMdlAsciiOnlyFile(): Promise<EditorFileReadResponse> {
+    return new Promise<EditorFileReadResponse>(async (resolve, reject) => {
+      if (this.buffer instanceof Uint8Array && this.buffer.length) {
+        resolve({ buffer: this.buffer });
+        return;
+      }
+      if (!this.path) {
+        resolve({ buffer: new Uint8Array(0) });
+        return;
+      }
+      if (this.protocol !== EditorFileProtocol.FILE) {
+        resolve({ buffer: new Uint8Array(0) });
+        return;
+      }
+      try {
+        if (this.useGameFileSystem) {
+          this.buffer = await KotOR.GameFileSystem.readFile(this.path);
+        } else if (this.useProjectFileSystem) {
+          this.buffer = await ProjectFileSystem.readFile(this.path);
+        } else if (KotOR.ApplicationProfile.ENV === KotOR.ApplicationEnvironment.ELECTRON) {
+          await new Promise<void>((res, rej) => {
+            fs.readFile(this.path, (err, buf) => {
+              if (err) {
+                rej(err);
+                return;
+              }
+              this.buffer = new Uint8Array(buf);
+              res();
+            });
+          });
+        } else if (this.handle) {
+          let granted = (await this.handle.queryPermission({ mode: "read" })) === "granted";
+          if (!granted) {
+            granted = (await this.handle.requestPermission({ mode: "read" })) === "granted";
+          }
+          if (!granted) {
+            resolve({ buffer: new Uint8Array(0) });
+            return;
+          }
+          const file = await this.handle.getFile();
+          this.buffer = new Uint8Array(await file.arrayBuffer());
+        }
+      } catch (e) {
+        console.error("EditorFile.readMdlAsciiOnlyFile", e);
+      }
+      resolve({ buffer: this.buffer ?? new Uint8Array(0) });
     });
   }
 
@@ -546,7 +826,10 @@ export class EditorFile extends EventListenerModel {
   }
 
   getFilename(){
-    return this.resref+'.'+this.ext;
+    if (this.mdlAsciiOnly) {
+      return `${this.resref}.mdl.ascii`;
+    }
+    return this.resref + "." + this.ext;
   }
 
   getPrettyPath(){
