@@ -75,10 +75,10 @@ npm run start
 
 ---
 
-#### Option B — Browser / web dev (Webpack + local server)
+#### Option B — Browser / web dev (Webpack)
 Use this when you're working on the web frontend (Launcher, Game, Forge, Debugger views) and want to open them in Chrome.
 
-**Step 1 — Build and watch for changes** (keeps running, recompiles on save):
+**Build and watch for changes** (keeps running, recompiles on save):
 ```bash
 npm run webpack:dev-watch
 ```
@@ -89,11 +89,7 @@ This compiles five bundles in parallel to the `dist/` folder:
 - `dist/forge/` — KotOR Forge modding tool
 - `dist/debugger/` — script debugger
 
-**Step 2 — Serve the output** (in a separate terminal):
-```bash
-npm run serve
-```
-Starts a static file server at **http://localhost:8080**. Then open one of these in Chrome:
+Serve `dist/` with a local static file server on port **8080**, then open one of these in Chrome:
 
 | URL | What it is |
 |---|---|
@@ -104,16 +100,10 @@ Starts a static file server at **http://localhost:8080**. Then open one of these
 | http://localhost:8080/forge/ | KotOR Forge modding tool |
 | http://localhost:8080/debugger/ | Script debugger |
 
-**Shortcut — run both at once:**
-```bash
-npm run dev
-```
-Runs `webpack:dev-watch` and `serve` in parallel with a single command.
-
 ---
 
 #### Option C — VS Code launch configurations
-If you're using VS Code, press **F5** (Run & Debug) and pick a configuration. VS Code will automatically start the `serve: dist` background task and open Chrome pointed at the right URL:
+If you're using VS Code, press **F5** (Run & Debug) and pick a configuration. VS Code will open Chrome pointed at the right URL on localhost:8080:
 
 - **KotOR Launcher** — opens the launcher at localhost:8080
 - **KotOR** — opens the KotOR I game client
@@ -121,7 +111,7 @@ If you're using VS Code, press **F5** (Run & Debug) and pick a configuration. VS
 - **KotOR Forge** — opens the Forge modding tool
 - **KotOR Debugger** — opens the script debugger
 
-> Make sure you've already run `npm run webpack:dev-watch` (or `npm run dev`) so `dist/` has been built before pressing F5.
+> Make sure you've already run `npm run webpack:dev-watch` and have a static server serving `dist/` on port 8080 before pressing F5.
 
 ---
 
