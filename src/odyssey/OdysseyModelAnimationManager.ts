@@ -197,8 +197,9 @@ export class OdysseyModelAnimationManager {
 
     this.trans = (anim.transition && this.lastAnimation && this.lastAnimation.name != anim.name && this.transElapsed < anim.transition);
 
-    if(!this.model.bonesInitialized)
-      return;
+    if(!this.model.bonesInitialized){
+      return false;
+    }
 
     //Update animation nodes if the model is being rendered
     if(this.model.animateFrame){
@@ -357,11 +358,7 @@ export class OdysseyModelAnimationManager {
       state = this.createAnimationState();
     }
     if(!node) return;
-    if (node.sourceNodeUUID) {
-      this.modelNode = this.model.nodesByUUID.get(node.sourceNodeUUID);
-    } else {
-      this.modelNode = this.model.nodes.get(node.name);
-    }
+    this.modelNode = this.model.nodes.get(node.name);
 
     if(!this.modelNode) return;
 
