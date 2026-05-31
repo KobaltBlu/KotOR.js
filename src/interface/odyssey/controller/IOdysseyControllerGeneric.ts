@@ -12,6 +12,7 @@ import type { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/control
  */
 export interface IOdysseyControllerGeneric {
   type: number;
+  supermodelLink: number;
   nodeType: number;
   frameCount: number;
   timeKeyIndex: number;

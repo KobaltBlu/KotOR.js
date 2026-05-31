@@ -17,6 +17,7 @@ import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControll
 export class OdysseyController {
 
   type: OdysseyModelControllerType = OdysseyModelControllerType.INVALID;
+  supermodelLink: number = -1;
   uuid: string = crypto.randomUUID();
 
   vec3;
@@ -26,7 +27,7 @@ export class OdysseyController {
 
   constructor( controller: IOdysseyControllerGeneric ){
     Object.assign(this, controller);
-
+    this.supermodelLink = controller.supermodelLink;
     this.vec3 = new THREE.Vector3(0, 0, 0);
     this.quaternion = new THREE.Quaternion(0, 0, 0, 1);
   }
