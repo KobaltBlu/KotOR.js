@@ -9,6 +9,7 @@
     "webpack:dev": "cross-env NODE_ENV=development webpack",
     "webpack:dev-watch": "cross-env NODE_ENV=development webpack --watch",
     "webpack:prod": "cross-env NODE_ENV=production webpack",
+    "dev": "cross-env NODE_ENV=development webpack serve",
     "electron:watch": "tsc-watch --project tsconfig.electron.json",
     "electron:compile": "tsc --project tsconfig.electron.json",
     "electron:build": "npm run webpack:prod && npm run electron:compile && npm run electron:icon && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npx --yes electron-builder build --publish=never",
@@ -23,6 +24,7 @@
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@fortawesome/react-fontawesome": "^3.1.1",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.6.2",
     "@types/blueimp-md5": "^2.18.2",
     "@types/bootstrap": "^5.2.10",
     "@types/escodegen": "^0.0.10",
@@ -60,6 +62,7 @@
     "react-dom": "^19.2.3",
     "react-draggable": "^4.5.0",
     "react-monaco-editor": "^0.59.0",
+    "react-refresh": "^0.18.0",
     "react-use": "^17.6.0",
     "resolve-url-loader": "^5.0.0",
     "sass": "^1.97.2",
@@ -78,6 +81,7 @@
     "user-agent-data-types": "^0.4.2",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.4",
     "webpackbar": "^7.0.0"
   },
   "dependencies": {

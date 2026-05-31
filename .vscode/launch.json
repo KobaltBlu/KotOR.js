@@ -6,42 +6,47 @@
       "request": "launch",
       "name": "KotOR Launcher",
       "url": "http://localhost:8080/launcher/index.html",
-      "webRoot": "${workspaceFolder}/dist"
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "dev: serve"
     },
     {
       "type": "chrome",
       "request": "launch",
       "name": "KotOR",
       "url": "http://localhost:8080/game/index.html?key=kotor",
-      "webRoot": "${workspaceFolder}/dist"
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "dev: serve"
     },
     {
       "type": "chrome",
       "request": "launch",
       "name": "TSL",
       "url": "http://localhost:8080/game/index.html?key=tsl",
-      "webRoot": "${workspaceFolder}/dist"
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "dev: serve"
     },
     {
       "type": "chrome",
       "request": "launch",
       "name": "KotOR Forge",
       "url": "http://localhost:8080/forge/index.html",
-      "webRoot": "${workspaceFolder}/dist"
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "dev: serve"
     },
     {
       "type": "chrome",
       "request": "launch",
       "name": "KotOR Debugger",
       "url": "http://localhost:8080/debugger/index.html",
-      "webRoot": "${workspaceFolder}/dist"
+      "webRoot": "${workspaceFolder}/dist",
+      "preLaunchTask": "dev: serve"
     }
   ],
   "compounds": [
     {
-      "name": "Dev: Watch (Launcher)",
+      "name": "Dev: HMR (Launcher)",
       "configurations": ["KotOR Launcher"],
-      "preLaunchTask": "webpack: dev-watch",
+      "preLaunchTask": "dev: serve",
       "stopAll": true
     }
   ]

@@ -2,6 +2,7 @@ const path = require('path');
 const webpack = require('webpack');
 const WebpackBar = require('webpackbar');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const ReactRefreshWebpackPlugin = require('@pmmmwh/react-refresh-webpack-plugin');
 
 const ROOT = path.resolve(__dirname, '..');
 
@@ -9,6 +10,8 @@ const packageJson = require('../package.json');
 const version = packageJson.version;
 
 const isProd = (process.env.NODE_ENV?.trim() === 'production');
+const isServe = process.argv.includes('serve');
+const isDevServe = !isProd && isServe;
 
 const srcPath = path.resolve(ROOT, 'src');
 
@@ -109,10 +112,79 @@ function makeWebpackBar(name, color) {
   });
 }
 
+function makeDevServer() {
+  return {
+    port: 8080,
+    hot: true,
+    liveReload: false,
+    compress: true,
+    static: {
+      directory: path.resolve(ROOT, 'dist'),
+      watch: false,
+    },
+    devMiddleware: {
+      writeToDisk: true,
+    },
+    headers: {
+      'Cache-Control': 'no-store',
+    },
+    client: {
+      overlay: {
+        errors: true,
+        warnings: false,
+      },
+    },
+    watchFiles: [
+      path.resolve(ROOT, 'dist/KotOR.js'),
+      path.resolve(ROOT, 'dist/bink-worker.js'),
+      path.resolve(ROOT, 'dist/server.js'),
+    ],
+  };
+}
+
+function makeHmrPlugins(isReactApp = false) {
+  if (!isDevServe) {
+    return [];
+  }
+
+  const plugins = [new webpack.HotModuleReplacementPlugin()];
+
+  if (isReactApp) {
+    plugins.push(new ReactRefreshWebpackPlugin({ overlay: false }));
+  }
+
+  return plugins;
+}
+
+function makeDevOutput(publicPath, uniqueName) {
+  if (!isDevServe) {
+    return {};
+  }
+
+  return {
+    publicPath,
+    uniqueName,
+  };
+}
+
+function makeReactEsbuildOptions(baseOptions) {
+  if (!isDevServe) {
+    return baseOptions;
+  }
+
+  return {
+    ...baseOptions,
+    jsx: 'automatic',
+    jsxDev: true,
+  };
+}
+
 module.exports = {
   ROOT,
   version,
   isProd,
+  isServe,
+  isDevServe,
   srcPath,
   scssRule,
   cssRule,
@@ -121,4 +193,8 @@ module.exports = {
   commonResolve,
   makeDefinePlugin,
   makeWebpackBar,
+  makeDevServer,
+  makeHmrPlugins,
+  makeDevOutput,
+  makeReactEsbuildOptions,
 };

@@ -1,7 +1,7 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
-const { ROOT, isProd, commonStats, commonResolve, makeDefinePlugin, makeWebpackBar } = require('./common');
+const { ROOT, isProd, isDevServe, commonStats, commonResolve, makeDefinePlugin, makeWebpackBar, makeDevServer, makeHmrPlugins, makeDevOutput } = require('./common');
 
 module.exports = (name, color) => ({
   mode: isProd ? 'production' : 'development',
@@ -39,6 +39,7 @@ module.exports = (name, color) => ({
   plugins: [
     makeWebpackBar(name, color),
     makeDefinePlugin(),
+    ...makeHmrPlugins(false),
     new HtmlWebpackPlugin({
       filename: 'index.html',
       inject: false,
@@ -77,5 +78,7 @@ module.exports = (name, color) => ({
     filename: '[name].js',
     path: path.resolve(ROOT, 'dist'),
     pathinfo: false,
+    ...makeDevOutput('/', 'kotor-lib'),
   },
+  ...(isDevServe ? { devServer: makeDevServer() } : {}),
 });

@@ -75,21 +75,23 @@ npm run start
 
 ---
 
-#### Option B — Browser / web dev (Webpack)
+#### Option B — Browser / web dev (HMR dev server)
 Use this when you're working on the web frontend (Launcher, Game, Forge, Debugger views) and want to open them in Chrome.
 
-**Build and watch for changes** (keeps running, recompiles on save):
+**Start the dev server** (builds, serves, and hot-reloads on save):
+
 ```bash
-npm run webpack:dev-watch
+npm run dev
 ```
-This compiles five bundles in parallel to the `dist/` folder:
+
+This runs webpack-dev-server on **http://localhost:8080** with HMR and React Fast Refresh. It compiles five bundles in parallel:
 - `KotOR.js` — core engine library
 - `dist/launcher/` — game launcher UI
 - `dist/game/` — in-browser game client
 - `dist/forge/` — KotOR Forge modding tool
 - `dist/debugger/` — script debugger
 
-Serve `dist/` with a local static file server on port **8080**, then open one of these in Chrome:
+React app code hot-updates without a full page reload. Changes to the engine bundle (`KotOR.js`) trigger a targeted page reload.
 
 | URL | What it is |
 |---|---|
@@ -100,18 +102,25 @@ Serve `dist/` with a local static file server on port **8080**, then open one of
 | http://localhost:8080/forge/ | KotOR Forge modding tool |
 | http://localhost:8080/debugger/ | Script debugger |
 
+For build-to-disk without a server (CI, quick compiles):
+
+```bash
+npm run webpack:dev-watch
+```
+
 ---
 
 #### Option C — VS Code launch configurations
-If you're using VS Code, press **F5** (Run & Debug) and pick a configuration. VS Code will open Chrome pointed at the right URL on localhost:8080:
+If you're using VS Code, press **F5** (Run & Debug) and pick a configuration. VS Code will automatically start the HMR dev server and open Chrome pointed at the right URL:
 
 - **KotOR Launcher** — opens the launcher at localhost:8080
 - **KotOR** — opens the KotOR I game client
 - **TSL** — opens the KotOR II game client
 - **KotOR Forge** — opens the Forge modding tool
 - **KotOR Debugger** — opens the script debugger
+- **Dev: HMR (Launcher)** — starts the dev server and opens the launcher
 
-> Make sure you've already run `npm run webpack:dev-watch` and have a static server serving `dist/` on port 8080 before pressing F5.
+> Or run `npm run dev` manually, then open any of the URLs above in Chrome.
 
 ---
 
@@ -146,7 +155,9 @@ Notes:
 
 | Command | What it does |
 |---|---|
+| `npm run dev` | HMR dev server on http://localhost:8080 |
 | `npm run webpack:dev` | One-shot development build (no watch) |
+| `npm run webpack:dev-watch` | Watch-mode development build (no dev server) |
 | `npm run webpack:prod` | Production build (minified, no source maps) |
 | `npm run electron:compile` | Compile only the Electron main process TypeScript |
 | `npm run test` | Run the Jest test suite |

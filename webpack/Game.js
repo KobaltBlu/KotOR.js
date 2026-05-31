@@ -2,7 +2,7 @@ const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
-const { ROOT, isProd, cssRule, scssRule, assetRules, commonStats, commonResolve, makeDefinePlugin, makeWebpackBar } = require('./common');
+const { ROOT, isProd, cssRule, scssRule, assetRules, commonStats, commonResolve, makeDefinePlugin, makeWebpackBar, makeHmrPlugins, makeDevOutput, makeReactEsbuildOptions } = require('./common');
 
 module.exports = (name, color) => ({
   mode: isProd ? 'production' : 'development',
@@ -18,11 +18,11 @@ module.exports = (name, color) => ({
       {
         test: /\.tsx?$/,
         loader: 'esbuild-loader',
-        options: {
+        options: makeReactEsbuildOptions({
           loader: 'tsx',
           target: 'esnext',
           tsconfig: 'tsconfig.game.json',
-        },
+        }),
         exclude: /node_modules/,
       },
       cssRule,
@@ -33,6 +33,7 @@ module.exports = (name, color) => ({
   plugins: [
     makeWebpackBar(name, color),
     makeDefinePlugin(),
+    ...makeHmrPlugins(true),
     new HtmlWebpackPlugin({
       filename: 'index.html',
       template: 'src/apps/game/index.html'
@@ -56,6 +57,7 @@ module.exports = (name, color) => ({
     filename: '[name].js',
     path: path.resolve(ROOT, 'dist/game'),
     globalObject: 'this',
+    ...makeDevOutput('/game/', 'kotor-game'),
     assetModuleFilename: (pathData) => {
       const { filename } = pathData;
       if (filename.endsWith('.ts')) {
