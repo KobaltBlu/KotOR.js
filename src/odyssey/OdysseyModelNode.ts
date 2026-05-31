@@ -146,7 +146,8 @@ export class OdysseyModelNode {
       } as any;
 
       controller.type = this.odysseyModel.mdlReader.readInt32();
-      this.odysseyModel.mdlReader.skip(2); //controller.unk_keyflag = this.odysseyModel.mdlReader.readInt16();
+      //
+      controller.supermodelLink = this.odysseyModel.mdlReader.readInt16();
       controller.frameCount = this.odysseyModel.mdlReader.readUInt16();
       controller.timeKeyIndex = this.odysseyModel.mdlReader.readUInt16(); //Index into the float array of the first time key
       controller.dataValueIndex = this.odysseyModel.mdlReader.readUInt16(); //Index into the float array of the first controller data value
