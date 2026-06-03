@@ -65,17 +65,25 @@ const UI_HMR_BOUNDARIES = [
 ] as const;
 
 function onUiHotApplied(): void {
-  console.log('[HMR] Game UI module updated — remounting while preserving session');
-  HotReloadManager.onHotAccept();
-  installHmrTestBridge();
-  mountApp();
+  try {
+    console.log('[HMR] Game UI module updated — remounting while preserving session');
+    HotReloadManager.onHotAccept();
+    installHmrTestBridge();
+    mountApp();
+  } catch (e) {
+    console.error('[HMR] UI hot accept failed — session preserved, skipping remount', e);
+  }
 }
 
 function onProbeHotApplied(): void {
-  console.log('[HMR] Game client probe updated — preserving session');
-  HotReloadManager.onHotAccept();
-  window.__KOTOR_HMR_PROBE_VALUE__ = require('@/dev/HmrTestProbe').HMR_PROBE as number;
-  installHmrTestBridge();
+  try {
+    console.log('[HMR] Game client probe updated — preserving session');
+    HotReloadManager.onHotAccept();
+    window.__KOTOR_HMR_PROBE_VALUE__ = require('@/dev/HmrTestProbe').HMR_PROBE as number;
+    installHmrTestBridge();
+  } catch (e) {
+    console.error('[HMR] Probe hot accept failed', e);
+  }
 }
 
 function bootstrap(): void {
@@ -97,6 +105,10 @@ if (typeof module !== 'undefined' && module.hot) {
     window.__KOTOR_HMR_STATUS_HANDLER__ = true;
     module.hot.addStatusHandler((status) => {
       if (status === 'abort' || status === 'fail') {
+        if (KotOR.GameState.hmrIsSessionActive()) {
+          console.warn('[HMR] Hot update failed — keeping live in-game session (no reload)');
+          return;
+        }
         console.warn('[HMR] Hot update failed — performing full reload');
         window.location.reload();
       }

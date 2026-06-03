@@ -4,6 +4,18 @@ import * as KotOR from "@/apps/game/KotOR";
 import { ILoaderProgress } from '@/apps/common/loader/LoaderProgress';
 import { HotReloadManager } from "@/dev/HotReloadManager";
 
+function readPreservedSessionUiState(gameKeyFallback: KotOR.GameEngineType) {
+  const preserved = HotReloadManager.shouldSkipBootstrap();
+  return {
+    appReady: preserved,
+    gameLoaded: preserved && KotOR.GameState.Ready,
+    showLoadingScreen: !preserved,
+    showEULAModal: preserved ? false : !AppState.eulaAccepted,
+    showGrantModal: preserved ? false : (AppState.eulaAccepted && !AppState.directoryLocated),
+    gameKey: AppState.gameKey || gameKeyFallback,
+  };
+}
+
 export interface AppProviderValues {
   appState: [typeof AppState];
   gameKey: [KotOR.GameEngineType, React.Dispatch<KotOR.GameEngineType>];
@@ -26,15 +38,16 @@ export function useApp(){
 }
 
 export const AppProvider = (props: any) => {
-  const [gameKey, setGameKey] = useState<KotOR.GameEngineType>(props.gameKey || KotOR.GameEngineType.KOTOR);
-  const [appReady, setAppReady] = useState<boolean>(false);
-  const [gameLoaded, setGameLoaded] = useState<boolean>(false);
-  const [showEULAModal, setShowEULAModal] = useState<boolean>(props.showEULAModal || false);
-  const [showGrantModal, setShowGrantModal] = useState<boolean>(props.showGrantModal || false);
+  const initialUi = readPreservedSessionUiState(props.gameKey || KotOR.GameEngineType.KOTOR);
+  const [gameKey, setGameKey] = useState<KotOR.GameEngineType>(initialUi.gameKey);
+  const [appReady, setAppReady] = useState<boolean>(initialUi.appReady);
+  const [gameLoaded, setGameLoaded] = useState<boolean>(initialUi.gameLoaded);
+  const [showEULAModal, setShowEULAModal] = useState<boolean>(initialUi.showEULAModal);
+  const [showGrantModal, setShowGrantModal] = useState<boolean>(initialUi.showGrantModal);
   const [showCheatConsole, setShowCheatConsole] = useState<boolean>(false);
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState<boolean>(false);
 
-  const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(true);
+  const [showLoadingScreen, setShowLoadingScreen] = useState<boolean>(initialUi.showLoadingScreen);
   const [loadingScreenMessage, setLoadingScreenMessage] = useState<string>('Loading...');
   const [loadingScreenProgress, setLoadingScreenProgress] = useState<ILoaderProgress | null>(null);
   const [loadingScreenBackgroundURL, setLoadingScreenBackgroundURL] = useState<string>('');
