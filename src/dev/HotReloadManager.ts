@@ -28,12 +28,18 @@ export class HotReloadManager {
     GameState.hmrInvalidateLoop();
     GameState.module?.area?.invalidateAreaObjectScriptSlots();
     GameState.ensureUpdateLoop();
+    if (sessionPreserved) {
+      GameState.ensureDialogAudio();
+    }
   }
 
   static preserveSession(): void {
     sessionPreserved = GameState.hmrIsSessionActive();
     GameState.hmrInvalidateLoop();
     GameState.ensureUpdateLoop();
+    if (sessionPreserved) {
+      GameState.ensureDialogAudio();
+    }
   }
 
   static wasSessionPreserved(): boolean {

@@ -176,6 +176,7 @@ export class ResourceLoader {
   }
 
   static getResource(resId: number, resRef: string){
+    resRef = resRef.toLowerCase();
     if(typeof ResourceLoader.Resources[resId] !== 'undefined'){
       if(typeof ResourceLoader.Resources[resId][resRef] !== 'undefined'){
         return ResourceLoader.Resources[resId][resRef];

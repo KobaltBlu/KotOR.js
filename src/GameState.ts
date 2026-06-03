@@ -942,13 +942,27 @@ export class GameState implements EngineContext {
     return p ? p : GameState.PartyManager.Player;
   }
 
-  static ResetModuleAudio(){                        
-    GameState.CutsceneManager.audioEmitter = 
-    this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
-    this.audioEmitter.maxDistance = 50;
-    this.audioEmitter.type = AudioEmitterType.GLOBAL;
-    this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.UNMASKABLE_SOUND);
-    this.audioEmitter.load();
+  static ensureDialogAudio(): void {
+    const existing = GameState.CutsceneManager.audioEmitter;
+    if (existing && !existing.isDestroyed) {
+      return;
+    }
+
+    const voEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
+    voEmitter.maxDistance = 50;
+    voEmitter.type = AudioEmitterType.GLOBAL;
+    voEmitter.setPriorityGroupId(AudioPriorityGroup.UNMASKABLE_SOUND);
+    GameState.CutsceneManager.audioEmitter = voEmitter;
+    voEmitter.load();
+  }
+
+  static ResetModuleAudio(){
+    const existing = GameState.CutsceneManager.audioEmitter;
+    if (existing && !existing.isDestroyed) {
+      existing.destroy();
+    }
+
+    GameState.ensureDialogAudio();
   }
 
   /**

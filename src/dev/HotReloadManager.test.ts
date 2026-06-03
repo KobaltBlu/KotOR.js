@@ -22,6 +22,7 @@ jest.mock('@/GameState', () => {
       }
       this.Update();
     }),
+    ensureDialogAudio: jest.fn(),
     module: undefined as { area?: { invalidateAreaObjectScriptSlots: jest.Mock } } | undefined,
   };
   return { GameState };
@@ -75,6 +76,7 @@ describe('HotReloadManager', () => {
     expect(HotReloadManager.getHotAcceptCount()).toBe(1);
     expect(mockedGameState.hmrInvalidateLoop).toHaveBeenCalled();
     expect(mockedGameState.ensureUpdateLoop).toHaveBeenCalled();
+    expect(mockedGameState.ensureDialogAudio).toHaveBeenCalled();
   });
 
   it('onHotAccept is idempotent for accept count across multiple calls', () => {
@@ -96,6 +98,7 @@ describe('HotReloadManager', () => {
     expect(HotReloadManager.wasSessionPreserved()).toBe(true);
     expect(mockedGameState.hmrInvalidateLoop).toHaveBeenCalled();
     expect(mockedGameState.ensureUpdateLoop).toHaveBeenCalled();
+    expect(mockedGameState.ensureDialogAudio).toHaveBeenCalled();
   });
 
   it('preserveSession does not restart loop before the engine is ready', () => {

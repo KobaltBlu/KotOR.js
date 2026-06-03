@@ -132,4 +132,12 @@ describe('ResourceLoader', () => {
       'Resource not found: ResRef: missing ResId: 2027'
     );
   });
+
+  it('getResource resolves registry entries case-insensitively', () => {
+    ResourceLoader.setResource(ResourceTypes.wav, 'trask01', { file: 'streamwaves/trask01.wav' });
+
+    expect(ResourceLoader.getResource(ResourceTypes.wav, 'TrAsK01')).toEqual({
+      file: 'streamwaves/trask01.wav',
+    });
+  });
 });

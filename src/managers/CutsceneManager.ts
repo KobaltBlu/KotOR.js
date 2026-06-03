@@ -78,6 +78,7 @@ export class CutsceneManager {
 
   static startConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.PartyManager.party[0]) {
     console.log('CutsceneManager.startConversation', dialog, owner, listener);
+    GameState.ensureDialogAudio();
     this.active = true;
     this.cameraState.currentCameraAnimation = undefined;
     this.owner = owner;

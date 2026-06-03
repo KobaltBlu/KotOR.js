@@ -275,6 +275,7 @@ export class AudioEmitter {
 
   async playStreamWave(resRef =''): Promise<AudioBufferSourceNode> {
     this.disposeCurrentSound();
+    resRef = (resRef || '').trim().toLowerCase();
 
     //attempt to load from the buffer cache
     if(this.buffers.has(resRef)){

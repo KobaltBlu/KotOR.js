@@ -107,7 +107,8 @@ export class AudioLoader {
   }
 
   static async LoadStreamWave (resRef: string) {
-    const snd = ResourceLoader.getResource(ResourceTypes['wav'], resRef);
+    const normalizedRef = (resRef || '').trim().toLowerCase();
+    const snd = ResourceLoader.getResource(ResourceTypes['wav'], normalizedRef);
     if(!!snd){
       try{
         const buffer = await GameFileSystem.readFile(snd.file);
@@ -119,9 +120,14 @@ export class AudioLoader {
         console.error(e);
         throw e;
       }
-    }else{
-      throw new Error(`LoadSteamWave: failed to locate playable resource`);
     }
+
+    const fromDisk = await AudioLoader.loadWavFromGamePaths(normalizedRef);
+    if (fromDisk) {
+      return fromDisk;
+    }
+
+    throw new Error(`LoadStreamWave: failed to locate playable resource "${normalizedRef}"`);
   }
 
   static async LoadMusic (resRef?: string){
