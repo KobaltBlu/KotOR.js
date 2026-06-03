@@ -8,6 +8,7 @@ import { isDevGameFileBackendActive } from '@/dev/DevGameFileBackend';
 export class AppState {
   static eulaAccepted: boolean = false;
   static directoryLocated: boolean = false;
+  static initStarted: boolean = false;
   static gameKey: KotOR.GameEngineType = KotOR.GameEngineType.KOTOR;
   static appProfile: any;
   static env: ApplicationEnvironment;
@@ -33,6 +34,11 @@ export class AppState {
    * initApp
    */
   static async initApp(){
+    if (AppState.initStarted) {
+      return;
+    }
+    AppState.initStarted = true;
+
     if(window.location.origin === 'file://'){
       AppState.env = ApplicationEnvironment.ELECTRON;
     }else{

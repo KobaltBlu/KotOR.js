@@ -1703,10 +1703,12 @@ export class ModuleObject {
    */
   onSpawn(runScript = true){
 
-    let onSpawn: NWScriptInstance;
+    let spawnKey: ModuleObjectScript | undefined;
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
-      onSpawn = this.scripts[ModuleObjectScript.CreatureOnSpawn];
+      spawnKey = ModuleObjectScript.CreatureOnSpawn;
     }
+
+    const onSpawn = spawnKey !== undefined ? this.refreshScriptInstance(spawnKey) : undefined;
 
     if(runScript && onSpawn){
       onSpawn.run(this, 0);

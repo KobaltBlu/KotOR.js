@@ -150,6 +150,8 @@ export class GameState implements EngineContext {
   
   static Ready = false;
   static hmrLoopGeneration = 0;
+  /** Generation for which an rAF continuation is already queued; null between frames. */
+  static hmrLoopScheduledGeneration: number | null = null;
   
   static CameraDebugZoom = 1;
   
@@ -999,11 +1001,11 @@ export class GameState implements EngineContext {
         try{ GameState.module.dispose(); }catch(e){
           console.error(e);
         }
+        GameState.module = undefined;
       }
 
       //Remove all cached scripts and kill all running instances
       GameState.NWScript.Reload();
-      GameState.module?.area?.invalidateAreaObjectScriptSlots();
 
       //Resets all keys to their default state
       GameState.controls.initKeys();
@@ -1065,6 +1067,7 @@ export class GameState implements EngineContext {
         }
         GameState.module.area.musicBackgroundPlay();
         GameState.loadingModule = false;
+        GameState.ensureUpdateLoop();
       });
     }catch(e){
       console.error(e);
@@ -1168,15 +1171,31 @@ export class GameState implements EngineContext {
 
   static hmrInvalidateLoop(): void {
     GameState.hmrLoopGeneration += 1;
+    GameState.hmrLoopScheduledGeneration = null;
   }
 
   static hmrIsSessionActive(): boolean {
     return GameState.Ready;
   }
 
+  /**
+   * Restart the rAF loop after HMR invalidation if it is not already scheduled.
+   */
+  static ensureUpdateLoop(): void {
+    if (!GameState.Ready || !GameState.OnReadyCalled || !GameState.clock) {
+      return;
+    }
+    if (GameState.hmrLoopScheduledGeneration === GameState.hmrLoopGeneration) {
+      return;
+    }
+    GameState.Update();
+  }
+
   static Update(){
     const loopGeneration = GameState.hmrLoopGeneration;
+    GameState.hmrLoopScheduledGeneration = loopGeneration;
     requestAnimationFrame(() => {
+      GameState.hmrLoopScheduledGeneration = null;
       if (loopGeneration !== GameState.hmrLoopGeneration) {
         return;
       }

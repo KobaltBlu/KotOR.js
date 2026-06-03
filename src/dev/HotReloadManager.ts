@@ -9,7 +9,17 @@ let sessionPreserved = false;
  */
 export class HotReloadManager {
   static shouldSkipBootstrap(): boolean {
-    return GameState.hmrIsSessionActive();
+    return GameState.hmrIsSessionActive() || HotReloadManager.isBootstrapInProgress();
+  }
+
+  static isBootstrapInProgress(): boolean {
+    try {
+      // Lazy require avoids a circular import with AppState at module load time.
+      const { AppState } = require('@/apps/game/states/AppState') as typeof import('@/apps/game/states/AppState');
+      return AppState.initStarted;
+    } catch {
+      return false;
+    }
   }
 
   static onHotAccept(): void {
@@ -17,15 +27,13 @@ export class HotReloadManager {
     sessionPreserved = GameState.hmrIsSessionActive();
     GameState.hmrInvalidateLoop();
     GameState.module?.area?.invalidateAreaObjectScriptSlots();
-    // Simulated/dev-only sessions may set Ready without running full Init() (no clock yet).
-    if (GameState.hmrIsSessionActive() && GameState.clock) {
-      GameState.Update();
-    }
+    GameState.ensureUpdateLoop();
   }
 
   static preserveSession(): void {
     sessionPreserved = GameState.hmrIsSessionActive();
     GameState.hmrInvalidateLoop();
+    GameState.ensureUpdateLoop();
   }
 
   static wasSessionPreserved(): boolean {
