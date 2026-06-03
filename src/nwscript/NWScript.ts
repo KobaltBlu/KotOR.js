@@ -350,7 +350,11 @@ export class NWScript {
     //If the script is already loaded, create a new instance and return it
     if( NWScript.scripts.has( scriptName ) ){
       const script = NWScript.scripts.get( scriptName );
-      return script.newInstance(parentInstance)
+      if(!script?.instructions?.size){
+        NWScript.scripts.delete(scriptName);
+      }else{
+        return script.newInstance(parentInstance);
+      }
     }
 
     //Fetch the script from the game resource list
@@ -362,6 +366,10 @@ export class NWScript {
     //Pass the buffer to a new script object
     const script = new NWScript( buffer );
     script.name = scriptName;
+    if(!script.instructions?.size){
+      console.warn(`NWScript.Load: Failed to parse NCS '${scriptName}'`);
+      return undefined;
+    }
     //Store a refernece to the script object inside the static "scripts" variable
     NWScript.scripts.set( scriptName, script );
 

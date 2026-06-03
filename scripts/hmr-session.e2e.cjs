@@ -19,6 +19,9 @@ const USE_REAL_ASSETS = Boolean(
 const REAL_ASSET_READY_TIMEOUT_MS = Number(
   process.env.KOTOR_HMR_REAL_ASSET_TIMEOUT_MS || 600000,
 );
+const KOTOR_HMR_E2E_MODULE = process.env.KOTOR_HMR_E2E_MODULE || '';
+const USE_IN_MODULE =
+  USE_REAL_ASSETS && Boolean(KOTOR_HMR_E2E_MODULE);
 const SERVER_READY_URLS = [
   GAME_URL,
   `http://127.0.0.1:${PORT}/game/index.html?key=kotor`,
@@ -199,6 +202,27 @@ async function waitForRealAssetSession(page) {
   );
 }
 
+async function waitForInModuleSession(page, moduleName) {
+  const start = Date.now();
+  while (Date.now() - start < REAL_ASSET_READY_TIMEOUT_MS) {
+    const snapshot = await page.evaluate(() => {
+      const bridge = window.__KOTOR_HMR_TEST__;
+      return bridge ? bridge.snapshotSession() : { ready: false, module: null, area: null, player: null };
+    });
+    if (
+      snapshot.ready
+      && snapshot.module === moduleName
+      && snapshot.player
+    ) {
+      return snapshot;
+    }
+    await wait(2000);
+  }
+  throw new Error(
+    `Module ${moduleName} did not become playable within ${REAL_ASSET_READY_TIMEOUT_MS}ms`,
+  );
+}
+
 async function main() {
   const originalProbe = await fs.readFile(PROBE_FILE, 'utf8');
   let server;
@@ -248,6 +272,15 @@ async function main() {
       console.log(`[hmr-e2e] Real assets: waiting for GameState.Ready via ${KOTOR_DEV_GAME_DIR}`);
       const snapshot = await waitForRealAssetSession(page);
       console.log('[hmr-e2e] Real asset session snapshot:', snapshot);
+
+      if (USE_IN_MODULE) {
+        console.log(`[hmr-e2e] Quick-play into module: ${KOTOR_HMR_E2E_MODULE}`);
+        await page.evaluate(async (moduleName) => {
+          await window.__KOTOR_HMR_TEST__.startQuickPlayToModule(moduleName);
+        }, KOTOR_HMR_E2E_MODULE);
+        const inModule = await waitForInModuleSession(page, KOTOR_HMR_E2E_MODULE);
+        console.log('[hmr-e2e] In-module session snapshot:', inModule);
+      }
     } else {
       await page.evaluate(() => window.__KOTOR_HMR_TEST__.activateSession());
     }
@@ -260,6 +293,10 @@ async function main() {
           : 'Failed to activate simulated session before HMR',
       );
     }
+
+    const preHmrSnapshot = USE_IN_MODULE
+      ? await page.evaluate(() => window.__KOTOR_HMR_TEST__.snapshotSession())
+      : null;
 
     const navigationsBeforeHmr = mainFrameNavigations;
     const probeValue = Date.now();
@@ -310,8 +347,31 @@ async function main() {
       throw new Error(`HMR probe value mismatch (expected ${probeValue}, got ${after.probeValue})`);
     }
 
+    if (preHmrSnapshot) {
+      const postHmrSnapshot = await page.evaluate(() => window.__KOTOR_HMR_TEST__.snapshotSession());
+      if (postHmrSnapshot.module !== preHmrSnapshot.module) {
+        throw new Error(
+          `In-module session lost module name (${preHmrSnapshot.module} -> ${postHmrSnapshot.module})`,
+        );
+      }
+      if (!postHmrSnapshot.player || !preHmrSnapshot.player) {
+        throw new Error('In-module session lost player reference after HMR');
+      }
+      const { x: bx, y: by, z: bz } = preHmrSnapshot.player;
+      const { x: ax, y: ay, z: az } = postHmrSnapshot.player;
+      if (bx !== ax || by !== ay || bz !== az) {
+        throw new Error(
+          `In-module player position changed after HMR (${bx},${by},${bz}) -> (${ax},${ay},${az})`,
+        );
+      }
+    }
+
     console.log('HMR session preservation E2E passed:', {
-      mode: USE_REAL_ASSETS ? 'real-assets' : 'synthetic',
+      mode: USE_IN_MODULE
+        ? 'real-assets-in-module'
+        : USE_REAL_ASSETS
+          ? 'real-assets'
+          : 'synthetic',
       pageLoadId: after.pageLoadId,
       acceptCount: after.acceptCount,
       probeValue: after.probeValue,

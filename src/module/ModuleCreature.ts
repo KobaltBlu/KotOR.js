@@ -3767,7 +3767,9 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('SkillList')){
         let skills = this.template.RootNode.getFieldByLabel('SkillList').getChildStructs();
         for(let i = 0; i < skills.length; i++){
-          this.skills[i].rank = skills[i].getFieldByLabel('Rank').getValue();
+          if(this.skills[i]){
+            this.skills[i].rank = skills[i].getFieldByLabel('Rank').getValue();
+          }
         }
       }
 

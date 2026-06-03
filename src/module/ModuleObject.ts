@@ -380,8 +380,54 @@ export class ModuleObject {
 
   getScriptInstance(scriptKey: ModuleObjectScript): NWScriptInstance | undefined {
     const script = this.scripts[scriptKey];
-    if(!script || !script.nwscript){ return undefined; }
-    return this.scripts[scriptKey].newInstance();
+    if(!script?.nwscript){ return undefined; }
+    return script.nwscript.newInstance(script);
+  }
+
+  /**
+   * Return a runnable script instance, reloading from the template resref when stale.
+   */
+  refreshScriptInstance(scriptKey: ModuleObjectScript): NWScriptInstance | undefined {
+    let instance = this.scripts[scriptKey];
+    if(instance && !instance._disposed && instance.getInstructionMap()?.size){
+      return instance;
+    }
+
+    if(instance){
+      delete this.scripts[scriptKey];
+    }
+
+    let resRef = instance?.name;
+    if(!resRef && this.template?.RootNode?.hasField(scriptKey)){
+      resRef = this.template.getFieldByLabel(scriptKey).getValue();
+    }
+    if(!resRef){
+      return undefined;
+    }
+
+    instance = GameState.NWScript.Load(resRef);
+    if(!instance){
+      return undefined;
+    }
+
+    instance.caller = this;
+    this.scripts[scriptKey] = instance;
+    return instance;
+  }
+
+  /**
+   * Drop disposed or otherwise unrunnable script instances from this object's slots.
+   */
+  invalidateDisposedScriptSlots(){
+    for(const key of Object.keys(this.scripts)){
+      const instance = this.scripts[key];
+      if(!(instance instanceof NWScriptInstance)){
+        continue;
+      }
+      if(instance._disposed || !instance.getInstructionMap()?.size){
+        delete this.scripts[key];
+      }
+    }
   }
 
   /**
@@ -1617,24 +1663,27 @@ export class ModuleObject {
       return;
     }
 
-    let onHeartbeat: NWScriptInstance;
+    let heartbeatKey: ModuleObjectScript | undefined;
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
-      onHeartbeat = this.scripts[ModuleObjectScript.CreatureOnHeartbeat];
+      heartbeatKey = ModuleObjectScript.CreatureOnHeartbeat;
     }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable)){
-      onHeartbeat = this.scripts[ModuleObjectScript.PlaceableOnHeartbeat];
+      heartbeatKey = ModuleObjectScript.PlaceableOnHeartbeat;
     }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
-      onHeartbeat = this.scripts[ModuleObjectScript.DoorOnHeartbeat];
+      heartbeatKey = ModuleObjectScript.DoorOnHeartbeat;
     }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)){
-      onHeartbeat = this.scripts[ModuleObjectScript.TriggerOnHeartbeat];
+      heartbeatKey = ModuleObjectScript.TriggerOnHeartbeat;
     }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleEncounter)){
-      onHeartbeat = this.scripts[ModuleObjectScript.EncounterOnHeartbeat];
+      heartbeatKey = ModuleObjectScript.EncounterOnHeartbeat;
     }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleMGObstacle)){
-      onHeartbeat = this.scripts[ModuleObjectScript.MGObstacleOnHeartbeat];
+      heartbeatKey = ModuleObjectScript.MGObstacleOnHeartbeat;
     }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleMGEnemy)){
-      onHeartbeat = this.scripts[ModuleObjectScript.MGEnemyOnHeartbeat];
+      heartbeatKey = ModuleObjectScript.MGEnemyOnHeartbeat;
     }else if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleMGPlayer)){
-      onHeartbeat = this.scripts[ModuleObjectScript.MGPlayerOnHeartbeat];
+      heartbeatKey = ModuleObjectScript.MGPlayerOnHeartbeat;
     }
+    if(heartbeatKey === undefined){ return; }
+
+    const onHeartbeat = this.refreshScriptInstance(heartbeatKey);
     if(!onHeartbeat){ return; }
 
     onHeartbeat.run(this);
@@ -3777,8 +3826,8 @@ export class ModuleObject {
         if(this.scripts[key] instanceof NWScriptInstance){
           this.scripts[key].dispose();
         }
-        this.scripts = {};
       });
+      this.scripts = {};
 
       //Clear action queue
       if(this.actionQueue){

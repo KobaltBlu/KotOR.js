@@ -110,6 +110,20 @@ export class NWScriptInstance {
     this._disposed = false;
   }
 
+  /**
+   * Resolve the instruction map for this instance.
+   * Instances share the parent NWScript map; dispose must not leave callers reading undefined.
+   */
+  getInstructionMap(): Map<number, NWScriptInstruction> | undefined {
+    if(this._disposed){
+      return undefined;
+    }
+    if(this.instructions?.size){
+      return this.instructions;
+    }
+    return this.nwscript?.instructions;
+  }
+
   newInstance(){
     return this.nwscript.newInstance();
   }
@@ -209,7 +223,6 @@ export class NWScriptInstance {
     }
 
     // this.nwscript = undefined;
-    this.instructions = undefined;
     this.init();
     this.dispatchEvent('dispose', this.uuid);
   }
@@ -267,6 +280,10 @@ export class NWScriptInstance {
   }
 
   run(caller: any = null, scriptVar = 0){
+    if(this._disposed || !this.getInstructionMap()?.size){
+      return;
+    }
+
     this.caller = caller;
     this.scriptVar = scriptVar;
 
@@ -322,10 +339,14 @@ export class NWScriptInstance {
   }
 
   getInstrAtOffset( offset: number ){
-    return this.instructions.get(offset);
+    return this.getInstructionMap()?.get(offset);
   }
 
   seekTo(address: number){
+    if(!this.getInstructionMap()){
+      this.currentInstruction = undefined;
+      return;
+    }
     this.seek = address;
     this.currentInstruction = this.getInstrAtOffset(address);
   }

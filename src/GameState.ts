@@ -1003,6 +1003,7 @@ export class GameState implements EngineContext {
 
       //Remove all cached scripts and kill all running instances
       GameState.NWScript.Reload();
+      GameState.module?.area?.invalidateAreaObjectScriptSlots();
 
       //Resets all keys to their default state
       GameState.controls.initKeys();

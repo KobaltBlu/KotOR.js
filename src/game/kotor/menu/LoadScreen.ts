@@ -69,14 +69,43 @@ export class LoadScreen extends GameMenu {
   }
 
   showRandomHint() {
-    this.LBL_LOADING.setText(GameState.TLKManager.TLKStrings[42493].Value);
-    let id = Math.floor(Math.random() * (GameState.TwoDAManager.datatables.get('loadscreenhints').RowCount - 0 + 1)) + 0;
-    let hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[id];
-    if (!hint) {
-      console.log('showRandomHint', id);
-      hint = GameState.TwoDAManager.datatables.get('loadscreenhints').rows[0];
+    const loadingStr = GameState.TLKManager.TLKStrings[42493]?.Value;
+    if (loadingStr) {
+      this.LBL_LOADING.setText(loadingStr);
     }
-    this.LBL_HINT.setText(GameState.TLKManager.TLKStrings[hint.gameplayhint].Value);
+
+    const hintsTable = GameState.TwoDAManager.datatables.get('loadscreenhints');
+    if (!hintsTable?.RowCount) {
+      this.LBL_HINT.setText('');
+      this.LBL_HINT.visible = false;
+      return;
+    }
+
+    let id = Math.floor(Math.random() * hintsTable.RowCount);
+    let hint = hintsTable.rows[id];
+    if (!hint) {
+      for (let i = 0; i < hintsTable.RowCount; i++) {
+        if (hintsTable.rows[i]) {
+          hint = hintsTable.rows[i];
+          break;
+        }
+      }
+    }
+    if (!hint?.gameplayhint) {
+      this.LBL_HINT.setText('');
+      this.LBL_HINT.visible = false;
+      return;
+    }
+
+    const hintStr = GameState.TLKManager.TLKStrings[hint.gameplayhint]?.Value;
+    if (!hintStr) {
+      this.LBL_HINT.setText('');
+      this.LBL_HINT.visible = false;
+      return;
+    }
+
+    this.LBL_HINT.setText(hintStr);
+    this.LBL_HINT.visible = true;
   }
 
   showSavingMessage() {

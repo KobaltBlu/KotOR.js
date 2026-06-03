@@ -401,7 +401,7 @@ export class IngameControls {
     KeyMapper.BindGamepad(this.gamePad);
 
     //W
-    KeyMapper.Actions[KeyMapAction.ActionUp].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.ActionUp,  (keymap) => {
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
       if(this.gamePadMovement) return;
@@ -418,7 +418,7 @@ export class IngameControls {
     });
 
     //S
-    KeyMapper.Actions[KeyMapAction.ActionDown].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.ActionDown,  (keymap) => {
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
       if(this.gamePadMovement) return;
@@ -435,7 +435,7 @@ export class IngameControls {
     });
 
     //Z
-    KeyMapper.Actions[KeyMapAction.ActionLeft].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.ActionLeft,  (keymap) => {
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
       const followee = GameState.PartyManager.party[0];
@@ -444,7 +444,7 @@ export class IngameControls {
     });
 
     //C
-    KeyMapper.Actions[KeyMapAction.ActionRight].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.ActionRight,  (keymap) => {
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
       const followee = GameState.PartyManager.party[0];
@@ -453,7 +453,7 @@ export class IngameControls {
     });
 
     //A
-    KeyMapper.Actions[KeyMapAction.CameraRotateLeft].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.CameraRotateLeft,  (keymap) => {
       // if(GameState.State == EngineState.PAUSED) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       if(
@@ -473,7 +473,7 @@ export class IngameControls {
     });
 
     //D
-    KeyMapper.Actions[KeyMapAction.CameraRotateRight].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.CameraRotateRight,  (keymap) => {
       // if(GameState.State == EngineState.PAUSED) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       if(
@@ -493,17 +493,17 @@ export class IngameControls {
     });
 
     //ChangeLeader
-    KeyMapper.Actions[KeyMapAction.ChangeChar].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.ChangeChar,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.PartyManager.ShiftLeader();
     });
 
-    KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Freelook,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.SetEngineMode(GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK);
     });
 
-    KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.WALKMODIFY,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       const pc = GameState.getCurrentPlayer();
       if(pc){
@@ -512,61 +512,61 @@ export class IngameControls {
     });
 
     //Dialog1
-    KeyMapper.Actions[KeyMapAction.Dialog1].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Dialog1,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(0);
     });
 
     //Dialog2
-    KeyMapper.Actions[KeyMapAction.Dialog2].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Dialog2,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(1);
     });
 
     //Dialog3
-    KeyMapper.Actions[KeyMapAction.Dialog3].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Dialog3,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(2);
     });
 
     //Dialog4
-    KeyMapper.Actions[KeyMapAction.Dialog4].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Dialog4,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(3);
     });
 
     //Dialog5
-    KeyMapper.Actions[KeyMapAction.Dialog5].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Dialog5,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(4);
     });
 
     //Dialog6
-    KeyMapper.Actions[KeyMapAction.Dialog6].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Dialog6,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(5);
     });
 
     //Dialog7
-    KeyMapper.Actions[KeyMapAction.Dialog7].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Dialog7,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(6);
     });
 
     //Dialog8
-    KeyMapper.Actions[KeyMapAction.Dialog8].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Dialog8,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(7);
     });
 
     //Dialog9
-    KeyMapper.Actions[KeyMapAction.Dialog9].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Dialog9,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.CutsceneManager.selectReplyAtIndex(8);
     });
 
     //DialogSkip
-    KeyMapper.Actions[KeyMapAction.DialogSkip].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.DialogSkip,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed && !Mouse.leftClick) return;
 
       if(GameState.CutsceneManager.active && GameState.CutsceneManager.isListening){
@@ -579,7 +579,7 @@ export class IngameControls {
     });
 
     //DialogAbort
-    KeyMapper.Actions[KeyMapAction.DialogAbort].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.DialogAbort,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
 
       if(GameState.CutsceneManager.active){
@@ -587,7 +587,7 @@ export class IngameControls {
       }
     })
 
-    KeyMapper.Actions[KeyMapAction.SelectNext].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.SelectNext,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       const nextObject = GameState.ModuleObjectManager.GetNextPlayerVisibleObject();
       if(nextObject){
@@ -596,7 +596,7 @@ export class IngameControls {
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.SelectPrev].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.SelectPrev,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       const previousObject = GameState.ModuleObjectManager.GetPreviousPlayerVisibleObject();
       if(previousObject){
@@ -605,7 +605,7 @@ export class IngameControls {
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.setActionProcessor(KeyMapAction.MGActionUp,  (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
@@ -618,7 +618,7 @@ export class IngameControls {
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.MGActionDown].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.setActionProcessor(KeyMapAction.MGActionDown,  (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
@@ -631,7 +631,7 @@ export class IngameControls {
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.MGActionLeft].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.setActionProcessor(KeyMapAction.MGActionLeft,  (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
@@ -644,7 +644,7 @@ export class IngameControls {
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.MGActionRight].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.setActionProcessor(KeyMapAction.MGActionRight,  (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
@@ -657,12 +657,12 @@ export class IngameControls {
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.PauseMinigame].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.PauseMinigame,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.State = ( GameState.State == EngineState.PAUSED ? EngineState.RUNNING : EngineState.PAUSED );
     });
 
-    KeyMapper.Actions[KeyMapAction.MGshoot].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.MGshoot,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.State != EngineState.RUNNING) return;
       switch(GameState.module.area.miniGame.type){
@@ -675,7 +675,7 @@ export class IngameControls {
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.GUI].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.GUI,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       const currentMenu = GameState.MenuManager.GetCurrentMenu();
       switch(GameState.Mode){
@@ -690,7 +690,7 @@ export class IngameControls {
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.Pause1].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Pause1,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
 
       const currentMenu = GameState.MenuManager.GetCurrentMenu();
@@ -705,98 +705,98 @@ export class IngameControls {
       }
     });
 
-    KeyMapper.Actions[KeyMapAction.Flourish].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Flourish,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       GameState.getCurrentPlayer().flourish();
     });
 
-    KeyMapper.Actions[KeyMapAction.FlyUp].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.setActionProcessor(KeyMapAction.FlyUp,  (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       followee.position.z += 5 * delta;
     });
 
-    KeyMapper.Actions[KeyMapAction.FlyDown].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.setActionProcessor(KeyMapAction.FlyDown,  (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       followee.position.z -= 5 * delta;
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleUp].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.setActionProcessor(KeyMapAction.ResolutionScaleUp,  (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
        GameState.rendererUpscaleFactor += 0.25;
       if(GameState.rendererUpscaleFactor >= 4) GameState.rendererUpscaleFactor = 4;
       GameState.updateRendererUpscaleFactor();
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleDown].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.setActionProcessor(KeyMapAction.ResolutionScaleDown,  (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       GameState.rendererUpscaleFactor -= 0.25;
       if(GameState.rendererUpscaleFactor <= 0.25) GameState.rendererUpscaleFactor = 0.25;
       GameState.updateRendererUpscaleFactor();
     });
 
-    KeyMapper.Actions[KeyMapAction.ResolutionScaleReset].setProcessor( (keymap, delta = 0) => {
+    KeyMapper.setActionProcessor(KeyMapAction.ResolutionScaleReset,  (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       GameState.rendererUpscaleFactor = 1.0;
       GameState.updateRendererUpscaleFactor();
     });
 
-    KeyMapper.Actions[KeyMapAction.Equip].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Equip,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuEquipment.open();
     });
 
-    KeyMapper.Actions[KeyMapAction.Inventory].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Inventory,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuInventory.open();
     });
     
-    KeyMapper.Actions[KeyMapAction.Character].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Character,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuCharacter.open();
     });
     
-    KeyMapper.Actions[KeyMapAction.SkillsAndFeats].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.SkillsAndFeats,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuAbilities.open();
     });
     
     
-    KeyMapper.Actions[KeyMapAction.Messages].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Messages,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuMessages.open();
     });
     
     
-    KeyMapper.Actions[KeyMapAction.Quests].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Quests,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuJournal.open();
     });
     
     
-    KeyMapper.Actions[KeyMapAction.Map].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Map,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuMap.open();
     });
     
-    KeyMapper.Actions[KeyMapAction.Options].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.Options,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuOptions.open();
     });
 
       // Handle movie skipping
-    KeyMapper.Actions[KeyMapAction.MovieSkip].setProcessor( (keymap) => {
+    KeyMapper.setActionProcessor(KeyMapAction.MovieSkip,  (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
 
       if(GameState.VideoManager.isMoviePlaying()){

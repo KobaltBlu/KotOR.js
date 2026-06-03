@@ -2000,6 +2000,29 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
+  /**
+   * After NWScript cache invalidation or HMR, clear stale script slots on area objects.
+   */
+  invalidateAreaObjectScriptSlots(){
+    const objectLists: ModuleObject[][] = [
+      this.triggers,
+      this.creatures,
+      this.doors,
+      this.placeables,
+      this.waypoints,
+      this.encounters,
+      this.stores,
+      this.sounds,
+      this.areaOfEffects,
+    ];
+    for(const objects of objectLists){
+      for(const object of objects){
+        object?.invalidateDisposedScriptSlots?.();
+      }
+    }
+    this.invalidateDisposedScriptSlots();
+  }
+
   async initAreaObjects(runSpawnScripts = false){
     for(let i = 0; i < this.doors.length; i++){
       if(this.doors[i] instanceof ModuleObject){

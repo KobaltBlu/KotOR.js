@@ -531,6 +531,13 @@ export class KeyMapper {
 
   }
 
+  static setActionProcessor(action: KeyMapAction, callback: KeymapProcessorCallback) {
+    const entry = KeyMapper.Actions[action];
+    if (entry) {
+      entry.setProcessor(callback);
+    }
+  }
+
   static BindGamepad(gamepad: GamePad){
     const setGamepad = (action: KeyMapAction, input: KeyInput | AnalogInput) => {
       const entry = KeyMapper.Actions[action];
