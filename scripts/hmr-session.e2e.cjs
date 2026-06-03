@@ -12,6 +12,13 @@ const ROOT = path.resolve(__dirname, '..');
 const PORT = Number(process.env.KOTOR_HMR_E2E_PORT || 8099);
 const PROBE_FILE = path.join(ROOT, 'src/dev/HmrTestProbe.ts');
 const GAME_URL = `http://127.0.0.1:${PORT}/game/?key=kotor`;
+const KOTOR_DEV_GAME_DIR = process.env.KOTOR_DEV_GAME_DIR || '';
+const USE_REAL_ASSETS = Boolean(
+  KOTOR_DEV_GAME_DIR && fsSync.existsSync(KOTOR_DEV_GAME_DIR),
+);
+const REAL_ASSET_READY_TIMEOUT_MS = Number(
+  process.env.KOTOR_HMR_REAL_ASSET_TIMEOUT_MS || 600000,
+);
 const SERVER_READY_URLS = [
   GAME_URL,
   `http://127.0.0.1:${PORT}/game/index.html?key=kotor`,
@@ -113,6 +120,7 @@ function startDevServer() {
         ...process.env,
         KOTOR_DEV_PORT: String(PORT),
         NODE_ENV: 'development',
+        ...(USE_REAL_ASSETS ? { KOTOR_DEV_GAME_DIR } : {}),
       },
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: process.platform !== 'win32',
@@ -174,6 +182,23 @@ async function ensureDistAssets() {
   }
 }
 
+async function waitForRealAssetSession(page) {
+  const start = Date.now();
+  while (Date.now() - start < REAL_ASSET_READY_TIMEOUT_MS) {
+    const snapshot = await page.evaluate(() => {
+      const bridge = window.__KOTOR_HMR_TEST__;
+      return bridge ? bridge.snapshotSession() : { ready: false, module: null, area: null, player: null };
+    });
+    if (snapshot.ready) {
+      return snapshot;
+    }
+    await wait(2000);
+  }
+  throw new Error(
+    `Real asset load did not reach GameState.Ready within ${REAL_ASSET_READY_TIMEOUT_MS}ms`,
+  );
+}
+
 async function main() {
   const originalProbe = await fs.readFile(PROBE_FILE, 'utf8');
   let server;
@@ -193,7 +218,8 @@ async function main() {
     browser = await puppeteer.launch({
       headless: true,
       executablePath: await resolveBrowserExecutable(),
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      protocolTimeout: REAL_ASSET_READY_TIMEOUT_MS + 120000,
+      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     });
 
     const page = await browser.newPage();
@@ -218,10 +244,21 @@ async function main() {
       acceptCount: window.__KOTOR_HMR_TEST__.getAcceptCount(),
     }));
 
-    await page.evaluate(() => window.__KOTOR_HMR_TEST__.activateSession());
+    if (USE_REAL_ASSETS) {
+      console.log(`[hmr-e2e] Real assets: waiting for GameState.Ready via ${KOTOR_DEV_GAME_DIR}`);
+      const snapshot = await waitForRealAssetSession(page);
+      console.log('[hmr-e2e] Real asset session snapshot:', snapshot);
+    } else {
+      await page.evaluate(() => window.__KOTOR_HMR_TEST__.activateSession());
+    }
+
     const sessionActiveBefore = await page.evaluate(() => window.__KOTOR_HMR_TEST__.isSessionActive());
     if (!sessionActiveBefore) {
-      throw new Error('Failed to activate simulated session before HMR');
+      throw new Error(
+        USE_REAL_ASSETS
+          ? 'GameState.Ready was not active before HMR after real asset load'
+          : 'Failed to activate simulated session before HMR',
+      );
     }
 
     const navigationsBeforeHmr = mainFrameNavigations;
@@ -274,6 +311,7 @@ async function main() {
     }
 
     console.log('HMR session preservation E2E passed:', {
+      mode: USE_REAL_ASSETS ? 'real-assets' : 'synthetic',
       pageLoadId: after.pageLoadId,
       acceptCount: after.acceptCount,
       probeValue: after.probeValue,

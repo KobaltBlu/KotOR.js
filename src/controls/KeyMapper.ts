@@ -532,43 +532,46 @@ export class KeyMapper {
   }
 
   static BindGamepad(gamepad: GamePad){
+    const setGamepad = (action: KeyMapAction, input: KeyInput | AnalogInput) => {
+      const entry = KeyMapper.Actions[action];
+      if (entry) {
+        entry.gamepadInput = input;
+      }
+    };
 
     //Movement
-    this.Actions[KeyMapAction.ActionUp].gamepadInput = gamepad.stick_l_y;
-    this.Actions[KeyMapAction.ActionDown].gamepadInput = gamepad.stick_l_y;
-    this.Actions[KeyMapAction.CameraRotateLeft].gamepadInput = gamepad.stick_l_x;
-    this.Actions[KeyMapAction.CameraRotateRight].gamepadInput = gamepad.stick_l_x;
-    this.Actions[KeyMapAction.Freelook].gamepadInput = gamepad.stick_l;
-    this.Actions[KeyMapAction.SelectPrev].gamepadInput = gamepad.trigger_l;
-    this.Actions[KeyMapAction.SelectNext].gamepadInput = gamepad.trigger_r;
+    setGamepad(KeyMapAction.ActionUp, gamepad.stick_l_y);
+    setGamepad(KeyMapAction.ActionDown, gamepad.stick_l_y);
+    setGamepad(KeyMapAction.CameraRotateLeft, gamepad.stick_l_x);
+    setGamepad(KeyMapAction.CameraRotateRight, gamepad.stick_l_x);
+    setGamepad(KeyMapAction.Freelook, gamepad.stick_l);
+    setGamepad(KeyMapAction.SelectPrev, gamepad.trigger_l);
+    setGamepad(KeyMapAction.SelectNext, gamepad.trigger_r);
 
     //Game
-    this.Actions[KeyMapAction.Options].gamepadInput = gamepad.button_start;
-    this.Actions[KeyMapAction.Pause].gamepadInput = gamepad.button_bumper_l;
-    this.Actions[KeyMapAction.ChangeChar].gamepadInput = gamepad.button_bumper_r;
-    this.Actions[KeyMapAction.STEALTH].gamepadInput = gamepad.button_back;
-    this.Actions[KeyMapAction.Flourish].gamepadInput = gamepad.button_y;
-    this.Actions[KeyMapAction.ClearOneAction].gamepadInput = gamepad.button_y;
-    this.Actions[KeyMapAction.ActionUp].gamepadInput = gamepad.button_d_up;
-    this.Actions[KeyMapAction.ActionDown].gamepadInput = gamepad.button_d_down;
-    this.Actions[KeyMapAction.ActionLeft].gamepadInput = gamepad.button_d_left;
-    this.Actions[KeyMapAction.ActionRight].gamepadInput = gamepad.button_d_right;
-    this.Actions[KeyMapAction.CancleCombat].gamepadInput = gamepad.button_b;
-    this.Actions[KeyMapAction.AlternateActions].gamepadInput = gamepad.button_x;
+    setGamepad(KeyMapAction.Options, gamepad.button_start);
+    setGamepad(KeyMapAction.Pause, gamepad.button_bumper_l);
+    setGamepad(KeyMapAction.ChangeChar, gamepad.button_bumper_r);
+    setGamepad(KeyMapAction.STEALTH, gamepad.button_back);
+    setGamepad(KeyMapAction.Flourish, gamepad.button_y);
+    setGamepad(KeyMapAction.ClearOneAction, gamepad.button_y);
+    setGamepad(KeyMapAction.ActionUp, gamepad.button_d_up);
+    setGamepad(KeyMapAction.ActionDown, gamepad.button_d_down);
+    setGamepad(KeyMapAction.ActionLeft, gamepad.button_d_left);
+    setGamepad(KeyMapAction.ActionRight, gamepad.button_d_right);
+    setGamepad(KeyMapAction.CancleCombat, gamepad.button_b);
+    setGamepad(KeyMapAction.AlternateActions, gamepad.button_x);
     
     //GUI
-    this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
-    this.Actions[KeyMapAction.NextMenu].gamepadInput = gamepad.button_bumper_r;
-    this.Actions[KeyMapAction.MoveForward].gamepadInput = gamepad.button_d_up;
-    this.Actions[KeyMapAction.MoveBack].gamepadInput = gamepad.button_d_down;
-    this.Actions[KeyMapAction.StrafeLeft].gamepadInput = gamepad.button_d_left;
-    this.Actions[KeyMapAction.StrafeRight].gamepadInput = gamepad.button_d_right;
-    this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
-    this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
-    this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;
+    setGamepad(KeyMapAction.PrevMenu, gamepad.button_bumper_l);
+    setGamepad(KeyMapAction.NextMenu, gamepad.button_bumper_r);
+    setGamepad(KeyMapAction.MoveForward, gamepad.button_d_up);
+    setGamepad(KeyMapAction.MoveBack, gamepad.button_d_down);
+    setGamepad(KeyMapAction.StrafeLeft, gamepad.button_d_left);
+    setGamepad(KeyMapAction.StrafeRight, gamepad.button_d_right);
 
     //Movie
-    this.Actions[KeyMapAction.MovieSkip].gamepadInput = gamepad.button_y;
+    setGamepad(KeyMapAction.MovieSkip, gamepad.button_y);
     
   }
 

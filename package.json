@@ -22,7 +22,8 @@
     "generate-manifest": "node scripts/generate-manifest.js",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
     "test": "jest --verbose --coverage --no-cache",
-    "test:hmr-e2e": "node scripts/hmr-session.e2e.cjs"
+    "test:hmr-e2e": "node scripts/hmr-session.e2e.cjs",
+    "test:hmr-e2e:assets": "node scripts/hmr-session.e2e.cjs"
   },
   "author": "KobaltBlu",
   "license": "GPL-3.0",
