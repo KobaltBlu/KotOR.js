@@ -17,8 +17,15 @@ function normalizePath(filePath: string): string {
   return filePath.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
 }
 
-function apiUrl(action: string, filePath: string): string {
-  return `${DEV_FS_BASE}?action=${encodeURIComponent(action)}&path=${encodeURIComponent(filePath)}`;
+function apiUrl(action: string, filePath: string, extra: Record<string, string | number> = {}): string {
+  const params = new URLSearchParams({
+    action,
+    path: filePath,
+  });
+  for (const [key, value] of Object.entries(extra)) {
+    params.set(key, String(value));
+  }
+  return `${DEV_FS_BASE}?${params.toString()}`;
 }
 
 /** In-memory virtual write store for gameinprogress (browser has no directory handle). */
@@ -201,7 +208,14 @@ async function loadFileBytes(filePath: string): Promise<Uint8Array> {
   }
   const response = await fetch(apiUrl('read', normalized));
   if (!response.ok) {
-    throw new Error(`DevGameFileBackend read failed: ${normalized}`);
+    let detail = '';
+    try {
+      detail = await response.text();
+    } catch {
+      detail = '';
+    }
+    const suffix = detail ? ` (HTTP ${response.status}: ${detail})` : ` (HTTP ${response.status})`;
+    throw new Error(`DevGameFileBackend read failed: ${normalized}${suffix}`);
   }
   const bytes = new Uint8Array(await response.arrayBuffer());
   fileByteCache.set(normalized, bytes);
@@ -231,9 +245,22 @@ export async function devGameRead(
   length: number,
   position: number,
 ): Promise<void> {
-  const bytes = await loadFileBytes(handle.path);
-  const slice = bytes.subarray(position, position + length);
-  output.set(slice, offset);
+  if (virtualFiles.has(handle.path)) {
+    const bytes = virtualFiles.get(handle.path)!;
+    output.set(bytes.subarray(position, position + length), offset);
+    return;
+  }
+  if (fileByteCache.has(handle.path)) {
+    const bytes = fileByteCache.get(handle.path)!;
+    output.set(bytes.subarray(position, position + length), offset);
+    return;
+  }
+  const response = await fetch(apiUrl('read', handle.path, { offset: position, length }));
+  if (!response.ok) {
+    throw new Error(`DevGameFileBackend read failed: ${handle.path} @ ${position}+${length}`);
+  }
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  output.set(bytes, offset);
 }
 
 export async function devGameClose(_handle: DevGameFileHandle): Promise<void> {

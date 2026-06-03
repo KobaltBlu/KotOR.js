@@ -2,6 +2,13 @@ const fs = require('fs');
 const path = require('path');
 
 /**
+ * Upper bound for whole-file (non-ranged) reads. Large archives (BIF/RIM) must be
+ * read via ranged requests; buffering a multi-hundred-MB file whole would OOM both
+ * this server and the browser. Ranged reads are unaffected by this limit.
+ */
+const MAX_WHOLE_FILE_BYTES = 64 * 1024 * 1024;
+
+/**
  * Dev-only middleware: expose a local KOTOR install to the browser game client
  * when File System Access API directory picking is unavailable (automation/HMR).
  */
@@ -73,6 +80,7 @@ function createDevGameFsMiddleware(gameDir) {
           exists: true,
           isDirectory: stats.isDirectory(),
           isFile: stats.isFile(),
+          size: stats.size,
         }));
       });
       return;
@@ -93,14 +101,71 @@ function createDevGameFsMiddleware(gameDir) {
     }
 
     if (action === 'read') {
-      fs.readFile(full, (err, data) => {
-        if (err) {
+      const offsetParam = url.searchParams.get('offset');
+      const lengthParam = url.searchParams.get('length');
+      const hasRange = offsetParam !== null && lengthParam !== null;
+      const offset = hasRange ? Number(offsetParam) : 0;
+      const length = hasRange ? Number(lengthParam) : null;
+
+      if (hasRange && (!Number.isFinite(offset) || !Number.isFinite(length) || offset < 0 || length < 0)) {
+        res.statusCode = 400;
+        res.end('Invalid offset or length');
+        return;
+      }
+
+      if (hasRange && length > MAX_WHOLE_FILE_BYTES) {
+        res.statusCode = 413;
+        res.end(
+          `Requested range length ${length} exceeds ${MAX_WHOLE_FILE_BYTES}. Read large archives in smaller windows.`,
+        );
+        return;
+      }
+
+      if (hasRange) {
+        fs.open(full, 'r', (openErr, fd) => {
+          if (openErr) {
+            res.statusCode = 404;
+            res.end('Not found');
+            return;
+          }
+          const buffer = Buffer.alloc(length);
+          fs.read(fd, buffer, 0, length, offset, (readErr, bytesRead) => {
+            fs.close(fd, () => {
+              if (readErr) {
+                res.statusCode = 500;
+                res.end('Read failed');
+                return;
+              }
+              res.setHeader('Content-Type', 'application/octet-stream');
+              res.end(buffer.subarray(0, bytesRead));
+            });
+          });
+        });
+        return;
+      }
+
+      fs.stat(full, (statErr, stats) => {
+        if (statErr) {
           res.statusCode = 404;
           res.end('Not found');
           return;
         }
-        res.setHeader('Content-Type', 'application/octet-stream');
-        res.end(data);
+        if (stats.size > MAX_WHOLE_FILE_BYTES) {
+          res.statusCode = 413;
+          res.end(
+            `File too large for whole-file read: ${stats.size} bytes exceeds ${MAX_WHOLE_FILE_BYTES}. Use a ranged read (offset/length).`,
+          );
+          return;
+        }
+        fs.readFile(full, (err, data) => {
+          if (err) {
+            res.statusCode = 404;
+            res.end('Not found');
+            return;
+          }
+          res.setHeader('Content-Type', 'application/octet-stream');
+          res.end(data);
+        });
       });
       return;
     }
