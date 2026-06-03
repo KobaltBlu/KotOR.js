@@ -14,7 +14,11 @@ interface InvokeResult {
   passedThrough?: boolean;
 }
 
-function invoke(middleware: (req: unknown, res: unknown, next: () => void) => void, url: string): Promise<InvokeResult> {
+function invoke(
+  middleware: (req: unknown, res: unknown, next: () => void) => void,
+  url: string,
+  remoteAddress = '127.0.0.1',
+): Promise<InvokeResult> {
   return new Promise((resolve) => {
     const res = {
       statusCode: 200,
@@ -26,7 +30,7 @@ function invoke(middleware: (req: unknown, res: unknown, next: () => void) => vo
         resolve({ statusCode: this.statusCode, headers: this.headers, body: data });
       },
     };
-    const req = { url };
+    const req = { url, socket: { remoteAddress } };
     middleware(req, res, () => resolve({ statusCode: 0, headers: {}, body: undefined, passedThrough: true }));
   });
 }
@@ -119,5 +123,15 @@ describe('dev-game-fs-middleware', () => {
   it('rejects a ranged read with negative offset/length (400)', async () => {
     const result = await invoke(middleware, '/__kotor_dev_fs?action=read&path=chitin.key&offset=-1&length=4');
     expect(result.statusCode).toBe(400);
+  });
+
+  it('rejects non-localhost clients before touching disk (403)', async () => {
+    const result = await invoke(
+      middleware,
+      '/__kotor_dev_fs?action=stat&path=chitin.key',
+      '192.168.1.50',
+    );
+    expect(result.statusCode).toBe(403);
+    expect(String(result.body)).toContain('localhost-only');
   });
 });

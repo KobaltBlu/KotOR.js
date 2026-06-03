@@ -8,6 +8,17 @@ const path = require('path');
  */
 const MAX_WHOLE_FILE_BYTES = 64 * 1024 * 1024;
 
+const LOCALHOST_ADDRESSES = new Set([
+  '127.0.0.1',
+  '::1',
+  '::ffff:127.0.0.1',
+]);
+
+function isLocalhostRequest(req) {
+  const addr = req?.socket?.remoteAddress || '';
+  return LOCALHOST_ADDRESSES.has(addr);
+}
+
 /**
  * Dev-only middleware: expose a local KOTOR install to the browser game client
  * when File System Access API directory picking is unavailable (automation/HMR).
@@ -49,6 +60,12 @@ function createDevGameFsMiddleware(gameDir) {
     const url = new URL(req.url, 'http://localhost');
     if (!url.pathname.startsWith('/__kotor_dev_fs')) {
       next();
+      return;
+    }
+
+    if (!isLocalhostRequest(req)) {
+      res.statusCode = 403;
+      res.end('Forbidden: dev game FS is localhost-only');
       return;
     }
 
