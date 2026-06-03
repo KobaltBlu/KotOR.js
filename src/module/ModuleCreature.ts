@@ -4066,7 +4066,8 @@ export class ModuleCreature extends ModuleObject {
   loadItem( template: GFFObject ){
     let item = new GameState.Module.ModuleArea.ModuleItem(template);
     item.initProperties();
-    if(!item.load()){
+    if(!item.load() || !item.baseItem){
+      item.destroy();
       return;
     }
     let hasItem = this.getItemByTag(item.getTag());

@@ -154,15 +154,15 @@ export class ModuleItem extends ModuleObject {
   }
 
   getWeaponWield(): WeaponWield{
-    return this.baseItem.weaponWield;
+    return this.baseItem?.weaponWield ?? WeaponWield.INVALID;
   }
 
   getWeaponType(): WeaponType {
-    return this.baseItem.weaponType;
+    return this.baseItem?.weaponType;
   }
 
   isRangedWeapon(){
-    return this.baseItem.rangedWeapon;
+    return this.baseItem?.rangedWeapon ?? false;
   }
 
   isStolen(){

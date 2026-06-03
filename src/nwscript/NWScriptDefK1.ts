@@ -4906,12 +4906,15 @@ NWScriptDefK1.Actions = {
       for(let i = 0, len = inventory.length; i < len; i++){
         let item = inventory[i];
         let baseItem = item.baseItem;
+        if(!baseItem){
+          continue;
+        }
         if(
           baseItem.weaponWield == WeaponWield.STUN_BATON || 
           baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
           baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
         ){
-          if(!weapon){
+          if(!weapon || !weapon.baseItem){
             weapon = item;
           }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
             weapon = item;
@@ -4920,10 +4923,14 @@ NWScriptDefK1.Actions = {
       }
 
       //If no melee found, equip ranged
-      if(!weapon){
+      if(!weapon || !weapon.baseItem){
+        weapon = undefined;
         for(let i = 0, len = inventory.length; i < len; i++){
           let item = inventory[i];
           let baseItem = item.baseItem;
+          if(!baseItem){
+            continue;
+          }
           if(
             baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
             baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
@@ -4938,6 +4945,10 @@ NWScriptDefK1.Actions = {
         }
       }
 
+      if(!weapon?.baseItem){
+        return false;
+      }
+      
       if(weapon == equipped){
         return false;
       }
@@ -4976,12 +4987,15 @@ NWScriptDefK1.Actions = {
       for(let i = 0, len = inventory.length; i < len; i++){
         const item = inventory[i];
         const baseItem = item.baseItem;
+        if(!baseItem){
+          continue;
+        }
         if(
           baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
           baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
           baseItem.weaponWield == WeaponWield.BLASTER_HEAVY
         ){
-          if(!weapon){
+          if(!weapon || !weapon.baseItem){
             weapon = item;
           }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
             weapon = item;
@@ -4990,10 +5004,14 @@ NWScriptDefK1.Actions = {
       }
 
       //If no ranged found, equip melee
-      if(!weapon){
+      if(!weapon || !weapon.baseItem){
+        weapon = undefined;
         for(let i = 0, len = inventory.length; i < len; i++){
           const item = inventory[i];
           const baseItem = item.baseItem;
+          if(!baseItem){
+            continue;
+          }
           if(
             baseItem.weaponWield == WeaponWield.STUN_BATON || 
             baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
@@ -5008,7 +5026,7 @@ NWScriptDefK1.Actions = {
         }
       }
       
-      if(!weapon){
+      if(!weapon?.baseItem){
         return;
       }
 
