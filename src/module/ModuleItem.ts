@@ -138,7 +138,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   getBodyVariation(){
-    return this.baseItem.bodyVar;
+    return this.baseItem?.bodyVar ?? '';
   }
 
   getModelVariation(){

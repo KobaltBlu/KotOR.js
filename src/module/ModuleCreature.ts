@@ -3210,8 +3210,9 @@ export class ModuleCreature extends ModuleObject {
 
   async loadBody() {
     let appearance = this.creatureAppearance;
-    let bodyVariation: string = this.equipment.ARMOR?.getBodyVariation() || '';
-    let textureVariation: number = this.equipment.ARMOR?.getTextureVariation() || 1;
+    const armor = this.equipment.ARMOR;
+    let bodyVariation: string = (armor?.baseItem ? armor.getBodyVariation() : '') || '';
+    let textureVariation: number = armor?.getTextureVariation() || 1;
     const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(bodyVariation, textureVariation);
     this.bodyModel = bodyModel;
     this.bodyTexture = bodyTexture;
@@ -3893,6 +3894,12 @@ export class ModuleCreature extends ModuleObject {
             }else{
               equipped_item = new GameState.Module.ModuleArea.ModuleItem(GFFObject.FromStruct(strt));
             }
+
+            equipped_item.setPossessor(this);
+            if(!equipped_item.load() || !equipped_item.baseItem){
+              equipped_item.destroy();
+              continue;
+            }
             
             switch(slot_type){
               case ModuleCreatureArmorSlot.HEAD:
@@ -4037,7 +4044,7 @@ export class ModuleCreature extends ModuleObject {
       let item: ModuleItem = (this.equipment as any)[slotKey];
       if(item){
         item.setPossessor(this);
-        if(!item.load()){
+        if(!item.load() || !item.baseItem){
           (this.equipment as any)[slotKey] = undefined;
           item.destroy();
         }
