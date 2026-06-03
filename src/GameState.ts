@@ -943,7 +943,12 @@ export class GameState implements EngineContext {
   }
 
   static ensureDialogAudio(): void {
-    const existing = GameState.CutsceneManager.audioEmitter;
+    const cutsceneManager = GameState.CutsceneManager;
+    if (!cutsceneManager) {
+      return;
+    }
+
+    const existing = cutsceneManager.audioEmitter;
     if (existing && !existing.isDestroyed) {
       return;
     }
@@ -952,7 +957,7 @@ export class GameState implements EngineContext {
     voEmitter.maxDistance = 50;
     voEmitter.type = AudioEmitterType.GLOBAL;
     voEmitter.setPriorityGroupId(AudioPriorityGroup.UNMASKABLE_SOUND);
-    GameState.CutsceneManager.audioEmitter = voEmitter;
+    cutsceneManager.audioEmitter = voEmitter;
     voEmitter.load();
   }
 
