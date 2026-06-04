@@ -35,6 +35,52 @@ const virtualDirs = new Set<string>();
 /** Byte cache for read-only disk assets (partial reads via open/read). */
 const fileByteCache = new Map<string, Uint8Array>();
 
+type DevStatPayload = {
+  exists: boolean;
+  isFile?: boolean;
+  isDirectory?: boolean;
+  size?: number;
+};
+
+/** Cached stat results — bootstrap issues thousands of duplicate exists() checks. */
+const statCache = new Map<string, DevStatPayload>();
+const statInflight = new Map<string, Promise<DevStatPayload>>();
+
+async function fetchStat(filePath: string): Promise<DevStatPayload> {
+  const normalized = normalizePath(filePath);
+  const cached = statCache.get(normalized);
+  if (cached) {
+    return cached;
+  }
+  const inflight = statInflight.get(normalized);
+  if (inflight) {
+    return inflight;
+  }
+
+  const promise = (async () => {
+    const response = await fetch(apiUrl('stat', normalized));
+    if (!response.ok) {
+      return { exists: false, isDirectory: false, isFile: false };
+    }
+    const data = await response.json() as DevStatPayload;
+    const payload: DevStatPayload = {
+      exists: !!data.exists,
+      isDirectory: !!data.isDirectory,
+      isFile: !!data.isFile,
+      size: data.size,
+    };
+    statCache.set(normalized, payload);
+    return payload;
+  })();
+
+  statInflight.set(normalized, promise);
+  try {
+    return await promise;
+  } finally {
+    statInflight.delete(normalized);
+  }
+}
+
 export class DevGameFileHandle {
   readonly kind = 'dev-game-file' as const;
   readonly path: string;
@@ -186,11 +232,7 @@ export async function devGameExists(filePath: string): Promise<boolean> {
     return true;
   }
 
-  const response = await fetch(apiUrl('stat', normalized));
-  if (!response.ok) {
-    return false;
-  }
-  const data = await response.json() as { exists?: boolean; isFile?: boolean; isDirectory?: boolean };
+  const data = await fetchStat(normalized);
   if (!data.exists) {
     return false;
   }

@@ -134,4 +134,14 @@ describe('dev-game-fs-middleware', () => {
     expect(result.statusCode).toBe(403);
     expect(String(result.body)).toContain('localhost-only');
   });
+
+  it('resolves paths case-insensitively (movies vs Movies)', async () => {
+    fs.mkdirSync(path.join(root, 'movies'));
+    fs.writeFileSync(path.join(root, 'movies', 'leclogo.bik'), Buffer.from('BIK'));
+
+    const result = await invoke(middleware, '/__kotor_dev_fs?action=stat&path=Movies/leclogo.bik');
+    const data = JSON.parse(String(result.body)) as { exists: boolean; isFile: boolean };
+    expect(data.exists).toBe(true);
+    expect(data.isFile).toBe(true);
+  });
 });

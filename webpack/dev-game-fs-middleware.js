@@ -32,6 +32,18 @@ function createDevGameFsMiddleware(gameDir) {
     realRoot = root;
   }
 
+  function isWithinRoot(candidate) {
+    if (candidate === root || candidate === realRoot) {
+      return true;
+    }
+    try {
+      const realCandidate = fs.realpathSync(candidate);
+      return realCandidate === realRoot || realCandidate.startsWith(realRoot + path.sep);
+    } catch {
+      return candidate === root || candidate.startsWith(root + path.sep);
+    }
+  }
+
   function resolveSafe(relativePath) {
     const normalized = String(relativePath || '')
       .replace(/\\/g, '/')
@@ -56,6 +68,63 @@ function createDevGameFsMiddleware(gameDir) {
     }
   }
 
+  /** Case-insensitive segment walk for Linux dev installs (movies vs Movies, etc.). */
+  function resolveSafeCaseInsensitive(relativePath) {
+    const direct = resolveSafe(relativePath);
+    if (direct && fs.existsSync(direct)) {
+      return direct;
+    }
+
+    const normalized = String(relativePath || '')
+      .replace(/\\/g, '/')
+      .replace(/\.\.\//g, '')
+      .replace(/\.\./g, '')
+      .replace(/^\/+/, '');
+    const parts = normalized.split('/').filter(Boolean);
+    if (!parts.length) {
+      return isWithinRoot(root) ? root : null;
+    }
+
+    let current = root;
+    for (const part of parts) {
+      let entries;
+      try {
+        entries = fs.readdirSync(current);
+      } catch {
+        return null;
+      }
+      const match = entries.find((entry) => entry.toLowerCase() === part.toLowerCase());
+      if (!match) {
+        return null;
+      }
+      current = path.join(current, match);
+      if (!isWithinRoot(current)) {
+        return null;
+      }
+    }
+
+    try {
+      const realFull = fs.realpathSync(current);
+      if (realFull !== realRoot && !realFull.startsWith(realRoot + path.sep)) {
+        return null;
+      }
+      return realFull;
+    } catch (err) {
+      if (err && err.code === 'ENOENT') {
+        return isWithinRoot(current) ? current : null;
+      }
+      return null;
+    }
+  }
+
+  function resolveForAction(relativePath) {
+    const caseResolved = resolveSafeCaseInsensitive(relativePath);
+    if (caseResolved) {
+      return caseResolved;
+    }
+    return resolveSafe(relativePath);
+  }
+
   return (req, res, next) => {
     const url = new URL(req.url, 'http://localhost');
     if (!url.pathname.startsWith('/__kotor_dev_fs')) {
@@ -71,7 +140,7 @@ function createDevGameFsMiddleware(gameDir) {
 
     const action = url.searchParams.get('action') || 'read';
     const relPath = url.searchParams.get('path') || '';
-    const full = resolveSafe(relPath);
+    const full = resolveForAction(relPath);
     if (!full) {
       res.statusCode = 403;
       res.end('Forbidden');

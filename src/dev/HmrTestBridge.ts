@@ -97,6 +97,10 @@ function portraitResRefFromTemplate(template: InstanceType<typeof KotOR.GFFObjec
   return portrait?.baseresref || 'po_player';
 }
 
+function twoDAHasRows(table: { RowCount?: number } | undefined): boolean {
+  return !!table && (table.RowCount ?? 0) > 0;
+}
+
 export function installHmrTestBridge(): void {
   if (process.env.NODE_ENV === 'production') {
     return;
@@ -113,7 +117,7 @@ export function installHmrTestBridge(): void {
     },
     startQuickPlayToModule: async (moduleName: string) => {
       const headsTable = KotOR.GameState.TwoDAManager.datatables.get('heads');
-      if (!headsTable?.rows?.length) {
+      if (!twoDAHasRows(headsTable)) {
         throw new Error('Game bootstrap incomplete: 2DA tables not loaded yet');
       }
       if (!KotOR.GameState.SWRuleSet.heads?.length) {
@@ -192,7 +196,7 @@ export function installHmrTestBridge(): void {
     isBootstrapReady: () => KotOR.GameState.Ready,
     isQuickPlayReady: () => {
       const headsTable = KotOR.GameState.TwoDAManager?.datatables?.get('heads');
-      if (!headsTable?.rows?.length) {
+      if (!twoDAHasRows(headsTable)) {
         return false;
       }
       if (!KotOR.GameState.SWRuleSet.heads?.length) {
@@ -208,11 +212,15 @@ export function installHmrTestBridge(): void {
         KotOR.GameState.RestoreEnginePlayMode();
       }
     },
-    getBootstrapStatus: () => ({
-      gameReady: KotOR.GameState.Ready,
-      twoDACount: KotOR.GameState.TwoDAManager?.datatables?.size ?? 0,
-      hasHeadsTable: !!KotOR.GameState.TwoDAManager?.datatables?.get('heads')?.rows?.length,
-      rulesetHeads: KotOR.GameState.SWRuleSet?.heads?.length ?? 0,
-    }),
+    getBootstrapStatus: () => {
+      const headsTable = KotOR.GameState.TwoDAManager?.datatables?.get('heads');
+      return {
+        gameReady: KotOR.GameState.Ready,
+        twoDACount: KotOR.GameState.TwoDAManager?.datatables?.size ?? 0,
+        hasHeadsTable: twoDAHasRows(headsTable),
+        headsRowCount: headsTable?.RowCount ?? 0,
+        rulesetHeads: KotOR.GameState.SWRuleSet?.heads?.length ?? 0,
+      };
+    },
   };
 }
