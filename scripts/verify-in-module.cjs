@@ -82,6 +82,7 @@ function findChrome() {
 async function waitForBootstrap(page, timeoutMs) {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
+    await page.evaluate(() => window.__KOTOR_HMR_TEST__?.skipIntroMovies?.());
     const ready = await page.evaluate(() => window.__KOTOR_HMR_TEST__?.isQuickPlayReady?.() ?? false);
     if (ready) {
       return;

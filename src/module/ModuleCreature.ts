@@ -1114,7 +1114,7 @@ export class ModuleCreature extends ModuleObject {
           this.animationState.started = true;
           let aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
           this.model.playAnimation(this.animationState.animation.name?.toLowerCase(), aLooping);
-        }else{
+        }else if(!this.shouldHoldAmbientAnimationPose()){
           this.setAnimationState(ModuleCreatureAnimState.PAUSE);
         }
       }
@@ -1429,6 +1429,34 @@ export class ModuleCreature extends ModuleObject {
     this.animationState.index = animState;
     this.animationState.animation = this.animationConstantToAnimation(animState);
     this.animationState.started = false;
+  }
+
+  /** GIT ambient poses (dead/prone/sleep) must hold after fire-forget completes. */
+  shouldHoldAmbientAnimationPose(): boolean {
+    if(!this.animationState.animation){
+      return false;
+    }
+    const fireForget = !!parseInt(this.animationState.animation.fireforget);
+    if(!fireForget){
+      return false;
+    }
+    switch(this.animationState.index){
+      case ModuleCreatureAnimState.DEAD:
+      case ModuleCreatureAnimState.DEAD1:
+      case ModuleCreatureAnimState.DEAD_PRONE:
+      case ModuleCreatureAnimState.PRONE:
+      case ModuleCreatureAnimState.SLEEP:
+      case ModuleCreatureAnimState.KNOCKED_DOWN:
+      case ModuleCreatureAnimState.KNOCKED_DOWN2:
+      case ModuleCreatureAnimState.KNOCKED_DOWN_LP:
+      case ModuleCreatureAnimState.KNOCKED_DOWN2_LP:
+      case ModuleCreatureAnimState.PARALYZED:
+      case ModuleCreatureAnimState.COLLAPSE:
+      case ModuleCreatureAnimState.COLLAPSE_LP:
+        return true;
+      default:
+        return false;
+    }
   }
   
   resetAnimationState(){

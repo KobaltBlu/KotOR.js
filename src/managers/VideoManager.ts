@@ -275,6 +275,13 @@ export class VideoManager {
     this.playNextMovie();
   }
 
+  /** Dev/verification: drain queued intro movies without playing them. */
+  static clearMovieQueue(): void {
+    this.movieQueue = [];
+    this.onQueueComplete = undefined;
+    this.stopMovie();
+  }
+
   /**
    * Queue a movie to be played
    */
