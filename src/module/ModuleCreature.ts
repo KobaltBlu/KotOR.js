@@ -1419,6 +1419,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   setAnimationState(animState: ModuleCreatureAnimState){
+    if(animState === undefined || animState === null){ return; }
+
+    if(animState < 10000){
+      animState = this.getAnimationNameById(animState);
+    }
     if(!animState){ return; }
     
     this.animationState.index = animState;
@@ -2856,7 +2861,7 @@ export class ModuleCreature extends ModuleObject {
     const exptable2DA = GameState.TwoDAManager.datatables.get('exptable');
     if(exptable2DA){
       let nextLevelEXP = exptable2DA.rows[level];
-      if(this.getXP() >= parseInt(nextLevelEXP.xp)){
+      if(nextLevelEXP?.xp != null && this.getXP() >= parseInt(nextLevelEXP.xp)){
         return true;
       }
     }
@@ -2974,11 +2979,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getHasSkill(value: number){
-    return this.skills[value].rank > 0;
+    return (this.skills[value]?.rank ?? 0) > 0;
   }
 
   getSkillLevel(value: number){
-    return this.skills[value].rank;
+    return this.skills[value]?.rank ?? 0;
   }
 
   getHasSpell(id = 0){
@@ -3282,13 +3287,24 @@ export class ModuleCreature extends ModuleObject {
     }
 
     const headDetails = GameState.SWRuleSet.heads[headId];
-    if(!headDetails){
+    if(!headDetails?.head){
+      console.warn('ModuleCreature.loadHead: missing head definition', this.getTag(), headId);
       return;
     }
 
     const headTexture = headDetails.getTextureGoodEvil(this.getGoodEvil());
     this.headModel = headDetails.head;
-    const mdl = await MDLLoader.loader.load(this.headModel);
+    let mdl;
+    try {
+      mdl = await MDLLoader.loader.load(this.headModel);
+    } catch (e) {
+      console.error('ModuleCreature.loadHead: MDL load failed', this.getTag(), this.headModel, e);
+      return;
+    }
+    if(!mdl){
+      console.warn('ModuleCreature.loadHead: empty MDL', this.getTag(), this.headModel);
+      return;
+    }
  
     const head = await OdysseyModel3D.FromMDL(mdl, {
       context: this.context,
@@ -4012,7 +4028,12 @@ export class ModuleCreature extends ModuleObject {
       console.error(e);
     }
 
-    if(this.template.RootNode.hasField('Animation')){
+    if(this.template.RootNode.hasField('AmbientAnimState')){
+      const ambientAnim = this.template.getFieldByLabel('AmbientAnimState').getValue();
+      if(ambientAnim !== 0){
+        this.setAnimationState(ambientAnim);
+      }
+    } else if(this.template.RootNode.hasField('Animation')){
       this.setAnimationState(
         this.template.getFieldByLabel('Animation').getValue()
       );

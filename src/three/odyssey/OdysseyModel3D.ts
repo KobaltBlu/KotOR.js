@@ -185,6 +185,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   attachHead(head: OdysseyModel3D){
 
+    if(!this.headhook){
+      console.error('OdysseyModel3D.attachHead: missing headhook on body model');
+      return;
+    }
+
     const rootNode = head.getRootOdysseyNode();
     // console.log('attachHead', rootNode);
     let remapper: [OdysseyObject3D, OdysseyObject3D][] = [];

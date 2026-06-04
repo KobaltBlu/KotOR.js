@@ -22,19 +22,19 @@ export class SWHead {
   getTextureGoodEvil(nGoodEvil: number){
     nGoodEvil = nGoodEvil > 50 ? 50 : nGoodEvil;
     const evilIndex = Math.floor(nGoodEvil/10);
+    const neutralTex = this.headtexg || this.headtexvg || this.headtexe || '';
     switch(evilIndex){
       case 0:
-        return !!this.headtexvvve?.length ? this.headtexvvve : this.head;
+        return this.headtexvvve || neutralTex;
       case 1:
-        return !!this.headtexvve?.length ? this.headtexvve : this.head;
+        return this.headtexvve || neutralTex;
       case 2:
-        return !!this.headtexve?.length ? this.headtexve : this.head;
+        return this.headtexve || neutralTex;
       case 3:
-        return !!this.headtexe?.length ? this.headtexe : this.head;
+        return this.headtexe || neutralTex;
       case 4:
-        return this.head;
       default:
-        return this.head; 
+        return neutralTex;
     }
   }
 

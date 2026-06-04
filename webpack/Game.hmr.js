@@ -51,7 +51,12 @@ module.exports = {
       ],
     },
     client: {
-      overlay: true,
+      // Keep compile errors visible; don't block the canvas when in-game runtime throws.
+      overlay: {
+        errors: true,
+        warnings: false,
+        runtimeErrors: false,
+      },
     },
     setupMiddlewares: (middlewares, devServer) => {
       if (KOTOR_DEV_GAME_DIR) {

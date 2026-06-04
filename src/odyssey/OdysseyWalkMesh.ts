@@ -87,14 +87,17 @@ export class OdysseyWalkMesh {
 
       if(face.surfacemat == undefined){
         console.warn('OdysseyWalkMesh', 'Unknown surfacemat', face, OdysseyModelUtility.SURFACEMATERIALS);
+        face.blocksLineOfSight = false;
+        face.walkCheck = false;
+        face.walk = false;
+      } else {
+        face.blocksLineOfSight = face.surfacemat.lineOfSight;
+        face.walkCheck = face.surfacemat.walkCheck;
+        face.walk = face.surfacemat.walk;
       }
 
-      face.blocksLineOfSight = face.surfacemat.lineOfSight;
-      face.walkCheck = face.surfacemat.walkCheck;
-      face.walk = face.surfacemat.walk;
-
       //Is this face walkable
-      if(face.surfacemat.walk){
+      if(face.surfacemat?.walk){
         let walkIdx = this.walkableFaces.push(face) - 1;
         face.adjacent = this.walkableFacesEdgesAdjacencyMatrix[walkIdx];
         face.adjacentDiff = this.walkableFacesEdgesAdjacencyMatrixDiff[walkIdx];

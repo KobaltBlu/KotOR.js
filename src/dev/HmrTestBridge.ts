@@ -19,15 +19,68 @@ declare global {
         area: string | null;
         player: { x: number; y: number; z: number } | null;
       };
+      inspectCreatures(): {
+        player: CreatureInspectSummary | null;
+        headlessHumanoids: CreatureInspectSummary[];
+        proneOrDead: CreatureInspectSummary[];
+        animationMissing: CreatureInspectSummary[];
+        totalCreatures: number;
+      };
+      nudgePlayer(dx: number, dy: number): void;
+      isBootstrapReady(): boolean;
     };
   }
 }
+
+type CreatureInspectSummary = {
+  tag: string;
+  appearance: number;
+  modeltype: string;
+  normalhead: number;
+  hasHead: boolean;
+  headAttached: boolean;
+  hasHeadhook: boolean;
+  animState: number;
+  animName: string | null;
+  currentAnim: string | null;
+  isDead: boolean;
+};
 
 function getProbeValue(): number {
   if (window.__KOTOR_HMR_PROBE_VALUE__ !== undefined) {
     return window.__KOTOR_HMR_PROBE_VALUE__;
   }
   return require('@/dev/HmrTestProbe').HMR_PROBE as number;
+}
+
+function waitForInGameModule(timeoutMs = 300000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const started = performance.now();
+    const tick = () => {
+      const gs = KotOR.GameState;
+      const inGame = !gs.loadingModule
+        && !!gs.module?.filename
+        && gs.Mode === KotOR.EngineMode.INGAME
+        && !!gs.module.readyToProcessEvents;
+      if (inGame) {
+        resolve();
+        return;
+      }
+      if (performance.now() - started > timeoutMs) {
+        reject(new Error(
+          `Module not ready after ${timeoutMs}ms (loadingModule=${gs.loadingModule}, mode=${gs.Mode}, readyToProcessEvents=${gs.module?.readyToProcessEvents})`,
+        ));
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
+
+function getPlayerCreature(): any {
+  return KotOR.GameState.PartyManager?.Player
+    || KotOR.GameState.PartyManager?.party?.[0];
 }
 
 function portraitResRefFromTemplate(template: InstanceType<typeof KotOR.GFFObject>): string {
@@ -51,6 +104,14 @@ export function installHmrTestBridge(): void {
       KotOR.GameState.Ready = true;
     },
     startQuickPlayToModule: async (moduleName: string) => {
+      const globalcat = KotOR.GameState.TwoDAManager.datatables.get('globalcat');
+      if (!globalcat?.rows) {
+        throw new Error('Game bootstrap incomplete: 2DA tables not loaded yet');
+      }
+      if (!KotOR.GameState.SWRuleSet.heads?.length) {
+        KotOR.GameState.SWRuleSet.Init();
+        KotOR.GameState.AppearanceManager.Init();
+      }
       KotOR.GameState.GlobalVariableManager.Init();
       const template = KotOR.GameState.PartyManager.GeneratePlayerTemplate();
       KotOR.GameState.PartyManager.PlayerTemplate = template;
@@ -61,12 +122,15 @@ export function installHmrTestBridge(): void {
         KotOR.GameState.MenuManager.LoadScreen.setHintMessage('');
       }
       await KotOR.GameState.LoadModule(moduleName);
+      await waitForInGameModule();
     },
     snapshotSession: () => {
-      const player = KotOR.GameState.PartyManager?.party?.[0]
-        || KotOR.GameState.PartyManager?.Player;
+      const player = getPlayerCreature();
+      const inGame = !KotOR.GameState.loadingModule
+        && KotOR.GameState.Mode === KotOR.EngineMode.INGAME
+        && !!KotOR.GameState.module?.readyToProcessEvents;
       return {
-        ready: KotOR.GameState.Ready,
+        ready: KotOR.GameState.Ready && inGame,
         module: KotOR.GameState.module?.filename ?? null,
         area: KotOR.GameState.module?.area?.name ?? null,
         player: player ? {
@@ -76,5 +140,44 @@ export function installHmrTestBridge(): void {
         } : null,
       };
     },
+    inspectCreatures: () => {
+      const summarize = (creature: any): CreatureInspectSummary => ({
+        tag: creature.getTag?.() || creature.tag || '',
+        appearance: creature.appearance ?? -1,
+        modeltype: creature.creatureAppearance?.modeltype ?? '',
+        normalhead: creature.creatureAppearance?.normalhead ?? -1,
+        hasHead: !!creature.head,
+        headAttached: !!creature.head?.parent,
+        hasHeadhook: !!creature.model?.headhook,
+        animState: creature.animationState?.index ?? -1,
+        animName: creature.animationState?.animation?.name ?? null,
+        currentAnim: creature.model?.getAnimationName?.() ?? null,
+        isDead: !!creature.isDead?.(),
+      });
+
+      const creatures = (KotOR.GameState.module?.area?.creatures ?? []) as InstanceType<typeof KotOR.ModuleCreature>[];
+      const summaries = creatures.map(summarize);
+      const player = getPlayerCreature();
+
+      return {
+        player: player ? summarize(player as InstanceType<typeof KotOR.ModuleCreature>) : null,
+        headlessHumanoids: summaries.filter(c => c.modeltype === 'B' && c.normalhead >= 0 && !c.hasHead),
+        proneOrDead: summaries.filter(c => [10006, 10008, 10139, 10156].includes(c.animState) || c.isDead),
+        animationMissing: summaries.filter(c => !c.animName && c.animState !== 10000),
+        totalCreatures: summaries.length,
+      };
+    },
+    nudgePlayer: (dx: number, dy: number) => {
+      const player = getPlayerCreature();
+      if (!player) {
+        return;
+      }
+      player.position.x += dx;
+      player.position.y += dy;
+      if (player.container) {
+        player.container.position.set(player.position.x, player.position.y, player.position.z);
+      }
+    },
+    isBootstrapReady: () => KotOR.GameState.Ready,
   };
 }
