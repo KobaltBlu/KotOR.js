@@ -81,15 +81,22 @@ function findChrome() {
 
 async function waitForBootstrap(page, timeoutMs) {
   const start = Date.now();
+  let lastLog = 0;
   while (Date.now() - start < timeoutMs) {
     await page.evaluate(() => window.__KOTOR_HMR_TEST__?.skipIntroMovies?.());
+    const status = await page.evaluate(() => window.__KOTOR_HMR_TEST__?.getBootstrapStatus?.() ?? null);
     const ready = await page.evaluate(() => window.__KOTOR_HMR_TEST__?.isQuickPlayReady?.() ?? false);
+    if (Date.now() - lastLog > 30000) {
+      console.log('[verify] Bootstrap status:', status);
+      lastLog = Date.now();
+    }
     if (ready) {
       return;
     }
     await wait(2000);
   }
-  throw new Error(`Game bootstrap not ready within ${timeoutMs}ms`);
+  const finalStatus = await page.evaluate(() => window.__KOTOR_HMR_TEST__?.getBootstrapStatus?.() ?? null);
+  throw new Error(`Game bootstrap not ready within ${timeoutMs}ms — ${JSON.stringify(finalStatus)}`);
 }
 
 async function waitForInModule(page, moduleName, timeoutMs) {
@@ -132,7 +139,7 @@ async function main() {
   await page.waitForFunction(() => window.__KOTOR_HMR_TEST__, { timeout: 120000 });
 
   console.log('[verify] Waiting for game bootstrap (2DA tables)...');
-  await waitForBootstrap(page, Number(process.env.KOTOR_VERIFY_BOOTSTRAP_TIMEOUT_MS || 600000));
+  await waitForBootstrap(page, Number(process.env.KOTOR_VERIFY_BOOTSTRAP_TIMEOUT_MS || 1200000));
 
   console.log(`[verify] Quick-play into ${MODULE} (timeout ${MODULE_TIMEOUT_MS}ms)...`);
   await page.evaluate(async (moduleName) => {

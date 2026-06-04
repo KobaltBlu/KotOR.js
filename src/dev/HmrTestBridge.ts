@@ -30,6 +30,12 @@ declare global {
       isBootstrapReady(): boolean;
       isQuickPlayReady(): boolean;
       skipIntroMovies(): void;
+      getBootstrapStatus(): {
+        gameReady: boolean;
+        twoDACount: number;
+        hasHeadsTable: boolean;
+        rulesetHeads: number;
+      };
     };
   }
 }
@@ -106,8 +112,8 @@ export function installHmrTestBridge(): void {
       KotOR.GameState.Ready = true;
     },
     startQuickPlayToModule: async (moduleName: string) => {
-      const globalcat = KotOR.GameState.TwoDAManager.datatables.get('globalcat');
-      if (!globalcat?.rows) {
+      const headsTable = KotOR.GameState.TwoDAManager.datatables.get('heads');
+      if (!headsTable?.rows?.length) {
         throw new Error('Game bootstrap incomplete: 2DA tables not loaded yet');
       }
       if (!KotOR.GameState.SWRuleSet.heads?.length) {
@@ -185,8 +191,8 @@ export function installHmrTestBridge(): void {
     },
     isBootstrapReady: () => KotOR.GameState.Ready,
     isQuickPlayReady: () => {
-      const globalcat = KotOR.GameState.TwoDAManager?.datatables?.get('globalcat');
-      if (!globalcat?.rows?.length) {
+      const headsTable = KotOR.GameState.TwoDAManager?.datatables?.get('heads');
+      if (!headsTable?.rows?.length) {
         return false;
       }
       if (!KotOR.GameState.SWRuleSet.heads?.length) {
@@ -201,5 +207,11 @@ export function installHmrTestBridge(): void {
         KotOR.GameState.RestoreEnginePlayMode();
       }
     },
+    getBootstrapStatus: () => ({
+      gameReady: KotOR.GameState.Ready,
+      twoDACount: KotOR.GameState.TwoDAManager?.datatables?.size ?? 0,
+      hasHeadsTable: !!KotOR.GameState.TwoDAManager?.datatables?.get('heads')?.rows?.length,
+      rulesetHeads: KotOR.GameState.SWRuleSet?.heads?.length ?? 0,
+    }),
   };
 }

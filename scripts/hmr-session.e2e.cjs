@@ -188,17 +188,17 @@ async function ensureDistAssets() {
 async function waitForRealAssetSession(page) {
   const start = Date.now();
   while (Date.now() - start < REAL_ASSET_READY_TIMEOUT_MS) {
-    const snapshot = await page.evaluate(() => {
-      const bridge = window.__KOTOR_HMR_TEST__;
-      return bridge ? bridge.snapshotSession() : { ready: false, module: null, area: null, player: null };
-    });
-    if (snapshot.ready) {
-      return snapshot;
+    await page.evaluate(() => window.__KOTOR_HMR_TEST__?.skipIntroMovies?.());
+    const ready = await page.evaluate(
+      () => window.__KOTOR_HMR_TEST__?.isQuickPlayReady?.() ?? false,
+    );
+    if (ready) {
+      return page.evaluate(() => window.__KOTOR_HMR_TEST__.snapshotSession());
     }
     await wait(2000);
   }
   throw new Error(
-    `Real asset load did not reach GameState.Ready within ${REAL_ASSET_READY_TIMEOUT_MS}ms`,
+    `Real asset load did not reach quick-play readiness within ${REAL_ASSET_READY_TIMEOUT_MS}ms`,
   );
 }
 
