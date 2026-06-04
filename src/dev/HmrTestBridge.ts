@@ -202,7 +202,8 @@ export function installHmrTestBridge(): void {
       return KotOR.GameState.SWRuleSet.heads?.length > 0;
     },
     skipIntroMovies: () => {
-      KotOR.GameState.VideoManager.clearMovieQueue();
+      const vm = KotOR.GameState.VideoManager ?? KotOR.VideoManager;
+      vm?.clearMovieQueue?.();
       if (KotOR.GameState.Mode === KotOR.EngineMode.MOVIE) {
         KotOR.GameState.RestoreEnginePlayMode();
       }
