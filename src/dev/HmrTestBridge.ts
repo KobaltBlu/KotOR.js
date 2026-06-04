@@ -28,6 +28,7 @@ declare global {
       };
       nudgePlayer(dx: number, dy: number): void;
       isBootstrapReady(): boolean;
+      isQuickPlayReady(): boolean;
     };
   }
 }
@@ -112,6 +113,9 @@ export function installHmrTestBridge(): void {
         KotOR.GameState.SWRuleSet.Init();
         KotOR.GameState.AppearanceManager.Init();
       }
+      if (!KotOR.GameState.Ready) {
+        KotOR.GameState.Ready = true;
+      }
       KotOR.GameState.GlobalVariableManager.Init();
       const template = KotOR.GameState.PartyManager.GeneratePlayerTemplate();
       KotOR.GameState.PartyManager.PlayerTemplate = template;
@@ -179,5 +183,10 @@ export function installHmrTestBridge(): void {
       }
     },
     isBootstrapReady: () => KotOR.GameState.Ready,
+    isQuickPlayReady: () => {
+      const globalcat = KotOR.GameState.TwoDAManager?.datatables?.get('globalcat');
+      const heads = KotOR.GameState.SWRuleSet?.heads;
+      return !!globalcat?.rows?.length && Array.isArray(heads) && heads.length > 0;
+    },
   };
 }
