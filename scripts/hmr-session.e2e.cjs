@@ -193,6 +193,7 @@ async function waitForRealAssetSession(page) {
       () => window.__KOTOR_HMR_TEST__?.isQuickPlayReady?.() ?? false,
     );
     if (ready) {
+      await page.evaluate(() => window.__KOTOR_HMR_TEST__.activateSession());
       return page.evaluate(() => window.__KOTOR_HMR_TEST__.snapshotSession());
     }
     await wait(2000);

@@ -162,8 +162,12 @@ export class ResourceLoader {
 
   }
 
-  static loadCachedResource(resId: number, resRef: string): Uint8Array {
-    return ResourceLoader.getCache(resId, resRef.toLocaleLowerCase());
+  static loadCachedResource(resId: number, resRef: string): Uint8Array | undefined {
+    const data = ResourceLoader.getCache(resId, resRef.toLocaleLowerCase());
+    if (!data?.length) {
+      return undefined;
+    }
+    return data;
   }
 
   static setResource(resId: number, resRef: string, opts = {}){

@@ -5,12 +5,55 @@
 
 const DEV_FS_BASE = '/__kotor_dev_fs';
 
-export function isDevGameFileBackendActive(): boolean {
-  return (
+/** True when a runtime probe found webpack dev-game-fs middleware (chitin.key). */
+let runtimeDevBackendActive = false;
+let runtimeProbeFinished = false;
+
+/**
+ * Detect dev-game-fs middleware at runtime so HMR works even when the bundle was
+ * built without KOTOR_DEV_GAME_DIR (stale tab, wrong port, or DefinePlugin drift).
+ */
+export async function probeDevGameFileBackend(): Promise<boolean> {
+  if (runtimeProbeFinished) {
+    return isDevGameFileBackendActive();
+  }
+  runtimeProbeFinished = true;
+
+  if (
     process.env.NODE_ENV !== 'production'
     && typeof process.env.KOTOR_DEV_GAME_DIR === 'string'
     && process.env.KOTOR_DEV_GAME_DIR.length > 0
-  );
+  ) {
+    runtimeDevBackendActive = true;
+    return true;
+  }
+
+  try {
+    const response = await fetch(`${DEV_FS_BASE}?action=stat&path=chitin.key`);
+    if (response.ok) {
+      const data = await response.json() as DevStatPayload;
+      runtimeDevBackendActive = !!data.exists;
+    }
+  } catch {
+    runtimeDevBackendActive = false;
+  }
+  return runtimeDevBackendActive;
+}
+
+/** Reset probe state (tests only). */
+export function resetDevGameFileBackendProbeForTests(): void {
+  runtimeDevBackendActive = false;
+  runtimeProbeFinished = false;
+}
+
+export function isDevGameFileBackendActive(): boolean {
+  if (process.env.NODE_ENV === 'production') {
+    return false;
+  }
+  const compileTime =
+    typeof process.env.KOTOR_DEV_GAME_DIR === 'string'
+    && process.env.KOTOR_DEV_GAME_DIR.length > 0;
+  return compileTime || runtimeDevBackendActive;
 }
 
 function normalizePath(filePath: string): string {
@@ -46,6 +89,41 @@ type DevStatPayload = {
 const statCache = new Map<string, DevStatPayload>();
 const statInflight = new Map<string, Promise<DevStatPayload>>();
 
+/** Limit parallel HTTP calls to dev middleware — unconstrained bursts exhaust browser sockets. */
+const DEV_FS_MAX_INFLIGHT = 16;
+let devFsActive = 0;
+const devFsWaitQueue: Array<() => void> = [];
+
+async function acquireDevFsSlot(): Promise<void> {
+  if (devFsActive < DEV_FS_MAX_INFLIGHT) {
+    devFsActive += 1;
+    return;
+  }
+  await new Promise<void>((resolve) => {
+    devFsWaitQueue.push(() => {
+      devFsActive += 1;
+      resolve();
+    });
+  });
+}
+
+function releaseDevFsSlot(): void {
+  devFsActive -= 1;
+  const next = devFsWaitQueue.shift();
+  if (next) {
+    next();
+  }
+}
+
+async function devFetch(input: string, init?: RequestInit): Promise<Response> {
+  await acquireDevFsSlot();
+  try {
+    return await fetch(input, init);
+  } finally {
+    releaseDevFsSlot();
+  }
+}
+
 async function fetchStat(filePath: string): Promise<DevStatPayload> {
   const normalized = normalizePath(filePath);
   const cached = statCache.get(normalized);
@@ -58,7 +136,7 @@ async function fetchStat(filePath: string): Promise<DevStatPayload> {
   }
 
   const promise = (async () => {
-    const response = await fetch(apiUrl('stat', normalized));
+    const response = await devFetch(apiUrl('stat', normalized));
     if (!response.ok) {
       return { exists: false, isDirectory: false, isFile: false };
     }
@@ -69,7 +147,10 @@ async function fetchStat(filePath: string): Promise<DevStatPayload> {
       isFile: !!data.isFile,
       size: data.size,
     };
-    statCache.set(normalized, payload);
+    // Cache positive hits only — transient misses (server starting, wrong cwd) should retry.
+    if (payload.exists) {
+      statCache.set(normalized, payload);
+    }
     return payload;
   })();
 
@@ -248,7 +329,7 @@ async function loadFileBytes(filePath: string): Promise<Uint8Array> {
   if (fileByteCache.has(normalized)) {
     return fileByteCache.get(normalized)!;
   }
-  const response = await fetch(apiUrl('read', normalized));
+  const response = await devFetch(apiUrl('read', normalized));
   if (!response.ok) {
     let detail = '';
     try {
@@ -297,7 +378,7 @@ export async function devGameRead(
     output.set(bytes.subarray(position, position + length), offset);
     return;
   }
-  const response = await fetch(apiUrl('read', handle.path, { offset: position, length }));
+  const response = await devFetch(apiUrl('read', handle.path, { offset: position, length }));
   if (!response.ok) {
     throw new Error(`DevGameFileBackend read failed: ${handle.path} @ ${position}+${length}`);
   }
@@ -349,7 +430,7 @@ async function devGameReaddirWalk(
   files: string[],
   depth: number,
 ): Promise<void> {
-  const response = await fetch(apiUrl('readdir', resourcePath));
+  const response = await devFetch(apiUrl('readdir', resourcePath));
   if (!response.ok) {
     if (!options.list_dirs && depth === 0 && virtualDirExists(resourcePath)) {
       return;

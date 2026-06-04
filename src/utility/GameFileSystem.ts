@@ -79,9 +79,7 @@ export class GameFileSystem {
       const filename = dirs.pop();
       const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
       if(dirHandle){
-        const file = await dirHandle.getFileHandle(filename, {
-          create: false
-        });
+        const file = await this.getFileHandleInsensitive(dirHandle, filename!);
         if(file){
           return file;
         }else{
@@ -482,7 +480,7 @@ export class GameFileSystem {
           if(details.ext){
             let handle = await this.resolveFilePathDirectoryHandle(dirOrFilePath);
             if(handle){
-              let fileHandle = await handle.getFileHandle(details.base);
+              let fileHandle = await this.getFileHandleInsensitive(handle, details.base);
               if(fileHandle){
                 resolve(true);
                 return;
@@ -571,6 +569,26 @@ export class GameFileSystem {
       return undefined;
     }else{
       return await window.showSaveFilePicker({});
+    }
+  }
+
+  private static async getFileHandleInsensitive(
+    dirHandle: FileSystemDirectoryHandle,
+    filename: string,
+    create = false,
+  ): Promise<FileSystemFileHandle> {
+    try {
+      return await dirHandle.getFileHandle(filename, { create });
+    } catch (e) {
+      if (create) {
+        throw e;
+      }
+      for await (const entry of dirHandle.values()) {
+        if (entry.kind === 'file' && entry.name.toLowerCase() === filename.toLowerCase()) {
+          return entry as FileSystemFileHandle;
+        }
+      }
+      throw e;
     }
   }
 

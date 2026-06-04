@@ -110,6 +110,12 @@ describe('ResourceLoader', () => {
     expect(erf.hasResource('shared', ResourceTypes.utc)).toBe(true);
   });
 
+  it('loadCachedResource returns undefined when cache is empty or zero-length', () => {
+    expect(ResourceLoader.loadCachedResource(ResourceTypes.utc, 'missing')).toBeUndefined();
+    ResourceLoader.cache[ResourceTypes.utc] = { empty: new Uint8Array(0) };
+    expect(ResourceLoader.loadCachedResource(ResourceTypes.utc, 'empty')).toBeUndefined();
+  });
+
   it('loadResource falls through to the KEY table and stores the result in fallback cache', async () => {
     const data = Uint8Array.from([0x10, 0x20]);
     const keyEntry = { resRef: 'shared', resType: ResourceTypes.utc, resId: 1 };

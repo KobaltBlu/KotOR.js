@@ -6,6 +6,9 @@ import {
   devGameRead,
   devGameReadFile,
   devGameVirtualWrite,
+  isDevGameFileBackendActive,
+  probeDevGameFileBackend,
+  resetDevGameFileBackendProbeForTests,
 } from '@/dev/DevGameFileBackend';
 
 const originalFetch = (globalThis as { fetch?: typeof fetch }).fetch;
@@ -29,6 +32,52 @@ describe('DevGameFileBackend', () => {
 
   afterEach(() => {
     setFetch(originalFetch);
+    resetDevGameFileBackendProbeForTests();
+  });
+
+  it('activates dev backend via runtime probe when middleware serves chitin.key', async () => {
+    const prevEnv = process.env.NODE_ENV;
+    const prevDir = process.env.KOTOR_DEV_GAME_DIR;
+    process.env.NODE_ENV = 'development';
+    process.env.KOTOR_DEV_GAME_DIR = '';
+
+    const fetchMock = jest.fn(async (url: string) => {
+      if (String(url).includes('chitin.key')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ exists: true, isFile: true }),
+        };
+      }
+      return { ok: false, status: 404, json: async () => ({ exists: false }) };
+    });
+    setFetch(fetchMock);
+
+    expect(isDevGameFileBackendActive()).toBe(false);
+    await expect(probeDevGameFileBackend()).resolves.toBe(true);
+    expect(isDevGameFileBackendActive()).toBe(true);
+
+    process.env.NODE_ENV = prevEnv;
+    process.env.KOTOR_DEV_GAME_DIR = prevDir;
+  });
+
+  it('leaves dev backend inactive when probe finds no chitin.key', async () => {
+    const prevEnv = process.env.NODE_ENV;
+    const prevDir = process.env.KOTOR_DEV_GAME_DIR;
+    process.env.NODE_ENV = 'development';
+    process.env.KOTOR_DEV_GAME_DIR = '';
+
+    setFetch(jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ exists: false }),
+    })));
+
+    await expect(probeDevGameFileBackend()).resolves.toBe(false);
+    expect(isDevGameFileBackendActive()).toBe(false);
+
+    process.env.NODE_ENV = prevEnv;
+    process.env.KOTOR_DEV_GAME_DIR = prevDir;
   });
 
   it('serves virtual-written files from memory without any fetch', async () => {

@@ -3,7 +3,7 @@ import { Launcher } from "@/apps/launcher/context/Launcher";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { GameInitializer } from "@/apps/game/GameInitializer";
 import { ILoaderProgress } from '@/apps/common/loader/LoaderProgress';
-import { isDevGameFileBackendActive } from '@/dev/DevGameFileBackend';
+import { isDevGameFileBackendActive, probeDevGameFileBackend } from '@/dev/DevGameFileBackend';
 
 export class AppState {
   static eulaAccepted: boolean = false;
@@ -48,6 +48,20 @@ export class AppState {
     AppState.appProfile = await AppState.getProfile();
     KotOR.ApplicationProfile.SetProfile(AppState.appProfile);
     KotOR.ApplicationProfile.InitEnvironment();
+
+    if (AppState.env === ApplicationEnvironment.BROWSER) {
+      await probeDevGameFileBackend();
+      if (
+        process.env.NODE_ENV !== 'production'
+        && !isDevGameFileBackendActive()
+      ) {
+        console.warn(
+          '[KotOR dev] Game asset middleware inactive. For Linux/real installs use:\n'
+          + '  KOTOR_DEV_GAME_DIR="/path/to/swkotor" KOTOR_DEV_PORT=8130 npm run webpack:serve-hmr\n'
+          + 'Then open http://127.0.0.1:8130/game/?key=kotor (avoid stale e2e ports like 8099).',
+        );
+      }
+    }
 
     document.title = `${AppState.appProfile?.full_name ? AppState.appProfile?.full_name : 'N/A' }`;
     

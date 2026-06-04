@@ -150,6 +150,9 @@ export class GFFObject {
   }
 
   parse(binary: Uint8Array, onComplete?: Function){
+    if (!binary?.length || binary.length < 56) {
+      throw new Error(`GFFObject: invalid or empty buffer (${binary?.length ?? 0} bytes)`);
+    }
     this.reader = new BinaryReader(binary);
 
     this.FileType = this.reader.readChars(4);
@@ -200,6 +203,10 @@ export class GFFObject {
       };
     }
     //End Fields
+
+    if (!this.tmpStructArray[0]) {
+      throw new Error('GFFObject: missing root struct (corrupt or truncated GFF)');
+    }
 
     try{
       this.RootNode = this.buildStruct(this.tmpStructArray[0]);

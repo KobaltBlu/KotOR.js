@@ -497,7 +497,7 @@ export class ModuleItem extends ModuleObject {
     if(!this.loaded && this.getEquippedRes()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getEquippedRes());
-      if(buffer){
+      if(buffer?.length){
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();
@@ -512,7 +512,7 @@ export class ModuleItem extends ModuleObject {
     }else if(!this.loaded && this.getInventoryRes()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getInventoryRes());
-      if(buffer){
+      if(buffer?.length){
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();

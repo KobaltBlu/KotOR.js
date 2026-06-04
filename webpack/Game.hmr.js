@@ -51,6 +51,8 @@ module.exports = {
       ],
     },
     client: {
+      // Follow the page URL port/host so HMR works when KOTOR_DEV_PORT != default.
+      webSocketURL: 'auto://0.0.0.0:0/ws',
       // Keep compile errors visible; don't block the canvas when in-game runtime throws.
       overlay: {
         errors: true,
@@ -66,6 +68,12 @@ module.exports = {
         });
         // eslint-disable-next-line no-console
         console.log(`[KotOR dev] Serving game files from ${KOTOR_DEV_GAME_DIR}`);
+      } else {
+        // eslint-disable-next-line no-console
+        console.warn(
+          '[KotOR dev] KOTOR_DEV_GAME_DIR is unset — browser will use File System Access API.\n'
+          + '  For Linux/real installs: KOTOR_DEV_GAME_DIR="/path/to/swkotor" KOTOR_DEV_PORT=8130 npm run webpack:serve-hmr',
+        );
       }
       return middlewares;
     },

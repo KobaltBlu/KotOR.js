@@ -93,7 +93,12 @@ function bootstrap(): void {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-  bootstrap();
+  void (async () => {
+    // Activate dev FS before React bootstrap so GameFileSystem never hits FS Access first.
+    const { probeDevGameFileBackend } = await import('@/dev/DevGameFileBackend');
+    await probeDevGameFileBackend();
+    bootstrap();
+  })();
 });
 
 if (typeof module !== 'undefined' && module.hot) {
