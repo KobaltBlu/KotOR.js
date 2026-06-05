@@ -74,7 +74,7 @@ const RANGED_READ_CHUNK = 4 * 1024 * 1024;
 ### 3. Reproducible smoke check
 
 ```bash
-KOTOR_DEV_GAME_DIR="/path/to/swkotor" KOTOR_DEV_PORT=8130 npm run webpack:serve-hmr
+KOTOR_DEV_GAME_DIR="/path/to/swkotor" KOTOR_DEV_PORT=8130 npm run dev:hmr
 KOTOR_DEV_PORT=8130 ./scripts/prove-dev-fs-smoke.sh
 ```
 
@@ -88,7 +88,7 @@ Whole-file reads of large BIF/ERF archives multiplied concurrent fetches and exh
 
 ## Prevention
 
-- **Before claiming HMR dev parity**, run `./scripts/prove-dev-fs-smoke.sh` against a live `webpack:serve-hmr` instance with real assets — not only unit tests and CI
+- **Before claiming HMR dev parity**, run `./scripts/prove-dev-fs-smoke.sh` against a live `npm run dev:hmr` server with real assets — not only unit tests and CI
 - **Manual dev workflow:** use `KOTOR_DEV_PORT=8130` (or your chosen port) consistently; open `http://127.0.0.1:<port>/game/?key=kotor`, not port 8099 unless that server is running
 - **Clear site data** after switching between FS Access picker mode and `KOTOR_DEV_GAME_DIR` middleware mode
 - **Unit tests:** `clearDevBrowserDirectoryHandle` and large-file ranged read coverage in `src/dev/DevGameFileBackend.test.ts`
