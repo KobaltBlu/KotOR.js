@@ -92,10 +92,9 @@ Whole-file reads of large BIF/ERF archives multiplied concurrent fetches and exh
 - **Manual dev workflow:** use `KOTOR_DEV_PORT=8130` (or your chosen port) consistently; open `http://127.0.0.1:<port>/game/?key=kotor`, not port 8099 unless that server is running
 - **Clear site data** after switching between FS Access picker mode and `KOTOR_DEV_GAME_DIR` middleware mode
 - **Unit tests:** `clearDevBrowserDirectoryHandle` and large-file ranged read coverage in `src/dev/DevGameFileBackend.test.ts`
-- **Diagnostic in browser console:** `window.__KOTOR_HMR__?.getBootstrapStatus?.()`
+- **Diagnostic in browser console:** `window.__KOTOR_HMR_TEST__?.getBootstrapStatus?.()`
 
 ## Related Issues
 
 - PR [#101](https://github.com/KobaltBlu/KotOR.js/pull/101) — HMR / Forge explorer progress branch
-- Local analysis: `.hmr-investigation/upstream-vs-hmr-analysis.md`
-- Plan: `docs/plans/2026-06-04-004-fix-dev-fs-stale-handle-root-cause-plan.md`
+- Local analysis: `.hmr-investigation/upstream-vs-hmr-analysis.md` (not committed; optional local artifact)

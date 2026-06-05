@@ -1,14 +1,21 @@
 #!/usr/bin/env bash
 # Smoke-test dev FS middleware on a running webpack:serve-hmr instance.
-# Usage: KOTOR_DEV_PORT=8170 ./scripts/prove-dev-fs-smoke.sh
+# Usage: KOTOR_DEV_PORT=8130 ./scripts/prove-dev-fs-smoke.sh
+# Requires: dev server already running with KOTOR_DEV_GAME_DIR set (same port).
 set -euo pipefail
 
-PORT="${KOTOR_DEV_PORT:-8095}"
+PORT="${KOTOR_DEV_PORT:-8130}"
 BASE="http://127.0.0.1:${PORT}"
+
+if ! curl -sf --connect-timeout 3 "${BASE}/__kotor_dev_fs?action=stat&path=chitin.key" >/dev/null 2>&1; then
+  echo "FAIL: no dev FS on port ${PORT} — start server first:"
+  echo "  KOTOR_DEV_GAME_DIR=/path/to/swkotor KOTOR_DEV_PORT=${PORT} npm run dev:hmr"
+  exit 1
+fi
 
 stat_chitin=$(curl -sf "${BASE}/__kotor_dev_fs?action=stat&path=chitin.key")
 echo "stat chitin.key: ${stat_chitin}"
-echo "${stat_chitin}" | grep -q '"exists":true' || { echo "FAIL: chitin.key missing"; exit 1; }
+echo "${stat_chitin}" | grep -q '"exists":true' || { echo "FAIL: chitin.key missing (is KOTOR_DEV_GAME_DIR set?)"; exit 1; }
 
 stat_bik=$(curl -sf "${BASE}/__kotor_dev_fs?action=stat&path=Movies/leclogo.bik")
 echo "stat Movies/leclogo.bik: ${stat_bik}"

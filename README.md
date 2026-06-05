@@ -111,18 +111,26 @@ npm run dev
 Runs `webpack:dev-watch` and `serve` in parallel with a single command.
 
 **Option B2 — Hot reload while playing (preserves game session):**
+
+For **Linux** or when you have a local KOTOR I install, point the dev server at game assets so the browser reads `chitin.key` via HTTP middleware instead of the File System Access picker:
+
+```bash
+KOTOR_DEV_GAME_DIR=/path/to/swkotor KOTOR_DEV_PORT=8130 npm run dev:hmr
+```
+
+Then open **http://127.0.0.1:8130/game/?key=kotor**. `webpack/dev-game-fs-middleware.js` serves files from `KOTOR_DEV_GAME_DIR` under `/__kotor_dev_fs`.
+
+**Port map:** `8080` = default HMR (no local assets unless you use the picker); **`8130` = recommended manual dev with real assets**; `8099` = CI HMR E2E only (`KOTOR_HMR_E2E_PORT`).
+
+Without `KOTOR_DEV_GAME_DIR`, you can still run HMR and pick a folder in the browser:
+
 ```bash
 npm run dev:hmr
 ```
-Runs `webpack:dev-kotor-watch` (engine + workers only) and a **webpack-dev-server** with HMR for the game client. Open **http://localhost:8080/game/?key=kotor**, load into the game, then edit TypeScript under `src/` — successful hot updates keep the live Three.js scene and `GameState` intact instead of forcing a full page reload.
 
-Point the dev server at a local KOTOR I install (Steam/GOG) so the browser can read `chitin.key` and game assets without the File System Access picker:
+Open **http://localhost:8080/game/?key=kotor** (port defaults to `8080` when `KOTOR_DEV_PORT` is unset). Load into the game, then edit TypeScript under `src/` — successful hot updates keep the live Three.js scene and `GameState` intact instead of forcing a full page reload.
 
-```bash
-KOTOR_DEV_GAME_DIR=/path/to/swkotor KOTOR_DEV_PORT=8095 npm run dev:hmr
-```
-
-Then open **http://localhost:8095/game/?key=kotor** (port defaults to `8080` when `KOTOR_DEV_PORT` is unset). `webpack/dev-game-fs-middleware.js` serves files from `KOTOR_DEV_GAME_DIR` under `/__kotor_dev_fs`.
+Verify dev FS after starting with real assets: `KOTOR_DEV_PORT=8130 ./scripts/prove-dev-fs-smoke.sh`
 
 > The HMR server inlines the engine module graph for hot-swap; `webpack:dev-kotor-watch` rebuilds `dist/KotOR.js` and workers without overwriting the HMR game bundle.
 
