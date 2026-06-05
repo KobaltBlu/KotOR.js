@@ -182,6 +182,10 @@ Notes:
 
 | Command | What it does |
 |---|---|
+| `npm run dev:hmr` | HMR dev server + engine watch (see Option B2 for `KOTOR_DEV_GAME_DIR`) |
+| `npm run test:hmr-e2e` | Puppeteer HMR session preservation e2e (CI uses port 8099) |
+| `KOTOR_DEV_PORT=8130 ./scripts/prove-dev-fs-smoke.sh` | Curl smoke test against live dev FS middleware |
+| `KOTOR_VERIFY_HMR=1 node scripts/verify-in-module.cjs` | In-module HMR proof with real assets (local only) |
 | `npm run webpack:dev` | One-shot development build (no watch) |
 | `npm run webpack:prod` | Production build (minified, no source maps) |
 | `npm run electron:compile` | Compile only the Electron main process TypeScript |

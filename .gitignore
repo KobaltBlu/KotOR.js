@@ -16,6 +16,8 @@ debug.log
 docs/*
 !docs/solutions/
 !docs/solutions/**
+.hmr-investigation/
+.audit/
 coverage/
 scratch/
 research/
