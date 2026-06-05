@@ -3,7 +3,7 @@ import { Launcher } from "@/apps/launcher/context/Launcher";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { GameInitializer } from "@/apps/game/GameInitializer";
 import { ILoaderProgress } from '@/apps/common/loader/LoaderProgress';
-import { isDevGameFileBackendActive, probeDevGameFileBackend } from '@/dev/DevGameFileBackend';
+import { isDevGameFileBackendActive, probeDevGameFileBackend, clearDevBrowserDirectoryHandle } from '@/dev/DevGameFileBackend';
 
 export class AppState {
   static eulaAccepted: boolean = false;
@@ -51,6 +51,15 @@ export class AppState {
 
     if (AppState.env === ApplicationEnvironment.BROWSER) {
       await probeDevGameFileBackend();
+      if (isDevGameFileBackendActive()) {
+        clearDevBrowserDirectoryHandle();
+        KotOR.GameFileSystem.clearDirectoryHandleCache();
+      } else if (
+        process.env.NODE_ENV !== 'production'
+      ) {
+        clearDevBrowserDirectoryHandle();
+        KotOR.GameFileSystem.clearDirectoryHandleCache();
+      }
       if (
         process.env.NODE_ENV !== 'production'
         && !isDevGameFileBackendActive()

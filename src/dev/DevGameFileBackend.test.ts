@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 import {
+  clearDevBrowserDirectoryHandle,
   DevGameFileHandle,
   devGameExists,
   devGameRead,
@@ -10,6 +11,7 @@ import {
   probeDevGameFileBackend,
   resetDevGameFileBackendProbeForTests,
 } from '@/dev/DevGameFileBackend';
+import { ApplicationProfile } from '@/utility/ApplicationProfile';
 
 const originalFetch = (globalThis as { fetch?: typeof fetch }).fetch;
 
@@ -92,8 +94,18 @@ describe('DevGameFileBackend', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('reads a small file whole and serves repeat reads from cache', async () => {
-    const fetchMock = jest.fn(async () => okBytes([1, 2, 3]));
+  it('reads a small file via stat + ranged read and caches repeat reads', async () => {
+    const fetchMock = jest.fn(async (url: string) => {
+      const u = String(url);
+      if (u.includes('action=stat')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ exists: true, isFile: true, size: 3 }),
+        };
+      }
+      return okBytes([1, 2, 3]);
+    });
     setFetch(fetchMock);
 
     const first = await devGameReadFile('data/small-once.gff');
@@ -102,8 +114,33 @@ describe('DevGameFileBackend', () => {
     const second = await devGameReadFile('data/small-once.gff');
     expect(Array.from(second)).toEqual([1, 2, 3]);
 
-    // Second read is served from fileByteCache — no second network request.
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // stat + one ranged read; second read is served from fileByteCache.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('reads large files via multiple ranged chunks (no whole-file fetch)', async () => {
+    const chunkSize = 4 * 1024 * 1024;
+    const totalSize = chunkSize + 100;
+    const fetchMock = jest.fn(async (url: string) => {
+      const u = String(url);
+      if (u.includes('action=stat')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ exists: true, isFile: true, size: totalSize }),
+        };
+      }
+      const offset = Number(new URL(u, 'http://localhost').searchParams.get('offset'));
+      const length = Number(new URL(u, 'http://localhost').searchParams.get('length'));
+      return okBytes(Array.from({ length }, (_, i) => (offset + i) & 0xff));
+    });
+    setFetch(fetchMock);
+
+    const bytes = await devGameReadFile('data/large.bif');
+    expect(bytes.length).toBe(totalSize);
+    expect(bytes[0]).toBe(0);
+    expect(bytes[chunkSize]).toBe(0);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
   it('issues a ranged fetch and writes bytes at the destination offset', async () => {
@@ -140,15 +177,32 @@ describe('DevGameFileBackend', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('rejects a whole-file read with a descriptive error when the server refuses (413)', async () => {
-    const fetchMock = jest.fn(async () => ({
-      ok: false,
-      status: 413,
-      text: async () => 'File too large for whole-file read: 999999999 bytes exceeds 67108864. Use a ranged read (offset/length).',
+  it('rejects read when stat reports file missing', async () => {
+    setFetch(jest.fn(async (url: string) => {
+      if (String(url).includes('action=stat')) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ exists: false, isFile: false }),
+        };
+      }
+      return {
+        ok: false,
+        status: 404,
+        text: async () => 'Not found',
+      };
     }));
-    setFetch(fetchMock);
 
-    await expect(devGameReadFile('data/huge-413.bif')).rejects.toThrow(/413/);
-    await expect(devGameReadFile('data/huge-413.bif')).rejects.toThrow(/too large/i);
+    await expect(devGameReadFile('data/missing.gff')).rejects.toThrow(/404/);
+  });
+
+  it('clearDevBrowserDirectoryHandle drops persisted FS Access handle', () => {
+    ApplicationProfile.directoryHandle = { name: 'swkotor' } as FileSystemDirectoryHandle;
+    ApplicationProfile.profile = { directory_handle: ApplicationProfile.directoryHandle };
+
+    clearDevBrowserDirectoryHandle();
+
+    expect(ApplicationProfile.directoryHandle).toBeUndefined();
+    expect(ApplicationProfile.profile.directory_handle).toBeUndefined();
   });
 });

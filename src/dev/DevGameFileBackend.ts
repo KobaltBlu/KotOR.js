@@ -3,7 +3,14 @@
  * KOTOR_DEV_GAME_DIR is set (browser cannot use native paths directly).
  */
 
+import { ApplicationProfile } from '@/utility/ApplicationProfile';
+
 const DEV_FS_BASE = '/__kotor_dev_fs';
+
+/** Do not cache whole-file reads larger than this in browser memory. */
+const MAX_FILE_BYTE_CACHE = 8 * 1024 * 1024;
+/** Ranged read chunk size — matches middleware expectations for large archives. */
+const RANGED_READ_CHUNK = 4 * 1024 * 1024;
 
 /** True when a runtime probe found webpack dev-game-fs middleware (chitin.key). */
 let runtimeDevBackendActive = false;
@@ -54,6 +61,17 @@ export function isDevGameFileBackendActive(): boolean {
     typeof process.env.KOTOR_DEV_GAME_DIR === 'string'
     && process.env.KOTOR_DEV_GAME_DIR.length > 0;
   return compileTime || runtimeDevBackendActive;
+}
+
+/**
+ * Remove persisted File System Access handles so dev HTTP FS is the sole asset path.
+ * Stale IndexedDB handles cause NotFoundError storms when middleware is active or port/env is wrong.
+ */
+export function clearDevBrowserDirectoryHandle(): void {
+  ApplicationProfile.directoryHandle = undefined as any;
+  if (ApplicationProfile.profile && typeof ApplicationProfile.profile === 'object') {
+    ApplicationProfile.profile.directory_handle = undefined;
+  }
 }
 
 function normalizePath(filePath: string): string {
@@ -321,15 +339,8 @@ export async function devGameExists(filePath: string): Promise<boolean> {
   return hasExt ? !!data.isFile : !!data.isDirectory;
 }
 
-async function loadFileBytes(filePath: string): Promise<Uint8Array> {
-  const normalized = normalizePath(filePath);
-  if (virtualFiles.has(normalized)) {
-    return virtualFiles.get(normalized)!;
-  }
-  if (fileByteCache.has(normalized)) {
-    return fileByteCache.get(normalized)!;
-  }
-  const response = await devFetch(apiUrl('read', normalized));
+async function readRangedBytes(normalized: string, offset: number, length: number): Promise<Uint8Array> {
+  const response = await devFetch(apiUrl('read', normalized, { offset, length }));
   if (!response.ok) {
     let detail = '';
     try {
@@ -338,11 +349,50 @@ async function loadFileBytes(filePath: string): Promise<Uint8Array> {
       detail = '';
     }
     const suffix = detail ? ` (HTTP ${response.status}: ${detail})` : ` (HTTP ${response.status})`;
-    throw new Error(`DevGameFileBackend read failed: ${normalized}${suffix}`);
+    throw new Error(`DevGameFileBackend read failed: ${normalized} @ ${offset}+${length}${suffix}`);
   }
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  fileByteCache.set(normalized, bytes);
-  return bytes;
+  return new Uint8Array(await response.arrayBuffer());
+}
+
+async function loadFileBytes(filePath: string): Promise<Uint8Array> {
+  const normalized = normalizePath(filePath);
+  if (virtualFiles.has(normalized)) {
+    return virtualFiles.get(normalized)!;
+  }
+  if (fileByteCache.has(normalized)) {
+    return fileByteCache.get(normalized)!;
+  }
+
+  const stat = await fetchStat(normalized);
+  if (!stat.exists || !stat.isFile) {
+    throw new Error(`DevGameFileBackend read failed: ${normalized} (HTTP 404: Not found)`);
+  }
+
+  const size = stat.size ?? 0;
+  if (size === 0) {
+    const empty = new Uint8Array(0);
+    fileByteCache.set(normalized, empty);
+    return empty;
+  }
+
+  if (size <= RANGED_READ_CHUNK) {
+    const bytes = await readRangedBytes(normalized, 0, size);
+    if (size <= MAX_FILE_BYTE_CACHE) {
+      fileByteCache.set(normalized, bytes);
+    }
+    return bytes;
+  }
+
+  const out = new Uint8Array(size);
+  for (let offset = 0; offset < size; offset += RANGED_READ_CHUNK) {
+    const length = Math.min(RANGED_READ_CHUNK, size - offset);
+    const chunk = await readRangedBytes(normalized, offset, length);
+    out.set(chunk, offset);
+  }
+  if (size <= MAX_FILE_BYTE_CACHE) {
+    fileByteCache.set(normalized, out);
+  }
+  return out;
 }
 
 export async function devGameReadFile(filePath: string): Promise<Uint8Array> {

@@ -4,6 +4,11 @@ import * as KotOR from "@/apps/game/KotOR";
 import { HotReloadManager } from "@/dev/HotReloadManager";
 import { installHmrTestBridge } from "@/dev/HmrTestBridge";
 import { HMR_PROBE } from "@/dev/HmrTestProbe";
+import {
+  clearDevBrowserDirectoryHandle,
+  isDevGameFileBackendActive,
+  probeDevGameFileBackend,
+} from "@/dev/DevGameFileBackend";
 import "@/apps/game/app.scss";
 
 declare const module: {
@@ -95,8 +100,15 @@ function bootstrap(): void {
 window.addEventListener('DOMContentLoaded', () => {
   void (async () => {
     // Activate dev FS before React bootstrap so GameFileSystem never hits FS Access first.
-    const { probeDevGameFileBackend } = await import('@/dev/DevGameFileBackend');
     await probeDevGameFileBackend();
+    if (isDevGameFileBackendActive()) {
+      clearDevBrowserDirectoryHandle();
+      KotOR.GameFileSystem.clearDirectoryHandleCache();
+    } else if (process.env.NODE_ENV !== 'production') {
+      // Wrong port or missing KOTOR_DEV_GAME_DIR — drop stale IndexedDB handles that cause NotFoundError storms.
+      clearDevBrowserDirectoryHandle();
+      KotOR.GameFileSystem.clearDirectoryHandleCache();
+    }
     bootstrap();
   })();
 });

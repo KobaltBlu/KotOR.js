@@ -648,6 +648,12 @@ export class GameFileSystem {
   static directoryCache: Map<string, FileSystemDirectoryHandle> = new Map();
   static directoryInflight: Map<string, Promise<FileSystemDirectoryHandle>> = new Map();
 
+  /** Drop cached FS Access handles (dev middleware mode or stale profile recovery). */
+  static clearDirectoryHandleCache(): void {
+    this.directoryCache.clear();
+    this.directoryInflight.clear();
+  }
+
   private static async resolveFilePathDirectoryHandle(filepath: string): Promise<FileSystemDirectoryHandle> {
     if(ApplicationProfile.directoryHandle){
       const dirs = filepath.split('/');
