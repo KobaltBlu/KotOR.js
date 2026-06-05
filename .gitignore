@@ -13,7 +13,9 @@ tests/
 # src/**/*.js
 dist/
 debug.log
-docs/
+docs/*
+!docs/solutions/
+!docs/solutions/**
 coverage/
 scratch/
 research/
