@@ -119,7 +119,7 @@ async function main() {
   const browser = await puppeteer.launch({
     headless: 'new',
     executablePath: findChrome(),
-    protocolTimeout: MODULE_TIMEOUT_MS + 300000,
+    protocolTimeout: MODULE_TIMEOUT_MS + HMR_TIMEOUT_MS + 600000,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
   });
 

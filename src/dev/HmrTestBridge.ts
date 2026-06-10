@@ -133,8 +133,15 @@ export function installHmrTestBridge(): void {
       KotOR.GameState.PartyManager.ActualPlayerTemplate = template;
       KotOR.GameState.PartyManager.AddPortraitToOrder(portraitResRefFromTemplate(template));
       await CurrentGame.InitGameInProgressFolder(true);
-      if (KotOR.GameState.MenuManager.LoadScreen) {
-        KotOR.GameState.MenuManager.LoadScreen.setHintMessage('');
+      const menuManager = KotOR.GameState.MenuManager;
+      if (!menuManager.LoadScreen || !menuManager.MenuToolTip) {
+        if (!menuManager.activeMenus) {
+          menuManager.Init();
+        }
+        await menuManager.LoadMainGameMenus();
+      }
+      if (menuManager.LoadScreen) {
+        menuManager.LoadScreen.setHintMessage('');
       }
       await KotOR.GameState.LoadModule(moduleName);
       await waitForInGameModule();

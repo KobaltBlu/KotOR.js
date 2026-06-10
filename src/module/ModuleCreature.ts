@@ -4056,12 +4056,7 @@ export class ModuleCreature extends ModuleObject {
       console.error(e);
     }
 
-    if(this.template.RootNode.hasField('AmbientAnimState')){
-      const ambientAnim = this.template.getFieldByLabel('AmbientAnimState').getValue();
-      if(ambientAnim !== 0){
-        this.setAnimationState(ambientAnim);
-      }
-    } else if(this.template.RootNode.hasField('Animation')){
+    if(this.template.RootNode.hasField('Animation')){
       this.setAnimationState(
         this.template.getFieldByLabel('Animation').getValue()
       );
