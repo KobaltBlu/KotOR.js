@@ -219,8 +219,8 @@ export class MenuManager {
       activeModals[i].update(delta);
     }
 
-    if(GameState.scene_gui.children.indexOf(GameState.scene_cursor_holder) != GameState.scene_gui.children.length){
-      GameState.scene_cursor_holder.remove(GameState.scene_gui);
+    if(GameState.scene_gui && GameState.scene_cursor_holder && GameState.scene_gui.children.indexOf(GameState.scene_cursor_holder) !== GameState.scene_gui.children.length - 1){
+      GameState.scene_gui.remove(GameState.scene_cursor_holder);
       GameState.scene_gui.add(GameState.scene_cursor_holder);
     }
 
@@ -332,8 +332,8 @@ export class MenuManager {
           KOTOR.MenuKeyboardEntry, KOTOR.InGameConfirm,
         ];
       }
-    }catch(e){
-      console.error(e);
+    }catch(e: any){
+      console.error(e?.stack || e);
     }
   }
   
@@ -396,8 +396,8 @@ export class MenuManager {
           KOTOR.CharGenQuickPanel, KOTOR.CharGenSkills,
         ];
       }
-    }catch(e){
-      console.error(e);
+    }catch(e: any){
+      console.error(e?.stack || e);
     }
   }
 
@@ -560,8 +560,8 @@ export class MenuManager {
       if(GameState.GameKey == GameEngineType.TSL){
         MenuManager.MenuPartySelection.childMenu = GameState.MenuManager.MenuTop;
       }
-    }catch(e){
-      console.error(e);
+    }catch(e: any){
+      console.error(e?.stack || e);
     }
   }
 

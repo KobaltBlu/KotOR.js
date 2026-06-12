@@ -87,7 +87,7 @@ export class GUISlider extends GUIControl{
           this.thumb.material.transparent = false;
           this.thumb.material.alphaTest = 0.5;
           this.thumb.material.needsUpdate = true;
-          if(texture.header){
+          if(texture?.header){
             this.thumb.width = texture.header.width;
             this.thumb.height = texture.header.height;
             this.thumb.mesh.scale.set(texture.header.width, texture.header.height, 1);

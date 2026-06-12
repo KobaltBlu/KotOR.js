@@ -337,9 +337,11 @@ export class VideoManager {
    * @param delta - Time delta in seconds (unused; BIK uses wall clock / audio clock)
    */
   static update(delta: number): void {
-    if (!this.bikObject || !this.isPlaying) return;
-    this.bikObject.update(delta);
-    const frame = this.bikObject.getCurrentFrame();
+    const bikObject = this.bikObject;
+    if (!bikObject || !this.isPlaying) return;
+    bikObject.update(delta);
+    if (this.bikObject !== bikObject || !this.isPlaying) return;
+    const frame = bikObject.getCurrentFrame();
     if (frame) {
       VideoManager.updateVideoTextures(frame);
     }

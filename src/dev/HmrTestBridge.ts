@@ -15,8 +15,10 @@ declare global {
       startQuickPlayToModule(moduleName: string): Promise<void>;
       snapshotSession(): {
         ready: boolean;
+        mode: number;
         module: string | null;
         area: string | null;
+        creatureCount: number | null;
         player: { x: number; y: number; z: number } | null;
       };
       inspectCreatures(): {
@@ -61,6 +63,17 @@ function getProbeValue(): number {
   return require('@/dev/HmrTestProbe').HMR_PROBE as number;
 }
 
+/**
+ * Engine modes that count as "in-module" for HMR session checks.
+ * Module intros auto-start DIALOG (e.g. Endar Spire), and FREELOOK is
+ * in-module camera control; MOVIE (bink playback) and menus are not.
+ */
+function isInModuleMode(mode: number): boolean {
+  return mode === KotOR.EngineMode.INGAME
+    || mode === KotOR.EngineMode.DIALOG
+    || mode === KotOR.EngineMode.FREELOOK;
+}
+
 function waitForInGameModule(timeoutMs = 300000): Promise<void> {
   return new Promise((resolve, reject) => {
     const started = performance.now();
@@ -68,7 +81,7 @@ function waitForInGameModule(timeoutMs = 300000): Promise<void> {
       const gs = KotOR.GameState;
       const inGame = !gs.loadingModule
         && !!gs.module?.filename
-        && gs.Mode === KotOR.EngineMode.INGAME
+        && isInModuleMode(gs.Mode)
         && !!gs.module.readyToProcessEvents;
       if (inGame) {
         resolve();
@@ -86,9 +99,54 @@ function waitForInGameModule(timeoutMs = 300000): Promise<void> {
   });
 }
 
-function getPlayerCreature(): any {
+export function getPlayerCreature(): any {
   return KotOR.GameState.PartyManager?.Player
     || KotOR.GameState.PartyManager?.party?.[0];
+}
+
+/** Clears any queued/playing bink movies so module load can finish unattended. */
+export function skipIntroMovies(): void {
+  const vm = KotOR.GameState.VideoManager ?? KotOR.VideoManager;
+  vm?.clearMovieQueue?.();
+  if (KotOR.GameState.Mode === KotOR.EngineMode.MOVIE) {
+    KotOR.GameState.RestoreEnginePlayMode();
+  }
+}
+
+/**
+ * Boots a playable session directly into a module, bypassing main menu and
+ * chargen. Shared by the HMR test bridge and dev session resume.
+ */
+export async function startQuickPlayToModule(moduleName: string): Promise<void> {
+  const headsTable = KotOR.GameState.TwoDAManager.datatables.get('heads');
+  if (!twoDAHasRows(headsTable)) {
+    throw new Error('Game bootstrap incomplete: 2DA tables not loaded yet');
+  }
+  if (!KotOR.GameState.SWRuleSet.heads?.length) {
+    KotOR.GameState.SWRuleSet.Init();
+    KotOR.GameState.AppearanceManager.Init();
+  }
+  if (!KotOR.GameState.Ready) {
+    KotOR.GameState.Ready = true;
+  }
+  KotOR.GameState.GlobalVariableManager.Init();
+  const template = KotOR.GameState.PartyManager.GeneratePlayerTemplate();
+  KotOR.GameState.PartyManager.PlayerTemplate = template;
+  KotOR.GameState.PartyManager.ActualPlayerTemplate = template;
+  KotOR.GameState.PartyManager.AddPortraitToOrder(portraitResRefFromTemplate(template));
+  await CurrentGame.InitGameInProgressFolder(true);
+  const menuManager = KotOR.GameState.MenuManager;
+  if (!menuManager.LoadScreen || !menuManager.MenuToolTip) {
+    if (!menuManager.activeMenus) {
+      menuManager.Init();
+    }
+    await menuManager.LoadMainGameMenus();
+  }
+  if (menuManager.LoadScreen) {
+    menuManager.LoadScreen.setHintMessage('');
+  }
+  await KotOR.GameState.LoadModule(moduleName);
+  await waitForInGameModule();
 }
 
 function portraitResRefFromTemplate(template: InstanceType<typeof KotOR.GFFObject>): string {
@@ -115,46 +173,18 @@ export function installHmrTestBridge(): void {
     activateSession: () => {
       KotOR.GameState.Ready = true;
     },
-    startQuickPlayToModule: async (moduleName: string) => {
-      const headsTable = KotOR.GameState.TwoDAManager.datatables.get('heads');
-      if (!twoDAHasRows(headsTable)) {
-        throw new Error('Game bootstrap incomplete: 2DA tables not loaded yet');
-      }
-      if (!KotOR.GameState.SWRuleSet.heads?.length) {
-        KotOR.GameState.SWRuleSet.Init();
-        KotOR.GameState.AppearanceManager.Init();
-      }
-      if (!KotOR.GameState.Ready) {
-        KotOR.GameState.Ready = true;
-      }
-      KotOR.GameState.GlobalVariableManager.Init();
-      const template = KotOR.GameState.PartyManager.GeneratePlayerTemplate();
-      KotOR.GameState.PartyManager.PlayerTemplate = template;
-      KotOR.GameState.PartyManager.ActualPlayerTemplate = template;
-      KotOR.GameState.PartyManager.AddPortraitToOrder(portraitResRefFromTemplate(template));
-      await CurrentGame.InitGameInProgressFolder(true);
-      const menuManager = KotOR.GameState.MenuManager;
-      if (!menuManager.LoadScreen || !menuManager.MenuToolTip) {
-        if (!menuManager.activeMenus) {
-          menuManager.Init();
-        }
-        await menuManager.LoadMainGameMenus();
-      }
-      if (menuManager.LoadScreen) {
-        menuManager.LoadScreen.setHintMessage('');
-      }
-      await KotOR.GameState.LoadModule(moduleName);
-      await waitForInGameModule();
-    },
+    startQuickPlayToModule: (moduleName: string) => startQuickPlayToModule(moduleName),
     snapshotSession: () => {
       const player = getPlayerCreature();
       const inGame = !KotOR.GameState.loadingModule
-        && KotOR.GameState.Mode === KotOR.EngineMode.INGAME
+        && isInModuleMode(KotOR.GameState.Mode)
         && !!KotOR.GameState.module?.readyToProcessEvents;
       return {
         ready: KotOR.GameState.Ready && inGame,
+        mode: KotOR.GameState.Mode,
         module: KotOR.GameState.module?.filename ?? null,
         area: KotOR.GameState.module?.area?.name ?? null,
+        creatureCount: KotOR.GameState.module?.area?.creatures?.length ?? null,
         player: player ? {
           x: player.position.x,
           y: player.position.y,
@@ -212,13 +242,7 @@ export function installHmrTestBridge(): void {
       }
       return KotOR.GameState.SWRuleSet.heads?.length > 0;
     },
-    skipIntroMovies: () => {
-      const vm = KotOR.GameState.VideoManager ?? KotOR.VideoManager;
-      vm?.clearMovieQueue?.();
-      if (KotOR.GameState.Mode === KotOR.EngineMode.MOVIE) {
-        KotOR.GameState.RestoreEnginePlayMode();
-      }
-    },
+    skipIntroMovies: () => skipIntroMovies(),
     getBootstrapStatus: () => {
       const headsTable = KotOR.GameState.TwoDAManager?.datatables?.get('heads');
       return {

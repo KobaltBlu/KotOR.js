@@ -4,7 +4,13 @@ Short entrypoint for coding agents. Human developers: see [README.md](README.md)
 
 ## Branch context
 
-This branch adds **HMR dev play** (`webpack:serve-hmr`, `DevGameFileBackend`, `/__kotor_dev_fs` middleware) and **Forge explorer progress**. Upstream `KobaltBlu/KotOR.js` master has **no HMR stack** — browser errors during HMR dev are often branch-only dev infrastructure, not Odyssey engine regressions. See `docs/solutions/runtime-errors/dev-fs-stale-handle-hmr-parity.md`.
+This branch adds **HMR dev play** (`webpack:serve-hmr`, `DevGameFileBackend`, `/__kotor_dev_fs` middleware) and **Forge explorer progress**.
+
+HMR has three tiers (see `src/dev/DevSessionResume.ts`, `src/apps/game/index.tsx`):
+
+1. **In-place hot swap** — only React UI shell (`@/apps/game/app`, AppContext) and the `HmrTestProbe` canary.
+2. **Engine-file edits** — cannot hot-swap in place (static singletons, `#private` fields, `instanceof` identity). The HMR status handler snapshots the session to `localStorage` and full-reloads; boot auto-resumes into the same module/position.
+3. **Manual F5** — same snapshot/auto-resume path (continuous 2 s autosave + `beforeunload`). Disable with `?devresume=0`. Upstream `KobaltBlu/KotOR.js` master has **no HMR stack** — browser errors during HMR dev are often branch-only dev infrastructure, not Odyssey engine regressions. See `docs/solutions/runtime-errors/dev-fs-stale-handle-hmr-parity.md`.
 
 ## Port map (do not mix these)
 

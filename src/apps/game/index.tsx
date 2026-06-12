@@ -3,6 +3,11 @@ import React from "react";
 import * as KotOR from "@/apps/game/KotOR";
 import { HotReloadManager } from "@/dev/HotReloadManager";
 import { installHmrTestBridge } from "@/dev/HmrTestBridge";
+import {
+  captureDevResumeSnapshot,
+  installDevSessionResume,
+  tryResumeDevSession,
+} from "@/dev/DevSessionResume";
 import { HMR_PROBE } from "@/dev/HmrTestProbe";
 import {
   clearDevBrowserDirectoryHandle,
@@ -95,6 +100,11 @@ function bootstrap(): void {
   window.__KOTOR_HMR_PROBE_VALUE__ = HMR_PROBE;
   installHmrTestBridge();
   mountApp();
+  if (process.env.NODE_ENV !== 'production') {
+    installDevSessionResume();
+    // F5 / fallback-reload resume: jump back into the saved module instead of main menu.
+    void tryResumeDevSession();
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -122,11 +132,17 @@ if (typeof module !== 'undefined' && module.hot) {
     window.__KOTOR_HMR_STATUS_HANDLER__ = true;
     module.hot.addStatusHandler((status) => {
       if (status === 'abort' || status === 'fail') {
-        if (KotOR.GameState.hmrIsSessionActive()) {
-          console.warn('[HMR] Hot update failed — keeping live in-game session (no reload)');
+        if ((window as any).__KOTOR_HMR_RELOAD_PENDING__) {
           return;
         }
-        console.warn('[HMR] Hot update failed — performing full reload');
+        const inSession = KotOR.GameState.hmrIsSessionActive();
+        const saved = captureDevResumeSnapshot();
+        if (!inSession && !saved) {
+          console.warn('[HMR] Update not hot-applicable — no live session to resume, skipping reload');
+          return;
+        }
+        (window as any).__KOTOR_HMR_RELOAD_PENDING__ = true;
+        console.warn(`[HMR] Update not hot-applicable — full reload${saved ? ' with session resume' : ''}`);
         window.location.reload();
       }
     });
@@ -138,10 +154,5 @@ if (typeof module !== 'undefined' && module.hot) {
 
   module.hot.accept(['@/dev/HmrTestProbe'], () => {
     onProbeHotApplied();
-  });
-
-  // Entry boundary: index.tsx / app.scss edits remount without full page reload.
-  module.hot.accept(() => {
-    onUiHotApplied();
   });
 }
