@@ -514,7 +514,16 @@ async function main() {
       }
     });
 
-    await page.goto(`${readyUrl}&devresume=0`, { waitUntil: 'domcontentloaded', timeout: SERVER_TIMEOUT_MS });
+    await page.goto(readyUrl, { waitUntil: 'domcontentloaded', timeout: SERVER_TIMEOUT_MS });
+    // Drop any stale snapshot so boot resume does not hijack quick-play; resume
+    // stays enabled for F5 / engine-edit reloads in later phases.
+    await page.evaluate((key) => {
+      try {
+        window.localStorage.removeItem(key);
+      } catch {
+        // ignore
+      }
+    }, RESUME_STORAGE_KEY);
     await page.waitForFunction(() => window.__KOTOR_HMR_TEST__, { timeout: 60000 });
 
     const before = await page.evaluate(() => ({
