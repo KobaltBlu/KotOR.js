@@ -156,27 +156,35 @@ const App = function() {
     <>
       <div id="container" className={`${appReady ? 'ready': ''} ${discordWidgetOpen ? 'discord_widget_open' : ''}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
         <div className="launcher-menu">
+          <h1 className="sr-only">KotOR.js Web Launcher</h1>
           <div className="launcher-menu-background"></div>
           <div className="menu-accent"><div className="inner"></div></div>
           <ul className="top-nav">
-            <li className="tab-btn nav-logo"><img src="images/kotor-js-logo.png" /></li>
+            <li className="tab-btn nav-logo"><img src="images/kotor-js-logo.png" alt="KotOR.js" /></li>
             <li className="tab-btn"><a href="#apps" onClick={onTabClicked}>Apps</a></li>
             <li className="tab-btn"><a href="#community" onClick={onTabClicked}>Community</a></li>
             <li className="tab-btn"><a href="#buy" onClick={onTabClicked}>Need KotOR?</a></li>
-            <li className="tab-btn discord-toggle" onClick={onDiscordToggle} title={discordWidgetOpen ? "Hide Discord" : "Show Discord"}>
+            <li
+              className="tab-btn discord-toggle"
+              role="button"
+              aria-label={discordWidgetOpen ? "Hide Discord" : "Show Discord"}
+              onClick={onDiscordToggle}
+              title={discordWidgetOpen ? "Hide Discord" : "Show Discord"}
+            >
               <i className={`fab fa-discord ${discordWidgetOpen ? 'active' : ''}`}></i>
             </li>
           </ul>
           {showMenuTopRight && (
             <div id="launcher-menu-top-right" className="launcher-menu-top-right">
-              <div className="launcher-min" title="Minimize Window" onClick={onBtnMinimize}><i className="fas fa-window-minimize"></i></div>
-              <div className="launcher-max" title="Maximize Window" onClick={onBtnMaximize}><i className="far fa-clone"></i></div>
-              <div className="launcher-close" title="Close Window" onClick={onBtnClose}><i className="fas fa-times"></i></div>
+              <div className="launcher-min" role="button" aria-label="Minimize window" title="Minimize Window" onClick={onBtnMinimize}><i className="fas fa-window-minimize"></i></div>
+              <div className="launcher-max" role="button" aria-label="Maximize window" title="Maximize Window" onClick={onBtnMaximize}><i className="far fa-clone"></i></div>
+              <div className="launcher-close" role="button" aria-label="Close window" title="Close Window" onClick={onBtnClose}><i className="fas fa-times"></i></div>
             </div>
           )}
         </div>
         <div className="tab-host">
           {(selectedTab == 'apps' && <div className="tab selected">
+            <h2 className="sr-only">Apps</h2>
             <div className="launcher-options">
               {Object.values(profileCategoriesValue).map((category: any, i: number) => {
                 return (
@@ -197,11 +205,13 @@ const App = function() {
             </div>
           </div>)}
           {(selectedTab == 'community' && <div className="tab selected">
+            <h2 className="sr-only">Community</h2>
             <div className="launcher-contents full-width">
               <CommunityTabContent />
             </div>
           </div>)}
           {(selectedTab == 'buy' && <div className="tab selected">
+            <h2 className="sr-only">Need KotOR?</h2>
             <div className="launcher-contents full-width d-flex">
               <div className="panel scroll-y">
                 <p>This project does not support piracy. To use this app, you will need to have obtained a legal copy of the supported games that you wish to play.</p>
