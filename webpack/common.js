@@ -125,6 +125,15 @@ function makeDevServer() {
     devMiddleware: {
       writeToDisk: true,
     },
+    historyApiFallback: {
+      rewrites: [
+        {
+          // App routes without a trailing slash (exclude paths with file extensions)
+          from: /^\/[^.]*[^/]$/,
+          to: (context) => `${context.parsedUrl.pathname}/`,
+        },
+      ],
+    },
     headers: {
       'Cache-Control': 'no-store',
     },

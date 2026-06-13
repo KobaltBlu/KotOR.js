@@ -23,10 +23,10 @@ export class AppState {
     await KotOR.ConfigClient.Init();
     await Launcher.InitProfiles();
     const rawKey = query.get("key");
-    const validKeys = Object.keys(Launcher.AppProfiles || {});
+    const gameKeys = ['kotor', 'tsl'];
     const key =
-      rawKey && validKeys.includes(rawKey) ? rawKey : "kotor";
-    return KotOR.ConfigClient.get(`Profiles.${key}`);
+      rawKey && gameKeys.includes(rawKey) ? rawKey : "kotor";
+    return Launcher.GetProfileByKey(key);
   }
 
   /**
@@ -40,6 +40,9 @@ export class AppState {
     }
 
     AppState.appProfile = await AppState.getProfile();
+    if (!AppState.appProfile) {
+      throw new Error('Failed to load game profile');
+    }
     KotOR.ApplicationProfile.SetProfile(AppState.appProfile);
     KotOR.ApplicationProfile.InitEnvironment();
 
@@ -176,7 +179,8 @@ export class AppState {
     if(AppState.env == ApplicationEnvironment.ELECTRON){
       KotOR.ApplicationProfile.directory = AppState.appProfile.directory;
     }else{
-      KotOR.ApplicationProfile.directoryHandle = AppState.appProfile.directory_handle;
+      KotOR.ApplicationProfile.directoryHandle =
+        AppState.appProfile.directory_handle ?? KotOR.ApplicationProfile.directoryHandle;
     }
     console.log('loading game...');
     AppState.loaderInit(AppState.appProfile.background, AppState.appProfile.logo);
@@ -234,6 +238,7 @@ export class AppState {
    */
   static async attachDirectoryHandle(handle: FileSystemDirectoryHandle){
     KotOR.ApplicationProfile.directoryHandle = handle;
+    AppState.appProfile.directory_handle = handle;
     KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory_handle`, handle);
     AppState.directoryLocated = true;
     AppState.loadGameDirectory();

@@ -44,18 +44,22 @@ const loadReactApplication = () => {
   await Launcher.InitProfiles();
   const getProfile = () => {
     const rawKey = query.get("key");
-    const validKeys = Object.keys(Launcher.AppProfiles || {});
     const key =
-      rawKey && validKeys.includes(rawKey) ? rawKey : "kotor";
-    return KotOR.ConfigClient.get(`Profiles.${key}`);
+      rawKey && ['kotor', 'tsl'].includes(rawKey) ? rawKey : "kotor";
+    return Launcher.GetProfileByKey(key);
   };
 
   const profileKey = query.get("key") && ['kotor', 'tsl'].includes(query.get("key")!) ? query.get("key")! : "kotor";
 
-  KotOR.ApplicationProfile.SetProfile(getProfile());
+  const profile = getProfile();
+  if (!profile) {
+    throw new Error('Failed to load Forge profile context');
+  }
+
+  KotOR.ApplicationProfile.SetProfile(profile);
   KotOR.ApplicationProfile.InitEnvironment();
 
-  applyProfileSeo(buildProfileSeo(getProfile(), {
+  applyProfileSeo(buildProfileSeo(profile, {
     appPath: '/forge/',
     profileKey,
   }));
