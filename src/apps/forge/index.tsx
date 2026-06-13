@@ -9,6 +9,8 @@ import { AppProvider, useApp } from "@/apps/forge/context/AppContext";
 import * as KotOR from "@/apps/forge/KotOR";
 import { App } from "@/apps/forge/App";
 import { Launcher } from "@/apps/launcher/context/Launcher";
+import { applyProfileSeo } from "@/apps/common/seo/applyProfileSeo";
+import { buildProfileSeo } from "@/apps/common/seo/profileSeo";
 
 TXILanguageService.initTXILanguage();
 
@@ -48,8 +50,15 @@ const loadReactApplication = () => {
     return KotOR.ConfigClient.get(`Profiles.${key}`);
   };
 
+  const profileKey = query.get("key") && ['kotor', 'tsl'].includes(query.get("key")!) ? query.get("key")! : "kotor";
+
   KotOR.ApplicationProfile.SetProfile(getProfile());
   KotOR.ApplicationProfile.InitEnvironment();
+
+  applyProfileSeo(buildProfileSeo(getProfile(), {
+    appPath: '/forge/',
+    profileKey,
+  }));
 
   document.body.classList.add(KotOR.ApplicationProfile.GameKey);
   loadReactApplication();

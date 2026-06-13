@@ -1,11 +1,48 @@
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Forge</title>
+    <title>KotOR Forge — KotOR.js Modding Suite</title>
+    <meta name="description" content="KotOR Forge is the browser-based modding suite for the KotOR.js Odyssey Engine. Edit modules, scripts, textures, and more using your own legally obtained PC game files. Requires your own legally obtained PC game files; none are included with this project. Not affiliated with Lucasfilm, Disney, BioWare, Obsidian, EA, Steam, or GOG.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://play.swkotor.net/forge/?key=kotor">
     <link rel="shortcut icon" href="favicon.ico">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="KotOR.js">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:title" content="KotOR Forge — KotOR.js Modding Suite">
+    <meta property="og:description" content="KotOR Forge is the browser-based modding suite for the KotOR.js Odyssey Engine. Edit modules, scripts, textures, and more using your own legally obtained PC game files. Requires your own legally obtained PC game files; none are included with this project. Not affiliated with Lucasfilm, Disney, BioWare, Obsidian, EA, Steam, or GOG.">
+    <meta property="og:url" content="https://play.swkotor.net/forge/?key=kotor">
+    <meta property="og:image" content="https://play.swkotor.net/forge/images/logo_forge.png">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="KotOR Forge — KotOR.js Modding Suite">
+    <meta name="twitter:description" content="KotOR Forge is the browser-based modding suite for the KotOR.js Odyssey Engine. Edit modules, scripts, textures, and more using your own legally obtained PC game files. Requires your own legally obtained PC game files; none are included with this project. Not affiliated with Lucasfilm, Disney, BioWare, Obsidian, EA, Steam, or GOG.">
+    <meta name="twitter:image" content="https://play.swkotor.net/forge/images/logo_forge.png">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "KotOR Forge",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Web browser",
+      "url": "https://play.swkotor.net/forge/?key=kotor",
+      "description": "KotOR Forge is the browser-based modding suite for the KotOR.js Odyssey Engine. Edit modules, scripts, textures, and more using your own legally obtained PC game files. Requires your own legally obtained PC game files; none are included with this project. Not affiliated with Lucasfilm, Disney, BioWare, Obsidian, EA, Steam, or GOG.",
+      "image": "https://play.swkotor.net/forge/images/logo_forge.png",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "isAccessibleForFree": true,
+      "license": "https://www.gnu.org/licenses/gpl-3.0.html"
+    }
+    </script>
+
     <style>
       html, body {
         background: #212121;
@@ -64,6 +101,15 @@
         animation: loading-accent 1.5s ease-in-out infinite;
       }
 
+      .seo-fallback {
+        max-width: 720px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+        line-height: 1.5;
+        font-family: sans-serif;
+        color: #ccc;
+      }
+
       @keyframes loading-accent {
         0% { opacity: 0.45; transform: scaleX(0.9); }
         50% { opacity: 1; transform: scaleX(1); }
@@ -72,6 +118,13 @@
     </style>
   </head> 
   <body>
+    <noscript>
+      <main class="seo-fallback">
+        <h1>KotOR Forge</h1>
+        <p>KotOR Forge is the browser-based modding suite for the KotOR.js Odyssey Engine. Edit modules, scripts, textures, and more using your own legally obtained PC game files. None are distributed with this project.</p>
+        <p><small>Independent fan project. Not affiliated with Lucasfilm, Disney, BioWare, Obsidian, EA, Steam, or GOG.</small></p>
+      </main>
+    </noscript>
     <div id="root">
       <div class="page-pre-loader">
         <div class="pre-loader-card">

@@ -40,6 +40,7 @@ module.exports = (name, color) => ({
     }),
     new CopyPlugin({
       patterns: [
+        { from: "src/assets/game", to: "" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
       ],
     }),

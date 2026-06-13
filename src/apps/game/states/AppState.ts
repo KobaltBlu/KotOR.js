@@ -2,6 +2,8 @@ import * as KotOR from "@/apps/game/KotOR";
 import { Launcher } from "@/apps/launcher/context/Launcher";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { GameInitializer } from "@/apps/game/GameInitializer";
+import { applyProfileSeo } from "@/apps/common/seo/applyProfileSeo";
+import { buildProfileSeo } from "@/apps/common/seo/profileSeo";
 
 export class AppState {
   static eulaAccepted: boolean = false;
@@ -41,7 +43,10 @@ export class AppState {
     KotOR.ApplicationProfile.SetProfile(AppState.appProfile);
     KotOR.ApplicationProfile.InitEnvironment();
 
-    document.title = `${AppState.appProfile?.full_name ? AppState.appProfile?.full_name : 'N/A' }`;
+    applyProfileSeo(buildProfileSeo(AppState.appProfile, {
+      appPath: '/game/',
+      profileKey: AppState.appProfile.key || 'kotor',
+    }));
     
     switch(AppState.appProfile.launch.args.gameChoice){
       case 2:

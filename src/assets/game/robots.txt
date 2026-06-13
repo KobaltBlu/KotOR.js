@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://play.swkotor.net/game/sitemap.xml

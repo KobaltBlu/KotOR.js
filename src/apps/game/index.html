@@ -1,11 +1,48 @@
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>KotOR</title>
+    <title>Star Wars: Knights of the Old Republic — KotOR.js Browser</title>
+    <meta name="description" content="Play Star Wars: Knights of the Old Republic in your browser with KotOR.js, an independent open-source Odyssey Engine reimplementation. Requires your own legally obtained PC game files; none are included with this project. Not affiliated with Lucasfilm, Disney, BioWare, Obsidian, EA, Steam, or GOG.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://play.swkotor.net/game/?key=kotor">
     <link rel="shortcut icon" href="favicon.ico">
+
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="KotOR.js">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:title" content="Star Wars: Knights of the Old Republic — KotOR.js Browser">
+    <meta property="og:description" content="Play Star Wars: Knights of the Old Republic in your browser with KotOR.js, an independent open-source Odyssey Engine reimplementation. Requires your own legally obtained PC game files; none are included with this project. Not affiliated with Lucasfilm, Disney, BioWare, Obsidian, EA, Steam, or GOG.">
+    <meta property="og:url" content="https://play.swkotor.net/game/?key=kotor">
+    <meta property="og:image" content="https://steamcdn-a.akamaihd.net/steam/apps/32370/logo.png">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Star Wars: Knights of the Old Republic — KotOR.js Browser">
+    <meta name="twitter:description" content="Play Star Wars: Knights of the Old Republic in your browser with KotOR.js, an independent open-source Odyssey Engine reimplementation. Requires your own legally obtained PC game files; none are included with this project. Not affiliated with Lucasfilm, Disney, BioWare, Obsidian, EA, Steam, or GOG.">
+    <meta name="twitter:image" content="https://steamcdn-a.akamaihd.net/steam/apps/32370/logo.png">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Star Wars: Knights of the Old Republic (KotOR.js)",
+      "applicationCategory": "GameApplication",
+      "operatingSystem": "Web browser",
+      "url": "https://play.swkotor.net/game/?key=kotor",
+      "description": "Play Star Wars: Knights of the Old Republic in your browser with KotOR.js, an independent open-source Odyssey Engine reimplementation. Requires your own legally obtained PC game files; none are included with this project. Not affiliated with Lucasfilm, Disney, BioWare, Obsidian, EA, Steam, or GOG.",
+      "image": "https://steamcdn-a.akamaihd.net/steam/apps/32370/logo.png",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "isAccessibleForFree": true,
+      "license": "https://www.gnu.org/licenses/gpl-3.0.html"
+    }
+    </script>
+
     <style>
       html, body {
         background: #212121;
@@ -64,6 +101,19 @@
         animation: loading-accent 1.5s ease-in-out infinite;
       }
 
+      .seo-fallback {
+        max-width: 720px;
+        margin: 2rem auto;
+        padding: 0 1.5rem;
+        line-height: 1.5;
+        font-family: sans-serif;
+        color: #ccc;
+      }
+
+      .seo-fallback a {
+        color: #c9dde6;
+      }
+
       @keyframes loading-accent {
         0% { opacity: 0.45; transform: scaleX(0.9); }
         50% { opacity: 1; transform: scaleX(1); }
@@ -72,6 +122,14 @@
     </style>
   </head>
   <body>
+    <noscript>
+      <main class="seo-fallback">
+        <h1>Star Wars: Knights of the Old Republic</h1>
+        <p>Play Star Wars: Knights of the Old Republic in your browser with KotOR.js, an independent open-source Odyssey Engine reimplementation. Use your own legally obtained PC game files; none are distributed with this project.</p>
+        <p>Also available: <a href="?key=tsl">KotOR II: The Sith Lords</a>.</p>
+        <p><small>Independent fan project. Not affiliated with Lucasfilm, Disney, BioWare, Obsidian, EA, Steam, or GOG.</small></p>
+      </main>
+    </noscript>
     <div class="viewport-wrapper">
       <div id="renderer-container"></div>
       <div id="root">
