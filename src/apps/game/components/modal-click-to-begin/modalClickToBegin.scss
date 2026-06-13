@@ -1,0 +1,50 @@
+.click-to-begin-modal {
+  .click-to-begin-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    p {
+      flex: 1;
+    }
+  }
+
+  .click-to-begin-help-btn {
+    flex-shrink: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-top: 2px;
+    padding: 0;
+    border: 1px solid #2a7ab9;
+    border-radius: 50%;
+    background: #30303d;
+    color: #90ceff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      border-color: #2196f3;
+      background: #255d8e;
+      color: #fff;
+    }
+
+    &:focus-visible {
+      outline: 2px solid #2196f3;
+      outline-offset: 2px;
+    }
+  }
+
+  .click-to-begin-help-message {
+    margin-top: 12px;
+    padding: 10px 12px;
+    border: 1px solid #464646;
+    border-radius: 4px;
+    background: #1a1a1a;
+    color: #b8c5cc;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+}

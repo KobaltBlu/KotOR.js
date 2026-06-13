@@ -9,6 +9,7 @@ export interface AppProviderValues {
   gameLoaded: [boolean, React.Dispatch<boolean>];
   showEULAModal: [boolean, React.Dispatch<boolean>];
   showGrantModal: [boolean, React.Dispatch<boolean>];
+  showClickToBeginModal: [boolean, React.Dispatch<boolean>];
   showCheatConsole: [boolean, React.Dispatch<boolean>];
   showPerformanceMonitor: [boolean, React.Dispatch<boolean>];
   showLoadingScreen: [boolean, React.Dispatch<boolean>];
@@ -28,6 +29,7 @@ export const AppProvider = (props: any) => {
   const [gameLoaded, setGameLoaded] = useState<boolean>(false);
   const [showEULAModal, setShowEULAModal] = useState<boolean>(props.showEULAModal || false);
   const [showGrantModal, setShowGrantModal] = useState<boolean>(props.showGrantModal || false);
+  const [showClickToBeginModal, setShowClickToBeginModal] = useState<boolean>(false);
   const [showCheatConsole, setShowCheatConsole] = useState<boolean>(false);
   const [showPerformanceMonitor, setShowPerformanceMonitor] = useState<boolean>(false);
 
@@ -36,18 +38,25 @@ export const AppProvider = (props: any) => {
   const [loadingScreenBackgroundURL, setLoadingScreenBackgroundURL] = useState<string>('');
   const [loadingScreenLogoURL, setLoadingScreenLogoURL] = useState<string>('');
 
+  const syncModalVisibility = () => {
+    const showEula = !AppState.eulaAccepted;
+    const showGrant = AppState.eulaAccepted && !AppState.directoryLocated;
+    const showClickToBegin = AppState.eulaAccepted && AppState.shouldDeferForAudioUnlock();
+    setShowEULAModal(showEula);
+    setShowGrantModal(showGrant);
+    setShowClickToBeginModal(showClickToBegin && !showEula && !showGrant);
+  };
+
   const onAppReady = () => {
     console.log('onAppReady', AppState.eulaAccepted, AppState.directoryLocated);
     setAppReady(true);
     setGameKey(AppState.gameKey);
-    setShowEULAModal(!AppState.eulaAccepted);
-    setShowGrantModal(AppState.eulaAccepted && !AppState.directoryLocated);
+    syncModalVisibility();
   }
 
   const onPreload = () => {
     console.log('onPreload', AppState.eulaAccepted, AppState.directoryLocated);
-    setShowEULAModal(!AppState.eulaAccepted);
-    setShowGrantModal(AppState.eulaAccepted && !AppState.directoryLocated);
+    syncModalVisibility();
   }
 
   const onGameLoaded = () => {
@@ -84,7 +93,7 @@ export const AppProvider = (props: any) => {
   useEffect(() => { 
     window.addEventListener('keypress', onKeyPress);
     AppState.addEventListener('on-preload', onPreload);
-    AppState.addEventListener('on-ready', onAppReady);  
+    AppState.addEventListener('on-ready', onAppReady);
     AppState.addEventListener('on-game-loaded', onGameLoaded);
     AppState.addEventListener('on-loader-show', onLoadingScreenShow);
     AppState.addEventListener('on-loader-hide', onLoadingScreenHide);
@@ -117,6 +126,7 @@ export const AppProvider = (props: any) => {
     gameLoaded: [gameLoaded, setGameLoaded],
     showEULAModal: [showEULAModal, setShowEULAModal],
     showGrantModal: [showGrantModal, setShowGrantModal],
+    showClickToBeginModal: [showClickToBeginModal, setShowClickToBeginModal],
     showCheatConsole: [showCheatConsole, setShowCheatConsole],
     showPerformanceMonitor: [showPerformanceMonitor, setShowPerformanceMonitor],
     showLoadingScreen: [showLoadingScreen, setShowLoadingScreen],

@@ -76,10 +76,38 @@ export class AppState {
     console.log('gameEULAConfig', gameEULAConfig);
     console.log('eulaState', eulaState);
     AppState.directoryLocated = await AppState.checkGameDirectory();
-    if(AppState.eulaAccepted){
+    AppState.processEventListener('on-ready', [AppState.eulaAccepted]);
+    if(AppState.eulaAccepted && !AppState.shouldDeferForAudioUnlock()){
       await AppState.loadGameDirectory();
     }
-    AppState.processEventListener('on-ready', [AppState.eulaAccepted]);
+  }
+
+  /**
+   * Returns true when the browser needs a user gesture before loading can start.
+   */
+  static shouldDeferForAudioUnlock(): boolean {
+    return AppState.directoryLocated && AppState.needsBrowserAudioUnlock();
+  }
+
+  /**
+   * Probe whether the browser will block audio until the user interacts.
+   */
+  static needsBrowserAudioUnlock(): boolean {
+    if(AppState.env !== ApplicationEnvironment.BROWSER){
+      return false;
+    }
+    try {
+      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      if(!AudioContextCtor){
+        return false;
+      }
+      const probe = new AudioContextCtor();
+      const suspended = probe.state === 'suspended';
+      void probe.close();
+      return suspended;
+    }catch{
+      return false;
+    }
   }
 
   /**
@@ -87,8 +115,31 @@ export class AppState {
    */
   static async acceptEULA(){
     AppState.eulaAccepted = true;
+    if(AppState.shouldDeferForAudioUnlock()){
+      AppState.processEventListener('on-preload', []);
+      return;
+    }
     await AppState.loadGameDirectory();
     AppState.processEventListener('on-preload', []);
+  }
+
+  /**
+   * beginAfterAudioUnlock
+   */
+  static async beginAfterAudioUnlock(){
+    await AppState.unlockBrowserAudio();
+    await AppState.loadGameDirectory();
+    AppState.processEventListener('on-preload', []);
+  }
+
+  static async unlockBrowserAudio(){
+    if(AppState.env !== ApplicationEnvironment.BROWSER){
+      return;
+    }
+    const audioCtx = KotOR.AudioEngine.GetAudioEngine().audioCtx;
+    if(audioCtx.state === 'suspended'){
+      await audioCtx.resume();
+    }
   }
 
   /**
@@ -241,7 +292,11 @@ export class AppState {
     AppState.appProfile.directory_handle = handle;
     KotOR.ConfigClient.set(`Profiles.${AppState.appProfile.key}.directory_handle`, handle);
     AppState.directoryLocated = true;
-    AppState.loadGameDirectory();
+    if(AppState.shouldDeferForAudioUnlock()){
+      AppState.processEventListener('on-preload', []);
+      return;
+    }
+    await AppState.loadGameDirectory();
   }
 
   /**
