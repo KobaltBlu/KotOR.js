@@ -331,8 +331,10 @@ export class VideoManager {
    */
   static update(delta: number): void {
     if (!this.bikObject || !this.isPlaying) return;
-    this.bikObject.update(delta);
-    const frame = this.bikObject.getCurrentFrame();
+    const bik = this.bikObject;
+    bik.update(delta);
+    if (!this.isPlaying) return;
+    const frame = bik.getCurrentFrame();
     if (frame) {
       VideoManager.updateVideoTextures(frame);
     }
