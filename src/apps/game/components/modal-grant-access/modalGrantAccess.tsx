@@ -2,11 +2,12 @@ import React from "react";
 import { KotORModal } from "@/apps/game/components/modal/modal";
 import { useApp } from "@/apps/game/context/AppContext";
 import { ApplicationEnvironment } from "@/apps/game/KotOR";
-import GrantAccessInfo from "@/apps/common/components/grantAccess/GrantAccessInfo";
+import GrantAccessModalContent from "@/apps/common/components/grantAccess/GrantAccessModalContent";
 
 export const ModalGrantAccess = () => {
   const appContext = useApp();
   const [appState] = appContext.appState;
+  const [gameKey] = appContext.gameKey;
 
   const onCancel = (e: React.MouseEvent<HTMLButtonElement>) => {
     console.log("File System: access denied");
@@ -67,13 +68,13 @@ export const ModalGrantAccess = () => {
     <KotORModal 
       title="Grant Access" 
       show={true} 
-      className="forge-style-modal"
+      className="forge-style-modal grant-access-modal"
       onCancel={onCancel} 
       onOk={onOk} 
       cancelText="QUIT" 
       okText="GRANT ACCESS"
     >
-      <GrantAccessInfo />
+      <GrantAccessModalContent gameKey={gameKey} />
     </KotORModal>
   );
 };

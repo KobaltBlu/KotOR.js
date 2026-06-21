@@ -18,17 +18,23 @@
   }
 
   .modal-grant-access {
-    width: min(720px, 100%);
+    width: min(960px, 100%);
+    max-height: min(88vh, 920px);
     margin: 0 auto;
     border: 1px solid #464646;
     border-radius: 5px;
     box-shadow: 2px 2px 10px #1d1d1d;
     background: #212121;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 
     .modal-content-wrapper {
       padding: 24px 24px 16px;
       text-align: left;
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
 
       h1 {
         margin: 0 0 12px;
@@ -56,6 +62,7 @@
       justify-content: flex-end;
       gap: 10px;
       padding: 0 24px 20px;
+      flex-shrink: 0;
 
       .modal-button {
         min-width: 140px;

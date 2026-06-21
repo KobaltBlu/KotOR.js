@@ -7,6 +7,27 @@
   max-width: 400px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 
+  &--embedded {
+    max-width: 100%;
+    width: 100%;
+    box-shadow: none;
+  }
+
+  &--compact {
+    .gog-widget__image {
+      height: 120px;
+    }
+
+    .gog-widget__content {
+      padding: 12px;
+    }
+
+    .gog-widget__title {
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+  }
+
   &__container {
     display: flex;
     flex-direction: column;
@@ -52,24 +73,14 @@
     &-list {
       color: #ccc;
     }
-  }
 
-  &__status {
-    margin-bottom: 16px;
-
-    .gog-widget__preorder {
-      color: #ffa500;
-      font-weight: 500;
-    }
-
-    .gog-widget__available {
-      color: #4caf50;
-      font-weight: 500;
-    }
-
-    .gog-widget__unavailable {
-      color: #f44336;
-      font-weight: 500;
+    &-item {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      font-size: 12px;
     }
   }
 
@@ -153,7 +164,7 @@
       border: 3px solid #333;
       border-top: 3px solid #00a8ff;
       border-radius: 50%;
-      animation: spin 1s linear infinite;
+      animation: gog-widget-spin 1s linear infinite;
       margin-bottom: 16px;
     }
   }
@@ -166,27 +177,23 @@
     padding: 40px 20px;
     color: #f44336;
     text-align: center;
+    gap: 12px;
+  }
 
-    i {
-      font-size: 24px;
-      margin-bottom: 12px;
-    }
+  &__error-icon {
+    font-size: 24px;
+    line-height: 1;
   }
 }
 
-@keyframes spin {
+@keyframes gog-widget-spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-// Responsive design
 @media (max-width: 480px) {
   .gog-widget {
     max-width: 100%;
-
-    &__container {
-      flex-direction: column;
-    }
 
     &__image {
       height: 150px;
@@ -198,6 +205,10 @@
 
     &__title {
       font-size: 16px;
+    }
+
+    &--compact .gog-widget__image {
+      height: 100px;
     }
   }
 }

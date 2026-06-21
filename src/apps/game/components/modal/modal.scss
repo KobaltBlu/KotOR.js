@@ -193,10 +193,10 @@
       }
     }
 
-    &.eula-modal {
+    &.grant-access-modal {
       .kotor-modal {
-        max-width: 900px;
-        max-height: 88vh;
+        max-width: 960px;
+        max-height: min(88vh, 920px);
       }
     }
 

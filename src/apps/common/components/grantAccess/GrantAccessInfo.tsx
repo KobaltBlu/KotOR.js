@@ -5,6 +5,7 @@ export const GrantAccessInfo = () => {
     <div className="grant-access-info">
       <p>Please grant this application access to your game install directory to continue.</p>
       <p>
+        Select the folder where you installed a legal copy of the game (Steam, GOG, or retail PC version).
         In supported browsers, this uses the File System Access API to request permission to the folder you select.
         This is important because the app must read game resources and write updated files directly in your install directory.
         {" "}
