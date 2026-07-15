@@ -165,6 +165,19 @@ export class ModuleItem extends ModuleObject {
     return this.baseItem.rangedWeapon;
   }
 
+  isLightsaber(): boolean {
+    return this.baseItemId == 8 || this.baseItemId == 9 || this.baseItemId == 10;
+  }
+
+  hasKeen(): boolean {
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      if(this.properties[i].isUseable() && this.properties[i].is(ModuleItemProperty.Keen)){
+        return true;
+      }
+    }
+    return false;
+  }
+
   isStolen(){
     return this.stolen;
   }
@@ -363,7 +376,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   getCriticalThreatRangeMin(){
-    return 20 - this.baseItem.criticalThreat;
+    return 21 - this.baseItem.criticalThreat;
   }
 
   getCriticalThreatRangeMax(){

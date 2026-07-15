@@ -11,7 +11,6 @@ import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { Dice } from "@/utility/Dice";
 import { DiceType } from "@/enums/combat/DiceType";
-import { WeaponType } from "@/enums/combat/WeaponType";
 
 /**
  * CombatAttackData class.
@@ -154,6 +153,16 @@ export class CombatAttackData {
   attackWeapon: ModuleItem;
 
   /**
+   * Milliseconds remaining before damage/feedback should apply.
+   */
+  damageApplyDelay: number = -1;
+
+  /**
+   * Whether damage/feedback has already been signaled for this attack.
+   */
+  damageApplied: boolean = false;
+
+  /**
    * Constructor for the CombatAttackData class
    */
   constructor(){
@@ -170,67 +179,99 @@ export class CombatAttackData {
    * @param feat - The feat that is being used for the attack
    */
   calculateDamage(creature: ModuleCreature, isCritial: boolean = false, feat?: TalentFeat){
-    /**
-     * Unarmed Strike
-     */
+    const critMultiplier = isCritial
+      ? creature.combatRound.getCriticalHitMultiplier(this.attackWeapon, feat, creature)
+      : 1;
+
+    // Unarmed: roll weapon dice once per critical-hit multiplier
     if(!this.attackWeapon){
-      const damageMultiplier = isCritial ? 2.0 : 1.0;
-      const nDamage = Dice.roll(1, DiceType.d4);
-      this.damageList[DamageType.BLUDGEONING].addDamage(nDamage * damageMultiplier);
-
+      for(let i = 0; i < critMultiplier; i++){
+        this.damageList[DamageType.BLUDGEONING].addDamage(Dice.roll(1, DiceType.d4));
+      }
+      const strMod = CombatAttackData.GetAbilityMod(creature.getSTR());
+      for(let i = 0; i < critMultiplier; i++){
+        this.damageList[DamageType.PHYSICAL].addDamage(strMod);
+      }
+      this.ensureMinimumDamage();
+      this.updateKillingBlow();
       return;
-    };
+    }
 
-    const damageMultiplier = isCritial ? this.attackWeapon.baseItem.criticalHitMultiplier : 1.0;
+    this.rangedAttack = !!this.attackWeapon.isRangedWeapon();
 
+    // Roll weapon dice once per critical-hit multiplier
     if(!creature.isSimpleCreature()){
-      this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getBaseDamage() * damageMultiplier);
+      for(let i = 0; i < critMultiplier; i++){
+        this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getBaseDamage());
+      }
       if(this.attackWeapon.hasDamageBonus()){
-        this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(this.attackWeapon.getDamageBonus() * damageMultiplier);
+        for(let i = 0; i < critMultiplier; i++){
+          this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(this.attackWeapon.getDamageBonus());
+        }
       }
 
-      if( 
-        creature.getHasFeat(CombatFeatType.POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.POWER_BLAST)
-      ){
-        this.damageList[DamageType.BASE].addDamage(5 * damageMultiplier);
+      // Active special-attack feat damage bonus only
+      const specialDamage = feat?.getDamageBonus?.() || 0;
+      if(specialDamage > 0){
+        for(let i = 0; i < critMultiplier; i++){
+          this.damageList[DamageType.BASE].addDamage(specialDamage);
+        }
       }
 
-      if( 
-        creature.getHasFeat(CombatFeatType.IMPROVED_POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.IMPROVED_POWER_BLAST)
-      ){
-        this.damageList[DamageType.BASE].addDamage(8 * damageMultiplier);
-      }
-
-      if( 
-        creature.getHasFeat(CombatFeatType.MASTER_POWER_ATTACK) || 
-        creature.getHasFeat(CombatFeatType.MASTER_POWER_BLAST) 
-      ){
-        this.damageList[DamageType.BASE].addDamage(10 * damageMultiplier);
-      }
-
-      let specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
+      const specBonus = this.calculateWeaponSpecBonus(creature, this.attackWeapon);
       if(specBonus > 0){
-        this.damageList[DamageType.BASE].addDamage(specBonus * damageMultiplier);
+        for(let i = 0; i < critMultiplier; i++){
+          this.damageList[DamageType.BASE].addDamage(specBonus);
+        }
       }
-
     }else{
-      this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getMonsterDamage() * damageMultiplier);
+      for(let i = 0; i < critMultiplier; i++){
+        this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getMonsterDamage());
+      }
       if(this.attackWeapon.hasDamageBonus()){
-        this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(this.attackWeapon.getDamageBonus() * damageMultiplier);
+        for(let i = 0; i < critMultiplier; i++){
+          this.damageList[this.attackWeapon.getDamageBonusType()].addDamage(this.attackWeapon.getDamageBonus());
+        }
       }
     }
 
-    //Add strength MOD to melee damage
-    if(this.attackWeapon.getWeaponType() == WeaponType.PIERCING){
-      this.damageList[DamageType.PHYSICAL].addDamage( Math.floor(( creature.getSTR() - 10) / 2) );
+    // STR mod for non-ranged attacks (full amount per crit multiplier)
+    if(!this.rangedAttack){
+      const strMod = CombatAttackData.GetAbilityMod(creature.getSTR());
+      for(let i = 0; i < critMultiplier; i++){
+        this.damageList[DamageType.PHYSICAL].addDamage(strMod);
+      }
     }
 
-    if(this.getTotalDamage() >= this.reactObject.getHP()){
+    // Sneak Attack: Nd6 for the highest known sneak feat
+    if(this.sneakAttack){
+      let sneakDice = 0;
+      for(let i = CombatFeatType.SNEAK_ATTACK_10D6; i >= CombatFeatType.SNEAK_ATTACK_1D6; i--){
+        if(creature.getHasFeat(i)){
+          sneakDice = i - CombatFeatType.SNEAK_ATTACK_1D6 + 1;
+          break;
+        }
+      }
+      if(sneakDice > 0){
+        this.damageList[DamageType.BASE].addDamage(Dice.roll(sneakDice, DiceType.d6));
+      }
+    }
+
+    this.ensureMinimumDamage();
+    this.updateKillingBlow();
+  }
+
+  private ensureMinimumDamage(){
+    // Floor resolved damage to at least 1 before resist/reduction
+    if(this.getTotalDamage() < 1){
+      this.damageList[DamageType.BASE].setDamage(1);
+    }
+  }
+
+  private updateKillingBlow(){
+    if(this.reactObject && this.getTotalDamage() >= this.reactObject.getHP()){
       this.killingBlow = true;
     }
-
   }
 
   /**
@@ -241,7 +282,7 @@ export class CombatAttackData {
    */
   calculateWeaponSpecBonus(creature: ModuleCreature, weapon: ModuleItem): number {
     let bonus = 0;
-    if(!creature){ return; }
+    if(!creature){ return 0; }
     
     switch(weapon.getWeaponWield()){
       case WeaponWield.BLASTER_PISTOL:
@@ -290,6 +331,7 @@ export class CombatAttackData {
     }
 
     target.addEffect(damageEffect, GameEffectDurationType.INSTANT);
+    this.damageApplied = true;
   }
 
   /**
@@ -315,6 +357,9 @@ export class CombatAttackData {
     this.reactObject = undefined;
     this.attackWeapon = undefined;
     this.attackResult = AttackResult.MISS;
+    this.rangedAttack = false;
+    this.damageApplyDelay = -1;
+    this.damageApplied = false;
     for(let i = 0; i < this.damageList.length; i++){
       this.damageList[i].reset();
     }
@@ -329,6 +374,10 @@ export class CombatAttackData {
     const struct = new GFFStruct(structIdx);
 
     return struct;
+  }
+
+  static GetAbilityMod(abilityScore: number = 10): number {
+    return Math.floor((abilityScore - 10) / 2);
   }
 
 }

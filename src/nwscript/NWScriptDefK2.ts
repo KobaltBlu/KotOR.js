@@ -5794,7 +5794,13 @@ NWScriptDefK2.Actions = {
     name: 'IsFormActive',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const creature = args[0];
+      if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+        return 0;
+      }
+      return (creature as ModuleCreature).isFormActive(args[1]) ? 1 : 0;
+    }
   },
   817: {
     comment: '817\nDJS-OEI 3/28/2004\nReturns the Form Mask of the requested spell. This is used\nto determine if a spell is affected by various Forms, usually\nConsular forms that modify duration/range.',
@@ -6139,7 +6145,13 @@ NWScriptDefK2.Actions = {
     name: 'SetCurrentForm',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const creature = args[0];
+      if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      (creature as ModuleCreature).setCurrentForm(args[1]);
+    }
   },
   860: {
     comment: '860\nRWT-OEI 09/09/04\nThis will disable or enable area transit',

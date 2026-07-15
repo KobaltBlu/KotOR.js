@@ -39,6 +39,8 @@ import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
 import { ICreatureAnimationState } from "@/interface/animation/ICreatureAnimationState";
 import { IOverlayAnimationState } from "@/interface/animation/IOverlayAnimationState";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { WeaponType } from "@/enums/combat/WeaponType";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
@@ -96,6 +98,8 @@ export class ModuleCreature extends ModuleObject {
   classes: CreatureClass[];
   comment: string;
   currentForce: number;
+  /** Active Jedi Form spell id (TSL); 0 = none. */
+  currentForm: number;
   currentHitPoints: number;
   deity: string;
   disarmable: number;
@@ -267,6 +271,7 @@ export class ModuleCreature extends ModuleObject {
     this.classes = [];
     this.comment = '';
     this.currentForce = 0;
+    this.currentForm = 0;
     this.currentHitPoints = 0; //The Creature's current hit points, not counting any bonuses. This value may be higher or lower than the creature's maximum hit points.
     this.regenTimer = 0;
     this.regenTimerMax = 6;
@@ -2613,18 +2618,81 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getAC(){
-    let baseac = 10;
-    let classBonus = 0;
+    let ac = 10;
 
     for(let i = 0; i < this.classes.length; i++){
-      classBonus += this.classes[i].getACBonus();
+      ac += this.classes[i].getACBonus() || 0;
     }
 
-    let armorAC = (this.equipment.ARMOR?.getACBonus() || 0);
+    ac += this.naturalAC || 0;
 
+    const armor = this.equipment.ARMOR;
+    const armorAC = armor?.getACBonus() || 0;
+    ac += armorAC;
+
+    // Shield / off-hand AC item (non-weapon with AC)
+    const leftHand = this.equipment.LEFTHAND;
+    if(leftHand && leftHand.getWeaponType() == WeaponType.INVALID){
+      ac += leftHand.getACBonus() || 0;
+    }
+
+    // DEX bonus, capped by armor max dex (baseitems.dexbonus). -1 = uncapped.
     let dexBonus = Math.floor((this.getDEX() - 10) / 2);
+    if(this.isDebilitated()){
+      dexBonus = Math.min(dexBonus, 0);
+    }
+    if(armor){
+      const maxDex = armor.baseItem?.dexBonus;
+      if(typeof maxDex == 'number' && maxDex >= 0){
+        dexBonus = Math.min(dexBonus, maxDex);
+      }
+    }
+    ac += dexBonus;
 
-    return baseac + classBonus + armorAC + dexBonus;
+    // Effect AC bonuses (EffectACIncrease/Decrease). int0=modifyType, int1=value
+    let dodgeBonus = 0;
+    let naturalBonus = 0;
+    let armorEffect = 0;
+    let shieldEffect = 0;
+    let deflectEffect = 0;
+    for(let i = 0; i < this.effects.length; i++){
+      const effect = this.effects[i];
+      if(
+        effect.type != GameEffectType.EffectACIncrease &&
+        effect.type != GameEffectType.EffectACDecrease
+      ) continue;
+      const modType = effect.getInt(0);
+      const value = effect.getInt(1) || 0;
+      const signed = effect.type == GameEffectType.EffectACIncrease ? value : -value;
+      switch(modType){
+        case 0: dodgeBonus += signed; break;     // AC_DODGE_BONUS
+        case 1: naturalBonus += signed; break;   // AC_NATURAL_BONUS
+        case 2: armorEffect = Math.max(armorEffect, signed); break; // AC_ARMOUR_ENCHANTMENT (max)
+        case 3: shieldEffect = Math.max(shieldEffect, signed); break;
+        case 4: deflectEffect = Math.max(deflectEffect, signed); break;
+        default: dodgeBonus += signed; break;
+      }
+    }
+    ac += dodgeBonus + naturalBonus + armorEffect + shieldEffect + deflectEffect;
+
+    // Dueling AC feat mod (GetTotalACFeatMod) — one-handed with free off-hand
+    const rightHand = this.equipment.RIGHTHAND;
+    if(
+      rightHand && !leftHand &&
+      (rightHand.getWeaponWield() == WeaponWield.ONE_HANDED_SWORD ||
+        rightHand.getWeaponWield() == WeaponWield.BLASTER_PISTOL ||
+        rightHand.getWeaponWield() == WeaponWield.STUN_BATON)
+    ){
+      if(this.getHasFeat(CombatFeatType.MASTER_DUELING)) ac += 3;
+      else if(this.getHasFeat(CombatFeatType.ADVANCED_DUELING)) ac += 2;
+      else if(this.getHasFeat(CombatFeatType.DUELING)) ac += 1;
+    }
+
+    if(this.isDebilitated()){
+      ac -= 4;
+    }
+
+    return ac;
   }
 
   getSTR(calculateBonuses = true){
@@ -2920,20 +2988,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getBaseAttackBonus(){
+    // Class BAB only; ability mods are applied in the attack-roll resolver
     let bab = 0;
     for(let i = 0, len = this.classes.length; i < len; i++){
       bab += this.classes[i].getBaseAttackBonus();
     }
-
-    let strMod = Math.floor(( this.getSTR() - 10) / 2);
-    let dexMod = Math.floor(( this.getDEX() - 10) / 2);
-
-    if(strMod > dexMod){
-      bab += strMod;
-    }else if(dexMod > strMod){
-      bab += dexMod;
-    }
-
     return bab;
   }
 
@@ -2983,6 +3042,31 @@ export class ModuleCreature extends ModuleObject {
 
   getHasSpell(id = 0){
     return (this.getSpell(id) instanceof TalentSpell) ? true : false;
+  }
+
+  /**
+   * Set the active Jedi Form spell id if the creature knows it.
+   */
+  setCurrentForm(formId = 0){
+    if(formId && !this.getHasSpell(formId)) return;
+    this.currentForm = formId || 0;
+  }
+
+  getCurrentForm(){
+    return this.currentForm || 0;
+  }
+
+  /**
+   * Whether the given form is active. Saber forms also require a lightsaber.
+   */
+  isFormActive(formId = 0){
+    if(!formId || this.currentForm != formId) return false;
+    if(formId >= 258 && formId <= 264){
+      const right = this.equipment?.RIGHTHAND;
+      const left = this.equipment?.LEFTHAND;
+      return !!(right?.isLightsaber?.() || left?.isLightsaber?.());
+    }
+    return true;
   }
 
   getSpell(id = 0){

@@ -5740,7 +5740,7 @@ NWScriptDefK1.Actions = {
       let effect = new GameState.GameEffectFactory.EffectBlasterDeflectionIncrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
-      effect.setInt(0, args[0]);
+      effect.setInt(1, args[0]);
       return effect.initialize();
     }
   },
@@ -5753,7 +5753,7 @@ NWScriptDefK1.Actions = {
       let effect = new GameState.GameEffectFactory.EffectBlasterDeflectionDecrease();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
-      effect.setInt(0, args[0]);
+      effect.setInt(1, args[0]);
       return effect.initialize();
     }
   },

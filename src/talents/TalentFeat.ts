@@ -1,9 +1,11 @@
 import { CombatRound } from "@/combat/CombatRound";
 import { type CreatureClass } from "@/combat/CreatureClass";
-import { EffectACDecrease, EffectAttackDecrease } from "@/effects";
-import { ModuleObjectType, TalentObjectType } from "@/enums";
+import { EffectACDecrease } from "@/effects";
+import { CombatFeatType, ModuleObjectType, TalentObjectType } from "@/enums";
 import { GameEffectDurationType } from "@/enums/effects";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import type { ModuleObject } from "@/module";
 import { GFFField } from "@/resource/GFFField";
@@ -201,46 +203,58 @@ export class TalentFeat extends TalentObject {
 
   getArmorClassPenalty(){
     switch(this.id){
-      case 11: //FLURRY
-      case 30: //RAPID SHOT
+      case CombatFeatType.FLURRY:
+      case CombatFeatType.RAPID_SHOT:
         return 4;
-      case 91: //IMPROVED FLURRY
-      case 92: //IMPROVED RAPID SHOT
+      case CombatFeatType.IMPROVED_FLURRY:
+      case CombatFeatType.IMPROVED_RAPID_SHOT:
         return 2;
-      case 51: //MASTER FLURRY
-      case 21: //MASTER RAPID SHOT
+      case CombatFeatType.MASTER_FLURRY:
+      case CombatFeatType.MASTER_RAPID_SHOT:
         return 1;
-      case 28: //CRITICAL STRIKE
-      case 19: //IMPROVED CRITICAL STRIKE
-      case 81: //MASTER CRITICAL STRIKE
+      case CombatFeatType.CRITICAL_STRIKE:
+      case CombatFeatType.IMPROVED_CRITICAL_STRIKE:
+      case CombatFeatType.MASTER_CRITICAL_STRIKE:
         return 5;
     }
     return 0;
   }
 
   getAttackPenalty(){
+    // Master Flurry has no to-hit penalty in TSL
     switch(this.id){
-      case 11: //FLURRY
-      case 30: //RAPID SHOT
+      case CombatFeatType.FLURRY:
+      case CombatFeatType.RAPID_SHOT:
         return 4;
-      case 91: //IMPROVED FLURRY
-      case 92: //IMPROVED RAPID SHOT
+      case CombatFeatType.IMPROVED_FLURRY:
+      case CombatFeatType.IMPROVED_RAPID_SHOT:
         return 2;
-      case 51: //MASTER FLURRY
-      case 21: //MASTER RAPID SHOT
+      case CombatFeatType.MASTER_FLURRY:
+        return GameState.GameKey == GameEngineType.TSL ? 0 : 1;
+      case CombatFeatType.MASTER_RAPID_SHOT:
         return 1;
-      case 8: //POWER ATTACK
+      case CombatFeatType.POWER_ATTACK:
+      case CombatFeatType.IMPROVED_POWER_ATTACK:
+      case CombatFeatType.MASTER_POWER_ATTACK:
+      case CombatFeatType.POWER_BLAST:
+      case CombatFeatType.IMPROVED_POWER_BLAST:
+      case CombatFeatType.MASTER_POWER_BLAST:
         return 3;
-      case 17: //IMPROVED POWER ATTACK
-        return 3;
-      case 83: //MASTER POWER ATTACK
-        return 3;
-      case 29: //POWER BLAST
-        return 3;
-      case 18: //IMPROVED POWER BLAST
-        return 3;
-      case 82: //MASTER POWER BLAST
-        return 3;
+    }
+    return 0;
+  }
+
+  getDamageBonus(){
+    switch(this.id){
+      case CombatFeatType.POWER_ATTACK:
+      case CombatFeatType.POWER_BLAST:
+        return 5;
+      case CombatFeatType.IMPROVED_POWER_ATTACK:
+      case CombatFeatType.IMPROVED_POWER_BLAST:
+        return 8;
+      case CombatFeatType.MASTER_POWER_ATTACK:
+      case CombatFeatType.MASTER_POWER_BLAST:
+        return 10;
     }
     return 0;
   }
@@ -248,6 +262,9 @@ export class TalentFeat extends TalentObject {
   impactCaster(object: ModuleObject){
     if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
 
+    // AC penalties (Flurry / Crit Strike) apply as temporary effects on the attacker.
+    // Attack/damage modifiers are applied in CombatRound so they are not
+    // double-counted through EffectAttackDecrease.
     const armorClassPenalty = this.getArmorClassPenalty();
     if(armorClassPenalty > 0){
       const acDecreaseEffect = new EffectACDecrease();
@@ -255,15 +272,6 @@ export class TalentFeat extends TalentObject {
       acDecreaseEffect.setDuration(FEAT_PENALTY_DURATION);
       acDecreaseEffect.setInt(1, armorClassPenalty);
       object.addEffect(acDecreaseEffect);
-    }
-
-    const attackPenalty = this.getAttackPenalty();
-    if(attackPenalty > 0){
-      const attackDecreaseEffect = new EffectAttackDecrease();
-      attackDecreaseEffect.setDurationType(GameEffectDurationType.TEMPORARY);
-      attackDecreaseEffect.setDuration(FEAT_PENALTY_DURATION);
-      attackDecreaseEffect.setInt(0, attackPenalty);
-      object.addEffect(attackDecreaseEffect);
     }
   }
 
