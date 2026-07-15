@@ -1,12 +1,18 @@
 import { GameEventType } from "@/enums/events/GameEventType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GameState } from "@/GameState";
+import { GameEvent } from "@/events/GameEvent";
+import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { GameEvent } from "@/events/GameEvent";
+import { BitWise } from "@/utility/BitWise";
 import * as THREE from "three";
 
 /**
  * EventSpawnBodyBag class.
+ * 
+ * Delayed attach of a prepared body-bag placeable into the area.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
@@ -17,44 +23,52 @@ import * as THREE from "three";
 export class EventSpawnBodyBag extends GameEvent {
 
   bodyBagId = 0;
-  position = new THREE.Vector3;
+  position = new THREE.Vector3();
 
   constructor(){
     super();
-
-    //Event Type
     this.type = GameEventType.EventSpawnBodyBag;
-
   }
 
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
-      this.bodyBagId  = struct.getFieldByLabel('BodyBagId').getValue();
-      this.position.x = struct.getFieldByLabel('PositionX').getValue();
-      this.position.y = struct.getFieldByLabel('PositionY').getValue();
-      this.position.z = struct.getFieldByLabel('PositionZ').getValue();
+      this.bodyBagId = struct.getFieldByLabel('BodyBagId')?.getValue() ?? 0;
+      this.position.x = struct.getFieldByLabel('PositionX')?.getValue() ?? 0;
+      this.position.y = struct.getFieldByLabel('PositionY')?.getValue() ?? 0;
+      this.position.z = struct.getFieldByLabel('PositionZ')?.getValue() ?? 0;
     }
   }
 
   execute(){
+    const placeable = GameState.ModuleObjectManager.GetObjectById(this.bodyBagId) as ModulePlaceable;
+    if(!BitWise.InstanceOfObject(placeable, ModuleObjectType.ModulePlaceable)){
+      return;
+    }
 
+    placeable.position.copy(this.position);
+    const area = this.getObject()?.area || GameState.module?.area;
+    if(!area){
+      return;
+    }
+
+    void placeable.placeInArea(area);
   }
 
   saveEventData(){
-    let struct = new GFFStruct(0x5555);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'BodyBagId' ) ).setValue(this.bodyBagId);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'PositionX' ) ).setValue(this.position.x);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'PositionY' ) ).setValue(this.position.y);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'PositionZ' ) ).setValue(this.position.z);
+    const struct = new GFFStruct(0x5555);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'BodyBagId') ).setValue(this.bodyBagId);
+    struct.addField( new GFFField(GFFDataType.FLOAT, 'PositionX') ).setValue(this.position.x);
+    struct.addField( new GFFField(GFFDataType.FLOAT, 'PositionY') ).setValue(this.position.y);
+    struct.addField( new GFFField(GFFDataType.FLOAT, 'PositionZ') ).setValue(this.position.z);
     return struct;
   }
 
   export(){
-    let struct = new GFFStruct( 0xABCD );
+    const struct = new GFFStruct( 0xABCD );
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( this.callerId );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
-    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
     eventData.addChildStruct( this.saveEventData() );
     struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
     struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( this.objectId );
@@ -64,4 +78,3 @@ export class EventSpawnBodyBag extends GameEvent {
   }
 
 }
-

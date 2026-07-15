@@ -15,7 +15,7 @@ export class SWBodyBag {
   label: string = '';
   name: number = -1;
   appearance: number = -1;
-  corpse: number = -1;
+  corpse: number = 0;
 
   static From2DA(row: any = {}){
     const bodyBag = new SWBodyBag();
@@ -24,15 +24,15 @@ export class SWBodyBag {
 
     if(row.hasOwnProperty('label'))
       bodyBag.label = TwoDAObject.normalizeValue(row.label, 'string', '') as string;
-    
-    if(row.hasOwnProperty('iconresref'))
-      bodyBag.name = TwoDAObject.normalizeValue(row.name, 'number', '') as number;
-    
+
+    if(row.hasOwnProperty('name'))
+      bodyBag.name = TwoDAObject.normalizeValue(row.name, 'number', -1) as number;
+
     if(row.hasOwnProperty('appearance'))
       bodyBag.appearance = TwoDAObject.normalizeValue(row.appearance, 'number', 0) as number;
-    
-    if(row.hasOwnProperty('description'))
-      bodyBag.corpse = TwoDAObject.normalizeValue(row.corpse, 'number', -1) as number;
+
+    if(row.hasOwnProperty('corpse'))
+      bodyBag.corpse = TwoDAObject.normalizeValue(row.corpse, 'number', 0) as number;
 
     return bodyBag;
   }

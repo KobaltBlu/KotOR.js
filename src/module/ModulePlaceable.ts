@@ -25,13 +25,16 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import { ModuleObject } from "@/module/ModuleObject";
-import type { ModuleItem } from "@/module/ModuleItem";
+import { ModuleItem } from "@/module/ModuleItem";
+import type { ModuleArea } from "@/module/ModuleArea";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { ModulePlaceableObjectSound } from "@/enums/module/ModulePlaceableObjectSound";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { SWBodyBag } from "@/engine/rules/SWBodyBag";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import * as THREE from "three";
 
 interface AnimStateInfo {
   lastAnimState: ModulePlaceableAnimState;
@@ -86,7 +89,9 @@ export class ModulePlaceable extends ModuleObject {
   z: number;
   defaultAnimPlayed: boolean;
   useable: any;
-  isBodyBag: any;
+  isBodyBag: boolean = false;
+  dieWhenEmpty: boolean = false;
+  isCorpse: boolean = false;
   lightState: any;
   props: any;
 
@@ -414,9 +419,13 @@ export class ModulePlaceable extends ModuleObject {
       }
     }
     const instance = this.scripts[ModuleObjectScript.PlaceableOnInvDisturbed];
-    if(!instance){ return; }
-    instance.lastDisturbed = GameState.PartyManager.party[0];
-    instance.run(this);
+    if(instance){
+      instance.lastDisturbed = GameState.PartyManager.party[0];
+      instance.run(this);
+    }
+    if(this.dieWhenEmpty && !this.inventory.length){
+      this.destroy();
+    }
   }
 
   getModel(){
@@ -780,6 +789,15 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('HasInventory'))
       this.hasInventory = this.template.RootNode.getFieldByLabel('HasInventory').getValue();
 
+    if(this.template.RootNode.hasField('IsBodyBag'))
+      this.isBodyBag = !!this.template.RootNode.getFieldByLabel('IsBodyBag').getValue();
+
+    if(this.template.RootNode.hasField('DieWhenEmpty'))
+      this.dieWhenEmpty = !!this.template.RootNode.getFieldByLabel('DieWhenEmpty').getValue();
+
+    if(this.template.RootNode.hasField('IsCorpse'))
+      this.isCorpse = !!this.template.RootNode.getFieldByLabel('IsCorpse').getValue();
+
     if(this.template.RootNode.hasField('Interruptable'))
       this.interruptable = this.template.RootNode.getFieldByLabel('Interruptable').getValue();
         
@@ -938,7 +956,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).setValue(this.currentHP);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue('');
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DieWhenEmpty') ).setValue( this.isBodyBag ? 1 : 0 );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DieWhenEmpty') ).setValue( this.dieWhenEmpty || this.isBodyBag ? 1 : 0 );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
 
     //Effects
@@ -955,7 +973,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'HasInventory') ).setValue(this.hasInventory ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBag') ).setValue(this.isBodyBag ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBagVisible') ).setValue(1);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsCorpse') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsCorpse') ).setValue(this.isCorpse ? 1 : 0);
 
     const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     //Object Inventory
@@ -1133,18 +1151,112 @@ export class ModulePlaceable extends ModuleObject {
     return template;
   }
 
-  static FromBodyBag(bodyBag: SWBodyBag){
+  static FromBodyBag(bodyBag: SWBodyBag, bodyBagRowId: number = 0){
     const placeable = new ModulePlaceable();
-    placeable.bodyBag = 1;
-    placeable.appearance = bodyBag.appearance;
+    placeable.bodyBag = bodyBagRowId;
+    placeable.appearance = bodyBag.appearance >= 0 ? bodyBag.appearance : 0;
     placeable.locName = new CExoLocString(bodyBag.name);
-    placeable.hp = 1;
-    placeable.hardness = 1;
-    placeable.hasInventory = true;
+    placeable.name = placeable.locName.getValue() || 'Body Bag';
+    placeable.tag = 'Body Bag';
+    placeable.hp = 15;
+    placeable.currentHP = 15;
+    placeable.hardness = 5;
+    placeable.fort = 16;
+    placeable.hasInventory = !bodyBag.corpse;
+    placeable.isCorpse = !!bodyBag.corpse;
     placeable.min1HP = true;
     placeable.partyInteract = true;
     placeable.isBodyBag = true;
+    placeable.dieWhenEmpty = !bodyBag.corpse;
+    placeable.plot = !bodyBag.corpse;
+    placeable.useable = true;
+    placeable.locked = false;
+    placeable.lockable = false;
+    try{
+      placeable.placeableAppearance = GameState.AppearanceManager.GetPlaceableAppearanceById(placeable.appearance);
+    }catch(e){}
     return placeable;
   }
 
+  /**
+   * Transfer droppable inventory/equipment (and gold) from a creature or placeable.
+   */
+  acquireItemsFromObject(source: ModuleObject, droppableOnly: boolean = true){
+    if(!source) return 0;
+    let transferred = 0;
+
+    if(BitWise.InstanceOfObject(source, ModuleObjectType.ModuleCreature)){
+      const creature = source as ModuleCreature;
+      const slots = Object.keys(creature.equipment) as (keyof typeof creature.equipment)[];
+      for(let i = 0; i < slots.length; i++){
+        const key = slots[i];
+        const item = creature.equipment[key] as ModuleItem;
+        if(!item) continue;
+        if(droppableOnly && !item.isDropable()) continue;
+        try{ item.onUnEquip?.(creature); }catch(e){}
+        try{
+          item.model?.parent?.remove(item.model);
+        }catch(e){}
+        (creature.equipment as any)[key] = undefined;
+        this.addItem(item);
+        transferred++;
+      }
+    }
+
+    const inv = source.inventory ? source.inventory.slice() : [];
+    for(let i = 0; i < inv.length; i++){
+      const item = inv[i] as ModuleItem;
+      if(!item) continue;
+      if(droppableOnly && !item.isDropable()) continue;
+      const idx = source.inventory.indexOf(item);
+      if(idx >= 0) source.inventory.splice(idx, 1);
+      this.addItem(item);
+      transferred++;
+    }
+
+    const gold = typeof (source as any).gold === 'number' ? (source as any).gold : 0;
+    if(gold > 0){
+      const credits = ModuleItem.FromResRef('g_i_credits001');
+      if(credits){
+        credits.setStackSize(gold);
+        this.addItem(credits);
+        (source as any).gold = 0;
+        transferred++;
+      }
+    }
+
+    return transferred;
+  }
+
+  /**
+   * Attach this placeable into the given area and load its model / walkmesh.
+   */
+  async placeInArea(area: ModuleArea){
+    if(!area) return;
+    this.area = area;
+    area.attachObject(this);
+    GameState.ModuleObjectManager.AddObjectById(this);
+
+    const model = await this.loadModel();
+    if(!model) return;
+
+    model.userData.moduleObject = this;
+    model.hasCollision = true;
+    model.name = this.getTag();
+    GameState.group.placeables.add(model);
+
+    try{
+      const pwk = await this.loadWalkmesh(model.name);
+      if(pwk?.mesh instanceof THREE.Object3D){
+        model.add(pwk.mesh);
+      }
+      model.userData.walkmesh = pwk;
+      if(pwk?.mesh) GameState.walkmeshList.push(pwk.mesh);
+    }catch(e){}
+
+    this.getCurrentRoom();
+    this.onSpawn(false);
+  }
+
 }
+

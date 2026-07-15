@@ -169,6 +169,11 @@ export class ModuleItem extends ModuleObject {
     return this.baseItemId == 8 || this.baseItemId == 9 || this.baseItemId == 10;
   }
 
+  /** Whether this item should be transferred into a body bag. */
+  isDropable(): boolean {
+    return this.dropable === undefined || this.dropable === null ? true : !!this.dropable;
+  }
+
   hasKeen(): boolean {
     for(let i = 0, len = this.properties.length; i < len; i++){
       if(this.properties[i].isUseable() && this.properties[i].is(ModuleItemProperty.Keen)){

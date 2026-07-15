@@ -36,6 +36,9 @@ import { AttackResult } from "@/enums/combat/AttackResult";
 import { DLGObject } from "@/resource/DLGObject";
 import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
+import { SWBodyBag } from "@/engine/rules/SWBodyBag";
+import { ModulePlaceable } from "@/module/ModulePlaceable";
+
 import { ICreatureAnimationState } from "@/interface/animation/ICreatureAnimationState";
 import { IOverlayAnimationState } from "@/interface/animation/IOverlayAnimationState";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
@@ -83,6 +86,8 @@ export class ModuleCreature extends ModuleObject {
   isCommandable: boolean;
   bodyBag: number;
   bodyVariation: number;
+  /** Carried credits moved into body bags as g_i_credits001. */
+  gold: number;
 
   cha: number;
   con: number;
@@ -267,6 +272,7 @@ export class ModuleCreature extends ModuleObject {
     this.pm_IsDisguised = false;
     this.bodyBag = 0;
     this.bodyVariation = 0;
+    this.gold = 0;
     this.challengeRating = 0;
     this.classes = [];
     this.comment = '';
@@ -2202,9 +2208,120 @@ export class ModuleCreature extends ModuleObject {
   onDeath(){
     this.weaponPowered(false);
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnDeath];
-    if(!nwscript){ return true; }
-    const instance = nwscript.newInstance();
-    instance.run(this);
+    if(nwscript){
+      const instance = nwscript.newInstance();
+      instance.run(this);
+    }
+    this.spawnBodyBag();
+    return true;
+  }
+
+  /**
+   * Resolve bodybag.2da row for this creature (UTC BodyBag, else appearance.body_bag).
+   */
+  getBodyBagRowId(): number {
+    if(this.bodyBag > 0) return this.bodyBag;
+    const fromAppearance = this.creatureAppearance?.body_bag;
+    if(typeof fromAppearance === 'number' && fromAppearance > 0) return fromAppearance;
+    return 0;
+  }
+
+  getBodyBagRule(): SWBodyBag | undefined {
+    const rowId = this.getBodyBagRowId();
+    return GameState.SWRuleSet?.bodyBags?.[rowId];
+  }
+
+  /**
+   * Whether this creature should drop a body bag (loot / corpse / gold).
+   */
+  shouldSpawnBodyBag(): boolean {
+    if(!this.isDestroyable) return false;
+    if(GameState.PartyManager?.party?.indexOf(this) >= 0) return false;
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlayer)) return false;
+
+    const rule = this.getBodyBagRule();
+    if(rule?.corpse) return true;
+
+    if(this.gold > 0) return true;
+
+    for(let i = 0; i < this.inventory.length; i++){
+      if(this.inventory[i]?.isDropable?.()) return true;
+    }
+
+    const slots = Object.keys(this.equipment) as (keyof typeof this.equipment)[];
+    for(let i = 0; i < slots.length; i++){
+      const item = this.equipment[slots[i]];
+      if(item?.isDropable?.()) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Create a body-bag placeable, move droppable loot into it, and schedule
+   * EventSpawnBodyBag to attach it to the area after a short delay.
+   */
+  spawnBodyBag(): number {
+    if(!this.shouldSpawnBodyBag()) return ModuleObjectConstant.OBJECT_INVALID;
+    if(!this.area || !GameState.module) return ModuleObjectConstant.OBJECT_INVALID;
+
+    const rowId = this.getBodyBagRowId();
+    let rule = this.getBodyBagRule();
+    if(!rule){
+      rule = new SWBodyBag();
+      rule.id = rowId;
+      rule.appearance = 3;
+      rule.name = 38151;
+      rule.corpse = 0;
+    }
+    // bodybag.2da may leave Appearance as **** (0); fall back to backpack (3)
+    if(!rule.appearance){
+      rule = Object.assign(new SWBodyBag(), rule, { appearance: 3 });
+    }
+
+    const placeable = ModulePlaceable.FromBodyBag(rule, rowId);
+    placeable.position.copy(this.position);
+    placeable.rotation.copy(this.rotation);
+    placeable.bearing = this.getFacing?.() ?? this.rotation.z;
+    GameState.ModuleObjectManager.AddObjectById(placeable);
+    placeable.acquireItemsFromObject(this, true);
+
+    // Corpse-type bags still need a usable inventory if they received items
+    if(placeable.inventory.length > 0){
+      placeable.hasInventory = true;
+    }
+
+    if(!placeable.inventory.length && !rule.corpse){
+      GameState.ModuleObjectManager.RemoveObject(placeable);
+      return ModuleObjectConstant.OBJECT_INVALID;
+    }
+
+    const future = GameState.module.timeManager.getFutureTimeFromSeconds(0.5);
+    const event = new GameState.GameEventFactory.EventSpawnBodyBag();
+    event.bodyBagId = placeable.id;
+    event.position.copy(placeable.position);
+    event.setCaller(this);
+    event.setObject(this.area as any);
+    event.setDay(future.pauseDay);
+    event.setTime(future.pauseTime);
+    GameState.module.addEvent(event);
+
+    // Begin corpse fade/destroy using appearance FadeDelayOnDeath when destroyable
+    if(this.isDestroyable){
+      const fadeDelay = this.creatureAppearance?.fadedelayondeath;
+      if(typeof fadeDelay === 'number' && fadeDelay >= 0){
+        this.setWillDestroy(true);
+        this.setDelayUntilFade(fadeDelay / 1000);
+        this.setDelayUntilDestroy(fadeDelay / 1000);
+        this.setNoFadeOnDestroy(false);
+      }else{
+        this.setWillDestroy(true);
+        this.setNoFadeOnDestroy(true);
+        this.setDelayUntilDestroy(0.5);
+      }
+    }
+
+    return placeable.id;
   }
 
   onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined){
@@ -3711,7 +3828,10 @@ export class ModuleCreature extends ModuleObject {
         this.bodyBag = this.template.getFieldByLabel('BodyBag').getValue();
 
       if(this.template.RootNode.hasField('BodyVariation'))
-        this.bodyBag = this.template.getFieldByLabel('BodyVariation').getValue();
+        this.bodyVariation = this.template.getFieldByLabel('BodyVariation').getValue();
+
+      if(this.template.RootNode.hasField('Gold'))
+        this.gold = this.template.getFieldByLabel('Gold').getValue();
 
       if(this.template.RootNode.hasField('ChallengeRating'))
         this.challengeRating = this.template.getFieldByLabel('ChallengeRating').getValue();
@@ -4457,7 +4577,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).setValue(this.forcePoints);
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'FortSaveThrow') ).setValue(this.fortitudeSaveThrow);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Gender') ).setValue(this.gender);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Gold') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Gold') ).setValue(this.gold || 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GoodEvil') ).setValue(this.goodEvil);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HitPoints') ).setValue(this.hitPoints);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Int') ).setValue(this.int);
