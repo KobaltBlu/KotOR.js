@@ -25,12 +25,21 @@ export class Keymap {
   actionstrref: number  = -1;
   descstrref:   number  = -1;
   language0:    number  =  0; //keycode?
+  /** Language0 from keymap.2da before INI remap (retail ResetToDefault source). */
+  defaultLanguage0: number = 0;
   character:    string  = '';
+  /** Character string from keymap.2da before INI remap. */
+  defaultCharacter: string = '';
   page:         number  =  0;
   sortpos:      number  = -1;
   name:         string  = '';
   remappable:   boolean = false;
   forcedisplay: boolean = false;
+
+  /** Working binding while the key mapper menu is open (committed on Accept). */
+  editLanguage0: number = 0;
+  editCharacter: string = '';
+  editDirty: boolean = false;
 
   icpc:       boolean = false;
   icminigame: boolean = false;
@@ -57,19 +66,62 @@ export class Keymap {
     this.processCallback = callback;
   }
 
+  /** Retail CSWGuiKeyMapButton category_flags from ICPC* columns. */
+  getCategoryFlags(): number {
+    let flags = 0;
+    if(this.icpc) flags |= 0x01;
+    if(this.icminigame) flags |= 0x02;
+    if(this.icpcgui) flags |= 0x04;
+    if(this.icdialog) flags |= 0x08;
+    if(this.icfreelook) flags |= 0x10;
+    if(this.icmovie) flags |= 0x20;
+    return flags;
+  }
+
+  /** Begin a key-mapper edit session from the live binding. */
+  beginEditSession(){
+    this.editLanguage0 = this.language0;
+    if(this.language0 === this.defaultLanguage0){
+      this.editCharacter = this.character || this.defaultCharacter;
+    }else{
+      // Deferred import avoided — display helper lives on the menu; use character / keycode fallback.
+      const code = language0ToKeyCode(this.language0);
+      if(code?.startsWith('Key') && code.length === 4){
+        this.editCharacter = code.slice(3);
+      }else if(code?.startsWith('Digit') && code.length === 6){
+        this.editCharacter = code.slice(5);
+      }else{
+        this.editCharacter = this.character || this.defaultCharacter;
+      }
+    }
+    this.editDirty = false;
+  }
+
+  /** Retail CreateOption visibility: remappable or forcedisplay, not disabled. */
+  isKeyMapperVisible(): boolean {
+    if(this.disabled) return false;
+    return this.remappable || this.forcedisplay;
+  }
+
   static From2DA(row: any = {}){
     const keymap = new Keymap();
 
     if(typeof row.disabled !== 'undefined')     keymap.disabled     = row.disabled      == '****' ? false : parseInt(row.disabled) ? true : false;
     if(typeof row.actionstrref !== 'undefined') keymap.actionstrref = row.actionstrref  == '****' ? -1    : parseInt(row.actionstrref);
     if(typeof row.descstrref !== 'undefined')   keymap.descstrref   = row.descstrref    == '****' ? -1    : parseInt(row.descstrref);
-    if(typeof row.language0 !== 'undefined')    keymap.language0    = row.language0     == '****' ? -1    : parseInt(row.language0);
-    if(typeof row.character !== 'undefined')    keymap.character    = row.label         == '****' ? ''    : row.character;
-    if(typeof row.page !== 'undefined')         keymap.page         = row.label         == '****' ? 0     : parseInt(row.page);
-    if(typeof row.sortpos !== 'undefined')      keymap.sortpos      = row.label         == '****' ? -1    : parseInt(row.sortpos);
-    if(typeof row.name !== 'undefined')         keymap.name         = row.label         == '****' ? ''    : row.name;
+    if(typeof row.language0 !== 'undefined')    keymap.language0    = row.language0     == '****' ? 0     : parseInt(row.language0);
+    if(typeof row.character !== 'undefined')    keymap.character    = row.character     == '****' ? ''    : row.character;
+    if(typeof row.page !== 'undefined')         keymap.page         = row.page          == '****' ? 0     : parseInt(row.page);
+    if(typeof row.sortpos !== 'undefined')      keymap.sortpos      = row.sortpos       == '****' ? -1    : parseInt(row.sortpos);
+    if(typeof row.name !== 'undefined')         keymap.name         = row.name          == '****' ? ''    : row.name;
     if(typeof row.remappable !== 'undefined')   keymap.remappable   = row.remappable    == '****' ? false : parseInt(row.remappable) ? true : false;
     if(typeof row.forcedisplay !== 'undefined') keymap.forcedisplay = row.forcedisplay  == '****' ? false : parseInt(row.forcedisplay) ? true : false;
+
+    keymap.defaultLanguage0 = keymap.language0;
+    keymap.defaultCharacter = keymap.character;
+    keymap.editLanguage0 = keymap.language0;
+    keymap.editCharacter = keymap.character;
+    keymap.editDirty = false;
 
     if(typeof row.icpc !== 'undefined')         keymap.icpc         = row.icpc          == '****' ? false : parseInt(row.icpc) ? true : false;
     if(typeof row.icminigame !== 'undefined')   keymap.icminigame   = row.icminigame    == '****' ? false : parseInt(row.icminigame) ? true : false;

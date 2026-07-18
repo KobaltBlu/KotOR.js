@@ -98,26 +98,69 @@ export class MenuAbilities extends GameMenu {
 
       this.BTN_CHANGE1?.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.party.length > 0){
+        if(GameState.PartyManager.party.length > 1){
           GameState.PartyManager.SwitchLeaderAtIndex(1);
-          this.updateFilter();
+          this.refreshAfterPartyChange();
         }
       });
       this.BTN_CHANGE2?.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(GameState.PartyManager.party.length > 1){
+        if(GameState.PartyManager.party.length > 2){
           GameState.PartyManager.SwitchLeaderAtIndex(2);
-          this.updateFilter();
+          this.refreshAfterPartyChange();
         }
+      });
+
+      GameState.PartyManager.AddEventListener('change', () => {
+        if(!this.isVisible()) return;
+        this.refreshAfterPartyChange();
       });
 
       resolve();
     });
   }
 
+  /**
+   * Refresh party swap portraits (BTN_CHANGE1/2) to match current party order.
+   * Mirrors MenuCharacter / MenuEquipment — K1 abilities.gui uses these controls.
+   */
+  updatePartyMemberButtons() {
+    this.BTN_CHANGE1?.hide();
+    this.BTN_CHANGE2?.hide();
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      if(i == 0) continue;
+      const btn_change = this.getControlByName('BTN_CHANGE' + i);
+      if(!btn_change) continue;
+      const partyMember = GameState.PartyManager.party[i];
+      if(!partyMember) continue;
+      btn_change.show();
+      const portraitResRef = partyMember.getPortraitResRef();
+      if(btn_change.getFillTextureName() != portraitResRef){
+        btn_change.setFillTextureName(portraitResRef);
+      }
+    }
+  }
+
+  updateSelectedPortrait() {
+    const creature = GameState.PartyManager.party[0];
+    if(!creature || !this.LBL_PORTRAIT) return;
+    const portraitResRef = creature.getPortraitResRef();
+    if(this.LBL_PORTRAIT.getFillTextureName() != portraitResRef){
+      this.LBL_PORTRAIT.setFillTextureName(portraitResRef);
+    }
+  }
+
+  refreshAfterPartyChange() {
+    this.updateSelectedPortrait();
+    this.updatePartyMemberButtons();
+    this.updateFilter();
+  }
+
   show() {
     super.show();
     this.manager.MenuTop?.LBLH_ABI?.onHoverIn?.();
+    this.updateSelectedPortrait();
+    this.updatePartyMemberButtons();
     this.updateFilter();
   }
 
@@ -172,11 +215,31 @@ export class MenuAbilities extends GameMenu {
     const allowedTypes = [1, 6];
     const unknownSpells: number[] = [176, 177, 178, 179, 180, 181, 182];
 
+    const parsePriority = (spell: any): number => {
+      const n = parseInt(String(spell.forcepriority ?? ''), 10);
+      return Number.isFinite(n) ? n : -1;
+    };
+
+    const parsePrereqs = (spell: any): number[] => {
+      const raw = String(spell.prerequisites ?? '');
+      if(!raw || raw === '****') return [];
+      return raw.split('_').map((sid: string) => parseInt(sid, 10)).filter((n) => Number.isFinite(n));
+    };
+
+    const familyKey = (spell: any): string => {
+      const hostile = parseInt(String(spell.forcehostile ?? ''), 10);
+      const friendly = parseInt(String(spell.forcefriendly ?? ''), 10);
+      if(Number.isFinite(hostile) && hostile >= 0) return `h:${hostile}`;
+      if(Number.isFinite(friendly) && friendly >= 0) return `f:${friendly}`;
+      return `id:${spell.__index}`;
+    };
+
     const allowedSpells: any[] = [];
     for (let i = 0; i < spellCount; i++) {
       const spell = spells[i];
+      if(!spell) continue;
       const id = spell.__index;
-      const usertype = parseInt(spell.usertype);
+      const usertype = parseInt(String(spell.usertype), 10);
 
       if(allowedTypes.indexOf(usertype) == -1){ continue; }
       if(!creature.getHasSpell(id) && unknownSpells.indexOf(id) == -1){ continue; }
@@ -184,39 +247,64 @@ export class MenuAbilities extends GameMenu {
       allowedSpells.push(spell);
     }
 
-    const rootSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 0; });
-    const midSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 1; });
-    const endSpells: any[] = allowedSpells.filter((spell) => { return parseInt(spell.forcepriority) === 2; });
+    // Group by forcehostile/forcefriendly family (retail chain), slot by forcepriority.
+    const mapSpells = new Map<string, any[]>();
+    const claimed = new Set<number>();
 
-    const mapSpells = new Map<number, any[]>();
-
-    for (let i = 0; i < rootSpells.length; i++) {
-      const spell = rootSpells[i];
-      const id = spell.__index;
-      const group = [spell];
-
-      const midSpell = midSpells.find( (curSpell) => {
-        const prereqs = String(curSpell.prerequisites || '').split('_').map((sid:string) => parseInt(sid));
-        return prereqs[0] == id && creature.getHasSpell(curSpell.__index);
-      });
-
-      if(midSpell){
-        group[parseInt(midSpell.forcepriority)] = midSpell;
+    for (let i = 0; i < allowedSpells.length; i++) {
+      const spell = allowedSpells[i];
+      const priority = parsePriority(spell);
+      const key = familyKey(spell);
+      let group = mapSpells.get(key);
+      if(!group){
+        group = [];
+        mapSpells.set(key, group);
       }
-
-      const endSpell = endSpells.find( (curSpell) => {
-        const prereqs = String(curSpell.prerequisites || '').split('_').map((sid:string) => parseInt(sid));
-        return prereqs[0] == id && creature.getHasSpell(curSpell.__index);
-      });
-
-      if(endSpell){
-        group[parseInt(endSpell.forcepriority)] = endSpell;
+      const slot = priority >= 0 && priority <= 2 ? priority : group.filter(Boolean).length;
+      if(!group[slot]){
+        group[slot] = spell;
+        claimed.add(spell.__index);
       }
-
-      mapSpells.set(id, group);
     }
 
-    return Array.from(mapSpells.values());
+    // Fallback: attach mid/end via prerequisites when family columns are missing.
+    for (let i = 0; i < allowedSpells.length; i++) {
+      const spell = allowedSpells[i];
+      if(claimed.has(spell.__index)) continue;
+      const prereqs = parsePrereqs(spell);
+      if(!prereqs.length) continue;
+      for (const [, group] of mapSpells) {
+        const root = group[0];
+        const mid = group[1];
+        if(root && prereqs[0] == root.__index){
+          const slot = parsePriority(spell);
+          group[slot >= 0 && slot <= 2 ? slot : 1] = spell;
+          claimed.add(spell.__index);
+          break;
+        }
+        if(mid && prereqs[0] == mid.__index){
+          group[2] = spell;
+          claimed.add(spell.__index);
+          break;
+        }
+      }
+    }
+
+    // Orphans (known powers with no family/root) still need a row.
+    for (let i = 0; i < allowedSpells.length; i++) {
+      const spell = allowedSpells[i];
+      if(claimed.has(spell.__index)) continue;
+      mapSpells.set(`orphan:${spell.__index}`, [spell]);
+      claimed.add(spell.__index);
+    }
+
+    const groups: any[][] = [];
+    for (const group of mapSpells.values()) {
+      // Compact sparse slots so GUISpellItem never walks undefined holes.
+      const compact = group.filter((s) => !!s);
+      if(compact.length) groups.push(compact);
+    }
+    return groups;
   }
 
   private tlk(strRef: number): string {

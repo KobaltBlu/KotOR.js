@@ -16,5 +16,6 @@ export enum FeedbackOption {
   FloatingNumbers = 4,
   StatusSummary = 5,
   HideQuickMenuButtons = 6,
-  EnableToolTips = 7,
+  UseSmallFonts = 7,
+  EnableToolTips = 8,
 }

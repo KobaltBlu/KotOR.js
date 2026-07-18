@@ -1,4 +1,5 @@
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GUIFeatItem } from "@/game/tsl/gui/GUIFeatItem";
 import { CharGenFeats as K1_CharGenFeats } from "@/game/kotor/KOTOR";
 
 /**
@@ -34,11 +35,11 @@ export class CharGenFeats extends K1_CharGenFeats {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
-    if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      resolve();
-    });
+    await super.menuControlInitializer(skipInit);
+  }
+
+  protected getFeatItemClass() {
+    return GUIFeatItem;
   }
   
 }

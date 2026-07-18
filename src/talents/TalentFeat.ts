@@ -329,8 +329,13 @@ export class TalentFeat extends TalentObject {
     effect.setExpireTime(future.pauseTime);
   }
 
+  /** Column prefix from classes.2da featstable (sol/scd/sct/...), not skillstable. */
+  private getFeatTableKey(classData: CreatureClass): string {
+    return (classData?.featstable || '').toLowerCase();
+  }
+
   getGranted(classData: CreatureClass): number {
-    switch(classData.skillstable){
+    switch(this.getFeatTableKey(classData)){
       case 'scd':
         return this.scdGranted;
       case 'sol':
@@ -367,7 +372,7 @@ export class TalentFeat extends TalentObject {
   }
 
   getRecom(classData: CreatureClass): number {
-    switch(classData.skillstable){
+    switch(this.getFeatTableKey(classData)){
       case 'scd':
         return this.scdRecom;
       case 'sol':
@@ -404,7 +409,7 @@ export class TalentFeat extends TalentObject {
   }
 
   getList(classData: CreatureClass): number {
-    switch(classData.skillstable){
+    switch(this.getFeatTableKey(classData)){
       case 'scd':
         return this.scdList;
       case 'sol':

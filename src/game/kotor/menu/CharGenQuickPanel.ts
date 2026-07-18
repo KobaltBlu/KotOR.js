@@ -1,4 +1,4 @@
-import { CurrentGame } from "@/engine/CurrentGame";
+import { CharGenQuickStep } from "@/managers/CharGenManager";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIControl, GUILabel, GUIButton } from "@/gui";
@@ -26,8 +26,6 @@ export class CharGenQuickPanel extends GameMenu {
   LBL_NUM2: GUILabel;
   BTN_STEPNAME3: GUIButton;
   LBL_NUM3: GUILabel;
-  step1: boolean;
-  step2: boolean;
 
   constructor(){
     super();
@@ -39,10 +37,7 @@ export class CharGenQuickPanel extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      this.step1 = false;
-      this.step2 = false;
-
+    return new Promise<void>((resolve) => {
       this.BTN_STEPNAME1.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenPortCust.open();
@@ -50,20 +45,14 @@ export class CharGenQuickPanel extends GameMenu {
 
       this.BTN_STEPNAME2.addEventListener('click', (e) => {
         e.stopPropagation();
+        if(GameState.CharGenManager.quickStep < CharGenQuickStep.NAME) return;
         this.manager.CharGenName.open();
       });
 
       this.BTN_STEPNAME3.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.CharGenManager.selectedCreature.equipment.ARMOR = undefined;
-        GameState.CharGenManager.selectedCreature.template.getFieldByLabel('Equip_ItemList').childStructs = [];
-        GameState.GlobalVariableManager.Init();
-        GameState.PartyManager.PlayerTemplate = GameState.CharGenManager.selectedCreature.save();
-        GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
-        GameState.PartyManager.AddPortraitToOrder(GameState.CharGenManager.selectedCreature.getPortraitResRef());
-        CurrentGame.InitGameInProgressFolder(true).then( () => {
-          GameState.LoadModule('end_m01aa');
-        });
+        if(GameState.CharGenManager.quickStep < CharGenQuickStep.PLAY) return;
+        GameState.CharGenManager.finalizeAndStartGame();
       });
 
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -82,24 +71,56 @@ export class CharGenQuickPanel extends GameMenu {
     });
   }
 
+  /** Retail CSWGuiQuickPanel::SetState */
+  setState(step: number) {
+    GameState.CharGenManager.quickStep = step;
+    this.applyStepVisibility();
+  }
+
+  portraitCreationCompleted() {
+    GameState.CharGenManager.advanceQuickStep(CharGenQuickStep.PORTRAIT);
+    this.applyStepVisibility();
+  }
+
+  nameCreationCompleted() {
+    GameState.CharGenManager.advanceQuickStep(CharGenQuickStep.NAME);
+    this.applyStepVisibility();
+  }
+
+  applyStepVisibility() {
+    const step = GameState.CharGenManager.quickStep;
+
+    this.BTN_STEPNAME1?.show();
+    this.LBL_1?.show();
+    this.LBL_NUM1?.show();
+
+    if(step >= CharGenQuickStep.NAME){
+      this.BTN_STEPNAME2?.show();
+      this.LBL_2?.show();
+      this.LBL_NUM2?.show();
+      if(this.BTN_STEPNAME2) this.BTN_STEPNAME2.disableSelection = false;
+    }else{
+      this.BTN_STEPNAME2?.hide();
+      this.LBL_2?.hide();
+      this.LBL_NUM2?.hide();
+    }
+
+    if(step >= CharGenQuickStep.PLAY){
+      this.BTN_STEPNAME3?.show();
+      this.LBL_3?.show();
+      this.LBL_NUM3?.show();
+      if(this.BTN_STEPNAME3) this.BTN_STEPNAME3.disableSelection = false;
+    }else{
+      this.BTN_STEPNAME3?.hide();
+      this.LBL_3?.hide();
+      this.LBL_NUM3?.hide();
+      if(this.BTN_STEPNAME3) this.BTN_STEPNAME3.disableSelection = true;
+    }
+  }
+
   show() {
     super.show();
-    this.BTN_STEPNAME2.hide();
-    this.LBL_2.hide();
-    this.LBL_NUM2.hide();
-    this.BTN_STEPNAME3.hide();
-    this.LBL_3.hide();
-    this.LBL_NUM3.hide();
-    if (this.step1) {
-      this.BTN_STEPNAME2.show();
-      this.LBL_2.show();
-      this.LBL_NUM2.show();
-    }
-    if (this.step2) {
-      this.BTN_STEPNAME3.show();
-      this.LBL_3.show();
-      this.LBL_NUM3.show();
-    }
+    this.applyStepVisibility();
   }
   
 }

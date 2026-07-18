@@ -49,7 +49,8 @@ export default {
     "Reverse Ingame YAxis": "0",
     "Reverse Minigame YAxis": "0",
     "Combat Movement": "1",
-    "TooltipDelay Sec": "1"
+    "TooltipDelay Sec": "1",
+    "UnlockedPlanetSongs": "0"
   },
   "Keymapping": {
     "Action286B": "8",

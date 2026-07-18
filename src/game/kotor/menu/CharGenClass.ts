@@ -67,104 +67,32 @@ export class CharGenClass extends GameMenu {
 
       this.BTN_SEL1.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 0;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
+        this.selectClassSlot(0);
       });
 
       this.BTN_SEL2.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 1;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
+        this.selectClassSlot(1);
       });
 
       this.BTN_SEL3.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 2;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
+        this.selectClassSlot(2);
       });
 
       this.BTN_SEL4.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 3;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
+        this.selectClassSlot(3);
       });
 
       this.BTN_SEL5.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 4;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
+        this.selectClassSlot(4);
       });
 
       this.BTN_SEL6.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selecting) return;
-        this.selecting = true;
-        GameState.CharGenManager.selectedClass = 5;
-        let template = GameState.CharGenManager.templates.get(GameState.CharGenManager.selectedClass);
-        GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
-        GameState.CharGenManager.selectedCreature.load();
-        GameState.CharGenManager.selectedCreature.loadModel().then((model: OdysseyModel3D) => {
-          TextureLoader.LoadQueue().then(() => {
-            this.selecting = false;
-            this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
-            this.manager.CharGenMain.open();
-          });
-        });
+        this.selectClassSlot(5);
       });
 
       this.tGuiPanel.getFill().position.z = -0.5;
@@ -184,6 +112,23 @@ export class CharGenClass extends GameMenu {
 
       resolve();
     });
+  }
+
+  selectClassSlot(slot: number) {
+    if(this.selecting) return;
+    this.selecting = true;
+    GameState.CharGenManager.selectedClass = slot;
+    const template = GameState.CharGenManager.templates.get(slot);
+    GameState.CharGenManager.selectedCreature = new GameState.Module.ModuleArea.ModulePlayer(template);
+    GameState.CharGenManager.selectedCreature.load();
+    GameState.CharGenManager.selectedCreature.loadModel().then(() => {
+      TextureLoader.LoadQueue().then(() => {
+        GameState.CharGenManager.resetChargenProgress();
+        this.selecting = false;
+        this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+        this.manager.CharGenMain.open();
+      }).catch(() => { this.selecting = false; });
+    }).catch(() => { this.selecting = false; });
   }
 
   async load3D() {

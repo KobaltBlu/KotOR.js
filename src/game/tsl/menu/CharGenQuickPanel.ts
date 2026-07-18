@@ -1,4 +1,4 @@
-import { CurrentGame } from "@/engine/CurrentGame";
+import { CharGenQuickStep } from "@/managers/CharGenManager";
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIButton, GUIControl } from "@/gui";
 import { CharGenQuickPanel as K1_CharGenQuickPanel } from "@/game/kotor/KOTOR";
@@ -36,7 +36,7 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       this.BTN_STEPNAME1.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.CharGenPortCust.open();
@@ -44,20 +44,14 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
 
       this.BTN_STEPNAME2.addEventListener('click', (e) => {
         e.stopPropagation();
+        if(GameState.CharGenManager.quickStep < CharGenQuickStep.NAME) return;
         this.manager.CharGenName.open();
       });
 
       this.BTN_STEPNAME3.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.CharGenManager.selectedCreature.equipment.ARMOR = undefined;
-        GameState.CharGenManager.selectedCreature.template.getFieldByLabel('Equip_ItemList').childStructs = [];
-        GameState.GlobalVariableManager.Init();
-        GameState.PartyManager.PlayerTemplate = GameState.CharGenManager.selectedCreature.save();
-        GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
-        GameState.PartyManager.AddPortraitToOrder(GameState.CharGenManager.selectedCreature.getPortraitResRef());
-        CurrentGame.InitGameInProgressFolder(true).then( () => {
-          GameState.LoadModule('001EBO');
-        });
+        if(GameState.CharGenManager.quickStep < CharGenQuickStep.PLAY) return;
+        GameState.CharGenManager.finalizeAndStartGame();
       });
 
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -68,9 +62,6 @@ export class CharGenQuickPanel extends K1_CharGenQuickPanel {
       });
 
       this.BTN_BACK.reattach(this.tGuiPanel);
-
-      // this.tGuiPanel.widget.position.x = -180;
-      // this.tGuiPanel.widget.position.y = 85;
       this.recalculatePosition();
       resolve();
     });

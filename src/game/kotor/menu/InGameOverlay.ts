@@ -399,12 +399,14 @@ export class InGameOverlay extends GameMenu {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
           this.UpdateTargetUIIcon(i);
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
         });
 
         this.getControlByName('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
         });
 
       }
@@ -421,6 +423,7 @@ export class InGameOverlay extends GameMenu {
           GameState.ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
           this.UpdateSelfUIIcon(i);
           this.UpdateActionDescription();
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
         });
 
         this.getControlByName('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
@@ -428,6 +431,7 @@ export class InGameOverlay extends GameMenu {
           GameState.ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
           this.UpdateSelfUIIcon(i);
           this.UpdateActionDescription();
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
         });
 
       }

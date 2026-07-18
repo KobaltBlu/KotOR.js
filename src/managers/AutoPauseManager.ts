@@ -1,7 +1,9 @@
 import { GameState } from "@/GameState";
 import type { INIConfig } from "@/engine/INIConfig";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { EngineMode } from "@/enums/engine/EngineMode";
 import { EngineState } from "@/enums/engine/EngineState";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 
 /**
  * AutoPauseManager class.
@@ -28,11 +30,14 @@ export class AutoPauseManager {
 
   static AutoPauseReason: Map<AutoPauseState, string> = new Map();
   static AutoPauseMessages: Map<AutoPauseState, string> = new Map();
+  static AutoPaused: boolean = false;
+  static CurrentReason: AutoPauseState = AutoPauseState.Generic;
+  static partyKilledCooldownUntil: number = 0;
+  static enemySightedLatchUntil: number = 0;
 
   static onPauseStateChange: Function;
 
   static Init(){
-    console.log('AutoPauseManager.Init', this.INIConfig.getProperty('Autopause Options.End Of Combat Round'))
     this.AutoPauseEnabled.Generic = true;
     this.AutoPauseEnabled.CombatRoundEnd = this.INIConfig.getProperty('Autopause Options.End Of Combat Round') == 1
     this.AutoPauseEnabled.EnemySighted = this.INIConfig.getProperty('Autopause Options.Enemy Sighted') == 1
@@ -41,16 +46,18 @@ export class AutoPauseManager {
     this.AutoPauseEnabled.ActionMenuUsed = this.INIConfig.getProperty('Autopause Options.Action Menu') == 1
     this.AutoPauseEnabled.NewTargetSelected = this.INIConfig.getProperty('Autopause Options.New Target Selected') == 1
 
+    const isTSL = GameState.GameKey == GameEngineType.TSL;
+
     this.AutoPauseReason.set(AutoPauseState.Generic, GameState.TLKManager.GetStringById(1508)?.Value);
     this.AutoPauseMessages.set(AutoPauseState.Generic, GameState.TLKManager.GetStringById(48384)?.Value);
     
     this.AutoPauseReason.set(AutoPauseState.CombatRoundEnd, GameState.TLKManager.GetStringById(42432)?.Value);
     this.AutoPauseMessages.set(AutoPauseState.CombatRoundEnd, GameState.TLKManager.GetStringById(48384)?.Value);
     
-    this.AutoPauseReason.set(AutoPauseState.EnemySighted, GameState.TLKManager.GetStringById(42396)?.Value);
+    this.AutoPauseReason.set(AutoPauseState.EnemySighted, GameState.TLKManager.GetStringById(isTSL ? 48732 : 48212)?.Value);
     this.AutoPauseMessages.set(AutoPauseState.EnemySighted, GameState.TLKManager.GetStringById(48384)?.Value);
     
-    this.AutoPauseReason.set(AutoPauseState.MineSighted, GameState.TLKManager.GetStringById(49116)?.Value);
+    this.AutoPauseReason.set(AutoPauseState.MineSighted, GameState.TLKManager.GetStringById(isTSL ? 48735 : 49118)?.Value);
     this.AutoPauseMessages.set(AutoPauseState.MineSighted, GameState.TLKManager.GetStringById(48384)?.Value);
     
     this.AutoPauseReason.set(AutoPauseState.PartyMemberKilled, GameState.TLKManager.GetStringById(42397)?.Value);
@@ -61,14 +68,56 @@ export class AutoPauseManager {
     
     this.AutoPauseReason.set(AutoPauseState.NewTargetSelected, GameState.TLKManager.GetStringById(42481)?.Value);
     this.AutoPauseMessages.set(AutoPauseState.NewTargetSelected, GameState.TLKManager.GetStringById(48384)?.Value);
+
+    this.AutoPaused = false;
+    this.CurrentReason = AutoPauseState.Generic;
+    this.partyKilledCooldownUntil = 0;
+    this.enemySightedLatchUntil = 0;
   }
 
   static SignalAutoPauseEvent(type: AutoPauseState){
     if(!this.GetAutoPauseTypeEnabled(type)) return false;
+    if(GameState.State == EngineState.PAUSED) return false;
+    if(type != AutoPauseState.Generic && GameState.Mode != EngineMode.INGAME) return false;
 
+    const player = GameState.getCurrentPlayer?.();
+    const inCombat = !!player?.combatData?.combatState;
+    if(
+      (type == AutoPauseState.EnemySighted || type == AutoPauseState.MineSighted) &&
+      inCombat
+    ){
+      return false;
+    }
+    if(type == AutoPauseState.NewTargetSelected && !inCombat) return false;
+
+    if(
+      type == AutoPauseState.EnemySighted &&
+      Date.now() < this.enemySightedLatchUntil
+    ){
+      return false;
+    }
+    if(type == AutoPauseState.PartyMemberKilled){
+      const now = Date.now();
+      if(now < this.partyKilledCooldownUntil) return false;
+      this.partyKilledCooldownUntil = now + 2000;
+    }
+
+    this.AutoPaused = true;
+    this.CurrentReason = type;
+    if(type == AutoPauseState.EnemySighted){
+      this.enemySightedLatchUntil = Date.now() + 10000;
+    }
     GameState.State = EngineState.PAUSED;
-    GameState.MenuManager.InGamePause.LBL_PAUSEREASON.setText(this.AutoPauseReason.get(type));
-    // MenuManager.InGamePause.LBL_PRESS.setText(this.AutoPauseMessages.get(type));
+    const pauseMenu = GameState.MenuManager?.InGamePause;
+    pauseMenu?.LBL_PAUSEREASON?.setText(this.AutoPauseReason.get(type));
+    if(type == AutoPauseState.EnemySighted || type == AutoPauseState.MineSighted){
+      pauseMenu?.LBL_PRESS?.hide();
+    }else{
+      if(GameState.GameKey == GameEngineType.TSL){
+        pauseMenu?.LBL_PRESS?.setText(GameState.TLKManager.GetStringById(136311)?.Value);
+      }
+      pauseMenu?.LBL_PRESS?.show();
+    }
 
     if(typeof this.onPauseStateChange === 'function'){
       this.onPauseStateChange(type);
@@ -77,7 +126,16 @@ export class AutoPauseManager {
     return true;
   }
 
+  /** Retail enemy-sighted latch stays armed while the hostile remains visible. */
+  static RefreshEnemySightedLatch(){
+    if(this.enemySightedLatchUntil > 0){
+      this.enemySightedLatchUntil = Date.now() + 10000;
+    }
+  }
+
   static Unpause(){
+    this.AutoPaused = false;
+    this.CurrentReason = AutoPauseState.Generic;
     GameState.State = EngineState.RUNNING;
   }
 

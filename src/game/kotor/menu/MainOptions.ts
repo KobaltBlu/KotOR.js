@@ -59,6 +59,7 @@ export class MainOptions extends GameMenu {
 
       this.BTN_FEEDBACK.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.manager.MenuFeedback.open();
       });
 
       this._button_b = this.BTN_BACK;

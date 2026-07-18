@@ -134,22 +134,45 @@ export class CharGenMain extends GameMenu {
     }
     this._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
     GameState.CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;
-    const portraitResRef = GameState.CharGenManager.selectedCreature.getPortraitResRef();
-    this.PORTRAIT_LBL.show();
-    if (this.PORTRAIT_LBL.getFillTextureName() != portraitResRef) {
-      this.PORTRAIT_LBL.setFillTextureName(portraitResRef);
-      TextureLoader.tpcLoader.fetch(portraitResRef).then((texture: OdysseyTexture) => {
-        this.PORTRAIT_LBL.setFillTexture(texture);
-      });
-    }
-    this.LBL_NAME.setText(GameState.CharGenManager.selectedCreature.firstName);
-    this.LBL_CLASS.setText(
-      GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.selectedClass].strings.name].Value
-    )
+    this.updateAttributes();
   }
 
   updateAttributes() {
+    const creature = GameState.CharGenManager.selectedCreature;
+    if(!creature) return;
 
+    this.STR_AB_LBL?.setText(String(creature.str | 0));
+    this.DEX_AB_LBL?.setText(String(creature.dex | 0));
+    this.CON_AB_LBL?.setText(String(creature.con | 0));
+    this.INT_AB_LBL?.setText(String(creature.int | 0));
+    this.WIS_AB_LBL?.setText(String(creature.wis | 0));
+    this.CHA_AB_LBL?.setText(String(creature.cha | 0));
+
+    this.LBL_VIT?.setText(String(creature.getMaxHP?.() ?? creature.maxHitPoints ?? 0));
+    this.LBL_DEF?.setText(String(creature.getAC?.() ?? 10));
+
+    const fort = (creature.fortbonus | 0) + Math.floor(((creature.con | 0) - 10) / 2);
+    const refl = (creature.refbonus | 0) + Math.floor(((creature.dex | 0) - 10) / 2);
+    const will = (creature.willbonus | 0) + Math.floor(((creature.wis | 0) - 10) / 2);
+    this.NEW_FORT_LBL?.setText(String(fort));
+    this.NEW_REFL_LBL?.setText(String(refl));
+    this.NEW_WILL_LBL?.setText(String(will));
+
+    this.LBL_NAME?.setText(creature.firstName || '');
+    this.LBL_CLASS?.setText(
+      GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.selectedClass].strings.name].Value
+    );
+
+    const portraitResRef = creature.getPortraitResRef?.();
+    if(portraitResRef && this.PORTRAIT_LBL){
+      this.PORTRAIT_LBL.show();
+      if(this.PORTRAIT_LBL.getFillTextureName() != portraitResRef){
+        this.PORTRAIT_LBL.setFillTextureName(portraitResRef);
+        TextureLoader.tpcLoader.fetch(portraitResRef).then((texture: OdysseyTexture) => {
+          this.PORTRAIT_LBL.setFillTexture(texture);
+        });
+      }
+    }
   }
   
 }

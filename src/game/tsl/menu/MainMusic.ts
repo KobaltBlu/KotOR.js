@@ -1,14 +1,30 @@
 import { GameState } from "@/GameState";
+import { AudioEngine } from "@/audio/AudioEngine";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { GameMenu } from "@/gui/GameMenu";
 import type { GUILabel, GUIButton, GUIListBox, GUISlider } from "@/gui";
 import { GUIMusicItem } from "@/game/tsl/gui/GUIMusicItem";
+import { TwoDAObject } from "@/resource/TwoDAObject";
+
+/** TLK 0xBDAC — retail LBL_TRACKNUM default strref (CSWGuiTitleMusic ctor). */
+const TLK_TRACKNUM_DEFAULT = 0xBDAC;
+
+interface MusicItem {
+  filename: string;
+  strrefname: number;
+  unlockplanet: number;
+  /** Index among unlocked songs (0-based). */
+  listIndex: number;
+}
 
 /**
  * MainMusic class.
- * 
+ *
+ * Retail CSWGuiTitleMusic (titlemusic_p) — UnlockedPlanetSongs bitmask,
+ * PopulateSongList / OnSongPicked / OnPlayPicked / OnLoopPicked / OnNextPicked / OnStopPicked.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMusic.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -30,17 +46,12 @@ export class MainMusic extends GameMenu {
   declare LB_MUSIC: GUIListBox;
   declare SLI_VOLUME: GUISlider;
 
-  selected: any;
+  selected: MusicItem | undefined;
   selectedIndex = 0;
-  musicVolume = 0.5;
-
-  audioCtx: AudioContext;
-  musicGain: GainNode;
-  bgmBuffer: AudioBuffer;
-  bgm: AudioBufferSourceNode;
   loop: boolean = false;
-
-  musicList: any[] = [];
+  /** Planet unlock flags 0..10 from Game Options.UnlockedPlanetSongs; planet 0 always unlocked. */
+  unlockedPlanets: boolean[] = [];
+  musicList: MusicItem[] = [];
 
   constructor(){
     super();
@@ -52,114 +63,196 @@ export class MainMusic extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       this.LB_MUSIC.setProtoBuilder(GUIMusicItem);
-      
-      this.audioCtx = new (global.AudioContext || (global as any).webkitAudioContext)();
-      this.musicGain = this.audioCtx.createGain();
-      this.musicGain.gain.value = this.musicVolume;
-      this.musicGain.connect(this.audioCtx.destination);
 
-      const table = GameState.TwoDAManager.datatables.get('musictable');
-      for(let i = 0; i < table.RowCount; i++){
-        this.musicList.push(table.getRowByIndex(i));
-      }
-      this.LB_MUSIC.setItems(this.musicList);
+      this.loadUnlockedPlanets();
+      this.populateSongList();
 
-      this.LBL_TRACKNUM.setText(`${0} / ${table.RowCount}`);
+      this.LBL_TRACKNAME.setText('');
+      this.LBL_TRACKNUM.setText(GameState.TLKManager.GetStringById(TLK_TRACKNUM_DEFAULT).Value || '');
 
-      this.LB_MUSIC.onSelected = (node: any) => {
-        console.log(node);
-        this.selected = node;
-        this.LBL_TRACKNAME.setText(GameState.TLKManager.GetStringById(node.strrefname).Value);
-        this.LBL_TRACKNUM.setText(`${node.__rowlabel} / ${table.RowCount}`);
-        this.selectedIndex = this.musicList.indexOf(node);
-      }
+      this.LB_MUSIC.onSelected = (node: MusicItem) => {
+        this.onSongPicked(node);
+      };
+
+      // Retail list item A-button → OnPlayPicked
+      this.LB_MUSIC.onClicked = (node: MusicItem) => {
+        this.onSongPicked(node);
+        this.onPlayPicked();
+      };
 
       this.BTN_PLAY.addEventListener('click', (e) => {
         e.stopPropagation();
-        AudioLoader.LoadMusic(this.selected.filename).then((data: Uint8Array) => {
-          this.setBackgroundMusic(data.buffer as ArrayBuffer);
-        }, () => {
-          console.error('Background Music not found', this.selected.filename);
-        });
+        this.onPlayPicked();
       });
 
       this.BTN_STOP.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.stopBackgroundMusic();
+        this.onStopPicked();
       });
 
       this.BTN_NEXT.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.selectedIndex++;
-        if(this.selectedIndex >= table.RowCount){
-          this.selectedIndex = 0;
-        }
-        console.log(this.selectedIndex);
-        this.LB_MUSIC.selectItem(this.LB_MUSIC.listItems[this.selectedIndex]);
+        this.onNextPicked();
       });
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.stopBackgroundMusic();
+        this.stopMusic();
         this.close();
       });
       this._button_b = this.BTN_BACK;
 
       this.BTN_LOOP.addEventListener('click', (e) => {
-        this.loop = !this.loop;
-        this.BTN_LOOP.pulsing = this.loop;
+        e.stopPropagation();
+        this.onLoopPicked();
       });
-      
+
+      // Retail options+0x4d = Sound Options.Music Volume (0–100)
+      this.SLI_VOLUME.attachINIProperty('Sound Options.Music Volume');
       this.SLI_VOLUME.onValueChanged = (value: number) => {
         value = Math.min(1, Math.max(0, value));
-        this.musicVolume = value;
-        this.musicGain.gain.value = value;
-      }
+        AudioEngine.GAIN_MUSIC = value;
+        GameState.iniConfig.setProperty('Sound Options.Music Volume', (value * 100) | 0);
+      };
 
       resolve();
     });
   }
 
-  setBackgroundMusic ( data: ArrayBuffer ) {
-    this.audioCtx.decodeAudioData( data, ( buffer ) => {
-      this.bgmBuffer = buffer;
-      this.startBackgroundMusic();
-    });
+  /**
+   * Ctor: read UnlockedPlanetSongs bitmask; force planet 0 unlocked.
+   */
+  loadUnlockedPlanets(): void {
+    const raw = GameState.iniConfig.getProperty('Game Options.UnlockedPlanetSongs');
+    const mask = parseInt(String(raw ?? '0'), 10) || 0;
+    this.unlockedPlanets = [];
+    for(let i = 0; i < 11; i++){
+      this.unlockedPlanets[i] = (mask & (1 << i)) !== 0;
+    }
+    this.unlockedPlanets[0] = true;
   }
 
-  startBackgroundMusic(buffer?: AudioBuffer){
+  /**
+   * CSWGuiTitleMusic::PopulateSongList — musictable rows with UnlockPlanet in 0..10 and unlocked.
+   */
+  populateSongList(): void {
+    this.musicList = [];
+    const table = GameState.TwoDAManager.datatables.get('musictable');
+    if(!table){
+      this.LB_MUSIC.setItems([]);
+      return;
+    }
 
-    if(buffer == undefined)
-      buffer = this.bgmBuffer;
+    for(let i = 0; i < table.RowCount; i++){
+      const row = table.getRowByIndex(i);
+      const filename = TwoDAObject.normalizeValue(row.filename ?? row.FileName, 'string', '');
+      const strrefname = TwoDAObject.normalizeValue(row.strrefname ?? row.StrrefName, 'number', -1);
+      const unlockplanet = TwoDAObject.normalizeValue(row.unlockplanet ?? row.UnlockPlanet, 'number', -1);
+      if(unlockplanet < 0 || unlockplanet >= 11) continue;
+      if(!this.unlockedPlanets[unlockplanet]) continue;
+      this.musicList.push({
+        filename,
+        strrefname,
+        unlockplanet,
+        listIndex: this.musicList.length,
+      });
+    }
 
-    this.stopBackgroundMusic();
-
-    //Create the new audio buffer and callbacks
-    this.bgm = this.audioCtx.createBufferSource();
-
-    this.bgm.buffer = buffer;
-    this.bgm.loop = false;
-    this.bgm.start( 0, 0 );
-    this.bgm.connect( this.musicGain );
-
-    this.bgm.onended = () => {
-      if(this.loop){
-        this.startBackgroundMusic()
-      }
-    };
+    this.LB_MUSIC.setItems(this.musicList);
   }
 
-  stopBackgroundMusic(){
+  /**
+   * CSWGuiTitleMusic::OnSongPicked — update selection + LBL_TRACKNUM as "%d/%d".
+   */
+  onSongPicked(node: MusicItem): void {
+    if(!node) return;
+    this.selected = node;
+    this.selectedIndex = this.musicList.indexOf(node);
+    if(this.selectedIndex < 0) this.selectedIndex = 0;
+    this.LBL_TRACKNAME.setText(GameState.TLKManager.GetStringById(node.strrefname).Value || '');
+    this.LBL_TRACKNUM.setText(`${this.selectedIndex + 1}/${this.musicList.length}`);
+  }
+
+  /**
+   * CSWGuiTitleMusic::OnPlayPicked
+   */
+  async onPlayPicked(): Promise<void> {
+    if(!this.musicList.length || !this.selected) return;
     try{
-      if (this.bgm != null) {
-        this.bgm.onended = undefined;
-        this.bgm.disconnect();
-        this.bgm.stop(0);
-        this.bgm = null;
+      const engine = AudioEngine.GetAudioEngine();
+      if(engine.areaMusicDayAudioEmitter.playing){
+        await engine.areaMusicDayAudioEmitter.fadeOutAndStop(0.5);
       }
-    }catch(e){}
+      const data = await AudioLoader.LoadMusic(this.selected.filename);
+      engine.setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, this.selected.filename);
+      await engine.areaMusicDayAudioEmitter.play(this.loop);
+      this.LBL_TRACKNAME.setText(GameState.TLKManager.GetStringById(this.selected.strrefname).Value || '');
+    }catch(e){
+      console.error('MainMusic: Background Music not found', this.selected.filename, e);
+    }
   }
-  
+
+  /**
+   * CSWGuiTitleMusic::OnLoopPicked — toggle loop + BTN_LOOP border pulsing.
+   */
+  onLoopPicked(): void {
+    this.loop = !this.loop;
+    this.BTN_LOOP.pulsing = this.loop;
+    const emitter = AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter;
+    if(emitter.node){
+      emitter.node.loop = this.loop;
+    }
+  }
+
+  /**
+   * CSWGuiTitleMusic::OnStopPicked / StopMusic — FadeAndStop(500ms), clear track name.
+   */
+  async onStopPicked(): Promise<void> {
+    const emitter = AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter;
+    if(!this.musicList.length || !emitter.playing) return;
+    await this.stopMusic();
+  }
+
+  async stopMusic(): Promise<void> {
+    const emitter = AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter;
+    if(emitter.playing){
+      await emitter.fadeOutAndStop(0.5);
+    }else{
+      emitter.stop(false);
+    }
+    this.LBL_TRACKNAME.setText('');
+  }
+
+  /**
+   * CSWGuiTitleMusic::OnNextPicked — advance selection, OnSongPicked, then play.
+   */
+  async onNextPicked(): Promise<void> {
+    if(!this.musicList.length) return;
+    if(!this.selected){
+      this.selectedIndex = 0;
+    }else{
+      this.selectedIndex++;
+      if(this.selectedIndex >= this.musicList.length){
+        this.selectedIndex = 0;
+      }
+    }
+    const next = this.musicList[this.selectedIndex];
+    this.LB_MUSIC.selectItem(next);
+    this.onSongPicked(next);
+    await this.onPlayPicked();
+  }
+
+  show(){
+    super.show();
+    this.loadUnlockedPlanets();
+    this.populateSongList();
+  }
+
+  close(){
+    void this.stopMusic();
+    super.close();
+  }
+
 }

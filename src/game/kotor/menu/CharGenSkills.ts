@@ -90,6 +90,8 @@ export class CharGenSkills extends GameMenu {
       this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
         GameState.CharGenManager.applyTempSkillsToCreature();
+        this.manager.CharGenCustomPanel?.skillCreationCompleted?.();
+        this.manager.CharGenMain?.updateAttributes?.();
         this.close();
       });
 

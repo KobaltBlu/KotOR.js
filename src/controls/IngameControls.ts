@@ -4,6 +4,7 @@ import type { GUIControl, GUIListBox, GUIScrollBar } from "@/gui";
 import { Utility } from "@/utility/Utility";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { EngineState } from "@/enums/engine/EngineState";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { KeyMapAction } from "@/enums/controls/KeyMapAction";
 import { MiniGameType } from "@/enums/engine/MiniGameType";
 import { FollowerCamera } from "@/engine/FollowerCamera";
@@ -749,19 +750,27 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.SelectNext].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const previousTarget = GameState.CursorManager.selectedObject;
       const nextObject = GameState.ModuleObjectManager.GetNextPlayerVisibleObject();
       if(nextObject){
         GameState.CursorManager.setReticleSelectedObject(nextObject);
         FollowerCamera.setFocusObject(nextObject);
+        if(nextObject !== previousTarget){
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.NewTargetSelected);
+        }
       }
     });
 
     KeyMapper.Actions[KeyMapAction.SelectPrev].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      const previousTarget = GameState.CursorManager.selectedObject;
       const previousObject = GameState.ModuleObjectManager.GetPreviousPlayerVisibleObject();
       if(previousObject){
         GameState.CursorManager.setReticleSelectedObject(previousObject);
         FollowerCamera.setFocusObject(previousObject);
+        if(previousObject !== previousTarget){
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.NewTargetSelected);
+        }
       }
     });
 
@@ -856,7 +865,7 @@ export class IngameControls {
       const currentMenu = GameState.MenuManager.GetCurrentMenu();
       if(currentMenu == GameState.MenuManager.InGameOverlay){
         if(GameState.State == EngineState.RUNNING){
-          GameState.AutoPauseManager.SignalAutoPauseEvent(0);
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
         }else{
           GameState.AutoPauseManager.Unpause();
         }

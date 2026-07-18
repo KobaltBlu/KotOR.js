@@ -1,6 +1,8 @@
 import { GameEngineType } from "@/enums/engine";
 import { SkillType } from "@/enums/nwscript/SkillType";
-import { RACE_DROID } from "@/game/equipment-menu-utils";
+
+/** Race id for droids (retail GetIcon race == 5). */
+const RACE_DROID = 5;
 
 export interface SkillPointClass {
   skillpointbase: number | string;

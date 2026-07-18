@@ -50,6 +50,7 @@ export class MenuManager {
   static MainMovies: KOTOR.MainMovies;
   static MainMusic: TSL.MainMusic;
   static MainOptions: KOTOR.MainOptions;
+  static MenuCredits: KOTOR.MenuCredits;
   static MenuAbilities: KOTOR.MenuAbilities;
   static MenuAutoPause: KOTOR.MenuAutoPause;
   static MenuCharacter: KOTOR.MenuCharacter;
@@ -262,6 +263,7 @@ export class MenuManager {
           MenuManager.LoadScreen,
           MenuManager.MainMenu,
           MenuManager.MainMovies,
+          MenuManager.MenuCredits,
           MenuManager.MainOptions,
           MenuManager.MenuResolutions,
           MenuManager.MenuSaveLoad,
@@ -281,6 +283,7 @@ export class MenuManager {
           MenuManager.GameMenuLoader(KOTOR.LoadScreen),
           MenuManager.GameMenuLoader(KOTOR.MainMenu),
           MenuManager.GameMenuLoader(KOTOR.MainMovies),
+          MenuManager.GameMenuLoader(KOTOR.MenuCredits),
           MenuManager.GameMenuLoader(KOTOR.MainOptions),
           MenuManager.GameMenuLoader(KOTOR.MenuResolutions),
           MenuManager.GameMenuLoader(KOTOR.MenuSaveLoad),
@@ -297,7 +300,7 @@ export class MenuManager {
           MenuManager.GameMenuLoader(KOTOR.MenuKeyboardEntry),
           MenuManager.GameMenuLoader(KOTOR.InGameConfirm),
         ]) as [
-          KOTOR.LoadScreen, KOTOR.MainMenu, KOTOR.MainMovies, KOTOR.MainOptions,
+          KOTOR.LoadScreen, KOTOR.MainMenu, KOTOR.MainMovies, KOTOR.MenuCredits, KOTOR.MainOptions,
           KOTOR.MenuResolutions, KOTOR.MenuSaveLoad, KOTOR.MenuSaveName, KOTOR.MenuGameplay,
           KOTOR.MenuGraphics, KOTOR.MenuGraphicsAdvanced, KOTOR.MenuAutoPause, KOTOR.MenuToolTip,
           KOTOR.MenuSound, KOTOR.MenuSoundAdvanced, KOTOR.MenuMouse, KOTOR.MenuKeyboardMapping,
@@ -309,6 +312,7 @@ export class MenuManager {
           MenuManager.MainMenu,
           MenuManager.MainMovies,
           MenuManager.MainMusic,
+          MenuManager.MenuCredits,
           MenuManager.MainOptions,
           MenuManager.MenuResolutions,
           MenuManager.MenuSaveLoad,
@@ -329,6 +333,7 @@ export class MenuManager {
           MenuManager.GameMenuLoader(TSL.MainMenu),
           MenuManager.GameMenuLoader(TSL.MainMovies),
           MenuManager.GameMenuLoader(TSL.MainMusic),
+          MenuManager.GameMenuLoader(TSL.MenuCredits),
           MenuManager.GameMenuLoader(TSL.MainOptions),
           MenuManager.GameMenuLoader(TSL.MenuResolutions),
           MenuManager.GameMenuLoader(TSL.MenuSaveLoad),
@@ -345,7 +350,7 @@ export class MenuManager {
           MenuManager.GameMenuLoader(TSL.MenuKeyboardEntry),
           MenuManager.GameMenuLoader(TSL.InGameConfirm),
         ]) as [
-          KOTOR.LoadScreen, KOTOR.MainMenu, KOTOR.MainMovies, TSL.MainMusic, KOTOR.MainOptions,
+          KOTOR.LoadScreen, KOTOR.MainMenu, KOTOR.MainMovies, TSL.MainMusic, KOTOR.MenuCredits, KOTOR.MainOptions,
           KOTOR.MenuResolutions, KOTOR.MenuSaveLoad, KOTOR.MenuSaveName, KOTOR.MenuGameplay,
           KOTOR.MenuGraphics, KOTOR.MenuGraphicsAdvanced, KOTOR.MenuAutoPause, KOTOR.MenuToolTip,
           KOTOR.MenuSound, KOTOR.MenuSoundAdvanced, KOTOR.MenuMouse, KOTOR.MenuKeyboardMapping,

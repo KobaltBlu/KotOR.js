@@ -30,7 +30,7 @@ export class CharGenName extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       this.NAME_BOX_EDIT.setEditable(true);
 
       this.BTN_BACK.addEventListener('click', (e) => {
@@ -40,8 +40,10 @@ export class CharGenName extends GameMenu {
 
       this.END_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.CharGenManager.selectedCreature.firstName = this.NAME_BOX_EDIT.getValue();
-        this.manager.CharGenQuickPanel.step2 = true;
+        GameState.CharGenManager.setCreatureName(this.NAME_BOX_EDIT.getValue());
+        this.manager.CharGenQuickPanel?.nameCreationCompleted?.();
+        this.manager.CharGenCustomPanel?.nameCreationCompleted?.();
+        this.manager.CharGenMain?.updateAttributes?.();
         this.close();
       });
 

@@ -615,7 +615,14 @@ export class ModuleObjectManager {
     //console.log('GetObjectsInShape', objectFilter, shape);
 
     if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){ //CREATURE
+      // Party members are removed from area.creatures on join — include them like GetNearestCreature
       object_pool = object_pool.concat(this.module.area.creatures);
+      for(let i = 0, len = PartyManager.party.length; i < len; i++){
+        const pm = PartyManager.party[i];
+        if(pm && object_pool.indexOf(pm) === -1){
+          object_pool.push(pm);
+        }
+      }
     }
 
     if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){ //ITEM

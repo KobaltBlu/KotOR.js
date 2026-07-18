@@ -26,7 +26,7 @@ export const CharGenClasses: {[key: number]: CharGenClassInterface} = {
       gender: 358,
       description: 32110
     },
-    appearances: [137, 140, 143, 146, 149, 152, 155, 158, 161, 164, 167, 170, 173, 175, 179]
+    appearances: [137, 140, 143, 146, 149, 152, 155, 158, 161, 164, 167, 170, 173, 176, 179]
   },
   2: {
     id: 0,

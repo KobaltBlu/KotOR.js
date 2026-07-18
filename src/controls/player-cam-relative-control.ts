@@ -3,8 +3,9 @@
  *
  * Accel: A*input - (A/Vmax)*v; if Vmax < 1.8 then A *= Vmax/1.8.
  * Walk scales desired input by 0.5. RK4 integration. Stop when |vx|,|vy| < 0.25.
- * Detect mode (PlayerState bit 0): Vmax=DriveAnimWalk, A=15 (GetMaxSpeed /
- * GetDriveAcceleration). Walk key only scales desired — it does not change Vmax.
+ * Stealth (activity_ bit 0 on client field124): Vmax=DriveAnimWalk, A=15
+ * (GetMaxSpeed / GetDriveAcceleration). Detect is activity bit 1 and does not
+ * change Vmax. Walk key only scales desired — it does not change Vmax.
  * Turn rate lerps MinTurnRate→MaxTurnRate (faster when slow); gated on
  * |facingError|>0.1 and |last SetSWAnimationSpeed|>0.1.
  * DriveAnimationUpdate: run when forwardSpeed > DriveMaxSpeed * 0.6.
@@ -33,9 +34,12 @@ export const DRIVE_ANIM_RUN_FACTOR = 0.6;
 export const PLAYER_WALK_INPUT_SCALE = 0.5;
 
 /**
- * GetDriveAcceleration when PlayerState detect bit is set (FLOAT_00747f6c).
+ * GetDriveAcceleration when activity_ stealth bit (0x1) is set (FLOAT_00747f6c).
  */
-export const PLAYER_DETECT_DRIVE_ACCL = 15;
+export const PLAYER_STEALTH_DRIVE_ACCL = 15;
+
+/** @deprecated use PLAYER_STEALTH_DRIVE_ACCL */
+export const PLAYER_DETECT_DRIVE_ACCL = PLAYER_STEALTH_DRIVE_ACCL;
 
 /** Control turn gate — |facingError| and |field164| must both exceed this. */
 export const PLAYER_TURN_GATE_DEG = 0.1;
@@ -88,18 +92,19 @@ export function createPlayerCamRelativeState(): PlayerCamRelativeState {
 }
 
 /**
- * Retail GetMaxSpeed / GetDriveAcceleration — detect (PlayerState bit 0) uses
+ * Retail GetMaxSpeed / GetDriveAcceleration — activity_ bit 0 (stealth) uses
  * DriveAnimWalk + fixed accel 15; otherwise appearance DriveMaxSpeed / DRIVEACCl.
+ * Client field124 mirrors server activity_ (UpdateLastUpdateObject flags 0x40).
  */
 export function resolvePlayerDriveLimits(
-  detectMode: boolean,
+  stealthMode: boolean,
   driveAccl: number,
   driveMaxSpeed: number,
   driveAnimWalk: number
 ): { driveAccl: number; maxSpeed: number } {
-  if(detectMode){
+  if(stealthMode){
     return {
-      driveAccl: PLAYER_DETECT_DRIVE_ACCL,
+      driveAccl: PLAYER_STEALTH_DRIVE_ACCL,
       maxSpeed: coalesceDriveAnimWalk(driveAnimWalk),
     };
   }

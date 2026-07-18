@@ -1,10 +1,16 @@
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { GameEngineType } from "@/enums/engine";
-import { computeSkillPointsGained, getCreatureSkillPointBase } from "@/engine/rules/skill-points";
+import {
+  canIncreaseSkillRank,
+  computeSkillPointsGained,
+  getCreatureSkillPointBase,
+  getSkillPointCost,
+  isSkillBlockedForCreature,
+} from "@/engine/rules/skill-points";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { CharGenClasses } from "@/game/CharGenClasses";
+import { CharGenClasses, type CharGenClassInterface } from "@/game/CharGenClasses";
 import { GameState } from "@/GameState";
 import { LBL_3DView } from "@/gui";
 import type { ModulePlayer } from "@/module/ModulePlayer";
@@ -17,6 +23,28 @@ import { AudioEngine } from "@/audio/AudioEngine";
 import { LTRObject } from "@/resource/LTRObject";
 import { MDLLoader, ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
+import { CurrentGame } from "@/engine/CurrentGame";
+import { TalentFeat } from "@/talents";
+import type { CreatureClass } from "@/combat/CreatureClass";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import { CExoLocString } from "@/resource/CExoLocString";
+
+/** Retail CSWGuiQuickPanel step indices. */
+export enum CharGenQuickStep {
+  PORTRAIT = 0,
+  NAME = 1,
+  PLAY = 2,
+}
+
+/** Retail CSWGuiCustomPanel step indices. */
+export enum CharGenCustomStep {
+  PORTRAIT = 0,
+  ABILITIES = 1,
+  SKILLS = 2,
+  FEATS = 3,
+  NAME = 4,
+  PLAY = 5,
+}
 
 /**
  * CharGenManager class.
@@ -37,8 +65,6 @@ export class CharGenManager {
   static int = 8;
   static cha = 8;
 
-  
-
   static availSkillPoints = 0;
 
   static computerUse = 0;
@@ -49,7 +75,6 @@ export class CharGenManager {
   static repair = 0;
   static security = 0;
   static treatInjury = 0;
-
 
   static selectedClass: number = 0;
   static hoveredClass: number = 0;
@@ -64,16 +89,201 @@ export class CharGenManager {
   static cgbody_light: OdysseyModel;
   static cghead_light: OdysseyModel;
 
-  static step1_complete: boolean = false;
-  static step2_complete: boolean = false;
-  static step3_complete: boolean = false;
-  static step4_complete: boolean = false;
-  static step5_complete: boolean = false;
-  static step6_complete: boolean = false;
+  /** Highest unlocked quick-panel step (portrait → name → play). */
+  static quickStep: number = CharGenQuickStep.PORTRAIT;
+  /** Highest unlocked custom-panel step (portrait → … → play). */
+  static customStep: number = CharGenCustomStep.PORTRAIT;
 
   static ltrMaleName: LTRObject;
   static ltrFemaleName: LTRObject;
   static ltrLastName: LTRObject;
+
+  static getSelectedClassSlot(): CharGenClassInterface {
+    return CharGenClasses[CharGenManager.selectedClass];
+  }
+
+  static getSelectedClassId(): number {
+    return CharGenManager.getSelectedClassSlot()?.id ?? 0;
+  }
+
+  static getSelectedClassData(): CreatureClass | undefined {
+    return GameState.SWRuleSet.classes[CharGenManager.getSelectedClassId()];
+  }
+
+  static resetChargenProgress() {
+    CharGenManager.quickStep = CharGenQuickStep.PORTRAIT;
+    CharGenManager.customStep = CharGenCustomStep.PORTRAIT;
+    CharGenManager.availPoints = 30;
+    CharGenManager.str = 8;
+    CharGenManager.dex = 8;
+    CharGenManager.con = 8;
+    CharGenManager.wis = 8;
+    CharGenManager.int = 8;
+    CharGenManager.cha = 8;
+    CharGenManager.resetSkillPoints();
+    CharGenManager.skillRankBaseline = [0, 0, 0, 0, 0, 0, 0, 0];
+    CharGenManager.availSkillPoints = 0;
+  }
+
+  static advanceQuickStep(fromStep: number) {
+    if(CharGenManager.quickStep <= fromStep){
+      CharGenManager.quickStep = Math.min(fromStep + 1, CharGenQuickStep.PLAY);
+    }
+  }
+
+  static advanceCustomStep(fromStep: number) {
+    if(CharGenManager.customStep <= fromStep){
+      CharGenManager.customStep = Math.min(fromStep + 1, CharGenCustomStep.PLAY);
+    }
+  }
+
+  static getStartModuleResRef(): string {
+    return GameState.GameKey == GameEngineType.TSL ? '001EBO' : 'end_m01aa';
+  }
+
+  static setCreatureName(name: string) {
+    const creature = CharGenManager.selectedCreature;
+    if(!creature) return;
+    creature.firstName = name;
+    const field = creature.template?.RootNode?.getFieldByLabel('FirstName');
+    if(field){
+      const loc = new CExoLocString();
+      loc.addSubString(name, 0);
+      field.setValue(loc);
+    }
+  }
+
+  /**
+   * Retail quick/custom PlayGame: strip temporary chargen armor, save player
+   * template, init game-in-progress, load starting module.
+   */
+  static finalizeAndStartGame() {
+    const creature = CharGenManager.selectedCreature;
+    if(!creature) return;
+
+    creature.equipment.ARMOR = undefined;
+    const equipList = creature.template?.getFieldByLabel('Equip_ItemList');
+    if(equipList){
+      equipList.childStructs = [];
+    }
+
+    GameState.GlobalVariableManager.Init();
+    GameState.PartyManager.PlayerTemplate = creature.save();
+    GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
+    GameState.PartyManager.AddPortraitToOrder(creature.getPortraitResRef());
+    CurrentGame.InitGameInProgressFolder(true).then( () => {
+      GameState.LoadModule(CharGenManager.getStartModuleResRef());
+    });
+  }
+
+  /**
+   * Retail CSWGuiQuickPanel::DoQuickStats — apply class package attributes,
+   * granted/package feats, and recommended skills.
+   */
+  static doQuickStats() {
+    const creature = CharGenManager.selectedCreature;
+    const classData = CharGenManager.getSelectedClassData();
+    if(!creature || !classData) return;
+
+    creature.str = classData.str;
+    creature.dex = classData.dex;
+    creature.con = classData.con;
+    creature.wis = classData.wis;
+    creature.int = classData.int;
+    creature.cha = classData.cha;
+
+    CharGenManager.str = creature.str;
+    CharGenManager.dex = creature.dex;
+    CharGenManager.con = creature.con;
+    CharGenManager.wis = creature.wis;
+    CharGenManager.int = creature.int;
+    CharGenManager.cha = creature.cha;
+    CharGenManager.availPoints = 0;
+
+    const savingTable = GameState.TwoDAManager.datatables.get(classData.savingthrowtable?.toLowerCase());
+    const savingRow = savingTable?.rows?.[0];
+    if(savingRow){
+      creature.fortbonus = parseInt(String(savingRow.fortsave), 10) || 0;
+      creature.willbonus = parseInt(String(savingRow.willsave), 10) || 0;
+      creature.refbonus = parseInt(String(savingRow.refsave), 10) || 0;
+    }
+
+    creature.feats = [];
+    CharGenManager.applyGrantedFeats(creature, classData);
+    CharGenManager.applyDefaultPackageFeats(creature, classData, 1);
+    CharGenManager.applyDefaultPackageSkills(creature);
+
+    GameState.MenuManager.CharGenMain?.updateAttributes?.();
+  }
+
+  static applyGrantedFeats(creature: ModulePlayer, classData: CreatureClass) {
+    const feats = GameState.SWRuleSet.feats;
+    if(!feats) return;
+    for(let i = 0; i < feats.length; i++){
+      const feat = feats[i];
+      if(!feat || feat.constant == '****') continue;
+      const granted = feat.getGranted?.(classData);
+      if(granted == 1){
+        creature.addFeat(new TalentFeat(i));
+      }else if(classData.isFeatAvailable?.(feat)){
+        const status = classData.getFeatStatus(feat);
+        if(status == 3 && (creature.getTotalClassLevel?.() || 1) >= classData.getFeatGrantedLevel(feat)){
+          creature.addFeat(TalentFeat.From2DA(feat));
+        }
+      }
+    }
+  }
+
+  /** Retail AddDefaultPackageFeats for first-level picks. */
+  static applyDefaultPackageFeats(creature: ModulePlayer, classData: CreatureClass, picks: number = 1) {
+    const feats = GameState.SWRuleSet.feats;
+    if(!feats || picks <= 0) return;
+
+    let remaining = picks;
+    for(let recom = 1; recom <= 20 && remaining > 0; recom++){
+      for(let i = 0; i < feats.length && remaining > 0; i++){
+        const feat = feats[i];
+        if(!feat || feat.constant == '****') continue;
+        if(feat.getRecom?.(classData) != recom) continue;
+        if(creature.getHasFeat(i)) continue;
+        if(classData.isFeatAvailable && !classData.isFeatAvailable(feat)) continue;
+        creature.addFeat(new TalentFeat(i));
+        remaining--;
+      }
+    }
+  }
+
+  /** Retail AddDefaultPackageSkills for first-level CharGen. */
+  static applyDefaultPackageSkills(creature: ModulePlayer) {
+    CharGenManager.resetSkillPoints();
+    CharGenManager.skillRankBaseline = [0, 0, 0, 0, 0, 0, 0, 0];
+    CharGenManager.availSkillPoints = CharGenManager.getMaxSkillPoints();
+    const skillOrder = CharGenManager.getRecommendedOrder();
+
+    let guard = 0;
+    const maxIterations = CharGenManager.availSkillPoints * SkillType.MAX_SKILLS + 8;
+    let spent = true;
+    while(CharGenManager.availSkillPoints > 0 && spent && guard < maxIterations){
+      spent = false;
+      guard++;
+      for(let i = 0; i < SkillType.MAX_SKILLS; i++){
+        const skillIndex = skillOrder[i];
+        if(skillIndex < 0) continue;
+        if(CharGenManager.availSkillPoints <= 0) break;
+        if(isSkillBlockedForCreature(creature, skillIndex)) continue;
+
+        const rank = CharGenManager.getTempSkillRank(skillIndex);
+        if(!canIncreaseSkillRank(creature, skillIndex, rank, CharGenManager.availSkillPoints)){
+          continue;
+        }
+        const cost = getSkillPointCost(creature, skillIndex, true);
+        CharGenManager.setTempSkillRank(skillIndex, rank + 1);
+        CharGenManager.availSkillPoints -= cost;
+        spent = true;
+      }
+    }
+    CharGenManager.applyTempSkillsToCreature();
+  }
 
   static async Start(){
     await GameState.MenuManager.LoadScreen.setLoadBackground('load_chargen');
@@ -98,6 +308,7 @@ export class CharGenManager {
     CharGenManager.ltrMaleName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanm'));
     CharGenManager.ltrFemaleName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanf'));
     CharGenManager.ltrLastName = new LTRObject(await ResourceLoader.loadResource(ResourceTypes.ltr, 'humanl'));
+    CharGenManager.resetChargenProgress();
     CharGenManager.InitializeCreatureTemplate();
     await CharGenManager.InitCharBackgroundModel();
   }
@@ -137,27 +348,7 @@ export class CharGenManager {
   static GetPlayerTemplate(nth = 0) {
     let template = new GFFObject();
     let idx = Math.floor(Math.random() * 15);
-    let classId = 0;
-    switch (nth) {
-    case 0:
-      classId = 2;
-      break;
-    case 1:
-      classId = 1;
-      break;
-    case 2:
-      classId = 0;
-      break;
-    case 3:
-      classId = 0;
-      break;
-    case 4:
-      classId = 1;
-      break;
-    case 5:
-      classId = 2;
-      break;
-    }
+    const classId = CharGenClasses[nth]?.id ?? 0;
     let portraitId = 0;
     let appearanceIdx = CharGenClasses[nth].appearances[idx];
     const portraits2DA = GameState.SWRuleSet.portraits;
@@ -177,7 +368,7 @@ export class CharGenManager {
       }
     }
     const gender = nth < 3 ? 0 : 1;
-    template.RootNode.addField(new GFFField(GFFDataType.INT, 'AIState')).setValue(appearanceIdx);
+    template.RootNode.addField(new GFFField(GFFDataType.INT, 'AIState')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.LIST, 'ActionList'));
     template.RootNode.addField(new GFFField(GFFDataType.INT, 'Age')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'AmbientAnimState')).setValue(0);
@@ -262,8 +453,6 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'ZOrientation')).setValue(0);
     return template;
   }
-
-  
 
   /** Baseline ranks when the skills panel opened (minus cannot go below). */
   static skillRankBaseline: number[] = [0, 0, 0, 0, 0, 0, 0, 0];
@@ -371,10 +560,9 @@ export class CharGenManager {
     return skillOrder;
   }
 
-  static generateRandomName(gender: number = 0){
-    const creature = CharGenManager.selectedCreature;
-    if(creature && !gender){
-      gender = creature.getGender();
+  static generateRandomName(gender?: number){
+    if(gender === undefined){
+      gender = CharGenManager.selectedCreature?.getGender?.() ?? 0;
     }
 
     let firstName = '';

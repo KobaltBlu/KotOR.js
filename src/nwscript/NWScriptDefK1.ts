@@ -1751,10 +1751,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [number, number, EngineLocation, number, number, THREE.Vector3]){
+      this.objectInShapeResults = GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5]);
       this.objectInSphapeIndex.set(args[0], 0);
-      const ls = GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], 0);
-      console.log('GetFirstObjectInShape', ls, args);
-      return ls;
+      return this.objectInShapeResults[0];
     }
   },
   129:{
@@ -1763,11 +1762,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [number, number, EngineLocation, number, number, THREE.Vector3]){
-      const nextId = this.objectInSphapeIndex.get(args[0]) + 1;
+      const nextId = (this.objectInSphapeIndex.get(args[0]) ?? -1) + 1;
       this.objectInSphapeIndex.set(args[0], nextId);
-      const ls = GameState.ModuleObjectManager.GetObjectsInShape(args[0], args[1], args[2], !!args[3], args[4], args[5], nextId);
-      console.log('GetNextObjectInShape', ls, args, nextId);
-      return ls;
+      return this.objectInShapeResults[nextId];
     }
   },
   130:{
@@ -7304,7 +7301,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [string, number, number, number]){
-      console.log('AurPostString', args[0]);
+      //
     }
   },
   583:{

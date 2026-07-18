@@ -65,6 +65,16 @@ export class MenuOptions extends GameMenu {
         this.manager.MenuAutoPause.open();
       });
 
+      this.BTN_GAMEPLAY.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuGameplay.open();
+      });
+
+      this.BTN_FEEDBACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.MenuFeedback.open();
+      });
+
       this.BTN_GRAPHICS.addEventListener('click', (e) => {
         e.stopPropagation();
         this.manager.MenuGraphics.open();

@@ -41,13 +41,15 @@ export class GUIFeatItem extends GUIProtoItem {
       for(let i = 0; i < featList.length; i++){
         let feat = featList[i];
 
-        let hasPrereqfeat1 = (feat.prereqfeat1 == '****' || GameState.getCurrentPlayer().getHasFeat(feat.prereqfeat1));
-        let hasPrereqfeat2 = (feat.prereqfeat2 == '****' || GameState.getCurrentPlayer().getHasFeat(feat.prereqfeat2));
-        let hasFeat = GameState.getCurrentPlayer().getHasFeat(feat.__index);
-
-        console.log(feat.constant, hasPrereqfeat1, hasPrereqfeat2);
-
-        let locked = !hasFeat || (!hasPrereqfeat1 || !hasPrereqfeat2);
+        const featId = typeof feat.id === 'number' ? feat.id : (feat.__index | 0);
+        const prereq1 = feat.prereqFeat1 ?? feat.prereqfeat1;
+        const prereq2 = feat.prereqFeat2 ?? feat.prereqfeat2;
+        const creature = (this.menu as any)?.creature
+          || GameState.CharGenManager?.selectedCreature
+          || GameState.getCurrentPlayer();
+        let hasPrereqfeat1 = !creature || (prereq1 == '****' || prereq1 == -1 || prereq1 == null || creature.getHasFeat(prereq1));
+        let hasPrereqfeat2 = !creature || (prereq2 == '****' || prereq2 == -1 || prereq2 == null || creature.getHasFeat(prereq2));
+        let locked = !hasPrereqfeat1 || !hasPrereqfeat2;
         if(locked){ continue; }
 
         let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
@@ -93,6 +95,10 @@ export class GUIFeatItem extends GUIProtoItem {
 
         buttonIcon.addEventListener('click', (e) => {
           e.stopPropagation();
+          const menu = this.menu as any;
+          if(typeof menu.selectFeat === 'function'){
+            menu.selectFeat(feat);
+          }
         });
 
         /**

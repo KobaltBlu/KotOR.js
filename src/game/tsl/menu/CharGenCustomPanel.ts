@@ -1,3 +1,5 @@
+import { CharGenCustomStep } from "@/managers/CharGenManager";
+import { GameState } from "@/GameState";
 import type { GUIControl, GUILabel, GUIButton } from "@/gui";
 import { CharGenCustomPanel as K1_CharGenCustomPanel } from "@/game/kotor/KOTOR";
 
@@ -39,11 +41,56 @@ export class CharGenCustomPanel extends K1_CharGenCustomPanel {
     this.background = '';
     this.voidFill = false;
   }
-  
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
+      this.BTN_BACK.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.CharGenMain.close();
+        this.manager.CharGenMain.childMenu = this.manager.CharGenQuickOrCustom;
+        this.manager.CharGenMain.open();
+      });
+
+      this.BTN_STEPNAME1.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.manager.CharGenPortCust.open();
+      });
+
+      this.BTN_STEPNAME2.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(GameState.CharGenManager.customStep < CharGenCustomStep.ABILITIES) return;
+        this.manager.CharGenAbilities.setCreature(GameState.CharGenManager.selectedCreature);
+        this.manager.CharGenAbilities.open();
+      });
+
+      this.BTN_STEPNAME3.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(GameState.CharGenManager.customStep < CharGenCustomStep.SKILLS) return;
+        this.manager.CharGenSkills.open();
+      });
+
+      this.BTN_STEPNAME4.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(GameState.CharGenManager.customStep < CharGenCustomStep.FEATS) return;
+        this.manager.CharGenFeats.setCreature(GameState.CharGenManager.selectedCreature);
+        this.manager.CharGenFeats.open();
+      });
+
+      this.BTN_STEPNAME5.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(GameState.CharGenManager.customStep < CharGenCustomStep.NAME) return;
+        this.manager.CharGenName.open();
+      });
+
+      this.BTN_STEPNAME6.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if(GameState.CharGenManager.customStep < CharGenCustomStep.PLAY) return;
+        GameState.CharGenManager.finalizeAndStartGame();
+      });
+
+      this.recalculatePosition();
       resolve();
     });
   }

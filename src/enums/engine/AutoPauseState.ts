@@ -10,10 +10,10 @@
  */
 export enum AutoPauseState {
   Generic = 0,
-  CombatRoundEnd = 1,
-  EnemySighted = 2,
-  MineSighted = 3,
-  PartyMemberKilled = 4,
-  ActionMenuUsed = 5,
-  NewTargetSelected = 6,
+  EnemySighted = 1,
+  CombatRoundEnd = 5,
+  ActionMenuUsed = 7,
+  NewTargetSelected = 8,
+  PartyMemberKilled = 9,
+  MineSighted = 11,
 }

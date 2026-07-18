@@ -43,12 +43,14 @@ export class GUIFeatItem extends GUIProtoItem {
           const featId = typeof feat.id === 'number' ? feat.id : (feat.__index | 0);
           const prereq1 = feat.prereqFeat1 ?? feat.prereqfeat1;
           const prereq2 = feat.prereqFeat2 ?? feat.prereqfeat2;
-          const player = GameState.getCurrentPlayer();
-          let hasPrereqfeat1 = (prereq1 == '****' || prereq1 == -1 || prereq1 == null || player.getHasFeat(prereq1));
-          let hasPrereqfeat2 = (prereq2 == '****' || prereq2 == -1 || prereq2 == null || player.getHasFeat(prereq2));
-          let hasFeat = player.getHasFeat(featId);
+          const creature = (this.menu as any)?.creature
+            || GameState.CharGenManager?.selectedCreature
+            || GameState.getCurrentPlayer();
+          let hasPrereqfeat1 = !creature || (prereq1 == '****' || prereq1 == -1 || prereq1 == null || creature.getHasFeat(prereq1));
+          let hasPrereqfeat2 = !creature || (prereq2 == '****' || prereq2 == -1 || prereq2 == null || creature.getHasFeat(prereq2));
 
-          let locked = !hasFeat || (!hasPrereqfeat1 || !hasPrereqfeat2);
+          // Locked when missing a prerequisite.
+          let locked = !hasPrereqfeat1 || !hasPrereqfeat2;
 
           let buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
           buttonIcon.setText('');

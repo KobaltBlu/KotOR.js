@@ -1221,20 +1221,28 @@ export class ModuleCreature extends ModuleObject {
       const stealthed = isCreatureStealthedOrInvisible(creature);
       const detected = !stealthed || doStealthDetection(this, creature);
       if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature) && detected){
+        const wasSeen = this.hasSeenObject(creature);
         if(GameState.PartyManager.party.indexOf(this) == -1){
           if(this.isHostile(creature)){
             this.resetExcitedDuration();
-            if(this == GameState.getCurrentPlayer() && !this.combatData.combatState){
-              GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
-            }
           }
+        }
+        if(
+          this == GameState.getCurrentPlayer() &&
+          this.isHostile(creature)
+        ){
+          if(!wasSeen){
+            GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
+          }
+          GameState.AutoPauseManager.RefreshEnemySightedLatch();
         }
         
         this.notifyPerceptionSeenObject(creature, true);
       }else if(distance < this.getPerceptionRangeSecondary() && detected){
         // Listen does not require LOS in retail; still require contested detect while stealthed
+        this.notifyPerceptionSeenObject(creature, false);
         this.notifyPerceptionHeardObject(creature, true);
-      }else if(stealthed && !detected){
+      }else{
         this.notifyPerceptionSeenObject(creature, false);
       }
     }
@@ -1265,8 +1273,9 @@ export class ModuleCreature extends ModuleObject {
           this.notifyPerceptionSeenObject(creature, true);
         }
       }else if(distance < this.getPerceptionRangeSecondary() && detected){
+        this.notifyPerceptionSeenObject(creature, false);
         this.notifyPerceptionHeardObject(creature, true);
-      }else if(stealthed && !detected){
+      }else{
         this.notifyPerceptionSeenObject(creature, false);
       }
     }
@@ -1297,6 +1306,12 @@ export class ModuleCreature extends ModuleObject {
       const check = resolvePassiveMineDetect(this, trig, { detectMode });
       if(check.result === MineSkillResult.SUCCESS || check.result === MineSkillResult.OWNED){
         trig.detectTrap();
+        if(
+          this == GameState.getCurrentPlayer() &&
+          check.result === MineSkillResult.SUCCESS
+        ){
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.MineSighted);
+        }
       }
     }
 
@@ -4333,9 +4348,9 @@ export class ModuleCreature extends ModuleObject {
     if(!ctrl) return;
     const appearance = this.getAppearance();
     const walking = !!ctrl.walking;
-    // Retail GetMaxSpeed / GetDriveAcceleration: detect (PlayerState bit 0), not walk key
+    // Retail GetMaxSpeed / GetDriveAcceleration: activity_ bit 0 = stealth, not detect
     const limits = resolvePlayerDriveLimits(
-      !!this.detectMode,
+      !!this.stealthMode,
       appearance?.driveaccl ?? 0,
       appearance?.drivemaxspeed ?? 0,
       appearance?.driveanimwalk ?? 0
@@ -4422,8 +4437,8 @@ export class ModuleCreature extends ModuleObject {
       const playbackSpeed = Math.abs(forwardSpeed) > 1e-4
         ? Math.abs(forwardSpeed)
         : step.speed;
-      // Detect forces walk-speed Vmax; never pick run anim while detect/walk
-      if(isDriveAnimRunning(forwardSpeed, driveMax) && !walking && !this.detectMode){
+      // Stealth (activity bit 0) forces walk-speed Vmax; never pick run while stealth/walk
+      if(isDriveAnimRunning(forwardSpeed, driveMax) && !walking && !this.stealthMode){
         this.setAnimationState(ModuleCreatureAnimState.RUNNING);
         const animDist = coalesceDriveAnimRun(
           GameState.GameKey === GameEngineType.TSL
@@ -6401,7 +6416,7 @@ export class ModuleCreature extends ModuleObject {
     let combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
     combatRoundDataStruct.addChildStruct( this.combatRound.toStruct(0xCADA) );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.getCommadable() ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(this.str);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(this.con);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CreatnScrptFird') ).setValue( this.spawned ? 1 : 0 );
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CreatureSize') ).setValue(3);
@@ -6524,7 +6539,7 @@ export class ModuleCreature extends ModuleObject {
       featList.addChildStruct( this.feats[i].save() );
     }
 
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue( this.template.RootNode.getFieldByLabel('FirstName')?.getCExoLocString() );
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue( this.firstName );
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).setValue(this.getFP());
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'FortSaveThrow') ).setValue(this.fortitudeSaveThrow);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Gender') ).setValue(this.gender);
@@ -6548,7 +6563,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'JoiningXP') ).setValue( this.joiningXP ? this.joiningXP : 0 );
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') ).setValue( this.template.RootNode.getFieldByLabel('LastName')?.getCExoLocString() );
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') ).setValue( this.lastName );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Listening') ).setValue( this.isListening );
 
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'MaxForcePoints') ).setValue(this.maxForcePoints);

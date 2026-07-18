@@ -1,6 +1,5 @@
 import { GameState } from "@/GameState";
 import type { GUIListBox, GUIButton } from "@/gui";
-import { TalentFeat } from "@/talents";
 import { CharGenQuickOrCustom as K1_CharGenQuickOrCustom } from "@/game/kotor/KOTOR";
 
 /**
@@ -29,75 +28,43 @@ export class CharGenQuickOrCustom extends K1_CharGenQuickOrCustom {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       this.QUICK_CHAR_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
         try{
-          const creatureClass = GameState.SWRuleSet.classes[GameState.CharGenManager.selectedClass];
-          const saving_throw_label = creatureClass['savingthrowtable'].toLowerCase();
-          const saving_throw_data = GameState.TwoDAManager.datatables.get(saving_throw_label).rows[0];
-          const feats_table = GameState.SWRuleSet.feats;
+          GameState.CharGenManager.resetChargenProgress();
+          GameState.CharGenManager.doQuickStats();
 
-          GameState.CharGenManager.selectedCreature.str = creatureClass.str;
-          GameState.CharGenManager.selectedCreature.dex = creatureClass.dex;
-          GameState.CharGenManager.selectedCreature.con = creatureClass.con;
-          GameState.CharGenManager.selectedCreature.wis = creatureClass.wis;
-          GameState.CharGenManager.selectedCreature.int = creatureClass.int;
-          GameState.CharGenManager.selectedCreature.cha = creatureClass.cha;
-          GameState.CharGenManager.selectedCreature.str = creatureClass.str;
-
-          GameState.CharGenManager.selectedCreature.fortbonus = parseInt(saving_throw_data.fortsave);
-          GameState.CharGenManager.selectedCreature.willbonus = parseInt(saving_throw_data.willsave);
-          GameState.CharGenManager.selectedCreature.refbonus = parseInt(saving_throw_data.refsave);
-
-          for(let i = 0, len = feats_table.length; i < len; i++){
-            const feat_data = feats_table[i];
-            if(feat_data.getGranted(creatureClass) == 1){
-              GameState.CharGenManager.selectedCreature.feats.push(new TalentFeat(i));
-            }
-          }
           this.manager.CharGenMain.close();
           this.manager.CharGenMain.childMenu = this.manager.CharGenQuickPanel;
+          this.manager.CharGenQuickPanel.setState(0);
           this.manager.CharGenMain.open();
         }catch(e){
-          console.log(e);
+          console.error(e);
         }
       });
 
       this.CUST_CHAR_BTN.addEventListener('click', (e) => {
         e.stopPropagation();
-        //GameState.CharGenMain.state = CharGenMain.STATES.CUSTOM;
-        //GameState.CharGenCustomPanel.Show();
+        GameState.CharGenManager.resetChargenProgress();
+        this.manager.CharGenAbilities.setCreature(GameState.CharGenManager.selectedCreature);
+        this.manager.CharGenAbilities.reset();
+        this.manager.CharGenSkills.reset();
+
         this.manager.CharGenMain.close();
         this.manager.CharGenMain.childMenu = this.manager.CharGenCustomPanel;
+        this.manager.CharGenCustomPanel.setState(0);
         this.manager.CharGenMain.open();
-
-        //Reset the Attributes window
-        this.manager.CharGenAbilities.reset();
-
-        //Reset the Skills window
-        this.manager.CharGenSkills.reset();
       });
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
-        //Game.CharGenMain.Hide();
-
         try{
           GameState.CharGenManager.selectedCreature.model.removeFromParent();
         }catch(e){}
-
-        // this.manager.CharGenClass.getControlByName('_3D_MODEL'+(CharGenManager.selectedClass+1))
-        //  .userData._3dView.scene.add(CharGenManager.selectedCreature.model);
         this.manager.CharGenMain.close();
       });
 
-      //Hide because this submenu is very incomplete.
-      //Comment out this line to work on the custom chargen screen
-      this.CUST_CHAR_BTN.hide();
-
-      // this.tGuiPanel.offset.x = -180;
-      // this.tGuiPanel.offset.y = 100;
       this.recalculatePosition();
       resolve();
     });

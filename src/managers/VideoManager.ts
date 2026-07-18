@@ -4,6 +4,7 @@ import { GameState } from "@/GameState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { YUVFrame } from "@/video/binkvideo";
+import { MainMovies } from "@/game/kotor/menu/MainMovies";
 
 /**
  * VideoManager class.
@@ -236,6 +237,8 @@ export class VideoManager {
 
       this.currentMovie = { name: movieName, skippable: skipable };
       this.isPlaying = true;
+      // CClientExoAppInternal::AddMovieToExoArrayList → CClientOptions::SetMovieShown
+      MainMovies.setMovieShown(movieName, true);
       await this.bikObject.play(movieName, () => {
         this.isPlaying = false;
         this.onMovieComplete();

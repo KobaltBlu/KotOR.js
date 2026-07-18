@@ -29,6 +29,7 @@ export class FeedbackMessageManager {
     FloatingNumbers: true,
     StatusSummary: true,
     HideQuickMenuButtons: false,
+    UseSmallFonts: false,
     EnableToolTips: true,
   }
 
@@ -49,6 +50,7 @@ export class FeedbackMessageManager {
     this.FeedbackOptions.FloatingNumbers = this.INIConfig.getProperty('Game Options.Floating Numbers') == 1;
     this.FeedbackOptions.StatusSummary = this.INIConfig.getProperty('Game Options.Status Summary') == 1;
     this.FeedbackOptions.HideQuickMenuButtons = this.INIConfig.getProperty('Game Options.Hide InGame GUI') == 1;
+    this.FeedbackOptions.UseSmallFonts = this.INIConfig.getProperty('Game Options.Use Small Fonts') == 1;
     this.FeedbackOptions.EnableToolTips = this.INIConfig.getProperty('Game Options.Enable Tooltips') == 1;
   }
 
@@ -207,6 +209,8 @@ export class FeedbackMessageManager {
         return this.FeedbackOptions.StatusSummary;
       case FeedbackOption.HideQuickMenuButtons:
         return this.FeedbackOptions.HideQuickMenuButtons;
+      case FeedbackOption.UseSmallFonts:
+        return this.FeedbackOptions.UseSmallFonts;
       case FeedbackOption.EnableToolTips:
         return this.FeedbackOptions.EnableToolTips;
     }
@@ -235,6 +239,9 @@ export class FeedbackMessageManager {
       break;
       case FeedbackOption.HideQuickMenuButtons:
         this.FeedbackOptions.HideQuickMenuButtons = value;
+      break;
+      case FeedbackOption.UseSmallFonts:
+        this.FeedbackOptions.UseSmallFonts = value;
       break;
       case FeedbackOption.EnableToolTips:
         this.FeedbackOptions.EnableToolTips = value;

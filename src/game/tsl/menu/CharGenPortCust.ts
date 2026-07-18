@@ -1,6 +1,5 @@
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIButton } from "@/gui";
-import { OdysseyModel3D } from "@/three/odyssey";
 import { CharGenClasses } from "@/game/CharGenClasses";
 import { CharGenPortCust as K1_CharGenPortCust } from "@/game/kotor/KOTOR";
 
@@ -37,8 +36,6 @@ export class CharGenPortCust extends K1_CharGenPortCust {
   declare BTN_BACK: GUIButton;
   declare BTN_ACCEPT: GUIButton;
 
-  isCharLoading: boolean = false;
-
   constructor(){
     super();
     this.gui_resref = 'portcust_p';
@@ -46,38 +43,29 @@ export class CharGenPortCust extends K1_CharGenPortCust {
     this.voidFill = false;
   }
 
-  async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
-    if(skipInit) return;
-    this.BTN_ARRL.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if(this.isCharLoading) return;
-      this.isCharLoading = true;
+  private async cycleAppearance(direction: -1 | 1) {
+    if(this.isCharLoading) return;
+    this.isCharLoading = true;
+    try{
       const creature = GameState.CharGenManager.selectedCreature;
-    
-      let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
-      let arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
-      if(idx <= 0){
-        creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[arrayLength - 1];
+      const appearances = CharGenClasses[GameState.CharGenManager.selectedClass].appearances;
+      let idx = appearances.indexOf(creature.appearance);
+      if(direction < 0){
+        creature.appearance = idx <= 0 ? appearances[appearances.length - 1] : appearances[idx - 1];
       }else{
-        creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[--idx];
+        creature.appearance = idx >= appearances.length - 1 ? appearances[0] : appearances[idx + 1];
       }
       creature.setAppearance(creature.appearance);
 
       for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
-        let port = GameState.SWRuleSet.portraits[i];
-        if(port.appearancenumber == creature.appearance){
+        const port = GameState.SWRuleSet.portraits[i];
+        if(
+          port.appearancenumber == creature.appearance ||
+          port.appearance_l == creature.appearance ||
+          port.appearance_s == creature.appearance
+        ){
           creature.portraitId = i;
-          creature.portrait = GameState.SWRuleSet.portraits[i];
-          break;
-        }else if(port.appearance_l == creature.appearance){
-          creature.portraitId = i;
-          creature.portrait = GameState.SWRuleSet.portraits[i];
-
-          break;
-        }else if(port.appearance_s == creature.appearance){
-          creature.portrait = GameState.SWRuleSet.portraits[i];
-          creature.portraitId = i;
+          creature.portrait = port;
           break;
         }
       }
@@ -90,78 +78,53 @@ export class CharGenPortCust extends K1_CharGenPortCust {
         model.removeFromParent();
         this._3dView.addModel(model);
       }
+    }finally{
       this.isCharLoading = false;
+    }
+  }
 
+  async menuControlInitializer(skipInit: boolean = false) {
+    await super.menuControlInitializer(true);
+    if(skipInit) return;
+
+    this.BTN_ARRL.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      await this.cycleAppearance(-1);
     });
 
     this.BTN_ARRR.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if(this.isCharLoading) return;
-      this.isCharLoading = true;
-      const creature = GameState.CharGenManager.selectedCreature;
-
-      let idx = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.indexOf(creature.appearance);
-      let arrayLength = CharGenClasses[GameState.CharGenManager.selectedClass].appearances.length;
-      if(idx >= arrayLength - 1){
-        creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[0];
-      }else{
-        creature.appearance = CharGenClasses[GameState.CharGenManager.selectedClass].appearances[++idx];
-      }
-      creature.setAppearance(creature.appearance);
-
-      for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
-        let port = GameState.SWRuleSet.portraits[i];
-        if(port.appearancenumber == creature.appearance){
-          creature.portraitId = i;
-          creature.portrait = GameState.SWRuleSet.portraits[i];
-          break;
-        }else if(port.appearance_l == creature.appearance){
-          creature.portraitId = i;
-          creature.portrait = GameState.SWRuleSet.portraits[i];
-          break;
-        }else if(port.appearance_s == creature.appearance){
-          creature.portraitId = i;
-          creature.portrait = GameState.SWRuleSet.portraits[i];
-          break;
-        }
-      }
-
-      const model = await creature.loadModel();
-      this.updateCamera();
-      this.UpdatePortrait();
-      if(model){
-        model.rotation.z = -Math.PI/2;
-        model.removeFromParent();
-        this._3dView.addModel(model);
-      }
-      this.isCharLoading = false;
-
+      await this.cycleAppearance(1);
     });
 
     this.BTN_BACK.addEventListener('click', async (e) => {
       e.stopPropagation();
       const creature = GameState.CharGenManager.selectedCreature;
-      if(!this.exiting){
-        this.exiting = true;
-        //Restore previous appearance
+      if(this.exiting) return;
+      this.exiting = true;
+      try{
         creature.appearance = this.appearance;
         creature.portraitId = this.portraitId;
+        if(GameState.SWRuleSet.portraits?.[this.portraitId]){
+          creature.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+        }
         creature.setAppearance(creature.appearance);
-        const model = await creature.loadModel();
-        this.exiting = false;
+        await creature.loadModel();
         this.close();
+      }finally{
+        this.exiting = false;
+        this.isCharLoading = false;
       }
-      this.isCharLoading = false;
     });
 
     this.BTN_ACCEPT.addEventListener('click', (e) => {
       e.stopPropagation();
       const creature = GameState.CharGenManager.selectedCreature;
-      
-      //Save appearance choice
       creature.template.getFieldByLabel('Appearance_Type').setValue(creature.appearance);
       creature.template.getFieldByLabel('PortraitId').setValue(creature.portraitId);
-      this.manager.CharGenQuickPanel.step1 = true;
+      this.manager.CharGenQuickPanel?.portraitCreationCompleted?.();
+      this.manager.CharGenCustomPanel?.portraitCreationCompleted?.();
+      this.manager.CharGenMain?.updateAttributes?.();
       this.close();
     });
 

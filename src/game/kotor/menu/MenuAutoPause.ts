@@ -1,14 +1,27 @@
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";;
+import type { GUIListBox, GUILabel, GUIButton, GUICheckBox } from "@/gui";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 
 const END_ROUND_DESC = 42445;
 const ENEMY_SIGHTED_DESC = 42446;
-const MINE_SIGHTED_DESC = 49117;
 const PARTY_KILLED_DESC = 42447;
-const ACTION_MENU_DESC = 48216;
-const NEW_TARGET_DESC = 48214;
+
+const AUTOPAUSE_OPTIONS: ReadonlyArray<{
+  control: keyof MenuAutoPause;
+  ini: string;
+  type: AutoPauseState;
+  k1Desc: number;
+  tslDesc: number;
+}> = [
+  { control: 'CB_ENDROUND', ini: 'Autopause Options.End Of Combat Round', type: AutoPauseState.CombatRoundEnd, k1Desc: END_ROUND_DESC, tslDesc: END_ROUND_DESC },
+  { control: 'CB_ENEMYSIGHTED', ini: 'Autopause Options.Enemy Sighted', type: AutoPauseState.EnemySighted, k1Desc: ENEMY_SIGHTED_DESC, tslDesc: ENEMY_SIGHTED_DESC },
+  { control: 'CB_MINESIGHTED', ini: 'Autopause Options.Mine Sighted', type: AutoPauseState.MineSighted, k1Desc: 49117, tslDesc: 48704 },
+  { control: 'CB_PARTYKILLED', ini: 'Autopause Options.Party Killed', type: AutoPauseState.PartyMemberKilled, k1Desc: PARTY_KILLED_DESC, tslDesc: PARTY_KILLED_DESC },
+  { control: 'CB_ACTIONMENU', ini: 'Autopause Options.Action Menu', type: AutoPauseState.ActionMenuUsed, k1Desc: 48416, tslDesc: 48705 },
+  { control: 'CB_TRIGGERS', ini: 'Autopause Options.New Target Selected', type: AutoPauseState.NewTargetSelected, k1Desc: 48214, tslDesc: 48706 },
+];
 
 /**
  * MenuAutoPause class.
@@ -42,94 +55,71 @@ export class MenuAutoPause extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
+      const isTSL = GameState.GameKey == GameEngineType.TSL;
+      for(const entry of AUTOPAUSE_OPTIONS){
+        const checkbox = this[entry.control] as GUICheckBox;
+        checkbox.attachINIProperty(entry.ini);
+        checkbox.onValueChanged = () => {
+          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(
+            entry.type,
+            GameState.iniConfig.getProperty(entry.ini) == 1
+          );
+        };
+        checkbox.addEventListener('hover', () => {
+          this.setDescription(isTSL ? entry.tslDesc : entry.k1Desc);
+        });
+      }
 
-      this.CB_ENDROUND.attachINIProperty('Autopause Options.End Of Combat Round');
-      this.CB_ENEMYSIGHTED.attachINIProperty('Autopause Options.Enemy Sighted');
-      this.CB_MINESIGHTED.attachINIProperty('Autopause Options.Mine Sighted');
-      this.CB_PARTYKILLED.attachINIProperty('Autopause Options.Party Killed');
-      this.CB_ACTIONMENU.attachINIProperty('Autopause Options.Action Menu');
-      this.CB_TRIGGERS.attachINIProperty('Autopause Options.New Target Selected');
-
-      this.CB_ENDROUND.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Autopause Options.End Of Combat Round') == 1){
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, true);
-        }else{
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
-        }
-      };
-
-      this.CB_ENDROUND.addEventListener('hover', () => {
-        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(END_ROUND_DESC)?.Value);
-      });
-
-      this.CB_ENEMYSIGHTED.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Autopause Options.Enemy Sighted') == 1){
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, true);
-        }else{
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
-        }
-      };
-      
-      this.CB_ENEMYSIGHTED.addEventListener('hover', () => {
-        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(ENEMY_SIGHTED_DESC)?.Value);
-      });
-
-      this.CB_MINESIGHTED.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Autopause Options.Mine Sighted') == 1){
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, true);
-        }else{
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
-        }
-      };
-      
-      this.CB_MINESIGHTED.addEventListener('hover', () => {
-        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(MINE_SIGHTED_DESC)?.Value);
-      });
-
-      this.CB_PARTYKILLED.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Autopause Options.Party Killed') == 1){
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, true);
-        }else{
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
-        }
-      };
-      
-      this.CB_PARTYKILLED.addEventListener('hover', () => {
-        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(PARTY_KILLED_DESC)?.Value);
-      });
-
-      this.CB_ACTIONMENU.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Autopause Options.Action Menu') == 1){
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, true);
-        }else{
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.CombatRoundEnd, false);
-        }
-      };
-      
-      this.CB_ACTIONMENU.addEventListener('hover', () => {
-        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(ACTION_MENU_DESC)?.Value);
-      });
-
-      this.CB_TRIGGERS.onValueChanged = () => {
-        if(GameState.iniConfig.getProperty('Autopause Options.New Target Selected') == 1){
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.NewTargetSelected, true);
-        }else{
-          GameState.AutoPauseManager.SetAutoPauseTypeEnabled(AutoPauseState.NewTargetSelected, false);
-        }
-      };
-      
-      this.CB_TRIGGERS.addEventListener('hover', () => {
-        this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(NEW_TARGET_DESC)?.Value);
+      this.BTN_DEFAULT.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.resetToDefaults();
       });
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
+        void GameState.iniConfig.save();
         this.close();
       });
+      this._button_b = this.BTN_BACK;
 
       resolve();
     });
-}
-  
+  }
+
+  show(): void {
+    super.show();
+    this.setupOptions();
+    this.setDescription(
+      GameState.GameKey == GameEngineType.TSL
+        ? AUTOPAUSE_OPTIONS[0].tslDesc
+        : AUTOPAUSE_OPTIONS[0].k1Desc
+    );
+  }
+
+  setupOptions(){
+    for(const entry of AUTOPAUSE_OPTIONS){
+      const checkbox = this[entry.control] as GUICheckBox;
+      const enabled = GameState.iniConfig.getProperty(entry.ini) == 1;
+      checkbox.setValue(enabled);
+      GameState.AutoPauseManager.SetAutoPauseTypeEnabled(entry.type, enabled);
+    }
+  }
+
+  resetToDefaults(){
+    const defaults = GameState.GameKey == GameEngineType.TSL
+      ? [false, true, false, true, false, true]
+      : [false, true, true, true, false, true];
+    for(let i = 0; i < AUTOPAUSE_OPTIONS.length; i++){
+      const entry = AUTOPAUSE_OPTIONS[i];
+      const checkbox = this[entry.control] as GUICheckBox;
+      checkbox.setValue(defaults[i]);
+      GameState.AutoPauseManager.SetAutoPauseTypeEnabled(entry.type, defaults[i]);
+    }
+  }
+
+  setDescription(strRef: number){
+    this.LB_DETAILS.setItem(GameState.TLKManager.GetStringById(strRef)?.Value || '');
+  }
+
 }

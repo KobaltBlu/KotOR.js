@@ -337,12 +337,14 @@ export class InGameOverlay extends K1_InGameOverlay {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].previousAction();
           this.UpdateTargetUIIcon(i);
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
         });
 
         this.getControlByName('BTN_TARGETDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.targetPanels[i].nextAction();
           this.UpdateTargetUIIcon(i);
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
         });
 
       }
@@ -358,12 +360,14 @@ export class InGameOverlay extends K1_InGameOverlay {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
           this.UpdateSelfUIIcon(i);
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
         });
 
         this.getControlByName('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
           this.UpdateSelfUIIcon(i);
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.ActionMenuUsed);
         });
 
       }

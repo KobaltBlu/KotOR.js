@@ -37,6 +37,7 @@ import { getProjectileImpactPosition, spawnCombatProjectile } from "@/combat/com
 import { GameState } from "@/GameState";
 import { getAttackEffectBonus } from "@/effects/effect-bonuses";
 import { FeedbackOption } from "@/enums/engine/FeedbackOption";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
@@ -340,7 +341,12 @@ export class CombatRound {
    * Retail EndCombatRound @ 004d4620 — master clears slave engaged link.
    */
   endCombatRound(options?: { skipCreateNewAttackActions?: boolean }){
-    console.log('endCombatRound', this.owner.tag);
+    const shouldAutoPause = (
+      !options?.skipCreateNewAttackActions &&
+      !!this.action &&
+      this.owner === GameState.getCurrentPlayer() &&
+      !this.owner.isDead()
+    );
     this.roundStarted = false;
     const combatData = this.owner.combatData;
     combatData.lastCombatFeatUsed = undefined;
@@ -411,6 +417,11 @@ export class CombatRound {
     // Retail Body Fuel @ EndCombatRound 004d4684: temporary FP = max FP
     if(this.owner.bodyFuel){
       this.owner.temporaryForce = this.owner.getMaxFP();
+    }
+
+    // Retail EndCombatRound auto-pause fires before CreateNewAttackActions.
+    if(shouldAutoPause){
+      GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.CombatRoundEnd);
     }
 
     // Retail EndCombatRound → CreateNewAttackActions for controlled PC @ 004d4620

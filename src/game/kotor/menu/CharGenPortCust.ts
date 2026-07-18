@@ -91,6 +91,7 @@ export class CharGenPortCust extends GameMenu {
           model.removeFromParent();
           this._3dView.addModel(model);
         }
+      }).finally(() => {
         this.isCharLoading = false;
       });
 
@@ -136,6 +137,7 @@ export class CharGenPortCust extends GameMenu {
           model.removeFromParent();
           this._3dView.addModel(model);
         }
+      }).finally(() => {
         this.isCharLoading = false;
       });
 
@@ -149,6 +151,9 @@ export class CharGenPortCust extends GameMenu {
         //Restore previous appearance
         creature.appearance = this.appearance;
         creature.portraitId = this.portraitId;
+        if(GameState.SWRuleSet.portraits?.[this.portraitId]){
+          creature.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+        }
         creature.setAppearance(creature.appearance);
         creature.loadModel().then( (model: OdysseyModel3D) => {
           model.rotation.z = -Math.PI/2;
@@ -165,7 +170,9 @@ export class CharGenPortCust extends GameMenu {
       //Save appearance choice
       creature.template.getFieldByLabel('Appearance_Type').setValue(creature.appearance);
       creature.template.getFieldByLabel('PortraitId').setValue(creature.portraitId);
-      this.manager.CharGenQuickPanel.step1 = true;
+      this.manager.CharGenQuickPanel?.portraitCreationCompleted?.();
+      this.manager.CharGenCustomPanel?.portraitCreationCompleted?.();
+      this.manager.CharGenMain?.updateAttributes?.();
 
       this.close();
     });
