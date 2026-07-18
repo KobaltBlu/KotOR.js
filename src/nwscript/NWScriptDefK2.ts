@@ -1,13 +1,15 @@
 import { ModuleObjectScript, ModuleObjectType } from "@/enums";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleObject } from "@/module";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
 import { BitWise } from "@/utility/BitWise";
 import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { NWScriptDef } from "@/nwscript/NWScriptDef";
 import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import EngineLocation from "@/engine/EngineLocation";
 
 /**
  * NWScriptDefK2 class.
@@ -340,6 +342,7 @@ NWScriptDefK2.Actions = {
     name: 'SetCameraFacing',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.FLOAT ],
+    // Inherited from NWScriptDefK1 (flags packing → ActionOrientCamera)
     action: undefined
   },
   46: {
@@ -599,7 +602,13 @@ NWScriptDefK2.Actions = {
     name: 'EffectResurrection',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const effect = new GameState.GameEffectFactory.EffectResurrection();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0] || 0); // % of max HP
+      return effect.initialize();
+    }
   },
   83: {
     comment: '83: GetPlayerRestrictMode\nreturns the current player \'restricted\' mode',
@@ -798,7 +807,7 @@ NWScriptDefK2.Actions = {
     action: undefined
   },
   111: {
-    comment: '111: Get the DC to save against for a spell (5 + spell level + CHA Mod + WIS Mod).\nThis can be called by a creature or by an Area of Effect object.',
+    comment: '111: Get the DC to save against for a spell (5 + level + WIS mod + CHA mod + Force Focus).\nThis can be called by a creature or by an Area of Effect object.',
     name: 'GetSpellSaveDC',
     type: NWScriptDataType.INTEGER,
     args: [],
@@ -963,7 +972,12 @@ NWScriptDefK2.Actions = {
     name: 'EffectKnockdown',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      const effect = new GameState.GameEffectFactory.EffectKnockdown();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   135: {
     comment: '135: Give oItem to oGiveTo\nIf oItem is not a valid item, or oGiveTo is not a valid object, nothing will\nhappen.',
@@ -1222,7 +1236,16 @@ NWScriptDefK2.Actions = {
     name: 'EffectAreaOfEffect',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, string, string, string]){
+      const effect = new GameState.GameEffectFactory.EffectAreaOfEffect();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0]);
+      effect.setString(0, args[1]);
+      effect.setString(1, args[2]);
+      effect.setString(2, args[3]);
+      return effect.initialize();
+    }
   },
   172: {
     comment: '172: * Returns TRUE if the Faction Ids of the two objects are the same',
@@ -1467,9 +1490,10 @@ NWScriptDefK2.Actions = {
      */
     action: function(this: NWScriptInstance, args: [ModuleObject, string, number, number, number, string, string, string, string, string, string, number, number, number, number]){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        //I'm hardcoding ignoreStartRange to true because i'm finding instances where it's causing the player to move halfway across the map to start a conversation
-        //even in ones that have nothing to do with the PC. Perhaps it was always meant to work this way?
-        this.caller.actionDialogObject( args[0], args[1], true, args[2], args[3] );
+        const ignoreStartRange = !!args[4];
+        const ignoreNames = [args[5], args[6], args[7], args[8], args[9], args[10]]
+          .filter((s) => typeof s === 'string' && s.trim().length > 0);
+        this.caller.actionDialogObject( args[0], args[1], ignoreStartRange, args[2], args[3], false, ignoreNames );
       }else{
         console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
       }
@@ -1879,21 +1903,46 @@ NWScriptDefK2.Actions = {
     name: 'GetFirstInPersistentObject',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger) ||
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleAreaOfEffect)
+      ){
+        this.persistentObjectIndex.set(args[0].id, 0);
+        return args[0].objectsInside[0];
+      }
+      return undefined;
+    }
   },
   263: {
     comment: '263: Get the next object within oPersistentObject.\n- oPersistentObject\n- nResidentObjectType: OBJECT_TYPE_*\n- nPersistentZone: PERSISTENT_ZONE_ACTIVE. [This could also take the value\n  PERSISTENT_ZONE_FOLLOW, but this is no longer used.]\n* Returns OBJECT_INVALID if no object is found.',
     name: 'GetNextInPersistentObject',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger) ||
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleAreaOfEffect)
+      ){
+        const nextId = this.persistentObjectIndex.get(args[0].id) + 1;
+        this.persistentObjectIndex.set(args[0].id, nextId);
+        return args[0].objectsInside[nextId];
+      }
+      return undefined;
+    }
   },
   264: {
     comment: '264: This returns the creator of oAreaOfEffectObject.\n* Returns OBJECT_INVALID if oAreaOfEffectObject is not a valid Area of Effect object.',
     name: 'GetAreaOfEffectCreator',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleAreaOfEffect)){
+        const aoe = args[0] as import("@/module/ModuleAreaOfEffect").ModuleAreaOfEffect;
+        return aoe.creator || GameState.ModuleObjectManager.GetObjectById(aoe.creatorId);
+      }
+      return undefined;
+    }
   },
   265: {
     comment: '265: Brings up the level up GUI for the player.  The GUI will only show up\n     if the player has gained enough experience points to level up.\n* Returns TRUE if the GUI was successfully brought up; FALSE if not.',
@@ -1935,7 +1984,12 @@ NWScriptDefK2.Actions = {
     name: 'EffectHaste',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      const effect = new GameState.GameEffectFactory.EffectHaste();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   271: {
     comment: '271: Give oItem to oGiveTo (instant; for similar Action use ActionGiveItem)\nIf oItem is not a valid item, or oGiveTo is not a valid object, nothing will\nhappen.',
@@ -2523,7 +2577,29 @@ NWScriptDefK2.Actions = {
     name: 'ShowUpgradeScreen',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject, number, number, string]){
+      const forcedItem = BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)
+        ? (args[0] as ModuleItem)
+        : undefined;
+      const skillCharacter = BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)
+        ? (args[1] as ModuleCreature)
+        : undefined;
+      const disableItemCreation = !!args[2];
+      const disableUpgrade = !!args[3];
+      const createItemString = args[4] || '';
+
+      if(disableUpgrade && disableItemCreation){
+        return;
+      }
+
+      GameState.MenuManager.MenuUpgradeSelect.open({
+        forcedItem,
+        skillCharacter,
+        disableItemCreation,
+        disableUpgrade,
+        createItemString,
+      });
+    }
   },
   355: {
     comment: '355: Set eEffect to be versus a specific alignment.\n- eEffect\n- nLawChaos: ALIGNMENT_LAWFUL/ALIGNMENT_CHAOTIC/ALIGNMENT_ALL\n- nGoodEvil: ALIGNMENT_GOOD/ALIGNMENT_EVIL/ALIGNMENT_ALL',
@@ -2635,6 +2711,7 @@ NWScriptDefK2.Actions = {
     name: 'PlayRumblePattern',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
+    // Inherited from NWScriptDefK1 → CameraShakeManager
     action: undefined
   },
   371: {
@@ -2642,6 +2719,7 @@ NWScriptDefK2.Actions = {
     name: 'StopRumblePattern',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
+    // Inherited from NWScriptDefK1 → CameraShakeManager
     action: undefined
   },
   372: {
@@ -2754,7 +2832,16 @@ NWScriptDefK2.Actions = {
     name: 'EffectHitPointChangeWhenDying',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.FLOAT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      if(!args[0]){
+        return undefined;
+      }
+      const effect = new GameState.GameEffectFactory.EffectHitPointChangeWhenDying();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setFloat(0, args[0]);
+      return effect.initialize();
+    }
   },
   388: {
     comment: '388: Spawn a GUI panel for the client that controls oPC.\n- oPC\n- nGUIPanel: GUI_PANEL_*\n* Nothing happens if oPC is not a player character or if an invalid value is\n  used for nGUIPanel.',
@@ -3265,7 +3352,13 @@ NWScriptDefK2.Actions = {
     name: 'EffectDispelMagicAll',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const effect = new GameState.GameEffectFactory.EffectDispelMagicAll();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0] || 0);
+      return effect.initialize();
+    }
   },
   461: {
     comment: '461: Cut immediately to placeable camera \'nCameraId\' during dialog.  nCameraId must be\n     an existing Placeable Camera ID.  Function only works during Dialog.',
@@ -3307,14 +3400,24 @@ NWScriptDefK2.Actions = {
     name: 'EffectSeeInvisible',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      const effect = new GameState.GameEffectFactory.EffectSeeInvisible();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   467: {
     comment: '467: Create a Time Stop effect.',
     name: 'EffectTimeStop',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      const effect = new GameState.GameEffectFactory.EffectTimeStop();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   468: {
     comment: '468:\nSet the maximum amount of stealth xp available in the area.',
@@ -3349,14 +3452,32 @@ NWScriptDefK2.Actions = {
     name: 'EffectSpellLevelAbsorption',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, number, number]){
+      const effect = new GameState.GameEffectFactory.EffectSpellLevelAbsorption();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      const maxLevel = args[0];
+      const total = args[1];
+      const school = args[2];
+      effect.setInt(0, (maxLevel >= -1 && maxLevel <= 9) ? maxLevel : -1);
+      effect.setInt(1, total || 0);
+      effect.setInt(2, school || 0);
+      effect.setInt(3, total === 0 ? 1 : 0);
+      return effect.initialize();
+    }
   },
   473: {
     comment: '473: Create a Dispel Magic Best effect.',
     name: 'EffectDispelMagicBest',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const effect = new GameState.GameEffectFactory.EffectDispelMagicBest();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0] || 0);
+      return effect.initialize();
+    }
   },
   474: {
     comment: '474:\nReturns the current amount of stealth xp available in the area.',
@@ -3440,7 +3561,17 @@ NWScriptDefK2.Actions = {
     name: 'EffectModifyAttacks',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      const n = args[0] || 0;
+      if(n >= 6){
+        return undefined;
+      }
+      const effect = new GameState.GameEffectFactory.EffectModifyNumAttacks();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, Math.max(0, n));
+      return effect.initialize();
+    }
   },
   486: {
     comment: '486: Get the last trap detected by oTarget.\n* Return value on error: OBJECT_INVALID',
@@ -3454,7 +3585,18 @@ NWScriptDefK2.Actions = {
     name: 'EffectDamageShield',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, number, number]){
+      const effect = new GameState.GameEffectFactory.EffectDamageShield();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      const flat = (args[0] >= 0 && args[0] <= 10000) ? args[0] : 1;
+      const dice = (args[1] >= 1 && args[1] <= 10) ? args[1] : 0;
+      const dtype = (args[2] >= 0 && args[2] <= 0x2000) ? args[2] : 8;
+      effect.setInt(0, flat);
+      effect.setInt(1, dice);
+      effect.setInt(2, dtype);
+      return effect.initialize();
+    }
   },
   488: {
     comment: '488: Get the trap nearest to oTarget.\nNote : \'trap objects\' are actually any trigger, placeable or door that is\ntrapped in oTarget\'s area.\n- oTarget\n- nTrapDetected: if this is TRUE, the trap returned has to have been detected\n  by oTarget.',
@@ -3573,6 +3715,7 @@ NWScriptDefK2.Actions = {
     name: 'SetCameraMode',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
+    // Inherited from NWScriptDefK1 → GameState.clientCameraMode / driveControlActive
     action: undefined
   },
   505: {
@@ -5080,14 +5223,19 @@ NWScriptDefK2.Actions = {
     name: 'SetGlobalFadeIn',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
+      GameState.FadeOverlayManager.holdForScript = false;
+      GameState.FadeOverlayManager.FadeIn(args[1], args[2], args[3], args[4], args[0]);
+    }
   },
   720: {
     comment: '720. SetGlobalFadeOut\nSets a Fade Out that starts after fWait seconds and fades for fLength Seconds.\nThe Fade will be to a color specified by the RGB values fR, fG, and fB.\nNote that fR, fG, and fB are normalized values.\nThe default values are an immediate cut to from black.',
     name: 'SetGlobalFadeOut',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
+      GameState.FadeOverlayManager.FadeOut(args[1], args[2], args[3], args[4], args[0]);
+    }
   },
   721: {
     comment: '721. GetLastAttackTarget\nReturns the last attack target for a given object',
@@ -5318,7 +5466,9 @@ NWScriptDefK2.Actions = {
     name: 'SetSoloMode',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.PartyManager.setSoloMode(!!args[0], { runScript: false });
+    }
   },
   754: {
     comment: '754: EffectCutSceneHorrified\nGet a horrified effect for cutscene purposes (ie. this effect will ignore immunities).',
@@ -5367,7 +5517,9 @@ NWScriptDefK2.Actions = {
     name: 'HoldWorldFadeInForDialog',
     type: NWScriptDataType.VOID,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      GameState.holdWorldFadeInForDialog = true;
+    }
   },
   761: {
     comment: '761: ShipBuild()\nThis will return if this is a shipping build. this should be used to disable all debug output.',
@@ -5497,7 +5649,13 @@ NWScriptDefK2.Actions = {
     name: 'EffectBlind',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      const effect = new GameState.GameEffectFactory.EffectBlindness();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 0x10); // true blind
+      return effect.initialize();
+    }
   },
   779: {
     comment: 'DJS-OEI 1/4/2004\n779: Create an FP regeneration modifier effect.',
@@ -5959,56 +6117,77 @@ NWScriptDefK2.Actions = {
     name: 'AddAvailablePUPByTemplate',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, string]){
+      return GameState.PartyManager.AddAvailablePUPByTemplate(args[0], args[1]) ? NW_TRUE : NW_FALSE;
+    }
   },
   837: {
     comment: '837\nRWT-OEI 07/17/04\nThis function adds a Puppet to the Puppet Table by\ncreature ID\nReturns 1 if successful, 0 if there was an error\nThis does not spawn the puppet or anything. It just\nadds it to the party table and makes it available for\nuse down the line. Exactly like AddAvailableNPCByTemplate',
     name: 'AddAvailablePUPByObject',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      return GameState.PartyManager.AddAvailablePUPByObject(args[0], args[1] as ModuleCreature) ? NW_TRUE : NW_FALSE;
+    }
   },
   838: {
     comment: '838\nRWT-OEI 07/17/04\nThis function assigns a PUPPET constant to a\nParty NPC.  The party NPC -MUST- be in the game\nbefore calling this.\nBoth the PUP and the NPC have\nto be available in their respective tables\nReturns 1 if successful, 0 if there was an error',
     name: 'AssignPUP',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, number]){
+      return GameState.PartyManager.AssignPUP(args[0], args[1]) ? NW_TRUE : NW_FALSE;
+    }
   },
   839: {
     comment: '839\nRWT-OEI 07/17/04\nThis function spawns a Party PUPPET.\nThis must be used whenever you want a copy\nof the puppet around to manipulate in the game\nsince the puppet is stored in the party table\njust like NPCs are.  Once a puppet is assigned\nto a party NPC (see AssignPUP), it will spawn\nor disappear whenever its owner joins or leaves\nthe party.\nThis does not add it to the party automatically,\njust like SpawnNPC doesn\'t. You must call AddPuppet()\nto actually add it to the party',
     name: 'SpawnAvailablePUP',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.LOCATION ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, EngineLocation]){
+      return GameState.PartyManager.SpawnAvailablePUP(args[0], args[1]);
+    }
   },
   840: {
     comment: '840\nRWT-OEI 07/18/04\nThis adds an existing puppet object to the party. The\npuppet object must already exist via SpawnAvailablePUP\nand must already be available via AddAvailablePUP*\nfunctions.',
     name: 'AddPartyPuppet',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      return GameState.PartyManager.AddPartyPuppet(args[0], args[1] as ModuleCreature) ? NW_TRUE : NW_FALSE;
+    }
   },
   841: {
     comment: '841\nRWT-OEI 07/19/04\nThis returns the object ID of the puppet\'s owner.\nThe Puppet\'s owner must exist and must be in the party\nin order to be found.\nReturns invalid object Id if the owner cannot be found.',
     name: 'GetPUPOwner',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return GameState.PartyManager.GetPUPOwner(args[0] as ModuleCreature);
+    }
   },
   842: {
     comment: '842\nRWT-OEI 07/19/04\nReturns 1 if the creature is a Puppet in the party.\nOtherwise returns 0. It is possible for a \'party puppet\'\nto exist without actually being in the party table.\nsuch as when SpawnAvailablePUP is used without subsequently\nusing AddPartyPuppet to add the newly spawned puppet to\nthe party table. A puppet in that in-between state would\nreturn 0 from this function',
     name: 'GetIsPuppet',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      return GameState.PartyManager.GetIsPartyPuppet(args[0] as ModuleCreature) ? NW_TRUE : NW_FALSE;
+    }
   },
   843: {
     comment: '843\nRWT-OEI 07/20/04\nSimiliar to ActionFollowLeader() except the creature\nfollows its owner\n//nRange is how close it should follow. Note that once this\n//action is queued, it will be the only thing this creature\n//does until a ClearAllActions() is used.',
     name: 'ActionFollowOwner',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.FLOAT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      const action = new GameState.ActionFactory.ActionFollowOwner();
+      action.setParameter(0, ActionParameterType.FLOAT, args[0] || 0);
+      this.caller.actionQueue.add(action);
+    }
   },
   844: {
     comment: '844\nRWT-OEI 07/21/04\nReturns TRUE if the object ID passed is the character\nthat the player is actively controlling at that point.\nNote that this function is *NOT* able to return correct\ninformation during Area Loading since the player is not\nactively controlling anyone at that point.',
@@ -6253,14 +6432,18 @@ NWScriptDefK2.Actions = {
     name: 'SaveNPCByObject',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      GameState.PartyManager.SaveNPCByObject(args[0], args[1] as ModuleCreature);
+    }
   },
   874: {
     comment: '874\nRWT-OEI 10/26/04\nThis function saves the party puppet at that index with the object\nthat is passed in. For the Remote, just use \'0\' for nPUP',
     name: 'SavePUPByObject',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      GameState.PartyManager.SavePUPByObject(args[0], args[1] as ModuleCreature);
+    }
   },
   875: {
     comment: '875\nRWT-OEI 10/29/04\nReturns TRUE if the object passed in is the character that the player\nmade at the start of the game',
@@ -6276,7 +6459,9 @@ NWScriptDefK2.Actions = {
     name: 'RebuildPartyTable',
     type: NWScriptDataType.VOID,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      GameState.PartyManager.RebuildPartyTable();
+    }
   }
 };
 

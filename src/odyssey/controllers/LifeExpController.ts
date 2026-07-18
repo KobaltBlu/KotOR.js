@@ -23,13 +23,25 @@ export class LifeExpController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.lifeExp = Math.ceil(data.value);
+      const em = manager.modelNode.emitter;
+      // Keep fractional lifeExp (e.g. 0.05); Math.ceil was stretching short fountain particles to 1s.
+      em.lifeExp = data.value >= 0 ? data.value : -1;
+      if(em.material?.uniforms?.maxAge){
+        em.material.uniforms.maxAge.value = em.lifeExp >= 0 ? em.lifeExp : -1;
+        em.material.uniformsNeedUpdate = true;
+      }
     }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.lifeExp = Math.ceil(OdysseyController.lerp1(last, next, fl));
+      const em = manager.modelNode.emitter;
+      const v = OdysseyController.lerp1(last, next, fl);
+      em.lifeExp = v >= 0 ? v : -1;
+      if(em.material?.uniforms?.maxAge){
+        em.material.uniforms.maxAge.value = em.lifeExp >= 0 ? em.lifeExp : -1;
+        em.material.uniformsNeedUpdate = true;
+      }
     }
   }
 

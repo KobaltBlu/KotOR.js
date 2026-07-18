@@ -17,8 +17,10 @@ export class CombatAttackDamage {
   }
 
   setDamage(amount: number = -1){
-    if(amount <= 0) return;
-    if(this.damageValue < 0) this.damageValue = 0;
+    if(amount < 0){
+      this.damageValue = -1;
+      return;
+    }
     this.damageValue = amount;
   }
 

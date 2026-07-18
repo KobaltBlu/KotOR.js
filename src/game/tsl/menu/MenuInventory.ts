@@ -1,19 +1,19 @@
 import { GameState } from "@/GameState";
-import { ModuleCreatureArmorSlot } from "@/enums";
+import { GameMenu } from "@/gui";
 import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
-import type { ModuleItem } from "@/module/ModuleItem";
 import { MenuInventory as K1_MenuInventory } from "@/game/kotor/KOTOR";
 import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
+import {
+  InventoryFilter,
+  getCurrentInventoryFilter,
+  setCurrentInventoryFilter,
+  type InventoryListNode,
+} from "@/game/inventory-menu-utils";
 
-enum InventoryFilter {
-  DATAPADS = 1,
-  WEAPONS = 2,
-  ARMOR = 4,
-  USEABLE = 8,
-  QUESTS = 16,
-  MISC = 32,
-  ALL = -1
-};
+/** Retail COLOR_YELLOW for active K2 filter buttons. */
+const FILTER_COLOR_YELLOW = { r: 1, g: 1, b: 0 };
+/** Disabled / inactive filter button text. */
+const FILTER_COLOR_DISABLED = { r: 0.5, g: 0.5, b: 0.5 };
 
 /**
  * MenuInventory class.
@@ -48,13 +48,12 @@ export class MenuInventory extends K1_MenuInventory {
   declare LB_ITEMS: GUIListBox;
   declare LB_DESCRIPTION: GUIListBox;
 
-  filter: InventoryFilter = InventoryFilter.ALL;
-
   constructor(){
     super();
     this.gui_resref = 'inventory_p';
     this.background = 'blackfill';
     this.voidFill = true;
+    this.isK2Inventory = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -68,52 +67,50 @@ export class MenuInventory extends K1_MenuInventory {
       this._button_b = this.BTN_EXIT;
 
       this.BTN_ALL.addEventListener('click', (e) => {
-        this.filter = InventoryFilter.ALL;
-        this.filterInventory();
-        this.updateFilterButton();
+        e.stopPropagation();
+        this.setFilter(InventoryFilter.ALL);
       });
 
       this.BTN_DATAPADS.addEventListener('click', (e) => {
-        this.filter = InventoryFilter.DATAPADS;
-        this.filterInventory();
-        this.updateFilterButton();
+        e.stopPropagation();
+        this.setFilter(InventoryFilter.DATAPADS);
       });
 
       this.BTN_WEAPONS.addEventListener('click', (e) => {
-        this.filter = InventoryFilter.WEAPONS;
-        this.filterInventory();
-        this.updateFilterButton();
+        e.stopPropagation();
+        this.setFilter(InventoryFilter.WEAPONS);
       });
 
       this.BTN_ARMOR.addEventListener('click', (e) => {
-        this.filter = InventoryFilter.ARMOR;
-        this.filterInventory();
-        this.updateFilterButton();
+        e.stopPropagation();
+        this.setFilter(InventoryFilter.ARMOR);
       });
 
       this.BTN_USEABLE.addEventListener('click', (e) => {
-        this.filter = InventoryFilter.USEABLE;
-        this.filterInventory();
-        this.updateFilterButton();
+        e.stopPropagation();
+        this.setFilter(InventoryFilter.USEABLE_K2);
       });
 
       this.BTN_QUESTS.addEventListener('click', (e) => {
-        this.filter = InventoryFilter.QUESTS;
-        this.filterInventory();
-        this.updateFilterButton();
+        e.stopPropagation();
+        this.setFilter(InventoryFilter.QUESTS_K2);
       });
 
       this.BTN_MISC.addEventListener('click', (e) => {
-        this.filter = InventoryFilter.MISC;
-        this.filterInventory();
-        this.updateFilterButton();
+        e.stopPropagation();
+        this.setFilter(InventoryFilter.MISC_K2);
       });
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
-      this.LB_ITEMS.onSelected = (item: ModuleItem) => {
+      this.LB_ITEMS.onSelected = (item: InventoryListNode) => {
         this.selected = item;
         this.UpdateSelected();
       }
+
+      this.BTN_USEITEM?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.useSelectedItem();
+      });
 
       this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.offset.x = 0;
@@ -121,62 +118,50 @@ export class MenuInventory extends K1_MenuInventory {
     });
   }
 
+  /** Retail SetNextFilter(int) — set category and highlight active button yellow. */
+  setFilter(filter: InventoryFilter){
+    setCurrentInventoryFilter(filter);
+    this.updateFilterButton();
+    this.populateItemListBox();
+  }
+
   updateFilterButton() {
-    this.BTN_ALL.pulsing = this.filter == InventoryFilter.ALL;
-    this.BTN_DATAPADS.pulsing = this.filter == InventoryFilter.DATAPADS;
-    this.BTN_WEAPONS.pulsing = this.filter == InventoryFilter.WEAPONS;
-    this.BTN_ARMOR.pulsing = this.filter == InventoryFilter.ARMOR;
-    this.BTN_USEABLE.pulsing = this.filter == InventoryFilter.USEABLE;
-    this.BTN_QUESTS.pulsing = this.filter == InventoryFilter.QUESTS;
-    this.BTN_MISC.pulsing = this.filter == InventoryFilter.MISC;
+    const filter = getCurrentInventoryFilter();
+    const buttons: [GUIButton, InventoryFilter][] = [
+      [this.BTN_ALL, InventoryFilter.ALL],
+      [this.BTN_DATAPADS, InventoryFilter.DATAPADS],
+      [this.BTN_WEAPONS, InventoryFilter.WEAPONS],
+      [this.BTN_ARMOR, InventoryFilter.ARMOR],
+      [this.BTN_USEABLE, InventoryFilter.USEABLE_K2],
+      [this.BTN_QUESTS, InventoryFilter.QUESTS_K2],
+      [this.BTN_MISC, InventoryFilter.MISC_K2],
+    ];
+
+    for(const [btn, btnFilter] of buttons){
+      if(!btn) continue;
+      const active = filter === btnFilter;
+      btn.pulsing = active;
+      const c = active ? FILTER_COLOR_YELLOW : FILTER_COLOR_DISABLED;
+      btn.setTextColor?.(c.r, c.g, c.b);
+      if(btn.defaultColor){
+        btn.defaultColor.setRGB(c.r, c.g, c.b);
+      }
+    }
   }
 
   filterInventory(){
-    let inventory = GameState.InventoryManager.inventory.slice().filter( (item) => {
-      switch(this.filter){
-        case InventoryFilter.DATAPADS:
-          return item.plot || item.baseItem.itemClass.toLocaleLowerCase() == 'i_datapad';
-        case InventoryFilter.WEAPONS:
-          return (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.LEFTHAND) == ModuleCreatureArmorSlot.LEFTHAND || 
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.RIGHTHAND) == ModuleCreatureArmorSlot.RIGHTHAND;
-        case InventoryFilter.ARMOR:
-          return (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMOR) == ModuleCreatureArmorSlot.ARMOR || 
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.HEAD) == ModuleCreatureArmorSlot.HEAD || 
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.ARMS) == ModuleCreatureArmorSlot.ARMS || 
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.BELT) == ModuleCreatureArmorSlot.BELT || 
-            (item.baseItem.equipableSlots & ModuleCreatureArmorSlot.IMPLANT) == ModuleCreatureArmorSlot.IMPLANT;
-        case InventoryFilter.USEABLE:
-          return item.baseItem.itemClass.toLocaleLowerCase() == 'i_medeqpmnt' ||
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_drdrepeqp';
-        case InventoryFilter.QUESTS:
-          return item.plot || item.baseItem.itemClass.toLocaleLowerCase() == 'p_pltuseitm';
-        case InventoryFilter.MISC:
-          return item.baseItem.itemClass.toLocaleLowerCase() == 'i_adrnaline' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_cmbtshot' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_collarlgt' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_Progspike' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_secspike' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_torch' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_upgrade' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_adhsvgren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_cryobgren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_firegren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_flashgren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_fraggren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_poisngren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_sonicgren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'w_stungren' || 
-            item.baseItem.itemClass.toLocaleLowerCase() == 'i_glowrod';
-      }
-      return true;
-    });
-    this.LB_ITEMS.setItems(inventory);
+    this.populateItemListBox();
   }
 
   show() {
-    super.show();
-    this.filter = InventoryFilter.ALL;
+    // Skip K1 portrait / party-change / filter-cycle labels (inventory_p).
+    // Retail OnPanelAdded keeps global filter and only PopulateItemListBox.
+    GameMenu.prototype.show.call(this);
+    this.manager.MenuTop.LBLH_INV.onHoverIn();
+    this.selectedControl = this.LB_ITEMS;
     this.updateFilterButton();
+    this.populateItemListBox();
+    this.LBL_CREDITS_VALUE?.setText(String(GameState.PartyManager.Gold));
   }
   
 }

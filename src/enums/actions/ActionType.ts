@@ -138,4 +138,6 @@ export enum ActionType {
   ActionCheckMoveToFollowRadius = 0x40,
   /** Surrender to enemies */
   ActionSurrenderToEnemies = 0x41,
+  /** TSL puppet follows AssignPUP owner (AIActionFollowOwner) */
+  ActionFollowOwner = 0x46,
 }

@@ -95,6 +95,7 @@ export class MenuSaveLoad extends GameMenu {
         // LOADGAME mode: load selected save
         if (this.mode === MenuSaveLoadMode.LOADGAME) {
           if (savegame) {
+            GameState.GameOverManager?.Reset?.();
             this.manager.ClearMenus();
             if (GameState.module instanceof Module) {
               GameState.module.dispose();
@@ -133,6 +134,8 @@ export class MenuSaveLoad extends GameMenu {
       this.BTN_BACK.addEventListener("click", (e) => {
         e.stopPropagation();
         this.close();
+        // Leaving load-from-death → TempDeathUpdate may re-show death UI
+        GameState.GameOverManager?.ResumeTempDeathChecks?.();
       });
       this._button_b = this.BTN_BACK;
 

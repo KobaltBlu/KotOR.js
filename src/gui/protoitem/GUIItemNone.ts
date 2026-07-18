@@ -12,6 +12,9 @@ const STR_NONE = 363;
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIItemNone {
+  /** Retail CSWGuiInGameItemEntry canUse: 0 = none row. */
+  equipCanUse: number = 0;
+
   constructor(){
     // super()
   }

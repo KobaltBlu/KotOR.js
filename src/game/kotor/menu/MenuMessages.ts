@@ -1,6 +1,7 @@
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
 
 /**
  * MenuMessages class.
@@ -20,6 +21,13 @@ export class MenuMessages extends GameMenu {
   BTN_SHOW: GUIButton;
 
   mode: number = 0;
+
+  /**
+   * Retail CSWGuiInGameMessages::HandleInputEvent @ 00628260 —
+   * key sequence )/') → "Punch it, Chewie!" + hsMode=1.
+   */
+  static readonly HS_MODE_CHEAT_KEYS = [')', '/', "'", ')'] as const;
+  hsModeCheatIdx = 0;
 
   constructor(){
     super();
@@ -46,8 +54,44 @@ export class MenuMessages extends GameMenu {
         }
         this.updateListVisibility();
       });
+
+      this.addEventListener('keydown', (e: KeyboardEvent) => {
+        this.handleHsModeCheatKey(e);
+      });
+
       resolve();
     });
+  }
+
+  /**
+   * Retail HandleInputEvent sequence )/') decrypts "Pvpfh!kw,!Ekexkh!" →
+   * "Punch it, Chewie!", AppendToMsgBuffer type 0x80, hsMode=1.
+   */
+  handleHsModeCheatKey(e: KeyboardEvent){
+    const key = e.key;
+    const seq = MenuMessages.HS_MODE_CHEAT_KEYS;
+    if(key !== seq[this.hsModeCheatIdx]){
+      this.hsModeCheatIdx = 0;
+      if(key !== seq[0]) return;
+    }
+    this.hsModeCheatIdx++;
+    if(this.hsModeCheatIdx < seq.length) return;
+
+    this.hsModeCheatIdx = 0;
+    // Encrypted retail bytes: each char -= (i & 3)
+    const encrypted = 'Pvpfh!kw,!Ekexkh!';
+    let decoded = '';
+    for(let i = 0; i < 0x11; i++){
+      decoded += String.fromCharCode(encrypted.charCodeAt(i) - (i & 3));
+    }
+    GameState.FeedbackMessageManager.AddMessage(
+      decoded,
+      FeebackMessageColor.INFO,
+      0x80,
+      { bypassStatusSummary: true }
+    );
+    GameState.cameraHsMode = 1;
+    this.show();
   }
 
   show() {

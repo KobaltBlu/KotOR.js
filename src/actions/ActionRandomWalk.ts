@@ -55,7 +55,7 @@ export class ActionRandomWalk extends Action {
     action.setParameter(0, ActionParameterType.FLOAT, position.x);
     action.setParameter(1, ActionParameterType.FLOAT, position.y);
     action.setParameter(2, ActionParameterType.FLOAT, position.z);
-    action.setParameter(3, ActionParameterType.DWORD, this.owner.area);
+    action.setParameter(3, ActionParameterType.DWORD, this.owner.area?.id ?? 0);
     action.setParameter(4, ActionParameterType.DWORD, 0xFFFFFFFF);
     action.setParameter(5, ActionParameterType.INT, run ? 1 : 0);
     action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, maxDistance));
@@ -63,7 +63,7 @@ export class ActionRandomWalk extends Action {
     action.setParameter(8, ActionParameterType.FLOAT, 30.0);
     owner.actionQueue.addFront(action);
 
-    return ActionStatus.COMPLETE;
+    return ActionStatus.IN_PROGRESS;
   }
 
 }

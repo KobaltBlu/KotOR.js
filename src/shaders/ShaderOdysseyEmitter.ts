@@ -42,6 +42,9 @@ export class ShaderOdysseyEmitter extends Shader {
       { deadSpace: { value: 0.0 } },
       { resolution: { value: new THREE.Vector2(1, 1) } },
       { softFactor: { value: 10.0 } },
+      { parentAlpha: { value: 1.0 } },
+      // Retail RenderStandard: percentStart==255 → start↔end; else three-key breakpoints
+      { lifePercents: { value: new THREE.Vector3(255, 0.5, 1) } },
     ];
 
     this.vertex = `
@@ -60,8 +63,11 @@ export class ShaderOdysseyEmitter extends Shader {
     uniform vec3 colorMid;
     uniform vec3 colorEnd;
     uniform mat4 matrix;
+    // x=percentStart (255 = two-key), y=percentMid, z=percentEnd — RenderStandard @ 0048f000
+    uniform vec3 lifePercents;
     #ifdef Motion_Blur
       uniform float blurLength;
+      attribute vec3 prevOffset;
     #endif
 
     #ifdef DEADSPACE
@@ -122,22 +128,30 @@ export class ShaderOdysseyEmitter extends Shader {
     }
 
     float getFloatOverLifetime( in float positionInTime, in vec3 attr ) {
-      highp float value = 0.0;
-      float deltaAge = mod(positionInTime * ( 3.0 - 1.0 ), 1.0);
+      // Retail: field37_0xdc == 255 → lerp start→end over full life (skip mid)
+      if(lifePercents.x >= 254.5){
+        return mix(attr.x, attr.z, clamp(positionInTime, 0.0, 1.0));
+      }
 
-      // Fix for static emitters (age is always zero).
-      value += attr.x * when_eq( deltaAge, 0.0 );
+      float t = clamp(positionInTime, 0.0, 1.0);
+      float ps = lifePercents.x;
+      float pm = lifePercents.y;
+      float pe = lifePercents.z;
 
-      // Unrolled loop (was i=0..1) to avoid dynamic vec3 indexing
-      // which triggers ANGLE/DirectX "potentially uninitialized variable" warnings.
-      // i = 0: interpolate attr.x -> attr.y
-      float shouldApply0 = and( when_gt( deltaAge, 0.0 ), when_le( deltaAge, 1.0 ) );
-      value += shouldApply0 * mix( attr.x, attr.y, deltaAge );
-      // i = 1: interpolate attr.y -> attr.z
-      float shouldApply1 = and( when_gt( deltaAge, 1.0 ), when_le( deltaAge, 2.0 ) );
-      value += shouldApply1 * mix( attr.y, attr.z, deltaAge - 1.0 );
-
-      return value;
+      if(t >= pe){
+        return attr.z;
+      }
+      if(t < pm){
+        if(t < ps){
+          return attr.x;
+        }
+        float denom = pm - ps;
+        float u = denom > 1e-6 ? (t - ps) / denom : 1.0;
+        return mix(attr.x, attr.y, clamp(u, 0.0, 1.0));
+      }
+      float denom = pe - pm;
+      float u = denom > 1e-6 ? (t - pm) / denom : 1.0;
+      return mix(attr.y, attr.z, clamp(u, 0.0, 1.0));
     }
     
     vec3 getColorOverLifetime( in float positionInTime, in vec3 color1, in vec3 color2, in vec3 color3 ) {
@@ -183,38 +197,46 @@ export class ShaderOdysseyEmitter extends Shader {
       }
 
       vec3 force = vec3(0.0);
+      #ifndef CPU_PHYSICS
+      // Legacy SPE approximation (billboards). World-space Fountain uses CPU MoveFunc instead.
       vec3 vel   = vec3(velocity.xyz) * age;
       vec3 accel = mass;
 
       force += vel;
       force *= 1.0 - (positionInTime * 0.5) * drag;
       force += accel * (age*5.0);
+      #endif
 
       //SpriteSheet Calculations
       float framesX = textureAnimation.x;
       float framesY = textureAnimation.y;
       float loopCount = textureAnimation.w;
       float totalFrames = textureAnimation.z;
+      // Retail frameStart/frameEnd (PartEmitter +0x70/+0x6c): animate within [start, end].
+      float startF = frameRange.x;
+      float endF = frameRange.y;
+      float span = max(endF - startF, 0.0) + 1.0;
 
       #ifdef FPS
-        float deltaMax = (1.0 / fps) * totalFrames;
-        float fTime = mod(time, deltaMax) / deltaMax;
-        float frameNumber = mod( fTime * totalFrames, totalFrames );
+        float deltaMax = (1.0 / max(fps, 0.001)) * span;
+        float fTime = mod(time, deltaMax) / max(deltaMax, 1e-6);
+        float frameNumber = startF + mod( fTime * span, span );
       #else
-        float frameNumber = mod( positionInTime * totalFrames, totalFrames );
+        float frameNumber = startF + mod( positionInTime * span, span );
       #endif
       
       #ifdef Aligned_to_Particle_Dir
-       frameNumber = mod( ids * totalFrames, totalFrames );
+       frameNumber = startF + mod( ids * span, span );
       #endif
 
       #ifdef RANDOM_PLAYBACK
-        frameNumber = mod( frameNumber + ids * 7.31, totalFrames );
+        // ids holds birth frame from Fountain Update RANDOM (bit 5) @ birth
+        frameNumber = mod( ids + (frameNumber - startF), span ) + startF;
       #endif
 
       // Clamp frame when loop is disabled (Single update emitters)
-      if(loopCount < 1.0 && frameNumber > totalFrames - 1.0) {
-        frameNumber = totalFrames - 1.0;
+      if(loopCount < 1.0 && frameNumber > endF) {
+        frameNumber = endF;
       }
 
       float column = floor(mod( frameNumber, framesX ));
@@ -264,11 +286,18 @@ export class ShaderOdysseyEmitter extends Shader {
         mat4 worldZMatrix = viewMatrix * mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
 
         //Points mode renders particles always facing the camera
-        vec3 newPos = position + force;
-        vec4 mvPos = worldZMatrix * vec4( newPos, 1.0);
-
-        gl_PointSize = (scaleF*2000.0) / length( mvPos.xyz );
-        gl_Position = projectionMatrix * worldZMatrix * (vec4(newPos, 1.0));
+        #ifdef CPU_PHYSICS
+          // position attribute holds world-space particle centers
+          vec3 newPos = position;
+          vec4 mvPos = viewMatrix * vec4( newPos, 1.0);
+          gl_PointSize = (scaleF*2000.0) / length( mvPos.xyz );
+          gl_Position = projectionMatrix * mvPos;
+        #else
+          vec3 newPos = position + force;
+          vec4 mvPos = worldZMatrix * vec4( newPos, 1.0);
+          gl_PointSize = (scaleF*2000.0) / length( mvPos.xyz );
+          gl_Position = projectionMatrix * worldZMatrix * (vec4(newPos, 1.0));
+        #endif
       #else
         #ifdef LINKED
           #ifdef LIGHTNING
@@ -281,22 +310,94 @@ export class ShaderOdysseyEmitter extends Shader {
             gl_Position = projectionMatrix * worldZMatrix * vec4(position, 1.0);
           #endif
         #else
+          #ifdef Motion_Blur
+            // Retail RenderMotionBlurred @ 00490820:
+            // halfW = size (after size*0.5 doubled); alongPad = sizeY*0.25 (or size*0.25).
+            // Quad spans head↔tail, then extends ±alongPad past each end.
+            vec3 head = offset;
+            vec3 tail = prevOffset;
+            vec3 motion = head - tail;
+            float motionLen = length(motion);
+            vec3 along = motionLen > 1e-5 ? motion / motionLen : vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);
+            vec3 toCam = normalize(cameraPosition - head);
+            vec3 side = cross(along, toCam);
+            float sideLen = length(side);
+            if(sideLen < 1e-5){
+              side = cross(along, vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]));
+              sideLen = length(side);
+            }
+            side = side / max(sideLen, 1e-5);
+            float halfW = scaleF;
+            float alongPad = (scaleFY > 0.0 ? scaleFY : scaleF) * 0.25;
+            // PlaneGeometry position.x/y ∈ [-0.5, 0.5]
+            vec3 worldPos = mix(tail, head, position.y + 0.5)
+              + side * (position.x * halfW * 2.0)
+              + along * (position.y * alongPad * 2.0);
+            gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
+          #else
           //Render particles as plane geometry so we can control it's rotation
           #ifdef Aligned_to_Particle_Dir
-            vec4 vertex = vec4( position, 1.0 ) * matrix;
-            vec3 newPos = offset + (vertex.xyz * scaleF);
-            gl_Position = projectionMatrix * modelViewMatrix * ( vec4(newPos, 1.0));
+            #ifdef CPU_PHYSICS
+              // World-space center; splat uses velocity.xyz as surface normal
+              if(props.w > 0.5){
+                vec3 n = normalize(velocity.xyz + vec3(1e-6));
+                vec3 helper = abs(n.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+                vec3 t = normalize(cross(helper, n));
+                vec3 b = cross(n, t);
+                vec3 worldPos = offset + t * (position.x * scaleF) + b * (position.y * scaleF);
+                gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
+              }else{
+                vec4 vertex = vec4( position * scaleF, 1.0 ) * matrix;
+                vec3 worldPos = offset + vertex.xyz;
+                gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
+              }
+            #else
+              vec4 vertex = vec4( position, 1.0 ) * matrix;
+              vec3 newPos = offset + (vertex.xyz * scaleF);
+              gl_Position = projectionMatrix * modelViewMatrix * ( vec4(newPos, 1.0));
+            #endif
           #else
             // Apply non-square scaling to quad vertices
             vec3 scaledPos = vec3(position.x * scaleF, position.y * scaleFY, position.z);
-            vec3 newPos = (offset) + scaledPos + force;
 
-            #ifdef Motion_Blur
-              // Stretch quad along velocity direction
-              vec3 velDir = normalize(velocity.xyz + vec3(0.0001));
-              float stretch = length(velocity.xyz) * blurLength;
-              newPos += velDir * (dot(scaledPos, velDir) * stretch);
-            #endif
+            #ifdef CPU_PHYSICS
+              // Retail: particle offset is world-space; billboard in view without emitter model matrix.
+              // Splatted (props.w): plane lies on hit surface — normal in velocity.xyz (RenderStandard).
+              if(props.w > 0.5){
+                vec3 n = normalize(velocity.xyz + vec3(1e-6));
+                vec3 helper = abs(n.z) < 0.999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
+                vec3 t = normalize(cross(helper, n));
+                vec3 b = cross(n, t);
+                vec3 worldPos = offset + t * scaledPos.x + b * scaledPos.y;
+                gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
+              }else{
+              #ifdef Billboard_to_World_Z
+                vec3 worldPos = offset + scaledPos;
+                mat4 worldZMatrix = viewMatrix * mat4(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+                vec4 mvCenter = viewMatrix * vec4(offset, 1.0);
+                worldZMatrix[3][0] = mvCenter.x;
+                worldZMatrix[3][1] = mvCenter.y;
+                worldZMatrix[3][2] = mvCenter.z;
+                gl_Position = projectionMatrix * worldZMatrix * ( vec4(scaledPos, 1.0) * rotationZ(rotate * age) );
+              #else
+                #ifdef Aligned_to_World_Z
+                  mat4 worldZMatrix = viewMatrix * mat4(1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+                  vec4 mvCenter = viewMatrix * vec4(offset, 1.0);
+                  worldZMatrix[3][0] = mvCenter.x;
+                  worldZMatrix[3][1] = mvCenter.y;
+                  worldZMatrix[3][2] = mvCenter.z;
+                  gl_Position = projectionMatrix * worldZMatrix * ( vec4(scaledPos, 1.0) * rotationZ(rotate * age) );
+                #else
+                  // Billboard_to_Local_Z / default: camera-facing at world offset
+                  vec4 mvPos = viewMatrix * vec4(offset, 1.0);
+                  vec4 local = vec4(scaledPos, 1.0) * rotationZ(rotate * age);
+                  mvPos.xy += local.xy;
+                  gl_Position = projectionMatrix * mvPos;
+                #endif
+              #endif
+              }
+            #else
+            vec3 newPos = (offset) + scaledPos + force;
 
             #ifdef Billboard_to_World_Z
               //Override the modelViewMatrix so we can ignore preset rotation's (That way the plane will lay flat on the ground)
@@ -322,6 +423,8 @@ export class ShaderOdysseyEmitter extends Shader {
                 gl_Position = projectionMatrix * modelViewMatrix * ( vec4(newPos, 1.0) * rotationZ(rotate * age) );
               #endif
             #endif
+            #endif
+          #endif
           #endif
         #endif
       #endif
@@ -334,6 +437,7 @@ export class ShaderOdysseyEmitter extends Shader {
     this.fragment = `
     precision highp float;
     uniform sampler2D map;
+    uniform float parentAlpha;
 
     #ifdef TINTED
       uniform vec3 tintColor;
@@ -368,11 +472,15 @@ export class ShaderOdysseyEmitter extends Shader {
       #endif
 
       vec4 textureColor = texture2D(map, uvTransform);
-      float finalAlpha = textureColor.w * alpha;
+      float finalAlpha = textureColor.w * alpha * parentAlpha;
 
       #ifdef DEPTH_TEXTURE
         float sceneDepth = texture2D(tDepth, gl_FragCoord.xy / resolution).r;
+        // Match logarithmicDepthBuffer encoding written into DepthTexture
         float particleDepth = gl_FragCoord.z;
+        #if defined( USE_LOGDEPTHBUF ) && defined( USE_LOGDEPTHBUF_EXT )
+          particleDepth = vIsPerspective == 0.0 ? gl_FragCoord.z : log2( vFragDepth ) * logDepthBufFC * 0.5;
+        #endif
         float fade = clamp((sceneDepth - particleDepth) * softFactor, 0.0, 1.0);
         finalAlpha *= fade;
       #endif

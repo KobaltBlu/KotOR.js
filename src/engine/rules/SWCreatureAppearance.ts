@@ -17,10 +17,12 @@ export class SWCreatureAppearance {
   race: string = '';
   walkdist: number = 1.7;
   rundist: number = 5.4;
-  driveanimwalk: number = 1.7;
-  driveanimrun: number = 5.4;
-  driveanimrun_pc: number = 5.4; //TSL
-  driveanimrun_xbox: number = 5.4; //TSL
+  /** Anim pacing distance — retail default 2 when zero. */
+  driveanimwalk: number = 2;
+  /** Anim pacing distance — retail default 4 when zero (K1 DriveAnimRun). */
+  driveanimrun: number = 4;
+  driveanimrun_pc: number = 4; //TSL PC column
+  driveanimrun_xbox: number = 4; //TSL
   racetex: string = '';
   modeltype: 'B'|'F'|'S'|'L' = 'B';
   normalhead: number = -1;
@@ -83,8 +85,10 @@ export class SWCreatureAppearance {
   weaponscale: number = 1.0;
   wing_tail_scale: number = 1.0;
   moverate: 'PLAYER'|'NOMOVE'|'VSLOW'|'SLOW'|'NORM'|'FAST'|'VFAST'|'DEFAULT'|'DFAST'|'HUGE'|'GIANT'|'WEE_FOLK' = 'NORM';
-  driveaccl: number = 50;
-  drivemaxspeed: number = 5.4;
+  /** Retail fallback when appearance zero / missing — GetAcceleration uses 25. */
+  driveaccl: number = 25;
+  /** Retail GetMaxSpeed null-creature fallback — 6. */
+  drivemaxspeed: number = 6;
   hitradius: number = 0.25;
   perspace: number = 0.35;
   creperspace: number = 0.4;
@@ -205,14 +209,22 @@ export class SWCreatureAppearance {
       appearance.walkdist = TwoDAObject.normalizeValue(row.walkdist, 'number', 1.7);
     if(row.hasOwnProperty('rundist'))
       appearance.rundist = TwoDAObject.normalizeValue(row.rundist, 'number', 5.4);
-    if(row.hasOwnProperty('driveanimwalk'))
-      appearance.driveanimwalk = TwoDAObject.normalizeValue(row.driveanimwalk, 'number', 1.7);
-    if(row.hasOwnProperty('driveanimrun'))
-      appearance.driveanimrun = TwoDAObject.normalizeValue(row.driveanimrun, 'number', 5.4);
-    if(row.hasOwnProperty('driveanimrun_pc'))
-      appearance.driveanimrun_pc = TwoDAObject.normalizeValue(row.driveanimrun_pc, 'number', 5.4); //TSL
-    if(row.hasOwnProperty('driveanimrun_xbox'))
-      appearance.driveanimrun_xbox = TwoDAObject.normalizeValue(row.driveanimrun_xbox, 'number', 5.4); //TSL
+    if(row.hasOwnProperty('driveanimwalk')){
+      appearance.driveanimwalk = TwoDAObject.normalizeValue(row.driveanimwalk, 'number', 2);
+      if(!(appearance.driveanimwalk > 0)) appearance.driveanimwalk = 2;
+    }
+    if(row.hasOwnProperty('driveanimrun')){
+      appearance.driveanimrun = TwoDAObject.normalizeValue(row.driveanimrun, 'number', 4);
+      if(!(appearance.driveanimrun > 0)) appearance.driveanimrun = 4;
+    }
+    if(row.hasOwnProperty('driveanimrun_pc')){
+      appearance.driveanimrun_pc = TwoDAObject.normalizeValue(row.driveanimrun_pc, 'number', 4); //TSL
+      if(!(appearance.driveanimrun_pc > 0)) appearance.driveanimrun_pc = 4;
+    }
+    if(row.hasOwnProperty('driveanimrun_xbox')){
+      appearance.driveanimrun_xbox = TwoDAObject.normalizeValue(row.driveanimrun_xbox, 'number', 4); //TSL
+      if(!(appearance.driveanimrun_xbox > 0)) appearance.driveanimrun_xbox = 4;
+    }
     if(row.hasOwnProperty('racetex'))
       appearance.racetex = TwoDAObject.normalizeValue(row.racetex, 'string', '');
     if(row.hasOwnProperty('modeltype'))
@@ -321,10 +333,14 @@ export class SWCreatureAppearance {
       appearance.wing_tail_scale = TwoDAObject.normalizeValue(row.wing_tail_scale, 'number', 1.0);
     if(row.hasOwnProperty('moverate'))
       appearance.moverate = TwoDAObject.normalizeValue(row.moverate, 'string', 'NORM');
-    if(row.hasOwnProperty('driveaccl'))
-      appearance.driveaccl = TwoDAObject.normalizeValue(row.driveaccl, 'number', 50);
-    if(row.hasOwnProperty('drivemaxspeed'))
-      appearance.drivemaxspeed = TwoDAObject.normalizeValue(row.drivemaxspeed, 'number', 5.4);
+    if(row.hasOwnProperty('driveaccl')){
+      appearance.driveaccl = TwoDAObject.normalizeValue(row.driveaccl, 'number', 25);
+      if(!(appearance.driveaccl > 0)) appearance.driveaccl = 25;
+    }
+    if(row.hasOwnProperty('drivemaxspeed')){
+      appearance.drivemaxspeed = TwoDAObject.normalizeValue(row.drivemaxspeed, 'number', 6);
+      if(!(appearance.drivemaxspeed > 0)) appearance.drivemaxspeed = 6;
+    }
     if(row.hasOwnProperty('hitradius'))
       appearance.hitradius = TwoDAObject.normalizeValue(row.hitradius, 'number', 0.25);
     if(row.hasOwnProperty('perspace'))

@@ -24,6 +24,8 @@ import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
 import { type SWPortrait } from "@/engine/rules/SWPortrait";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
+import { getPathPersonalSpace } from "@/combat/attack-range";
+import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
 
 export interface CurrentMember {
   isLeader: boolean,
@@ -45,10 +47,18 @@ export interface PartyNPCList {
 export interface PartyPuppet {
   available: boolean;
   select: boolean;
+  /** UTC template (AVAILPUP{n}.utc), same pattern as PartyNPC */
+  template?: GFFObject;
+  /** Spawned creature when present in the area (party table object id cache) */
+  moduleObject?: ModuleCreature;
 }
 
 export interface PartyPuppetList {
   [key: string]: PartyPuppet;
+}
+
+export interface CurrentPuppet {
+  puppetID: number;
 }
 
 /**
@@ -66,6 +76,42 @@ export class PartyManager {
 
   static party: ModuleCreature[] = [];
   static aiStyle = 0;
+
+  /**
+   * Retail CSWPartyTable::SetSoloMode + TogglePartyFollow (runs k_sup_solo).
+   * @param enabled - solo mode on/off
+   * @param options.unstealthOnDisable - when turning solo off, strip party stealth (retail UnstealthParty)
+   * @param options.runScript - run k_sup_solo after the flag changes (retail TogglePartyFollow)
+   */
+  static setSoloMode(enabled: boolean, options: { unstealthOnDisable?: boolean; runScript?: boolean } = {}){
+    const unstealthOnDisable = options.unstealthOnDisable !== false;
+    const runScript = options.runScript !== false;
+    const next = !!enabled;
+    const wasSolo = !!GameState.SOLOMODE;
+
+    if(!next && unstealthOnDisable && wasSolo){
+      for(let i = 0; i < PartyManager.party.length; i++){
+        const member = PartyManager.party[i];
+        if(member?.stealthMode){
+          member.setStealthMode(false);
+        }
+      }
+    }
+
+    GameState.SOLOMODE = next;
+
+    if(runScript && wasSolo !== next){
+      try{
+        const script = GameState.NWScript.Load('k_sup_solo');
+        if(script){
+          // Retail runs on OBJECT_INVALID (0x7f000000)
+          script.run(PartyManager.party[0] || GameState.module?.area);
+        }
+      }catch(e){
+        // Script may be missing outside a full install
+      }
+    }
+  }
 
   /**
    * Current Player Creature (Can be overridden by with an NPC)
@@ -94,6 +140,8 @@ export class PartyManager {
 
   static Gold = 0;
   static CurrentMembers: CurrentMember[] = [];
+  /** Active party puppet slot IDs (TSL PT_PUPPETS / PT_PUPPET_ID). */
+  static CurrentPuppets: CurrentPuppet[] = [];
 
   static InfluenceMap: Map<number, number> = new Map<number, number>();
   static ChemicalCount: number = 0;
@@ -112,6 +160,7 @@ export class PartyManager {
   static Initialize(){
     PartyManager.MaxPartyCount = GameState.GameKey == GameEngineType.TSL ? 12 : 9;
     PartyManager.MaxPuppetCount = GameState.GameKey == GameEngineType.TSL ? 3 : 0;
+    partyFollowPath.reset();
 
     for(let i = 0; i < PartyManager.MaxPartyCount; i++){
       GameState.PartyManager.InfluenceMap.set(i, -1);
@@ -128,6 +177,8 @@ export class PartyManager {
         select: true
       };
     }
+    GameState.PartyManager.CurrentPuppets = [];
+    GameState.PartyManager.PuppetCount = 0;
   }
 
   /**
@@ -161,6 +212,8 @@ export class PartyManager {
         select: true
       };
     }
+    GameState.PartyManager.CurrentPuppets = [];
+    GameState.PartyManager.PuppetCount = 0;
 
     if(gff.RootNode.hasField('GlxyMap')){
       let GlxyMap = gff.getFieldByLabel('GlxyMap').getChildStructs()[0];
@@ -196,6 +249,10 @@ export class PartyManager {
         }
       }
     }
+
+    if(gff.RootNode.hasField('PT_SOLOMODE')){
+      GameState.SOLOMODE = !!gff.RootNode.getFieldByLabel('PT_SOLOMODE').getValue();
+    }
   
     if(gff.RootNode.hasField('PT_AVAIL_NPCS')){
       let avail = gff.getFieldByLabel('PT_AVAIL_NPCS').getChildStructs();
@@ -215,17 +272,19 @@ export class PartyManager {
       }
     }
 
-    //TSL: PT_ITEM_CHEMICAL
+    //TSL: PT_ITEM_CHEMICAL / PT_ITEM_COMPONENT (retail SaveTableInfo)
     if(gff.RootNode.hasField('PT_ITEM_CHEMICAL')){
       GameState.PartyManager.ChemicalCount = gff.RootNode.getFieldByLabel('PT_ITEM_CHEMICAL').getValue();
     }
 
-    //TSL: PT_ITEM_COMPONEN
-    if(gff.RootNode.hasField('PT_ITEM_COMPONEN')){
+    if(gff.RootNode.hasField('PT_ITEM_COMPONENT')){
+      GameState.PartyManager.ComponentCount = gff.RootNode.getFieldByLabel('PT_ITEM_COMPONENT').getValue();
+    }else if(gff.RootNode.hasField('PT_ITEM_COMPONEN')){
+      // Legacy truncated field name
       GameState.PartyManager.ComponentCount = gff.RootNode.getFieldByLabel('PT_ITEM_COMPONEN').getValue();
     }
   
-    //TSL: PT_AVAIL_PUPS
+    //TSL: PT_INFLUENCE
     if(gff.RootNode.hasField('PT_INFLUENCE')){
       const list = gff.getFieldByLabel('PT_INFLUENCE').getChildStructs();
       for(let i = 0; i < list.length; i++){
@@ -233,12 +292,20 @@ export class PartyManager {
       }
     }
   
-    //TSL: PT_AVAIL_PUPS
+    //TSL: PT_PUPPETS — active puppet slot IDs in the party
+    GameState.PartyManager.CurrentPuppets = [];
     if(gff.RootNode.hasField('PT_PUPPETS')){
       const list = gff.getFieldByLabel('PT_PUPPETS').getChildStructs();
       for(let i = 0; i < list.length; i++){
-        //todo
+        const idField = list[i].getFieldByLabel('PT_PUPPET_ID');
+        if(!idField) continue;
+        GameState.PartyManager.CurrentPuppets.push({ puppetID: idField.getValue() | 0 });
       }
+    }
+    if(gff.RootNode.hasField('PT_NUM_PUPPETS')){
+      GameState.PartyManager.PuppetCount = gff.RootNode.getFieldByLabel('PT_NUM_PUPPETS').getValue() | 0;
+    }else{
+      GameState.PartyManager.PuppetCount = GameState.PartyManager.CurrentPuppets.length;
     }
 
     GameState.PartyManager.Gold = gff.RootNode.getFieldByLabel('PT_GOLD').getValue();
@@ -280,6 +347,21 @@ export class PartyManager {
       }
     }
 
+    // Retail LoadTableInfo — restore per-baseitem cost multipliers
+    const costMultField =
+      gff.RootNode.getFieldByLabel('PT_COST_MULT_LIST') ||
+      gff.RootNode.getFieldByLabel('PT_COST_MULT_LIS');
+    if(costMultField){
+      const list = costMultField.getChildStructs();
+      const baseItems = GameState.SWRuleSet?.baseItems || [];
+      for(let i = 0; i < list.length && i < baseItems.length; i++){
+        const v = list[i].getFieldByLabel('PT_COST_MULT_VALUE')?.getValue();
+        if(typeof v === 'number' && Number.isFinite(v)){
+          baseItems[i].itemMultiplier = v;
+        }
+      }
+    }
+
     for(let i = 0; i < PartyManager.MaxPartyCount; i++){
       const id = i;
       try{
@@ -290,6 +372,22 @@ export class PartyManager {
         }
       }catch(e){
         console.log(e);
+      }
+    }
+
+    // TSL: AVAILPUP{n}.utc beside AVAILNPC (GetPupFilename → "AVAILPUP%d")
+    if(GameState.GameKey == GameEngineType.TSL){
+      for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
+        try{
+          const buffer = await GameFileSystem.readFile( path.join( CurrentGame.gameinprogress_dir, 'availpup'+i+'.utc') );
+          if(buffer.length){
+            const pup = GameState.PartyManager.Puppets[i] || { available: false, select: true };
+            pup.template = new GFFObject(buffer);
+            GameState.PartyManager.Puppets[i] = pup;
+          }
+        }catch(e){
+          // Missing AVAILPUP is normal when slot never saved
+        }
       }
     }
 
@@ -363,10 +461,17 @@ export class PartyManager {
 
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED')).setValue(0);
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NP')).setValue( GameState.getCurrentPlayer() == GameState.PartyManager.Player ? -1 : GameState.PartyManager.party.indexOf(GameState.getCurrentPlayer()) );
-      partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_COST_MULT_LIS'));
 
-      //TODO: COST MULT LIST
-
+      // Retail SaveTableInfo @ 00565000 — one PT_COST_MULT_VALUE per baseitems row
+      const costMultList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_COST_MULT_LIST'));
+      const baseItems = GameState.SWRuleSet?.baseItems || [];
+      for(let i = 0; i < baseItems.length; i++){
+        const costStruct = new GFFStruct(0);
+        costStruct.addField(new GFFField(GFFDataType.FLOAT, 'PT_COST_MULT_VALUE')).setValue(
+          Number(baseItems[i]?.itemMultiplier) || 1
+        );
+        costMultList.addChildStruct(costStruct);
+      }
       const dlg_list = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_DLG_MSG_LIST'));
 
       for(let i = 0; i <  GameState.DialogMessageManager.Entries.length; i++){
@@ -402,6 +507,34 @@ export class PartyManager {
 
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_NUM_MEMBERS')).setValue(numMembers);
 
+      // TSL SaveTableInfo @ 00700e00 — puppets + components/chemicals
+      if(GameState.GameKey == GameEngineType.TSL){
+        const puppets = GameState.PartyManager.CurrentPuppets || [];
+        partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_NUM_PUPPETS')).setValue(puppets.length);
+        const puppetsList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PUPPETS'));
+        for(let i = 0; i < puppets.length; i++){
+          const pupStruct = new GFFStruct(0);
+          pupStruct.addField(new GFFField(GFFDataType.INT, 'PT_PUPPET_ID')).setValue(puppets[i].puppetID | 0);
+          puppetsList.addChildStruct(pupStruct);
+        }
+
+        const availPups = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_AVAIL_PUPS'));
+        for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
+          const pm = GameState.PartyManager.Puppets[i] || { available: false, select: true };
+          const availStruct = new GFFStruct(0);
+          availStruct.addField(new GFFField(GFFDataType.BYTE, 'PT_PUP_AVAIL')).setValue(pm.available ? 1 : 0);
+          availStruct.addField(new GFFField(GFFDataType.BYTE, 'PT_PUP_SELECT')).setValue(pm.select ? 1 : 0);
+          availPups.addChildStruct(availStruct);
+        }
+
+        partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_ITEM_COMPONENT')).setValue(
+          GameState.PartyManager.ComponentCount | 0
+        );
+        partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_ITEM_CHEMICAL')).setValue(
+          GameState.PartyManager.ChemicalCount | 0
+        );
+      }
+
       /**
        * Pazaak Cards
        */
@@ -433,7 +566,7 @@ export class PartyManager {
       }
 
       partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_PLAYEDSECONDS')).setValue(0);
-      partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_SOLOMODE')).setValue(0);
+      partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_SOLOMODE')).setValue(GameState.SOLOMODE ? 1 : 0);
 
       const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
       if(tutorial2DA){
@@ -504,6 +637,7 @@ export class PartyManager {
     PartyManager.party.unshift(pm);
     PartyManager.ProcessEventListener('change', [pm]);
     PartyManager.UpdateLeader();
+    PartyManager.resetFollowPath(pm);
     return pm;
   }
 
@@ -760,6 +894,228 @@ export class PartyManager {
   }
 
   /**
+   * TSL AddAvailablePUPByTemplate (CSWPartyTable::AddPUP by resref @ 007002b0).
+   * Marks slot available and stores UTC; does not spawn.
+   */
+  static AddAvailablePUPByTemplate(pupId = 0, template: string = ''): boolean {
+    if(GameState.GameKey != GameEngineType.TSL) return false;
+    if(pupId < 0 || pupId >= PartyManager.MaxPuppetCount) return false;
+    if(PartyManager.Puppets[pupId]?.available) return false;
+    const resref = (template || '').trim();
+    if(!resref) return false;
+    const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utc'], resref);
+    if(!buffer){
+      console.error('Failed to load puppet template', resref);
+      return false;
+    }
+    const pup = PartyManager.Puppets[pupId] || { available: false, select: true };
+    pup.available = true;
+    pup.select = true;
+    pup.template = new GFFObject(buffer);
+    PartyManager.Puppets[pupId] = pup;
+    void PartyManager.ExportPuppetTemplate(pupId, pup.template);
+    return true;
+  }
+
+  /**
+   * TSL AddAvailablePUPByObject (CSWPartyTable::AddPUP @ 006fff20).
+   * Saves creature to AVAILPUP{n}.utc; does not spawn.
+   */
+  static AddAvailablePUPByObject(pupId = 0, object: ModuleCreature): boolean {
+    if(GameState.GameKey != GameEngineType.TSL) return false;
+    if(pupId < 0 || pupId >= PartyManager.MaxPuppetCount) return false;
+    if(PartyManager.Puppets[pupId]?.available) return false;
+    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return false;
+    const pup = PartyManager.Puppets[pupId] || { available: false, select: true };
+    pup.available = true;
+    pup.select = true;
+    pup.template = object.save();
+    PartyManager.Puppets[pupId] = pup;
+    void PartyManager.ExportPuppetTemplate(pupId, pup.template);
+    return true;
+  }
+
+  /**
+   * TSL AssignPUP @ 00700400 — set owner NPC's assignedPuppetId (creature+0x11f8).
+   * Both PUP and NPC must be available; NPC must already exist in-game.
+   */
+  static AssignPUP(pupId = 0, npcId = 0): boolean {
+    if(GameState.GameKey != GameEngineType.TSL) return false;
+    if(pupId < 0 || pupId >= PartyManager.MaxPuppetCount) return false;
+    if(npcId < 0 || npcId >= PartyManager.MaxPartyCount) return false;
+    if(!PartyManager.NPCS[npcId]?.available) return false;
+    if(!PartyManager.Puppets[pupId]?.available) return false;
+    const owner =
+      PartyManager.GetPartyMemberByNPCId(npcId) ||
+      PartyManager.NPCS[npcId]?.moduleObject;
+    if(!BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)) return false;
+    owner.assignedPuppetId = pupId;
+    return true;
+  }
+
+  /**
+   * TSL SpawnAvailablePUP / SpawnPUP @ 007031c0 — load from AVAILPUP if needed, place at location.
+   * Does not add to the party puppet list (call AddPartyPuppet for that).
+   */
+  static SpawnAvailablePUP(pupId = 0, location?: EngineLocation): ModuleCreature | undefined {
+    if(GameState.GameKey != GameEngineType.TSL) return undefined;
+    if(pupId < 0 || pupId >= PartyManager.MaxPuppetCount) return undefined;
+    const pup = PartyManager.Puppets[pupId];
+    if(!pup?.available) return undefined;
+
+    let partyMember = pup.moduleObject;
+    if(!BitWise.InstanceOfObject(partyMember, ModuleObjectType.ModuleCreature)){
+      if(!(pup.template instanceof GFFObject)) return undefined;
+      partyMember = new ModuleCreature(pup.template);
+      pup.moduleObject = partyMember;
+    }
+
+    partyMember.clearAllActions();
+
+    const area = location?.area || GameState.module?.area;
+    if(!area) return partyMember;
+
+    area.attachObject(partyMember);
+    partyMember.load();
+    const pos = location?.position?.clone?.() || location?.position || partyMember.position;
+    const facing = location?.getFacing?.() ?? partyMember.getFacing?.() ?? 0;
+    partyMember.loadModel().then( (model: OdysseyModel3D) => {
+      partyMember.model.userData.moduleObject = partyMember;
+      if(pos) partyMember.setPosition(pos);
+      partyMember.setFacing(facing, true);
+      partyMember.box = new THREE.Box3().setFromObject(partyMember.container);
+      model.hasCollision = true;
+      GameState.group.creatures.add( partyMember.container );
+      partyMember.getCurrentRoom();
+      partyMember.onSpawn();
+    });
+    return partyMember;
+  }
+
+  /**
+   * TSL GetPUPID @ 007035f0 — puppet slot index for a spawned puppet object, or -1.
+   */
+  static GetPUPID(object: ModuleCreature): number {
+    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return -1;
+    for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
+      if(PartyManager.Puppets[i]?.moduleObject === object) return i;
+    }
+    return -1;
+  }
+
+  /**
+   * TSL GetPUPOwner @ 00704c70 — party member / player whose assignedPuppetId matches.
+   */
+  static GetPUPOwner(object: ModuleCreature): ModuleCreature | undefined {
+    if(GameState.GameKey != GameEngineType.TSL) return undefined;
+    const pupId = PartyManager.GetPUPID(object);
+    if(pupId < 0) return undefined;
+    for(let i = 0; i < PartyManager.party.length; i++){
+      const member = PartyManager.party[i];
+      if(member?.assignedPuppetId === pupId) return member;
+    }
+    const player = PartyManager.Player;
+    if(BitWise.InstanceOfObject(player, ModuleObjectType.ModuleCreature) && player.assignedPuppetId === pupId){
+      return player;
+    }
+    return undefined;
+  }
+
+  /**
+   * TSL SaveMemberByObject / SaveNPCByObject @ 006fdca0 — write creature to AVAILNPC{n}.utc.
+   */
+  static SaveNPCByObject(npcId = 0, object: ModuleCreature): void {
+    if(npcId < 0 || npcId >= PartyManager.MaxPartyCount) return;
+    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
+    object.clearAllActions();
+    const npc = PartyManager.NPCS[npcId] || {
+      available: false,
+      canSelect: false,
+      spawned: false,
+    };
+    npc.template = object.save();
+    npc.moduleObject = object;
+    PartyManager.NPCS[npcId] = npc;
+    void PartyManager.ExportPartyMemberTemplate(npcId, npc.template);
+  }
+
+  /**
+   * TSL RebuildPartyTable @ ExecuteCommandRebuildPartyTable 007b1a30 —
+   * rebind NPC/PUP object caches by companion tag when the NPC/PUP is available.
+   */
+  static RebuildPartyTable(): void {
+    if(GameState.GameKey != GameEngineType.TSL) return;
+    const tags = [
+      'atton', 'baodur', 'mand', 'g0t0', 'handmaiden', 'hk47',
+      'kreia', 'mira', 't3m4', 'visasmarr', 'hanharr', 'disciple',
+    ];
+    for(let i = 0; i < tags.length; i++){
+      if(!PartyManager.NPCS[i]?.available) continue;
+      const obj = GameState.ModuleObjectManager.GetObjectByTag(tags[i], 0);
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+        PartyManager.NPCS[i].moduleObject = obj as ModuleCreature;
+        (obj as ModuleCreature).npcId = i;
+      }
+    }
+    if(PartyManager.Puppets[0]?.available){
+      const remote = GameState.ModuleObjectManager.GetObjectByTag('remote', 0);
+      if(BitWise.InstanceOfObject(remote, ModuleObjectType.ModuleCreature)){
+        PartyManager.Puppets[0].moduleObject = remote as ModuleCreature;
+      }
+    }
+  }
+
+  /**
+   * TSL SavePuppetByObject @ 006fe0e0 — write creature to GAMEINPROGRESS:AVAILPUP{n}.utc.
+   */
+  static SavePUPByObject(pupId = 0, object: ModuleCreature): void {
+    if(GameState.GameKey != GameEngineType.TSL) return;
+    if(pupId < 0 || pupId >= PartyManager.MaxPuppetCount) return;
+    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
+    object.clearAllActions();
+    const pup = PartyManager.Puppets[pupId] || { available: false, select: true };
+    pup.template = object.save();
+    pup.moduleObject = object;
+    PartyManager.Puppets[pupId] = pup;
+    void PartyManager.ExportPuppetTemplate(pupId, pup.template);
+  }
+
+  /**
+   * TSL AddPartyPuppet / AddPuppet @ 006feb00 — add available puppet to active party list + SetIsPuppet.
+   */
+  static AddPartyPuppet(pupId = 0, object?: ModuleCreature): boolean {
+    if(GameState.GameKey != GameEngineType.TSL) return false;
+    if(pupId < 0 || pupId >= PartyManager.MaxPuppetCount) return false;
+    const pup = PartyManager.Puppets[pupId];
+    if(!pup?.available) return false;
+    if(PartyManager.CurrentPuppets.some((p) => p.puppetID === pupId)){
+      return true;
+    }
+    if(PartyManager.CurrentPuppets.length >= PartyManager.MaxPuppetCount) return false;
+    // Retail: reject if another slot already caches this object id
+    if(object && BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)){
+      for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
+        if(i !== pupId && PartyManager.Puppets[i]?.moduleObject === object) return false;
+      }
+      pup.moduleObject = object;
+      object.isPuppet = true;
+    }else if(pup.moduleObject){
+      pup.moduleObject.isPuppet = true;
+    }
+    PartyManager.CurrentPuppets.push({ puppetID: pupId });
+    PartyManager.PuppetCount = PartyManager.CurrentPuppets.length;
+    return true;
+  }
+
+  /**
+   * TSL GetIsPuppet — reads creature isPuppet (SetIsPuppet / +0x11fc), not mere spawn cache.
+   */
+  static GetIsPartyPuppet(object: ModuleCreature): boolean {
+    if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return false;
+    return !!object.isPuppet;
+  }
+
+  /**
    * Add a world creature to the list of Party Members and remove it from the creatures array
    * @param slot - The slot to add the creature to
    * @param creature - The creature to add to the list of Party Members
@@ -831,6 +1187,7 @@ export class PartyManager {
         GameState.group.party.add( partyMember.container );
         oldPC.destroy();
         partyMember.onSpawn();
+        PartyManager.resetFollowPath(partyMember);
       });
       return partyMember;
     }catch(e){
@@ -862,6 +1219,7 @@ export class PartyManager {
   static ShiftLeader(){
     PartyManager.party.push( PartyManager.party.shift() );
     PartyManager.UpdateLeader();
+    PartyManager.resetFollowPath(PartyManager.party[0]);
   }
 
   /**
@@ -1129,6 +1487,27 @@ export class PartyManager {
   static #tmpFollowPositionTarget = new THREE.Vector3();
   static #tmpFollowPosition = new THREE.Vector3();
   /**
+   * Record leader trail for party follow (retail ProcessPoint).
+   * Call when the controlled party leader moves.
+   */
+  static processLeaderFollowPoint(leader: ModuleCreature){
+    if(!leader || PartyManager.party[0] !== leader) return;
+    if(GameState.SOLOMODE) return;
+    partyFollowPath.processPoint(leader, leader.area);
+  }
+
+  /**
+   * Reset follow ring (area transition / party rearrange).
+   */
+  static resetFollowPath(leader?: ModuleCreature){
+    if(leader){
+      partyFollowPath.reset(leader.position, leader.rotation?.z ?? 0);
+    }else{
+      partyFollowPath.reset();
+    }
+  }
+
+  /**
    * Get the follow position of the creature
    * @param creature - The creature to get the follow position of
    * @returns THREE.Vector3
@@ -1138,9 +1517,9 @@ export class PartyManager {
   }
 
   /**
-   * Get the follow position of the creature at the index
-   * @param idx - The index of the party member to get the follow position of
-   * @returns THREE.Vector3
+   * Get the follow position of the creature at the index.
+   * Prefers RecaulateFollowPoint center-trail goal when the ring is warm
+   * (retail @ 006359c0); falls back to lateral offset behind the live leader.
    */
   static GetFollowPositionAtIndex(idx: number = 1){
     const leader = PartyManager.party[0];
@@ -1149,17 +1528,32 @@ export class PartyManager {
     if(!creature)
       return new THREE.Vector3();
 
-    const targetOffset = (idx == 2) ? -1.5 :1.5;
+    if(idx >= 1 && idx <= 2 && partyFollowPath.getFollowGoal(idx, this.#tmpFollowPosition)){
+      return (creature.area?.isPointWalkable?.(this.#tmpFollowPosition))
+        ? this.#tmpFollowPosition
+        : creature.area.getNearestWalkablePoint(this.#tmpFollowPosition, getPathPersonalSpace(creature));
+    }
+
+    const targetOffset = (idx == 2) ? -1.5 : 1.5;
 
     this.#tmpFollowPositionTarget.set(
-      targetOffset * Math.cos(leader.rotation.z), 
-      targetOffset * Math.sin(leader.rotation.z), 
+      targetOffset * Math.cos(leader.rotation.z),
+      targetOffset * Math.sin(leader.rotation.z),
       0
     );
     this.#tmpFollowPosition.copy(leader.position).sub(this.#tmpFollowPositionTarget);
 
     return (creature.area.isPointWalkable(this.#tmpFollowPosition)) ?
-      this.#tmpFollowPosition : creature.area.getNearestWalkablePoint(this.#tmpFollowPosition, creature.getHitDistance());
+      this.#tmpFollowPosition : creature.area.getNearestWalkablePoint(this.#tmpFollowPosition, getPathPersonalSpace(creature));
+  }
+
+  /**
+   * Retail TeleportForward — advance along the follow ring to a safe offset.
+   */
+  static teleportFollowForward(creature: ModuleCreature, out: THREE.Vector3): boolean {
+    const idx = PartyManager.party.indexOf(creature);
+    if(idx < 1) return false;
+    return partyFollowPath.teleportForward(idx, creature.area, out);
   }
 
   /**
@@ -1185,6 +1579,15 @@ export class PartyManager {
   }
 
   /**
+   * TSL GetPupFilename — export AVAILPUP{n}.utc into GAMEINPROGRESS.
+   */
+  static async ExportPuppetTemplate( index = 0, template: GFFObject ){
+    if(!(template instanceof GFFObject)){ return; }
+    template.removeFieldByLabel('TemplateResRef');
+    await template.export( path.join( CurrentGame.gameinprogress_dir, 'AVAILPUP'+index+'.utc'));
+  }
+
+  /**
    * Export the party member templates
    * @returns void
    */
@@ -1204,6 +1607,14 @@ export class PartyManager {
         }
 
         await PartyManager.ExportPartyMemberTemplate(i, pm.template);
+      }
+      if(GameState.GameKey == GameEngineType.TSL){
+        for(let i = 0; i < PartyManager.MaxPuppetCount; i++){
+          const pup = PartyManager.Puppets[i];
+          if(pup?.template instanceof GFFObject){
+            await PartyManager.ExportPuppetTemplate(i, pup.template);
+          }
+        }
       }
       await PartyManager.ExportPlayerCharacter();
       resolve();

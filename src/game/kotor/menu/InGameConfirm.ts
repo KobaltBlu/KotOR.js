@@ -148,7 +148,11 @@ export class InGameConfirm extends GameMenu {
   fromStringRef(strRef: number){
     const tlkString = GameState.TLKManager.GetStringById(strRef);
     if(!tlkString){ return; }
-    this.LB_MESSAGE.setItem(tlkString.Value);
+    this.fromString(tlkString.Value);
+  }
+
+  fromString(message: string){
+    this.LB_MESSAGE.setItem(message);
     const node = this.LB_MESSAGE.children[0];
     this.messageBoxHeight = node.textSize.y;
     this.LB_MESSAGE.extent.height = this.LB_MESSAGE.height = this.messageBoxHeight;

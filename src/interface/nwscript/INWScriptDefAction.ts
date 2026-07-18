@@ -1,4 +1,5 @@
 import type { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
+import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 
 /**
  * INWScriptDefAction interface.
@@ -15,5 +16,5 @@ export interface INWScriptDefAction {
   name: string,
   type: NWScriptDataType,
   args: NWScriptDataType[],
-  action?: (args: any[]) => any
+  action?: (this: NWScriptInstance, ...args: any[]) => any
 };

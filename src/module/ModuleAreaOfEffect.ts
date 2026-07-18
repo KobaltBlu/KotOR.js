@@ -6,8 +6,12 @@ import { ModuleObject } from "@/module/ModuleObject";
 import { AreaOfEffectShape } from "@/enums/module/AreaOfEffectShape";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import { GameState } from "@/GameState";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
+import { SignalEventType } from "@/enums/events/SignalEventType";
+import { BitWise } from "@/utility/BitWise";
 
 /**
  * ModuleAreaOfEffect class.
@@ -56,14 +60,271 @@ export class ModuleAreaOfEffect extends ModuleObject {
   lastHeartBeatDay: number;
   lastHeartbeatTime: number;
 
+  /** Script resrefs before NWScript.Load (from vfx_persistent / effect overrides). */
+  scriptResRefs: {
+    onEnter: string;
+    heartbeat: string;
+    onExit: string;
+    onUserDefined: string;
+  } = { onEnter: '', heartbeat: '', onExit: '', onUserDefined: '' };
+
+  heartbeatMsAccum: number = 0;
+  durationMsRemaining: number = 0;
+  destroyRequested: boolean = false;
+
   constructor ( gff = new GFFObject() ) {
     super(gff);
     this.objectType |= ModuleObjectType.ModuleAreaOfEffect;
+    this.radius = 5;
+    this.shape = AreaOfEffectShape.CIRCLE;
+    this.length = 0;
+    this.width = 0;
+    this.spellSaveDC = 14;
+    this.lastHeartBeatDay = 0;
+    this.lastHeartbeatTime = 0;
   }
 
   load(){
     //We already have the template (From SAVEGAME)
     this.initProperties();
+    this.loadScripts();
+  }
+
+  /**
+   * Load shape/scripts from vfx_persistent.2da (retail LoadAreaEffect).
+   */
+  loadFromPersistentRow(
+    rowId: number,
+    overrides?: { onEnter?: string; heartbeat?: string; onExit?: string }
+  ){
+    this.areaEffectId = rowId;
+    const table = GameState.TwoDAManager.datatables.get('vfx_persistent')
+      || GameState.TwoDAManager.datatables.get('vfx_persist');
+    const row = table?.rows?.[rowId];
+    if(row){
+      this.tag = String(row.label || row.Label || `aoe_${rowId}`);
+      const shape = String(row.shape || row.SHAPE || 'C').toUpperCase();
+      if(shape.startsWith('R')){
+        this.shape = AreaOfEffectShape.RECTANGLE;
+        this.length = parseFloat(row.length || row.LENGTH || 0) || 0;
+        this.width = parseFloat(row.width || row.WIDTH || 0) || 0;
+        this.radius = Math.sqrt(
+          Math.pow(this.length / 2, 2) + Math.pow(this.width / 2, 2)
+        );
+      }else{
+        this.shape = AreaOfEffectShape.CIRCLE;
+        this.radius = parseFloat(row.radius || row.RADIUS || 5) || 5;
+      }
+      this.scriptResRefs.onEnter = String(row.onenter || row.ONENTER || '');
+      this.scriptResRefs.heartbeat = String(row.heartbeat || row.HEARTBEAT || '');
+      this.scriptResRefs.onExit = String(row.onexit || row.ONEXIT || '');
+    }else{
+      this.tag = `aoe_${rowId}`;
+      this.shape = AreaOfEffectShape.CIRCLE;
+      this.radius = 5;
+    }
+    if(overrides?.onEnter) this.scriptResRefs.onEnter = overrides.onEnter;
+    if(overrides?.heartbeat) this.scriptResRefs.heartbeat = overrides.heartbeat;
+    if(overrides?.onExit) this.scriptResRefs.onExit = overrides.onExit;
+  }
+
+  loadScripts(){
+    const map: [ModuleObjectScript, string][] = [
+      [ModuleObjectScript.AoEOnEnter, this.scriptResRefs.onEnter],
+      [ModuleObjectScript.AoEOnHeartbeat, this.scriptResRefs.heartbeat],
+      [ModuleObjectScript.AoEOnExit, this.scriptResRefs.onExit],
+      [ModuleObjectScript.AoEOnUserDefined, this.scriptResRefs.onUserDefined],
+    ];
+    // Also load from GFF template fields if present
+    const node = this.template?.RootNode;
+    const gffKeys: [ModuleObjectScript, string][] = [
+      [ModuleObjectScript.AoEOnEnter, 'OnObjEnter'],
+      [ModuleObjectScript.AoEOnHeartbeat, 'OnHeartbeat'],
+      [ModuleObjectScript.AoEOnExit, 'OnObjExit'],
+      [ModuleObjectScript.AoEOnUserDefined, 'OnUserDefined'],
+    ];
+    for(const [key, field] of gffKeys){
+      if(node?.hasField(field)){
+        const resRef = node.getFieldByLabel(field).getValue();
+        if(resRef) this.scriptResRefs[
+          key === ModuleObjectScript.AoEOnEnter ? 'onEnter'
+            : key === ModuleObjectScript.AoEOnHeartbeat ? 'heartbeat'
+            : key === ModuleObjectScript.AoEOnExit ? 'onExit'
+            : 'onUserDefined'
+        ] = resRef;
+      }
+    }
+    for(const [scriptKey, resRef] of map){
+      const ref = scriptKey === ModuleObjectScript.AoEOnEnter ? this.scriptResRefs.onEnter
+        : scriptKey === ModuleObjectScript.AoEOnHeartbeat ? this.scriptResRefs.heartbeat
+        : scriptKey === ModuleObjectScript.AoEOnExit ? this.scriptResRefs.onExit
+        : this.scriptResRefs.onUserDefined;
+      if(!ref) continue;
+      const nwscript = GameState.NWScript.Load(ref);
+      if(!nwscript) continue;
+      nwscript.caller = this;
+      this.scripts[scriptKey] = nwscript;
+      if(scriptKey === ModuleObjectScript.AoEOnHeartbeat) this.onHeartbeat = nwscript;
+      if(scriptKey === ModuleObjectScript.AoEOnEnter) this.onObjectEnter = nwscript;
+      if(scriptKey === ModuleObjectScript.AoEOnExit) this.onObjectExit = nwscript;
+      if(scriptKey === ModuleObjectScript.AoEOnUserDefined) this.onUserDefined = nwscript;
+    }
+  }
+
+  isInsideBoundingBox(object: ModuleObject): boolean {
+    if(!object) return false;
+    const dx = object.position.x - this.position.x;
+    const dy = object.position.y - this.position.y;
+    if(this.shape === AreaOfEffectShape.RECTANGLE){
+      const halfL = (this.length || 0) / 2;
+      const halfW = (this.width || 0) / 2;
+      return Math.abs(dx) <= halfL && Math.abs(dy) <= halfW;
+    }
+    const r = this.radius || 0;
+    return (dx * dx + dy * dy) <= (r * r);
+  }
+
+  isInside(object: ModuleObject): boolean {
+    return this.objectsInside.indexOf(object) >= 0;
+  }
+
+  addObjectInside(object: ModuleObject): boolean {
+    if(this.isInside(object)) return false;
+    this.objectsInside.push(object);
+    return true;
+  }
+
+  removeObjectInside(object: ModuleObject): boolean {
+    const idx = this.objectsInside.indexOf(object);
+    if(idx < 0) return false;
+    this.objectsInside.splice(idx, 1);
+    return true;
+  }
+
+  updateObjectInside(object: ModuleObject){
+    if(!object || this.destroyRequested) return;
+    if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature) && (object as any).isDead?.()){
+      // still allow exit when dying
+    }
+    const inside = this.isInsideBoundingBox(object);
+    if(inside){
+      const added = this.addObjectInside(object);
+      if(added){
+        this.lastEntered = object;
+        this.lastEnteredId = object.id;
+        this.onEnter(object);
+      }
+      return;
+    }
+    const removed = this.removeObjectInside(object);
+    if(removed){
+      this.lastLeft = object;
+      this.lastLeftId = object.id;
+      this.onExit(object);
+    }
+  }
+
+  onEnter(object?: ModuleObject){
+    if(!object) return;
+    const event = new GameState.GameEventFactory.EventSignalEvent();
+    event.setCaller(object);
+    event.setObject(this);
+    event.setDay(GameState.module.timeManager.pauseDay);
+    event.setTime(GameState.module.timeManager.pauseTime);
+    event.eventType = SignalEventType.OnObjectEnter;
+    GameState.module.addEvent(event);
+  }
+
+  onExit(object?: ModuleObject){
+    if(!object) return;
+    const event = new GameState.GameEventFactory.EventSignalEvent();
+    event.setCaller(object);
+    event.setObject(this);
+    event.setDay(GameState.module.timeManager.pauseDay);
+    event.setTime(GameState.module.timeManager.pauseTime);
+    event.eventType = SignalEventType.OnObjectExit;
+    GameState.module.addEvent(event);
+  }
+
+  update(delta = 0){
+    if(this.destroyRequested || this.destroyed) return;
+
+    // Follow linked creature (retail circle + linked_to_object)
+    if(
+      this.shape !== AreaOfEffectShape.RECTANGLE &&
+      this.linkedToObject &&
+      BitWise.InstanceOfObject(this.linkedToObject, ModuleObjectType.ModuleCreature)
+    ){
+      if((this.linkedToObject as any).isDead?.() || !this.linkedToObject.area){
+        this.requestDestroy();
+        return;
+      }
+      this.position.copy(this.linkedToObject.position);
+    }
+
+    // Temporary duration countdown (seconds → ms)
+    if(this.durationType === GameEffectDurationType.TEMPORARY && this.duration > 0){
+      if(this.durationMsRemaining <= 0){
+        this.durationMsRemaining = this.duration * 1000;
+      }
+      this.durationMsRemaining -= delta * 1000;
+      if(this.durationMsRemaining <= 0){
+        this.requestDestroy();
+        return;
+      }
+    }
+
+    // Refresh occupants
+    const creatures = this.area?.creatures || [];
+    for(let i = 0; i < creatures.length; i++){
+      this.updateObjectInside(creatures[i]);
+    }
+    const party = GameState.PartyManager?.party || [];
+    for(let i = 0; i < party.length; i++){
+      if(party[i]) this.updateObjectInside(party[i]);
+    }
+
+    // Heartbeat ~6s (retail AIUpdate > 5999ms); skip first tick
+    if(this.lastHeartBeatDay === 0 && this.lastHeartbeatTime === 0){
+      this.lastHeartBeatDay = GameState.module.timeManager.pauseDay;
+      this.lastHeartbeatTime = GameState.module.timeManager.pauseTime;
+      this.heartbeatMsAccum = 0;
+      return;
+    }
+    this.heartbeatMsAccum += delta * 1000;
+    if(this.heartbeatMsAccum > 5999){
+      this.heartbeatMsAccum = 0;
+      this.lastHeartBeatDay = GameState.module.timeManager.pauseDay;
+      this.lastHeartbeatTime = GameState.module.timeManager.pauseTime;
+      const hb = this.getScriptInstance(ModuleObjectScript.AoEOnHeartbeat) || this.onHeartbeat;
+      if(hb){
+        hb.caller = this;
+        hb.run(this);
+      }
+    }
+  }
+
+  updatePaused(delta = 0){
+    // AoEs freeze with world pause
+  }
+
+  requestDestroy(){
+    if(this.destroyRequested) return;
+    this.destroyRequested = true;
+    // Exit everyone still inside
+    const inside = this.objectsInside.slice();
+    for(let i = 0; i < inside.length; i++){
+      this.removeObjectInside(inside[i]);
+      this.onExit(inside[i]);
+    }
+    this.destroy();
+  }
+
+  destroy(){
+    if(this.area){
+      this.area.detachObject(this);
+    }
+    super.destroy();
   }
 
   initProperties(): void {
@@ -145,20 +406,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
     if(this.template.RootNode.hasField('PositionZ'))
       this.position.z = this.template.getFieldByLabel('PositionZ').getValue();
 
-    //ActionList
-    try{
-      if(this.template.RootNode.hasField('ActionList')){
-        let actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
-        for(let i = 0, len = actionStructs.length; i < len; i++){
-          let action = GameState.ActionFactory.FromStruct(actionStructs[i]);
-          if(action){
-            this.actionQueue.add(action);
-          }
-        }
-      }
-    }catch(e: any){
-      console.error(e);
-    }
+    this.loadActionList();
 
     //SWVarTable
     if(this.template.RootNode.hasField('SWVarTable')){
@@ -209,7 +457,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Duration') ).setValue(this.duration);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'DurationType') ).setValue(this.durationType);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'LastHrtbtDay') ).setValue(this.lastHeartBeatDay);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'LastHrtbtTime') ).setValue(this.lastHeartBeatDay);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'LastHrtbtTime') ).setValue(this.lastHeartbeatTime);
 
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'OnHeartbeat') ).setValue(this.onHeartbeat.name);
 

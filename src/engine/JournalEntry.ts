@@ -4,6 +4,7 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { JournalCategory } from "@/engine/JournalCategory";
 import { JournalCategoryEntry } from "@/engine/JournalCategoryEntry";
+import { ModuleCalendar } from "@/module/ModuleCalendar";
 
 /**
  * JournalEntry class.
@@ -34,6 +35,14 @@ export class JournalEntry {
 
   getEntryText(): string {
     return this.entry.text.getTLKValue();
+  }
+
+  /**
+   * Format JNL_Date / JNL_Time as a calendar date string for UI lists.
+   * Uses the retail 28-day / 12-month conversion from Mod_PauseDay.
+   */
+  getReceivedDateLabel(): string {
+    return ModuleCalendar.formatPauseDayLabel(this.date);
   }
 
   load(): void {

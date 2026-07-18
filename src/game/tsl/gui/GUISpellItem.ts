@@ -54,8 +54,6 @@ export class GUISpellItem extends GUIProtoItem {
 
         let hasSpell = GameState.PartyManager.party[0].getHasSpell(spell.__index);
 
-        console.log(spell.constant, hasPrereq);
-
         const unknownSpells: number[] = [176, 177, 178, 179, 180, 181, 182];
         const isUnknown = unknownSpells.indexOf(spell.__index) >= 0;
 
@@ -105,6 +103,10 @@ export class GUISpellItem extends GUIProtoItem {
 
         buttonIcon.addEventListener('click', (e) => {
           e.stopPropagation();
+          const menu = this.menu as any;
+          if(typeof menu.selectPower === 'function'){
+            menu.selectPower(spell);
+          }
         });
 
         /**

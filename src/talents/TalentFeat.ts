@@ -1,20 +1,26 @@
 import { CombatRound } from "@/combat/CombatRound";
 import { type CreatureClass } from "@/combat/CreatureClass";
-import { EffectACDecrease } from "@/effects";
+import { EffectACDecrease, EffectSetState } from "@/effects";
+import { isSetStateImmune } from "@/effects/set-state";
 import { CombatFeatType, ModuleObjectType, TalentObjectType } from "@/enums";
 import { GameEffectDurationType } from "@/enums/effects";
+import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 import { TwoDAManager } from "@/managers/TwoDAManager";
-import type { ModuleObject } from "@/module";
+import type { ModuleCreature, ModuleObject } from "@/module";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 import { BitWise } from "@/utility/BitWise";
 import { TalentObject } from "@/talents/TalentObject";
+import type { GameEffect } from "@/effects/GameEffect";
 
-const FEAT_PENALTY_DURATION = CombatRound.ROUND_LENGTH;
+/** Retail Resolve*SpecialAttack ACDECREASE duration (seconds). */
+const FEAT_PENALTY_DURATION_SEC = 3;
+/** Retail Crit Strike / Sniper SETSTATE stun duration (seconds). */
+const FEAT_STUN_DURATION_SEC = 6;
 
 /**
  * TalentFeat class.
@@ -145,24 +151,12 @@ export class TalentFeat extends TalentObject {
     if(this.category == 0x1104){
       oCaster.attackCreature(oTarget, this);
       return;
-      // oCaster.actionQueue.add({
-      //   type: ActionType.ActionPhysicalAttacks,
-      //   object: oTarget,
-      //   feat: this.id
-      // });
-      // oCaster.combatData.lastCombatFeatUsed = this;
     }
 
     //RANGED
     if(this.category == 0x1111){
       oCaster.attackCreature(oTarget, this);
       return;
-      // oCaster.actionQueue.add({
-      //   type: ActionType.ActionPhysicalAttacks,
-      //   object: oTarget,
-      //   feat: this.id
-      // });
-      // oCaster.combatData.lastCombatFeatUsed = this;
     }
 
   }
@@ -215,6 +209,9 @@ export class TalentFeat extends TalentObject {
       case CombatFeatType.CRITICAL_STRIKE:
       case CombatFeatType.IMPROVED_CRITICAL_STRIKE:
       case CombatFeatType.MASTER_CRITICAL_STRIKE:
+      case CombatFeatType.SNIPER_SHOT:
+      case CombatFeatType.IMPROVED_SNIPER_SHOT:
+      case CombatFeatType.MASTER_SNIPER_SHOT:
         return 5;
     }
     return 0;
@@ -262,22 +259,74 @@ export class TalentFeat extends TalentObject {
   impactCaster(object: ModuleObject){
     if(!BitWise.InstanceOfObject(object, ModuleObjectType.ModuleCreature)) return;
 
-    // AC penalties (Flurry / Crit Strike) apply as temporary effects on the attacker.
-    // Attack/damage modifiers are applied in CombatRound so they are not
-    // double-counted through EffectAttackDecrease.
+    // AC penalties (Flurry / Crit Strike / Sniper / Rapid Shot) — retail
+    // ResolveMeleeSpecialAttack @ 005ba8e0 / ResolveRangedSpecialAttack @ 005ba540.
+    // Attack/damage modifiers stay in CombatRound (not EffectAttackDecrease).
     const armorClassPenalty = this.getArmorClassPenalty();
     if(armorClassPenalty > 0){
       const acDecreaseEffect = new EffectACDecrease();
       acDecreaseEffect.setDurationType(GameEffectDurationType.TEMPORARY);
-      acDecreaseEffect.setDuration(FEAT_PENALTY_DURATION);
+      acDecreaseEffect.setDuration(FEAT_PENALTY_DURATION_SEC);
+      acDecreaseEffect.setInt(0, 0);
       acDecreaseEffect.setInt(1, armorClassPenalty);
+      acDecreaseEffect.setInt(2, GameState.SWRuleSet?.racialTypeCount ?? 0);
+      acDecreaseEffect.setInt(5, 0x4007);
+      this.applyTemporaryExpire(acDecreaseEffect, FEAT_PENALTY_DURATION_SEC);
+      acDecreaseEffect.setCreator(object);
       object.addEffect(acDecreaseEffect);
     }
   }
 
-  impactTarget(object: ModuleObject){
-    // if(!(object instanceof ModuleCreature)) return;
+  /**
+   * Retail on-hit SETSTATE stun from Crit Strike (STR DC) / Sniper Shot (INT DC).
+   * ResolveMeleeSpecialAttack @ 005ba8e0 / ResolveRangedSpecialAttack @ 005ba540 —
+   * Fort save DC = total level + ability mod; duration 6s; state = CUT_SCENE_STUNNED.
+   * Caller queues the returned effect onto the first swing's CombatAttackData.
+   */
+  impactTarget(caster: ModuleObject, target: ModuleObject): GameEffect | undefined {
+    if(!BitWise.InstanceOfObject(caster, ModuleObjectType.ModuleCreature)) return undefined;
+    if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)) return undefined;
 
+    const meleeStun =
+      this.id === CombatFeatType.CRITICAL_STRIKE ||
+      this.id === CombatFeatType.IMPROVED_CRITICAL_STRIKE ||
+      this.id === CombatFeatType.MASTER_CRITICAL_STRIKE;
+    const rangedStun =
+      this.id === CombatFeatType.SNIPER_SHOT ||
+      this.id === CombatFeatType.IMPROVED_SNIPER_SHOT ||
+      this.id === CombatFeatType.MASTER_SNIPER_SHOT;
+    if(!meleeStun && !rangedStun) return undefined;
+
+    const attacker = caster as ModuleCreature;
+    const defender = target as ModuleCreature;
+    const abilityMod = meleeStun
+      ? CombatRound.GetMod(attacker.getSTR())
+      : CombatRound.GetMod(attacker.getINT());
+    const dc = (attacker.getTotalClassLevel() & 0xff) + abilityMod;
+
+    const stun = new EffectSetState();
+    stun.setInt(0, GameEffectSetStateType.CUT_SCENE_STUNNED);
+    stun.setDurationType(GameEffectDurationType.TEMPORARY);
+    stun.setDuration(FEAT_STUN_DURATION_SEC);
+    stun.setCreator(attacker);
+    this.applyTemporaryExpire(stun, FEAT_STUN_DURATION_SEC);
+
+    if(isSetStateImmune(defender, GameEffectSetStateType.CUT_SCENE_STUNNED, false, attacker)){
+      return undefined;
+    }
+    // FortitudeSave (SavingThrowRoll type 1) — apply only on failure
+    if(defender.fortitudeSave(dc, 0, attacker)){
+      return undefined;
+    }
+    return stun;
+  }
+
+  private applyTemporaryExpire(effect: GameEffect, durationSec: number){
+    const timeManager = GameState.module?.timeManager;
+    if(!timeManager || durationSec <= 0) return;
+    const future = timeManager.getFutureTimeFromSeconds(durationSec);
+    effect.setExpireDay(future.pauseDay);
+    effect.setExpireTime(future.pauseTime);
   }
 
   getGranted(classData: CreatureClass): number {

@@ -222,7 +222,8 @@ export class NWScriptStack {
   saveForEventSituation(){
     let struct = new GFFStruct();
 
-    struct.addField( new GFFField(GFFDataType.INT, 'BasePointer') ).setValue(this.basePointer);
+    // Retail CVirtualMachineStack::SaveStack stores dword indices; load multiplies by 4.
+    struct.addField( new GFFField(GFFDataType.INT, 'BasePointer') ).setValue(this.basePointer / 4);
 
     let stack = struct.addField( new GFFField(GFFDataType.LIST, 'Stack') ).setValue(this.pointer);
     for(let i = 0; i < this.stack.length; i++){
@@ -250,8 +251,8 @@ export class NWScriptStack {
       stack.addChildStruct(elementStruct);
     }
 
-    struct.addField( new GFFField(GFFDataType.INT, 'StackPointer') ).setValue(this.pointer);
-    struct.addField( new GFFField(GFFDataType.INT, 'StackPointer') ).setValue(this.stackSize);
+    struct.addField( new GFFField(GFFDataType.INT, 'StackPointer') ).setValue(this.pointer / 4);
+    struct.addField( new GFFField(GFFDataType.INT, 'TotalSize') ).setValue(this.stack.length);
   
     return struct;
   }

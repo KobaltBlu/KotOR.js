@@ -5,12 +5,18 @@ import { ResourceTypes } from "@/resource/ResourceTypes";
 import { GameState } from "@/GameState";
 import { PathPoint } from "@/engine/pathfinding/PathPoint";
 import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import type { PathPointDfsResume } from "@/engine/pathfinding/ComputedPath";
+import { SMOOTH_SELECTION_BUDGET_MS } from "@/engine/pathfinding/smooth-select-nodes";
 import { IClosestPathPointData } from "@/interface/engine/pathfinding/IClosestPathPointData";
 import type { ModuleArea } from "@/module/ModuleArea";
 import { Utility } from "@/utility/Utility";
 import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { EngineDebugType } from "@/enums";
+import { hasDirectLine, farthestClearPoint } from "@/engine/pathfinding/test-direct-line";
+import { plotGridPath } from "@/engine/pathfinding/plot-grid-path";
+import { getPathPersonalSpace } from "@/combat/attack-range";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
 * ModulePath class.
@@ -36,6 +42,12 @@ export class ModulePath {
 
   pointCount: number = 0;
   connectionCount: number = 0;
+
+  /**
+   * Per-owner DFS TransTable resume (PlotPathPointPath field104_0x1b4 / field111).
+   * Survives ComputedPath teardown when MoveTo clears realtime paths.
+   */
+  private dfsResumeByOwner = new Map<number, PathPointDfsResume>();
 
   helperColors: THREE.Float32BufferAttribute;
   helperPositions: THREE.Float32BufferAttribute;
@@ -377,6 +389,13 @@ export class ModulePath {
     return point;
   }
 
+  /**
+   * Retail PlotPathInArea @ 004c3260 (subset):
+   * 1. TestDirectLine → 2-point path
+   * 2. Else PTH A* (PlotPathPointPath approx)
+   * 3. Else partial clear toward dest (no blind through-wall fallback)
+   * Empty path = unreachable (caller should ERROR).
+   */
   traverseToPoint(owner: ModuleObject, origin: THREE.Vector3, dest: THREE.Vector3, smooth: boolean = true): ComputedPath {
     this.reset();
 
@@ -386,45 +405,148 @@ export class ModulePath {
     const destPoint = PathPoint.FromVector3(dest);
     destPoint.setArea(this.area);
 
-    const fallbackPath = ComputedPath.FromPointsList([originPoint, destPoint]);
-    if(!this.points.length) return fallbackPath;
+    // Stage 1: retail TestDirectLine first
+    if(hasDirectLine(this.area, origin, dest, owner)){
+      return ComputedPath.FromPointsList([originPoint, destPoint]);
+    }
 
-    if(originPoint.hasLOS(destPoint, owner)) return fallbackPath;
+    // Stage 2: PTH PathPointDFS when path points exist
+    if(this.points.length){
+      const closest_origin_point = this.getClosestPathPoint(origin);
+      const closest_destination_point = this.getClosestPathPoint(dest);
+      if(!closest_origin_point || !closest_destination_point){
+        // Partial: farthest clear along the blocked line (PlotPathInArea recovery)
+        return this.partialClearPath(owner, origin, dest, originPoint);
+      }
 
-    const closest_origin_point = this.getClosestPathPoint(origin);
-    const closest_destination_point = this.getClosestPathPoint(dest);
+      originPoint.addConnection(closest_origin_point);
+      closest_origin_point.addConnection(originPoint);
+      closest_destination_point.addConnection(destPoint);
+      destPoint.addConnection(closest_destination_point);
 
-    //origin
-    originPoint.addConnection(closest_origin_point);
-    closest_origin_point.addConnection(originPoint);
+      originPoint.connections = this.points.slice(0).filter( (p) => {
+        return p.hasLOS(originPoint, owner);
+      });
 
-    //dest
-    closest_destination_point.addConnection(destPoint);
-    destPoint.addConnection(closest_destination_point);
+      const path = new ComputedPath(owner, originPoint, destPoint);
+      path.setOwner(owner);
+      const ownerId = owner?.id;
+      const resume = ownerId != null ? this.dfsResumeByOwner.get(ownerId) : undefined;
+      path.search({ resume });
 
-    originPoint.connections = this.points.slice(0).filter( (p) => {
-      return p.hasLOS(originPoint, owner);
+      for(let i = 0, len = this.points.length; i < len; i++){
+        const p = this.points[i];
+        p.removeConnection(originPoint);
+        p.removeConnection(destPoint);
+      }
+
+      if(ownerId != null){
+        if(path.dfsResume){
+          this.dfsResumeByOwner.set(ownerId, path.dfsResume);
+        }else{
+          this.dfsResumeByOwner.delete(ownerId);
+        }
+      }
+
+      if(path.points.length){
+        // Incomplete DFS (time slice) — mark realtime so MoveTo repaths soon
+        if(path.incomplete){
+          path.realtime = true;
+          path.timer = Math.min(path.timer || 20, 8);
+        }
+        // SmoothSelectionRestartable time slice (~DAT_007a1b1c / 10ms) on realtime paths.
+        // Stage resume is intra-call; cross-frame field124 needs PlotPath session hold (Partial).
+        path.prunePathPoints({
+          timeBudgetMs: path.realtime ? SMOOTH_SELECTION_BUDGET_MS : undefined,
+        });
+        if(smooth) path.smoothCorners();
+        return path;
+      }
+
+      // DFS failed / timed out empty — try grid corridor before partial clear
+      const gridAfterPth = this.gridPathToComputed(owner, origin, dest, originPoint);
+      if(gridAfterPth){
+        gridAfterPth.prunePathPoints({
+          timeBudgetMs: gridAfterPth.realtime ? SMOOTH_SELECTION_BUDGET_MS : undefined,
+        });
+        if(smooth) gridAfterPth.smoothCorners();
+        return gridAfterPth;
+      }
+      return this.partialClearPath(owner, origin, dest, originPoint);
+    }
+
+    // Stage 3: no PTH — retail PlotGridPath @ 004c1a00
+    const gridPath = this.gridPathToComputed(owner, origin, dest, originPoint);
+    if(gridPath){
+      gridPath.prunePathPoints({
+        timeBudgetMs: gridPath.realtime ? SMOOTH_SELECTION_BUDGET_MS : undefined,
+      });
+      if(smooth) gridPath.smoothCorners();
+      return gridPath;
+    }
+    return this.partialClearPath(owner, origin, dest, originPoint);
+  }
+
+  /**
+   * Convert plotGridPath world points into a ComputedPath, or undefined.
+   */
+  private gridPathToComputed(
+    owner: ModuleObject,
+    origin: THREE.Vector3,
+    dest: THREE.Vector3,
+    originPoint: PathPoint
+  ): ComputedPath | undefined {
+    const perspace = getPathPersonalSpace(owner as ModuleCreature);
+    const world = plotGridPath(this.area, origin, dest, {
+      owner,
+      personalSpace: perspace,
+      checkCreatures: true,
     });
-
-    const path = new ComputedPath(owner, originPoint, destPoint);
-    path.setOwner(owner);
-    path.search();
-
-    //clean up tmp point refs
-    for(let i = 0, len = this.points.length; i < len; i++){
-      const p = this.points[i];
-      p.removeConnection(originPoint);
-      p.removeConnection(destPoint);
+    if(!world?.length || world.length < 2){
+      return undefined;
     }
-
-    if(path.points.length){
-      if(smooth)
-        path.smooth();
-      return path;
+    // Must reach near dest (not a stuck partial mid-corridor)
+    const last = world[world.length - 1];
+    if(last.distanceToSquared(dest) > 1.0){
+      return undefined;
     }
-    
-    return fallbackPath;
+    const points = world.map((v, idx) => {
+      const p = PathPoint.FromVector3(v);
+      p.setArea(this.area);
+      if(idx === world.length - 1) p.end = true;
+      return p;
+    });
+    // Ensure origin matches
+    points[0] = originPoint;
+    return ComputedPath.FromPointsList(points);
+  }
 
+  /**
+   * When full path fails: return 2-point path to farthest clear sample, or empty.
+   * Mirrors PlotPathInArea return-2 partial when binary expand finds a clear point.
+   */
+  private partialClearPath(
+    owner: ModuleObject,
+    origin: THREE.Vector3,
+    dest: THREE.Vector3,
+    originPoint: PathPoint
+  ): ComputedPath {
+    const clear = farthestClearPoint(this.area, origin, dest, {
+      owner,
+      personalSpace: getPathPersonalSpace(owner as ModuleCreature),
+      checkCreatures: true,
+    });
+    if(clear.distanceToSquared(origin) < 0.01){
+      // Stay-put path — never return empty (buildHelperLine / movers expect points)
+      const stay = PathPoint.FromVector3(origin);
+      stay.setArea(this.area);
+      stay.end = true;
+      return ComputedPath.FromPointsList([originPoint, stay]);
+    }
+    const clearPoint = PathPoint.FromVector3(clear);
+    clearPoint.setArea(this.area);
+    clearPoint.end = true;
+    return ComputedPath.FromPointsList([originPoint, clearPoint]);
   }
 
   reset(){

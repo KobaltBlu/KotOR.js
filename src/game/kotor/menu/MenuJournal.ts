@@ -189,14 +189,7 @@ export class MenuJournal extends GameMenu {
         
         return 0;
       }else if(this.sort == JournalSort.RECIEVED){
-        if (a.date < b.date) {
-          return -1;
-        }
-        if (a.date > b.date) {
-          return 1;
-        }
-        
-        return 0;
+        return GameState.JournalManager.compareReceived(a, b);
       }else if(this.sort == JournalSort.PRIORITY){
         if (a.category.priority < b.category.priority) {
           return -1;

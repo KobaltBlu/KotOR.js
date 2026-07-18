@@ -21,9 +21,10 @@ export enum OdysseyModelEmitterFlag {
   INHERIT_LOCAL =  0x0100,
   SPLAT         =  0x0200,
   INHERIT_PART  =  0x0400,
-  DEPTH_TEXTURE =  0x0800, //maybe, per ndix UR
-  _13            =  0x1000,
-  _2000          =  0x2000,
-  _3000          =  0x4000,
-  _4000          =  0x8000,
+  DEPTH_TEXTURE =  0x0800, // soft particles — RenderStandard DEPTH_TEXTURE
+  /** No PartEmitter Update/Render bit tests found in K1 swkotor.exe (bits 12–15). */
+  UNUSED_1000   =  0x1000,
+  UNUSED_2000   =  0x2000,
+  UNUSED_4000   =  0x4000,
+  UNUSED_8000   =  0x8000,
 };

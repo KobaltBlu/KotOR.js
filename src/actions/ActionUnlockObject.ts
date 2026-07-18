@@ -4,10 +4,11 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@/GameState";
 import { SSFType } from "@/enums/resource/SSFType";
-import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { queueMoveIntoUseRange } from "@/actions/use-range";
 // import type { ModulePlaceable } from "@/module/ModulePlaceable";
 // import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleItem } from "@/module/ModuleItem";
@@ -31,6 +32,7 @@ export class ActionUnlockObject extends Action {
   shouted: boolean;
   usedItem: boolean;
   oItem: ModuleItem;
+  private timingBarStarted = false;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -47,10 +49,13 @@ export class ActionUnlockObject extends Action {
     this.target = this.getParameter<ModuleObject>(0);
     this.oItem = this.getParameter<ModuleItem>(1);
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable))
+    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) && !BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable)){
+      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
+    }
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModulePlaceable)){
+      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
     
@@ -59,22 +64,8 @@ export class ActionUnlockObject extends Action {
       this.owner.playSoundSet(SSFType.UNLOCK);
     }
 
-    let distance = Utility.Distance2D(this.owner.position, this.target.position);
-    if(distance > 1.5){
-        
-      // this.owner.openSpot = undefined;
-      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-      actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 1.5 );
-      actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-      actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-      this.owner.actionQueue.addFront(actionMoveToTarget);
-
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature) &&
+       queueMoveIntoUseRange(this.owner as ModuleCreature, this.target, this.groupId)){
       return ActionStatus.IN_PROGRESS;
     }else{
 
@@ -103,9 +94,13 @@ export class ActionUnlockObject extends Action {
       if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
         this.owner.setFacingObject( this.target );
 
-      if(this.timer == undefined){
-        this.timer = 1.5;
+      if(!this.timingBarStarted){
+        this.timingBarStarted = true;
         this.target.audioEmitter.playSound('gui_lockpick');
+        // Retail StartGuiTimingBar(this, 0x5dc, 8) — 1500 ms, type 8
+        if(this.owner === GameState.getCurrentPlayer()){
+          GameState.GuiTimingBarManager?.startMs?.(0x5dc, 'Unlock', this.owner, 8);
+        }
       }
 
       if(!this.owner.isSimpleCreature()){
@@ -129,6 +124,7 @@ export class ActionUnlockObject extends Action {
           event.eventType = SignalEventType.OnFailToOpen;
           GameState.module.addEvent(event);
         }
+        GameState.GuiTimingBarManager?.stopFor?.(this.owner);
         return ActionStatus.COMPLETE;
       }
       

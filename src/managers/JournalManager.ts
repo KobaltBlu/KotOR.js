@@ -1,8 +1,6 @@
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import { CExoLocString } from "@/resource/CExoLocString";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
-import { GFFStruct } from "@/resource/GFFStruct";
 import { ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { TwoDAManager } from "@/managers/TwoDAManager";
@@ -10,6 +8,7 @@ import { JournalCategory } from "@/engine/JournalCategory";
 import { JournalEntry } from "@/engine/JournalEntry";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { GameState } from "@/GameState";
+import { ModuleCalendar } from "@/module/ModuleCalendar";
 
 /**
  * JournalManager class.
@@ -63,29 +62,45 @@ export class JournalManager {
     return 0;
   }
 
+  /** Stamp JNL_Date / JNL_Time from module calendar (Mod_PauseDay / Mod_PauseTime). */
+  static stampEntryTime(entry: JournalEntry){
+    const tm = GameState.module?.timeManager;
+    entry.date = tm?.pauseDay ?? 0;
+    entry.time = tm?.pauseTime ?? 0;
+  }
+
+  /**
+   * Compare journal entries by received calendar time (pauseDay, then pauseTime).
+   * Negative when a is earlier than b.
+   */
+  static compareReceived(a: JournalEntry, b: JournalEntry): number {
+    return ModuleCalendar.comparePauseDayTime(a.date, a.time, b.date, b.time);
+  }
+
   static AddJournalQuestEntry(szPlotID: string = '', state: number = 0, allowOverrideHigher: boolean = false): boolean {
-    if(JournalManager.PlotExists(szPlotID)){
-      GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.JOURNAL_ENTRY_ADDED);
-      let entry = JournalManager.GeJournalEntryByTag(szPlotID);
-      if(entry){
-        if(entry.state > state && allowOverrideHigher){
-          entry.state = state;
-        }else {
-          entry.state = state;
-        }
-        // entry.date; //TODO
-        // entry.time ; //TODO
-        entry.load();
-      }else{
-        entry = new JournalEntry();
-        entry.plot_id = szPlotID;
+    if(!JournalManager.PlotExists(szPlotID)){
+      return false;
+    }
+
+    GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.JOURNAL_ENTRY_ADDED);
+    let entry = JournalManager.GeJournalEntryByTag(szPlotID);
+    if(entry){
+      // Retail: advance state unless new state is lower without allowOverrideHigher
+      if(state >= entry.state || allowOverrideHigher){
         entry.state = state;
-        entry.date = 0; //TODO
-        entry.time = 0; //TODO
+        JournalManager.stampEntryTime(entry);
         entry.load();
       }
+      return true;
     }
-    return false;
+
+    entry = new JournalEntry();
+    entry.plot_id = szPlotID;
+    entry.state = state;
+    JournalManager.stampEntryTime(entry);
+    entry.load();
+    JournalManager.AddEntry(entry);
+    return true;
   }
 
   static RemoveJournalQuestEntry(szPlotID: string = ''): boolean {

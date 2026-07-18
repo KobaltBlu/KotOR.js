@@ -14,14 +14,17 @@ export class EffectDamageReduction extends GameEffect {
   constructor(){
     super();
     this.type = GameEffectType.EffectDamageReduction;
-
+    // intList[0] : nAmount
+    // intList[1] : nDamagePower (bypass threshold)
+    // intList[2] : nLimit (0 = infinite)
   }
 
   onApply(){
     if(this.applied)
       return;
-      
+
     super.onApply();
+    // Mitigated in combat/damage-mitigation when damage is applied
   }
 
 }

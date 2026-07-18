@@ -32,10 +32,14 @@ export class CameraShakeManager {
   static time: number = 0;
 
   static beforeRender() {
-    if(GameState.Mode == EngineMode.INGAME){
-      //Cache the current camera properties
+    if(
+      GameState.Mode == EngineMode.INGAME ||
+      GameState.Mode == EngineMode.DIALOG ||
+      GameState.Mode == EngineMode.MINIGAME ||
+      GameState.Mode == EngineMode.FREELOOK
+    ){
+      if(!GameState.currentCamera) return;
       CameraShakeManager.cache.position.copy(GameState.currentCamera.position);
-      //CameraShakeManager.cache.quaternion.copy(GameState.currentCamera.quaternion);
     }
   };
 
@@ -47,10 +51,7 @@ export class CameraShakeManager {
     if(rumble){
       let lsamples = parseInt(rumble.lsamples);
       let rsamples = parseInt(rumble.rsamples);
-      
-      // Debug: Log the rumble data to understand the time units
-      console.log('Rumble data for index', idx, ':', rumble);
-      
+
       for(let i = 0; i < lsamples; i++){
         const time = parseFloat(rumble['ltime'+(i+1)]);
         
@@ -83,7 +84,12 @@ export class CameraShakeManager {
   }
 
   static update(delta: number = 0, camera: THREE.Camera) {
-    if(GameState.Mode == EngineMode.INGAME){
+    if(
+      GameState.Mode == EngineMode.INGAME ||
+      GameState.Mode == EngineMode.DIALOG ||
+      GameState.Mode == EngineMode.MINIGAME ||
+      GameState.Mode == EngineMode.FREELOOK
+    ){
       //GameState.currentCamera
       CameraShakeManager.position.set(0, 0, 0);
 
@@ -138,10 +144,14 @@ export class CameraShakeManager {
   }
 
   static afterRender() {
-    if(GameState.Mode == EngineMode.INGAME){
-      //Restore the current camera's cached properties
+    if(
+      GameState.Mode == EngineMode.INGAME ||
+      GameState.Mode == EngineMode.DIALOG ||
+      GameState.Mode == EngineMode.MINIGAME ||
+      GameState.Mode == EngineMode.FREELOOK
+    ){
+      if(!GameState.currentCamera) return;
       GameState.currentCamera.position.copy(CameraShakeManager.cache.position);
-      //GameState.currentCamera.copy(CameraShakeManager.cache.quaternion);
     }
   }
 }

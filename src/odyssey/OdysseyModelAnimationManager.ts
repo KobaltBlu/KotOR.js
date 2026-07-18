@@ -217,14 +217,35 @@ export class OdysseyModelAnimationManager {
 
     //this.updateAnimationNode(anim, anim.rooNode);
     state.lastTime = state.elapsed;
-    state.elapsed = Math.min(state.elapsed + delta, anim.length);
+    state.elapsed += delta;
+    if(delta >= 0){
+      state.elapsed = Math.min(state.elapsed, anim.length);
+    }else if(state.elapsed < 0){
+      if(state.loop && anim.length > 0){
+        state.elapsed = ((state.elapsed % anim.length) + anim.length) % anim.length;
+        state.elapsedCount++;
+      }else{
+        state.elapsed = 0;
+      }
+    }
     
     this.updateAnimationEvents(anim, state);
 
     if(this.lastAnimation && this.lastAnimationState){
       this.lastAnimationState.lastTime = this.lastAnimationState.elapsed;
-      this.lastAnimationState.elapsed = Math.min(this.lastAnimationState.elapsed + delta, this.lastAnimation.length);
-      this.transElapsed = Math.min(this.transElapsed + delta, this.currentAnimation.transition);
+      this.lastAnimationState.elapsed += delta;
+      if(delta >= 0){
+        this.lastAnimationState.elapsed = Math.min(this.lastAnimationState.elapsed, this.lastAnimation.length);
+      }else if(this.lastAnimationState.elapsed < 0){
+        if(this.lastAnimationState.loop && this.lastAnimation.length > 0){
+          this.lastAnimationState.elapsed =
+            ((this.lastAnimationState.elapsed % this.lastAnimation.length) + this.lastAnimation.length) %
+            this.lastAnimation.length;
+        }else{
+          this.lastAnimationState.elapsed = 0;
+        }
+      }
+      this.transElapsed = Math.min(this.transElapsed + Math.abs(delta), this.currentAnimation.transition);
       if(this.lastAnimationState.elapsed >= this.lastAnimation.length){
         this.lastAnimationState.elapsed = this.lastAnimation.length;
         this.lastAnimationState.lastTime = this.lastAnimation.length;
@@ -239,7 +260,7 @@ export class OdysseyModelAnimationManager {
       this.transElapsed = 0;
     }
 
-    if(state.elapsed >= anim.length){
+    if(delta >= 0 && state.elapsed >= anim.length){
       this.updateAnimationEvents(anim, state);
 
       state.lastTime = anim.length;

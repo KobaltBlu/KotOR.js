@@ -46,12 +46,21 @@ export class EventSpawnBodyBag extends GameEvent {
     }
 
     placeable.position.copy(this.position);
-    const area = this.getObject()?.area || GameState.module?.area;
+    // Event object is the area (SpawnBodyBag AddEventDeltaTime target)
+    const obj = this.getObject();
+    let area = GameState.module?.area;
+    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleArea)){
+      area = obj as any;
+    }else if(obj?.area){
+      area = obj.area;
+    }
     if(!area){
       return;
     }
 
-    void placeable.placeInArea(area);
+    void placeable.placeInArea(area).catch((e) => {
+      console.error('EventSpawnBodyBag placeInArea failed', e);
+    });
   }
 
   saveEventData(){
@@ -66,12 +75,12 @@ export class EventSpawnBodyBag extends GameEvent {
   export(){
     const struct = new GFFStruct( 0xABCD );
 
-    struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( this.callerId );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( this.exportCallerId() );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
     const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
     eventData.addChildStruct( this.saveEventData() );
     struct.addField( new GFFField(GFFDataType.DWORD, 'EventId') ).setValue(this.id);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( this.objectId );
+    struct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( this.exportObjectId() );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Time') ).setValue(this.time);
 
     return struct;

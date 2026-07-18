@@ -1,10 +1,11 @@
-import * as THREE from 'three';
-import { IPathPointOptions } from "@/interface/engine/pathfinding/IPathPointOptions";
-import { Utility } from "@/utility/Utility";
 import type { ModuleArea } from "@/module/ModuleArea";
+import type { ModuleObject } from "@/module/ModuleObject";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
-import type { ModuleObject } from "@/module/ModuleObject";
+import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
+import { segmentCrossesBlockingWalkEdge } from "@/engine/pathfinding/test-direct-line";
+import * as THREE from 'three';
+import { IPathPointOptions } from "@/interface/engine/pathfinding/IPathPointOptions";
 
 /**
  * PathPoint class.
@@ -79,36 +80,15 @@ export class PathPoint {
     if(!this.area)
       return true;
 
-    const path_line = new THREE.Line3(this.vector, point_b.vector);
-    /**
-     * Check line intersects walkable edges
-     */
-    for(let j = 0, len = this.area.walkEdges.length; j < len; j++){
-      const edge = this.area.walkEdges[j];
-
-      //Ignore transition edges
-      if(edge.transition != -1)
-        continue;
-      
-      if(Utility.LineLineIntersection(path_line.start.x, path_line.start.y, path_line.end.x, path_line.end.y, edge.line.start.x, edge.line.start.y, edge.line.end.x, edge.line.end.y)){
-        return false;
-      }
+    if(segmentCrossesBlockingWalkEdge(this.area, this.vector, point_b.vector)){
+      return false;
     }
 
-    /**
-     * Check line intersects creatures
-     */
-    for(let j = 0, len = this.area.creatures.length; j < len; j++){
-      const obj = this.area.creatures[j];
-
-      //Ignore the owner if found in this list
-      if(obj == owner)
-        continue;
-
-      if(obj.checkLineIntersectsObject(path_line))
-        return false;
-    }
-    return true;
+    const creatures = noCreaturesOnLine(this.area, this.vector, point_b.vector, {
+      owner,
+      allowPartyCreatures: true,
+    });
+    return creatures.clear;
   }
 
   addConnection(node: PathPoint) {

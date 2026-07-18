@@ -1,4 +1,5 @@
 import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { DLGObject } from "@/resource/DLGObject";
 import { DLGNode } from "@/resource/DLGNode";
 import type { ModuleCreature, ModuleObject } from "@/module";
@@ -18,16 +19,32 @@ import { CameraMode } from "@/enums/dialog/CameraMode";
 import { ICameraState } from "@/interface/dialog/ICameraState";
 import { AudioEmitter } from "@/audio/AudioEmitter";
 import { ICameraParticipant } from "@/interface/dialog/ICameraParticipant";
-
-const ENTRY_DELAY = 3000;
-const HALF_PI = Math.PI / 2;
-const QUARTER_PI = Math.PI / 4;
-
-const SINGLE_SHOT_ANGLE_OFFSET = 0.5;
+import {
+  computeDialogCameraShot,
+  dlgAngleToShotType,
+  DIALOG_CAMERA_FOV,
+  ANIMATED_CAMERA_NEAR,
+  ANIMATED_CAMERA_FAR,
+  getCameraAnimationName,
+  createDialogPseudoRandomState,
+  resolveEntryCameraAngle,
+  resolveReplyCameraAngle,
+  lookupDialogCloseUpExtra,
+  type DialogPseudoRandomState,
+} from "@/managers/dialog-camera";
 
 export class CutsceneManager {
 
   static active: boolean = false;
+  /** Retail CSWSDialog pseudo-random camera angle state (@ 0059f220 / 005a13d0). */
+  static dialogCameraPrng: DialogPseudoRandomState | undefined;
+  /** When true, conversation is private (scripted bPrivateConversation). */
+  static privateConversation: boolean = false;
+  /**
+   * Retail CGuiInGame::dialog_non_dependant_list — participant names that may be
+   * absent without blocking dialog entry send (ActionStartConversation ignore args).
+   */
+  static dialogNonDependantNames: Set<string> = new Set();
   static cutsceneMode: CutsceneMode = CutsceneMode.DIALOG;
 
   static conversation_name: string;
@@ -76,10 +93,32 @@ export class CutsceneManager {
     return this.owner;
   }
 
-  static startConversation(dialog: DLGObject, owner: ModuleObject, listener: ModuleObject = GameState.PartyManager.party[0]) {
-    console.log('CutsceneManager.startConversation', dialog, owner, listener);
+  static setDialogNonDependantNames(names: string[] = []){
+    this.dialogNonDependantNames.clear();
+    for(let i = 0; i < names.length; i++){
+      const n = names[i]?.trim();
+      if(n) this.dialogNonDependantNames.add(n.toLocaleLowerCase());
+    }
+  }
+
+  /** Retail CGuiInGame::IsOnDialogNonDependantList @ 0062f840 (case-insensitive). */
+  static isDialogNonDependant(participant: string): boolean {
+    if(!participant) return false;
+    return this.dialogNonDependantNames.has(participant.toLocaleLowerCase());
+  }
+
+  static startConversation(
+    dialog: DLGObject,
+    owner: ModuleObject,
+    listener: ModuleObject = GameState.PartyManager.party[0],
+    privateConversation: boolean = false,
+    ignoreObjectNames: string[] = [],
+  ) {
     this.active = true;
+    this.privateConversation = !!privateConversation;
+    this.setDialogNonDependantNames(ignoreObjectNames);
     this.cameraState.currentCameraAnimation = undefined;
+    this.dialogCameraPrng = createDialogPseudoRandomState(dialog?.resref || '');
     this.owner = owner;
     this.listener = listener;
     this.paused = false;
@@ -153,7 +192,6 @@ export class CutsceneManager {
 
     console.log(`CutsceneManager.startConversation: ${this.dialog.getConversationType() ? 'Computer' : 'Conversation'}`);
 
-    GameState.holdWorldFadeInForDialog = (this.cutsceneMode == CutsceneMode.ANIMATED);
     Promise.all([
       this.dialog.loadStuntCamera(),
       this.dialog.loadStuntActors(),
@@ -213,6 +251,13 @@ export class CutsceneManager {
     this.currentEntry = entry;
     this.currentEntry.repliesShown = false;
     entry.initProperties();
+
+    // Retail HandleDialogEntry: release module-load hold with 1s fade-in
+    if(GameState.holdWorldFadeInForDialog){
+      GameState.holdWorldFadeInForDialog = false;
+      GameState.FadeOverlayManager.FadeIn(1, 0, 0, 0, 0);
+    }
+
     const isComputerCameraEntry = this.dialog.getConversationType() == DLGConversationType.COMPUTER && entry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA;
     this.state = ConversationState.LISTENING_TO_SPEAKER;
     if (GameState.Mode != EngineMode.DIALOG)
@@ -257,12 +302,12 @@ export class CutsceneManager {
       }
     }
 
-    //Node Delay
-    const nodeDelay = (this.cutsceneMode != CutsceneMode.ANIMATED && entry.delay > -1) ? entry.delay * 1000 : ENTRY_DELAY;
-    entry.setNodeDelay(nodeDelay);
+    // Node delay (retail CSWSDialog::SendDialogEntry / SetDialogDelay) — seconds → ms
+    let delaySec = this.computeEntryDelaySeconds(entry);
     if(isComputerCameraEntry){
-      entry.setNodeDelay(5000);
+      delaySec = 5;
     }
+    entry.setNodeDelay(delaySec * 1000);
     //Node camera
     this.setEntryCamera(entry);
 
@@ -286,6 +331,26 @@ export class CutsceneManager {
     }else{
       GameState.MenuManager.InGameDialog.setReplies(replies);
     }
+  }
+
+  /**
+   * Compute entry delay in seconds (retail SendDialogEntry delay selection).
+   */
+  static computeEntryDelaySeconds(entry: DLGNode): number {
+    const hasVO = !!entry.getVoiceResRef();
+    const explicitDelay = (entry.waitFlags & DLGNode.WAIT_EXPLICIT_DELAY) !== 0;
+
+    if(!hasVO && !explicitDelay){
+      if(this.cutsceneMode == CutsceneMode.ANIMATED){
+        return 0;
+      }
+      return DLGNode.estimateSpokenTimeSeconds(entry.getCompiledString());
+    }
+
+    if((entry.delay >>> 0) === DLGNode.DELAY_UNSET){
+      return 0;
+    }
+    return entry.delay >>> 0;
   }
 
   /**
@@ -399,8 +464,10 @@ export class CutsceneManager {
       console.error(e);
     }
 
-    this.setListenerCamera();
-    
+    // Retail ShowDialogReplies @ 006340e0 — swap speaker/listener then
+    // UpdateShotCamera with the first reply's camera fields.
+    this.setReplyCamera(entry, reply);
+
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameComputer.setDialogMode(ConversationState.WAITING_FOR_PC_CHOICE);
     }else{
@@ -415,6 +482,7 @@ export class CutsceneManager {
   static endConversation(aborted = false) {
     const wasBark = this.cutsceneMode == CutsceneMode.BARK;
     this.active = false;
+    this.dialogNonDependantNames.clear();
     if (this.paused) {
       this.ended = true;
     }
@@ -449,6 +517,12 @@ export class CutsceneManager {
       if(this.cutsceneMode == CutsceneMode.ANIMATED){
         GameState.FadeOverlayManager.FadeInFromCutscene();
       }
+    }
+
+    // Retail SetGlobalDialogState(0): release any remaining holdWorldFadeInForDialog
+    if(GameState.holdWorldFadeInForDialog){
+      GameState.holdWorldFadeInForDialog = false;
+      GameState.FadeOverlayManager.FadeIn(1, 0, 0, 0, 0);
     }
 
     this.dialog = undefined;
@@ -486,7 +560,13 @@ export class CutsceneManager {
         }
       } else {
         const actor = GameState.ModuleObjectManager.GetObjectByTag(participant.participant);
-        if(!actor){ continue; }
+        if(!actor){
+          // Retail: missing + NonDependant → skip; missing + required → retry wait
+          if(!this.isDialogNonDependant(participant.participant)){
+            console.warn('CutsceneManager: dialog missing participant', participant.participant);
+          }
+          continue;
+        }
         console.log('actor', actor);
         if (participant.animation >= 10000) {
           const anim = actor.animationConstantToAnimation(participant.animation);
@@ -534,7 +614,12 @@ export class CutsceneManager {
       const participant = entry.animations[i];
       if(!participant.participant){ continue; }
       const actor = GameState.ModuleObjectManager.GetObjectByTag(participant.participant);
-      if(!actor){ continue; }
+      if(!actor){
+        if(!this.isDialogNonDependant(participant.participant)){
+          console.warn('CutsceneManager: dialog missing participant', participant.participant);
+        }
+        continue;
+      }
       if (participant.animation >= 10000) {
         const anim = actor.animationConstantToAnimation(participant.animation);
         if (anim) {
@@ -547,12 +632,10 @@ export class CutsceneManager {
   }
 
   /**
-   * Get the CUT animation name
-   * @param index - The index of the animation
-   * @returns The CUT animation name
+   * Get the CUT animation name — retail GetCameraAnimationName @ 006288f0.
    */
   static getCUTAnimationName(index = 0) {
-    return 'CUT' + ('000' + (index - 1200 + 1)).slice(-3) + 'W';
+    return getCameraAnimationName(index);
   }
 
   /**
@@ -562,18 +645,10 @@ export class CutsceneManager {
    */
   static getDialogAnimation(index = 0): any {
     console.log('GetDialogAnimation', index);
-    if (index >= 1000 && index < 1400) {
-      const id = (index - 999);
-      return {
-        name: 'cut' + ('000' + id).slice(-3),
-        looping: '1'
-      };
-    } else if (index >= 1400 && index < 1500) {
-      const id = (index - 1399);
-      return {
-        name: 'cut' + ('000' + id).slice(-3) + 'L',
-        looping: '1'
-      };
+    if (index >= 1000 && index < 10000) {
+      const name = getCameraAnimationName(index);
+      if(name === 'none') return undefined;
+      return { name, looping: '1' };
     } else if (index >= 10000) {
       const animations2DA = GameState.TwoDAManager.datatables.get('animations');
       if(!animations2DA){ return; }
@@ -652,22 +727,224 @@ export class CutsceneManager {
   }
 
   /**
-   * Set the camera for an entry
-   * @param entry - The entry to set the camera for
+   * Set the camera for an entry — retail HandleDialogEntry @ 00631d80 /
+   * SetAnimatedCamera @ 0062bfa0 (anim id must be 1000..0x6BF).
    */
   static setEntryCamera(entry: DLGNode){
-    const angle = entry.cameraAngle;
-    const cameraID = entry.cameraAnimation > -1 ? entry.cameraAnimation : entry.cameraID;
+    let angle = entry.cameraAngle;
+    // Retail SendDialogEntryNode @ 005a13d0 resolves ANGLE_RANDOM + advances PRNG
+    if(this.dialogCameraPrng){
+      angle = resolveEntryCameraAngle(angle, this.dialogCameraPrng);
+    }else if(angle == DLGCameraAngle.ANGLE_RANDOM){
+      angle = DLGCameraAngle.ANGLE_SPEAKER_BEHIND_PLAYER;
+    }
     const fov = entry.camFieldOfView;
     const cameraAnimation = entry.cameraAnimation;
+    // Cache side once per shot (AddCalculatedLineOfAction @ 006bcec0)
+    this.cameraState.dialogCamSide = undefined;
+    this.cameraState.camHeightOffset = entry.camHeightOffset ?? 0;
+    this.cameraState.tarHeightOffset = entry.tarHeightOffset ?? 0;
+    this.cameraState.closeUpExtra = 0;
 
-    if ( angle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA || this.dialog.animatedCamera && cameraAnimation > -1 ) {
-      this.setAnimatedCamera(cameraAnimation, fov);
-    } else if (angle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA) {
-      this.setPlaceableCamera(cameraID);
-    } else {
-      this.setDialogCamera(angle);
+    // Animated cut: try SetAnimatedCamera when anim id in retail range; else shot framing
+    const useAnimated =
+      this.cutsceneMode == CutsceneMode.ANIMATED
+      || angle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA;
+    if(useAnimated && this.trySetAnimatedCamera(cameraAnimation, fov)){
+      return;
     }
+
+    if(angle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA){
+      // Placeable uses CameraID only (LoadDialogCamera clears id unless angle==6)
+      this.setPlaceableCamera(entry.cameraID);
+      return;
+    }
+
+    // Angle 4 without a valid CUT anim — UpdateShotCamera framing fallback (treat as speaker)
+    if(angle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA){
+      angle = DLGCameraAngle.ANGLE_SPEAKER;
+    }
+
+    // Angle 5: UpdateShotCamera @ 006306e0 early-outs before SetShot (hold framing)
+    if(angle == DLGCameraAngle.ANGLE_FOCUS_PLAYER){
+      this.cameraState.mode = CameraMode.DIALOG;
+      this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_FOCUS_PLAYER;
+      if(entry.listener && entry.speaker){
+        this.setCameraParticipants(entry.listener, entry.speaker);
+      }
+      return;
+    }
+
+    this.setDialogCamera(angle);
+    if(angle == DLGCameraAngle.ANGLE_SPEAKER){
+      this.cameraState.closeUpExtra = this.resolveCloseUpExtra(entry, entry.speaker);
+    }
+  }
+
+  /**
+   * Retail ShowDialogReplies @ 006340e0 — swap so player is speaker, then
+   * UpdateShotCamera with the first reply's camera angle / heights / id.
+   */
+  static setReplyCamera(entry: DLGNode, reply: DLGNode){
+    const prevSpeaker =
+      this.cameraState.speaker.participant
+      || entry.speaker
+      || this.owner;
+    const player =
+      (this.listener && this.listener.isPM)
+        ? this.listener
+        : (GameState.PartyManager.party[0] || this.listener);
+
+    let angle = reply.cameraAngle;
+    if(this.dialogCameraPrng){
+      angle = resolveReplyCameraAngle(angle, this.dialogCameraPrng);
+    }else if(angle == DLGCameraAngle.ANGLE_RANDOM){
+      angle = DLGCameraAngle.ANGLE_SPEAKER_BEHIND_PLAYER;
+    }
+
+    this.cameraState.dialogCamSide = undefined;
+    this.cameraState.camHeightOffset = reply.camHeightOffset ?? 0;
+    this.cameraState.tarHeightOffset = reply.tarHeightOffset ?? 0;
+    this.cameraState.closeUpExtra = 0;
+
+    // Angle 5: restore pre-swap participants and skip SetShot
+    if(angle == DLGCameraAngle.ANGLE_FOCUS_PLAYER){
+      this.cameraState.mode = CameraMode.DIALOG;
+      this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_FOCUS_PLAYER;
+      if(prevSpeaker && player){
+        this.setCameraParticipants(player, prevSpeaker);
+      }
+      return;
+    }
+
+    // Swapped pair: speaker = player, listener = previous speaker
+    if(player && prevSpeaker){
+      this.setCameraParticipants(prevSpeaker, player);
+    }
+
+    const useAnimated = angle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA;
+    if(useAnimated && this.trySetAnimatedCamera(reply.cameraAnimation, reply.camFieldOfView)){
+      return;
+    }
+
+    if(angle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA){
+      this.setPlaceableCamera(reply.cameraID);
+      return;
+    }
+
+    if(angle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA){
+      angle = DLGCameraAngle.ANGLE_SPEAKER;
+    }
+
+    this.setDialogCamera(angle);
+    // setDialogCamera re-binds entry participants when currentEntry exists —
+    // reply phase clears currentEntry, so re-apply the swap.
+    if(player && prevSpeaker){
+      this.setCameraParticipants(prevSpeaker, player);
+    }
+    if(angle == DLGCameraAngle.ANGLE_SPEAKER){
+      this.cameraState.closeUpExtra = this.resolveCloseUpExtra(reply, player);
+    }
+  }
+
+  /**
+   * UpdateShotCamera CU_PB_Range path — speaker AnimList id → dialoganimations row.
+   */
+  static resolveCloseUpExtra(node: DLGNode, speaker: ModuleObject | undefined): number {
+    if(!node || !speaker) return 0;
+    const table = GameState.TwoDAManager.datatables.get('dialoganimations');
+    if(!table) return 0;
+
+    const speakerTag = (speaker.getTag?.() || '').toLowerCase();
+    let animId = 0;
+    for(let i = 0; i < node.animations.length; i++){
+      const a = node.animations[i];
+      const p = String(a.participant || '').toLowerCase();
+      const matches =
+        p === speakerTag
+        || (p === 'owner' && speaker === this.owner)
+        || (p === 'player' && speaker === this.listener)
+        || (!p && speaker === (node.speaker || this.owner));
+      if(!matches) continue;
+      animId = Number(a.animation) || 0;
+      break;
+    }
+    if(animId < 10000) return 0;
+
+    let range = lookupDialogCloseUpExtra(animId, (rowIndex) => {
+      return table.getByID(rowIndex) || table.rows[rowIndex];
+    });
+    // TSL UpdateShotCamera @ 004d4ef0: appearance 0x235 gets an extra
+    // quarter-unit close-up pull after CU_PB_Range lookup.
+    if(
+      GameState.GameKey == GameEngineType.TSL
+      && (speaker as ModuleCreature).appearance == 0x235
+    ){
+      range += 0.25;
+    }
+    return range;
+  }
+
+  /**
+   * Retail CGuiInGame::SetAnimatedCamera @ 0062bfa0 —
+   * succeeds only when 999 < animId < 0x6c0 and CameraModel is loaded.
+   * @returns true if animated camera was applied
+   */
+  static trySetAnimatedCamera(nCamera: number, nFOV: number = -1): boolean {
+    if(!(this.dialog?.animatedCamera instanceof OdysseyModel3D)){
+      return false;
+    }
+    if(!(nCamera > 999 && nCamera < 0x6c0)){
+      return false;
+    }
+    const animationName = getCameraAnimationName(nCamera);
+    if(animationName === 'none'){
+      return false;
+    }
+    const animation = this.dialog.animatedCamera.odysseyAnimationMap.get(animationName.toLowerCase().trim());
+    if(!animation){
+      return false;
+    }
+
+    const animationState = this.dialog.animatedCamera.animationManager.createAnimationState();
+    this.cameraState.currentCameraAnimation = animation;
+    this.cameraState.currentCameraAnimationElapsed = 0;
+    this.dialog.animatedCamera.animationManager.currentAnimation = animation;
+    this.dialog.animatedCamera.animationManager.currentAnimationState = animationState;
+    if(this.currentEntry){
+      this.currentEntry.checkList.cameraAnimationComplete = false;
+    }
+    this.cameraState.mode = CameraMode.ANIMATED;
+    this.cameraState.cameraAnimation = nCamera;
+    GameState.currentCamera = GameState.camera_animated;
+    // SetAnimatedCamera @ 00641010 SetClipDist(0.1, 10000)
+    GameState.camera_animated.near = ANIMATED_CAMERA_NEAR;
+    GameState.camera_animated.far = ANIMATED_CAMERA_FAR;
+    if(nFOV != -1 && nFOV > 0){
+      GameState.camera_animated.fov = nFOV;
+    }else{
+      GameState.camera_animated.fov = DIALOG_CAMERA_FOV;
+    }
+    GameState.camera_animated.updateProjectionMatrix();
+
+    // Reply phase clears currentEntry — keep any swap already applied by setReplyCamera.
+    this.bindCameraParticipantsFromActiveNode();
+    return true;
+  }
+
+  /**
+   * Set the animated camera — LoadAnimatedCamera @ 00640f70 / camerahook follow.
+   * Prefer trySetAnimatedCamera; this path keeps legacy callers and falls back on failure.
+   */
+  static setAnimatedCamera(nCamera: number, nFOV: number = -1) {
+    if(this.trySetAnimatedCamera(nCamera, nFOV)){
+      return;
+    }
+    console.warn(`No animation found for camera [${nCamera}] falling back to dialog camera`);
+    if(this.currentEntry){
+      this.currentEntry.checkList.cameraAnimationComplete = true;
+    }
+    this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
   }
 
   /**
@@ -685,88 +962,88 @@ export class CutsceneManager {
   }
 
   /**
-   * Set the listener camera
+   * Set the listener camera — legacy path; prefer setReplyCamera (ShowDialogReplies).
+   * Angle 5 holds framing (UpdateShotCamera early-out before SetShot).
    */
   static setListenerCamera(){
-    this.setDialogCamera(DLGCameraAngle.ANGLE_FOCUS_PLAYER);
+    this.cameraState.mode = CameraMode.DIALOG;
+    this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_FOCUS_PLAYER;
     this.setCameraParticipants(this.owner, this.listener);
   }
 
   /**
    * Set the dialog camera
-   * @param nAngle - The angle to set the camera to
+   * @param nAngle - The angle to set the camera to (ANGLE_RANDOM already resolved)
    */
   static setDialogCamera(nAngle: DLGCameraAngle) {
     GameState.currentCamera = GameState.camera_dialog;
+    GameState.camera_dialog.fov = DIALOG_CAMERA_FOV;
+    GameState.camera_dialog.updateProjectionMatrix();
     this.cameraState.mode = CameraMode.DIALOG;
-    this.cameraState.cameraAngle = 
-      (nAngle == DLGCameraAngle.ANGLE_RANDOM) ? Math.floor(Math.random() * 3) + 1 : nAngle;
-    if(this.currentEntry){
-      this.setCameraParticipants(this.currentEntry.listener, this.currentEntry.speaker);
-    }
+    // Fallbacks that still pass ANGLE_RANDOM (placeable miss, etc.)
+    this.cameraState.cameraAngle =
+      (nAngle == DLGCameraAngle.ANGLE_RANDOM)
+        ? DLGCameraAngle.ANGLE_SPEAKER_BEHIND_PLAYER
+        : nAngle;
+    // Force reframing next update
+    this.cameraState.listener.position = undefined;
+    this.cameraState.speaker.position = undefined;
+    this.bindCameraParticipantsFromActiveNode();
   }
 
   /**
-   * Set the placeable camera
-   * @param nCamera - The camera to set
+   * Set the placeable camera — retail SetShotFromScript @ 0062e900 /
+   * UpdateShotCamera @ 006306e0 (param_1 == 6).
+   * Looks up GIT CameraList by CameraID, rebuilds pose, and applies it onto
+   * the dialog camera (CSWBehaviorCameraDialog::SetShot type 6) — not a
+   * separate render camera, so clip/FOV/shake stay on one dialog cam.
    */
   static setPlaceableCamera(nCamera: number) {
-    let cam = GameState.getCameraById(nCamera);
-    if (!cam) {
+    const src = GameState.getCameraById(nCamera);
+    if (!src) {
       console.warn(`No placeable camera found for camera [${nCamera}] falling back to dialog camera`);
       this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
       return;
     }
 
-    GameState.currentCamera = cam;
+    this.applyPlaceableShotToDialogCamera(src);
     this.cameraState.mode = CameraMode.PLACEABLE;
     this.cameraState.cameraID = nCamera;
-    if(this.currentEntry){
-      this.setCameraParticipants(this.currentEntry.listener, this.currentEntry.speaker);
-    }else{
-      this.setCameraParticipants(this.owner, this.listener);
-    }
+    // Reply phase clears currentEntry — keep any swap already applied by setReplyCamera.
+    this.bindCameraParticipantsFromActiveNode();
   }
 
   /**
-   * Set the animated camera
-   * @param nCamera - The camera to set
-   * @param nFOV - The field of view to set
+   * Copy a ModuleCamera PerspectiveCamera pose onto camera_dialog.
+   * Mirrors CSWBehaviorCameraDialog::SetShot(6, pos, quat, fov) @ 006bb590.
    */
-  static setAnimatedCamera(nCamera: number, nFOV: number = -1) {
-    const animationState = this.dialog.animatedCamera.animationManager.createAnimationState();
-    if(nCamera == -1){
-      this.currentEntry.checkList.cameraAnimationComplete = true;
-      this.dialog.animatedCamera.animationManager.currentAnimationState = animationState;
-      console.warn(`No animation found for camera [${nCamera}] falling back to dialog camera`);
-      this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
-      return;
-    }
+  static applyPlaceableShotToDialogCamera(src: THREE.PerspectiveCamera) {
+    const dialog = GameState.camera_dialog;
+    dialog.position.copy(src.position);
+    dialog.quaternion.copy(src.quaternion);
+    dialog.rotation.setFromQuaternion(src.quaternion, 'YZX');
+    dialog.up.set(0, 0, 1);
+    const fov = (typeof src.fov === 'number' && src.fov > 0) ? src.fov : DIALOG_CAMERA_FOV;
+    dialog.fov = fov;
+    dialog.updateProjectionMatrix();
+    dialog.updateMatrixWorld(true);
+    GameState.currentCamera = dialog;
+  }
 
-    if (!(this.dialog.animatedCamera instanceof OdysseyModel3D)) {
-      console.warn(`No animated camera model found for camera [${nCamera}] falling back to dialog camera`);
-      this.setDialogCamera(DLGCameraAngle.ANGLE_RANDOM);
-      return;
-    }
-
-    const animationName = this.getCUTAnimationName(nCamera);
-    const animation = this.dialog.animatedCamera.odysseyAnimationMap.get(animationName.toLowerCase().trim());
-    this.cameraState.currentCameraAnimation = animation;
-    this.cameraState.currentCameraAnimationElapsed = 0;
-    this.dialog.animatedCamera.animationManager.currentAnimation = animation;
-    this.dialog.animatedCamera.animationManager.currentAnimationState = animationState;
-    this.currentEntry.checkList.cameraAnimationComplete = !this.cameraState.currentCameraAnimation;
-    this.cameraState.mode = CameraMode.ANIMATED;
-    GameState.currentCamera = GameState.camera_animated;
-    if (nFOV != -1) {
-      GameState.camera_animated.fov = nFOV;
-    }
-    
+  /**
+   * Bind speaker/listener for the active camera shot.
+   * Prefer the current entry when present; otherwise keep an existing
+   * reply-phase swap and only fall back to conversation owner/listener.
+   */
+  static bindCameraParticipantsFromActiveNode(){
     if(this.currentEntry){
       this.setCameraParticipants(this.currentEntry.listener, this.currentEntry.speaker);
-    }else{
-      this.setCameraParticipants(this.owner, this.listener);
+      return;
     }
+    if(this.cameraState.speaker.participant && this.cameraState.listener.participant){
+      return;
+    }
+    this.setCameraParticipants(this.owner, this.listener);
   }
 
   /**
@@ -817,7 +1094,10 @@ export class CutsceneManager {
     }
 
     if (this.cameraState.mode == CameraMode.PLACEABLE) {
-      this.setPlaceableCamera(this.currentEntry.cameraAnimation > -1 ? this.currentEntry.cameraAnimation : this.currentEntry.cameraID);
+      // Reply phase clears currentEntry — ownership lives on cameraState.cameraID.
+      // Re-apply each tick like Control @ 006bcf50 type-6 (stored shot → dialog cam).
+      this.setPlaceableCamera(this.cameraState.cameraID);
+      GameState.forwardVector.set(0, 0, -1).applyQuaternion(GameState.camera_dialog.quaternion);
       if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
         GameState.MenuManager.InGameComputer.hide();
         GameState.MenuManager.InGameComputerCam.show();
@@ -827,48 +1107,33 @@ export class CutsceneManager {
 
     if (this.cameraState.mode == CameraMode.DIALOG) {
       const listener = this.cameraState.listener;
-      const speaker = this.cameraState.speaker;   
+      const speaker = this.cameraState.speaker;
 
       if(!listener.participant || !speaker.participant){
         return;
       }
-      
-      const listenerNeedsUpdate = (!listener.position || (listener.position.x != listener.participant.position.x && listener.position.y != listener.participant.position.y && listener.position.z != listener.participant.position.z));
-      const speakerNeedsUpdate = (!speaker.position || (speaker.position.x != speaker.participant.position.x && speaker.position.y != speaker.participant.position.y && speaker.position.z != speaker.participant.position.z));
-      
-      if(!listenerNeedsUpdate && !speakerNeedsUpdate){
-        return;
-      }
 
-      if(listenerNeedsUpdate){
-        if(!listener.position){
-          listener.position = new THREE.Vector3();
-        }
-        if(!listener.rotation){
-          listener.rotation = new THREE.Vector3();
-        }
-        listener.position.x = listener.participant.position.x;
-        listener.position.y = listener.participant.position.y;
-        listener.position.z = listener.participant.position.z;
-        listener.rotation.x = listener.participant.rotation.x;
-        listener.rotation.y = listener.participant.rotation.y;
-        listener.rotation.z = listener.participant.rotation.z;
+      // Always refresh tracked poses — dialog shots follow CAMERAHOOK each frame.
+      // Do not early-out on body position alone: first-frame hook matrixWorld can be
+      // at origin while participant.position is already correct, which previously
+      // locked auto-angle cameras at (0,0,0) until a body move.
+      if(!listener.position){
+        listener.position = new THREE.Vector3();
       }
+      if(!listener.rotation){
+        listener.rotation = new THREE.Vector3();
+      }
+      listener.position.copy(listener.participant.position);
+      listener.rotation.copy(listener.participant.rotation);
 
-      if(speakerNeedsUpdate){
-        if(!speaker.position){
-          speaker.position = new THREE.Vector3();
-        }
-        if(!speaker.rotation){
-          speaker.rotation = new THREE.Vector3();
-        }
-        speaker.position.x = speaker.participant.position.x;
-        speaker.position.y = speaker.participant.position.y;
-        speaker.position.z = speaker.participant.position.z;
-        speaker.rotation.x = speaker.participant.rotation.x;
-        speaker.rotation.y = speaker.participant.rotation.y;
-        speaker.rotation.z = speaker.participant.rotation.z;
+      if(!speaker.position){
+        speaker.position = new THREE.Vector3();
       }
+      if(!speaker.rotation){
+        speaker.rotation = new THREE.Vector3();
+      }
+      speaker.position.copy(speaker.participant.position);
+      speaker.rotation.copy(speaker.participant.rotation);
 
       switch (this.cameraState.cameraAngle) {
         case DLGCameraAngle.ANGLE_SPEAKER:
@@ -881,7 +1146,11 @@ export class CutsceneManager {
           this.updateCameraAngleTwoShot(delta);
           break;
         case DLGCameraAngle.ANGLE_FOCUS_PLAYER:
-          this.updateListenerCamera(delta);
+          // UpdateShotCamera @ 006306e0: angle 5 skips SetShot — hold framing
+          break;
+        default:
+          // Unresolved ANGLE_RANDOM (0) or unknown — frame as speaker
+          this.updateCameraAngleSpeaker(delta);
           break;
       }
       return;
@@ -918,203 +1187,203 @@ export class CutsceneManager {
     }
 
     if(!manager.currentAnimation){
-      this.currentEntry.checkList.cameraAnimationComplete = true;
+      if(this.currentEntry){
+        this.currentEntry.checkList.cameraAnimationComplete = true;
+      }
       return;
     }
     GameState.currentCamera = GameState.camera_animated;
     manager.update(delta);
     cameraModel.camerahook.updateMatrixWorld();
     cameraModel.camerahook.getWorldPosition(GameState.camera_animated.position);
-    GameState.camera_animated.quaternion.copy(cameraModel.camerahook.quaternion);
+    cameraModel.camerahook.getWorldQuaternion(GameState.camera_animated.quaternion);
     GameState.camera_animated.updateProjectionMatrix();
-    if(!manager.currentAnimation){
+    if(!manager.currentAnimation && this.currentEntry){
       this.currentEntry.checkList.cameraAnimationComplete = true;
     }
   }
 
-  /**
-   * setCameraAngleSpeaker
-   * Speaker front: a standard head-and-shoulders shot of the current speaker.
-   */
-  static updateCameraAngleSpeaker(delta: number = 0){
-    // Get camera positions for both speaker and listener (with camera hooks if available)
-    const speaker = this.cameraState.speaker.participant;
-    const listener = this.cameraState.listener.participant;
-    const speakerCameraPosition = speaker.getCameraHookPosition();
-    const listenerCameraPosition = listener.getCameraHookPosition();
-    
-    // Fixed distance for close-up head-on shot - not dependent on listener distance
-    const closeUpDistance = 1.2; // Fixed distance for consistent close-up framing
-    const heightOffset = 0; // No height adjustment needed for head-on shot
-    
-    // Position camera for head-on close-up speaker shot
-    // Camera positioned directly in front of the speaker based on their rotation
-    const speakerRotation = (speaker.rotation.z + HALF_PI) - SINGLE_SHOT_ANGLE_OFFSET;
-    
-    // Calculate camera position based on speaker's facing direction
-    const cameraX = speakerCameraPosition.x + Math.cos(speakerRotation) * closeUpDistance;
-    const cameraY = speakerCameraPosition.y + Math.sin(speakerRotation) * closeUpDistance;
-    const cameraZ = speakerCameraPosition.z + heightOffset;
-    
-    // Calculate final camera position - direct frontal shot based on speaker's rotation
-    const cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
-    
-    // Calculate lookAt target - at speaker's eye level for proper framing
-    const lookAtTarget = speakerCameraPosition.clone().add(new THREE.Vector3(0, 0, 0.1)); // Lower lookAt target
-    
-    // Set camera position and look at the speaker
-    GameState.camera_dialog.position.copy(cameraPosition);
-    GameState.camera_dialog.lookAt(lookAtTarget);
-  }
+  static #tmpDialogCamPos = new THREE.Vector3();
+  static #tmpDialogCamLook = new THREE.Vector3();
 
   /**
-   * setCameraAngleSpeakerBehindPlayer
-   * Over-the-shoulder: frames the speaker OTS from the listener's side (classic shot-reverse-shot style)
-   * Uses collision detection to prevent camera from clipping through walls
-   * Falls back to setCameraAngleSpeaker if camera would collide with walkmesh
+   * Apply GetCameraParameters framing (@ 006bb7b0) to camera_dialog.
+   * Side from AddCalculatedLineOfAction / GetSideUnobstructed @ 006bc600 (cached per entry).
+   * On HitCheck failure, retail sets field9 and reframes as type-1 close-up.
+   * OldHitCheck (DLGObject) → body position instead of CAMERAHOOK (Control @ 006bcf50).
    */
-  static updateCameraAngleSpeakerBehindPlayer(delta: number = 0){
-    // Get camera positions for both speaker and listener (with camera hooks if available)
-    const speaker = this.cameraState.speaker.participant;
-    const listener = this.cameraState.listener.participant;
-    const speakerCameraPosition = speaker.getCameraHookPosition();
-    const listenerCameraPosition = listener.getCameraHookPosition();
-    
-    // Calculate midpoint between speaker and listener for lookAt target
-    const midpoint = this.getCameraMidPoint(speakerCameraPosition, listenerCameraPosition, 0.5);
-    
-    // Calculate distance between participants for adaptive camera positioning
-    const participantDistance = speakerCameraPosition.distanceTo(listenerCameraPosition);
-    
-    // Get listener's rotation to position camera behind and to the left
-    const listenerRotation = listener.rotation.z;
-    
-    // Adaptive distances to ensure both participants are framed equally
-    const baseBehindDistance = 1.0; // Base distance behind listener
-    const baseLeftDistance = 1.5;   // Base distance to the left of listener
-    const distanceMultiplier = Math.max(0.8, Math.min(1.5, participantDistance * 0.4)); // Scale with participant distance
-    
-    let behindDistance = baseBehindDistance * distanceMultiplier;
-    let leftDistance = baseLeftDistance * distanceMultiplier;
-    
-    // Calculate initial camera position behind and to the left of listener
-    let cameraX = listenerCameraPosition.x + Math.cos(listenerRotation + Math.PI) * behindDistance + Math.cos(listenerRotation - HALF_PI) * leftDistance;
-    let cameraY = listenerCameraPosition.y + Math.sin(listenerRotation + Math.PI) * behindDistance + Math.sin(listenerRotation - HALF_PI) * leftDistance;
-    const cameraZ = midpoint.z + 0.3; // Slightly above the midpoint for better framing
-    
-    // Calculate initial camera position
-    let cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
-    
-    // Adjust camera distance based on collision detection (similar to FollowerCamera)
-    const adjustedDistance = this.adjustCameraDistanceForCollision(cameraPosition, listenerCameraPosition, behindDistance);
-    
-    // Recalculate camera position with adjusted distance
-    if (adjustedDistance < behindDistance) {
-      this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_SPEAKER;
-      this.updateCameraAngleSpeaker();
-      return;
-      const scaleFactor = adjustedDistance / behindDistance;
-      behindDistance = adjustedDistance;
-      leftDistance *= scaleFactor;
-      
-      cameraX = listenerCameraPosition.x + Math.cos(listenerRotation + Math.PI) * behindDistance + Math.cos(listenerRotation - HALF_PI) * leftDistance;
-      cameraY = listenerCameraPosition.y + Math.sin(listenerRotation + Math.PI) * behindDistance + Math.sin(listenerRotation - HALF_PI) * leftDistance;
-      cameraPosition.set(cameraX, cameraY, cameraZ);
+  static applyDialogCameraShot(
+    shotType: number,
+    speakerPos: THREE.Vector3,
+    listenerPos: THREE.Vector3,
+    swapParticipants = false
+  ){
+    const sp = swapParticipants ? listenerPos : speakerPos;
+    const lp = swapParticipants ? speakerPos : listenerPos;
+    const heightBias = this.cameraState.camHeightOffset ?? 0;
+    const focusHeightBias = this.cameraState.tarHeightOffset ?? 0;
+    let closeUpExtra = 0;
+    if((shotType | 0) === 1){
+      closeUpExtra = this.cameraState.closeUpExtra ?? 0;
+    }else{
+      this.cameraState.closeUpExtra = 0;
     }
-    
-    // Set camera position and look at the midpoint between speaker and listener
-    GameState.camera_dialog.position.copy(cameraPosition);
-    GameState.camera_dialog.lookAt(midpoint);
+    if(this.cameraState.dialogCamSide == null){
+      this.cameraState.dialogCamSide = this.pickDialogCameraSide(sp, lp);
+    }
+    const side = this.cameraState.dialogCamSide;
+    let collided = false;
+
+    computeDialogCameraShot(
+      shotType, sp, lp,
+      this.#tmpDialogCamPos, this.#tmpDialogCamLook,
+      { side, heightBias, focusHeightBias, closeUpExtra }
+    );
+
+    if(this.checkDialogCameraObstruction(shotType, this.#tmpDialogCamPos, this.#tmpDialogCamLook, sp, lp)){
+      collided = true;
+      computeDialogCameraShot(
+        1, sp, lp,
+        this.#tmpDialogCamPos, this.#tmpDialogCamLook,
+        { collided: true, side, heightBias, focusHeightBias }
+      );
+    }
+
+    GameState.camera_dialog.fov = DIALOG_CAMERA_FOV;
+    GameState.camera_dialog.position.copy(this.#tmpDialogCamPos);
+    GameState.camera_dialog.lookAt(this.#tmpDialogCamLook);
+    GameState.camera_dialog.updateProjectionMatrix();
+    return !collided;
   }
 
   /**
-   * setCameraAngleTwoShot
-   * True two-shot: frames both speaker and listener in a wide conversational view
-   * Camera positioned to show both participants with proper framing and distance
-   * Falls back to setCameraAngleSpeakerBehindPlayer if camera would collide with walkmesh
+   * Framing point for dialog shots — Control @ 006bcf50:
+   * OldHitCheck uses object position + object camera height; otherwise
+   * CAMERAHOOK (with height fallback).
    */
-  static updateCameraAngleTwoShot(delta: number = 0){
-    // Get speaker and listener positions with camera height
+  static getDialogFramingPosition(obj: ModuleObject): THREE.Vector3 {
+    if(this.dialog?.oldHitCheck){
+      const position = obj.position.clone();
+      position.z += obj.getCameraHeight();
+      return position;
+    }
+    return obj.getCameraHookPosition().clone();
+  }
+
+  /**
+   * Retail GetSideUnobstructed @ 006bc600 — pick yaw side 1 vs 2 by comparing
+   * HitCheck counts for type-2/3 shots on each side. Side 2 wins ties.
+   * Type-3 shots count up to 3 rays when OldHitCheck is clear (SetShot @ 006bd260).
+   */
+  static pickDialogCameraSide(speakerPos: THREE.Vector3, listenerPos: THREE.Vector3): number {
+    let hitsSide1 = 0;
+    let hitsSide2 = 0;
+    const tmpPos = new THREE.Vector3();
+    const tmpLook = new THREE.Vector3();
+    for(const type of [2, 3]){
+      for(const side of [1, 2] as const){
+        computeDialogCameraShot(
+          type, speakerPos, listenerPos,
+          tmpPos, tmpLook,
+          { side }
+        );
+        const hits = this.countDialogCameraHits(type, tmpPos, tmpLook, speakerPos, listenerPos);
+        if(side === 1) hitsSide1 += hits;
+        else hitsSide2 += hits;
+      }
+    }
+    return hitsSide1 < hitsSide2 ? 1 : 2;
+  }
+
+  /**
+   * SetShot @ 006bd260 obstruction count — type 3 uses midpoint + speaker + listener
+   * rays when OldHitCheck is unset; other shots use a single look↔camera ray.
+   */
+  static countDialogCameraHits(
+    shotType: number,
+    cameraPosition: THREE.Vector3,
+    lookPosition: THREE.Vector3,
+    speakerPos: THREE.Vector3,
+    listenerPos: THREE.Vector3
+  ): number {
+    let hits = 0;
+    if(this.checkCameraCollision(cameraPosition, lookPosition)) hits++;
+    if((shotType | 0) === 3 && !this.dialog?.oldHitCheck){
+      if(this.checkCameraCollision(cameraPosition, speakerPos)) hits++;
+      if(this.checkCameraCollision(cameraPosition, listenerPos)) hits++;
+    }
+    return hits;
+  }
+
+  static checkDialogCameraObstruction(
+    shotType: number,
+    cameraPosition: THREE.Vector3,
+    lookPosition: THREE.Vector3,
+    speakerPos: THREE.Vector3,
+    listenerPos: THREE.Vector3
+  ): boolean {
+    return this.countDialogCameraHits(
+      shotType, cameraPosition, lookPosition, speakerPos, listenerPos
+    ) > 0;
+  }
+
+  /** Speaker front — GetCameraParameters shot type 1. */
+  static updateCameraAngleSpeaker(_delta: number = 0){
     const speaker = this.cameraState.speaker.participant;
     const listener = this.cameraState.listener.participant;
-    const speakerPos = speaker.position.clone().add(new THREE.Vector3(0, 0, speaker.getCameraHeight()));
-    const listenerPos = listener.position.clone().add(new THREE.Vector3(0, 0, listener.getCameraHeight()));
-    
-    // Calculate midpoint between speaker and listener
-    const midpoint = this.getCameraMidPoint(speakerPos, listenerPos, 0.5);
-    
-    // Calculate direction from listener to speaker
-    const direction = speakerPos.clone().sub(listenerPos).normalize();
-    
-    // Calculate perpendicular direction for camera positioning
-    const perpendicular = new THREE.Vector3(-direction.y, direction.x, 0).normalize();
-    
-    // Calculate distance between participants
-    const participantDistance = speakerPos.distanceTo(listenerPos);
-    
-    // Determine camera distance based on participant separation
-    // Minimum 2.5 units, maximum 10 units, or 1.2x their distance
-    const minDistance = 2.5;
-    const maxDistance = 10.0;
-    const multiplier = 1.2;
-    const cameraDistance = Math.max(minDistance, Math.min(maxDistance, participantDistance * multiplier));
-    
-    // Position camera to the side of both participants
-    const cameraPosition = midpoint.clone()
-      .add(perpendicular.multiplyScalar(cameraDistance))
-      .add(new THREE.Vector3(0, 0, 0)); // Slightly elevated for better framing
-    
-    // Check for walkmesh collision before setting camera position
-    if (!this.validateCameraParticipants() || this.checkCameraCollision(cameraPosition, speaker.position)) {
-      // Fall back to over-the-shoulder shot if collision detected
+    this.applyDialogCameraShot(
+      dlgAngleToShotType(DLGCameraAngle.ANGLE_SPEAKER),
+      this.getDialogFramingPosition(speaker),
+      this.getDialogFramingPosition(listener)
+    );
+  }
+
+  /** Over-the-shoulder — shot type 2; collision → type 1. */
+  static updateCameraAngleSpeakerBehindPlayer(_delta: number = 0){
+    const speaker = this.cameraState.speaker.participant;
+    const listener = this.cameraState.listener.participant;
+    const ok = this.applyDialogCameraShot(
+      dlgAngleToShotType(DLGCameraAngle.ANGLE_SPEAKER_BEHIND_PLAYER),
+      this.getDialogFramingPosition(speaker),
+      this.getDialogFramingPosition(listener)
+    );
+    if(!ok){
+      this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_SPEAKER;
+    }
+  }
+
+  /** Two-shot — shot type 3; collision → OTS fallback. */
+  static updateCameraAngleTwoShot(_delta: number = 0){
+    const speaker = this.cameraState.speaker.participant;
+    const listener = this.cameraState.listener.participant;
+    if(!this.validateCameraParticipants()){
       this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_SPEAKER_BEHIND_PLAYER;
       this.updateCameraAngleSpeakerBehindPlayer();
       return;
     }
-    
-    // Calculate lookAt target - slightly biased toward the speaker
-    const speakerBias = 0.5; // 50% bias toward speaker
-    const lookAtTarget = this.getCameraMidPoint(listenerPos, speakerPos, speakerBias)
-      .add(new THREE.Vector3(0, 0, -0.5)); // Slightly above midpoint
-    
-    // Set camera position and lookAt
-    GameState.camera_dialog.position.copy(cameraPosition);
-    GameState.camera_dialog.lookAt(lookAtTarget);
+    const ok = this.applyDialogCameraShot(
+      dlgAngleToShotType(DLGCameraAngle.ANGLE_SPEAKER_AND_PLAYER_SIDE),
+      this.getDialogFramingPosition(speaker),
+      this.getDialogFramingPosition(listener)
+    );
+    if(!ok){
+      this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_SPEAKER_BEHIND_PLAYER;
+      this.updateCameraAngleSpeakerBehindPlayer();
+    }
   }
 
   /**
-   * Update the listener camera
-   * @param delta - The delta time
+   * Angle 5 holds framing (UpdateShotCamera early-out). Kept for callers that
+   * still invoke an explicit listener close-up; frames camera speaker as type 1.
    */
-  static updateListenerCamera(delta: number = 0){
-    // Get camera positions for both speaker and listener (with camera hooks if available)
+  static updateListenerCamera(_delta: number = 0){
     const speaker = this.cameraState.speaker.participant;
     const listener = this.cameraState.listener.participant;
-    const speakerCameraPosition = speaker.getCameraHookPosition();
-    const listenerCameraPosition = listener.getCameraHookPosition();
-    
-    // Fixed distance for close-up head-on shot - not dependent on listener distance
-    const closeUpDistance = 1.2; // Fixed distance for consistent close-up framing
-    const heightOffset = 0; // No height adjustment needed for head-on shot
-    
-    // Position camera for head-on close-up speaker shot
-    // Camera positioned directly in front of the speaker based on their rotation
-    const speakerRotation = (speaker.rotation.z + HALF_PI) + SINGLE_SHOT_ANGLE_OFFSET;
-    
-    // Calculate camera position based on speaker's facing direction
-    const cameraX = speakerCameraPosition.x + Math.cos(speakerRotation) * closeUpDistance;
-    const cameraY = speakerCameraPosition.y + Math.sin(speakerRotation) * closeUpDistance;
-    const cameraZ = speakerCameraPosition.z + heightOffset;
-    
-    // Calculate final camera position - direct frontal shot based on speaker's rotation
-    const cameraPosition = new THREE.Vector3(cameraX, cameraY, cameraZ);
-    
-    // Calculate lookAt target - at speaker's eye level for proper framing
-    const lookAtTarget = speakerCameraPosition.clone().add(new THREE.Vector3(0, 0, 0.1)); // Lower lookAt target
-    
-    // Set camera position and look at the speaker
-    GameState.camera_dialog.position.copy(cameraPosition);
-    GameState.camera_dialog.lookAt(lookAtTarget);
+    this.applyDialogCameraShot(
+      1,
+      this.getDialogFramingPosition(speaker),
+      this.getDialogFramingPosition(listener)
+    );
   }
 
   static #tmpMPVec3 = new THREE.Vector3();
@@ -1199,16 +1468,8 @@ export class CutsceneManager {
       const castableFaces = aabbFaces[k];
       const intersects = castableFaces.object.collisionManager.walkmesh.raycast(raycaster, castableFaces.faces) || [];
       
-      if (intersects.length > 0) {
-        // Check if any intersection is close to the camera position
-        for (let i = 0; i < intersects.length; i++) {
-          const intersect = intersects[i];
-          // If intersection is very close to camera position, consider it a collision
-          if (intersect.distance < 0.5) {
-            return true;
-          }
-        }
-      }
+      // Retail Scene::HitCheck tests the complete target↔camera segment.
+      if (intersects.length > 0) return true;
     }
     
     return false;

@@ -32,6 +32,7 @@ import { BitWise } from "@/utility/BitWise";
 import { IAmbientSource } from "@/interface/area/IAmbientSource";
 import { IGrassProperties } from "@/interface/area/IGrassProperties";
 import { SpellCastInstance } from "@/combat/SpellCastInstance";
+import { CombatProjectile } from "@/combat/combat-projectile";
 import { TextSprite3D } from "@/engine/TextSprite3D";
 import { ModuleObject } from "@/module/ModuleObject";
 import { ModuleAreaOfEffect } from "@/module/ModuleAreaOfEffect";
@@ -55,8 +56,11 @@ import { ModuleMGTrack } from "@/module/ModuleMGTrack";
 import { ModuleMGPlayer } from "@/module/ModuleMGPlayer";
 import type { Module } from "@/module/Module";
 import { IVISRoom } from "@/interface/module/IVISRoom";
-import { BackgroundMusicMode } from "@/enums/audio/BackgroundMusicMode";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleDayPhase } from "@/enums/module/ModuleDayPhase";
+import { ModuleCalendar } from "@/module/ModuleCalendar";
+import { ModuleTimeManager } from "@/module/ModuleTimeManager";
+import { CorpseCache } from "@/module/corpse-cache";
 
 type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
@@ -105,8 +109,16 @@ export class ModuleArea extends ModuleObject {
   layout: LYTObject;
   areaMap: AreaMap;
 
+  /**
+   * Retail CSWSArea field42_0x1e0 — visit mark during CountAreaTransitionTriggers.
+   * Set when a transition into this area is chosen so only one portal per dest is used.
+   */
+  interAreaVisitMark: number = 0;
+
   cameras: ModuleCamera[] = [];
   creatures: ModuleCreature[] = [];
+  /** Retail CSWCArea KeepCorpse shell cache (max 3). */
+  corpseCache: CorpseCache = new CorpseCache();
   doorhooks: any[] = [];
   doors: ModuleDoor[] = [];
   encounters: ModuleEncounter[] = [];
@@ -156,8 +168,8 @@ export class ModuleArea extends ModuleObject {
   creatorId = -1;
 
   /**
-   * Determines if there is an active day/night cycle
-   * @remarks not supported by KotOR or TSL. not sure if we will add support for this in the engine
+   * Determines if there is an active day/night cycle.
+   * Retail CSWCArea::UpdateDayNightCycle / SetAsDay|Night|Dawn|Dusk.
    */
   dayNightCycle: boolean = false;
 
@@ -204,6 +216,32 @@ export class ModuleArea extends ModuleObject {
    * TRUE if the area is always night, FALSE if area is always day. Meaningful only if DayNightCycle is FALSE
    */
   isNight: boolean = false;
+
+  /**
+   * Runtime lighting night flag (retail `area.is_night`). Distinct from authored ARE `IsNight`.
+   */
+  lightingIsNight = false;
+
+  /** Retail dawn-transition flag (CSWCArea field38_0x1b4). */
+  dayNightDawnActive = false;
+
+  /** Retail dusk-transition flag (CSWCArea field39_0x1b8). */
+  dayNightDuskActive = false;
+
+  /** Retail field41_0x1c0 — pending midpoint audio/lighting flip during dawn/dusk. */
+  dayNightHalfwayPending = false;
+
+  /** Last module day phase applied via SetTimeOfDayState. */
+  appliedDayPhase: ModuleDayPhase | 0 = 0;
+
+  /** Whether area BGM/ambient currently use day tracks. */
+  audioUsesDayTracks = true;
+
+  /** Retail `shadowAlpha` for this area's day/night cycle (0–1). */
+  shadowAlpha = 0;
+
+  /** Retail `beamingProjectionAlpha` during dawn/dusk (0–0.05). */
+  beamingProjectionAlpha = 0;
 
   lightingScheme = 0;
 
@@ -325,6 +363,7 @@ export class ModuleArea extends ModuleObject {
   restrictMode: number;
 
   spellInstances: SpellCastInstance[] = [];
+  combatProjectiles: CombatProjectile[] = [];
   textSprites: TextSprite3D[] = [];
 
   roomWalkmeshes: OdysseyWalkMesh[] = [];
@@ -344,6 +383,7 @@ export class ModuleArea extends ModuleObject {
 
   dispose(){
     this.areaMap.dispose();
+    this.corpseCache.clear();
 
     //clear area room objects
     while (this.rooms.length){
@@ -399,53 +439,46 @@ export class ModuleArea extends ModuleObject {
   }
 
   update(delta: number = 0){
-    let roomCount = this.rooms.length;
-    let aoeCount = this.areaOfEffects.length;
-    let trigCount = this.triggers.length;
-    let encounterCount = this.encounters.length;
-    let creatureCount = this.creatures.length;
-    let placeableCount = this.placeables.length;
-    let doorCount = this.doors.length;
-    let partyCount = GameState.PartyManager.party.length;
-
+    // Re-read lengths each iteration: destroy/detach can splice mid-update
     //update triggers
-    for(let i = 0; i < trigCount; i++){
-      this.triggers[i].update(delta);
+    for(let i = 0; i < this.triggers.length; i++){
+      this.triggers[i]?.update(delta);
     }
 
     //update encounters
-    for(let i = 0; i < encounterCount; i++){
-      this.encounters[i].update(delta);
+    for(let i = 0; i < this.encounters.length; i++){
+      this.encounters[i]?.update(delta);
     }
     
     //update aoe
-    for(let i = 0; i < aoeCount; i++){
-      this.areaOfEffects[i].update(delta);
+    for(let i = 0; i < this.areaOfEffects.length; i++){
+      this.areaOfEffects[i]?.update(delta);
     }
 
     //update party
-    for(let i = 0; i < partyCount; i++){
-      GameState.PartyManager.party[i].update(delta);
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      GameState.PartyManager.party[i]?.update(delta);
     }
     
     //update creatures
-    for(let i = 0; i < creatureCount; i++){
-      this.creatures[i].update(delta);
+    for(let i = 0; i < this.creatures.length; i++){
+      this.creatures[i]?.update(delta);
     }
-    
+
     //update placeables
-    for(let i = 0; i < placeableCount; i++){
-      this.placeables[i].update(delta);
+    for(let i = 0; i < this.placeables.length; i++){
+      this.placeables[i]?.update(delta);
     }
     
     //update doors
-    for(let i = 0; i < doorCount; i++){
-      this.doors[i].update(delta);
+    for(let i = 0; i < this.doors.length; i++){
+      this.doors[i]?.update(delta);
     }
 
     //unset party controlled
-    for(let i = 0; i < partyCount; i++){
-      GameState.PartyManager.party[i].controlled = false;
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      const pm = GameState.PartyManager.party[i];
+      if(pm) pm.controlled = false;
     }
 
     if(GameState.Mode == EngineMode.MINIGAME){
@@ -453,13 +486,13 @@ export class ModuleArea extends ModuleObject {
     }
 
     //update rooms
-    for(let i = 0; i < roomCount; i++){
-      this.rooms[i].update(delta);
+    for(let i = 0; i < this.rooms.length; i++){
+      this.rooms[i]?.update(delta);
       // this.rooms[i].hide();
     }
 
-    for(let i = 0, spellCount = this.spellInstances.length; i < spellCount; i++){
-      this.spellInstances[i].update(delta);
+    for(let i = 0; i < this.spellInstances.length; i++){
+      this.spellInstances[i]?.update(delta);
     }
 
     let spellIndex = this.spellInstances.length;
@@ -468,6 +501,17 @@ export class ModuleArea extends ModuleObject {
       if(spellInstance && spellInstance.completed){
         spellInstance.dispose();
         this.spellInstances.splice(spellIndex, 1);
+      }
+    }
+
+    for(let i = 0; i < this.combatProjectiles.length; i++){
+      this.combatProjectiles[i]?.update(delta);
+    }
+    let projIndex = this.combatProjectiles.length;
+    while(projIndex--){
+      const proj = this.combatProjectiles[projIndex];
+      if(proj && (proj.completed || proj.disposed)){
+        this.combatProjectiles.splice(projIndex, 1);
       }
     }
 
@@ -506,52 +550,56 @@ export class ModuleArea extends ModuleObject {
       this.path.update(delta);
     }
 
+    this.updateDayNightCycle();
     this.updateMusic(delta);
   }
 
   updatePaused(delta: number = 0){
-    let roomCount = this.rooms.length;
-    let trigCount = this.triggers.length;
-    let encounterCount = this.encounters.length;
-    let aoeCount = this.areaOfEffects.length;
-    let creatureCount = this.creatures.length;
-    let placeableCount = this.placeables.length;
-    let doorCount = this.doors.length;
-    let partyCount = GameState.PartyManager.party.length;
-
     //update triggers
-    for(let i = 0; i < trigCount; i++){
-      this.triggers[i].updatePaused(delta);
+    for(let i = 0; i < this.triggers.length; i++){
+      this.triggers[i]?.updatePaused(delta);
     }
 
     //update encounters
-    for(let i = 0; i < encounterCount; i++){
-      this.encounters[i].updatePaused(delta);
+    for(let i = 0; i < this.encounters.length; i++){
+      this.encounters[i]?.updatePaused(delta);
     }
 
     //update aoe
-    for(let i = 0; i < aoeCount; i++){
-      this.areaOfEffects[i].updatePaused(delta);
+    for(let i = 0; i < this.areaOfEffects.length; i++){
+      this.areaOfEffects[i]?.updatePaused(delta);
     }
 
-    //update party
-    for(let i = 0; i < partyCount; i++){
-      GameState.PartyManager.party[i].updatePaused(delta);
+    //update party (TimeStop exclusions keep full update — retail exclusion list)
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      const pm = GameState.PartyManager.party[i];
+      if(!pm) continue;
+      if(GameState.timeStopActive && GameState.timeStopExclusions?.has(pm.id)){
+        pm.update(delta);
+      }else{
+        pm.updatePaused(delta);
+      }
     }
     
     //update creatures
-    for(let i = 0; i < creatureCount; i++){
-      this.creatures[i].updatePaused(delta);
+    for(let i = 0; i < this.creatures.length; i++){
+      const c = this.creatures[i];
+      if(!c) continue;
+      if(GameState.timeStopActive && GameState.timeStopExclusions?.has(c.id)){
+        c.update(delta);
+      }else{
+        c.updatePaused(delta);
+      }
     }
     
     //update placeables
-    for(let i = 0; i < placeableCount; i++){
-      this.placeables[i].updatePaused(delta);
+    for(let i = 0; i < this.placeables.length; i++){
+      this.placeables[i]?.updatePaused(delta);
     }
     
     //update doors
-    for(let i = 0; i < doorCount; i++){
-      this.doors[i].updatePaused(delta);
+    for(let i = 0; i < this.doors.length; i++){
+      this.doors[i]?.updatePaused(delta);
     }
 
     if(GameState.Mode == EngineMode.MINIGAME){
@@ -566,7 +614,332 @@ export class ModuleArea extends ModuleObject {
     this.updateRoomVisibility(delta);
     FollowerCamera.update(delta, this);
 
+    this.updateDayNightCycle();
     this.updateMusic(delta);
+  }
+
+  /**
+   * Retail CSWCArea::UpdateDayNightCycle @ 00606490 + SetTimeOfDayState @ 00640640.
+   * Applies sun/moon lighting for the module day phase and lerps during dawn/dusk.
+   */
+  updateDayNightCycle(){
+    const timeManager = this.module?.timeManager;
+    if(!timeManager){ return; }
+
+    const phase = timeManager.dayPhase;
+    if(this.appliedDayPhase !== phase){
+      this.setTimeOfDayState(phase);
+    }
+
+    if(!this.dayNightDawnActive && !this.dayNightDuskActive){
+      return;
+    }
+
+    const hourLengthMs = timeManager.minutesPerHour * ModuleCalendar.SECONDS_IN_MINUTE * ModuleCalendar.MILISECONDS_IN_SECOND;
+    if(hourLengthMs <= 0){ return; }
+
+    const progress = Math.min(1, Math.max(0, timeManager.transition / hourLengthMs));
+    const sun = this.sun;
+    const moon = this.moon;
+    const half = 0.5;
+
+    if(this.dayNightDawnActive){
+      if(progress < 1){
+        // Dawn: moon → sun; beamingProjectionAlpha = progress * 0.05
+        this.beamingProjectionAlpha = progress * 0.05;
+        this.updateTransitionShadowAlpha(progress, half);
+        this.applyLightingColors(
+          this.lerpColor(moon.ambientColor, sun.ambientColor, progress),
+          this.lerpColor(moon.diffuseColor, sun.diffuseColor, progress),
+          this.lerpColor(moon.fogColor, sun.fogColor, progress),
+          this.lerpScalar(moon.fogNear, sun.fogNear, progress),
+          this.lerpScalar(moon.fogFar, sun.fogFar, progress),
+          !!(sun.fogOn || moon.fogOn),
+          this.shadowAlpha
+        );
+      }else{
+        this.dayNightDawnActive = false;
+        this.dayNightHalfwayPending = false;
+        this.lightingIsNight = false;
+        this.beamingProjectionAlpha = 0.05;
+        this.applySunLighting();
+      }
+    }else if(this.dayNightDuskActive){
+      if(progress < 1){
+        // Dusk: sun → moon; beamingProjectionAlpha = 0.05 - progress * 0.05
+        this.beamingProjectionAlpha = 0.05 - progress * 0.05;
+        this.updateTransitionShadowAlpha(progress, half);
+        this.applyLightingColors(
+          this.lerpColor(sun.ambientColor, moon.ambientColor, progress),
+          this.lerpColor(sun.diffuseColor, moon.diffuseColor, progress),
+          this.lerpColor(sun.fogColor, moon.fogColor, progress),
+          this.lerpScalar(sun.fogNear, moon.fogNear, progress),
+          this.lerpScalar(sun.fogFar, moon.fogFar, progress),
+          !!(sun.fogOn || moon.fogOn),
+          this.shadowAlpha
+        );
+      }else{
+        this.dayNightDuskActive = false;
+        this.dayNightHalfwayPending = false;
+        this.lightingIsNight = true;
+        this.beamingProjectionAlpha = 0;
+        this.applyMoonLighting();
+      }
+    }
+
+    if(this.dayNightHalfwayPending && progress >= half){
+      if(this.dayNightDuskActive){
+        this.lightingIsNight = true;
+      }else if(this.dayNightDawnActive){
+        this.lightingIsNight = false;
+      }
+      this.dayNightHalfwayPending = false;
+      this.updateAmbientAudioTimeOfDay();
+    }
+
+    // Retail UpdateDayNightCycle refreshes sound-object hour/phase gates every frame.
+    this.updateSoundObjectsTimeOfDay();
+  }
+
+  /**
+   * Retail UpdateDayNightCycle shadowAlpha during dawn/dusk:
+   * before midpoint → opacity*0.01*(1 - t/0.5);
+   * after midpoint  → opacity*0.01*(t/0.5 - 1).
+   */
+  updateTransitionShadowAlpha(progress: number, half = 0.5){
+    this.shadowAlpha = ModuleArea.computeTransitionShadowAlpha(
+      this.shadowOpacity,
+      progress,
+      this.dayNightHalfwayPending,
+      half
+    );
+  }
+
+  /** Pure retail shadowAlpha curve for dawn/dusk (unit-tested). */
+  static computeTransitionShadowAlpha(shadowOpacity: number, progress: number, beforeHalfway: boolean, half = 0.5){
+    return ModuleTimeManager.computeTransitionShadowAlpha(shadowOpacity, progress, beforeHalfway, half);
+  }
+
+  /**
+   * Retail CSWCModule::SetTimeOfDayState @ 00640640.
+   */
+  setTimeOfDayState(phase: ModuleDayPhase){
+    switch(phase){
+      case ModuleDayPhase.Day:
+        this.setAsDay();
+        break;
+      case ModuleDayPhase.Night:
+        this.setAsNight();
+        break;
+      case ModuleDayPhase.Dawn:
+        this.setAsNight();
+        this.setAsDawn();
+        break;
+      case ModuleDayPhase.Dusk:
+        this.setAsDay();
+        this.setAsDusk();
+        break;
+    }
+
+    if(this.appliedDayPhase !== phase){
+      this.appliedDayPhase = phase;
+      this.updateSoundObjectsTimeOfDay();
+      this.updateAmbientAudioTimeOfDay();
+    }
+  }
+
+  /** Retail CSWCArea::SetAsDay @ 006058c0. */
+  setAsDay(){
+    if(!this.dayNightCycle && this.isNight){
+      this.setAsNight();
+      return;
+    }
+    this.dayNightDawnActive = false;
+    this.dayNightDuskActive = false;
+    this.dayNightHalfwayPending = true;
+    this.lightingIsNight = false;
+    this.beamingProjectionAlpha = 0.05;
+    this.shadowAlpha = (this.shadowOpacity | 0) * 0.01;
+    this.applySunLighting();
+  }
+
+  /** Retail CSWCArea::SetAsNight @ 006059c0. */
+  setAsNight(){
+    if(!this.dayNightCycle && !this.isNight){
+      this.setAsDay();
+      return;
+    }
+    this.dayNightDawnActive = false;
+    this.dayNightDuskActive = false;
+    this.dayNightHalfwayPending = true;
+    this.lightingIsNight = true;
+    this.beamingProjectionAlpha = 0;
+    this.shadowAlpha = (this.shadowOpacity | 0) * 0.01;
+    this.applyMoonLighting();
+  }
+
+  /** Retail CSWCArea::SetAsDawn @ 00606cf0. */
+  setAsDawn(){
+    if(!this.dayNightCycle){
+      if(this.isNight){
+        this.setAsNight();
+      }else{
+        this.setAsDay();
+      }
+      return;
+    }
+    this.dayNightHalfwayPending = true;
+    this.dayNightDawnActive = true;
+    this.dayNightDuskActive = false;
+    this.lightingIsNight = true;
+    this.beamingProjectionAlpha = 0;
+    this.shadowAlpha = (this.shadowOpacity | 0) * 0.01;
+  }
+
+  /** Retail CSWCArea::SetAsDusk @ 00606c50. */
+  setAsDusk(){
+    if(!this.dayNightCycle){
+      if(this.isNight){
+        this.setAsNight();
+      }else{
+        this.setAsDay();
+      }
+      return;
+    }
+    this.dayNightHalfwayPending = true;
+    this.dayNightDuskActive = true;
+    this.dayNightDawnActive = false;
+    this.lightingIsNight = false;
+    this.beamingProjectionAlpha = 0.05;
+    this.shadowAlpha = (this.shadowOpacity | 0) * 0.01;
+  }
+
+  applySunLighting(){
+    this.applyLightingColors(
+      this.sun.ambientColor,
+      this.sun.diffuseColor,
+      this.sun.fogColor,
+      this.sun.fogNear,
+      this.sun.fogFar,
+      !!this.sun.fogOn,
+      this.shadowAlpha
+    );
+  }
+
+  applyMoonLighting(){
+    this.applyLightingColors(
+      this.moon.ambientColor,
+      this.moon.diffuseColor,
+      this.moon.fogColor,
+      this.moon.fogNear,
+      this.moon.fogFar,
+      !!this.moon.fogOn,
+      this.shadowAlpha
+    );
+  }
+
+  /**
+   * Apply retail sun/moon ambient + diffuse (+ fog/clear).
+   * Ambient → GameState.globalLight; diffuse → GameState.sunLight (gidy_sun_diff).
+   */
+  applyLightingColors(
+    ambientColor: number,
+    diffuseColor: number,
+    fogColor: number,
+    fogNear: number,
+    fogFar: number,
+    fogOn: boolean,
+    shadowAlpha = this.shadowAlpha
+  ){
+    this.shadowAlpha = shadowAlpha;
+    GameState.shadowAlpha = this.shadowAlpha;
+    GameState.beamingProjectionAlpha = this.beamingProjectionAlpha;
+
+    if(GameState.globalLight){
+      GameState.globalLight.color.setRGB(
+        THREE.MathUtils.clamp((ambientColor & 0xFF) / 255, 0.15, 1),
+        THREE.MathUtils.clamp(((ambientColor >> 8) & 0xFF) / 255, 0.15, 1),
+        THREE.MathUtils.clamp(((ambientColor >> 16) & 0xFF) / 255, 0.15, 1),
+      );
+    }
+
+    if(GameState.sunLight){
+      const dr = (diffuseColor & 0xFF) / 255;
+      const dg = ((diffuseColor >> 8) & 0xFF) / 255;
+      const db = ((diffuseColor >> 16) & 0xFF) / 255;
+      GameState.sunLight.color.setRGB(dr, dg, db);
+      // Dim diffuse at night; scale slightly by beaming during dawn/dusk.
+      const nightScale = this.lightingIsNight ? 0.35 : 0.85;
+      const beamBoost = 1 + this.beamingProjectionAlpha * 4;
+      GameState.sunLight.intensity = Math.max(0.05, nightScale * beamBoost * (1 - this.shadowAlpha * 0.35));
+    }
+
+    if(fogOn){
+      if(!this.fog){
+        this.fog = new THREE.Fog(fogColor, fogNear, fogFar);
+      }else{
+        this.fog.color.setHex(fogColor);
+        this.fog.near = fogNear;
+        this.fog.far = fogFar;
+      }
+      GameState.scene.fog = this.fog;
+    }else{
+      this.fog = undefined;
+      GameState.scene.fog = undefined;
+    }
+
+    if(GameState.renderer){
+      GameState.renderer.setClearColor(new THREE.Color(fogColor));
+    }
+  }
+
+  lerpScalar(from: number, to: number, t: number){
+    return from + (to - from) * t;
+  }
+
+  lerpColor(from: number, to: number, t: number){
+    const fr = from & 0xFF;
+    const fg = (from >> 8) & 0xFF;
+    const fb = (from >> 16) & 0xFF;
+    const tr = to & 0xFF;
+    const tg = (to >> 8) & 0xFF;
+    const tb = (to >> 16) & 0xFF;
+    const r = Math.round(fr + (tr - fr) * t) & 0xFF;
+    const g = Math.round(fg + (tg - fg) * t) & 0xFF;
+    const b = Math.round(fb + (tb - fb) * t) & 0xFF;
+    return (b << 16) | (g << 8) | r;
+  }
+
+  /**
+   * Day and dawn use day tracks; night and dusk use night tracks
+   * (retail CSWCSoundObject::UpdateTimeOfDay phase grouping).
+   */
+  static usesDayAudioTracks(phase: ModuleDayPhase){
+    return ModuleTimeManager.usesDayAudioTracks(phase);
+  }
+
+  updateAmbientAudioTimeOfDay(){
+    const phase = this.module?.timeManager?.dayPhase ?? ModuleDayPhase.Day;
+    const useDay = ModuleTimeManager.usesDayAudioTracks(phase);
+    if(this.audioUsesDayTracks === useDay){
+      const audioEngine = AudioEngine.GetAudioEngine();
+      const musicEmitter = useDay ? audioEngine.areaMusicDayAudioEmitter : audioEngine.areaMusicNightAudioEmitter;
+      const ambientEmitter = useDay ? audioEngine.ambientAudioDayEmitter : audioEngine.ambientAudioNightEmitter;
+      if(musicEmitter.playing || ambientEmitter.playing){
+        return;
+      }
+    }
+    this.audioUsesDayTracks = useDay;
+    this.musicBackgroundPlay();
+    this.ambientSoundPlay();
+  }
+
+  updateSoundObjectsTimeOfDay(){
+    const phase = this.module?.timeManager?.dayPhase ?? ModuleDayPhase.Day;
+    const hour = this.module?.timeManager?.hour ?? 0;
+    for(let i = 0; i < this.sounds.length; i++){
+      this.sounds[i]?.updateTimeOfDay(phase, hour);
+    }
   }
 
   applyAreaWind(): void {
@@ -632,26 +1005,37 @@ export class ModuleArea extends ModuleObject {
   }
 
   updateMusic(delta: number = 0){
-    const audioEngine = AudioEngine.GetAudioEngine();
-    const oPC = GameState.getCurrentPlayer();
-    if(oPC.excitedDuration > 0 && audioEngine.bgmMode == BackgroundMusicMode.AREA && audioEngine.battleMusicLoaded){
-      audioEngine.bgmMode = BackgroundMusicMode.BATTLE;
-      audioEngine.areaMusicDayAudioEmitter.stop();
-      audioEngine.battleMusicAudioEmitter.play(true);
-    }else if(oPC.excitedDuration <= 0 && audioEngine.bgmMode == BackgroundMusicMode.BATTLE && audioEngine.battleMusicLoaded){
-      audioEngine.bgmMode = audioEngine.battleStingerLoaded ? BackgroundMusicMode.BATTLE_STINGER : BackgroundMusicMode.AREA;
-      audioEngine.battleMusicAudioEmitter.stop();
-    }
+    // Battle music is event-driven from SetExcitedState / UpdateExcitedStateTimer
+    // (AudioEngine.playBattleMusic). AudioEngine.update handles post-fade start delay.
+    void delta;
+  }
+
+  /**
+   * Retail CSWSAmbientSound::PlayBattleMusic @ 005c9b90.
+   * NWScript MusicBattlePlay / MusicBattleStop and excited-timer combat music share this path.
+   */
+  playBattleMusic(play: boolean){
+    AudioEngine.GetAudioEngine().playBattleMusic(play);
   }
 
   musicBackgroundPlay(){
     const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.areaMusicDayAudioEmitter.play();
+    const useDay = this.audioUsesDayTracks;
+    audioEngine.areaMusicPreferNight = !useDay;
+    const active = useDay ? audioEngine.areaMusicDayAudioEmitter : audioEngine.areaMusicNightAudioEmitter;
+    const inactive = useDay ? audioEngine.areaMusicNightAudioEmitter : audioEngine.areaMusicDayAudioEmitter;
+    if(inactive.playing){
+      inactive.stop();
+    }
+    if(!active.playing){
+      active.play();
+    }
   }
 
   musicBackgroundStop(){
     const audioEngine = AudioEngine.GetAudioEngine();
     audioEngine.areaMusicDayAudioEmitter.stop();
+    audioEngine.areaMusicNightAudioEmitter.stop();
   }
 
   musicBackgroundSetDelay(delay: number){
@@ -696,13 +1080,11 @@ export class ModuleArea extends ModuleObject {
   }
 
   musicBattlePlay(){
-    const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.battleMusicAudioEmitter.play();
+    this.playBattleMusic(true);
   }
 
   musicBattleStop(){
-    const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.battleMusicAudioEmitter.stop();
+    this.playBattleMusic(false);
   }
 
   async musicBattleSet(index: number){
@@ -717,17 +1099,25 @@ export class ModuleArea extends ModuleObject {
         const data = await AudioLoader.LoadMusic(battleMusic.resource);
         audioEngine.setAudioBuffer('BATTLE', data.buffer as ArrayBuffer, battleMusic.resource);
       }
-      //Load the battle stinger
-      try{
-        if(battleMusic.stinger1 != '****'){
-          console.log('Loading Battle Stinger', battleMusic.stinger1);
-          const data = await AudioLoader.LoadStreamSound(battleMusic.stinger1);
-          audioEngine.setAudioBuffer('BATTLE_STINGER', data.buffer as ArrayBuffer, battleMusic.stinger1);
+      // Retail ReadInfo loads Stinger1–3; PlayStinger picks randomly among non-empty
+      const stingerKeys = ['stinger1', 'stinger2', 'stinger3'] as const;
+      const stingerBuffers: ArrayBuffer[] = [];
+      for(let i = 0; i < stingerKeys.length; i++){
+        const key = stingerKeys[i];
+        const resRef = battleMusic[key];
+        if(!resRef || resRef === '****'){
+          continue;
         }
-      }catch(e){
-        console.log('Battle Stinger not found', battleMusic.stinger1);
-        console.error(e);
+        try{
+          console.log('Loading Battle Stinger', resRef);
+          const data = await AudioLoader.LoadStreamSound(resRef);
+          stingerBuffers.push(data.buffer as ArrayBuffer);
+        }catch(e){
+          console.log('Battle Stinger not found', resRef);
+          console.error(e);
+        }
       }
+      audioEngine.setBattleStingerBuffers(stingerBuffers);
     }catch(e){
       console.log('Background Music not found', battleMusic);
       console.error(e);
@@ -736,12 +1126,21 @@ export class ModuleArea extends ModuleObject {
 
   ambientSoundPlay(){
     const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.ambientAudioDayEmitter.play();
+    const useDay = this.audioUsesDayTracks;
+    const active = useDay ? audioEngine.ambientAudioDayEmitter : audioEngine.ambientAudioNightEmitter;
+    const inactive = useDay ? audioEngine.ambientAudioNightEmitter : audioEngine.ambientAudioDayEmitter;
+    if(inactive.playing){
+      inactive.stop();
+    }
+    if(!active.playing){
+      active.play();
+    }
   }
 
   ambientSoundStop(){
     const audioEngine = AudioEngine.GetAudioEngine();
     audioEngine.ambientAudioDayEmitter.stop();
+    audioEngine.ambientAudioNightEmitter.stop();
   }
 
   async ambientSoundDaySet(index: number){
@@ -759,7 +1158,6 @@ export class ModuleArea extends ModuleObject {
       try{
         const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
         audioEngine.setAudioBuffer('AMBIENT_DAY', data.buffer as ArrayBuffer, ambientDay.resource);
-        audioEngine.ambientAudioDayEmitter.play(true);
       }catch(e){
         console.error('Ambient Audio not found', ambientDay);
       } 
@@ -772,18 +1170,16 @@ export class ModuleArea extends ModuleObject {
     this.audio.ambient.night = index;
     const ambientsound2DA = GameState.TwoDAManager.datatables.get('ambientsound');
     if(ambientsound2DA){
-      //Load the ambient day sound
-      const ambientDay = ambientsound2DA.rows[this.audio.ambient.night];
-      if(!ambientDay || ambientDay.resource == '****'){
+      const ambientNight = ambientsound2DA.rows[this.audio.ambient.night];
+      if(!ambientNight || ambientNight.resource == '****'){
         return;
       }
-      console.log('Loading Ambient Day Sound', ambientDay.resource);
+      console.log('Loading Ambient Night Sound', ambientNight.resource);
       try{
-        const data = await AudioLoader.LoadAmbientSound(ambientDay.resource);
-        audioEngine.setAudioBuffer('AMBIENT_NIGHT', data.buffer as ArrayBuffer, ambientDay.resource);
-        audioEngine.ambientAudioNightEmitter.play(true);
+        const data = await AudioLoader.LoadAmbientSound(ambientNight.resource);
+        audioEngine.setAudioBuffer('AMBIENT_NIGHT', data.buffer as ArrayBuffer, ambientNight.resource);
       }catch(e){
-        console.error('Ambient Audio not found', ambientDay);
+        console.error('Ambient Audio not found', ambientNight);
       } 
     }
   }
@@ -792,6 +1188,11 @@ export class ModuleArea extends ModuleObject {
     if(!spellInstance) return;
     GameState.group.spell_instances.add(spellInstance.container);
     this.spellInstances.push(spellInstance);
+  }
+
+  attachCombatProjectile(projectile: CombatProjectile){
+    if(!projectile) return;
+    this.combatProjectiles.push(projectile);
   }
 
   attachTextSprite3D(sprite: TextSprite3D){
@@ -1218,10 +1619,17 @@ export class ModuleArea extends ModuleObject {
 
   getCameraStyle(){
     const cameraStyle2DA = GameState.TwoDAManager.datatables.get('camerastyle');
-    if(cameraStyle2DA){
-      return cameraStyle2DA.rows[this.cameraStyle];
+    if(cameraStyle2DA?.rows){
+      return cameraStyle2DA.rows[this.cameraStyle] ?? cameraStyle2DA.rows[0] ?? {};
     }
-    return cameraStyle2DA.rows[0];
+    // Retail SetCameraStyle fallbacks when 2DA missing (dist/speed/pitch/height)
+    return {
+      distance: 6.25,
+      speed: 20,
+      pitch: 80,
+      height: 3.5,
+      viewangle: 55,
+    };
   }
 
   async loadPath(){
@@ -2270,7 +2678,10 @@ export class ModuleArea extends ModuleObject {
 
     const creatureList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Creature List') );
     for(let i = 0; i < this.creatures.length; i++){
-      creatureList.addChildStruct( this.creatures[i].save().RootNode );
+      const creature = this.creatures[i];
+      // Retail: KeepCorpse shells / post-0xb visuals are client-only — never serialize
+      if(!creature || creature.isRetainedCorpse || creature.serverDestroyed) continue;
+      creatureList.addChildStruct( creature.save().RootNode );
     }
 
     git.RootNode.addField( new GFFField(GFFDataType.LIST, 'CurrentWeather') ).setValue(this.weather.currentWeather);

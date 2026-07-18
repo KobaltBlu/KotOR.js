@@ -7,9 +7,12 @@ import { EffectAbilityIncrease } from "@/effects/EffectAbilityIncrease";
 import { EffectAreaOfEffect } from "@/effects/EffectAreaOfEffect";
 import { EffectAssuredDeflection } from "@/effects/EffectAssuredDeflection";
 import { EffectAssuredHit } from "@/effects/EffectAssuredHit";
+import { EffectHitPointChangeWhenDying } from "@/effects/EffectHitPointChangeWhenDying";
+import { EffectTimeStop } from "@/effects/EffectTimeStop";
 import { EffectAttackDecrease } from "@/effects/EffectAttackDecrease";
 import { EffectAttackIncrease } from "@/effects/EffectAttackIncrease";
 import { EffectBeam } from "@/effects/EffectBeam";
+import { EffectBlindness } from "@/effects/EffectBlindness";
 import { EffectBlasterDeflectionDecrease } from "@/effects/EffectBlasterDeflectionDecrease";
 import { EffectBlasterDeflectionIncrease } from "@/effects/EffectBlasterDeflectionIncrease";
 import { EffectConcealment } from "@/effects/EffectConcealment";
@@ -21,9 +24,13 @@ import { EffectDamageImmunityIncrease } from "@/effects/EffectDamageImmunityIncr
 import { EffectDamageIncrease } from "@/effects/EffectDamageIncrease";
 import { EffectDamageReduction } from "@/effects/EffectDamageReduction";
 import { EffectDamageResistance } from "@/effects/EffectDamageResistance";
+import { EffectDamageShield } from "@/effects/EffectDamageShield";
+import { EffectDarkness } from "@/effects/EffectDarkness";
 import { EffectDeath } from "@/effects/EffectDeath";
 import { EffectDisease } from "@/effects/EffectDisease";
 import { EffectDisguise } from "@/effects/EffectDisguise";
+import { EffectDispelMagicAll } from "@/effects/EffectDispelMagicAll";
+import { EffectDispelMagicBest } from "@/effects/EffectDispelMagicBest";
 import { EffectEntangle } from "@/effects/EffectEntangle";
 import { EffectFeat } from "@/effects/EffectFeat";
 import { EffectForceFizzle } from "@/effects/EffectForceFizzle";
@@ -32,33 +39,52 @@ import { EffectForcePushed } from "@/effects/EffectForcePushed";
 import { EffectForceResisted } from "@/effects/EffectForceResisted";
 import { EffectForceShield } from "@/effects/EffectForceShield";
 import { EffectHaste } from "@/effects/EffectHaste";
+import { EffectHasteInternal } from "@/effects/EffectHasteInternal";
 import { EffectHeal } from "@/effects/EffectHeal";
 import { EffectHealForcePoints } from "@/effects/EffectHealForcePoints";
 import { EffectIcon } from "@/effects/EffectIcon";
 import { EffectImmunity } from "@/effects/EffectImmunity";
 import { EffectInvisibility } from "@/effects/EffectInvisibility";
 import { EffectKnockdown } from "@/effects/EffectKnockdown";
+import { EffectLimitMovementSpeed } from "@/effects/EffectLimitMovementSpeed";
 import { EffectLink } from "@/effects/EffectLink";
 import { EffectMissChance } from "@/effects/EffectMissChance";
+import { EffectModifyNumAttacks } from "@/effects/EffectModifyNumAttacks";
 import { EffectMovementSpeedDecrease } from "@/effects/EffectMovementSpeedDecrease";
 import { EffectMovementSpeedIncrease } from "@/effects/EffectMovementSpeedIncrease";
 import { EffectPoison } from "@/effects/EffectPoison";
 import { EffectRacialType } from "@/effects/EffectRacialType";
 import { EffectRegenerate } from "@/effects/EffectRegenerate";
 import { EffectResurrection } from "@/effects/EffectResurrection";
+import { EffectSanctuary } from "@/effects/EffectSanctuary";
 import { EffectSavingThrowDecrease } from "@/effects/EffectSavingThrowDecrease";
 import { EffectSavingThrowIncrease } from "@/effects/EffectSavingThrowIncrease";
+import { EffectSeeInvisible } from "@/effects/EffectSeeInvisible";
 import { EffectSetState } from "@/effects/EffectSetState";
+import { EffectSetStateInternal } from "@/effects/EffectSetStateInternal";
 import { EffectSkillDecrease } from "@/effects/EffectSkillDecrease";
 import { EffectSkillIncrease } from "@/effects/EffectSkillIncrease";
 import { EffectSlow } from "@/effects/EffectSlow";
+import { EffectSlowInternal } from "@/effects/EffectSlowInternal";
 import { EffectSpellImmunity } from "@/effects/EffectSpellImmunity";
+import { EffectSpellLevelAbsorption } from "@/effects/EffectSpellLevelAbsorption";
 import { EffectTemporaryForce } from "@/effects/EffectTemporaryForce";
 import { EffectTemporaryHitPoints } from "@/effects/EffectTemporaryHitPoints";
+import { EffectUltraVision } from "@/effects/EffectUltraVision";
 import { EffectVisualEffect } from "@/effects/EffectVisualEffect";
 import { EffectForceResistanceIncrease } from "@/effects/EffectForceResistanceIncrease";
 import { EffectForceResistanceDecrease } from "@/effects/EffectForceResistanceDecrease";
 import { EffectTrueSeeing } from "@/effects/EffectTrueSeeing";
+import { EffectSilence } from "@/effects/EffectSilence";
+import { EffectDeaf } from "@/effects/EffectDeaf";
+import { EffectArcaneSpellFailure } from "@/effects/EffectArcaneSpellFailure";
+import { EffectForceDrain } from "@/effects/EffectForceDrain";
+import { EffectBodyFuel } from "@/effects/EffectBodyFuel";
+import { EffectPsychicStatic } from "@/effects/EffectPsychicStatic";
+import { EffectCurse } from "@/effects/EffectCurse";
+import { EffectNegativeLevel } from "@/effects/EffectNegativeLevel";
+import { EffectSummonCreature } from "@/effects/EffectSummonCreature";
+import { EffectLightsaberThrow } from "@/effects/EffectLightsaberThrow";
 import { GameEffect } from "@/effects/GameEffect";
 
 /**
@@ -73,14 +99,16 @@ import { GameEffect } from "@/effects/GameEffect";
 export class GameEffectFactory {
 
   static EffectHaste: typeof EffectHaste = EffectHaste;
+  static EffectHasteInternal: typeof EffectHasteInternal = EffectHasteInternal;
   static EffectDamageResistance: typeof EffectDamageResistance = EffectDamageResistance;
   static EffectSlow: typeof EffectSlow = EffectSlow;
+  static EffectSlowInternal: typeof EffectSlowInternal = EffectSlowInternal;
   static EffectResurrection: typeof EffectResurrection = EffectResurrection;
   static EffectDisease: typeof EffectDisease = EffectDisease;
-  // static EffectSummonCreature: typeof EffectSummonCreature = EffectSummonCreature;
+  static EffectSummonCreature: typeof EffectSummonCreature = EffectSummonCreature;
   static EffectRegenerate: typeof EffectRegenerate = EffectRegenerate;
   static EffectSetState: typeof EffectSetState = EffectSetState;
-  // static EffectSetStateInternal: typeof EffectSetStateInternal = EffectSetStateInternal;
+  static EffectSetStateInternal: typeof EffectSetStateInternal = EffectSetStateInternal;
   static EffectAttackIncrease: typeof EffectAttackIncrease = EffectAttackIncrease;
   static EffectAttackDecrease: typeof EffectAttackDecrease = EffectAttackDecrease;
   static EffectDamageReduction: typeof EffectDamageReduction = EffectDamageReduction;
@@ -92,11 +120,11 @@ export class GameEffectFactory {
   static EffectEntangle: typeof EffectEntangle = EffectEntangle;
   static EffectDeath: typeof EffectDeath = EffectDeath;
   static EffectKnockdown: typeof EffectKnockdown = EffectKnockdown;
-  // static EffectDeaf: typeof EffectDeaf = EffectDeaf;
+  static EffectDeaf: typeof EffectDeaf = EffectDeaf;
   static EffectImmunity: typeof EffectImmunity = EffectImmunity;
   // static EffectSetAIState: typeof EffectSetAIState = EffectSetAIState;
   // static EffectEnemyAttackBonus: typeof EffectEnemyAttackBonus = EffectEnemyAttackBonus;
-  // static EffectArcaneSpellFailure: typeof EffectArcaneSpellFailure = EffectArcaneSpellFailure;
+  static EffectArcaneSpellFailure: typeof EffectArcaneSpellFailure = EffectArcaneSpellFailure;
   static EffectSavingThrowIncrease: typeof EffectSavingThrowIncrease = EffectSavingThrowIncrease;
   static EffectSavingThrowDecrease: typeof EffectSavingThrowDecrease = EffectSavingThrowDecrease;
   static EffectMovementSpeedIncrease: typeof EffectMovementSpeedIncrease = EffectMovementSpeedIncrease;
@@ -112,9 +140,9 @@ export class GameEffectFactory {
   static EffectDamage: typeof EffectDamage = EffectDamage;
   static EffectHeal: typeof EffectHeal = EffectHeal;
   static EffectLink: typeof EffectLink = EffectLink;
-  // static EffectModifyNumAttacks: typeof EffectModifyNumAttacks = EffectModifyNumAttacks;
-  // static EffectCurse: typeof EffectCurse = EffectCurse;
-  // static EffectSilence: typeof EffectSilence = EffectSilence;
+  static EffectModifyNumAttacks: typeof EffectModifyNumAttacks = EffectModifyNumAttacks;
+  static EffectCurse: typeof EffectCurse = EffectCurse;
+  static EffectSilence: typeof EffectSilence = EffectSilence;
   static EffectInvisibility: typeof EffectInvisibility = EffectInvisibility;
   static EffectACIncrease: typeof EffectACIncrease = EffectACIncrease;
   static EffectACDecrease: typeof EffectACDecrease = EffectACDecrease;
@@ -124,37 +152,41 @@ export class GameEffectFactory {
   static EffectLight: typeof EffectLight = EffectLight;*/
   static EffectSkillIncrease: typeof EffectSkillIncrease = EffectSkillIncrease;
   static EffectSkillDecrease: typeof EffectSkillDecrease = EffectSkillDecrease;
-  // static EffectHitPointChangeWhenDying: typeof EffectHitPointChangeWhenDying = EffectHitPointChangeWhenDying;
+  static EffectHitPointChangeWhenDying: typeof EffectHitPointChangeWhenDying = EffectHitPointChangeWhenDying;
   // static EffectSetWalkAnimation: typeof EffectSetWalkAnimation = EffectSetWalkAnimation;
-  // static EffectLimitMovementSpeed: typeof EffectLimitMovementSpeed = EffectLimitMovementSpeed;
+  static EffectLimitMovementSpeed: typeof EffectLimitMovementSpeed = EffectLimitMovementSpeed;
   static EffectForcePushed: typeof EffectForcePushed = EffectForcePushed;
-  // static EffectDamageShield: typeof EffectDamageShield = EffectDamageShield;
+  static EffectDamageShield: typeof EffectDamageShield = EffectDamageShield;
   static EffectDisguise: typeof EffectDisguise = EffectDisguise;
-  /*static EffectSanctuary: typeof EffectSanctuary = EffectSanctuary;
+  static EffectSanctuary: typeof EffectSanctuary = EffectSanctuary;
+  static EffectDispellMagic: typeof EffectDispelMagicAll = EffectDispelMagicAll;
+  static EffectDispellMagicBest: typeof EffectDispelMagicBest = EffectDispelMagicBest;
+  static EffectDispelMagicAll: typeof EffectDispelMagicAll = EffectDispelMagicAll;
+  static EffectDispelMagicBest: typeof EffectDispelMagicBest = EffectDispelMagicBest;
   static EffectTimeStop: typeof EffectTimeStop = EffectTimeStop;
-  static EffectSpellLevelAbsorption: typeof EffectSpellLevelAbsorption = EffectSpellLevelAbsorption;*/
+  static EffectSpellLevelAbsorption: typeof EffectSpellLevelAbsorption = EffectSpellLevelAbsorption;
   static EffectIcon: typeof EffectIcon = EffectIcon;
   static EffectRacialType: typeof EffectRacialType = EffectRacialType;
-  // static EffectSeeInvisible: typeof EffectSeeInvisible = EffectSeeInvisible;
-  // static EffectUltraVision: typeof EffectUltraVision = EffectUltraVision;
+  static EffectSeeInvisible: typeof EffectSeeInvisible = EffectSeeInvisible;
   static EffectTrueSeeing: typeof EffectTrueSeeing = EffectTrueSeeing;
-  // static EffectBlindness: typeof EffectBlindness = EffectBlindness;
-  // static EffectDarkness: typeof EffectDarkness = EffectDarkness;
+  static EffectBlindness: typeof EffectBlindness = EffectBlindness;
+  static EffectDarkness: typeof EffectDarkness = EffectDarkness;
+  static EffectUltraVision: typeof EffectUltraVision = EffectUltraVision;
   static EffectMissChance: typeof EffectMissChance = EffectMissChance;
   static EffectConcealment: typeof EffectConcealment = EffectConcealment;
   // static EffectAppear: typeof EffectAppear = EffectAppear;
-  // static EffectNegativeLevel: typeof EffectNegativeLevel = EffectNegativeLevel;
-  // static EffectBonusFeat: typeof EffectBonusFeat = EffectBonusFeat;
+  static EffectNegativeLevel: typeof EffectNegativeLevel = EffectNegativeLevel;
+  static EffectBonusFeat: typeof EffectFeat = EffectFeat;
   // static EffectSummonParty: typeof EffectSummonParty = EffectSummonParty;
-  // static EffectForceDrain: typeof EffectForceDrain = EffectForceDrain;
+  static EffectForceDrain: typeof EffectForceDrain = EffectForceDrain;
   static EffectTemporaryForce: typeof EffectTemporaryForce = EffectTemporaryForce;
   static EffectBlasterDeflectionIncrease: typeof EffectBlasterDeflectionIncrease = EffectBlasterDeflectionIncrease;
   static EffectBlasterDeflectionDecrease: typeof EffectBlasterDeflectionDecrease = EffectBlasterDeflectionDecrease;
   static EffectDamageForcePoints: typeof EffectDamageForcePoints = EffectDamageForcePoints;
   static EffectHealForcePoints: typeof EffectHealForcePoints = EffectHealForcePoints;
-  // static EffectBodyFuel: typeof EffectBodyFuel = EffectBodyFuel;
-  // static EffectPsychicStatic: typeof EffectPsychicStatic = EffectPsychicStatic;
-  // static EffectLightSaberThrow: typeof EffectLightSaberThrow = EffectLightSaberThrow;
+  static EffectBodyFuel: typeof EffectBodyFuel = EffectBodyFuel;
+  static EffectPsychicStatic: typeof EffectPsychicStatic = EffectPsychicStatic;
+  static EffectLightSaberThrow: typeof EffectLightsaberThrow = EffectLightsaberThrow;
   static EffectAssuredHit: typeof EffectAssuredHit = EffectAssuredHit;
   static EffectForceJump: typeof EffectForceJump = EffectForceJump;
   static EffectAssuredDeflection: typeof EffectAssuredDeflection = EffectAssuredDeflection;
@@ -221,6 +253,9 @@ export class GameEffectFactory {
       case GameEffectType.EffectDisease: //Disease
         effect = new EffectDisease();
       break;
+      case GameEffectType.EffectSummonCreature:
+        effect = new EffectSummonCreature();
+      break;
       case GameEffectType.EffectRegenerate: //Regenerate
         effect = new EffectRegenerate();
       break;
@@ -255,16 +290,25 @@ export class GameEffectFactory {
         effect = new EffectDeath();
       break;
       case GameEffectType.EffectKnockdown: //Knockdown
-
+        effect = new EffectKnockdown();
+      break;
+      case GameEffectType.EffectHasteInternal:
+        effect = new EffectHasteInternal();
+      break;
+      case GameEffectType.EffectSlowInternal:
+        effect = new EffectSlowInternal();
       break;
       case GameEffectType.EffectDeaf: //Deaf
-
+        effect = new EffectDeaf();
       break;
       case GameEffectType.EffectImmunity: //Immunity
         effect = new EffectImmunity();
       break;
       case GameEffectType.EffectEnemyAttackBonus: //EnemyAttackBonus
 
+      break;
+      case GameEffectType.EffectArcaneSpellFailure:
+        effect = new EffectArcaneSpellFailure();
       break;
       case GameEffectType.EffectSavingThrowIncrease: //SavingThrowIncrease
         effect = new EffectSavingThrowIncrease();
@@ -282,16 +326,16 @@ export class GameEffectFactory {
         effect = new EffectVisualEffect();
       break;
       case GameEffectType.EffectAreaOfEffect: //AreaOfEffect
-
+        effect = new EffectAreaOfEffect();
       break;
       case GameEffectType.EffectBeam: //Beam
         effect = new EffectBeam();
       break;
       case GameEffectType.EffectForceResistanceIncrease: //ForceResistanceIncrease
-
+        effect = new EffectForceResistanceIncrease();
       break;
       case GameEffectType.EffectForceResistanceDecrease: //ForceResistanceDecrease
-
+        effect = new EffectForceResistanceDecrease();
       break;
       case GameEffectType.EffectPoison: //Poison
         effect = new EffectPoison();
@@ -311,6 +355,9 @@ export class GameEffectFactory {
       case GameEffectType.EffectLink: //Link
         effect = new EffectLink();
       break;
+      case GameEffectType.EffectModifyNumAttacks:
+        effect = new EffectModifyNumAttacks();
+      break;
       case GameEffectType.EffectACIncrease: //ACIncrease
         effect = new EffectACIncrease();
       break;
@@ -320,6 +367,12 @@ export class GameEffectFactory {
       case GameEffectType.EffectSpellImmunity: //SpellImmunity
         effect = new EffectSpellImmunity();
       break;
+      case GameEffectType.EffectDispellMagic:
+        effect = new EffectDispelMagicAll();
+      break;
+      case GameEffectType.EffectDispellMagicBest:
+        effect = new EffectDispelMagicBest();
+      break;
       case GameEffectType.EffectSkillIncrease: //SkillIncrease
         effect = new EffectSkillIncrease();
       break;
@@ -327,22 +380,40 @@ export class GameEffectFactory {
         effect = new EffectSkillDecrease();
       break;
       case GameEffectType.EffectHitPointChangeWhenDying: //HitPointChangeWhenDying
-
+        effect = new EffectHitPointChangeWhenDying();
       break;
       case GameEffectType.EffectLimitMovementSpeed: //LimitMovementSpeed
-
+        effect = new EffectLimitMovementSpeed();
       break;
       case GameEffectType.EffectForcePushed: //ForcePushed
 
       break;
       case GameEffectType.EffectDamageShield: //DamageShield
-
+        effect = new EffectDamageShield();
+      break;
+      case GameEffectType.EffectSanctuary:
+        effect = new EffectSanctuary();
+      break;
+      case GameEffectType.EffectSeeInvisible:
+        effect = new EffectSeeInvisible();
+      break;
+      case GameEffectType.EffectInvisibility:
+        effect = new EffectInvisibility();
+      break;
+      case GameEffectType.EffectMissChance:
+        effect = new EffectMissChance();
+      break;
+      case GameEffectType.EffectConcealment:
+        effect = new EffectConcealment();
+      break;
+      case GameEffectType.EffectTemporaryForce:
+        effect = new EffectTemporaryForce();
       break;
       case GameEffectType.EffectDisguise: //Disguise
         effect = new EffectDisguise();
       break;
       case GameEffectType.EffectSpellLevelAbsorption: //SpellLevelAbsorption
-
+        effect = new EffectSpellLevelAbsorption();
       break;
       case GameEffectType.EffectIcon: //SetEffectIcon
         effect = new EffectIcon();
@@ -350,8 +421,29 @@ export class GameEffectFactory {
       case GameEffectType.EffectRacialType: //RacialType
         effect = new EffectRacialType();
       break;
+      case GameEffectType.EffectNegativeLevel:
+        effect = new EffectNegativeLevel();
+      break;
       case GameEffectType.EffectBonusFeat: //BonusFeat
         effect = new EffectFeat();
+      break;
+      case GameEffectType.EffectForceDrain:
+        effect = new EffectForceDrain();
+      break;
+      case GameEffectType.EffectBodyFuel:
+        effect = new EffectBodyFuel();
+      break;
+      case GameEffectType.EffectPsychicStatic:
+        effect = new EffectPsychicStatic();
+      break;
+      case GameEffectType.EffectLightSaberThrow:
+        effect = new EffectLightsaberThrow();
+      break;
+      case GameEffectType.EffectSilence:
+        effect = new EffectSilence();
+      break;
+      case GameEffectType.EffectCurse:
+        effect = new EffectCurse();
       break;
       case GameEffectType.EffectBlasterDeflectionIncrease: //BlasterDeflectionIncrease
         effect = new EffectBlasterDeflectionIncrease();
@@ -377,8 +469,26 @@ export class GameEffectFactory {
       case GameEffectType.EffectSetState: //EffectSetState
         effect = new EffectSetState();
       break;
+      case GameEffectType.EffectSetStateInternal:
+        effect = new EffectSetStateInternal();
+      break;
       case GameEffectType.EffectTrueseeing: //TrueSeeing
         effect = new EffectTrueSeeing();
+      break;
+      case GameEffectType.EffectBlindness:
+        effect = new EffectBlindness();
+      break;
+      case GameEffectType.EffectDarkness:
+        effect = new EffectDarkness();
+      break;
+      case GameEffectType.EffectUltraVision:
+        effect = new EffectUltraVision();
+      break;
+      case GameEffectType.EffectTimeStop:
+        effect = new EffectTimeStop();
+      break;
+      case GameEffectType.EffectSeeInvisible:
+        effect = new EffectSeeInvisible();
       break;
     }
 

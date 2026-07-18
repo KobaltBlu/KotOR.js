@@ -23,7 +23,9 @@ export class EffectAbilityIncrease extends GameEffect {
   onApply(){
     if(this.applied)
       return;
-      
+    // Retail OnApplyAbilityIncrease @ 004d84d0: reject non-positive amount
+    if((this.getInt(1) || 0) <= 0)
+      return;
     super.onApply();
   }
 

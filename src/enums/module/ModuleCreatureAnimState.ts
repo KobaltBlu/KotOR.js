@@ -39,6 +39,10 @@ export enum ModuleCreatureAnimState {
   CASTOUT2 = 10016,
   CASTOUT1_LP = 10017,
   CASTOUT2_LP = 10018,
+  /** Retail castanim 3 → 0x2723 */
+  CASTOUT3_LP = 10019,
+  /** Retail castanim 4 → 0x2724 */
+  CASTOUT4_LP = 10020,
   SPASM = 10023,
   TAUNT = 10028,
   GREETING = 10029,

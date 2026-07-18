@@ -1,62 +1,138 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import {
+  damageFlagsFromChannels,
+  mitigateDamageAmount,
+  sumDamageChannels,
+} from "@/combat/damage-mitigation";
+import { GameState } from "@/GameState";
 import { BitWise } from "@/utility/BitWise";
 
 /**
  * EffectDamage class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
+ * Retail: CSWSEffectListHandler::OnApplyDamage @ 004dfa40
+ *
  * @file EffectDamage.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectDamage extends GameEffect {
+  /** Resolved HP loss after mitigation (set in onApply). */
+  resolvedDamage = 0;
+
   constructor(){
     super();
     this.type = GameEffectType.EffectDamage;
-    
+
     this.setNumIntegers(21);
-    this.intList.fill(-1, 0, 16);
+    this.intList.fill(-1, 0, 15);
 
-    //intList[0] : -1 or Bludgeoning Damage Amount
-    //intList[1] : -1 or Piercing Damage Amount
-    //intList[2] : -1 or Slashing Damage Amount
-    //intList[3] : -1 or Universal Damage Amount
-    //intList[4] : -1 or Acid Damage Amount
-    //intList[5] : -1 or Cold Damage Amount
-    //intList[6] : -1 or Lightside Damage Amount
-    //intList[7] : -1 or Electrical Damage Amount
-    //intList[8] : -1 or Fire Damage Amount
-    //intList[9] : -1 or Darkside Damage Amount
-    //intList[10] : -1 or Sonic Damage Amount
-    //intList[11] : -1 or Ion Damage Amount
-    //intList[12] : -1 or Energy Damage Amount
-    //intList[13] : -1 or Poison Damage Amount
-    //intList[14] : -1 or Base Damage Amount
-    //intList[15] : -1 or Physical Damage Amount    
-    //intList[16] : 1000
-    //intList[17] : Damage Type
-    //intList[18] : Damage Power
-
+    // intList[0..14] : typed damage channels (DamageType index; -1 = unused)
+    // intList[15]    : unused / reserved
+    // intList[16]    : pause / anim timing (ms)
+    // intList[17]    : Damage Type flags (DAMAGE_TYPE_*)
+    // intList[18]    : Damage Power (DAMAGE_POWER_*)
+    // intList[19]    : 1 = combat-packaged (already mitigated); 0 = run Immunity→Resist→DR
+    // intList[20]    : 1 = damage-shield sourced (skip ResolveDamageShields)
   }
 
   onApply(){
     if(this.applied)
       return;
-      
+
     super.onApply();
-    
-    if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject)){
-      this.object.subtractHP(this.getDamageAmount());
+
+    if(!BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleObject)){
+      return;
+    }
+
+    const channels = this.getChannelArray();
+
+    // Plot / immortal: zero damage (retail zeroes non-negative channels)
+    if(this.object.plot){
+      for(let i = 0; i < 15; i++){
+        if(channels[i] >= 0) channels[i] = 0;
+      }
+      this.writeChannels(channels);
+      this.resolvedDamage = 0;
       this.object.combatData.lastDamager = this.creator;
       this.object.combatData.lastAttacker = this.creator;
+      return;
+    }
+
+    const alreadyMitigated = this.getInt(19) === 1;
+    // Combat-packaged: sum typed channels (already mitigated).
+    // Script EffectDamage: retail mitigates using int[14] (also written beside the typed channel).
+    let amount = alreadyMitigated
+      ? sumDamageChannels(channels)
+      : (this.getInt(14) >= 0 ? this.getInt(14) : sumDamageChannels(channels));
+
+    if(!alreadyMitigated && amount > 0){
+      let flags = this.getInt(17);
+      if(!flags || flags < 0){
+        flags = damageFlagsFromChannels(channels);
+      }
+      const power = Math.max(0, this.getInt(18) || 0);
+      amount = mitigateDamageAmount(this.object, amount, flags, power);
+      // Mirror retail: write resolved total into every positive channel for last-damage state
+      for(let i = 0; i < 15; i++){
+        if(channels[i] >= 0) channels[i] = amount;
+      }
+      this.writeChannels(channels);
+    }
+
+    amount = Math.min(Math.max(amount, 0), 10000);
+
+    // Test knob: scale outgoing damage from the PC / party members.
+    const scale = GameState.DEBUG_PC_DAMAGE_SCALE;
+    if(scale !== 1 && scale >= 0 && this.creator && GameState.PartyManager?.party?.indexOf(this.creator as any) >= 0){
+      amount = Math.floor(amount * scale);
+    }
+
+    this.resolvedDamage = amount;
+    if(amount > 0){
+      this.object.subtractHP(amount);
+    }
+    this.object.combatData.lastDamager = this.creator;
+    this.object.combatData.lastAttacker = this.creator;
+
+    // Retail OnApplyDamage schedules OnDamaged / door-placeable combat broadcast.
+    // Door/placeable onDamaged handlers BroadcastCombatStateToParty(attacker, INVALID).
+    if(amount > 0 && typeof this.object.onDamaged === 'function'){
+      this.object.onDamaged();
     }
   }
 
+  getChannelArray(): number[] {
+    const channels: number[] = new Array(15);
+    for(let i = 0; i < 15; i++){
+      const v = this.getInt(i);
+      channels[i] = (v === undefined || v === null) ? -1 : v;
+    }
+    return channels;
+  }
+
+  writeChannels(channels: number[]){
+    for(let i = 0; i < 15; i++){
+      this.setInt(i, channels[i]);
+    }
+  }
+
+  getTypedDamageTotal(): number {
+    return sumDamageChannels(this.getChannelArray());
+  }
+
   getDamageAmount(){
-    return Math.min(Math.max(this.getInt(14), 1), 10000);
+    if(this.resolvedDamage > 0 || this.applied){
+      return this.resolvedDamage;
+    }
+    const total = this.getTypedDamageTotal();
+    if(total <= 0) return 0;
+    return Math.min(Math.max(total, 1), 10000);
   }
 
   getDamageType(){

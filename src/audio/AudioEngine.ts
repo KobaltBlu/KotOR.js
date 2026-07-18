@@ -64,6 +64,12 @@ class AudioChannel {
 
 type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | 'BATTLE' | 'BATTLE_STINGER' | 'DIALOG' | 'AMBIENT_DAY' | 'AMBIENT_NIGHT'
 
+/** Retail FadeAndStop duration used by PlayBattleMusic / PlayMusic (ms). */
+export const BATTLE_MUSIC_FADE_MS = 800;
+
+/** Retail Update delay before starting battle track after fade (ms). */
+const BATTLE_MUSIC_START_DELAY_MS = 10;
+
 /**
  * AudioEngine class.
  * 
@@ -117,6 +123,19 @@ export class AudioEngine {
   dialogMusicLoaded: boolean = false;
   ambientLoaded: boolean = false;
 
+  /**
+   * Retail CSWSAmbientSound::battle_music_playing — area-level want flag.
+   * PlayBattleMusic no-ops when the requested state matches.
+   */
+  battleMusicPlaying: boolean = false;
+
+  /** Loaded battle stinger buffers (ambientmusic Stinger1–3), for random pick. */
+  battleStingerBuffers: ArrayBuffer[] = [];
+
+  /** Pending battle-track start after area fade (retail field20_0xd0). */
+  private battleMusicStartTimerMs: number = 0;
+  private battleMusicTransitionToken: number = 0;
+
   bgmTimer: number = 0;
   bgmLoopTime: number = 30000;
   bgmState: BackgroundMusicState = BackgroundMusicState.UNLOADED;
@@ -125,6 +144,8 @@ export class AudioEngine {
   mode: AudioEngineMode = AudioEngine.Mode;
   areaProperies: IAreaAudioProperties;
   areaMusicNightLoaded: boolean;
+  /** Prefer night BGM when neither day nor night emitter is currently playing. */
+  areaMusicPreferNight = false;
   ambientNightLoaded: boolean;
 
   reverbEngine: ReverbEngine;
@@ -224,9 +245,8 @@ export class AudioEngine {
       this.bgmMode = BackgroundMusicMode.BATTLE;
     });
 
-    this.battleStingerAudioEmitter.addEventListener('play', () => {
-      this.bgmMode = BackgroundMusicMode.BATTLE_STINGER;
-    });
+    // Stinger is a one-shot overlay on a separate source (retail field33_0x104);
+    // it must not steal bgmMode from resumed area music.
 
     this.dialogMusicAudioEmitter.addEventListener('play', () => {
       this.bgmMode = BackgroundMusicMode.DIALOG;
@@ -240,18 +260,8 @@ export class AudioEngine {
       }
     });
 
-    this.battleMusicAudioEmitter.addEventListener('stop', () => {
-      if(this.battleStingerLoaded){
-        this.battleStingerAudioEmitter.play();
-      }else{
-        this.areaMusicDayAudioEmitter.play();
-      }
-    });
-
-    this.battleStingerAudioEmitter.addEventListener('ended', () => {
-      this.bgmState = BackgroundMusicState.PLAYING;
-      this.areaMusicDayAudioEmitter.play();
-    });
+    // Stinger + area resume are driven by playBattleMusic(false), not battle stop events.
+    // Retail PlayStinger uses a separate source and overlaps area music restart.
 
     this.dialogMusicAudioEmitter.addEventListener('ended', () => {
       this.bgmState = BackgroundMusicState.ENDED;
@@ -341,12 +351,131 @@ export class AudioEngine {
         this.bgmTimer -= delta * 1000;
         if(this.bgmTimer <= 0){
           this.bgmTimer = 0;
-          this.areaMusicDayAudioEmitter.play();
+          this.getActiveAreaMusicEmitter().play();
           this.bgmState = BackgroundMusicState.PLAYING;
         }
       }
     }
 
+    // Retail CSWCAmbientSound::Update — after fade, delay then PlayBattleMusic(1)
+    if(this.battleMusicStartTimerMs > 0 && this.battleMusicPlaying){
+      this.battleMusicStartTimerMs -= delta * 1000;
+      if(this.battleMusicStartTimerMs <= 0){
+        this.battleMusicStartTimerMs = 0;
+        if(!this.battleMusicAudioEmitter.playing && this.battleMusicLoaded){
+          this.bgmMode = BackgroundMusicMode.BATTLE;
+          this.battleMusicAudioEmitter.play(true);
+        }
+      }
+    }
+
+  }
+
+  /**
+   * Retail CSWSAmbientSound::PlayBattleMusic @ 005c9b90 / CSWCAmbientSound @ 0068e610.
+   * @param play true = start battle BGM; false = fade out, stinger, resume area music
+   */
+  playBattleMusic(play: boolean){
+    if(this.battleMusicPlaying === play){
+      return;
+    }
+    this.battleMusicPlaying = play;
+    this.battleMusicTransitionToken++;
+    const token = this.battleMusicTransitionToken;
+
+    if(play){
+      void this.beginBattleMusic(token);
+    }else{
+      void this.endBattleMusic(token);
+    }
+  }
+
+  /**
+   * Active area BGM emitter based on which day/night track is currently playing,
+   * falling back to the last preferred day/night selection.
+   */
+  getActiveAreaMusicEmitter(): AmbientAudioEmitter {
+    if(this.areaMusicNightAudioEmitter.playing){
+      return this.areaMusicNightAudioEmitter;
+    }
+    if(this.areaMusicDayAudioEmitter.playing){
+      return this.areaMusicDayAudioEmitter;
+    }
+    if(this.areaMusicPreferNight && this.areaMusicNightLoaded){
+      return this.areaMusicNightAudioEmitter;
+    }
+    return this.areaMusicDayAudioEmitter;
+  }
+
+  private async beginBattleMusic(token: number){
+    if(!this.battleMusicLoaded){
+      this.battleMusicPlaying = false;
+      return;
+    }
+    // Fade area music if playing, then start battle after short delay
+    const areaMusic = this.getActiveAreaMusicEmitter();
+    if(areaMusic.playing){
+      await areaMusic.fadeOutAndStop(BATTLE_MUSIC_FADE_MS / 1000);
+      if(token !== this.battleMusicTransitionToken || !this.battleMusicPlaying){
+        return;
+      }
+      this.battleMusicStartTimerMs = BATTLE_MUSIC_START_DELAY_MS;
+      return;
+    }
+    if(this.battleMusicAudioEmitter.playing){
+      return;
+    }
+    this.bgmMode = BackgroundMusicMode.BATTLE;
+    this.bgmState = BackgroundMusicState.PLAYING;
+    this.battleMusicAudioEmitter.play(true);
+  }
+
+  private async endBattleMusic(token: number){
+    this.battleMusicStartTimerMs = 0;
+    if(this.battleMusicAudioEmitter.playing){
+      await this.battleMusicAudioEmitter.fadeOutAndStop(BATTLE_MUSIC_FADE_MS / 1000);
+    }else{
+      this.battleMusicAudioEmitter.stop(false);
+    }
+    if(token !== this.battleMusicTransitionToken || this.battleMusicPlaying){
+      return;
+    }
+    // Retail: PlayStinger on a separate source, then PlayMusic(1) immediately
+    this.playRandomBattleStinger();
+    this.bgmMode = BackgroundMusicMode.AREA;
+    this.bgmState = BackgroundMusicState.PLAYING;
+    if(this.areaMusicLoaded || this.areaMusicNightLoaded){
+      this.getActiveAreaMusicEmitter().play();
+    }
+  }
+
+  /**
+   * Retail CSWCAmbientSound::PlayStinger @ 0068db30 —
+   * pick uniformly among non-empty Stinger1–3 on the battle music row.
+   */
+  playRandomBattleStinger(){
+    const buffers = this.battleStingerBuffers;
+    if(!buffers.length){
+      return;
+    }
+    const pick = buffers[Math.floor(Math.random() * buffers.length)];
+    if(!pick){
+      return;
+    }
+    this.battleStingerAudioEmitter.setData(pick);
+    this.battleStingerLoaded = true;
+    this.battleStingerAudioEmitter.play(false);
+  }
+
+  /**
+   * Replace loaded battle stingers (empty resource / **** skipped by caller).
+   */
+  setBattleStingerBuffers(buffers: ArrayBuffer[]){
+    this.battleStingerBuffers = buffers.filter(Boolean);
+    this.battleStingerLoaded = this.battleStingerBuffers.length > 0;
+    if(this.battleStingerLoaded){
+      this.battleStingerAudioEmitter.setData(this.battleStingerBuffers[0]);
+    }
   }
 
   addEmitter(emitter: AudioEmitter){
@@ -377,9 +506,9 @@ export class AudioEngine {
         this.battleMusicLoaded = true;
         break;
       case 'BATTLE_STINGER':
-        this.battleStingerAudioEmitter.setData(data);
+        // Prefer setBattleStingerBuffers for multi-stinger retail rows; single buffer fallback
+        this.setBattleStingerBuffers([data]);
         this.battleStingerAudioEmitter.name = name;
-        this.battleStingerLoaded = true;
         break;
       case 'DIALOG':
         this.dialogMusicAudioEmitter.setData(data);
@@ -405,6 +534,9 @@ export class AudioEngine {
     this.areaMusicLoaded = false;
     this.battleMusicLoaded = false;
     this.battleStingerLoaded = false;
+    this.battleStingerBuffers = [];
+    this.battleMusicPlaying = false;
+    this.battleMusicStartTimerMs = 0;
     this.dialogMusicLoaded = false;
     this.ambientLoaded = false;
   }

@@ -37,29 +37,18 @@ export class ModuleCalendar {
   }
 
   advanceDeltaTime(delta = 0){
-    this.advanceDayAndTime(0, ( ModuleCalendar.MILISECONDS_IN_SECOND * delta ) | 0);
+    this.advanceDayAndTime(0, Math.trunc(ModuleCalendar.MILISECONDS_IN_SECOND * delta));
   }
 
   advanceDayAndTime(day = 0, milliseconds = 0){
-    let time = this.pauseTime + (milliseconds | 0);
-    if ( time >= this.MAX_DAY_TIME ) {
-      this.pauseDay++;
-      time -= this.MAX_DAY_TIME;
-    }
-    this.pauseTime = time;
+    const dayLength = this.MAX_DAY_TIME;
+    if(dayLength <= 0) return;
 
-    this.milisecond = this.getMilisecondsFromPauseTime();
-    this.second = this.getSecondsFromPauseTime();
-    this.minute = this.getMinutesFromPauseTime();
-    this.hour = this.getHoursFromPauseTime();
-
-    this.pauseDay += day;
-    this.day = this.getDayFromPauseDay();
-    this.month = this.getMonthFromPauseDay();
-    this.year = this.getYearFromPauseDay();
-
-    //this.pauseTime  = (this.hour * 120000) + (this.minute * 60000) + (this.second * 1000) + this.milisecond;
-    //this.pauseDay   = (this.year * ModuleCalendar.MONTHS_IN_YEAR * ModuleCalendar.DAYS_IN_MONTH ) + ( (this.month - 1) * ModuleCalendar.DAYS_IN_MONTH) + (this.day - 1);
+    const totalTime = this.pauseTime + Math.trunc(milliseconds);
+    const elapsedDays = Math.floor(totalTime / dayLength);
+    this.pauseTime = ((totalTime % dayLength) + dayLength) % dayLength;
+    this.pauseDay = Math.max(0, this.pauseDay + Math.trunc(day) + elapsedDays);
+    this.updateCalendarDateTime();
   }
 
   pauseTimeFromCalendar(){
@@ -72,6 +61,12 @@ export class ModuleCalendar {
     return  ( this.year * ModuleCalendar.MONTHS_IN_YEAR * ModuleCalendar.DAYS_IN_MONTH ) + 
             ( ( this.month - 1 ) * ModuleCalendar.DAYS_IN_MONTH) + 
             ( this.day - 1 );
+  }
+
+  setCalendarDateTime(){
+    this.pauseTime = this.pauseTimeFromCalendar();
+    this.pauseDay = this.pauseDayFromCalendar();
+    this.advanceDayAndTime();
   }
 
   updateCalendarDateTime(){
@@ -113,6 +108,27 @@ export class ModuleCalendar {
 
   getYearFromPauseDay(){
     return (this.pauseDay / ModuleCalendar.DAYS_IN_MONTH / ModuleCalendar.MONTHS_IN_YEAR) | 0;
+  }
+
+  /**
+   * Compare two calendar stamps (Mod_PauseDay / Mod_PauseTime).
+   * Negative when a is earlier than b.
+   */
+  static comparePauseDayTime(aDay = 0, aTime = 0, bDay = 0, bTime = 0){
+    const dayDelta = (aDay | 0) - (bDay | 0);
+    if(dayDelta !== 0){
+      return dayDelta;
+    }
+    return (aTime | 0) - (bTime | 0);
+  }
+
+  /** Format Mod_PauseDay as DD/MM/YYYY using the retail 28-day / 12-month calendar. */
+  static formatPauseDayLabel(pauseDay = 0){
+    const day = (pauseDay % ModuleCalendar.DAYS_IN_MONTH + 1) | 0;
+    const month = (pauseDay / ModuleCalendar.DAYS_IN_MONTH % ModuleCalendar.MONTHS_IN_YEAR + 1) | 0;
+    const year = (pauseDay / ModuleCalendar.DAYS_IN_MONTH / ModuleCalendar.MONTHS_IN_YEAR) | 0;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${pad(day)}/${pad(month)}/${year}`;
   }
 
   get MAX_DAY_TIME(){

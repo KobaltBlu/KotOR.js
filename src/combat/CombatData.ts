@@ -54,11 +54,29 @@ export class CombatData {
 
   reset(){
     this.initialize();
+    // Retail CServerExoApp::ClearAllActions @ 004aef40 clears attempted/current
+    // attack + spell targets together with the action queue.
+    this.lastAttemptedAttackTarget = undefined;
+    this.lastAttackTarget = undefined;
+    this.lastSpellTarget = undefined;
+    this.lastAttemptedSpellTarget = undefined;
   }
 
   clearTarget(target: ModuleObject){
     this.lastAttackTarget = undefined;
     this.object.combatRound.clearActionsByTarget(target);
+  }
+
+  /**
+   * Retail AddAttackActions @ 004fde40 / AddAttackAction @ 004d398d /
+   * CreateNewAttackActions @ 005b6980 — sticky attempted target: set only when
+   * currently INVALID (OBJECT_INVALID).
+   */
+  setAttemptedAttackTargetIfInvalid(target: ModuleObject): void {
+    if(!target) return;
+    if(!this.lastAttemptedAttackTarget || this.lastAttemptedAttackTarget.isDead()){
+      this.lastAttemptedAttackTarget = target;
+    }
   }
 
   getEquippedWeaponType(){

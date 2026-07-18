@@ -9,6 +9,7 @@ import { MiniGameType } from "@/enums/engine/MiniGameType";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ClientCameraMode } from "@/enums/engine/ClientCameraMode";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlEventFactory } from "@/gui/GUIControlEventFactory";
 import { Keyboard } from "@/controls/Keyboard";
@@ -18,8 +19,43 @@ import { KeyMapper } from "@/controls/KeyMapper";
 import { AnalogInput } from "@/controls/AnalogInput";
 import { TGAObject } from "@/resource/TGAObject";
 import { GameFileSystem } from "@/utility/GameFileSystem";
-import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
+import {
+  applyDriveInput,
+  abortDriveControl,
+  isDriveControlActive,
+  DRIVE_FORWARD,
+  DRIVE_BACKWARD,
+  DRIVE_RUN,
+  DRIVE_YAW_LEFT,
+  DRIVE_YAW_RIGHT,
+} from "@/controls/drive-input";
+import {
+  createPlayerCamRelativeState,
+  setPlayerAxes,
+} from "@/controls/player-cam-relative-control";
 import { EventManager } from "@/managers/EventManager";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+
+function ensurePlayerControl(creature: { playerControl?: ReturnType<typeof createPlayerCamRelativeState> }){
+  if(!creature.playerControl){
+    creature.playerControl = createPlayerCamRelativeState();
+  }
+  return creature.playerControl;
+}
+
+/**
+ * Build forward axis from W+S together.
+ * ProcessMappings runs every action every frame — per-key !down handlers that
+ * zero axisForward race and wipe the other key (W lost to S's idle clear).
+ */
+function resolveKeyboardForwardAxis(): number {
+  const up = !!KeyMapper.Actions[KeyMapAction.ActionUp]?.keyboardInput?.down;
+  const down = !!KeyMapper.Actions[KeyMapAction.ActionDown]?.keyboardInput?.down;
+  let forward = 0;
+  if(up) forward += 1;
+  if(down) forward -= 1;
+  return forward;
+}
 
 /**
  * IngameControls class.
@@ -58,6 +94,11 @@ export class IngameControls {
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       this.keyboard.onKeyDown(e);
+
+      // Retail HandleInputEvent: while game_over_state, hurry the death fade
+      if(GameState.GameOverManager?.GetGameOver?.()){
+        GameState.GameOverManager.OnDeathSequenceInput();
+      }
 
       if(GameState.MenuManager.activeGUIElement){
         if(typeof GameState.MenuManager.activeGUIElement.onKeyDown === 'function'){
@@ -197,6 +238,7 @@ export class IngameControls {
 
       Mouse.downItem = null;
       Mouse.clickItem = null;
+      Mouse.shiftKey = !!event.shiftKey;
 
       // Block GUI selection while a movie is playing
       if(!GameState.VideoManager.isMoviePlaying() && event.button == 0){
@@ -272,6 +314,7 @@ export class IngameControls {
       }
 
       Mouse.leftClick = true;
+      Mouse.shiftKey = !!event.shiftKey;
 
       if(Mouse.leftDown){
         if(!Mouse.pointerLock){
@@ -281,6 +324,11 @@ export class IngameControls {
         //If the NoClickTimer is active then we will return out of this function
         if(GameState.noClickTimer){
           return;
+        }
+
+        // Retail: click during death sequence hurries the fade (before UI click handling)
+        if(GameState.GameOverManager?.GetGameOver?.()){
+          GameState.GameOverManager.OnDeathSequenceInput();
         }
         
         let clickCaptured = false;
@@ -405,62 +453,129 @@ export class IngameControls {
     KeyMapper.BindKeyboard(this.keyboard, GameState.iniConfig);
     KeyMapper.BindGamepad(this.gamePad);
 
-    //W
-    KeyMapper.Actions[KeyMapAction.ActionUp].setProcessor( (keymap) => {
-      if(GameState.State == EngineState.PAUSED) return;
-      if(!keymap.keyboardInput?.down) return;
+    //W / S — resolve both keys together (see resolveKeyboardForwardAxis)
+    const applyWasdMove = () => {
       if(this.gamePadMovement) return;
-      const followee = GameState.PartyManager.party[0];
-      if(!followee) return;
-      if(!followee.canMove()) return;
+      const followee = GameState.PartyManager.party[0] as ModuleCreature | undefined;
+      if(!followee?.canMove?.()) return;
 
-      followee.clearAllActions(true);
-      followee.force = 1;
-      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing + Math.PI/2), false, TURN_SPEED_FAST);
+      const forward = resolveKeyboardForwardAxis();
+      const walking = !!followee.walk;
+
+      if(isDriveControlActive(followee)){
+        if(!forward){
+          abortDriveControl(followee);
+          return;
+        }
+        if(forward > 0){
+          applyDriveInput(followee, walking ? DRIVE_FORWARD : DRIVE_RUN);
+        }else{
+          applyDriveInput(followee, DRIVE_BACKWARD);
+        }
+        GameState.scene_cursor_holder.visible = true;
+        FollowerCamera.clearFocusObject();
+        return;
+      }
+
+      const ctrl = ensurePlayerControl(followee);
+      if(!forward){
+        setPlayerAxes(ctrl, 0, ctrl.axisRight || 0, walking);
+        return;
+      }
+
+      followee.cancelLocomotionActions();
+      setPlayerAxes(ctrl, forward, ctrl.axisRight || 0, walking);
       followee.controlled = true;
       GameState.scene_cursor_holder.visible = true;
       FollowerCamera.clearFocusObject();
+    };
+
+    //W
+    KeyMapper.Actions[KeyMapAction.ActionUp].setProcessor( (keymap) => {
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down) FollowerCamera.setNavigateAxes(undefined, undefined, 1);
+        return;
+      }
+      if(GameState.Mode == EngineMode.FREELOOK){
+        if(keymap.keyboardInput?.down){
+          FollowerCamera.setFreeLookAxes(0, 1);
+        }
+        return;
+      }
+      if(GameState.State == EngineState.PAUSED) return;
+      applyWasdMove();
     });
 
     //S
     KeyMapper.Actions[KeyMapAction.ActionDown].setProcessor( (keymap) => {
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down) FollowerCamera.setNavigateAxes(undefined, undefined, -1);
+        return;
+      }
+      if(GameState.Mode == EngineMode.FREELOOK){
+        if(keymap.keyboardInput?.down){
+          FollowerCamera.setFreeLookAxes(0, -1);
+        }
+        return;
+      }
       if(GameState.State == EngineState.PAUSED) return;
-      if(!keymap.keyboardInput?.down) return;
-      if(this.gamePadMovement) return;
-      const followee = GameState.PartyManager.party[0];
-      if(!followee) return;
-      if(!followee.canMove()) return;
-      
-      followee.clearAllActions(true);
-      followee.force = 1;
-      followee.setFacing(Utility.NormalizeRadian(FollowerCamera.facing - Math.PI/2), false, TURN_SPEED_FAST);
-      followee.controlled = true;
-      GameState.scene_cursor_holder.visible = true;
-      FollowerCamera.clearFocusObject();
+      applyWasdMove();
     });
 
     //Z
     KeyMapper.Actions[KeyMapAction.ActionLeft].setProcessor( (keymap) => {
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down) FollowerCamera.setNavigateAxes(undefined, undefined, undefined, -1);
+        return;
+      }
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
       const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       if(!followee.canMove()) return;
+      if(isDriveControlActive(followee)){
+        applyDriveInput(followee, DRIVE_YAW_LEFT);
+      }
     });
 
     //C
     KeyMapper.Actions[KeyMapAction.ActionRight].setProcessor( (keymap) => {
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down) FollowerCamera.setNavigateAxes(undefined, undefined, undefined, 1);
+        return;
+      }
       if(GameState.State == EngineState.PAUSED) return;
       if(!keymap.keyboardInput?.down) return;
       const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       if(!followee.canMove()) return;
+      if(isDriveControlActive(followee)){
+        applyDriveInput(followee, DRIVE_YAW_RIGHT);
+      }
     });
 
     //A
     KeyMapper.Actions[KeyMapAction.CameraRotateLeft].setProcessor( (keymap) => {
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down || (keymap.gamepadInput as AnalogInput)?.value < 0){
+          FollowerCamera.setNavigateAxes(1);
+        }
+        return;
+      }
       // if(GameState.State == EngineState.PAUSED) return;
+      if(GameState.Mode == EngineMode.FREELOOK){
+        if(keymap.keyboardInput?.down || (keymap.gamepadInput as AnalogInput)?.value < 0){
+          const stick = this.gamePad.stick_r_x.value;
+          FollowerCamera.setFreeLookAxes(stick ? -stick : 1, 0);
+        }
+        return;
+      }
       if(GameState.Mode != EngineMode.INGAME) return;
+      const followee = GameState.PartyManager.party[0];
+      if(isDriveControlActive(followee) && keymap.keyboardInput?.down){
+        applyDriveInput(followee, DRIVE_YAW_LEFT);
+        return;
+      }
       if(
         (keymap.keyboardInput.down || 
         (keymap.gamepadInput as AnalogInput).value < 0)
@@ -479,8 +594,26 @@ export class IngameControls {
 
     //D
     KeyMapper.Actions[KeyMapAction.CameraRotateRight].setProcessor( (keymap) => {
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        if(keymap.keyboardInput?.down || (keymap.gamepadInput as AnalogInput)?.value > 0){
+          FollowerCamera.setNavigateAxes(-1);
+        }
+        return;
+      }
       // if(GameState.State == EngineState.PAUSED) return;
+      if(GameState.Mode == EngineMode.FREELOOK){
+        if(keymap.keyboardInput?.down || (keymap.gamepadInput as AnalogInput)?.value > 0){
+          const stick = this.gamePad.stick_r_x.value;
+          FollowerCamera.setFreeLookAxes(stick ? -stick : -1, 0);
+        }
+        return;
+      }
       if(GameState.Mode != EngineMode.INGAME) return;
+      const followee = GameState.PartyManager.party[0];
+      if(isDriveControlActive(followee) && keymap.keyboardInput?.down){
+        applyDriveInput(followee, DRIVE_YAW_RIGHT);
+        return;
+      }
       if(
         (keymap.keyboardInput.down || 
         (keymap.gamepadInput as AnalogInput).value > 0)
@@ -505,14 +638,36 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.Freelook].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      // Retail caseD_1 @ 006216c7: hsMode==1 → SetNavigateCamera + hsMode++
+      if(GameState.cameraHsMode === 1
+        && (GameState.clientCameraMode | 0) !== ClientCameraMode.FREELOOK
+        && (GameState.clientCameraMode | 0) !== ClientCameraMode.NAVIGATE){
+        FollowerCamera.beginNavigateHover();
+        GameState.cameraHsMode = 2;
+        return;
+      }
+      // Exiting navigate restores chase (RestoreCamera when leaving mode 5/7)
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        GameState.clientCameraMode = ClientCameraMode.ON_A_STICK;
+        FollowerCamera.navigateActive = false;
+        FollowerCamera.navigateHoverMode = false;
+        FollowerCamera.lastAppliedCameraMode = -1;
+        if(GameState.Mode == EngineMode.FREELOOK){
+          GameState.SetEngineMode(EngineMode.INGAME);
+        }
+        return;
+      }
       GameState.SetEngineMode(GameState.Mode == EngineMode.FREELOOK ? EngineMode.INGAME : EngineMode.FREELOOK);
     });
 
     KeyMapper.Actions[KeyMapAction.WALKMODIFY].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      const pc = GameState.getCurrentPlayer();
+      const pc = GameState.getCurrentPlayer() as ModuleCreature | undefined;
       if(pc){
         pc.walk = !pc.walk;
+        if(pc.playerControl){
+          pc.playerControl.walking = !!pc.walk;
+        }
       }
     });
 
@@ -717,6 +872,10 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.FlyUp].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        FollowerCamera.setNavigateAxes(undefined, undefined, undefined, undefined, 1);
+        return;
+      }
       const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       followee.position.z += 5 * delta;
@@ -724,6 +883,10 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.FlyDown].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
+      if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
+        FollowerCamera.setNavigateAxes(undefined, undefined, undefined, undefined, -1);
+        return;
+      }
       const followee = GameState.PartyManager.party[0];
       if(!followee) return;
       followee.position.z -= 5 * delta;
@@ -895,12 +1058,35 @@ export class IngameControls {
         if(followee){
           if(followee.canMove()){
             if( this.gamePad.stick_l_x.value || this.gamePad.stick_l_y.value ){
-              followee.clearAllActions(true);
-              followee.force = 1;
-              followee.setFacing( Utility.NormalizeRadian( Math.atan2(-this.gamePad.stick_l_x.value, -this.gamePad.stick_l_y.value) + FollowerCamera.facing + Math.PI/2 ) , false, TURN_SPEED_FAST);
-              followee.controlled = true;
-              GameState.scene_cursor_holder.visible = false;
-              this.gamePadMovement = true;
+              if(isDriveControlActive(followee)){
+                let flags = 0;
+                const lx = this.gamePad.stick_l_x.value;
+                const ly = this.gamePad.stick_l_y.value;
+                if(ly < -0.2) flags |= DRIVE_FORWARD;
+                if(ly > 0.2) flags |= DRIVE_BACKWARD;
+                if((flags & DRIVE_FORWARD) && Math.abs(ly) > 0.7) flags = DRIVE_RUN;
+                if(lx < -0.2) flags |= DRIVE_YAW_LEFT;
+                if(lx > 0.2) flags |= DRIVE_YAW_RIGHT;
+                if(flags) applyDriveInput(followee, flags);
+                GameState.scene_cursor_holder.visible = false;
+                this.gamePadMovement = true;
+              }else{
+                // Preserve float stick magnitude for cam-relative RK4
+                followee.cancelLocomotionActions();
+                const lx = this.gamePad.stick_l_x.value;
+                const ly = this.gamePad.stick_l_y.value;
+                const ctrl = ensurePlayerControl(followee);
+                // stick: -y forward, x right (retail left_right / up_down)
+                setPlayerAxes(ctrl, -ly, lx, !!followee.walk);
+                followee.controlled = true;
+                GameState.scene_cursor_holder.visible = false;
+                this.gamePadMovement = true;
+              }
+            }else if(this.gamePadMovement){
+              this.gamePadMovement = false;
+              if(followee.playerControl){
+                setPlayerAxes(followee.playerControl, 0, 0, !!followee.playerControl.walking);
+              }
             }
           }
         }
@@ -908,6 +1094,19 @@ export class IngameControls {
     }
     
     KeyMapper.ProcessMappings(GameState.Mode, delta);
+
+    // FreeLook: right-stick look (CSWCameraFreeLook tilt/rotate axes)
+    if(GameState.Mode == EngineMode.FREELOOK){
+      const rx = this.gamePad.stick_r_x.value;
+      const ry = this.gamePad.stick_r_y.value;
+      if(Math.abs(rx) > 0.15 || Math.abs(ry) > 0.15){
+        FollowerCamera.setFreeLookAxes(
+          Math.abs(rx) > 0.15 ? -rx : 0,
+          Math.abs(ry) > 0.15 ? -ry : 0
+        );
+      }
+      GameState.scene_cursor_holder.visible = false;
+    }
 
     //Keyboard: onFrameEnd
     this.keyboard.onFrameEnd(delta);

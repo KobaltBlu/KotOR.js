@@ -55,7 +55,7 @@ export class ActionTakeItem extends Action {
 
     if(GameState.PartyManager.party.indexOf(this.owner as any) >= 0){
       GameState.InventoryManager.addItem( oItem );
-    }{
+    }else{
       this.owner.addItem( oItem );
     }
 

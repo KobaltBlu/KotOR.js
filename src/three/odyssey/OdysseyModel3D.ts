@@ -175,14 +175,22 @@ export class OdysseyModel3D extends OdysseyObject3D {
   setOpacity(opacity: number){
     this.opacity = opacity;
     if(!this.materials.length) return;
+    const fading = opacity < 1;
     for(let i = 0; i < this.materials.length; i++){
-      this.materials[i].opacity = opacity;
-      this.materials[i].needsUpdate = true;
-      this.materials[i].transparent = opacity < 1;
-      if(this.materials[i] instanceof THREE.ShaderMaterial){
-        (this.materials[i] as THREE.ShaderMaterial).uniforms.opacity.value = opacity;
-        (this.materials[i] as THREE.ShaderMaterial).uniformsNeedUpdate = true;
+      const mat = this.materials[i];
+      mat.opacity = opacity;
+      mat.needsUpdate = true;
+      if(mat instanceof THREE.ShaderMaterial && mat.uniforms?.opacity){
+        mat.uniforms.opacity.value = opacity;
+        mat.uniformsNeedUpdate = true;
       }
+      // Additive/TXI special blends keep their own transparent/depthWrite; normal materials
+      // must disable depthWrite while fading or the mesh pops invisible in WebGL.
+      if(mat.blending === THREE.AdditiveBlending){
+        continue;
+      }
+      mat.transparent = fading;
+      mat.depthWrite = !fading;
     }
   }
 

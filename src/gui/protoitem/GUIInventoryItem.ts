@@ -45,7 +45,7 @@ export class GUIInventoryItem extends GUIProtoItem {
 
   createControl(){
     try{
-      const isContainer = this.menu.gui_resref == 'container';
+      const isContainer = this.menu.gui_resref == 'container' || this.menu.gui_resref == 'container_p';
       if(this.menu.gui_resref == 'inventory'){
         this.setExtentHeight(52.5);
       }else if(this.menu.gui_resref == 'equip'){
@@ -91,7 +91,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.buttonIcon.setExtentTop(0);
       this.buttonIcon.setExtentLeft(0);
       this.buttonIcon.setTextAlignment(GUIControlAlignment.HorizontalRight | GUIControlAlignment.VerticalBottom);
-      this.buttonIcon.setText(this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '');
+      this.buttonIcon.setText((this.node?.getStackSize?.() ?? 1) > 1 ? this.node.getStackSize().toString() : '');
       this.buttonIcon.disableBorder();
       this.buttonIcon.disableHighlight();
       this.buttonIcon.hasText = true;
@@ -127,10 +127,11 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.spriteGroup.add(this.hexSprite);  
       this.spriteGroup.add(this.iconSprite);
 
-      if(this.node.getStackSize() >= 100){
+      const stackSize = this.node?.getStackSize?.() ?? 1;
+      if(stackSize >= 100){
         this.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_7' : 'uibit_eqp_itm3');
         this.hexMaterial.needsUpdate = true;
-      }else if(this.node.getStackSize() > 1){
+      }else if(stackSize > 1){
         this.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_6' : 'uibit_eqp_itm2');
         this.hexMaterial.needsUpdate = true;
       }else{
@@ -196,16 +197,22 @@ export class GUIInventoryItem extends GUIProtoItem {
   update(delta: number){
     const isDirty = this.needsUpdate;
     super.update(delta);
+    // createControl can fail before hexMaterial exists (e.g. incomplete list nodes).
+    if(!this.hexMaterial){
+      this.needsUpdate = false;
+      return;
+    }
     const opacity = this.disableSelection ? 0.5 : 1;
     const pulseOpacity = this.selected ? 1 - (0.5 *GameState.MenuManager.pulseOpacity) * opacity : opacity;
     this.hexMaterial.opacity = pulseOpacity;
 
     if(isDirty){
-      this.buttonIcon.setText(this.node.getStackSize() > 1 ? this.node.getStackSize().toString() : '');
-      if(this.node.getStackSize() >= 100){
+      const stackSize = this.node?.getStackSize?.() ?? 1;
+      this.buttonIcon?.setText(stackSize > 1 ? stackSize.toString() : '');
+      if(stackSize >= 100){
         this.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_7' : 'uibit_eqp_itm3');
         this.hexMaterial.needsUpdate = true;
-      }else if(this.node.getStackSize() > 1){
+      }else if(stackSize > 1){
         this.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_6' : 'uibit_eqp_itm2');
         this.hexMaterial.needsUpdate = true;
       }else{

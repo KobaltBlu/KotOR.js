@@ -1,6 +1,7 @@
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { GameEngineType } from "@/enums/engine";
+import { computeSkillPointsGained, getCreatureSkillPointBase } from "@/engine/rules/skill-points";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { CharGenClasses } from "@/game/CharGenClasses";
@@ -264,24 +265,84 @@ export class CharGenManager {
 
   
 
-  static resetSkillPoints() {
-    for (let i = 0; i < 8; i++) {
-      CharGenManager.selectedCreature.skills[i].rank = 0;
-    }
-    CharGenManager.computerUse = CharGenManager.selectedCreature.skills[0].rank;
-    CharGenManager.demolitions = CharGenManager.selectedCreature.skills[1].rank;
-    CharGenManager.stealth = CharGenManager.selectedCreature.skills[2].rank;
-    CharGenManager.awareness = CharGenManager.selectedCreature.skills[3].rank;
-    CharGenManager.persuade = CharGenManager.selectedCreature.skills[4].rank;
-    CharGenManager.repair = CharGenManager.selectedCreature.skills[5].rank;
-    CharGenManager.security = CharGenManager.selectedCreature.skills[6].rank;
-    CharGenManager.treatInjury = CharGenManager.selectedCreature.skills[7].rank;
+  /** Baseline ranks when the skills panel opened (minus cannot go below). */
+  static skillRankBaseline: number[] = [0, 0, 0, 0, 0, 0, 0, 0];
+
+  static getTempSkillRanks(): number[] {
+    return [
+      CharGenManager.computerUse,
+      CharGenManager.demolitions,
+      CharGenManager.stealth,
+      CharGenManager.awareness,
+      CharGenManager.persuade,
+      CharGenManager.repair,
+      CharGenManager.security,
+      CharGenManager.treatInjury,
+    ];
   }
 
-  
+  static getTempSkillRank(skillId: number): number {
+    return CharGenManager.getTempSkillRanks()[skillId] | 0;
+  }
 
+  static setTempSkillRank(skillId: number, rank: number) {
+    switch(skillId){
+      case 0: CharGenManager.computerUse = rank; break;
+      case 1: CharGenManager.demolitions = rank; break;
+      case 2: CharGenManager.stealth = rank; break;
+      case 3: CharGenManager.awareness = rank; break;
+      case 4: CharGenManager.persuade = rank; break;
+      case 5: CharGenManager.repair = rank; break;
+      case 6: CharGenManager.security = rank; break;
+      case 7: CharGenManager.treatInjury = rank; break;
+    }
+  }
+
+  /** Reset temporary skill ranks only — does not mutate the creature until Accept. */
+  static resetSkillPoints() {
+    CharGenManager.computerUse = 0;
+    CharGenManager.demolitions = 0;
+    CharGenManager.stealth = 0;
+    CharGenManager.awareness = 0;
+    CharGenManager.persuade = 0;
+    CharGenManager.repair = 0;
+    CharGenManager.security = 0;
+    CharGenManager.treatInjury = 0;
+  }
+
+  static syncTempSkillsFromCreature() {
+    const creature = CharGenManager.selectedCreature;
+    if(!creature?.skills){
+      CharGenManager.resetSkillPoints();
+      CharGenManager.skillRankBaseline = [0, 0, 0, 0, 0, 0, 0, 0];
+      return;
+    }
+    for(let i = 0; i < 8; i++){
+      const rank = creature.skills[i]?.rank | 0;
+      CharGenManager.setTempSkillRank(i, rank);
+      CharGenManager.skillRankBaseline[i] = rank;
+    }
+  }
+
+  static applyTempSkillsToCreature() {
+    const creature = CharGenManager.selectedCreature;
+    if(!creature?.skills) return;
+    for(let i = 0; i < 8; i++){
+      creature.skills[i].rank = CharGenManager.getTempSkillRank(i);
+    }
+  }
+
+  /** Retail AddSkillPointsPerLevel for first-level CharGen. */
   static getMaxSkillPoints() {
-    return 10 + parseInt(CharGenManager.selectedCreature.classes[0].skillpointbase as any);
+    const creature = CharGenManager.selectedCreature;
+    if(!creature) return 4;
+    const intScore = CharGenManager.int || creature.getINT?.(false) || creature.int || 8;
+    return computeSkillPointsGained(
+      getCreatureSkillPointBase(creature),
+      intScore,
+      1,
+      GameState.GameKey
+    );
   }
 
   static getSkillTableColumn() {
@@ -292,22 +353,19 @@ export class CharGenManager {
     return CharGenManager.selectedCreature.classes[0].skillstable.toLowerCase() + '_reco';
   }
 
-  static getRecommendedOrder() {
-    let skillOrder: any = {
-      '0': -1,
-      '1': -1,
-      '2': -1,
-      '3': -1,
-      '4': -1,
-      '5': -1,
-      '6': -1,
-      '7': -1
-    };
-    
+  /** Returns skill indices in recommended spend order (-1 = unused slot). */
+  static getRecommendedOrder(): number[] {
+    const skillOrder: number[] = [-1, -1, -1, -1, -1, -1, -1, -1];
+    const table = TwoDAManager.datatables.get('skills');
+    if(!table) return skillOrder;
+
     for (let i = 0; i < 8; i++) {
-      let value = TwoDAManager.datatables.get('skills').rows[i][this.getSkillTableColumnRecommended()];
-      if (value != '****') {
-        skillOrder[value - 1] = i;
+      const value = table.rows[i][this.getSkillTableColumnRecommended()];
+      if (value != '****' && value != null && value !== '') {
+        const order = parseInt(String(value), 10) - 1;
+        if(order >= 0 && order < 8){
+          skillOrder[order] = i;
+        }
       }
     }
     return skillOrder;

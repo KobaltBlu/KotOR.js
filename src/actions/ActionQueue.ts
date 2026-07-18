@@ -58,6 +58,8 @@ export class ActionQueue extends Array {
   add( actionNode: Action ){
     if(!actionNode){ return; }
     actionNode.owner = this.owner;
+    actionNode.queue = this;
+    this.#processGroupId(actionNode);
     super.push( actionNode );
   }
 
@@ -71,6 +73,8 @@ export class ActionQueue extends Array {
   addFront( actionNode: Action ){
     if(!actionNode){ return; }
     actionNode.owner = this.owner;
+    actionNode.queue = this;
+    this.#processGroupId(actionNode);
     super.unshift( actionNode );
   }
 
@@ -115,9 +119,6 @@ export class ActionQueue extends Array {
    */
   //@ts-expect-error
   push( actionNode: Action ){
-    actionNode.owner = this.owner;
-    actionNode.queue = this;
-    this.#processGroupId(actionNode);
     this.add( actionNode );
   }
 
@@ -130,9 +131,6 @@ export class ActionQueue extends Array {
    */
   //@ts-expect-error
   unshift( actionNode: Action ){
-    actionNode.owner = this.owner;
-    actionNode.queue = undefined;
-    this.#processGroupId(actionNode);
     this.addFront( actionNode );
   }
 
@@ -144,12 +142,31 @@ export class ActionQueue extends Array {
    *
    */
   process( delta: number = 0 ){
-    let action = this[0];
+    const action = this[0];
     if(!action){ return; }
     action.owner = this.owner;
-    let status = action.update( delta );
-    if(status != ActionStatus.IN_PROGRESS){
-      this.shift();
+    const status = action.update( delta );
+    if(status == ActionStatus.IN_PROGRESS){
+      return;
+    }
+
+    // WAITING: action dispatched sub-actions (e.g. ActionCombat) and should be removed
+    // even if it is no longer at the head after unshifting children.
+    if(status == ActionStatus.WAITING){
+      const index = this.indexOf(action);
+      if(index >= 0){
+        this.splice(index, 1).map( (a: Action) => a.dispose() );
+      }
+      return;
+    }
+
+    if(this[0] === action){
+      this.shift()?.dispose();
+    }else{
+      const index = this.indexOf(action);
+      if(index >= 0){
+        this.splice(index, 1).map( (a: Action) => a.dispose() );
+      }
     }
   }
 
@@ -188,7 +205,7 @@ export class ActionQueue extends Array {
    *
    */
   clearActionsByGroupId(groupId: number = -1){
-    if(groupId > 0) return;
+    if(groupId < 0) return;
     let index = this.length;
     while(index--){
       const action = this[index];

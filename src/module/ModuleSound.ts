@@ -15,6 +15,7 @@ import { GameState } from "@/GameState";
 import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 import { AudioGeneratedType } from "@/enums/audio/AudioGeneratedType";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
+import { ModuleDayPhase } from "@/enums/module/ModuleDayPhase";
 
 /**
 * ModuleSound class.
@@ -223,6 +224,33 @@ export class ModuleSound extends ModuleObject {
     return this;
   }
 
+  /**
+   * Retail CSWCSoundObject::UpdateTimeOfDay @ 0066ae90.
+   * Times: 0 = Hours bitmask, 1 = day-only, 2 = night-only, other = always.
+   */
+  updateTimeOfDay(phase: ModuleDayPhase, hour = 0){
+    let active = true;
+    const times = this.times | 0;
+    if(times === 0){
+      active = ((1 << ((hour | 0) & 0x1f)) & (this.hours | 0)) !== 0;
+    }else{
+      switch(phase){
+        case ModuleDayPhase.Day:
+        case ModuleDayPhase.Dawn:
+          active = times !== 2;
+          break;
+        case ModuleDayPhase.Night:
+        case ModuleDayPhase.Dusk:
+          active = times !== 1;
+          break;
+      }
+    }
+    this.active = active;
+    if(this.audioEmitter){
+      this.audioEmitter.isActive = active;
+    }
+  }
+
   setPosition(x: number = 0, y: number = 0, z: number = 0): ModuleSound {
     this.position.x = x;
     this.position.y = y;
@@ -377,6 +405,8 @@ export class ModuleSound extends ModuleObject {
       this.soundType = this.randomPosition ? AudioEmitterType.RANDOM : AudioEmitterType.POSITIONAL;
     }
     
+    this.loadActionList();
+
     this.initialized = true;
 
   }

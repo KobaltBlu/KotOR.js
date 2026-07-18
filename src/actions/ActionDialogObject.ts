@@ -3,6 +3,7 @@ import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
@@ -36,14 +37,33 @@ export class ActionDialogObject extends Action {
     // 2 - int:     bPrivateConversation 
     // 3 - int:     (?) nConversationType
     // 4 - int:     ignoreStartRange
-    // 5 - dword:   (?) listener - `appears to be object_invalid mostly`
+    // 5 - dword:   listener object id (OBJECT_INVALID = use owner)
+    // 6-11 - string: sNameObjectToIgnore1-6 (DialogNonDependantList)
     
   }
 
   update(delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
-    let conversation_resref: string = this.getParameter<string>(1) || '';
-    let ignoreStartRange = this.getParameter<number>(4) || 0;
+    const conversation_resref: string = this.getParameter<string>(1) || '';
+    const bPrivate = !!this.getParameter<number>(2);
+    const ignoreStartRange = this.getParameter<number>(4) || 0;
+    const listenerParam = this.getParameter<ModuleObject>(5);
+    const listener = BitWise.InstanceOfObject(listenerParam, ModuleObjectType.ModuleObject) &&
+      (listenerParam as any).id !== ModuleObjectConstant.OBJECT_INVALID
+      ? listenerParam
+      : this.owner;
+
+    const ignoreNames: string[] = [];
+    for(let i = 0; i < 6; i++){
+      const name = this.getParameter<string>(6 + i);
+      if(typeof name === 'string' && name.trim().length > 0){
+        ignoreNames.push(name);
+      }
+    }
+
+    if(!this.target){
+      return ActionStatus.FAILED;
+    }
 
     if(!this.validate_conversation_resref){
       this.validate_conversation_resref = true;
@@ -53,20 +73,20 @@ export class ActionDialogObject extends Action {
     }
 
     if(GameState.Mode == EngineMode.DIALOG){
-      console.log('ActionDialogObject: Already in dialog', this.owner.getName(), this.owner.getTag());
       return ActionStatus.FAILED;
     }
 
+    const dialog = this.conversation ? this.conversation : this.owner?.conversation;
+
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
     {
-      GameState.CutsceneManager.startConversation(this.conversation ? this.conversation : this.owner.conversation, this.owner, this.target);
+      GameState.CutsceneManager.startConversation(dialog, this.owner, this.target || listener, bPrivate, ignoreNames);
       return ActionStatus.COMPLETE;
     }
 
-    let distance = Utility.Distance2D(this.owner.position, this.target.position);
+    const distance = Utility.Distance2D(this.owner.position, this.target.position);
     if(distance > 4.5 && !ignoreStartRange){
-      // this.owner.openSpot = undefined;
-      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+      const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
       actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
@@ -79,23 +99,25 @@ export class ActionDialogObject extends Action {
       this.owner.actionQueue.addFront(actionMoveToTarget);
 
       return ActionStatus.IN_PROGRESS;
-    }else{
-      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
-      this.owner.force = 0;
-      this.owner.speed = 0;
-
-      this.owner.heardStrings = [];
-      this.target.heardStrings = [];
-      const onDialog = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature) ? this.target.scripts[ModuleObjectScript.CreatureOnDialog] : undefined;
-      if(onDialog){
-        this.target.onDialog(this.owner, -1, this.conversation);
-      }else{
-        GameState.CutsceneManager.startConversation(this.conversation ? this.conversation : this.owner.conversation, this.target, this.owner);
-      }
-      return ActionStatus.COMPLETE;
     }
-    
-    return ActionStatus.FAILED;
+
+    this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+    this.owner.force = 0;
+    this.owner.speed = 0;
+
+    this.owner.heardStrings = [];
+    this.target.heardStrings = [];
+    const onDialog = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
+      ? this.target.scripts[ModuleObjectScript.CreatureOnDialog]
+      : undefined;
+    if(onDialog){
+      // Ignore names still apply if OnDialog starts the cutscene path later
+      GameState.CutsceneManager.setDialogNonDependantNames(ignoreNames);
+      this.target.onDialog(this.owner, -1, this.conversation);
+    }else{
+      GameState.CutsceneManager.startConversation(dialog, this.target, listener, bPrivate, ignoreNames);
+    }
+    return ActionStatus.COMPLETE;
   }
 
 }

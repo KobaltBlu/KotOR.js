@@ -49,6 +49,8 @@ export enum GameEffectType {
   EffectDamage = 0x26,
   EffectHeal = 0x27,
   EffectLink = 0x28,
+  EffectHasteInternal = 0x29,
+  EffectSlowInternal = 0x2A,
   EffectModifyNumAttacks = 0x2C,
   EffectCurse = 0x2D,
   EffectSilence = 0x2E,

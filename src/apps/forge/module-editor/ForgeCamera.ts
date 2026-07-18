@@ -1,5 +1,6 @@
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 import * as KotOR from "@/apps/forge/KotOR";
+import { placeableCameraOrientation } from "@/utility/aurora-camera-orientation";
 import * as THREE from "three";
 
 export class ForgeCamera extends ForgeGameObject {
@@ -27,19 +28,16 @@ export class ForgeCamera extends ForgeGameObject {
       this.cameraID = this.area.getNextCameraId();
     }
     this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, this.aspectRatio, 0.1, 100);
-    this.rotation.reorder('YZX');
-    this.rotation.x = THREE.MathUtils.degToRad(this.pitch);
-    this.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
-    this.perspectiveCamera.updateMatrixWorld(true);
-    this.perspectiveCamera.updateMatrix();
-    this.perspectiveCamera.rotation.reorder('YZX');
-    this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
-    this.perspectiveCamera.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
-
+    // Keep container quaternion as GIT Orientation; compose Pitch only on the view cam.
+    this.perspectiveCamera.up.set(0, 0, 1);
+    placeableCameraOrientation(this.quaternion, this.pitch, this.perspectiveCamera.quaternion);
+    this.perspectiveCamera.rotation.setFromQuaternion(this.perspectiveCamera.quaternion, 'YZX');
     //@ts-ignore
     this.perspectiveCamera.position.copy(this.position);
-    //@ts-ignore
-    // this.perspectiveCamera.quaternion.copy(this.quaternion);
+    const height = typeof this.height === 'number' ? this.height : 0;
+    this.perspectiveCamera.position.z += height;
+    this.perspectiveCamera.updateMatrixWorld(true);
+    this.perspectiveCamera.updateMatrix();
 
     this.cameraHelper = new THREE.CameraHelper(this.perspectiveCamera);
     this.context.scene.add(this.perspectiveCamera);

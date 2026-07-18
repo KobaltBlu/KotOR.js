@@ -11,6 +11,7 @@ import type { Module, ModuleCreature, ModuleDoor, ModuleObject } from "@/module"
 import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 import { GameState } from "@/GameState";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 
 const UPDATE_SELECTABLE_OBJECTS_INTERVAL = 0.5;
 
@@ -656,6 +657,18 @@ export class ModuleObjectManager {
     for(let i = 0, len = object_pool.length; i < len; i++){
       if(BitWise.InstanceOf(object_pool[i]?.objectType, ModuleObjectType.ModuleObject)){
         if(object_pool[i].position.distanceTo(target.position) < size){
+          if(lineOfSight){
+            const from =
+              (origin && (origin.x !== 0 || origin.y !== 0 || origin.z !== 0))
+                ? origin
+                : target.position;
+            if(!clearLineOfSight(this.module?.area, from, object_pool[i].position, {
+              ignoreObject: object_pool[i],
+              eyeHeight: 1.5,
+            })){
+              continue;
+            }
+          }
           results.push(object_pool[i]);
         }
       }
@@ -723,6 +736,7 @@ export class ModuleObjectManager {
 
   static GetSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
 
+    // KeepCorpse shells remain in area.creatures (save-filtered); hidden bags are non-useable
     const objects = [
       ...GameState.PartyManager.party,
       ...GameState.module.area.placeables, 

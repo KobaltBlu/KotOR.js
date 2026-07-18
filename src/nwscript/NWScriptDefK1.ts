@@ -8,7 +8,7 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleObject, ModuleArea, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "@/module";
+import type { ModuleCreature, ModuleObject, ModuleArea, ModuleAreaOfEffect, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "@/module";
 import type { TalentObject } from "@/talents/TalentObject";
 import type { GameEffect } from "@/effects/GameEffect";
 import type { GameEvent } from "@/events/GameEvent";
@@ -25,23 +25,31 @@ import { EventConversation, EventSpellCastAt, EventUserDefined, NWScriptEvent } 
 import { NWScriptDef } from "@/nwscript/NWScriptDef";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { EngineMode } from "@/enums/engine/EngineMode";
-import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { ClientCameraMode } from "@/enums/engine/ClientCameraMode";
+import { FollowerCamera } from "@/engine/FollowerCamera";
 import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 import { TalentObjectType } from "@/enums/engine/TalentObjectType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { DLGObject } from "@/resource/DLGObject";
 import { ResourceLoader } from "@/loaders";
 import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { CombatRound } from "@/combat/CombatRound";
+import { findMostDamagingMelee, findMostDamagingRanged } from "@/combat/equip-most-damaging";
 import { BitWise } from "@/utility/BitWise";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { ExperienceType } from "@/enums/engine/ExperienceType";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
+import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
 import { CreatureClassType } from "@/enums/nwscript/CreatureClassType";
 import { TalkVolume } from "@/enums/engine/TalkVolume";
-import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
 import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
+import { hasImmunityType } from "@/effects/haste-slow";
+import { changeFactionByFaction } from "@/module/faction-by-faction";
+import { GameOverManager } from "@/managers/GameOverManager";
+import { setAreaTransitionBMP } from "@/engine/area-transition-bmp";
 
 /**
  * NWScriptDefK1 class.
@@ -261,6 +269,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
+      // Retail GetWorldTimeMinute: compressed 0..(Mod_MinPerHour-1), not 0-59.
       return GameState.module.timeManager.minute | 0;
     }
   },
@@ -420,7 +429,18 @@ NWScriptDefK1.Actions = {
     comment: "29: Get the possessor of oItem\n* Return value on error: OBJECT_INVALID\n",
     name: "GetItemPossessor",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // ExecuteCommandGetItemPossessor @ 0053a5c0 — follow possessor; dig once if nested item
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        return undefined;
+      }
+      let possessor = (args[0] as ModuleItem).getPossessor();
+      if(BitWise.InstanceOfObject(possessor, ModuleObjectType.ModuleItem)){
+        possessor = (possessor as ModuleItem).getPossessor();
+      }
+      return BitWise.InstanceOfObject(possessor, ModuleObjectType.ModuleObject) ? possessor : undefined;
+    }
   },
   30:{
     comment: "30: Get the object possessed by oCreature with the tag sItemTag\n* Return value on error: OBJECT_INVALID\n",
@@ -473,57 +493,56 @@ NWScriptDefK1.Actions = {
       let slot = args[1];
       const obj = this.caller as ModuleCreature;
       switch(args[1]){
-        case 0:
+        case 0: // INVENTORY_SLOT_HEAD
           slot = ModuleCreatureArmorSlot.HEAD;
           break;
-        case 1:
+        case 1: // INVENTORY_SLOT_BODY
           slot = ModuleCreatureArmorSlot.ARMOR;
           break;
-        case 2:
+        case 3: // INVENTORY_SLOT_HANDS
           slot = ModuleCreatureArmorSlot.ARMS;
           break;
-        case 3:
+        case 4: // INVENTORY_SLOT_RIGHTWEAPON
           slot = ModuleCreatureArmorSlot.RIGHTHAND;
           break;
-        case 4:
+        case 5: // INVENTORY_SLOT_LEFTWEAPON
           slot = ModuleCreatureArmorSlot.LEFTHAND;
           break;
-        case 5:
+        case 7: // INVENTORY_SLOT_LEFTARM
           slot = ModuleCreatureArmorSlot.LEFTARMBAND;
           break;
-        case 6:
+        case 8: // INVENTORY_SLOT_RIGHTARM
           slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
           break;
-        case 7:
+        case 9: // INVENTORY_SLOT_IMPLANT
           slot = ModuleCreatureArmorSlot.IMPLANT;
           break;
-        case 8:
+        case 10: // INVENTORY_SLOT_BELT
           slot = ModuleCreatureArmorSlot.BELT;
           break;
-        case 9:
+        case 14: // INVENTORY_SLOT_CWEAPON_L
           slot = ModuleCreatureArmorSlot.CLAW1;
           break;
-        case 10:
+        case 15: // INVENTORY_SLOT_CWEAPON_R
           slot = ModuleCreatureArmorSlot.CLAW2;
           break;
-        case 14:
+        case 16: // INVENTORY_SLOT_CWEAPON_B
           slot = ModuleCreatureArmorSlot.CLAW3;
           break;
-        case 15:
+        case 17: // INVENTORY_SLOT_CARMOUR
           slot = ModuleCreatureArmorSlot.HIDE;
-          break;
-        case 16:
-          slot = ModuleCreatureArmorSlot.HEAD;
-          break;
-        case 17:
-          slot = ModuleCreatureArmorSlot.ARMOR; //Creature Armor
           break;
       }
       const action = new GameState.ActionFactory.ActionEquipItem();
       action.setParameter(0, ActionParameterType.DWORD, args[0]);
       action.setParameter(1, ActionParameterType.INT, slot);
       action.setParameter(2, ActionParameterType.INT, args[2] ? NW_TRUE : NW_FALSE);
-      obj.actionQueue.addFront(action);
+      // Retail AddEquipItemActions: defer to combat round while in combat
+      if(obj.combatData?.combatState && obj.combatRound && !args[2]){
+        obj.combatRound.addEquipAction(args[0] as ModuleItem, slot, false);
+      }else{
+        obj.actionQueue.addFront(action);
+      }
     }
   },
   33:{
@@ -547,7 +566,12 @@ NWScriptDefK1.Actions = {
       action.setParameter(1, ActionParameterType.DWORD, undefined);
       action.setParameter(2, ActionParameterType.INT, args[1] ? NW_TRUE : NW_FALSE);
 
-      obj.actionQueue.add(action);
+      // Retail AddUnequipActions: defer to combat round while in combat (non-instant)
+      if(obj.combatData?.combatState && obj.combatRound && !args[1]){
+        obj.combatRound.addUnequipAction(args[0] as ModuleItem, false);
+      }else{
+        obj.actionQueue.addFront(action);
+      }
     }
   },
   34:{
@@ -730,7 +754,21 @@ NWScriptDefK1.Actions = {
     comment: "45: Change the direction in which the camera is facing\n- fDirection is expressed as anticlockwise degrees from Due East.\n(0.0f=East, 90.0f=North, 180.0f=West, 270.0f=South)\nThis can be used to change the way the camera is facing after the player\nemerges from an area transition.\n",
     name: "SetCameraFacing",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [number]){
+      // Retail ExecuteCommandSetCameraFacing @ 00542530 → ActionOrientCamera (0x16)
+      // params: INT flags=1, FLOAT facing, FLOAT 0, FLOAT 0, INT transition=0
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+      const action = new GameState.ActionFactory.ActionOrientCamera();
+      action.setParameter(0, ActionParameterType.INT, 0x01); // CAMERA_LOC_FLAG_FACING
+      action.setParameter(1, ActionParameterType.FLOAT, typeof args[0] === 'number' ? args[0] : 0);
+      action.setParameter(2, ActionParameterType.FLOAT, 0);
+      action.setParameter(3, ActionParameterType.FLOAT, 0);
+      action.setParameter(4, ActionParameterType.INT, 0); // SNAP (transition bit not set)
+      this.caller.actionQueue.add(action);
+    }
   },
   46:{
     comment: "46: Play sSoundName\n- sSoundName: TBD - SS\n",
@@ -738,11 +776,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
-      try{
-        const oSound = GameState.ModuleObjectManager.GetObjectByTag(args[0], 0, NWModuleObjectType.SOUND) as ModuleSound;
-        if(!oSound){ return; }
-        oSound.audioEmitter.playNextSound();
-      }catch(e){ console.error(e); }
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+      const action = new GameState.ActionFactory.ActionPlaySound();
+      action.setParameter(0, ActionParameterType.STRING, args[0] || '');
+      this.caller.actionQueue.add(action);
     }
   },
   47:{
@@ -776,7 +815,7 @@ NWScriptDefK1.Actions = {
       action.setParameter(6, ActionParameterType.FLOAT, args[1].position.x); //Target X
       action.setParameter(7, ActionParameterType.FLOAT, args[1].position.y); //Target Y
       action.setParameter(8, ActionParameterType.FLOAT, args[1].position.z); //Target Z
-      action.setParameter(9, ActionParameterType.INT, args[5]); //ProjectilePath
+      action.setParameter(9, ActionParameterType.INT, (args[5] | 0) | (args[6] ? 0x40000000 : 0)); //ProjectilePath + instant bit
       action.setParameter(10, ActionParameterType.INT, -1);
       action.setParameter(11, ActionParameterType.INT, -1);
       this.caller.actionQueue.add(action);
@@ -1196,17 +1235,35 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(BitWise.InstanceOfObject(GameState.module.area, ModuleObjectType.ModuleArea)){
-        GameState.module.area.restrictMode ? NW_TRUE : NW_FALSE;
+      if(BitWise.InstanceOfObject(GameState.module?.area, ModuleObjectType.ModuleArea)){
+        return GameState.module.area.restrictMode ? NW_TRUE : NW_FALSE;
       }
-      return 0;
+      return NW_FALSE;
     }
   },
   84:{
     comment: "84: Get the Caster Level of oCreature.\n* Return value on error: 0;\n",
     name: "GetCasterLevel",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        const c = args[0] as ModuleCreature;
+        // Prefer spellcaster class levels; else total level
+        const spellLv = c.getSpellCasterLevel?.() || 0;
+        return spellLv > 0 ? spellLv : (c.getTotalClassLevel?.() || 0);
+      }
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleAreaOfEffect)){
+        const aoe = args[0] as ModuleAreaOfEffect;
+        const creator = aoe.creator;
+        if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
+          const c = creator as ModuleCreature;
+          const spellLv = c.getSpellCasterLevel() || 0;
+          return spellLv > 0 ? spellLv : (c.getTotalClassLevel() || 0);
+        }
+      }
+      return 0;
+    }
   },
   85:{
     comment: "85: Get the first in-game effect on oCreature.\n",
@@ -1484,16 +1541,23 @@ NWScriptDefK1.Actions = {
     }
   },
   111:{
-    comment: "111: Get the DC to save against for a spell (10 + spell level + relevant ability\nbonus).  This can be called by a creature or by an Area of Effect object.\n",
+    comment: "111: Get the DC to save against for a spell (5 + level + WIS mod + CHA mod + Force Focus).\nThis can be called by a creature or by an Area of Effect object.\n",
     name: "GetSpellSaveDC",
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
-        (this.caller as ModuleCreature).getSpellSaveDC();
+        return (this.caller as ModuleCreature).getSpellSaveDC();
       }
-
-      return 10;
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleAreaOfEffect)){
+        const aoe = this.caller as ModuleAreaOfEffect;
+        const creator = aoe.creator;
+        if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
+          return (creator as ModuleCreature).getSpellSaveDC();
+        }
+        return aoe.spellSaveDC ?? 14;
+      }
+      return 14;
     }
   },
   112:{
@@ -1719,16 +1783,33 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.EVENT],
     action: function(this: NWScriptInstance, args: [ModuleObject, GameEvent]){
       //This needs to happen once the script has completed
+      const event = args[1];
+      if(!(event instanceof NWScriptEvent)){
+        console.warn('SignalEvent', 'Invalid event argument', args);
+        return;
+      }
+
+      // Retail CSWSModule::EventHandler @ 004c5120 — GetModule() is not a ModuleObject in JS
+      if(args[0] === (GameState.module as any)){
+        if(event.type === NWScriptEventType.EventUserDefined){
+          const onUserDefined = GameState.module.scripts[ModuleObjectScript.ModuleOnUserDefined];
+          if(onUserDefined){
+            // OBJECT_SELF in module scripts is typically the area/module context;
+            // pass area as caller so GetArea/GetObjectType paths stay valid.
+            onUserDefined.run(GameState.module.area ?? this.caller, parseInt(event.getInt(0)));
+          }
+        }else{
+          console.error('SignalEvent', 'Unhandled module event', event);
+        }
+        return;
+      }
+
       if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))){
         args[0] = GameState.module.area;
       }
 
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
-        if(args[1] instanceof NWScriptEvent){
-          args[0].scriptEventHandler( args[1] );
-        }else{
-          console.warn('SignalEvent', 'Invalid event argument', args);
-        }
+        args[0].scriptEventHandler( event );
       }else{
         console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
       }
@@ -1895,13 +1976,25 @@ NWScriptDefK1.Actions = {
     comment: "146: The caller will perform a Melee Touch Attack on oTarget\nThis is not an action, and it assumes the caller is already within range of\noTarget\n* Returns 0 on a miss, 1 on a hit and 2 on a critical hit\n",
     name: "TouchAttackMelee",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return 0;
+      }
+      return (this.caller as ModuleCreature).doTouchAttack(args[0], false);
+    }
   },
   147:{
     comment: "147: The caller will perform a Ranged Touch Attack on oTarget\n* Returns 0 on a miss, 1 on a hit and 2 on a critical hit\n",
     name: "TouchAttackRanged",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return 0;
+      }
+      return (this.caller as ModuleCreature).doTouchAttack(args[0], true);
+    }
   },
   148:{
     comment: "148: Create a Paralyze effect\n",
@@ -1912,7 +2005,7 @@ NWScriptDefK1.Actions = {
       let effect = new GameState.GameEffectFactory.EffectSetState();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
-      effect.setInt(0, 5); // Sleep State
+      effect.setInt(0, 5); // Paralyze State
       return effect.initialize();
     }
   },
@@ -2022,7 +2115,7 @@ NWScriptDefK1.Actions = {
           case 15:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.CLAW2);
           case 16:
-            return obj.getItemInSlot(ModuleCreatureArmorSlot.CLAW2);
+            return obj.getItemInSlot(ModuleCreatureArmorSlot.CLAW3);
           case 17:
             return obj.getItemInSlot(ModuleCreatureArmorSlot.HIDE);
         }
@@ -2260,7 +2353,9 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        if((args[0] as ModuleCreature).getIsPC() || (args[1] as ModuleCreature).getIsPC()) return;
         args[0].faction = args[1].faction;
+        args[0].factionId = args[1].faction?.id ?? args[1].factionId;
         GameState.FactionManager.AddCreatureToFaction(args[0]);
       }
     }
@@ -2632,7 +2727,11 @@ NWScriptDefK1.Actions = {
     comment: "203: Set the transition bitmap of a player; this should only be called in area\ntransition scripts. This action should be run by the person 'clicking' the\narea transition via AssignCommand.\n- nPredefinedAreaTransition:\n-> To use a predefined area transition bitmap, use one of AREA_TRANSITION_*\n-> To use a custom, user-defined area transition bitmap, use\nAREA_TRANSITION_USER_DEFINED and specify the filename in the second\nparameter\n- sCustomAreaTransitionBMP: this is the filename of a custom, user-defined\narea transition bitmap\n",
     name: "SetAreaTransitionBMP",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [number, string]){
+      // ExecuteCommandSetAreaTransitionBMP @ 00542410 → CSWSPlayer::SetAreaTransitionBMP @ 00560cd0
+      setAreaTransitionBMP(args[0] | 0, args[1] ?? '');
+    }
   },
   204:{
     comment: "AMF: APRIL 28, 2003 - I HAVE CHANGED THIS FUNCTION AS PER DAN'S REQUEST\n204: Starts a conversation with oObjectToConverseWith - this will cause their\nOnDialog event to fire.\n- oObjectToConverseWith\n- sDialogResRef: If this is blank, the creature's own dialogue file will be used\n- bPrivateConversation: If this is blank, the default is FALSE.\n- nConversationType - If this is blank the default will be Cinematic, ie. a normal conversation type\nother choices inclue: CONVERSATION_TYPE_COMPUTER\nUPDATE:  nConversationType actually has no meaning anymore.  This has been replaced by a flag in the dialog editor.  However\nfor backwards compatability it has been left here.  So when using this command place CONVERSATION_TYPE_CINEMATIC in here. - DJF\n- bIgnoreStartRange - If this is blank the default will be FALSE, ie. Start conversation ranges are in effect\nSetting this to TRUE will cause creatures to start a conversation without requiring to close\nthe distance between the two object in dialog.\n- sNameObjectToIgnore1-6 - Normally objects in the animation list of the dialog editor have to be available for animations on that node to work\nthese 6 strings are to indicate 6 objects that don�t need to be available for things to proceed.  The string should be EXACTLY\nthe same as the string that it represents in the dialog editor.\n",
@@ -2641,9 +2740,10 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [ModuleObject, string, number, number, number, string, string, string, string, string, string]){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        //I'm hardcoding ignoreStartRange to true because i'm finding instances where it's causing the player to move halfway across the map to start a conversation
-        //even in ones that have nothing to do with the PC. Perhaps it was always meant to work this way?
-        this.caller.actionDialogObject( args[0], args[1], true, args[2], args[3] );
+        const ignoreStartRange = !!args[4];
+        const ignoreNames = [args[5], args[6], args[7], args[8], args[9], args[10]]
+          .filter((s) => typeof s === 'string' && s.trim().length > 0);
+        this.caller.actionDialogObject( args[0], args[1], ignoreStartRange, args[2], args[3], false, ignoreNames );
       }else{
         console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
       }
@@ -2796,6 +2896,11 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [number, GameEffect, EngineLocation, number]){
       args[1].setDurationType(args[0]);
       args[1].setDuration(args[3]);
+      if(args[0] == GameEffectDurationType.TEMPORARY && args[3] > 0){
+        const future = GameState.module.timeManager.getFutureTimeFromSeconds(args[3]);
+        args[1].setExpireDay(future.pauseDay);
+        args[1].setExpireTime(future.pauseTime);
+      }
       GameState.module.addEffect(args[1], args[2]);
     }
   },
@@ -2892,7 +2997,13 @@ NWScriptDefK1.Actions = {
     comment: "224: the effect of body fule.. convers HP -> FP i think\n",
     name: "EffectBodyFuel",
     type: NWScriptDataType.EFFECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      let effect = new GameState.GameEffectFactory.EffectBodyFuel();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   225:{
     comment: "225: Get the orientation value from lLocation.\n",
@@ -2985,14 +3096,15 @@ NWScriptDefK1.Actions = {
       const action = new GameState.ActionFactory.ActionCastSpell();
       action.setParameter(0, ActionParameterType.INT, args[0]); //Spell Id
       action.setParameter(1, ActionParameterType.INT, -1);
-      action.setParameter(2, ActionParameterType.INT, args[4]); //DomainLevel
+      action.setParameter(2, ActionParameterType.INT, 0); //DomainLevel (N/A at location)
       action.setParameter(3, ActionParameterType.INT, 0);
       action.setParameter(4, ActionParameterType.INT, 0);
       action.setParameter(5, ActionParameterType.DWORD, -1); //Target Object
       action.setParameter(6, ActionParameterType.FLOAT, args[1].position.x); //Target X
       action.setParameter(7, ActionParameterType.FLOAT, args[1].position.y); //Target Y
       action.setParameter(8, ActionParameterType.FLOAT, args[1].position.z); //Target Z
-      action.setParameter(9, ActionParameterType.INT, args[5]); //ProjectilePath
+      // args: path=4, instant=5 (NWScript ActionCastSpellAtLocation)
+      action.setParameter(9, ActionParameterType.INT, (args[4] | 0) | (args[5] ? 0x40000000 : 0));
       action.setParameter(10, ActionParameterType.INT, -1);
       action.setParameter(11, ActionParameterType.INT, -1);
       this.caller.actionQueue.add(action);
@@ -3081,15 +3193,22 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
-      console.log("DestroyObject", args[0], args[1], args[2], args[3]);
+      // Retail ExecuteCommandDestroyObject @ 00530104:
+      // SetDeleteNoFade(bNoFade); SetFadeOutTime(fFadeOut*1000); Event 0xb after fDelay ms.
       if(!args[0]){
         return;
       }
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
+        const fDelay = typeof args[1] === 'number' ? args[1] : 0;
+        const bNoFade = !!args[2];
+        const fFadeOut = typeof args[3] === 'number' ? args[3] : 0;
+        // Retail SetFadeOutTime(0) / bNoFade → remove after fDelay with no fade length.
+        const skipFade = bNoFade || fFadeOut <= 0;
         args[0].setWillDestroy(true);
-        args[0].setDelayUntilDestroy(args[1]);
-        args[0].setDelayUntilFade(args[3]);
-        args[0].setNoFadeOnDestroy(args[2] ? true : false);
+        args[0].setNoFadeOnDestroy(skipFade);
+        args[0].setFadeDuration(skipFade ? 0 : fFadeOut);
+        args[0].setDelayUntilFade(fDelay);
+        args[0].setDelayUntilDestroy(fDelay + (skipFade ? 0 : fFadeOut));
         return;
       }
       args[0].destroy();
@@ -3333,7 +3452,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.lastPerceived.object, ModuleObjectType.ModuleCreature)){
+      if(BitWise.InstanceOfObject(this.lastPerceived?.object, ModuleObjectType.ModuleCreature)){
         return this.lastPerceived.object;
       }
       return undefined;
@@ -3345,11 +3464,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.lastPerceived.object, ModuleObjectType.ModuleObject)){
-        return !this.lastPerceived.object.isDead() || !!(this.lastPerceived.data & PerceptionMask.HEARD);
-      }else{
-        return 0;
+      // Retail GetLastPerception @ 0053b2a0 — returns event flag int (creature+0x904)
+      if(BitWise.InstanceOfObject(this.lastPerceived?.object, ModuleObjectType.ModuleObject)){
+        return !!(this.lastPerceived.data & PerceptionMask.HEARD) ? 1 : 0;
       }
+      return 0;
     }
   },
   258:{
@@ -3358,11 +3477,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.lastPerceived.object, ModuleObjectType.ModuleObject)){
-        return this.lastPerceived.object.isDead() || !!(this.lastPerceived.data & PerceptionMask.INAUDIBLE);
-      }else{
-        return 0;
+      if(BitWise.InstanceOfObject(this.lastPerceived?.object, ModuleObjectType.ModuleObject)){
+        return !!(this.lastPerceived.data & PerceptionMask.INAUDIBLE) ? 1 : 0;
       }
+      return 0;
     }
   },
   259:{
@@ -3371,10 +3489,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.lastPerceived.object, ModuleObjectType.ModuleCreature))
-        return !this.lastPerceived.object.isDead() || !!(this.lastPerceived.data & PerceptionMask.SEEN);
-      else
-        return 0;
+      // Was buggy `!isDead() || SEEN` — always true while alive. Retail is flag-only.
+      if(BitWise.InstanceOfObject(this.lastPerceived?.object, ModuleObjectType.ModuleCreature))
+        return !!(this.lastPerceived.data & PerceptionMask.SEEN) ? 1 : 0;
+      return 0;
     }
   },
   260:{
@@ -3389,11 +3507,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.lastPerceived.object, ModuleObjectType.ModuleObject)){
-        return this.lastPerceived.object.isDead() || !!(this.lastPerceived.data & PerceptionMask.INVISIBLE);
-      }else{
-        return 0;
+      if(BitWise.InstanceOfObject(this.lastPerceived?.object, ModuleObjectType.ModuleObject)){
+        return !!(this.lastPerceived.data & PerceptionMask.INVISIBLE) ? 1 : 0;
       }
+      return 0;
     }
   },
   262:{
@@ -3402,7 +3519,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger)){
+      if(
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger) ||
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleAreaOfEffect)
+      ){
         this.persistentObjectIndex.set(args[0].id, 0)
         return args[0].objectsInside[0];
       }else{
@@ -3416,7 +3536,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger)){
+      if(
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleTrigger) ||
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleAreaOfEffect)
+      ){
         const nextId = this.persistentObjectIndex.get(args[0].id) + 1;
         this.persistentObjectIndex.set(args[0].id, nextId)
         return args[0].objectsInside[nextId];
@@ -3429,7 +3552,14 @@ NWScriptDefK1.Actions = {
     comment: "264: This returns the creator of oAreaOfEffectObject.\n* Returns OBJECT_INVALID if oAreaOfEffectObject is not a valid Area of Effect object.\n",
     name: "GetAreaOfEffectCreator",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleAreaOfEffect)){
+        const aoe = args[0] as ModuleAreaOfEffect;
+        return aoe.creator || GameState.ModuleObjectManager.GetObjectById(aoe.creatorId);
+      }
+      return undefined;
+    }
   },
   265:{
     comment: "265: Brings up the level up GUI for the player.  The GUI will only show up\nif the player has gained enough experience points to level up.\n* Returns TRUE if the GUI was successfully brought up; FALSE if not.\n",
@@ -3533,6 +3663,9 @@ NWScriptDefK1.Actions = {
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
+      // Retail: race filter default = racialtypes row count (any); align 0 = any
+      effect.setInt(1, GameState.SWRuleSet.racialTypeCount);
+      effect.setInt(2, 0);
       return effect.initialize();
     }
   },
@@ -3540,7 +3673,21 @@ NWScriptDefK1.Actions = {
     comment: "274: - oCreature\n- nImmunityType: IMMUNITY_TYPE_*\n- oVersus: if this is specified, then we also check for the race and\nalignment of oVersus\n* Returns TRUE if oCreature has immunity of type nImmunity versus oVersus.\n",
     name: "GetIsImmune",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return NW_FALSE;
+      }
+      const creature = args[0] as ModuleCreature;
+      const versus = BitWise.InstanceOfObject(args[2], ModuleObjectType.ModuleCreature)
+        ? args[2] as ModuleCreature
+        : undefined;
+      // Retail GetEffectImmunity @ 005a6960
+      const immune = creature.combatRound
+        ? creature.combatRound.hasEffectImmunity(creature, args[1], versus)
+        : hasImmunityType(creature, args[1], versus);
+      return immune ? NW_TRUE : NW_FALSE;
+    }
   },
   275:{
     comment: "275: Creates a Damage Immunity Increase effect.\n- nDamageType: DAMAGE_TYPE_*\n- nPercentImmunity\n",
@@ -3668,13 +3815,35 @@ NWScriptDefK1.Actions = {
     comment: "287: Use nFeat on oTarget.\n- nFeat: FEAT_*\n- oTarget\n",
     name: "ActionUseFeat",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      const feat = new GameState.TalentFeat(args[0]);
+      feat.useTalentOnObject(args[1], this.caller);
+    }
   },
   288:{
     comment: "288: Runs the action 'UseSkill' on the current creature\nUse nSkill on oTarget.\n- nSkill: SKILL_*\n- oTarget\n- nSubSkill: SUBSKILL_*\n- oItemUsed: Item to use in conjunction with the skill\n",
     name: "ActionUseSkill",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject, number, ModuleObject]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      const skill = new GameState.TalentSkill(args[0]);
+      skill.useTalentOnObject(args[1], this.caller, args[2] || 0, args[3]);
+    }
   },
   289:{
     comment: "289: Determine whether oSource sees oTarget.\n",
@@ -3916,7 +4085,51 @@ NWScriptDefK1.Actions = {
     comment: "310: Use tChosenTalent at lTargetLocation.\n",
     name: "ActionUseTalentAtLocation",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.TALENT, NWScriptDataType.LOCATION]
+    args: [NWScriptDataType.TALENT, NWScriptDataType.LOCATION],
+    action: function(this: NWScriptInstance, args: [TalentObject, EngineLocation]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      if(!args[0] || !args[1]){
+        return;
+      }
+
+      const talent = args[0];
+      const location = args[1];
+
+      // Spells at a location use the cast-spell location path (handles range itself).
+      if(talent.objectType & TalentObjectType.TalentSpell){
+        const action = new GameState.ActionFactory.ActionCastSpell();
+        action.setParameter(0, ActionParameterType.INT, talent.id);
+        action.setParameter(1, ActionParameterType.INT, -1);
+        action.setParameter(2, ActionParameterType.INT, 0);
+        action.setParameter(3, ActionParameterType.INT, 0);
+        action.setParameter(4, ActionParameterType.INT, 0);
+        action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+        action.setParameter(6, ActionParameterType.FLOAT, location.position.x);
+        action.setParameter(7, ActionParameterType.FLOAT, location.position.y);
+        action.setParameter(8, ActionParameterType.FLOAT, location.position.z);
+        action.setParameter(9, ActionParameterType.INT, 0);
+        action.setParameter(10, ActionParameterType.INT, -1);
+        action.setParameter(11, ActionParameterType.INT, -1);
+        this.caller.actionQueue.add(action);
+        return;
+      }
+
+      // Feats/skills: close distance, then use talent once in range.
+      const action = new GameState.ActionFactory.ActionMoveToPoint();
+      action.setParameter(0, ActionParameterType.FLOAT, location.position.x);
+      action.setParameter(1, ActionParameterType.FLOAT, location.position.y);
+      action.setParameter(2, ActionParameterType.FLOAT, location.position.z);
+      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(4, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+      action.setParameter(5, ActionParameterType.INT, 1);
+      action.setParameter(6, ActionParameterType.FLOAT, 1.5);
+      action.setParameter(7, ActionParameterType.INT, 0);
+      action.setParameter(8, ActionParameterType.FLOAT, 30.0);
+      this.caller.actionQueue.add(action);
+      (this.caller as ModuleCreature).useTalent(talent, this.caller);
+    }
   },
   311:{
     comment: "311: Get the gold piece value of oItem.\n* Returns 0 if oItem is not a valid item.\n",
@@ -3979,16 +4192,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // Retail ExecuteCommandGetAttackTarget @ 00536800 — returns field66_0x504
+      // with no combat-state gate (docs claim otherwise).
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        if(args[0].combatData.combatState){
-          return args[0].combatData.lastAttackTarget || args[0].combatData.lastAttacker;
-        }else{
-          return undefined;
-        }
-      }else{
-        return undefined;
+        return args[0].combatData.lastAttackTarget;
       }
-      
+      return undefined;
     }
   },
   317:{
@@ -4104,10 +4313,13 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModulePlaceable)){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
-      
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return;
+      }
+
       const action = new GameState.ActionFactory.ActionUseObject();
       action.setParameter(0, ActionParameterType.DWORD, args[0]);
       this.caller.actionQueue.add(action);
@@ -4429,7 +4641,13 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      GameState.MenuManager.MenuUpgradeSelect.open();
+      const oItem = args[0];
+      const forcedItem = BitWise.InstanceOfObject(oItem, ModuleObjectType.ModuleItem)
+        ? (oItem as ModuleItem)
+        : undefined;
+      GameState.MenuManager.MenuUpgradeSelect.open({
+        forcedItem,
+      });
     }
   },
   355:{
@@ -4472,7 +4690,41 @@ NWScriptDefK1.Actions = {
     comment: "360: Causes the action subject to move away from lMoveAwayFrom.\n",
     name: "ActionMoveAwayFromLocation",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [EngineLocation, number, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      if(!args[0]){
+        return;
+      }
+
+      const caller = this.caller as ModuleCreature;
+      const from = args[0].position;
+      const bRun = !!args[1];
+      const range = args[2] || 10.0;
+
+      const dx = caller.position.x - from.x;
+      const dy = caller.position.y - from.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1.0;
+      if(dist >= range){
+        return;
+      }
+
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const action = new GameState.ActionFactory.ActionMoveToPoint();
+      action.setParameter(0, ActionParameterType.FLOAT, from.x + nx * range);
+      action.setParameter(1, ActionParameterType.FLOAT, from.y + ny * range);
+      action.setParameter(2, ActionParameterType.FLOAT, caller.position.z);
+      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      action.setParameter(4, ActionParameterType.DWORD, 0);
+      action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
+      action.setParameter(6, ActionParameterType.FLOAT, 1.0);
+      action.setParameter(7, ActionParameterType.INT, 0);
+      action.setParameter(8, ActionParameterType.FLOAT, 30.0);
+      caller.actionQueue.add(action);
+    }
   },
   361:{
     comment: "361: Get the target that the caller attempted to attack - this should be used in\nconjunction with GetAttackTarget(). This value is set every time an attack is\nmade, and is reset at the end of combat.\n* Returns OBJECT_INVALID if the caller is not a valid creature.\n",
@@ -4539,8 +4791,8 @@ NWScriptDefK1.Actions = {
     name: "DisplayFeedBackText",
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
-    action: function(this: NWScriptInstance, args: [number]){
-      //TODO
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      GameState.FeedbackMessageManager.DisplayFeedBackText(args[0], args[1]);
     }
   },
   367:{
@@ -4622,11 +4874,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [ModuleObject, string]){
-      const entry = new FeedbackMessageEntry();
-      entry.message = args[1];
-      entry.color = FeebackMessageColor.INFO;
-      entry.type = 0;
-      GameState.FeedbackMessageManager.AddEntry(entry);
+      GameState.FeedbackMessageManager.AddMessage(
+        args[1],
+        FeebackMessageColor.INFO,
+        0,
+        { bypassStatusSummary: true },
+      );
     }
   },
   375:{
@@ -4670,11 +4923,25 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, ModuleCreature, number, number]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleStore)){
-        GameState.MenuManager.MenuStore.setStoreObject(args[0] as ModuleStore);
-        GameState.MenuManager.MenuStore.setCustomerObject(args[1]);
-        GameState.MenuManager.MenuStore.setBonusMarkUp(args[2]);
-        GameState.MenuManager.MenuStore.setBonusMarkDown(args[3]);
+      // ExecuteCommandOpenStore @ 00540300 → ShowStoreGui @ 0062e310
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleStore)){
+        return;
+      }
+      const store = args[0] as ModuleStore;
+      const menu = GameState.MenuManager.MenuStore;
+      menu.setStoreObject(store);
+      menu.setCustomerObject(args[1]);
+      menu.setBonusMarkUp(args[2]);
+      menu.setBonusMarkDown(args[3]);
+      // sellMode / Examine visibility set by MenuStore.initializeStoreType (BuySellFlag)
+      menu.open();
+      // Retail also queues SignalEvent OnOpen (0x16) on the store
+      const openResRef = typeof store.onOpenStore === 'string' ? store.onOpenStore : store.onOpenStore?.name;
+      if(openResRef){
+        try{
+          const script = GameState.NWScript.Load(openResRef);
+          script?.run?.(store, 0);
+        }catch(_e){ /* optional */ }
       }
     }
   },
@@ -4682,7 +4949,15 @@ NWScriptDefK1.Actions = {
     comment: "379:\n",
     name: "ActionSurrenderToEnemies",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionSurrenderToEnemies();
+      this.caller.actionQueue.add(action);
+    }
   },
   380:{
     comment: "380: Get the first member of oMemberOfFaction's faction (start to cycle through\noMemberOfFaction's faction).\n* Returns OBJECT_INVALID if oMemberOfFaction's faction is invalid.\n",
@@ -4723,8 +4998,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [EngineLocation, number, number]){
+      // Retail ForceMoveToPoint == JumpToPoint (not a forced walk).
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
-        (this.caller as ModuleCreature).moveToLocation( args[0], !!args[1]);//, args[2] );
+        (this.caller as ModuleCreature).jumpToLocation( args[0] );
       }
     }
   },
@@ -4734,8 +5010,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
+      // Retail ForceMoveToObject == JumpToObject (not a forced walk).
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
-        (this.caller as ModuleCreature).moveToObject( args[0], !!args[1], args[2] );
+        (this.caller as ModuleCreature).jumpToObject( args[0] );
       }
     }
   },
@@ -4771,13 +5048,27 @@ NWScriptDefK1.Actions = {
     comment: "387: Create a Hit Point Change When Dying effect.\n- fHitPointChangePerRound: this can be positive or negative, but not zero.\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if fHitPointChangePerRound is 0.\n",
     name: "EffectHitPointChangeWhenDying",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [number]){
+      if(!args[0]){
+        return undefined;
+      }
+      const effect = new GameState.GameEffectFactory.EffectHitPointChangeWhenDying();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setFloat(0, args[0]);
+      return effect.initialize();
+    }
   },
   388:{
     comment: "388: Spawn a GUI panel for the client that controls oPC.\n- oPC\n- nGUIPanel: GUI_PANEL_*\n* Nothing happens if oPC is not a player character or if an invalid value is\nused for nGUIPanel.\n",
     name: "PopUpGUIPanel",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      // GUI_PANEL_PLAYER_DEATH = 0 (SendServerToPlayerPopUpGUIPanel @ 0056aac0)
+      GameOverManager.PopUpGUIPanel(args[0], args[1] | 0);
+    }
   },
   389:{
     comment: "389: This allows you to add a new class to any creature object\n",
@@ -4885,69 +5176,29 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-
-      if(args[0] == undefined)
-        args[0] = this.caller;
-
-      if(GameState.PartyManager.party.indexOf(args[0] as any) >= 0)
-        return;
-
-      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+      // oVersus (args[0]) is optional combat-target context; the subject is always OBJECT_SELF.
+      // Retail EquipMostDamagingMeleeWeapon @ 00500e50 — used by GN_EquipAppropriateWeapon.
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
 
-      let inventory = (args[0] as ModuleCreature).getInventory();
-      const equipped = args[1] ? (args[0] as ModuleCreature).equipment.LEFTHAND : (args[0] as ModuleCreature).equipment.RIGHTHAND;
-      let weapon: ModuleItem = equipped;
-      if(args[0].isSimpleCreature()){
+      const creature = this.caller as ModuleCreature;
+      if(creature.isSimpleCreature()){
         return;
       }
 
-      for(let i = 0, len = inventory.length; i < len; i++){
-        let item = inventory[i];
-        let baseItem = item.baseItem;
-        if(
-          baseItem.weaponWield == WeaponWield.STUN_BATON || 
-          baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
-          baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
-        ){
-          if(!weapon){
-            weapon = item;
-          }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
-            weapon = item;
-          }
-        }
+      const offHand = !!args[1];
+      const equipped = offHand ? creature.equipment.LEFTHAND : creature.equipment.RIGHTHAND;
+      const weapon = findMostDamagingMelee(creature, offHand);
+      if(!weapon || weapon === equipped){
+        return;
       }
 
-      //If no melee found, equip ranged
-      if(!weapon){
-        for(let i = 0, len = inventory.length; i < len; i++){
-          let item = inventory[i];
-          let baseItem = item.baseItem;
-          if(
-            baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
-            baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
-            baseItem.weaponWield == WeaponWield.BLASTER_HEAVY
-          ){
-            if(!weapon){
-              weapon = item;
-            }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
-              weapon = item;
-            }
-          }
-        }
-      }
-
-      if(weapon == equipped){
-        return false;
-      }
-      
       const action = new GameState.ActionFactory.ActionEquipItem();
       action.setParameter(0, ActionParameterType.DWORD, weapon);
-      action.setParameter(1, ActionParameterType.INT, args[1] ? ModuleCreatureArmorSlot.LEFTHAND : ModuleCreatureArmorSlot.RIGHTHAND);
+      action.setParameter(1, ActionParameterType.INT, offHand ? ModuleCreatureArmorSlot.LEFTHAND : ModuleCreatureArmorSlot.RIGHTHAND);
       action.setParameter(2, ActionParameterType.INT, NW_FALSE);
       this.caller.actionQueue.add(action);
-
     }
   },
   400:{
@@ -4956,59 +5207,20 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-
-      if(args[0] == undefined){
-        args[0] = this.caller;
-      }
-      
-      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        return;
-      }
-      
-      let inventory = (args[0] as ModuleCreature).getInventory();
-      const equipped = (args[0] as ModuleCreature).equipment.RIGHTHAND;
-      let weapon: ModuleItem = equipped;
-
-      if(args[0].isSimpleCreature()){
+      // oVersus (args[0]) is optional combat-target context; the subject is always OBJECT_SELF.
+      // Retail EquipMostDamagingRangedWeapon @ 00501250 — used by GN_EquipAppropriateWeapon.
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
 
-      for(let i = 0, len = inventory.length; i < len; i++){
-        const item = inventory[i];
-        const baseItem = item.baseItem;
-        if(
-          baseItem.weaponWield == WeaponWield.BLASTER_PISTOL || 
-          baseItem.weaponWield == WeaponWield.BLASTER_RIFLE || 
-          baseItem.weaponWield == WeaponWield.BLASTER_HEAVY
-        ){
-          if(!weapon){
-            weapon = item;
-          }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
-            weapon = item;
-          }
-        }
+      const creature = this.caller as ModuleCreature;
+      if(creature.isSimpleCreature()){
+        return;
       }
 
-      //If no ranged found, equip melee
-      if(!weapon){
-        for(let i = 0, len = inventory.length; i < len; i++){
-          const item = inventory[i];
-          const baseItem = item.baseItem;
-          if(
-            baseItem.weaponWield == WeaponWield.STUN_BATON || 
-            baseItem.weaponWield == WeaponWield.ONE_HANDED_SWORD || 
-            baseItem.weaponWield == WeaponWield.TWO_HANDED_SWORD
-          ){
-            if(!weapon){
-              weapon = item;
-            }else if((baseItem.dieToRoll * baseItem.numDice) > (weapon.baseItem.dieToRoll * weapon.baseItem.numDice)){
-              weapon = item;
-            }
-          }
-        }
-      }
-      
-      if(!weapon){
+      const equipped = creature.equipment.RIGHTHAND;
+      const weapon = findMostDamagingRanged(creature);
+      if(!weapon || weapon === equipped){
         return;
       }
 
@@ -5017,14 +5229,19 @@ NWScriptDefK1.Actions = {
       action.setParameter(1, ActionParameterType.INT, ModuleCreatureArmorSlot.RIGHTHAND);
       action.setParameter(2, ActionParameterType.INT, NW_FALSE);
       this.caller.actionQueue.add(action);
-
     }
   },
   401:{
     comment: "401: Get the Armour Class of oItem.\n* Return 0 if the oItem is not a valid item, or if oItem has no armour value.\n",
     name: "GetItemACValue",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        return 0;
+      }
+      return (args[0] as ModuleItem).getACBonus();
+    }
   },
   402:{
     comment: "402:\nEffect that will play an animation and display a visual effect to indicate the\ntarget has resisted a force power.\n",
@@ -5055,31 +5272,82 @@ NWScriptDefK1.Actions = {
     comment: "404: The creature will equip the armour in its possession that has the highest\narmour class.\n",
     name: "ActionEquipMostEffectiveArmor",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+
+      const creature = this.caller as ModuleCreature;
+      if(GameState.PartyManager.party.indexOf(creature) >= 0){
+        return;
+      }
+      if(creature.isSimpleCreature()){
+        return;
+      }
+
+      const inventory = creature.getInventory();
+      const equipped = creature.equipment.ARMOR;
+      let armor: ModuleItem = equipped;
+
+      for(let i = 0, len = inventory.length; i < len; i++){
+        const item = inventory[i];
+        if(!item?.baseItem){ continue; }
+        if(!armor || item.getACBonus() > armor.getACBonus()){
+          armor = item;
+        }
+      }
+
+      if(!armor || armor == equipped){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionEquipItem();
+      action.setParameter(0, ActionParameterType.DWORD, armor);
+      action.setParameter(1, ActionParameterType.INT, ModuleCreatureArmorSlot.ARMOR);
+      action.setParameter(2, ActionParameterType.INT, NW_FALSE);
+      creature.actionQueue.add(action);
+    }
   },
   405:{
     comment: "405: * Returns TRUE if it is currently day.\n",
     name: "GetIsDay",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // Retail ExecuteCommandGetIsDay @ 00539900 — module phase == 1
+      return GameState.module?.timeManager.isDay() ? NW_TRUE : NW_FALSE;
+    }
   },
   406:{
     comment: "406: * Returns TRUE if it is currently night.\n",
     name: "GetIsNight",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // Retail ExecuteCommandGetIsNight @ 00539de0 — module phase == 2
+      return GameState.module?.timeManager.isNight() ? NW_TRUE : NW_FALSE;
+    }
   },
   407:{
     comment: "407: * Returns TRUE if it is currently dawn.\n",
     name: "GetIsDawn",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // Retail ExecuteCommandGetIsDawn @ 005398c0 — module phase == 3
+      return GameState.module?.timeManager.isDawn() ? NW_TRUE : NW_FALSE;
+    }
   },
   408:{
     comment: "408: * Returns TRUE if it is currently dusk.\n",
     name: "GetIsDusk",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // Retail ExecuteCommandGetIsDusk @ 00539bd0 — module phase == 4
+      return GameState.module?.timeManager.isDusk() ? NW_TRUE : NW_FALSE;
+    }
   },
   409:{
     comment: "409: * Returns TRUE if oCreature was spawned from an encounter.\n",
@@ -5087,7 +5355,15 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return 0;
+      // Retail ExecuteCommandGetIsEncounterCreature @ 00539c10 —
+      // TRUE when creature.field407_0xa24 != OBJECT_INVALID
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        const creature = args[0] as ModuleCreature;
+        return creature.encounterObjectId !== ModuleObjectConstant.OBJECT_INVALID
+          ? NW_TRUE
+          : NW_FALSE;
+      }
+      return NW_FALSE;
     }
   },
   410:{
@@ -5109,7 +5385,9 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        if((args[0] as ModuleCreature).getIsPC()) return;
         args[0].faction = GameState.FactionManager.factions.get(args[1]);
+        args[0].factionId = args[1];
         GameState.FactionManager.AddCreatureToFaction(args[0]);
       }
     }
@@ -5656,7 +5934,14 @@ NWScriptDefK1.Actions = {
     comment: "460: Create a Dispel Magic All effect.\n",
     name: "EffectDispelMagicAll",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      const effect = new GameState.GameEffectFactory.EffectDispelMagicAll();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0] || 0);
+      return effect.initialize();
+    }
   },
   461:{
     comment: "461: Cut immediately to placeable camera 'nCameraId' during dialog.  nCameraId must be\nan existing Placeable Camera ID.  Function only works during Dialog.\n",
@@ -5714,13 +5999,25 @@ NWScriptDefK1.Actions = {
     comment: "466: Create a See Invisible effect.\n",
     name: "EffectSeeInvisible",
     type: NWScriptDataType.EFFECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      const effect = new GameState.GameEffectFactory.EffectSeeInvisible();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   467:{
     comment: "467: Create a Time Stop effect.\n",
     name: "EffectTimeStop",
     type: NWScriptDataType.EFFECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      const effect = new GameState.GameEffectFactory.EffectTimeStop();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   468:{
     comment: "468:\nSet the maximum amount of stealth xp available in the area.\n",
@@ -5775,13 +6072,34 @@ NWScriptDefK1.Actions = {
     comment: "472: Create a Spell Level Absorption effect.\n- nMaxSpellLevelAbsorbed: maximum spell level that will be absorbed by the\neffect\n- nTotalSpellLevelsAbsorbed: maximum number of spell levels that will be\nabsorbed by the effect\n- nSpellSchool: SPELL_SCHOOL_*\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if:\nnMaxSpellLevelAbsorbed is not between -1 and 9 inclusive, or nSpellSchool\nis invalid.\n",
     name: "EffectSpellLevelAbsorption",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number, number]){
+      // Create-only: retail DoSpellLevelAbsorption is a no-op
+      const effect = new GameState.GameEffectFactory.EffectSpellLevelAbsorption();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      const maxLevel = args[0];
+      const total = args[1];
+      const school = args[2];
+      effect.setInt(0, (maxLevel >= -1 && maxLevel <= 9) ? maxLevel : -1);
+      effect.setInt(1, total || 0);
+      effect.setInt(2, school || 0);
+      effect.setInt(3, total === 0 ? 1 : 0);
+      return effect.initialize();
+    }
   },
   473:{
     comment: "473: Create a Dispel Magic Best effect.\n",
     name: "EffectDispelMagicBest",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      const effect = new GameState.GameEffectFactory.EffectDispelMagicBest();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, args[0] || 0);
+      return effect.initialize();
+    }
   },
   474:{
     comment: "474:\nReturns the current amount of stealth xp available in the area.\n",
@@ -5789,7 +6107,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.stealthXPMax || 0;
+      return GameState.module?.area?.stealthXP || 0;
     }
   },
   475:{
@@ -5814,24 +6132,11 @@ NWScriptDefK1.Actions = {
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModulePlayer)){
+      if((this.caller as ModuleCreature).getIsPC?.()){
         return;
       }
 
-      const caller = this.caller as ModuleCreature;
-      const creatures = GameState.module.area.creatures;
-      for(let i = 0; i < creatures.length; i++){
-        const creature = creatures[i];
-        if(creature === caller) continue;
-        const dx = creature.position.x - caller.position.x;
-        const dy = creature.position.y - caller.position.y;
-        if(dx * dx + dy * dy > 100) continue; // 10m radius = 100 sq
-        if(creature.isHostile(caller)){
-          creature.clearAllActions();
-          creature.clearAllEffects();
-          GameState.FactionManager.SetFactionReputation(caller, creature, 50);
-        }
-      }
+      (this.caller as ModuleCreature).surrenderToEnemies(false);
     }
   },
   477:{
@@ -5840,7 +6145,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.EFFECT,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectMissChance();
+      // Retail ExecuteCommandEffectMissChance creates CONCEALMENT type
+      let effect = new GameState.GameEffectFactory.EffectConcealment();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
@@ -5874,9 +6180,13 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        (args[0] as ModuleCreature).addXP(GameState.module.area.stealthXP, ExperienceType.STEALTH);
-      }
+      // Retail CSWSArea::AwardStealthXP @ 00508770
+      const area = GameState.module?.area;
+      if(!area || !area.stealthXPEnabled || !area.stealthXP) return;
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)) return;
+      (args[0] as ModuleCreature).addXP(area.stealthXP, ExperienceType.STEALTH);
+      area.stealthXP = 0;
+      area.setStealthXPEnabled(false);
     }
   },
   481:{
@@ -5931,7 +6241,18 @@ NWScriptDefK1.Actions = {
     comment: "485: Create a Modify Attacks effect to add attacks.\n- nAttacks: maximum is 5, even with the effect stacked\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nAttacks > 5.\n",
     name: "EffectModifyAttacks",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      const n = args[0] || 0;
+      if(n >= 6){
+        return undefined;
+      }
+      const effect = new GameState.GameEffectFactory.EffectModifyNumAttacks();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, Math.max(0, n));
+      return effect.initialize();
+    }
   },
   486:{
     comment: "486: Get the last trap detected by oTarget.\n* Return value on error: OBJECT_INVALID\n",
@@ -5943,7 +6264,19 @@ NWScriptDefK1.Actions = {
     comment: "487: Create a Damage Shield effect which does (nDamageAmount + nRandomAmount)\ndamage to any melee attacker on a successful attack of damage type nDamageType.\n- nDamageAmount: an integer value\n- nRandomAmount: DAMAGE_BONUS_*\n- nDamageType: DAMAGE_TYPE_*\n",
     name: "EffectDamageShield",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, number, number]){
+      const effect = new GameState.GameEffectFactory.EffectDamageShield();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      const flat = (args[0] >= 0 && args[0] <= 10000) ? args[0] : 1;
+      const dice = (args[1] >= 1 && args[1] <= 10) ? args[1] : 0;
+      const dtype = (args[2] >= 0 && args[2] <= 0x2000) ? args[2] : 8;
+      effect.setInt(0, flat);
+      effect.setInt(1, dice);
+      effect.setInt(2, dtype);
+      return effect.initialize();
+    }
   },
   488:{
     comment: "488: Get the trap nearest to oTarget.\nNote : 'trap objects' are actually any trigger, placeable or door that is\ntrapped in oTarget's area.\n- oTarget\n- nTrapDetected: if this is TRUE, the trap returned has to have been detected\nby oTarget.\n",
@@ -5976,19 +6309,34 @@ NWScriptDefK1.Actions = {
     comment: "491: Get oTarget's base fortitude saving throw value (this will only work for\ncreatures, doors, and placeables).\n* Returns 0 if oTarget is invalid.\n",
     name: "GetFortitudeSavingThrow",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))
+        return args[0].getFortitudeSave();
+      return 0;
+    }
   },
   492:{
     comment: "492: Get oTarget's base will saving throw value (this will only work for creatures,\ndoors, and placeables).\n* Returns 0 if oTarget is invalid.\n",
     name: "GetWillSavingThrow",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))
+        return args[0].getWillSave();
+      return 0;
+    }
   },
   493:{
     comment: "493: Get oTarget's base reflex saving throw value (this will only work for\ncreatures, doors, and placeables).\n* Returns 0 if oTarget is invalid.\n",
     name: "GetReflexSavingThrow",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))
+        return args[0].getReflexSave();
+      return 0;
+    }
   },
   494:{
     comment: "494: Get oCreature's challenge rating.\n* Returns 0.0 if oCreature is invalid.\n",
@@ -6000,13 +6348,25 @@ NWScriptDefK1.Actions = {
     comment: "495: Returns the found enemy creature on a pathfind.\n",
     name: "GetFoundEnemyCreature",
     type: NWScriptDataType.OBJECT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // Retail ExecuteCommandGetFoundEnemyCreature @ 00546e70 —
+      // path_find_info->field140_0x264 (set by PlotPathAroundCreature).
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        return (args[0] as ModuleCreature).collisionManager?.foundEnemyCreature;
+      }
+      return undefined;
+    }
   },
   496:{
     comment: "496: Get oCreature's movement rate.\n* Returns 0 if oCreature is invalid.\n",
     name: "GetMovementRate",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature))) return 0;
+      return (args[0] as ModuleCreature).getMovementRate();
+    }
   },
   497:{
     comment: "497: GetSubRace of oCreature\nReturns SUBRACE_*\n",
@@ -6068,6 +6428,7 @@ NWScriptDefK1.Actions = {
       action.setParameter(9, ActionParameterType.INT, args[2] || 0); //ProjectilePath
       action.setParameter(10, ActionParameterType.INT, -1);
       action.setParameter(11, ActionParameterType.INT, -1);
+      action.setParameter(12, ActionParameterType.INT, 1); //Fake cast
       this.caller.actionQueue.add(action);
     }
   },
@@ -6075,7 +6436,31 @@ NWScriptDefK1.Actions = {
     comment: "502: The action subject will fake casting a spell at lLocation; the conjure and\ncast animations and visuals will occur, nothing else.\n- nSpell\n- lTarget\n- nProjectilePathType: PROJECTILE_PATH_TYPE_*\n",
     name: "ActionCastFakeSpellAtLocation",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, EngineLocation, number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+      if(!args[1]){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionCastSpell();
+      action.setParameter(0, ActionParameterType.INT, args[0]);
+      action.setParameter(1, ActionParameterType.INT, -1);
+      action.setParameter(2, ActionParameterType.INT, 0);
+      action.setParameter(3, ActionParameterType.INT, 0);
+      action.setParameter(4, ActionParameterType.INT, 0);
+      action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+      action.setParameter(6, ActionParameterType.FLOAT, args[1].position.x);
+      action.setParameter(7, ActionParameterType.FLOAT, args[1].position.y);
+      action.setParameter(8, ActionParameterType.FLOAT, args[1].position.z);
+      action.setParameter(9, ActionParameterType.INT, args[2] || 0);
+      action.setParameter(10, ActionParameterType.INT, -1);
+      action.setParameter(11, ActionParameterType.INT, -1);
+      action.setParameter(12, ActionParameterType.INT, 1); //Fake cast
+      this.caller.actionQueue.add(action);
+    }
   },
   503:{
     comment: "503: CutsceneAttack\nThis function allows the designer to specify exactly what's going to happen in a combat round\nThere are no guarentees made that the animation specified here will be correct - only that it will be played,\nso it is up to the designer to ensure that they have selected the right animation\nIt relies upon constants specified above for the attack result\n",
@@ -6091,10 +6476,26 @@ NWScriptDefK1.Actions = {
     }
   },
   504:{
-    comment: "504: Set the camera mode for oPlayer.\n- oPlayer\n- nCameraMode: CAMERA_MODE_*\n* If oPlayer is not player-controlled or nCameraMode is invalid, nothing\nhappens.\n",
+    comment: "504: Set the camera mode for oPlayer.\n- oPlayer\n- nCameraMode: CAMERA_MODE_* (0 ChaseCam, 1 TOP_DOWN/BG, 2 STIFF/EQ, 3 OnAStick default, 5 FreeLook/Drive, 6 TargetLock, 7 Navigate)\n* If oPlayer is not player-controlled or nCameraMode is invalid, nothing\nhappens.\n",
     name: "SetCameraMode",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      // Retail NWScript: if oPlayer is not PC-controlled or nCameraMode is invalid, nothing happens.
+      // CClientOptions::SetCameraMode @ 0061b6f0 stores the mode byte once validated upstream.
+      const mode = args[1] | 0;
+      const pc = GameState.PartyManager?.party?.[0] as ModuleCreature | undefined;
+      if(!pc || !BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) || args[0] !== pc){
+        return;
+      }
+      if(mode < ClientCameraMode.CHASE || mode > ClientCameraMode.NAVIGATE){
+        return;
+      }
+      GameState.clientCameraMode = mode;
+      pc.driveControlActive = mode === ClientCameraMode.DRIVE;
+      FollowerCamera.lastAppliedCameraMode = -1;
+      FollowerCamera.applyCameraModeStyle(mode);
+    }
   },
   505:{
     comment: "505: SetLockOrientationInDialog\nAllows the locking and unlocking of orientation changes for an object in dialog\n- oObject - Object\n- nValue - TRUE or FALSE\n",
@@ -6273,38 +6674,50 @@ NWScriptDefK1.Actions = {
 
         let action = args[0].actionQueue[0];
         if(action){
+          // ACTION_* script constants (GetAQActionID whitelist)
           switch(action.type){
-            case ActionType.ActionMoveToPoint: return 0;
-            case ActionType.ActionPickUpItem: return 1;
-            case ActionType.ActionDropItem: return 2;
-            case ActionType.ActionPhysicalAttacks: return 3;
-            case ActionType.ActionCastSpell: return 4;
-            case ActionType.ActionItemCastSpell: return 4;
-            case ActionType.ActionOpenDoor: return 5;
-            case ActionType.ActionCloseDoor: return 6;
-            case ActionType.ActionDialogObject: return 7;
-            case ActionType.ActionDisarmMine: return 8;
-            case ActionType.ActionRecoverMine: return 9;
-            case ActionType.ActionFlagMine: return 10;
-            case ActionType.ActionExamineMine: return 11;
-            case ActionType.ActionSetMine: return 12;
-            case ActionType.ActionUnlockObject: return 13;
-            case ActionType.ActionLockObject: return 14;
-            case ActionType.ActionUseObject: return 15;
-            //case ActionType.ActionAnimalEmpathy: return 16;
-            //case ActionType.ActionRest: return 17;
-            //case ActionType.ActionTaunt: return 18;
-            case ActionType.ActionItemCastSpell: return 19;
-            case ActionType.ActionCounterSpell: return 31;
-            case ActionType.ActionHeal: return 33;
-            //case ActionType.ActionPickPocket: return 34;
-            case ActionType.ActionForceFollowObject: return 35;
-            case ActionType.ActionWait: return 36;
-            //case ActionType.ActionSit: return 37;
-            case ActionType.ActionFollowLeader: return 38;
+            case ActionType.ActionMoveToPoint:
+            case ActionType.ActionCheckMoveToObject:
+            case ActionType.ActionCheckMoveAwayFromObject:
+            case ActionType.ActionCheckInterAreaPathfinding:
+            case ActionType.ActionCheckMoveToPoint:
+            case ActionType.ActionCheckMoveToObjectRadius:
+            case ActionType.ActionCheckMoveToPointRadius:
+            case ActionType.ActionCheckMoveAwayFromLocation:
+            case ActionType.ActionCheckForceFollowObject:
+            case ActionType.ActionCheckMoveToFollowRadius:
+              return 0;                                           // ACTION_MOVETOPOINT
+            case ActionType.ActionPickUpItem: return 1;            // ACTION_PICKUPITEM
+            case ActionType.ActionDropItem: return 2;              // ACTION_DROPITEM
+            case ActionType.ActionPhysicalAttacks:
+            case ActionType.ActionCombat: return 3;                // ACTION_ATTACKOBJECT
+            case ActionType.ActionCastSpell: return 4;             // ACTION_CASTSPELL
+            case ActionType.ActionOpenDoor: return 5;              // ACTION_OPENDOOR
+            case ActionType.ActionCloseDoor: return 6;             // ACTION_CLOSEDOOR
+            case ActionType.ActionDialogObject: return 7;          // ACTION_DIALOGOBJECT
+            case ActionType.ActionDisarmMine: return 8;            // ACTION_DISABLETRAP
+            case ActionType.ActionRecoverMine: return 9;           // ACTION_RECOVERTRAP
+            case ActionType.ActionFlagMine: return 10;             // ACTION_FLAGTRAP
+            case ActionType.ActionExamineMine: return 11;          // ACTION_EXAMINETRAP
+            case ActionType.ActionSetMine: return 12;              // ACTION_SETTRAP
+            case ActionType.ActionUnlockObject: return 13;         // ACTION_OPENLOCK
+            case ActionType.ActionLockObject: return 14;           // ACTION_LOCK
+            case ActionType.ActionUseObject: return 15;            // ACTION_USEOBJECT
+            case ActionType.ActionAnimalEmpathy: return 16;        // ACTION_ANIMALEMPATHY
+            case ActionType.ActionRest: return 17;                 // ACTION_REST
+            case ActionType.ActionTaunt: return 18;                // ACTION_TAUNT
+            case ActionType.ActionItemCastSpell: return 19;        // ACTION_ITEMCASTSPELL
+            case ActionType.ActionCounterSpell: return 31;         // ACTION_COUNTERSPELL
+            case ActionType.ActionHeal: return 33;                 // ACTION_HEAL
+            case ActionType.ActionPickPocket: return 34;           // ACTION_PICKPOCKET
+            case ActionType.ActionForceFollowObject:
+            case ActionType.ActionFollowOwner: return 35;    // ACTION_FOLLOW
+            case ActionType.ActionWait: return 36;                 // ACTION_WAIT
+            case ActionType.ActionFollowLeader:
+            case ActionType.ActionPartyFollowLeader: return 38;    // ACTION_FOLLOWLEADER
           }
         }else{
-          return 65534; //Empty
+          return 65534; // ACTION_QUEUEEMPTY
         }
       }
   
@@ -6337,13 +6750,19 @@ NWScriptDefK1.Actions = {
     comment: "525: Display floaty text above the specified creature.\nThe text will also appear in the chat buffer of each player that receives the\nfloaty text.\n- nStrRefToDisplay: String ref (therefore text is translated)\n- oCreatureToFloatAbove\n- bBroadcastToFaction: If this is TRUE then only creatures in the same faction\nas oCreatureToFloatAbove\nwill see the floaty text, and only if they are within range (30 metres).\n",
     name: "FloatingTextStrRefOnCreature",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number, ModuleObject, number]){
+      GameState.FeedbackMessageManager.FloatingTextStrRefOnCreature(args[0], args[1], !!args[2]);
+    }
   },
   526:{
     comment: "526: Display floaty text above the specified creature.\nThe text will also appear in the chat buffer of each player that receives the\nfloaty text.\n- sStringToDisplay: String\n- oCreatureToFloatAbove\n- bBroadcastToFaction: If this is TRUE then only creatures in the same faction\nas oCreatureToFloatAbove\nwill see the floaty text, and only if they are within range (30 metres).\n",
     name: "FloatingTextStringOnCreature",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [string, ModuleObject, number]){
+      GameState.FeedbackMessageManager.FloatingTextOnCreature(args[0], args[1], !!args[2]);
+    }
   },
   527:{
     comment: "527: - oTrapObject: a placeable, door or trigger\n* Returns TRUE if oTrapObject is disarmable.\n",
@@ -6613,7 +7032,16 @@ NWScriptDefK1.Actions = {
     comment: "554: Spawn in the Death GUI.\nThe default (as defined by BioWare) can be spawned in by PopUpGUIPanel, but\nif you want to turn off the 'Respawn' or 'Wait for Help' buttons, this is the\nfunction to use.\n- oPC\n- bRespawnButtonEnabled: if this is TRUE, the 'Respawn' button will be enabled\non the Death GUI.\n- bWaitForHelpButtonEnabled: if this is TRUE, the 'Wait For Help' button will\nbe enabled on the Death GUI.\n- nHelpStringReference\n- sHelpString\n",
     name: "PopUpDeathGUIPanel",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number, string]){
+      GameOverManager.PopUpDeathGUIPanel(
+        args[0],
+        !!args[1],
+        !!args[2],
+        args[3] | 0,
+        args[4] ?? '',
+      );
+    }
   },
   555:{
     comment: "555: Disable oTrap.\n- oTrap: a placeable, door or trigger.\n",
@@ -6702,7 +7130,11 @@ NWScriptDefK1.Actions = {
     comment: "564: Immediately ends the currently running game and returns to the start screen.\nnShowEndGameGui: Set TRUE to display the death gui.\n",
     name: "EndGame",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      // ExecuteCommandEndGame @ 00535570 → SetEndGamePending(+ SetGameOver if show GUI)
+      GameOverManager.EndGame(!!args[0]);
+    }
   },
   565:{
     comment: "565: Get a variable passed when calling console debug runscript\n",
@@ -7110,19 +7542,48 @@ NWScriptDefK1.Actions = {
     comment: "608: SWMG_GetCameraNearClip\n",
     name: "SWMG_GetCameraNearClip",
     type: NWScriptDataType.FLOAT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // Retail ExecuteCommandSWMG_GetCameraClipping @ 005cbe90 → GetClipDist
+      const mg = GameState.module?.area?.miniGame;
+      return mg ? (mg.nearClip ?? 0) : 0;
+    }
   },
   609:{
     comment: "609: SWMG_GetCameraFarClip\n",
     name: "SWMG_GetCameraFarClip",
     type: NWScriptDataType.FLOAT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      const mg = GameState.module?.area?.miniGame;
+      return mg ? (mg.farClip ?? 0) : 0;
+    }
   },
   610:{
     comment: "610: SWMG_SetCameraClip\n",
     name: "SWMG_SetCameraClip",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [number, number]){
+      // Retail SetClipDist @ 00670b50 — swap if near>far, apply to camera
+      const mg = GameState.module?.area?.miniGame;
+      if(!mg) return;
+      let nearClip = args[0];
+      let farClip = args[1];
+      if(nearClip > farClip){
+        const t = nearClip;
+        nearClip = farClip;
+        farClip = t;
+      }
+      mg.nearClip = nearClip;
+      mg.farClip = farClip;
+      const cam = GameState.camera;
+      if(cam){
+        cam.near = nearClip > 0 ? nearClip : cam.near;
+        cam.far = farClip > 0 ? farClip : cam.far;
+        cam.updateProjectionMatrix();
+      }
+    }
   },
   611:{
     comment: "611: SWMG_GetPlayer\n",
@@ -7593,7 +8054,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      console.log('BarkString', args[1]);
+      const tlk = GameState.TLKManager.GetStringById(args[1]);
+      const text = tlk?.Value || '';
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject) && text){
+        args[0].speakString(text, TalkVolume.TALK);
+      }
       GameState.MenuManager.InGameBark.barkFromStringRef(args[1]);
     }
   },
@@ -7628,18 +8093,24 @@ NWScriptDefK1.Actions = {
     comment: "675: EffectForceDrain\nThis command will reduce the force points of a creature.\n",
     name: "EffectForceDrain",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.INTEGER]
-  },
-  676:{
-    comment: "676: EffectTemporaryForcePoints\n\n",
-    name: "EffectPsychicStatic",
-    type: NWScriptDataType.EFFECT,
-    args: [],
+    args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      let effect = new GameState.GameEffectFactory.EffectTemporaryForce();
+      let effect = new GameState.GameEffectFactory.EffectForceDrain();
       effect.setCreator(this.caller);
       effect.setSpellId(this.getSpellId());
       effect.setInt(0, args[0]);
+      return effect.initialize();
+    }
+  },
+  676:{
+    comment: "676: EffectPsychicStatic — blocks Force powers (silence field)\n",
+    name: "EffectPsychicStatic",
+    type: NWScriptDataType.EFFECT,
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      let effect = new GameState.GameEffectFactory.EffectPsychicStatic();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
       return effect.initialize();
     }
   },
@@ -7867,7 +8338,16 @@ NWScriptDefK1.Actions = {
     comment: "700. ActionBarkString\nthis will cause a creature to bark the strRef from the talk table.\n",
     name: "ActionBarkString",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionBarkString();
+      action.setParameter(0, ActionParameterType.INT, args[0]);
+      this.caller.actionQueue.add(action);
+    }
   },
   701:{
     comment: "701. GetIsConversationActive\nChecks to see if any conversations are currently taking place\n",
@@ -7882,7 +8362,18 @@ NWScriptDefK1.Actions = {
     comment: "702. EffectLightsaberThrow\nThis function throws a lightsaber at a target\nIf multiple targets are specified, then the lightsaber travels to them\nsequentially, returning to the first object specified\nThis effect is applied to an object, so an effector is not needed\n",
     name: "EffectLightsaberThrow",
     type: NWScriptDataType.EFFECT,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject, ModuleObject, number]){
+      let effect = new GameState.GameEffectFactory.EffectLightSaberThrow();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      if(args[0]) effect.setObject(0, args[0]);
+      if(args[1]) effect.setObject(1, args[1]);
+      if(args[2]) effect.setObject(2, args[2]);
+      // Retail create pops this int but does not SetInteger; we store for spell-speed select
+      effect.setInt(0, args[3] || 0);
+      return effect.initialize();
+    }
   },
   703:{
     comment: "703.\ncreates the effect of a whirl wind.\n",
@@ -8071,7 +8562,6 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
       console.log('SetGlobalFadeOut', args[1], args[2], args[3], args[4]);
-      GameState.FadeOverlayManager.holdForScript = false;
       GameState.FadeOverlayManager.FadeOut(args[1], args[2], args[3], args[4], args[0]);
     }
   },
@@ -8263,9 +8753,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      //TODO move all creatures from current faction to target faction
-      //TODO clear all actions 
-      //TODO clear combat
+      // ExecuteCommandChangeByFaction @ 00546340 (SurrenderByFaction branch)
+      changeFactionByFaction(this.caller, args[0] | 0, args[1] | 0, true);
     }
   },
   737:{
@@ -8274,7 +8763,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number, number]){
-      //TODO move all creatures from current faction to target faction
+      // ExecuteCommandChangeByFaction @ 00546340 (ChangeFactionByFaction branch)
+      changeFactionByFaction(this.caller, args[0] | 0, args[1] | 0, false);
     }
   },
   738:{
@@ -8444,7 +8934,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.SOLOMODE = !!args[0];
+      // Retail SetSoloMode does not re-run k_sup_solo (TogglePartyFollow does)
+      GameState.PartyManager.setSoloMode(!!args[0], { runScript: false });
     }
   },
   754:{
@@ -8542,31 +9033,21 @@ NWScriptDefK1.Actions = {
       if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return;
       }
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModulePlayer)){
+      if((this.caller as ModuleCreature).getIsPC?.()){
         return;
       }
 
-      const caller = this.caller as ModuleCreature;
-      const creatures = GameState.module.area.creatures;
-      for(let i = 0; i < creatures.length; i++){
-        const creature = creatures[i];
-        if(creature === caller) continue;
-        const dx = creature.position.x - caller.position.x;
-        const dy = creature.position.y - caller.position.y;
-        if(dx * dx + dy * dy > 100) continue; // 10m radius = 100 sq
-        if(creature.isHostile(caller)){
-          creature.clearAllActions();
-          // Unlike SurrenderToEnemies, do NOT clear effects
-          GameState.FactionManager.SetFactionReputation(caller, creature, 50);
-        }
-      }
+      (this.caller as ModuleCreature).surrenderToEnemies(true);
     }
   },
   763:{
     comment: "763. SuppressStatusSummaryEntry\nThis will prevent the next n entries that should have shown up in the status summary\nfrom being added\nThis will not add on to any existing summary suppressions, but rather replace it.  So\nto clear the supression system pass 0 as the entry value\n",
     name: "SuppressStatusSummaryEntry",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.FeedbackMessageManager.SuppressStatusSummaryEntry(args[0]);
+    }
   },
   764:{
     comment: "764. GetCheatCode\nReturns true if cheat code has been enabled\n",
@@ -8623,7 +9104,7 @@ NWScriptDefK1.Actions = {
         return;
       }
       if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
-        npc.moduleObject = args[1];
+        npc.moduleObject = args[1] as ModuleCreature;
       }
     }
   },

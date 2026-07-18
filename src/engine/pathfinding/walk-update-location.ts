@@ -1,0 +1,140 @@
+import * as THREE from "three";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import {
+  DriveUpdateResult,
+  driveUpdateLocation,
+} from "@/engine/pathfinding/drive-update-location";
+import {
+  pathApproachScale,
+  walkSpeedFactorRamp,
+  walkTrapezoidStep,
+  WALK_BACK_DOT,
+} from "@/engine/pathfinding/locomotion";
+import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
+import { bumpFriends } from "@/engine/pathfinding/bump-friends";
+import { GameState } from "@/GameState";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+
+/**
+ * Retail CSWSCreature::WalkUpdateLocation @ 0051bb10.
+ *
+ * SQRT approach + persistent speed-factor ramp (field37) + trapezoidal step,
+ * then DriveUpdateLocation walkable clip / door-cross / NoCreaturesOnLine.
+ *
+ * @file walk-update-location.ts
+ */
+
+export { DriveUpdateResult as WalkUpdateResult };
+
+const _dest = new THREE.Vector3();
+const _probe = new THREE.Vector3();
+
+export interface WalkUpdateOptions {
+  /** Remaining path length in world units (ComputeTotalWalkDistance). */
+  remainingDistance?: number;
+  /** Allow walk-back facing when short reverse path. */
+  allowWalkBack?: boolean;
+  /** Extra locomotion scale (FollowLeader bands). */
+  followScale?: number;
+}
+
+/**
+ * Advance one frame toward the next path point with retail accel/trapezoid.
+ */
+export function walkUpdateLocation(
+  creature: ModuleCreature,
+  dest: THREE.Vector3,
+  running: boolean,
+  delta: number,
+  options: WalkUpdateOptions = {}
+): DriveUpdateResult {
+  if(!creature?.area || !dest) return DriveUpdateResult.BLOCKED;
+
+  const walk = creature.getWalkSpeed?.() || 1.7;
+  const run = creature.getRunSpeed?.() || 5.4;
+  const base = running ? run : walk;
+  const remaining =
+    typeof options.remainingDistance === 'number'
+      ? options.remainingDistance
+      : Math.hypot(dest.x - creature.position.x, dest.y - creature.position.y);
+
+  const prev =
+    typeof creature.walkSpeedFactor === 'number' && creature.walkSpeedFactor > 0
+      ? creature.walkSpeedFactor
+      : 0;
+
+  const approach = pathApproachScale(remaining, base, delta);
+  const factor = walkSpeedFactorRamp(prev, approach, delta);
+  const step = walkTrapezoidStep(prev, factor, base, delta);
+  creature.walkSpeedFactor = factor;
+
+  // Scale so driveUpdateLocation's speed*delta ≈ trapezoid step
+  const nominal = Math.max(1e-6, base * Math.max(0, delta));
+  const trapezoidScale = step / nominal;
+  const follow = options.followScale && options.followScale > 0 ? options.followScale : 1;
+  const savedScale = creature.locomotionScale;
+  creature.locomotionScale = Math.max(0.1, trapezoidScale * follow);
+
+  // Walk-back: keep facing, move toward goal (retail WalkUpdateLocationDistance)
+  if(options.allowWalkBack && !running){
+    const dx = dest.x - creature.position.x;
+    const dy = dest.y - creature.position.y;
+    const lenSq = dx * dx + dy * dy;
+    if(lenSq > 1e-8 && lenSq < 4.0){
+      const len = Math.sqrt(lenSq);
+      const gx = dx / len;
+      const gy = dy / len;
+      const fx = Math.cos(creature.rotation.z + Math.PI / 2);
+      const fy = Math.sin(creature.rotation.z + Math.PI / 2);
+      if(fx * gx + fy * gy < WALK_BACK_DOT){
+        creature.moveDirOverride = { x: gx, y: gy };
+      }
+    }
+  }
+
+  // Retail WalkUpdateLocationTestDistance: test the actual frame step, then
+  // BumpFriends before the final NoCreaturesOnLine in DriveUpdateLocation.
+  const toX = dest.x - creature.position.x;
+  const toY = dest.y - creature.position.y;
+  const toLen = Math.hypot(toX, toY);
+  if(toLen > 1e-8){
+    const probeLen = Math.min(toLen, step * follow);
+    _probe.set(
+      creature.position.x + (toX / toLen) * probeLen,
+      creature.position.y + (toY / toLen) * probeLen,
+      creature.position.z
+    );
+    const creatures = noCreaturesOnLine(
+      creature.area,
+      creature.position,
+      _probe,
+      { owner: creature, allowPartyCreatures: false }
+    );
+    if(!creatures.clear && creatures.blockingCreatureId != null){
+      const blocker =
+        creature.area.creatures?.find((c) => c.id === creatures.blockingCreatureId) ??
+        GameState.PartyManager?.party?.find((c) => c.id === creatures.blockingCreatureId);
+      if(BitWise.InstanceOfObject(blocker, ModuleObjectType.ModuleCreature)){
+        bumpFriends(creature, blocker as ModuleCreature, _probe, creature.position);
+      }
+    }
+  }
+
+  _dest.copy(dest);
+  const result = driveUpdateLocation(creature, _dest, running, delta);
+
+  creature.locomotionScale = savedScale;
+  if(result === DriveUpdateResult.BLOCKED){
+    creature.blockingTimer = (creature.blockingTimer || 0) + 1;
+    creature.collisionTimer += Math.max(0, delta);
+  }else{
+    creature.blockingTimer = Math.max(0, (creature.blockingTimer || 0) - 1);
+  }
+  return result;
+}
+
+/** Reset persistent WalkUpdate field37 when pathing ends. */
+export function resetWalkSpeedFactor(creature: ModuleCreature): void {
+  if(creature) creature.walkSpeedFactor = 0;
+}

@@ -1,14 +1,15 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { BitWise } from "@/utility/BitWise";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { rebalanceHasteSlow } from "@/effects/haste-slow";
 
 /**
- * EffectHaste class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ * EffectHaste — retail outer type 0x01; net-balance via OnApplyHasteOrSlow @ 004e2a90.
+ * Does not grant extra attacks per round (retail CalculateOnHandAttacks ignores haste).
+ *
  * @file EffectHaste.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectHaste extends GameEffect {
   constructor(){
@@ -19,9 +20,16 @@ export class EffectHaste extends GameEffect {
   onApply(){
     if(this.applied)
       return;
-
     super.onApply();
+    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+      rebalanceHasteSlow(this.object as ModuleCreature, this);
+    }
   }
 
+  onRemove(){
+    super.onRemove();
+    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+      rebalanceHasteSlow(this.object as ModuleCreature, this);
+    }
+  }
 }
-

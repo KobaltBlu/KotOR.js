@@ -22,7 +22,8 @@ export class FadeOverlayManager {
   static wait = 0;
   static state: FadeOverlayState = FadeOverlayState.NONE;
 
-  static holdForScript: boolean;
+  /** K2 SetFadeUntilScript: fade-in blocked until SetGlobalFadeIn clears this. */
+  static holdForScript: boolean = false;
   /* Fade Geometry */
 
   /** renderOrder so video player (9999991+) can always draw on top of the fade */
@@ -46,7 +47,14 @@ export class FadeOverlayManager {
     FadeOverlayManager.material.opacity = duration === 0 ? 1 : 0;
   }
 
+  /**
+   * Start a fade-in. No-op while holdForScript is set (retail SetFadeUntilScript).
+   * Callers that must lift the hold (SetGlobalFadeIn) clear holdForScript first.
+   */
   static FadeIn(duration = 0, r = 0, g = 0, b = 0, nWait = 0){
+    if(FadeOverlayManager.holdForScript){
+      return;
+    }
     FadeOverlayManager.material.visible = true;
     FadeOverlayManager.material.color.setRGB(r, g, b);
     FadeOverlayManager.duration = duration;
@@ -58,6 +66,9 @@ export class FadeOverlayManager {
   }
 
   static FadeInFromCutscene(){
+    if(FadeOverlayManager.holdForScript){
+      return;
+    }
     if(FadeOverlayManager.state == FadeOverlayState.FADED_OUT || FadeOverlayManager.state == FadeOverlayState.FADING_OUT){
       FadeOverlayManager.FadeIn(1, 0, 0, 0);
     }
@@ -86,21 +97,18 @@ export class FadeOverlayManager {
       FadeOverlayManager.elapsed = FadeOverlayManager.duration;
     }
 
-    // Calculate progress (0 to 1)
+    // Linear progress (retail CSWGuiFade — no easing)
     const progress = FadeOverlayManager.duration > 0 ? 
       Math.min(FadeOverlayManager.elapsed / FadeOverlayManager.duration, 1) : 1;
-
-    // Apply easing function for smoother transitions
-    const easedProgress = FadeOverlayManager.easeInOutQuad(progress);
 
     // Calculate target opacity based on state
     let targetOpacity: number;
     switch(FadeOverlayManager.state){
       case FadeOverlayState.FADING_IN:
-        targetOpacity = 1 - easedProgress; // Fade from 1 to 0
+        targetOpacity = 1 - progress; // Fade from 1 to 0
         break;
       case FadeOverlayState.FADING_OUT:
-        targetOpacity = easedProgress; // Fade from 0 to 1
+        targetOpacity = progress; // Fade from 0 to 1
         break;
       default:
         return;
@@ -122,15 +130,6 @@ export class FadeOverlayManager {
           break;
       }
     }
-  }
-
-  /**
-   * Easing function for smooth transitions
-   * @param t Progress value (0 to 1)
-   * @returns Eased progress value
-   */
-  private static easeInOutQuad(t: number): number {
-    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
   }
 
 }

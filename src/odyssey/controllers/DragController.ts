@@ -23,13 +23,19 @@ export class DragController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.drag = data.value;
+      const em = manager.modelNode.emitter;
+      em.drag = data.value;
+      em.material.uniforms.drag.value = em.drag;
+      em.material.uniformsNeedUpdate = true;
     }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
-      manager.modelNode.emitter.drag = OdysseyController.lerp1(last, next, fl);
+      const em = manager.modelNode.emitter;
+      em.drag = OdysseyController.lerp1(last, next, fl);
+      em.material.uniforms.drag.value = em.drag;
+      em.material.uniformsNeedUpdate = true;
     }
   }
 

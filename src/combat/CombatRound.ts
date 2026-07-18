@@ -13,6 +13,7 @@ import { AttackResult } from "@/enums/combat/AttackResult";
 import { LightsaberForm } from "@/enums/combat/LightsaberForm";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { ActionType } from "@/enums/actions/ActionType";
+import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { DamageType } from "@/enums/combat/DamageType";
 import { DiceType } from "@/enums/combat/DiceType";
 import { WeaponType } from "@/enums/combat/WeaponType";
@@ -21,10 +22,26 @@ import { TextSprite3D } from "@/engine/TextSprite3D";
 import { BitWise } from "@/utility/BitWise";
 import { CombatAttackData } from "@/combat/CombatAttackData";
 import type { CombatRoundAction } from "@/combat/CombatRoundAction";
+import { CombatRoundAction as CombatRoundActionClass } from "@/combat/CombatRoundAction";
+import { createNewAttackActions } from "@/combat/create-new-attack-actions";
+import {
+  getProjectileMissLocation,
+  getProjectileTravelDelayMs,
+  getWeaponDischargeHand,
+  getWeaponDischargeInfo,
+  pickAttackShotIndices,
+  type PendingDischargeVisual,
+} from "@/combat/weapon-discharge";
+import { signalRangedImpactVfx } from "@/combat/ranged-impact-vfx";
+import { getProjectileImpactPosition, spawnCombatProjectile } from "@/combat/combat-projectile";
 import { GameState } from "@/GameState";
-import { FeedbackMessageEntry } from "@/engine/FeedbackMessageEntry";
-import { FeebackMessageColor } from "@/enums/engine/FeedbackMessageColor";
+import { getAttackEffectBonus } from "@/effects/effect-bonuses";
+import { FeedbackOption } from "@/enums/engine/FeedbackOption";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import type { TalentFeat } from "@/talents";
+import { formatAttackSummaryFeedback, AttackSummaryStrRef } from "@/combat/attack-summary-feedback";
 import * as THREE from 'three';
 
 const SPELL_FORCE_DEFLECTION = 162;
@@ -59,9 +76,11 @@ export class CombatRound {
   weaponSucks: boolean = false;
   dodgeTarget: ModuleObject;
   newAttackTarget: ModuleObject; //the new target to switch to after this combat round has ended
-  engaged: boolean = false; //dueling(?)
-  master: boolean = false; //is this combatround group owned by this creature
-  masterID: ModuleObject; //the creature that owns this combat group
+  engaged: boolean = false; // ResolveEngagedState / StartCombatRound
+  master: boolean = false; // ResolveMasterState — drives duel pair
+  masterID: ModuleObject; // creature that owns this duel group
+  /** Retail field51_0x9c4 — duel slave when this round is master. */
+  duelPartner: ModuleObject;
 
   roundPaused: boolean = false;
   roundPausedBy: ModuleObject;
@@ -74,9 +93,16 @@ export class CombatRound {
 
   currentAttack: number = 0;
   parryIndex: number = 0;
-  numAOOs: number = 1; //Attacks of Opportunity - unused (?)
-  numCleaves: number = 1; //Cleave Attacks - unused (?)
+  numAOOs: number = 1; //Attacks of Opportunity - unused (retail AOO stub)
+  numCleaves: number = 1; //Cleave Attacks - unused (retail AOO stub)
   onHandAttacks: number = 0;
+  offHandAttacks: number = 0;
+  /**
+   * Discharge-only visual bolts (shots without AttackList rolls).
+   * Heavy / rifle weapondischarge rows fire Shots > attack count.
+   */
+  pendingDischargeVisuals: PendingDischargeVisual[] = [];
+  /** @deprecated Prefer onHandAttacks (CalculateOnHandAttacks). Kept for save compat. */
   additionalAttacks: number = 0;
   effectAttacks: number = 0;
   parryActions: number = 0;
@@ -87,6 +113,9 @@ export class CombatRound {
   specialAttackList: any[] = []; // (?)
   scheduledActionList: CombatRoundAction[] = [];
   action: CombatRoundAction;
+
+  /** Last position while PhysicalAttacks held on blocked LOS (retail field70–72). */
+  losStuckPosition: THREE.Vector3 | undefined;
 
   constructor(owner: ModuleObject){
     this.owner = owner;
@@ -106,6 +135,7 @@ export class CombatRound {
     this.engaged = false;
     this.master = false;
     this.masterID = undefined;
+    this.duelPartner = undefined;
     this.roundPaused = false;
     this.roundPausedBy = undefined;
     this.infinitePause = false;
@@ -121,11 +151,13 @@ export class CombatRound {
     this.numAOOs = 1;
     this.numCleaves = 1;
     this.onHandAttacks = 1;
+    this.offHandAttacks = 0;
     this.additionalAttacks = 0;
     this.effectAttacks = 0;
     this.parryActions = 0;
     this.offHandTaken = false;
     this.extraTaken = false;
+    this.pendingDischargeVisuals.length = 0;
     this.attackList = new Array(5);
     for(let i = 0; i < 5; i++){
       this.attackList[i] = new CombatAttackData();
@@ -133,80 +165,181 @@ export class CombatRound {
   }
 
   /**
-   * Begin the combat round
+   * Retail CSWSCombatRound::StartCombatRound @ 004d5f70.
+   * @param target - Attack target (also dodge_target / lock orientation)
+   * @param engaged - ResolveEngagedState result
+   * @param master - ResolveMasterState result
+   * @param featId - combat feat id for CalculateOnHandAttacks
    */
-  beginCombatRound(){
-    console.log('beginCombatRound', this.owner.tag);
+  startCombatRound(
+    target: ModuleObject | undefined,
+    engaged: boolean = false,
+    master: boolean = false,
+    featId: number = 0
+  ){
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
 
     const owner: ModuleCreature = this.owner as any;
 
-    this.roundStarted = true;
-    this.roundLength = CombatRound.ROUND_LENGTH;
+    this.engaged = !!engaged;
+    this.master = !!master;
 
-    this.onHandAttacks = owner.equipment.RIGHTHAND ? 1 : 0;
-    this.additionalAttacks = 0;
+    // Retail: engaged slave re-enters via EndCombatRound mid-start
+    if(this.engaged && !this.master){
+      const savedAction = this.action;
+      this.endCombatRound({ skipCreateNewAttackActions: true });
+      this.action = savedAction;
+    }
+
+    if(!this.master){
+      this.masterID = target;
+    }else{
+      this.masterID = owner;
+      if(this.engaged && target){
+        this.duelPartner = target;
+        const partnerRound = target.combatRound;
+        if(partnerRound){
+          partnerRound.masterID = this.masterID;
+          partnerRound.duelPartner = this.duelPartner;
+          partnerRound.timer = 0;
+        }
+      }
+    }
+
+    this.roundStarted = true;
+    this.timer = 0;
+    this.roundPaused = false;
+    this.pauseTimer = 0;
+    this.roundPausedBy = undefined;
+    this.spellCastRound = false;
+    this.roundLength = CombatRound.ROUND_LENGTH;
     this.offHandTaken = false;
     this.extraTaken = false;
-
-    this.spellCastRound = false;
     this.deflectArrow = true;
+    this.weaponSucks = false;
+    this.dodgeTarget = target;
+    this.pendingDischargeVisuals.length = 0;
+
+    for(let i = 0; i < 5; i++){
+      this.attackList[i]?.reset?.();
+    }
 
     const combatData = owner.combatData;
-
-    combatData.lastAttackTarget = undefined;
-    combatData.lastSpellTarget = undefined;
-    this.timer = 0;
-
     if(this.action){
-      const target = this.action.target;
-      const targetCombatRound = target.combatRound;
       if(this.action.actionType == CombatActionType.ATTACK){
-        combatData.lastAttackTarget = target;
-        if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
-          if(owner.isDuelingObject(target)){
-            this.engaged = true;
-            if(!this.masterID && !targetCombatRound.masterID){
-              this.masterID = targetCombatRound.masterID = owner;
-              this.master = true;
-              targetCombatRound.master = false;
-            }else if(!this.masterID){
-              this.masterID = targetCombatRound.masterID;
-              this.master = false;
-            }
-          }
-        }else if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
-          this.master = true;
-          targetCombatRound.master = !this.master;
-        }
+        combatData.lastAttackTarget = this.action.target || target;
       }else if(
         this.action.actionType == CombatActionType.CAST_SPELL ||
         this.action.actionType == CombatActionType.ITEM_CAST_SPELL
       ){
         this.spellCastRound = true;
       }else if(this.action.actionType == CombatActionType.ATTACK_USE_FEAT){
-        this.action.feat.impactCaster(owner);
-        this.action.feat.impactTarget(this.action.target);
-        switch(this.action.featId){
-          case CombatFeatType.FLURRY:
-          case CombatFeatType.IMPROVED_FLURRY:
-          case CombatFeatType.MASTER_FLURRY:
-          case CombatFeatType.RAPID_SHOT:
-          case CombatFeatType.IMPROVED_RAPID_SHOT:
-          case CombatFeatType.MASTER_RAPID_SHOT:
-            if(owner.equipment.RIGHTHAND){
-              this.additionalAttacks += 1;
-            }
-          break;
-        }
+        // AC penalties at round start; on-hit stun queued in calculateWeaponAttack
+        this.action.feat?.impactCaster?.(owner);
+        featId = this.action.featId || featId;
       }
+    }else if(target){
+      combatData.lastAttackTarget = target;
     }
+
+    this.calculateOnHandAttacks(featId);
+    this.calculateOffHandAttacks(owner);
   }
 
   /**
-   * End the combat round
+   * @deprecated Prefer startCombatRound(target, engaged, master, featId).
+   * Kept for spell/item cast paths that only need a fresh round shell.
    */
-  endCombatRound(){
+  beginCombatRound(){
+    const target = this.action?.target;
+    let featId = 0;
+    if(this.action?.actionType == CombatActionType.ATTACK_USE_FEAT){
+      featId = this.action.featId || 0;
+    }
+    this.startCombatRound(target, false, true, featId);
+  }
+
+    /**
+   * Retail CalculateOnHandAttacks @ 004d2a10.
+   * Always 1 + effect_attacks; +1 for Flurry / Rapid Shot feat ids.
+   */
+  calculateOnHandAttacks(featId = 0): number {
+    const effectBonus = Math.max(0, Math.min(2, this.effectAttacks | 0));
+    let count = 1 + effectBonus;
+    switch(featId){
+      case CombatFeatType.FLURRY:
+      case CombatFeatType.IMPROVED_FLURRY:
+      case CombatFeatType.MASTER_FLURRY:
+      case CombatFeatType.RAPID_SHOT:
+      case CombatFeatType.IMPROVED_RAPID_SHOT:
+      case CombatFeatType.MASTER_RAPID_SHOT:
+        count += 1;
+      break;
+    }
+    this.onHandAttacks = count;
+    this.additionalAttacks = Math.max(0, count - 1);
+    return this.onHandAttacks;
+  }
+
+  /**
+   * Retail CalculateOffHandAttacks @ 004d2a70.
+   * Dual-wield when MH weapon size ≤ creature size and OH is a real weapon;
+   * else oversized MELEE_TWO_HAND gets one bonus main-hand-style slot.
+   */
+  calculateOffHandAttacks(creature: ModuleCreature): number {
+    this.offHandAttacks = 0;
+    if(!creature || creature.isSimpleCreature()){
+      return 0;
+    }
+
+    const mainHand = creature.equipment.RIGHTHAND;
+    if(!mainHand){
+      return 0;
+    }
+
+    const creatureSize = this.getCreatureSize(creature);
+    const mhBase = mainHand.getBaseItem();
+    const mhSize = (mhBase?.weaponSize as number) || 0;
+
+    // MH size ≤ creature size: eligible for dual-wield off-hand
+    if(mhSize <= creatureSize){
+      const offHand = creature.equipment.LEFTHAND;
+      if(offHand){
+        if(
+          offHand.getWeaponType() != WeaponType.INVALID &&
+          offHand.getWeaponWield() != WeaponWield.INVALID
+        ){
+          this.offHandAttacks = 1;
+          return 1;
+        }
+      }
+      return 0;
+    }
+
+    // MH larger than creature: 2H melee gets a bonus attack slot
+    if(mainHand.getWeaponWield() == WeaponWield.TWO_HANDED_SWORD){
+      this.offHandAttacks = 1;
+      return 1;
+    }
+
+    return 0;
+  }
+
+  /** Appearance sizecategory (defaults to MEDIUM=3). */
+  getCreatureSize(creature: ModuleCreature): number {
+    return creature.getAppearance()?.sizecategory || 3;
+  }
+
+  /** Total attacks this round (on + off). Caps at AttackList length. */
+  getTotalAttacks(): number {
+    return Math.min(5, (this.onHandAttacks || 0) + (this.offHandAttacks || 0));
+  }
+
+  /**
+   * End the combat round.
+   * Retail EndCombatRound @ 004d4620 — master clears slave engaged link.
+   */
+  endCombatRound(options?: { skipCreateNewAttackActions?: boolean }){
     console.log('endCombatRound', this.owner.tag);
     this.roundStarted = false;
     const combatData = this.owner.combatData;
@@ -238,6 +371,19 @@ export class CombatRound {
       }
     }
 
+    // Master ends → release duel slave (retail field51 clear)
+    if(this.master && this.duelPartner?.combatRound){
+      const slave = this.duelPartner.combatRound;
+      slave.roundPaused = false;
+      slave.roundPausedBy = undefined;
+      slave.infinitePause = false;
+      slave.pauseTimer = 0;
+      slave.engaged = false;
+      slave.masterID = undefined;
+      slave.duelPartner = undefined;
+      slave.master = false;
+    }
+
     this.roundPaused = false;
     this.roundPausedBy = undefined;
     this.pauseTimer = 0;
@@ -253,13 +399,38 @@ export class CombatRound {
     this.deflectArrow = true;
     this.action = undefined;
     this.timer = 0;
+    this.engaged = false;
+    this.master = false;
+    this.masterID = undefined;
+    this.duelPartner = undefined;
     for(let i = 0; i < 5; i++){
       this.attackList[i].reset();
     }
     this.owner.onCombatRoundEnd();
+
+    // Retail Body Fuel @ EndCombatRound 004d4684: temporary FP = max FP
+    if(this.owner.bodyFuel){
+      this.owner.temporaryForce = this.owner.getMaxFP();
+    }
+
+    // Retail EndCombatRound → CreateNewAttackActions for controlled PC @ 004d4620
+    if(
+      !options?.skipCreateNewAttackActions &&
+      BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)
+    ){
+      const creature = this.owner as ModuleCreature;
+      if(
+        GameState.getCurrentPlayer() === creature &&
+        !creature.isDead() &&
+        creature.isHostileCombatEngaged() &&
+        !this.scheduledActionList.length
+      ){
+        createNewAttackActions(creature);
+      }
+    }
   }
 
-  /**
+    /**
    * Reset the combat round
    */
   reset(){
@@ -296,16 +467,57 @@ export class CombatRound {
 
   /**
    * Advance pending damage timers and apply hits that are ready.
+   * At muzzle time (remaining delay ≤ reaxnDelay) spawn bolt + ShotSound.
    */
   processPendingDamage(deltaMs: number = 0){
     for(let i = 0; i < this.currentAttack; i++){
       const attack = this.attackList[i];
       if(!attack || attack.damageApplied || attack.damageApplyDelay < 0) continue;
-      attack.damageApplyDelay -= deltaMs;
+
+      const after = attack.damageApplyDelay - deltaMs;
+      if(
+        attack.rangedAttack &&
+        !attack.projectileSpawned &&
+        after <= (attack.reaxnDelay || 0)
+      ){
+        spawnCombatProjectile(this.owner as ModuleCreature, attack);
+        attack.projectileSpawned = true;
+      }
+
+      attack.damageApplyDelay = after;
       if(attack.damageApplyDelay <= 0){
         this.signalAttackResult(attack);
       }
     }
+
+    this.processPendingDischargeVisuals(deltaMs);
+  }
+
+  /**
+   * Spawn discharge-only bolts (Shots without AttackList rolls).
+   */
+  processPendingDischargeVisuals(deltaMs: number = 0){
+    if(!this.pendingDischargeVisuals.length) return;
+    for(let i = this.pendingDischargeVisuals.length - 1; i >= 0; i--){
+      const shot = this.pendingDischargeVisuals[i];
+      shot.muzzleRemainingMs -= deltaMs;
+      if(shot.muzzleRemainingMs > 0) continue;
+      this.spawnDischargeVisualProjectile(shot);
+      this.pendingDischargeVisuals.splice(i, 1);
+    }
+  }
+
+  spawnDischargeVisualProjectile(shot: PendingDischargeVisual){
+    const fake = new CombatAttackData();
+    fake.rangedAttack = true;
+    fake.attackWeapon = shot.attackWeapon as any;
+    fake.weaponAttackType = shot.weaponAttackType;
+    fake.reaxnDelay = shot.travelMs;
+    fake.rangedTargetX = shot.rangedTargetX;
+    fake.rangedTargetY = shot.rangedTargetY;
+    fake.rangedTargetZ = shot.rangedTargetZ;
+    fake.reactObject = shot.reactObject;
+    spawnCombatProjectile(this.owner as ModuleCreature, fake);
   }
 
   /**
@@ -315,7 +527,15 @@ export class CombatRound {
     for(let i = 0; i < this.currentAttack; i++){
       const attack = this.attackList[i];
       if(!attack || attack.damageApplied || attack.damageApplyDelay < 0) continue;
+      if(attack.rangedAttack && !attack.projectileSpawned){
+        spawnCombatProjectile(this.owner as ModuleCreature, attack);
+        attack.projectileSpawned = true;
+      }
       this.signalAttackResult(attack);
+    }
+
+    while(this.pendingDischargeVisuals.length){
+      this.spawnDischargeVisualProjectile(this.pendingDischargeVisuals.pop()!);
     }
   }
 
@@ -326,24 +546,43 @@ export class CombatRound {
     if(!attack || attack.damageApplied) return;
     attack.damageApplyDelay = -1;
 
+    const owner = this.owner as ModuleCreature;
+    if(attack.rangedAttack){
+      signalRangedImpactVfx(attack, owner);
+    }
+
+    const showFloaty = GameState.FeedbackMessageManager.GetFeedbackTypeEnabled(FeedbackOption.FloatingNumbers);
+
+    const tlkFloaty = (strRef: number) =>
+      GameState.TLKManager.GetStringById(strRef)?.getDisplayText?.() ||
+      GameState.TLKManager.GetStringById(strRef)?.Value ||
+      '';
+
     if(
       attack.attackResult == AttackResult.HIT_SUCCESSFUL ||
       attack.attackResult == AttackResult.CRITICAL_HIT ||
       attack.attackResult == AttackResult.AUTOMATIC_HIT
     ){
-      const owner = this.owner as ModuleCreature;
       attack.applyDamageEffectToCreature(owner, attack.reactObject as ModuleCreature);
-      if(attack.reactObject){
+      if(attack.reactObject && showFloaty){
         TextSprite3D.CreateOnObject(attack.reactObject, attack.getTotalDamage().toString(), TextSprite3DType.HOSTILE, 1500);
       }
     }else if(attack.attackResult == AttackResult.MISS && attack.reactObject){
-      TextSprite3D.CreateOnObject(attack.reactObject, 'miss', TextSprite3DType.NEUTRAL, 1500);
+      if(showFloaty){
+        TextSprite3D.CreateOnObject(attack.reactObject, tlkFloaty(AttackSummaryStrRef.MISS) || 'Miss', TextSprite3DType.NEUTRAL, 1500);
+      }
       attack.damageApplied = true;
     }else if(attack.attackResult == AttackResult.PARRIED && attack.reactObject){
-      TextSprite3D.CreateOnObject(attack.reactObject, 'parry', TextSprite3DType.NEUTRAL, 1500);
+      // Retail attack_result 8 floaty uses Deflected! (0xa5ab)
+      if(showFloaty){
+        TextSprite3D.CreateOnObject(attack.reactObject, tlkFloaty(AttackSummaryStrRef.DEFLECTED) || 'Deflected!', TextSprite3DType.NEUTRAL, 1500);
+      }
       attack.damageApplied = true;
     }else if(attack.attackResult == AttackResult.DEFLECTED && attack.reactObject){
-      TextSprite3D.CreateOnObject(attack.reactObject, 'deflect', TextSprite3DType.NEUTRAL, 1500);
+      // Retail attack_result 9 floaty uses Returned! (0xa5b5)
+      if(showFloaty){
+        TextSprite3D.CreateOnObject(attack.reactObject, tlkFloaty(AttackSummaryStrRef.RETURNED) || 'Returned!', TextSprite3DType.NEUTRAL, 1500);
+      }
       attack.damageApplied = true;
     }else{
       attack.damageApplied = true;
@@ -351,14 +590,116 @@ export class CombatRound {
   }
 
   /**
-   * Pause the round for the given pause owner and pause timer
-   * @param pauseOwner - The pause owner to pause the round for
-   * @param pauseTimer - The pause timer to pause the round for
+   * Retail GetSpellActionPending @ 004d35c0 —
+   * true when a cast is in progress or a CAST_SPELL is still scheduled.
+   * (Retail list check uses action-type byte; KotOR Combat uses CAST_SPELL=9.)
    */
-  pauseRound(pauseOwner: ModuleObject, pauseTimer: number = 0){
+  getSpellActionPending(): boolean {
+    if(this.spellCastRound) return true;
+    for(let i = 0; i < this.scheduledActionList.length; i++){
+      const t = this.scheduledActionList[i]?.actionType;
+      if(t === CombatActionType.CAST_SPELL || t === CombatActionType.ITEM_CAST_SPELL){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Retail SetSpellCastRound @ 004d28b0 —
+   * marks this round as a spell cast and stores the spell id on the creature.
+   */
+  setSpellCastRound(_spellId: number = -1, _metaFlag: number = 0){
+    this.spellCastRound = true;
+  }
+
+  /**
+   * Retail RemoveSpellAction @ 004d3ba0 —
+   * drop pending CAST_SPELL entries from the scheduled list and clear spellCastRound.
+   */
+  removeSpellAction(){
+    this.scheduledActionList = this.scheduledActionList.filter(
+      (a) => a?.actionType !== CombatActionType.CAST_SPELL
+    );
+    this.spellCastRound = false;
+    if(this.action?.actionType === CombatActionType.CAST_SPELL){
+      this.action = undefined;
+    }
+  }
+
+  /**
+   * Retail RemoveSpellActionFromRound @ 004ef450.
+   */
+  removeSpellActionFromRound(){
+    if(this.getSpellActionPending()){
+      this.removeSpellAction();
+    }else{
+      this.spellCastRound = false;
+    }
+  }
+
+  /**
+   * Retail CheckActionLengthAtTime @ 004d2970 —
+   * whether the target's round can absorb a reaction of `actionLengthMs`.
+   */
+  checkActionLengthAtTime(
+    pausedBy: ModuleObject | undefined,
+    actionLengthMs: number,
+    delayMs: number = 0
+  ): boolean {
+    if(
+      this.roundPaused &&
+      this.roundPausedBy &&
+      pausedBy &&
+      this.roundPausedBy !== pausedBy &&
+      (this.timer + delayMs) < (this.pauseTimer + this.timer)
+    ){
+      return false;
+    }
+    if(this.roundStarted){
+      const remaining =
+        ((this.roundLength - this.overlapAmount) - this.timer) - delayMs + 1000;
+      return actionLengthMs <= remaining;
+    }
+    return true;
+  }
+
+  /**
+   * Retail DecrementRoundLength @ 004d3440 (simplified) —
+   * shrink remaining round by attack/reaction animation length.
+   */
+  decrementRoundLength(amountMs: number){
+    if(!this.roundStarted || !(amountMs > 0)) return;
+    const prev = this.roundLength || CombatRound.ROUND_LENGTH;
+    const next = prev - amountMs;
+    if(next < 0){
+      this.roundLength = amountMs;
+      this.overlapAmount = Math.max(0, this.overlapAmount);
+    }else{
+      if(prev > 0){
+        this.timer = Math.floor((this.timer / prev) * next);
+      }
+      this.roundLength = next;
+    }
+  }
+
+  /**
+   * Pause the round for the given pause owner and pause timer.
+   * Retail SetRoundPaused + SetPauseTimer — infinitePause holds slave until master ends.
+   */
+  pauseRound(pauseOwner: ModuleObject, pauseTimer: number = 0, infinitePause: boolean = false){
     this.roundPaused = true;
     this.roundPausedBy = pauseOwner;
-    this.pauseTimer = pauseTimer;
+    this.infinitePause = !!infinitePause;
+    if(this.infinitePause){
+      this.pauseTimer = pauseTimer;
+    }else if(pauseTimer === 0){
+      this.pauseTimer = 0;
+    }else if(this.pauseTimer > 0){
+      this.pauseTimer += pauseTimer;
+    }else{
+      this.pauseTimer = pauseTimer;
+    }
   }
 
   /**
@@ -379,6 +720,95 @@ export class CombatRound {
   addAction(action: CombatRoundAction){
     action.owner = this.owner;
     this.scheduledActionList.push(action);
+  }
+
+  /**
+   * Retail CSWSCombatRound::AddEquipAction @ 004d3c30 —
+   * queue ITEM_EQUIP at list head (deferred while casting / combat busy).
+   */
+  addEquipAction(item: ModuleItem, slot: number, instant: boolean = false){
+    if(!item) return;
+    this.decrementRoundLength(1500);
+    const action = new CombatRoundActionClass(this.owner);
+    action.actionType = CombatActionType.ITEM_EQUIP;
+    action.actionTimer = 0;
+    action.animationTime = 1500;
+    action.item = item;
+    action.inventorySlot = slot | 0;
+    action.equipInstant = !!instant;
+    this.scheduledActionList.unshift(action);
+  }
+
+  /**
+   * Retail CSWSCombatRound::AddUnequipAction @ 004d3ce0.
+   */
+  addUnequipAction(item: ModuleItem, instant: boolean = false){
+    if(!item) return;
+    this.decrementRoundLength(1500);
+    const action = new CombatRoundActionClass(this.owner);
+    action.actionType = CombatActionType.ITEM_UNEQUIP;
+    action.actionTimer = 0;
+    action.animationTime = 1500;
+    action.item = item;
+    action.target = item;
+    action.equipInstant = !!instant;
+    this.scheduledActionList.unshift(action);
+  }
+
+  /**
+   * Retail GetActionPending @ 004d3580 —
+   * head scheduled action's timer has elapsed.
+   */
+  getActionPending(): boolean {
+    const head = this.scheduledActionList[0];
+    if(!head) return false;
+    return (head.actionTimer || 0) <= (this.timer || 0);
+  }
+
+  /**
+   * Retail ProcessPendingCombatActions @ 004f7530 —
+   * promote deferred ITEM_EQUIP / ITEM_UNEQUIP onto the creature action queue
+   * (called after CastSpell fail/complete).
+   */
+  processPendingCombatActions(){
+    if(!this.getActionPending()) return;
+    const owner = this.owner as ModuleCreature;
+    if(!owner?.actionQueue) return;
+
+    for(let i = this.scheduledActionList.length - 1; i >= 0; i--){
+      const ca = this.scheduledActionList[i];
+      if(!ca) continue;
+
+      if(ca.actionType === CombatActionType.ITEM_EQUIP){
+        const item = ca.item || (
+          BitWise.InstanceOfObject(ca.target, ModuleObjectType.ModuleItem)
+            ? ca.target as ModuleItem
+            : undefined
+        );
+        if(item){
+          const equipAction = new GameState.ActionFactory.ActionEquipItem();
+          equipAction.setParameter(0, ActionParameterType.DWORD, item);
+          equipAction.setParameter(1, ActionParameterType.INT, ca.inventorySlot | 0);
+          equipAction.setParameter(2, ActionParameterType.INT, ca.equipInstant ? 1 : 0);
+          owner.actionQueue.addFront(equipAction);
+        }
+        this.scheduledActionList.splice(i, 1);
+      }else if(ca.actionType === CombatActionType.ITEM_UNEQUIP){
+        const item = ca.item || (
+          BitWise.InstanceOfObject(ca.target, ModuleObjectType.ModuleItem)
+            ? ca.target as ModuleItem
+            : undefined
+        );
+        if(item){
+          const unequipAction = new GameState.ActionFactory.ActionUnequipItem();
+          unequipAction.setParameter(0, ActionParameterType.DWORD, item);
+          unequipAction.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+          unequipAction.setParameter(2, ActionParameterType.INT, ca.equipInstant ? 1 : 0);
+          owner.actionQueue.addFront(unequipAction);
+        }
+        this.scheduledActionList.splice(i, 1);
+      }
+    }
   }
 
   /**
@@ -430,65 +860,46 @@ export class CombatRound {
   }
 
   /**
-   * Calculate the attack damage for the given creature and combat action
+   * Retail ResolveAttack @ 005bba80 entry — melee vs ranged by main-hand weapon.
+   * Fills AttackList slots (JS flattens retail sub_attacks into attackList[5]).
    * @param creature - The creature to calculate the attack damage for
    * @param combatAction - The combat action to calculate the attack damage for
    */
   calculateAttackDamage(creature: ModuleCreature, combatAction: CombatRoundAction){
+    this.resolveAttack(creature, combatAction);
+  }
+
+  /**
+   * Retail CSWSCreature::ResolveAttack @ 005bba80
+   */
+  resolveAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
     if(!combatAction || combatAction.resultsCalculated)
       return;
 
-      creature.weaponPowered(true);
+    creature.weaponPowered(true);
 
     combatAction.resultsCalculated = true;
+    // Retail ResolveAttack @ 005bba80 — GetAttackTarget (field66_0x504) = attackee
+    if(combatAction.target){
+      creature.combatData.lastAttackTarget = combatAction.target;
+    }
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
     this.currentAttack = 0;
+    this.offHandTaken = false;
+    this.pendingDischargeVisuals.length = 0;
 
     if(!combatAction.isCutsceneAttack){
       combatAction.attackResult = (hasAssuredHit) ? AttackResult.AUTOMATIC_HIT : AttackResult.MISS;
       combatAction.attackDamage = 0;
-      if(creature && !creature.isSimpleCreature()){
-        /**
-         * Unarmed Strike
-         */
-        if(!creature.equipment.RIGHTHAND && !creature.equipment.LEFTHAND){
-          this.calculateWeaponAttack(creature, undefined, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
-        }
 
-        /**
-         * Main Hand Attack
-         */
-        if(creature.equipment.RIGHTHAND){
-          this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
-        }
-
-        /**
-         * Off Hand Attack
-         */
-        if(creature.equipment.LEFTHAND){
-          this.calculateWeaponAttack(creature, creature.equipment.LEFTHAND, ModuleCreatureArmorSlot.LEFTHAND, combatAction);
-        }
-
-        /**
-         * Additional Attacks
-         */
-        if(this.additionalAttacks > 0){
-          for(let i = 0; i < this.additionalAttacks; i++){
-            if(!creature.equipment.RIGHTHAND){ continue; }
-            this.calculateWeaponAttack(creature, creature.equipment.RIGHTHAND, ModuleCreatureArmorSlot.RIGHTHAND, combatAction);
-          }
-        }
-      }else if(creature && creature.isSimpleCreature()){
-        if(creature.equipment.CLAW1){
-          this.calculateWeaponAttack(creature, creature.equipment.CLAW1, ModuleCreatureArmorSlot.CLAW1, combatAction);
-        }
-
-        if(creature.equipment.CLAW2){
-          this.calculateWeaponAttack(creature, creature.equipment.CLAW2, ModuleCreatureArmorSlot.CLAW2, combatAction);
-        }
-
-        if(creature.equipment.CLAW3){
-          this.calculateWeaponAttack(creature, creature.equipment.CLAW3, ModuleCreatureArmorSlot.CLAW3, combatAction);
+      if(creature && creature.isSimpleCreature()){
+        this.resolveSimpleCreatureAttacks(creature, combatAction);
+      }else if(creature){
+        const mainWeapon = creature.equipment.RIGHTHAND;
+        if(mainWeapon?.isRangedWeapon?.()){
+          this.resolveRangedAttack(creature, combatAction);
+        }else{
+          this.resolveMeleeAttack(creature, combatAction);
         }
       }
     }
@@ -526,11 +937,202 @@ export class CombatRound {
       for(let i = 0; i < this.currentAttack; i++){
         const attack = this.attackList[i];
         if(!attack) continue;
-        // Stagger multi-attacks slightly
+        // Ranged resolveRangedAttack already set discharge + travel delays
+        if(attack.damageApplyDelay >= 0) continue;
+        // Stagger multi-attacks slightly (retail GetWeaponImpactTime per swing)
         attack.damageApplyDelay = damageDelayMs + (i * 200);
       }
     }
+  }
 
+  /**
+   * Retail ResolveMeleeAttack @ 005bb890 — loop GetTotalAttacks, SetOffHandAttack by index.
+   */
+  resolveMeleeAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
+    const maxSlots = this.attackList.length;
+    const onHand = Math.max(0, this.onHandAttacks || 0);
+    const offHand = Math.max(0, this.offHandAttacks || 0);
+    const total = Math.min(maxSlots, onHand + offHand);
+    const mainWeapon = creature.equipment.RIGHTHAND;
+    const offWeapon = creature.equipment.LEFTHAND;
+
+    for(let swing = 0; swing < total && this.currentAttack < maxSlots; swing++){
+      const isOffHand = swing >= onHand;
+      this.offHandTaken = isOffHand;
+
+      let weapon = mainWeapon;
+      let slot = ModuleCreatureArmorSlot.RIGHTHAND;
+      if(isOffHand){
+        if(
+          offWeapon &&
+          offWeapon.getWeaponType() != WeaponType.INVALID &&
+          offWeapon.getWeaponWield() != WeaponWield.INVALID
+        ){
+          weapon = offWeapon;
+          slot = ModuleCreatureArmorSlot.LEFTHAND;
+        }else if(mainWeapon?.getWeaponWield() == WeaponWield.TWO_HANDED_SWORD){
+          weapon = mainWeapon;
+          slot = ModuleCreatureArmorSlot.RIGHTHAND;
+        }else{
+          continue;
+        }
+      }
+
+      this.calculateWeaponAttack(creature, weapon, slot, combatAction);
+    }
+  }
+
+  /**
+   * Retail ResolveRangedAttack @ 005bb590 —
+   * weapondischarge.2da Shots/Hits + random attack-shot assignment + travel delay.
+   * Every discharge shot fires a bolt; only randomly assigned shots get AttackList rolls.
+   */
+  resolveRangedAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
+    const maxSlots = this.attackList.length;
+    const onHand = Math.max(0, this.onHandAttacks || 0);
+    const offHand = Math.max(0, this.offHandAttacks || 0);
+    const totalAttacks = Math.min(maxSlots, onHand + offHand);
+    const mainWeapon = creature.equipment.RIGHTHAND;
+    const offWeapon = creature.equipment.LEFTHAND;
+
+    this.attackGroup = (this.attackGroup + 1) & 0xff;
+    this.pendingDischargeVisuals.length = 0;
+
+    // Preview combat anim name (same formula as calculateRoundAnimations for ranged)
+    const attackKey = creature.getCombatAnimationAttackType() || 'b';
+    const weaponWield = creature.getCombatAnimationWeaponType() || 5;
+    let attackType = 1;
+    if(combatAction.feat){
+      // Feat-specific ranged attack types mirror calculateAttackAnimation
+      const fid = combatAction.feat.id;
+      if(fid === CombatFeatType.RAPID_SHOT || fid === CombatFeatType.IMPROVED_RAPID_SHOT || fid === CombatFeatType.MASTER_RAPID_SHOT){
+        attackType = 2;
+      }else if(fid === CombatFeatType.SNIPER_SHOT || fid === CombatFeatType.IMPROVED_SNIPER_SHOT || fid === CombatFeatType.MASTER_SNIPER_SHOT){
+        attackType = 3;
+      }else if(fid === CombatFeatType.POWER_BLAST || fid === CombatFeatType.IMPROVED_POWER_BLAST || fid === CombatFeatType.MASTER_POWER_BLAST){
+        attackType = 4;
+      }
+    }
+    const animName = `${attackKey}${weaponWield}a${attackType}`;
+    combatAction.animationName = animName;
+
+    const discharge = getWeaponDischargeInfo(creature, animName);
+    const shots = discharge?.shots ?? totalAttacks;
+    const attackShotIndices = pickAttackShotIndices(shots, totalAttacks);
+    const attackShotSet = new Set(attackShotIndices);
+
+    let attackRollIndex = 0;
+    for(let shot = 0; shot < shots; shot++){
+      const dischargeHand = getWeaponDischargeHand(discharge?.switchMask ?? '', shot);
+      const isOffHand = attackShotSet.has(shot)
+        ? (attackRollIndex >= onHand)
+        : (dischargeHand !== 0 && !!offWeapon);
+      const weapon = isOffHand && offWeapon ? offWeapon : mainWeapon;
+      const slot = isOffHand && offWeapon
+        ? ModuleCreatureArmorSlot.LEFTHAND
+        : ModuleCreatureArmorSlot.RIGHTHAND;
+      const muzzleMs = discharge?.shotTimes[shot] ?? (shot * 200);
+      const weaponAttackType = dischargeHand !== 0 ? 2 : (slot === ModuleCreatureArmorSlot.LEFTHAND ? 2 : 1);
+
+      if(!attackShotSet.has(shot)){
+        // Retail: discharge-only → ResolveRangedMiss + sub_attack (no AttackList roll)
+        if(this.pendingDischargeVisuals.length >= 16) continue;
+        const impactPos = getProjectileMissLocation(creature, combatAction.target);
+        const travelMs = getProjectileTravelDelayMs(creature.position, impactPos);
+        this.pendingDischargeVisuals.push({
+          muzzleRemainingMs: muzzleMs,
+          travelMs,
+          weaponAttackType,
+          attackWeapon: weapon,
+          rangedTargetX: impactPos.x,
+          rangedTargetY: impactPos.y,
+          rangedTargetZ: impactPos.z,
+          reactObject: combatAction.target,
+        });
+        continue;
+      }
+
+      if(this.currentAttack >= maxSlots){
+        attackRollIndex++;
+        continue;
+      }
+
+      this.offHandTaken = isOffHand;
+      const slotBefore = this.currentAttack;
+      this.calculateWeaponAttack(creature, weapon, slot, combatAction);
+      const attack = this.attackList[slotBefore];
+      if(!attack){
+        attackRollIndex++;
+        continue;
+      }
+
+      attack.attackGroup = this.attackGroup;
+      attack.rangedAttack = true;
+      attack.weaponAttackType = weaponAttackType;
+
+      const hit =
+        attack.attackResult === AttackResult.HIT_SUCCESSFUL ||
+        attack.attackResult === AttackResult.CRITICAL_HIT ||
+        attack.attackResult === AttackResult.AUTOMATIC_HIT ||
+        attack.attackResult === AttackResult.DEFLECTED ||
+        attack.attackResult === AttackResult.PARRIED;
+
+      let impactPos: THREE.Vector3;
+      if(hit){
+        // ResolveRangedHit — impact node or body z+1.25 (retail CSWCProjectile)
+        impactPos = getProjectileImpactPosition(combatAction.target);
+        attack.rangedTargetX = impactPos.x;
+        attack.rangedTargetY = impactPos.y;
+        attack.rangedTargetZ = impactPos.z;
+      }else{
+        impactPos = getProjectileMissLocation(creature, combatAction.target);
+        attack.rangedTargetX = impactPos.x;
+        attack.rangedTargetY = impactPos.y;
+        attack.rangedTargetZ = impactPos.z;
+      }
+
+      const travelMs = getProjectileTravelDelayMs(creature.position, impactPos);
+      attack.reaxnDelay = travelMs;
+      attack.damageApplyDelay = muzzleMs + travelMs;
+
+      attackRollIndex++;
+    }
+
+    // Fallback if discharge table missing / no shots assigned
+    if(this.currentAttack === 0){
+      for(let swing = 0; swing < totalAttacks && this.currentAttack < maxSlots; swing++){
+        const isOffHand = swing >= onHand;
+        this.offHandTaken = isOffHand;
+        const weapon = isOffHand && offWeapon ? offWeapon : mainWeapon;
+        const slot = isOffHand && offWeapon
+          ? ModuleCreatureArmorSlot.LEFTHAND
+          : ModuleCreatureArmorSlot.RIGHTHAND;
+        this.calculateWeaponAttack(creature, weapon, slot, combatAction);
+      }
+    }
+  }
+
+  resolveSimpleCreatureAttacks(creature: ModuleCreature, combatAction: CombatRoundAction){
+    if(creature.equipment.CLAW1){
+      this.calculateWeaponAttack(creature, creature.equipment.CLAW1, ModuleCreatureArmorSlot.CLAW1, combatAction);
+    }
+    if(creature.equipment.CLAW2){
+      this.calculateWeaponAttack(creature, creature.equipment.CLAW2, ModuleCreatureArmorSlot.CLAW2, combatAction);
+    }
+    if(creature.equipment.CLAW3){
+      this.calculateWeaponAttack(creature, creature.equipment.CLAW3, ModuleCreatureArmorSlot.CLAW3, combatAction);
+    }
+  }
+
+  /**
+   * Retail ResolveMeleeAttack coup_de_grace gate:
+   * target creature debilitated/dying, total level &lt; 5, not party-UI path → Automatic Hit.
+   */
+  shouldCoupDeGrace(target: ModuleCreature): boolean {
+    if(!target) return false;
+    if(GameState.PartyManager?.party?.indexOf(target) >= 0) return false;
+    if(target.getTotalClassLevel() >= 5) return false;
+    return !!(target.isDebilitated?.() || (typeof target.getHP === 'function' && target.getHP() <= 0));
   }
 
   /**
@@ -541,8 +1143,8 @@ export class CombatRound {
   }
 
   /**
-   * Ability modifier for attack rolls. Ranged uses DEX; lightsabers use the
-   * better of STR and DEX; other melee uses STR.
+   * Ability modifier for attack rolls. Ranged uses DEX; melee uses STR unless
+   * TSL Finesse feats allow the better of STR/DEX.
    */
   getAttackAbilityModifier(creature: ModuleCreature, weapon: ModuleItem | undefined): number {
     const strMod = CombatRound.GetMod(creature.getSTR());
@@ -550,8 +1152,14 @@ export class CombatRound {
     if(weapon?.isRangedWeapon()){
       return dexMod;
     }
-    // Lightsaber base items 8/9/10 use the higher of STR/DEX
+    // TSL Finesse: Lightsabers / Melee Weapons — use higher of STR/DEX
     if(weapon && (weapon.baseItemId == 8 || weapon.baseItemId == 9 || weapon.baseItemId == 10)){
+      if(creature.getHasFeat(CombatFeatType.FINESSE_LIGHTSABERS)){
+        return Math.max(strMod, dexMod);
+      }
+      return strMod;
+    }
+    if(creature.getHasFeat(CombatFeatType.FINESSE_MELEE_WEAPONS)){
       return Math.max(strMod, dexMod);
     }
     return strMod;
@@ -612,6 +1220,9 @@ export class CombatRound {
         modifier += 10;
       }
     }
+
+    // EffectAttackIncrease / EffectAttackDecrease
+    modifier += getAttackEffectBonus(creature);
 
     return modifier;
   }
@@ -723,7 +1334,7 @@ export class CombatRound {
   }
 
   /**
-   * Check if the creature is dual-wielding
+   * Check if the creature is dual-wielding (retail CalculateOffHandAttacks dual path).
    */
   isDualWielding(creature: ModuleCreature): boolean {
     const rightHand = creature.equipment.RIGHTHAND;
@@ -731,21 +1342,38 @@ export class CombatRound {
     if(!rightHand || !leftHand) return false;
     if(leftHand.getWeaponType() == WeaponType.INVALID) return false;
     if(leftHand.getWeaponWield() == WeaponWield.INVALID) return false;
-    return rightHand.getWeaponWield() != WeaponWield.STUN_BATON;
+    if(rightHand.getWeaponWield() == WeaponWield.STUN_BATON) return false;
+    const creatureSize = this.getCreatureSize(creature);
+    const mhSize = (rightHand.getBaseItem()?.weaponSize as number) || 0;
+    return mhSize <= creatureSize;
   }
 
   /**
    * Two-weapon fighting to-hit modifier.
+   * TSL Superior Two-Weapon Fighting I/II/III replace Master penalties when present.
    */
   calculateTwoWeaponModifier(creature: ModuleCreature, slot: ModuleCreatureArmorSlot.RIGHTHAND|ModuleCreatureArmorSlot.LEFTHAND): number {
     if(!creature || creature.isSimpleCreature()) return 0;
+    if(!this.isDualWielding(creature)) return 0;
 
     const leftHand = creature.equipment.LEFTHAND;
-    const creatureSize = 3;
+    const creatureSize = this.getCreatureSize(creature);
     const offhandRelativeSize = leftHand
       ? (leftHand.getBaseItem().weaponSize as number) - creatureSize
       : 0;
     const lightOffhand = offhandRelativeSize == -1;
+
+    // TSL Superior Two-Weapon Fighting (requires Master as prereq in rules)
+    if(creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_2_WEAPON_III)){
+      if(slot == ModuleCreatureArmorSlot.RIGHTHAND) return lightOffhand ? 2 : 0;
+      if(slot == ModuleCreatureArmorSlot.LEFTHAND) return -1;
+    }else if(creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_2_WEAPON_II)){
+      if(slot == ModuleCreatureArmorSlot.RIGHTHAND) return lightOffhand ? 2 : 0;
+      if(slot == ModuleCreatureArmorSlot.LEFTHAND) return -2;
+    }else if(creature.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_2_WEAPON_I)){
+      if(slot == ModuleCreatureArmorSlot.RIGHTHAND) return lightOffhand ? 1 : -1;
+      if(slot == ModuleCreatureArmorSlot.LEFTHAND) return -2;
+    }
 
     if(slot == ModuleCreatureArmorSlot.RIGHTHAND){
       let modifier = lightOffhand ? -4 : -6;
@@ -966,17 +1594,35 @@ export class CombatRound {
   }
 
   /**
-   * Whether the creature has the given effect immunity type.
+   * Retail CSWSCreatureStats::GetEffectImmunity @ 005a6960.
    * Combat uses 30 (sneak) and 31 (critical hits).
+   * @param versus - optional attacker for race / alignment filters on the effect
    */
-  hasEffectImmunity(creature: ModuleCreature, immunityType: number): boolean {
+  hasEffectImmunity(
+    creature: ModuleCreature,
+    immunityType: number,
+    versus?: ModuleCreature
+  ): boolean {
+    if(!creature || immunityType <= 0 || immunityType >= 0x21) return false;
+    const raceCount = GameState.SWRuleSet?.racialTypeCount ?? 0;
+    let versusRace = raceCount;
+    let versusAlign = 0xffffffff;
+    if(versus){
+      versusRace = versus.getRace?.() ?? versus.race ?? raceCount;
+      const ge = versus.getGoodEvil?.() ?? 50;
+      // Retail: <41 evil(3), >59 good(2), else neutral(1)
+      versusAlign = ge < 41 ? 3 : (ge > 59 ? 2 : 1);
+    }
     for(let i = 0; i < creature.effects.length; i++){
       const effect = creature.effects[i];
       if(effect.type != GameEffectType.EffectImmunity) continue;
       const type = effect.getInt(0);
-      if(type == 0 || type == immunityType){
-        return true;
-      }
+      const race = effect.getInt(1);
+      const align = effect.getInt(2);
+      if(type != 0 && type != immunityType) continue;
+      if(race != raceCount && race != versusRace) continue;
+      if(align != 0 && align != versusAlign) continue;
+      return true;
     }
     return false;
   }
@@ -996,10 +1642,10 @@ export class CombatRound {
     }
     if(dice <= 0) return false;
 
-    // Sneak / critical immunities block sneak application
+    // Sneak / critical immunities block sneak application (vs attacker race/align)
     if(
-      this.hasEffectImmunity(target, 30) ||
-      this.hasEffectImmunity(target, 31)
+      this.hasEffectImmunity(target, 30, attacker) ||
+      this.hasEffectImmunity(target, 31, attacker)
     ){
       return false;
     }
@@ -1024,14 +1670,22 @@ export class CombatRound {
     return true;
   }
 
+  getMissChancePercent(creature: ModuleCreature): number {
+    let percent = 0;
+    for(let i = 0; i < creature.effects.length; i++){
+      const effect = creature.effects[i];
+      if(effect.type == GameEffectType.EffectMissChance){
+        percent = Math.max(percent, effect.getInt(0) || 0);
+      }
+    }
+    return Math.min(100, Math.max(0, percent));
+  }
+
   getConcealmentPercent(creature: ModuleCreature): number {
     let percent = 0;
     for(let i = 0; i < creature.effects.length; i++){
       const effect = creature.effects[i];
-      if(
-        effect.type == GameEffectType.EffectConcealment ||
-        effect.type == GameEffectType.EffectMissChance
-      ){
+      if(effect.type == GameEffectType.EffectConcealment){
         percent = Math.max(percent, effect.getInt(0) || 0);
       }
     }
@@ -1040,30 +1694,78 @@ export class CombatRound {
 
   /**
    * Resolve a weapon attack roll and its damage.
+   * @param swingIndex - Retail ResolveMeleeAttack loop index (for impact timing / OH gate)
    */
-  calculateWeaponAttack(creature: ModuleCreature, weapon: ModuleItem | undefined = undefined, weaponSlot: ModuleCreatureArmorSlot, combatAction: CombatRoundAction) {
+  calculateWeaponAttack(
+    creature: ModuleCreature,
+    weapon: ModuleItem | undefined = undefined,
+    weaponSlot: ModuleCreatureArmorSlot,
+    combatAction: CombatRoundAction
+  ) {
+    if(this.currentAttack >= this.attackList.length){
+      return;
+    }
+    const swingIndex = this.currentAttack;
     const naturalRoll = this.rollD20();
     const attackMod = this.getAttackModifierVersus(creature, weapon, weaponSlot, combatAction);
     const attackTotal = naturalRoll + attackMod;
-    const targetAC = combatAction.target.getAC();
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
     const attack = this.attackList[this.currentAttack];
     let isCritical = false;
 
-    attack.reactObject = combatAction.target;
-    attack.attackWeapon = weapon;
-    attack.rangedAttack = !!(weapon?.isRangedWeapon());
-    attack.sneakAttack = false;
-
     const targetCreature = BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)
       ? combatAction.target as ModuleCreature
       : undefined;
+    // Retail ResolveAttackRoll → GetArmorClassVersus(defender, attacker, touch=0)
+    const targetAC = targetCreature
+      ? targetCreature.getArmorClassVersus(creature, false)
+      : combatAction.target.getAC();
+
+    attack.reactObject = combatAction.target;
+    attack.attackWeapon = weapon;
+    attack.attackGroup = this.attackGroup;
+    attack.rangedAttack = !!(weapon?.isRangedWeapon());
+    attack.sneakAttack = false;
+    attack.coupDeGrace = false;
+    attack.weaponAttackType = weaponSlot == ModuleCreatureArmorSlot.LEFTHAND ? 2 : 1;
+    attack.toHitTotal = attackTotal;
+    attack.targetDefense = targetAC;
 
     if(targetCreature){
       this.resolveSneakAttack(creature, targetCreature, attack);
+      if(this.shouldCoupDeGrace(targetCreature)){
+        attack.coupDeGrace = true;
+      }
     }
 
-    // Concealment / miss chance: d100 > percent means attack proceeds
+    // Coup de grace → Automatic Hit (retail ResolveAttackRoll)
+    if(attack.coupDeGrace){
+      combatAction.attackResult = AttackResult.AUTOMATIC_HIT;
+      attack.attackResult = AttackResult.AUTOMATIC_HIT;
+      attack.calculateDamage(creature, false, combatAction.feat);
+      this.logAttackResult(creature, weapon, combatAction, false, false);
+      this.queueFeatSpecialAttackOnHit(creature, combatAction, attack, swingIndex);
+      this.currentAttack++;
+      return;
+    }
+
+    // Attacker MissChance (retail Blindness child MissChance 50%)
+    if(!hasAssuredHit){
+      const missChance = this.getMissChancePercent(creature);
+      if(missChance > 0){
+        const roll = Math.floor(Math.random() * 100) + 1;
+        if(roll <= missChance){
+          combatAction.attackResult = AttackResult.MISS;
+          attack.attackResult = AttackResult.MISS;
+          attack.concealment = true;
+          this.logAttackResult(creature, weapon, combatAction, false, hasAssuredHit);
+          this.currentAttack++;
+          return;
+        }
+      }
+    }
+
+    // Target Concealment
     if(targetCreature && !hasAssuredHit){
       const conceal = this.getConcealmentPercent(targetCreature);
       if(conceal > 0){
@@ -1111,7 +1813,7 @@ export class CombatRound {
         const confirmed = (confirmRoll + attackMod) >= targetAC;
         // Crit immunity converts a confirmed crit into a normal hit
         isCritical = confirmed && !(
-          targetCreature && this.hasEffectImmunity(targetCreature, 31)
+          targetCreature && this.hasEffectImmunity(targetCreature, 31, creature)
         );
         combatAction.attackResult = isCritical ? AttackResult.CRITICAL_HIT : AttackResult.HIT_SUCCESSFUL;
         attack.attackResult = combatAction.attackResult;
@@ -1124,13 +1826,40 @@ export class CombatRound {
     }
 
     this.logAttackResult(creature, weapon, combatAction, isCritical, hasAssuredHit);
+    this.queueFeatSpecialAttackOnHit(creature, combatAction, attack, swingIndex);
     this.currentAttack++;
   }
 
   /**
-   * Calculate the round animations for the given creature and combat action
-   * @param creature - The creature to calculate the animations for
-   * @param combatAction - The combat action to calculate the animations for
+   * Retail ResolveMeleeSpecialAttack @ 005ba8e0 / ResolveRangedSpecialAttack @ 005ba540 —
+   * on first swing only: queue Crit Strike / Sniper SETSTATE stun when the attack hits.
+   * (AC penalties are applied earlier via TalentFeat.impactCaster.)
+   */
+  queueFeatSpecialAttackOnHit(
+    creature: ModuleCreature,
+    combatAction: CombatRoundAction,
+    attack: CombatAttackData,
+    swingIndex: number
+  ){
+    if(swingIndex !== 0 || !combatAction?.feat || !attack) return;
+    const result = attack.attackResult;
+    if(
+      result !== AttackResult.HIT_SUCCESSFUL &&
+      result !== AttackResult.CRITICAL_HIT &&
+      result !== AttackResult.AUTOMATIC_HIT
+    ){
+      return;
+    }
+    const onHit = combatAction.feat.impactTarget?.(creature, combatAction.target);
+    if(onHit){
+      attack.pendingOnHitEffects.push(onHit);
+    }
+  }
+
+  /**
+   * Calculate the round animations for the given creature and combat action.
+   * Retail ResolveMeleeAnimations @ 005b7470 / ResolveRangedAnimations @ 005b6c40 —
+   * engaged duels sync target reaction (DAMAGE/PARRY/DODGE) when CheckActionLengthAtTime.
    */
   calculateRoundAnimations(creature: ModuleCreature, combatAction: CombatRoundAction){
     if(!combatAction) return;
@@ -1139,7 +1868,7 @@ export class CombatRound {
     let weaponWield = creature.getCombatAnimationWeaponType();
     let attackType = 1;
 
-    //Get random basic melee attack in combat with another melee creature that is targeting you
+    // Engaged melee choreography uses c*aN attack set (retail duel anims)
     if(attackKey == 'm'){
       if(this.engaged && !this.attacksIncludeKillingBlow()){
         attackKey = 'c';
@@ -1147,8 +1876,49 @@ export class CombatRound {
       }
     }
 
-    this.action.animationName = attackKey+weaponWield+'a'+attackType;
+    // Prefer anim name already chosen by resolveRangedAttack (feat-aware + discharge row)
+    if(combatAction.animationName){
+      this.action.animationName = combatAction.animationName;
+    }else{
+      this.action.animationName = attackKey+weaponWield+'a'+attackType;
+    }
     this.action.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(this.action.animationName);
+
+    const animLength = Math.max(
+      1,
+      combatAction.animationTime || 1500
+    );
+
+    // Stamp AttackList[0] reaction metadata (retail GetAttack(current))
+    const primary = this.attackList[0];
+    if(primary){
+      primary.animationLength = animLength;
+    }
+    this.decrementRoundLength(animLength);
+
+    const pickReaction = (result: AttackResult): number => {
+      if(
+        result === AttackResult.HIT_SUCCESSFUL ||
+        result === AttackResult.CRITICAL_HIT ||
+        result === AttackResult.AUTOMATIC_HIT
+      ){
+        return ModuleCreatureAnimState.DAMAGE;
+      }
+      if(
+        result === AttackResult.PARRIED ||
+        result === AttackResult.DEFLECTED
+      ){
+        return ModuleCreatureAnimState.PARRY;
+      }
+      if(
+        result === AttackResult.MISS ||
+        result === AttackResult.ATTACK_RESISTED ||
+        result === AttackResult.ATTACK_FAILED
+      ){
+        return ModuleCreatureAnimState.DODGE;
+      }
+      return ModuleCreatureAnimState.READY;
+    };
 
     if(combatAction.isCutsceneAttack){
 
@@ -1179,70 +1949,69 @@ export class CombatRound {
 
     }else{
 
-      if(
-        combatAction.attackResult == AttackResult.HIT_SUCCESSFUL ||
-        combatAction.attackResult == AttackResult.CRITICAL_HIT ||
-        combatAction.attackResult == AttackResult.AUTOMATIC_HIT
-      ){
+      const attackAnim = this.engaged && combatAction.animation === ModuleCreatureAnimState.ATTACK_DUELING
+        ? ModuleCreatureAnimState.ATTACK_DUELING
+        : ModuleCreatureAnimState.ATTACK;
 
-        if(creature){
-          creature.playTwoDAAnimation( combatAction.twoDAAnimation );
-          creature.animationState.index = ModuleCreatureAnimState.ATTACK;
+      if(creature){
+        creature.playTwoDAAnimation( combatAction.twoDAAnimation || this.action.twoDAAnimation );
+        creature.animationState.index = attackAnim;
+      }
+
+      const target = BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)
+        ? combatAction.target as ModuleCreature
+        : undefined;
+
+      if(target && !target.isDead?.() && !this.attacksIncludeKillingBlow()){
+        const reaction = pickReaction(combatAction.attackResult);
+        if(primary){
+          primary.reaxnAnimation = reaction;
+          primary.reaxnAnimLength = animLength;
+          primary.reaxnDelay = 0;
         }
 
-        if(combatAction.target && BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)){
-          const target: ModuleCreature = combatAction.target as any;
-          if(
+        // Engaged (ResolveMeleeAnimations): CheckActionLengthAtTime or hit/parry always syncs
+        // Unengaged: only react if target idle/ready and targeting attacker
+        const engagedCanReact = !!(
+          this.engaged &&
+          target.combatRound &&
+          (
+            target.combatRound.checkActionLengthAtTime(creature, animLength, 0) ||
+            combatAction.attackResult === AttackResult.HIT_SUCCESSFUL ||
+            combatAction.attackResult === AttackResult.CRITICAL_HIT ||
+            combatAction.attackResult === AttackResult.AUTOMATIC_HIT ||
+            combatAction.attackResult === AttackResult.PARRIED ||
+            combatAction.attackResult === AttackResult.DEFLECTED
+          )
+        );
+        const unengagedCanReact = !(
+          this.engaged
+        ) && (
+          (
             target.animationState.index == ModuleCreatureAnimState.IDLE ||
             target.animationState.index == ModuleCreatureAnimState.READY
-          ){
-            if(target.combatData.lastAttackTarget == creature){
-              if(!this.attacksIncludeKillingBlow()){
-                target.playTwoDAAnimation( target.getDamageAnimation( combatAction.animationName ) );
-                target.animationState.index = ModuleCreatureAnimState.DAMAGE;
-              }
-            }
-          }
-        }
+          ) &&
+          target.combatData.lastAttackTarget == creature
+        );
 
-      }else if(
-        combatAction.attackResult == AttackResult.PARRIED ||
-        combatAction.attackResult == AttackResult.DEFLECTED
-      ){
+        const shouldReact = engagedCanReact || unengagedCanReact;
 
-        if(creature){
-          creature.playTwoDAAnimation( combatAction.twoDAAnimation );
-          creature.animationState.index = ModuleCreatureAnimState.ATTACK;
-        }
-
-        if(combatAction.target && BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)){
-          const target: ModuleCreature = combatAction.target as any;
-          if(!this.attacksIncludeKillingBlow()){
-            target.playTwoDAAnimation( target.getParryAnimation( combatAction.animationName ) );
+        if(shouldReact && reaction !== ModuleCreatureAnimState.READY){
+          if(reaction === ModuleCreatureAnimState.DAMAGE){
+            target.playTwoDAAnimation( target.getDamageAnimation( this.action.animationName ) );
+            target.animationState.index = ModuleCreatureAnimState.DAMAGE;
+          }else if(reaction === ModuleCreatureAnimState.PARRY){
+            target.playTwoDAAnimation( target.getParryAnimation( this.action.animationName ) );
             target.animationState.index = ModuleCreatureAnimState.PARRY;
+          }else if(reaction === ModuleCreatureAnimState.DODGE){
+            target.playTwoDAAnimation( target.getDodgeAnimation( this.action.animationName ) );
+            target.animationState.index = ModuleCreatureAnimState.DODGE;
           }
-        }
-
-      }else{
-
-        if(creature){
-          creature.playTwoDAAnimation( combatAction.twoDAAnimation );
-          creature.animationState.index = ModuleCreatureAnimState.ATTACK;
-        }
-
-        if(combatAction.target && BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)){
-          const target: ModuleCreature = combatAction.target as any;
-          if(
-            target.animationState.index == ModuleCreatureAnimState.IDLE ||
-            target.animationState.index == ModuleCreatureAnimState.READY
-          ){
-            if(combatAction.target.combatData.lastAttackTarget == creature){
-              if(!this.attacksIncludeKillingBlow()){
-                target.playTwoDAAnimation( target.getDodgeAnimation( combatAction.animationName ) );
-                target.animationState.index = ModuleCreatureAnimState.DODGE;
-              }
-            }
+          if(this.engaged && target.combatRound){
+            target.combatRound.decrementRoundLength(animLength);
           }
+        }else if(primary && this.engaged){
+          primary.reaxnAnimation = ModuleCreatureAnimState.READY;
         }
       }
     }
@@ -1262,95 +2031,187 @@ export class CombatRound {
 
   /**
    * Convert the combat round to a GFF struct
+   * Retail CSWSCombatRound::SaveCombatRound @ 004d3ec0 (struct type 0xCADA)
    * @param structIdx - The index of the struct
    * @returns The GFF struct
    */
   toStruct(structIdx: number = 0xCADA){
     const struct = new GFFStruct(structIdx);
+    const objId = (o: ModuleObject | undefined) =>
+      o?.id ?? ModuleObjectConstant.OBJECT_INVALID;
+
+    struct.addField(new GFFField(GFFDataType.BYTE, 'RoundStarted')).setValue(this.roundStarted ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'SpellCastRound')).setValue(this.spellCastRound ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'DeflectArrow')).setValue(this.deflectArrow ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'WeaponSucks')).setValue(this.weaponSucks ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'DodgeTarget')).setValue(objId(this.dodgeTarget));
+    struct.addField(new GFFField(GFFDataType.DWORD, 'NewAttackTarget')).setValue(objId(this.newAttackTarget));
+    struct.addField(new GFFField(GFFDataType.INT, 'Engaged')).setValue(this.engaged ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'Master')).setValue(this.master ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'MasterID')).setValue(objId(this.masterID));
+    struct.addField(new GFFField(GFFDataType.DWORD, 'DuelPartner')).setValue(objId(this.duelPartner));
+    struct.addField(new GFFField(GFFDataType.BYTE, 'RoundPaused')).setValue(this.roundPaused ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'RoundPausedBy')).setValue(objId(this.roundPausedBy));
+    struct.addField(new GFFField(GFFDataType.BYTE, 'InfinitePause')).setValue(this.infinitePause ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'PauseTimer')).setValue(this.pauseTimer || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'Timer')).setValue(this.timer || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'RoundLength')).setValue(this.roundLength || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'OverlapAmount')).setValue(this.overlapAmount || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'BleedTimer')).setValue(this.bleedTimer || 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'CurrentAttack')).setValue(this.currentAttack || 0);
+    struct.addField(new GFFField(GFFDataType.WORD, 'AttackID')).setValue(this.attackID || 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'AttackGroup')).setValue(this.attackGroup || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'ParryIndex')).setValue(this.parryIndex || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'NumAOOs')).setValue(this.numAOOs || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'NumCleaves')).setValue(this.numCleaves || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'OnHandAttacks')).setValue(this.onHandAttacks || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'OffHandAttacks')).setValue(this.offHandAttacks || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'AdditAttacks')).setValue(this.additionalAttacks || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'EffectAttacks')).setValue(this.effectAttacks || 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'ParryActions')).setValue(this.parryActions || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'OffHandTaken')).setValue(this.offHandTaken ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'ExtraTaken')).setValue(this.extraTaken ? 1 : 0);
+
+    const attackList = struct.addField(new GFFField(GFFDataType.LIST, 'AttackList'));
+    for(let i = 0; i < 5; i++){
+      attackList.addChildStruct(this.attackList[i].toStruct(0xAAEE));
+    }
+
+    const specAttackList = struct.addField(new GFFField(GFFDataType.LIST, 'SpecAttackList'));
+    for(let i = 0; i < this.specialAttackList.length; i++){
+      const spec = new GFFStruct(0xDAEE);
+      const val = typeof this.specialAttackList[i] === 'number'
+        ? this.specialAttackList[i]
+        : 0;
+      spec.addField(new GFFField(GFFDataType.WORD, 'SpecialAttack')).setValue(val);
+      specAttackList.addChildStruct(spec);
+    }
+
+    // SpecAttackIdList — empty until special-attack id list is typed
+    struct.addField(new GFFField(GFFDataType.LIST, 'SpecAttackIdList'));
+
+    const schedList = struct.addField(new GFFField(GFFDataType.LIST, 'SchedActionList'));
+    for(let i = 0; i < this.scheduledActionList.length; i++){
+      schedList.addChildStruct(this.scheduledActionList[i].toStruct(0xDAEA));
+    }
 
     return struct;
   }
 
   /**
-   * Log the attack result to the combat feedback system
-   * @param creature - The creature performing the attack
-   * @param weapon - The weapon used in the attack
-   * @param combatAction - The combat action containing the result
-   * @param isCritical - Whether the attack was a critical hit
-   * @param hasAssuredHit - Whether the attack had assured hit effect
+   * Retail CSWSCombatRound::LoadCombatRound @ 004d5120 —
+   * only restores when RoundStarted is non-zero.
    */
-  logAttackResult(creature: ModuleCreature, weapon: ModuleItem | undefined, combatAction: CombatRoundAction, isCritical: boolean, hasAssuredHit: boolean) {
-    const { FeedbackMessageManager } = GameState;
+  fromStruct(struct: GFFStruct): boolean {
+    if(!struct || !struct.hasField('RoundStarted')){
+      return false;
+    }
+    const get = (label: string, fallback: number = 0) =>
+      struct.hasField(label) ? struct.getFieldByLabel(label).getValue() : fallback;
 
-    let message = '';
-    let color = FeebackMessageColor.ATTACK;
-
-    // Get weapon name for display
-    const weaponName = weapon ? weapon.getName() : 'Unarmed';
-
-    // Format message based on attack result
-    switch (combatAction.attackResult) {
-      case AttackResult.CRITICAL_HIT:
-        if (hasAssuredHit) {
-          message = `${creature.getName()}: *Assured Hit* Critical Hit with ${weaponName}!`;
-        } else {
-          message = `${creature.getName()}: Critical Hit with ${weaponName}!`;
-        }
-        break;
-
-      case AttackResult.HIT_SUCCESSFUL:
-        if (hasAssuredHit) {
-          message = `${creature.getName()}: *Assured Hit* Hit with ${weaponName}!`;
-        } else {
-          message = `${creature.getName()}: Hit with ${weaponName}!`;
-        }
-        break;
-
-      case AttackResult.AUTOMATIC_HIT:
-        message = `${creature.getName()}: Automatic Hit with ${weaponName}!`;
-        break;
-
-      case AttackResult.MISS:
-        message = `${creature.getName()}: Miss with ${weaponName}!`;
-        color = FeebackMessageColor.INFO; // Use info color for misses
-        break;
-
-      case AttackResult.ATTACK_RESISTED:
-        message = `${creature.getName()}: Attack Resisted with ${weaponName}!`;
-        color = FeebackMessageColor.INFO;
-        break;
-
-      case AttackResult.ATTACK_FAILED:
-        message = `${creature.getName()}: Attack Failed with ${weaponName}!`;
-        color = FeebackMessageColor.INFO;
-        break;
-
-      case AttackResult.PARRIED:
-        message = `${creature.getName()}: Attack Parried with ${weaponName}!`;
-        color = FeebackMessageColor.INFO;
-        break;
-
-      case AttackResult.DEFLECTED:
-        message = `${creature.getName()}: Attack Deflected with ${weaponName}!`;
-        color = FeebackMessageColor.INFO;
-        break;
-
-      default:
-        message = `${creature.getName()}: Unknown attack result with ${weaponName}!`;
-        color = FeebackMessageColor.INFO;
-        break;
+    this.roundStarted = !!get('RoundStarted');
+    if(!this.roundStarted){
+      return false;
     }
 
-    // Create and add the feedback message entry
-    const entry = new FeedbackMessageEntry();
-    entry.message = message;
-    entry.color = color;
-    entry.type = 0; // Standard combat feedback type
+    this.spellCastRound = !!get('SpellCastRound');
+    this.deflectArrow = !!get('DeflectArrow', 1);
+    this.weaponSucks = !!get('WeaponSucks');
+    this.dodgeTarget = resolveObjectId(get('DodgeTarget', ModuleObjectConstant.OBJECT_INVALID));
+    this.newAttackTarget = resolveObjectId(get('NewAttackTarget', ModuleObjectConstant.OBJECT_INVALID));
+    this.roundPaused = !!get('RoundPaused');
+    this.roundPausedBy = resolveObjectId(get('RoundPausedBy', ModuleObjectConstant.OBJECT_INVALID));
+    this.infinitePause = false; // retail clears after load
+    this.pauseTimer = get('PauseTimer');
+    this.engaged = !!get('Engaged');
+    this.master = !!get('Master');
+    this.masterID = resolveObjectId(get('MasterID', ModuleObjectConstant.OBJECT_INVALID));
+    this.duelPartner = resolveObjectId(get('DuelPartner', ModuleObjectConstant.OBJECT_INVALID));
+    this.timer = get('Timer');
+    this.roundLength = get('RoundLength', CombatRound.ROUND_LENGTH);
+    this.overlapAmount = get('OverlapAmount');
+    this.bleedTimer = get('BleedTimer');
+    this.currentAttack = get('CurrentAttack');
+    this.attackID = get('AttackID');
+    this.attackGroup = get('AttackGroup');
+    this.parryIndex = get('ParryIndex');
+    this.numAOOs = get('NumAOOs', 1);
+    this.numCleaves = get('NumCleaves', 1);
+    this.onHandAttacks = get('OnHandAttacks');
+    this.offHandAttacks = get('OffHandAttacks');
+    this.additionalAttacks = get('AdditAttacks');
+    this.effectAttacks = 0; // retail zeroes EffectAttacks on load
+    this.parryActions = get('ParryActions');
+    this.offHandTaken = !!get('OffHandTaken');
+    this.extraTaken = !!get('ExtraTaken');
 
-    FeedbackMessageManager.AddEntry(entry);
+    if(struct.hasField('AttackList')){
+      const list = struct.getFieldByLabel('AttackList').getChildStructs();
+      for(let i = 0; i < 5; i++){
+        if(!this.attackList[i]) this.attackList[i] = new CombatAttackData();
+        if(list[i]) this.attackList[i].fromStruct(list[i]);
+      }
+    }
 
-    // Also log to console for debugging
-    console.log(`Combat Log: ${message}`);
+    this.specialAttackList = [];
+    if(struct.hasField('SpecAttackList')){
+      const list = struct.getFieldByLabel('SpecAttackList').getChildStructs();
+      for(let i = 0; i < list.length; i++){
+        if(list[i]?.hasField('SpecialAttack')){
+          this.specialAttackList.push(list[i].getFieldByLabel('SpecialAttack').getValue());
+        }
+      }
+    }
+
+    this.scheduledActionList = [];
+    if(struct.hasField('SchedActionList')){
+      const list = struct.getFieldByLabel('SchedActionList').getChildStructs();
+      for(let i = 0; i < list.length; i++){
+        const action = new CombatRoundActionClass(this.owner);
+        action.fromStruct(list[i], this.owner);
+        this.scheduledActionList.push(action);
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Log the attack result to the Messages feedback buffer.
+   * Mirrors retail SendAttackSummaryFeedback → CC 0x12 TLK assembly.
+   */
+  /**
+   * Log the attack result to the Messages feedback buffer.
+   * Mirrors retail SendAttackSummaryFeedback → CC 0x12 TLK assembly.
+   */
+  logAttackResult(creature: ModuleCreature, _weapon: ModuleItem | undefined, combatAction: CombatRoundAction, isCritical: boolean, hasAssuredHit: boolean) {
+    const { FeedbackMessageManager } = GameState;
+
+    const attack = this.currentAttack < this.attackList.length
+      ? this.attackList[this.currentAttack]
+      : undefined;
+
+    const critical =
+      isCritical ||
+      combatAction.attackResult === AttackResult.CRITICAL_HIT ||
+      (!!attack && attack.attackResult === AttackResult.CRITICAL_HIT);
+
+    const { message, color } = formatAttackSummaryFeedback({
+      attacker: creature,
+      defender: combatAction.target ?? attack?.reactObject,
+      attackResult: combatAction.attackResult,
+      toHitTotal: attack?.toHitTotal ?? 0,
+      targetDefense: attack?.targetDefense ?? (combatAction.target?.getAC?.() ?? 0),
+      damage: attack?.getTotalDamage?.() ?? combatAction.attackDamage ?? 0,
+      feat: combatAction.feat,
+      critical,
+      sneakAttack: !!attack?.sneakAttack,
+      coupDeGrace: !!attack?.coupDeGrace,
+      automaticHit: hasAssuredHit && !attack?.coupDeGrace,
+      automaticMiss: false,
+    });
+
+    FeedbackMessageManager.AddMessage(message, color);
   }
 
   /**
@@ -1362,4 +2223,13 @@ export class CombatRound {
     return Math.floor( ( val - 10 ) / 2 );
   }
 
+}
+
+function resolveObjectId(id: number): ModuleObject | undefined {
+  if(!id || id === ModuleObjectConstant.OBJECT_INVALID) return undefined;
+  try{
+    return GameState.ModuleObjectManager?.GetObjectById?.(id);
+  }catch{
+    return undefined;
+  }
 }

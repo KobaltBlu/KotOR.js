@@ -1,19 +1,19 @@
 import { ModuleObjectType } from "@/enums";
-import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GameState } from "@/GameState";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
+import { isInUseRange, queueMoveIntoUseRange } from "@/actions/use-range";
 
 /**
  * ActionUseObject class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
+ * Retail AIActionUseObject uses GetIsInUseRange / GetUseRange before use.
+ *
  * @file ActionUseObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -23,10 +23,6 @@ export class ActionUseObject extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionUseObject;
-
-    //PARAMS
-    // 0 - dword: object id
-    
   }
 
   update(delta: number = 0): ActionStatus {
@@ -37,38 +33,29 @@ export class ActionUseObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    let distance = Utility.Distance2D(this.owner.position, this.target.position);
-    if(distance > 1.5){
-        
-      // this.owner.openSpot = undefined;
-      let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-      actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 1.5 );
-      actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-      actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-      this.owner.actionQueue.addFront(actionMoveToTarget);
-
-      return ActionStatus.IN_PROGRESS;
-    }else{
-      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
-      this.owner.force = 0;
-      this.owner.speed = 0;
-      //console.log(this.target);
-
-      this.owner.setFacingObject( this.target );
-
-      if(this.target != GameState.PartyManager.Player){
-        this.target.use(this.owner);
-      }
-
-      return ActionStatus.COMPLETE;
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      return ActionStatus.FAILED;
     }
-    return ActionStatus.FAILED;
+
+    const owner = this.owner as ModuleCreature;
+    if(queueMoveIntoUseRange(owner, this.target, this.groupId)){
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    if(!isInUseRange(owner, this.target)){
+      return ActionStatus.FAILED;
+    }
+
+    owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+    owner.force = 0;
+    owner.speed = 0;
+    owner.setFacingObject(this.target);
+
+    if(this.target != GameState.PartyManager.Player){
+      this.target.use(owner);
+    }
+
+    return ActionStatus.COMPLETE;
   }
 
 }

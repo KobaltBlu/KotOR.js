@@ -5,13 +5,22 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { ResourceLoader } from "@/loaders/ResourceLoader";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
+import { queueMoveIntoUseRange } from "@/actions/use-range";
+import {
+  fadeDestroyTrap,
+  MineSkillResult,
+  resolveMineSkillCheck,
+  runTriggerOnDisarmScript,
+  signalTrapDisarm,
+  signalTrapTriggered,
+} from "@/actions/mine-skill";
 
 /**
  * ActionRecoverMine class.
@@ -25,11 +34,13 @@ import { Action } from "@/actions/Action";
 
 export class ActionRecoverMine extends Action {
 
+  private animQueued = false;
+
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionRecoverMine;
 
-    //PARAMS - unknown
+    //PARAMS
     //0 - DWORD: oTarget
   }
 
@@ -37,49 +48,73 @@ export class ActionRecoverMine extends Action {
 
     this.target = this.getParameter<ModuleObject>(0);
     if(!this.target){
+      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
-      let distance = Utility.Distance2D(this.owner.position, this.target.position);
-            
-      if(distance > 3){
-        // this.owner.openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-        actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-        actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-        actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.target.area.id);
-        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-        actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 3 );
-        actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-        actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-        this.owner.actionQueue.addFront(actionMoveToTarget);
-
-        return ActionStatus.IN_PROGRESS;
-      }
-
-      if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)){
-        const trap: ModuleTrigger = this.target as any;
-        if(trap.type != ModuleTriggerType.TRAP){
-          return ActionStatus.FAILED;
-        }
-
-        //todo: recover skill check
-
-        trap.destroy();
-        const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], trap.trapResRef);
-        if(buffer){
-          const item = new GameState.Module.ModuleArea.ModuleItem(new GFFObject(buffer));
-          this.owner.addItem(item);
-        }
-      }
-
-      return ActionStatus.COMPLETE;
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
+      return ActionStatus.FAILED;
     }
-    
-    return ActionStatus.FAILED;
+
+    const owner = this.owner as ModuleCreature;
+    if(queueMoveIntoUseRange(owner, this.target, this.groupId, { extraRange: 0.25 })){
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    if(!this.animQueued){
+      this.animQueued = true;
+      owner.setFacingObject(this.target);
+      const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
+      playAnim.setParameter(0, ActionParameterType.INT, 0x2794);
+      playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
+      playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
+      owner.actionQueue.addFront(playAnim);
+      if(owner === GameState.getCurrentPlayer()){
+        GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Recover Mine', owner, 1);
+      }
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(owner);
+
+    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)){
+      stopBar();
+      return ActionStatus.FAILED;
+    }
+
+    const trap = this.target as ModuleTrigger;
+    if(trap.type != ModuleTriggerType.TRAP){
+      stopBar();
+      return ActionStatus.FAILED;
+    }
+
+    const check = resolveMineSkillCheck(owner, trap);
+    if(check.result === MineSkillResult.FAIL_TRIGGER){
+      signalTrapTriggered(trap, owner);
+      stopBar();
+      return ActionStatus.FAILED;
+    }
+    if(check.result === MineSkillResult.FAIL){
+      stopBar();
+      return ActionStatus.FAILED;
+    }
+
+    signalTrapDisarm(trap, owner);
+    runTriggerOnDisarmScript(trap);
+
+    const resRef = trap.trapResRef || trap.templateResRef;
+    if(resRef){
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utp'], resRef);
+      if(buffer){
+        const item = new GameState.Module.ModuleArea.ModuleItem(new GFFObject(buffer));
+        owner.addItem(item);
+      }
+    }
+
+    fadeDestroyTrap(trap);
+    stopBar();
+    return ActionStatus.COMPLETE;
   }
 
 }

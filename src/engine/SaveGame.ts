@@ -1146,4 +1146,33 @@ export class SaveGame {
     }
   }
 
+  /**
+   * Most recent save for game-over "Load Last Save" (TSL LaunchMostRecentSave).
+   * Prefers newest TIMESTAMP; falls back to highest folder id.
+   */
+  static GetMostRecentSave(): SaveGame | undefined {
+    if(!SaveGame.saves?.length) return undefined;
+
+    let best: SaveGame | undefined;
+    let bestTime = -1;
+    for(let i = 0; i < SaveGame.saves.length; i++){
+      const save = SaveGame.saves[i];
+      if(!save) continue;
+      const t = save.TIMESTAMP instanceof Date ? save.TIMESTAMP.getTime() : 0;
+      if(t > bestTime){
+        bestTime = t;
+        best = save;
+      }
+    }
+
+    if(best) return best;
+
+    // Fallback: highest numeric folder prefix
+    return [...SaveGame.saves].sort((a, b) => {
+      const na = parseInt(a.folderName?.split(' - ')[0] || '0', 10) || 0;
+      const nb = parseInt(b.folderName?.split(' - ')[0] || '0', 10) || 0;
+      return nb - na;
+    })[0];
+  }
+
 }

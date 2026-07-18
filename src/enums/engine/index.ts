@@ -1,4 +1,5 @@
 export * from "@/enums/engine/AutoPauseState";
+export * from "@/enums/engine/ClientCameraMode";
 export * from "@/enums/engine/EngineDebugType";
 export * from "@/enums/engine/EngineMode";
 export * from "@/enums/engine/EngineState";

@@ -39,6 +39,10 @@ export class DLGNode {
   cameraID: number;
   cameraAnimation: number;
   camFieldOfView: number;
+  /** Retail CamHeightOffset — SetShot field3 / GetCameraParameters height bias. */
+  camHeightOffset: number = 0;
+  /** Retail TarHeightOffset — SetShot field4 / focus height bias. */
+  tarHeightOffset: number = 0;
   camVidEffect: number = -1;
   comment: string;
   delay: number;
@@ -68,10 +72,21 @@ export class DLGNode {
   text: string;
   vo_resref: string;
   waitFlags: number;
+  /** Runtime entry timer in ms (set by CutsceneManager via setNodeDelay). */
+  nodeDelayMs: number = 0;
   elapsed: number = 0;
   fade: { type: number; length: number; delay: number; color: { r: number; g: number; b: number; };  started: boolean };
   speaker: ModuleObject;
   dialog: DLGObject;
+
+  /** Retail WaitFlags bits (CSWSObject::IsDialogDelay). */
+  static readonly WAIT_CAMERA = 0x01;
+  static readonly WAIT_VOICE = 0x02;
+  static readonly WAIT_ANIM = 0x04;
+  static readonly WAIT_FADE = 0x08;
+  static readonly WAIT_EXPLICIT_DELAY = 0x10;
+  /** Retail Delay DWORD 0xFFFFFFFF — use unsigned (>>> 0); JS `& 0xFFFFFFFF` yields signed -1. */
+  static readonly DELAY_UNSET = 0xFFFFFFFF >>> 0;
 
   listener: ModuleObject;
   owner: ModuleObject;
@@ -96,9 +111,12 @@ export class DLGNode {
     this.cameraID = 0;
     this.cameraAnimation = -1;
     this.camFieldOfView = -1;
+    this.camHeightOffset = 0;
+    this.tarHeightOffset = 0;
     this.camVidEffect = -1;
     this.comment = '';
     this.delay = 0;
+    this.nodeDelayMs = 0;
     this.fadeType = 0;
     this.listenerTag = '';
     this.plotIndex = -1;
@@ -129,6 +147,7 @@ export class DLGNode {
     this.text = '';
     this.vo_resref = '';
     this.waitFlags = 0;
+    this.elapsed = 0;
     this.fade = {
       type: 0,
       length: 0,
@@ -167,6 +186,8 @@ export class DLGNode {
       this.listener = this.dialog.listener;
     }
 
+    this.elapsed = 0;
+    this.fade.started = false;
     //Checklist
     this.resetChecklist();
   }
@@ -285,20 +306,27 @@ export class DLGNode {
     this.elapsed += delta * 1000;
     this.processFadeOverlay();
     if(!!this.checkList.voiceOverError){
-      if(this.elapsed >= this.delay){
+      if(this.elapsed >= this.nodeDelayMs){
         this.checkList.voiceOverComplete = true;
       }
     }
     return this.checkList.isComplete();
   }
 
-  setNodeDelay(delay: number = 0){
-    this.delay = delay;
+  /**
+   * Set the runtime entry delay timer (milliseconds).
+   */
+  setNodeDelay(delayMs: number = 0){
+    this.nodeDelayMs = delayMs;
   }
 
+  /**
+   * Apply DLG node fade overlay (retail HandleDialogEntry → letterbox SetFade).
+   * Types 1/4 fade out; 2/3 fade in. Length 0 is an instant cut (types 1/2).
+   * Completion for WaitFlags&0x08 uses fade.delay + fade.length in seconds.
+   */
   processFadeOverlay(){
-    if(this.checkList.fadeComplete) return;
-    if(!this.fade.length){
+    if(this.fade.type === 0){
       this.checkList.fadeComplete = true;
       return;
     }
@@ -319,7 +347,7 @@ export class DLGNode {
         break;
       }
     }
-    if(this.elapsed >= (this.fade.delay + this.fade.length)){
+    if(this.elapsed >= (this.fade.delay + this.fade.length) * 1000){
       this.checkList.fadeComplete = true;
     }
   }
@@ -386,32 +414,54 @@ export class DLGNode {
     return this.camVidEffect == -1 || this.cameraAngle != DLGCameraAngle.ANGLE_PLACEABLE_CAMERA ? -1 : this.camVidEffect;
   }
 
+  /**
+   * Entry completion checklist mirroring retail CSWSObject::IsDialogDelay WaitFlags bits.
+   */
   resetChecklist(){
+    const waitCamera = (this.waitFlags & DLGNode.WAIT_CAMERA) !== 0;
+    const waitVoice = (this.waitFlags & DLGNode.WAIT_VOICE) !== 0;
+    const waitAnim = (this.waitFlags & DLGNode.WAIT_ANIM) !== 0;
+    const waitFade = (this.waitFlags & DLGNode.WAIT_FADE) !== 0;
+    const hasAnimatedCamera = !!(this.dialog?.animatedCamera)
+      && this.cameraAnimation > -1
+      && this.cameraAngle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA;
+
     this.checkList = {
       isSkipped: false,
-      cameraAnimationComplete: this.dialog.animatedCamera && this.cameraID > -1 && this.cameraAngle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA ? false : true,
-      voiceOverComplete: false,
+      cameraAnimationComplete: waitCamera && hasAnimatedCamera ? false : true,
+      voiceOverComplete: waitVoice ? false : true,
+      participantAnimationComplete: waitAnim ? false : true,
       alreadyAllowed: false,
-      fadeComplete: false,
+      fadeComplete: waitFade ? false : true,
       voiceOverError: false,
       isComplete: (): boolean => {
         if (this.checkList.alreadyAllowed || this.checkList.isSkipped) {
           return false;
         }
-        if (!!this.dialog.animatedCamera && this.cameraID > -1 && this.cameraAngle == DLGCameraAngle.ANGLE_ANIMATED_CAMERA) {
-          if (this.checkList.cameraAnimationComplete) {
-            this.checkList.alreadyAllowed = true;
-            return true;
-          }
-        } else {
-          if (this.checkList.voiceOverComplete && this.checkList.fadeComplete) {
-            this.checkList.alreadyAllowed = true;
-            return true;
-          }
+        if (waitVoice && !this.checkList.voiceOverComplete) {
+          return false;
         }
-        return false;
+        if (waitFade && !this.checkList.fadeComplete) {
+          return false;
+        }
+        if (waitCamera && !this.checkList.cameraAnimationComplete) {
+          return false;
+        }
+        if (waitAnim && !this.checkList.participantAnimationComplete) {
+          return false;
+        }
+        if (this.elapsed < this.nodeDelayMs) {
+          return false;
+        }
+        this.checkList.alreadyAllowed = true;
+        return true;
       }
     };
+
+    // Participant anim wait: no engine tracker yet — do not block entry completion.
+    if (waitAnim) {
+      this.checkList.participantAnimationComplete = true;
+    }
   }
 
   static FromDialogStruct( struct: GFFStruct, dialog: DLGObject ){
@@ -455,7 +505,9 @@ export class DLGNode {
     }
 
     if(struct.hasField('CameraAnimation')){
-      node.cameraAnimation = struct.getFieldByLabel('CameraAnimation').getValue();
+      // Retail WORD; 0 means none. Valid CUT ids are 1000..0x6BF (SetAnimatedCamera @ 0062bfa0).
+      const anim = struct.getFieldByLabel('CameraAnimation').getValue();
+      node.cameraAnimation = anim > 0 ? anim : -1;
     }
 
     if(struct.hasField('CameraAngle')){
@@ -542,6 +594,15 @@ export class DLGNode {
 
     if(struct.hasField('CamFieldOfView')){
       node.camFieldOfView = struct.getFieldByLabel('CamFieldOfView').getValue();
+    }
+
+    // LoadDialogCamera @ 0059eaa0
+    if(struct.hasField('CamHeightOffset')){
+      node.camHeightOffset = struct.getFieldByLabel('CamHeightOffset').getValue();
+    }
+
+    if(struct.hasField('TarHeightOffset')){
+      node.tarHeightOffset = struct.getFieldByLabel('TarHeightOffset').getValue();
     }
 
     if(struct.hasField('RepliesList')){
@@ -762,10 +823,17 @@ export class DLGNode {
     }
 
     if(struct.hasField('Delay')){
-      node.delay = struct.getFieldByLabel('Delay').getValue() & 0xFFFFFFFF;
+      // >>> 0: JS bitwise & yields signed -1 for 0xFFFFFFFF; retail Delay unset is unsigned
+      node.delay = struct.getFieldByLabel('Delay').getValue() >>> 0;
     }
 
+    if(struct.hasField('WaitFlags')){
+      node.waitFlags = struct.getFieldByLabel('WaitFlags').getValue() >>> 0;
+    }
+
+    let fadeTypePresent = false;
     if(struct.hasField('FadeType')){
+      fadeTypePresent = true;
       node.fade.type = struct.getFieldByLabel('FadeType').getValue();
     }
 
@@ -776,6 +844,18 @@ export class DLGNode {
     if(struct.hasField('FadeDelay')){
       node.fade.delay = struct.getFieldByLabel('FadeDelay').getValue();
     }
+
+    if(struct.hasField('FadeColor')){
+      const color = struct.getFieldByLabel('FadeColor').getVector();
+      if(color){
+        node.fade.color.r = color.x;
+        node.fade.color.g = color.y;
+        node.fade.color.b = color.z;
+      }
+    }
+
+    // Retail CSWSDialog::LoadDialogBase fade / delay / WaitFlags mutations
+    node.applyLoadDialogBaseMutations(dialog, fadeTypePresent);
 
     if(struct.hasField('NodeUnskippable')){
       node.skippable = !struct.getFieldByLabel('NodeUnskippable').getValue();
@@ -812,6 +892,56 @@ export class DLGNode {
     }
 
     return node;
+  }
+
+  /**
+   * Retail CSWSDialog::LoadDialogBase post-load mutations for Delay, WaitFlags, and fade fields.
+   */
+  applyLoadDialogBaseMutations(dialog: DLGObject, fadeTypePresent: boolean = true){
+    const hasSound = !!(this.sound || this.vo_resref);
+    const delayEntry = (dialog?.delayEntry ?? 0) >>> 0;
+    // Normalize in case callers stored a signed -1 from a bitwise op
+    this.delay = this.delay >>> 0;
+
+    if(this.delay === DLGNode.DELAY_UNSET){
+      if(!hasSound){
+        if(this.waitFlags === 0){
+          // leave delay unset; SendDialogEntry will use spoken-time estimate
+        }else{
+          this.delay = delayEntry;
+        }
+      }else{
+        this.delay = delayEntry;
+        if(this.waitFlags === 0){
+          this.waitFlags = DLGNode.WAIT_VOICE;
+        }
+      }
+    }else{
+      this.waitFlags = this.waitFlags | DLGNode.WAIT_EXPLICIT_DELAY;
+    }
+
+    if(this.fade.type === 1 || this.fade.type === 2){
+      this.fade.length = 0;
+    }
+    if(this.fade.type === 0 || !fadeTypePresent){
+      this.fade.type = 0;
+      this.fade.delay = 0;
+      this.fade.length = 0;
+      this.fade.color.r = 0;
+      this.fade.color.g = 0;
+      this.fade.color.b = 0;
+    }
+  }
+
+  /**
+   * Spoken-time estimate in seconds when Delay is unset and there is no VO (retail SetDialogDelay / text length).
+   */
+  static estimateSpokenTimeSeconds(text: string): number {
+    const cleaned = (text || '').trim();
+    if(!cleaned.length){
+      return 0.01;
+    }
+    return Math.max(0.01, cleaned.length * 0.1125);
   }
 
   getCompiledString(): string {

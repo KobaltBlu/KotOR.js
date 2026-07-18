@@ -139,24 +139,23 @@ export const TabUTMEditor = function(props: BaseTabProps){
               </FormField>
               <FormField 
                 label="Buy/Sell Flag" 
-                info="Controls what the store can do: 0 = Buy only, 1 = Sell only, 2 = Buy and Sell, 3 = Neither."
+                info="Retail BuySellFlag: 1 = Buy only, 2 = Sell only, 3 = Buy and Sell (Examine toggles mode)."
               >
                 <select value={buySellFlag} onChange={(e) => { setBuySellFlag(Number(e.target.value)); tab.store.buySellFlag = Number(e.target.value); tab.updateFile(); }}>
-                  <option value={0}>Buy Only</option>
-                  <option value={1}>Sell Only</option>
-                  <option value={2}>Buy and Sell</option>
-                  <option value={3}>Neither</option>
+                  <option value={1}>Buy Only</option>
+                  <option value={2}>Sell Only</option>
+                  <option value={3}>Buy and Sell</option>
                 </select>
               </FormField>
               <FormField 
                 label="Mark Down" 
-                info="Percentage discount when selling items to the store (0-100)."
+                info="Percentage of base cost paid when buying from the PC (100 = full GetCost)."
               >
                 <input type="number" min="0" max="100" value={markDown} onChange={onUpdateNumberField(setMarkDown, 'markDown')} />
               </FormField>
               <FormField 
                 label="Mark Up" 
-                info="Percentage markup when buying items from the store (0-100)."
+                info="Percentage of base cost charged when selling to the PC (100 = full GetCost)."
               >
                 <input type="number" min="0" max="100" value={markUp} onChange={onUpdateNumberField(setMarkUp, 'markUp')} />
               </FormField>

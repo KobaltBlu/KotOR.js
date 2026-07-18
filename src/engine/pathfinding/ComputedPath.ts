@@ -2,7 +2,30 @@ import * as THREE from "three";
 import { PathPoint } from "@/engine/pathfinding/PathPoint";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { GameState } from "@/GameState";
-import { BinaryHeap } from "@/engine/pathfinding/BinaryHeap";
+import { smoothCornerOptimize } from "@/engine/pathfinding/smooth-corner-optimize";
+import {
+  smoothSelectionRestartable,
+  SMOOTH_SELECTION_BUDGET_MS,
+  type SmoothSelectionResume,
+} from "@/engine/pathfinding/smooth-select-nodes";
+import { testDirectLine } from "@/engine/pathfinding/test-direct-line";
+import { computeCreatureEdgeDetour } from "@/engine/pathfinding/path-point-creature-detour";
+import { pathPointDfsSearch } from "@/engine/pathfinding/path-point-dfs";
+import type { PathPointDfsTransTable } from "@/engine/pathfinding/path-point-dfs-trans-table";
+import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
+import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
+
+/** Resume state for PlotPathPointPath field104 / field111 across timed-out searches. */
+export type PathPointDfsResume = {
+  transTable: PathPointDfsTransTable;
+  costBudget: number;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
+};
+
+export type { SmoothSelectionResume };
 
 export class ComputedPath {
   owner: ModuleObject;
@@ -11,6 +34,12 @@ export class ComputedPath {
   destination: PathPoint = undefined;
   realtime: boolean = false;
   timer: number = 0;
+  /** SmoothSelectionRestartable mid-pipeline resume (field124 + working). */
+  smoothResume: SmoothSelectionResume | undefined;
+  /** True when DFS hit wall-clock budget without a full path (retail return 1). */
+  incomplete: boolean = false;
+  /** Populated on timeout for cross-frame TransTable reuse (retail field104_0x1b4). */
+  dfsResume: PathPointDfsResume | undefined;
 
   color = new THREE.Color().setRGB(1, 0.6470588235294118, 0);
   helperColors: THREE.Float32BufferAttribute;
@@ -22,6 +51,9 @@ export class ComputedPath {
   });
   helperMesh: THREE.LineSegments = new THREE.LineSegments();
   enableHelper: boolean = false;
+
+  /** Detour waypoint when parent→child went around a creature (retail cost geometry). */
+  private edgeDetours = new WeakMap<PathPoint, THREE.Vector3>();
 
   constructor(owner: ModuleObject, origin: PathPoint = undefined, destination: PathPoint = undefined){
     this.owner = owner;
@@ -35,7 +67,8 @@ export class ComputedPath {
   }
 
   getCost( point: PathPoint ){
-    return point.vector.distanceToSquared( this.destination.vector );
+    // Retail PathPointDFS heuristic: distance to goal
+    return point.vector.distanceTo( this.destination.vector );
   }
 
   clone(){
@@ -46,119 +79,175 @@ export class ComputedPath {
     return clone;
   }
 
-  //https://github.com/bgrins/javascript-astar
-  search(): ComputedPath {
-    const openHeap = new BinaryHeap<PathPoint>(
-      //scorer
-      function(node: PathPoint) { 
-      return node.f; 
+  /**
+   * PTH graph search — PathPointDFS (@ 004c0b30) with TransTable + iterative
+   * cost budget (PlotPathPointPath). Creature detours from GenerateSuccessors.
+   * Optional wall-clock slice (~retail high-res timer continuation).
+   * Pass `resume` to reuse TransTable when start/end unchanged (field104).
+   */
+  search(options: {
+    timeBudgetMs?: number;
+    resume?: PathPointDfsResume;
+  } = {}): ComputedPath {
+    this.edgeDetours = new WeakMap();
+    this.incomplete = false;
+    this.dfsResume = undefined;
+    this.smoothResume = undefined;
+    if(!this.origin || !this.destination){
+      return this;
+    }
+
+    // Realtime / chase repaths get a tighter slice; normal plots get default DFS budget
+    const timeBudgetMs = options.timeBudgetMs ?? (this.realtime ? 6 : undefined);
+
+    const ox = this.origin.vector.x;
+    const oy = this.origin.vector.y;
+    const dx = this.destination.vector.x;
+    const dy = this.destination.vector.y;
+    const resume = options.resume;
+    const sameEndpoints = !!(
+      resume &&
+      Math.hypot(ox - resume.startX, oy - resume.startY) < 0.01 &&
+      Math.hypot(dx - resume.endX, dy - resume.endY) < 0.01
+    );
+
+    const result = pathPointDfsSearch({
+      origin: this.origin,
+      destination: this.destination,
+      owner: this.owner,
+      evaluateEdge: (from, to) => this.evaluateEdge(from, to),
+      timeBudgetMs,
+      transTable: sameEndpoints ? resume.transTable : undefined,
+      costBudget: sameEndpoints ? resume.costBudget : undefined,
     });
-    openHeap.push(this.origin);
-    while(openHeap.size() > 0){
-      const currentNode = openHeap.pop();
 
-      if(currentNode == this.destination){
-        let curr = currentNode;
-        curr.end = true;
-        this.points = [];
-        while(curr.parent) {
-          this.points.push(curr);
-          curr = curr.parent;
-        }
-        
-        this.points.reverse();
-        this.prunePathPoints();
-        return this;
-      }
-
-      currentNode.closed = true;
-
-      const neighbors = currentNode.connections;
-      for(let i = 0, il = neighbors.length; i < il; i++) {
-        let neighbor = neighbors[i];
-        if(neighbor.closed || !neighbor.hasLOS(currentNode, this.owner)) {
-          continue;
-        }
-        let gScore = currentNode.g + neighbor.cost;
-        let beenVisited = neighbor.visited;
-        if(!beenVisited || gScore < neighbor.g) {
-          neighbor.visited = true;
-          neighbor.parent = currentNode;
-          neighbor.h = neighbor.h || this.getCost(neighbor);
-          neighbor.g = gScore;
-          neighbor.f = neighbor.g + neighbor.h;
-          if (!beenVisited) {
-            openHeap.push(neighbor);
-          }
-          else {
-            openHeap.rescoreElement(neighbor);
-          }
-        }
-      }
-
+    this.edgeDetours = result.detours;
+    this.incomplete = !!result.timedOut;
+    if(result.end && (result.ok || result.timedOut)){
+      this.reconstructPath(result.end);
+      // SmoothSelection runs in ModulePath.traverseToPoint / callers via prunePathPoints
+      // (avoids double-prune and allows SmoothSelectionRestartable resume).
+    }
+    if(result.timedOut && result.transTable && result.costBudget != null){
+      this.dfsResume = {
+        transTable: result.transTable,
+        costBudget: result.costBudget,
+        startX: ox,
+        startY: oy,
+        endX: dx,
+        endY: dy,
+      };
     }
     return this;
   }
 
+  private reconstructPath(end: PathPoint){
+    let curr: PathPoint | undefined = end;
+    if(curr) curr.end = true;
+    this.points = [];
+    while(curr){
+      this.points.push(curr);
+      const parent = curr.parent;
+      const detour = this.edgeDetours.get(curr);
+      if(detour && parent){
+        const mid = PathPoint.FromVector3(detour);
+        mid.setArea(curr.area ?? parent.area);
+        this.points.push(mid);
+      }
+      curr = parent;
+    }
+    this.points.reverse();
+  }
+
   /**
-   * Prunes any unneeded points based of LOS checks between points
-   * @returns void
+   * Edge cost for PTH expansion (GenerateSuccessors @ 004bdb00).
+   * cost < 0 = blocked (NoNonWalk door/placeable / wall).
+   * Creature on line → retail detour length + splice waypoint.
    */
-  prunePathPoints(){
-    // return;
-    if(!this.points.length)
+  private evaluateEdge(from: PathPoint, to: PathPoint): { cost: number; detour?: THREE.Vector3 } {
+    const dist = from.vector.distanceTo(to.vector);
+    const area = from.area ?? this.owner?.area;
+    if(!area) return { cost: dist };
+
+    // Retail: NoNonWalkPolysDetailed after creature check — skip door/placeable edges
+    const polys = noNonWalkPolysDetailed(area, from.vector, to.vector);
+    if(!polys.clear){
+      return { cost: -1 };
+    }
+
+    const creatures = noCreaturesOnLine(area, from.vector, to.vector, {
+      owner: this.owner,
+      allowPartyCreatures: true,
+    });
+    if(!creatures.clear && creatures.blockingCreatureId != null){
+      const blocker =
+        area.creatures?.find((c) => c.id === creatures.blockingCreatureId) ??
+        GameState.PartyManager?.party?.find((c) => c.id === creatures.blockingCreatureId);
+      if(blocker){
+        const d = computeCreatureEdgeDetour(area, from.vector, to.vector, blocker, this.owner);
+        if(d) return { cost: d.cost, detour: d.detour };
+      }
+      return { cost: dist + Math.max(1.0, dist * 0.5) };
+    }
+
+    // Wall / walkmesh LOS (non-creature)
+    const hit = testDirectLine(area, from.vector, to.vector, {
+      owner: this.owner,
+      checkCreatures: false,
+      allowPartyCreatures: true,
+    });
+    if(hit.ok) return { cost: dist };
+    return { cost: -1 };
+  }
+
+  /**
+   * Prune — retail SmoothSelection three-pass (densify + string-pull).
+   * Optional time budget + resume (~SmoothSelectionRestartable @ 004c13e0).
+   */
+  prunePathPoints(options: {
+    timeBudgetMs?: number;
+    resume?: SmoothSelectionResume;
+  } = {}){
+    if(this.points.length <= 2){
+      this.smoothResume = undefined;
       return;
-
-    const pruneList: number[] = [];
-    let pruneRest = false;
-
-    let lastLOSOrigin;
-    for(let i = 0, len = this.points.length; i < len; i++){
-      const cPoint = this.points[i];
-      const nPoint = this.points[i+1];
-      const lPoint = this.points[i-1];
-
-      if(this.destination == cPoint || !nPoint) continue;
-
-      /**
-       * Prune until the end because we already found LOS to the destination
-       */
-      if(pruneRest && nPoint){
-        pruneList.push(i);
-        continue;
-      }
-
-      if(cPoint.hasLOS(this.destination, this.owner)){
-        pruneRest = true;
-        continue;
-      }
-      
-      if(cPoint == this.origin)
-        continue;
-
-      if(!lPoint)
-        continue;
-
-      if(lastLOSOrigin && lastLOSOrigin.hasLOS(nPoint, this.owner)){
-        pruneList.push(i);
-        continue;
-      }
-
-      lastLOSOrigin = undefined;
-
-      if(!!nPoint && lPoint.hasLOS(nPoint, this.owner)){
-        lastLOSOrigin = lPoint;
-        pruneList.push(i);
-        continue;
-      }
     }
 
-    if(pruneList.length){
-      while(pruneList.length){
-        this.points.splice(pruneList.pop(), 1);
+    const area = this.owner?.area ?? this.points[0]?.area;
+    const vectors = this.points.map((p) => p.vector);
+    const timeBudgetMs = options.timeBudgetMs ?? (
+      this.realtime ? SMOOTH_SELECTION_BUDGET_MS : undefined
+    );
+    const result = smoothSelectionRestartable(area, vectors, this.owner, {
+      timeBudgetMs,
+      resume: options.resume,
+    });
+    const selected = result.points;
+    this.smoothResume = result.timedOut ? result.resume : undefined;
+    // Intra-call abort only — do not mark path incomplete (would fight DFS resume).
+    if(selected.length === this.points.length){
+      let same = true;
+      for(let i = 0; i < selected.length; i++){
+        if(selected[i] !== this.points[i].vector && selected[i].distanceToSquared(this.points[i].vector) > 1e-8){
+          same = false;
+          break;
+        }
       }
+      if(same) return;
     }
 
+    const next: PathPoint[] = [];
+    for(let i = 0; i < selected.length; i++){
+      const v = selected[i];
+      const existing = this.points.find((p) => p.vector === v || p.vector.distanceToSquared(v) < 1e-8);
+      next.push(existing ?? PathPoint.FromVector3(v));
+    }
+    if(next.length){
+      next[next.length - 1].end = true;
+    }
+    this.points = next;
+    this.origin = this.points[0];
+    this.destination = this.points[this.points.length - 1];
     this.reIndex();
   }
 
@@ -173,14 +262,22 @@ export class ComputedPath {
 
   buildHelperLine(){
     const pointCount = this.points.length;
-    const connectionCount = pointCount - 1;
+    if(pointCount < 1){
+      if(this.helperMesh){
+        this.helperMesh.visible = false;
+        this.helperMesh.removeFromParent();
+      }
+      return;
+    }
+
+    const connectionCount = Math.max(0, pointCount - 1);
     const pointDataSize = 6;
     const connDataSize = 6;
     const bufferSize = (pointCount * pointDataSize) + (connectionCount * connDataSize);
 
     let connectionIndexStart = (pointCount * 2);
 
-    if(!bufferSize){
+    if(bufferSize <= 0){
       this.helperMesh.visible = false;
       this.helperMesh.removeFromParent();
       return;
@@ -360,6 +457,19 @@ export class ComputedPath {
     this.points = curve.getPoints( divisions ).map( (v) => {
       return PathPoint.FromVector3(this.owner ? this.owner.area.getNearestWalkablePoint(v, safeDistance) : v);
     });
+  }
+
+  /**
+   * Retail SmoothPointsOnPath second stage — corner chords via TestDirectLine.
+   * Prefer this over Catmull-Rom for pathfinding fidelity.
+   */
+  smoothCorners(){
+    if(this.points.length < 3) return;
+    const area = this.owner?.area ?? this.points[0]?.area;
+    this.points = smoothCornerOptimize(area, this.points, this.owner);
+    this.origin = this.points[0];
+    this.destination = this.points[this.points.length - 1];
+    this.reIndex();
   }
 
   static FromPointsList(points: PathPoint[] = []): ComputedPath {

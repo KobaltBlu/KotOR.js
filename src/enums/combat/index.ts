@@ -1,6 +1,7 @@
 export * from "@/enums/combat/AttackResult";
 export * from "@/enums/combat/CombatActionType";
 export * from "@/enums/combat/CombatFeatType";
+export * from "@/enums/combat/CombatMode";
 export * from "@/enums/combat/LightsaberForm";
 export * from "@/enums/combat/ProjectilePath";
 export * from "@/enums/combat/RoundTypes";

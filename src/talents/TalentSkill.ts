@@ -1,14 +1,19 @@
 import { GameState } from "@/GameState";
 import { ActionUnlockObject } from "@/actions/ActionUnlockObject";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { BaseItemType } from "@/enums/combat/BaseItemType";
 import { TalentObjectType } from "@/enums/engine/TalentObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import { SubSkillType } from "@/enums/nwscript/SubSkillType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
-import type { ModuleObject } from "@/module";
+import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { TwoDAObject } from "@/resource/TwoDAObject";
 import { TalentObject } from "@/talents/TalentObject";
+import { BitWise } from "@/utility/BitWise";
 
 interface SkillClass {
   class: string;
@@ -49,13 +54,56 @@ export class TalentSkill extends TalentObject {
     this.rank = rank;
   }
   
-  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
+  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject, nSubSkill: number = 0, oItemUsed?: ModuleObject){
     this.oCaster = oCaster;
     this.oTarget = oTarget;
-    if(this.id == 6){ //Security
+    if(this.id == SkillType.SECURITY){
       const action = new ActionUnlockObject();
       action.setParameter(0, ActionParameterType.DWORD, this.oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
+      action.setParameter(1, ActionParameterType.DWORD, oItemUsed || ModuleObjectConstant.OBJECT_INVALID);
       this.oCaster.actionQueue.add(action);
+      return;
+    }
+
+    if(this.id == SkillType.DEMOLITIONS){
+      let action: any;
+      if(nSubSkill == SubSkillType.RECOVERTRAP){
+        action = new GameState.ActionFactory.ActionRecoverMine();
+      }else if(nSubSkill == SubSkillType.EXAMINETRAP){
+        action = new GameState.ActionFactory.ActionExamineMine();
+      }else if(nSubSkill == SubSkillType.FLAGTRAP){
+        action = new GameState.ActionFactory.ActionFlagMine();
+      }else{
+        action = new GameState.ActionFactory.ActionDisarmMine();
+      }
+      action.setParameter(0, ActionParameterType.DWORD, this.oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
+      this.oCaster.actionQueue.add(action);
+      return;
+    }
+
+    if(this.id == SkillType.TREAT_INJURY || this.id == SkillType.REPAIR){
+      if(!BitWise.InstanceOfObject(oCaster, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      const caster = oCaster as ModuleCreature;
+      let kit = BitWise.InstanceOfObject(oItemUsed, ModuleObjectType.ModuleItem)
+        ? oItemUsed as ModuleItem
+        : undefined;
+
+      if(!kit && this.id == SkillType.TREAT_INJURY){
+        kit = caster.getInventory().find((item) => item.baseItemId === BaseItemType.MEDICAL_EQUIPMENT);
+      }
+
+      if(!kit){
+        return;
+      }
+
+      const action = new GameState.ActionFactory.ActionHeal();
+      action.setParameter(0, ActionParameterType.DWORD, oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
+      action.setParameter(1, ActionParameterType.DWORD, kit);
+      action.setParameter(2, ActionParameterType.INT, this.id);
+      action.setParameter(3, ActionParameterType.INT, 1);
+      caster.actionQueue.add(action);
     }
   }
 
@@ -171,8 +219,8 @@ export class TalentSkill extends TalentObject {
 
         const classCodeLower = classCode.toLowerCase();
 
-        const isClassSkill = TwoDAObject.normalizeValue(`${classCodeLower}_class`, 'boolean', false);
-        const recommendedLevel = TwoDAObject.normalizeValue(`${classCodeLower}_reco`, 'number', 0);
+        const isClassSkill = TwoDAObject.normalizeValue(row[`${classCodeLower}_class`], 'boolean', false);
+        const recommendedLevel = TwoDAObject.normalizeValue(row[`${classCodeLower}_reco`], 'number', 0);
 
         const skillClass: SkillClass = {
           class: classCode,

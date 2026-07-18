@@ -59,6 +59,7 @@ export class MenuManager {
   static MenuFeedback: KOTOR.MenuFeedback;
   static MenuGalaxyMap: KOTOR.MenuGalaxyMap;
   static MenuGameplay: KOTOR.MenuGameplay;
+  static MenuGameOver: TSL.MenuGameOver;
   static MenuGraphics: KOTOR.MenuGraphics;
   static MenuGraphicsAdvanced: KOTOR.MenuGraphicsAdvanced;
   static MenuInventory: KOTOR.MenuInventory;
@@ -525,6 +526,7 @@ export class MenuManager {
           MenuManager.MenuPazaakWager,
           MenuManager.MenuPazaakGame,
           MenuManager.MenuPazaakSetup,
+          MenuManager.MenuGameOver,
         ] = await Promise.all([
           MenuManager.GameMenuLoader(TSL.InGameAreaTransition),
           MenuManager.GameMenuLoader(TSL.InGameBark),
@@ -555,6 +557,7 @@ export class MenuManager {
           MenuManager.GameMenuLoader(TSL.MenuPazaakWager),
           MenuManager.GameMenuLoader(TSL.MenuPazaakGame),
           MenuManager.GameMenuLoader(TSL.MenuPazaakSetup),
+          MenuManager.GameMenuLoader(TSL.MenuGameOver),
         ]) as [
           KOTOR.InGameAreaTransition, KOTOR.InGameBark, KOTOR.InGameComputer, KOTOR.InGameComputerCam,
           KOTOR.InGameDialog, KOTOR.InGameOverlay, KOTOR.InGamePause, KOTOR.MenuAbilities,
@@ -563,7 +566,7 @@ export class MenuManager {
           KOTOR.MenuMap, KOTOR.MenuMessages, KOTOR.MenuOptions, KOTOR.MenuFeedback,
           KOTOR.MenuPartySelection, KOTOR.MenuStore, KOTOR.MenuTop, KOTOR.MenuUpgrade,
           KOTOR.MenuUpgradeItems, KOTOR.MenuUpgradeSelect, KOTOR.MenuPazaakWager,
-          KOTOR.MenuPazaakGame, KOTOR.MenuPazaakSetup,
+          KOTOR.MenuPazaakGame, KOTOR.MenuPazaakSetup, TSL.MenuGameOver,
         ];
       }
 

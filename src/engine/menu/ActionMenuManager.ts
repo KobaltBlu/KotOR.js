@@ -3,18 +3,37 @@ import { ActionMenuPanel } from "@/engine/menu/ActionMenuPanel";
 import { ActionMenuItem } from "@/engine/menu/ActionMenuItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleItem } from "@/module/ModuleItem";
 import { IActionPanelLists } from "@/interface/gui/IActionPanelLists";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ActionType } from "@/enums/actions/ActionType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "@/enums";
 import { TalentObject } from "@/talents/TalentObject";
+import { TalentSpell } from "@/talents/TalentSpell";
+import {
+  UsableItemMask,
+  getUsableItemMenuName,
+  isGrenadeHostileItem,
+  isLeaderUsableItem,
+  isUsableItemActive,
+} from "@/engine/menu/action-menu-usable";
+import { getCombatMenuFeatIds } from "@/engine/menu/action-menu-combat-feats";
+import {
+  buildEquipmentForceMenuSpellList,
+  buildForceMenuSpellList,
+  getHostileTargetExclusionFlags,
+  isDroidForceMenuCaster,
+  isForceMenuSpellEnabled,
+} from "@/engine/menu/action-menu-force-powers";
 
 /**
  * ActionMenuManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ * Populates mipc personal/target action slots like retail
+ * CSWCCreature::{GetPersonalActions,GetTargetActions}.
+ *
  * @file ActionMenuManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -34,11 +53,11 @@ export class ActionMenuManager {
     targetPanels: [],
     selfPanels: [],
   };
-  
+
   static SetPC(oPC: ModuleCreature){
     ActionMenuManager.oPC = oPC;
   }
-  
+
   static SetTarget(oTarget: ModuleObject){
     ActionMenuManager.oTarget = oTarget;
   }
@@ -50,13 +69,161 @@ export class ActionMenuManager {
       targetPanels: [],
       selfPanels: [],
     };
-    
+
     for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.targetPanels[i] = new GameState.ActionMenuManager.ActionMenuPanel();
     }
-    
+
     for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.selfPanels[i] = new GameState.ActionMenuManager.ActionMenuPanel();
+    }
+  }
+
+  static areaIsRestricted(): boolean {
+    return !!ActionMenuManager.oPC?.area?.restrictMode;
+  }
+
+  /** Retail GetSelfForcePowers → personal slot 0. */
+  static populateSelfForcePowers(){
+    if(!ActionMenuManager.oPC) return;
+    // ClassInfo::GetMenuInfo returns empty while area restrict_mode != 0.
+    if(ActionMenuManager.areaIsRestricted()) return;
+
+    const resource = ActionMenuManager.oPC.getForceMenuResource();
+    const forceItemMask = ActionMenuManager.oPC.getForceItemMask();
+    // Self uses known class spells only (not armband CastSpell props).
+    const entries = buildForceMenuSpellList(
+      ActionMenuManager.oPC.getClassSpells(),
+      'friendly'
+    );
+
+    for(let i = 0; i < entries.length; i++){
+      const { spell } = entries[i];
+      const cost = ActionMenuManager.oPC.getAdjustedForcePointCost(spell);
+      // Retail GetSelfForcePowers passes distanceSq = 0.0001
+      const enabled = isForceMenuSpellEnabled(spell, {
+        resource,
+        cost,
+        distanceSq: 0.0001,
+        forceItemMask,
+      });
+      ActionMenuManager.ActionPanels.selfPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+        talent: spell,
+        target: ActionMenuManager.oPC,
+        icon: spell.iconresref,
+        enabled,
+        name: spell.name || spell.label || '',
+      }));
+    }
+  }
+
+  /** Retail GetHostileForcePowers → target slot 1. */
+  static populateHostileForcePowers(){
+    if(!ActionMenuManager.oPC || !ActionMenuManager.oTarget) return;
+    if(ActionMenuManager.areaIsRestricted()) return;
+
+    const exclusionFlags = getHostileTargetExclusionFlags(ActionMenuManager.oTarget);
+    const resource = ActionMenuManager.oPC.getForceMenuResource();
+    const forceItemMask = ActionMenuManager.oPC.getForceItemMask();
+    const dx = ActionMenuManager.oTarget.position.x - ActionMenuManager.oPC.position.x;
+    const dy = ActionMenuManager.oTarget.position.y - ActionMenuManager.oPC.position.y;
+    const dz = ActionMenuManager.oTarget.position.z - ActionMenuManager.oPC.position.z;
+    const distanceSq = dx * dx + dy * dy + dz * dz;
+
+    const entries = isDroidForceMenuCaster(ActionMenuManager.oPC)
+      ? buildEquipmentForceMenuSpellList(ActionMenuManager.oPC, exclusionFlags)
+      : buildForceMenuSpellList(
+          ActionMenuManager.oPC.getClassSpells(),
+          'hostile',
+          exclusionFlags
+        );
+
+    for(let i = 0; i < entries.length; i++){
+      const entry = entries[i];
+      const spell = entry.spell;
+      let enabled: boolean;
+      if(entry.item){
+        // GetEquipmentForcePowers: charges + item masks (no FP gate).
+        enabled = isUsableItemActive(ActionMenuManager.oPC, entry.item)
+          && isForceMenuSpellEnabled(spell, {
+            resource: Number.POSITIVE_INFINITY,
+            cost: 0,
+            distanceSq,
+            forceItemMask,
+          });
+      }else{
+        const cost = ActionMenuManager.oPC.getAdjustedForcePointCost(spell);
+        enabled = isForceMenuSpellEnabled(spell, {
+          resource,
+          cost,
+          distanceSq,
+          forceItemMask,
+        });
+      }
+      ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+        talent: spell,
+        item: entry.item,
+        target: ActionMenuManager.oTarget,
+        icon: spell.iconresref || entry.item?.getIcon?.() || '',
+        enabled,
+        name: spell.name || spell.label || '',
+      }));
+    }
+  }
+
+  /** Retail GetUsableItems(mask) for a personal slot. */
+  static populateUsableItems(panelIndex: number, mask: number){
+    if(!ActionMenuManager.oPC) return;
+    const panel = ActionMenuManager.ActionPanels.selfPanels[panelIndex];
+    if(!panel) return;
+
+    // Retail skips equipped bands/belt in restricted areas, but still scans
+    // inventory so plot items can pass IsLeaderUsableItem.
+    if(!ActionMenuManager.areaIsRestricted()){
+      const equipSlots: (keyof ModuleCreature['equipment'])[] = ['LEFTARMBAND', 'RIGHTARMBAND', 'BELT'];
+      for(let i = 0; i < equipSlots.length; i++){
+        const item = ActionMenuManager.oPC.equipment[equipSlots[i]] as ModuleItem;
+        if(!item) continue;
+        if(!isLeaderUsableItem(ActionMenuManager.oPC, item, true, mask)) continue;
+        panel.addAction(new GameState.ActionMenuManager.ActionMenuItem({
+          item,
+          target: ActionMenuManager.oPC,
+          icon: item.getIcon(),
+          enabled: isUsableItemActive(ActionMenuManager.oPC, item, true),
+          name: getUsableItemMenuName(item),
+        }));
+      }
+    }
+
+    const inventory = ActionMenuManager.oPC.getInventory() || [];
+    for(let i = 0; i < inventory.length; i++){
+      const item = inventory[i];
+      if(!item) continue;
+      if(!isLeaderUsableItem(ActionMenuManager.oPC, item, false, mask)) continue;
+      panel.addAction(new GameState.ActionMenuManager.ActionMenuItem({
+        item,
+        target: ActionMenuManager.oPC,
+        icon: item.getIcon(),
+        enabled: isUsableItemActive(ActionMenuManager.oPC, item, false),
+        name: getUsableItemMenuName(item),
+      }));
+    }
+  }
+
+  /** Retail GetHostileItems — grenades on hostile creature target slot 2. */
+  static populateHostileItems(){
+    if(!ActionMenuManager.oPC || !ActionMenuManager.oTarget || ActionMenuManager.areaIsRestricted()) return;
+    const inventory = ActionMenuManager.oPC.getInventory() || [];
+    for(let i = 0; i < inventory.length; i++){
+      const item = inventory[i];
+      if(!isGrenadeHostileItem(item)) continue;
+      ActionMenuManager.ActionPanels.targetPanels[2].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+        item,
+        target: ActionMenuManager.oTarget,
+        icon: item.getIcon(),
+        enabled: isUsableItemActive(ActionMenuManager.oPC, item),
+        name: item.getName(),
+      }));
     }
   }
 
@@ -64,228 +231,178 @@ export class ActionMenuManager {
     for(let i = 0; i < ActionMenuManager.TARGET_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.targetPanels[i].clearActions();
     }
-    
+
     for(let i = 0; i < ActionMenuManager.SELF_MENU_COUNT; i++){
       ActionMenuManager.ActionPanels.selfPanels[i].clearActions();
     }
 
+    if(!ActionMenuManager.oPC){
+      return ActionMenuManager.ActionPanels;
+    }
+
     const securityTalent = ActionMenuManager.oPC.skills[SkillType.SECURITY];
-    const bHasSecuritySkill = ActionMenuManager.oPC.getSkillLevel(SkillType.SECURITY) >= 1;
-    const bHasDemolitionsSkill = ActionMenuManager.oPC.getSkillLevel(SkillType.DEMOLITIONS) >= 1;
+    const bCanUseSecurity = ActionMenuManager.oPC.getCanUseSkill(SkillType.SECURITY);
+    const bCanUseDemolitions = ActionMenuManager.oPC.getCanUseSkill(SkillType.DEMOLITIONS);
+
+    const restricted = ActionMenuManager.areaIsRestricted();
 
     if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleObject){
 
       if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModulePlaceable){
-        if(ActionMenuManager.oTarget.isLocked()){
-          if(bHasSecuritySkill){
-            const action = new GameState.ActionFactory.ActionUnlockObject();
-            action.setOwner(ActionMenuManager.oPC as ModuleObject);
-            action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
-            action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
-            ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-              action: action,
-              icon: securityTalent.getIcon()
-            }));
-          }
-
-          const securityTunnelers = ActionMenuManager.oPC.getInventory().filter((item) => {
-            return item.baseItemId == 59
-          });
-
-          if(securityTunnelers.length){
-            const item = securityTunnelers[0];
-            
-            const action = new GameState.ActionFactory.ActionUnlockObject();
-            action.setOwner(ActionMenuManager.oPC as ModuleObject);
-            action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
-            action.setParameter(1, ActionParameterType.DWORD, securityTunnelers[0]);
-            ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-              action: action,
-              icon: item.getIcon()
-            }));
-          }
-          
-          if(!this.oTarget?.notBlastable){
-            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-              action: {
-                type: ActionType.ActionPhysicalAttacks,
-                object: ActionMenuManager.oTarget,
-                talent: undefined
-              },
-              icon: 'i_attack'
-            }));
-          }
-
-          if(!ActionMenuManager.oTarget?.notBlastable){
-            const mineList = ActionMenuManager.oPC.getInventory().filter((item) => {
-              return item.baseItemId == 58
-            });
-            for(let i = 0, len = mineList.length; i < len; i++){
-              const item = mineList[i];
-              const setMine = new GameState.ActionFactory.ActionSetMine();
-              setMine.setOwner(ActionMenuManager.oPC as ModuleObject);
-              setMine.setTarget(ActionMenuManager.oTarget as ModuleObject);
-              setMine.setParameter(0, ActionParameterType.DWORD, item);
-              setMine.setParameter(1, ActionParameterType.DWORD, ActionMenuManager.oTarget);
-              setMine.setParameter(2, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.x);
-              setMine.setParameter(3, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.y);
-              setMine.setParameter(4, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.z);
-              ActionMenuManager.ActionPanels.targetPanels[2].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-                action: setMine,
-                icon: item.getIcon()
-              }));
-            }
-          }
+        // Retail placeable slot 1: Security when locked + useable + can use skill.
+        if(
+          ActionMenuManager.oTarget.isLocked() &&
+          ActionMenuManager.oTarget.isUseable() &&
+          bCanUseSecurity
+        ){
+          const action = new GameState.ActionFactory.ActionUnlockObject();
+          action.setOwner(ActionMenuManager.oPC as ModuleObject);
+          action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
+          action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+          ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+            action: action,
+            icon: securityTalent.getIcon()
+          }));
+        }
+        // Retail placeable slot 0: Bash when closed/useable/not blastable and
+        // area restrict_mode == 0 (independent of lock state).
+        if(
+          !restricted &&
+          !ActionMenuManager.oTarget.isOpen() &&
+          ActionMenuManager.oTarget.isUseable() &&
+          !ActionMenuManager.oTarget.notBlastable
+        ){
+          const player = GameState.PartyManager.Player;
+          // Retail dims Bash on a locked placeable when a companion is acting,
+          // the player creature is dead/in-party, and PartyInteract is false.
+          const bashEnabled = (
+            !ActionMenuManager.oTarget.isLocked() ||
+            !player ||
+            ActionMenuManager.oPC === player ||
+            !player.isPartyMember() ||
+            !player.isDead() ||
+            !!ActionMenuManager.oTarget.partyInteract
+          );
+          ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+            action: {
+              type: ActionType.ActionPhysicalAttacks,
+              object: ActionMenuManager.oTarget,
+              talent: undefined
+            },
+            target: ActionMenuManager.oTarget,
+            icon: 'i_attack',
+            name: 'Bash',
+            enabled: bashEnabled,
+          }));
+        }
+        // Retail GetTargetActions TARGET_SWITCHING path: an unlocked hostile
+        // placeable redirects slot 1 to hostile force powers (reputation < 11).
+        if(
+          !ActionMenuManager.oTarget.isLocked() &&
+          ActionMenuManager.oTarget.isHostile(ActionMenuManager.oPC as ModuleObject)
+        ){
+          ActionMenuManager.populateHostileForcePowers();
         }
       }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleDoor){
-        if(ActionMenuManager.oTarget.isLocked()){
-          if(bHasSecuritySkill){
-            const action = new GameState.ActionFactory.ActionUnlockObject();
-            action.setOwner(ActionMenuManager.oPC as ModuleObject);
-            action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
-            action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+        // Retail door slot 1: Security when useable, KeyRequired == 0, and
+        // GetCanUseSkill(Security). Unlock action itself still needs locked.
+        if(
+          ActionMenuManager.oTarget.isUseable() &&
+          !ActionMenuManager.oTarget.keyRequired &&
+          bCanUseSecurity
+        ){
+          const action = new GameState.ActionFactory.ActionUnlockObject();
+          action.setOwner(ActionMenuManager.oPC as ModuleObject);
+          action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
+          action.setParameter(1, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
 
-            ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-              action: action,
-              icon: securityTalent.getIcon()
-            }));
-          }
-
-          const securityTunnelers = this.oPC.getInventory().filter((item) => {
-            return item.baseItemId == 59
-          });
-
-          if(securityTunnelers.length){
-            const item = securityTunnelers[0];
-            
-            const action = new GameState.ActionFactory.ActionUnlockObject();
-            action.setOwner(ActionMenuManager.oPC as ModuleObject);
-            action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
-            action.setParameter(1, ActionParameterType.DWORD, securityTunnelers[0]);
-            ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-              action: action,
-              icon: item.getIcon()
-            }));
-          }
-          
-          if(!this.oTarget?.notBlastable){
-            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-              action: {
-                type: ActionType.ActionPhysicalAttacks,
-                object: ActionMenuManager.oTarget,
-                talent: undefined
-              },
-              icon: 'i_attack'
-            }));
-          }
-
-          const mineList = this.oPC.getInventory().filter((item) => {
-            return item.baseItemId == 58
-          });
-
-          if(!this.oTarget?.notBlastable){
-            for(let i = 0, len = mineList.length; i < len; i++){
-              const item = mineList[i];
-              const setMine = new GameState.ActionFactory.ActionSetMine();
-              setMine.setOwner(ActionMenuManager.oPC as ModuleObject);
-              setMine.setTarget(ActionMenuManager.oTarget as ModuleObject);
-              setMine.setParameter(0, ActionParameterType.DWORD, item);
-              setMine.setParameter(1, ActionParameterType.DWORD, ActionMenuManager.oTarget);
-              setMine.setParameter(2, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.x);
-              setMine.setParameter(3, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.y);
-              setMine.setParameter(4, ActionParameterType.FLOAT, ActionMenuManager.oTarget.position.z);
-              ActionMenuManager.ActionPanels.targetPanels[2].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-                action: setMine,
-                icon: item.getIcon()
-              }));
-            }
-          }
-        }
-      }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature && ActionMenuManager.oTarget.isHostile(GameState.PartyManager.party[0] as ModuleObject)){
-        ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-          action: {
-            type: ActionType.ActionPhysicalAttacks,
-            object: ActionMenuManager.oTarget,
-            talent: undefined
-          },
-          icon: 'i_attack'
-        }));
-
-        if(ActionMenuManager.oPC.getEquippedWeaponType() == 1){
-          //category = 0x1104
-          const feats = ActionMenuManager.oPC.getFeats().filter( (f: any, i:number, array: any[]) => { 
-            return f.category == 0x1104 && (
-              f.successor == '****' || 
-              (!array.find( (f2: any) => f2.__index == f.successor))
-            ) 
-          });
-
-          for(let i = 0, len = feats.length; i < len; i++){
-            const feat = feats[i];
-            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-              talent: feat,
-              icon: feat.icon
-            }));
-          }
-
-        }
-
-        if(ActionMenuManager.oPC.getEquippedWeaponType() == 4){
-          //category = 0x1111
-          const feats = ActionMenuManager.oPC.getFeats().filter( (f: any, i:number, array: any[]) => { 
-            return f.category == 0x1111 && (
-              f.successor == '****' || 
-              (!array.find( (f2: any) => f2.__index == f.successor))
-            ) 
-          });
-
-          for(let i = 0, len = feats.length; i < len; i++){
-            const feat = feats[i];
-            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-              talent: feat,
-              icon: feat.icon
-            }));
-          }
-
-        }
-
-        const hostileSpells = ActionMenuManager.oPC.getSpells().filter( (s: any) => {
-          return !isNaN(parseInt(s.forcehostile));
-        });
-
-        for(let i = 0; i < hostileSpells.length; i++){
           ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-            talent: hostileSpells[i],
-            target: ActionMenuManager.oTarget,
-            icon: hostileSpells[i].iconresref
+            action: action,
+            icon: securityTalent.getIcon()
           }));
+        }
+        // Retail door slot 0: Bash suppressed while open/opening/closing,
+        // NotBlastable, unusable, or restrict_mode.
+        if(
+          !restricted &&
+          !ActionMenuManager.oTarget.isOpen() &&
+          ActionMenuManager.oTarget.isUseable() &&
+          !ActionMenuManager.oTarget.notBlastable
+        ){
+          ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+            action: {
+              type: ActionType.ActionPhysicalAttacks,
+              object: ActionMenuManager.oTarget,
+              talent: undefined
+            },
+            target: ActionMenuManager.oTarget,
+            icon: 'i_attack',
+            name: 'Bash',
+          }));
+        }
+      }else if(
+        ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature &&
+        ActionMenuManager.oTarget.isHostile(ActionMenuManager.oPC as ModuleObject)
+      ){
+        // Retail GetTargetActions slot 0: GetCombatFeatsSkills then
+        // GetHostileInterfaceActions(Attack). Both skip when restrict_mode.
+        if(!restricted){
+          // GetHostileInterfaceActions — Attack (i_attack). Listed first so
+          // selectedIndex 0 stays Attack; retail appends it after feats.
+          ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+            action: {
+              type: ActionType.ActionPhysicalAttacks,
+              object: ActionMenuManager.oTarget,
+              talent: undefined
+            },
+            icon: 'i_attack',
+            name: 'Attack',
+          }));
+
+          // GetCombatFeatsSkills/CheckFeat — one highest-owned feat per chain.
+          const featIds = getCombatMenuFeatIds(
+            id => ActionMenuManager.oPC.getHasFeat(id),
+            ActionMenuManager.oPC.isRangedEquipped()
+          );
+          for(let i = 0; i < featIds.length; i++){
+            // Bonus-feat effects pass CheckFeat even when not in the base feat list.
+            const feat = ActionMenuManager.oPC.getFeat(featIds[i])
+              || new GameState.TalentFeat(featIds[i]);
+            ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+              talent: feat,
+              target: ActionMenuManager.oTarget,
+              icon: feat.icon,
+              name: feat.name || feat.label || '',
+            }));
+          }
+
+          ActionMenuManager.populateHostileForcePowers();
+          ActionMenuManager.populateHostileItems();
         }
 
       }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleTrigger){
         if(ActionMenuManager.oTarget.type == ModuleTriggerType.TRAP){
-          /**
-           * Disarm Mine
-           */
-          if(bHasDemolitionsSkill && ActionMenuManager.oTarget.trapDisarmable){
+          if(bCanUseDemolitions && ActionMenuManager.oTarget.trapDisarmable){
             const action = new GameState.ActionFactory.ActionDisarmMine();
             action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
             ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: action,
-              icon: 'gui_mp_dismined'
+              target: ActionMenuManager.oTarget,
+              icon: 'i_disablemine',
+              name: 'Disable Mine',
             }));
           }
 
-          /**
-           * Recover Mine
-           */
-          if(bHasDemolitionsSkill){
+          if(bCanUseDemolitions){
             const action = new GameState.ActionFactory.ActionRecoverMine();
             action.setOwner(ActionMenuManager.oPC as ModuleObject);
             action.setParameter(0, ActionParameterType.DWORD, this.oTarget);
             ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
               action: action,
-              icon: 'gui_mp_recmined'
+              target: ActionMenuManager.oTarget,
+              icon: 'i_recovermine',
+              name: 'Recover Mine',
             }));
           }
         }
@@ -293,24 +410,18 @@ export class ActionMenuManager {
 
     }
 
-    const friendlySpells = ActionMenuManager.oPC.getSpells().filter( (s: any) => {
-      return !isNaN(parseInt(s.forcefriendly));
-    });
-
-    for(let i = 0; i < friendlySpells.length; i++){
-      ActionMenuManager.ActionPanels.selfPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
-        talent: friendlySpells[i],
-        target: ActionMenuManager.oPC,
-        icon: friendlySpells[i].iconresref
-      }));
-    }
+    // Retail GetPersonalActions slots 0–3
+    ActionMenuManager.populateSelfForcePowers();
+    ActionMenuManager.populateUsableItems(1, UsableItemMask.MEDICAL);
+    ActionMenuManager.populateUsableItems(2, UsableItemMask.OTHER);
+    ActionMenuManager.populateUsableItems(3, UsableItemMask.MINES);
 
     return ActionMenuManager.ActionPanels;
   }
 
   static targetActionCount(){
     return ActionMenuManager.ActionPanels.targetPanels.reduce(
-      (previousValue, currentValue, currentIndex, panels) => {
+      (previousValue, currentValue) => {
         return previousValue += currentValue.actions.length;
       }, 0
     );
@@ -318,10 +429,60 @@ export class ActionMenuManager {
 
   static selfActionCount(){
     return ActionMenuManager.ActionPanels.selfPanels.reduce(
-      (previousValue, currentValue, currentIndex, panels) => {
+      (previousValue, currentValue) => {
         return previousValue += currentValue.actions.length;
       }, 0
     );
+  }
+
+  /**
+   * Retail player input: ActionManager(1) clears the queue, then UseItem / CastSpell /
+   * AddAttackActions (HandlePlayerToServerInputMessage cases 2/9/0x12).
+   */
+  static activateMenuItem(menuItem: ActionMenuItem, defaultTarget?: ModuleObject){
+    if(!ActionMenuManager.oPC || !menuItem) return;
+    if(menuItem.enabled === false) return;
+
+    const target = menuItem.target || defaultTarget || ActionMenuManager.oTarget;
+    const pc = ActionMenuManager.oPC;
+
+    if(menuItem.action?.type === ActionType.ActionCounterSpell){
+      GameState.ActionFactory.AddCounterSpellActions(
+        pc as any,
+        target as any,
+        { clear: true }
+      );
+      return;
+    }
+
+    // Mirror CSWSCreature::ActionManager(1) before UseItem / CastSpell / Attack
+    pc.clearAllActions(true);
+
+    if(menuItem.action && menuItem.action.type == ActionType.ActionPhysicalAttacks){
+      pc.attackCreature(target as ModuleCreature, undefined);
+      return;
+    }
+
+    // Explicit target actions (security, disable/recover mine) take precedence
+    // over their optional item metadata. Retail dispatches the action callback.
+    if(menuItem.action){
+      pc.actionQueue.addFront(menuItem.action);
+      return;
+    }
+
+    if(menuItem.item){
+      const useTarget = target || pc;
+      menuItem.item.useItemOnObject(pc, useTarget as ModuleObject, { isUserAction: true });
+      return;
+    }
+
+    if(menuItem.talent instanceof TalentObject){
+      if(menuItem.talent instanceof TalentSpell){
+        menuItem.talent.useTalentOnObject(target || pc, pc, { isUserAction: true });
+      }else{
+        menuItem.talent.useTalentOnObject(target || pc, pc);
+      }
+    }
   }
 
   static onTargetMenuAction(index: number = 0){
@@ -329,38 +490,26 @@ export class ActionMenuManager {
 
     const action = ActionMenuManager.ActionPanels.targetPanels[index].getSelectedAction();
     if(action){
-      if(index==0){
-        if(action.action && action.action.type == ActionType.ActionPhysicalAttacks){
-          ActionMenuManager.oPC.attackCreature(action.target, undefined);
-        }else if(action.action){
-          console.log('onTargetMenuAction', action);
-          ActionMenuManager.oPC.actionQueue.addFront(
-            action.action
-          ); 
-        }else if(action.talent instanceof TalentObject){
-          action.talent.useTalentOnObject(action.target, ActionMenuManager.oPC);
-        }
-      }else if(action.talent){
-        action.talent.useTalentOnObject(action.target, ActionMenuManager.oPC);
-      }else if(action.action){
-        console.log('onTargetMenuAction', action);
-        ActionMenuManager.oPC.actionQueue.addFront(
-          action.action
-        );
-      }
+      ActionMenuManager.activateMenuItem(action, ActionMenuManager.oTarget);
     }
   }
 
   static onSelfMenuAction(index: number = 0){
     if(!ActionMenuManager.oPC){ return; }
-    
+
     const action = ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
     if(!action){ return; }
 
-    if(action.talent instanceof TalentObject){
-      //GameState.getCurrentPlayer().useTalent(action.talent, action.target);
-      action.talent.useTalentOnObject(ActionMenuManager.oPC, ActionMenuManager.oPC);
-    }
+    ActionMenuManager.activateMenuItem(action, ActionMenuManager.oPC);
+  }
+
+  /**
+   * Inventory BTN_USEITEM — retail InstantUseItem (not animated UseItem).
+   * Target is ignored; impact applies on the controlled PC.
+   */
+  static useInventoryItem(item: ModuleItem, _target?: ModuleObject){
+    if(!ActionMenuManager.oPC || !item) return;
+    item.instantUseItem(ActionMenuManager.oPC);
   }
 
 }

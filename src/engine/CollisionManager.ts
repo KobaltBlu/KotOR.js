@@ -28,6 +28,8 @@ interface ProcessedCollision {
   closestPoint: THREE.Vector3;
   priority: number; // For stable collision resolution
   type?: CollisionType;
+  /** Creature that caused this collision (CREATURE type only). */
+  blocker?: ModuleObject;
 }
 
 
@@ -84,6 +86,7 @@ class CollisionPool {
     data.closestPoint.set(0, 0, 0);
     data.priority = 0;
     data.type = undefined;
+    data.blocker = undefined;
     this.collisionDataPool.push(data);
   }
 
@@ -157,9 +160,10 @@ export class CollisionManager {
   object: ModuleObject;
 
   // Collision state
-  blockingTimer: number = 0;
   lastBlockingObject: ModuleObject;
   blockingObject: ModuleObject;
+  /** Retail path_find_info->field140_0x264 — hostile found while pathing around a blocker. */
+  foundEnemyCreature: ModuleObject;
 
   // Ground/walkmesh state
   walkmesh: OdysseyWalkMesh;
@@ -284,6 +288,9 @@ export class CollisionManager {
       return;
     }
 
+    // Clear each frame so onBlocked / stuck timers reflect live contact only
+    this.blockingObject = undefined;
+
     const originalForce = this.object.forceVector.clone();
     const steps = 4;
     const stepForce = originalForce.clone().multiplyScalar(1 / steps);
@@ -301,7 +308,7 @@ export class CollisionManager {
       // Update ground positioning first
       this.updateGroundPositioning();
 
-      // Calculate predicted position for collision detection
+      // Predicted / swept position for capsule probes (retail-style lookahead contact)
       this.tempPosition.copy(this.object.position).add(this.object.forceVector);
       this.originalPosition.copy(this.object.position);
 
@@ -343,6 +350,13 @@ export class CollisionManager {
 
     if (!collided) {
       this.object.forceVector.copy(originalForce);
+    } else {
+      // Seconds of continuous collision — MoveTo / FollowLeader / party stuck warp
+      this.object.collisionTimer += delta;
+      // Discrete stuck counter used by MoveTo / Follow / Drive thresholds
+      if(typeof (this.object as { blockingTimer?: number }).blockingTimer === 'number'){
+        (this.object as { blockingTimer: number }).blockingTimer += 1;
+      }
     }
   }
 
@@ -463,6 +477,7 @@ export class CollisionManager {
       otherPos.z
     );
     collision.priority = CollisionConfig.PROFILES[CollisionType.CREATURE].priority;
+    collision.blocker = creature;
 
     return collision;
   }
@@ -681,6 +696,15 @@ export class CollisionManager {
     // Resolve creature collisions separately (no occlusion filtering)
     const creatureCollisions = this.collisionState.collisions.get(CollisionType.CREATURE) || [];
     if (creatureCollisions.length > 0) {
+      // Closest creature becomes blocking_creature_id; hostiles → foundEnemy (retail PlotPathAroundCreature)
+      creatureCollisions.sort((a, b) => a.distance - b.distance);
+      const blocker = creatureCollisions[0]?.blocker;
+      if (blocker) {
+        this.blockingObject = blocker;
+        if (typeof this.object.isHostile === 'function' && this.object.isHostile(blocker)) {
+          this.foundEnemyCreature = blocker;
+        }
+      }
       this.applyCollideAndSlide(creatureCollisions);
     }
 

@@ -1,9 +1,20 @@
-
 import { GameMenu } from "@/gui";
-import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
+import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { ModuleItem } from "@/module";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import { GameState } from "@/GameState";
+import {
+  clearInventoryItemNewFlag,
+  collectInventoryListNodes,
+  cycleK1InventoryFilter,
+  formatInventoryTitle,
+  formatQuestItemsButtonText,
+  getCurrentInventoryFilter,
+  getK1InventoryFilter,
+  setCurrentInventoryFilter,
+  type InventoryListNode,
+  unwrapInventoryListNode,
+} from "@/game/inventory-menu-utils";
 
 /**
  * MenuInventory class.
@@ -32,7 +43,13 @@ export class MenuInventory extends GameMenu {
   BTN_USEITEM: GUIButton;
   BTN_EXIT: GUIButton;
 
-  selected: ModuleItem;
+  selected: InventoryListNode | undefined;
+  /** Retail activating_item_id — refresh selection after InstantUseItem. */
+  protected activatingItem: ModuleItem | undefined;
+  protected activatedScroll: number = 0;
+  protected activatedIndex: number = -1;
+  /** True for TSL inventory_p (no portrait / party-change chrome). */
+  protected isK2Inventory: boolean = false;
 
   constructor(){
     super();
@@ -54,7 +71,7 @@ export class MenuInventory extends GameMenu {
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
       this.LB_ITEMS.padding = 5;
-      this.LB_ITEMS.onSelected = (item: ModuleItem) => {
+      this.LB_ITEMS.onSelected = (item: InventoryListNode) => {
         this.selected = item;
         this.UpdateSelected();
       }
@@ -62,52 +79,177 @@ export class MenuInventory extends GameMenu {
       this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.offset.x = 0;
 
-      this.BTN_CHANGE1.addEventListener('click', (e) => {
+      this.BTN_CHANGE1?.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.party.length > 0){
           GameState.PartyManager.SwitchLeaderAtIndex(1);
+          this.populateItemListBox();
         }
       });
-      this.BTN_CHANGE2.addEventListener('click', (e) => {
+      this.BTN_CHANGE2?.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.PartyManager.party.length > 1){
           GameState.PartyManager.SwitchLeaderAtIndex(2);
+          this.populateItemListBox();
         }
+      });
+
+      this.BTN_USEITEM?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.useSelectedItem();
+      });
+
+      // Retail BTN_QUESTITEMS → SetNextFilter (X button cycles K1 filters 0–5).
+      this.BTN_QUESTITEMS?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        cycleK1InventoryFilter();
+        this.updateFilterLabels();
+        this.populateItemListBox();
       });
 
       GameState.PartyManager.AddEventListener('change', () => {
         if(!this.isVisible()) return;
         this.updateCharacterStats();
+        this.updatePartyMemberButtons();
+        this.populateItemListBox();
       });
       resolve();
     });
   }
 
+  protected getActiveCreature(){
+    return GameState.PartyManager.party[0];
+  }
+
+  protected updateFilterLabels(){
+    // K1 only understands filters 0–5; clamp if returning from a K2 category.
+    const filter = getK1InventoryFilter(getCurrentInventoryFilter());
+    if(filter !== getCurrentInventoryFilter()){
+      setCurrentInventoryFilter(filter);
+    }
+    this.LBL_INV?.setText(formatInventoryTitle(filter));
+    this.BTN_QUESTITEMS?.setText(formatQuestItemsButtonText(filter));
+  }
+
+  /**
+   * Retail PopulateItemListBox — equipped slots then bag, CheckFilter applied.
+   */
+  populateItemListBox(preserveSelection: boolean = false){
+    const pc = this.getActiveCreature();
+    if(!pc){
+      this.LB_ITEMS.setItems([]);
+      this.selected = undefined;
+      this.UpdateSelected();
+      return;
+    }
+
+    const filter = getCurrentInventoryFilter();
+    const nodes = collectInventoryListNodes(pc, filter, this.isK2Inventory);
+
+    let selectIndex = 0;
+    if(preserveSelection && this.activatingItem){
+      const idx = nodes.findIndex((n) => unwrapInventoryListNode(n) === this.activatingItem);
+      if(idx >= 0) selectIndex = idx;
+      else if(this.activatedIndex >= 0){
+        selectIndex = Math.min(this.activatedIndex, Math.max(0, nodes.length - 1));
+      }
+    }else if(this.selected){
+      const selectedItem = unwrapInventoryListNode(this.selected);
+      const idx = nodes.findIndex((n) => unwrapInventoryListNode(n) === selectedItem);
+      if(idx >= 0) selectIndex = idx;
+    }
+
+    const savedScroll = preserveSelection ? this.activatedScroll : this.LB_ITEMS.scroll;
+
+    this.LB_ITEMS.setItems(nodes, {
+      selectIndex: nodes.length ? selectIndex : -1,
+    });
+
+    if(nodes.length && typeof savedScroll === 'number'){
+      this.LB_ITEMS.scroll = savedScroll;
+      this.LB_ITEMS.updateList?.();
+    }
+
+    if(!nodes.length){
+      this.selected = undefined;
+      this.LB_DESCRIPTION?.setItem('');
+      if(this.BTN_USEITEM){
+        this.BTN_USEITEM.disableSelection = true;
+      }
+    }else{
+      const selectedCtrl = this.LB_ITEMS.children[selectIndex];
+      this.selected = (selectedCtrl?.node ?? nodes[selectIndex]) as InventoryListNode;
+      this.UpdateSelected();
+    }
+
+    this.activatingItem = undefined;
+    this.LBL_CREDITS_VALUE?.setText(String(GameState.PartyManager.Gold));
+  }
+
+  /** @deprecated use populateItemListBox — kept for subclasses that call filterInventory. */
+  filterInventory(){
+    this.populateItemListBox();
+  }
+
+  canUseSelectedItem(): boolean {
+    if(!this.selected) return false;
+    return (this.selected.inventoryCanUse | 0) === 1;
+  }
+
+  useSelectedItem(){
+    const pc = this.getActiveCreature();
+    const item = unwrapInventoryListNode(this.selected);
+    if(!pc || !item) return;
+
+    if(!this.canUseSelectedItem()){
+      const strRef = this.selected.inventoryDenyStrRef | 0;
+      if(strRef){
+        GameState.FeedbackMessageManager?.AddStrRef?.(strRef);
+      }
+      return;
+    }
+
+    // Retail OnControlSelected: InstantUseItem, keep panel open, dirty-refresh list.
+    this.activatingItem = item;
+    this.activatedScroll = this.LB_ITEMS.scroll | 0;
+    this.activatedIndex = this.LB_ITEMS.listItems?.indexOf(this.selected) ?? -1;
+
+    GameState.ActionMenuManager.SetPC(pc);
+    GameState.ActionMenuManager.useInventoryItem(item, pc);
+
+    this.populateItemListBox(true);
+    this.updateCharacterStats();
+  }
+
   UpdateSelected(){
-    if(this.selected instanceof ModuleItem){
-      this.LB_DESCRIPTION?.setItem(this.selected.getDescription());
+    const item = unwrapInventoryListNode(this.selected);
+    if(item instanceof ModuleItem){
+      this.LB_DESCRIPTION?.setItem(item.getDescription());
+      clearInventoryItemNewFlag(item);
+    }else{
+      this.LB_DESCRIPTION?.setItem('');
+    }
+    if(this.BTN_USEITEM){
+      this.BTN_USEITEM.disableSelection = !this.canUseSelectedItem();
     }
   }
 
-  filterInventory(){
-    const inv = GameState.InventoryManager.getNonQuestInventory();
-    this.LB_ITEMS.setItems(inv);
-  }
-
   updateCharacterStats(){
-    const currentPC = GameState.PartyManager.party[0];
+    if(this.isK2Inventory) return;
+    const currentPC = this.getActiveCreature();
     if (!currentPC) {
       return;
     }
     this.LBL_VIT?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
     this.LBL_DEF?.setText(currentPC.getAC());
-    if(this.LBL_PORT.getFillTextureName() != currentPC.getPortraitResRef()){
+    if(this.LBL_PORT && this.LBL_PORT.getFillTextureName() != currentPC.getPortraitResRef()){
       this.LBL_PORT.setFillTextureName(currentPC.getPortraitResRef());
     }
-    this.LBL_CREDITS_VALUE.setText(GameState.PartyManager.Gold);
+    this.LBL_CREDITS_VALUE?.setText(String(GameState.PartyManager.Gold));
   }
 
   updatePartyMemberButtons(){
+    if(this.isK2Inventory) return;
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
     for (let i = 0; i < GameState.PartyManager.party.length; i++) {
@@ -131,7 +273,8 @@ export class MenuInventory extends GameMenu {
     super.show();
     this.manager.MenuTop.LBLH_INV.onHoverIn();
     this.selectedControl = this.LB_ITEMS;
-    this.filterInventory();
+    this.updateFilterLabels();
+    this.populateItemListBox();
     this.updateCharacterStats();
     this.updatePartyMemberButtons();
   }
@@ -145,4 +288,3 @@ export class MenuInventory extends GameMenu {
   }
   
 }
-

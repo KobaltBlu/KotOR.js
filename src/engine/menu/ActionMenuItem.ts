@@ -17,6 +17,9 @@ export class ActionMenuItem {
   talent: any = undefined;
   icon = '';
   item: ModuleItem;
+  /** Retail field7 bit0: false → dimmed / inactive icon. */
+  enabled: boolean = true;
+  name: string = '';
 
   constructor( props: any = {} ){
     props = Object.assign({
@@ -24,13 +27,17 @@ export class ActionMenuItem {
       talent: undefined,
       target: GameState.ActionMenuManager.oTarget,
       icon: '',
-      item: undefined
+      item: undefined,
+      enabled: true,
+      name: '',
     }, props);
     this.action = props.action;
     this.talent = props.talent;
     this.icon = props.icon;
     this.target = props.target;
     this.item = props.item;
+    this.enabled = props.enabled !== false;
+    this.name = props.name || '';
   }
 
 }

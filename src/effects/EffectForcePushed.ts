@@ -82,7 +82,7 @@ export class EffectForcePushed extends GameEffect {
       const eSetState = new GameState.GameEffectFactory.EffectSetState();
       eSetState.setDurationType(GameEffectDurationType.TEMPORARY);
       const eFutureTime = GameState.module.timeManager.getFutureTimeFromSeconds(3);
-      eSetState.setExpireDay(eFutureTime.day);
+      eSetState.setExpireDay(eFutureTime.pauseDay);
       eSetState.setExpireTime(eFutureTime.pauseTime);
       eSetState.setDuration(3);
       eSetState.setCreator(this.object);

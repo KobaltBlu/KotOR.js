@@ -34,3 +34,7 @@ export * from "@/module/ModuleMGTrack";
 export * from "@/module/EncounterSpawnEntry";
 export * from "@/module/EncounterSpawnPointEntry";
 export * from "@/module/EncounterCreatureEntry";
+export * from "@/module/encounter-cr";
+export * from "@/module/encounter-spawn";
+export * from "@/module/faction-by-faction";
+export * from "@/module/corpse-cache";

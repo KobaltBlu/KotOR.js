@@ -124,6 +124,64 @@ export class ForgeModule {
 
   setFromIFO(ifo: KotOR.GFFObject){
     this.ifo = ifo;
+    if(!(ifo instanceof KotOR.GFFObject)){ return; }
+
+    this.timeManager.setFromIFO(ifo, false);
+    this.dawnHour = this.timeManager.dawnHour;
+    this.duskHour = this.timeManager.duskHour;
+    this.transition = this.timeManager.transition;
+
+    if(ifo.RootNode.hasField('Expansion_Pack')){
+      this.expansionPack = ifo.getFieldByLabel('Expansion_Pack').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_Creator_ID')){
+      this.creatorId = ifo.getFieldByLabel('Mod_Creator_ID').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_Description')){
+      this.description = ifo.getFieldByLabel('Mod_Description').getCExoLocString();
+    }
+    if(ifo.RootNode.hasField('Mod_Entry_Area')){
+      this.entryArea = ifo.getFieldByLabel('Mod_Entry_Area').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_Entry_Dir_X')){
+      this.entryDirectionX = ifo.getFieldByLabel('Mod_Entry_Dir_X').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_Entry_Dir_Y')){
+      this.entryDirectionY = ifo.getFieldByLabel('Mod_Entry_Dir_Y').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_Entry_X')){
+      this.entryX = ifo.getFieldByLabel('Mod_Entry_X').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_Entry_Y')){
+      this.entryY = ifo.getFieldByLabel('Mod_Entry_Y').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_Entry_Z')){
+      this.entryZ = ifo.getFieldByLabel('Mod_Entry_Z').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_ID')){
+      this.id = ifo.getFieldByLabel('Mod_ID').getVoid();
+    }
+    if(ifo.RootNode.hasField('Mod_IsSaveGame')){
+      this.isSaveGame = !!ifo.getFieldByLabel('Mod_IsSaveGame').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_Name')){
+      this.name = ifo.getFieldByLabel('Mod_Name').getCExoLocString();
+    }
+    if(ifo.RootNode.hasField('Mod_StartMovie')){
+      this.startMovie = ifo.getFieldByLabel('Mod_StartMovie').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_Tag')){
+      this.tag = ifo.getFieldByLabel('Mod_Tag').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_VO_ID')){
+      this.voId = ifo.getFieldByLabel('Mod_VO_ID').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_Version')){
+      this.version = ifo.getFieldByLabel('Mod_Version').getValue();
+    }
+    if(ifo.RootNode.hasField('Mod_XPScale')){
+      this.xpScale = ifo.getFieldByLabel('Mod_XPScale').getValue();
+    }
   }
 
   async load(){
@@ -149,15 +207,17 @@ export class ForgeModule {
     // Mod_CutSceneList
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Mod_CutSceneList'));
 
-    // Mod_DawnHour
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_DawnHour', this.dawnHour));
+    // Mod_DawnHour / Mod_DuskHour — keep Forge fields and timeManager in sync
+    this.timeManager.dawnHour = this.dawnHour;
+    this.timeManager.duskHour = this.duskHour;
+    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_DawnHour', this.timeManager.dawnHour));
 
     // Mod_Description
     const modDescriptionField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'Mod_Description'))!;
     modDescriptionField.setCExoLocString(this.description);
 
     // Mod_DuskHour
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_DuskHour', this.duskHour));
+    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_DuskHour', this.timeManager.duskHour));
 
     // Mod_Entry_Area
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_Entry_Area', this.entryArea));
@@ -213,12 +273,20 @@ export class ForgeModule {
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnUnAqreItem', this.scriptResRefs.get('Mod_OnUnAqreItem') || ''));
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_OnUsrDefined', this.scriptResRefs.get('Mod_OnUsrDefined') || ''));
 
-    // Start Date/Time
+    // Start Date/Time + pause clock (retail SaveModuleIFOStart fields)
+    this.timeManager.calendar.setCalendarDateTime();
+    this.timeManager.dayPhase = this.timeManager.computeDayPhase(this.timeManager.hour);
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_StartDay', this.timeManager.day));
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_StartHour', this.timeManager.hour));
+    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Mod_StartMiliSec', this.timeManager.milisecond));
+    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Mod_StartMinute', this.timeManager.minute));
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Mod_StartMonth', this.timeManager.month));
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Mod_StartMovie', this.startMovie));
+    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Mod_StartSecond', this.timeManager.second));
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Mod_StartYear', this.timeManager.year));
+    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Mod_PauseDay', this.timeManager.pauseDay));
+    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Mod_PauseTime', this.timeManager.pauseTime));
+    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Mod_Transition', this.timeManager.transition));
 
     // Mod_Tag
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Mod_Tag', this.tag));

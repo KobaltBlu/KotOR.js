@@ -4,6 +4,7 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { placeableCameraOrientation } from "@/utility/aurora-camera-orientation";
 import * as THREE from "three";
 
 /**
@@ -123,16 +124,33 @@ export class ModuleCamera {
       this.perspectiveCamera.removeFromParent();
       this.perspectiveCamera = undefined;
     }
-    this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.1, 1500);
-    this.perspectiveCamera.up = new THREE.Vector3( 0, 1, 0 );
-    this.perspectiveCamera.position.set(0, 0, this.height);
-    this.perspectiveCamera.position.add(this.position);
-    this.perspectiveCamera.rotation.reorder('YZX');
-    this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
-    this.perspectiveCamera.rotation.z = -Math.atan2(this.orientation.w, -this.orientation.x)*2;
+    // Retail LoadPlaceableCameras @ 00505eb0 / SetShotFromScript @ 0062e900
+    // / UpdateShotCamera @ 006306e0 (angle 6) / Control @ 006bcf50:
+    // position.z += Height; FOV default 55;
+    // orientation = YawPitchRoll(Yaw(q), Pitch(q)+Pitch, Roll(q)).
+    // GFF Orientation is WXYZ (ReadFieldQuaternion @ 004121b0).
+    // Aurora Camera and Three.js both look along local −Z.
+    // No near-plane pad — retail SetShot uses the rebuilt pose as-is.
+    const fov = (typeof this.fov === 'number' && this.fov > 0) ? this.fov : 55;
+    this.perspectiveCamera = new THREE.PerspectiveCamera(
+      fov,
+      GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(),
+      0.1,
+      1500
+    );
+    this.perspectiveCamera.up = new THREE.Vector3(0, 0, 1);
 
-    //Clipping hack
-    this.perspectiveCamera.position.add(new THREE.Vector3(0, 0, 0.5).applyEuler(this.perspectiveCamera.rotation));
+    const height = typeof this.height === 'number' ? this.height : 0;
+    this.perspectiveCamera.position.set(
+      this.position.x,
+      this.position.y,
+      this.position.z + height
+    );
+
+    const pitchDeg = typeof this.pitch === 'number' ? this.pitch : 0;
+    placeableCameraOrientation(this.orientation, pitchDeg, this.perspectiveCamera.quaternion);
+    this.perspectiveCamera.rotation.setFromQuaternion(this.perspectiveCamera.quaternion, 'YZX');
+    this.perspectiveCamera.updateMatrixWorld(true);
 
     this.perspectiveCamera.userData.moduleObject = this;
     this.perspectiveCamera.userData.ingameID = this.cameraID;

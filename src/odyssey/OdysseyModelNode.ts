@@ -233,10 +233,10 @@ export class OdysseyModelNode {
                     )
                   );
                   
-                  //If this is the first frame ignore the control point at v1 by copying the values from v0
-                  //This appears to fix the problem I was having with the camera going off the rails at times
-                  //This also appears to make all the isLinearBezier checks I was doing before unnecessary
-                  //Further testing is needed before I can be sure isLinearBezier can be removed from the AnimationManager as well
+                  // If this is the first keyframe, ignore the Bezier control at v1 by
+                  // copying v0 (keeps animated cameras from jumping off-rails on start).
+                  // Retail camera animation still uses the same controller data; this
+                  // matches observed first-frame stability for dialog CameraModel paths.
                   if(!r){
                     frame.bezier.v1.copy(frame.bezier.v0);
                   }

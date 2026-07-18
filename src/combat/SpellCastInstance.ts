@@ -1,17 +1,22 @@
 import type { ModuleObject } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { TalentSpell } from "@/talents";
 import * as THREE from "three";
 import { OdysseyModel3D } from "@/three/odyssey";
-// import { NWScript } from "@/nwscript/NWScript";
 import { OdysseyModel } from "@/odyssey";
 import { GameState } from "@/GameState";
 import { MDLLoader } from "@/loaders";
+import { ActionType } from "@/enums/actions/ActionType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { BitWise } from "@/utility/BitWise";
+import { Utility } from "@/utility/Utility";
+import { getCounterSpellRange } from "@/combat/spell-range";
 
 /**
  * SpellCastInstance class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SpellCastInstance.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -46,6 +51,9 @@ export class SpellCastInstance {
 
   impacted: boolean = false;
   completed: boolean = false;
+  interrupted: boolean = false;
+  /** When false, skip counterspell scan (fake / item casts may opt out). */
+  allowCounterSpell: boolean = true;
   conjureTime = 3000;
   conjuring: boolean = false;
   castTime: number = 0;
@@ -55,6 +63,37 @@ export class SpellCastInstance {
     this.owner = caster;
     this.target = target;
     this.spell = spell;
+  }
+
+  /**
+   * Apply conjure/cast timings and impact script from the talent.
+   */
+  applySpellData(options: { fake?: boolean } = {}){
+    if(options.fake){
+      this.impactscript = '';
+      this.allowCounterSpell = false;
+    }else{
+      this.impactscript = this.spell?.impactscript || '';
+      this.allowCounterSpell = true;
+    }
+
+    const conjMs = SpellCastInstance.parseTimeMs(this.spell?.getConjureTime?.() ?? this.spell?.conjtime, 3000);
+    const castMs = SpellCastInstance.parseTimeMs(this.spell?.getCastTime?.() ?? this.spell?.casttime, 0);
+    this.conjureTime = conjMs;
+    this.castTime = castMs;
+    this.casthandvisual = this.spell?.casthandvisual || '';
+  }
+
+  private static parseTimeMs(value: unknown, fallback: number): number {
+    const n = typeof value === 'number' ? value : parseFloat(String(value ?? ''));
+    if(isNaN(n) || n < 0){
+      return fallback;
+    }
+    // spells.2da values are milliseconds; tiny values treated as seconds
+    if(n > 0 && n < 20){
+      return n * 1000;
+    }
+    return n;
   }
 
   init(){
@@ -72,37 +111,122 @@ export class SpellCastInstance {
       this.projectileTarget.x += Math.random() * (0.25 - -0.25) + -0.25;
       this.projectileTarget.y += Math.random() * (0.25 - -0.25) + -0.25;
       this.projectileCurve.v2.copy(this.projectileTarget);
+    }else if(this.targetLocation){
+      this.projectileTarget.copy(this.targetLocation);
+      this.projectileCurve.v2.copy(this.projectileTarget);
     }
 
-    if(this.spell.projmodel != ''){
-      console.log('projectile', this.spell.projmodel);
+    if(this.spell?.projmodel != ''){
       MDLLoader.loader.load(this.spell.projmodel.toLowerCase())
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: this.owner.context
         }).then((model: OdysseyModel3D) => {
           this.projectile = model;
-          console.log('projectile', model);
           if(this.owner.model){
             if(this.owner.model.rhand){
               this.owner.context.group.effects.add(model);
               this.projectileHook = this.owner.model.rhand;
-              //TextureLoader.LoadQueue();
             }else{
               this.projectile.dispose();
             }
           }else{
             this.projectile.dispose();
           }
-
         });
       });
     }
   }
 
+  /**
+   * Cancel cast before impact. Skips impact script and cleans VFX.
+   */
+  interrupt(){
+    if(this.completed || this.interrupted){
+      return;
+    }
+    this.interrupted = true;
+    this.conjuring = false;
+    this.conjureTime = 0;
+    this.castTime = 0;
+    this.completed = true;
+    this.clearOwnerSpellRound({ unpause: true });
+    this.dispose();
+  }
+
+  private clearOwnerSpellRound(options: { unpause?: boolean } = {}){
+    const round = (this.owner as any)?.combatRound;
+    if(!round){
+      return;
+    }
+    if(typeof round.removeSpellActionFromRound === 'function'){
+      round.removeSpellActionFromRound();
+    }else{
+      round.spellCastRound = false;
+    }
+    // Interrupt aborts the cast pause; normal complete leaves pauseTimer for catch-time
+    if(options.unpause && typeof round.unpauseRound === 'function'){
+      round.unpauseRound(this.owner);
+    }
+  }
+
+  /**
+   * True if a living counterspeller is holding stance on this caster.
+   */
+  findCounterSpeller(): ModuleCreature | undefined {
+    if(!this.allowCounterSpell || !this.owner?.area){
+      return undefined;
+    }
+    const creatures = this.owner.area.creatures || [];
+    const party = GameState.PartyManager?.party || [];
+    const candidates = [...creatures];
+    for(let i = 0; i < party.length; i++){
+      if(candidates.indexOf(party[i]) < 0){
+        candidates.push(party[i]);
+      }
+    }
+
+    for(let i = 0; i < candidates.length; i++){
+      const creature = candidates[i] as ModuleCreature;
+      if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+        continue;
+      }
+      if(creature === this.owner || creature.isDead?.() || creature.isDebilitated?.()){
+        continue;
+      }
+      if(creature.area !== this.owner.area){
+        continue;
+      }
+      const action = creature.action || creature.actionQueue?.[0];
+      if(!action || action.type !== ActionType.ActionCounterSpell){
+        continue;
+      }
+      const focus = action.getParameter?.(0);
+      const focusId = typeof focus === 'number' ? focus : (focus as ModuleObject)?.id;
+      if(focus !== this.owner && focusId !== this.owner.id){
+        continue;
+      }
+      if(Utility.Distance2D(creature.position, this.owner.position) > getCounterSpellRange()){
+        continue;
+      }
+      return creature;
+    }
+    return undefined;
+  }
+
   update(delta: number = 0){
+    if(this.completed || this.interrupted){
+      return;
+    }
+
     if(this.conjureTime > 0){
       this.conjuring = true;
+
+      if(this.findCounterSpeller()){
+        this.interrupt();
+        return;
+      }
+
       this.conjureTime -= (1000 * delta);
 
       if(this.projectile && this.projectileHook){
@@ -110,11 +234,12 @@ export class SpellCastInstance {
         this.projectileOrigin.copy(this.projectile.position);
         this.projectileCurve.v0.copy(this.projectileOrigin);
       }
-      //combatAction.casting = true;
     }else if(this.castTime > 0){
       this.conjuring = false;
 
-      this.castTimeProgress = this.castTime / (this.spell.getCastTime() * 0.5);
+      const halfCast = Math.max(1, (this.spell.getCastTime?.() as any) || this.castTime || 1);
+      const halfCastMs = SpellCastInstance.parseTimeMs(halfCast, this.castTime) * 0.5;
+      this.castTimeProgress = this.castTime / Math.max(1, halfCastMs);
       if(this.castTimeProgress > 1){
         this.castTimeProgress = 1;
       }
@@ -134,7 +259,6 @@ export class SpellCastInstance {
       }
 
       this.castTime -= (1000 * delta);
-      //this.casting = true;
     }else{
       this.conjuring = false;
 
@@ -142,8 +266,8 @@ export class SpellCastInstance {
         this.impact();
       }
 
-      //I guess the spell is over now
       this.completed = true;
+      this.clearOwnerSpellRound({ unpause: false });
     }
 
     if(this.casthandmodel){
@@ -153,20 +277,16 @@ export class SpellCastInstance {
     if(this.projectile){
       this.projectile.update(delta);
     }
-  }  
+  }
 
   impact(){
-    //We only want to run the impact script once
-    if(this.impacted) return;
+    if(this.impacted || this.interrupted) return;
     this.impacted = true;
-    
+
     if(this.impactscript != ''){
-      console.log('Casting spell', this.impactscript, this);
       const instance = GameState.NWScript.Load(this.impactscript);
       if(instance) {
-        //pass the talent to the script instance and run it
         instance.talent = this.spell;
-        //instance.spellTarget = oTarget;
         instance.run(this.owner, 0);
       };
     }
@@ -182,11 +302,9 @@ export class SpellCastInstance {
           if(this.owner.model){
             if(this.owner.model.lhand){
               this.owner.model.lhand.add(this.casthandmodel);
-              //TextureLoader.LoadQueue();
 
               const anim = this.casthandmodel.playAnimation('cast01', false);
               setTimeout(() => {
-                //Clean up the impact effect
                 this.casthandmodel.dispose();
               }, (anim ? anim.length * 1000 : 1500) )
             }else{
@@ -207,9 +325,14 @@ export class SpellCastInstance {
   }
 
   dispose(){
-
-    if(this.casthandmodel) this.casthandmodel.dispose();
-    if(this.projectile) this.projectile.dispose();
+    try{
+      if(this.casthandmodel) this.casthandmodel.dispose();
+    }catch(_e){ /* already disposed */ }
+    try{
+      if(this.projectile) this.projectile.dispose();
+    }catch(_e){ /* already disposed */ }
+    this.casthandmodel = undefined as any;
+    this.projectile = undefined as any;
     if(this.container) this.container.removeFromParent();
   }
 

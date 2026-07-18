@@ -31,8 +31,9 @@ import { BitWise } from "@/utility/BitWise";
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
-import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";.3
+import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 
 interface AnimStateInfo {
   lastAnimState: ModuleDoorAnimState;
@@ -305,6 +306,9 @@ export class ModuleDoor extends ModuleObject {
   updateCollisionState(): void {
     // if(!this.collisionManager?.walkmesh?.mesh){ return; }
 
+    // Keep DWK WorldToLocal matrix in sync with model (open/close / anim).
+    this.syncWalkmeshMatrix();
+
     let idx = -1;
     switch(this.openState){
       case ModuleDoorOpenState.DESTROYED:
@@ -319,6 +323,14 @@ export class ModuleDoor extends ModuleObject {
         idx = this.area.doorWalkmeshes.indexOf(this.collisionManager.walkmesh);
         if(idx == -1){ this.area.doorWalkmeshes.push(this.collisionManager.walkmesh); }
       break;
+    }
+  }
+
+  /** Copy model transform onto door wok for NoNonWalkPolysInDoor / WorldToLocal. */
+  syncWalkmeshMatrix(): void {
+    if(this.collisionManager?.walkmesh && this.model){
+      this.model.updateMatrix?.();
+      this.collisionManager.walkmesh.matrixWorld.copy(this.model.matrix);
     }
   }
 
@@ -612,11 +624,19 @@ export class ModuleDoor extends ModuleObject {
     }
 
     if(this.collisionManager.walkmesh && this.model){
-      this.collisionManager.walkmesh.matrixWorld.copy(this.model.matrix);
+      this.syncWalkmeshMatrix();
     }
   }
 
   onAttacked(attackType: CombatActionType){
+    // Retail CSWSDoor::EventHandler 0xf @ 0058ba8c — BroadcastCombatStateToParty(attacker, INVALID)
+    const attacker = this.combatData.lastAttacker;
+    if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleCreature)){
+      const atk = attacker as ModuleCreature;
+      atk.broadcastCombatStateToParty();
+      atk.removeCombatInvisibilityEffects();
+    }
+
     const isSpellAttack = attackType == CombatActionType.CAST_SPELL || attackType == CombatActionType.ITEM_CAST_SPELL;
     const instance = this.scripts[!isSpellAttack ? ModuleObjectScript.DoorOnMeleeAttacked : ModuleObjectScript.DoorOnSpellCastAt];
     if(!instance){ return; }
@@ -624,6 +644,12 @@ export class ModuleDoor extends ModuleObject {
   }
 
   onDamaged(): boolean{
+    // Retail OnApplyDamage door/placeable @ 004e055f — BroadcastCombatStateToParty(attacker, INVALID)
+    const damager = this.combatData.lastDamager ?? this.combatData.lastAttacker;
+    if(BitWise.InstanceOfObject(damager, ModuleObjectType.ModuleCreature)){
+      (damager as ModuleCreature).broadcastCombatStateToParty();
+    }
+
     const instance = this.scripts[ModuleObjectScript.DoorOnDamaged];
     if(!instance){ return false; }
     instance.run(this);
@@ -637,6 +663,9 @@ export class ModuleDoor extends ModuleObject {
       this.model.update(delta);
       //this.box.setFromObject(this.model);
     }
+
+    // Placeables refresh wok each tick; doors need the same for animated DWK.
+    this.syncWalkmeshMatrix();
 
     if(this.isDead()){
       if(!this.destroyAnimationPlayed){
@@ -1182,6 +1211,8 @@ export class ModuleDoor extends ModuleObject {
         }
       }
     }
+
+    this.loadActionList();
 
     if(this.template.RootNode.hasField('LinkedTo'))
       this.linkedTo = this.template.RootNode.getFieldByLabel('LinkedTo').getValue();

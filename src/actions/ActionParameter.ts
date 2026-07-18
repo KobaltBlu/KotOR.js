@@ -131,6 +131,7 @@ export class ActionParameter {
 
   toStruct(){
     const struct = new GFFStruct(1);
+    struct.addField(new GFFField(GFFDataType.INT, 'Type', this.type));
     switch(this.type){
       case ActionParameterType.INT:
         struct.addField(new GFFField(GFFDataType.INT, 'Value', this.value));
@@ -150,7 +151,7 @@ export class ActionParameter {
         );
       break;
       default:
-        throw 'ActionParameter.FromStruct: Invalid Type ('+this.type+')';
+        throw 'ActionParameter.toStruct: Invalid Type ('+this.type+')';
     }
 
     return struct;

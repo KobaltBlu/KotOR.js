@@ -26,8 +26,28 @@ export class ActionSpeakStrRef extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    const str = GameState.TLKManager.GetStringById( this.getParameter<number>(0) ).Value;
-    this.owner.speakString(str, this.getParameter<TalkVolume>(1));
+    if(!this.owner){
+      return ActionStatus.FAILED;
+    }
+
+    const strRef = this.getParameter<number>(0);
+    if(typeof strRef !== 'number'){
+      return ActionStatus.FAILED;
+    }
+
+    const tlk = GameState.TLKManager.GetStringById(strRef);
+    const text = tlk?.Value || '';
+    if(!text){
+      return ActionStatus.FAILED;
+    }
+
+    const volume = this.getParameter<TalkVolume>(1) ?? TalkVolume.TALK;
+    this.owner.speakString(text, volume);
+
+    if(volume !== TalkVolume.SILENT_TALK && volume !== TalkVolume.SILENT_SHOUT){
+      GameState.MenuManager.InGameBark.barkFromStringRef(strRef);
+    }
+
     return ActionStatus.COMPLETE;
   }
 

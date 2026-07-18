@@ -126,21 +126,24 @@ export class InventoryManager {
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.ITEM_RECEIVED);
       item.load();
       let hasItem = InventoryManager.getItemByTag(item.getTag());
-      if(hasItem){
+      // Retail stacks only identical items; differently upgraded variants must not merge.
+      const canStack = hasItem && InventoryManager.canStackItems(hasItem as ModuleItem, item);
+      if(hasItem && canStack){
 
         if(!limitOne){
-          hasItem.setStackSize(hasItem.getStackSize() + item.getStackSize());
+          (hasItem as ModuleItem).setStackSize((hasItem as ModuleItem).getStackSize() + item.getStackSize());
         }else{
-          hasItem.setStackSize(hasItem.getStackSize() + 1);
+          (hasItem as ModuleItem).setStackSize((hasItem as ModuleItem).getStackSize() + 1);
         }
 
-        return hasItem;
+        return hasItem as ModuleItem;
       }else{
 
         if(limitOne)
           item.setStackSize(1);
 
         InventoryManager.inventory.push(item);
+        item.setPossessor(GameState.PartyManager.Player);
         return item;
       }
     }
@@ -187,6 +190,18 @@ export class InventoryManager {
         return item;
     }
     return false;
+  }
+
+  /** Items with different upgrade state must not stack together. */
+  static canStackItems(a: ModuleItem, b: ModuleItem): boolean {
+    if(!a || !b) return false;
+    if((a.getTag?.() || '').toLowerCase() !== (b.getTag?.() || '').toLowerCase()) return false;
+    if((a.upgrades || 0) !== (b.upgrades || 0)) return false;
+    if((a.upgradeLevel || 0) !== (b.upgradeLevel || 0)) return false;
+    for(let i = 0; i < 6; i++){
+      if((a.getUpgradeSlot?.(i) ?? -1) !== (b.getUpgradeSlot?.(i) ?? -1)) return false;
+    }
+    return true;
   }
 
   static itemFromJSON(json: any = {}){

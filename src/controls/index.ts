@@ -5,3 +5,5 @@ export * from "@/controls/KeyInput";
 export * from "@/controls/Mouse";
 export * from "@/controls/Keyboard";
 export * from "@/controls/KeyMapper";
+export * from "@/controls/drive-input";
+export * from "@/controls/player-cam-relative-control";

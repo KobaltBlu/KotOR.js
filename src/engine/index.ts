@@ -5,3 +5,4 @@ export * from "@/engine/JournalCategoryEntry";
 export * from "@/engine/minigames";
 export * from "@/engine/INIConfig";
 export * from "@/engine/TurnSpeeds";
+export * from "@/engine/area-transition-bmp";

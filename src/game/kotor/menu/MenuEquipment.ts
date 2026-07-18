@@ -1,13 +1,41 @@
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton, GUIControl } from "@/gui";
-import { TextureLoader } from "@/loaders";
 import { GUIItemEquipped } from "@/gui/protoitem/GUIItemEquipped";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { WeaponSize } from "@/enums/combat/WeaponSize";
+import {
+  EQUIP_COLOR_BLUE,
+  EQUIP_COLOR_GREEN,
+  STR_BACK,
+  STR_CANCEL,
+  STR_CANT_EQUIP,
+  STR_EQUIP,
+  STR_NOTHING_AVAILABLE,
+  STR_OFFHAND_BLOCKED,
+  STR_SELECT_TITLE,
+  STR_WEAPON_CONFLICT,
+  formatAttackBonus,
+  formatDamageRange,
+  getEmptySlotIcon,
+  getEquipScreenAttackBonus,
+  getEquipScreenDamageRange,
+  getOffHandSlotForMain,
+  getSlotNameStrRef,
+  isLargeWeapon,
+  isMainHandSlot,
+  isOffHandSlot,
+  isTwoHandedWeapon,
+} from "@/game/equipment-menu-utils";
+
+type EquipListNode = ModuleItem | GUIItemEquipped | GUIItemNone;
+
+type EquipCanUseNode = EquipListNode & { equipCanUse?: number };
 
 /**
  * MenuEquipment class.
@@ -63,9 +91,20 @@ export class MenuEquipment extends GameMenu {
   BTN_CHANGE2: GUIButton;
 
   defaultControl: GUIControl;
-  slot: ModuleCreatureArmorSlot;
-  equipmentSelectionActive: boolean;
-  selectedItem: ModuleItem;
+  slot: ModuleCreatureArmorSlot = null;
+  equipmentSelectionActive: boolean = false;
+  selectedItem: EquipListNode = undefined;
+
+  /** Snapshot of the item in `slot` when selection mode began (retail previously_equipped). */
+  previouslyEquipped: ModuleItem = undefined;
+  /** Off-hand item removed when previewing a LARGE main-hand weapon. */
+  previouslyEquippedOffHand: ModuleItem = undefined;
+  /** Slot for previouslyEquippedOffHand (LEFTHAND / LEFTHAND2). */
+  previouslyEquippedOffHandSlot: ModuleCreatureArmorSlot = null;
+  /** True while a preview change is outstanding (revert on Back). */
+  previewActive: boolean = false;
+  /** Suppress recursive preview while rebuilding the list selection. */
+  private _suppressPreview: boolean = false;
 
   constructor(){
     super();
@@ -74,15 +113,17 @@ export class MenuEquipment extends GameMenu {
     this.voidFill = true;
   }
 
+  protected getActiveCreature(): ModuleCreature {
+    return GameState.PartyManager.party[0];
+  }
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
     this.childMenu = this.manager.MenuTop;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       this.defaultControl = this.BTN_INV_BODY;
 
-      // this.LB_ITEMS.offset.x = 0;
-      
       this.LB_DESC.hide();
       this.LBL_CANTEQUIP.hide();
 
@@ -109,121 +150,33 @@ export class MenuEquipment extends GameMenu {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.equipmentSelectionActive){
-          this.slot = null;
-          this.equipmentSelectionActive = false;
-          this.updateList();
+          this.cancelEquipmentSelection();
         }else{
           this.close();
         }
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_INV_IMPLANT.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.slot = ModuleCreatureArmorSlot.IMPLANT;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.IMPLANT);
-      });
-
-      this.BTN_INV_HEAD.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.slot = ModuleCreatureArmorSlot.HEAD;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.HEAD);
-      });
-
-      this.BTN_INV_HANDS.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.slot = ModuleCreatureArmorSlot.ARMS;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.ARMS);
-      });
-
-      this.BTN_INV_ARM_L.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.slot = ModuleCreatureArmorSlot.LEFTARMBAND;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.LEFTARMBAND);
-      });
-
-      this.BTN_INV_BODY.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.slot = ModuleCreatureArmorSlot.ARMOR;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.ARMOR);
-      });
-
-      this.BTN_INV_ARM_R.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.RIGHTARMBAND);
-      });
-
-      this.BTN_INV_WEAP_L.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.slot = ModuleCreatureArmorSlot.LEFTHAND;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.LEFTHAND);
-      });
-
-      this.BTN_INV_BELT.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.slot = ModuleCreatureArmorSlot.BELT;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.BELT);
-      });
-
-      this.BTN_INV_WEAP_R.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.slot = ModuleCreatureArmorSlot.RIGHTHAND;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.RIGHTHAND);
-      });
+      this.bindSlotButton(this.BTN_INV_IMPLANT, ModuleCreatureArmorSlot.IMPLANT);
+      this.bindSlotButton(this.BTN_INV_HEAD, ModuleCreatureArmorSlot.HEAD);
+      this.bindSlotButton(this.BTN_INV_HANDS, ModuleCreatureArmorSlot.ARMS);
+      this.bindSlotButton(this.BTN_INV_ARM_L, ModuleCreatureArmorSlot.LEFTARMBAND);
+      this.bindSlotButton(this.BTN_INV_BODY, ModuleCreatureArmorSlot.ARMOR);
+      this.bindSlotButton(this.BTN_INV_ARM_R, ModuleCreatureArmorSlot.RIGHTARMBAND);
+      this.bindSlotButton(this.BTN_INV_WEAP_L, ModuleCreatureArmorSlot.LEFTHAND);
+      this.bindSlotButton(this.BTN_INV_BELT, ModuleCreatureArmorSlot.BELT);
+      this.bindSlotButton(this.BTN_INV_WEAP_R, ModuleCreatureArmorSlot.RIGHTHAND);
 
       this.BTN_EQUIP.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selectedItem instanceof ModuleItem){
-          //console.log('selectedItem', this.selectedItem, this.slot, );
-          let currentPC = GameState.PartyManager.party[0];
-          if(this.selectedItem instanceof GUIItemNone){
-            currentPC.unequipSlot(this.slot);
-          }else if(this.selectedItem instanceof ModuleItem){
-            currentPC.equipItem(this.slot, this.selectedItem).then( () => {
-              this.updateSlotIcons();
-            });
-          }
-          this.slot = null;
-          this.equipmentSelectionActive = false;
-          this.updateSelected(null);
-          this.updateSlotIcons();
-          this.updateList();
-        }
+        this.commitEquipmentSelection();
       });
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
       this.LB_ITEMS.padding = 5;
-      this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
+      this.LB_ITEMS.onSelected = (item: EquipListNode) => {
         this.updateSelected(item);
-      }
+      };
 
       this.BTN_CHANGE1.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -238,7 +191,7 @@ export class MenuEquipment extends GameMenu {
         }
       });
 
-      GameState.PartyManager.AddEventListener('change', (pm: ModuleCreature) => {
+      GameState.PartyManager.AddEventListener('change', () => {
         if(!this.isVisible()) return;
         this.updateCharacterStats();
       });
@@ -246,34 +199,236 @@ export class MenuEquipment extends GameMenu {
     });
   }
 
+  protected bindSlotButton(btn: GUIButton, slot: ModuleCreatureArmorSlot) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.onSelectSlot(slot);
+    }).addEventListener('hover', () => {
+      this.updateListHover(slot);
+    });
+  }
+
   /**
-   * Update the list hover.
+   * Retail OnSelectSlot — enter item-selection mode for a slot.
    */
-  updateListHover(slot: number) {
-    if (slot) {
-      const inv = GameState.InventoryManager.getInventory(slot, GameState.getCurrentPlayer());
-      const currentPC = GameState.PartyManager.party[0];
-      this.LB_ITEMS.mutate(tx => {
-        tx.clear();
-        tx.add(new GUIItemNone());
-        if(currentPC.GetItemInSlot(slot)){
-          tx.add(new GUIItemEquipped(currentPC.GetItemInSlot(slot)));
-        }
-        for (let i = 0; i < inv.length; i++) {
-          tx.add(inv[i]);
-        }
-      });
-      this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
+  onSelectSlot(slot: ModuleCreatureArmorSlot) {
+    const currentPC = this.getActiveCreature();
+    if(!currentPC) return;
+
+    if(isOffHandSlot(slot)){
+      const mainSlot = slot === ModuleCreatureArmorSlot.LEFTHAND2
+        ? ModuleCreatureArmorSlot.RIGHTHAND2
+        : ModuleCreatureArmorSlot.RIGHTHAND;
+      const mainWeapon = currentPC.GetItemInSlot(mainSlot);
+      if(isLargeWeapon(mainWeapon)){
+        GameState.MenuManager.InGameConfirm.fromStringRef(STR_OFFHAND_BLOCKED);
+        return;
+      }
+    }
+
+    this.slot = slot;
+    this.equipmentSelectionActive = true;
+    this.previewActive = false;
+    this.previouslyEquipped = currentPC.GetItemInSlot(slot);
+    this.previouslyEquippedOffHand = undefined;
+    this.previouslyEquippedOffHandSlot = null;
+    this.updateList();
+
+    // Retail: if only the "None" row exists, show nothing-available message.
+    if(this.LB_ITEMS.children.length <= 1){
+      GameState.MenuManager.InGameConfirm.fromStringRef(STR_NOTHING_AVAILABLE);
+      this.slot = null;
+      this.equipmentSelectionActive = false;
+      this.clearPreviewSnapshot();
+      this.updateList();
+      return;
+    }
+
+    this.LBL_SELECTTITLE?.setText(GameState.TLKManager.GetStringById(STR_SELECT_TITLE).Value);
+  }
+
+  /**
+   * Retail OnOKPressed — commit preview (clear revert snapshot) and leave selection mode.
+   */
+  commitEquipmentSelection() {
+    if(!this.equipmentSelectionActive) return;
+    this.clearPreviewSnapshot();
+    this.slot = null;
+    this.equipmentSelectionActive = false;
+    this.previewActive = false;
+    this.showCantEquipMessage(false);
+    this.updateSelected(undefined);
+    this.updateList();
+    this.updateInventoryDisplay();
+  }
+
+  /**
+   * Retail Back while selecting — revert preview and leave selection mode.
+   */
+  async cancelEquipmentSelection() {
+    if(this.previewActive){
+      await this.revertPreview();
+    }
+    this.clearPreviewSnapshot();
+    this.slot = null;
+    this.equipmentSelectionActive = false;
+    this.previewActive = false;
+    this.showCantEquipMessage(false);
+    this.updateSelected(undefined);
+    this.updateList();
+    this.updateInventoryDisplay();
+  }
+
+  protected clearPreviewSnapshot() {
+    this.previouslyEquipped = undefined;
+    this.previouslyEquippedOffHand = undefined;
+    this.previouslyEquippedOffHandSlot = null;
+  }
+
+  protected async revertPreview() {
+    const currentPC = this.getActiveCreature();
+    if(!currentPC || !this.slot) return;
+
+    const current = currentPC.GetItemInSlot(this.slot);
+    if(this.previouslyEquipped){
+      if(current !== this.previouslyEquipped){
+        await currentPC.equipItem(this.slot, this.previouslyEquipped);
+      }
+    }else if(current){
+      currentPC.unequipSlot(this.slot);
+    }
+
+    if(this.previouslyEquippedOffHandSlot){
+      if(this.previouslyEquippedOffHand){
+        await currentPC.equipItem(this.previouslyEquippedOffHandSlot, this.previouslyEquippedOffHand);
+      }
     }
   }
 
   /**
-   * Update the list.
+   * Retail OnItemSelected — preview-equip on list selection.
    */
+  async previewEquipSelection(item: EquipListNode) {
+    if(this._suppressPreview || !this.equipmentSelectionActive || !this.slot) return;
+
+    const canUse = (item as EquipCanUseNode).equipCanUse ?? 1;
+    if(canUse === 2){
+      this.showCantEquipMessage(true, STR_CANT_EQUIP);
+      return;
+    }
+    if(canUse === 3){
+      this.showCantEquipMessage(true, STR_WEAPON_CONFLICT);
+      return;
+    }
+
+    this.showCantEquipMessage(false);
+
+    const currentPC = this.getActiveCreature();
+    if(!currentPC) return;
+
+    const currentEquipped = currentPC.GetItemInSlot(this.slot);
+
+    if(item instanceof GUIItemNone){
+      if(!currentEquipped) return;
+      this.previewActive = true;
+      // Unequipping main hand with offhand — retail also drops offhand.
+      if(isMainHandSlot(this.slot)){
+        const offSlot = getOffHandSlotForMain(this.slot);
+        if(offSlot){
+          const offItem = currentPC.GetItemInSlot(offSlot);
+          if(offItem && !this.previouslyEquippedOffHand){
+            this.previouslyEquippedOffHand = offItem;
+            this.previouslyEquippedOffHandSlot = offSlot;
+            currentPC.unequipSlot(offSlot);
+          }
+        }
+      }
+      currentPC.unequipSlot(this.slot);
+      this.updateInventoryDisplay();
+      return;
+    }
+
+    let targetItem: ModuleItem;
+    if(item instanceof GUIItemEquipped){
+      targetItem = item.node;
+    }else if(item instanceof ModuleItem){
+      targetItem = item;
+    }else{
+      return;
+    }
+
+    if(targetItem === currentEquipped) return;
+
+    this.previewActive = true;
+
+    // LARGE main-hand preview unequips offhand (retail weapon_size == 4).
+    if(isMainHandSlot(this.slot) && isLargeWeapon(targetItem)){
+      const offSlot = getOffHandSlotForMain(this.slot);
+      if(offSlot){
+        const offItem = currentPC.GetItemInSlot(offSlot);
+        if(offItem){
+          if(!this.previouslyEquippedOffHand){
+            this.previouslyEquippedOffHand = offItem;
+            this.previouslyEquippedOffHandSlot = offSlot;
+          }
+          currentPC.unequipSlot(offSlot);
+        }
+      }
+    }else if(isMainHandSlot(this.slot) && this.previouslyEquippedOffHand && this.previouslyEquippedOffHandSlot){
+      // Restoring a non-large main hand — put offhand back if still free.
+      if(!currentPC.GetItemInSlot(this.previouslyEquippedOffHandSlot)){
+        await currentPC.equipItem(this.previouslyEquippedOffHandSlot, this.previouslyEquippedOffHand);
+      }
+      this.previouslyEquippedOffHand = undefined;
+      this.previouslyEquippedOffHandSlot = null;
+    }
+
+    await currentPC.equipItem(this.slot, targetItem);
+    this.updateInventoryDisplay();
+  }
+
+  /**
+   * Retail ShowCantEquipMessage.
+   */
+  showCantEquipMessage(show: boolean, strRef: number = 0) {
+    const combatLabels = [
+      this.LBL_ATKL, this.LBL_ATKR, this.LBL_TOHITL, this.LBL_TOHITR,
+      this.LBL_DEF, this.LBL_VITALITY, this.LBL_ATTACK_INFO, this.LBL_DEF_INFO,
+      this.LBL_TOHIT, this.LBL_DAMAGE,
+    ];
+
+    if(show){
+      for(const lbl of combatLabels){
+        lbl?.hide();
+      }
+      if(strRef){
+        this.LBL_CANTEQUIP?.setText(GameState.TLKManager.GetStringById(strRef).Value);
+      }
+      this.LBL_CANTEQUIP?.show();
+      this.BTN_EQUIP.disableSelection = true;
+      this.BTN_EQUIP?.setTextColor(0.5, 0.5, 0.5);
+    }else{
+      this.LBL_CANTEQUIP?.hide();
+      this.BTN_EQUIP.disableSelection = false;
+      this.BTN_EQUIP?.setTextColor(EQUIP_COLOR_BLUE.r, EQUIP_COLOR_BLUE.g, EQUIP_COLOR_BLUE.b);
+      if(!this.equipmentSelectionActive){
+        for(const lbl of combatLabels){
+          lbl?.show();
+        }
+      }
+    }
+  }
+
+  updateListHover(slot: number) {
+    if(!slot || this.equipmentSelectionActive) return;
+    this.setSlotName(slot);
+    this.populateItemList(slot, false);
+  }
+
   updateList() {
     if (!this.equipmentSelectionActive) {
       this.BTN_EQUIP?.hide();
-      this.BTN_BACK?.setText(GameState.TLKManager.GetStringById(1582).Value);
+      this.BTN_BACK?.setText(GameState.TLKManager.GetStringById(STR_BACK).Value);
       this.LB_DESC?.hide();
       this.BTN_INV_IMPLANT?.show();
       this.BTN_INV_HEAD?.show();
@@ -298,10 +453,11 @@ export class MenuEquipment extends GameMenu {
       this.LBL_SLOTNAME?.show();
       this.LBL_TXTBAR?.show();
       this.LBL_SELECTTITLE?.setText('');
+      this.showCombatStatLabels(true);
     } else {
       this.BTN_EQUIP?.show();
-      this.BTN_EQUIP?.setText(GameState.TLKManager.GetStringById(31387).Value);
-      this.BTN_BACK?.setText(GameState.TLKManager.GetStringById(1581).Value);
+      this.BTN_EQUIP?.setText(GameState.TLKManager.GetStringById(STR_EQUIP).Value);
+      this.BTN_BACK?.setText(GameState.TLKManager.GetStringById(STR_CANCEL).Value);
       this.LB_DESC?.show();
       this.BTN_INV_IMPLANT?.hide();
       this.BTN_INV_HEAD?.hide();
@@ -325,161 +481,269 @@ export class MenuEquipment extends GameMenu {
       this.LBL_PORT_BORD?.hide();
       this.LBL_SLOTNAME?.hide();
       this.LBL_TXTBAR?.hide();
-      this.LBL_SELECTTITLE?.setText('');
+      this.showCombatStatLabels(false);
     }
-    this.selectedItem = null;
-    this.updateSelected(null);
-    const currentPC = GameState.PartyManager.party[0];
+
+    this.selectedItem = undefined;
+    if(!this.equipmentSelectionActive){
+      this.updateSelected(undefined);
+    }
+
     if (this.slot) {
-      const inv = GameState.InventoryManager.getInventory(this.slot, currentPC);
-      this.LB_ITEMS.mutate(tx => {
-        tx.clear();
-        tx.add(new GUIItemNone());
-        if(currentPC.GetItemInSlot(this.slot)){
-          tx.add(new GUIItemEquipped(currentPC.GetItemInSlot(this.slot)));
-        }
-        for (let i = 0; i < inv.length; i++) {
-          tx.add(inv[i]);
-        }
-      });
-      this.LB_ITEMS.select(this.LB_ITEMS.children[this.LB_ITEMS.children.length-1]);
+      this.setSlotName(this.slot);
+      this.populateItemList(this.slot, this.equipmentSelectionActive);
+    }
+  }
+
+  protected showCombatStatLabels(show: boolean) {
+    const labels = [
+      this.LBL_ATKL, this.LBL_ATKR, this.LBL_TOHITL, this.LBL_TOHITR,
+      this.LBL_DEF, this.LBL_VITALITY, this.LBL_ATTACK_INFO, this.LBL_DEF_INFO,
+      this.LBL_TOHIT, this.LBL_DAMAGE,
+    ];
+    for(const lbl of labels){
+      if(show) lbl?.show();
+      else lbl?.hide();
+    }
+  }
+
+  protected setSlotName(slot: ModuleCreatureArmorSlot) {
+    const currentPC = this.getActiveCreature();
+    if(!currentPC || !this.LBL_SLOTNAME) return;
+    const strRef = getSlotNameStrRef(slot, currentPC.getRace());
+    if(strRef){
+      this.LBL_SLOTNAME.setText(GameState.TLKManager.GetStringById(strRef).Value);
     }
   }
 
   /**
-   * Update the selected item.
+   * Build LB_ITEMS for a slot (None, Equipped, inventory) — retail OnEnterSlot.
    */
-  updateSelected(item: ModuleItem|GUIItemEquipped|GUIItemNone) {
-    this.selectedItem = undefined;
+  protected populateItemList(slot: ModuleCreatureArmorSlot, selectDefault: boolean) {
+    const currentPC = this.getActiveCreature();
+    if(!currentPC) return;
+
+    const inv = GameState.InventoryManager.getInventory(slot, currentPC);
+    const equipped = currentPC.GetItemInSlot(slot);
+    const mainWeapon = isOffHandSlot(slot)
+      ? currentPC.GetItemInSlot(
+          slot === ModuleCreatureArmorSlot.LEFTHAND2
+            ? ModuleCreatureArmorSlot.RIGHTHAND2
+            : ModuleCreatureArmorSlot.RIGHTHAND
+        )
+      : undefined;
+    const offWeapon = isMainHandSlot(slot)
+      ? currentPC.GetItemInSlot(getOffHandSlotForMain(slot))
+      : undefined;
+
+    this._suppressPreview = true;
+    this.LB_ITEMS.mutate(tx => {
+      tx.clear();
+      tx.add(new GUIItemNone());
+      if(equipped){
+        tx.add(new GUIItemEquipped(equipped));
+      }
+      for (let i = 0; i < inv.length; i++) {
+        const item = inv[i] as ModuleItem & { equipCanUse?: number };
+        item.equipCanUse = this.getItemEquipCanUse(item, slot, mainWeapon, offWeapon);
+        tx.add(item);
+      }
+    });
+
+    if(selectDefault){
+      // Prefer last inventory item like prior code, or equipped row if present.
+      const kids = this.LB_ITEMS.children;
+      if(kids.length > 0){
+        const equippedIdx = equipped ? 1 : -1;
+        this.LB_ITEMS.select(kids[equippedIdx >= 0 ? equippedIdx : kids.length - 1]);
+      }
+    }
+    this._suppressPreview = false;
+  }
+
+  protected getItemEquipCanUse(
+    item: ModuleItem,
+    slot: ModuleCreatureArmorSlot,
+    mainWeapon: ModuleItem | undefined,
+    offWeapon: ModuleItem | undefined,
+  ): number {
+    // Dual-wield style mismatch → canUse 3 (retail).
+    if(isMainHandSlot(slot) && offWeapon){
+      const a = item.getWeaponWield();
+      const b = offWeapon.getWeaponWield();
+      if(a !== b || (a !== WeaponWield.ONE_HANDED_SWORD && a !== WeaponWield.BLASTER_PISTOL)){
+        if(item.baseItem?.weaponSize !== WeaponSize.LARGE){
+          return 3;
+        }
+      }
+    }
+    if(isOffHandSlot(slot) && mainWeapon){
+      const a = mainWeapon.getWeaponWield();
+      const b = item.getWeaponWield();
+      if(a !== b || (a !== WeaponWield.ONE_HANDED_SWORD && a !== WeaponWield.BLASTER_PISTOL)){
+        return 3;
+      }
+    }
+    return 1;
+  }
+
+  updateSelected(item: EquipListNode) {
+    this.selectedItem = item;
     let description = '';
     if (item instanceof ModuleItem) {
-      this.selectedItem = item;
-      description = this.selectedItem.getDescription();
+      description = item.getDescription();
     } else if(item instanceof GUIItemEquipped) {
       description = item.node.getDescription();
     }
-    this.LB_DESC.setItem(description);
-  }
+    this.LB_DESC?.setItem(description || null);
 
-  /**
-   * Update the slot icons.
-   */
-  updateSlotIcons(force: boolean = false) {
-    const currentPC = GameState.PartyManager.party[0];
-    if(!currentPC) return;
-
-    if (currentPC.getRace() == 6) {
-      let implant = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.IMPLANT);
-      if (implant) {
-        let icon = 'i' + implant.baseItem.itemClass + '_' + ('000' + implant.getModelVariation()).slice(-3);
-        if (force || this.LBL_INV_IMPLANT.getFillTextureName() != icon) {
-          this.LBL_INV_IMPLANT.setFillTextureName(icon);
-
-        }
-      } else if (force || this.LBL_INV_IMPLANT.getFillTextureName() != 'iimplant') {
-        this.LBL_INV_IMPLANT.setFillTextureName('iimplant');
-      }
-      let head = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.HEAD);
-      if (head) {
-        let icon = 'i' + head.baseItem.itemClass + '_' + ('000' + head.getModelVariation()).slice(-3);
-        if (force || this.LBL_INV_HEAD.getFillTextureName() != icon) {
-          this.LBL_INV_HEAD.setFillTextureName(icon);
-        }
-      } else if (force || this.LBL_INV_HEAD.getFillTextureName() != 'ihead') {
-        this.LBL_INV_HEAD.setFillTextureName('ihead');
-      }
-      let hands = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMS);
-      if (hands) {
-        let icon = 'i' + hands.baseItem.itemClass + '_' + ('000' + hands.getModelVariation()).slice(-3);
-        if (force || this.LBL_INV_HANDS.getFillTextureName() != icon) {
-          this.LBL_INV_HANDS.setFillTextureName(icon);
-        }
-      } else if (force || this.LBL_INV_HANDS.getFillTextureName() != 'ihands') {
-        this.LBL_INV_HANDS.setFillTextureName('ihands');
-      }
-      let l_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
-      if (l_arm) {
-        let icon = 'i' + l_arm.baseItem.itemClass + '_' + ('000' + l_arm.getModelVariation()).slice(-3);
-        if (force || this.LBL_INV_ARM_L.getFillTextureName() != icon) {
-          this.LBL_INV_ARM_L.setFillTextureName(icon);
-        }
-      } else if (force || this.LBL_INV_ARM_L.getFillTextureName() != 'iforearm_l') {
-        this.LBL_INV_ARM_L.setFillTextureName('iforearm_l');
-      }
-      let armor = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMOR);
-      if (armor) {
-        let icon = 'i' + armor.baseItem.itemClass + '_' + ('000' + armor.getModelVariation()).slice(-3);
-        if (force || this.LBL_INV_BODY.getFillTextureName() != icon) {
-          this.LBL_INV_BODY.setFillTextureName(icon);
-        }
-      } else if (force || this.LBL_INV_BODY.getFillTextureName() != 'iarmor') {
-        this.LBL_INV_BODY.setFillTextureName('iarmor');
-      }
-      let r_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
-      if (r_arm) {
-        let icon = 'i' + r_arm.baseItem.itemClass + '_' + ('000' + r_arm.getModelVariation()).slice(-3);
-        if (force || this.LBL_INV_ARM_R.getFillTextureName() != icon) {
-          this.LBL_INV_ARM_R.setFillTextureName(icon);
-        }
-      } else if (force || this.LBL_INV_ARM_R.getFillTextureName() != 'iforearm_r') {
-        this.LBL_INV_ARM_R.setFillTextureName('iforearm_r');
-      }
-      let l_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
-      if (l_weap) {
-        let icon = 'i' + l_weap.baseItem.itemClass + '_' + ('000' + l_weap.getModelVariation()).slice(-3);
-        if (force || this.LBL_INV_WEAP_L.getFillTextureName() != icon) {
-          this.LBL_INV_WEAP_L.setFillTextureName(icon);
-        }
-      } else if (force || this.LBL_INV_WEAP_L.getFillTextureName() != 'iweap_l') {
-        this.LBL_INV_WEAP_L.setFillTextureName('iweap_l');
-      }
-      let belt = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.BELT);
-      if (belt) {
-        let icon = 'i' + belt.baseItem.itemClass + '_' + ('000' + belt.getModelVariation()).slice(-3);
-        if (force || this.LBL_INV_BELT.getFillTextureName() != icon) {
-          this.LBL_INV_BELT.setFillTextureName(icon);
-        }
-      } else if (force || this.LBL_INV_BELT.getFillTextureName() != 'ibelt') {
-        this.LBL_INV_BELT.setFillTextureName('ibelt');
-      }
-      let r_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
-      if (r_weap) {
-        let icon = 'i' + r_weap.baseItem.itemClass + '_' + ('000' + r_weap.getModelVariation()).slice(-3);
-        if (force || this.LBL_INV_WEAP_R.getFillTextureName() != icon) {
-          this.LBL_INV_WEAP_R.setFillTextureName(icon);
-        }
-      } else if (force || this.LBL_INV_WEAP_R.getFillTextureName() != 'iweap_r') {
-        this.LBL_INV_WEAP_R.setFillTextureName('iweap_r');
-      }
-    } else {
-
+    if(this.equipmentSelectionActive && item){
+      void this.previewEquipSelection(item);
     }
   }
 
   /**
-   * Update the character stats.
+   * Retail UpdateInventory — slot icons + attack/damage/AC/HP.
    */
+  updateInventoryDisplay(force: boolean = false) {
+    const currentPC = this.getActiveCreature();
+    if(!currentPC) return;
+
+    this.updateSlotIcons(force);
+    this.updateWeaponStatLabels(currentPC);
+    this.LBL_DEF?.setText(String(currentPC.getAC()));
+    this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
+  }
+
+  protected updateWeaponStatLabels(currentPC: ModuleCreature) {
+    const rWeap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
+    const lWeap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
+    const bab = currentPC.getBaseAttackBonus();
+    const twoHand = isTwoHandedWeapon(rWeap);
+
+    // Right hand (unarmed uses right-hand to-hit when no weapons — retail empty path)
+    if(rWeap){
+      const atk = getEquipScreenAttackBonus(currentPC, rWeap, false);
+      const dmg = getEquipScreenDamageRange(rWeap);
+      this.setStatLabel(this.LBL_ATKR, dmg.max > 0 ? formatDamageRange(dmg.min, dmg.max) : '', false);
+      this.setStatLabel(this.LBL_TOHITR, formatAttackBonus(atk), atk > bab);
+    }else if(!lWeap){
+      const atk = getEquipScreenAttackBonus(currentPC, undefined, false);
+      this.setStatLabel(this.LBL_ATKR, '', false);
+      this.setStatLabel(this.LBL_TOHITR, formatAttackBonus(atk), atk > bab);
+    }else{
+      this.setStatLabel(this.LBL_ATKR, '', false);
+      this.setStatLabel(this.LBL_TOHITR, '', false);
+    }
+
+    // Left hand / two-hand mirror
+    if(twoHand && rWeap){
+      const atk = getEquipScreenAttackBonus(currentPC, rWeap, true);
+      const dmg = getEquipScreenDamageRange(rWeap);
+      this.setStatLabel(this.LBL_ATKL, dmg.max > 0 ? formatDamageRange(dmg.min, dmg.max) : '', false);
+      this.setStatLabel(this.LBL_TOHITL, formatAttackBonus(atk), atk > bab);
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L, 0.25);
+    }else if(lWeap){
+      const atk = getEquipScreenAttackBonus(currentPC, lWeap, true);
+      const dmg = getEquipScreenDamageRange(lWeap);
+      this.setStatLabel(this.LBL_ATKL, dmg.max > 0 ? formatDamageRange(dmg.min, dmg.max) : '', false);
+      this.setStatLabel(this.LBL_TOHITL, formatAttackBonus(atk), atk > bab);
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L, 1);
+    }else{
+      this.setStatLabel(this.LBL_ATKL, '', false);
+      this.setStatLabel(this.LBL_TOHITL, '', false);
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L, 1);
+    }
+  }
+
+  protected setStatLabel(label: GUILabel | undefined, text: string, better: boolean) {
+    if(!label) return;
+    label.setText(text);
+    const c = better ? EQUIP_COLOR_GREEN : EQUIP_COLOR_BLUE;
+    label.setTextColor(c.r, c.g, c.b);
+  }
+
+  protected setSlotIconAlpha(label: GUILabel | undefined, alpha: number) {
+    if(!label?.border?.fill?.material?.uniforms?.opacity) return;
+    label.border.fill.material.uniforms.opacity.value = alpha;
+    if(label.highlight?.fill?.material?.uniforms?.opacity){
+      label.highlight.fill.material.uniforms.opacity.value = alpha;
+    }
+  }
+
+  updateSlotIcons(force: boolean = false) {
+    const currentPC = this.getActiveCreature();
+    if(!currentPC) return;
+
+    const race = currentPC.getRace();
+    // Humans (6) and droids (5) both use the paper-doll slot icons.
+    if (race !== 6 && race !== 5) {
+      return;
+    }
+
+    const slots: [ModuleCreatureArmorSlot, GUILabel][] = [
+      [ModuleCreatureArmorSlot.IMPLANT, this.LBL_INV_IMPLANT],
+      [ModuleCreatureArmorSlot.HEAD, this.LBL_INV_HEAD],
+      [ModuleCreatureArmorSlot.ARMS, this.LBL_INV_HANDS],
+      [ModuleCreatureArmorSlot.LEFTARMBAND, this.LBL_INV_ARM_L],
+      [ModuleCreatureArmorSlot.ARMOR, this.LBL_INV_BODY],
+      [ModuleCreatureArmorSlot.RIGHTARMBAND, this.LBL_INV_ARM_R],
+      [ModuleCreatureArmorSlot.LEFTHAND, this.LBL_INV_WEAP_L],
+      [ModuleCreatureArmorSlot.BELT, this.LBL_INV_BELT],
+      [ModuleCreatureArmorSlot.RIGHTHAND, this.LBL_INV_WEAP_R],
+    ];
+
+    for(const [slot, lbl] of slots){
+      if(!lbl) continue;
+      const item = currentPC.GetItemInSlot(slot);
+      let icon: string;
+      if(item){
+        icon = 'i' + item.baseItem.itemClass + '_' + ('000' + item.getModelVariation()).slice(-3);
+      }else{
+        icon = getEmptySlotIcon(slot, race);
+      }
+      if(force || lbl.getFillTextureName() != icon){
+        lbl.setFillTextureName(icon);
+      }
+    }
+
+    // Two-hand dimming applied in updateWeaponStatLabels
+    if(!isTwoHandedWeapon(currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND))){
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L, 1);
+    }
+  }
+
   updateCharacterStats(){
     this.selectedControl = this.defaultControl;
+    if(this.equipmentSelectionActive && this.previewActive){
+      void this.revertPreview().then(() => {
+        this.clearPreviewSnapshot();
+        this.equipmentSelectionActive = false;
+        this.previewActive = false;
+        this.refreshCharacterPanel();
+      });
+      return;
+    }
     this.equipmentSelectionActive = false;
-    const currentPC = GameState.PartyManager.party[0];
+    this.clearPreviewSnapshot();
+    this.refreshCharacterPanel();
+  }
+
+  protected refreshCharacterPanel() {
+    const currentPC = this.getActiveCreature();
     if (!currentPC) {
       return;
     }
-    this.LB_DESC.setItem(null);
-    this.LB_ITEMS.setItems([]);
-    this.LBL_VITALITY?.setText(currentPC.getHP() + '/' + currentPC.getMaxHP());
-    this.LBL_DEF?.setText(currentPC.getAC());
-    if(this.LBL_PORTRAIT.getFillTextureName() != currentPC.getPortraitResRef()){
+    this.LB_DESC?.setItem(null);
+    this.LB_ITEMS?.setItems([]);
+    if(this.LBL_PORTRAIT && this.LBL_PORTRAIT.getFillTextureName() != currentPC.getPortraitResRef()){
       this.LBL_PORTRAIT.setFillTextureName(currentPC.getPortraitResRef());
     }
-    this.updateSlotIcons(true);
+    this.updateInventoryDisplay(true);
     this.updateList();
+    this.updatePartyMemberButtons();
   }
 
-  /**
-   * Update the party member buttons.
-   */
   updatePartyMemberButtons(){
     this.BTN_CHANGE1?.hide();
     this.BTN_CHANGE2?.hide();
@@ -504,7 +768,10 @@ export class MenuEquipment extends GameMenu {
     super.show();
     this.manager.MenuTop.LBLH_EQU.onHoverIn();
     this.equipmentSelectionActive = false;
+    this.previewActive = false;
+    this.clearPreviewSnapshot();
     this.selectedControl = this.defaultControl;
+    this.showCantEquipMessage(false);
     this.updateList();
     this.updateCharacterStats();
     this.updatePartyMemberButtons();
@@ -512,11 +779,9 @@ export class MenuEquipment extends GameMenu {
 
   triggerControllerAPress() {
     if (this.equipmentSelectionActive) {
-      if (this.selectedControl) {
-        this.selectedControl.click();
-      }
-    } else {
       this.BTN_EQUIP.click();
+    } else if (this.selectedControl) {
+      this.selectedControl.click();
     }
   }
 

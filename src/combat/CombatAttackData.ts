@@ -2,8 +2,12 @@ import { CombatAttackDamage } from "@/combat/CombatAttackDamage";
 import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
 import { CExoLocString } from "@/resource/CExoLocString";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { DamageType } from "@/enums/combat/DamageType";
 import { EffectDamage } from "@/effects";
+import type { GameEffect } from "@/effects/GameEffect";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { AttackResult } from "@/enums/combat/AttackResult";
 import { TalentFeat } from "@/talents";
@@ -11,6 +15,14 @@ import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { Dice } from "@/utility/Dice";
 import { DiceType } from "@/enums/combat/DiceType";
+import {
+  damageFlagsFromChannels,
+  mitigateDamageAmount,
+  scaleDamageChannels,
+} from "@/combat/damage-mitigation";
+import { getDamageIncreaseBonusesByChannel } from "@/effects/effect-bonuses";
+import { resolveDamageShields } from "@/combat/damage-shields";
+import { GameState } from "@/GameState";
 
 /**
  * CombatAttackData class.
@@ -88,6 +100,23 @@ export class CombatAttackData {
   sneakAttack: boolean = false;
 
   /**
+   * On-hit effects queued by Resolve*SpecialAttack (e.g. Crit Strike stun).
+   * Applied with damage at impact time (retail attack effect list @ +0x88).
+   */
+  pendingOnHitEffects: GameEffect[] = [];
+
+  /**
+   * Attack roll total (d20 + modifiers) for status-summary feedback.
+   * Retail CSWSCombatAttackData fields packed as CC ints[2].
+   */
+  toHitTotal: number = 0;
+
+  /**
+   * Target defense / AC for status-summary feedback (CC ints[3]).
+   */
+  targetDefense: number = 0;
+
+  /**
    * The weapon attack type for the attack
    */
   weaponAttackType: number = 0;
@@ -163,6 +192,11 @@ export class CombatAttackData {
   damageApplied: boolean = false;
 
   /**
+   * Whether the traveling bolt / ShotSound has been spawned at muzzle time.
+   */
+  projectileSpawned: boolean = false;
+
+  /**
    * Constructor for the CombatAttackData class
    */
   constructor(){
@@ -191,6 +225,13 @@ export class CombatAttackData {
       const strMod = CombatAttackData.GetAbilityMod(creature.getSTR());
       for(let i = 0; i < critMultiplier; i++){
         this.damageList[DamageType.PHYSICAL].addDamage(strMod);
+      }
+      const unarmedChannels = getDamageIncreaseBonusesByChannel(creature);
+      for(let ch = 0; ch < unarmedChannels.length; ch++){
+        const amount = unarmedChannels[ch];
+        if(amount){
+          this.damageList[ch].addDamage(amount);
+        }
       }
       this.ensureMinimumDamage();
       this.updateKillingBlow();
@@ -254,6 +295,17 @@ export class CombatAttackData {
       }
       if(sneakDice > 0){
         this.damageList[DamageType.BASE].addDamage(Dice.roll(sneakDice, DiceType.d6));
+      }
+    }
+
+    // EffectDamageIncrease / Decrease via iprp_damagecost (DAMAGE_BONUS_*)
+    const effectChannels = getDamageIncreaseBonusesByChannel(creature, {
+      critMultiplier,
+    });
+    for(let ch = 0; ch < effectChannels.length; ch++){
+      const amount = effectChannels[ch];
+      if(amount){
+        this.damageList[ch].addDamage(amount);
       }
     }
 
@@ -322,6 +374,26 @@ export class CombatAttackData {
    */
   applyDamageEffectToCreature(owner: ModuleCreature, target: ModuleCreature){
     if(!target) return;
+
+    // Retail GetDamageRoll @ 005a9050: Immunity → Resistance → Reduction before packaging.
+    // SignalMeleeDamage sets int[19]=1 so OnApplyDamage skips a second pass.
+    if(target.plot){
+      for(let i = 0; i < 15; i++){
+        this.damageList[i].setDamage(0);
+      }
+    }else{
+      const channels: number[] = new Array(15);
+      for(let i = 0; i < 15; i++){
+        channels[i] = this.damageList[i].damageValue;
+      }
+      const flags = damageFlagsFromChannels(channels);
+      const mitigated = mitigateDamageAmount(target, this.getTotalDamage(), flags, 0);
+      scaleDamageChannels(channels, mitigated);
+      for(let i = 0; i < 15; i++){
+        this.damageList[i].setDamage(channels[i]);
+      }
+    }
+
     const damageEffect = new EffectDamage();
     damageEffect.setCreator(owner);
 
@@ -329,8 +401,19 @@ export class CombatAttackData {
       const damage = this.damageList[i];
       damageEffect.setInt(i, damage.damageValue);
     }
+    damageEffect.setInt(19, 1);
 
     target.addEffect(damageEffect, GameEffectDurationType.INSTANT);
+    // Retail ResolveDamageShields after mitigated combat damage
+    if(owner && !target.plot && this.getTotalDamage() > 0){
+      resolveDamageShields(target, owner);
+    }
+    // Retail Signal*Damage applies queued special-attack effects (SETSTATE stun, etc.)
+    for(let i = 0; i < this.pendingOnHitEffects.length; i++){
+      const onHit = this.pendingOnHitEffects[i];
+      if(onHit) target.addEffect(onHit);
+    }
+    this.pendingOnHitEffects.length = 0;
     this.damageApplied = true;
   }
 
@@ -360,6 +443,8 @@ export class CombatAttackData {
     this.rangedAttack = false;
     this.damageApplyDelay = -1;
     this.damageApplied = false;
+    this.projectileSpawned = false;
+    this.pendingOnHitEffects.length = 0;
     for(let i = 0; i < this.damageList.length; i++){
       this.damageList[i].reset();
     }
@@ -367,17 +452,113 @@ export class CombatAttackData {
 
   /**
    * Convert the combat attack data to a GFF struct
+   * Retail CSWSCombatAttackData::SaveData @ 004d2210 (list element type 0xAAEE)
    * @param structIdx - The index of the struct
    * @returns The GFF struct
    */
-  toStruct(structIdx: number = -1){
+  toStruct(structIdx: number = 0xAAEE){
     const struct = new GFFStruct(structIdx);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'AttackGroup')).setValue(this.attackGroup || 0);
+    struct.addField(new GFFField(GFFDataType.WORD, 'AnimationLength')).setValue(this.animationLength || 0);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'MissedBy')).setValue(
+      this.missedBy?.id ?? ModuleObjectConstant.OBJECT_INVALID
+    );
+    struct.addField(new GFFField(GFFDataType.BYTE, 'AttackResult')).setValue(this.attackResult || 0);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'ReactObject')).setValue(
+      this.reactObject?.id ?? ModuleObjectConstant.OBJECT_INVALID
+    );
+    struct.addField(new GFFField(GFFDataType.WORD, 'ReaxnDelay')).setValue(this.reaxnDelay || 0);
+    struct.addField(new GFFField(GFFDataType.WORD, 'ReaxnAnimation')).setValue(this.reaxnAnimation || 0);
+    struct.addField(new GFFField(GFFDataType.WORD, 'ReaxnAnimLength')).setValue(this.reaxnAnimLength || 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'Concealment')).setValue(this.concealment ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.WORD, 'AttackType')).setValue(this.attackType ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'AttackMode')).setValue(this.attackMode || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'RangedAttack')).setValue(this.rangedAttack ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'SneakAttack')).setValue(this.sneakAttack ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'WeaponAttackType')).setValue(this.weaponAttackType || 0);
+    struct.addField(new GFFField(GFFDataType.FLOAT, 'RangedTargetX')).setValue(this.rangedTargetX || 0);
+    struct.addField(new GFFField(GFFDataType.FLOAT, 'RangedTargetY')).setValue(this.rangedTargetY || 0);
+    struct.addField(new GFFField(GFFDataType.FLOAT, 'RangedTargetZ')).setValue(this.rangedTargetZ || 0);
 
+    const damageList = struct.addField(new GFFField(GFFDataType.LIST, 'DamageList'));
+    for(let i = 0; i < 15; i++){
+      const dmgStruct = new GFFStruct(0xDAEE);
+      const val = this.damageList[i]?.damageValue ?? -1;
+      dmgStruct.addField(new GFFField(GFFDataType.SHORT, 'DamageValue')).setValue(val);
+      damageList.addChildStruct(dmgStruct);
+    }
+
+    struct.addField(new GFFField(GFFDataType.BYTE, 'KillingBlow')).setValue(this.killingBlow ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'CoupDeGrace')).setValue(this.coupDeGrace ? 1 : 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'CriticalThreat')).setValue(this.criticalThreat || 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'AttackDeflected')).setValue(this.attackDeflected || 0);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'AmmoItem')).setValue(
+      this.ammoItem?.id ?? ModuleObjectConstant.OBJECT_INVALID
+    );
+    struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'AttackDebugText')).setValue('');
+    struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'DamageDebugText')).setValue('');
     return struct;
+  }
+
+  /**
+   * Retail CSWSCombatAttackData::LoadData @ 004d2450
+   */
+  fromStruct(struct: GFFStruct){
+    if(!struct) return;
+    const get = (label: string, fallback: number = 0) =>
+      struct.hasField(label) ? struct.getFieldByLabel(label).getValue() : fallback;
+
+    this.attackGroup = get('AttackGroup');
+    this.animationLength = get('AnimationLength', 1500);
+    this.attackResult = get('AttackResult', AttackResult.MISS);
+    this.reaxnDelay = get('ReaxnDelay');
+    this.reaxnAnimation = get('ReaxnAnimation', 10001);
+    this.reaxnAnimLength = get('ReaxnAnimLength');
+    this.concealment = !!get('Concealment');
+    this.attackType = !!get('AttackType');
+    this.attackMode = get('AttackMode');
+    this.rangedAttack = !!get('RangedAttack');
+    this.sneakAttack = !!get('SneakAttack');
+    this.weaponAttackType = get('WeaponAttackType');
+    this.rangedTargetX = get('RangedTargetX');
+    this.rangedTargetY = get('RangedTargetY');
+    this.rangedTargetZ = get('RangedTargetZ');
+    this.killingBlow = !!get('KillingBlow');
+    this.coupDeGrace = !!get('CoupDeGrace');
+    this.criticalThreat = get('CriticalThreat');
+    this.attackDeflected = get('AttackDeflected');
+
+    const missedById = get('MissedBy', ModuleObjectConstant.OBJECT_INVALID);
+    const reactId = get('ReactObject', ModuleObjectConstant.OBJECT_INVALID);
+    const ammoId = get('AmmoItem', ModuleObjectConstant.OBJECT_INVALID);
+    this.missedBy = resolveObjectId(missedById);
+    this.reactObject = resolveObjectId(reactId);
+    this.ammoItem = resolveObjectId(ammoId);
+
+    if(struct.hasField('DamageList')){
+      const list = struct.getFieldByLabel('DamageList').getChildStructs();
+      for(let i = 0; i < 15; i++){
+        if(!this.damageList[i]) this.damageList[i] = new CombatAttackDamage();
+        if(list[i]?.hasField('DamageValue')){
+          this.damageList[i].setDamage(list[i].getFieldByLabel('DamageValue').getValue());
+        }else{
+          this.damageList[i].reset();
+        }
+      }
+    }
   }
 
   static GetAbilityMod(abilityScore: number = 10): number {
     return Math.floor((abilityScore - 10) / 2);
   }
 
+}
+
+function resolveObjectId(id: number): ModuleObject | undefined {
+  if(!id || id === ModuleObjectConstant.OBJECT_INVALID) return undefined;
+  try{
+    return GameState.ModuleObjectManager?.GetObjectById?.(id);
+  }catch{
+    return undefined;
+  }
 }

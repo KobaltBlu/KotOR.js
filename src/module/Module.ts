@@ -2,6 +2,7 @@ import * as THREE from "three";
 import * as path from "path";
 import { AudioEmitter } from "@/audio/AudioEmitter";
 import { GameEffect } from "@/effects";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
 import EngineLocation from "@/engine/EngineLocation";
 import { GameState } from "@/GameState";
 import { CExoLocString } from "@/resource/CExoLocString";
@@ -237,7 +238,7 @@ export class Module {
     this.ifo = ifo;
 
     //Setup Module Calendar
-    this.timeManager.setFromIFO(ifo);
+    this.timeManager.setFromIFO(ifo, isLoadingSave);
     
     const areaList = ifo.getFieldByLabel('Mod_Area_list');
     const areaCount = areaList.getChildStructs().length;
@@ -352,6 +353,18 @@ export class Module {
   addEffect(effect?: GameEffect, lLocation?: EngineLocation){
     if(!(effect instanceof GameEffect)){ return; }
 
+    // Retail location AOE: spawn ModuleAreaOfEffect at lLocation
+    if(effect.type === GameEffectType.EffectAreaOfEffect && lLocation){
+      const aoeEffect = effect as import("@/effects/EffectAreaOfEffect").EffectAreaOfEffect;
+      aoeEffect.applyLocation = lLocation;
+      effect.setCreator(this.area as any);
+      effect.setAttachedObject(this as any);
+      effect.loadModel();
+      effect.onApply(this as any);
+      this.effects.push(effect);
+      return;
+    }
+
     effect.loadModel();
     const object: any = {
       model: new THREE.Object3D(),
@@ -398,8 +411,8 @@ export class Module {
       let eqLen = this.eventQueue.length - 1;
       for(let i = eqLen; i >= 0; i--){
         let event = this.eventQueue[i];
-        
-        if( this.timeManager.pauseDay >= event.day && this.timeManager.pauseTime >= event.time ){
+        // Compare full calendar span (day wrap-safe) — not pauseDay && pauseTime
+        if(this.timeManager.getMilisecondsElapsed(event.day, event.time) >= 0){
           event.execute();
           this.eventQueue.splice(i, 1);
         }
@@ -636,7 +649,7 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_StartYear') ).setValue(this.timeManager.year);
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Tag') ).setValue(this.tag);
     ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Tokens') );
-    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Transition') ).setValue(this.transition);
+    ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Transition') ).setValue(this.timeManager.transition);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Version') ).setValue(this.version);
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_XPScale') .setValue(this.xpScale));
     ifo.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
@@ -860,6 +873,9 @@ export class Module {
   //ex: end_m01aa end_m01aa_s
   static async Load(modName: string, waypoint?: string){
     console.log('Load', modName);
+    const transitionCalendar = !GameState.isLoadingSave && GameState.module?.filename
+      ? GameState.module.timeManager.calendar.clone()
+      : undefined;
     const module = new Module();
     module.filename = modName;
     module.transWP = waypoint;
@@ -871,7 +887,12 @@ export class Module {
       const ifo_data = await ResourceLoader.loadResource(ResourceTypes['ifo'], 'module');
       const ifo = new GFFObject(ifo_data);
       module.setFromIFO(ifo, GameState.isLoadingSave);
-      GameState.time = module.timeManager.pauseTime / 1000;
+      if(transitionCalendar){
+        module.timeManager.pauseDay = transitionCalendar.pauseDay;
+        module.timeManager.pauseTime = transitionCalendar.pauseTime;
+        module.timeManager.calendar.advanceDayAndTime();
+        module.timeManager.dayPhase = module.timeManager.computeDayPhase(module.timeManager.hour);
+      }
 
       const gitBuffer = await ResourceLoader.loadResource(ResourceTypes['git'], module.entryArea);
       const git = new GFFObject(gitBuffer);

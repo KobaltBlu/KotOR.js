@@ -17,6 +17,9 @@ import { EncounterCreatureEntry } from "@/module/EncounterCreatureEntry";
 import { EncounterSpawnPointEntry } from "@/module/EncounterSpawnPointEntry";
 import { EncounterSpawnEntry } from "@/module/EncounterSpawnEntry";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { calculatePointsFromCR } from "@/module/encounter-cr";
+import { spawnCreatureFromSpawnList, spawnIfAppropriate } from "@/module/encounter-spawn";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
 * ModuleEncounter class.
@@ -63,6 +66,8 @@ export class ModuleEncounter extends ModuleObject {
   customScriptId: any;
   areaListMaxSize: any;
   spawnPoolActive: any;
+  /** Retail field40_0x2d8 — CR points recovered via DestroySelf unlink. */
+  spawnPoolRecovered: number = 0;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -88,6 +93,12 @@ export class ModuleEncounter extends ModuleObject {
     this.resetTime = 32000; //Seconds before encounter respawns
     this.spawnOption = 0; //0: Continuous Spawn | 1: Single-Shot Spawn
     this.started = 0; //0: if there are no creatures currently belonging to the encounter. | 1: if any creatures currently exist that belong to the encounter.
+    this.numberSpawned = 0;
+    this.spawnPoolActive = 0;
+    this.spawnPoolRecovered = 0;
+    this.exhausted = 0;
+    this.lastSpawnDay = 0;
+    this.lastSpawnTime = 0;
 
     this.scripts = {
       onEntered: undefined,
@@ -124,6 +135,8 @@ export class ModuleEncounter extends ModuleObject {
 
             this.onEnter(creature);
             this.triggered = true;
+            this.lastEntered = creature;
+            spawnIfAppropriate(this);
           }
         }
       }else{
@@ -153,6 +166,8 @@ export class ModuleEncounter extends ModuleObject {
 
             this.onEnter(partymember);
             this.triggered = true;
+            this.lastEntered = partymember;
+            spawnIfAppropriate(this);
           }
         }
       }else{
@@ -166,6 +181,34 @@ export class ModuleEncounter extends ModuleObject {
           }
         }
       }
+    }
+
+    // Retail AIUpdate @ 00593fb0: Single-shot + Reset → re-activate after ResetTime
+    if(
+      this.spawnOption === 1 &&
+      this.reset === 1 &&
+      this.exhausted &&
+      this.lastSpawnDay &&
+      this.lastSpawnTime
+    ){
+      const tm = GameState.module?.timeManager;
+      if(tm){
+        const elapsed = tm.getMilisecondsElapsed(this.lastSpawnDay, this.lastSpawnTime);
+        if(elapsed >= (this.resetTime | 0) * 1000){
+          this.lastSpawnDay = 0;
+          this.lastSpawnTime = 0;
+          this.exhausted = 0;
+          this.active = 1;
+          this.spawnPoolRecovered = 0;
+          this.spawnPoolActive = 0;
+          spawnIfAppropriate(this);
+        }
+      }
+    }
+
+    // Retail AIUpdate: SpawnCreatureFromSpawnList each tick while queue non-empty
+    if(this.active && this.spawnList?.length){
+      spawnCreatureFromSpawnList(this);
     }
 
     this.mesh.visible = ConfigClient.get('Game.debug.trigger_geometry_show') ? true : false;
@@ -186,6 +229,69 @@ export class ModuleEncounter extends ModuleObject {
     const instance = nwscript.newInstance();
     instance.exitingObject = object;
     instance.run(this, 0);
+  }
+
+  onExhausted(){
+    const nwscript = this.scripts[ModuleObjectScript.EncounterOnExhausted];
+    if(!nwscript){ return; }
+    const instance = nwscript.newInstance();
+    instance.run(this, 0);
+  }
+
+  /**
+   * Mark a creature as spawned from this encounter (retail field407_0xa24).
+   */
+  registerSpawnedCreature(creature: ModuleCreature, poolCost: number = 0){
+    if(!creature) return;
+    creature.encounterObjectId = this.id;
+    creature.encounterUnlinked = false;
+    this.numberSpawned = (this.numberSpawned || 0) + 1;
+    this.started = 1;
+    if(poolCost > 0){
+      this.spawnPoolActive = (this.spawnPoolActive || 0) + poolCost;
+    }
+  }
+
+  /**
+   * Retail CSWSEncounter::RemoveFromActiveCreatureCount @ 00594310.
+   * @param challengeRating creature CR
+   * @param fromDestroySelf 1 = AIActionEncounterCreatureDestroySelf (recover to field40);
+   *                        0 = OnApplyDeath (may fire OnExhausted when count hits 0)
+   */
+  removeFromActiveCreatureCount(challengeRating: number, fromDestroySelf: number = 0){
+    let spawned = this.numberSpawned || 0;
+    if(spawned <= 0) return;
+
+    const points = calculatePointsFromCR(challengeRating);
+    spawned -= 1;
+    this.numberSpawned = spawned;
+
+    let pool = (this.spawnPoolActive || 0) - points;
+    if(pool < 0) pool = 0;
+    this.spawnPoolActive = pool;
+
+    if(fromDestroySelf === 1){
+      this.spawnPoolRecovered = (this.spawnPoolRecovered || 0) + points;
+      return;
+    }
+
+    if(spawned === 0){
+      this.onExhausted();
+      // Retail clears per-creature spawn flags, then:
+      this.active = 0;
+      this.started = 0;
+      this.exhausted = 1;
+      if(this.reset === 1){
+        // Retail stamps world timer last_spawn_day / last_spawn_time
+        const tm = GameState.module?.timeManager;
+        this.lastSpawnDay = tm?.pauseDay ?? 0;
+        this.lastSpawnTime = tm?.pauseTime ?? 0;
+        // Avoid day=0 looking "unstamped" — retail treats 0 as empty
+        if(!this.lastSpawnDay && !this.lastSpawnTime){
+          this.lastSpawnDay = 1;
+        }
+      }
+    }
   }
 
   load(){
@@ -457,6 +563,8 @@ export class ModuleEncounter extends ModuleObject {
 
       if(this.template.RootNode.hasField('SpawnPoolActive'))
         this.spawnPoolActive = this.template.getFieldByLabel('SpawnPoolActive').getValue();
+
+      this.loadActionList();
 
       this.initialized = true;
     }

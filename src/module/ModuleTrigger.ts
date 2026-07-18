@@ -609,6 +609,9 @@ export class ModuleTrigger extends ModuleObject {
     if(this.template.RootNode.hasField('TrapDetectDC'))
       this.trapDetectDC = this.template.getFieldByLabel('TrapDetectDC').getValue();
 
+    if(this.template.RootNode.hasField('TrapDisarmDC'))
+      this.trapDisarmDC = this.template.getFieldByLabel('TrapDisarmDC').getValue();
+
     if(this.template.RootNode.hasField('TrapFlag'))
       this.trapFlag = this.template.getFieldByLabel('TrapFlag').getValue();
 
@@ -647,6 +650,8 @@ export class ModuleTrigger extends ModuleObject {
       }
     }
     
+    this.loadActionList();
+
     this.initialized = true;
 
     if(this.type == ModuleTriggerType.TRAP){
@@ -722,6 +727,7 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin') ).setValue(this.transitionDestin);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmDC') ).setValue(this.trapDisarmDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(this.trapFlag);

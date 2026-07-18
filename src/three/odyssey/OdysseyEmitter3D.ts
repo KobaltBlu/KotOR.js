@@ -32,7 +32,12 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   private static _v3C = new THREE.Vector3();
   private static _v3D = new THREE.Vector3();
   private static _quat = new THREE.Quaternion();
+  private static _quatB = new THREE.Quaternion();
+  private static _quatC = new THREE.Quaternion();
   private static _mat4 = new THREE.Matrix4();
+
+  /** Retail DoEmitterBucket / UpdateEmitters: AnimateParticles(min(dt, 0.1)). */
+  private static readonly MAX_ANIMATE_DT = 0.1;
 
   static BirthTime: number = 1;
   static PlaneGeometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
@@ -62,28 +67,73 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   velocities: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
   props: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
   ids: THREE.BufferAttribute|THREE.InstancedBufferAttribute;
+  /** Motion_Blur particle tail (+0x60). */
+  prevOffsets: THREE.InstancedBufferAttribute;
+  /**
+   * Per-particle inherit velocity (retail Particle scale×accel @ +0x18/+0x1c).
+   * CPU-only; MoveFunc adds inherit×dt then |inherit×(1-dt)|.
+   */
+  private inheritVels: Float32Array = new Float32Array(0);
 
   particleCount: number = 0;
   referenceNode: OdysseyObject3D = new OdysseyObject3D();
 
-  // Lightning properties
+  // Lightning properties (PartEmitter+0xb8..0xc8)
   lightningZigZag: number = 0;
   lightningScale: number = 0;
   lightningDelay: number = 0;
   lightningRadius: number = 0;
   lightningSubDiv: number = 0;
+  /** Retail field43_0xf4 — accumulates dt until lightningDelay. */
   _lightningDelay: number = 0;
-
-  // Velocity calculation cache
-  d: number = 0;
-  vx: number = 0;
-  vy: number = 0;
-  vz: number = 0;
-  d2: number = 0;
+  /**
+   * Bolt-local mid-sample offsets (u/v in plane ⊥ start→end).
+   * Regenerated when delay elapses (LightningEmitter::Update @ 00498b80).
+   */
+  private _lightningMidOU: Float32Array = new Float32Array(0);
+  private _lightningMidOV: Float32Array = new Float32Array(0);
+  private _lightningSampleCount: number = 0;
+  /** ControlPTDelay accumulator (PartEmitter field44_0xf8). */
+  private _controlPTAccum: number = 0;
+  /** Mid control-point jitter in bolt-local (u,v); sized to cpCount. */
+  private _cpMidOU: Float32Array = new Float32Array(0);
+  private _cpMidOV: Float32Array = new Float32Array(0);
+  private _cpCount: number = 0;
+  /** Scratch centers for Hermite samples (xyz interleaved). */
+  private _lightningCenters: Float32Array = new Float32Array(0);
+  /** Scratch control-point positions / tangents (xyz interleaved). */
+  private _cpPositions: Float32Array = new Float32Array(0);
+  private _cpTangents: Float32Array = new Float32Array(0);
+  /** Scratch xyz mid offsets for RecursiveFractal @ 0048e700. */
+  private _fractalXYZ: Float32Array = new Float32Array(0);
+  /**
+   * Child bolts from numBranches (UpdateBranches @ 00491a50).
+   * Lightweight ribbons — not full child LightningEmitters.
+   */
+  private _lightningBranches: {
+    attachIdx: number;
+    sampleCount: number;
+    sizeScale: number;
+    /** When true, end tracks parent reference (scale>0.5 path). */
+    trackTarget: boolean;
+    endX: number;
+    endY: number;
+    endZ: number;
+    midOU: Float32Array;
+    midOV: Float32Array;
+    centers: Float32Array;
+  }[] = [];
+  private _lightningBranchActive: number = 0;
+  /** Hard cap — retail birthrate>9 was unstable; keep a safe ceiling. */
+  private static readonly LIGHTNING_MAX_SAMPLES = 64;
+  private static readonly LIGHTNING_MAX_CPS = 32;
+  private static readonly LIGHTNING_MAX_BRANCHES = 8;
 
   context: any;
   lifeExp: number = -1;
   _birthTimer: number = 0;
+  /** FountainEmitter field33_0xcc — accumulates dt for spawntype-0 birth. */
+  private _birthAccum: number = 0;
 
   birthRate: number = 0;
   birthRateRandom: number = 0;
@@ -123,9 +173,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   combineTime: number = 0;
   p2pBezier2: number = 0;
   p2pBezier3: number = 0;
-  percentStart: number = 0;
-  percentMid: number = 0;
-  percentEnd: number = 0;
+  /** Retail sentinel 255 = two-key start→end (RenderStandard field37_0xdc). */
+  percentStart: number = 255;
+  percentMid: number = 0.5;
+  percentEnd: number = 1;
   targetSize: number = 0;
   controlPTCount: number = 0;
   controlPTDelay: number = 0;
@@ -133,18 +184,18 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   tangentLength: number = 0;
   controlPTRadius: number = 0;
 
-  speed_min: number = 0;
-  speed_max: number = 0;
-  xangle: number = 0;
-  zangle: number = 0;
   //@ts-ignore
   mesh: THREE.Points|THREE.Mesh;
-  speed: number = 0;
 
-  // Inherit tracking: emitter world position delta between frames
+  // Inherit tracking: emitter world pose between frames (retail field71/74 + field87/91)
   private _lastWorldPos: THREE.Vector3 = new THREE.Vector3();
   private _worldPosDelta: THREE.Vector3 = new THREE.Vector3();
   private _hasLastWorldPos: boolean = false;
+  private _lastWorldQuat: THREE.Quaternion = new THREE.Quaternion();
+  private _hasLastWorldQuat: boolean = false;
+  /** Per-tick world pose — must not alias general scratches (_v3C / _quatB) used by birth. */
+  private _frameWorldPos: THREE.Vector3 = new THREE.Vector3();
+  private _frameWorldQuat: THREE.Quaternion = new THREE.Quaternion();
 
   // Trail spawn tracking (spawntype 1)
   private _lastTrailPos: THREE.Vector3 = new THREE.Vector3();
@@ -155,13 +206,17 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   private _lastRibbonCenter: THREE.Vector3 = new THREE.Vector3();
   private _hasRibbonCenter: boolean = false;
 
-  // Chunk emitter state
+  // Chunk emitter state (ChunkyParticle presentation — InstancedMesh approx of per-particle Gob)
   private _chunkGeometry: THREE.BufferGeometry = null;
   private _chunkMaterial: THREE.Material = null;
   private _chunkLoaded: boolean = false;
   private _isChunkEmitter: boolean = false;
   private _chunkMesh: THREE.InstancedMesh = null;
   private _chunkMatrix: THREE.Matrix4 = new THREE.Matrix4();
+  private _chunkQuat: THREE.Quaternion = new THREE.Quaternion();
+  private _chunkScale: THREE.Vector3 = new THREE.Vector3(1, 1, 1);
+  private _chunkColor: THREE.Color = new THREE.Color(1, 1, 1);
+  private _chunkColors: THREE.InstancedBufferAttribute = null;
 
   constructor(odysseyNode: OdysseyModelNode){
     super();
@@ -172,11 +227,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     switch(this.node.renderMode){
       case 'Normal':
-      case 'Motion_Blur':
       case 'Linked':
         this.geometry = new THREE.BufferGeometry();
       break;
       default:
+        // Motion_Blur and billboard modes: instanced plane quads
         this.geometry = new THREE.InstancedBufferGeometry();
         this.geometry.index = OdysseyEmitter3D.PlaneGeometry.index;
         this.geometry.attributes.position = OdysseyEmitter3D.PlaneGeometry.attributes.position;
@@ -215,7 +270,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         visible: true
       });
 
-      if(this.node.twoSidedTex || this.node.renderMode == 'Linked' || this.node.renderMode == 'Billboard_to_Local_Z'){
+      if(this.node.twoSidedTex || this.node.renderMode == 'Linked' || this.node.renderMode == 'Billboard_to_Local_Z' || this.node.renderMode == 'Motion_Blur'){
         this.material.side = THREE.DoubleSide;
       }
 
@@ -397,8 +452,16 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.material.uniforms.velocity.value = this.velocity;
       this.material.uniforms.randVelocity.value = this.randVelocity;
       this.material.uniforms.blurLength.value = this.blurLength;
+      if(this.material.uniforms.lifePercents){
+        this.material.uniforms.lifePercents.value.set(
+          this.percentStart,
+          this.percentMid,
+          this.percentEnd
+        );
+      }
 
       this.maxParticleCount = this.getMaxParticleCount();
+      this.ensureInheritVelCapacity(this.maxParticleCount);
 
       if(this.node.updateMode == 'Lightning'){
         this.material.defines.LIGHTNING = '';
@@ -417,7 +480,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         this.material.defines.TINTED = '';
       }
 
-      // DEPTH_TEXTURE is deferred to tick() when context (and its depth target) is available
+      // DEPTH_TEXTURE define enabled in updateDepthTextureUniforms when a depth target exists
 
       if(this.node.deadSpace > 0 && this.node.renderMode == 'Aligned_to_Particle_Dir'){
         this.material.defines.DEADSPACE = '';
@@ -425,6 +488,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
 
       this.material.defines[this.node.renderMode] = '';
+      // Retail fountain particles are world-space; CPU MoveFunc + shader without SPE vel×age.
+      if(this.node.renderMode !== 'Linked'){
+        this.material.defines.CPU_PHYSICS = '';
+      }
+      this.material.needsUpdate = true;
 
       this._birthTimer = this.birthRate > 0 ? 1/this.birthRate : 1;
 
@@ -433,8 +501,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.material.blending = THREE.NormalBlending;
         break;
         case 'Lighten':
+          // Retail: glBlendFunc(SRC_ALPHA, ONE); glDepthMask(0) — transparent additive pass
           this.material.blending = THREE.AdditiveBlending;
-          this.material.transparent = false;
+          this.material.transparent = true;
           this.material.depthWrite = false;
           this.material.needsUpdate = true;
         break;
@@ -445,29 +514,25 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         break;
       }
 
+      // Geom SizeStart may be missing; zero scale → invisible quads (esp. Motion_Blur)
+      if(!(this.sizes[0] > 0 || this.sizes[1] > 0 || this.sizes[2] > 0)){
+        this.sizes[0] = 0.04;
+        this.sizes[1] = 0.04;
+        this.sizes[2] = 0.02;
+        this.material.uniforms.scale.value.fromArray(this.sizes);
+      }
+
       const offsets: number[] = [];
       const props: number[] = [];
       const velocities: number[] = [];
       const ids: number[] = [];
+      const prevOffsets: number[] = [];
 
-      //Start Velocity Calculations
-      this.speed_min = this.velocity;
-      this.speed_max = this.randVelocity;
-
-      this.xangle = this.spread;
-      this.zangle = this.spread;
-      this.vx = Math.sin(this.xangle);
-      this.vy = Math.sin(this.zangle);
-      this.vz = Math.cos(this.xangle) + Math.cos(this.zangle);
-
-      const vSum = Math.abs(this.vx) + Math.abs(this.vy) + Math.abs(this.vz);
-      this.d = vSum > 0 ? this.speed_min / vSum : 0;
-      this.d2 = vSum > 0 ? this.speed_max / vSum : 0;
-      //End Velocity Calculations
+      // Birth uses retail Particle::initialize (randomDirection + speed×zdir).
+      this.attributeChanged('mass');
 
       switch(this.node.renderMode){
         case 'Normal':
-        case 'Motion_Blur':
           this.material.defines.POINTS = '';
 
           this.offsets = new THREE.BufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
@@ -496,6 +561,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.mesh = new THREE.Mesh( this.geometry, this.material );
         break;
         default:
+          // Motion_Blur + billboards: instanced quads (offset = world pos for Motion_Blur)
           this.offsets = new THREE.InstancedBufferAttribute( new Float32Array( offsets ), 3 ).setUsage( THREE.DynamicDrawUsage );
           this.velocities = new THREE.InstancedBufferAttribute( new Float32Array( velocities ), 4 ).setUsage( THREE.DynamicDrawUsage );
           this.props = new THREE.InstancedBufferAttribute( new Float32Array( props ), 4 ).setUsage( THREE.DynamicDrawUsage );
@@ -504,6 +570,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.geometry.setAttribute( 'velocity', this.velocities );
           this.geometry.setAttribute( 'props', this.props );
           this.geometry.setAttribute( 'ids', this.ids );
+          if(this.node.renderMode === 'Motion_Blur'){
+            this.prevOffsets = new THREE.InstancedBufferAttribute( new Float32Array( this.maxParticleCount * 3 ), 3 ).setUsage( THREE.DynamicDrawUsage );
+            this.geometry.setAttribute( 'prevOffset', this.prevOffsets );
+          }
       
           this.mesh = new THREE.Mesh( this.geometry, this.material );
         break;
@@ -523,7 +593,15 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   getMaxParticleCount(){
     if(this.node.renderMode == 'Linked'){
       if(this.updateType == 'Lightning'){
-        return 10 * 2;
+        // Retail: (int)birthRate = bolt sample count (field4_0x58). Each sample → L/R verts.
+        const n = Math.max(
+          2,
+          Math.min(
+            OdysseyEmitter3D.LIGHTNING_MAX_SAMPLES,
+            Math.floor(this.birthRate) || 10
+          )
+        );
+        return n * 2;
       }else{
         // Each logical sample = 2 verts (L/R). `le`/`br` use ceil so fractional MDL values size conservatively.
         const le = Math.max(1, Math.ceil(this.lifeExp >= 0 ? this.lifeExp : 1));
@@ -535,39 +613,190 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         return samples * 2;
       }
     }else{
-      return (Math.ceil( (this.lifeExp >= 0 ? this.lifeExp : 1) ) * Math.ceil(this.birthRate));
+      // lifeExp 0.05 → ceil=1; birthRate 0 → keep a small buffer so resize can grow when travel01 sets rate
+      const le = Math.max(1, Math.ceil(this.lifeExp >= 0 ? this.lifeExp : 1));
+      const br = Math.max(1, Math.ceil(this.birthRate || 1));
+      return Math.max(8, le * br * 2);
     }
   }
 
   getRandomPosition(){
-    const spread = OdysseyEmitter3D._v3A.copy(this.size);
-    const quat = OdysseyEmitter3D._quat.set(0, 0, 0, 1);
-    
-    if(this.node.renderMode == 'Normal' || this.node.renderMode == 'Motion_Blur'){
-      const pos = OdysseyEmitter3D._v3B;
-      this.getWorldQuaternion(quat);
-      this.getWorldPosition(pos);
-      return new THREE.Vector3(
-        ( Math.random() * spread.x - ( spread.x * 0.5 ) ),
-        ( Math.random() * spread.y - ( spread.y * 0.5 ) ),
-        ( Math.random() * spread.z - ( spread.z * 0.5 ) )
-      ).applyQuaternion(this.parent.quaternion).add(pos);
-    }else if(this.node.renderMode == 'Linked'){
-      this.getWorldQuaternion(quat);
-      const pos = new THREE.Vector3();
-      this.getWorldPosition(pos);
-      return pos;
+    // World-space birth (emitter GetWorld + size box).
+    if(this.node.renderMode == 'Linked'){
+      this.getWorldPosition(OdysseyEmitter3D._v3B);
+      return OdysseyEmitter3D._v3B.clone();
     }
-    return new THREE.Vector3(
-      this.position.x + ( Math.random() * spread.x - ( spread.x * 0.5 ) ),
-      this.position.y + ( Math.random() * spread.y - ( spread.y * 0.5 ) ),
-      this.position.z + ( Math.random() * spread.z - ( spread.z * 0.5 ) )
-    ).applyQuaternion(this.quaternion);
+
+    // Retail Particle::randomPosition @ 0048d870 — offsets on local X/Y only (not Z).
+    const quat = OdysseyEmitter3D._quat;
+    const pos = OdysseyEmitter3D._v3B;
+    this.getWorldQuaternion(quat);
+    this.getWorldPosition(pos);
+    const ox = Math.random() * this.size.x - this.size.x * 0.5;
+    const oy = Math.random() * this.size.y - this.size.y * 0.5;
+    const xOff = OdysseyEmitter3D._v3C.set(1, 0, 0).applyQuaternion(quat).multiplyScalar(ox);
+    const yOff = OdysseyEmitter3D._v3A.set(0, 1, 0).applyQuaternion(quat).multiplyScalar(oy);
+    return pos.clone().add(xOff).add(yOff);
   }
 
   /** Returns center + random offset in [-range/2, +range/2] */
   randomFloat(center: number, range: number){
     return center + ( Math.random() * range - ( range * 0.5 ) );
+  }
+
+  /**
+   * Retail Particle::initialize randvel jitter: signed centi-units when randvel > 0.01.
+   * speed = velocity + jitter (even when velocity is 0).
+   */
+  private randomSignedCentiJitter(range: number): number {
+    if(!(range > 0.01)) return 0;
+    const cents = Math.trunc(range * 100);
+    if(cents <= 0) return 0;
+    let j = Math.floor(Math.random() * cents);
+    if(Math.random() < 0.5) j = -j;
+    return j * 0.01;
+  }
+
+  /**
+   * Retail Particle::randomDirection @ 0048de60.
+   * Premultiply tilt about emitter-fixed world X, then twist about emitter-fixed world Z
+   * (axes taken once from the emitter quat — not post-tilt local Z).
+   * Optional deadSpace camera clamp when node.deadSpace !== 0.
+   */
+  private randomDirectionRetail(outQuat: THREE.Quaternion, birthPos: THREE.Vector3){
+    const emitterX = OdysseyEmitter3D._v3C.set(1, 0, 0).applyQuaternion(outQuat);
+    const emitterZ = OdysseyEmitter3D._v3D.set(0, 0, 1).applyQuaternion(outQuat);
+    const qAxis = OdysseyEmitter3D._quatB;
+
+    // Tilt: angle = (rand % (1 - ftol(spread/2 * -100))) * 0.01 ≈ [0, spread/2]
+    const tiltDiv = Math.max(1, 1 - Math.trunc(this.spread * 0.5 * -100));
+    const tilt = (Math.floor(Math.random() * tiltDiv)) * 0.01;
+    qAxis.setFromAxisAngle(emitterX, tilt);
+    outQuat.premultiply(qAxis);
+
+    // Twist about original emitter Z: (rand % 628) * 0.01 ≈ [0, 2π)
+    const twist = (Math.floor(Math.random() * 0x274)) * 0.01;
+    qAxis.setFromAxisAngle(emitterZ, twist);
+    outQuat.premultiply(qAxis);
+
+    if(this.node.deadSpace !== 0){
+      this.applyDeadSpaceClamp(outQuat, birthPos);
+    }
+  }
+
+  /**
+   * Retail camera-facing clamp gated on emitter deadSpace (MdlNodeEmitter first float).
+   * While |dot(camDir, ydir)| < cos(π/2 − deadSpace), rotate about camDir × ydir.
+   */
+  private applyDeadSpaceClamp(quat: THREE.Quaternion, birthPos: THREE.Vector3){
+    const cam = this.context?.currentCamera as THREE.Camera | undefined;
+    if(!cam) return;
+
+    const deadSpace = this.node.deadSpace;
+    const threshold = Math.cos(Math.PI * 0.5 - deadSpace);
+
+    const camDir = OdysseyEmitter3D._v3C;
+    cam.getWorldPosition(camDir);
+    camDir.x = birthPos.x - camDir.x;
+    camDir.y = birthPos.y - camDir.y;
+    camDir.z = birthPos.z - camDir.z;
+    const camLen = camDir.length();
+    if(camLen < 1e-8) return;
+    camDir.multiplyScalar(1 / camLen);
+
+    const qAxis = OdysseyEmitter3D._quatB;
+    const axis = OdysseyEmitter3D._v3A;
+    const ydir = OdysseyEmitter3D._v3D;
+
+    let yw = quat.w, yx = quat.x, yy = quat.y, yz = quat.z;
+    // ydir · camDir
+    let dot =
+      (2 * (yx * yy - yz * yw)) * camDir.x +
+      (1 - 2 * (yx * yx + yz * yz)) * camDir.y +
+      (2 * (yy * yz + yx * yw)) * camDir.z;
+
+    // Bound iterations — retail can loop; avoid hangs on bad deadSpace.
+    for(let guard = 0; guard < 16; guard++){
+      const absDot = Math.abs(dot);
+      if(threshold <= absDot) break;
+
+      let angle: number;
+      if(dot >= 0){
+        angle = (dot - Math.PI * 0.5) + deadSpace;
+      }else{
+        angle = (deadSpace + Math.PI * 0.5) - dot;
+      }
+
+      // Retail rebuilds ydir into the cross operand (camDir × ydir).
+      ydir.set(
+        2 * (yx * yy - yz * yw),
+        1 - 2 * (yx * yx + yz * yz),
+        2 * (yy * yz + yx * yw)
+      );
+      axis.copy(camDir).cross(ydir);
+      if(axis.lengthSq() < 1e-12) break;
+      axis.normalize();
+
+      qAxis.setFromAxisAngle(axis, angle);
+      quat.premultiply(qAxis);
+      yw = quat.w; yx = quat.x; yy = quat.y; yz = quat.z;
+
+      dot =
+        (2 * (yx * yy - yz * yw)) * camDir.x +
+        (1 - 2 * (yx * yx + yz * yz)) * camDir.y +
+        (2 * (yy * yz + yx * yw)) * camDir.z;
+      if(dot < 0) dot = -dot;
+    }
+  }
+
+  /** Retail initialize: vel = (velocity + randvel jitter) × particle local Z. */
+  private birthVelocityFromQuat(quat: THREE.Quaternion, out: THREE.Vector3){
+    const speed = this.velocity + this.randomSignedCentiJitter(this.randVelocity);
+    out.set(0, 0, 1).applyQuaternion(quat).multiplyScalar(speed);
+  }
+
+  private ensureInheritVelCapacity(count: number){
+    const need = Math.max(0, count) * 3;
+    if(this.inheritVels.length >= need) return;
+    const next = new Float32Array(need);
+    next.set(this.inheritVels);
+    this.inheritVels = next;
+  }
+
+  /**
+   * Particle::inheritVelocity @ 0048d9e0 (INHERIT_VEL).
+   * Stores scale×unitAccel as a single vec3 (MoveFunc: pos += v×dt; v *= |1−dt|).
+   * accel = emitterLinearVel + (currZ − prevZ) × |emitter − birth| / dt.
+   */
+  private setBirthInheritVelocity(i: number, birthPos: THREE.Vector3, delta: number){
+    this.ensureInheritVelCapacity(i + 1);
+    const ib = i * 3;
+    if(!this.node.flags.canInheritVelocity || !this._hasLastWorldPos){
+      this.inheritVels[ib] = 0;
+      this.inheritVels[ib + 1] = 0;
+      this.inheritVels[ib + 2] = 0;
+      return;
+    }
+
+    const invDt = delta > 0 ? 1 / delta : 0.01;
+    const lx = this._worldPosDelta.x * invDt;
+    const ly = this._worldPosDelta.y * invDt;
+    const lz = this._worldPosDelta.z * invDt;
+
+    const currZ = OdysseyEmitter3D._v3A.set(0, 0, 1).applyQuaternion(this._frameWorldQuat);
+    const prevZ = OdysseyEmitter3D._v3B.set(0, 0, 1).applyQuaternion(this._lastWorldQuat);
+    const dx = this._frameWorldPos.x - birthPos.x;
+    const dy = this._frameWorldPos.y - birthPos.y;
+    const dz = this._frameWorldPos.z - birthPos.z;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+    const ax = lx + (currZ.x - prevZ.x) * dist * invDt;
+    const ay = ly + (currZ.y - prevZ.y) * dist * invDt;
+    const az = lz + (currZ.z - prevZ.z) * dist * invDt;
+    // Unnormalized vector == scale × unitAccel after retail normalize.
+    this.inheritVels[ib] = ax;
+    this.inheritVels[ib + 1] = ay;
+    this.inheritVels[ib + 2] = az;
   }
 
   getRandomMaxAge(){
@@ -673,6 +902,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(!delta){
       delta = 1/30;
     }
+    // Retail DoEmitterBucket @ 004509b0: AnimateParticles(min(dt, 0.1)) then RenderFunc
+    delta = Math.min(delta, OdysseyEmitter3D.MAX_ANIMATE_DT);
 
     if ( this.parent === null ) {
       this.matrixWorld.copy( this.matrix );
@@ -680,16 +911,19 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.matrixWorld.multiplyMatrices( this.parent.matrixWorld, this.matrix );
     }
 
-    // Track emitter world position delta for inherit/trail
-    const currentWorldPos = OdysseyEmitter3D._v3C;
-    this.getWorldPosition(currentWorldPos);
+    // Track emitter world pose delta for inherit/trail (AnimateParticles field71/74).
+    // Dedicated fields — birth/randomDirection reuse static scratches and must not clobber these
+    // (plc_fntnmrbl has inherit_local; garbage deltas looked like floaty/wrong spray).
+    this.getWorldPosition(this._frameWorldPos);
     if(this._hasLastWorldPos){
-      this._worldPosDelta.subVectors(currentWorldPos, this._lastWorldPos);
+      this._worldPosDelta.subVectors(this._frameWorldPos, this._lastWorldPos);
     }else{
       this._worldPosDelta.set(0, 0, 0);
     }
-    this._lastWorldPos.copy(currentWorldPos);
-    this._hasLastWorldPos = true;
+
+    this.getWorldQuaternion(this._frameWorldQuat);
+    const currentWorldPos = this._frameWorldPos;
+    const currentWorldQuat = this._frameWorldQuat;
 
     // Tinting: update tint color from scene ambient if isTinted
     if(this.node.flags.isTinted && this.context){
@@ -699,8 +933,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
     }
 
-    // Soft-particle (DEPTH_TEXTURE) is disabled until resolution tracking and
-    // depth-buffer plumbing are fully wired up in the renderer.
+    // Retail RenderStandard/MotionBlurred: gob.alpha × FUN_0048dc90 fade × particle alpha
+    if(this.material?.uniforms?.parentAlpha){
+      this.material.uniforms.parentAlpha.value =
+        this.getParentGobAlpha() * this.getEmitterFadeAlpha();
+    }
+
+    // Soft particles: bind scene depth when DEPTH_TEXTURE flag is set
+    this.updateDepthTextureUniforms();
 
     let updatePositions = false;
     let updateVelocity = false;
@@ -710,6 +950,15 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this._birthTimer -= delta;
     if(this._birthTimer < 0)
       this._birthTimer = 0;
+
+    // FountainEmitter::Update spawntype 0 @ 00496e40 — batch birth quota for this frame
+    let fountainBirthQuota = 0;
+    if(this.node.renderMode !== 'Linked' &&
+       this.node.updateMode !== 'Explosion' &&
+       this.node.updateMode !== 'Single' &&
+       this.node.spaceType !== 1){
+      fountainBirthQuota = this.consumeFountainBirthQuota(delta);
+    }
 
     let maxParticleCount = this.getMaxParticleCount();
     let resizeArrays = (maxParticleCount > this.offsets.count);
@@ -728,7 +977,6 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
       switch(this.node.renderMode){
         case 'Normal':
-        case 'Motion_Blur':
           this.offsets = new THREE.BufferAttribute( offsets, 3 ).setUsage( THREE.DynamicDrawUsage );
           this.velocities = new THREE.BufferAttribute( velocities, 4 ).setUsage( THREE.DynamicDrawUsage );
           this.props = new THREE.BufferAttribute( props, 4 ).setUsage( THREE.DynamicDrawUsage );
@@ -749,6 +997,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.geometry.setAttribute( 'ids', this.ids );
         break;
         default:
+          // Motion_Blur + billboards
           this.offsets = new THREE.InstancedBufferAttribute( offsets, 3 ).setUsage( THREE.DynamicDrawUsage );
           this.velocities = new THREE.InstancedBufferAttribute( velocities, 4 ).setUsage( THREE.DynamicDrawUsage );
           this.props = new THREE.InstancedBufferAttribute( props, 4 ).setUsage( THREE.DynamicDrawUsage );
@@ -757,6 +1006,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.geometry.setAttribute( 'velocity', this.velocities );
           this.geometry.setAttribute( 'props', this.props );
           this.geometry.setAttribute( 'ids', this.ids );
+          if(this.node.renderMode === 'Motion_Blur'){
+            const prev = new Float32Array(this.maxParticleCount * 3);
+            if(this.prevOffsets){
+              prev.set(this.prevOffsets.array.subarray(0, Math.min(prev.length, this.prevOffsets.array.length)));
+            }
+            this.prevOffsets = new THREE.InstancedBufferAttribute( prev, 3 ).setUsage( THREE.DynamicDrawUsage );
+            this.geometry.setAttribute( 'prevOffset', this.prevOffsets );
+          }
         break;
       }
 
@@ -764,6 +1021,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       if(this.node.renderMode != 'Linked')
         updateVelocity = true;
       updateProperties = true;
+      this.ensureInheritVelCapacity(this.maxParticleCount);
       if(this.node.renderMode === 'Linked'){
         this.particleIndex = 0;
         this.linkedTotalSpawns = 0;
@@ -778,13 +1036,22 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(this.updateType == 'Lightning'){
       this.emitterLog('tick:earlyReturn', { reason: 'Lightning', delta });
       this.tickLightning(delta);
+      this.commitInheritPose(currentWorldPos, currentWorldQuat);
+      return;
+    }
+
+    // SingleEmitter::Update @ 004979c0 — before Fountain/P2P birth loops
+    if(this.node.updateMode == 'Single' && this.node.renderMode !== 'Linked'){
+      this.tickSingle(delta);
+      this.commitInheritPose(currentWorldPos, currentWorldQuat);
       return;
     }
 
     // P2P: attractor / Bezier paths (per-particle indices). Linked ribbons use main tick below
     // (trail + ring + strip); P2PGravity indexes every *vertex* and moves offsets — wrong for L/R pairs.
     // KotOR MDL can set P2P flags on Linked trail emitters (e.g. v_heal_imp); those must not early-return here.
-    if(this.node.flags.isP2P && this.node.renderMode !== 'Linked' && this.node.renderMode !== 'Fountain'){
+    // (Fountain is updateMode — never compare it to renderMode.)
+    if(this.node.flags.isP2P && this.node.renderMode !== 'Linked'){
       this.emitterLog('tick:earlyReturn', { reason: this.node.flags.isP2PSel ? 'P2PBezier' : 'P2PGravity', delta });
       if(this.node.flags.isP2PSel){
         this.tickP2PBezier(delta);
@@ -794,6 +1061,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       // if(this.node.renderMode !== 'Linked' && this.node.flags.affectedByWind){
       //   this.applyWindForces(delta);
       // }
+      this.commitInheritPose(currentWorldPos, currentWorldQuat);
       return;
     }
 
@@ -915,121 +1183,179 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
 
     if(this.node.renderMode != 'Linked'){
-    for(let i = 0; i < spawnableParticleCount; i++){
+      // FountainEmitter::Update order @ 00496e40:
+      // 1) chkParticleLife  2) Motion_Blur tail lerp  3) particleRot (shader rotate*age)
+      // 4) MoveFunc         5) birth
 
+      // --- 1) Age / kill only (no spawn yet) ---
+      for(let i = 0; i < spawnableParticleCount; i++){
         let age = this.props.getX(i) || 0;
         let maxAge = this.props.getY(i) || (this.lifeExp >= 0 ? this.lifeExp : -1);
         let alive = this.props.getZ(i) == 1;
 
         if(i < this.maxParticleCount){
-
           if(this.node.updateMode == 'Single'){
             age += delta;
             this.props.setX(i, age || 0);
-            // Keep per-particle maxAge (infinite = -1); do not force 1.0 or static Single breaks.
             this.props.setY(i, maxAge);
             this.props.setZ(i, 1);
             updateProperties = true;
-          }else{
-            if(alive){
-              if(maxAge >= 0.0 && age >= maxAge){
-                age = 0;
-                this.particleCount -= 1;
-                this.props.setZ(i, 0);
-              }else{
-                age += delta;
-                if(maxAge > 0.0 && age > maxAge) age = maxAge;
-              }
-
-              // Bounce: check ground collision for alive particles
-              if(this.node.flags.canBounce && this.node.renderMode !== 'Linked'){
-                this.checkBounce(i);
-              }
-            }else{
-
-              let canSpawn = !this._birthTimer;
-              let maxSpawn = 1;
-
-              if(this.node.updateMode == 'Explosion'){
-                canSpawn = this.isDetonated;
-                maxSpawn = this.birthRate;
-              }
-
-              // Trail mode overrides the normal birth logic
-              if(this.node.spaceType === 1){
-                canSpawn = trailBirthCount > 0;
-                maxSpawn = Math.max(1, trailBirthCount);
-              }
-
-              if(canSpawn && birthCount < maxSpawn){
-                this.spawnParticle(i, delta);
-                updatePositions = true;
-                if(this.node.renderMode != 'Linked')
-                  updateVelocity = true;
-                birthCount++;
-              }
-
+          }else if(alive){
+            if(maxAge >= 0.0 && age >= maxAge){
               age = 0;
+              this.particleCount -= 1;
+              this.props.setZ(i, 0);
+            }else{
+              age += delta;
+              if(maxAge > 0.0 && age > maxAge) age = maxAge;
             }
+            this.props.setX(i, age || 0);
+            updateProperties = true;
           }
-
-          this.props.setX(i, age || 0);
-          updateProperties = true;
-
-        }else{
-          if(this.node.updateMode != 'Single'){
-            if(alive){
-              if(maxAge >= 0.0 && age >= maxAge){
-                age = 0;
-                this.particleCount -= 1;
-                this.props.setZ(i, 0);
-              }else{
-                age += delta;
-              }
-            }else{
+        }else if(this.node.updateMode != 'Single'){
+          if(alive){
+            if(maxAge >= 0.0 && age >= maxAge){
               age = 0;
+              this.particleCount -= 1;
+              this.props.setZ(i, 0);
+            }else{
+              age += delta;
             }
             this.props.setX(i, age || 0);
             updateProperties = true;
           }
         }
-
       }
 
-    }
+      // --- 2) Motion_Blur tail lerp (before MoveFunc) ---
+      if(this.node.renderMode === 'Motion_Blur' && this.prevOffsets && this.blurLength > 0){
+        const t = Math.min(delta, this.blurLength) / this.blurLength;
+        const omt = 1 - t;
+        for(let i = 0; i < spawnableParticleCount; i++){
+          if(this.props.getZ(i) !== 1) continue;
+          this.prevOffsets.setX(i, omt * this.prevOffsets.getX(i) + t * this.offsets.getX(i));
+          this.prevOffsets.setY(i, omt * this.prevOffsets.getY(i) + t * this.offsets.getY(i));
+          this.prevOffsets.setZ(i, omt * this.prevOffsets.getZ(i) + t * this.offsets.getZ(i));
+        }
+        this.prevOffsets.needsUpdate = true;
+      }
 
-    // Inherit: move POINTS-mode particles with emitter
-    if(this.node.renderMode === 'Normal' && this.node.flags.canInherit && this._hasLastWorldPos){
-      for(let i = 0; i < spawnableParticleCount; i++){
-        if(this.props.getZ(i) === 1){
-          this.offsets.setX(i, this.offsets.getX(i) + this._worldPosDelta.x);
-          this.offsets.setY(i, this.offsets.getY(i) + this._worldPosDelta.y);
-          this.offsets.setZ(i, this.offsets.getZ(i) + this._worldPosDelta.z);
+      // --- 4a) Inherit (MoveFunc start) — world-space particles ---
+      // Inherit (retail moveParticleStandard bit 6 @ 00492450):
+      // local = pos - prevEmitter; local = (currQ * inv(prevQ)) * local; pos = local + currEmitter.
+      if(this.node.flags.canInherit && this._hasLastWorldPos){
+        const prevPos = this._lastWorldPos;
+        const deltaQ = OdysseyEmitter3D._quatC
+          .copy(this._lastWorldQuat).invert()
+          .premultiply(currentWorldQuat);
+        const useQuat = this._hasLastWorldQuat && Math.abs(1 - Math.abs(deltaQ.w)) > 1e-6;
+        const local = OdysseyEmitter3D._v3A;
+        const vel = OdysseyEmitter3D._v3D;
+        for(let i = 0; i < spawnableParticleCount; i++){
+          if(this.props.getZ(i) !== 1) continue;
+          if(useQuat){
+            local.set(
+              this.offsets.getX(i) - prevPos.x,
+              this.offsets.getY(i) - prevPos.y,
+              this.offsets.getZ(i) - prevPos.z
+            ).applyQuaternion(deltaQ);
+            this.offsets.setX(i, local.x + currentWorldPos.x);
+            this.offsets.setY(i, local.y + currentWorldPos.y);
+            this.offsets.setZ(i, local.z + currentWorldPos.z);
+            vel.set(this.velocities.getX(i), this.velocities.getY(i), this.velocities.getZ(i))
+              .applyQuaternion(deltaQ);
+            this.velocities.setX(i, vel.x);
+            this.velocities.setY(i, vel.y);
+            this.velocities.setZ(i, vel.z);
+          }else{
+            this.offsets.setX(i, this.offsets.getX(i) + this._worldPosDelta.x);
+            this.offsets.setY(i, this.offsets.getY(i) + this._worldPosDelta.y);
+            this.offsets.setZ(i, this.offsets.getZ(i) + this._worldPosDelta.z);
+          }
+        }
+        updatePositions = true;
+        if(useQuat) updateVelocity = true;
+      }
+
+      if(this.node.flags.canInheritPart && this._hasLastWorldPos){
+        for(let i = 0; i < spawnableParticleCount; i++){
+          if(this.props.getZ(i) === 1){
+            if(!this.node.flags.canInherit){
+              this.offsets.setX(i, this.offsets.getX(i) + this._worldPosDelta.x);
+              this.offsets.setY(i, this.offsets.getY(i) + this._worldPosDelta.y);
+              this.offsets.setZ(i, this.offsets.getZ(i) + this._worldPosDelta.z);
+            }
+            if(this.prevOffsets){
+              this.prevOffsets.setX(i, this.prevOffsets.getX(i) + this._worldPosDelta.x);
+              this.prevOffsets.setY(i, this.prevOffsets.getY(i) + this._worldPosDelta.y);
+              this.prevOffsets.setZ(i, this.prevOffsets.getZ(i) + this._worldPosDelta.z);
+            }
+          }
+        }
+        updatePositions = true;
+        if(this.prevOffsets) this.prevOffsets.needsUpdate = true;
+      }
+
+      if(this.node.flags.canInheritLocal && this._hasLastWorldPos){
+        // Retail moveParticleStandard bit 8 (without bit 6 INHERIT):
+        // particle += (object.pos − prevObject.pos). Emitter world delta matches a
+        // placeable-rooted emitter. Do not transform/subtract — that scrambled spray
+        // when pose scratches were also aliased (see _frameWorldPos).
+        for(let i = 0; i < spawnableParticleCount; i++){
+          if(this.props.getZ(i) === 1){
+            this.offsets.setX(i, this.offsets.getX(i) + this._worldPosDelta.x);
+            this.offsets.setY(i, this.offsets.getY(i) + this._worldPosDelta.y);
+            this.offsets.setZ(i, this.offsets.getZ(i) + this._worldPosDelta.z);
+            if(this.prevOffsets && !this.node.flags.canInherit){
+              this.prevOffsets.setX(i, this.prevOffsets.getX(i) + this._worldPosDelta.x);
+              this.prevOffsets.setY(i, this.prevOffsets.getY(i) + this._worldPosDelta.y);
+              this.prevOffsets.setZ(i, this.prevOffsets.getZ(i) + this._worldPosDelta.z);
+            }
+          }
+        }
+        updatePositions = true;
+        if(this.prevOffsets) this.prevOffsets.needsUpdate = true;
+      }
+
+      // --- 4b) moveParticleStandard: integrate + wind + HitCheck bounce ---
+      if(this.integrateStandardParticles(delta, spawnableParticleCount)){
+        updatePositions = true;
+        updateVelocity = true;
+      }
+
+      // --- 5) Birth into dead slots ---
+      if(this.node.updateMode != 'Single'){
+        for(let i = 0; i < spawnableParticleCount && i < this.maxParticleCount; i++){
+          if(this.props.getZ(i) === 1) continue;
+
+          let canSpawn = false;
+          let maxSpawn = 0;
+
+          if(this.node.updateMode == 'Explosion'){
+            // ExplosionEmitter::Update @ 00497640: ftol(birthRate) particles on Detonate
+            canSpawn = this.isDetonated;
+            maxSpawn = Math.floor(this.birthRate) || 0;
+          }else if(this.node.spaceType === 1){
+            if(trailBirthCount > 0){
+              canSpawn = true;
+              maxSpawn = Math.max(1, trailBirthCount);
+            }else if(this.birthRate > 0 && !this._birthTimer){
+              canSpawn = true;
+              maxSpawn = 1;
+            }
+          }else{
+            canSpawn = fountainBirthQuota > 0;
+            maxSpawn = fountainBirthQuota;
+          }
+
+          if(canSpawn && birthCount < maxSpawn){
+            this.spawnParticle(i, delta);
+            updatePositions = true;
+            updateVelocity = true;
+            birthCount++;
+          }
         }
       }
-      updatePositions = true;
-    }
-
-    // InheritLocal: keep instanced-mode particles at their world-space spawn position
-    if(this.node.renderMode !== 'Normal' && this.node.renderMode !== 'Linked' &&
-       this.node.flags.canInheritLocal && this._hasLastWorldPos){
-      const invQuat = OdysseyEmitter3D._quat.copy(this.quaternion).invert();
-      const localDelta = OdysseyEmitter3D._v3A.copy(this._worldPosDelta).applyQuaternion(invQuat);
-      for(let i = 0; i < spawnableParticleCount; i++){
-        if(this.props.getZ(i) === 1){
-          this.offsets.setX(i, this.offsets.getX(i) - localDelta.x);
-          this.offsets.setY(i, this.offsets.getY(i) - localDelta.y);
-          this.offsets.setZ(i, this.offsets.getZ(i) - localDelta.z);
-        }
-      }
-      updatePositions = true;
-    }
-
-    // Wind: impulses (blast) + area wind (ARE WindPower / Forge preview); same resolver as dangly.
-    // Linked ribbon: world-space verts are frozen at spawn — never push them with wind.
-    if(this.node.renderMode !== 'Linked' && this.node.flags.affectedByWind){
-      this.applyWindForces(delta);
-      updatePositions = true;
     }
 
     if(this.node.renderMode == "Aligned_to_Particle_Dir" && this.parent){
@@ -1062,6 +1388,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         updateMode: this.node.updateMode,
         birthRate: this.birthRate,
         birthTimer: this._birthTimer,
+        birthAccum: this._birthAccum,
+        fountainBirthQuota,
         lifeExp: this.lifeExp,
         particleCount: this.particleCount,
         offsetsCount: this.offsets.count,
@@ -1077,6 +1405,86 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(this._isChunkEmitter && this._chunkLoaded){
       this.updateChunkInstances();
     }
+
+    // Store pose for next frame's inherit (retail: field74←field71 before next GetWorld)
+    this.commitInheritPose(currentWorldPos, currentWorldQuat);
+  }
+
+  /** Retail gob.field46_0xd8 — walk to OdysseyModel3D.opacity. */
+  private getParentGobAlpha(): number {
+    let obj: THREE.Object3D | null = this.parent;
+    while(obj){
+      if((obj as any).type === 'OdysseyModel' && typeof (obj as any).opacity === 'number'){
+        return (obj as any).opacity;
+      }
+      obj = obj.parent;
+    }
+    return 1;
+  }
+
+  /**
+   * PartEmitter::FUN_0048dc90 @ 0048dc90 — emitterFadeHeight (00798b94) = 5.0.
+   * If emitterWorldZ − modelRootZ > 5 → multiply alpha by deadspace, else 1.
+   * Ref is the CAurObject / OdysseyModel3D root (retail MdlNode abs Z mistyped as
+   * children.size in Ghidra). Used by RenderStandard, RenderMotionBlurred, RenderLinked.
+   */
+  private getEmitterFadeAlpha(): number {
+    const EMITTER_FADE_HEIGHT = 5.0;
+    const dead = this.node?.deadSpace;
+    if(dead === undefined || dead === null) return 1;
+
+    this.getWorldPosition(OdysseyEmitter3D._v3A);
+    let refZ = OdysseyEmitter3D._v3A.z;
+    let obj: THREE.Object3D | null = this.parent;
+    while(obj){
+      if((obj as any).type === 'OdysseyModel'){
+        obj.getWorldPosition(OdysseyEmitter3D._v3B);
+        refZ = OdysseyEmitter3D._v3B.z;
+        break;
+      }
+      obj = obj.parent;
+    }
+    // Retail: emitterFadeHeight < field73_0x16c − nodeAbsZ
+    if(OdysseyEmitter3D._v3A.z - refZ > EMITTER_FADE_HEIGHT){
+      return dead;
+    }
+    return 1;
+  }
+
+  /** Bind GameState/context depth target for soft-particle DEPTH_TEXTURE emitters. */
+  private updateDepthTextureUniforms(): void {
+    if(!this.node?.flags?.isDepthTexture || !this.material) return;
+    const u = this.material.uniforms;
+    if(!u?.tDepth || !u?.resolution) return;
+
+    const depthTex =
+      this.context?.depthTarget?.depthTexture ||
+      GameState.depthTarget?.depthTexture ||
+      null;
+
+    if(depthTex){
+      if(!('DEPTH_TEXTURE' in this.material.defines)){
+        this.material.defines.DEPTH_TEXTURE = '';
+        this.material.needsUpdate = true;
+      }
+      u.tDepth.value = depthTex;
+      const rt = this.context?.depthTarget || GameState.depthTarget;
+      const w = rt?.width || GameState.ResolutionManager?.getViewportWidth?.() || 1;
+      const h = rt?.height || GameState.ResolutionManager?.getViewportHeight?.() || 1;
+      u.resolution.value.set(w, h);
+      // Request depth prepass before the next composed frame
+      GameState.softDepthNeeded = true;
+      if(this.context){
+        this.context.softDepthNeeded = true;
+      }
+    }
+  }
+
+  private commitInheritPose(pos: THREE.Vector3, quat: THREE.Quaternion){
+    this._lastWorldPos.copy(pos);
+    this._hasLastWorldPos = true;
+    this._lastWorldQuat.copy(quat);
+    this._hasLastWorldQuat = true;
   }
 
   setReferenceNode( referenceNode: OdysseyObject3D ){
@@ -1085,129 +1493,1154 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
   }
 
+  /**
+   * LightningEmitter::Update @ 00498b80 + UpdateControlPoints @ 00497c60.
+   * Retail: (int)birthRate = sample count; lightningDelay gates zigzag/fractal regen;
+   * ControlPTCount/Delay/Radius + TangentLength build Hermite CPs; zigZag° spins
+   * offset axis; SubDiv>0 → RecursiveFractal @ 0048e700; numBranches → UpdateBranches
+   * @ 00491a50; RenderLinked camera ribbon (sizeStart×0.5 half-width).
+   */
   tickLightning(delta: number = 0){
-    if(this._lightningDelay === undefined){
-      this._lightningDelay = 0.00;
+    const start = OdysseyEmitter3D._v3A;
+    this.getWorldPosition(start);
+    const target = OdysseyEmitter3D._v3B;
+    if(this.referenceNode){
+      this.referenceNode.getWorldPosition(target);
+    }else{
+      target.copy(start);
+      target.z += 1;
     }
 
-    let lightningZigZag = this.lightningZigZag + 1;
-    const start = OdysseyEmitter3D._v3A.set(0, 0, 0);
-    this.getWorldPosition(start);
-    const target = OdysseyEmitter3D._v3B.set(0, 0, 0);
-    this.referenceNode.getWorldPosition(target);
+    const sampleCount = Math.max(
+      2,
+      Math.min(
+        OdysseyEmitter3D.LIGHTNING_MAX_SAMPLES,
+        Math.floor(this.birthRate) || 10
+      )
+    );
 
-    let scale = 0.5;
+    const bolt = OdysseyEmitter3D._v3C.subVectors(target, start);
+    const dist = bolt.length();
+    if(dist > 1e-6) bolt.multiplyScalar(1 / dist);
+    else bolt.set(0, 0, 1);
 
-    let gridX1 = 2;
-    let indices: number[] = [];
-    let vertices: number[] = [];
-    let normals: number[] = [];
-    let uvs: number[] = [];
-    let velocities: number[] = [];
-    let props: number[] = [];
-    let spread = (this.lightningScale || 0);
-    let age = 0;
+    const basisU = OdysseyEmitter3D._v3D;
+    basisU.set(0, 0, 1).cross(bolt);
+    if(basisU.lengthSq() < 1e-8){
+      basisU.set(1, 0, 0).cross(bolt);
+    }
+    basisU.normalize();
+    const vX = bolt.y * basisU.z - bolt.z * basisU.y;
+    const vY = bolt.z * basisU.x - bolt.x * basisU.z;
+    const vZ = bolt.x * basisU.y - bolt.y * basisU.x;
 
-    if(this._lightningDelay >= this.lightningDelay){
-      if(this.parent && (this.parent.quaternion.x || this.parent.quaternion.y || this.parent.quaternion.z || this.parent.quaternion.w != 1))
-        this.parent.quaternion.set(0, 0, 0, 1);
+    this._lightningDelay += delta;
+    const delay = this.lightningDelay > 0 ? this.lightningDelay : 0;
+    const needZigZagRegen =
+      this._lightningSampleCount !== sampleCount ||
+      this._lightningMidOU.length < sampleCount ||
+      this._lightningDelay >= delay;
 
+    if(needZigZagRegen){
       this._lightningDelay = 0;
-      for(let iy = 0; iy < lightningZigZag; iy++){
-        let percentage = iy/lightningZigZag;
-        let x = start.x + ( (target.x - start.x) * percentage);
-        let y = start.y + ( (target.y - start.y) * percentage);
-        let z = start.z + ( (target.z - start.z) * percentage);
+      // Asset-driven: SubDiv>0 → fractal path. Retail gates on DAT_0083049c
+      // (Lightning Update @ 00498b80): ==0 → zigzag, !=0 → RecursiveFractal.
+      // K1 has no writers to DAT_0083049c (BSS stays 0 → always zigzag); SubDiv
+      // proxy keeps fractal available for assets that author subdivision.
+      if(this.lightningSubDiv > 0){
+        this.regenerateLightningFractalOffsets(
+          sampleCount, dist, bolt, basisU, vX, vY, vZ
+        );
+      }else{
+        this.regenerateLightningMidOffsets(
+          sampleCount, start, target, bolt, basisU, vX, vY, vZ
+        );
+      }
+      // Child bolts also refresh zigzag (Update forced with delay+0.01)
+      for(let b = 0; b < this._lightningBranchActive; b++){
+        this.regenBranchMidOffsets(this._lightningBranches[b]);
+      }
+    }
 
-        if(iy === 0){
-          // First vertex: keep at start position
-        }else if(iy + 1 === lightningZigZag){
-          x = this.randomFloat(x, this.lightningRadius);
-          y = this.randomFloat(y, this.lightningRadius);
-          z = this.randomFloat(z, this.lightningRadius);
-        }else{
-          x = this.randomFloat(x, spread);
-          y = this.randomFloat(y, spread);
-          z = this.randomFloat(z, spread);
+    this._controlPTAccum += delta;
+    const cpDelay = this.controlPTDelay > 0 ? this.controlPTDelay : 0;
+    const tanLen = this.getLightningTangentLength();
+    const wantCPs = this.controlPTCount > 0 || tanLen > 0;
+    const cpCount = wantCPs
+      ? Math.max(
+          2,
+          Math.min(
+            OdysseyEmitter3D.LIGHTNING_MAX_CPS,
+            Math.floor(dist * this.controlPTCount + 0.5) + 2
+          )
+        )
+      : 2;
+    const maxBranches = Math.min(
+      OdysseyEmitter3D.LIGHTNING_MAX_BRANCHES,
+      Math.max(0, this.node?.branchCount || 0)
+    );
+    const structuralCP =
+      wantCPs &&
+      (this._cpCount !== cpCount || this._cpMidOU.length < cpCount);
+    const structuralBranch =
+      maxBranches > 0 && this._lightningBranches.length < maxBranches;
+    const needCPOrBranch =
+      structuralCP ||
+      structuralBranch ||
+      (this._controlPTAccum >= cpDelay && (wantCPs || maxBranches > 0));
+
+    if(needCPOrBranch){
+      this._controlPTAccum = 0;
+      if(wantCPs){
+        this.regenerateControlPTOffsets(cpCount);
+      }
+      // UpdateBranches @ 00491a50 — same gate as ControlPT regen
+      if(maxBranches > 0){
+        this.updateLightningBranches(
+          maxBranches, sampleCount, dist, start, target, bolt, basisU, vX, vY, vZ
+        );
+      }else{
+        this._lightningBranchActive = 0;
+      }
+    }
+
+    if(this._lightningCenters.length < sampleCount * 3){
+      this._lightningCenters = new Float32Array(sampleCount * 3);
+    }
+    this.fillLightningSampleCenters(
+      sampleCount,
+      cpCount,
+      wantCPs,
+      tanLen,
+      start,
+      target,
+      bolt,
+      basisU,
+      vX,
+      vY,
+      vZ,
+      needZigZagRegen
+    );
+
+    // Ribbon half-width — RenderLinked field18_0x90 * 0.5
+    let halfW = (this.sizes[0] || 0) * 0.5;
+    if(!(halfW > 0)) halfW = 0.02;
+
+    const cam = (this.context?.currentCamera || GameState.currentCamera) as
+      | THREE.Camera
+      | undefined;
+
+    const indices: number[] = [];
+    const vertices: number[] = [];
+    const normals: number[] = [];
+    const uvs: number[] = [];
+    const velocities: number[] = [];
+    const props: number[] = [];
+
+    this.appendLightningRibbon(
+      this._lightningCenters,
+      sampleCount,
+      bolt.x, bolt.y, bolt.z,
+      basisU.x, basisU.y, basisU.z,
+      halfW,
+      cam,
+      vertices,
+      normals,
+      uvs,
+      velocities,
+      props,
+      indices,
+      0
+    );
+
+    let totalSamples = sampleCount;
+    const centers = this._lightningCenters;
+    for(let b = 0; b < this._lightningBranchActive; b++){
+      const branch = this._lightningBranches[b];
+      const ai = Math.min(branch.attachIdx, sampleCount - 1);
+      const bx0 = centers[ai * 3];
+      const by0 = centers[ai * 3 + 1];
+      const bz0 = centers[ai * 3 + 2];
+      let ex = branch.endX;
+      let ey = branch.endY;
+      let ez = branch.endZ;
+      if(branch.trackTarget){
+        ex = target.x;
+        ey = target.y;
+        ez = target.z;
+      }
+      const bCount = branch.sampleCount;
+      if(branch.centers.length < bCount * 3){
+        branch.centers = new Float32Array(bCount * 3);
+      }
+      // Follow main-bolt attach each frame (Update sync after zigzag)
+      this.fillBranchCenters(branch, bx0, by0, bz0, ex, ey, ez);
+      let bdx = ex - bx0;
+      let bdy = ey - by0;
+      let bdz = ez - bz0;
+      const bDist = Math.sqrt(bdx * bdx + bdy * bdy + bdz * bdz);
+      if(bDist > 1e-6){
+        bdx /= bDist;
+        bdy /= bDist;
+        bdz /= bDist;
+      }else{
+        bdx = bolt.x;
+        bdy = bolt.y;
+        bdz = bolt.z;
+      }
+      // Camera-facing basis ⊥ branch
+      let bux = -bdy;
+      let buy = bdz;
+      let buz = -bdx;
+      let buLen = Math.sqrt(bux * bux + buy * buy + buz * buz);
+      if(buLen < 1e-8){
+        bux = 1;
+        buy = 0;
+        buz = 0;
+        // cross(boltDir, X)
+        bux = 0;
+        buy = bdz;
+        buz = -bdy;
+        buLen = Math.sqrt(bux * bux + buy * buy + buz * buz);
+      }
+      if(buLen > 1e-8){
+        bux /= buLen;
+        buy /= buLen;
+        buz /= buLen;
+      }
+      const bHalf = halfW * branch.sizeScale;
+      const vertBase = vertices.length / 3;
+      this.appendLightningRibbon(
+        branch.centers,
+        bCount,
+        bdx, bdy, bdz,
+        bux, buy, buz,
+        bHalf,
+        cam,
+        vertices,
+        normals,
+        uvs,
+        velocities,
+        props,
+        indices,
+        vertBase
+      );
+      totalSamples += bCount;
+    }
+
+    this.geometry.setIndex(indices);
+    this.geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    this.geometry.setAttribute('offset', new THREE.Float32BufferAttribute(velocities, 4));
+    this.geometry.setAttribute('props', new THREE.Float32BufferAttribute(props, 4));
+    this.geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    this.velocities = this.geometry.getAttribute('offset') as THREE.BufferAttribute;
+    this.props = this.geometry.getAttribute('props') as THREE.BufferAttribute;
+    this.offsets = this.geometry.getAttribute('position') as THREE.BufferAttribute;
+    this.particleCount = totalSamples;
+
+    if(this.geometry.boundingSphere){
+      this.geometry.boundingSphere.radius = Math.max(dist, halfW * 2);
+    }
+  }
+
+  /** TangentLength controller, else binary controlPTSmoothing. */
+  private getLightningTangentLength(): number {
+    if(this.tangentLength > 0) return this.tangentLength;
+    return this.node?.controlPTSmoothing || 0;
+  }
+
+  /**
+   * UpdateControlPoints @ 00497c60 — sample Hermite through CPs, then add zigzag.
+   * Without ControlPTCount/TangentLength: linear lerp + zigzag (numCPs==2, tanLen==0).
+   */
+  private fillLightningSampleCenters(
+    sampleCount: number,
+    cpCount: number,
+    wantCPs: boolean,
+    tanLen: number,
+    start: THREE.Vector3,
+    target: THREE.Vector3,
+    bolt: THREE.Vector3,
+    basisU: THREE.Vector3,
+    vX: number,
+    vY: number,
+    vZ: number,
+    needZigZagRegen: boolean
+  ){
+    const centers = this._lightningCenters;
+    const denom = sampleCount - 1;
+
+    if(!wantCPs){
+      for(let i = 0; i < sampleCount; i++){
+        const t = i / denom;
+        let cx = start.x + (target.x - start.x) * t;
+        let cy = start.y + (target.y - start.y) * t;
+        let cz = start.z + (target.z - start.z) * t;
+        if(i > 0 && i < sampleCount - 1){
+          const ou = this._lightningMidOU[i] || 0;
+          const ov = this._lightningMidOV[i] || 0;
+          cx += basisU.x * ou + vX * ov;
+          cy += basisU.y * ou + vY * ov;
+          cz += basisU.z * ou + vZ * ov;
+        }else if(i === sampleCount - 1 && this.targetSize > 0 && needZigZagRegen){
+          const j = this.targetSize * 0.5;
+          cx += this.randomFloat(0, j * 2);
+          cy += this.randomFloat(0, j * 2);
+          cz += this.randomFloat(0, j * 2);
         }
+        centers[i * 3] = cx;
+        centers[i * 3 + 1] = cy;
+        centers[i * 3 + 2] = cz;
+      }
+      return;
+    }
 
-        for ( let ix = 0; ix < 2; ix ++ ) {
-          let xO = scale/2;
-          if(ix == 1){
-            xO = -scale/2;
-          }
+    // Build CP positions + tangents (bolt-local mid jitter from ControlPTRadius)
+    const cpDenom = cpCount - 1;
+    if(this._cpPositions.length < cpCount * 3){
+      this._cpPositions = new Float32Array(cpCount * 3);
+      this._cpTangents = new Float32Array(cpCount * 3);
+    }
+    const cps = this._cpPositions;
+    const tans = this._cpTangents;
 
-          vertices.push( x + xO, - y, z );
-          normals.push( 0, 0, 1 );
-          uvs.push( ix / 1 );
-          uvs.push( 1 - ( iy / (lightningZigZag-1) ) );
+    // Start tangent: emitter local Z × tanLen (retail quat zdir × field50)
+    const quat = OdysseyEmitter3D._quat;
+    this.getWorldQuaternion(quat);
+    const zx = 2 * (quat.x * quat.z + quat.w * quat.y);
+    const zy = 2 * (quat.y * quat.z - quat.w * quat.x);
+    const zz = 1 - 2 * (quat.x * quat.x + quat.y * quat.y);
+    let t0x = zx * tanLen;
+    let t0y = zy * tanLen;
+    let t0z = zz * tanLen;
+    if(t0x * t0x + t0y * t0y + t0z * t0z < 1e-10){
+      t0x = bolt.x * tanLen;
+      t0y = bolt.y * tanLen;
+      t0z = bolt.z * tanLen;
+    }
+    const t1x = bolt.x * tanLen;
+    const t1y = bolt.y * tanLen;
+    const t1z = bolt.z * tanLen;
 
-          velocities.push(0, 0, 0, 0);
+    for(let c = 0; c < cpCount; c++){
+      const u = c / cpDenom;
+      let cx = start.x + (target.x - start.x) * u;
+      let cy = start.y + (target.y - start.y) * u;
+      let cz = start.z + (target.z - start.z) * u;
+      if(c > 0 && c < cpCount - 1){
+        const ou = this._cpMidOU[c] || 0;
+        const ov = this._cpMidOV[c] || 0;
+        cx += basisU.x * ou + vX * ov;
+        cy += basisU.y * ou + vY * ov;
+        cz += basisU.z * ou + vZ * ov;
+      }
+      cps[c * 3] = cx;
+      cps[c * 3 + 1] = cy;
+      cps[c * 3 + 2] = cz;
+    }
 
-          if(!this.geometry.attributes.props){
-            age = 0;
-          }else{
-            age = ((this.geometry.attributes.props as THREE.BufferAttribute).getX( 0 ) || 0) + delta;
-          }
+    tans[0] = t0x;
+    tans[1] = t0y;
+    tans[2] = t0z;
+    tans[(cpCount - 1) * 3] = t1x;
+    tans[(cpCount - 1) * 3 + 1] = t1y;
+    tans[(cpCount - 1) * 3 + 2] = t1z;
+    for(let c = 1; c < cpCount - 1; c++){
+      let dx = cps[(c + 1) * 3] - cps[(c - 1) * 3];
+      let dy = cps[(c + 1) * 3 + 1] - cps[(c - 1) * 3 + 1];
+      let dz = cps[(c + 1) * 3 + 2] - cps[(c - 1) * 3 + 2];
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      if(len > 1e-6){
+        dx = (dx / len) * tanLen;
+        dy = (dy / len) * tanLen;
+        dz = (dz / len) * tanLen;
+      }else{
+        dx = bolt.x * tanLen;
+        dy = bolt.y * tanLen;
+        dz = bolt.z * tanLen;
+      }
+      // TangentSpread: yaw/pitch jitter on mid tangents (field49)
+      const spread = this.tangentSpread || 0;
+      if(spread > 0){
+        const yaw = this.randomFloat(0, spread * 2);
+        const pitch = this.randomFloat(0, spread * 2);
+        const cy = Math.cos(yaw);
+        const sy = Math.sin(yaw);
+        const cp = Math.cos(pitch);
+        const sp = Math.sin(pitch);
+        const rx = dx * cy + dz * sy;
+        const rz = -dx * sy + dz * cy;
+        dx = rx * cp + dy * sp;
+        dy = -rx * sp + dy * cp;
+        dz = rz;
+      }
+      tans[c * 3] = dx;
+      tans[c * 3 + 1] = dy;
+      tans[c * 3 + 2] = dz;
+    }
 
-          if(age >= 1)
-            age = 0;
+    // Sample Hermite segments onto particle slots (retail end of UpdateControlPoints)
+    for(let i = 0; i < sampleCount; i++){
+      const tBolt = i / denom;
+      // Map sample t onto CP parameter space
+      let seg = Math.floor(tBolt * cpDenom);
+      if(seg >= cpDenom) seg = cpDenom - 1;
+      const segStart = seg / cpDenom;
+      const segEnd = (seg + 1) / cpDenom;
+      let t = segEnd > segStart ? (tBolt - segStart) / (segEnd - segStart) : 0;
+      if(t > 1) t = 1;
 
-          props.push(age, 1, 1, 0);
-        }
+      const i0 = seg * 3;
+      const i1 = (seg + 1) * 3;
+      const p0x = cps[i0];
+      const p0y = cps[i0 + 1];
+      const p0z = cps[i0 + 2];
+      const p1x = cps[i1];
+      const p1y = cps[i1 + 1];
+      const p1z = cps[i1 + 2];
+      const h0x = tans[i0];
+      const h0y = tans[i0 + 1];
+      const h0z = tans[i0 + 2];
+      const h1x = tans[i1];
+      const h1y = tans[i1 + 1];
+      const h1z = tans[i1 + 2];
+
+      const u = 1 - t;
+      const a = u * u * u;
+      const b = 3 * t * u * u;
+      const c = 3 * u * t * t;
+      const d = t * t * t;
+      // Retail: a*P0 + b*(P0+T0) + c*(P1-T1) + d*P1
+      let cx = a * p0x + b * (p0x + h0x) + c * (p1x - h1x) + d * p1x;
+      let cy = a * p0y + b * (p0y + h0y) + c * (p1y - h1y) + d * p1y;
+      let cz = a * p0z + b * (p0z + h0z) + c * (p1z - h1z) + d * p1z;
+
+      if(i > 0 && i < sampleCount - 1){
+        const ou = this._lightningMidOU[i] || 0;
+        const ov = this._lightningMidOV[i] || 0;
+        cx += basisU.x * ou + vX * ov;
+        cy += basisU.y * ou + vY * ov;
+        cz += basisU.z * ou + vZ * ov;
       }
 
-      // Index and geometry building AFTER the vertex loop
-      for(let iy2 = 0; iy2 < lightningZigZag-1; iy2++){
-        for ( let ix = 0; ix < 1; ix++ ) {
-          let a = ix + gridX1 * iy2;
-          let b = ix + gridX1 * ( iy2 + 1 );
-          let c = ( ix + 1 ) + gridX1 * ( iy2 + 1 );
-          let d = ( ix + 1 ) + gridX1 * iy2;
-          indices.push( a, b, d );
-          indices.push( b, c, d );
-        }
-      }
+      centers[i * 3] = cx;
+      centers[i * 3 + 1] = cy;
+      centers[i * 3 + 2] = cz;
+    }
+  }
 
-      this.geometry.setIndex(indices);
-      this.geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( vertices, 3 ) );
-      this.geometry.setAttribute( 'offset', new THREE.Float32BufferAttribute( velocities, 4 ) );
-      this.geometry.setAttribute( 'props', new THREE.Float32BufferAttribute( props, 4 ) );
-      this.geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( normals, 3 ) );
-      this.geometry.setAttribute( 'uv', new THREE.Float32BufferAttribute( uvs, 2 ) );
-
-      // Update references to newly created attributes
-      this.velocities = this.geometry.getAttribute('offset') as THREE.BufferAttribute;
-      this.props = this.geometry.getAttribute('props') as THREE.BufferAttribute;
-
-      if(this.geometry.boundingSphere)
-        this.geometry.boundingSphere.radius = start.distanceTo(target);
-
+  /** ControlPTRadius mid-CP jitter (UpdateControlPoints mid branch). */
+  private regenerateControlPTOffsets(cpCount: number){
+    if(this._cpMidOU.length < cpCount){
+      this._cpMidOU = new Float32Array(cpCount);
+      this._cpMidOV = new Float32Array(cpCount);
     }else{
-      this._lightningDelay += delta;
-      for(let iy = 0; iy < lightningZigZag; iy++){
-        for ( let ix = 0; ix < 2; ix++ ) {
-          if(!this.geometry.attributes.props){
-            age = 0;
-          }else{
-            age = ((this.geometry.attributes.props as THREE.BufferAttribute).getX( 0 ) || 0) + delta;
-          }
+      this._cpMidOU.fill(0);
+      this._cpMidOV.fill(0);
+    }
+    this._cpCount = cpCount;
 
-          if(age >= 1)
-            age = 0;
+    const radius = this.controlPTRadius || 0;
+    if(!(radius > 0) || cpCount < 3) return;
 
-          props.push(age, 1, 1, 0);
-        }
-      }
-      this.geometry.setAttribute( 'props', new THREE.Float32BufferAttribute( props, 4 ) );
-      this.props = this.geometry.getAttribute('props') as THREE.BufferAttribute;
+    const cents = Math.max(1, Math.floor(radius * 100));
+    for(let c = 1; c < cpCount - 1; c++){
+      let mag = Math.floor(Math.random() * cents) * 0.01;
+      if((Math.random() * 2) | 0) mag = -mag;
+      const ang = Math.random() * Math.PI * 2;
+      this._cpMidOU[c] = Math.cos(ang) * mag;
+      this._cpMidOV[c] = Math.sin(ang) * mag;
     }
   }
 
   /**
-   * P2P Gravity mode: particles are attracted toward the reference node.
-   * Gravity accelerates particles toward the target, drag allows overshoot,
-   * and threshold kills particles within a radius of the target.
+   * Regen mid-sample offsets in bolt-local (u,v).
+   * Retail non-fractal path: tent×radius×rand on spun perp + scale×seg×rand along bolt.
+   */
+  private regenerateLightningMidOffsets(
+    sampleCount: number,
+    start: THREE.Vector3,
+    target: THREE.Vector3,
+    bolt: THREE.Vector3,
+    basisU: THREE.Vector3,
+    vX: number,
+    vY: number,
+    vZ: number
+  ){
+    if(this._lightningMidOU.length < sampleCount){
+      this._lightningMidOU = new Float32Array(sampleCount);
+      this._lightningMidOV = new Float32Array(sampleCount);
+    }else{
+      this._lightningMidOU.fill(0);
+      this._lightningMidOV.fill(0);
+    }
+    this._lightningSampleCount = sampleCount;
+
+    const dist = start.distanceTo(target);
+    if(dist < 1e-6) return;
+
+    const zigMax = Math.max(0, Math.floor(this.lightningZigZag));
+    const radius = this.lightningRadius || 0;
+    const scale = this.lightningScale || 0;
+    const segScale = (dist / sampleCount) * 0.5 * scale;
+    const deg2rad = 0.017453292;
+    let angleAccum = 0;
+
+    for(let i = 1; i < sampleCount - 1; i++){
+      const t = i / sampleCount;
+      const tent = t < 0.5 ? t + t : (1 - t) * 2;
+
+      if(zigMax > 0){
+        let deg = Math.floor(Math.random() * zigMax);
+        if((Math.random() * 2) | 0){
+          deg = 360 - deg;
+        }
+        angleAccum += deg;
+      }
+      const rad = angleAccum * deg2rad;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+      const kx = bolt.y * basisU.z - bolt.z * basisU.y;
+      const ky = bolt.z * basisU.x - bolt.x * basisU.z;
+      const kz = bolt.x * basisU.y - bolt.y * basisU.x;
+      const dot = bolt.x * basisU.x + bolt.y * basisU.y + bolt.z * basisU.z;
+      const px = basisU.x * cos + kx * sin + bolt.x * dot * (1 - cos);
+      const py = basisU.y * cos + ky * sin + bolt.y * dot * (1 - cos);
+      const pz = basisU.z * cos + kz * sin + bolt.z * dot * (1 - cos);
+
+      const radiusMag = tent * radius * Math.random();
+      let alongMag = segScale * Math.random();
+      if((Math.random() * 2) | 0) alongMag = -alongMag;
+
+      const ox = px * radiusMag + bolt.x * alongMag;
+      const oy = py * radiusMag + bolt.y * alongMag;
+      const oz = pz * radiusMag + bolt.z * alongMag;
+      this._lightningMidOU[i] = ox * basisU.x + oy * basisU.y + oz * basisU.z;
+      this._lightningMidOV[i] = ox * vX + oy * vY + oz * vZ;
+    }
+  }
+
+  /**
+   * RecursiveFractal @ 0048e700 — depth = floor(dist×SubDiv×0.5).
+   * Writes lightning mid offsets; then along-bolt scale jitter like Update.
+   */
+  private regenerateLightningFractalOffsets(
+    sampleCount: number,
+    dist: number,
+    bolt: THREE.Vector3,
+    basisU: THREE.Vector3,
+    vX: number,
+    vY: number,
+    vZ: number
+  ){
+    if(this._lightningMidOU.length < sampleCount){
+      this._lightningMidOU = new Float32Array(sampleCount);
+      this._lightningMidOV = new Float32Array(sampleCount);
+    }else{
+      this._lightningMidOU.fill(0);
+      this._lightningMidOV.fill(0);
+    }
+    this._lightningSampleCount = sampleCount;
+
+    if(dist < 1e-6 || sampleCount < 3) return;
+
+    const depth = Math.max(
+      1,
+      Math.min(
+        Math.floor((sampleCount - 1) / 2),
+        Math.floor(dist * this.lightningSubDiv * 0.5)
+      )
+    );
+    if(this._fractalXYZ.length < sampleCount * 3){
+      this._fractalXYZ = new Float32Array(sampleCount * 3);
+    }else{
+      this._fractalXYZ.fill(0);
+    }
+
+    // Retail: param_4 = (-bolt.y, bolt.z, -bolt.x); displace along that axis
+    const px = -bolt.y;
+    const py = bolt.z;
+    const pz = -bolt.x;
+    let pLen = Math.sqrt(px * px + py * py + pz * pz);
+    let dx = px;
+    let dy = py;
+    let dz = pz;
+    if(pLen > 1e-8){
+      dx /= pLen;
+      dy /= pLen;
+      dz /= pLen;
+    }else{
+      dx = basisU.x;
+      dy = basisU.y;
+      dz = basisU.z;
+    }
+
+    this.recursiveFractalDisplace(depth, depth, dx, dy, dz, 0, 1.0, sampleCount);
+
+    // Post-fractal along-bolt jitter (Update @ 00498b80 fractal branch)
+    const seg = (dist / sampleCount) * 0.5;
+    const scale = this.lightningScale || 0;
+    if(seg >= 0.01 && scale > 0){
+      const seg100 = Math.max(1, Math.floor(seg * 100));
+      for(let i = 1; i < sampleCount - 1; i++){
+        let sx = bolt.x;
+        let sy = bolt.y;
+        let sz = bolt.z;
+        if(((Math.random() * 2) | 0) === 0){
+          sx = -sx;
+          sy = -sy;
+          sz = -sz;
+        }
+        const mag = (((Math.random() * seg100) | 0) * 0.01) * scale;
+        const o = i * 3;
+        this._fractalXYZ[o] += sx * mag;
+        this._fractalXYZ[o + 1] += sy * mag;
+        this._fractalXYZ[o + 2] += sz * mag;
+      }
+    }
+
+    for(let i = 1; i < sampleCount - 1; i++){
+      const o = i * 3;
+      const ox = this._fractalXYZ[o];
+      const oy = this._fractalXYZ[o + 1];
+      const oz = this._fractalXYZ[o + 2];
+      this._lightningMidOU[i] = ox * basisU.x + oy * basisU.y + oz * basisU.z;
+      this._lightningMidOV[i] = ox * vX + oy * vY + oz * vZ;
+    }
+  }
+
+  /** RecursiveFractal body — Lightning path SETs xyz into _fractalXYZ. */
+  private recursiveFractalDisplace(
+    idx: number,
+    half: number,
+    dx: number,
+    dy: number,
+    dz: number,
+    accum: number,
+    amp: number,
+    sampleCount: number
+  ){
+    const radius = this.lightningRadius || 0;
+    const amp100 = Math.max(1, Math.floor(amp * 100));
+    const mag = (((Math.random() * amp100) | 0) * 0.01) * radius + accum;
+    this.setFractalOffset(idx, dx, dy, dz, mag, sampleCount);
+
+    if(half === 0) return;
+
+    const half2 = Math.floor(half * 0.5);
+    const amp2 = amp * 0.5;
+    let left = idx - half2;
+    const amp2_100 = Math.max(1, Math.floor(amp2 * 100));
+    let mag2 = (((Math.random() * amp2_100) | 0) * 0.01) * radius + mag;
+    this.setFractalOffset(left, dx, dy, dz, mag2, sampleCount);
+
+    if(half2 !== 0){
+      const quarter = Math.floor(half2 * 0.5);
+      const amp4 = amp2 * 0.5;
+      const amp4_100 = Math.max(1, Math.floor(amp4 * 100));
+      const farLeft = left - quarter;
+      let mag4 = (((Math.random() * amp4_100) | 0) * 0.01) * radius + mag2;
+      this.setFractalOffset(farLeft, dx, dy, dz, mag4, sampleCount);
+
+      if(quarter !== 0){
+        const q2 = Math.floor(quarter * 0.5);
+        const amp8 = amp4 * 0.5;
+        this.recursiveFractalDisplace(
+          farLeft - q2, q2, dx, dy, dz, mag4, amp8, sampleCount
+        );
+        this.recursiveFractalDisplace(
+          farLeft + q2, q2, dx, dy, dz, mag4, amp8, sampleCount
+        );
+      }
+
+      left = quarter + left;
+      mag2 = (((Math.random() * amp4_100) | 0) * 0.01) * radius + mag2;
+      this.setFractalOffset(left, dx, dy, dz, mag2, sampleCount);
+
+      if(quarter !== 0){
+        const q2 = Math.floor(quarter * 0.5);
+        const amp8 = amp4 * 0.5;
+        this.recursiveFractalDisplace(
+          left - q2, q2, dx, dy, dz, mag2, amp8, sampleCount
+        );
+        this.recursiveFractalDisplace(
+          left + q2, q2, dx, dy, dz, mag2, amp8, sampleCount
+        );
+      }
+    }
+
+    const right = half2 + idx;
+    let accumR = (((Math.random() * amp2_100) | 0) * 0.01) * radius + mag;
+    this.setFractalOffset(right, dx, dy, dz, accumR, sampleCount);
+
+    if(half2 === 0) return;
+
+    // Tail of retail while-loop: recurse left of right, then continue from right+half2/2
+    const nextHalf = Math.floor(half2 * 0.5);
+    const nextAmp = amp2 * 0.5;
+    this.recursiveFractalDisplace(
+      right - nextHalf, nextHalf, dx, dy, dz, accumR, nextAmp, sampleCount
+    );
+    this.recursiveFractalDisplace(
+      right + nextHalf, nextHalf, dx, dy, dz, accumR, nextAmp, sampleCount
+    );
+  }
+
+  private setFractalOffset(
+    idx: number,
+    dx: number,
+    dy: number,
+    dz: number,
+    mag: number,
+    sampleCount: number
+  ){
+    if(idx <= 0 || idx >= sampleCount - 1) return;
+    const o = idx * 3;
+    this._fractalXYZ[o] = dx * mag;
+    this._fractalXYZ[o + 1] = dy * mag;
+    this._fractalXYZ[o + 2] = dz * mag;
+  }
+
+  /**
+   * UpdateBranches @ 00491a50 — active = rand%(numBranches+1);
+   * scale ∈ [0.1,0.9]; attachIdx = ftol(sampleCount×scale);
+   * size/sizeY/size_mid… × scale on child; short vs track-target ends;
+   * sampleCount = dist×SubDiv+2.
+   */
+  private updateLightningBranches(
+    maxBranches: number,
+    sampleCount: number,
+    dist: number,
+    start: THREE.Vector3,
+    target: THREE.Vector3,
+    bolt: THREE.Vector3,
+    basisU: THREE.Vector3,
+    vX: number,
+    vY: number,
+    vZ: number
+  ){
+    while(this._lightningBranches.length < maxBranches){
+      this._lightningBranches.push({
+        attachIdx: 0,
+        sampleCount: 2,
+        sizeScale: 1,
+        trackTarget: false,
+        endX: 0,
+        endY: 0,
+        endZ: 0,
+        midOU: new Float32Array(0),
+        midOV: new Float32Array(0),
+        centers: new Float32Array(0),
+      });
+    }
+
+    // Retail: field37 = rand() % (numBranches + 1)
+    this._lightningBranchActive = (Math.random() * (maxBranches + 1)) | 0;
+
+    // Mid-axis used for short-branch spin (retail field34..36)
+    const midX = vX;
+    const midY = vY;
+    const midZ = vZ;
+
+    for(let i = 0; i < this._lightningBranchActive; i++){
+      const branch = this._lightningBranches[i];
+      // fVar2 = (rand%80)*0.01 + 0.1  → [0.1, 0.89]
+      const scale = (((Math.random() * 80) | 0) * 0.01) + 0.1;
+      branch.sizeScale = scale;
+      // attachIdx = ftol(sampleCount * scale) — clamp into open interval
+      branch.attachIdx = Math.min(
+        sampleCount - 1,
+        Math.max(1, Math.floor(sampleCount * scale) | 0)
+      );
+
+      const attach = Math.min(sampleCount - 1, Math.max(0, branch.attachIdx));
+      const t = attach / Math.max(1, sampleCount - 1);
+      const ax = start.x + (target.x - start.x) * t;
+      const ay = start.y + (target.y - start.y) * t;
+      const az = start.z + (target.z - start.z) * t;
+
+      if(scale <= 0.5){
+        branch.trackTarget = false;
+        // Length = (0.25..0.99) * |bolt| * 0.5
+        const len = ((((Math.random() * 75) | 0) * 0.01) + 0.25) * dist * 0.5;
+        // YawPitchRoll(−(rand%45), 0, rand%360) × (size × midAxis) then add
+        // attach + (0.25..0.49)*boltVec (retail short-branch end)
+        const yawDeg = (Math.random() * 360) | 0;
+        const pitchDeg = -(((Math.random() * 45) | 0));
+        const yaw = yawDeg * 0.017453292;
+        const pitch = pitchDeg * 0.017453292;
+        const cy = Math.cos(yaw), sy = Math.sin(yaw);
+        const cp = Math.cos(pitch), sp = Math.sin(pitch);
+        // Start from mid-axis * size (field18_0x90 ≈ sizes[0])
+        const size0 = this.sizes[0] || 1;
+        let dx = midX * size0;
+        let dy = midY * size0;
+        let dz = midZ * size0;
+        // Approximate YawPitchRoll: yaw about Z then pitch about X in mid frame
+        let x1 = dx * cy - dy * sy;
+        let y1 = dx * sy + dy * cy;
+        let z1 = dz;
+        dx = x1;
+        dy = y1 * cp - z1 * sp;
+        dz = y1 * sp + z1 * cp;
+        let dLen = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if(dLen > 1e-8){
+          dx /= dLen;
+          dy /= dLen;
+          dz /= dLen;
+        }
+        const boltFrac = ((((Math.random() * 25) | 0) * 0.01) + 0.25);
+        const bx = (target.x - start.x) * boltFrac;
+        const by = (target.y - start.y) * boltFrac;
+        const bz = (target.z - start.z) * boltFrac;
+        // Spin vector scaled to len, plus bolt fraction from attach
+        branch.endX = ax + dx * len + bx;
+        branch.endY = ay + dy * len + by;
+        branch.endZ = az + dz * len + bz;
+        // birthRate = |end−attach| * SubDiv + 2
+        const edx = branch.endX - ax;
+        const edy = branch.endY - ay;
+        const edz = branch.endZ - az;
+        const bDist = Math.sqrt(edx * edx + edy * edy + edz * edz);
+        branch.sampleCount = Math.max(
+          2,
+          Math.min(
+            OdysseyEmitter3D.LIGHTNING_MAX_SAMPLES,
+            Math.floor(bDist * (this.lightningSubDiv || 0) + 2) || 2
+          )
+        );
+      }else{
+        branch.trackTarget = true;
+        branch.endX = target.x;
+        branch.endY = target.y;
+        branch.endZ = target.z;
+        const dx = target.x - ax;
+        const dy = target.y - ay;
+        const dz = target.z - az;
+        const bDist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        branch.sampleCount = Math.max(
+          2,
+          Math.min(
+            OdysseyEmitter3D.LIGHTNING_MAX_SAMPLES,
+            Math.floor(bDist * (this.lightningSubDiv || 0) + 2) || 2
+          )
+        );
+      }
+
+      this.regenBranchMidOffsets(branch);
+    }
+  }
+
+  private regenBranchMidOffsets(branch: {
+    sampleCount: number;
+    sizeScale?: number;
+    midOU: Float32Array;
+    midOV: Float32Array;
+  }){
+    const n = branch.sampleCount;
+    if(branch.midOU.length < n){
+      branch.midOU = new Float32Array(n);
+      branch.midOV = new Float32Array(n);
+    }else{
+      branch.midOU.fill(0);
+      branch.midOV.fill(0);
+    }
+    const radius = (this.lightningRadius || 0) * (branch.sizeScale || 1);
+    for(let i = 1; i < n - 1; i++){
+      const t = i / n;
+      const tent = t < 0.5 ? t + t : (1 - t) * 2;
+      const ang = Math.random() * Math.PI * 2;
+      const mag = tent * radius * Math.random();
+      branch.midOU[i] = Math.cos(ang) * mag;
+      branch.midOV[i] = Math.sin(ang) * mag;
+    }
+  }
+
+  private fillBranchCenters(
+    branch: {
+      sampleCount: number;
+      midOU: Float32Array;
+      midOV: Float32Array;
+      centers: Float32Array;
+    },
+    ax: number,
+    ay: number,
+    az: number,
+    ex: number,
+    ey: number,
+    ez: number
+  ){
+    const n = branch.sampleCount;
+    const denom = Math.max(1, n - 1);
+    let bdx = ex - ax;
+    let bdy = ey - ay;
+    let bdz = ez - az;
+    const bDist = Math.sqrt(bdx * bdx + bdy * bdy + bdz * bdz);
+    if(bDist > 1e-6){
+      bdx /= bDist;
+      bdy /= bDist;
+      bdz /= bDist;
+    }
+    // Orthonormal UV ⊥ branch
+    let ux = -bdy;
+    let uy = bdz;
+    let uz = -bdx;
+    let uLen = Math.sqrt(ux * ux + uy * uy + uz * uz);
+    if(uLen < 1e-8){
+      ux = 0;
+      uy = bdz;
+      uz = -bdy;
+      uLen = Math.sqrt(ux * ux + uy * uy + uz * uz);
+    }
+    if(uLen > 1e-8){
+      ux /= uLen;
+      uy /= uLen;
+      uz /= uLen;
+    }
+    const vx = bdy * uz - bdz * uy;
+    const vy = bdz * ux - bdx * uz;
+    const vz = bdx * uy - bdy * ux;
+
+    for(let i = 0; i < n; i++){
+      const t = i / denom;
+      let cx = ax + (ex - ax) * t;
+      let cy = ay + (ey - ay) * t;
+      let cz = az + (ez - az) * t;
+      if(i > 0 && i < n - 1){
+        const ou = branch.midOU[i] || 0;
+        const ov = branch.midOV[i] || 0;
+        cx += ux * ou + vx * ov;
+        cy += uy * ou + vy * ov;
+        cz += uz * ou + vz * ov;
+      }
+      branch.centers[i * 3] = cx;
+      branch.centers[i * 3 + 1] = cy;
+      branch.centers[i * 3 + 2] = cz;
+    }
+  }
+
+  /** Camera-facing L/R ribbon strip into shared geometry buffers. */
+  private appendLightningRibbon(
+    centers: Float32Array,
+    sampleCount: number,
+    boltX: number,
+    boltY: number,
+    boltZ: number,
+    basisUX: number,
+    basisUY: number,
+    basisUZ: number,
+    halfW: number,
+    cam: THREE.Camera | undefined,
+    vertices: number[],
+    normals: number[],
+    uvs: number[],
+    velocities: number[],
+    props: number[],
+    indices: number[],
+    vertBase: number
+  ){
+    const denom = Math.max(1, sampleCount - 1);
+    for(let i = 0; i < sampleCount; i++){
+      const t = i / denom;
+      const cx = centers[i * 3];
+      const cy = centers[i * 3 + 1];
+      const cz = centers[i * 3 + 2];
+
+      let tx = boltX;
+      let ty = boltY;
+      let tz = boltZ;
+      if(i < sampleCount - 1){
+        tx = centers[(i + 1) * 3] - cx;
+        ty = centers[(i + 1) * 3 + 1] - cy;
+        tz = centers[(i + 1) * 3 + 2] - cz;
+        const tLen = Math.sqrt(tx * tx + ty * ty + tz * tz);
+        if(tLen > 1e-6){
+          tx /= tLen;
+          ty /= tLen;
+          tz /= tLen;
+        }else{
+          tx = boltX;
+          ty = boltY;
+          tz = boltZ;
+        }
+      }
+
+      let toCamX = 0;
+      let toCamY = 0;
+      let toCamZ = 1;
+      if(cam){
+        const cp = cam.position;
+        toCamX = cp.x - cx;
+        toCamY = cp.y - cy;
+        toCamZ = cp.z - cz;
+        const cLen = Math.sqrt(toCamX * toCamX + toCamY * toCamY + toCamZ * toCamZ);
+        if(cLen > 1e-6){
+          toCamX /= cLen;
+          toCamY /= cLen;
+          toCamZ /= cLen;
+        }
+      }
+      let sx = ty * toCamZ - tz * toCamY;
+      let sy = tz * toCamX - tx * toCamZ;
+      let sz = tx * toCamY - ty * toCamX;
+      let sLen = Math.sqrt(sx * sx + sy * sy + sz * sz);
+      if(sLen < 1e-6){
+        sx = basisUX;
+        sy = basisUY;
+        sz = basisUZ;
+        sLen = 1;
+      }
+      sx = (sx / sLen) * halfW;
+      sy = (sy / sLen) * halfW;
+      sz = (sz / sLen) * halfW;
+
+      vertices.push(cx - sx, cy - sy, cz - sz);
+      vertices.push(cx + sx, cy + sy, cz + sz);
+      normals.push(0, 0, 1, 0, 0, 1);
+      uvs.push(0, 1 - t, 1, 1 - t);
+      velocities.push(0, 0, 0, 0, 0, 0, 0, 0);
+      props.push(t, 1, 1, 0, t, 1, 1, 0);
+    }
+
+    const base = vertBase;
+    for(let i = 0; i < sampleCount - 1; i++){
+      const a = base + i * 2;
+      const b = a + 1;
+      const c = a + 2;
+      const d = a + 3;
+      indices.push(a, c, b);
+      indices.push(b, c, d);
+    }
+  }
+
+  /**
+   * SingleEmitter::Update @ 004979c0.
+   * birthRate==0 → destroy sole particle; else age + Motion_Blur + MoveFunc;
+   * empty → spawn one. No Fountain birth timer / trails / Detonate.
+   */
+  tickSingle(delta: number){
+    const count = this.offsets?.count || 0;
+    if(count < 1) return;
+
+    if(Math.floor(this.birthRate) === 0){
+      for(let i = 0; i < count; i++){
+        if(this.props.getZ(i) === 1){
+          this.props.setZ(i, 0);
+          this.particleCount = Math.max(0, this.particleCount - 1);
+        }
+        this.props.setX(i, 0);
+      }
+      this.props.needsUpdate = true;
+      if(this._isChunkEmitter && this._chunkLoaded){
+        this.updateChunkInstances();
+      }
+      return;
+    }
+
+    let live = -1;
+    for(let i = 0; i < count; i++){
+      if(this.props.getZ(i) === 1){
+        live = i;
+        break;
+      }
+    }
+
+    if(live >= 0){
+      // P2P MoveFunc paths age inside tickP2P* — avoid double-aging
+      if(this.node.flags.isP2P){
+        if(this.node.flags.isP2PSel){
+          this.tickP2PBezier(delta);
+        }else{
+          this.tickP2PGravity(delta);
+        }
+        // Enforce at-most-one live particle
+        for(let i = 0; i < count; i++){
+          if(i !== 0 && this.props.getZ(i) === 1){
+            this.props.setZ(i, 0);
+            this.particleCount = Math.max(0, this.particleCount - 1);
+          }
+        }
+        this.props.needsUpdate = true;
+        if(this._isChunkEmitter && this._chunkLoaded){
+          this.updateChunkInstances();
+        }
+        return;
+      }
+
+      let age = (this.props.getX(live) || 0) + delta;
+      const life = this.lifeExp;
+      if(life > 0 && age > life){
+        age = 0;
+      }else if(life <= 0 && age < 0){
+        age = delta;
+      }
+      this.props.setX(live, age);
+      this.props.setY(live, life >= 0 ? life : -1);
+      this.props.needsUpdate = true;
+
+      if(this.node.renderMode === 'Motion_Blur' && this.prevOffsets && this.blurLength > 0){
+        const t = Math.min(delta, this.blurLength) / this.blurLength;
+        const omt = 1 - t;
+        this.prevOffsets.setX(live, omt * this.prevOffsets.getX(live) + t * this.offsets.getX(live));
+        this.prevOffsets.setY(live, omt * this.prevOffsets.getY(live) + t * this.offsets.getY(live));
+        this.prevOffsets.setZ(live, omt * this.prevOffsets.getZ(live) + t * this.offsets.getZ(live));
+        this.prevOffsets.needsUpdate = true;
+      }
+
+      if(this.node.flags.canInherit && this._hasLastWorldPos){
+        const prevPos = this._lastWorldPos;
+        const deltaQ = OdysseyEmitter3D._quatC
+          .copy(this._lastWorldQuat).invert()
+          .premultiply(this._frameWorldQuat);
+        const useQuat = this._hasLastWorldQuat && Math.abs(1 - Math.abs(deltaQ.w)) > 1e-6;
+        const local = OdysseyEmitter3D._v3A;
+        const vel = OdysseyEmitter3D._v3D;
+        if(useQuat){
+          local.set(
+            this.offsets.getX(live) - prevPos.x,
+            this.offsets.getY(live) - prevPos.y,
+            this.offsets.getZ(live) - prevPos.z
+          ).applyQuaternion(deltaQ);
+          this.offsets.setX(live, local.x + this._frameWorldPos.x);
+          this.offsets.setY(live, local.y + this._frameWorldPos.y);
+          this.offsets.setZ(live, local.z + this._frameWorldPos.z);
+          vel.set(this.velocities.getX(live), this.velocities.getY(live), this.velocities.getZ(live))
+            .applyQuaternion(deltaQ);
+          this.velocities.setX(live, vel.x);
+          this.velocities.setY(live, vel.y);
+          this.velocities.setZ(live, vel.z);
+        }else{
+          this.offsets.setX(live, this.offsets.getX(live) + this._worldPosDelta.x);
+          this.offsets.setY(live, this.offsets.getY(live) + this._worldPosDelta.y);
+          this.offsets.setZ(live, this.offsets.getZ(live) + this._worldPosDelta.z);
+        }
+        this.offsets.needsUpdate = true;
+        this.velocities.needsUpdate = true;
+      }
+      this.integrateStandardParticles(delta, count);
+    }else{
+      this.spawnParticle(0, delta);
+      this.particleCount = 1;
+      for(let i = 1; i < count; i++){
+        this.props.setZ(i, 0);
+      }
+      this.props.needsUpdate = true;
+      this.offsets.needsUpdate = true;
+      this.velocities.needsUpdate = true;
+    }
+
+    this.sortParticles();
+    if(this._isChunkEmitter && this._chunkLoaded){
+      this.updateChunkInstances();
+    }
+  }
+
+  /**
+   * P2P Gravity → moveParticleP2PGrav @ 00494200.
+   * Retail: pos += vel*dt → wind → if |toRef|² < threshold² kill →
+   * vel *= pow(drag, dt) → a = grav*normalize(toRef) → pos += a*dt²; vel += a*dt →
+   * vel.z -= mass*9.81*dt → |scale*(1-dt)| → optional bounce.
    */
   tickP2PGravity(delta: number){
     let updatePositions = false;
@@ -1224,6 +2657,12 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     let birthCount = 0;
     const spawnableParticleCount = this.offsets.count;
+    const thresholdSq = this.threshold > 0 ? this.threshold * this.threshold : 0;
+    const massGravity = this.mass * 9.81;
+    const drag = this.drag;
+    const grav = this.gravity;
+    // Retail: vel *= pow(drag, dt). drag<=0 → zero velocity (pow domain).
+    const dragPow = drag > 0 ? Math.pow(drag, delta) : 0;
 
     for(let i = 0; i < spawnableParticleCount; i++){
       let age = this.props.getX(i) || 0;
@@ -1239,10 +2678,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         this.localToWorld(pW);
 
         toRef.copy(refW).sub(pW);
-        const dist = toRef.length();
+        const distSq = toRef.lengthSq();
 
         // Kill particle if within threshold distance
-        if(this.threshold > 0 && dist < this.threshold){
+        if(thresholdSq > 0 && distSq < thresholdSq){
           this.props.setZ(i, 0);
           this.particleCount -= 1;
           age = 0;
@@ -1251,24 +2690,36 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.particleCount -= 1;
           age = 0;
         }else{
-          if(dist > 0.001) toRef.multiplyScalar(1.0 / dist);
-
           velW.set(
             this.velocities.getX(i),
             this.velocities.getY(i),
             this.velocities.getZ(i)
           );
 
-          velW.addScaledVector(toRef, this.gravity * delta);
+          // Predict with current velocity first (retail order before attract).
+          pW.addScaledVector(velW, delta);
 
-          const dampFactor = 1.0 / (1.0 + this.drag);
-          velW.multiplyScalar(1.0 - dampFactor * delta);
+          velW.multiplyScalar(dragPow);
+
+          if(grav !== 0 && distSq > 1e-12){
+            toRef.multiplyScalar(1.0 / Math.sqrt(distSq));
+            const ax = grav * toRef.x * delta;
+            const ay = grav * toRef.y * delta;
+            const az = grav * toRef.z * delta;
+            pW.x += ax * delta;
+            pW.y += ay * delta;
+            pW.z += az * delta;
+            velW.x += ax;
+            velW.y += ay;
+            velW.z += az;
+          }
+
+          velW.z -= massGravity * delta;
 
           this.velocities.setX(i, velW.x);
           this.velocities.setY(i, velW.y);
           this.velocities.setZ(i, velW.z);
 
-          pW.addScaledVector(velW, delta);
           this.worldToLocal(pW);
 
           this.offsets.setX(i, pW.x);
@@ -1284,7 +2735,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         let maxSpawn = 1;
         if(this.node.updateMode == 'Explosion'){
           canSpawn = this.isDetonated;
-          maxSpawn = this.birthRate;
+          maxSpawn = Math.floor(this.birthRate) || 0;
+        }else if(this.node.updateMode == 'Single'){
+          canSpawn = this.particleCount < 1 && Math.floor(this.birthRate) > 0;
+          maxSpawn = 1;
         }
         if(canSpawn && birthCount < maxSpawn){
           this.spawnParticle(i, delta);
@@ -1311,33 +2765,84 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * P2P Bezier mode: particles travel along a cubic Bezier curve from
-   * the emitter to the reference node. combineTime controls the transition
-   * duration. p2pBezier2/3 control source/target tangent lengths.
+   * P2P_SEL → moveParticleP2PBezier @ 00492ea0 (MoveFunc @ 00494d40).
+   * Retail: inherit rebase → pos+=vel×dt → wind → cubic Bezier(t=age/life)
+   * P0=emitter, P1=emitter+ez×bezier2, P2=target+tz×bezier3, P3=target(+targetSize);
+   * blend = Bezier×pow(t³,drag) + free×(1−pow); vel.z −= mass×9.81×dt; |1−dt| on
+   * residual scale; optional HitCheck bounce.
    */
   tickP2PBezier(delta: number){
     let updatePositions = false;
+    let updateVelocity = false;
     let updateProperties = false;
 
-    const startPos = OdysseyEmitter3D._v3A.set(0, 0, 0);
+    const startPos = OdysseyEmitter3D._v3A;
     this.getWorldPosition(startPos);
-    const endPos = OdysseyEmitter3D._v3B.set(0, 0, 0);
-    this.referenceNode.getWorldPosition(endPos);
+    const endPos = OdysseyEmitter3D._v3B;
+    if(this.referenceNode){
+      this.referenceNode.getWorldPosition(endPos);
+    }else{
+      endPos.copy(startPos).add(new THREE.Vector3(0, 0, 1));
+    }
 
-    // Build control points along the emitter's local Z axis
-    const forward = OdysseyEmitter3D._v3C.set(0, 0, 1);
+    // TargetSize jitter on reference (once per MoveFunc), retail field45_0xfc
+    if(this.targetSize > 0){
+      const j = this.targetSize * 0.5;
+      endPos.x += this.randomFloat(0, j * 2) - j;
+      endPos.y += this.randomFloat(0, j * 2) - j;
+      endPos.z += this.randomFloat(0, j * 2) - j;
+    }
+
+    const emitZ = OdysseyEmitter3D._v3C.set(0, 0, 1);
     const quat = OdysseyEmitter3D._quat;
     this.getWorldQuaternion(quat);
-    forward.applyQuaternion(quat);
+    emitZ.applyQuaternion(quat);
 
-    const cp1 = new THREE.Vector3().copy(startPos).addScaledVector(forward, this.p2pBezier2);
-    const cp2 = new THREE.Vector3().copy(endPos).addScaledVector(forward, -this.p2pBezier3);
+    // Reference local Z for P2 (retail: zdir from ref orientation × bezier3)
+    const refZ = OdysseyEmitter3D._v3D.set(0, 0, 1);
+    if(this.referenceNode){
+      this.referenceNode.getWorldQuaternion(OdysseyEmitter3D._quatB);
+      refZ.applyQuaternion(OdysseyEmitter3D._quatB);
+    }else{
+      refZ.copy(emitZ);
+    }
 
-    const curve = new THREE.CubicBezierCurve3(startPos.clone(), cp1, cp2, endPos.clone());
-    const transitTime = this.combineTime > 0 ? this.combineTime : 1;
+    const b2 = this.p2pBezier2 || 0;
+    const b3 = this.p2pBezier3 || 0;
+    // Control points (world)
+    const p0x = startPos.x, p0y = startPos.y, p0z = startPos.z;
+    const p1x = startPos.x + emitZ.x * b2;
+    const p1y = startPos.y + emitZ.y * b2;
+    const p1z = startPos.z + emitZ.z * b2;
+    const p2x = endPos.x + refZ.x * b3;
+    const p2y = endPos.y + refZ.y * b3;
+    const p2z = endPos.z + refZ.z * b3;
+    const p3x = endPos.x, p3y = endPos.y, p3z = endPos.z;
+
+    const drag = this.drag;
+    const massGravity = this.mass * 9.81;
+    const inheritDecay = Math.abs(1 - delta);
+    const doWind = !!this.node.flags.affectedByWind;
+    const doBounce = !!this.node.flags.canBounce;
+    const doInherit = !!this.node.flags.canInherit && this._hasLastWorldPos;
+
+    let windAx = 0, windAy = 0, windAz = 0;
+    if(doWind){
+      const windStrength = resolveDanglyWindPower(this.context) * 0.01;
+      if(windStrength > 1e-6){
+        windAx = ODYSSEY_AREA_WIND_DIRECTION.x * windStrength * delta;
+        windAy = ODYSSEY_AREA_WIND_DIRECTION.y * windStrength * delta;
+        windAz = ODYSSEY_AREA_WIND_DIRECTION.z * windStrength * delta;
+      }
+    }
+
+    // Retail t = age / field12_0x78 (lifeExp); combineTime is not the Bezier parameter
+    const transit = this.lifeExp > 0 ? this.lifeExp : (this.combineTime > 0 ? this.combineTime : 1);
 
     let birthCount = 0;
     const spawnableParticleCount = this.offsets.count;
+    const pW = OdysseyEmitter3D._v3B;
+    const velW = OdysseyEmitter3D._v3C;
 
     for(let i = 0; i < spawnableParticleCount; i++){
       let age = this.props.getX(i) || 0;
@@ -1350,28 +2855,103 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.particleCount -= 1;
           age = 0;
         }else{
-          age += delta;
-          const t = Math.min(age / transitTime, 1.0);
-          const pointW = curve.getPoint(t);
-          const localP = OdysseyEmitter3D._v3D;
-          localP.copy(pointW);
-          this.worldToLocal(localP);
+          pW.set(this.offsets.getX(i), this.offsets.getY(i), this.offsets.getZ(i));
+          this.localToWorld(pW);
 
-          this.offsets.setX(i, localP.x);
-          this.offsets.setY(i, localP.y);
-          this.offsets.setZ(i, localP.z);
+          // INHERIT rebase (bit 6) — same as fountain MoveFunc start
+          if(doInherit){
+            const prevPos = this._lastWorldPos;
+            const deltaQ = OdysseyEmitter3D._quatC
+              .copy(this._lastWorldQuat).invert()
+              .premultiply(this._frameWorldQuat);
+            if(this._hasLastWorldQuat && Math.abs(1 - Math.abs(deltaQ.w)) > 1e-6){
+              pW.sub(prevPos).applyQuaternion(deltaQ).add(this._frameWorldPos);
+              velW.set(this.velocities.getX(i), this.velocities.getY(i), this.velocities.getZ(i))
+                .applyQuaternion(deltaQ);
+              this.velocities.setX(i, velW.x);
+              this.velocities.setY(i, velW.y);
+              this.velocities.setZ(i, velW.z);
+              updateVelocity = true;
+            }else{
+              pW.add(this._worldPosDelta);
+            }
+          }
+
+          velW.set(
+            this.velocities.getX(i),
+            this.velocities.getY(i),
+            this.velocities.getZ(i)
+          );
+
+          // Free predict
+          let fx = pW.x + velW.x * delta;
+          let fy = pW.y + velW.y * delta;
+          let fz = pW.z + velW.z * delta;
+          fx += windAx;
+          fy += windAy;
+          fz += windAz;
+
+          age += delta;
+          let t = age / transit;
+          if(t > 1) t = 1;
+          if(t < 0) t = 0;
+          const omt = 1 - t;
+          const b0 = omt * omt * omt;
+          const b1 = 3 * omt * omt * t;
+          const b2w = 3 * omt * t * t;
+          const b3w = t * t * t;
+          const bx = p0x * b0 + p1x * b1 + p2x * b2w + p3x * b3w;
+          const by = p0y * b0 + p1y * b1 + p2y * b2w + p3y * b3w;
+          const bz = p0z * b0 + p1z * b1 + p2z * b2w + p3z * b3w;
+
+          // Retail: pow(t³, drag); drag==0 → pow(..,0)==1 → full Bezier
+          const t3 = t * t * t;
+          const w = drag > 0 ? Math.pow(Math.max(t3, 1e-30), drag) : 1;
+          const iw = 1 - w;
+          pW.x = bx * w + fx * iw;
+          pW.y = by * w + fy * iw;
+          pW.z = bz * w + fz * iw;
+
+          velW.z -= massGravity * delta;
+          // Residual speed scale |1−dt| (retail particle+0x18)
+          velW.x *= inheritDecay;
+          velW.y *= inheritDecay;
+          velW.z *= inheritDecay;
+
+          this.velocities.setX(i, velW.x);
+          this.velocities.setY(i, velW.y);
+          this.velocities.setZ(i, velW.z);
+
+          const prevX = this.offsets.getX(i);
+          const prevY = this.offsets.getY(i);
+          const prevZ = this.offsets.getZ(i);
+
+          this.worldToLocal(pW);
+          this.offsets.setX(i, pW.x);
+          this.offsets.setY(i, pW.y);
+          this.offsets.setZ(i, pW.z);
+
+          if(doBounce){
+            this.applyBounceHitCheck(i, prevX, prevY, prevZ, delta);
+          }
+
           updatePositions = true;
+          updateVelocity = true;
         }
       }else{
         let canSpawn = !this._birthTimer;
         let maxSpawn = 1;
         if(this.node.updateMode == 'Explosion'){
           canSpawn = this.isDetonated;
-          maxSpawn = this.birthRate;
+          maxSpawn = Math.floor(this.birthRate) || 0;
+        }else if(this.node.updateMode == 'Single'){
+          canSpawn = this.particleCount < 1 && Math.floor(this.birthRate) > 0;
+          maxSpawn = 1;
         }
         if(canSpawn && birthCount < maxSpawn){
           this.spawnParticle(i, delta);
           updatePositions = true;
+          updateVelocity = true;
           birthCount++;
         }
         age = 0;
@@ -1381,6 +2961,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
 
     if(updatePositions) this.offsets.needsUpdate = true;
+    if(updateVelocity) this.velocities.needsUpdate = true;
     if(updateProperties) this.props.needsUpdate = true;
 
     if(!this._birthTimer){
@@ -1521,46 +3102,32 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.offsets.setX(i, newPosition.x);
       this.offsets.setY(i, newPosition.y);
       this.offsets.setZ(i, newPosition.z);
+      if(this.prevOffsets){
+        // Retail: +0x60 initialized to birth position; inherit alone never updates it.
+        this.prevOffsets.setX(i, newPosition.x);
+        this.prevOffsets.setY(i, newPosition.y);
+        this.prevOffsets.setZ(i, newPosition.z);
+        this.prevOffsets.needsUpdate = true;
+      }
     }else{
       this.setLinkedVertexPosition(i, newPosition);
     }
 
-    if(this.velocity){
-      if(this.node.updateMode == 'Explosion' && this.node.renderMode != 'Linked'){
-        this.velocities.setX(i, this.randomFloat(this.d * this.vx, this.spread));
-        this.velocities.setY(i, this.randomFloat(this.d * this.vy, this.spread));
-        this.velocities.setZ(i, this.randomFloat(this.d * this.vz, this.spread));
-      }else{
-        const quat = OdysseyEmitter3D._quat;
-        this.getWorldQuaternion(quat);
-        this.vec3.set(
-          this.randomFloat(this.d * this.vx, this.d2 * this.vx),
-          this.randomFloat(this.d * this.vy, this.d2 * this.vy), 
-          this.randomFloat(this.d * this.vz, this.d2 * this.vz)
-        ).applyQuaternion(quat);
+    if(this.node.renderMode != 'Linked'){
+      // Retail Particle::initialize @ 004921d0 (Fountain + Explosion + Single):
+      // world quat → optional randomDirection(spread) → (velocity+randvel)×zdir.
+      const quat = OdysseyEmitter3D._quat;
+      this.getWorldQuaternion(quat);
+      if(this.spread !== 0){
+        this.randomDirectionRetail(quat, newPosition);
+      }
+      this.birthVelocityFromQuat(quat, this.vec3);
+      this.velocities.setX(i, this.vec3.x);
+      this.velocities.setY(i, this.vec3.y);
+      this.velocities.setZ(i, this.vec3.z);
 
-        if(this.node.renderMode != 'Linked'){
-          this.velocities.setX(i, this.vec3.x);
-          this.velocities.setY(i, this.vec3.y);
-          this.velocities.setZ(i, this.vec3.z);
-        }
-      }
-    }else{
-      if(this.node.renderMode != 'Linked'){
-        this.velocities.setX(i, 0);
-        this.velocities.setY(i, 0);
-        this.velocities.setZ(i, 0);
-      }
-    }
-
-    // Inherit velocity from emitter movement
-    if(this.node.flags.canInheritVelocity && this._hasLastWorldPos && delta > 0){
-      const emitterVel = OdysseyEmitter3D._v3A.copy(this._worldPosDelta).divideScalar(delta);
-      if(this.node.renderMode != 'Linked'){
-        this.velocities.setX(i, this.velocities.getX(i) + emitterVel.x);
-        this.velocities.setY(i, this.velocities.getY(i) + emitterVel.y);
-        this.velocities.setZ(i, this.velocities.getZ(i) + emitterVel.z);
-      }
+      // Retail inheritVelocity @ 0048d9e0: fill scale×accel (MoveFunc), do not bake into birth vel.
+      this.setBirthInheritVelocity(i, newPosition, delta);
     }
 
     if(this.node.renderMode != 'Linked'){
@@ -1582,6 +3149,16 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       for(let v = 0; v < 2; v++){
         this.ids.setX(i * 2 + v, i);
       }
+    }else if(this.node.flags.isRandom){
+      // FountainEmitter::Update RANDOM bit5: birth frame ∈ [frameStart, frameEnd]
+      const start = Math.trunc(this.material.uniforms.frameRange.value.x);
+      const end = Math.trunc(this.material.uniforms.frameRange.value.y);
+      let range = end - start + 1;
+      if(range < 0) range = -range;
+      const birthFrame = range > 0
+        ? start + Math.floor(Math.random() * range)
+        : start;
+      this.ids.setX(i, birthFrame);
     }else{
       this.ids.setX(i, i);
     }
@@ -1590,105 +3167,124 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * Check and handle bounce against ground/walkmesh for a particle.
-   * If the particle has crossed below the ground surface, reflect its
-   * velocity Z component and snap position to the surface. If canSplat
-   * is set, the particle is marked as splatted on first bounce.
+   * Retail moveParticleStandard HitCheck @ 00492450 (DAT_00798ba0 == 1):
+   * Scene::HitCheck(prev, curr, &curr) snaps position; then either zero vel
+   * (bounceCo==0) or reflect × 0.75 with Z *= clamp(0.033/dt, 0.5, 1) * bounceCo.
+   * If |v|² < 0.5 → stop (props.w), nudge +0.02 along normal (+ size if splat).
    */
-  private checkBounce(i: number): void {
-    const z = this.offsets.getZ(i);
-    let groundZ = 0;
+  private applyBounceHitCheck(
+    i: number,
+    prevX: number,
+    prevY: number,
+    prevZ: number,
+    delta: number
+  ): void {
+    const currX = this.offsets.getX(i);
+    const currY = this.offsets.getY(i);
+    const currZ = this.offsets.getZ(i);
 
-    // Attempt walkmesh lookup through context for accurate ground height
+    const dx = currX - prevX;
+    const dy = currY - prevY;
+    const dz = currZ - prevZ;
+    const segLen = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if(segLen < 1e-6) return;
+
+    const area = this.context?.module?.area;
+    if(!area?.rooms?.length) return;
+
+    const raycaster = GameState.raycaster;
+    const prevFar = raycaster.far;
+    const origin = OdysseyEmitter3D._v3A.set(prevX, prevY, prevZ);
+    const dir = OdysseyEmitter3D._v3B.set(dx, dy, dz).multiplyScalar(1 / segLen);
+    raycaster.ray.origin.copy(origin);
+    raycaster.ray.direction.copy(dir);
+    raycaster.far = segLen;
+
+    let bestDist = Infinity;
+    const hitPoint = OdysseyEmitter3D._v3C;
+    const hitNormal = OdysseyEmitter3D._v3D.set(0, 0, 1);
+    let found = false;
+
     try {
-      const area = this.context?.module?.area;
-      if(area?.rooms){
-        const px = this.offsets.getX(i);
-        const py = this.offsets.getY(i);
-        const testPos = OdysseyEmitter3D._v3A.set(px, py, z);
-        for(let r = 0; r < area.rooms.length; r++){
-          const wm = area.rooms[r].collisionManager?.walkmesh;
-          if(!wm?.walkableFaces) continue;
-          for(let f = 0; f < wm.walkableFaces.length; f++){
-            const face = wm.walkableFaces[f];
-            if(face.triangle.containsPoint(testPos)){
-              face.triangle.closestPointToPoint(testPos, OdysseyEmitter3D._v3B);
-              groundZ = OdysseyEmitter3D._v3B.z;
-              break;
-            }
+      for(let r = 0; r < area.rooms.length; r++){
+        const wok = area.rooms[r]?.collisionManager?.walkmesh;
+        if(!wok?.faces?.length) continue;
+        const hits = wok.raycast(raycaster, wok.faces);
+        if(!hits?.length) continue;
+        for(let k = 0; k < hits.length; k++){
+          const hit = hits[k];
+          if(hit.distance < 0 || hit.distance > segLen || hit.distance >= bestDist) continue;
+          bestDist = hit.distance;
+          hitPoint.copy(origin).addScaledVector(dir, hit.distance);
+          const wokFace = (hit as any).face;
+          if(wokFace?.normal){
+            hitNormal.copy(wokFace.normal).normalize();
+          }else if(hit.face?.normal){
+            hitNormal.copy(hit.face.normal).normalize();
+          }else{
+            hitNormal.set(0, 0, 1);
           }
-          if(groundZ !== 0) break;
+          found = true;
         }
       }
-    } catch(_) {
-      // No walkmesh available; use z=0
+    } finally {
+      raycaster.far = prevFar;
     }
 
-    if(z <= groundZ){
-      this.offsets.setZ(i, groundZ + 0.005);
+    if(!found) return;
 
-      const vz = this.velocities.getZ(i);
-      this.velocities.setZ(i, Math.abs(vz) * this.bounceCo);
+    // HitCheck writes intersection into particle position
+    this.offsets.setX(i, hitPoint.x);
+    this.offsets.setY(i, hitPoint.y);
+    this.offsets.setZ(i, hitPoint.z);
 
-      // Splat: mark particle as face-up on ground
-      if(this.node.flags.canSplat && this.props.getW(i) !== 1){
-        this.props.setW(i, 1);
+    let vx = this.velocities.getX(i);
+    let vy = this.velocities.getY(i);
+    let vz = this.velocities.getZ(i);
+    let speedSq = 0;
+
+    if(this.bounceCo === 0){
+      vx = 0;
+      vy = 0;
+      vz = 0;
+      speedSq = 0;
+    }else{
+      // v' = v - 2(v·n)n
+      const ndot = vx * hitNormal.x + vy * hitNormal.y + vz * hitNormal.z;
+      vx -= 2 * ndot * hitNormal.x;
+      vy -= 2 * ndot * hitNormal.y;
+      vz -= 2 * ndot * hitNormal.z;
+      // × 0.75 on all axes
+      vx *= 0.75;
+      vy *= 0.75;
+      vz *= 0.75;
+      // Z only: clamp(0.033/dt, 0.5, 1) * bounceCo
+      let dtScale = 0.033 / Math.max(delta, 1e-6);
+      if(dtScale > 1) dtScale = 1;
+      else if(dtScale < 0.5) dtScale = 0.5;
+      vz *= dtScale * this.bounceCo;
+      speedSq = vx * vx + vy * vy + vz * vz;
+    }
+
+    if(speedSq < 0.5){
+      this.props.setW(i, 1);
+      // Retail: store hit normal at particle+0x48; RotationArc(up→n) at +0x2c.
+      // Vel is unused after stop — keep normal in velocity.xyz for splat draw.
+      vx = hitNormal.x;
+      vy = hitNormal.y;
+      vz = hitNormal.z;
+      let nudge = 0.02;
+      if(this.node.flags.canSplat){
+        nudge += this.sizes[0] || 0;
       }
-    }
-  }
-
-  /**
-   * Blast impulses (emitter-generated) plus area wind using {@link resolveDanglyWindPower}
-   * and the same world wind axis as dangly (`ODYSSEY_AREA_WIND_DIRECTION`), transformed to
-   * emitter-local offsets.
-   */
-  private applyWindForces(delta: number): void {
-    const windStrength = resolveDanglyWindPower(this.context) * 0.01;
-    const wm = GameState.windManager;
-    const hasImpulses = wm && wm.pointSourceWinds.length > 0;
-    if(!hasImpulses && windStrength <= 1e-6){
-      return;
+      this.offsets.setX(i, hitPoint.x + hitNormal.x * nudge);
+      this.offsets.setY(i, hitPoint.y + hitNormal.y * nudge);
+      this.offsets.setZ(i, hitPoint.z + hitNormal.z * nudge);
     }
 
-    let ax = 0;
-    let ay = 0;
-    let az = 0;
-    if(windStrength > 1e-6){
-      const w = OdysseyEmitter3D._v3A;
-      w.copy(ODYSSEY_AREA_WIND_DIRECTION).multiplyScalar(windStrength * delta);
-      OdysseyEmitter3D._mat4.copy(this.matrixWorld).invert();
-      w.transformDirection(OdysseyEmitter3D._mat4);
-      ax = w.x;
-      ay = w.y;
-      az = w.z;
-    }
-
-    const count = this.offsets.count;
-    for(let i = 0; i < count; i++){
-      if(this.props.getZ(i) !== 1) continue;
-
-      const px = this.offsets.getX(i);
-      const py = this.offsets.getY(i);
-      const pz = this.offsets.getZ(i);
-
-      if(wm && wm.pointSourceWinds.length > 0){
-        const worldPos = OdysseyEmitter3D._v3B.set(px, py, pz).applyMatrix4(this.matrixWorld);
-        const gust = wm.getGlobalPointWind(worldPos);
-        if(gust.lengthSq() > 1e-12){
-          const localGust = OdysseyEmitter3D._v3C.copy(gust);
-          localGust.transformDirection(OdysseyEmitter3D._mat4);
-          this.offsets.setX(i, px + localGust.x);
-          this.offsets.setY(i, py + localGust.y);
-          this.offsets.setZ(i, pz + localGust.z);
-        }
-      }
-
-      if(windStrength > 1e-6){
-        this.offsets.setX(i, this.offsets.getX(i) + ax);
-        this.offsets.setY(i, this.offsets.getY(i) + ay);
-        this.offsets.setZ(i, this.offsets.getZ(i) + az);
-      }
-    }
+    this.velocities.setX(i, vx);
+    this.velocities.setY(i, vy);
+    this.velocities.setZ(i, vz);
   }
 
   //https://github.com/mrdoob/three.js/blob/master/examples/webgl_custom_attributes_points2.html#L173
@@ -1756,6 +3352,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   detonate(){
     this.isDetonated = true;
     this.resetTrailSpawnState();
+    this._birthAccum = 0;
     if(this.node.renderMode == 'Linked'){
       this.particleIndex = 0;
       this.linkedTotalSpawns = 0;
@@ -1786,8 +3383,152 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     return this.birthRate > 0 ? 1/this.birthRate : 1;
   }
 
+  /**
+   * FountainEmitter MoveFunc → moveParticleStandard @ 00492450 (after inherit).
+   * pos += vel×dt + inherit×dt → wind → vel.z -= mass×9.81×dt → |inherit×(1−dt)| → HitCheck.
+   */
+  private integrateStandardParticles(delta: number, count: number): boolean {
+    if(delta <= 0 || count <= 0) return false;
+
+    const doWind = !!this.node.flags.affectedByWind;
+    let windAx = 0;
+    let windAy = 0;
+    let windAz = 0;
+    if(doWind){
+      const windStrength = resolveDanglyWindPower(this.context) * 0.01;
+      if(windStrength > 1e-6){
+        OdysseyEmitter3D._v3A
+          .copy(ODYSSEY_AREA_WIND_DIRECTION)
+          .multiplyScalar(windStrength * delta);
+        windAx = OdysseyEmitter3D._v3A.x;
+        windAy = OdysseyEmitter3D._v3A.y;
+        windAz = OdysseyEmitter3D._v3A.z;
+      }
+    }
+    const wm = doWind ? GameState.windManager : undefined;
+    const doBounce = !!this.node.flags.canBounce;
+    const doInheritVel = !!this.node.flags.canInheritVelocity;
+    if(doInheritVel){
+      this.ensureInheritVelCapacity(count);
+    }
+
+    // Retail: vel.z -= dt * PartEmitter.mass(+0x7c) * 9.81 — not the grav controller.
+    const massGravity = this.mass * 9.81;
+    const inheritDecay = Math.abs(1 - delta);
+    let changed = false;
+
+    for(let i = 0; i < count; i++){
+      if(this.props.getZ(i) !== 1) continue;
+      // Retail: particle+0x6c != 0 → skip MoveFunc body (normal kept in velocity for draw)
+      if(this.props.getW(i) === 1){
+        continue;
+      }
+
+      let vx = this.velocities.getX(i);
+      let vy = this.velocities.getY(i);
+      let vz = this.velocities.getZ(i);
+
+      const prevX = this.offsets.getX(i);
+      const prevY = this.offsets.getY(i);
+      const prevZ = this.offsets.getZ(i);
+
+      let px = prevX + vx * delta;
+      let py = prevY + vy * delta;
+      let pz = prevZ + vz * delta;
+
+      let ix = 0, iy = 0, iz = 0;
+      if(doInheritVel){
+        const ib = i * 3;
+        ix = this.inheritVels[ib];
+        iy = this.inheritVels[ib + 1];
+        iz = this.inheritVels[ib + 2];
+        px += ix * delta;
+        py += iy * delta;
+        pz += iz * delta;
+      }
+
+      if(doWind){
+        if(wm && wm.pointSourceWinds.length > 0){
+          const gust = wm.getGlobalPointWind(OdysseyEmitter3D._v3B.set(px, py, pz));
+          if(gust.lengthSq() > 1e-12){
+            px += gust.x * delta;
+            py += gust.y * delta;
+            pz += gust.z * delta;
+          }
+        }
+        px += windAx;
+        py += windAy;
+        pz += windAz;
+      }
+
+      this.offsets.setX(i, px);
+      this.offsets.setY(i, py);
+      this.offsets.setZ(i, pz);
+
+      vz -= massGravity * delta;
+
+      this.velocities.setX(i, vx);
+      this.velocities.setY(i, vy);
+      this.velocities.setZ(i, vz);
+
+      // Retail: scale = |scale × (1 − dt)| after mass
+      if(doInheritVel){
+        const ib = i * 3;
+        this.inheritVels[ib] = ix * inheritDecay;
+        this.inheritVels[ib + 1] = iy * inheritDecay;
+        this.inheritVels[ib + 2] = iz * inheritDecay;
+      }
+
+      if(doBounce){
+        this.applyBounceHitCheck(i, prevX, prevY, prevZ, delta);
+      }
+
+      changed = true;
+    }
+
+    return changed;
+  }
+
+  /**
+   * FountainEmitter::Update spawntype 0 @ 00496e40.
+   * Accumulate dt; when accum ≥ 1/rate, spawn floor(rate×accum) % (floor(rate)+1)
+   * (at least 1), with optional RandomBirthRate ±jitter, then reset accum.
+   */
+  private consumeFountainBirthQuota(delta: number): number {
+    if(this.birthRate <= 0){
+      this._birthAccum = 0;
+      return 0;
+    }
+
+    this._birthAccum += delta;
+    const period = 1 / this.birthRate;
+    if(this._birthAccum < period){
+      return 0;
+    }
+
+    let rate = this.birthRate;
+    const rbr = Math.floor(Math.abs(this.birthRateRandom) + 1e-6);
+    if(rbr > 0){
+      const jitter = Math.floor(Math.random() * rbr);
+      rate = Math.random() < 0.5 ? rate - jitter : rate + jitter;
+      if(rate < 0) rate = 0;
+    }
+
+    if(rate <= 0){
+      this._birthAccum = 0;
+      return 0;
+    }
+
+    const modBase = Math.floor(rate) + 1;
+    let count = Math.floor(rate * this._birthAccum) % modBase;
+    if(count < 1) count = 1;
+    this._birthAccum = 0;
+    return count;
+  }
+
   disable(){
     this.birthRate = 0;
+    this._birthAccum = 0;
     this.resetTrailSpawnState();
     if(this.node.renderMode === 'Linked'){
       this.resetRibbonTangentState();
@@ -1816,12 +3557,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   attributeChanged(attr: string){
-    const quat = OdysseyEmitter3D._quat;
     switch(attr){
       case 'mass':
-        if(!this.parent) return;
-        this.parent.getWorldQuaternion(quat);
-        this.vec3.set(0, 0, this.mass).applyQuaternion(this.quaternion);
+        // SPE billboard approx of moveParticleStandard: vel.z -= mass*9.81*dt (world Z-up).
+        // Fountain CPU_PHYSICS applies this on the CPU; grav/drag are P2P-only there.
+        this.vec3.set(0, 0, -this.mass * 9.81);
         this.material.uniforms.mass.value.copy(this.vec3);
         this.material.uniformsNeedUpdate = true;
       break;
@@ -1829,8 +3569,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * Load the chunk MDL model asynchronously for chunk emitters.
-   * Once loaded, creates an InstancedMesh for rendering chunk particles.
+   * Load chunk MDL for ChunkyParticle presentation (retail NewCAurObject(chunkName)).
+   * ChunkyParticle::initialize @ 00492400 plays "impact" on the gob; we keep a shared
+   * InstancedMesh (no per-particle Gob anim) and sync transforms in updateChunkInstances.
    */
   private async loadChunkModel(): Promise<void> {
     try {
@@ -1843,7 +3584,15 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       const model = await OdysseyModel3D.FromMDL(mdl, { context: this.context });
       if(!model) return;
 
-      // Find the first renderable mesh geometry in the loaded model
+      // Prefer first mesh; try to leave model at impact/default pose
+      try{
+        if(typeof (model as any).playAnimation === 'function'){
+          (model as any).playAnimation('impact', false) ||
+            (model as any).playAnimation('default', true);
+          (model as any).animationManager?.update?.(0);
+        }
+      }catch(_e){ /* ignore */ }
+
       let foundGeom: THREE.BufferGeometry = null;
       let foundMat: THREE.Material = null;
       model.traverse((child: THREE.Object3D) => {
@@ -1854,21 +3603,39 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         }
       });
 
+      try{ model.dispose(); }catch(_e){ /* ignore */ }
+
       if(!foundGeom) return;
 
       this._chunkGeometry = foundGeom;
-      this._chunkMaterial = foundMat || new THREE.MeshBasicMaterial({ color: 0xffffff });
+      this._chunkMaterial = foundMat || new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        transparent: true,
+        depthWrite: false,
+      });
+      // Allow per-instance tint from particle color lifecycle
+      if('vertexColors' in this._chunkMaterial){
+        (this._chunkMaterial as THREE.MeshBasicMaterial).vertexColors = true;
+      }
+
+      const capacity = Math.max(this.maxParticleCount, 1);
       this._chunkMesh = new THREE.InstancedMesh(
         this._chunkGeometry,
         this._chunkMaterial,
-        Math.max(this.maxParticleCount, 1)
+        capacity
       );
       this._chunkMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       this._chunkMesh.renderOrder = this.node.renderOrder || 0;
       this._chunkMesh.frustumCulled = false;
+      this._chunkMesh.count = capacity;
+
+      const colors = new Float32Array(capacity * 3);
+      colors.fill(1);
+      this._chunkColors = new THREE.InstancedBufferAttribute(colors, 3);
+      this._chunkMesh.instanceColor = this._chunkColors;
+
       this._chunkLoaded = true;
 
-      // Hide the sprite mesh for chunk emitters
       if(this.mesh){
         this.mesh.visible = false;
       }
@@ -1880,31 +3647,40 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * Update InstancedMesh transforms for chunk emitter particles.
-   * Each alive particle gets a matrix from its offset position,
-   * rotation (particleRot * age), and lifecycle scale.
+   * Sync InstancedMesh to particle state (ChunkyParticle gob pose approx).
+   * Offsets are world-space (CPU_PHYSICS); convert to emitter-local for the child mesh.
+   * Orientation: splat → align +Z to surface normal (velocity); else particleRot×age about Z.
+   * Scale: size start/mid/end over life × parent gob scale.
    */
   private updateChunkInstances(): void {
     if(!this._chunkMesh) return;
 
     const mat = this._chunkMatrix;
+    const quat = this._chunkQuat;
+    const scl = this._chunkScale;
+    const col = this._chunkColor;
     const count = Math.min(this.offsets.count, this._chunkMesh.count);
-    let visibleCount = 0;
+    const parentScale = this.getParentGobScale();
+    const fade = this.getParentGobAlpha() * this.getEmitterFadeAlpha();
+    const local = OdysseyEmitter3D._v3A;
+    const up = OdysseyEmitter3D._v3B.set(0, 0, 1);
 
     for(let i = 0; i < count; i++){
       const alive = this.props.getZ(i) === 1;
       if(!alive){
-        // Hide dead particles by zeroing scale
         mat.makeScale(0, 0, 0);
         this._chunkMesh.setMatrixAt(i, mat);
+        if(this._chunkColors){
+          this._chunkColors.setXYZ(i, 0, 0, 0);
+        }
         continue;
       }
 
       const age = this.props.getX(i);
       const maxAge = this.props.getY(i) || 1;
-      const positionInTime = maxAge > 0 ? age / maxAge : 0;
+      const positionInTime = maxAge > 0 ? Math.min(1, Math.max(0, age / maxAge)) : 0;
 
-      // Interpolate scale over lifetime
+      // Size lifecycle (same mid-split as RenderStandard)
       const t = positionInTime * 2;
       let scaleVal: number;
       if(t <= 1){
@@ -1913,22 +3689,68 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         scaleVal = this.sizes[1] + (this.sizes[2] - this.sizes[1]) * (t - 1);
       }
       if(scaleVal <= 0) scaleVal = 0.001;
+      scaleVal *= parentScale;
 
-      const px = this.offsets.getX(i);
-      const py = this.offsets.getY(i);
-      const pz = this.offsets.getZ(i);
-      const rot = this.angle * age;
+      // Color lifecycle
+      if(t <= 1){
+        col.copy(this.colorStart).lerp(this.colorMid, t);
+      }else{
+        col.copy(this.colorMid).lerp(this.colorEnd, t - 1);
+      }
+      // Alpha baked into color intensity × fade (no per-instance opacity on InstancedMesh)
+      const a = fade;
+      if(this._chunkColors){
+        this._chunkColors.setXYZ(i, col.r * a, col.g * a, col.b * a);
+      }
 
-      mat.makeRotationZ(rot);
-      mat.scale(OdysseyEmitter3D._v3A.set(scaleVal, scaleVal, scaleVal));
-      mat.setPosition(px, py, pz);
+      // World offset → emitter local
+      local.set(this.offsets.getX(i), this.offsets.getY(i), this.offsets.getZ(i));
+      this.worldToLocal(local);
 
+      if(this.props.getW(i) === 1){
+        // Splat stop: velocity.xyz holds surface normal (applyBounceHitCheck)
+        OdysseyEmitter3D._v3C.set(
+          this.velocities.getX(i),
+          this.velocities.getY(i),
+          this.velocities.getZ(i)
+        );
+        if(OdysseyEmitter3D._v3C.lengthSq() > 1e-8){
+          OdysseyEmitter3D._v3C.normalize();
+          quat.setFromUnitVectors(up, OdysseyEmitter3D._v3C);
+        }else{
+          quat.identity();
+        }
+      }else{
+        // particleRot × age about local Z (retail particle+0x14)
+        quat.setFromAxisAngle(up, (this.angle || 0) * age);
+      }
+
+      scl.set(scaleVal, scaleVal, scaleVal);
+      mat.compose(local, quat, scl);
       this._chunkMesh.setMatrixAt(i, mat);
-      visibleCount++;
     }
 
     this._chunkMesh.count = count;
     this._chunkMesh.instanceMatrix.needsUpdate = true;
+    if(this._chunkColors){
+      this._chunkColors.needsUpdate = true;
+    }
+  }
+
+  /** Parent OdysseyModel3D.scale (Explosion birth passes gob.scale into initialize). */
+  private getParentGobScale(): number {
+    let obj: THREE.Object3D | null = this.parent;
+    while(obj){
+      if((obj as any).type === 'OdysseyModel'){
+        const s = (obj as any).scale;
+        if(s && typeof s.x === 'number'){
+          return (Math.abs(s.x) + Math.abs(s.y) + Math.abs(s.z)) / 3 || 1;
+        }
+        return 1;
+      }
+      obj = obj.parent;
+    }
+    return 1;
   }
 
 }

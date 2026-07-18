@@ -9,6 +9,11 @@ import { SpellCastInstance } from "@/combat/SpellCastInstance";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums";
+import { GFFStruct } from "@/resource/GFFStruct";
+import { GFFField } from "@/resource/GFFField";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { GameState } from "@/GameState";
 
 export class CombatRoundAction {
   owner: ModuleObject;
@@ -23,7 +28,11 @@ export class CombatRoundAction {
   actionType: CombatActionType = CombatActionType.INVALID;
   target: ModuleObject;
   retargettable: number = 0;
-  inventorySlot: ModuleObject;
+  /**
+   * Equipment slot for ITEM_EQUIP (retail InventorySlot dword).
+   * ModuleCreatureArmorSlot / INVENTORY_SLOT_* — not an object id.
+   */
+  inventorySlot: number = 0;
   targetRepository: ModuleObject;
 
   isUserAction: boolean = false; //Was this action created by the player
@@ -158,4 +167,60 @@ export class CombatRoundAction {
     this.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(animation);
   }
 
+  /**
+   * Retail CSWSCombatRoundAction::SaveData @ 004d1dd0 (list element type 0xDAEA)
+   */
+  toStruct(structIdx: number = 0xDAEA): GFFStruct {
+    const struct = new GFFStruct(structIdx);
+    struct.addField(new GFFField(GFFDataType.INT, 'ActionTimer')).setValue(this.actionTimer || 0);
+    struct.addField(new GFFField(GFFDataType.WORD, 'Animation')).setValue(this.animation || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'AnimationTime')).setValue(this.animationTime || 0);
+    struct.addField(new GFFField(GFFDataType.INT, 'NumAttacks')).setValue(this.numAttacks || 0);
+    struct.addField(new GFFField(GFFDataType.BYTE, 'ActionType')).setValue(this.actionType || 0);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'Target')).setValue(
+      this.target?.id ?? ModuleObjectConstant.OBJECT_INVALID
+    );
+    struct.addField(new GFFField(GFFDataType.BYTE, 'Retargettable')).setValue(this.retargettable || 0);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'InventorySlot')).setValue(
+      this.inventorySlot || 0
+    );
+    struct.addField(new GFFField(GFFDataType.DWORD, 'TargetRepository')).setValue(
+      this.targetRepository?.id ?? ModuleObjectConstant.OBJECT_INVALID
+    );
+    return struct;
+  }
+
+  /**
+   * Retail CSWSCombatRoundAction::LoadData @ 004d1e90
+   */
+  fromStruct(struct: GFFStruct, owner?: ModuleObject){
+    if(!struct) return;
+    if(owner) this.owner = owner;
+    const get = (label: string, fallback: number = 0) =>
+      struct.hasField(label) ? struct.getFieldByLabel(label).getValue() : fallback;
+
+    this.actionTimer = get('ActionTimer');
+    this.animation = get('Animation');
+    this.animationTime = get('AnimationTime');
+    this.numAttacks = get('NumAttacks');
+    this.actionType = get('ActionType', CombatActionType.INVALID);
+    this.retargettable = get('Retargettable');
+
+    const targetId = get('Target', ModuleObjectConstant.OBJECT_INVALID);
+    const invSlot = get('InventorySlot', 0);
+    const repoId = get('TargetRepository', ModuleObjectConstant.OBJECT_INVALID);
+    this.target = resolveObjectId(targetId);
+    this.inventorySlot = invSlot;
+    this.targetRepository = resolveObjectId(repoId);
+  }
+
+}
+
+function resolveObjectId(id: number): ModuleObject | undefined {
+  if(!id || id === ModuleObjectConstant.OBJECT_INVALID) return undefined;
+  try{
+    return GameState.ModuleObjectManager?.GetObjectById?.(id);
+  }catch{
+    return undefined;
+  }
 }

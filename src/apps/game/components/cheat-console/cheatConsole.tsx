@@ -42,6 +42,8 @@ export const CheatConsole = () => {
     }
   ];
 
+  const pcDamageScalePresets = [1, 0.5, 0.25, 0.1, 0];
+
   const onConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {  
     setConsoleInput(e.target.value);
   }
@@ -78,7 +80,14 @@ export const CheatConsole = () => {
     setShowDebugMenu(!showDebugMenu);
   }
 
+  const onSetPcDamageScale = (value: number) => {
+    const next = Number.isFinite(value) ? Math.max(0, value) : 1;
+    KotOR.GameState.DEBUG_PC_DAMAGE_SCALE = next;
+    setDebugTick(debugTick + 1);
+  }
+
   const formatDebugLabel = (label: string) => label.replace(/_/g, ' ');
+  const pcDamageScale = KotOR.GameState.DEBUG_PC_DAMAGE_SCALE;
 
   return (
     <div className={`console on ${gameKey}`}>
@@ -108,6 +117,35 @@ export const CheatConsole = () => {
                   </div>
                 </div>
               ))}
+              <div className="console-submenu-group">
+                <div className="console-submenu-title">Combat</div>
+                <div className="console-submenu-row">
+                  <label className="console-submenu-label" htmlFor="pc-damage-scale">
+                    PC Damage Scale
+                  </label>
+                  <input
+                    id="pc-damage-scale"
+                    className="console-number-input"
+                    type="number"
+                    min={0}
+                    max={10}
+                    step={0.05}
+                    value={pcDamageScale}
+                    onChange={(e) => onSetPcDamageScale(parseFloat(e.target.value))}
+                  />
+                </div>
+                <div className="console-submenu-buttons">
+                  {pcDamageScalePresets.map((preset) => (
+                    <button
+                      key={preset}
+                      className={`console-btn console-btn-small ${pcDamageScale === preset ? 'on' : 'off'}`}
+                      onClick={() => onSetPcDamageScale(preset)}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>

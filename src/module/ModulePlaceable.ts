@@ -34,6 +34,7 @@ import { ModulePlaceableObjectSound } from "@/enums/module/ModulePlaceableObject
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { SWBodyBag } from "@/engine/rules/SWBodyBag";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import * as THREE from "three";
 
 interface AnimStateInfo {
@@ -92,6 +93,13 @@ export class ModulePlaceable extends ModuleObject {
   isBodyBag: boolean = false;
   dieWhenEmpty: boolean = false;
   isCorpse: boolean = false;
+  /**
+   * Retail IsBodyBagVisible — ordinary bags start hidden under a KeepCorpse shell.
+   * Persisted as 1 on save (shells are never serialized); runtime may hide.
+   */
+  isBodyBagVisible: boolean = true;
+  /** Creature/object id that spawned this body bag (retail field65). */
+  sourceCreatureId: number = 0;
   lightState: any;
   props: any;
 
@@ -323,7 +331,30 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   isUseable(){
+    // Hidden bags are looted via the retained corpse shell, not direct select
+    if(this.isBodyBag && !this.isBodyBagVisible) return false;
     return this.useable;
+  }
+
+  setBodyBagVisible(visible: boolean){
+    this.isBodyBagVisible = !!visible;
+    if(this.container){
+      this.container.visible = this.isBodyBagVisible;
+    }
+    if(this.model){
+      this.model.visible = this.isBodyBagVisible;
+    }
+  }
+
+  /**
+   * Retail CSWCPlaceable::GetReticlePoint @ 00682ff0 —
+   * corpses use rootdummy; others fall back to lookathook.
+   */
+  getReticleNode(){
+    if(this.isCorpse && this.model?.rootdummy){
+      return this.model.rootdummy;
+    }
+    return super.getReticleNode();
   }
 
   isOpen(){
@@ -423,6 +454,9 @@ export class ModulePlaceable extends ModuleObject {
       instance.lastDisturbed = GameState.PartyManager.party[0];
       instance.run(this);
     }
+    if(this.isCorpse && !this.inventory.length){
+      this.useable = false;
+    }
     if(this.dieWhenEmpty && !this.inventory.length){
       this.destroy();
     }
@@ -450,7 +484,8 @@ export class ModulePlaceable extends ModuleObject {
         this.playObjectSound(ModulePlaceableObjectSound.OPENED);
       break;
       case ModulePlaceableEvent.OPEN_END:
-        if(this.hasInventory){
+        // Retail: has_inventory = !corpse, but corpse bags with items remain useable
+        if(this.hasInventory || (this.isCorpse && this.inventory.length > 0)){
           GameState.MenuManager.MenuContainer.AttachContainer(this);
           GameState.MenuManager.MenuContainer.open();
         }
@@ -508,7 +543,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   lock(object: ModuleObject){
-    if(!this.locked){ return; }
+    if(this.locked){ return; }
     this.locked = true;
     
     const instance = this.scripts[ModuleObjectScript.PlaceableOnLock];
@@ -670,9 +705,11 @@ export class ModulePlaceable extends ModuleObject {
     let hasItem = this.getItemByTag(item.getTag());
     if(hasItem){
       hasItem.setStackSize(hasItem.getStackSize() + 1);
+      hasItem.setPossessor(this);
       return hasItem;
     }else{
       this.inventory.push(item);
+      item.setPossessor(this);
       return item;
     }
   }
@@ -688,7 +725,7 @@ export class ModulePlaceable extends ModuleObject {
 
       return walkmesh;
     }catch(e){
-      console.error(e);
+      // Many placeables (incl. body bags) have no .pwk — empty mesh is fine
       const walkmesh = new OdysseyWalkMesh();
       walkmesh.name = resRef;
       walkmesh.moduleObject = this;
@@ -791,6 +828,9 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.hasField('IsBodyBag'))
       this.isBodyBag = !!this.template.RootNode.getFieldByLabel('IsBodyBag').getValue();
+
+    if(this.template.RootNode.hasField('IsBodyBagVisible'))
+      this.isBodyBagVisible = !!this.template.RootNode.getFieldByLabel('IsBodyBagVisible').getValue();
 
     if(this.template.RootNode.hasField('DieWhenEmpty'))
       this.dieWhenEmpty = !!this.template.RootNode.getFieldByLabel('DieWhenEmpty').getValue();
@@ -919,11 +959,27 @@ export class ModulePlaceable extends ModuleObject {
       }
     }
     
+    this.loadActionList();
+
     this.initialized = true;
 
   }
 
   destroy(): void {
+    // Retail SpawnBodyBag accepts placeables with items when destroyable
+    if(!this.isBodyBag && this.isDestroyable){
+      this.spawnBodyBag();
+    }
+    // Unlink KeepCorpse shell → bag (does not evict the shell from the cache)
+    if(this.isBodyBag && this.sourceCreatureId){
+      const source = GameState.ModuleObjectManager.GetObjectById(this.sourceCreatureId);
+      if(BitWise.InstanceOfObject(source, ModuleObjectType.ModuleCreature)){
+        const creature = source as ModuleCreature;
+        if(creature.bodyBagObjectId === this.id){
+          creature.bodyBagObjectId = 0;
+        }
+      }
+    }
     super.destroy();
     if(this.area) this.area.detachObject(this);
 
@@ -941,6 +997,16 @@ export class ModulePlaceable extends ModuleObject {
     }catch(e){}
   }
 
+  /**
+   * Spawn a body bag from this placeable's inventory (retail placeable SpawnBodyBag).
+   */
+  spawnBodyBag(): number {
+    if(this.isBodyBag) return ModuleObjectConstant.OBJECT_INVALID;
+    if(!this.isDestroyable) return ModuleObjectConstant.OBJECT_INVALID;
+    if(!this.inventory.length) return ModuleObjectConstant.OBJECT_INVALID;
+    return ModulePlaceable.spawnBodyBagFrom(this, this.bodyBag || 0);
+  }
+
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTP ';
@@ -956,7 +1022,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).setValue(this.currentHP);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue('');
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DieWhenEmpty') ).setValue( this.dieWhenEmpty || this.isBodyBag ? 1 : 0 );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DieWhenEmpty') ).setValue( this.dieWhenEmpty ? 1 : 0 );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
 
     //Effects
@@ -972,6 +1038,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Hardness') ).setValue(this.hardness);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'HasInventory') ).setValue(this.hasInventory ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBag') ).setValue(this.isBodyBag ? 1 : 0);
+    // Shells are never saved — persist visible so reload shows the bag
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBagVisible') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsCorpse') ).setValue(this.isCorpse ? 1 : 0);
 
@@ -1162,6 +1229,7 @@ export class ModulePlaceable extends ModuleObject {
     placeable.currentHP = 15;
     placeable.hardness = 5;
     placeable.fort = 16;
+    // Retail: has_inventory = !is_corpse; plot = !is_corpse; dieWhenEmpty for non-corpse bags
     placeable.hasInventory = !bodyBag.corpse;
     placeable.isCorpse = !!bodyBag.corpse;
     placeable.min1HP = true;
@@ -1176,6 +1244,76 @@ export class ModulePlaceable extends ModuleObject {
       placeable.placeableAppearance = GameState.AppearanceManager.GetPlaceableAppearanceById(placeable.appearance);
     }catch(e){}
     return placeable;
+  }
+
+  /**
+   * Create a body-bag placeable from a creature or placeable, move droppable loot,
+   * and schedule EventSpawnBodyBag (~500ms) to place it in the area.
+   * @param placeableAppearance Optional retail GetBodyBagAppearance override.
+   */
+  static spawnBodyBagFrom(
+    source: ModuleObject,
+    bodyBagRowId: number = 0,
+    rule?: SWBodyBag,
+    placeableAppearance?: number
+  ): number {
+    if(!source || !GameState.module) return ModuleObjectConstant.OBJECT_INVALID;
+    const area = source.area || GameState.module.area;
+    if(!area) return ModuleObjectConstant.OBJECT_INVALID;
+
+    let bagRule = rule || GameState.SWRuleSet?.bodyBags?.[bodyBagRowId];
+    if(!bagRule){
+      bagRule = new SWBodyBag();
+      bagRule.id = bodyBagRowId;
+      bagRule.appearance = 3;
+      bagRule.name = 38151;
+      bagRule.corpse = 0;
+    }
+    // Retail GetBodyBagAppearance: **** / missing → backpack placeable (3)
+    const appearanceId = (placeableAppearance != null && placeableAppearance > 0)
+      ? placeableAppearance
+      : (bagRule.appearance > 0 ? bagRule.appearance : 3);
+    if(bagRule.appearance !== appearanceId){
+      bagRule = Object.assign(new SWBodyBag(), bagRule, { appearance: appearanceId });
+    }
+
+    const placeable = ModulePlaceable.FromBodyBag(bagRule, bodyBagRowId);
+    placeable.position.copy(source.position);
+    placeable.rotation.copy(source.rotation);
+    placeable.bearing = source.getFacing?.() ?? source.rotation.z;
+    if(BitWise.InstanceOfObject(source, ModuleObjectType.ModuleCreature)){
+      placeable.sourceCreatureId = source.id;
+    }
+    // Visible by default; KeepCorpse shells hide ordinary bags after spawn
+    placeable.isBodyBagVisible = true;
+    GameState.ModuleObjectManager.AddObjectById(placeable);
+    placeable.acquireItemsFromObject(source, true);
+
+    // Retail: corpse bags with no items clear useable; keep has_inventory = !corpse
+    if(bagRule.corpse){
+      placeable.useable = placeable.inventory.length > 0;
+    }
+
+    if(!placeable.inventory.length && !bagRule.corpse){
+      GameState.ModuleObjectManager.RemoveObject(placeable);
+      return ModuleObjectConstant.OBJECT_INVALID;
+    }
+
+    // Attach to area immediately so save/reload always has the authoritative bag
+    placeable.area = area;
+    area.attachObject(placeable);
+
+    const future = GameState.module.timeManager.getFutureTimeFromSeconds(0.5);
+    const event = new GameState.GameEventFactory.EventSpawnBodyBag();
+    event.bodyBagId = placeable.id;
+    event.position.copy(placeable.position);
+    event.setCaller(source);
+    event.setObject(area as any);
+    event.setDay(future.pauseDay);
+    event.setTime(future.pauseTime);
+    GameState.module.addEvent(event);
+
+    return placeable.id;
   }
 
   /**
@@ -1230,20 +1368,63 @@ export class ModulePlaceable extends ModuleObject {
 
   /**
    * Attach this placeable into the given area and load its model / walkmesh.
+   * Matches ModuleArea.loadPlaceables — add `container` (not bare model) so
+   * the model stays parented with the correct world transform.
+   */
+  /**
+   * Attach/load model into the area. Idempotent — safe after immediate attachObject
+   * and on EventSpawnBodyBag / reload.
    */
   async placeInArea(area: ModuleArea){
-    if(!area) return;
+    if(!area || this.destroyed) return;
     this.area = area;
     area.attachObject(this);
     GameState.ModuleObjectManager.AddObjectById(this);
 
+    // After reload there is never a KeepCorpse shell — show the bag
+    if(this.isBodyBag && !this.isBodyBagVisible){
+      const hasShell = area.corpseCache?.hasSourceCreatureId(this.sourceCreatureId);
+      if(!hasShell){
+        this.isBodyBagVisible = true;
+      }
+    }
+
+    // Ensure appearance resolved (bodybag **** → backpack fallback already applied)
+    if(!this.placeableAppearance){
+      try{
+        this.placeableAppearance = GameState.AppearanceManager.GetPlaceableAppearanceById(
+          this.appearance || 3
+        );
+      }catch(e){
+        console.error('Body bag appearance resolve failed', this.appearance, e);
+        return;
+      }
+    }
+    if(!this.placeableAppearance?.modelname){
+      console.error('Body bag missing placeable appearance', this.appearance);
+      return;
+    }
+
+    // Already loaded into the scene
+    if(this.model && this.container.parent === GameState.group.placeables){
+      this.setBodyBagVisible(this.isBodyBagVisible);
+      return;
+    }
+
     const model = await this.loadModel();
-    if(!model) return;
+    if(!model || this.destroyed){
+      if(!model) console.error('Body bag loadModel failed', this.appearance, this.tag);
+      return;
+    }
 
     model.userData.moduleObject = this;
     model.hasCollision = true;
-    model.name = this.getTag();
-    GameState.group.placeables.add(model);
+    model.userData.tag = this.getTag();
+    // Retail/area load path: container carries world transform (position === container.position)
+    if(this.container.parent !== GameState.group.placeables){
+      GameState.group.placeables.add(this.container);
+    }
+    this.setBodyBagVisible(this.isBodyBagVisible);
 
     try{
       const pwk = await this.loadWalkmesh(model.name);
@@ -1255,8 +1436,8 @@ export class ModulePlaceable extends ModuleObject {
     }catch(e){}
 
     this.getCurrentRoom();
+    this.computeBoundingBox?.();
     this.onSpawn(false);
   }
-
 }
 

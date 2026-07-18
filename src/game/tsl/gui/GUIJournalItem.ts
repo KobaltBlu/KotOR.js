@@ -1,13 +1,7 @@
-import type { SaveGame } from "@/engine/SaveGame";
-import { JournalCategory } from "@/engine/JournalCategory";
 import { JournalEntry } from "@/engine/JournalEntry";
 import { GUIProtoItem } from "@/gui";
 import type { GameMenu, GUIControl } from "@/gui";
 import { GFFStruct } from "@/resource/GFFStruct";
-
-const toPaddedDigit = (num: number, len = 2) => {
-  return new String(num).padStart(len, '0');
-}
 
 /**
  * GUIJournalItem class.
@@ -29,7 +23,9 @@ export class GUIJournalItem extends GUIProtoItem {
 
   createControl(){
     try{
-      this.setText(this.node.category.name.getTLKValue());
+      const name = this.node?.getName?.() || this.node?.category?.name?.getTLKValue?.() || '';
+      const date = this.node?.getReceivedDateLabel?.() || '';
+      this.setText(date ? `${name}  (${date})` : name);
       super.createControl();
     }catch(e){
       console.error(e);

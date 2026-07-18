@@ -25,12 +25,14 @@ export class VelocityController extends OdysseyController {
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.velocity = data.value;
+      manager.modelNode.emitter.attributeChanged('velocity');
     }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.velocity = OdysseyController.lerp1(last, next, fl);
+      manager.modelNode.emitter.attributeChanged('velocity');
     }
   }
 

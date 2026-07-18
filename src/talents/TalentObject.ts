@@ -37,7 +37,6 @@ export class TalentObject {
   useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
     this.oCaster = oCaster;
     this.oTarget = oTarget;
-    //console.log('useTalentOnObject', oCaster, this, oTarget);
   }
 
   talentCombatRoundEnd(oTarget: ModuleObject, oCaster: ModuleObject){

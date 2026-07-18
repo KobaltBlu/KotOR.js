@@ -20,6 +20,17 @@ export interface ICameraState {
   cameraAnimation: number;
   currentCameraAnimation: OdysseyModelAnimation;
   currentCameraAnimationElapsed: number;
+  /** Cached GetSideUnobstructed result (1 or 2); cleared on each entry shot. */
+  dialogCamSide?: number;
+  /** CamHeightOffset from active entry/reply (SetShot field3). */
+  camHeightOffset?: number;
+  /** TarHeightOffset from active entry/reply (SetShot field4). */
+  tarHeightOffset?: number;
+  /**
+   * Close-up pull from dialoganimations CU_PB_Range (UpdateShotCamera @ 006306e0
+   * field137_0xbb8 / SetShot field5). Cleared when shot type ≠ 1.
+   */
+  closeUpExtra?: number;
   listener: ICameraParticipant;
   speaker: ICameraParticipant;
 }

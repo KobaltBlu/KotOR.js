@@ -7,6 +7,7 @@ import type { ModuleRoom } from "@/module/ModuleRoom";
 import { AudioEmitter } from "@/audio/AudioEmitter";
 import { CreatureClass } from "@/combat/CreatureClass";
 import { EffectRacialType } from "@/effects";
+import { animForSetState, getActiveSetStateType } from "@/effects/set-state";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
@@ -21,23 +22,32 @@ import { TalentFeat } from "@/talents/TalentFeat";
 import { TalentObject } from "@/talents/TalentObject";
 import { TalentSkill } from "@/talents/TalentSkill";
 import { TalentSpell } from "@/talents/TalentSpell";
+import { getCanUseSkill as getCanUseSkillRetail } from "@/talents/skill-usability";
+import { getSkillRankRetail } from "@/talents/skill-rank";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
 import { OdysseyModel, OdysseyModelAnimation } from "@/odyssey";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { LIPObject } from "@/resource/LIPObject";
 import { Utility } from "@/utility/Utility";
 import { EngineMode } from "@/enums/engine/EngineMode";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { SSFType } from "@/enums/resource/SSFType";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import EngineLocation from "@/engine/EngineLocation";
+import { FollowerCamera } from "@/engine/FollowerCamera";
 import { AttackResult } from "@/enums/combat/AttackResult";
 // import { ICombatAction } from "@/interface/combat/ICombatAction";
 import { DLGObject } from "@/resource/DLGObject";
 import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
 import { SWBodyBag } from "@/engine/rules/SWBodyBag";
+import type { InterAreaWaypoint } from "@/engine/pathfinding/inter-area-path";
+import { plotPathAroundCreature } from "@/engine/pathfinding/plot-path-around-creature";
+import { bumpFriends } from "@/engine/pathfinding/bump-friends";
 import { ModulePlaceable } from "@/module/ModulePlaceable";
+import type { ModuleEncounter } from "@/module/ModuleEncounter";
+import { BaseItemType } from "@/enums/combat/BaseItemType";
 
 import { ICreatureAnimationState } from "@/interface/animation/ICreatureAnimationState";
 import { IOverlayAnimationState } from "@/interface/animation/IOverlayAnimationState";
@@ -54,7 +64,13 @@ import { PerceptionType } from "@/enums/engine/PerceptionType";
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { CombatActionType } from "@/enums/combat/CombatActionType";
+import {
+  CombatMode,
+  COMBAT_MODE_ACTIVITY_BIT,
+  COMBAT_MODE_ACTIVITY_MASK,
+} from "@/enums/combat/CombatMode";
 import { CombatRoundAction } from "@/combat";
+import { CombatInformation } from "@/combat/CombatInformation";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import type { Action } from "@/actions/Action";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
@@ -63,6 +79,43 @@ import { TextSprite3D } from "@/engine/TextSprite3D";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { ExperienceType } from "@/enums/engine/ExperienceType";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { MineSkillResult, resolvePassiveMineDetect } from "@/actions/mine-skill";
+import { doStealthDetection, isCreatureStealthedOrInvisible, isInvisibleToObserver } from "@/combat/stealth-detection";
+import { PerceptionMask } from "@/enums/engine/PerceptionMask";
+import {
+  COMBAT_STATE_DURATION_MS,
+  ExcitedDurationRow,
+  getExcitedDurationMs,
+} from "@/combat/combat-engagement";
+import { createNewAttackActions } from "@/combat/create-new-attack-actions";
+import { hasTargetBeenDetected, getNearestEnemy } from "@/combat/nearest-enemy";
+import {
+  isChoreographedMeleeWeapon,
+  resolveChoreographedState,
+} from "@/combat/combat-dueling";
+import { getAbilityEffectBonus, getAttackEffectBonus } from "@/effects/effect-bonuses";
+import { Dice } from "@/utility/Dice";
+import {
+  getCreatureSpeedRates,
+  coalesceDriveAnimRun,
+  coalesceDriveAnimWalk,
+  coalesceDriveMaxSpeed,
+} from "@/engine/pathfinding/movement-rate";
+import { resetWalkSpeedFactor } from "@/engine/pathfinding/walk-update-location";
+import {
+  cameraRelativeDesired,
+  createPlayerCamRelativeState,
+  driveAnimPlaybackRate,
+  isDriveAnimRunning,
+  playerApplyTurn,
+  playerCombatFaceStep,
+  playerIntegrateRk4,
+  playerKillReleasedAxisVelocity,
+  playerShouldApplyTurn,
+  resolvePlayerDriveLimits,
+  type PlayerCamRelativeState,
+} from "@/controls/player-cam-relative-control";
+import { ClientCameraMode } from "@/enums/engine/ClientCameraMode";
 
 /**
 * ModuleCreature class.
@@ -85,9 +138,91 @@ export class ModuleCreature extends ModuleObject {
   aiStyle: number;
   isCommandable: boolean;
   bodyBag: number;
+  /** Object id of the body-bag placeable spawned from this corpse (retail client link). */
+  bodyBagObjectId: number = 0;
   bodyVariation: number;
   /** Carried credits moved into body bags as g_i_credits001. */
   gold: number;
+  /**
+   * Retail SetKeepCorpse — transient client shell after event 0xb.
+   * Runtime-only; never serialized.
+   */
+  isRetainedCorpse: boolean = false;
+  /**
+   * True once retail destroy event 0xb has run (bag spawned / authority removed).
+   * Excludes the creature from area save even while a fade visual remains.
+   */
+  serverDestroyed: boolean = false;
+  /** Missing FadeDelayOnDeath → KeepCorpse path at event 0xb. */
+  keepCorpseOnDestroy: boolean = false;
+  /** Eviction fade timer for retained shells (seconds remaining). */
+  retainedCorpseFadeRemaining: number = -1;
+  /** Party stealth mode (retail CSWCCreature::stealth_mode). */
+  stealthMode: boolean = false;
+  /**
+   * Search / detect mode (retail detect_mode).
+   * KotOR defaults ON (constructor + Load* force SetActivity(2,1)); no player UI toggle.
+   * Affects passive mine range/bonus and contested Awareness vs Stealth.
+   */
+  detectMode: boolean = true;
+  /** Retail field307_0x8c8 — Silence / Psychic Static */
+  silenced: boolean = false;
+  /** Deafness flag (perception / ASF parent) */
+  deaf: boolean = false;
+  /** Max ArcaneSpellFailure percent from effects */
+  arcaneSpellFailure: number = 0;
+  /** Retail CCombatInformation — creature CombatInfo GFF (0xCAAA). */
+  combatInformation: CombatInformation = new CombatInformation();
+  /** Retail body_fuel_ @ +0xa9c — Body Fuel active */
+  bodyFuel: boolean = false;
+  /** Retail field396_0xa04 — Lightsaber Throw in progress */
+  throwingLightsaber: boolean = false;
+  /** Retail field437_0xab4 — saber throw projectile rate */
+  lightsaberThrowRate: number = 37;
+  /**
+   * Inter-area waypoint list (path_find_info field37/36).
+   * Populated by beginInterAreaPath; advanced by CheckInterArea.
+   */
+  interAreaWaypoints: InterAreaWaypoint[] = [];
+  /**
+   * Retail CPathfindInformation field40_0xb8 / field39_0xb4 —
+   * transition object ids excluded after PlotPathInArea failure (failed portals).
+   */
+  interAreaExcludedIds: number[] = [];
+  /** Remembered dest for recompute after portal exclusion. */
+  interAreaDestAreaId: number = -1;
+  interAreaPreferModule: string = '';
+  /**
+   * When true (camera mode DRIVE / explicit), WASD routes through AddDriveAction.
+   */
+  driveControlActive: boolean = false;
+  /**
+   * Retail activity_ bitfield (SetActivity @ 004f00a0).
+   * Combat modes use 0x100–0x2000; stealth=1, detect=2, dialog=4.
+   * Default includes detect (2) — matches CSWSCreature ctor.
+   */
+  activity: number = 0x2;
+  /** Bits that ActivityManager / SetActivity will not auto-clear. */
+  activityLocked: number = 0;
+  /** Retail field49_0x4d2 — SetCombatMode @ 0050ee80. */
+  combatMode: CombatMode = CombatMode.NONE;
+  /** Deferred combat mode while round_started (retail field50_0x4d3). */
+  pendingCombatMode: number = -1;
+  isHasted: boolean = false;
+  isSlowed: boolean = false;
+  limitMovementSpeed: boolean = false;
+  /**
+   * Extra locomotion multiplier (FollowLeader rate bands, path approach ease).
+   * Applied after effect movementSpeed; not clamped to GetWalkRate bounds.
+   */
+  locomotionScale: number = 1;
+  /**
+   * When set, forceVector uses this XY direction instead of facing
+   * (walk-back toward a goal behind the creature).
+   */
+  moveDirOverride: { x: number; y: number } | undefined;
+  /** Retail creature+0x8EC vision/detect bits. */
+  visionFlags: number = 0;
 
   cha: number;
   con: number;
@@ -100,9 +235,18 @@ export class ModuleCreature extends ModuleObject {
   willbonus: number;
 
   challengeRating: number;
+  /**
+   * Retail field407_0xa24 — encounter game-object id when spawned from an encounter.
+   * OBJECT_INVALID when not an encounter creature.
+   */
+  encounterObjectId: number = ModuleObjectConstant.OBJECT_INVALID;
+  /** Retail field408_0xa28 — already unlinked from encounter active count. */
+  encounterUnlinked: boolean = false;
   classes: CreatureClass[];
   comment: string;
   currentForce: number;
+  /** Temporary force points spent before currentForce (retail CreatureStats temp FP). */
+  temporaryForce: number;
   /** Active Jedi Form spell id (TSL); 0 = none. */
   currentForm: number;
   currentHitPoints: number;
@@ -136,6 +280,15 @@ export class ModuleCreature extends ModuleObject {
   textureVar: number;
   walkRate: number;
   blockingTimer: number;
+  /**
+   * Retail WalkUpdateLocation field37_0xb8 — previous frame speed factor.
+   */
+  walkSpeedFactor: number;
+  /**
+   * Camera-relative client controller state (CSWPlayerControlCamRelative).
+   * Used for direct WASD / stick; ActionDrive remains the discrete server path.
+   */
+  playerControl: PlayerCamRelativeState;
   groundTilt: THREE.Vector3;
   up: THREE.Vector3;
   declare lipObject: LIPObject;
@@ -152,6 +305,16 @@ export class ModuleCreature extends ModuleObject {
   joiningXP: any;
   skillPoints: any;
   npcId: number;
+  /**
+   * TSL assigned puppet slot id (retail CSWCreature+0x11f8).
+   * Set by AssignPUP; -1 when none.
+   */
+  assignedPuppetId: number = -1;
+  /**
+   * TSL SetIsPuppet flag (retail CSWCreature+0x11fc).
+   * True after AddPartyPuppet; GetIsPuppet reads this.
+   */
+  isPuppet: boolean = false;
   // appearance: any;
 
   animationState: ICreatureAnimationState;
@@ -176,11 +339,25 @@ export class ModuleCreature extends ModuleObject {
   };
   regenTimer: number;
   regenTimerMax: number;
+  /** Battle-music timer (ms). Retail field31_0x384 / ExcitedDuration.2da. */
   excitedDuration: number;
+  /** Combat engagement timer (ms). Retail field58_0x4e4; SetCombatState refreshes to 8000. */
+  combatStateTimer: number;
+  /** Retail ResolveInitiative field56 — non-party AI combat refresh pending. */
+  combatAiRefreshPending: boolean = false;
+  /** Retail field_0xac0 — 1=Damage, 2=SpellCast; Damage sticks over SpellCast. */
+  combatStateReason: number;
+  /**
+   * Retail InstantUseItem lockout (field436_0xab0). While > 0 during hostile combat,
+   * inventory Use Item shows TLK 42409.
+   */
+  instantItemCooldownMs: number;
   turning: number;
   deathAnimationPlayed: boolean;
   deathStarted: boolean;
   getUpAnimationPlayed: boolean;
+  /** True once scheduleDestroyAsCorpse applied appearance DestroyObjectDelay / FadeDelayOnDeath. */
+  corpseDestroyScheduled: boolean;
   animSpeed: number;
   selectedNPC: number;
   creatureAppearance: SWCreatureAppearance;
@@ -218,6 +395,7 @@ export class ModuleCreature extends ModuleObject {
     this.head = null;
     this.deathAnimationPlayed = false;
     this.aiStyle = 0;
+    this.corpseDestroyScheduled = false;
 
     this.isCommandable = true;
 
@@ -256,6 +434,9 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.lastAttackResult = undefined;
 
     this.excitedDuration = 0;
+    this.combatStateTimer = 0;
+    this.combatStateReason = 0;
+    this.instantItemCooldownMs = 0;
 
     this.cha = 0;
     this.con = 0;
@@ -274,9 +455,12 @@ export class ModuleCreature extends ModuleObject {
     this.bodyVariation = 0;
     this.gold = 0;
     this.challengeRating = 0;
+    this.encounterObjectId = ModuleObjectConstant.OBJECT_INVALID;
+    this.encounterUnlinked = false;
     this.classes = [];
     this.comment = '';
     this.currentForce = 0;
+    this.temporaryForce = 0;
     this.currentForm = 0;
     this.currentHitPoints = 0; //The Creature's current hit points, not counting any bonuses. This value may be higher or lower than the creature's maximum hit points.
     this.regenTimer = 0;
@@ -367,7 +551,9 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.combatActionTimer = 3; 
     this.combatData.combatState = false;
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
-    this.collisionManager.blockingTimer = 0;
+    this.blockingTimer = 0;
+    this.walkSpeedFactor = 0;
+    this.playerControl = createPlayerCamRelativeState();
 
     this.fp_push_played = false;
     this.fp_land_played = false;
@@ -380,6 +566,8 @@ export class ModuleCreature extends ModuleObject {
     this.lockDialogOrientation = false;
     this.lipObject = undefined;
     this.walk = false;
+    this.locomotionScale = 1;
+    this.moveDirOverride = undefined;
 
     this.isListening = false;
     this.listeningPatterns = {};
@@ -420,10 +608,32 @@ export class ModuleCreature extends ModuleObject {
   }
 
   update( delta = 0 ){
-    
+
+    if(this.destroyed){
+      return;
+    }
+
+    // KeepCorpse shells skip normal AI/effects — visual + eviction fade only
+    if(this.isRetainedCorpse){
+      this.updateRetainedCorpse(delta);
+      return;
+    }
+
     super.update(delta);
 
-    if(this.willDestroy || this.destroyed){
+    if(this.destroyed){
+      return;
+    }
+
+    // Converted to KeepCorpse during updateDestroy this frame
+    if(this.isRetainedCorpse){
+      this.updateRetainedCorpse(delta);
+      return;
+    }
+
+    // Retail: DestroyObjectDelay runs before remove; corpse must keep playing DIE→DEAD + model fade.
+    if(this.willDestroy){
+      this.updateCorpsePendingDestroy(delta);
       return;
     }
 
@@ -565,7 +775,12 @@ export class ModuleCreature extends ModuleObject {
       if(this.isDebilitated()){
         this.force = 0;
         this.speed = 0;
-        this.setAnimationState(ModuleCreatureAnimState.IDLE);
+        if(!this.combatData.combatState){
+          const state = getActiveSetStateType(this);
+          this.setAnimationState(
+            state > 0 ? animForSetState(state) : ModuleCreatureAnimState.PAUSE
+          );
+        }
       }
 
       //-------------------------//
@@ -585,62 +800,119 @@ export class ModuleCreature extends ModuleObject {
         this.speed = 0;
         this.animSpeed = 1;
         this.forceVector.set(0, 0, 0);
-      }
-
-      this.forceVector.z = 0;
-
-      this.speed += (this.getMovementSpeed() * 2.5) * this.force * delta;
-
-      if(this.speed > this.getMovementSpeed()){
-        this.speed = this.getMovementSpeed();
-      }
-      
-      let forceDelta = Math.max(this.force * delta, this.speed * delta);
-      let gravityDelta = -1 * delta;
-      
-      if(this.speed){
-        this.animSpeed = this.speed / this.getRunSpeed();
-      }else{
-        this.animSpeed = 1;
-      }
-        
-      if(!this.forceVector.length()){
-        this.forceVector.x = ( Math.cos(this.rotation.z + Math.PI/2) * forceDelta );
-        this.forceVector.y = ( Math.sin(this.rotation.z + Math.PI/2) * forceDelta );
-        if(this.forceVector.length()){
-          if(this.animSpeed > 0.75){
-            this.setAnimationState(ModuleCreatureAnimState.RUNNING);
-          }else{
-            this.setAnimationState(ModuleCreatureAnimState.WALKING);
-          }
+        if(this.playerControl){
+          this.playerControl.active = false;
+          this.playerControl.velX = 0;
+          this.playerControl.velY = 0;
+          this.playerControl.accelX = 0;
+          this.playerControl.accelY = 0;
+          this.playerControl.lastAnimMoveSpeed = 0;
+          this.playerControl.driveFlags = 0;
         }
-        //this.forceVector.z = gravityDelta;
-      }else{
-        this.forceVector.multiplyScalar(forceDelta);
       }
 
-      if(this.force < 1){
-        this.speed -= (this.getMovementSpeed() * 2.5) * delta;
-      }
+      const actionType = this.action?.type;
+      const serverLocomotionActive =
+        actionType === ActionType.ActionDrive ||
+        actionType === ActionType.ActionMoveToPoint ||
+        actionType === ActionType.ActionFollowLeader ||
+        actionType === ActionType.ActionForceFollowObject;
+      const playerControlMoving =
+        !!this.playerControl &&
+        Math.hypot(this.playerControl.velX, this.playerControl.velY) > 0;
+      // Direct WASD/stick overrides path actions while axes are held. Keep
+      // running the controller after release so retail drag can decelerate.
+      const usePlayerControl =
+        (!!this.playerControl?.active || playerControlMoving) &&
+        (this.controlled || this === GameState.getCurrentPlayer());
 
-      if(this.speed < 0){
-        this.speed = 0;
-      }
-
-      if(!this.forceVector.length() && ( this.animationState.index == ModuleCreatureAnimState.RUNNING || this.animationState.index == ModuleCreatureAnimState.WALKING )){
-        this.setAnimationState(ModuleCreatureAnimState.IDLE);
-        this.speed = 0;
+      if(usePlayerControl){
+        this.applyPlayerCamRelativeControl(delta);
+      }else if(serverLocomotionActive){
+        this.forceVector.set(0, 0, 0);
         this.force = 0;
+        this.updateServerLocomotionAnimationRate();
+      }else if(this.force > 0 || this.moveDirOverride){
+        // Legacy force-mover leftovers (RandomWalk etc. enqueue MoveTo now).
+        // Keep a minimal coast path for any remaining force setters.
+        this.forceVector.z = 0;
+        this.speed += (this.getMovementSpeed() * 2.5) * this.force * delta;
+        if(this.speed > this.getMovementSpeed()){
+          this.speed = this.getMovementSpeed();
+        }
+        let forceDelta = Math.max(this.force * delta, this.speed * delta);
+        if(this.speed){
+          this.animSpeed = this.speed / this.getRunSpeed();
+        }else{
+          this.animSpeed = 1;
+        }
+        if(!this.forceVector.length()){
+          if(this.moveDirOverride){
+            const ox = this.moveDirOverride.x;
+            const oy = this.moveDirOverride.y;
+            const len = Math.hypot(ox, oy);
+            if(len > 1e-8){
+              this.forceVector.x = (ox / len) * forceDelta;
+              this.forceVector.y = (oy / len) * forceDelta;
+            }
+          }else{
+            this.forceVector.x = ( Math.cos(this.rotation.z + Math.PI/2) * forceDelta );
+            this.forceVector.y = ( Math.sin(this.rotation.z + Math.PI/2) * forceDelta );
+          }
+          if(this.forceVector.length()){
+            if(this.moveDirOverride && this.isWalking()){
+              this.setAnimationState(ModuleCreatureAnimState.WALKING_BACK);
+            }else if(this.animSpeed > 0.75){
+              this.setAnimationState(ModuleCreatureAnimState.RUNNING);
+            }else{
+              this.setAnimationState(ModuleCreatureAnimState.WALKING);
+            }
+          }
+        }else{
+          this.forceVector.multiplyScalar(forceDelta);
+        }
+        if(this.force < 1){
+          this.speed -= (this.getMovementSpeed() * 2.5) * delta;
+        }
+        if(this.speed < 0){
+          this.speed = 0;
+        }
+        if(!this.forceVector.length() && ( this.animationState.index == ModuleCreatureAnimState.RUNNING || this.animationState.index == ModuleCreatureAnimState.WALKING || this.animationState.index == ModuleCreatureAnimState.WALKING_BACK )){
+          if(this.combatMode === CombatMode.COUNTERSPELL){
+            this.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
+          }else{
+            this.setAnimationState(
+              this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
+            );
+          }
+          this.speed = 0;
+          this.force = 0;
+        }
+      }else{
+        this.forceVector.set(0, 0, 0);
+        this.force = 0;
+        if(this.speed > 0){
+          this.speed = 0;
+        }
       }
 
       //-----------------------//
       // END: Move Speed Logic //
       //-----------------------//
 
-      if(this.combatData.combatState && this.animationState.index == ModuleCreatureAnimState.PAUSE){
+      // IDLE == PAUSE (10000); promote out-of-combat idle to combat ready while engaged.
+      if(this.combatMode === CombatMode.COUNTERSPELL){
+        if(
+          this.animationState.index == ModuleCreatureAnimState.PAUSE ||
+          this.animationState.index == ModuleCreatureAnimState.READY
+        ){
+          this.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
+        }
+      }else if(this.combatData.combatState && this.animationState.index == ModuleCreatureAnimState.PAUSE){
         this.setAnimationState(ModuleCreatureAnimState.READY);
       }
 
+      this.updateCombatStateTimer(delta);
       this.updateExcitedDuration(delta);
       this.updateCombat(delta);
       this.updateCasting(delta);
@@ -670,7 +942,15 @@ export class ModuleCreature extends ModuleObject {
         //END: Animation Optimization
 
         if(GameState.Mode != EngineMode.DIALOG){
-          this.model.update( this.movementSpeed * delta );
+          const locomoting =
+            this.animationState.index == ModuleCreatureAnimState.RUNNING ||
+            this.animationState.index == ModuleCreatureAnimState.WALKING ||
+            this.animationState.index == ModuleCreatureAnimState.WALKING_BACK;
+          // Walk-back reuses walk rows with reverse playback.
+          const playback =
+            (locomoting ? this.animSpeed : this.movementSpeed) *
+            (this.animationState.index == ModuleCreatureAnimState.WALKING_BACK ? -1 : 1);
+          this.model.update(playback * delta);
           if(this.lipObject instanceof LIPObject){
             this.lipObject.update(delta, this.model);
           }
@@ -690,21 +970,34 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(this.collisionManager.blockingObject != this.collisionManager.lastBlockingObject){
+        const enteredBlock =
+          !!this.collisionManager.blockingObject &&
+          this.collisionManager.blockingObject !== this.collisionManager.lastBlockingObject;
         this.collisionManager.lastBlockingObject = this.collisionManager.blockingObject;
-        //console.log('blocking script', this.blocking);
-        this.onBlocked();
+        // Retail OnBlocked fires on enter; clearing contact is not a new block event
+        if(enteredBlock){
+          this.onBlocked();
+        }
       }
 
-      if(this.forceVector.length())
-        this.collisionManager.updateCollision(delta);
+      // Predicted RK4 sweep; DriveUpdateLocation already calls updateCollision for path/drive.
+      if(this.forceVector.length()){
+        this.updateCollision(delta);
+      }
 
       this.updatePerceptionList(delta);
       this.updateListeningPatterns();
 
 
-      //If a non controlled party member is stuck, warp them to their follow position
-      if(this.npcId != undefined && this != (GameState.getCurrentPlayer() as any) && this.collisionTimer >= 1){
-        this.setPosition(GameState.PartyManager.GetFollowPosition(this));
+      // Party companion stuck: prefer follow-ring TeleportForward; give hex/avoidance time first
+      if(this.npcId != undefined && this != (GameState.getCurrentPlayer() as any) && this.collisionTimer >= 2){
+        const following = this.action?.type === ActionType.ActionFollowLeader;
+        const dest = new THREE.Vector3();
+        if(following && GameState.PartyManager.teleportFollowForward(this, dest)){
+          this.setPosition(dest);
+        }else{
+          this.setPosition(GameState.PartyManager.GetFollowPosition(this));
+        }
         this.collisionTimer = 0;
       }
 
@@ -790,7 +1083,8 @@ export class ModuleCreature extends ModuleObject {
       //Loop through and update the effects
       if(this.deferEventUpdate){
         for(let i = 0, len = this.effects.length; i < len; i++){
-          this.effects[i].update(delta);
+          const effect = this.effects[i];
+          if(effect) effect.update(delta);
         }
       }
 
@@ -809,9 +1103,12 @@ export class ModuleCreature extends ModuleObject {
 
     this.updateRegen(delta);
 
-    this.collisionTimer -= delta;
-    if(this.collisionTimer < 0)
-      this.collisionTimer = 0;
+    // Decay stuck timer only when not in contact (CollisionManager increments while colliding)
+    if(!this.collisionManager?.blockingObject){
+      this.collisionTimer -= delta;
+      if(this.collisionTimer < 0)
+        this.collisionTimer = 0;
+    }
 
     this.force = 0;
   }
@@ -921,7 +1218,9 @@ export class ModuleCreature extends ModuleObject {
       }
 
       let distance = this.position.distanceTo(creature.position);
-      if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
+      const stealthed = isCreatureStealthedOrInvisible(creature);
+      const detected = !stealthed || doStealthDetection(this, creature);
+      if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature) && detected){
         if(GameState.PartyManager.party.indexOf(this) == -1){
           if(this.isHostile(creature)){
             this.resetExcitedDuration();
@@ -932,8 +1231,11 @@ export class ModuleCreature extends ModuleObject {
         }
         
         this.notifyPerceptionSeenObject(creature, true);
-      }else if(distance < this.getPerceptionRangeSecondary() && this.hasLineOfSight(creature)){
+      }else if(distance < this.getPerceptionRangeSecondary() && detected){
+        // Listen does not require LOS in retail; still require contested detect while stealthed
         this.notifyPerceptionHeardObject(creature, true);
+      }else if(stealthed && !detected){
+        this.notifyPerceptionSeenObject(creature, false);
       }
     }
 
@@ -952,7 +1254,9 @@ export class ModuleCreature extends ModuleObject {
       }
 
       let distance = this.position.distanceTo(creature.position);
-      if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature)){
+      const stealthed = isCreatureStealthedOrInvisible(creature);
+      const detected = !stealthed || doStealthDetection(this, creature);
+      if(distance < this.getPerceptionRangePrimary() && this.hasLineOfSight(creature) && detected){
         if(GameState.PartyManager.party.indexOf(this) == -1){
           if(this.isHostile(creature)){
             this.resetExcitedDuration();
@@ -960,20 +1264,42 @@ export class ModuleCreature extends ModuleObject {
 
           this.notifyPerceptionSeenObject(creature, true);
         }
-      }else if(distance < this.getPerceptionRangeSecondary() && this.hasLineOfSight(creature)){
+      }else if(distance < this.getPerceptionRangeSecondary() && detected){
         this.notifyPerceptionHeardObject(creature, true);
+      }else if(stealthed && !detected){
+        this.notifyPerceptionSeenObject(creature, false);
       }
     }
 
+    // Passive trap detect — retail UpdateMineCheck @ 004fa390:
+    // Awareness + d10 (or d10+10) vs DetectDC; not ActionFlagMine.
+    const detectMode = !!this.detectMode;
+    const range = detectMode ? 20.0 : 3.0;
     for(let i = 0, triglen = this.area.triggers.length; i < triglen; i++){
       const trig = this.area.triggers[i];
       if(trig.type != ModuleTriggerType.TRAP){ continue; }
       if(trig.trapDetected){ continue; }
-      const actionFlag = new GameState.ActionFactory.ActionFlagMine();
-      actionFlag.setParameter(0, ActionParameterType.DWORD, trig);
-      this.actionQueue.addFront(actionFlag);
+      if(!trig.trapDetectable && !(trig.setByPlayerParty && this.isPartyMember())){ continue; }
+
+      const distance = this.position.distanceTo(trig.position);
+      if(distance > range){ continue; }
+
+      if(trig.setByPlayerParty && this.isPartyMember()){
+        trig.detectTrap();
+        continue;
+      }
+
+      // Hostile / non-friendly traps only (retail reputation < 90).
+      if(typeof (this as any).isHostile === 'function' && !this.isHostile(trig as any)){
+        continue;
+      }
+
+      const check = resolvePassiveMineDetect(this, trig, { detectMode });
+      if(check.result === MineSkillResult.SUCCESS || check.result === MineSkillResult.OWNED){
+        trig.detectTrap();
+      }
     }
-    
+
   }
 
   updateCombat(delta = 0){
@@ -1004,20 +1330,33 @@ export class ModuleCreature extends ModuleObject {
       this.combatRound.clearActions();
     }
 
-    if(this.combatData.combatState){
-      //If creature is being controller by the player, keep at least one basic action in the attack queue while attack target is still alive 
+    // Auto-requeue only for hostile Damage engagement — not flourish (SpellCast reason).
+    // Retail CreateNewAttackActions / GetNearestEnemy: SEEN + LOS + MaxCleaveRange.
+    if(this.isHostileCombatEngaged()){
       if(GameState.getCurrentPlayer() == this){
         if(!this.combatRound.scheduledActionList.length && !this.combatRound.action){
-          if( this.combatData.lastAttackTarget ){
-            this.attackCreature(this.combatData.lastAttackTarget, undefined);
-          }else if( this.combatData.lastAttacker ){
-            this.attackCreature(this.combatData.lastAttacker, undefined);
+          const last = this.combatData.lastAttackTarget;
+          const attacker = this.combatData.lastAttacker;
+          if(
+            last &&
+            !last.isDead() &&
+            this.isHostile(last) &&
+            hasTargetBeenDetected(this, last)
+          ){
+            this.attackCreature(last, undefined);
+          }else if(
+            attacker &&
+            !attacker.isDead() &&
+            this.isHostile(attacker) &&
+            hasTargetBeenDetected(this, attacker)
+          ){
+            this.attackCreature(attacker, undefined);
           }else{
-            //TODO: Attack nearest perceived hostile creature?
+            createNewAttackActions(this);
           }
         }
       }
-    }else{
+    }else if(!this.combatData.combatState){
       if(this.animationState.index == ModuleCreatureAnimState.READY){
         this.setAnimationState(ModuleCreatureAnimState.PAUSE);
       }
@@ -1056,8 +1395,8 @@ export class ModuleCreature extends ModuleObject {
           return true;
         }
       }else if(action.type == ActionType.ActionItemCastSpell){
-        const spell = new TalentSpell( action.getParameter(0) );
-        const target: ModuleObject = action.getParameter(5);
+        const spell = new TalentSpell( action.getParameter(5) );
+        const target: ModuleObject = action.getParameter(0);
         if(target instanceof ModuleObject){
           return spell.inRange(target, this);
         }else{
@@ -1125,13 +1464,39 @@ export class ModuleCreature extends ModuleObject {
           this.animationState.started = true;
           let aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
           this.model.playAnimation(this.animationState.animation.name?.toLowerCase(), aLooping);
+        }else if(this.isDead() || this.willDestroy){
+          // DIE fireforget finished → DEAD; never drop corpses to PAUSE/READY.
+          if(
+            this.animationState.index == ModuleCreatureAnimState.DIE ||
+            this.animationState.index == ModuleCreatureAnimState.DIE1
+          ){
+            this.setAnimationState(ModuleCreatureAnimState.DEAD);
+            this.deathAnimationPlayed = true;
+          }
+        }else if(this.combatData.combatState){
+          // Retail GetPauseReadyAnimation while engaged — don't drop to out-of-combat pause.
+          if(this.animationState.index == ModuleCreatureAnimState.READY){
+            this.animationState.started = false;
+          }else{
+            this.setAnimationState(ModuleCreatureAnimState.READY);
+          }
         }else{
           this.setAnimationState(ModuleCreatureAnimState.PAUSE);
         }
       }
+    }else if(this.isDead() || this.willDestroy){
+      if(
+        this.animationState.index != ModuleCreatureAnimState.DEAD &&
+        this.animationState.index != ModuleCreatureAnimState.DEAD1
+      ){
+        this.setAnimationState(ModuleCreatureAnimState.DEAD);
+        this.deathAnimationPlayed = true;
+      }
     }else{
       console.error('Animation Missing', this.getTag(), this.getName(), this.animationState);
-      this.setAnimationState(ModuleCreatureAnimState.PAUSE);
+      this.setAnimationState(
+        this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
+      );
     }
 
   }
@@ -1175,7 +1540,7 @@ export class ModuleCreature extends ModuleObject {
     this.updateCollision();
   }
 
-  moveToObject(target: ModuleObject, bRun = true, distance = 1.0){
+  moveToObject(target: ModuleObject, bRun = true, distance = 1.0, timeout = 30.0){
 
     if(target instanceof ModuleObject){
         
@@ -1189,7 +1554,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
       action.setParameter(7, ActionParameterType.INT, 0);
-      action.setParameter(8, ActionParameterType.FLOAT, 30.0);
+      action.setParameter(8, ActionParameterType.FLOAT, timeout > 0 ? timeout : 30.0);
       this.actionQueue.add(action);
     }
 
@@ -1231,7 +1596,7 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  moveToLocation(target: ModuleObject|EngineLocation, bRun = true){
+  moveToLocation(target: ModuleObject|EngineLocation, bRun = true, timeout = 30.0){
 
     if(target instanceof EngineLocation || target instanceof ModuleObject){
 
@@ -1273,7 +1638,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
       action.setParameter(7, ActionParameterType.INT, 0);
-      action.setParameter(8, ActionParameterType.FLOAT, 30.0);
+      action.setParameter(8, ActionParameterType.FLOAT, timeout > 0 ? timeout : 30.0);
       this.actionQueue.add(action);
 
     }
@@ -1310,30 +1675,236 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
+  /**
+   * Enter/refresh combat. Retail AddAttackActions → BroadcastCombatStateToParty →
+   * SetCombatState(1) @ 004f2610 (8000ms) + SetExcitedState @ 004f3580 (ExcitedDuration.2da).
+   */
+  setCombatEngaged(reason: ExcitedDurationRow = ExcitedDurationRow.Damage){
+    const wasCombat = this.combatData.combatState;
+    this.setCombatState(true, reason);
+    this.setExcitedState(reason);
+    // Retail RemoveCombatInvisibilityEffects @ 004f5f70 on hostile engagement
+    if(!wasCombat){
+      this.removeCombatInvisibilityEffects();
+    }
+  }
+
+  /**
+   * Retail CSWSCreature::BroadcastCombatStateToParty @ 004fbbe0.
+   * Refreshes SetCombatState(1) on self when hostile to `other` (or `other` is self),
+   * then party/faction mates in spot range get SetCombatState + SetExcitedState(Damage).
+   * Used on attack start and OnPhysicalAttacked (including misses).
+   */
+  broadcastCombatStateToParty(other?: ModuleObject){
+    const otherCreature = BitWise.InstanceOfObject(other, ModuleObjectType.ModuleCreature)
+      ? (other as ModuleCreature)
+      : undefined;
+
+    const combatReasonFor = (subject: ModuleCreature): ExcitedDurationRow => {
+      if(!otherCreature){
+        return ExcitedDurationRow.SpellCast;
+      }
+      const attempted = otherCreature.combatData.lastAttemptedAttackTarget;
+      const attemptedSpell = otherCreature.combatData.lastAttemptedSpellTarget;
+      if(attempted === subject || attemptedSpell === subject){
+        return ExcitedDurationRow.Damage;
+      }
+      return ExcitedDurationRow.SpellCast;
+    };
+
+    const selfOrMissing = !other || other === this;
+    const hostileToOther = !!other && this.getReputation(other) < 11;
+    if(selfOrMissing || hostileToOther){
+      this.setCombatState(true, combatReasonFor(this));
+    }
+
+    if(this.plot){
+      return;
+    }
+
+    const members: ModuleCreature[] = (this.isPartyMember() || this.faction?.id === 0)
+      ? GameState.PartyManager.party
+      : (this.faction?.creatures ?? []);
+
+    for(let i = 0; i < members.length; i++){
+      const member = members[i];
+      if(!member || member.isDead()){
+        continue;
+      }
+
+      const range = typeof member.getPerceptionRangePrimary === 'function'
+        ? member.getPerceptionRangePrimary()
+        : this.getPerceptionRangePrimary();
+      const dx = this.position.x - member.position.x;
+      const dy = this.position.y - member.position.y;
+      const dz = this.position.z - member.position.z;
+      if(dx * dx + dy * dy + dz * dz > range * range){
+        continue;
+      }
+
+      // Retail: GetReputation(member, param_1) < 11 — skip when other is self/friendly
+      if(other && member.getReputation(other) >= 11){
+        continue;
+      }
+      if(!other){
+        continue;
+      }
+
+      member.setCombatState(true, combatReasonFor(member));
+      member.setExcitedState(ExcitedDurationRow.Damage);
+    }
+  }
+
+  /**
+   * Retail CSWSCreature::ResolveInitiative @ 004ece60 —
+   * sets field56_0x4dc = (field426_0xa88 == 0) — non-party AI refresh flag.
+   */
+  resolveInitiative(){
+    // Party / player-UI creatures (field426) → 0; others → 1
+    this.combatAiRefreshPending = GameState.PartyManager?.party?.indexOf(this) < 0;
+    if(!this.combatData.combatState){
+      this.setCombatState(true, ExcitedDurationRow.SpellCast);
+    }
+  }
+
+  /**
+   * Compatibility wrapper — physical engagement uses Damage row.
+   */
   resetExcitedDuration(){
-    this.excitedDuration = 10000;
+    this.setCombatEngaged(ExcitedDurationRow.Damage);
+  }
+
+  /**
+   * Retail CSWSCreature::SetCombatState @ 004f2610.
+   * Active → refresh 8000ms timer; inactive → clear combat engagement.
+   */
+  setCombatState(active: boolean, reason: number = ExcitedDurationRow.Damage){
+    if(!active){
+      this.combatData.combatState = false;
+      this.combatStateTimer = 0;
+      this.combatStateReason = 0;
+      // Retail SetCombatState(0) @ 004f2610 clears attempted/current attack+spell targets
+      this.combatData.lastAttemptedAttackTarget = undefined;
+      this.combatData.lastAttackTarget = undefined;
+      this.combatData.lastAttemptedSpellTarget = undefined;
+      this.combatData.lastSpellTarget = undefined;
+      // Client SetCombatMode(0) @ 005ede80 → RestoreCamera
+      if(this === GameState.getCurrentPlayer()){
+        FollowerCamera.setCombatCameraActive(false);
+      }
+      return;
+    }
+    this.combatData.combatState = true;
+    this.combatStateTimer = COMBAT_STATE_DURATION_MS;
+    // Retail: Damage reason (1) sticks; SpellCast (2) does not overwrite it.
+    if(this.combatStateReason !== ExcitedDurationRow.Damage){
+      this.combatStateReason = reason;
+    }
+    // Client SetCombatMode(1) @ 005ede80 → SetCombatCamera (mode 6)
+    if(this === GameState.getCurrentPlayer()){
+      FollowerCamera.setCombatCameraActive(true);
+    }
+  }
+
+  /**
+   * Retail CSWSCreature::SetExcitedState @ 004f3580 — only extend if new DURATION is greater.
+   * When extended for a client-controlled creature with GetNearestEnemy(30) present,
+   * calls area PlayBattleMusic(1).
+   */
+  setExcitedState(row: ExcitedDurationRow | number){
+    const duration = getExcitedDurationMs(row);
+    if(duration <= this.excitedDuration){
+      return;
+    }
+    this.excitedDuration = duration;
+    // Retail: GetClientObjectByObjectId must succeed (controlled PC)
+    if(this !== GameState.getCurrentPlayer()){
+      return;
+    }
+    const area = this.area;
+    if(!area){
+      return;
+    }
+    // Retail GetNearestEnemy(this, 30.0, OBJECT_INVALID, OBJECT_INVALID)
+    if(getNearestEnemy(this, 30)){
+      area.playBattleMusic(true);
+    }
+  }
+
+  /**
+   * Retail CSWSCreature::RemoveCombatInvisibilityEffects @ 004f5f70 —
+   * strip INVISIBILITY when int[0]==1 and all SANCTUARY.
+   */
+  removeCombatInvisibilityEffects(){
+    const effects = this.effects ? this.effects.slice() : [];
+    for(let i = 0; i < effects.length; i++){
+      const e = effects[i];
+      if(!e) continue;
+      if(e.type === GameEffectType.EffectInvisibility && e.getInt(0) === 1){
+        this.removeEffect(e);
+      }else if(e.type === GameEffectType.EffectSanctuary){
+        this.removeEffect(e);
+      }
+    }
+    if(this.stealthMode){
+      this.stealthMode = false;
+    }
   }
 
   cancelExcitedDuration(){
+    const hadExcited = this.excitedDuration > 0;
     this.excitedDuration = 0;
+    if(hadExcited && this === GameState.getCurrentPlayer() && this.area){
+      this.area.playBattleMusic(false);
+    }
   }
 
+  /**
+   * Retail AIUpdate combat-state tick @ 004fe210 — field58_0x4e4 countdown to SetCombatState(0).
+   */
+  updateCombatStateTimer(delta = 0){
+    if(this.instantItemCooldownMs > 0){
+      this.instantItemCooldownMs = Math.max(0, this.instantItemCooldownMs - (1000 * delta));
+    }
+    if(this.isDead()){
+      if(this.combatData.combatState){
+        this.cancelCombat();
+      }
+      return;
+    }
+    if(!this.combatData.combatState) return;
+    this.combatStateTimer -= (1000 * delta);
+    if(this.combatStateTimer <= 0){
+      this.setCombatState(false, this.combatStateReason);
+      if(this.animationState.index == ModuleCreatureAnimState.READY){
+        this.setAnimationState(ModuleCreatureAnimState.PAUSE);
+      }
+      this.weaponPowered(false);
+    }
+  }
+
+  /**
+   * Retail UpdateExcitedStateTimer @ 004ed110 — battle music timer only (not stance).
+   * On expiry for a client-controlled creature → PlayBattleMusic(0).
+   */
   updateExcitedDuration(delta = 0){
     if(this.isDead()){
-      this.excitedDuration = 0;
-      this.cancelCombat();
-      this.weaponPowered(false);
+      if(this.excitedDuration > 0){
+        this.excitedDuration = 0;
+        if(this === GameState.getCurrentPlayer() && this.area){
+          this.area.playBattleMusic(false);
+        }
+      }
+      return;
     }
-
     if(this.excitedDuration > 0){
       this.excitedDuration -= (1000 * delta);
-      this.combatData.combatState = true;
-    }
-
-    if(this.excitedDuration <= 0){
-      this.combatData.combatState = false;
-      this.excitedDuration = 0;
-      this.weaponPowered(false);
+      if(this.excitedDuration <= 0){
+        this.excitedDuration = 0;
+        if(this === GameState.getCurrentPlayer() && this.area){
+          this.area.playBattleMusic(false);
+        }
+      }
     }
   }
 
@@ -1341,20 +1912,19 @@ export class ModuleCreature extends ModuleObject {
     if(!(BitWise.InstanceOf(this.combatData.lastAttackTarget?.objectType, ModuleObjectType.ModuleCreature))) return false;
     const target = this.combatData.lastAttackTarget as ModuleCreature;
     if(target.combatData.lastAttackTarget != this) return false;
-    return (target.isDuelingWeaponEquipped() && this.isDuelingWeaponEquipped());
+    return resolveChoreographedState(this, target);
   }
 
+  /** Retail ResolveChoreographedState weapon gate (excludes stun baton / ranged). */
   isDuelingWeaponEquipped(){
-    if(!this.equipment.RIGHTHAND) return false;
-    return (
-      this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.STUN_BATON ||
-      this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.ONE_HANDED_SWORD ||
-      this.equipment.RIGHTHAND.getWeaponWield() == WeaponWield.TWO_HANDED_SWORD
-    );
+    return isChoreographedMeleeWeapon(this);
   }
 
   isDuelingObject( oObject: ModuleObject ){
-    return (oObject instanceof ModuleObject && this.combatData.lastAttackTarget == oObject && oObject.combatData.lastAttackTarget == this && oObject.combatData.getEquippedWeaponType() == 1 && this.combatData.getEquippedWeaponType() == 1);
+    if(!(oObject instanceof ModuleObject)) return false;
+    if(this.combatData.lastAttackTarget != oObject) return false;
+    if(oObject.combatData.lastAttackTarget != this) return false;
+    return resolveChoreographedState(this, oObject);
   }
 
   attackCreature(
@@ -1370,6 +1940,9 @@ export class ModuleCreature extends ModuleObject {
 
     if(target.isDead())
       return;
+
+    // Retail AddAttackActions @ 004fde40 — sticky GetAttemptedAttackTarget
+    this.combatData.setAttemptedAttackTargetIfInvalid(target);
 
     let combatAction = new CombatRoundAction();
     combatAction.actionType = CombatActionType.ATTACK;
@@ -1392,6 +1965,9 @@ export class ModuleCreature extends ModuleObject {
     }
 
     this.combatRound.addAction(combatAction);
+
+    // Retail AddAttackActions → BroadcastCombatStateToParty(this, this.id)
+    this.broadcastCombatStateToParty(this);
 
     if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
       const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
@@ -1517,13 +2093,133 @@ export class ModuleCreature extends ModuleObject {
     };
   }
 
+  /**
+   * Retail CSWSCreature::CancelCombat @ 004fdaa0.
+   */
   cancelCombat(){
-    this.clearTarget();
-    this.combatData.combatState = false;
+    this.clearAllActions(true);
+    this.setCombatState(false);
     this.cancelExcitedDuration();
+    this.clearTarget();
+    if(this.combatRound){
+      if(this.combatRound.roundStarted){
+        this.combatRound.endCombatRound({ skipCreateNewAttackActions: true });
+      }
+      this.combatRound.clearActions();
+    }
     this.resetOverlayAnimationState();
-    if(this.animationState.index == ModuleCreatureAnimState.READY)
-      this.setAnimationState(ModuleCreatureAnimState.PAUSE)
+    if(this.animationState.index == ModuleCreatureAnimState.READY){
+      this.setAnimationState(ModuleCreatureAnimState.PAUSE);
+    }
+  }
+
+  /**
+   * Retail CSWSCreature::SurrenderToEnemies @ 00518990.
+   * @param retainSelfBuffs - 1 for SurrenderRetainBuffs (keep self-created effects)
+   */
+  surrenderToEnemies(retainSelfBuffs: boolean = false){
+    this.cancelCombat();
+    this.clearAllEffects(retainSelfBuffs);
+
+    const area = this.area;
+    if(area?.creatures?.length){
+      const origin = this.position;
+      const radiusSq = 250 * 250; // retail 62500 — not the NWScript 10m comment
+      for(let i = 0; i < area.creatures.length; i++){
+        const other = area.creatures[i];
+        if(!other || other === this) continue;
+        const dx = other.position.x - origin.x;
+        const dy = other.position.y - origin.y;
+        const dz = other.position.z - origin.z;
+        if(dx * dx + dy * dy + dz * dz > radiusSq) continue;
+        // Retail GetReputation(self, other) < 11
+        if(this.getReputation(other) >= 11) continue;
+        other.cancelCombat();
+        other.clearAllEffects(retainSelfBuffs);
+      }
+    }
+
+    // Retail AddMember to FactionManager's primary faction (repute row 0 = Player)
+    const playerFaction = GameState.FactionManager?.factions?.get(0);
+    if(playerFaction && this.faction !== playerFaction){
+      this.faction?.removeMember?.(this);
+      this.faction = playerFaction;
+      this.factionId = playerFaction.id;
+      playerFaction.addMember(this);
+    }
+  }
+
+  /**
+   * Retail CSWSCreature::ClearVisibleList + UpdateVisibleList(0) —
+   * used by ChangeFactionByFaction after AddMember.
+   */
+  clearVisibleList(){
+    this.perceptionList = [];
+    // Force UpdateVisibleList on next tick (bypass 3s throttle)
+    this.perceptionTimer = 3;
+    this.updatePerceptionList(0);
+  }
+
+  /**
+   * Retail CSWSCreature::ClearHostileActionsVersus @ 004f61d0 —
+   * drop queued action groups that target `versus`.
+   */
+  clearHostileActionsVersus(versus: ModuleCreature){
+    if(!versus || !this.actionQueue?.length) return;
+    const groups = new Set<number>();
+    for(let i = 0; i < this.actionQueue.length; i++){
+      const action = this.actionQueue[i];
+      if(!action?.parameters?.length) continue;
+      for(let p = 0; p < action.parameters.length; p++){
+        if(action.getParameter(p) === versus){
+          groups.add(action.groupId);
+          break;
+        }
+      }
+    }
+    if(!groups.size) return;
+    for(let i = this.actionQueue.length - 1; i >= 0; i--){
+      if(groups.has(this.actionQueue[i].groupId)){
+        this.actionQueue.splice(i, 1);
+      }
+    }
+  }
+
+  /**
+   * Retail CSWSCreature::PacifyCreature @ 004fd960 —
+   * area creatures that have this as a combat/hostile ref leave combat vs us.
+   */
+  pacifyCreature(){
+    const area = this.area;
+    if(!area?.creatures?.length) return;
+
+    for(let i = 0; i < area.creatures.length; i++){
+      const other = area.creatures[i];
+      if(!other || other === this) continue;
+
+      const cd = other.combatData;
+      const engaged =
+        cd.lastAttackTarget === this ||
+        cd.lastAttemptedAttackTarget === this ||
+        cd.lastAttacker === this ||
+        cd.lastDamager === this ||
+        cd.lastSpellTarget === this ||
+        cd.lastAttemptedSpellTarget === this ||
+        cd.lastSpellAttacker === this;
+
+      if(!engaged) continue;
+
+      other.setCombatState(false);
+      if(cd.lastAttackTarget === this || cd.lastAttemptedAttackTarget === this){
+        other.clearTarget();
+      }
+      if(cd.lastAttacker === this) cd.lastAttacker = undefined;
+      if(cd.lastDamager === this) cd.lastDamager = undefined;
+      if(cd.lastSpellTarget === this) cd.lastSpellTarget = undefined;
+      if(cd.lastAttemptedSpellTarget === this) cd.lastAttemptedSpellTarget = undefined;
+      if(cd.lastSpellAttacker === this) cd.lastSpellAttacker = undefined;
+      other.clearHostileActionsVersus(this);
+    }
   }
 
   getDamageAnimation( attackAnim: string ): ITwoDAAnimation {
@@ -1960,7 +2656,10 @@ export class ModuleCreature extends ModuleObject {
   }
 
   flourish(){
-    this.resetExcitedDuration();
+    // Retail PlayerFlourishWeapons @ 005f45c8: PowerItem + SetCombatState(1, 2) only.
+    // Client CSWCCreature::SetCombatState syncs only when reason==Damage(1), so combat UI
+    // / excited / invis strip must NOT run for flourish (reason SpellCast/2).
+    this.setCombatState(true, ExcitedDurationRow.SpellCast);
     let isSimple = this.isSimpleCreature();
     let weaponType = this.getCombatAnimationWeaponType();
     
@@ -1971,6 +2670,14 @@ export class ModuleCreature extends ModuleObject {
         this.weaponPowered(true);
       }
     }
+  }
+
+  /**
+   * True when engagement came from hostile combat (Damage), not flourish/SpellCast-only.
+   * Matches retail client sync gate: SetCombatState client update iff param_2 == 1.
+   */
+  isHostileCombatEngaged(): boolean {
+    return !!(this.combatData.combatState && this.combatStateReason === ExcitedDurationRow.Damage);
   }
 
   /**
@@ -2092,6 +2799,29 @@ export class ModuleCreature extends ModuleObject {
     this.lookAtObject = oObject;
   }
 
+  /**
+   * Retail CSWCCreature::GetReticlePoint @ 0060fd80 —
+   * head / head_g / rootdummy (then ModuleObject lookathook fallback).
+   */
+  getReticleNode(){
+    if(!this.model){ return; }
+
+    if(this.model.headhook){
+      return this.model.headhook;
+    }
+
+    const headG = this.getModelNodeByName('head_g');
+    if(headG){
+      return headG;
+    }
+
+    if(this.model.rootdummy){
+      return this.model.rootdummy;
+    }
+
+    return super.getReticleNode();
+  }
+
   static readonly HEAD_TRACKING_H_SPEED = Math.PI * 2;
   static readonly HEAD_TRACKING_V_SPEED = Math.PI * 0.25;
   lookAtPosition: THREE.Vector3 = new THREE.Vector3();
@@ -2161,9 +2891,9 @@ export class ModuleCreature extends ModuleObject {
 
     if(this.isHostile(callee) && !this.isDead()){
       GameState.getCurrentPlayer().attackCreature(this, undefined);
-    }else if(this.isHostile(callee) && this.isDead()){
+    }else if(this.isDead() && this.canLootAsCorpse(callee)){
       this.clearAllActions();
-      GameState.getCurrentPlayer().actionUseObject(this);
+      GameState.getCurrentPlayer().actionUseObject(this.getLootUseTarget());
     }else if(!this.isDead()){
       this.clearAllActions();
       if(this.getConversation() && this.getConversation().resref){
@@ -2186,6 +2916,16 @@ export class ModuleCreature extends ModuleObject {
     for(let i = 0; i < tLen; i++){
       triggers[i].updateObjectInside(this);
     }
+    // Area of Effect enter/exit (retail UpdateSubAreas)
+    const aoes = GameState.module.area.areaOfEffects;
+    const aLen = aoes?.length || 0;
+    for(let i = 0; i < aLen; i++){
+      aoes[i].updateObjectInside(this);
+    }
+    // Retail ProcessPoint on leader walk — feed party follow ring
+    if(GameState.PartyManager.party[0] === this){
+      GameState.PartyManager.processLeaderFollowPoint(this);
+    }
   }
 
   //---------------//
@@ -2205,6 +2945,27 @@ export class ModuleCreature extends ModuleObject {
     instance.run(this);
   }
 
+  /**
+   * Retail OnApplyDeath encounter unlink (param_2=0) /
+   * AIActionEncounterCreatureDestroySelf (param_2=1).
+   */
+  unlinkFromEncounter(fromDestroySelf: boolean = false){
+    if(this.encounterUnlinked) return;
+    if(this.encounterObjectId === ModuleObjectConstant.OBJECT_INVALID) return;
+
+    const encounter = GameState.ModuleObjectManager.GetObjectById(this.encounterObjectId);
+    if(
+      encounter &&
+      BitWise.InstanceOfObject(encounter, ModuleObjectType.ModuleEncounter)
+    ){
+      (encounter as ModuleEncounter).removeFromActiveCreatureCount(
+        this.challengeRating || 0,
+        fromDestroySelf ? 1 : 0
+      );
+    }
+    this.encounterUnlinked = true;
+  }
+
   onDeath(){
     this.weaponPowered(false);
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnDeath];
@@ -2212,8 +2973,98 @@ export class ModuleCreature extends ModuleObject {
       const instance = nwscript.newInstance();
       instance.run(this);
     }
-    this.spawnBodyBag();
+
+    // Retail OnApplyDeath @ 004e0ac0 → RemoveFromActiveCreatureCount(..., 0)
+    this.unlinkFromEncounter(false);
+
+    // Retail OnApplyDeath strips combat/buff VFX before corpse schedule (else willDestroy
+    // / KeepCorpse skips effect updates and leaves frozen emitters in the world).
+    this.clearEffectsOnDeath();
+
+    // Retail SetAutoPaused Party Killed when a party member dies (not full wipe)
+    if(GameState.PartyManager.party.indexOf(this) >= 0){
+      GameState.GameOverManager?.NotifyPartyMemberDeath?.(this);
+      const anyAlive = GameState.PartyManager.party.some((pm) => pm && pm !== this && !pm.isDead());
+      if(anyAlive){
+        GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.PartyMemberKilled);
+      }
+    }
+
+    // Retail: body bag spawns on destroy when destroyable; OnDeath only scripts + schedule remove
+    this.scheduleDestroyAsCorpse();
     return true;
+  }
+
+  /**
+   * Begin destroy scheduling for a destroyable corpse.
+   * Retail OnApplyDeath (`004e0ac0`): wait appearance.DestroyObjectDelay (default 3.0s),
+   * then event `0xb` spawns the bag and either SetFadeOutTime (FadeDelayOnDeath ms)
+   * or SetKeepCorpse (missing FadeDelayOnDeath) — not an 8s fade-as-authority.
+   * Non-destroyable corpses stay selectable with loot on the creature.
+   */
+  scheduleDestroyAsCorpse(){
+    if(!this.isDestroyable) return;
+    if(this.destroyed || this.serverDestroyed || this.isRetainedCorpse) return;
+    // Re-apply after OnDeath DestroyObject(OBJECT_SELF) defaults so bare willDestroy
+    // with delay 0 does not skip DestroyObjectDelay / FadeDelayOnDeath.
+    if(this.corpseDestroyScheduled) return;
+
+    const destroyDelayRaw = this.creatureAppearance?.destroyobjectdelay;
+    const destroyDelay = (typeof destroyDelayRaw === 'number' && destroyDelayRaw >= 0)
+      ? destroyDelayRaw
+      : 3.0;
+
+    // FadeDelayOnDeath INT ms when present; missing → KeepCorpse (client shell).
+    const fadeDelayOnDeath = this.creatureAppearance?.fadedelayondeath;
+    const hasFadeDelayOnDeath = typeof fadeDelayOnDeath === 'number' && fadeDelayOnDeath >= 0;
+    this.keepCorpseOnDestroy = !hasFadeDelayOnDeath;
+    const fadeDurationSec = hasFadeDelayOnDeath ? fadeDelayOnDeath / 1000 : 0;
+
+    this.corpseDestroyScheduled = true;
+    this.setWillDestroy(true);
+    if(this.keepCorpseOnDestroy){
+      // Wait DestroyObjectDelay, then enter retained shell (no opacity fade)
+      this.setNoFadeOnDestroy(true);
+      this.setFadeDuration(0);
+      this.setDelayUntilFade(destroyDelay);
+      this.setDelayUntilDestroy(destroyDelay);
+    }else{
+      this.setNoFadeOnDestroy(fadeDurationSec <= 0);
+      this.setFadeDuration(fadeDurationSec);
+      this.setDelayUntilFade(destroyDelay);
+      this.setDelayUntilDestroy(destroyDelay + Math.max(fadeDurationSec, 0));
+    }
+  }
+
+  /**
+   * Continue death animation + model while waiting for DestroyObjectDelay / fade-out.
+   */
+  updateCorpsePendingDestroy(delta: number = 0){
+    if(this.audioEmitter){
+      this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
+      this.footstepEmitter?.setPosition(this.position.x, this.position.y, this.position.z);
+    }
+
+    if(this.isDead()){
+      this.damageList = [];
+      this.getUpAnimationPlayed = false;
+      if(
+        this.deathStarted &&
+        this.animationState.index != ModuleCreatureAnimState.DEAD &&
+        this.animationState.index != ModuleCreatureAnimState.DIE
+      ){
+        this.setAnimationState(ModuleCreatureAnimState.DEAD);
+        this.deathAnimationPlayed = true;
+      }
+    }
+
+    this.updateAnimationState();
+    this.updateItems(delta);
+
+    if(this.model instanceof OdysseyModel3D && this.model.bonesInitialized){
+      this.model.animateFrame = true;
+      this.model.update(delta);
+    }
   }
 
   /**
@@ -2232,12 +3083,75 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
+   * Placeable appearance id for the bag — retail GetBodyBagAppearance @ 004ef2e0.
+   * bodybag.Appearance → else appearance.Body_Bag row's appearance → else 3.
+   */
+  getBodyBagAppearance(): number {
+    const bags = GameState.SWRuleSet?.bodyBags;
+    const readAppearance = (rowId: number): number | undefined => {
+      const row = bags?.[rowId];
+      if(!row) return undefined;
+      return row.appearance > 0 ? row.appearance : undefined;
+    };
+
+    const primary = readAppearance(this.getBodyBagRowId());
+    if(primary != null) return primary;
+
+    const altRow = this.creatureAppearance?.body_bag;
+    if(typeof altRow === 'number' && altRow >= 0){
+      const secondary = readAppearance(altRow);
+      if(secondary != null) return secondary;
+    }
+    return 3;
+  }
+
+  getBodyBagPlaceable(): ModulePlaceable | undefined {
+    if(!this.bodyBagObjectId) return undefined;
+    const bag = GameState.ModuleObjectManager.GetObjectById(this.bodyBagObjectId);
+    if(BitWise.InstanceOfObject(bag, ModuleObjectType.ModulePlaceable)){
+      return bag as ModulePlaceable;
+    }
+    return undefined;
+  }
+
+  /** Target for ActionUseObject when looting a dead creature (bag if present, else corpse). */
+  getLootUseTarget(): ModuleObject {
+    const bag = this.getBodyBagPlaceable();
+    if(bag && !bag.destroyed){
+      return bag;
+    }
+    return this;
+  }
+
+  hasLootableContents(): boolean {
+    if(this.gold > 0) return true;
+    for(let i = 0; i < this.inventory.length; i++){
+      if(this.inventory[i]?.isDropable?.()) return true;
+    }
+    const slots = Object.keys(this.equipment) as (keyof typeof this.equipment)[];
+    for(let i = 0; i < slots.length; i++){
+      if(this.equipment[slots[i]]?.isDropable?.()) return true;
+    }
+    return !!this.inventory.length;
+  }
+
+  /** Whether the player can loot this corpse (hostile, selectable dead, or linked bag). */
+  canLootAsCorpse(from?: ModuleObject): boolean {
+    if(!this.isDead() && !this.isRetainedCorpse) return false;
+    if(this.getBodyBagPlaceable()) return true;
+    if(from && this.isHostile(from)) return true;
+    if(this.isDeadSelectable && this.hasLootableContents()) return true;
+    return this.isDeadSelectable;
+  }
+
+  /**
    * Whether this creature should drop a body bag (loot / corpse / gold).
    */
   shouldSpawnBodyBag(): boolean {
     if(!this.isDestroyable) return false;
     if(GameState.PartyManager?.party?.indexOf(this) >= 0) return false;
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlayer)) return false;
+    if(this.bodyBagObjectId) return false;
 
     const rule = this.getBodyBagRule();
     if(rule?.corpse) return true;
@@ -2259,69 +3173,147 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Create a body-bag placeable, move droppable loot into it, and schedule
-   * EventSpawnBodyBag to attach it to the area after a short delay.
+   * EventSpawnBodyBag (~500ms) to load its model.
+   * Retail: destroy event 0xb when destroyable + dead.
    */
   spawnBodyBag(): number {
     if(!this.shouldSpawnBodyBag()) return ModuleObjectConstant.OBJECT_INVALID;
-    if(!this.area || !GameState.module) return ModuleObjectConstant.OBJECT_INVALID;
 
-    const rowId = this.getBodyBagRowId();
-    let rule = this.getBodyBagRule();
-    if(!rule){
-      rule = new SWBodyBag();
-      rule.id = rowId;
-      rule.appearance = 3;
-      rule.name = 38151;
-      rule.corpse = 0;
+    const rule = this.getBodyBagRule();
+    const bagId = ModulePlaceable.spawnBodyBagFrom(
+      this,
+      this.getBodyBagRowId(),
+      rule,
+      this.getBodyBagAppearance()
+    );
+    if(bagId !== ModuleObjectConstant.OBJECT_INVALID){
+      this.bodyBagObjectId = bagId;
     }
-    // bodybag.2da may leave Appearance as **** (0); fall back to backpack (3)
-    if(!rule.appearance){
-      rule = Object.assign(new SWBodyBag(), rule, { appearance: 3 });
-    }
+    return bagId;
+  }
 
-    const placeable = ModulePlaceable.FromBodyBag(rule, rowId);
-    placeable.position.copy(this.position);
-    placeable.rotation.copy(this.rotation);
-    placeable.bearing = this.getFacing?.() ?? this.rotation.z;
-    GameState.ModuleObjectManager.AddObjectById(placeable);
-    placeable.acquireItemsFromObject(this, true);
+  /**
+   * Retail event 0xb body: SpawnBodyBag then KeepCorpse or fade-out visual.
+   * Called when DestroyObjectDelay elapses (and as destroy() backup).
+   */
+  onServerDestroyEvent(){
+    if(this.serverDestroyed || this.isRetainedCorpse) return;
+    this.serverDestroyed = true;
 
-    // Corpse-type bags still need a usable inventory if they received items
-    if(placeable.inventory.length > 0){
-      placeable.hasInventory = true;
+    if(this.isDead() && this.isDestroyable && !this.bodyBagObjectId){
+      this.spawnBodyBag();
     }
 
-    if(!placeable.inventory.length && !rule.corpse){
-      GameState.ModuleObjectManager.RemoveObject(placeable);
-      return ModuleObjectConstant.OBJECT_INVALID;
+    const bag = this.getBodyBagPlaceable();
+    const bagIsCorpseModel = !!bag?.isCorpse;
+
+    // Corpse-model bags (Rancor/Krayt) show the placeable; no KeepCorpse shell
+    if(this.keepCorpseOnDestroy && !bagIsCorpseModel){
+      this.enterRetainedCorpse();
+      return;
     }
 
-    const future = GameState.module.timeManager.getFutureTimeFromSeconds(0.5);
-    const event = new GameState.GameEventFactory.EventSpawnBodyBag();
-    event.bodyBagId = placeable.id;
-    event.position.copy(placeable.position);
-    event.setCaller(this);
-    event.setObject(this.area as any);
-    event.setDay(future.pauseDay);
-    event.setTime(future.pauseTime);
-    GameState.module.addEvent(event);
+    if(bag){
+      bag.setBodyBagVisible(true);
+    }
+    // Fade path continues via willDestroy / updateDestroyFade → destroy()
+  }
 
-    // Begin corpse fade/destroy using appearance FadeDelayOnDeath when destroyable
-    if(this.isDestroyable){
-      const fadeDelay = this.creatureAppearance?.fadedelayondeath;
-      if(typeof fadeDelay === 'number' && fadeDelay >= 0){
-        this.setWillDestroy(true);
-        this.setDelayUntilFade(fadeDelay / 1000);
-        this.setDelayUntilDestroy(fadeDelay / 1000);
-        this.setNoFadeOnDestroy(false);
-      }else{
-        this.setWillDestroy(true);
-        this.setNoFadeOnDestroy(true);
-        this.setDelayUntilDestroy(0.5);
+  /**
+   * Convert to a runtime-only KeepCorpse shell (retail client corpse cache entry).
+   * Stays in area.creatures for updates/selection but is excluded from save.
+   */
+  enterRetainedCorpse(){
+    if(this.isRetainedCorpse || this.destroyed) return;
+
+    const area = this.area || GameState.module?.area;
+    this.isRetainedCorpse = true;
+    this.willDestroy = false;
+    this.keepCorpseOnDestroy = false;
+    this.retainedCorpseFadeRemaining = -1;
+    this.retainedCorpseFadeTotal = 0;
+    this.setOpacity(1);
+
+    if(area){
+      area.corpseCache.add(this);
+    }
+
+    const bag = this.getBodyBagPlaceable();
+    if(bag && !bag.isCorpse){
+      bag.setBodyBagVisible(false);
+    }
+
+    // Hold DEAD pose
+    if(this.animationState.index != ModuleCreatureAnimState.DEAD){
+      this.setAnimationState(ModuleCreatureAnimState.DEAD);
+      this.deathAnimationPlayed = true;
+    }
+  }
+
+  /** Corpse-cache overflow: reveal bag and fade this shell out. */
+  beginRetainedCorpseFadeOut(fadeSec: number = 1.0){
+    if(!this.isRetainedCorpse || this.destroyed) return;
+    const bag = this.getBodyBagPlaceable();
+    if(bag) bag.setBodyBagVisible(true);
+    this.retainedCorpseFadeTotal = Math.max(0, fadeSec);
+    this.retainedCorpseFadeRemaining = this.retainedCorpseFadeTotal;
+    if(this.retainedCorpseFadeRemaining <= 0){
+      this.disposeRetainedCorpse(false);
+    }
+  }
+
+  /** Total fade length when eviction starts (for opacity). */
+  retainedCorpseFadeTotal: number = 0;
+
+  updateRetainedCorpse(delta: number = 0){
+    if(this.destroyed || !this.isRetainedCorpse) return;
+
+    if(this.audioEmitter){
+      this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z + 1.0);
+    }
+
+    if(this.retainedCorpseFadeRemaining >= 0){
+      this.retainedCorpseFadeRemaining -= delta;
+      const total = this.retainedCorpseFadeTotal > 0 ? this.retainedCorpseFadeTotal : 1;
+      const opacity = Math.max(0, this.retainedCorpseFadeRemaining / total);
+      this.setOpacity(opacity);
+      Object.values(this.equipment).forEach(item => {
+        if(item && item.model instanceof OdysseyModel3D){
+          item.model.setOpacity(opacity);
+        }
+      });
+      if(this.retainedCorpseFadeRemaining <= 0){
+        this.setOpacity(0);
+        this.disposeRetainedCorpse(false);
+        return;
       }
     }
 
-    return placeable.id;
+    this.updateAnimationState();
+    if(this.model instanceof OdysseyModel3D && this.model.bonesInitialized){
+      this.model.animateFrame = true;
+      this.model.update(delta);
+    }
+  }
+
+  /**
+   * Dispose a KeepCorpse shell. Does not destroy the linked body bag.
+   */
+  disposeRetainedCorpse(revealBag: boolean = false){
+    if(this.destroyed) return;
+    const area = this.area || GameState.module?.area;
+    area?.corpseCache?.remove(this);
+
+    if(revealBag){
+      const bag = this.getBodyBagPlaceable();
+      if(bag) bag.setBodyBagVisible(true);
+    }
+
+    this.isRetainedCorpse = false;
+    this.willDestroy = false;
+    this.serverDestroyed = true;
+    super.destroy();
+    this.disposeCreatureVisuals();
   }
 
   onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined){
@@ -2336,6 +3328,20 @@ export class ModuleCreature extends ModuleObject {
   }
 
   onAttacked(attackType: CombatActionType){
+    // Retail EventHandler physical-attacked (0xf) @ 004ff0ed — runs for hit and miss.
+    // BroadcastCombatStateToParty on attacker + target refreshes 8000ms combat + party ExcitedDuration.
+    const attacker = this.combatData.lastAttacker;
+    if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleCreature)){
+      const atk = attacker as ModuleCreature;
+      atk.broadcastCombatStateToParty(this);
+      atk.removeCombatInvisibilityEffects();
+    }
+    this.broadcastCombatStateToParty(
+      BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleObject)
+        ? (attacker as ModuleObject)
+        : undefined
+    );
+
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnAttacked];
     if(!nwscript){ return; }
     const instance = nwscript.newInstance();
@@ -2347,8 +3353,22 @@ export class ModuleCreature extends ModuleObject {
     if(this.isDead())
       return true;
 
-    this.resetExcitedDuration();
-    
+    // Retail creature OnApplyDamage does not BroadcastCombatState (engagement is OnAttacked /
+    // harmful OnSpellCastAt). Refresh ExcitedDuration Damage row when HP is lost.
+    const damager = this.combatData.lastDamager ?? this.combatData.lastAttacker;
+    if(BitWise.InstanceOfObject(damager, ModuleObjectType.ModuleCreature)){
+      const dmg = damager as ModuleCreature;
+      dmg.broadcastCombatStateToParty(this);
+      dmg.setExcitedState(ExcitedDurationRow.SpellCast);
+      dmg.removeCombatInvisibilityEffects();
+    }
+    this.broadcastCombatStateToParty(
+      BitWise.InstanceOfObject(damager, ModuleObjectType.ModuleObject)
+        ? (damager as ModuleObject)
+        : undefined
+    );
+    this.setExcitedState(ExcitedDurationRow.Damage);
+
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnDamaged];
     if(!nwscript){ return true; }
     const instance = nwscript.newInstance();
@@ -2360,6 +3380,65 @@ export class ModuleCreature extends ModuleObject {
     if(this == GameState.getCurrentPlayer())
       return;
 
+    const blocker = this.collisionManager?.blockingObject;
+    // Retail PlotPathAroundCreature @ 005d0840:
+    //   GetReputation(blocker, mover) < 11 → pathfail with foundEnemy=blocker;
+    //   if mover commandable → return without hex;
+    //   both arcs fail → pathfail with foundEnemy=INVALID;
+    //   splice ok + hostile on arc → pathfail with that enemy.
+    if(BitWise.InstanceOfObject(blocker, ModuleObjectType.ModuleCreature)){
+      const runPathfail = () => {
+        const pathfail = GameState.NWScript.Load('k_def_pathfail01');
+        if(pathfail){
+          pathfail.newInstance().run(this);
+        }
+      };
+
+      // Retail WalkUpdateLocationTestDistance → BumpFriends before hex/pathfail
+      const bumpTo = this.position.clone();
+      if(this.forceVector?.lengthSq?.() > 1e-8){
+        bumpTo.addScaledVector(this.forceVector.clone().normalize(), 1);
+      }else{
+        const facing = this.facing ?? this.rotation?.z ?? 0;
+        bumpTo.x += Math.cos(facing);
+        bumpTo.y += Math.sin(facing);
+      }
+      if(bumpFriends(this, blocker as ModuleCreature, bumpTo, this.position)){
+        this.collisionManager.blockingObject = undefined;
+        this.collisionTimer = 0;
+        return;
+      }
+
+      // Retail: reputation of blocker toward this mover (GetReputation < 11)
+      const blockerCreature = blocker as ModuleCreature;
+      const hostileBlocker = (blockerCreature.getReputation?.(this) ?? 100) < 11;
+      if(hostileBlocker){
+        this.collisionManager.foundEnemyCreature = blocker;
+        runPathfail();
+        // Retail: commandable mover skips hex after hostile pathfail
+        if(this.getCommadable?.()){
+          return;
+        }
+      }else{
+        this.collisionManager.foundEnemyCreature = undefined;
+      }
+
+      const result = plotPathAroundCreature(this, blockerCreature);
+      if(result.spliced){
+        if(result.foundEnemyOnPath && (result.foundEnemyOnPath.getReputation?.(this) ?? 100) < 11){
+          this.collisionManager.foundEnemyCreature = result.foundEnemyOnPath;
+          runPathfail();
+        }
+        return;
+      }
+
+      // Both CW/CCW failed — retail clears foundEnemy then pathfail
+      this.collisionManager.foundEnemyCreature = undefined;
+      runPathfail();
+      return;
+    }
+
+    this.collisionManager.foundEnemyCreature = undefined;
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnBlocked];
     if(!nwscript){ return; }
     const instance = nwscript.newInstance();
@@ -2368,7 +3447,12 @@ export class ModuleCreature extends ModuleObject {
   }
 
   use(object: ModuleObject){
-    if(this.hasInventory()){
+    const bag = this.getBodyBagPlaceable();
+    if(bag && !bag.destroyed){
+      bag.use(object);
+      return;
+    }
+    if(this.hasInventory() || this.hasLootableContents()){
       GameState.MenuManager.MenuContainer.AttachContainer(this);
       GameState.MenuManager.MenuContainer.open();
     }
@@ -2385,7 +3469,13 @@ export class ModuleCreature extends ModuleObject {
   }
 
   isUseable(){
-    return !this.isDead() || this.isDeadSelectable;
+    if(this.isRetainedCorpse){
+      // Selectable shell that routes loot to the linked bag
+      return !!this.getBodyBagPlaceable() || this.isDeadSelectable;
+    }
+    if(!this.isDead()) return true;
+    if(this.getBodyBagPlaceable()) return true;
+    return this.isDeadSelectable;
   }
 
   isDead(){
@@ -2400,48 +3490,75 @@ export class ModuleCreature extends ModuleObject {
     return this.hasEffect(GameEffectType.EffectPoison);
   }
 
+  hasSetState(state: number){
+    return !!(this.effects || []).find(
+      e => e?.applied && e.type === GameEffectType.EffectSetState && e.getInt(0) === state
+    );
+  }
+
   isConfused(){
-    return this.effects.find( e => e.type == GameEffectType.EffectSetState && e.getInt(0) == 1) ? true : false;
+    return this.hasSetState(1);
   }
 
   isFrightened(){
-    return this.effects.find( e => e.type == GameEffectType.EffectSetState && e.getInt(0) == 2) ? true : false;
+    return this.hasSetState(2);
   }
 
   isDroidStunned(){
-    return this.effects.find( e => e.type == GameEffectType.EffectSetState && e.getInt(0) == 3) ? true : false;
+    return this.hasSetState(3);
   }
 
   isStunned(){
-    return this.effects.find( e => e.type == GameEffectType.EffectSetState && e.getInt(0) == 4) ? true : false;
+    return this.hasSetState(4);
   }
 
   isParalyzed(){
-    return this.effects.find( e => e.type == GameEffectType.EffectSetState && e.getInt(0) == 5) ? true : false;
+    return this.hasSetState(5);
   }
 
   isSleeping(){
-    return this.effects.find( e => e.type == GameEffectType.EffectSetState && e.getInt(0) == 6) ? true : false;
+    return this.hasSetState(6);
   }
 
   isChoking(){
-    return this.effects.find( e => e.type == GameEffectType.EffectSetState && e.getInt(0) == 7) ? true : false;
+    return this.hasSetState(7);
   }
 
   isHorrified(){
-    return this.effects.find( e => e.type == GameEffectType.EffectSetState && e.getInt(0) == 8) ? true : false;
+    return this.hasSetState(8);
   }
 
   isForcePushed(){
-    return this.effects.find( e => e.type == GameEffectType.EffectSetState && e.getInt(0) == 9) ? true : false;
+    return this.hasSetState(9);
   }
 
   isWhirlwind(){
-    return this.effects.find( e => e.type == GameEffectType.EffectSetState && e.getInt(0) == 10) ? true : false;
+    return this.hasSetState(10);
+  }
+
+  isKnockedDown(){
+    return !!(this.effects || []).find(
+      e => e?.type === GameEffectType.EffectKnockdown && e.applied
+    );
+  }
+
+  /** Retail EffectEntangle — aborts AIActionCastSpell mid-cast. */
+  isEntangled(){
+    return this.hasEffect(GameEffectType.EffectEntangle);
   }
 
   isDebilitated(){
-    return this.isConfused() || this.isStunned() || this.isDroidStunned() || this.isParalyzed() || this.isFrightened() || this.isChoking() || this.isForcePushed() || this.isHorrified();
+    return this.isConfused()
+      || this.isStunned()
+      || this.isDroidStunned()
+      || this.isParalyzed()
+      || this.isFrightened()
+      || this.isSleeping()
+      || this.isChoking()
+      || this.isForcePushed()
+      || this.isHorrified()
+      || this.isWhirlwind()
+      || this.isKnockedDown();
   }
 
   setCommadable(bCommandable = 0){
@@ -2689,8 +3806,11 @@ export class ModuleCreature extends ModuleObject {
     this.min1HP = bMinOneHP ? true : false;
   }
 
+  /**
+   * Retail GetCurrentForcePoints: temporary + current.
+   */
   getFP(){
-    return this.forcePoints;
+    return (this.temporaryForce || 0) + (this.currentForce || 0);
   }
 
   getMaxFP(){
@@ -2698,32 +3818,83 @@ export class ModuleCreature extends ModuleObject {
   }
 
   setFP(nAmount = 0){
-    let bonus = this.maxForcePoints - this.forcePoints;
-    this.currentForce = nAmount - bonus;
+    this.temporaryForce = 0;
+    this.currentForce = Math.max(0, nAmount);
   }
 
   addFP(nAmount = 0, ignoreMaxForcePoints = false){
+    if(nAmount <= 0) return;
     if(ignoreMaxForcePoints){
       this.currentForce += nAmount;
     }else{
-      let currentFP = this.getFP();
-      if(currentFP < this.getMaxFP()){
-        if(currentFP + nAmount > this.getMaxFP()){
-          this.currentForce += nAmount + (this.getMaxFP() - (currentFP + nAmount));
-        }else{
-          this.currentForce += nAmount;
-        }
-      }
+      const room = Math.max(0, this.getMaxFP() - this.getFP());
+      this.currentForce += Math.min(nAmount, room);
     }
-
-    if(this.getFP() < 0)
-      this.setFP(0);
+    if(this.getFP() < 0) this.setFP(0);
   }
 
+  /**
+   * Retail UnReadySpell spend order: temporary FP first, then current.
+   */
   subtractFP(nAmount = 0){
-    this.currentForce -= nAmount;
-    if(this.getFP() < 0)
-      this.setFP(0);
+    if(nAmount <= 0) return;
+    let remaining = nAmount;
+    if(this.temporaryForce > 0){
+      if(remaining <= this.temporaryForce){
+        this.temporaryForce -= remaining;
+        return;
+      }
+      remaining -= this.temporaryForce;
+      this.temporaryForce = 0;
+    }
+    this.currentForce -= remaining;
+    if(this.currentForce < 0) this.currentForce = 0;
+  }
+
+  /**
+   * Retail CSWSpell::GetAdjustedForcePoints @ 0059b8a0 — forceadjust.2da by alignment band.
+   */
+  getAdjustedForcePointCost(spell: { forcepoints?: number; goodEvil?: string }): number {
+    const base = typeof spell?.forcepoints === 'number' ? spell.forcepoints : (parseInt(String(spell?.forcepoints)) || 0);
+    if(base <= 0) return 0;
+    // NPCs outside party use base cost (retail param_2 == 0)
+    if(!this.isPartyMember() && !this.isPC){
+      return base;
+    }
+    const alignment = spell?.goodEvil || '-';
+    if(alignment !== 'G' && alignment !== 'E'){
+      return base;
+    }
+    const table = GameState.TwoDAManager.datatables.get('forceadjust');
+    if(!table) return base;
+    const rowIndex = Math.min(10, Math.max(0, Math.floor(this.getGoodEvil() / 10)));
+    const row = table.getRowByIndex?.(rowIndex) || table.rows[rowIndex] || table.rows[String(rowIndex)];
+    if(!row) return base;
+    const mult = parseFloat(alignment === 'G' ? (row.goodcost ?? 1) : (row.evilcost ?? 1));
+    if(!isFinite(mult) || mult <= 0) return base;
+    return Math.max(0, Math.floor(base * mult));
+  }
+
+  /**
+   * FP available for Force-menu enable checks.
+   * Retail GetSelfForcePowers / GetHostileForcePowers: body_fuel → use HP instead of FP.
+   */
+  getForceMenuResource(): number {
+    if(this.bodyFuel){
+      return this.getHP();
+    }
+    return this.getFP();
+  }
+
+  /**
+   * Spend adjusted FP for a spell at cast-start. Returns false if insufficient.
+   */
+  unreadySpell(spell: { forcepoints?: number; goodEvil?: string }): boolean {
+    const cost = this.getAdjustedForcePointCost(spell);
+    if(cost <= 0) return true;
+    if(this.getFP() < cost) return false;
+    this.subtractFP(cost);
+    return true;
   }
 
   getCameraHeight(){
@@ -2734,26 +3905,63 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  /**
+   * NWScript GetAC / simple AC — retail GetArmorClass @ 004ed1d0.
+   */
   getAC(){
+    return this.getArmorClassVersus(undefined, false);
+  }
+
+  /**
+   * Whether this creature currently SEES `object` (perception bit 0x01).
+   * Retail GetVisibleListElement bit_flags & 1.
+   */
+  hasSeenObject(object: ModuleObject): boolean {
+    if(!object || object === this) return true;
+    const entry = this.perceptionList?.find((o) => o.object === object);
+    return !!(entry && (entry.data & PerceptionMask.SEEN));
+  }
+
+  /**
+   * Retail CSWSCreatureStats::GetArmorClassVersus @ 005ad0e0.
+   * @param attacker - creature rolling the attack (for invis / SEEN gates)
+   * @param touch - when true, omit armor / shield / natural equipment AC and
+   *   armor/shield effect AC (types 2–3); dodge + deflection still apply
+   */
+  getArmorClassVersus(attacker?: ModuleCreature, touch = false): number {
     let ac = 10;
 
     for(let i = 0; i < this.classes.length; i++){
       ac += this.classes[i].getACBonus() || 0;
     }
 
-    ac += this.naturalAC || 0;
-
-    const armor = this.equipment.ARMOR;
-    const armorAC = armor?.getACBonus() || 0;
-    ac += armorAC;
-
-    // Shield / off-hand AC item (non-weapon with AC)
-    const leftHand = this.equipment.LEFTHAND;
-    if(leftHand && leftHand.getWeaponType() == WeaponType.INVALID){
-      ac += leftHand.getACBonus() || 0;
+    // creaturesize.2da acattachmod by appearance.sizecategory
+    const sizeCat = this.getAppearance()?.sizecategory ?? 3;
+    const sizeRow = GameState.SWRuleSet?.creatureSizes?.[sizeCat];
+    if(sizeRow && typeof sizeRow.acattachmod === 'number' && sizeRow.acattachmod !== -1){
+      ac += sizeRow.acattachmod;
     }
 
-    // DEX bonus, capped by armor max dex (baseitems.dexbonus). -1 = uncapped.
+    if(!touch){
+      ac += this.naturalAC || 0;
+
+      const armor = this.equipment.ARMOR;
+      ac += armor?.getACBonus() || 0;
+
+      // Shield / off-hand AC item (non-weapon with AC)
+      const leftHand = this.equipment.LEFTHAND;
+      if(leftHand && leftHand.getWeaponType() == WeaponType.INVALID){
+        ac += leftHand.getACBonus() || 0;
+      }
+    }
+
+    // Flat-footed / can't see attacker: deny positive DEX (negative still hurts).
+    // Retail: GetInvisible(attacker, defender) || !(SEEN bit) → no GetDEXMod / dodge field.
+    const loseDex =
+      !!attacker &&
+      (isInvisibleToObserver(this, attacker) || !this.hasSeenObject(attacker));
+
+    const armor = this.equipment.ARMOR;
     let dexBonus = Math.floor((this.getDEX() - 10) / 2);
     if(this.isDebilitated()){
       dexBonus = Math.min(dexBonus, 0);
@@ -2764,9 +3972,13 @@ export class ModuleCreature extends ModuleObject {
         dexBonus = Math.min(dexBonus, maxDex);
       }
     }
+    if(loseDex){
+      dexBonus = Math.min(dexBonus, 0);
+    }
     ac += dexBonus;
 
-    // Effect AC bonuses (EffectACIncrease/Decrease). int0=modifyType, int1=value
+    // Effect AC bonuses. int0=modifyType, int1=value
+    // Touch: skip armor/shield enchantment (types 2–3); dodge/natural/deflection apply.
     let dodgeBonus = 0;
     let naturalBonus = 0;
     let armorEffect = 0;
@@ -2784,16 +3996,22 @@ export class ModuleCreature extends ModuleObject {
       switch(modType){
         case 0: dodgeBonus += signed; break;     // AC_DODGE_BONUS
         case 1: naturalBonus += signed; break;   // AC_NATURAL_BONUS
-        case 2: armorEffect = Math.max(armorEffect, signed); break; // AC_ARMOUR_ENCHANTMENT (max)
-        case 3: shieldEffect = Math.max(shieldEffect, signed); break;
+        case 2: // AC_ARMOUR_ENCHANTMENT (max)
+          if(!touch) armorEffect = Math.max(armorEffect, signed);
+          break;
+        case 3: // AC_SHIELD_ENCHANTMENT (max)
+          if(!touch) shieldEffect = Math.max(shieldEffect, signed);
+          break;
         case 4: deflectEffect = Math.max(deflectEffect, signed); break;
         default: dodgeBonus += signed; break;
       }
     }
+    // Retail applies effect dodge even when DEX is denied; natural effects apply on touch.
     ac += dodgeBonus + naturalBonus + armorEffect + shieldEffect + deflectEffect;
 
     // Dueling AC feat mod (GetTotalACFeatMod) — one-handed with free off-hand
     const rightHand = this.equipment.RIGHTHAND;
+    const leftHand = this.equipment.LEFTHAND;
     if(
       rightHand && !leftHand &&
       (rightHand.getWeaponWield() == WeaponWield.ONE_HANDED_SWORD ||
@@ -2812,6 +4030,50 @@ export class ModuleCreature extends ModuleObject {
     return ac;
   }
 
+  /**
+   * Retail ExecuteCommandDoTouchAttack @ 00548de0.
+   * @returns 0 miss, 1 hit, 2 critical
+   */
+  doTouchAttack(target: ModuleObject, ranged = false): number {
+    if(!target) return 0;
+    if(
+      BitWise.InstanceOfObject(target, ModuleObjectType.ModuleDoor) ||
+      BitWise.InstanceOfObject(target, ModuleObjectType.ModulePlaceable)
+    ){
+      return 1;
+    }
+    if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
+      return 0;
+    }
+    const defender = target as ModuleCreature;
+
+    // Concealment → miss (ResolveDefensiveEffects subset)
+    let conceal = 0;
+    for(let i = 0; i < defender.effects.length; i++){
+      const e = defender.effects[i];
+      if(e?.type === GameEffectType.EffectConcealment){
+        conceal = Math.max(conceal, e.getInt(0) || 0);
+      }
+    }
+    if(conceal > 0 && (Math.floor(Math.random() * 100) + 1) <= conceal){
+      return 0;
+    }
+
+    const atkBonus =
+      this.getBaseAttackBonus() +
+      Math.floor(((ranged ? this.getDEX() : this.getSTR()) - 10) / 2) +
+      getAttackEffectBonus(this);
+    const touchAC = defender.getArmorClassVersus(this, true);
+    const roll = Dice.rollD20(1);
+
+    if(roll === 1) return 0;
+    if(roll === 20){
+      const confirm = Dice.rollD20(1);
+      return (confirm + atkBonus) >= touchAC ? 2 : 1;
+    }
+    return (roll + atkBonus) >= touchAC ? 1 : 0;
+  }
+
   getSTR(calculateBonuses = true){
     if(!calculateBonuses){
       return this.str;
@@ -2828,7 +4090,8 @@ export class ModuleCreature extends ModuleObject {
       (this.equipment.BELT?.getSTRBonus() || 0) +
       (this.equipment.CLAW1?.getSTRBonus() || 0) +
       (this.equipment.CLAW2?.getSTRBonus() || 0) +
-      (this.equipment.HIDE?.getSTRBonus() || 0);
+      (this.equipment.HIDE?.getSTRBonus() || 0) +
+      getAbilityEffectBonus(this, 0);
     }
   }
 
@@ -2848,7 +4111,8 @@ export class ModuleCreature extends ModuleObject {
       (this.equipment.BELT?.getDEXBonus() || 0) +
       (this.equipment.CLAW1?.getDEXBonus() || 0) +
       (this.equipment.CLAW2?.getDEXBonus() || 0) +
-      (this.equipment.HIDE?.getDEXBonus() || 0);
+      (this.equipment.HIDE?.getDEXBonus() || 0) +
+      getAbilityEffectBonus(this, 1);
     }
   }
 
@@ -2868,7 +4132,8 @@ export class ModuleCreature extends ModuleObject {
       (this.equipment.BELT?.getCONBonus() || 0) +
       (this.equipment.CLAW1?.getCONBonus() || 0) +
       (this.equipment.CLAW2?.getCONBonus() || 0) +
-      (this.equipment.HIDE?.getCONBonus() || 0);
+      (this.equipment.HIDE?.getCONBonus() || 0) +
+      getAbilityEffectBonus(this, 2);
     }
   }
 
@@ -2888,7 +4153,8 @@ export class ModuleCreature extends ModuleObject {
       (this.equipment.BELT?.getCHABonus() || 0) +
       (this.equipment.CLAW1?.getCHABonus() || 0) +
       (this.equipment.CLAW2?.getCHABonus() || 0) +
-      (this.equipment.HIDE?.getCHABonus() || 0);
+      (this.equipment.HIDE?.getCHABonus() || 0) +
+      getAbilityEffectBonus(this, 5);
     }
   }
 
@@ -2908,7 +4174,8 @@ export class ModuleCreature extends ModuleObject {
       (this.equipment.BELT?.getWISBonus() || 0) +
       (this.equipment.CLAW1?.getWISBonus() || 0) +
       (this.equipment.CLAW2?.getWISBonus() || 0) +
-      (this.equipment.HIDE?.getWISBonus() || 0);
+      (this.equipment.HIDE?.getWISBonus() || 0) +
+      getAbilityEffectBonus(this, 4);
     }
   }
 
@@ -2928,12 +4195,29 @@ export class ModuleCreature extends ModuleObject {
       (this.equipment.BELT?.getINTBonus() || 0) +
       (this.equipment.CLAW1?.getINTBonus() || 0) +
       (this.equipment.CLAW2?.getINTBonus() || 0) +
-      (this.equipment.HIDE?.getINTBonus() || 0);
+      (this.equipment.HIDE?.getINTBonus() || 0) +
+      getAbilityEffectBonus(this, 3);
     }
   }
 
+  /**
+   * Retail CalculateSpellSaveDC @ 004ef6e0 —
+   * 5 + total level + WIS mod + CHA mod + Force Focus (+1/+2/+4).
+   */
   getSpellSaveDC(){
-    return 10 + this.getSpellCasterLevel();
+    const wisMod = Math.floor((this.getWIS() - 10) / 2);
+    const chaMod = Math.floor((this.getCHA() - 10) / 2);
+    let dc = 5 + this.getTotalClassLevel() + wisMod + chaMod;
+    if(this.getHasFeat(CombatFeatType.FORCE_FOCUS_MASTERY)){
+      return dc + 4;
+    }
+    if(this.getHasFeat(CombatFeatType.FORCE_FOCUS_ADVANCED)){
+      return dc + 2;
+    }
+    if(this.getHasFeat(CombatFeatType.FORCE_FOCUS)){
+      return dc + 1;
+    }
+    return dc;
   }
 
   getSpellCasterLevel(){
@@ -2960,12 +4244,12 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getWalkRateId(){
-
-    if(GameState.PartyManager.party.indexOf(this) >= 0){
-      return 0;
-    }
-
     return this.walkRate;
+  }
+
+  /** NWScript GetMovementRate — WalkRate id (0 if invalid). */
+  getMovementRate(){
+    return this.getWalkRateId() | 0;
   }
 
   getName(){
@@ -2977,38 +4261,284 @@ export class ModuleCreature extends ModuleObject {
   }
 
   isWalking(){
+    if(this.playerControl?.active){
+      return !!this.playerControl.walking;
+    }
     if(this.action && this.action.type == ActionType.ActionMoveToPoint){
       return !this.action.getParameter(5) ? true : false;
+    }
+    if(this.action && this.action.type == ActionType.ActionFollowLeader){
+      return !!this.walk;
+    }
+    if(this.action && this.action.type == ActionType.ActionForceFollowObject){
+      return !!this.walk;
+    }
+    if(this.action && this.action.type == ActionType.ActionDrive){
+      const flags = this.action.getParameter<number>(4) ?? 0;
+      return (flags & 0x03) !== 0x03;
     }
     return this.walk;
   }
 
+  private resolveCreatureSpeed(){
+    const table = GameState.TwoDAManager.datatables.get('creaturespeed');
+    const token = this.creatureAppearance?.moverate;
+    return getCreatureSpeedRates(this.getWalkRateId(), token, table as any);
+  }
+
   getRunSpeed(){
-    if(this.getWalkRateId() == 7){
-      return this.creatureAppearance.rundist
-    }
-    const creaturespeed2DA = GameState.TwoDAManager.datatables.get('creaturespeed');
-    if(creaturespeed2DA){
-      return parseFloat(creaturespeed2DA.rows[this.getWalkRateId()].runrate);
-    }
+    return this.resolveCreatureSpeed().run;
   }
 
   getWalkSpeed(){
-    if(this.getWalkRateId() == 7){
-      return this.creatureAppearance.walkdist
-    }
-    const creaturespeed2DA = GameState.TwoDAManager.datatables.get('creaturespeed');
-    if(creaturespeed2DA){
-      return parseFloat(creaturespeed2DA.rows[this.getWalkRateId()].walkrate);
+    return this.resolveCreatureSpeed().walk;
+  }
+
+  /**
+   * Clear locomotion sticky state (walk / scale / override / WalkUpdate ramp).
+   * Called from Action.dispose and clearAllActions.
+   * @param resetPlayerControl When true (action dispose), also zero cam-relative axes/velocity.
+   */
+  clearLocomotionState(resetPlayerControl: boolean = false){
+    this.force = 0;
+    this.speed = 0;
+    this.walk = false;
+    this.locomotionScale = 1;
+    this.moveDirOverride = undefined;
+    resetWalkSpeedFactor(this);
+    if(resetPlayerControl && this.playerControl){
+      this.playerControl.active = false;
+      this.playerControl.axisForward = 0;
+      this.playerControl.axisRight = 0;
+      this.playerControl.velX = 0;
+      this.playerControl.velY = 0;
+      this.playerControl.accelX = 0;
+      this.playerControl.accelY = 0;
+      this.playerControl.facingErrorDeg = 0;
+      this.playerControl.lastAnimMoveSpeed = 0;
+      this.playerControl.driveFlags = 0;
     }
   }
 
+  /** Path/Drive movers call this from DriveUpdateLocation; RK4 uses forceVector sweep. */
+  updateCollision(delta: number = 0){
+    this.collisionManager?.updateCollision(delta);
+  }
+
+  /**
+   * Retail CSWPlayerControlCamRelative::Control — RK4 accel/drag + turn + DriveAnimationUpdate gate.
+   */
+  applyPlayerCamRelativeControl(delta: number = 0){
+    const ctrl = this.playerControl;
+    if(!ctrl) return;
+    const appearance = this.getAppearance();
+    const walking = !!ctrl.walking;
+    // Retail GetMaxSpeed / GetDriveAcceleration: detect (PlayerState bit 0), not walk key
+    const limits = resolvePlayerDriveLimits(
+      !!this.detectMode,
+      appearance?.driveaccl ?? 0,
+      appearance?.drivemaxspeed ?? 0,
+      appearance?.driveanimwalk ?? 0
+    );
+    const driveAccl = limits.driveAccl;
+    const driveMax = coalesceDriveMaxSpeed(appearance?.drivemaxspeed ?? 0);
+    const vmax = limits.maxSpeed * (this.movementSpeed > 0 ? this.movementSpeed : 1);
+
+    // cameraRelativeDesired applies walk ×0.5 on the stick vector only
+    const desired = cameraRelativeDesired(
+      ctrl.axisForward,
+      ctrl.axisRight,
+      FollowerCamera.facing,
+      walking
+    );
+    playerKillReleasedAxisVelocity(
+      ctrl,
+      ctrl.axisForward,
+      ctrl.axisRight,
+      FollowerCamera.facing
+    );
+
+    const stickZero =
+      Math.abs(ctrl.axisForward) < 1e-4 && Math.abs(ctrl.axisRight) < 1e-4;
+    const prevAnimSpeed = ctrl.lastAnimMoveSpeed;
+
+    const step = playerIntegrateRk4(ctrl, desired.x, desired.y, driveAccl, vmax, delta);
+    this.forceVector.set(step.dx, step.dy, 0);
+    this.speed = step.speed;
+    this.force = step.speed > 1e-4 ? 1 : 0;
+
+    if(step.speed > 1e-4){
+      const desiredFacing = Math.atan2(ctrl.velY, ctrl.velX) - Math.PI / 2;
+      let facingError = ((desiredFacing - this.rotation.z) * 180) / Math.PI;
+      while(facingError > 180) facingError -= 360;
+      while(facingError < -180) facingError += 360;
+      ctrl.facingErrorDeg = facingError;
+      if(playerShouldApplyTurn(facingError, prevAnimSpeed)){
+        const minTurn = FollowerCamera.minTurnRateDeg;
+        const maxTurn = FollowerCamera.maxTurnRateDeg;
+        const nextFacing = playerApplyTurn(
+          this.rotation.z,
+          desiredFacing,
+          step.speed,
+          vmax,
+          minTurn,
+          maxTurn,
+          delta
+        );
+        // Retail SetOrientation applies the rate-limited yaw immediately.
+        // Do not route through facingAnim (TURN_SPEED_SLOW) — that overrides Min/MaxTurnRate.
+        this.setFacing(nextFacing, true);
+      }
+    }else if(
+      stickZero &&
+      (GameState.clientCameraMode | 0) === ClientCameraMode.COMBAT
+    ){
+      // Retail Control camera_mode 6 idle face toward last hostile target @ 900°/s
+      const target = FollowerCamera.getCombatLookTarget(this);
+      if(
+        target &&
+        target !== this &&
+        !target.destroyed &&
+        this.getReputation(target) <= 10
+      ){
+        const dx = target.position.x - this.position.x;
+        const dy = target.position.y - this.position.y;
+        if(dx * dx + dy * dy > 1e-8){
+          const targetYaw = Math.atan2(dy, dx) - Math.PI / 2;
+          this.setFacing(
+            playerCombatFaceStep(this.rotation.z, targetYaw, delta),
+            true
+          );
+        }
+      }
+    }
+
+    // DriveAnimationUpdate uses signed speed along current creature forward,
+    // not total lateral velocity.
+    if(step.speed > 1e-4){
+      const facingX = Math.cos(this.rotation.z + Math.PI / 2);
+      const facingY = Math.sin(this.rotation.z + Math.PI / 2);
+      const forwardSpeed = ctrl.velX * facingX + ctrl.velY * facingY;
+      const playbackSpeed = Math.abs(forwardSpeed) > 1e-4
+        ? Math.abs(forwardSpeed)
+        : step.speed;
+      // Detect forces walk-speed Vmax; never pick run anim while detect/walk
+      if(isDriveAnimRunning(forwardSpeed, driveMax) && !walking && !this.detectMode){
+        this.setAnimationState(ModuleCreatureAnimState.RUNNING);
+        const animDist = coalesceDriveAnimRun(
+          GameState.GameKey === GameEngineType.TSL
+            ? (appearance.driveanimrun_pc || appearance.driveanimrun)
+            : appearance.driveanimrun
+        );
+        this.animSpeed = Math.max(
+          0.1,
+          driveAnimPlaybackRate(
+            playbackSpeed,
+            animDist,
+            this.getAnimationLength(ModuleCreatureAnimState.RUNNING)
+          )
+        );
+      }else if(ctrl.axisForward < -0.2){
+        this.setAnimationState(ModuleCreatureAnimState.WALKING_BACK);
+        const animDist = coalesceDriveAnimWalk(appearance.driveanimwalk);
+        this.animSpeed = Math.max(
+          0.1,
+          driveAnimPlaybackRate(
+            playbackSpeed,
+            animDist,
+            this.getAnimationLength(ModuleCreatureAnimState.WALKING_BACK)
+          )
+        );
+      }else{
+        this.setAnimationState(ModuleCreatureAnimState.WALKING);
+        const animDist = coalesceDriveAnimWalk(appearance.driveanimwalk);
+        this.animSpeed = Math.max(
+          0.1,
+          driveAnimPlaybackRate(
+            playbackSpeed,
+            animDist,
+            this.getAnimationLength(ModuleCreatureAnimState.WALKING)
+          )
+        );
+      }
+    }else{
+      ctrl.facingErrorDeg = 0;
+      if(
+        this.animationState.index == ModuleCreatureAnimState.RUNNING ||
+        this.animationState.index == ModuleCreatureAnimState.WALKING ||
+        this.animationState.index == ModuleCreatureAnimState.WALKING_BACK
+      ){
+        if(this.combatMode === CombatMode.COUNTERSPELL){
+          this.setAnimationState(ModuleCreatureAnimState.CASTOUT1_LP);
+        }else{
+          this.setAnimationState(
+            this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
+          );
+        }
+      }
+      this.animSpeed = 1;
+    }
+
+    // Retail SetSWAnimationSpeed — next frame's turn gate reads this
+    ctrl.lastAnimMoveSpeed = step.speed;
+
+    // Consume one-shot axes each frame (keyboard processors re-assert while held)
+    if(!ctrl.active){
+      ctrl.axisForward = 0;
+      ctrl.axisRight = 0;
+    }
+  }
+
+  /**
+   * Path/Drive animation pacing uses appearance walkdist/rundist and the
+   * actual world speed produced by WalkUpdateLocation/DriveUpdateLocation.
+   */
+  private updateServerLocomotionAnimationRate(){
+    if(!(this.speed > 0)){
+      this.animSpeed = 1;
+      return;
+    }
+    const running = this.animationState.index == ModuleCreatureAnimState.RUNNING;
+    const animState = running
+      ? ModuleCreatureAnimState.RUNNING
+      : this.animationState.index == ModuleCreatureAnimState.WALKING_BACK
+        ? ModuleCreatureAnimState.WALKING_BACK
+        : ModuleCreatureAnimState.WALKING;
+    const animDist = running
+      ? (this.creatureAppearance?.rundist || 5.4)
+      : (this.creatureAppearance?.walkdist || 1.7);
+    this.animSpeed = Math.max(
+      0.1,
+      driveAnimPlaybackRate(this.speed, animDist, this.getAnimationLength(animState))
+    );
+  }
+
   getMovementSpeed(){
-    return (this.isWalking() ? this.getWalkSpeed() : this.getRunSpeed()) * this.movementSpeed;
+    const scale = (this.locomotionScale > 0 ? this.locomotionScale : 1) * this.movementSpeed;
+    // Retail LimitMovementSpeed caps to walk while slowed
+    if(this.limitMovementSpeed){
+      return this.getWalkSpeed() * scale;
+    }
+    return (this.isWalking() ? this.getWalkSpeed() : this.getRunSpeed()) * scale;
   }
 
   getHitDistance(){
     return this.creatureAppearance.hitdist;
+  }
+
+  /** appearance.hitradius — unengaged DesiredAttackRange. */
+  getHitRadius(){
+    return this.creatureAppearance.hitradius;
+  }
+
+  /** appearance.creperspace — creature spacing / engaged DesiredAttackRange. */
+  getCreaturePersonalSpace(){
+    return this.creatureAppearance.creperspace;
+  }
+
+  /** appearance.perspace — pathfind / walkmesh personal radius. */
+  getPathPersonalSpace(){
+    return this.creatureAppearance.perspace;
   }
 
   getMainClass(){
@@ -3018,18 +4548,62 @@ export class ModuleCreature extends ModuleObject {
     return this.classes[this.classes.length - 1];
   }
 
-  getTotalClassLevel(){
+  /**
+   * @param subtractNegatives — retail GetLevel(stats, 1): subtract class.negativeLevels
+   */
+  getTotalClassLevel(subtractNegatives = false){
     let total = 0;
     for(let i = 0, len = this.classes.length; i < len; i++){
-      total += this.classes[i].level;
+      const cls = this.classes[i];
+      let lv = cls.level || 0;
+      if(subtractNegatives){
+        lv = Math.max(0, lv - (cls.negativeLevels || 0));
+      }
+      total += lv;
     }
     return total;
   }
 
-  getClassLevel(nClass = 0){
+  /**
+   * Retail GetForceItemMask @ 004efa80 — bit flags from equipped baseitem types
+   * used by AIActionCastSpell forbid/require mask checks.
+   */
+  getForceItemMask(): number {
+    let mask = 0;
+    const slots = this.equipment;
+    if(!slots) return 0;
+    const items = [
+      slots.HEAD, slots.ARMOR, slots.ARMS, slots.RIGHTHAND, slots.LEFTHAND,
+      slots.LEFTARMBAND, slots.RIGHTARMBAND, slots.IMPLANT, slots.BELT,
+      slots.RIGHTHAND2, slots.LEFTHAND2,
+    ];
+    for(let i = 0; i < items.length; i++){
+      const item = items[i];
+      if(!item) continue;
+      const t = item.baseItemId | 0;
+      switch(t){
+        case 0x1f: mask |= 0x01; break;
+        case 0x20: mask |= 0x02; break;
+        case 0x21: mask |= 0x04; break;
+        case 0x22: mask |= 0x08; break;
+        case 0x23: mask |= 0x10; break;
+        case 0x24: mask |= 0x20; break;
+        case 0x27:
+        case 0x28:
+        case 0x29: mask |= 0x40; break;
+      }
+    }
+    return mask;
+  }
+
+  getClassLevel(nClass = 0, subtractNegatives = false){
     for(let i = 0, len = this.classes.length; i < len; i++){
       if(this.classes[i].id == nClass){
-        return this.classes[i].level;
+        let lv = this.classes[i].level || 0;
+        if(subtractNegatives){
+          lv = Math.max(0, lv - (this.classes[i].negativeLevels || 0));
+        }
+        return lv;
       }
     }
     return 0;
@@ -3146,6 +4720,15 @@ export class ModuleCreature extends ModuleObject {
         return true;
       }
     }
+    // Retail bonus_feats list from EffectBonusFeat @ 004e46e0
+    if(this.effects?.length){
+      for(let i = 0; i < this.effects.length; i++){
+        const e = this.effects[i];
+        if(e?.type === GameEffectType.EffectBonusFeat && e.getInt(0) === id){
+          return true;
+        }
+      }
+    }
     return false;
   }
 
@@ -3153,8 +4736,289 @@ export class ModuleCreature extends ModuleObject {
     return this.skills[value].rank > 0;
   }
 
+  /**
+   * Retail CSWSCreatureStats::GetCanUseSkill @ 005af880.
+   */
+  getCanUseSkill(value: number): boolean {
+    return getCanUseSkillRetail(this.skills, this.classes, value);
+  }
+
+  /**
+   * Retail CSWSCreatureStats::GetSkillRank @ 005aa570.
+   * @param raw — when true, return signed base rank only (no mods/feats/effects).
+   */
+  getSkillRank(value: number, raw: boolean = false){
+    return getSkillRankRetail(this, value, raw);
+  }
+
   getSkillLevel(value: number){
-    return this.skills[value].rank;
+    return this.getSkillRank(value, false);
+  }
+
+  /**
+   * Retail CSWCCreature::IsStealthCapable — skill + stealth device on belt/hide.
+   */
+  isStealthCapable(): boolean {
+    if(this.area?.restrictMode) return false;
+    if(this.getSkillLevel(2) < 1) return false; // SkillType.STEALTH
+    const belt = this.equipment?.BELT;
+    const hide = this.equipment?.HIDE;
+    const isStealthDevice = (item: ModuleItem) =>
+      !!item && (
+        item.baseItemId === BaseItemType.STEALTH_UNIT ||
+        item.baseItem?.itemType === 0x2c
+      );
+    if(isStealthDevice(belt)) return true;
+    if(isStealthDevice(hide)) return true;
+    return false;
+  }
+
+  /**
+   * Retail CSWCCreature::SetStealthMode @ 0050ee50 — toggle invisibility for party stealth.
+   */
+  setStealthMode(enabled: boolean){
+    const next = !!enabled;
+    if(this.stealthMode === next) return;
+    this.stealthMode = next;
+    if(next){
+      const effect = new GameState.GameEffectFactory.EffectInvisibility();
+      effect.setCreator(this);
+      effect.setDurationType(GameEffectDurationType.PERMANENT);
+      // INVISIBILITY_TYPE_NORMAL = 1 — stripped on combat engagement
+      effect.setInt(0, 1);
+      this.addEffect(effect);
+    }else{
+      const effects = this.effects ? this.effects.slice() : [];
+      for(let i = 0; i < effects.length; i++){
+        if(effects[i]?.type === GameEffectType.EffectInvisibility){
+          this.removeEffect(effects[i]);
+        }
+      }
+    }
+  }
+
+  /**
+   * Retail SetDetectMode @ 0050ee30 — sets detect_mode; ComputeModifiedMovementRate
+   * only applies LimitMovementSpeed for stealth in KotOR (detect is a no-op there).
+   */
+  setDetectMode(enabled: boolean){
+    const next = !!enabled;
+    if(this.detectMode === next) return;
+    this.detectMode = next;
+  }
+
+  /**
+   * Retail SetActivity @ 004f00a0 — set/clear activity bits with combat-mode exclusivity.
+   */
+  setActivity(bits: number, enable: boolean, _param3: number = 0){
+    const mask = bits | 0;
+    if(!mask) return;
+    if(enable && (this.activity & mask) === mask){
+      return;
+    }
+
+    // Entering / clearing a combat-mode bit clears other unlocked combat-mode bits
+    if(
+      ((mask & COMBAT_MODE_ACTIVITY_MASK) !== 0 && enable) ||
+      (mask === COMBAT_MODE_ACTIVITY_MASK && !enable)
+    ){
+      for(const bit of [0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000]){
+        if((this.activity & bit) !== 0 && (this.activityLocked & bit) === 0 && (mask & bit) === 0){
+          this.setActivity(bit, false, 0);
+        }
+      }
+    }
+
+    // Skill-mode group 0xf8 exclusivity (simplified)
+    if(((mask & 0xf8) !== 0 && enable) || (mask === 0xf8 && !enable)){
+      for(const bit of [0x08, 0x10, 0x20, 0x40, 0x80]){
+        if((this.activity & bit) !== 0 && (this.activityLocked & bit) === 0 && (mask & bit) === 0){
+          this.setActivity(bit, false, 0);
+        }
+      }
+    }
+
+    if(enable){
+      this.activity |= mask;
+    }else{
+      this.activity &= ~mask;
+    }
+
+    if((mask & 1) !== 0){
+      if(enable){
+        if((this.activity & 0xc) === 0){
+          this.setStealthMode(true);
+        }else{
+          this.activity &= ~1;
+        }
+      }else{
+        this.setStealthMode(false);
+      }
+    }
+    if((mask & 2) !== 0){
+      this.setDetectMode(enable);
+    }
+    // dialog-stop (4) left as no-op beyond the bit itself (StopDialog on clear)
+  }
+
+  /**
+   * Retail ActivityManager @ 004f87d0 —
+   * param 1 clears skill/combat soft modes; param 4 clears stealth/dialog for CounterSpell.
+   */
+  activityManager(reason: number){
+    if(reason === 4){
+      if((this.activity & 1) !== 0 && (this.activityLocked & 1) === 0){
+        this.activity &= ~1;
+        this.setStealthMode(false);
+      }
+      if((this.activity & 4) !== 0 && (this.activityLocked & 4) === 0){
+        this.activity &= ~4;
+      }
+      if((this.activity & 8) !== 0 && (this.activityLocked & 8) === 0){
+        this.activity &= ~8;
+      }
+      return;
+    }
+
+    if((this.activityLocked & COMBAT_MODE_ACTIVITY_MASK) !== COMBAT_MODE_ACTIVITY_MASK){
+      for(const bit of [0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000]){
+        if((this.activity & bit) !== 0 && (this.activityLocked & bit) === 0){
+          this.setActivity(bit, false, 0);
+        }
+      }
+      this.activity &= ~COMBAT_MODE_ACTIVITY_MASK;
+    }
+
+    if(reason === 1){
+      if((this.activity & 1) !== 0 && (this.activityLocked & 1) === 0){
+        this.activity &= ~1;
+        this.setStealthMode(false);
+      }
+      if((this.activity & 4) !== 0 && (this.activityLocked & 4) === 0){
+        this.activity &= ~4;
+      }
+      for(const bit of [0x08, 0x10, 0x20, 0x40, 0x80]){
+        if((this.activity & bit) !== 0 && (this.activityLocked & bit) === 0){
+          this.activity &= ~bit;
+        }
+      }
+    }
+  }
+
+  /**
+   * Retail SetCombatMode @ 0050ee80 — maps mode → activity bit; defers while round started.
+   */
+  setCombatMode(mode: number, forceImmediate: boolean = false){
+    const next = (mode | 0) as CombatMode;
+
+    if(!forceImmediate && next === this.combatMode){
+      return;
+    }
+
+    if(!forceImmediate && next !== CombatMode.COUNTERSPELL && this.combatRound?.roundStarted){
+      this.pendingCombatMode = next;
+      return;
+    }
+
+    const prev = this.combatMode;
+    this.combatMode = next;
+    this.applyCombatModeActivityTransition(prev, next);
+  }
+
+  /**
+   * Match SetCombatMode activity transitions; CounterSpell uses the same bit mapping.
+   */
+  private applyCombatModeActivityTransition(prev: CombatMode, next: CombatMode){
+    if(next === CombatMode.MODE_1){
+      this.setActivity(0x400, true, 0);
+      return;
+    }
+    if(prev === CombatMode.MODE_1){
+      this.setActivity(0x400, false, 0);
+      // Retail stops here when leaving mode 1; still apply next when forced
+      if(next === CombatMode.NONE) return;
+    }
+
+    if(next === CombatMode.MODE_2){
+      this.setActivity(0x100, true, 0);
+      return;
+    }
+    if(prev === CombatMode.MODE_2){
+      this.setActivity(0x100, false, 0);
+      if(next === CombatMode.NONE) return;
+    }
+
+    if(next === CombatMode.MODE_3){
+      this.setActivity(0x200, true, 0);
+      return;
+    }
+    if(prev === CombatMode.MODE_3){
+      this.setActivity(0x200, false, 0);
+      if(next === CombatMode.NONE) return;
+    }
+
+    if(next === CombatMode.COUNTERSPELL){
+      this.setActivity(0x800, true, 0);
+      return;
+    }
+    if(prev === CombatMode.COUNTERSPELL){
+      this.setActivity(0x800, false, 0);
+      if(next === CombatMode.NONE) return;
+    }
+
+    if(next === CombatMode.MODE_5){
+      this.setActivity(0x1000, true, 0);
+      return;
+    }
+    if(prev === CombatMode.MODE_5){
+      this.setActivity(0x1000, false, 0);
+      if(next === CombatMode.NONE) return;
+    }
+
+    if(next === CombatMode.MODE_6){
+      this.setActivity(0x2000, true, 0);
+      return;
+    }
+    if(prev === CombatMode.MODE_6){
+      this.setActivity(0x2000, false, 0);
+    }
+  }
+
+  /**
+   * Retail AIActionCounterSpell combat-mode enter @ 005143d7 —
+   * ActivityManager(4) then set mode 4 / activity 0x800 (or clear prior mode bit).
+   */
+  enterCounterSpellMode(){
+    this.activityManager(4);
+    if(this.combatMode === CombatMode.COUNTERSPELL){
+      return;
+    }
+    const prev = this.combatMode;
+    this.combatMode = CombatMode.COUNTERSPELL;
+    if(prev === CombatMode.MODE_1){
+      this.setActivity(0x400, false, 0);
+    }else if(prev === CombatMode.MODE_2){
+      this.setActivity(0x100, false, 0);
+    }else if(prev === CombatMode.MODE_3){
+      this.setActivity(0x200, false, 0);
+    }else{
+      this.setActivity(0x800, true, 0);
+    }
+  }
+
+  /** Clear combat mode (CreateNewAttackActions / leave CounterSpell). */
+  clearCombatMode(){
+    this.pendingCombatMode = -1;
+    if(this.combatMode === CombatMode.NONE) return;
+    const prev = this.combatMode;
+    this.combatMode = CombatMode.NONE;
+    this.applyCombatModeActivityTransition(prev, CombatMode.NONE);
+  }
+
+  toggleStealthMode(){
+    if(!this.isStealthCapable()) return false;
+    this.setStealthMode(!this.stealthMode);
+    return this.stealthMode;
   }
 
   getHasSpell(id = 0){
@@ -3311,6 +5175,7 @@ export class ModuleCreature extends ModuleObject {
     this.listeningPatterns[sString] = iNum;
   }
 
+  /** NWScript GetPersonalSpace — appearance.perspace. */
   getPersonalSpace(){
     return this.creatureAppearance.perspace;
   }
@@ -3544,9 +5409,28 @@ export class ModuleCreature extends ModuleObject {
     item.onEquip(this);
     await item.loadModel();
     switch(slot){
+      case ModuleCreatureArmorSlot.IMPLANT:
+        this.equipment.IMPLANT = item;
+      break;
+      case ModuleCreatureArmorSlot.HEAD:
+        this.equipment.HEAD = item;
+        await this.loadModel();
+      break;
+      case ModuleCreatureArmorSlot.ARMS:
+        this.equipment.ARMS = item;
+      break;
+      case ModuleCreatureArmorSlot.LEFTARMBAND:
+        this.equipment.LEFTARMBAND = item;
+      break;
+      case ModuleCreatureArmorSlot.RIGHTARMBAND:
+        this.equipment.RIGHTARMBAND = item;
+      break;
       case ModuleCreatureArmorSlot.ARMOR:
         this.equipment.ARMOR = item;
         await this.loadModel();
+      break;
+      case ModuleCreatureArmorSlot.BELT:
+        this.equipment.BELT = item;
       break;
       case ModuleCreatureArmorSlot.RIGHTHAND:
         this.equipment.RIGHTHAND = item;
@@ -3575,6 +5459,9 @@ export class ModuleCreature extends ModuleObject {
       case ModuleCreatureArmorSlot.CLAW3:
         this.equipment.CLAW3 = item;
       break;
+      case ModuleCreatureArmorSlot.HIDE:
+        this.equipment.HIDE = item;
+      break;
     }
   }
 
@@ -3584,33 +5471,29 @@ export class ModuleCreature extends ModuleObject {
         case ModuleCreatureArmorSlot.IMPLANT:
           try{
             if(this.equipment.IMPLANT){
-              this.equipment.IMPLANT.onUnEquip(this);
-              this.equipment.IMPLANT.destroy();
+              const item = this.equipment.IMPLANT;
               this.equipment.IMPLANT = undefined;
+              item.onUnEquip(this);
             }
           }catch(e){
             
           }
         break;
         case ModuleCreatureArmorSlot.HEAD:
-
           if(this.equipment.HEAD){
-            this.equipment.HEAD.onUnEquip(this);
+            const item = this.equipment.HEAD;
+            try{ item.model?.parent?.remove(item.model); }catch(e){}
+            this.equipment.HEAD = undefined;
+            item.onUnEquip(this);
+            this.loadModel();
           }
-
-          try{
-            this.equipment.HEAD.model.parent.remove(this.equipment.HEAD.model);
-          }catch(e){}
-
-          this.equipment.HEAD = undefined;
-          this.loadModel();
         break;
         case ModuleCreatureArmorSlot.ARMS:
           try{
             if(this.equipment.ARMS){
-              this.equipment.ARMS.onUnEquip(this);
-              this.equipment.ARMS.destroy();
+              const item = this.equipment.ARMS;
               this.equipment.ARMS = undefined;
+              item.onUnEquip(this);
             }
           }catch(e){
             
@@ -3619,9 +5502,9 @@ export class ModuleCreature extends ModuleObject {
         case ModuleCreatureArmorSlot.RIGHTARMBAND:
           try{
             if(this.equipment.RIGHTARMBAND){
-              this.equipment.RIGHTARMBAND.onUnEquip(this);
-              this.equipment.RIGHTARMBAND.destroy();
+              const item = this.equipment.RIGHTARMBAND;
               this.equipment.RIGHTARMBAND = undefined;
+              item.onUnEquip(this);
             }
           }catch(e){
             
@@ -3630,9 +5513,9 @@ export class ModuleCreature extends ModuleObject {
         case ModuleCreatureArmorSlot.LEFTARMBAND:
           try{
             if(this.equipment.LEFTARMBAND){
-              this.equipment.LEFTARMBAND.onUnEquip(this);
-              this.equipment.LEFTARMBAND.destroy();
+              const item = this.equipment.LEFTARMBAND;
               this.equipment.LEFTARMBAND = undefined;
+              item.onUnEquip(this);
             }
           }catch(e){
             
@@ -3647,25 +5530,14 @@ export class ModuleCreature extends ModuleObject {
           this.equipment.ARMOR = undefined;
           this.loadModel();
         break;
-        case ModuleCreatureArmorSlot.RIGHTARMBAND:
-          try{
-            if(this.equipment.RIGHTARMBAND){
-              this.equipment.RIGHTARMBAND.onUnEquip(this);
-              this.model.rhand.remove(this.equipment.RIGHTARMBAND.model);
-              this.equipment.RIGHTARMBAND.destroy();
-              this.equipment.RIGHTARMBAND = undefined;
-            }
-          }catch(e){
-            
-          }
-        break;
         case ModuleCreatureArmorSlot.RIGHTHAND:
           try{
             if(this.equipment.RIGHTHAND){
-              this.equipment.RIGHTHAND.onUnEquip(this);
-              this.model.rhand.remove(this.equipment.RIGHTHAND.model);
-              this.equipment.RIGHTHAND.destroy();
+              const item = this.equipment.RIGHTHAND;
+              try{ this.model?.rhand?.remove(item.model); }catch(e){}
               this.equipment.RIGHTHAND = undefined;
+              // Return to inventory — do not destroy (AI weapon switches).
+              item.onUnEquip(this);
             }
           }catch(e){
             
@@ -3674,10 +5546,9 @@ export class ModuleCreature extends ModuleObject {
         case ModuleCreatureArmorSlot.RIGHTHAND2:
           try{
             if(this.equipment.RIGHTHAND2){
-              this.equipment.RIGHTHAND2.onUnEquip(this);
-              // this.model.rhand.remove(this.equipment.RIGHTHAND2.model);
-              this.equipment.RIGHTHAND2.destroy();
+              const item = this.equipment.RIGHTHAND2;
               this.equipment.RIGHTHAND2 = undefined;
+              item.onUnEquip(this);
             }
           }catch(e){
             
@@ -3686,10 +5557,10 @@ export class ModuleCreature extends ModuleObject {
         case ModuleCreatureArmorSlot.BELT:
           try{
             if(this.equipment.BELT){
-              this.equipment.BELT.onUnEquip(this);
-              this.model.rhand.remove(this.equipment.BELT.model);
-              this.equipment.BELT.destroy();
+              const item = this.equipment.BELT;
+              try{ this.model?.rhand?.remove(item.model); }catch(e){}
               this.equipment.BELT = undefined;
+              item.onUnEquip(this);
             }
           }catch(e){
             
@@ -3698,10 +5569,10 @@ export class ModuleCreature extends ModuleObject {
         case ModuleCreatureArmorSlot.LEFTHAND:
           try{
             if(this.equipment.LEFTHAND){
-              this.equipment.LEFTHAND.onUnEquip(this);
-              this.model.lhand.remove(this.equipment.LEFTHAND.model);
-              this.equipment.LEFTHAND.destroy();
-              this.equipment.LEFTHAND = null;
+              const item = this.equipment.LEFTHAND;
+              try{ this.model?.lhand?.remove(item.model); }catch(e){}
+              this.equipment.LEFTHAND = undefined;
+              item.onUnEquip(this);
             }
           }catch(e){
             
@@ -3710,10 +5581,9 @@ export class ModuleCreature extends ModuleObject {
         case ModuleCreatureArmorSlot.LEFTHAND2:
           try{
             if(this.equipment.LEFTHAND2){
-              this.equipment.LEFTHAND2.onUnEquip(this);
-              // this.model.lhand.remove(this.equipment.LEFTHAND2.model);
-              this.equipment.LEFTHAND2.destroy();
-              this.equipment.LEFTHAND2 = null;
+              const item = this.equipment.LEFTHAND2;
+              this.equipment.LEFTHAND2 = undefined;
+              item.onUnEquip(this);
             }
           }catch(e){
             
@@ -3871,6 +5741,19 @@ export class ModuleCreature extends ModuleObject {
         this.setCommadable(this.template.RootNode.getFieldByLabel('Commandable').getValue());
       }
 
+      // Retail LoadCreature / LoadCreatureData / LoadCharacterFromIFO:
+      // DetectMode GFF is read then ignored; SetActivity(2,1) always enables detect.
+      // StealthMode goes through SetActivity(1, value) — blocked while detect activity bit is set
+      // (same as retail; stealth is typically off on load).
+      if((this.activity & 2) === 0){
+        this.setActivity(2, true, 0);
+      }else{
+        this.setDetectMode(true);
+      }
+      if(this.template.RootNode.hasField('StealthMode')){
+        this.setActivity(1, !!this.template.RootNode.getFieldByLabel('StealthMode').getValue(), 0);
+      }
+
       if(this.template.RootNode.hasField('ExpressionList')){
         let expressions = this.template.RootNode.getFieldByLabel('ExpressionList').getChildStructs();
         for(let i = 0; i < expressions.length; i++){
@@ -3928,6 +5811,13 @@ export class ModuleCreature extends ModuleObject {
 
       if(this.template.RootNode.hasField('MaxForcePoints')){
         this.maxForcePoints = this.template.getFieldByLabel('MaxForcePoints').getValue();
+      }
+      // CurrentForce is the spendable pool (retail CreatureStats current FP).
+      // Toolset UTCs often leave ForcePoints filled and CurrentForce at 0.
+      if(this.currentForce <= 0 && this.forcePoints > 0){
+        this.currentForce = this.maxForcePoints > 0
+          ? Math.min(this.forcePoints, this.maxForcePoints)
+          : this.forcePoints;
       }
 
       if(this.template.RootNode.hasField('Min1HP'))
@@ -4164,19 +6054,35 @@ export class ModuleCreature extends ModuleObject {
       }
       this.loadSoundSet();
 
-      //ActionList
+      this.loadActionList();
+
+      // CombatRoundData — retail LoadCombatRound only applies when RoundStarted != 0
       try{
-        if(this.template.RootNode.hasField('ActionList')){
-          const actionStructs = this.template.RootNode.getFieldByLabel('ActionList').getChildStructs();
-          for(let i = 0, len = actionStructs.length; i < len; i++){
-            const action = GameState.ActionFactory.FromStruct(actionStructs[i]);
-            if(action){
-              this.actionQueue.add(action);
-            }
+        if(this.template.RootNode.hasField('CombatRoundData')){
+          const crField = this.template.RootNode.getFieldByLabel('CombatRoundData');
+          const crStructs = crField.getChildStructs?.() || [];
+          const crStruct = crStructs[0];
+          if(crStruct){
+            this.combatRound.fromStruct(crStruct);
           }
         }
       }catch(e: any){
-        console.error(e);
+        console.error('ModuleCreature.initProperties CombatRoundData', e);
+      }
+
+      // CombatInfo — retail CCombatInformation::LoadData @ 00552350
+      try{
+        if(this.template.RootNode.hasField('CombatInfo')){
+          const ciField = this.template.RootNode.getFieldByLabel('CombatInfo');
+          const ciStructs = ciField.getChildStructs?.() || [];
+          const ciStruct = ciStructs[0];
+          if(ciStruct){
+            this.combatInformation.fromStruct(ciStruct);
+            this.arcaneSpellFailure = this.combatInformation.arcaneSpellFail || this.arcaneSpellFailure;
+          }
+        }
+      }catch(e: any){
+        console.error('ModuleCreature.initProperties CombatInfo', e);
       }
 
       //PerceptionList
@@ -4288,11 +6194,21 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateDestroyFade(delta: number = 0): void {
+    if(this.destroyed || this.isRetainedCorpse) return;
+
+    // Retail EventHandler destroy (0xb) @ 004ff3fa — fires at DestroyObjectDelay
+    if(!this.serverDestroyed && this.timeSinceDestroyStarted >= this.delayUntilFade){
+      this.onServerDestroyEvent();
+      // KeepCorpse converts to retained shell — stop the destroy timer path
+      if(this.isRetainedCorpse) return;
+    }
+
     super.updateDestroyFade(delta);
-    if(this.noFadeOnDestroy || this.destroyed) return;
+    if(this.noFadeOnDestroy) return;
     if(this.timeSinceDestroyStarted >= this.delayUntilFade){
       const fadeElapsed = this.timeSinceDestroyStarted - this.delayUntilFade;
-      const opacity = Math.max(0, 1 - (fadeElapsed / ModuleObject.FADE_TIME));
+      const fadeLen = this.getFadeDuration();
+      const opacity = fadeLen > 0 ? Math.max(0, 1 - (fadeElapsed / fadeLen)) : 0;
       Object.values(this.equipment).forEach(item => {
         if(item && item.model instanceof OdysseyModel3D){
           item.model.setOpacity(opacity);
@@ -4301,8 +6217,38 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  setOpacity(opacity: number){
+    super.setOpacity(opacity);
+    if(this.head instanceof OdysseyModel3D){
+      this.head.setOpacity(opacity);
+    }
+  }
+
   destroy(): void {
+    if(this.destroyed) return;
+
+    // KeepCorpse shell — only disposeRetainedCorpse / cache eviction tears it down
+    if(this.isRetainedCorpse){
+      return;
+    }
+
+    // Retail EventHandler destroy (0xb) @ 004ff3fa
+    this.unlinkFromEncounter(false);
+
+    if(!this.serverDestroyed){
+      this.onServerDestroyEvent();
+      if(this.isRetainedCorpse){
+        // Converted to KeepCorpse shell — do not dispose visuals
+        return;
+      }
+    }
+
     super.destroy();
+    this.disposeCreatureVisuals();
+  }
+
+  /** Tear down head/equipment/inventory visuals after ModuleObject.destroy(). */
+  disposeCreatureVisuals(){
     if(this.head instanceof OdysseyModel3D){
       if(this.head.parent instanceof THREE.Object3D){
         this.head.removeFromParent();
@@ -4442,13 +6388,18 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(0);
 
     let combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
-
-    //TODO: CombatInfo
+    // Retail CCombatInformation::SaveData @ 00550f30
+    this.combatInformation.arcaneSpellFail = this.arcaneSpellFailure | 0;
+    if(this.combatRound){
+      this.combatInformation.numAttacks =
+        ((this.combatRound.onHandAttacks || 0) + (this.combatRound.offHandAttacks || 0)) & 0xff;
+    }
+    this.combatInformation.leftEquip = this.equipment.LEFTHAND?.id ?? 0;
+    this.combatInformation.rightEquip = this.equipment.RIGHTHAND?.id ?? 0;
+    combatInfoStruct.addChildStruct(this.combatInformation.toStruct(0xCAAA));
 
     let combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
-
-    //TODO: CombatRoundData
-
+    combatRoundDataStruct.addChildStruct( this.combatRound.toStruct(0xCADA) );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.getCommadable() ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(this.str);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
@@ -4459,7 +6410,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DeadSelectable') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Deity') ).setValue('');
     //gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue();
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DetectMode') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DetectMode') ).setValue(this.detectMode ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Dex') ).setValue(this.dex);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Disarmable') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DuplicatingHead') ).setValue(255);
@@ -4574,7 +6525,7 @@ export class ModuleCreature extends ModuleObject {
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue( this.template.RootNode.getFieldByLabel('FirstName')?.getCExoLocString() );
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).setValue(this.forcePoints);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).setValue(this.getFP());
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'FortSaveThrow') ).setValue(this.fortitudeSaveThrow);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Gender') ).setValue(this.gender);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Gold') ).setValue(this.gold || 0);
@@ -4603,7 +6554,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'MaxForcePoints') ).setValue(this.maxForcePoints);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'MaxHitPoints') ).setValue(this.maxHitPoints);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'MovementRate') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'MovementRate') ).setValue(this.getMovementRate());
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NaturalAC') ).setValue(this.naturalAC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NotReorienting') ).setValue(this.notReorienting);
 
@@ -4662,7 +6613,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SkillPoints') ).setValue( this.skillPoints ? this.skillPoints : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).setValue(this.soundSetFile);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StartingPackage') ).setValue(0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StealthMode') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StealthMode') ).setValue(this.stealthMode ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Str') ).setValue(this.str);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Subrace') ).setValue('');
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') ).setValue(this.subrace);

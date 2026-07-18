@@ -133,6 +133,9 @@ export class UI3DRenderer extends EventListenerModel {
   lights: THREE.Group = new THREE.Group();
   globalLight: THREE.Light;
   depthTarget: THREE.WebGLRenderTarget;
+  /** Set by DEPTH_TEXTURE emitters; triggers a depth prepass before render. */
+  softDepthNeeded: boolean = false;
+  private _depthPrepassHidden: THREE.Object3D[] = [];
   raycaster: THREE.Raycaster = new THREE.Raycaster();
   orbitControls: OrbitControls;
 
@@ -1132,6 +1135,35 @@ export class UI3DRenderer extends EventListenerModel {
     return '';
   }
 
+  /** Scene depth into depthTarget for soft particles (emitters hidden). */
+  renderDepthPrepass(): void {
+    if(!this.depthTarget || !this.softDepthNeeded || !this.renderer || !this.currentCamera) return;
+    this.softDepthNeeded = false;
+
+    const hidden = this._depthPrepassHidden;
+    hidden.length = 0;
+    this.scene.traverse((obj) => {
+      if((obj as any).type === 'OdysseyEmitter' && obj.visible){
+        obj.visible = false;
+        hidden.push(obj);
+      }
+    });
+
+    const renderer = this.renderer;
+    const prevTarget = renderer.getRenderTarget();
+    const prevAutoClear = renderer.autoClear;
+    renderer.setRenderTarget(this.depthTarget);
+    renderer.autoClear = false;
+    renderer.clear(true, true, true);
+    renderer.render(this.scene, this.guiMode ? this.guiCamera : this.currentCamera);
+    renderer.setRenderTarget(prevTarget);
+    renderer.autoClear = prevAutoClear;
+
+    for(let i = 0; i < hidden.length; i++){
+      hidden[i].visible = true;
+    }
+  }
+
   render(){
     if(!this.enabled) return;
     this.queuedAnimationFrame = requestAnimationFrame( () => {
@@ -1173,6 +1205,9 @@ export class UI3DRenderer extends EventListenerModel {
         this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
         this.lightManager.update(delta, this.currentCamera);
       }
+
+      // Soft-particle depth (DEPTH_TEXTURE emitters) before color pass
+      this.renderDepthPrepass();
 
       // Render main scene
       this.renderer.render( this.scene, this.guiMode ? this.guiCamera : this.currentCamera );

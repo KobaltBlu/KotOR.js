@@ -2,41 +2,35 @@ import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 
 /**
- * EffectMovementSpeedDecrease class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ * EffectMovementSpeedDecrease — NWScript nPercentChange 1–99.
+ * ≥100 deletes (no apply); negative would increase (treated as no-op here).
+ *
  * @file EffectMovementSpeedDecrease.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectMovementSpeedDecrease extends GameEffect {
   constructor(){
     super();
     this.type = GameEffectType.EffectMovementSpeedDecrease;
-    
-    //intList[0] : nPercentChange
-
+    // intList[0] : percent reduction (1–99)
   }
 
   onApply(){
     if(this.applied)
       return;
-      
+
     super.onApply();
-    
+
     if(!this.object) return;
-    if(this.getInt(0) <= 99){
-      this.object.updateMovementSpeed();
-    }
+    const pct = this.getInt(0) | 0;
+    // Retail: n >= 100 → effect deleted / ignored
+    if(pct < 1 || pct >= 100) return;
+    this.object.updateMovementSpeed();
   }
 
   onRemove(){
     super.onRemove();
-
     if(!this.object) return;
     this.object.updateMovementSpeed();
   }
-
 }
 

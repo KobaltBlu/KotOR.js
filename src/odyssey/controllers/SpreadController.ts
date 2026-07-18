@@ -25,12 +25,14 @@ export class SpreadController extends OdysseyController {
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.spread = data.value;
+      manager.modelNode.emitter.attributeChanged('spread');
     }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
     if(manager.modelNode.emitter){
       manager.modelNode.emitter.spread = OdysseyController.lerp1(last, next, fl);
+      manager.modelNode.emitter.attributeChanged('spread');
     }
   }
 

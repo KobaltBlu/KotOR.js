@@ -7,14 +7,22 @@ import { TextureType } from "@/enums/loaders/TextureType";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { GameState } from "@/GameState";
 import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
-// import { ShaderManager } from "@/managers";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+
+/** K1 CSWGuiOptionsCheckbox fixed glyph size (`0x19`). */
+const OPTIONS_CHECKBOX_SIZE = 0x19;
+/** K1 CSWGuiOptionsCheckbox text strip starts at `left + 0x1e`. */
+const OPTIONS_TEXT_OFFSET = 0x1e;
 
 /**
  * GUICheckBox class.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * 
+ * Maps to K1 `CSWGuiButtonToggle`. Tags starting with `CB_` use the
+ * `CSWGuiOptionsCheckbox` SetExtent layout (fixed 25×25 glyph + label strip).
  * 
  * @file GUICheckBox.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -251,6 +259,10 @@ export class GUICheckBox extends GUIControl{
         this.highlightSelected.pulsing = highlightSelected.getFieldByLabel('PULSING').getValue() || 0;
       }
 
+      if(control.hasField('ISSELECTED')){
+        this.value = control.getFieldByLabel('ISSELECTED').getValue() ? 1 : 0;
+      }
+
     }
 
     //Control Textures
@@ -268,9 +280,7 @@ export class GUICheckBox extends GUIControl{
 
         texture.wrapS = THREE.ClampToEdgeWrapping;
         texture.wrapT = THREE.ClampToEdgeWrapping;
-        let cbSize = this.getCBScale();
-        this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
-        this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
+        this.layoutCheckboxFills();
       });
     }
 
@@ -331,9 +341,7 @@ export class GUICheckBox extends GUIControl{
         if(texture == null){
           this.highlightSelected.fill.material.uniforms.opacity.value = 0.01;
         }
-        let cbSize = this.getCBScale();
-        this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
-        this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
+        this.layoutCheckboxFills();
       });
     }else{
       this.highlightSelected.fill.material.visible = false;
@@ -350,7 +358,6 @@ export class GUICheckBox extends GUIControl{
     this.addEventListener( 'mouseMove', (e: any) => { });
 
     this.addEventListener( 'click', () =>{
-      console.log('click', this);
       this.setValue(!this.value);
     });
 
@@ -360,46 +367,184 @@ export class GUICheckBox extends GUIControl{
 
     this.addEventListener( 'mouseUp', () => { });
 
-    let cbSize = this.getCBScale();
-    this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
-    
-    this.borderSelected.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
-    this.highlightSelected.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
-
     this.borderSelected.fill.material.uniforms.diffuse.value.set(this.defaultColor);
     this.highlightSelected.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
 
+    this.layoutCheckboxFills();
     this.updateCBVisualState();
   }
 
-  getCBScale(){
-    // return this.guiFont?.bsline || this.extent.height/2;
-    return 24;
+  /**
+   * K1 options menus construct type-7 as `CSWGuiOptionsCheckbox` (fixed glyph + label).
+   * Overlay toggles (`TB_*`, party BTNs, list PROTOITEM) stay as plain `CSWGuiButtonToggle`.
+   */
+  isOptionsStyleLayout(): boolean {
+    return typeof this.name === 'string' && this.name.startsWith('CB_');
+  }
+
+  /** Glyph size for options checkboxes (`0x19`); unused for full-extent toggles. */
+  getCBScale(): number {
+    return OPTIONS_CHECKBOX_SIZE;
+  }
+
+  /**
+   * Center of the 25×25 glyph in widget space.
+   * K1: `(left, top + 2 + (height - 0x19) / 2)` → center-origin `(−(W−25)/2, −2)`.
+   */
+  getOptionsCheckboxCenter(): THREE.Vector2 {
+    return new THREE.Vector2(
+      -(this.extent.width - OPTIONS_CHECKBOX_SIZE) / 2,
+      -2
+    );
+  }
+
+  layoutCheckboxFills(){
+    if(!this.isOptionsStyleLayout()){
+      return;
+    }
+
+    const cbSize = this.getCBScale();
+    const center = this.getOptionsCheckboxCenter();
+    const fills = [
+      this.border.fill.mesh,
+      this.borderSelected.fill.mesh,
+      this.highlight.fill.mesh,
+      this.highlightSelected.fill.mesh,
+    ];
+
+    for(const mesh of fills){
+      if(!mesh) continue;
+      mesh.scale.set(cbSize, cbSize, 1);
+      mesh.position.set(center.x, center.y, this.zOffset);
+    }
   }
 
   buildFill(){
     super.buildFill();
-    let cbSize = this.getCBScale();
-    this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.border.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
-    this.border.fill.material.uniforms.diffuse.value.set(this.defaultColor);
+    if(this.isOptionsStyleLayout()){
+      this.layoutCheckboxFills();
+      this.border.fill.material.uniforms.diffuse.value.set(this.defaultColor);
+    }
   }
 
   buildHighlightFill(){
     super.buildHighlightFill();
-    let cbSize = this.getCBScale();
-    this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.highlight.fill.mesh.position.set(-(this.extent.width/2 - cbSize/2), 0, this.zOffset);
-    this.highlight.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
+    if(this.isOptionsStyleLayout()){
+      this.layoutCheckboxFills();
+      this.highlight.fill.material.uniforms.diffuse.value.set(this.defaultHighlightColor);
+    }
   }
 
-  hideHighlight(){}
-  hideBorder(){}
-  hideFill(){}
-  hideHighlightFill(){}
+  resizeFill(){
+    super.resizeFill();
+    this.layoutCheckboxFills();
+  }
+
+  resizeHighlightFill(){
+    super.resizeHighlightFill();
+    this.layoutCheckboxFills();
+  }
+
+  /** Options text lives in `(left+0x1e, top, width-0x1e, height)` — not the border inner rect. */
+  getInnerSize(){
+    if(this.isOptionsStyleLayout()){
+      return {
+        width: Math.max(0, this.extent.width - OPTIONS_TEXT_OFFSET),
+        height: this.extent.height,
+      };
+    }
+    return super.getInnerSize();
+  }
+
+  alignText(){
+    if(!this.isOptionsStyleLayout()){
+      super.alignText();
+      return;
+    }
+
+    if(this.text.geometry && this.text.geometry.boundingBox){
+      this.text.geometry.boundingBox.getSize(this.textSize);
+    }
+    this.widget.userData.text.position.z = this.zOffset;
+
+    // Text strip starts at left + 0x1e (widget left is −width/2).
+    this.widget.userData.text.position.x = -(this.extent.width / 2) + OPTIONS_TEXT_OFFSET;
+
+    const innerSize = this.getInnerSize();
+    const vertical = this.text.alignment & GUIControlAlignment.VerticalMask;
+    switch(vertical){
+      case GUIControlAlignment.VerticalTop:
+        this.widget.userData.text.position.y = (innerSize.height / 2 - this.textSize.y / 2) + this.textSize.y / 2;
+        break;
+      case GUIControlAlignment.VerticalCenter:
+        this.widget.userData.text.position.y = this.textSize.y / 2;
+        break;
+      case GUIControlAlignment.VerticalBottom:
+        this.widget.userData.text.position.y = -(innerSize.height / 2 - this.textSize.y / 2) + this.textSize.y / 2;
+        break;
+    }
+  }
+
+  hideHighlight(){
+    if(this.isOptionsStyleLayout()){
+      // Options style: edges stay off; fill visibility is owned by updateCBVisualState.
+      if(this.highlight.mesh) this.highlight.mesh.visible = false;
+      return;
+    }
+    super.hideHighlight();
+  }
+
+  hideBorder(){
+    if(this.isOptionsStyleLayout()){
+      if(this.border.mesh) this.border.mesh.visible = false;
+      return;
+    }
+    super.hideBorder();
+  }
+
+  hideFill(){
+    if(this.isOptionsStyleLayout()){
+      return;
+    }
+    super.hideFill();
+  }
+
+  hideHighlightFill(){
+    if(this.isOptionsStyleLayout()){
+      return;
+    }
+    super.hideHighlightFill();
+  }
+
+  showBorder(){
+    if(this.isOptionsStyleLayout()){
+      if(this.border.mesh) this.border.mesh.visible = false;
+      return;
+    }
+    super.showBorder();
+  }
+
+  showHighlight(){
+    if(this.isOptionsStyleLayout()){
+      if(this.highlight.mesh) this.highlight.mesh.visible = false;
+      return;
+    }
+    super.showHighlight();
+  }
+
+  showFill(){
+    if(this.isOptionsStyleLayout()){
+      return;
+    }
+    super.showFill();
+  }
+
+  showHighlightFill(){
+    if(this.isOptionsStyleLayout()){
+      return;
+    }
+    super.showHighlightFill();
+  }
 
   updateCBVisualState(){
     this.border.fill.mesh.visible = false;
@@ -407,11 +552,14 @@ export class GUICheckBox extends GUIControl{
     this.highlight.fill.mesh.visible = false;
     this.highlightSelected.fill.mesh.visible = false;
 
-    let cbSize = this.getCBScale();
-    this.border.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.borderSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.highlight.fill.mesh.scale.set(cbSize, cbSize, 1);
-    this.highlightSelected.fill.mesh.scale.set(cbSize, cbSize, 1);
+    if(this.isOptionsStyleLayout()){
+      // K1 OptionsCheckbox: only the 25×25 fills draw; chrome edges stay off.
+      if(this.border.mesh) this.border.mesh.visible = false;
+      if(this.highlight.mesh) this.highlight.mesh.visible = false;
+      if(this.borderSelected.mesh) this.borderSelected.mesh.visible = false;
+      if(this.highlightSelected.mesh) this.highlightSelected.mesh.visible = false;
+      this.layoutCheckboxFills();
+    }
 
     if(this.hover){
       if(this.value){
@@ -426,7 +574,15 @@ export class GUICheckBox extends GUIControl{
         this.border.fill.mesh.visible = true;
       }
     }
+  }
 
+  _onCreate(){
+    super._onCreate();
+    this.layoutCheckboxFills();
+    this.updateCBVisualState();
+    if(this.isOptionsStyleLayout() && this.text?.mesh){
+      this.alignText();
+    }
   }
 
   onHoverOut(){

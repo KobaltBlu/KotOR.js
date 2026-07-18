@@ -4,14 +4,20 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { ResourceLoader } from "@/loaders/ResourceLoader";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleTrigger } from "@/module/ModuleTrigger";
-import { GFFObject } from "@/resource/GFFObject";
-import { ResourceTypes } from "@/resource/ResourceTypes";
 import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
+import { queueMoveIntoUseRange } from "@/actions/use-range";
+import {
+  fadeDestroyTrap,
+  MineSkillResult,
+  resolveMineSkillCheck,
+  runTriggerOnDisarmScript,
+  signalTrapDisarm,
+  signalTrapTriggered,
+} from "@/actions/mine-skill";
 
 /**
  * ActionDisarmMine class.
@@ -25,11 +31,13 @@ import { Action } from "@/actions/Action";
 
 export class ActionDisarmMine extends Action {
 
+  private animQueued = false;
+
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionDisarmMine;
 
-    //PARAMS - unknown
+    //PARAMS
     //0 - DWORD: oTarget
   }
 
@@ -37,44 +45,76 @@ export class ActionDisarmMine extends Action {
 
     this.target = this.getParameter<ModuleObject>(0);
     if(!this.target){
+      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
       return ActionStatus.FAILED;
     }
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
-      let distance = Utility.Distance2D(this.owner.position, this.target.position);
-            
-      if(distance > 3){
-        // this.owner.openSpot = undefined;
-        let actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-        actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-        actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-        actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, this.target.area.id);
-        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-        actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 3 );
-        actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-        actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-        this.owner.actionQueue.addFront(actionMoveToTarget);
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      GameState.GuiTimingBarManager?.stopFor?.(this.owner);
+      return ActionStatus.FAILED;
+    }
 
-        return ActionStatus.IN_PROGRESS;
+    const owner = this.owner as ModuleCreature;
+    if(queueMoveIntoUseRange(owner, this.target, this.groupId, { extraRange: 0.25 })){
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    if(!this.animQueued){
+      this.animQueued = true;
+      owner.setFacingObject(this.target);
+      const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
+      playAnim.setParameter(0, ActionParameterType.INT, 0x2794);
+      playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
+      playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
+      owner.actionQueue.addFront(playAnim);
+      if(owner === GameState.getCurrentPlayer()){
+        GameState.GuiTimingBarManager?.startMs?.(0x1194, 'Disarm Mine', owner, 1);
+      }
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    const stopBar = () => GameState.GuiTimingBarManager?.stopFor?.(owner);
+
+    if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)){
+      const trap = this.target as ModuleTrigger;
+      if(trap.type != ModuleTriggerType.TRAP){
+        stopBar();
+        return ActionStatus.FAILED;
       }
 
-      if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleTrigger)){
-        const trap: ModuleTrigger = this.target as any;
-        if(trap.type != ModuleTriggerType.TRAP){
-          return ActionStatus.FAILED;
-        }
-
-        //todo: disarm skill check
-
-        trap.destroy();
+      const check = resolveMineSkillCheck(owner, trap);
+      if(check.result === MineSkillResult.FAIL_TRIGGER){
+        signalTrapTriggered(trap, owner);
+        stopBar();
+        return ActionStatus.FAILED;
+      }
+      if(check.result === MineSkillResult.FAIL){
+        stopBar();
+        return ActionStatus.FAILED;
       }
 
+      signalTrapDisarm(trap, owner);
+      runTriggerOnDisarmScript(trap);
+      fadeDestroyTrap(trap);
+      stopBar();
       return ActionStatus.COMPLETE;
     }
-    
-    return ActionStatus.FAILED;
+
+    // Door / placeable trap
+    const check = resolveMineSkillCheck(owner, this.target);
+    if(check.result === MineSkillResult.FAIL_TRIGGER){
+      signalTrapTriggered(this.target, owner);
+      stopBar();
+      return ActionStatus.FAILED;
+    }
+    if(check.result === MineSkillResult.FAIL){
+      stopBar();
+      return ActionStatus.FAILED;
+    }
+
+    signalTrapDisarm(this.target, owner);
+    stopBar();
+    return ActionStatus.COMPLETE;
   }
 
 }

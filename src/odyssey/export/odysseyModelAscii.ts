@@ -251,8 +251,8 @@ function emitEmitter(em: OdysseyModelNodeEmitter, nl: string): string {
   s += nl + "  twosidedtex " + em.twoSidedTex;
   s += nl + "  loop " + em.loop;
   s += nl + "  renderorder " + em.renderOrder;
-  s += nl + "  m_bFrameBlending " + em.padding1;
-  s += nl + "  m_sDepthTextureName ";
+  s += nl + "  m_bFrameBlending " + em.frameBlending;
+  s += nl + "  m_sDepthTextureName " + (em.depthTextureName || "");
   const F = OdysseyModelEmitterFlag;
   const nf = em.nFlags;
   s += nl + "  p2p " + (nf & F.P2P ? 1 : 0);

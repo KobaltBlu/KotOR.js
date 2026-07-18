@@ -60,6 +60,10 @@ export class DLGObject {
   oldHitCheck: boolean;
   postProcOwner: number;
   alienRaceOwner: number;
+  /** DLG root DelayEntry — default entry delay in seconds when node Delay is -1 (retail). */
+  delayEntry: number = 0;
+  /** DLG root DelayReply — default reply delay in seconds (retail). */
+  delayReply: number = 0;
 
   constructor(resref = ''){
     this.resref = resref;
@@ -87,6 +91,14 @@ export class DLGObject {
 
     if(this.gff.RootNode.hasField('CameraModel')){
       this.animatedCameraResRef = this.gff.RootNode.getFieldByLabel('CameraModel').getValue();
+    }
+
+    // Load before EntryList/ReplyList so LoadDialogBase mutations can use DelayEntry
+    if(this.gff.RootNode.hasField('DelayEntry')){
+      this.delayEntry = this.gff.RootNode.getFieldByLabel('DelayEntry').getValue() >>> 0;
+    }
+    if(this.gff.RootNode.hasField('DelayReply')){
+      this.delayReply = this.gff.RootNode.getFieldByLabel('DelayReply').getValue() >>> 0;
     }
 
     if(this.gff.RootNode.hasField('EndConverAbort')){

@@ -3,7 +3,7 @@ import { ModuleItemCostTable } from "@/enums/module/ModuleItemCostTable";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { Dice } from "@/utility/Dice";
+import { resolveDamageBonusFromRow } from "@/combat/damage-bonus";
 import { SWItemPropsDef } from "@/engine/rules/SWItemPropsDef";
 import { SWCostTable } from "@/engine/rules/SWCostTable";
 import { TwoDAObject } from "@/resource/TwoDAObject";
@@ -168,13 +168,7 @@ export class ItemProperty {
         case ModuleItemCostTable.Damage:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
-
-          if(costTableRow.numdice != '****'){
-
-            return Dice.roll(parseInt(costTableRow.numdice), Dice.intToDiceType(costTableRow.die) );
-          }else{
-            return parseInt(costTableRow.label);
-          }
+          return resolveDamageBonusFromRow(costTableRow);
         break;
         case ModuleItemCostTable.Immune:
           //Random Cost Check
@@ -202,10 +196,7 @@ export class ItemProperty {
         case ModuleItemCostTable.Monster_Cost:
           //Random Cost Check
           costTableRow = this.costTableRandomCheck();
-
-          if(costTableRow.numdice != '****'){
-            return Dice.roll(parseInt(costTableRow.numdice), Dice.intToDiceType(costTableRow.die) );
-          }
+          return resolveDamageBonusFromRow(costTableRow);
         break;
 
       }

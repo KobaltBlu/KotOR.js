@@ -311,13 +311,14 @@ export class InGameOverlay extends GameMenu {
 
       this.TB_SOLO.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.SOLOMODE = !GameState.SOLOMODE;
+        GameState.PartyManager.setSoloMode(!GameState.SOLOMODE);
       }).setKeymapAction(KeyMapAction.PartyActive).setTooltipText(
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_SOLOMODE].Value
       );
 
       this.TB_STEALTH.addEventListener('click', (e) => {
         e.stopPropagation();
+        this.onStealthToggle();
       }).setKeymapAction(KeyMapAction.STEALTH).setTooltipText(
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_STEALTH].Value
       );
@@ -369,7 +370,7 @@ export class InGameOverlay extends GameMenu {
 
       this.LBL_QUEUE0.addEventListener('click', (e) => {
         e.stopPropagation();
-        // GameState.getCurrentPlayer().clearCombatAction(GameState.getCurrentPlayer().combatData.combatAction);
+        GameState.getCurrentPlayer()?.clearCombatAction();
       });
 
       this.LBL_QUEUE1.addEventListener('click', (e) => {
@@ -419,12 +420,14 @@ export class InGameOverlay extends GameMenu {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.selfPanels[i].previousAction();
           this.UpdateSelfUIIcon(i);
+          this.UpdateActionDescription();
         });
 
         this.getControlByName('BTN_ACTIONDOWN'+i).addEventListener('click', (e) => {
           e.stopPropagation();
           GameState.ActionMenuManager.ActionPanels.selfPanels[i].nextAction();
           this.UpdateSelfUIIcon(i);
+          this.UpdateActionDescription();
         });
 
       }
@@ -594,7 +597,10 @@ export class InGameOverlay extends GameMenu {
         guiControl.border.fill.material.transparent = true;
         guiControl.highlight.fill.material.transparent = true;
         guiControl.widget.position.z = 5;
+        this.applyActionIconEnabled(guiControl, action.enabled !== false);
       });
+    } else {
+      this.applyActionIconEnabled(guiControl, action.enabled !== false);
     }
   }
 
@@ -611,7 +617,10 @@ export class InGameOverlay extends GameMenu {
           guiControl.border.fill.material.transparent = true;
           guiControl.highlight.fill.material.transparent = true;
           guiControl.widget.position.z = 5;
+          this.applyActionIconEnabled(guiControl, action.enabled !== false);
         });
+      } else if (action) {
+        this.applyActionIconEnabled(guiControl, action.enabled !== false);
       } else if (!action) {
         guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
         guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
@@ -621,6 +630,77 @@ export class InGameOverlay extends GameMenu {
       guiControl.setMaterialTexture(guiControl.border.fill.material, undefined);
       guiControl.setMaterialTexture(guiControl.highlight.fill.material, undefined);
       guiControl.setFillTextureName('');
+    }
+  }
+
+  applyActionIconEnabled(guiControl: GUIButton, enabled: boolean){
+    const alpha = enabled ? 1.0 : 0.25;
+    try{
+      if(guiControl.border?.fill?.material?.uniforms?.opacity){
+        guiControl.border.fill.material.uniforms.opacity.value = alpha;
+      }
+      if(guiControl.highlight?.fill?.material?.uniforms?.opacity){
+        guiControl.highlight.fill.material.uniforms.opacity.value = alpha;
+      }
+    }catch(e){}
+    guiControl.disableSelection = !enabled;
+  }
+
+  /**
+   * Retail OnStealthButtonPressed → PartyMenuStealth (solo-mode query when party > 1).
+   */
+  onStealthToggle(){
+    const pc = GameState.getCurrentPlayer();
+    if(!pc?.isStealthCapable?.()) return;
+
+    const partyCount = GameState.PartyManager?.party?.length || 1;
+    if(!GameState.SOLOMODE && partyCount > 1 && !pc.stealthMode){
+      // Entering stealth with companions requires solo mode confirmation
+      this.manager.InGameConfirm.showConfirmDialog(
+        TLK_TOOLTIP_SOLOMODE,
+        () => {
+          GameState.PartyManager.setSoloMode(true);
+          this.TB_SOLO?.setValue?.(true);
+          pc.toggleStealthMode();
+          this.TB_STEALTH?.setValue?.(pc.stealthMode);
+        },
+        () => {
+          this.TB_STEALTH?.setValue?.(pc.stealthMode);
+        }
+      );
+      return;
+    }
+
+    pc.toggleStealthMode();
+    this.TB_STEALTH?.setValue?.(pc.stealthMode);
+  }
+
+  UpdateActionDescription(){
+    if(!this.LBL_ACTIONDESC) return;
+    let desc = '';
+    for(let i = 0; i < GameState.ActionMenuManager.SELF_MENU_COUNT; i++){
+      const selected = GameState.ActionMenuManager.ActionPanels.selfPanels[i]?.getSelectedAction();
+      if(selected?.name){
+        desc = selected.name;
+        break;
+      }
+    }
+    if(!desc){
+      for(let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++){
+        const selected = GameState.ActionMenuManager.ActionPanels.targetPanels[i]?.getSelectedAction();
+        if(selected?.name){
+          desc = selected.name;
+          break;
+        }
+      }
+    }
+    if(desc){
+      this.LBL_ACTIONDESC.setText(desc);
+      this.LBL_ACTIONDESC.show();
+      this.LBL_ACTIONDESCBG?.show();
+    }else{
+      this.LBL_ACTIONDESC.hide();
+      this.LBL_ACTIONDESCBG?.hide();
     }
   }
 
@@ -942,6 +1022,19 @@ export class InGameOverlay extends GameMenu {
     this.UpdateTargetUIPanels();
     this.UpdateSelfUIPanels();
     this.UpdateHUDNotificationIcons(delta);
+    const timingBar = GameState.GuiTimingBarManager;
+    if(timingBar?.isActive()){
+      // Retail only shows the bar for the client-controlled creature.
+      const ownerId = timingBar.ownerId;
+      if(ownerId < 0 || oPC?.id === ownerId){
+        timingBar.update(delta, this);
+      }else{
+        this.UpdateActionDescription();
+      }
+    }else{
+      timingBar?.restoreOverlay?.(this);
+      this.UpdateActionDescription();
+    }
 
     //update minimap
     this.miniMap.setPosition(oPC.position.x, oPC.position.y);
@@ -980,7 +1073,12 @@ export class InGameOverlay extends GameMenu {
         this.getControlByName('LBL_DEBILATATED' + (id + 1))?.hide();
       }
     }
-    if (oPC.excitedDuration || oPC.combatRound.scheduledActionList.length) {
+    // Retail client combat UI follows CSWCCreature combat state (synced only for Damage reason),
+    // not flourish-only SetCombatState(1, SpellCast/2).
+    const hostileCombat = typeof oPC.isHostileCombatEngaged === 'function'
+      ? oPC.isHostileCombatEngaged()
+      : oPC.combatData.combatState;
+    if (hostileCombat || oPC.excitedDuration || oPC.combatRound.scheduledActionList.length) {
       this.showCombatUI();
       let action0 = oPC.combatRound.action;
       let action1 = oPC.combatRound.scheduledActionList[0];

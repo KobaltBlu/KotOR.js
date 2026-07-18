@@ -15,6 +15,8 @@ export class EncounterSpawnEntry {
 
   spawnResref = '';
   spawnCR = 0;
+  /** Precomputed pool cost (retail field2_0x14). */
+  poolPoints = 0;
 
   save(){
     let struct = new GFFStruct();

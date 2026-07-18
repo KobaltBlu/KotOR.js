@@ -11,6 +11,7 @@ import { TileColor } from "@/engine/TileColor";
 import { BinaryWriter } from "@/utility/binary/BinaryWriter";
 import { IPerimeter } from "@/interface/odyssey";
 import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
+import { clearWalkCheckMaterialMaskCache } from "@/engine/pathfinding/walk-check-material-mask";
 
 /**
  * OdysseyWalkMesh class.
@@ -27,6 +28,21 @@ export class OdysseyWalkMesh {
   name: string;
   moduleObject: ModuleObject;
   header: any = { };
+  /**
+   * Retail CSWWalkMeshHeader.relative_use_positions[0] @ file+0x0C —
+   * loaded by CSWCollisionMesh::LoadMeshBinary @ 00597120 into
+   * relative_use_position_1 (mesh+0x70). Used by GetNearestActionPoint.
+   */
+  relativeUsePosition1: THREE.Vector3 = new THREE.Vector3();
+  /** Retail relative_use_positions[1] @ file+0x18 → relative_use_position_2. */
+  relativeUsePosition2: THREE.Vector3 = new THREE.Vector3();
+  /**
+   * Retail CSWWalkMeshHeader.absolute_use_positions[0/1] @ file+0x24/+0x30.
+   * Present in the 136-byte header; LoadMeshBinary does not copy these into
+   * CSWCollisionMesh (only the relative pair is used at runtime).
+   */
+  absoluteUsePosition1: THREE.Vector3 = new THREE.Vector3();
+  absoluteUsePosition2: THREE.Vector3 = new THREE.Vector3();
   walkableFaces: OdysseyFace3[] = [];
   walkableFacesWithEdge: OdysseyFace3[] = [];
   grassFaces: OdysseyFace3[] = [];
@@ -301,6 +317,10 @@ export class OdysseyWalkMesh {
   readBinary(){
     if(this.wokReader instanceof BinaryReader){
       this.header = this.readHeader();
+      this.relativeUsePosition1.copy(this.header.relativeUsePosition1 || this.relativeUsePosition1);
+      this.relativeUsePosition2.copy(this.header.relativeUsePosition2 || this.relativeUsePosition2);
+      this.absoluteUsePosition1.copy(this.header.absoluteUsePosition1 || this.absoluteUsePosition1);
+      this.absoluteUsePosition2.copy(this.header.absoluteUsePosition2 || this.absoluteUsePosition2);
       //READ Verticies
       this.wokReader.seek(this.header.offsetToVertices);
       for (let i = 0; i < this.header.verticesCount; i++){
@@ -488,12 +508,17 @@ export class OdysseyWalkMesh {
   }
 
   readHeader(){
-
+    // Retail CSWWalkMeshHeader @ Ghidra (size 0x88 = 136) —
+    // written by SaveBinaryMesh @ 0059a040, read by LoadMeshBinary @ 00597120.
     return {
       fileType: this.wokReader.readChars(4),
       version: this.wokReader.readChars(4),
+      // Retail name: world_coords (LocalToWorld treats non-zero as already-world)
       walkMeshType: this.wokReader.readUInt32(),
-      reserved: this.wokReader.readBytes(48),
+      relativeUsePosition1: new THREE.Vector3(this.wokReader.readSingle(), this.wokReader.readSingle(), this.wokReader.readSingle()),
+      relativeUsePosition2: new THREE.Vector3(this.wokReader.readSingle(), this.wokReader.readSingle(), this.wokReader.readSingle()),
+      absoluteUsePosition1: new THREE.Vector3(this.wokReader.readSingle(), this.wokReader.readSingle(), this.wokReader.readSingle()),
+      absoluteUsePosition2: new THREE.Vector3(this.wokReader.readSingle(), this.wokReader.readSingle(), this.wokReader.readSingle()),
       position: new THREE.Vector3(this.wokReader.readSingle(), this.wokReader.readSingle(), this.wokReader.readSingle()),
       verticesCount: this.wokReader.readUInt32(),
       offsetToVertices: this.wokReader.readUInt32(),
@@ -558,6 +583,26 @@ export class OdysseyWalkMesh {
       nearest = distance;
     }
     return nearest_point;
+  }
+
+  /**
+   * World-space relative use/action point —
+   * retail CSWCollisionMesh::LocalToWorld @ 00596aa0 of relative_use_position_1/2.
+   * Returns undefined when the local vector is zero (GetNearestActionPoint fallback).
+   */
+  getRelativeUsePositionWorld(index: 1 | 2 = 1, out?: THREE.Vector3): THREE.Vector3 | undefined {
+    const local = index === 2 ? this.relativeUsePosition2 : this.relativeUsePosition1;
+    if(local.x === 0 && local.y === 0 && local.z === 0){
+      return undefined;
+    }
+    const result = out || new THREE.Vector3();
+    result.copy(local);
+    if(this.mat4){
+      result.applyMatrix4(this.mat4);
+    }else if(this.matrixWorld){
+      result.applyMatrix4(this.matrixWorld);
+    }
+    return result;
   }
 
   #tmpTriangle = new THREE.Triangle();
@@ -671,6 +716,7 @@ export class OdysseyWalkMesh {
       for(let i = 0, len = surfacemat2DA.RowCount; i < len; i++){
         OdysseyModelUtility.SURFACEMATERIALS[i] = SurfaceMaterial.From2DA(surfacemat2DA.rows[i]);
       }
+      clearWalkCheckMaterialMaskCache();
     }
   }
 
@@ -1201,7 +1247,18 @@ export class OdysseyWalkMesh {
     bw.writeChars(this.header.fileType);
     bw.writeChars(this.header.version);
     bw.writeUInt32(this.header.walkMeshType);
-    bw.writeBytes(new Uint8Array(48));
+    bw.writeSingle(this.relativeUsePosition1.x);
+    bw.writeSingle(this.relativeUsePosition1.y);
+    bw.writeSingle(this.relativeUsePosition1.z);
+    bw.writeSingle(this.relativeUsePosition2.x);
+    bw.writeSingle(this.relativeUsePosition2.y);
+    bw.writeSingle(this.relativeUsePosition2.z);
+    bw.writeSingle(this.absoluteUsePosition1.x);
+    bw.writeSingle(this.absoluteUsePosition1.y);
+    bw.writeSingle(this.absoluteUsePosition1.z);
+    bw.writeSingle(this.absoluteUsePosition2.x);
+    bw.writeSingle(this.absoluteUsePosition2.y);
+    bw.writeSingle(this.absoluteUsePosition2.z);
     bw.writeSingle(this.header.position.x);
     bw.writeSingle(this.header.position.y);
     bw.writeSingle(this.header.position.z);

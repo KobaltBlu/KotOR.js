@@ -64,6 +64,37 @@ export class GameEvent {
     return BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject) ? this.object : this.setObject(GameState.ModuleObjectManager.GetObjectById(this.objectId));
   }
 
+  /** OBJECT_INVALID / retail sentinel used in event-queue GFF. */
+  static readonly INVALID_OBJECT_ID = 2130706432;
+
+  /** Persist CallerId for event-queue save (script caller, else event caller). */
+  exportCallerId(): number {
+    if(BitWise.InstanceOfObject(this.script?.caller, ModuleObjectType.ModuleObject)){
+      return this.script.caller.id;
+    }
+    if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+      return this.caller.id;
+    }
+    if((this.callerId | 0) !== 0){
+      return this.callerId | 0;
+    }
+    return GameEvent.INVALID_OBJECT_ID;
+  }
+
+  /** Persist ObjectId for event-queue save (script object, else event object). */
+  exportObjectId(): number {
+    if(BitWise.InstanceOfObject(this.script?.object, ModuleObjectType.ModuleObject)){
+      return this.script.object.id;
+    }
+    if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleObject)){
+      return this.object.id;
+    }
+    if((this.objectId | 0) !== 0){
+      return this.objectId | 0;
+    }
+    return GameEvent.INVALID_OBJECT_ID;
+  }
+
   eventDataFromStruct(struct: GFFStruct){
     if(struct instanceof GFFStruct){
       return;

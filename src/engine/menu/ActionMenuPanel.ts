@@ -43,10 +43,21 @@ export class ActionMenuPanel {
   }
 
   getSelectedAction(){
+    if(!this.actions.length){
+      this.selectedIndex = 0;
+      return undefined;
+    }
+    if(this.selectedIndex >= this.actions.length){
+      this.selectedIndex = this.actions.length - 1;
+    }
+    if(this.selectedIndex < 0){
+      this.selectedIndex = 0;
+    }
     return this.actions[this.selectedIndex];
   }
 
   clearActions(){
+    // Keep selectedIndex across per-frame rebuilds; getSelectedAction clamps.
     this.actions = [];
   }
 

@@ -8,12 +8,15 @@ import { ICombatAction } from "@/interface/combat/ICombatAction";
 // import { ModuleObjectManager, PartyManager } from "@/managers";
 import { type ModuleCreature, type ModuleObject } from "@/module";
 // import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { BitWise } from "@/utility/BitWise";
 import { ActionParameter } from "@/actions/ActionParameter";
 import { ActionQueue } from "@/actions/ActionQueue";
 import * as THREE from "three";
 import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
+import { getCreaturePersonalSpace, getPathPersonalSpace } from "@/combat/attack-range";
 
 /**
  * Base class for all game actions in the engine.
@@ -106,7 +109,20 @@ export class Action {
    * The destructor for this action
    */
   dispose(){
-    //stub
+    if(this.owner && this.computedPath && this.owner.getComputedPath?.() === this.computedPath){
+      this.owner.setComputedPath(undefined);
+    }
+    this.computedPath = undefined;
+    // Movement actions leave walk / locomotionScale / moveDirOverride sticky otherwise
+    if(
+      this.type === ActionType.ActionMoveToPoint ||
+      this.type === ActionType.ActionFollowLeader ||
+      this.type === ActionType.ActionForceFollowObject ||
+      this.type === ActionType.ActionDrive
+    ){
+      // Path sticky only — do not zero cam-relative playerControl (WASD re-asserts each frame)
+      (this.owner as any)?.clearLocomotionState?.(false);
+    }
   }
 
   /**
@@ -165,8 +181,10 @@ export class Action {
     if (!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
     const owner: ModuleCreature = this.owner as any;
 
-    // Early exit if no movement vector
-    if (owner.forceVector.lengthSq() < 0.001) return;
+    // Move direction: forceVector after ModuleCreature builds it, else facing
+    // (action update runs before forceVector is filled each frame).
+    const moveDir = Action.#tmpAvoidDir;
+    if(!this.getMoveDirection(owner, moveDir)) return;
 
     // Check if this is the player character
     const isPlayerCharacter = GameState.PartyManager.party.indexOf(owner) === 0;
@@ -177,10 +195,9 @@ export class Action {
     const SAFETY_BUFFER = 1.1; // Multiplier for hit distance safety
     const BLOCKING_DECAY_RATE = 0.5; // Rate at which blocking timer decreases
 
-    // Calculate look-ahead points (fixed direction - was backwards)
-    const forceNormalized = owner.forceVector.clone().normalize();
-    const ahead = owner.position.clone().add(forceNormalized.clone().multiplyScalar(AVOIDANCE_DISTANCE));
-    const ahead2 = owner.position.clone().add(forceNormalized.clone().multiplyScalar(AVOIDANCE_DISTANCE_SHORT));
+    // Calculate look-ahead points
+    const ahead = owner.position.clone().add(moveDir.clone().multiplyScalar(AVOIDANCE_DISTANCE));
+    const ahead2 = owner.position.clone().add(moveDir.clone().multiplyScalar(AVOIDANCE_DISTANCE_SHORT));
 
     // Find the closest obstacle
     let closestObstacle: ModuleCreature | undefined;
@@ -206,7 +223,8 @@ export class Action {
         return;
       }
 
-      const hitDistance = creature.getAppearance().hitdist * SAFETY_BUFFER;
+      // Retail creature spacing for avoidance uses cre_personal_space
+      const hitDistance = getCreaturePersonalSpace(creature) * SAFETY_BUFFER;
       const creaturePos = creature.position;
 
       // Check both look-ahead points
@@ -245,22 +263,44 @@ export class Action {
     // Different avoidance behavior for player vs NPCs
     if (isPlayerCharacter) {
       // For player character, use force-based avoidance (adjust movement vector)
-      this.applyPlayerAvoidance(owner, closestObstacle, closestDistance, delta);
+      this.applyPlayerAvoidance(owner, closestObstacle, closestDistance, delta, moveDir);
     } else {
       // For NPCs, use full path recalculation
-      this.calculateAvoidancePath(owner, closestObstacle, finalTarget, closestDistance);
+      this.calculateAvoidancePath(owner, closestObstacle, finalTarget, closestDistance, moveDir);
       this.coordinateObstacleAvoidance(owner, closestObstacle);
     }
 
     owner.blockingTimer += 1;
   }
 
+  /** Forward direction for avoidance: live forceVector, else facing. */
+  static readonly #tmpAvoidDir = new THREE.Vector3();
+
+  private getMoveDirection(owner: ModuleCreature, out: THREE.Vector3): boolean {
+    if(owner.forceVector.lengthSq() > 0.001){
+      out.copy(owner.forceVector).setZ(0).normalize();
+      return out.lengthSq() > 0.001;
+    }
+    // Same basis ModuleCreature uses when building forceVector from facing
+    out.set(
+      Math.cos(owner.rotation.z + Math.PI / 2),
+      Math.sin(owner.rotation.z + Math.PI / 2),
+      0
+    );
+    return out.lengthSq() > 0.001;
+  }
+
   /**
    * Applies force-based avoidance for player character
    */
-  private applyPlayerAvoidance(owner: ModuleCreature, obstacle: ModuleCreature, obstacleDistance: number, delta: number) {
+  private applyPlayerAvoidance(
+    owner: ModuleCreature,
+    obstacle: ModuleCreature,
+    obstacleDistance: number,
+    delta: number,
+    moveDir: THREE.Vector3
+  ) {
     const AVOIDANCE_FORCE = 0.3; // How strong the avoidance force is
-    const MIN_AVOIDANCE_DISTANCE = 0.5; // Minimum distance before applying avoidance
     
     // Calculate avoidance force based on distance to obstacle
     const distanceToObstacle = owner.position.distanceTo(obstacle.position);
@@ -275,10 +315,15 @@ export class Action {
     const perpendicular = new THREE.Vector3(-awayFromObstacle.y, awayFromObstacle.x, 0).normalize();
     
     // Determine which side to avoid to (based on current movement direction)
-    const currentDirection = owner.forceVector.clone().normalize();
+    const currentDirection = moveDir;
     const dotProduct = currentDirection.dot(perpendicular);
     const avoidDirection = dotProduct > 0 ? perpendicular : perpendicular.clone().negate();
     
+    // Seed forceVector from facing if empty so avoidance can bias this frame's slide
+    if(owner.forceVector.lengthSq() < 0.001){
+      owner.forceVector.copy(moveDir);
+    }
+
     // Apply avoidance force to movement vector
     const avoidanceForce = avoidDirection.clone().multiplyScalar(AVOIDANCE_FORCE * avoidanceStrength * delta);
     owner.forceVector.add(avoidanceForce);
@@ -293,22 +338,29 @@ export class Action {
   /**
    * Calculates the avoidance path around an obstacle
    */
-  private calculateAvoidancePath(owner: ModuleCreature, obstacle: ModuleCreature, finalTarget: THREE.Vector3, obstacleDistance: number) {
+  private calculateAvoidancePath(
+    owner: ModuleCreature,
+    obstacle: ModuleCreature,
+    finalTarget: THREE.Vector3,
+    obstacleDistance: number,
+    moveDir: THREE.Vector3
+  ) {
     const SAFETY_BUFFER = 1.5;
-    const safeRadius = obstacle.getHitDistance() * SAFETY_BUFFER;
+    const ownerPathRadius = getPathPersonalSpace(owner);
+    const safeRadius = getCreaturePersonalSpace(obstacle) * SAFETY_BUFFER;
 
     // Calculate perpendicular direction for detour
-    const direction = owner.forceVector.clone().normalize();
+    const direction = moveDir;
     const perpendicular = new THREE.Vector3(-direction.y, direction.x, 0).normalize();
 
     // Calculate two possible detour points
     const detourPoint1 = owner.area.getNearestWalkablePoint(
       obstacle.position.clone().add(perpendicular.clone().multiplyScalar(safeRadius)),
-      owner.getHitDistance()
+      ownerPathRadius
     );
     const detourPoint2 = owner.area.getNearestWalkablePoint(
       obstacle.position.clone().sub(perpendicular.clone().multiplyScalar(safeRadius)),
-      owner.getHitDistance()
+      ownerPathRadius
     );
 
      // Choose the better detour point based on edge distance
@@ -322,7 +374,7 @@ export class Action {
     const path2 = owner.area.path.traverseToPoint(owner, chosenDetourPoint, finalTarget, false);
     path2.prunePathPoints();
     path.merge(path2);
-    path.fixWalkEdges(owner.getHitDistance());
+    path.fixWalkEdges(ownerPathRadius);
     path.setOwner(owner);
     path.setColor(owner.helperColor);
     path.smooth();
@@ -338,7 +390,7 @@ export class Action {
     const isObstacleMoving = obstacle.forceVector.lengthSq() > 0.001;
     if (!isObstacleMoving) return;
 
-    const hitDistance = obstacle.getHitDistance() * 1.1;
+    const hitDistance = getCreaturePersonalSpace(obstacle) * 1.1;
     const obstacleAhead = obstacle.position.clone().add(obstacle.forceVector.clone().normalize());
     const obstacleMovingAway = obstacleAhead.distanceTo(owner.position) > hitDistance;
 
@@ -353,18 +405,19 @@ export class Action {
       // Calculate alternate detour (opposite of what we chose)
       const direction = obstacle.forceVector.clone().normalize();
       const perpendicular = new THREE.Vector3(-direction.y, direction.x, 0).normalize();
-      const safeRadius = obstacle.getHitDistance() * 1.5;
+      const safeRadius = getCreaturePersonalSpace(obstacle) * 1.5;
+      const pathRadius = getPathPersonalSpace(obstacle);
       
       const alternateDetour = owner.area.getNearestWalkablePoint(
         obstacle.position.clone().sub(perpendicular.clone().multiplyScalar(safeRadius)),
-        obstacle.getHitDistance()
+        pathRadius
       );
 
       const path = ComputedPath.FromVector3List([obstacle.position, alternateDetour]);
       const path2 = obstacle.area.path.traverseToPoint(obstacle, alternateDetour, target, false);
       path2.prunePathPoints();
       path.merge(path2);
-      path.fixWalkEdges(obstacle.getHitDistance());
+      path.fixWalkEdges(pathRadius);
       path.setOwner(obstacle);
       path.setColor(obstacle.helperColor);
       path.smooth();
@@ -386,6 +439,25 @@ export class Action {
         }
       }
     }
+  }
+
+  /**
+   * Serialize this action to a GFF ActionList child struct.
+   */
+  toStruct(): GFFStruct {
+    const struct = new GFFStruct(0);
+    struct.addField(new GFFField(GFFDataType.DWORD, 'ActionId', this.type));
+    struct.addField(new GFFField(GFFDataType.WORD, 'GroupActionId', this.groupId));
+    struct.addField(new GFFField(GFFDataType.WORD, 'NumParams', this.parameters.length));
+
+    const params = struct.addField(new GFFField(GFFDataType.LIST, 'Paramaters'));
+    for(let i = 0, len = this.parameters.length; i < len; i++){
+      if(this.parameters[i]){
+        params.addChildStruct(this.parameters[i].toStruct());
+      }
+    }
+
+    return struct;
   }
 
   /**

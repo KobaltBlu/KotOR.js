@@ -623,10 +623,10 @@ function parseEmitterBody(em: OdysseyModelNodeEmitter, s: MdlAsciiTokenStream): 
     else if (w === "twosidedtex") em.twoSidedTex = s.takeInt();
     else if (w === "loop") em.loop = s.takeInt();
     else if (w === "renderorder") em.renderOrder = s.takeInt();
-    else if (w === "m_bframeblending") em.padding1 = s.takeInt();
+    else if (w === "m_bframeblending") em.frameBlending = s.takeInt();
     else if (w === "m_sdepthtexturename") {
-      /* optional string */
-      s.take();
+      const t = s.take();
+      em.depthTextureName = t?.text && t.text !== "null" ? cleanName(t.text) : "";
     } else if (w === "p2p") {
       if (s.takeNumber()) em.nFlags |= OdysseyModelEmitterFlag.P2P;
       else em.nFlags &= ~OdysseyModelEmitterFlag.P2P;

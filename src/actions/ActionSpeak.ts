@@ -30,7 +30,15 @@ export class ActionSpeak extends Action {
       return ActionStatus.FAILED;
     }
 
-    this.owner.speakString(this.getParameter<string>(0), this.getParameter<TalkVolume>(1));
+    const text = this.getParameter<string>(0) || '';
+    const volume = this.getParameter<TalkVolume>(1) ?? TalkVolume.TALK;
+    this.owner.speakString(text, volume);
+
+    // Visible bark for non-silent volumes (hear pipeline already handled above).
+    if(text && volume !== TalkVolume.SILENT_TALK && volume !== TalkVolume.SILENT_SHOUT){
+      GameState.MenuManager.InGameBark.barkFromString(text);
+    }
+
     return ActionStatus.COMPLETE;
   }
 

@@ -2,12 +2,19 @@ import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot"
 import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
 import { ModuleCreature, ModuleItem } from "@/module";
 import { MenuEquipment as K1_MenuEquipment } from "@/game/kotor/KOTOR";
-import { GUIItemEquipped } from "@/gui/protoitem/GUIItemEquipped";
-import { GUIItemNone } from "@/gui/protoitem/GUIItemNone";
 import { GameState } from "@/GameState";
 import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
+import {
+  EQUIP_COLOR_BLUE,
+  formatAttackBonus,
+  formatDamageRange,
+  getEmptySlotIcon,
+  getEquipScreenAttackBonus,
+  getEquipScreenDamageRange,
+  isTwoHandedWeapon,
+} from "@/game/equipment-menu-utils";
 
-const STR_SLOT_DISABLED = 125554; //You cannot equip or remove an item from this slot.
+const STR_SLOT_DISABLED = 125554; // You cannot equip or remove an item from this slot.
 
 /**
  * MenuEquipment class.
@@ -79,16 +86,19 @@ export class MenuEquipment extends K1_MenuEquipment {
     this.voidFill = true;
   }
 
+  protected getActiveCreature(): ModuleCreature {
+    return GameState.PartyManager.party[this.currentNPCIndex];
+  }
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
 
     this.childMenu = this.manager.MenuTop;
 
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       this.defaultControl = this.BTN_INV_BODY;
 
-      // alphaTest on all 11 slot icon labels so transparent icon textures render correctly
       this.LBL_INV_IMPLANT.border.fill.material.alphaTest = 0.5;
       this.LBL_INV_IMPLANT.highlight.fill.material.alphaTest = 0.5;
       this.LBL_INV_HEAD.border.fill.material.alphaTest = 0.5;
@@ -118,182 +128,35 @@ export class MenuEquipment extends K1_MenuEquipment {
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.equipmentSelectionActive){
-          this.slot = null;
-          this.equipmentSelectionActive = false;
-          this.updateList();
+          this.cancelEquipmentSelection();
         }else{
           this.close();
         }
       });
       this._button_b = this.BTN_BACK;
 
-      this.BTN_INV_IMPLANT.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.IMPLANT)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.IMPLANT;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.IMPLANT);
-      });
-
-      this.BTN_INV_HEAD.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.HEAD)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.HEAD;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.HEAD);
-      });
-
-      this.BTN_INV_HANDS.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.ARMS)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.ARMS;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.ARMS);
-      });
-
-      this.BTN_INV_ARM_L.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.LEFTARMBAND)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.LEFTARMBAND;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.LEFTARMBAND);
-      });
-
-      this.BTN_INV_BODY.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.ARMOR)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.ARMOR;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.ARMOR);
-      });
-
-      this.BTN_INV_ARM_R.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.RIGHTARMBAND)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.RIGHTARMBAND;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.RIGHTARMBAND);
-      });
-
-      this.BTN_INV_WEAP_L.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.LEFTHAND)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.LEFTHAND;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.LEFTHAND);
-      });
-
-      this.BTN_INV_BELT.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.BELT)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.BELT;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.BELT);
-      });
-
-      this.BTN_INV_WEAP_R.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.RIGHTHAND)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.RIGHTHAND;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.RIGHTHAND);
-      });
-
-      this.BTN_INV_WEAP_L2.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.LEFTHAND2)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.LEFTHAND2;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.LEFTHAND2);
-      });
-
-      this.BTN_INV_WEAP_R2.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if(this.isSlotLocked(ModuleCreatureArmorSlot.RIGHTHAND2)){
-          GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
-          return;
-        }
-        this.slot = ModuleCreatureArmorSlot.RIGHTHAND2;
-        this.equipmentSelectionActive = true;
-        this.updateList();
-      }).addEventListener('hover', (e) => {
-        this.updateListHover(ModuleCreatureArmorSlot.RIGHTHAND2);
-      });
+      this.bindLockedSlotButton(this.BTN_INV_IMPLANT, ModuleCreatureArmorSlot.IMPLANT);
+      this.bindLockedSlotButton(this.BTN_INV_HEAD, ModuleCreatureArmorSlot.HEAD);
+      this.bindLockedSlotButton(this.BTN_INV_HANDS, ModuleCreatureArmorSlot.ARMS);
+      this.bindLockedSlotButton(this.BTN_INV_ARM_L, ModuleCreatureArmorSlot.LEFTARMBAND);
+      this.bindLockedSlotButton(this.BTN_INV_BODY, ModuleCreatureArmorSlot.ARMOR);
+      this.bindLockedSlotButton(this.BTN_INV_ARM_R, ModuleCreatureArmorSlot.RIGHTARMBAND);
+      this.bindLockedSlotButton(this.BTN_INV_WEAP_L, ModuleCreatureArmorSlot.LEFTHAND);
+      this.bindLockedSlotButton(this.BTN_INV_BELT, ModuleCreatureArmorSlot.BELT);
+      this.bindLockedSlotButton(this.BTN_INV_WEAP_R, ModuleCreatureArmorSlot.RIGHTHAND);
+      this.bindLockedSlotButton(this.BTN_INV_WEAP_L2, ModuleCreatureArmorSlot.LEFTHAND2);
+      this.bindLockedSlotButton(this.BTN_INV_WEAP_R2, ModuleCreatureArmorSlot.RIGHTHAND2);
 
       this.BTN_EQUIP.addEventListener('click', (e) => {
         e.stopPropagation();
-        if(this.selectedItem instanceof ModuleItem || this.selectedItem instanceof GUIItemNone){
-          const currentPC = GameState.PartyManager.party[this.currentNPCIndex];
-          if(this.selectedItem instanceof GUIItemNone){
-            currentPC.unequipSlot(this.slot);
-          }else{
-            currentPC.equipItem(this.slot, this.selectedItem).then(() => {
-              this.updateSlotIcons();
-            });
-          }
-          this.slot = null;
-          this.equipmentSelectionActive = false;
-          this.updateSelected(undefined as any);
-          this.updateSlotIcons();
-          this.updateList();
-        }
+        this.commitEquipmentSelection();
       });
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
       this.LB_ITEMS.padding = 2;
-      this.LB_ITEMS.onSelected = (item: ModuleItem|GUIItemEquipped|GUIItemNone) => {
+      this.LB_ITEMS.onSelected = (item: ModuleItem | any) => {
         this.updateSelected(item);
-      }
+      };
 
       this.BTN_PREVNPC.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -310,33 +173,13 @@ export class MenuEquipment extends K1_MenuEquipment {
       });
 
       this.BTN_SWAPWEAPONS.addEventListener('click', (e) => {
-        const currentPC = GameState.PartyManager.party[this.currentNPCIndex];
-        if(currentPC){
-          const right_1 = currentPC.equipment.RIGHTHAND;
-          const right_2 = currentPC.equipment.RIGHTHAND2;
-          currentPC.equipment.RIGHTHAND = undefined;
-          currentPC.equipment.RIGHTHAND2 = undefined;
-
-          if(right_1) right_1.destroy();
-
-          if(right_1) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND2, right_1).then(() => { this.updateSlotIcons(true); });
-          if(right_2) currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND,  right_2).then(() => { this.updateSlotIcons(true); });
-
-          const left_1 = currentPC.equipment.LEFTHAND;
-          const left_2 = currentPC.equipment.LEFTHAND2;
-          currentPC.equipment.LEFTHAND = undefined;
-          currentPC.equipment.LEFTHAND2 = undefined;
-
-          if(left_1) left_1.destroy();
-
-          if(left_1) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left_1).then(() => { this.updateSlotIcons(true); });
-          if(left_2) currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND,  left_2).then(() => { this.updateSlotIcons(true); });
-          this.updateSlotIcons(true);
-        }
+        e.stopPropagation();
+        void this.swapWeaponConfigs();
       });
 
-      GameState.PartyManager.AddEventListener('change', (pm: ModuleCreature) => {
+      GameState.PartyManager.AddEventListener('change', () => {
         if(!this.isVisible()) return;
+        this.currentNPCIndex = 0;
         this.updateCharacterStats();
       });
 
@@ -344,211 +187,278 @@ export class MenuEquipment extends K1_MenuEquipment {
     });
   }
 
+  private bindLockedSlotButton(btn: GUIButton, slot: ModuleCreatureArmorSlot) {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if(this.isSlotLocked(slot)){
+        GameState.MenuManager.InGameConfirm.fromStringRef(STR_SLOT_DISABLED);
+        return;
+      }
+      this.onSelectSlot(slot);
+    }).addEventListener('hover', () => {
+      this.updateListHover(slot);
+    });
+  }
+
+  /**
+   * Retail PerformToggleEquip / BTN_SWAPWEAPONS — swap config 1 ↔ 2 without destroying items.
+   */
+  private async swapWeaponConfigs() {
+    const currentPC = this.getActiveCreature();
+    if(!currentPC) return;
+
+    const right1 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
+    const right2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
+    const left1 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
+    const left2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND2);
+
+    currentPC.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
+    currentPC.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
+    currentPC.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND);
+    currentPC.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND2);
+
+    if(right2) await currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND, right2);
+    if(right1) await currentPC.equipItem(ModuleCreatureArmorSlot.RIGHTHAND2, right1);
+    if(left2) await currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND, left2);
+    if(left1) await currentPC.equipItem(ModuleCreatureArmorSlot.LEFTHAND2, left1);
+
+    this.updateInventoryDisplay(true);
+  }
+
   updateList() {
     super.updateList();
     if (!this.equipmentSelectionActive) {
-      this.LBL_BACK1.show();
-      this.LBL_ATKL.show();
-      this.LBL_ATKR.show();
-      this.LBL_ATTACKMOD.show();
+      this.LBL_BACK1?.show();
+      this.LBL_ATKL?.show();
+      this.LBL_ATKR?.show();
+      this.LBL_ATTACKMOD?.show();
 
-      this.LBL_DEF_TEXT.show();
-      this.LBL_DEF_BACK.show();
-      this.LBL_DEF.show();
+      this.LBL_DEF_TEXT?.show();
+      this.LBL_DEF_BACK?.show();
+      this.LBL_DEF?.show();
 
-      this.LBL_DAMTEXT.show();
-      this.LBL_DAMAGE.show();
+      this.LBL_DAMTEXT?.show();
+      this.LBL_DAMAGE?.show();
 
-      this.LBL_TOHIT.show();
-      this.LBL_TOHITL.show();
-      this.LBL_TOHITR.show();
+      this.LBL_TOHIT?.show();
+      this.LBL_TOHITL?.show();
+      this.LBL_TOHITR?.show();
 
-      this.LBL_INV_WEAP_L2.show();
-      this.LBL_INV_WEAP_R2.show();
-      this.BTN_INV_WEAP_L2.show();
-      this.BTN_INV_WEAP_R2.show();
-      this.BTN_SWAPWEAPONS.show();
+      this.LBL_INV_WEAP_L2?.show();
+      this.LBL_INV_WEAP_R2?.show();
+      this.BTN_INV_WEAP_L2?.show();
+      this.BTN_INV_WEAP_R2?.show();
+      this.BTN_SWAPWEAPONS?.show();
       this.updateSlotLock();
     }else{
-      this.LBL_BACK1.hide();
-      this.LBL_ATKL.hide();
-      this.LBL_ATKR.hide();
-      this.LBL_ATTACKMOD.hide();
+      this.LBL_BACK1?.hide();
+      this.LBL_ATKL?.hide();
+      this.LBL_ATKR?.hide();
+      this.LBL_ATTACKMOD?.hide();
 
-      this.LBL_DEF_TEXT.hide();
-      this.LBL_DEF_BACK.hide();
-      this.LBL_DEF.hide();
+      this.LBL_DEF_TEXT?.hide();
+      this.LBL_DEF_BACK?.hide();
+      this.LBL_DEF?.hide();
 
-      this.LBL_DAMTEXT.hide();
-      this.LBL_DAMAGE.hide();
+      this.LBL_DAMTEXT?.hide();
+      this.LBL_DAMAGE?.hide();
 
-      this.LBL_TOHIT.hide();
-      this.LBL_TOHITL.hide();
-      this.LBL_TOHITR.hide();
+      this.LBL_TOHIT?.hide();
+      this.LBL_TOHITL?.hide();
+      this.LBL_TOHITR?.hide();
       
-      this.LBL_INV_WEAP_L2.hide();
-      this.LBL_INV_WEAP_R2.hide();
-      this.BTN_INV_WEAP_L2.hide();
-      this.BTN_INV_WEAP_R2.hide();
-      this.BTN_SWAPWEAPONS.hide();
+      this.LBL_INV_WEAP_L2?.hide();
+      this.LBL_INV_WEAP_R2?.hide();
+      this.BTN_INV_WEAP_L2?.hide();
+      this.BTN_INV_WEAP_R2?.hide();
+      this.BTN_SWAPWEAPONS?.hide();
+    }
+  }
+
+  protected showCombatStatLabels(show: boolean) {
+    // K2 selection mode hides a different set via updateList override.
+    if(!show) return;
+    this.LBL_ATKL?.show();
+    this.LBL_ATKR?.show();
+    this.LBL_TOHITL?.show();
+    this.LBL_TOHITR?.show();
+    this.LBL_DEF?.show();
+    this.LBL_TOHIT?.show();
+    this.LBL_DAMAGE?.show();
+    this.LBL_ATTACKMOD?.show();
+    this.LBL_DAMTEXT?.show();
+    this.LBL_DEF_TEXT?.show();
+  }
+
+  showCantEquipMessage(show: boolean, strRef: number = 0) {
+    const combatLabels = [
+      this.LBL_ATKL, this.LBL_ATKR, this.LBL_TOHITL, this.LBL_TOHITR,
+      this.LBL_DEF, this.LBL_ATTACK_INFO, this.LBL_DEF_INFO,
+      this.LBL_TOHIT, this.LBL_DAMAGE, this.LBL_ATTACKMOD, this.LBL_DAMTEXT, this.LBL_DEF_TEXT, this.LBL_DEF_BACK,
+    ];
+
+    if(show){
+      for(const lbl of combatLabels){
+        lbl?.hide();
+      }
+      if(strRef){
+        this.LBL_CANTEQUIP?.setText(GameState.TLKManager.GetStringById(strRef).Value);
+      }
+      this.LBL_CANTEQUIP?.show();
+      this.BTN_EQUIP.disableSelection = true;
+      this.BTN_EQUIP?.setTextColor(0.5, 0.5, 0.5);
+    }else{
+      this.LBL_CANTEQUIP?.hide();
+      this.BTN_EQUIP.disableSelection = false;
+      this.BTN_EQUIP?.setTextColor(EQUIP_COLOR_BLUE.r, EQUIP_COLOR_BLUE.g, EQUIP_COLOR_BLUE.b);
+      if(!this.equipmentSelectionActive){
+        for(const lbl of combatLabels){
+          lbl?.show();
+        }
+      }
     }
   }
 
   updateSlotIcons(force: boolean = false) {
-    const currentPC = GameState.PartyManager.party[this.currentNPCIndex];
+    const currentPC = this.getActiveCreature();
     if(!currentPC) return;
 
-    if(currentPC.getRace() == 6){
-      let implant = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.IMPLANT);
-      if(implant){
-        let icon = 'i' + implant.baseItem.itemClass + '_' + ('000' + implant.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_IMPLANT.getFillTextureName() != icon){
-          this.LBL_INV_IMPLANT.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_IMPLANT.getFillTextureName() != 'iimplant'){
-        this.LBL_INV_IMPLANT.setFillTextureName('iimplant');
-      }
+    const race = currentPC.getRace();
+    if(race !== 6 && race !== 5) return;
 
-      let head = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.HEAD);
-      if(head){
-        let icon = 'i' + head.baseItem.itemClass + '_' + ('000' + head.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_HEAD.getFillTextureName() != icon){
-          this.LBL_INV_HEAD.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_HEAD.getFillTextureName() != 'ihead'){
-        this.LBL_INV_HEAD.setFillTextureName('ihead');
-      }
+    const slots: [ModuleCreatureArmorSlot, GUILabel][] = [
+      [ModuleCreatureArmorSlot.IMPLANT, this.LBL_INV_IMPLANT],
+      [ModuleCreatureArmorSlot.HEAD, this.LBL_INV_HEAD],
+      [ModuleCreatureArmorSlot.ARMS, this.LBL_INV_HANDS],
+      [ModuleCreatureArmorSlot.LEFTARMBAND, this.LBL_INV_ARM_L],
+      [ModuleCreatureArmorSlot.ARMOR, this.LBL_INV_BODY],
+      [ModuleCreatureArmorSlot.RIGHTARMBAND, this.LBL_INV_ARM_R],
+      [ModuleCreatureArmorSlot.LEFTHAND, this.LBL_INV_WEAP_L],
+      [ModuleCreatureArmorSlot.BELT, this.LBL_INV_BELT],
+      [ModuleCreatureArmorSlot.RIGHTHAND, this.LBL_INV_WEAP_R],
+      [ModuleCreatureArmorSlot.LEFTHAND2, this.LBL_INV_WEAP_L2],
+      [ModuleCreatureArmorSlot.RIGHTHAND2, this.LBL_INV_WEAP_R2],
+    ];
 
-      let hands = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMS);
-      if(hands){
-        let icon = 'i' + hands.baseItem.itemClass + '_' + ('000' + hands.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_HANDS.getFillTextureName() != icon){
-          this.LBL_INV_HANDS.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_HANDS.getFillTextureName() != 'ihands'){
-        this.LBL_INV_HANDS.setFillTextureName('ihands');
+    for(const [slot, lbl] of slots){
+      if(!lbl) continue;
+      const item = currentPC.GetItemInSlot(slot);
+      let icon: string;
+      if(item){
+        icon = 'i' + item.baseItem.itemClass + '_' + ('000' + item.getModelVariation()).slice(-3);
+      }else{
+        icon = getEmptySlotIcon(slot, race);
       }
+      if(force || lbl.getFillTextureName() != icon){
+        lbl.setFillTextureName(icon);
+      }
+    }
 
-      let l_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTARMBAND);
-      if(l_arm){
-        let icon = 'i' + l_arm.baseItem.itemClass + '_' + ('000' + l_arm.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_ARM_L.getFillTextureName() != icon){
-          this.LBL_INV_ARM_L.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_ARM_L.getFillTextureName() != 'iforearm_l'){
-        this.LBL_INV_ARM_L.setFillTextureName('iforearm_l');
-      }
+    if(!isTwoHandedWeapon(currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND))){
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L, 1);
+    }
+    if(!isTwoHandedWeapon(currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND2))){
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L2, 1);
+    }
+  }
 
-      let armor = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.ARMOR);
-      if(armor){
-        let icon = 'i' + armor.baseItem.itemClass + '_' + ('000' + armor.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_BODY.getFillTextureName() != icon){
-          this.LBL_INV_BODY.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_BODY.getFillTextureName() != 'iarmor'){
-        this.LBL_INV_BODY.setFillTextureName('iarmor');
-      }
+  protected updateWeaponStatLabels(currentPC: ModuleCreature) {
+    const rWeap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
+    const lWeap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
+    const bab = currentPC.getBaseAttackBonus();
+    const twoHand = isTwoHandedWeapon(rWeap);
 
-      let r_arm = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTARMBAND);
-      if(r_arm){
-        let icon = 'i' + r_arm.baseItem.itemClass + '_' + ('000' + r_arm.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_ARM_R.getFillTextureName() != icon){
-          this.LBL_INV_ARM_R.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_ARM_R.getFillTextureName() != 'iforearm_r'){
-        this.LBL_INV_ARM_R.setFillTextureName('iforearm_r');
-      }
+    this.LBL_ATTACKMOD?.setText(formatAttackBonus(bab));
 
-      let l_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
-      if(l_weap){
-        let icon = 'i' + l_weap.baseItem.itemClass + '_' + ('000' + l_weap.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_WEAP_L.getFillTextureName() != icon){
-          this.LBL_INV_WEAP_L.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_WEAP_L.getFillTextureName() != 'iweap_l'){
-        this.LBL_INV_WEAP_L.setFillTextureName('iweap_l');
-      }
+    if(rWeap){
+      const atk = getEquipScreenAttackBonus(currentPC, rWeap, false);
+      const dmg = getEquipScreenDamageRange(rWeap);
+      const dmgStr = dmg.max > 0 ? formatDamageRange(dmg.min, dmg.max) : '-';
+      this.setStatLabel(this.LBL_ATKR, dmgStr === '-' ? '' : dmgStr, false);
+      this.setStatLabel(this.LBL_TOHITR, formatAttackBonus(atk), atk > bab);
+      this.LBL_DAMAGE?.setText(dmgStr);
+    }else if(!lWeap){
+      const atk = getEquipScreenAttackBonus(currentPC, undefined, false);
+      this.setStatLabel(this.LBL_ATKR, '', false);
+      this.setStatLabel(this.LBL_TOHITR, formatAttackBonus(atk), atk > bab);
+      this.LBL_DAMAGE?.setText('-');
+    }else{
+      this.setStatLabel(this.LBL_ATKR, '', false);
+      this.setStatLabel(this.LBL_TOHITR, '-', false);
+      this.LBL_DAMAGE?.setText('-');
+    }
 
-      let belt = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.BELT);
-      if(belt){
-        let icon = 'i' + belt.baseItem.itemClass + '_' + ('000' + belt.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_BELT.getFillTextureName() != icon){
-          this.LBL_INV_BELT.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_BELT.getFillTextureName() != 'ibelt'){
-        this.LBL_INV_BELT.setFillTextureName('ibelt');
-      }
+    if(twoHand && rWeap){
+      const atk = getEquipScreenAttackBonus(currentPC, rWeap, true);
+      const dmg = getEquipScreenDamageRange(rWeap);
+      this.setStatLabel(this.LBL_ATKL, dmg.max > 0 ? formatDamageRange(dmg.min, dmg.max) : '', false);
+      this.setStatLabel(this.LBL_TOHITL, formatAttackBonus(atk), atk > bab);
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L, 0.25);
+    }else if(lWeap){
+      const atk = getEquipScreenAttackBonus(currentPC, lWeap, true);
+      const dmg = getEquipScreenDamageRange(lWeap);
+      this.setStatLabel(this.LBL_ATKL, dmg.max > 0 ? formatDamageRange(dmg.min, dmg.max) : '', false);
+      this.setStatLabel(this.LBL_TOHITL, formatAttackBonus(atk), atk > bab);
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L, 1);
+    }else{
+      this.setStatLabel(this.LBL_ATKL, '', false);
+      this.setStatLabel(this.LBL_TOHITL, '-', false);
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L, 1);
+    }
 
-      let r_weap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
-      if(r_weap){
-        let icon = 'i' + r_weap.baseItem.itemClass + '_' + ('000' + r_weap.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_WEAP_R.getFillTextureName() != icon){
-          this.LBL_INV_WEAP_R.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_WEAP_R.getFillTextureName() != 'iweap_r'){
-        this.LBL_INV_WEAP_R.setFillTextureName('iweap_r');
-      }
-
-      let l_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND2);
-      if(l_weap2){
-        let icon = 'i' + l_weap2.baseItem.itemClass + '_' + ('000' + l_weap2.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_WEAP_L2.getFillTextureName() != icon){
-          this.LBL_INV_WEAP_L2.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_WEAP_L2.getFillTextureName() != 'iweap_l'){
-        this.LBL_INV_WEAP_L2.setFillTextureName('iweap_l');
-      }
-
-      let r_weap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
-      if(r_weap2){
-        let icon = 'i' + r_weap2.baseItem.itemClass + '_' + ('000' + r_weap2.getModelVariation()).slice(-3);
-        if(force || this.LBL_INV_WEAP_R2.getFillTextureName() != icon){
-          this.LBL_INV_WEAP_R2.setFillTextureName(icon);
-        }
-      }else if(force || this.LBL_INV_WEAP_R2.getFillTextureName() != 'iweap_r'){
-        this.LBL_INV_WEAP_R2.setFillTextureName('iweap_r');
-      }
+    // Config-2 two-hand dimming
+    const rWeap2 = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
+    if(isTwoHandedWeapon(rWeap2)){
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L2, 0.25);
+    }else{
+      this.setSlotIconAlpha(this.LBL_INV_WEAP_L2, 1);
     }
   }
 
   updateCharacterStats() {
     this.selectedControl = this.defaultControl;
+    if(this.equipmentSelectionActive && this.previewActive){
+      void this.revertPreview().then(() => {
+        this.clearPreviewSnapshot();
+        this.equipmentSelectionActive = false;
+        this.previewActive = false;
+        this.refreshCharacterPanel();
+      });
+      return;
+    }
     this.equipmentSelectionActive = false;
-    const currentPC = GameState.PartyManager.party[this.currentNPCIndex];
+    this.clearPreviewSnapshot();
+    this.refreshCharacterPanel();
+  }
+
+  protected refreshCharacterPanel() {
+    const currentPC = this.getActiveCreature();
     if(!currentPC) return;
 
     this.LB_DESC?.setItem(null);
     this.LB_ITEMS?.setItems([]);
-
     this.LBL_TITLE?.setText(currentPC.getName());
-    this.LBL_DEF?.setText(String(currentPC.getAC()));
-
-    const rWeap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.RIGHTHAND);
-    const lWeap = currentPC.GetItemInSlot(ModuleCreatureArmorSlot.LEFTHAND);
-    const bab = currentPC.getBaseAttackBonus();
-    const babStr = bab >= 0 ? `+${bab}` : String(bab);
-
-    this.LBL_TOHITR?.setText(rWeap ? babStr : '-');
-    this.LBL_TOHITL?.setText(lWeap ? babStr : '-');
-    this.LBL_ATTACKMOD?.setText(babStr);
-    this.LBL_DAMAGE?.setText(
-      rWeap && rWeap.baseItem?.numDice ? `${rWeap.baseItem.numDice}d${rWeap.baseItem.die}` : '-'
-    );
-
-    this.updateSlotIcons(true);
+    this.updateInventoryDisplay(true);
     this.updateList();
   }
 
   private isSlotLocked(slot: ModuleCreatureArmorSlot): boolean {
-    const npc = GameState.PartyManager.party[this.currentNPCIndex];
+    const npc = this.getActiveCreature();
     if(!npc) return false;
-    const locked = npc.creatureAppearance?.equipslotslocked ?? 0;
+    let locked = npc.creatureAppearance?.equipslotslocked ?? 0;
     if(locked === -1) return false;
+
+    // Retail UpdateSlotLocks: locking primary hand also locks secondary config.
+    if(slot === ModuleCreatureArmorSlot.LEFTHAND2 && (locked & ModuleCreatureArmorSlot.LEFTHAND)){
+      return true;
+    }
+    if(slot === ModuleCreatureArmorSlot.RIGHTHAND2 && (locked & ModuleCreatureArmorSlot.RIGHTHAND)){
+      return true;
+    }
     return (locked & slot) !== 0;
   }
 
   private updateSlotLock() {
-
     const slots: [GUIButton, GUILabel, ModuleCreatureArmorSlot][] = [
       [this.BTN_INV_IMPLANT, this.LBL_INV_IMPLANT, ModuleCreatureArmorSlot.IMPLANT],
       [this.BTN_INV_HEAD,    this.LBL_INV_HEAD,    ModuleCreatureArmorSlot.HEAD],
@@ -564,6 +474,7 @@ export class MenuEquipment extends K1_MenuEquipment {
     ];
 
     for(const [btn, lbl, slot] of slots){
+      if(!btn || !lbl) continue;
       if(this.isSlotLocked(slot)){
         btn.setBorderColor(btn.defaultLockedColor.r, btn.defaultLockedColor.g, btn.defaultLockedColor.b);
         btn.setHighlightColor(btn.defaultLockedColor.r, btn.defaultLockedColor.g, btn.defaultLockedColor.b);
@@ -581,16 +492,16 @@ export class MenuEquipment extends K1_MenuEquipment {
   show() {
     this.currentNPCIndex = 0;
     super.show();
-    this.LBL_BACK1.widget.position.z = 0;
+    if(this.LBL_BACK1?.widget){
+      this.LBL_BACK1.widget.position.z = 0;
+    }
   }
 
   triggerControllerAPress() {
     if(this.equipmentSelectionActive){
-      if(this.selectedControl){
-        this.selectedControl.click();
-      }
-    }else{
       this.BTN_EQUIP.click();
+    }else if(this.selectedControl){
+      this.selectedControl.click();
     }
   }
 
@@ -618,11 +529,8 @@ export class MenuEquipment extends K1_MenuEquipment {
       this.BTN_INV_WEAP_L2.onHoverOut();
       this.BTN_INV_WEAP_R2.onHoverOut();
       if(this.selectedControl == this.BTN_INV_IMPLANT){
-        // top row — no move
       }else if(this.selectedControl == this.BTN_INV_HEAD){
-        // top row — no move
       }else if(this.selectedControl == this.BTN_INV_HANDS){
-        // top row — no move
       }else if(this.selectedControl == this.BTN_INV_ARM_L){
         this.selectedControl = this.BTN_INV_IMPLANT;
       }else if(this.selectedControl == this.BTN_INV_BODY){
@@ -676,13 +584,10 @@ export class MenuEquipment extends K1_MenuEquipment {
       }else if(this.selectedControl == this.BTN_INV_WEAP_L){
         this.selectedControl = this.BTN_INV_WEAP_L2;
       }else if(this.selectedControl == this.BTN_INV_BELT){
-        // bottom center — no move
       }else if(this.selectedControl == this.BTN_INV_WEAP_R){
         this.selectedControl = this.BTN_INV_WEAP_R2;
       }else if(this.selectedControl == this.BTN_INV_WEAP_L2){
-        // bottom row — no move
       }else if(this.selectedControl == this.BTN_INV_WEAP_R2){
-        // bottom row — no move
       }
       if(this.selectedControl){
         this.selectedControl.onHoverIn();
@@ -692,7 +597,6 @@ export class MenuEquipment extends K1_MenuEquipment {
 
   triggerControllerDLeftPress() {
     if(this.equipmentSelectionActive){
-      // no action in item list
     }else{
       this.BTN_INV_IMPLANT.onHoverOut();
       this.BTN_INV_HEAD.onHoverOut();
@@ -706,25 +610,21 @@ export class MenuEquipment extends K1_MenuEquipment {
       this.BTN_INV_WEAP_L2.onHoverOut();
       this.BTN_INV_WEAP_R2.onHoverOut();
       if(this.selectedControl == this.BTN_INV_IMPLANT){
-        // left column — no move
       }else if(this.selectedControl == this.BTN_INV_HEAD){
         this.selectedControl = this.BTN_INV_IMPLANT;
       }else if(this.selectedControl == this.BTN_INV_HANDS){
         this.selectedControl = this.BTN_INV_HEAD;
       }else if(this.selectedControl == this.BTN_INV_ARM_L){
-        // left column — no move
       }else if(this.selectedControl == this.BTN_INV_BODY){
         this.selectedControl = this.BTN_INV_ARM_L;
       }else if(this.selectedControl == this.BTN_INV_ARM_R){
         this.selectedControl = this.BTN_INV_BODY;
       }else if(this.selectedControl == this.BTN_INV_WEAP_L){
-        // left column — no move
       }else if(this.selectedControl == this.BTN_INV_BELT){
         this.selectedControl = this.BTN_INV_WEAP_L;
       }else if(this.selectedControl == this.BTN_INV_WEAP_R){
         this.selectedControl = this.BTN_INV_BELT;
       }else if(this.selectedControl == this.BTN_INV_WEAP_L2){
-        // left column — no move
       }else if(this.selectedControl == this.BTN_INV_WEAP_R2){
         this.selectedControl = this.BTN_INV_WEAP_L2;
       }
@@ -736,7 +636,6 @@ export class MenuEquipment extends K1_MenuEquipment {
 
   triggerControllerDRightPress() {
     if(this.equipmentSelectionActive){
-      // no action in item list
     }else{
       this.BTN_INV_IMPLANT.onHoverOut();
       this.BTN_INV_HEAD.onHoverOut();
@@ -754,23 +653,19 @@ export class MenuEquipment extends K1_MenuEquipment {
       }else if(this.selectedControl == this.BTN_INV_HEAD){
         this.selectedControl = this.BTN_INV_HANDS;
       }else if(this.selectedControl == this.BTN_INV_HANDS){
-        // right column — no move
       }else if(this.selectedControl == this.BTN_INV_ARM_L){
         this.selectedControl = this.BTN_INV_BODY;
       }else if(this.selectedControl == this.BTN_INV_BODY){
         this.selectedControl = this.BTN_INV_ARM_R;
       }else if(this.selectedControl == this.BTN_INV_ARM_R){
-        // right column — no move
       }else if(this.selectedControl == this.BTN_INV_WEAP_L){
         this.selectedControl = this.BTN_INV_BELT;
       }else if(this.selectedControl == this.BTN_INV_BELT){
         this.selectedControl = this.BTN_INV_WEAP_R;
       }else if(this.selectedControl == this.BTN_INV_WEAP_R){
-        // right column — no move
       }else if(this.selectedControl == this.BTN_INV_WEAP_L2){
         this.selectedControl = this.BTN_INV_WEAP_R2;
       }else if(this.selectedControl == this.BTN_INV_WEAP_R2){
-        // right column — no move
       }
       if(this.selectedControl){
         this.selectedControl.onHoverIn();

@@ -15,18 +15,19 @@ export class EffectDamageResistance extends GameEffect {
     super();
     this.type = GameEffectType.EffectDamageResistance;
     
-    //intList[0] : nDamageType
-    //intList[1] : nDamageLimit
-    //intList[2] : nDamageLimit
-    //intList[3] : nVulnerabilityFlags ???
+    // intList[0] : nDamageType flags (DAMAGE_TYPE_*)
+    // intList[1] : nAmount absorbed per hit
+    // intList[2] : nLimit total pool (0 = infinite)
+    // intList[3] : vulnerability / double-cost flags (retail)
 
   }
 
   onApply(){
     if(this.applied)
       return;
-      
+
     super.onApply();
+    // Mitigated in combat/damage-mitigation when damage is applied
   }
 
 }

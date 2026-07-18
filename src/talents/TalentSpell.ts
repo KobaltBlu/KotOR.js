@@ -7,7 +7,8 @@ import { OdysseyModel3D } from "@/three/odyssey";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ActionCombat } from "@/actions/ActionCombat";
-import { CombatRoundAction, SpellCastInstance } from "@/combat";
+import { CombatRoundAction, ExcitedDurationRow, isWithinSpellCastRange, resolveSpellCastRange } from "@/combat";
+import { getSpellCastAnimState, getSpellConjureAnimState } from "@/combat/spell-cast-anims";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { CombatActionType } from "@/enums/combat/CombatActionType";
 import { TalentObjectType } from "@/enums/engine/TalentObjectType";
@@ -152,21 +153,28 @@ export class TalentSpell extends TalentObject {
   }
 
   getCastingAnimation(){
-    if(this.conjanim == 'throw'){
+    if(this.castanim == 'throw' || this.conjanim == 'throw'){
       if(this.id == 4 || this.id == 46){
         return 'throwsablp';
       }else{
         return '';
-
-        //throwgen1 is an unnder-handed throw. I think it's used if the target is close
-        //this.conjanim = 'throwgen1';
       }
     }
 
-    if(this.conjanim == 'up'){
+    if(this.castanim == 'up' || this.conjanim == 'up'){
       return 'castoutlp3';
     }
     return 'castoutlp1';
+  }
+
+  /** Retail conjure SetAnimation id from spells.2da ConjAnim. */
+  getConjureAnimState(){
+    return getSpellConjureAnimState(this.conjanim);
+  }
+
+  /** Retail cast SetAnimation id from spells.2da CastAnim (0 = skip). */
+  getCastAnimState(){
+    return getSpellCastAnimState(this.castanim || this.conjanim);
   }
 
   getCasterAnimation(){
@@ -177,29 +185,37 @@ export class TalentSpell extends TalentObject {
     
   }
 
-  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject){
+  /**
+   * Queue a cast via combat round (retail AddCastSpellActions / GUI ForceMenuAction).
+   * @param options.isUserAction — player HUD/input (CombatRoundAction.isUserAction)
+   */
+  useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject, options?: { isUserAction?: boolean }){
     super.useTalentOnObject(oTarget, oCaster);
 
-    console.log('Talent.useTalentOnObject', this);
-    
     oCaster.combatData.lastSpellTarget = oTarget;
     oTarget.combatData.lastSpellAttacker = oCaster;
     if(this.hostilesetting == 1){
-      oCaster.resetExcitedDuration();
+      // Retail hostile cast → BroadcastCombatStateToParty (not caster-only setCombatEngaged)
+      if(typeof (oCaster as any).broadcastCombatStateToParty === 'function'){
+        (oCaster as any).broadcastCombatStateToParty(oCaster);
+        (oCaster as any).setExcitedState?.(ExcitedDurationRow.SpellCast);
+        (oCaster as any).removeCombatInvisibilityEffects?.();
+      }else if(typeof (oCaster as any).setCombatEngaged === 'function'){
+        (oCaster as any).setCombatEngaged(ExcitedDurationRow.SpellCast);
+      }else{
+        oCaster.resetExcitedDuration();
+      }
     }
 
     const combatAction = new CombatRoundAction();
     combatAction.actionType = CombatActionType.CAST_SPELL;
     combatAction.target = oTarget;
     combatAction.setSpell(this);
-    combatAction.animation = ModuleCreatureAnimState.CASTOUT1;
+    combatAction.animation = this.getConjureAnimState();
     combatAction.animationName = this.getConjureAnimation();
     combatAction.animationTime = 1500;
-
-    combatAction.addSpellInstance(
-      new SpellCastInstance(combatAction.owner, combatAction.target, this)
-    );
-
+    combatAction.isUserAction = !!options?.isUserAction;
+    // SpellCastInstance is created later by ActionCastSpell.startSpellInstance
     oCaster.combatRound.addAction(combatAction);
 
     if(!oCaster.actionQueue.actionTypeExists(ActionType.ActionCombat)){
@@ -213,40 +229,12 @@ export class TalentSpell extends TalentObject {
     if(oTarget == oCaster){
       return true;
     }
-    let distance = oCaster.position.distanceTo(oTarget.position);
-    //Spell ranges are defined in the ranges.2da file
-    switch(this.range){
-      case 'L': //Large
-        return distance < 28;
-      case 'M': //Medium
-        return distance < 15;
-      case 'P': //Personal
-        return true;
-      case 'S': //Small
-        return distance < 10;
-      case 'T': //Touch
-        return true;//distance < 2.25;
-      case 'W': //Throw
-        return distance < 15;
-    }
-    return true;
+    const distance = oCaster.position.distanceTo(oTarget.position);
+    return isWithinSpellCastRange(this.range, distance, false);
   }
 
   getCastRange(){
-    switch(this.range){
-      case 'L': //Large
-        return 28;
-      case 'M': //Medium
-        return 15;
-      case 'P': //Personal
-        return Infinity;
-      case 'S': //Small
-        return 10;
-      case 'T': //Touch
-        return Infinity;//distance < 2.25;
-      case 'W': //Throw
-        return 15;
-    }
+    return resolveSpellCastRange(this.range);
   }
 
   static From2DA( row: any ){

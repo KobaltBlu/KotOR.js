@@ -141,6 +141,9 @@ function makeDevServer() {
       overlay: {
         errors: true,
         warnings: false,
+        // Keep runtime/console errors in the browser console only;
+        // the fullscreen overlay blocks the game client in dev.
+        runtimeErrors: false,
       },
     },
     watchFiles: [

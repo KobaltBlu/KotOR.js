@@ -4,6 +4,7 @@ export * from "@/enums/module/AreaTerrainFlag";
 export * from "@/enums/module/ModuleCreatureAmbientState";
 export * from "@/enums/module/ModuleCreatureAnimState";
 export * from "@/enums/module/ModuleCreatureArmorSlot";
+export * from "@/enums/module/ModuleDayPhase";
 export * from "@/enums/module/ModuleDoorAnimState";
 export * from "@/enums/module/ModuleCreatureArmorSlot";
 export * from "@/enums/module/ModuleDoorAnimState";

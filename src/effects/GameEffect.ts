@@ -43,7 +43,8 @@ export class GameEffect {
     this.expireDay = 0;
     this.expireTime = 0;
     this.spellId = -1;
-    this.subType = 0;
+    // Retail / NWN default subtype bit = MAGICAL (dispellable when TEMPORARY/PERMANENT)
+    this.subType = GameEffectSubType.MAGICAL;
     this.skipOnLoad = false;
 
     this.applied = false;

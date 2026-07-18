@@ -152,10 +152,13 @@ export class ModuleStore extends ModuleObject {
       for(let i = 0; i < items.length; i++){
         const moduleItem = new ModuleItem(GFFObject.FromStruct(items[i]));
         this.inventory.push(moduleItem)
+        moduleItem.setPossessor(this);
         moduleItem.load();
       }
     }
     
+    this.loadActionList();
+
     this.initialized = true;
 
   }

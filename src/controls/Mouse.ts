@@ -39,6 +39,8 @@ export class Mouse {
   static leftClick: boolean = false;
   static rightDown: boolean = false;
   static rightClick: boolean = false;
+  /** Retail g_bShiftActionState — full-stack give/transfer when true. */
+  static shiftKey: boolean = false;
 
   //positions
   static position: THREE.Vector2 = new THREE.Vector2();

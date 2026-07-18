@@ -1,33 +1,86 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { BitWise } from "@/utility/BitWise";
+import { GameState } from "@/GameState";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleAreaOfEffect } from "@/module/ModuleAreaOfEffect";
+import type EngineLocation from "@/engine/EngineLocation";
 
 /**
- * EffectAreaOfEffect class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ * EffectAreaOfEffect — retail OnApplyAreaOfEffect @ 004dade0 /
+ * location path via CSWSArea::ApplyEffect @ 0050c780.
+ *
+ * int[0] = vfx_persistent row; string[0..2] = OnEnter / Heartbeat / OnExit overrides;
+ * objectList[0] = spawned ModuleAreaOfEffect.
+ *
  * @file EffectAreaOfEffect.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectAreaOfEffect extends GameEffect {
+  /** When set, onApply places AOE at this location instead of following the host object. */
+  applyLocation?: EngineLocation;
+
   constructor(){
     super();
     this.type = GameEffectType.EffectAreaOfEffect;
-
-    // https://nwnlexicon.com/index.php?title=EffectAreaOfEffect#Area_of_Effect_Effect
-    // intList[0] : nAreaEffectId - vfx_persistent.2da
-    // stringList[0] : sOnEnterScript
-    // stringList[1] : sHeartbeatScript
-    // stringList[2] : sOnExitScript
-    // objectList[0] : aoeObject
   }
 
   onApply(){
     if(this.applied)
       return;
-      
+
+    const area = GameState.module?.area;
+    if(!area) return;
+
+    const aoeId = (this.getInt(0) || 0) & 0xff;
+    const host = this.object;
+    const isCreatureHost = BitWise.InstanceOfObject(host, ModuleObjectType.ModuleCreature);
+
+    if(!this.applyLocation && !isCreatureHost){
+      return;
+    }
+
     super.onApply();
+
+    // Avoid static import cycle with GameEffectFactory ↔ ModuleAreaOfEffect
+    const AoECtor = (area as any).constructor.ModuleAreaOfEffect;
+    if(!AoECtor) return;
+    const aoe: ModuleAreaOfEffect = new AoECtor();
+    aoe.loadFromPersistentRow(aoeId, {
+      onEnter: this.getString(0) || '',
+      heartbeat: this.getString(1) || '',
+      onExit: this.getString(2) || '',
+    });
+    aoe.creator = this.getCreator() || (isCreatureHost ? host as ModuleCreature : undefined as any);
+    aoe.creatorId = aoe.creator?.id ?? -1;
+    aoe.spellId = this.getSpellId();
+    aoe.duration = this.duration;
+    aoe.durationType = this.getDurationType();
+
+    if(this.applyLocation){
+      aoe.position.copy(this.applyLocation.position);
+      aoe.linkedToObject = undefined as any;
+      aoe.linkedToObjectId = -1;
+    }else{
+      const creature = host as ModuleCreature;
+      aoe.position.copy(creature.position);
+      aoe.linkedToObject = creature;
+      aoe.linkedToObjectId = creature.id;
+    }
+
+    aoe.area = area;
+    GameState.ModuleObjectManager.AddObjectById(aoe);
+    area.attachObject(aoe);
+    aoe.loadScripts();
+
+    this.setObject(0, aoe);
   }
 
+  onRemove(){
+    super.onRemove();
+    const aoe = this.getObject(0) as ModuleAreaOfEffect;
+    if(aoe && typeof aoe.destroy === 'function'){
+      aoe.destroy();
+    }
+  }
 }

@@ -1,44 +1,35 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { normalizeSpeedIncreasePercent } from "@/engine/pathfinding/locomotion";
 
 /**
- * EffectMovementSpeedIncrease class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ * EffectMovementSpeedIncrease — NWScript / retail absolute speed percent.
+ * n < 100 → n+100 (50 → 150%); n ≥ 100 used directly (200 → 2× before clamp).
+ *
  * @file EffectMovementSpeedIncrease.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EffectMovementSpeedIncrease extends GameEffect {
   constructor(){
     super();
     this.type = GameEffectType.EffectMovementSpeedIncrease;
-    
-    //intList[0] : nPercentChange
-
+    // intList[0] : absolute speed percent after normalize
   }
 
   onApply(){
     if(this.applied)
       return;
-      
-    super.onApply();
-    
-    if(!this.object) return;
-    if(this.getInt(0) < 100){
-      this.setInt(0, this.getInt(0) + 100);
-    }
 
+    super.onApply();
+
+    if(!this.object) return;
+    this.setInt(0, normalizeSpeedIncreasePercent(this.getInt(0)));
     this.object.updateMovementSpeed();
   }
 
   onRemove(){
     super.onRemove();
-
     if(!this.object) return;
     this.object.updateMovementSpeed();
   }
-
 }
 

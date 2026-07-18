@@ -127,6 +127,8 @@ export class GameInitializer {
     KotOR.GameState.TwoDAManager = KotOR.TwoDAManager;
     KotOR.GameState.PazaakManager = KotOR.PazaakManager;
     KotOR.GameState.UINotificationManager = KotOR.UINotificationManager;
+    KotOR.GameState.GuiTimingBarManager = KotOR.GuiTimingBarManager;
+    KotOR.GameState.GameOverManager = KotOR.GameOverManager;
     KotOR.GameState.CutsceneManager = KotOR.CutsceneManager;
     KotOR.GameState.VideoManager = KotOR.VideoManager;
     KotOR.GameState.LegalScreenManager = KotOR.LegalScreenManager;

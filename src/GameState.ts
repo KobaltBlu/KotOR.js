@@ -3,7 +3,7 @@ import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
-  VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, CutsceneManager, LegalScreenManager, EventManager
+  VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, GuiTimingBarManager, GameOverManager, CutsceneManager, LegalScreenManager, EventManager
 } from "@/managers";
 
 import type { SWRuleSet } from "@/engine/rules/SWRuleSet";
@@ -22,6 +22,7 @@ import { IngameControls } from "@/controls/IngameControls";
 // import { Mouse } from "@/controls/Mouse";
 
 import { INIConfig } from "@/engine/INIConfig";
+import { consumeAreaTransitionLoadBackground } from "@/engine/area-transition-bmp";
 
 // import { OdysseyObject3D } from "@/three/odyssey";
 import { AudioEngine, AudioEmitter } from "@/audio";
@@ -116,6 +117,8 @@ export class GameState implements EngineContext {
   static TwoDAManager: typeof TwoDAManager;
   static PazaakManager: typeof PazaakManager;
   static UINotificationManager: typeof UINotificationManager;
+  static GuiTimingBarManager: typeof GuiTimingBarManager;
+  static GameOverManager: typeof GameOverManager;
   static CutsceneManager: typeof CutsceneManager;
   static LegalScreenManager: typeof LegalScreenManager;
   static lastGameplayThumb?: OffscreenCanvas;
@@ -160,6 +163,12 @@ export class GameState implements EngineContext {
   
   static SOLOMODE = false;
   static isLoadingSave = false;
+
+  /**
+   * Test-only multiplier for damage dealt by the PC / party (1 = normal).
+   * Set below 1 (e.g. 0.25) so combat lasts longer while damage math is verified.
+   */
+  static DEBUG_PC_DAMAGE_SCALE = 1;
   
   static Flags = {
     EnableAreaVIS: false,
@@ -185,13 +194,25 @@ export class GameState implements EngineContext {
   };
   
   static IsPaused = false;
+
+  /** TimeStop effect: world paused with exclusion list (retail pause bit 1). */
+  static timeStopActive = false;
+  static timeStopPausedByEffect = false;
+  static timeStopExclusions: Set<number> = new Set();
   
   static Mode: EngineMode = EngineMode.GUI;
+  /** CClientOptions::camera_mode — default 3 (OnAStick); SetCameraMode / drive gate */
+  static clientCameraMode: number = 3;
+  /**
+   * Retail hsMode @ 008338e8 — message-panel key sequence sets 1;
+   * freelook then enters Navigate (hover) and bumps to 2.
+   */
+  static cameraHsMode: number = 0;
   static holdWorldFadeInForDialog = false;
   static autoRun = false;
   static AlphaTest = 0.5;
   static noClickTimer = 0;
-  static maxSelectableDistance = 20;
+  static maxSelectableDistance = 30;
   static maxSelectableDistanceSquared = GameState.maxSelectableDistance * GameState.maxSelectableDistance;
 
   static delta: number = 0;
@@ -204,12 +225,20 @@ export class GameState implements EngineContext {
   static time: number = 0;
   static deltaTime: number = 0;
   static deltaTimeFixed: number = 0;
+  /** Retail SetGameSpeed / world timer snapshot scale (death sequence slows this). */
+  static timeScale: number = 1;
 
   static canvas: HTMLCanvasElement;
   static context: WebGLRenderingContext;
   static rendererUpscaleFactor: number;
   static renderer: THREE.WebGLRenderer;
   static depthTarget: THREE.WebGLRenderTarget;
+  /**
+   * Set by DEPTH_TEXTURE emitters during tick. When true, Render runs a
+   * scene depth prepass into depthTarget (emitters hidden) for soft particles.
+   */
+  static softDepthNeeded: boolean = false;
+  private static _depthPrepassHidden: THREE.Object3D[] = [];
   static clock: THREE.Clock;
   static stats: Stats;
 
@@ -239,6 +268,12 @@ export class GameState implements EngineContext {
 
   //GameState properties
   static globalLight: THREE.AmbientLight;
+  /** Retail Aurora sun diffuse channel (`gidy_sun_diff`). */
+  static sunLight: THREE.DirectionalLight;
+  /** Retail global `shadowAlpha` (0–1) from day/night cycle. */
+  static shadowAlpha = 0;
+  /** Retail global `beamingProjectionAlpha` (0–0.05) from dawn/dusk. */
+  static beamingProjectionAlpha = 0;
   static currentLeader: ModuleCreature;
   static playerFeetOffset: THREE.Vector3;
   static collisionList: any[];
@@ -565,7 +600,8 @@ export class GameState implements EngineContext {
 
     GameState.camera_dialog = new THREE.PerspectiveCamera( 55, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.01, 15000 );
     GameState.camera_dialog.up = new THREE.Vector3( 0, 0, 1 );
-    GameState.camera_animated = new THREE.PerspectiveCamera( 55, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.01, 15000 );
+    // Animated clip defaults match SetAnimatedCamera @ 00641010 (0.1, 10000)
+    GameState.camera_animated = new THREE.PerspectiveCamera( 55, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.1, 10000 );
     GameState.camera_animated.up = new THREE.Vector3( 0, 1, 0 );
     GameState.camera.up = new THREE.Vector3( 0, 0, 1 );
     GameState.camera.position.set( .1, 5, 1 );              // offset the camera a bit
@@ -603,8 +639,14 @@ export class GameState implements EngineContext {
     GameState.globalLight.position.y = 0;
     GameState.globalLight.position.z = 0;
     GameState.globalLight.intensity  = 1;
-
     GameState.scene.add(GameState.globalLight);
+
+    // Aurora sun diffuse — Z-up directional fill matching retail gidy_sun_diff
+    GameState.sunLight = new THREE.DirectionalLight(0xFFFFFF, 0.85);
+    GameState.sunLight.position.set(0.35, -0.25, 1);
+    GameState.sunLight.target.position.set(0, 0, 0);
+    GameState.scene.add(GameState.sunLight);
+    GameState.scene.add(GameState.sunLight.target);
 
     GameState.currentLeader = undefined;
     GameState.playerFeetOffset = new THREE.Vector3(0,0,1);
@@ -840,6 +882,9 @@ export class GameState implements EngineContext {
 
       GameState.Ready = true;
       GameState.Start();
+      // Camera shake applies during update; restore after render so it doesn't accumulate
+      GameState.addEventListener('beforeRender', () => GameState.CameraShakeManager.beforeRender());
+      GameState.addEventListener('afterRender', () => GameState.CameraShakeManager.afterRender());
       console.log(PerformanceMonitor.toString());
     }catch(e){
       console.error(e);
@@ -980,7 +1025,9 @@ export class GameState implements EngineContext {
         sMovie6: sMovie6
       });
       GameState.loadingModule = true;
-      await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+name);
+      // Destination ARE not loaded yet — fall back to load_<module> / loadscreens row / custom
+      const loadBg = consumeAreaTransitionLoadBackground(name, 0);
+      await GameState.MenuManager.LoadScreen.setLoadBackground(loadBg);
       GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
       /**
        * Set the game mode to loading
@@ -1076,7 +1123,9 @@ export class GameState implements EngineContext {
         if(!GameState.holdWorldFadeInForDialog){
           GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
         }
+        GameState.module.area.updateDayNightCycle();
         GameState.module.area.musicBackgroundPlay();
+        GameState.module.area.ambientSoundPlay();
         GameState.loadingModule = false;
       });
     }catch(e){
@@ -1104,8 +1153,17 @@ export class GameState implements EngineContext {
     if(GameState.Mode == mode){
       return;
     }
+    const prev = GameState.Mode;
     console.log('SetEngineMode: ', mode);
     GameState.Mode = mode;
+
+    // CSWCameraFreeLook enter/exit
+    if(mode == EngineMode.FREELOOK && prev != EngineMode.FREELOOK){
+      FollowerCamera.beginFreeLook();
+    }else if(prev == EngineMode.FREELOOK && mode != EngineMode.FREELOOK){
+      FollowerCamera.endFreeLook();
+    }
+
     if(mode == EngineMode.LOADING){
       if(GameState.MenuManager.LoadScreen){
         GameState.MenuManager.LoadScreen.setProgress(0);
@@ -1140,6 +1198,7 @@ export class GameState implements EngineContext {
         name: GameState.module.name
       });
     }
+    GameState.GameOverManager?.Reset?.();
     GameState.MenuManager.ClearMenus();
     GameState.deltaTime = 0;
     // GameState.initTimers();
@@ -1174,13 +1233,12 @@ export class GameState implements EngineContext {
     }
   }
 
-  static getCameraById(id = 0){
+  static getCameraById(id = 0): THREE.PerspectiveCamera | undefined {
     for(let i = 0; i < GameState.staticCameras.length; i++){
       if(GameState.staticCameras[i].userData.ingameID == id)
         return GameState.staticCameras[i];
     }
-
-    return GameState.currentCamera;
+    return undefined;
   }
 
   static forwardVector = new THREE.Vector3(0, 0, );
@@ -1294,17 +1352,21 @@ export class GameState implements EngineContext {
       GameState.forwardVector.z = -1;
     }
 
+    // Death sequence: slow world time (UpdateDeathSequence → SetGameSpeed)
+    GameState.GameOverManager.UpdateDeathSequence(delta);
+    const simDelta = delta * (GameState.timeScale > 0 ? GameState.timeScale : 1);
+
     if(GameState.State != EngineState.PAUSED){
-      GameState.updateTime(delta);
+      GameState.updateTime(simDelta);
     }
 
     //Handle Module Tick
     if(
       GameState.State == EngineState.PAUSED || GameState.MenuManager.activeModals.length
     ){
-      GameState.module.tickPaused(delta);
+      GameState.module.tickPaused(simDelta);
     }else{
-      GameState.module.tick(delta);
+      GameState.module.tick(simDelta);
 
       //Update the Bark Overlay if it is visible
       if(GameState.MenuManager.InGameBark?.bVisible){
@@ -1312,11 +1374,14 @@ export class GameState implements EngineContext {
       }
     }
 
+    // Party wipe / combat-clear resurrect (TempDeathUpdate) — wall-clock delta
+    GameState.GameOverManager.TempDeathUpdate(delta);
+
     GameState.FadeOverlayManager.Update(delta);
     GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
     GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
     GameState.currentCameraPosition.set(0, 0, 0);
-    GameState.currentCameraPosition.applyMatrix4(FollowerCamera.camera.matrix);
+    GameState.currentCameraPosition.applyMatrix4(GameState.currentCamera.matrixWorld);
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
@@ -1324,7 +1389,11 @@ export class GameState implements EngineContext {
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
     
     //Handle the visibility of the PAUSE overlay
-    if(GameState.State == EngineState.PAUSED && GameState.MenuManager.InGameOverlay.isVisible()){
+    if(
+      GameState.State == EngineState.PAUSED &&
+      !GameState.timeStopActive &&
+      GameState.MenuManager.InGameOverlay.isVisible()
+    ){
       if(!GameState.MenuManager.InGamePause.isVisible())
         GameState.MenuManager.InGamePause.show();
     }else{
@@ -1344,7 +1413,12 @@ export class GameState implements EngineContext {
     if(isEntryMode){
       GameState.scene_cursor_holder.visible = false;
     }
-    GameState.module.tick(delta);
+    // World timer keeps running in dialog unless paused (same policy as freelook).
+    if(GameState.State == EngineState.PAUSED || GameState.MenuManager.activeModals.length){
+      GameState.module.tickPaused(delta);
+    }else{
+      GameState.module.tick(delta);
+    }
     GameState.CutsceneManager.update(delta);
     if(GameState.MenuManager.InGameBark?.bVisible){
       GameState.MenuManager.InGameBark.update(delta);
@@ -1353,7 +1427,7 @@ export class GameState implements EngineContext {
     GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
     GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
     GameState.currentCameraPosition.set(0, 0, 0);
-    GameState.currentCameraPosition.applyMatrix4(FollowerCamera.camera.matrix);
+    GameState.currentCameraPosition.applyMatrix4(GameState.currentCamera.matrixWorld);
     GameState.lightManager.update(delta, GameState.currentCamera);
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
@@ -1361,7 +1435,11 @@ export class GameState implements EngineContext {
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
     
     //Handle the visibility of the PAUSE overlay
-    if(GameState.State == EngineState.PAUSED && GameState.MenuManager.InGameOverlay.isVisible()){
+    if(
+      GameState.State == EngineState.PAUSED &&
+      !GameState.timeStopActive &&
+      GameState.MenuManager.InGameOverlay.isVisible()
+    ){
       if(!GameState.MenuManager.InGamePause.isVisible())
         GameState.MenuManager.InGamePause.show();
     }else{
@@ -1374,9 +1452,21 @@ export class GameState implements EngineContext {
     GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
     GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
     GameState.currentCameraPosition.set(0, 0, 0);
-    GameState.currentCameraPosition.applyMatrix4(FollowerCamera.camera.matrix);
+    GameState.currentCameraPosition.applyMatrix4(GameState.currentCamera.matrixWorld);
 
-    GameState.updateTime(delta);
+    if(GameState.State != EngineState.PAUSED){
+      GameState.updateTime(delta);
+    }
+
+    // Minigames run inside the area; keep module/calendar ticking unless paused.
+    if(GameState.module){
+      if(GameState.State == EngineState.PAUSED || GameState.MenuManager.activeModals.length){
+        GameState.module.tickPaused(delta);
+      }else{
+        GameState.module.tick(delta);
+      }
+    }
+
     GameState.FadeOverlayManager.Update(delta);
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.windManager.update(delta);
@@ -1385,7 +1475,11 @@ export class GameState implements EngineContext {
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
     //Handle the visibility of the PAUSE overlay
-    if(GameState.State == EngineState.PAUSED && GameState.MenuManager.InGameOverlay.isVisible()){
+    if(
+      GameState.State == EngineState.PAUSED &&
+      !GameState.timeStopActive &&
+      GameState.MenuManager.InGameOverlay.isVisible()
+    ){
       if(!GameState.MenuManager.InGamePause.isVisible())
         GameState.MenuManager.InGamePause.show();
     }else{
@@ -1395,30 +1489,46 @@ export class GameState implements EngineContext {
   }
 
   static UpdateFreeLook(delta: number = 0){
-    //Update Mode Camera
+    // CSWCameraFreeLook — video effect from appearance.freelookeffect
     GameState.VideoEffectManager.SetVideoEffect(-1);
     const player = GameState.getCurrentPlayer();
     if(player){
       const appearance = player.getAppearance();
       if(appearance){
         const effectId = appearance.freelookeffect;
-        if(!isNaN(effectId)){
+        if(!isNaN(effectId) && effectId >= 0){
           GameState.VideoEffectManager.SetVideoEffect(effectId);
         }
       }
     }
 
+    GameState.currentCamera = GameState.camera;
+    GameState.scene_cursor_holder.visible = false;
+
+    if(GameState.State != EngineState.PAUSED){
+      GameState.updateTime(delta);
+    }
+
+    // Keep world ticking while freelooking (retail keeps simulation running)
+    if(GameState.module){
+      if(GameState.State == EngineState.PAUSED || GameState.MenuManager.activeModals.length){
+        GameState.module.tickPaused(delta);
+      }else{
+        GameState.module.tick(delta);
+      }
+    }
+
+    GameState.FadeOverlayManager.Update(delta);
     GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
     GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
     GameState.currentCameraPosition.set(0, 0, 0);
-    GameState.currentCameraPosition.applyMatrix4(FollowerCamera.camera.matrix);
-
-    GameState.updateTime(delta);
-    GameState.FadeOverlayManager.Update(delta);
+    GameState.currentCameraPosition.applyMatrix4(GameState.currentCamera.matrixWorld);
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.windManager.update(delta);
-    GameState.module.area.updateRoomAnimatedLights(delta);
-    GameState.module.area.updateRoomWindUniforms();
+    if(GameState.module?.area){
+      GameState.module.area.updateRoomAnimatedLights(delta);
+      GameState.module.area.updateRoomWindUniforms();
+    }
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
   }
 
@@ -1433,7 +1543,40 @@ export class GameState implements EngineContext {
     GameState.renderPassAA.camera = GameState.currentCamera;
     GameState.bokehPass.camera = GameState.currentCamera;
 
+    GameState.renderDepthPrepass();
     GameState.composer.render(delta);
+  }
+
+  /**
+   * Fill depthTarget.depthTexture with scene depth (no emitters) for soft
+   * particle DEPTH_TEXTURE sampling. Skipped unless an emitter requested it.
+   */
+  static renderDepthPrepass(): void {
+    if(!GameState.depthTarget || !GameState.softDepthNeeded) return;
+    GameState.softDepthNeeded = false;
+
+    const hidden = GameState._depthPrepassHidden;
+    hidden.length = 0;
+    GameState.scene.traverse((obj) => {
+      if((obj as any).type === 'OdysseyEmitter' && obj.visible){
+        obj.visible = false;
+        hidden.push(obj);
+      }
+    });
+
+    const renderer = GameState.renderer;
+    const prevTarget = renderer.getRenderTarget();
+    const prevAutoClear = renderer.autoClear;
+    renderer.setRenderTarget(GameState.depthTarget);
+    renderer.autoClear = false;
+    renderer.clear(true, true, true);
+    renderer.render(GameState.scene, GameState.currentCamera);
+    renderer.setRenderTarget(prevTarget);
+    renderer.autoClear = prevAutoClear;
+
+    for(let i = 0; i < hidden.length; i++){
+      hidden[i].visible = true;
+    }
   }
 
   static updateTime(delta: number = 0){

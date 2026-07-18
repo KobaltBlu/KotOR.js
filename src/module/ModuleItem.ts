@@ -20,8 +20,15 @@ import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
 import { ItemProperty } from "@/engine/ItemProperty";
 import { GameState } from "@/GameState";
-import { ActionParameterType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@/enums";
+import { ActionParameterType, ActionType, CombatActionType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@/enums";
+import { CombatRoundAction, SpellCastInstance } from "@/combat";
+import { castAmmunitionProjectile } from "@/combat/combat-projectile";
 import type { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
+
+/** Retail InstantUseItem combat lockout (field436_0xab0 = 3000). */
+export const INSTANT_ITEM_USE_COOLDOWN_MS = 3000;
+/** TLK: one item per combat round (inventory InstantUseItem gate). */
+export const TLK_ITEM_USE_COMBAT_ROUND = 42409;
 
 /**
 * ModuleItem class.
@@ -117,6 +124,7 @@ export class ModuleItem extends ModuleObject {
       nItem.template.getFieldByLabel('StackSize')?.setValue(1);
     }
     nItem.stackSize = 1;
+    nItem.copyUpgradeStateFrom(this);
     return nItem;
   }
 
@@ -189,6 +197,19 @@ export class ModuleItem extends ModuleObject {
 
   isInfinite(){
     return this.infinite;
+  }
+
+  /**
+   * Retail CSWSItem::GetCost — plot items are worthless; otherwise
+   * floor(Cost * baseitems.itemmultiplier), with results under 2 treated as 1.
+   */
+  getGoldPieceValue(): number {
+    if(this.plot){
+      return 0;
+    }
+    const multiplier = this.baseItem?.itemMultiplier ?? 1;
+    const value = Math.floor((this.cost | 0) * multiplier);
+    return value < 2 ? 1 : value;
   }
 
   getPropertiesList(){
@@ -310,6 +331,14 @@ export class ModuleItem extends ModuleObject {
         case WeaponWield.STUN_BATON:
           if(this.baseItemId == 8 || this.baseItemId == 9 || this.baseItemId == 10){
             if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_LIGHTSABER)){
+              bonus += 1;
+            }
+            // TSL Superior Weapon Focus: Lightsaber I/II/III → +1/+2/+3 (stacks with Focus)
+            if(this.possessor.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_LIGHTSABER_III)){
+              bonus += 3;
+            }else if(this.possessor.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_LIGHTSABER_II)){
+              bonus += 2;
+            }else if(this.possessor.getHasFeat(CombatFeatType.SUPER_WEAPON_FOCUS_LIGHTSABER_I)){
               bonus += 1;
             }
           }else if(this.possessor.getHasFeat(CombatFeatType.WEAPON_FOCUS_MELEE_WEAPONS)){
@@ -451,49 +480,152 @@ export class ModuleItem extends ModuleObject {
   isUpgradable(){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
-      if(property.upgradeType >= 0){
+      if(property.upgradeType >= 0 && property.upgradeType !== 255){
         return true;
       }
+    }
+    return this.upgradeLevel > 0;
+  }
+
+  getUpgradeSlot(index: number): number {
+    switch(index){
+      case 0: return this.upgradeSlot0;
+      case 1: return this.upgradeSlot1;
+      case 2: return this.upgradeSlot2;
+      case 3: return this.upgradeSlot3;
+      case 4: return this.upgradeSlot4;
+      case 5: return this.upgradeSlot5;
+      default: return -1;
+    }
+  }
+
+  setUpgradeSlot(index: number, value: number): void {
+    const slotValue = (typeof value === 'number' ? value : -1);
+    switch(index){
+      case 0: this.upgradeSlot0 = slotValue; break;
+      case 1: this.upgradeSlot1 = slotValue; break;
+      case 2: this.upgradeSlot2 = slotValue; break;
+      case 3: this.upgradeSlot3 = slotValue; break;
+      case 4: this.upgradeSlot4 = slotValue; break;
+      case 5: this.upgradeSlot5 = slotValue; break;
+    }
+  }
+
+  hasUpgradeBit(rowIndex: number): boolean {
+    if(rowIndex < 0 || rowIndex > 31) return false;
+    const flag = 1 << rowIndex;
+    return ((this.upgrades || 0) & flag) === flag;
+  }
+
+  copyUpgradeStateFrom(source: ModuleItem): void {
+    if(!source) return;
+    this.upgrades = source.upgrades || 0;
+    this.upgradeLevel = source.upgradeLevel || 0;
+    for(let i = 0; i < 6; i++){
+      this.setUpgradeSlot(i, source.getUpgradeSlot(i));
+    }
+  }
+
+  castAmmunitionAtTarget(oCaster: ModuleObject, oTarget: ModuleObject){
+    if(typeof oTarget == 'undefined') return;
+    const ammunitiontype = this.baseItem?.ammunitionType;
+    if(!(ammunitiontype >= 1)) return;
+    castAmmunitionProjectile(oCaster, oTarget, this);
+  }
+
+  /**
+   * Retail CSWSCreature::UseItem → AddItemCastSpellActions (mipc / PartyMenuUseItem).
+   * Schedules ITEM_CAST_SPELL on the combat round, then ensures ActionCombat.
+   */
+  scheduleItemCastSpell(oCaster: ModuleCreature, oTarget: ModuleObject, spellId: number, options: { isUserAction?: boolean; activePropertyIndex?: number } = {}){
+    if(!oCaster?.combatRound) return;
+
+    const combatAction = new CombatRoundAction();
+    combatAction.actionType = CombatActionType.ITEM_CAST_SPELL;
+    combatAction.target = oTarget;
+    combatAction.item = this;
+    combatAction.activePropertyIndex = options.activePropertyIndex ?? 0;
+    combatAction.domainLevel = 1;
+    combatAction.isUserAction = !!options.isUserAction;
+    combatAction.setSpell(new TalentSpell(spellId));
+    combatAction.animation = ModuleCreatureAnimState.CASTOUT1;
+    combatAction.animationTime = 1500;
+    oCaster.combatRound.addAction(combatAction);
+
+    if(!oCaster.actionQueue.actionTypeExists(ActionType.ActionCombat)){
+      const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
+      oCaster.actionQueue.add(action);
+    }
+  }
+
+  /**
+   * Retail InstantUseItem @ 004efe30 — inventory Use Item (immediate SpellCastAndImpact).
+   * During combat sets a 3s lockout (TLK 42409 / one item per round).
+   */
+  instantUseItem(oCaster: ModuleCreature): boolean {
+    if(!oCaster) return false;
+
+    if(
+      oCaster.isHostileCombatEngaged?.() &&
+      (oCaster.instantItemCooldownMs || 0) > 0
+    ){
+      GameState.FeedbackMessageManager?.AddStrRef?.(TLK_ITEM_USE_COMBAT_ROUND);
+      return false;
+    }
+
+    for(let i = 0, len = this.properties.length; i < len; i++){
+      const property = this.properties[i];
+      if(!property.isUseable() || !property.is(ModuleItemProperty.CastSpell) || property.subType == null){
+        continue;
+      }
+
+      const spell = new TalentSpell(property.subType);
+      const cast = new SpellCastInstance(oCaster, oCaster, spell);
+      cast.applySpellData();
+      cast.conjureTime = 0;
+      cast.castTime = 0;
+      cast.allowCounterSpell = false;
+      oCaster.area?.attachSpellInstance?.(cast);
+      cast.init();
+      cast.impact();
+      cast.completed = true;
+
+      if(this.charges > 1){
+        this.charges -= 1;
+      }else if(this.charges === 1){
+        oCaster.removeItem(this, 1);
+      }else{
+        const stack = this.getStackSize();
+        if(stack <= 1){
+          oCaster.removeItem(this, 1);
+        }else{
+          this.setStackSize(stack - 1);
+        }
+      }
+
+      if(oCaster.combatData?.combatState){
+        oCaster.instantItemCooldownMs = INSTANT_ITEM_USE_COOLDOWN_MS;
+      }
+      return true;
     }
     return false;
   }
 
-  castAmmunitionAtTarget(oCaster: ModuleObject, oTarget: ModuleObject){
-    if(typeof oTarget != 'undefined'){
-      let ammunitiontype = this.baseItem.ammunitionType;
-      if( ammunitiontype >= 1 ){
-        const _2DA = GameState.TwoDAManager.datatables.get('ammunitiontypes');
-        if(_2DA){
-          let ammunition = _2DA.rows[ammunitiontype];
-          if(typeof ammunition != 'undefined'){
-            
-          }
-        }
-      }
-
-    }
-  }
-
-  useItemOnObject(oCaster: ModuleCreature, oTarget: ModuleObject){
+  /**
+   * Use item on a target. HUD / scripted UseItem uses combat-round cast;
+   * non-CastSpell props keep direct action enqueue.
+   */
+  useItemOnObject(oCaster: ModuleCreature, oTarget: ModuleObject, options: { isUserAction?: boolean } = {}){
     for(let i = 0, len = this.properties.length; i < len; i++){
       let property = this.properties[i];
       if(!property.isUseable()){ continue; }
 
       if(property.is(ModuleItemProperty.CastSpell)){
-        const action = new GameState.ActionFactory.ActionItemCastSpell();
-        action.setParameter(0, ActionParameterType.DWORD, oTarget);
-        action.setParameter(1, ActionParameterType.DWORD, oTarget.area);
-        action.setParameter(2, ActionParameterType.FLOAT, oTarget.position.x);
-        action.setParameter(3, ActionParameterType.FLOAT, oTarget.position.y);
-        action.setParameter(4, ActionParameterType.FLOAT, oTarget.position.z);
-        action.setParameter(5, ActionParameterType.INT, property.getValue());
-        action.setParameter(6, ActionParameterType.INT, 1);
-        action.setParameter(7, ActionParameterType.FLOAT, 1.0);
-        action.setParameter(8, ActionParameterType.INT, -1);
-        action.setParameter(9, ActionParameterType.INT, -1);
-        action.setParameter(10, ActionParameterType.DWORD, this);
-        action.setParameter(11, ActionParameterType.STRING, '');
-        oCaster.actionQueue.add(action);
+        // Retail UseItem → AddItemCastSpellActions (combat round path)
+        this.scheduleItemCastSpell(oCaster, oTarget, property.subType, {
+          isUserAction: options.isUserAction,
+          activePropertyIndex: i,
+        });
       }else if(property.is(ModuleItemProperty.ThievesTools)){
         const action = new GameState.ActionFactory.ActionUnlockObject();
         action.setParameter(0, ActionParameterType.DWORD, oTarget);
@@ -507,6 +639,31 @@ export class ModuleItem extends ModuleObject {
         action.setParameter(3, ActionParameterType.FLOAT, oTarget.position.y);
         action.setParameter(4, ActionParameterType.FLOAT, oTarget.position.z);
         oCaster.actionQueue.add(action);
+      }else if(property.is(ModuleItemProperty.Droid_Repair_Kit)){
+        const skill = new GameState.TalentSkill(SkillType.REPAIR);
+        skill.useTalentOnObject(oTarget, oCaster, 0, this);
+      }else if(property.is(ModuleItemProperty.Computer_Spike)){
+        // Consume spike and grant temporary Computer Use bonus (costValue from property table)
+        const bonus = Math.max(1, property.getValue?.() || property.costValue || 1);
+        const effect = new GameState.GameEffectFactory.EffectSkillIncrease();
+        effect.setCreator(oCaster);
+        effect.setInt(0, SkillType.COMPUTER_USE);
+        effect.setInt(1, bonus);
+        effect.setDurationType(GameEffectDurationType.TEMPORARY);
+        effect.setDuration(120); // seconds — lasts through typical computer use
+        oCaster.addEffect(effect);
+
+        const inventory = oCaster.getInventory();
+        if(inventory.includes(this)){
+          const stack = this.getStackSize();
+          if(stack <= 1){
+            const idx = inventory.indexOf(this);
+            if(idx >= 0) inventory.splice(idx, 1);
+            this.destroy();
+          }else{
+            this.setStackSize(stack - 1);
+          }
+        }
       }
     }
   }
@@ -759,27 +916,33 @@ export class ModuleItem extends ModuleObject {
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot0')){
-      this.upgradeSlot0 = this.template.getFieldByLabel('UpgradeSlot0').getValue();
+      const v = this.template.getFieldByLabel('UpgradeSlot0').getValue();
+      this.upgradeSlot0 = (v === 255 ? -1 : v);
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot1')){
-      this.upgradeSlot1 = this.template.getFieldByLabel('UpgradeSlot1').getValue();
+      const v = this.template.getFieldByLabel('UpgradeSlot1').getValue();
+      this.upgradeSlot1 = (v === 255 ? -1 : v);
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot2')){
-      this.upgradeSlot2 = this.template.getFieldByLabel('UpgradeSlot2').getValue();
+      const v = this.template.getFieldByLabel('UpgradeSlot2').getValue();
+      this.upgradeSlot2 = (v === 255 ? -1 : v);
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot3')){
-      this.upgradeSlot3 = this.template.getFieldByLabel('UpgradeSlot3').getValue();
+      const v = this.template.getFieldByLabel('UpgradeSlot3').getValue();
+      this.upgradeSlot3 = (v === 255 ? -1 : v);
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot4')){
-      this.upgradeSlot4 = this.template.getFieldByLabel('UpgradeSlot4').getValue();
+      const v = this.template.getFieldByLabel('UpgradeSlot4').getValue();
+      this.upgradeSlot4 = (v === 255 ? -1 : v);
     }
 
     if(this.template.RootNode.hasField('UpgradeSlot5')){
-      this.upgradeSlot5 = this.template.getFieldByLabel('UpgradeSlot5').getValue();
+      const v = this.template.getFieldByLabel('UpgradeSlot5').getValue();
+      this.upgradeSlot5 = (v === 255 ? -1 : v);
     }
 
     if(this.template.RootNode.hasField('XPosition'))
@@ -809,7 +972,7 @@ export class ModuleItem extends ModuleObject {
 
   }
 
-  setPossessor( oCreature: ModuleCreature){
+  setPossessor( oCreature: ModuleObject){
     this.possessor = oCreature;
   }
 
@@ -830,7 +993,7 @@ export class ModuleItem extends ModuleObject {
     if(GameState.PartyManager.party.indexOf(oCreature) >= 0){
       GameState.InventoryManager.removeItem(this);
     }else{
-      //oCreature.inventory.push(this);
+      oCreature.removeItem(this, this.getStackSize?.() ?? 1);
     }
     this.setPossessor(oCreature);
   }
@@ -841,7 +1004,7 @@ export class ModuleItem extends ModuleObject {
     if(GameState.PartyManager.party.indexOf(oCreature) >= 0){
       GameState.InventoryManager.addItem(this);
     }else{
-      //oCreature.inventory.push(this);
+      oCreature.addItem(this);
     }
     this.setPossessor(undefined);
   }
@@ -868,6 +1031,13 @@ export class ModuleItem extends ModuleObject {
     itemStruct.addField( new GFFField(GFFDataType.WORD, 'StackSize') ).setValue(this.stackSize);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Stolen') ).setValue(this.stolen);
     itemStruct.addField( new GFFField(GFFDataType.DWORD, 'Upgrades') ).setValue(this.upgrades);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeLevel') ).setValue(this.upgradeLevel);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot0') ).setValue(this.upgradeSlot0 == -1 ? 255 : this.upgradeSlot0);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot1') ).setValue(this.upgradeSlot1 == -1 ? 255 : this.upgradeSlot1);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot2') ).setValue(this.upgradeSlot2 == -1 ? 255 : this.upgradeSlot2);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot3') ).setValue(this.upgradeSlot3 == -1 ? 255 : this.upgradeSlot3);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot4') ).setValue(this.upgradeSlot4 == -1 ? 255 : this.upgradeSlot4);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot5') ).setValue(this.upgradeSlot5 == -1 ? 255 : this.upgradeSlot5);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Dropable') ).setValue(this.dropable);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).setValue(1);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'ModelVariation') ).setValue(this.modelVariation);

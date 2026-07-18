@@ -73,6 +73,8 @@ export class CreatureClass {
   featgain: string = '';
 
   level: number;
+  /** Retail classes[i].negative_levels — drained levels (EffectNegativeLevel). */
+  negativeLevels: number = 0;
   spells: TalentSpell[] = [];
 
   savingThrows: SWSavingThrow[] = [];
@@ -116,6 +118,24 @@ export class CreatureClass {
 
   getACBonus(){
     return this.acbonuses[this.level];
+  }
+
+  /** Retail CSWClass::GetFortSaveBonus @ 005bccd0 — fort_saves[level-1]. */
+  getFortSaveBonus(){
+    if(this.level <= 0) return 0;
+    return this.savingThrows[this.level - 1]?.fortsave ?? 0;
+  }
+
+  /** Retail CSWClass::GetRefSaveBonus @ 005bccf0. */
+  getRefSaveBonus(){
+    if(this.level <= 0) return 0;
+    return this.savingThrows[this.level - 1]?.refsave ?? 0;
+  }
+
+  /** Retail CSWClass::GetWillSaveBonus @ 005bcd10. */
+  getWillSaveBonus(){
+    if(this.level <= 0) return 0;
+    return this.savingThrows[this.level - 1]?.willsave ?? 0;
   }
 
   isFeatAvailable( feat: any ){

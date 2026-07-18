@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { TextureLoader } from "@/loaders";
 import { Mouse } from "@/controls/Mouse";
 import type { ModuleObject } from "@/module";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { EngineMode, GameEngineType } from "@/enums/engine";
 import type { MenuManager } from "@/managers/MenuManager";
@@ -10,19 +11,20 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
+import {
+	CombatReticlePulse,
+	getHoverReticleStyle,
+	getReticleKind,
+	getReticlePixelSize,
+	getSelectedReticleStyle,
+	pixelSizeToWorldScale,
+} from "@/managers/reticle";
 
 /**
  * Manages the in-game cursor, reticles, and selection/hover logic.
  *
- * Responsibilities:
- * - Loads and manages cursor/reticle sprite materials
- * - Updates cursor appearance based on UI hover, object hover, and selection
- * - Performs lightweight ray tests against point proxies to find hovered objects
- * - Exposes helpers to sync reticle sprites with world positions
- *
- * Performance notes:
- * - Uses a pooled `THREE.Points` with dynamic attributes to raycast against interactables
- * - Avoids unnecessary material swaps; reticle setters guard redundant assignments
+ * Retail: CSWGuiMainInterface::UpdateStickyTarget @ 006889c0 /
+ * UpdateIndicator @ 0068a310 — distance size, combatreticle pulse, off-screen hide.
  *
  * @file CursorManager.ts
  * @author KobaltBlu
@@ -52,6 +54,10 @@ export class CursorManager {
 	static hovered: THREE.Object3D;
 	/** Game module object currently hovered */
 	static hoveredObject: ModuleObject;
+
+	/** Retail combat-reticle swell (UpdateIndicator field21_0x5cb0) */
+	static combatReticlePulse = new CombatReticlePulse();
+	static lastCombatReticleTargetId: number = -1;
 	
 	/** Subset of module objects considered for selection/hover */
 	static visibleObjects: ModuleObject[];
@@ -75,16 +81,11 @@ export class CursorManager {
 	static sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } ); 
 	/** Debug sphere mesh (optional visualization) */
 	static sphere: THREE.Mesh;
+
+	static #tmpWorld = new THREE.Vector3();
 	
 	/**
 	 * Initializes cursor/reticle materials and sprites, and loads textures.
-	 *
-	 * This sets up sprite materials, enqueues GUI textures via `TextureLoader`,
-	 * creates the cursor and reticle sprites, and finalizes material flags for
-	 * proper rendering order and depth behavior.
-	 *
-	 * @async
-	 * @returns Promise<void> Resolves when textures are loaded and materials are ready
 	 */
 	static async init(){
 		CursorManager.cursorMaterials.set('default', new THREE.SpriteMaterial());
@@ -106,9 +107,9 @@ export class CursorManager {
 
 		CursorManager.cursorMaterials.set('reticleF', new THREE.SpriteMaterial());
 		CursorManager.cursorMaterials.set('reticleF2', new THREE.SpriteMaterial());
-
 		CursorManager.cursorMaterials.set('reticleH', new THREE.SpriteMaterial());
 		CursorManager.cursorMaterials.set('reticleH2', new THREE.SpriteMaterial());
+		CursorManager.cursorMaterials.set('reticleCombat', new THREE.SpriteMaterial());
 
 		CursorManager.cursorMaterials.set('arrowF', new THREE.SpriteMaterial());
 		CursorManager.cursorMaterials.set('arrowH', new THREE.SpriteMaterial());
@@ -156,6 +157,7 @@ export class CursorManager {
 		TextureLoader.enQueue('friendlyreticle2', CursorManager.cursorMaterials.get('reticleF2'));
 		TextureLoader.enQueue('hostilereticle', CursorManager.cursorMaterials.get('reticleH'));
 		TextureLoader.enQueue('hostilereticle2', CursorManager.cursorMaterials.get('reticleH2'));
+		TextureLoader.enQueue('combatreticle', CursorManager.cursorMaterials.get('reticleCombat'));
 
 		TextureLoader.enQueue('friendlyarrow', CursorManager.cursorMaterials.get('arrowF'));
 		TextureLoader.enQueue('hostilearrow', CursorManager.cursorMaterials.get('arrowH'));
@@ -169,40 +171,33 @@ export class CursorManager {
 
 		await TextureLoader.LoadQueue();
 
-		CursorManager.cursorMaterials.get('reticleF').depthTest = false;
-		CursorManager.cursorMaterials.get('reticleF2').depthTest = false;
-		CursorManager.cursorMaterials.get('reticleH').depthTest = false;
-		CursorManager.cursorMaterials.get('reticleH2').depthTest = false;
+		for(const key of ['reticleF', 'reticleF2', 'reticleH', 'reticleH2', 'reticleCombat'] as const){
+			const mat = CursorManager.cursorMaterials.get(key);
+			if(mat){
+				mat.depthTest = false;
+			}
+		}
 	}
 
 	/**
 	 * Sets the current cursor sprite material by name.
-	 *
-	 * If the mouse is currently held down, appends "D" to the material name to
-	 * select the pressed variant (e.g., `defaultD`).
-	 *
-	 * @param cursor Cursor material key (e.g., "default", "select", "attack")
 	 */
 	static setCursor(cursor = 'default'){
 		const cursorName = !Mouse.leftDown ? cursor : cursor+'D';
-    const cursorMaterial = CursorManager.cursorMaterials.get(cursorName);
-    if(CursorManager.cursor.material != cursorMaterial){
-      CursorManager.cursor.material = cursorMaterial;
-    }
-		
+		const cursorMaterial = CursorManager.cursorMaterials.get(cursorName);
+		if(CursorManager.cursor.material != cursorMaterial){
+			CursorManager.cursor.material = cursorMaterial;
+		}
 	}
 
 	/**
 	 * Notifies the cursor system that a `ModuleObject` was destroyed.
-	 *
-	 * Clears selection/hover references and removes the object from the
-	 * `selectableObjects` list if present.
-	 *
-	 * @param object The object that has been destroyed
 	 */
 	static notifyObjectDestroyed(object: ModuleObject){
 		if(CursorManager.selectedObject == object){
 			CursorManager.selectedObject = undefined;
+			CursorManager.combatReticlePulse.reset();
+			CursorManager.lastCombatReticleTargetId = -1;
 		}
 		if(CursorManager.hoveredObject == object){
 			CursorManager.hoveredObject = undefined;
@@ -219,76 +214,79 @@ export class CursorManager {
 
 	/**
 	 * Sets the primary reticle material by name (guarded to avoid redundant swaps).
-	 * @param reticle Reticle key (e.g., "reticleF", "reticleH")
 	 */
 	static setReticle(reticle = 'reticleF'){
-    const reticleMaterial = CursorManager.cursorMaterials.get(reticle);
-		if(CursorManager.reticle.material != reticleMaterial)
+		const reticleMaterial = CursorManager.cursorMaterials.get(reticle);
+		if(reticleMaterial && CursorManager.reticle.material != reticleMaterial)
 			CursorManager.reticle.material = reticleMaterial;
 	}
 
 	/**
 	 * Sets the secondary reticle material by name (guarded to avoid redundant swaps).
-	 * @param reticle Reticle key (e.g., "reticleF2", "reticleH2")
 	 */
 	static setReticle2(reticle = 'reticleF'){
-    const reticleMaterial = CursorManager.cursorMaterials.get(reticle);
-		if(CursorManager.reticle2.material != reticleMaterial)
+		const reticleMaterial = CursorManager.cursorMaterials.get(reticle);
+		if(reticleMaterial && CursorManager.reticle2.material != reticleMaterial)
 			CursorManager.reticle2.material = reticleMaterial;
+	}
+
+	static applyReticleScale(sprite: THREE.Sprite, object: ModuleObject | undefined, pulseExtraPx = 0){
+		const player = GameState.getCurrentPlayer();
+		if(!object || !player || !sprite){
+			return;
+		}
+		const distSq = player.position.distanceToSquared(object.position);
+		const px = getReticlePixelSize(distSq, getReticleKind(object)) + pulseExtraPx;
+		const s = pixelSizeToWorldScale(Math.max(1, px));
+		sprite.scale.set(s, s, s);
 	}
 
 	/**
 	 * Sets the currently selected object and positions the secondary reticle.
-	 *
-	 * Also chooses a friendly/hostile reticle style depending on the object type
-	 * and hostility towards the current player.
-	 *
-	 * @param object The module object to mark as selected
 	 */
 	public static setReticleSelectedObject( object: ModuleObject ){
-		GameState.getCurrentPlayer().lookAt(object);
-		if(object){
-			CursorManager.selected = object.getReticleNode();
-			if(CursorManager.selected){
-				CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
-				CursorManager.selectedObject = object;
-			}
-
-			if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){		
-				CursorManager.setReticle2('reticleF2');
-			}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
-				if(!object.isUseable()){
-					return;
-				}		
-				CursorManager.setReticle2('reticleF2');
-			}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
-				if(object.isHostile(GameState.getCurrentPlayer())){
-					CursorManager.setReticle2('reticleH2');
-				}else{
-					CursorManager.setReticle2('reticleF2');
-				}
-			}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
-				if(object.isHostile(GameState.getCurrentPlayer())){
-					CursorManager.setReticle2('reticleF2');
-				}else{
-					CursorManager.setReticle2('reticleF2');
-				}
-			}
+		const player = GameState.getCurrentPlayer();
+		if(player && object){
+			player.lookAt(object);
 		}
+		if(!object){
+			CursorManager.selectedObject = undefined;
+			CursorManager.selected = undefined;
+			CursorManager.combatReticlePulse.reset();
+			CursorManager.lastCombatReticleTargetId = -1;
+			return;
+		}
+
+		CursorManager.selected = object.getReticleNode();
+		if(CursorManager.selected){
+			CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
+			CursorManager.selectedObject = object;
+		}
+
+		if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable) && !object.isUseable()){
+			return;
+		}
+
+		const style = getSelectedReticleStyle(object);
+		if(style.material === 'reticleCombat'){
+			if(CursorManager.lastCombatReticleTargetId !== object.id){
+				CursorManager.combatReticlePulse.arm();
+				CursorManager.lastCombatReticleTargetId = object.id;
+			}
+		}else{
+			CursorManager.combatReticlePulse.reset();
+			CursorManager.lastCombatReticleTargetId = -1;
+		}
+		CursorManager.setReticle2(style.material);
 	}
 
 	/**
 	 * Sets the currently hovered object and positions the primary reticle.
-	 *
-	 * Also chooses the cursor style (e.g., select, use, attack, talk) depending
-	 * on the hovered object type and context.
-	 *
-	 * @param object The module object currently under the cursor
 	 */
 	public static setReticleHoveredObject( object: ModuleObject ){
 		if(!object){ return; }
 
-		let canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
+		const canChangeCursor = (CursorManager.hoveredObject == CursorManager.selectedObject);
 
 		CursorManager.hovered = object.getReticleNode();
 		if(CursorManager.hovered){
@@ -297,70 +295,40 @@ export class CursorManager {
 		}
 
 		if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleDoor)){
-			if(canChangeCursor)
-				CursorManager.setCursor('door');
-			else
-				CursorManager.setCursor('select');
-
-				CursorManager.setReticle('reticleF');
+			CursorManager.setCursor(canChangeCursor ? 'door' : 'select');
+			CursorManager.setReticle(getHoverReticleStyle(object).material);
 		}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
 			if(!object.isUseable()){
 				return;
 			}
-			if(canChangeCursor)
-				CursorManager.setCursor('use');
-			else
-				CursorManager.setCursor('select');
-
-				CursorManager.setReticle('reticleF');
+			CursorManager.setCursor(canChangeCursor ? 'use' : 'select');
+			CursorManager.setReticle(getHoverReticleStyle(object).material);
 		}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleTrigger)){
 			if(!object.isUseable()){
 				return;
 			}
-			if(canChangeCursor)
-				CursorManager.setCursor('trap');
-			else
-				CursorManager.setCursor('select');
-
-			CursorManager.setReticle('reticleF');
+			CursorManager.setCursor(canChangeCursor ? 'trap' : 'select');
+			CursorManager.setReticle(getHoverReticleStyle(object).material);
 		}else if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
+			const player = GameState.getCurrentPlayer();
+			const creature = object as ModuleCreature;
+			const style = getHoverReticleStyle(creature);
 
-			if(object.isHostile(GameState.getCurrentPlayer())){
-				if(!object.isDead()){
-					if(canChangeCursor)
-						CursorManager.setCursor('attack');
-					else
-						CursorManager.setCursor('select');
-
-					CursorManager.setReticle('reticleH');
-				}else{
-					if(canChangeCursor)
-						CursorManager.setCursor('use');
-					else
-						CursorManager.setCursor('select');
-
-					CursorManager.setReticle('reticleF');
-				}
+			if(style.hostile){
+				CursorManager.setCursor(canChangeCursor ? 'attack' : 'select');
+			}else if(creature.isDead() && creature.canLootAsCorpse(player)){
+				CursorManager.setCursor(canChangeCursor ? 'use' : 'select');
+			}else if(creature.isDead()){
+				CursorManager.setCursor(canChangeCursor ? 'use' : 'select');
 			}else{
-				if(canChangeCursor)
-					CursorManager.setCursor('talk');
-				else
-					CursorManager.setCursor('select');
-
-				CursorManager.setReticle('reticleF');
+				CursorManager.setCursor(canChangeCursor ? 'talk' : 'select');
 			}
-
+			CursorManager.setReticle(style.material);
 		}
 	}
 
 	/**
 	 * Per-frame update for cursor/reticles based on UI and world state.
-	 *
-	 * Responsibilities:
-	 * - Positions the cursor sprite to match viewport mouse position
-	 * - Computes UI hover state and switches cursor if hovering clickable widgets
-	 * - Maintains hovered/selected object references and reticle visibility
-	 * - Performs ray tests against interactables when appropriate
 	 */
 	static updateCursor(){
 		let cursorCaptured = false;
@@ -410,11 +378,15 @@ export class CursorManager {
 			if(CursorManager.selectedObject.position.distanceToSquared(GameState.getCurrentPlayer().position) > maxSelectableDistanceSquared){
 				CursorManager.selectedObject = undefined;
 				CursorManager.selected = undefined;
+				CursorManager.combatReticlePulse.reset();
+				CursorManager.lastCombatReticleTargetId = -1;
 			}
 
 			if(CursorManager.selectedObject && !CursorManager.selectedObject.isUseable()){
 				CursorManager.selectedObject = undefined;
 				CursorManager.selected = undefined;
+				CursorManager.combatReticlePulse.reset();
+				CursorManager.lastCombatReticleTargetId = -1;
 			}
 		}
 
@@ -434,48 +406,61 @@ export class CursorManager {
 			if(CursorManager.MenuManager.GetCurrentMenu() == CursorManager.MenuManager.InGameOverlay){
 				if(GameState.scene_cursor_holder.visible){
 					const moduleObject = CursorManager.onMouseHitInteractive();
-					// console.log('moduleObject', moduleObject);
 					if(moduleObject){
 						CursorManager.setReticleHoveredObject(moduleObject);
+					}else{
+						// Retail UpdateStickyTarget hides hover when GetReticlePoint fails / no target
+						CursorManager.hoveredObject = undefined;
+						CursorManager.hovered = undefined;
 					}
 				}else{
 					if(!CursorManager.selectedObject){
 						let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
-						// CursorManager.setReticleSelectedObject(closest);
 						CursorManager.setReticleHoveredObject(closest);
 					}
 				}
 			}
 		}
 
+		const delta = GameState.delta || 0;
+
 		if(GameState.Mode == EngineMode.INGAME && CursorManager.hovered instanceof OdysseyObject3D){
-			CursorManager.hovered.getWorldPosition(CursorManager.reticle.position);
-			CursorManager.reticle.visible = true;
+			CursorManager.hovered.getWorldPosition(CursorManager.#tmpWorld);
+			const onScreen = GameState.viewportFrustum?.containsPoint(CursorManager.#tmpWorld) ?? true;
+			if(onScreen){
+				CursorManager.reticle.position.copy(CursorManager.#tmpWorld);
+				CursorManager.reticle.visible = true;
+				CursorManager.applyReticleScale(CursorManager.reticle, CursorManager.hoveredObject);
+				CursorManager.setReticle(getHoverReticleStyle(CursorManager.hoveredObject).material);
+			}else{
+				CursorManager.reticle.visible = false;
+			}
 		}else{
 			CursorManager.reticle.visible = false;
 		}
 
 		if(GameState.Mode == EngineMode.INGAME && CursorManager.selected instanceof OdysseyObject3D && !CursorManager.MenuManager.MenuContainer.bVisible){
-			CursorManager.selected.getWorldPosition(CursorManager.reticle2.position);
-			CursorManager.reticle2.visible = true;
-			if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleDoor)){		
-				CursorManager.setReticle2('reticleF2');
-			}else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModulePlaceable)){
-				if(!CursorManager.selectedObject.isUseable()){
-					return;
-				}		
-				CursorManager.setReticle2('reticleF2');
-			}else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleTrigger)){
-				if(!CursorManager.selectedObject.isUseable()){
-					return;
-				}		
-				CursorManager.setReticle2('reticleF2');
-			}else if(BitWise.InstanceOfObject(CursorManager.selectedObject, ModuleObjectType.ModuleCreature)){
-				if(CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer())){
-					CursorManager.setReticle2('reticleH2');
-				}else{
-					CursorManager.setReticle2('reticleF2');
+			CursorManager.selected.getWorldPosition(CursorManager.#tmpWorld);
+			const onScreen = GameState.viewportFrustum?.containsPoint(CursorManager.#tmpWorld) ?? true;
+			if(onScreen){
+				const style = getSelectedReticleStyle(CursorManager.selectedObject);
+				if(style.material === 'reticleCombat'){
+					if(CursorManager.lastCombatReticleTargetId !== CursorManager.selectedObject?.id){
+						CursorManager.combatReticlePulse.arm();
+						CursorManager.lastCombatReticleTargetId = CursorManager.selectedObject?.id ?? -1;
+					}
+				}else if(CursorManager.lastCombatReticleTargetId !== -1){
+					CursorManager.combatReticlePulse.reset();
+					CursorManager.lastCombatReticleTargetId = -1;
 				}
+				const pulsePx = CursorManager.combatReticlePulse.update(delta, style.material === 'reticleCombat');
+				CursorManager.reticle2.position.copy(CursorManager.#tmpWorld);
+				CursorManager.reticle2.visible = true;
+				CursorManager.setReticle2(style.material);
+				CursorManager.applyReticleScale(CursorManager.reticle2, CursorManager.selectedObject, pulsePx);
+			}else{
+				// Off-screen: retail swaps to edge arrow (InGameOverlay.updateArrow)
+				CursorManager.reticle2.visible = false;
 			}
 		}else{
 			CursorManager.reticle2.visible = false;
@@ -494,12 +479,6 @@ export class CursorManager {
 
 	/**
 	 * Performs a ray test against interactable objects using a point cloud proxy.
-	 *
-	 * Builds a `THREE.Points` geometry positioned above each interactable target
-	 * and raycasts against it to determine the closest hovered object while
-	 * respecting `GameState.maxSelectableDistance`.
-	 *
-	 * @returns The hovered `ModuleObject`, or `undefined` if none hit
 	 */
 	public static onMouseHitInteractive(): ModuleObject | undefined {
 		
@@ -509,7 +488,6 @@ export class CursorManager {
 		const points: number[] = [];
 		const sizes: number[] = [];
 
-		// Line of sight offset for the point cloud
 		const losZ = CursorManager.pointLOSOffset;
 		
 		for(let i = 0; i < objCount; i++){
@@ -518,7 +496,6 @@ export class CursorManager {
 			sizes.push(CursorManager.pointSize);
 		}
 
-		// resize the point cloud if the number of objects has changed
 		if(objCount != CursorManager.pointGeomerty.attributes.size.count){
 			CursorManager.pointGeomerty.attributes.position = new THREE.Float32BufferAttribute(points, 3);
 			CursorManager.pointGeomerty.attributes.size = new THREE.Float32BufferAttribute(sizes, 1);
