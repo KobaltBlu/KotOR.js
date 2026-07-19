@@ -10,9 +10,13 @@ import {
 interface ICasterStencilState {
   colorWrite: boolean;
   depthWrite: boolean;
+  depthTest: boolean;
   stencilWrite: boolean;
+  stencilWriteMask: number;
   stencilFunc: THREE.StencilFunc;
   stencilRef: number;
+  stencilFail: THREE.StencilOp;
+  stencilZFail: THREE.StencilOp;
   stencilZPass: THREE.StencilOp;
 }
 
@@ -29,15 +33,13 @@ interface ICasterSave {
  * Aligns with Scene::RenderStencilShadowsForThisLight @ 00450730:
  * - dark ground disks at focus Z
  * - opacity shadowAlpha * 0.5
- * - radius from light/shadow radius (clamped / foreshortened by Δz)
+ * - depth test disabled while drawing the disk
+ * - stencil Equal + Keep (mask written by caster meshes first)
  * - ten-segment fan geometry
- * - stencil mask written from caster meshes (castShadow / flagShadow)
  *
- * Soft path (Graphics Options.Soft Shadows) uses a radial alpha falloff instead
- * of the legacy NV/ATI image-space soft-shadow extensions.
- *
- * Mask pass uses a dedicated camera layer so non-casters are skipped without
- * a full-scene hide traverse.
+ * Three.js only enables the stencil *test* when material.stencilWrite is true
+ * (see WebGLRenderer setMaterial). Disks therefore keep stencilWrite=true with
+ * stencilWriteMask=0 so Equal is applied without modifying the stencil buffer.
  */
 export class ShadowBlobManager {
   /** Camera/object layer bit used only for stencil mask draws. */
@@ -54,6 +56,7 @@ export class ShadowBlobManager {
   private _castersScratch: THREE.Mesh[] = [];
   private _savedScratch: ICasterSave[] = [];
   private _blobVisScratch: boolean[] = [];
+  private _hiddenScratch: THREE.Object3D[] = [];
 
   init(lightManager: LightManager, parent?: THREE.Object3D){
     this.lightManager = lightManager;
@@ -76,14 +79,18 @@ export class ShadowBlobManager {
       color: 0x000000,
       transparent: true,
       opacity: 0,
+      // Retail glDisable(GL_DEPTH_TEST) while drawing the disk @ 00450730.
       depthWrite: false,
-      depthTest: true,
-      // Retail glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA) for hard path
+      depthTest: false,
       blending: THREE.NormalBlending,
       side: THREE.DoubleSide,
-      stencilWrite: false,
+      // Three.js gates stencil *test* on stencilWrite — keep write on with mask 0.
+      stencilWrite: true,
+      stencilWriteMask: 0,
       stencilFunc: THREE.EqualStencilFunc,
       stencilRef: 1,
+      stencilFail: THREE.KeepStencilOp,
+      stencilZFail: THREE.KeepStencilOp,
       stencilZPass: THREE.KeepStencilOp,
     });
 
@@ -99,24 +106,37 @@ export class ShadowBlobManager {
 
     const soft = !!this.lightManager?.softShadowsEnabled;
     for(let i = 0; i < maxBlobs; i++){
-      // Retail glStencilFunc bit: 1 << (lightIndex)
+      // Retail glStencilFunc bit: 1 << (lightIndex)  (param_3 is 1-based in retail)
       const stencilRef = 1 << (i % 8);
       const mat = this.hardMaterial.clone();
       if(soft){
         mat.map = this.softTexture;
       }
-      mat.stencilFunc = THREE.EqualStencilFunc;
-      mat.stencilRef = stencilRef;
-      mat.stencilWrite = false;
+      this.applyDiskStencilState(mat, stencilRef);
       const mesh = new THREE.Mesh(this.geometry, mat);
       mesh.visible = false;
-      mesh.renderOrder = -1;
+      // After opaque geometry; depthTest is off so order among transparent only.
+      mesh.renderOrder = 1;
       mesh.frustumCulled = false;
       mesh.userData.stencilRef = stencilRef;
       mesh.userData.lightIndex = i;
       this.blobs.push(mesh);
       this.group.add(mesh);
     }
+  }
+
+  private applyDiskStencilState(mat: THREE.MeshBasicMaterial, stencilRef: number){
+    mat.stencilWrite = true;
+    mat.stencilWriteMask = 0;
+    mat.stencilFunc = THREE.EqualStencilFunc;
+    mat.stencilRef = stencilRef;
+    mat.stencilFuncMask = 0xffffffff;
+    mat.stencilFail = THREE.KeepStencilOp;
+    mat.stencilZFail = THREE.KeepStencilOp;
+    mat.stencilZPass = THREE.KeepStencilOp;
+    mat.depthTest = false;
+    mat.depthWrite = false;
+    mat.needsUpdate = true;
   }
 
   private createSoftDiskTexture(): THREE.DataTexture {
@@ -153,7 +173,6 @@ export class ShadowBlobManager {
       this.rebuildBlobs();
     }
 
-    // SunShadows / MoonShadows off → GameState.shadowAlpha forced to 0 in applyLightingColors.
     const opacity = retailStencilShadowOpacity(GameState.shadowAlpha);
     const lights = this.lightManager.shadowLights;
 
@@ -182,14 +201,13 @@ export class ShadowBlobManager {
       }
 
       mesh.visible = true;
-      // Small bias to avoid z-fighting with ground; retail draws at focus Z.
-      mesh.position.set(disk.x, disk.y, disk.z + 0.05);
+      // Retail draws the disk at focus Z (no +bias); depth test is off.
+      mesh.position.set(disk.x, disk.y, disk.z);
       mesh.scale.set(disk.radius, disk.radius, 1);
       const mat = mesh.material as THREE.MeshBasicMaterial;
-      // Exact zero shadow fade must remain zero (no fadeFactor fallback).
       const fade = Number.isFinite(light.shadowFadeFactor) ? light.shadowFadeFactor : 0;
       mat.opacity = opacity * fade;
-      mat.stencilRef = mesh.userData.stencilRef || (1 << (i % 8));
+      this.applyDiskStencilState(mat, mesh.userData.stencilRef || (1 << (i % 8)));
     }
   }
 
@@ -224,9 +242,13 @@ export class ShadowBlobManager {
     const casters = this._castersScratch;
     casters.length = 0;
     const stencilLayer = ShadowBlobManager.STENCIL_LAYER;
+    const blobSet = this.blobs;
     scene.traverse((obj) => {
       const mesh = obj as THREE.Mesh;
-      if(mesh.isMesh && mesh.castShadow && mesh.visible && !this.blobs.includes(mesh)){
+      if(!mesh.isMesh || !mesh.visible || blobSet.indexOf(mesh) >= 0){ return; }
+      // castShadow from MDL flagShadow / loader options; SkinnedMesh covers
+      // creatures whose meshes were built before castShadow was forced on.
+      if(mesh.castShadow || (mesh as THREE.SkinnedMesh).isSkinnedMesh){
         mesh.layers.enable(stencilLayer);
         casters.push(mesh);
       }
@@ -238,7 +260,6 @@ export class ShadowBlobManager {
     }
 
     const saved = this._savedScratch;
-    saved.length = 0;
     for(let i = 0; i < casters.length; i++){
       const mesh = casters[i];
       const materials = (Array.isArray(mesh.material) ? mesh.material : [mesh.material])
@@ -252,7 +273,6 @@ export class ShadowBlobManager {
       entry.visible = mesh.visible;
       entry.materials = materials;
       const state = entry.state;
-      state.length = materials.length;
       for(let mi = 0; mi < materials.length; mi++){
         const mat = materials[mi];
         let st = state[mi];
@@ -260,20 +280,29 @@ export class ShadowBlobManager {
           st = {
             colorWrite: true,
             depthWrite: true,
+            depthTest: true,
             stencilWrite: false,
+            stencilWriteMask: 0xff,
             stencilFunc: THREE.AlwaysStencilFunc,
             stencilRef: 0,
+            stencilFail: THREE.KeepStencilOp,
+            stencilZFail: THREE.KeepStencilOp,
             stencilZPass: THREE.KeepStencilOp,
           };
           state[mi] = st;
         }
         st.colorWrite = (mat as any).colorWrite !== false;
         st.depthWrite = mat.depthWrite;
+        st.depthTest = mat.depthTest;
         st.stencilWrite = mat.stencilWrite;
+        st.stencilWriteMask = mat.stencilWriteMask;
         st.stencilFunc = mat.stencilFunc;
         st.stencilRef = mat.stencilRef;
+        st.stencilFail = mat.stencilFail;
+        st.stencilZFail = mat.stencilZFail;
         st.stencilZPass = mat.stencilZPass;
       }
+      state.length = materials.length;
     }
     saved.length = casters.length;
 
@@ -284,34 +313,55 @@ export class ShadowBlobManager {
       this.blobs[i].visible = false;
     }
 
-    const prevLayersMask = camera.layers.mask;
-    camera.layers.set(stencilLayer);
-
-    for(let i = 0; i < lights.length && i < this.blobs.length; i++){
-      const light = lights[i];
-      const stencilRef = (this.blobs[i].userData.stencilRef as number) || (1 << (i % 8));
-      const lightRadius = Math.max(light.shadowRadius || 0, light.getRadius());
-      if(!(lightRadius > 0)){ continue; }
-
-      for(let ci = 0; ci < saved.length; ci++){
-        const entry = saved[ci];
-        const dist = entry.mesh.getWorldPosition(this._world).distanceTo(light.worldPosition);
-        entry.mesh.visible = dist <= lightRadius + 2;
-        for(let mi = 0; mi < entry.materials.length; mi++){
-          const mat = entry.materials[mi];
-          (mat as any).colorWrite = false;
-          mat.depthWrite = false;
-          mat.stencilWrite = true;
-          mat.stencilFunc = THREE.AlwaysStencilFunc;
-          mat.stencilRef = stencilRef;
-          mat.stencilZPass = THREE.ReplaceStencilOp;
-        }
+    // Hide non-casters for the mask pass (layer filter alone can miss parented
+    // skinned setups if a parent is culled; visibility hide is the reliable path).
+    const hidden = this._hiddenScratch;
+    hidden.length = 0;
+    scene.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if(mesh.isMesh && mesh.visible && casters.indexOf(mesh) < 0){
+        mesh.visible = false;
+        hidden.push(mesh);
       }
+    });
 
-      renderer.render(scene, camera);
+    const prevLayersMask = camera.layers.mask;
+    try{
+      // Prefer layer filter when it works; visibility hide is the safety net above.
+      camera.layers.set(stencilLayer);
+
+      for(let i = 0; i < lights.length && i < this.blobs.length; i++){
+        const light = lights[i];
+        const stencilRef = (this.blobs[i].userData.stencilRef as number) || (1 << (i % 8));
+        const lightRadius = Math.max(light.shadowRadius || 0, light.getRadius());
+        if(!(lightRadius > 0)){ continue; }
+
+        for(let ci = 0; ci < saved.length; ci++){
+          const entry = saved[ci];
+          const dist = entry.mesh.getWorldPosition(this._world).distanceTo(light.worldPosition);
+          entry.mesh.visible = dist <= lightRadius + 2;
+          for(let mi = 0; mi < entry.materials.length; mi++){
+            const mat = entry.materials[mi];
+            (mat as any).colorWrite = false;
+            mat.depthWrite = false;
+            mat.depthTest = true;
+            mat.stencilWrite = true;
+            mat.stencilWriteMask = 0xff;
+            mat.stencilFunc = THREE.AlwaysStencilFunc;
+            mat.stencilRef = stencilRef;
+            mat.stencilFuncMask = 0xffffffff;
+            mat.stencilFail = THREE.KeepStencilOp;
+            mat.stencilZFail = THREE.KeepStencilOp;
+            mat.stencilZPass = THREE.ReplaceStencilOp;
+            mat.needsUpdate = true;
+          }
+        }
+
+        renderer.render(scene, camera);
+      }
+    }finally{
+      camera.layers.mask = prevLayersMask;
     }
-
-    camera.layers.mask = prevLayersMask;
 
     for(let i = 0; i < saved.length; i++){
       const entry = saved[i];
@@ -321,14 +371,24 @@ export class ShadowBlobManager {
         const prev = entry.state[mi];
         (mat as any).colorWrite = prev.colorWrite;
         mat.depthWrite = prev.depthWrite;
+        mat.depthTest = prev.depthTest;
         mat.stencilWrite = prev.stencilWrite;
+        mat.stencilWriteMask = prev.stencilWriteMask;
         mat.stencilFunc = prev.stencilFunc;
         mat.stencilRef = prev.stencilRef;
+        mat.stencilFail = prev.stencilFail;
+        mat.stencilZFail = prev.stencilZFail;
         mat.stencilZPass = prev.stencilZPass;
+        mat.needsUpdate = true;
       }
+    }
+    for(let i = 0; i < hidden.length; i++){
+      hidden[i].visible = true;
     }
     for(let i = 0; i < this.blobs.length; i++){
       this.blobs[i].visible = blobVis[i];
+      const mat = this.blobs[i].material as THREE.MeshBasicMaterial;
+      this.applyDiskStencilState(mat, this.blobs[i].userData.stencilRef || (1 << (i % 8)));
     }
 
     gl.stencilMask(prevStencilMask);

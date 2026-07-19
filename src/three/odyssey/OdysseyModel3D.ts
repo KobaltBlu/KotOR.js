@@ -1459,7 +1459,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
               parentNode.userData.mesh = mesh;
             }
             if(!isAabb){
-              mesh.castShadow = odysseyNode.flagShadow;// && !options.static;//options.castShadow;
+              // MDL flagShadow selects casters; options.castShadow forces casting for
+              // creatures/placeables so stencil shadow disks have geometry to mask.
+              mesh.castShadow = !!odysseyNode.flagShadow || !!options.castShadow;
               mesh.receiveShadow = options.receiveShadow;
             }else if(options.attachMdlAabbMesh){
               mesh.castShadow = false;

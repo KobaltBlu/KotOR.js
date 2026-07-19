@@ -1590,7 +1590,8 @@ export class GameState implements EngineContext {
     GameState.renderDepthPrepass();
 
     // Orchestrate stencil-preserving clear for shadow disks:
-    // 1) clear color/depth/stencil into the composer write buffer
+    // 1) clear color/depth/stencil into the composer read buffer
+    //    (RenderPass draws into readBuffer — see three RenderPass.js)
     // 2) write caster masks (colorWrite disabled)
     // 3) clear color/depth only, preserving stencil
     // 4) render composer with RenderPass.clear = false
@@ -1598,8 +1599,9 @@ export class GameState implements EngineContext {
     const composer = GameState.composer;
     const prevTarget = renderer.getRenderTarget();
     const prevRenderPassClear = GameState.renderPass.clear;
-    if(GameState.shadowBlobManager && GameState.currentCamera && composer?.writeBuffer){
-      renderer.setRenderTarget(composer.writeBuffer);
+    const stencilTarget = composer?.readBuffer;
+    if(GameState.shadowBlobManager && GameState.currentCamera && stencilTarget){
+      renderer.setRenderTarget(stencilTarget);
       renderer.clear(true, true, true);
       GameState.shadowBlobManager.renderStencilMasks(
         renderer,
