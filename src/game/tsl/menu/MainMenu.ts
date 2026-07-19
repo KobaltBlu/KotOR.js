@@ -11,9 +11,11 @@ import { MainMenu as K1_MainMenu } from "@/game/kotor/KOTOR";
 
 /**
  * MainMenu class.
- * 
+ *
+ * Retail CSWGuiMainMenu (mainmenu8x6_p) — TSL adds Music between Movies and Options.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMenu.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -44,10 +46,26 @@ export class MainMenu extends K1_MainMenu {
     this.userCanClose = false;
   }
 
+  /** TSL: New → Load → Movies → Music → Options → Exit. */
+  protected getNavButtons(): GUIButton[] {
+    return [
+      this.BTN_NEWGAME,
+      this.BTN_LOADGAME,
+      this.BTN_MOVIES,
+      this.BTN_MUSIC,
+      this.BTN_OPTIONS,
+      this.BTN_EXIT,
+    ].filter((b): b is GUIButton => !!b);
+  }
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
+      this.selectedControl = this.BTN_NEWGAME;
+      this._button_a = this.BTN_NEWGAME;
+      this._button_b = this.BTN_EXIT;
+
       this.LB_MODULES.hide();
       this.LBL_NEWCONTENT.hide();
       this.BTN_WARP.hide();
@@ -90,7 +108,7 @@ export class MainMenu extends K1_MainMenu {
           alert('To exit the game in your browser, close this tab or window. For the best experience, open the game from the KotOR.js launcher so Exit Game works from the menu.');
         }
       });
-      
+
       (this.tGuiPanel.widget.userData.fill as any).visible = false;
 
       this._3dView = new LBL_3DView();
@@ -99,16 +117,14 @@ export class MainMenu extends K1_MainMenu {
       (this.LBL_3DVIEW.getFill().material as any).transparent = false;
       this._3dView.setControl(this.LBL_3DVIEW);
       (this.LBL_3DVIEW.getFill().material as any).visible = true;
-      
+
       MDLLoader.loader.load('mainmenu01')
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
-          // manageLighting: false,
           context: this._3dView
         }).then((model: OdysseyModel3D) => {
-          console.log('Model Loaded', model);
           this._3dViewModel = model;
-          
+
           this._3dView.camera.position.copy(model.camerahook.position);
           this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
@@ -116,19 +132,19 @@ export class MainMenu extends K1_MainMenu {
           TextureLoader.LoadQueue().then(() => {
             this._3dViewModel.playAnimation(0, true);
             resolve();
-          });
-        }).catch(resolve);
-      }).catch(resolve);
+          }).catch(() => resolve());
+        }).catch(() => resolve());
+      }).catch(() => resolve());
     });
   }
 
   update(delta = 0) {
-    this._3dView.render(delta);
+    super.update(delta);
   }
 
   show() {
     super.show();
     GameState.AlphaTest = 0.5;
   }
-    
+
 }

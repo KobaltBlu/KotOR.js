@@ -355,7 +355,7 @@ export class LBL_MapView {
       );
       this.arrowPlane.rotation.set(0, 0, this.arrowAngle);
       if(this.mode == MapMode.FULLMAP){
-        (this.arrowPlane.material as THREE.MeshBasicMaterial).opacity = 1 - (0.5 *GameState.MenuManager.pulseOpacity);
+        (this.arrowPlane.material as THREE.MeshBasicMaterial).opacity = GameState.MenuManager.pulseOpacity;
       }
     }
 

@@ -3,10 +3,21 @@ import type { GUIButton, GUILabel, GUIListBox } from "@/gui";
 import { MainOptions as K1_MainOptions } from "@/game/kotor/KOTOR";
 
 /**
+ * Retail CSWGuiOptionsMain button description TLKs.
+ */
+const TLK_DESC_GAMEPLAY = 0xa521;
+const TLK_DESC_FEEDBACK = 0x2147a;
+const TLK_DESC_AUTOPAUSE = 0xa523;
+const TLK_DESC_GRAPHICS = 0xbe2f;
+const TLK_DESC_SOUND = 0xbe30;
+
+/**
  * MainOptions class.
- * 
+ *
+ * Retail CSWGuiOptionsMain (optionsmain_p).
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainOptions.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -35,7 +46,9 @@ export class MainOptions extends K1_MainOptions {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
+      this.selectedControl = this.BTN_GAMEPLAY;
+      this._button_b = this.BTN_BACK;
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -67,28 +80,28 @@ export class MainOptions extends K1_MainOptions {
         this.manager.MenuFeedback.open();
       });
 
-      this.BTN_GAMEPLAY.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42273].Value);
+      this.BTN_GAMEPLAY.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_GAMEPLAY);
       });
 
-      this.BTN_FEEDBACK.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[136314].Value);
+      this.BTN_FEEDBACK.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_FEEDBACK);
       });
 
-      this.BTN_AUTOPAUSE.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[42275].Value);
+      this.BTN_AUTOPAUSE.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_AUTOPAUSE);
       });
 
-      this.BTN_GRAPHICS.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48687].Value);
+      this.BTN_GRAPHICS.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_GRAPHICS);
       });
 
-      this.BTN_SOUND.addEventListener( 'hover', () => {
-        this.LB_DESC.setItem(GameState.TLKManager.TLKStrings[48688].Value);
+      this.BTN_SOUND.addEventListener('hover', () => {
+        this.setDescription(TLK_DESC_SOUND);
       });
 
       resolve();
     });
   }
-  
+
 }

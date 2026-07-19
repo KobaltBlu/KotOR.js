@@ -123,6 +123,9 @@ export class GameMenu {
     //You can just use this.CONTROL_NAME 
     this.assignChildControlsToMenu(this.tGuiPanel);
 
+    // Retail CSWGuiPanel::StopLoadFromLayout — MOVETO IDs → control pointers
+    this.resolveMoveToControls();
+
     await this.menuControlInitializer();
 
     // await TextureLoader.LoadQueue();
@@ -142,6 +145,72 @@ export class GameMenu {
       if(!!ctrl && !isNaN(parseInt(ctrl.name[0]))) ctrl.name = '_'+ctrl.name;
       (this as any)[ctrl.name] = ctrl;
       this.assignChildControlsToMenu(ctrl);
+    }
+  }
+
+  /**
+   * Retail CSWGuiPanel::StopLoadFromLayout — replace MOVETO control IDs with pointers.
+   * IDs index the panel control list the same way InitControl places controls by GFF ID.
+   */
+  resolveMoveToControls(){
+    if(!this.tGuiPanel){ return; }
+
+    const byId = new Map<number, GUIControl>();
+    const collect = (control: GUIControl) => {
+      if(!control){ return; }
+      if(typeof control.id === 'number' && control.id >= 0){
+        byId.set(control.id, control);
+      }
+      for(let i = 0; i < control.children.length; i++){
+        collect(control.children[i]);
+      }
+    };
+    collect(this.tGuiPanel);
+
+    const resolveControl = (control: GUIControl) => {
+      if(!control){ return; }
+      if(control.hasMoveTo){
+        const dirs: Array<'up' | 'down' | 'left' | 'right'> = ['up', 'down', 'left', 'right'];
+        for(let i = 0; i < dirs.length; i++){
+          const dir = dirs[i];
+          const id = control.moveTo[dir];
+          if(typeof id === 'number' && id >= 0 && byId.has(id)){
+            control.setMoveToControl(dir, byId.get(id));
+          }else{
+            control.setMoveToControl(dir, undefined);
+          }
+        }
+      }
+      for(let i = 0; i < control.children.length; i++){
+        resolveControl(control.children[i]);
+      }
+    };
+    resolveControl(this.tGuiPanel);
+  }
+
+  /**
+   * Retail CSWGuiPanel::SetActiveControl — deactivate previous, activate next (hover visual).
+   */
+  setActiveControl(control?: GUIControl, _playSound: boolean = true){
+    if(this.selectedControl === control){
+      return;
+    }
+
+    if(this.selectedControl){
+      this.setWidgetHoverActive(this.selectedControl, false);
+      if(this.selectedControl.hover || this.selectedControl.mouseOver){
+        this.selectedControl.onHoverOut();
+      }
+    }
+
+    this.selectedControl = control;
+    this.manager.activeGUIElement = control;
+
+    if(control){
+      this.setWidgetHoverActive(control, true);
+      if(!control.hover){
+        control.onHoverIn();
+      }
     }
   }
 
@@ -368,40 +437,26 @@ export class GameMenu {
   }
 
   triggerControllerDUpPress(){
-    if(
-      this.selectedControl &&
-      BitWise.InstanceOfObject(this.selectedControl.objectType, GUIControlTypeMask.GUIListBox)
-    ){
-      (this.selectedControl as GUIControl & { directionalNavigate(dir: string): void }).directionalNavigate('up');
-      return;
-    }
-    if(this.manager.activeGUIElement){
-      //this.manager.activeGUIElement.click();
+    if(this.selectedControl){
+      this.selectedControl.directionalNavigate('up');
     }
   }
 
   triggerControllerDDownPress(){
-    if(
-      this.selectedControl &&
-      BitWise.InstanceOfObject(this.selectedControl.objectType, GUIControlTypeMask.GUIListBox)
-    ){
-      (this.selectedControl as GUIControl & { directionalNavigate(dir: string): void }).directionalNavigate('down');
-      return;
-    }
-    if(this.manager.activeGUIElement){
-      //this.manager.activeGUIElement.click();
+    if(this.selectedControl){
+      this.selectedControl.directionalNavigate('down');
     }
   }
 
   triggerControllerDLeftPress(){
-    if(this.manager.activeGUIElement){
-      //this.manager.activeGUIElement.click();
+    if(this.selectedControl){
+      this.selectedControl.directionalNavigate('left');
     }
   }
 
   triggerControllerDRightPress(){
-    if(this.manager.activeGUIElement){
-      //this.manager.activeGUIElement.click();
+    if(this.selectedControl){
+      this.selectedControl.directionalNavigate('right');
     }
   }
 

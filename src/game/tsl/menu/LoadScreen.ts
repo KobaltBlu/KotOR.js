@@ -4,9 +4,11 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 
 /**
  * LoadScreen class.
- * 
+ *
+ * Retail CSWGuiLoadScreen (loadscreen_p).
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file LoadScreen.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -18,7 +20,6 @@ export class LoadScreen extends K1_LoadScreen {
   declare LBL_HINT: GUILabel;
   declare LBL_LOGO: GUILabel;
   declare LBL_LOADING: GUILabel;
-  // defaultTex: any;
 
   constructor(){
     super();
@@ -30,11 +31,11 @@ export class LoadScreen extends K1_LoadScreen {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      this.LBL_HINT.visible = false;
+    return new Promise<void>((resolve) => {
+      this.LBL_HINT.hide();
       this.defaultTex = (this.tGuiPanel.getFill().material as any).uniforms.map.value;
       resolve();
     });
   }
-  
+
 }

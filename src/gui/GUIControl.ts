@@ -792,7 +792,7 @@ export class GUIControl {
           this.text.text = this.menu.gameStringParse(GameState.TLKManager.TLKStrings[this.text.strref]?.Value || '');
         }
         this.text.alignment = text.getFieldByLabel('ALIGNMENT')?.getValue();
-        this.text.pulsing = text.getFieldByLabel('PULSING')?.getValue();
+          this.text.pulsing = text.getFieldByLabel('PULSING')?.getValue() || 0;
 
         if(this.text.font == 'fnt_d16x16'){
           this.text.font = 'fnt_d16x16b';
@@ -842,15 +842,15 @@ export class GUIControl {
       }
     }
 
-    //Moveto
+    //Moveto — retail CSWGuiNavigable::Load (IDs into panel controls[]; resolved later)
     this.hasMoveTo = control.hasField('MOVETO');
     if(this.hasMoveTo){
       let moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
       if(moveTo){
-        this.moveTo.down = moveTo.getFieldByLabel('DOWN')?.getValue();
-        this.moveTo.left = moveTo.getFieldByLabel('LEFT')?.getValue();
-        this.moveTo.right = moveTo.getFieldByLabel('RIGHT')?.getValue();
-        this.moveTo.up = moveTo.getFieldByLabel('UP')?.getValue();
+        this.moveTo.down = moveTo.getFieldByLabel('DOWN')?.getValue() ?? 0;
+        this.moveTo.left = moveTo.getFieldByLabel('LEFT')?.getValue() ?? 0;
+        this.moveTo.right = moveTo.getFieldByLabel('RIGHT')?.getValue() ?? 0;
+        this.moveTo.up = moveTo.getFieldByLabel('UP')?.getValue() ?? 0;
       }
     }
   }
@@ -1253,46 +1253,65 @@ export class GUIControl {
     this.widget.visible = true;
   }
 
+  /**
+   * Whether this control needs continuous opacity animation.
+   * Retail pulses only via GFF PULSING / SetPulsingAlpha — not hover or selected alone.
+   */
+  wantsPulseAnimation(): boolean {
+    return !!(
+      this.pulsing ||
+      (this.border.pulsing | 0) ||
+      (this.highlight.pulsing | 0) ||
+      (this.text.pulsing | 0)
+    );
+  }
+
   update(delta: number){
     const opacity = this.disableSelection ? 0.5 : 1;
-    if(this.pulsing || (this.hover && this.isClickable()) || this.selected){
-      const pulseOpacity = 1 - (0.5 *GameState.MenuManager.pulseOpacity) * opacity;
-      /**
-       * Border
-       */
+    // Retail CSWGuiBorder::Draw / CSWGuiText::Draw: use m_fPulsingAlpha when pulsing bits set.
+    // GFF PULSING → SetPulsingAlpha(nonzero, bit0, bit1): bit0 = edges/corners, bit1 = fill.
+    // `this.pulsing` is the runtime SetPulsingAlpha(enable, …) equivalent (menus/protoitems).
+    const borderFlags = this.border.pulsing | 0;
+    const highlightFlags = this.highlight.pulsing | 0;
+    const textFlags = this.text.pulsing | 0;
+    // Runtime `this.pulsing` ≈ SetPulsingAlpha(1, 1, 0): edges/corners + text, not fill.
+    // Fill pulses only when GFF PULSING bit1 is set (retail SetPulsingAlpha fill flag).
+    const pulseBorderEdge = this.pulsing || !!(borderFlags & 1);
+    const pulseBorderFill = !!(borderFlags & 2);
+    const pulseHighlightEdge = this.pulsing || !!(highlightFlags & 1);
+    const pulseHighlightFill = !!(highlightFlags & 2);
+    const pulseText = this.pulsing || !!textFlags;
+
+    if(pulseBorderEdge || pulseBorderFill || pulseHighlightEdge || pulseHighlightFill || pulseText){
+      const pulseAlpha = GameState.MenuManager.pulseOpacity * opacity;
+      const solidAlpha = opacity;
+
       if(this.border.edge_material){
-        this.border.edge_material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
+        this.border.edge_material.uniforms.opacity.value = pulseBorderEdge ? pulseAlpha : solidAlpha;
       }
 
       if(this.border.corner_material){
-        this.border.corner_material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
-      }
-  
-      if(this.border.fill.material){
-        this.border.fill.material.uniforms.opacity.value = this.hover ? 1 : pulseOpacity;
+        this.border.corner_material.uniforms.opacity.value = pulseBorderEdge ? pulseAlpha : solidAlpha;
       }
 
-      /**
-       * Highlight
-       */
+      if(this.border.fill.material){
+        this.border.fill.material.uniforms.opacity.value = pulseBorderFill ? pulseAlpha : solidAlpha;
+      }
+
       if(this.highlight.edge_material){
-        this.highlight.edge_material.uniforms.opacity.value = pulseOpacity;
+        this.highlight.edge_material.uniforms.opacity.value = pulseHighlightEdge ? pulseAlpha : solidAlpha;
       }
 
       if(this.highlight.corner_material){
-        this.highlight.corner_material.uniforms.opacity.value = pulseOpacity;
+        this.highlight.corner_material.uniforms.opacity.value = pulseHighlightEdge ? pulseAlpha : solidAlpha;
       }
 
       if(this.highlight.fill.material){
-        this.highlight.fill.material.uniforms.opacity.value = pulseOpacity;
+        this.highlight.fill.material.uniforms.opacity.value = pulseHighlightFill ? pulseAlpha : solidAlpha;
       }
 
-      /**
-       * Text
-       */
       if(this.text.material){
-        this.text.material.uniforms.opacity.value = !this.hover ? 1 : pulseOpacity;
-        this.setTextColor(this.defaultHighlightColor.r, this.defaultHighlightColor.g, this.defaultHighlightColor.b);
+        this.text.material.uniforms.opacity.value = pulseText ? pulseAlpha : solidAlpha;
       }
     }else{
       this.resetPulse();
@@ -2656,44 +2675,75 @@ export class GUIControl {
     this.processEventListener('click');
   }
 
-  setDPadTarget(direction = '', control: GUIControl){
+  /**
+   * Retail CSWGuiNavigable::SetMoveToControl — stores a resolved neighbor pointer
+   * (or clears the link). Before panel resolve, GFF MOVETO IDs live in {@link moveTo}.
+   */
+  setMoveToControl(direction: string, control?: GUIControl){
     if(typeof direction == 'string'){
       direction = direction.toLowerCase();
     }
 
-    if(control instanceof GUIControl){
-      switch(direction){
-        case 'up':
-          this.dPadTarget.up = control;
-        break;
-        case 'down':
-          this.dPadTarget.down = control;
-        break;
-        case 'left':
-          this.dPadTarget.left = control;
-        break;
-        case 'right':
-          this.dPadTarget.right = control;
-        break;
-      }
+    const target = (control instanceof GUIControl) ? control : undefined;
+    switch(direction){
+      case 'up':
+        this.dPadTarget.up = target;
+      break;
+      case 'down':
+        this.dPadTarget.down = target;
+      break;
+      case 'left':
+        this.dPadTarget.left = target;
+      break;
+      case 'right':
+        this.dPadTarget.right = target;
+      break;
     }
   }
 
-  directionalNavigate(direction = ''){
-    switch(direction){
-      case 'up':
-
-      break;
-      case 'down':
-
-      break;
-      case 'left':
-
-      break;
-      case 'right':
-
-      break;
+  /** Retail CSWGuiNavigable::GetMoveToControl — neighbor pointer after resolve. */
+  getMoveToControl(direction: string): GUIControl | undefined {
+    if(typeof direction == 'string'){
+      direction = direction.toLowerCase();
     }
+    switch(direction){
+      case 'up': return this.dPadTarget.up;
+      case 'down': return this.dPadTarget.down;
+      case 'left': return this.dPadTarget.left;
+      case 'right': return this.dPadTarget.right;
+      default: return undefined;
+    }
+  }
+
+  /** @deprecated Prefer {@link setMoveToControl}. */
+  setDPadTarget(direction = '', control: GUIControl){
+    this.setMoveToControl(direction, control);
+  }
+
+  /**
+   * Retail CSWGuiNavigable::HandleInputEvent for D-pad / arrow keys.
+   * Follows resolved MoveTo neighbors and activates via the parent menu.
+   */
+  directionalNavigate(direction = ''){
+    if(typeof direction == 'string'){
+      direction = direction.toLowerCase();
+    }
+    if(direction !== 'up' && direction !== 'down' && direction !== 'left' && direction !== 'right'){
+      return;
+    }
+
+    let next = this.getMoveToControl(direction);
+
+    // Skip non-focusable / hidden neighbors (retail clears bit 0x8 to keep walking).
+    while(next && (!next.isVisible() || next.disableSelection)){
+      next = next.getMoveToControl(direction);
+    }
+
+    if(!next || next === this){
+      return;
+    }
+
+    this.menu?.setActiveControl(next);
   }
 
   onINIPropertyAttached(){

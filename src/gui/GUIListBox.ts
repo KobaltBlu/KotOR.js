@@ -192,9 +192,7 @@ export class GUIListBox extends GUIControl {
       return;
     }
 
-    const wantsAnimated = this.children.some(c =>
-      c.pulsing || (c.hover && c.isClickable()),
-    );
+    const wantsAnimated = this.children.some(c => c.wantsPulseAnimation());
     if (!wantsAnimated && !this.listRttDirty) {
       return;
     }

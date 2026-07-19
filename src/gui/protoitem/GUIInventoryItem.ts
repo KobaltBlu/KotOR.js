@@ -203,8 +203,9 @@ export class GUIInventoryItem extends GUIProtoItem {
       return;
     }
     const opacity = this.disableSelection ? 0.5 : 1;
-    const pulseOpacity = this.selected ? 1 - (0.5 *GameState.MenuManager.pulseOpacity) * opacity : opacity;
-    this.hexMaterial.opacity = pulseOpacity;
+    this.hexMaterial.opacity = this.pulsing
+      ? GameState.MenuManager.pulseOpacity * opacity
+      : opacity;
 
     if(isDirty){
       const stackSize = this.node?.getStackSize?.() ?? 1;

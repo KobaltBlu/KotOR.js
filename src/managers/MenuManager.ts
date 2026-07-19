@@ -18,10 +18,14 @@ import { EventManager } from "@/managers/EventManager";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class MenuManager {
+  /** Retail CSWGuiDrawable::m_fPulsingAlpha (0.4 ↔ 1.0). */
   static pulseOpacity: number;
   static activeMenus: GameMenu[];
   static activeModals: GameMenu[];
+  /** Retail CSWGuiDrawable::m_fAlphaPulseTimer — seconds left in current half-cycle. */
   static pulse: number;
+  /** Retail CSWGuiDrawable::m_bAlphaPulsingUp. */
+  static pulseAscending: boolean;
 
   static activeGUIElement: GUIControl;
   static hoveredGUIElement: GUIControl;
@@ -93,7 +97,8 @@ export class MenuManager {
 
     MenuManager.activeMenus = [];
     MenuManager.activeModals = [];
-    MenuManager.pulse = 0;
+    MenuManager.pulse = 0.75;
+    MenuManager.pulseAscending = false;
     MenuManager.pulseOpacity = 1;
 
   }
@@ -202,25 +207,16 @@ export class MenuManager {
     GameState.CursorManager.cursor.material.depthWrite = false;
     GameState.CursorManager.cursor.renderOrder = 9999999;
 
-    MenuManager.pulse += 5 * delta;
-    // Map time * speed to a full sine wave cycle (0 to 2π)
-    const wave = Math.sin(MenuManager.pulse);
-    // Convert sine range (-1 to 1) to 0 to 1
-    MenuManager.pulseOpacity = (wave + 1) / 2;
-
-    // if(MenuManager.pulse > 2){
-    //   MenuManager.pulse = 0;
-    // }
-
-    // if(this.pulse > 2){
-    //   MenuManager.pulseOpacity = 0;
-    // }
-
-    // if(this.pulse > 1){
-    //   MenuManager.pulseOpacity = this.pulse - 1;
-    // }else{
-    //   MenuManager.pulseOpacity = 1 - this.pulse;
-    // }
+    // Retail CSWGuiDrawable::UpdatePulsing — triangle wave between 0.4 and 1.0 over 0.75s half-cycles.
+    const HALF_CYCLE = 0.75;
+    MenuManager.pulse -= delta;
+    if(MenuManager.pulse < 0){
+      MenuManager.pulseAscending = !MenuManager.pulseAscending;
+      MenuManager.pulse = HALF_CYCLE;
+    }
+    const from = MenuManager.pulseAscending ? 0.4 : 1.0;
+    const to = MenuManager.pulseAscending ? 1.0 : 0.4;
+    MenuManager.pulseOpacity = (to - from) * (HALF_CYCLE - MenuManager.pulse) * (1 / HALF_CYCLE) + from;
 
     if(GameState.Mode == EngineMode.INGAME && MenuManager.InGameOverlay.bVisible){
       MenuManager.InGameOverlay.update(delta);
@@ -275,6 +271,7 @@ export class MenuManager {
           MenuManager.MenuToolTip,
           MenuManager.MenuSound,
           MenuManager.MenuSoundAdvanced,
+          MenuManager.MenuFeedback,
           MenuManager.MenuMouse,
           MenuManager.MenuKeyboardMapping,
           MenuManager.MenuKeyboardEntry,
@@ -295,6 +292,7 @@ export class MenuManager {
           MenuManager.GameMenuLoader(KOTOR.MenuToolTip),
           MenuManager.GameMenuLoader(KOTOR.MenuSound),
           MenuManager.GameMenuLoader(KOTOR.MenuSoundAdvanced),
+          MenuManager.GameMenuLoader(KOTOR.MenuFeedback),
           MenuManager.GameMenuLoader(KOTOR.MenuMouse),
           MenuManager.GameMenuLoader(KOTOR.MenuKeyboardMapping),
           MenuManager.GameMenuLoader(KOTOR.MenuKeyboardEntry),
@@ -303,8 +301,8 @@ export class MenuManager {
           KOTOR.LoadScreen, KOTOR.MainMenu, KOTOR.MainMovies, KOTOR.MenuCredits, KOTOR.MainOptions,
           KOTOR.MenuResolutions, KOTOR.MenuSaveLoad, KOTOR.MenuSaveName, KOTOR.MenuGameplay,
           KOTOR.MenuGraphics, KOTOR.MenuGraphicsAdvanced, KOTOR.MenuAutoPause, KOTOR.MenuToolTip,
-          KOTOR.MenuSound, KOTOR.MenuSoundAdvanced, KOTOR.MenuMouse, KOTOR.MenuKeyboardMapping,
-          KOTOR.MenuKeyboardEntry, KOTOR.InGameConfirm,
+          KOTOR.MenuSound, KOTOR.MenuSoundAdvanced, KOTOR.MenuFeedback, KOTOR.MenuMouse,
+          KOTOR.MenuKeyboardMapping, KOTOR.MenuKeyboardEntry, KOTOR.InGameConfirm,
         ];
       }else if(GameState.GameKey == GameEngineType.TSL){
         [
@@ -324,6 +322,7 @@ export class MenuManager {
           MenuManager.MenuToolTip,
           MenuManager.MenuSound,
           MenuManager.MenuSoundAdvanced,
+          MenuManager.MenuFeedback,
           MenuManager.MenuMouse,
           MenuManager.MenuKeyboardMapping,
           MenuManager.MenuKeyboardEntry,
@@ -345,6 +344,7 @@ export class MenuManager {
           MenuManager.GameMenuLoader(TSL.MenuToolTip),
           MenuManager.GameMenuLoader(TSL.MenuSound),
           MenuManager.GameMenuLoader(TSL.MenuSoundAdvanced),
+          MenuManager.GameMenuLoader(TSL.MenuFeedback),
           MenuManager.GameMenuLoader(TSL.MenuMouse),
           MenuManager.GameMenuLoader(TSL.MenuKeyboardMapping),
           MenuManager.GameMenuLoader(TSL.MenuKeyboardEntry),
@@ -353,8 +353,8 @@ export class MenuManager {
           KOTOR.LoadScreen, KOTOR.MainMenu, KOTOR.MainMovies, TSL.MainMusic, KOTOR.MenuCredits, KOTOR.MainOptions,
           KOTOR.MenuResolutions, KOTOR.MenuSaveLoad, KOTOR.MenuSaveName, KOTOR.MenuGameplay,
           KOTOR.MenuGraphics, KOTOR.MenuGraphicsAdvanced, KOTOR.MenuAutoPause, KOTOR.MenuToolTip,
-          KOTOR.MenuSound, KOTOR.MenuSoundAdvanced, KOTOR.MenuMouse, KOTOR.MenuKeyboardMapping,
-          KOTOR.MenuKeyboardEntry, KOTOR.InGameConfirm,
+          KOTOR.MenuSound, KOTOR.MenuSoundAdvanced, KOTOR.MenuFeedback, KOTOR.MenuMouse,
+          KOTOR.MenuKeyboardMapping, KOTOR.MenuKeyboardEntry, KOTOR.InGameConfirm,
         ];
       }
     }catch(e){
@@ -452,7 +452,6 @@ export class MenuManager {
           MenuManager.MenuMap,
           MenuManager.MenuMessages,
           MenuManager.MenuOptions,
-          MenuManager.MenuFeedback,
           MenuManager.MenuPartySelection,
           MenuManager.MenuStore,
           MenuManager.MenuTop,
@@ -481,7 +480,6 @@ export class MenuManager {
           MenuManager.GameMenuLoader(KOTOR.MenuMap),
           MenuManager.GameMenuLoader(KOTOR.MenuMessages),
           MenuManager.GameMenuLoader(KOTOR.MenuOptions),
-          MenuManager.GameMenuLoader(KOTOR.MenuFeedback),
           MenuManager.GameMenuLoader(KOTOR.MenuPartySelection),
           MenuManager.GameMenuLoader(KOTOR.MenuStore),
           MenuManager.GameMenuLoader(KOTOR.MenuTop),
@@ -496,7 +494,7 @@ export class MenuManager {
           KOTOR.InGameDialog, KOTOR.InGameOverlay, KOTOR.InGamePause, KOTOR.MenuAbilities,
           KOTOR.MenuCharacter, KOTOR.MenuContainer, KOTOR.MenuEquipment, KOTOR.MenuGalaxyMap,
           KOTOR.MenuInventory, KOTOR.MenuJournal, KOTOR.MenuLevelUp, KOTOR.MenuMap,
-          KOTOR.MenuMessages, KOTOR.MenuOptions, KOTOR.MenuFeedback, KOTOR.MenuPartySelection,
+          KOTOR.MenuMessages, KOTOR.MenuOptions, KOTOR.MenuPartySelection,
           KOTOR.MenuStore, KOTOR.MenuTop, KOTOR.MenuUpgrade, KOTOR.MenuUpgradeItems,
           KOTOR.MenuUpgradeSelect, KOTOR.MenuPazaakWager, KOTOR.MenuPazaakGame, KOTOR.MenuPazaakSetup,
         ];
@@ -521,7 +519,6 @@ export class MenuManager {
           MenuManager.MenuMap,
           MenuManager.MenuMessages,
           MenuManager.MenuOptions,
-          MenuManager.MenuFeedback,
           MenuManager.MenuPartySelection,
           MenuManager.MenuStore,
           MenuManager.MenuTop,
@@ -552,7 +549,6 @@ export class MenuManager {
           MenuManager.GameMenuLoader(TSL.MenuMap),
           MenuManager.GameMenuLoader(TSL.MenuMessages),
           MenuManager.GameMenuLoader(TSL.MenuOptions),
-          MenuManager.GameMenuLoader(TSL.MenuFeedback),
           MenuManager.GameMenuLoader(TSL.MenuPartySelection),
           MenuManager.GameMenuLoader(TSL.MenuStore),
           MenuManager.GameMenuLoader(TSL.MenuTop),
@@ -568,7 +564,7 @@ export class MenuManager {
           KOTOR.InGameDialog, KOTOR.InGameOverlay, KOTOR.InGamePause, KOTOR.MenuAbilities,
           KOTOR.MenuCharacter, TSL.MenuChemicals, KOTOR.MenuContainer, KOTOR.MenuEquipment,
           KOTOR.MenuGalaxyMap, KOTOR.MenuInventory, KOTOR.MenuJournal, KOTOR.MenuLevelUp,
-          KOTOR.MenuMap, KOTOR.MenuMessages, KOTOR.MenuOptions, KOTOR.MenuFeedback,
+          KOTOR.MenuMap, KOTOR.MenuMessages, KOTOR.MenuOptions,
           KOTOR.MenuPartySelection, KOTOR.MenuStore, KOTOR.MenuTop, KOTOR.MenuUpgrade,
           KOTOR.MenuUpgradeItems, KOTOR.MenuUpgradeSelect, KOTOR.MenuPazaakWager,
           KOTOR.MenuPazaakGame, KOTOR.MenuPazaakSetup, TSL.MenuGameOver,

@@ -13,9 +13,11 @@ import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 
 /**
  * MainMenu class.
- * 
+ *
+ * Retail CSWGuiMainMenu — title screen buttons, 3D backdrop, theme music.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MainMenu.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -48,11 +50,39 @@ export class MainMenu extends GameMenu {
     this.userCanClose = false;
   }
 
+  /** Visible title buttons in retail order (New → Load → Movies → Options → Exit). */
+  protected getNavButtons(): GUIButton[] {
+    return [
+      this.BTN_NEWGAME,
+      this.BTN_LOADGAME,
+      this.BTN_MOVIES,
+      this.BTN_OPTIONS,
+      this.BTN_EXIT,
+    ].filter((b): b is GUIButton => !!b);
+  }
+
+  protected clearNavHover() {
+    for(const btn of this.getNavButtons()){
+      btn.onHoverOut();
+    }
+  }
+
+  protected selectNavButton(btn: GUIButton) {
+    this.clearNavHover();
+    // Force re-apply hover even when focus is unchanged (e.g. menu show).
+    if(this.selectedControl === btn){
+      this.selectedControl = undefined;
+    }
+    this.setActiveControl(btn);
+  }
+
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       this.selectedControl = this.BTN_NEWGAME;
+      this._button_a = this.BTN_NEWGAME;
+      this._button_b = this.BTN_EXIT;
 
       this.LB_MODULES.hide();
       this.LBL_BW.hide();
@@ -67,35 +97,23 @@ export class MainMenu extends GameMenu {
 
       this.BTN_LOADGAME.addEventListener('click', (e) => {
         e.stopPropagation();
-        //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
         this.manager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
-        this.manager.MenuSaveLoad.open()
+        this.manager.MenuSaveLoad.open();
       });
 
       this.BTN_MOVIES.addEventListener('click', (e) => {
         e.stopPropagation();
-        //this.Hide();
         this.manager.MainMovies.open();
-        //Game.LoadModule('danm14aa', null, () => { console.log('ready to load'); })
       });
 
       this.BTN_OPTIONS.addEventListener('click', (e) => {
         e.stopPropagation();
-        //this.Hide();
         this.manager.MainOptions.open();
       });
 
       this.BTN_EXIT.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (ApplicationProfile.ENV === ApplicationEnvironment.ELECTRON) {
-          window.close();
-        }else{
-          if(window.opener){
-            window.close();
-            return;
-          }
-          alert('To exit the game in your browser, close this tab or window. For the best experience, open the game from the KotOR.js launcher so Exit Game works from the menu.');
-        }
+        this.onExitPicked();
       });
 
       MDLLoader.loader.load('mainmenu').then((mdl: OdysseyModel) => {
@@ -107,14 +125,12 @@ export class MainMenu extends GameMenu {
         (this.LBL_3DVIEW.getFill().material as THREE.ShaderMaterial).transparent = false;
         this._3dView.setControl(this.LBL_3DVIEW);
         (this.LBL_3DVIEW.getFill().material as any).visible = true;
-        
-        OdysseyModel3D.FromMDL(mdl, { 
-          // manageLighting: false,
+
+        OdysseyModel3D.FromMDL(mdl, {
           context: this._3dView
-        }).then( (model: OdysseyModel3D) => {
-          console.log('Model Loaded', model);
+        }).then((model: OdysseyModel3D) => {
           this._3dViewModel = model;
-          
+
           this._3dView.camera.position.copy(model.camerahook.position);
           this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
 
@@ -122,19 +138,30 @@ export class MainMenu extends GameMenu {
           TextureLoader.LoadQueue().then(() => {
             this._3dViewModel.playAnimation(0, true);
             resolve();
-          });
-        }).catch((e: any) => {
-
-        });
-      });
+          }).catch(() => resolve());
+        }).catch(() => resolve());
+      }).catch(() => resolve());
     });
   }
 
+  protected onExitPicked() {
+    if (ApplicationProfile.ENV === ApplicationEnvironment.ELECTRON) {
+      window.close();
+    }else{
+      if(window.opener){
+        window.close();
+        return;
+      }
+      alert('To exit the game in your browser, close this tab or window. For the best experience, open the game from the KotOR.js launcher so Exit Game works from the menu.');
+    }
+  }
+
   Start(){
-    return new Promise<void>( (resolve, reject) => {
-      this.manager.ClearMenus(); 
+    return new Promise<void>((resolve) => {
+      this.manager.ClearMenus();
       AudioLoader.LoadMusic(this.bgMusicResRef).then((data: Uint8Array) => {
-        AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, this.bgMusicResRef);
+        this.bgMusicBuffer = data.buffer as ArrayBuffer;
+        AudioEngine.GetAudioEngine().setAudioBuffer('BACKGROUND_MUSIC_DAY', this.bgMusicBuffer, this.bgMusicResRef);
         AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
         this.open();
         resolve();
@@ -149,7 +176,7 @@ export class MainMenu extends GameMenu {
   update(delta = 0) {
     super.update(delta);
     try {
-      this._3dView.render(delta);
+      this._3dView?.render(delta);
     } catch (e: any) {
       console.error(e);
     }
@@ -162,55 +189,12 @@ export class MainMenu extends GameMenu {
       AudioEngine.GetAudioEngine().areaMusicDayAudioEmitter.play();
     }
     GameState.AlphaTest = 0.5;
-    CurrentGame.InitGameInProgressFolder(false).then( () => {
-
-    });
-  }
-
-  triggerControllerDUpPress() {
-    if (!this.selectedControl) {
-      this.selectedControl = this.BTN_NEWGAME;
+    CurrentGame.InitGameInProgressFolder(false).then(() => {});
+    if(this.selectedControl){
+      this.selectNavButton(this.selectedControl as GUIButton);
+    }else{
+      this.selectNavButton(this.BTN_NEWGAME);
     }
-    this.BTN_NEWGAME.onHoverOut();
-    this.BTN_LOADGAME.onHoverOut();
-    this.BTN_MOVIES.onHoverOut();
-    this.BTN_OPTIONS.onHoverOut();
-    this.BTN_EXIT.onHoverOut();
-    if (this.selectedControl == this.BTN_EXIT) {
-      this.selectedControl = this.BTN_OPTIONS;
-    } else if (this.selectedControl == this.BTN_OPTIONS) {
-      this.selectedControl = this.BTN_MOVIES;
-    } else if (this.selectedControl == this.BTN_MOVIES) {
-      this.selectedControl = this.BTN_LOADGAME;
-    } else if (this.selectedControl == this.BTN_LOADGAME) {
-      this.selectedControl = this.BTN_NEWGAME;
-    } else if (this.selectedControl == this.BTN_NEWGAME) {
-      this.selectedControl = this.BTN_EXIT;
-    }
-    this.selectedControl.onHoverIn();
-  }
-
-  triggerControllerDDownPress() {
-    if (!this.selectedControl) {
-      this.selectedControl = this.BTN_NEWGAME;
-    }
-    this.BTN_NEWGAME.onHoverOut();
-    this.BTN_LOADGAME.onHoverOut();
-    this.BTN_MOVIES.onHoverOut();
-    this.BTN_OPTIONS.onHoverOut();
-    this.BTN_EXIT.onHoverOut();
-    if (this.selectedControl == this.BTN_NEWGAME) {
-      this.selectedControl = this.BTN_LOADGAME;
-    } else if (this.selectedControl == this.BTN_LOADGAME) {
-      this.selectedControl = this.BTN_MOVIES;
-    } else if (this.selectedControl == this.BTN_MOVIES) {
-      this.selectedControl = this.BTN_OPTIONS;
-    } else if (this.selectedControl == this.BTN_OPTIONS) {
-      this.selectedControl = this.BTN_EXIT;
-    } else if (this.selectedControl == this.BTN_EXIT) {
-      this.selectedControl = this.BTN_NEWGAME;
-    }
-    this.selectedControl.onHoverIn();
   }
 
   triggerControllerAPress() {
@@ -222,5 +206,5 @@ export class MainMenu extends GameMenu {
   triggerControllerBPress() {
     this.BTN_EXIT.click();
   }
-  
+
 }
