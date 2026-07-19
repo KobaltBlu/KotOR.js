@@ -347,7 +347,13 @@ export class AudioEmitter {
   }
 
   getVolume(): number {
-    return (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
+    let gain = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
+    // Retail CExoSoundInternal::Render multiplies playing/streaming sources by ambient scale.
+    // Apply to SFX channel emitters (area AmbientScale from UpdateRoom).
+    if(this.channel === AudioEngineChannel.SFX && this.engine){
+      gain *= this.engine.currentAmbientScale;
+    }
+    return gain;
   }
 
   getCurrentSoundName(): string {

@@ -5,3 +5,5 @@ export * from "@/three/odyssey/OdysseyEmitter3D";
 export * from "@/three/odyssey/OdysseyTexture";
 export * from "@/three/odyssey/OdysseyCompressedTexture";
 export * from "@/three/odyssey/OdysseyFace3";
+export * from "@/three/odyssey/OdysseyLightingBinder";
+export * from "@/three/odyssey/OdysseyMaterialBuilder";

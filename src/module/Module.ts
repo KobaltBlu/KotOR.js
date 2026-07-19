@@ -452,17 +452,8 @@ export class Module {
       
       GameState.ModuleObjectManager.ResetPlayerId();
 
-      GameState.globalLight.color.setRGB(
-        (this.area.dynamicAmbientColor & 0xFF) / 255,
-        (this.area.dynamicAmbientColor >> 8 & 0xFF) / 255,
-        (this.area.dynamicAmbientColor >> 16 & 0xFF) / 255
-      );
-      
-      GameState.globalLight.color.setRGB(
-        THREE.MathUtils.clamp(GameState.globalLight.color.r, 0.2, 1),
-        THREE.MathUtils.clamp(GameState.globalLight.color.g, 0.2, 1),
-        THREE.MathUtils.clamp(GameState.globalLight.color.b, 0.2, 1),
-      );
+      // Scene ambient = ARE DynAmbientColor (CAurScene::SetAmbient). Sun/moon ambient
+      // is the directional light ambient channel via applyLightingColors.
 
       GameState.camera.position.setX(this.entryX);
       GameState.camera.position.setY(this.entryY);

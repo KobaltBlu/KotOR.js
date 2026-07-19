@@ -12,7 +12,13 @@ export interface IOdysseyModelLoaderOptions {
   textureVar?: string, //override texture
   castShadow?: boolean, //force cast shadow on mesh nodes
   receiveShadow?: boolean, //force recieve shadow on mesh nodes
-  manageLighting?: boolean, // true | light nodes are manages by the LightManager class, false | lights are created inline
+  /**
+   * true (default): register light nodes with context.lightManager.
+   * false: keep OdysseyLight3D model-local (no LightManager registration).
+   * Preview contexts that need lighting should leave this true/omitted and
+   * provide their own context.lightManager.
+   */
+  manageLighting?: boolean,
   // context: Game,
   mergeStatic?: boolean, //Use on room models
   static?: boolean, //Static placeable

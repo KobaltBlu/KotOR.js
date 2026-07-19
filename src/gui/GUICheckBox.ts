@@ -631,8 +631,9 @@ export class GUICheckBox extends GUIControl{
       this.setValue(GameState.iniConfig.getProperty(this.iniProperty));
   }
 
-  setValue(value: boolean){
-    this.value = value ? 1 : 0;
+  setValue(value: boolean | number | string){
+    // Coerce INI strings ("0"/"1") — bare `value ? 1 : 0` treats "0" as on.
+    this.value = Number(value) ? 1 : 0;
 
     if(this.iniProperty){
       GameState.iniConfig.setProperty(this.iniProperty, this.value);

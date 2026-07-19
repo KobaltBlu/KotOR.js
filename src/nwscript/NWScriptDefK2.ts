@@ -1490,6 +1490,14 @@ NWScriptDefK2.Actions = {
      */
     action: function(this: NWScriptInstance, args: [ModuleObject, string, number, number, number, string, string, string, string, string, string, number, number, number, number]){
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        // Retail clears party[0] before dialog unless TSL bDontClearAllActions
+        const bDontClearAllActions = !!args[14];
+        if(!bDontClearAllActions){
+          const partyLeader = GameState.PartyManager.party[0];
+          if(BitWise.InstanceOfObject(partyLeader, ModuleObjectType.ModuleCreature)){
+            partyLeader.clearAllActions(true);
+          }
+        }
         const ignoreStartRange = !!args[4];
         const ignoreNames = [args[5], args[6], args[7], args[8], args[9], args[10]]
           .filter((s) => typeof s === 'string' && s.trim().length > 0);

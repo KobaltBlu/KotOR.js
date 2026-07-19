@@ -132,6 +132,8 @@ export class ModuleObject {
   //Room
   room: ModuleRoom;
   rooms: ModuleRoom[] = [];
+  /** Retail ApplyShadowBlob — Fx_Shadow_S/M/L model attached under the object. */
+  shadowBlobModel: OdysseyModel3D;
   roomIds: number[] = [];
   roomSize: THREE.Vector3;
 
@@ -529,6 +531,10 @@ export class ModuleObject {
       this.collisionManager.roomCheck(delta);
     }
 
+    if(this.shadowBlobModel){
+      // Retail ShowShadowBlob / HideShadowBlob — tied to area shadow enable + shadowAlpha.
+      this.shadowBlobModel.visible = GameState.areaShadowsEnabled && GameState.shadowAlpha > 0;
+    }
 
     this.sphere.center.copy(this.position);
     this.sphere.radius = this.getHitDistance() * 2;
@@ -632,7 +638,7 @@ export class ModuleObject {
       this.collisionManager.foundEnemyCreature = undefined;
     }
     // Drop sticky walk / approach / player-control axes after cancel
-    (this as any).clearLocomotionState?.();
+    (this as any).clearLocomotionState?.(true);
     //this.clearTarget();
   }
 
@@ -2527,6 +2533,75 @@ export class ModuleObject {
   }
 
   /**
+   * Retail CSWCAnimBase::ApplyShadowBlob — attach Fx_Shadow_S/M/L under the model root.
+   * Blob models have shadows turned off (TurnOffShadows).
+   */
+  async applyShadowBlob(resref: string): Promise<void> {
+    this.removeShadowBlob();
+    if(!resref || !(this.model instanceof OdysseyModel3D)){ return; }
+    try{
+      const mdl = await MDLLoader.loader.load(resref);
+      if(!mdl || !(this.model instanceof OdysseyModel3D)){ return; }
+      const blob = await OdysseyModel3D.FromMDL(mdl, {
+        context: this.context,
+        castShadow: false,
+        receiveShadow: false,
+        manageLighting: true,
+        static: true,
+      });
+      blob.traverse((obj) => {
+        const mesh = obj as THREE.Mesh;
+        if(mesh.isMesh){
+          mesh.castShadow = false;
+          mesh.receiveShadow = false;
+        }
+      });
+      this.shadowBlobModel = blob;
+      this.model.add(blob);
+    }catch(_e){
+      // Missing Fx_Shadow_* models is non-fatal (e.g. incomplete installs).
+    }
+  }
+
+  removeShadowBlob(){
+    if(this.shadowBlobModel){
+      this.shadowBlobModel.removeFromParent();
+      try{ this.shadowBlobModel.dispose(); }catch(_e){}
+      this.shadowBlobModel = undefined;
+    }
+  }
+
+  /**
+   * Resolve retail Fx_Shadow_S/M/L from appearance.sizecategory (creatures).
+   * size 1–2 → S, 4–5 → L, else M (CSWCCreature::ApplyShadowBlob).
+   */
+  static shadowBlobResRefFromSizeCategory(sizeCategory: number): string {
+    switch(sizeCategory | 0){
+      case 1:
+      case 2:
+        return 'Fx_Shadow_S';
+      case 4:
+      case 5:
+        return 'Fx_Shadow_L';
+      default:
+        return 'Fx_Shadow_M';
+    }
+  }
+
+  /**
+   * Resolve retail Fx_Shadow_S/M/L from placeables.2da ShadowSize.
+   * 0 → S, 1 → M, 2 → L, else M (CSWCPlaceable::ApplyShadowBlob).
+   */
+  static shadowBlobResRefFromPlaceableShadowSize(shadowSize: number): string {
+    switch(shadowSize | 0){
+      case 0: return 'Fx_Shadow_S';
+      case 2: return 'Fx_Shadow_L';
+      case 1:
+      default: return 'Fx_Shadow_M';
+    }
+  }
+
+  /**
    * Set the position
    * @param x 
    * @param y 
@@ -4051,6 +4126,8 @@ export class ModuleObject {
     try{ console.log('destroy', this.getTag(), this);}catch(e: any){}
     try{
       this.container.removeFromParent();
+
+      this.removeShadowBlob();
 
       if(this.model instanceof OdysseyModel3D){
         this.model.removeFromParent();

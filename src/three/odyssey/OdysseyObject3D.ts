@@ -39,7 +39,7 @@ export class OdysseyObject3D extends THREE.Object3D {
   lipping: boolean = false;
   
   emitter: OdysseyEmitter3D;
-  light: THREE.Light | OdysseyLight3D;
+  light: OdysseyLight3D;
   mesh: THREE.Mesh | THREE.SkinnedMesh;
 
   constructor( node: OdysseyModelNode = undefined ){

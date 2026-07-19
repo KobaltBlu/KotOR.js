@@ -4,12 +4,17 @@ import type { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimati
 import { OdysseyModelControllerType } from "@/enums/odyssey/OdysseyModelControllerType";
 import { IOdysseyControllerFrameGeneric } from "@/interface/odyssey/controller/IOdysseyControllerFrameGeneric";
 import { IOdysseyControllerGeneric } from "@/interface/odyssey/controller/IOdysseyControllerGeneric";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 
 /**
  * VerticalDisplacementController class.
- * 
+ *
+ * Animates PartLight vertical displacement (retail field5_0x64) added to
+ * light Z for shadow projection (ProjectDynamicShadow).
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file VerticalDisplacementController.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -23,11 +28,21 @@ export class VerticalDisplacementController extends OdysseyController {
   }
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
-    
+    if ((manager.modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+      const light = manager.modelNode.light as OdysseyLight3D;
+      if(light?.type === 'OdysseyLight'){
+        light.verticalDisplacement = data.value || 0;
+      }
+    }
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
-    
+    if ((manager.modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+      const light = manager.modelNode.light as OdysseyLight3D;
+      if(light?.type === 'OdysseyLight'){
+        light.verticalDisplacement = ((next.value - last.value) * fl + last.value) || 0;
+      }
+    }
   }
 
 }

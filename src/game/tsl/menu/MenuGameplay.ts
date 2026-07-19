@@ -100,8 +100,10 @@ export class MenuGameplay extends K1_MenuGameplay {
         e.stopPropagation();
         GameState.SWRuleSet.currentDifficulty = this.difficultyList.indexOf(this.selectedDifficulty);
         GameState.iniConfig.setProperty('Game Options.Difficulty Level', GameState.SWRuleSet.currentDifficulty);
+        void GameState.iniConfig.save();
         this.close();
       });
+      this._button_b = this.BTN_BACK;
 
       this.BTN_KEYMAP.addEventListener('click', (e) => {
         e.stopPropagation();

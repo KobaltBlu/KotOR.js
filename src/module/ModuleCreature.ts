@@ -822,7 +822,9 @@ export class ModuleCreature extends ModuleObject {
         Math.hypot(this.playerControl.velX, this.playerControl.velY) > 0;
       // Direct WASD/stick overrides path actions while axes are held. Keep
       // running the controller after release so retail drag can decelerate.
+      // Dialog mode still ticks creatures; sticky axes must not keep coasting.
       const usePlayerControl =
+        GameState.Mode != EngineMode.DIALOG &&
         (!!this.playerControl?.active || playerControlMoving) &&
         (this.controlled || this === GameState.getCurrentPlayer());
 
@@ -5352,6 +5354,8 @@ export class ModuleCreature extends ModuleObject {
       }
 
       this.model.disableMatrixUpdate();
+      const sizeCat = appearance.sizecategory ?? 3;
+      void this.applyShadowBlob(ModuleObject.shadowBlobResRefFromSizeCategory(sizeCat));
       return this.model;
     }catch(e){
       console.error(e);

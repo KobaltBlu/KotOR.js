@@ -172,7 +172,8 @@ export class CharGenClass extends GameMenu {
             });
           });
         },
-        manageLighting: false,
+        // Preview context owns its LightManager; keep manager registration on.
+        manageLighting: true,
         context: _3dView
       });
     });

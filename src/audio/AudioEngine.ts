@@ -151,6 +151,14 @@ export class AudioEngine {
   reverbEngine: ReverbEngine;
   reverbEnabled: boolean = false;
 
+  /**
+   * Retail CExoSoundInternal desired_ambient_scale (ARE room AmbientScale).
+   * Lerped toward target each update (~1 second to catch up, matching Render).
+   */
+  desiredAmbientScale: number = 1;
+  currentAmbientScale: number = 1;
+  private ambientScaleLerpFrom: number = 1;
+
   static get GAIN_MUSIC(){
     return AudioEngine.musicChannel.getGain();
   }
@@ -317,6 +325,17 @@ export class AudioEngine {
     }
   }
 
+  /**
+   * Retail CExoSound::SetDesiredAmbientScale — room AmbientScale from ARE.
+   * Applied as a volume multiplier on ambient emitters while lerping in update().
+   */
+  setDesiredAmbientScale(scale: number){
+    const next = Number.isFinite(scale) ? Math.max(0, scale) : 1;
+    if(next === this.desiredAmbientScale){ return; }
+    this.ambientScaleLerpFrom = this.currentAmbientScale;
+    this.desiredAmbientScale = next;
+  }
+
   update ( delta: number, position = new THREE.Vector3(), rotation = new THREE.Euler(), forward = new THREE.Vector3() ) {
     // Set listener position using modern AudioParam properties
     if(typeof this.audioCtx.listener.positionX !== 'undefined'){
@@ -337,6 +356,29 @@ export class AudioEngine {
       this.audioCtx.listener.upZ.value = 1;
     }else{
       this.audioCtx.listener.setOrientation(forward.x, forward.y, forward.z, 0, 0, 1);
+    }
+
+    // Retail CExoSoundInternal::Render ambient-scale lerp (dt * (desired - origin) per frame).
+    const dt = Math.min(0.1, Math.max(0, delta));
+    if(this.currentAmbientScale !== this.desiredAmbientScale){
+      let next = this.currentAmbientScale + dt * (this.desiredAmbientScale - this.ambientScaleLerpFrom);
+      if(this.ambientScaleLerpFrom < this.desiredAmbientScale){
+        next = Math.min(next, this.desiredAmbientScale);
+      }else{
+        next = Math.max(next, this.desiredAmbientScale);
+      }
+      this.currentAmbientScale = next;
+      this.ambientAudioDayEmitter.setVolume(this.currentAmbientScale);
+      this.ambientAudioNightEmitter.setVolume(this.currentAmbientScale);
+      // Refresh SFX emitter gains so ambient scale applies while they play.
+      if(this.emitters){
+        for(let i = 0, il = this.emitters.length; i < il; i++){
+          const em = this.emitters[i];
+          if(em?.gainNode && em.channel === AudioEngineChannel.SFX){
+            em.gainNode.gain.value = em.getVolume();
+          }
+        }
+      }
     }
 
     // Update reverb engine 3D positioning

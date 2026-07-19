@@ -3,6 +3,7 @@ import { WindManager } from "@/managers/WindManager";
 import { GFFObject } from "@/resource/GFFObject";
 import type { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
+import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
 import { AreaMap } from "@/module/AreaMap";
 import { AreaWeather } from "@/module/AreaWeather";
 import * as THREE from "three";
@@ -131,6 +132,8 @@ export class ModuleArea extends ModuleObject {
   areaOfEffects: ModuleAreaOfEffect[] = [];
   miniGame: ModuleMiniGame;
   walkmesh_rooms: ModuleRoom[] = [];
+  /** Reused list for updateRoomAnimatedLights (creatures/placeables/doors/…). */
+  private _lightingDynamicsScratch: Array<{ model?: unknown; position?: THREE.Vector3 }> = [];
 
   scriptResRefs: Map<AreaScriptKeys, string> = new Map<AreaScriptKeys, string>();
 
@@ -839,11 +842,14 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Apply retail sun/moon ambient + diffuse (+ fog/clear).
-   * Ambient → GameState.globalLight; diffuse → GameState.sunLight (gidy_sun_diff).
+   * Apply retail sun/moon directional ambient + diffuse (+ fog/clear).
+   * Scene light-model ambient stays ARE DynAmbientColor (see applyDynAmbient).
+   * sunAmbient → directional ambient channel; diffuse → OdysseyLightingBinder sunColor.
+   * Colors are applied directly — no invented intensity curves (CSWCArea::UpdateDayNightCycle @ 00606490).
+   * shadowAlpha / beamingProjectionAlpha remain on GameState for stencil shadows / beaming meshes.
    */
   applyLightingColors(
-    ambientColor: number,
+    sunAmbientColor: number,
     diffuseColor: number,
     fogColor: number,
     fogNear: number,
@@ -852,26 +858,29 @@ export class ModuleArea extends ModuleObject {
     shadowAlpha = this.shadowAlpha
   ){
     this.shadowAlpha = shadowAlpha;
-    GameState.shadowAlpha = this.shadowAlpha;
+    // Gate stencil/creature blobs on ARE SunShadows / MoonShadows for active period.
+    GameState.areaShadowsEnabled = this.lightingIsNight ? !!this.moon.shadows : !!this.sun.shadows;
+    GameState.shadowAlpha = GameState.areaShadowsEnabled ? this.shadowAlpha : 0;
     GameState.beamingProjectionAlpha = this.beamingProjectionAlpha;
 
-    if(GameState.globalLight){
-      GameState.globalLight.color.setRGB(
-        THREE.MathUtils.clamp((ambientColor & 0xFF) / 255, 0.15, 1),
-        THREE.MathUtils.clamp(((ambientColor >> 8) & 0xFF) / 255, 0.15, 1),
-        THREE.MathUtils.clamp(((ambientColor >> 16) & 0xFF) / 255, 0.15, 1),
-      );
-    }
+    // Keep DynAmbient as scene ambient (LoadArea → CAurScene::SetAmbient).
+    this.applyDynAmbient();
 
+    const sar = (sunAmbientColor & 0xFF) / 255;
+    const sag = ((sunAmbientColor >> 8) & 0xFF) / 255;
+    const sab = ((sunAmbientColor >> 16) & 0xFF) / 255;
+    GameState.sunAmbientColor.setRGB(sar, sag, sab);
+    OdysseyLightingBinder.setAreaSunAmbient(GameState.sunAmbientColor);
+
+    const dr = (diffuseColor & 0xFF) / 255;
+    const dg = ((diffuseColor >> 8) & 0xFF) / 255;
+    const db = ((diffuseColor >> 16) & 0xFF) / 255;
+    GameState.sunColor.setRGB(dr, dg, db);
+    OdysseyLightingBinder.setAreaSun(GameState.sunColor);
+    OdysseyLightingBinder.setAreaSunDirection(GameState.sunDirection.x, GameState.sunDirection.y, GameState.sunDirection.z);
     if(GameState.sunLight){
-      const dr = (diffuseColor & 0xFF) / 255;
-      const dg = ((diffuseColor >> 8) & 0xFF) / 255;
-      const db = ((diffuseColor >> 16) & 0xFF) / 255;
-      GameState.sunLight.color.setRGB(dr, dg, db);
-      // Dim diffuse at night; scale slightly by beaming during dawn/dusk.
-      const nightScale = this.lightingIsNight ? 0.35 : 0.85;
-      const beamBoost = 1 + this.beamingProjectionAlpha * 4;
-      GameState.sunLight.intensity = Math.max(0.05, nightScale * beamBoost * (1 - this.shadowAlpha * 0.35));
+      GameState.sunLight.color.copy(GameState.sunColor);
+      GameState.sunLight.intensity = 1;
     }
 
     if(fogOn){
@@ -890,6 +899,49 @@ export class ModuleArea extends ModuleObject {
 
     if(GameState.renderer){
       GameState.renderer.setClearColor(new THREE.Color(fogColor));
+    }
+
+    this.updateBeamingMaterials();
+  }
+
+  /**
+   * Retail LoadArea → CAurScene::SetAmbient(DynAmbientColor).
+   * This is the light-model ambient for dynamic objects — not sun/moon ambient.
+   */
+  applyDynAmbient(){
+    const c = this.dynamicAmbientColor | 0;
+    const ar = (c & 0xFF) / 255;
+    const ag = ((c >> 8) & 0xFF) / 255;
+    const ab = ((c >> 16) & 0xFF) / 255;
+    GameState.ambientColor.setRGB(ar, ag, ab);
+    OdysseyLightingBinder.setAreaAmbient(GameState.ambientColor);
+    if(GameState.globalLight){
+      GameState.globalLight.color.copy(GameState.ambientColor);
+      GameState.globalLight.intensity = 1;
+    }
+  }
+
+  /**
+   * Retail SetBeaming @ 0047147e — apply beamingProjectionAlpha to beaming meshes
+   * (additive blend color alpha during dawn/dusk).
+   */
+  updateBeamingMaterials(){
+    const alpha = this.beamingProjectionAlpha;
+    const rooms = this.rooms;
+    for(let i = 0, il = rooms.length; i < il; i++){
+      const room = rooms[i];
+      if(!room.model || !(room.model instanceof OdysseyModel3D)){ continue; }
+      for(let j = 0, jl = room.model.materials.length; j < jl; j++){
+        const material = room.model.materials[j];
+        if(!material?.userData?.beaming){ continue; }
+        if(material instanceof THREE.ShaderMaterial && material.uniforms?.opacity){
+          material.uniforms.opacity.value = alpha;
+        }else{
+          material.opacity = alpha;
+        }
+        material.visible = alpha > 0;
+        material.transparent = true;
+      }
     }
   }
 
@@ -972,36 +1024,34 @@ export class ModuleArea extends ModuleObject {
     for (let i = 0; i < this.creatures.length; i++) bindCreatureModel(this.creatures[i]);
     for (let i = 0; i < this.placeables.length; i++) bindCreatureModel(this.placeables[i]);
     for (let i = 0; i < this.doors.length; i++) bindCreatureModel(this.doors[i]);
+    for (let i = 0; i < this.items.length; i++) bindCreatureModel(this.items[i]);
   }
 
   /**
-   * Update room models width lightmaps to use animated lights
-   * Animated lights are the only lights that can influence lightmapped surfaces
-   * @param delta 
+   * Push packed Odyssey light + area ambient/sun uniforms to room and dynamic materials.
    */
   updateRoomAnimatedLights(delta: number = 0){
+    void delta;
 
     const lm = GameState.lightManager;
-    const animatedLightUniformStructList = lm.animatedLights;
-
-    const rooms = this.rooms;
-    for(let i = 0, il = rooms.length; i < il; i++){
-      const room = rooms[i];
-      if(!room.isVisible() || !room.model){ continue; }
-      if(!(room.model instanceof OdysseyModel3D)){ continue; }
-
-      for(let j = 0, jl = room.model.materials.length; j < jl; j++){
-        const material = room.model.materials[j];
-        if(!(material instanceof THREE.ShaderMaterial && !material.defines?.USE_LIGHTMAP)){ continue; }
-        if(material.userData.animatedLightCacheID == lm.animatedLightsCacheID){ continue; }
-        material.uniforms.animPointLights.value = animatedLightUniformStructList;
-        (material.uniforms.animPointLights as any).needsUpdate = true;
-        material.userData.animatedLightCacheID = lm.animatedLightsCacheID;
-        material.uniformsNeedUpdate = true;
-        material.defines.NUM_ANIM_POINT_LIGHTS = animatedLightUniformStructList.length.toString();
-        material.needsUpdate = true;
-      }
+    const camera = GameState.currentCamera;
+    // RenderOnlyGobs walks Scene.objects — creatures, placeables, doors, items,
+    // party members, and other model-bearing gobs that receive GetNearestLights.
+    const dynamics = this._lightingDynamicsScratch;
+    dynamics.length = 0;
+    for(let i = 0; i < this.creatures.length; i++) dynamics.push(this.creatures[i]);
+    for(let i = 0; i < this.placeables.length; i++) dynamics.push(this.placeables[i]);
+    for(let i = 0; i < this.doors.length; i++) dynamics.push(this.doors[i]);
+    for(let i = 0; i < this.items.length; i++) dynamics.push(this.items[i]);
+    for(let i = 0; i < this.areaOfEffects.length; i++) dynamics.push(this.areaOfEffects[i]);
+    const party = GameState.PartyManager?.party;
+    if(party){
+      for(let i = 0; i < party.length; i++) dynamics.push(party[i]);
     }
+    if(GameState.player){
+      dynamics.push(GameState.player);
+    }
+    OdysseyLightingBinder.bindArea(lm, this.rooms, dynamics, camera);
   }
 
   updateMusic(delta: number = 0){
@@ -1243,6 +1293,10 @@ export class ModuleArea extends ModuleObject {
         if(this.lastRoom?.envAudio >= 0){
           AudioEngine.GetAudioEngine().setReverbProfile(this.lastRoom?.envAudio || 0);
         }
+        // Retail UpdateRoom @ 005ee860 — AmbientScale drives audio, not lighting.
+        if(this.lastRoom && Number.isFinite(this.lastRoom.ambientScale)){
+          AudioEngine.GetAudioEngine().setDesiredAmbientScale(this.lastRoom.ambientScale);
+        }
 
         //Reset all room's visibility to hidden
         const roomCount = this.rooms.length;
@@ -1335,6 +1389,7 @@ export class ModuleArea extends ModuleObject {
     this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
     this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
     this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
+    this.applyDynAmbient();
     this.expansionList = [];
 
     this.flags = this.are.getFieldByLabel('Flags').getValue();

@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { GameState } from "@/GameState";
 import type { LightManager } from "@/managers";
-import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyModel3D, OdysseyLightingBinder } from "@/three/odyssey";
 import type { GUIControl } from "@/gui/GUIControl";
 
 /**
@@ -37,6 +37,11 @@ export class LBL_3DView {
   control: any;
   frustumMat4: THREE.Matrix4;
   viewportFrustum: THREE.Frustum;
+  /**
+   * PrioritizeLights focus (retail Scene.focus_position, default origin).
+   * GUI gobs score / GetNearestLights against the subject, not the camera.
+   */
+  lightFocus = new THREE.Vector3(0, 0, 0);
 
   constructor(width: number = 800, height: number = 600){
 
@@ -59,7 +64,6 @@ export class LBL_3DView {
     this.globalLight.position.y = 0;
     this.globalLight.position.z = 0;
     this.globalLight.intensity  = 1;
-
     //this.scene.add(this.globalLight);
     this.camera.up = new THREE.Vector3( 0, 0, 1 );
     this.camera.updateProjectionMatrix();
@@ -80,6 +84,10 @@ export class LBL_3DView {
     this.scene.add(this.group.creatures);
 
     this.lightManager.init(this);
+    // GUI 3D views have no ARE DynAmbientColor — scene ambient stays black so
+    // authored model lights (and their quadratic falloff) create the mood.
+    this.lightManager.setAreaAmbient(0, 0, 0);
+    this.lightManager.setAreaSun(0, 0, 0);
   }
 
   setControl(control: GUIControl){
@@ -146,7 +154,21 @@ export class LBL_3DView {
     if(this.currentCamera){
       this.frustumMat4.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse )
       this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
-      this.lightManager.update(delta, this.currentCamera);
+      // Score lights vs subject focus (Scene.focus_position, default origin).
+      this.lightManager.update(delta, { position: this.lightFocus });
+      // Mainmenu is an AddModel gob: GetNearestLights around focus (not room globals).
+      for(let i = 0; i < this.scene.children.length; i++){
+        const element = this.scene.children[i];
+        if(element instanceof OdysseyModel3D){
+          OdysseyLightingBinder.bindSceneModel(
+            this.lightManager,
+            element,
+            this.currentCamera,
+            this.lightFocus,
+            'gob'
+          );
+        }
+      }
     }
 
     let oldClearColor = new THREE.Color()

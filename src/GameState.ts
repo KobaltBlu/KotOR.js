@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import {
   AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
-  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
+  FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, ShadowBlobManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, GuiTimingBarManager, GameOverManager, CutsceneManager, LegalScreenManager, EventManager
 } from "@/managers";
@@ -66,6 +66,7 @@ import type { IPCMessage } from "@/server/ipc/IPCMessage";
 import { IPCMessageType } from "@/enums/server/ipc/IPCMessageType";
 import { IPCMessageTypeDebug } from "@/enums/server/ipc/IPCMessageTypeDebug";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
+import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
 
 export interface GameStateInitializeOptions {
   Game: GameEngineType,
@@ -243,6 +244,7 @@ export class GameState implements EngineContext {
   static stats: Stats;
 
   static lightManager: LightManager;
+  static shadowBlobManager: ShadowBlobManager;
   static windManager: WindManager;
 
   static visible: boolean;
@@ -266,13 +268,25 @@ export class GameState implements EngineContext {
   static viewportFrustum: THREE.Frustum;
   static viewportProjectionMatrix: THREE.Matrix4;
 
-  //GameState properties
-  static globalLight: THREE.AmbientLight;
-  /** Retail Aurora sun diffuse channel (`gidy_sun_diff`). */
-  static sunLight: THREE.DirectionalLight;
-  /** Retail global `shadowAlpha` (0–1) from day/night cycle. */
+  // Scene light-model ambient = ARE DynAmbientColor (CAurScene::SetAmbient @ LoadArea).
+  // Sun/moon ambient = directional light ambient channel; diffuse = gidy_sun_diff.
+  static ambientColor = new THREE.Color(0xFFFFFF);
+  static sunAmbientColor = new THREE.Color(0x000000);
+  static sunColor = new THREE.Color(0xFFFFFF);
+  /** Direction toward retail gidy_sun at (4000, 4500, 7000) — LoadArea. */
+  static sunDirection = new THREE.Vector3(4000, 4500, 7000).normalize();
+  /** @deprecated Use ambientColor — kept for rare debug callers. */
+  static globalLight: { color: THREE.Color; intensity: number } | undefined;
+  /** @deprecated Use sunColor — kept for rare debug callers. */
+  static sunLight: { color: THREE.Color; intensity: number; position: THREE.Vector3 } | undefined;
+  /** Retail global `shadowAlpha` (0–1) from day/night cycle — stencil shadow darkness. */
   static shadowAlpha = 0;
-  /** Retail global `beamingProjectionAlpha` (0–0.05) from dawn/dusk. */
+  /**
+   * ARE SunShadows / MoonShadows for the active day/night lighting period.
+   * When false, stencil disks and creature Fx_Shadow blobs are hidden.
+   */
+  static areaShadowsEnabled = true;
+  /** Retail global `beamingProjectionAlpha` (0–0.05) from dawn/dusk — SetBeaming blend alpha. */
   static beamingProjectionAlpha = 0;
   static currentLeader: ModuleCreature;
   static playerFeetOffset: THREE.Vector3;
@@ -532,6 +546,8 @@ export class GameState implements EngineContext {
     });
 
     GameState.lightManager = new GameState.LightManager();
+    OdysseyLightingBinder.setActiveManager(GameState.lightManager);
+    GameState.shadowBlobManager = new ShadowBlobManager();
     GameState.windManager = new GameState.WindManager();
     WindManager.setInstance(GameState.windManager);
     GameState.processEventListener('init');
@@ -557,16 +573,25 @@ export class GameState implements EngineContext {
 
     GameState.canvas.style.setProperty('width', '0');
     GameState.canvas.style.setProperty('height', '0');
-    GameState.context = GameState.canvas.getContext( 'webgl' );
 
     GameState.rendererUpscaleFactor = 1;
+    // Request stencil up front for retail-equivalent shadow disks. Attributes
+    // must be set on the first getContext call for the canvas.
+    GameState.context = GameState.canvas.getContext('webgl', {
+      antialias: false,
+      alpha: true,
+      depth: true,
+      stencil: true,
+      preserveDrawingBuffer: false,
+    }) as WebGLRenderingContext;
     GameState.renderer = new THREE.WebGLRenderer({
       antialias: false,
       canvas: GameState.canvas,
       context: GameState.context,
       logarithmicDepthBuffer: true,
       alpha: true,
-      preserveDrawingBuffer: false
+      preserveDrawingBuffer: false,
+      stencil: true,
     }) as THREE.WebGLRenderer;
 
     
@@ -633,20 +658,17 @@ export class GameState implements EngineContext {
     GameState.viewportFrustum = new THREE.Frustum();
     GameState.viewportProjectionMatrix = new THREE.Matrix4();
 
-    //0x60534A
-    GameState.globalLight = new THREE.AmbientLight(0xFFFFFF);
-    GameState.globalLight.position.x = 0;
-    GameState.globalLight.position.y = 0;
-    GameState.globalLight.position.z = 0;
-    GameState.globalLight.intensity  = 1;
-    GameState.scene.add(GameState.globalLight);
-
-    // Aurora sun diffuse — Z-up directional fill matching retail gidy_sun_diff
-    GameState.sunLight = new THREE.DirectionalLight(0xFFFFFF, 0.85);
-    GameState.sunLight.position.set(0.35, -0.25, 1);
-    GameState.sunLight.target.position.set(0, 0, 0);
-    GameState.scene.add(GameState.sunLight);
-    GameState.scene.add(GameState.sunLight.target);
+    // DynAmbient + sun ambient/diffuse — OdysseyLightingBinder (no THREE lights)
+    GameState.ambientColor.setRGB(1, 1, 1);
+    GameState.sunAmbientColor.setRGB(0, 0, 0);
+    GameState.sunColor.setRGB(1, 1, 1);
+    GameState.sunDirection.set(4000, 4500, 7000).normalize();
+    GameState.globalLight = { color: GameState.ambientColor, intensity: 1 };
+    GameState.sunLight = { color: GameState.sunColor, intensity: 1, position: GameState.sunDirection };
+    OdysseyLightingBinder.setAreaAmbient(GameState.ambientColor);
+    OdysseyLightingBinder.setAreaSunAmbient(GameState.sunAmbientColor);
+    OdysseyLightingBinder.setAreaSun(GameState.sunColor);
+    OdysseyLightingBinder.setAreaSunDirection(GameState.sunDirection.x, GameState.sunDirection.y, GameState.sunDirection.z);
 
     GameState.currentLeader = undefined;
     GameState.playerFeetOffset = new THREE.Vector3(0,0,1);
@@ -720,6 +742,20 @@ export class GameState implements EngineContext {
 
     //BEGIN: PostProcessing
     GameState.composer = new EffectComposer(GameState.renderer);
+    // Enable stencil on composer targets for retail-equivalent shadow disks.
+    const composerRT = {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+      depthBuffer: true,
+      stencilBuffer: true,
+    };
+    const w = GameState.ResolutionManager.getViewportWidth();
+    const h = GameState.ResolutionManager.getViewportHeight();
+    GameState.composer.renderTarget1 = new THREE.WebGLRenderTarget(w, h, composerRT);
+    GameState.composer.renderTarget2 = GameState.composer.renderTarget1.clone();
+    GameState.composer.writeBuffer = GameState.composer.renderTarget1;
+    GameState.composer.readBuffer = GameState.composer.renderTarget2;
     GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
     GameState.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
     GameState.odysseyShaderPass = new OdysseyShaderPass();
@@ -817,6 +853,7 @@ export class GameState implements EngineContext {
        * Initialize the LightManager
        */
       GameState.lightManager.init(GameState);
+      GameState.shadowBlobManager.init(GameState.lightManager, GameState.scene);
       GameState.windManager.init(GameState);
       GameState.lightManager.setLightHelpersVisible(ConfigClient.get('GameState.debug.light_helpers') ? true : false);
 
@@ -1396,6 +1433,7 @@ export class GameState implements EngineContext {
     GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
+    GameState.shadowBlobManager.update(GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
@@ -1439,6 +1477,7 @@ export class GameState implements EngineContext {
     GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.currentCamera);
+    GameState.shadowBlobManager.update(GameState.currentCamera?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
@@ -1475,6 +1514,7 @@ export class GameState implements EngineContext {
     GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
+    GameState.shadowBlobManager.update(GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
     GameState.module.area.updateRoomWindUniforms();
@@ -1527,6 +1567,7 @@ export class GameState implements EngineContext {
     GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
+    GameState.shadowBlobManager.update(GameState.getCurrentPlayer()?.position ?? GameState.currentCameraPosition);
     GameState.windManager.update(delta);
     if(GameState.module?.area){
       GameState.module.area.updateRoomAnimatedLights(delta);
@@ -1547,7 +1588,31 @@ export class GameState implements EngineContext {
     GameState.bokehPass.camera = GameState.currentCamera;
 
     GameState.renderDepthPrepass();
-    GameState.composer.render(delta);
+
+    // Orchestrate stencil-preserving clear for shadow disks:
+    // 1) clear color/depth/stencil into the composer write buffer
+    // 2) write caster masks (colorWrite disabled)
+    // 3) clear color/depth only, preserving stencil
+    // 4) render composer with RenderPass.clear = false
+    const renderer = GameState.renderer;
+    const composer = GameState.composer;
+    const prevTarget = renderer.getRenderTarget();
+    const prevRenderPassClear = GameState.renderPass.clear;
+    if(GameState.shadowBlobManager && GameState.currentCamera && composer?.writeBuffer){
+      renderer.setRenderTarget(composer.writeBuffer);
+      renderer.clear(true, true, true);
+      GameState.shadowBlobManager.renderStencilMasks(
+        renderer,
+        GameState.scene,
+        GameState.currentCamera,
+        false
+      );
+      renderer.clear(true, true, false);
+      GameState.renderPass.clear = false;
+    }
+    composer.render(delta);
+    GameState.renderPass.clear = prevRenderPassClear;
+    renderer.setRenderTarget(prevTarget);
   }
 
   /**

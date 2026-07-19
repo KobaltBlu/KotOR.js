@@ -323,8 +323,8 @@ export class TextureLoader {
               tex.material.uniforms.map.value.updateMatrix();
             }
             tex.material.defines.USE_LIGHTMAP = '';
-            tex.material.defines.USE_ENVMAP = '';
-            tex.material.defines.ENVMAP_TYPE_CUBE = '';
+            // Do not enable USE_ENVMAP here — lightmaps are independent of cubemaps,
+            // and a null envMap with reflectivity=1 can corrupt shading.
             delete tex.material.defines.IGNORE_LIGHTING;
             tex.material.defines.AURORA = "";
             tex.material.uniformsNeedUpdate = true;

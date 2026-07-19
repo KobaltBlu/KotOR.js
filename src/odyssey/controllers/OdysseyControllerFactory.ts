@@ -31,6 +31,8 @@ import { LightningSubDivController } from "@/odyssey/controllers/LightningSubDiv
 import { LightningZigZagController } from "@/odyssey/controllers/LightningZigZagController";
 import { MassController } from "@/odyssey/controllers/MassController";
 import { MultiplierController } from "@/odyssey/controllers/MultiplierController";
+import { ShadowRadiusController } from "@/odyssey/controllers/ShadowRadiusController";
+import { VerticalDisplacementController } from "@/odyssey/controllers/VerticalDisplacementController";
 import { OrientationController } from "@/odyssey/controllers/OrientationController";
 import { P2PBezier2Controller } from "@/odyssey/controllers/P2PBezier2Controller";
 import { P2PBezier3Controller } from "@/odyssey/controllers/P2PBezier3Controller";
@@ -101,6 +103,10 @@ export class OdysseyControllerFactory {
           return new RadiusController(controller);
         case OdysseyModelControllerType.Multiplier:
           return new MultiplierController(controller);
+        case OdysseyModelControllerType.ShadowRadius:
+          return new ShadowRadiusController(controller);
+        case OdysseyModelControllerType.VerticalDisplacement:
+          return new VerticalDisplacementController(controller);
       }
     }
 

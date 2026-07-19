@@ -79,8 +79,10 @@ export class MenuGameplay extends GameMenu {
         e.stopPropagation();
         GameState.SWRuleSet.currentDifficulty = this.difficultyList.indexOf(this.selectedDifficulty);
         GameState.iniConfig.setProperty('Game Options.Difficulty Level', GameState.SWRuleSet.currentDifficulty);
+        void GameState.iniConfig.save();
         this.close();
       });
+      this._button_b = this.BTN_BACK;
 
       this.BTN_KEYMAP.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -133,9 +135,18 @@ export class MenuGameplay extends GameMenu {
       }
       
       this.difficultyList.push(row);
-      if(row.desc === 'Normal'){
-        this.selectedDifficulty = row;
-      }
+    }
+
+    const saved = Number(GameState.iniConfig.getProperty('Game Options.Difficulty Level'));
+    const idx = Number.isFinite(saved)
+      ? saved
+      : (GameState.SWRuleSet.currentDifficulty ?? 1);
+    this.selectedDifficulty =
+      this.difficultyList[idx] ??
+      this.difficultyList[1] ??
+      this.difficultyList[0];
+    if(this.selectedDifficulty){
+      GameState.SWRuleSet.currentDifficulty = this.difficultyList.indexOf(this.selectedDifficulty);
     }
     this.updateSelectedDifficulty();
   }

@@ -41,18 +41,15 @@ import { WindManager } from "@/managers/WindManager";
 import { GameState } from "@/GameState";
 import { createNodeParseContext, type NodeParseContext } from "@/three/odyssey/OdysseyModel3DNodeParseContext";
 import { parseOdysseyNode } from "@/three/odyssey/OdysseyModel3DNodeParser";
+import {
+  createEmptyOdysseyLightPosArray,
+  createEmptyOdysseyLightColorArray,
+} from "@/shaders/chunks/OdysseyLighting";
 
 export { resolveDanglyWindPower } from "@/three/odyssey/windPowerContext";
 export type { NodeParseContext, NodeParseFlags, OdysseyModel3DParseBuilders } from "@/three/odyssey/OdysseyModel3DNodeParseContext";
 export { createNodeParseContext } from "@/three/odyssey/OdysseyModel3DNodeParseContext";
 export { parseOdysseyNode } from "@/three/odyssey/OdysseyModel3DNodeParser";
-
-function odysseyOnBeforeCompile(this: THREE.ShaderMaterial, shader: any) {
-  const lightCount = this.uniforms.animPointLights.value.length;
-  const numAnimatedLights = (lightCount || 0).toString();
-  shader.vertexShader = shader.vertexShader.replace( /NUM_ANIM_POINT_LIGHTS/g, numAnimatedLights.toString() );
-  shader.fragmentShader = (numAnimatedLights > 0 ? `#define NUM_ANIM_POINT_LIGHTS ${numAnimatedLights}\n #define USE_ANIMATED_LIGHTS\n` : '') + shader.fragmentShader.replace( /NUM_ANIM_POINT_LIGHTS/g, numAnimatedLights.toString() );
-}
 
 /**
  * OdysseyModel3D class.
@@ -889,16 +886,44 @@ export class OdysseyModel3D extends OdysseyObject3D {
                 data.y, 
                 data.z
               );
+              const colorLight = (modelNode as any).light as OdysseyLight3D | undefined;
+              if(colorLight){
+                colorLight.color.setRGB(data.x, data.y, data.z);
+              }
             }
           break;
           case OdysseyModelControllerType.Multiplier:
             if ((modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
               (modelNode.odysseyModelNode as OdysseyModelNodeLight).multiplier = data.value;
+              const multLight = (modelNode as any).light as OdysseyLight3D | undefined;
+              if(multLight){
+                multLight.multiplier = data.value;
+              }
             }
           break;
           case OdysseyModelControllerType.Radius:
             if ((modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
               (modelNode.odysseyModelNode as OdysseyModelNodeLight).radius = data.value;
+              const radiusLight = (modelNode as any).light as OdysseyLight3D | undefined;
+              if(radiusLight){
+                radiusLight.radius = data.value;
+              }
+            }
+          break;
+          case OdysseyModelControllerType.ShadowRadius:
+            if ((modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+              const shadowLight = (modelNode as any).light as OdysseyLight3D | undefined;
+              if(shadowLight){
+                shadowLight.shadowRadius = data.value;
+              }
+            }
+          break;
+          case OdysseyModelControllerType.VerticalDisplacement:
+            if ((modelNode.odysseyModelNode.nodeType & OdysseyModelNodeType.Light) == OdysseyModelNodeType.Light) {
+              const dispLight = (modelNode as any).light as OdysseyLight3D | undefined;
+              if(dispLight){
+                dispLight.verticalDisplacement = data.value;
+              }
             }
           break;
         }
@@ -944,7 +969,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         vertexShader: THREE.ShaderLib.odyssey.vertexShader,
         uniforms: THREE.UniformsUtils.clone(THREE.ShaderLib.odyssey.uniforms),
         side:THREE.FrontSide,
-        lights: true,
+        lights: false,
         fog: true,
         skinning: true
       } as any);
@@ -952,8 +977,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
       skinMaterial.defines.AURORA = '';
       skinMaterial.defines.USE_UV = '';
       skinMaterial.defines.USE_SKINNING = '';
+      skinMaterial.defines.MAX_ODYSSEY_LIGHTS = '8';
       skinMaterial.uniforms.diffuse.value.r = 0.5;
-      skinMaterial.onBeforeCompile = odysseyOnBeforeCompile.bind(skinMaterial);
 
       // skinMaterial.opacity = 0.5;
       // skinMaterial.transparent = true;
@@ -1491,11 +1516,20 @@ export class OdysseyModel3D extends OdysseyObject3D {
         vertexShader: THREE.ShaderLib.odyssey.vertexShader,
         uniforms: THREE.UniformsUtils.clone(THREE.ShaderLib.odyssey.uniforms),
         side: THREE.FrontSide,
-        lights: true,
+        lights: false,
         fog: odysseyModel.affectedByFog,
       });
 
       if(material instanceof THREE.ShaderMaterial){
+        // Detach Vector4 light slots aliased by UniformsUtils.clone(ShaderLib).
+        if(material.uniforms.odysseyLightPos){
+          material.uniforms.odysseyLightPos.value = createEmptyOdysseyLightPosArray();
+          material.userData.odysseyLightPosOwned = true;
+        }
+        if(material.uniforms.odysseyLightColor){
+          material.uniforms.odysseyLightColor.value = createEmptyOdysseyLightColorArray();
+          material.userData.odysseyLightColorOwned = true;
+        }
         material.uniforms.shininess.value = 0.0000001;
         material.extensions.derivatives = true;
         //material.extensions.fragDepth = true;
@@ -1510,6 +1544,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
         material.uniforms.time.value = options?.context?.time || 0;
         material.defines = material.defines || {};
         material.defines.AURORA = "";
+        material.defines.MAX_ODYSSEY_LIGHTS = "8";
 
         if(options.isForceShield){
           material.defines.FORCE_SHIELD = "";
@@ -1533,7 +1568,18 @@ export class OdysseyModel3D extends OdysseyObject3D {
             material.uniforms.selfIllumColor.value.setRGB(frame.x, frame.y, frame.z);
           }
         }
-        material.onBeforeCompile = odysseyOnBeforeCompile.bind(material);
+
+        // Retail SetBeaming @ 0047147e — beaming meshes use beamingProjectionAlpha as blend alpha.
+        if(odysseyNode.beaming){
+          material.userData.beaming = true;
+          material.transparent = true;
+          material.blending = THREE.AdditiveBlending;
+          material.depthWrite = false;
+          if(material.uniforms.opacity){
+            material.uniforms.opacity.value = 0;
+          }
+          material.visible = false;
+        }
       }
 
       if(!odysseyNode.flagRender && !((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB)){
@@ -1633,68 +1679,49 @@ export class OdysseyModel3D extends OdysseyObject3D {
     return material;
   };
 
-  static NodeLightBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeLight, options: IOdysseyModelLoaderOptions): THREE.Light|OdysseyLight3D {
+  static NodeLightBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Object3D, odysseyNode: OdysseyModelNodeLight, options: IOdysseyModelLoaderOptions): OdysseyLight3D {
 
-    // odysseyNode.color = new THREE.Color(0xFFFFFF);
-    // odysseyNode.radius = 5.0;
-    // odysseyNode.intensity = 1.0;
-    // odysseyNode.multiplier = 1.0;
+    const lightNode = new OdysseyLight3D(odysseyNode);
+    lightNode.odysseyModel = odysseyModel;
+    lightNode.isAnimated = odysseyNode.isAnimDummyNode;
+    lightNode.name = (odysseyNode.name || '').toLowerCase();
+    // Parent OdysseyObject3D already owns the node transform (parser sets
+    // position/quaternion). Keep the light at local origin so world position
+    // is not doubled.
+    lightNode.position.set(0, 0, 0);
+    parentNode.add(lightNode);
 
-    //if(GameKey != "TSL"){
-    //  odysseyNode.intensity = odysseyNode.intensity > 1 ? odysseyNode.intensity * .01 : odysseyNode.intensity;
-    //}else{
-      // odysseyNode.intensity = odysseyNode.intensity * odysseyNode.multiplier;// > 1 ? odysseyNode.intensity * .01 : odysseyNode.intensity;
-    //}
+    lightNode.parentUUID = odysseyModel.uuid;
+    lightNode.userData.odysseyModel = odysseyModel;
+    lightNode.userData.odysseyNode = odysseyNode;
 
-    let lightNode: THREE.Light|OdysseyLight3D;
-
-    if(!options.manageLighting){
-      if(odysseyNode.ambientFlag){
-        lightNode = new THREE.AmbientLight( odysseyNode.color );
-        lightNode.intensity = odysseyNode.multiplier * 0.5;
-      }else{
-        lightNode = new THREE.PointLight( odysseyNode.color, 1, 1, 1 );
-        (lightNode.shadow.camera as any).far = odysseyNode.radius;
-      }
-      lightNode.userData = {
-        decay: 1,
-        controllers: odysseyNode.controllers,
-        helper: { visiable: false },
-      }
-      lightNode.visible = true;
-
-      lightNode.userData.radius = 5.0;
-      lightNode.userData.multiplier = 1;
-      lightNode.intensity = 1;
-      
-      parentNode.add(lightNode);
-      OdysseyModel3D.NodeLensflareBuilder(odysseyModel, lightNode, odysseyNode, options);
-    }else{
-      lightNode = new OdysseyLight3D(odysseyNode);
-      lightNode.odysseyModel = odysseyModel;
-      lightNode.isAnimated = odysseyNode.isAnimDummyNode;
-      lightNode.position.copy(odysseyNode.position);
-      parentNode.add(lightNode);
-
-      lightNode.parentUUID = odysseyModel.uuid;
-      lightNode.userData.odysseyModel = odysseyModel;
-      lightNode.userData.odysseyNode = odysseyNode;
-  
-      lightNode.priority = odysseyNode.lightPriority;
-      lightNode.isAmbient = odysseyNode.ambientFlag ? true : false;
-      lightNode.isDynamic = odysseyNode.dynamicFlag ? true : false;
-      lightNode.affectDynamic = odysseyNode.affectDynamicFlag ? true : false;
-      lightNode.castShadow = odysseyNode.shadowFlag ? true : false;
-      lightNode.genFlare = odysseyNode.generateFlareFlag ? true : false;
-      lightNode.isFading = odysseyNode.fadingLightFlag;
-      lightNode.maxIntensity = 1;
-      lightNode.color = odysseyNode.color;
-      OdysseyModel3D.NodeLensflareBuilder(odysseyModel, lightNode, odysseyNode, options);
-      if(!!odysseyModel.context && !!odysseyModel.context.lightManager){
-        odysseyModel.context.lightManager.addLight(lightNode);
-      }
+    lightNode.priority = odysseyNode.lightPriority;
+    lightNode.authoredPriority = odysseyNode.lightPriority;
+    lightNode.isAmbient = odysseyNode.ambientFlag ? true : false;
+    lightNode.dynamicType = odysseyNode.dynamicFlag | 0;
+    lightNode.isDynamic = lightNode.dynamicType !== 0;
+    lightNode.affectDynamic = odysseyNode.affectDynamicFlag ? true : false;
+    lightNode.castShadow = odysseyNode.shadowFlag ? true : false;
+    lightNode.genFlare = odysseyNode.generateFlareFlag ? true : false;
+    lightNode.isFading = odysseyNode.fadingLightFlag;
+    // ControlLightsFade: fadingLightFlag → initial fade 0, else 1
+    lightNode.fadeFactor = odysseyNode.fadingLightFlag ? 0 : 1;
+    lightNode.shadowFadeFactor = 0;
+    lightNode.maxIntensity = 1;
+    lightNode.color = odysseyNode.color;
+    lightNode.radius = odysseyNode.radius || 0;
+    lightNode.multiplier = odysseyNode.multiplier || 0;
+    lightNode.shadowRadius = 0;
+    lightNode.verticalDisplacement = 0;
+    OdysseyModel3D.NodeLensflareBuilder(odysseyModel, lightNode, odysseyNode, options);
+    // manageLighting defaults true: register with the context LightManager.
+    // false keeps the OdysseyLight3D model-local (no manager registration).
+    const manageLighting = options?.manageLighting !== false;
+    if(manageLighting && !!odysseyModel.context?.lightManager){
+      odysseyModel.context.lightManager.addLight(lightNode);
     }
-    
+    (parentNode as any).light = lightNode;
+
     odysseyNode.controllers.forEach( (controller) => {
       switch(controller.type){
         case OdysseyModelControllerType.Color:
@@ -1704,25 +1731,16 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //odysseyNode.position.set(controller.data[0].x, controller.data[0].y, controller.data[0].z);
         break;
         case OdysseyModelControllerType.Radius:
-          if(lightNode instanceof THREE.PointLight){
-            lightNode.userData.radius = controller.data[0].value;
-            lightNode.distance = lightNode.userData.radius * lightNode.userData.multiplier;
-          }else if(lightNode instanceof THREE.AmbientLight){
-            //Not supported on AmbientLights
-          }else if(lightNode instanceof OdysseyLight3D){
-            lightNode.radius = controller.data[0].value;
-          }
+          lightNode.radius = controller.data[0].value;
         break;
         case OdysseyModelControllerType.Multiplier:
-          if(lightNode instanceof THREE.PointLight){
-            lightNode.userData.multiplier = controller.data[0].value;
-            lightNode.distance = lightNode.userData.radius * lightNode.userData.multiplier;
-          }else if(lightNode instanceof THREE.AmbientLight){
-            lightNode.userData.multiplier = controller.data[0].value;
-            lightNode.intensity = lightNode.userData.multiplier * 0.5;
-          }else if(lightNode instanceof OdysseyLight3D){
-            lightNode.multiplier = controller.data[0].value;
-          }
+          lightNode.multiplier = controller.data[0].value;
+        break;
+        case OdysseyModelControllerType.ShadowRadius:
+          lightNode.shadowRadius = controller.data[0].value;
+        break;
+        case OdysseyModelControllerType.VerticalDisplacement:
+          lightNode.verticalDisplacement = controller.data[0].value;
         break;
       }
     });
@@ -1730,7 +1748,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     return lightNode;
   };
 
-  static NodeLensflareBuilder(odysseyModel: OdysseyModel3D, parentNode: THREE.Light|OdysseyLight3D, odysseyNode: OdysseyModelNodeLight, options: IOdysseyModelLoaderOptions){
+  static NodeLensflareBuilder(odysseyModel: OdysseyModel3D, parentNode: OdysseyLight3D, odysseyNode: OdysseyModelNodeLight, options: IOdysseyModelLoaderOptions){
     if(odysseyNode.flare.radius){
       let lensFlare = new Lensflare();
 
@@ -1740,11 +1758,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
         });
       }
 
-      if(!options.manageLighting){
-        //parentNode.add(lensFlare);
-      }else{
-        parentNode.userData.lensFlare = lensFlare;
-      }
+      parentNode.userData.lensFlare = lensFlare;
+      parentNode.add(lensFlare);
     }
   }
 

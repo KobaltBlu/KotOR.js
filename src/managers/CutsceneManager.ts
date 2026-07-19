@@ -107,6 +107,22 @@ export class CutsceneManager {
     return this.dialogNonDependantNames.has(participant.toLocaleLowerCase());
   }
 
+  /**
+   * Cancel path movers and zero cam-relative WASD/stick state on the active party.
+   * Dialog mode still ticks creatures; sticky axes otherwise keep the PC coasting.
+   */
+  static stopPartyLocomotionForDialog() {
+    const party = GameState.PartyManager?.party;
+    if(!party?.length) return;
+    for(let i = 0; i < party.length; i++){
+      const member = party[i];
+      if(!BitWise.InstanceOfObject(member, ModuleObjectType.ModuleCreature)) continue;
+      const creature = member as ModuleCreature;
+      creature.cancelLocomotionActions();
+      creature.clearLocomotionState(true);
+    }
+  }
+
   static startConversation(
     dialog: DLGObject,
     owner: ModuleObject,
@@ -175,6 +191,10 @@ export class CutsceneManager {
       this.endConversation();
       return;
     }
+
+    // Stop party locomotion before DIALOG mode. Cam-relative axes/velocity stay
+    // sticky after key-map switch, and module still ticks during dialog.
+    this.stopPartyLocomotionForDialog();
     
     GameState.SetEngineMode(EngineMode.DIALOG);
     

@@ -29,7 +29,7 @@ export class OdysseyMaterialBuilder {
       vertexShader: (THREE.ShaderLib as any).odyssey.vertexShader,
       uniforms,
       side: THREE.DoubleSide,
-      lights: true,
+      lights: false,
       fog: false,
       transparent: false,
     });
@@ -38,6 +38,7 @@ export class OdysseyMaterialBuilder {
     material.defines.AURORA = "";
     material.defines.USE_UV = "";
     material.defines.USE_MAP = "";
+    material.defines.MAX_ODYSSEY_LIGHTS = "8";
     return material;
   }
 

@@ -657,6 +657,8 @@ export class ModulePlaceable extends ModuleObject {
       this.container.add(this.model);
 
       this.model.disableMatrixUpdate();
+      const shadowSize = this.getAppearance()?.shadowsize ?? 1;
+      void this.applyShadowBlob(ModuleObject.shadowBlobResRefFromPlaceableShadowSize(shadowSize));
     }catch(e){
       console.error(e);
     }

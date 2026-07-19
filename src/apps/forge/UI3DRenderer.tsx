@@ -1024,13 +1024,16 @@ export class UI3DRenderer extends EventListenerModel {
       this.globalLight.removeFromParent();
       this.globalLight.dispose();
     }
-    this.globalLight = new THREE.AmbientLight(0x7F7F7F); //0x60534A
+    // Odyssey materials use OdysseyLightingBinder (lights:false); keep a debug AmbientLight
+    // only for non-Odyssey helpers that still use Mesh*Material with lights.
+    this.globalLight = new THREE.AmbientLight(0x7F7F7F);
     this.globalLight.name = 'Ambient Light';
-    this.globalLight.position.x = 0;
-    this.globalLight.position.y = 0;
-    this.globalLight.position.z = 0;
-    this.globalLight.intensity  = 1;
+    this.globalLight.position.set(0, 0, 0);
+    this.globalLight.intensity = 1;
     this.lights.add(this.globalLight);
+    // Preview ambient/sun live on this renderer's LightManager.
+    this.lightManager.setAreaAmbient(0.5, 0.5, 0.5);
+    this.lightManager.setAreaSun(0.35, 0.35, 0.35);
   }
 
   private buildScene(){
@@ -1204,6 +1207,11 @@ export class UI3DRenderer extends EventListenerModel {
         this.frustumMat4.multiplyMatrices( this.currentCamera.projectionMatrix, this.currentCamera.matrixWorldInverse )
         this.viewportFrustum.setFromProjectionMatrix(this.frustumMat4);
         this.lightManager.update(delta, this.currentCamera);
+        this.selectable.traverse((obj: any) => {
+          if(obj?.materials && typeof obj.update === 'function'){
+            KotOR.OdysseyLightingBinder.bindSceneModel(this.lightManager, obj, this.currentCamera);
+          }
+        });
       }
 
       // Soft-particle depth (DEPTH_TEXTURE emitters) before color pass

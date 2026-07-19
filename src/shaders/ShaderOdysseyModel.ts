@@ -1,170 +1,16 @@
 import * as THREE from "three";
 import { Shader } from "@/shaders/Shader";
 import { ODYSSEY_DANGLY_VERTEX_LIBRARY } from "@/shaders/odysseyDangly";
-
-const odyssey_envmap_fragment = `
-#ifdef USE_ENVMAP
-  #ifdef ENV_WORLDPOS
-    vec3 cameraToFrag;
-    if ( isOrthographic ) {
-      cameraToFrag = normalize( vec3( - viewMatrix[ 0 ][ 2 ], - viewMatrix[ 1 ][ 2 ], - viewMatrix[ 2 ][ 2 ] ) );
-    } else {
-      cameraToFrag = normalize( vWorldPosition - cameraPosition );
-    }
-    vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
-    #ifdef ENVMAP_MODE_REFLECTION
-      vec3 reflectVec = reflect( cameraToFrag, worldNormal );
-    #else
-      vec3 reflectVec = refract( cameraToFrag, worldNormal, refractionRatio );
-    #endif
-  #else
-    vec3 reflectVec = vReflect;
-  #endif
-  #ifdef ENVMAP_TYPE_CUBE
-    vec4 envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
-  #elif defined( ENVMAP_TYPE_CUBE_UV )
-    vec4 envColor = textureCubeUV( envMap, reflectVec, 0.0 );
-  #else
-    vec4 envColor = vec4( 0.0 );
-  #endif
-  // #ifdef ENVMAP_BLENDING_MULTIPLY
-  //   outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, specularStrength * reflectivity );
-  // #elif defined( ENVMAP_BLENDING_MIX )
-  //   outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity );
-  // #elif defined( ENVMAP_BLENDING_ADD )
-  //   outgoingLight += envColor.xyz * specularStrength * reflectivity;
-  // #endif
-  #ifdef ENVMAP_BLENDING_MULTIPLY
-    outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - diffuseColor.a) ); //odyssey uses the alpha of the texture to blend the envmap
-  #elif defined( ENVMAP_BLENDING_MIX )
-    outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity * (1.0 - diffuseColor.a) ); //odyssey uses the alpha of the texture to blend the envmap
-  #elif defined( ENVMAP_BLENDING_ADD )
-    outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a); //odyssey uses the alpha of the texture to blend the envmap
-  #endif
-#endif`
-
-THREE.ShaderChunk.meshodyssey_vert = `
-#define PHONG
-varying vec3 vViewPosition;
-#include <common>
-#include <uv_pars_vertex>
-#include <uv2_pars_vertex>
-#include <displacementmap_pars_vertex>
-#include <envmap_pars_vertex>
-#include <color_pars_vertex>
-#include <fog_pars_vertex>
-#include <normal_pars_vertex>
-#include <morphtarget_pars_vertex>
-#include <skinning_pars_vertex>
-#include <shadowmap_pars_vertex>
-#include <logdepthbuf_pars_vertex>
-#include <clipping_planes_pars_vertex>
-void main() {
-  #include <uv_vertex>
-  #include <uv2_vertex>
-  #include <color_vertex>
-  #include <morphcolor_vertex>
-  #include <beginnormal_vertex>
-  #include <morphnormal_vertex>
-  #include <skinbase_vertex>
-  #include <skinnormal_vertex>
-  #include <defaultnormal_vertex>
-  #include <normal_vertex>
-  #include <begin_vertex>
-  #include <morphtarget_vertex>
-  #include <skinning_vertex>
-  #include <displacementmap_vertex>
-  #include <project_vertex>
-  #include <logdepthbuf_vertex>
-  #include <clipping_planes_vertex>
-  vViewPosition = - mvPosition.xyz;
-  #include <worldpos_vertex>
-  #include <envmap_vertex>
-  #include <shadowmap_vertex>
-  #include <fog_vertex>
-}`;
-
-THREE.ShaderChunk.meshodyssey_frag = `
-#define PHONG
-
-uniform vec3 diffuse;
-uniform vec3 emissive;
-uniform vec3 specular;
-uniform float shininess;
-uniform float opacity;
-
-#include <common>
-#include <packing>
-#include <dithering_pars_fragment>
-#include <color_pars_fragment>
-#include <uv_pars_fragment>
-#include <uv2_pars_fragment>
-#include <map_pars_fragment>
-#include <alphamap_pars_fragment>
-#include <alphatest_pars_fragment>
-#include <aomap_pars_fragment>
-#include <lightmap_pars_fragment>
-#include <emissivemap_pars_fragment>
-#include <envmap_common_pars_fragment>
-#include <envmap_pars_fragment>
-// #include <cube_uv_reflection_fragment>
-#include <fog_pars_fragment>
-#include <bsdfs>
-#include <lights_pars_begin>
-#include <normal_pars_fragment>
-#include <lights_phong_pars_fragment>
-#include <shadowmap_pars_fragment>
-#include <bumpmap_pars_fragment>
-#include <normalmap_pars_fragment>
-#include <specularmap_pars_fragment>
-#include <logdepthbuf_pars_fragment>
-#include <clipping_planes_pars_fragment>
-void main() {
-
-  #include <clipping_planes_fragment>
-
-  vec4 diffuseColor = vec4( diffuse, opacity );
-  ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
-  vec3 totalEmissiveRadiance = emissive;
-
-  #include <logdepthbuf_fragment>
-  #include <map_fragment>
-  #include <color_fragment>
-  #include <alphamap_fragment>
-  #include <alphatest_fragment>
-  #include <specularmap_fragment>
-  #include <normal_fragment_begin>
-  #include <normal_fragment_maps>
-  #include <emissivemap_fragment>
-  
-  // accumulation
-  #include <lights_phong_fragment>
-  #include <lights_fragment_begin>
-  #include <lights_fragment_maps>
-  #include <lights_fragment_end>
-
-  // modulation
-  #include <aomap_fragment>
-
-  vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-  
-  #include <envmap_fragment>
-  #include <output_fragment>
-  #include <tonemapping_fragment>
-  #include <encodings_fragment>
-  #include <fog_fragment>
-  #include <premultiplied_alpha_fragment>
-  #include <dithering_fragment>
-}`;
+import {
+  MAX_ODYSSEY_LIGHTS,
+  ODYSSEY_LIGHTING_PARS_FRAGMENT,
+  createOdysseyLightingUniforms,
+  createOdysseyMaterialBaseUniforms,
+} from "@/shaders/chunks/OdysseyLighting";
 
 /**
- * ShaderOdysseyModel class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
- * @file ShaderOdysseyModel.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * ShaderOdysseyModel — Odyssey model materials with fully custom lighting.
+ * No THREE lighting chunks, lights uniforms, or renderer light collection.
  */
 export class ShaderOdysseyModel extends Shader {
 
@@ -174,8 +20,6 @@ export class ShaderOdysseyModel extends Shader {
     this.name = 'odyssey';
 
     this.fragment = `
-    #define PHONG
-    
     uniform vec3 diffuse;
     uniform vec3 emissive;
     uniform vec3 selfIllumColor;
@@ -184,19 +28,15 @@ export class ShaderOdysseyModel extends Shader {
     uniform float shininess;
     uniform float opacity;
     uniform float time;
-    uniform vec4 animatedUV; // MDL animatedUV properties
-    uniform vec4 animationVectorMap; // Base map TXI cycle animation
-    uniform vec4 animationVectorBump; // Bump map TXI cycle animation
-  
+    uniform vec4 animatedUV;
+    uniform vec4 animationVectorMap;
+    uniform vec4 animationVectorBump;
+
     float randF(vec2 co) {
       return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
     }
-  
+
     vec2 UVJitter( vec2 p ) {
-      // convert Vertex position <-1,+1> to texture coordinate <0,1> and some shrinking so the effect dont overlap screen
-      //p.x=( 0.55*p.x)+0.5;
-      //p.y=(-0.55*p.y)+0.5;
-      // wave distortion
       float x = (sin( (25.0 * p.y + 30.0 * p.x + 6.28 * 0.3477) + (randF(vec2(time, tan(time)))) ) * (animatedUV.z * 0.1));
       float y = (sin( (25.0 * p.y + 30.0 * p.x + 6.28 * 0.7812) + (randF(vec2(time, tan(time)))) ) * (animatedUV.w * 0.1));
       return vec2(p.x + x + ((animatedUV.x * 50.0) * time), p.y + y + ((animatedUV.y * 50.0) * time));
@@ -205,7 +45,7 @@ export class ShaderOdysseyModel extends Shader {
     #ifdef CYCLE_BUMP
       varying vec2 vUvBumpCycle;
     #endif
-  
+
     #ifdef WATER
       uniform float waterAlpha;
     #endif
@@ -226,34 +66,12 @@ export class ShaderOdysseyModel extends Shader {
     #include <envmap_pars_fragment>
     #include <cube_uv_reflection_fragment>
     #include <fog_pars_fragment>
-    #include <bsdfs>
-    #include <lights_pars_begin>
-    
-    //ADD Animated to PointLight struct
-    #ifdef USE_ANIMATED_LIGHTS
-      struct AnimPointLight {
-        vec3 position;
-        vec3 color;
-        float distance;
-        float decay;
-      };
-      uniform AnimPointLight animPointLights[ NUM_ANIM_POINT_LIGHTS ];
-
-      // light is an out parameter as having it as a return value caused compiler errors on some devices
-      void getPointAnimLightInfo( const in AnimPointLight pointLight, const in GeometricContext geometry, out IncidentLight light ) {
-        vec3 lVector = pointLight.position - geometry.position;
-        light.direction = normalize( lVector );
-        float lightDistance = length( lVector );
-        light.color = pointLight.color;
-        light.color *= getDistanceAttenuation( lightDistance, pointLight.distance, pointLight.decay );
-        light.visible = ( light.color != vec3( 0.0 ) );
-      }
-    #endif
-    //END Animated to PointLight struct
-
     #include <normal_pars_fragment>
-    #include <lights_phong_pars_fragment>
-    #include <shadowmap_pars_fragment>
+
+    varying vec3 vViewPosition;
+
+    ${ODYSSEY_LIGHTING_PARS_FRAGMENT}
+
     #ifdef WATER
       #ifdef USE_BUMPMAP
         uniform sampler2D bumpMap;
@@ -273,7 +91,7 @@ export class ShaderOdysseyModel extends Shader {
         vec3 perturbNormalArb( vec3 surf_pos, vec3 surf_norm, vec2 dHdxy, float faceDirection ) {
           vec3 vSigmaX = dFdx( surf_pos.xyz );
           vec3 vSigmaY = dFdy( surf_pos.xyz );
-          vec3 vN = surf_norm; // normalized
+          vec3 vN = surf_norm;
           vec3 R1 = cross( vSigmaY, vN );
           vec3 R2 = cross( vN, vSigmaX );
           float fDet = dot( vSigmaX, R1 ) * faceDirection;
@@ -288,38 +106,20 @@ export class ShaderOdysseyModel extends Shader {
     #include <specularmap_pars_fragment>
     #include <logdepthbuf_pars_fragment>
     #include <clipping_planes_pars_fragment>
-  
-    void RE_Direct_Anim( const in IncidentLight directLight, const in GeometricContext geometry, const in BlinnPhongMaterial material, inout ReflectedLight reflectedLight ) {
-      float dotNL = saturate( dot( geometry.normal, directLight.direction ) );
-      vec3 irradiance = dotNL * directLight.color;
-      reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseColor );
-      reflectedLight.directSpecular += irradiance * BRDF_BlinnPhong( directLight.direction, geometry.viewDir, geometry.normal, material.specularColor, material.specularShininess ) * material.specularStrength;
-    }
-  
-    //float rand(vec2 co) {
-    //  return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-    //}
-  
-    vec2 uResolution = vec2(640.0, 480.0);
-  
-  
+
     void main() {
       #include <clipping_planes_fragment>
 
       vec4 diffuseColor = vec4( diffuse, opacity );
-      ReflectedLight reflectedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
-      ReflectedLight animatedLight = ReflectedLight( vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ), vec3( 0.0 ) );
       vec3 totalEmissiveRadiance = emissive;
 
       #include <logdepthbuf_fragment>
 
-      // #include <map_fragment> 
       #ifdef USE_MAP
         vec4 sampledDiffuseColor = texture2D( map, vUv );
         #if defined( ANIMATED_UV )
           sampledDiffuseColor = texture2D( map, UVJitter(vUv) );
         #endif
-        // sampledDiffuseColor = mapTexelToLinear( sampledDiffuseColor );
         diffuseColor *= sampledDiffuseColor;
       #endif
 
@@ -330,67 +130,58 @@ export class ShaderOdysseyModel extends Shader {
       #include <normal_fragment_begin>
       #include <normal_fragment_maps>
       #include <emissivemap_fragment>
-      // accumulation
-      #include <lights_phong_fragment>
 
-      #include <lights_fragment_begin>
-      //BEGIN CUSTOM LIGHTING - "lights_fragment_begin"
-      #ifdef USE_ANIMATED_LIGHTS
-        AnimPointLight animPointLight;
-        #pragma unroll_loop_start
-        for ( int i = 0; i < NUM_ANIM_POINT_LIGHTS; i ++ ) {
-          animPointLight = animPointLights[ i ];
-          getPointAnimLightInfo( animPointLight, geometry, directLight );
-          RE_Direct_Anim( directLight, geometry, material, animatedLight );
-        }
-        #pragma unroll_loop_end
-      #endif
-      //END CUSTOM LIGHTING
-  
-      #include <lights_fragment_maps>
-      #include <lights_fragment_end>
+      // specularStrength from specularmap_fragment; use perturbed normal after normal maps
+      vec3 geometryPosition = - vViewPosition;
+      vec3 geometryViewDir = ( isOrthographic ) ? vec3( 0.0, 0.0, 1.0 ) : normalize( vViewPosition );
 
-      // modulation
-      #include <aomap_fragment>
+      vec3 materialDiffuseColor = diffuseColor.rgb;
+      vec3 materialSpecularColor = specular;
+      float materialShininess = max( shininess, 1e-4 );
 
-      #ifndef AURORA
-        vec3 outgoingLight = reflectedLight.directDiffuse + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
+      vec3 directDiffuse = vec3( 0.0 );
+      vec3 directSpecular = vec3( 0.0 );
+      vec3 indirectDiffuse = vec3( 0.0 );
+
+      #ifdef USE_LIGHTMAP
+        // Retail: static lighting is baked into the lightmap (ComputeStaticLighting).
+        // Runtime GL/point lights must not re-light these surfaces (would double-light).
+        // Area sun/ambient also excluded — lightmap already includes that contribution.
+        indirectDiffuse += texture2D( lightMap, vUv2 ).xyz * lightMapIntensity * materialDiffuseColor;
       #else
-        #ifdef USE_LIGHTMAP
-          reflectedLight.indirectDiffuse = vec3(0.0);
-          reflectedLight.indirectDiffuse += PI * texture2D( lightMap, vUv2 ).xyz * lightMapIntensity;
-          reflectedLight.indirectDiffuse *= BRDF_Lambert( diffuseColor.rgb );
-          //vec3 outgoingLight = (reflectedLight.indirectDiffuse + animatedLight); // shadow intensity hardwired to 0.5 here
-  
-          vec3 outgoingLight = reflectedLight.indirectDiffuse + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance));
-        #else
-          //reflectedLight.indirectDiffuse = vec3(diffuseColor.rgb);
+        #ifndef IGNORE_LIGHTING
+          odysseyAccumulateLights(
+            geometryPosition, normal, geometryViewDir,
+            materialDiffuseColor, materialSpecularColor, materialShininess, specularStrength,
+            directDiffuse, directSpecular, indirectDiffuse
+          );
+        #endif
+      #endif
+
+      #ifdef USE_AOMAP
+        float ambientOcclusion = ( texture2D( aoMap, vUv2 ).r - 1.0 ) * aoMapIntensity + 1.0;
+        indirectDiffuse *= ambientOcclusion;
+      #endif
+
+      vec3 outgoingLight = directDiffuse + indirectDiffuse + directSpecular + totalEmissiveRadiance;
+
+      #ifdef IGNORE_LIGHTING
+        // Unlit / self-illum meshes: albedo (+ self-illum) only.
+        // Lightmapped rooms keep the baked USE_LIGHTMAP result above.
+        #ifndef USE_LIGHTMAP
+          outgoingLight = diffuseColor.rgb + totalEmissiveRadiance;
           #ifdef SELFILLUMCOLOR
-            vec3 outgoingLight = (reflectedLight.directDiffuse) + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
-          #else
-            vec3 outgoingLight = (reflectedLight.directDiffuse) + reflectedLight.indirectDiffuse + reflectedLight.directSpecular + reflectedLight.indirectSpecular + totalEmissiveRadiance;
+            outgoingLight *= max(vec3(0.25), selfIllumColor);
           #endif
         #endif
       #endif
-      
-      #ifdef IGNORE_LIGHTING
-        //outgoingLight = vec3(diffuseColor.rgb + animatedLight);
-        //mix(diffuseColor.rgb, reflectedLight.directDiffuse, 0.75)
-        //outgoingLight = max(diffuseColor.rgb, mix( diffuseColor.rgb, emissive, 0.5 ));
-        outgoingLight = (diffuseColor.rgb) + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance));
-        #ifdef SELFILLUMCOLOR
-          outgoingLight = (diffuseColor.rgb) + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance));
-          outgoingLight *= max(vec3(0.25), selfIllumColor);
-        #endif
-        //outgoingLight = max( diffuseColor.rgb, diffuseColor.rgb * emissive );// + (((animatedLight.directDiffuse * 0.5) + animatedLight.indirectDiffuse + animatedLight.directSpecular + animatedLight.indirectSpecular + totalEmissiveRadiance)* 0.5);
-      #endif
+
       #ifdef USE_ENVMAP
         #ifdef ENV_WORLDPOS
           vec3 cameraToFrag;
-          
           if ( isOrthographic ) {
             cameraToFrag = normalize( vec3( - viewMatrix[ 0 ][ 2 ], - viewMatrix[ 1 ][ 2 ], - viewMatrix[ 2 ][ 2 ] ) );
-          }  else {
+          } else {
             cameraToFrag = normalize( vWorldPosition - cameraPosition );
           }
           vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
@@ -413,9 +204,6 @@ export class ShaderOdysseyModel extends Shader {
         #else
           vec4 envColor = vec4( 0.0 );
         #endif
-        #ifndef ENVMAP_TYPE_CUBE_UV
-          //envColor = envMapTexelToLinear( envColor );
-        #endif
         #ifdef ENVMAP_BLENDING_MULTIPLY
           outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - diffuseColor.a) );
         #elif defined( ENVMAP_BLENDING_MIX )
@@ -424,17 +212,13 @@ export class ShaderOdysseyModel extends Shader {
           outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a);
         #endif
       #endif
+
       #ifdef SABER
         sampledDiffuseColor = texture2D( map, vUv );
         gl_FragColor = sampledDiffuseColor;
       #else
         gl_FragColor = vec4( outgoingLight, diffuseColor.a );
       #endif
-      
-      //#ifdef USE_TWEAK_COLOR
-      //  float average = (gl_FragColor.r + gl_FragColor.g + gl_FragColor.b) / 3.0;
-      //  gl_FragColor.rgb = (vec3(average, average, average) * tweakColor);
-      //#endif
 
       #include <tonemapping_fragment>
       #include <encodings_fragment>
@@ -444,24 +228,18 @@ export class ShaderOdysseyModel extends Shader {
         gl_FragColor.a = waterAlpha;
       #endif
       #ifdef HOLOGRAM
-        
-        vec2 q = vUv;
         vec2 uv = vUv;
-        vec3 oricol = outgoingLight.xyz;
         vec3 col = texture2D(map, vUv).rgb;
         float gray = dot(col, vec3(0.299, 0.587, 0.114));
-  
         col.r = gray * 0.33;
         col.g = gray * 0.75;
         col.b = clamp(gray * 1.5, 0.0, 1.0);
-  
         col = clamp(col*0.5+0.5*col*col*1.2,0.0,1.0);
         col *= 0.6 + 0.4*16.0*uv.x*uv.y*(1.0-uv.x)*(1.0-uv.y);
         col *= vec3(0.9,1.0,0.7);
         col *= 0.8+0.2*sin(10.0*time+uv.y*900.0);
-        col *= 1.0-0.07*rand(vec2(time, tan(time)));
+        col *= 1.0-0.07*randF(vec2(time, tan(time)));
         gl_FragColor = vec4(col,0.5);
-        
       #endif
       #include <premultiplied_alpha_fragment>
       #include <dithering_fragment>
@@ -469,7 +247,6 @@ export class ShaderOdysseyModel extends Shader {
     `;
 
     this.vertex = `
-    #define PHONG
     varying vec3 vViewPosition;
     #ifndef FLAT_SHADED
       varying vec3 vNormal;
@@ -487,7 +264,7 @@ export class ShaderOdysseyModel extends Shader {
       varying vec2 vUvBumpCycle;
       uniform vec4 animationVectorBump;
     #endif
-  
+
     #ifdef DANGLY
       attribute vec4 constraint;
       attribute vec3 danglyOffset;
@@ -505,14 +282,13 @@ export class ShaderOdysseyModel extends Shader {
     #include <fog_pars_vertex>
     #include <morphtarget_pars_vertex>
     #include <skinning_pars_vertex>
-    #include <shadowmap_pars_vertex>
     #include <logdepthbuf_pars_vertex>
     #include <clipping_planes_pars_vertex>
 
     #ifdef DANGLY
     ${ODYSSEY_DANGLY_VERTEX_LIBRARY}
     #endif
-    
+
     void main() {
       #include <uv_vertex>
 
@@ -527,7 +303,7 @@ export class ShaderOdysseyModel extends Shader {
         float mapFrameNumber = floor(mod(mapTime * mapTotalFrames, mapTotalFrames));
         float mapColumn = floor(mod(mapFrameNumber, mapFramesX));
         float mapRow = floor((mapFrameNumber - mapColumn) / mapFramesX);
-        float mapRowFlipped = mapRow;//(mapFramesY - 1.0) - mapRow;
+        float mapRowFlipped = mapRow;
         float mapColumnNorm = mapColumn / mapFramesX;
         float mapRowNorm = mapRowFlipped / mapFramesY;
 
@@ -552,11 +328,10 @@ export class ShaderOdysseyModel extends Shader {
         float bumpFrameNumber = floor(mod(bumpTime * bumpTotalFrames, bumpTotalFrames));
         float bumpColumn = floor(mod(bumpFrameNumber, bumpFramesX));
         float bumpRow = floor((bumpFrameNumber - bumpColumn) / bumpFramesX);
-        float bumpRowFlipped = bumpRow; //(bumpFramesY - 1.0) - bumpRow;
+        float bumpRowFlipped = bumpRow;
         float bumpColumnNorm = bumpColumn / bumpFramesX;
         float bumpRowNorm = bumpRowFlipped / bumpFramesY;
         vec2 cycleUV = vec2(bumpColumnNorm, bumpRowNorm);
-        // Sample within the selected frame tile instead of offsetting full-range UVs.
         vec2 frameUV = uv / vec2(bumpFramesX, bumpFramesY);
         vUvBumpCycle = cycleUV + frameUV;
       #endif
@@ -569,7 +344,7 @@ export class ShaderOdysseyModel extends Shader {
       #include <skinnormal_vertex>
       #include <defaultnormal_vertex>
 
-      #ifndef FLAT_SHADED // Normal computed with derivatives when FLAT_SHADED
+      #ifndef FLAT_SHADED
         vNormal = normalize( transformedNormal );
       #endif
 
@@ -588,29 +363,24 @@ export class ShaderOdysseyModel extends Shader {
       #ifdef DANGLY
         odyssey_apply_dangly_vertex(transformed, objectNormal, modelMatrix);
       #endif
-  
+
       #ifdef FORCE_SHIELD
-        //Expand the vertex along it's normal direction
         transformed += objectNormal * 0.01;
       #endif
-  
+
       #include <project_vertex>
       #include <logdepthbuf_vertex>
       #include <clipping_planes_vertex>
       vViewPosition = - mvPosition.xyz;
       #include <worldpos_vertex>
       #include <envmap_vertex>
-      #include <shadowmap_vertex>
       #include <fog_vertex>
     }
     `;
 
-    // this.vertex = THREE.ShaderChunk.meshodyssey_vert;
-    // this.fragment = THREE.ShaderChunk.meshodyssey_frag;
-
     this.uniforms = [
-      THREE.ShaderLib.phong.uniforms,
-      { diffuse: { value: new THREE.Color() } },
+      createOdysseyMaterialBaseUniforms(),
+      createOdysseyLightingUniforms(),
       { selfIllumColor: { value: new THREE.Color() } },
       { tweakColor: { value: new THREE.Color() } },
       { alphaTest: { value: 0.0 } },
@@ -622,14 +392,9 @@ export class ShaderOdysseyModel extends Shader {
       { danglyDisplacement: { value: 0 } },
       { danglyTightness: { value: 0 } },
       { danglyPeriod: { value: 0 } },
-      { animPointLights: { value: [], properties: {
-        color: {},
-        position: {},
-        decay: {},
-        distance: {}
-      } } },
     ];
-
   }
 
 }
+
+export { MAX_ODYSSEY_LIGHTS };
