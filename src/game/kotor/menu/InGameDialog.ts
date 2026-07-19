@@ -29,6 +29,9 @@ export class InGameDialog extends GameMenu {
   topBar: THREE.Mesh;
   bottomBar: THREE.Mesh;
 
+  // GameMenu.show() applies this.engineMode — must be DIALOG, not GUI default
+  engineMode: EngineMode = EngineMode.DIALOG;
+
   constructor(){
     super();
     this.gui_resref = 'dialog';

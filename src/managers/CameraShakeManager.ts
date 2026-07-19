@@ -31,17 +31,12 @@ export class CameraShakeManager {
   static rsamples: RumbleSample[] = [];
   static time: number = 0;
 
-  static beforeRender() {
-    if(
-      GameState.Mode == EngineMode.INGAME ||
-      GameState.Mode == EngineMode.DIALOG ||
-      GameState.Mode == EngineMode.MINIGAME ||
-      GameState.Mode == EngineMode.FREELOOK
-    ){
-      if(!GameState.currentCamera) return;
-      CameraShakeManager.cache.position.copy(GameState.currentCamera.position);
-    }
-  };
+  /**
+   * No-op. Pre-shake pose is cached in update() after FollowerCamera has run.
+   * Caching at frame-start (old beforeRender hook) restored a stale position
+   * in afterRender and undid the follower camera every frame.
+   */
+  static beforeRender() {};
 
   static playRumblePattern(idx = 0) {
     CameraShakeManager.lsamples = [];
@@ -90,7 +85,10 @@ export class CameraShakeManager {
       GameState.Mode == EngineMode.MINIGAME ||
       GameState.Mode == EngineMode.FREELOOK
     ){
-      //GameState.currentCamera
+      if(!GameState.currentCamera) return;
+
+      // Cache post-FollowerCamera pose before rumble so afterRender only undoes shake
+      CameraShakeManager.cache.position.copy(GameState.currentCamera.position);
       CameraShakeManager.position.set(0, 0, 0);
 
       // Process left samples (X-axis shake)

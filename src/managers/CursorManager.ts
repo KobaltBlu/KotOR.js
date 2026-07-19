@@ -243,10 +243,15 @@ export class CursorManager {
 
 	/**
 	 * Sets the currently selected object and positions the secondary reticle.
+	 * @param options.lookAt - when false, skip creature LookAt (ShowObject param_2=0)
 	 */
-	public static setReticleSelectedObject( object: ModuleObject ){
+	public static setReticleSelectedObject(
+		object: ModuleObject,
+		options?: { lookAt?: boolean },
+	){
+		const doLookAt = options?.lookAt !== false;
 		const player = GameState.getCurrentPlayer();
-		if(player && object){
+		if(doLookAt && player && object){
 			player.lookAt(object);
 		}
 		if(!object){
@@ -334,6 +339,19 @@ export class CursorManager {
 		let cursorCaptured = false;
 		let guiHoverCaptured = false;
 
+		// Retail ProcessInput / HideMouse while rightClickHeld — skip hover picking.
+		// Mouse Look keeps LMB picking active while camera tracks movement.
+		if(Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled()){
+			CursorManager.setCursor('default');
+			CursorManager.hoveredObject = undefined;
+			CursorManager.hovered = undefined;
+			CursorManager.reticle.visible = false;
+			if(GameState.scene_cursor_holder){
+				GameState.scene_cursor_holder.visible = false;
+			}
+			return;
+		}
+
 		CursorManager.setCursor('default');
 		GameState.scene_cursor_holder.position.x = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidth()/2) + (32/2);
 		GameState.scene_cursor_holder.position.y = (Mouse.positionViewport.y*-1) + (GameState.ResolutionManager.getViewportHeight()/2) - (32/2);
@@ -413,12 +431,9 @@ export class CursorManager {
 						CursorManager.hoveredObject = undefined;
 						CursorManager.hovered = undefined;
 					}
-				}else{
-					if(!CursorManager.selectedObject){
-						let closest = GameState.ModuleObjectManager.GetNearestInteractableObject();
-						CursorManager.setReticleHoveredObject(closest);
-					}
 				}
+				// Hidden cursor: retail does not auto-acquire hover via nearest;
+				// DoPassiveSelection owns selected target presentation.
 			}
 		}
 

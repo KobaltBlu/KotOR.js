@@ -142,6 +142,8 @@ export class ModuleDoor extends ModuleObject {
     this.portraitId = 0;
     this.ref = 0;
     this.static = false;
+    // GIT door instances often omit Useable; retail treats those as interactable.
+    this.useable = true;
     this.tag = '';
     this.templateResRef = '';
     this.trapDetectDC = 0;
@@ -295,8 +297,14 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
+  /**
+   * Retail CSWCDoor::can_use_actions_ — template Useable flag.
+   * Static doors are never interactable. Open / NotBlastable are gated
+   * separately by callers (selection, Bash menu).
+   * When Useable is absent from the template, default is true (common on GIT doors).
+   */
   isUseable(){
-    return !this.openState && !this.static;
+    return !!this.useable && !this.static;
   }
 
   isOpen(){
@@ -1098,6 +1106,10 @@ export class ModuleDoor extends ModuleObject {
     if(this.template.RootNode.hasField('HP'))
       this.hp = this.template.RootNode.getFieldByLabel('HP').getValue();
 
+    // If CurrentHP was absent, start at max HP so bash is not immediately dead.
+    if(!this.template.RootNode.hasField('CurrentHP'))
+      this.currentHP = this.hp;
+
     if(this.template.RootNode.hasField('Hardness'))
       this.hardness = this.template.RootNode.getFieldByLabel('Hardness').getValue();
     
@@ -1145,6 +1157,9 @@ export class ModuleDoor extends ModuleObject {
 
     if(this.template.RootNode.hasField('Static'))
       this.static = this.template.getFieldByLabel('Static').getValue();
+
+    if(this.template.RootNode.hasField('Useable'))
+      this.useable = !!this.template.getFieldByLabel('Useable').getValue();
 
     if(this.template.RootNode.hasField('Tag'))
       this.tag = this.template.getFieldByLabel('Tag').getValue();

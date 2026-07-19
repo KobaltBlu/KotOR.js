@@ -443,10 +443,7 @@ export class CutsceneManager {
     //Update Speaker Animation State
     try {
       if(BitWise.InstanceOfObject(this.getCurrentOwner(), ModuleObjectType.ModuleCreature)){
-        const anim = this.getCurrentOwner().animationConstantToAnimation( ModuleCreatureAnimState.LISTEN )
-        if(anim){
-          this.getCurrentOwner().dialogPlayAnimation(anim);
-        }
+        this.playDialogCreatureAnimation(this.getCurrentOwner(), ModuleCreatureAnimState.LISTEN);
       }
     } catch (e: any) {
       console.error(e);
@@ -455,10 +452,7 @@ export class CutsceneManager {
     //Update Listener Animation State
     try {
       if(BitWise.InstanceOfObject(this.getCurrentListener(), ModuleObjectType.ModuleCreature)){
-        const anim = this.getCurrentListener().animationConstantToAnimation( ModuleCreatureAnimState.LISTEN )
-        if(anim){
-          this.getCurrentListener().dialogPlayAnimation(anim);
-        }
+        this.playDialogCreatureAnimation(this.getCurrentListener(), ModuleCreatureAnimState.LISTEN);
       }
     } catch (e: any) {
       console.error(e);
@@ -569,10 +563,8 @@ export class CutsceneManager {
         }
         console.log('actor', actor);
         if (participant.animation >= 10000) {
-          const anim = actor.animationConstantToAnimation(participant.animation);
-          console.log('anim', anim)
-          if (anim) {
-            actor.dialogPlayAnimation(anim);
+          if (actor.animationConstantToAnimation(participant.animation)) {
+            this.playDialogCreatureAnimation(actor, participant.animation);
           } else {
             console.error('Anim', participant.animation);
           }
@@ -590,24 +582,37 @@ export class CutsceneManager {
   }
 
   /**
+   * Play a dialog participant animation — retail SetDialogAnimations @ 006313a0
+   * uses CSWCObject SetAnimation (field39_0x9c) for constants >= 10000, not a
+   * parallel dialog-only slot. Combat READY/attack stances must go through
+   * animationState or CutsceneAttack playTwoDAAnimation is blocked.
+   */
+  static playDialogCreatureAnimation(actor: ModuleObject, animationConstant: number) {
+    if(!BitWise.InstanceOfObject(actor, ModuleObjectType.ModuleCreature)){
+      const anim = actor.animationConstantToAnimation(animationConstant);
+      if(anim){
+        actor.dialogPlayAnimation(anim);
+      }
+      return;
+    }
+    const creature = actor as ModuleCreature;
+    creature.dialogAnimation = null;
+    creature.setAnimationState(animationConstant);
+  }
+
+  /**
    * Set the participant animations for a normal dialog entry
    * @param entry - The entry to set the participant animations for
    */
   static setEntryAnimations(entry: DLGNode) {
-    //Speaker Animation
+    //Speaker Animation — retail default 0x2736 (TALK_NORMAL)
     if (BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)) {
-      const anim = this.currentEntry.speaker.animationConstantToAnimation( ModuleCreatureAnimState.TALK_NORMAL )
-      if(anim){
-        this.currentEntry.speaker.dialogPlayAnimation(anim);
-      }
+      this.playDialogCreatureAnimation(this.currentEntry.speaker, ModuleCreatureAnimState.TALK_NORMAL);
     }
 
-    //Listener Animation
+    //Listener Animation — retail default 0x272E (LISTEN)
     if (BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)) {
-      const anim = this.currentEntry.listener.animationConstantToAnimation( ModuleCreatureAnimState.LISTEN )
-      if(anim){
-        this.currentEntry.listener.dialogPlayAnimation(anim);
-      }
+      this.playDialogCreatureAnimation(this.currentEntry.listener, ModuleCreatureAnimState.LISTEN);
     }
 
     for (let i = 0; i < entry.animations.length; i++) {
@@ -621,9 +626,8 @@ export class CutsceneManager {
         continue;
       }
       if (participant.animation >= 10000) {
-        const anim = actor.animationConstantToAnimation(participant.animation);
-        if (anim) {
-          actor.dialogPlayAnimation(anim);
+        if (actor.animationConstantToAnimation(participant.animation)) {
+          this.playDialogCreatureAnimation(actor, participant.animation);
         } else {
           console.error('Anim', participant.animation);
         }

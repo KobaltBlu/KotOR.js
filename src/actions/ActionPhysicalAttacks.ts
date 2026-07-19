@@ -83,6 +83,34 @@ export class ActionPhysicalAttacks extends Action {
       return ActionStatus.FAILED;
     }
 
+    // CutsceneAttack: designer-placed poses — skip detection/range/move and play the swing.
+    const cutsceneAttack = !!owner.combatRound?.action?.isCutsceneAttack;
+    if(cutsceneAttack){
+      owner.force = 0;
+      owner.speed = 0;
+      const combatRound = owner.combatRound;
+      if(!combatRound.roundPaused){
+        combatRound.startCombatRound(target, false, true, combatRound.action?.featId || 0);
+        if(combatRound.action){
+          combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
+        }
+        combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+        if(combatRound.roundStarted){
+          combatRound.calculateAttackDamage(owner, combatRound.action);
+          owner.setFacing(
+            Math.atan2(
+              owner.position.y - target.position.y,
+              owner.position.x - target.position.x
+            ) + Math.PI/2,
+            false,
+            TURN_SPEED_FAST
+          );
+          return ActionStatus.COMPLETE;
+        }
+      }
+      return ActionStatus.IN_PROGRESS;
+    }
+
     // Retail HasTargetBeenDetected @ 005b48f0 — doors/placeables always; creatures need SEEN
     if(!hasTargetBeenDetected(owner, target)){
       return ActionStatus.FAILED;

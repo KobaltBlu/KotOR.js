@@ -3111,10 +3111,14 @@ export class ModuleObject {
 
   /**
    * Set the HP
+   * Retail CSWSObject::DoDamage clamps to 1 when min1hp is set.
    * @param value 
    */
   setHP(value = 0){
     this.currentHP = value;
+    if(this.min1HP && this.currentHP < 1){
+      this.currentHP = 1;
+    }
   }
 
   /**

@@ -882,8 +882,7 @@ export class GameState implements EngineContext {
 
       GameState.Ready = true;
       GameState.Start();
-      // Camera shake applies during update; restore after render so it doesn't accumulate
-      GameState.addEventListener('beforeRender', () => GameState.CameraShakeManager.beforeRender());
+      // Shake is cached in CameraShakeManager.update; restore after render so it doesn't accumulate
       GameState.addEventListener('afterRender', () => GameState.CameraShakeManager.afterRender());
       console.log(PerformanceMonitor.toString());
     }catch(e){
@@ -1339,6 +1338,23 @@ export class GameState implements EngineContext {
     //NOP
   }
 
+  /**
+   * Rebuild viewport frustum / camera position from the live camera locals.
+   * Must run after FollowerCamera (or any camera pose write) — otherwise
+   * matrixWorldInverse stays on the previous render pose and objects cull wrong while turning.
+   */
+  static updateViewportFrustum(){
+    if(!GameState.currentCamera) return;
+    GameState.currentCamera.updateMatrixWorld();
+    GameState.frustumMat4.multiplyMatrices(
+      GameState.currentCamera.projectionMatrix,
+      GameState.currentCamera.matrixWorldInverse
+    );
+    GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
+    GameState.currentCameraPosition.set(0, 0, 0);
+    GameState.currentCameraPosition.applyMatrix4(GameState.currentCamera.matrixWorld);
+  }
+
   static UpdateIngame(delta: number = 0){
     //Get Selectable Objects In Range
     GameState.ModuleObjectManager.TickSelectableObjects(delta);
@@ -1378,10 +1394,7 @@ export class GameState implements EngineContext {
     GameState.GameOverManager.TempDeathUpdate(delta);
 
     GameState.FadeOverlayManager.Update(delta);
-    GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
-    GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
-    GameState.currentCameraPosition.set(0, 0, 0);
-    GameState.currentCameraPosition.applyMatrix4(GameState.currentCamera.matrixWorld);
+    GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
@@ -1424,10 +1437,7 @@ export class GameState implements EngineContext {
       GameState.MenuManager.InGameBark.update(delta);
     }
     GameState.FadeOverlayManager.Update(delta);
-    GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
-    GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
-    GameState.currentCameraPosition.set(0, 0, 0);
-    GameState.currentCameraPosition.applyMatrix4(GameState.currentCamera.matrixWorld);
+    GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.currentCamera);
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
@@ -1449,11 +1459,6 @@ export class GameState implements EngineContext {
   }
 
   static UpdateMinigame(delta: number = 0){
-    GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
-    GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
-    GameState.currentCameraPosition.set(0, 0, 0);
-    GameState.currentCameraPosition.applyMatrix4(GameState.currentCamera.matrixWorld);
-
     if(GameState.State != EngineState.PAUSED){
       GameState.updateTime(delta);
     }
@@ -1468,6 +1473,7 @@ export class GameState implements EngineContext {
     }
 
     GameState.FadeOverlayManager.Update(delta);
+    GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.windManager.update(delta);
     GameState.module.area.updateRoomAnimatedLights(delta);
@@ -1519,10 +1525,7 @@ export class GameState implements EngineContext {
     }
 
     GameState.FadeOverlayManager.Update(delta);
-    GameState.frustumMat4.multiplyMatrices( GameState.currentCamera.projectionMatrix, GameState.currentCamera.matrixWorldInverse )
-    GameState.viewportFrustum.setFromProjectionMatrix(GameState.frustumMat4);
-    GameState.currentCameraPosition.set(0, 0, 0);
-    GameState.currentCameraPosition.applyMatrix4(GameState.currentCamera.matrixWorld);
+    GameState.updateViewportFrustum();
     GameState.lightManager.update(delta, GameState.getCurrentPlayer());
     GameState.windManager.update(delta);
     if(GameState.module?.area){

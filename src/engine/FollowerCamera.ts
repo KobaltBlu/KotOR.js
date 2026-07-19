@@ -100,6 +100,8 @@ export class FollowerCamera {
 
   // camerastyle.2da
   static pitch: number = 0;
+  /** Style pitch at last SetCameraStyle — mouse tilt clamps around this. */
+  static stylePitch: number = 0;
   static height: number = FollowerCamera.DEFAULT_STYLE_HEIGHT;
   static fov: number = 55;
   static styleSpeed: number = FollowerCamera.DEFAULT_STYLE_SPEED;
@@ -107,6 +109,11 @@ export class FollowerCamera {
   static tiltDown: number = 30;
   static tiltSpeed: number = 0;
   static rotation: number = 90;
+  /**
+   * Browser pixels ≈ full DirectInput unit for UpdateCamera mouse deltas
+   * (GetMouseDelta clamps raw DI to [-1,1] before × GetMouseSenSetting).
+   */
+  static readonly MOUSE_DELTA_NORMALIZE_PX = 25;
   /** Cached from camerastyle MinTurnRate / MaxTurnRate for CamRelative Control */
   static minTurnRateDeg: number = FollowerCamera.DEFAULT_MIN_TURN_RATE_DEG;
   static maxTurnRateDeg: number = FollowerCamera.DEFAULT_MAX_TURN_RATE_DEG;
@@ -263,6 +270,7 @@ export class FollowerCamera {
     FollowerCamera.distance = FollowerCamera.maxDistance = dist;
     FollowerCamera.styleSpeed = speed;
     FollowerCamera.pitch = THREE.MathUtils.degToRad(pitchDeg);
+    FollowerCamera.stylePitch = FollowerCamera.pitch;
     FollowerCamera.height = height;
     FollowerCamera.tiltUp = tiltUp;
     FollowerCamera.tiltDown = tiltDown;
@@ -349,6 +357,45 @@ export class FollowerCamera {
   }
 
   /**
+   * Retail UpdateCamera @ 005f5e10 mouse path while rightClickHeld (or Mouse Look):
+   * TurnCamera(dx * GetMouseSenSetting), TiltCamera(dy * GetMouseSenSetting).
+   * dx/dy are pixel movement this frame (browser); normalized like DI [-1,1].
+   */
+  static applyMouseLookDelta(dx: number, dy: number, sensitivityDeg?: number){
+    if(!dx && !dy) return;
+
+    const sens = typeof sensitivityDeg === 'number'
+      ? sensitivityDeg
+      : Mouse.getSensitivityDegrees();
+    const norm = FollowerCamera.MOUSE_DELTA_NORMALIZE_PX;
+    let nx = dx / norm;
+    let ny = dy / norm;
+    if(nx > 1) nx = 1;
+    else if(nx < -1) nx = -1;
+    if(ny > 1) ny = 1;
+    else if(ny < -1) ny = -1;
+
+    // Default cameraHorizAxisFlip / cameraVertAxisFlip off → negate for natural look
+    FollowerCamera.facing = Utility.NormalizeRadian(
+      FollowerCamera.facing + THREE.MathUtils.degToRad(-nx * sens)
+    );
+
+    const pitchMin = FollowerCamera.stylePitch
+      - THREE.MathUtils.degToRad(Math.max(0, FollowerCamera.tiltDown));
+    const pitchMax = FollowerCamera.stylePitch
+      + THREE.MathUtils.degToRad(Math.max(0, FollowerCamera.tiltUp));
+    let nextPitch = FollowerCamera.pitch + THREE.MathUtils.degToRad(-ny * sens);
+    if(nextPitch < pitchMin) nextPitch = pitchMin;
+    if(nextPitch > pitchMax) nextPitch = pitchMax;
+    // Keep within chase-safe band
+    if(nextPitch < 0) nextPitch = 0;
+    if(nextPitch > HALF_PI) nextPitch = HALF_PI;
+    FollowerCamera.pitch = nextPitch;
+
+    FollowerCamera.clearFocusObject();
+  }
+
+  /**
    * Resolve FreeLookHook → CameraHook → root+2 (CSWCameraFreeLook::Control @ 00639d00).
    */
   static resolveFreeLookHook(followee: ModuleObject): boolean {
@@ -385,11 +432,14 @@ export class FollowerCamera {
       FollowerCamera.freeLookPitchAxis * FollowerCamera.flTiltSpeed * dt;
 
     // Mouse look when cursor is hidden / pointer-driven (retail HideMouse)
+    // Scale by GetMouseSenSetting vs default (~29.8) — was hard-coded 0.15
     const mx = Mouse.MouseX - Mouse.OldMouseX;
     const my = Mouse.MouseY - Mouse.OldMouseY;
     if(mx || my){
-      FollowerCamera.freeLookYawDeg -= mx * 0.15;
-      FollowerCamera.freeLookPitchDeg -= my * 0.15;
+      const sensScale = Mouse.getSensitivityDegrees() / 29.8;
+      const lookScale = 0.15 * sensScale;
+      FollowerCamera.freeLookYawDeg -= mx * lookScale;
+      FollowerCamera.freeLookPitchDeg -= my * lookScale;
     }
 
     // Clamp pitch to FL_LOOKUP / FL_LOOKDOWN

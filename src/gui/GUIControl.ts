@@ -1685,6 +1685,13 @@ export class GUIControl {
         this.anchorOffset.x = ((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
         this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
       break;
+      case Anchor.User: {
+        // Absolute top-left screen pixels → centered GUI widget coords (Y up)
+        const vpW = GameState.ResolutionManager.getViewportWidth();
+        const vpH = GameState.ResolutionManager.getViewportHeight();
+        this.anchorOffset.x = -vpW / 2 + this.extent.left + this.extent.width / 2;
+        this.anchorOffset.y = vpH / 2 - this.extent.top - this.extent.height / 2;
+      } break;
       default:
         this.anchorOffset = new THREE.Vector2(posX, posY);
       break;

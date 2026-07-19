@@ -38,10 +38,49 @@ const preloadTextures = ['enemy_bar', 'hostilearrow', 'friend_bar', 'friendlyarr
 const preloadTexturesMap = new Map<string, OdysseyTexture>();
 
 const ARROW_SCALE = 32;
-const ARROW_SCALE_HALF = ARROW_SCALE / 2;
 const ARROW_DIR_LEFT = 0;
-const ARROW_DIR_DOWN = Math.PI/2;
+const ARROW_DIR_DOWN = Math.PI / 2;
 const ARROW_DIR_RIGHT = Math.PI;
+const ARROW_DIR_UP = -Math.PI / 2;
+/** Retail PositionMenu / UpdateIndicator edge inset (0x20). */
+const TARGET_MENU_EDGE = 0x20;
+
+/** Screen-space menu anchor from CSWCCreature::GetMenuPoint / object vtable 0x13c. */
+type TargetMenuPoint = {
+  x: number;
+  y: number;
+  /** 1 = in front of camera, 2 = behind / off-axis (edge treatment). */
+  status: 0 | 1 | 2;
+};
+
+/** Clamp rect from LBL_ARROW_MARGIN + LBL_MENUBG + TB_PAUSE (MainInterface ctor). */
+type TargetMenuBounds = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+/** Relative layout captured from GUI extents (CSWGuiTargetActionMenu::Initialize). */
+type TargetMenuLayout = {
+  menuWidth: number;
+  /** PB_HEALTH.top - (LBL_NAME.top + LBL_NAME.height) */
+  healthGap: number;
+  /** BTN_TARGET0.top - (LBL_NAME.top + LBL_NAME.height) */
+  actionGap: number;
+  /** BTN_TARGET0.left - LBL_NAME.left (retail inset under nameplate) */
+  actionOffsetLeft: number;
+  healthHeight: number;
+  actionButtonWidth: number;
+  actionButtonHeight: number;
+  actionLabelLeft: number;
+  actionLabelTop: number;
+  actionUpLeft: number;
+  actionUpTop: number;
+  actionDownLeft: number;
+  actionDownTop: number;
+  actionSlotStride: number;
+};
 
 /**
  * InGameOverlay class.
@@ -167,6 +206,15 @@ export class InGameOverlay extends GameMenu {
 
   namePlateArrow: THREE.Mesh;
   namePlateArrowMaterial: THREE.MeshBasicMaterial;
+
+  /** CSWGuiTargetActionMenu layout gaps / width from GUI init. */
+  targetMenuLayout: TargetMenuLayout;
+  targetScreenPosition: THREE.Vector3 = new THREE.Vector3();
+  reticlePosition: THREE.Vector3 = new THREE.Vector3();
+  reticleScreenPosition: THREE.Vector3 = new THREE.Vector3();
+  #menuPointWorld: THREE.Vector3 = new THREE.Vector3();
+  #menuPointNdc: THREE.Vector3 = new THREE.Vector3();
+  #camForward: THREE.Vector3 = new THREE.Vector3();
 
   constructor(){
     super();
@@ -470,12 +518,52 @@ export class InGameOverlay extends GameMenu {
       this.namePlateArrow.scale.y = 32;
       this.namePlateArrow.position.z = 5;
       this.namePlateArrow.renderOrder = 5;
-      this.namePlateArrow.visible = true;
+      this.namePlateArrow.visible = false;
       this.tGuiPanel.widget.add(this.namePlateArrow);
+
+      this.captureTargetMenuLayout();
 
       // this.LBL_COMBATBG2.visible = false;
       resolve();
     });
+  }
+
+  /**
+   * Retail CSWGuiTargetActionMenu::Initialize — store width_ and vertical gaps
+   * between name, health bar, and target action buttons from GUI extents.
+   */
+  captureTargetMenuLayout() {
+    const name = this.LBL_NAME;
+    const health = this.PB_HEALTH;
+    const btn0 = this.BTN_TARGET0;
+    if(!name || !health || !btn0){
+      return;
+    }
+
+    const nameBottom = name.extent.top + name.extent.height;
+    const btn1 = this.BTN_TARGET1;
+    const lbl0 = this.LBL_TARGET0;
+    const up0 = this.BTN_TARGETUP0;
+    const down0 = this.BTN_TARGETDOWN0;
+    this.targetMenuLayout = {
+      menuWidth: name.extent.width,
+      healthGap: health.extent.top - nameBottom,
+      actionGap: btn0.extent.top - nameBottom,
+      // mipc28x6: name L=0, BTN_TARGET0 L=43 — actions are inset under the plate
+      actionOffsetLeft: btn0.extent.left - name.extent.left,
+      healthHeight: health.extent.height,
+      actionButtonWidth: btn0.extent.width,
+      actionButtonHeight: btn0.extent.height,
+      actionLabelLeft: (lbl0?.extent.left ?? btn0.extent.left) - btn0.extent.left,
+      actionLabelTop: (lbl0?.extent.top ?? btn0.extent.top) - btn0.extent.top,
+      actionUpLeft: (up0?.extent.left ?? btn0.extent.left) - btn0.extent.left,
+      actionUpTop: (up0?.extent.top ?? btn0.extent.top) - btn0.extent.top,
+      actionDownLeft: (down0?.extent.left ?? btn0.extent.left) - btn0.extent.left,
+      actionDownTop: (down0?.extent.top ?? btn0.extent.top) - btn0.extent.top,
+      actionSlotStride: btn1
+        ? (btn1.extent.left - btn0.extent.left)
+        : (btn0.extent.width + 5),
+    };
   }
 
   showCombatUI() {
@@ -567,9 +655,10 @@ export class InGameOverlay extends GameMenu {
   _canShowTargetUI() {
     if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature) && GameState.CursorManager.selectedObject.isDead())
       return false;
+    // Retail still shows edge arrow + nameplate when reticle is off-screen (UpdateIndicator status 2)
     return (
-      !this.manager.MenuContainer.bVisible && 
-      GameState.CursorManager.reticle2.visible && 
+      !this.manager.MenuContainer.bVisible &&
+      !!GameState.CursorManager.selectedObject &&
       BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleObject) &&
       !BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleRoom)
     );
@@ -708,44 +797,251 @@ export class InGameOverlay extends GameMenu {
     }
   }
 
-  targetScreenPosition: THREE.Vector3 = new THREE.Vector3();
-  reticlePosition: THREE.Vector3 = new THREE.Vector3();
-  reticleScreenPosition: THREE.Vector3 = new THREE.Vector3();
-  updateArrow(selectedObject: ModuleObject) {
-    this.namePlateArrow.visible = !!selectedObject;
-    if(!selectedObject) return;
-    
-    const viewportXMin = -GameState.ResolutionManager.getViewportWidth()/2 + ARROW_SCALE_HALF;
-    const viewportXMax = GameState.ResolutionManager.getViewportWidth()/2 - ARROW_SCALE_HALF;
-    const viewportYMin2 = -GameState.ResolutionManager.getViewportHeight()/2 + ARROW_SCALE_HALF;
-    const viewportYMax2 = GameState.ResolutionManager.getViewportHeight()/2 - ARROW_SCALE_HALF;
-    const viewportYMin = -240/2 + ARROW_SCALE_HALF;
-    const viewportYMax = 240/2 - ARROW_SCALE_HALF;
-    const offLeft = this.reticleScreenPosition.x <= viewportXMin;
-    const offRight = this.reticleScreenPosition.x >= viewportXMax;
-    const offTop = this.reticleScreenPosition.y <= viewportYMin2;
-    const offBottom = this.reticleScreenPosition.y >= viewportYMax2;
-    const offScreen = offLeft || offRight || offTop || offBottom;
+  /**
+   * Retail CSWCCreature::GetMenuPoint @ 0060ff30 / object vtable+0x13c.
+   * Returns top-left screen pixels and visibility status (1 front, 2 behind).
+   */
+  getTargetMenuPoint(selectedObject: ModuleObject): TargetMenuPoint {
+    const vpW = GameState.ResolutionManager.getViewportWidth();
+    const vpH = GameState.ResolutionManager.getViewportHeight();
+    const camera = GameState.currentCamera;
+    if(!camera || !selectedObject){
+      return { x: vpW / 2, y: vpH / 2, status: 0 };
+    }
 
-    const isOnScreen = GameState.viewportFrustum.containsPoint(this.reticlePosition);
-    if(isOnScreen){
+    if(BitWise.InstanceOfObject(selectedObject, ModuleObjectType.ModuleCreature)){
+      this.#menuPointWorld.copy(selectedObject.position);
+      const tag = (selectedObject.tag || '').toLowerCase();
+      // Retail: +2.0 for zaalbar/hk47, else +1.75
+      this.#menuPointWorld.z += (tag === 'zaalbar' || tag === 'hk47') ? 2.0 : 1.75;
+    }else{
+      const node = selectedObject.getReticleNode?.();
+      if(node){
+        node.getWorldPosition(this.#menuPointWorld);
+      }else{
+        this.#menuPointWorld.copy(selectedObject.position);
+      }
+    }
+
+    this.reticlePosition.copy(this.#menuPointWorld);
+
+    // Do NOT call camera.getWorldDirection() — it runs updateWorldMatrix() and
+    // desyncs matrixWorld from matrixWorldInverse mid-frame, which corrupts
+    // GameState frustum / currentCameraPosition while the camera turns.
+    // FollowerCamera forward is local +Y (Z-up, YZX).
+    this.#camForward.set(0, 1, 0).applyQuaternion(camera.quaternion);
+    const toPointX = this.#menuPointWorld.x - camera.position.x;
+    const toPointY = this.#menuPointWorld.y - camera.position.y;
+    const toPointZ = this.#menuPointWorld.z - camera.position.z;
+    const inFront = (toPointX * this.#camForward.x + toPointY * this.#camForward.y + toPointZ * this.#camForward.z) > 0;
+    const status: 1 | 2 = inFront ? 1 : 2;
+
+    this.#menuPointNdc.copy(this.#menuPointWorld).project(camera);
+    const x = (this.#menuPointNdc.x * 0.5 + 0.5) * vpW;
+    const y = (-this.#menuPointNdc.y * 0.5 + 0.5) * vpH;
+    this.reticleScreenPosition.set(x, y, 0);
+    return { x, y, status };
+  }
+
+  /**
+   * Retail MainInterface ctor clamp rect:
+   * left = arrow_margin.left
+   * top = menubg.top + menubg.height
+   * width = viewportWidth - 2 * arrow_margin.left
+   * height = pause.top - top
+   */
+  getTargetMenuBounds(): TargetMenuBounds {
+    const vpW = GameState.ResolutionManager.getViewportWidth();
+    const vpH = GameState.ResolutionManager.getViewportHeight();
+    const panelW = this.tGuiPanel?.extent?.width || 640;
+    const panelH = this.tGuiPanel?.extent?.height || 480;
+    const sx = vpW / panelW;
+    const sy = vpH / panelH;
+
+    const marginLeft = (this.LBL_ARROW_MARGIN?.extent.left ?? 0) * sx;
+    const menuBg = this.LBL_MENUBG?.extent;
+    const marginTop = menuBg ? (menuBg.top + menuBg.height) * sy : 0;
+    const pauseTop = (this.TB_PAUSE?.extent.top ?? panelH) * sy;
+
+    return {
+      left: marginLeft,
+      top: marginTop,
+      width: Math.max(0, vpW - marginLeft * 2),
+      height: Math.max(0, pauseTop - marginTop),
+    };
+  }
+
+  /**
+   * Retail CSWGuiTargetActionMenu::PositionMenu @ 00686090.
+   * Positions the floating target menu viewport origin (top-left screen pixels).
+   */
+  positionTargetMenu(point: TargetMenuPoint, menuWidth: number, menuHeight: number): { x: number; y: number } {
+    const bounds = this.getTargetMenuBounds();
+    const halfW = menuWidth / 2;
+    let menuX = 0;
+    let menuY = 0;
+    const screenX = point.x;
+    const screenY = point.y;
+    const edge = TARGET_MENU_EDGE;
+
+    if(point.status === 2){
+      // Behind camera: pin to left/right half and vertical edges
+      menuX = screenX <= GameState.ResolutionManager.getViewportWidth() / 2
+        ? bounds.left
+        : bounds.left + bounds.width - menuWidth;
+
+      if(screenY < bounds.top + edge){
+        menuY = (bounds.top + bounds.height) - menuHeight - edge;
+      }else if(screenY > bounds.top + bounds.height - edge){
+        menuY = bounds.top;
+      }else if(screenY < GameState.ResolutionManager.getViewportHeight() / 2){
+        menuY = GameState.ResolutionManager.getViewportHeight() - Math.floor(menuHeight + screenY + edge);
+      }else{
+        menuY = Math.floor(screenY - edge - menuHeight);
+      }
+    }else{
+      // In front: center on point horizontally; place menu above point with 32px gap
+      if(screenX - halfW < bounds.left){
+        menuX = bounds.left;
+        if(screenY < bounds.top + edge){
+          menuY = bounds.top;
+        }else if(screenY > bounds.top + bounds.height - edge){
+          menuY = bounds.top + bounds.height - menuHeight - edge;
+        }else{
+          menuY = Math.floor(screenY - edge - menuHeight);
+        }
+      }else if(screenX + halfW > bounds.left + bounds.width){
+        menuX = bounds.left + bounds.width - menuWidth;
+        if(screenY < bounds.top + edge){
+          menuY = bounds.top;
+        }else if(screenY > bounds.top + bounds.height - edge){
+          menuY = bounds.top + bounds.height - menuHeight - edge;
+        }else{
+          menuY = Math.floor(screenY - edge - menuHeight);
+        }
+      }else{
+        menuX = Math.floor(screenX - halfW);
+        if(screenY < bounds.top + edge){
+          menuY = bounds.top;
+        }else if(screenY > bounds.top + bounds.height - edge){
+          menuY = bounds.top + bounds.height - menuHeight - edge;
+        }else{
+          menuY = Math.floor(screenY - edge - menuHeight);
+        }
+      }
+    }
+
+    // Final clamp (PositionMenu epilogue)
+    const maxX = bounds.left + bounds.width - menuWidth;
+    const maxY = bounds.top + bounds.height - menuHeight;
+    menuX = Math.min(Math.max(menuX, bounds.left), maxX);
+    menuY = Math.min(Math.max(menuY, bounds.top), maxY);
+    return { x: menuX, y: menuY };
+  }
+
+  placeUserControl(control: GUILabel | GUIButton | GUIProgressBar | undefined, left: number, top: number, width?: number, height?: number) {
+    if(!control) return;
+    control.scale = false;
+    control.anchor = Anchor.User;
+    control.extent.left = left;
+    control.extent.top = top;
+    if(typeof width === 'number') control.extent.width = width;
+    if(typeof height === 'number') control.extent.height = height;
+    control.recalculate();
+  }
+
+  /**
+   * Retail CSWGuiMainInterface::UpdateIndicator edge-arrow path when target is
+   * outside LBL_ARROW_MARGIN (or behind camera). On-screen reticles stay in CursorManager.
+   */
+  updateArrow(selectedObject: ModuleObject, point?: TargetMenuPoint) {
+    if(!this.namePlateArrow){
+      return;
+    }
+    if(!selectedObject || !point || point.status === 0){
       this.namePlateArrow.visible = false;
       return;
     }
 
-    this.namePlateArrow.position.x = Math.min(Math.max(this.reticleScreenPosition.x, viewportXMin), viewportXMax);
-    this.namePlateArrow.position.y = -Math.min(Math.max(this.reticleScreenPosition.y, viewportYMin), viewportYMax);
-    this.namePlateArrow.position.y += 50;
-    if(offLeft){
-      this.namePlateArrow.rotation.z = ARROW_DIR_LEFT;
-    }else if(offRight){
-      this.namePlateArrow.rotation.z = ARROW_DIR_RIGHT;
-    }else{
-      this.namePlateArrow.rotation.z = ARROW_DIR_DOWN;
+    const margin = this.LBL_ARROW_MARGIN?.extent;
+    const panelW = this.tGuiPanel?.extent?.width || 640;
+    const panelH = this.tGuiPanel?.extent?.height || 480;
+    const vpW = GameState.ResolutionManager.getViewportWidth();
+    const vpH = GameState.ResolutionManager.getViewportHeight();
+    const sx = vpW / panelW;
+    const sy = vpH / panelH;
+
+    const marginLeft = (margin?.left ?? 0) * sx;
+    const marginTop = (margin?.top ?? 0) * sy;
+    const marginW = (margin?.width ?? panelW) * sx;
+    const marginH = (margin?.height ?? panelH) * sy;
+    const marginRight = marginLeft + marginW;
+    const marginBottom = marginTop + marginH;
+
+    const screenX = point.x;
+    const screenY = point.y;
+    const inside =
+      point.status === 1 &&
+      screenX >= marginLeft + TARGET_MENU_EDGE &&
+      screenX <= marginRight - TARGET_MENU_EDGE &&
+      screenY >= marginTop + TARGET_MENU_EDGE &&
+      screenY <= marginBottom - TARGET_MENU_EDGE;
+
+    // On-screen inside margin: retail draws the world reticle, not the edge arrow
+    if(inside){
+      this.namePlateArrow.visible = false;
+      return;
     }
-    this.namePlateArrow.scale.x = 32;
-    this.namePlateArrow.scale.y = 32;
+
+    this.namePlateArrow.visible = true;
+    let arrowLeft = screenX;
+    let arrowTop = screenY;
+    let size = ARROW_SCALE;
+    let rotation = ARROW_DIR_DOWN;
+
+    if(screenX < marginLeft + TARGET_MENU_EDGE){
+      arrowLeft = marginLeft;
+      rotation = ARROW_DIR_LEFT;
+      size = ARROW_SCALE;
+      if(screenY < marginTop + TARGET_MENU_EDGE){
+        arrowTop = marginTop;
+      }else if(screenY > marginBottom - TARGET_MENU_EDGE){
+        arrowTop = marginBottom - size;
+      }else{
+        arrowTop = Math.floor(screenY - size / 2);
+      }
+    }else if(screenX > marginRight - TARGET_MENU_EDGE){
+      arrowLeft = marginRight - size;
+      rotation = ARROW_DIR_RIGHT;
+      size = ARROW_SCALE;
+      if(screenY < marginTop + TARGET_MENU_EDGE){
+        arrowTop = marginTop;
+      }else if(screenY > marginBottom - TARGET_MENU_EDGE){
+        arrowTop = marginBottom - size;
+      }else{
+        arrowTop = Math.floor(screenY - size / 2);
+      }
+    }else if(screenY < marginTop + TARGET_MENU_EDGE){
+      arrowTop = marginTop;
+      rotation = ARROW_DIR_UP;
+      size = ARROW_SCALE;
+      arrowLeft = Math.floor(screenX - size / 2);
+    }else{
+      arrowTop = marginBottom - size;
+      rotation = ARROW_DIR_DOWN;
+      size = ARROW_SCALE;
+      arrowLeft = Math.floor(screenX - size / 2);
+    }
+
+    arrowLeft = Math.min(Math.max(arrowLeft, marginLeft), marginRight - size);
+    arrowTop = Math.min(Math.max(arrowTop, marginTop), marginBottom - size);
+
+    // Mesh lives in panel-centered GUI space (Y up)
+    this.namePlateArrow.position.x = -vpW / 2 + arrowLeft + size / 2;
+    this.namePlateArrow.position.y = vpH / 2 - arrowTop - size / 2;
     this.namePlateArrow.position.z = 5;
+    this.namePlateArrow.rotation.z = rotation;
+    this.namePlateArrow.scale.set(size, size, 1);
     this.namePlateArrow.renderOrder = 5;
   }
 
@@ -766,117 +1062,109 @@ export class InGameOverlay extends GameMenu {
       return;
     }
 
-    if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
-      if (GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'friend_bar') {
+    const selected = GameState.CursorManager.selectedObject;
+    const isHostile = BitWise.InstanceOfObject(selected, ModuleObjectType.ModuleCreature)
+      && selected.isHostile(GameState.getCurrentPlayer());
+
+    if (isHostile) {
+      if (this.PB_HEALTH.getFillTextureName() != 'enemy_bar') {
         this.PB_HEALTH.setFillTextureName('enemy_bar');
         this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('enemy_bar'));
+      }
+      if (this.namePlateArrowMaterial) {
         this.namePlateArrowMaterial.map = preloadTexturesMap.get('hostilearrow');
-      } else if (!GameState.CursorManager.selectedObject.isHostile(GameState.getCurrentPlayer()) && this.PB_HEALTH.getFillTextureName() == 'enemy_bar') {
-        this.PB_HEALTH.setFillTextureName('friend_bar');
-        this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('friend_bar'));
-        this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
       }
     } else {
       if (this.PB_HEALTH.getFillTextureName() != 'friend_bar') {
         this.PB_HEALTH.setFillTextureName('friend_bar');
         this.PB_HEALTH.setFillTexture(preloadTexturesMap.get('friend_bar'));
+      }
+      if (this.namePlateArrowMaterial) {
         this.namePlateArrowMaterial.map = preloadTexturesMap.get('friendlyarrow');
       }
     }
-    if (this.manager.InGameOverlay.LBL_NAME.text.text != GameState.CursorManager.selectedObject.getName()) {
-      this.LBL_NAME.setText(GameState.CursorManager.selectedObject.getName(), 25);
-    }
-    let health = 100 * Math.min(Math.max(GameState.CursorManager.selectedObject.getHP() / GameState.CursorManager.selectedObject.getMaxHP(), 0), 1);
-    if (health > 100)
-      health = 100;
-    this.PB_HEALTH.setProgress(health);
-    const maxBoundsX = GameState.ResolutionManager.getViewportWidth() / 2 + 640 / 2 - 125;
-    const maxBoundsX2 = GameState.ResolutionManager.getViewportWidth() / 2 - 640 / 2 - 125;
-    this.targetScreenPosition.set(640 / 2, 480 / 2, 0);
-    if (BitWise.InstanceOfObject(GameState.CursorManager.selectedObject, ModuleObjectType.ModuleCreature)) {
-      this.reticlePosition.copy(GameState.CursorManager.selectedObject.position);
-      this.reticlePosition.z += 2;
-    } else {
-      this.reticlePosition.setFromMatrixPosition(GameState.CursorManager.reticle2.matrixWorld);
-    }
-    this.reticleScreenPosition.copy(this.reticlePosition);
-    this.reticleScreenPosition.project(GameState.currentCamera);
 
-    const widthHalf = GameState.ResolutionManager.getViewportWidth() / 2;
-    const heightHalf = GameState.ResolutionManager.getViewportHeight() / 2;
-    this.reticleScreenPosition.x = this.reticleScreenPosition.x * widthHalf;
-    this.reticleScreenPosition.y = -(this.reticleScreenPosition.y * heightHalf);
-    this.reticleScreenPosition.z = 0;
-    this.updateArrow(GameState.CursorManager.selectedObject);
-    
-    this.targetScreenPosition.add(this.reticleScreenPosition);
-    if (this.targetScreenPosition.x > maxBoundsX) {
-      this.targetScreenPosition.x = maxBoundsX;
+    if (this.LBL_NAME.text.text != selected.getName()) {
+      this.LBL_NAME.setText(selected.getName(), 25);
     }
-    if (this.targetScreenPosition.x < -maxBoundsX2) {
-      this.targetScreenPosition.x = -maxBoundsX2;
-    }
-    if (this.targetScreenPosition.y > 640 / 2) {
-      this.targetScreenPosition.y = 640 / 2;
-    }
-    if (this.targetScreenPosition.y < 100) {
-      this.targetScreenPosition.y = 100;
-    }
-    this.LBL_NAME.scale = this.LBL_NAMEBG.scale = this.PB_HEALTH.scale = this.LBL_HEALTHBG.scale = false;
+
+    let health = 100 * Math.min(Math.max(selected.getHP() / selected.getMaxHP(), 0), 1);
+    if (health > 100) health = 100;
+    this.PB_HEALTH.setProgress(health);
+
+    const point = this.getTargetMenuPoint(selected);
+    this.updateArrow(selected, point);
+
+    const layout = this.targetMenuLayout;
+    const menuWidth = layout?.menuWidth || this.LBL_NAME.extent.width;
+    // Retail SetNameLabel: name height from ideal text height, then stack health/actions
+    const nameHeight = Math.max(this.LBL_NAME.getTextSize()?.y || 0, this.LBL_NAME.extent.height);
+    const healthGap = layout?.healthGap ?? 0;
+    const actionGap = layout?.actionGap ?? 0;
+    const healthHeight = layout?.healthHeight ?? this.PB_HEALTH.extent.height;
+    const hasActions = !!GameState.ActionMenuManager.targetActionCount();
+    const actionBottom = hasActions
+      ? (actionGap + (layout?.actionButtonHeight ?? 0))
+      : 0;
+    const healthBottom = healthGap + healthHeight;
+    const menuHeight = nameHeight + Math.max(healthBottom, actionBottom);
+
+    const menuPos = this.positionTargetMenu(point, menuWidth, menuHeight);
+    this.targetScreenPosition.set(menuPos.x, menuPos.y, 0);
+
     this.LBL_NAME?.show();
     this.LBL_NAMEBG?.show();
     this.PB_HEALTH?.show();
     this.LBL_HEALTHBG?.show();
-    this.LBL_NAME.extent.left = this.targetScreenPosition.x - 20;
-    this.LBL_NAME.anchor = Anchor.User;
-    this.LBL_NAMEBG.extent.left = this.targetScreenPosition.x - 20;
-    this.LBL_NAMEBG.anchor = Anchor.User;
-    this.PB_HEALTH.extent.left = this.targetScreenPosition.x - 20;
-    this.PB_HEALTH.anchor = Anchor.User;
-    this.LBL_HEALTHBG.extent.left = this.targetScreenPosition.x - 20;
-    this.LBL_HEALTHBG.anchor = Anchor.User;
-    this.LBL_NAME.extent.top = this.targetScreenPosition.y - 38;
-    this.LBL_NAMEBG.extent.top = this.targetScreenPosition.y - 38;
-    this.PB_HEALTH.extent.top = this.targetScreenPosition.y - 12;
-    this.LBL_HEALTHBG.extent.top = this.targetScreenPosition.y - 12;
-    this.LBL_NAME.recalculate();
-    this.LBL_NAMEBG.recalculate();
-    this.PB_HEALTH.recalculate();
-    this.LBL_HEALTHBG.recalculate();
-    if (!!GameState.ActionMenuManager.targetActionCount()) {
+
+    this.placeUserControl(this.LBL_NAME, menuPos.x, menuPos.y, menuWidth, nameHeight);
+    this.placeUserControl(this.LBL_NAMEBG, menuPos.x, menuPos.y, menuWidth, nameHeight);
+
+    const healthTop = menuPos.y + nameHeight + healthGap;
+    this.placeUserControl(this.PB_HEALTH, menuPos.x, healthTop, menuWidth, healthHeight);
+    this.placeUserControl(this.LBL_HEALTHBG, menuPos.x, healthTop, menuWidth, healthHeight);
+
+    if (hasActions) {
+      const stride = layout?.actionSlotStride ?? (this.BTN_TARGET0.extent.width + 5);
+      const actionOffsetLeft = layout?.actionOffsetLeft ?? 43;
+      const actionTop = menuPos.y + nameHeight + actionGap;
       for (let i = 0; i < GameState.ActionMenuManager.TARGET_MENU_COUNT; i++) {
-        let xPos = (this.getControlByName('BTN_TARGET' + i).extent.width + 5) * i + 20;
-        this.getControlByName('BTN_TARGET' + i).scale = false;
-        this.getControlByName('BTN_TARGET' + i).extent.left = this.targetScreenPosition.x + xPos;
-        this.getControlByName('BTN_TARGET' + i).extent.top = this.targetScreenPosition.y;
-        this.getControlByName('BTN_TARGET' + i).anchor = Anchor.User;
-        this.getControlByName('LBL_TARGET' + i).scale = false;
-        this.getControlByName('LBL_TARGET' + i).extent.left = this.targetScreenPosition.x + xPos + 3;
-        this.getControlByName('LBL_TARGET' + i).extent.top = this.targetScreenPosition.y + 14;
-        this.getControlByName('LBL_TARGET' + i).anchor = Anchor.User;
-        this.getControlByName('BTN_TARGETUP' + i).scale = false;
-        this.getControlByName('BTN_TARGETUP' + i).extent.left = this.targetScreenPosition.x + xPos;
-        this.getControlByName('BTN_TARGETUP' + i).extent.top = this.targetScreenPosition.y + 5;
-        this.getControlByName('BTN_TARGETUP' + i).anchor = Anchor.User;
-        this.getControlByName('BTN_TARGETDOWN' + i).scale = false;
-        this.getControlByName('BTN_TARGETDOWN' + i).extent.left = this.targetScreenPosition.x + xPos;
-        this.getControlByName('BTN_TARGETDOWN' + i).extent.top = this.targetScreenPosition.y + (this.getControlByName('BTN_TARGET' + i).extent.height / 2 + 12);
-        this.getControlByName('BTN_TARGETDOWN' + i).widget.rotation.z = Math.PI;
-        this.getControlByName('BTN_TARGETDOWN' + i).anchor = Anchor.User;
+        const slotLeft = menuPos.x + actionOffsetLeft + stride * i;
+        const btn = this.getControlByName('BTN_TARGET' + i) as GUIButton;
+        const lbl = this.getControlByName('LBL_TARGET' + i) as GUIButton;
+        const up = this.getControlByName('BTN_TARGETUP' + i) as GUIButton;
+        const down = this.getControlByName('BTN_TARGETDOWN' + i) as GUIButton;
+
+        this.placeUserControl(btn, slotLeft, actionTop);
+        this.placeUserControl(
+          lbl,
+          slotLeft + (layout?.actionLabelLeft ?? 2),
+          actionTop + (layout?.actionLabelTop ?? 14)
+        );
+        this.placeUserControl(
+          up,
+          slotLeft + (layout?.actionUpLeft ?? 0),
+          actionTop + (layout?.actionUpTop ?? 1)
+        );
+        this.placeUserControl(
+          down,
+          slotLeft + (layout?.actionDownLeft ?? 1),
+          actionTop + (layout?.actionDownTop ?? 45)
+        );
+        if (down) {
+          down.widget.rotation.z = Math.PI;
+        }
+
         this.UpdateTargetUIIcon(i);
-        this.getControlByName('BTN_TARGETUP' + i).recalculate();
-        this.getControlByName('BTN_TARGETDOWN' + i).recalculate();
-        this.getControlByName('BTN_TARGET' + i).recalculate();
-        this.getControlByName('LBL_TARGET' + i).recalculate();
-        this.getControlByName('BTN_TARGET' + i)?.show();
-        this.getControlByName('LBL_TARGET' + i)?.show();
-        
-        if(GameState.ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1){
-          this.getControlByName('BTN_TARGETUP' + i)?.hide();
-          this.getControlByName('BTN_TARGETDOWN' + i)?.hide();
-        }else{
-          this.getControlByName('BTN_TARGETUP' + i)?.show();
-          this.getControlByName('BTN_TARGETDOWN' + i)?.show();
+        btn?.show();
+        lbl?.show();
+
+        if (GameState.ActionMenuManager.ActionPanels.targetPanels[i].actions.length <= 1) {
+          up?.hide();
+          down?.hide();
+        } else {
+          up?.show();
+          down?.show();
         }
       }
     } else {

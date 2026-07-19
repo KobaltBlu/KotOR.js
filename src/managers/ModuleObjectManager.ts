@@ -7,13 +7,28 @@ import { ReputationType } from "@/enums/nwscript/ReputationType";
 import { BitWise } from "@/utility/BitWise";
 import { PartyManager } from "@/managers/PartyManager";
 import * as THREE from "three";
-import type { Module, ModuleCreature, ModuleDoor, ModuleObject } from "@/module";
+import type { Module, ModuleCreature, ModuleDoor, ModuleObject, ModulePlaceable, ModuleTrigger } from "@/module";
 import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 import { GameState } from "@/GameState";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
+import { FollowerCamera } from "@/engine/FollowerCamera";
+import { isClientCombatMode } from "@/managers/reticle";
+import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 
+/** Retail GetNearestObjects / DoPassiveSelection range (√900). */
+const NEAREST_OBJECT_RANGE = 30;
+const NEAREST_OBJECT_RANGE_SQ = NEAREST_OBJECT_RANGE * NEAREST_OBJECT_RANGE;
+/** Front cone cos(~30°) from GetNearestObjects. */
+const FRONT_CONE_DOT = 0.866;
+/** Origin offset behind player for front-cone test. */
+const FRONT_CONE_ORIGIN_BACK = 4;
+/** LOS grace while sticky target briefly occluded (field205_0x368). */
+const STICKY_LOS_GRACE_SEC = 1.0;
 const UPDATE_SELECTABLE_OBJECTS_INTERVAL = 0.5;
+
+type NearestValid = { ok: boolean; hostile: boolean };
+type NearestLists = { around: ModuleObject[]; front: ModuleObject[] };
 
 /**
  * ModuleObjectManager class.
@@ -270,43 +285,6 @@ export class ModuleObjectManager {
     }
 
     return undefined;
-
-  }
-
-  public static GetNearestInteractableObject(oObject?: ModuleObject){
-    let results: ModuleObject[] = [];
-
-    results = results.concat(PartyManager.party);
-    results = results.concat(this.module.area.creatures);
-    results = results.concat(this.module.area.doors);
-    results = results.concat(this.module.area.placeables);
-
-    results.sort(
-      function(a,b) {
-        try{
-          let distanceA = a.position.distanceTo(oObject.position);
-          let distanceB = b.position.distanceTo(oObject.position);
-          return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
-          return 0;
-        }
-      }
-    );
-
-    let result: any;
-    let count = results.length;
-
-    for(let i = 0; i < count; i++){
-      result = results[i];
-      if( result != PartyManager.party[0] && result.isOnScreen() && result.isUseable() ){
-        if( result.hasLineOfSight( PartyManager.party[0] ) ){
-          break;
-        }
-      }
-      result = undefined;
-    }
-
-    return result;
 
   }
 
@@ -707,142 +685,417 @@ export class ModuleObjectManager {
 
   static playerSelectableObjects: ModuleObject[] = [];
   static playerHoverableObjects: ModuleObject[] = [];
+  /** Hostile flags parallel to playerSelectableObjects (GetNearestObjects param_2). */
+  static #nearestHostileFlags = new WeakMap<ModuleObject, boolean>();
   static #currentVisibleObject: ModuleObject;
   static #currentVisibleObjectIndex: number = 0;
+  /** Sticky LOS grace timer (retail field205_0x368). */
+  static #stickyLosGrace = 0;
+  static #cachedFront: ModuleObject[] = [];
 
-  static SetPlayerVisibleObjects(objects: ModuleObject[]){
-    this.playerSelectableObjects = objects;
-    this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(this.#currentVisibleObject);
-    if(this.#currentVisibleObjectIndex == -1){
-      this.#currentVisibleObjectIndex = 0;
-      this.#currentVisibleObject = this.playerSelectableObjects[0];
+  static #tmpForward = new THREE.Vector3();
+  static #tmpBehind = new THREE.Vector3();
+  static #tmpDelta = new THREE.Vector3();
+
+  /**
+   * Retail CSWSCreature::ValidNearestObjectType @ 004f2c30.
+   */
+  static validNearestObjectType(player: ModuleObject, obj: ModuleObject): NearestValid {
+    if(!obj || obj === player || !obj.area){
+      return { ok: false, hostile: false };
     }
+
+    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+      const cre = obj as ModuleCreature;
+      if(typeof cre.isDead === 'function' && cre.isDead()){
+        return { ok: false, hostile: false };
+      }
+      const viewer = player as ModuleCreature;
+      const seen = typeof viewer.hasSeenObject === 'function'
+        ? viewer.hasSeenObject(cre)
+        : true;
+      if(!seen && !obj.hasLineOfSight(player, NEAREST_OBJECT_RANGE)){
+        return { ok: false, hostile: false };
+      }
+      const hostile = typeof cre.isHostile === 'function'
+        ? cre.isHostile(player)
+        : false;
+      return { ok: true, hostile };
+    }
+
+    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)){
+      const trig = obj as ModuleTrigger;
+      if(trig.type !== ModuleTriggerType.TRAP){
+        return { ok: false, hostile: false };
+      }
+      // Detected, party-planted, or non-hostile to player
+      if(
+        trig.trapDetected ||
+        trig.setByPlayerParty ||
+        (typeof trig.isHostile === 'function' && !trig.isHostile(player))
+      ){
+        return { ok: true, hostile: true };
+      }
+      return { ok: false, hostile: false };
+    }
+
+    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
+      const plc = obj as ModulePlaceable;
+      if(!plc.isUseable()){
+        return { ok: false, hostile: false };
+      }
+      // Mine-like placeable with poor reputation → hostile flag
+      const mineLike = !!(plc.trapType || plc.trapDetectable);
+      const hostile = mineLike && typeof plc.isHostile === 'function' && plc.isHostile(player);
+      return { ok: true, hostile };
+    }
+
+    if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
+      const door = obj as ModuleDoor;
+      if(door.isOpen()){
+        return { ok: false, hostile: false };
+      }
+      if(!door.isUseable()){
+        return { ok: false, hostile: false };
+      }
+      return { ok: true, hostile: false };
+    }
+
+    return { ok: false, hostile: false };
   }
 
-  static GetNextPlayerVisibleObject(){
-    this.#currentVisibleObjectIndex++;
-    if(this.#currentVisibleObjectIndex >= this.playerSelectableObjects.length){
-      this.#currentVisibleObjectIndex = 0;
-    }
-    this.#currentVisibleObject = this.playerSelectableObjects[this.#currentVisibleObjectIndex];
-    return this.#currentVisibleObject;
+  /** Relative yaw degrees [0, 360) from player facing to target delta. */
+  static #relativeYawDeg(playerFacing: number, dx: number, dy: number): number {
+    let yaw = Math.atan2(dy, dx) - playerFacing;
+    while(yaw < 0) yaw += Math.PI * 2;
+    while(yaw >= Math.PI * 2) yaw -= Math.PI * 2;
+    return yaw * (180 / Math.PI);
   }
 
-  static GetPreviousPlayerVisibleObject(){
-    this.#currentVisibleObjectIndex--;
-    if(this.#currentVisibleObjectIndex < 0){
-      this.#currentVisibleObjectIndex = this.playerSelectableObjects.length - 1;
+  /**
+   * Retail CSWSCreature::GetNearestObjects @ 004fc4c0 (both ranges 30).
+   * around: yaw-sorted; front: distance-sorted within ~30° cone from 4u behind.
+   */
+  static getNearestObjects(player: ModuleObject): NearestLists {
+    const area = GameState.module?.area;
+    if(!player || !area){
+      return { around: [], front: [] };
     }
-    this.#currentVisibleObject = this.playerSelectableObjects[this.#currentVisibleObjectIndex];
-    return this.#currentVisibleObject;
-  }
 
-  static #tmpPlayerPosition = new THREE.Vector3();
-  static #tmpTargetPosition = new THREE.Vector3();
-  static #losZOffset = 1;
-
-  static GetSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
-
-    // KeepCorpse shells remain in area.creatures (save-filtered); hidden bags are non-useable
-    const objects = [
+    const candidates: ModuleObject[] = [
       ...GameState.PartyManager.party,
-      ...GameState.module.area.placeables, 
-      ...GameState.module.area.doors, 
-      ...GameState.module.area.creatures,
-      ...GameState.module.area.triggers.filter((trig) => trig.type == ModuleTriggerType.TRAP)
+      ...area.placeables,
+      ...area.doors,
+      ...area.creatures,
+      ...area.triggers.filter((t) => t.type === ModuleTriggerType.TRAP),
     ];
 
-    this.playerSelectableObjects = [];
-    this.playerHoverableObjects = [];
+    // Match ModuleCreature locomotion forward (rotation.z + π/2)
+    const facing = player.getFacing();
+    const forwardAngle = facing + Math.PI / 2;
+    this.#tmpForward.set(Math.cos(forwardAngle), Math.sin(forwardAngle), 0).normalize();
+    this.#tmpBehind
+      .copy(player.position)
+      .addScaledVector(this.#tmpForward, -FRONT_CONE_ORIGIN_BACK);
 
-    const objCount = objects.length;
-    this.#tmpPlayerPosition.copy(player.position);
-    this.#tmpPlayerPosition.z += this.#losZOffset;
+    type AroundEntry = { obj: ModuleObject; yaw: number; hostile: boolean };
+    type FrontEntry = { obj: ModuleObject; distSq: number; hostile: boolean };
+    const aroundEntries: AroundEntry[] = [];
+    const frontEntries: FrontEntry[] = [];
+    this.#nearestHostileFlags = new WeakMap();
 
-    this.#tmpTargetPosition.set(0, 0, 0);
-    
-    for(let i = 0; i < objCount; i++){
-      const obj = objects[i];
+    for(let i = 0; i < candidates.length; i++){
+      const obj = candidates[i];
+      const valid = this.validNearestObjectType(player, obj);
+      if(!valid.ok) continue;
 
-      //Ignore the player
-      if(obj == player){ continue; }
+      this.#tmpDelta.copy(obj.position).sub(player.position);
+      const distSq = this.#tmpDelta.lengthSq();
+      if(distSq > NEAREST_OBJECT_RANGE_SQ) continue;
 
-      //Ignore objects that are not useable
-      if(!obj.isUseable()){ continue; }
+      const yaw = this.#relativeYawDeg(forwardAngle, this.#tmpDelta.x, this.#tmpDelta.y);
+      aroundEntries.push({ obj, yaw, hostile: valid.hostile });
+      this.#nearestHostileFlags.set(obj, valid.hostile);
 
-      //Ignore doors that are open
-      const isDoor = BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor);
-      if(isDoor){
-        if((obj as ModuleDoor).isOpen()){ continue; };
+      // Front hemisphere relative to player
+      const frontDot = this.#tmpDelta.x * this.#tmpForward.x + this.#tmpDelta.y * this.#tmpForward.y;
+      if(frontDot < 0) continue;
+
+      // Cone from point 4u behind player
+      this.#tmpDelta.copy(obj.position).sub(this.#tmpBehind).normalize();
+      const coneDot =
+        this.#tmpDelta.x * this.#tmpForward.x +
+        this.#tmpDelta.y * this.#tmpForward.y +
+        this.#tmpDelta.z * this.#tmpForward.z;
+      if(coneDot > FRONT_CONE_DOT){
+        frontEntries.push({ obj, distSq, hostile: valid.hostile });
       }
-
-      this.#tmpTargetPosition.copy(obj.position);
-      if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)){
-        this.#tmpTargetPosition.z += this.#losZOffset;
-      }else{
-        this.#tmpTargetPosition.z += this.#losZOffset;//0.1;
-      }
-
-      const distance = this.#tmpTargetPosition.distanceToSquared(this.#tmpPlayerPosition);
-      if(distance > GameState.maxSelectableDistanceSquared){
-        continue;
-      }
-
-      //Ignore objects that have no area
-      if(!obj.area){
-        continue;
-      }
-
-      //Ignore objects that we don't have line of sight to
-      const hasLineOfSight = obj.hasLineOfSight(player, GameState.maxSelectableDistance);
-      if(!hasLineOfSight){
-        continue;
-      }
-
-      if(GameState.viewportFrustum.containsPoint(obj.position)){
-        this.playerHoverableObjects.push(obj);
-      }
-
-      //Add the object to the selectable objects list
-      this.playerSelectableObjects.push(obj);
     }
 
-    this.SetPlayerVisibleObjects(this.playerSelectableObjects);
+    aroundEntries.sort((a, b) => a.yaw - b.yaw);
+    frontEntries.sort((a, b) => a.distSq - b.distSq);
 
-    if(player.force > 0){
-      //get closest object to player
-      const closestObject = this.playerSelectableObjects.sort((a, b) => {
-        return a.position.distanceTo(player.position) - b.position.distanceTo(player.position);
-      })[0];
-      this.#currentVisibleObject = closestObject;
-      this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(closestObject);
-      GameState.CursorManager.setReticleSelectedObject(closestObject);
-    }
+    return {
+      around: aroundEntries.map((e) => e.obj),
+      front: frontEntries.map((e) => e.obj),
+    };
+  }
 
-    if(this.playerSelectableObjects.indexOf(GameState.CursorManager.selectedObject) == -1){
-      GameState.CursorManager.selectedObject = undefined;
-      GameState.CursorManager.selected = undefined;
+  static isNearestHostile(obj: ModuleObject | undefined): boolean {
+    if(!obj) return false;
+    return this.#nearestHostileFlags.get(obj) === true;
+  }
+
+  /** Approximate retail CSWCCreature::CanSee for selection. */
+  static canSeeObject(player: ModuleObject, obj: ModuleObject): boolean {
+    if(!player || !obj) return false;
+    return obj.hasLineOfSight(player, NEAREST_OBJECT_RANGE);
+  }
+
+  /**
+   * Retail CClientExoAppInternal::ShowObject @ 005f9c60 (presentation subset).
+   * @param doLookAt - param_2: creature LookAt
+   * @param doCameraFocus - param_3: SetLookAtTarget. Tab/SelectNearest passes true.
+   *   Combat-mode auto-focus is intentionally omitted here: continuous
+   *   FollowerCamera.focusObject yaw moves the floating target menu and
+   *   breaks BTN_TARGET clicks (security / attack).
+   */
+  static showObject(
+    obj: ModuleObject | undefined,
+    doLookAt: boolean,
+    doCameraFocus: boolean,
+  ){
+    if(!obj){
+      GameState.CursorManager.setReticleSelectedObject(undefined, { lookAt: false });
+      FollowerCamera.clearFocusObject();
       this.#currentVisibleObject = undefined;
       this.#currentVisibleObjectIndex = -1;
-      GameState.CursorManager.setReticleSelectedObject(this.#currentVisibleObject);
+      return;
     }
 
+    GameState.CursorManager.setReticleSelectedObject(obj, { lookAt: doLookAt });
+
+    this.#currentVisibleObject = obj;
+    this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(obj);
+
+    if(doLookAt && doCameraFocus){
+      FollowerCamera.setFocusObject(obj);
+    }else if(!doCameraFocus){
+      // Mouse / passive acquisition should not keep a prior Tab focus yaw
+      FollowerCamera.clearFocusObject();
+    }
+  }
+
+  /**
+   * Rebuild selectable / hoverable caches from GetNearestObjects.
+   * Does not mutate current selection (DoPassiveSelection owns that).
+   */
+  static GetSelectableObjectsInRange(player: ModuleObject): ModuleObject[] {
+    if(!player){
+      this.playerSelectableObjects = [];
+      this.playerHoverableObjects = [];
+      this.#cachedFront = [];
+      return this.playerSelectableObjects;
+    }
+
+    const { around, front } = this.getNearestObjects(player);
+    this.playerSelectableObjects = around;
+    this.#cachedFront = front;
+    this.playerHoverableObjects = [];
+
+    for(let i = 0; i < around.length; i++){
+      const obj = around[i];
+      if(GameState.viewportFrustum?.containsPoint(obj.position)){
+        this.playerHoverableObjects.push(obj);
+      }
+    }
+
+    // Sync cycle index to current selection without forcing a new pick
+    const selected = GameState.CursorManager.selectedObject;
+    this.#currentVisibleObjectIndex = selected
+      ? this.playerSelectableObjects.indexOf(selected)
+      : -1;
+    this.#currentVisibleObject = this.#currentVisibleObjectIndex >= 0
+      ? selected
+      : undefined;
+
     return this.playerSelectableObjects;
+  }
+
+  /**
+   * Retail CClientExoAppInternal::DoPassiveSelection @ 005fa630.
+   */
+  static doPassiveSelection(player: ModuleObject, delta: number = 0){
+    if(!player){
+      this.showObject(undefined, false, false);
+      return;
+    }
+
+    if(!this.playerSelectableObjects.length){
+      this.GetSelectableObjectsInRange(player);
+    }
+
+    const around = this.playerSelectableObjects;
+    const front = this.#cachedFront;
+    const last = GameState.CursorManager.selectedObject;
+    const combat = isClientCombatMode();
+
+    const inAround = (obj: ModuleObject | undefined) =>
+      !!obj && around.indexOf(obj) !== -1;
+
+    // Sticky: keep last_target while still in pool
+    if(last && inAround(last)){
+      if(this.canSeeObject(player, last)){
+        this.#stickyLosGrace = 0;
+        // Drop stale Tab focus on a different object so the floating menu stays put
+        if(FollowerCamera.focusObject && FollowerCamera.focusObject !== last){
+          FollowerCamera.clearFocusObject();
+        }
+        return;
+      }
+      this.#stickyLosGrace += delta;
+      if(this.#stickyLosGrace < STICKY_LOS_GRACE_SEC){
+        return;
+      }
+      this.#stickyLosGrace = 0;
+      // Fall through to auto-pick
+    }else{
+      this.#stickyLosGrace = 0;
+    }
+
+    const firstCanSee = (list: ModuleObject[], hostileOnly: boolean): ModuleObject | undefined => {
+      for(let i = 0; i < list.length; i++){
+        const obj = list[i];
+        if(hostileOnly && !this.isNearestHostile(obj)) continue;
+        if(!this.canSeeObject(player, obj)) continue;
+        return obj;
+      }
+      return undefined;
+    };
+
+    let pick: ModuleObject | undefined;
+    if(combat){
+      // Prefer hostiles in front cone, then hostiles in around, then any front
+      pick =
+        firstCanSee(front, true) ||
+        firstCanSee(around, true) ||
+        firstCanSee(front, false);
+    }else{
+      pick = firstCanSee(front, false);
+    }
+
+    if(pick){
+      if(pick === last){
+        return;
+      }
+      // New acquisition: LookAt; camera focus if combat (handled inside showObject)
+      this.showObject(pick, true, false);
+    }else if(last){
+      this.showObject(undefined, false, false);
+    }
+  }
+
+  /**
+   * Retail CClientExoAppInternal::SelectNearestObject @ 005fb050.
+   * @param previous - true = SelectPrev (param_1 != 0)
+   */
+  static selectNearestObject(previous: boolean = false): ModuleObject | undefined {
+    const player = PartyManager.party[0] ?? GameState.getCurrentPlayer();
+    if(!player) return undefined;
+
+    // Refresh pool if empty
+    if(!this.playerSelectableObjects.length){
+      this.GetSelectableObjectsInRange(player);
+    }
+
+    const list = this.playerSelectableObjects;
+    if(!list.length) return undefined;
+
+    const combat = isClientCombatMode();
+    // Out of combat: prefer hostile creatures when any exist (param_2 = 2)
+    let hostileOnly = false;
+    if(!combat){
+      for(let i = 0; i < list.length; i++){
+        const obj = list[i];
+        if(
+          this.isNearestHostile(obj) &&
+          BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature) &&
+          this.canSeeObject(player, obj)
+        ){
+          hostileOnly = true;
+          break;
+        }
+      }
+    }
+
+    const matches = (obj: ModuleObject) => {
+      if(!this.canSeeObject(player, obj)) return false;
+      if(!hostileOnly) return true;
+      return (
+        BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature) &&
+        this.isNearestHostile(obj)
+      );
+    };
+
+    const selected = GameState.CursorManager.selectedObject;
+    let idx = selected ? list.indexOf(selected) : -1;
+    if(idx < 0){
+      idx = previous ? list.length - 1 : 0;
+    }else if(previous){
+      idx = idx === 0 ? list.length - 1 : idx - 1;
+    }else{
+      idx = idx >= list.length - 1 ? 0 : idx + 1;
+    }
+
+    // Walk until a matching CanSee object (retail cycle loop)
+    for(let n = 0; n < list.length; n++){
+      const obj = list[idx];
+      if(matches(obj)){
+        const previousTarget = selected;
+        this.showObject(obj, true, true);
+        if(obj !== previousTarget){
+          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.NewTargetSelected);
+        }
+        return obj;
+      }
+      if(previous){
+        idx = idx === 0 ? list.length - 1 : idx - 1;
+      }else{
+        idx = idx >= list.length - 1 ? 0 : idx + 1;
+      }
+    }
+
+    return undefined;
+  }
+
+  /** @deprecated Use selectNearestObject(false) */
+  static GetNextPlayerVisibleObject(){
+    return this.selectNearestObject(false);
+  }
+
+  /** @deprecated Use selectNearestObject(true) */
+  static GetPreviousPlayerVisibleObject(){
+    return this.selectNearestObject(true);
   }
 
   static tUpdateSelectable = 0;
 
   /**
-   * Updates the cache of selectable objects
-   * @param delta - The delta time
+   * Rebuild nearest lists on interval; run DoPassiveSelection every tick.
    */
   static TickSelectableObjects(delta: number = 0){
+    const player = PartyManager.party[0];
+    if(!player){
+      return;
+    }
+
     this.tUpdateSelectable -= delta;
     if(this.tUpdateSelectable <= 0){
-      //Update the cache of selectable objects
-      GameState.ModuleObjectManager.GetSelectableObjectsInRange(PartyManager.party[0]);
+      this.GetSelectableObjectsInRange(player);
       this.tUpdateSelectable = UPDATE_SELECTABLE_OBJECTS_INTERVAL;
     }
+
+    this.doPassiveSelection(player, delta);
   }
 
 }

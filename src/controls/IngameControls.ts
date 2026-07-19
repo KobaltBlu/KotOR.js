@@ -222,35 +222,36 @@ export class IngameControls {
       }
       if(event.target == this.element){
         GameState.MenuManager.activeGUIElement = undefined;
-
-        if(event.button == 0){
-
-        }else if(event.button == 2){
-          // Ask the browser to lock the pointer
-          // this.element.requestPointerLock();
-        }
       }
 
       GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
-      
-      let clickCaptured = false;
 
       const customEvent = GUIControlEventFactory.generateEventObject();
+      const logical = Mouse.mapBrowserButton(event.button);
 
       Mouse.downItem = null;
       Mouse.clickItem = null;
       Mouse.shiftKey = !!event.shiftKey;
 
-      // Block GUI selection while a movie is playing
-      if(!GameState.VideoManager.isMoviePlaying() && event.button == 0){
+      if(logical === 'left'){
+        Mouse.leftDown = true;
+      }else if(logical === 'right'){
+        Mouse.rightDown = true;
+      }else if(logical === 'middle'){
+        Mouse.middleDown = true;
+        Mouse.MiddleMouseDown = true;
+      }
+
+      // GUI / world action clicks (logical left). Camera hold is RMB-only
+      // (Mouse Look inverts RMB sense per-frame — never steals LMB).
+      if(logical === 'left'){
         const uiControls = this.MenuGetActiveUIElements();
         for(let i = 0; i < uiControls.length; i++){
           if(!customEvent.propagate)
             break;
-          
+
           const control = uiControls[i];
           if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
-            clickCaptured = true;
             if(GameState.debug.CONTROLS)
               console.log('uiControls', control)
             try{
@@ -269,12 +270,6 @@ export class IngameControls {
           }
         }
       }
-
-      if(event.button == 0){
-        Mouse.leftDown = true;
-      }else if(event.button == 1){
-        Mouse.rightDown = true;
-      }
     });
 
     window.addEventListener('mousemove', (event: MouseEvent) => {
@@ -283,27 +278,38 @@ export class IngameControls {
         return;
       }
 
-      GameState.scene_cursor_holder.visible = true;
+      if(event.movementX || event.movementY){
+        Mouse.MouseX += event.movementX;
+        Mouse.MouseY += event.movementY;
+      }
 
       if(Mouse.pointerLock){
         Mouse.Update( Mouse.positionWindow.x + event.movementX, Mouse.positionWindow.y + event.movementY );
       }else{
+        // Always track absolute position for GUI / world clicks.
+        // RMB-hold look uses movement deltas separately; do not freeze UI coords
+        // (Mouse Look mode looks continuously while LMB must still hit-test).
         Mouse.Update( event.clientX, event.clientY );
+        if(!event.movementX && !event.movementY){
+          Mouse.MouseX = event.pageX - this.element.offsetLeft;
+          Mouse.MouseY = event.pageY - this.element.offsetTop;
+        }
       }
-      
-      if(Mouse.downItem && Mouse.leftDown){
+
+      const showCursor =
+        !Mouse.pointerLock &&
+        GameState.Mode != EngineMode.FREELOOK &&
+        !(Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled());
+      if(showCursor && GameState.scene_cursor_holder){
+        GameState.scene_cursor_holder.visible = true;
+      }
+
+      if(Mouse.downItem && Mouse.leftDown && !(Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled())){
         if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
           if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
             Mouse.downItem.processEventListener('mouseMove', [])
           }
         }
-      }
-      if(event.movementX || event.movementY){
-        Mouse.MouseX += event.movementX;
-        Mouse.MouseY += event.movementY;
-      }else{
-        Mouse.MouseX = event.pageX - this.element.offsetLeft;
-        Mouse.MouseY = event.pageY - this.element.offsetTop;
       }
     });
 
@@ -314,118 +320,126 @@ export class IngameControls {
         return;
       }
 
-      Mouse.leftClick = true;
+      const logical = Mouse.mapBrowserButton(event.button);
       Mouse.shiftKey = !!event.shiftKey;
 
-      if(Mouse.leftDown){
-        if(!Mouse.pointerLock){
-          Mouse.Update( event.clientX, event.clientY );
-        }
-
-        //If the NoClickTimer is active then we will return out of this function
-        if(GameState.noClickTimer){
-          return;
-        }
-
-        // Retail: click during death sequence hurries the fade (before UI click handling)
-        if(GameState.GameOverManager?.GetGameOver?.()){
-          GameState.GameOverManager.OnDeathSequenceInput();
-        }
-        
-        let clickCaptured = false;
-
-        const customEvent = GUIControlEventFactory.generateEventObject();
-
-        //Try to fire mouse up regardless if mouse is still inside object
-        if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
-          if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
-            try{
-              Mouse.downItem.processEventListener('mouseUp', [customEvent]);
-              Mouse.leftClick = false;
-            }catch(e){
-              console.error(e);
-            }
-          }
-        }
-
-        const uiControls = this.MenuGetActiveUIElements();
-        for(let i = 0; i < uiControls.length; i++){
-          if(!customEvent.propagate)
-            break;
-
-          const control = uiControls[i];
-          if(control === Mouse.clickItem){
-            if(typeof control.widget.parent !== 'undefined'){
-              if(!(control.widget.parent instanceof THREE.Scene) && control.widget.visible){
-                clickCaptured = true;
-                try{
-                  Mouse.clickItem = null;
-                  //control.onClick(customEvent);
-                  GameState.MenuManager.activeGUIElement = control;
-                  control.processEventListener('click', [customEvent]);
-                  GameState.guiAudioEmitter.playSoundFireAndForget('gui_click');
-                  Mouse.leftClick = false;
-                  EventManager.FireEvent('menu.click', {
-                    name: control.name,
-                    menu: control.menu.constructor.name
-                  });
-                }catch(e){
-                  console.error(e);
-                }
-              }
-            }
-          }
-        }
-
-        let selectedObject = clickCaptured;
-  
-        if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
-          if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
-            const moduleObject = GameState.CursorManager.onMouseHitInteractive();
-            if(BitWise.InstanceOf(moduleObject?.objectType, ModuleObjectType.ModuleObject)){
-              if(moduleObject.isUseable() && moduleObject != GameState.getCurrentPlayer()){
-
-                selectedObject = true;
-
-                const distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
-                const distanceThreshold = 20;
-
-                if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
-                  if(typeof moduleObject.onClick === 'function'){
-                    GameState.getCurrentPlayer().clearAllActions();
-                    moduleObject.onClick(GameState.getCurrentPlayer());
-                  }else{
-                    let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
-                    //console.log(distance);
-                    if(distance > 1.5){
-                      GameState.getCurrentPlayer().clearAllActions();
-                      moduleObject.clearAllActions();
-                      GameState.getCurrentPlayer().actionDialogObject(moduleObject);
-                    }
-                  }
-                }
-                GameState.CursorManager.setReticleSelectedObject(moduleObject);
-              }
-              if(GameState.debug.SELECTED_OBJECT)
-                console.log('Ingame Object', moduleObject);
-            }else{
-              if(GameState.debug.SELECTED_OBJECT)
-                console.log('Object', moduleObject);
-            }
-
-            if(!selectedObject){
-              // GameState.CursorManager.hovered = GameState.CursorManager.hoveredObject = GameState.CursorManager.selected = GameState.CursorManager.selectedObject = undefined;
-            }
-          }
-        }
-      }
-      if(event.button == 0){
+      if(logical === 'left'){
         Mouse.leftDown = false;
+      }else if(logical === 'right'){
+        Mouse.rightDown = false;
+      }else if(logical === 'middle'){
+        Mouse.middleDown = false;
+        Mouse.MiddleMouseDown = false;
+      }
+
+      // Only logical left release drives GUI / world click / dialog skip
+      if(logical !== 'left'){
+        return;
+      }
+
+      Mouse.leftClick = true;
+
+      if(!Mouse.pointerLock){
+        Mouse.Update( event.clientX, event.clientY );
+      }
+
+      //If the NoClickTimer is active then we will return out of this function
+      if(GameState.noClickTimer){
         Mouse.downItem = undefined;
         Mouse.clickItem = undefined;
-      }else if(event.button == 1){
-        Mouse.rightDown = false;
+        return;
       }
+
+      // Retail: click during death sequence hurries the fade (before UI click handling)
+      if(GameState.GameOverManager?.GetGameOver?.()){
+        GameState.GameOverManager.OnDeathSequenceInput();
+      }
+
+      let clickCaptured = false;
+
+      const customEvent = GUIControlEventFactory.generateEventObject();
+
+      //Try to fire mouse up regardless if mouse is still inside object
+      if(BitWise.InstanceOf(Mouse.downItem?.objectType, GUIControlTypeMask.GUIControl)){
+        if(!(Mouse.downItem.widget.parent instanceof THREE.Scene)){
+          try{
+            Mouse.downItem.processEventListener('mouseUp', [customEvent]);
+            Mouse.leftClick = false;
+          }catch(e){
+            console.error(e);
+          }
+        }
+      }
+
+      // Fire click on the control that received mousedown — do not require the
+      // cursor to still be over it. Floating target menus move with the camera
+      // (edge-turn / focus), so a re-hit-test between down and up drops clicks.
+      if(
+        BitWise.InstanceOf(Mouse.clickItem?.objectType, GUIControlTypeMask.GUIControl) &&
+        Mouse.clickItem.widget?.visible &&
+        !(Mouse.clickItem.widget.parent instanceof THREE.Scene)
+      ){
+        clickCaptured = true;
+        try{
+          const control = Mouse.clickItem;
+          Mouse.clickItem = null;
+          GameState.MenuManager.activeGUIElement = control;
+          control.processEventListener('click', [customEvent]);
+          GameState.guiAudioEmitter.playSoundFireAndForget('gui_click');
+          Mouse.leftClick = false;
+          EventManager.FireEvent('menu.click', {
+            name: control.name,
+            menu: control.menu.constructor.name
+          });
+        }catch(e){
+          console.error(e);
+        }
+      }
+
+      let selectedObject = clickCaptured;
+
+      if(!clickCaptured && (GameState.Mode != EngineMode.DIALOG)){
+        if(GameState.Mode == EngineMode.INGAME && GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay){
+          const moduleObject = GameState.CursorManager.onMouseHitInteractive();
+          if(BitWise.InstanceOf(moduleObject?.objectType, ModuleObjectType.ModuleObject)){
+            if(moduleObject.isUseable() && moduleObject != GameState.getCurrentPlayer()){
+
+              selectedObject = true;
+
+              const distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
+              const distanceThreshold = 20;
+
+              if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
+                if(typeof moduleObject.onClick === 'function'){
+                  GameState.getCurrentPlayer().clearAllActions();
+                  moduleObject.onClick(GameState.getCurrentPlayer());
+                }else{
+                  let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
+                  if(distance > 1.5){
+                    GameState.getCurrentPlayer().clearAllActions();
+                    moduleObject.clearAllActions();
+                    GameState.getCurrentPlayer().actionDialogObject(moduleObject);
+                  }
+                }
+              }
+              GameState.CursorManager.setReticleSelectedObject(moduleObject);
+              FollowerCamera.clearFocusObject();
+            }
+            if(GameState.debug.SELECTED_OBJECT)
+              console.log('Ingame Object', moduleObject);
+          }else{
+            if(GameState.debug.SELECTED_OBJECT)
+              console.log('Object', moduleObject);
+          }
+
+          if(!selectedObject){
+            // GameState.CursorManager.hovered = GameState.CursorManager.hoveredObject = GameState.CursorManager.selected = GameState.CursorManager.selectedObject = undefined;
+          }
+        }
+      }
+
+      Mouse.downItem = undefined;
+      Mouse.clickItem = undefined;
     });
 
     document.body.addEventListener('wheel', (e: WheelEvent) => {
@@ -434,12 +448,16 @@ export class IngameControls {
           (GameState.MenuManager.hoveredGUIElement as GUIListBox).scrollUp();
         }else if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
           (GameState.MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollUp();
+        }else{
+          this.cycleHoveredActionMenu(-1);
         }
       }else{
         if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
           (GameState.MenuManager.hoveredGUIElement as GUIListBox).scrollDown();
         }else if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIScrollBar)){
           (GameState.MenuManager.hoveredGUIElement as GUIScrollBar).list.scrollDown();
+        }else{
+          this.cycleHoveredActionMenu(1);
         }
       }
     });
@@ -750,28 +768,12 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.SelectNext].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      const previousTarget = GameState.CursorManager.selectedObject;
-      const nextObject = GameState.ModuleObjectManager.GetNextPlayerVisibleObject();
-      if(nextObject){
-        GameState.CursorManager.setReticleSelectedObject(nextObject);
-        FollowerCamera.setFocusObject(nextObject);
-        if(nextObject !== previousTarget){
-          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.NewTargetSelected);
-        }
-      }
+      GameState.ModuleObjectManager.selectNearestObject(false);
     });
 
     KeyMapper.Actions[KeyMapAction.SelectPrev].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      const previousTarget = GameState.CursorManager.selectedObject;
-      const previousObject = GameState.ModuleObjectManager.GetPreviousPlayerVisibleObject();
-      if(previousObject){
-        GameState.CursorManager.setReticleSelectedObject(previousObject);
-        FollowerCamera.setFocusObject(previousObject);
-        if(previousObject !== previousTarget){
-          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.NewTargetSelected);
-        }
-      }
+      GameState.ModuleObjectManager.selectNearestObject(true);
     });
 
     KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (keymap, delta = 0) => {
@@ -1104,6 +1106,30 @@ export class IngameControls {
     
     KeyMapper.ProcessMappings(GameState.Mode, delta);
 
+    // Retail look state: RMB hold, or always-on when Mouse Look (inverted RMB)
+    Mouse.syncCameraHold();
+
+    // Retail UpdateCamera mouse look while rightClickHeld (or Mouse Look)
+    if(Mouse.cameraHoldActive && GameState.Mode == EngineMode.INGAME){
+      const dx = Mouse.MouseX - Mouse.OldMouseX;
+      const dy = Mouse.MouseY - Mouse.OldMouseY;
+      if(dx || dy){
+        FollowerCamera.applyMouseLookDelta(dx, dy);
+      }
+      // Hide software cursor only for classic RMB-hold look (Mouse Look keeps
+      // cursor for LMB picking while camera tracks movement).
+      if(!Mouse.isMouseLookEnabled() && GameState.scene_cursor_holder){
+        GameState.scene_cursor_holder.visible = false;
+      }
+    }else if(
+      GameState.Mode == EngineMode.INGAME &&
+      !Mouse.cameraHoldActive &&
+      currentMenu == GameState.MenuManager.InGameOverlay
+    ){
+      // Retail UpdateCamera edge turn — cursor near left/right screen frame
+      this.updateScreenEdgeCameraTurn();
+    }
+
     // FreeLook: right-stick look (CSWCameraFreeLook tilt/rotate axes)
     if(GameState.Mode == EngineMode.FREELOOK){
       const rx = this.gamePad.stick_r_x.value;
@@ -1122,9 +1148,73 @@ export class IngameControls {
 
     //Mouse: onFrameEnd
     Mouse.leftClick = false;
+    Mouse.rightClick = false;
 
     Mouse.OldMouseX = Mouse.MouseX;
     Mouse.OldMouseY = Mouse.MouseY;
+  }
+
+  /**
+   * Retail UpdateCamera @ 005f5e10 — turn when cursor is within screenFramePercentage
+   * of the left/right viewport edge (min 2px). Skip while over GUI so floating
+   * target-menu clicks are not invalidated by camera motion.
+   */
+  updateScreenEdgeCameraTurn(){
+    if(this.MenuGetActiveUIElements().length > 0){
+      return;
+    }
+    const vpW = GameState.ResolutionManager.getViewportWidth();
+    const edge = Math.max(2, Math.floor(vpW * 0.02));
+    const x = Mouse.positionViewport.x;
+    if(x <= edge){
+      FollowerCamera.clearFocusObject();
+      FollowerCamera.turning = true;
+      FollowerCamera.dir = 1;
+    }else if(x >= vpW - edge){
+      FollowerCamera.clearFocusObject();
+      FollowerCamera.turning = true;
+      FollowerCamera.dir = -1;
+    }
+  }
+
+  /**
+   * Retail CSWGuiManager::HandleZMouse @ 0040c650 — wheel over action buttons
+   * cycles the matching ActionMenuPanel (BTN_TARGET* / BTN_ACTION*).
+   */
+  cycleHoveredActionMenu(direction: number){
+    const controls = this.MenuGetActiveUIElements();
+    for(let i = 0; i < controls.length; i++){
+      const control = controls[i];
+      if(!control?.isVisible?.() || !control.name) continue;
+      const name = control.name.toUpperCase();
+
+      let panelIndex = -1;
+      let isTarget = false;
+      let match = name.match(/^BTN_TARGET(?:UP|DOWN)?(\d+)$/);
+      if(match){
+        isTarget = true;
+        panelIndex = parseInt(match[1], 10);
+      }else{
+        match = name.match(/^BTN_ACTION(?:UP|DOWN)?(\d+)$/);
+        if(match){
+          panelIndex = parseInt(match[1], 10);
+        }
+      }
+      if(panelIndex < 0) continue;
+
+      const panels = isTarget
+        ? GameState.ActionMenuManager.ActionPanels.targetPanels
+        : GameState.ActionMenuManager.ActionPanels.selfPanels;
+      const panel = panels?.[panelIndex];
+      if(!panel || panel.actions.length <= 1) return;
+
+      if(direction < 0){
+        panel.previousAction();
+      }else{
+        panel.nextAction();
+      }
+      return;
+    }
   }
 
   plChangeCallback(e: any){

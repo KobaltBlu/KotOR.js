@@ -1495,6 +1495,10 @@ export class ModuleCreature extends ModuleObject {
           }else{
             this.setAnimationState(ModuleCreatureAnimState.READY);
           }
+        }else if(GameState.Mode == EngineMode.DIALOG && this.animationState.index != ModuleCreatureAnimState.PAUSE){
+          // Retail SetDialogAnimations owns the pose until the next entry — re-apply
+          // looping talk/listen/READY instead of falling through to idle pause.
+          this.animationState.started = false;
         }else{
           this.setAnimationState(ModuleCreatureAnimState.PAUSE);
         }
@@ -2039,6 +2043,9 @@ export class ModuleCreature extends ModuleObject {
 
   playTwoDAAnimation(animation: ITwoDAAnimation){
     if(animation){
+      // Retail combat/cutscene swings use SetAnimation — clear dialog slot so
+      // updateAnimationState is not blocked by a lingering dialog READY pose.
+      this.dialogAnimation = null;
       this.resetAnimationState();
       this.animationState = {
         index: ModuleCreatureAnimState.PAUSE,

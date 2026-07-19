@@ -322,8 +322,11 @@ export class ModulePlaceable extends ModuleObject {
 
   setOpenState(state: ModulePlaceableState){
     this.state = state;
-    if(this.state == ModulePlaceableState.OPEN) this.openState = true;
-    else this.openState = false
+    if(this.state == ModulePlaceableState.OPEN || this.state == ModulePlaceableState.DEAD){
+      this.openState = true;
+    }else{
+      this.openState = false;
+    }
   }
 
   isStatic(){
@@ -358,7 +361,8 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   isOpen(){
-    return this.openState;
+    // Retail field4_0x110: open or destroyed — Bash is suppressed for both.
+    return this.openState || this.state == ModulePlaceableState.DEAD;
   }
 
   GetConversation(){
@@ -474,6 +478,12 @@ export class ModulePlaceable extends ModuleObject {
     this.animStateInfo.started = false;
     if(animState == ModulePlaceableAnimState.OPEN) this.animStateInfo.loop = true;
     if(animState == ModulePlaceableAnimState.DEFAULT) this.animStateInfo.loop = true;
+    // Resting OPEN / DEAD sync openState for Bash gates (retail field4_0x110).
+    if(animState == ModulePlaceableAnimState.OPEN){
+      this.setOpenState(ModulePlaceableState.OPEN);
+    }else if(animState == ModulePlaceableAnimState.DEAD){
+      this.setOpenState(ModulePlaceableState.DEAD);
+    }
     if(this.model) this.model.stopAnimation();
   }
 
@@ -762,6 +772,7 @@ export class ModulePlaceable extends ModuleObject {
         break;
         case 2:
           this.setAnimationState(ModulePlaceableAnimState.CLOSE);
+          this.setOpenState(ModulePlaceableState.CLOSED);
         break;
         case 3:
           this.setAnimationState(ModulePlaceableAnimState.DEAD);
@@ -819,6 +830,10 @@ export class ModulePlaceable extends ModuleObject {
         
     if(this.template.RootNode.hasField('HP'))
       this.hp = this.template.RootNode.getFieldByLabel('HP').getValue();
+
+    // If CurrentHP was absent, start at max HP so bash is not immediately dead.
+    if(!this.template.RootNode.hasField('CurrentHP'))
+      this.currentHP = this.hp;
 
     if(this.template.RootNode.hasField('Hardness'))
       this.hardness = this.template.RootNode.getFieldByLabel('Hardness').getValue();

@@ -321,8 +321,8 @@ export class ActionMenuManager {
             icon: securityTalent.getIcon()
           }));
         }
-        // Retail door slot 0: Bash suppressed while open/opening/closing,
-        // NotBlastable, unusable, or restrict_mode.
+        // Retail door slot 0: Bash when anim is not OPENED1/OPENED2, open
+        // flag is clear, NotBlastable == 0, Useable, and restrict_mode == 0.
         if(
           !restricted &&
           !ActionMenuManager.oTarget.isOpen() &&
