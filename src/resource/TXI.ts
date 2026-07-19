@@ -70,7 +70,7 @@ export class TXI {
     this.baselineheight = 0;
     this.texturewidth = 0;
     this.spacingr = 0;
-    this.spacingr = 0;
+    this.spacingb = 0;
     this.caretindent = 0;
     this.upperleftcoords = [];
     this.lowerrightcoords = [];
