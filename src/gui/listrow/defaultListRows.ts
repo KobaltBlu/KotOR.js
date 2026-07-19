@@ -1,5 +1,6 @@
 import type { GUIListBox } from "@/gui/GUIListBox";
 import type { GUIControl } from "@/gui/GUIControl";
+import { GUICheckBox } from "@/gui/GUICheckBox";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { applyProtoTemplateSkin } from "@/gui/listrow/applyProtoTemplateSkin";
 
@@ -65,6 +66,10 @@ export function createDefaultCheckBoxRow(
   const widget = ctrl.createControl();
   ctrl.setTextColor(ctrl.defaultColor.r, ctrl.defaultColor.g, ctrl.defaultColor.b);
   ctrl.setText(node as any);
+  if(ctrl instanceof GUICheckBox){
+    ctrl.alignText();
+    ctrl.updateCBVisualState();
+  }
   list.itemGroup.add(widget);
 
   if (typeof options.onClick === "function") {

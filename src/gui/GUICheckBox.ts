@@ -376,10 +376,14 @@ export class GUICheckBox extends GUIControl{
 
   /**
    * K1 options menus construct type-7 as `CSWGuiOptionsCheckbox` (fixed glyph + label).
-   * Overlay toggles (`TB_*`, party BTNs, list PROTOITEM) stay as plain `CSWGuiButtonToggle`.
+   * Overlay toggles (`TB_*`, party BTNs) stay as plain `CSWGuiButtonToggle`.
+   * List PROTOITEM checkbox rows (e.g. optfeedback LB_OPTIONS) are OptionsCheckbox.
    */
   isOptionsStyleLayout(): boolean {
-    return typeof this.name === 'string' && this.name.startsWith('CB_');
+    if(typeof this.name !== 'string'){
+      return false;
+    }
+    return this.name.startsWith('CB_') || this.name === 'PROTOITEM';
   }
 
   /** Glyph size for options checkboxes (`0x19`); unused for full-extent toggles. */
@@ -574,6 +578,8 @@ export class GUICheckBox extends GUIControl{
         this.border.fill.mesh.visible = true;
       }
     }
+
+    this.list?.markListRttDirty?.();
   }
 
   _onCreate(){
