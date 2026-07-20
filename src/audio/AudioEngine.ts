@@ -3,11 +3,20 @@ import type { AudioEmitter } from "@/audio/AudioEmitter";
 import { AudioEngineMode } from "@/enums/audio/AudioEngineMode";
 import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
 import { AmbientAudioEmitter } from "@/audio/AmbientAudioEmitter";
-import { EAXPresets } from "@/audio/EAXPresets";
 import { BackgroundMusicMode } from "@/enums/audio/BackgroundMusicMode";
 import { BackgroundMusicState } from "@/enums/audio/BackgroundMusicState";
 import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { SoundMode } from "@/enums/audio/SoundMode";
 import { ReverbEngine } from "@/audio/ReverbEngine";
+import { AudioPriorityManager } from "@/audio/AudioPriorityManager";
+import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
+import {
+  OBSTRUCTION_REUSE_AGE_MS,
+  OBSTRUCTION_REUSE_DIST,
+} from "@/engine/pathfinding/get-obstruction-factor";
+
+/** Retail SetSoundMode stack size (+0xf4 … +0x11c, max depth 9). */
+const SOUND_MODE_STACK_MAX = 9;
 
 class AudioChannel {
 
@@ -17,6 +26,9 @@ class AudioChannel {
   #gainCached: number;
 
   #gain: number;
+
+  /** Retail MuteSound/UnMuteSound bus scale (dialog/sfx/music sliders). */
+  #busScale: number = 1;
 
   #channel: AudioEngineChannel;
 
@@ -39,12 +51,26 @@ class AudioChannel {
   setGain(value: number){
     this.#gain = value;
     this.#gainCached = this.#gain;
-    if(this.muted){ return; }
-    this.#gainNode.gain.value = value;
+    this.applyGain();
+  }
+
+  /** Multiplier for MuteSound fade (1 = full, 0 = silent). Does not change user gain. */
+  setBusScale(scale: number){
+    this.#busScale = Number.isFinite(scale) ? Math.max(0, Math.min(1, scale)) : 1;
+    this.applyGain();
+  }
+
+  getBusScale(){
+    return this.#busScale;
   }
 
   getGainNode(){
     return this.#gainNode;
+  }
+
+  private applyGain(){
+    if(this.muted){ return; }
+    this.#gainNode.gain.value = this.#gain * this.#busScale;
   }
 
   mute(){
@@ -57,7 +83,7 @@ class AudioChannel {
   unmute(){
     if(!this.muted){ return; }
     this.muted = false;
-    this.#gainNode.gain.value = this.#gainCached;
+    this.applyGain();
     this.getGainNode().connect( this.audioCtx.destination );
   }
 }
@@ -69,6 +95,12 @@ export const BATTLE_MUSIC_FADE_MS = 800;
 
 /** Retail Update delay before starting battle track after fade (ms). */
 const BATTLE_MUSIC_START_DELAY_MS = 10;
+
+/**
+ * Retail CExoSoundInternal::MuteSound / UnMuteSound fade duration (ms).
+ * MuteSound @ 00638aa0 / UnMuteSound @ 00638b00 set +0x58 / +0x60 = 500.
+ */
+export const SOUND_MUTE_FADE_MS = 500;
 
 /**
  * AudioEngine class.
@@ -108,6 +140,23 @@ export class AudioEngine {
   // reverbLF: any;
   // reverbHF: any;
   emitters: AudioEmitter[];
+
+  /**
+   * Retail prioritygroups.2da voice allocator (maxplaying / interrupt / fadetime).
+   */
+  priorityManager: AudioPriorityManager;
+
+  /** Cached listener position for priority distance steal. */
+  listenerPosition = { x: 0, y: 0, z: 0 };
+
+  /**
+   * Retail OcclusionRender amortizes obstruction samples across frames.
+   * Round-robin index into emitters; process a few GetObstructionFactor calls per update.
+   */
+  private occlusionCursor: number = 0;
+
+  /** Max fresh GetObstructionFactor calls per AudioEngine.update (budget stand-in). */
+  static OCCLUSION_SAMPLES_PER_FRAME = 4;
 
   ambientAudioDayEmitter: AmbientAudioEmitter;
   ambientAudioNightEmitter: AmbientAudioEmitter;
@@ -158,6 +207,63 @@ export class AudioEngine {
   desiredAmbientScale: number = 1;
   currentAmbientScale: number = 1;
   private ambientScaleLerpFrom: number = 1;
+
+  /**
+   * Retail +0x24 SetDesiredEnvironment / +0x14 SetCurrentEnvironment (EnvAudio index).
+   * Render applies when current != desired.
+   */
+  desiredEnvironment: number = 0;
+  currentEnvironment: number = -1;
+
+  /**
+   * Retail MuteSound flag (+0x10). When true, Render fades dialog/sfx/music to 0.
+   * GUI and movie buses are not part of that fade.
+   */
+  static soundMuted: boolean = false;
+
+  /** Current bus scale applied by MuteSound/UnMuteSound (1 = full, 0 = silent). */
+  private static muteBusScale: number = 1;
+
+  /** Fade-out duration ms (+0x58); 0 = inactive. */
+  private static muteFadeOutMs: number = 0;
+
+  /** Fade-in duration ms (+0x60); 0 = inactive. */
+  private static muteFadeInMs: number = 0;
+
+  /** Fade start timestamp ms (+0x54). */
+  private static muteFadeStartMs: number = 0;
+
+  /**
+   * Soft pause for SetSoundMode 2/3/4/5 → PauseAllSounds (bus-level approx).
+   * Instant zero on selected buses; movie/gui stay active. VO is left alone.
+   */
+  private static soundsPausedForMovie: boolean = false;
+  /** When paused, whether SFX bus is held at 0 (always true while paused today). */
+  private static pauseSfxBus: boolean = false;
+  /**
+   * When paused, whether Music bus is held at 0.
+   * Retail GetPauseable @ 006393e0: modes 2/4 keep streaming music (groups 1/2/11; mode 2 also 4).
+   * Mode 3 (movie/load) pauses music streams.
+   */
+  private static pauseMusicBus: boolean = false;
+
+  /**
+   * Retail CExoSoundInternal +0xf4 mode stack / +0x11c depth / +0x120 movie flag.
+   * stack[0] is the idle baseline (SoundMode.POP); depth starts at 0.
+   */
+  private static soundModeStack: number[] = new Array(SOUND_MODE_STACK_MAX + 1).fill(SoundMode.POP);
+  private static soundModeDepth: number = 0;
+  /** Retail +0x120 — set by mode 5, cleared by mode 6 / pop of 5. */
+  private static soundModeMovieFlag: boolean = false;
+
+  /**
+   * Retail CExoSoundInternal offset 0 — StartDuckingMusicAndAmbientSounds sets 0.2,
+   * StopDucking restores 1.0. Applied to music streams + ambient groups 4/5 in SetVolume.
+   */
+  musicAmbientDuckScale: number = 1;
+
+  /** Retail StartDuckingMusicAndAmbientSounds @ 00633cb0 (0x3e4ccccd = 0.2). */
+  static DIALOG_MUSIC_AMBIENT_DUCK = 0.2;
 
   static get GAIN_MUSIC(){
     return AudioEngine.musicChannel.getGain();
@@ -228,6 +334,7 @@ export class AudioEngine {
     AudioEngine.guiChannel.getGainNode().connect(this.audioCtx.destination);
 
     this.emitters = [];
+    this.priorityManager = new AudioPriorityManager();
     this.bgmTimer = 0;
     this.ambientAudioDayEmitter = new AmbientAudioEmitter(this);
     this.ambientAudioNightEmitter = new AmbientAudioEmitter(this);
@@ -236,6 +343,17 @@ export class AudioEngine {
     this.battleMusicAudioEmitter = new AmbientAudioEmitter(this);
     this.battleStingerAudioEmitter = new AmbientAudioEmitter(this);
     this.dialogMusicAudioEmitter = new AmbientAudioEmitter(this);
+
+    // Retail CSWCAmbientSound SetPriorityGroup:
+    // PlayAmbientSound → 4, PlayMusic/PlayBattleMusic → 2, PlayStinger → 1.
+    // Dialog music uses the area music streaming source path (group 2).
+    this.ambientAudioDayEmitter.setPriorityGroupId(AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS);
+    this.ambientAudioNightEmitter.setPriorityGroupId(AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS);
+    this.areaMusicDayAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STREAMS);
+    this.areaMusicNightAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STREAMS);
+    this.battleMusicAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STREAMS);
+    this.battleStingerAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STINGERS);
+    this.dialogMusicAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STREAMS);
 
     this.ambientAudioDayEmitter.setDestination(AudioEngine.sfxChannel.getGainNode());
     this.ambientAudioNightEmitter.setDestination(AudioEngine.sfxChannel.getGainNode());
@@ -259,6 +377,7 @@ export class AudioEngine {
     this.dialogMusicAudioEmitter.addEventListener('play', () => {
       this.bgmMode = BackgroundMusicMode.DIALOG;
       this.areaMusicDayAudioEmitter.stop();
+      this.areaMusicNightAudioEmitter.stop();
     });
 
     this.areaMusicDayAudioEmitter.addEventListener('ended', () => {
@@ -283,6 +402,52 @@ export class AudioEngine {
 
   }
 
+  /**
+   * Retail GetClosestRecentSound @ 00636980 — reuse obstruction if another emitter
+   * sampled near the same source/listener within 175ms.
+   */
+  findRecentObstruction(
+    sx: number, sy: number, sz: number,
+    lx: number, ly: number, lz: number,
+    nowMs: number
+  ): number | null {
+    if(!this.emitters?.length) return null;
+    const distSq = OBSTRUCTION_REUSE_DIST * OBSTRUCTION_REUSE_DIST;
+    for(let i = 0, il = this.emitters.length; i < il; i++){
+      const sample = this.emitters[i]?.getObstructionSample?.();
+      if(!sample) continue;
+      if(nowMs - sample.ms >= OBSTRUCTION_REUSE_AGE_MS) continue;
+      const dsx = sx - sample.sx;
+      const dsy = sy - sample.sy;
+      const dsz = sz - sample.sz;
+      if(dsx * dsx + dsy * dsy + dsz * dsz >= distSq) continue;
+      const dlx = lx - sample.lx;
+      const dly = ly - sample.ly;
+      const dlz = lz - sample.lz;
+      if(dlx * dlx + dly * dly + dlz * dlz >= distSq) continue;
+      return sample.factor;
+    }
+    return null;
+  }
+
+  /**
+   * Retail OcclusionRender — walk playing positional sources with a soft per-frame budget.
+   */
+  private updateOcclusion(): void {
+    if(!this.emitters?.length) return;
+    const n = this.emitters.length;
+    let computed = 0;
+    const budget = AudioEngine.OCCLUSION_SAMPLES_PER_FRAME;
+    for(let visited = 0; visited < n && computed < budget; visited++){
+      if(this.occlusionCursor >= n) this.occlusionCursor = 0;
+      const em = this.emitters[this.occlusionCursor++];
+      if(!em || em.isDestroyed) continue;
+      if(em.updateObstruction?.(false)){
+        computed++;
+      }
+    }
+  }
+
   setReverbState(eaxEnabled = false){
     if(eaxEnabled == this.reverbEnabled) return;
     this.reverbEnabled = eaxEnabled;
@@ -300,29 +465,51 @@ export class AudioEngine {
     }
   }
 
-  setReverbProfile(index = 0){
-    console.log('setReverbProfile:', index);
-    if(index == -1){
+  /**
+   * Retail CExoSound::SetDesiredEnvironment @ 0063aba0 — room EnvAudio from UpdateRoom.
+   * Applied on next update via SetCurrentEnvironment (Render).
+   */
+  setDesiredEnvironment(index: number){
+    const next = Number.isFinite(index) ? Math.trunc(index) : 0;
+    this.desiredEnvironment = next;
+  }
+
+  /**
+   * Retail CExoSoundInternal::SetCurrentEnvironment @ 00638930 — stores +0x14 and applies EAX.
+   */
+  setCurrentEnvironment(index: number){
+    const next = Number.isFinite(index) ? Math.trunc(index) : 0;
+    if(next === this.currentEnvironment){ return; }
+    this.currentEnvironment = next;
+    if(next < 0){
       this.setReverbState(false);
       return;
     }
     this.setReverbState(true);
-    this.reverbEngine.loadPreset(index);
-    return;
+    this.reverbEngine.loadPreset(next);
+  }
 
-    const software_mode = (this.mode == AudioEngineMode.Software);
-    if(software_mode){
-      console.warn('setReverbProfile:', 'Reverb can\'t be set because Force Software mode is on');
+  /**
+   * Retail Render @ 00634cf0 — if current env != desired, SetCurrentEnvironment(desired).
+   */
+  applyDesiredEnvironment(){
+    if(this.currentEnvironment !== this.desiredEnvironment){
+      this.setCurrentEnvironment(this.desiredEnvironment);
     }
+  }
 
-    if(index >= 0){
-      let data = EAXPresets.PresetFromIndex(index);
-      console.log('setReverbProfile:', data);
-      
-      this.setReverbState(!software_mode);
-    }else{
-      this.setReverbState(false);
+  /**
+   * Apply EnvAudio immediately (forge / tools). Gameplay uses setDesiredEnvironment.
+   * Pass -1 to disable reverb.
+   */
+  setReverbProfile(index = 0){
+    if(index === -1){
+      this.setDesiredEnvironment(-1);
+      this.setCurrentEnvironment(-1);
+      return;
     }
+    this.setDesiredEnvironment(index);
+    this.setCurrentEnvironment(index);
   }
 
   /**
@@ -336,7 +523,62 @@ export class AudioEngine {
     this.desiredAmbientScale = next;
   }
 
+  /**
+   * Retail StartDuckingMusicAndAmbientSounds — CSWSDialog ctor.
+   * Multiplies music + areawide ambient streaming volumes by 0.2.
+   */
+  startDuckingMusicAndAmbientSounds(){
+    this.setMusicAmbientDuckScale(AudioEngine.DIALOG_MUSIC_AMBIENT_DUCK);
+  }
+
+  /**
+   * Retail StopDuckingMusicAndAmbientSounds — CSWSDialog dtor.
+   */
+  stopDuckingMusicAndAmbientSounds(){
+    this.setMusicAmbientDuckScale(1);
+  }
+
+  setMusicAmbientDuckScale(scale: number){
+    const next = Number.isFinite(scale) ? Math.max(0, Math.min(1, scale)) : 1;
+    if(next === this.musicAmbientDuckScale){ return; }
+    this.musicAmbientDuckScale = next;
+    this.applyMusicAmbientDuckScale();
+  }
+
+  private applyMusicAmbientDuckScale(){
+    const ambientEmitters = [
+      this.ambientAudioDayEmitter,
+      this.ambientAudioNightEmitter,
+      this.areaMusicDayAudioEmitter,
+      this.areaMusicNightAudioEmitter,
+      this.battleMusicAudioEmitter,
+      this.battleStingerAudioEmitter,
+      this.dialogMusicAudioEmitter,
+    ];
+    for(let i = 0; i < ambientEmitters.length; i++){
+      const em = ambientEmitters[i];
+      if(em?.gainNode){
+        em.gainNode.gain.value = em.getEffectiveVolume();
+      }
+    }
+    // Retail SetVolume also ducks oneshot/positional sources in groups 4 and 5.
+    if(this.emitters){
+      for(let i = 0, il = this.emitters.length; i < il; i++){
+        const em = this.emitters[i];
+        if(!em?.gainNode) continue;
+        if(em.priority === AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS ||
+           em.priority === AudioPriorityGroup.LOOPING_POSITIONAL_AMBIENTS){
+          em.gainNode.gain.value = em.getVolume();
+        }
+      }
+    }
+  }
+
   update ( delta: number, position = new THREE.Vector3(), rotation = new THREE.Euler(), forward = new THREE.Vector3() ) {
+    this.listenerPosition.x = position.x;
+    this.listenerPosition.y = position.y;
+    this.listenerPosition.z = position.z;
+
     // Set listener position using modern AudioParam properties
     if(typeof this.audioCtx.listener.positionX !== 'undefined'){
       this.audioCtx.listener.positionX.value = position.x;
@@ -360,6 +602,9 @@ export class AudioEngine {
 
     // Retail CExoSoundInternal::Render ambient-scale lerp (dt * (desired - origin) per frame).
     const dt = Math.min(0.1, Math.max(0, delta));
+    AudioEngine.updateMuteFade();
+    // Retail Render: SetCurrentEnvironment when desired (+0x24) != current (+0x14).
+    this.applyDesiredEnvironment();
     if(this.currentAmbientScale !== this.desiredAmbientScale){
       let next = this.currentAmbientScale + dt * (this.desiredAmbientScale - this.ambientScaleLerpFrom);
       if(this.ambientScaleLerpFrom < this.desiredAmbientScale){
@@ -380,6 +625,16 @@ export class AudioEngine {
         }
       }
     }
+
+    // Retail GetWithinRangeOfListener cull for positional emitters (0063e820).
+    if(this.emitters){
+      for(let i = 0, il = this.emitters.length; i < il; i++){
+        this.emitters[i]?.updateListenerRange?.();
+      }
+    }
+
+    // Retail OcclusionRender @ 00635fd0 — amortized obstruction for positional sources.
+    this.updateOcclusion();
 
     // Update reverb engine 3D positioning
     this.reverbEngine.updateListener(
@@ -601,12 +856,36 @@ export class AudioEngine {
       this.emitters[i].destroy();
 
     this.emitters = [];
+    this.priorityManager.clear();
 
     //Clean up the background music emitters
     this.areaMusicDayAudioEmitter.dispose();
     this.battleMusicAudioEmitter.dispose();
     this.battleStingerAudioEmitter.dispose();
     this.dialogMusicAudioEmitter.dispose();
+
+    AudioEngine.resetSoundModeState();
+  }
+
+  /** Clear SetSoundMode stack / pause / mute fade (area unload / engine reset). */
+  static resetSoundModeState(){
+    if(AudioEngine.soundsPausedForMovie || AudioEngine.pauseSfxBus || AudioEngine.pauseMusicBus){
+      AudioEngine.ResumeAllSoundsFromMovie();
+    }
+    if(AudioEngine.soundMuted){
+      AudioEngine.UnMuteSound();
+    }
+    AudioEngine.soundModeStack = new Array(SOUND_MODE_STACK_MAX + 1).fill(SoundMode.POP);
+    AudioEngine.soundModeDepth = 0;
+    AudioEngine.soundModeMovieFlag = false;
+    AudioEngine.pauseSfxBus = false;
+    AudioEngine.pauseMusicBus = false;
+    AudioEngine.muteFadeOutMs = 0;
+    AudioEngine.muteFadeInMs = 0;
+    AudioEngine.muteFadeStartMs = 0;
+    AudioEngine.muteBusScale = 1;
+    AudioEngine.soundMuted = false;
+    AudioEngine.applyMuteBusScale(1);
   }
 
   static GetAudioEngine(){
@@ -614,8 +893,226 @@ export class AudioEngine {
     return this.engines[0];
   }
 
+  private static applyMuteBusScale(scale: number){
+    AudioEngine.muteBusScale = scale;
+    if(AudioEngine.pauseSfxBus){
+      if(AudioEngine.sfxChannel) AudioEngine.sfxChannel.setBusScale(0);
+    }else if(AudioEngine.sfxChannel){
+      AudioEngine.sfxChannel.setBusScale(scale);
+    }
+    if(AudioEngine.pauseMusicBus){
+      if(AudioEngine.musicChannel) AudioEngine.musicChannel.setBusScale(0);
+    }else if(AudioEngine.musicChannel){
+      AudioEngine.musicChannel.setBusScale(scale);
+    }
+    if(AudioEngine.voChannel) AudioEngine.voChannel.setBusScale(scale);
+  }
+
+  /**
+   * Retail MuteSound @ 00638aa0 — if not muted, start 500ms fade of dialog/sfx/music to 0.
+   */
+  static MuteSound(){
+    if(AudioEngine.soundMuted){ return; }
+    AudioEngine.soundMuted = true;
+    AudioEngine.muteFadeInMs = 0;
+    AudioEngine.muteFadeOutMs = SOUND_MUTE_FADE_MS;
+    AudioEngine.muteFadeStartMs = performance.now();
+  }
+
+  /**
+   * Retail UnMuteSound @ 00638b00 — if muted, start 500ms fade back to user slider gains.
+   */
+  static UnMuteSound(){
+    if(!AudioEngine.soundMuted){ return; }
+    AudioEngine.soundMuted = false;
+    AudioEngine.muteFadeOutMs = 0;
+    AudioEngine.muteFadeInMs = SOUND_MUTE_FADE_MS;
+    AudioEngine.muteFadeStartMs = performance.now();
+  }
+
+  /**
+   * Retail Render mute fade (+0x58 fade-out / +0x60 fade-in over stored baselines).
+   */
+  private static updateMuteFade(){
+    const now = performance.now();
+    if(AudioEngine.muteFadeOutMs > 0){
+      const elapsed = now - AudioEngine.muteFadeStartMs;
+      const t = Math.min(1, Math.max(0, elapsed / AudioEngine.muteFadeOutMs));
+      AudioEngine.applyMuteBusScale(1 - t);
+      if(t >= 1){
+        AudioEngine.muteFadeOutMs = 0;
+        AudioEngine.muteFadeStartMs = 0;
+      }
+      return;
+    }
+    if(AudioEngine.muteFadeInMs > 0){
+      const elapsed = now - AudioEngine.muteFadeStartMs;
+      const t = Math.min(1, Math.max(0, elapsed / AudioEngine.muteFadeInMs));
+      AudioEngine.applyMuteBusScale(t);
+      if(t >= 1){
+        AudioEngine.muteFadeInMs = 0;
+        AudioEngine.muteFadeStartMs = 0;
+      }
+    }
+  }
+
+  /**
+   * Retail PauseAllSounds — bus-level approx of per-source Pause + GetPauseable.
+   * @param pauseMusic When true, zero Music bus (mode 3 / movie). When false, SFX only
+   *   (modes 2/4 keep streaming music groups audible).
+   */
+  static PauseAllSounds(pauseMusic: boolean = true){
+    AudioEngine.soundsPausedForMovie = true;
+    AudioEngine.pauseSfxBus = true;
+    AudioEngine.pauseMusicBus = pauseMusic;
+    if(AudioEngine.sfxChannel) AudioEngine.sfxChannel.setBusScale(0);
+    if(pauseMusic){
+      if(AudioEngine.musicChannel) AudioEngine.musicChannel.setBusScale(0);
+    }else if(AudioEngine.musicChannel){
+      // Ensure music is not left at 0 from a prior movie pause.
+      const scale = AudioEngine.muteBusScale > 0 ? AudioEngine.muteBusScale : 1;
+      AudioEngine.musicChannel.setBusScale(scale);
+    }
+  }
+
+  /** @deprecated Prefer PauseAllSounds(true) — kept for movie callers. */
+  static PauseAllSoundsForMovie(){
+    AudioEngine.PauseAllSounds(true);
+  }
+
+  /** Retail ResumeAllSounds after pause / SetSoundMode pop. */
+  static ResumeAllSoundsFromMovie(){
+    if(!AudioEngine.soundsPausedForMovie && !AudioEngine.pauseSfxBus && !AudioEngine.pauseMusicBus){
+      AudioEngine.ensureGameBusesAudible();
+      return;
+    }
+    AudioEngine.soundsPausedForMovie = false;
+    AudioEngine.pauseSfxBus = false;
+    AudioEngine.pauseMusicBus = false;
+    AudioEngine.applyMuteBusScale(AudioEngine.muteBusScale);
+  }
+
+  /**
+   * Whether this sound mode should pause the Music bus (GetPauseable inverse for streams).
+   * Mode 3 → yes; modes 2/4 → no; keepStreamingMusic → no.
+   */
+  private static shouldPauseMusicForMode(mode: number, keepStreamingMusic: number): boolean {
+    if(keepStreamingMusic){ return false; }
+    return mode === SoundMode.PAUSE_LOAD || mode === SoundMode.MOVIE;
+  }
+
+  /**
+   * Retail CExoSound::GetSoundMode @ 0063ac30 — top of mode stack.
+   */
+  static GetSoundMode(): number {
+    return AudioEngine.soundModeStack[AudioEngine.soundModeDepth] ?? SoundMode.POP;
+  }
+
+  /**
+   * Retail CExoSoundInternal::SetSoundMode @ 006395a0.
+   * @param mode SoundMode value (0 pops; 1 mute; 2/3/4 pause; 5/6 movie path)
+   * @param keepStreamingMusic When non-zero, retail uses PauseAllButStreamingMusicForMovie.
+   */
+  static SetSoundMode(mode: number, keepStreamingMusic: number = 0){
+    if(mode === SoundMode.MOVIE || mode === SoundMode.RESUME_MOVIE){
+      if(mode === SoundMode.MOVIE){
+        AudioEngine.PauseAllSounds(AudioEngine.shouldPauseMusicForMode(SoundMode.MOVIE, keepStreamingMusic));
+        AudioEngine.soundModeMovieFlag = true;
+      }else{
+        AudioEngine.soundModeMovieFlag = false;
+        AudioEngine.ResumeAllSoundsFromMovie();
+        const top = AudioEngine.soundModeStack[AudioEngine.soundModeDepth] ?? SoundMode.POP;
+        if(AudioEngine.soundModeDepth !== 0){
+          AudioEngine.soundModeDepth--;
+          AudioEngine.SetSoundMode(top, 0);
+        }
+      }
+      return;
+    }
+
+    const current = AudioEngine.soundModeStack[AudioEngine.soundModeDepth] ?? SoundMode.POP;
+    if(mode !== SoundMode.POP && mode === current){
+      return;
+    }
+
+    // Undo current top effects before pop / push.
+    if(current === SoundMode.MUTE){
+      AudioEngine.UnMuteSound();
+    }
+    if(current === SoundMode.PAUSE || current === SoundMode.PAUSE_LOAD || current === SoundMode.PAUSE_GUI){
+      AudioEngine.ResumeAllSoundsFromMovie();
+    }
+
+    let applyMode = mode;
+    if(mode === SoundMode.POP){
+      AudioEngine.soundModeDepth--;
+      if(AudioEngine.soundModeDepth < 0){
+        AudioEngine.soundModeDepth = 0;
+      }
+      applyMode = AudioEngine.soundModeStack[AudioEngine.soundModeDepth] ?? SoundMode.POP;
+    }else{
+      AudioEngine.soundModeDepth++;
+      if(AudioEngine.soundModeDepth > SOUND_MODE_STACK_MAX){
+        AudioEngine.soundModeDepth = SOUND_MODE_STACK_MAX;
+      }
+      AudioEngine.soundModeStack[AudioEngine.soundModeDepth] = mode;
+      applyMode = mode;
+    }
+
+    if(applyMode === SoundMode.MUTE){
+      AudioEngine.MuteSound();
+    }
+    if(applyMode === SoundMode.PAUSE || applyMode === SoundMode.PAUSE_LOAD || applyMode === SoundMode.PAUSE_GUI){
+      AudioEngine.PauseAllSounds(
+        AudioEngine.shouldPauseMusicForMode(applyMode, keepStreamingMusic)
+      );
+    }
+  }
+
+  /**
+   * Retail BusyWaitMuteSound @ 0044cc30 — SetSoundMode(1) then wait ~500ms while Render runs.
+   */
+  static async BusyWaitMuteSound(): Promise<void> {
+    AudioEngine.SetSoundMode(SoundMode.MUTE, 0);
+    const start = performance.now();
+    while(performance.now() - start < SOUND_MUTE_FADE_MS){
+      AudioEngine.updateMuteFade();
+      await new Promise<void>((resolve) => setTimeout(resolve, 16));
+    }
+    AudioEngine.updateMuteFade();
+  }
+
+  /** Pop sound modes until idle (retail MainLoop double SetSoundMode(0) after load). */
+  static clearSoundModeStack(){
+    let guard = SOUND_MODE_STACK_MAX + 2;
+    while(guard-- > 0 && AudioEngine.GetSoundMode() !== SoundMode.POP){
+      AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    }
+    if(AudioEngine.soundModeDepth > 0){
+      AudioEngine.soundModeDepth = 0;
+    }
+  }
+
+  /**
+   * Ensure SFX/Music/VO buses are not stuck silent after movie pause / mute fade.
+   * Does not clear an intentional MuteSound (soundMuted).
+   */
+  static ensureGameBusesAudible(){
+    if(AudioEngine.soundMuted || AudioEngine.muteFadeOutMs > 0){ return; }
+    if(AudioEngine.pauseSfxBus || AudioEngine.pauseMusicBus){ return; }
+    const scale = AudioEngine.muteBusScale > 0 ? AudioEngine.muteBusScale : 1;
+    AudioEngine.muteBusScale = scale;
+    if(AudioEngine.sfxChannel) AudioEngine.sfxChannel.setBusScale(scale);
+    if(AudioEngine.musicChannel) AudioEngine.musicChannel.setBusScale(scale);
+    if(AudioEngine.voChannel) AudioEngine.voChannel.setBusScale(scale);
+  }
+
   static ToggleMute(){
-    console.warn('ToggleMute is unimplemented');
+    if(AudioEngine.soundMuted || AudioEngine.muteFadeOutMs > 0){
+      AudioEngine.UnMuteSound();
+    }else{
+      AudioEngine.MuteSound();
+    }
   }
 
   static Mute(channel: AudioEngineChannel = AudioEngineChannel.ALL) {

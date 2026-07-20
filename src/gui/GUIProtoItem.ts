@@ -40,9 +40,11 @@ export class GUIProtoItem extends GUIControl{
 
     if(this.parent && this.parent.objectType & GUIControlTypeMask.GUIListBox){
       const list = this.parent as GUIListBox;
-      this.extent.width = list.extent.width
-        - (list.scrollbar ? list.scrollbar.extent.width : 0)
-        - list.padding * 2;
+      // Match organizeControls item width: viewport (fill) minus 2*padding
+      const vw = typeof list.getViewportWidth === 'function'
+        ? list.getViewportWidth()
+        : list.extent.width - (list.scrollbar ? list.scrollbar.extent.width : 0);
+      this.extent.width = Math.max(1, vw - list.padding * 2);
     }
 
     this.onSelect = () => {
@@ -140,11 +142,13 @@ export class GUIProtoItem extends GUIControl{
 
   calculateBox(){
     let worldPosition = this.parent.widget.position.clone();
-    //console.log('worldPos', worldPosition);
-    this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
-    this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
-    this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
-    this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
+    const rtt = (this.list as GUIListBox | undefined)?.targetMesh;
+    const ox = rtt?.position?.x ?? 0;
+    const oy = rtt?.position?.y ?? 0;
+    this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x + ox;
+    this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y + oy;
+    this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x + ox;
+    this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y + oy;
     
     for(let i = 0; i < this.children.length; i++){
       this.children[i].updateBounds();

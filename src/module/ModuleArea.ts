@@ -1290,10 +1290,10 @@ export class ModuleArea extends ModuleObject {
         }
         this.lastRoom = player.room;
 
+        // Retail UpdateRoom @ 00430340 — SetDesiredEnvironment + SetDesiredAmbientScale.
         if(this.lastRoom?.envAudio >= 0){
-          AudioEngine.GetAudioEngine().setReverbProfile(this.lastRoom?.envAudio || 0);
+          AudioEngine.GetAudioEngine().setDesiredEnvironment(this.lastRoom.envAudio || 0);
         }
-        // Retail UpdateRoom @ 005ee860 — AmbientScale drives audio, not lighting.
         if(this.lastRoom && Number.isFinite(this.lastRoom.ambientScale)){
           AudioEngine.GetAudioEngine().setDesiredAmbientScale(this.lastRoom.ambientScale);
         }
@@ -1656,7 +1656,9 @@ export class ModuleArea extends ModuleObject {
 
     GameState.AlphaTest = this.alphaTest;
 
-    AudioEngine.GetAudioEngine().setReverbProfile(this.audio.environmentAudio);
+    // Area default EnvAudio — desired; Render/update applies SetCurrentEnvironment.
+    AudioEngine.GetAudioEngine().setDesiredEnvironment(this.audio.environmentAudio);
+    AudioEngine.GetAudioEngine().applyDesiredEnvironment();
 
     FollowerCamera.setCameraStyle(this.getCameraStyle());
     if(this.miniGame){

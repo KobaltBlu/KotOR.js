@@ -278,7 +278,7 @@ export class IngameControls {
         !(logical === 'left' && Mouse.clickItem) &&
         (GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.FREELOOK)
       ){
-        Mouse.tryRequestPointerLock(this.element);
+        // Mouse.tryRequestPointerLock(this.element);
       }
     });
 
@@ -455,6 +455,7 @@ export class IngameControls {
       Mouse.clickItem = undefined;
     });
 
+    // Wheel → retail one-index (or oversized page-step) scroll via GUIListBox.scrollUp/Down
     document.body.addEventListener('wheel', (e: WheelEvent) => {
       if(e.deltaY < 0){
         if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){

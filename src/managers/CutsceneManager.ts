@@ -14,6 +14,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
+import { SoundMode } from "@/enums/audio/SoundMode";
 import * as THREE from "three";
 import { CameraMode } from "@/enums/dialog/CameraMode";
 import { ICameraState } from "@/interface/dialog/ICameraState";
@@ -163,6 +164,14 @@ export class CutsceneManager {
     }
 
     this.conversation_name = dialog.resref;
+    // Retail CSWSDialog ctor → StartDuckingMusicAndAmbientSounds (0.2).
+    // Retail SendDialogEntry: if GetSoundMode()!=0 → SetSoundMode(0) so VO is audible.
+    const audio = AudioEngine.GetAudioEngine();
+    if(AudioEngine.GetSoundMode() !== SoundMode.POP){
+      AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    }
+    AudioEngine.ensureGameBusesAudible();
+    audio.startDuckingMusicAndAmbientSounds();
     this.dialog = dialog;
     this.dialog.owner = this.owner;
     this.dialog.listener = this.listener;
@@ -543,6 +552,8 @@ export class CutsceneManager {
     this.cutsceneMode = CutsceneMode.DIALOG;
     GameState.VideoEffectManager.SetVideoEffect(-1);
     AudioEngine.GetAudioEngine().dialogMusicAudioEmitter.stop();
+    // Retail CSWSDialog dtor → StopDuckingMusicAndAmbientSounds (1.0).
+    AudioEngine.GetAudioEngine().stopDuckingMusicAndAmbientSounds();
 
     if(wasBark){
       GameState.RestoreEnginePlayMode();

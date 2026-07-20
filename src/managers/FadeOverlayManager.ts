@@ -29,6 +29,13 @@ export class FadeOverlayManager {
   /** renderOrder so video player (9999991+) can always draw on top of the fade */
   static readonly FADE_RENDER_ORDER = 9999990;
 
+  /**
+   * Retail post-LevelLoad world fade-in (CClientExoAppInternal::MainLoop →
+   * CGuiInGame::StartGlobalFade direction=1, wait=0.5, length=1.0).
+   */
+  static readonly WORLD_FADE_IN_WAIT = 0.5;
+  static readonly WORLD_FADE_IN_LENGTH = 1.0;
+
   static Initialize(){
     FadeOverlayManager.plane.position.z = 499;
     FadeOverlayManager.plane.renderOrder = FadeOverlayManager.FADE_RENDER_ORDER;

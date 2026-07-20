@@ -3,6 +3,8 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameMenu } from "@/gui";
 import type { GUILabel, GUIProgressBar } from "@/gui";
 import { TwoDAObject } from "@/resource/TwoDAObject";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { SoundMode } from "@/enums/audio/SoundMode";
 
 /** Retail loading label TLK (LoadScreen show). */
 const TLK_LOADING = 42493;
@@ -28,6 +30,8 @@ export class LoadScreen extends GameMenu {
   PB_PROGRESS: GUIProgressBar;
   LBL_HINT: GUILabel;
   LBL_LOGO: GUILabel;
+  /** True after show() pushed SetSoundMode(4); hide() pops once. */
+  private soundModeHeld: boolean = false;
   LBL_LOADING: GUILabel;
   defaultTex: any;
 
@@ -175,12 +179,20 @@ export class LoadScreen extends GameMenu {
     super.show();
     this.setProgress(0);
     GameState.FadeOverlayManager.plane.visible = false;
+    // Retail ShowLoadScreen: SetSoundMode(4) (or 3) → PauseAllSounds
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+    this.soundModeHeld = true;
   }
 
   hide() {
     super.hide();
     GameState.FadeOverlayManager.plane.visible = true;
     this.setProgress(0);
+    // Retail StartSounds / load complete: SetSoundMode(0)
+    if(this.soundModeHeld){
+      AudioEngine.SetSoundMode(SoundMode.POP, 0);
+      this.soundModeHeld = false;
+    }
   }
 
 }

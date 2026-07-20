@@ -197,10 +197,9 @@ export class ModuleSound extends ModuleObject {
     this.audioEmitter.isRandomPosition = this.randomPosition;
     this.audioEmitter.interval = this.interval;
     this.audioEmitter.intervalVariation = this.intervalVariation;
-    this.audioEmitter.minDistance = this.minDistance > 0 ? this.minDistance : Math.max(1, priorityGroup?.minvolumedist || 1);
-    this.audioEmitter.maxDistance = this.maxDistance > 0 ? this.maxDistance : Math.max(this.audioEmitter.minDistance, priorityGroup?.maxvolumedist || 1);
     this.audioEmitter.playbackRate = 1;
     this.audioEmitter.playbackRateVariation = this.pitchVariation > 0 ? this.pitchVariation : priorityGroup?.playbackvariance || 0;
+    this.audioEmitter.fixedVariance = this.fixedVariance;
     this.audioEmitter.volume = Math.max(0, Math.min(127, this.volume));
     this.audioEmitter.volumeVariation = this.volumeVariation || 0;
     this.audioEmitter.setPriorityGroupId(Number.isFinite(this.priority) ? this.priority : AudioPriorityGroup.DEFAULT);
@@ -213,6 +212,10 @@ export class ModuleSound extends ModuleObject {
     this.audioEmitter.randomY = this.randomPosition ? this.randomRangeY || 0 : 0;
     this.audioEmitter.randomZ = 0;
     this.audioEmitter.elevation = this.elevation || 0;
+    const minD = this.minDistance > 0 ? this.minDistance : Math.max(1, priorityGroup?.minvolumedist || 1);
+    const maxD = this.maxDistance > 0 ? this.maxDistance : Math.max(minD, priorityGroup?.maxvolumedist || 1);
+    this.audioEmitter.setMinDistance(minD);
+    this.audioEmitter.setMaxDistance(maxD);
     await this.audioEmitter.load();
   }
 
@@ -247,7 +250,13 @@ export class ModuleSound extends ModuleObject {
     }
     this.active = active;
     if(this.audioEmitter){
+      const wasActive = this.audioEmitter.isActive;
       this.audioEmitter.isActive = active;
+      if(wasActive && !active){
+        this.audioEmitter.stop(this.audioEmitter.getPriorityFadeTime());
+      }else if(!wasActive && active){
+        this.audioEmitter.start();
+      }
     }
   }
 
@@ -270,7 +279,12 @@ export class ModuleSound extends ModuleObject {
   }
 
   setFixedVariance(fixedVariance: number = 1.0): ModuleSound {
-    this.fixedVariance = Math.max(0, Math.min(2.0, fixedVariance));
+    // Retail SetFixedVariance accepts [0.5, 2]; outside range is ignored on the source.
+    const v = Math.max(0, Math.min(2.0, fixedVariance));
+    this.fixedVariance = v;
+    if(this.audioEmitter){
+      this.audioEmitter.fixedVariance = v;
+    }
     return this;
   }
 
@@ -286,6 +300,20 @@ export class ModuleSound extends ModuleObject {
 
     if(this.audioEmitter){
       this.audioEmitter.stop(fadeTime);
+    }
+    return this;
+  }
+
+  /**
+   * Retail CSWSSoundObject::FadeAndStop — deactivate then fade/stop the source.
+   * @param fadeSeconds NWScript fSeconds (converted to ms in retail; Web Audio uses seconds).
+   */
+  fadeAndStop(fadeSeconds: number = 0): ModuleSound {
+    this.active = false;
+    if(this.audioEmitter){
+      this.audioEmitter.isActive = false;
+      const t = Math.max(0, fadeSeconds);
+      this.audioEmitter.stop(t);
     }
     return this;
   }
@@ -331,6 +359,9 @@ export class ModuleSound extends ModuleObject {
 
     if(this.template.RootNode.hasField('Looping'))
       this.looping = this.template.getFieldByLabel('Looping').getValue();
+
+    if(this.template.RootNode.hasField('Continuous'))
+      this.continuous = !!this.template.getFieldByLabel('Continuous').getValue();
 
     if(this.template.RootNode.hasField('MaxDistance'))
       this.maxDistance = this.template.getFieldByLabel('MaxDistance').getValue();

@@ -11,6 +11,7 @@ export * from "@/engine/pathfinding/test-direct-line";
 export * from "@/engine/pathfinding/plot-grid-path";
 export * from "@/engine/pathfinding/plot-path-around-creature";
 export * from "@/engine/pathfinding/clear-line-of-sight";
+export * from "@/engine/pathfinding/get-obstruction-factor";
 export * from "@/engine/pathfinding/party-soft-separate";
 export * from "@/engine/pathfinding/test-safe-location-point";
 export * from "@/engine/pathfinding/compute-safe-location";

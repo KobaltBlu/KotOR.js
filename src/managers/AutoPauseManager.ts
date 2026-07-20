@@ -4,6 +4,8 @@ import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { EngineState } from "@/enums/engine/EngineState";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { SoundMode } from "@/enums/audio/SoundMode";
 
 /**
  * AutoPauseManager class.
@@ -108,6 +110,8 @@ export class AutoPauseManager {
       this.enemySightedLatchUntil = Date.now() + 10000;
     }
     GameState.State = EngineState.PAUSED;
+    // Retail SetPausedByCombat(1) → SetSoundMode(2) — SFX pause, music stays (GetPauseable).
+    AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
     const pauseMenu = GameState.MenuManager?.InGamePause;
     pauseMenu?.LBL_PAUSEREASON?.setText(this.AutoPauseReason.get(type));
     if(type == AutoPauseState.EnemySighted || type == AutoPauseState.MineSighted){
@@ -137,6 +141,10 @@ export class AutoPauseManager {
     this.AutoPaused = false;
     this.CurrentReason = AutoPauseState.Generic;
     GameState.State = EngineState.RUNNING;
+    // Retail SetPausedByCombat(0) → SetSoundMode(0)
+    if(AudioEngine.GetSoundMode() === SoundMode.PAUSE){
+      AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    }
   }
 
   static GetAutoPauseTypeEnabled(type: AutoPauseState){

@@ -17,6 +17,8 @@ import type { ModuleMGGunBullet } from "@/module/ModuleMGGunBullet";
 import type { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
 import type { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { MGTrackFollowerSounds } from "@/module/minigame/MGTrackFollowerSounds";
+import { MGTrackFollowerAudio } from "@/module/minigame/MGTrackFollowerAudio";
 
 /**
 * ModuleMGPlayer class.
@@ -41,6 +43,11 @@ export class ModuleMGPlayer extends ModuleObject {
 
   gunBanks: ModuleMGGunBank[] = [];
   bullets: ModuleMGGunBullet[] = [];
+
+  /** Retail CSWTrackFollower Sounds (Engine / Death) + SWMG sound properties. */
+  trackFollowerSounds: MGTrackFollowerSounds = new MGTrackFollowerSounds();
+  /** Engine loop + death oneshot (Go / Stop / OnDeath). */
+  trackFollowerAudio: MGTrackFollowerAudio = new MGTrackFollowerAudio(this.trackFollowerSounds, true);
 
   //debug sphere
   sphere_geom: THREE.Mesh;
@@ -270,6 +277,8 @@ export class ModuleMGPlayer extends ModuleObject {
     this.sphere.center.copy(this.position);
     this.sphere_geom.position.copy(this.sphere.center);
 
+    this.trackFollowerAudio.updatePosition(this.position.x, this.position.y, this.position.z);
+
     if(this.camera instanceof OdysseyModel3D && this.camera.bonesInitialized && this.camera.visible){
       this.camera.update(delta);
     }
@@ -298,7 +307,31 @@ export class ModuleMGPlayer extends ModuleObject {
         }
       }
       this.onDamaged();
+      if(this.hit_points <= 0){
+        this.die();
+      }
     }
+  }
+
+  /** Retail CSWTrackFollower::Die → OnDeath. */
+  die(){
+    if(!this.alive){ return; }
+    this.alive = false;
+    void this.trackFollowerAudio.playDeathSound();
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnDeath];
+    if(instance){
+      instance.run(this, 0);
+    }
+  }
+
+  /** Retail CSWTrackFollower::Go — start engine loop. */
+  go(){
+    this.trackFollowerAudio.go(this.position.x, this.position.y, this.position.z);
+  }
+
+  /** Retail CSWTrackFollower::Stop — stop engine loop. */
+  stopTrack(){
+    this.trackFollowerAudio.stop();
   }
 
   adjustHitPoints(nHP = 0, nAbsolute = 0){
@@ -685,6 +718,7 @@ export class ModuleMGPlayer extends ModuleObject {
   load(){
     this.initProperties();
     GameState.scene.add(this.sphere_geom);
+    void this.trackFollowerAudio.load();
   }
 
   loadCamera( onLoad?: Function ){
@@ -890,6 +924,13 @@ export class ModuleMGPlayer extends ModuleObject {
 
     if(this.template.RootNode.hasField('Track'))
       this.trackName = this.template.getFieldByLabel('Track').getValue();
+
+    // Retail CSWTrackFollower Sounds struct (Death / Engine resrefs).
+    if(this.template.RootNode.hasField('Sounds')){
+      this.trackFollowerSounds.loadFromSoundsStruct(
+        this.template.getFieldByLabel('Sounds').getFieldStruct()
+      );
+    }
 
     if(this.template.RootNode.hasField('TunnelXNeg'))
       this.tunnel.neg.x = THREE.MathUtils.degToRad(this.template.getFieldByLabel('TunnelXNeg').getValue());

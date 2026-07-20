@@ -1729,11 +1729,14 @@ export class GUIControl {
     let worldPosition: THREE.Vector3 = new THREE.Vector3;
     if(this.list){
       worldPosition.copy(this.parent.widget.position.clone());
-      //console.log('worldPos', worldPosition);
-      this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
-      this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
-      this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
-      this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
+      // RTT content is drawn on list.targetMesh, which may be shifted for the scrollbar
+      const rtt = (this.list as any).targetMesh as THREE.Mesh | undefined;
+      const ox = rtt?.position?.x ?? 0;
+      const oy = rtt?.position?.y ?? 0;
+      this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x + ox;
+      this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y + oy;
+      this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x + ox;
+      this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y + oy;
       
       for(let i = 0; i < this.children.length; i++){
         this.children[i].updateBounds();
@@ -1774,12 +1777,15 @@ export class GUIControl {
     let left = this.extent.left - ( (parentExtent.width - this.extent.width) / 2 );
     let top = -this.extent.top + ( (parentExtent.height - this.extent.height) / 2 );
 
-    let shrinkWidth = this.getShrinkWidth();
-    left += shrinkWidth;
+    // Retail SetExtent: only shift content left when scrollbar is on the left
+    const shrinkWidth = this.getShrinkWidth();
+    if (shrinkWidth && this.flipLeft()) {
+      left += shrinkWidth;
+    }
 
     return {
       top: top,
-      left: left,// + this.border.dimension,
+      left: left,
       width: this.extent.width,
       height: this.extent.height,
     };
@@ -1848,7 +1854,11 @@ export class GUIControl {
   getShrinkWidth() {
     let shrinkWidth = 0;
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
-      shrinkWidth = ((this as any).scrollbar.extent.width) + ((this as any).scrollbar.border.dimension * 2) - ((this as any).padding * 2);
+      const lb = this as any;
+      // Retail SetExtent @ 0041bf80: content width -= scrollbar.extent.width only
+      if (lb.scrollbar?.extent?.width) {
+        shrinkWidth = lb.scrollbar.extent.width;
+      }
     }
     return shrinkWidth;
   }

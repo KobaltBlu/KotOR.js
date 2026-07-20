@@ -10,7 +10,6 @@ import { Mouse } from "@/controls/Mouse";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIProtoItem } from "@/gui/GUIProtoItem";
 import type { GUIScrollBar } from "@/gui/GUIScrollBar";
-import { GUIControlEvent } from "@/gui/GUIControlEvent";
 import { getExistingListRowIndex } from "@/gui/listrow/listRowAddItem";
 import { measureListRowHeight } from "@/gui/listrow/listRowMeasure";
 import {
@@ -18,27 +17,54 @@ import {
   type GUIListItemCallbacks,
 } from "@/gui/listrow/defaultListRows";
 import { applyCustomProtoRowSkin } from "@/gui/listrow/applyProtoTemplateSkin";
+import {
+  createDefaultListBoxBitFlags,
+  type ListBoxBitFlags,
+} from "@/gui/ListBoxBitFlags";
 
 /**
- * GUIListBox class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
- * @file GUIListBox.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
- * 
- * Features:
- * - Automatic scrollbar visibility based on content height
- * - Scrollbar is hidden when all items fit within the listbox height
- * - Scrollbar is shown when content exceeds the visible area
+ * GUIListBox — aligned with retail CSWGuiListBox (swkotor.exe).
+ *
+ * Layout uses index-based OrganizeControls / OrganizeUnequal / OrganizeOversized.
+ * RTT rendering and menu APIs (setItems / setProtoBuilder) are preserved.
  */
 export class GUIListBox extends GUIControl {
   listItems: any[];
-  /** Vertical scroll offset in pixels (content scrolled up). */
-  scroll: number;
-  /** Maximum scroll offset in pixels (total content height minus viewport). */
-  maxScroll: number;
+  /**
+   * Compat scroll position for menus that read/write `.scroll`.
+   * Equal/unequal: `topVisibleIndex`. Oversized: `scrollPosition - 1`.
+   */
+  get scroll(): number {
+    if (this.shouldScroll()) {
+      return Math.max(0, this.scrollPosition - 1);
+    }
+    return this.topVisibleIndex;
+  }
+  set scroll(value: number) {
+    const v = Math.max(0, Math.floor(value) || 0);
+    this.bitFlags.autoScrollToSelection = false;
+    if (this.shouldScroll()) {
+      this.scrollPosition = v + 1;
+      this.organizeOversized();
+      this.updateScrollbarVisibility();
+      this.calculateBox();
+      this.markListRttDirty();
+      return;
+    }
+    this.topVisibleIndex = v;
+    this.organizeControls();
+  }
+  /** Compat: max scroll index (`maxValue - 1` or oversized pages - 1). */
+  get maxScroll(): number {
+    if (this.shouldScroll()) {
+      return Math.max(0, this.getPagesToScroll() - 1);
+    }
+    return Math.max(0, (this.scrollbar?.maxValue ?? 1) - 1);
+  }
+  set maxScroll(_value: number) {
+    // read-only from retail's perspective; kept for assignment safety
+  }
+
   GUIProtoItemClass: typeof GUIProtoItem;
   onSelected: (node: any, control: GUIControl, index: number) => void;
   onClicked: (node: any, control: GUIControl, index: number) => void;
@@ -58,21 +84,36 @@ export class GUIListBox extends GUIControl {
   targetMaterial: THREE.MeshBasicMaterial;
   targetGeometry: THREE.PlaneGeometry;
   targetMesh: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
-  selectedItem: GUIControl;
-  minY: number;
-  maxY: number;
-  
-  // Height caching for performance
+  selectedItem: GUIControl | undefined;
+
+  /** Retail bit flags / organize state */
+  bitFlags: ListBoxBitFlags = createDefaultListBoxBitFlags();
+  selectionIndex: number = -1;
+  clickedIndex: number = -1;
+  hoveredRowIndex: number = -1;
+  /** When true, row classes expose an explicit click-to-select contract (retail field24). */
+  protoClickSelects: boolean = false;
+  topVisibleIndex: number = 0;
+  bottomVisibleIndex: number = 0;
+  itemsPerPage: number = 0;
+  itemHeight: number = 0;
+  /** 1-based page scroll for oversized single items (retail scroll_position). */
+  scrollPosition: number = 1;
+  /** Viewport height / font height when in oversized mode. */
+  pageCount: number = 1;
+  listColor: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  /** Explicit override; when unset, heights are compared during organize. */
+  forceVariableItemHeight: boolean | undefined;
+
   private itemHeightCache = new Map<number, number>();
   private cacheDirty = true;
-  /** When false and no row animation, RTT can skip a frame (see {@link markListRttDirty}). */
   private listRttDirty = true;
-  /** While > 0, targetMesh is hidden and RTT publish is suppressed. Set via mutate(); cleared by commit(). */
   private mutationDepth = 0;
-  /** When true, update() will publish as soon as all children report isTextureReady. */
   private pendingPublish = false;
-  /** Incremented each commit(); frame-tick publish checks this to ignore stale commits from rapid hover. */
   private publishGeneration = 0;
+  /** Scrollbar thumb drag start (retail field5_0x7c). */
+  private scrollDragStartValue = 0;
+  private scrollBarDragState: 'none' | 'bar' | 'arrow_up' | 'arrow_down' | 'page_up' | 'page_down' = 'none';
 
   static hexTextures: Map<string, OdysseyTexture>;
   static InitTextures: () => void;
@@ -82,31 +123,46 @@ export class GUIListBox extends GUIControl {
     this.objectType |= GUIControlTypeMask.GUIListBox;
 
     this.listItems = [];
-    this.scroll = 0;
-    this.maxScroll = 0;
     this.offset = new THREE.Vector2(0, 0);
     this.scene = new THREE.Scene();
+    this.bitFlags = createDefaultListBoxBitFlags();
 
-    //ProtoItem
+    // Retail Load @ 0041d5b0 — LEFTSCROLLBAR default 1
+    if (control.hasField('LEFTSCROLLBAR')) {
+      this.bitFlags.scrollbarOnLeft = control.getFieldByLabel('LEFTSCROLLBAR').getValue() == 1;
+    } else {
+      this.bitFlags.scrollbarOnLeft = true;
+    }
+
+    if (control.hasField('LOOPING')) {
+      this.bitFlags.looping = control.getFieldByLabel('LOOPING').getValue() == 1;
+    }
+
+    if (control.hasField('COLOR')) {
+      const c = control.getFieldByLabel('COLOR').getVector();
+      if (c) {
+        this.listColor.set(c.x, c.y, c.z);
+      }
+    }
+
+    //ProtoItem — retail LoadProtoItem @ 0041d3e0
     this.hasProtoItem = control.hasField('PROTOITEM');
     if(this.hasProtoItem){
-      //console.log(control.getFieldByLabel('PROTOITEM'))
       this.protoItem = this.menu.factory.FromStruct(control.getFieldByLabel('PROTOITEM').getChildStructs()[0], this.menu, this, this.scale);
     }
 
     //ScrollBar
     this.hasScrollBar = control.hasField('SCROLLBAR');
     if(this.hasScrollBar){
-      //console.log(control.getFieldByLabel('SCROLLBAR'))
       this._scrollbar = control.getFieldByLabel('SCROLLBAR').getChildStructs()[0];
     }
 
     if(this.hasScrollBar){
       this.scrollbar = new this.menu.factory.GUIScrollBar(this.menu, this._scrollbar, this, this.scale);
-      // scrollWrapper must exist before setList: setList → update → updateList → updateScrollbarVisibility uses scrollWrapper.
+      // Retail Draw: scrollbar is outside AurGUISetupViewport — parent beside border, not inside RTT
       this.scrollWrapper = new THREE.Group();
       this.scrollWrapper.add(this.scrollbar.createControl());
-      this.scene.add(this.scrollWrapper);
+      this.widget.add(this.scrollWrapper);
       this.scrollbar.setList(this);
     }
 
@@ -114,12 +170,8 @@ export class GUIListBox extends GUIControl {
     this.itemGroup.name = 'ListItems';
     this.itemGroup.position.set(0, 0, 0);
 
-    const shrinkWidth = this.scrollbar ? this.scrollbar.extent.width/2 : 0;
-    this.itemGroup.position.x += this.isScrollBarLeft() ? shrinkWidth : (shrinkWidth) * -1;
-
-    let extent = this.getOuterSize();
-    this.width = extent.width;
-    this.height = extent.height;
+    // RTT covers content viewport only (border-inner / fill), matching retail AurGUISetupViewport
+    this.syncRttSizeFromViewport();
 
     this.camera = new THREE.OrthographicCamera(
       this.width / -2, this.width / 2,
@@ -128,7 +180,7 @@ export class GUIListBox extends GUIControl {
     );
     this.camera.position.z = 100;
 
-    this.texture = new THREE.WebGLRenderTarget(this.width, this.height, {
+    this.texture = new THREE.WebGLRenderTarget(Math.max(1, this.width), Math.max(1, this.height), {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       format: THREE.RGBAFormat,
@@ -145,30 +197,55 @@ export class GUIListBox extends GUIControl {
     this.targetGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
     this.targetMesh = new THREE.Mesh(this.targetGeometry, this.targetMaterial);
     this.targetMaterial.map = this.texture.texture;
-    this.targetMesh.position.x = 0;
-    this.targetMesh.position.y = 0;
     this.targetMesh.position.z = 4;
     this.targetMesh.renderOrder = 5;
-    this.targetMesh.scale.set(this.width, this.height, 1);
+    this.layoutRttQuad();
     this.widget.add(this.targetMesh);
 
     this.scene.add(this.itemGroup);
+    this.syncScrollBarExtent();
+  }
 
+  /**
+   * Size RTT to fill/viewport (content area after scrollbar shrink).
+   * Scrollbar sits on the widget beside this quad — not inside the render target.
+   */
+  private syncRttSizeFromViewport(): void {
+    const fill = this.getFillExtent();
+    this.width = Math.max(1, fill.width);
+    this.height = Math.max(1, fill.height);
+  }
+
+  /** Position the RTT quad over the content area (shifted away from the scrollbar). */
+  private layoutRttQuad(): void {
+    if (!this.targetMesh) return;
+    this.targetMesh.scale.set(this.width, this.height, 1);
+    const shrink = this.getShrinkWidth();
+    // Content is centered with -shrink/2 offset (see getBorderExtent); match that.
+    this.targetMesh.position.x = this.isScrollBarLeft() ? shrink / 2 : -shrink / 2;
+    this.targetMesh.position.y = 0;
+  }
+
+  /**
+   * Retail SetScrollBarExtent @ 004181f0 — bar height matches list; X from LEFTSCROLLBAR.
+   */
+  syncScrollBarExtent(): void {
+    if (!this.scrollbar) return;
+    this.scrollbar.syncToListHeight(this.extent.height);
+    this.scrollbar.calculatePosition();
+    this.scrollbar.layoutThumb();
   }
 
   resizeControl(): void {
     super.resizeControl();
-    this.width = this.extent.width;
-    this.height = this.extent.height;
-    this.texture.setSize(this.width, this.height);
-    this.targetMesh.scale.set(this.width, this.height, 1);
+    this.syncRttSizeFromViewport();
+    this.texture.setSize(Math.max(1, this.width), Math.max(1, this.height));
+    this.layoutRttQuad();
     this.updateCamera();
+    this.syncScrollBarExtent();
     this.invalidateHeightCache();
+    this.bitFlags.layoutDirty = true;
     this.updateList();
-    if(this.scrollbar) {
-      this.scrollbar.update();
-    }
-    // Update scrollbar visibility after resize
     this.updateScrollbarVisibility();
   }
 
@@ -182,7 +259,6 @@ export class GUIListBox extends GUIControl {
       return;
     }
 
-    // Frame-tick publish: wait until all row controls report their textures ready
     if (this.pendingPublish) {
       const allReady = this.children.every(c => c.isTextureReady);
       if (allReady) {
@@ -190,6 +266,12 @@ export class GUIListBox extends GUIControl {
         this._doPublish();
       }
       return;
+    }
+
+    // Retail Draw: arrow pulse + hold-repeat on the live scrollbar mesh (outside RTT)
+    if (this.scrollbar && this.scrollWrapper?.visible) {
+      this.scrollbar.updateArrowPulse(delta);
+      this.scrollbar.updateHoldRepeat(delta);
     }
 
     const wantsAnimated = this.children.some(c => c.wantsPulseAnimation());
@@ -207,19 +289,24 @@ export class GUIListBox extends GUIControl {
   }
 
   // ---------------------------------------------------------------------------
-  // Mutation API — the only public way to change list contents
+  // Mutation API
   // ---------------------------------------------------------------------------
 
   /**
-   * Replace the entire list with `nodes`, then publish the RTT once all row
-   * textures are ready. Uses `getItemOptions` for per-row callbacks or
-   * `itemOptions` as a shared fallback. Selects `selectIndex` after publish.
+   * Multi-item replace. Clears noSelectMode for multi-row lists unless requestNoSelect.
    */
   setItems(nodes: readonly any[], options: GUIListItemCallbacks & {
     getItemOptions?: (node: any, index: number) => GUIListItemCallbacks;
     selectIndex?: number;
+    /** Keep scroll-only mode (description-style). */
+    requestNoSelect?: boolean;
   } = {} as any): void {
-    const { getItemOptions, selectIndex, ...sharedOpts } = options as any;
+    const { getItemOptions, selectIndex, requestNoSelect, ...sharedOpts } = options as any;
+    if (requestNoSelect) {
+      this.bitFlags.noSelectMode = true;
+    } else if (nodes.length > 1) {
+      this.bitFlags.noSelectMode = false;
+    }
     this.mutate((tx) => {
       tx.clear();
       for (let i = 0; i < nodes.length; i++) {
@@ -227,7 +314,6 @@ export class GUIListBox extends GUIControl {
       }
     });
     if (typeof selectIndex === 'number' && selectIndex >= 0) {
-      // Applied after commit; children are populated during mutate
       if (this.children[selectIndex]) {
         this.select(this.children[selectIndex]);
       }
@@ -235,20 +321,14 @@ export class GUIListBox extends GUIControl {
   }
 
   /**
-   * Replace the list with zero or one row. Passing `null`/`undefined`/empty
-   * string clears the list. Accepts the same node types as {@link setItems}.
+   * Replace the list with zero or one row. Description panes use this path —
+   * retail treats them as noSelectMode (scroll-only, visibleValue = 1).
    */
   setItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): void {
     const nodes = (node != null && node !== '') ? [node] : [];
-    this.setItems(nodes, options);
+    this.setItems(nodes, { ...options, requestNoSelect: true } as any);
   }
 
-  /**
-   * Low-level escape hatch for custom multi-step builds (e.g. equipment slot
-   * lists with mixed node types). The transaction object provides `clear` and
-   * `add` that operate under mutation suppression; `commit` fires automatically
-   * when `fn` returns.
-   */
   mutate(fn: (tx: { clear(): void; add(node: any, options?: GUIListItemCallbacks): GUIControl }) => void): void {
     this.mutationDepth++;
     if (this.mutationDepth === 1) {
@@ -262,10 +342,6 @@ export class GUIListBox extends GUIControl {
     this._commit();
   }
 
-  /**
-   * Append items without clearing first. Used for incremental additions such
-   * as dialog reply rows or music playlist rows.
-   */
   appendItems(nodes: readonly any[], options: GUIListItemCallbacks & {
     getItemOptions?: (node: any, index: number) => GUIListItemCallbacks;
   } = {} as any): void {
@@ -277,12 +353,10 @@ export class GUIListBox extends GUIControl {
     });
   }
 
-  /** Append a single item without clearing first. */
   appendItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): void {
     this.appendItems([node], options);
   }
 
-  /** Remove a row by its node object and re-publish. */
   removeItem(node: any): void {
     const index = this.listItems.indexOf(node);
     if (index >= 0) {
@@ -290,7 +364,6 @@ export class GUIListBox extends GUIControl {
     }
   }
 
-  /** Remove a row by index and re-publish. */
   removeItemAt(index: number): void {
     if (index >= 0 && index < this.children.length) {
       const removed = this.children[index];
@@ -301,35 +374,33 @@ export class GUIListBox extends GUIControl {
       }
       if (this.selectedItem === removed) {
         this.selectedItem = undefined;
+        this.selectionIndex = -1;
         if (this.children.length > 0) {
           this.select(this.children[Math.min(index, this.children.length - 1)]);
         }
+      } else if (this.selectionIndex > index) {
+        this.selectionIndex--;
       }
       this.invalidateHeightCache();
+      this.bitFlags.layoutDirty = true;
       this.updateList();
       this.updateScrollbarVisibility();
       this.markListRttDirty();
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Internal implementation
-  // ---------------------------------------------------------------------------
-
   private _commit(): void {
     this.mutationDepth = 0;
     this.publishGeneration++;
     this.pendingPublish = true;
-    // Scrollbar reset after clear
-    if (this.scrollbar) {
-      this.scrollbar.scrollPos = 0;
-    }
+    // Do not reset scrollbar cur here — organize/publish (and callers restoring .scroll) own it
   }
 
   private _doPublish(): void {
+    this.bitFlags.layoutDirty = true;
     this.updateList();
     if (this.scrollbar) {
-      this.scrollbar.update();
+      this.scrollbar.layoutThumb();
     }
     this.updateScrollbarVisibility();
     this.listRttDirty = false;
@@ -366,9 +437,8 @@ export class GUIListBox extends GUIControl {
 
     if(this.scrollbar){
       this.scrollbar.calculatePosition();
-      this.scrollbar.update();
+      this.scrollbar.layoutThumb();
     }
-
   }
 
   private _clearItems(){
@@ -377,9 +447,13 @@ export class GUIListBox extends GUIControl {
     }
     this.listItems = [];
     this.children = [];
-    this.scroll = 0;
-    this.maxScroll = 0;
+    this.topVisibleIndex = 0;
+    this.bottomVisibleIndex = 0;
+    this.scrollPosition = 1;
+    this.selectionIndex = -1;
+    this.selectedItem = undefined;
     this.invalidateHeightCache();
+    this.bitFlags.layoutDirty = true;
     this.updateScrollbarVisibility();
   }
 
@@ -391,9 +465,73 @@ export class GUIListBox extends GUIControl {
     return this.protoItem.type;
   }
 
-  /** Registers the custom list row presenter (same as assigning {@link GUIProtoItemClass}). */
   setProtoBuilder(ctor: typeof GUIProtoItem): void {
     this.GUIProtoItemClass = ctor;
+  }
+
+  setVariableItemHeight(value: boolean): void {
+    this.forceVariableItemHeight = value;
+    this.bitFlags.variableItemHeight = value;
+    this.bitFlags.layoutDirty = true;
+  }
+
+  setNoSelectMode(value: boolean): void {
+    this.bitFlags.noSelectMode = value;
+    this.bitFlags.layoutDirty = true;
+  }
+
+  setSelectOnLeftClick(value: boolean): void {
+    this.bitFlags.selectOnLeftClick = value;
+  }
+
+  /**
+   * Retail SetTopVisible @ 006b2590 — clamp topVisibleIndex into scroll range.
+   */
+  setTopVisible(newTopIndex: number): void {
+    const maxTop = Math.max(0, this.children.length - this.itemsPerPage);
+    if (newTopIndex < maxTop) {
+      this.topVisibleIndex = Math.max(0, newTopIndex | 0);
+    } else {
+      this.topVisibleIndex = maxTop;
+    }
+    this.bitFlags.autoScrollToSelection = false;
+    this.organizeControls();
+  }
+
+  /**
+   * Whether hover should change selection (retail HandleMouseMove @ 0041c400).
+   * Opt-in via setSelectOnLeftClick(false). Default is click-to-select so hover
+   * only highlights and does not override the last clicked selection.
+   */
+  shouldHoverSelect(): boolean {
+    if (this.bitFlags.noSelectMode) return false;
+    if (this.bitFlags.selectOnLeftClick) return false;
+    if (this.protoClickSelects) return false;
+    return true;
+  }
+
+  /**
+   * Hover over a row. When hover-select is enabled, updates selection.
+   * Otherwise only tracks hoveredRowIndex (highlight via row mouseIn).
+   */
+  onRowHover(control: GUIControl | undefined): void {
+    if (!control || control.disableSelection) {
+      this.hoveredRowIndex = -1;
+      return;
+    }
+    const index = this.children.indexOf(control);
+    this.hoveredRowIndex = index;
+    if (!this.shouldHoverSelect()) {
+      return;
+    }
+    if (index < 0 || index === this.selectionIndex) {
+      return;
+    }
+    this.setSelectedControl(index, false);
+  }
+
+  setLooping(value: boolean): void {
+    this.bitFlags.looping = value;
   }
 
   private _addItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): GUIControl {
@@ -441,92 +579,128 @@ export class GUIListBox extends GUIControl {
 
       this.itemGroup.add(widget);
           
-      if(typeof options.onClick === 'function' && !ctrl.disableSelection){
+      if (!ctrl.disableSelection && !this.bitFlags.noSelectMode) {
+        if (this.bitFlags.selectOnLeftClick || this.protoClickSelects) {
+          ctrl.addEventListener('mouseDown', (e) => {
+            e.stopPropagation();
+            const index = this.children.indexOf(ctrl);
+            if (index >= 0 && index !== this.selectionIndex) {
+              this.setSelectedControl(index, true);
+            }
+          });
+        }
         ctrl.addEventListener('click', (e) => {
           e.stopPropagation();
           this.select(ctrl);
-
-          options.onClick(node, ctrl);
+          if (typeof options.onClick === 'function') {
+            options.onClick(node, ctrl);
+          }
         });
       }
     }
 
-    if(ctrl){
-      ctrl.addEventListener('click', (e) => {
-        this.select(ctrl);
-      });
-    }
-
     this.invalidateHeightCache();
+    this.bitFlags.layoutDirty = true;
 
     return this.children[idx];
   }
 
   setSelectedIndex(index: number = 0){
-    if(index >= 0 && index < this.children.length){
-      let lastSelectedIndex = 0;
-      for(let i = 0, len = this.children.length; i < len; i++){
-        if(this.children[i].selected == true) lastSelectedIndex = i;
-        this.children[i].selected = false;
-      }
-
-      this.children[index].selected = true;
-      if(index != lastSelectedIndex && typeof this.children[index].onSelect === 'function'){
-        this.children[index].onSelect.call(this);
-      }
-    }
+    this.setSelectedControl(index, false);
   }
 
+  /**
+   * Retail SetSelectedControl @ 0041c040 — always AutoScroll + OrganizeControls.
+   */
+  setSelectedControl(controlId: number, _playSound: boolean = false): void {
+    const sameIndex = controlId === this.selectionIndex && controlId >= 0;
+
+    if (!sameIndex) {
+      if (this.selectionIndex >= 0 && this.selectionIndex < this.children.length) {
+        const prev = this.children[this.selectionIndex];
+        if (prev.selected) {
+          prev.selected = false;
+          if (typeof prev.onSelect === 'function') {
+            prev.onSelect.call(this);
+          }
+        }
+      }
+
+      if (controlId < 0 || controlId >= this.children.length) {
+        this.selectionIndex = -1;
+        this.selectedItem = undefined;
+      } else {
+        this.selectionIndex = controlId;
+        const ctrl = this.children[controlId];
+        ctrl.selected = true;
+        this.selectedItem = ctrl;
+        if (typeof ctrl.onSelect === 'function') {
+          ctrl.onSelect.call(this);
+        }
+        if (typeof this.onSelected === 'function') {
+          this.onSelected(ctrl.node, ctrl, controlId);
+        }
+      }
+    }
+
+    // Retail always sets AutoScroll and re-organizes (brings selection back into view)
+    this.bitFlags.autoScrollToSelection = true;
+    this.organizeControls();
+    if (this.scrollbar) {
+      this.scrollbar.setCurValue(this.topVisibleIndex);
+    }
+    this.markListRttDirty();
+  }
+
+  /**
+   * Row click / left-up. Retail:
+   * - selectOnLeftClick (or protoClickSelects): select on down/click
+   * - else: selection already from hover; click only fires onClicked
+   */
   select(control: GUIControl){
     try{
-      const len = this.children.length;
-      let bWasSelected = false;
-      let bWasItemSelected = false;
-
-      //deselect all 
-      for(let i = 0; i < len; i++){
-        bWasSelected = this.children[i].selected;
-        if(this.children[i] == control){
-          bWasItemSelected = this.children[i].selected;
-          continue; 
+      if (this.bitFlags.noSelectMode) {
+        return;
+      }
+      if (control instanceof GUIControl && control.disableSelection) {
+        return;
+      }
+      if (!(control instanceof GUIControl)) {
+        this.setSelectedControl(-1, false);
+        if (typeof this.onClicked === 'function') {
+          this.onClicked(undefined, undefined as any, -1);
         }
+        return;
+      }
+      const index = this.children.indexOf(control);
+      if (index < 0) return;
 
-        this.children[i].selected = false;
-        if(bWasSelected && typeof this.children[i].onSelect === 'function'){
-          this.children[i].onSelect.call(this);
-        }
+      this.clickedIndex = index;
+
+      if (this.bitFlags.selectOnLeftClick || this.protoClickSelects) {
+        this.setSelectedControl(index, false);
+      } else if (this.selectionIndex !== index) {
+        // Hover path missed (e.g. touch); still select on click
+        this.setSelectedControl(index, false);
       }
 
-      if(control instanceof GUIControl && this.selectedItem != control){
-        control.selected = true;
-        this.selectedItem = control;
-        if(!bWasItemSelected && typeof control.onSelect === 'function'){
-          control.onSelect.call(this);
-          // item.processEventListener('select');
-        }
-
-        if(!bWasItemSelected && typeof this.onSelected === 'function')
-          this.onSelected(control.node, control, this.children.indexOf(control));
+      if (typeof this.onClicked === 'function') {
+        this.onClicked(control.node, control, index);
       }
-        
-      if(control instanceof GUIControl && typeof this.onClicked === 'function')
-        this.onClicked(control.node, control, this.children.indexOf(control));
-
-      this.markListRttDirty();
+      this.clickedIndex = -1;
     }catch(e){
       console.error(e);
     }
   }
 
   clearSelection(){
-    this.select(undefined);
+    this.setSelectedControl(-1, false);
   }
 
   selectItem(item: any){
     let idx = this.listItems.indexOf(item);
     if(idx >= 0){
-      this.select(this.children[idx]);
-      this.setSelectedIndex(idx);
+      this.setSelectedControl(idx, false);
     }
   }
 
@@ -551,68 +725,465 @@ export class GUIListBox extends GUIControl {
   listItemMarginTop = 0;
   listItemMarginBottom = 0;
 
-  /** Height of the inner list area between border vertical insets (matches scrollable viewport). */
   getViewportInnerHeight(): number {
-    const visibleTop = this.extent.height / 2;// - this.border.inneroffsety;
-    const visibleBottom = -this.extent.height / 2;// + this.border.inneroffsety;
-    return visibleTop - visibleBottom;
+    // Retail SetExtent @ 0041bf80: viewport_height = border GetInnerExtent height
+    return this.getFillExtent().height;
   }
 
+  getViewportWidth(): number {
+    // Retail viewport_width after scrollbar shrink + border inset
+    return this.getFillExtent().width;
+  }
+
+  /** Retail shouldScroll @ 0041a290 — single item taller than viewport. */
+  shouldScroll(): boolean {
+    const count = this.children.length;
+    if (count <= 0) return false;
+    if (this.bitFlags.variableItemHeight) return false;
+    const vh = this.getViewportInnerHeight();
+    return vh < (this.padding + this.itemHeight);
+  }
+
+  /** Retail getPagesToScroll @ 004182b0. */
+  getPagesToScroll(): number {
+    const vh = this.getViewportInnerHeight();
+    if (vh === 0) return 1;
+    const a = Math.floor(((this.itemHeight * this.pageCount) / vh) + 0.9999);
+    const b = Math.floor(this.pageCount);
+    return (a - b) + 1;
+  }
+
+  private getFontHeight(): number {
+    const src = this.children[0] || this.protoItem;
+    if (src?.guiFont?.height) {
+      return src.guiFont.height;
+    }
+    return 16;
+  }
+
+  private inferVariableHeights(heights: number[]): boolean {
+    if (typeof this.forceVariableItemHeight === 'boolean') {
+      return this.forceVariableItemHeight;
+    }
+    if (heights.length <= 1) return false;
+    const first = heights[0];
+    for (let i = 1; i < heights.length; i++) {
+      if (Math.abs(heights[i] - first) > 1) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Place a row using retail top-down extents converted to Three.js Y-up center coords.
+   * Origin top=0 is the top of the border-inner viewport (retail AurGUISetupViewport).
+   * Retail SetExtent: left = padding, width = viewport - 2*padding (center X = 0 in RTT).
+   */
+  private placeItem(ctrl: GUIControl, top: number, height: number, width: number): void {
+    const vh = this.getViewportInnerHeight();
+    const visibleTop = vh / 2;
+    ctrl.extent.left = this.padding;
+    ctrl.extent.height = height;
+    if (width > 0) {
+      ctrl.extent.width = width;
+    }
+    ctrl.widget.position.x = 0;
+    ctrl.widget.position.y = visibleTop - top - height / 2;
+    ctrl.updateBounds();
+  }
+
+  /**
+   * Retail Draw clip test @ 0041a3e0 — whether a row intersects (or is fully inside) the viewport.
+   */
+  private isRowInViewport(top: number, height: number, vh: number): boolean {
+    const bottom = top + height;
+    if (bottom <= 0 || top > vh) {
+      return false;
+    }
+    if (this.bitFlags.clipPartiallyVisibleItems) {
+      return bottom < vh && top >= 0;
+    }
+    return true;
+  }
+
+  /** Public entry used by menus and scrollbar; maps to retail OrganizeControls. */
   updateList(){
-    if(!this.children.length){
-      this.maxScroll = 0;
-      this.scroll = 0;
+    this.organizeControls();
+  }
+
+  /**
+   * Retail OrganizeControls @ 0041b140 (with Unequal / Oversized branches).
+   */
+  organizeControls(): void {
+    const count = this.children.length;
+    const vh = this.getViewportInnerHeight();
+    const vw = this.getViewportWidth();
+
+    if (count === 0) {
+      if (!this.bitFlags.layoutDirty) {
+        this.calculateBox();
+        this.markListRttDirty();
+        return;
+      }
+      if (this.scrollbar) {
+        this.scrollbar.setMaxValue(1, false);
+        this.scrollbar.setCurValue(1);
+        this.scrollbar.setVisibleValue(1);
+      }
+      this.bitFlags.layoutDirty = false;
       this.updateScrollbarVisibility();
-      this.updateScrollbarThumb();
       this.calculateBox();
       this.markListRttDirty();
       return;
     }
 
-    const visibleTop = this.extent.height / 2;// - this.border.inneroffsety;
-    const visibleBottom = -this.extent.height / 2;// + this.border.inneroffsety;
-    const visibleHeight = visibleTop - visibleBottom;
-
     const heights: number[] = [];
-    for (let i = 0; i < this.children.length; i++) {
+    for (let i = 0; i < count; i++) {
       heights.push(this.getItemHeight(this.children[i]));
     }
+    this.bitFlags.variableItemHeight = this.inferVariableHeights(heights);
 
-    const prefix: number[] = [0];
-    for (let i = 0; i < heights.length; i++) {
-      prefix.push(prefix[i] + heights[i] + this.padding);
+    if (this.bitFlags.variableItemHeight) {
+      this.organizeUnequal(heights);
+      this.cacheDirty = false;
+      this.updateScrollbarVisibility();
+      this.calculateBox();
+      this.markListRttDirty();
+      return;
     }
 
-    const totalContentHeight = prefix[heights.length] + this.padding;
-    this.maxScroll = Math.max(0, totalContentHeight - visibleHeight);
+    if (this.bitFlags.layoutDirty) {
+      this.itemHeight = 0;
+      for (let i = 0; i < count; i++) {
+        if (heights[i] > this.itemHeight) {
+          this.itemHeight = heights[i];
+        }
+      }
+      // Only reset scroll window when content/layout metrics change (retail layoutDirty path).
+      // Intentionally does not clobber topVisibleIndex on every organize — callers that clear
+      // items already reset indices in _clearItems.
+      if (this.topVisibleIndex < 0) {
+        this.topVisibleIndex = 0;
+      }
 
-    this.scroll = Math.max(0, Math.min(this.scroll, this.maxScroll));
+      if (this.itemHeight === 0) {
+        if (this.scrollbar) {
+          this.scrollbar.setMaxValue(1, false);
+          this.scrollbar.setCurValue(1);
+          this.scrollbar.setVisibleValue(1);
+        }
+        this.bitFlags.layoutDirty = false;
+        this.updateScrollbarVisibility();
+        this.calculateBox();
+        this.markListRttDirty();
+        return;
+      }
 
-    const topBase = visibleTop - this.padding;
+      const pitch = this.padding + this.itemHeight;
+      let itemsPerPage = Math.floor(vh / pitch);
+      this.itemsPerPage = itemsPerPage;
 
-    for (let i = 0; i < this.children.length; i++) {
-      const height = heights[i];
-      const itemY = topBase - prefix[i] - height / 2 + this.scroll;
-      this.children[i].widget.position.y = itemY;
-      this.children[i].updateBounds();
+      if (itemsPerPage === 0) {
+        // Oversized: drive scrollbar in page units (scroll_position / getPagesToScroll)
+        if (vh < (this.padding + this.itemHeight)) {
+          const fontH = this.getFontHeight();
+          if (fontH !== 0) {
+            this.pageCount = vh / fontH;
+          }
+        }
+        if (this.scrollbar) {
+          const pages = this.getPagesToScroll();
+          this.scrollbar.setMaxValue(Math.max(1, pages), this.bitFlags.noSelectMode);
+          this.scrollbar.setVisibleValue(1);
+        }
+      } else {
+        let maxVal = (count - itemsPerPage) + 1;
+        if (maxVal < 2) maxVal = 1;
+        if (this.scrollbar) {
+          this.scrollbar.setMaxValue(maxVal, this.bitFlags.noSelectMode);
+          // Retail OrganizeControls: noSelectMode → visibleValue = 1
+          let visible = 1;
+          if (!this.bitFlags.noSelectMode) {
+            visible = itemsPerPage;
+            if (count <= itemsPerPage) {
+              visible = count;
+            }
+          }
+          this.scrollbar.setVisibleValue(visible);
+        }
+        const maxTop = Math.max(0, maxVal - 1);
+        if (this.topVisibleIndex > maxTop) {
+          this.topVisibleIndex = maxTop;
+        }
+      }
+
+      if (vh < (this.padding + this.itemHeight) && count > 0) {
+        const fontH = this.getFontHeight();
+        if (fontH !== 0) {
+          this.pageCount = vh / fontH;
+        }
+      }
+
+      this.bitFlags.layoutDirty = false;
+    }
+
+    if (vh < (this.padding + this.itemHeight) && count > 0 && !this.bitFlags.variableItemHeight) {
+      this.organizeOversized();
+      this.cacheDirty = false;
+      this.updateScrollbarVisibility();
+      this.calculateBox();
+      this.markListRttDirty();
+      return;
+    }
+
+    // AutoScrollToSelection
+    if (this.bitFlags.autoScrollToSelection && this.selectionIndex >= 0) {
+      const sel = this.selectionIndex;
+      const top = this.topVisibleIndex;
+      if (sel < top) {
+        this.topVisibleIndex = sel;
+      } else if (sel >= top + this.itemsPerPage) {
+        let next = (sel - this.itemsPerPage) + 1;
+        if (next < 0) next = 0;
+        this.topVisibleIndex = next;
+      }
+    }
+
+    if (this.scrollbar) {
+      this.scrollbar.setCurValue(this.topVisibleIndex);
+    }
+
+    const pitch = this.padding + this.itemHeight;
+    const ipp = this.itemsPerPage;
+    const pad = this.padding;
+    const itemWidth = Math.max(0, vw - pad * 2);
+
+    // leftover vertical space distributed across visible rows (retail OrganizeControls)
+    let leftover = (vh - ipp * pitch) - pad;
+    let extra = ipp > 0 ? Math.floor(leftover / ipp) : 0;
+    leftover = leftover - ipp * extra;
+
+    let cursorTop = pad - this.topVisibleIndex * pitch;
+    const tops: number[] = new Array(count);
+    const rowHeights: number[] = new Array(count);
+
+    // Items above the visible window
+    for (let i = 0; i < this.topVisibleIndex; i++) {
+      tops[i] = cursorTop;
+      rowHeights[i] = this.itemHeight;
+      this.placeItem(this.children[i], cursorTop, this.itemHeight, itemWidth);
+      cursorTop += pitch;
+    }
+
+    let visibleEnd = this.topVisibleIndex + ipp;
+    if (visibleEnd > count) visibleEnd = count;
+
+    const baseVisibleHeight = this.itemHeight + extra;
+    for (let i = this.topVisibleIndex; i < visibleEnd; i++) {
+      let h = baseVisibleHeight;
+      let top = cursorTop;
+      if (leftover !== 0) {
+        h = baseVisibleHeight + 1;
+        top = cursorTop + 1;
+        leftover--;
+      }
+      tops[i] = top;
+      rowHeights[i] = h;
+      this.placeItem(this.children[i], top, h, itemWidth);
+      cursorTop = top + pad + h;
+    }
+
+    this.bottomVisibleIndex = visibleEnd - 1;
+
+    // Items below
+    for (let i = visibleEnd; i < count; i++) {
+      tops[i] = cursorTop;
+      rowHeights[i] = this.itemHeight;
+      this.placeItem(this.children[i], cursorTop, this.itemHeight, itemWidth);
+      cursorTop += pitch;
+    }
+
+    // Retail Draw viewport clip — RTT still renders; we hide meshes that fail the clip test
+    for (let i = 0; i < count; i++) {
+      this.children[i].widget.visible = this.isRowInViewport(tops[i], rowHeights[i], vh);
     }
 
     this.cacheDirty = false;
-
     this.updateScrollbarVisibility();
-    this.updateScrollbarThumb();
+    if (this.scrollbar) {
+      this.scrollbar.layoutThumb();
+      this.scrollbar.syncArrowVisibility();
+    }
     this.calculateBox();
     this.markListRttDirty();
   }
 
-  isScrollBarLeft(){
-    if(this.control.hasField('LEFTSCROLLBAR')){
-      return this.control.getFieldByLabel('LEFTSCROLLBAR').getValue() == 1;
+  /**
+   * Retail OrganizeUnequal @ 00419ee0.
+   */
+  private organizeUnequal(heights: number[]): void {
+    const count = this.children.length;
+    const vh = this.getViewportInnerHeight();
+    const vw = this.getViewportWidth();
+    const pad = this.padding;
+    const itemWidth = Math.max(0, vw - pad * 2);
+
+    if (this.bitFlags.layoutDirty) {
+      if (count === 1) {
+        this.itemHeight = heights[0];
+      } else {
+        this.itemHeight = 0;
+        for (let i = 0; i < count - 1; i++) {
+          if (heights[i] > this.itemHeight) {
+            this.itemHeight = heights[i];
+          }
+        }
+      }
+      // Preserve scroll window across republish when possible (inventory restore).
+      if (this.topVisibleIndex < 0 || this.topVisibleIndex >= count) {
+        this.topVisibleIndex = 0;
+      }
+      this.bottomVisibleIndex = -1;
+      this.bitFlags.anchorTop = true;
+      if (this.itemHeight === 0) {
+        this.bitFlags.layoutDirty = false;
+        return;
+      }
+      this.bitFlags.layoutDirty = false;
+      // retail sets scrollbarVisible bit alongside
+      this.bitFlags.scrollbarVisible = true;
     }
-    return false;
+
+    if (this.bitFlags.autoScrollToSelection && this.selectionIndex >= 0) {
+      const sel = this.selectionIndex;
+      if (this.topVisibleIndex >= 0 && sel < this.topVisibleIndex) {
+        this.topVisibleIndex = sel;
+        this.bottomVisibleIndex = -1;
+        this.bitFlags.anchorTop = true;
+      } else if (this.bottomVisibleIndex >= 0 && sel > this.bottomVisibleIndex) {
+        this.topVisibleIndex = -1;
+        this.bottomVisibleIndex = sel;
+        this.bitFlags.anchorTop = false;
+      }
+    }
+
+    let anchorIndex: number;
+    let cursorTop: number;
+    if (this.bitFlags.anchorTop) {
+      anchorIndex = Math.max(0, this.topVisibleIndex);
+      cursorTop = pad;
+    } else {
+      anchorIndex = Math.max(0, this.bottomVisibleIndex);
+      cursorTop = vh - heights[anchorIndex] - pad;
+    }
+
+    // Place anchor, then walk up, then walk down
+    const tops: number[] = new Array(count);
+    tops[anchorIndex] = cursorTop;
+    this.placeItem(this.children[anchorIndex], cursorTop, heights[anchorIndex], itemWidth);
+
+    let y = cursorTop;
+    for (let i = anchorIndex - 1; i >= 0; i--) {
+      y = y - (pad + heights[i]);
+      tops[i] = y;
+      this.placeItem(this.children[i], y, heights[i], itemWidth);
+    }
+
+    y = tops[anchorIndex] + heights[anchorIndex] + pad;
+    for (let i = anchorIndex + 1; i < count; i++) {
+      tops[i] = y;
+      this.placeItem(this.children[i], y, heights[i], itemWidth);
+      y = y + pad + heights[i];
+    }
+
+    if (this.bitFlags.anchorTop) {
+      let bottom = -1;
+      let filled = true;
+      for (let i = this.topVisibleIndex + 1; i < count; i++) {
+        if (tops[i] + heights[i] > vh) {
+          bottom = i - 1;
+          filled = false;
+          break;
+        }
+      }
+      if (this.bottomVisibleIndex === -1 || filled) {
+        this.bottomVisibleIndex = count - 1;
+      } else {
+        this.bottomVisibleIndex = bottom;
+      }
+    } else {
+      for (let i = this.bottomVisibleIndex - 1; i >= 0; i--) {
+        if (tops[i] < 0) {
+          this.topVisibleIndex = i + 1;
+          break;
+        }
+      }
+      if (this.topVisibleIndex < 0) {
+        this.topVisibleIndex = 0;
+      }
+      this.bitFlags.anchorTop = true;
+    }
+
+    this.itemsPerPage = (this.bottomVisibleIndex - this.topVisibleIndex) + 1;
+    let maxVal = (count - this.itemsPerPage) + 1;
+    if (maxVal < 2) maxVal = 1;
+
+    if (this.scrollbar) {
+      this.scrollbar.setMaxValue(maxVal, this.bitFlags.noSelectMode);
+      this.scrollbar.setVisibleValue((this.bottomVisibleIndex - this.topVisibleIndex) + 1);
+      this.scrollbar.setCurValue(this.topVisibleIndex);
+      this.scrollbar.layoutThumb();
+      this.scrollbar.syncArrowVisibility();
+    }
+
+    // Visibility for retail Draw clip (shader RTT — hide meshes, do not switch to immediate mode)
+    for (let i = 0; i < count; i++) {
+      this.children[i].widget.visible = this.isRowInViewport(tops[i], heights[i], vh);
+    }
   }
 
-  /** Returns the raw drawn height of the row widget — no padding included. Padding is applied by the caller as part of slot pitch. */
+  /**
+   * Retail OrganizeOversized @ 0041a2d0.
+   */
+  private organizeOversized(): void {
+    const vh = this.getViewportInnerHeight();
+    const vw = this.getViewportWidth();
+    const pad = this.padding;
+    const itemWidth = Math.max(0, vw - pad * 2);
+    const pages = Math.max(1, this.getPagesToScroll());
+    if (this.scrollPosition < 1) this.scrollPosition = 1;
+    if (this.scrollPosition > pages) this.scrollPosition = pages;
+
+    let top: number;
+    if (this.scrollPosition === pages) {
+      top = (vh - this.itemHeight) - pad;
+    } else {
+      const iVar2 = this.scrollPosition - 1;
+      top = pad - Math.floor((iVar2 * vh) / Math.max(this.pageCount, 0.0001));
+    }
+
+    if (this.scrollbar) {
+      this.scrollbar.setMaxValue(pages, this.bitFlags.noSelectMode);
+      this.scrollbar.setVisibleValue(1);
+      // Map 1-based scrollPosition onto 0..max for thumb (cur 0 = top)
+      this.scrollbar.setCurValue(this.scrollPosition - 1);
+      this.scrollbar.layoutThumb();
+      this.scrollbar.syncArrowVisibility();
+    }
+
+    const ctrl = this.children[0];
+    this.placeItem(ctrl, top, this.itemHeight, itemWidth);
+    ctrl.widget.visible = true;
+    for (let i = 1; i < this.children.length; i++) {
+      this.children[i].widget.visible = false;
+    }
+  }
+
+  isScrollBarLeft(){
+    return this.bitFlags.scrollbarOnLeft;
+  }
+
   getNodeHeight(node?: GUIControl): number {
     if (!node) {
       console.warn('GUIListBox.getNodeHeight', 'No proto item found', `${this.menu.gui_resref}.gui`, this.name);
@@ -633,43 +1204,128 @@ export class GUIListBox extends GUIControl {
     return cHeight;
   }
 
-  /** Total virtual content height matching the scroll range used in {@link updateList}. Used by the scrollbar for thumb sizing. */
+  /** Total virtual content height — used by older callers; prefer scrollbar max/visible. */
   getContentHeight(): number {
     if (!this.children.length) return 0;
+    if (!this.bitFlags.variableItemHeight && this.itemHeight > 0) {
+      return this.children.length * (this.itemHeight + this.padding) + this.padding;
+    }
     let height = 0;
     for (let i = 0; i < this.children.length; i++) {
       height += this.getItemHeight(this.children[i]) + this.padding;
     }
-    height += this.padding; // trailing padding after last row
+    height += this.padding;
     return height;
   }
 
-  /** Pixels per arrow/wheel step; scrollbar thumb uses the same quanta when dragging. */
+  /** One retail scroll step for wheel/arrows (index unit). */
   getScrollStep(): number {
-    if(!this.children.length){
-      return 24;
-    }
-    return Math.max(8, this.getItemHeight(this.children[0]) + this.padding);
+    return 1;
   }
 
+  /**
+   * Scroll toward earlier items (retail ScrollDownArrow / wheel up).
+   */
   scrollUp(){
-    const step = this.getScrollStep();
-    this.scroll -= step;
-    if(this.scroll <= 0){
-      this.scroll = 0;
+    this.bitFlags.autoScrollToSelection = false;
+    if (this.shouldScroll()) {
+      this.scrollPosition = Math.max(1, this.scrollPosition - 1);
+      this.organizeOversized();
+      this.updateScrollbarVisibility();
+      this.calculateBox();
+      this.markListRttDirty();
+      return;
     }
-
-    this.updateList();
+    if (this.topVisibleIndex < 1) return;
+    this.topVisibleIndex--;
+    this.organizeControls();
   }
 
+  /**
+   * Scroll toward later items (retail ScrollUpArrow / wheel down).
+   */
   scrollDown(){
-    const step = this.getScrollStep();
-    this.scroll += step;
-    if(this.scroll > this.maxScroll){
-      this.scroll = this.maxScroll;
+    this.bitFlags.autoScrollToSelection = false;
+    if (this.shouldScroll()) {
+      const pages = this.getPagesToScroll();
+      this.scrollPosition = Math.min(pages, this.scrollPosition + 1);
+      this.organizeOversized();
+      this.updateScrollbarVisibility();
+      this.calculateBox();
+      this.markListRttDirty();
+      return;
     }
+    const maxTop = Math.max(0, (this.scrollbar?.maxValue ?? 1) - 1);
+    if (this.topVisibleIndex >= maxTop) return;
+    this.topVisibleIndex++;
+    this.organizeControls();
+  }
 
-    this.updateList();
+  scrollPageUp(){
+    this.bitFlags.autoScrollToSelection = false;
+    if (this.shouldScroll()) {
+      const step = Math.floor(this.pageCount) || 1;
+      this.scrollPosition = Math.max(1, this.scrollPosition - step);
+      this.organizeOversized();
+      this.updateScrollbarVisibility();
+      this.calculateBox();
+      this.markListRttDirty();
+      return;
+    }
+    if (this.topVisibleIndex < 1) return;
+    const page = this.scrollbar?.visibleItemCount || this.itemsPerPage || 1;
+    this.topVisibleIndex = Math.max(0, this.topVisibleIndex - page);
+    this.organizeControls();
+  }
+
+  scrollPageDown(){
+    this.bitFlags.autoScrollToSelection = false;
+    if (this.shouldScroll()) {
+      const step = Math.floor(this.pageCount) || 1;
+      const pages = this.getPagesToScroll();
+      this.scrollPosition = Math.min(pages, this.scrollPosition + step);
+      this.organizeOversized();
+      this.updateScrollbarVisibility();
+      this.calculateBox();
+      this.markListRttDirty();
+      return;
+    }
+    const maxTop = Math.max(0, (this.scrollbar?.maxValue ?? 1) - 1);
+    if (this.topVisibleIndex >= maxTop) return;
+    const page = this.scrollbar?.visibleItemCount || this.itemsPerPage || 1;
+    this.topVisibleIndex = Math.min(maxTop, this.topVisibleIndex + page);
+    this.organizeControls();
+  }
+
+  /** Apply scrollbar thumb drag value (retail HandleMouseCapturedMovement). */
+  applyScrollBarDragValue(curValue: number): void {
+    this.bitFlags.autoScrollToSelection = false;
+    if (this.shouldScroll()) {
+      // curValue is 0-based from scrollbar; scrollPosition is 1-based
+      const pages = this.getPagesToScroll();
+      this.scrollPosition = Math.max(1, Math.min(pages, curValue + 1));
+      this.organizeOversized();
+    } else {
+      const maxTop = Math.max(0, (this.scrollbar?.maxValue ?? 1) - 1);
+      this.topVisibleIndex = Math.max(0, Math.min(maxTop, curValue));
+      this.organizeControls();
+    }
+    this.updateScrollbarVisibility();
+    this.calculateBox();
+    this.markListRttDirty();
+  }
+
+  beginScrollBarDrag(): void {
+    if (this.shouldScroll()) {
+      this.scrollDragStartValue = this.scrollPosition - 1;
+    } else {
+      this.scrollDragStartValue = this.scrollbar?.currentValue ?? this.topVisibleIndex;
+    }
+    this.scrollBarDragState = 'bar';
+  }
+
+  getScrollBarDragStartValue(): number {
+    return this.scrollDragStartValue;
   }
 
   getActiveControls(){
@@ -678,23 +1334,41 @@ export class GUIListBox extends GUIControl {
       return [];
 
     let controls: GUIControl[] = [];
+    const vh = this.getViewportInnerHeight();
+    const visibleTop = vh / 2;
+    let hoveredRow: GUIControl | undefined;
+
     for(let i = 0; i < this.children.length; i++){
       let control = this.children[i];
-      //Check to see if the control is onscreen
-      if(control.widget.visible){
-        //check to see if the mouse is inside the control
-        if(control.box.containsPoint(Mouse.positionUI)){
-          controls.push(control);
-          controls = controls.concat( control.getActiveControls() );
-        }else{
-          this.menu.setWidgetHoverActive(control, false);
+      if(!control.widget.visible){
+        this.menu.setWidgetHoverActive(control, false);
+        continue;
+      }
+
+      // Clip hit-tests to the list viewport (retail HitCheckMouseLocal uses viewport-local coords)
+      const cy = control.widget.position.y;
+      const rowH = control.extent?.height || 0;
+      const itemTop = visibleTop - (cy + rowH / 2);
+      if (!this.isRowInViewport(itemTop, rowH, vh)) {
+        this.menu.setWidgetHoverActive(control, false);
+        continue;
+      }
+
+      if(control.box.containsPoint(Mouse.positionUI)){
+        if (!hoveredRow) {
+          hoveredRow = control;
         }
+        controls.push(control);
+        controls = controls.concat( control.getActiveControls() );
       }else{
         this.menu.setWidgetHoverActive(control, false);
       }
     }
 
-    if(this.scrollbar){
+    // Retail HandleMouseMove @ 0041c400 — hover-select when !selectOnLeftClick
+    this.onRowHover(hoveredRow);
+
+    if(this.scrollbar && this.scrollWrapper?.visible){
       if(this.scrollbar.box.containsPoint(Mouse.positionUI)){
         controls.push(this.scrollbar);
       }
@@ -715,23 +1389,11 @@ export class GUIListBox extends GUIControl {
 
   calculateBox(){
     let worldPosition = this.parent.widget.position.clone();
-    //console.log('worldPos', worldPosition);
 
     this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
     this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
     this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
     this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
-
-    /*this.box = new THREE.Box2(
-      new THREE.Vector2(
-        this.widget.position.x - this.extent.width/2 + worldPosition.x,
-        this.widget.position.y - this.extent.height/2 + worldPosition.y
-      ),
-      new THREE.Vector2(
-        this.widget.position.x + this.extent.width/2 + worldPosition.x,
-        this.widget.position.y + this.extent.height/2 + worldPosition.y
-      )
-    );*/
 
     for(let i = 0; i < this.children.length; i++){
       this.children[i].calculateBox();
@@ -740,128 +1402,110 @@ export class GUIListBox extends GUIControl {
     if(this.scrollbar){
       this.scrollbar.calculatePosition();
     }
-
-
   }
 
   _onCreate(){
     super._onCreate();
-
-    //let extent = this.getFillExtent();
-    //let sprite = this.getFill();
-    //sprite.material.color = new THREE.Color(0.0, 0.658824, 0.980392);
-
-    //this.setProgress(this.curValue);
-    
   }
 
+  /**
+   * Retail HandleInputEvent up/down — move selection; scroll via AutoScroll.
+   */
   directionalNavigate(direction = ''){
     const maxItems = this.children.length;
     if(maxItems <= 0){
       return;
     }
-    let index = this.children.indexOf(this.selectedItem);
+
+    if (this.bitFlags.noSelectMode) {
+      if (direction === 'up') this.scrollUp();
+      else if (direction === 'down') this.scrollDown();
+      return;
+    }
+
+    let index = this.selectionIndex;
+    if (index < 0) {
+      this.setSelectedControl(0, false);
+      return;
+    }
+
     switch(direction){
       case 'up':
-        index--;
-        if(index < 0){
-          index = 0;
+        if (this.shouldScroll()) {
+          this.scrollUp();
+          return;
         }
-        this.select(this.children[index]);
-        this.scrollUp();
-      return;
+        if (index < 1) {
+          if (this.bitFlags.looping) {
+            this.setSelectedControl(maxItems - 1, true);
+          }
+          return;
+        }
+        this.setSelectedControl(index - 1, true);
+        return;
       case 'down':
-        index++;
-        if(index >= maxItems){
-          index = maxItems-1;
+        if (this.shouldScroll()) {
+          this.scrollDown();
+          return;
         }
-        this.select(this.children[index]);
-        this.scrollDown();
-      return;
+        if (index >= maxItems - 1) {
+          if (this.bitFlags.looping) {
+            this.setSelectedControl(0, true);
+          }
+          return;
+        }
+        this.setSelectedControl(index + 1, true);
+        return;
     }
     super.directionalNavigate(direction);
   }
 
-  // Unified height calculation method
   private getItemHeight(node: GUIControl): number {
     const nodeIndex = this.children.indexOf(node);
     
     if (!this.cacheDirty && this.itemHeightCache.has(nodeIndex)) {
-      return this.itemHeightCache.get(nodeIndex);
+      return this.itemHeightCache.get(nodeIndex) ?? 0;
     }
     
-    let height = 0;
-    
-    height = measureListRowHeight(this, node);
+    const height = measureListRowHeight(this, node);
     
     this.itemHeightCache.set(nodeIndex, height);
     return height;
   }
 
-  // Invalidate height cache when items change
   private invalidateHeightCache() {
     this.cacheDirty = true;
     this.itemHeightCache.clear();
   }
 
-  /** Row text wrapped / extent changed — height cache must clear or rows stay overlapped. */
   relayoutAfterRowHeightChange(){
     this.invalidateHeightCache();
+    this.bitFlags.layoutDirty = true;
     this.updateList();
     if(this.scrollbar){
-      this.scrollbar.update();
+      this.scrollbar.layoutThumb();
     }
   }
 
-  // Update scrollbar visibility based on content height
   private updateScrollbarVisibility(){
     if(!this.scrollbar || !this.hasScrollBar || !this.scrollWrapper) return;
-    
-    // Calculate if scrolling is needed
-    // maxScroll > 0 means there are more items than can fit in the visible area
-    const needsScrolling = this.maxScroll > 0;
-    
-    // Show/hide scrollbar based on whether scrolling is needed
-    this.scrollWrapper.visible = needsScrolling;
-    
-    // Also update the scrollbar's internal visibility state if it has one
+
+    const needsScrolling = this.shouldScroll()
+      ? this.getPagesToScroll() > 1
+      : (this.scrollbar.maxValue > 1);
+
+    this.bitFlags.scrollbarVisible = needsScrolling;
+    this.scrollWrapper.visible = needsScrolling && this.bitFlags.scrollbarVisible;
+
     if(this.scrollbar.widget) {
-      this.scrollbar.widget.visible = needsScrolling;
+      this.scrollbar.widget.visible = this.scrollWrapper.visible;
     }
   }
 
-  // Public method to manually update scrollbar visibility
   public refreshScrollbarVisibility(){
     this.updateScrollbarVisibility();
   }
 
-  // Update scrollbar thumb position
-  private updateScrollbarThumb(){
-    if(!this.scrollbar) return;
-    if(this.maxScroll <= 0){
-      this.scrollbar.scrollPos = 0;
-      return;
-    }
-
-    const scrollPercent = this.scroll / this.maxScroll;
-    this.scrollbar.scrollPos = scrollPercent;
-
-    const scrollThumbOffset = (this.scrollbar.extent.height - this.scrollbar.thumb.scale.y);
-    const maxThumbY = scrollThumbOffset / 2;
-    const minThumbY = -maxThumbY;
-    
-    this.scrollbar.thumb.position.y = maxThumbY - (scrollThumbOffset * scrollPercent);
-    
-    // Clamp to bounds
-    this.scrollbar.thumb.position.y = Math.max(minThumbY, Math.min(maxThumbY, this.scrollbar.thumb.position.y));
-    
-    // Handle NaN
-    if(isNaN(this.scrollbar.thumb.position.y)){
-      this.scrollbar.thumb.position.y = 0;
-    }
-  }
-
-  // Update camera to match coordinate system
   private updateCamera() {
     this.camera.left = -this.width / 2;
     this.camera.right = this.width / 2;

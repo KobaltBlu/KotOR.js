@@ -11,6 +11,8 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { MDLLoader } from "@/loaders";
 import { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { MGTrackFollowerSounds } from "@/module/minigame/MGTrackFollowerSounds";
+import { MGTrackFollowerAudio } from "@/module/minigame/MGTrackFollowerAudio";
 
 /**
 * ModuleMGEnemy class.
@@ -28,6 +30,10 @@ export class ModuleMGEnemy extends ModuleObject {
   gunBanks: ModuleMGGunBank[] = [];
   models: OdysseyModel3D[] = [];
   track: THREE.Object3D;
+  /** Retail CSWTrackFollower Sounds + SWMG sound properties. */
+  trackFollowerSounds: MGTrackFollowerSounds = new MGTrackFollowerSounds();
+  /** Engine loop + death oneshot (Go / Stop / OnDeath). */
+  trackFollowerAudio: MGTrackFollowerAudio = new MGTrackFollowerAudio(this.trackFollowerSounds, false);
   animationManagers: OdysseyModelAnimationManager[] = [];
   gun_hook: THREE.Object3D;
 
@@ -112,6 +118,8 @@ export class ModuleMGEnemy extends ModuleObject {
     this.sphere_geom.scale.setScalar(this.sphere_radius);
     this.sphere_geom.position.copy(this.sphere.center);
 
+    this.trackFollowerAudio.updatePosition(this.position.x, this.position.y, this.position.z);
+
     for(let i = 0; i < this.animationManagers.length; i++){
       const aManager = this.animationManagers[i];
       aManager.updateAnimation(aManager.currentAnimation, aManager.currentAnimationState, delta);
@@ -141,6 +149,7 @@ export class ModuleMGEnemy extends ModuleObject {
     if(this.hit_points <= 0 && this.alive){
       this.alive = false;
       console.log('MGEnemy death', this);
+      void this.trackFollowerAudio.playDeathSound();
       const onDeath = this.scripts[ModuleObjectScript.MGEnemyOnDeath];
       if(onDeath){
         onDeath.run(this);
@@ -250,6 +259,7 @@ export class ModuleMGEnemy extends ModuleObject {
   async load(){
     this.initProperties();
     GameState.scene.add(this.sphere_geom);
+    void this.trackFollowerAudio.load();
     return this.template;
   }
 
@@ -299,6 +309,16 @@ export class ModuleMGEnemy extends ModuleObject {
     const onCreate = this.scripts[ModuleObjectScript.MGEnemyOnCreate];
     if(!onCreate){ return; }
     onCreate.run(this, 0);
+  }
+
+  /** Retail CSWTrackFollower::Go — start engine loop. */
+  go(){
+    this.trackFollowerAudio.go(this.position.x, this.position.y, this.position.z);
+  }
+
+  /** Retail CSWTrackFollower::Stop — stop engine loop. */
+  stopTrack(){
+    this.trackFollowerAudio.stop();
   }
 
   onDamaged(){
@@ -415,6 +435,11 @@ export class ModuleMGEnemy extends ModuleObject {
     if(this.template.RootNode.hasField('Track'))
       this.trackName = this.template.getFieldByLabel('Track').getValue();
 
+    if(this.template.RootNode.hasField('Sounds')){
+      this.trackFollowerSounds.loadFromSoundsStruct(
+        this.template.getFieldByLabel('Sounds').getFieldStruct()
+      );
+    }
 
     if(this.template.RootNode.hasField('Models')){
       let models = this.template.getFieldByLabel('Models').getChildStructs();

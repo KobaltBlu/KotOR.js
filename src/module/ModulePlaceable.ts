@@ -32,6 +32,7 @@ import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { ModulePlaceableObjectSound } from "@/enums/module/ModulePlaceableObjectSound";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
+import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { SWBodyBag } from "@/engine/rules/SWBodyBag";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
@@ -173,7 +174,8 @@ export class ModulePlaceable extends ModuleObject {
 
     try{
       this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
-      this.audioEmitter.maxDistance = 50;
+      this.audioEmitter.type = AudioEmitterType.POSITIONAL;
+      this.audioEmitter.setMaxDistance(50);
       this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.ROOM_SOUNDS);
       this.audioEmitter.load();
     }catch(e){

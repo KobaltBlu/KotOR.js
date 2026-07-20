@@ -161,8 +161,8 @@ export class ModuleDoor extends ModuleObject {
 
     try{
       this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
-      this.audioEmitter.maxDistance = 50;
       this.audioEmitter.type = AudioEmitterType.POSITIONAL;
+      this.audioEmitter.setMaxDistance(50);
       this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.ROOM_SOUNDS);
       this.audioEmitter.load();
     }catch(e){

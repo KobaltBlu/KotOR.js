@@ -6,26 +6,31 @@ import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { TextureType } from "@/enums/loaders/TextureType";
 import { Mouse } from "@/controls/Mouse";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { ResolutionManager } from "@/managers/ResolutionManager";
 import { GUIControl } from "@/gui/GUIControl";
 import type { GUIListBox } from "@/gui/GUIListBox";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 
+/** Retail CSWGuiScrollBarHitCheckResult */
+export enum ScrollBarHit {
+  MISS = 0,
+  DOWN_ARROW = 1,
+  UP_ARROW = 2,
+  BAR = 3,
+  BEFORE_BAR = 4,
+  AFTER_BAR = 5,
+}
+
 /**
- * GUIScrollBar class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
- * @file GUIScrollBar.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * GUIScrollBar — aligned with retail CSWGuiScrollBar index-unit API
+ * (setMaxValue / setCurValue / setVisibleValue @ 00418070+).
  */
 export class GUIScrollBar extends GUIControl{
   _dir: GFFStruct | undefined;
   arrowTex: THREE.Texture;
   upArrowGeometry: THREE.PlaneGeometry;
   upArrowMaterial: THREE.MeshBasicMaterial;
+  /** @deprecated prefer currentValue / maxValue — kept as 0..1 thumb fraction */
   scrollPos: number;
   scrollMax: number;
   mouseOffset: { x: number; y: number; };
@@ -41,6 +46,31 @@ export class GUIScrollBar extends GUIControl{
 
   arrowSize: number = 16;
 
+  /** Retail max_value */
+  maxValue: number = 1;
+  /** Retail current_value */
+  currentValue: number = 0;
+  /** Retail visible_item_count */
+  visibleItemCount: number = 1;
+  noSelectMode: boolean = false;
+  /** Retail DRAWMODE bit (ScrollBar::Load) — when set, CanScroll gates arrow draw. */
+  drawMode: boolean = false;
+  /** Full control height including arrows (list-matched); extent.height is the track. */
+  private listMatchedHeight: number = 0;
+
+  private dragStartMouseY = 0;
+  private dragging = false;
+
+  /** Retail hold-repeat while mouse captured on arrow/page (Draw @ 0041a3e0). */
+  private holdHit: ScrollBarHit = ScrollBarHit.MISS;
+  private holdRepeatTimer = 0.5;
+  private readonly HOLD_REPEAT_INTERVAL = 0.1;
+
+  /** Shared arrow alpha pulse (retail UpdateArrowPulsing @ 00418300). */
+  private static arrowPulseTime = 0.75;
+  private static arrowPulseUp = true;
+  private static arrowAlpha = 1.0;
+
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
     this.objectType |= GUIControlTypeMask.GUIScrollBar;
@@ -54,6 +84,20 @@ export class GUIScrollBar extends GUIControl{
     this.extent.height -= (this.arrowSize + this.border.dimension) * 2;
 
     this.arrowTex = undefined;
+
+    // Retail ScrollBar::Load @ 0041bcd0 — optional GFF seed values (list organize overrides later)
+    if (this.control.hasField('MAXVALUE')) {
+      this.setMaxValue(this.control.getFieldByLabel('MAXVALUE').getValue() | 0, false);
+    }
+    if (this.control.hasField('CURVALUE')) {
+      this.setCurValue(this.control.getFieldByLabel('CURVALUE').getValue() | 0);
+    }
+    if (this.control.hasField('VISIBLEVALUE')) {
+      this.setVisibleValue(this.control.getFieldByLabel('VISIBLEVALUE').getValue() | 0);
+    }
+    if (this.control.hasField('DRAWMODE')) {
+      this.drawMode = (this.control.getFieldByLabel('DRAWMODE').getValue() | 0) === 1;
+    }
 
     if(this.control.hasField('DIR')){
       this._dir = this.control.getFieldByLabel('DIR')?.getChildStructs()[0];
@@ -78,8 +122,6 @@ export class GUIScrollBar extends GUIControl{
           this.upArrowMaterial.transparent = true;
           this.upArrowMaterial.needsUpdate = true;
 
-          let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
-
           this.upArrow.userData.updateBox = () => {
             this.upArrow.getWorldPosition(this.upArrow.userData.worldPosition);
             this.upArrow.userData.box = new THREE.Box2(
@@ -102,15 +144,13 @@ export class GUIScrollBar extends GUIControl{
           this.downArrow = new THREE.Mesh( this.downArrowGeometry, this.downArrowMaterial );
 
           this.widget.add(this.downArrow);
-          this.downArrow.name = 'SCROLLBAR up arrow';
+          this.downArrow.name = 'SCROLLBAR down arrow';
           this.downArrow.scale.x = this.arrowSize;
           this.downArrow.scale.y = this.arrowSize;
           this.downArrow.position.z = 5;
           this.downArrow.position.y = -(this.extent.height/2 + this.arrowSize/2);
           this.downArrow.rotation.z = Math.PI;
           this.downArrow.userData.worldPosition = new THREE.Vector3();
-
-          parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
 
           this.downArrowMaterial.transparent = true;
           this.downArrowMaterial.needsUpdate = true;
@@ -130,24 +170,13 @@ export class GUIScrollBar extends GUIControl{
             this.downArrow.userData.box.translate(this.downArrow.userData.worldPosition)
           };
           this.downArrow.userData.updateBox();
-
-          this.upArrow.userData.onClick = (e: any) => {
-            this.scrollUp();
-          };
-
-          this.downArrow.userData.onClick = (e: any) => {
-            this.scrollDown();
-          };
-
+          // Arrow input is owned by mouseDown / hold-repeat (avoid double scroll via onClick)
         });
       }
     }
 
     if(this.control.hasField('THUMB')){
       this._thumb = this.control.getFieldByLabel('THUMB').getChildStructs()[0];
-      /*this.thumbMaterial = new THREE.SpriteMaterial( { map: null, color: new THREE.Color(0xFFFFFF) } );
-      this.thumbMaterial.transparent = true;
-      this.thumb = new THREE.Sprite( this.thumbMaterial );*/
 
       this.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
       this.thumbMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), side: THREE.DoubleSide} );
@@ -159,7 +188,7 @@ export class GUIScrollBar extends GUIControl{
       this.thumb.scale.y = this.extent.height/2;
       this.thumb.position.z = 5;
 
-      let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
+      let parentPos = this.worldPosition;
 
       this.thumb.userData.box = new THREE.Box2(
         new THREE.Vector2(
@@ -192,13 +221,9 @@ export class GUIScrollBar extends GUIControl{
         this.processEventListener('hover', [e]);
       };
 
-      this.thumb.userData.getControl = (e: any) => {
+      this.thumb.userData.getControl = (_e: any) => {
         return this;
       };
-
-      // this.thumb.click = (e: any) => {
-      //   console.log('scroll thumb')
-      // };
 
       if(this._thumb.hasField('IMAGE')){
         TextureLoader.enQueue(this._thumb.getFieldByLabel('IMAGE').getValue(), this.thumbMaterial, TextureType.TEXTURE);
@@ -207,135 +232,327 @@ export class GUIScrollBar extends GUIControl{
     }
 
     this.addEventListener('mouseMove', () => {
-      //if(this.inner_box.containsPoint(Mouse.positionUI)){
-        this.mouseInside();
-      //}
-    });
-
-    this.addEventListener('click', () =>{
-      let mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
-      let mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
-
-      let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
-      this.mouseOffset.y = scrollTop;
-      if(this.upArrow.userData.box.containsPoint(Mouse.positionUI)){
-        this.list.scrollUp();
-      }else if(this.downArrow.userData.box.containsPoint(Mouse.positionUI)){
-        this.list.scrollDown();
-      }else if(this.inner_box.containsPoint(Mouse.positionUI)){
+      if (this.dragging && Mouse.leftDown) {
         this.mouseInside();
       }
-    })
+    });
+
+    // Click is a no-op for scroll actions — mouseDown owns fire + hold-repeat (avoids double-step)
+    this.addEventListener('click', (e) => {
+      e.stopPropagation();
+    });
 
     this.addEventListener('mouseDown', (e) => {
       e.stopPropagation();
-      let mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
-      let mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
-      let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
-      this.mouseOffset.y = scrollTop;
-      this.upArrow.userData.updateBox();
-      this.downArrow.userData.updateBox();
+      this.upArrow?.userData?.updateBox?.();
+      this.downArrow?.userData?.updateBox?.();
+
+      const hit = this.hitCheckScrollbar();
+      if (hit === ScrollBarHit.BAR) {
+        this.dragging = true;
+        this.dragStartMouseY = Mouse.positionViewport.y;
+        this.list?.beginScrollBarDrag();
+        this.endHoldRepeat();
+      } else if (
+        hit === ScrollBarHit.UP_ARROW ||
+        hit === ScrollBarHit.DOWN_ARROW ||
+        hit === ScrollBarHit.BEFORE_BAR ||
+        hit === ScrollBarHit.AFTER_BAR
+      ) {
+        this.fireHitAction(hit);
+        this.beginHoldRepeat(hit);
+      }
     });
 
     this.addEventListener('mouseUp', () => {
-      let mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
-      let mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
-      //let scrollTop = ( this.thumb.position.y + (this.thumb.scale.y / 2) ) + mouseY;
-      //this.mouseOffset.y = scrollTop;
-      //console.log('GUIScrollBar', 'blah');
-      /*if(this.upArrow.box.containsPoint(Mouse.Mouse.positionUI)){
-        console.log('GUIScrollBar', 'up');
-        this.list.scrollUp();
-      }else if(this.downArrow.box.containsPoint(Mouse.Mouse.positionUI)){
-        console.log('GUIScrollBar', 'down');
-        this.list.scrollDown();
-      }else */if(this.inner_box.containsPoint(Mouse.positionUI)){
-        //console.log('GUIScrollBar', 'scroll');
-        this.mouseInside();
-      }
+      this.dragging = false;
+      this.endHoldRepeat();
     });
 
   }
+
+  /**
+   * Retail SetScrollBarExtent — match full list height; keep track = full − 2×arrows.
+   */
+  syncToListHeight(listHeight: number): void {
+    this.listMatchedHeight = Math.max(1, listHeight);
+    const arrowPad = (this.arrowSize + (this.border?.dimension || 0)) * 2;
+    this.extent.height = Math.max(1, this.listMatchedHeight - arrowPad);
+
+    if (this.upArrow) {
+      this.upArrow.position.y = this.extent.height / 2 + this.arrowSize / 2;
+      this.upArrow.userData.updateBox?.();
+    }
+    if (this.downArrow) {
+      this.downArrow.position.y = -(this.extent.height / 2 + this.arrowSize / 2);
+      this.downArrow.userData.updateBox?.();
+    }
+  }
+
+  /** Full hit height including up/down arrows. */
+  getFullHitHeight(): number {
+    if (this.listMatchedHeight > 0) return this.listMatchedHeight;
+    return this.extent.height + this.arrowSize * 2;
+  }
+
+  /**
+   * Retail setMaxValue @ 00418070.
+   */
+  setMaxValue(maxValue: number, noSelectMode: boolean = false): void {
+    if (maxValue < 0) return;
+    if (this.maxValue !== maxValue) {
+      this.maxValue = maxValue;
+      this.noSelectMode = noSelectMode;
+      this.scrollMax = maxValue;
+      this.layoutThumb();
+    } else {
+      this.noSelectMode = noSelectMode;
+    }
+  }
+
+  /**
+   * Retail setCurValue @ 004180a0.
+   */
+  setCurValue(curValue: number): void {
+    if (curValue < 0) {
+      curValue = 0;
+    } else if (curValue > this.maxValue) {
+      curValue = this.maxValue;
+    }
+    this.currentValue = curValue;
+    const denom = Math.max(1, this.maxValue - 1);
+    this.scrollPos = this.maxValue <= 1 ? 0 : curValue / denom;
+    this.layoutThumb();
+  }
+
+  /**
+   * Retail setVisibleValue @ 004180d0.
+   */
+  setVisibleValue(visibleValue: number): void {
+    if (visibleValue < 0 || (visibleValue === 0 && this.maxValue !== 0)) {
+      this.visibleItemCount = 1;
+    } else {
+      this.visibleItemCount = visibleValue;
+    }
+    this.layoutThumb();
+  }
+
+  /** Position/size thumb from max/cur/visible (retail SetExtent @ 004193f0). */
+  layoutThumb(): void {
+    if (!this.thumb) return;
+
+    const track = this.extent.height;
+    // Retail: thumb = visible / (visible + max) * track when max > 1
+    let scaleY: number;
+    if (this.maxValue > 1) {
+      scaleY = this.visibleItemCount / (this.visibleItemCount + this.maxValue);
+    } else {
+      scaleY = 1;
+    }
+    scaleY = Math.min(1, Math.max(0.01, scaleY));
+    this.thumb.scale.y = track * scaleY;
+    this.thumb.scale.x = this.extent.width / 2;
+
+    const travel = Math.max(0, track - this.thumb.scale.y);
+    const denom = Math.max(1, this.maxValue - 1);
+    const t = this.maxValue <= 1 ? 0 : this.currentValue / denom;
+    this.thumb.position.y = (travel / 2) - t * travel;
+
+    if (isNaN(this.thumb.position.y)) {
+      this.thumb.position.y = 0;
+    }
+
+    this.syncArrowVisibility();
+  }
+
+  /** Retail CanScrollUp @ 00418010. */
+  canScrollUp(): boolean {
+    if (this.maxValue <= this.visibleItemCount) return false;
+    return this.currentValue >= 1;
+  }
+
+  /** Retail CanScrollDown @ 00418030. */
+  canScrollDown(): boolean {
+    let limit = this.maxValue;
+    // bit 2 = noSelectMode on scrollbar
+    if (!this.noSelectMode && this.visibleItemCount < 2 && this.currentValue !== this.maxValue) {
+      limit = this.maxValue + 1;
+    }
+    return this.visibleItemCount < this.maxValue
+      && (this.currentValue + this.visibleItemCount) < limit;
+  }
+
+  /** Show/hide DIR arrows (retail ScrollBar::Draw DRAWMODE / CanScroll). */
+  syncArrowVisibility(): void {
+    if (this.drawMode) {
+      if (this.upArrow) this.upArrow.visible = this.canScrollUp();
+      if (this.downArrow) this.downArrow.visible = this.canScrollDown();
+    } else {
+      if (this.upArrow) this.upArrow.visible = true;
+      if (this.downArrow) this.downArrow.visible = true;
+    }
+  }
+
+  /**
+   * Retail UpdateArrowPulsing — write alpha into arrow MeshBasicMaterial.
+   * Keeps modern Three.js materials; does not use legacy GL immediate mode.
+   */
+  updateArrowPulse(delta: number): void {
+    if (!this.list?.bitFlags?.animateScrollArrows) return;
+
+    GUIScrollBar.arrowPulseTime -= delta;
+    if (GUIScrollBar.arrowPulseTime <= 0) {
+      GUIScrollBar.arrowPulseUp = !GUIScrollBar.arrowPulseUp;
+      GUIScrollBar.arrowPulseTime = 0.75;
+    }
+    const from = GUIScrollBar.arrowPulseUp ? 1.0 : 0.2;
+    const to = GUIScrollBar.arrowPulseUp ? 0.2 : 1.0;
+    GUIScrollBar.arrowAlpha =
+      (from - to) * (0.75 - GUIScrollBar.arrowPulseTime) * (1.3333334) + to;
+
+    const a = GUIScrollBar.arrowAlpha;
+    if (this.upArrowMaterial) {
+      this.upArrowMaterial.opacity = a;
+      this.upArrowMaterial.transparent = true;
+      this.upArrowMaterial.needsUpdate = true;
+    }
+    if (this.downArrowMaterial) {
+      this.downArrowMaterial.opacity = a;
+      this.downArrowMaterial.transparent = true;
+      this.downArrowMaterial.needsUpdate = true;
+    }
+  }
+
+  /** Begin hold-repeat for arrow/page (retail mouse capture path). */
+  beginHoldRepeat(hit: ScrollBarHit): void {
+    this.holdHit = hit;
+    this.holdRepeatTimer = 0.5;
+  }
+
+  endHoldRepeat(): void {
+    this.holdHit = ScrollBarHit.MISS;
+    this.holdRepeatTimer = 0.5;
+  }
+
+  /**
+   * Retail Draw hold-repeat: while LMB held and hit region unchanged, fire scroll every 0.1s.
+   */
+  updateHoldRepeat(delta: number): void {
+    if (this.holdHit === ScrollBarHit.MISS || !Mouse.leftDown || !this.list) {
+      if (!Mouse.leftDown) {
+        this.endHoldRepeat();
+        this.dragging = false;
+      }
+      return;
+    }
+
+    const current = this.hitCheckScrollbar();
+    if (current !== this.holdHit) {
+      this.endHoldRepeat();
+      return;
+    }
+
+    this.holdRepeatTimer -= delta;
+    while (this.holdRepeatTimer < 0) {
+      this.holdRepeatTimer += this.HOLD_REPEAT_INTERVAL;
+      this.fireHitAction(this.holdHit);
+    }
+  }
+
+  private fireHitAction(hit: ScrollBarHit): void {
+    switch (hit) {
+      case ScrollBarHit.UP_ARROW:
+        this.list?.scrollUp();
+        break;
+      case ScrollBarHit.DOWN_ARROW:
+        this.list?.scrollDown();
+        break;
+      case ScrollBarHit.BEFORE_BAR:
+        this.list?.scrollPageUp();
+        break;
+      case ScrollBarHit.AFTER_BAR:
+        this.list?.scrollPageDown();
+        break;
+      default:
+        break;
+    }
+  }
   
   scrollUp() {
-    // throw new Error("Method not implemented.");
+    this.list?.scrollUp();
   }
   scrollDown() {
-    // throw new Error("Method not implemented.");
+    this.list?.scrollDown();
+  }
+
+  /**
+   * Map local mouse to retail HitCheckScrollbar regions (vertical bar).
+   * Three.js Y-up: up arrow at +y (top), down arrow at -y (bottom).
+   */
+  hitCheckScrollbar(): ScrollBarHit {
+    if (!this.list) return ScrollBarHit.MISS;
+    const pos = Mouse.positionUI;
+
+    if (this.upArrow?.userData?.box?.containsPoint(pos)) {
+      return ScrollBarHit.UP_ARROW;
+    }
+    if (this.downArrow?.userData?.box?.containsPoint(pos)) {
+      return ScrollBarHit.DOWN_ARROW;
+    }
+
+    if (this.thumb?.userData?.box) {
+      // refresh thumb box
+      const parentPos = this.worldPosition;
+      const halfW = this.extent.width / 2;
+      const halfH = this.thumb.scale.y / 2;
+      const thumbWorld = parentPos.clone();
+      thumbWorld.y += this.thumb.position.y;
+      const thumbBox = new THREE.Box2(
+        new THREE.Vector2(thumbWorld.x - halfW, thumbWorld.y - halfH),
+        new THREE.Vector2(thumbWorld.x + halfW, thumbWorld.y + halfH),
+      );
+      this.thumb.userData.box = thumbBox;
+      if (thumbBox.containsPoint(pos)) {
+        return ScrollBarHit.BAR;
+      }
+    }
+
+    if (this.inner_box?.containsPoint(pos)) {
+      const parentPos = this.worldPosition;
+      const thumbY = parentPos.y + (this.thumb?.position.y || 0);
+      if (pos.y > thumbY) {
+        return ScrollBarHit.BEFORE_BAR; // above thumb → page up
+      }
+      return ScrollBarHit.AFTER_BAR;
+    }
+
+    return ScrollBarHit.MISS;
   }
 
   mouseInside(){
+    if (!this.list || !this.thumb || !this.dragging) return;
 
-    let mouseX = Mouse.positionViewport.x - (ResolutionManager.getViewportWidthScaled() / 2);
-    let mouseY = Mouse.positionViewport.y - (ResolutionManager.getViewportHeightScaled() / 2);
-    //console.log(mouseY);
-    //if(this.inner_box.containsPoint({x: mouseX, y: mouseY})){
+    const travel = Math.max(1, this.extent.height - this.thumb.scale.y);
+    const start = this.list.getScrollBarDragStartValue();
+    const deltaY = this.dragStartMouseY - Mouse.positionViewport.y;
+    const maxIdx = this.list.shouldScroll()
+      ? Math.max(0, this.list.getPagesToScroll() - 1)
+      : Math.max(0, this.maxValue - 1);
 
-      let centerPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
-
-      let scrollBarHeight = this.extent.height;
-
-      this.thumb.position.y = -(mouseY) || 0;
-
-      if(this.thumb.position.y < -((scrollBarHeight - this.thumb.scale.y))/2 ){
-        this.thumb.position.y = -((scrollBarHeight - this.thumb.scale.y))/2 || 0
-      }
-
-      if(this.thumb.position.y > ((scrollBarHeight - this.thumb.scale.y))/2 ){
-        this.thumb.position.y = ((scrollBarHeight - this.thumb.scale.y))/2 || 0
-      }
-
-      const maxThumbTravel = ((scrollBarHeight - this.thumb.scale.y)/2);
-      const scrollY = (this.thumb.position.y + maxThumbTravel) / (maxThumbTravel * 2);
-      this.scrollPos = 1.0 - scrollY;
-      this.update();
-
-    //}
-
+    const delta = Math.round((deltaY / travel) * maxIdx);
+    const next = Math.max(0, Math.min(maxIdx, start + delta));
+    this.list.applyScrollBarDragValue(next);
   }
 
   setList(list: GUIListBox){
     this.list = list;
     this.calculatePosition();
-    this.update();
+    this.layoutThumb();
   }
 
+  /** @deprecated use layoutThumb — kept for callers */
   update(){
-
-    if(this.list){
-
-      const contentHeight = this.list.getContentHeight();
-      const vh =
-        typeof this.list.getViewportInnerHeight === 'function'
-          ? this.list.getViewportInnerHeight()
-          : this.list.extent.height;
-
-      let scaleY = contentHeight > 0 ? vh / contentHeight : 1;
-      if(scaleY > 1){
-        scaleY = 1;
-        this.thumb.scale.y = this.extent.height * scaleY;
-      }else{
-        if(scaleY < 0.01)
-          scaleY = 0.01;
-        this.thumb.scale.y = this.extent.height * scaleY;
-      }
-
-      if(this.list.maxScroll <= 0){
-        this.list.scroll = 0;
-        this.scrollPos = 0;
-      }else{
-        let rawScroll = this.list.maxScroll * this.scrollPos;
-        const step = this.list.getScrollStep();
-        if (step > 0) {
-          rawScroll = Math.round(rawScroll / step) * step;
-        }
-        this.list.scroll = Math.max(0, Math.min(this.list.maxScroll, rawScroll));
-        this.scrollPos = this.list.scroll / this.list.maxScroll;
-      }
-      this.list.updateList();
-
-    }
-
+    this.layoutThumb();
   }
 
   calculatePosition(){
@@ -343,18 +560,11 @@ export class GUIScrollBar extends GUIControl{
     let parentOffsetX, parentOffsetY;
     if(!(this.parent.widget instanceof THREE.Scene)){
       parentExtent = this.menu.tGuiPanel.extent;
-      //console.log(this.parent)
-      //parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x + this.offset.x;
-      //parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y + this.offset.y;
       parentOffsetX = this.menu.tGuiPanel.worldPosition.x + this.offset.x;
       parentOffsetY = this.menu.tGuiPanel.worldPosition.y + this.offset.y;
-
     }else{
       parentOffsetX = parentOffsetY = 0;
     }
-
-    // let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
-    // let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
 
     if(this.list){
       if(this.list.isScrollBarLeft()){
@@ -375,16 +585,18 @@ export class GUIScrollBar extends GUIControl{
     }catch(e){
       console.error(e);
     }
-    let parentPos = this.worldPosition; //this.widget.getWorldPosition(new THREE.Vector3());
-    //console.log('worldPos', worldPosition);
+    this.updateWorldPosition();
+    const parentPos = this.worldPosition;
+    const fullH = this.getFullHitHeight();
+
     this.box = new THREE.Box2(
       new THREE.Vector2(
         this.anchorOffset.x - this.extent.width/2 + worldPosition.x,
-        this.anchorOffset.y - (this.extent.height + 64)/2 + worldPosition.y
+        this.anchorOffset.y - fullH/2 + worldPosition.y
       ),
       new THREE.Vector2(
         this.anchorOffset.x + this.extent.width/2 + worldPosition.x,
-        this.anchorOffset.y + (this.extent.height + 64)/2 + worldPosition.y
+        this.anchorOffset.y + fullH/2 + worldPosition.y
       )
     );
 
@@ -399,14 +611,16 @@ export class GUIScrollBar extends GUIControl{
       )
     );
     if(this.thumb){
+      const halfW = this.extent.width / 2;
+      const halfH = this.thumb.scale.y / 2;
       this.thumb.userData.box = new THREE.Box2(
         new THREE.Vector2(
-          (parentPos.x - this.extent.width/2),
-          (parentPos.y - this.extent.height/2)
+          parentPos.x - halfW,
+          parentPos.y + this.thumb.position.y - halfH
         ),
         new THREE.Vector2(
-          (parentPos.x + this.extent.width/2),
-          (parentPos.y + this.extent.height/2)
+          parentPos.x + halfW,
+          parentPos.y + this.thumb.position.y + halfH
         )
       );
     }

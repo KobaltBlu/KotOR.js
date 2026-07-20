@@ -136,7 +136,7 @@ export class MenuCredits extends GameMenu {
       }
     }
     for(let i = 0; i < 8; i++) lines.push(' ');
-    this.LB_CREDITS.setItems(lines);
+    this.LB_CREDITS.setItems(lines, { requestNoSelect: true } as any);
     this.LB_CREDITS.scroll = 0;
     this.LB_CREDITS.show();
     this.setListOpacity(1);

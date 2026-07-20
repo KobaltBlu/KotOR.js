@@ -382,8 +382,8 @@ export class Module {
     };
 
     object.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
-    object.audioEmitter.maxDistance = 50;
     object.audioEmitter.type = AudioEmitterType.POSITIONAL;
+    object.audioEmitter.setMaxDistance(50);
     object.audioEmitter.setPriorityGroupId(AudioPriorityGroup.NORMAL_SPELL_EFFECTS);
     object.audioEmitter.load();
     object.audioEmitter.setPosition(lLocation.position.x, lLocation.position.y, lLocation.position.z);

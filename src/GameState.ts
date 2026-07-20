@@ -829,13 +829,18 @@ export class GameState implements EngineContext {
 
       /**
        * Initialize Audio for the GUI
+       * INI Sound Options volumes are 0–100; GainNode expects 0–1 (same as GUI sliders).
        */
       const audioEngine = AudioEngine.GetAudioEngine();
-      AudioEngine.GAIN_MUSIC = parseInt(GameState.iniConfig.getProperty('Sound Options.Music Volume')) || 0
-      AudioEngine.GAIN_VO = parseInt(GameState.iniConfig.getProperty('Sound Options.Voiceover Volume')) || 0
-      AudioEngine.GAIN_SFX = parseInt(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')) || 0
-      AudioEngine.GAIN_GUI = parseInt(GameState.iniConfig.getProperty('Sound Options.Sound Effects Volume')) || 0
-      AudioEngine.GAIN_MOVIE = parseInt(GameState.iniConfig.getProperty('Sound Options.Movie Volume')) || 0
+      const iniVolumeToGain = (key: string) => {
+        const raw = parseInt(GameState.iniConfig.getProperty(key)) || 0;
+        return Math.max(0, Math.min(1, raw / 100));
+      };
+      AudioEngine.GAIN_MUSIC = iniVolumeToGain('Sound Options.Music Volume');
+      AudioEngine.GAIN_VO = iniVolumeToGain('Sound Options.Voiceover Volume');
+      AudioEngine.GAIN_SFX = iniVolumeToGain('Sound Options.Sound Effects Volume');
+      AudioEngine.GAIN_GUI = iniVolumeToGain('Sound Options.Sound Effects Volume');
+      AudioEngine.GAIN_MOVIE = iniVolumeToGain('Sound Options.Movie Volume');
 
       GameState.guiAudioEmitter = new AudioEmitter(audioEngine, AudioEngineChannel.GUI);
       GameState.guiAudioEmitter.maxDistance = 100;
@@ -1030,8 +1035,10 @@ export class GameState implements EngineContext {
     this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
     this.audioEmitter.maxDistance = 50;
     this.audioEmitter.type = AudioEmitterType.GLOBAL;
-    this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.UNMASKABLE_SOUND);
+    // Retail dialog VO uses One_Shot_Streams (group 3), not Unmaskable.
+    this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.ONE_SHOT_STREAMS);
     this.audioEmitter.load();
+    AudioEngine.ensureGameBusesAudible();
   }
 
   /**
@@ -1154,10 +1161,16 @@ export class GameState implements EngineContext {
           }
         }
 
-        //Reveal the area
+        //Reveal the area — retail MainLoop StartGlobalFade(1, wait=0.5, length=1.0)
         GameState.MenuManager.LoadScreen.close();
+        // Retail MainLoop after StartSounds: SetSoundMode(0) again (clears BusyWait mute under load).
+        AudioEngine.clearSoundModeStack();
         if(!GameState.holdWorldFadeInForDialog){
-          GameState.FadeOverlayManager.FadeIn(2.5, 0, 0, 0, 1);
+          GameState.FadeOverlayManager.FadeIn(
+            GameState.FadeOverlayManager.WORLD_FADE_IN_LENGTH,
+            0, 0, 0,
+            GameState.FadeOverlayManager.WORLD_FADE_IN_WAIT
+          );
         }
         GameState.module.area.updateDayNightCycle();
         GameState.module.area.musicBackgroundPlay();

@@ -5,6 +5,7 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { YUVFrame } from "@/video/binkvideo";
 import { MainMovies } from "@/game/kotor/menu/MainMovies";
+import { SoundMode } from "@/enums/audio/SoundMode";
 
 /**
  * VideoManager class.
@@ -237,6 +238,8 @@ export class VideoManager {
 
       this.currentMovie = { name: movieName, skippable: skipable };
       this.isPlaying = true;
+      // Retail ExecuteCommandPlayMovie: SetSoundMode(3) when not skippable
+      AudioEngine.SetSoundMode(SoundMode.PAUSE_LOAD, 0);
       // CClientExoAppInternal::AddMovieToExoArrayList → CClientOptions::SetMovieShown
       MainMovies.setMovieShown(movieName, true);
       await this.bikObject.play(movieName, () => {
@@ -374,6 +377,8 @@ export class VideoManager {
 
     this.currentMovie = null;
     this.isPlaying = false;
+    // Retail after PlayMovie: SetSoundMode(0) → ResumeAllSounds
+    AudioEngine.SetSoundMode(SoundMode.POP, 0);
 
     if (GameState.Mode === EngineMode.MOVIE) {
       GameState.RestoreEnginePlayMode();

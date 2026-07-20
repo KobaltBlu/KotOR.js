@@ -7,6 +7,8 @@ import { ActionMenuManager } from "@/engine/menu/ActionMenuManager";
 import { EngineState } from "@/enums/engine/EngineState";
 import { PerformanceMonitor } from "@/utility/PerformanceMonitor";
 import { EventManager } from "@/managers/EventManager";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { SoundMode } from "@/enums/audio/SoundMode";
 
 /**
  * MenuManager class.
@@ -125,6 +127,17 @@ export class MenuManager {
       MenuManager.activeMenus.push(menu);
   
       MenuManager.Resize();
+      // Retail ShowSWInGameGui: SetSoundMode(4). Only when leaving gameplay into a GUI menu.
+      // Main menu / title GUI must not pause (ctor clears mode; menu music stays audible).
+      if(
+        menu.engineMode === EngineMode.GUI &&
+        (GameState.Mode === EngineMode.INGAME ||
+          GameState.Mode === EngineMode.MINIGAME ||
+          GameState.Mode === EngineMode.FREELOOK ||
+          GameState.Mode === EngineMode.DIALOG)
+      ){
+        AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+      }
     }else{
       if(MenuManager.activeModals.indexOf(menu) == -1)
         MenuManager.activeModals.push(menu);
@@ -156,6 +169,12 @@ export class MenuManager {
 
       MenuManager.Resize();
 
+      // Retail HideSWInGameGui: SetSoundMode(0) when leaving GUI pause screens.
+      // Only pop when no GUI-mode menus remain (nested SetSoundMode(4) is a no-op).
+      if(menu.engineMode === EngineMode.GUI && !MenuManager.hasGuiPauseMenu()){
+        AudioEngine.SetSoundMode(SoundMode.POP, 0);
+      }
+
       if((!MenuManager.activeMenus.length || MenuManager.activeMenus[MenuManager.activeMenus.length-1].engineMode != EngineMode.GUI) && GameState.Mode !== EngineMode.MOVIE){
         GameState.RestoreEnginePlayMode();
       }
@@ -164,6 +183,13 @@ export class MenuManager {
       if(mIdx >= 0)
         MenuManager.activeModals.splice(mIdx, 1);
     }
+  }
+
+  /** True if any non-overlay active menu uses EngineMode.GUI (retail in-game pause GUI). */
+  static hasGuiPauseMenu(): boolean {
+    return MenuManager.activeMenus.some(
+      (m) => !m.isOverlayGUI && m.engineMode === EngineMode.GUI
+    );
   }
 
   static ClearMenus(){

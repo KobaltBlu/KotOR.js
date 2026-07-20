@@ -14,6 +14,8 @@ import EngineLocation from "@/engine/EngineLocation";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { ResourceTypes } from "@/KotOR";
 import { exists } from "fs";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { SoundMode } from "@/enums/audio/SoundMode";
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
 
@@ -359,6 +361,9 @@ export class SaveGame {
     await this.loadPC();
     //Load The Last Module
     console.log('SaveGame', this.getLastModule(), 'Loading Module...');
+    // Retail LoadGame / DoQuickLoad: SetSoundMode(0) then BusyWaitMuteSound before ShowLoadScreen.
+    AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    await AudioEngine.BusyWaitMuteSound();
     GameState.LoadModule(this.getLastModule(), null);
     console.log('SaveGame', 'Load Complete!');
   }

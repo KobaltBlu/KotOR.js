@@ -112,6 +112,16 @@ export class ModuleMiniGame {
     }
 
     this.player.onCreate();
+    // Retail CSWMiniGame::Go — start track followers (engine loops).
+    this.go();
+  }
+
+  /** Retail CSWMiniGame::Go @ 0055cd00 — player + enemies Go(). */
+  go(){
+    this.player?.go();
+    for(let i = 0; i < this.enemies.length; i++){
+      this.enemies[i]?.go();
+    }
   }
 
   async loadMGPlayer(): Promise<void> {

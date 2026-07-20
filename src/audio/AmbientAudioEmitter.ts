@@ -1,13 +1,15 @@
 import type { AudioEngine } from "@/audio/AudioEngine";
 import { EventListener } from "@/utility/EventListener";
+import { GameState } from "@/GameState";
 
 /**
  * AmbientAudioEmitter class.
- * 
- * The AmbientAudioEmitter class is used to play ambient audio in the game.
- * 
+ *
+ * Streaming-style ambient / music source. Mirrors retail
+ * CExoStreamingSoundSource SetPriorityGroup (0063c970): group id + volume byte.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file AmbientAudioEmitter.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -27,7 +29,19 @@ export class AmbientAudioEmitter extends EventListener {
 
   onendedFired: boolean = false;
 
+  /** Base gain 0–1 (ambient scale, script volume, etc.) before priority group volume. */
   volume: number = 1;
+
+  /**
+   * prioritygroups.2da row.
+   * Retail: ambient=4, area/battle/dialog music=2, stingers=1.
+   */
+  priorityGroupId: number = undefined;
+
+  /** Group volume byte 0–127 (streaming source +0xd4). */
+  priorityGroupVolume: number = 127;
+
+  private priorityVoiceId: number = undefined;
 
   constructor(engine: AudioEngine){
     super();
@@ -35,17 +49,50 @@ export class AmbientAudioEmitter extends EventListener {
     this.gainNode = this.engine?.audioCtx.createGain();
   }
 
+  /**
+   * Retail CExoStreamingSoundSourceInternal::SetPriorityGroup @ 0063c970 —
+   * store group id and copy volume byte from CExoSoundPriorityGroup +0x7.
+   */
+  setPriorityGroupId(priorityGroupId: number): this {
+    this.priorityGroupId = priorityGroupId;
+    this.refreshPriorityGroupVolume();
+    if(this.gainNode){
+      this.gainNode.gain.value = this.getEffectiveVolume();
+    }
+    return this;
+  }
+
+  refreshPriorityGroupVolume(): void {
+    if(this.priorityGroupId == null){
+      this.priorityGroupVolume = 127;
+      return;
+    }
+    const group = GameState.SWRuleSet?.getPriorityGroupById?.(this.priorityGroupId);
+    this.priorityGroupVolume = Math.max(0, Math.min(127, group?.volume ?? 127));
+  }
+
+  /** volume × (groupVolume / 127) × dialog duck — retail streaming SetVolume compose. */
+  getEffectiveVolume(): number {
+    let gain = this.volume * (this.priorityGroupVolume / 127);
+    // Retail: music slider OR group 4/5 multiply by CExoSoundInternal[0] duck scale.
+    const duck = this.engine?.musicAmbientDuckScale;
+    if(typeof duck === 'number' && duck !== 1){
+      gain *= duck;
+    }
+    return gain;
+  }
+
   setVolume(volume: number){
     this.volume = volume;
     if(this.gainNode){
-      this.gainNode.gain.value = this.volume;
+      this.gainNode.gain.value = this.getEffectiveVolume();
     }
     return this;
   }
 
   /**
    * Set the data for the audio
-   * @param data 
+   * @param data
    */
   setData(data: ArrayBuffer){
     this.data = data;
@@ -54,7 +101,7 @@ export class AmbientAudioEmitter extends EventListener {
 
   /**
    * Set the destination for the audio
-   * @param destination 
+   * @param destination
    */
   setDestination(destination: AudioNode){
     this.destination = destination;
@@ -64,8 +111,8 @@ export class AmbientAudioEmitter extends EventListener {
 
   /**
    * Play the audio data
-   * @param loop 
-   * @returns 
+   * @param loop
+   * @returns
    */
   async play(loop = false){
     if(!this.data){
@@ -81,6 +128,25 @@ export class AmbientAudioEmitter extends EventListener {
     if(this.node || this.playing){
       if(this.node) this.node.onended = undefined;
       this.stop();
+    }
+
+    this.refreshPriorityGroupVolume();
+
+    if(this.priorityGroupId != null && this.engine?.priorityManager){
+      this.releasePriorityVoice();
+      const acquired = this.engine.priorityManager.tryAcquire({
+        owner: this,
+        groupId: this.priorityGroupId,
+        distanceSq: 0,
+        onStolen: () => {
+          // Retail InterruptPlayingSound → hard stop (no fadetime).
+          this.stop();
+        },
+      });
+      if(!acquired.allowed){
+        return;
+      }
+      this.priorityVoiceId = acquired.voiceId;
     }
 
     if(this.gainNode){
@@ -102,6 +168,7 @@ export class AmbientAudioEmitter extends EventListener {
         this.node = null;
         this.playing = false;
         this.loaded = false;
+        this.releasePriorityVoice();
       }
       console.warn('AmbientAudioEmitter', 'decodeAudioData failed', e);
       return;
@@ -116,7 +183,7 @@ export class AmbientAudioEmitter extends EventListener {
     node.start(0, 0);
     node.connect(this.gainNode);
     this.gainNode.connect(this.destination);
-    this.gainNode.gain.value = this.volume;
+    this.gainNode.gain.value = this.getEffectiveVolume();
     this.playing = true;
     this.loaded = true;
     node.onended = () => {
@@ -125,10 +192,17 @@ export class AmbientAudioEmitter extends EventListener {
       this.playing = false;
       this.loaded = false;
       this.node = null;
+      this.releasePriorityVoice();
       this.processEventListener('ended');
     };
     this.processEventListener('play');
     return this;
+  }
+
+  private releasePriorityVoice(): void {
+    if(this.priorityVoiceId == null){ return; }
+    this.engine?.priorityManager?.release(this.priorityVoiceId);
+    this.priorityVoiceId = undefined;
   }
 
   /**
@@ -148,6 +222,7 @@ export class AmbientAudioEmitter extends EventListener {
       this.gainNode.disconnect();
       this.gainNode = null;
     }
+    this.releasePriorityVoice();
     if(!emitEvents){
       this.onendedFired = true;
       return this;
@@ -173,7 +248,7 @@ export class AmbientAudioEmitter extends EventListener {
 
     const currentTime = this.engine.audioCtx.currentTime;
     const currentGain = this.gainNode.gain.value;
-    
+
     // Set up the fade out curve
     this.gainNode.gain.cancelScheduledValues(currentTime);
     this.gainNode.gain.setValueAtTime(currentGain, currentTime);
@@ -214,10 +289,10 @@ export class AmbientAudioEmitter extends EventListener {
 
     const currentTime = this.engine.audioCtx.currentTime;
     const currentGain = this.gainNode.gain.value;
-    
+
     // Set up the fade in curve
     this.gainNode.gain.setValueAtTime(currentGain, currentTime);
-    this.gainNode.gain.linearRampToValueAtTime(this.volume, currentTime + duration);
+    this.gainNode.gain.linearRampToValueAtTime(this.getEffectiveVolume(), currentTime + duration);
     return this;
   }
 
@@ -228,6 +303,8 @@ export class AmbientAudioEmitter extends EventListener {
     this.playing = false;
     this.loaded = false;
     this.data = null;
+    this.releasePriorityVoice();
+    this.engine?.priorityManager?.releaseAllForOwner(this);
     if(this.node){
       this.node.onended = undefined;
       this.node.disconnect();

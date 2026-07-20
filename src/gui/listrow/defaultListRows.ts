@@ -10,6 +10,36 @@ export interface GUIListItemCallbacks {
   onHover?: (e: unknown, ...args: unknown[]) => void;
 }
 
+function wireDefaultRowClick(
+  list: GUIListBox,
+  ctrl: GUIControl,
+  node: unknown,
+  options: GUIListItemCallbacks,
+): void {
+  if (ctrl.disableSelection || list.bitFlags.noSelectMode) {
+    return;
+  }
+
+  // Retail HandleLMouseDown: selectOnLeftClick → select on mouse down
+  if (list.bitFlags.selectOnLeftClick || list.protoClickSelects) {
+    ctrl.addEventListener("mouseDown", (e: unknown) => {
+      (e as { stopPropagation?: () => void }).stopPropagation?.();
+      const index = list.children.indexOf(ctrl);
+      if (index >= 0 && index !== list.selectionIndex) {
+        list.setSelectedControl(index, true);
+      }
+    });
+  }
+
+  ctrl.addEventListener("click", (e: unknown) => {
+    (e as { stopPropagation?: () => void }).stopPropagation?.();
+    list.select(ctrl);
+    if (typeof options.onClick === "function") {
+      options.onClick(node, ctrl);
+    }
+  });
+}
+
 /**
  * Default PROTOITEM row kinds from GFF (no custom GUIProtoItemClass).
  */
@@ -38,13 +68,7 @@ export function createDefaultLabelOrProtoItemRow(
   ctrl.setHighlightColor(ctrl.defaultHighlightColor.r, ctrl.defaultHighlightColor.g, ctrl.defaultHighlightColor.b);
   ctrl.setBorderColor(ctrl.defaultColor.r, ctrl.defaultColor.g, ctrl.defaultColor.b);
 
-  if (typeof options.onClick === "function") {
-    ctrl.addEventListener("click", (e: unknown) => {
-      (e as { stopPropagation?: () => void }).stopPropagation?.();
-      list.select(ctrl);
-      options.onClick!(node, ctrl);
-    });
-  }
+  wireDefaultRowClick(list, ctrl, node, options);
   return ctrl;
 }
 
@@ -72,13 +96,7 @@ export function createDefaultCheckBoxRow(
   }
   list.itemGroup.add(widget);
 
-  if (typeof options.onClick === "function") {
-    ctrl.addEventListener("click", (e: unknown) => {
-      (e as { stopPropagation?: () => void }).stopPropagation?.();
-      list.select(ctrl);
-      options.onClick!(node, ctrl);
-    });
-  }
+  wireDefaultRowClick(list, ctrl, node, options);
 
   if (typeof options.onValueChanged === "function") {
     ctrl.addEventListener("valueChanged", (e: unknown) => {
@@ -117,13 +135,7 @@ export function createDefaultButtonRow(
 
     list.itemGroup.add(widget);
 
-    if (typeof options.onClick === "function") {
-      ctrl.addEventListener("click", (e: unknown) => {
-        (e as { stopPropagation?: () => void }).stopPropagation?.();
-        list.select(ctrl);
-        options.onClick!(node, ctrl);
-      });
-    }
+    wireDefaultRowClick(list, ctrl, node, options);
     return ctrl;
   } catch (e) {
     console.log(e);

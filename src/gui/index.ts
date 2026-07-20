@@ -5,6 +5,7 @@ export * from "@/gui/GUIButton";
 export * from "@/gui/GUICheckBox";
 export * from "@/gui/GUILabel";
 export * from "@/gui/GUIListBox";
+export * from "@/gui/ListBoxBitFlags";
 export * from "@/gui/GUIPanel";
 export * from "@/gui/GUIProgressBar";
 export * from "@/gui/GUIProtoItem";

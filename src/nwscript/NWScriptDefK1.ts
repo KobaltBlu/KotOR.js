@@ -7184,7 +7184,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
         const audioEngine = AudioEngine.GetAudioEngine();
-        audioEngine.ambientAudioDayEmitter.setVolume(args[1] / 100);
+        audioEngine.ambientAudioNightEmitter.setVolume(args[1] / 100);
       }
     }
   },
@@ -8180,37 +8180,70 @@ NWScriptDefK1.Actions = {
     comment: "683. SWMG_GetSoundFrequency\nGets the frequency of a trackfollower sound\n",
     name: "SWMG_GetSoundFrequency",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        return (args[0] as ModuleMGPlayer|ModuleMGEnemy).trackFollowerSounds.getSoundFrequency(args[1]);
+      }
+      return 0;
+    }
   },
   684:{
     comment: "684. SWMG_SetSoundFrequency\nSets the frequency of a trackfollower sound\n",
     name: "SWMG_SetSoundFrequency",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy).trackFollowerSounds.setSoundFrequency(args[1], args[2]);
+      }
+    }
   },
   685:{
     comment: "685. SWMG_GetSoundFrequencyIsRandom\nGets whether the frequency of a trackfollower sound is using the random model\n",
     name: "SWMG_GetSoundFrequencyIsRandom",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        return (args[0] as ModuleMGPlayer|ModuleMGEnemy).trackFollowerSounds.getSoundFrequencyIsRandom(args[1]);
+      }
+      return 0;
+    }
   },
   686:{
     comment: "686. SWMG_SetSoundFrequencyIsRandom\nSets whether the frequency of a trackfollower sound is using the random model\n",
     name: "SWMG_SetSoundFrequencyIsRandom",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy).trackFollowerSounds.setSoundFrequencyIsRandom(args[1], args[2]);
+      }
+    }
   },
   687:{
     comment: "687. SWMG_GetSoundVolume\nGets the volume of a trackfollower sound\n",
     name: "SWMG_GetSoundVolume",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        return (args[0] as ModuleMGPlayer|ModuleMGEnemy).trackFollowerSounds.getSoundVolume(args[1]);
+      }
+      return 0;
+    }
   },
   688:{
     comment: "688. SWMG_SetSoundVolume\nSets the volume of a trackfollower sound\n",
     name: "SWMG_SetSoundVolume",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy).trackFollowerSounds.setSoundVolume(args[1], args[2]);
+      }
+    }
   },
   689:{
     comment: "689. SoundObjectGetPitchVariance\nGets the pitch variance of a placeable sound object\n",
@@ -8849,7 +8882,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleSound)){
-        (args[0] as ModuleSound).stop(args[1] || 0);
+        (args[0] as ModuleSound).fadeAndStop(args[1] || 0);
       }
     }
   },

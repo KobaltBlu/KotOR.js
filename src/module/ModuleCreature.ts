@@ -591,14 +591,14 @@ export class ModuleCreature extends ModuleObject {
     try{
 
       this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
-      this.audioEmitter.maxDistance = 50;
       this.audioEmitter.type = AudioEmitterType.POSITIONAL;
+      this.audioEmitter.setMaxDistance(50);
       this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.COMBAT);
       this.audioEmitter.load();
 
       this.footstepEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
-      this.footstepEmitter.maxDistance = 50;
       this.footstepEmitter.type = AudioEmitterType.POSITIONAL;
+      this.footstepEmitter.setMaxDistance(50);
       this.footstepEmitter.setPriorityGroupId(AudioPriorityGroup.MEDIUM_AND_SMALL_CREATURE_FOOTSTEPS);
       this.footstepEmitter.load();
     }catch(e){
@@ -2635,18 +2635,23 @@ export class ModuleCreature extends ModuleObject {
       break;
       case 'Swingshort':
         rhWeaponSoundResRef = rhSounds?.getSwingShortResRef() || '';
+        lhWeaponSoundResRef = lhSounds?.getSwingShortResRef() || '';
       break;
       case 'Swinglong':
         rhWeaponSoundResRef = rhSounds?.getSwingLongResRef() || '';
+        lhWeaponSoundResRef = lhSounds?.getSwingLongResRef() || '';
       break;
       case 'HitParry':
         rhWeaponSoundResRef = rhSounds?.getHitParryResRef() || '';
+        lhWeaponSoundResRef = lhSounds?.getHitParryResRef() || '';
       break;
       case 'Contact':
         rhWeaponSoundResRef = rhSounds?.getClashResRef() || '';
+        lhWeaponSoundResRef = lhSounds?.getClashResRef() || '';
       break;
       case 'Clash':
         rhWeaponSoundResRef = rhSounds?.getClashResRef() || '';
+        lhWeaponSoundResRef = lhSounds?.getClashResRef() || '';
       break;
       case 'Hit':
         if(this.combatData.combatAction && this.combatData.combatAction.hits && this.combatData.combatAction.damage){
@@ -2654,6 +2659,7 @@ export class ModuleCreature extends ModuleObject {
         }
 
         rhWeaponSoundResRef = rhSounds?.getLeatherResRef() || '';
+        lhWeaponSoundResRef = lhSounds?.getLeatherResRef() || '';
       break;
     }
 
@@ -2664,9 +2670,14 @@ export class ModuleCreature extends ModuleObject {
       this.footstepEmitter.playSoundFireAndForget(footstepSoundResRef);
     }
 
-    if(rhWeaponSoundResRef){
+    if(rhWeaponSoundResRef || lhWeaponSoundResRef){
       this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.COMBAT);
-      this.audioEmitter.playSoundFireAndForget(rhWeaponSoundResRef);
+      if(rhWeaponSoundResRef){
+        this.audioEmitter.playSoundFireAndForget(rhWeaponSoundResRef);
+      }
+      if(lhWeaponSoundResRef && lhWeaponSoundResRef !== rhWeaponSoundResRef){
+        this.audioEmitter.playSoundFireAndForget(lhWeaponSoundResRef);
+      }
     }
   }
 

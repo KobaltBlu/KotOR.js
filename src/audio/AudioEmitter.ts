@@ -1,8 +1,15 @@
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { GameState } from "@/GameState";
+import {
+  getObstructionFactor,
+  obstructionVolumeScale,
+  OBSTRUCTION_REUSE_AGE_MS,
+  OBSTRUCTION_REUSE_DIST,
+} from "@/engine/pathfinding/get-obstruction-factor";
 
 const GAIN_RAMP_TIME = 0.25;
 const PRIORITY_GROUP_DEFAULT = 23;
@@ -52,11 +59,19 @@ export class AudioEmitter {
   soundIndex: number = 0;
   playbackRate: number = 1;
   playbackRateVariation: number = 0;
+  /**
+   * Retail FixedVariance (UTS / SoundObjectSetFixedVariance).
+   * Playback-rate multiplier in [0.5, 2]; when set, random pitch variance is ignored
+   * (CExoSoundSourceInternal::SetFixedVariance @ 0063f2f0 clears +0x7c).
+   */
+  fixedVariance: number = 1;
   elevation: number = 0;
 
   priority: number = PRIORITY_GROUP_DEFAULT;
   priorityGroupVolume: number = 127;
 
+  /** Held for sequenced/looping playback (start/playNextSound). */
+  currentVoiceId: number = undefined;
   currentSound: AudioBufferSourceNode = undefined;
   buffers: Map<string, AudioBuffer> = new Map<string, AudioBuffer>();
   channel: AudioEngineChannel = AudioEngineChannel.SFX;
@@ -64,6 +79,27 @@ export class AudioEmitter {
   interationCount: number = 0;
 
   disabled: boolean = false;
+
+  /**
+   * Retail GetWithinRangeOfListener (0063e820): positional sources are in range when
+   * distance-to-listener <= maxDistance. Globals (2D) are always in range.
+   */
+  inListenerRange: boolean = true;
+
+  /** Looping/sequenced emitter was culled or disabled and should restart when eligible. */
+  pendingResume: boolean = false;
+
+  /**
+   * Retail Miles obstruction factor [0,1] at source +0xa4 / streaming +0x104.
+   * Gain multiplies by (1 − factor) — approximates AIL_set_sample_obstruction.
+   */
+  obstructionFactor: number = 0;
+
+  /** Listener position used when obstructionFactor was last computed (reuse cache). */
+  private obstructionListener = { x: 0, y: 0, z: 0 };
+
+  /** Timestamp (ms) of last obstruction sample. */
+  private obstructionSampleMs: number = 0;
 
   constructor (audioEngine: AudioEngine, channel: AudioEngineChannel = AudioEngineChannel.SFX) {
     this.isDestroyed = false;
@@ -79,7 +115,7 @@ export class AudioEmitter {
   setVolume(volume: number = 127): AudioEmitter {
     this.volume = Math.max(0, Math.min(127, volume));
     if(this.gainNode){
-      this.gainNode.gain.value = this.volume;
+      this.gainNode.gain.value = this.getVolume();
     }
     return this;
   }
@@ -106,21 +142,244 @@ export class AudioEmitter {
       this.mainNode.positionY.value = this.position.y;
       this.mainNode.positionZ.value = this.position.z + this.elevation;
     }
+
+    if(this.currentVoiceId != null){
+      this.engine?.priorityManager?.updateDistance(this.currentVoiceId, this.getListenerDistanceSq());
+    }
   }
 
   setDisabled(disabled: boolean): void {
     if(disabled == this.disabled){
       return;
     }
-    return;
     this.disabled = disabled;
-    this.gainNode.gain.linearRampToValueAtTime(disabled ? 0 : 1, this.engine.audioCtx.currentTime + GAIN_RAMP_TIME);
+    if(disabled){
+      // Room hide / disable: hard-stop and free priority slots (retail ShutDownSource).
+      const wantsResume = this.isLooping || this.sounds.length > 0;
+      this.suspendForCullOrDisable(wantsResume);
+      return;
+    }
+    if(this.gainNode && this.engine){
+      const now = this.engine.audioCtx.currentTime;
+      this.gainNode.gain.cancelScheduledValues(now);
+      this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, now);
+      this.gainNode.gain.linearRampToValueAtTime(this.getVolume(), now + GAIN_RAMP_TIME);
+    }
+    this.tryResumeAfterCullOrDisable();
   }
 
   setPriorityGroupId(priorityGroupId: number): void {
     this.priority = priorityGroupId;
     const priorityGroup = GameState.SWRuleSet.getPriorityGroupById(priorityGroupId);
     this.priorityGroupVolume = Math.max(0, Math.min(127, priorityGroup?.volume ?? 127));
+    if(this.gainNode){
+      this.gainNode.gain.value = this.getVolume();
+    }
+  }
+
+  setMinDistance(minDistance: number): void {
+    this.minDistance = Math.max(0, minDistance);
+    this.applyPannerDistances();
+  }
+
+  setMaxDistance(maxDistance: number): void {
+    this.maxDistance = Math.max(this.minDistance, maxDistance);
+    this.applyPannerDistances();
+  }
+
+  /**
+   * Miles-like 3D falloff via Web Audio linear distance model:
+   * full level until refDistance (min), silent at maxDistance.
+   * Retail SetDistance stores min @ +0x78, max @ +0x74; range gate uses max.
+   */
+  applyPannerDistances(): void {
+    if(!(this.mainNode instanceof PannerNode)){ return; }
+    const minD = Math.max(0.01, this.minDistance || 0.01);
+    const maxD = Math.max(minD, this.maxDistance || minD);
+    this.mainNode.panningModel = 'equalpower';
+    this.mainNode.distanceModel = 'linear';
+    this.mainNode.refDistance = minD;
+    this.mainNode.maxDistance = maxD;
+    this.mainNode.rolloffFactor = 1;
+  }
+
+  getPriorityFadeTime(): number {
+    return this.engine?.priorityManager?.getGroupFadeTimeSeconds(this.priority)
+      ?? GameState.SWRuleSet.getPriorityGroupById(this.priority)?.getFadeTimeSeconds?.()
+      ?? 0;
+  }
+
+  getListenerDistanceSq(): number {
+    const lx = this.engine?.listenerPosition?.x ?? 0;
+    const ly = this.engine?.listenerPosition?.y ?? 0;
+    const lz = this.engine?.listenerPosition?.z ?? 0;
+    const dx = this.position.x - lx;
+    const dy = this.position.y - ly;
+    const dz = (this.position.z + this.elevation) - lz;
+    return dx * dx + dy * dy + dz * dz;
+  }
+
+  /**
+   * Retail CExoSoundSourceInternal::GetWithinRangeOfListener @ 0063e820.
+   * Non-positional (2D) always true; else distance <= maxDistance.
+   */
+  isWithinListenerRange(): boolean {
+    if(this.type !== AudioEmitterType.POSITIONAL){
+      return true;
+    }
+    const maxD = Math.max(0, this.maxDistance);
+    return this.getListenerDistanceSq() <= maxD * maxD;
+  }
+
+  /**
+   * Called from AudioEngine.update — cull / resume positional emitters.
+   */
+  updateListenerRange(): void {
+    if(this.isDestroyed || this.type !== AudioEmitterType.POSITIONAL){
+      return;
+    }
+    const inRange = this.isWithinListenerRange();
+    if(inRange === this.inListenerRange){
+      if(inRange && this.pendingResume && !this.disabled && this.isActive){
+        this.tryResumeAfterCullOrDisable();
+      }
+      return;
+    }
+    this.inListenerRange = inRange;
+    if(!inRange){
+      const wantsResume = this.isLooping || this.sounds.length > 0;
+      this.suspendForCullOrDisable(wantsResume);
+    }else if(!this.disabled && this.isActive){
+      this.tryResumeAfterCullOrDisable();
+    }
+  }
+
+  /**
+   * Retail OcclusionRender / PlaySourceOn3DVoice obstruction sample.
+   * Non-positional sources stay at factor 0.
+   * @returns true if a fresh GetObstructionFactor was run (for per-frame budget).
+   */
+  updateObstruction(force = false): boolean {
+    if(this.isDestroyed || this.type !== AudioEmitterType.POSITIONAL){
+      if(this.obstructionFactor !== 0){
+        this.obstructionFactor = 0;
+        if(this.gainNode) this.gainNode.gain.value = this.getVolume();
+      }
+      return false;
+    }
+    if(this.disabled || !this.inListenerRange){
+      return false;
+    }
+
+    const lx = this.engine?.listenerPosition?.x ?? 0;
+    const ly = this.engine?.listenerPosition?.y ?? 0;
+    const lz = this.engine?.listenerPosition?.z ?? 0;
+    const now = performance.now();
+
+    // GetClosestRecentSound: reuse if positions within 0.5 and age < 175ms.
+    if(!force && this.obstructionSampleMs > 0){
+      const age = now - this.obstructionSampleMs;
+      if(age < OBSTRUCTION_REUSE_AGE_MS){
+        const dLx = lx - this.obstructionListener.x;
+        const dLy = ly - this.obstructionListener.y;
+        const dLz = lz - this.obstructionListener.z;
+        if(dLx * dLx + dLy * dLy + dLz * dLz < OBSTRUCTION_REUSE_DIST * OBSTRUCTION_REUSE_DIST){
+          return false;
+        }
+      }
+    }
+
+    // Prefer a nearby emitter's recent sample (GetClosestRecentSound across playing list).
+    const reused = this.engine?.findRecentObstruction?.(
+      this.position.x, this.position.y, this.position.z + this.elevation,
+      lx, ly, lz, now
+    );
+    let factor: number;
+    let computed = false;
+    if(reused != null){
+      factor = reused;
+    }else{
+      const area = GameState.module?.area;
+      factor = getObstructionFactor(
+        area,
+        { x: this.position.x, y: this.position.y, z: this.position.z + this.elevation },
+        { x: lx, y: ly, z: lz }
+      );
+      computed = true;
+    }
+
+    this.obstructionListener.x = lx;
+    this.obstructionListener.y = ly;
+    this.obstructionListener.z = lz;
+    this.obstructionSampleMs = now;
+    if(factor !== this.obstructionFactor){
+      this.obstructionFactor = factor;
+      if(this.gainNode){
+        this.gainNode.gain.value = this.getVolume();
+      }
+    }else{
+      this.obstructionFactor = factor;
+    }
+    return computed;
+  }
+
+  /** Expose last sample for GetClosestRecentSound reuse across emitters. */
+  getObstructionSample(): {
+    sx: number; sy: number; sz: number;
+    lx: number; ly: number; lz: number;
+    ms: number; factor: number;
+  } | null {
+    if(this.obstructionSampleMs <= 0) return null;
+    return {
+      sx: this.position.x,
+      sy: this.position.y,
+      sz: this.position.z + this.elevation,
+      lx: this.obstructionListener.x,
+      ly: this.obstructionListener.y,
+      lz: this.obstructionListener.z,
+      ms: this.obstructionSampleMs,
+      factor: this.obstructionFactor,
+    };
+  }
+
+  private suspendForCullOrDisable(wantsResume: boolean): void {
+    if(wantsResume && (this.state === AudioEmitterState.PLAYING || this.currentSound || this.pendingResume)){
+      this.pendingResume = true;
+    }
+    this.stop(0);
+    this.stopAllFireAndForget();
+    this.releaseCurrentVoice();
+    this.engine?.priorityManager?.releaseAllForOwner(this);
+    if(this.gainNode && this.engine){
+      this.gainNode.gain.cancelScheduledValues(this.engine.audioCtx.currentTime);
+      this.gainNode.gain.value = 0;
+    }
+  }
+
+  private tryResumeAfterCullOrDisable(): void {
+    if(this.isDestroyed || this.disabled || !this.isActive){ return; }
+    if(this.type === AudioEmitterType.POSITIONAL && !this.isWithinListenerRange()){ return; }
+    if(!this.pendingResume && this.state === AudioEmitterState.PLAYING){ return; }
+    if(!this.sounds.length){ return; }
+    this.pendingResume = false;
+    this.inListenerRange = true;
+    if(this.gainNode){
+      this.gainNode.gain.value = this.getVolume();
+    }
+    this.start();
+  }
+
+  private stopAllFireAndForget(): void {
+    for(let i = this.ffsounds.length - 1; i >= 0; i--){
+      const sound = this.ffsounds[i];
+      try{
+        sound.onended = undefined;
+        sound.disconnect();
+        sound.stop(0);
+      }catch(e){}
+      this.releaseVoiceId((sound as any).__priorityVoiceId);
+    }
+    this.ffsounds.length = 0;
   }
 
   async load(): Promise<void> {
@@ -130,11 +389,12 @@ export class AudioEmitter {
       case AudioEmitterType.POSITIONAL:
         this.mainNode = this.engine.audioCtx.createPanner();
         this.setPosition( this.position.x, this.position.y, this.position.z + this.elevation );
-        (this.mainNode as PannerNode).maxDistance = this.maxDistance;
+        this.applyPannerDistances();
         this.mainNode.connect(this.gainNode);
       break;
       case AudioEmitterType.GLOBAL:
         this.mainNode = this.gainNode;
+        this.inListenerRange = true;
       break;
     }
 
@@ -147,8 +407,11 @@ export class AudioEmitter {
     for(let i = 0; i < this.sounds.length; i++){
       await this.loadSounds(i);
     }
-    if(this.isActive){
+    if(this.isActive && this.isWithinListenerRange() && !this.disabled){
       this.start();
+    }else if(this.isActive && this.sounds.length){
+      this.pendingResume = true;
+      this.inListenerRange = this.isWithinListenerRange();
     }
   }
 
@@ -202,11 +465,78 @@ export class AudioEmitter {
 
   ffsounds: AudioBufferSourceNode[] = [];
 
+  private acquireVoice(
+    holdAcrossSequence: boolean,
+    onStolen?: () => void
+  ): { ok: boolean; voiceId?: number } {
+    const manager = this.engine?.priorityManager;
+    if(!manager){ return { ok: true }; }
+
+    if(holdAcrossSequence && this.currentVoiceId != null){
+      manager.updateDistance(this.currentVoiceId, this.getListenerDistanceSq());
+      return { ok: true, voiceId: this.currentVoiceId };
+    }
+
+    const result = manager.tryAcquire({
+      owner: this,
+      groupId: this.priority,
+      distanceSq: this.getListenerDistanceSq(),
+      onStolen: onStolen ?? (() => {
+        // Retail InterruptPlayingSound → ShutDownSource: hard stop, no fade.
+        if(holdAcrossSequence){
+          this.stop(0);
+        }else{
+          this.disposeCurrentSound();
+          this.releaseCurrentVoice();
+        }
+      }),
+    });
+    if(!result.allowed){
+      return { ok: false };
+    }
+    if(holdAcrossSequence){
+      this.currentVoiceId = result.voiceId;
+    }
+    return { ok: true, voiceId: result.voiceId };
+  }
+
+  private releaseCurrentVoice(): void {
+    if(this.currentVoiceId == null){ return; }
+    this.engine?.priorityManager?.release(this.currentVoiceId);
+    this.currentVoiceId = undefined;
+  }
+
+  private releaseVoiceId(voiceId: number | undefined): void {
+    if(voiceId == null){ return; }
+    if(voiceId === this.currentVoiceId){
+      this.releaseCurrentVoice();
+      return;
+    }
+    this.engine?.priorityManager?.release(voiceId);
+  }
+
+  private stopFireAndForgetByVoiceId(voiceId: number | undefined): void {
+    if(voiceId == null){ return; }
+    for(let i = this.ffsounds.length - 1; i >= 0; i--){
+      const sound = this.ffsounds[i];
+      if((sound as any).__priorityVoiceId !== voiceId){ continue; }
+      try{
+        sound.onended = undefined;
+        sound.disconnect();
+        sound.stop(0);
+      }catch(e){}
+      this.ffsounds.splice(i, 1);
+      break;
+    }
+    this.releaseVoiceId(voiceId);
+  }
+
   async playSoundFireAndForget(resRef = ''): Promise<AudioBufferSourceNode>{
     if(resRef == '****' || !resRef?.length){ return; }
+    if(this.disabled || !this.isWithinListenerRange()){ return; }
+    // Retail PlaySourceOn3DVoice obstruction sample for oneshots.
+    this.updateObstruction(true);
     try{
-      const sound: AudioBufferSourceNode = this.engine.audioCtx.createBufferSource();
-      (sound as any).name = resRef;
       let buffer: AudioBuffer = (this.buffers.has(resRef)) ? this.buffers.get(resRef) : undefined;
       if(!buffer){
         let data = await AudioLoader.LoadSound(resRef);
@@ -218,6 +548,34 @@ export class AudioEmitter {
         return;
       }
 
+      const holder: { voiceId?: number; sound?: AudioBufferSourceNode; dead?: boolean } = {};
+      const acquired = this.acquireVoice(false, () => {
+        holder.dead = true;
+        if(holder.sound){
+          this.stopFireAndForgetByVoiceId(holder.voiceId);
+        }else{
+          this.releaseVoiceId(holder.voiceId);
+        }
+      });
+      if(!acquired.ok || holder.dead){
+        return;
+      }
+      holder.voiceId = acquired.voiceId;
+      if(holder.dead){
+        this.releaseVoiceId(holder.voiceId);
+        return;
+      }
+
+      const sound: AudioBufferSourceNode = this.engine.audioCtx.createBufferSource();
+      (sound as any).name = resRef;
+      (sound as any).__priorityVoiceId = holder.voiceId;
+      holder.sound = sound;
+
+      if(holder.dead){
+        this.releaseVoiceId(holder.voiceId);
+        return;
+      }
+
       this.ffsounds.push(sound);
 
       sound.buffer = buffer;
@@ -226,8 +584,9 @@ export class AudioEmitter {
 
       sound.onended = () => {
         sound.disconnect();
-        sound.stop(0);
+        try{ sound.stop(0); }catch(e){}
         this.ffsounds.splice(this.ffsounds.indexOf(sound), 1);
+        this.releaseVoiceId((sound as any).__priorityVoiceId);
       }
       return sound;
     }catch(e){
@@ -239,7 +598,15 @@ export class AudioEmitter {
 
   async playSound(resRef = ''): Promise<AudioBufferSourceNode>{
     if(resRef == '****' || !resRef?.length){ return; }
+    if(this.disabled || !this.isWithinListenerRange()){ return; }
     this.disposeCurrentSound();
+    this.releaseCurrentVoice();
+
+    const acquired = this.acquireVoice(false);
+    if(!acquired.ok){
+      return;
+    }
+    this.currentVoiceId = acquired.voiceId;
 
     //attempt to load from the buffer cache
     if(this.buffers.has(resRef)){
@@ -249,6 +616,12 @@ export class AudioEmitter {
       this.currentSound.loop = this.isLooping;
       this.currentSound.connect(this.mainNode);
       this.currentSound.start(this.engine.audioCtx.currentTime);
+      if(!this.isLooping){
+        this.currentSound.onended = () => {
+          this.releaseCurrentVoice();
+          this.currentSound = null;
+        };
+      }
       return this.currentSound;
     }
     
@@ -263,29 +636,61 @@ export class AudioEmitter {
         this.currentSound.loop = this.isLooping;
         this.currentSound.connect(this.mainNode);
         this.currentSound.start(this.engine.audioCtx.currentTime);
+        if(!this.isLooping){
+          this.currentSound.onended = () => {
+            this.releaseCurrentVoice();
+            this.currentSound = null;
+          };
+        }
         return this.currentSound;
       }catch(e){
         console.log('AudioEmitter', 'Sound not added to emitter', resRef);
         console.error(e);
+        this.releaseCurrentVoice();
       }
     }catch(e){
       console.log('AudioEmitter', 'Sound not found', resRef);
+      this.releaseCurrentVoice();
     }
   }
 
   async playStreamWave(resRef =''): Promise<AudioBufferSourceNode> {
     this.disposeCurrentSound();
+    this.releaseCurrentVoice();
 
-    //attempt to load from the buffer cache
-    if(this.buffers.has(resRef)){
-      this.stop();
+    const acquired = this.acquireVoice(false);
+    if(!acquired.ok){
+      console.warn('AudioEmitter', 'playStreamWave denied by priority manager', resRef, 'group', this.priority);
+      return;
+    }
+    this.currentVoiceId = acquired.voiceId;
+
+    // Ensure emitter gain is current (load() may have been long ago; duck/mute may have changed buses).
+    if(this.gainNode){
+      this.gainNode.gain.value = this.getVolume();
+    }
+
+    const begin = (buffer: AudioBuffer) => {
+      if(!this.mainNode){
+        console.warn('AudioEmitter', 'playStreamWave: mainNode not loaded', resRef);
+        this.releaseCurrentVoice();
+        return;
+      }
       this.currentSound = this.engine.audioCtx.createBufferSource();
-      this.currentSound.buffer = this.buffers.get(resRef);
-      // this.currentSound.buffer.onEnd = onEnd;
+      this.currentSound.buffer = buffer;
       (this.currentSound as any).name = resRef;
       this.currentSound.start(this.engine.audioCtx.currentTime);
       this.currentSound.connect(this.mainNode);
+      this.currentSound.onended = () => {
+        this.releaseCurrentVoice();
+        this.currentSound = null;
+      };
       return this.currentSound;
+    };
+
+    //attempt to load from the buffer cache
+    if(this.buffers.has(resRef)){
+      return begin(this.buffers.get(resRef));
     }
     
     //load from disk
@@ -293,21 +698,15 @@ export class AudioEmitter {
       const data = await AudioLoader.LoadStreamWave(resRef);
       try{
         const buffer = await this.addSound(resRef, data);
-        this.stop();
-        this.currentSound = this.engine.audioCtx.createBufferSource();
-        this.currentSound.buffer = buffer;
-        // this.currentSound.buffer.onEnd = onEnd;
-        (this.currentSound as any).name = resRef;
-        this.currentSound.start(this.engine.audioCtx.currentTime);
-        this.currentSound.connect(this.mainNode);
-
-        return this.currentSound;
+        return begin(buffer);
       }catch(e: any){
         console.log('AudioEmitter', 'Sound not added to emitter', resRef);
+        this.releaseCurrentVoice();
         throw e;
       }
     }catch(e){
       console.log('AudioEmitter', 'Failed to locate StreamWave', resRef);
+      this.releaseCurrentVoice();
       throw e;
     }
   }
@@ -316,9 +715,18 @@ export class AudioEmitter {
     if(!this.sounds.length){
       return;
     }
+    if(this.disabled || !this.isWithinListenerRange()){
+      this.pendingResume = true;
+      return;
+    }
+    this.pendingResume = false;
+    this.inListenerRange = true;
     this.state = AudioEmitterState.PLAYING;
     this.disposeCurrentSound();
+    this.releaseCurrentVoice();
     this.interationCount = 0;
+    // Retail PlaySourceOn3DVoice samples obstruction before resume.
+    this.updateObstruction(true);
     this.gainNode.gain.setValueAtTime(this.getVolume(), this.getCurrentTime());
     this.playNextSound();
   }
@@ -343,15 +751,38 @@ export class AudioEmitter {
   }
 
   getPlaybackRate(): number {
+    // Retail: FixedVariance in [0.5, 2] replaces random pitch (helper @ 0063f5d0).
+    const fv = this.fixedVariance;
+    if(Number.isFinite(fv) && fv >= 0.5 && fv <= 2 && fv !== 1){
+      return this.playbackRate * fv;
+    }
     return this.playbackRate + this.getRandomVariation(this.playbackRateVariation);
   }
 
   getVolume(): number {
+    if(this.disabled){
+      return 0;
+    }
     let gain = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
+    gain *= this.priorityGroupVolume / 127;
     // Retail CExoSoundInternal::Render multiplies playing/streaming sources by ambient scale.
     // Apply to SFX channel emitters (area AmbientScale from UpdateRoom).
     if(this.channel === AudioEngineChannel.SFX && this.engine){
       gain *= this.engine.currentAmbientScale;
+    }
+    // Retail streaming SetVolume: group 4/5 (and music slider) × duck scale @ sound+0x0.
+    if(this.engine && (
+      this.priority === AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS ||
+      this.priority === AudioPriorityGroup.LOOPING_POSITIONAL_AMBIENTS
+    )){
+      const duck = this.engine.musicAmbientDuckScale;
+      if(typeof duck === 'number' && duck !== 1){
+        gain *= duck;
+      }
+    }
+    // Retail DoObstructionWork / AIL_set_sample_obstruction → volume × (1 − factor).
+    if(this.type === AudioEmitterType.POSITIONAL){
+      gain *= obstructionVolumeScale(this.obstructionFactor);
     }
     return gain;
   }
@@ -367,10 +798,23 @@ export class AudioEmitter {
   playNextSound(): void {
     if(this.isDestroyed || this.state == AudioEmitterState.FADING_OUT)
       return;
+
+    if(this.disabled || !this.isWithinListenerRange()){
+      this.pendingResume = true;
+      this.suspendForCullOrDisable(true);
+      return;
+    }
     
     this.disposeCurrentSound();
 
     if(!this.sounds.length){
+      return;
+    }
+
+    const acquired = this.acquireVoice(true);
+    if(!acquired.ok){
+      this.state = AudioEmitterState.STOPPED;
+      this.releaseCurrentVoice();
       return;
     }
 
@@ -452,6 +896,9 @@ export class AudioEmitter {
       return;
     
     if(!this.currentSound){
+      this.releaseCurrentVoice();
+      this.state = AudioEmitterState.STOPPED;
+      this.interationCount = 0;
       return;
     }
 
@@ -459,6 +906,7 @@ export class AudioEmitter {
       this.state = AudioEmitterState.STOPPED;
       this.interationCount = 0;
       this.disposeCurrentSound();
+      this.releaseCurrentVoice();
       return;
     }
     this.state = AudioEmitterState.FADING_OUT;
@@ -472,6 +920,7 @@ export class AudioEmitter {
         this.state = AudioEmitterState.STOPPED;
         this.interationCount = 0;
         this.disposeCurrentSound();
+        this.releaseCurrentVoice();
       };
       this.currentSound.stop(fadeEndTime);
     }
@@ -481,6 +930,11 @@ export class AudioEmitter {
     this.buffers.clear();
     this.interationCount = 0;
     this.isDestroyed = true;
+    this.pendingResume = false;
+    this.disposeCurrentSound();
+    this.stopAllFireAndForget();
+    this.releaseCurrentVoice();
+    this.engine?.priorityManager?.releaseAllForOwner(this);
     if(!this.engine){ return; }
     this.engine.removeEmitter(this);
   }
