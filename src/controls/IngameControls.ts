@@ -91,7 +91,9 @@ export class IngameControls {
 
     this.initKeys();
 
-    this.element.requestPointerLock = this.element.requestPointerLock;
+    // Ask the browser to release the pointer
+    document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
+    document.addEventListener('pointerlockerror', this.plErrorCallback.bind(this), true);
 
     window.addEventListener('keydown', (e: KeyboardEvent) => {
       this.keyboard.onKeyDown(e);
@@ -207,10 +209,6 @@ export class IngameControls {
       }
     });
 
-    // Ask the browser to release the pointer
-    document.exitPointerLock = document.exitPointerLock;
-    document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
-
     window.addEventListener('mousedown', (event: MouseEvent) => {
       // Block GUI selection while a movie is playing
       if(GameState.VideoManager.isMoviePlaying()){
@@ -269,6 +267,18 @@ export class IngameControls {
             }
           }
         }
+      }
+
+      // Clicking the game canvas requests pointer lock (user gesture).
+      // GUI clicks and non-canvas targets keep the absolute-mouse fallback.
+      // If the browser denies lock, look continues with absolute mouse movement.
+      Mouse.syncCameraHold();
+      if(
+        event.target === this.element &&
+        !(logical === 'left' && Mouse.clickItem) &&
+        (GameState.Mode == EngineMode.INGAME || GameState.Mode == EngineMode.FREELOOK)
+      ){
+        Mouse.tryRequestPointerLock(this.element);
       }
     });
 
@@ -331,6 +341,9 @@ export class IngameControls {
         Mouse.middleDown = false;
         Mouse.MiddleMouseDown = false;
       }
+
+      // End/start look immediately on button release (releases pointer lock).
+      Mouse.syncCameraHold();
 
       // Only logical left release drives GUI / world click / dialog skip
       if(logical !== 'left'){
@@ -1109,6 +1122,15 @@ export class IngameControls {
     // Retail look state: RMB hold, or always-on when Mouse Look (inverted RMB)
     Mouse.syncCameraHold();
 
+    // Leave pointer lock when not in a gameplay camera mode (menus, loading, etc.)
+    if(
+      Mouse.pointerLock &&
+      GameState.Mode != EngineMode.INGAME &&
+      GameState.Mode != EngineMode.FREELOOK
+    ){
+      Mouse.exitPointerLock();
+    }
+
     // Retail UpdateCamera mouse look while rightClickHeld (or Mouse Look)
     if(Mouse.cameraHoldActive && GameState.Mode == EngineMode.INGAME){
       const dx = Mouse.MouseX - Mouse.OldMouseX;
@@ -1217,12 +1239,33 @@ export class IngameControls {
     }
   }
 
-  plChangeCallback(e: any){
-    if(document.pointerLockElement === this.element) {
+  plChangeCallback(_e: Event){
+    if(document.pointerLockElement === this.element){
       Mouse.pointerLock = true;
-    } else {
+      Mouse.pointerLockDenied = false;
+      Mouse.pointerLockWanted = true;
+      // Avoid a look spike when entering relative mode
+      Mouse.OldMouseX = Mouse.MouseX;
+      Mouse.OldMouseY = Mouse.MouseY;
+      if(GameState.scene_cursor_holder){
+        GameState.scene_cursor_holder.visible = false;
+      }
+    }else{
       Mouse.pointerLock = false;
+      // Esc / focus loss: keep looking via absolute mouse if hold still desired.
+      if(!Mouse.cameraHoldActive){
+        Mouse.pointerLockWanted = false;
+        if(GameState.scene_cursor_holder && GameState.Mode != EngineMode.FREELOOK){
+          GameState.scene_cursor_holder.visible = true;
+        }
+      }
     }
+  }
+
+  plErrorCallback(_e: Event){
+    // Lock unavailable this attempt — continue with existing absolute-mouse look.
+    Mouse.pointerLock = false;
+    Mouse.pointerLockDenied = true;
   }
 
 }

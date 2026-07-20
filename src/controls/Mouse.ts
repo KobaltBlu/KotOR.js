@@ -40,7 +40,14 @@ export class Mouse {
   static CollisionPosition: THREE.Vector3 = new THREE.Vector3();
   static Vector: THREE.Vector2 = new THREE.Vector2();
   static Client: THREE.Vector2 = new THREE.Vector2();
+  /** True while document.pointerLockElement is our game canvas. */
   static pointerLock: boolean = false;
+  /** We want lock for the current camera-hold; false after release. */
+  static pointerLockWanted: boolean = false;
+  /** Browser rejected lock for this hold attempt — use absolute mouse until hold ends. */
+  static pointerLockDenied: boolean = false;
+  /** requestPointerLock is missing / unusable in this environment. */
+  static pointerLockUnsupported: boolean = false;
 
   // Logical button states (after Reverse Mouse Buttons mapping)
   static leftDown: boolean = false;
@@ -186,13 +193,57 @@ export class Mouse {
     if(!Mouse.cameraHoldActive) return;
     Mouse.cameraHoldActive = false;
     Mouse.cameraHoldConsumedPress = false;
-    // Restore frozen cursor only for classic RMB-hold look
+    // Restore frozen cursor only for classic RMB-hold look (keep pointer lock
+    // if the player clicked the canvas to enable it).
     if(!Mouse.isMouseLookEnabled()){
       Mouse.Update(Mouse.storedCursorX, Mouse.storedCursorY);
     }
-    if(GameState.scene_cursor_holder){
+    if(GameState.scene_cursor_holder && !Mouse.pointerLock){
       GameState.scene_cursor_holder.visible = true;
     }
+  }
+
+  /**
+   * Request pointer lock on `element` (must be called from a user gesture).
+   * On failure / unsupported, look continues with absolute mouse movement.
+   */
+  static tryRequestPointerLock(element: HTMLElement | null | undefined){
+    if(!element || Mouse.pointerLock || Mouse.pointerLockUnsupported){
+      return;
+    }
+    if(typeof element.requestPointerLock !== 'function'){
+      Mouse.pointerLockUnsupported = true;
+      return;
+    }
+    // Fresh click may retry after a prior denial (Esc, focus loss, etc.).
+    Mouse.pointerLockDenied = false;
+    Mouse.pointerLockWanted = true;
+    try{
+      const result: any = element.requestPointerLock();
+      if(result && typeof result.catch === 'function'){
+        result.catch(() => {
+          // Promise rejection — keep looking via absolute mouse
+          Mouse.pointerLockDenied = true;
+        });
+      }
+    }catch(_e){
+      Mouse.pointerLockDenied = true;
+    }
+  }
+
+  /** Release pointer lock if we hold it (safe no-op when unlocked). */
+  static exitPointerLock(){
+    Mouse.pointerLockWanted = false;
+    Mouse.pointerLockDenied = false;
+    if(typeof document === 'undefined') return;
+    if(document.pointerLockElement && typeof document.exitPointerLock === 'function'){
+      try{
+        document.exitPointerLock();
+      }catch(_e){
+        // ignore
+      }
+    }
+    Mouse.pointerLock = false;
   }
 
   static getMouseAxis(axis: MouseAxis){

@@ -340,8 +340,9 @@ export class CursorManager {
 		let guiHoverCaptured = false;
 
 		// Retail ProcessInput / HideMouse while rightClickHeld — skip hover picking.
-		// Mouse Look keeps LMB picking active while camera tracks movement.
-		if(Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled()){
+		// Pointer lock also hides the OS cursor; skip world hover while locked.
+		// Mouse Look keeps LMB picking active while camera tracks movement (unlocked).
+		if(Mouse.pointerLock || (Mouse.cameraHoldActive && !Mouse.isMouseLookEnabled())){
 			CursorManager.setCursor('default');
 			CursorManager.hoveredObject = undefined;
 			CursorManager.hovered = undefined;
