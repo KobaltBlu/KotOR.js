@@ -148,11 +148,47 @@ export class NWScriptStackSimulator {
       return arg.expression;
     }
     const objectExpr = this.expressionFromObjectSubjectInstr(arg.objectInstr);
+    const nested = this.remapThunkScriptObjectArgsToSubject(arg.nestedScript, objectExpr);
     return NWScriptExpression.functionCall(
       "AssignCommand",
-      [objectExpr, arg.nestedScript],
+      [objectExpr, nested],
       NWScriptDataType.VOID
     );
+  }
+
+  /**
+   * Replace local object variables inside a STORE_STATE thunk script with {@code subject}
+   * (AssignCommand's oActionSubject). Thunk CPTOPSP -4 is the copy-frame top, not localVar_0.
+   */
+  private remapThunkScriptObjectArgsToSubject(
+    expr: NWScriptExpression,
+    subject: NWScriptExpression
+  ): NWScriptExpression {
+    if (expr.type === NWScriptExpressionType.FUNCTION_CALL) {
+      const newArgs = (expr.arguments || []).map((arg) => {
+        if (
+          arg.type === NWScriptExpressionType.VARIABLE &&
+          !arg.isGlobal &&
+          arg.dataType === NWScriptDataType.OBJECT
+        ) {
+          return subject;
+        }
+        return this.remapThunkScriptObjectArgsToSubject(arg, subject);
+      });
+      return NWScriptExpression.functionCall(
+        expr.functionName || "/*thunk*/",
+        newArgs,
+        expr.dataType ?? NWScriptDataType.VOID
+      );
+    }
+    if (
+      expr.type === NWScriptExpressionType.VARIABLE &&
+      !expr.isGlobal &&
+      expr.dataType === NWScriptDataType.OBJECT
+    ) {
+      return subject;
+    }
+    return expr;
   }
 
   /** Build object expression from CPTOP or CONST without mutating the live stack. */
@@ -659,10 +695,14 @@ export class NWScriptStackSimulator {
           NWScriptExpression.constant("OBJECT_SELF", NWScriptDataType.OBJECT)
         );
       }
+      // STORE_STATE thunk CPTOPSP -4 is the copy top, not caller localVar_0 — bind
+      // ActionOpenDoor(o) etc. to the same subject already on the stack (k_act_com31).
+      const subject = args[0];
+      const remapped = this.remapThunkScriptObjectArgsToSubject(assignReplace, subject);
       if (args.length === 1) {
-        args.push(assignReplace);
+        args.push(remapped);
       } else {
-        args[args.length - 1] = assignReplace;
+        args[args.length - 1] = remapped;
       }
     }
     

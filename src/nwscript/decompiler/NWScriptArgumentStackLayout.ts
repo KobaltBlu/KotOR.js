@@ -57,7 +57,8 @@ const HARD_STOP_BACKWARDS = new Set<number>([
   OP_JNZ,
   OP_JMP,
   OP_RETN,
-  OP_ACTION,
+  // OP_ACTION is NOT a hard stop: valued actions (GetModule, ObjectToString, …)
+  // are part of the arg-expression chain before JSR (k_act_com31 sub1/sub4).
 ]);
 
 /** Signed int32 from raw offset field */
@@ -136,12 +137,15 @@ export function instructionForwardStackSlotDelta(ins: NWScriptInstruction): numb
     case OP_ACTION: {
       const raw = ins.argCount ?? 0;
       const nargs = Math.min(Math.max(raw, 0), 48);
-      const ret =
-        ins.actionDefinition !== undefined &&
-        ins.actionDefinition.type !== undefined &&
-        ins.actionDefinition.type !== NWScriptDataType.VOID
-          ? 1
-          : 0;
+      const def = ins.actionDefinition;
+      let ret = 0;
+      if (def !== undefined && def.type !== undefined) {
+        ret = def.type !== NWScriptDataType.VOID ? 1 : 0;
+      } else {
+        // Without a def, prefer assuming a scalar return so GetModule/ObjectToString
+        // chains still contribute a slot (void actions with args still net ≤ 0).
+        ret = 1;
+      }
       return -nargs + ret;
     }
 
@@ -153,20 +157,28 @@ export function instructionForwardStackSlotDelta(ins: NWScriptInstruction): numb
   }
 }
 
-/** Linear bytecode slice immediately before JSR, up to a control/call barrier (not including the barrier instruction). */
-function collectChainBeforeJsr(jsr: NWScriptInstruction): NWScriptInstruction[] {
+/**
+ * Linear bytecode slice immediately before JSR, up to a control/call barrier.
+ * Returns whether the walk stopped on a prior OP_JSR (whose return may still be on stack).
+ */
+function collectChainBeforeJsr(jsr: NWScriptInstruction): {
+  chain: NWScriptInstruction[];
+  stoppedOnJsr: boolean;
+} {
   const rev: NWScriptInstruction[] = [];
   let cur: NWScriptInstruction | null | undefined = jsr.prevInstr;
   let guard = 240;
+  let stoppedOnJsr = false;
   while (cur && guard-- > 0) {
     if (HARD_STOP_BACKWARDS.has(cur.code)) {
+      stoppedOnJsr = cur.code === OP_JSR;
       break;
     }
     rev.push(cur);
     cur = cur.prevInstr;
   }
   rev.reverse();
-  return rev;
+  return { chain: rev, stoppedOnJsr };
 }
 
 /** Legacy tally: pushes only (over-counts CPTOP + CONST separated by folded binops — kept as fallback when delta sum fails mid-chain). */
@@ -177,7 +189,12 @@ function legacyPushTailCount(chain: NWScriptInstruction[]): number {
       ins.code === OP_CONST ||
       ins.code === OP_CPTOPSP ||
       ins.code === OP_CPTOPBP ||
-      ins.code === OP_RSADD
+      ins.code === OP_RSADD ||
+      // Valued ACTION leaves a slot; count as a push when definition is missing/non-void
+      (ins.code === OP_ACTION &&
+        (ins.actionDefinition === undefined ||
+          ins.actionDefinition.type === undefined ||
+          ins.actionDefinition.type !== NWScriptDataType.VOID))
     ) {
       n++;
     }
@@ -186,11 +203,34 @@ function legacyPushTailCount(chain: NWScriptInstruction[]): number {
 }
 
 /**
+ * True when chain starts with CPDOWN(+optional MOVSP) then CPTOP — prior JSR return
+ * was stored to a local and re-pushed as the next call's argument (k_act_com31 sub3).
+ */
+function chainIsReturnAssignThenCptop(chain: NWScriptInstruction[]): boolean {
+  if (chain.length < 2) {
+    return false;
+  }
+  let i = 0;
+  if (chain[i].code !== OP_CPDOWNSP && chain[i].code !== OP_CPDOWNBP) {
+    return false;
+  }
+  i++;
+  if (i < chain.length && chain[i].code === OP_MOVSP) {
+    i++;
+  }
+  if (i >= chain.length) {
+    return false;
+  }
+  return chain[i].code === OP_CPTOPSP || chain[i].code === OP_CPTOPBP;
+}
+
+/**
  * Net dword slots on caller stack consumed as arguments immediately before JSR forward execution.
  */
 function inferCallerArgSlotsBeforeJsr(jsr: NWScriptInstruction): number {
-  const chain = collectChainBeforeJsr(jsr);
-  let delta = 0;
+  const { chain, stoppedOnJsr } = collectChainBeforeJsr(jsr);
+  // Prior JSR left a return value that this chain CPDOWN+MOVSP cleans up then CPTOP re-pushes.
+  let delta = stoppedOnJsr && chainIsReturnAssignThenCptop(chain) ? 1 : 0;
   for (const ins of chain) {
     const d = instructionForwardStackSlotDelta(ins);
     if (d === null) {

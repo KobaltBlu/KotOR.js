@@ -3080,6 +3080,30 @@ export class NWScriptControlNodeToASTConverter {
           // In-loop target: short-circuit probe — keep walking.
         } else {
           finalJz = cur;
+          if (seenLogical) {
+            // Exit JZ of combined condition: no further LOGAND/LOGOR before CPDOWN/RETN.
+            // Mid-ladder may still JZ after a LOGOR when chaining a||b||c (keep walking).
+            let peek: NWScriptInstruction | null | undefined = cur.nextInstr;
+            let foundMoreLogical = false;
+            let peekGuard = 96;
+            while (peek && peekGuard-- > 0) {
+              if (peek.code === OP_LOGANDII || peek.code === OP_LOGORII) {
+                foundMoreLogical = true;
+                break;
+              }
+              if (
+                peek.code === OP_CPDOWNSP ||
+                peek.code === OP_CPDOWNBP ||
+                peek.code === OP_RETN
+              ) {
+                break;
+              }
+              peek = peek.nextInstr;
+            }
+            if (!foundMoreLogical) {
+              break;
+            }
+          }
         }
       }
       // Post-LOGOR CPDOWN stop applies to the if/if-else path only; while bodies may
@@ -3107,8 +3131,10 @@ export class NWScriptControlNodeToASTConverter {
     let bodyStartAddr: number | undefined;
     if (bodyAssign) {
       bodyStartAddr = bodyAssign.address;
-    } else if (options?.allowJzFallthroughBody && finalJz.nextInstr) {
-      // while/do-while: combined condition left on stack; body is fall-through after exit JZ.
+    } else if (finalJz.nextInstr) {
+      // if/while: combined condition left on stack; then/body is fall-through after the
+      // exit JZ (Bioware OR ladders with CPTOPBP often have no post-LOGOR CPDOWN —
+      // k_act_com31 UT_SetPlotBooleanFlag / UT_RemoveComputerSpikes).
       bodyStartAddr = finalJz.nextInstr.address;
     } else {
       return null;
