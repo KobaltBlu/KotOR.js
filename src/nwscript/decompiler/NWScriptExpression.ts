@@ -22,6 +22,52 @@ export enum NWScriptExpressionType {
   VECTOR_LITERAL = 'vector_literal',
 }
 
+/**
+ * Shortest decimal that round-trips through IEEE-754 binary32 (NWScript float).
+ * Avoids `String(0.2)` → `0.20000000298023224`.
+ */
+function formatFloat32NssLiteral(n: number): string {
+  const f = Math.fround(n);
+  if (!Number.isFinite(f)) {
+    return "0.0";
+  }
+  if (f === 0) {
+    return "0.0";
+  }
+  for (let significant = 1; significant <= 9; significant++) {
+    const raw = f.toPrecision(significant);
+    // Prefer fixed decimal over scientific for NSS readability.
+    let candidate: string;
+    if (/e/i.test(raw)) {
+      const digitsAfter = Math.min(12, Math.max(1, significant + 4));
+      candidate = f.toFixed(digitsAfter).replace(/(\.\d*?)0+$/, "$1");
+      if (candidate.endsWith(".")) {
+        candidate += "0";
+      }
+    } else {
+      candidate = raw;
+      if (!candidate.includes(".")) {
+        candidate = `${candidate}.0`;
+      } else {
+        candidate = candidate.replace(/(\.\d*?)0+$/, "$1");
+        if (candidate.endsWith(".")) {
+          candidate += "0";
+        }
+      }
+    }
+    if (Math.fround(Number(candidate)) === f) {
+      return candidate;
+    }
+  }
+  let fallback = f.toFixed(7).replace(/(\.\d*?)0+$/, "$1");
+  if (!fallback.includes(".")) {
+    fallback = `${fallback}.0`;
+  } else if (fallback.endsWith(".")) {
+    fallback += "0";
+  }
+  return fallback;
+}
+
 export class NWScriptExpression {
   type: NWScriptExpressionType;
   dataType: NWScriptDataType;
@@ -156,8 +202,8 @@ export class NWScriptExpression {
             return "0.0f";
           }
           // NSS float literals must not look like ints (re-parse assigns them as int).
-          const s = String(n);
-          const base = s.includes(".") || s.toLowerCase().includes("e") ? s : `${n}.0`;
+          // Pretty-print binary32 so 0.2f does not become 0.20000000298023224f.
+          const base = formatFloat32NssLiteral(n);
           return base.endsWith("f") ? base : `${base}f`;
         } else if (this.dataType === NWScriptDataType.INTEGER) {
           return this.value.toString();

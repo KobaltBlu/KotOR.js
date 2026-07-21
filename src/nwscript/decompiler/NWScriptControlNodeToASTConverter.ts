@@ -630,6 +630,22 @@ export class NWScriptControlNodeToASTConverter {
   }
 
   /**
+   * True when {@code body} is a single break or continue (possibly wrapped in nested empty blocks).
+   * Used to collapse `if (cond) break; else continue;` latch noise on while bodies.
+   */
+  private blockIsSoleJumpStatement(
+    body: NWScriptBlockNode,
+    kind: NWScriptASTNodeType.BREAK | NWScriptASTNodeType.CONTINUE
+  ): boolean {
+    let stmts = body.statements;
+    // Unwrap nested single-statement blocks
+    while (stmts.length === 1 && stmts[0].type === NWScriptASTNodeType.BLOCK) {
+      stmts = (stmts[0] as NWScriptBlockNode).statements;
+    }
+    return stmts.length === 1 && stmts[0].type === kind;
+  }
+
+  /**
    * Convert ControlNode tree to AST Program node
    * @param mainControlNode The ControlNode tree for the main function
    * @param structureBuilder The structure builder (needed to build ControlNode trees for functions)
@@ -1794,6 +1810,15 @@ export class NWScriptControlNodeToASTConverter {
     
     // Get header block for metadata (if condition is a basic block)
     const headerBlock = node.condition.type === 'basic_block' ? node.condition.block : undefined;
+
+    // Break-bounded while latch: `if (n > N) break; else continue;` is fallthrough to the
+    // loop back-edge — emit a plain if with break only (source never writes the else).
+    if (
+      this.blockIsSoleJumpStatement(thenBody, NWScriptASTNodeType.BREAK) &&
+      this.blockIsSoleJumpStatement(elseBody, NWScriptASTNodeType.CONTINUE)
+    ) {
+      return NWScriptAST.createIf(condition, thenBody, undefined, headerBlock) as NWScriptIfElseNode;
+    }
     
     return NWScriptAST.createIf(condition, thenBody, elseBody, headerBlock) as NWScriptIfElseNode;
   }

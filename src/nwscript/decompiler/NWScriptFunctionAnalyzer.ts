@@ -721,7 +721,81 @@ export class NWScriptFunctionAnalyzer {
       }
     }
     out = this.narrowCptopspParamsToCallArity(out, minCallerArgSlots);
+    // Empty stubs (e.g. Db_PostString) never CPTOP their formals — invent from CONST
+    // pushes at call sites so the decl arity matches the calls.
+    if (out.length === 0 && minCallerArgSlots > 0) {
+      out = this.inventFormalsFromCallSiteConsts(entryAddress, minCallerArgSlots);
+    }
     return this.refineCptopspParamTypesFromCallSites(entryAddress, out);
+  }
+
+  /**
+   * Invent formals for empty-body stubs from CONST type codes pushed immediately before
+   * each JSR to {@code entryAddress}. Left-to-right CONST order = param1..paramN.
+   */
+  private inventFormalsFromCallSiteConsts(
+    entryAddress: number,
+    minSlots: number
+  ): NWScriptFunctionParameter[] {
+    const typeVotes: NWScriptDataType[][] = Array.from({ length: minSlots }, () => []);
+    for (const instr of this.cfg.script.instructions.values()) {
+      if (instr.code !== OP_JSR || instr.offset === undefined) {
+        continue;
+      }
+      if (instr.address + instr.offset !== entryAddress) {
+        continue;
+      }
+      const pushes: NWScriptDataType[] = [];
+      let p: NWScriptInstruction | null | undefined = instr.prevInstr;
+      let steps = 0;
+      while (p && steps++ < 48 && pushes.length < minSlots) {
+        if (p.code === OP_CONST && p.type !== undefined) {
+          let dt = NWScriptDataType.INTEGER;
+          if (p.type === 4) dt = NWScriptDataType.FLOAT;
+          else if (p.type === 5) dt = NWScriptDataType.STRING;
+          else if (p.type === 6) dt = NWScriptDataType.OBJECT;
+          else if (p.type === 3) dt = NWScriptDataType.INTEGER;
+          // Args are pushed right-to-left: walking backward, first CONST is param1.
+          pushes.push(dt);
+        } else if (
+          p.code === OP_JSR ||
+          p.code === OP_ACTION ||
+          p.code === OP_RETN ||
+          p.code === OP_JMP
+        ) {
+          break;
+        }
+        p = p.prevInstr;
+      }
+      for (let i = 0; i < Math.min(pushes.length, minSlots); i++) {
+        typeVotes[i].push(pushes[i]);
+      }
+    }
+
+    const params: NWScriptFunctionParameter[] = [];
+    for (let i = 0; i < minSlots; i++) {
+      const votes = typeVotes[i];
+      let dataType = NWScriptDataType.INTEGER;
+      if (votes.length > 0) {
+        const objectVotes = votes.filter((v) => v === NWScriptDataType.OBJECT).length;
+        const floatVotes = votes.filter((v) => v === NWScriptDataType.FLOAT).length;
+        const stringVotes = votes.filter((v) => v === NWScriptDataType.STRING).length;
+        if (objectVotes > 0) dataType = NWScriptDataType.OBJECT;
+        else if (floatVotes > 0) dataType = NWScriptDataType.FLOAT;
+        else if (stringVotes > 0) dataType = NWScriptDataType.STRING;
+        else dataType = NWScriptDataType.INTEGER;
+      }
+      const typePrefix = this.getTypePrefix(dataType);
+      // Most-negative offset = first param (matches CPTOPSP frame layout).
+      const offset = -(minSlots - i) * 4;
+      params.push({
+        name: `${typePrefix}Param${i + 1}`,
+        dataType,
+        offset,
+        resolvedViaSpOperand: true,
+      });
+    }
+    return params;
   }
 
   /**
@@ -754,7 +828,8 @@ export class NWScriptFunctionAnalyzer {
       let steps = 0;
       while (p && steps++ < 32 && pushes.length < spParams.length) {
         if (p.code === OP_CONST && p.type !== undefined) {
-          pushes.unshift(p.type);
+          // Args are pushed right-to-left: walking backward, first CONST is param1.
+          pushes.push(p.type);
         } else if (
           p.code === OP_JSR ||
           p.code === OP_ACTION ||
