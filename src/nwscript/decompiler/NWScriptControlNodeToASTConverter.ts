@@ -23,12 +23,14 @@ import {
 } from "@/nwscript/decompiler/NWScriptArgumentStackLayout";
 import {
   buildActionDoCommandThunkArgByActionAddress,
+  buildAssignCommandThunkArgByActionAddress,
   buildDelayCommandThunkCalleeByActionAddress,
 } from "@/nwscript/decompiler/NWScriptStoreStateThunkSkip";
 
 type DecompJumpHint =
   | { kind: "loop"; exit: NWScriptBasicBlock | null; header: NWScriptBasicBlock | null; increment: NWScriptBasicBlock | null }
-  | { kind: "switch"; exit: NWScriptBasicBlock };
+  | { kind: "switch"; exit: NWScriptBasicBlock }
+  | { kind: "if"; merge: NWScriptBasicBlock };
 /**
  * Converts ControlNode tree to NWScriptASTNode tree.
  * This is the bridge between the control flow structure and the abstract syntax tree.
@@ -159,6 +161,12 @@ export class NWScriptControlNodeToASTConverter {
    * Short-circuit probe blocks folded into a logical `&&`/`||` if-condition — skip nested empty ifs.
    */
   private shortCircuitAbsorbedBlocks: Set<NWScriptBasicBlock> = new Set();
+
+  /**
+   * RETN merge blocks already covered by a valued `return` emitted from a CPDOWNSP return-write
+   * that JMPs/falls through to that merge — skip the default `return 0` on the shared RETN.
+   */
+  private retnMergeSatisfiedByReturn: Set<NWScriptBasicBlock> = new Set();
 
   /**
    * Upper bound (exclusive) for valid `localVar_i` indices when matching CPDOWNSP to RSADD slots.
@@ -472,6 +480,11 @@ export class NWScriptControlNodeToASTConverter {
       functions
     );
     this.stackSimulator.setActionDoCommandThunkArg(actionDoThunks);
+    const assignThunks = buildAssignCommandThunkArgByActionAddress(
+      cfg.script,
+      functions
+    );
+    this.stackSimulator.setAssignCommandThunkArg(assignThunks);
     
     this.setupVariableMappings();
     this.buildBlockToFunctionMap();
@@ -481,6 +494,9 @@ export class NWScriptControlNodeToASTConverter {
     const s = new NWScriptStackSimulator();
     s.setJsrCalleeArgSlotsByEntryPc(this.jsrCalleeArgSlotsByEntryPc);
     s.setJsrUserRoutineMetaByEntryPc(this.jsrUserRoutineMetaByEntryPc);
+    s.setDelayCommandThunkSecondArg(this.stackSimulator.getDelayCommandThunkSecondArg());
+    s.setActionDoCommandThunkArg(this.stackSimulator.getActionDoCommandThunkArg());
+    s.setAssignCommandThunkArg(this.stackSimulator.getAssignCommandThunkArg());
     return s;
   }
 
@@ -603,9 +619,25 @@ export class NWScriptControlNodeToASTConverter {
       if (h.header != null && this.blockIsContinueTrampolineTo(target, h.header)) {
         return "continue";
       }
+      // while/do-while: continue may land on the latch (incr + JMP header), not the header
+      if (h.header != null && this.blockIsLoopLatchContinueTarget(target, h.header)) {
+        return "continue";
+      }
     }
 
     return null;
+  }
+
+  /** True when {@code target} is the active if/if-else merge (structural fallthrough). */
+  private isActiveIfMergeTarget(target: NWScriptBasicBlock | null): boolean {
+    if (!target) return false;
+    for (let i = this.jumpHints.length - 1; i >= 0; i--) {
+      const h = this.jumpHints[i];
+      if (h.kind === "if" && target === h.merge) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /** True when {@code block} is solely a JMP to {@code header} (continue trampoline). */
@@ -627,6 +659,67 @@ export class NWScriptControlNodeToASTConverter {
     }
     const dest = this.cfg.getBlockForAddress(end.address + end.offset);
     return dest === header;
+  }
+
+  /**
+   * True when {@code block} is a while/do-while latch that continues the loop: it JMPs to
+   * {@code header} (possibly after incr/CPDOWN). Used so `if (j==1) continue;` that jumps
+   * to the latch is not left as an empty then-arm (smoke_24).
+   */
+  private blockIsLoopLatchContinueTarget(
+    block: NWScriptBasicBlock,
+    header: NWScriptBasicBlock
+  ): boolean {
+    if (block === header) {
+      return true;
+    }
+    if (this.blockIsContinueTrampolineTo(block, header)) {
+      return true;
+    }
+    for (const ins of block.instructions) {
+      if (ins.code === OP_JMP && ins.offset !== undefined) {
+        const dest = this.cfg.getBlockForAddress(ins.address + ins.offset);
+        if (dest === header) {
+          return true;
+        }
+        if (dest && this.blockIsContinueTrampolineTo(dest, header)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * After emitting a valued return from a CPDOWNSP return-write in {@code block}, mark the
+   * shared RETN merge (JMP target or successor with RETN) so the merge does not emit
+   * another default `return 0`.
+   */
+  private markRetnMergeSatisfiedFromReturnWriteBlock(block: NWScriptBasicBlock): void {
+    const end = block.endInstruction;
+    if (end?.code === OP_JMP && end.offset !== undefined) {
+      const dest = this.cfg.getBlockForAddress(end.address + end.offset);
+      if (dest && this.blockContainsRetn(dest)) {
+        this.retnMergeSatisfiedByReturn.add(dest);
+        return;
+      }
+    }
+    for (const succ of block.successors) {
+      if (this.blockContainsRetn(succ)) {
+        this.retnMergeSatisfiedByReturn.add(succ);
+      }
+    }
+    // Fallthrough: RETN in this same block after the return-write
+    if (this.blockContainsRetn(block)) {
+      this.retnMergeSatisfiedByReturn.add(block);
+    }
+  }
+
+  private blockContainsRetn(block: NWScriptBasicBlock): boolean {
+    if (block.endInstruction?.code === OP_RETN) {
+      return true;
+    }
+    return block.instructions.some((ins) => ins.code === OP_RETN);
   }
 
   /**
@@ -686,6 +779,7 @@ export class NWScriptControlNodeToASTConverter {
       this.functionStackInitialized.delete(functionContext);
       this.emittedBasicBlocksInCurrentProcedure.clear();
       this.shortCircuitAbsorbedBlocks.clear();
+      this.retnMergeSatisfiedByReturn.clear();
 
       // Initialize variable tracking for this function
       if (!this.functionVariableCounts.has(functionContext)) {
@@ -1013,6 +1107,55 @@ export class NWScriptControlNodeToASTConverter {
     if (!conditionInstr) {
       return;
     }
+
+    // Only process init/decl ops before the condition expression. CPTOP/CONST/ACTION
+    // immediately before JZ belong to the condition — processing them here leaves a
+    // phantom +4 on the live stack (JZ is never simulated), so return-slot CPDOWNSP
+    // in then/else mis-resolves onto a local (smoke_13: `return 1` → `localVar_0 = 1`).
+    let preCondEndAddr = conditionInstr.address;
+    let scanPre: NWScriptInstruction | null | undefined = headerBlock.startInstruction;
+    let lastCpdown: NWScriptInstruction | null = null;
+    let preScanGuard = 100000;
+    while (scanPre && scanPre.address < conditionInstr.address && preScanGuard-- > 0) {
+      if (scanPre.code === OP_CPDOWNSP || scanPre.code === OP_CPDOWNBP) {
+        lastCpdown = scanPre;
+      }
+      scanPre = scanPre.nextInstr;
+    }
+    if (lastCpdown) {
+      let endAt: NWScriptInstruction | null | undefined = lastCpdown.nextInstr;
+      if (endAt && endAt.code === OP_MOVSP) {
+        endAt = endAt.nextInstr;
+      }
+      if (endAt && endAt.address <= conditionInstr.address) {
+        preCondEndAddr = endAt.address;
+      }
+    } else {
+      // Condition-only header (e.g. PrintInteger(203); if (1) break;): emit call
+      // side effects before the JZ, then restore SP so predicate CPTOP/CONST do not leak.
+      const snap = this.stackSimulator.takeStackSnapshot();
+      try {
+        this.expressionBuilder.setStackPointer(this.stackSimulator.getStackPointer());
+        for (const instr of headerBlock.instructions) {
+          if (instr.address >= conditionInstr.address) {
+            break;
+          }
+          const processed = this.stackSimulator.processInstruction(instr);
+          this.expressionBuilder.setStackPointer(this.stackSimulator.getStackPointer());
+          if (
+            (instr.code === OP_ACTION || instr.code === OP_JSR) &&
+            processed &&
+            processed.type === NWScriptExpressionType.FUNCTION_CALL
+          ) {
+            statements.push(NWScriptAST.createExpressionStatement(processed));
+          }
+        }
+      } finally {
+        this.stackSimulator.restoreStackSnapshot(snap);
+      }
+      return;
+    }
+
     const variableStackPositions =
       this.functionVariableStackPositions.get(functionContext) ??
       (() => {
@@ -1031,7 +1174,7 @@ export class NWScriptControlNodeToASTConverter {
     this.expressionBuilder.setStackPointer(this.stackSimulator.getStackPointer());
 
     for (const instr of headerBlock.instructions) {
-      if (instr.address >= conditionInstr.address) {
+      if (instr.address >= preCondEndAddr) {
         break;
       }
       if (instr.code === OP_RSADD) {
@@ -1272,7 +1415,12 @@ export class NWScriptControlNodeToASTConverter {
         }
         if (jumpKind === "continue") {
           // For-loop increment's JMP back to the header is the loop latch, not a continue stmt.
-          if (!this.convertingForIncrement) {
+          // Non-empty then-arm JMP to if-merge that is also the while latch is fallthrough
+          // (k_act_com31 AssignCommand → GetNext), not `continue` (smoke_24 empty then keeps continue).
+          if (
+            !this.convertingForIncrement &&
+            !(this.isActiveIfMergeTarget(targetBlock) && blockStatements.length > 0)
+          ) {
             blockStatements.push(NWScriptAST.createContinue());
           }
           continue;
@@ -1322,6 +1470,7 @@ export class NWScriptControlNodeToASTConverter {
               const value =
                 returnValueExpr ?? this.defaultReturnExpression(functionContext!.returnType);
               blockStatements.push(NWScriptAST.createReturn(value));
+              this.markRetnMergeSatisfiedFromReturnWriteBlock(block);
               nwscriptDecompilerDebug(`[RETURN-DETECT] ✓ Created return statement with expression: ${value.toNSS()}`);
             } else {
               nwscriptDecompilerDebug(`[RETURN-DETECT] ✗ WARNING: No expression on stack for return value`);
@@ -1356,6 +1505,7 @@ export class NWScriptControlNodeToASTConverter {
             const value =
               returnValueExpr ?? this.defaultReturnExpression(functionContext!.returnType);
             blockStatements.push(NWScriptAST.createReturn(value));
+            this.markRetnMergeSatisfiedFromReturnWriteBlock(block);
             nwscriptDecompilerDebug(`[RETURN-DETECT-FLOW] ✓ Created return statement with expression: ${value.toNSS()}`);
           } else {
             nwscriptDecompilerDebug(`[RETURN-DETECT-FLOW] ✗ WARNING: No expression on stack for return value`);
@@ -1365,9 +1515,12 @@ export class NWScriptControlNodeToASTConverter {
       
       // Check for special instructions
       if (instruction.code === OP_RETN) {
-        // RETN just tells the program to return to the address after the last JSR
-        // The actual return statement was already created when we saw the CPDOWNSP
-        // But if we didn't see a CPDOWNSP (void function), we still need to create a return
+        // RETN just tells the program to return to the address after the last JSR.
+        // Valued returns are emitted at the CPDOWNSP write; shared merge RETNs must not
+        // emit another default `return 0` once a write path already targeted this block.
+        if (this.retnMergeSatisfiedByReturn.has(block)) {
+          continue;
+        }
         if (!isReturnWrite && !returnValueExpr) {
           if (
             functionContext &&
@@ -1573,34 +1726,44 @@ export class NWScriptControlNodeToASTConverter {
           if (expr.dataType === NWScriptDataType.VOID) {
             blockStatements.push(NWScriptAST.createExpressionStatement(expr));
           } else {
-          // Look ahead to see if this function call is part of a larger expression
-          // Check up to 5 instructions ahead for patterns that consume the function result
+          // Look ahead to see if this function call is part of a larger expression.
+          // Prefer linear nextInstr so a block boundary between JSR and CPDOWNSP
+          // (smoke_39: n = AddTwo(3)) does not emit a dead `sub1(3);` before the assign.
           let isPartOfExpression = false;
-          const lookAheadLimit = Math.min(i + 6, block.instructions.length);
-          
-          for (let j = i + 1; j < lookAheadLimit; j++) {
-            const futureInstr = block.instructions[j];
-            
-            // If we find a comparison, binary op, or assignment, the function call is part of an expression
-            if (futureInstr.code === OP_EQUAL || futureInstr.code === OP_NEQUAL || 
-                futureInstr.code === OP_GT || futureInstr.code === OP_GEQ || 
-                futureInstr.code === OP_LT || futureInstr.code === OP_LEQ ||
-                futureInstr.code === OP_ADD || futureInstr.code === OP_SUB ||
-                futureInstr.code === OP_MUL || futureInstr.code === OP_DIV ||
-                futureInstr.code === OP_LOGANDII || futureInstr.code === OP_LOGORII ||
-                futureInstr.code === OP_CPDOWNSP) {
-              // Non-void call result is consumed by the upcoming op / assignment.
+          let future: NWScriptInstruction | null | undefined = instruction.nextInstr;
+          let lookAheadSteps = 0;
+          while (future && lookAheadSteps++ < 8) {
+            if (
+              future.code === OP_EQUAL ||
+              future.code === OP_NEQUAL ||
+              future.code === OP_GT ||
+              future.code === OP_GEQ ||
+              future.code === OP_LT ||
+              future.code === OP_LEQ ||
+              future.code === OP_ADD ||
+              future.code === OP_SUB ||
+              future.code === OP_MUL ||
+              future.code === OP_DIV ||
+              future.code === OP_LOGANDII ||
+              future.code === OP_LOGORII ||
+              future.code === OP_CPDOWNSP ||
+              // Later ACTION/JSR typically consume this return as an argument
+              // (e.g. ObjectToString(GetModule()), UT_*(GetModule(), …)).
+              future.code === OP_ACTION ||
+              future.code === OP_JSR
+            ) {
               isPartOfExpression = true;
               break;
             }
-            
-            // If we hit a terminator (JMP, JZ, JNZ, RETN, JSR), stop looking ahead
-            // The function call is not part of an expression in this block
-            if (futureInstr.code === OP_JMP || futureInstr.code === OP_RETN ||
-                futureInstr.code === OP_JSR || futureInstr.code === OP_JZ ||
-                futureInstr.code === OP_JNZ) {
+            if (
+              future.code === OP_JMP ||
+              future.code === OP_RETN ||
+              future.code === OP_JZ ||
+              future.code === OP_JNZ
+            ) {
               break;
             }
+            future = future.nextInstr;
           }
           
           // Only create expression statement if it's not part of a larger expression
@@ -1724,9 +1887,19 @@ export class NWScriptControlNodeToASTConverter {
       }
     }
 
-    // Convert body
+    // Convert body — if-merge hint suppresses latch continue on then-arm JMP
     this.stackSimulator.restoreStackSnapshot(preBranchSnap);
-    const thenBody = this.convertControlNodeToBlock(actualBodyNode, functionContext);
+    if (node.exitBlock) {
+      this.jumpHints.push({ kind: "if", merge: node.exitBlock });
+    }
+    let thenBody: NWScriptBlockNode;
+    try {
+      thenBody = this.convertControlNodeToBlock(actualBodyNode, functionContext);
+    } finally {
+      if (node.exitBlock) {
+        this.popJumpHint();
+      }
+    }
     this.stackSimulator.restoreStackSnapshot(preBranchSnap);
     
     // If the body is empty and we extracted a cross-block condition, the body block was part of the condition
@@ -1803,9 +1976,20 @@ export class NWScriptControlNodeToASTConverter {
     
     // Convert bodies — restore pre-branch stack between arms
     this.stackSimulator.restoreStackSnapshot(preBranchSnap);
-    const thenBody = this.convertControlNodeToBlock(thenBodyNode, functionContext);
-    this.stackSimulator.restoreStackSnapshot(preBranchSnap);
-    const elseBody = this.convertControlNodeToBlock(node.elseBody, functionContext);
+    if (node.exitBlock) {
+      this.jumpHints.push({ kind: "if", merge: node.exitBlock });
+    }
+    let thenBody: NWScriptBlockNode;
+    let elseBody: NWScriptBlockNode;
+    try {
+      thenBody = this.convertControlNodeToBlock(thenBodyNode, functionContext);
+      this.stackSimulator.restoreStackSnapshot(preBranchSnap);
+      elseBody = this.convertControlNodeToBlock(node.elseBody, functionContext);
+    } finally {
+      if (node.exitBlock) {
+        this.popJumpHint();
+      }
+    }
     this.stackSimulator.restoreStackSnapshot(preBranchSnap);
     
     // Get header block for metadata (if condition is a basic block)
@@ -1855,6 +2039,17 @@ export class NWScriptControlNodeToASTConverter {
       body = this.convertControlNodeToBlock(node.body, functionContext);
     } finally {
       this.popJumpHint();
+    }
+
+    // While latch is `incr; JMP header` — the JMP often lowers as a trailing `continue;`
+    // which is not present in source (smoke_24). Strip sole trailing continues.
+    while (body.statements.length > 0) {
+      const last = body.statements[body.statements.length - 1];
+      if (last.type === NWScriptASTNodeType.CONTINUE) {
+        body.statements.pop();
+      } else {
+        break;
+      }
     }
 
     return NWScriptAST.createWhile(condition, body, headerBlock);
@@ -2619,13 +2814,39 @@ export class NWScriptControlNodeToASTConverter {
     this.stackSimulator.setVariableStackPositions(variableStackPositions);
     this.stackSimulator.setLocalVariableInits(this.localInits);
 
+    // Start after the last init CPDOWN before the JZ. Headers often share a block with
+    // RSADD/CONST/CPDOWN decls that pre-condition processing already applied to the live
+    // stack; replaying those from a post-decl SP double-counts and CPTOPSP resolves to the
+    // wrong locals (e.g. string `a == b` → `localVar_2 == localVar_2`).
+    let startInstr: NWScriptInstruction | null = block.startInstruction;
+    let lastCpdownBeforeCond: NWScriptInstruction | null = null;
+    let scan: NWScriptInstruction | null | undefined = block.startInstruction;
+    let scanGuard = 100000;
+    while (scan && scan.address < conditionInstr.address && scanGuard-- > 0) {
+      if (scan.code === OP_CPDOWNSP || scan.code === OP_CPDOWNBP) {
+        lastCpdownBeforeCond = scan;
+      }
+      scan = scan.nextInstr;
+    }
+    if (lastCpdownBeforeCond?.nextInstr) {
+      startInstr = lastCpdownBeforeCond.nextInstr;
+      if (startInstr.code === OP_MOVSP && startInstr.nextInstr) {
+        startInstr = startInstr.nextInstr;
+      }
+    }
+    if (!startInstr) {
+      return null;
+    }
+
+    const entrySp = this.computeStackPointerAtAddress(efCtx, startInstr.address);
     const snap = this.stackSimulator.takeStackSnapshot();
     try {
-      for (const ins of block.instructions) {
-        if (ins === conditionInstr || ins.address === conditionInstr.address) {
-          break;
-        }
-        this.stackSimulator.processInstruction(ins);
+      this.stackSimulator.setProgramStackPointer(entrySp);
+      let cur: NWScriptInstruction | null | undefined = startInstr;
+      let replayGuard = 100000;
+      while (cur && cur.address < conditionInstr.address && replayGuard-- > 0) {
+        this.stackSimulator.processInstruction(cur);
+        cur = cur.nextInstr;
       }
       const stackTop = this.stackSimulator.peek();
       if (stackTop) {

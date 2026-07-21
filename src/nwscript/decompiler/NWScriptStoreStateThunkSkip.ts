@@ -476,3 +476,48 @@ export function buildActionDoCommandThunkArgByActionAddress(
 
   return map;
 }
+
+/**
+ * Map AssignCommand ACTION instr address → recovered action argument (`ActionOpenDoor(o)`, etc.).
+ * Standalone AssignCommand (not nested under DelayCommand) uses the same STORE_STATE+JMP island.
+ */
+export function buildAssignCommandThunkArgByActionAddress(
+  script: NWScript,
+  functions: NWScriptFunction[]
+): Map<number, NWScriptExpression> {
+  const entryPcToFn = new Map<number, NWScriptFunction>();
+  for (const f of functions) {
+    if (!f.isMain) {
+      entryPcToFn.set(f.entryBlock.startInstruction.address, f);
+    }
+  }
+  const jsrArgSlotsByEntryPc = buildJsrCalleeArgSlotsByEntryPc(functions, script);
+  const map = new Map<number, NWScriptExpression>();
+
+  for (const instruction of script.instructions.values()) {
+    if (
+      instruction.code !== OP_ACTION ||
+      !(
+        instruction.actionDefinition?.name === "AssignCommand" ||
+        instruction.action === 6
+      )
+    ) {
+      continue;
+    }
+    const outer = findOuterStoreStateJmp(instruction);
+    if (!outer) {
+      continue;
+    }
+    const expr = recoverThunkScriptExpression(
+      outer.jmp,
+      outer.jmpTarget,
+      entryPcToFn,
+      jsrArgSlotsByEntryPc
+    );
+    if (expr) {
+      map.set(instruction.address, expr);
+    }
+  }
+
+  return map;
+}

@@ -34,6 +34,8 @@ export interface IfNode {
   type: 'if';
   condition: ControlNode; // Condition block
   body: ControlNode; // Then body
+  /** Post-if merge (both paths converge) — JMP here is fallthrough, not continue */
+  exitBlock?: NWScriptBasicBlock;
 }
 
 /**
@@ -44,6 +46,8 @@ export interface IfElseNode {
   condition: ControlNode; // Condition block
   thenBody: ControlNode; // Then body
   elseBody: ControlNode; // Else body
+  /** Post-if merge — JMP here is fallthrough, not continue */
+  exitBlock?: NWScriptBasicBlock;
 }
 
 /**
@@ -739,10 +743,12 @@ export class NWScriptControlStructureBuilder {
   /**
    * Blocks reachable inside one switch arm via fallthrough/successors only (no JMP targets).
    * Used to discover break/continue JMP destinations without swallowing the merge into the arm.
+   * When {@code exitBlock} is set, do not walk into the post-switch merge (or beyond).
    */
   private switchArmFallthroughBlocks(
     armEntry: NWScriptBasicBlock,
-    otherArmEntries: Set<NWScriptBasicBlock>
+    otherArmEntries: Set<NWScriptBasicBlock>,
+    exitBlock?: NWScriptBasicBlock | null
   ): Set<NWScriptBasicBlock> {
     const out = new Set<NWScriptBasicBlock>();
     const queue: NWScriptBasicBlock[] = [armEntry];
@@ -752,8 +758,14 @@ export class NWScriptControlStructureBuilder {
       if (out.has(b)) {
         continue;
       }
+      if (exitBlock && b === exitBlock) {
+        continue;
+      }
       out.add(b);
       for (const s of this.cfg.getIntraProceduralSuccessors(b, false)) {
+        if (exitBlock && s === exitBlock) {
+          continue;
+        }
         if (otherArmEntries.has(s) || out.has(s)) {
           continue;
         }
@@ -906,7 +918,7 @@ export class NWScriptControlStructureBuilder {
    * Merge instructions along a CMP ladder beyond single-successor chains by following bytecode
    * fall-through (nextInstr after each block terminator) across 2-way splits. Capped tightly to
    * avoid sucking unrelated control-flow; {@link tryIdentifySwitchFromInstructions} still requires
-   * ≥2 matched case rows plus a default JMP.
+   * ≥1 matched case row (JNZ) plus a default JMP.
    */
   private switchDispatchExtendedMerge(start: NWScriptBasicBlock): NWScriptInstruction[] {
     const out: NWScriptInstruction[] = [];
@@ -1008,7 +1020,9 @@ export class NWScriptControlStructureBuilder {
     const branchWindowEnd = Math.min(instructions.length, equalIdx + 4);
     for (let k = equalIdx + 1; k < branchWindowEnd; k++) {
       const opc = instructions[k].code;
-      if (opc === OP_JNZ || opc === OP_JZ) {
+      // Switch dispatch uses JNZ (jump when case matches). JZ is if/while and must not
+      // seed single-case switches (smoke_24 `if (j == 1) continue`).
+      if (opc === OP_JNZ) {
         branchIdx = k;
         break;
       }
@@ -1039,12 +1053,21 @@ export class NWScriptControlStructureBuilder {
       if (op !== OP_CPTOPSP && op !== OP_CPTOPBP) {
         continue;
       }
+      // Discriminant load must live in the header block. Extended merges can reach a
+      // later switch's CPTOP; seeding from those would attach that ladder to this header
+      // (smoke_08: case-2 entry mis-identified as the while's switch).
+      const seedAddr = instructions[seedIdx].address;
+      const headerRange = headerBlock.getAddressRange();
+      if (seedAddr < headerRange.start || seedAddr >= headerRange.end) {
+        continue;
+      }
       const cand = this.tryBuildSwitchStructureFromSeed(headerBlock, instructions, seedIdx);
       const n =
         cand?.switchCases && cand.switchCases.size > 0
           ? cand.switchCases.size
           : 0;
-      if (n >= 2 && n > bestDistinctCases) {
+      // Allow 1-case + default switches (smoke_08); still prefer richer ladders.
+      if (n >= 1 && n > bestDistinctCases) {
         best = cand!;
         bestDistinctCases = n;
       }
@@ -1087,6 +1110,12 @@ export class NWScriptControlStructureBuilder {
     let scanPos = firstRow.branchIdx + 1;
 
     while (scanPos < instructions.length) {
+      // End of the dispatch ladder: default JMP. Do not keep scanning into case
+      // bodies or later switches (smoke_08: sole `case 2` must not absorb the
+      // while's `case 0` EQUAL+JNZ as another arm of the same switch).
+      if (instructions[scanPos].code === OP_JMP) {
+        break;
+      }
       const nextRow = this.tryParseSwitchCaseRow(instructions, scanPos, false);
       if (!nextRow) {
         break;
@@ -1095,7 +1124,8 @@ export class NWScriptControlStructureBuilder {
       scanPos = nextRow.branchIdx + 1;
     }
 
-    if (caseJNZs.length < 2) {
+    // ≥1 case + default JMP (smoke_08 is a single `case 2` / `default` switch).
+    if (caseJNZs.length < 1) {
       return null;
     }
 
@@ -1204,8 +1234,24 @@ export class NWScriptControlStructureBuilder {
       return null;
     }
 
-    for (const ins of best.merged) {
-      const owner = this.cfg.getBlockForAddress(ins.address);
+    // Only occupy the dispatch ladder (through the default JMP), not case bodies or
+    // later code that extended merges may have appended.
+    let occupyUntil = best.merged.length;
+    for (let i = 0; i < best.merged.length; i++) {
+      const ins = best.merged[i];
+      if (ins.code === OP_JMP && i > 0) {
+        // First unconditional JMP after case compares is the default branch.
+        const prevIsCaseBranch = best.merged
+          .slice(0, i)
+          .some((p) => p.code === OP_JNZ || p.code === OP_JZ);
+        if (prevIsCaseBranch) {
+          occupyUntil = i + 1;
+          break;
+        }
+      }
+    }
+    for (let i = 0; i < occupyUntil; i++) {
+      const owner = this.cfg.getBlockForAddress(best.merged[i].address);
       if (owner) {
         this.switchDispatchOccupiedBlocks.add(owner.id);
       }
@@ -2298,6 +2344,10 @@ export class NWScriptControlStructureBuilder {
       processed.add(ifElse.headerBlock);
       // Keep following do-while / while headers scannable when they are an if merge target.
       // Also keep side-effecting merges free (e.g. `i = 0` that is both for-break target and pre-do stmt).
+      // Plain if joins whose merge is itself the next `if` (smoke_15: `if (a==b); if (a!="no")`)
+      // must stay free — but do NOT free OR/AND ladder probe exits (smoke_45): those look
+      // conditional yet swallowing them into the while body nests the real body under a probe
+      // that short-circuit absorption later skips.
       if (ifElse.exitBlock && !ifElse.exitBlock.isLoopHeader) {
         const exitHasSideEffects = ifElse.exitBlock.instructions.some(
           (i) =>
@@ -2308,7 +2358,16 @@ export class NWScriptControlStructureBuilder {
             i.code === OP_INCISP ||
             i.code === OP_DECISP
         );
-        if (!exitHasSideEffects) {
+        const exitIsJoinConditional =
+          !!ifElse.exitBlock.conditionInstruction &&
+          (!ifElse.elseBlocks || ifElse.elseBlocks.length === 0) &&
+          // Sequential ifs (smoke_15): then arm ends with an unconditional JMP to the
+          // merge, which is the next if header. OR/AND ladder probes reach the next
+          // term via the header's false JZ, not a then-arm JMP — keep marking those.
+          ifElse.bodyBlocks.some(
+            (b) => b.exitType === "jump" && b.successors.has(ifElse.exitBlock!)
+          );
+        if (!exitHasSideEffects && !exitIsJoinConditional) {
           processed.add(ifElse.exitBlock);
         }
       }
@@ -2377,13 +2436,15 @@ export class NWScriptControlStructureBuilder {
         type: 'if_else',
         condition: conditionNode,
         thenBody,
-        elseBody
+        elseBody,
+        exitBlock: structure.exitBlock,
       };
     }
     return {
       type: 'if',
       condition: conditionNode,
-      body: thenBody
+      body: thenBody,
+      exitBlock: structure.exitBlock,
     };
   }
 
@@ -2573,7 +2634,9 @@ export class NWScriptControlStructureBuilder {
       for (const [caseValue, caseBlock] of structure.switchCases.entries()) {
         const others = new Set(armEntries);
         others.delete(caseBlock);
-        const armBlocks = Array.from(this.switchArmFallthroughBlocks(caseBlock, others));
+        const armBlocks = Array.from(
+          this.switchArmFallthroughBlocks(caseBlock, others, structure.exitBlock)
+        );
         if (armBlocks.length === 0) {
           armBlocks.push(caseBlock);
         }
@@ -2591,7 +2654,11 @@ export class NWScriptControlStructureBuilder {
           const others = new Set(armEntries);
           others.delete(structure.defaultBlock!);
           const armBlocks = Array.from(
-            this.switchArmFallthroughBlocks(structure.defaultBlock!, others)
+            this.switchArmFallthroughBlocks(
+              structure.defaultBlock!,
+              others,
+              structure.exitBlock
+            )
           );
           if (armBlocks.length === 0) {
             armBlocks.push(structure.defaultBlock!);

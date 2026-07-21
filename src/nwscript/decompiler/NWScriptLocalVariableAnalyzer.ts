@@ -2,7 +2,7 @@ import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import type { NWScript } from "@/nwscript/NWScript";
 import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
-import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_MOVSP, OP_NEG, OP_ACTION } from "@/nwscript/NWScriptOPCodes";
+import { OP_RSADD, OP_CONST, OP_CPDOWNSP, OP_MOVSP, OP_NEG, OP_ACTION, OP_JSR } from "@/nwscript/NWScriptOPCodes";
 
 /**
  * Represents a detected local variable initialization
@@ -98,17 +98,23 @@ export class NWScriptLocalVariableAnalyzer {
       if (!current || current.code !== OP_CPDOWNSP) continue;
       const cpdownsp = current;
       
-      // Check if there's an ACTION call between CONST and CPDOWNSP
-      // If so, this CONST is a parameter to the function, not the initializer value
-      // We should still detect the variable but not set an initializer
+      // Check if there's an ACTION/JSR between CONST and CPDOWNSP.
+      // If so, this CONST is a call argument, not the local's initializer (smoke_39:
+      // `RSADD; CONST 3; JSR; CPDOWNSP` must not become `int localVar = 3`).
       let hasAction = false;
+      let hasJsr = false;
       let checkCurrent = constInstr.nextInstr;
       while (checkCurrent && checkCurrent.address < cpdownsp.address) {
         if (checkCurrent.code === OP_ACTION) {
           hasAction = true;
-          break;
+        }
+        if (checkCurrent.code === OP_JSR) {
+          hasJsr = true;
         }
         checkCurrent = checkCurrent.nextInstr;
+      }
+      if (hasJsr) {
+        continue;
       }
 
       // Check CPDOWNSP parameters

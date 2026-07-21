@@ -107,6 +107,9 @@ export class NWScriptStackSimulator {
   /** ActionDoCommand ACTION PC → recovered action argument (STORE_STATE thunk). */
   private actionDoCommandThunkArg: Map<number, NWScriptExpression> = new Map();
 
+  /** AssignCommand ACTION PC → recovered action argument (STORE_STATE thunk). */
+  private assignCommandThunkArg: Map<number, NWScriptExpression> = new Map();
+
   setJsrCalleeArgSlotsByEntryPc(map: Map<number, number>): void {
     this.jsrCalleeArgSlotsByEntryPc = map;
   }
@@ -121,6 +124,22 @@ export class NWScriptStackSimulator {
 
   setActionDoCommandThunkArg(map: Map<number, NWScriptExpression>): void {
     this.actionDoCommandThunkArg = map;
+  }
+
+  setAssignCommandThunkArg(map: Map<number, NWScriptExpression>): void {
+    this.assignCommandThunkArg = map;
+  }
+
+  getDelayCommandThunkSecondArg(): Map<number, DelayCommandThunkArg> {
+    return this.delayCommandThunkSecondArg;
+  }
+
+  getActionDoCommandThunkArg(): Map<number, NWScriptExpression> {
+    return this.actionDoCommandThunkArg;
+  }
+
+  getAssignCommandThunkArg(): Map<number, NWScriptExpression> {
+    return this.assignCommandThunkArg;
   }
 
   /** Resolve DelayCommand thunk second arg (JSR callee or nested AssignCommand). */
@@ -599,6 +618,8 @@ export class NWScriptStackSimulator {
       functionName === "DelayCommand" || instruction.action === 7;
     const isActionDoCommand =
       functionName === "ActionDoCommand" || instruction.action === 294;
+    const isAssignCommand =
+      functionName === "AssignCommand" || instruction.action === 6;
 
     const thunkReplace =
       isDelayCommand
@@ -625,6 +646,23 @@ export class NWScriptStackSimulator {
         args.push(actionDoReplace);
       } else {
         args[0] = actionDoReplace;
+      }
+    }
+
+    const assignReplace =
+      isAssignCommand
+        ? this.assignCommandThunkArg.get(instruction.address)
+        : undefined;
+    if (assignReplace) {
+      if (args.length === 0) {
+        args.push(
+          NWScriptExpression.constant("OBJECT_SELF", NWScriptDataType.OBJECT)
+        );
+      }
+      if (args.length === 1) {
+        args.push(assignReplace);
+      } else {
+        args[args.length - 1] = assignReplace;
       }
     }
     

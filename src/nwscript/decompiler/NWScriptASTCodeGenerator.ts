@@ -6,16 +6,19 @@ import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 /**
  * Generates NSS source code from an Abstract Syntax Tree.
  * This is the final step in the decompilation pipeline.
- * 
+ *
+ * Indentation is relative: each block prefixes child lines with exactly one
+ * indent unit. Nested constructs must not also apply an absolute indentLevel
+ * (that double-indents when parents re-prefix).
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file NWScriptASTCodeGenerator.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class NWScriptASTCodeGenerator {
-  private indentLevel: number = 0;
-  private indentString: string = '    '; // 4 spaces
+  private indentString: string = '    '; // 4 spaces per nesting level
 
   /**
    * Generate NSS source code from an AST
@@ -51,6 +54,13 @@ export class NWScriptASTCodeGenerator {
     }
 
     return lines.join('\n');
+  }
+
+  /**
+   * Prefix each non-empty line with one indent unit (relative nesting).
+   */
+  private nest(lines: string[]): string[] {
+    return lines.map((line) => (line.length > 0 ? this.indentString + line : line));
   }
 
   /**
@@ -91,7 +101,7 @@ export class NWScriptASTCodeGenerator {
   private generateGlobalVariableDeclaration(decl: NWScriptGlobalVariableDeclarationNode): string {
     const typeName = this.getTypeName(decl.dataType);
     const name = decl.name;
-    
+
     if (decl.initializer) {
       return `${typeName} ${name} = ${decl.initializer.toNSS()};`;
     } else {
@@ -111,23 +121,18 @@ export class NWScriptASTCodeGenerator {
     lines.push(`${returnTypeName} ${func.name}(${params})`);
     lines.push('{');
 
-    // Local variable declarations
-    this.indentLevel++;
+    const body: string[] = [];
     for (const local of func.locals) {
-      lines.push(this.indent() + this.generateVariableDeclaration(local));
+      body.push(this.generateVariableDeclaration(local));
     }
 
     if (func.locals.length > 0) {
-      lines.push(''); // Blank line after locals
+      body.push(''); // Blank line after locals
     }
 
-    // Function body
-    const bodyLines = this.generateBlock(func.body);
-    if (bodyLines.length > 0) {
-      lines.push(...bodyLines.map(line => this.indent() + line));
-    }
+    body.push(...this.generateBlock(func.body));
+    lines.push(...this.nest(body));
 
-    this.indentLevel--;
     lines.push('}');
 
     return lines;
@@ -139,7 +144,7 @@ export class NWScriptASTCodeGenerator {
   private generateVariableDeclaration(decl: NWScriptVariableDeclarationNode): string {
     const typeName = this.getTypeName(decl.dataType);
     const name = decl.name;
-    
+
     if (decl.initializer) {
       return `${typeName} ${name} = ${decl.initializer.toNSS()};`;
     } else {
@@ -264,120 +269,69 @@ export class NWScriptASTCodeGenerator {
   }
 
   /**
+   * Brace-wrapped body: child lines get exactly one relative indent.
+   */
+  private bracedBody(bodyLines: string[]): string[] {
+    const lines: string[] = ['{'];
+    if (bodyLines.length > 0) {
+      lines.push(...this.nest(bodyLines));
+    } else {
+      lines.push(this.indentString + '// Empty');
+    }
+    lines.push('}');
+    return lines;
+  }
+
+  /**
    * Generate if statement
    */
   private generateIf(ifNode: NWScriptIfNode): string[] {
-    const lines: string[] = [];
     const condition = ifNode.condition.toNSS();
-    
-    lines.push(`if (${condition})`);
-    lines.push('{');
-    
-    this.indentLevel++;
-    const bodyLines = this.generateBlock(ifNode.thenBody);
-    if (bodyLines.length > 0) {
-      lines.push(...bodyLines.map(line => this.indent() + line));
-    } else {
-      lines.push(this.indent() + '// Empty');
-    }
-    this.indentLevel--;
-    
-    lines.push('}');
-    
-    return lines;
+    return [
+      `if (${condition})`,
+      ...this.bracedBody(this.generateBlock(ifNode.thenBody)),
+    ];
   }
 
   /**
    * Generate if-else statement
    */
   private generateIfElse(ifElseNode: NWScriptIfElseNode): string[] {
-    const lines: string[] = [];
     const condition = ifElseNode.condition.toNSS();
-    
-    lines.push(`if (${condition})`);
-    lines.push('{');
-    
-    this.indentLevel++;
-    const thenLines = this.generateBlock(ifElseNode.thenBody);
-    if (thenLines.length > 0) {
-      lines.push(...thenLines.map(line => this.indent() + line));
-    } else {
-      lines.push(this.indent() + '// Empty');
-    }
-    this.indentLevel--;
-    
-    lines.push('}');
-    lines.push('else');
-    lines.push('{');
-    
-    this.indentLevel++;
-    const elseLines = this.generateBlock(ifElseNode.elseBody);
-    if (elseLines.length > 0) {
-      lines.push(...elseLines.map(line => this.indent() + line));
-    } else {
-      lines.push(this.indent() + '// Empty');
-    }
-    this.indentLevel--;
-    
-    lines.push('}');
-    
-    return lines;
+    return [
+      `if (${condition})`,
+      ...this.bracedBody(this.generateBlock(ifElseNode.thenBody)),
+      'else',
+      ...this.bracedBody(this.generateBlock(ifElseNode.elseBody)),
+    ];
   }
 
   /**
    * Generate while loop
    */
   private generateWhile(whileNode: NWScriptWhileNode): string[] {
-    const lines: string[] = [];
     const condition = whileNode.condition.toNSS();
-    
-    lines.push(`while (${condition})`);
-    lines.push('{');
-    
-    this.indentLevel++;
-    const bodyLines = this.generateBlock(whileNode.body);
-    if (bodyLines.length > 0) {
-      lines.push(...bodyLines.map(line => this.indent() + line));
-    } else {
-      lines.push(this.indent() + '// Empty');
-    }
-    this.indentLevel--;
-    
-    lines.push('}');
-    
-    return lines;
+    return [
+      `while (${condition})`,
+      ...this.bracedBody(this.generateBlock(whileNode.body)),
+    ];
   }
 
   /**
    * Generate do-while loop
    */
   private generateDoWhile(doWhileNode: NWScriptDoWhileNode): string[] {
-    const lines: string[] = [];
     const condition = doWhileNode.condition.toNSS();
-    
-    lines.push('do');
-    lines.push('{');
-    
-    this.indentLevel++;
-    const bodyLines = this.generateBlock(doWhileNode.body);
-    if (bodyLines.length > 0) {
-      lines.push(...bodyLines.map(line => this.indent() + line));
-    } else {
-      lines.push(this.indent() + '// Empty');
-    }
-    this.indentLevel--;
-    
-    lines.push(`} while (${condition});`);
-    
-    return lines;
+    const body = this.bracedBody(this.generateBlock(doWhileNode.body));
+    // Replace closing `}` with `} while (...);`
+    body[body.length - 1] = `} while (${condition});`;
+    return ['do', ...body];
   }
 
   /**
    * Generate for loop
    */
   private generateFor(forNode: NWScriptForNode): string[] {
-    const lines: string[] = [];
-    
     let init = '';
     if (forNode.init) {
       const initLines = this.generateStatement(forNode.init);
@@ -386,9 +340,9 @@ export class NWScriptASTCodeGenerator {
         init = initLines[0].replace(/;$/, '');
       }
     }
-    
+
     const condition = forNode.condition ? forNode.condition.toNSS() : '';
-    
+
     let increment = '';
     if (forNode.increment) {
       const incLines = this.generateStatement(forNode.increment);
@@ -401,22 +355,11 @@ export class NWScriptASTCodeGenerator {
         increment = incLines[0].replace(/;$/, '');
       }
     }
-    
-    lines.push(`for (${init}; ${condition}; ${increment})`);
-    lines.push('{');
-    
-    this.indentLevel++;
-    const bodyLines = this.generateBlock(forNode.body);
-    if (bodyLines.length > 0) {
-      lines.push(...bodyLines.map(line => this.indent() + line));
-    } else {
-      lines.push(this.indent() + '// Empty');
-    }
-    this.indentLevel--;
-    
-    lines.push('}');
-    
-    return lines;
+
+    return [
+      `for (${init}; ${condition}; ${increment})`,
+      ...this.bracedBody(this.generateBlock(forNode.body)),
+    ];
   }
 
   private generateSwitch(switchNode: NWScriptSwitchNode): string[] {
@@ -424,26 +367,16 @@ export class NWScriptASTCodeGenerator {
     lines.push(`switch (${switchNode.expression.toNSS()})`);
     lines.push('{');
 
-    this.indentLevel++;
+    const inner: string[] = [];
     for (const c of switchNode.cases) {
-      lines.push(this.indent() + `case ${c.value.toNSS()}:`);
-      this.indentLevel++;
-      const bodyLines = this.generateBlock(c.body);
-      if (bodyLines.length > 0) {
-        lines.push(...bodyLines.map((line) => this.indent() + line));
-      }
-      this.indentLevel--;
+      inner.push(`case ${c.value.toNSS()}:`);
+      inner.push(...this.nest(this.generateBlock(c.body)));
     }
     if (switchNode.defaultCase) {
-      lines.push(this.indent() + 'default:');
-      this.indentLevel++;
-      const defLines = this.generateBlock(switchNode.defaultCase.body);
-      if (defLines.length > 0) {
-        lines.push(...defLines.map((line) => this.indent() + line));
-      }
-      this.indentLevel--;
+      inner.push('default:');
+      inner.push(...this.nest(this.generateBlock(switchNode.defaultCase.body)));
     }
-    this.indentLevel--;
+    lines.push(...this.nest(inner));
 
     lines.push('}');
     return lines;
@@ -480,12 +413,4 @@ export class NWScriptASTCodeGenerator {
         return 'unknown';
     }
   }
-
-  /**
-   * Get current indentation string
-   */
-  private indent(): string {
-    return this.indentString.repeat(this.indentLevel);
-  }
 }
-
