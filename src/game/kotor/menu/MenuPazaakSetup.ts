@@ -191,9 +191,11 @@ export class MenuPazaakSetup extends GameMenu {
 
   open(){
     super.open();
+    // MaxWager<=0 skips wager UI (tutorial / mute-credits games).
     if(GameState.PazaakManager.MaxWager > 0){
       GameState.MenuManager.MenuPazaakWager.open();
     }
+    // ShowTutorial is retained for future UI polish; setup still opens without wager.
     this.knownCards.clear();
     for(let i = 0; i < PazaakCards.MAX_CARDS; i++){
       const card = GameState.PazaakManager.Cards.get(i);

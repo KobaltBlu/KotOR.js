@@ -110,9 +110,9 @@ export class NWScriptExpressionBuilder {
       
       case OP_LOGANDII:
       case OP_LOGORII:
-      case OP_BOOLANDII:
         return this.handleLogical(instruction);
       
+      case OP_BOOLANDII:
       case OP_INCORII:
       case OP_EXCORII:
         return this.handleBitwise(instruction);
@@ -264,11 +264,17 @@ export class NWScriptExpressionBuilder {
    * Handle bitwise operations
    */
   private handleBitwise(instruction: NWScriptInstruction): NWScriptExpression {
+    const operator =
+      instruction.code === OP_INCORII
+        ? "|"
+        : instruction.code === OP_BOOLANDII
+          ? "&"
+          : "^";
+
     if (this.expressionStack.length < 2) {
       const right = this.expressionStack.pop() || NWScriptExpression.constant(0, NWScriptDataType.INTEGER);
       const left = this.expressionStack.pop() || NWScriptExpression.constant(0, NWScriptDataType.INTEGER);
       
-      const operator = instruction.code === OP_INCORII ? '|' : '^';
       const expr = NWScriptExpression.binaryOp(operator, left, right, NWScriptDataType.INTEGER);
       this.expressionStack.push(expr);
       return expr;
@@ -276,7 +282,6 @@ export class NWScriptExpressionBuilder {
 
     const right = this.expressionStack.pop()!;
     const left = this.expressionStack.pop()!;
-    const operator = instruction.code === OP_INCORII ? '|' : '^';
     
     const expr = NWScriptExpression.binaryOp(operator, left, right, NWScriptDataType.INTEGER);
     this.expressionStack.push(expr);
@@ -451,6 +456,11 @@ export class NWScriptExpressionBuilder {
       // We should resolve this dynamically using the actual stack state, not static offsets
       const offset = instruction.offset || 0;
       const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
+
+      const spParamEarly = this.cptopspParameterOperands.get(offsetSigned);
+      if (spParamEarly) {
+        return NWScriptExpression.variable(spParamEarly.name, spParamEarly.dataType, false);
+      }
       
       // Calculate the actual stack position this instruction reads from
       const sourceStackPos = this.stackPointer + offsetSigned;
@@ -491,22 +501,16 @@ export class NWScriptExpressionBuilder {
         }
         
         if (!foundVar) {
-          const spParam = this.cptopspParameterOperands.get(offsetSigned);
-          if (spParam) {
-            varName = spParam.name;
-            dataType = spParam.dataType;
+          const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
+          if (this.localVariables.has(offsetUnsigned)) {
+            const localVar = this.localVariables.get(offsetUnsigned)!;
+            varName = localVar.name;
+            dataType = localVar.dataType;
+            nwscriptDecompilerDebug(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using static offset mapping (offset=${offsetUnsigned.toString(16)})`);
           } else {
-            const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
-            if (this.localVariables.has(offsetUnsigned)) {
-              const localVar = this.localVariables.get(offsetUnsigned)!;
-              varName = localVar.name;
-              dataType = localVar.dataType;
-              nwscriptDecompilerDebug(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using static offset mapping (offset=${offsetUnsigned.toString(16)})`);
-            } else {
-              varName = this.generateVariableName(false, offset);
-              dataType = NWScriptDataType.INTEGER;
-              nwscriptDecompilerDebug(`[ExpressionBuilder.handleVariableRead] Generated generic name: ${varName}`);
-            }
+            varName = this.generateVariableName(false, offset);
+            dataType = NWScriptDataType.INTEGER;
+            nwscriptDecompilerDebug(`[ExpressionBuilder.handleVariableRead] Generated generic name: ${varName}`);
           }
         } else {
           nwscriptDecompilerDebug(`[ExpressionBuilder.handleVariableRead] Resolved to ${varName} using fallback tolerance search`);
@@ -555,7 +559,6 @@ export class NWScriptExpressionBuilder {
     switch (opCode) {
       case OP_LOGANDII: return '&&';
       case OP_LOGORII: return '||';
-      case OP_BOOLANDII: return '&';
       default: return '?';
     }
   }

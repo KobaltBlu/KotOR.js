@@ -186,6 +186,10 @@ export class ModuleSound extends ModuleObject {
   async loadSound(){
     const priorityGroup = GameState.SWRuleSet.getPriorityGroupById(this.priority);
     const type = !!this.positional ? AudioEmitterType.POSITIONAL : AudioEmitterType.GLOBAL;
+    // Retail LoadFromMessage promote: Continuous && 1 sound && Interval==0 && !RandomPosition → Looping.
+    if(this.continuous && this.soundResRefs.length === 1 && !this.randomPosition && (this.interval | 0) === 0){
+      this.looping = true;
+    }
     if(this.audioEmitter){
       this.audioEmitter.destroy();
     }
@@ -193,6 +197,7 @@ export class ModuleSound extends ModuleObject {
     this.audioEmitter.name = this.tag;
     this.audioEmitter.isActive = this.active;
     this.audioEmitter.isLooping = this.looping;
+    this.audioEmitter.isContinuous = this.continuous;
     this.audioEmitter.isRandom = this.random;
     this.audioEmitter.isRandomPosition = this.randomPosition;
     this.audioEmitter.interval = this.interval;
@@ -289,7 +294,10 @@ export class ModuleSound extends ModuleObject {
   }
 
   start(): ModuleSound {
+    // Retail CSWSSoundObject::Play sets Active = 1 before starting the source.
+    this.active = true;
     if(this.audioEmitter){
+      this.audioEmitter.isActive = true;
       this.audioEmitter.start();
     }
     return this;

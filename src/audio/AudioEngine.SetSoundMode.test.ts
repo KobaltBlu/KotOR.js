@@ -8,15 +8,19 @@ import { SoundMode } from '@/enums/audio/SoundMode';
 
 const channel = () => {
   let busScale = 1;
+  const gainNode = { id: Math.random() };
   return {
     setBusScale: (s: number) => { busScale = s; },
     getBusScale: () => busScale,
+    getGainNode: () => gainNode,
   };
 };
 
 const sfx = channel();
 const music = channel();
 const vo = channel();
+
+const ambientDestinations: { day?: unknown; night?: unknown } = {};
 
 jest.mock('@/GameState', () => ({
   GameState: {
@@ -41,6 +45,9 @@ jest.mock('@/audio/ReverbEngine', () => ({
 jest.mock('@/audio/AmbientAudioEmitter', () => ({
   AmbientAudioEmitter: class {
     dispose() {}
+    setDestination(dest: unknown) {
+      return this;
+    }
   },
 }));
 
@@ -74,6 +81,17 @@ describe('AudioEngine.SetSoundMode', () => {
     sfx.setBusScale(1);
     music.setBusScale(1);
     vo.setBusScale(1);
+    ambientDestinations.day = undefined;
+    ambientDestinations.night = undefined;
+    (AudioEngine as any).engines = [{
+      ambientAudioDayEmitter: {
+        setDestination: (d: unknown) => { ambientDestinations.day = d; },
+      },
+      ambientAudioNightEmitter: {
+        setDestination: (d: unknown) => { ambientDestinations.night = d; },
+      },
+      audioCtx: { destination: { kind: 'ctx' } },
+    }];
     AudioEngine.resetSoundModeState();
   });
 
@@ -89,6 +107,26 @@ describe('AudioEngine.SetSoundMode', () => {
     AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
     expect(sfx.getBusScale()).toBe(0);
     expect(music.getBusScale()).toBe(1);
+  });
+
+  test('mode 2 routes areawide ambients onto music bus (group 4 keep-alive)', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
+    expect(ambientDestinations.day).toBe(music.getGainNode());
+    expect(ambientDestinations.night).toBe(music.getGainNode());
+  });
+
+  test('mode 4 keeps areawide ambients on muted SFX bus', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+    expect(ambientDestinations.day).toBe(sfx.getGainNode());
+    expect(ambientDestinations.night).toBe(sfx.getGainNode());
+  });
+
+  test('pop from mode 2 restores ambients to SFX bus', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
+    AudioEngine.SetSoundMode(SoundMode.POP, 0);
+    expect(ambientDestinations.day).toBe(sfx.getGainNode());
+    expect(ambientDestinations.night).toBe(sfx.getGainNode());
+    expect(sfx.getBusScale()).toBe(1);
   });
 
   test('mode 3 movie/load pauses SFX and music', () => {

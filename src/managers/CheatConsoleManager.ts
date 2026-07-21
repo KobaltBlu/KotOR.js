@@ -167,6 +167,10 @@ export class CheatConsoleManager {
       case 'giverandomloot':
         CheatConsoleManager.giveRandomLoot(parseInt(params[0]));
         break;
+      case 'restartminigame':
+        // Retail ConsoleFunc "restartminigame" → CSWCArea::RestartMiniGame @ 00605e50.
+        void GameState.module?.area?.restartMiniGame?.();
+        break;
     }
   }
 

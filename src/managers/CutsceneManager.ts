@@ -281,10 +281,14 @@ export class CutsceneManager {
     this.currentEntry.repliesShown = false;
     entry.initProperties();
 
-    // Retail HandleDialogEntry: release module-load hold with 1s fade-in
+    // Retail HandleDialogEntry: release module-load hold with StartGlobalFade(1, 0, 1)
     if(GameState.holdWorldFadeInForDialog){
       GameState.holdWorldFadeInForDialog = false;
-      GameState.FadeOverlayManager.FadeIn(1, 0, 0, 0, 0);
+      GameState.FadeOverlayManager.FadeIn(
+        GameState.FadeOverlayManager.HOLD_WORLD_FADE_IN_LENGTH,
+        0, 0, 0,
+        GameState.FadeOverlayManager.HOLD_WORLD_FADE_IN_WAIT
+      );
     }
 
     const isComputerCameraEntry = this.dialog.getConversationType() == DLGConversationType.COMPUTER && entry.cameraAngle == DLGCameraAngle.ANGLE_PLACEABLE_CAMERA;
@@ -545,7 +549,11 @@ export class CutsceneManager {
     // Retail SetGlobalDialogState(0): release any remaining holdWorldFadeInForDialog
     if(GameState.holdWorldFadeInForDialog){
       GameState.holdWorldFadeInForDialog = false;
-      GameState.FadeOverlayManager.FadeIn(1, 0, 0, 0, 0);
+      GameState.FadeOverlayManager.FadeIn(
+        GameState.FadeOverlayManager.HOLD_WORLD_FADE_IN_LENGTH,
+        0, 0, 0,
+        GameState.FadeOverlayManager.HOLD_WORLD_FADE_IN_WAIT
+      );
     }
 
     this.dialog = undefined;

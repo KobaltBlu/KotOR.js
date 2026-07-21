@@ -321,9 +321,12 @@ export class DLGNode {
   }
 
   /**
-   * Apply DLG node fade overlay (retail HandleDialogEntry → letterbox SetFade).
+   * Apply DLG node fade overlay.
+   * Retail HandleDialogEntry → CSWGuiDialogLetterbox::SetFade @ 006a7620
+   * (KotOR.js reuses FadeOverlayManager with the same dir/wait/length/color).
    * Types 1/4 fade out; 2/3 fade in. Length 0 is an instant cut (types 1/2).
-   * Completion for WaitFlags&0x08 uses fade.delay + fade.length in seconds.
+   * WaitFlags&0x08 (WAIT_FADE) completes when the overlay IsFadeDone, with a
+   * delay+length seconds fallback matching IsDialogDelay bit 8.
    */
   processFadeOverlay(){
     if(this.fade.type === 0){
@@ -347,7 +350,9 @@ export class DLGNode {
         break;
       }
     }
-    if(this.elapsed >= (this.fade.delay + this.fade.length) * 1000){
+    // Retail IsFadingInDialog: !letterbox.IsFadeDone
+    if(GameState.FadeOverlayManager.isFadeDone() ||
+       this.elapsed >= (this.fade.delay + this.fade.length) * 1000){
       this.checkList.fadeComplete = true;
     }
   }

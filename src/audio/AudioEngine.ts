@@ -960,8 +960,10 @@ export class AudioEngine {
    * Retail PauseAllSounds — bus-level approx of per-source Pause + GetPauseable.
    * @param pauseMusic When true, zero Music bus (mode 3 / movie). When false, SFX only
    *   (modes 2/4 keep streaming music groups audible).
+   * @param keepAreawideAmbients When true (mode 2), route group-4 day/night ambients
+   *   around the muted SFX bus so they stay audible (GetPauseable @ 006393e0).
    */
-  static PauseAllSounds(pauseMusic: boolean = true){
+  static PauseAllSounds(pauseMusic: boolean = true, keepAreawideAmbients: boolean = false){
     AudioEngine.soundsPausedForMovie = true;
     AudioEngine.pauseSfxBus = true;
     AudioEngine.pauseMusicBus = pauseMusic;
@@ -973,6 +975,22 @@ export class AudioEngine {
       const scale = AudioEngine.muteBusScale > 0 ? AudioEngine.muteBusScale : 1;
       AudioEngine.musicChannel.setBusScale(scale);
     }
+    AudioEngine.applyAreawideAmbientBypass(keepAreawideAmbients);
+  }
+
+  /**
+   * Mode 2 GetPauseable keeps group 4 (LOOPING_AREAWIDE_AMBIENTS) while SFX bus is 0.
+   * Re-route day/night ambient emitters onto the Music bus (still audible) or back to SFX.
+   */
+  static applyAreawideAmbientBypass(keep: boolean){
+    const engine = AudioEngine.engines[0];
+    if(!engine){ return; }
+    const sfxGain = AudioEngine.sfxChannel?.getGainNode?.();
+    const musicGain = AudioEngine.musicChannel?.getGainNode?.();
+    const dest = keep ? (musicGain || engine.audioCtx?.destination) : sfxGain;
+    if(!dest){ return; }
+    engine.ambientAudioDayEmitter?.setDestination?.(dest);
+    engine.ambientAudioNightEmitter?.setDestination?.(dest);
   }
 
   /** @deprecated Prefer PauseAllSounds(true) — kept for movie callers. */
@@ -989,6 +1007,7 @@ export class AudioEngine {
     AudioEngine.soundsPausedForMovie = false;
     AudioEngine.pauseSfxBus = false;
     AudioEngine.pauseMusicBus = false;
+    AudioEngine.applyAreawideAmbientBypass(false);
     AudioEngine.applyMuteBusScale(AudioEngine.muteBusScale);
   }
 
@@ -1063,8 +1082,11 @@ export class AudioEngine {
       AudioEngine.MuteSound();
     }
     if(applyMode === SoundMode.PAUSE || applyMode === SoundMode.PAUSE_LOAD || applyMode === SoundMode.PAUSE_GUI){
+      // Mode 2 (PAUSE): GetPauseable also exempts group 4 areawide ambients.
+      // Mode 4 (PAUSE_GUI): group 4 is paused with SFX.
       AudioEngine.PauseAllSounds(
-        AudioEngine.shouldPauseMusicForMode(applyMode, keepStreamingMusic)
+        AudioEngine.shouldPauseMusicForMode(applyMode, keepStreamingMusic),
+        applyMode === SoundMode.PAUSE
       );
     }
   }

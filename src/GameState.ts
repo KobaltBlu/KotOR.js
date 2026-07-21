@@ -50,6 +50,7 @@ import { SSAARenderPass } from "three/examples/jsm/postprocessing/SSAARenderPass
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass";
 import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
+import { AfterimagePass } from "three/examples/jsm/postprocessing/AfterimagePass";
 import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
 import Stats from 'three/examples/jsm/libs/stats.module'
@@ -210,6 +211,8 @@ export class GameState implements EngineContext {
    */
   static cameraHsMode: number = 0;
   static holdWorldFadeInForDialog = false;
+  /** True while waiting on area-transition pre-fade before LoadModule. */
+  static areaTransitionPending = false;
   static autoRun = false;
   static AlphaTest = 0.5;
   static noClickTimer = 0;
@@ -331,6 +334,10 @@ export class GameState implements EngineContext {
   static renderPassGUI: RenderPass;
   static bloomPass: BloomPass;
   static bokehPass: BokehPass;
+  /** Retail AurEnable/DisableSpeedBlur + AurSetSpeedBlurRatio (SWMG_SetSpeedBlurEffect). */
+  static speedBlurPass: AfterimagePass;
+  static speedBlurEnabled: boolean = false;
+  static speedBlurRatio: number = 0.75;
   
   static module: Module;
   static loadingModule: boolean = false;
@@ -356,6 +363,21 @@ export class GameState implements EngineContext {
 
   static ToggleDebugState(type: EngineDebugType){
     GameState.SetDebugState(type, !this.debug[type]);
+  }
+
+  /**
+   * Retail ExecuteCommandSWMG_SetSpeedBlurEffect @ 005435a0 —
+   * AurSetSpeedBlurRatio (default 0.75) + AurEnable/DisableSpeedBlur.
+   */
+  static SetSpeedBlurEffect(enabled: boolean, ratio: number = 0.75){
+    GameState.speedBlurEnabled = !!enabled;
+    if(typeof ratio === 'number' && Number.isFinite(ratio)){
+      GameState.speedBlurRatio = ratio;
+    }
+    if(GameState.speedBlurPass){
+      GameState.speedBlurPass.uniforms.damp.value = GameState.speedBlurRatio;
+      GameState.speedBlurPass.enabled = GameState.speedBlurEnabled;
+    }
   }
 
   static SetDebugState(type: EngineDebugType, enabled: boolean){
@@ -771,6 +793,9 @@ export class GameState implements EngineContext {
       // height: ResolutionManager.getViewportHeight()
     });
 
+    GameState.speedBlurPass = new AfterimagePass(GameState.speedBlurRatio);
+    GameState.speedBlurPass.enabled = false;
+
     GameState.renderPassAA.sampleLevel = 1;
 
     GameState.renderPass.renderToScreen = false;
@@ -789,6 +814,7 @@ export class GameState implements EngineContext {
     GameState.bokehPass.enabled = false;
 
     GameState.composer.addPass(GameState.renderPass);
+    GameState.composer.addPass(GameState.speedBlurPass);
     // GameState.composer.addPass(GameState.bokehPass);
     // GameState.composer.addPass(GameState.renderPassAA);
     // GameState.composer.addPass(GameState.odysseyShaderPass);
@@ -1042,6 +1068,27 @@ export class GameState implements EngineContext {
   }
 
   /**
+   * Retail door/trigger area transition: StartGlobalFade(0, wait=0, length=0.5)
+   * then load after the fade. Skips the pre-fade if a load is already in progress.
+   */
+  static LoadModuleWithAreaTransitionFade(name = '', waypoint: string = null){
+    if(GameState.loadingModule || GameState.areaTransitionPending){
+      return;
+    }
+    if(!name){
+      return;
+    }
+    GameState.areaTransitionPending = true;
+    const length = GameState.FadeOverlayManager.AREA_TRANSITION_FADE_LENGTH;
+    GameState.FadeOverlayManager.FadeOut(length, 0, 0, 0, 0);
+    const delayMs = Math.max(0, length) * 1000;
+    setTimeout(() => {
+      GameState.areaTransitionPending = false;
+      void GameState.LoadModule(name, waypoint);
+    }, delayMs);
+  }
+
+  /**
    * Load a module
    * @param name 
    * @param waypoint - The waypoint to spawn the player at (if null, the player will spawn at the entry waypoint)
@@ -1071,6 +1118,8 @@ export class GameState implements EngineContext {
       // Destination ARE not loaded yet — fall back to load_<module> / loadscreens row / custom
       const loadBg = consumeAreaTransitionLoadBackground(name, 0);
       await GameState.MenuManager.LoadScreen.setLoadBackground(loadBg);
+      // Clear any leftover K2 hold so the load cover FadeOut is not blocked.
+      GameState.FadeOverlayManager.holdForScript = false;
       GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
       /**
        * Set the game mode to loading
@@ -1079,6 +1128,8 @@ export class GameState implements EngineContext {
       GameState.MenuManager.ClearMenus();
 
       GameState.UnloadModule();
+      // Re-assert black cover after unload (UnloadModule clears fade state).
+      GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
 
       GameState.MenuManager.LoadScreen.setProgress(0);
       GameState.MenuManager.LoadScreen.showRandomHint();
@@ -1165,6 +1216,10 @@ export class GameState implements EngineContext {
         GameState.MenuManager.LoadScreen.close();
         // Retail MainLoop after StartSounds: SetSoundMode(0) again (clears BusyWait mute under load).
         AudioEngine.clearSoundModeStack();
+        // Retail also defers when dialog already active (field45_0xb4) and forces holdWorld.
+        if(GameState.Mode == EngineMode.DIALOG || GameState.CutsceneManager?.active){
+          GameState.holdWorldFadeInForDialog = true;
+        }
         if(!GameState.holdWorldFadeInForDialog){
           GameState.FadeOverlayManager.FadeIn(
             GameState.FadeOverlayManager.WORLD_FADE_IN_LENGTH,
@@ -1259,6 +1314,8 @@ export class GameState implements EngineContext {
     GameState.renderer.setClearColor(new THREE.Color(0, 0, 0));
     GameState.AlphaTest = 0;
     GameState.holdWorldFadeInForDialog = false;
+    GameState.areaTransitionPending = false;
+    GameState.FadeOverlayManager.Reset();
     const audioEngine = AudioEngine.GetAudioEngine();
     audioEngine.reset();
 

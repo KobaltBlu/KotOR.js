@@ -45,6 +45,12 @@ export class AudioEmitter {
   sounds: string[] = [];
   isActive: boolean = true;
   isLooping: boolean = false;
+  /**
+   * Retail UTS Continuous (+0x154 client). When false, sequence stops after last sound
+   * and deactivates (GetNextSound @ 0055be40 → SetIsActive(0)). Default true matches
+   * prior wrap behavior for non-UTS emitters.
+   */
+  isContinuous: boolean = true;
   isRandom: boolean = false;
   isRandomPosition: boolean = false;
   randomX: number = 0;
@@ -735,14 +741,29 @@ export class AudioEmitter {
     return ( Math.random() * (value * 2) ) - value;
   }
 
-  getNextSoundIndex(): number {
+  /**
+   * Advance playlist index after a oneshot ends.
+   * @returns false when Continuous=0 and the list is exhausted (retail empty resref).
+   */
+  advanceToNextSound(): boolean {
+    if(!this.sounds.length){ return false; }
     if(this.isRandom){
-      return Math.floor(Math.random() * this.sounds.length);
-    }else{
-      this.soundIndex++;
-      if(this.soundIndex >= this.sounds.length)
-        this.soundIndex = 0;
+      this.soundIndex = Math.floor(Math.random() * this.sounds.length);
+      return true;
     }
+    this.soundIndex++;
+    if(this.soundIndex >= this.sounds.length){
+      if(!this.isContinuous){
+        this.soundIndex = Math.max(0, this.sounds.length - 1);
+        return false;
+      }
+      this.soundIndex = 0;
+    }
+    return true;
+  }
+
+  getNextSoundIndex(): number {
+    this.advanceToNextSound();
     return this.soundIndex;
   }
 
@@ -843,7 +864,14 @@ export class AudioEmitter {
       if(!!this.currentSound?.loop || !this.isActive || this.isDestroyed){
         return;
       }
-      this.getNextSoundIndex();
+      if(!this.advanceToNextSound()){
+        // Retail Continuous=0 at end of list → SetIsActive(0).
+        this.isActive = false;
+        this.state = AudioEmitterState.STOPPED;
+        this.disposeCurrentSound();
+        this.releaseCurrentVoice();
+        return;
+      }
       this.playNextSound();
     } : undefined;
     this.currentSound.start(this.engine.audioCtx.currentTime + delay);

@@ -17,7 +17,9 @@ export enum NWScriptExpressionType {
   UNARY_OP = 'unary_op',
   FUNCTION_CALL = 'function_call',
   COMPARISON = 'comparison',
-  LOGICAL = 'logical'
+  LOGICAL = 'logical',
+  /** NSS vector literal `[x, y, z]` */
+  VECTOR_LITERAL = 'vector_literal',
 }
 
 export class NWScriptExpression {
@@ -121,9 +123,29 @@ export class NWScriptExpression {
   }
 
   /**
+   * Create an NSS vector literal `[x, y, z]` (components in `arguments`)
+   */
+  static vectorLiteral(
+    x: NWScriptExpression,
+    y: NWScriptExpression,
+    z: NWScriptExpression
+  ): NWScriptExpression {
+    const expr = new NWScriptExpression(NWScriptExpressionType.VECTOR_LITERAL, NWScriptDataType.VECTOR);
+    expr.arguments = [x, y, z];
+    return expr;
+  }
+
+  /**
    * Convert expression to NSS source code
    */
   toNSS(): string {
+    const fallback = (dt: NWScriptDataType): string => {
+      if (dt === NWScriptDataType.FLOAT) return "0.0f";
+      if (dt === NWScriptDataType.STRING) return '""';
+      if (dt === NWScriptDataType.OBJECT) return "OBJECT_INVALID";
+      return "0";
+    };
+
     switch (this.type) {
       case NWScriptExpressionType.CONSTANT:
         if (this.dataType === NWScriptDataType.STRING) {
@@ -139,21 +161,30 @@ export class NWScriptExpression {
           return base.endsWith("f") ? base : `${base}f`;
         } else if (this.dataType === NWScriptDataType.INTEGER) {
           return this.value.toString();
-        } else if (this.dataType === NWScriptDataType.OBJECT && this.value === 0) {
-          return 'OBJECT_INVALID';
+        } else if (this.dataType === NWScriptDataType.OBJECT) {
+          // Project compiler: OBJECT_SELF=0, OBJECT_INVALID=1 (see NWScriptASTBuilder).
+          // Retail engine also uses 0x7f000000 for OBJECT_INVALID.
+          if (this.value === 0) return "OBJECT_SELF";
+          if (this.value === 1 || this.value === 0x7f000000) return "OBJECT_INVALID";
+          return String(this.value);
         }
         return String(this.value);
 
       case NWScriptExpressionType.VARIABLE:
         return this.variableName;
 
+      case NWScriptExpressionType.VECTOR_LITERAL: {
+        const comps = this.arguments.map((a) => a?.toNSS() ?? "0.0f");
+        return `[${comps.join(", ")}]`;
+      }
+
       case NWScriptExpressionType.BINARY_OP:
-        const leftStr = this.left?.toNSS() || '?';
-        const rightStr = this.right?.toNSS() || '?';
+        const leftStr = this.left?.toNSS() ?? fallback(this.dataType);
+        const rightStr = this.right?.toNSS() ?? fallback(this.dataType);
         return `(${leftStr} ${this.operator} ${rightStr})`;
 
       case NWScriptExpressionType.UNARY_OP:
-        const operandStr = this.left?.toNSS() || '?';
+        const operandStr = this.left?.toNSS() ?? fallback(this.dataType);
         return `${this.operator}${operandStr}`;
 
       case NWScriptExpressionType.FUNCTION_CALL:
@@ -161,17 +192,17 @@ export class NWScriptExpression {
         return `${this.functionName}(${argsStr})`;
 
       case NWScriptExpressionType.COMPARISON:
-        const compLeft = this.left?.toNSS() || '?';
-        const compRight = this.right?.toNSS() || '?';
+        const compLeft = this.left?.toNSS() ?? "0";
+        const compRight = this.right?.toNSS() ?? "0";
         return `(${compLeft} ${this.operator} ${compRight})`;
 
       case NWScriptExpressionType.LOGICAL:
-        const logLeft = this.left?.toNSS() || '?';
-        const logRight = this.right?.toNSS() || '?';
+        const logLeft = this.left?.toNSS() ?? "0";
+        const logRight = this.right?.toNSS() ?? "0";
         return `(${logLeft} ${this.operator} ${logRight})`;
 
       default:
-        return '?';
+        return fallback(this.dataType);
     }
   }
 

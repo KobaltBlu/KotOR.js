@@ -388,6 +388,15 @@ export class ModuleArea extends ModuleObject {
     this.areaMap.dispose();
     this.corpseCache.clear();
 
+    if(this.miniGame){
+      this.miniGame.dispose();
+      // Dedicated MG stream stopped — resume area BGM if buffers are loaded.
+      const audio = AudioEngine.GetAudioEngine();
+      if(audio.areaMusicLoaded || audio.areaMusicNightLoaded){
+        this.musicBackgroundPlay();
+      }
+    }
+
     //clear area room objects
     while (this.rooms.length){
       this.rooms[0].destroy();
@@ -1513,6 +1522,7 @@ export class ModuleArea extends ModuleObject {
     const creatures = this.git.getFieldByLabel('Creature List');
     const doors = this.git.getFieldByLabel('Door List');
     const encounters = this.git.getFieldByLabel('Encounter List');
+    const groundItems = this.git.getFieldByLabel('List');
     const placeables = this.git.getFieldByLabel('Placeable List');
     const sounds = this.git.getFieldByLabel('SoundList');
     const stores = this.git.getFieldByLabel('StoreList');
@@ -1536,6 +1546,26 @@ export class ModuleArea extends ModuleObject {
     this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
     AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
 
+    const areaPropsStruct = areaProps.getChildStructs()[0];
+    if(areaPropsStruct.hasField('StealthXPCurrent')){
+      this.stealthXP = areaPropsStruct.getFieldByLabel('StealthXPCurrent').getValue() | 0;
+    }
+    if(areaPropsStruct.hasField('StealthXPLoss')){
+      this.stealthXPLoss = areaPropsStruct.getFieldByLabel('StealthXPLoss').getValue() | 0;
+    }
+    if(areaPropsStruct.hasField('StealthXPMax')){
+      this.stealthXPMax = areaPropsStruct.getFieldByLabel('StealthXPMax').getValue() | 0;
+    }
+    if(areaPropsStruct.hasField('RestrictMode')){
+      this.restrictMode = areaPropsStruct.getFieldByLabel('RestrictMode').getValue() | 0;
+    }
+    if(areaPropsStruct.hasField('Unescapable')){
+      this.unescapable = !!areaPropsStruct.getFieldByLabel('Unescapable').getValue();
+    }
+    if(areaPropsStruct.hasField('SunFogColor')){
+      this.sun.fogColor = areaPropsStruct.getFieldByLabel('SunFogColor').getValue();
+    }
+
     //Cameras
     if(cameras){
       for(let i = 0; i < cameras.childStructs.length; i++){
@@ -1558,6 +1588,14 @@ export class ModuleArea extends ModuleObject {
       for(let i = 0; i < creatures.childStructs.length; i++){
         const strt = creatures.childStructs[i];
         this.attachObject( new ModuleCreature(GFFObject.FromStruct(strt)) );
+      }
+    }
+
+    //Ground items (GIT List)
+    if(groundItems){
+      for(let i = 0; i < groundItems.childStructs.length; i++){
+        const strt = groundItems.childStructs[i];
+        this.attachObject( new ModuleItem(GFFObject.FromStruct(strt)) );
       }
     }
 
@@ -1748,13 +1786,63 @@ export class ModuleArea extends ModuleObject {
         }
   
         for(let i = 0; i < this.layout.obstacles.length; i++){
-          this.miniGame.obstacles.push(new ModuleMGObstacle(undefined, this.layout.obstacles[i]));
+          const layoutObs = this.layout.obstacles[i];
+          const name = ModuleMiniGame.normalizeMgoName(layoutObs?.name);
+          // Retail: LYT places by Name/pos; ARE Name → GetMiniGameObjectByName → Load(Scripts).
+          const template = name ? this.miniGame.getMiniGameObjectByName(name) : undefined;
+          const obstacle = new ModuleMGObstacle(template, layoutObs);
+          if(template){
+            // Retail CSWMGObstacle::Load @ 0066d0b0 — Scripts then OnCreate (OnCreate in initMiniGameObjects).
+            obstacle.loadScripts();
+          }
+          this.miniGame.obstacles.push(obstacle);
         }
       }
     }catch(e){
       console.error(e);
       this.layout = new LYTObject();
     }
+  }
+
+  /**
+   * Retail CSWCArea::RestartMiniGame @ 00605e50 (cheat `restartminigame`) —
+   * new MiniGame, re-add tracks/obstacles from layout, Load, destroy old, Go.
+   */
+  async restartMiniGame(): Promise<ModuleMiniGame | undefined> {
+    if(!this.are?.RootNode?.hasField?.('MiniGame')){ return undefined; }
+    if(!this.layout){ return undefined; }
+
+    const old = this.miniGame;
+    const next = new ModuleMiniGame(
+      this.are.getFieldByLabel('MiniGame').getChildStructs()[0]
+    );
+
+    for(let i = 0; i < this.layout.tracks.length; i++){
+      next.tracks.push(new ModuleMGTrack(this.layout.tracks[i]));
+    }
+    for(let i = 0; i < this.layout.obstacles.length; i++){
+      const layoutObs = this.layout.obstacles[i];
+      const name = ModuleMiniGame.normalizeMgoName(layoutObs?.name);
+      const template = name ? next.getMiniGameObjectByName(name) : undefined;
+      const obstacle = new ModuleMGObstacle(template, layoutObs);
+      if(template){
+        obstacle.loadScripts();
+      }
+      next.obstacles.push(obstacle);
+    }
+
+    try{
+      await next.load();
+    }catch(e){
+      console.error('ModuleArea.restartMiniGame: Load failed', e);
+      next.dispose();
+      return undefined;
+    }
+
+    old?.dispose();
+    this.miniGame = next;
+    next.initMiniGameObjects();
+    return next;
   }
 
   cleanupUninitializedObjects(){
@@ -2134,6 +2222,7 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++){
       await GameState.PartyManager.LoadPartyMember(i);
     }
+    GameState.PartyManager.ApplyControlledNPC();
   }
 
   /**
@@ -2693,10 +2782,10 @@ export class ModuleArea extends ModuleObject {
     struct.addField( new GFFField(GFFDataType.INT, 'MusicNight') ).setValue(this.audio.music.night);
 
     struct.addField( new GFFField(GFFDataType.BYTE, 'RestrictMode') ).setValue(this.restrictMode ? 1 : 0);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPCurrent') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.BYTE, 'StealthXPLoss') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPMax') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.DWORD, 'SunFogColor') ).setValue(0);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPCurrent') ).setValue(this.stealthXP | 0);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'StealthXPLoss') ).setValue(this.stealthXPLoss | 0);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPMax') ).setValue(this.stealthXPMax | 0);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'SunFogColor') ).setValue(this.sun?.fogColor | 0);
     
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(0);
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(0);
@@ -2753,8 +2842,13 @@ export class ModuleArea extends ModuleObject {
       encounterList.addChildStruct( this.encounters[i].save().RootNode );
     }
 
-    //Area Items List
+    //Area Items List (ground drops)
     const list = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'List') );
+    for(let i = 0; i < this.items.length; i++){
+      const item = this.items[i];
+      if(!item) continue;
+      list.addChildStruct( item.save() );
+    }
 
     const placeableList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Placeable List') );
     for(let i = 0; i < this.placeables.length; i++){

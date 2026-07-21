@@ -1,11 +1,16 @@
-import { ModuleObject } from "@/module/ModuleObject";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ILayoutObstacle } from "@/interface/resource/ILayoutObstacle";
-import { NWScript } from "@/nwscript/NWScript";
-import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFObject } from "@/resource/GFFObject";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { GameState } from "@/GameState";
+import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
+import { ModuleObject } from "@/module/ModuleObject";
+import type { ModuleMGPlayer } from "@/module/ModuleMGPlayer";
+import { OdysseyModel3D } from "@/three/odyssey";
+import { OdysseyModel, OdysseyModelAnimationManager } from "@/odyssey";
+import { MDLLoader } from "@/loaders";
+import type { OdysseyObject3D } from "@/three/odyssey";
+import * as THREE from "three";
 
 /**
 * ModuleMGObstacle class.
@@ -25,13 +30,31 @@ export class ModuleMGObstacle extends ModuleObject {
   max_hps: number = 0;
   invince_period: number;
   layout: ILayoutObstacle;
+  /** One-shot latch after DoObstacleHitCheck (accel pads, etc.). */
+  hit: boolean = false;
+  /** Retail last_follower_hit_index — player who last bumped this obstacle. */
+  lastFollowerHit: ModuleMGPlayer | undefined;
+  lastHPChange: number = 0;
+  models: OdysseyModel3D[] = [];
+  animationManagers: OdysseyModelAnimationManager[] = [];
 
   constructor(template: GFFObject, layout: ILayoutObstacle){
     super(template);
     this.objectType |= ModuleObjectType.ModuleMGObstacle;
     this.name = '';
     this.invince = 0;
+    this.hit_points = 0;
     this.layout = layout;
+    if(template){
+      this.initProperties();
+    }else if(layout?.name){
+      this.name = String(layout.name).toLowerCase();
+      if(layout.position){
+        this.position.copy(layout.position);
+      }
+    }
+    // Retail CSWMGObstacle ctor → CSWMiniGameObject @ 0066c540 registers in MGO array.
+    MiniGameObjectArray.register(this);
   }
 
   setTemplate(template: GFFObject){
@@ -44,6 +67,13 @@ export class ModuleMGObstacle extends ModuleObject {
     this.invince -= delta;
     if(this.invince < 0) this.invince = 0;
 
+    for(let i = 0; i < this.animationManagers.length; i++){
+      this.animationManagers[i]?.update?.(delta);
+    }
+    for(let i = 0; i < this.models.length; i++){
+      this.models[i]?.update?.(delta);
+    }
+
   }
 
   updatePaused(delta: number = 0){
@@ -54,12 +84,110 @@ export class ModuleMGObstacle extends ModuleObject {
 
   }
 
+  /**
+   * Obstacles are not TrackFollowers; Adjust still queues delta for script/default apply.
+   * SetFollowerHitPoints → nAbsolute (only if nHP > 0, retail SetHitPoints).
+   */
   adjustHitPoints(nHP = 0, nAbsolute = 0){
-    this.hit_points += nHP;
+    if(nAbsolute){
+      if(nHP > 0){
+        this.hit_points = nHP;
+      }
+      return;
+    }
+    this.lastHPChange = nHP;
+    this.applyQueuedHitPoints();
+  }
+
+  applyQueuedHitPoints(){
+    this.hit_points += this.lastHPChange;
+    if(this.max_hps > 0 && this.hit_points > this.max_hps){
+      this.hit_points = this.max_hps;
+    }
   }
 
   startInvulnerability(){
     this.invince = this.invince_period || 0;
+  }
+
+  /**
+   * Named collision part on loaded Gob (`hitbullet` / `hitbump`).
+   * Retail GetPart on obstacle aurora object.
+   */
+  getHitPart(partName: string): OdysseyObject3D | THREE.Object3D | undefined {
+    const key = partName.toLowerCase();
+    for(let i = 0; i < this.models.length; i++){
+      const model = this.models[i];
+      if(!model){ continue; }
+      const node = model.nodes?.get?.(key) || model.getObjectByName?.(partName);
+      if(node){ return node; }
+    }
+    return undefined;
+  }
+
+  /**
+   * Retail AddObstacle @ 00672250 — NewCAurObject(LYT name), SetPosition, PlayAnimation("ready").
+   */
+  async loadModel(): Promise<void> {
+    const resref = (this.name || this.layout?.name || '')
+      .replace(/\0[\s\S]*$/g, '')
+      .toLowerCase()
+      .trim();
+    if(!resref){ return; }
+
+    try{
+      const mdl: OdysseyModel = await MDLLoader.loader.load(resref);
+      const model = await OdysseyModel3D.FromMDL(mdl, {
+        context: this.context,
+        castShadow: true,
+        receiveShadow: true,
+      });
+      model.name = resref;
+      if(this.layout?.position){
+        model.position.copy(this.layout.position);
+        this.position.copy(this.layout.position);
+      }
+      this.models.push(model);
+      this.container.add(model);
+      GameState.scene?.add?.(this.container);
+
+      const ready = model.odysseyAnimationMap?.get?.('ready');
+      if(ready){
+        model.playAnimation(ready, false);
+      }
+    }catch(e){
+      console.warn(`ModuleMGObstacle.loadModel: failed to load [${resref}]`, e);
+    }
+  }
+
+  /**
+   * Retail SWMG_PlayAnimation / TrackFollower::PlayAnimation @ 0066d550 —
+   * loop/queue/overlay flags match player path.
+   */
+  playAnimation(name = '', bLooping = 0, bQueue = 0, bOverlay = 0){
+    for(let i = 0; i < this.models.length; i++){
+      const model = this.models[i];
+      if(!model){ continue; }
+      const anim = model.odysseyAnimationMap?.get?.(name.toLowerCase().trim());
+      if(!anim){ continue; }
+
+      const existingIndex = this.animationManagers.findIndex(
+        (am) => am?.currentAnimation?.name == name
+      );
+      if(existingIndex >= 0){
+        this.animationManagers.splice(existingIndex, 1);
+      }
+
+      if(bOverlay){
+        const animManager = new OdysseyModelAnimationManager(model);
+        const state = animManager.createAnimationState();
+        state.loop = !!bLooping;
+        animManager.setCurrentAnimation(anim, state);
+        this.animationManagers.push(animManager);
+      }else{
+        model.playAnimation(anim, !!bLooping);
+      }
+    }
   }
 
   onAnimEvent(){
@@ -80,9 +208,17 @@ export class ModuleMGObstacle extends ModuleObject {
     onHitBullet.run(this, 0);
   }
 
-  onHitFollower(){
+  /**
+   * Retail CSWMiniGameObject::OnHitFollower @ 0066c2d0 —
+   * run OnHitFollower script (accelpad.nss etc). `follower` is the player bumper.
+   */
+  onHitFollower(follower?: ModuleMGPlayer){
     const onHitFollower = this.scripts[ModuleObjectScript.MGObstacleOnHitFollower];
     if(!onHitFollower){ return; }
+    if(follower){
+      this.lastFollowerHit = follower;
+      onHitFollower.mgFollower = follower;
+    }
     onHitFollower.run(this, 0);
   }
 
@@ -95,25 +231,53 @@ export class ModuleMGObstacle extends ModuleObject {
       ModuleObjectScript.MGObstacleOnHitFollower,
     ];
 
+    const scriptsNode = this.template?.getFieldByLabel?.('Scripts')?.getFieldStruct?.();
+    if(!scriptsNode){ return; }
+
     for(const scriptKey of scriptKeys){
-      if(!scriptKey){ continue; }
-      const nwscript = GameState.NWScript.Load(scriptKey);
-      if(!nwscript){ 
-        console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}] for object ${this.name}`);
-        continue; 
+      if(!scriptsNode.hasField(scriptKey)){ continue; }
+      const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
+      if(!resRef){ continue; }
+      const nwscript = GameState.NWScript.Load(resRef);
+      if(!nwscript){
+        console.warn(`ModuleMGObstacle.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
+        continue;
       }
       nwscript.caller = this;
       this.scripts[scriptKey] = nwscript;
     }
-
   }
 
   initProperties(){
-    if(this.template.RootNode.hasField('Name'))
+    if(this.template?.RootNode?.hasField?.('Name'))
       this.name = this.template.getFieldByLabel('Name').getValue().toLowerCase();
+    else if(this.layout?.name)
+      this.name = String(this.layout.name).toLowerCase();
+
+    if(this.template?.RootNode?.hasField?.('Hit_Points'))
+      this.hit_points = this.template.getFieldByLabel('Hit_Points').getValue();
+    if(this.template?.RootNode?.hasField?.('Max_Hit_Points'))
+      this.max_hps = this.template.getFieldByLabel('Max_Hit_Points').getValue();
+    if(this.template?.RootNode?.hasField?.('Invince_Period'))
+      this.invince_period = this.template.getFieldByLabel('Invince_Period').getValue();
+
+    if(this.layout?.position){
+      this.position.copy(this.layout.position);
+    }
 
     this.initialized = true;
   }
 
+  /** Tear down for DestroyMiniGameObject / area dispose. */
+  dispose(){
+    MiniGameObjectArray.unregister(this);
+    for(let i = 0; i < this.models.length; i++){
+      const model = this.models[i];
+      model?.parent?.remove(model);
+      model?.dispose?.();
+    }
+    this.models.length = 0;
+    this.container?.removeFromParent?.();
+  }
 
 }

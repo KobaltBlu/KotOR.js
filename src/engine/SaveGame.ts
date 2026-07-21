@@ -16,6 +16,8 @@ import { ResourceTypes } from "@/KotOR";
 import { exists } from "fs";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { SoundMode } from "@/enums/audio/SoundMode";
+import { SaveLoadAudit } from "@/engine/SaveLoadAudit";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
 
@@ -351,12 +353,29 @@ export class SaveGame {
     await this.initGameInProgressFolder();
     //Load GlobalVars
     await this.loadGlobalVARS();
+    SaveLoadAudit.logLoadStage('GLOBALVARS', {
+      bools: GameState.GlobalVariableManager?.Globals?.Boolean?.size || 0,
+      nums: GameState.GlobalVariableManager?.Globals?.Number?.size || 0,
+      strs: GameState.GlobalVariableManager?.Globals?.String?.size || 0,
+      locs: GameState.GlobalVariableManager?.Globals?.Location?.size || 0,
+    });
     //Load Inventory
     // await this.loadInventory();
     //Load PartyTable
     await this.loadPartyTable();
+    SaveLoadAudit.logLoadStage('PARTYTABLE', {
+      party: GameState.PartyManager?.CurrentMembers?.length || 0,
+      gold: GameState.PartyManager?.Gold || 0,
+      influence: GameState.PartyManager?.InfluenceMap?.size || 0,
+      xpPool: GameState.PartyManager?.XPPool || 0,
+      journal: GameState.JournalManager?.Entries?.length || 0,
+    });
     //Load PIFO if it exists
     await this.loadPIFO();
+    SaveLoadAudit.logLoadStage('pifo', {
+      hasPifo: !!this.pifo,
+      hasPCTemplate: !!GameState.PartyManager?.PlayerTemplate,
+    });
     //Load pc if it exists
     await this.loadPC();
     //Load The Last Module
@@ -481,11 +500,10 @@ export class SaveGame {
 
     let boolBytes = this.globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
     let catBooleans = this.globalVars.getFieldByLabel('CatBoolean').getChildStructs();
-    let maxBits = boolBytes.length * 8;
-    for(let i = 0; i < maxBits; i++){
+    for(let i = 0; i < boolBytes.length; i++){
       for(let j = 0; j < 8; j++){
         let index = (i * 8) + j;
-        let bit = (boolBytes[i] >> 7-j) & 1; //reverse the bit index because of ENDIANS -_-
+        let bit = (boolBytes[i] >> (7 - j)) & 1; // retail MSB-first
 
         let boolCat = catBooleans[index];
         if(boolCat){
@@ -577,6 +595,9 @@ export class SaveGame {
       for(let i = 0; i < invArr.length; i++){
         GameState.InventoryManager.addItem(GFFObject.FromStruct(invArr[i]));
       }
+      SaveLoadAudit.logLoadStage('inventory', {
+        items: GameState.InventoryManager?.inventory?.length || 0,
+      });
     }catch(e){
       console.error(e);
     }
@@ -799,73 +820,87 @@ export class SaveGame {
   }
 
   /**
-   * Saves the current game state to this save game.
-   * 
-   * This method exports the current game state including save metadata,
-   * party data, and global variables to the save game directory. It does
-   * not create a new save game, but updates an existing one.
-   * 
-   * @async
-   * @returns {Promise<void>} Resolves when the save operation is complete.
-   * 
-   * @throws {Error} Throws an error if the save operation fails.
-   * 
-   * @example
-   * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * await saveGame.Save();
-   * // Current game state has been saved
+   * Saves the current game state to this save game folder (full pack).
    */
   async Save(){
-    //TODO
     if(!GameState.module){ return; }
     try{
-      //Go ahead and run mkdir. It will silently fail if it already exists
       await GameFileSystem.mkdir(this.directory, { recursive: false });
-        
-      await SaveGame.ExportSaveNFO(this.directory, this.SAVEGAMENAME);
-      await GameState.PartyManager.Export( this.directory );
-      await SaveGame.ExportGlobalVars( this.directory );
+      await SaveGame.writeSaveFolder(this.directory, this.folderName, this.SAVEGAMENAME || '', this.getSaveNumber(), false);
     }catch(e){
       console.error(e);
     }
   }
 
   /**
-   * Creates a new save game with the current game state.
-   * 
-   * This static method creates a complete new save game including:
-   * 1. Creating the save directory structure
-   * 2. Saving the current module state
-   * 3. Exporting game resources to the save folder
-   * 4. Creating save metadata (savenfo.res)
-   * 5. Exporting global variables
-   * 6. Exporting party data
-   * 7. Capturing and saving a screenshot thumbnail
-   * 
-   * @static
-   * @async
-   * @param {string} [name=''] - The custom name for the save game.
-   * @param {number} [replace_id=0] - The ID to use for the save game. If 0 or 1, uses the next available ID.
-   * @returns {Promise<void>} Resolves when the save operation is complete.
-   * 
-   * @throws {Error} Throws an error if the save operation fails.
-   * 
-   * @example
-   * // Create a new save game
-   * await SaveGame.SaveCurrentGame('My Adventure');
-   * 
-   * // Create an autosave
-   * await SaveGame.SaveCurrentGame('', 1);
+   * Shared writer used by named saves, overwrite, autosave, and quicksave.
+   * Packs module ERF, sidecars (NFO/globals/party/pifo), and screenshot.
    */
-  static async SaveCurrentGame( name = '', replace_id = 0 ){
+  static async writeSaveFolder(
+    save_dir: string,
+    save_dir_name: string,
+    name: string,
+    save_id: number,
+    showUI = true
+  ){
     if(!GameState.module){ return; }
 
-    GameState.MenuManager.LoadScreen.open();
-    GameState.MenuManager.LoadScreen.showSavingMessage();
+    if(showUI){
+      GameState.MenuManager.LoadScreen.open();
+      GameState.MenuManager.LoadScreen.showSavingMessage();
+      GameState.MenuManager.LoadScreen.setProgress(25);
+    }
 
-    let save_id = replace_id >= 2 ? replace_id : SaveGame.NEXT_SAVE_ID++;
+    await GameState.module.save(true);
+    if(showUI) GameState.MenuManager.LoadScreen.setProgress(50);
 
-    //Prepare SaveGame directory
+    await CurrentGame.ExportToSaveFolder( save_dir );
+    if(showUI) GameState.MenuManager.LoadScreen.setProgress(75);
+
+    await SaveGame.ExportSaveNFO(save_dir, name, save_id, save_id === 1);
+    await SaveGame.ExportGlobalVars( save_dir );
+    await GameState.PartyManager.Export( save_dir );
+    await SaveGame.ExportPIFO( save_dir );
+
+    try{
+      const tga = await GameState.GetScreenShot();
+      await tga.export( path.join( save_dir, 'Screen.tga'));
+    }catch(e){
+      console.warn('SaveGame.writeSaveFolder: screenshot failed', e);
+    }
+
+    SaveLoadAudit.logExportSnapshot(save_dir);
+
+    const newEntry = new SaveGame(save_dir_name);
+    const existingIndex = SaveGame.saves.findIndex(s => s.getSaveNumber() === save_id);
+
+    if (existingIndex >= 0) {
+      SaveGame.saves[existingIndex] = newEntry;
+    } else {
+      SaveGame.AddSaveGame(newEntry);
+    }
+    await newEntry.loadNFO();
+
+    if(showUI){
+      GameState.MenuManager.LoadScreen.setProgress(100);
+      GameState.MenuManager.LoadScreen.close();
+    }
+  }
+
+  /**
+   * Creates a new named save game with the current game state.
+   *
+   * @param name - Custom display name for the save
+   * @param replace_id - Slot id to overwrite; if < 2, allocates next manual slot (>= 2)
+   */
+  static async SaveCurrentGame( name = '', replace_id = -1 ){
+    if(!GameState.module){ return; }
+
+    let save_id = replace_id >= 2 ? replace_id : Math.max(SaveGame.NEXT_SAVE_ID, 2);
+    if(replace_id < 2){
+      SaveGame.NEXT_SAVE_ID = save_id + 1;
+    }
+
     if(!(await GameFileSystem.exists(SaveGame.base_directory))){
       await GameFileSystem.mkdir(SaveGame.base_directory);
     }
@@ -877,35 +912,54 @@ export class SaveGame {
       await GameFileSystem.mkdir(save_dir);
     }
 
-    GameState.MenuManager.LoadScreen.setProgress(25);
+    await SaveGame.writeSaveFolder(save_dir, save_dir_name, name, save_id, true);
+  }
 
-    await GameState.module.save();
-    GameState.MenuManager.LoadScreen.setProgress(50);
+  /**
+   * Retail-style autosave into `000001 - AUTOSAVE`.
+   */
+  static async AutoSave(){
+    if(!GameState.module){ return; }
+    if(!(await GameFileSystem.exists(SaveGame.base_directory))){
+      await GameFileSystem.mkdir(SaveGame.base_directory);
+    }
+    const save_dir_name = '000001 - AUTOSAVE';
+    const save_dir = path.join(SaveGame.base_directory, save_dir_name);
+    if(!(await GameFileSystem.exists(save_dir))){
+      await GameFileSystem.mkdir(save_dir);
+    }
+    await SaveGame.writeSaveFolder(save_dir, save_dir_name, '', 1, true);
+  }
 
-    await CurrentGame.ExportToSaveFolder( save_dir );
-    GameState.MenuManager.LoadScreen.setProgress(75);
+  /**
+   * Retail-style quicksave into `000000 - QUICKSAVE`.
+   */
+  static async QuickSave(){
+    if(!GameState.module){ return; }
+    if(!(await GameFileSystem.exists(SaveGame.base_directory))){
+      await GameFileSystem.mkdir(SaveGame.base_directory);
+    }
+    const save_dir_name = '000000 - QUICKSAVE';
+    const save_dir = path.join(SaveGame.base_directory, save_dir_name);
+    if(!(await GameFileSystem.exists(save_dir))){
+      await GameFileSystem.mkdir(save_dir);
+    }
+    await SaveGame.writeSaveFolder(save_dir, save_dir_name, '', 0, true);
+  }
 
-    await SaveGame.ExportSaveNFO(save_dir, name);
-    await SaveGame.ExportGlobalVars( save_dir );
-    await GameState.PartyManager.Export( save_dir );
-
-    //Get Screenshot
-    const tga = await GameState.GetScreenShot();
-    await tga.export( path.join( save_dir, 'Screen.tga'));
-
-    const newEntry = new SaveGame(save_dir_name);
-    const existingIndex = SaveGame.saves.findIndex(s => s.getSaveNumber() === save_id);
-
-    if (existingIndex >= 0) {
-      SaveGame.saves[existingIndex] = newEntry;  // overwrite case
-  } else {
-      SaveGame.AddSaveGame(newEntry);            // new save case
-            }
-    await newEntry.loadNFO();
-    
-    //Save Complete
-    GameState.MenuManager.LoadScreen.setProgress(100);
-    GameState.MenuManager.LoadScreen.close();
+  /**
+   * Exports player template as pifo.ifo (retail copies TEMP:pifo into the save folder).
+   */
+  static async ExportPIFO(directory: string){
+    const pifo = new GFFObject();
+    pifo.FileType = 'IFO ';
+    const playerList = pifo.RootNode.addField(new GFFField(GFFDataType.LIST, 'Mod_PlayerList'));
+    if(GameState.PartyManager.Player){
+      playerList.addChildStruct(GameState.PartyManager.Player.save().RootNode);
+    }else if(GameState.PartyManager.ActualPlayerTemplate?.RootNode){
+      playerList.addChildStruct(GameState.PartyManager.ActualPlayerTemplate.RootNode);
+    }
+    await pifo.export(path.join(directory, 'pifo.ifo'));
   }
 
   /**
@@ -928,7 +982,7 @@ export class SaveGame {
    * await SaveGame.ExportSaveNFO('Saves/000001 - Game1', 'My Adventure');
    * // savenfo.res file created with metadata
    */
-  static async ExportSaveNFO( directory: string, savename: string){
+  static async ExportSaveNFO( directory: string, savename: string, saveNumber = 0, isPCAutoSave = false){
     console.log('ExportSaveNFO', directory, savename);
     const nfo = new GFFObject();
     nfo.FileType = 'NFO ';
@@ -953,6 +1007,25 @@ export class SaveGame {
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).value = savename;
     nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT')).value = 0;
     nfo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'TIMEPLAYED')).value = GameState.time | 0;
+
+    // Retail TSL DoPCAutosave: TIMESTAMP = Windows FILETIME (DWORD64)
+    const fileTime = BigInt(Date.now() - winEpoch) * 10000n;
+    const timestampBuf = new Uint8Array(8);
+    new DataView(timestampBuf.buffer).setBigUint64(0, fileTime, true);
+    nfo.RootNode.addField(new GFFField(GFFDataType.DWORD64, 'TIMESTAMP')).setData(timestampBuf);
+
+    const pc = GameState.PartyManager.Player || GameState.getCurrentPlayer();
+    const pcName = (pc && typeof pc.getName === 'function') ? (pc.getName() || '') : '';
+    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PCNAME')).setValue(pcName);
+
+    // Retail TSL NFO extras (DoPCAutosave / StallEventSaveGame)
+    if(GameState.GameKey == GameEngineType.TSL){
+      nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PCAUTOSAVE')).setValue(isPCAutoSave ? 1 : 0);
+      nfo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'SAVENUMBER')).setValue(saveNumber | 0);
+      for(let i = 0; i < 10; i++){
+        nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT'+i)).setValue(0);
+      }
+    }
 
     await nfo.export(path.join(directory, 'savenfo.res'));
   }
@@ -986,15 +1059,16 @@ export class SaveGame {
 
     //Global Booleans
     const catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
-    const boolBuffer =  new Uint8Array( ( GameState.GlobalVariableManager.Globals.Boolean.size / 8 ) );
+    const boolBuffer =  new Uint8Array( Math.max(1, Math.ceil( GameState.GlobalVariableManager.Globals.Boolean.size / 8 )) );
     let i = 0;
     GameState.GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
       let boolean = globBool;
       let byte_offset = Math.floor( i / 8 );
       let bit_index = (i % 8);
 
+      // Retail MSB-first packing (CSWGlobalVariableTable::WriteTable / SetBit)
       if(boolean.value){
-        boolBuffer[byte_offset] |= 1 << bit_index;
+        boolBuffer[byte_offset] |= 1 << (7 - bit_index);
       }
 
       let boolStruct = new GFFStruct();
@@ -1116,6 +1190,14 @@ export class SaveGame {
    */
   static async OverwriteSave(save: SaveGame): Promise<void> {
     if (!(save instanceof SaveGame)) return;
+    if(save.getIsAutoSave()){
+      await SaveGame.AutoSave();
+      return;
+    }
+    if(save.getIsQuickSave()){
+      await SaveGame.QuickSave();
+      return;
+    }
     const replaceId = save.getSaveNumber();
     const existingName = save.getSaveName();
     await SaveGame.SaveCurrentGame(existingName, replaceId);

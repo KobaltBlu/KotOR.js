@@ -899,7 +899,7 @@ export class ModuleDoor extends ModuleObject {
     if(object != GameState.getCurrentPlayer()) return;
     if(this.getLinkedToModule() && !(GameState.Mode == EngineMode.DIALOG) && this.isOpen()){
       if(object.controlled){
-        GameState.LoadModule(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase());
+        GameState.LoadModuleWithAreaTransitionFade(this.getLinkedToModule().toLowerCase(), this.getLinkedTo().toLowerCase());
       }else{
         object.lastDoorEntered = this;
       }

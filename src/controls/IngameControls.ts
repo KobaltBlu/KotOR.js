@@ -1153,6 +1153,24 @@ export class IngameControls {
       this.updateScreenEdgeCameraTurn();
     }
 
+    // Retail CSWMiniGame::UpdateAxis then UpdateMouse (Accel writes field49; mouse mutates field49.velocity).
+    if(GameState.Mode == EngineMode.MINIGAME && GameState.State == EngineState.RUNNING){
+      const mg = GameState.module?.area?.miniGame;
+      if(mg){
+        const lxRaw = this.gamePad.stick_l_x.value;
+        const lyRaw = this.gamePad.stick_l_y.value;
+        const lx = Math.abs(lxRaw) > 0.15 ? lxRaw : 0;
+        const ly = Math.abs(lyRaw) > 0.15 ? lyRaw : 0;
+        // Always call (incl. zero) so AxisAcceleration damping runs.
+        mg.updateAxis(lx, ly, 0, delta);
+        const dx = Mouse.MouseX - Mouse.OldMouseX;
+        const dy = Mouse.MouseY - Mouse.OldMouseY;
+        if(dx || dy){
+          mg.updateMouse(dx, dy, delta);
+        }
+      }
+    }
+
     // FreeLook: right-stick look (CSWCameraFreeLook tilt/rotate axes)
     if(GameState.Mode == EngineMode.FREELOOK){
       const rx = this.gamePad.stick_r_x.value;

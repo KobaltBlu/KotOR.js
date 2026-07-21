@@ -19,7 +19,8 @@ const KEYWORDS = new Map<string, string>([
   ["struct", "STRUCT"],
   ["action", "ACTION"],
   ["object", "OBJECT"],
-  ["object_id", "OBJECT"],
+  // object_id is a type alias accepted in tryParseDataType (name), not a keyword —
+  // so OBJECT_ID in nwscript.nss stays a name and Vector/Object stay callable.
 
   ["return", "RETURN"],
   ["break", "BREAK"],
@@ -216,7 +217,9 @@ export class NWScriptLexer {
       let s = "";
       while (/[A-Za-z0-9_#]/.test(this.peekChar(0))) s += this.nextChar();
 
-      const kw = KEYWORDS.get(s) ?? KEYWORDS.get(s.toLowerCase());
+      // NWScript keywords are case-sensitive (vector vs engine action Vector).
+      // Matching toLowerCase() incorrectly keywordizes Vector/Object/etc.
+      const kw = KEYWORDS.get(s);
       if (kw) return this.makeToken("keyword", kw, startLine, startCol, this.line, this.col);
 
       return this.makeToken("name", s, startLine, startCol, this.line, this.col);

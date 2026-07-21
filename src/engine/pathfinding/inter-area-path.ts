@@ -595,7 +595,7 @@ export function tryUseInterAreaTransition(
       const entry = (door.getLinkedTo?.() || '').toLowerCase();
       const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
       if(creature === pc || creature.controlled){
-        GameState.LoadModule(linkedModule.toLowerCase(), entry);
+        GameState.LoadModuleWithAreaTransitionFade(linkedModule.toLowerCase(), entry);
       }else{
         creature.lastDoorEntered = door;
         // Nudge into transit so door onEnter can fire for party members
@@ -639,7 +639,7 @@ export function tryUseInterAreaTransition(
       const entry = (trigger.linkedTo || '').toLowerCase();
       const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
       if(creature === pc || creature.controlled){
-        GameState.LoadModule(linkedModule.toLowerCase(), entry);
+        GameState.LoadModuleWithAreaTransitionFade(linkedModule.toLowerCase(), entry);
       }else{
         trigger.onEnter?.(creature);
       }

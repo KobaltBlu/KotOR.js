@@ -13,6 +13,8 @@ import { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { MGTrackFollowerSounds } from "@/module/minigame/MGTrackFollowerSounds";
 import { MGTrackFollowerAudio } from "@/module/minigame/MGTrackFollowerAudio";
+import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
+import { ModuleMGTrack } from "@/module/ModuleMGTrack";
 
 /**
 * ModuleMGEnemy class.
@@ -45,6 +47,8 @@ export class ModuleMGEnemy extends ModuleObject {
   boostVelocity: number;
   invince: number;
   alive: boolean;
+  /** Retail enemy Trigger byte — SWMG_IsTrigger when non-zero. */
+  isTrigger: boolean = false;
   sphere_geom: THREE.Mesh;
   sphere_radius: number;
   hit_points: number;
@@ -58,9 +62,17 @@ export class ModuleMGEnemy extends ModuleObject {
   maximum_speed: any;
   minimum_speed: any;
   num_loops: any;
+  /** Retail CSWTrackFollower field9_0x88 bit0 — Go sets, Stop clears. */
+  running: boolean = false;
+  /** True when track model was created for this follower. */
+  ownsTrack: boolean = false;
+  /** Retail PlayAnimation("track", speed * 0.01). */
+  trackAnimRate: number = 0;
   trackName: any;
 
   collided: boolean = false;
+  /** Last HP delta for SWMG_GetLastHPChange / OnDamage. */
+  lastHPChange: number = 0;
 
   constructor(template: GFFObject){
     super();
@@ -92,18 +104,52 @@ export class ModuleMGEnemy extends ModuleObject {
     this.sphere_geom = new THREE.Mesh( geometry, material );
     this.sphere_geom.visible = false;
 
+    // Retail CSWTrackFollower → CSWMiniGameObject @ 0066c540.
+    MiniGameObjectArray.register(this);
   }
 
-  setTrack(model = new THREE.Object3D()){
+  setTrack(model: THREE.Object3D = new THREE.Object3D(), ownsTrack: boolean = false){
+    if(this.ownsTrack && this.track && this.track !== model){
+      this.track.parent?.remove(this.track);
+      (this.track as OdysseyModel3D).dispose?.();
+    }
+
+    this.ownsTrack = ownsTrack;
     this.track = model;
+    this.running = false;
     this.container.removeFromParent();
 
     try{
-      this.track.getObjectByName('modelhook').add(this.container);
+      const hook = this.track.getObjectByName('modelhook');
+      if(hook){
+        hook.add(this.container);
+      }else{
+        this.track.add(this.container);
+        console.warn('ModuleMGEnemy.setTrack: no modelhook on', this.trackName);
+      }
     }catch(e){
-
+      console.error(e);
     }
+  }
 
+  setFollowerSpeed(speed: number){
+    this.maximum_speed = speed;
+    this.trackAnimRate = Math.max(0, speed) * 0.01;
+    if(this.running && this.track instanceof OdysseyModel3D){
+      this.ensureTrackAnimation();
+    }
+  }
+
+  ensureTrackAnimation(){
+    if(!(this.track instanceof OdysseyModel3D)){ return; }
+    const want =
+      this.track.odysseyAnimationMap?.get?.('track') ||
+      this.track.odysseyAnimations?.[0];
+    if(!want){ return; }
+    const cur = this.track.animationManager?.currentAnimation;
+    if(!cur || cur !== want){
+      this.track.playAnimation(want, true);
+    }
   }
 
   update(delta: number = 0){
@@ -129,16 +175,9 @@ export class ModuleMGEnemy extends ModuleObject {
       let child_model = this.models[i];
       if(child_model instanceof OdysseyModel3D && child_model.bonesInitialized && child_model.visible){
 
-        if(this.hit_points > 0){
+        if(this.alive && this.hit_points > 0){
           if(!child_model.animationManager.currentAnimation || (child_model.animationManager.currentAnimation.name != 'Ready_01' && child_model.animationManager.currentAnimation.name != 'damage')){
             child_model.playAnimation('Ready_01', false);
-          }
-        }else if(!this.alive && !this.died){
-          child_model.playAnimation('die', false);
-          this.died = true;
-        }else{
-          if(!child_model.animationManager.currentAnimation){
-            //child_model.visible = false;
           }
         }
 
@@ -146,34 +185,59 @@ export class ModuleMGEnemy extends ModuleObject {
       }
     }
 
-    if(this.hit_points <= 0 && this.alive){
-      this.alive = false;
-      console.log('MGEnemy death', this);
-      void this.trackFollowerAudio.playDeathSound();
-      const onDeath = this.scripts[ModuleObjectScript.MGEnemyOnDeath];
-      if(onDeath){
-        onDeath.run(this);
+    // Retail TrackFollowerPartDie / donedie — purge model when non-looping die ends.
+    if(!this.alive && this.died){
+      for(let i = this.models.length - 1; i >= 0; i--){
+        const child_model = this.models[i];
+        if(!(child_model instanceof OdysseyModel3D)){
+          this.removeModelAt(i);
+          continue;
+        }
+        const cur = child_model.animationManager?.currentAnimation;
+        if(!cur || cur.name?.toLowerCase?.() !== 'die'){
+          this.removeModelAt(i);
+        }
       }
     }
 
-    this.box.setFromObject(this.models[0]);
+    if(this.hit_points <= 0 && this.alive){
+      this.die();
+    }
+
+    if(this.models[0]){
+      this.box.setFromObject(this.models[0]);
+    }
 
     if(this.track instanceof OdysseyModel3D){
-      if(!this.track.animationManager.currentAnimation && this.alive){
-        this.track.playAnimation(0, true);
-      }else if(!this.alive && this.track.animationManager.currentAnimation){
+      if(this.alive && this.running){
+        this.ensureTrackAnimation();
+        const rate = this.trackAnimRate > 0 ? this.trackAnimRate : 1;
+        this.track.update(delta * rate);
+      }else if(!this.alive && this.track.animationManager?.currentAnimation){
         this.track.stopAnimation();
+      }else if(this.alive && !this.running){
+        // Not started yet — still tick idle track pose.
+        this.track.update(delta);
       }
-      this.track.update(delta);
     }
         
     for(let i = 0; i < this.gunBanks.length; i++){
-      this.gunBanks[i].update(delta);
-      if(this.alive){
+      const bank = this.gunBanks[i];
+      bank.update(delta);
+      if(!this.alive){ continue; }
+      const player = GameState.module?.area?.miniGame?.player;
+      if(!player?.alive){ continue; }
+
+      // Retail TargettingGunBank: Sensing_Radius gates auto-fire; else forward ray LOS.
+      if(bank.isTargetting()){
+        if(bank.isPlayerInSensingRange(player)){
+          bank.fire();
+        }
+      }else{
         this.container.getWorldPosition(GameState.raycaster.ray.origin);
         this.container.getWorldDirection(GameState.raycaster.ray.direction);
-        if(GameState.raycaster.ray.intersectsSphere(GameState.module.area.miniGame.player.sphere)){
-          this.gunBanks[i].fire();
+        if(GameState.raycaster.ray.intersectsSphere(player.sphere)){
+          bank.fire();
         }
       }
     }
@@ -186,22 +250,42 @@ export class ModuleMGEnemy extends ModuleObject {
 
   damage(damage = 0){
     if(this.alive){
-      this.hit_points -= damage;
-      let model: OdysseyModel3D
-      for(let i = 0; i < this.models.length; i++){
-        model = this.models[i];
-        if(model instanceof OdysseyModel3D){
-          if(model.bonesInitialized && model.visible){
-            model.playAnimation('damage', false);
-          }
-        }
-      }
-      this.onDamaged();
+      this.adjustHitPoints(-damage, 0);
     }
   }
 
+  /**
+   * Retail AdjustHitPoints @ 0066e8e0 — queue hp_adjust then OnDamage(0).
+   * SetFollowerHitPoints → SetHitPoints (nAbsolute; only if nHP > 0).
+   */
   adjustHitPoints(nHP = 0, nAbsolute = 0){
-    this.hit_points += nHP;
+    if(nAbsolute){
+      if(nHP > 0){
+        this.hit_points = nHP;
+      }
+      return;
+    }
+    this.lastHPChange = nHP;
+    this.onDamaged(false);
+  }
+
+  /**
+   * Retail OnDamage @ 0066e7a0 default apply path.
+   */
+  applyQueuedHitPoints(){
+    const adjust = this.lastHPChange;
+    let hp = this.hit_points + adjust;
+    this.hit_points = hp;
+    if(adjust < 0){
+      if(hp > 0){
+        this.playAnimation('damage', 0, 0, 0);
+        this.playAnimation('Ready_01', 0, 0, 1);
+      }else if(this.alive){
+        this.die(false);
+      }
+    }else if(this.max_hps > 0 && hp > this.max_hps){
+      this.hit_points = this.max_hps;
+    }
   }
 
   startInvulnerability(){
@@ -288,14 +372,20 @@ export class ModuleMGEnemy extends ModuleObject {
     for(let i = 0; i < this.gunBanks.length; i++){
       const gunbank = this.gunBanks[i];
       await gunbank.load();
-      this.gun_hook = this.getGunHook(gunbank.bankID);
-      if(this.gun_hook instanceof THREE.Object3D){
-        this.gun_hook.add(gunbank.model);
+      let added = 0;
+      for(let m = 0; m < this.models.length; m++){
+        added += await gunbank.attachGuns(this.models[m]);
       }
+      if(!added){
+        added += await gunbank.attachGuns(this.container);
+      }
+      this.gun_hook = gunbank.gunHooks[0] || this.getGunHook(gunbank.bankID);
     }
   }
 
   getGunHook(bankID: number): THREE.Object3D | undefined {
+    const points = ModuleMGGunBank.findGunAttachPoints(this.container, bankID);
+    if(points.length){ return points[0]; }
     return this.container.getObjectByName('gunbank'+bankID) as THREE.Object3D;
   }
 
@@ -311,20 +401,141 @@ export class ModuleMGEnemy extends ModuleObject {
     onCreate.run(this, 0);
   }
 
-  /** Retail CSWTrackFollower::Go — start engine loop. */
+  /** Retail CSWTrackFollower::Go @ 006701c0. */
   go(){
+    if(this.running || !this.alive){ return; }
+
+    for(let i = 0; i < this.models.length; i++){
+      const model = this.models[i];
+      if(model instanceof OdysseyModel3D && model.bonesInitialized){
+        model.playAnimation('Ready_01', false);
+      }
+    }
+
+    const spd = this.maximum_speed || this.minimum_speed || 0;
+    this.setFollowerSpeed(typeof spd === 'number' ? spd : 0);
+    this.ensureTrackAnimation();
+    this.running = true;
     this.trackFollowerAudio.go(this.position.x, this.position.y, this.position.z);
   }
 
-  /** Retail CSWTrackFollower::Stop — stop engine loop. */
+  /**
+   * Retail CSWTrackFollower::OnDeath @ 0066e2a0.
+   * skipScript=true = DefaultImpl path (OnDeath(1)).
+   */
+  die(skipScript: boolean = false){
+    if(!this.alive){ return; }
+
+    if(!skipScript){
+      const onDeath = this.scripts[ModuleObjectScript.MGEnemyOnDeath];
+      if(onDeath){
+        onDeath.run(this, 0);
+        return;
+      }
+    }
+
+    this.alive = false;
+    this.stopTrack();
+    void this.trackFollowerAudio.playDeathSound();
+
+    // Play die on each model; RemoveModel immediately if die missing (retail).
+    for(let i = this.models.length - 1; i >= 0; i--){
+      const model = this.models[i];
+      if(!(model instanceof OdysseyModel3D) || !model.bonesInitialized){
+        this.removeModelAt(i);
+        continue;
+      }
+      const dieAnim = model.odysseyAnimationMap?.get?.('die');
+      if(!dieAnim){
+        this.removeModelAt(i);
+        continue;
+      }
+      model.playAnimation(dieAnim, false);
+      this.died = true;
+    }
+
+    // Retail OnDeath → each gun bank Die @ 00674990.
+    for(let i = 0; i < this.gunBanks.length; i++){
+      this.gunBanks[i]?.die?.();
+    }
+
+    const mg = GameState.module?.area?.miniGame;
+    if(mg){
+      mg.removeEnemy(this);
+      if(this.models.length){
+        mg.noteDyingEnemy(this);
+      }else{
+        this.disposeFollower();
+      }
+    }else if(!this.models.length){
+      this.disposeFollower();
+    }
+  }
+
+  /** Retail CSWTrackFollower::RemoveModel @ 0066d280. */
+  removeModelAt(index: number){
+    if(index < 0 || index >= this.models.length){ return; }
+    const model = this.models[index];
+    model?.parent?.remove(model);
+    model?.dispose?.();
+    this.models.splice(index, 1);
+  }
+
+  /** Retail CSWTrackFollower::Stop @ 0066d440. */
   stopTrack(){
+    if(this.track instanceof OdysseyModel3D && this.running){
+      this.track.stopAnimation?.();
+    }
+    this.running = false;
     this.trackFollowerAudio.stop();
   }
 
-  onDamaged(){
-    const onDamage = this.scripts[ModuleObjectScript.MGEnemyOnDamage];
-    if(!onDamage){ return true; }
-    onDamage.run(this, 0);
+  disposeFollower(){
+    this.stopTrack();
+    this.alive = false;
+    this.trackFollowerAudio.destroy?.();
+
+    for(let i = 0; i < this.gunBanks.length; i++){
+      const bank = this.gunBanks[i];
+      while(bank.bullets?.length){
+        const b = bank.bullets.pop();
+        b?.disposeBullet?.();
+      }
+      bank.removeGunModel?.();
+    }
+    this.gunBanks.length = 0;
+
+    for(let i = 0; i < this.models.length; i++){
+      const model = this.models[i];
+      model?.parent?.remove(model);
+      model?.dispose?.();
+    }
+    this.models.length = 0;
+    this.container?.removeFromParent?.();
+    this.sphere_geom?.parent?.remove(this.sphere_geom);
+
+    if(this.ownsTrack && this.track){
+      this.track.parent?.remove(this.track);
+      (this.track as OdysseyModel3D).dispose?.();
+      this.ownsTrack = false;
+    }
+    this.track = new THREE.Object3D();
+    MiniGameObjectArray.unregister(this);
+  }
+
+  /**
+   * Retail OnDamage @ 0066e7a0 —
+   * param 0: script if present; else / param 1: apply lastHPChange.
+   */
+  onDamaged(skipScript: boolean = false){
+    if(!skipScript){
+      const onDamage = this.scripts[ModuleObjectScript.MGEnemyOnDamage];
+      if(onDamage){
+        onDamage.run(this, 0);
+        return true;
+      }
+    }
+    this.applyQueuedHitPoints();
     return true;
   }
 
@@ -342,8 +553,10 @@ export class ModuleMGEnemy extends ModuleObject {
 
   onHitBullet(){
     const onHitBullet = this.scripts[ModuleObjectScript.MGEnemyOnHitBullet];
-    if(!onHitBullet){ return; }
-    onHitBullet.run(this, 0);
+    if(onHitBullet){
+      onHitBullet.run(this, 0);
+      return;
+    }
   }
 
   onHitFollower(){
@@ -352,10 +565,21 @@ export class ModuleMGEnemy extends ModuleObject {
     onHitFollower.run(this, 0);
   }
 
-  onHitObstacle(){
-    const onHitObstacle = this.scripts[ModuleObjectScript.MGEnemyOnHitObstacle];
-    if(!onHitObstacle){ return; }
-    onHitObstacle.run(this, 0);
+  /**
+   * Retail OnHitObstacle @ 0066e5c0 — script if set (param 0); else OnDeath(0).
+   * skipScript=true = SWMG_OnObstacleHit DefaultImpl (param 1).
+   */
+  onHitObstacle(skipScript: boolean = false){
+    if(!skipScript){
+      const onHitObstacle = this.scripts[ModuleObjectScript.MGEnemyOnHitObstacle];
+      if(onHitObstacle){
+        onHitObstacle.run(this, 0);
+        return;
+      }
+    }
+    if(this.alive){
+      this.die(false);
+    }
   }
 
   onTrackLoop(){
@@ -433,7 +657,12 @@ export class ModuleMGEnemy extends ModuleObject {
       this.sphere_radius = this.template.getFieldByLabel('Sphere_Radius').getValue();
 
     if(this.template.RootNode.hasField('Track'))
-      this.trackName = this.template.getFieldByLabel('Track').getValue();
+      this.trackName = ModuleMGTrack.normalizeName(
+        this.template.getFieldByLabel('Track').getValue()
+      );
+
+    if(this.template.RootNode.hasField('Trigger'))
+      this.isTrigger = !!this.template.getFieldByLabel('Trigger').getValue();
 
     if(this.template.RootNode.hasField('Sounds')){
       this.trackFollowerSounds.loadFromSoundsStruct(

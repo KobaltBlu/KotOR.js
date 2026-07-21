@@ -184,6 +184,7 @@ export class MenuUpgrade extends K1_MenuUpgrade {
 
     // Keep slot infos referenced so tree-shaking / unused warnings stay quiet.
     void getSlotInfos(this.category);
+    this.bind3DViewControl();
   }
 
 }

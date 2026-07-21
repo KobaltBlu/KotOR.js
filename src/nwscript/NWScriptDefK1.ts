@@ -38,6 +38,7 @@ import { CombatRound } from "@/combat/CombatRound";
 import { findMostDamagingMelee, findMostDamagingRanged } from "@/combat/equip-most-damaging";
 import { BitWise } from "@/utility/BitWise";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 import { ExperienceType } from "@/enums/engine/ExperienceType";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
@@ -50,6 +51,18 @@ import { hasImmunityType } from "@/effects/haste-slow";
 import { changeFactionByFaction } from "@/module/faction-by-faction";
 import { GameOverManager } from "@/managers/GameOverManager";
 import { setAreaTransitionBMP } from "@/engine/area-transition-bmp";
+import { SaveGame } from "@/engine/SaveGame";
+import type { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
+
+/**
+ * Resolve a gun bank on a MG player/enemy by index (SWMG gun-bank ops).
+ */
+function getGunBank(obj: ModuleObject, index: number): ModuleMGGunBank | undefined {
+  if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleMGEnemy)){
+    return (obj as ModuleMGPlayer|ModuleMGEnemy).gunBanks?.[index];
+  }
+  return undefined;
+}
 
 /**
  * NWScriptDefK1 class.
@@ -4771,8 +4784,9 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [number, string, number, number, ModuleObject]){
       GameState.PazaakManager.SetOpponentDeck(args[0] || 0);
       GameState.PazaakManager.SetEndScript(args[1] || '');
-      GameState.PazaakManager.MaxWager = args[2] || 0;
-      GameState.PazaakManager.Wager = args[2] || 0;
+      const maxWager = args[2] || 0;
+      GameState.PazaakManager.MaxWager = maxWager;
+      GameState.PazaakManager.Wager = maxWager > 0 ? maxWager : 0;
       GameState.PazaakManager.ShowTutorial = !!args[3];
       GameState.PazaakManager.SetOpponent(args[4] as ModuleCreature || this.caller as ModuleCreature);
       GameState.PazaakManager.Won = false;
@@ -6571,7 +6585,10 @@ NWScriptDefK1.Actions = {
     comment: "512: Only if we are in a single player game, AutoSave the game.\n",
     name: "DoSinglePlayerAutoSave",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      void SaveGame.AutoSave();
+    }
   },
   513:{
     comment: "513: Get the game difficulty (GAME_DIFFICULTY_*).\n",
@@ -6654,14 +6671,21 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.miniGame.player.accel_lateral_secs = args[0];
+      const mg = GameState.module.area.miniGame;
+      mg.lateralAccel = args[0];
+      mg.player.accel_lateral_secs = args[0];
     }
   },
   521:{
     comment: "521: Returns the minigame lateral acceleration/sec value\n",
     name: "SWMG_GetLateralAccelerationPerSecond",
     type: NWScriptDataType.FLOAT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      const mg = GameState.module?.area?.miniGame;
+      if(!mg){ return 0; }
+      return mg.player?.accel_lateral_secs ?? mg.lateralAccel ?? 0;
+    }
   },
   522:{
     comment: "522: Get the current action (ACTION_*) that oObject is executing.\n",
@@ -7126,7 +7150,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number]){
-        //TODO
+      // ExecuteCommandSWMG_SetSpeedBlurEffect @ 005435a0
+      const ratio = typeof args[1] === 'number' ? args[1] : 0.75;
+      GameState.SetSpeedBlurEffect(!!args[0], ratio);
     }
   },
   564:{
@@ -7210,7 +7236,13 @@ NWScriptDefK1.Actions = {
     comment: "571: Get the duration (in seconds) of the sound attached to nStrRef\n* Returns 0.0f if no duration is stored or if no sound is attached\n",
     name: "GetStrRefSoundDuration",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      // Retail ExecuteCommandGetStrRefSoundDuration @ 0079e8f0 — CTlkTable::Fetch → float SoundLength.
+      const tlk = GameState.TLKManager.GetStringById(args[0]);
+      if(!tlk){ return 0; }
+      return tlk.getDisplaySoundLength();
+    }
   },
   572:{
     comment: "572: Add oPC to oPartyLeader's party.  This will only work on two PCs.\n- oPC: player to add to a party\n- oPartyLeader: player already in the party\n",
@@ -7314,13 +7346,19 @@ NWScriptDefK1.Actions = {
     comment: "583: OnAnimKey\nget the event and the name of the model on which the event happened\nSWMG_GetLastEvent\n",
     name: "SWMG_GetLastEvent",
     type: NWScriptDataType.STRING,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module?.area?.miniGame?.lastEvent || '';
+    }
   },
   584:{
     comment: "584: SWMG_GetLastEventModelName\n",
     name: "SWMG_GetLastEventModelName",
     type: NWScriptDataType.STRING,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module?.area?.miniGame?.lastEventModelName || '';
+    }
   },
   585:{
     comment: "585: gets an object by its name (duh!)\nSWMG_GetObjectByName\n",
@@ -7328,18 +7366,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string]){
-      for(let i = 0, len = GameState.module.area.miniGame.obstacles.length; i < len; i++){
-        const obstacle = GameState.module.area.miniGame.obstacles[i];
-        if(obstacle.name == args[0]){
-          return obstacle;
-        }
-      }
-      for(let i = 0, len = GameState.module.area.miniGame.enemies.length; i < len; i++){
-        const enemy = GameState.module.area.miniGame.enemies[i];
-        if(enemy.name == args[0]){
-          return enemy;
-        }
-      }
+      // Retail GetMGOArray → GetMiniGameObjectByName @ 0066bfb0 (live 255-slot registry).
+      return MiniGameObjectArray.getByName(args[0]);
     }
   },
   586:{
@@ -7348,8 +7376,13 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, string, number, number, number]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
-        (args[0] as ModuleMGPlayer|ModuleMGEnemy).playAnimation(args[1], args[2], args[3], args[4]);
+      // Retail GetMiniGameObject(DEFAULT) — player, enemy, or obstacle.
+      if(
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) ||
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) ||
+        BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle)
+      ){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).playAnimation(args[1], args[2], args[3], args[4]);
       }
     }
   },
@@ -7357,19 +7390,34 @@ NWScriptDefK1.Actions = {
     comment: "587: OnHitBullet\nget the damage, the target type (see TARGETflags), and the shooter\nSWMG_GetLastBulletHitDamage\n",
     name: "SWMG_GetLastBulletHitDamage",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module?.area?.miniGame?.lastBulletHitDamage || 0;
+    }
   },
   588:{
     comment: "588: SWMG_GetLastBulletHitTarget\n",
     name: "SWMG_GetLastBulletHitTarget",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module?.area?.miniGame?.lastBulletHitTarget || 0;
+    }
   },
   589:{
     comment: "589: SWMG_GetLastBulletHitShooter\n",
     name: "SWMG_GetLastBulletHitShooter",
     type: NWScriptDataType.OBJECT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // Retail HitCheckBullet stores last_bullet_hit_shooter_index (mgo_index);
+      // StackPushObject that index (0xff if unset).
+      const shooter = GameState.module?.area?.miniGame?.lastBulletHitShooter as ModuleObject | undefined;
+      if(!shooter){ return undefined; }
+      const idx = shooter.mgoIndex;
+      if(typeof idx !== 'number' || idx < 0 || idx >= 0xff){ return undefined; }
+      return shooter;
+    }
   },
   590:{
     comment: "590: adjusts a followers hit points, can specify the absolute value to set to\nSWMG_AdjustFollowerHitPoints\n",
@@ -7377,8 +7425,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      // Retail ExecuteCommand @ 005cb990 pops object + one int only; nAbsolute unused.
+      // Accelpad passes (-100),(-100) — treating truthy nAbsolute as Set would kill the player.
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer)){
-        (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).adjustHitPoints(args[1], args[2]);
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).adjustHitPoints(args[1], 0);
       }
     }
   },
@@ -7388,8 +7438,13 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        //return this.caller.onBulletHit();
+      // Retail DefaultImpl → OnHitBullet(1) — engine default, skip nested script preference.
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGPlayer)){
+        (this.caller as ModuleMGPlayer).onHitBullet(this.mgBullet);
+      }else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGEnemy)){
+        (this.caller as ModuleMGEnemy).onHitBullet();
+      }else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGObstacle)){
+        (this.caller as ModuleMGObstacle).onHitBullet();
       }
     }
   },
@@ -7399,8 +7454,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGObstacle)){
-        //return this.caller.onObstacleHit();
+      // Retail DefaultImpl → OnHitObstacle(1) — skip nested script, then OnDeath(0).
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGPlayer)){
+        (this.caller as ModuleMGPlayer).onHitObstacle(this.mgObstacle, true);
+      }else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGEnemy)){
+        (this.caller as ModuleMGEnemy).onHitObstacle(true);
       }
     }
   },
@@ -7410,7 +7468,14 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return this.mgFollower || undefined;
+      // Retail @ 005cbb00: GetLastFollowerHit on caller MGO (obstacle's last_follower_hit_index).
+      if(this.mgFollower){ return this.mgFollower; }
+      const caller = this.caller;
+      if(BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleMGObstacle)){
+        const hit = (caller as ModuleMGObstacle).lastFollowerHit;
+        if(hit){ return hit; }
+      }
+      return GameState.module?.area?.miniGame?.lastFollowerHit || undefined;
     }
   },
   594:{
@@ -7419,20 +7484,26 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return this.mgObstacle || undefined;
+      return this.mgObstacle || GameState.module?.area?.miniGame?.lastObstacleHit || undefined;
     }
   },
   595:{
     comment: "595: gets information about the last bullet fired\nSWMG_GetLastBulletFiredDamage\n",
     name: "SWMG_GetLastBulletFiredDamage",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module?.area?.miniGame?.lastBulletFiredDamage || 0;
+    }
   },
   596:{
     comment: "596: SWMG_GetLastBulletFiredTarget\n",
     name: "SWMG_GetLastBulletFiredTarget",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module?.area?.miniGame?.lastBulletFiredTarget || 0;
+    }
   },
   597:{
     comment: "597: gets an objects name\nSWMG_GetObjectName\n",
@@ -7452,8 +7523,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        //this.caller.onDeath();
+      // Retail DefaultImpl → OnDeath(1) — engine default without re-entering script.
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGPlayer)){
+        (this.caller as ModuleMGPlayer).die(true);
+      }else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGEnemy)){
+        (this.caller as ModuleMGEnemy).die(true);
       }
     }
   },
@@ -7463,7 +7537,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return (GameState.module.area.miniGame.enemies.indexOf(args[0] as ModuleMGEnemy ) >= 0) ? NW_TRUE : NW_FALSE;
+      const mg = GameState.module?.area?.miniGame;
+      if(!mg){ return NW_FALSE; }
+      if(mg.player === args[0]){ return NW_TRUE; }
+      return mg.enemies.indexOf(args[0] as ModuleMGEnemy) >= 0 ? NW_TRUE : NW_FALSE;
     }
   },
   600:{
@@ -7490,7 +7567,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      //return GameState.module.area.MiniGame.Enemies.indexOf(args[0]) >= 0;
+      // Retail: enemy-like MGO with Trigger flag non-zero.
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        return (args[0] as ModuleMGEnemy).isTrigger ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
     }
   },
   603:{
@@ -7508,8 +7589,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        this.caller.onDamaged();
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle)){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).adjustHitPoints(args[1], 1);
       }
     }
   },
@@ -7519,8 +7600,13 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        //this.caller.onDamaged();
+      // Retail DefaultImpl → OnDamage(1): apply queued hp_adjust (skip script).
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGPlayer)){
+        (this.caller as ModuleMGPlayer).onDamaged(true);
+      }else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGEnemy)){
+        (this.caller as ModuleMGEnemy).onDamaged(true);
+      }else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGObstacle)){
+        (this.caller as ModuleMGObstacle).applyQueuedHitPoints();
       }
     }
   },
@@ -7528,7 +7614,19 @@ NWScriptDefK1.Actions = {
     comment: "606: SWMG_GetLastHPChange\n",
     name: "SWMG_GetLastHPChange",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGPlayer)){
+        return (this.caller as ModuleMGPlayer).lastHPChange || 0;
+      }
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGEnemy)){
+        return (this.caller as ModuleMGEnemy).lastHPChange || 0;
+      }
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGObstacle)){
+        return (this.caller as ModuleMGObstacle).lastHPChange || 0;
+      }
+      return 0;
+    }
   },
   607:{
     comment: "607: SWMG_RemoveAnimation\n",
@@ -7639,8 +7737,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle)){
-        return (args[0] as ModuleMGEnemy|ModuleMGObstacle).hit_points;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle)){
+        return (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).hit_points;
       }
       return 0;
     }
@@ -7651,8 +7749,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle)){
-        return (args[0] as ModuleMGEnemy|ModuleMGObstacle).max_hps;
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle)){
+        return (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).max_hps;
       }
       return 0;
     }
@@ -7661,31 +7759,58 @@ NWScriptDefK1.Actions = {
     comment: "618: SWMG_SetMaxHitPoints\n",
     name: "SWMG_SetMaxHitPoints",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle)){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).max_hps = args[1];
+      }
+    }
   },
   619:{
     comment: "619: SWMG_GetSphereRadius\n",
     name: "SWMG_GetSphereRadius",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        return (args[0] as ModuleMGPlayer|ModuleMGEnemy).sphere_radius || 0;
+      }
+      return 0;
+    }
   },
   620:{
     comment: "620: SWMG_SetSphereRadius\n",
     name: "SWMG_SetSphereRadius",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy).sphere_radius = args[1];
+      }
+    }
   },
   621:{
     comment: "621: SWMG_GetNumLoops\n",
     name: "SWMG_GetNumLoops",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        return (args[0] as ModuleMGPlayer|ModuleMGEnemy).num_loops || 0;
+      }
+      return 0;
+    }
   },
   622:{
     comment: "622: SWMG_SetNumLoops\n",
     name: "SWMG_SetNumLoops",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy).num_loops = args[1];
+      }
+    }
   },
   623:{
     comment: "623: SWMG_GetPosition\n",
@@ -7705,103 +7830,187 @@ NWScriptDefK1.Actions = {
     comment: "624: SWMG_GetGunBankCount\n",
     name: "SWMG_GetGunBankCount",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        return (args[0] as ModuleMGPlayer|ModuleMGEnemy).gunBanks?.length || 0;
+      }
+      return 0;
+    }
   },
   625:{
     comment: "625: SWMG_GetGunBankBulletModel\n",
     name: "SWMG_GetGunBankBulletModel",
     type: NWScriptDataType.STRING,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.proto_bullet?.model_name || '';
+    }
   },
   626:{
     comment: "626: SWMG_GetGunBankGunModel\n",
     name: "SWMG_GetGunBankGunModel",
     type: NWScriptDataType.STRING,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.gunModel || '';
+    }
   },
   627:{
     comment: "627: SWMG_GetGunBankDamage\n",
     name: "SWMG_GetGunBankDamage",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.proto_bullet?.damage_amt || 0;
+    }
   },
   628:{
     comment: "628: SWMG_GetGunBankTimeBetweenShots\n",
     name: "SWMG_GetGunBankTimeBetweenShots",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.proto_bullet?.rate_of_fire || 0;
+    }
   },
   629:{
     comment: "629: SWMG_GetGunBankLifespan\n",
     name: "SWMG_GetGunBankLifespan",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.proto_bullet?.lifespan || 0;
+    }
   },
   630:{
     comment: "630: SWMG_GetGunBankSpeed\n",
     name: "SWMG_GetGunBankSpeed",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.proto_bullet?.speed || 0;
+    }
   },
   631:{
     comment: "631: SWMG_GetGunBankTarget\n",
     name: "SWMG_GetGunBankTarget",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.proto_bullet?.target_type || 0;
+    }
   },
   632:{
     comment: "632: SWMG_SetGunBankBulletModel\n",
     name: "SWMG_SetGunBankBulletModel",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.STRING]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, string]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank?.proto_bullet){
+        bank.proto_bullet.model_name = args[2] || '';
+      }
+    }
   },
   633:{
     comment: "633: SWMG_SetGunBankGunModel\n",
     name: "SWMG_SetGunBankGunModel",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.STRING]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, string]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank){
+        bank.gunModel = args[2] || '';
+      }
+    }
   },
   634:{
     comment: "634: SWMG_SetGunBankDamage\n",
     name: "SWMG_SetGunBankDamage",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank?.proto_bullet){
+        bank.proto_bullet.damage_amt = args[2] || 0;
+      }
+    }
   },
   635:{
     comment: "635: SWMG_SetGunBankTimeBetweenShots\n",
     name: "SWMG_SetGunBankTimeBetweenShots",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank?.proto_bullet){
+        bank.proto_bullet.rate_of_fire = args[2] || 0;
+      }
+    }
   },
   636:{
     comment: "636: SWMG_SetGunBankLifespan\n",
     name: "SWMG_SetGunBankLifespan",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank?.proto_bullet){
+        bank.proto_bullet.lifespan = args[2] || 0;
+      }
+    }
   },
   637:{
     comment: "637: SWMG_SetGunBankSpeed\n",
     name: "SWMG_SetGunBankSpeed",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank?.proto_bullet){
+        bank.proto_bullet.speed = args[2] || 0;
+      }
+    }
   },
   638:{
     comment: "638: SWMG_SetGunBankTarget\n",
     name: "SWMG_SetGunBankTarget",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank?.proto_bullet){
+        bank.proto_bullet.target_type = args[2] || 0;
+      }
+    }
   },
   639:{
     comment: "639: SWMG_GetLastBulletHitPart\n",
     name: "SWMG_GetLastBulletHitPart",
     type: NWScriptDataType.STRING,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module?.area?.miniGame?.lastBulletHitPart || '';
+    }
   },
   640:{
     comment: "640: SWMG_IsGunBankTargetting\n",
     name: "SWMG_IsGunBankTargetting",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      if(!bank){ return NW_FALSE; }
+      return bank.isTargetting() ? NW_TRUE : NW_FALSE;
+    }
   },
   641:{
     comment: "641: SWMG_GetPlayerOffset\nreturns a vector with the player rotation for rotation minigames\nreturns a vector with the player translation for translation minigames\n",
@@ -7817,7 +8026,8 @@ NWScriptDefK1.Actions = {
           THREE.MathUtils.radToDeg(rot.z)
         );
       }else{
-        return GameState.module.area.miniGame.player.position;
+        // Retail translation offset (KeepInTunnel space), not world position.
+        return GameState.module.area.miniGame.player.playerOffset.clone();
       }
     }
   },
@@ -7825,7 +8035,10 @@ NWScriptDefK1.Actions = {
     comment: "642: SWMG_GetPlayerInvincibility\n",
     name: "SWMG_GetPlayerInvincibility",
     type: NWScriptDataType.FLOAT,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.module.area.miniGame.player.invince || 0;
+    }
   },
   643:{
     comment: "643: SWMG_GetPlayerSpeed\n",
@@ -7869,14 +8082,29 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [THREE.Vector3]){
-      GameState.module.area.miniGame.player.position.copy(args[0]);
+      const player = GameState.module.area.miniGame.player;
+      if(GameState.module.area.miniGame.type == 2){
+        player.rotation.set(
+          THREE.MathUtils.degToRad(args[0].x),
+          THREE.MathUtils.degToRad(args[0].y),
+          THREE.MathUtils.degToRad(args[0].z)
+        );
+      }else{
+        player.playerOffset.copy(args[0]);
+        player.keepInTunnel(player.playerOffset);
+        player.container.position.copy(player.playerOffset);
+      }
     }
   },
   648:{
     comment: "648: SWMG_SetPlayerInvincibility\n",
     name: "SWMG_SetPlayerInvincibility",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.module.area.miniGame.player.invince = args[0];
+      GameState.module.area.miniGame.player.invince_period = args[0];
+    }
   },
   649:{
     comment: "649: SWMG_SetPlayerSpeed\n",
@@ -7936,61 +8164,103 @@ NWScriptDefK1.Actions = {
     comment: "655: SWMG_GetPlayerOrigin\n",
     name: "SWMG_GetPlayerOrigin",
     type: NWScriptDataType.VECTOR,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      const o = GameState.module.area.miniGame.player.origin;
+      return new THREE.Vector3(o.x, o.y, o.z);
+    }
   },
   656:{
     comment: "656: SWMG_SetPlayerOrigin\n",
     name: "SWMG_SetPlayerOrigin",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.VECTOR]
+    args: [NWScriptDataType.VECTOR],
+    action: function(this: NWScriptInstance, args: [THREE.Vector3]){
+      const o = GameState.module.area.miniGame.player.origin;
+      o.x = args[0].x;
+      o.y = args[0].y;
+      o.z = args[0].z;
+    }
   },
   657:{
     comment: "657: SWMG_GetGunBankHorizontalSpread\n",
     name: "SWMG_GetGunBankHorizontalSpread",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.horizSpread || 0;
+    }
   },
   658:{
     comment: "658: SWMG_GetGunBankVerticalSpread\n",
     name: "SWMG_GetGunBankVerticalSpread",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.vertSpread || 0;
+    }
   },
   659:{
     comment: "659: SWMG_GetGunBankSensingRadius\n",
     name: "SWMG_GetGunBankSensingRadius",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.sensingRadius || 0;
+    }
   },
   660:{
     comment: "660: SWMG_GetGunBankInaccuracy\n",
     name: "SWMG_GetGunBankInaccuracy",
     type: NWScriptDataType.FLOAT,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      const bank = getGunBank(args[0], args[1]);
+      return bank?.inaccuracy || 0;
+    }
   },
   661:{
     comment: "661: SWMG_SetGunBankHorizontalSpread\n",
     name: "SWMG_SetGunBankHorizontalSpread",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank) bank.horizSpread = args[2];
+    }
   },
   662:{
     comment: "662: SWMG_SetGunBankVerticalSpread\n",
     name: "SWMG_SetGunBankVerticalSpread",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank) bank.vertSpread = args[2];
+    }
   },
   663:{
     comment: "663: SWMG_SetGunBankSensingRadius\n",
     name: "SWMG_SetGunBankSensingRadius",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank) bank.sensingRadius = args[2];
+    }
   },
   664:{
     comment: "664: SWMG_SetGunBankInaccuracy\n",
     name: "SWMG_SetGunBankInaccuracy",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      const bank = getGunBank(args[0], args[1]);
+      if(bank) bank.inaccuracy = args[2];
+    }
   },
   665:{
     comment: "665: GetIsInvulnerable\nThis returns whether the follower object is currently invulnerable to damage\n",
@@ -8572,13 +8842,23 @@ NWScriptDefK1.Actions = {
     comment: "717. SWMG_GetPlayerTunnelInfinite\nGets whether each of the dimensions is infinite\n",
     name: "SWMG_GetPlayerTunnelInfinite",
     type: NWScriptDataType.VECTOR,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      const t = GameState.module.area.miniGame.player.tunnelInfinite;
+      return new THREE.Vector3(t.x, t.y, t.z);
+    }
   },
   718:{
     comment: "718. SWMG_SetPlayerTunnelInfinite\nSets whether each of the dimensions is infinite\n",
     name: "SWMG_SetPlayerTunnelInfinite",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.VECTOR]
+    args: [NWScriptDataType.VECTOR],
+    action: function(this: NWScriptInstance, args: [THREE.Vector3]){
+      const t = GameState.module.area.miniGame.player.tunnelInfinite;
+      t.x = args[0].x;
+      t.y = args[0].y;
+      t.z = args[0].z;
+    }
   },
   719:{
     comment: "719. SetGlobalFadeIn\nSets a Fade In that starts after fWait seconds and fades for fLength Seconds.\nThe Fade will be from a color specified by the RGB values fR, fG, and fB.\nNote that fR, fG, and fB are normalized values.\nThe default values are an immediate cut in from black.\n",
@@ -8586,7 +8866,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
-      console.log('SetGlobalFadeIn', args[1], args[2], args[3], args[4]);
       GameState.FadeOverlayManager.holdForScript = false;
       GameState.FadeOverlayManager.FadeIn( args[1], args[2], args[3], args[4], args[0]);
     }
@@ -8597,7 +8876,6 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number, number, number, number]){
-      console.log('SetGlobalFadeOut', args[1], args[2], args[3], args[4]);
       GameState.FadeOverlayManager.FadeOut(args[1], args[2], args[3], args[4], args[0]);
     }
   },

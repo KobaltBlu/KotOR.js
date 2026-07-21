@@ -535,9 +535,14 @@ export class NWScriptControlFlowGraph {
           break;
         }
 
-        // Stop if we've reached the next leader
+        // Stop if we've reached the next leader — include currentInstr (e.g. LOGANDII
+        // that sits immediately before an OR/merge leader; otherwise && never appears in CFG).
         if (nextLeaderAddr !== null && currentInstr.nextInstr && 
             currentInstr.nextInstr.address >= nextLeaderAddr) {
+          if (currentInstr !== leaderInstr) {
+            block.addInstruction(currentInstr);
+            this.instructionToBlock.set(currentInstr.address, block);
+          }
           block.endInstruction = currentInstr;
           block.exitType = 'fallthrough';
           break;

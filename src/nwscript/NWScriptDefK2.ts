@@ -10,6 +10,9 @@ import { NWScriptDef } from "@/nwscript/NWScriptDef";
 import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import EngineLocation from "@/engine/EngineLocation";
+import { SaveGame } from "@/engine/SaveGame";
+import * as THREE from "three";
+import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 
 /**
  * NWScriptDefK2 class.
@@ -2677,14 +2680,26 @@ NWScriptDefK2.Actions = {
     name: 'PlayPazaak',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, string, number, number, ModuleObject]){
+      GameState.PazaakManager.SetOpponentDeck(args[0] || 0);
+      GameState.PazaakManager.SetEndScript(args[1] || '');
+      const maxWager = args[2] || 0;
+      GameState.PazaakManager.MaxWager = maxWager;
+      GameState.PazaakManager.Wager = maxWager > 0 ? maxWager : 0;
+      GameState.PazaakManager.ShowTutorial = !!args[3];
+      GameState.PazaakManager.SetOpponent(args[4] as ModuleCreature || this.caller as ModuleCreature);
+      GameState.PazaakManager.Won = false;
+      GameState.PazaakManager.StartGame();
+    }
   },
   365: {
     comment: '365: Returns result of last Pazaak game.  Should be used only in an EndScript sent to PlayPazaak.\n* Returns 0 if player loses, 1 if player wins.',
     name: 'GetLastPazaakResult',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.PazaakManager.Won ? 1 : 0;
+    }
   },
   366: {
     comment: '366:  displays a feed back string for the object spicified and the constant\nrepersents the string to be displayed see:FeedBackText.2da',
@@ -3780,7 +3795,9 @@ NWScriptDefK2.Actions = {
     name: 'DoSinglePlayerAutoSave',
     type: NWScriptDataType.VOID,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      void SaveGame.AutoSave();
+    }
   },
   513: {
     comment: '513: Get the game difficulty (GAME_DIFFICULTY_*).',
@@ -4139,7 +4156,10 @@ NWScriptDefK2.Actions = {
     name: 'SWMG_SetSpeedBlurEffect',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.FLOAT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, number]){
+      const ratio = typeof args[1] === 'number' ? args[1] : 0.75;
+      GameState.SetSpeedBlurEffect(!!args[0], ratio);
+    }
   },
   564: {
     comment: '564: Immediately ends the currently running game and returns to the start screen.\nnShowEndGameGui: Set TRUE to display the death gui.',
@@ -4293,7 +4313,9 @@ NWScriptDefK2.Actions = {
     name: 'SWMG_GetObjectByName',
     type: NWScriptDataType.OBJECT,
     args: [ NWScriptDataType.STRING ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string]){
+      return MiniGameObjectArray.getByName(args[0]);
+    }
   },
   586: {
     comment: '586: plays an animation on an object\nSWMG_PlayAnimation',
@@ -5417,7 +5439,7 @@ NWScriptDefK2.Actions = {
     comment: '745: SoundObjectFadeAndStop\nFades a sound object for \'fSeconds\' and then stops it.',
     name: 'SoundObjectFadeAndStop',
     type: NWScriptDataType.VOID,
-    args: [ NWScriptDataType.OBJECT ],
+    args: [ NWScriptDataType.OBJECT, NWScriptDataType.FLOAT ],
     action: undefined
   },
   746: {
@@ -5699,6 +5721,12 @@ NWScriptDefK2.Actions = {
           return GameState.PartyManager.SwoopUpgrade2;
         case 2:
           return GameState.PartyManager.SwoopUpgrade3;
+        case 3:
+          return GameState.PartyManager.SwoopUpgrade4;
+        case 4:
+          return GameState.PartyManager.SwoopUpgrade5;
+        case 5:
+          return GameState.PartyManager.SwoopUpgrade6;
       }
       return -1;
     }	
@@ -5723,8 +5751,8 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      //cut content?
-      // GameState.MenuManager.MenuSwoopUp.open();
+      // TSL CSWGuiSwoopUpgrade — ShowSwoopUpgradeScreen opens swoopup_p.
+      GameState.MenuManager.MenuSwoopUp?.open();
     }
   },
   786: {
@@ -5753,14 +5781,35 @@ NWScriptDefK2.Actions = {
     name: 'SWMG_GetTrackPosition',
     type: NWScriptDataType.VECTOR,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      const obj = args[0] as any;
+      const track = obj?.track;
+      if(track?.position){
+        return track.position.clone();
+      }
+      if(obj?.position){
+        return obj.position.clone();
+      }
+      return new THREE.Vector3();
+    }
   },
   790: {
     comment: 'FAK - OEI 1/15/04\n790: minigame function that lets you psuedo-set the position of a follower object',
     name: 'SWMG_SetFollowerPosition',
     type: NWScriptDataType.VECTOR,
     args: [ NWScriptDataType.VECTOR ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [THREE.Vector3]){
+      const player = GameState.module?.area?.miniGame?.player;
+      if(!player || !args[0]){ return args[0]; }
+      // Pseudo-set: write playerOffset (swoop) like SetPlayerOffset; keep tunnel clamp.
+      if(player.playerOffset){
+        player.playerOffset.copy(args[0]);
+        player.keepInTunnel?.(player.playerOffset);
+        player.container?.position?.copy?.(player.playerOffset);
+        return player.playerOffset.clone();
+      }
+      return args[0];
+    }
   },
   791: {
     comment: '//RWT-OEI 01/16/04\n791: A function to put the character into a true combat state but the reason set to\n     not real combat. This should help us control animations in cutscenes with a bit\n     more precision. -- Not totally sure this is doing anything just yet. Seems\n     the combat condition gets cleared shortly after anyway.\n     If nEnable is 1, it enables fake combat mode. If 0, it disables it.\n     WARNING: Whenever using this function to enable fake combat mode, you should\n              have a matching call to it to disable it. (pass 0 for nEnable).',
@@ -5774,7 +5823,9 @@ NWScriptDefK2.Actions = {
     name: 'SWMG_DestroyMiniGameObject',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      GameState.module?.area?.miniGame?.destroyMiniGameObject?.(args[0]);
+    }
   },
   793: {
     comment: 'DJS-OEI 1/26/2004\n793: Returns the Demolitions skill of the creature that\nplaced this mine. This will often be 0. This function accepts\nthe object that the mine is attached to (Door, Placeable, or Trigger)\nand will determine which one it actually is at runtime.',
@@ -5868,7 +5919,11 @@ NWScriptDefK2.Actions = {
     name: 'SWMG_SetJumpSpeed',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.FLOAT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      // TSL ExecuteCommandSWMG_SetJumpSpeed @ 007fc210
+      const mg = GameState.module?.area?.miniGame;
+      if(mg){ mg.setJumpSpeed(args[0]); }
+    }
   },
   805: {
     comment: 'PC CODE MERGER\n805. IsMoviePlaying--dummy func so we can compile',
@@ -6040,21 +6095,36 @@ NWScriptDefK2.Actions = {
     name: 'SWMG_PlayerApplyForce',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.VECTOR ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [THREE.Vector3]){
+      // TSL ExecuteCommandSWMG_PlayerApplyForce @ 007fc260 — jumpSpeed = vector.z
+      const mg = GameState.module?.area?.miniGame;
+      if(!mg){ return; }
+      const v = args[0];
+      if(v){
+        mg.setJumpSpeed(v.z);
+        if(mg.player){
+          mg.player.lateralForce += v.x;
+        }
+      }
+    }
   },
   826: {
     comment: '826\nDJS-OEI 6/12/2004\nThis function allows a script to set the conditions which constitute\na combat forfeit by a member of the player\'s party. This is typically\nused to handle Battle Circle behavior or other challenge-based combats.\nnForfeitFlags: This is an OR\'ed together series of FORFEIT_* defines.',
     name: 'SetForfeitConditions',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.PartyManager.ForfeitConditions = args[0] | 0;
+    }
   },
   827: {
     comment: '827\nDJS-OEI 6/12/2004\nThis function returns the last FORFEIT_* condition that the player\nhas violated.',
     name: 'GetLastForfeitViolation',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.PartyManager.LastForfeitViolation | 0;
+    }
   },
   828: {
     comment: '828\nAWD-OEI 6/21/2004\nThis function does not return a value.\nThis function modifies the BASE value of the REFLEX saving throw for aObject',
@@ -6311,7 +6381,9 @@ NWScriptDefK2.Actions = {
     name: 'DisableMap',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.PartyManager.DisableMap = !!args[0];
+    }
   },
   857: {
     comment: '857\nRWT-OEI 08/31/04\nThis function schedules a mine to play its DETONATION\nanimation once it is destroyed. Note that this detonates\nthe mine immediately but has nothing to do with causing\nthe mine to do any damage to anything around it. To\nget the mine to damage things around it when it detonates\ndo:\nAssignCommand(<mine>,ExecuteScript( \'k_trp_generic\',<mine>));\nright before you call DetonateMine(). By my experience so far\nyou don\'t need any kind of delay between the two.',
@@ -6325,7 +6397,9 @@ NWScriptDefK2.Actions = {
     name: 'DisableHealthRegen',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.PartyManager.DisableHealthRegen = !!args[0];
+    }
   },
   859: {
     comment: '859\nDJS-OEI 9/7/2004\nThis function sets the current Jedi Form on the given creature. This\ncall will do nothing if the target does not know the Form itself.',

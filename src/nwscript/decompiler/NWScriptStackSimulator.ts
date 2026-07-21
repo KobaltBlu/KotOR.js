@@ -1,8 +1,9 @@
 import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
-import { NWScriptExpression } from "@/nwscript/decompiler/NWScriptExpression";
+import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompiler/NWScriptExpression";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
 import type { JsrUserRoutineMeta } from "@/nwscript/decompiler/NWScriptArgumentStackLayout";
+import type { DelayCommandThunkArg } from "@/nwscript/decompiler/NWScriptStoreStateThunkSkip";
 import {
   OP_CONST, OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
   OP_EQUAL, OP_NEQUAL, OP_GT, OP_GEQ, OP_LT, OP_LEQ,
@@ -20,6 +21,8 @@ import {
 interface StackItem {
   expression: NWScriptExpression;
   address: number; // Instruction address that created this item
+  /** Stack footprint in bytes (4 for scalars, 12 for vector, 8 for two-int struct, …) */
+  byteSize: number;
 }
 
 /**
@@ -75,6 +78,16 @@ export class NWScriptStackSimulator {
    * This is set by the converter and used for accurate CPTOPSP resolution
    */
   private variableStackPositions: Map<number, number> = new Map();
+
+  /**
+   * Declared local slot types (index → type), including coalesced vector/struct slots.
+   */
+  private localSlotTypes: NWScriptDataType[] = [];
+
+  /**
+   * Stack position → member name (`x`/`y`/`z`) for coalesced aggregate component slots.
+   */
+  private slotMemberNames: Map<number, string> = new Map();
   
   /**
    * Local variable initializations (for looking up variable info by index)
@@ -88,8 +101,11 @@ export class NWScriptStackSimulator {
   /** Callee entry PC → user subroutine (for JSR → {@link NWScriptExpression.functionCall}). */
   private jsrUserRoutineMetaByEntryPc: Map<number, JsrUserRoutineMeta> = new Map();
 
-  /** DelayCommand ACTION PC → void script callee for second argument (STORE_STATE thunk). */
-  private delayCommandThunkSecondArg: Map<number, NWScriptExpression> = new Map();
+  /** DelayCommand ACTION PC → recovered second argument (STORE_STATE thunk). */
+  private delayCommandThunkSecondArg: Map<number, DelayCommandThunkArg> = new Map();
+
+  /** ActionDoCommand ACTION PC → recovered action argument (STORE_STATE thunk). */
+  private actionDoCommandThunkArg: Map<number, NWScriptExpression> = new Map();
 
   setJsrCalleeArgSlotsByEntryPc(map: Map<number, number>): void {
     this.jsrCalleeArgSlotsByEntryPc = map;
@@ -99,8 +115,59 @@ export class NWScriptStackSimulator {
     this.jsrUserRoutineMetaByEntryPc = map;
   }
 
-  setDelayCommandThunkSecondArg(map: Map<number, NWScriptExpression>): void {
+  setDelayCommandThunkSecondArg(map: Map<number, DelayCommandThunkArg>): void {
     this.delayCommandThunkSecondArg = map;
+  }
+
+  setActionDoCommandThunkArg(map: Map<number, NWScriptExpression>): void {
+    this.actionDoCommandThunkArg = map;
+  }
+
+  /** Resolve DelayCommand thunk second arg (JSR callee or nested AssignCommand). */
+  private resolveDelayCommandThunkArg(arg: DelayCommandThunkArg): NWScriptExpression {
+    if (arg.type === "expression") {
+      return arg.expression;
+    }
+    const objectExpr = this.expressionFromObjectSubjectInstr(arg.objectInstr);
+    return NWScriptExpression.functionCall(
+      "AssignCommand",
+      [objectExpr, arg.nestedScript],
+      NWScriptDataType.VOID
+    );
+  }
+
+  /** Build object expression from CPTOP or CONST without mutating the live stack. */
+  private expressionFromObjectSubjectInstr(instruction: NWScriptInstruction): NWScriptExpression {
+    if (instruction.code === OP_CPTOPSP || instruction.code === OP_CPTOPBP) {
+      // handleVariableRead pushes the read as a stack effect — undo it, this is only a
+      // name resolution (a leaked slot skews every later SP-relative read in the block).
+      const expr = this.handleVariableRead(instruction);
+      this.pop();
+      return expr;
+    }
+    if (instruction.code === OP_CONST) {
+      // Mirror object CONST ABI used by handleConst (0 → SELF, 1 / 0x7f000000 → INVALID)
+      const typeCode = instruction.type ?? 0;
+      if (typeCode === NWScriptDataType.OBJECT || typeCode === 0x06) {
+        const raw =
+          instruction.object ??
+          instruction.integer ??
+          instruction.value ??
+          0;
+        if (raw === 0) {
+          return NWScriptExpression.constant("OBJECT_SELF", NWScriptDataType.OBJECT);
+        }
+        if (raw === 1 || raw === 0x7f000000) {
+          return NWScriptExpression.constant("OBJECT_INVALID", NWScriptDataType.OBJECT);
+        }
+        return NWScriptExpression.constant(raw, NWScriptDataType.OBJECT);
+      }
+      return NWScriptExpression.constant(
+        instruction.integer ?? instruction.value ?? 0,
+        NWScriptDataType.OBJECT
+      );
+    }
+    return NWScriptExpression.constant("OBJECT_SELF", NWScriptDataType.OBJECT);
   }
 
   /**
@@ -150,9 +217,9 @@ export class NWScriptStackSimulator {
       
       case OP_LOGANDII:
       case OP_LOGORII:
-      case OP_BOOLANDII:
         return this.handleLogical(instruction);
       
+      case OP_BOOLANDII:
       case OP_INCORII:
       case OP_EXCORII:
         return this.handleBitwise(instruction);
@@ -249,6 +316,12 @@ export class NWScriptStackSimulator {
    * Handle binary arithmetic operations
    */
   private handleBinaryOp(instruction: NWScriptInstruction): NWScriptExpression {
+    const typeCode = instruction.type ?? 0;
+    // VV / vector arithmetic: two size-12 values → one size-12 result
+    if (typeCode === 0x3a) {
+      return this.handleVectorBinaryOp(instruction);
+    }
+
     if (this.stack.length < 2) {
       // Not enough operands - create placeholder
       const right = this.pop()?.expression || NWScriptExpression.constant(0, NWScriptDataType.INTEGER);
@@ -269,6 +342,42 @@ export class NWScriptStackSimulator {
     const expr = NWScriptExpression.binaryOp(operator, left.expression, right.expression, dataType);
     this.push(expr, instruction.address);
     return expr;
+  }
+
+  /**
+   * ADD/SUB/MUL/DIV with type 0x3A (VV): pop two vectors (12 bytes each), push one vector.
+   */
+  private handleVectorBinaryOp(instruction: NWScriptInstruction): NWScriptExpression {
+    const operator = this.getBinaryOperator(instruction.code);
+    const right = this.popVectorOperand();
+    const left = this.popVectorOperand();
+    const expr = NWScriptExpression.binaryOp(operator, left, right, NWScriptDataType.VECTOR);
+    this.push(expr, instruction.address, 12);
+    return expr;
+  }
+
+  /** Pop a vector expression — either one size-12 item or three float slots. */
+  private popVectorOperand(): NWScriptExpression {
+    const top = this.peek();
+    if (top && (top.byteSize === 12 || top.expression.dataType === NWScriptDataType.VECTOR)) {
+      return this.pop()!.expression;
+    }
+    // Three scalar floats on the stack (z then y then x from top)
+    const z = this.pop()?.expression || NWScriptExpression.constant(0, NWScriptDataType.FLOAT);
+    const y = this.pop()?.expression || NWScriptExpression.constant(0, NWScriptDataType.FLOAT);
+    const x = this.pop()?.expression || NWScriptExpression.constant(0, NWScriptDataType.FLOAT);
+    // Prefer a single variable if all three name the same vector local
+    if (
+      x.type === NWScriptExpressionType.VARIABLE &&
+      y.type === NWScriptExpressionType.VARIABLE &&
+      z.type === NWScriptExpressionType.VARIABLE &&
+      x.variableName &&
+      x.variableName === y.variableName &&
+      x.variableName === z.variableName
+    ) {
+      return NWScriptExpression.variable(x.variableName, NWScriptDataType.VECTOR, x.isGlobal);
+    }
+    return NWScriptExpression.vectorLiteral(x, y, z);
   }
 
   /**
@@ -321,11 +430,17 @@ export class NWScriptStackSimulator {
    * Handle bitwise operations
    */
   private handleBitwise(instruction: NWScriptInstruction): NWScriptExpression {
+    const operator =
+      instruction.code === OP_INCORII
+        ? "|"
+        : instruction.code === OP_BOOLANDII
+          ? "&"
+          : "^";
+
     if (this.stack.length < 2) {
       const right = this.pop()?.expression || NWScriptExpression.constant(0, NWScriptDataType.INTEGER);
       const left = this.pop()?.expression || NWScriptExpression.constant(0, NWScriptDataType.INTEGER);
       
-      const operator = instruction.code === OP_INCORII ? '|' : '^';
       const expr = NWScriptExpression.binaryOp(operator, left, right, NWScriptDataType.INTEGER);
       this.push(expr, instruction.address);
       return expr;
@@ -333,7 +448,6 @@ export class NWScriptStackSimulator {
 
     const right = this.pop()!;
     const left = this.pop()!;
-    const operator = instruction.code === OP_INCORII ? '|' : '^';
     
     const expr = NWScriptExpression.binaryOp(operator, left.expression, right.expression, NWScriptDataType.INTEGER);
     this.push(expr, instruction.address);
@@ -454,11 +568,21 @@ export class NWScriptStackSimulator {
 
     const args: NWScriptExpression[] = [];
 
+    // Action-type args (0xff) travel via STORE_STATE, not the stack — popping for them
+    // would swallow an unrelated value and skew SP for every later read.
+    const defArgTypes: number[] = Array.isArray(actionDef.args) ? actionDef.args : [];
+    let popCount = 0;
+    for (let i = 0; i < argCount; i++) {
+      if (defArgTypes[i] !== 0xff) {
+        popCount++;
+      }
+    }
+
     // Pop arguments from stack
     // In NWScript, arguments appear to be pushed in forward order (first arg first)
     // So when we pop them, we get them in reverse order (last arg first)
     // We use push to collect them, then reverse to get correct order
-    for (let i = 0; i < argCount && this.stack.length > 0; i++) {
+    for (let i = 0; i < popCount && this.stack.length > 0; i++) {
       const item = this.pop();
       if (item) {
         args.unshift(item.expression); // unshift to maintain correct order
@@ -473,19 +597,34 @@ export class NWScriptStackSimulator {
 
     const isDelayCommand =
       functionName === "DelayCommand" || instruction.action === 7;
+    const isActionDoCommand =
+      functionName === "ActionDoCommand" || instruction.action === 294;
 
     const thunkReplace =
       isDelayCommand
         ? this.delayCommandThunkSecondArg.get(instruction.address)
         : undefined;
     if (thunkReplace) {
+      const secondArg = this.resolveDelayCommandThunkArg(thunkReplace);
       if (args.length === 0) {
         args.push(NWScriptExpression.constant(0, NWScriptDataType.FLOAT));
       }
       if (args.length === 1) {
-        args.push(thunkReplace);
+        args.push(secondArg);
       } else {
-        args[args.length - 1] = thunkReplace;
+        args[args.length - 1] = secondArg;
+      }
+    }
+
+    const actionDoReplace =
+      isActionDoCommand
+        ? this.actionDoCommandThunkArg.get(instruction.address)
+        : undefined;
+    if (actionDoReplace) {
+      if (args.length === 0) {
+        args.push(actionDoReplace);
+      } else {
+        args[0] = actionDoReplace;
       }
     }
     
@@ -504,6 +643,7 @@ export class NWScriptStackSimulator {
    */
   private handleVariableRead(instruction: NWScriptInstruction): NWScriptExpression {
     const isGlobal = instruction.code === OP_CPTOPBP;
+    const copySize = instruction.size || 4;
     let varName: string;
     let dataType: NWScriptDataType;
     
@@ -534,6 +674,20 @@ export class NWScriptStackSimulator {
       // We should resolve this dynamically using the actual stack state, not static offsets
       const offset = instruction.offset || 0;
       const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
+
+      // Prefer formals mapped by CPTOPSP operand before local position fuzzy-match.
+      // After RSADD of a local, SP+offset can land near the new slot and steal param reads
+      // (e.g. `t = z * 2` → localVar_0 * 2).
+      const spParamEarly = this.cptopspParameterOperands.get(offsetSigned);
+      if (spParamEarly) {
+        const expr = NWScriptExpression.variable(
+          spParamEarly.name,
+          spParamEarly.dataType,
+          false
+        );
+        this.push(expr, instruction.address, copySize > 4 ? copySize : 4);
+        return expr;
+      }
       
       // Calculate the actual stack position this instruction reads from
       const sourceStackPos = this.stackPointer + offsetSigned;
@@ -544,7 +698,7 @@ export class NWScriptStackSimulator {
         // RSADD-registered slot: analyzer may have no NWScriptLocalInit row (non −8 CPDOWNSP patterns).
         const init = this.localVariableInits[varIndex];
         varName = `localVar_${varIndex}`;
-        dataType = init?.dataType ?? NWScriptDataType.INTEGER;
+        dataType = init?.dataType ?? this.localSlotTypes[varIndex] ?? NWScriptDataType.INTEGER;
       } else {
         // Stack-aware fallback: Check all variable positions with tolerance
         // The stack may have grown between RSADD and CPTOPSP, so check all recorded positions
@@ -568,7 +722,7 @@ export class NWScriptStackSimulator {
         if (tolBestIdx !== undefined) {
           const init = this.localVariableInits[tolBestIdx];
           varName = `localVar_${tolBestIdx}`;
-          dataType = init?.dataType ?? NWScriptDataType.INTEGER;
+          dataType = init?.dataType ?? this.localSlotTypes[tolBestIdx] ?? NWScriptDataType.INTEGER;
           foundVar = true;
         }
         
@@ -587,35 +741,43 @@ export class NWScriptStackSimulator {
           if (bestIdx !== undefined && bestDist <= 512) {
             const init = this.localVariableInits[bestIdx];
             varName = `localVar_${bestIdx}`;
-            dataType = init?.dataType ?? NWScriptDataType.INTEGER;
+            dataType = init?.dataType ?? this.localSlotTypes[bestIdx] ?? NWScriptDataType.INTEGER;
             foundVar = true;
           }
         }
 
         if (!foundVar) {
-          const spParam = this.cptopspParameterOperands.get(offsetSigned);
-          if (spParam) {
-            varName = spParam.name;
-            dataType = spParam.dataType;
-            foundVar = true;
+          // Last resort: Fallback to static offset-based mapping (for backward compatibility)
+          const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
+          if (this.localVariables.has(offsetUnsigned)) {
+            const localVar = this.localVariables.get(offsetUnsigned)!;
+            varName = localVar.name;
+            dataType = localVar.dataType;
           } else {
-            // Last resort: Fallback to static offset-based mapping (for backward compatibility)
-            const offsetUnsigned = offset < 0 ? offset + 0x100000000 : offset;
-            if (this.localVariables.has(offsetUnsigned)) {
-              const localVar = this.localVariables.get(offsetUnsigned)!;
-              varName = localVar.name;
-              dataType = localVar.dataType;
-            } else {
-              varName = this.generateVariableName(false, offsetSigned);
-              dataType = NWScriptDataType.INTEGER;
-            }
+            varName = this.generateVariableName(false, offsetSigned);
+            dataType = NWScriptDataType.INTEGER;
           }
         }
+      }
+
+      // Member slot (struct/vector component) — converter may register `localVar_N.x`
+      const member = this.slotMemberNames.get(sourceStackPos);
+      if (member && copySize <= 4) {
+        varName = `${varName}.${member}`;
+        if (dataType === NWScriptDataType.VECTOR) {
+          dataType = NWScriptDataType.FLOAT;
+        } else if (dataType === NWScriptDataType.STRUCTURE) {
+          dataType = NWScriptDataType.INTEGER;
+        }
+      } else if (copySize === 12) {
+        dataType = NWScriptDataType.VECTOR;
+      } else if (copySize === 8 && (dataType === NWScriptDataType.STRUCTURE || dataType === NWScriptDataType.INTEGER)) {
+        dataType = NWScriptDataType.STRUCTURE;
       }
     }
     
     const expr = NWScriptExpression.variable(varName, dataType, isGlobal);
-    this.push(expr, instruction.address);
+    this.push(expr, instruction.address, copySize > 4 ? copySize : 4);
     return expr;
   }
 
@@ -627,13 +789,22 @@ export class NWScriptStackSimulator {
       return null;
     }
 
+    const copySize = instruction.size || 4;
+    if (copySize === 12) {
+      const top = this.peek();
+      if (top && (top.byteSize === 12 || top.expression.dataType === NWScriptDataType.VECTOR)) {
+        return top.expression;
+      }
+      const comps = this.peekTopExpressions(3);
+      if (comps.length === 3) {
+        return NWScriptExpression.vectorLiteral(comps[0], comps[1], comps[2]);
+      }
+    }
+
     // CPDOWNSP copies from top of stack to a location down the stack
     // The value remains on the stack
     const topItem = this.peek();
     if (topItem) {
-      // The value is written to stack[SP + offset]
-      // For now, we just keep the value on the stack
-      // The actual write is tracked by NWScriptVariableTracker
       return topItem.expression;
     }
     return null;
@@ -661,24 +832,29 @@ export class NWScriptStackSimulator {
    * Handle MOVSP (move stack pointer)
    */
   private handleMovsp(instruction: NWScriptInstruction): void {
-    const offset = instruction.offset || 0;
-    
-    if (offset > 0) {
-      // Positive offset: remove items from stack (cleanup)
-      const count = Math.floor(offset / 4); // Each item is 4 bytes
-      for (let i = 0; i < count && this.stack.length > 0; i++) {
-        this.pop();
-      }
-    } else if (offset < 0) {
-      // Negative offset: reserve space (add empty slots)
-      // This is typically for variable declarations
-      const count = Math.floor(-offset / 4);
-      // We don't add actual items, just track the space
-      // The stack pointer effectively moves, but we track it via stackPointer
+    let offset = instruction.offset || 0;
+    if (offset > 0x7FFFFFFF) {
+      offset -= 0x100000000;
     }
-    
-    // Update stack pointer
-    this.stackPointer += offset;
+
+    if (offset < 0) {
+      // Shrink: remove values from the expression stack (cleanup after CPDOWN)
+      let remaining = -offset;
+      while (remaining > 0 && this.stack.length > 0) {
+        const top = this.peek()!;
+        const sz = top.byteSize || 4;
+        if (sz > remaining) {
+          break;
+        }
+        this.pop();
+        remaining -= sz;
+      }
+      if (remaining > 0) {
+        this.stackPointer -= remaining;
+      }
+    } else if (offset > 0) {
+      this.stackPointer += offset;
+    }
   }
 
   /**
@@ -694,6 +870,39 @@ export class NWScriptStackSimulator {
     const sizeToDestroy = instruction.sizeToDestroy || 0;
     const offsetToSaveElement = instruction.offsetToSaveElement || 0;
     const sizeOfElementToSave = instruction.sizeOfElementToSave || 0;
+
+    // Aggregate on top (struct/vector copy): extract member by byte offset
+    const top = this.peek();
+    if (
+      top &&
+      top.byteSize === sizeToDestroy &&
+      (top.expression.dataType === NWScriptDataType.STRUCTURE ||
+        top.expression.dataType === NWScriptDataType.VECTOR ||
+        (top.expression.type === NWScriptExpressionType.VARIABLE && sizeToDestroy >= 8))
+    ) {
+      const base = this.pop()!;
+      const member =
+        offsetToSaveElement === 0
+          ? "x"
+          : offsetToSaveElement === 4
+            ? "y"
+            : offsetToSaveElement === 8
+              ? "z"
+              : `f${offsetToSaveElement / 4}`;
+      let memberExpr: NWScriptExpression;
+      if (base.expression.type === NWScriptExpressionType.VARIABLE && base.expression.variableName) {
+        const baseName = base.expression.variableName.replace(/\.[xyz]$/, "");
+        const fieldType =
+          base.expression.dataType === NWScriptDataType.VECTOR
+            ? NWScriptDataType.FLOAT
+            : NWScriptDataType.INTEGER;
+        memberExpr = NWScriptExpression.variable(`${baseName}.${member}`, fieldType, base.expression.isGlobal);
+      } else {
+        memberExpr = base.expression;
+      }
+      this.push(memberExpr, instruction.address, sizeOfElementToSave || 4);
+      return;
+    }
     
     // Convert bytes to number of items (each item is 4 bytes)
     const totalItemsToRemove = Math.floor(sizeToDestroy / 4);
@@ -702,7 +911,6 @@ export class NWScriptStackSimulator {
     
     if (totalItemsToRemove === 0 || this.stack.length === 0) {
       console.warn('DESTRUCT', sizeToDestroy, offsetToSaveElement, sizeOfElementToSave, this.stack.length);
-      // Nothing to remove, but still update stack pointer
       return;
     }
     
@@ -714,25 +922,19 @@ export class NWScriptStackSimulator {
       const saveStartIndex = this.stack.length - saveEndFromTop;
       const saveEndIndex = this.stack.length - saveStartFromTop;
       
-      // This preserves the relative order when pushed back
       for (let i = saveStartIndex; i < saveEndIndex; i++) {
         savedItems.push(this.stack[i]);
       }
     }
     
-    // Remove the entire region from the top (pop totalItemsToRemove items)
-    // This decreases stackPointer by sizeToDestroy
     for (let i = 0; i < totalItemsToRemove && this.stack.length > 0; i++) {
       this.pop();
     }
     
-    // Push the saved items back onto the stack
-    // This increases stackPointer by sizeOfElementToSave
     for (const item of savedItems) {
-      this.push(item.expression, item.address);
+      this.push(item.expression, item.address, item.byteSize || 4);
     }
-
-    this.stackPointer -= sizeToDestroy;
+    // pop/push already adjusted SP — do not subtract sizeToDestroy again
   }
 
   /**
@@ -812,9 +1014,10 @@ export class NWScriptStackSimulator {
   /**
    * Push an expression onto the stack
    */
-  push(expression: NWScriptExpression, address: number): void {
-    this.stack.push({ expression, address });
-    this.stackPointer += 4; // Each item is 4 bytes
+  push(expression: NWScriptExpression, address: number, byteSize: number = 4): void {
+    const size = byteSize > 0 ? byteSize : 4;
+    this.stack.push({ expression, address, byteSize: size });
+    this.stackPointer += size;
   }
 
   /**
@@ -825,7 +1028,7 @@ export class NWScriptStackSimulator {
       return null;
     }
     const item = this.stack.pop()!;
-    this.stackPointer -= 4;
+    this.stackPointer -= item.byteSize || 4;
     return item;
   }
 
@@ -837,6 +1040,18 @@ export class NWScriptStackSimulator {
       return null;
     }
     return this.stack[this.stack.length - 1];
+  }
+
+  /**
+   * Expressions at the top of the stack (oldest of the window first).
+   * Used to build vector literals from three float CONST pushes before size-12 CPDOWN.
+   */
+  peekTopExpressions(count: number): NWScriptExpression[] {
+    if (count <= 0 || this.stack.length === 0) {
+      return [];
+    }
+    const start = Math.max(0, this.stack.length - count);
+    return this.stack.slice(start).map((i) => i.expression);
   }
 
   /**
@@ -958,6 +1173,14 @@ export class NWScriptStackSimulator {
   setVariableStackPositions(positions: Map<number, number>): void {
     this.variableStackPositions = positions;
   }
+
+  setLocalSlotTypes(types: NWScriptDataType[]): void {
+    this.localSlotTypes = types;
+  }
+
+  setSlotMemberNames(members: Map<number, string>): void {
+    this.slotMemberNames = members;
+  }
   
   /**
    * Set local variable initializations for variable info lookup
@@ -1017,7 +1240,6 @@ export class NWScriptStackSimulator {
     switch (opCode) {
       case OP_LOGANDII: return '&&';
       case OP_LOGORII: return '||';
-      case OP_BOOLANDII: return '&&';
       default: return '?';
     }
   }
@@ -1043,18 +1265,24 @@ export class NWScriptStackSimulator {
       case 4: return NWScriptDataType.FLOAT;
       case 5: return NWScriptDataType.STRING;
       case 6: return NWScriptDataType.OBJECT;
+      case 0x3a: return NWScriptDataType.VECTOR; // VV
+      case 0x3b: // VF
+      case 0x3c: // FV
+        return NWScriptDataType.VECTOR;
       default: return NWScriptDataType.INTEGER;
     }
   }
 
   /**
-   * Generate a variable name
+   * Generate a variable name (must be a legal NSS identifier — no leading minus).
    */
   private generateVariableName(isGlobal: boolean, offsetSigned: number): string {
+    const off =
+      offsetSigned < 0 ? `n${Math.abs(offsetSigned)}` : String(offsetSigned);
     if (isGlobal) {
-      return `g_bp_${offsetSigned}`;
+      return `g_bp_${off}`;
     }
-    return `sp_${offsetSigned}`;
+    return `sp_${off}`;
   }
 }
 

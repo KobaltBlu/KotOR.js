@@ -56,9 +56,6 @@ export class GameOverManager {
   /** last_party_member_temp_killed — focus target for CSWCameraDeath. */
   static lastPartyMemberKilled: ModuleObject | undefined;
 
-  /** Retail global fade length when death starts (StartGlobalFade length = 12). */
-  static readonly DEATH_FADE_SECONDS = 12;
-
   /** Auto-resurrect dead party after this many ms of combat clear (5000). */
   static readonly COMBAT_CLEAR_RESURRECT_MS = 5000;
 
@@ -259,8 +256,12 @@ export class GameOverManager {
       GameState.PartyManager.party[0];
     FollowerCamera.beginDeathCamera(camTarget);
 
-    // Atmosphere: fade to black over 12s (CGuiInGame::StartGlobalFade length=12, opacity→1)
-    GameState.FadeOverlayManager.FadeOut(this.DEATH_FADE_SECONDS, 0, 0, 0);
+    // Atmosphere: StartGlobalFade(0, wait=12, length=1) @ RunDeathSequence 005f7280
+    GameState.FadeOverlayManager.FadeOut(
+      GameState.FadeOverlayManager.DEATH_FADE_LENGTH,
+      0, 0, 0,
+      GameState.FadeOverlayManager.DEATH_FADE_WAIT
+    );
 
     if(GameState.GameKey == GameEngineType.TSL){
       GameState.MenuManager.MenuGameOver?.openDeath();
@@ -311,9 +312,7 @@ export class GameOverManager {
     }
     GameState.timeScale = speed;
 
-    const fading =
-      GameState.FadeOverlayManager.state == FadeOverlayState.FADING_OUT ||
-      GameState.FadeOverlayManager.state == FadeOverlayState.FADING_IN;
+    const fading = GameState.FadeOverlayManager.isFading();
 
     // K1: when global fade completes, Clear game over + SetEndGamePending → main menu
     if(
@@ -324,8 +323,7 @@ export class GameOverManager {
       GameState.timeScale = 1;
       this.SetGameOver(false);
       this.deathSpeedDirty = true;
-      GameState.FadeOverlayManager.material.visible = false;
-      GameState.FadeOverlayManager.state = FadeOverlayState.NONE;
+      GameState.FadeOverlayManager.Stop();
       if(GameState.MenuManager.InGameConfirm?.isVisible()){
         GameState.MenuManager.InGameConfirm.close();
       }
@@ -343,22 +341,21 @@ export class GameOverManager {
 
   /**
    * Retail HurryDeathSequence — called from HandleInputEvent while game_over_state != 0.
-   * Collapses remaining fade to 0.5s (StartGlobalFade length=0 wait, fade 0.5).
+   * Collapses remaining fade to StartGlobalFade(0, wait=0, length=0.5).
    */
   static HurryDeathSequence(){
     if(!this.gameOver) return;
+    const fade = GameState.FadeOverlayManager;
+    const total = fade.wait + fade.duration;
+    const progress = total > 0 ? fade.elapsed / total : 1;
     // Already nearly done — don't restart a slow fade
     if(
-      GameState.FadeOverlayManager.state == FadeOverlayState.FADED_OUT ||
-      (
-        GameState.FadeOverlayManager.state == FadeOverlayState.FADING_OUT &&
-        GameState.FadeOverlayManager.duration > 0 &&
-        GameState.FadeOverlayManager.elapsed / GameState.FadeOverlayManager.duration > 0.85
-      )
+      fade.state == FadeOverlayState.FADED_OUT ||
+      (fade.state == FadeOverlayState.FADING_OUT && progress > 0.85)
     ){
       return;
     }
-    GameState.FadeOverlayManager.FadeOut(0.5, 0, 0, 0);
+    fade.FadeOut(fade.DEATH_HURRY_FADE_LENGTH, 0, 0, 0);
   }
 
   /**
@@ -422,7 +419,11 @@ export class GameOverManager {
           GameState.PartyManager.party[0] ||
           oPC;
         FollowerCamera.beginDeathCamera(camTarget);
-        GameState.FadeOverlayManager.FadeOut(this.DEATH_FADE_SECONDS, 0, 0, 0);
+        GameState.FadeOverlayManager.FadeOut(
+          GameState.FadeOverlayManager.DEATH_FADE_LENGTH,
+          0, 0, 0,
+          GameState.FadeOverlayManager.DEATH_FADE_WAIT
+        );
       }
       GameState.MenuManager.MenuGameOver?.openDeath({
         respawnEnabled: respawnButtonEnabled,
@@ -445,7 +446,11 @@ export class GameOverManager {
     if(!this.gameOver){
       this.SetGameOver(true);
       this.deathElapsed = 0;
-      GameState.FadeOverlayManager.FadeOut(this.DEATH_FADE_SECONDS, 0, 0, 0);
+      GameState.FadeOverlayManager.FadeOut(
+        GameState.FadeOverlayManager.DEATH_FADE_LENGTH,
+        0, 0, 0,
+        GameState.FadeOverlayManager.DEATH_FADE_WAIT
+      );
     }
   }
 
@@ -467,8 +472,7 @@ export class GameOverManager {
    */
   static QuitToMainMenu(){
     this.Reset();
-    GameState.FadeOverlayManager.material.visible = false;
-    GameState.FadeOverlayManager.state = FadeOverlayState.NONE;
+    GameState.FadeOverlayManager.Stop();
     GameState.MenuManager.ClearMenus();
     GameState.UnloadModule();
     GameState.State = EngineState.RUNNING;
@@ -493,8 +497,7 @@ export class GameOverManager {
     }
 
     this.Reset();
-    GameState.FadeOverlayManager.material.visible = false;
-    GameState.FadeOverlayManager.state = FadeOverlayState.NONE;
+    GameState.FadeOverlayManager.Stop();
     GameState.MenuManager.ClearMenus();
     if(GameState.module instanceof Module){
       GameState.module.dispose();
@@ -509,8 +512,7 @@ export class GameOverManager {
     this.gameOver = false;
     this.suspendTempDeath = true;
     GameState.timeScale = 1;
-    GameState.FadeOverlayManager.material.visible = false;
-    GameState.FadeOverlayManager.state = FadeOverlayState.NONE;
+    GameState.FadeOverlayManager.Stop();
     GameState.MenuManager.MenuGameOver?.close();
     GameState.MenuManager.MenuSaveLoad.mode = MenuSaveLoadMode.LOADGAME;
     GameState.MenuManager.MenuSaveLoad.open();

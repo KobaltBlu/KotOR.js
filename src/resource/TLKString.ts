@@ -46,10 +46,17 @@ export class TLKString {
     return String(this.SoundResRef ?? '').replace(/\0[\s\S]*$/g, '').trim();
   }
 
-  /** SoundLength exposed when SNDLENGTH_PRESENT is set; otherwise 0. */
+  /**
+   * SoundLength in seconds when SNDLENGTH_PRESENT is set; otherwise 0.
+   * TLK stores SoundLength as IEEE-754 float (retail CTlkTable::Fetch → float).
+   */
   getDisplaySoundLength(): number {
     if (!this.hasSoundLengthPresent()) return 0;
-    return this.SoundLength >>> 0;
+    const bits = this.SoundLength >>> 0;
+    if(bits === 0){ return 0; }
+    const view = new DataView(new ArrayBuffer(4));
+    view.setUint32(0, bits, true);
+    return view.getFloat32(0, true);
   }
 
   setFlag(flag: TLKStringFlags, enabled: boolean): void {

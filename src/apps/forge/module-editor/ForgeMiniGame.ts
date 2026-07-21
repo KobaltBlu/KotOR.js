@@ -16,7 +16,8 @@ export class ForgeMiniGame {
   farClip: number = 0;
   lateralAccel: number = 0;
   movementPerSec: number = 0;
-  music: number = 0;
+  /** Retail MiniGame.Music CResRef (streammusic). */
+  music: string = '';
   nearClip: number = 0;
   useInertia: number = 0;
 
@@ -32,7 +33,7 @@ export class ForgeMiniGame {
     this.farClip = struct.getFieldByLabel('Far_Clip').getValue();
     this.lateralAccel = struct.getFieldByLabel('LateralAccel').getValue();
     this.movementPerSec = struct.getFieldByLabel('MovementPerSec').getValue();
-    this.music = struct.getFieldByLabel('Music').getValue();
+    this.music = ForgeMiniGame.parseMusicResRef(struct);
     this.nearClip = struct.getFieldByLabel('Near_Clip').getValue();
     this.type = struct.getFieldByLabel('Type').getValue();
     this.useInertia = struct.getFieldByLabel('UseInertia').getValue();
@@ -60,6 +61,23 @@ export class ForgeMiniGame {
     }
   }
 
+  /** Retail ReadFieldCResRef("Music"); tolerate legacy DWORD ambientmusic indices. */
+  static parseMusicResRef(struct: KotOR.GFFStruct): string {
+    if(!struct?.hasField?.('Music')){ return ''; }
+    const raw = struct.getFieldByLabel('Music').getValue();
+    if(typeof raw === 'number'){
+      const row = KotOR.TwoDAManager?.datatables?.get('ambientmusic')?.rows?.[raw];
+      const res = row?.resource;
+      if(typeof res === 'string' && res && res !== '****'){
+        return res.replace(/\0[\s\S]*$/g, '').toLowerCase();
+      }
+      return '';
+    }
+    if(typeof raw !== 'string'){ return ''; }
+    const resRef = raw.replace(/\0[\s\S]*$/g, '').toLowerCase();
+    if(!resRef || resRef === '****'){ return ''; }
+    return resRef;
+  }
 
   exportToGFFStruct(): KotOR.GFFStruct {
     const struct = new KotOR.GFFStruct(0);
@@ -72,7 +90,7 @@ export class ForgeMiniGame {
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Far_Clip', this.farClip));
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'LateralAccel', this.lateralAccel));
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'MovementPerSec', this.movementPerSec));
-    struct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Music', this.music));
+    struct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Music', this.music || ''));
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Near_Clip', this.nearClip));
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Type', this.type));
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'UseInertia', this.useInertia));

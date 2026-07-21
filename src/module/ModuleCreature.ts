@@ -1128,7 +1128,7 @@ export class ModuleCreature extends ModuleObject {
         }
 
         const regen_health = parseFloat(regen2DA.healthregen);
-        if(!isNaN(regen_health)){
+        if(!isNaN(regen_health) && !GameState.PartyManager.DisableHealthRegen){
           this.addHP(Math.abs(regen_health));
         }
       }
@@ -5887,6 +5887,13 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('Plot'))
         this.plot = this.template.getFieldByLabel('Plot').getValue();
 
+      if(this.template.RootNode.hasField('IsDestroyable'))
+        this.isDestroyable = !!this.template.getFieldByLabel('IsDestroyable').getValue();
+      if(this.template.RootNode.hasField('IsRaiseable'))
+        this.isRaisable = !!this.template.getFieldByLabel('IsRaiseable').getValue();
+      if(this.template.RootNode.hasField('DeadSelectable'))
+        this.isDeadSelectable = !!this.template.getFieldByLabel('DeadSelectable').getValue();
+
       if(this.template.RootNode.hasField('PortraitId')){
         this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
         this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
@@ -6410,6 +6417,7 @@ export class ModuleCreature extends ModuleObject {
     //gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'AreaId') ).setValue(1);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).setValue(this.getAC());
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).setValue(this.bodyBag);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyVariation') ).setValue(this.bodyVariation | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Cha') ).setValue(this.cha);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') ).setValue(this.challengeRating);
 
@@ -6444,12 +6452,12 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CreatureSize') ).setValue(3);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentForce') ).setValue(this.currentForce);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHitPoints') ).setValue(this.currentHitPoints);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DeadSelectable') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DeadSelectable') ).setValue(this.isDeadSelectable ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Deity') ).setValue('');
     //gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue();
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DetectMode') ).setValue(this.detectMode ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Dex') ).setValue(this.dex);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Disarmable') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Disarmable') ).setValue(this.disarmable ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DuplicatingHead') ).setValue(255);
     
     //Effects
@@ -6570,9 +6578,9 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HitPoints') ).setValue(this.hitPoints);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Int') ).setValue(this.int);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Interruptable') ).setValue(this.interruptable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsDestroyable') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsDestroyable') ).setValue(this.isDestroyable ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsPC') ).setValue( this.playerCreated ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsRaiseable') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsRaiseable') ).setValue(this.isRaisable ? 1 : 0);
     if(this.playerCreated){
       gff.RootNode.addField( new GFFField(GFFDataType.INT, 'PlayerCreated') ).setValue(1);
     }
@@ -6616,7 +6624,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).setValue(this.perceptionRange?.id || 0);
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Phenotype') ).setValue(this.phenotype);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'PregameCurrent') ).setValue(28);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Race') ).setValue(this.race);
@@ -6656,6 +6664,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') ).setValue(this.subrace);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Tail') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TextureVar') ).setValue(this.textureVar | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'UseBackupHead') ).setValue(0);
     let varTable = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'WillSaveThrow') ).setValue(this.willSaveThrow);
@@ -6674,7 +6683,7 @@ export class ModuleCreature extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'fortbonus') ).setValue(this.fortbonus);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'refbonus') ).setValue(this.refbonus);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'refbonus') ).setValue(this.refbonus);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'willbonus') ).setValue(this.willbonus);
 
     this.template = gff;
 

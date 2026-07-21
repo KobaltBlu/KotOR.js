@@ -90,6 +90,12 @@ export class ModuleObject {
   combatRoundTimer: number;
   controlled: boolean;
   id: number;
+  /**
+   * Retail CSWMiniGameObject::mgo_index — slot in client MiniGameObjectArray (0xff = unset).
+   * Synced to `id` on register so NWScript StackPushObject / StoreState use the slot
+   * (retail ExecuteCommandSWMG_GetObjectByName @ 005cb6d0 pushes mgo_index).
+   */
+  mgoIndex: number = 0xff;
   initialized: boolean;
   isPlayer: boolean = false;
   isPM: boolean = false;

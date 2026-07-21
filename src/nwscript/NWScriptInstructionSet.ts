@@ -143,6 +143,7 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
       case NWScriptDataType.OBJECT:
         args.push( this.stack.pop()?.value );
         //Test for and fix instances where an object id is pushed instead of an object reference
+        // (module ObjectList id, or retail SWMG mgo_index 0..0xfe).
         if(typeof args[i] == 'number') args[i] = GameState.ModuleObjectManager.GetObjectById(args[i]);
       break;
       case NWScriptDataType.STRING:

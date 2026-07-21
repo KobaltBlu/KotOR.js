@@ -1,9 +1,12 @@
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { GameState } from "@/GameState";
-import { GameMenu } from "@/gui";
+import { GameMenu, LBL_3DView } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
 import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
+import { MDLLoader, TextureLoader } from "@/loaders";
 import type { ModuleItem } from "@/module/ModuleItem";
+import { OdysseyModel } from "@/odyssey";
+import { OdysseyModel3D } from "@/three/odyssey";
 import {
   UpgradeCategory,
   UpgradeSessionSlot,
@@ -80,6 +83,12 @@ export class MenuUpgrade extends GameMenu {
   originalTag: string = '';
   pendingCrystalTemplate: string = '';
 
+  /** Retail CSWGui3DSceneView on 3D_MODEL / 3D_MODEL_LS. */
+  _3dView: LBL_3DView;
+  _3dViewRoom: OdysseyModel3D;
+  _3dViewLight: OdysseyModel3D;
+  _3dViewItem: OdysseyModel3D;
+
   constructor(){
     super();
     this.gui_resref = 'upgrade';
@@ -126,8 +135,205 @@ export class MenuUpgrade extends GameMenu {
         this.cancelPanel();
       });
       this._button_b = this.BTN_BACK;
-      resolve();
+
+      this.init3DPreview().then(() => resolve()).catch(() => resolve());
     });
+  }
+
+  /**
+   * Retail CSWGuiUpgrade ctor — both 3D_MODEL scenes load `gui3D_room` + `upgitem_light`.
+   */
+  async init3DPreview(){
+    const lbl = this._3D_MODEL || this._3D_MODEL_LS;
+    if(!lbl){ return; }
+
+    this._3dView = new LBL_3DView();
+    this._3dView.visible = true;
+    // Retail Update3DView FOV ≈ 22.72 (0x41b5ced9); LBL_3DView default is 22.5.
+    this._3dView.camera.fov = 22.72;
+    if(lbl.extent?.width && lbl.extent?.height){
+      this._3dView.camera.aspect = lbl.extent.width / lbl.extent.height;
+    }
+    this._3dView.camera.updateProjectionMatrix();
+    this.bind3DViewControl();
+
+    try{
+      const roomMdl: OdysseyModel = await MDLLoader.loader.load('gui3D_room');
+      this._3dViewRoom = await OdysseyModel3D.FromMDL(roomMdl, { context: this._3dView });
+      this._3dView.addModel(this._3dViewRoom);
+    }catch(e){
+      console.warn('MenuUpgrade: failed to load gui3D_room', e);
+    }
+
+    try{
+      const lightMdl: OdysseyModel = await MDLLoader.loader.load('upgitem_light');
+      this._3dViewLight = await OdysseyModel3D.FromMDL(lightMdl, { context: this._3dView });
+      this._3dView.addModel(this._3dViewLight);
+    }catch(e){
+      console.warn('MenuUpgrade: failed to load upgitem_light', e);
+    }
+
+    await TextureLoader.LoadQueue().catch(() => {});
+  }
+
+  /** Point the shared GuiScene at the visible 3D_MODEL / 3D_MODEL_LS label. */
+  bind3DViewControl(){
+    if(!this._3dView){ return; }
+    const isLS = this.category === UpgradeCategory.LIGHTSABER;
+    const lbl = (isLS ? this._3D_MODEL_LS : this._3D_MODEL) || this._3D_MODEL || this._3D_MODEL_LS;
+    if(!lbl){ return; }
+    this._3dView.setControl(lbl);
+    const other = isLS ? this._3D_MODEL : this._3D_MODEL_LS;
+    if(other && other !== lbl){
+      other.setFillTexture?.(this._3dView.texture.texture);
+    }
+  }
+
+  /**
+   * Retail CSWGuiUpgrade::GetArmorModelAndTextureResRef @ 005bd420 —
+   * appearance.2da row 0x89, columns Model{A–N} / TEX{A–N} from clamped model
+   * variation; texture gets `%02d` textureVariation with Exists fallbacks.
+   */
+  static getArmorModelAndTextureResRef(
+    modelVariation: number,
+    textureVariation: number
+  ): { model: string; texture: string } {
+    let modelVar = modelVariation | 0;
+    if(modelVar < 1){ modelVar = 1; }
+    else if(modelVar > 0xe){ modelVar = 0xe; }
+    let texVar = textureVariation | 0;
+    if(texVar < 1){ texVar = 1; }
+
+    const letter = String.fromCharCode(0x40 + modelVar); // A..N
+    const appearance = GameState.TwoDAManager?.datatables?.get('appearance');
+    const row = appearance?.getRowByIndex?.(0x89);
+    if(!row){
+      return { model: '', texture: '' };
+    }
+
+    const modelCol = `model${letter.toLowerCase()}`;
+    const modelColAlt = `Model${letter}`;
+    const texCol = `tex${letter.toLowerCase()}`;
+    const texColAlt = `TEX${letter}`;
+
+    let model = String(row[modelCol] ?? row[modelColAlt] ?? '').replace(/\0[\s\S]*$/g, '').trim();
+    let texture = String(row[texCol] ?? row[texColAlt] ?? '').replace(/\0[\s\S]*$/g, '').trim();
+    if(!model || model === '****'){
+      model = '';
+    }
+    if(!texture || texture === '****'){
+      texture = '';
+    }else{
+      texture = `${texture}${texVar < 10 ? '0' : ''}${texVar}`;
+    }
+    return { model, texture };
+  }
+
+  /**
+   * Retail CSWGuiUpgrade::Update3DView @ 005bdae4 —
+   * RemoveModel item, AddModel from GetModelResRef / armor path, camera on
+   * camerahook{itemType}, parent to rotatehook{itemType}, play rotate / powered.
+   */
+  async update3DView(){
+    if(!this._3dView || !this.workingItem){ return; }
+    this.bind3DViewControl();
+
+    if(this._3dViewItem){
+      this._3dViewItem.parent?.remove?.(this._3dViewItem);
+      this._3dView.removeModel(this._3dViewItem);
+      this._3dViewItem = undefined;
+    }
+
+    const base = this.workingItem.getBaseItem?.() || this.workingItem.baseItem;
+    const itemType = base?.itemType ?? 0;
+    const baseId = this.workingItem.getBaseItemId?.() ?? this.workingItem.baseItemId ?? 0;
+
+    let camHook = `camerahook${itemType}`;
+    let rotHook = `rotatehook${itemType}`;
+    // Retail switch on baseitem itemType byte:
+    if(itemType === 0 && baseId === 1){
+      camHook = 'camerahook0a';
+      rotHook = 'rotatehook0a';
+    }else if(itemType === 4 && baseId === 0x14){
+      camHook = 'camerahook4a';
+      rotHook = 'rotatehook4a';
+    }else if(itemType === 0x24 || itemType === 0x25 || itemType === 0x26){
+      camHook = 'camerahook31';
+      rotHook = 'rotatehook31';
+    }
+
+    const room = this._3dViewRoom;
+    if(room){
+      const camNode =
+        room.nodes?.get?.(camHook) ||
+        (camHook !== 'camerahook' ? room.nodes?.get?.('camerahook') : undefined) ||
+        room.camerahook;
+      if(camNode){
+        camNode.updateWorldMatrix?.(true, false);
+        if(camNode.matrixWorld){
+          this._3dView.camera.position.setFromMatrixPosition(camNode.matrixWorld);
+          this._3dView.camera.quaternion.setFromRotationMatrix(camNode.matrixWorld);
+        }else{
+          this._3dView.camera.position.copy(camNode.position);
+          this._3dView.camera.quaternion.copy(camNode.quaternion);
+        }
+        this._3dView.camera.updateProjectionMatrix();
+      }
+    }
+
+    try{
+      this.workingItem.context = this._3dView as any;
+      let itemModel: OdysseyModel3D | undefined;
+
+      if(this.category === UpgradeCategory.ARMOR){
+        const armor = MenuUpgrade.getArmorModelAndTextureResRef(
+          this.workingItem.getModelVariation?.() ?? 1,
+          this.workingItem.getTextureVariation?.() ?? 1
+        );
+        if(armor.model){
+          try{
+            const mdl: OdysseyModel = await MDLLoader.loader.load(armor.model);
+            itemModel = await OdysseyModel3D.FromMDL(mdl, {
+              context: this._3dView,
+              lighting: true,
+              textureVar: armor.texture || '****',
+            });
+          }catch(e){
+            console.warn('MenuUpgrade: armor appearance model failed, falling back', e);
+          }
+        }
+      }
+
+      if(!itemModel){
+        itemModel = await this.workingItem.loadModel();
+      }
+      if(!itemModel){ return; }
+      this._3dViewItem = itemModel;
+
+      const rotNode = room?.nodes?.get?.(rotHook);
+      if(rotNode){
+        rotNode.add(itemModel);
+        room.playAnimation?.('rotate', true);
+      }else{
+        this._3dView.addModel(itemModel);
+      }
+
+      if(base?.poweredItem){
+        itemModel.playAnimation?.('powered', true);
+      }
+      if(this.category === UpgradeCategory.ARMOR){
+        itemModel.playAnimation?.('neutral', true);
+      }
+
+      await TextureLoader.LoadQueue().catch(() => {});
+    }catch(e){
+      console.warn('MenuUpgrade: Update3DView failed', e);
+    }
+  }
+
+  update(delta = 0){
+    super.update(delta);
+    this._3dView?.render?.(delta);
   }
 
   openWithItem(source: UpgradeItemSource, category?: UpgradeCategory) {
@@ -187,6 +393,7 @@ export class MenuUpgrade extends GameMenu {
     this.updateSlotIcons();
     this.setDescription(this.workingItem?.getDescription?.() || '');
     this.BTN_ASSEMBLE.disableSelection = false;
+    void this.update3DView();
   }
 
   getSlotButtons(): GUIButton[] {
@@ -301,6 +508,8 @@ export class MenuUpgrade extends GameMenu {
         }
       }
     }
+
+    this.bind3DViewControl();
   }
 
   /** Map UI button index to session slot index (armor uses buttons 1,2). */

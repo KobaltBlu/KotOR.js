@@ -21,25 +21,82 @@ const MSG_YOU_WIN = 32334;
 const MSG_TIED = 32338;
 const MSG_YOU_LOSE = 32335;
 
+/** Retail PlayAITurn / DoAITurn return codes (next AI_state). */
+enum PazaakAIResult {
+  DONE = 0,
+  DRAW = 1,
+  PLAY_SIDE = 2,
+  STAND = 3,
+  PASS = 4,
+}
+
+interface IPazaakSidecardPick {
+  total: number;
+  handIndex: number;
+  flipped: boolean;
+}
+
 /**
- * Find the best index for a number in an array
- * @param numbers - The array of numbers
- * @param target - The target number
- * @returns The index of the best number
+ * Retail CSWPazaak::FindPotentialSidecardTotal @ 006e4910.
+ * maximize=true → param_3==0 (highest non-bust total); false → param_3==1 (lowest).
  */
-function findBestIndex(numbers: number[], target: number): number {
+function findPotentialSidecardTotal(
+  table: IPazaakTable,
+  sideDeckCards: IPazaakCard[],
+  maximize: boolean
+): IPazaakSidecardPick {
+  const rawTotal = table.points;
+  let bestTotal = rawTotal > 20 ? -1000000 : rawTotal;
   let bestIndex = -1;
-  let bestDiff = Infinity;
+  let bestFlipped = false;
+  let prevWasReversible = false;
 
-  numbers.forEach((num, index) => {
-    const diff = target - num;
-    if (diff >= 0 && diff < bestDiff) {
-      bestDiff = diff;
-      bestIndex = index;
+  for(let i = 0; i < PazaakHandSlots.MAX_SLOTS; i++){
+    const cardId = table.handCards.get(i);
+    if(cardId == undefined || cardId == PazaakCards.INVALID){
+      continue;
     }
-  });
+    const card = sideDeckCards[cardId];
+    if(!card){ continue; }
 
-  return bestIndex;
+    const reversible = !!card.reversible;
+    // Retail: reversible tries flipped first (local_14==2), then unflipped.
+    const passes = reversible ? [true, false] : [false];
+    for(let p = 0; p < passes.length; p++){
+      const flipped = passes[p];
+      const mod = flipped ? card.modifier[1] : card.modifier[0];
+      let newTotal = rawTotal + mod;
+      if(newTotal > 20){
+        newTotal = -1000000;
+      }
+
+      let take = false;
+      if(maximize){
+        if(newTotal > bestTotal){
+          take = true;
+        }else if(newTotal === bestTotal && prevWasReversible){
+          take = true;
+        }
+      }else{
+        if(newTotal < bestTotal){
+          if(newTotal > -1000000){
+            take = true;
+          }
+        }else if(newTotal === bestTotal && prevWasReversible){
+          take = true;
+        }
+      }
+
+      if(take){
+        bestTotal = newTotal;
+        bestIndex = i;
+        bestFlipped = flipped;
+        prevWasReversible = reversible;
+      }
+    }
+  }
+
+  return { total: bestTotal, handIndex: bestIndex, flipped: bestFlipped };
 }
 
 /**
@@ -148,6 +205,8 @@ export class PazaakManager {
   static TurnMode: PazaakTurnMode = PazaakTurnMode.PLAYER;
   static Actions: IPazaakAction[] = [];
   static TargetWins: number = 3;
+  /** Retail CSWPazaak field6_0x22c — PlayAITurn state (0..4). */
+  static AIState: number = 0;
 
   static {
     PazaakManager.Initialize();
@@ -199,6 +258,11 @@ export class PazaakManager {
       PazaakManager.Config = PazaakConfig_KOTOR;
     }else{
       PazaakManager.Config = PazaakConfig_TSL;
+    }
+    // Retail ExecuteCommandPlayPazaak @ 00540fd0 — MaxWager<=0 mutes credits + wager UI.
+    if(this.MaxWager <= 0){
+      this.MaxWager = 0;
+      this.Wager = 0;
     }
     this.TotalMainDeckCards = PazaakManager.Config.data.mainDeckCards.length;
     this.TotalSideDeckCards = PazaakManager.Config.data.sideDeckCards.length;
@@ -422,11 +486,13 @@ export class PazaakManager {
       table.handCardPlayed = false;
       if(table.stand){
         this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
-      }
-      /**
-       * Draw a card from the main deck
-       */
-      else{
+      }else if(tableIndex == PazaakTurnMode.OPPONENT){
+        // Retail DoAITurn: AI_state starts at 0 (draw via PlayAITurn).
+        this.AIState = 0;
+        this.AddActionFront(tableIndex, PazaakActionType.AI_DETERMINE_MOVE, [tableIndex]);
+        this.AddActionFront(tableIndex, PazaakActionType.WAIT, [0.5, 0]);
+        this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_startturn']);
+      }else{
         this.AddActionFront(tableIndex, PazaakActionType.DRAW_CARD, [tableIndex]);
         this.AddActionFront(tableIndex, PazaakActionType.WAIT, [0.5, 0]);
         this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_startturn']);
@@ -458,8 +524,13 @@ export class PazaakManager {
       const playerPoints = this.Tables[0].points;
       const opponentPoints = this.Tables[1].points;
       const bBusted = (playerPoints > this.TargetPoints || opponentPoints > this.TargetPoints);
+      // Retail DetermineWinner: bust forces both stand before comparing.
+      if(bBusted){
+        this.Tables[0].stand = true;
+        this.Tables[1].stand = true;
+      }
       const bTied = (playerPoints == this.TargetPoints && opponentPoints == this.TargetPoints);
-      const bAllStand = (playerStand && opponentStand);
+      const bAllStand = (this.Tables[0].stand && this.Tables[1].stand);
       //if the players are tied or both busted or both stood, end the round
       if(bTied || bBusted || bAllStand){
         this.AddAction(this.TurnMode, PazaakActionType.END_ROUND);
@@ -484,36 +555,27 @@ export class PazaakManager {
       const playerPoints = this.Tables[PazaakTurnMode.PLAYER].points;
       const opponentPoints = this.Tables[PazaakTurnMode.OPPONENT].points;
       console.log(`PazaakManager: End round ${playerPoints} - ${opponentPoints}`);
-      //[Results]:
+      //[Results] retail CSWPazaak::DetermineWinner @ 006e48a0:
+      // bust totals → -1000000; higher non-bust total wins; equal → tie.
       // -1 - tied
       //  0 - player wins
       //  1 - opponent wins
+      let pScore = playerPoints > this.TargetPoints ? -1000000 : playerPoints;
+      let oScore = opponentPoints > this.TargetPoints ? -1000000 : opponentPoints;
       let result = -1;
-      if(playerPoints > this.TargetPoints){
-        //Player loses because they busted
-        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, ['mgs_warnbust']);
-        result = PazaakTurnMode.OPPONENT;
-      }else if(opponentPoints > this.TargetPoints){
-        //Opponent loses because they busted
-        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, ['mgs_winset']);
+      if(pScore > oScore){
         result = PazaakTurnMode.PLAYER;
+        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, [
+          playerPoints > this.TargetPoints || opponentPoints > this.TargetPoints ? 'mgs_winset' : 'mgs_winmatch'
+        ]);
+      }else if(oScore > pScore){
+        result = PazaakTurnMode.OPPONENT;
+        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, [
+          playerPoints > this.TargetPoints ? 'mgs_warnbust' : 'mgs_loseset'
+        ]);
       }else{
-        const pScoreOffset = Math.abs(playerPoints - this.TargetPoints);
-        const oScoreOffset = Math.abs(opponentPoints - this.TargetPoints);
-
-        if (pScoreOffset < oScoreOffset) {
-          //Player wins because they are closer to 20
-          this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, ['mgs_winmatch']);
-          result = PazaakTurnMode.PLAYER;
-        } else if (oScoreOffset < pScoreOffset) {
-          //Opponent wins because they are closer to 20
-          this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, ['mgs_loseset']);
-          result = PazaakTurnMode.OPPONENT;
-        } else {
-          //Both players are equally close to 20
-          this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, ['mgs_warnbust']);
-          result = -1;
-        }
+        result = -1;
+        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, ['mgs_warnbust']);
       }
 
       if(result == -1){
@@ -546,11 +608,16 @@ export class PazaakManager {
     else if(action.type == PazaakActionType.END_GAME){
       const winner = this.GetActionPropertyAsNumber(0, 0);
       this.Won = winner == PazaakTurnMode.PLAYER;
-      const winnings = this.Won ? this.Wager * 2 : -this.Wager * 2;
-      if(GameState.PartyManager.Player){
-        GameState.PartyManager.Player.addGold(winnings);
+      // Retail: MaxWager<=0 → do not modify player credits.
+      if(this.MaxWager > 0 && this.Wager !== 0){
+        const winnings = this.Won ? this.Wager * 2 : -this.Wager * 2;
+        if(GameState.PartyManager.Player){
+          GameState.PartyManager.Player.addGold(winnings);
+        }
+        console.log(`PazaakManager: End game ${winner == PazaakTurnMode.PLAYER ? 'Player' : 'Opponent'} wins! | ${winnings} gold`);
+      }else{
+        console.log(`PazaakManager: End game ${winner == PazaakTurnMode.PLAYER ? 'Player' : 'Opponent'} wins! | credits muted (MaxWager<=0)`);
       }
-      console.log(`PazaakManager: End game ${winner == PazaakTurnMode.PLAYER ? 'Player' : 'Opponent'} wins! | ${winnings} gold`);
       GameState.MenuManager.MenuPazaakGame.close();
       if(this.EndScriptInstance){
         this.EndScriptInstance.run(this.Opponent);
@@ -583,62 +650,21 @@ export class PazaakManager {
       }
 
       /**
-       * Find the best card to play next
+       * Player: stand on 20 / bust ends round / full board ends turn.
+       * Opponent: AI continues via queued AI_DETERMINE_MOVE (PlayAITurn state 1).
        */
-      let bestCardIndex = -1;
-      let bestCardFlipped = false;
-      let scoreAfterBestCard = table.points;
-      for(let i = 0; i < PazaakHandSlots.MAX_SLOTS; i++){
-        const sdCardIndex = table.handCards.get(i);
-        if(sdCardIndex == PazaakCards.INVALID){
-          continue;
+      if(tableIndex == PazaakTurnMode.PLAYER){
+        if(table.points == this.TargetPoints){
+          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
+        }else if(table.points > this.TargetPoints){
+          this.AddActionFront(tableIndex, PazaakActionType.END_ROUND);
+        }else if(!cardDrawn){
+          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex]);
+        }else{
+          this.AddActionFront(tableIndex, PazaakActionType.WAIT, [1, 0]);
+          this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_drawmain']);
         }
-        const card = this.Config.data.sideDeckCards[sdCardIndex];
-        const scoreAfterCard = table.points + card.modifier[0];
-
-        const scores = [table.points, scoreAfterBestCard, scoreAfterCard];
-        if(card.reversible){
-          scores.push(table.points + card.modifier[1]);
-        }
-
-        const bestIndex = findBestIndex(scores, this.TargetPoints);
-
-        if(bestIndex == 2){
-          bestCardIndex = i;
-          scoreAfterBestCard = table.points + card.modifier[0];
-          bestCardFlipped = false;
-        }else if(bestIndex == 3){
-          bestCardIndex = i;
-          scoreAfterBestCard = table.points + card.modifier[1];
-          bestCardFlipped = true;
-        }
-      }
-
-      /**
-       * If the player has 20 points after drawing a card, they will end their turn by standing
-       */
-      if(table.points == this.TargetPoints){
-        this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
-      }
-      /**
-       * If the player has more than 20 points, they will end their turn because they busted
-       */
-      else if(table.points > this.TargetPoints){
-        this.AddActionFront(tableIndex, PazaakActionType.END_ROUND);
-      }
-      /**
-       * If the player has no space left on the table, they will end their turn
-       */
-      else if(!cardDrawn){
-        this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex]);
-      }
-      /**
-       * If the player has cards to draw, draw a card
-       */
-      else{
-        if(tableIndex == 1){
-          this.AddActionFront(tableIndex, PazaakActionType.AI_DETERMINE_MOVE, [tableIndex]);
-        }
+      }else{
         this.AddActionFront(tableIndex, PazaakActionType.WAIT, [1, 0]);
         this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_drawmain']);
       }
@@ -681,117 +707,44 @@ export class PazaakManager {
       this.AddActionFront(tableIndex, PazaakActionType.WAIT, [1, 0]);
       this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_playside']);
 
-      /**
-       * If this action is from the opponent, determine if they should stand or not
-       */
-      if(tableIndex == PazaakTurnMode.OPPONENT){
-        const stand = table.points >= 18 && table.points <= this.TargetPoints;
-        this.AddAction(tableIndex, PazaakActionType.END_TURN, [tableIndex, stand ? 1 : 0]);
-      }
+      // Opponent side-card: retail returns state 2; next AI_DETERMINE_MOVE continues PlayAITurn.
+      // Player side-card: UI / player chooses stand separately.
 
       actionStatus = ActionStatus.COMPLETE;
     }
     /**
-     * AI determines a move
+     * AI determines a move — retail CSWPazaak::PlayAITurn @ 006e4c60.
      */
     else if(action.type == PazaakActionType.AI_DETERMINE_MOVE){
-      console.log(`PazaakManager: AI determining move...`);
-      const tableIndex = this.GetActionPropertyAsNumber(0, 0);
-      const aiTable = this.Tables[tableIndex];
-      const playerTable = this.Tables[PazaakTurnMode.PLAYER];
+      console.log(`PazaakManager: AI determining move (state ${this.AIState})...`);
+      const tableIndex = PazaakTurnMode.OPPONENT;
+      const decision = this.playAITurn(this.AIState);
+      this.AIState = decision.code;
 
-      /**
-       * Find the best card to play next
-       */
-      let bestCardIndex = -1;
-      let bestCardFlipped = false;
-      let scoreAfterBestCard = aiTable.points;
-      for(let i = 0; i < PazaakHandSlots.MAX_SLOTS; i++){
-        const sdCardIndex = aiTable.handCards.get(i);
-        if(sdCardIndex == PazaakCards.INVALID){
-          continue;
-        }
-        const card = this.Config.data.sideDeckCards[sdCardIndex];
-        const scoreAfterCard = aiTable.points + card.modifier[0];
-
-        const scores = [aiTable.points, scoreAfterBestCard, scoreAfterCard];
-        if(card.reversible){
-          scores.push(aiTable.points + card.modifier[1]);
-        }
-
-        const bestIndex = findBestIndex(scores, this.TargetPoints);
-
-        if(bestIndex == 2){
-          bestCardIndex = i;
-          scoreAfterBestCard = aiTable.points + card.modifier[0];
-          bestCardFlipped = false;
-        }else if(bestIndex == 3){
-          bestCardIndex = i;
-          scoreAfterBestCard = aiTable.points + card.modifier[1];
-          bestCardFlipped = true;
-        }
-      }
-
-      /**
-       * If the AI has 20 points, they will stand to end their turn
-       * there is no better move at this point
-       */
-      if(aiTable.points == 20){
-        this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 1]);
-      }
-      /**
-       * The AI will stand on 19 or 18
-       * unless they have a better card to play that will put them equal to 20
-       * to consolidate their potential win
-       */
-      if((aiTable.points == 19 || aiTable.points == 18)){
-        if(bestCardIndex > -1){
-          this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [tableIndex, bestCardIndex, bestCardFlipped ? 1 : 0]);
-        }else{
-          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 1]);
-        }
-      }
-      /**
-       * If the AI has more than 20 points, they will end their turn because they busted
-       */
-      else if(aiTable.points > 20){
-        //if the AI has more than 20 points,
-        // they will play a hand card to try to get just under or equal to 20
-        // but not less than 18
-        if(bestCardIndex != -1 && scoreAfterBestCard >= 18){
-          this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [tableIndex, bestCardIndex, bestCardFlipped ? 1 : 0]);
-        }else{
-          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 1]);
-        }
-      }
-      /**
-       * If the AI has less than 18 points, they will play a hand card
-       */
-      else if(aiTable.points < 18){
-        //if the AI has less than 15 points, they will end their turn
-        //this is to prevent the AI from playing a card that will cause them to use up all their hand cards too early
-        if(aiTable.points < 15){
-          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
-        }
-        /**
-         * If the AI has a valid card to play, play it
-         */
-        else if(bestCardIndex != -1){
-          this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [tableIndex, bestCardIndex, bestCardFlipped ? 1 : 0]);
-        }
-        /**
-         * If the AI has no valid cards to play, end their turn in hopes of not busting after the next draw
-         */
-        else{
-          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
-        }
-      }
-      /**
-       * If the AI has between 18 and 20 points, they will auto stand to end their turn
-       */
-      else
-      {
-        this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [PazaakTurnMode.OPPONENT, 0]);
+      switch(decision.code){
+        case PazaakAIResult.DRAW:
+          this.AddActionFront(tableIndex, PazaakActionType.AI_DETERMINE_MOVE, [tableIndex]);
+          this.AddActionFront(tableIndex, PazaakActionType.DRAW_CARD, [tableIndex]);
+          this.AddActionFront(tableIndex, PazaakActionType.WAIT, [0.4, 0]);
+          break;
+        case PazaakAIResult.PLAY_SIDE:
+          this.AddActionFront(tableIndex, PazaakActionType.AI_DETERMINE_MOVE, [tableIndex]);
+          this.AddActionFront(tableIndex, PazaakActionType.PLAY_HAND_CARD, [
+            tableIndex,
+            decision.handIndex,
+            decision.flipped ? 1 : 0
+          ]);
+          this.AddActionFront(tableIndex, PazaakActionType.WAIT, [0.4, 0]);
+          break;
+        case PazaakAIResult.STAND:
+          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
+          break;
+        case PazaakAIResult.PASS:
+          this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 0]);
+          break;
+        case PazaakAIResult.DONE:
+        default:
+          break;
       }
       actionStatus = ActionStatus.COMPLETE;
     }
@@ -848,6 +801,89 @@ export class PazaakManager {
 
   static ClearActions(){
     this.Actions = [];
+  }
+
+  /**
+   * Retail CSWPazaak::PlayAITurn @ 006e4c60.
+   * AI = enemy table, human = player table; aiState = field6_0x22c.
+   */
+  static playAITurn(aiState: number): { code: number; handIndex: number; flipped: boolean } {
+    const ai = this.Tables[PazaakTurnMode.OPPONENT];
+    const player = this.Tables[PazaakTurnMode.PLAYER];
+    const sideCards = this.Config.data.sideDeckCards;
+    const none = { code: PazaakAIResult.DONE, handIndex: -1, flipped: false };
+
+    let playerTotal = player.points;
+    if(playerTotal > 20){
+      playerTotal = -1000000;
+      player.stand = true;
+    }
+
+    switch(aiState){
+      case 0:
+        if(ai.stand){
+          return none;
+        }
+        return { code: PazaakAIResult.DRAW, handIndex: -1, flipped: false };
+
+      case 1: {
+        const aiRaw = ai.points;
+        const earlySets = (player.winCount + 1) < 3;
+        if(player.stand && playerTotal < aiRaw && aiRaw < 21){
+          return { code: PazaakAIResult.STAND, handIndex: -1, flipped: false };
+        }
+
+        const minSide = findPotentialSidecardTotal(ai, sideCards, false);
+        const maxSide = findPotentialSidecardTotal(ai, sideCards, true);
+
+        if(
+          maxSide.total > 17 &&
+          playerTotal <= maxSide.total &&
+          (maxSide.total > 19 || (maxSide.total > 18 && minSide.total > 11) || minSide.total > 13) &&
+          maxSide.handIndex >= 0
+        ){
+          return {
+            code: PazaakAIResult.PLAY_SIDE,
+            handIndex: maxSide.handIndex,
+            flipped: maxSide.flipped
+          };
+        }
+
+        if(aiRaw > 20){
+          if(earlySets && playerTotal > 17 && maxSide.total < playerTotal){
+            return { code: PazaakAIResult.PASS, handIndex: -1, flipped: false };
+          }
+          if(maxSide.handIndex >= 0){
+            return {
+              code: PazaakAIResult.PLAY_SIDE,
+              handIndex: maxSide.handIndex,
+              flipped: maxSide.flipped
+            };
+          }
+        }
+      }
+      // falls through to post-side / stand logic (retail case 2)
+      case 2: {
+        const aiCmp = ai.points > 20 ? -1000000 : ai.points;
+        if(player.stand && aiCmp < playerTotal){
+          return { code: PazaakAIResult.PASS, handIndex: -1, flipped: false };
+        }
+        if(aiCmp < 18){
+          const minSide = findPotentialSidecardTotal(ai, sideCards, false);
+          if(minSide.total < 16){
+            return { code: PazaakAIResult.PASS, handIndex: -1, flipped: false };
+          }
+        }
+        return { code: PazaakAIResult.STAND, handIndex: -1, flipped: false };
+      }
+
+      case 3:
+      case 4:
+        return none;
+
+      default:
+        return { code: PazaakAIResult.PASS, handIndex: -1, flipped: false };
+    }
   }
 
   /**

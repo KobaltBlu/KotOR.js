@@ -104,8 +104,15 @@ export class AmbientAudioEmitter extends EventListener {
    * @param destination
    */
   setDestination(destination: AudioNode){
+    if(this.gainNode && this.destination && this.destination !== destination){
+      try{
+        this.gainNode.disconnect(this.destination);
+      }catch(_e){ /* already disconnected */ }
+    }
     this.destination = destination;
-    this.gainNode.connect(this.destination);
+    if(this.gainNode && this.destination){
+      this.gainNode.connect(this.destination);
+    }
     return this;
   }
 

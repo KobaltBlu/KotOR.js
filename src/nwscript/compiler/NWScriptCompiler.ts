@@ -108,7 +108,6 @@ export class NWScriptCompiler {
     compile_fail: [],
     compile_end: [],
   };
-  spCache: number = 0;
   bytesWritten: number = 0;
   freezeBytesWritten: boolean = false;
   basePointerWriting: boolean;
@@ -243,13 +242,18 @@ export class NWScriptCompiler {
   getStatementLength( statement: any ){
     const bpCache = this.basePointer;
     const spCache = this.stackPointer;
+    // Dry-runs nest (DelayCommand→AssignCommand thunk lengths): restore the previous
+    // freeze/silent state, not false, or the outer dry-run drifts bytesWritten and
+    // later JSR fixups patch the wrong site (self-JSR +0).
+    const silentCache = this._silent;
+    const freezeCache = this.freezeBytesWritten;
     this._silent = true;
     this.freezeBytesWritten = true;
     const buffer = this.compileStatement( statement ) as Uint8Array;
-    this._silent = false;
-    this.freezeBytesWritten = false;
+    this._silent = silentCache;
+    this.freezeBytesWritten = freezeCache;
     this.basePointer = bpCache;
-    this.spCache = spCache;
+    this.stackPointer = spCache;
     return buffer.length;
   }
 
@@ -689,7 +693,10 @@ export class NWScriptCompiler {
           for(let i = 0; i < statement.struct_reference.properties.length; i++){
             const prop = statement.struct_reference.properties[i];
             prop.is_global = statement.is_global;
+            // Vectors occupy three float slots (12 bytes), same as scalar vector locals.
             if( this.getDataType(prop).value == 'vector'){
+              buffers.push( this.writeRSADD( NWCompileDataTypes.F ) );
+              buffers.push( this.writeRSADD( NWCompileDataTypes.F ) );
               buffers.push( this.writeRSADD( NWCompileDataTypes.F ) );
             }else{
               buffers.push( this.writeRSADD( this.getDataType(prop).unary ) );
@@ -822,7 +829,7 @@ export class NWScriptCompiler {
         const isGlobal = varRef?.is_global;
         const propRef = left.property_reference;
         buffers.push( this.compileStatement(right) as Uint8Array );
-        // @todo support vectors, currently we only support single slot datatypes
+        // Size follows statement.datatype (incl. vector = 12 bytes / 3 floats).
         if(isGlobal){
           buffers.push( this.writeCPDOWNBP( (varRef.stackPointer - this.basePointer) + propRef.offsetPointer, this.getDataTypeStackLength(statement.datatype) ) );
         }else{
@@ -1985,8 +1992,8 @@ export class NWScriptCompiler {
 
       if(statement.initializer && typeof statement.initializer === 'object'){
         (statement.initializer as any).statement_context = 'statement';
+        buffers.push( this.compileStatement( statement.initializer ) as Uint8Array );
       }
-      buffers.push( this.compileStatement( statement.initializer ) as Uint8Array );
 
       statement.initializer_end = this.scope.bytes_written;
       //End initializer
@@ -2035,8 +2042,8 @@ export class NWScriptCompiler {
 
       if(statement.incrementor && typeof statement.incrementor === 'object'){
         (statement.incrementor as any).statement_context = 'statement';
+        buffers.push( this.compileStatement( statement.incrementor ) as Uint8Array );
       }
-      buffers.push( this.compileStatement( statement.incrementor ) as Uint8Array );
 
       statement.incrementor_end = this.scope.bytes_written;
       //End incrementor

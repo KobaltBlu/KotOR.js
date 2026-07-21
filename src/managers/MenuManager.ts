@@ -555,6 +555,7 @@ export class MenuManager {
           MenuManager.MenuPazaakGame,
           MenuManager.MenuPazaakSetup,
           MenuManager.MenuGameOver,
+          MenuManager.MenuSwoopUp,
         ] = await Promise.all([
           MenuManager.GameMenuLoader(TSL.InGameAreaTransition),
           MenuManager.GameMenuLoader(TSL.InGameBark),
@@ -585,6 +586,7 @@ export class MenuManager {
           MenuManager.GameMenuLoader(TSL.MenuPazaakGame),
           MenuManager.GameMenuLoader(TSL.MenuPazaakSetup),
           MenuManager.GameMenuLoader(TSL.MenuGameOver),
+          MenuManager.GameMenuLoader(TSL.MenuSwoopUp),
         ]) as [
           KOTOR.InGameAreaTransition, KOTOR.InGameBark, KOTOR.InGameComputer, KOTOR.InGameComputerCam,
           KOTOR.InGameDialog, KOTOR.InGameOverlay, KOTOR.InGamePause, KOTOR.MenuAbilities,
@@ -593,7 +595,7 @@ export class MenuManager {
           KOTOR.MenuMap, KOTOR.MenuMessages, KOTOR.MenuOptions,
           KOTOR.MenuPartySelection, KOTOR.MenuStore, KOTOR.MenuTop, KOTOR.MenuUpgrade,
           KOTOR.MenuUpgradeItems, KOTOR.MenuUpgradeSelect, KOTOR.MenuPazaakWager,
-          KOTOR.MenuPazaakGame, KOTOR.MenuPazaakSetup, TSL.MenuGameOver,
+          KOTOR.MenuPazaakGame, KOTOR.MenuPazaakSetup, TSL.MenuGameOver, TSL.MenuSwoopUp,
         ];
       }
 

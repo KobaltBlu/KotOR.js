@@ -5,7 +5,9 @@ import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
 declare const dialog: any;
 
-const webHandleHasRemove = typeof (FileSystemFileHandle.prototype as any).remove === 'function'
+const webHandleHasRemove =
+  typeof FileSystemFileHandle !== "undefined" &&
+  typeof (FileSystemFileHandle.prototype as { remove?: unknown }).remove === "function";
 
 const spleep = (time: number = 0) => {
   return new Promise( (resolve, reject) => {

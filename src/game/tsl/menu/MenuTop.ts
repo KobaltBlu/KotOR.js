@@ -95,6 +95,7 @@ export class MenuTop extends K1_MenuTop {
 
       this.BTN_MAP.addEventListener('click', (e) => {
         e.stopPropagation();
+        if(GameState.PartyManager.DisableMap) return;
         this.CloseAllOtherMenus();
         this.manager.MenuMap.open();
       });

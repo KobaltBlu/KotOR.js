@@ -23,6 +23,13 @@ export class NWScriptASTCodeGenerator {
   generate(ast: NWScriptProgramNode): string {
     const lines: string[] = [];
 
+    // Emit recovered struct types used by STRUCTURE locals
+    const structDefs = this.collectStructDefinitions(ast);
+    for (const def of structDefs) {
+      lines.push(...def);
+      lines.push('');
+    }
+
     // Generate global variable declarations
     for (const global of ast.globals) {
       lines.push(this.generateGlobalVariableDeclaration(global));
@@ -44,6 +51,38 @@ export class NWScriptASTCodeGenerator {
     }
 
     return lines.join('\n');
+  }
+
+  /**
+   * Synthetic struct Pt-like definitions for STRUCTURE-typed locals.
+   */
+  private collectStructDefinitions(ast: NWScriptProgramNode): string[][] {
+    let needsStruct = false;
+    const scanDecl = (d: { dataType: NWScriptDataType }) => {
+      if (d.dataType === NWScriptDataType.STRUCTURE) {
+        needsStruct = true;
+      }
+    };
+    for (const g of ast.globals) {
+      scanDecl(g);
+    }
+    for (const f of ast.functions) {
+      for (const l of f.locals) {
+        scanDecl(l);
+      }
+    }
+    if (!needsStruct) {
+      return [];
+    }
+    return [
+      [
+        'struct Struct0',
+        '{',
+        '    int x;',
+        '    int y;',
+        '};',
+      ],
+    ];
   }
 
   /**
@@ -209,8 +248,8 @@ export class NWScriptASTCodeGenerator {
    * Generate assignment
    */
   private generateAssignment(assign: NWScriptAssignmentNode): string {
-    const prefix = assign.isGlobal ? 'GLOBAL.' : '';
-    return `${prefix}${assign.variable} = ${assign.value.toNSS()};`;
+    // Globals are declared at program scope — do not prefix with illegal `GLOBAL.`
+    return `${assign.variable} = ${assign.value.toNSS()};`;
   }
 
   /**
@@ -342,8 +381,9 @@ export class NWScriptASTCodeGenerator {
     let init = '';
     if (forNode.init) {
       const initLines = this.generateStatement(forNode.init);
-      if (initLines.length > 0) {
-        init = initLines[0].replace(/;$/, ''); // Remove trailing semicolon
+      // Skip empty / control-flow-only "statements" in the init slot
+      if (initLines.length > 0 && !initLines[0].startsWith('//') && initLines[0] !== 'continue;' && initLines[0] !== 'break;') {
+        init = initLines[0].replace(/;$/, '');
       }
     }
     
@@ -352,8 +392,13 @@ export class NWScriptASTCodeGenerator {
     let increment = '';
     if (forNode.increment) {
       const incLines = this.generateStatement(forNode.increment);
-      if (incLines.length > 0) {
-        increment = incLines[0].replace(/;$/, ''); // Remove trailing semicolon
+      if (
+        incLines.length > 0 &&
+        !incLines[0].startsWith('//') &&
+        incLines[0] !== 'continue;' &&
+        incLines[0] !== 'break;'
+      ) {
+        increment = incLines[0].replace(/;$/, '');
       }
     }
     
@@ -365,7 +410,6 @@ export class NWScriptASTCodeGenerator {
     if (bodyLines.length > 0) {
       lines.push(...bodyLines.map(line => this.indent() + line));
     } else {
-      // Empty body - add empty line or comment
       lines.push(this.indent() + '// Empty');
     }
     this.indentLevel--;
@@ -422,6 +466,8 @@ export class NWScriptASTCodeGenerator {
         return 'void';
       case NWScriptDataType.VECTOR:
         return 'vector';
+      case NWScriptDataType.STRUCTURE:
+        return 'struct Struct0';
       case NWScriptDataType.EFFECT:
         return 'effect';
       case NWScriptDataType.EVENT:

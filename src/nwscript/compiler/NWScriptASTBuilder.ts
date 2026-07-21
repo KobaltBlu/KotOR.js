@@ -648,22 +648,45 @@ export class NWScriptASTBuilder {
   // Data type parsing
   // -------------------------
   private tryParseDataType(): DataTypeNode | null {
-    if (this.is("keyword", "VOID")) { this.next(); return dt("void", NWCompileDataTypes.void); }
-    if (this.is("keyword", "INT")) { this.next(); return dt("int", NWCompileDataTypes.int); }
-    if (this.is("keyword", "FLOAT")) { this.next(); return dt("float", NWCompileDataTypes.float); }
-    if (this.is("keyword", "STRING")) { this.next(); return dt("string", NWCompileDataTypes.string); }
-    if (this.is("keyword", "OBJECT")) { this.next(); return dt("object", NWCompileDataTypes.object); }
-    if (this.is("keyword", "VECTOR")) { this.next(); return dt("vector", NWCompileDataTypes.vector); }
-    if (this.is("keyword", "ACTION")) { this.next(); return dt("action", NWCompileDataTypes.action); }
+    // Type keywords are accepted case-insensitively (K1 nwscript.nss uses INT, OBJECT_ID).
+    // Identifiers like Vector (engine action) must remain names — see lexer exact keyword match.
+    const typeFromKeyword = (kw: string, value: string, unary: number): DataTypeNode | null => {
+      if (this.is("keyword", kw)) {
+        this.next();
+        return dt(value, unary);
+      }
+      return null;
+    };
 
-    // engine types are identifiers that got injected from nwscript.nss defines
+    const fromKw =
+      typeFromKeyword("VOID", "void", NWCompileDataTypes.void) ||
+      typeFromKeyword("INT", "int", NWCompileDataTypes.int) ||
+      typeFromKeyword("FLOAT", "float", NWCompileDataTypes.float) ||
+      typeFromKeyword("STRING", "string", NWCompileDataTypes.string) ||
+      typeFromKeyword("OBJECT", "object", NWCompileDataTypes.object) ||
+      typeFromKeyword("VECTOR", "vector", NWCompileDataTypes.vector) ||
+      typeFromKeyword("ACTION", "action", NWCompileDataTypes.action);
+    if (fromKw) return fromKw;
+
     if (this.is("name")) {
       const lower = this.tok.value.toLowerCase();
-      const unary = this.engineTypesByLower.get(lower);
-      if (unary !== undefined) {
-        const v = this.tok.value;
-        this.next();
-        return { type: "datatype", value: v.toLowerCase(), unary, engine_type: true };
+      switch (lower) {
+        case "void": this.next(); return dt("void", NWCompileDataTypes.void);
+        case "int": this.next(); return dt("int", NWCompileDataTypes.int);
+        case "float": this.next(); return dt("float", NWCompileDataTypes.float);
+        case "string": this.next(); return dt("string", NWCompileDataTypes.string);
+        case "object":
+        case "object_id": this.next(); return dt("object", NWCompileDataTypes.object);
+        case "vector": this.next(); return dt("vector", NWCompileDataTypes.vector);
+        case "action": this.next(); return dt("action", NWCompileDataTypes.action);
+        default: {
+          const unary = this.engineTypesByLower.get(lower);
+          if (unary !== undefined) {
+            const v = this.tok.value;
+            this.next();
+            return { type: "datatype", value: v.toLowerCase(), unary, engine_type: true };
+          }
+        }
       }
     }
 

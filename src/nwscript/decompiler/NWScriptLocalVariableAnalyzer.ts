@@ -75,11 +75,11 @@ export class NWScriptLocalVariableAnalyzer {
       let current = rsadd.nextInstr;
       if (!current) continue;
 
-      // Find CONST
-      while (current && current.code !== OP_CONST && current.address < rsadd.address + 50) {
-        current = current.nextInstr;
+      // Plain init is RSADD → CONST (immediately). Skipping ahead past CPTOP*/ops
+      // falsely treats expression operands (e.g. `t = z * 2`) as the local's initializer.
+      if (current.code !== OP_CONST) {
+        continue;
       }
-      if (!current || current.code !== OP_CONST) continue;
       const constInstr = current;
 
       // Check for NEG after CONST

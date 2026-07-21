@@ -15,6 +15,10 @@ import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { isClientCombatMode } from "@/managers/reticle";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
+
+/** First non-MG object id — retail SWMG StackPushObject uses mgo_index 0..0xfe. */
+const FIRST_MODULE_OBJECT_ID = MiniGameObjectArray.CAPACITY + 1; // 0x100
 
 /** Retail GetNearestObjects / DoPassiveSelection range (√900). */
 const NEAREST_OBJECT_RANGE = 30;
@@ -45,7 +49,8 @@ export class ModuleObjectManager {
   static module: Module;
 
   static ObjectList: Map<any, ModuleObject> = new Map();
-  static COUNT: number = 1;
+  /** Start above mgo_index range (0..0xfe) so module ids never collide with SWMG object ids. */
+  static COUNT: number = FIRST_MODULE_OBJECT_ID;
   static PLAYER_ID = ModuleObjectConstant.PLAYER_ID;
 
   static GetObjectById(id: ModuleObject|number = -1){
@@ -53,15 +58,23 @@ export class ModuleObjectManager {
     if(id == ModuleObjectConstant.OBJECT_INVALID)
       return undefined;
 
-    if(typeof id === 'object'){
-      if(id.id >= 1){
-        return id;
-      }
+    // Retail MG StackPushObject uses mgo_index; 0xff = empty / invalid for MG.
+    if(id === MiniGameObjectArray.INVALID_INDEX)
+      return undefined;
+
+    if(typeof id === 'object' && id != null){
+      return id;
     }
 
     if(this.ObjectList.has(id)){
       return this.ObjectList.get(id);
     }
+
+    // Retail SWMG_* StackPopObject → GetMiniGameObject(mgo_index).
+    if(typeof id === 'number' && id >= 0 && id < MiniGameObjectArray.CAPACITY){
+      return MiniGameObjectArray.get(id);
+    }
+
     return undefined;
 
   }
@@ -105,9 +118,10 @@ export class ModuleObjectManager {
   }
 
   static Reset(){
-    this.COUNT = 1;
+    this.COUNT = FIRST_MODULE_OBJECT_ID;
     this.PLAYER_ID = ModuleObjectConstant.PLAYER_ID;
     this.ObjectList.clear();
+    MiniGameObjectArray.clear();
   }
 
   public static GetObjectByTag(sTag = '', iNum = 0, oType = NWModuleObjectType.ALL){

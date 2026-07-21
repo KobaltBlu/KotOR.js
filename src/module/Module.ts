@@ -13,6 +13,7 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { ERFObject } from "@/resource/ERFObject";
 import { CurrentGame } from "@/engine/CurrentGame";
+import { SaveLoadAudit } from "@/engine/SaveLoadAudit";
 import { RIMObject } from "@/resource/RIMObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { GameEventFactory } from "@/events/GameEventFactory";
@@ -291,6 +292,7 @@ export class Module {
           tokenList[i].getFieldByLabel('Mod_TokensValue').getValue()
         );
       }
+      SaveLoadAudit.logLoadStage('Mod_Tokens', { tokens: this.customTokens.size });
     }
 
     if(ifo.RootNode.hasField('Mod_PlayerList') && isLoadingSave){
@@ -597,9 +599,11 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_X') ).setValue(this.entryX);
     ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Y') ).setValue(this.entryY);
     ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Z') ).setValue(this.entryZ);
+    ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Expansion_Pack') ).setValue(this.expansionPack | 0);
     ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Expan_List') );
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Hak') ).setValue(this.hak);
-    ifo.RootNode.addField( new GFFField(GFFDataType.VOID, 'Mod_ID') );
+    const modIdField = ifo.RootNode.addField( new GFFField(GFFDataType.VOID, 'Mod_ID') );
+    modIdField.setData(this.id instanceof Uint8Array && this.id.length ? this.id : new Uint8Array(16));
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsNWMFile') ).setValue(0);
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsSaveGame') ).setValue( isSaveGame ? 1 : 0);
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_MinPerHour') ).setValue(this.timeManager.minutesPerHour);
@@ -636,15 +640,33 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMiliSec') ).setValue(this.timeManager.milisecond);
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMinute') ).setValue(this.timeManager.minute);
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartMonth') ).setValue(this.timeManager.month);
+    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_StartMovie') ).setValue(this.startMovie || '');
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartSecond') ).setValue(this.timeManager.second);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_StartYear') ).setValue(this.timeManager.year);
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Tag') ).setValue(this.tag);
-    ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Tokens') );
+    const tokenList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Tokens') );
+    // Retail SaveModuleIFOStart skips built-in tokens 0..9
+    this.customTokens.forEach( (tokenValue, tokenNumber) => {
+      if(tokenNumber <= 9) return;
+      const tokenStruct = new GFFStruct(7);
+      tokenStruct.addField( new GFFField(GFFDataType.DWORD, 'Mod_TokensNumber') ).setValue(tokenNumber);
+      tokenStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_TokensValue') ).setValue(tokenValue || '');
+      tokenList.addChildStruct(tokenStruct);
+    });
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Transition') ).setValue(this.timeManager.transition);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Version') ).setValue(this.version);
+    ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_VO_ID') ).setValue(this.voId || '');
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_XPScale') .setValue(this.xpScale));
-    ifo.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    // Module-level SWVarTable: no ModuleObject locals yet — write empty BitArray/ByteArray like object saves
+    const swVarTable = ifo.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
+    const swVarStruct = new GFFStruct();
+    swVarStruct.addField( new GFFField(GFFDataType.LIST, 'BitArray') );
+    swVarStruct.addField( new GFFField(GFFDataType.LIST, 'ByteArray') );
+    swVarTable.addChildStruct(swVarStruct);
     ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
+    if(isSaveGame){
+      SaveLoadAudit.warnGap('Creature List / VarTable', 'limbo creatures and named VarTable not populated (no runtime store yet)');
+    }
     
     this.ifo = ifo;
 

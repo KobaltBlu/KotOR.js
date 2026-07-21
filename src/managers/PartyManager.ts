@@ -146,10 +146,52 @@ export class PartyManager {
   static InfluenceMap: Map<number, number> = new Map<number, number>();
   static ChemicalCount: number = 0;
   static ComponentCount: number = 0;
+  /** Party XP pool (retail PT_XP_POOL). */
+  static XPPool: number = 0;
+  /** Controlled party index; -1 = PC (retail PT_CONTROLLED_NPC). */
+  static ControlledNPC: number = -1;
+  /** Party AI / follow state (retail PT_AISTATE / PT_FOLLOWSTATE). */
+  static AIState: number = 0;
+  static FollowState: number = 0;
+  /** TSL: DisableMap / DisableHealthRegen (PT_DISABLEMAP / PT_DISABLEREGEN). */
+  static DisableMap: boolean = false;
+  static DisableHealthRegen: boolean = false;
+  /** TSL: battle-circle forfeit (FORFEITCONDS / FORFEITVIOL). */
+  static ForfeitConditions: number = 0;
+  static LastForfeitViolation: number = 0;
 
   static SwoopUpgrade1: number = -1;
   static SwoopUpgrade2: number = -1;
   static SwoopUpgrade3: number = -1;
+  /** Extra slots written by CSWGuiSwoopUpgrade::OnAssemble (6 total). */
+  static SwoopUpgrade4: number = -1;
+  static SwoopUpgrade5: number = -1;
+  static SwoopUpgrade6: number = -1;
+
+  /** Retail OnAssemble writes swoopupgrade.2da row ids into slots 0..5. */
+  static setSwoopUpgradeSlot(slot: number, rowIndex: number){
+    const v = (typeof rowIndex === 'number' && Number.isFinite(rowIndex)) ? rowIndex : -1;
+    switch(slot){
+      case 0: PartyManager.SwoopUpgrade1 = v; break;
+      case 1: PartyManager.SwoopUpgrade2 = v; break;
+      case 2: PartyManager.SwoopUpgrade3 = v; break;
+      case 3: PartyManager.SwoopUpgrade4 = v; break;
+      case 4: PartyManager.SwoopUpgrade5 = v; break;
+      case 5: PartyManager.SwoopUpgrade6 = v; break;
+    }
+  }
+
+  static getSwoopUpgradeSlot(slot: number): number {
+    switch(slot){
+      case 0: return PartyManager.SwoopUpgrade1;
+      case 1: return PartyManager.SwoopUpgrade2;
+      case 2: return PartyManager.SwoopUpgrade3;
+      case 3: return PartyManager.SwoopUpgrade4;
+      case 4: return PartyManager.SwoopUpgrade5;
+      case 5: return PartyManager.SwoopUpgrade6;
+      default: return -1;
+    }
+  }
 
   static #eventListeners: Map<PartyManagerEvent, Function[]> = new Map();
 
@@ -179,6 +221,20 @@ export class PartyManager {
     }
     GameState.PartyManager.CurrentPuppets = [];
     GameState.PartyManager.PuppetCount = 0;
+    GameState.PartyManager.XPPool = 0;
+    GameState.PartyManager.ControlledNPC = -1;
+    GameState.PartyManager.AIState = 0;
+    GameState.PartyManager.FollowState = 0;
+    GameState.PartyManager.DisableMap = false;
+    GameState.PartyManager.DisableHealthRegen = false;
+    GameState.PartyManager.ForfeitConditions = 0;
+    GameState.PartyManager.LastForfeitViolation = 0;
+    GameState.PartyManager.SwoopUpgrade1 = -1;
+    GameState.PartyManager.SwoopUpgrade2 = -1;
+    GameState.PartyManager.SwoopUpgrade3 = -1;
+    GameState.PartyManager.SwoopUpgrade4 = -1;
+    GameState.PartyManager.SwoopUpgrade5 = -1;
+    GameState.PartyManager.SwoopUpgrade6 = -1;
   }
 
   /**
@@ -214,6 +270,14 @@ export class PartyManager {
     }
     GameState.PartyManager.CurrentPuppets = [];
     GameState.PartyManager.PuppetCount = 0;
+    GameState.PartyManager.XPPool = 0;
+    GameState.PartyManager.ControlledNPC = -1;
+    GameState.PartyManager.AIState = 0;
+    GameState.PartyManager.FollowState = 0;
+    GameState.PartyManager.DisableMap = false;
+    GameState.PartyManager.DisableHealthRegen = false;
+    GameState.PartyManager.ForfeitConditions = 0;
+    GameState.PartyManager.LastForfeitViolation = 0;
 
     if(gff.RootNode.hasField('GlxyMap')){
       let GlxyMap = gff.getFieldByLabel('GlxyMap').getChildStructs()[0];
@@ -310,8 +374,54 @@ export class PartyManager {
 
     GameState.PartyManager.Gold = gff.RootNode.getFieldByLabel('PT_GOLD').getValue();
 
-    if(gff.RootNode.hasField('PT_CONTROLLED_NP')){
-      console.log('PT_CONTROLLED_NP', gff.RootNode.getFieldByLabel('PT_CONTROLLED_NP').getValue());
+    // Retail label is PT_CONTROLLED_NPC (16 chars); accept legacy truncated PT_CONTROLLED_NP
+    const controlledField =
+      gff.RootNode.getFieldByLabel('PT_CONTROLLED_NPC') ||
+      gff.RootNode.getFieldByLabel('PT_CONTROLLED_NP');
+    if(controlledField){
+      GameState.PartyManager.ControlledNPC = controlledField.getValue() | 0;
+    }
+
+    if(gff.RootNode.hasField('PT_XP_POOL')){
+      GameState.PartyManager.XPPool = gff.RootNode.getFieldByLabel('PT_XP_POOL').getValue() | 0;
+    }
+
+    if(gff.RootNode.hasField('PT_AISTATE')){
+      GameState.PartyManager.AIState = gff.RootNode.getFieldByLabel('PT_AISTATE').getValue() | 0;
+    }
+
+    if(gff.RootNode.hasField('PT_FOLLOWSTATE')){
+      GameState.PartyManager.FollowState = gff.RootNode.getFieldByLabel('PT_FOLLOWSTATE').getValue() | 0;
+    }
+
+    if(gff.RootNode.hasField('PT_PLAYEDSECONDS')){
+      const played = gff.RootNode.getFieldByLabel('PT_PLAYEDSECONDS').getValue() | 0;
+      if(played > 0){
+        GameState.time = played;
+      }
+    }
+
+    // TSL SaveTableInfo — swoop upgrades, PC name, map/regen, forfeit
+    if(gff.RootNode.hasField('PT_SWOOP1')){
+      GameState.PartyManager.SwoopUpgrade1 = gff.RootNode.getFieldByLabel('PT_SWOOP1').getValue() | 0;
+    }
+    if(gff.RootNode.hasField('PT_SWOOP2')){
+      GameState.PartyManager.SwoopUpgrade2 = gff.RootNode.getFieldByLabel('PT_SWOOP2').getValue() | 0;
+    }
+    if(gff.RootNode.hasField('PT_SWOOP3')){
+      GameState.PartyManager.SwoopUpgrade3 = gff.RootNode.getFieldByLabel('PT_SWOOP3').getValue() | 0;
+    }
+    if(gff.RootNode.hasField('PT_DISABLEMAP')){
+      GameState.PartyManager.DisableMap = !!gff.RootNode.getFieldByLabel('PT_DISABLEMAP').getValue();
+    }
+    if(gff.RootNode.hasField('PT_DISABLEREGEN')){
+      GameState.PartyManager.DisableHealthRegen = !!gff.RootNode.getFieldByLabel('PT_DISABLEREGEN').getValue();
+    }
+    if(gff.RootNode.hasField('FORFEITCONDS')){
+      GameState.PartyManager.ForfeitConditions = gff.RootNode.getFieldByLabel('FORFEITCONDS').getValue() | 0;
+    }
+    if(gff.RootNode.hasField('FORFEITVIOL')){
+      GameState.PartyManager.LastForfeitViolation = gff.RootNode.getFieldByLabel('FORFEITVIOL').getValue() | 0;
     }
 
     if(gff.RootNode.hasField('PT_MEMBERS')){
@@ -331,6 +441,10 @@ export class PartyManager {
       for(let i = 0; i < entries.length; i++){
         GameState.JournalManager.AddEntry(JournalEntry.FromStruct(entries[i]));
       }
+    }
+
+    if(gff.RootNode.hasField('JNL_SortOrder')){
+      GameState.JournalManager.SortOrder = gff.RootNode.getFieldByLabel('JNL_SortOrder').getValue() | 0;
     }
 
     if(gff.RootNode.hasField('PT_DLG_MSG_LIST')){
@@ -445,11 +559,10 @@ export class PartyManager {
         );
       }
 
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'JNL_SortOrder')).setValue(0);
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_AISTATE')).setValue(0);
+      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'JNL_SortOrder')).setValue(GameState.JournalManager.SortOrder | 0);
+      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_AISTATE')).setValue(GameState.PartyManager.AIState | 0);
       let availNPCSList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_AVAIL_NPCS'));
 
-      //TODO: Party Available NPCS
       let maxPartyMembers = (GameState.GameKey == GameEngineType.KOTOR) ? 9 : 12;
       for(let i = 0; i < maxPartyMembers; i++){
         let pm = GameState.PartyManager.NPCS[i];
@@ -460,7 +573,11 @@ export class PartyManager {
       }
 
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED')).setValue(0);
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NP')).setValue( GameState.getCurrentPlayer() == GameState.PartyManager.Player ? -1 : GameState.PartyManager.party.indexOf(GameState.getCurrentPlayer()) );
+      const controlledIdx = GameState.getCurrentPlayer() == GameState.PartyManager.Player
+        ? -1
+        : GameState.PartyManager.party.indexOf(GameState.getCurrentPlayer());
+      GameState.PartyManager.ControlledNPC = controlledIdx;
+      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NPC')).setValue(controlledIdx);
 
       // Retail SaveTableInfo @ 00565000 — one PT_COST_MULT_VALUE per baseitems row
       const costMultList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_COST_MULT_LIST'));
@@ -488,7 +605,7 @@ export class PartyManager {
         );
       }
 
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_FOLLOWSTATE')).setValue(0);
+      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_FOLLOWSTATE')).setValue(GameState.PartyManager.FollowState | 0);
       partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_GOLD')).setValue(GameState.PartyManager.Gold);
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_LAST_GUI_PNL')).setValue(0);
       let ptMembersList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_MEMBERS'));
@@ -507,8 +624,21 @@ export class PartyManager {
 
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_NUM_MEMBERS')).setValue(numMembers);
 
-      // TSL SaveTableInfo @ 00700e00 — puppets + components/chemicals
+      // TSL SaveTableInfo @ 00700e00 — puppets + components/chemicals + influence + swoops
       if(GameState.GameKey == GameEngineType.TSL){
+        const pc = GameState.PartyManager.Player || GameState.getCurrentPlayer();
+        const pcName = (pc && typeof pc.getName === 'function') ? (pc.getName() || '') : '';
+        partytable.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_PCNAME')).setValue(pcName);
+        partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_SWOOP1')).setValue(
+          GameState.PartyManager.SwoopUpgrade1 | 0
+        );
+        partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_SWOOP2')).setValue(
+          GameState.PartyManager.SwoopUpgrade2 | 0
+        );
+        partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_SWOOP3')).setValue(
+          GameState.PartyManager.SwoopUpgrade3 | 0
+        );
+
         const puppets = GameState.PartyManager.CurrentPuppets || [];
         partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_NUM_PUPPETS')).setValue(puppets.length);
         const puppetsList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PUPPETS'));
@@ -532,6 +662,30 @@ export class PartyManager {
         );
         partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_ITEM_CHEMICAL')).setValue(
           GameState.PartyManager.ChemicalCount | 0
+        );
+
+        // Retail SaveTableInfo — 12 influence entries
+        const influenceList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_INFLUENCE'));
+        for(let i = 0; i < 12; i++){
+          const inflStruct = new GFFStruct(0);
+          const infl = GameState.PartyManager.InfluenceMap.has(i)
+            ? GameState.PartyManager.InfluenceMap.get(i)
+            : -1;
+          inflStruct.addField(new GFFField(GFFDataType.INT, 'PT_NPC_INFLUENCE')).setValue(infl | 0);
+          influenceList.addChildStruct(inflStruct);
+        }
+
+        partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'FORFEITVIOL')).setValue(
+          GameState.PartyManager.LastForfeitViolation | 0
+        );
+        partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'FORFEITCONDS')).setValue(
+          GameState.PartyManager.ForfeitConditions | 0
+        );
+        partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_DISABLEMAP')).setValue(
+          GameState.PartyManager.DisableMap ? 1 : 0
+        );
+        partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_DISABLEREGEN')).setValue(
+          GameState.PartyManager.DisableHealthRegen ? 1 : 0
         );
       }
 
@@ -565,7 +719,7 @@ export class PartyManager {
         pazaakSideDeckList.addChildStruct(sideDeckStruct);
       }
 
-      partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_PLAYEDSECONDS')).setValue(0);
+      partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_PLAYEDSECONDS')).setValue(GameState.time | 0);
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_SOLOMODE')).setValue(GameState.SOLOMODE ? 1 : 0);
 
       const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
@@ -588,7 +742,7 @@ export class PartyManager {
         partytable.RootNode.addField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN')).setData(new Uint8Array(0));
       }
 
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_XP_POOL'));
+      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_XP_POOL')).setValue(GameState.PartyManager.XPPool | 0);
 
       partytable.FileType = 'PT  ';
       partytable.export(path.join(directory, 'PARTYTABLE.res'), () => {
@@ -1209,6 +1363,19 @@ export class PartyManager {
         memberID: pm.npcId
       };
       PartyManager.SavePartyMember(pm.npcId);
+    }
+  }
+
+  /**
+   * Apply retail PT_CONTROLLED_NPC after party spawn (-1 = PC at index 0).
+   */
+  static ApplyControlledNPC(){
+    const idx = PartyManager.ControlledNPC;
+    if(typeof idx !== 'number' || idx < 0){
+      return;
+    }
+    if(idx > 0 && idx < PartyManager.party.length){
+      PartyManager.SwitchLeaderAtIndex(idx);
     }
   }
 

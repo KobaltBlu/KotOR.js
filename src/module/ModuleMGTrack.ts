@@ -8,15 +8,11 @@ import { MDLLoader } from "@/loaders";
 
 /**
 * ModuleMGTrack class.
-* 
-* Class representing the rails that an enemy or player are attached to in minigame modules.
-* 
-* KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
+* LYT track prototype (name + world position). Retail MiniGame stores proto tracks
+* (AddTrack); each follower gets its own track Gob via ForceSetTrack / NewCAurObject.
+*
 * @file ModuleMGTrack.ts
-* @author KobaltBlu <https://github.com/KobaltBlu>
-* @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
-* @memberof KotOR
 */
 export class ModuleMGTrack extends ModuleObject {
   index: number;
@@ -28,10 +24,13 @@ export class ModuleMGTrack extends ModuleObject {
     this.objectType |= ModuleObjectType.ModuleMGTrack;
 
     this.index = 0;
-    this.track = layout.name.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    this.track = ModuleMGTrack.normalizeName(layout?.name);
     this.position.copy(layout.position.clone());
     this.layout = layout;
+  }
 
+  static normalizeName(name: string | undefined | null): string {
+    return String(name ?? '').replace(/\0[\s\S]*$/g, '').toLowerCase();
   }
 
   update(delta: number = 0){
@@ -43,24 +42,31 @@ export class ModuleMGTrack extends ModuleObject {
   }
 
   async load(){
-    //stub
+    // Proto only — follower models are created in createFollowerModel().
   }
 
-  async loadModel (){
+  /**
+   * Retail SetPlayer/AddEnemy path — NewCAurObject(trackResRef) per follower,
+   * positioned from proto track Vector.
+   */
+  async createFollowerModel(): Promise<OdysseyModel3D> {
     const mdl = await MDLLoader.loader.load(this.track);
     const model = await OdysseyModel3D.FromMDL(mdl, {
       context: this.context,
       castShadow: false,
       receiveShadow: false
     });
+    model.name = this.track;
+    model.position.copy(this.position);
+    model.hasCollision = true;
+    model.userData.moduleObject = this;
+    return model;
+  }
 
-    try{
-      console.log('track', model);
-      this.model = model;
-      model.name = this.track;
-    }catch(e){
-      console.error(e);
-    }
+  /** @deprecated Prefer createFollowerModel — shared proto model is not used for followers. */
+  async loadModel (){
+    const model = await this.createFollowerModel();
+    this.model = model;
     return this.model;
   }
 

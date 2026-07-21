@@ -4,7 +4,7 @@ import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import type { NWScriptGlobalInit } from "@/nwscript/decompiler/NWScriptGlobalVariableAnalyzer";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { inferSubroutineParameterSlotsFromCallSites } from "@/nwscript/decompiler/NWScriptArgumentStackLayout";
-import { OP_JSR, OP_RETN, OP_RSADD, OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_SAVEBP, OP_RESTOREBP, OP_MOVSP, OP_CPTOPBP, OP_CPTOPSP } from "@/nwscript/NWScriptOPCodes";
+import { OP_JSR, OP_RETN, OP_RSADD, OP_STORE_STATE, OP_STORE_STATEALL, OP_JMP, OP_JZ, OP_JNZ, OP_SAVEBP, OP_RESTOREBP, OP_MOVSP, OP_CPTOPBP, OP_CPTOPSP, OP_CPDOWNSP, OP_CPDOWNBP, OP_CONST, OP_ACTION } from "@/nwscript/NWScriptOPCodes";
 
 /**
  * Represents a function/subroutine in the decompiled code.
@@ -694,11 +694,21 @@ export class NWScriptFunctionAnalyzer {
       return [];
     }
 
-    const minCallerArgSlots = inferSubroutineParameterSlotsFromCallSites(
+    // Prefer arity from non-thunk call sites; fall back to STORE_STATE thunk JSRs
+    // (DelayCommand(..., Helper(arg))) when the callee is only invoked from a thunk.
+    const minCallerArgSlotsExcludingThunks = inferSubroutineParameterSlotsFromCallSites(
       this.cfg.script,
       entryAddress,
       (instr) => !this.nestedCallAddresses.has(instr.address)
     );
+    const minCallerArgSlotsIncludingThunks = inferSubroutineParameterSlotsFromCallSites(
+      this.cfg.script,
+      entryAddress
+    );
+    const minCallerArgSlots =
+      minCallerArgSlotsExcludingThunks > 0
+        ? minCallerArgSlotsExcludingThunks
+        : minCallerArgSlotsIncludingThunks;
     if (minCallerArgSlots === 0) {
       return [];
     }
@@ -710,7 +720,89 @@ export class NWScriptFunctionAnalyzer {
         out = fb;
       }
     }
-    return this.narrowCptopspParamsToCallArity(out, minCallerArgSlots);
+    out = this.narrowCptopspParamsToCallArity(out, minCallerArgSlots);
+    return this.refineCptopspParamTypesFromCallSites(entryAddress, out);
+  }
+
+  /**
+   * CPTOPSP type bytes are often generic (0x01); refine formal types from CONST pushes at call sites
+   * (including DelayCommand STORE_STATE thunks).
+   */
+  private refineCptopspParamTypesFromCallSites(
+    entryAddress: number,
+    params: NWScriptFunctionParameter[]
+  ): NWScriptFunctionParameter[] {
+    if (params.length === 0) {
+      return params;
+    }
+    const spParams = params.filter((p) => p.resolvedViaSpOperand);
+    if (spParams.length === 0) {
+      return params;
+    }
+
+    // Collect CONST type codes pushed immediately before each matching JSR (last N pushes).
+    const typeVotes: NWScriptDataType[][] = spParams.map(() => []);
+    for (const instr of this.cfg.script.instructions.values()) {
+      if (instr.code !== OP_JSR || instr.offset === undefined) {
+        continue;
+      }
+      if (instr.address + instr.offset !== entryAddress) {
+        continue;
+      }
+      const pushes: number[] = [];
+      let p: NWScriptInstruction | null | undefined = instr.prevInstr;
+      let steps = 0;
+      while (p && steps++ < 32 && pushes.length < spParams.length) {
+        if (p.code === OP_CONST && p.type !== undefined) {
+          pushes.unshift(p.type);
+        } else if (
+          p.code === OP_JSR ||
+          p.code === OP_ACTION ||
+          p.code === OP_RETN ||
+          p.code === OP_JMP
+        ) {
+          break;
+        }
+        p = p.prevInstr;
+      }
+      for (let i = 0; i < Math.min(pushes.length, spParams.length); i++) {
+        const t = pushes[i];
+        if (t === 4) typeVotes[i].push(NWScriptDataType.FLOAT);
+        else if (t === 5) typeVotes[i].push(NWScriptDataType.STRING);
+        else if (t === 6) typeVotes[i].push(NWScriptDataType.OBJECT);
+        else if (t === 3) typeVotes[i].push(NWScriptDataType.INTEGER);
+      }
+    }
+
+    return params.map((param) => {
+      if (!param.resolvedViaSpOperand) {
+        return param;
+      }
+      const spIndex = spParams.indexOf(param);
+      if (spIndex < 0 || typeVotes[spIndex].length === 0) {
+        return param;
+      }
+      // Prefer non-integer when any call site pushed a more specific CONST type
+      const votes = typeVotes[spIndex];
+      const objectVotes = votes.filter((v) => v === NWScriptDataType.OBJECT).length;
+      const floatVotes = votes.filter((v) => v === NWScriptDataType.FLOAT).length;
+      const stringVotes = votes.filter((v) => v === NWScriptDataType.STRING).length;
+      let dataType = param.dataType;
+      if (objectVotes > 0) dataType = NWScriptDataType.OBJECT;
+      else if (floatVotes > 0) dataType = NWScriptDataType.FLOAT;
+      else if (stringVotes > 0) dataType = NWScriptDataType.STRING;
+      if (dataType === param.dataType) {
+        return param;
+      }
+      const typePrefix = this.getTypePrefix(dataType);
+      const indexMatch = param.name.match(/(\d+)$/);
+      const idx = indexMatch ? indexMatch[1] : "1";
+      return {
+        ...param,
+        dataType,
+        name: `${typePrefix}Param${idx}`,
+      };
+    });
   }
 
   /**
@@ -871,15 +963,118 @@ export class NWScriptFunctionAnalyzer {
   /**
    * Analyze return type for a **subroutine** (JSR target), not main/StartingConditional.
    *
-   * KotOR reserves a non-void script return word on the **caller** stack (RSADD immediately before
-   * JSR in {@link NWScriptCompiler.compileFunctionCall}). The callee's first OP_RSADD is almost
-   * always a **local** (e.g. {@code int t;} right after parameters), not the logical return type.
-   * Treating that RSADD as {@code int foo()} made JSR simulation push a fake return value, popped
-   * real arguments, and broke round-trips. Int-returning user subs are rare in our fixtures; when
-   * needed, infer from caller-side RSADD or RETN epilogue instead of callee entry RSADD.
+   * Caller RSADD-before-JSR is necessary but not sufficient: a preceding local
+   * {@code int x;} is also RSADD immediately before a void call. Require a
+   * callee return-slot write (CPDOWNSP → MOVSP → RETN) before trusting caller RSADD.
    */
-  private analyzeReturnType(_entryBlock: NWScriptBasicBlock, _bodyBlocks: NWScriptBasicBlock[]): NWScriptDataType {
-    return NWScriptDataType.VOID;
+  private analyzeReturnType(entryBlock: NWScriptBasicBlock, bodyBlocks: NWScriptBasicBlock[]): NWScriptDataType {
+    if (!this.calleeHasReturnValueWrite(bodyBlocks)) {
+      return NWScriptDataType.VOID;
+    }
+
+    const entryAddress = entryBlock.startInstruction?.address;
+    if (entryAddress === undefined) {
+      return NWScriptDataType.INTEGER;
+    }
+
+    const votes = new Map<NWScriptDataType, number>();
+    for (const instruction of this.cfg.script.instructions.values()) {
+      if (
+        instruction.code !== OP_JSR ||
+        instruction.offset === undefined ||
+        instruction.address + instruction.offset !== entryAddress
+      ) {
+        continue;
+      }
+      const rsadd = this.findCallerReturnRsadd(instruction);
+      if (!rsadd) {
+        continue;
+      }
+      const dt = this.rsaddTypeToDataType(rsadd.type);
+      if (dt === NWScriptDataType.VOID) {
+        continue;
+      }
+      votes.set(dt, (votes.get(dt) || 0) + 1);
+    }
+
+    if (votes.size === 0) {
+      // Callee epilogue can look like a return write (last assign + MOVSP + RETN).
+      // Without a caller RSADD vote, keep VOID.
+      return NWScriptDataType.VOID;
+    }
+
+    let best: NWScriptDataType = NWScriptDataType.INTEGER;
+    let bestCount = 0;
+    for (const [dt, count] of votes) {
+      if (count > bestCount) {
+        best = dt;
+        bestCount = count;
+      }
+    }
+    return best;
+  }
+
+  /** True if any body block has CPDOWNSP → MOVSP … → RETN/JMP (user return value). */
+  private calleeHasReturnValueWrite(bodyBlocks: NWScriptBasicBlock[]): boolean {
+    for (const block of bodyBlocks) {
+      for (let i = 0; i < block.instructions.length; i++) {
+        const instr = block.instructions[i];
+        if (instr.code !== OP_CPDOWNSP) continue;
+        if (i + 1 >= block.instructions.length) continue;
+        if (block.instructions[i + 1].code !== OP_MOVSP) continue;
+        const limit = Math.min(i + 8, block.instructions.length);
+        for (let j = i + 2; j < limit; j++) {
+          const next = block.instructions[j];
+          if (next.code === OP_RETN || next.code === OP_JMP) return true;
+          if (next.code === OP_JSR || next.code === OP_JZ || next.code === OP_JNZ) break;
+        }
+      }
+    }
+    return false;
+  }
+
+  /** Map RSADD unary type byte to {@link NWScriptDataType}. */
+  private rsaddTypeToDataType(rsaddType: number): NWScriptDataType {
+    switch (rsaddType) {
+      case 3: return NWScriptDataType.INTEGER;
+      case 4: return NWScriptDataType.FLOAT;
+      case 5: return NWScriptDataType.STRING;
+      case 6: return NWScriptDataType.OBJECT;
+      default: return NWScriptDataType.VOID;
+    }
+  }
+
+  /**
+   * Walk backward from a JSR for the caller RSADD that reserved return space.
+   * Rejects RSADD followed by CPDOWNSP before the JSR (local init pattern).
+   */
+  private findCallerReturnRsadd(jsr: NWScriptInstruction): NWScriptInstruction | null {
+    let current: NWScriptInstruction | null = jsr.prevInstr;
+    const between: NWScriptInstruction[] = [];
+    let steps = 0;
+    while (current && steps < 64) {
+      if (current.code === OP_RSADD) {
+        for (const instr of between) {
+          if (instr.code === OP_CPDOWNSP || instr.code === OP_CPDOWNBP) {
+            return null;
+          }
+        }
+        return current;
+      }
+      if (
+        current.code === OP_JMP ||
+        current.code === OP_JZ ||
+        current.code === OP_JNZ ||
+        current.code === OP_RETN ||
+        current.code === OP_JSR
+      ) {
+        break;
+      }
+      between.push(current);
+      current = current.prevInstr;
+      steps++;
+    }
+    return null;
   }
 
   /**
