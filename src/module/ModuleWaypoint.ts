@@ -93,10 +93,19 @@ export class ModuleWaypoint extends ModuleObject {
     gff.FileType = 'UTW ';
     gff.RootNode.type = 5;
 
+    const localizedName = this.localizedName instanceof CExoLocString
+      ? this.localizedName
+      : (this.locName instanceof CExoLocString ? this.locName : new CExoLocString());
+    const mapNote = this.mapNote instanceof CExoLocString ? this.mapNote : new CExoLocString();
+
     gff.RootNode.addField( this.actionQueueToActionList() );
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'Commandable') ).setValue(1);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'HasMapNote') ).setValue(1);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'LocalizedName') ).setValue(this.locName);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'Commandable') ).setValue(this.commandable ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'HasMapNote') ).setValue(this.hasMapNote ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(localizedName);
+    if(this.hasMapNote){
+      gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'MapNote') ).setValue(mapNote);
+      gff.RootNode.addField( new GFFField(GFFDataType.BYTE,  'MapNoteEnabled') ).setValue(this.mapNoteEnabled ? 1 : 0);
+    }
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //SWVarTable
@@ -104,27 +113,14 @@ export class ModuleWaypoint extends ModuleObject {
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
 
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.LIST,  'VarTable') );
-    
-    if(this.template.RootNode.hasField('XOrientation')){
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.template.RootNode.getFieldByLabel('XOrientation').getValue());
-    }else{
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(0);
-    }
+    this.writeNamedVarTable(gff.RootNode);
 
+    // Retail CSWSWaypoint::SaveWaypoint — live orientation, not template snapshot
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.getXOrientation());
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    
-    if(this.template.RootNode.hasField('YOrientation')){
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.template.RootNode.getFieldByLabel('YOrientation').getValue());
-    }else{
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(0);
-    }
-    
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.getYOrientation());
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    
-    if(this.template.RootNode.hasField('ZOrientation'))
-      gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.template.RootNode.getFieldByLabel('ZOrientation').getValue());
-    
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.getZOrientation());
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
 
     this.template = gff;

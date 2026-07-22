@@ -452,14 +452,21 @@ export class DLGObject {
   }
 
   /**
-   * Load the dialog background music
+   * Load the dialog AmbientTrack (retail LoadAmbientTrackForDialog @ 004d4750).
+   * Empty / missing track destroys any prior dialog stream without recreating.
    */
   async loadBackgroundMusic() {
-    if (!this.ambientTrack) { return; }
+    const audio = AudioEngine.GetAudioEngine();
+    if (!this.ambientTrack) {
+      // Retail empty LoadAmbientTrack: hard-destroy prior source (no fade).
+      audio.dialogMusicAudioEmitter.stop();
+      return;
+    }
     const bgm = await AudioLoader.LoadMusic(this.ambientTrack);
     if(!bgm){ return; }
-    AudioEngine.GetAudioEngine().setAudioBuffer('DIALOG', bgm.buffer as ArrayBuffer, this.ambientTrack);
-    AudioEngine.GetAudioEngine().dialogMusicAudioEmitter.play();
+    audio.setAudioBuffer('DIALOG', bgm.buffer as ArrayBuffer, this.ambientTrack);
+    // Retail Play(..., 1, ...) — loop; layers over ducked area BGM (do not stop area).
+    audio.dialogMusicAudioEmitter.play(true);
   }
 
   async load(){

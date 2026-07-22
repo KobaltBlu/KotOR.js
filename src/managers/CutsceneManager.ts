@@ -185,10 +185,9 @@ export class CutsceneManager {
       return;
     }
     
-    //bark entry
+    //bark entry — no AmbientTrack load (async race with immediate endConversation).
     const isBarkDialog = this.startingEntry.isBarkDialog();
     if (isBarkDialog) {
-      this.dialog.loadBackgroundMusic()
       this.cutsceneMode = CutsceneMode.BARK;
       this.startingEntry.initProperties();
       GameState.MenuManager.InGameBark.bark(this.startingEntry);
@@ -559,9 +558,10 @@ export class CutsceneManager {
     this.dialog = undefined;
     this.cutsceneMode = CutsceneMode.DIALOG;
     GameState.VideoEffectManager.SetVideoEffect(-1);
-    AudioEngine.GetAudioEngine().dialogMusicAudioEmitter.stop();
-    // Retail CSWSDialog dtor → StopDuckingMusicAndAmbientSounds (1.0).
-    AudioEngine.GetAudioEngine().stopDuckingMusicAndAmbientSounds();
+    const audioEngine = AudioEngine.GetAudioEngine();
+    // Retail ~CSWSDialog: StopDucking only — area BGM keeps playing; AmbientTrack left until UnloadArea.
+    audioEngine.bgmTimer = 0;
+    audioEngine.stopDuckingMusicAndAmbientSounds();
 
     if(wasBark){
       GameState.RestoreEnginePlayMode();

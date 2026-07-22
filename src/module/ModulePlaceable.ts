@@ -101,6 +101,7 @@ export class ModulePlaceable extends ModuleObject {
   isBodyBagVisible: boolean = true;
   /** Creature/object id that spawned this body bag (retail field65). */
   sourceCreatureId: number = 0;
+  groundPile: boolean = false;
   lightState: any;
   props: any;
 
@@ -857,6 +858,12 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('IsCorpse'))
       this.isCorpse = !!this.template.RootNode.getFieldByLabel('IsCorpse').getValue();
 
+    if(this.template.RootNode.hasField('GroundPile'))
+      this.groundPile = !!this.template.RootNode.getFieldByLabel('GroundPile').getValue();
+
+    if(this.template.RootNode.hasField('IsDestroyable'))
+      this.isDestroyable = !!this.template.RootNode.getFieldByLabel('IsDestroyable').getValue();
+
     if(this.template.RootNode.hasField('Interruptable'))
       this.interruptable = this.template.RootNode.getFieldByLabel('Interruptable').getValue();
         
@@ -868,6 +875,9 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.hasField('LocName'))
       this.locName = this.template.getFieldByLabel('LocName').getCExoLocString();
+
+    if(this.template.RootNode.hasField('Description'))
+      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
 
     if(this.template.RootNode.hasField('Locked'))
       this.locked = this.template.getFieldByLabel('Locked').getValue();
@@ -1037,10 +1047,12 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Bearing') ).setValue(this.bearing);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).setValue(this.bodyBag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CloseLockDC') ).setValue(this.closeLockDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHP') ).setValue(this.currentHP);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue('');
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(
+      this.description instanceof CExoLocString ? this.description : new CExoLocString()
+    );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DieWhenEmpty') ).setValue( this.dieWhenEmpty ? 1 : 0 );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DisarmDC') ).setValue(this.disarmDC);
 
@@ -1052,14 +1064,15 @@ export class ModulePlaceable extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Faction') ).setValue(this.faction ? this.faction.id : this.factionId);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Fort') ).setValue(this.fort);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GroundPile') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'GroundPile') ).setValue(this.groundPile ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'HP') ).setValue(this.hp);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Hardness') ).setValue(this.hardness);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'HasInventory') ).setValue(this.hasInventory ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBag') ).setValue(this.isBodyBag ? 1 : 0);
     // Shells are never saved — persist visible so reload shows the bag
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBagVisible') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBagVisible') ).setValue(this.isBodyBagVisible ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsCorpse') ).setValue(this.isCorpse ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsDestroyable') ).setValue(this.isDestroyable ? 1 : 0);
 
     const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     //Object Inventory
@@ -1109,6 +1122,7 @@ export class ModulePlaceable extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
@@ -1116,7 +1130,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Useable') ).setValue(this.useable);
-    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
+    this.writeNamedVarTable(gff.RootNode);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Will') ).setValue(this.will);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.position.x);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Y') ).setValue(this.position.y);

@@ -11,6 +11,7 @@ import type { ModuleMGPlayer } from "@/module/ModuleMGPlayer";
 import type { ModuleMGObstacle } from "@/module/ModuleMGObstacle";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
+import { hitCheckPart, type MGHitCheckOut } from "@/module/minigame/MGHitCheck";
 
 /**
 * ModuleMGGunBullet class.
@@ -40,8 +41,16 @@ export class ModuleMGGunBullet extends ModuleObject {
   /** Retail explode-anim hold before gob destroy. */
   exploding: boolean = false;
 
+  /** Retail GetPreviousPosition → GetPosition segment for HitCheckPart. */
   directionLine: THREE.Line3 = new THREE.Line3();
   directionLinePoint: THREE.Vector3 = new THREE.Vector3();
+  /** Last HitCheckPart world hit (explode orient). */
+  lastHitPoint: THREE.Vector3 = new THREE.Vector3();
+  lastHitNormal: THREE.Vector3 = new THREE.Vector3();
+  private static _hitOut: MGHitCheckOut = {
+    point: new THREE.Vector3(),
+    normal: new THREE.Vector3(),
+  };
 
   constructor( template: GFFObject, owner: ModuleObject ){
     super();
@@ -56,6 +65,9 @@ export class ModuleMGGunBullet extends ModuleObject {
     this.velocity = new THREE.Vector3();
   }
 
+  /**
+   * Motion / lifetime only — collision runs from MiniGame.doHitCheck (retail order).
+   */
   update(delta = 0){
     this.life += delta;
 
@@ -76,6 +88,7 @@ export class ModuleMGGunBullet extends ModuleObject {
     this.velocity.set(0, this.speed * delta, 0);
     this.velocity.applyQuaternion(this.quaternion);
 
+    // Prev → curr segment (retail GetPreviousPosition / GetPosition).
     this.directionLine.start.copy(this.position);
     this.directionLine.end.copy(this.position).add(this.velocity);
 
@@ -85,16 +98,15 @@ export class ModuleMGGunBullet extends ModuleObject {
       this.model.position.copy(this.position);
     }
 
-    this.doHitCheck();
-
     if(this.model) this.model.update(delta);
-    return !this.hit;
+    return true;
   }
 
   /**
-   * Retail DoBulletHitCheck path — sphere hits vs followers / player / obstacles.
+   * Retail DoBulletHitCheck / HitCheckBullet — HitCheckPart on hitbullet parts.
    */
   doHitCheck(){
+    if(this.hit || this.exploding){ return; }
     const mg = GameState.module?.area?.miniGame;
     if(!mg){ return; }
 
@@ -105,7 +117,7 @@ export class ModuleMGGunBullet extends ModuleObject {
       for(let i = 0, len = mg.enemies.length; i < len; i++){
         const enemy = mg.enemies[i];
         if(!enemy?.alive){ continue; }
-        if(enemy.sphere?.containsPoint?.(this.position)){
+        if(this.hitsFollower(enemy)){
           this.applyHitFollower(enemy);
           return;
         }
@@ -119,7 +131,7 @@ export class ModuleMGGunBullet extends ModuleObject {
       }
     }else{
       const player = mg.player;
-      if(player?.alive && player.sphere?.containsPoint?.(this.position)){
+      if(player?.alive && this.hitsFollower(player)){
         this.applyHitFollower(player);
         return;
       }
@@ -135,32 +147,72 @@ export class ModuleMGGunBullet extends ModuleObject {
 
   /**
    * Retail HitCheckBullet @ 006730a0 —
-   * segment previous→current vs obstacle part "hitbullet" when model loaded;
-   * else proximity sphere (legacy stand-in).
+   * segment previous→current vs obstacle part "hitbullet" via HitCheckPart.
    */
   hitsObstacle(obstacle: ModuleMGObstacle): boolean {
-    if(!obstacle){ return false; }
+    if(!obstacle?.models?.length){ return false; }
 
-    const hitPart = obstacle.getHitPart?.('hitbullet');
-    if(hitPart){
-      // Approximate HitCheckPart: segment vs part world sphere (part radius or 0.5).
-      const r = hitPart.userData?.sphereRadius ?? 0.5;
-      const closest = this.directionLine.closestPointToPoint(
-        hitPart.getWorldPosition(ModuleMGGunBullet._tmpHit),
-        true,
-        ModuleMGGunBullet._tmpClosest
-      );
-      return closest.distanceToSquared(ModuleMGGunBullet._tmpHit) <= r * r;
+    const from = this.directionLine.start;
+    const to = this.directionLine.end;
+    const out = ModuleMGGunBullet._hitOut;
+
+    for(let i = 0; i < obstacle.models.length; i++){
+      const root = obstacle.models[i];
+      if(!root){ continue; }
+      const part = root.nodes?.get?.('hitbullet') || root.getObjectByName?.('hitbullet');
+      if(!part){ continue; }
+      if(hitCheckPart(root, part, from, to, out)){
+        if(out.point) this.lastHitPoint.copy(out.point);
+        if(out.normal) this.lastHitNormal.copy(out.normal);
+        return true;
+      }
     }
 
+    // No hitbullet part: proximity stand-in at layout position.
     const pos = obstacle.layout?.position ?? obstacle.position;
     if(!pos){ return false; }
     const r = 1.0;
     return this.position.distanceToSquared(pos) <= r * r;
   }
 
-  private static _tmpHit = new THREE.Vector3();
-  private static _tmpClosest = new THREE.Vector3();
+  /**
+   * Retail DoBulletHitCheck on follower models — hitbullet HitCheckPart; else sphere.
+   */
+  hitsFollower(target: ModuleMGPlayer | ModuleMGEnemy): boolean {
+    if(!target){ return false; }
+    const from = this.directionLine.start;
+    const to = this.directionLine.end;
+    const out = ModuleMGGunBullet._hitOut;
+    const models = (target as ModuleMGPlayer).models || (target as ModuleMGEnemy).models;
+
+    if(models?.length){
+      for(let i = 0; i < models.length; i++){
+        const root = models[i];
+        if(!root){ continue; }
+        const part = root.nodes?.get?.('hitbullet') || root.getObjectByName?.('hitbullet');
+        if(!part){ continue; }
+        if(hitCheckPart(root, part, from, to, out)){
+          if(out.point) this.lastHitPoint.copy(out.point);
+          if(out.normal) this.lastHitNormal.copy(out.normal);
+          return true;
+        }
+      }
+      // Models present but no hitbullet part — no sphere fallback (retail requires part).
+      // If none of the models had a part, fall through to sphere.
+      let anyPart = false;
+      for(let i = 0; i < models.length; i++){
+        const root = models[i];
+        if(!root){ continue; }
+        if(root.nodes?.get?.('hitbullet') || root.getObjectByName?.('hitbullet')){
+          anyPart = true;
+          break;
+        }
+      }
+      if(anyPart){ return false; }
+    }
+
+    return !!(target.sphere?.containsPoint?.(this.position));
+  }
 
   applyHitFollower(target: ModuleMGPlayer | ModuleMGEnemy){
     this.hit = true;

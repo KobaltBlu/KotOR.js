@@ -5,6 +5,9 @@ import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
+import { GFFObject } from "@/resource/GFFObject";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { GFFField } from "@/resource/GFFField";
 
 /**
  * CurrentGame class.
@@ -137,19 +140,60 @@ export class CurrentGame {
     }
   }
 
-  static async ExportToSaveFolder( folder: string ){
-    let sav = new ERFObject();
+  /**
+   * Retail StallEventSaveGame packs GAMEINPROGRESS with Mod_IsSaveGame=1 on every module.
+   * Mid-transition module.sav files may still have 0 — patch before packing SAVEGAME.sav.
+   */
+  static async markModulesAsSaveGame(){
     try{
       const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
       for(let i = 0; i < files.length; i++){
         const file = files[i];
-        const file_path = path.join( file );
+        const file_info = path.parse(file);
+        if((file_info.ext || '').toLowerCase() !== '.sav') continue;
+        const file_path = path.join(CurrentGame.gameinprogress_dir, file);
+        try{
+          const data = await GameFileSystem.readFile(file_path);
+          const moduleErf = new ERFObject(data);
+          await moduleErf.load();
+          const ifoBuf = await moduleErf.getResourceBufferByResRef('module', ResourceTypes.ifo);
+          if(!ifoBuf) continue;
+          const ifo = new GFFObject(ifoBuf);
+          if(ifo.RootNode.hasField('Mod_IsSaveGame')){
+            ifo.RootNode.getFieldByLabel('Mod_IsSaveGame').setValue(1);
+          }else{
+            ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_IsSaveGame')).setValue(1);
+          }
+          moduleErf.addResource('module', ResourceTypes.ifo, ifo.getExportBuffer());
+          await moduleErf.export(file_path);
+        }catch(e){
+          console.warn('CurrentGame.markModulesAsSaveGame', file, e);
+        }
+      }
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  static async ExportToSaveFolder( folder: string ){
+    await CurrentGame.markModulesAsSaveGame();
+    let sav = new ERFObject();
+    // Retail CERFFile create path uses "MOD V1.0"
+    sav.header.fileType = 'MOD ';
+    sav.header.fileVersion = 'V1.0';
+    try{
+      const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
+      for(let i = 0; i < files.length; i++){
+        const file = files[i];
+        const file_path = path.join( CurrentGame.gameinprogress_dir, file );
         const file_info = path.parse(file);
         const ext = file_info.ext.split('.').pop();
         if(typeof ResourceTypes[ext] != 'undefined'){
           try{
             const data = await GameFileSystem.readFile( file_path);
-            sav.addResource(file_info.name, ResourceTypes[ext], data);
+            // Retail inventory resource is lowercase inventory.res
+            const resName = file_info.name.toLowerCase() === 'inventory' ? 'inventory' : file_info.name;
+            sav.addResource(resName, ResourceTypes[ext], data);
           }catch(e){
             console.error(e);
           }

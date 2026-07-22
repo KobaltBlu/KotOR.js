@@ -451,6 +451,25 @@ export class AudioEmitter {
     }
   }
 
+  /**
+   * Mode-2 GetPauseable: route group-4 emitters past a muted SFX bus onto Music,
+   * without changing this.channel (restore reconnects to the original bus).
+   */
+  setOutputBypassMutedSfx(bypass: boolean): void {
+    if(!this.gainNode){ return; }
+    if(bypass){
+      try{
+        this.gainNode.disconnect();
+      }catch(_e){ /* already disconnected */ }
+      const musicGain = AudioEngine.musicChannel?.getGainNode?.();
+      if(musicGain){
+        this.gainNode.connect(musicGain);
+      }
+      return;
+    }
+    this.setChannel(this.channel);
+  }
+
   async loadSounds(soundIndex = 0): Promise<void> {
     if(soundIndex >= this.sounds.length){
       return;
@@ -487,6 +506,7 @@ export class AudioEmitter {
       owner: this,
       groupId: this.priority,
       distanceSq: this.getListenerDistanceSq(),
+      is3D: this.type === AudioEmitterType.POSITIONAL,
       onStolen: onStolen ?? (() => {
         // Retail InterruptPlayingSound → ShutDownSource: hard stop, no fade.
         if(holdAcrossSequence){

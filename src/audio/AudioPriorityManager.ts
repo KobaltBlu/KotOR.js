@@ -8,6 +8,11 @@ export interface AudioPriorityAcquireOptions {
   groupId: number;
   /** Squared distance to listener (reserved; retail same-group preempt is list-order). */
   distanceSq?: number;
+  /**
+   * Retail GetFree3DVoice vs GetFree2DVoice pool selection.
+   * Positional emitters → true; globals / streaming → false.
+   */
+  is3D?: boolean;
   /** Called when this voice is stolen to make room for a new request. */
   onStolen: () => void;
 }
@@ -23,16 +28,17 @@ export interface AudioPriorityVoice {
   groupId: number;
   startTime: number;
   distanceSq: number;
+  is3D: boolean;
   onStolen: () => void;
 }
 
 /**
- * Soft global voice budget approximating Miles DIG mixer channels.
- * CExoSoundInternal ctor calls _AIL_set_preference_8(3, 0x40) → 64 voices.
- * GetFree2DVoice @ 00637db0 / GetFree3DVoice @ 00637bd0 steal occupied slots
- * whose group priority rank is worse (higher) than the requester.
+ * Soft DIG mixer channel total (retail _AIL_set_preference(3, 0x40) → 64).
+ * Split evenly across GetFree2DVoice / GetFree3DVoice pools.
  */
 export const SOFT_GLOBAL_VOICE_BUDGET = 64;
+export const SOFT_2D_VOICE_BUDGET = 32;
+export const SOFT_3D_VOICE_BUDGET = 32;
 
 /**
  * Retail prioritygroups.2da voice allocator.
@@ -44,7 +50,7 @@ export const SOFT_GLOBAL_VOICE_BUDGET = 64;
  *   (AddToPlayingList uses AddHead → first = newest)
  * - AddToPlayingList @ 00637fc0 / RemoveFromPlayingList @ 00637850 — group count ±1 at +0x5
  * - GetFree2DVoice @ 00637db0 / GetFree3DVoice @ 00637bd0 — Miles HW slot steal by
- *   priority rank (lower better); soft-budgeted here via SOFT_GLOBAL_VOICE_BUDGET
+ *   priority rank (lower better); soft-budgeted here via separate 2D/3D pools
  * - GetPriorityGroup @ 00637f90 — invalid id clamps to row 0x17 (DEFAULT)
  *
  * Volume: source copies group volume byte (+0x7) at construct; emitters multiply
@@ -55,8 +61,23 @@ export class AudioPriorityManager {
   private voices = new Map<number, AudioPriorityVoice>();
   /** Insertion-ordered ids per group (newest at end). */
   private byGroup = new Map<number, number[]>();
-  /** Soft Miles-like pool size (override in tests). */
-  maxGlobalVoices: number = SOFT_GLOBAL_VOICE_BUDGET;
+  /** Soft Miles-like 2D pool size (override in tests). */
+  max2DVoices: number = SOFT_2D_VOICE_BUDGET;
+  /** Soft Miles-like 3D pool size (override in tests). */
+  max3DVoices: number = SOFT_3D_VOICE_BUDGET;
+
+  /**
+   * Combined soft budget (tests / legacy). Setting splits evenly across 2D/3D.
+   * @deprecated Prefer max2DVoices / max3DVoices.
+   */
+  get maxGlobalVoices(): number {
+    return this.max2DVoices + this.max3DVoices;
+  }
+  set maxGlobalVoices(n: number){
+    const total = Math.max(0, n | 0);
+    this.max2DVoices = Math.floor(total / 2);
+    this.max3DVoices = Math.ceil(total / 2);
+  }
 
   getVoiceCount(groupId: number): number {
     return this.byGroup.get(groupId)?.length ?? 0;
@@ -64,6 +85,14 @@ export class AudioPriorityManager {
 
   getActiveVoiceCount(): number {
     return this.voices.size;
+  }
+
+  getPoolVoiceCount(is3D: boolean): number {
+    let n = 0;
+    for(const voice of this.voices.values()){
+      if(voice.is3D === is3D) n++;
+    }
+    return n;
   }
 
   getGroup(groupId: number): SWPriorityGroup | undefined {
@@ -80,6 +109,7 @@ export class AudioPriorityManager {
     const maxPlaying = group?.maxplaying ?? 255;
     const unlimited = !group || group.isUnlimited() || maxPlaying >= 255;
     const distanceSq = Number.isFinite(options.distanceSq) ? options.distanceSq as number : 0;
+    const is3D = !!options.is3D;
     const ids = this.byGroup.get(groupId);
 
     if(!unlimited && ids && ids.length >= maxPlaying){
@@ -94,11 +124,11 @@ export class AudioPriorityManager {
       this.stealVoice(victim);
     }
 
-    // Soft GetFree2D/3DVoice: when the global pool is full, steal the worst
-    // occupied voice whose priority rank is strictly worse than the requester.
-    if(this.voices.size >= this.maxGlobalVoices){
+    // Soft GetFree2D/3DVoice: steal only within the matching DIG pool.
+    const poolMax = is3D ? this.max3DVoices : this.max2DVoices;
+    if(this.getPoolVoiceCount(is3D) >= poolMax){
       const requesterPriority = group?.priority ?? 255;
-      const hwVictim = this.pickHwStealVictim(requesterPriority);
+      const hwVictim = this.pickHwStealVictim(requesterPriority, is3D);
       if(!hwVictim){
         return { allowed: false };
       }
@@ -112,6 +142,7 @@ export class AudioPriorityManager {
       groupId,
       startTime: performance.now(),
       distanceSq,
+      is3D,
       onStolen: options.onStolen,
     };
     this.voices.set(voiceId, voice);
@@ -179,13 +210,14 @@ export class AudioPriorityManager {
   }
 
   /**
-   * Retail GetFree*Voice victim pick: among voices with priority > requesterPriority,
-   * choose the highest (worst) priority value.
+   * Retail GetFree*Voice victim pick: among voices in the same 2D/3D pool with
+   * priority > requesterPriority, choose the highest (worst) priority value.
    */
-  private pickHwStealVictim(requesterPriority: number): AudioPriorityVoice | undefined {
+  private pickHwStealVictim(requesterPriority: number, is3D: boolean): AudioPriorityVoice | undefined {
     let best: AudioPriorityVoice | undefined;
     let bestPriority = 0;
     for(const voice of this.voices.values()){
+      if(voice.is3D !== is3D) continue;
       const g = this.getGroup(voice.groupId);
       const p = g?.priority ?? 255;
       if(requesterPriority < p && bestPriority < p){

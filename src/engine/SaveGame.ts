@@ -47,8 +47,10 @@ export class SaveGame {
   TIMESTAMP: Date;
   /** Gameplay hint value (unused in most cases) */
   GAMEPLAYHINT: number;
-  /** Story hint value (unused in most cases) */
+  /** Story hint value (K1 NFO STORYHINT) */
   STORYHINT: number;
+  /** TSL NFO STORYHINT0..9 */
+  STORYHINTS: number[] = [0,0,0,0,0,0,0,0,0,0];
   /** The thumbnail texture for the save game */
   thumbnail: OdysseyTexture;
   /** The Player Information File Object containing player template data */
@@ -132,7 +134,9 @@ export class SaveGame {
     this.TIMEPLAYED = 0;
     this.GAMEPLAYHINT = 0;
     this.STORYHINT = 0;
+    this.STORYHINTS = [0,0,0,0,0,0,0,0,0,0];
     this.TIMESTAMP = new Date();
+    this.CHEATUSED = false;
 
     this.loadNFO();
     this.thumbnail = null;
@@ -221,6 +225,14 @@ export class SaveGame {
 
       if(this.savenfo.RootNode.hasField('STORYHINT')){
         this.STORYHINT = this.savenfo.getFieldByLabel('STORYHINT').getValue()
+      }
+
+      // TSL NFO STORYHINT0..9 (K1 uses single STORYHINT above)
+      this.STORYHINTS = [0,0,0,0,0,0,0,0,0,0];
+      for(let i = 0; i < 10; i++){
+        if(this.savenfo.RootNode.hasField('STORYHINT'+i)){
+          this.STORYHINTS[i] = this.savenfo.getFieldByLabel('STORYHINT'+i).getValue() | 0;
+        }
       }
 
       if(this.savenfo.RootNode.hasField('TIMEPLAYED')){
@@ -336,6 +348,9 @@ export class SaveGame {
 
     GameState.SaveGame = this;
 
+    // NFO CHEATUSED is a fallback; PARTYTABLE PT_CHEAT_USED overwrites during loadPartyTable
+    GameState.PartyManager.CheatUsed = !!this.CHEATUSED;
+
     GameState.PartyManager.PortraitOrder = [];
 
     if(this.PORTRAIT0)
@@ -363,12 +378,24 @@ export class SaveGame {
     // await this.loadInventory();
     //Load PartyTable
     await this.loadPartyTable();
+
+    // NFO story/gameplay hints live outside PARTYTABLE — restore after PartyManager.Load resets them
+    GameState.PartyManager.StoryHint = this.STORYHINT | 0;
+    GameState.PartyManager.StoryHints = (this.STORYHINTS || [0,0,0,0,0,0,0,0,0,0]).slice(0, 10);
+    while(GameState.PartyManager.StoryHints.length < 10){
+      GameState.PartyManager.StoryHints.push(0);
+    }
+    GameState.PartyManager.GameplayHint = this.GAMEPLAYHINT | 0;
+
     SaveLoadAudit.logLoadStage('PARTYTABLE', {
       party: GameState.PartyManager?.CurrentMembers?.length || 0,
       gold: GameState.PartyManager?.Gold || 0,
       influence: GameState.PartyManager?.InfluenceMap?.size || 0,
       xpPool: GameState.PartyManager?.XPPool || 0,
       journal: GameState.JournalManager?.Entries?.length || 0,
+      cheatUsed: !!GameState.PartyManager?.CheatUsed,
+      storyHint: GameState.PartyManager?.StoryHint | 0,
+      gameplayHint: GameState.PartyManager?.GameplayHint | 0,
     });
     //Load PIFO if it exists
     await this.loadPIFO();
@@ -987,9 +1014,10 @@ export class SaveGame {
     const nfo = new GFFObject();
     nfo.FileType = 'NFO ';
 
+    const cheatUsed = GameState.PartyManager.CheatUsed ? 1 : 0;
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).value = GameState.module.area.areaName.getValue();
-    nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).value = 0;
-    nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'GAMEPLAYHINT')).value = 0;
+    nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).value = cheatUsed;
+    nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'GAMEPLAYHINT')).value = GameState.PartyManager.GameplayHint | 0;
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).value = GameState.module.filename.toUpperCase();
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE1')).value = '';
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE2')).value = '';
@@ -1005,25 +1033,28 @@ export class SaveGame {
     }
 
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'SAVEGAMENAME')).value = savename;
-    nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT')).value = 0;
     nfo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'TIMEPLAYED')).value = GameState.time | 0;
 
-    // Retail TSL DoPCAutosave: TIMESTAMP = Windows FILETIME (DWORD64)
-    const fileTime = BigInt(Date.now() - winEpoch) * 10000n;
-    const timestampBuf = new Uint8Array(8);
-    new DataView(timestampBuf.buffer).setBigUint64(0, fileTime, true);
-    nfo.RootNode.addField(new GFFField(GFFDataType.DWORD64, 'TIMESTAMP')).setData(timestampBuf);
-
-    const pc = GameState.PartyManager.Player || GameState.getCurrentPlayer();
-    const pcName = (pc && typeof pc.getName === 'function') ? (pc.getName() || '') : '';
-    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PCNAME')).setValue(pcName);
-
-    // Retail TSL NFO extras (DoPCAutosave / StallEventSaveGame)
     if(GameState.GameKey == GameEngineType.TSL){
+      // Retail TSL: TIMESTAMP, PCNAME, PCAUTOSAVE, SAVENUMBER, STORYHINT0..9
+      const fileTime = BigInt(Date.now() - winEpoch) * 10000n;
+      const timestampBuf = new Uint8Array(8);
+      new DataView(timestampBuf.buffer).setBigUint64(0, fileTime, true);
+      nfo.RootNode.addField(new GFFField(GFFDataType.DWORD64, 'TIMESTAMP')).setData(timestampBuf);
+
+      const pc = GameState.PartyManager.Player || GameState.getCurrentPlayer();
+      const pcName = (pc && typeof pc.getName === 'function') ? (pc.getName() || '') : '';
+      nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PCNAME')).setValue(pcName);
       nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PCAUTOSAVE')).setValue(isPCAutoSave ? 1 : 0);
       nfo.RootNode.addField(new GFFField(GFFDataType.DWORD, 'SAVENUMBER')).setValue(saveNumber | 0);
       for(let i = 0; i < 10; i++){
-        nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT'+i)).setValue(0);
+        nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT'+i)).setValue(GameState.PartyManager.StoryHints[i] | 0);
+      }
+    }else{
+      // Retail K1: single STORYHINT; PCAUTOSAVE on autosave
+      nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'STORYHINT')).value = GameState.PartyManager.StoryHint | 0;
+      if(isPCAutoSave){
+        nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PCAUTOSAVE')).setValue(1);
       }
     }
 
@@ -1059,7 +1090,9 @@ export class SaveGame {
 
     //Global Booleans
     const catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
-    const boolBuffer =  new Uint8Array( Math.max(1, Math.ceil( GameState.GlobalVariableManager.Globals.Boolean.size / 8 )) );
+    // Retail WriteTable: ValBoolean size = (boolean_count >> 3) + 1
+    const boolCount = GameState.GlobalVariableManager.Globals.Boolean.size;
+    const boolBuffer = new Uint8Array( (boolCount >> 3) + 1 );
     let i = 0;
     GameState.GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
       let boolean = globBool;

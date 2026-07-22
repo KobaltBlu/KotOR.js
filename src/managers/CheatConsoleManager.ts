@@ -133,6 +133,9 @@ export class CheatConsoleManager {
     const args = command.trim().toLowerCase().split(' ');
     const cmd = args.shift();
     const params = args;
+    if(cmd){
+      GameState.PartyManager.CheatUsed = true;
+    }
     switch(cmd){  
       case 'adddark':
         CheatConsoleManager.addDarkSide(parseInt(params[0]));

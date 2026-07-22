@@ -41,6 +41,12 @@ export class AmbientAudioEmitter extends EventListener {
   /** Group volume byte 0–127 (streaming source +0xd4). */
   priorityGroupVolume: number = 127;
 
+  /**
+   * Retail CExoStreamingSoundSource::SetStreamingMusicForMovie (+0x108).
+   * PauseAllButStreamingMusicForMovie @ 00638f00 skips streams with this set.
+   */
+  streamingMusicForMovie: boolean = false;
+
   private priorityVoiceId: number = undefined;
 
   constructor(engine: AudioEngine){
@@ -145,6 +151,7 @@ export class AmbientAudioEmitter extends EventListener {
         owner: this,
         groupId: this.priorityGroupId,
         distanceSq: 0,
+        is3D: false,
         onStolen: () => {
           // Retail InterruptPlayingSound → hard stop (no fadetime).
           this.stop();

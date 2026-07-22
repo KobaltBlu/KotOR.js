@@ -205,6 +205,8 @@ export class GameEffectFactory {
     let eSubType = struct.getFieldByLabel('SubType').getValue();
     let eCreator = struct.getFieldByLabel('CreatorId').getValue();
     let eSpellId = struct.getFieldByLabel('SpellId').getValue();
+    let eId = struct.hasField('Id') ? struct.getFieldByLabel('Id').getValue() : 0;
+    let eIsExposed = struct.hasField('IsExposed') ? !!struct.getFieldByLabel('IsExposed').getValue() : true;
     
     let eDuration = struct.getFieldByLabel('Duration').getValue();
     let eExpireDay = struct.getFieldByLabel('ExpireDay').getValue();
@@ -502,6 +504,8 @@ export class GameEffectFactory {
         effect.setCreator(eCreator);
         effect.setSpellId(eSpellId == 4294967295 ? -1 : eSpellId);
         effect.setSubTypeUnMasked(eSubType);
+        effect.setId(typeof eId === 'bigint' ? Number(eId) : (eId || 0));
+        effect.setIsExposed(eIsExposed);
 
         effect.setNumIntegers(eNumIntegers);
         effect.setIntList(intList);

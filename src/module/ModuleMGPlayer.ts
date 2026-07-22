@@ -24,6 +24,16 @@ import { MGTrackFollowerAudio } from "@/module/minigame/MGTrackFollowerAudio";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 import { ModuleMiniGame } from "@/module/ModuleMiniGame";
 import { ModuleMGTrack } from "@/module/ModuleMGTrack";
+import { hitCheckPart } from "@/module/minigame/MGHitCheck";
+
+/** Retail SWMGKeyInfo (0x24) appended by OnReportKey @ 0066dd60. */
+export interface SWMGKeyInfo {
+  time: number;
+  position: THREE.Vector3;
+  orientation: THREE.Quaternion;
+  hasPosition: boolean;
+  hasOrientation: boolean;
+}
 
 /**
 * ModuleMGPlayer class.
@@ -115,6 +125,14 @@ export class ModuleMGPlayer extends ModuleObject {
    * (fields 0x228–0x230) for bump-plane projection when UseInertia.
    */
   inertiaVelocity: THREE.Vector3 = new THREE.Vector3();
+  /**
+   * Retail OnReportKey @ 0066dd60 → follower.trigger (Pos keys, flag+0xc≠0)
+   * and MiniPlayer field3_0x1ac (Ori keys, flag+0xc==0). SWMGKeyInfo 0x24.
+   */
+  inertiaKeysTrigger: SWMGKeyInfo[] = [];
+  inertiaKeysReport: SWMGKeyInfo[] = [];
+  /** Anim time before track.update this frame (for key-crossing emit). */
+  private inertiaAnimT0: number = 0;
   private inertiaHookPrev: THREE.Vector3 = new THREE.Vector3();
   private inertiaHookCurr: THREE.Vector3 = new THREE.Vector3();
   private inertiaHookQuat: THREE.Quaternion = new THREE.Quaternion();
@@ -127,7 +145,7 @@ export class ModuleMGPlayer extends ModuleObject {
   private inertiaSegQuat: THREE.Quaternion = new THREE.Quaternion();
   private inertiaLocalMat: THREE.Matrix4 = new THREE.Matrix4();
   private inertiaWorldMat: THREE.Matrix4 = new THREE.Matrix4();
-  private static readonly _inertiaTimes: number[] = [];
+  private static readonly _mergeOrder: SWMGKeyInfo[] = [];
   private static readonly _aimOffScratch = new THREE.Vector3();
   private static readonly _aimQuatScratch = new THREE.Quaternion();
 
@@ -142,6 +160,22 @@ export class ModuleMGPlayer extends ModuleObject {
   ownsTrack: boolean = false;
   /** Retail SetSpeed / Go — PlayAnimation("track", speed * 0.01). */
   trackAnimRate: number = 0;
+  /**
+   * Model world position at start of update — DoObstacleHitCheck segment start
+   * (retail follower GetPreviousPosition → GetPosition).
+   */
+  hitModelSegFrom: THREE.Vector3 = new THREE.Vector3();
+  private hitModelSegReady: boolean = false;
+  private static _tmpHitBump = new THREE.Vector3();
+  private static _tmpHitModel = new THREE.Vector3();
+  /**
+   * Retail OnAnimKeyEvent @ 0066fe50 — bound playEvent listeners on track + models.
+   * Detached in disposeFollower.
+   */
+  private animPlayEventHandler = (e: { event?: string; target?: { name?: string } }) => {
+    this.handleAnimPlayEvent(e);
+  };
+  private animPlayEventTargets: Array<{ target: THREE.Object3D; handler: typeof this.animPlayEventHandler }> = [];
 
   constructor(template: GFFObject){
     super();
@@ -214,9 +248,12 @@ export class ModuleMGPlayer extends ModuleObject {
 
   setTrack(model: THREE.Object3D = new OdysseyObject3D(), ownsTrack: boolean = false){
     // Retail ForceSetTrack: destroy previous track Gob if replacing.
-    if(this.ownsTrack && this.track && this.track !== model){
-      this.track.parent?.remove(this.track);
-      (this.track as OdysseyModel3D).dispose?.();
+    if(this.track && this.track !== model){
+      this.unbindAnimPlayEvent(this.track);
+      if(this.ownsTrack){
+        this.track.parent?.remove(this.track);
+        (this.track as OdysseyModel3D).dispose?.();
+      }
     }
 
     this.ownsTrack = ownsTrack;
@@ -258,8 +295,11 @@ export class ModuleMGPlayer extends ModuleObject {
     this.playerOffset.set(0, 0, 0);
     this.container.position.set(0, 0, 0);
     this.inertiaReady = false;
+    this.clearInertiaKeyBuffers();
     this.onCreateRun = false;
     this._heartbeatTimeout = 0;
+    // Retail Go RegisterCallBack(OnAnimKeyEvent) on track Gob.
+    this.bindAnimPlayEvent(this.track);
   }
 
   /** Sync track anim playback rate — retail SetSpeed @ 0066c870. */
@@ -271,6 +311,11 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
+  /**
+   * Ensure "track" anim is playing.
+   * Retail Go also RegisterCallBack(OnReportKey) on the track Gob; JS synthesizes
+   * those reports from modelhook Position/Orientation key crossings (no Aurora CB).
+   */
   ensureTrackAnimation(){
     if(!(this.track instanceof OdysseyModel3D)){ return; }
     const mgr = this.track.animationManager;
@@ -329,6 +374,10 @@ export class ModuleMGPlayer extends ModuleObject {
 
     this.invince -= delta;
     if(this.invince < 0) this.invince = 0;
+
+    // Capture model world pos before motion — DoObstacleHitCheck segment start.
+    this.getHitModelWorld(this.hitModelSegFrom);
+    this.hitModelSegReady = true;
 
     //super.update(delta);
     //Process the heartbeat timer
@@ -397,7 +446,8 @@ export class ModuleMGPlayer extends ModuleObject {
       case MiniGameType.SWOOPRACE: {
         const miniGame = GameState.module.area.miniGame;
 
-        if(this.speed_min || this.speed){
+        // Retail Control accelerates only while follower running bit is set.
+        if(this.running && (this.speed_min || this.speed)){
           if(this.speed < this.speed_min){
             this.speed = this.speed_min;
           }
@@ -440,19 +490,27 @@ export class ModuleMGPlayer extends ModuleObject {
           this.playerOffset.z
         );
 
-        // Retail forward motion is track "track" anim (Go/SetSpeed). Fallback: translate mesh.
+        // Retail Go/SetSpeed: "track" at speed*0.01 — rate 0 freezes (no :1 fallback while running).
         if(this.track instanceof OdysseyModel3D){
-          const rate = this.running && this.trackAnimRate > 0 ? this.trackAnimRate : 1;
+          const rate = this.running ? this.trackAnimRate : 0;
+          const animState = this.track.animationManager?.currentAnimationState;
+          this.inertiaAnimT0 = typeof animState?.lastTime === 'number'
+            ? animState.lastTime
+            : (typeof animState?.elapsed === 'number' ? Math.max(0, animState.elapsed - delta * rate) : 0);
           this.track.update(delta * rate);
           if(!this.running || !this.track.animationManager?.currentAnimation){
             this.track.position.add(this.forceVector);
+          }
+          // OnReportKey stand-in: emit SWMGKeyInfo for keys crossed this frame.
+          if(miniGame.useInertia && this.running){
+            this.emitInertiaKeysFromTrackAnim();
           }
         }else if(this.track){
           this.track.updateMatrixWorld();
           this.track.position.add(this.forceVector);
         }
 
-        // Retail UseInertia: DoInertia projects modelhook motion onto BumpPlane (while running).
+        // Retail UseInertia: merge OnReportKey buffers → DoInertia (Control @ 0066d640).
         if(miniGame.useInertia && this.running){
           this.applyInertia(delta);
         }
@@ -554,7 +612,8 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  /** Retail CSWTrackFollower::Go @ 006701c0 — Ready_01, track anim @ speed*0.01, running bit, engine. */
+  /** Retail CSWTrackFollower::Go @ 006701c0 — Ready_01, track anim @ speed*0.01, running bit, engine.
+   * Also RegisterCallBack(OnReportKey) when UseInertia path active — see emitInertiaKeysFromTrackAnim. */
   go(){
     if(this.running || !this.alive){ return; }
 
@@ -568,6 +627,7 @@ export class ModuleMGPlayer extends ModuleObject {
     this.setFollowerSpeed(this.speed || this.speed_min || 0);
     this.ensureTrackAnimation();
     this.running = true;
+    this.clearInertiaKeyBuffers();
     this.trackFollowerAudio.go(this.position.x, this.position.y, this.position.z);
   }
 
@@ -587,6 +647,7 @@ export class ModuleMGPlayer extends ModuleObject {
   disposeFollower(){
     this.stopTrack();
     this.alive = false;
+    this.unbindAnimPlayEvents();
     this.trackFollowerAudio.destroy?.();
 
     for(let i = 0; i < this.gunBanks.length; i++){
@@ -778,27 +839,86 @@ export class ModuleMGPlayer extends ModuleObject {
     return sgn * n;
   }
 
+  clearInertiaKeyBuffers(){
+    this.inertiaKeysTrigger.length = 0;
+    this.inertiaKeysReport.length = 0;
+  }
+
   /**
-   * Sample modelhook after track motion and apply DoInertia → offset (UseInertia).
-   * When the track anim has modelhook Position keys in the frame window, merge
-   * segments like retail Control @ 0066d640 (DoInertia per keyframe dt).
+   * Retail OnReportKey @ 0066dd60 stand-in — for each modelhook Position key crossed
+   * append to follower.trigger list; Orientation keys → field3 list.
+   * World-bakes Aurora local key values for DoInertia (expects world pos/quat).
+   */
+  emitInertiaKeysFromTrackAnim(){
+    const trackModel = this.track as OdysseyModel3D;
+    const animMgr = trackModel?.animationManager;
+    const anim = animMgr?.currentAnimation;
+    const state = animMgr?.currentAnimationState;
+    if(!anim || !state || !anim.nodes?.length){ return; }
+
+    const animNode = anim.nodes.find(
+      (n) => n?.name && n.name.toLowerCase() === 'modelhook'
+    );
+    if(!animNode){ return; }
+
+    const t0 = this.inertiaAnimT0;
+    const t1 = typeof state.elapsed === 'number' ? state.elapsed : t0;
+    if(!(t1 > t0)){ return; }
+
+    const posCtrl = animNode.controllers?.get?.(OdysseyModelControllerType.Position);
+    const oriCtrl = animNode.controllers?.get?.(OdysseyModelControllerType.Orientation);
+    const posFrames: IOdysseyControllerFrameGeneric[] = posCtrl?.data;
+    const oriFrames: IOdysseyControllerFrameGeneric[] = oriCtrl?.data;
+
+    const hook = trackModel.getObjectByName?.('modelhook');
+    const parent = hook?.parent;
+    if(parent){ parent.updateWorldMatrix(true, false); }
+    const parentWorld = parent?.matrixWorld || trackModel.matrixWorld;
+
+    if(posFrames?.length){
+      for(let i = 0; i < posFrames.length; i++){
+        const t = posFrames[i]?.time;
+        if(typeof t !== 'number' || !(t > t0 && t <= t1)){ continue; }
+        const key: SWMGKeyInfo = {
+          time: t,
+          position: new THREE.Vector3(),
+          orientation: new THREE.Quaternion(),
+          hasPosition: true,
+          hasOrientation: false,
+        };
+        this.sampleHookWorldAt(posFrames, oriFrames, t, parentWorld, key.position, key.orientation);
+        this.inertiaKeysTrigger.push(key);
+      }
+    }
+
+    if(oriFrames?.length){
+      for(let i = 0; i < oriFrames.length; i++){
+        const t = oriFrames[i]?.time;
+        if(typeof t !== 'number' || !(t > t0 && t <= t1)){ continue; }
+        // Skip if Position already emitted at same time (avoid duplicate merge events).
+        if(posFrames?.some((f) => f?.time === t)){ continue; }
+        const key: SWMGKeyInfo = {
+          time: t,
+          position: new THREE.Vector3(),
+          orientation: new THREE.Quaternion(),
+          hasPosition: false,
+          hasOrientation: true,
+        };
+        this.sampleHookWorldAt(posFrames || [], oriFrames, t, parentWorld, key.position, key.orientation);
+        this.inertiaKeysReport.push(key);
+      }
+    }
+  }
+
+  /**
+   * Retail UseInertia: Control @ 0066d640 merges OnReportKey buffers → DoInertia
+   * per segment, then remainder to live modelhook; clears counts each frame.
    */
   applyInertia(delta: number){
     const hook = this.track?.getObjectByName?.('modelhook');
     if(!hook || delta <= 0){ return; }
 
     this.track.updateMatrixWorld(true);
-
-    if(this.applyInertiaFromAnimKeys(hook, delta)){
-      this.keepInTunnel(this.playerOffset);
-      this.container.position.set(
-        this.playerOffset.x,
-        this.playerOffset.y,
-        this.playerOffset.z
-      );
-      return;
-    }
-
     hook.getWorldPosition(this.inertiaHookCurr);
     hook.getWorldQuaternion(this.inertiaHookQuat);
 
@@ -806,115 +926,96 @@ export class ModuleMGPlayer extends ModuleObject {
       this.inertiaHookPrev.copy(this.inertiaHookCurr);
       this.inertiaVelocity.set(0, 0, 0);
       this.inertiaReady = true;
+      this.clearInertiaKeyBuffers();
       return;
     }
 
-    this.doInertia(
-      this.inertiaHookPrev,
-      this.inertiaHookCurr,
-      this.inertiaHookQuat,
-      delta,
-      this.inertiaOut
-    );
-    this.playerOffset.add(this.inertiaOut);
+    const merged = this.mergeInertiaKeyBuffers();
+    this.inertiaSegPrev.copy(this.inertiaHookPrev);
+    this.inertiaSegQuat.copy(this.inertiaHookQuat);
+    let tCursor = this.inertiaAnimT0;
+
+    for(let i = 0; i < merged.length; i++){
+      const key = merged[i];
+      const dt = key.time - tCursor;
+      if(dt > 0){
+        if(key.hasPosition){
+          this.inertiaSegCurr.copy(key.position);
+        }else{
+          this.inertiaSegCurr.copy(this.inertiaSegPrev);
+        }
+        if(key.hasOrientation){
+          this.inertiaSegQuat.copy(key.orientation);
+        }
+        this.doInertia(
+          this.inertiaSegPrev,
+          this.inertiaSegCurr,
+          this.inertiaSegQuat,
+          dt,
+          this.inertiaOut
+        );
+        this.playerOffset.add(this.inertiaOut);
+        this.inertiaSegPrev.copy(this.inertiaSegCurr);
+      }else{
+        // Zero-dt / same-time key: update pose state only (Control coalesces).
+        if(key.hasOrientation){ this.inertiaSegQuat.copy(key.orientation); }
+        if(key.hasPosition){ this.inertiaSegPrev.copy(key.position); }
+      }
+      tCursor = key.time;
+    }
+
+    // Frame remainder → live modelhook (retail final DoInertia with leftover dt).
+    const t1 = this.inertiaAnimT0 + delta;
+    // Prefer anim elapsed span when available.
+    const trackModel = this.track as OdysseyModel3D;
+    const elapsed = trackModel?.animationManager?.currentAnimationState?.elapsed;
+    const tEnd = typeof elapsed === 'number' && elapsed > this.inertiaAnimT0 ? elapsed : t1;
+    const rem = tEnd - tCursor;
+    if(rem > 1e-8){
+      this.doInertia(
+        this.inertiaSegPrev,
+        this.inertiaHookCurr,
+        this.inertiaHookQuat,
+        rem,
+        this.inertiaOut
+      );
+      this.playerOffset.add(this.inertiaOut);
+      this.inertiaSegPrev.copy(this.inertiaHookCurr);
+      this.inertiaSegQuat.copy(this.inertiaHookQuat);
+    }
+
+    this.inertiaHookPrev.copy(this.inertiaSegPrev);
+    this.inertiaHookCurr.copy(this.inertiaSegPrev);
+    this.inertiaHookQuat.copy(this.inertiaSegQuat);
+
     this.keepInTunnel(this.playerOffset);
     this.container.position.set(
       this.playerOffset.x,
       this.playerOffset.y,
       this.playerOffset.z
     );
-    this.inertiaHookPrev.copy(this.inertiaHookCurr);
+    this.clearInertiaKeyBuffers();
   }
 
   /**
-   * Retail UseInertia path merges track trigger keyframe lists (Control @ 0066d640)
-   * then DoInertia each segment. Approximate by merging modelhook Position + Orientation
-   * key times in the frame window (two controller lists → one sorted timeline).
+   * Retail Control merge of two 0x24 lists by ascending time.
+   * Rewrites absolute times stay absolute here; segment dts computed in applyInertia.
    */
-  applyInertiaFromAnimKeys(hook: THREE.Object3D, delta: number): boolean {
-    const trackModel = this.track as OdysseyModel3D;
-    const animMgr = trackModel?.animationManager;
-    const anim = animMgr?.currentAnimation;
-    const state = animMgr?.currentAnimationState;
-    if(!anim || !state || !anim.nodes?.length){ return false; }
-
-    const animNode = anim.nodes.find(
-      (n) => n?.name && n.name.toLowerCase() === 'modelhook'
-    );
-    if(!animNode){ return false; }
-
-    const posCtrl = animNode.controllers?.get?.(OdysseyModelControllerType.Position);
-    const frames: IOdysseyControllerFrameGeneric[] = posCtrl?.data;
-    if(!frames?.length){ return false; }
-
-    const oriCtrl = animNode.controllers?.get?.(OdysseyModelControllerType.Orientation);
-    const oriFrames: IOdysseyControllerFrameGeneric[] = oriCtrl?.data;
-
-    const t0 = typeof state.lastTime === 'number' ? state.lastTime : Math.max(0, state.elapsed - delta);
-    const t1 = state.elapsed;
-    if(!(t1 > t0)){ return false; }
-
-    // Merge Position + Orientation key times in (t0, t1) — retail merges two trigger lists by time.
-    const times = ModuleMGPlayer._inertiaTimes;
-    times.length = 0;
-    times.push(t0);
-    const pushUnique = (t: number) => {
-      if(!(t > t0 && t < t1)){ return; }
-      if(times[times.length - 1] === t){ return; }
-      // Keep sorted (controllers are ordered; merge both streams).
-      let i = times.length;
-      while(i > 1 && times[i - 1] > t){ i--; }
-      if(times[i - 1] === t){ return; }
-      times.splice(i, 0, t);
-    };
-    for(let i = 0; i < frames.length; i++){
-      const t = frames[i]?.time;
-      if(typeof t === 'number'){ pushUnique(t); }
-    }
-    if(oriFrames?.length){
-      for(let i = 0; i < oriFrames.length; i++){
-        const t = oriFrames[i]?.time;
-        if(typeof t === 'number'){ pushUnique(t); }
+  mergeInertiaKeyBuffers(): SWMGKeyInfo[] {
+    const out = ModuleMGPlayer._mergeOrder;
+    out.length = 0;
+    const a = this.inertiaKeysTrigger;
+    const b = this.inertiaKeysReport;
+    let i = 0;
+    let j = 0;
+    while(i < a.length || j < b.length){
+      if(j >= b.length || (i < a.length && a[i].time <= b[j].time)){
+        out.push(a[i++]);
+      }else{
+        out.push(b[j++]);
       }
     }
-    times.push(t1);
-    // Retail always DoInertia for the frame remainder; one segment is enough.
-    if(times.length < 2){ return false; }
-
-    const parent = hook.parent;
-    if(parent){ parent.updateWorldMatrix(true, false); }
-    const parentWorld = parent?.matrixWorld || trackModel.matrixWorld;
-
-    if(!this.inertiaReady){
-      this.sampleHookWorldAt(frames, oriFrames, t0, parentWorld, this.inertiaHookPrev, this.inertiaHookQuat);
-      this.inertiaVelocity.set(0, 0, 0);
-      this.inertiaReady = true;
-    }
-
-    this.inertiaSegPrev.copy(this.inertiaHookPrev);
-    this.inertiaSegQuat.copy(this.inertiaHookQuat);
-
-    for(let i = 1; i < times.length; i++){
-      const a = times[i - 1];
-      const b = times[i];
-      const dt = b - a;
-      if(dt <= 0){ continue; }
-      this.sampleHookWorldAt(frames, oriFrames, b, parentWorld, this.inertiaSegCurr, this.inertiaSegQuat);
-      this.doInertia(
-        this.inertiaSegPrev,
-        this.inertiaSegCurr,
-        this.inertiaSegQuat,
-        dt,
-        this.inertiaOut
-      );
-      this.playerOffset.add(this.inertiaOut);
-      this.inertiaSegPrev.copy(this.inertiaSegCurr);
-    }
-
-    this.inertiaHookPrev.copy(this.inertiaSegPrev);
-    this.inertiaHookCurr.copy(this.inertiaSegPrev);
-    this.inertiaHookQuat.copy(this.inertiaSegQuat);
-    return true;
+    return out;
   }
 
   /** Evaluate modelhook local Position/Orientation at anim time → world. */
@@ -926,8 +1027,12 @@ export class ModuleMGPlayer extends ModuleObject {
     outPos: THREE.Vector3,
     outQuat: THREE.Quaternion
   ){
-    const pos = this.sampleVec3Frame(posFrames, time);
-    outPos.set(pos.x, pos.y, pos.z);
+    if(posFrames?.length){
+      const pos = this.sampleVec3Frame(posFrames, time);
+      outPos.set(pos.x, pos.y, pos.z);
+    }else{
+      outPos.set(0, 0, 0);
+    }
     if(oriFrames?.length){
       const o = this.sampleQuatFrame(oriFrames, time);
       outQuat.set(o.x, o.y, o.z, o.w);
@@ -1071,18 +1176,73 @@ export class ModuleMGPlayer extends ModuleObject {
    * OnHitObstacle(player), set obstacle.last_follower_hit = player, OnHitFollower(obstacle).
    * Latched once per obstacle (like enemy.collided).
    */
+  /**
+   * World position of primary follower model (or container) for HitCheckPart segments.
+   */
+  getHitModelWorld(out: THREE.Vector3): THREE.Vector3 {
+    const model = this.models?.[0];
+    if(model){
+      model.updateMatrixWorld?.(true);
+      return model.getWorldPosition(out);
+    }
+    this.container.updateMatrixWorld?.(true);
+    return this.container.getWorldPosition(out);
+  }
+
+  /**
+   * Named collision part on loaded follower Gobs (`hitbullet`).
+   */
+  getHitPart(partName: string): THREE.Object3D | undefined {
+    const key = partName.toLowerCase();
+    for(let i = 0; i < this.models.length; i++){
+      const model = this.models[i];
+      if(!model){ continue; }
+      const node = model.nodes?.get?.(key) || model.getObjectByName?.(partName);
+      if(node){ return node; }
+    }
+    return undefined;
+  }
+
+  /**
+   * Retail DoObstacleHitCheck @ 0066e6b0 —
+   * HitCheckPart(hitbump, follower model prev→curr) when obstacle models loaded.
+   */
   tryHitObstacle(obstacle: ModuleMGObstacle){
     // Retail DoObstacleHitCheck does not gate on invulnerability — scripts do.
     if(!this.alive){ return; }
     if(!obstacle || obstacle.hit){ return; }
+    if(!obstacle.models?.length){ return; }
+    // Retail DoObstacleHitCheck requires follower models.size != 0.
+    if(!this.models?.length){ return; }
 
     let hit = false;
-    const hitPart = obstacle.getHitPart?.('hitbump');
-    if(hitPart){
-      const r = (hitPart as any).userData?.sphereRadius ?? 0.5;
-      const partPos = hitPart.getWorldPosition(ModuleMGPlayer._tmpHitBump);
-      hit = this.sphere.center.distanceToSquared(partPos) <= (this.sphere_radius + r) * (this.sphere_radius + r);
-    }else{
+    const from = this.hitModelSegReady
+      ? this.hitModelSegFrom
+      : this.getHitModelWorld(ModuleMGPlayer._tmpHitModel);
+    const to = this.getHitModelWorld(ModuleMGPlayer._tmpHitBump);
+
+    for(let i = 0; i < obstacle.models.length; i++){
+      const root = obstacle.models[i];
+      if(!root){ continue; }
+      const hitPart = root.nodes?.get?.('hitbump') || root.getObjectByName?.('hitbump');
+      if(!hitPart){ continue; }
+      if(hitCheckPart(root, hitPart, from, to)){
+        hit = true;
+        break;
+      }
+    }
+
+    if(!hit){
+      // No hitbump part on any model — proximity stand-in.
+      let anyBump = false;
+      for(let i = 0; i < obstacle.models.length; i++){
+        const root = obstacle.models[i];
+        if(root?.nodes?.get?.('hitbump') || root?.getObjectByName?.('hitbump')){
+          anyBump = true;
+          break;
+        }
+      }
+      if(anyBump){ return; }
       const obsPos = obstacle.layout?.position ?? obstacle.position;
       if(!obsPos){ return; }
       const radius = this.sphere_radius || 1;
@@ -1099,8 +1259,6 @@ export class ModuleMGPlayer extends ModuleObject {
     this.onHitObstacle(obstacle);
     obstacle.onHitFollower(this);
   }
-
-  private static _tmpHitBump = new THREE.Vector3();
 
   fire(){
     if(this.gunBanks.length){
@@ -1457,6 +1615,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   load(){
     this.initProperties();
+    this.loadScripts();
     GameState.scene.add(this.sphere_geom);
     void this.trackFollowerAudio.load();
   }
@@ -1511,6 +1670,8 @@ export class ModuleMGPlayer extends ModuleObject {
         }
         this.models.push(model);
         model.name = item.model;
+        // Retail Go RegisterCallBack(OnAnimKeyEvent) on follower models.
+        this.bindAnimPlayEvent(model);
 
         if(this.camera && model.name == this.camera.name)
           model.visible = false;
@@ -1548,11 +1709,63 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
+  /**
+   * Retail OnAnimKeyEvent @ 0066fe50 stand-in via OdysseyModel3D playEvent.
+   * custom_* → lastEvent = suffix + OnAnimEvent script; loop → Num_Loops + OnTrackLoop.
+   */
+  handleAnimPlayEvent(e: { event?: string; target?: { name?: string } }){
+    const raw = String(e?.event ?? '');
+    if(!raw){ return; }
+    const lower = raw.toLowerCase();
+    const modelName = e?.target?.name || this.models?.[0]?.name || this.name || '';
+    const mg = GameState.module?.area?.miniGame;
+
+    if(lower.startsWith('custom_')){
+      // Retail stores param_2+7 (suffix after "custom_").
+      mg?.recordAnimEvent?.(raw.substring(7), modelName);
+      this.onAnimEvent();
+      return;
+    }
+    if(lower === 'loop'){
+      // Retail: if looping != -1, decrement + SetSpeed, then OnTrackLoop script.
+      if(typeof this.num_loops === 'number' && this.num_loops !== -1){
+        this.num_loops = this.num_loops - 1;
+        this.setFollowerSpeed(this.speed);
+      }
+      this.onTrackLoop();
+    }
+  }
+
+  bindAnimPlayEvent(target: THREE.Object3D | undefined | null){
+    if(!target || typeof (target as any).addEventListener !== 'function'){ return; }
+    // Avoid double-bind on the same object.
+    for(let i = 0; i < this.animPlayEventTargets.length; i++){
+      if(this.animPlayEventTargets[i].target === target){ return; }
+    }
+    (target as any).addEventListener('playEvent', this.animPlayEventHandler);
+    this.animPlayEventTargets.push({ target, handler: this.animPlayEventHandler });
+  }
+
+  unbindAnimPlayEvent(target: THREE.Object3D | undefined | null){
+    if(!target){ return; }
+    for(let i = this.animPlayEventTargets.length - 1; i >= 0; i--){
+      const entry = this.animPlayEventTargets[i];
+      if(entry.target !== target){ continue; }
+      (entry.target as any).removeEventListener?.('playEvent', entry.handler);
+      this.animPlayEventTargets.splice(i, 1);
+    }
+  }
+
+  unbindAnimPlayEvents(){
+    for(let i = 0; i < this.animPlayEventTargets.length; i++){
+      const { target, handler } = this.animPlayEventTargets[i];
+      (target as any).removeEventListener?.('playEvent', handler);
+    }
+    this.animPlayEventTargets.length = 0;
+  }
+
   onAnimEvent(){
     const instance = this.scripts[ModuleObjectScript.MGPlayerOnAnimEvent];
-    const mg = GameState.module?.area?.miniGame;
-    // SWMG_GetLastEvent / GetLastEventModelName — anim key event context.
-    mg?.recordAnimEvent?.('OnAnimEvent', this.models?.[0]?.name || this.name || '');
     if(!instance){ return; }
     instance.run(this, 0);
   }

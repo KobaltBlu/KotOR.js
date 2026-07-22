@@ -69,6 +69,13 @@ export class ModuleMGEnemy extends ModuleObject {
   /** Retail PlayAnimation("track", speed * 0.01). */
   trackAnimRate: number = 0;
   trackName: any;
+  /**
+   * Retail OnAnimKeyEvent @ 0066fe50 — playEvent on track + models.
+   */
+  private animPlayEventHandler = (e: { event?: string; target?: { name?: string } }) => {
+    this.handleAnimPlayEvent(e);
+  };
+  private animPlayEventTargets: Array<{ target: THREE.Object3D; handler: typeof this.animPlayEventHandler }> = [];
 
   collided: boolean = false;
   /** Last HP delta for SWMG_GetLastHPChange / OnDamage. */
@@ -109,9 +116,12 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   setTrack(model: THREE.Object3D = new THREE.Object3D(), ownsTrack: boolean = false){
-    if(this.ownsTrack && this.track && this.track !== model){
-      this.track.parent?.remove(this.track);
-      (this.track as OdysseyModel3D).dispose?.();
+    if(this.track && this.track !== model){
+      this.unbindAnimPlayEvent(this.track);
+      if(this.ownsTrack){
+        this.track.parent?.remove(this.track);
+        (this.track as OdysseyModel3D).dispose?.();
+      }
     }
 
     this.ownsTrack = ownsTrack;
@@ -130,6 +140,7 @@ export class ModuleMGEnemy extends ModuleObject {
     }catch(e){
       console.error(e);
     }
+    this.bindAnimPlayEvent(this.track);
   }
 
   setFollowerSpeed(speed: number){
@@ -242,6 +253,9 @@ export class ModuleMGEnemy extends ModuleObject {
       }
     }
 
+    if(GameState.module){
+      this.triggerHeartbeat();
+    }
   }
 
   updatePaused(delta: number = 0){
@@ -342,6 +356,7 @@ export class ModuleMGEnemy extends ModuleObject {
 
   async load(){
     this.initProperties();
+    this.loadScripts();
     GameState.scene.add(this.sphere_geom);
     void this.trackFollowerAudio.load();
     return this.template;
@@ -361,7 +376,7 @@ export class ModuleMGEnemy extends ModuleObject {
         this.models.push(model);
         this.container.add(model);  
         model.name = item.model;
-
+        this.bindAnimPlayEvent(model);
       }catch(e){
         console.error(e);
       }
@@ -387,6 +402,57 @@ export class ModuleMGEnemy extends ModuleObject {
     const points = ModuleMGGunBank.findGunAttachPoints(this.container, bankID);
     if(points.length){ return points[0]; }
     return this.container.getObjectByName('gunbank'+bankID) as THREE.Object3D;
+  }
+
+  /**
+   * Retail OnAnimKeyEvent @ 0066fe50 stand-in via OdysseyModel3D playEvent.
+   */
+  handleAnimPlayEvent(e: { event?: string; target?: { name?: string } }){
+    const raw = String(e?.event ?? '');
+    if(!raw){ return; }
+    const lower = raw.toLowerCase();
+    const modelName = e?.target?.name || this.models?.[0]?.name || this.name || '';
+    const mg = GameState.module?.area?.miniGame;
+
+    if(lower.startsWith('custom_')){
+      mg?.recordAnimEvent?.(raw.substring(7), modelName);
+      this.onAnimEvent();
+      return;
+    }
+    if(lower === 'loop'){
+      if(typeof this.num_loops === 'number' && this.num_loops !== -1){
+        this.num_loops = this.num_loops - 1;
+        this.setFollowerSpeed(this.maximum_speed || 0);
+      }
+      this.onTrackLoop();
+    }
+  }
+
+  bindAnimPlayEvent(target: THREE.Object3D | undefined | null){
+    if(!target || typeof (target as any).addEventListener !== 'function'){ return; }
+    for(let i = 0; i < this.animPlayEventTargets.length; i++){
+      if(this.animPlayEventTargets[i].target === target){ return; }
+    }
+    (target as any).addEventListener('playEvent', this.animPlayEventHandler);
+    this.animPlayEventTargets.push({ target, handler: this.animPlayEventHandler });
+  }
+
+  unbindAnimPlayEvent(target: THREE.Object3D | undefined | null){
+    if(!target){ return; }
+    for(let i = this.animPlayEventTargets.length - 1; i >= 0; i--){
+      const entry = this.animPlayEventTargets[i];
+      if(entry.target !== target){ continue; }
+      (entry.target as any).removeEventListener?.('playEvent', entry.handler);
+      this.animPlayEventTargets.splice(i, 1);
+    }
+  }
+
+  unbindAnimPlayEvents(){
+    for(let i = 0; i < this.animPlayEventTargets.length; i++){
+      const { target, handler } = this.animPlayEventTargets[i];
+      (target as any).removeEventListener?.('playEvent', handler);
+    }
+    this.animPlayEventTargets.length = 0;
   }
 
   onAnimEvent(){
@@ -476,6 +542,7 @@ export class ModuleMGEnemy extends ModuleObject {
   removeModelAt(index: number){
     if(index < 0 || index >= this.models.length){ return; }
     const model = this.models[index];
+    this.unbindAnimPlayEvent(model);
     model?.parent?.remove(model);
     model?.dispose?.();
     this.models.splice(index, 1);
@@ -493,6 +560,7 @@ export class ModuleMGEnemy extends ModuleObject {
   disposeFollower(){
     this.stopTrack();
     this.alive = false;
+    this.unbindAnimPlayEvents();
     this.trackFollowerAudio.destroy?.();
 
     for(let i = 0; i < this.gunBanks.length; i++){

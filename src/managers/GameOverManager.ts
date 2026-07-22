@@ -377,6 +377,7 @@ export class GameOverManager {
    * (SendServerToPlayerPopUpGUIPanel @ 0056aac0).
    */
   static PopUpGUIPanel(oPC: ModuleObject | undefined, guiPanel: number){
+    GameState.PartyManager.LastGuiPanel = guiPanel | 0;
     if(guiPanel !== 0) return;
     this.PopUpDeathGUIPanel(oPC, true, true, 0, '');
   }

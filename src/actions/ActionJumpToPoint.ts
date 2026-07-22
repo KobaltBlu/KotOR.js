@@ -6,6 +6,7 @@ import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import * as THREE from "three";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
+import { GameState } from "@/GameState";
 
 /**
  * ActionJumpToPoint class.
@@ -60,6 +61,11 @@ export class ActionJumpToPoint extends Action {
     );
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      const creature = this.owner as import("@/module/ModuleCreature").ModuleCreature;
+      // Retail AIActionJumpToPoint: leave limbo when jumping from area-less state
+      if(GameState.module?.isObjectInLimbo(creature) && !creature.area){
+        GameState.module.removeObjectFromLimbo(creature);
+      }
       this.owner.setPosition(new THREE.Vector3(this.x, this.y, this.z));
       this.owner.setFacing(this.facing, false, TURN_SPEED_FAST);
       this.owner.collisionManager.groundFace = undefined;

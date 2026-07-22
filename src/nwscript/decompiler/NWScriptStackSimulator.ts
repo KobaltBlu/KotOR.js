@@ -3,6 +3,7 @@ import { NWScriptExpression, NWScriptExpressionType } from "@/nwscript/decompile
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import type { NWScriptFunctionParameter } from "@/nwscript/decompiler/NWScriptFunctionAnalyzer";
 import type { JsrUserRoutineMeta } from "@/nwscript/decompiler/NWScriptArgumentStackLayout";
+import { orderActionArgsTopFirst } from "@/nwscript/decompiler/NWScriptArgumentStackLayout";
 import type { DelayCommandThunkArg } from "@/nwscript/decompiler/NWScriptStoreStateThunkSkip";
 import {
   OP_CONST, OP_ACTION, OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MODII,
@@ -58,8 +59,10 @@ export class NWScriptStackSimulator {
    */
   private functionParameters: Map<number, { name: string, dataType: NWScriptDataType }> = new Map();
 
-  /** CPTOPSP-only parameters: CPTOPSP signed offset operand → formal */
+  /** CPTOPSP operand → formal (SP-relative formals). */
   private cptopspParameterOperands: Map<number, { name: string; dataType: NWScriptDataType }> = new Map();
+  /** Absolute stack position at function entry → formal (SP may grow; operand changes). */
+  private cptopspParamByAbsolutePosition: Map<number, { name: string; dataType: NWScriptDataType }> = new Map();
   
   /**
    * Global variables (for mapping CPTOPBP positive offsets to global variable names)
@@ -593,7 +596,15 @@ export class NWScriptStackSimulator {
       args.reverse();
       const expr = NWScriptExpression.functionCall(meta.name, args, meta.returnType);
       if (meta.returnType !== NWScriptDataType.VOID) {
-        this.push(expr, instruction.address);
+        // Caller pre-reserved the return with RSADD below the args. After popping args,
+        // replace that slot — do not push (extra +4 desyncs SP; breaks later RSADD reuse).
+        const top = this.peek();
+        if (top) {
+          top.expression = expr;
+          top.address = instruction.address;
+        } else {
+          this.push(expr, instruction.address);
+        }
       }
       return expr;
     }
@@ -621,8 +632,6 @@ export class NWScriptStackSimulator {
       return null;
     }
 
-    const args: NWScriptExpression[] = [];
-
     // Action-type args (0xff) travel via STORE_STATE, not the stack — popping for them
     // would swallow an unrelated value and skew SP for every later read.
     const defArgTypes: number[] = Array.isArray(actionDef.args) ? actionDef.args : [];
@@ -633,19 +642,17 @@ export class NWScriptStackSimulator {
       }
     }
 
-    // Pop arguments from stack
-    // In NWScript, arguments appear to be pushed in forward order (first arg first)
-    // So when we pop them, we get them in reverse order (last arg first)
-    // We use push to collect them, then reverse to get correct order
+    // Pop top-first. Default NWScript is R-to-L (top = first formal). Retail sometimes
+    // pushes L-to-R with repeated CPTOP offsets (SetLocalBoolean triple −16) — detect via
+    // top matching the last formal type when first≠last.
+    const popped: NWScriptExpression[] = [];
     for (let i = 0; i < popCount && this.stack.length > 0; i++) {
       const item = this.pop();
       if (item) {
-        args.unshift(item.expression); // unshift to maintain correct order
+        popped.push(item.expression);
       }
     }
-    
-    // Reverse to get correct argument order (first arg first)
-    args.reverse();
+    const args = orderActionArgsTopFirst(popped, defArgTypes);
 
     const functionName = actionDef.name || `Action_${instruction.action}`;
     const returnType = actionDef.type || NWScriptDataType.VOID;
@@ -753,11 +760,22 @@ export class NWScriptStackSimulator {
       const offset = instruction.offset || 0;
       const offsetSigned = offset > 0x7FFFFFFF ? offset - 0x100000000 : offset;
 
-      // Prefer formals mapped by CPTOPSP operand before local position fuzzy-match.
-      // After RSADD of a local, SP+offset can land near the new slot and steal param reads
-      // (e.g. `t = z * 2` → localVar_0 * 2).
+      // Prefer formals by absolute stack position (after RSADD, CPTOPSP operand changes
+      // but the param slot's absolute address stays fixed).
+      const sourceStackPos = this.stackPointer + offsetSigned;
+      const spParamByAbs = this.cptopspParamByAbsolutePosition.get(sourceStackPos);
+      if (spParamByAbs) {
+        const expr = NWScriptExpression.variable(
+          spParamByAbs.name,
+          spParamByAbs.dataType,
+          false
+        );
+        this.push(expr, instruction.address, copySize > 4 ? copySize : 4);
+        return expr;
+      }
+      // Fallback: operand match only when no absolute frame was recorded (temps).
       const spParamEarly = this.cptopspParameterOperands.get(offsetSigned);
-      if (spParamEarly) {
+      if (spParamEarly && this.cptopspParamByAbsolutePosition.size === 0) {
         const expr = NWScriptExpression.variable(
           spParamEarly.name,
           spParamEarly.dataType,
@@ -766,10 +784,6 @@ export class NWScriptStackSimulator {
         this.push(expr, instruction.address, copySize > 4 ? copySize : 4);
         return expr;
       }
-      
-      // Calculate the actual stack position this instruction reads from
-      const sourceStackPos = this.stackPointer + offsetSigned;
-      
       // First, try to resolve using the dynamic stack position map (stack-aware)
       const varIndex = this.variableStackPositions.get(sourceStackPos);
       if (varIndex !== undefined) {
@@ -882,10 +896,27 @@ export class NWScriptStackSimulator {
     // CPDOWNSP copies from top of stack to a location down the stack
     // The value remains on the stack
     const topItem = this.peek();
-    if (topItem) {
-      return topItem.expression;
+    if (!topItem) {
+      return null;
     }
-    return null;
+
+    // Mirror the write into the expression stack so later CPTOPSP of that slot
+    // sees the new value when the destination is still a live StackItem.
+    let offset = instruction.offset || 0;
+    if (offset > 0x7FFFFFFF) {
+      offset -= 0x100000000;
+    }
+    const targetAbs = this.stackPointer + offset;
+    let abs = this.stackPointer;
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      abs -= this.stack[i].byteSize || 4;
+      if (abs === targetAbs) {
+        this.stack[i].expression = topItem.expression;
+        break;
+      }
+    }
+
+    return topItem.expression;
   }
 
   /**
@@ -1192,12 +1223,17 @@ export class NWScriptStackSimulator {
     this.stackSnapshots.clear();
     this.functionParameters.clear();
     this.cptopspParameterOperands.clear();
+    this.cptopspParamByAbsolutePosition.clear();
   }
 
   /** Save stack depth/SP/BP for re-entrant probing (e.g. switch discriminant extraction). */
   takeStackSnapshot(): { stack: StackItem[]; stackPointer: number; basePointer: number } {
     return {
-      stack: this.stack.map((i) => ({ expression: i.expression, address: i.address })),
+      stack: this.stack.map((i) => ({
+        expression: i.expression,
+        address: i.address,
+        byteSize: i.byteSize,
+      })),
       stackPointer: this.stackPointer,
       basePointer: this.basePointer,
     };
@@ -1208,22 +1244,48 @@ export class NWScriptStackSimulator {
     stackPointer: number;
     basePointer: number;
   }): void {
-    this.stack = snapshot.stack.map((i) => ({ expression: i.expression, address: i.address }));
+    this.stack = snapshot.stack.map((i) => ({
+      expression: i.expression,
+      address: i.address,
+      byteSize: i.byteSize || 4,
+    }));
     this.stackPointer = snapshot.stackPointer;
     this.basePointer = snapshot.basePointer;
   }
 
   /**
-   * Set function parameters for parameter name mapping
+   * Set function parameters for parameter name mapping.
+   * Absolute CPTOPSP formal slots use {@code paramFrameSp} when provided, otherwise the
+   * current {@link stackPointer} (must be function-entry SP when recording).
    */
-  setFunctionParameters(parameters: NWScriptFunctionParameter[]): void {
+  setFunctionParameters(
+    parameters: NWScriptFunctionParameter[],
+    paramFrameSp?: number
+  ): void {
     this.functionParameters.clear();
     this.cptopspParameterOperands.clear();
-    for (const param of parameters) {
-      if (param.resolvedViaSpOperand) {
-        this.cptopspParameterOperands.set(param.offset, { name: param.name, dataType: param.dataType });
-      } else {
-        this.functionParameters.set(param.offset, { name: param.name, dataType: param.dataType });
+    this.cptopspParamByAbsolutePosition.clear();
+    const entrySp = paramFrameSp ?? this.stackPointer;
+    const recordAbs = paramFrameSp !== undefined || this.stackPointer !== 0;
+    const bpParams = parameters.filter((p) => !p.resolvedViaSpOperand);
+    const spParams = parameters
+      .filter((p) => p.resolvedViaSpOperand)
+      .sort((a, b) => a.offset - b.offset); // most-negative first = param1
+    for (const param of bpParams) {
+      this.functionParameters.set(param.offset, { name: param.name, dataType: param.dataType });
+    }
+    // Body CPTOPSP operands often reflect post-RSADD slots (e.g. −8 for a lone formal).
+    // Absolute param frame uses canonical entry offsets −4*n … −4.
+    for (let i = 0; i < spParams.length; i++) {
+      const param = spParams[i];
+      const canonicalOffset = -(spParams.length - i) * 4;
+      const info = { name: param.name, dataType: param.dataType };
+      this.cptopspParameterOperands.set(canonicalOffset, info);
+      if (param.offset !== canonicalOffset) {
+        this.cptopspParameterOperands.set(param.offset, info);
+      }
+      if (recordAbs) {
+        this.cptopspParamByAbsolutePosition.set(entrySp + canonicalOffset, info);
       }
     }
   }
@@ -1343,6 +1405,7 @@ export class NWScriptStackSimulator {
       case 4: return NWScriptDataType.FLOAT;
       case 5: return NWScriptDataType.STRING;
       case 6: return NWScriptDataType.OBJECT;
+      case 0x23: return NWScriptDataType.STRING; // ADDSS / string binary
       case 0x3a: return NWScriptDataType.VECTOR; // VV
       case 0x3b: // VF
       case 0x3c: // FV

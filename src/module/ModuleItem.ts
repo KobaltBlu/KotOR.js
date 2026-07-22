@@ -10,6 +10,7 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { CExoLocString } from "@/resource/CExoLocString";
 import { MDLLoader, ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { TalentSpell } from "@/talents";
@@ -20,6 +21,7 @@ import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
 import { ItemProperty } from "@/engine/ItemProperty";
 import { GameState } from "@/GameState";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ActionParameterType, ActionType, CombatActionType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@/enums";
 import { CombatRoundAction, SpellCastInstance } from "@/combat";
 import { castAmmunitionProjectile } from "@/combat/combat-projectile";
@@ -134,6 +136,9 @@ export class ModuleItem extends ModuleObject {
   }
 
   getDescription(){
+    if(this.descIdentified instanceof CExoLocString){
+      return this.descIdentified.getValue();
+    }
     return this.descIdentified;
   }
 
@@ -842,10 +847,10 @@ export class ModuleItem extends ModuleObject {
       this.deleting = this.template.getFieldByLabel('DELETING').getValue();
 
     if(this.template.RootNode.hasField('DescIdentified'))
-      this.descIdentified = this.template.getFieldByLabel('DescIdentified').getValue();
+      this.descIdentified = this.template.getFieldByLabel('DescIdentified').getCExoLocString();
 
     if(this.template.RootNode.hasField('Description'))
-      this.description = this.template.getFieldByLabel('Description').getValue();
+      this.description = this.template.getFieldByLabel('Description').getCExoLocString();
 
     if(this.template.RootNode.hasField('Dropable'))
       this.dropable = this.template.getFieldByLabel('Dropable').getValue();
@@ -1025,21 +1030,30 @@ export class ModuleItem extends ModuleObject {
     itemStruct.addField( new GFFField(GFFDataType.INT, 'BaseItem') ).setValue(this.getBaseItemId());
     itemStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Identified') ).setValue(this.identified);
-    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(this.template.getFieldByLabel('Description')?.getCExoLocString());
-    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'DescIdentified') ).setValue(this.template.getFieldByLabel('DescIdentified')?.getCExoLocString());
-    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(this.template.getFieldByLabel('LocalizedName')?.getCExoLocString());
+    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(
+      this.description instanceof CExoLocString ? this.description : new CExoLocString()
+    );
+    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'DescIdentified') ).setValue(
+      this.descIdentified instanceof CExoLocString ? this.descIdentified : new CExoLocString()
+    );
+    itemStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(
+      this.localizedName instanceof CExoLocString ? this.localizedName : new CExoLocString()
+    );
     itemStruct.addField( new GFFField(GFFDataType.WORD, 'StackSize') ).setValue(this.stackSize);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Stolen') ).setValue(this.stolen);
     itemStruct.addField( new GFFField(GFFDataType.DWORD, 'Upgrades') ).setValue(this.upgrades);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeLevel') ).setValue(this.upgradeLevel);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot0') ).setValue(this.upgradeSlot0 == -1 ? 255 : this.upgradeSlot0);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot1') ).setValue(this.upgradeSlot1 == -1 ? 255 : this.upgradeSlot1);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot2') ).setValue(this.upgradeSlot2 == -1 ? 255 : this.upgradeSlot2);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot3') ).setValue(this.upgradeSlot3 == -1 ? 255 : this.upgradeSlot3);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot4') ).setValue(this.upgradeSlot4 == -1 ? 255 : this.upgradeSlot4);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot5') ).setValue(this.upgradeSlot5 == -1 ? 255 : this.upgradeSlot5);
+    // TSL-only upgrade slots (K1 has no UpgradeLevel / UpgradeSlot* strings)
+    if(GameState.GameKey == GameEngineType.TSL){
+      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeLevel') ).setValue(this.upgradeLevel);
+      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot0') ).setValue(this.upgradeSlot0 == -1 ? 255 : this.upgradeSlot0);
+      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot1') ).setValue(this.upgradeSlot1 == -1 ? 255 : this.upgradeSlot1);
+      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot2') ).setValue(this.upgradeSlot2 == -1 ? 255 : this.upgradeSlot2);
+      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot3') ).setValue(this.upgradeSlot3 == -1 ? 255 : this.upgradeSlot3);
+      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot4') ).setValue(this.upgradeSlot4 == -1 ? 255 : this.upgradeSlot4);
+      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot5') ).setValue(this.upgradeSlot5 == -1 ? 255 : this.upgradeSlot5);
+    }
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Dropable') ).setValue(this.dropable);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).setValue(1);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).setValue(this.pickpocketable ? 1 : 0);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'ModelVariation') ).setValue(this.modelVariation);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Charges') ).setValue(this.charges);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'MaxCharges') ).setValue(this.maxCharges);
@@ -1060,7 +1074,7 @@ export class ModuleItem extends ModuleObject {
     itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue(this.zOrientation);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'NonEquippable') ).setValue(this.nonEquippable);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'NewItem') ).setValue(this.newItem);
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'DELETING') ).setValue(0);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'DELETING') ).setValue(this.deleting ? 1 : 0);
 
     return itemStruct;
   }

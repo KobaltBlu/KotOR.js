@@ -232,7 +232,7 @@ export class InventoryManager {
         itemList.addChildStruct( InventoryManager.inventory[i].save() );
       }
 
-      await gff.export( path.join( CurrentGame.gameinprogress_dir, 'INVENTORY.res') );
+      await gff.export( path.join( CurrentGame.gameinprogress_dir, 'inventory.res') );
       resolve(gff);
     });
   }

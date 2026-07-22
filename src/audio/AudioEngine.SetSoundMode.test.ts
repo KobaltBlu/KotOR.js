@@ -72,8 +72,12 @@ jest.mock('three', () => ({
 }));
 
 import { AudioEngine } from '@/audio/AudioEngine';
+import { AudioPriorityGroup } from '@/enums/audio/AudioPriorityGroup';
 
 describe('AudioEngine.SetSoundMode', () => {
+  let group4Bypass: boolean | undefined;
+  let group4Emitter: { priority: number; isDestroyed: boolean; setOutputBypassMutedSfx: (b: boolean) => void };
+
   beforeEach(() => {
     (AudioEngine as any).sfxChannel = sfx;
     (AudioEngine as any).musicChannel = music;
@@ -83,13 +87,22 @@ describe('AudioEngine.SetSoundMode', () => {
     vo.setBusScale(1);
     ambientDestinations.day = undefined;
     ambientDestinations.night = undefined;
+    group4Bypass = undefined;
+    group4Emitter = {
+      priority: AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS,
+      isDestroyed: false,
+      setOutputBypassMutedSfx: (b: boolean) => { group4Bypass = b; },
+    };
     (AudioEngine as any).engines = [{
       ambientAudioDayEmitter: {
         setDestination: (d: unknown) => { ambientDestinations.day = d; },
+        setVolume: () => {},
       },
       ambientAudioNightEmitter: {
         setDestination: (d: unknown) => { ambientDestinations.night = d; },
+        setVolume: () => {},
       },
+      emitters: [group4Emitter],
       audioCtx: { destination: { kind: 'ctx' } },
     }];
     AudioEngine.resetSoundModeState();
@@ -115,6 +128,16 @@ describe('AudioEngine.SetSoundMode', () => {
     expect(ambientDestinations.night).toBe(music.getGainNode());
   });
 
+  test('mode 2 bypasses Priority=4 AudioEmitters past muted SFX', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE, 0);
+    expect(group4Bypass).toBe(true);
+  });
+
+  test('mode 4 does not bypass Priority=4 AudioEmitters', () => {
+    AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
+    expect(group4Bypass).toBe(false);
+  });
+
   test('mode 4 keeps areawide ambients on muted SFX bus', () => {
     AudioEngine.SetSoundMode(SoundMode.PAUSE_GUI, 0);
     expect(ambientDestinations.day).toBe(sfx.getGainNode());
@@ -126,6 +149,7 @@ describe('AudioEngine.SetSoundMode', () => {
     AudioEngine.SetSoundMode(SoundMode.POP, 0);
     expect(ambientDestinations.day).toBe(sfx.getGainNode());
     expect(ambientDestinations.night).toBe(sfx.getGainNode());
+    expect(group4Bypass).toBe(false);
     expect(sfx.getBusScale()).toBe(1);
   });
 
@@ -136,10 +160,10 @@ describe('AudioEngine.SetSoundMode', () => {
     expect(vo.getBusScale()).toBe(1);
   });
 
-  test('keepStreamingMusic leaves music up on mode 3', () => {
+  test('keepStreamingMusic mutes Music bus but keeps flagged streams (PauseAllButStreamingMusicForMovie)', () => {
     AudioEngine.SetSoundMode(SoundMode.PAUSE_LOAD, 1);
     expect(sfx.getBusScale()).toBe(0);
-    expect(music.getBusScale()).toBe(1);
+    expect(music.getBusScale()).toBe(0);
   });
 
   test('duplicate mode 4 is a no-op (does not nest pause)', () => {

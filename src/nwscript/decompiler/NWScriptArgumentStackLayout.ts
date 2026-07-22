@@ -67,6 +67,32 @@ function signedInt32(off: number): number {
 }
 
 /**
+ * Restore ACTION argument source order from a top-first pop list.
+ * Default NWScript is R-to-L (top = first formal). Some retail sequences push L-to-R
+ * with repeated CPTOPSP offsets (e.g. SetLocalBoolean triple −16); detect when the top
+ * value's type matches the last formal and not the first.
+ */
+export function orderActionArgsTopFirst<T extends { dataType: NWScriptDataType }>(
+  poppedTopFirst: T[],
+  defArgTypes: number[]
+): T[] {
+  const stackTypes = defArgTypes.filter((t) => t !== 0xff);
+  if (poppedTopFirst.length < 2 || stackTypes.length < 2) {
+    return poppedTopFirst.slice();
+  }
+  const firstT = stackTypes[0];
+  const lastT = stackTypes[stackTypes.length - 1];
+  if (firstT === lastT) {
+    return poppedTopFirst.slice();
+  }
+  const topT = poppedTopFirst[0]?.dataType;
+  if (topT === lastT && topT !== firstT) {
+    return poppedTopFirst.slice().reverse();
+  }
+  return poppedTopFirst.slice();
+}
+
+/**
  * Approximate dword stack delta (effect on SP-relative stack depth for scalar-heavy code).
  * Returns null when the opcode cannot be modeled safely for inference.
  */
@@ -189,7 +215,7 @@ function legacyPushTailCount(chain: NWScriptInstruction[]): number {
       ins.code === OP_CONST ||
       ins.code === OP_CPTOPSP ||
       ins.code === OP_CPTOPBP ||
-      ins.code === OP_RSADD ||
+      // OP_RSADD is return/frame reservation, not an arg push
       // Valued ACTION leaves a slot; count as a push when definition is missing/non-void
       (ins.code === OP_ACTION &&
         (ins.actionDefinition === undefined ||
@@ -232,6 +258,10 @@ function inferCallerArgSlotsBeforeJsr(jsr: NWScriptInstruction): number {
   // Prior JSR left a return value that this chain CPDOWN+MOVSP cleans up then CPTOP re-pushes.
   let delta = stoppedOnJsr && chainIsReturnAssignThenCptop(chain) ? 1 : 0;
   for (const ins of chain) {
+    // RSADD reserves return/locals on the caller frame — not an argument slot.
+    if (ins.code === OP_RSADD) {
+      continue;
+    }
     const d = instructionForwardStackSlotDelta(ins);
     if (d === null) {
       return Math.max(0, legacyPushTailCount(chain));

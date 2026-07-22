@@ -36,6 +36,10 @@ export class GameEffect {
   objectList: ModuleObject[] = [];
   object: ModuleObject;
   type: GameEffectType;
+  /** Retail CGameEffect::id — DWORD64 allocated from Module.effectNextId */
+  id: number = 0;
+  /** Retail is_exposed — whether the effect is shown on the character sheet */
+  isExposed: boolean = true;
   
   constructor(){
     this.creator = undefined;
@@ -46,6 +50,8 @@ export class GameEffect {
     // Retail / NWN default subtype bit = MAGICAL (dispellable when TEMPORARY/PERMANENT)
     this.subType = GameEffectSubType.MAGICAL;
     this.skipOnLoad = false;
+    this.id = 0;
+    this.isExposed = true;
 
     this.applied = false;
     this.initialized = false;
@@ -122,6 +128,14 @@ export class GameEffect {
 
   setSpellId(nSpellId = -1){
     this.spellId = nSpellId;
+  }
+
+  setId(id: number = 0){
+    this.id = id;
+  }
+
+  setIsExposed(exposed: boolean = true){
+    this.isExposed = !!exposed;
   }
 
   setIntList(intList: any[] = []){
@@ -260,7 +274,7 @@ export class GameEffect {
   save(){
 
     let effectStruct = new GFFStruct(2);
-    effectStruct.addField( new GFFField(GFFDataType.DWORD64, 'Id') ).setValue(0);
+    effectStruct.addField( new GFFField(GFFDataType.DWORD64, 'Id') ).setValue(this.id);
     effectStruct.addField( new GFFField(GFFDataType.WORD, 'Type') ).setValue(this.getSaveType());
     effectStruct.addField( new GFFField(GFFDataType.WORD, 'SubType') ).setValue(this.getSubTypeUnMasked());
     effectStruct.addField( new GFFField(GFFDataType.FLOAT, 'Duration') ).setValue(this.getDuration());
@@ -269,7 +283,7 @@ export class GameEffect {
     effectStruct.addField( new GFFField(GFFDataType.DWORD, 'ExpireTime') ).setValue(this.getExpireTime());
     effectStruct.addField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).setValue( typeof this.creator === 'object' ? this.creator.id : 2130706432 );
     effectStruct.addField( new GFFField(GFFDataType.DWORD, 'SpellId') ).setValue(this.getSpellId() >= 0 ? this.getSpellId() : 4294967295);
-    effectStruct.addField( new GFFField(GFFDataType.INT, 'IsExposed') ).setValue(1);
+    effectStruct.addField( new GFFField(GFFDataType.INT, 'IsExposed') ).setValue(this.isExposed ? 1 : 0);
     effectStruct.addField( new GFFField(GFFDataType.INT, 'NumIntegers') ).setValue(8);
 
     let intList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'IntList') );

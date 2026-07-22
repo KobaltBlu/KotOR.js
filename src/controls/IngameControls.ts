@@ -59,6 +59,21 @@ function resolveKeyboardForwardAxis(): number {
 }
 
 /**
+ * Build swoop lateral axis from A+D together (same race-avoidance as resolveKeyboardForwardAxis).
+ * Retail keys feed UpdateAxis as ±1.
+ */
+function resolveMinigameKeyAxisX(): number {
+  const left = !!KeyMapper.Actions[KeyMapAction.MGActionLeft]?.keyboardInput?.down
+    || !!KeyMapper.Actions[KeyMapAction.MGActionLeft]?.gamepadInput?.pressed;
+  const right = !!KeyMapper.Actions[KeyMapAction.MGActionRight]?.keyboardInput?.down
+    || !!KeyMapper.Actions[KeyMapAction.MGActionRight]?.gamepadInput?.pressed;
+  let x = 0;
+  if(left) x -= 1;
+  if(right) x += 1;
+  return x;
+}
+
+/**
  * IngameControls class.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -816,29 +831,20 @@ export class IngameControls {
       }
     });
 
+    // Swoop L/R: axis combined in MINIGAME UpdateAxis (±1). Turret still rotates here.
     KeyMapper.Actions[KeyMapAction.MGActionLeft].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       if(GameState.State != EngineState.RUNNING) return;
-      switch(GameState.module.area.miniGame.type){
-        case MiniGameType.SWOOPRACE:
-          GameState.module.area.miniGame.player.lateralForce = -GameState.module.area.miniGame.player.accel_lateral_secs;
-        break;
-        case MiniGameType.TURRET:
-          GameState.module.area.miniGame.player.rotate('z', 1 * delta);
-        break;
+      if(GameState.module.area.miniGame.type === MiniGameType.TURRET){
+        GameState.module.area.miniGame.player.rotate('z', 1 * delta);
       }
     });
 
     KeyMapper.Actions[KeyMapAction.MGActionRight].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       if(GameState.State != EngineState.RUNNING) return;
-      switch(GameState.module.area.miniGame.type){
-        case MiniGameType.SWOOPRACE:
-          GameState.module.area.miniGame.player.lateralForce = GameState.module.area.miniGame.player.accel_lateral_secs;
-        break;
-        case MiniGameType.TURRET:
-          GameState.module.area.miniGame.player.rotate('z', -1 * delta);
-        break;
+      if(GameState.module.area.miniGame.type === MiniGameType.TURRET){
+        GameState.module.area.miniGame.player.rotate('z', -1 * delta);
       }
     });
 
@@ -1159,8 +1165,11 @@ export class IngameControls {
       if(mg){
         const lxRaw = this.gamePad.stick_l_x.value;
         const lyRaw = this.gamePad.stick_l_y.value;
-        const lx = Math.abs(lxRaw) > 0.15 ? lxRaw : 0;
-        const ly = Math.abs(lyRaw) > 0.15 ? lyRaw : 0;
+        const stickX = Math.abs(lxRaw) > 0.15 ? lxRaw : 0;
+        const stickY = Math.abs(lyRaw) > 0.15 ? lyRaw : 0;
+        // Stick wins past deadzone; else keyboard ±1 (retail UpdateAxis).
+        const lx = stickX || (mg.type === MiniGameType.SWOOPRACE ? resolveMinigameKeyAxisX() : 0);
+        const ly = stickY;
         // Always call (incl. zero) so AxisAcceleration damping runs.
         mg.updateAxis(lx, ly, 0, delta);
         const dx = Mouse.MouseX - Mouse.OldMouseX;

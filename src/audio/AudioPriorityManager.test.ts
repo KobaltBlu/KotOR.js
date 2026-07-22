@@ -198,8 +198,9 @@ describe('AudioPriorityManager', () => {
     expect(manager.getVoiceCount(AudioPriorityGroup.PLAYER_CHAT)).toBe(1);
   });
 
-  test('**** maxplaying never denies under soft global budget', () => {
+  test('**** maxplaying never denies under soft 2D budget', () => {
     const manager = new AudioPriorityManager();
+    manager.max2DVoices = 64;
     for(let i = 0; i < 40; i++){
       const result = manager.tryAcquire({
         owner: {},
@@ -211,9 +212,10 @@ describe('AudioPriorityManager', () => {
     expect(manager.getVoiceCount(AudioPriorityGroup.MUSIC_STREAMS)).toBe(40);
   });
 
-  test('soft global budget steals worse priority across groups', () => {
+  test('soft 2D budget steals worse priority across groups', () => {
     const manager = new AudioPriorityManager();
-    manager.maxGlobalVoices = 2;
+    manager.max2DVoices = 2;
+    manager.max3DVoices = 2;
     const stolen: string[] = [];
 
     expect(manager.tryAcquire({
@@ -240,9 +242,10 @@ describe('AudioPriorityManager', () => {
     expect(manager.getVoiceCount(AudioPriorityGroup.PLAYER_CHAT)).toBe(1);
   });
 
-  test('soft global budget denies when no worse-priority victim', () => {
+  test('soft 2D budget denies when no worse-priority victim', () => {
     const manager = new AudioPriorityManager();
-    manager.maxGlobalVoices = 2;
+    manager.max2DVoices = 2;
+    manager.max3DVoices = 2;
 
     expect(manager.tryAcquire({
       owner: {},
@@ -262,5 +265,68 @@ describe('AudioPriorityManager', () => {
       onStolen: () => {},
     }).allowed).toBe(false);
     expect(manager.getActiveVoiceCount()).toBe(2);
+  });
+
+  test('full 2D pool does not steal from 3D pool', () => {
+    const manager = new AudioPriorityManager();
+    manager.max2DVoices = 1;
+    manager.max3DVoices = 1;
+    const stolen: string[] = [];
+
+    expect(manager.tryAcquire({
+      owner: {},
+      groupId: AudioPriorityGroup.PLAYER_FOOTSTEPS,
+      is3D: true,
+      onStolen: () => stolen.push('3d-foot'),
+    }).allowed).toBe(true);
+
+    expect(manager.tryAcquire({
+      owner: {},
+      groupId: AudioPriorityGroup.COMBAT,
+      is3D: false,
+      onStolen: () => stolen.push('2d-combat'),
+    }).allowed).toBe(true);
+
+    // 2D pool full of combat(15); chat(8) steals combat, not the 3D foot voice
+    expect(manager.tryAcquire({
+      owner: {},
+      groupId: AudioPriorityGroup.PLAYER_CHAT,
+      is3D: false,
+      onStolen: () => stolen.push('2d-chat'),
+    }).allowed).toBe(true);
+    expect(stolen).toEqual(['2d-combat']);
+    expect(manager.getPoolVoiceCount(true)).toBe(1);
+    expect(manager.getPoolVoiceCount(false)).toBe(1);
+    expect(manager.getVoiceCount(AudioPriorityGroup.PLAYER_FOOTSTEPS)).toBe(1);
+  });
+
+  test('full 3D pool does not steal from 2D pool', () => {
+    const manager = new AudioPriorityManager();
+    manager.max2DVoices = 1;
+    manager.max3DVoices = 1;
+
+    expect(manager.tryAcquire({
+      owner: {},
+      groupId: AudioPriorityGroup.PLAYER_CHAT,
+      is3D: false,
+      onStolen: () => {},
+    }).allowed).toBe(true);
+
+    expect(manager.tryAcquire({
+      owner: {},
+      groupId: AudioPriorityGroup.COMBAT,
+      is3D: true,
+      onStolen: () => {},
+    }).allowed).toBe(true);
+
+    // 3D full of combat(15); footsteps(19) cannot steal chat (wrong pool) or combat (worse requester)
+    expect(manager.tryAcquire({
+      owner: {},
+      groupId: AudioPriorityGroup.PLAYER_FOOTSTEPS,
+      is3D: true,
+      onStolen: () => {},
+    }).allowed).toBe(false);
+    expect(manager.getPoolVoiceCount(false)).toBe(1);
+    expect(manager.getPoolVoiceCount(true)).toBe(1);
   });
 });

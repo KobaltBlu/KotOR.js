@@ -93,6 +93,15 @@ type BackgroundAudioType = 'BACKGROUND_MUSIC_DAY' | 'BACKGROUND_MUSIC_NIGHT' | '
 /** Retail FadeAndStop duration used by PlayBattleMusic / PlayMusic (ms). */
 export const BATTLE_MUSIC_FADE_MS = 800;
 
+/** Same as PlayMusic FadeAndStop(800) — area BGM stop / day↔night switch. */
+export const AREA_MUSIC_FADE_MS = 800;
+
+/** Retail PlayAmbientSound(0) FadeAndStop duration (ms). */
+export const AMBIENT_SOUND_FADE_MS = 6000;
+
+/** Retail FadeAndStopDialogAmbientTrack duration (ms) — UnloadArea only. */
+export const DIALOG_AMBIENT_TRACK_FADE_MS = 500;
+
 /** Retail Update delay before starting battle track after fade (ms). */
 const BATTLE_MUSIC_START_DELAY_MS = 10;
 
@@ -155,8 +164,8 @@ export class AudioEngine {
    */
   private occlusionCursor: number = 0;
 
-  /** Max fresh GetObstructionFactor calls per AudioEngine.update (budget stand-in). */
-  static OCCLUSION_SAMPLES_PER_FRAME = 4;
+  /** Max wall-clock ms for OcclusionRender per frame (retail ctor +0xc4 = 3). */
+  static OCCLUSION_BUDGET_MS = 3;
 
   ambientAudioDayEmitter: AmbientAudioEmitter;
   ambientAudioNightEmitter: AmbientAudioEmitter;
@@ -177,6 +186,11 @@ export class AudioEngine {
    * PlayBattleMusic no-ops when the requested state matches.
    */
   battleMusicPlaying: boolean = false;
+
+  /**
+   * Retail CSWCAmbientSound PlayMusic want (+0x4). Update only restarts area BGM when set.
+   */
+  areaMusicWanted: boolean = false;
 
   /** Loaded battle stinger buffers (ambientmusic Stinger1–3), for random pick. */
   battleStingerBuffers: ArrayBuffer[] = [];
@@ -207,6 +221,13 @@ export class AudioEngine {
   desiredAmbientScale: number = 1;
   currentAmbientScale: number = 1;
   private ambientScaleLerpFrom: number = 1;
+
+  /**
+   * GIT AmbientSndDayVol / AmbientSndNitVol (and script 567/568), normalized 0–1.
+   * Composed with currentAmbientScale when refreshing day/night ambient emitters.
+   */
+  ambientDayVolume: number = 1;
+  ambientNightVolume: number = 1;
 
   /**
    * Retail +0x24 SetDesiredEnvironment / +0x14 SetCurrentEnvironment (EnvAudio index).
@@ -346,14 +367,16 @@ export class AudioEngine {
 
     // Retail CSWCAmbientSound SetPriorityGroup:
     // PlayAmbientSound → 4, PlayMusic/PlayBattleMusic → 2, PlayStinger → 1.
-    // Dialog music uses the area music streaming source path (group 2).
+    // Retail CSWCAmbientSound SetPriorityGroup:
+    // PlayAmbientSound → 4, PlayMusic/PlayBattleMusic → 2, PlayStinger → 1.
+    // LoadAmbientTrackForDialog @ 004d4750 → SetPriorityGroup(4).
     this.ambientAudioDayEmitter.setPriorityGroupId(AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS);
     this.ambientAudioNightEmitter.setPriorityGroupId(AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS);
     this.areaMusicDayAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STREAMS);
     this.areaMusicNightAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STREAMS);
     this.battleMusicAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STREAMS);
     this.battleStingerAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STINGERS);
-    this.dialogMusicAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STREAMS);
+    this.dialogMusicAudioEmitter.setPriorityGroupId(AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS);
 
     this.ambientAudioDayEmitter.setDestination(AudioEngine.sfxChannel.getGainNode());
     this.ambientAudioNightEmitter.setDestination(AudioEngine.sfxChannel.getGainNode());
@@ -365,6 +388,12 @@ export class AudioEngine {
 
     this.areaMusicDayAudioEmitter.addEventListener('play', () => {
       this.bgmMode = BackgroundMusicMode.AREA;
+      this.bgmState = BackgroundMusicState.PLAYING;
+    });
+
+    this.areaMusicNightAudioEmitter.addEventListener('play', () => {
+      this.bgmMode = BackgroundMusicMode.AREA;
+      this.bgmState = BackgroundMusicState.PLAYING;
     });
 
     this.battleMusicAudioEmitter.addEventListener('play', () => {
@@ -374,28 +403,30 @@ export class AudioEngine {
     // Stinger is a one-shot overlay on a separate source (retail field33_0x104);
     // it must not steal bgmMode from resumed area music.
 
+    // Retail: duck keeps area BGM playing; AmbientTrack layers on top — do not stop area music.
     this.dialogMusicAudioEmitter.addEventListener('play', () => {
       this.bgmMode = BackgroundMusicMode.DIALOG;
-      this.areaMusicDayAudioEmitter.stop();
-      this.areaMusicNightAudioEmitter.stop();
     });
 
-    this.areaMusicDayAudioEmitter.addEventListener('ended', () => {
+    const onAreaMusicEnded = () => {
       this.bgmState = BackgroundMusicState.ENDED;
-      if(AudioEngine.loopBGM){
-        this.bgmTimer = this.bgmLoopTime;
+      // Retail Update: arm restart when want set; timer = max(1, MusicDelay).
+      if(this.areaMusicWanted && AudioEngine.loopBGM){
+        this.bgmTimer = Math.max(1, this.bgmLoopTime | 0);
+      }else{
+        this.bgmTimer = 0;
       }
-    });
+    };
+
+    this.areaMusicDayAudioEmitter.addEventListener('ended', onAreaMusicEnded);
+    this.areaMusicNightAudioEmitter.addEventListener('ended', onAreaMusicEnded);
 
     // Stinger + area resume are driven by playBattleMusic(false), not battle stop events.
     // Retail PlayStinger uses a separate source and overlaps area music restart.
 
+    // Dialog AmbientTrack end: restore mode only — area BGM was never stopped (want untouched).
     this.dialogMusicAudioEmitter.addEventListener('ended', () => {
-      this.bgmState = BackgroundMusicState.ENDED;
       this.bgmMode = BackgroundMusicMode.AREA;
-      if(AudioEngine.loopBGM){
-        this.bgmTimer = this.bgmLoopTime;
-      }
     });
 
     AudioEngine.engines.push(this);
@@ -431,20 +462,20 @@ export class AudioEngine {
   }
 
   /**
-   * Retail OcclusionRender — walk playing positional sources with a soft per-frame budget.
+   * Retail OcclusionRender — walk playing positional sources with a soft per-frame
+   * wall-clock budget (retail +0xc4 defaults to 3ms).
    */
   private updateOcclusion(): void {
     if(!this.emitters?.length) return;
     const n = this.emitters.length;
-    let computed = 0;
-    const budget = AudioEngine.OCCLUSION_SAMPLES_PER_FRAME;
-    for(let visited = 0; visited < n && computed < budget; visited++){
+    const t0 = performance.now();
+    const budgetMs = AudioEngine.OCCLUSION_BUDGET_MS;
+    for(let visited = 0; visited < n; visited++){
+      if(performance.now() - t0 >= budgetMs) break;
       if(this.occlusionCursor >= n) this.occlusionCursor = 0;
       const em = this.emitters[this.occlusionCursor++];
       if(!em || em.isDestroyed) continue;
-      if(em.updateObstruction?.(false)){
-        computed++;
-      }
+      em.updateObstruction?.(false);
     }
   }
 
@@ -521,6 +552,72 @@ export class AudioEngine {
     if(next === this.desiredAmbientScale){ return; }
     this.ambientScaleLerpFrom = this.currentAmbientScale;
     this.desiredAmbientScale = next;
+  }
+
+  /** Retail PlayMusic want flag (+0x4). */
+  setAreaMusicWanted(want: boolean){
+    this.areaMusicWanted = !!want;
+    if(!want){
+      this.bgmTimer = 0;
+    }
+  }
+
+  /**
+   * Retail PlayMusic(0) — FadeAndStop(800) both day/night area music emitters; clear restart timer.
+   */
+  async fadeStopAreaMusic(): Promise<void> {
+    this.bgmTimer = 0;
+    const sec = AREA_MUSIC_FADE_MS / 1000;
+    await Promise.all([
+      this.areaMusicDayAudioEmitter?.fadeOutAndStop?.(sec) ?? Promise.resolve(),
+      this.areaMusicNightAudioEmitter?.fadeOutAndStop?.(sec) ?? Promise.resolve(),
+    ]);
+    this.bgmState = BackgroundMusicState.ENDED;
+  }
+
+  /** Resume active area music emitter if want is set (dialog end / ChangeTrack). */
+  resumeAreaMusicIfWanted(){
+    if(!this.areaMusicWanted){ return; }
+    this.bgmTimer = 0;
+    this.bgmMode = BackgroundMusicMode.AREA;
+    const em = this.getActiveAreaMusicEmitter();
+    if(em && !em.playing){
+      em.play(true);
+    }
+  }
+
+  /**
+   * Retail FadeAndStopDialogAmbientTrack @ 004e15c0 — 500ms fade then destroy.
+   * Called from area unload, not CloseDialog.
+   */
+  async fadeStopDialogAmbientTrack(): Promise<void> {
+    const sec = DIALOG_AMBIENT_TRACK_FADE_MS / 1000;
+    await this.dialogMusicAudioEmitter?.fadeOutAndStop?.(sec);
+    if(this.bgmMode === BackgroundMusicMode.DIALOG){
+      this.bgmMode = BackgroundMusicMode.AREA;
+    }
+  }
+
+  /**
+   * GIT / script ambient day volume (0–1). Composed with currentAmbientScale.
+   */
+  setAmbientDayVolume(volume01: number){
+    this.ambientDayVolume = Number.isFinite(volume01) ? Math.max(0, Math.min(1, volume01)) : 1;
+    this.refreshAmbientEmitterVolumes();
+  }
+
+  /**
+   * GIT / script ambient night volume (0–1). Composed with currentAmbientScale.
+   */
+  setAmbientNightVolume(volume01: number){
+    this.ambientNightVolume = Number.isFinite(volume01) ? Math.max(0, Math.min(1, volume01)) : 1;
+    this.refreshAmbientEmitterVolumes();
+  }
+
+  /** Apply day/night GIT volumes × current AmbientScale to streaming ambient emitters. */
+  refreshAmbientEmitterVolumes(){
+    this.ambientAudioDayEmitter?.setVolume?.(this.ambientDayVolume * this.currentAmbientScale);
+    this.ambientAudioNightEmitter?.setVolume?.(this.ambientNightVolume * this.currentAmbientScale);
   }
 
   /**
@@ -613,8 +710,7 @@ export class AudioEngine {
         next = Math.max(next, this.desiredAmbientScale);
       }
       this.currentAmbientScale = next;
-      this.ambientAudioDayEmitter.setVolume(this.currentAmbientScale);
-      this.ambientAudioNightEmitter.setVolume(this.currentAmbientScale);
+      this.refreshAmbientEmitterVolumes();
       // Refresh SFX emitter gains so ambient scale applies while they play.
       if(this.emitters){
         for(let i = 0, il = this.emitters.length; i < il; i++){
@@ -642,9 +738,16 @@ export class AudioEngine {
       [rotation.x, rotation.y, rotation.z]
     );
 
-    //Handle the background music loop
-    if(this.areaMusicLoaded && this.bgmState == BackgroundMusicState.ENDED && this.bgmMode == BackgroundMusicMode.AREA){
-      if(this.bgmTimer > 0 && AudioEngine.loopBGM){
+    //Handle the background music loop (retail CSWCAmbientSound::Update @ 00557ba0)
+    if(
+      this.areaMusicWanted &&
+      AudioEngine.loopBGM &&
+      this.bgmState == BackgroundMusicState.ENDED &&
+      this.bgmMode == BackgroundMusicMode.AREA &&
+      !AudioEngine.soundModeMovieFlag &&
+      AudioEngine.GetSoundMode() !== SoundMode.PAUSE_LOAD
+    ){
+      if(this.bgmTimer > 0){
         this.bgmTimer -= delta * 1000;
         if(this.bgmTimer <= 0){
           this.bgmTimer = 0;
@@ -962,13 +1065,19 @@ export class AudioEngine {
    *   (modes 2/4 keep streaming music groups audible).
    * @param keepAreawideAmbients When true (mode 2), route group-4 day/night ambients
    *   around the muted SFX bus so they stay audible (GetPauseable @ 006393e0).
+   * @param keepStreamingMusicForMovie When true, retail PauseAllButStreamingMusicForMovie:
+   *   mute Music bus but re-route streams with SetStreamingMusicForMovie (+0x108).
    */
-  static PauseAllSounds(pauseMusic: boolean = true, keepAreawideAmbients: boolean = false){
+  static PauseAllSounds(
+    pauseMusic: boolean = true,
+    keepAreawideAmbients: boolean = false,
+    keepStreamingMusicForMovie: boolean = false
+  ){
     AudioEngine.soundsPausedForMovie = true;
     AudioEngine.pauseSfxBus = true;
-    AudioEngine.pauseMusicBus = pauseMusic;
+    AudioEngine.pauseMusicBus = pauseMusic || keepStreamingMusicForMovie;
     if(AudioEngine.sfxChannel) AudioEngine.sfxChannel.setBusScale(0);
-    if(pauseMusic){
+    if(pauseMusic || keepStreamingMusicForMovie){
       if(AudioEngine.musicChannel) AudioEngine.musicChannel.setBusScale(0);
     }else if(AudioEngine.musicChannel){
       // Ensure music is not left at 0 from a prior movie pause.
@@ -976,11 +1085,40 @@ export class AudioEngine {
       AudioEngine.musicChannel.setBusScale(scale);
     }
     AudioEngine.applyAreawideAmbientBypass(keepAreawideAmbients);
+    AudioEngine.applyStreamingMusicForMovieBypass(keepStreamingMusicForMovie);
+  }
+
+  /**
+   * Retail PauseAllButStreamingMusicForMovie @ 00638f00 — keep streams with +0x108 audible
+   * by routing them past the muted Music bus to the context destination.
+   */
+  static applyStreamingMusicForMovieBypass(keep: boolean){
+    const engine = AudioEngine.engines[0];
+    if(!engine){ return; }
+    const musicGain = AudioEngine.musicChannel?.getGainNode?.();
+    const dest = keep
+      ? (engine.audioCtx?.destination)
+      : musicGain;
+    if(!dest){ return; }
+    const emitters = [
+      engine.areaMusicDayAudioEmitter,
+      engine.areaMusicNightAudioEmitter,
+    ];
+    for(let i = 0; i < emitters.length; i++){
+      const em = emitters[i];
+      if(!em) continue;
+      if(keep && em.streamingMusicForMovie){
+        em.setDestination?.(dest);
+      }else if(musicGain){
+        em.setDestination?.(musicGain);
+      }
+    }
   }
 
   /**
    * Mode 2 GetPauseable keeps group 4 (LOOPING_AREAWIDE_AMBIENTS) while SFX bus is 0.
-   * Re-route day/night ambient emitters onto the Music bus (still audible) or back to SFX.
+   * Re-route day/night ambient emitters and Priority=4 AudioEmitters onto the Music bus
+   * (still audible) or back to SFX.
    */
   static applyAreawideAmbientBypass(keep: boolean){
     const engine = AudioEngine.engines[0];
@@ -991,6 +1129,16 @@ export class AudioEngine {
     if(!dest){ return; }
     engine.ambientAudioDayEmitter?.setDestination?.(dest);
     engine.ambientAudioNightEmitter?.setDestination?.(dest);
+
+    // Retail GetPauseable: any oneshot/source with group 4 is exempt in mode 2.
+    if(engine.emitters){
+      for(let i = 0, il = engine.emitters.length; i < il; i++){
+        const em = engine.emitters[i];
+        if(!em || em.isDestroyed) continue;
+        if(em.priority !== AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS) continue;
+        em.setOutputBypassMutedSfx?.(keep);
+      }
+    }
   }
 
   /** @deprecated Prefer PauseAllSounds(true) — kept for movie callers. */
@@ -1008,16 +1156,22 @@ export class AudioEngine {
     AudioEngine.pauseSfxBus = false;
     AudioEngine.pauseMusicBus = false;
     AudioEngine.applyAreawideAmbientBypass(false);
+    AudioEngine.applyStreamingMusicForMovieBypass(false);
     AudioEngine.applyMuteBusScale(AudioEngine.muteBusScale);
   }
 
   /**
    * Whether this sound mode should pause the Music bus (GetPauseable inverse for streams).
-   * Mode 3 → yes; modes 2/4 → no; keepStreamingMusic → no.
+   * Mode 3 → yes; modes 2/4 → no.
+   * keepStreamingMusic uses PauseAllButStreamingMusicForMovie (separate bypass path).
    */
   private static shouldPauseMusicForMode(mode: number, keepStreamingMusic: number): boolean {
     if(keepStreamingMusic){ return false; }
     return mode === SoundMode.PAUSE_LOAD || mode === SoundMode.MOVIE;
+  }
+
+  private static shouldKeepStreamingMusicForMovie(keepStreamingMusic: number): boolean {
+    return !!keepStreamingMusic;
   }
 
   /**
@@ -1035,7 +1189,11 @@ export class AudioEngine {
   static SetSoundMode(mode: number, keepStreamingMusic: number = 0){
     if(mode === SoundMode.MOVIE || mode === SoundMode.RESUME_MOVIE){
       if(mode === SoundMode.MOVIE){
-        AudioEngine.PauseAllSounds(AudioEngine.shouldPauseMusicForMode(SoundMode.MOVIE, keepStreamingMusic));
+        AudioEngine.PauseAllSounds(
+          AudioEngine.shouldPauseMusicForMode(SoundMode.MOVIE, keepStreamingMusic),
+          false,
+          AudioEngine.shouldKeepStreamingMusicForMovie(keepStreamingMusic)
+        );
         AudioEngine.soundModeMovieFlag = true;
       }else{
         AudioEngine.soundModeMovieFlag = false;
@@ -1086,7 +1244,8 @@ export class AudioEngine {
       // Mode 4 (PAUSE_GUI): group 4 is paused with SFX.
       AudioEngine.PauseAllSounds(
         AudioEngine.shouldPauseMusicForMode(applyMode, keepStreamingMusic),
-        applyMode === SoundMode.PAUSE
+        applyMode === SoundMode.PAUSE,
+        AudioEngine.shouldKeepStreamingMusicForMovie(keepStreamingMusic)
       );
     }
   }

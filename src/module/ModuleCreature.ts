@@ -15,6 +15,7 @@ import { GameState } from "@/GameState";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { CExoLocString } from "@/resource/CExoLocString";
 import { MDLLoader, ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { SSFObject } from "@/resource/SSFObject";
@@ -270,12 +271,33 @@ export class ModuleCreature extends ModuleObject {
   palletID: number;
   partyInteract: number;
   phenotype: number;
+  /** Retail Appearance_Head */
+  appearanceHead: number;
+  /** Retail Color_Hair / Color_Skin / Color_Tattoo* */
+  colorHair: number;
+  colorSkin: number;
+  colorTattoo1: number;
+  colorTattoo2: number;
+  duplicatingHead: number;
+  useBackupHead: number;
+  tail: number;
+  wings: number;
   race: number;
   skills: TalentSkill[];
   soundSetFile: number;
   specialAbilities: any[];
   subrace: number;
   subraceIndex: number;
+  /** Retail SaveStats Age */
+  age: number;
+  /** Retail SaveStats AIState */
+  aiState: number;
+  /** Retail SaveCreature AmbientAnimState */
+  ambientAnimState: number;
+  /** Retail SaveStats StartingPackage */
+  startingPackage: number;
+  /** AreaId from last save (DWORD); live area is this.area */
+  savedAreaId: number = 0;
   templateList: any[];
   textureVar: number;
   walkRate: number;
@@ -510,6 +532,15 @@ export class ModuleCreature extends ModuleObject {
     this.partyInteract = 0;
     this.perceptionRange = GameState.SWRuleSet.ranges[11];
     this.phenotype = 0;
+    this.appearanceHead = 0;
+    this.colorHair = 0;
+    this.colorSkin = 0;
+    this.colorTattoo1 = 0;
+    this.colorTattoo2 = 0;
+    this.duplicatingHead = 255;
+    this.useBackupHead = 0;
+    this.tail = 0;
+    this.wings = 0;
     this.plot = false;
     this.portraitId = 0;
     this.race = 0;
@@ -535,6 +566,11 @@ export class ModuleCreature extends ModuleObject {
     this.specialAbilities = [];
     this.subrace = 0;
     this.subraceIndex = 0;
+    this.age = 0;
+    this.aiState = 0;
+    this.ambientAnimState = 0;
+    this.startingPackage = 0;
+    this.savedAreaId = 0;
     this.tag = '';
     this.templateList = [];
     this.templateResRef = '';
@@ -5731,6 +5767,41 @@ export class ModuleCreature extends ModuleObject {
         this.setAppearance(this.template.getFieldByLabel('Appearance_Type').getValue());
       }
 
+      if(this.template.RootNode.hasField('AreaId')){
+        // Retail SaveCreature AreaId — area attach restores live area; keep as metadata only
+        this.savedAreaId = this.template.getFieldByLabel('AreaId').getValue() >>> 0;
+      }
+
+      if(this.template.RootNode.hasField('Age'))
+        this.age = this.template.getFieldByLabel('Age').getValue() | 0;
+
+      if(this.template.RootNode.hasField('AIState'))
+        this.aiState = this.template.getFieldByLabel('AIState').getValue() | 0;
+
+      if(this.template.RootNode.hasField('AmbientAnimState'))
+        this.ambientAnimState = this.template.getFieldByLabel('AmbientAnimState').getValue() | 0;
+
+      if(this.template.RootNode.hasField('Appearance_Head'))
+        this.appearanceHead = this.template.getFieldByLabel('Appearance_Head').getValue();
+
+      if(this.template.RootNode.hasField('Color_Hair'))
+        this.colorHair = this.template.getFieldByLabel('Color_Hair').getValue();
+      if(this.template.RootNode.hasField('Color_Skin'))
+        this.colorSkin = this.template.getFieldByLabel('Color_Skin').getValue();
+      if(this.template.RootNode.hasField('Color_Tattoo1'))
+        this.colorTattoo1 = this.template.getFieldByLabel('Color_Tattoo1').getValue();
+      if(this.template.RootNode.hasField('Color_Tattoo2'))
+        this.colorTattoo2 = this.template.getFieldByLabel('Color_Tattoo2').getValue();
+
+      if(this.template.RootNode.hasField('DuplicatingHead'))
+        this.duplicatingHead = this.template.getFieldByLabel('DuplicatingHead').getValue();
+      if(this.template.RootNode.hasField('UseBackupHead'))
+        this.useBackupHead = this.template.getFieldByLabel('UseBackupHead').getValue();
+      if(this.template.RootNode.hasField('Tail'))
+        this.tail = this.template.getFieldByLabel('Tail').getValue();
+      if(this.template.RootNode.hasField('Wings'))
+        this.wings = this.template.getFieldByLabel('Wings').getValue();
+
       if(this.template.RootNode.hasField('BodyBag'))
         this.bodyBag = this.template.getFieldByLabel('BodyBag').getValue();
 
@@ -5911,6 +5982,22 @@ export class ModuleCreature extends ModuleObject {
 
       if(this.template.RootNode.hasField('SoundSetFile'))
         this.soundSetFile = this.template.RootNode.getFieldByLabel('SoundSetFile').getValue();
+
+      if(this.template.RootNode.hasField('SpecAbilityList')){
+        this.specialAbilities = [];
+        const list = this.template.RootNode.getFieldByLabel('SpecAbilityList').getChildStructs();
+        for(let i = 0; i < list.length; i++){
+          const s = list[i];
+          this.specialAbilities.push({
+            spell: s.hasField('Spell') ? (s.getFieldByLabel('Spell').getValue() | 0) : 0,
+            spellFlags: s.hasField('SpellFlags') ? (s.getFieldByLabel('SpellFlags').getValue() | 0) : 0,
+            spellCasterLevel: s.hasField('SpellCasterLevel') ? (s.getFieldByLabel('SpellCasterLevel').getValue() | 0) : 0,
+          });
+        }
+      }
+
+      if(this.template.RootNode.hasField('StartingPackage'))
+        this.startingPackage = this.template.RootNode.getFieldByLabel('StartingPackage').getValue() | 0;
     
       if(this.template.RootNode.hasField('SubRace'))
         this.subrace = this.template.RootNode.getFieldByLabel('SubRace').getValue();
@@ -6402,19 +6489,27 @@ export class ModuleCreature extends ModuleObject {
       gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).setValue(1);
     }
     
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_FirstName') )
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_LastName') )
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_FirstName') ).setValue(
+      this.firstName instanceof CExoLocString
+        ? this.firstName
+        : new CExoLocString().addSubString(String(this.firstName || ''))
+    );
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_LastName') ).setValue(
+      this.lastName instanceof CExoLocString
+        ? this.lastName
+        : new CExoLocString().addSubString(String(this.lastName || ''))
+    );
 
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'AIState') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'AIState') ).setValue(this.aiState | 0);
 
     gff.RootNode.addField( this.actionQueueToActionList() );
 
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Age') ).setValue(0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AmbientAnimState') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Age') ).setValue(this.age | 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AmbientAnimState') ).setValue(this.ambientAnimState | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Animation') ).setValue(this.animationState.index);
-    //gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Appearance_Head') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Appearance_Head') ).setValue(this.appearanceHead | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).setValue(this.appearance);
-    //gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'AreaId') ).setValue(1);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'AreaId') ).setValue(this.area?.id ?? 0);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).setValue(this.getAC());
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).setValue(this.bodyBag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyVariation') ).setValue(this.bodyVariation | 0);
@@ -6427,10 +6522,10 @@ export class ModuleCreature extends ModuleObject {
       classList.addChildStruct( this.classes[i].save() );
     }
     
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Hair') ).setValue(0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Skin') ).setValue(0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo1') ).setValue(0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Hair') ).setValue(this.colorHair | 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Skin') ).setValue(this.colorSkin | 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo1') ).setValue(this.colorTattoo1 | 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(this.colorTattoo2 | 0);
 
     let combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
     // Retail CCombatInformation::SaveData @ 00550f30
@@ -6449,16 +6544,18 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(this.con);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CreatnScrptFird') ).setValue( this.spawned ? 1 : 0 );
-    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CreatureSize') ).setValue(3);
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CreatureSize') ).setValue(this.getAppearance()?.sizecategory ?? 3);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentForce') ).setValue(this.currentForce);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'CurrentHitPoints') ).setValue(this.currentHitPoints);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DeadSelectable') ).setValue(this.isDeadSelectable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Deity') ).setValue('');
-    //gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue();
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Deity') ).setValue(this.deity || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Description') ).setValue(
+      this.description instanceof CExoLocString ? this.description : new CExoLocString()
+    );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DetectMode') ).setValue(this.detectMode ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Dex') ).setValue(this.dex);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Disarmable') ).setValue(this.disarmable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DuplicatingHead') ).setValue(255);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'DuplicatingHead') ).setValue(this.duplicatingHead | 0);
     
     //Effects
     let effectList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'EffectList') );
@@ -6601,6 +6698,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'MovementRate') ).setValue(this.getMovementRate());
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NaturalAC') ).setValue(this.naturalAC);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NoPermDeath') ).setValue(this.noPermDeath ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NotReorienting') ).setValue(this.notReorienting);
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PM_IsDisguised') ).setValue( this.hasEffect(GameEffectType.EffectDisguise) ? 1 : 0 );
@@ -6626,7 +6724,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Phenotype') ).setValue(this.phenotype);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'PregameCurrent') ).setValue(28);
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'PregameCurrent') ).setValue(this.getHP() | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Race') ).setValue(this.race);
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'RefSaveThrow') ).setValue(this.reflexSaveThrow);
 
@@ -6657,18 +6755,32 @@ export class ModuleCreature extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SkillPoints') ).setValue( this.skillPoints ? this.skillPoints : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).setValue(this.soundSetFile);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StartingPackage') ).setValue(0);
+
+    // Retail SaveClassInfo SpecAbilityList (struct type 4)
+    const specAbilityList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpecAbilityList') );
+    for(let i = 0; i < this.specialAbilities.length; i++){
+      const sa = this.specialAbilities[i];
+      if(!sa) continue;
+      const saStruct = new GFFStruct(4);
+      saStruct.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue((sa.spell ?? 0) | 0);
+      saStruct.addField( new GFFField(GFFDataType.BYTE, 'SpellFlags') ).setValue((sa.spellFlags ?? 0) | 0);
+      saStruct.addField( new GFFField(GFFDataType.BYTE, 'SpellCasterLevel') ).setValue((sa.spellCasterLevel ?? 0) | 0);
+      specAbilityList.addChildStruct(saStruct);
+    }
+
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StartingPackage') ).setValue(this.startingPackage | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StealthMode') ).setValue(this.stealthMode ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Str') ).setValue(this.str);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Subrace') ).setValue('');
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') ).setValue(this.subrace);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') ).setValue(this.subraceIndex | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Tail') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Tail') ).setValue(this.tail | 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TextureVar') ).setValue(this.textureVar | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'UseBackupHead') ).setValue(0);
-    let varTable = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'UseBackupHead') ).setValue(this.useBackupHead ? 1 : 0);
+    this.writeNamedVarTable(gff.RootNode);
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'WillSaveThrow') ).setValue(this.willSaveThrow);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wings') ).setValue(0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wings') ).setValue(this.wings | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Wis') ).setValue(this.wis);
 
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue( this.position.x );

@@ -455,47 +455,44 @@ export class ModuleSound extends ModuleObject {
     gff.FileType = 'UTS ';
     gff.RootNode.type = 6;
 
-    gff.RootNode.addField( this.actionQueueToActionList() );
+    // Retail CSWSSoundObject::Save field set (no TemplateResRef / Priority / Elevation / Commandable)
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Continuous') ).setValue(this.continuous ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'FixedVariance') ).setValue(this.fixedVariance);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'GeneratedType') ).setValue(this.generatedType);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Positional') ).setValue(this.positional ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Looping') ).setValue(this.looping ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Volume') ).setValue(Math.max(0, Math.min(127, this.volume | 0)));
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'VolumeVrtn') ).setValue(Math.max(0, Math.min(127, this.volumeVariation | 0)));
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Times') ).setValue(this.times | 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'PitchVariation') ).setValue(this.pitchVariation);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Hours') ).setValue(this.hours);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'GeneratedType') ).setValue(this.generatedType);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Interval') ).setValue(this.interval);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'IntervalVrtn') ).setValue(this.intervalVariation);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Looping') ).setValue(this.looping ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MaxDistance') ).setValue(this.maxDistance);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MinDistance') ).setValue(this.minDistance);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'PitchVariation') ).setValue(this.pitchVariation);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Positional') ).setValue(this.positional ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MaxDistance') ).setValue(this.maxDistance);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Continuous') ).setValue(this.continuous ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Random') ).setValue(this.random ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'FixedVariance') ).setValue(this.fixedVariance);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'RandomPosition') ).setValue(this.randomPosition ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeX') ).setValue(this.randomRangeX);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'RandomRangeY') ).setValue(this.randomRangeY);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Priority') ).setValue(this.priority);
-    //SWVarTable
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
+
+    // KotOR.js engine extras (ObjectId / locals / actions) for round-trip within engine
+    gff.RootNode.addField( this.actionQueueToActionList() );
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
     let swVarTable = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getSWVarTableSaveStruct() );
+    this.writeNamedVarTable(gff.RootNode);
 
-    //Sounds
     let sounds = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Sounds') );
     for(let i = 0; i < this.soundResRefs.length; i++){
       let soundStruct = new GFFStruct();
       soundStruct.addField( new GFFField(GFFDataType.RESREF, 'Sound', this.soundResRefs[i]) );
       sounds.addChildStruct(soundStruct);
     }
-
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Times') ).setValue(this.times);
-    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Volume') ).setValue(Math.max(0, Math.min(127, this.volume)));
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'VolumeVrtn') ).setValue(Math.max(0, Math.min(127, this.volumeVariation)));
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Elevation') ).setValue(this.elevation);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
-    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
 
     this.template = gff;
     return gff;

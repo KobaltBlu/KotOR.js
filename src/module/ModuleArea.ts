@@ -28,6 +28,7 @@ import { FollowerCamera } from "@/engine/FollowerCamera";
 import { ResourceLoader, TextureLoader } from "@/loaders";
 import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
 import { AudioEngine } from "@/audio";
+import { AREA_MUSIC_FADE_MS, AMBIENT_SOUND_FADE_MS } from "@/audio/AudioEngine";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { IAmbientSource } from "@/interface/area/IAmbientSource";
@@ -109,6 +110,39 @@ export class ModuleArea extends ModuleObject {
   visObject: VISObject;
   layout: LYTObject;
   areaMap: AreaMap;
+  /** Retail GIT TransPending / TransPendCurrID / TransPendNextID */
+  transPending: number = 0;
+  transPendCurrId: number = 0;
+  transPendNextId: number = 0;
+
+  /**
+   * Retail CSWSArea::GetNextTransitionPendingID — bump allocator, skip 0.
+   */
+  getNextTransitionPendingId(): number {
+    this.transPendNextId = ((this.transPendNextId | 0) + 1) & 0xFF;
+    if(this.transPendNextId === 0){
+      this.transPendNextId = 1;
+    }
+    return this.transPendNextId;
+  }
+
+  /**
+   * Retail CSWSArea::SetTransitionPending — door/trigger module-link handshake.
+   * @param pending 1 while transition is in flight, 0 when cleared
+   * @param currId optional pending id; allocated when pending and omitted
+   */
+  setTransitionPending(pending: boolean | number, currId?: number){
+    const on = pending ? 1 : 0;
+    this.transPending = on;
+    if(on){
+      this.transPendCurrId = (typeof currId === 'number' ? currId : this.getNextTransitionPendingId()) & 0xFF;
+      if(this.transPendCurrId === 0){
+        this.transPendCurrId = this.getNextTransitionPendingId();
+      }
+    }else{
+      this.transPendCurrId = 0;
+    }
+  }
 
   /**
    * Retail CSWSArea field42_0x1e0 — visit mark during CountAreaTransitionTriggers.
@@ -387,6 +421,9 @@ export class ModuleArea extends ModuleObject {
   dispose(){
     this.areaMap.dispose();
     this.corpseCache.clear();
+
+    // Retail FadeAndStopDialogAmbientTrack @ 004e15c0 — 500ms on UnloadArea.
+    void AudioEngine.GetAudioEngine().fadeStopDialogAmbientTrack();
 
     if(this.miniGame){
       this.miniGame.dispose();
@@ -1079,22 +1116,24 @@ export class ModuleArea extends ModuleObject {
 
   musicBackgroundPlay(){
     const audioEngine = AudioEngine.GetAudioEngine();
+    audioEngine.setAreaMusicWanted(true);
     const useDay = this.audioUsesDayTracks;
     audioEngine.areaMusicPreferNight = !useDay;
     const active = useDay ? audioEngine.areaMusicDayAudioEmitter : audioEngine.areaMusicNightAudioEmitter;
     const inactive = useDay ? audioEngine.areaMusicNightAudioEmitter : audioEngine.areaMusicDayAudioEmitter;
+    const fadeSec = AREA_MUSIC_FADE_MS / 1000;
     if(inactive.playing){
-      inactive.stop();
+      void inactive.fadeOutAndStop(fadeSec);
     }
     if(!active.playing){
-      active.play();
+      active.play(true);
     }
   }
 
   musicBackgroundStop(){
     const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.areaMusicDayAudioEmitter.stop();
-    audioEngine.areaMusicNightAudioEmitter.stop();
+    audioEngine.setAreaMusicWanted(false);
+    void audioEngine.fadeStopAreaMusic();
   }
 
   musicBackgroundSetDelay(delay: number){
@@ -1102,17 +1141,29 @@ export class ModuleArea extends ModuleObject {
     audioEngine.bgmLoopTime = delay;
   }
 
-  async musicBackgroundDaySet(index: number){
+  async musicBackgroundDaySet(index: number, streamingMusicForMovie: number = 0){
     const audioEngine = AudioEngine.GetAudioEngine();
-    //Load the background music
     const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
     const bgMusic = ambientmusic2DA.rows[index];
     this.audio.music.day = index;
+    const prevName = audioEngine.areaMusicDayAudioEmitter?.name || '';
+    const wasPlaying = !!audioEngine.areaMusicDayAudioEmitter?.playing;
     try{
-      if(bgMusic.resource != '****'){
+      if(bgMusic && bgMusic.resource != '****'){
         console.log('Loading Background Music', bgMusic.resource);
         const data = await AudioLoader.LoadMusic(bgMusic.resource);
         audioEngine.setAudioBuffer('BACKGROUND_MUSIC_DAY', data.buffer as ArrayBuffer, bgMusic.resource);
+        audioEngine.areaMusicDayAudioEmitter.streamingMusicForMovie = !!streamingMusicForMovie;
+        // Retail SetMusicDayTrack: if playing & different file → PlayMusic(0) then PlayMusic(1).
+        const newName = (bgMusic.resource || '').toLowerCase();
+        if(wasPlaying && prevName && prevName.toLowerCase() !== newName){
+          await audioEngine.areaMusicDayAudioEmitter.fadeOutAndStop(AREA_MUSIC_FADE_MS / 1000);
+        }
+        if(audioEngine.areaMusicWanted){
+          this.musicBackgroundPlay();
+        }
+      }else{
+        audioEngine.areaMusicDayAudioEmitter.streamingMusicForMovie = !!streamingMusicForMovie;
       }
     }catch(e){
       console.log('Background Music not found', bgMusic);
@@ -1120,17 +1171,28 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  async musicBackgroundNightSet(index: number){
+  async musicBackgroundNightSet(index: number, streamingMusicForMovie: number = 0){
     const audioEngine = AudioEngine.GetAudioEngine();
-    //Load the battle music
     const ambientmusic2DA = GameState.TwoDAManager.datatables.get('ambientmusic');
     const bgMusic = ambientmusic2DA.rows[index];
     this.audio.music.night = index;
+    const prevName = audioEngine.areaMusicNightAudioEmitter?.name || '';
+    const wasPlaying = !!audioEngine.areaMusicNightAudioEmitter?.playing;
     try{
-      if(bgMusic.resource != '****'){
+      if(bgMusic && bgMusic.resource != '****'){
         console.log('Loading Background Music', bgMusic.resource);
         const data = await AudioLoader.LoadMusic(bgMusic.resource);
         audioEngine.setAudioBuffer('BACKGROUND_MUSIC_NIGHT', data.buffer as ArrayBuffer, bgMusic.resource);
+        audioEngine.areaMusicNightAudioEmitter.streamingMusicForMovie = !!streamingMusicForMovie;
+        const newName = (bgMusic.resource || '').toLowerCase();
+        if(wasPlaying && prevName && prevName.toLowerCase() !== newName){
+          await audioEngine.areaMusicNightAudioEmitter.fadeOutAndStop(AREA_MUSIC_FADE_MS / 1000);
+        }
+        if(audioEngine.areaMusicWanted){
+          this.musicBackgroundPlay();
+        }
+      }else{
+        audioEngine.areaMusicNightAudioEmitter.streamingMusicForMovie = !!streamingMusicForMovie;
       }
     }catch(e){
       console.log('Background Music not found', bgMusic);
@@ -1185,6 +1247,9 @@ export class ModuleArea extends ModuleObject {
 
   ambientSoundPlay(){
     const audioEngine = AudioEngine.GetAudioEngine();
+    // Push GIT / script ambient volumes (0–100) into the engine before play.
+    audioEngine.setAmbientDayVolume((this.audio.ambient.dayVolume ?? 100) / 100);
+    audioEngine.setAmbientNightVolume((this.audio.ambient.nightVolume ?? 100) / 100);
     const useDay = this.audioUsesDayTracks;
     const active = useDay ? audioEngine.ambientAudioDayEmitter : audioEngine.ambientAudioNightEmitter;
     const inactive = useDay ? audioEngine.ambientAudioNightEmitter : audioEngine.ambientAudioDayEmitter;
@@ -1198,8 +1263,9 @@ export class ModuleArea extends ModuleObject {
 
   ambientSoundStop(){
     const audioEngine = AudioEngine.GetAudioEngine();
-    audioEngine.ambientAudioDayEmitter.stop();
-    audioEngine.ambientAudioNightEmitter.stop();
+    const sec = AMBIENT_SOUND_FADE_MS / 1000;
+    void audioEngine.ambientAudioDayEmitter.fadeOutAndStop(sec);
+    void audioEngine.ambientAudioNightEmitter.fadeOutAndStop(sec);
   }
 
   async ambientSoundDaySet(index: number){
@@ -1680,6 +1746,29 @@ export class ModuleArea extends ModuleObject {
       this.transWP = null;
     }
 
+    // Retail GIT weather fields (BYTE)
+    if(this.git.RootNode.hasField('CurrentWeather')){
+      this.weather.currentWeather = this.git.getFieldByLabel('CurrentWeather').getValue();
+      this.weather.fromSave = true;
+    }
+    if(this.git.RootNode.hasField('WeatherStarted')){
+      this.weather.started = !!this.git.getFieldByLabel('WeatherStarted').getValue();
+    }
+    if(this.git.RootNode.hasField('TransPending')){
+      this.transPending = this.git.getFieldByLabel('TransPending').getValue() | 0;
+    }
+    if(this.git.RootNode.hasField('TransPendCurrID')){
+      this.transPendCurrId = this.git.getFieldByLabel('TransPendCurrID').getValue() | 0;
+    }
+    if(this.git.RootNode.hasField('TransPendNextID')){
+      this.transPendNextId = this.git.getFieldByLabel('TransPendNextID').getValue() | 0;
+    }
+
+    // Retail GIT named VarTable
+    if(this.git.RootNode.hasField('VarTable')){
+      this.loadNamedVarTable(this.git.getFieldByLabel('VarTable'));
+    }
+
     if(this.git.RootNode.hasField('SWVarTable')){
       console.log("SWVarTable", this.git);
       let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
@@ -2033,6 +2122,10 @@ export class ModuleArea extends ModuleObject {
     object.area = this;
 
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleCreature)){
+      // Leaving limbo when attached to an area (retail AddToArea counterpart)
+      if(GameState.module?.isObjectInLimbo(object as ModuleCreature)){
+        GameState.module.removeObjectFromLimbo(object as ModuleCreature);
+      }
       if(this.creatures.indexOf(object as ModuleCreature) >= 0) return;
       this.creatures.push(object as ModuleCreature);
     }
@@ -2787,9 +2880,9 @@ export class ModuleArea extends ModuleObject {
     struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPMax') ).setValue(this.stealthXPMax | 0);
     struct.addField( new GFFField(GFFDataType.DWORD, 'SunFogColor') ).setValue(this.sun?.fogColor | 0);
     
-    struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(0);
-    struct.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(0);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(this.transPendCurrId | 0);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(this.transPendNextId | 0);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(this.transPending | 0);
     struct.addField( new GFFField(GFFDataType.BYTE, 'Unescapable') ).setValue(this.unescapable);
     return struct;
   }
@@ -2830,7 +2923,8 @@ export class ModuleArea extends ModuleObject {
       creatureList.addChildStruct( creature.save().RootNode );
     }
 
-    git.RootNode.addField( new GFFField(GFFDataType.LIST, 'CurrentWeather') ).setValue(this.weather.currentWeather);
+    // Retail CSWSArea::SaveGIT — CurrentWeather is BYTE, not LIST
+    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CurrentWeather') ).setValue(this.weather.currentWeather | 0);
 
     const doorList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Door List') );
     for(let i = 0; i < this.doors.length; i++){
@@ -2869,16 +2963,16 @@ export class ModuleArea extends ModuleObject {
       storeList.addChildStruct( this.stores[i].save().RootNode );
     }
     
-    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(0);
-    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(0);
-    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(0);
+    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(this.transPendCurrId | 0);
+    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(this.transPendNextId | 0);
+    git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(this.transPending | 0);
 
     const triggerList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'TriggerList') );
     for(let i = 0; i < this.triggers.length; i++){
       triggerList.addChildStruct( this.triggers[i].save().RootNode );
     }
 
-    git.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
+    this.writeNamedVarTable(git.RootNode);
 
     const waypointList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'WaypointList') );
     for(let i = 0; i < this.waypoints.length; i++){

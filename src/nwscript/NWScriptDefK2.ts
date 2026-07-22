@@ -3,7 +3,7 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleItem, ModuleObject } from "@/module";
+import type { ModuleCreature, ModuleItem, ModuleObject, ModuleArea } from "@/module";
 import { BitWise } from "@/utility/BitWise";
 import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { NWScriptDef } from "@/nwscript/NWScriptDef";
@@ -3147,18 +3147,26 @@ NWScriptDefK2.Actions = {
     action: undefined
   },
   428: {
-    comment: '428: Change the background day track for oArea to nTrack.\n- oArea\n- nTrack',
+    comment: '428: Change the background day track for oArea to nTrack.\n- oArea\n- nTrack\n- nStreamingMusicForMovie: SetStreamingMusicForMovie flag (K2)',
     name: 'MusicBackgroundChangeDay',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).musicBackgroundDaySet(args[1], args[2] || 0);
+      }
+    }
   },
   429: {
-    comment: '429: Change the background night track for oArea to nTrack.\n- oArea\n- nTrack',
+    comment: '429: Change the background night track for oArea to nTrack.\n- oArea\n- nTrack\n- nStreamingMusicForMovie: SetStreamingMusicForMovie flag (K2)',
     name: 'MusicBackgroundChangeNight',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).musicBackgroundNightSet(args[1], args[2] || 0);
+      }
+    }
   },
   430: {
     comment: '430: Play the battle music for oArea.',

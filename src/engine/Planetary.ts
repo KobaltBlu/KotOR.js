@@ -78,16 +78,23 @@ export class Planetary {
   static SaveStruct(){
     let struct = new GFFStruct();
 
-    struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapNumPnts') ).setValue(Planetary.planets.length);
+    // Retail SaveTableInfo hardcodes GlxyMapNumPnts = 16
+    const planetCount = 16;
+    struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapNumPnts') ).setValue(planetCount);
 
-    let planetMask = 0
-    for(let i = 0; i < Planetary.planets.length; i++){
-      let planet = Planetary.planets[i];
+    // Retail packs available in bits 0..15 and selectable in bits 16..31
+    let planetMask = 0;
+    for(let i = 0; i < planetCount; i++){
+      const planet = Planetary.planets[i];
+      if(!planet) continue;
       if(planet.enabled){
-        planetMask |= 1 << planet.id;
+        planetMask |= 1 << i;
       }
-      planetMask = planetMask >>> 0;
+      if(planet.selectable){
+        planetMask |= 1 << (i + 16);
+      }
     }
+    planetMask = planetMask >>> 0;
     struct.addField( new GFFField(GFFDataType.DWORD, 'GlxyMapPlntMsk') ).setValue(planetMask);
     struct.addField( new GFFField(GFFDataType.INT, 'GlxyMapSelPnt') ).setValue(Planetary.selectedIndex);
 

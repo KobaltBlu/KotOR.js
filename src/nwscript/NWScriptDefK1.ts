@@ -5578,7 +5578,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
-        (args[0] as ModuleArea).musicBackgroundDaySet(args[1]);
+        (args[0] as ModuleArea).musicBackgroundDaySet(args[1], 0);
       }
     }
   },
@@ -5589,7 +5589,7 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
-        (args[0] as ModuleArea).musicBackgroundNightSet(args[1]);
+        (args[0] as ModuleArea).musicBackgroundNightSet(args[1], 0);
       }
     }
   },
@@ -7197,8 +7197,10 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
-        const audioEngine = AudioEngine.GetAudioEngine();
-        audioEngine.ambientAudioDayEmitter.setVolume(args[1] / 100);
+        const area = args[0] as ModuleArea;
+        const nVolume = typeof args[1] === 'number' ? args[1] : 0;
+        area.audio.ambient.dayVolume = nVolume;
+        AudioEngine.GetAudioEngine().setAmbientDayVolume(nVolume / 100);
       }
     }
   },
@@ -7209,8 +7211,10 @@ NWScriptDefK1.Actions = {
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
-        const audioEngine = AudioEngine.GetAudioEngine();
-        audioEngine.ambientAudioNightEmitter.setVolume(args[1] / 100);
+        const area = args[0] as ModuleArea;
+        const nVolume = typeof args[1] === 'number' ? args[1] : 0;
+        area.audio.ambient.nightVolume = nVolume;
+        AudioEngine.GetAudioEngine().setAmbientNightVolume(nVolume / 100);
       }
     }
   },
@@ -8112,7 +8116,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.module.area.miniGame.player.speed = args[0];
+      // Retail SetSpeed @ 0066c870 — update speed + track anim rate (speed*0.01).
+      GameState.module.area.miniGame.player.setFollowerSpeed(args[0]);
     }
   },
   650:{
@@ -8405,11 +8410,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
-        return args[0].getLocalBoolean( args[1] ) ? NW_TRUE : NW_FALSE;
-      }else{
-        return 0;
+      const target: any = args[0];
+      if(target && typeof target.getLocalBoolean === 'function'){
+        return target.getLocalBoolean( args[1] ) ? NW_TRUE : NW_FALSE;
       }
+      return 0;
     }
   },
   680:{
@@ -8418,7 +8423,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-      args[0].setLocalBoolean( args[1], !!args[2] )
+      const target: any = args[0];
+      if(target && typeof target.setLocalBoolean === 'function'){
+        target.setLocalBoolean( args[1], !!args[2] );
+      }
     }
   },
   681:{
@@ -8427,11 +8435,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
-        return args[0].getLocalNumber( args[1] );
-      }else{
-        return 0;
+      const target: any = args[0];
+      if(target && typeof target.getLocalNumber === 'function'){
+        return target.getLocalNumber( args[1] );
       }
+      return 0;
     }
   },
   682:{
@@ -8440,10 +8448,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-    args[0].setLocalNumber(
-      args[1],
-      args[2]
-      )
+      const target: any = args[0];
+      if(target && typeof target.setLocalNumber === 'function'){
+        target.setLocalNumber( args[1], args[2] );
+      }
     }
   },
   683:{

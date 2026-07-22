@@ -25,10 +25,22 @@ import { IModuleScripts } from "@/interface/module/IModuleScripts";
 import { IAreaListItem } from "@/interface/area/IAreaListItem";
 import type { GameEvent } from "@/events/GameEvent";
 import { ModuleArea } from "@/module/ModuleArea";
+import { ModuleCreature } from "@/module/ModuleCreature";
 import { ModuleTimeManager } from "@/module/ModuleTimeManager";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { ScriptVarTable } from "@/engine/ScriptVarTable";
+
+export interface ModuleExpansionEntry {
+  name: CExoLocString;
+  id: number;
+}
+
+export interface ModuleCutSceneEntry {
+  name: string;
+  id: number;
+}
 
 type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|'Mod_OnClientLeav'|'Mod_OnHeartbeat'|'Mod_OnModLoad'|'Mod_OnModStart'|'Mod_OnPlrDeath'|'Mod_OnPlrDying'|'Mod_OnPlrLvlUp'|'Mod_OnPlrRest'|'Mod_OnSpawnBtnDn'|'Mod_OnUnAqreItem'|'Mod_OnUsrDefined';
 
@@ -162,7 +174,7 @@ export class Module {
   /** 
    * @deprecated Deprecated: since NWN
    */
-  expansionList: any[] = [];
+  expansionList: ModuleExpansionEntry[] = [];
 
   /** 
    * @deprecated Deprecated: since NWN
@@ -177,7 +189,16 @@ export class Module {
   /** 
    * @deprecated Deprecated: since NWN
    */
-  cutSceneList: any[] = [];
+  cutSceneList: ModuleCutSceneEntry[] = [];
+
+  /**
+   * Retail limbo creature list (IFO "Creature List", struct type 4).
+   */
+  limboCreatures: ModuleCreature[] = [];
+
+  /** Module-level SW locals (IFO SWVarTable) */
+  _locals: { Booleans: boolean[]; Numbers: Record<number, number> } = { Booleans: [], Numbers: {} };
+  scriptVarTable: ScriptVarTable = new ScriptVarTable();
 
   /** 
    * always set to 2
@@ -227,6 +248,7 @@ export class Module {
     this.nextCharId1 = 0; // DWORD -
     this.nextObjId0  = 0; // DWORD Keeps track of which id to give the next object created
     this.nextObjId1  = 0; // DWORD -
+    this.effectNextId = 1;
 
     this.tag;
     this.voId = '';
@@ -350,6 +372,140 @@ export class Module {
 
     if(ifo.RootNode.hasField('Mod_NextObjId1'))
       this.nextObjId1 = ifo.getFieldByLabel('Mod_NextObjId1').getValue();
+
+    if(ifo.RootNode.hasField('Mod_Effect_NxtId')){
+      const nxt = ifo.getFieldByLabel('Mod_Effect_NxtId').getValue();
+      this.effectNextId = typeof nxt === 'bigint' ? Number(nxt) : (nxt || 1);
+    }else{
+      this.effectNextId = 1;
+    }
+
+    // Limbo creatures (retail LoadLimboCreatures)
+    this.limboCreatures = [];
+    if(isLoadingSave && ifo.RootNode.hasField('Creature List')){
+      const limboList = ifo.getFieldByLabel('Creature List').getChildStructs();
+      for(let i = 0; i < limboList.length; i++){
+        const strt = limboList[i];
+        if(strt.type !== 4 && strt.type !== undefined){
+          // Retail only loads element type 4; accept missing type from older writers
+        }
+        try{
+          const creature = new ModuleCreature(GFFObject.FromStruct(strt));
+          creature.load();
+          this.limboCreatures.push(creature);
+        }catch(e){
+          console.warn('Module.setFromIFO limbo creature', e);
+        }
+      }
+      SaveLoadAudit.logLoadStage('limbo', { creatures: this.limboCreatures.length });
+    }
+
+    // Mod_CutSceneList / Mod_Expan_List
+    this.cutSceneList = [];
+    if(ifo.RootNode.hasField('Mod_CutSceneList')){
+      const list = ifo.getFieldByLabel('Mod_CutSceneList').getChildStructs();
+      for(let i = 0; i < list.length; i++){
+        const s = list[i];
+        this.cutSceneList.push({
+          name: s.hasField('CutScene_Name') ? s.getFieldByLabel('CutScene_Name').getValue() : '',
+          id: s.hasField('CutScene_ID') ? (s.getFieldByLabel('CutScene_ID').getValue() | 0) : 0,
+        });
+      }
+    }
+    this.expansionList = [];
+    if(ifo.RootNode.hasField('Mod_Expan_List')){
+      const list = ifo.getFieldByLabel('Mod_Expan_List').getChildStructs();
+      for(let i = 0; i < list.length; i++){
+        const s = list[i];
+        this.expansionList.push({
+          name: s.hasField('Expansion_Name') ? s.getFieldByLabel('Expansion_Name').getCExoLocString() : new CExoLocString(),
+          id: s.hasField('Expansion_ID') ? (s.getFieldByLabel('Expansion_ID').getValue() | 0) : 0,
+        });
+      }
+    }
+
+    // Module SWVarTable / named VarTable
+    this._locals = { Booleans: [], Numbers: {} };
+    this.scriptVarTable = new ScriptVarTable();
+    if(ifo.RootNode.hasField('SWVarTable')){
+      const swStructs = ifo.getFieldByLabel('SWVarTable').getChildStructs();
+      const swVarTableStruct = swStructs[0];
+      if(swVarTableStruct?.hasField('BitArray')){
+        const localBools = swVarTableStruct.getFieldByLabel('BitArray').getChildStructs();
+        for(let i = 0; i < localBools.length; i++){
+          const data = localBools[i].getFieldByLabel('Variable').getValue();
+          for(let bit = 0; bit < 32; bit++){
+            this._locals.Booleans[bit + (i * 32)] = ((data >> bit) % 2 != 0);
+          }
+        }
+      }
+      if(swVarTableStruct?.hasField('ByteArray')){
+        const localNumbers = swVarTableStruct.getFieldByLabel('ByteArray').getChildStructs();
+        for(let i = 0; i < localNumbers.length; i++){
+          this._locals.Numbers[i] = localNumbers[i].getFieldByLabel('Variable').getValue();
+        }
+      }
+    }
+    if(ifo.RootNode.hasField('VarTable')){
+      this.scriptVarTable.loadFromListField(ifo.getFieldByLabel('VarTable'));
+    }
+  }
+
+  addObjectToLimbo(creature: ModuleCreature){
+    if(!creature) return;
+    if(this.limboCreatures.indexOf(creature) < 0){
+      this.limboCreatures.push(creature);
+    }
+  }
+
+  removeObjectFromLimbo(creature: ModuleCreature){
+    const idx = this.limboCreatures.indexOf(creature);
+    if(idx >= 0) this.limboCreatures.splice(idx, 1);
+  }
+
+  isObjectInLimbo(creature: ModuleCreature){
+    return this.limboCreatures.indexOf(creature) >= 0;
+  }
+
+  getModuleSWVarTableSaveStruct(){
+    const swVarTableStruct = new GFFStruct();
+    const swVarTableBitArray = swVarTableStruct.addField(new GFFField(GFFDataType.LIST, 'BitArray'));
+    for(let i = 0; i < 3; i++){
+      const varStruct = new GFFStruct();
+      let value = 0;
+      const offset = 32 * i;
+      for(let j = 0; j < 32; j++){
+        if(this._locals.Booleans[offset + j]){
+          value |= 1 << j;
+        }
+      }
+      varStruct.addField(new GFFField(GFFDataType.DWORD, 'Variable')).setValue(value >>> 0);
+      swVarTableBitArray.addChildStruct(varStruct);
+    }
+    const swVarTableByteArray = swVarTableStruct.addField(new GFFField(GFFDataType.LIST, 'ByteArray'));
+    for(let i = 0; i < 8; i++){
+      const varStruct = new GFFStruct();
+      varStruct.addField(new GFFField(GFFDataType.BYTE, 'Variable')).setValue(Number(this._locals.Numbers[i] || 0));
+      swVarTableByteArray.addChildStruct(varStruct);
+    }
+    return swVarTableStruct;
+  }
+
+  /** Retail module SWVarTable — Get/SetLocalBoolean on GetModule() */
+  getLocalBoolean(index: number){
+    return !!this._locals.Booleans[index];
+  }
+
+  getLocalNumber(index: number){
+    return this._locals.Numbers[index] ? this._locals.Numbers[index] as number : 0;
+  }
+
+  setLocalBoolean(index: number, bool: boolean){
+    this._locals.Booleans[index] = !!bool;
+  }
+
+  setLocalNumber(index: number, value: number){
+    this._locals.Numbers[index] = value & 0xFF;
   }
 
   addEffect(effect?: GameEffect, lLocation?: EngineLocation){
@@ -572,7 +728,14 @@ export class Module {
     const ifo = new GFFObject();
     ifo.FileType = 'IFO ';
 
-    ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Creature List') );
+    const creatureList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Creature List') );
+    for(let i = 0; i < this.limboCreatures.length; i++){
+      const creature = this.limboCreatures[i];
+      if(!creature) continue;
+      const root = creature.save().RootNode;
+      root.setType(4); // retail limbo element type
+      creatureList.addChildStruct(root);
+    }
     const eventQueue = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'EventQueue') );
     for(let i = 0; i < this.eventQueue.length; i++){
       let event = this.eventQueue[i];
@@ -588,7 +751,14 @@ export class Module {
     }
 
     ifo.RootNode.addField( new GFFField(GFFDataType.INT, 'Mod_Creator_ID') ).setValue(this.creatorId);
-    ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_CutSceneList') );
+    const cutSceneList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_CutSceneList') );
+    for(let i = 0; i < this.cutSceneList.length; i++){
+      const entry = this.cutSceneList[i];
+      const csStruct = new GFFStruct(1);
+      csStruct.addField(new GFFField(GFFDataType.RESREF, 'CutScene_Name')).setValue(entry.name || '');
+      csStruct.addField(new GFFField(GFFDataType.DWORD, 'CutScene_ID')).setValue(entry.id | 0);
+      cutSceneList.addChildStruct(csStruct);
+    }
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_DawnHour') ).setValue(this.timeManager.dawnHour);
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_Description') ).setValue( this.description );
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_DuskHour') ).setValue(this.timeManager.duskHour);
@@ -600,7 +770,14 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Y') ).setValue(this.entryY);
     ifo.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Mod_Entry_Z') ).setValue(this.entryZ);
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Expansion_Pack') ).setValue(this.expansionPack | 0);
-    ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Expan_List') );
+    const expanList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_Expan_List') );
+    for(let i = 0; i < this.expansionList.length; i++){
+      const entry = this.expansionList[i];
+      const exStruct = new GFFStruct(0);
+      exStruct.addField(new GFFField(GFFDataType.CEXOLOCSTRING, 'Expansion_Name')).setValue(entry.name || new CExoLocString());
+      exStruct.addField(new GFFField(GFFDataType.INT, 'Expansion_ID')).setValue(entry.id | 0);
+      expanList.addChildStruct(exStruct);
+    }
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Hak') ).setValue(this.hak);
     const modIdField = ifo.RootNode.addField( new GFFField(GFFDataType.VOID, 'Mod_ID') );
     modIdField.setData(this.id instanceof Uint8Array && this.id.length ? this.id : new Uint8Array(16));
@@ -657,16 +834,11 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Version') ).setValue(this.version);
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_VO_ID') ).setValue(this.voId || '');
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_XPScale') .setValue(this.xpScale));
-    // Module-level SWVarTable: no ModuleObject locals yet — write empty BitArray/ByteArray like object saves
+    // Module-level SWVarTable + named VarTable
     const swVarTable = ifo.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
-    const swVarStruct = new GFFStruct();
-    swVarStruct.addField( new GFFField(GFFDataType.LIST, 'BitArray') );
-    swVarStruct.addField( new GFFField(GFFDataType.LIST, 'ByteArray') );
-    swVarTable.addChildStruct(swVarStruct);
-    ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
-    if(isSaveGame){
-      SaveLoadAudit.warnGap('Creature List / VarTable', 'limbo creatures and named VarTable not populated (no runtime store yet)');
-    }
+    swVarTable.addChildStruct( this.getModuleSWVarTableSaveStruct() );
+    const varTable = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
+    this.scriptVarTable.writeToListField(varTable);
     
     this.ifo = ifo;
 

@@ -35,6 +35,7 @@ import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { DLGObject } from "@/resource/DLGObject";
 import { Faction } from "@/engine/Faction";
+import { ScriptVarTable } from "@/engine/ScriptVarTable";
 import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
 import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
@@ -184,6 +185,8 @@ export class ModuleObject {
   casting: any[] = [];
   damageList: any[] = [];
   _locals: { Booleans: any[]; Numbers: {}; };
+  /** Retail named VarTable (CSWSScriptVarTable) — round-trip from saves */
+  scriptVarTable: ScriptVarTable = new ScriptVarTable();
   objectsInside: any[];
   lockDialogOrientation: boolean = false;
   lastInventoryDisturbType: number = 0;
@@ -364,6 +367,7 @@ export class ModuleObject {
       Booleans: [],
       Numbers: {}
     };
+    this.scriptVarTable = new ScriptVarTable();
 
     this.objectsInside = [];
     this.lockDialogOrientation = false;
@@ -2890,6 +2894,13 @@ export class ModuleObject {
     if(!effect.initialized){
       effect.initialize();
     }
+    // Retail: allocate effect id from module Mod_Effect_NxtId when not loaded from save
+    if(!effect.id && GameState.module){
+      if(typeof GameState.module.effectNextId !== 'number' || isNaN(GameState.module.effectNextId)){
+        GameState.module.effectNextId = 1;
+      }
+      effect.setId(GameState.module.effectNextId++);
+    }
     effect.setAttachedObject(this);
     effect.loadModel();
     effect.onApply(this);
@@ -3955,6 +3966,10 @@ export class ModuleObject {
       }
     }
 
+    if(this.template.RootNode.hasField('VarTable')){
+      this.loadNamedVarTable(this.template.RootNode.getFieldByLabel('VarTable'));
+    }
+
     this.loadActionList();
 
     this.initialized = true;
@@ -4004,6 +4019,22 @@ export class ModuleObject {
       swVarTableByteArray.addChildStruct(varStruct);
     }
     return swVarTableStruct;
+  }
+
+  /**
+   * Load named VarTable from a GFF LIST field (retail CSWSScriptVarTable).
+   */
+  loadNamedVarTable(field?: GFFField){
+    this.scriptVarTable.loadFromListField(field);
+  }
+
+  /**
+   * Write named VarTable into a new LIST field on the given parent struct/root.
+   */
+  writeNamedVarTable(parent: GFFStruct): GFFField {
+    const list = parent.addField(new GFFField(GFFDataType.LIST, 'VarTable'));
+    this.scriptVarTable.writeToListField(list);
+    return list;
   }
 
   /**

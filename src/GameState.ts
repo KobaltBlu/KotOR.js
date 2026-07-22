@@ -1078,6 +1078,10 @@ export class GameState implements EngineContext {
     if(!name){
       return;
     }
+    // Retail door/trigger EventHandler → SetTransitionPending(1, nextId) before fade/load
+    if(GameState.module?.area){
+      GameState.module.area.setTransitionPending(true);
+    }
     GameState.areaTransitionPending = true;
     const length = GameState.FadeOverlayManager.AREA_TRANSITION_FADE_LENGTH;
     GameState.FadeOverlayManager.FadeOut(length, 0, 0, 0, 0);
@@ -1148,8 +1152,13 @@ export class GameState implements EngineContext {
       GameState.SetEngineMode(EngineMode.LOADING);
       
       if(GameState.module){
-        try{ await GameState.module.save(); }catch(e){
+        // Retail StallEventSaveGame → SaveModuleStart sets is_save_game = 1
+        // TransPending remains set from LoadModuleWithAreaTransitionFade until after stall save
+        try{ await GameState.module.save(true); }catch(e){
           console.error(e);
+        }
+        if(GameState.module.area){
+          GameState.module.area.setTransitionPending(false);
         }
         try{ GameState.module.dispose(); }catch(e){
           console.error(e);
@@ -1193,14 +1202,18 @@ export class GameState implements EngineContext {
 
         GameState.ResetModuleAudio();
 
-        GameState.MenuManager.InGameOverlay.recalculatePosition();
-        GameState.MenuManager.InGameOverlay.open();
-
         GameState.renderer.compile(GameState.scene, GameState.currentCamera);
         GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
         
         console.log('ModuleArea.initAreaObjects');
-        GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
+        // Retail minigame areas: no party InGame HUD (swoop/turret).
+        if(GameState.module.area.miniGame){
+          GameState.SetEngineMode(EngineMode.MINIGAME);
+        }else{
+          GameState.MenuManager.InGameOverlay.recalculatePosition();
+          GameState.MenuManager.InGameOverlay.open();
+          GameState.SetEngineMode(EngineMode.INGAME);
+        }
         await GameState.module.area.initAreaObjects(runSpawnScripts);
         console.log('ModuleArea: ready to play');
         GameState.module.readyToProcessEvents = true;
@@ -1281,6 +1294,21 @@ export class GameState implements EngineContext {
   
       if(GameState.MenuManager.InGameAreaTransition)
         GameState.MenuManager.InGameAreaTransition.hide();
+    }
+
+    // Minigame: keep party InGameOverlay off the menu stack so GUI pop
+    // (options etc.) cannot reshow the HUD via Remove → show().
+    if(mode == EngineMode.MINIGAME){
+      const overlay = GameState.MenuManager.InGameOverlay;
+      if(overlay && (overlay.isVisible() || GameState.MenuManager.activeMenus.indexOf(overlay) >= 0)){
+        overlay.close();
+      }
+    }else if(mode == EngineMode.INGAME && GameState.module && !GameState.module.area?.miniGame){
+      const overlay = GameState.MenuManager.InGameOverlay;
+      if(overlay && GameState.MenuManager.activeMenus.indexOf(overlay) < 0){
+        overlay.recalculatePosition();
+        overlay.open();
+      }
     }
 
     if(!(mode == EngineMode.INGAME || mode == EngineMode.DIALOG || mode == EngineMode.FREELOOK || mode == EngineMode.MINIGAME)){
@@ -1590,11 +1618,10 @@ export class GameState implements EngineContext {
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
 
-    //Handle the visibility of the PAUSE overlay
+    // Pause banner — MG has no InGameOverlay, so do not gate on it.
     if(
       GameState.State == EngineState.PAUSED &&
-      !GameState.timeStopActive &&
-      GameState.MenuManager.InGameOverlay.isVisible()
+      !GameState.timeStopActive
     ){
       if(!GameState.MenuManager.InGamePause.isVisible())
         GameState.MenuManager.InGamePause.show();

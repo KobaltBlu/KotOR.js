@@ -159,6 +159,18 @@ export class PartyManager {
   /** TSL: battle-circle forfeit (FORFEITCONDS / FORFEITVIOL). */
   static ForfeitConditions: number = 0;
   static LastForfeitViolation: number = 0;
+  /** Retail CHEATUSED / PT_CHEAT_USED — set when cheat console is used */
+  static CheatUsed: boolean = false;
+  /** NFO GAMEPLAYHINT (BYTE) */
+  static GameplayHint: number = 0;
+  /** K1 NFO STORYHINT (BYTE) */
+  static StoryHint: number = 0;
+  /** TSL NFO STORYHINT0..9 */
+  static StoryHints: number[] = [0,0,0,0,0,0,0,0,0,0];
+  /** Retail PT_LAST_GUI_PNL */
+  static LastGuiPanel: number = 0;
+  /** TSL PT_COM_MSG_LIST entries */
+  static CombatMessages: { msg: string; type: number; color: number }[] = [];
 
   static SwoopUpgrade1: number = -1;
   static SwoopUpgrade2: number = -1;
@@ -272,6 +284,12 @@ export class PartyManager {
     GameState.PartyManager.PuppetCount = 0;
     GameState.PartyManager.XPPool = 0;
     GameState.PartyManager.ControlledNPC = -1;
+    GameState.PartyManager.CheatUsed = false;
+    GameState.PartyManager.GameplayHint = 0;
+    GameState.PartyManager.StoryHint = 0;
+    GameState.PartyManager.StoryHints = [0,0,0,0,0,0,0,0,0,0];
+    GameState.PartyManager.LastGuiPanel = 0;
+    GameState.PartyManager.CombatMessages = [];
     GameState.PartyManager.AIState = 0;
     GameState.PartyManager.FollowState = 0;
     GameState.PartyManager.DisableMap = false;
@@ -287,7 +305,8 @@ export class PartyManager {
       let currentPlanet = GlxyMap.getFieldByLabel('GlxyMapSelPnt').getValue();
 
       for(let i = 0; i < planetCount; i++){
-        GameState.Planetary.SetPlanetAvailable(i,  !!((planetBits>>i) & 0x01));
+        GameState.Planetary.SetPlanetAvailable(i,  !!((planetBits >> i) & 0x01));
+        GameState.Planetary.SetPlanetSelectable(i, !!((planetBits >> (i + 16)) & 0x01));
       }
 
       GameState.Planetary.SetSelectedPlanet(currentPlanet);
@@ -386,6 +405,10 @@ export class PartyManager {
       GameState.PartyManager.XPPool = gff.RootNode.getFieldByLabel('PT_XP_POOL').getValue() | 0;
     }
 
+    if(gff.RootNode.hasField('PT_CHEAT_USED')){
+      GameState.PartyManager.CheatUsed = !!gff.RootNode.getFieldByLabel('PT_CHEAT_USED').getValue();
+    }
+
     if(gff.RootNode.hasField('PT_AISTATE')){
       GameState.PartyManager.AIState = gff.RootNode.getFieldByLabel('PT_AISTATE').getValue() | 0;
     }
@@ -437,6 +460,7 @@ export class PartyManager {
     }
 
     if(gff.RootNode.hasField('JNL_Entries')){
+      GameState.JournalManager.ClearEntries();
       const entries = gff.RootNode.getFieldByLabel('JNL_Entries').getChildStructs();
       for(let i = 0; i < entries.length; i++){
         GameState.JournalManager.AddEntry(JournalEntry.FromStruct(entries[i]));
@@ -448,6 +472,7 @@ export class PartyManager {
     }
 
     if(gff.RootNode.hasField('PT_DLG_MSG_LIST')){
+      GameState.DialogMessageManager.ClearEntries();
       const entries = gff.RootNode.getFieldByLabel('PT_DLG_MSG_LIST').getChildStructs();
       for(let i = 0; i < entries.length; i++){
         GameState.DialogMessageManager.AddEntry(DialogMessageEntry.FromStruct(entries[i]));
@@ -455,9 +480,30 @@ export class PartyManager {
     }
 
     if(gff.RootNode.hasField('PT_FB_MSG_LIST')){
+      GameState.FeedbackMessageManager.ClearEntries();
       const entries = gff.RootNode.getFieldByLabel('PT_FB_MSG_LIST').getChildStructs();
       for(let i = 0; i < entries.length; i++){
-        GameState.FeedbackMessageManager.AddEntry(FeedbackMessageEntry.FromStruct(entries[i]));
+        GameState.FeedbackMessageManager.AddEntry(
+          FeedbackMessageEntry.FromStruct(entries[i]),
+          { bypassStatusSummary: true }
+        );
+      }
+    }
+
+    if(gff.RootNode.hasField('PT_LAST_GUI_PNL')){
+      GameState.PartyManager.LastGuiPanel = gff.RootNode.getFieldByLabel('PT_LAST_GUI_PNL').getValue() | 0;
+    }
+
+    if(gff.RootNode.hasField('PT_COM_MSG_LIST')){
+      GameState.PartyManager.CombatMessages = [];
+      const entries = gff.RootNode.getFieldByLabel('PT_COM_MSG_LIST').getChildStructs();
+      for(let i = 0; i < entries.length; i++){
+        const s = entries[i];
+        GameState.PartyManager.CombatMessages.push({
+          msg: s.hasField('PT_COM_MSG_MSG') ? s.getFieldByLabel('PT_COM_MSG_MSG').getValue() : '',
+          type: s.hasField('PT_COM_MSG_TYPE') ? (s.getFieldByLabel('PT_COM_MSG_TYPE').getValue() | 0) : 0,
+          color: s.hasField('PT_COM_MSG_COOR') ? (s.getFieldByLabel('PT_COM_MSG_COOR').getValue() | 0) : 0,
+        });
       }
     }
 
@@ -537,7 +583,9 @@ export class PartyManager {
         GameState.PazaakManager.PlayerSideDeck.set(i, list[i].getFieldByLabel('PT_PAZSIDECARD').getValue());
       }
     }
-    
+
+    const { SaveLoadAudit } = await import("@/engine/SaveLoadAudit");
+    SaveLoadAudit.runRetailCompatChecklist('load');
   }
 
   /**
@@ -572,7 +620,7 @@ export class PartyManager {
         availNPCSList.addChildStruct(availStruct);
       }
 
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED')).setValue(0);
+      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED')).setValue(GameState.PartyManager.CheatUsed ? 1 : 0);
       const controlledIdx = GameState.getCurrentPlayer() == GameState.PartyManager.Player
         ? -1
         : GameState.PartyManager.party.indexOf(GameState.getCurrentPlayer());
@@ -605,9 +653,21 @@ export class PartyManager {
         );
       }
 
+      if(GameState.GameKey == GameEngineType.TSL){
+        const com_list = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_COM_MSG_LIST'));
+        for(let i = 0; i < GameState.PartyManager.CombatMessages.length; i++){
+          const cm = GameState.PartyManager.CombatMessages[i];
+          const comStruct = new GFFStruct(0);
+          comStruct.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_COM_MSG_MSG')).setValue(cm.msg || '');
+          comStruct.addField(new GFFField(GFFDataType.DWORD, 'PT_COM_MSG_TYPE')).setValue(cm.type | 0);
+          comStruct.addField(new GFFField(GFFDataType.BYTE, 'PT_COM_MSG_COOR')).setValue(cm.color | 0);
+          com_list.addChildStruct(comStruct);
+        }
+      }
+
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_FOLLOWSTATE')).setValue(GameState.PartyManager.FollowState | 0);
       partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_GOLD')).setValue(GameState.PartyManager.Gold);
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_LAST_GUI_PNL')).setValue(0);
+      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_LAST_GUI_PNL')).setValue(GameState.PartyManager.LastGuiPanel | 0);
       let ptMembersList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_MEMBERS'));
 
       let numMembers = 0;
@@ -723,24 +783,25 @@ export class PartyManager {
       partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_SOLOMODE')).setValue(GameState.SOLOMODE ? 1 : 0);
 
       const tutorial2DA = GameState.TwoDAManager.datatables.get('tutorial');
+      // Retail: K1 writes 6 bytes; TSL writes 0x21 (33) bytes from GUI tutorial bitarray
+      const retailTutBytes = GameState.GameKey == GameEngineType.TSL ? 0x21 : 6;
+      let byteCount = retailTutBytes;
       if(tutorial2DA){
-        let byteCount = Math.ceil(tutorial2DA.RowCount / 8);
-        let buffer = new Uint8Array(byteCount);
-        for(let i = 0; i < byteCount; i++){
-          let byte = 0;
-          for(let j = 0; j < 8; j++){
-            let offset = (8 * i) + j;
-            let bit = GameState.TutorialWindowTracker[offset];
-            if(bit){
-              byte |= 1 << j;
-            }
-          }
-          buffer[i] = byte;
-        }
-        partytable.RootNode.addField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN')).setData(buffer);
-      }else{
-        partytable.RootNode.addField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN')).setData(new Uint8Array(0));
+        byteCount = Math.max(retailTutBytes, Math.ceil(tutorial2DA.RowCount / 8));
       }
+      let buffer = new Uint8Array(byteCount);
+      for(let i = 0; i < byteCount; i++){
+        let byte = 0;
+        for(let j = 0; j < 8; j++){
+          let offset = (8 * i) + j;
+          let bit = GameState.TutorialWindowTracker[offset];
+          if(bit){
+            byte |= 1 << j; // LSB packing (matches LoadTableInfo)
+          }
+        }
+        buffer[i] = byte;
+      }
+      partytable.RootNode.addField(new GFFField(GFFDataType.VOID, 'PT_TUT_WND_SHOWN')).setData(buffer);
 
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_XP_POOL')).setValue(GameState.PartyManager.XPPool | 0);
 

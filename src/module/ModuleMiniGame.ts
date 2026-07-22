@@ -319,24 +319,49 @@ export class ModuleMiniGame {
 
   /**
    * Retail CSWMiniGame::DoHitCheck @ 006732f0 —
-   * obstacle vs player, then follower sphere overlaps (bullet path handled on gun banks).
+   * live bullets → obstacles vs player → follower sphere bumps.
    */
   doHitCheck(){
     const player = this.player;
     if(!player?.alive || !player.running){ return; }
 
+    // 1) Bullets (player + enemy gun banks).
+    this.doBulletHitChecks(player);
+    for(let i = 0; i < this.enemies.length; i++){
+      const enemy = this.enemies[i];
+      if(!enemy){ continue; }
+      this.doBulletHitChecks(enemy);
+    }
+
+    // 2) Obstacles vs player.
     for(let i = 0; i < this.obstacles.length; i++){
       const obstacle = this.obstacles[i];
       if(!obstacle){ continue; }
       player.tryHitObstacle(obstacle);
     }
 
+    // 3) Follower bumps (sphere latch).
     for(let i = 0; i < this.enemies.length; i++){
       const enemy = this.enemies[i];
       if(!enemy || !enemy.alive || enemy.collided){ continue; }
       if(enemy.sphere?.containsPoint?.(player.sphere.center)){
         enemy.collided = true;
         player.onHitFollower(enemy);
+      }
+    }
+  }
+
+  /** Run HitCheck on each live bullet for a follower's gun banks. */
+  private doBulletHitChecks(follower: { gunBanks?: { bullets?: { doHitCheck?: () => void; hit?: boolean; exploding?: boolean }[] }[] }){
+    const banks = follower.gunBanks;
+    if(!banks?.length){ return; }
+    for(let b = 0; b < banks.length; b++){
+      const bullets = banks[b]?.bullets;
+      if(!bullets?.length){ continue; }
+      for(let i = 0; i < bullets.length; i++){
+        const bullet = bullets[i];
+        if(!bullet || bullet.hit || bullet.exploding){ continue; }
+        bullet.doHitCheck?.();
       }
     }
   }
@@ -867,7 +892,7 @@ export class ModuleMiniGame {
     for(let i = 0; i < this.enemies.length; i++){
       const enemy = this.enemies[i];
       const onCreate = enemy.scripts[ModuleObjectScript.MGEnemyOnCreate];
-      if(!onCreate){ return; }
+      if(!onCreate){ continue; }
       onCreate.run(enemy, 0);
     }
   }

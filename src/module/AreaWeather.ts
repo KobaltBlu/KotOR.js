@@ -27,6 +27,8 @@ export class AreaWeather {
   chanceLightning: number = 0;
   currentWeather: WeatherCondition = WeatherCondition.CLEAR;
   started: boolean = false;
+  /** When true, load() keeps CurrentWeather from save instead of rolling chances */
+  fromSave: boolean = false;
 
   constructor(area: ModuleArea){
     this.area = area;
@@ -63,23 +65,17 @@ export class AreaWeather {
    * @returns string
    */
   getWeatherModelName(): string {
-    switch(this.getWeatherCondition()){
-      case WeatherCondition.SNOW:
-        return 'fx_snow';
-      case WeatherCondition.RAIN:
-        return 'fx_rain';
-      case WeatherCondition.LIGHTNING:
-        return 'fx_lightning';
-    }
-    return '';
+    return this.getWeatherModelNameFor(this.currentWeather);
   }
 
   /**
    * Load the weather model
    */
   async load(){
-    this.currentWeather = this.getWeatherCondition();
-    const weatherModelName = this.getWeatherModelName();
+    if(!this.fromSave){
+      this.currentWeather = this.getWeatherCondition();
+    }
+    const weatherModelName = this.getWeatherModelNameFor(this.currentWeather);
     try{
       if(weatherModelName){
         const mdl = await MDLLoader.loader.load(weatherModelName);
@@ -92,6 +88,18 @@ export class AreaWeather {
     }catch(e){
       console.error(e);
     }
+  }
+
+  getWeatherModelNameFor(condition: WeatherCondition): string {
+    switch(condition){
+      case WeatherCondition.SNOW:
+        return 'fx_snow';
+      case WeatherCondition.RAIN:
+        return 'fx_rain';
+      case WeatherCondition.LIGHTNING:
+        return 'fx_lightning';
+    }
+    return '';
   }
 
   /**

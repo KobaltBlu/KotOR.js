@@ -656,7 +656,7 @@ export class ModuleEncounter extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnHeartbeat) ).setValue(this.scripts[ModuleObjectScript.EncounterOnHeartbeat]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.EncounterOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.EncounterOnUserDefined]?.name || '');
 
-    gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'VarTable') );
+    this.writeNamedVarTable(gff.RootNode);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);

@@ -252,11 +252,10 @@ export class NWScriptControlStructureBuilder {
         // Recursively find nested structures within the if/else
         this.findNestedStructures(ifElse, 0);
         this.structures.push(ifElse);
-        // Only mark header and exit as processed - body blocks may contain nested structures
+        // Only mark header as processed. Do NOT mark exitBlock — the merge after
+        // if/else (e.g. SetLocalBoolean after GiveXP OR ladders) must remain
+        // scannable as a sibling in the procedure sequence.
         this.processedBlocks.add(ifElse.headerBlock);
-        if (ifElse.exitBlock) {
-          this.processedBlocks.add(ifElse.exitBlock);
-        }
         continue;
       }
     }

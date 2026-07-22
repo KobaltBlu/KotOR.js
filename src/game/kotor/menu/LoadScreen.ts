@@ -96,12 +96,15 @@ export class LoadScreen extends GameMenu {
 
   /**
    * Retail CClientExoAppInternal::GetNextLoadScreenHintSTRREF GamePlayHint path.
+   * Advances PartyManager.GameplayHint so NFO GAMEPLAYHINT persists across saves.
    */
   protected getNextGameplayHintStrRef(): number {
     const table = GameState.TwoDAManager.datatables.get('loadscreenhints');
     if(!table || table.RowCount <= 0) return 0;
 
     const rowCount = table.RowCount;
+    // Seed from PartyManager (retail client hint counter)
+    this.gameplayHintIndex = (GameState.PartyManager.GameplayHint | 0) % rowCount;
     let index = this.gameplayHintIndex % rowCount;
     let row = table.getRowByIndex(index);
     let strRef = TwoDAObject.normalizeValue(
@@ -125,7 +128,29 @@ export class LoadScreen extends GameMenu {
         this.gameplayHintIndex = 0;
       }
     }
+    GameState.PartyManager.GameplayHint = this.gameplayHintIndex | 0;
     return strRef;
+  }
+
+  /**
+   * Retail story-hint counter path (NFO STORYHINT / STORYHINT0).
+   * Advances PartyManager.StoryHint even when UI currently shows GamePlayHint text.
+   */
+  protected advanceStoryHintIndex(){
+    const table = GameState.TwoDAManager.datatables.get('loadscreenhints');
+    const rowCount = table?.RowCount || 0;
+    if(rowCount <= 0){
+      GameState.PartyManager.StoryHint = ((GameState.PartyManager.StoryHint | 0) + 1) & 0xFF;
+    }else{
+      this.storyHintIndex = (GameState.PartyManager.StoryHint | 0) % rowCount;
+      this.storyHintIndex = (this.storyHintIndex + 1) % rowCount;
+      GameState.PartyManager.StoryHint = this.storyHintIndex | 0;
+    }
+    // TSL NFO STORYHINT0..9 — keep slot 0 as the rotating story counter
+    if(!GameState.PartyManager.StoryHints || GameState.PartyManager.StoryHints.length < 10){
+      GameState.PartyManager.StoryHints = [0,0,0,0,0,0,0,0,0,0];
+    }
+    GameState.PartyManager.StoryHints[0] = GameState.PartyManager.StoryHint | 0;
   }
 
   showRandomHint() {
@@ -135,6 +160,7 @@ export class LoadScreen extends GameMenu {
       || ''
     );
 
+    this.advanceStoryHintIndex();
     const strRef = this.getNextGameplayHintStrRef();
     const text = strRef
       ? (GameState.TLKManager.GetStringById(strRef)?.Value

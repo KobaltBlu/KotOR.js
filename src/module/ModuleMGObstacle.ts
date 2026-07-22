@@ -37,6 +37,11 @@ export class ModuleMGObstacle extends ModuleObject {
   lastHPChange: number = 0;
   models: OdysseyModel3D[] = [];
   animationManagers: OdysseyModelAnimationManager[] = [];
+  /** Retail OnAnimKeyEvent custom_* → OnAnimEvent (obstacles have no track loop). */
+  private animPlayEventHandler = (e: { event?: string; target?: { name?: string } }) => {
+    this.handleAnimPlayEvent(e);
+  };
+  private animPlayEventTargets: Array<{ target: THREE.Object3D; handler: typeof this.animPlayEventHandler }> = [];
 
   constructor(template: GFFObject, layout: ILayoutObstacle){
     super(template);
@@ -74,6 +79,9 @@ export class ModuleMGObstacle extends ModuleObject {
       this.models[i]?.update?.(delta);
     }
 
+    if(GameState.module){
+      this.triggerHeartbeat();
+    }
   }
 
   updatePaused(delta: number = 0){
@@ -150,6 +158,7 @@ export class ModuleMGObstacle extends ModuleObject {
       this.models.push(model);
       this.container.add(model);
       GameState.scene?.add?.(this.container);
+      this.bindAnimPlayEvent(model);
 
       const ready = model.odysseyAnimationMap?.get?.('ready');
       if(ready){
@@ -158,6 +167,35 @@ export class ModuleMGObstacle extends ModuleObject {
     }catch(e){
       console.warn(`ModuleMGObstacle.loadModel: failed to load [${resref}]`, e);
     }
+  }
+
+  /**
+   * Retail OnAnimKeyEvent custom_* path — record suffix for SWMG_GetLastEvent, run OnAnimEvent.
+   */
+  handleAnimPlayEvent(e: { event?: string; target?: { name?: string } }){
+    const raw = String(e?.event ?? '');
+    if(!raw){ return; }
+    if(!raw.toLowerCase().startsWith('custom_')){ return; }
+    const modelName = e?.target?.name || this.models?.[0]?.name || this.name || '';
+    GameState.module?.area?.miniGame?.recordAnimEvent?.(raw.substring(7), modelName);
+    this.onAnimEvent();
+  }
+
+  bindAnimPlayEvent(target: THREE.Object3D | undefined | null){
+    if(!target || typeof (target as any).addEventListener !== 'function'){ return; }
+    for(let i = 0; i < this.animPlayEventTargets.length; i++){
+      if(this.animPlayEventTargets[i].target === target){ return; }
+    }
+    (target as any).addEventListener('playEvent', this.animPlayEventHandler);
+    this.animPlayEventTargets.push({ target, handler: this.animPlayEventHandler });
+  }
+
+  unbindAnimPlayEvents(){
+    for(let i = 0; i < this.animPlayEventTargets.length; i++){
+      const { target, handler } = this.animPlayEventTargets[i];
+      (target as any).removeEventListener?.('playEvent', handler);
+    }
+    this.animPlayEventTargets.length = 0;
   }
 
   /**
@@ -270,6 +308,7 @@ export class ModuleMGObstacle extends ModuleObject {
 
   /** Tear down for DestroyMiniGameObject / area dispose. */
   dispose(){
+    this.unbindAnimPlayEvents();
     MiniGameObjectArray.unregister(this);
     for(let i = 0; i < this.models.length; i++){
       const model = this.models[i];
