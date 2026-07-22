@@ -50,6 +50,11 @@ export class ShaderOdysseyModel extends Shader {
       uniform float waterAlpha;
     #endif
 
+    #ifdef USE_DIRT
+      uniform sampler2D dirtMap;
+      varying vec2 vDirtUv;
+    #endif
+
     #include <common>
     #include <packing>
     #include <dithering_pars_fragment>
@@ -165,8 +170,16 @@ export class ShaderOdysseyModel extends Shader {
 
       vec3 outgoingLight = directDiffuse + indirectDiffuse + directSpecular + totalEmissiveRadiance;
 
+      // Retail PartTriMesh::Mat @ 00473900 — SelfIllumColor → GL_EMISSION (additive).
+      // FFP then modulates by texture: emission * albedo ≈ fullbright textured at 1,1,1.
+      #ifndef IGNORE_LIGHTING
+        #ifdef SELFILLUMCOLOR
+          outgoingLight += selfIllumColor * materialDiffuseColor;
+        #endif
+      #endif
+
       #ifdef IGNORE_LIGHTING
-        // Unlit / self-illum meshes: albedo (+ self-illum) only.
+        // Unlit meshes: albedo (+ self-illum) only.
         // Lightmapped rooms keep the baked USE_LIGHTMAP result above.
         #ifndef USE_LIGHTMAP
           outgoingLight = diffuseColor.rgb + totalEmissiveRadiance;
@@ -211,6 +224,12 @@ export class ShaderOdysseyModel extends Shader {
         #elif defined( ENVMAP_BLENDING_ADD )
           outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a);
         #endif
+      #endif
+
+      // TSL dirt overlay — blend dirtytex over lit albedo using dirt alpha.
+      #ifdef USE_DIRT
+        vec4 dirtSample = texture2D( dirtMap, vDirtUv );
+        outgoingLight = mix( outgoingLight, dirtSample.rgb, dirtSample.a );
       #endif
 
       #ifdef SABER
@@ -274,6 +293,13 @@ export class ShaderOdysseyModel extends Shader {
       uniform float windDanglyElapsed;
       uniform float danglyWindLevel;
     #endif
+
+    #ifdef USE_DIRT
+      uniform float dirtWorldspace;
+      uniform float dirtScale;
+      varying vec2 vDirtUv;
+    #endif
+
     #include <uv_pars_vertex>
     #include <uv2_pars_vertex>
     #include <displacementmap_pars_vertex>
@@ -373,6 +399,20 @@ export class ShaderOdysseyModel extends Shader {
       #include <clipping_planes_vertex>
       vViewPosition = - mvPosition.xyz;
       #include <worldpos_vertex>
+
+      #ifdef USE_DIRT
+        if ( dirtWorldspace > 0.5 ) {
+          vec4 dirtWorld = modelMatrix * vec4( transformed, 1.0 );
+          vDirtUv = dirtWorld.xz * dirtScale;
+        } else {
+          #if defined( USE_UV )
+            vDirtUv = vUv;
+          #else
+            vDirtUv = vec2( 0.0 );
+          #endif
+        }
+      #endif
+
       #include <envmap_vertex>
       #include <fog_vertex>
     }
@@ -392,6 +432,9 @@ export class ShaderOdysseyModel extends Shader {
       { danglyDisplacement: { value: 0 } },
       { danglyTightness: { value: 0 } },
       { danglyPeriod: { value: 0 } },
+      { dirtMap: { value: null } },
+      { dirtWorldspace: { value: 1 } },
+      { dirtScale: { value: 0.1 } },
     ];
   }
 

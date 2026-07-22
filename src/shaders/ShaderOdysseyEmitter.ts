@@ -491,6 +491,12 @@ export class ShaderOdysseyEmitter extends Shader {
         finalColor *= tintColor;
       #endif
 
+      #ifdef PUNCH_THROUGH
+        // Retail RenderStandard Punch-Through: glEnable(ALPHA_TEST).
+        // Material.alphaTest is unused without alphatest_fragment — discard here.
+        if ( finalAlpha < 0.5 ) discard;
+      #endif
+
       gl_FragColor = vec4( finalColor, finalAlpha);
 
       ${THREE.ShaderChunk[ "logdepthbuf_fragment" ]}

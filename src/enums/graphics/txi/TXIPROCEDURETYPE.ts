@@ -13,5 +13,11 @@ export enum TXIPROCEDURETYPE {
   'CYCLE'= 1,
   'WATER'= 2,
   'RANDOM'= 3,
-  'RINGTEXDISTORT'= 4
+  'RINGTEXDISTORT'= 4,
+  /** TSL DirtyTextureController layer 0 → dirtytex */
+  'DIRTY'= 5,
+  /** TSL DirtyTextureController layer 1 → dirtytex2 */
+  'DIRTY2'= 6,
+  /** TSL DirtyTextureController layer 2 → dirtytex3 */
+  'DIRTY3'= 7,
 };

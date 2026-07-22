@@ -500,6 +500,21 @@ export class KeyMapper {
       }
     }
 
+    // Retail swoop/turret defaults when keymap.2da/INI left MG actions unbound.
+    const bindIfEmpty = (action: KeyMapAction, key: KeyInput | undefined) => {
+      if(!key){ return; }
+      const map = KeyMapper.Actions[action];
+      if(map && !map.keyboardInput){
+        map.keyboardInput = key;
+      }
+    };
+    bindIfEmpty(KeyMapAction.MGActionUp, keyboard.action.KeyW);
+    bindIfEmpty(KeyMapAction.MGActionDown, keyboard.action.KeyS);
+    bindIfEmpty(KeyMapAction.MGActionLeft, keyboard.action.KeyA);
+    bindIfEmpty(KeyMapAction.MGActionRight, keyboard.action.KeyD);
+    bindIfEmpty(KeyMapAction.MGshoot, keyboard.action.Space);
+    bindIfEmpty(KeyMapAction.PauseMinigame, keyboard.action.Escape);
+
     //Movement
     /*KeyMapper.Actions[KeyMapAction.ActionUp].keyboardInput = keyboard.action.KeyW;
     KeyMapper.Actions[KeyMapAction.ActionDown].keyboardInput = keyboard.action.KeyS;
@@ -607,6 +622,19 @@ export class KeyMapper {
     this.Actions[KeyMapAction.ActionRight].gamepadInput = gamepad.button_d_right;
     this.Actions[KeyMapAction.CancleCombat].gamepadInput = gamepad.button_b;
     this.Actions[KeyMapAction.AlternateActions].gamepadInput = gamepad.button_x;
+
+    // Minigame — d-pad L/R when stick unused; stick still drives UpdateAxis directly.
+    const bindPadIfEmpty = (action: KeyMapAction, input: AnalogInput | any) => {
+      const map = this.Actions[action];
+      if(map && !map.gamepadInput){
+        map.gamepadInput = input;
+      }
+    };
+    bindPadIfEmpty(KeyMapAction.MGActionLeft, gamepad.button_d_left);
+    bindPadIfEmpty(KeyMapAction.MGActionRight, gamepad.button_d_right);
+    bindPadIfEmpty(KeyMapAction.MGActionUp, gamepad.button_d_up);
+    bindPadIfEmpty(KeyMapAction.MGActionDown, gamepad.button_d_down);
+    bindPadIfEmpty(KeyMapAction.MGshoot, gamepad.button_a);
     
     //GUI
     this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;

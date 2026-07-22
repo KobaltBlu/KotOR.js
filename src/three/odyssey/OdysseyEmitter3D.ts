@@ -9,6 +9,7 @@ import {
   ODYSSEY_AREA_WIND_DIRECTION,
   resolveDanglyWindPower,
 } from "@/three/odyssey/windPowerContext";
+import { FORCE_DISTORTION_STENCIL_BIT } from "@/shaders/pass/ForceDistortionPass";
 
 /**
  * OdysseyEmitter3D class.
@@ -492,6 +493,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       if(this.node.renderMode !== 'Linked'){
         this.material.defines.CPU_PHYSICS = '';
       }
+      // Punch-Through: alpha-test discard (RenderStandard enables ALPHA_TEST).
+      // Required for force-distortion stencil masks to match Fx_distortion alpha.
+      if(this.node.blendMode === 'Punch-Through'){
+        this.material.defines.PUNCH_THROUGH = '';
+      }
       this.material.needsUpdate = true;
 
       this._birthTimer = this.birthRate > 0 ? 1/this.birthRate : 1;
@@ -941,6 +947,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     // Soft particles: bind scene depth when DEPTH_TEXTURE flag is set
     this.updateDepthTextureUniforms();
+
+    // Force distortion: stencil mask when parent Gob is TILE / distortion-active
+    this.updateForceDistortionStencil();
 
     let updatePositions = false;
     let updateVelocity = false;
@@ -1435,14 +1444,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     this.getWorldPosition(OdysseyEmitter3D._v3A);
     let refZ = OdysseyEmitter3D._v3A.z;
-    let obj: THREE.Object3D | null = this.parent;
-    while(obj){
-      if((obj as any).type === 'OdysseyModel'){
-        obj.getWorldPosition(OdysseyEmitter3D._v3B);
-        refZ = OdysseyEmitter3D._v3B.z;
-        break;
-      }
-      obj = obj.parent;
+    const owner = this.getOwnerModel();
+    if(owner){
+      owner.getWorldPosition(OdysseyEmitter3D._v3B);
+      refZ = OdysseyEmitter3D._v3B.z;
     }
     // Retail: emitterFadeHeight < field73_0x16c − nodeAbsZ
     if(OdysseyEmitter3D._v3A.z - refZ > EMITTER_FADE_HEIGHT){
@@ -1477,6 +1482,64 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       if(this.context){
         this.context.softDepthNeeded = true;
       }
+    }
+  }
+
+  /**
+   * Walk to owning OdysseyModel3D (Gob). Used for alpha fade and force distortion.
+   */
+  private getOwnerModel(): any {
+    let obj: THREE.Object3D | null = this.parent;
+    while(obj){
+      if((obj as any).type === 'OdysseyModel'){
+        return obj;
+      }
+      obj = obj.parent;
+    }
+    return null;
+  }
+
+  /**
+   * PartEmitter::RenderFunc @ 0049b680 — when parent Gob is distortion-active:
+   * colorMask(0) + stencil REPLACE during the scene pass. Stencil uses bit
+   * {@link FORCE_DISTORTION_STENCIL_BIT} so shadow-disk bits 0–6 stay intact.
+   * Sets forceDistortionNeeded for the FB warp pass.
+   */
+  private updateForceDistortionStencil(): void {
+    if(!this.material) return;
+
+    const owner = this.getOwnerModel();
+    const active = !!(owner && typeof owner.isForceDistortionActive === 'function'
+      && owner.isForceDistortionActive()
+      && this.visible
+      && owner.visible);
+
+    if(active){
+      GameState.forceDistortionNeeded = true;
+      if(this.context){
+        (this.context as any).forceDistortionNeeded = true;
+      }
+      // Retail colorMask(0) — never draw Fx_distortion as color
+      this.material.colorWrite = false;
+      this.material.depthWrite = false;
+      this.material.stencilWrite = true;
+      this.material.stencilWriteMask = FORCE_DISTORTION_STENCIL_BIT;
+      this.material.stencilFuncMask = 0xff;
+      this.material.stencilFunc = THREE.AlwaysStencilFunc;
+      this.material.stencilRef = FORCE_DISTORTION_STENCIL_BIT;
+      this.material.stencilFail = THREE.KeepStencilOp;
+      this.material.stencilZFail = THREE.KeepStencilOp;
+      this.material.stencilZPass = THREE.ReplaceStencilOp;
+    }else{
+      this.material.colorWrite = true;
+      this.material.stencilWrite = false;
+      this.material.stencilWriteMask = 0xff;
+      this.material.stencilFuncMask = 0xff;
+      this.material.stencilFunc = THREE.AlwaysStencilFunc;
+      this.material.stencilRef = 0;
+      this.material.stencilFail = THREE.KeepStencilOp;
+      this.material.stencilZFail = THREE.KeepStencilOp;
+      this.material.stencilZPass = THREE.KeepStencilOp;
     }
   }
 

@@ -66,6 +66,10 @@ export class ModuleMGEnemy extends ModuleObject {
   running: boolean = false;
   /** True when track model was created for this follower. */
   ownsTrack: boolean = false;
+  /**
+   * Retail ForceSetTrack 3rd arg — AddEnemy always passes 0.
+   */
+  trackAttachType: number = 0;
   /** Retail PlayAnimation("track", speed * 0.01). */
   trackAnimRate: number = 0;
   trackName: any;
@@ -115,7 +119,7 @@ export class ModuleMGEnemy extends ModuleObject {
     MiniGameObjectArray.register(this);
   }
 
-  setTrack(model: THREE.Object3D = new THREE.Object3D(), ownsTrack: boolean = false){
+  setTrack(model: THREE.Object3D = new THREE.Object3D(), ownsTrack: boolean = false, attachType: number = 0){
     if(this.track && this.track !== model){
       this.unbindAnimPlayEvent(this.track);
       if(this.ownsTrack){
@@ -125,6 +129,7 @@ export class ModuleMGEnemy extends ModuleObject {
     }
 
     this.ownsTrack = ownsTrack;
+    this.trackAttachType = attachType;
     this.track = model;
     this.running = false;
     this.container.removeFromParent();
@@ -222,7 +227,8 @@ export class ModuleMGEnemy extends ModuleObject {
     if(this.track instanceof OdysseyModel3D){
       if(this.alive && this.running){
         this.ensureTrackAnimation();
-        const rate = this.trackAnimRate > 0 ? this.trackAnimRate : 1;
+        // Retail SetSpeed/Go: rate = speed*0.01 — never fall back to 1 when speed is 0.
+        const rate = this.trackAnimRate;
         this.track.update(delta * rate);
       }else if(!this.alive && this.track.animationManager?.currentAnimation){
         this.track.stopAnimation();
@@ -253,8 +259,13 @@ export class ModuleMGEnemy extends ModuleObject {
       }
     }
 
-    if(GameState.module){
-      this.triggerHeartbeat();
+    if(this._heartbeatTimeout <= 0){
+      if(GameState.module){
+        this.triggerHeartbeat();
+      }
+      this._heartbeatTimeout = 3000;
+    }else{
+      this._heartbeatTimeout -= 1000 * delta;
     }
   }
 
@@ -462,6 +473,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   onCreate(){
+    this.spawned = true;
     const onCreate = this.scripts[ModuleObjectScript.MGEnemyOnCreate];
     if(!onCreate){ return; }
     onCreate.run(this, 0);
@@ -548,10 +560,19 @@ export class ModuleMGEnemy extends ModuleObject {
     this.models.splice(index, 1);
   }
 
-  /** Retail CSWTrackFollower::Stop @ 0066d440. */
+  /**
+   * Retail CSWTrackFollower::Stop @ 0066d440 —
+   * PlayAnimation("track", 0, flags) then clear running + engine Stop.
+   */
   stopTrack(){
     if(this.track instanceof OdysseyModel3D && this.running){
-      this.track.stopAnimation?.();
+      const want =
+        this.track.odysseyAnimationMap?.get?.('track') ||
+        this.track.odysseyAnimations?.[0];
+      if(want){
+        this.track.playAnimation(want, true);
+      }
+      this.trackAnimRate = 0;
     }
     this.running = false;
     this.trackFollowerAudio.stop();
@@ -559,6 +580,9 @@ export class ModuleMGEnemy extends ModuleObject {
 
   disposeFollower(){
     this.stopTrack();
+    if(this.track instanceof OdysseyModel3D){
+      this.track.stopAnimation?.();
+    }
     this.alive = false;
     this.unbindAnimPlayEvents();
     this.trackFollowerAudio.destroy?.();

@@ -8077,7 +8077,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VECTOR,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.miniGame.player.tunnel.pos;
+      const t = GameState.module.area.miniGame.player.tunnel.pos;
+      return new THREE.Vector3(t.x, t.y, t.z);
     }
   },
   647:{
@@ -8144,7 +8145,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [THREE.Vector3]){
-      GameState.module.area.miniGame.player.tunnel.pos = args[0];
+      const t = GameState.module.area.miniGame.player.tunnel.pos;
+      t.x = args[0].x;
+      t.y = args[0].y;
+      t.z = args[0].z;
     }
   },
   653:{
@@ -8153,7 +8157,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VECTOR,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.module.area.miniGame.player.tunnel.neg;
+      const t = GameState.module.area.miniGame.player.tunnel.neg;
+      return new THREE.Vector3(t.x, t.y, t.z);
     }
   },
   654:{
@@ -8162,7 +8167,10 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.VECTOR],
     action: function(this: NWScriptInstance, args: [THREE.Vector3]){
-      GameState.module.area.miniGame.player.tunnel.neg = args[0];
+      const t = GameState.module.area.miniGame.player.tunnel.neg;
+      t.x = args[0].x;
+      t.y = args[0].y;
+      t.z = args[0].z;
     }
   },
   655:{

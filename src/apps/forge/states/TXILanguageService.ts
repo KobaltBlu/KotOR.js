@@ -74,7 +74,7 @@ export class TXILanguageService {
           [/\/\/.*$/, "comment", "@pop"],
           [/#.*$/, "comment", "@pop"],
           [
-            /\b(cycle|water|random|ringtexdistort)\b/i,
+            /\b(cycle|water|random|ringtexdistort|dirty|dirty2|dirty3)\b/i,
             { token: "keyword.value", next: "@pop" },
           ],
           [/\b(punchthrough|additive)\b/i, { token: "keyword.value", next: "@pop" }],

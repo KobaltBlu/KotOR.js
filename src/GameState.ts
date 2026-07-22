@@ -33,7 +33,7 @@ import { ITextureLoaderQueuedRef } from "@/interface/loaders/ITextureLoaderQueue
 
 import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
-import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType } from "@/enums/engine";
+import { EngineState, EngineMode, GameEngineType, GameEngineEnv, EngineDebugType, RenderLayer } from "@/enums/engine";
 import { TextureType } from "@/enums/loaders/TextureType";
 
 import { EngineContext } from "@/engine/EngineContext";
@@ -41,6 +41,7 @@ import { EngineContext } from "@/engine/EngineContext";
 import { ConfigClient } from "@/utility/ConfigClient";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { OdysseyShaderPass } from "@/shaders/pass/OdysseyShaderPass";
+import { ForceDistortionPass } from "@/shaders/pass/ForceDistortionPass";
 import { ResourceLoader, TextureLoader } from "@/loaders";
 
 //THREE.js imports
@@ -243,6 +244,14 @@ export class GameState implements EngineContext {
    */
   static softDepthNeeded: boolean = false;
   private static _depthPrepassHidden: THREE.Object3D[] = [];
+  /**
+   * Set by force-distortion emitters (TILE / Gob.distortion) during tick when
+   * the area has rooms. Enables ForceDistortionPass for that frame
+   * (retail forcePushBucket nonempty → FrameBufferModifications bit 0x20).
+   */
+  static forceDistortionNeeded: boolean = false;
+  /** Global "distortiontex" from Scene ctor — heat-warp lookup. */
+  static forceDistortionTexture: THREE.Texture | null = null;
   static clock: THREE.Clock;
   static stats: Stats;
 
@@ -330,8 +339,11 @@ export class GameState implements EngineContext {
   static renderPass: RenderPass;
   static renderPassAA: SSAARenderPass;
   static odysseyShaderPass: OdysseyShaderPass;
+  static forceDistortionPass: ForceDistortionPass;
   static copyPass: ShaderPass;
   static renderPassGUI: RenderPass;
+  /** MG camera HUD after AfterimagePass — retail screen-stable gauges stay sharp. */
+  static renderPassMGHud: RenderPass;
   static bloomPass: BloomPass;
   static bokehPass: BokehPass;
   /** Retail AurEnable/DisableSpeedBlur + AurSetSpeedBlurRatio (SWMG_SetSpeedBlurEffect). */
@@ -353,7 +365,7 @@ export class GameState implements EngineContext {
   static preloadTextures: string[] = ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
     'fx_tex_09', 'fx_tex_10', 'fx_tex_11', 'fx_tex_12', 'fx_tex_13', 'fx_tex_14', 'fx_tex_15', 'fx_tex_16',
     'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
-    'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth'];
+    'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth', 'distortiontex'];
 
   static domElement: HTMLElement;
 
@@ -781,8 +793,30 @@ export class GameState implements EngineContext {
     GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
     GameState.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
     GameState.odysseyShaderPass = new OdysseyShaderPass();
+    GameState.forceDistortionPass = new ForceDistortionPass();
+    GameState.forceDistortionPass.enabled = false;
     GameState.copyPass = new ShaderPass(CopyShader);
     GameState.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
+    GameState.renderPassMGHud = new RenderPass(GameState.scene, GameState.currentCamera);
+    // Swap camera layer mask for HUD-only draw after AfterimagePass.
+    const mgHudRender = GameState.renderPassMGHud.render.bind(GameState.renderPassMGHud);
+    GameState.renderPassMGHud.render = (
+      renderer: THREE.WebGLRenderer,
+      writeBuffer: THREE.WebGLRenderTarget,
+      readBuffer: THREE.WebGLRenderTarget,
+      deltaTime: number,
+      maskActive: boolean
+    ) => {
+      const cam = GameState.renderPassMGHud.camera as THREE.Camera | undefined;
+      const prevMask = cam?.layers?.mask;
+      if(cam){
+        cam.layers.set(RenderLayer.MG_CAMERA_HUD);
+      }
+      mgHudRender(renderer, writeBuffer, readBuffer, deltaTime, maskActive);
+      if(cam && prevMask !== undefined){
+        cam.layers.mask = prevMask;
+      }
+    };
     
     GameState.bloomPass = new BloomPass(0.5);
     GameState.bokehPass = new BokehPass(GameState.scene, GameState.currentCamera, {
@@ -801,6 +835,7 @@ export class GameState implements EngineContext {
     GameState.renderPass.renderToScreen = false;
     GameState.copyPass.renderToScreen = false;
     GameState.renderPassGUI.renderToScreen = false;
+    GameState.renderPassMGHud.renderToScreen = false;
 
     GameState.renderPass.clear = true;
     GameState.bloomPass.clear = false;
@@ -809,12 +844,19 @@ export class GameState implements EngineContext {
     GameState.copyPass.clear = false;
     GameState.renderPassGUI.clear = false;
     GameState.renderPassGUI.clearDepth = true;
+    GameState.renderPassMGHud.clear = false;
+    GameState.renderPassMGHud.clearDepth = true;
+    GameState.renderPassMGHud.enabled = false;
 
     GameState.bokehPass.needsSwap = true;
     GameState.bokehPass.enabled = false;
 
     GameState.composer.addPass(GameState.renderPass);
     GameState.composer.addPass(GameState.speedBlurPass);
+    // MG camera HUD after accumulation blur (retail screen-stable gauges).
+    GameState.composer.addPass(GameState.renderPassMGHud);
+    // Retail FrameBufferModifications bit 0x20 — before GUI
+    GameState.composer.addPass(GameState.forceDistortionPass);
     // GameState.composer.addPass(GameState.bokehPass);
     // GameState.composer.addPass(GameState.renderPassAA);
     // GameState.composer.addPass(GameState.odysseyShaderPass);
@@ -829,6 +871,7 @@ export class GameState implements EngineContext {
     GameState.renderPassGUI.clear = false;
     GameState.renderPass.needsSwap = false;
     GameState.renderPassGUI.needsSwap = false;
+    GameState.renderPassMGHud.needsSwap = false;
 
     /**
      * Initialize the game controls
@@ -937,6 +980,7 @@ export class GameState implements EngineContext {
         undefined,
         TextureType.TEXTURE
       );
+      void GameState.ensureForceDistortionTexture();
 
       if(GameState.GameKey == GameEngineType.KOTOR){
         GameState.VideoManager.queueMovie('leclogo', true);
@@ -1683,8 +1727,35 @@ export class GameState implements EngineContext {
     GameState.renderPass.camera = GameState.currentCamera;
     GameState.renderPassAA.camera = GameState.currentCamera;
     GameState.bokehPass.camera = GameState.currentCamera;
+    if(GameState.renderPassMGHud){
+      GameState.renderPassMGHud.camera = GameState.currentCamera;
+    }
 
     GameState.renderDepthPrepass();
+
+    // Retail doFrameBufferFX (INI "Graphics Options"."Frame Buffer") + nonempty
+    // forcePushBucket → RenderForceDistortion before GUI.
+    if(GameState.forceDistortionPass){
+      const needed = GameState.forceDistortionNeeded;
+      GameState.forceDistortionNeeded = false;
+      if(needed && !GameState.forceDistortionTexture){
+        // Sync fallback so the pass can run this frame; async upgrades to real asset
+        GameState.forceDistortionTexture = GameState.createFallbackDistortionTexture();
+        GameState.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
+        void GameState.ensureForceDistortionTexture();
+      }
+      // Retail ManageSceneBSP only fills forcePushBucket when rooms.size != 0.
+      const rooms = GameState.module?.area?.rooms;
+      const roomedOk = !GameState.module?.area || !!(rooms && rooms.length > 0);
+      GameState.forceDistortionPass.enabled =
+        needed &&
+        roomedOk &&
+        GameState.isFrameBufferEffectsEnabled() &&
+        !!GameState.forceDistortionTexture;
+      if(GameState.forceDistortionPass.enabled){
+        GameState.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
+      }
+    }
 
     // Orchestrate stencil-preserving clear for shadow disks:
     // 1) clear color/depth/stencil into the composer read buffer
@@ -1697,6 +1768,20 @@ export class GameState implements EngineContext {
     const prevTarget = renderer.getRenderTarget();
     const prevRenderPassClear = GameState.renderPass.clear;
     const stencilTarget = composer?.readBuffer;
+
+    const cam = GameState.currentCamera;
+    const prevCamLayers = cam?.layers?.mask;
+    const mgCamera = GameState.module?.area?.miniGame?.player?.camera;
+    const hudPass = GameState.renderPassMGHud;
+    if(hudPass){
+      hudPass.enabled = !!mgCamera;
+    }
+    if(cam){
+      // World pass: exclude MG camera HUD (drawn after AfterimagePass).
+      cam.layers.enable(RenderLayer.DEFAULT);
+      cam.layers.disable(RenderLayer.MG_CAMERA_HUD);
+    }
+
     if(GameState.shadowBlobManager && GameState.currentCamera && stencilTarget){
       renderer.setRenderTarget(stencilTarget);
       renderer.clear(true, true, true);
@@ -1710,8 +1795,77 @@ export class GameState implements EngineContext {
       GameState.renderPass.clear = false;
     }
     composer.render(delta);
+    if(cam && prevCamLayers !== undefined){
+      cam.layers.mask = prevCamLayers;
+    }
     GameState.renderPass.clear = prevRenderPassClear;
     renderer.setRenderTarget(prevTarget);
+  }
+
+  /**
+   * Retail SetFrameBuffer / AurEnableFrameBufferEffects — INI
+   * "Graphics Options"."Frame Buffer" (defaults to "1" in swkotor*-config).
+   */
+  static isFrameBufferEffectsEnabled(): boolean {
+    if(!GameState.iniConfig) return true;
+    const raw = GameState.iniConfig.getProperty('Graphics Options.Frame Buffer');
+    if(raw === undefined || raw === null || raw === '') return true;
+    return String(raw) !== '0';
+  }
+
+  /**
+   * Load Scene ctor global distortiontex for RenderForceDistortion.
+   * Installs a procedural fallback immediately so the pass can run while
+   * the real asset loads asynchronously.
+   */
+  static async ensureForceDistortionTexture(): Promise<void> {
+    if(GameState.forceDistortionTexture && !(GameState.forceDistortionTexture as any)._forceDistortionFallback){
+      return;
+    }
+    if(!GameState.forceDistortionTexture){
+      GameState.forceDistortionTexture = GameState.createFallbackDistortionTexture();
+      if(GameState.forceDistortionPass){
+        GameState.forceDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
+      }
+    }
+    try {
+      const tex = await TextureLoader.Load('distortiontex');
+      if(tex){
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        GameState.forceDistortionTexture = tex;
+        if(GameState.forceDistortionPass){
+          GameState.forceDistortionPass.setDistortionTexture(tex);
+        }
+      }
+    }catch(e){
+      console.warn('Failed to load distortiontex', e);
+    }
+  }
+
+  /** Procedural stand-in when distortiontex is absent from game files. */
+  static createFallbackDistortionTexture(): THREE.DataTexture {
+    const size = 64;
+    const data = new Uint8Array(size * size * 4);
+    for(let i = 0; i < size * size; i++){
+      // Centered near 0.5 so 2*(c-0.5)*scale yields small UV offsets
+      const r = 128 + ((Math.random() * 48) | 0) - 24;
+      const g = 128 + ((Math.random() * 48) | 0) - 24;
+      data[i * 4] = r;
+      data[i * 4 + 1] = g;
+      data[i * 4 + 2] = 128;
+      data[i * 4 + 3] = 255;
+    }
+    const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
+    tex.wrapS = THREE.RepeatWrapping;
+    tex.wrapT = THREE.RepeatWrapping;
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.needsUpdate = true;
+    (tex as any)._forceDistortionFallback = true;
+    return tex;
   }
 
   /**

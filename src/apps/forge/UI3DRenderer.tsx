@@ -6,6 +6,9 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { FirstPersonControls } from 'three/examples/jsm/controls/FirstPersonControls.js';
 import { TransformControls } from 'three/examples/jsm/controls/TransformControls';
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
+import { FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass';
+import { CopyShader } from 'three/examples/jsm/shaders/CopyShader';
+import { ForceDistortionPass } from '@/shaders/pass/ForceDistortionPass';
 import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 
@@ -136,6 +139,16 @@ export class UI3DRenderer extends EventListenerModel {
   /** Set by DEPTH_TEXTURE emitters; triggers a depth prepass before render. */
   softDepthNeeded: boolean = false;
   private _depthPrepassHidden: THREE.Object3D[] = [];
+  /**
+   * Set by TILE / Gob.distortion emitters during tick. Triggers force-distortion
+   * post-pass (retail RenderForceDistortion) after the scene color is drawn.
+   */
+  forceDistortionNeeded: boolean = false;
+  forceDistortionTexture: THREE.Texture | null = null;
+  private forceDistortionPass: ForceDistortionPass | null = null;
+  /** Scene color + stencil for force-distortion (Forge has no EffectComposer). */
+  private sceneTarget: THREE.WebGLRenderTarget | null = null;
+  private copyToScreenQuad: FullScreenQuad | null = null;
   raycaster: THREE.Raycaster = new THREE.Raycaster();
   orbitControls: OrbitControls;
 
@@ -1070,6 +1083,8 @@ export class UI3DRenderer extends EventListenerModel {
       // autoClear: false,
       depth: true,
       alpha: true,
+      // Stencil required for force-distortion emitter masks
+      stencil: true,
       logarithmicDepthBuffer: false,
       preserveDrawingBuffer: false,
     });
@@ -1078,6 +1093,68 @@ export class UI3DRenderer extends EventListenerModel {
       this.renderer.setClearColor(this.clearColor)
       this.renderer.autoClear = false;
       this.renderer.setSize( this.width, this.height );
+    }
+
+    if(!this.forceDistortionPass){
+      this.forceDistortionPass = new ForceDistortionPass();
+    }
+    if(!this.copyToScreenQuad){
+      const mat = new THREE.ShaderMaterial({
+        uniforms: THREE.UniformsUtils.clone(CopyShader.uniforms),
+        vertexShader: CopyShader.vertexShader,
+        fragmentShader: CopyShader.fragmentShader,
+        depthTest: false,
+        depthWrite: false,
+        blending: THREE.NoBlending,
+      });
+      this.copyToScreenQuad = new FullScreenQuad(mat);
+    }
+    this.ensureSceneTarget();
+    void this.ensureForceDistortionTexture();
+  }
+
+  private ensureSceneTarget(){
+    const w = Math.max(1, this.width || 1);
+    const h = Math.max(1, this.height || 1);
+    if(
+      this.sceneTarget &&
+      this.sceneTarget.width === w &&
+      this.sceneTarget.height === h
+    ){
+      return;
+    }
+    if(this.sceneTarget){
+      this.sceneTarget.dispose();
+    }
+    this.sceneTarget = new THREE.WebGLRenderTarget(w, h, {
+      minFilter: THREE.LinearFilter,
+      magFilter: THREE.LinearFilter,
+      format: THREE.RGBAFormat,
+      depthBuffer: true,
+      stencilBuffer: true,
+    });
+  }
+
+  private async ensureForceDistortionTexture(){
+    if(this.forceDistortionTexture && !(this.forceDistortionTexture as any)._forceDistortionFallback){
+      return;
+    }
+    if(!this.forceDistortionTexture){
+      this.forceDistortionTexture = KotOR.GameState.createFallbackDistortionTexture();
+      this.forceDistortionPass?.setDistortionTexture(this.forceDistortionTexture);
+    }
+    try {
+      const tex = await KotOR.TextureLoader.Load('distortiontex');
+      if(tex){
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        this.forceDistortionTexture = tex;
+        this.forceDistortionPass?.setDistortionTexture(tex);
+      }
+    }catch(e){
+      console.warn('UI3DRenderer: failed to load distortiontex', e);
     }
   }
 
@@ -1101,6 +1178,7 @@ export class UI3DRenderer extends EventListenerModel {
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
     this.depthTarget.setSize( this.width, this.height );
+    this.ensureSceneTarget();
 
     this.guiCamera.left = this.width / -2;
     this.guiCamera.right = this.width / 2;
@@ -1217,8 +1295,34 @@ export class UI3DRenderer extends EventListenerModel {
       // Soft-particle depth (DEPTH_TEXTURE emitters) before color pass
       this.renderDepthPrepass();
 
-      // Render main scene
-      this.renderer.render( this.scene, this.guiMode ? this.guiCamera : this.currentCamera );
+      const cam = this.guiMode ? this.guiCamera : this.currentCamera;
+      const forceNeeded = this.forceDistortionNeeded;
+      this.forceDistortionNeeded = false;
+
+      // Force distortion (TILE / Gob.distortion): scene→stencil RT, warp, blit
+      if(forceNeeded && this.forceDistortionPass && this.sceneTarget && cam){
+        if(!this.forceDistortionTexture){
+          this.forceDistortionTexture = KotOR.GameState.createFallbackDistortionTexture();
+          this.forceDistortionPass.setDistortionTexture(this.forceDistortionTexture);
+          void this.ensureForceDistortionTexture();
+        }
+        this.ensureSceneTarget();
+        const rt = this.sceneTarget!;
+        this.renderer.setRenderTarget(rt);
+        this.renderer.clear(true, true, true);
+        this.renderer.render(this.scene, cam);
+
+        this.forceDistortionPass.setDistortionTexture(this.forceDistortionTexture);
+        this.forceDistortionPass.render(this.renderer, rt, rt);
+
+        this.renderer.setRenderTarget(null);
+        const copyMat = this.copyToScreenQuad!.material as THREE.ShaderMaterial;
+        copyMat.uniforms.tDiffuse.value = rt.texture;
+        this.copyToScreenQuad!.render(this.renderer);
+      }else{
+        this.renderer.setRenderTarget(null);
+        this.renderer.render( this.scene, cam );
+      }
 
       // Render camera preview if enabled
       if(this.previewEnabled && this.previewCamera && this.canvas){
@@ -1309,6 +1413,20 @@ export class UI3DRenderer extends EventListenerModel {
 
     if(this.orbitControls){
       this.orbitControls.dispose();
+    }
+
+    if(this.forceDistortionPass){
+      this.forceDistortionPass.dispose();
+      this.forceDistortionPass = null;
+    }
+    if(this.copyToScreenQuad){
+      (this.copyToScreenQuad.material as THREE.Material).dispose();
+      this.copyToScreenQuad.dispose();
+      this.copyToScreenQuad = null;
+    }
+    if(this.sceneTarget){
+      this.sceneTarget.dispose();
+      this.sceneTarget = null;
     }
 
     if(this.camera){

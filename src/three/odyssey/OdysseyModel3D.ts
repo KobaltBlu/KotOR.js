@@ -13,6 +13,8 @@ import { IOdysseyModelHeader } from "@/interface/odyssey/IOdysseyModelHeader";
 import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
 import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import { TwoDAManager } from "@/managers/TwoDAManager";
+import { DirtyTextureManager } from "@/managers/DirtyTextureManager";
+import { WindManager } from "@/managers/WindManager";
 import { IOdysseyModelLoaderOptions } from "@/interface/odyssey";
 import { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
@@ -37,7 +39,6 @@ import { OdysseyObject3D } from "@/three/odyssey/OdysseyObject3D";
 import { OdysseyEmitter3D } from "@/three/odyssey/OdysseyEmitter3D";
 import { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 import { type IGameContext } from "@/interface/engine/IGameContext";
-import { WindManager } from "@/managers/WindManager";
 import { GameState } from "@/GameState";
 import { createNodeParseContext, type NodeParseContext } from "@/three/odyssey/OdysseyModel3DNodeParseContext";
 import { parseOdysseyNode } from "@/three/odyssey/OdysseyModel3DNodeParser";
@@ -146,6 +147,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
   bonesInitialized = false;
   Scale: number;
   modelHeader: IOdysseyModelHeader = {} as IOdysseyModelHeader;
+  /**
+   * Retail Gob.distortion (+0x17C). Set by Gob::EnableDistortion / VFX 0x708;
+   * cleared by DisableDistortion. Combined with TILE classification for
+   * forcePushBucket / emitter stencil mask (ManageSceneBSP / RenderFunc).
+   */
+  distortion: boolean = false;
   affectedByFog: boolean;
   options: any = {};
   oldAnim: OdysseyModelAnimation;
@@ -168,6 +175,20 @@ export class OdysseyModel3D extends OdysseyObject3D {
   hasCollision: boolean;
   animLoop: any;
   opacity: number = 1;
+
+  /**
+   * Retail force-distortion opt-in (ManageSceneBSP / PartEmitter::RenderFunc):
+   * gob.distortion != 0 OR ((classification >> 1) & 1) — i.e. OdysseyModelClass.TILE.
+   */
+  isForceDistortionActive(): boolean {
+    if(this.distortion) return true;
+    const cls = Number(
+      this.modelHeader?.classification ??
+      (this.sourceModel as any)?.modelHeader?.classification ??
+      0
+    );
+    return (cls & OdysseyModelClass.TILE) !== 0;
+  }
 
   setOpacity(opacity: number){
     this.opacity = opacity;
@@ -1615,6 +1636,31 @@ export class OdysseyModel3D extends OdysseyObject3D {
         material.transparent = true;
         if(odysseyNode.hideInHolograms){
           material.visible = false;
+        }
+      }
+
+      // TSL dirt overlay — retail PartTriMesh::Draw case 0x10.
+      if(odysseyNode.dirtEnabled && material instanceof THREE.ShaderMaterial){
+        const slot = Math.max(0, Math.min(2, ((odysseyNode.dirtTexture ?? 1) | 0) - 1));
+        const dirtMap = DirtyTextureManager.getTexture(slot);
+        if(dirtMap){
+          material.defines.USE_DIRT = "";
+          if(material.uniforms.dirtMap){
+            material.uniforms.dirtMap.value = dirtMap;
+          }else{
+            material.uniforms.dirtMap = { value: dirtMap };
+          }
+          if(material.uniforms.dirtWorldspace){
+            material.uniforms.dirtWorldspace.value = (odysseyNode.dirtCoordSpace ?? 1) !== 0 ? 1 : 0;
+          }else{
+            material.uniforms.dirtWorldspace = { value: (odysseyNode.dirtCoordSpace ?? 1) !== 0 ? 1 : 0 };
+          }
+          if(material.uniforms.dirtScale){
+            material.uniforms.dirtScale.value = 0.1;
+          }else{
+            material.uniforms.dirtScale = { value: 0.1 };
+          }
+          material.needsUpdate = true;
         }
       }
 

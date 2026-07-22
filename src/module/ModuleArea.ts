@@ -1,5 +1,6 @@
 import { GameState } from "@/GameState";
 import { WindManager } from "@/managers/WindManager";
+import { DirtyTextureManager } from "@/managers/DirtyTextureManager";
 import { GFFObject } from "@/resource/GFFObject";
 import type { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
@@ -33,6 +34,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { IAmbientSource } from "@/interface/area/IAmbientSource";
 import { IGrassProperties } from "@/interface/area/IGrassProperties";
+import { IAreaDirtLayer, IAreaDirtProperties } from "@/interface/area/IAreaDirtProperties";
 import { SpellCastInstance } from "@/combat/SpellCastInstance";
 import { CombatProjectile } from "@/combat/combat-projectile";
 import { TextSprite3D } from "@/engine/TextSprite3D";
@@ -247,6 +249,18 @@ export class ModuleArea extends ModuleObject {
     },
     quadSize: 0,
     textureName: ''
+  };
+
+  /**
+   * TSL ARE DirtyARGB/Size/Formula/Func One–Three.
+   * Formula values are stored after retail 0↔1 swap.
+   */
+  dirt: IAreaDirtProperties = {
+    layers: [
+      { argb: 0, size: 0, formula: 0, func: 0 },
+      { argb: 0, size: 0, formula: 0, func: 0 },
+      { argb: 0, size: 0, formula: 0, func: 0 },
+    ],
   };
 
   /**
@@ -485,6 +499,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     this.weather.destroy();
+    DirtyTextureManager.dispose();
   }
 
   update(delta: number = 0){
@@ -968,6 +983,35 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
+   * Read one TSL ARE dirt layer (One/Two/Three). Missing fields → zeros.
+   * Retail CSWSArea::LoadAreaHeader swaps DirtyFormula 0↔1 before storage.
+   */
+  readAreDirtLayer(suffix: 'One' | 'Two' | 'Three'): IAreaDirtLayer {
+    const readInt = (label: string): number | undefined => {
+      if(!this.are?.RootNode?.hasField(label)){
+        return undefined;
+      }
+      const field = this.are.getFieldByLabel(label);
+      return field ? (field.getValue() | 0) : undefined;
+    };
+    const authoredFormula = readInt(`DirtyFormula${suffix}`);
+    let formula = authoredFormula ?? 0;
+    if(authoredFormula !== undefined){
+      if(formula === 1){
+        formula = 0;
+      }else if(formula === 0){
+        formula = 1;
+      }
+    }
+    return {
+      argb: readInt(`DirtyARGB${suffix}`) ?? 0,
+      size: readInt(`DirtySize${suffix}`) ?? 0,
+      formula,
+      func: readInt(`DirtyFunc${suffix}`) ?? 0,
+    };
+  }
+
+  /**
    * Retail SetBeaming @ 0047147e — apply beamingProjectionAlpha to beaming meshes
    * (additive blend color alpha during dawn/dusk).
    */
@@ -1096,6 +1140,10 @@ export class ModuleArea extends ModuleObject {
     }
     if(GameState.player){
       dynamics.push(GameState.player);
+    }
+    // MG followers use container as `.model` (no materials) — bind child OdysseyModel3Ds.
+    if(this.miniGame){
+      this.miniGame.collectLightingModels(dynamics);
     }
     OdysseyLightingBinder.bindArea(lm, this.rooms, dynamics, camera);
   }
@@ -1480,6 +1528,15 @@ export class ModuleArea extends ModuleObject {
       },
       quadSize: this.are.getFieldByLabel('Grass_QuadSize').getValue(),
       textureName: this.are.getFieldByLabel('Grass_TexName').getValue()
+    };
+
+    // TSL dirt layers (DirtyARGB/Size/Formula/Func One–Three). Retail swaps formula 0↔1 on load.
+    this.dirt = {
+      layers: [
+        this.readAreDirtLayer('One'),
+        this.readAreDirtLayer('Two'),
+        this.readAreDirtLayer('Three'),
+      ],
     };
 
     this.id = this.are.getFieldByLabel('ID').getValue();
@@ -1997,6 +2054,9 @@ export class ModuleArea extends ModuleObject {
       }catch(e){
         console.error(e);
       }
+
+      // Retail Scene ctor loads dirtytex* before room models bind dirt overlays.
+      try { await DirtyTextureManager.loadForArea(this); } catch(e){ console.error(e); }
 
       try { await this.loadRooms(); } catch(e){ console.error(e); }
 

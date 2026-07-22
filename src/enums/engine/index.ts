@@ -12,6 +12,7 @@ export * from "@/enums/engine/MapNorthAxis";
 export * from "@/enums/engine/MiniGameType";
 export * from "@/enums/engine/PerceptionMask";
 export * from "@/enums/engine/PerceptionType";
+export * from "@/enums/engine/RenderLayer";
 export * from "@/enums/engine/ReputationConstant";
 export * from "@/enums/engine/TutorialMessage";
 export * from "@/enums/engine/TalentObjectType";

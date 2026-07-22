@@ -66,12 +66,12 @@ export class OdysseyModelNodeMesh extends OdysseyModelNode {
   flagShadow: boolean;
   beaming: boolean;
   flagRender: boolean;
-  dirtEnabled: number;
-  tslPadding1: number;
-  dirtTexture: number;
-  dirtCoordSpace: number;
-  hideInHolograms: number;
-  tslPadding2: number;
+  dirtEnabled: number = 0;
+  tslPadding1: number = 0;
+  dirtTexture: number = 1;
+  dirtCoordSpace: number = 1;
+  hideInHolograms: number = 0;
+  tslPadding2: number = 0;
   _unknown2: number;
   _totalArea: number;
   _unknown4: number;

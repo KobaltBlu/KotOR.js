@@ -11,6 +11,7 @@ import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 // import { NWScript } from "@/nwscript/NWScript";
 import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
 import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { RenderLayer } from "@/enums/engine/RenderLayer";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { MDLLoader } from "@/loaders";
 import type { ModuleRoom } from "@/module/ModuleRoom";
@@ -158,6 +159,11 @@ export class ModuleMGPlayer extends ModuleObject {
   running: boolean = false;
   /** True when `track` was created for this follower (must dispose with follower). */
   ownsTrack: boolean = false;
+  /**
+   * Retail ForceSetTrack 3rd arg / GetAttachType @ 00670c10 —
+   * swoop=1, turret=2, enemy=0. Used when attaching rotating models to modelhook.
+   */
+  trackAttachType: number = 0;
   /** Retail SetSpeed / Go — PlayAnimation("track", speed * 0.01). */
   trackAnimRate: number = 0;
   /**
@@ -246,7 +252,7 @@ export class ModuleMGPlayer extends ModuleObject {
     return this.max_hps;
   }
 
-  setTrack(model: THREE.Object3D = new OdysseyObject3D(), ownsTrack: boolean = false){
+  setTrack(model: THREE.Object3D = new OdysseyObject3D(), ownsTrack: boolean = false, attachType: number = 0){
     // Retail ForceSetTrack: destroy previous track Gob if replacing.
     if(this.track && this.track !== model){
       this.unbindAnimPlayEvent(this.track);
@@ -257,6 +263,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
 
     this.ownsTrack = ownsTrack;
+    this.trackAttachType = attachType;
     this.track = model;
     this.running = false;
     this.rotation.reorder('YZX');
@@ -313,8 +320,9 @@ export class ModuleMGPlayer extends ModuleObject {
 
   /**
    * Ensure "track" anim is playing.
-   * Retail Go also RegisterCallBack(OnReportKey) on the track Gob; JS synthesizes
-   * those reports from modelhook Position/Orientation key crossings (no Aurora CB).
+   * Retail Go / SetSpeed PlayAnimation("track", speed*0.01, flags) —
+   * looping==1 → 0x11, else 0x14 (both loop-style; JS uses loop=true).
+   * OnReportKey is synthesized from modelhook key crossings (no Aurora CB).
    */
   ensureTrackAnimation(){
     if(!(this.track instanceof OdysseyModel3D)){ return; }
@@ -379,10 +387,15 @@ export class ModuleMGPlayer extends ModuleObject {
     this.getHitModelWorld(this.hitModelSegFrom);
     this.hitModelSegReady = true;
 
-    //super.update(delta);
-    //Process the heartbeat timer
-    if(GameState.module){
-      this.triggerHeartbeat();
+    // Retail object heartbeat cadence (~3s); MG was calling every frame and
+    // never set spawned, so OnHeartbeat (tunnels/gear/timer) never ran.
+    if(this._heartbeatTimeout <= 0){
+      if(GameState.module){
+        this.triggerHeartbeat();
+      }
+      this._heartbeatTimeout = 3000;
+    }else{
+      this._heartbeatTimeout -= 1000 * delta;
     }
 
     this.sphere.radius = this.sphere_radius;
@@ -462,11 +475,26 @@ export class ModuleMGPlayer extends ModuleObject {
           this.forceVector.set(0, this.speed * delta, 0);
         }
 
-        // Retail MiniGame::Control → velocity delta (field49−field48) into lateral, then copy.
-        miniGame.commitPhysicsToPlayer(delta);
+        // Retail Control @ 0066d640 order: advance track → OnReportKey → DoInertia
+        // into field49.acceleration → offset += velocity delta → KeepInTunnel.
+        // Track Gob motion is Aurora "track" anim only — never translate the mesh.
+        if(this.track instanceof OdysseyModel3D){
+          const rate = this.running ? this.trackAnimRate : 0;
+          const animState = this.track.animationManager?.currentAnimationState;
+          this.inertiaAnimT0 = typeof animState?.lastTime === 'number'
+            ? animState.lastTime
+            : (typeof animState?.elapsed === 'number' ? Math.max(0, animState.elapsed - delta * rate) : 0);
+          this.track.update(delta * rate);
+          if(miniGame.useInertia && this.running){
+            this.emitInertiaKeysFromTrackAnim();
+            this.applyInertia(delta);
+          }
+        }else if(this.track){
+          this.track.updateMatrixWorld();
+        }
 
-        // Lateral into tunnel offset (independent of forward speed).
-        this.playerOffset.x += this.lateralForce * delta;
+        // Axis velocity delta → tunnel offset (not lateralForce*dt).
+        miniGame.commitPhysicsToPlayer(delta);
         this.updateBankAnimation(this.lateralForce, delta);
         this.lateralForce = 0;
 
@@ -476,44 +504,12 @@ export class ModuleMGPlayer extends ModuleObject {
         miniGame.jumpSpeed = jumpBefore - ModuleMiniGame.JUMP_GRAVITY * delta;
         this.jumpVelcolity = miniGame.jumpSpeed;
 
-        const offsetBeforeX = this.playerOffset.x;
         this.keepInTunnel(this.playerOffset);
-        // Retail: lateral tunnel clamp clears MiniGame axis/physics velocity.
-        if(Math.abs(offsetBeforeX - this.playerOffset.x) > 0.01){
-          this.lateralForce = 0;
-          miniGame.clearAxisPhysics();
-        }
-
         this.container.position.set(
           this.playerOffset.x,
           this.playerOffset.y,
           this.playerOffset.z
         );
-
-        // Retail Go/SetSpeed: "track" at speed*0.01 — rate 0 freezes (no :1 fallback while running).
-        if(this.track instanceof OdysseyModel3D){
-          const rate = this.running ? this.trackAnimRate : 0;
-          const animState = this.track.animationManager?.currentAnimationState;
-          this.inertiaAnimT0 = typeof animState?.lastTime === 'number'
-            ? animState.lastTime
-            : (typeof animState?.elapsed === 'number' ? Math.max(0, animState.elapsed - delta * rate) : 0);
-          this.track.update(delta * rate);
-          if(!this.running || !this.track.animationManager?.currentAnimation){
-            this.track.position.add(this.forceVector);
-          }
-          // OnReportKey stand-in: emit SWMGKeyInfo for keys crossed this frame.
-          if(miniGame.useInertia && this.running){
-            this.emitInertiaKeysFromTrackAnim();
-          }
-        }else if(this.track){
-          this.track.updateMatrixWorld();
-          this.track.position.add(this.forceVector);
-        }
-
-        // Retail UseInertia: merge OnReportKey buffers → DoInertia (Control @ 0066d640).
-        if(miniGame.useInertia && this.running){
-          this.applyInertia(delta);
-        }
 
         if(this.boostVelocity > 0){
           this.boostVelocity -= (2 * delta);
@@ -631,10 +627,20 @@ export class ModuleMGPlayer extends ModuleObject {
     this.trackFollowerAudio.go(this.position.x, this.position.y, this.position.z);
   }
 
-  /** Retail CSWTrackFollower::Stop @ 0066d440 — stop track anim, clear running, stop engine. */
+  /**
+   * Retail CSWTrackFollower::Stop @ 0066d440 —
+   * PlayAnimation("track", 0, flags) then clear running + engine Stop.
+   * (Not a hard stopAnimation — disposeFollower hard-stops after this.)
+   */
   stopTrack(){
     if(this.track instanceof OdysseyModel3D && this.running){
-      this.track.stopAnimation?.();
+      const want =
+        this.track.odysseyAnimationMap?.get?.('track') ||
+        this.track.odysseyAnimations?.[0];
+      if(want){
+        this.track.playAnimation(want, true);
+      }
+      this.trackAnimRate = 0;
     }
     this.running = false;
     this.trackFollowerAudio.stop();
@@ -646,6 +652,9 @@ export class ModuleMGPlayer extends ModuleObject {
    */
   disposeFollower(){
     this.stopTrack();
+    if(this.track instanceof OdysseyModel3D){
+      this.track.stopAnimation?.();
+    }
     this.alive = false;
     this.unbindAnimPlayEvents();
     this.trackFollowerAudio.destroy?.();
@@ -913,10 +922,13 @@ export class ModuleMGPlayer extends ModuleObject {
   /**
    * Retail UseInertia: Control @ 0066d640 merges OnReportKey buffers → DoInertia
    * per segment, then remainder to live modelhook; clears counts each frame.
+   * DoInertia results accumulate into MiniGame field49.acceleration (physicsNext),
+   * not playerOffset — offset only receives the axis velocity delta afterward.
    */
   applyInertia(delta: number){
+    const miniGame = GameState.module?.area?.miniGame;
     const hook = this.track?.getObjectByName?.('modelhook');
-    if(!hook || delta <= 0){ return; }
+    if(!miniGame || !hook || delta <= 0){ return; }
 
     this.track.updateMatrixWorld(true);
     hook.getWorldPosition(this.inertiaHookCurr);
@@ -930,6 +942,7 @@ export class ModuleMGPlayer extends ModuleObject {
       return;
     }
 
+    const accel = miniGame.physicsNext.acceleration;
     const merged = this.mergeInertiaKeyBuffers();
     this.inertiaSegPrev.copy(this.inertiaHookPrev);
     this.inertiaSegQuat.copy(this.inertiaHookQuat);
@@ -954,7 +967,7 @@ export class ModuleMGPlayer extends ModuleObject {
           dt,
           this.inertiaOut
         );
-        this.playerOffset.add(this.inertiaOut);
+        accel.add(this.inertiaOut);
         this.inertiaSegPrev.copy(this.inertiaSegCurr);
       }else{
         // Zero-dt / same-time key: update pose state only (Control coalesces).
@@ -966,7 +979,6 @@ export class ModuleMGPlayer extends ModuleObject {
 
     // Frame remainder → live modelhook (retail final DoInertia with leftover dt).
     const t1 = this.inertiaAnimT0 + delta;
-    // Prefer anim elapsed span when available.
     const trackModel = this.track as OdysseyModel3D;
     const elapsed = trackModel?.animationManager?.currentAnimationState?.elapsed;
     const tEnd = typeof elapsed === 'number' && elapsed > this.inertiaAnimT0 ? elapsed : t1;
@@ -979,7 +991,7 @@ export class ModuleMGPlayer extends ModuleObject {
         rem,
         this.inertiaOut
       );
-      this.playerOffset.add(this.inertiaOut);
+      accel.add(this.inertiaOut);
       this.inertiaSegPrev.copy(this.inertiaHookCurr);
       this.inertiaSegQuat.copy(this.inertiaHookQuat);
     }
@@ -987,13 +999,6 @@ export class ModuleMGPlayer extends ModuleObject {
     this.inertiaHookPrev.copy(this.inertiaSegPrev);
     this.inertiaHookCurr.copy(this.inertiaSegPrev);
     this.inertiaHookQuat.copy(this.inertiaSegQuat);
-
-    this.keepInTunnel(this.playerOffset);
-    this.container.position.set(
-      this.playerOffset.x,
-      this.playerOffset.y,
-      this.playerOffset.z
-    );
     this.clearInertiaKeyBuffers();
   }
 
@@ -1634,6 +1639,8 @@ export class ModuleMGPlayer extends ModuleObject {
               try{
                 this.camera = camera;
                 camera.name = this.cameraName;
+                // Draw after AfterimagePass so speed blur does not smear HUD.
+                camera.traverse((o) => { o.layers.set(RenderLayer.MG_CAMERA_HUD); });
                 this.container.add(camera);
               }catch(e){
                 console.error(e);
@@ -1641,8 +1648,9 @@ export class ModuleMGPlayer extends ModuleObject {
               resolve();
             },
             context: this.context,
-            castShadow: true,
-            receiveShadow: true
+            // Camera HUD meshes are authored shadow 0 — do not force lit-via-castShadow.
+            castShadow: false,
+            receiveShadow: false
           });
         }
       ).catch((e) => {
@@ -1771,6 +1779,8 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   onCreate(){
+    // Allow triggerHeartbeat (spawned gate in ModuleObject.triggerHeartbeat).
+    this.spawned = true;
     const instance = this.scripts[ModuleObjectScript.MGPlayerOnCreate];
     if(!instance){ return; }
     instance.run(this, 0);

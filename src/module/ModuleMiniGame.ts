@@ -13,6 +13,7 @@ import { AudioLoader } from "@/audio/AudioLoader";
 import { AmbientAudioEmitter } from "@/audio/AmbientAudioEmitter";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
+import type { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
 
 /** Retail CSWMGPhysicsState @ MiniGame field48/field49 (24 bytes: accel + vel). */
@@ -631,8 +632,10 @@ export class ModuleMiniGame {
   };
 
   /**
-   * Retail MiniGame::Control → MiniPlayer::Control —
+   * Retail MiniGame::Control → MiniPlayer::Control @ 0066d640 —
    * offset += (field49.velocity - field48.velocity), then copy next→prev.
+   * Call after UseInertia has added DoInertia into physicsNext.acceleration
+   * (inertia affects the *next* AxisAcceleration frame, not this delta).
    */
   commitPhysicsToPlayer(delta: number = 0){
     if(!this.player){ return; }
@@ -641,9 +644,12 @@ export class ModuleMiniGame {
     const dz = this.physicsNext.velocity.z - this.physicsPrev.velocity.z;
 
     if(this.type === MiniGameType.SWOOPRACE){
-      if(dx){
-        this.player.lateralForce += dx / Math.max(delta, 1e-6);
-      }
+      // Retail: Vector::+=(&offset, &local_44) with full XYZ velocity delta.
+      this.player.playerOffset.x += dx;
+      this.player.playerOffset.y += dy;
+      this.player.playerOffset.z += dz;
+      // Bank from axis input magnitude (not post-commit velocity rate).
+      this.player.lateralForce = this.lastAxisInput.x * this.lateralAccel;
     }else if(this.type === MiniGameType.TURRET){
       if(dx){ this.player.rotate('x', dx); }
       if(dy){ this.player.rotate('y', dy); }
@@ -654,7 +660,7 @@ export class ModuleMiniGame {
     this.physicsPrev.velocity.copy(this.physicsNext.velocity);
   }
 
-  /** Clear MiniGame axis/physics velocity on tunnel clamp (retail clears axis_velocity). */
+  /** Reset axis physics state (not called after KeepInTunnel — retail Control does not). */
   clearAxisPhysics(){
     this.physicsPrev.acceleration.set(0, 0, 0);
     this.physicsPrev.velocity.set(0, 0, 0);
@@ -711,10 +717,24 @@ export class ModuleMiniGame {
   }
 
   /**
+   * Retail GetAttachType @ 00670c10 — swoop=1, turret=2, else 0.
+   */
+  getAttachType(): number {
+    if(this.type === MiniGameType.SWOOPRACE){ return 1; }
+    if(this.type === MiniGameType.TURRET){ return 2; }
+    return 0;
+  }
+
+  /**
    * Retail ForceSetTrack path — NewCAurObject(trackResRef) per follower, not a shared LYT mesh.
+   * attachType: SetPlayer passes GetAttachType (1/2); AddEnemy passes 0.
    */
   async bindFollowerTrack(
-    follower: { trackName: any; setTrack: (model: any, owns?: boolean) => void },
+    follower: {
+      trackName: any;
+      setTrack: (model: any, owns?: boolean, attachType?: number) => void;
+    },
+    attachType: number = 0,
   ): Promise<void> {
     const proto = this.findTrackByName(follower.trackName);
     if(!proto){
@@ -723,7 +743,7 @@ export class ModuleMiniGame {
     }
     const model = await proto.createFollowerModel();
     GameState.group.creatures.add(model);
-    follower.setTrack(model, true);
+    follower.setTrack(model, true, attachType);
   }
 
   /**
@@ -849,7 +869,7 @@ export class ModuleMiniGame {
     if(!player.accel_lateral_secs && this.lateralAccel){
       player.accel_lateral_secs = this.lateralAccel;
     }
-    await this.bindFollowerTrack(player);
+    await this.bindFollowerTrack(player, this.getAttachType());
     player.getCurrentRoom();
   }
 
@@ -870,7 +890,7 @@ export class ModuleMiniGame {
       await enemy.load();
       await enemy.loadModel();
       await enemy.loadGunBanks();
-      await this.bindFollowerTrack(enemy);
+      await this.bindFollowerTrack(enemy, 0);
       enemy.computeBoundingBox();
       enemy.getCurrentRoom();
     }
@@ -894,6 +914,61 @@ export class ModuleMiniGame {
       const onCreate = enemy.scripts[ModuleObjectScript.MGEnemyOnCreate];
       if(!onCreate){ continue; }
       onCreate.run(enemy, 0);
+    }
+  }
+
+  /**
+   * Push MG OdysseyModel3Ds into the area lighting dynamics list.
+   * ModuleMG* `.model` is the container (no materials) — bind each child model/camera/gun.
+   */
+  collectLightingModels(
+    out: Array<{ model?: unknown; position?: THREE.Vector3 }>
+  ): void {
+    const pushModels = (
+      models: OdysseyModel3D[] | undefined,
+      position: THREE.Vector3
+    ) => {
+      if(!models){ return; }
+      for(let i = 0; i < models.length; i++){
+        const model = models[i];
+        if(model?.materials){
+          out.push({ model, position });
+        }
+      }
+    };
+
+    const pushGunBanks = (
+      gunBanks: { guns?: OdysseyModel3D[] }[] | undefined,
+      position: THREE.Vector3
+    ) => {
+      if(!gunBanks){ return; }
+      for(let i = 0; i < gunBanks.length; i++){
+        pushModels(gunBanks[i]?.guns, position);
+      }
+    };
+
+    const player = this.player;
+    if(player){
+      const pos = player.position;
+      pushModels(player.models, pos);
+      if(player.camera?.materials){
+        out.push({ model: player.camera, position: pos });
+      }
+      pushGunBanks(player.gunBanks, pos);
+    }
+
+    for(let i = 0; i < this.enemies.length; i++){
+      const enemy = this.enemies[i];
+      if(!enemy){ continue; }
+      const pos = enemy.position;
+      pushModels(enemy.models, pos);
+      pushGunBanks(enemy.gunBanks, pos);
+    }
+
+    for(let i = 0; i < this.obstacles.length; i++){
+      const obstacle = this.obstacles[i];
+      if(!obstacle){ continue; }
+      pushModels(obstacle.models, obstacle.position);
     }
   }
 

@@ -79,8 +79,13 @@ export class ModuleMGObstacle extends ModuleObject {
       this.models[i]?.update?.(delta);
     }
 
-    if(GameState.module){
-      this.triggerHeartbeat();
+    if(this._heartbeatTimeout <= 0){
+      if(GameState.module){
+        this.triggerHeartbeat();
+      }
+      this._heartbeatTimeout = 3000;
+    }else{
+      this._heartbeatTimeout -= 1000 * delta;
     }
   }
 
@@ -235,6 +240,7 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   onCreate(){
+    this.spawned = true;
     const onCreate = this.scripts[ModuleObjectScript.MGObstacleOnCreate];
     if(!onCreate){ return; }
     onCreate.run(this, 0);

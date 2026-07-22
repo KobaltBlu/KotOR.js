@@ -183,6 +183,18 @@ export class TXI {
             case 'ringtexdistort':
               this.procedureType = TXIPROCEDURETYPE.RINGTEXDISTORT;
             break;
+            case 'dirty':
+              this.isAnimated = false;
+              this.procedureType = TXIPROCEDURETYPE.DIRTY;
+            break;
+            case 'dirty2':
+              this.isAnimated = false;
+              this.procedureType = TXIPROCEDURETYPE.DIRTY2;
+            break;
+            case 'dirty3':
+              this.isAnimated = false;
+              this.procedureType = TXIPROCEDURETYPE.DIRTY3;
+            break;
           }
         break;
         case 'numx':
