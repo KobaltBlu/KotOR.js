@@ -29,6 +29,9 @@ import { ModuleMGTrack } from "@/module/ModuleMGTrack";
 * @memberof KotOR
 */
 export class ModuleMGEnemy extends ModuleObject {
+  /** Retail CSWTrackFollower ctor @ 0066dee0 — default track playback speed. */
+  static readonly DEFAULT_TRACK_SPEED = 100;
+
   gunBanks: ModuleMGGunBank[] = [];
   models: OdysseyModel3D[] = [];
   track: THREE.Object3D;
@@ -59,8 +62,9 @@ export class ModuleMGEnemy extends ModuleObject {
   cameraName: any;
   cameraRotate: any;
   max_hps: any;
-  maximum_speed: any;
-  minimum_speed: any;
+  /** Swoop accel ceiling when present in ARE; not the track playback speed. */
+  maximum_speed: number = 0;
+  minimum_speed: number = 0;
   num_loops: any;
   /** Retail CSWTrackFollower field9_0x88 bit0 — Go sets, Stop clears. */
   running: boolean = false;
@@ -70,6 +74,11 @@ export class ModuleMGEnemy extends ModuleObject {
    * Retail ForceSetTrack 3rd arg — AddEnemy always passes 0.
    */
   trackAttachType: number = 0;
+  /**
+   * Retail CSWTrackFollower ctor @ 0066dee0 — speed = 100.
+   * Go / SetSpeed play "track" at speed * 0.01.
+   */
+  speed: number = 100;
   /** Retail PlayAnimation("track", speed * 0.01). */
   trackAnimRate: number = 0;
   trackName: any;
@@ -149,7 +158,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   setFollowerSpeed(speed: number){
-    this.maximum_speed = speed;
+    this.speed = speed;
     this.trackAnimRate = Math.max(0, speed) * 0.01;
     if(this.running && this.track instanceof OdysseyModel3D){
       this.ensureTrackAnimation();
@@ -433,7 +442,7 @@ export class ModuleMGEnemy extends ModuleObject {
     if(lower === 'loop'){
       if(typeof this.num_loops === 'number' && this.num_loops !== -1){
         this.num_loops = this.num_loops - 1;
-        this.setFollowerSpeed(this.maximum_speed || 0);
+        this.setFollowerSpeed(this.speed);
       }
       this.onTrackLoop();
     }
@@ -490,8 +499,7 @@ export class ModuleMGEnemy extends ModuleObject {
       }
     }
 
-    const spd = this.maximum_speed || this.minimum_speed || 0;
-    this.setFollowerSpeed(typeof spd === 'number' ? spd : 0);
+    this.setFollowerSpeed(this.speed);
     this.ensureTrackAnimation();
     this.running = true;
     this.trackFollowerAudio.go(this.position.x, this.position.y, this.position.z);

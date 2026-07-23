@@ -203,7 +203,8 @@ export class ModuleMGPlayer extends ModuleObject {
 
     this.animationManagers = [];
 
-    this.speed = 0;
+    // Retail CSWTrackFollower ctor @ 0066dee0 — speed defaults to 100 (track rate = speed*0.01).
+    this.speed = 100;
     this.speed_min = 0;
     this.speed_max = 0;
     this.accel_secs = 0;
@@ -301,8 +302,14 @@ export class ModuleMGPlayer extends ModuleObject {
       console.error(e);
     }
 
-    this.playerOffset.set(0, 0, 0);
+    this.playerOffset.set(this.origin.x, this.origin.y, this.origin.z);
     this.container.position.set(0, 0, 0);
+    if(GameState.module?.area?.miniGame?.type === MiniGameType.TURRET){
+      // Start_Offset_* are degrees for type-2 aim; sync rotation.
+      this.applyTurretOffsetRotation();
+    }else{
+      this.container.position.set(this.playerOffset.x, this.playerOffset.y, this.playerOffset.z);
+    }
     this.inertiaReady = false;
     this.clearInertiaKeyBuffers();
     this.onCreateRun = false;
@@ -524,7 +531,17 @@ export class ModuleMGPlayer extends ModuleObject {
       } break;
       case MiniGameType.TURRET: {
         const miniGame = GameState.module.area.miniGame;
-        // Aim from UpdateAxis/UpdateMouse → commitPhysicsToPlayer (velocity delta → rotate).
+        // Retail: Aurora advances the track Gob; we must tick it (same rate as Go/SetSpeed).
+        if(this.track instanceof OdysseyModel3D){
+          if(this.running){
+            this.ensureTrackAnimation();
+          }
+          const rate = this.running ? this.trackAnimRate : 0;
+          this.track.update(delta * rate);
+        }else if(this.track){
+          this.track.updateMatrixWorld();
+        }
+        // Aim from UpdateAxis/UpdateMouse → commitPhysicsToPlayer (degree offset → rotation).
         miniGame.commitPhysicsToPlayer(delta);
         break;
       }
@@ -627,7 +644,7 @@ export class ModuleMGPlayer extends ModuleObject {
       }
     }
 
-    this.setFollowerSpeed(this.speed || this.speed_min || 0);
+    this.setFollowerSpeed(this.speed);
     this.ensureTrackAnimation();
     this.running = true;
     this.clearInertiaKeyBuffers();
@@ -1196,12 +1213,6 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail DoObstacleHitCheck @ 0066e6b0 —
-   * GetPart("hitbump") + HitCheckPart when Gob loaded; else proximity sphere.
-   * OnHitObstacle(player), set obstacle.last_follower_hit = player, OnHitFollower(obstacle).
-   * Latched once per obstacle (like enemy.collided).
-   */
-  /**
    * World position of primary follower model (or container) for HitCheckPart segments.
    */
   getHitModelWorld(out: THREE.Vector3): THREE.Vector3 {
@@ -1230,7 +1241,8 @@ export class ModuleMGPlayer extends ModuleObject {
 
   /**
    * Retail DoObstacleHitCheck @ 0066e6b0 —
-   * HitCheckPart(hitbump, follower model prev→curr) when obstacle models loaded.
+   * Requires obstacle Gob "hitbump" part + follower models.size != 0, then HitCheckPart.
+   * No proximity fallback (that falsely killed turret players with large Sphere_Radius).
    */
   tryHitObstacle(obstacle: ModuleMGObstacle){
     // Retail DoObstacleHitCheck does not gate on invulnerability — scripts do.
@@ -1256,23 +1268,6 @@ export class ModuleMGPlayer extends ModuleObject {
         break;
       }
     }
-
-    if(!hit){
-      // No hitbump part on any model — proximity stand-in.
-      let anyBump = false;
-      for(let i = 0; i < obstacle.models.length; i++){
-        const root = obstacle.models[i];
-        if(root?.nodes?.get?.('hitbump') || root?.getObjectByName?.('hitbump')){
-          anyBump = true;
-          break;
-        }
-      }
-      if(anyBump){ return; }
-      const obsPos = obstacle.layout?.position ?? obstacle.position;
-      if(!obsPos){ return; }
-      const radius = this.sphere_radius || 1;
-      hit = this.sphere.center.distanceToSquared(obsPos) <= (radius * 2) * (radius * 2);
-    }
     if(!hit){ return; }
 
     obstacle.hit = true;
@@ -1292,6 +1287,18 @@ export class ModuleMGPlayer extends ModuleObject {
       }
     }
     this.onFire();
+  }
+
+  /**
+   * Turret aim: playerOffset is degrees (retail ori controllers 0x3ea/0x3eb).
+   * Sync container.rotation (radians) from offset after KeepInTunnel.
+   */
+  applyTurretOffsetRotation(){
+    this.rotation.set(
+      THREE.MathUtils.degToRad(this.playerOffset.x),
+      THREE.MathUtils.degToRad(this.playerOffset.y),
+      THREE.MathUtils.degToRad(this.playerOffset.z)
+    );
   }
 
   rotate(axis = 'x', amount = 0){
@@ -1648,6 +1655,7 @@ export class ModuleMGPlayer extends ModuleObject {
   /**
    * Load Camera ResRef model. Resolves true on success.
    * Turret Load requires a successful camera (retail hard-fail).
+   * Parenting is deferred to setCameraHook (after ForceSetTrack).
    */
   loadCamera(): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
@@ -1665,7 +1673,6 @@ export class ModuleMGPlayer extends ModuleObject {
                 camera.name = this.cameraName;
                 // Draw after AfterimagePass so speed blur does not smear HUD.
                 camera.traverse((o) => { o.layers.set(RenderLayer.MG_CAMERA_HUD); });
-                this.container.add(camera);
                 resolve(true);
               }catch(e){
                 console.error(e);
@@ -1683,6 +1690,33 @@ export class ModuleMGPlayer extends ModuleObject {
         resolve(false);
       });
     });
+  }
+
+  /**
+   * Retail CSWMiniPlayer::SetCameraHook @ 0066d030 —
+   * CameraRotate==0 → AttachToObject behavior 0; else GetAttachType (turret=2).
+   * Attach camera Gob to track modelhook (not under rotating container).
+   */
+  setCameraHook(cameraRotateFlag: number = 0){
+    const camera = this.camera;
+    if(!(camera instanceof OdysseyModel3D)){ return; }
+
+    camera.removeFromParent();
+    const hook = this.track?.getObjectByName?.('modelhook') || this.track;
+    if(hook){
+      hook.add(camera);
+    }else{
+      GameState.group?.creatures?.add?.(camera);
+    }
+
+    // Non-zero CameraRotate → inherit attach-type orientation (rotating models share this).
+    // Behavior 0 leaves camera fixed to modelhook without container aim rotation.
+    const useAttach = !!cameraRotateFlag;
+    if(useAttach && this.trackAttachType){
+      // Parent under container so aim (container.rotation) carries the camera/HUD.
+      camera.removeFromParent();
+      this.container.add(camera);
+    }
   }
 
   async loadModel (){

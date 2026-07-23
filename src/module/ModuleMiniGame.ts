@@ -1,7 +1,6 @@
 import { GameState } from "@/GameState";
 import { MiniGameType } from "@/enums/engine/MiniGameType";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { ModuleMGEnemy } from "@/module/ModuleMGEnemy";
@@ -659,9 +658,13 @@ export class ModuleMiniGame {
       // Bank from axis input magnitude (not post-commit velocity rate).
       this.player.lateralForce = this.lastAxisInput.x * this.lateralAccel;
     }else if(this.type === MiniGameType.TURRET){
-      if(dx){ this.player.rotate('x', dx); }
-      if(dy){ this.player.rotate('y', dy); }
-      if(dz){ this.player.rotate('z', dz); }
+      // Retail Control @ 0066d640 — offset += velocity delta in **degrees**, then
+      // KeepInTunnel + write offset to ori controllers. Not radians (was ~57× fast).
+      this.player.playerOffset.x += dx;
+      this.player.playerOffset.y += dy;
+      this.player.playerOffset.z += dz;
+      this.player.keepInTunnel(this.player.playerOffset);
+      this.player.applyTurretOffsetRotation();
     }
 
     this.physicsPrev.acceleration.copy(this.physicsNext.acceleration);
@@ -867,20 +870,16 @@ export class ModuleMiniGame {
     if(this.type === MiniGameType.TURRET && !cameraOk){
       throw new Error('ModuleMiniGame: turret Camera model load failed');
     }
-    if(this.type === MiniGameType.TURRET && player.cameraRotate){
-      // CameraRotate BYTE — initial yaw offset (degrees → radians).
-      const deg = typeof player.cameraRotate === 'number' ? player.cameraRotate : 0;
-      if(deg){
-        player.rotate('z', THREE.MathUtils.degToRad(deg));
-      }
-    }
     await player.loadModel();
     await player.loadGunBanks();
     // ARE LateralAccel default → player lateral force scale (keyboard / stick).
     if(!player.accel_lateral_secs && this.lateralAccel){
       player.accel_lateral_secs = this.lateralAccel;
     }
+    // Retail SetPlayer order: models → ForceSetTrack → SetCameraHook(CameraRotate).
     await this.bindFollowerTrack(player, this.getAttachType());
+    // CameraRotate BYTE is SetCameraHook attach flag (0 vs GetAttachType), not yaw degrees.
+    player.setCameraHook(player.cameraRotate ? 1 : 0);
     player.getCurrentRoom();
   }
 
@@ -920,12 +919,8 @@ export class ModuleMiniGame {
   }
 
   runMiniGameScripts(){
-    for(let i = 0; i < this.enemies.length; i++){
-      const enemy = this.enemies[i];
-      const onCreate = enemy.scripts[ModuleObjectScript.MGEnemyOnCreate];
-      if(!onCreate){ continue; }
-      onCreate.run(enemy, 0);
-    }
+    // Enemy/obstacle/player OnCreate already ran in initMiniGameObjects.
+    // Retail Go follows OnCreate; keep this hook for restart / late script bind.
   }
 
   /**

@@ -193,6 +193,17 @@ export class ModuleMGGunBank extends ModuleObject {
       this.model.update?.(delta);
     }
 
+    // If fire* anim events never ran (anim ended without FireGunCallback), spawn once.
+    for(let i = 0; i < this.pendingFallbackFire.length; i++){
+      if(!this.pendingFallbackFire[i]){ continue; }
+      const gun = this.guns[i];
+      const cur = gun?.animationManager?.currentAnimation;
+      const stillFiring = !!cur && cur.name?.toLowerCase?.() === 'fire';
+      if(stillFiring){ continue; }
+      this.pendingFallbackFire[i] = false;
+      this.spawnBulletFromGun(i, 0);
+    }
+
     // Retail BehaviorTrack::Control @ 006db180 — aim targeting guns at player.
     if(this.isTargetting() && !this.disabled){
       this.updateGunTracking();
@@ -332,7 +343,8 @@ export class ModuleMGGunBank extends ModuleObject {
           this.spawnBulletFromGun(i, 0);
           this.pendingFallbackFire[i] = false;
         }else{
-          this.pendingFallbackFire[i] = false;
+          // Wait for fire*/fire%d playEvent; update() falls back if the event never runs.
+          this.pendingFallbackFire[i] = true;
         }
       }
       if(sfx){
@@ -392,15 +404,17 @@ export class ModuleMGGunBank extends ModuleObject {
     const bullet = new ModuleMGGunBullet( this.bulletTemplate, this );
     bullet.load().then( () => {
       if(this.disabled || !hook){ return; }
+      // Retail FireGunCallback @ 00673a40 — GetPartPosition(bullethook) → pos + ori.
       hook.getWorldPosition(bullet.position);
+      hook.updateMatrixWorld?.(true);
 
-      // Retail FireGunCallback targeting path — aim at player + Inaccuracy disk.
+      // Targeting banks overwrite ori (aim + inaccuracy); else keep bullethook world ori.
       if(this.isTargetting() && this.aimBulletAtPlayer(bullet)){
         // aimed
       }else{
-        const ownerModel = (this.owner as any)?.model || (this.owner as any)?.container;
-        ownerModel?.getWorldQuaternion?.(bullet.quaternion);
-        hook.getWorldDirection(bullet.direction);
+        hook.getWorldQuaternion(bullet.quaternion);
+        // Motion uses quaternion (+Y forward); keep direction in sync for debug/LOS.
+        bullet.direction.set(0, 1, 0).applyQuaternion(bullet.quaternion);
       }
 
       GameState.group.placeables.add(bullet.model);
