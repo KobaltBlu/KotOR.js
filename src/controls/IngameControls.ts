@@ -59,7 +59,7 @@ function resolveKeyboardForwardAxis(): number {
 }
 
 /**
- * Build swoop lateral axis from A+D together (same race-avoidance as resolveKeyboardForwardAxis).
+ * Build swoop/turret lateral axis from A+D together (same race-avoidance as resolveKeyboardForwardAxis).
  * Retail keys feed UpdateAxis as ±1.
  */
 function resolveMinigameKeyAxisX(): number {
@@ -72,6 +72,23 @@ function resolveMinigameKeyAxisX(): number {
   if(right) x += 1;
   return x;
 }
+
+/**
+ * Turret pitch axis from W+S / d-pad up+down — retail PollInput Z pair → UpdateAxis z.
+ */
+function resolveMinigameKeyAxisZ(): number {
+  const up = !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.keyboardInput?.down
+    || !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.gamepadInput?.pressed;
+  const down = !!KeyMapper.Actions[KeyMapAction.MGActionDown]?.keyboardInput?.down
+    || !!KeyMapper.Actions[KeyMapAction.MGActionDown]?.gamepadInput?.pressed;
+  let z = 0;
+  if(up) z += 1;
+  if(down) z -= 1;
+  return z;
+}
+
+/** Retail ProcessInput mouse Poll / 20.0 before UpdateMouse. */
+const MG_MOUSE_POLL_SCALE = 20;
 
 /**
  * IngameControls class.
@@ -805,48 +822,14 @@ export class IngameControls {
       GameState.ModuleObjectManager.selectNearestObject(true);
     });
 
-    KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-      if(GameState.State != EngineState.RUNNING) return;
-      switch(GameState.module.area.miniGame.type){
-        case MiniGameType.SWOOPRACE:
+    // Keys feed UpdateAxis via resolveMinigameKeyAxis* — do not rotate here.
+    KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (_keymap, _delta = 0) => {});
 
-        break;
-        case MiniGameType.TURRET:
-          GameState.module.area.miniGame.player.rotate('x', 1 * delta);
-        break;
-      }
-    });
+    KeyMapper.Actions[KeyMapAction.MGActionDown].setProcessor( (_keymap, _delta = 0) => {});
 
-    KeyMapper.Actions[KeyMapAction.MGActionDown].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-      if(GameState.State != EngineState.RUNNING) return;
-      switch(GameState.module.area.miniGame.type){
-        case MiniGameType.SWOOPRACE:
-        
-        break;
-        case MiniGameType.TURRET:
-          GameState.module.area.miniGame.player.rotate('x', -1 * delta);
-        break;
-      }
-    });
+    KeyMapper.Actions[KeyMapAction.MGActionLeft].setProcessor( (_keymap, _delta = 0) => {});
 
-    // Swoop L/R: axis combined in MINIGAME UpdateAxis (±1). Turret still rotates here.
-    KeyMapper.Actions[KeyMapAction.MGActionLeft].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-      if(GameState.State != EngineState.RUNNING) return;
-      if(GameState.module.area.miniGame.type === MiniGameType.TURRET){
-        GameState.module.area.miniGame.player.rotate('z', 1 * delta);
-      }
-    });
-
-    KeyMapper.Actions[KeyMapAction.MGActionRight].setProcessor( (keymap, delta = 0) => {
-      if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
-      if(GameState.State != EngineState.RUNNING) return;
-      if(GameState.module.area.miniGame.type === MiniGameType.TURRET){
-        GameState.module.area.miniGame.player.rotate('z', -1 * delta);
-      }
-    });
+    KeyMapper.Actions[KeyMapAction.MGActionRight].setProcessor( (_keymap, _delta = 0) => {});
 
     KeyMapper.Actions[KeyMapAction.PauseMinigame].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
@@ -856,14 +839,8 @@ export class IngameControls {
     KeyMapper.Actions[KeyMapAction.MGshoot].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.State != EngineState.RUNNING) return;
-      switch(GameState.module.area.miniGame.type){
-        case MiniGameType.TURRET:
-          GameState.module.area.miniGame.player.fire();
-        break;
-        case MiniGameType.SWOOPRACE:
-          GameState.module.area.miniGame.player.jump();
-        break;
-      }
+      // player may be cleared after death (SetPlayer null) — no-op until restart.
+      GameState.module?.area?.miniGame?.player?.shoot();
     });
 
     KeyMapper.Actions[KeyMapAction.GUI].setProcessor( (keymap) => {
@@ -1159,23 +1136,49 @@ export class IngameControls {
       this.updateScreenEdgeCameraTurn();
     }
 
-    // Retail CSWMiniGame::UpdateAxis then UpdateMouse (Accel writes field49; mouse mutates field49.velocity).
-    if(GameState.Mode == EngineMode.MINIGAME && GameState.State == EngineState.RUNNING){
+    // Retail ProcessInput @ 006227e0 — UpdateAxis (always) then UpdateMouse (type2);
+    // combat/Engine pause blocks Fire only, not axis damping.
+    if(GameState.Mode == EngineMode.MINIGAME){
       const mg = GameState.module?.area?.miniGame;
       if(mg){
         const lxRaw = this.gamePad.stick_l_x.value;
         const lyRaw = this.gamePad.stick_l_y.value;
         const stickX = Math.abs(lxRaw) > 0.15 ? lxRaw : 0;
         const stickY = Math.abs(lyRaw) > 0.15 ? lyRaw : 0;
-        // Stick wins past deadzone; else keyboard ±1 (retail UpdateAxis).
-        const lx = stickX || (mg.type === MiniGameType.SWOOPRACE ? resolveMinigameKeyAxisX() : 0);
-        const ly = stickY;
-        // Always call (incl. zero) so AxisAcceleration damping runs.
-        mg.updateAxis(lx, ly, 0, delta);
-        const dx = Mouse.MouseX - Mouse.OldMouseX;
-        const dy = Mouse.MouseY - Mouse.OldMouseY;
-        if(dx || dy){
-          mg.updateMouse(dx, dy, delta);
+        const keyX = resolveMinigameKeyAxisX();
+        const reverseY = GameState.isMinigameYAxisReversed();
+
+        if(mg.type === MiniGameType.SWOOPRACE){
+          // Retail ProcessInput: clamp(Poll(L)+Poll(R), -1, 1) — stick and keys sum.
+          const x = Math.max(-1, Math.min(1, stickX + keyX));
+          mg.updateAxis(x, 0, 0, delta);
+        }else if(mg.type === MiniGameType.TURRET){
+          // Retail: UpdateAxis(x,0,z); optional negate Z for Reverse Minigame YAxis.
+          const x = Math.max(-1, Math.min(1, stickX + keyX));
+          let z = Math.max(-1, Math.min(1, stickY + resolveMinigameKeyAxisZ()));
+          if(reverseY){ z = -z; }
+          mg.updateAxis(x, 0, z, delta);
+
+          const dx = Mouse.MouseX - Mouse.OldMouseX;
+          const dy = Mouse.MouseY - Mouse.OldMouseY;
+          if(dx || dy){
+            let mx = Math.max(-1, Math.min(1, dx / MG_MOUSE_POLL_SCALE));
+            let my = Math.max(-1, Math.min(1, dy / MG_MOUSE_POLL_SCALE));
+            if(reverseY){ my = -my; }
+            mg.updateMouse(mx, my, delta);
+          }
+          // Retail recenter cursor unless combat-paused.
+          if(GameState.State == EngineState.RUNNING){
+            const cx = (this.element?.clientWidth || window.innerWidth) * 0.5;
+            const cy = (this.element?.clientHeight || window.innerHeight) * 0.5;
+            const ox = this.element?.offsetLeft || 0;
+            const oy = this.element?.offsetTop || 0;
+            Mouse.Update(ox + cx, oy + cy);
+            Mouse.MouseX = cx;
+            Mouse.MouseY = cy;
+            Mouse.OldMouseX = cx;
+            Mouse.OldMouseY = cy;
+          }
         }
       }
     }

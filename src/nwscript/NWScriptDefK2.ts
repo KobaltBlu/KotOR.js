@@ -4356,7 +4356,8 @@ NWScriptDefK2.Actions = {
   590: {
     comment: '590: adjusts a followers hit points, can specify the absolute value to set to\nSWMG_AdjustFollowerHitPoints',
     name: 'SWMG_AdjustFollowerHitPoints',
-    type: NWScriptDataType.INTEGER,
+    // Retail ExecuteCommand @ 005cb990 — no StackPushInteger (VOID).
+    type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
     action: undefined
   },

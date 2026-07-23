@@ -2095,7 +2095,13 @@ export class ModuleArea extends ModuleObject {
       GameState.MenuManager.LoadScreen.setProgress(60);
 
       if(this.miniGame){
-        try { await this.miniGame.load(); } catch(e){ console.error(e); }
+        try {
+          await this.miniGame.load();
+        }catch(e){
+          console.error(e);
+          // Retail type-2 Load aborts on missing Camera — do not continue half-loaded MG.
+          throw e;
+        }
       }
 
       GameState.MenuManager.LoadScreen.setProgress(70);
@@ -2118,7 +2124,11 @@ export class ModuleArea extends ModuleObject {
 
       GameState.MenuManager.LoadScreen.setProgress(100);
 
-      FollowerCamera.facing = Utility.NormalizeRadian(GameState.PartyManager.party[0].getFacing() - Math.PI/2);
+      // Minigame loads intentionally leave party empty (see loadPlayer); skip facing sync.
+      const facingSource = GameState.PartyManager.party[0] ?? GameState.PartyManager.Player;
+      if(facingSource){
+        FollowerCamera.facing = Utility.NormalizeRadian(facingSource.getFacing() - Math.PI/2);
+      }
 
       try { await this.weather.load(); } catch(e){ console.error(e); }
 

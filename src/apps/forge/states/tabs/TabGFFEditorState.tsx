@@ -32,6 +32,12 @@ export class TabGFFEditorState extends TabState {
         accept: {
           'application/octet-stream': ['.gff']
         }
+      },
+      {
+        description: 'JSON',
+        accept: {
+          'application/json': ['.json']
+        }
       }
     ];
   }
@@ -68,6 +74,37 @@ export class TabGFFEditorState extends TabState {
       this.selectedNode = node;
       this.processEventListener('onNodeSelected', [node]);
     }
+  }
+
+  async exportAsJson(){
+    const jsonSaveType = {
+      description: 'JSON',
+      accept: {
+        'application/json': ['.json']
+      }
+    };
+    const previousSaveTypes = this.saveTypes;
+    const previousFileExt = this.file?.ext;
+    this.saveTypes = [jsonSaveType];
+    if(this.file){
+      this.file.ext = 'json';
+    }
+    try{
+      return await this.saveAs();
+    }finally{
+      this.saveTypes = previousSaveTypes;
+      if(this.file){
+        this.file.ext = previousFileExt;
+      }
+    }
+  }
+
+  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
+    if(ext === 'json'){
+      const textEncoder = new TextEncoder();
+      return textEncoder.encode(JSON.stringify(this.gff.toJSON(), null, 2));
+    }
+    return this.gff.getExportBuffer();
   }
 
 }

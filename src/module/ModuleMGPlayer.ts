@@ -11,6 +11,7 @@ import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 // import { NWScript } from "@/nwscript/NWScript";
 import { IModelListItem } from "@/interface/module/minigame/IModelListItem";
 import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { RenderLayer } from "@/enums/engine/RenderLayer";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { MDLLoader } from "@/loaders";
@@ -26,6 +27,7 @@ import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 import { ModuleMiniGame } from "@/module/ModuleMiniGame";
 import { ModuleMGTrack } from "@/module/ModuleMGTrack";
 import { hitCheckPart } from "@/module/minigame/MGHitCheck";
+import { FollowerCamera } from "@/engine/FollowerCamera";
 
 /** Retail SWMGKeyInfo (0x24) appended by OnReportKey @ 0066dd60. */
 export interface SWMGKeyInfo {
@@ -498,11 +500,14 @@ export class ModuleMGPlayer extends ModuleObject {
         this.updateBankAnimation(this.lateralForce, delta);
         this.lateralForce = 0;
 
-        // TSL CSWMiniPlayer::Control @ 005446a4 — jumpSpeed * dt on Z, then gravity.
-        const jumpBefore = miniGame.jumpSpeed;
-        this.playerOffset.z += jumpBefore * delta;
-        miniGame.jumpSpeed = jumpBefore - ModuleMiniGame.JUMP_GRAVITY * delta;
-        this.jumpVelcolity = miniGame.jumpSpeed;
+        // TSL CSWMiniPlayer::Control @ 005446a0 — jumpSpeed * dt on Z, then gravity.
+        // K1 has no MiniGame jumpSpeed field / SWMG_SetJumpSpeed.
+        if(GameState.GameKey == GameEngineType.TSL){
+          const jumpBefore = miniGame.jumpSpeed;
+          this.playerOffset.z += jumpBefore * delta;
+          miniGame.jumpSpeed = jumpBefore - ModuleMiniGame.JUMP_GRAVITY * delta;
+          this.jumpVelcolity = miniGame.jumpSpeed;
+        }
 
         this.keepInTunnel(this.playerOffset);
         this.container.position.set(
@@ -517,10 +522,12 @@ export class ModuleMGPlayer extends ModuleObject {
           this.boostVelocity = 0;
         }
       } break;
-      case MiniGameType.TURRET:
+      case MiniGameType.TURRET: {
+        const miniGame = GameState.module.area.miniGame;
         // Aim from UpdateAxis/UpdateMouse → commitPhysicsToPlayer (velocity delta → rotate).
         miniGame.commitPhysicsToPlayer(delta);
         break;
+      }
     }
         
     for(let i = 0; i < this.gunBanks.length; i++){
@@ -652,6 +659,13 @@ export class ModuleMGPlayer extends ModuleObject {
    */
   disposeFollower(){
     this.stopTrack();
+    // Retail SetCamera detach — camera must not stay parented under disposed HUD.
+    if(FollowerCamera.mgCameraHookAttached){
+      const hook = this.camera?.camerahook;
+      if(!hook || FollowerCamera.camera.parent === hook){
+        FollowerCamera.detachMinigameCamera();
+      }
+    }
     if(this.track instanceof OdysseyModel3D){
       this.track.stopAnimation?.();
     }
@@ -735,7 +749,12 @@ export class ModuleMGPlayer extends ModuleObject {
   shoot(){
     switch(GameState.module.area.miniGame.type){
       case MiniGameType.SWOOPRACE:
-        this.jump();
+        // K1 → Fire; TSL → jump (SetJumpSpeed / player hop).
+        if(GameState.GameKey == GameEngineType.TSL){
+          this.jump();
+        }else{
+          this.fire();
+        }
       break;
       case MiniGameType.TURRET:
         this.fire();
@@ -744,10 +763,11 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Swoop jump: prefer OnFire scripts (SWMG_SetJumpSpeed), else TSL player hop.
-   * Retail gravity @ JUMP_GRAVITY acts on MiniGame.jumpSpeed each frame.
+   * TSL-only swoop hop: OnFire scripts (SWMG_SetJumpSpeed @ 007fc210), else PLAYER_JUMP_SPEED.
+   * K1 HandleInputEvent always MiniPlayer::Fire (guns) — no jumpSpeed.
    */
   jump(){
+    if(GameState.GameKey != GameEngineType.TSL){ return; }
     const miniGame = GameState.module?.area?.miniGame;
     if(!miniGame || miniGame.type !== MiniGameType.SWOOPRACE){ return; }
 
@@ -1625,10 +1645,14 @@ export class ModuleMGPlayer extends ModuleObject {
     void this.trackFollowerAudio.load();
   }
 
-  loadCamera(): Promise<void> {
-    return new Promise<void>((resolve) => {
+  /**
+   * Load Camera ResRef model. Resolves true on success.
+   * Turret Load requires a successful camera (retail hard-fail).
+   */
+  loadCamera(): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
       if(!this.cameraName){
-        resolve();
+        resolve(false);
         return;
       }
       const resref = this.cameraName.replace(/\0[\s\S]*$/g,'').toLowerCase();
@@ -1642,10 +1666,11 @@ export class ModuleMGPlayer extends ModuleObject {
                 // Draw after AfterimagePass so speed blur does not smear HUD.
                 camera.traverse((o) => { o.layers.set(RenderLayer.MG_CAMERA_HUD); });
                 this.container.add(camera);
+                resolve(true);
               }catch(e){
                 console.error(e);
+                resolve(false);
               }
-              resolve();
             },
             context: this.context,
             // Camera HUD meshes are authored shadow 0 — do not force lit-via-castShadow.
@@ -1655,7 +1680,7 @@ export class ModuleMGPlayer extends ModuleObject {
         }
       ).catch((e) => {
         console.error('ModuleMGPlayer.loadCamera failed', resref, e);
-        resolve();
+        resolve(false);
       });
     });
   }

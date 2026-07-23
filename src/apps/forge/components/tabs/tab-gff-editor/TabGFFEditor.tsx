@@ -10,6 +10,7 @@ import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
 import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
 import { createGFFContextMenuItems } from "@/apps/forge/components/tabs/tab-gff-editor/GFFContextMenu";
+import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
 import "@/apps/forge/components/tabs/tab-gff-editor/TabGFFEditor.scss";
 
@@ -39,28 +40,57 @@ export const TabGFFEditor = function(props: BaseTabProps){
     };
   })
 
+  const menuItems: MenuItem[] = [
+    {
+      label: 'File',
+      children: [
+        {
+          label: 'Save',
+          shortcut: 'Ctrl+S',
+          onClick: () => { void tab.save(); },
+          disabled: !gff,
+        },
+        {
+          label: 'Save As...',
+          shortcut: 'Ctrl+Shift+S',
+          onClick: () => { void tab.saveAs(); },
+          disabled: !gff,
+        },
+        { separator: true },
+        {
+          label: 'Export JSON...',
+          onClick: () => { void tab.exportAsJson(); },
+          disabled: !gff,
+        },
+      ]
+    },
+  ];
+
   return (
 <>
-  <div id="gffContainer" style={{position: 'relative', overflow: 'auto', height: '100%', width:'50%', float: 'left'}}>
-    <ForgeTreeView>
-      {
-        (
-          gff ? <GFFStructElement struct={ gff.RootNode } key={ gff.RootNode.uuid } open={true} tab={tab} depth={0} /> : <></>
-        )
-      }
-    </ForgeTreeView>
-  </div>
-  <div id="gffProperties" className="container" style={{position: 'relative', overflow: 'auto', height: '100%', width:'50%', padding:'10px', float: 'left'}}>
-    {(
-      selectedNode ? (
-        selectedNode instanceof KotOR.GFFField ? 
-          <GFFFieldProperties node={selectedNode} /> :
-        selectedNode instanceof KotOR.GFFStruct ? 
-          <GFFStructProperties node={selectedNode} /> : 
+  <MenuBar items={menuItems} />
+  <div className="gff-editor-area">
+    <div id="gffContainer">
+      <ForgeTreeView>
+        {
+          (
+            gff ? <GFFStructElement struct={ gff.RootNode } key={ gff.RootNode.uuid } open={true} tab={tab} depth={0} /> : <></>
+          )
+        }
+      </ForgeTreeView>
+    </div>
+    <div id="gffProperties" className="container">
+      {(
+        selectedNode ? (
+          selectedNode instanceof KotOR.GFFField ? 
+            <GFFFieldProperties node={selectedNode} /> :
+          selectedNode instanceof KotOR.GFFStruct ? 
+            <GFFStructProperties node={selectedNode} /> : 
+          <></>
+        ) : 
         <></>
-      ) : 
-      <></>
-    )}
+      )}
+    </div>
   </div>
 </>);
 

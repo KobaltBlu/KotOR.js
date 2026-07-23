@@ -346,6 +346,40 @@ export class FollowerCamera {
     FollowerCamera.freeLookPitchDeg = 0;
   }
 
+  /**
+   * Retail CSWMiniGame::SetCamera @ 00671670 — BehaviorAttach live camera to camerahook.
+   * Identity local transform; world pose follows the hook (no per-frame copy).
+   */
+  static mgCameraHookAttached = false;
+
+  static attachMinigameCamera(hook: THREE.Object3D){
+    if(!hook){ return; }
+    if(FollowerCamera.mgCameraHookAttached && FollowerCamera.camera.parent === hook){
+      return;
+    }
+    FollowerCamera.detachMinigameCamera();
+    hook.add(FollowerCamera.camera);
+    FollowerCamera.camera.position.set(0, 0, 0);
+    FollowerCamera.camera.quaternion.identity();
+    FollowerCamera.camera.scale.set(1, 1, 1);
+    FollowerCamera.mgCameraHookAttached = true;
+  }
+
+  /** Leave MINIGAME / dispose follower — restore free camera in world space. */
+  static detachMinigameCamera(){
+    const cam = FollowerCamera.camera;
+    if(!FollowerCamera.mgCameraHookAttached && !cam.parent){ return; }
+    if(cam.parent){
+      cam.getWorldPosition(FollowerCamera.tmpHookPos);
+      cam.getWorldQuaternion(FollowerCamera.tmpHookQuat);
+      cam.removeFromParent();
+      cam.position.copy(FollowerCamera.tmpHookPos);
+      cam.quaternion.copy(FollowerCamera.tmpHookQuat);
+      cam.scale.set(1, 1, 1);
+    }
+    FollowerCamera.mgCameraHookAttached = false;
+  }
+
   /** Set FreeLook look axes (−1…1) for this frame; consumed in updateFreeLook. */
   static setFreeLookAxes(yawAxis: number = 0, pitchAxis: number = 0){
     if(Math.abs(yawAxis) > Math.abs(FollowerCamera.freeLookYawAxis)){
@@ -1464,8 +1498,13 @@ export class FollowerCamera {
     if(GameState.Mode == EngineMode.MINIGAME){
       if(BitWise.InstanceOf(followee?.objectType, ModuleObjectType.ModuleMGPlayer)){
         ( (mgPlayer: ModuleMGPlayer) => {
-          mgPlayer.camera.camerahook.getWorldPosition(FollowerCamera.camera.position);
-          mgPlayer.camera.camerahook.getWorldQuaternion(FollowerCamera.camera.quaternion);
+          const hook = mgPlayer.camera?.camerahook;
+          if(hook){
+            // Retail SetCamera — attach to camerahook (no world-pose copy).
+            FollowerCamera.attachMinigameCamera(hook);
+          }else{
+            FollowerCamera.detachMinigameCamera();
+          }
           FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
           // Retail CSWMiniGame clip_start/clip_end (Near_Clip / Far_Clip)
           if(area.miniGame.nearClip > 0){
@@ -1478,6 +1517,9 @@ export class FollowerCamera {
         })(followee as any);
       }
     }else{
+      if(FollowerCamera.mgCameraHookAttached){
+        FollowerCamera.detachMinigameCamera();
+      }
       FollowerCamera.updatePositionInterpRate(
         FollowerCamera.camera.position,
         FollowerCamera.tmpSafeCam,

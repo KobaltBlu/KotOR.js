@@ -1347,11 +1347,16 @@ export class GameState implements EngineContext {
       if(overlay && (overlay.isVisible() || GameState.MenuManager.activeMenus.indexOf(overlay) >= 0)){
         overlay.close();
       }
-    }else if(mode == EngineMode.INGAME && GameState.module && !GameState.module.area?.miniGame){
-      const overlay = GameState.MenuManager.InGameOverlay;
-      if(overlay && GameState.MenuManager.activeMenus.indexOf(overlay) < 0){
-        overlay.recalculatePosition();
-        overlay.open();
+    }else{
+      if(prev == EngineMode.MINIGAME){
+        FollowerCamera.detachMinigameCamera();
+      }
+      if(mode == EngineMode.INGAME && GameState.module && !GameState.module.area?.miniGame){
+        const overlay = GameState.MenuManager.InGameOverlay;
+        if(overlay && GameState.MenuManager.activeMenus.indexOf(overlay) < 0){
+          overlay.recalculatePosition();
+          overlay.open();
+        }
       }
     }
 
@@ -1810,6 +1815,17 @@ export class GameState implements EngineContext {
     if(!GameState.iniConfig) return true;
     const raw = GameState.iniConfig.getProperty('Graphics Options.Frame Buffer');
     if(raw === undefined || raw === null || raw === '') return true;
+    return String(raw) !== '0';
+  }
+
+  /**
+   * Retail ClientOptions minigame_yaxis — INI
+   * "Game Options"."Reverse Minigame YAxis" (turret Z / mouse Y invert).
+   */
+  static isMinigameYAxisReversed(): boolean {
+    if(!GameState.iniConfig) return false;
+    const raw = GameState.iniConfig.getProperty('Game Options.Reverse Minigame YAxis');
+    if(raw === undefined || raw === null || raw === '') return false;
     return String(raw) !== '0';
   }
 

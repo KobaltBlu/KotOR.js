@@ -7426,13 +7426,13 @@ NWScriptDefK1.Actions = {
   590:{
     comment: "590: adjusts a followers hit points, can specify the absolute value to set to\nSWMG_AdjustFollowerHitPoints\n",
     name: "SWMG_AdjustFollowerHitPoints",
-    type: NWScriptDataType.INTEGER,
+    // Retail ExecuteCommand @ 005cb990 — no StackPushInteger (VOID).
+    type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number]){
-      // Retail ExecuteCommand @ 005cb990 pops object + one int only; nAbsolute unused.
-      // Accelpad passes (-100),(-100) — treating truthy nAbsolute as Set would kill the player.
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer)){
-        (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).adjustHitPoints(args[1], 0);
+      // Retail pops object + one int only; nAbsolute unused. FOLLOWER only (player/enemy).
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer)){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy).adjustHitPoints(args[1], 0);
       }
     }
   },
@@ -7541,10 +7541,14 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      const mg = GameState.module?.area?.miniGame;
-      if(!mg){ return NW_FALSE; }
-      if(mg.player === args[0]){ return NW_TRUE; }
-      return mg.enemies.indexOf(args[0] as ModuleMGEnemy) >= 0 ? NW_TRUE : NW_FALSE;
+      // Retail IsSomething @ 005cbc80 — follower vtable (player + enemies, incl. dying).
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer)){
+        return NW_TRUE;
+      }
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        return NW_TRUE;
+      }
+      return NW_FALSE;
     }
   },
   600:{
@@ -7553,7 +7557,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.module.area.miniGame.player == args[0] ? NW_TRUE : NW_FALSE;
+      return BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) ? NW_TRUE : NW_FALSE;
     }
   },
   601:{
@@ -7562,7 +7566,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.module.area.miniGame.enemies.indexOf(args[0] as ModuleMGEnemy) >= 0;
+      // InstanceOf covers active + dyingEnemies (still ModuleMGEnemy until purged).
+      return BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) ? NW_TRUE : NW_FALSE;
     }
   },
   602:{
@@ -7571,7 +7576,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail: enemy-like MGO with Trigger flag non-zero.
+      // Retail: enemy + Trigger byte @ +0x1a0 non-zero.
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
         return (args[0] as ModuleMGEnemy).isTrigger ? NW_TRUE : NW_FALSE;
       }
@@ -7584,7 +7589,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return GameState.module.area.miniGame.obstacles.indexOf(args[0] as ModuleMGObstacle) >= 0;
+      return BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle) ? NW_TRUE : NW_FALSE;
     }
   },
   604:{
@@ -7593,8 +7598,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle)){
-        (args[0] as ModuleMGPlayer|ModuleMGEnemy|ModuleMGObstacle).adjustHitPoints(args[1], 1);
+      // Retail SetHitPoints on follower only (player/enemy).
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        (args[0] as ModuleMGPlayer|ModuleMGEnemy).adjustHitPoints(args[1], 1);
       }
     }
   },

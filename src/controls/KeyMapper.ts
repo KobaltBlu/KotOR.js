@@ -500,20 +500,21 @@ export class KeyMapper {
       }
     }
 
-    // Retail swoop/turret defaults when keymap.2da/INI left MG actions unbound.
-    const bindIfEmpty = (action: KeyMapAction, key: KeyInput | undefined) => {
+    // Retail swoop/turret defaults when keymap.2da/INI left MG actions unbound
+    // (language0 failed to resolve to a KeyInput).
+    const bindMgDefault = (action: KeyMapAction, key: KeyInput | undefined) => {
       if(!key){ return; }
       const map = KeyMapper.Actions[action];
       if(map && !map.keyboardInput){
         map.keyboardInput = key;
       }
     };
-    bindIfEmpty(KeyMapAction.MGActionUp, keyboard.action.KeyW);
-    bindIfEmpty(KeyMapAction.MGActionDown, keyboard.action.KeyS);
-    bindIfEmpty(KeyMapAction.MGActionLeft, keyboard.action.KeyA);
-    bindIfEmpty(KeyMapAction.MGActionRight, keyboard.action.KeyD);
-    bindIfEmpty(KeyMapAction.MGshoot, keyboard.action.Space);
-    bindIfEmpty(KeyMapAction.PauseMinigame, keyboard.action.Escape);
+    bindMgDefault(KeyMapAction.MGActionUp, keyboard.action.KeyW);
+    bindMgDefault(KeyMapAction.MGActionDown, keyboard.action.KeyS);
+    bindMgDefault(KeyMapAction.MGActionLeft, keyboard.action.KeyA);
+    bindMgDefault(KeyMapAction.MGActionRight, keyboard.action.KeyD);
+    bindMgDefault(KeyMapAction.MGshoot, keyboard.action.Space);
+    bindMgDefault(KeyMapAction.PauseMinigame, keyboard.action.Escape);
 
     //Movement
     /*KeyMapper.Actions[KeyMapAction.ActionUp].keyboardInput = keyboard.action.KeyW;
@@ -635,6 +636,8 @@ export class KeyMapper {
     bindPadIfEmpty(KeyMapAction.MGActionUp, gamepad.button_d_up);
     bindPadIfEmpty(KeyMapAction.MGActionDown, gamepad.button_d_down);
     bindPadIfEmpty(KeyMapAction.MGshoot, gamepad.button_a);
+    // Start is Options in INGAME; MINIGAME keymap only runs PauseMinigame.
+    bindPadIfEmpty(KeyMapAction.PauseMinigame, gamepad.button_start);
     
     //GUI
     this.Actions[KeyMapAction.PrevMenu].gamepadInput = gamepad.button_bumper_l;

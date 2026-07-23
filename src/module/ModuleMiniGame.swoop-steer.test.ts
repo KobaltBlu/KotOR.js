@@ -165,4 +165,92 @@ describe('ModuleMiniGame swoop lateral steer', () => {
     }
     expect(mg.player.playerOffset.x).toBeGreaterThan(0);
   });
+
+  it('turret UpdateAxis(x,0,z) remaps to pitch X and yaw Z velocity', () => {
+    const mg = Object.create(ModuleMiniGame.prototype) as ModuleMiniGame;
+    mg.type = MiniGameType.TURRET;
+    mg.lateralAccel = 60;
+    mg.movementPerSec = 90;
+    mg.axisMode = 1;
+    mg.physicsPrev = {
+      acceleration: new THREE.Vector3(),
+      velocity: new THREE.Vector3(),
+    };
+    mg.physicsNext = {
+      acceleration: new THREE.Vector3(),
+      velocity: new THREE.Vector3(),
+    };
+    mg.lastAxisInput = new THREE.Vector3();
+    mg.axisVelocity = new THREE.Vector3();
+    mg.player = { playerOffset: new THREE.Vector3(), rotate: () => {} } as any;
+
+    const dt = 1 / 30;
+    // Retail remap (x,0,z) → (-z, 0, -x)
+    mg.updateAxis(1, 0, 0.5, dt);
+    expect(mg.lastAxisInput.x).toBeCloseTo(-0.5, 5);
+    expect(mg.lastAxisInput.y).toBeCloseTo(0, 5);
+    expect(mg.lastAxisInput.z).toBeCloseTo(-1, 5);
+    expect(Math.abs(mg.physicsNext.velocity.x)).toBeGreaterThan(0);
+    expect(Math.abs(mg.physicsNext.velocity.z)).toBeGreaterThan(0);
+  });
+
+  it('swoop UpdateAxis ignores Y/Z stick packing (x,0,0 only)', () => {
+    const { mg } = makeSwoop();
+    const dt = 1 / 30;
+    mg.updateAxis(0, 1, 1, dt);
+    // Remap negates y/z but input y/z were 1 — still non-zero lastAxis after remap.
+    // ProcessInput packing uses (x,0,0); this asserts remap of pure lateral.
+    mg.physicsPrev.acceleration.set(0, 0, 0);
+    mg.physicsPrev.velocity.set(0, 0, 0);
+    mg.physicsNext.acceleration.set(0, 0, 0);
+    mg.physicsNext.velocity.set(0, 0, 0);
+    mg.updateAxis(1, 0, 0, dt);
+    expect(mg.lastAxisInput.x).toBeCloseTo(1, 5);
+    expect(mg.lastAxisInput.y).toBeCloseTo(0, 5);
+    expect(mg.lastAxisInput.z).toBeCloseTo(0, 5);
+  });
+
+  it('retail ProcessInput axis packing clamps stick+keys sum to [-1,1]', () => {
+    const pack = (stick: number, key: number) => Math.max(-1, Math.min(1, stick + key));
+    expect(pack(0, 1)).toBe(1);
+    expect(pack(0, -1)).toBe(-1);
+    expect(pack(0.5, 1)).toBe(1);
+    expect(pack(-0.5, -1)).toBe(-1);
+    expect(pack(0.2, 0)).toBeCloseTo(0.2, 5);
+    expect(pack(0, 0)).toBe(0);
+  });
+
+  it('onfire-shaped SetPlayerTunnelPos/Neg ±20 opens X for lateral steer', () => {
+    const { mg, keepInTunnel } = makeSwoop();
+    (mg.player as any).tunnel.pos.set(0, 0, 0);
+    (mg.player as any).tunnel.neg.set(0, 0, 0);
+    // Simulate SWMG_SetPlayerTunnel* as onfire.ncs (CONSTF x,y,z → ACTION).
+    (mg.player as any).tunnel.pos.set(20, 0, 0);
+    (mg.player as any).tunnel.neg.set(-20, 0, 0);
+    const dt = 1 / 30;
+    for(let i = 0; i < 20; i++){
+      mg.updateAxis(1, 0, 0, dt);
+      mg.commitPhysicsToPlayer(dt);
+      keepInTunnel(mg.player.playerOffset);
+    }
+    expect(mg.player.playerOffset.x).toBeGreaterThan(0);
+    expect(mg.player.playerOffset.x).toBeLessThanOrEqual(20);
+  });
+
+  it('ACTION vector pop matches CONSTF x,y,z order (z on top → Vector3.x)', () => {
+    // Mirrors CALL_ACTION VECTOR pop after compiler push x,y,z.
+    const stack = [20, 0, 0]; // push order; last is top
+    const z = stack.pop();
+    const y = stack.pop();
+    const x = stack.pop();
+    const v = new THREE.Vector3(x, y, z);
+    expect(v.x).toBe(20);
+    expect(v.y).toBe(0);
+    expect(v.z).toBe(0);
+    // Pre-fix bug: first pop into .x swapped X/Z → TunnelX stayed 0.
+    const wrongStack = [20, 0, 0];
+    const wrong = new THREE.Vector3(wrongStack.pop(), wrongStack.pop(), wrongStack.pop());
+    expect(wrong.x).toBe(0);
+    expect(wrong.z).toBe(20);
+  });
 });

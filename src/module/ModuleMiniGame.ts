@@ -1,5 +1,6 @@
 import { GameState } from "@/GameState";
 import { MiniGameType } from "@/enums/engine/MiniGameType";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
@@ -265,8 +266,9 @@ export class ModuleMiniGame {
     return resRef;
   }
 
-  /** Retail SWMG_SetJumpSpeed @ 007fc210 (TSL Win) — writes MiniGame jumpSpeed. */
+  /** Retail SWMG_SetJumpSpeed @ 007fc210 (TSL Win) — writes MiniGame jumpSpeed. K1 has no op. */
   setJumpSpeed(speed: number = 0){
+    if(GameState.GameKey != GameEngineType.TSL){ return; }
     this.jumpSpeed = speed;
   }
 
@@ -381,7 +383,13 @@ export class ModuleMiniGame {
 
   async load(){
     try { await this.loadMGTracks(); } catch(e){ console.error(e); }
-    try { await this.loadMGPlayer(); } catch(e){ console.error(e); }
+    try {
+      await this.loadMGPlayer();
+    }catch(e){
+      console.error(e);
+      // Retail type-2 Load aborts when Camera missing/invalid — propagate.
+      throw e;
+    }
     try { await this.loadMGEnemies(); } catch(e){ console.error(e); }
     try { await this.loadMGObstacles(); } catch(e){ console.error(e); }
     try { await this.loadMusic(); } catch(e){ console.error(e); }
@@ -851,11 +859,14 @@ export class ModuleMiniGame {
     const player: ModuleMGPlayer = this.player;
     if(!player){ return; }
     await player.load();
-    // Retail type 2 Load requires valid Camera ResRef (fails Load if missing).
+    // Retail type 2 Load @ 006723d0 requires valid Camera ResRef (return 0 if missing).
     if(this.type === MiniGameType.TURRET && !player.cameraName){
-      console.error('ModuleMiniGame: turret Player.Camera ResRef required');
+      throw new Error('ModuleMiniGame: turret Player.Camera ResRef required');
     }
-    await player.loadCamera();
+    const cameraOk = await player.loadCamera();
+    if(this.type === MiniGameType.TURRET && !cameraOk){
+      throw new Error('ModuleMiniGame: turret Camera model load failed');
+    }
     if(this.type === MiniGameType.TURRET && player.cameraRotate){
       // CameraRotate BYTE — initial yaw offset (degrees → radians).
       const deg = typeof player.cameraRotate === 'number' ? player.cameraRotate : 0;
