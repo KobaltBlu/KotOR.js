@@ -131,6 +131,56 @@
     text-align: right;
   }
 
+  .console-warp-browser {
+    width: min(360px, 80vw);
+    text-align: left;
+  }
+
+  .console-filter-input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 4px 0 8px;
+    background: #0e0e0ebd;
+    border: 1px solid #d4a03d;
+    border-radius: 4px;
+    color: #e6b35c;
+    font-size: 0.85rem;
+    font-weight: bold;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .console-warp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: min(40vh, 320px);
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+
+  .console-warp-item {
+    margin: 0;
+    width: 100%;
+    text-align: left;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", monospace;
+  }
+
+  .console-warp-empty {
+    color: #e6b35c;
+    opacity: 0.7;
+    font-size: 0.85rem;
+    padding: 0.5rem 0;
+  }
+
+  .console-warp-count {
+    margin-top: 6px;
+    color: #e6b35c;
+    opacity: 0.7;
+    font-size: 0.75rem;
+    text-align: right;
+  }
+
   .console-btn.on {
     background: #1c2c38;
   }
@@ -158,8 +208,14 @@
       color: #00ffcc;
     }
 
-    .console-number-input {
+    .console-number-input,
+    .console-filter-input {
       border-color: #1a5f4e;
+      color: #00ffcc;
+    }
+
+    .console-warp-empty,
+    .console-warp-count {
       color: #00ffcc;
     }
   }

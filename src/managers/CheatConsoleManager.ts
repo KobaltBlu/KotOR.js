@@ -6,6 +6,7 @@ import { ResourceLoader } from "@/loaders";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { KEYManager } from "@/managers/KEYManager";
 import { ExperienceType } from "@/enums/engine/ExperienceType";
+import { GameFileSystem } from "@/utility/GameFileSystem";
 
 /**
  * CheatConsoleManager class.
@@ -111,6 +112,30 @@ export class CheatConsoleManager {
   static warp (name: string = ''){
     if(name){
       GameState.LoadModule(name)
+    }
+  }
+
+  /**
+   * Lists warpable module resrefs under `modules/` (.rim / .mod).
+   * Skips secondary archives (`*_s`) that are not standalone entry modules.
+   */
+  static async listModules(): Promise<string[]> {
+    try{
+      const files = await GameFileSystem.readdir('modules');
+      const names = new Set<string>();
+      for(const file of files){
+        const base = (file.split(/[/\\]/).pop() || '').toLowerCase();
+        const match = base.match(/^(.+)\.(rim|mod)$/);
+        if(!match){ continue; }
+        const name = match[1];
+        if(name.endsWith('_s')){ continue; }
+        names.add(name);
+      }
+      console.log(Array.from(names));
+      return Array.from(names).sort((a, b) => a.localeCompare(b));
+    }catch(e){
+      console.error('CheatConsoleManager.listModules failed', e);
+      return [];
     }
   }
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useApp } from "@/apps/game/context/AppContext";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";
 import "@/apps/game/components/cheat-console/cheat-console.scss";
@@ -13,6 +13,11 @@ export const CheatConsole = () => {
   const [consoleInput, setConsoleInput] = useState('');
   const [debugTick, setDebugTick] = useState(0);
   const [showDebugMenu, setShowDebugMenu] = useState(false);
+  const [showWarpMenu, setShowWarpMenu] = useState(false);
+  const [modules, setModules] = useState<string[]>([]);
+  const [modulesLoading, setModulesLoading] = useState(false);
+  const [modulesLoaded, setModulesLoaded] = useState(false);
+  const [warpFilter, setWarpFilter] = useState('');
 
   const debugGroups = [
     {
@@ -43,6 +48,32 @@ export const CheatConsole = () => {
   ];
 
   const pcDamageScalePresets = [1, 0.5, 0.25, 0.1, 0];
+
+  useEffect(() => {
+    if(!showWarpMenu || modulesLoaded){ return; }
+    let cancelled = false;
+    setModulesLoading(true);
+    KotOR.CheatConsoleManager.listModules().then((list) => {
+      if(cancelled){ return; }
+      setModules(list);
+      setModulesLoaded(true);
+      setModulesLoading(false);
+    }).catch((e) => {
+      console.error(e);
+      if(cancelled){ return; }
+      setModulesLoaded(true);
+      setModulesLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [showWarpMenu, modulesLoaded]);
+
+  const filteredModules = useMemo(() => {
+    const query = warpFilter.trim().toLowerCase();
+    if(!query){ return modules; }
+    return modules.filter((name) => name.includes(query));
+  }, [modules, warpFilter]);
+
+  const currentModule = (KotOR.GameState.module?.filename || '').toLowerCase();
 
   const onConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {  
     setConsoleInput(e.target.value);
@@ -77,7 +108,18 @@ export const CheatConsole = () => {
   }
   
   const onToggleDebugMenu = () => {
+    setShowWarpMenu(false);
     setShowDebugMenu(!showDebugMenu);
+  }
+
+  const onToggleWarpMenu = () => {
+    setShowDebugMenu(false);
+    setShowWarpMenu(!showWarpMenu);
+  }
+
+  const onWarpModule = (name: string) => {
+    appState.consoleCommand(`warp ${name}`);
+    setShowCheatConsole(false);
   }
 
   const onSetPcDamageScale = (value: number) => {
@@ -95,6 +137,45 @@ export const CheatConsole = () => {
         <button className="console-btn" onClick={onToggleDebugger}>Debugger</button>
         <button className="console-btn" onClick={onTogglePerformanceMonitor}>Toggle Stats</button>
         <button className="console-btn" onClick={onReloadLastSave}>Reload Last Save</button>
+        <div className="console-menu-anchor">
+          <button className="console-btn" onClick={onToggleWarpMenu}>
+            Warp {showWarpMenu ? '▲' : '▼'}
+          </button>
+          {showWarpMenu && (
+            <div className="console-submenu console-warp-browser">
+              <div className="console-submenu-title">Module Warp</div>
+              <input
+                className="console-filter-input"
+                type="text"
+                placeholder="Filter modules..."
+                value={warpFilter}
+                onChange={(e) => setWarpFilter(e.target.value)}
+                autoFocus
+              />
+              <div className="console-warp-list">
+                {modulesLoading && (
+                  <div className="console-warp-empty">Loading modules...</div>
+                )}
+                {!modulesLoading && filteredModules.length === 0 && (
+                  <div className="console-warp-empty">No modules found</div>
+                )}
+                {!modulesLoading && filteredModules.map((name) => (
+                  <button
+                    key={name}
+                    className={`console-btn console-btn-small console-warp-item ${currentModule === name ? 'on' : 'off'}`}
+                    onClick={() => onWarpModule(name)}
+                    title={`warp ${name}`}
+                  >
+                    {name}
+                  </button>
+                ))}
+              </div>
+              <div className="console-warp-count">
+                {modulesLoading ? '…' : `${filteredModules.length} / ${modules.length}`}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="console-menu-anchor">
           <button className="console-btn" onClick={onToggleDebugMenu}>
             Debug {showDebugMenu ? '▲' : '▼'}
