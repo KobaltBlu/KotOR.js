@@ -151,13 +151,15 @@ export class ActionSetMine extends Action {
     }
 
     this.usedItem = true;
-    const stack = this.oItem.getStackSize() | 0;
-    if(stack > 1){
-      this.oItem.setStackSize(stack - 1);
-    }else if((this.oItem.charges | 0) > 1){
-      this.oItem.charges -= 1;
-    }else{
-      owner.removeItem(this.oItem, 1);
+    if(!GameState.infiniteUses){
+      const stack = this.oItem.getStackSize() | 0;
+      if(stack > 1){
+        this.oItem.setStackSize(stack - 1);
+      }else if((this.oItem.charges | 0) > 1){
+        this.oItem.charges -= 1;
+      }else{
+        owner.removeItem(this.oItem, 1);
+      }
     }
 
     stopBar();

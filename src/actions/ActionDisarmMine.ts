@@ -62,8 +62,12 @@ export class ActionDisarmMine extends Action {
     if(!this.animQueued){
       this.animQueued = true;
       owner.setFacingObject(this.target);
+      // Retail AIActionDisarmMine @ 00519570: door 0x2796, placeable 0x2797, trigger 0x2794
+      const isDoor = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor);
+      const isPlaceable = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable);
+      const animId = isDoor ? 0x2796 : (isPlaceable ? 0x2797 : 0x2794);
       const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
-      playAnim.setParameter(0, ActionParameterType.INT, 0x2794);
+      playAnim.setParameter(0, ActionParameterType.INT, animId);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
       playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
       owner.actionQueue.addFront(playAnim);

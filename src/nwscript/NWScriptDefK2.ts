@@ -1504,7 +1504,7 @@ NWScriptDefK2.Actions = {
         const ignoreStartRange = !!args[4];
         const ignoreNames = [args[5], args[6], args[7], args[8], args[9], args[10]]
           .filter((s) => typeof s === 'string' && s.trim().length > 0);
-        this.caller.actionDialogObject( args[0], args[1], ignoreStartRange, args[2], args[3], false, ignoreNames );
+        this.caller.actionDialogObject( args[0], args[1], ignoreStartRange, args[2], args[3], false, ignoreNames, args[12] ?? -1, args[13] ?? -1 );
       }else{
         console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
       }
@@ -1515,14 +1515,22 @@ NWScriptDefK2.Actions = {
     name: 'ActionPauseConversation',
     type: NWScriptDataType.VOID,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        this.caller.actionQueue.add( new GameState.ActionFactory.ActionPauseDialog() );
+      }
+    }
   },
   206: {
     comment: '206: Resume a conversation after it has been paused.',
     name: 'ActionResumeConversation',
     type: NWScriptDataType.VOID,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
+        this.caller.actionQueue.add( new GameState.ActionFactory.ActionResumeDialog() );
+      }
+    }
   },
   207: {
     comment: '207: Create a Beam effect.\n- nBeamVisualEffect: VFX_BEAM_*\n- oEffector: the beam is emitted from this creature\n- nBodyPart: BODY_NODE_*\n- bMissEffect: If this is TRUE, the beam will fire to a random vector near or\n  past the target\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if nBeamVisualEffect is\n  not valid.',
@@ -6365,7 +6373,13 @@ NWScriptDefK2.Actions = {
     name: 'ActionSwitchWeapons',
     type: NWScriptDataType.VOID,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // Retail ExecuteCommandActionSwitchWeapons @ 007b0f50 → AddAction(0x47)
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      GameState.ActionFactory.AddSwitchWeaponsAction(this.caller as ModuleCreature);
+    }
   },
   854: {
     comment: '854\nDJS-OEI 8/29/2004\nPlayOverlayAnimation\nThis function will play an overlay animation on a character\neven if the character is moving. This does not cause an action\nto be placed on the queue. The animation passed in must be\ndesignated as an overlay in Animations.2DA.',

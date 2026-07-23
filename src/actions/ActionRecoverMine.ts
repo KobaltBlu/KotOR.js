@@ -65,8 +65,13 @@ export class ActionRecoverMine extends Action {
     if(!this.animQueued){
       this.animQueued = true;
       owner.setFacingObject(this.target);
+      // Retail AIActionRecoverMine @ 00518c40: door/placeable 0x274c, trigger 0x279d
+      const isDoorOrPlaceable =
+        BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor) ||
+        BitWise.InstanceOfObject(this.target, ModuleObjectType.ModulePlaceable);
+      const animId = isDoorOrPlaceable ? 0x274c : 0x279d;
       const playAnim = new GameState.ActionFactory.ActionPlayAnimation();
-      playAnim.setParameter(0, ActionParameterType.INT, 0x2794);
+      playAnim.setParameter(0, ActionParameterType.INT, animId);
       playAnim.setParameter(1, ActionParameterType.FLOAT, 1.0);
       playAnim.setParameter(2, ActionParameterType.FLOAT, 4.5);
       owner.actionQueue.addFront(playAnim);

@@ -56,6 +56,10 @@ import { ActionEncounterCreatureDestroySelf } from "@/actions/ActionEncounterCre
 import { ActionOrientCamera } from "@/actions/ActionOrientCamera";
 import { ActionCounterSpell } from "@/actions/ActionCounterSpell";
 import { ActionDrive } from "@/actions/ActionDrive";
+import { ActionDoorSaber } from "@/actions/ActionDoorSaber";
+import { ActionSwitchWeapons } from "@/actions/ActionSwitchWeapons";
+import { ActionStanceTotalDefense } from "@/actions/ActionStanceTotalDefense";
+import { ActionStanceMeditative } from "@/actions/ActionStanceMeditative";
 import {
   ActionCheckMoveToObject,
   ActionCheckMoveAwayFromObject,
@@ -134,6 +138,10 @@ export class ActionFactory {
   static ActionOrientCamera: typeof ActionOrientCamera = ActionOrientCamera;
   static ActionCounterSpell: typeof ActionCounterSpell = ActionCounterSpell;
   static ActionDrive: typeof ActionDrive = ActionDrive;
+  static ActionDoorSaber: typeof ActionDoorSaber = ActionDoorSaber;
+  static ActionSwitchWeapons: typeof ActionSwitchWeapons = ActionSwitchWeapons;
+  static ActionStanceTotalDefense: typeof ActionStanceTotalDefense = ActionStanceTotalDefense;
+  static ActionStanceMeditative: typeof ActionStanceMeditative = ActionStanceMeditative;
   static ActionCheckMoveToObject: typeof ActionCheckMoveToObject = ActionCheckMoveToObject;
   static ActionCheckMoveAwayFromObject: typeof ActionCheckMoveAwayFromObject = ActionCheckMoveAwayFromObject;
   static ActionCheckInterAreaPathfinding: typeof ActionCheckInterAreaPathfinding = ActionCheckInterAreaPathfinding;
@@ -317,6 +325,18 @@ export class ActionFactory {
       case ActionType.ActionDrive:
         action = new ActionDrive(actionId, groupId);
       break;
+      case ActionType.ActionDoorSaber:
+        action = new ActionDoorSaber(actionId, groupId);
+      break;
+      case ActionType.ActionSwitchWeapons:
+        action = new ActionSwitchWeapons(actionId, groupId);
+      break;
+      case ActionType.ActionStanceTotalDefense:
+        action = new ActionStanceTotalDefense(actionId, groupId);
+      break;
+      case ActionType.ActionStanceMeditative:
+        action = new ActionStanceMeditative(actionId, groupId);
+      break;
       case ActionType.ActionCheckMoveToObject:
         action = new ActionCheckMoveToObject(actionId, groupId);
       break;
@@ -451,6 +471,77 @@ export class ActionFactory {
         refresh: 1,
       }
     );
+    creature.actionQueue.add(action);
+    return action;
+  }
+
+  /**
+   * Queue TSL weapon config swap (AddSwitchWeaponsAction / AIActionSwitchWeapons @ 006bbb10).
+   * Engine ID 0x47.
+   */
+  static AddSwitchWeaponsAction(
+    creature: { actionQueue: { add: (a: Action) => void }; clearAllActions?: (u?: boolean) => void },
+    options: { clear?: boolean; groupId?: number } = {}
+  ): ActionSwitchWeapons {
+    if(options.clear){
+      creature.clearAllActions?.(true);
+    }
+    const action = new ActionSwitchWeapons(-1, options.groupId ?? -1);
+    creature.actionQueue.add(action);
+    return action;
+  }
+
+  /**
+   * Queue TSL door-saber (AddDoorSaberAction @ 006ae890). Engine ID 0x43.
+   */
+  static AddDoorSaberAction(
+    creature: { actionQueue: { add: (a: Action) => void }; clearAllActions?: (u?: boolean) => void },
+    door: { id: number },
+    options: { clear?: boolean; groupId?: number } = {}
+  ): ActionDoorSaber | undefined {
+    if(!creature || !door){
+      return undefined;
+    }
+    if(options.clear){
+      creature.clearAllActions?.(true);
+    }
+    const action = new ActionDoorSaber(-1, options.groupId ?? -1);
+    action.setParameter(0, ActionParameterType.DWORD, door.id);
+    creature.actionQueue.add(action);
+    return action;
+  }
+
+  /**
+   * Queue Total Defense stance. Engine ID 0x44.
+   */
+  static AddStanceTotalDefenseAction(
+    creature: { actionQueue: { add: (a: Action) => void }; clearAllActions?: (u?: boolean) => void },
+    target: { id: number },
+    options: { clear?: boolean; groupId?: number } = {}
+  ): ActionStanceTotalDefense | undefined {
+    if(!creature || !target){
+      return undefined;
+    }
+    if(options.clear){
+      creature.clearAllActions?.(true);
+    }
+    const action = new ActionStanceTotalDefense(-1, options.groupId ?? -1);
+    action.setParameter(0, ActionParameterType.DWORD, target.id);
+    creature.actionQueue.add(action);
+    return action;
+  }
+
+  /**
+   * Queue Meditative stance. Engine ID 0x45.
+   */
+  static AddStanceMeditativeAction(
+    creature: { actionQueue: { add: (a: Action) => void }; clearAllActions?: (u?: boolean) => void },
+    options: { clear?: boolean; groupId?: number } = {}
+  ): ActionStanceMeditative {
+    if(options.clear){
+      creature.clearAllActions?.(true);
+    }
+    const action = new ActionStanceMeditative(-1, options.groupId ?? -1);
     creature.actionQueue.add(action);
     return action;
   }

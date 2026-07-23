@@ -15,10 +15,11 @@ import { GameState } from "@/GameState";
  *
  * ProcessPoint follow_data stride (~0x28):
  *   field0_0x0  Vector3 center
- *   field1_0xc  float bearing (retail degrees; JS stores radians from rotation.z)
- *   field2_0x10 Vector3 lateral slot1 (party_member field12 rotated by DegToRad(bearing))
+ *   field1_0xc  float bearing — retail stores **degrees** (consumers DegToRad);
+ *               KotOR.js stores **radians** (`leader.rotation.z`) and uses cos/sin directly
+ *   field2_0x10 Vector3 lateral slot1
  *   field3_0x1c Vector3 lateral slot2
- * Recalc/Teleport use center (field0); cold GetFollowPosition uses ±1.5 along (cos,sin).
+ * Recalc/Teleport use center (field0); cold GetFollowPosition uses ±1.5 along (cos,sin) of radians.
  *
  * @file party-follow-path.ts
  */
@@ -129,6 +130,7 @@ export class PartyFollowPath {
 
   /**
    * Retail ProcessPoint — record leader position when moved enough / LOS broken.
+   * Bearing is stored in radians (JS); retail field1_0xc is degrees.
    */
   processPoint(
     leader: ModuleCreature,
@@ -136,6 +138,7 @@ export class PartyFollowPath {
   ): void {
     if(!leader) return;
     const point = leader.position;
+    // ModuleCreature.rotation.z is radians — keep ring bearing in radians throughout JS
     const bearing = leader.rotation?.z ?? 0;
 
     if(!this.hasLastClear){

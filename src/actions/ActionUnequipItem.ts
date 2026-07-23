@@ -54,6 +54,10 @@ export class ActionUnequipItem extends Action {
       obj.unequipSlot(ModuleCreatureArmorSlot.BELT);
     }else if(obj.equipment.RIGHTHAND == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND);
+    }else if(obj.equipment.RIGHTHAND2 == item){
+      obj.unequipSlot(ModuleCreatureArmorSlot.RIGHTHAND2);
+    }else if(obj.equipment.LEFTHAND2 == item){
+      obj.unequipSlot(ModuleCreatureArmorSlot.LEFTHAND2);
     }else if(obj.equipment.CLAW1 == item){
       obj.unequipSlot(ModuleCreatureArmorSlot.CLAW1);
     }else if(obj.equipment.CLAW2 == item){

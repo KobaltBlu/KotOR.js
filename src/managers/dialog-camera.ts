@@ -1,5 +1,11 @@
 import * as THREE from "three";
 import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
+import {
+  auroraPitchFromQuaternion,
+  auroraRollFromQuaternion,
+  auroraYawFromQuaternion,
+  auroraYawPitchRoll,
+} from "@/utility/aurora-camera-orientation";
 
 /**
  * Retail CSWBehaviorCameraDialog::GetCameraParameters @ 006bb7b0.
@@ -32,6 +38,13 @@ export interface DialogCameraShotOptions {
   collided?: boolean;
   /** param_2 — side flip (2 mirrors yaw); GetSideUnobstructed @ 006bc600 */
   side?: number;
+  /**
+   * TSL Aspyr vanilla camera hacks (UpdateShotCamera @ 004d4880) —
+   * only applied when !isDialogGameModded().
+   */
+  aspyrDistanceOverride?: number;
+  aspyrHeightOverride?: number;
+  aspyrAngleOverrideDeg?: number;
 }
 
 export interface DialogPseudoRandomState {
@@ -315,6 +328,28 @@ export function computeDialogCameraShot(
   }
 
   outPos.z += dist * heightAddScale + heightBias;
+
+  // TSL Aspyr appearance overrides (gated by !IsGameModded)
+  const distOvr = opts.aspyrDistanceOverride ?? 0;
+  const heightOvr = opts.aspyrHeightOverride ?? 0;
+  const angleOvr = opts.aspyrAngleOverrideDeg ?? 0;
+  if(distOvr || heightOvr || angleOvr){
+    if(angleOvr){
+      const fromLook = new THREE.Vector3().subVectors(outPos, outLook);
+      const rotatedOvr = rotateYaw(fromLook, angleOvr);
+      outPos.copy(outLook).add(rotatedOvr);
+    }
+    if(distOvr){
+      const dir = new THREE.Vector3().subVectors(outPos, outLook);
+      const len = dir.length();
+      if(len > 1e-6){
+        dir.multiplyScalar((len + distOvr) / len);
+        outPos.copy(outLook).add(dir);
+      }
+    }
+    outPos.z += heightOvr;
+  }
+
   return { position: outPos, lookAt: outLook };
 }
 
@@ -358,3 +393,77 @@ export function lookupDialogCloseUpExtra(
   if(range > -0.001 && range < 0.001) return 0;
   return range;
 }
+
+/**
+ * TSL Aspyr `IsGameModded` @ 004072b0 — override/mod folder (or subscribed mods).
+ * KotOR.js maps this to ini EnableOverride / look_in_override.
+ */
+export function isDialogGameModded(enableOverride?: boolean, lookInOverride?: boolean): boolean {
+  return !!enableOverride || !!lookInOverride;
+}
+
+export interface AspyrDialogCameraOverrides {
+  distance: number;
+  height: number;
+  angleDeg: number;
+}
+
+/**
+ * TSL Aspyr UpdateShotCamera appearance pair hacks — only when !IsGameModded
+ * and Aspyr vanilla flag. Appearance ids: 0x121, 0x122, 0x16b.
+ */
+export function resolveAspyrAppearanceCameraOverrides(
+  speakerAppearanceId: number,
+  listenerAppearanceId: number,
+  shotType: number,
+  gameModded: boolean,
+  applyVanillaAspyrHacks: boolean
+): AspyrDialogCameraOverrides {
+  const empty = { distance: 0, height: 0, angleDeg: 0 };
+  if(gameModded || !applyVanillaAspyrHacks) return empty;
+  const sp = speakerAppearanceId | 0;
+  const lp = listenerAppearanceId | 0;
+  const type = shotType | 0;
+  // 0x121=289, 0x122=290, 0x16b=363
+  if(sp === 0x121 && lp === 0x122 && type === 3){
+    return { distance: 0, height: 1, angleDeg: 70 };
+  }
+  if(sp === 0x16b && lp === 0x122 && type === 3){
+    return { distance: 0.2, height: 1, angleDeg: 70 };
+  }
+  if(sp === 0x122 && lp === 0x16b && type === 2){
+    return { distance: 0.2, height: 1, angleDeg: 70 };
+  }
+  if(sp === 0x122 && lp === 0x121 && type === 2){
+    return { distance: 0.8, height: 0.6, angleDeg: 120 };
+  }
+  return empty;
+}
+
+/**
+ * TSL Aspyr placeable (angle 6) vanilla offset when !IsGameModded —
+ * +2 X, −6 Y, +0.5 Z, +110° pitch on rebuilt quat.
+ */
+export function applyAspyrPlaceableCameraHack(
+  position: THREE.Vector3,
+  orientation: THREE.Quaternion,
+  gameModded: boolean,
+  applyVanillaAspyrHacks: boolean,
+  outPos: THREE.Vector3 = position,
+  outQuat: THREE.Quaternion = orientation
+): { position: THREE.Vector3; quaternion: THREE.Quaternion } {
+  outPos.copy(position);
+  outQuat.copy(orientation);
+  if(gameModded || !applyVanillaAspyrHacks){
+    return { position: outPos, quaternion: outQuat };
+  }
+  outPos.x += 2;
+  outPos.y -= 6;
+  outPos.z += 0.5;
+  const yaw = auroraYawFromQuaternion(outQuat);
+  const pitch = auroraPitchFromQuaternion(outQuat) + 110;
+  const roll = auroraRollFromQuaternion(outQuat);
+  auroraYawPitchRoll(yaw, pitch, roll, outQuat);
+  return { position: outPos, quaternion: outQuat };
+}
+

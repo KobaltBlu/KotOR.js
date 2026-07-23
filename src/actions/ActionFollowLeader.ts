@@ -2,35 +2,32 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { EngineMode } from "@/enums/engine/EngineMode";
-import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import {
   createFollowRuntime,
   FollowLeaderState,
-  FOLLOW_COMFORT,
-  resolveFollowState,
-  shouldFollowRun,
+  FOLLOW_STUCK_ITERATIONS,
+  isFollowWaitState,
   type FollowLeaderRuntime,
 } from "@/engine/pathfinding/follow-leader";
-import { getFollowRateScale } from "@/engine/pathfinding/locomotion";
+import {
+  isActivelyApproaching,
+  stepFollowLeaderState,
+} from "@/engine/pathfinding/follow-leader-sm";
 import { partySoftSeparate } from "@/engine/pathfinding/party-soft-separate";
-import { getPathPersonalSpace } from "@/combat/attack-range";
-import { walkUpdateLocation } from "@/engine/pathfinding/walk-update-location";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { BitWise } from "@/utility/BitWise";
-import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
 import * as THREE from "three";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 
 const _followOffset = new THREE.Vector3();
-/** Repath when the live offset drifts this far from the path end. */
-const OFFSET_REPATH_DRIFT = 1.25;
 
 /**
  * ActionFollowLeader class.
- * Party companion follow — retail thresholds / follow ring + WalkUpdateLocation.
+ * Party companion follow — retail WalkUpdateLocation_QuickWalk_FollowLeader
+ * 11-state SM + follow ring + WalkUpdateLocation.
  *
  * @file ActionFollowLeader.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -71,128 +68,51 @@ export class ActionFollowLeader extends Action {
     this.target = leader;
     _followOffset.copy(GameState.PartyManager.GetFollowPosition(owner));
     const offset = _followOffset;
-    const distLeader = Utility.Distance2D(owner.position, leader.position);
-    const distOffset = Utility.Distance2D(owner.position, offset);
 
-    if(this.followRuntime.state === FollowLeaderState.MovingToOffset){
-      if(distOffset > FOLLOW_COMFORT + 0.25){
-        this.followRuntime.stuckTimer += delta;
-      }else{
-        this.followRuntime.stuckTimer = 0;
+    // Retail do/while (iVar14 == 1) with field11 abort → Reset
+    let iterations = 0;
+    let teleport = false;
+    while(iterations < FOLLOW_STUCK_ITERATIONS){
+      iterations++;
+      const step = stepFollowLeaderState(
+        this.followRuntime,
+        owner,
+        leader,
+        offset,
+        delta,
+        (d, g, face) => this.runCreatureAvoidance(d, g, face)
+      );
+      if(step.teleport){
+        teleport = true;
+        break;
       }
-    }else{
-      this.followRuntime.stuckTimer = 0;
+      if(!step.continueInner) break;
     }
 
-    const next = resolveFollowState(
-      distLeader,
-      distOffset,
-      this.followRuntime.state,
-      this.followRuntime.stuckTimer
-    );
-    this.followRuntime.state = next;
-
-    if(next === FollowLeaderState.Teleport){
+    if(teleport || this.followRuntime.state === FollowLeaderState.Teleport){
       this.teleportToOffset(owner, offset);
-      this.followRuntime.state = FollowLeaderState.Idle;
+      this.followRuntime.state = FollowLeaderState.WaitingForPath;
       this.followRuntime.stuckTimer = 0;
+      this.followRuntime.stuckCounter = 0;
       return ActionStatus.IN_PROGRESS;
     }
 
-    if(next === FollowLeaderState.MovingToOffset){
-      this.driveTowardOffset(owner, offset, leader, delta, shouldFollowRun(distLeader, distOffset));
+    if(isActivelyApproaching(this.followRuntime)){
       return ActionStatus.IN_PROGRESS;
     }
 
+    // WaitDest / WaitingForPath — hold without clearing a pending path
+    if(isFollowWaitState(this.followRuntime.state)){
+      owner.force = 0;
+      owner.speed = 0;
+      owner.moveDirOverride = undefined;
+      return ActionStatus.IN_PROGRESS;
+    }
+
+    // Offset / Idle — soft-separate + look at leader (retail LookAt when step≈0)
     this.parkIdle(owner);
+    this.lookAtLeader(owner, leader);
     return ActionStatus.IN_PROGRESS;
-  }
-
-  /**
-   * WalkUpdateLocation toward follow offset (retail FollowLeader bands via followScale).
-   */
-  private driveTowardOffset(
-    owner: ModuleCreature,
-    offset: THREE.Vector3,
-    leader: ModuleCreature,
-    delta: number,
-    run: boolean
-  ){
-    this.ensurePathToOffset(owner, offset);
-
-    if(owner.blockingTimer >= 5 || owner.collisionTimer >= 0.5){
-      owner.blockingTimer = 0;
-      owner.collisionTimer = 0;
-      this.runCreatureAvoidance(delta, offset, leader);
-    }
-
-    const path = owner.getComputedPath();
-    const point = path?.points?.[0];
-    if(point && Utility.Distance2D(owner.position, point.vector) <= 0.5){
-      path.pop();
-    }
-    const goal = path?.points?.[0]?.vector ?? offset;
-    this.faceToward(owner, goal);
-
-    owner.walk = !run;
-    owner.force = 0;
-    owner.moveDirOverride = undefined;
-    owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
-
-    let remaining = Utility.Distance2D(owner.position, goal);
-    const pts = path?.points;
-    if(pts?.length){
-      remaining = Utility.Distance2D(owner.position, pts[0].vector);
-      for(let i = 1; i < pts.length; i++){
-        remaining += Utility.Distance2D(pts[i - 1].vector, pts[i].vector);
-      }
-    }
-
-    walkUpdateLocation(owner, goal, run, delta, {
-      remainingDistance: remaining,
-      followScale: getFollowRateScale(Utility.Distance2D(owner.position, offset)),
-    });
-  }
-
-  private faceToward(owner: ModuleCreature, goal: THREE.Vector3){
-    const dx = goal.x - owner.position.x;
-    const dy = goal.y - owner.position.y;
-    if(dx * dx + dy * dy < 1e-8) return;
-    const atan = Math.atan2(-dy, -dx);
-    owner.setFacing(atan + Math.PI / 2, false, TURN_SPEED_FAST);
-  }
-
-  private ensurePathToOffset(owner: ModuleCreature, offset: THREE.Vector3){
-    const area = owner.area ?? GameState.module?.area;
-    if(!area?.path?.traverseToPoint) return;
-
-    const path = owner.getComputedPath();
-    const end = path?.points?.length
-      ? path.points[path.points.length - 1].vector
-      : undefined;
-    const drift = end ? Utility.Distance2D(end, offset) : Infinity;
-    if(path?.points?.length && drift <= OFFSET_REPATH_DRIFT){
-      return;
-    }
-
-    let dest = offset;
-    if(typeof area.getNearestWalkablePoint === 'function' && typeof area.isPointWalkable === 'function'){
-      if(!area.isPointWalkable(offset)){
-        dest = area.getNearestWalkablePoint(offset, 0.05);
-      }
-    }
-
-    const computed = area.path.traverseToPoint(owner, owner.position, dest);
-    if(!computed?.points?.length){
-      return;
-    }
-    computed.prunePathPoints();
-    computed.smoothCorners();
-    computed.fixWalkEdges(getPathPersonalSpace(owner));
-    computed.setColor(owner.helperColor);
-    computed.realtime = true;
-    computed.timer = 20;
-    owner.setComputedPath(computed);
   }
 
   private parkIdle(owner: ModuleCreature){
@@ -204,6 +124,14 @@ export class ActionFollowLeader extends Action {
     owner.setComputedPath(undefined);
     // Party field426 creatures aren't BumpFriends targets — soft-separate when idle
     partySoftSeparate(owner);
+  }
+
+  private lookAtLeader(owner: ModuleCreature, leader: ModuleCreature){
+    const dx = leader.position.x - owner.position.x;
+    const dy = leader.position.y - owner.position.y;
+    if(dx * dx + dy * dy < 1e-8) return;
+    const atan = Math.atan2(-dy, -dx);
+    owner.setFacing(atan + Math.PI / 2, false, TURN_SPEED_FAST);
   }
 
   /**

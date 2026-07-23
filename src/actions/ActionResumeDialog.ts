@@ -5,9 +5,10 @@ import { Action } from "@/actions/Action";
 
 /**
  * ActionResumeDialog class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
+ * Retail AIActionResumeDialog @ 0057b320 — clears pause and flushes any
+ * deferred SendDialogEntry pending while paused.
+ *
  * @file ActionResumeDialog.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -20,8 +21,7 @@ export class ActionResumeDialog extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    GameState.CutsceneManager.paused = false;
-    console.log('ActionResumeDialog', this.owner.getName(), this.owner.getTag());
+    GameState.CutsceneManager.resumeConversation();
     return ActionStatus.COMPLETE;
   }
 

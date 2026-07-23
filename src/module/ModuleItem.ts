@@ -595,16 +595,18 @@ export class ModuleItem extends ModuleObject {
       cast.impact();
       cast.completed = true;
 
-      if(this.charges > 1){
-        this.charges -= 1;
-      }else if(this.charges === 1){
-        oCaster.removeItem(this, 1);
-      }else{
-        const stack = this.getStackSize();
-        if(stack <= 1){
+      if(!GameState.infiniteUses){
+        if(this.charges > 1){
+          this.charges -= 1;
+        }else if(this.charges === 1){
           oCaster.removeItem(this, 1);
         }else{
-          this.setStackSize(stack - 1);
+          const stack = this.getStackSize();
+          if(stack <= 1){
+            oCaster.removeItem(this, 1);
+          }else{
+            this.setStackSize(stack - 1);
+          }
         }
       }
 
@@ -658,15 +660,17 @@ export class ModuleItem extends ModuleObject {
         effect.setDuration(120); // seconds — lasts through typical computer use
         oCaster.addEffect(effect);
 
-        const inventory = oCaster.getInventory();
-        if(inventory.includes(this)){
-          const stack = this.getStackSize();
-          if(stack <= 1){
-            const idx = inventory.indexOf(this);
-            if(idx >= 0) inventory.splice(idx, 1);
-            this.destroy();
-          }else{
-            this.setStackSize(stack - 1);
+        if(!GameState.infiniteUses){
+          const inventory = oCaster.getInventory();
+          if(inventory.includes(this)){
+            const stack = this.getStackSize();
+            if(stack <= 1){
+              const idx = inventory.indexOf(this);
+              if(idx >= 0) inventory.splice(idx, 1);
+              this.destroy();
+            }else{
+              this.setStackSize(stack - 1);
+            }
           }
         }
       }

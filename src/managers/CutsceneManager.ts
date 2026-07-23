@@ -31,8 +31,16 @@ import {
   resolveEntryCameraAngle,
   resolveReplyCameraAngle,
   lookupDialogCloseUpExtra,
+  resolveAspyrAppearanceCameraOverrides,
+  isDialogGameModded,
+  applyAspyrPlaceableCameraHack,
   type DialogPseudoRandomState,
 } from "@/managers/dialog-camera";
+import {
+  auroraPitchFromVector,
+  auroraYawFromVector,
+  auroraYawPitchRoll,
+} from "@/utility/aurora-camera-orientation";
 
 export class CutsceneManager {
 
@@ -67,7 +75,24 @@ export class CutsceneManager {
 
   static audioEmitter: AudioEmitter;
 
+  /**
+   * Retail CSWSObject::field15_0x50 — PauseConversation blocks advancing to the
+   * next entry/reply (SendDialogEntry @ 004cd460) while the current entry's
+   * WaitFlags / VO / camera keep ticking.
+   */
   static paused: boolean = false;
+  /** Retail field13_0x48 — deferred advance after pause while entry completed. */
+  static pendingAdvance: boolean = false;
+  /**
+   * Actors that received dialog AnimList / default talk/listen this entry —
+   * polled for WAIT_ANIM (IsAnimationPlayingInDialog @ 0062d570).
+   */
+  static dialogAnimParticipants: ModuleObject[] = [];
+  /** TSL ActionStartConversation nBarkX/nBarkY (−1 = default layout). */
+  static barkScreenX: number = -1;
+  static barkScreenY: number = -1;
+  static readonly #tmpCamDir = new THREE.Vector3();
+  static readonly #tmpCamQuat = new THREE.Quaternion();
 
   static cameraState: ICameraState = {
     mode: CameraMode.DIALOG,
@@ -109,15 +134,68 @@ export class CutsceneManager {
   }
 
   /**
+   * Speaker / listener (or current entry pair) for private-conversation gating.
+   * Non-participants keep AI locomotion and are not forced into dialog facing.
+   */
+  static isDialogParticipant(obj: ModuleObject | undefined): boolean {
+    if(!obj) return false;
+    if(obj === this.owner || obj === this.listener) return true;
+    if(this.currentEntry){
+      if(obj === this.currentEntry.speaker || obj === this.currentEntry.listener) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Retail AIActionPauseDialog @ 0057b290 — set field15_0x50 + dialog-stop activity bit.
+   */
+  static pauseConversation() {
+    if(!this.active || !this.dialog) return;
+    this.paused = true;
+    const owner = this.getCurrentOwner();
+    if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)){
+      (owner as ModuleCreature).setActivity(4, true, 0);
+    }
+  }
+
+  /**
+   * Retail AIActionResumeDialog @ 0057b320 — clear pause, ActivityManager(2),
+   * clear dialog-stop bit, clear stealth bit; flush deferred SendDialogEntry.
+   */
+  static resumeConversation() {
+    if(!this.dialog) return;
+    this.paused = false;
+    const owner = this.getCurrentOwner();
+    if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)){
+      const creature = owner as ModuleCreature;
+      creature.activityManager(2);
+      creature.setActivity(4, false, 0);
+      creature.setActivity(1, false, 0);
+    }
+    if(this.pendingAdvance && this.currentEntry && !this.currentEntry.repliesShown){
+      this.pendingAdvance = false;
+      this.currentEntry.repliesShown = true;
+      this.showReplies(this.currentEntry);
+    }else{
+      this.pendingAdvance = false;
+    }
+  }
+
+  /**
    * Cancel path movers and zero cam-relative WASD/stick state on the active party.
    * Dialog mode still ticks creatures; sticky axes otherwise keep the PC coasting.
+   * Private conversations only park speaker/listener (N16).
    */
   static stopPartyLocomotionForDialog() {
     const party = GameState.PartyManager?.party;
     if(!party?.length) return;
+    const privateConvo = this.privateConversation;
     for(let i = 0; i < party.length; i++){
       const member = party[i];
       if(!BitWise.InstanceOfObject(member, ModuleObjectType.ModuleCreature)) continue;
+      if(privateConvo && !this.isDialogParticipant(member)){
+        continue;
+      }
       const creature = member as ModuleCreature;
       creature.cancelLocomotionActions();
       creature.clearLocomotionState(true);
@@ -130,15 +208,21 @@ export class CutsceneManager {
     listener: ModuleObject = GameState.PartyManager.party[0],
     privateConversation: boolean = false,
     ignoreObjectNames: string[] = [],
+    barkScreenX: number = -1,
+    barkScreenY: number = -1,
   ) {
     this.active = true;
     this.privateConversation = !!privateConversation;
     this.setDialogNonDependantNames(ignoreObjectNames);
+    this.barkScreenX = typeof barkScreenX === 'number' ? barkScreenX : -1;
+    this.barkScreenY = typeof barkScreenY === 'number' ? barkScreenY : -1;
     this.cameraState.currentCameraAnimation = undefined;
     this.dialogCameraPrng = createDialogPseudoRandomState(dialog?.resref || '');
     this.owner = owner;
     this.listener = listener;
     this.paused = false;
+    this.pendingAdvance = false;
+    this.dialogAnimParticipants = [];
     this.ended = false;
     this.currentEntry = null;
     this.state = ConversationState.INVALID;
@@ -190,7 +274,7 @@ export class CutsceneManager {
     if (isBarkDialog) {
       this.cutsceneMode = CutsceneMode.BARK;
       this.startingEntry.initProperties();
-      GameState.MenuManager.InGameBark.bark(this.startingEntry);
+      GameState.MenuManager.InGameBark.bark(this.startingEntry, this.barkScreenX, this.barkScreenY);
       this.startingEntry.runScripts();
       const reply = this.dialog.getReplyByIndex(this.startingEntry.replies[0]?.index);
       if (reply) {
@@ -262,6 +346,7 @@ export class CutsceneManager {
    */
   static playerSkipEntry(currentEntry: DLGNode) {
     if(!this.currentEntry) { return; }
+    if(this.paused) { return; }
     if(!this.currentEntry.skippable) { return; }
     if(this.currentEntry.checkList.isSkipped){ return; }
     if(this.currentEntry.repliesShown){ return; }
@@ -276,6 +361,13 @@ export class CutsceneManager {
    * @param entry - The entry to show
    */
   static showEntry(entry: DLGNode) {
+    if(this.paused){
+      // Retail SendDialogEntry defers while field15_0x50 set — stash as pending show.
+      this.pendingAdvance = true;
+      return;
+    }
+    this.pendingAdvance = false;
+    this.dialogAnimParticipants = [];
     this.currentEntry = entry;
     this.currentEntry.repliesShown = false;
     entry.initProperties();
@@ -303,14 +395,19 @@ export class CutsceneManager {
       GameState.MenuManager.InGameDialog.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
     }
 
+    // N16: only force look-at on dialog participants (speaker/listener).
     if(BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)){
       const creature = this.currentEntry.speaker as ModuleCreature;
-      creature.lookAt(this.currentEntry.listener);
+      if(this.isDialogParticipant(creature)){
+        creature.lookAt(this.currentEntry.listener);
+      }
     }
     
     if(BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)){
       const creature = this.currentEntry.listener as ModuleCreature;
-      creature.lookAt(this.currentEntry.speaker);
+      if(this.isDialogParticipant(creature)){
+        creature.lookAt(this.currentEntry.speaker);
+      }
     }
 
     entry.updateJournal();
@@ -408,6 +505,9 @@ export class CutsceneManager {
    * @param reply - The reply to handle
    */
   static onReplySelect(reply: DLGNode) {
+    if(this.paused){
+      return;
+    }
     if (!reply) {
       this.endConversation();
       return;
@@ -508,10 +608,13 @@ export class CutsceneManager {
   static endConversation(aborted = false) {
     const wasBark = this.cutsceneMode == CutsceneMode.BARK;
     this.active = false;
+    this.paused = false;
+    this.pendingAdvance = false;
+    this.dialogAnimParticipants = [];
+    this.barkScreenX = -1;
+    this.barkScreenY = -1;
     this.dialogNonDependantNames.clear();
-    if (this.paused) {
-      this.ended = true;
-    }
+    this.ended = true;
     if(!wasBark){
       this.audioEmitter.stop();
       if(this.dialog?.getConversationType() == DLGConversationType.COMPUTER){
@@ -585,6 +688,7 @@ export class CutsceneManager {
             const animationName = this.getCUTAnimationName(participant.animation);
             const odysseyAnimation = actor.animations ? actor.animations.find( a => a.name.toLocaleLowerCase() == animationName.toLocaleLowerCase()) : undefined;
             if(odysseyAnimation){
+              this.registerDialogAnimParticipant(creature);
               creature.dialogPlayOdysseyAnimation(odysseyAnimation);
             }
           }
@@ -611,6 +715,7 @@ export class CutsceneManager {
           const anim = this.getDialogAnimation(participant.animation);
           console.log('anim', anim)
           if (anim) {
+            this.registerDialogAnimParticipant(actor);
             actor.dialogPlayAnimation(anim);
           } else {
             console.error('Anim', participant.animation);
@@ -627,6 +732,7 @@ export class CutsceneManager {
    * animationState or CutsceneAttack playTwoDAAnimation is blocked.
    */
   static playDialogCreatureAnimation(actor: ModuleObject, animationConstant: number) {
+    this.registerDialogAnimParticipant(actor);
     if(!BitWise.InstanceOfObject(actor, ModuleObjectType.ModuleCreature)){
       const anim = actor.animationConstantToAnimation(animationConstant);
       if(anim){
@@ -667,6 +773,14 @@ export class CutsceneManager {
       if (participant.animation >= 10000) {
         if (actor.animationConstantToAnimation(participant.animation)) {
           this.playDialogCreatureAnimation(actor, participant.animation);
+        } else {
+          console.error('Anim', participant.animation);
+        }
+      }else{
+        const anim = this.getDialogAnimation(participant.animation);
+        if (anim) {
+          this.registerDialogAnimParticipant(actor);
+          actor.dialogPlayAnimation(anim);
         } else {
           console.error('Anim', participant.animation);
         }
@@ -1064,7 +1178,17 @@ export class CutsceneManager {
     const dialog = GameState.camera_dialog;
     dialog.position.copy(src.position);
     dialog.quaternion.copy(src.quaternion);
-    dialog.rotation.setFromQuaternion(src.quaternion, 'YZX');
+
+    const modded = isDialogGameModded(GameState.Flags.EnableOverride, false);
+    const aspyrVanilla = GameState.GameKey === GameEngineType.TSL;
+    if(!modded && aspyrVanilla){
+      applyAspyrPlaceableCameraHack(
+        dialog.position, dialog.quaternion, modded, true,
+        dialog.position, dialog.quaternion
+      );
+    }
+
+    dialog.rotation.setFromQuaternion(dialog.quaternion, 'YZX');
     dialog.up.set(0, 0, 1);
     const fov = (typeof src.fov === 'number' && src.fov > 0) ? src.fov : DIALOG_CAMERA_FOV;
     dialog.fov = fov;
@@ -1106,15 +1230,86 @@ export class CutsceneManager {
 
     this.updateCamera(delta);
 
-    if(this.paused) return;
-
+    // Retail PauseConversation only blocks SendDialogEntry advance — keep
+    // current-entry WaitFlags / VO / fade / camera ticking while paused.
     if(this.currentEntry){
+      this.pollParticipantAnimationWait();
       const updateComplete = this.currentEntry.update(delta);
       if(updateComplete && !this.currentEntry.repliesShown){
-        this.currentEntry.repliesShown = true;
-        this.showReplies(this.currentEntry);
+        if(this.paused){
+          this.pendingAdvance = true;
+        }else{
+          this.currentEntry.repliesShown = true;
+          this.showReplies(this.currentEntry);
+        }
       }
     }
+  }
+
+  /**
+   * Retail IsAnimationPlayingInDialog @ 0062d570 / AnimationDialog @ 0063c4a0 —
+   * WAIT_ANIM clears when no registered participant still plays a dialog
+   * fire-forget or looping clip.
+   */
+  static pollParticipantAnimationWait() {
+    const entry = this.currentEntry;
+    if(!entry?.checkList) return;
+    if((entry.waitFlags & DLGNode.WAIT_ANIM) === 0) return;
+    if(entry.checkList.participantAnimationComplete) return;
+
+    if(!this.dialogAnimParticipants.length){
+      entry.checkList.participantAnimationComplete = true;
+      return;
+    }
+
+    for(let i = 0; i < this.dialogAnimParticipants.length; i++){
+      if(this.isDialogAnimationPlaying(this.dialogAnimParticipants[i])){
+        return;
+      }
+    }
+    entry.checkList.participantAnimationComplete = true;
+  }
+
+  /** True while a dialog fire-forget / looping anim is still driving the model. */
+  static isDialogAnimationPlaying(obj: ModuleObject): boolean {
+    if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) return false;
+    const creature = obj as ModuleCreature;
+    const da = creature.dialogAnimation;
+    if(da){
+      const looping = !!parseInt(String(da.data?.looping ?? 0));
+      const fireforget = !!parseInt(String(da.data?.fireforget ?? 0));
+      // Looping dialog anims keep WAIT_ANIM held while dialogAnimation is set.
+      if(looping) return true;
+      if(fireforget){
+        if(!da.started) return true;
+        if(creature.model?.animationManager?.currentAnimation === da.animation) return true;
+      }
+      // Non-classified dialog clip still playing
+      if(da.animation && creature.model?.animationManager?.currentAnimation === da.animation){
+        return true;
+      }
+      return false;
+    }
+    // Constants routed through setAnimationState (playDialogCreatureAnimation)
+    const anim = creature.animationState?.animation;
+    if(anim){
+      const fireforget = !!parseInt(String(anim.fireforget ?? 0));
+      const looping = !!parseInt(String(anim.looping ?? 0));
+      const dialog = !!parseInt(String((anim as any).dialog ?? 0));
+      if(dialog && (fireforget || looping)){
+        if(looping) return true;
+        if(fireforget && creature.model?.animationManager?.currentAnimation){
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  static registerDialogAnimParticipant(actor: ModuleObject | undefined) {
+    if(!actor) return;
+    if(this.dialogAnimParticipants.indexOf(actor) >= 0) return;
+    this.dialogAnimParticipants.push(actor);
   }
 
   /**
@@ -1167,7 +1362,11 @@ export class CutsceneManager {
         listener.rotation = new THREE.Vector3();
       }
       listener.position.copy(listener.participant.position);
-      listener.rotation.copy(listener.participant.rotation);
+      listener.rotation.set(
+        listener.participant.rotation.x,
+        listener.participant.rotation.y,
+        listener.participant.rotation.z
+      );
 
       if(!speaker.position){
         speaker.position = new THREE.Vector3();
@@ -1176,7 +1375,11 @@ export class CutsceneManager {
         speaker.rotation = new THREE.Vector3();
       }
       speaker.position.copy(speaker.participant.position);
-      speaker.rotation.copy(speaker.participant.rotation);
+      speaker.rotation.set(
+        speaker.participant.rotation.x,
+        speaker.participant.rotation.y,
+        speaker.participant.rotation.z
+      );
 
       switch (this.cameraState.cameraAngle) {
         case DLGCameraAngle.ANGLE_SPEAKER:
@@ -1277,10 +1480,33 @@ export class CutsceneManager {
     const side = this.cameraState.dialogCamSide;
     let collided = false;
 
+    const speakerObj = swapParticipants
+      ? this.cameraState.listener.participant
+      : this.cameraState.speaker.participant;
+    const listenerObj = swapParticipants
+      ? this.cameraState.speaker.participant
+      : this.cameraState.listener.participant;
+    const spApp = BitWise.InstanceOfObject(speakerObj, ModuleObjectType.ModuleCreature)
+      ? (speakerObj as ModuleCreature).getAppearance()?.id ?? -1
+      : -1;
+    const lpApp = BitWise.InstanceOfObject(listenerObj, ModuleObjectType.ModuleCreature)
+      ? (listenerObj as ModuleCreature).getAppearance()?.id ?? -1
+      : -1;
+    const modded = isDialogGameModded(GameState.Flags.EnableOverride, false);
+    const aspyrVanilla = GameState.GameKey === GameEngineType.TSL;
+    const aspyr = resolveAspyrAppearanceCameraOverrides(
+      spApp, lpApp, shotType, modded, aspyrVanilla
+    );
+
     computeDialogCameraShot(
       shotType, sp, lp,
       this.#tmpDialogCamPos, this.#tmpDialogCamLook,
-      { side, heightBias, focusHeightBias, closeUpExtra }
+      {
+        side, heightBias, focusHeightBias, closeUpExtra,
+        aspyrDistanceOverride: aspyr.distance,
+        aspyrHeightOverride: aspyr.height,
+        aspyrAngleOverrideDeg: aspyr.angleDeg,
+      }
     );
 
     if(this.checkDialogCameraObstruction(shotType, this.#tmpDialogCamPos, this.#tmpDialogCamLook, sp, lp)){
@@ -1294,9 +1520,32 @@ export class CutsceneManager {
 
     GameState.camera_dialog.fov = DIALOG_CAMERA_FOV;
     GameState.camera_dialog.position.copy(this.#tmpDialogCamPos);
-    GameState.camera_dialog.lookAt(this.#tmpDialogCamLook);
+    // Retail Control @ 006bcf50: YawPitchRoll from GetCameraParameters quat
+    // (not THREE.lookAt, which can introduce non-Aurora roll).
+    this.applyDialogCameraLookAt(this.#tmpDialogCamPos, this.#tmpDialogCamLook);
     GameState.camera_dialog.updateProjectionMatrix();
     return !collided;
+  }
+
+  /**
+   * Orient camera_dialog toward a look point using Aurora yaw/pitch (roll 0).
+   */
+  static applyDialogCameraLookAt(pos: THREE.Vector3, look: THREE.Vector3) {
+    this.#tmpCamDir.set(look.x - pos.x, look.y - pos.y, look.z - pos.z);
+    if(this.#tmpCamDir.lengthSq() < 1e-12){
+      this.#tmpCamDir.set(0, 1, 0);
+    }else{
+      this.#tmpCamDir.normalize();
+    }
+    // Camera looks along local −Z; facing vector for Aurora extractors is the
+    // world direction the camera faces (pos → look).
+    const yaw = auroraYawFromVector(this.#tmpCamDir.x, this.#tmpCamDir.y, this.#tmpCamDir.z);
+    const pitch = auroraPitchFromVector(this.#tmpCamDir.x, this.#tmpCamDir.y, this.#tmpCamDir.z);
+    auroraYawPitchRoll(yaw, pitch, 0, this.#tmpCamQuat);
+    const dialog = GameState.camera_dialog;
+    dialog.up.set(0, 0, 1);
+    dialog.quaternion.copy(this.#tmpCamQuat);
+    dialog.rotation.setFromQuaternion(this.#tmpCamQuat, 'YZX');
   }
 
   /**

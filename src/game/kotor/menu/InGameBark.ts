@@ -51,7 +51,7 @@ export class InGameBark extends GameMenu {
     });
   }
   
-  bark(entry: DLGNode) {
+  bark(entry: DLGNode, screenX: number = -1, screenY: number = -1) {
 
     const outText = this.gameStringParse(entry.text);
     console.log('bark', entry, outText);
@@ -87,8 +87,16 @@ export class InGameBark extends GameMenu {
     this.LBL_BARKTEXT.text.geometry.boundingBox?.getSize(size);
     this.tGuiPanel.extent.height = Math.ceil(size.y) + 14;
     this.tGuiPanel.resizeControl();
-    this.tGuiPanel.widget.position.x = -GameState.ResolutionManager.getViewportWidth() / 2 + this.tGuiPanel.extent.width / 2 + 10;
-    this.tGuiPanel.widget.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
+    // TSL ActionStartConversation nBarkX/nBarkY — left/top corner override (−1 = default).
+    if(screenX >= 0 && screenY >= 0){
+      const halfW = GameState.ResolutionManager.getViewportWidth() / 2;
+      const halfH = GameState.ResolutionManager.getViewportHeight() / 2;
+      this.tGuiPanel.widget.position.x = -halfW + screenX + this.tGuiPanel.extent.width / 2;
+      this.tGuiPanel.widget.position.y = halfH - screenY - this.tGuiPanel.extent.height / 2;
+    }else{
+      this.tGuiPanel.widget.position.x = -GameState.ResolutionManager.getViewportWidth() / 2 + this.tGuiPanel.extent.width / 2 + 10;
+      this.tGuiPanel.widget.position.y = GameState.ResolutionManager.getViewportHeight() / 2 - this.tGuiPanel.extent.height / 2 - 134;
+    }
     this.LBL_BARKTEXT.setText(entry.text);
 
     if (!!entry.getVoiceResRef()?.length) {

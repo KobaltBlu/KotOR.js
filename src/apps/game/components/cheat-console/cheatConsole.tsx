@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useApp } from "@/apps/game/context/AppContext";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";
 import "@/apps/game/components/cheat-console/cheat-console.scss";
@@ -18,6 +18,10 @@ export const CheatConsole = () => {
   const [modulesLoading, setModulesLoading] = useState(false);
   const [modulesLoaded, setModulesLoaded] = useState(false);
   const [warpFilter, setWarpFilter] = useState('');
+  const [autoCompletePrefix, setAutoCompletePrefix] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const commandNames = useMemo(() => KotOR.CheatConsoleManager.getCommandNames(), []);
 
   const debugGroups = [
     {
@@ -50,6 +54,10 @@ export const CheatConsole = () => {
   const pcDamageScalePresets = [1, 0.5, 0.25, 0.1, 0];
 
   useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
     if(!showWarpMenu || modulesLoaded){ return; }
     let cancelled = false;
     setModulesLoading(true);
@@ -75,14 +83,64 @@ export const CheatConsole = () => {
 
   const currentModule = (KotOR.GameState.module?.filename || '').toLowerCase();
 
-  const onConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {  
+  const onConsoleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     setConsoleInput(e.target.value);
+    setAutoCompletePrefix('');
   }
 
-  const onConsoleSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const applyCommandAutocomplete = (reverse: boolean) => {
+    const value = consoleInput;
+    const spaceIdx = value.search(/\s/);
+    const hasArgs = spaceIdx >= 0;
+    const cmdToken = (hasArgs ? value.slice(0, spaceIdx) : value).toLowerCase();
+    const rest = hasArgs ? value.slice(spaceIdx) : '';
+
+    // Only complete the first token (command name), not arguments.
+    const caret = inputRef.current?.selectionStart ?? value.length;
+    if(hasArgs && caret > spaceIdx){ return; }
+    if(!cmdToken){ return; }
+
+    const prefix = autoCompletePrefix || cmdToken;
+    const cycleMatches = commandNames.filter((name) => name.startsWith(prefix));
+    if(!cycleMatches.length){ return; }
+
+    let nextIndex = 0;
+    if(autoCompletePrefix){
+      const currentIdx = cycleMatches.indexOf(cmdToken);
+      if(currentIdx >= 0){
+        nextIndex = reverse
+          ? (currentIdx - 1 + cycleMatches.length) % cycleMatches.length
+          : (currentIdx + 1) % cycleMatches.length;
+      }else{
+        nextIndex = reverse ? cycleMatches.length - 1 : 0;
+      }
+    }else{
+      // Fresh Tab from typed token
+      nextIndex = 0;
+      if(cycleMatches[0] === cmdToken && cycleMatches.length > 1){
+        nextIndex = reverse ? cycleMatches.length - 1 : 1;
+      }else if(reverse){
+        nextIndex = cycleMatches.length - 1;
+      }
+    }
+
+    const completed = cycleMatches[nextIndex];
+    if(!completed){ return; }
+    setAutoCompletePrefix(prefix);
+    setConsoleInput(completed + rest);
+  }
+
+  const onConsoleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if(e.key === 'Tab'){
+      e.preventDefault();
+      e.stopPropagation();
+      applyCommandAutocomplete(e.shiftKey);
+      return;
+    }
     if (e.key === 'Enter') {
       appState.consoleCommand(consoleInput);
       setConsoleInput('');
+      setAutoCompletePrefix('');
       setShowCheatConsole(false);
     }
   }
@@ -231,7 +289,14 @@ export const CheatConsole = () => {
           )}
         </div>
       </div>
-      <input className="console-input" type="text" value={consoleInput} onChange={onConsoleInput} onKeyDown={onConsoleSubmit} />
+      <input
+        ref={inputRef}
+        className="console-input"
+        type="text"
+        value={consoleInput}
+        onChange={onConsoleInput}
+        onKeyDown={onConsoleKeyDown}
+      />
     </div>
   );
 };

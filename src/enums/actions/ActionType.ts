@@ -124,11 +124,15 @@ export enum ActionType {
   ActionHeal = 0x38,
   /** Check if creature can force follow object */
   ActionCheckForceFollowObject = 0x3A,
-  /** Make creature follow leader */
+  /** Make creature follow leader (NWScript ActionFollowLeader path-follow) */
   ActionFollowLeader = 0x3D,
   /** Wait in area */
   ActionAreaWait = 0x3C,
-  /** Make party follow leader */
+  /**
+   * Party follow-leader mode flag (TSL AIActionPartyFollowLeader @ 006ca5b0).
+   * Same engine ID as ActionFollowLeader — GetAQActionIDByID only has case 0x3D → 38.
+   * Factory maps both names to ActionFollowLeader (walk-follow).
+   */
   ActionPartyFollowLeader = 0x3D,
   /** Display bark string */
   ActionBarkString = 0x3E,
@@ -138,6 +142,14 @@ export enum ActionType {
   ActionCheckMoveToFollowRadius = 0x40,
   /** Surrender to enemies */
   ActionSurrenderToEnemies = 0x41,
+  /** TSL cut locked door with lightsaber (AIActionDoorSaber) — RunActions case 0x43 */
+  ActionDoorSaber = 0x43,
+  /** TSL Total Defense combat stance (AIActionStanceTotalDefense) */
+  ActionStanceTotalDefense = 0x44,
+  /** TSL Meditative combat stance (AIActionStanceMeditative) */
+  ActionStanceMeditative = 0x45,
   /** TSL puppet follows AssignPUP owner (AIActionFollowOwner) */
   ActionFollowOwner = 0x46,
+  /** TSL swap weapon config 1 ↔ 2 (AIActionSwitchWeapons) — RunActions case 0x47 */
+  ActionSwitchWeapons = 0x47,
 }

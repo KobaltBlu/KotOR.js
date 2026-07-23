@@ -462,11 +462,6 @@ export class DLGNode {
         return true;
       }
     };
-
-    // Participant anim wait: no engine tracker yet — do not block entry completion.
-    if (waitAnim) {
-      this.checkList.participantAnimationComplete = true;
-    }
   }
 
   static FromDialogStruct( struct: GFFStruct, dialog: DLGObject ){

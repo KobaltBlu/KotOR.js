@@ -26,6 +26,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
+import { computeSafeLocation } from "@/engine/pathfinding/compute-safe-location";
 
 export interface CurrentMember {
   isLeader: boolean,
@@ -285,6 +286,11 @@ export class PartyManager {
     GameState.PartyManager.XPPool = 0;
     GameState.PartyManager.ControlledNPC = -1;
     GameState.PartyManager.CheatUsed = false;
+    GameState.turboEnabled = false;
+    GameState.cheatInvulnerable = false;
+    GameState.infiniteUses = false;
+    GameState.cheatRevealMap = false;
+    GameState.danceDanceMalak = false;
     GameState.PartyManager.GameplayHint = 0;
     GameState.PartyManager.StoryHint = 0;
     GameState.PartyManager.StoryHints = [0,0,0,0,0,0,0,0,0,0];
@@ -1558,15 +1564,16 @@ export class PartyManager {
         PartyManager.AddPortraitToOrder( partyMember.getPortraitResRef() );
         PartyManager.party[ PartyManager.GetCreatureStartingPartyIndex(partyMember) ] = partyMember;
         let spawn = PartyManager.GetSpawnLocation(partyMember);
+        // Retail PositionParty: companions share the leader/waypoint orientation (Yaw @ 004aa0f0).
+        const spawnFacing = -Math.atan2(spawn.rotation.x, spawn.rotation.y);
         partyMember.position.copy(spawn.position);
-        partyMember.setFacing(spawn.getFacing(), true);
+        partyMember.setFacing(spawnFacing, true);
         
         const model = await partyMember.loadModel();
         model.userData.moduleObject = partyMember;
 
         partyMember.position.copy(spawn.position);
-        partyMember.setFacing(spawn.getFacing(), true);
-        //partyMember.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
+        partyMember.setFacing(spawnFacing, true);
   
         model.hasCollision = true;
         GameState.group.party.add( partyMember.container );
@@ -1574,9 +1581,9 @@ export class PartyManager {
         partyMember.onSpawn();
       }else{
         const spawn = PartyManager.GetSpawnLocation(currentSlot);
+        const spawnFacing = -Math.atan2(spawn.rotation.x, spawn.rotation.y);
         currentSlot.position.copy(spawn.position);
-        currentSlot.setFacing(spawn.getFacing(), true);
-        //currentSlot.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(0, 0));
+        currentSlot.setFacing(spawnFacing, true);
       }
     }catch(e){
       console.error(e);
@@ -1621,95 +1628,84 @@ export class PartyManager {
   }
 
   /**
-   * Get the spawn location of the creature
+   * Retail CSWParty formation 0 local offsets (CSWParty ctor @ 00636170).
+   * Local frame: +X right of facing, +Y forward along facing.
+   * PositionParty @ 00565b00 / TSL 006ff590 rotates these by Yaw(orientation).
+   */
+  static readonly FORMATION_OFFSETS: ReadonlyArray<Readonly<{ x: number; y: number }>> = [
+    { x: 0, y: 0 },
+    { x: 1.5, y: -0.7 },
+    { x: -1.5, y: 0.8 },
+  ];
+
+  /** Scratch vectors for GetSpawnLocation / PositionParty safe snap. */
+  static #spawnPos = new THREE.Vector3();
+  static #spawnSafe = new THREE.Vector3();
+
+  /**
+   * Get the spawn location of the creature when entering a module.
+   * Retail: MovePlayerToArea (waypoint/entry + ComputeSafeLocation r=20) then
+   * PositionParty (formation offsets + ComputeSafeLocation r=10).
    * @param creature - The creature to get the spawn location of
    * @returns EngineLocation
    */
   static GetSpawnLocation( creature: ModuleCreature ){
-    if( BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature) ){
-      if( GameState.isLoadingSave ){
-        return new EngineLocation(
-          creature.position.x, 
-          creature.position.y, 
-          creature.position.z,
-          creature.getXOrientation(), 
-          creature.getYOrientation(), 
-          creature.getZOrientation()
-        );
-      }else if( GameState.module.area.transWP ){
-        if( GameState.module.area.transWP ){
-          //console.log('TransWP - PM', GameState.module.area.transWP);
-        }
-        let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
-        let spawnLoc = GameState.module.area.getSpawnLocation();
-        let facing = -Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y);
-        switch(index){
-          case 0:
-            return new EngineLocation(
-              spawnLoc.position.x,
-              spawnLoc.position.y, 
-              spawnLoc.position.z,
-              spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
-              spawnLoc.rotation.z
-            );
-          case 1:
-            return new EngineLocation(
-              spawnLoc.position.x + 1.5 * Math.cos(facing), 
-              spawnLoc.position.y + 1.5 * Math.sin(facing), 
-              spawnLoc.position.z,
-              spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
-              spawnLoc.rotation.z
-            );
-          case 2:
-            return new EngineLocation(
-              spawnLoc.position.x + -1.5 * Math.cos(facing), 
-              spawnLoc.position.y + -1.5 * Math.sin(facing), 
-              spawnLoc.position.z,
-              spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
-              spawnLoc.rotation.z
-            );
-        }
-      }else{
-        let index = PartyManager.PortraitOrder.indexOf( creature.getPortraitResRef().toLowerCase() );
-        let spawnLoc = GameState.module.area.getSpawnLocation();
-        let facing = spawnLoc.getFacing();
-        switch(index){
-          case 0:
-            return new EngineLocation(
-              spawnLoc.position.x,
-              spawnLoc.position.y, 
-              spawnLoc.position.z,
-              spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
-              spawnLoc.rotation.z,
-            );
-          case 1:
-            return new EngineLocation(
-              spawnLoc.position.x + 1.5 * Math.cos(facing), 
-              spawnLoc.position.y + 1.5 * Math.sin(facing), 
-              spawnLoc.position.z,
-              spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
-              spawnLoc.rotation.z,
-            );
-          case 2:
-            return new EngineLocation(
-              spawnLoc.position.x + -1.5 * Math.cos(facing), 
-              spawnLoc.position.y + -1.5 * Math.sin(facing), 
-              spawnLoc.position.z,
-              spawnLoc.rotation.x,
-              spawnLoc.rotation.y, 
-              spawnLoc.rotation.z,
-            );
-        }
-      }
+    if( !BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature) ){
+      return GameState.module.area.getSpawnLocation();
     }
-    
-    return GameState.module.area.getSpawnLocation();
 
+    if( GameState.isLoadingSave ){
+      return new EngineLocation(
+        creature.position.x,
+        creature.position.y,
+        creature.position.z,
+        creature.getXOrientation(),
+        creature.getYOrientation(),
+        creature.getZOrientation()
+      );
+    }
+
+    const spawnLoc = GameState.module.area.getSpawnLocation();
+    const ox = spawnLoc.rotation.x;
+    const oy = spawnLoc.rotation.y;
+    // Retail Yaw @ 004aa0f0: atan2(-x, y) in degrees → radians here.
+    const yaw = -Math.atan2(ox, oy);
+
+    let index = PartyManager.party.indexOf(creature);
+    if(index < 0){
+      index = PartyManager.PortraitOrder.indexOf(creature.getPortraitResRef().toLowerCase());
+    }
+    if(index < 0) index = 0;
+    if(index > 2) index = 2;
+
+    const offset = PartyManager.FORMATION_OFFSETS[index];
+    const cos = Math.cos(yaw);
+    const sin = Math.sin(yaw);
+    // Rotate local formation offset around Z (Quaternion * Vector @ 004a9bb0).
+    PartyManager.#spawnPos.set(
+      spawnLoc.position.x + (offset.x * cos - offset.y * sin),
+      spawnLoc.position.y + (offset.x * sin + offset.y * cos),
+      spawnLoc.position.z
+    );
+
+    // MovePlayerToArea uses r=20 for the PC; PositionParty uses r=10 for NPCs.
+    const radius = index === 0 ? 20 : 10;
+    const area = GameState.module?.area;
+    if(computeSafeLocation(area, PartyManager.#spawnPos, PartyManager.#spawnSafe, {
+      radius,
+      owner: creature,
+    })){
+      PartyManager.#spawnPos.copy(PartyManager.#spawnSafe);
+    }
+
+    return new EngineLocation(
+      PartyManager.#spawnPos.x,
+      PartyManager.#spawnPos.y,
+      PartyManager.#spawnPos.z,
+      ox,
+      oy,
+      0
+    );
   }
 
   static #tmpFollowPositionTarget = new THREE.Vector3();

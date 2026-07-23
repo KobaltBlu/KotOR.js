@@ -20,6 +20,10 @@ import {
   DEFAULT_DRIVE_ACCL,
   DEFAULT_DRIVE_MAX_SPEED,
 } from "@/engine/pathfinding/movement-rate";
+import { GameState } from "@/GameState";
+
+/** Retail turbo GetMaxSpeed when CClientOptions.turbo_enabled (FLOAT_007a25f8). */
+export const PLAYER_TURBO_MAX_SPEED = 15;
 
 /** Retail stop threshold for cam-relative velocity (world units/sec). */
 export const PLAYER_VEL_STOP = 0.25;
@@ -106,6 +110,13 @@ export function resolvePlayerDriveLimits(
     return {
       driveAccl: PLAYER_STEALTH_DRIVE_ACCL,
       maxSpeed: coalesceDriveAnimWalk(driveAnimWalk),
+    };
+  }
+  // Retail CClientOptions.turbo_enabled → GetMaxSpeed returns 15.0
+  if(GameState.turboEnabled){
+    return {
+      driveAccl: coalesceDriveAccl(driveAccl),
+      maxSpeed: PLAYER_TURBO_MAX_SPEED,
     };
   }
   return {

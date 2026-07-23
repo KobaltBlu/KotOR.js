@@ -53,12 +53,11 @@ export default class EngineLocation {
   }
 
   //Set the facing value and then update the rotation values
+  // Orientation vector matches creature forward: (-sin(θ), cos(θ)).
   setFacing( facing = 0 ){
-    this.facing = 0;
-    let theta = facing;
-
-    this.rotation.x = 1 * Math.cos(theta);
-    this.rotation.y = 1 * Math.sin(theta);
+    this.facing = facing;
+    this.rotation.x = -Math.sin(facing);
+    this.rotation.y = Math.cos(facing);
     this.rotation.z = 0;
   }
 
@@ -68,8 +67,9 @@ export default class EngineLocation {
   }
 
   //Use the rotation values to update the facing value
+  // Retail Yaw @ 004aa0f0: atan2(-x, y) — matches ModuleCreature loadPlayer facing.
   updateFacing(){
-    this.facing = -Math.atan2(this.rotation.y, this.rotation.x);
+    this.facing = -Math.atan2(this.rotation.x, this.rotation.y);
   }
 
   getArea(){

@@ -5,9 +5,10 @@ import { Action } from "@/actions/Action";
 
 /**
  * ActionPauseDialog class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
+ * Retail AIActionPauseDialog @ 0057b290 — sets CSWSObject field15_0x50 so
+ * SendDialogEntry defers the next entry while the current node keeps ticking.
+ *
  * @file ActionPauseDialog.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -20,7 +21,7 @@ export class ActionPauseDialog extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    GameState.CutsceneManager.paused = true;
+    GameState.CutsceneManager.pauseConversation();
     return ActionStatus.COMPLETE;
   }
 

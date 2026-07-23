@@ -17,5 +17,6 @@ export * from "@/engine/pathfinding/test-safe-location-point";
 export * from "@/engine/pathfinding/compute-safe-location";
 export * from "@/engine/pathfinding/count-visible-to-players";
 export * from "@/engine/pathfinding/follow-leader";
+export * from "@/engine/pathfinding/follow-leader-sm";
 export * from "@/engine/pathfinding/locomotion";
 export * from "@/engine/pathfinding/party-follow-path";

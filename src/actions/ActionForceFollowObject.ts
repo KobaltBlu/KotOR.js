@@ -9,27 +9,26 @@ import {
   FOLLOW_REPATH,
   FOLLOW_STUCK_SEC,
   FOLLOW_TELEPORT_DIST,
+  resolveFollowState,
   shouldFollowRun,
   type FollowLeaderRuntime,
 } from "@/engine/pathfinding/follow-leader";
-import { getPathPersonalSpace } from "@/combat/attack-range";
-import { walkUpdateLocation } from "@/engine/pathfinding/walk-update-location";
-import { getFollowRateScale } from "@/engine/pathfinding/locomotion";
-import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import {
+  driveTowardOffset,
+} from "@/engine/pathfinding/follow-leader-sm";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { Action } from "@/actions/Action";
-import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import * as THREE from "three";
 
-/** Repath when live follow goal drifts this far from path end. */
-const GOAL_REPATH_DRIFT = 1.25;
+const _followGoal = new THREE.Vector3();
 
 /**
  * ActionForceFollowObject class.
- * NWScript ForceFollow — path + WalkUpdateLocation toward live target.
+ * NWScript ForceFollow (0x37) — path + WalkUpdate toward live target.
+ * Shares Moving_To_Offset helpers with FollowLeader; not the party ring SM.
  *
  * @file ActionForceFollowObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -66,10 +65,13 @@ export class ActionForceFollowObject extends Action {
     const repath = Math.max(FOLLOW_REPATH * 0.5, followDistance * 1.15);
     const teleportAt = Math.max(FOLLOW_TELEPORT_DIST, followDistance * 4);
 
+    this.computeFollowGoal(owner, followTarget, followDistance, _followGoal);
+    const goal = _followGoal;
     const dist = Utility.Distance2D(owner.position, followTarget.position);
+    const distGoal = Utility.Distance2D(owner.position, goal);
 
     if(this.followRuntime.state === FollowLeaderState.MovingToOffset){
-      if(dist > comfort + 0.25){
+      if(distGoal > comfort + 0.25){
         this.followRuntime.stuckTimer += delta;
       }else{
         this.followRuntime.stuckTimer = 0;
@@ -78,31 +80,41 @@ export class ActionForceFollowObject extends Action {
       this.followRuntime.stuckTimer = 0;
     }
 
-    let next = this.followRuntime.state;
+    // ForceFollow uses Offset / MovingToOffset / Teleport only (not full party SM)
+    let next = resolveFollowState(
+      dist,
+      distGoal,
+      this.followRuntime.state,
+      this.followRuntime.stuckTimer
+    );
+    // Scale teleport/repath with NWScript distance param
     if(dist >= teleportAt || this.followRuntime.stuckTimer >= FOLLOW_STUCK_SEC){
       next = FollowLeaderState.Teleport;
-    }else if(next === FollowLeaderState.MovingToOffset){
-      next = dist <= comfort ? FollowLeaderState.Idle : FollowLeaderState.MovingToOffset;
-    }else{
-      next = dist >= repath ? FollowLeaderState.MovingToOffset : FollowLeaderState.Idle;
+    }else if(next === FollowLeaderState.MovingToOffset || next === FollowLeaderState.Offset){
+      if(distGoal <= comfort){
+        next = FollowLeaderState.Offset;
+      }else if(distGoal >= repath || dist >= repath){
+        next = FollowLeaderState.MovingToOffset;
+      }
     }
     this.followRuntime.state = next;
 
     if(next === FollowLeaderState.Teleport){
-      owner.force = 0;
-      owner.speed = 0;
-      owner.setComputedPath(undefined);
-      const jump = new GameState.ActionFactory.ActionJumpToObject(undefined, this.groupId);
-      jump.setParameter(0, ActionParameterType.DWORD, followTarget.id);
-      jump.setParameter(1, ActionParameterType.INT, 1);
-      owner.actionQueue.addFront(jump);
-      this.followRuntime.state = FollowLeaderState.Idle;
+      this.teleportNearTarget(owner, followTarget, goal);
+      this.followRuntime.state = FollowLeaderState.Offset;
       this.followRuntime.stuckTimer = 0;
       return ActionStatus.IN_PROGRESS;
     }
 
     if(next === FollowLeaderState.MovingToOffset){
-      this.driveTowardTarget(owner, followTarget, followDistance, delta, shouldFollowRun(dist, dist));
+      driveTowardOffset(
+        owner,
+        goal,
+        followTarget,
+        delta,
+        shouldFollowRun(dist, distGoal),
+        (d, g, face) => this.runCreatureAvoidance(d, g, face)
+      );
       return ActionStatus.IN_PROGRESS;
     }
 
@@ -116,71 +128,53 @@ export class ActionForceFollowObject extends Action {
   }
 
   /**
-   * Stay near the target at followDistance — path + WalkUpdateLocation.
+   * Jump to walkable near live follow goal (parity with FollowLeader Teleport path).
    */
-  private driveTowardTarget(
+  private teleportNearTarget(
     owner: ModuleCreature,
     followTarget: ModuleCreature,
-    followDistance: number,
-    delta: number,
-    run: boolean
+    goal: THREE.Vector3
   ){
-    const goal = this.computeFollowGoal(owner, followTarget, followDistance);
-    this.ensurePathToGoal(owner, goal);
-
-    if(owner.blockingTimer >= 5 || owner.collisionTimer >= 0.5){
-      owner.blockingTimer = 0;
-      owner.collisionTimer = 0;
-      this.runCreatureAvoidance(delta, goal, followTarget);
+    const area = owner.area ?? GameState.module?.area;
+    const dest = new THREE.Vector3().copy(goal);
+    if(area?.getNearestWalkablePoint){
+      dest.copy(area.getNearestWalkablePoint(goal, 0.5));
     }
-
-    const path = owner.getComputedPath();
-    const point = path?.points?.[0];
-    if(point && Utility.Distance2D(owner.position, point.vector) <= 0.5){
-      path.pop();
-    }
-    const faceGoal = path?.points?.[0]?.vector ?? goal;
-    this.faceToward(owner, faceGoal);
-
-    owner.walk = !run;
     owner.force = 0;
+    owner.speed = 0;
     owner.locomotionScale = 1;
     owner.moveDirOverride = undefined;
-    owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
-
-    let remaining = Utility.Distance2D(owner.position, faceGoal);
-    const pts = path?.points;
-    if(pts?.length){
-      remaining = Utility.Distance2D(owner.position, pts[0].vector);
-      for(let i = 1; i < pts.length; i++){
-        remaining += Utility.Distance2D(pts[i - 1].vector, pts[i].vector);
-      }
-    }
-
-    walkUpdateLocation(owner, faceGoal, run, delta, {
-      remainingDistance: remaining,
-      followScale: getFollowRateScale(Utility.Distance2D(owner.position, goal)),
-    });
+    owner.setComputedPath(undefined);
+    const jump = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
+    jump.setParameter(0, ActionParameterType.FLOAT, dest.x);
+    jump.setParameter(1, ActionParameterType.FLOAT, dest.y);
+    jump.setParameter(2, ActionParameterType.FLOAT, dest.z);
+    jump.setParameter(3, ActionParameterType.DWORD, area?.id ?? GameState.module.area.id);
+    jump.setParameter(4, ActionParameterType.INT, 0);
+    jump.setParameter(5, ActionParameterType.FLOAT, 20.0);
+    jump.setParameter(6, ActionParameterType.FLOAT, followTarget.rotation?.z ?? 0);
+    jump.setParameter(7, ActionParameterType.FLOAT, 0);
+    owner.actionQueue.addFront(jump);
   }
 
   private computeFollowGoal(
     owner: ModuleCreature,
     followTarget: ModuleCreature,
-    followDistance: number
+    followDistance: number,
+    out: THREE.Vector3
   ): THREE.Vector3 {
     const dx = owner.position.x - followTarget.position.x;
     const dy = owner.position.y - followTarget.position.y;
     const len = Math.hypot(dx, dy);
-    const goal = new THREE.Vector3();
     if(len < 1e-4){
-      goal.set(
+      out.set(
         followTarget.position.x + Math.cos(followTarget.rotation.z) * followDistance,
         followTarget.position.y + Math.sin(followTarget.rotation.z) * followDistance,
         followTarget.position.z
       );
     }else{
       const scale = followDistance / len;
-      goal.set(
+      out.set(
         followTarget.position.x + dx * scale,
         followTarget.position.y + dy * scale,
         followTarget.position.z
@@ -188,46 +182,12 @@ export class ActionForceFollowObject extends Action {
     }
 
     const area = owner.area ?? GameState.module?.area;
-    if(area && typeof area.isPointWalkable === 'function' && !area.isPointWalkable(goal)){
+    if(area && typeof area.isPointWalkable === 'function' && !area.isPointWalkable(out)){
       if(typeof area.getNearestWalkablePoint === 'function'){
-        return area.getNearestWalkablePoint(goal, 0.05);
+        out.copy(area.getNearestWalkablePoint(out, 0.05));
       }
     }
-    return goal;
-  }
-
-  private ensurePathToGoal(owner: ModuleCreature, goal: THREE.Vector3){
-    const area = owner.area ?? GameState.module?.area;
-    if(!area?.path?.traverseToPoint) return;
-
-    const path = owner.getComputedPath();
-    const end = path?.points?.length
-      ? path.points[path.points.length - 1].vector
-      : undefined;
-    const drift = end ? Utility.Distance2D(end, goal) : Infinity;
-    if(path?.points?.length && drift <= GOAL_REPATH_DRIFT){
-      return;
-    }
-
-    const computed = area.path.traverseToPoint(owner, owner.position, goal);
-    if(!computed?.points?.length){
-      return;
-    }
-    computed.prunePathPoints();
-    computed.smoothCorners();
-    computed.fixWalkEdges(getPathPersonalSpace(owner));
-    computed.setColor(owner.helperColor);
-    computed.realtime = true;
-    computed.timer = 20;
-    owner.setComputedPath(computed);
-  }
-
-  private faceToward(owner: ModuleCreature, goal: THREE.Vector3){
-    const dx = goal.x - owner.position.x;
-    const dy = goal.y - owner.position.y;
-    if(dx * dx + dy * dy < 1e-8) return;
-    const atan = Math.atan2(-dy, -dx);
-    owner.setFacing(atan + Math.PI / 2, false, TURN_SPEED_FAST);
+    return out;
   }
 
 }

@@ -65,6 +65,50 @@ function getGunBank(obj: ModuleObject, index: number): ModuleMGGunBank | undefin
 }
 
 /**
+ * Retail CSWSObject::GetAQActionIDByID (K1 + TSL extras).
+ * Check* path actions are not acceptable (return 65535) — GetCurrentAction walks past them.
+ */
+function ActionFactoryGetAQActionID(type: number): number {
+  switch(type){
+    case ActionType.ActionMoveToPoint: return 0;              // ACTION_MOVETOPOINT
+    case ActionType.ActionPickUpItem: return 1;               // ACTION_PICKUPITEM
+    case ActionType.ActionDropItem: return 2;                 // ACTION_DROPITEM
+    case ActionType.ActionPhysicalAttacks: return 3;          // ACTION_ATTACKOBJECT
+    case ActionType.ActionCastSpell: return 4;                // ACTION_CASTSPELL
+    case ActionType.ActionOpenDoor: return 5;                 // ACTION_OPENDOOR
+    case ActionType.ActionCloseDoor: return 6;                // ACTION_CLOSEDOOR
+    case ActionType.ActionDialogObject: return 7;             // ACTION_DIALOGOBJECT
+    case ActionType.ActionDisarmMine: return 8;               // ACTION_DISABLETRAP
+    case ActionType.ActionRecoverMine: return 9;              // ACTION_RECOVERTRAP
+    case ActionType.ActionFlagMine: return 10;                // ACTION_FLAGTRAP
+    case ActionType.ActionExamineMine: return 11;             // ACTION_EXAMINETRAP
+    case ActionType.ActionSetMine: return 12;                 // ACTION_SETTRAP
+    case ActionType.ActionUnlockObject: return 13;            // ACTION_OPENLOCK
+    case ActionType.ActionLockObject: return 14;              // ACTION_LOCK
+    case ActionType.ActionUseObject: return 15;               // ACTION_USEOBJECT
+    case ActionType.ActionAnimalEmpathy: return 16;           // ACTION_ANIMALEMPATHY
+    case ActionType.ActionRest: return 17;                    // ACTION_REST
+    case ActionType.ActionTaunt: return 18;                   // ACTION_TAUNT
+    case ActionType.ActionItemCastSpell: return 19;           // ACTION_ITEMCASTSPELL
+    case ActionType.ActionCounterSpell: return 31;            // ACTION_COUNTERSPELL
+    case ActionType.ActionHeal: return 33;                    // ACTION_HEAL
+    case ActionType.ActionPickPocket: return 34;              // ACTION_PICKPOCKET
+    case ActionType.ActionForceFollowObject: return 35;       // ACTION_FOLLOW
+    case ActionType.ActionWait: return 36;                    // ACTION_WAIT
+    case ActionType.ActionFollowLeader:
+    case ActionType.ActionPartyFollowLeader: return 38;       // ACTION_FOLLOWLEADER
+    case ActionType.ActionCombat: return 39;                  // retail GetAQ 0x3F → 0x27
+    // TSL (GetAQActionIDByID @ 006b3410 / RunActions @ 006b18a0)
+    case ActionType.ActionDoorSaber: return 40;               // engine 0x43
+    case ActionType.ActionStanceTotalDefense: return 41;      // engine 0x44
+    case ActionType.ActionStanceMeditative: return 42;        // engine 0x45
+    case ActionType.ActionFollowOwner: return 43;             // engine 0x46
+    case ActionType.ActionSwitchWeapons: return 44;           // engine 0x47
+    default: return 65535;
+  }
+}
+
+/**
  * NWScriptDefK1 class.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -6693,61 +6737,33 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-  
+
       if(args[0] == undefined)
         args[0] = this.caller;
 
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
-
-        let action = args[0].actionQueue[0];
-        if(action){
-          // ACTION_* script constants (GetAQActionID whitelist)
-          switch(action.type){
-            case ActionType.ActionMoveToPoint:
-            case ActionType.ActionCheckMoveToObject:
-            case ActionType.ActionCheckMoveAwayFromObject:
-            case ActionType.ActionCheckInterAreaPathfinding:
-            case ActionType.ActionCheckMoveToPoint:
-            case ActionType.ActionCheckMoveToObjectRadius:
-            case ActionType.ActionCheckMoveToPointRadius:
-            case ActionType.ActionCheckMoveAwayFromLocation:
-            case ActionType.ActionCheckForceFollowObject:
-            case ActionType.ActionCheckMoveToFollowRadius:
-              return 0;                                           // ACTION_MOVETOPOINT
-            case ActionType.ActionPickUpItem: return 1;            // ACTION_PICKUPITEM
-            case ActionType.ActionDropItem: return 2;              // ACTION_DROPITEM
-            case ActionType.ActionPhysicalAttacks:
-            case ActionType.ActionCombat: return 3;                // ACTION_ATTACKOBJECT
-            case ActionType.ActionCastSpell: return 4;             // ACTION_CASTSPELL
-            case ActionType.ActionOpenDoor: return 5;              // ACTION_OPENDOOR
-            case ActionType.ActionCloseDoor: return 6;             // ACTION_CLOSEDOOR
-            case ActionType.ActionDialogObject: return 7;          // ACTION_DIALOGOBJECT
-            case ActionType.ActionDisarmMine: return 8;            // ACTION_DISABLETRAP
-            case ActionType.ActionRecoverMine: return 9;           // ACTION_RECOVERTRAP
-            case ActionType.ActionFlagMine: return 10;             // ACTION_FLAGTRAP
-            case ActionType.ActionExamineMine: return 11;          // ACTION_EXAMINETRAP
-            case ActionType.ActionSetMine: return 12;              // ACTION_SETTRAP
-            case ActionType.ActionUnlockObject: return 13;         // ACTION_OPENLOCK
-            case ActionType.ActionLockObject: return 14;           // ACTION_LOCK
-            case ActionType.ActionUseObject: return 15;            // ACTION_USEOBJECT
-            case ActionType.ActionAnimalEmpathy: return 16;        // ACTION_ANIMALEMPATHY
-            case ActionType.ActionRest: return 17;                 // ACTION_REST
-            case ActionType.ActionTaunt: return 18;                // ACTION_TAUNT
-            case ActionType.ActionItemCastSpell: return 19;        // ACTION_ITEMCASTSPELL
-            case ActionType.ActionCounterSpell: return 31;         // ACTION_COUNTERSPELL
-            case ActionType.ActionHeal: return 33;                 // ACTION_HEAL
-            case ActionType.ActionPickPocket: return 34;           // ACTION_PICKPOCKET
-            case ActionType.ActionForceFollowObject:
-            case ActionType.ActionFollowOwner: return 35;    // ACTION_FOLLOW
-            case ActionType.ActionWait: return 36;                 // ACTION_WAIT
-            case ActionType.ActionFollowLeader:
-            case ActionType.ActionPartyFollowLeader: return 38;    // ACTION_FOLLOWLEADER
-          }
-        }else{
+        const queue = args[0].actionQueue;
+        if(!queue || queue.length === 0){
           return 65534; // ACTION_QUEUEEMPTY
         }
+
+        // Retail ExecuteCommandGetCurrentAction @ 00549040: walk same groupId,
+        // keep last GetAcceptableAction / GetAQActionIDByID whitelist hit.
+        const headGroup = queue[0].groupId;
+        let result = 65535;
+        for(let i = 0; i < queue.length; i++){
+          const action = queue[i];
+          if(!action || action.groupId !== headGroup){
+            break;
+          }
+          const aq = ActionFactoryGetAQActionID(action.type);
+          if(aq !== 65535){
+            result = aq;
+          }
+        }
+        return result;
       }
-  
+
       return 65535; //Invalid
     }
   },

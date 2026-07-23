@@ -172,6 +172,17 @@ export class GameState implements EngineContext {
    * Set below 1 (e.g. 0.25) so combat lasts longer while damage math is verified.
    */
   static DEBUG_PC_DAMAGE_SCALE = 1;
+
+  /** Retail CClientOptions.turbo_enabled — GetMaxSpeed returns 15 when set. */
+  static turboEnabled = false;
+  /** Retail party invulnerability cheat (server immortal for party). */
+  static cheatInvulnerable = false;
+  /** Retail infiniteuses — skip usable item charge/stack consume. */
+  static infiniteUses = false;
+  /** Retail revealmap toggle — hide minimap fog overlay without wiping explored data. */
+  static cheatRevealMap = false;
+  /** Retail dancedancemalak GUI flag. */
+  static danceDanceMalak = false;
   
   static Flags = {
     EnableAreaVIS: false,

@@ -319,6 +319,10 @@ export class LBL_MapView {
 
     this.updateFog();
 
+    if(this.fogPlane){
+      this.fogPlane.visible = !GameState.cheatRevealMap;
+    }
+
     const scaleSize = this.getMapTextureScaleSize();
     
     this.areaMap.revealPosition(this.position.x, this.position.y);

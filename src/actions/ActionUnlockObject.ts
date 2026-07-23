@@ -128,7 +128,7 @@ export class ActionUnlockObject extends Action {
         return ActionStatus.COMPLETE;
       }
       
-      if(this.oItem){
+      if(this.oItem && !GameState.infiniteUses){
         //If we have more charges, reduce the charges count by 1
         if(this.oItem.charges > 1){
           this.oItem.charges -= 1;

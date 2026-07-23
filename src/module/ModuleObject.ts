@@ -727,8 +727,10 @@ export class ModuleObject {
    * @param nConvoType 
    * @param clearable 
    * @param ignoreObjectNames - sNameObjectToIgnore1-6 (AddToDialogNonDependantList)
+   * @param barkScreenX - TSL nBarkX (−1 default)
+   * @param barkScreenY - TSL nBarkY (−1 default)
    */
-  actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false, ignoreObjectNames: string[] = [] ){
+  actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false, ignoreObjectNames: string[] = [], barkScreenX: number = -1, barkScreenY: number = -1 ){
     const action = new GameState.ActionFactory.ActionDialogObject();
     action.setParameter(0, ActionParameterType.DWORD, target.id);
     action.setParameter(1, ActionParameterType.STRING, dialogResRef);
@@ -740,6 +742,8 @@ export class ModuleObject {
     for(let i = 0; i < 6; i++){
       action.setParameter(6 + i, ActionParameterType.STRING, ignoreObjectNames[i] ?? '');
     }
+    action.setParameter(12, ActionParameterType.INT, barkScreenX);
+    action.setParameter(13, ActionParameterType.INT, barkScreenY);
     action.clearable = clearable;
     console.log('ModuleObject.actionDialogObject', action);
     this.actionQueue.add(action);
@@ -1069,11 +1073,7 @@ export class ModuleObject {
           if(this.isSimpleCreature()){
             return animations2DA.rows[256];
           }else{
-            if(this.getHP()/this.getMaxHP() > .20){
-              return animations2DA.rows[6];
-            }else{
-              return animations2DA.rows[8];
-            }
+            return this.isInjured() ? animations2DA.rows[8] : animations2DA.rows[6];
           }
         break;
         case ModuleCreatureAnimState.PAUSE2:
@@ -1081,39 +1081,23 @@ export class ModuleObject {
           if(this.isSimpleCreature()){
             return animations2DA.rows[257];
           }else{
-            if(this.getHP()/this.getMaxHP() > .20){
-              return animations2DA.rows[7];
-            }else{
-              return animations2DA.rows[8];
-            }
+            return this.isInjured() ? animations2DA.rows[8] : animations2DA.rows[7];
           }
         break;
         case ModuleCreatureAnimState.PAUSE3:
           if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
-          if(this.getHP()/this.getMaxHP() > .20){
-            return animations2DA.rows[359];
-          }else{
-            return animations2DA.rows[8];
-          }
+          return this.isInjured() ? animations2DA.rows[8] : animations2DA.rows[359];
         break;
         case ModuleCreatureAnimState.PAUSE4:
           if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
-          if(this.getHP()/this.getMaxHP() > .20){
-            return animations2DA.rows[357];
-          }else{
-            return animations2DA.rows[8];
-          }
+          return this.isInjured() ? animations2DA.rows[8] : animations2DA.rows[357];
         break;
         case ModuleCreatureAnimState.PAUSE_SCRATCH_HEAD:
           if(this.isPoisoned()) return animations2DA.rows[15];
           if(this.isSimpleCreature()){
             return animations2DA.rows[12];
           }else{
-            if(this.getHP()/this.getMaxHP() > .20){
-              return animations2DA.rows[7];
-            }else{
-              return animations2DA.rows[8];
-            }
+            return this.isInjured() ? animations2DA.rows[8] : animations2DA.rows[7];
           }
         break;
         case ModuleCreatureAnimState.PAUSE_BORED:
@@ -1167,13 +1151,9 @@ export class ModuleObject {
         break;
         case ModuleCreatureAnimState.WALKING:
           if(this.isSimpleCreature()){
-            if(this.getHP()/this.getMaxHP() > .20){
-              return animations2DA.rows[253];
-            }else{
-              return animations2DA.rows[254];
-            }
+            return this.isInjured() ? animations2DA.rows[254] : animations2DA.rows[253];
           }else{
-            if(this.getHP()/this.getMaxHP() > .20){
+            if(!this.isInjured()){
               switch(this.getCombatAnimationWeaponType()){
                 case 2:
                   return animations2DA.rows[338];
@@ -1198,7 +1178,7 @@ export class ModuleObject {
           if(this.isSimpleCreature()){
             return animations2DA.rows[253];
           }else{
-            if(this.getHP()/this.getMaxHP() > .20){
+            if(!this.isInjured()){
               switch(this.getCombatAnimationWeaponType()){
                 case 2:
                   return animations2DA.rows[338];
@@ -1222,7 +1202,7 @@ export class ModuleObject {
           if(this.isSimpleCreature()){
             return animations2DA.rows[255];
           }else{
-            if(this.getHP()/this.getMaxHP() > .20){
+            if(!this.isInjured()){
               switch(this.getCombatAnimationWeaponType()){
                 case 1:
                   return animations2DA.rows[343];
@@ -2129,6 +2109,16 @@ export class ModuleObject {
    */
   isDead(){
     return this.getHP() <= 0;
+  }
+
+  /**
+   * Retail CSWSCreature::IsInjured @ 004eff30 — current/max < 0.2.
+   * Invalid max HP must not count as injured (avoids 0/0 → NaN → pauseinj on load).
+   */
+  isInjured(){
+    const max = this.getMaxHP();
+    if(!(max > 0)) return false;
+    return this.getHP() / max < 0.2;
   }
 
   /**

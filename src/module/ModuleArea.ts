@@ -878,6 +878,23 @@ export class ModuleArea extends ModuleObject {
     this.shadowAlpha = (this.shadowOpacity | 0) * 0.01;
   }
 
+  /**
+   * Retail CSWCArea::ForceBrightSunAndMoon @ 00605fe0.
+   * Ambient RGB → 0; diffuse RGB → 1; sun fog off; reapply day/night.
+   */
+  forceBrightSunAndMoon(){
+    this.sun.ambientColor = 0;
+    this.moon.ambientColor = 0;
+    this.sun.diffuseColor = 0xffffff;
+    this.moon.diffuseColor = 0xffffff;
+    this.sun.fogOn = false;
+    if(this.lightingIsNight){
+      this.setAsNight();
+    }else{
+      this.setAsDay();
+    }
+  }
+
   applySunLighting(){
     this.applyLightingColors(
       this.sun.ambientColor,
@@ -2360,11 +2377,10 @@ export class ModuleArea extends ModuleObject {
           model.userData.moduleObject = player;
           model.hasCollision = true;
 
-          let spawnLoc = this.getSpawnLocation();
+          let spawnLoc = GameState.PartyManager.GetSpawnLocation(player);
 
           player.position.copy(spawnLoc.position);
           player.setFacing(-Math.atan2(spawnLoc.rotation.x, spawnLoc.rotation.y), true);
-          //player.quaternion.setFromAxisAngle(new THREE.Vector3(0,0,1), -Math.atan2(spawnLoc.XOrientation, spawnLoc.YOrientation));
 
           player.getCurrentRoom();
           player.computeBoundingBox(true);
@@ -2386,6 +2402,8 @@ export class ModuleArea extends ModuleObject {
       await GameState.PartyManager.LoadPartyMember(i);
     }
     GameState.PartyManager.ApplyControlledNPC();
+    // Retail PositionParty → ResetAllFollowData after placing the party.
+    GameState.PartyManager.resetFollowPath(GameState.PartyManager.party[0]);
   }
 
   /**

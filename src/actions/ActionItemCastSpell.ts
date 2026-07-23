@@ -58,6 +58,7 @@ export class ActionItemCastSpell extends Action {
   private consumeItemCharges(oItem: ModuleItem){
     if(this.chargesConsumed || !oItem) return;
     this.chargesConsumed = true;
+    if(GameState.infiniteUses){ return; }
     if(oItem.charges > 1){
       oItem.charges -= 1;
     }else if(oItem.charges === 1){

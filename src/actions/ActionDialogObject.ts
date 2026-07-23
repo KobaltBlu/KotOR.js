@@ -39,6 +39,8 @@ export class ActionDialogObject extends Action {
     // 4 - int:     ignoreStartRange
     // 5 - dword:   listener object id (OBJECT_INVALID = use owner)
     // 6-11 - string: sNameObjectToIgnore1-6 (DialogNonDependantList)
+    // 12 - int:    TSL nBarkX (−1 default)
+    // 13 - int:    TSL nBarkY (−1 default)
     
   }
 
@@ -60,6 +62,10 @@ export class ActionDialogObject extends Action {
         ignoreNames.push(name);
       }
     }
+    const barkX = this.getParameter<number>(12);
+    const barkY = this.getParameter<number>(13);
+    const barkScreenX = typeof barkX === 'number' ? barkX : -1;
+    const barkScreenY = typeof barkY === 'number' ? barkY : -1;
 
     if(!this.target){
       return ActionStatus.FAILED;
@@ -80,7 +86,7 @@ export class ActionDialogObject extends Action {
 
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
     {
-      GameState.CutsceneManager.startConversation(dialog, this.owner, this.target || listener, bPrivate, ignoreNames);
+      GameState.CutsceneManager.startConversation(dialog, this.owner, this.target || listener, bPrivate, ignoreNames, barkScreenX, barkScreenY);
       return ActionStatus.COMPLETE;
     }
 
@@ -115,7 +121,7 @@ export class ActionDialogObject extends Action {
       GameState.CutsceneManager.setDialogNonDependantNames(ignoreNames);
       this.target.onDialog(this.owner, -1, this.conversation);
     }else{
-      GameState.CutsceneManager.startConversation(dialog, this.target, listener, bPrivate, ignoreNames);
+      GameState.CutsceneManager.startConversation(dialog, this.target, listener, bPrivate, ignoreNames, barkScreenX, barkScreenY);
     }
     return ActionStatus.COMPLETE;
   }

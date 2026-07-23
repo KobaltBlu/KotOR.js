@@ -105,7 +105,7 @@ export class ActionHeal extends Action {
     }
 
     const inventory = owner.getInventory();
-    if(inventory.includes(item)){
+    if(!GameState.infiniteUses && inventory.includes(item)){
       const stack = item.getStackSize();
       if(stack <= 1){
         const idx = inventory.indexOf(item);

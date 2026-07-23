@@ -64,6 +64,18 @@ export class EffectDamage extends GameEffect {
       return;
     }
 
+    // Retail invulnerability cheat — party members only
+    if(GameState.cheatInvulnerable && this.object.isPartyMember?.()){
+      for(let i = 0; i < 15; i++){
+        if(channels[i] >= 0) channels[i] = 0;
+      }
+      this.writeChannels(channels);
+      this.resolvedDamage = 0;
+      this.object.combatData.lastDamager = this.creator;
+      this.object.combatData.lastAttacker = this.creator;
+      return;
+    }
+
     const alreadyMitigated = this.getInt(19) === 1;
     // Combat-packaged: sum typed channels (already mitigated).
     // Script EffectDamage: retail mitigates using int[14] (also written beside the typed channel).

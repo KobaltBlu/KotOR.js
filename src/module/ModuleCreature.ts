@@ -583,7 +583,8 @@ export class ModuleCreature extends ModuleObject {
 
     this.perceptionList = [];
 
-    this.setAnimationState(ModuleCreatureAnimState.IDLE);
+    // Do not resolve pause/inj here — HP is still 0 until initProperties.
+    // Retail SetAnimation runs after ReadStatsFromGff (LoadCreature @ 00500350).
     this.combatData.combatActionTimer = 3; 
     this.combatData.combatState = false;
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
@@ -3553,6 +3554,14 @@ export class ModuleCreature extends ModuleObject {
     return this.getHP() <= 0 && !this.min1HP;
   }
 
+  /**
+   * Retail CSWSCreature::IsInjured @ 004eff30 — skip when appearance.disableinjuredanim.
+   */
+  isInjured(){
+    if(this.getAppearance()?.disableinjuredanim) return false;
+    return super.isInjured();
+  }
+
   isDiseased(){
     return this.hasEffect(GameEffectType.EffectDisease);
   }
@@ -5830,11 +5839,15 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('CurrentForce'))
         this.currentForce = this.template.getFieldByLabel('CurrentForce').getValue();
 
-      if(this.template.RootNode.hasField('CurrentHitPoints'))
-        this.currentHitPoints = this.template.getFieldByLabel('CurrentHitPoints').getValue();
-
       if(this.template.RootNode.hasField('HitPoints'))
         this.hitPoints = this.template.getFieldByLabel('HitPoints').getValue();
+
+      // Retail ReadStatsFromGff: CurrentHitPoints defaults to HitPoints when absent.
+      if(this.template.RootNode.hasField('CurrentHitPoints')){
+        this.currentHitPoints = this.template.getFieldByLabel('CurrentHitPoints').getValue();
+      }else{
+        this.currentHitPoints = this.hitPoints;
+      }
 
       if(this.template.RootNode.hasField('Disarmable'))
         this.disarmable = this.template.getFieldByLabel('Disarmable').getValue();
@@ -5915,6 +5928,11 @@ export class ModuleCreature extends ModuleObject {
 
       if(this.template.RootNode.hasField('MaxHitPoints')){
         this.maxHitPoints = this.template.getFieldByLabel('MaxHitPoints').getValue();
+      }
+      // Retail computes max HP from stats; toolset UTCs that omit MaxHitPoints
+      // must not leave max at 0 (that made pause resolve as pauseinj).
+      if(this.maxHitPoints <= 0 && this.hitPoints > 0){
+        this.maxHitPoints = this.hitPoints;
       }
 
       if(this.template.RootNode.hasField('MaxForcePoints')){
@@ -6244,11 +6262,17 @@ export class ModuleCreature extends ModuleObject {
       console.error(e);
     }
 
+    // Retail CSWSCreature::LoadCreature — ReadFieldINT("Animation", default 10000)
+    // then SetAnimation. Always re-resolve after HP is loaded so pause is not
+    // stuck on pauseinj from a pre-stats constructor resolve.
+    let anim = ModuleCreatureAnimState.PAUSE;
     if(this.template.RootNode.hasField('Animation')){
-      this.setAnimationState(
-        this.template.getFieldByLabel('Animation').getValue()
-      );
+      anim = this.template.getFieldByLabel('Animation').getValue();
     }
+    if(!anim || anim === 0xFFFFFFFF){
+      anim = ModuleCreatureAnimState.PAUSE;
+    }
+    this.setAnimationState(anim);
 
     this.initialized = true;
 

@@ -83,6 +83,15 @@ export class ActionMenuManager {
     return !!ActionMenuManager.oPC?.area?.restrictMode;
   }
 
+  /** True if acting PC has a lightsaber in either hand (TSL DoorSaber gate). */
+  static oPCHasLightsaber(): boolean {
+    const pc = ActionMenuManager.oPC;
+    if(!pc) return false;
+    const rh = pc.equipment?.RIGHTHAND;
+    const lh = pc.equipment?.LEFTHAND;
+    return !!(rh?.isLightsaber?.() || lh?.isLightsaber?.());
+  }
+
   /** Retail GetSelfForcePowers → personal slot 0. */
   static populateSelfForcePowers(){
     if(!ActionMenuManager.oPC) return;
@@ -319,6 +328,23 @@ export class ActionMenuManager {
           ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
             action: action,
             icon: securityTalent.getIcon()
+          }));
+        }
+        // TSL DoorSaber (engine 0x43): locked door + lightsaber in either hand
+        if(
+          GameState.GameKey === GameEngineType.TSL &&
+          ActionMenuManager.oTarget.isLocked() &&
+          ActionMenuManager.oTarget.isUseable() &&
+          !ActionMenuManager.oTarget.isOpen() &&
+          ActionMenuManager.oPCHasLightsaber()
+        ){
+          const saber = new GameState.ActionFactory.ActionDoorSaber();
+          saber.setOwner(ActionMenuManager.oPC as ModuleObject);
+          saber.setParameter(0, ActionParameterType.DWORD, this.oTarget);
+          ActionMenuManager.ActionPanels.targetPanels[2].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+            action: saber,
+            icon: 'i_attack',
+            name: 'Cut Open',
           }));
         }
         // Retail door slot 0: Bash when anim is not OPENED1/OPENED2, open
