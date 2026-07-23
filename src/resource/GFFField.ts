@@ -702,57 +702,131 @@ export class GFFField {
   }
 
   /**
-   * Converts this field to a JSON representation.
-   * 
-   * The JSON structure includes:
-   * - type: The field's data type
-   * - value: The field's value (type-specific)
-   * - structs: Array of child structure JSON objects
-   * 
-   * @returns {IGFFFieldJSON} A JSON object representing this field
-   * 
+   * Converts this field to OpenKotOR GFF JSON
+   * (`https://openkotor.com/schemas/gff.schema.json`).
+   *
    * @example
    * ```typescript
-   * const field = new GFFField(GFFDataType.CExoString, 'Name', 'PlayerName');
+   * const field = new GFFField(GFFDataType.CEXOSTRING, 'Name', 'PlayerName');
    * const json = field.toJSON();
-   * console.log(json.type); // GFFDataType.CExoString
-   * console.log(json.value); // 'PlayerName'
-   * 
-   * // With child structures
-   * const structField = new GFFField(GFFDataType.STRUCT, 'CreatureData');
-   * structField.addChildStruct(new GFFStruct(0x0007));
-   * const structJson = structField.toJSON();
-   * console.log(structJson.structs.length); // 1
+   * // { type: 'cexostring', value: 'PlayerName' }
    * ```
    */
   toJSON(): IGFFFieldJSON {
-    const field = {
-      type: this.getType(),
-      value: this.getValue(),
-      structs: [] as any[]
-    };
-
     switch (this.getType()) {
-      case GFFDataType.CEXOLOCSTRING:
-        field.value = this.getCExoLocString();
-      break;
-      case GFFDataType.VOID:
-        field.value = this.getVoid();
-      break;
-      case GFFDataType.ORIENTATION:
-        field.value = this.getOrientation();
-      break;
-      case GFFDataType.VECTOR:
-        field.value = this.getVector();
-      break;
+      case GFFDataType.BYTE:
+        return { type: 'byte', value: Number(this.getValue()) & 0xFF };
+      case GFFDataType.CHAR: {
+        const n = Number(this.getValue());
+        return { type: 'char', value: (n << 24) >> 24 };
+      }
+      case GFFDataType.WORD:
+        return { type: 'word', value: Number(this.getValue()) & 0xFFFF };
+      case GFFDataType.SHORT: {
+        const n = Number(this.getValue());
+        return { type: 'short', value: (n << 16) >> 16 };
+      }
+      case GFFDataType.DWORD:
+        return { type: 'dword', value: Number(this.getValue()) >>> 0 };
+      case GFFDataType.INT:
+        return { type: 'int', value: Number(this.getValue()) | 0 };
+      case GFFDataType.FLOAT:
+        return { type: 'float', value: Number(this.getValue()) };
+      case GFFDataType.DOUBLE:
+        return { type: 'double', value: Number(this.getValue()) };
+      case GFFDataType.DWORD64:
+        return { type: 'dword64', value: GFFField.jsonIntegerFromBigInt(this.getBigUint64()) };
+      case GFFDataType.INT64:
+        return { type: 'int64', value: GFFField.jsonIntegerFromBigInt(this.getBigInt64()) };
+      case GFFDataType.CEXOSTRING:
+        return { type: 'cexostring', value: String(this.getValue() ?? '') };
+      case GFFDataType.RESREF:
+        return { type: 'resref', value: String(this.getValue() ?? '') };
+      case GFFDataType.CEXOLOCSTRING: {
+        const loc = this.getCExoLocString();
+        const value: { [key: string]: string | number } = {};
+        // BadStrRef (-1) is omitted per the OpenKotOR schema.
+        if(loc && loc.getRESREF() !== -1){
+          value.id = loc.getRESREF();
+        }
+        const strings = loc?.getStrings() ?? [];
+        for(let i = 0; i < strings.length; i++){
+          const sub = strings[i];
+          if(!sub) continue;
+          value[String(sub.GetStringID())] = sub.getString();
+        }
+        return { type: 'cexolocstring', value };
+      }
+      case GFFDataType.VOID: {
+        const bytes = this.getVoid() || new Uint8Array(0);
+        return { type: 'void', value64: GFFField.bytesToBase64(bytes) };
+      }
+      case GFFDataType.STRUCT: {
+        const children = this.getChildStructs();
+        const child = children.length ? children[0].toJSON() : {};
+        return { type: 'struct', value: child };
+      }
+      case GFFDataType.LIST:
+        return {
+          type: 'list',
+          value: this.getChildStructs().map((struct) => struct.toJSON()),
+        };
+      case GFFDataType.VECTOR: {
+        const v = this.getVector() || { x: 0, y: 0, z: 0 };
+        return { type: 'vector', value: { x: v.x, y: v.y, z: v.z } };
+      }
+      case GFFDataType.ORIENTATION: {
+        const o = this.getOrientation() || { x: 0, y: 0, z: 0, w: 1 };
+        return { type: 'orientation', value: { x: o.x, y: o.y, z: o.z, w: o.w } };
+      }
+      default:
+        return { type: 'int', value: Number(this.getValue()) | 0 };
     }
+  }
 
-    const children = this.getChildStructs();
-    for(let i = 0; i < children.length; i++){
-      field.structs[i] = children[i].toJSON();
+  /** Reads a little-endian unsigned 64-bit value from field data (or value). */
+  getBigUint64(): bigint {
+    if(this.dataView && this.data && this.data.byteLength >= 8){
+      return this.dataView.getBigUint64(0, true);
     }
+    const v = this.value;
+    if(typeof v === 'bigint') return v;
+    if(typeof v === 'number') return BigInt(Math.trunc(v));
+    if(typeof v === 'string' && v.length) return BigInt(v);
+    return 0n;
+  }
 
-    return field;
+  /** Reads a little-endian signed 64-bit value from field data (or value). */
+  getBigInt64(): bigint {
+    if(this.dataView && this.data && this.data.byteLength >= 8){
+      return this.dataView.getBigInt64(0, true);
+    }
+    const v = this.value;
+    if(typeof v === 'bigint') return v;
+    if(typeof v === 'number') return BigInt(Math.trunc(v));
+    if(typeof v === 'string' && v.length) return BigInt(v);
+    return 0n;
+  }
+
+  private static jsonIntegerFromBigInt(value: bigint): number {
+    if(value <= BigInt(Number.MAX_SAFE_INTEGER) && value >= BigInt(Number.MIN_SAFE_INTEGER)){
+      return Number(value);
+    }
+    // JSON Schema wants an integer; beyond safe range we still emit a number
+    // (precision may be lost) rather than throwing on BigInt stringify.
+    return Number(value);
+  }
+
+  private static bytesToBase64(bytes: Uint8Array): string {
+    if(typeof Buffer !== 'undefined'){
+      return Buffer.from(bytes).toString('base64');
+    }
+    let binary = '';
+    const chunk = 0x8000;
+    for(let i = 0; i < bytes.length; i += chunk){
+      binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+    return btoa(binary);
   }
 
 }

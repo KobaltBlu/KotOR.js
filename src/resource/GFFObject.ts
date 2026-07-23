@@ -221,7 +221,16 @@ export class GFFObject {
   }
 
   toJSON(){
-    return this.RootNode.toJSON();
+    const root = this.RootNode ? this.RootNode.toJSON() : {};
+    return {
+      __data_type: (this.FileType || '').replace(/\0/g, '').trim(),
+      ...root,
+    };
+  }
+
+  /** Pretty-printed OpenKotOR GFF JSON suitable for file export. */
+  toJSONString(space: number | string = 2): string {
+    return JSON.stringify(this.toJSON(), null, space);
   }
 
   buildStruct(struct: any){

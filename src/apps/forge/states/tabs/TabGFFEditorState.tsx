@@ -19,6 +19,7 @@ export class TabGFFEditorState extends TabState {
 
   tabName: string = `GFF`;
   gff: KotOR.GFFObject;
+  private forcedExportExt?: 'json';
 
   selectedNode: KotOR.GFFField|KotOR.GFFStruct;
 
@@ -84,14 +85,17 @@ export class TabGFFEditorState extends TabState {
       }
     };
     const previousSaveTypes = this.saveTypes;
+    const previousForcedExportExt = this.forcedExportExt;
     const previousFileExt = this.file?.ext;
     this.saveTypes = [jsonSaveType];
+    this.forcedExportExt = 'json';
     if(this.file){
       this.file.ext = 'json';
     }
     try{
       return await this.saveAs();
     }finally{
+      this.forcedExportExt = previousForcedExportExt;
       this.saveTypes = previousSaveTypes;
       if(this.file){
         this.file.ext = previousFileExt;
@@ -100,9 +104,10 @@ export class TabGFFEditorState extends TabState {
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
-    if(ext === 'json'){
+    const normalizedExt = (this.forcedExportExt || ext || '').replace(/^\./, '').toLowerCase();
+    if(normalizedExt === 'json'){
       const textEncoder = new TextEncoder();
-      return textEncoder.encode(JSON.stringify(this.gff.toJSON(), null, 2));
+      return textEncoder.encode(this.gff.toJSONString());
     }
     return this.gff.getExportBuffer();
   }

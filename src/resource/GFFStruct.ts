@@ -263,31 +263,29 @@ export class GFFStruct {
   }
 
   /**
-   * Converts this structure to a JSON representation.
-   * 
-   * @returns {IGFFStructJSON} A JSON object containing the structure's type and all field data
-   * 
+   * Converts this structure to OpenKotOR GFF JSON.
+   *
+   * `__struct_id` is omitted when the structure ID is -1.
+   * Field labels become object keys.
+   *
    * @example
    * ```typescript
    * const struct = new GFFStruct(0x0007);
-   * struct.addField(new GFFField('Name', GFFDataType.CExoString, 'PlayerName'));
-   * struct.addField(new GFFField('Level', GFFDataType.UInt32, 1));
-   * 
+   * struct.addField(new GFFField(GFFDataType.CEXOSTRING, 'Name', 'PlayerName'));
    * const json = struct.toJSON();
-   * console.log(json.type); // 0x0007
-   * console.log(json.fields.Name.value); // 'PlayerName'
-   * console.log(json.fields.Level.value); // 1
+   * // { __struct_id: 7, Name: { type: 'cexostring', value: 'PlayerName' } }
    * ```
    */
   toJSON(): IGFFStructJSON {
-    const struct: IGFFStructJSON = {
-      type: this.getType(),
-      fields: {}
-    };
+    const struct: IGFFStructJSON = {};
+    const type = this.getType();
+    if(type !== -1){
+      struct.__struct_id = type;
+    }
 
     for(let i = 0; i < this.fields.length; i++){
       const f = this.fields[i];
-      struct.fields[f.label] = f.toJSON();
+      struct[f.label] = f.toJSON();
     }
 
     return struct;
