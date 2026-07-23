@@ -25,11 +25,8 @@ export class SWFeatGain {
   classMap: Map<string, IFeatGainClass> = new Map();
 
   /**
-   * **Unused** by the odyssey engine
-   * https://lucasforumsarchive.com/thread/121440-more-feats#post-11
-   * @param classCode
-   * @returns number[]
-   * @deprecated
+   * Bonus feat picks per level (featgain.2da *_bon).
+   * Used by retail CalcLevelUpNumberFeats second out-param @ 005a6f40.
    */
   getBonus(classCode: string): number[] {
     return this.classMap.get(classCode.toLowerCase())?.bonuses || [];

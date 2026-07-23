@@ -4,6 +4,7 @@ import { GUIFeatItem } from "@/game/kotor/gui/GUIFeatItem";
 import type { ModuleCreature } from "@/module";
 import { TalentFeat } from "@/talents";
 import { GameState } from "@/GameState";
+import { getFeatPicksForLevel } from "@/engine/rules/level-up";
 
 /**
  * CharGenFeats class.
@@ -33,6 +34,8 @@ export class CharGenFeats extends GameMenu {
   selectedFeat: any = null;
   chosenFeats: number[] = [];
   selectionsRemaining: number = 1;
+  levelUpMode: boolean = false;
+  levelUpAcceptCallback?: () => void;
 
   constructor(){
     super();
@@ -54,6 +57,13 @@ export class CharGenFeats extends GameMenu {
       this.BTN_ACCEPT?.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.selectionsRemaining > 0) return;
+        if(this.levelUpMode){
+          this.levelUpAcceptCallback?.();
+          this.levelUpAcceptCallback = undefined;
+          this.levelUpMode = false;
+          this.close();
+          return;
+        }
         this.manager.CharGenCustomPanel?.featCreationCompleted?.();
         this.close();
       });
@@ -75,10 +85,18 @@ export class CharGenFeats extends GameMenu {
   show() {
     super.show();
     if(!this.creature){
-      this.creature = GameState.CharGenManager.selectedCreature;
+      this.creature = this.levelUpMode
+        ? GameState.LevelUpManager?.creature
+        : GameState.CharGenManager.selectedCreature;
     }
     this.chosenFeats = [];
-    this.selectionsRemaining = 1;
+    if(this.levelUpMode && GameState.LevelUpManager?.draft){
+      this.selectionsRemaining = GameState.LevelUpManager.draft.featPicksRemaining | 0;
+    }else{
+      const classData = this.creature?.getMainClass?.() || this.creature?.classes?.[0];
+      const picks = classData ? getFeatPicksForLevel(classData as any, 1) : 1;
+      this.selectionsRemaining = picks > 0 ? picks : 1;
+    }
     this.addGrantedFeats();
     this.LB_FEATS.setProtoBuilder(this.getFeatItemClass());
     this.buildFeatList();
@@ -117,11 +135,27 @@ export class CharGenFeats extends GameMenu {
     if(!this.creature || !this.selectedFeat || this.selectionsRemaining <= 0) return;
     const featId = this.getFeatId(this.selectedFeat);
     if(this.creature.getHasFeat(featId)) return;
+    if(!this.canChooseFeat(this.selectedFeat)) return;
     this.creature.addFeat(new TalentFeat(featId));
     this.chosenFeats.push(featId);
     this.selectionsRemaining--;
     this.updateSelectionsLabel();
     this.buildFeatList();
+  }
+
+  /** Prereq + class list gate before adding a pick. */
+  canChooseFeat(feat: any): boolean {
+    if(!this.creature || !feat) return false;
+    const mainClass = this.creature.getMainClass?.() || this.creature.classes?.[0];
+    if(!mainClass) return false;
+    if(mainClass.isFeatAvailable && !mainClass.isFeatAvailable(feat)) return false;
+    const status = mainClass.getFeatStatus?.(feat);
+    if(status === 4 || status === false) return false;
+    const p1 = feat.prereqFeat1 | 0;
+    const p2 = feat.prereqFeat2 | 0;
+    if(p1 >= 0 && p1 !== 0xFFFFFFFF && p1 !== -1 && !this.creature.getHasFeat(p1)) return false;
+    if(p2 >= 0 && p2 !== 0xFFFFFFFF && p2 !== -1 && !this.creature.getHasFeat(p2)) return false;
+    return true;
   }
 
   applyRecommendedFeats() {
@@ -155,7 +189,11 @@ export class CharGenFeats extends GameMenu {
       }
     }
     this.chosenFeats = [];
-    this.selectionsRemaining = 1;
+    const classData = this.creature?.getMainClass?.() || this.creature?.classes?.[0];
+    const picks = classData ? getFeatPicksForLevel(classData as any, 1) : 1;
+    this.selectionsRemaining = this.levelUpMode && GameState.LevelUpManager?.draft
+      ? (GameState.LevelUpManager.draft.featPicksRemaining | 0)
+      : (picks > 0 ? picks : 1);
   }
 
   updateSelectionsLabel() {

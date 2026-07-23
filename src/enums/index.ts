@@ -1,6 +1,7 @@
 export * from "@/enums/ApplicationEnvironment";
 export * from "@/enums/ApplicationMode";
 export * from "@/enums/actions";
+export * from "@/enums/animation";
 export * from "@/enums/audio";
 export * from "@/enums/chargen";
 export * from "@/enums/combat";

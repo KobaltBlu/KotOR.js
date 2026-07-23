@@ -71,11 +71,27 @@ export class CharGenQuickOrCustom extends GameMenu {
         this.manager.CharGenMain.close();
       });
 
+      const setDescFromControl = (ctrl: GUIButton) => {
+        const hint = ctrl?.getHintText?.() || ctrl?.getText?.() || '';
+        if(hint) this.LB_DESC?.setItem?.(hint);
+      };
+      this.QUICK_CHAR_BTN?.addEventListener('hover', () => setDescFromControl(this.QUICK_CHAR_BTN));
+      this.CUST_CHAR_BTN?.addEventListener('hover', () => setDescFromControl(this.CUST_CHAR_BTN));
+      this.QUICK_CHAR_BTN?.addEventListener('click', () => setDescFromControl(this.QUICK_CHAR_BTN));
+      // Default pane text from Quick button hint
+      setDescFromControl(this.QUICK_CHAR_BTN);
+
       this.tGuiPanel.offset.x = -180;
       this.tGuiPanel.offset.y = 100;
       this.recalculatePosition();
       resolve();
     });
+  }
+
+  show() {
+    super.show();
+    const hint = this.QUICK_CHAR_BTN?.getHintText?.() || '';
+    if(hint) this.LB_DESC?.setItem?.(hint);
   }
   
 }

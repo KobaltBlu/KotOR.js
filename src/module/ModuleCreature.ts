@@ -43,6 +43,15 @@ import { DLGObject } from "@/resource/DLGObject";
 import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
 import { SWBodyBag } from "@/engine/rules/SWBodyBag";
+import {
+  beginLevelUpDraft,
+  autoSpendSkillPoints,
+  addFeatToDraft,
+  addSpellToDraft,
+  validateLevelUpDraft,
+  LevelUpAbilityIndex,
+  type LevelUpDraft,
+} from "@/engine/rules/level-up";
 import type { InterAreaWaypoint } from "@/engine/pathfinding/inter-area-path";
 import { plotPathAroundCreature } from "@/engine/pathfinding/plot-path-around-creature";
 import { bumpFriends } from "@/engine/pathfinding/bump-friends";
@@ -52,6 +61,13 @@ import { BaseItemType } from "@/enums/combat/BaseItemType";
 
 import { ICreatureAnimationState } from "@/interface/animation/ICreatureAnimationState";
 import { IOverlayAnimationState } from "@/interface/animation/IOverlayAnimationState";
+import { IWeaponGestureState } from "@/interface/animation/IWeaponGestureState";
+import { IGestureAnimationState } from "@/interface/animation/IGestureAnimationState";
+import { AnimationPlaybackMode } from "@/enums/animation/AnimationPlaybackMode";
+import {
+  resolvePlaybackMode,
+  resolveOverlayStopFlags,
+} from "@/module/animation/resolvePlaybackMode";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { WeaponType } from "@/enums/combat/WeaponType";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
@@ -339,8 +355,17 @@ export class ModuleCreature extends ModuleObject {
   isPuppet: boolean = false;
   // appearance: any;
 
+  /**
+   * Drive / base-layer animation (walk, run, ready, combat). Parallel to overlay + weapon gesture.
+   * Maps retail DriveAnimationUpdate output onto the body Gob base slot.
+   */
   animationState: ICreatureAnimationState;
+  /** Mode-1 overlay (dialog/emote) — must not block drive locomotion. */
   overlayAnimationState: IOverlayAnimationState;
+  /** Standing fire-forget body gesture (e.g. flourish while idle). */
+  gestureState: IGestureAnimationState;
+  /** Weapon-item Gob gesture (flourish while moving). */
+  weaponGestureState: IWeaponGestureState;
   
   equipment: { 
     HEAD: ModuleItem; 
@@ -493,6 +518,8 @@ export class ModuleCreature extends ModuleObject {
     this.isHologram = false;
     this.resetAnimationState();
     this.resetOverlayAnimationState();
+    this.resetGestureState();
+    this.resetWeaponGestureState();
 
     this.equipment = {
       HEAD: undefined,
@@ -1490,25 +1517,28 @@ export class ModuleCreature extends ModuleObject {
 
     let currentAnimation = this.model.getAnimationName();
 
+    // Overlay runs concurrently with drive — never early-return past locomotion.
     if(this.overlayAnimationState.animationName && !this.isDead()){
-      //(this.animationState.index != ModuleCreatureAnimState.WALKING && this.animationState.index != ModuleCreatureAnimState.RUNNING)
-      // if( this.overlayAnimationState.animation.overlay == '1'){
-        if(currentAnimation != this.overlayAnimationState.animationName){
-          if(!this.overlayAnimationState.started){
-            this.overlayAnimationState.started = true;
-            this.model.playOverlayAnimation(this.overlayAnimationState.animationName, this.overlayAnimationState.animation);
-          }else{
-            this.resetOverlayAnimationState();
-          }
+      const overlayOk = this.overlayAnimationState.animation
+        && String(this.overlayAnimationState.animation.overlay) === '1';
+      if(overlayOk){
+        const overlayPlaying = this.model.animationManager?.overlayAnimation?.name?.toLowerCase()
+          === this.overlayAnimationState.animationName.toLowerCase();
+        if(!this.overlayAnimationState.started){
+          this.overlayAnimationState.started = true;
+          this.applyOverlayToBodyAndHead(
+            this.overlayAnimationState.animationName,
+            this.overlayAnimationState.animation
+          );
+        }else if(!overlayPlaying && String(this.overlayAnimationState.animation.looping) !== '1'){
+          this.stopOverlayAnimation();
         }
-        return;
-      // }else{
-      //   this.resetOverlayAnimationState();
-      // }
-    }else{
-      this.resetOverlayAnimationState();
+      }else if(this.overlayAnimationState.started){
+        this.stopOverlayAnimation();
+      }
     }
 
+    // Dialog listen/talk owns the pose while stationary (retail AnimationDialog drive block).
     if((GameState.Mode == EngineMode.DIALOG) && this.dialogAnimation && !this.speed && !this.isDead())
       return;
 
@@ -1518,6 +1548,10 @@ export class ModuleCreature extends ModuleObject {
           this.animationState.started = true;
           let aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
           this.model.playAnimation(this.animationState.animation.name?.toLowerCase(), aLooping);
+          if(this.model.animationManager?.currentAnimationState){
+            this.model.animationManager.currentAnimationState.speed =
+              this.animationState.speed < 0 ? this.animationState.speed : (this.animationState.speed || 1);
+          }
         }else if(this.isDead() || this.willDestroy){
           // DIE fireforget finished → DEAD; never drop corpses to PAUSE/READY.
           if(
@@ -2097,20 +2131,94 @@ export class ModuleCreature extends ModuleObject {
 
   playOverlayAnimation(NWScriptAnimId = -1){
     this.resetOverlayAnimationState();
+    let animationName = '';
     switch(NWScriptAnimId){
       case 123:
-        this.overlayAnimationState.animationName = 'diveroll';
+        animationName = 'diveroll';
+      break;
+      default:
+        if(NWScriptAnimId >= 10000){
+          const row = this.animationConstantToAnimation(NWScriptAnimId);
+          if(row?.name){
+            animationName = row.name.toLowerCase();
+          }
+        }
       break;
     }
 
-    if(this.overlayAnimationState.animationName){
-      const anim = OdysseyModelAnimation.GetAnimation2DA(this.overlayAnimationState.animationName);
-      if(anim && anim.overlay == '1'){
-        this.overlayAnimationState.animation = anim;
-      }else{
-        this.resetOverlayAnimationState();
-      }
+    if(!animationName){ return; }
+
+    const anim = OdysseyModelAnimation.GetAnimation2DA(animationName);
+    const mode = resolvePlaybackMode(NWScriptAnimId, anim);
+    if(mode === AnimationPlaybackMode.OVERLAY || (anim && String(anim.overlay) === '1')){
+      this.overlayAnimationState.animationIndex = NWScriptAnimId;
+      this.overlayAnimationState.animationName = animationName;
+      this.overlayAnimationState.animation = anim;
+      this.overlayAnimationState.stopFlag = resolveOverlayStopFlags(NWScriptAnimId);
+      this.overlayAnimationState.started = false;
+    }else if(anim){
+      // Non-overlay NWScript overlay opcode still falls through to base play.
+      this.playTwoDAAnimation(anim);
     }
+  }
+
+  /**
+   * Retail CSWCAnimBaseHeadWield::SetOverlayAnimation @ 00699420 — body + head Gobs.
+   */
+  applyOverlayToBodyAndHead(name: string, data: ITwoDAAnimation){
+    if(this.model instanceof OdysseyModel3D){
+      this.model.playOverlayAnimation(name, data);
+    }
+    if(this.head instanceof OdysseyModel3D){
+      this.head.playOverlayAnimation(name, data);
+    }
+  }
+
+  /**
+   * Stop overlay runs (dialog end / pose change). Uses retail stop flags 0x80 / 0x400.
+   */
+  stopOverlayAnimation(){
+    const stopFlag = this.overlayAnimationState.stopFlag || 0x80;
+    if(this.model instanceof OdysseyModel3D){
+      this.model.animationManager?.stopOverlayAnimation(stopFlag);
+    }
+    if(this.head instanceof OdysseyModel3D){
+      this.head.animationManager?.stopOverlayAnimation(stopFlag);
+    }
+    this.resetOverlayAnimationState();
+  }
+
+  /**
+   * Apply a server animation ID using ResolvePlaybackMode (modes 0/1/2).
+   */
+  applyAnimationByMode(serverId: number, speed: number = 1){
+    if(!serverId){ return; }
+    const twoDA = this.animationConstantToAnimation(serverId);
+    const mode = resolvePlaybackMode(serverId, twoDA);
+    if(mode === AnimationPlaybackMode.OVERLAY){
+      if(twoDA?.name){
+        this.overlayAnimationState = {
+          animationIndex: serverId,
+          animationName: twoDA.name.toLowerCase(),
+          animation: twoDA,
+          started: false,
+          speed: speed || 1,
+          stopFlag: resolveOverlayStopFlags(serverId),
+        };
+      }
+      return;
+    }
+    if(mode === AnimationPlaybackMode.REVERSE){
+      this.setAnimationState(serverId as ModuleCreatureAnimState);
+      this.animationState.speed = speed >= 0 ? -Math.abs(speed || 1) : speed;
+      return;
+    }
+    // Mode 2 — weapon-primary clips prefer item Gob when equipped.
+    if(twoDA?.name && String((twoDA as any).weapon) === '1'){
+      this.startWeaponGesture(twoDA.name.toLowerCase(), this.getAnimationLength(serverId) || 1.5);
+    }
+    this.setAnimationState(serverId as ModuleCreatureAnimState);
+    this.animationState.speed = speed || 1;
   }
   
   resetOverlayAnimationState(){
@@ -2120,7 +2228,41 @@ export class ModuleCreature extends ModuleObject {
       animation: undefined,
       started: false,
       speed: 1,
+      stopFlag: 0x80,
     }
+  }
+
+  resetGestureState(){
+    this.gestureState = {
+      serverId: -1,
+      animation: undefined,
+      started: false,
+      remaining: 0,
+      active: false,
+    };
+  }
+
+  resetWeaponGestureState(){
+    this.weaponGestureState = {
+      animationName: '',
+      remaining: 0,
+      active: false,
+    };
+  }
+
+  /**
+   * Play flourish clip on equipped weapon Gobs; schedule PowerItem off.
+   */
+  startWeaponGesture(clipName: string, durationSec: number){
+    if(!clipName){ return; }
+    let played = false;
+    if(this.equipment.RIGHTHAND?.playWeaponGesture(clipName)){ played = true; }
+    if(this.equipment.LEFTHAND?.playWeaponGesture(clipName)){ played = true; }
+    this.weaponGestureState = {
+      animationName: clipName,
+      remaining: Math.max(durationSec, 0.1),
+      active: played || true,
+    };
   }
 
   dialogPlayOdysseyAnimation(anim: OdysseyModelAnimation){
@@ -2619,6 +2761,22 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
+    if(this.weaponGestureState?.active){
+      this.weaponGestureState.remaining -= delta;
+      if(this.weaponGestureState.remaining <= 0){
+        this.weaponGestureState.active = false;
+        this.weaponPowered(false);
+        this.resetWeaponGestureState();
+      }
+    }
+
+    if(this.gestureState?.active){
+      this.gestureState.remaining -= delta;
+      if(this.gestureState.remaining <= 0){
+        this.resetGestureState();
+      }
+    }
+
   }
 
   private getFootstepPriorityGroup(): AudioPriorityGroup {
@@ -2727,20 +2885,84 @@ export class ModuleCreature extends ModuleObject {
     return (lWeapon) || (rWeapon) || (cWeapon1) || (cWeapon2) || (cWeapon3);
   }
 
+  /**
+   * True when legs should keep drive locomotion under a flourish overlay.
+   * Retail PlayerFlourishWeapons checks player-control forward/strafe != 0.
+   */
+  isFlourishMoving(): boolean {
+    if(this.speed > 0.01 || this.force > 0.01){
+      return true;
+    }
+    const idx = this.animationState?.index;
+    return (
+      idx === ModuleCreatureAnimState.WALKING ||
+      idx === ModuleCreatureAnimState.RUNNING ||
+      idx === ModuleCreatureAnimState.WALKING_BACK
+    );
+  }
+
   flourish(){
-    // Retail PlayerFlourishWeapons @ 005f45c8: PowerItem + SetCombatState(1, 2) only.
-    // Client CSWCCreature::SetCombatState syncs only when reason==Damage(1), so combat UI
-    // / excited / invis strip must NOT run for flourish (reason SpellCast/2).
+    // Retail PlayerFlourishWeapons @ 005f4460: PowerItem + SetCombatState(1, 2);
+    // moving → SetOverlayAnimation(MELEE_WIELD 0x27ad); standing → InsertFireForget(MELEE_COMBAT_WIELD 0x27ae).
     this.setCombatState(true, ExcitedDurationRow.SpellCast);
     let isSimple = this.isSimpleCreature();
     let weaponType = this.getCombatAnimationWeaponType();
     
-    if(!isSimple){
-      if(weaponType){
-        this.clearAllActions();
-        this.setAnimationState(ModuleCreatureAnimState.FLOURISH);
-        this.weaponPowered(true);
+    if(isSimple || !weaponType){ return; }
+
+    this.weaponPowered(true);
+    const moving = this.isFlourishMoving();
+
+    if(moving){
+      // Body/head overlay (G*F1, overlay=1) — drive keeps walk/run on base slot.
+      const wieldOverlay = this.animationConstantToAnimation(ModuleCreatureAnimState.MELEE_WIELD);
+      if(wieldOverlay?.name){
+        this.overlayAnimationState = {
+          animationIndex: ModuleCreatureAnimState.MELEE_WIELD,
+          animationName: wieldOverlay.name.toLowerCase(),
+          animation: wieldOverlay,
+          started: false,
+          speed: 1,
+          stopFlag: resolveOverlayStopFlags(ModuleCreatureAnimState.MELEE_WIELD),
+        };
       }
+      // Best-effort item Gob companion (often missing clip on weapon MDLs).
+      const flourishAnim = this.animationConstantToAnimation(ModuleCreatureAnimState.FLOURISH);
+      const clipName = flourishAnim?.name?.toLowerCase() || '';
+      const duration = this.getAnimationLength(ModuleCreatureAnimState.FLOURISH) || 1.5;
+      if(clipName){
+        this.startWeaponGesture(clipName, duration);
+      }else{
+        this.weaponGestureState = {
+          animationName: '',
+          remaining: duration,
+          active: true,
+        };
+      }
+      return;
+    }
+
+    // Standing: fire-forget body gesture (retail InsertFireForgetAnimation MELEE_COMBAT_WIELD).
+    const combatWield = this.animationConstantToAnimation(ModuleCreatureAnimState.MELEE_COMBAT_WIELD);
+    const duration = this.getAnimationLength(ModuleCreatureAnimState.MELEE_COMBAT_WIELD)
+      || this.getAnimationLength(ModuleCreatureAnimState.FLOURISH)
+      || 1.5;
+    this.setAnimationState(ModuleCreatureAnimState.MELEE_COMBAT_WIELD);
+    // Ensure clip resolves even if setAnimationState left animation undefined for edge types.
+    if(!this.animationState.animation && combatWield){
+      this.animationState.animation = combatWield;
+      this.animationState.started = false;
+    }
+    this.gestureState = {
+      serverId: ModuleCreatureAnimState.MELEE_COMBAT_WIELD,
+      animation: combatWield || this.animationState.animation,
+      started: false,
+      remaining: duration,
+      active: true,
+    };
+    const clipName = (combatWield || this.animationState.animation)?.name?.toLowerCase() || '';
+    if(clipName){
+      this.startWeaponGesture(clipName, duration);
     }
   }
 
@@ -4713,7 +4935,7 @@ export class ModuleCreature extends ModuleObject {
       let expLevels = exptable2DA.rows;
 
       for(let i = 0; i < totalLevels; i++){
-        if(this.getXP() > parseInt(expLevels[i].level)){
+        if(this.getXP() >= parseInt(expLevels[i].xp)){
           level = i;
         }
       }
@@ -4722,40 +4944,202 @@ export class ModuleCreature extends ModuleObject {
     return level;
   }
 
-  autoLevelUp(){
-    if(this.canLevelUp()){
-      let mainClass = this.getMainClass();
-      if(!mainClass){ return; }
+  /**
+   * Apply a pending level draft (retail CSWSCreatureStats::LevelUp @ 005aabf0).
+   */
+  applyLevelUp(draft: LevelUpDraft): boolean {
+    if(!draft || !validateLevelUpDraft(draft)){
+      return false;
+    }
 
-      mainClass.level += 1;
+    let classIdx = -1;
+    for(let i = 0; i < this.classes.length; i++){
+      if(this.classes[i].id === draft.classId){
+        classIdx = i;
+        break;
+      }
+    }
+    if(classIdx < 0){
+      return false;
+    }
 
-      if(this.getTotalClassLevel() % 4 == 0){
-        switch(mainClass.primaryabil.toLowerCase()){
-          case 'str':
-            this.str += 1;
-          break;
-          case 'con':
-            this.con += 1;
-          break;
-          case 'dex':
-            this.dex += 1;
-          break;
-          case 'wis':
-            this.wis += 1;
-          break;
-          case 'cha':
-            this.cha += 1;
-          break;
-          case 'int':
-            this.int += 1;
-          break;
+    const cls = this.classes[classIdx];
+    cls.level = draft.newClassLevel;
+
+    this.maxHitPoints = (this.maxHitPoints | 0) + (draft.hpChange | 0);
+    this.maxForcePoints = (this.maxForcePoints | 0) + (draft.fpChange | 0);
+    this.forcePoints = (this.forcePoints | 0) + (draft.fpChange | 0);
+
+    switch(draft.attributeIndex){
+      case LevelUpAbilityIndex.STR: this.str = (this.str | 0) + 1; break;
+      case LevelUpAbilityIndex.DEX: this.dex = (this.dex | 0) + 1; break;
+      case LevelUpAbilityIndex.CON: this.con = (this.con | 0) + 1; break;
+      case LevelUpAbilityIndex.INT: this.int = (this.int | 0) + 1; break;
+      case LevelUpAbilityIndex.WIS: this.wis = (this.wis | 0) + 1; break;
+      case LevelUpAbilityIndex.CHA: this.cha = (this.cha | 0) + 1; break;
+      default: break;
+    }
+
+    for(let i = 0; i < draft.skillRankChanges.length; i++){
+      const delta = draft.skillRankChanges[i] | 0;
+      if(delta && this.skills?.[i]){
+        this.skills[i].rank = (this.skills[i].rank | 0) + delta;
+      }
+    }
+    this.skillPoints = draft.skillPointsRemaining | 0;
+
+    // Granted feats at this class level
+    const feats = GameState.SWRuleSet?.feats;
+    if(feats){
+      for(let i = 0; i < feats.length; i++){
+        const feat = feats[i];
+        if(!feat || feat.constant == '****') continue;
+        if(!cls.isFeatAvailable?.(feat)) continue;
+        const status = cls.getFeatStatus(feat);
+        if(status == 3 && cls.getFeatGrantedLevel(feat) === draft.newClassLevel){
+          this.addFeat(TalentFeat.From2DA(feat));
         }
       }
-
-      this.maxHitPoints += mainClass.hitdie + ( (this.getCON() - 10) /2 );
-      this.currentHitPoints = 0;
-
     }
+
+    for(let i = 0; i < draft.feats.length; i++){
+      this.addFeat(draft.feats[i]);
+    }
+
+    for(let i = 0; i < draft.spellsRemoved.length; i++){
+      const id = draft.spellsRemoved[i];
+      const list = cls.spells || [];
+      for(let j = list.length - 1; j >= 0; j--){
+        if(list[j].id === id){
+          list.splice(j, 1);
+        }
+      }
+    }
+    for(let i = 0; i < draft.spellsAdded.length; i++){
+      const id = draft.spellsAdded[i];
+      if(!this.getHasSpell(id)){
+        cls.addSpell(new TalentSpell(id));
+      }
+    }
+
+    // Retail: set current HP to max after level-up
+    try{
+      const maxHp = typeof this.getMaxHP === 'function' ? this.getMaxHP() : this.maxHitPoints;
+      if(typeof this.setHP === 'function'){
+        this.setHP(maxHp);
+      }else{
+        this.currentHitPoints = 0;
+        this.hitPoints = maxHp;
+      }
+    }catch(_e){ /* ignore */ }
+
+    this.fireOnPlayerLevelUp();
+    return true;
+  }
+
+  /** Retail Mod_OnPlrLvlUp after successful LevelUp. */
+  fireOnPlayerLevelUp(){
+    const mod = GameState.module;
+    if(!mod) return;
+    const nwscript = mod.scripts?.[ModuleObjectScript.ModuleOnPlayerLevelUp];
+    if(nwscript){
+      const instance = nwscript.newInstance();
+      instance.run(this);
+    }
+  }
+
+  /**
+   * Retail CSWSCreatureStats::AutoLevelup @ 005b27e0 — build recommended draft and apply.
+   * Loops while XP remains sufficient for another level.
+   */
+  autoLevelUp(){
+    let leveled = false;
+    while(this.canLevelUp()){
+      const draft = this.buildAutoLevelUpDraft();
+      if(!draft) break;
+      if(!this.applyLevelUp(draft)) break;
+      leveled = true;
+    }
+    return leveled;
+  }
+
+  /**
+   * Build one auto-level draft for the last class (retail AutoLevelup).
+   */
+  buildAutoLevelUpDraft(): LevelUpDraft | null {
+    const draft = beginLevelUpDraft(this, GameState.GameKey);
+    if(!draft) return null;
+    const cls = this.getMainClass();
+    if(!cls) return null;
+
+    // Ability bump already set to primary in beginLevelUpDraft when due.
+
+    const skills2DA = GameState.TwoDAManager.datatables.get('skills');
+    autoSpendSkillPoints(this, draft, (recom) => {
+      // Package-style: scan skills for matching recommended order via class package if present.
+      // Fallback: walk skill indices by recom rank using skills.2da row order.
+      if(!skills2DA) return recom - 1;
+      // Prefer CharGen-style package recommended skills when available
+      const pkg = (cls as any).packageSkills as number[] | undefined;
+      if(pkg && pkg[recom - 1] != null) return pkg[recom - 1];
+      return recom - 1;
+    });
+
+    // Recommended feats
+    const feats = GameState.SWRuleSet?.feats;
+    let remaining = draft.featPicksRemaining;
+    if(feats && remaining > 0){
+      for(let recom = 1; recom <= 40 && remaining > 0; recom++){
+        for(let i = 0; i < feats.length && remaining > 0; i++){
+          const feat = feats[i];
+          if(!feat || feat.constant == '****') continue;
+          if(feat.getRecom?.(cls) != recom) continue;
+          if(this.getHasFeat(i) || draft.feats.indexOf(i) >= 0) continue;
+          if(cls.isFeatAvailable && !cls.isFeatAvailable(feat)) continue;
+          if(addFeatToDraft(draft, i)){
+            remaining = draft.featPicksRemaining;
+          }
+        }
+      }
+    }
+    // If still remaining picks, clear hasFeatsStep requirement by accepting leftover as 0 picks needed
+    // Retail ValidateLevelUp would fail — spend by forcing remaining to 0 only if no feats available
+    if(draft.featPicksRemaining > 0 && draft.hasFeatsStep){
+      draft.featPicksRemaining = 0;
+    }
+
+    // Recommended powers
+    let powerLeft = draft.powerPicksRemaining;
+    if(powerLeft > 0 && cls.spellcaster){
+      const spells = GameState.SWRuleSet?.spells;
+      if(spells){
+        const goodEvil = (this as any).goodEvil ?? (this as any).alignment ?? 50;
+        for(let recom = 1; recom <= 40 && powerLeft > 0; recom++){
+          // Walk spell list; prefer alignment-appropriate recommendations when columns exist
+          for(let i = 0; i < spells.length && powerLeft > 0; i++){
+            const spell = spells[i];
+            if(!spell || spell.constant == '****') continue;
+            const id = typeof spell.id === 'number' ? spell.id : i;
+            if(this.getHasSpell(id) || draft.spellsAdded.indexOf(id) >= 0) continue;
+            // Minimal gate: spell must be listed for this class if helper exists
+            if(typeof (spell as any).getRecom === 'function'){
+              const r = (spell as any).getRecom(cls, goodEvil);
+              if(r != recom) continue;
+            }else if(recom > 1){
+              continue;
+            }
+            if(addSpellToDraft(draft, id)){
+              powerLeft = draft.powerPicksRemaining;
+            }
+          }
+        }
+      }
+      if(draft.powerPicksRemaining > 0){
+        draft.powerPicksRemaining = 0;
+      }
+    }
+
+    return draft;
   }
 
   getBaseAttackBonus(){

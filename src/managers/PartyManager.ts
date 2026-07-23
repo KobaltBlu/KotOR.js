@@ -238,6 +238,8 @@ export class PartyManager {
     GameState.PartyManager.ControlledNPC = -1;
     GameState.PartyManager.AIState = 0;
     GameState.PartyManager.FollowState = 0;
+    GameState.PartyManager.formation = 0;
+    GameState.PartyManager.formationInvert = false;
     GameState.PartyManager.DisableMap = false;
     GameState.PartyManager.DisableHealthRegen = false;
     GameState.PartyManager.ForfeitConditions = 0;
@@ -298,6 +300,8 @@ export class PartyManager {
     GameState.PartyManager.CombatMessages = [];
     GameState.PartyManager.AIState = 0;
     GameState.PartyManager.FollowState = 0;
+    GameState.PartyManager.formation = 0;
+    GameState.PartyManager.formationInvert = false;
     GameState.PartyManager.DisableMap = false;
     GameState.PartyManager.DisableHealthRegen = false;
     GameState.PartyManager.ForfeitConditions = 0;
@@ -882,16 +886,15 @@ export class PartyManager {
    * @param leaveInWorld - Whether to leave the NPC in the world
    * @returns void
    */
-  static RemoveNPCById(npcId = 0, leaveInWorld = false){
-    console.log('RemoveNPCById', npcId, leaveInWorld);
+  static RemoveNPCById(npcId = 0, leaveInWorld = false): boolean {
     const partyMember = PartyManager.GetPartyMemberByNPCId(npcId);
     if(!partyMember){
-      return;
+      return false;
     }
 
     const pmIndex = PartyManager.party.indexOf(partyMember);
     if(pmIndex == -1){
-      return;
+      return false;
     }
 
     //Remove the partymember from the module
@@ -900,10 +903,8 @@ export class PartyManager {
     PartyManager.RebuildPortraitOrder();
 
     if(!leaveInWorld){
-      console.log('RemoveNPCById !leaveInWorld', partyMember);
       partyMember.destroy();
     }else{
-      console.log('RemoveNPCById leaveInWorld', partyMember);
       if(partyMember.container){
         partyMember.container.removeFromParent();
       }
@@ -912,6 +913,7 @@ export class PartyManager {
     }
     
     PartyManager.RemoveCurrentMemberByNPCId(npcId);
+    return true;
   }
 
   static GetPartyMemberByNPCId(npcId = 0){
@@ -1628,15 +1630,81 @@ export class PartyManager {
   }
 
   /**
-   * Retail CSWParty formation 0 local offsets (CSWParty ctor @ 00636170).
-   * Local frame: +X right of facing, +Y forward along facing.
-   * PositionParty @ 00565b00 / TSL 006ff590 rotates these by Yaw(orientation).
+   * Retail CSWParty formation local offsets (CSWParty ctor @ 00636170 → field16_0x1c8).
+   * Each pattern stores companion slot1 then slot2 (+X right, +Y forward).
+   * Leader is always (0,0). SetFormation @ 00634760 selects pattern 0–2.
    */
-  static readonly FORMATION_OFFSETS: ReadonlyArray<Readonly<{ x: number; y: number }>> = [
-    { x: 0, y: 0 },
-    { x: 1.5, y: -0.7 },
-    { x: -1.5, y: 0.8 },
+  static readonly FORMATION_PATTERN_COMPANIONS: ReadonlyArray<
+    ReadonlyArray<Readonly<{ x: number; y: number }>>
+  > = [
+    // Pattern 0
+    [ { x: 1.5, y: -0.7 }, { x: -1.5, y: 0.8 } ],
+    // Pattern 1 (ctor zeros for slots — companions stack on leader locally)
+    [ { x: 0.0, y: 0.0 }, { x: 0.0, y: 0.0 } ],
+    // Pattern 2
+    [ { x: -2.0, y: 1.5 }, { x: 2.0, y: 4.5 } ],
   ];
+
+  /**
+   * Active party follow formation (retail CSWParty.formation). Default 0 after ctor SetFormation(0).
+   * −9999 cycles to next unlocked pattern.
+   */
+  static formation: number = 0;
+  /** Retail field12_0x1c4 — when set, SetFormation swaps slot1/slot2 offsets. */
+  static formationInvert: boolean = false;
+
+  /**
+   * Leader + companion offsets for the active formation pattern.
+   * Index 0 = leader (0,0); 1/2 = companions from FORMATION_PATTERN_COMPANIONS.
+   */
+  static getFormationOffsets(): ReadonlyArray<Readonly<{ x: number; y: number }>> {
+    const pattern = PartyManager.formation;
+    const idx = (pattern >= 0 && pattern < 3) ? pattern : 0;
+    let c0 = PartyManager.FORMATION_PATTERN_COMPANIONS[idx][0];
+    let c1 = PartyManager.FORMATION_PATTERN_COMPANIONS[idx][1];
+    if(PartyManager.formationInvert){
+      const tmp = c0;
+      c0 = c1;
+      c1 = tmp;
+    }
+    return [ { x: 0, y: 0 }, c0, c1 ];
+  }
+
+  /** @deprecated Prefer getFormationOffsets(); kept for callers expecting formation-0 shape. */
+  static get FORMATION_OFFSETS(): ReadonlyArray<Readonly<{ x: number; y: number }>> {
+    return PartyManager.getFormationOffsets();
+  }
+
+  /**
+   * Retail CSWParty::SetFormation @ 00634760.
+   * @param pattern 0–2, or −9999 to cycle
+   */
+  static setFormation(pattern: number): void {
+    if(pattern === -9999){
+      let next = PartyManager.formation + 1;
+      if(next >= 3) next = 0;
+      PartyManager.setFormation(next);
+      return;
+    }
+    if(pattern < 0 || pattern >= 3){
+      return;
+    }
+    if(pattern === PartyManager.formation){
+      return;
+    }
+    PartyManager.formation = pattern;
+  }
+
+  /**
+   * Retail CSWParty::InvertFormation — toggle companion offset swap.
+   */
+  static invertFormation(on?: boolean): void {
+    if(typeof on === 'boolean'){
+      PartyManager.formationInvert = on;
+    }else{
+      PartyManager.formationInvert = !PartyManager.formationInvert;
+    }
+  }
 
   /** Scratch vectors for GetSpawnLocation / PositionParty safe snap. */
   static #spawnPos = new THREE.Vector3();
@@ -1678,7 +1746,7 @@ export class PartyManager {
     if(index < 0) index = 0;
     if(index > 2) index = 2;
 
-    const offset = PartyManager.FORMATION_OFFSETS[index];
+    const offset = PartyManager.getFormationOffsets()[index];
     const cos = Math.cos(yaw);
     const sin = Math.sin(yaw);
     // Rotate local formation offset around Z (Quaternion * Vector @ 004a9bb0).
@@ -1758,11 +1826,14 @@ export class PartyManager {
         : creature.area.getNearestWalkablePoint(this.#tmpFollowPosition, getPathPersonalSpace(creature));
     }
 
-    const targetOffset = (idx == 2) ? -1.5 : 1.5;
+    const offsets = PartyManager.getFormationOffsets();
+    const targetOffset = (idx == 2) ? (offsets[2]?.x ?? -1.5) : (offsets[1]?.x ?? 1.5);
+    // Prefer active formation lateral X; fall back to ±1.5 when pattern-1 zeros.
+    const lateral = Math.abs(targetOffset) > 1e-4 ? targetOffset : (idx == 2 ? -1.5 : 1.5);
 
     this.#tmpFollowPositionTarget.set(
-      targetOffset * Math.cos(leader.rotation.z),
-      targetOffset * Math.sin(leader.rotation.z),
+      lateral * Math.cos(leader.rotation.z),
+      lateral * Math.sin(leader.rotation.z),
       0
     );
     this.#tmpFollowPosition.copy(leader.position).sub(this.#tmpFollowPositionTarget);
@@ -1781,12 +1852,34 @@ export class PartyManager {
   }
 
   /**
-   * Give XP to the player
-   * @param nXP - The amount of XP to give
-   * @returns void
+   * Give XP to the party (retail CSWPartyTable::DistributeExperience @ 005653a0).
+   * Adds to PT_XP_POOL and awards the full amount to each active party member + player.
    */
   static GiveXP(nXP = 0){
-    this.Player.experience += nXP;
+    const amount = nXP | 0;
+    if(amount <= 0){ return; }
+
+    PartyManager.XPPool = (PartyManager.XPPool | 0) + amount;
+
+    const awarded = new Set<ModuleCreature>();
+    for(let i = 0; i < PartyManager.party.length; i++){
+      const member = PartyManager.party[i];
+      if(!member || awarded.has(member)) continue;
+      awarded.add(member);
+      if(typeof member.addXP === 'function'){
+        member.addXP(amount);
+      }else if(typeof member.experience === 'number'){
+        member.experience += amount;
+      }
+    }
+    if(PartyManager.Player && !awarded.has(PartyManager.Player as ModuleCreature)){
+      if(typeof PartyManager.Player.addXP === 'function'){
+        PartyManager.Player.addXP(amount);
+      }else{
+        PartyManager.Player.experience += amount;
+      }
+    }
+
     GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.PLOT_XP_RECEIVED);
   }
 

@@ -17,4 +17,6 @@ export interface OdysseyModelAnimationManagerState {
   lastEvent: number;
   events: boolean[];
   animation?: any;
+  /** Playback rate; negative = reverse (mode 0). */
+  speed?: number;
 }

@@ -9,6 +9,7 @@ export const CheatConsole = () => {
   const [appState] = appContext.appState;
   const [gameKey] = appContext.gameKey;
   const [showCheatConsole, setShowCheatConsole] = appContext.showCheatConsole;
+  const [showSceneOverview, setShowSceneOverview] = appContext.showSceneOverview;
   const [showPerformanceMonitor] = appContext.showPerformanceMonitor;
   const [consoleInput, setConsoleInput] = useState('');
   const [debugTick, setDebugTick] = useState(0);
@@ -145,6 +146,10 @@ export const CheatConsole = () => {
     }
   }
 
+  const onToggleSceneOverview = () => {
+    setShowSceneOverview(!showSceneOverview);
+  }
+
   const onToggleDebugger = () => {
     appState.toggleDebugger();
     setShowCheatConsole(false);
@@ -192,6 +197,9 @@ export const CheatConsole = () => {
   return (
     <div className={`console on ${gameKey}`}>
       <div className="console-buttons">
+        <button className="console-btn" onClick={onToggleSceneOverview}>
+          Scene {showSceneOverview ? '▲' : '▼'}
+        </button>
         <button className="console-btn" onClick={onToggleDebugger}>Debugger</button>
         <button className="console-btn" onClick={onTogglePerformanceMonitor}>Toggle Stats</button>
         <button className="console-btn" onClick={onReloadLastSave}>Reload Last Save</button>

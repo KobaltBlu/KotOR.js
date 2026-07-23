@@ -678,7 +678,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
       lastTime: 0,
       delta: 0,
       lastEvent: -1,
-      events: []
+      events: [],
+      speed: 1,
     };
     
     if(typeof anim === 'number'){

@@ -51,6 +51,7 @@ import { hasImmunityType } from "@/effects/haste-slow";
 import { changeFactionByFaction } from "@/module/faction-by-faction";
 import { GameOverManager } from "@/managers/GameOverManager";
 import { setAreaTransitionBMP } from "@/engine/area-transition-bmp";
+import { setCreatureFormation } from "@/engine/pathfinding/set-formation";
 import { SaveGame } from "@/engine/SaveGame";
 import type { ModuleMGGunBank } from "@/module/ModuleMGGunBank";
 
@@ -3625,7 +3626,11 @@ NWScriptDefK1.Actions = {
     comment: "265: Brings up the level up GUI for the player.  The GUI will only show up\nif the player has gained enough experience points to level up.\n* Returns TRUE if the GUI was successfully brought up; FALSE if not.\n",
     name: "ShowLevelUpGUI",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      // Retail ExecuteCommandShowLevelUpGUI @ 00543870 → CGuiInGame::ShowLevelUpGUI
+      return GameState.LevelUpManager?.showLevelUpGUI?.() ? NW_TRUE : NW_FALSE;
+    }
   },
   266:{
     comment: "266: Flag the specified item as being non-equippable or not.  Set bNonEquippable\nto TRUE to prevent this item from being equipped, and FALSE to allow\nthe normal equipping checks to determine if the item can be equipped.\nNOTE: This will do nothing if the object passed in is not an item.  Items that\nare already equipped when this is called will not automatically be\nunequipped.  These items will just be prevented from being re-equipped\nshould they be unequipped.\n",
@@ -7274,7 +7279,14 @@ NWScriptDefK1.Actions = {
     comment: "573: Remove oPC from their current party. This will only work on a PC.\n- oPC: removes this player from whatever party they're currently in.\n",
     name: "RemoveFromParty",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // Retail ExecuteCommandRemoveFromParty @ 00541ba0 — CSWSFaction::RemoveMember.
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        const creature = args[0] as ModuleCreature;
+        creature.faction?.removeMember?.(creature);
+      }
+    }
   },
   574:{
     comment: "574: Adds a creature to the party\nReturns whether the addition was successful\nAddPartyMember\n",
@@ -7295,8 +7307,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.PartyManager.RemoveNPCById(args[0], true);
-      return 0;
+      const ok = GameState.PartyManager.RemoveNPCById(args[0], true);
+      return ok ? NW_TRUE : NW_FALSE;
     }
   },
   576:{
@@ -9023,7 +9035,12 @@ NWScriptDefK1.Actions = {
     comment: "729. SetFormation\nPut oCreature into the nFormationPattern about oAnchor at position nPosition\n- oAnchor: The formation is set relative to this object\n- oCreature: This is the creature that you wish to join the formation\n- nFormationPattern: FORMATION_*\n- nPosition: Integer from 1 to 10 to specify which position in the formation\noCreature is supposed to take.\n",
     name: "SetFormation",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject, number, number]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        setCreatureFormation(args[0], args[1] as ModuleCreature, args[2] | 0, args[3] | 0);
+      }
+    }
   },
   730:{
     comment: "730. ActionFollowLeader\nthis action has a party member follow the leader.\nDO NOT USE ON A CREATURE THAT IS NOT IN THE PARTY!!\n",

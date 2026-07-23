@@ -761,6 +761,7 @@ export class ModuleItem extends ModuleObject {
    * @param powered - Whether the weapon should be powered
    */
   setPowered(powered: boolean){
+    if(!(this.model instanceof OdysseyModel3D)){ return; }
     const currentAnimL = this.model.animationManager.currentAnimation || this.model.odysseyAnimationMap.get('off');
     if(!currentAnimL){ return; }
 
@@ -790,6 +791,18 @@ export class ModuleItem extends ModuleObject {
         this.model.playAnimation('off', true);
       break;
     }
+  }
+
+  /**
+   * Play a fire-forget gesture clip on this item Gob (retail AnimBaseWield path).
+   * Used for weapon flourish while body drive continues on the creature model.
+   */
+  playWeaponGesture(clipName: string): boolean {
+    if(!(this.model instanceof OdysseyModel3D) || !clipName){ return false; }
+    const name = clipName.toLowerCase().trim();
+    if(!this.model.odysseyAnimationMap?.has(name)){ return false; }
+    this.model.playAnimation(name, false);
+    return true;
   }
 
   static FromResRef(resRef: string): ModuleItem {

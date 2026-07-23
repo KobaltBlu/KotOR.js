@@ -80,6 +80,8 @@ export class CreatureClass {
   savingThrows: SWSavingThrow[] = [];
   attackBonuses: SWAttackBonus[] = [];
   featGainPoints: number[] = [];
+  /** featgain.2da *_bon columns — retail CalcLevelUpNumberFeats second out. */
+  featGainBonuses: number[] = [];
   spellGainPoints: number[] = [];
   acbonuses: number[] = [];
 
@@ -312,6 +314,7 @@ export class CreatureClass {
     let featGain = GameState.SWRuleSet.featGains;
     if(featGain){
       this.featGainPoints = featGain.getRegular(this.featgain);
+      this.featGainBonuses = featGain.getBonus(this.featgain);
     }
 
     let spellGain = GameState.SWRuleSet.spellGains;

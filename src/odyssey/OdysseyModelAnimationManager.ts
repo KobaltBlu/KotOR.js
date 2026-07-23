@@ -79,7 +79,10 @@ export class OdysseyModelAnimationManager {
 
     if(this.currentAnimation && this.currentAnimation.type == 'OdysseyModelAnimation'){
       if(this.model.bonesInitialized){
-        if(!this.updateAnimation(this.currentAnimation, this.currentAnimationState, delta)){
+        const rate = typeof this.currentAnimationState.speed === 'number'
+          ? this.currentAnimationState.speed
+          : 1;
+        if(!this.updateAnimation(this.currentAnimation, this.currentAnimationState, delta * rate)){
           if(!this.currentAnimationState.loop){
             this.stopAnimation();
           }else{
@@ -133,7 +136,8 @@ export class OdysseyModelAnimationManager {
     this.lastAnimationState = this.createAnimationState();
   }
 
-  stopOverlayAnimation(){
+  stopOverlayAnimation(_stopFlag: number = 0x80){
+    // stopFlag reserved for multi-run stack filtering (0x80 / 0x400); single overlay slot clears all.
     this.overlayAnimation = undefined;
     this.overlayAnimationState = {
       loop: false,

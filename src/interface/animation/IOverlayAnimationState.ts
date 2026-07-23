@@ -16,4 +16,6 @@ export interface IOverlayAnimationState {
   animation: ITwoDAAnimation;
   started: boolean;
   speed: number;
+  /** Aurora stop flag from resolveOverlayStopFlags (0x80 or 0x400). */
+  stopFlag: number;
 }

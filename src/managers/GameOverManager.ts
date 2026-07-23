@@ -225,13 +225,31 @@ export class GameOverManager {
     }
 
     // Retail: if not solo and a member is >40 units from leader (1600 sqr), pull to formation
-    if(!GameState.SOLOMODE && leaderPos){
+    if(!GameState.SOLOMODE && leaderPos && leader){
+      const area = leader.area || GameState.module?.area;
+      const ox = typeof leader.getXOrientation === 'function' ? leader.getXOrientation() : 0;
+      const oy = typeof leader.getYOrientation === 'function' ? leader.getYOrientation() : 1;
+      const yaw = -Math.atan2(ox, oy);
+      const cos = Math.cos(yaw);
+      const sin = Math.sin(yaw);
+      const offsets = GameState.PartyManager.getFormationOffsets();
+
       for(let i = 1; i < party.length; i++){
         const member = party[i];
         if(!member) continue;
-        if(member.position.distanceToSquared(leaderPos) > 1600){
-          member.position.copy(leaderPos);
-          member.position.x += 1.0 * i;
+        if(member.position.distanceToSquared(leaderPos) <= 1600) continue;
+
+        const offset = offsets[Math.min(i, offsets.length - 1)] || { x: 1.5 * i, y: -0.7 };
+        const preferred = new THREE.Vector3(
+          leaderPos.x + (offset.x * cos - offset.y * sin),
+          leaderPos.y + (offset.x * sin + offset.y * cos),
+          leaderPos.z
+        );
+        const safe = new THREE.Vector3();
+        if(area && computeSafeLocation(area, preferred, safe, { radius: 10, owner: member as ModuleCreature })){
+          member.position.copy(safe);
+        }else{
+          member.position.copy(preferred);
         }
       }
     }

@@ -13,6 +13,7 @@ import EngineLocation from "@/engine/EngineLocation";
 import { SaveGame } from "@/engine/SaveGame";
 import * as THREE from "three";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
+import { TalentSpell } from "@/talents/TalentSpell";
 
 /**
  * NWScriptDefK2 class.
@@ -5777,14 +5778,26 @@ NWScriptDefK2.Actions = {
     name: 'GrantFeat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        (args[1] as ModuleCreature).addFeat(args[0] | 0);
+      }
+    }
   },
   787: {
     comment: 'DJS-OEI 1/13/2004\n787: Grants the target a spell without regard for prerequisites.',
     name: 'GrantSpell',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        const creature = args[1] as ModuleCreature;
+        const cls = creature.getMainClass?.();
+        if(cls && !creature.getHasSpell(args[0] | 0)){
+          cls.addSpell(new TalentSpell(args[0] | 0));
+        }
+      }
+    }
   },
   788: {
     comment: 'DJS-OEI 1/13/2004\n788: Places an active mine on the map.\nnMineType - Mine Type from Traps.2DA\nlPoint - The location in the world to place the mine.\nnDetectDCBase - This value, plus the \'DetectDCMod\' column in Traps.2DA\nresults in the final DC for creatures to detect this mine.\nnDisarmDCBase - This value, plus the \'DisarmDCMod\' column in Traps.2DA\nresults in the final DC for creatures to disarm this mine.\noCreator - The object that should be considered the owner of the mine.\nIf oCreator is set to OBJECT_INVALID, the faction of the mine will be\nconsidered Hostile1, meaning the party will be vulnerable to it.',

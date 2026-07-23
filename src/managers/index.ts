@@ -3,6 +3,7 @@ export * from "@/managers/AutoPauseManager";
 export * from "@/managers/BIFManager";
 export * from "@/managers/CameraShakeManager";
 export * from "@/managers/CharGenManager";
+export * from "@/managers/LevelUpManager";
 export * from "@/managers/CheatConsoleManager";
 export * from "@/managers/ConfigManager";
 export * from "@/managers/CursorManager";

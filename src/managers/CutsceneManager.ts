@@ -661,6 +661,20 @@ export class CutsceneManager {
     this.dialog = undefined;
     this.cutsceneMode = CutsceneMode.DIALOG;
     GameState.VideoEffectManager.SetVideoEffect(-1);
+
+    // Retail overlay stop when leaving dialog (SetOverlayAnimation param_3=0).
+    const stopOverlayOn = (obj: ModuleObject | undefined) => {
+      if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
+        const c = obj as ModuleCreature;
+        if(typeof c.stopOverlayAnimation === 'function'){
+          c.stopOverlayAnimation();
+        }
+        c.dialogAnimation = null;
+      }
+    };
+    stopOverlayOn(this.owner);
+    stopOverlayOn(this.listener);
+
     const audioEngine = AudioEngine.GetAudioEngine();
     // Retail ~CSWSDialog: StopDucking only — area BGM keeps playing; AmbientTrack left until UnloadArea.
     audioEngine.bgmTimer = 0;

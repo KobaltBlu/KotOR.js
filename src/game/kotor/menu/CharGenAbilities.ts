@@ -55,6 +55,21 @@ export class CharGenAbilities extends GameMenu {
   BTN_BACK: GUIButton;
 
   creature: ModuleCreature;
+  /** Focused ability for cost/desc labels (chargen UX). */
+  selectedAttribute: CharGenAttribute = CharGenAttribute.STR;
+  /** When true, Accept only picks +1 attribute for LevelUpManager draft. */
+  levelUpMode: boolean = false;
+  levelUpAcceptCallback?: () => void;
+
+  /** KotOR dialog.tlk ability descriptions (STR…CHA). */
+  private static readonly ABILITY_DESC_STRREF: Record<number, number> = {
+    [CharGenAttribute.STR]: 132,
+    [CharGenAttribute.DEX]: 133,
+    [CharGenAttribute.CON]: 134,
+    [CharGenAttribute.WIS]: 136,
+    [CharGenAttribute.INT]: 135,
+    [CharGenAttribute.CHA]: 137,
+  };
 
   constructor(){
     super();
@@ -102,6 +117,11 @@ export class CharGenAbilities extends GameMenu {
   }
 
   private tryIncrease(attr: CharGenAttribute) {
+    if(this.levelUpMode){
+      this.selectedAttribute = attr;
+      this.updateFocusedAbilityLabels();
+      return;
+    }
     if(!this.creature) return;
     const score = this.getScore(attr);
     const cost = costToIncreaseAbility(score);
@@ -112,6 +132,7 @@ export class CharGenAbilities extends GameMenu {
   }
 
   private tryDecrease(attr: CharGenAttribute) {
+    if(this.levelUpMode) return;
     if(!this.creature) return;
     const score = this.getScore(attr);
     if(score <= 8 || score <= this.getCreatureBase(attr)) return;
@@ -132,6 +153,14 @@ export class CharGenAbilities extends GameMenu {
       this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
 
+        if(this.levelUpMode){
+          this.levelUpAcceptCallback?.();
+          this.levelUpAcceptCallback = undefined;
+          this.levelUpMode = false;
+          this.close();
+          return;
+        }
+
         if(this.creature){
           this.creature.str = GameState.CharGenManager.str;
           this.creature.dex = GameState.CharGenManager.dex;
@@ -139,6 +168,7 @@ export class CharGenAbilities extends GameMenu {
           this.creature.wis = GameState.CharGenManager.wis;
           this.creature.int = GameState.CharGenManager.int;
           this.creature.cha = GameState.CharGenManager.cha;
+          GameState.CharGenManager.applyClassSavingThrows(this.creature as any);
         }
 
         this.manager.CharGenMain.updateAttributes();
@@ -161,9 +191,24 @@ export class CharGenAbilities extends GameMenu {
         this.updateButtonStates();
       });
 
+      const bindSelect = (btn: GUIButton, attr: CharGenAttribute) => {
+        btn?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.selectedAttribute = attr;
+          this.updateFocusedAbilityLabels();
+        });
+      };
+      bindSelect(this.STR_POINTS_BTN, CharGenAttribute.STR);
+      bindSelect(this.DEX_POINTS_BTN, CharGenAttribute.DEX);
+      bindSelect(this.CON_POINTS_BTN, CharGenAttribute.CON);
+      bindSelect(this.WIS_POINTS_BTN, CharGenAttribute.WIS);
+      bindSelect(this.INT_POINTS_BTN, CharGenAttribute.INT);
+      bindSelect(this.CHA_POINTS_BTN, CharGenAttribute.CHA);
+
       const bindMinus = (btn: GUIButton, attr: CharGenAttribute) => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
+          this.selectedAttribute = attr;
           this.tryDecrease(attr);
           this.updateButtonStates();
         });
@@ -171,6 +216,7 @@ export class CharGenAbilities extends GameMenu {
       const bindPlus = (btn: GUIButton, attr: CharGenAttribute) => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
+          this.selectedAttribute = attr;
           this.tryIncrease(attr);
           this.updateButtonStates();
         });
@@ -244,6 +290,22 @@ export class CharGenAbilities extends GameMenu {
     if(costToIncreaseAbility(mgr.cha) > mgr.availPoints || mgr.cha >= 18) this.CHA_PLUS_BTN.hide();
 
     this.REMAINING_SELECTIONS_LBL.setText(mgr.availPoints);
+    this.updateFocusedAbilityLabels();
+  }
+
+  updateFocusedAbilityLabels() {
+    const score = this.getScore(this.selectedAttribute);
+    const cost = costToIncreaseAbility(score);
+    const mod = Math.floor((score - 10) / 2);
+    this.COST_POINTS_LBL?.setText?.(String(cost));
+    this.LBL_ABILITY_MOD?.setText?.(mod >= 0 ? `+${mod}` : String(mod));
+    const strRef = CharGenAbilities.ABILITY_DESC_STRREF[this.selectedAttribute];
+    const desc = strRef != null
+      ? (GameState.TLKManager.GetStringById?.(strRef)?.Value
+        ?? GameState.TLKManager.TLKStrings?.[strRef]?.Value
+        ?? '')
+      : '';
+    this.LB_DESC?.setItem?.(desc || null);
   }
 
   getAttributeCost(index = 0){

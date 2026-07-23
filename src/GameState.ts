@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import {
-  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
+  AppearanceManager, AutoPauseManager, TLKManager, CharGenManager, LevelUpManager, CheatConsoleManager, CameraShakeManager, ConfigManager, CursorManager, DialogMessageManager,
   FadeOverlayManager, FeedbackMessageManager, GlobalVariableManager, InventoryManager, JournalManager, LightManager, ShadowBlobManager, WindManager, MenuManager, ModuleObjectManager, PartyManager,
   ResolutionManager, ShaderManager, TwoDAManager, FactionManager,
   VideoEffectManager, VideoManager, PazaakManager, UINotificationManager, GuiTimingBarManager, GameOverManager, CutsceneManager, LegalScreenManager, EventManager
@@ -99,6 +99,7 @@ export class GameState implements EngineContext {
   static AutoPauseManager: typeof AutoPauseManager;
   static CameraShakeManager: typeof CameraShakeManager;
   static CharGenManager: typeof CharGenManager;
+  static LevelUpManager: typeof LevelUpManager;
   static CheatConsoleManager: typeof CheatConsoleManager;
   static ConfigManager: typeof ConfigManager;
   static CursorManager: typeof CursorManager;

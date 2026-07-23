@@ -72,6 +72,7 @@ export class MenuManager {
   static MenuInventory: KOTOR.MenuInventory;
   static MenuJournal: KOTOR.MenuJournal;
   static MenuLevelUp: KOTOR.MenuLevelUp;
+  static MenuPowerLevelUp: KOTOR.MenuPowerLevelUp;
   static MenuMap: KOTOR.MenuMap;
   static MenuMessages: KOTOR.MenuMessages;
   static MenuOptions: KOTOR.MenuOptions;
@@ -446,6 +447,40 @@ export class MenuManager {
           KOTOR.CharGenMain, KOTOR.CharGenName, KOTOR.CharGenPortCust, KOTOR.CharGenQuickOrCustom,
           KOTOR.CharGenQuickPanel, KOTOR.CharGenSkills,
         ];
+      }
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  /** Lazy-load CharGen ability/skill/feat panels + power level-up for in-game leveling. */
+  static async EnsureLevelUpMenus(){
+    const isTSL = GameState.GameKey == GameEngineType.TSL;
+    try{
+      if(!MenuManager.CharGenAbilities){
+        MenuManager.CharGenAbilities = await MenuManager.GameMenuLoader(
+          isTSL ? TSL.CharGenAbilities : KOTOR.CharGenAbilities
+        ) as KOTOR.CharGenAbilities;
+      }
+      if(!MenuManager.CharGenSkills){
+        MenuManager.CharGenSkills = await MenuManager.GameMenuLoader(
+          isTSL ? TSL.CharGenSkills : KOTOR.CharGenSkills
+        ) as KOTOR.CharGenSkills;
+      }
+      if(!MenuManager.CharGenFeats){
+        MenuManager.CharGenFeats = await MenuManager.GameMenuLoader(
+          isTSL ? TSL.CharGenFeats : KOTOR.CharGenFeats
+        ) as KOTOR.CharGenFeats;
+      }
+      if(!MenuManager.MenuPowerLevelUp){
+        MenuManager.MenuPowerLevelUp = await MenuManager.GameMenuLoader(
+          isTSL ? TSL.MenuPowerLevelUp : KOTOR.MenuPowerLevelUp
+        ) as KOTOR.MenuPowerLevelUp;
+      }
+      if(!MenuManager.MenuLevelUp){
+        MenuManager.MenuLevelUp = await MenuManager.GameMenuLoader(
+          isTSL ? TSL.MenuLevelUp : KOTOR.MenuLevelUp
+        ) as KOTOR.MenuLevelUp;
       }
     }catch(e){
       console.error(e);

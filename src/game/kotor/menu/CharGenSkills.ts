@@ -69,6 +69,8 @@ export class CharGenSkills extends GameMenu {
   TRE_PLUS_BTN: GUIButton;
 
   selectedSkillIndex: number = SkillType.COMPUTER_USE;
+  levelUpMode: boolean = false;
+  levelUpAcceptCallback?: () => void;
 
   constructor(){
     super();
@@ -89,6 +91,13 @@ export class CharGenSkills extends GameMenu {
 
       this.BTN_ACCEPT.addEventListener('click', (e) => {
         e.stopPropagation();
+        if(this.levelUpMode){
+          this.levelUpAcceptCallback?.();
+          this.levelUpAcceptCallback = undefined;
+          this.levelUpMode = false;
+          this.close();
+          return;
+        }
         GameState.CharGenManager.applyTempSkillsToCreature();
         this.manager.CharGenCustomPanel?.skillCreationCompleted?.();
         this.manager.CharGenMain?.updateAttributes?.();
@@ -159,6 +168,9 @@ export class CharGenSkills extends GameMenu {
   }
 
   private getCreature() {
+    if(this.levelUpMode && GameState.LevelUpManager?.creature){
+      return GameState.LevelUpManager.creature;
+    }
     return GameState.CharGenManager.selectedCreature;
   }
 

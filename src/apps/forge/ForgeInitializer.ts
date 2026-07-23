@@ -103,6 +103,7 @@ export class ForgeInitializer {
     KotOR.GameState.AutoPauseManager = KotOR.AutoPauseManager;
     KotOR.GameState.CameraShakeManager = KotOR.CameraShakeManager;
     KotOR.GameState.CharGenManager = KotOR.CharGenManager;
+    KotOR.GameState.LevelUpManager = KotOR.LevelUpManager;
     KotOR.GameState.CheatConsoleManager = KotOR.CheatConsoleManager;
     KotOR.GameState.ConfigManager = KotOR.ConfigManager;
     KotOR.GameState.CursorManager = KotOR.CursorManager;

@@ -1,6 +1,9 @@
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { Action } from "@/actions/Action";
+import { BitWise } from "@/utility/BitWise";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 
 enum ActionPlayAnimationType
 {
@@ -19,6 +22,7 @@ enum ActionPlayAnimationType
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionPlayAnimation extends Action {
+  /** When set, force mode-1 overlay routing (SetOverlayAnimation). */
   overlayAnimation: any;
   animation: number;
   speed: number;
@@ -41,10 +45,6 @@ export class ActionPlayAnimation extends Action {
   }
 
   update(delta: number = 0): ActionStatus {
-    if(this.overlayAnimation)
-      return ActionStatus.FAILED;
-
-    
     if(!this.bInitialized){
       this.animation = this.getParameter<number>(0);
       this.speed = this.getParameter<number>(1);
@@ -53,14 +53,25 @@ export class ActionPlayAnimation extends Action {
       this.animationType = this.time == -1 ? ActionPlayAnimationType.LOOPING : this.time == 0 ? ActionPlayAnimationType.FIRE_AND_FORGET : ActionPlayAnimationType.TIMED;
     }
 
-    if(this.animation >= 10000){
-      this.owner.setAnimationState(this.animation);
-      this.animationLength = this.owner.getAnimationLength(this.animation);
-    }else{
+    if(this.animation < 10000){
       console.error('ActionPlayAnimation Invalid animation', this.owner.getName(), this.animation, this);
       return ActionStatus.FAILED;
     }
-    
+
+    const owner = this.owner as ModuleCreature;
+    if(!this.bInitialized){
+      if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature) && typeof owner.applyAnimationByMode === 'function'){
+        if(this.overlayAnimation && typeof owner.playOverlayAnimation === 'function'){
+          owner.playOverlayAnimation(this.animation);
+        }else{
+          owner.applyAnimationByMode(this.animation, this.speed || 1);
+        }
+      }else{
+        owner.setAnimationState(this.animation);
+      }
+    }
+
+    this.animationLength = owner.getAnimationLength(this.animation);
     this.bInitialized = true;
 
     //If the time is -1, the animation will loop until the next animation is applied

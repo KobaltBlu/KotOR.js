@@ -41,6 +41,11 @@ import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
 import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
 import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
 import { IDialogAnimationState } from "@/interface/animation/IDialogAnimationState";
+import {
+  flourishAnimationRow,
+  meleeCombatWieldAnimationRow,
+  meleeWieldAnimationRow,
+} from "@/module/animation/flourish-wield-dispatch";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import type { IPerceptionInfo } from "@/interface/engine/IPerceptionInfo";
@@ -1483,29 +1488,14 @@ export class ModuleObject {
         case ModuleCreatureAnimState.KNEEL1:
           return animations2DA.rows[23];
         break;
+        // MELEE_WIELD (10157 / 0x27ad) — SetOverlayAnimation while moving (PlayerFlourishWeapons).
+        case ModuleCreatureAnimState.MELEE_WIELD:
+          return animations2DA.rows[meleeWieldAnimationRow(this.getCombatAnimationWeaponType())];
+        // MELEE_COMBAT_WIELD (10158 / 0x27ae) — standing InsertFireForgetAnimation path.
+        case ModuleCreatureAnimState.MELEE_COMBAT_WIELD:
+          return animations2DA.rows[meleeCombatWieldAnimationRow(this.getCombatAnimationWeaponType())];
         case ModuleCreatureAnimState.FLOURISH:
-          switch( this.getCombatAnimationWeaponType() ){
-            case 1:
-              return animations2DA.rows[91];
-            case 2:
-              return animations2DA.rows[132];
-            case 3:
-              return animations2DA.rows[173];
-            case 4:
-              return animations2DA.rows[214];
-            case 5:
-              return animations2DA.rows[222];
-            case 6:
-              return animations2DA.rows[136];
-            case 7:
-              return animations2DA.rows[244];
-            case 8:
-              return animations2DA.rows[373];
-            case 9:
-              return animations2DA.rows[244];
-            default:
-              return animations2DA.rows[373];
-          }
+          return animations2DA.rows[flourishAnimationRow(this.getCombatAnimationWeaponType())];
         break;
         
         //BEGIN TSL ANIMATIONS

@@ -118,6 +118,12 @@ export class MenuCharacter extends GameMenu {
       });
       this._button_y = this.BTN_AUTO;
 
+      this.BTN_LEVELUP?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        GameState.LevelUpManager?.showLevelUpGUI?.(GameState.getCurrentPlayer());
+      });
+      this._button_x = this.BTN_LEVELUP;
+
       this.BTN_CHANGE1?.addEventListener('click', (e) => {
         e.stopPropagation();
         if (GameState.PartyManager.party.length > 1) {
@@ -250,8 +256,10 @@ export class MenuCharacter extends GameMenu {
     this.LBL_NEEDED_XP?.setText(GameState.TwoDAManager.datatables.get('exptable').rows[character.getTotalClassLevel()].xp.replace(/\B(?=(\d{3})+(?!\d))/g, ','));
     if (character.canLevelUp()) {
       this.BTN_AUTO?.show();
+      this.BTN_LEVELUP?.show();
     } else {
       this.BTN_AUTO?.hide();
+      this.BTN_LEVELUP?.hide();
     }
   }
 

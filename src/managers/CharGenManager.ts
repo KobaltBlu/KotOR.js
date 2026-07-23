@@ -216,6 +216,19 @@ export class CharGenManager {
     GameState.MenuManager.CharGenMain?.updateAttributes?.();
   }
 
+  /** Apply class savingthrowtable row 0 (shared by quick + custom paths). */
+  static applyClassSavingThrows(creature: ModulePlayer, classData?: CreatureClass) {
+    const cls = classData || CharGenManager.getSelectedClassData();
+    if(!creature || !cls) return;
+    const savingTable = GameState.TwoDAManager.datatables.get(cls.savingthrowtable?.toLowerCase());
+    const savingRow = savingTable?.rows?.[0];
+    if(savingRow){
+      creature.fortbonus = parseInt(String(savingRow.fortsave), 10) || 0;
+      creature.willbonus = parseInt(String(savingRow.willsave), 10) || 0;
+      creature.refbonus = parseInt(String(savingRow.refsave), 10) || 0;
+    }
+  }
+
   static applyGrantedFeats(creature: ModulePlayer, classData: CreatureClass) {
     const feats = GameState.SWRuleSet.feats;
     if(!feats) return;

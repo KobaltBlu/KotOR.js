@@ -99,6 +99,11 @@ export class MenuCharacter extends K1_MenuCharacter {
       });
       this._button_y = this.BTN_AUTO;
 
+      this.BTN_LEVELUP?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        GameState.LevelUpManager?.showLevelUpGUI?.(GameState.getCurrentPlayer());
+      });
+
       this.BTN_CHANGE1?.addEventListener('click', (e) => {
         e.stopPropagation();
         if (GameState.PartyManager.party.length > 1) {
