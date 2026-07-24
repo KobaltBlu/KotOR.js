@@ -3,7 +3,7 @@ import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
 import { ModuleCreature, ModuleItem } from "@/module";
 import { MenuEquipment as K1_MenuEquipment } from "@/game/kotor/KOTOR";
 import { GameState } from "@/GameState";
-import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import {
   EQUIP_COLOR_BLUE,
   formatAttackBonus,

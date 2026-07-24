@@ -1,12 +1,15 @@
+import * as THREE from 'three';
 import { VideoEffect } from "@/engine/VideoEffect";
 import { GameState } from "@/GameState";
+import { TextureLoader } from "@/loaders";
 import type { TwoDAObject } from "@/resource/TwoDAObject";
 
 /**
  * VideoEffectManager class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
+ * Retail EnableVideoEffect / DisableVideoEffect — drives saturation, film noise,
+ * K2 clairvoyance/dream, fury, and force-sight framebuffer flags.
+ *
  * @file VideoEffectManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -16,6 +19,15 @@ export class VideoEffectManager {
   static videoEffects: VideoEffect[] = [];
   static videoEffect: VideoEffect;
   static videoEffectId: number = -1;
+
+  /** AurEnableForceSight flag (DAT_00a29fac). */
+  static forceSightActive: boolean = false;
+  /** EffectForceSight refcount so VideoEffect + game effect can coexist. */
+  static forceSightEffectCount: number = 0;
+
+  static filmNoiseTexture: THREE.Texture | null = null;
+  static furyTexture: THREE.Texture | null = null;
+  static furyLevel: number = 0;
 
   static SetVideoEffect(id: number = -1){
     if(VideoEffectManager.videoEffectId == id){ return; }
@@ -33,46 +45,196 @@ export class VideoEffectManager {
     }
 
     VideoEffectManager.videoEffect = vEffect;
+    void VideoEffectManager.applyK2Extras(vEffect);
+  }
+
+  /**
+   * Retail AurEnableForceSight / AurDisableForceSight.
+   * Cubemap path not yet ported — flag still gates FB interactions + stand-in look.
+   */
+  static SetForceSight(active: boolean){
+    if(active){
+      VideoEffectManager.forceSightEffectCount++;
+    }else{
+      VideoEffectManager.forceSightEffectCount = Math.max(0, VideoEffectManager.forceSightEffectCount - 1);
+    }
+    VideoEffectManager.forceSightActive = VideoEffectManager.forceSightEffectCount > 0
+      || !!(VideoEffectManager.videoEffect?.enableForceSight);
+  }
+
+  static async ensureFilmNoiseTexture(): Promise<void> {
+    if(VideoEffectManager.filmNoiseTexture){ return; }
+    try {
+      const tex = await TextureLoader.Load('filmnoisetex');
+      if(tex){
+        tex.wrapS = THREE.RepeatWrapping;
+        tex.wrapT = THREE.RepeatWrapping;
+        tex.minFilter = THREE.LinearFilter;
+        tex.magFilter = THREE.LinearFilter;
+        VideoEffectManager.filmNoiseTexture = tex;
+        if(GameState.odysseyShaderPass){
+          GameState.odysseyShaderPass.uniforms.tFilmNoise.value = tex;
+        }
+      }
+    }catch(e){
+      console.warn('Failed to load filmnoisetex', e);
+    }
+  }
+
+  static async loadFuryTexture(level: number): Promise<void> {
+    const clamped = Math.max(0, Math.min(3, level | 0));
+    if(clamped <= 0){
+      VideoEffectManager.furyLevel = 0;
+      VideoEffectManager.furyTexture = null;
+      if(GameState.furyPass){
+        GameState.furyPass.setFuryTexture(null);
+        GameState.furyPass.enabled = false;
+      }
+      return;
+    }
+    if(VideoEffectManager.furyLevel === clamped && VideoEffectManager.furyTexture){
+      return;
+    }
+    const name = clamped === 2 ? 'fx_Fury02' : clamped === 3 ? 'fx_Fury03' : 'fx_Fury01';
+    try {
+      const tex = await TextureLoader.Load(name);
+      if(tex){
+        tex.wrapS = THREE.ClampToEdgeWrapping;
+        tex.wrapT = THREE.ClampToEdgeWrapping;
+        VideoEffectManager.furyTexture = tex;
+        VideoEffectManager.furyLevel = clamped;
+        if(GameState.furyPass){
+          GameState.furyPass.setFuryTexture(tex);
+        }
+      }
+    }catch(e){
+      console.warn(`Failed to load ${name}`, e);
+    }
+  }
+
+  private static async applyK2Extras(effect: VideoEffect){
+    if(effect.enableScanNoise){
+      void VideoEffectManager.ensureFilmNoiseTexture();
+    }
+    if(effect.enableFury){
+      await VideoEffectManager.loadFuryTexture(effect.furyLevel || 1);
+    }else{
+      await VideoEffectManager.loadFuryTexture(0);
+    }
+    VideoEffectManager.forceSightActive = VideoEffectManager.forceSightEffectCount > 0
+      || !!effect.enableForceSight;
   }
 
   static Update(delta: number = 0){
-    if(!VideoEffectManager.videoEffect){ return; }
-    
-    if(!GameState.odysseyShaderPass){ return; }
-    
+    const fbOn = GameState.isFrameBufferEffectsEnabled();
     const effect = VideoEffectManager.videoEffect;
 
-    if(effect.enableSaturation){
-			GameState.odysseyShaderPass.uniforms.saturation.value = effect.saturation;
-			GameState.odysseyShaderPass.uniforms.modulation.value.set(
-				effect.modulation.red, effect.modulation.green, effect.modulation.blue
-			);
-			GameState.odysseyShaderPass.uniforms.bmodulate.value = true;
-		}else{
-			GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
-			GameState.odysseyShaderPass.uniforms.saturation.value = 1;
-			GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
-		}
+    // --- OdysseyShaderPass: saturation + film noise ---
+    if(GameState.odysseyShaderPass){
+      const wantSat = !!(effect?.enableSaturation);
+      const wantNoise = !!(effect?.enableScanNoise);
+      const wantForceSightLook = VideoEffectManager.forceSightActive;
 
-    if(effect.enableScanNoise){
-			GameState.odysseyShaderPass.uniforms.bscanlines.value = true;
-			GameState.odysseyShaderPass.uniforms.grayscale.value = true;
-			GameState.odysseyShaderPass.uniforms.sCount.value = (Math.floor(Math.random() * 256) + 250)*0.5;
-		}else{
-			GameState.odysseyShaderPass.uniforms.bscanlines.value = false;
-			GameState.odysseyShaderPass.uniforms.grayscale.value = false;
+      if(wantSat){
+        GameState.odysseyShaderPass.uniforms.saturation.value = effect.saturation;
+        GameState.odysseyShaderPass.uniforms.modulation.value.set(
+          effect.modulation.red, effect.modulation.green, effect.modulation.blue
+        );
+        GameState.odysseyShaderPass.uniforms.bmodulate.value = true;
+      }else if(wantForceSightLook){
+        // Stand-in until cubemap force-sight path: cool desaturation
+        GameState.odysseyShaderPass.uniforms.saturation.value = 0.35;
+        GameState.odysseyShaderPass.uniforms.modulation.value.set(0.75, 0.85, 1.15);
+        GameState.odysseyShaderPass.uniforms.bmodulate.value = true;
+      }else{
+        GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
+        GameState.odysseyShaderPass.uniforms.saturation.value = 1;
+        GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
+      }
+
+      if(wantNoise){
+        GameState.odysseyShaderPass.uniforms.bFilmNoise.value = true;
+        if(VideoEffectManager.filmNoiseTexture){
+          GameState.odysseyShaderPass.uniforms.tFilmNoise.value = VideoEffectManager.filmNoiseTexture;
+        }else{
+          void VideoEffectManager.ensureFilmNoiseTexture();
+        }
+      }else{
+        GameState.odysseyShaderPass.uniforms.bFilmNoise.value = false;
+      }
+
+      GameState.odysseyShaderPass.enabled =
+        fbOn && (wantSat || wantNoise || wantForceSightLook);
     }
+
+    // --- Dream distortion (clairvoyance) ---
+    if(GameState.dreamDistortionPass){
+      const wantDream = !!(effect?.enableClairVoyance || effect?.enableClairVoyanceFull);
+      if(wantDream){
+        if(!GameState.forceDistortionTexture){
+          GameState.forceDistortionTexture = GameState.createFallbackDistortionTexture();
+          void GameState.ensureForceDistortionTexture();
+        }
+        GameState.dreamDistortionPass.setDistortionTexture(GameState.forceDistortionTexture);
+        // EnableClairvoyance(1) vs EnableClairvoyanceFull(0): full = larger warp
+        GameState.dreamDistortionPass.setFullMode(!!effect.enableClairVoyanceFull);
+      }
+      GameState.dreamDistortionPass.enabled =
+        fbOn && wantDream && !!GameState.forceDistortionTexture;
+    }
+
+    // --- Fury ---
+    if(GameState.furyPass){
+      const wantFury = !!(effect?.enableFury) && !!VideoEffectManager.furyTexture;
+      if(wantFury){
+        if(!GameState.forceDistortionTexture){
+          GameState.forceDistortionTexture = GameState.createFallbackDistortionTexture();
+          void GameState.ensureForceDistortionTexture();
+        }
+        GameState.furyPass.setFuryTexture(VideoEffectManager.furyTexture);
+        GameState.furyPass.setDistortionTexture(GameState.forceDistortionTexture);
+      }
+      GameState.furyPass.enabled = fbOn && wantFury;
+    }
+
+    // Always-on overbrighten + convolution when FB effects INI is on + roomed area
+    // (retail Scene::RenderSinglePass only applies mask 0x1F with a room)
+    const rooms = GameState.module?.area?.rooms;
+    const roomedOk = !!(rooms && rooms.length > 0);
+    const alwaysOn = fbOn && roomedOk;
+    if(GameState.overbrightenPass){
+      GameState.overbrightenPass.enabled = alwaysOn;
+    }
+    if(GameState.convolutionBloomPass){
+      GameState.convolutionBloomPass.enabled = alwaysOn;
+    }
+
+    // silence unused
+    void delta;
   }
 
   static Reset(){
     VideoEffectManager.videoEffectId = -1;
     VideoEffectManager.videoEffect = undefined;
-		GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
-		GameState.odysseyShaderPass.uniforms.saturation.value = 1;
-		GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
-		
-		GameState.odysseyShaderPass.uniforms.bscanlines.value = false;
-		GameState.odysseyShaderPass.uniforms.grayscale.value = false;
+    VideoEffectManager.forceSightActive = VideoEffectManager.forceSightEffectCount > 0;
+    VideoEffectManager.furyLevel = 0;
+    VideoEffectManager.furyTexture = null;
+
+    if(GameState.odysseyShaderPass){
+      GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
+      GameState.odysseyShaderPass.uniforms.saturation.value = 1;
+      GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
+      GameState.odysseyShaderPass.uniforms.bFilmNoise.value = false;
+      GameState.odysseyShaderPass.enabled = VideoEffectManager.forceSightActive
+        && GameState.isFrameBufferEffectsEnabled();
+    }
+    if(GameState.dreamDistortionPass){
+      GameState.dreamDistortionPass.enabled = false;
+    }
+    if(GameState.furyPass){
+      GameState.furyPass.setFuryTexture(null);
+      GameState.furyPass.enabled = false;
+    }
   }
 
   static Init2DA(dataTable: TwoDAObject){
@@ -81,7 +243,6 @@ export class VideoEffectManager {
     for(let i = 0; i < dataTable.RowCount; i++){
       VideoEffectManager.videoEffects[i] = VideoEffect.From2DA(dataTable.rows[i]);
     }
-
   }
 
 }

@@ -129,6 +129,7 @@ import {
   playerCombatFaceStep,
   playerIntegrateRk4,
   playerKillReleasedAxisVelocity,
+  playerSetSWAnimationSpeedMag,
   playerShouldApplyTurn,
   resolvePlayerDriveLimits,
   type PlayerCamRelativeState,
@@ -4678,6 +4679,14 @@ export class ModuleCreature extends ModuleObject {
     this.speed = step.speed;
     this.force = step.speed > 1e-4 ? 1 : 0;
 
+    // Retail SetSWAnimationSpeed(mag, 0): total |v|; 0 when |v| <= 1
+    let animMoveSpeed = playerSetSWAnimationSpeedMag(step.speed);
+    // DriveAnimationUpdate: stealth clamps field164 to drive_anim_walk before gate
+    if(this.stealthMode && animMoveSpeed > 0){
+      const walkCap = coalesceDriveAnimWalk(appearance?.driveanimwalk ?? 0);
+      if(animMoveSpeed > walkCap) animMoveSpeed = walkCap;
+    }
+
     if(step.speed > 1e-4){
       const desiredFacing = Math.atan2(ctrl.velY, ctrl.velX) - Math.PI / 2;
       let facingError = ((desiredFacing - this.rotation.z) * 180) / Math.PI;
@@ -4724,54 +4733,38 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    // DriveAnimationUpdate uses signed speed along current creature forward,
-    // not total lateral velocity.
-    if(step.speed > 1e-4){
-      const facingX = Math.cos(this.rotation.z + Math.PI / 2);
-      const facingY = Math.sin(this.rotation.z + Math.PI / 2);
-      const forwardSpeed = ctrl.velX * facingX + ctrl.velY * facingY;
-      const playbackSpeed = Math.abs(forwardSpeed) > 1e-4
-        ? Math.abs(forwardSpeed)
-        : step.speed;
-      // Stealth (activity bit 0) forces walk-speed Vmax; never pick run while stealth/walk
-      if(isDriveAnimRunning(forwardSpeed, driveMax) && !walking && !this.stealthMode){
-        this.setAnimationState(ModuleCreatureAnimState.RUNNING);
-        const animDist = coalesceDriveAnimRun(
-          GameState.GameKey === GameEngineType.TSL
-            ? (appearance.driveanimrun_pc || appearance.driveanimrun)
-            : appearance.driveanimrun
-        );
-        this.animSpeed = Math.max(
-          0.1,
-          driveAnimPlaybackRate(
-            playbackSpeed,
-            animDist,
-            this.getAnimationLength(ModuleCreatureAnimState.RUNNING)
-          )
-        );
+    // DriveAnimationUpdate @ 00615960: run when speed > 0.6*DriveMaxSpeed, else
+    // walk while SetSWAnimationSpeed mag > 0. On key release, retail coasts:
+    // run → walk (below 0.6*Vmax) → idle (|v|<=1) while RK4 still slides to 0.25.
+    // Only change the base clip when the state changes — restarting walk every
+    // frame (setAnimationState clears started) is not retail.
+    if(animMoveSpeed > 0){
+      let nextAnim: ModuleCreatureAnimState;
+      if(isDriveAnimRunning(animMoveSpeed, driveMax) && !walking && !this.stealthMode){
+        nextAnim = ModuleCreatureAnimState.RUNNING;
       }else if(ctrl.axisForward < -0.2){
-        this.setAnimationState(ModuleCreatureAnimState.WALKING_BACK);
-        const animDist = coalesceDriveAnimWalk(appearance.driveanimwalk);
-        this.animSpeed = Math.max(
-          0.1,
-          driveAnimPlaybackRate(
-            playbackSpeed,
-            animDist,
-            this.getAnimationLength(ModuleCreatureAnimState.WALKING_BACK)
-          )
-        );
+        nextAnim = ModuleCreatureAnimState.WALKING_BACK;
       }else{
-        this.setAnimationState(ModuleCreatureAnimState.WALKING);
-        const animDist = coalesceDriveAnimWalk(appearance.driveanimwalk);
-        this.animSpeed = Math.max(
-          0.1,
-          driveAnimPlaybackRate(
-            playbackSpeed,
-            animDist,
-            this.getAnimationLength(ModuleCreatureAnimState.WALKING)
-          )
-        );
+        nextAnim = ModuleCreatureAnimState.WALKING;
       }
+      if(this.animationState.index !== nextAnim){
+        this.setAnimationState(nextAnim);
+      }
+      const animDist = nextAnim === ModuleCreatureAnimState.RUNNING
+        ? coalesceDriveAnimRun(
+            GameState.GameKey === GameEngineType.TSL
+              ? (appearance.driveanimrun_pc || appearance.driveanimrun)
+              : appearance.driveanimrun
+          )
+        : coalesceDriveAnimWalk(appearance.driveanimwalk);
+      this.animSpeed = Math.max(
+        0.1,
+        driveAnimPlaybackRate(
+          animMoveSpeed,
+          animDist,
+          this.getAnimationLength(nextAnim)
+        )
+      );
     }else{
       ctrl.facingErrorDeg = 0;
       if(
@@ -4790,8 +4783,8 @@ export class ModuleCreature extends ModuleObject {
       this.animSpeed = 1;
     }
 
-    // Retail SetSWAnimationSpeed — next frame's turn gate reads this
-    ctrl.lastAnimMoveSpeed = step.speed;
+    // Retail SetSWAnimationSpeed — next frame's turn gate reads this (field164)
+    ctrl.lastAnimMoveSpeed = animMoveSpeed;
 
     // Consume one-shot axes each frame (keyboard processors re-assert while held)
     if(!ctrl.active){

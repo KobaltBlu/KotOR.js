@@ -38,6 +38,7 @@ import { EffectForceJump } from "@/effects/EffectForceJump";
 import { EffectForcePushed } from "@/effects/EffectForcePushed";
 import { EffectForceResisted } from "@/effects/EffectForceResisted";
 import { EffectForceShield } from "@/effects/EffectForceShield";
+import { EffectForceSight } from "@/effects/EffectForceSight";
 import { EffectHaste } from "@/effects/EffectHaste";
 import { EffectHasteInternal } from "@/effects/EffectHasteInternal";
 import { EffectHeal } from "@/effects/EffectHeal";
@@ -193,6 +194,7 @@ export class GameEffectFactory {
   static EffectForceResisted: typeof EffectForceResisted = EffectForceResisted;
   static EffectForceFizzle: typeof EffectForceFizzle = EffectForceFizzle;
   static EffectForceShield: typeof EffectForceShield = EffectForceShield;
+  static EffectForceSight: typeof EffectForceSight = EffectForceSight;
   // static EffectPureGoodPowers: typeof EffectPureGoodPowers = EffectPureGoodPowers;
   // static EfffectPureEvilPowers: typeof EfffectPureEvilPowers = EfffectPureEvilPowers;
   
@@ -467,6 +469,9 @@ export class GameEffectFactory {
       break;
       case GameEffectType.EffectForceShield: //ForceShield
         effect = new EffectForceShield();
+      break;
+      case GameEffectType.EffectForceSight:
+        effect = new EffectForceSight();
       break;
       case GameEffectType.EffectSetState: //EffectSetState
         effect = new EffectSetState();

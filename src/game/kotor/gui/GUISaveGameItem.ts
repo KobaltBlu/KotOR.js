@@ -22,7 +22,7 @@ export class GUISaveGameItem extends GUIProtoItem {
 
   createControl(){
     try{
-      this.extent.height = 48;
+      this.setExtentHeight(48);
       super.createControl();
       this.setText(this.node.getFullName());
     }catch(e){

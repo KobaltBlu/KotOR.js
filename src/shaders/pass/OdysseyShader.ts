@@ -1,5 +1,12 @@
 import * as THREE from 'three';
 
+/**
+ * OdysseyShader — retail VideoEffects saturation + film/scan noise.
+ *
+ * Saturation: RenderSaturationAdjustment @ K1 00434890 /
+ * AurSetSaturationParams @ 0044f100 (luma 0.3086 / 0.6094 / 0.082).
+ * Film noise: RenderOverlayFilmNoise @ 00432ad0 — additive filmnoisetex.
+ */
 interface OdysseyShader {
   uniforms: { [uniform: string]: THREE.IUniform<any>; },
   vertexShader: string;
@@ -8,21 +15,15 @@ interface OdysseyShader {
 
 export const OdysseyShader: OdysseyShader = {
   uniforms: {
-    //Saturation/Modulation
-    'tDiffuse': { value: null },
-    'saturation': { value: 1.0 },
-    'modulation': new THREE.Uniform( new THREE.Vector3(1, 1, 1) ),
-
-    //FilmPass
-		'time': { value: 0.0 },
-		'nIntensity': { value: 1 },
-		'sIntensity': { value: 0.325 },
-		'sCount': { value: 512 },
-
-    //booleans
-		'grayscale': { value: 1 },
-		'bscanlines': { value: 0 },
-		'bmodulate': { value: 0 },
+    tDiffuse: { value: null },
+    tFilmNoise: { value: null },
+    saturation: { value: 1.0 },
+    modulation: new THREE.Uniform( new THREE.Vector3(1, 1, 1) ),
+    /** Retail film-noise UV tile (~7.5 on one axis in RenderOverlayFilmNoise). */
+    filmNoiseScale: { value: 7.5 },
+    time: { value: 0.0 },
+    bFilmNoise: { value: 0 },
+    bmodulate: { value: 0 },
   },
 
   vertexShader: /* glsl */ `
@@ -33,60 +34,32 @@ export const OdysseyShader: OdysseyShader = {
     }`,
 
   fragmentShader: /* glsl */ `
-    #include <common>
-
     uniform sampler2D tDiffuse;
+    uniform sampler2D tFilmNoise;
     varying vec2 vUv;
     uniform float saturation;
     uniform vec3 modulation;
+    uniform float filmNoiseScale;
+    uniform float time;
+    uniform bool bFilmNoise;
+    uniform bool bmodulate;
 
-		// control parameter
-		uniform float time;
-		uniform bool grayscale;
-		uniform bool bscanlines;
-		uniform bool bmodulate;
-
-		// noise effect intensity value (0 = no effect, 1 = full effect)
-		uniform float nIntensity;
-
-		// scanlines effect intensity value (0 = no effect, 1 = full effect)
-		uniform float sIntensity;
-
-		// scanlines effect count value (0 = no effect, 4096 = full effect)
-		uniform float sCount;
-
-		void main() {
-      // sample the source
+    void main() {
       vec4 cTextureScreen = texture2D( tDiffuse, vUv );
-      vec3 cResult = vec3(cTextureScreen.rgb);
+      vec3 cResult = cTextureScreen.rgb;
 
-      if( bscanlines ){
-        // make some noise
-        float dx = rand( vUv + time );
-
-        // add noise
-        cResult = cTextureScreen.rgb + cTextureScreen.rgb * clamp( 0.1 + dx, 0.0, 1.0 );
-
-        // get us a sine and cosine
-        vec2 sc = vec2( sin( vUv.y * sCount ), cos( vUv.y * sCount ) );
-
-        // add scanlines
-        cResult += cTextureScreen.rgb * vec3( sc.x, sc.y, sc.x ) * sIntensity;
-
-        // interpolate between source and result by intensity
-        cResult = cTextureScreen.rgb + clamp( nIntensity, 0.0,1.0 ) * ( cResult - cTextureScreen.rgb );
-
-        // convert to grayscale if desired
-        if( grayscale ) {
-          cResult = vec3( cResult.r * 0.3 + cResult.g * 0.59 + cResult.b * 0.11 );
-        }
+      // Retail RenderOverlayFilmNoise: scene + filmnoisetex (additive)
+      if( bFilmNoise ){
+        vec2 noiseUv = vec2( vUv.x * filmNoiseScale, vUv.y * filmNoiseScale + time * 0.15 );
+        vec3 noise = texture2D( tFilmNoise, noiseUv ).rgb;
+        cResult = cResult + noise;
       }
 
-      //modulation effect
-      if(bmodulate){
-        vec3 lumaWeights = vec3(.25,.50,.25);
-        vec3 grey = vec3( dot( lumaWeights, cResult.rgb ) );
-        cResult.rgb = modulation * ( grey + saturation * (cResult.rgb - grey) );
+      // Retail saturation matrix (weights 0.3086 / 0.6094 / 0.082)
+      if( bmodulate ){
+        vec3 lumaWeights = vec3( 0.3086, 0.6094, 0.082 );
+        vec3 grey = vec3( dot( lumaWeights, cResult ) );
+        cResult = modulation * ( grey + saturation * ( cResult - grey ) );
       }
 
       gl_FragColor = vec4( cResult, cTextureScreen.a );

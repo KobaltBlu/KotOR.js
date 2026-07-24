@@ -18,6 +18,8 @@ export class VideoEffect {
   enableForceSight: boolean = false;
   enableClairVoyanceFull: boolean = false;
   enableFury: boolean = false;
+  /** Retail EnableFury column is an int 1–3 selecting fx_Fury0N. */
+  furyLevel: number = 0;
 
   saturation: number = 0;
   modulation = {red: 0, blue: 0, green: 0};
@@ -36,7 +38,9 @@ export class VideoEffect {
     vEffect.enableClairVoyance = !!parseFloat(effect.enableclairvoyance);
     vEffect.enableForceSight = !!parseFloat(effect.enableforcesight);
     vEffect.enableClairVoyanceFull = !!parseFloat(effect.enableclairvoyancefull);
-    vEffect.enableFury = !!parseFloat(effect.enablefury);
+    const furyVal = parseFloat(effect.enablefury);
+    vEffect.furyLevel = Number.isFinite(furyVal) ? Math.max(0, Math.min(3, furyVal | 0)) : 0;
+    vEffect.enableFury = vEffect.furyLevel > 0;
 
     return vEffect;
   }

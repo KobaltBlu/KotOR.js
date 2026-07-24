@@ -43,6 +43,7 @@ export * from "@/effects/EffectForceResisted";
 export * from "@/effects/EffectForceResistanceDecrease";
 export * from "@/effects/EffectForceResistanceIncrease";
 export * from "@/effects/EffectForceShield";
+export * from "@/effects/EffectForceSight";
 export * from "@/effects/EffectHaste";
 export * from "@/effects/EffectHasteInternal";
 export * from "@/effects/EffectHeal";

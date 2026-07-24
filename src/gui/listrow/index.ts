@@ -5,4 +5,3 @@ export * from "@/gui/listrow/defaultListRows";
 export * from "@/gui/listrow/listRowAddItem";
 export * from "@/gui/listrow/listRowMeasure";
 export * from "@/gui/listrow/listRowHover";
-export * from "@/gui/listrow/ListRowRegistry";

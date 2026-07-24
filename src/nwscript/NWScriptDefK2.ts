@@ -6117,7 +6117,13 @@ NWScriptDefK2.Actions = {
     name: 'EffectForceSight',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // ExecuteCommandEffectForceSight @ 00789df0 — type 0x72
+      const effect = new GameState.GameEffectFactory.EffectForceSight();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   824: {
     comment: '824\nFAK - OEI 5/7/04\ngets the walk state of the creature: 0 walk or standing, 1 is running',

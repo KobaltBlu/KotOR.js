@@ -1,18 +1,19 @@
-import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "@/gui";
+import { GameMenu, GUIButton, GUIControl, GUIProtoItem } from "@/gui";
 import { GameEngineType } from "@/enums/engine";
 import { GameState } from "@/GameState";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
-import { TextureLoader } from "@/loaders";
 import { GFFStruct } from "@/resource/GFFStruct";
-import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import * as THREE from "three";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+import {
+  applyProtoItemHexMap,
+  applyProtoSelectVisuals,
+  enqueueProtoIconLoad,
+} from "@/gui/protoitem/protoItemHelpers";
 
 /**
- * GUIInventoryItem class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ * GUIInventoryItem — shared K1/TSL inventory / equip / container list row.
+ *
  * @file GUIInventoryItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -23,15 +24,11 @@ export class GUIInventoryItem extends GUIProtoItem {
   buttonIcon: GUIButton;
 
   spriteGroup: THREE.Group;
-
-  //Hex Border Decal
   hexMaterial: THREE.SpriteMaterial;
   hexSprite: THREE.Sprite;
-  //Item Icon
   iconMaterial: THREE.SpriteMaterial;
   iconSprite: THREE.Sprite;
 
-  /** True once the async icon texture load has been queued. */
   private _iconLoadStarted = false;
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
@@ -44,28 +41,34 @@ export class GUIInventoryItem extends GUIProtoItem {
   buildHighlight(){}
   buildText(){}
 
+  /** Per-menu row height overrides (PROTOITEM template used when unset). */
+  private applyRowHeight(): void {
+    const resref = this.menu.gui_resref;
+    const isContainer = resref == 'container' || resref == 'container_p';
+    const isTslInvEquip =
+      GameState.GameKey == GameEngineType.TSL &&
+      (resref == 'inventory' || resref == 'inventory_p' || resref == 'equip' || resref == 'equip_p');
+
+    if(isContainer){
+      this.setExtentHeight(60);
+    }else if(isTslInvEquip){
+      this.setExtentHeight(48);
+    }else if(resref == 'inventory' || resref == 'equip'){
+      this.setExtentHeight(52);
+    }
+  }
+
   createControl(){
     try{
-      const isContainer = this.menu.gui_resref == 'container' || this.menu.gui_resref == 'container_p';
-      if(this.menu.gui_resref == 'inventory'){
-        this.setExtentHeight(52);
-      }else if(this.menu.gui_resref == 'equip'){
-        this.setExtentHeight(52);
-      }else if(isContainer){
-        this.setExtentHeight(60);
-      }
+      this.applyRowHeight();
       super.createControl();
-      //Create the actual control elements below
 
-
+      const isContainer = this.menu.gui_resref == 'container' || this.menu.gui_resref == 'container_p';
       const protoWidth = asExtentInt(this.extent.width);
-      const protoHeight = asExtentInt(this.extent.height);
-      const iconWidth = isContainer ? 60 : 60;
-      const iconHeight = isContainer ? 60 : 60;
-
+      const iconWidth = 60;
+      const iconHeight = 60;
       const labelWidth = asExtentInt((protoWidth - iconWidth) + 5);
 
-      //Label
       this.buttonLabel = new GUIButton(this.menu, this.control, this, this.scale);
       this.buttonLabel.setExtentLeft(0);
       this.buttonLabel.setExtentWidth(labelWidth);
@@ -85,7 +88,6 @@ export class GUIInventoryItem extends GUIProtoItem {
       _buttonWidget.position.z = this.zIndex + 1;
       this.widget.add(_buttonWidget);
 
-      //Icon
       this.buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
       this.buttonIcon.setExtentWidth(iconWidth);
       this.buttonIcon.setExtentHeight(iconHeight);
@@ -105,86 +107,40 @@ export class GUIInventoryItem extends GUIProtoItem {
       _buttonIconWidget.position.x = -truncDiv(protoWidth - asExtentInt(this.buttonIcon.extent.width), 2);
       _buttonIconWidget.position.y = 0;
       _buttonIconWidget.position.z = this.zIndex + 1;
-
       this.widget.add(_buttonIconWidget);
 
-      this.iconMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      this.iconMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
       this.iconMaterial.transparent = true;
       this.iconMaterial.visible = false;
-      this.iconSprite = new THREE.Sprite( this.iconMaterial );
+      this.iconSprite = new THREE.Sprite(this.iconMaterial);
 
       this.spriteGroup = new THREE.Group();
       this.iconSprite.scale.x = asExtentInt(iconWidth * 0.9);
       this.iconSprite.scale.y = asExtentInt(iconHeight * 0.9);
       this.iconSprite.position.z = 2;
 
-      this.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );
+      this.hexMaterial = new THREE.SpriteMaterial({ map: null, color: 0xffffff });
       this.hexMaterial.transparent = true;
-      this.hexSprite = new THREE.Sprite( this.hexMaterial );
-      this.hexSprite.scale.x = 
+      this.hexSprite = new THREE.Sprite(this.hexMaterial);
+      this.hexSprite.scale.x = iconWidth;
       this.hexSprite.scale.y = iconWidth;
       this.hexSprite.position.z = 1;
 
-      this.spriteGroup.add(this.hexSprite);  
+      this.spriteGroup.add(this.hexSprite);
       this.spriteGroup.add(this.iconSprite);
 
-      const stackSize = this.node?.getStackSize?.() ?? 1;
-      if(stackSize >= 100){
-        this.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_7' : 'uibit_eqp_itm3');
-        this.hexMaterial.needsUpdate = true;
-      }else if(stackSize > 1){
-        this.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_6' : 'uibit_eqp_itm2');
-        this.hexMaterial.needsUpdate = true;
-      }else{
-        this.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_3' : 'uibit_eqp_itm1');
-        this.hexMaterial.needsUpdate = true;
-      }
+      applyProtoItemHexMap(this.hexMaterial, this.node?.getStackSize?.() ?? 1);
 
       this.onSelect = () => {
-        if(this.selected){
-          this.showHighlight();
-          this.hideBorder();
-          this.pulsing = true;
-          this.text.color.setRGB(1, 1, 0);
-          this.text.material.uniforms.diffuse.value = this.text.color;
-          this.text.material.needsUpdate = true;
-  
-          this.buttonLabel.showHighlight();
-          this.buttonLabel.hideBorder();
-          this.hexMaterial.color.setRGB(1, 1, 0);
-          this.buttonLabel.setHighlightColor(1, 1, 0);
-          this.buttonLabel.pulsing = true;
-          this.buttonIcon.pulsing = true;
-
-          this.buttonLabel.text.color.setRGB(1, 1, 0);
-          this.buttonLabel.text.material.uniforms.diffuse.value = this.buttonLabel.text.color;
-          this.buttonLabel.text.material.needsUpdate = true;
-        }else{
-          this.hideHighlight();
-          this.showBorder();
-          this.pulsing = false;
-          this.text.color.setRGB(0, 0.658824, 0.980392);
-          this.text.material.uniforms.diffuse.value = this.text.color;
-          this.text.material.needsUpdate = true;
-  
-          this.buttonLabel.hideHighlight();
-          this.buttonLabel.showBorder();
-          this.hexMaterial.color.setRGB(0, 0.658823549747467, 0.9803921580314636);
-          this.buttonLabel.setBorderColor(0, 0.658823549747467, 0.9803921580314636);
-          this.buttonLabel.pulsing = false;
-          this.buttonIcon.pulsing = false;
-
-          this.buttonLabel.text.color.setRGB(0, 0.658824, 0.980392);
-          this.buttonLabel.text.material.uniforms.diffuse.value = this.buttonLabel.text.color;
-          this.buttonLabel.text.material.needsUpdate = true;
-        }
+        applyProtoSelectVisuals(this, !!this.selected, {
+          buttonLabel: this.buttonLabel,
+          buttonIcon: this.buttonIcon,
+          hexMaterial: this.hexMaterial,
+        });
       };
       this.onSelect.call(this);
 
-      //StackCount Text
       _buttonIconWidget.add(this.spriteGroup);
-
-      // initTextures() can finish in the constructor before node is set; queue icon load here.
       this._loadIcon();
 
       return this.widget;
@@ -192,13 +148,11 @@ export class GUIInventoryItem extends GUIProtoItem {
       console.error(e);
     }
     return this.widget;
-
   }
 
   update(delta: number){
     const isDirty = this.needsUpdate;
     super.update(delta);
-    // createControl can fail before hexMaterial exists (e.g. incomplete list nodes).
     if(!this.hexMaterial){
       this.needsUpdate = false;
       return;
@@ -211,16 +165,7 @@ export class GUIInventoryItem extends GUIProtoItem {
     if(isDirty){
       const stackSize = this.node?.getStackSize?.() ?? 1;
       this.buttonIcon?.setText(stackSize > 1 ? stackSize.toString() : '');
-      if(stackSize >= 100){
-        this.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_7' : 'uibit_eqp_itm3');
-        this.hexMaterial.needsUpdate = true;
-      }else if(stackSize > 1){
-        this.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_6' : 'uibit_eqp_itm2');
-        this.hexMaterial.needsUpdate = true;
-      }else{
-        this.hexMaterial.map = GUIListBox.hexTextures.get(GameState.GameKey == GameEngineType.KOTOR ? 'lbl_hex_3' : 'uibit_eqp_itm1');
-        this.hexMaterial.needsUpdate = true;
-      }
+      applyProtoItemHexMap(this.hexMaterial, stackSize);
     }
     this.needsUpdate = false;
   }
@@ -229,26 +174,18 @@ export class GUIInventoryItem extends GUIProtoItem {
     this._loadIcon();
   }
 
-  /** Loads item icon after template textures; safe to call from onTexturesReady or createControl. */
   private _loadIcon(): void {
-    if (!this.node || !this.iconMaterial || this._iconLoadStarted) {
+    if(!this.node || !this.iconMaterial){
       return;
     }
-    const iconName = this.node.getIcon();
-    if (!iconName) {
-      this.invalidateListRtt();
-      return;
-    }
-    this._iconLoadStarted = true;
-    this._beginTextureLoad();
-    TextureLoader.Load(iconName).then((texture: OdysseyTexture) => {
-      if (texture) {
-        this.iconMaterial.map = texture;
-        this.iconMaterial.needsUpdate = true;
-        this.iconMaterial.visible = true;
-      }
-      this._endTextureLoad();
-    });
+    const flag = { value: this._iconLoadStarted };
+    enqueueProtoIconLoad(
+      this as any,
+      this.node.getIcon?.(),
+      this.iconMaterial,
+      flag,
+    );
+    this._iconLoadStarted = flag.value;
   }
 
 }

@@ -18,7 +18,7 @@ export class GUIJournalItem extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
-    this.extent.height = 44;
+    this.setExtentHeight(44);
   }
 
   createControl(){

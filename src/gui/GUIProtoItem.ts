@@ -123,7 +123,7 @@ export class GUIProtoItem extends GUIControl{
   }
 
   getItemHeight(){
-    let height = (this.extent.height);
+    let height = asExtentInt(this.extent.height);
     if((this.objectType & GUIControlTypeMask.GUIButton)){
       return height;
     }
@@ -132,8 +132,9 @@ export class GUIProtoItem extends GUIControl{
       this.text.geometry.computeBoundingBox();
       const tSize = new THREE.Vector3();
       this.text.geometry.boundingBox.getSize(tSize);
-      if(tSize.y > height){
-        height = tSize.y;
+      const textH = asExtentInt(tSize.y);
+      if(textH > height){
+        height = textH;
       }
     }
 

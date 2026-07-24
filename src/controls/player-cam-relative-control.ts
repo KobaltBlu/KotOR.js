@@ -6,9 +6,11 @@
  * Stealth (activity_ bit 0 on client field124): Vmax=DriveAnimWalk, A=15
  * (GetMaxSpeed / GetDriveAcceleration). Detect is activity bit 1 and does not
  * change Vmax. Walk key only scales desired — it does not change Vmax.
+ * Partial stick release kills velocity on the released camera axis; full release
+ * leaves velocity for drag coast. SetSWAnimationSpeed mag = |v| (0 when |v|<=1).
  * Turn rate lerps MinTurnRate→MaxTurnRate (faster when slow); gated on
  * |facingError|>0.1 and |last SetSWAnimationSpeed|>0.1.
- * DriveAnimationUpdate: run when forwardSpeed > DriveMaxSpeed * 0.6.
+ * DriveAnimationUpdate: run when speed > DriveMaxSpeed * 0.6.
  *
  * @file player-cam-relative-control.ts
  */
@@ -33,6 +35,12 @@ export const PLAYER_ACCL_SCALE_VMAX = 1.8;
 
 /** DriveAnimationUpdate run threshold factor (FLOAT_007a22f4 = 0.6). */
 export const DRIVE_ANIM_RUN_FACTOR = 0.6;
+
+/**
+ * Retail Control zeros SetSWAnimationSpeed when velocity magnitude <= this
+ * (still coasts via RK4 until PLAYER_VEL_STOP).
+ */
+export const PLAYER_ANIM_SPEED_CUTOFF = 1.0;
 
 /** Walk modifier on desired input axes. */
 export const PLAYER_WALK_INPUT_SCALE = 0.5;
@@ -282,8 +290,10 @@ export function playerIntegrateRk4(
 }
 
 /**
- * Retail Control: when a stick axis is released, kill velocity along that
- * camera axis immediately (strafe stops when A/D / stick-X is released).
+ * Retail Control: when exactly one stick axis is held, kill velocity along the
+ * released camera axis immediately (strafe stops when A/D is released while W
+ * is held). When both axes are released, do nothing — drag coasts until
+ * |vx|,|vy| < 0.25.
  */
 export function playerKillReleasedAxisVelocity(
   state: PlayerCamRelativeState,
@@ -291,21 +301,35 @@ export function playerKillReleasedAxisVelocity(
   axisRight: number,
   cameraFacing: number
 ): void {
+  const fwdReleased = Math.abs(axisForward) < 1e-4;
+  const rightReleased = Math.abs(axisRight) < 1e-4;
+  // Full release: leave velocity for GetAcceleration drag (retail Control).
+  if(fwdReleased && rightReleased) return;
+
   const forwardX = -Math.cos(cameraFacing);
   const forwardY = -Math.sin(cameraFacing);
   const rightX = Math.sin(cameraFacing);
   const rightY = -Math.cos(cameraFacing);
 
-  if(Math.abs(axisForward) < 1e-4){
+  if(fwdReleased){
     const along = state.velX * forwardX + state.velY * forwardY;
     state.velX -= along * forwardX;
     state.velY -= along * forwardY;
   }
-  if(Math.abs(axisRight) < 1e-4){
+  if(rightReleased){
     const along = state.velX * rightX + state.velY * rightY;
     state.velX -= along * rightX;
     state.velY -= along * rightY;
   }
+}
+
+/**
+ * Retail Control → SetSWAnimationSpeed magnitude: total |v|; 0 when
+ * !finite or |v| <= 1.0 (idle cutover while RK4 may still coast to 0.25).
+ */
+export function playerSetSWAnimationSpeedMag(speedMag: number): number {
+  if(!Number.isFinite(speedMag) || speedMag <= PLAYER_ANIM_SPEED_CUTOFF) return 0;
+  return speedMag;
 }
 
 /**

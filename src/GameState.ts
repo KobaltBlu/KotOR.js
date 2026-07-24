@@ -42,6 +42,10 @@ import { ConfigClient } from "@/utility/ConfigClient";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { OdysseyShaderPass } from "@/shaders/pass/OdysseyShaderPass";
 import { ForceDistortionPass } from "@/shaders/pass/ForceDistortionPass";
+import { OverbrightenPass } from "@/shaders/pass/OverbrightenPass";
+import { ConvolutionBloomPass } from "@/shaders/pass/ConvolutionBloomPass";
+import { DreamDistortionPass } from "@/shaders/pass/DreamDistortionPass";
+import { FuryPass } from "@/shaders/pass/FuryPass";
 import { ResourceLoader, TextureLoader } from "@/loaders";
 
 //THREE.js imports
@@ -352,6 +356,14 @@ export class GameState implements EngineContext {
   static renderPassAA: SSAARenderPass;
   static odysseyShaderPass: OdysseyShaderPass;
   static forceDistortionPass: ForceDistortionPass;
+  /** Retail FrameBufferModifications bit 0x01. */
+  static overbrightenPass: OverbrightenPass;
+  /** Retail FrameBufferModifications bit 0x02. */
+  static convolutionBloomPass: ConvolutionBloomPass;
+  /** K2 clairvoyance / dream distortion. */
+  static dreamDistortionPass: DreamDistortionPass;
+  /** K2 force fury overlay (fx_Fury01/02/03). */
+  static furyPass: FuryPass;
   static copyPass: ShaderPass;
   static renderPassGUI: RenderPass;
   /** MG camera HUD after AfterimagePass — retail screen-stable gauges stay sharp. */
@@ -377,7 +389,8 @@ export class GameState implements EngineContext {
   static preloadTextures: string[] = ['fx_tex_01', 'fx_tex_02', 'fx_tex_03', 'fx_tex_04', 'fx_tex_05', 'fx_tex_06', 'fx_tex_07', 'fx_tex_08',
     'fx_tex_09', 'fx_tex_10', 'fx_tex_11', 'fx_tex_12', 'fx_tex_13', 'fx_tex_14', 'fx_tex_15', 'fx_tex_16',
     'fx_tex_17', 'fx_tex_18', 'fx_tex_19', 'fx_tex_20', 'fx_tex_21', 'fx_tex_22', 'fx_tex_23', 'fx_tex_24',
-    'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth', 'distortiontex'];
+    'fx_tex_25', 'fx_tex_26', 'fx_tex_stealth', 'distortiontex', 'filmnoisetex',
+    'fx_Fury01', 'fx_Fury02', 'fx_Fury03'];
 
   static domElement: HTMLElement;
 
@@ -805,8 +818,17 @@ export class GameState implements EngineContext {
     GameState.renderPass = new RenderPass(GameState.scene, GameState.currentCamera);
     GameState.renderPassAA = new SSAARenderPass (GameState.scene, GameState.currentCamera);
     GameState.odysseyShaderPass = new OdysseyShaderPass();
+    GameState.odysseyShaderPass.enabled = false;
     GameState.forceDistortionPass = new ForceDistortionPass();
     GameState.forceDistortionPass.enabled = false;
+    GameState.overbrightenPass = new OverbrightenPass();
+    GameState.overbrightenPass.enabled = false;
+    GameState.convolutionBloomPass = new ConvolutionBloomPass();
+    GameState.convolutionBloomPass.enabled = false;
+    GameState.dreamDistortionPass = new DreamDistortionPass();
+    GameState.dreamDistortionPass.enabled = false;
+    GameState.furyPass = new FuryPass();
+    GameState.furyPass.enabled = false;
     GameState.copyPass = new ShaderPass(CopyShader);
     GameState.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
     GameState.renderPassMGHud = new RenderPass(GameState.scene, GameState.currentCamera);
@@ -867,11 +889,17 @@ export class GameState implements EngineContext {
     GameState.composer.addPass(GameState.speedBlurPass);
     // MG camera HUD after accumulation blur (retail screen-stable gauges).
     GameState.composer.addPass(GameState.renderPassMGHud);
-    // Retail FrameBufferModifications bit 0x20 — before GUI
+    // Retail FrameBufferModifications order before GUI:
+    // 0x01 overbrighten → 0x02 convolution → 0x20 force distortion →
+    // film/sat (VideoEffects) → K2 dream → K2 fury
+    GameState.composer.addPass(GameState.overbrightenPass);
+    GameState.composer.addPass(GameState.convolutionBloomPass);
     GameState.composer.addPass(GameState.forceDistortionPass);
+    GameState.composer.addPass(GameState.odysseyShaderPass);
+    GameState.composer.addPass(GameState.dreamDistortionPass);
+    GameState.composer.addPass(GameState.furyPass);
     // GameState.composer.addPass(GameState.bokehPass);
     // GameState.composer.addPass(GameState.renderPassAA);
-    // GameState.composer.addPass(GameState.odysseyShaderPass);
     // GameState.composer.addPass(GameState.bloomPass);
 
     GameState.composer.addPass(GameState.renderPassGUI);
@@ -1866,6 +1894,12 @@ export class GameState implements EngineContext {
         GameState.forceDistortionTexture = tex;
         if(GameState.forceDistortionPass){
           GameState.forceDistortionPass.setDistortionTexture(tex);
+        }
+        if(GameState.dreamDistortionPass){
+          GameState.dreamDistortionPass.setDistortionTexture(tex);
+        }
+        if(GameState.furyPass){
+          GameState.furyPass.setDistortionTexture(tex);
         }
       }
     }catch(e){

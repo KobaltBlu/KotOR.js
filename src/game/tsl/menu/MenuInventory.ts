@@ -2,7 +2,7 @@ import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUILabel, GUIButton, GUIListBox } from "@/gui";
 import { MenuInventory as K1_MenuInventory } from "@/game/kotor/KOTOR";
-import { GUIInventoryItem } from "@/game/tsl/gui/GUIInventoryItem";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import {
   InventoryFilter,
   getCurrentInventoryFilter,

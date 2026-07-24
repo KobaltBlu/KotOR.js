@@ -1,5 +1,6 @@
 import { GameMenu, GUIButton, GUIControl, GUIProtoItem } from "@/gui";
 import { GameState } from "@/GameState";
+import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import type { Keymap } from "@/controls";
 
@@ -32,7 +33,7 @@ export class GUIKeyMapItem extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
-    this.extent.height = 71;
+    this.setExtentHeight(71);
   }
 
   buildFill(){}
@@ -45,15 +46,15 @@ export class GUIKeyMapItem extends GUIProtoItem {
       super.createControl();
 
       const spacing = 2;
-      const protoWidth = this.extent.width;
-      const protoHeight = this.extent.height - spacing;
-      const iconWidth = (protoWidth * .30) - spacing;
-      const labelWidth = protoWidth - iconWidth - this.parent.border.inneroffset;
+      const protoWidth = asExtentInt(this.extent.width);
+      const protoHeight = asExtentInt(this.extent.height) - spacing;
+      const iconWidth = asExtentInt(protoWidth * 0.30) - spacing;
+      const labelWidth = asExtentInt(protoWidth - iconWidth - asExtentInt(this.parent.border.inneroffset));
 
       this.buttonLabel = new GUIButton(this.menu, this.control, this, this.scale);
-      this.buttonLabel.extent.left = 0;
-      this.buttonLabel.extent.width = labelWidth;
-      this.buttonLabel.extent.height = protoHeight;
+      this.buttonLabel.setExtentLeft(0);
+      this.buttonLabel.setExtentWidth(labelWidth);
+      this.buttonLabel.setExtentHeight(protoHeight);
       this.buttonLabel.setText(GameState.TLKManager.GetStringById(this.node.actionstrref)?.Value || '');
       this.buttonLabel.autoCalculatePosition = false;
       if(this.node.descstrref >= 0){
@@ -62,15 +63,15 @@ export class GUIKeyMapItem extends GUIProtoItem {
       this.children.push(this.buttonLabel);
 
       const _buttonWidget = this.buttonLabel.createControl();
-      _buttonWidget.position.x = -(protoWidth - this.buttonLabel.extent.width) / 2;
+      _buttonWidget.position.x = -truncDiv(protoWidth - asExtentInt(this.buttonLabel.extent.width), 2);
       _buttonWidget.position.y = 0;
       _buttonWidget.position.z = this.zIndex + 1;
       this.widget.add(_buttonWidget);
 
       this.buttonKey = new GUIButton(this.menu, this.control, this, this.scale);
-      this.buttonKey.extent.left = 0;
-      this.buttonKey.extent.width = iconWidth;
-      this.buttonKey.extent.height = protoHeight;
+      this.buttonKey.setExtentLeft(0);
+      this.buttonKey.setExtentWidth(iconWidth);
+      this.buttonKey.setExtentHeight(protoHeight);
       this.buttonKey.setText(this.getDisplayKeyText());
       this.buttonKey.autoCalculatePosition = false;
       if(this.node.descstrref >= 0){
@@ -79,7 +80,7 @@ export class GUIKeyMapItem extends GUIProtoItem {
       this.children.push(this.buttonKey);
 
       const _buttonKeyWidget = this.buttonKey.createControl();
-      _buttonKeyWidget.position.x = (protoWidth - iconWidth) / 2;
+      _buttonKeyWidget.position.x = truncDiv(protoWidth - iconWidth, 2);
       _buttonKeyWidget.position.y = 0;
       _buttonKeyWidget.position.z = this.zIndex + 1;
       this.widget.add(_buttonKeyWidget);
