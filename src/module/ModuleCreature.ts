@@ -55,6 +55,7 @@ import {
 import type { InterAreaWaypoint } from "@/engine/pathfinding/inter-area-path";
 import { plotPathAroundCreature } from "@/engine/pathfinding/plot-path-around-creature";
 import { bumpFriends } from "@/engine/pathfinding/bump-friends";
+import { getUseRange } from "@/actions/use-range";
 import { ModulePlaceable } from "@/module/ModulePlaceable";
 import type { ModuleEncounter } from "@/module/ModuleEncounter";
 import { BaseItemType } from "@/enums/combat/BaseItemType";
@@ -1635,6 +1636,7 @@ export class ModuleCreature extends ModuleObject {
   /**
    * Enqueue AIActionMoveToPoint. Retail AddMoveToPointAction: timeout 0 = no
    * Jump fallback (ActionMoveTo*); timeout > 0 = ForceMove jump-on-expiry.
+   * Arrive range: max(script fRange, GetUseRange) — ExecuteCommandMoveToObject @ 0053fb00.
    */
   moveToObject(target: ModuleObject, bRun = true, distance = 1.0, timeout = 0){
 
@@ -1648,7 +1650,8 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
       action.setParameter(4, ActionParameterType.DWORD, target.id);
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
-      action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
+      const use = getUseRange(this, target, false);
+      action.setParameter(6, ActionParameterType.FLOAT, Math.max(use.range, distance));
       action.setParameter(7, ActionParameterType.INT, 0);
       action.setParameter(8, ActionParameterType.FLOAT, timeout > 0 ? timeout : 0);
       this.actionQueue.add(action);

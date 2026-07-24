@@ -175,8 +175,8 @@ export class GUIListBox extends GUIControl {
     this.syncRttSizeFromViewport();
 
     this.camera = new THREE.OrthographicCamera(
-      this.width / -2, this.width / 2,
-      this.height / 2, this.height / -2,
+      -truncDiv(asExtentInt(this.width), 2), truncDiv(asExtentInt(this.width), 2),
+      truncDiv(asExtentInt(this.height), 2), -truncDiv(asExtentInt(this.height), 2),
       1, 500
     );
     this.camera.position.z = 100;
@@ -213,17 +213,17 @@ export class GUIListBox extends GUIControl {
    */
   private syncRttSizeFromViewport(): void {
     const fill = this.getFillExtent();
-    this.width = Math.max(1, fill.width);
-    this.height = Math.max(1, fill.height);
+    this.width = Math.max(1, asExtentInt(fill.width));
+    this.height = Math.max(1, asExtentInt(fill.height));
   }
 
   /** Position the RTT quad over the content area (shifted away from the scrollbar). */
   private layoutRttQuad(): void {
     if (!this.targetMesh) return;
     this.targetMesh.scale.set(this.width, this.height, 1);
-    const shrink = this.getShrinkWidth();
-    // Content is centered with -shrink/2 offset (see getBorderExtent); match that.
-    this.targetMesh.position.x = this.isScrollBarLeft() ? shrink / 2 : -shrink / 2;
+    const shrink = asExtentInt(this.getShrinkWidth());
+    // Content is centered with -truncDiv(shrink, 2) offset (see getBorderExtent); match that.
+    this.targetMesh.position.x = this.isScrollBarLeft() ? truncDiv(shrink, 2) : -truncDiv(shrink, 2);
     this.targetMesh.position.y = 0;
   }
 
@@ -786,11 +786,11 @@ export class GUIListBox extends GUIControl {
     const visibleTop = truncDiv(asExtentInt(vh), 2);
     const topI = asExtentInt(top);
     const heightI = asExtentInt(height);
-    ctrl.extent.left = asExtentInt(this.padding);
-    ctrl.extent.top = topI;
-    ctrl.extent.height = heightI;
+    ctrl.setExtentLeft(asExtentInt(this.padding));
+    ctrl.setExtentTop(topI);
+    ctrl.setExtentHeight(heightI);
     if (width > 0) {
-      ctrl.extent.width = asExtentInt(width);
+      ctrl.setExtentWidth(asExtentInt(width));
     }
     ctrl.widget.position.x = 0;
     ctrl.widget.position.y = asExtentInt(visibleTop - topI - truncDiv(heightI, 2));
@@ -1526,10 +1526,12 @@ export class GUIListBox extends GUIControl {
   }
 
   private updateCamera() {
-    this.camera.left = -this.width / 2;
-    this.camera.right = this.width / 2;
-    this.camera.top = this.height / 2;
-    this.camera.bottom = -this.height / 2;
+    const halfW = truncDiv(asExtentInt(this.width), 2);
+    const halfH = truncDiv(asExtentInt(this.height), 2);
+    this.camera.left = -halfW;
+    this.camera.right = halfW;
+    this.camera.top = halfH;
+    this.camera.bottom = -halfH;
     this.camera.updateProjectionMatrix();
   }
 

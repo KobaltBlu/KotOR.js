@@ -203,6 +203,7 @@ export class ComputedPath {
   /**
    * Prune — retail SmoothSelection three-pass (densify + string-pull).
    * Optional time budget + resume (~SmoothSelectionRestartable @ 004c13e0).
+   * On timeout sets `smoothResume` for ModulePath cross-frame session.
    */
   prunePathPoints(options: {
     timeBudgetMs?: number;
@@ -224,7 +225,6 @@ export class ComputedPath {
     });
     const selected = result.points;
     this.smoothResume = result.timedOut ? result.resume : undefined;
-    // Intra-call abort only — do not mark path incomplete (would fight DFS resume).
     if(selected.length === this.points.length){
       let same = true;
       for(let i = 0; i < selected.length; i++){

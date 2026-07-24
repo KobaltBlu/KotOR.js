@@ -5,16 +5,11 @@ import type { GUIControl, GUILabel } from "@/gui";
 import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
 import { MapMode } from "@/enums/engine/MapMode";
 import * as THREE from "three";
-import { GameEngineType } from "@/enums/engine";
 import { TextureLoader } from "@/loaders";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
-// import { ShaderManager, MenuManager, PartyManager } from "@/managers";
 
 const FOG_SIZE = 64;
 const FOG_SIZE_HALF = FOG_SIZE/2;
-/** Retail map texture design size (note pan clamp). */
-const MAP_TEX_WIDTH = 440;
-const MAP_TEX_HEIGHT = 256;
 
 const planeGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
 
@@ -88,11 +83,13 @@ export class LBL_MapView {
     this.viewportFrustum = new THREE.Frustum();
 
     this.scene = new THREE.Scene();
+    const halfW = truncDiv(asExtentInt(this.width), 2);
+    const halfH = truncDiv(asExtentInt(this.height), 2);
     this.camera = new THREE.OrthographicCamera( 
-      this.width / -2,
-      this.width / 2,
-      this.height / 2,
-      this.height / -2,
+      -halfW,
+      halfW,
+      halfH,
+      -halfH,
       1, 1000
     );
 
@@ -202,8 +199,8 @@ export class LBL_MapView {
   }
 
   setSize(width = 0, height = 0){
-    this.width = width;
-    this.height = height;
+    this.width = Math.max(1, asExtentInt(width));
+    this.height = Math.max(1, asExtentInt(height));
     this.texture.setSize(this.width, this.height);
     this.tDepth.setSize(this.width, this.height);
     this.updateRatio();
@@ -211,11 +208,19 @@ export class LBL_MapView {
 
   updateRatio(){
     this.texture.setSize(this.width, this.height);
-    this.camera.left = this.width / -2;
-    this.camera.right = this.width / 2;
-    this.camera.top = this.height / 2;
-    this.camera.bottom = this.height / -2;
+    const halfW = truncDiv(asExtentInt(this.width), 2);
+    const halfH = truncDiv(asExtentInt(this.height), 2);
+    this.camera.left = -halfW;
+    this.camera.right = halfW;
+    this.camera.top = halfH;
+    this.camera.bottom = -halfH;
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Retail MapZoom — only applied to HUD minimap (InitializeMap). */
+  getMapZoom(): number {
+    if(this.mode != MapMode.MINIMAP || !this.areaMap) return 1;
+    return Math.max(1, this.areaMap.mapZoom || 1);
   }
 
   setTexture(texture: OdysseyTexture){
@@ -227,17 +232,32 @@ export class LBL_MapView {
     const material = this.mapPlane.material as THREE.MeshBasicMaterial;
     material.map = this.mapTexture;
 
+    this.applyMapPlaneScale();
+  }
+
+  applyMapPlaneScale(){
+    if(!this.mapTexture) return;
+
+    const zoom = this.getMapZoom();
     const textureSize = this.getMapTextureSize();
-    this.mapPlane.scale.set(textureSize.width, textureSize.height, 1);
-
     const scaleSize = this.getMapTextureScaleSize();
-    this.mapGroup.position.x = textureSize.width/2;
-    this.mapGroup.position.y = textureSize.height/2;
 
-    this.fogPlane.scale.set(scaleSize.width, scaleSize.height, 1);
+    this.mapPlane.scale.set(
+      Math.max(1, asExtentInt(textureSize.width / zoom)),
+      Math.max(1, asExtentInt(textureSize.height / zoom)),
+      1
+    );
+    this.mapGroup.position.x = truncDiv(asExtentInt(textureSize.width / zoom), 2);
+    this.mapGroup.position.y = truncDiv(asExtentInt(textureSize.height / zoom), 2);
+
+    this.fogPlane.scale.set(
+      Math.max(1, asExtentInt(scaleSize.width)),
+      Math.max(1, asExtentInt(scaleSize.height)),
+      1
+    );
     this.fogPlane.position.z = 5;
-    this.fogPlane.position.x = scaleSize.width/2;
-    this.fogPlane.position.y = scaleSize.height/2;
+    this.fogPlane.position.x = truncDiv(asExtentInt(scaleSize.width), 2);
+    this.fogPlane.position.y = truncDiv(asExtentInt(scaleSize.height), 2);
   }
 
   setAreaMap(areaMap: AreaMap){
@@ -246,6 +266,7 @@ export class LBL_MapView {
 
     (this.fogPlane.material as THREE.ShaderMaterial).uniforms.alphaMap.value = this.areaMap.fogAlphaTexture;
     (this.fogPlane.material as THREE.ShaderMaterial).uniforms.mapRes.value.set(this.areaMap.mapResX+1, this.areaMap.mapResY+1);
+    this.applyMapPlaneScale();
 
     if(this.mode == MapMode.FULLMAP){
       this.areaMap.addEventListener('mapNoteAdded', (note: ModuleWaypoint) => {
@@ -263,11 +284,12 @@ export class LBL_MapView {
         const scaleSize = this.getMapTextureScaleSize();
         const mapPos = this.areaMap.toMapCoordinates(note.position.x, note.position.y);
         noteMesh.position.set(
-          (scaleSize.width * mapPos.x) + 4,
-          (scaleSize.height * mapPos.y) + 4, 
+          asExtentInt(scaleSize.width * mapPos.x),
+          asExtentInt(scaleSize.height * mapPos.y),
           10
         );
-        noteMesh.scale.set(this.mapNoteSize * this.mapNoteDefaultScale, this.mapNoteSize * this.mapNoteDefaultScale, 1);
+        const noteScale = Math.max(1, asExtentInt(this.mapNoteSize * this.mapNoteDefaultScale));
+        noteMesh.scale.set(noteScale, noteScale, 1);
         if(!this.mapNoteSelected) this.mapNoteSelected = note;
       });
 
@@ -317,7 +339,7 @@ export class LBL_MapView {
   }
 
   render(delta: number = 0){
-    if(!this.visible || !this.control)
+    if(!this.visible || !this.control || !this.areaMap)
       return;
 
     if(!this.currentCamera) this.currentCamera = this.camera;
@@ -333,14 +355,16 @@ export class LBL_MapView {
       this.fogPlane.visible = !GameState.cheatRevealMap;
     }
 
+    this.applyMapPlaneScale();
     const scaleSize = this.getMapTextureScaleSize();
     
-    this.areaMap.revealPosition(this.position.x, this.position.y);
+    // Retail UpdateMapData: SetWorldPointExplored(..., 1)
+    this.areaMap.revealPosition(this.position.x, this.position.y, 1);
     const mapPos = this.areaMap.toMapCoordinates(this.position.x, this.position.y);
-    this.currentCamera.position.x = (scaleSize.width * mapPos.x);
-    this.currentCamera.position.y = (scaleSize.height * mapPos.y);
+    this.currentCamera.position.x = asExtentInt(scaleSize.width * mapPos.x);
+    this.currentCamera.position.y = asExtentInt(scaleSize.height * mapPos.y);
     const minX = truncDiv(asExtentInt(this.width), 2);
-    const maxX = Math.max(minX, MAP_TEX_WIDTH - minX);
+    const maxX = Math.max(minX, asExtentInt(scaleSize.width) - minX);
 
     if(this.currentCamera.position.x < minX){
       this.currentCamera.position.x = minX;
@@ -351,7 +375,7 @@ export class LBL_MapView {
     }
 
     const minY = truncDiv(asExtentInt(this.height), 2);
-    const maxY = Math.max(minY, MAP_TEX_HEIGHT - minY);
+    const maxY = Math.max(minY, asExtentInt(scaleSize.height) - minY);
 
     if(this.currentCamera.position.y < minY){
       this.currentCamera.position.y = minY;
@@ -363,8 +387,8 @@ export class LBL_MapView {
 
     if(this.arrowPlane){
       this.arrowPlane.position.set(
-        (scaleSize.width * mapPos.x) + 4,
-        (scaleSize.height * mapPos.y) + 4, 
+        asExtentInt(scaleSize.width * mapPos.x),
+        asExtentInt(scaleSize.height * mapPos.y),
         10
       );
       this.arrowPlane.rotation.set(0, 0, this.arrowAngle);
@@ -373,20 +397,17 @@ export class LBL_MapView {
       }
     }
 
+    // Retail CSWGuiMapHider::Draw — companion dots for party[1..] on both minimap and full map
     for(let i = 0; i < 2; i++){
       const pm = GameState.PartyManager.party[i+1];
       const mesh = this.partyGroup.children[i];
-      if(this.mode == MapMode.MINIMAP){
-        mesh.visible = false;
-        continue;
-      }
 
       if(pm){
         mesh.visible = true;
         const pos = this.areaMap.toMapCoordinates(pm.position.x, pm.position.y);
         mesh.position.set(
-          (scaleSize.width * pos.x) + 4,
-          (scaleSize.height * pos.y) + 4, 
+          asExtentInt(scaleSize.width * pos.x),
+          asExtentInt(scaleSize.height * pos.y),
           9
         );
       }else{
@@ -453,16 +474,13 @@ export class LBL_MapView {
 
   }
 
+  /**
+   * Logical map display size. MINIMAP applies retail MapZoom (extent *= 1/MapZoom).
+   */
   getMapTextureScaleSize(): { width: number, height: number } {
-    let width = MAP_TEX_WIDTH;
-    let height = MAP_TEX_HEIGHT;
-
-    if(GameState.GameKey == GameEngineType.TSL){
-      width = 512;
-      height = 256;
-    }
-
-    return { width: width, height: height };
+    const logical = AreaMap.getLogicalMapSize();
+    const zoom = this.getMapZoom();
+    return { width: logical.width / zoom, height: logical.height / zoom };
   }
 
   getMapTextureSize(): { width: number, height: number } {
@@ -484,29 +502,29 @@ export class LBL_MapView {
     this.position.set(x, y, 0);
   }
 
+  /**
+   * Retail GetMapRotateCCWFromWorldOrientation / SetPartyMemberWorldOrientation.
+   * `angle` is creature yaw (radians); NorthAxis offsets are retail degrees.
+   */
   setRotation(angle: number = 0){
-    this.arrowAngle = angle;
+    if(!this.areaMap){
+      this.arrowAngle = angle;
+      return;
+    }
     switch(this.areaMap.northAxis){
-      case MapNorthAxis.NORTH:
-        {
-          this.arrowAngle = angle;
-        }
-      break;
-      case MapNorthAxis.SOUTH:
-        {
-          this.arrowAngle = angle + (Math.PI / 2);
-        }
-      break;
       case MapNorthAxis.EAST:
-        {
-          this.arrowAngle = angle + (Math.PI / 2);
-        }
-      break;
+        this.arrowAngle = angle + Math.PI;
+        break;
+      case MapNorthAxis.SOUTH:
+        this.arrowAngle = angle + (Math.PI / 2);
+        break;
       case MapNorthAxis.WEST:
-        {
-          this.arrowAngle = angle - (Math.PI / 2);
-        }
-      break;
+        this.arrowAngle = angle + (3 * Math.PI / 2);
+        break;
+      case MapNorthAxis.NORTH:
+      default:
+        this.arrowAngle = angle;
+        break;
     }
   }
 

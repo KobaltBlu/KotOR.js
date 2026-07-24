@@ -83,7 +83,7 @@ export class GUIScrollBar extends GUIControl{
     this.mouseOffset = {x: 0, y: 0};
     this.arrowSize = this.extent.width;
 
-    this.extent.height -= (this.arrowSize + this.border.dimension) * 2;
+    this.setExtentHeight(asExtentInt(this.extent.height) - (asExtentInt(this.arrowSize) + asExtentInt(this.border.dimension)) * 2);
 
     this.arrowTex = undefined;
 
@@ -176,8 +176,8 @@ export class GUIScrollBar extends GUIControl{
 
       this.widget.add(this.thumb);
       this.thumb.name = 'SCROLLBAR thumb';
-      this.thumb.scale.x = truncDiv(asExtentInt(this.extent.width), 2);
-      this.thumb.scale.y = truncDiv(asExtentInt(this.extent.height), 2);
+      this.thumb.scale.x = Math.max(1, asExtentInt(this.extent.width));
+      this.thumb.scale.y = Math.max(1, asExtentInt(this.extent.height));
       this.thumb.position.z = 5;
 
       let parentPos = this.worldPosition;
@@ -272,7 +272,7 @@ export class GUIScrollBar extends GUIControl{
   syncToListHeight(listHeight: number): void {
     this.listMatchedHeight = Math.max(1, asExtentInt(listHeight));
     const arrowPad = (asExtentInt(this.arrowSize) + asExtentInt(this.border?.dimension || 0)) * 2;
-    this.extent.height = Math.max(1, this.listMatchedHeight - arrowPad);
+    this.setExtentHeight(Math.max(1, this.listMatchedHeight - arrowPad));
 
     if (this.upArrow) {
       this.upArrow.position.y = truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2);
@@ -346,7 +346,7 @@ export class GUIScrollBar extends GUIControl{
     }
     scaleY = Math.min(1, Math.max(0.01, scaleY));
     this.thumb.scale.y = asExtentInt(track * scaleY) || 1;
-    this.thumb.scale.x = Math.max(1, truncDiv(asExtentInt(this.extent.width), 2));
+    this.thumb.scale.x = Math.max(1, asExtentInt(this.extent.width));
 
     const travel = Math.max(0, track - asExtentInt(this.thumb.scale.y));
     const denom = Math.max(1, this.maxValue - 1);

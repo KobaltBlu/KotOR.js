@@ -8,7 +8,7 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleObject, ModuleArea, ModuleAreaOfEffect, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger } from "@/module";
+import type { ModuleCreature, ModuleObject, ModuleArea, ModuleAreaOfEffect, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from "@/module";
 import type { TalentObject } from "@/talents/TalentObject";
 import type { GameEffect } from "@/effects/GameEffect";
 import type { GameEvent } from "@/events/GameEvent";
@@ -5113,7 +5113,13 @@ NWScriptDefK1.Actions = {
     comment: "386: Set whether oMapPin is enabled.\n- oMapPin\n- nEnabled: 0=Off, 1=On\n",
     name: "SetMapPinEnabled",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleWaypoint)) return;
+      const waypoint = args[0] as ModuleWaypoint;
+      if(!waypoint.hasMapNote) return;
+      waypoint.mapNoteEnabled = !!args[1];
+    }
   },
   387:{
     comment: "387: Create a Hit Point Change When Dying effect.\n- fHitPointChangePerRound: this can be positive or negative, but not zero.\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if fHitPointChangePerRound is 0.\n",

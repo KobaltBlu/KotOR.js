@@ -235,13 +235,8 @@ export class ForgeInitializer {
      */
     await KotOR.GameState.Planetary.Init()
 
-    ForgeInitializer.SetLoadingMessage("Initializing SaveGame Folder");
-    /**
-     * Initialize SaveGame Folder
-     */
-    KotOR.PerformanceMonitor.start('SaveGame.GetSaveGames');
-    await KotOR.SaveGame.GetSaveGames();
-    KotOR.PerformanceMonitor.stop('SaveGame.GetSaveGames');
+    // SaveGame.GetSaveGames() is skipped in Forge — the resource explorer lists
+    // Saves/ lazily, and Forge does not use the in-game SaveGame.saves list.
 
     KotOR.VideoEffectManager.Init2DA(KotOR.TwoDAManager.datatables.get('videoeffects') as any);
   }

@@ -18,5 +18,7 @@ export enum GUIControlType {
   Slider    = 8,
   ScrollBar = 9,
   Progress  = 10,
-  Listbox   = 11
+  Listbox   = 11,
+  /** Retail CSWGuiEditbox — constructed by TAG, not GFF CONTROLTYPE. */
+  EditBox   = 12,
 }

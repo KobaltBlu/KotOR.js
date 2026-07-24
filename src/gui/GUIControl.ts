@@ -1632,6 +1632,7 @@ export class GUIControl {
         vpW,
         vpH,
         flags,
+        GameState.GameKey,
       );
     }
 
@@ -1707,32 +1708,6 @@ export class GUIControl {
     const centered = extentToCenteredPosition(this.extent, parentW, parentH);
     this.anchorOffset = new THREE.Vector2(centered.x, centered.y);
 
-    const halfX = truncDiv(parentW, 2);
-    const quatX = 25;
-    const halfY = truncDiv(parentH, 2);
-
-    if(this.scale && this.anchor == 'none'){
-      if(this.extent.left == 0 && this.extent.top == 0){
-        //Screen centered
-      }else{
-        if(this.extent.left < truncDiv(halfX, 2) && this.extent.top > halfY){
-          this.anchor = Anchor.BottomLeft;
-        }else if( ( this.extent.left > quatX && this.extent.left < (halfX+quatX) ) && this.extent.top > halfY){
-          this.anchor = Anchor.BottomCenter;
-        }else if(this.extent.left > truncDiv(halfX, 2) && this.extent.top > halfY){
-          this.anchor = Anchor.BottomRight;
-        }
-
-        if(this.extent.left < truncDiv(halfX, 2) && this.extent.top < halfY){
-          this.anchor = Anchor.TopLeft;
-        }else if( ( this.extent.left > quatX && this.extent.left < (halfX+quatX) ) && this.extent.top < halfY){
-          this.anchor = Anchor.TopCenter
-        }else if(this.extent.left > truncDiv(halfX, 2) && this.extent.top < halfY){
-          this.anchor = Anchor.TopRight;
-        }
-      }
-    }
-
     const vpW = asExtentInt(ResolutionManager.getViewportWidth());
     const vpH = asExtentInt(ResolutionManager.getViewportHeight());
     const w = asExtentInt(this.extent.width);
@@ -1742,6 +1717,36 @@ export class GUIControl {
     // HUD right/bottom dock previously hardcoded 800×600; use panel design size (often 800×600).
     const designW = parentW > 0 ? parentW : GUI_DESIGN_WIDTH;
     const designH = parentH > 0 ? parentH : GUI_DESIGN_HEIGHT;
+
+    // Auto-dock HUD controls from design-canvas quadrants (no magic quatX=25).
+    if(this.scale && this.anchor == Anchor.None){
+      if(!(left == 0 && top == 0)){
+        const cx = left + truncDiv(w, 2);
+        const cy = top + truncDiv(h, 2);
+        const midX = truncDiv(designW, 2);
+        const midY = truncDiv(designH, 2);
+        const bandLeft = truncDiv(designW, 3);
+        const bandRight = designW - truncDiv(designW, 3);
+        const isTop = cy < midY;
+        let horiz: 'left' | 'center' | 'right';
+        if(cx >= bandLeft && cx < bandRight){
+          horiz = 'center';
+        }else if(cx < midX){
+          horiz = 'left';
+        }else{
+          horiz = 'right';
+        }
+        if(isTop){
+          this.anchor = horiz === 'left' ? Anchor.TopLeft
+            : horiz === 'center' ? Anchor.TopCenter
+            : Anchor.TopRight;
+        }else{
+          this.anchor = horiz === 'left' ? Anchor.BottomLeft
+            : horiz === 'center' ? Anchor.BottomCenter
+            : Anchor.BottomRight;
+        }
+      }
+    }
 
     switch(this.anchor){
       case Anchor.TopLeft:
@@ -1862,15 +1867,7 @@ export class GUIControl {
   }
 
   getControlExtent(){
-    let renderSize = this.getRendererSize();
-
-    let wRatio = GameState.ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
-    let hRatio = GameState.ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
-
     let parentExtent = { width: this.menu.width, height: this.menu.height };
-    //if(!(this.parent instanceof THREE.Scene)){
-      //parentExtent = this.parent.control.extent;
-    //}
 
     let left = asExtentInt(this.extent.left) - truncDiv(asExtentInt(parentExtent.width) - asExtentInt(this.extent.width), 2);
     let top = -asExtentInt(this.extent.top) + truncDiv(asExtentInt(parentExtent.height) - asExtentInt(this.extent.height), 2);
@@ -1887,12 +1884,13 @@ export class GUIControl {
       width: asExtentInt(this.extent.width),
       height: asExtentInt(this.extent.height),
     };
-
   }
 
   getInnerSize(){
-    let width = Math.max(0, this.extent.width - (this.border.dimension || this.highlight.dimension));
-    let height = Math.max(0, this.extent.height - (this.border.dimension || this.highlight.dimension));
+    // Retail CSWGuiBorder::GetInnerExtent @ 00415240 — int inset from border dim
+    const dim = asExtentInt(this.border.dimension || this.highlight.dimension || 0);
+    let width = Math.max(0, asExtentInt(this.extent.width) - dim);
+    let height = Math.max(0, asExtentInt(this.extent.height) - dim);
 
     return {
       width: width,
@@ -1917,19 +1915,27 @@ export class GUIControl {
     return false;
   }
 
+  /** Three.js rejects zero scale; apply only after int layout math. */
+  private static readonly MESH_EPS = 1e-5;
+
+  private meshSize(n: number): number {
+    return n > 0 ? n : GUIControl.MESH_EPS;
+  }
+
   getFillExtent(){
     let extent = this.getControlExtent();
-    let shrinkWidth = this.getShrinkWidth();
-
-    const borderSize = Math.min(this.getBorderSize(), this.extent.width / 2, this.extent.height / 2);
-    let width = Math.max(0.00001, this.extent.width - 2 * borderSize - shrinkWidth);
-    let height = Math.max(0.00001, this.extent.height - 2 * borderSize);
+    let shrinkWidth = asExtentInt(this.getShrinkWidth());
+    const ew = asExtentInt(this.extent.width);
+    const eh = asExtentInt(this.extent.height);
+    const borderSize = Math.min(asExtentInt(this.getBorderSize()), truncDiv(ew, 2), truncDiv(eh, 2));
+    let width = Math.max(0, ew - 2 * borderSize - shrinkWidth);
+    let height = Math.max(0, eh - 2 * borderSize);
 
     return {
       top: extent.top, 
       left: extent.left, 
-      width: width,
-      height: height
+      width: this.meshSize(width),
+      height: this.meshSize(height)
     };
   }
 
@@ -1961,157 +1967,172 @@ export class GUIControl {
     return shrinkWidth;
   }
 
+  /**
+   * Border edge/corner quads in widget-local space (ints).
+   * Retail CSWGuiBorder::Draw @ 004168c0 uses int left/top/width/height.
+   */
   getBorderExtent(side: string){
-    const shrinkWidth = this.getShrinkWidth();
-    const borderSize = Math.min(this.getBorderSize(), this.extent.width / 2, this.extent.height / 2);
+    const shrinkWidth = asExtentInt(this.getShrinkWidth());
+    const ew = asExtentInt(this.extent.width);
+    const eh = asExtentInt(this.extent.height);
+    const borderSize = Math.min(asExtentInt(this.getBorderSize()), truncDiv(ew, 2), truncDiv(eh, 2));
 
-    let innerW = Math.max(0, this.extent.width - borderSize);
-    let innerH = Math.max(0, this.extent.height - borderSize);
+    let innerW = Math.max(0, ew - borderSize);
+    let innerH = Math.max(0, eh - borderSize);
 
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
-      // innerW += this.parent.border.inneroffset * 2;
-      innerW = Math.min(this.extent.width, innerW);
+      innerW = Math.min(ew, innerW);
     }
+
+    const halfInnerW = truncDiv(innerW, 2);
+    const halfInnerH = truncDiv(innerH, 2);
+    const halfShrink = truncDiv(shrinkWidth, 2);
 
     let top = 0, left = 0, width = 0, height = 0;
 
     switch(side){
       case 'top':
-        top = -(innerH / 2);
-        left = -shrinkWidth / 2;
+        top = -halfInnerH;
+        left = -halfShrink;
         width = innerW - borderSize - shrinkWidth;
         height = borderSize;
       break;
       case 'bottom':
-        top = (innerH / 2);
-        left = -shrinkWidth / 2;
+        top = halfInnerH;
+        left = -halfShrink;
         width = innerW - borderSize - shrinkWidth;
         height = borderSize;
       break;
       case 'left':
         top = 0;
-        left = -(innerW / 2);
+        left = -halfInnerW;
         width = innerH - borderSize;
         height = borderSize;
       break;
       case 'right':
         top = 0;
-        left = (innerW / 2) - shrinkWidth;
+        left = halfInnerW - shrinkWidth;
         width = innerH - borderSize;
         height = borderSize;
       break;
       case 'topLeft':
-        top = (innerH / 2);
-        left = -(innerW / 2);
+        top = halfInnerH;
+        left = -halfInnerW;
         width = borderSize;
         height = borderSize;
       break;
       case 'topRight':
-        top = (innerH / 2);
-        left = (innerW / 2) - shrinkWidth;
+        top = halfInnerH;
+        left = halfInnerW - shrinkWidth;
         width = borderSize;
         height = borderSize;
       break;
       case 'bottomLeft':
-        top = -(innerH / 2);
-        left = -(innerW / 2);
+        top = -halfInnerH;
+        left = -halfInnerW;
         width = borderSize;
         height = borderSize;
       break;
       case 'bottomRight':
-        top = -(innerH / 2);
-        left = (innerW / 2) - shrinkWidth;
+        top = -halfInnerH;
+        left = halfInnerW - shrinkWidth;
         width = borderSize;
         height = borderSize;
       break;
     }
 
-    if(width < 0) width = 0.00001;
-    if(height < 0) height = 0.00001;
-
     return {
       top: top,
       left: left + (this.flipLeft() ? shrinkWidth : 0),
-      width: width,
-      height: height
+      width: this.meshSize(width),
+      height: this.meshSize(height)
     };
 
   }
 
   getHighlightExtent(side: string){
-    const shrinkWidth = this.getShrinkWidth();
-    const highlightSize = Math.min(this.getHightlightSize(), this.extent.width / 2, this.extent.height / 2);
+    const shrinkWidth = asExtentInt(this.getShrinkWidth());
+    const ew = asExtentInt(this.extent.width);
+    const eh = asExtentInt(this.extent.height);
+    const highlightSize = Math.min(asExtentInt(this.getHightlightSize()), truncDiv(ew, 2), truncDiv(eh, 2));
 
-    let innerW = Math.max(0, this.extent.width - highlightSize);
-    let innerH = Math.max(0, this.extent.height - highlightSize);
+    let innerW = Math.max(0, ew - highlightSize);
+    let innerH = Math.max(0, eh - highlightSize);
 
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIProtoItem)){
-      // innerW += this.parent.border.inneroffset * 2;
-      innerW = Math.min(this.extent.width, innerW);
+      innerW = Math.min(ew, innerW);
     }
+
+    const halfInnerW = truncDiv(innerW, 2);
+    const halfInnerH = truncDiv(innerH, 2);
+    const halfShrink = truncDiv(shrinkWidth, 2);
 
     let top = 0, left = 0, width = 0, height = 0;
 
     switch(side){
       case 'top':
-        top = -(innerH / 2);
-        left = -shrinkWidth / 2;
+        top = -halfInnerH;
+        left = -halfShrink;
         width = innerW - highlightSize - shrinkWidth;
         height = highlightSize;
       break;
       case 'bottom':
-        top = (innerH / 2);
-        left = -shrinkWidth / 2;
+        top = halfInnerH;
+        left = -halfShrink;
         width = innerW - highlightSize - shrinkWidth;
         height = highlightSize;
       break;
       case 'left':
         top = 0;
-        left = -(innerW / 2);
+        left = -halfInnerW;
         width = innerH - highlightSize;
         height = highlightSize;
       break;
       case 'right':
         top = 0;
-        left = (innerW / 2) - shrinkWidth;
+        left = halfInnerW - shrinkWidth;
         width = innerH - highlightSize;
         height = highlightSize;
       break;
       case 'topLeft':
-        top = (innerH / 2);
-        left = -(innerW / 2);
+        top = halfInnerH;
+        left = -halfInnerW;
         width = highlightSize;
         height = highlightSize;
       break;
       case 'topRight':
-        top = (innerH / 2);
-        left = (innerW / 2) - shrinkWidth;
+        top = halfInnerH;
+        left = halfInnerW - shrinkWidth;
         width = highlightSize;
         height = highlightSize;
       break;
       case 'bottomLeft':
-        top = -(innerH / 2);
-        left = -(innerW / 2);
+        top = -halfInnerH;
+        left = -halfInnerW;
         width = highlightSize;
         height = highlightSize;
       break;
       case 'bottomRight':
-        top = -(innerH / 2);
-        left = (innerW / 2) - shrinkWidth;
+        top = -halfInnerH;
+        left = halfInnerW - shrinkWidth;
         width = highlightSize;
         height = highlightSize;
       break;
     }
 
-    if(width < 0) width = 0.00001;
-    if(height < 0) height = 0.00001;
-
     return {
       top: top,
       left: left + (this.flipLeft() ? shrinkWidth : 0),
-      width: width,
-      height: height
+      width: this.meshSize(width),
+      height: this.meshSize(height)
     };
+  }
+
+  /** ListBox content fill X: shift away from scrollbar (matches layoutRttQuad). */
+  private getFillShrinkOffsetX(): number {
+    const shrink = asExtentInt(this.getShrinkWidth());
+    const half = truncDiv(shrink, 2);
+    return this.flipLeft() ? half : -half;
   }
 
   buildFill(){
@@ -2122,9 +2143,7 @@ export class GUIControl {
       this.border.fill.mesh.scale.x = extent.width || 0.000001;
       this.border.fill.mesh.scale.y = extent.height || 0.000001;
       this.border.fill.mesh.position.z = this.zOffset;
-
-      const shrinkWidth = this.getShrinkWidth();
-      this.border.fill.mesh.position.x = (this.flipLeft() ? shrinkWidth/2 : -shrinkWidth/2);
+      this.border.fill.mesh.position.x = this.getFillShrinkOffsetX();
     }
   }
 
@@ -2305,6 +2324,7 @@ export class GUIControl {
       this.highlight.fill.mesh.scale.x = extent.width || 0.000001;
       this.highlight.fill.mesh.scale.y = extent.height || 0.000001;
       this.highlight.fill.mesh.position.z = this.zOffset;
+      this.highlight.fill.mesh.position.x = this.getFillShrinkOffsetX();
     }
   }
 
@@ -2406,22 +2426,24 @@ export class GUIControl {
     }
     this.widget.userData.text.position.z = this.zOffset;
 
-    const innerSize = this.getInnerSize()
+    const innerSize = this.getInnerSize();
+    const innerW = asExtentInt(innerSize.width);
+    const innerH = asExtentInt(innerSize.height);
+    const textH = asExtentInt(this.textSize.y);
 
-    //Horizontal Alignment moved to GUIFont
-    // const horizontal = this.text.alignment & GUIControlAlignment.HorizontalMask;
-    this.widget.userData.text.position.x = -(innerSize.width/2 - this.textSize.x/2) - this.textSize.x/2;
+    // Horizontal alignment is handled in GUIFont; origin sits at left edge of inner box.
+    this.widget.userData.text.position.x = -truncDiv(innerW, 2);
 
-    const vertical   = this.text.alignment & GUIControlAlignment.VerticalMask;
+    const vertical = this.text.alignment & GUIControlAlignment.VerticalMask;
     switch(vertical){
       case GUIControlAlignment.VerticalTop:
-        this.widget.userData.text.position.y = (innerSize.height/2 - this.textSize.y/2) + this.textSize.y/2;
+        this.widget.userData.text.position.y = truncDiv(innerH, 2);
       break;
       case GUIControlAlignment.VerticalCenter:
-        this.widget.userData.text.position.y = this.textSize.y/2;
+        this.widget.userData.text.position.y = truncDiv(textH, 2);
       break;
       case GUIControlAlignment.VerticalBottom:
-        this.widget.userData.text.position.y = -(innerSize.height/2 - this.textSize.y/2) + this.textSize.y/2;
+        this.widget.userData.text.position.y = -truncDiv(innerH, 2) + textH;
       break;
     }
 
@@ -2433,7 +2455,7 @@ export class GUIControl {
       this.list &&
       (this.type == GUIControlType.Label || this.type == GUIControlType.ProtoItem)
     ){
-      this.extent.height = this.textSize.y;
+      this.extent.height = asExtentInt(this.textSize.y);
       this.resizeControl();
       this.list.relayoutAfterRowHeightChange();
     }
@@ -2564,6 +2586,7 @@ export class GUIControl {
       let extent = this.getFillExtent();
       this.border.fill.mesh.scale.x = extent.width || 0.000001;
       this.border.fill.mesh.scale.y = extent.height || 0.000001;
+      this.border.fill.mesh.position.x = this.getFillShrinkOffsetX();
     }
   }
 
@@ -2572,6 +2595,7 @@ export class GUIControl {
       let extent = this.getFillExtent();
       this.highlight.fill.mesh.scale.x = extent.width || 0.000001;
       this.highlight.fill.mesh.scale.y = extent.height || 0.000001;
+      this.highlight.fill.mesh.position.x = this.getFillShrinkOffsetX();
     }
   }
 

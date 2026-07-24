@@ -60,6 +60,15 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   /** Set to false to silence `[emitterName]` tick logs (see `emitterLog`). */
   static EMITTER_TICK_DEBUG = false;
 
+  /**
+   * Retail PartEmitter+0x1f8 (Gob::SetEmitterAsWeather).
+   * When set, live particles toroidally wrap X/Y around the module camera (±5).
+   */
+  isWeather: boolean = false;
+
+  /** Retail weather wrap half-extent (_DAT_009f6fc0 / _DAT_009f6fbc = 5). */
+  private static readonly WEATHER_WRAP_HALF = 5;
+
   updateType: string;
   maxParticleCount: number = 0;
 
@@ -1330,6 +1339,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       if(this.integrateStandardParticles(delta, spawnableParticleCount)){
         updatePositions = true;
         updateVelocity = true;
+      }
+
+      // Retail isWeather wrap after fountain integrate (moveParticle* @ 008a9e57)
+      if(this.isWeather && this.wrapWeatherParticles(spawnableParticleCount)){
+        updatePositions = true;
       }
 
       // --- 5) Birth into dead slots ---
@@ -2682,6 +2696,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         this.velocities.needsUpdate = true;
       }
       this.integrateStandardParticles(delta, count);
+      if(this.isWeather){
+        this.wrapWeatherParticles(count);
+      }
     }else{
       this.spawnParticle(0, delta);
       this.particleCount = 1;
@@ -3549,6 +3566,54 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       changed = true;
     }
 
+    return changed;
+  }
+
+  /**
+   * Retail PartEmitter weather wrap @ 008a9e57 (after particle integrate).
+   * Toroidally folds live particle X/Y into a 10×10 box centered on the module camera
+   * so rain/snow stays with the PC when weather Gobs are teleported each frame.
+   */
+  private wrapWeatherParticles(count: number): boolean {
+    if(!this.isWeather || count <= 0 || !this.offsets) return false;
+
+    const camera = GameState.currentCamera || GameState.camera;
+    if(!camera) return false;
+
+    camera.getWorldPosition(OdysseyEmitter3D._v3A);
+    const camX = OdysseyEmitter3D._v3A.x;
+    const camY = OdysseyEmitter3D._v3A.y;
+    const half = OdysseyEmitter3D.WEATHER_WRAP_HALF;
+    const period = half * 2;
+
+    let changed = false;
+    for(let i = 0; i < count; i++){
+      if(this.props.getZ(i) !== 1) continue;
+
+      let dx = this.offsets.getX(i) - camX + half;
+      let dy = this.offsets.getY(i) - camY + half;
+
+      // C-style fmod wrap into ~[-half, +half] (retail moveParticle weather block)
+      if(dx < 0){
+        dx = (dx % period) + half;
+      }else{
+        dx = (dx % period) - half;
+      }
+      if(dy < 0){
+        dy = (dy % period) + half;
+      }else{
+        dy = (dy % period) - half;
+      }
+
+      this.offsets.setX(i, camX + dx);
+      this.offsets.setY(i, camY + dy);
+      // Z unchanged
+      changed = true;
+    }
+
+    if(changed){
+      this.offsets.needsUpdate = true;
+    }
     return changed;
   }
 

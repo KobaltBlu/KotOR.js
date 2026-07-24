@@ -3,7 +3,14 @@ import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { MapNorthAxis } from "@/enums/engine/MapNorthAxis";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
+
+/** Retail K1 logical map size (CSWSAreaMap / GetMapPixelFromWorldCoord). */
+export const AREA_MAP_LOGICAL_SIZE_K1 = { width: 440, height: 256 } as const;
+/** Retail TSL Aspyr logical map size (0x24C x 0x126). */
+export const AREA_MAP_LOGICAL_SIZE_TSL = { width: 588, height: 294 } as const;
 
 /**
 * AreaMap class.
@@ -62,8 +69,17 @@ export class AreaMap {
     this.mapPt1Y = 0;
     this.mapPt2X = 0;
     this.mapPt2Y = 0;
-    this.mapZoom = 0;
+    this.mapZoom = 1;
 
+  }
+
+  /** Retail logical map pixel size for the active game. */
+  static getLogicalMapSize(): { width: number, height: number } {
+    // Use ApplicationProfile (not GameState) to avoid circular init via @/module barrel.
+    if(ApplicationProfile.GameKey == GameEngineType.TSL){
+      return { width: AREA_MAP_LOGICAL_SIZE_TSL.width, height: AREA_MAP_LOGICAL_SIZE_TSL.height };
+    }
+    return { width: AREA_MAP_LOGICAL_SIZE_K1.width, height: AREA_MAP_LOGICAL_SIZE_K1.height };
   }
 
   init(){
@@ -78,7 +94,8 @@ export class AreaMap {
   }
 
   generateResY(){
-    this.mapResY = Math.max(1, Math.floor((this.mapResX * 256) / 440));
+    const { width, height } = AreaMap.getLogicalMapSize();
+    this.mapResY = Math.max(1, Math.floor((this.mapResX * height) / width));
   }
 
   generateMapData(){
@@ -205,11 +222,17 @@ export class AreaMap {
     return false;
   }
 
-  revealPosition(x: number = 0, y: number = 0, radius: number = 0){
+  /**
+   * Retail CSWSAreaMap::SetWorldPointExplored — default radius 1 (UpdateMapData).
+   * Radius uses a manhattan diamond of grid cells; -1 reveals the entire map.
+   */
+  revealPosition(x: number = 0, y: number = 0, radius: number = 1){
     if(radius == -1){
       this.revealEntireMap();
       return;
     }
+
+    if(!this.mapResX) return;
 
     radius = Math.abs(radius);
     const resX = (this.mapResX+1);
@@ -221,70 +244,16 @@ export class AreaMap {
 
     const gridX = Math.floor(resX * mapPos.x);
     const gridY = Math.floor(resY * mapPos.y);
-    
-    let needsUpdate = this.revealFogAtArrayIndex((resX * gridY) + gridX);
 
-    //reveal radius
-    for(let y = 1; y < radius; y++){
-      for(let x = 1; x < radius; x++){
-        const tY = gridY-y;
-        if(tY >= 0){
-          if(gridX-x >= 0){
-            const tlIndex = (resX * (tY)) + (gridX-x);
-            if(this.revealFogAtArrayIndex(tlIndex)){
-              needsUpdate = true;
-            }
-          }
-  
-          const tIndex = (resX * (tY)) + (gridX);
-          if(this.revealFogAtArrayIndex(tIndex)){
-            needsUpdate = true;
-          }
-  
-          if(gridX+x < resX){
-            const trIndex = (resX * (tY)) + (gridX+x);
-            if(this.revealFogAtArrayIndex(trIndex)){
-              needsUpdate = true;
-            }
-          }
-        }
-  
-        if(gridY >= 0 && gridY < resY){
-          if(gridX-x >= 0){
-            const mlIndex = (resX * (gridY)) + (gridX-x);
-            if(this.revealFogAtArrayIndex(mlIndex)){
-              needsUpdate = true;
-            }
-          }
-  
-          if(gridX+x < resX){
-            const mrIndex = (resX * (gridY)) + (gridX+x);
-            if(this.revealFogAtArrayIndex(mrIndex)){
-              needsUpdate = true;
-            }
-          }
-        }
-  
-        const bY = gridY+y;
-        if(bY >= 0 && bY < resY){
-          if(gridX-x >= 0){
-            const blIndex = (resX * (bY)) + (gridX-x);
-            if(this.revealFogAtArrayIndex(blIndex)){
-              needsUpdate = true;
-            }
-          }
-  
-          const bIndex = (resX * (bY)) + (gridX);
-          if(this.revealFogAtArrayIndex(bIndex)){
-            needsUpdate = true;
-          }
-  
-          if(gridX+x < resX){
-            const brIndex = (resX * (bY)) + (gridX+x);
-            if(this.revealFogAtArrayIndex(brIndex)){
-              needsUpdate = true;
-            }
-          }
+    let needsUpdate = false;
+    for(let dx = -radius; dx <= radius; dx++){
+      const dyLimit = radius - Math.abs(dx);
+      for(let dy = -dyLimit; dy <= dyLimit; dy++){
+        const gx = gridX + dx;
+        const gy = gridY + dy;
+        if(gx < 0 || gy < 0 || gx >= resX || gy >= resY) continue;
+        if(this.revealFogAtArrayIndex((resX * gy) + gx)){
+          needsUpdate = true;
         }
       }
     }
@@ -297,6 +266,11 @@ export class AreaMap {
     if(index >= 0 && index < this.fogAlphaPixelData.length){
       if(this.fogAlphaPixelData[index]){
         this.fogAlphaPixelData[index] = 0;
+        const byteIndex = Math.floor(index / 8);
+        const bitIndex = index % 8;
+        if(byteIndex < this.data.length){
+          this.data[byteIndex] |= (1 << bitIndex);
+        }
         needsUpdate = true;
       }
     }
@@ -304,6 +278,7 @@ export class AreaMap {
   }
 
   revealEntireMap(){
+    this.data.fill(0xFF);
     this.fogAlphaPixelData.fill(0);
     this.fogAlphaTexture.needsUpdate = true;
   }
@@ -335,10 +310,14 @@ export class AreaMap {
   exportData(){
     let dataStruct = new GFFStruct(14);
 
+    this.data.fill(0);
     let byteIndex = 0;
     for(let i = 0; i < this.fogAlphaPixelData.length; i++){
       const bitIndex = i % 8;
-      this.data[byteIndex] |= 1 << bitIndex;
+      // Explored cells have fog alpha 0
+      if(this.fogAlphaPixelData[i] == 0){
+        this.data[byteIndex] |= 1 << bitIndex;
+      }
 
       if(!((i+1) % 8)){
         byteIndex++;
@@ -393,7 +372,7 @@ export class AreaMap {
       areaMap.mapPt2X = struct.getFieldByLabel('MapPt2X').getValue();
       areaMap.mapPt2Y = struct.getFieldByLabel('MapPt2Y').getValue();
       areaMap.mapResX = struct.getFieldByLabel('MapResX').getValue();
-      areaMap.mapZoom = struct.getFieldByLabel('MapZoom').getValue();
+      areaMap.mapZoom = struct.getFieldByLabel('MapZoom').getValue() || 1;
       areaMap.northAxis = struct.getFieldByLabel('NorthAxis').getValue();
       areaMap.worldPt1X = struct.getFieldByLabel('WorldPt1X').getValue();
       areaMap.worldPt1Y = struct.getFieldByLabel('WorldPt1Y').getValue();

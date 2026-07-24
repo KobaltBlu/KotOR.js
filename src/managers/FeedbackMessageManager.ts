@@ -230,6 +230,8 @@ export class FeedbackMessageManager {
       break;
       case FeedbackOption.MiniMap:
         this.FeedbackOptions.MiniMap = value;
+        // Retail OnMiniMap → CGuiInGame::InitializeMap
+        GameState.MenuManager?.InGameOverlay?.updateMiniMapVisibility?.();
       break;
       case FeedbackOption.FloatingNumbers:
         this.FeedbackOptions.FloatingNumbers = value;

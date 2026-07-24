@@ -1,6 +1,7 @@
 import { GameMenu, GUIButton, GUIControl, GUIListBox, GUIProtoItem } from "@/gui";
 import { GameEngineType } from "@/enums/engine";
 import { GameState } from "@/GameState";
+import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { TextureLoader } from "@/loaders";
 import { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
@@ -47,9 +48,9 @@ export class GUIInventoryItem extends GUIProtoItem {
     try{
       const isContainer = this.menu.gui_resref == 'container' || this.menu.gui_resref == 'container_p';
       if(this.menu.gui_resref == 'inventory'){
-        this.setExtentHeight(52.5);
+        this.setExtentHeight(52);
       }else if(this.menu.gui_resref == 'equip'){
-        this.setExtentHeight(52.5);
+        this.setExtentHeight(52);
       }else if(isContainer){
         this.setExtentHeight(60);
       }
@@ -57,17 +58,17 @@ export class GUIInventoryItem extends GUIProtoItem {
       //Create the actual control elements below
 
 
-      const protoWidth = this.extent.width;
-      const protoHeight = this.extent.height;
+      const protoWidth = asExtentInt(this.extent.width);
+      const protoHeight = asExtentInt(this.extent.height);
       const iconWidth = isContainer ? 60 : 60;
       const iconHeight = isContainer ? 60 : 60;
 
-      const labelWidth = (protoWidth - iconWidth) + 5;
+      const labelWidth = asExtentInt((protoWidth - iconWidth) + 5);
 
       //Label
       this.buttonLabel = new GUIButton(this.menu, this.control, this, this.scale);
-      this.buttonLabel.extent.left = 0;
-      this.buttonLabel.extent.width = labelWidth;
+      this.buttonLabel.setExtentLeft(0);
+      this.buttonLabel.setExtentWidth(labelWidth);
       if(!isContainer){
         this.buttonLabel.setTextAlignment(GUIControlAlignment.HorizontalCenter | GUIControlAlignment.VerticalCenter);
       }else{
@@ -79,7 +80,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.children.push(this.buttonLabel);
 
       const _buttonWidget = this.buttonLabel.createControl();
-      _buttonWidget.position.x = (protoWidth - this.buttonLabel.extent.width) / 2;
+      _buttonWidget.position.x = truncDiv(protoWidth - asExtentInt(this.buttonLabel.extent.width), 2);
       _buttonWidget.position.y = 0;
       _buttonWidget.position.z = this.zIndex + 1;
       this.widget.add(_buttonWidget);
@@ -101,7 +102,7 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.children.push(this.buttonIcon);
 
       const _buttonIconWidget = this.buttonIcon.createControl();
-      _buttonIconWidget.position.x = -(protoWidth/2 - this.buttonIcon.extent.width/2);
+      _buttonIconWidget.position.x = -truncDiv(protoWidth - asExtentInt(this.buttonIcon.extent.width), 2);
       _buttonIconWidget.position.y = 0;
       _buttonIconWidget.position.z = this.zIndex + 1;
 
@@ -113,8 +114,8 @@ export class GUIInventoryItem extends GUIProtoItem {
       this.iconSprite = new THREE.Sprite( this.iconMaterial );
 
       this.spriteGroup = new THREE.Group();
-      this.iconSprite.scale.x = iconWidth * 0.90;
-      this.iconSprite.scale.y = iconHeight * 0.90;
+      this.iconSprite.scale.x = asExtentInt(iconWidth * 0.9);
+      this.iconSprite.scale.y = asExtentInt(iconHeight * 0.9);
       this.iconSprite.position.z = 2;
 
       this.hexMaterial = new THREE.SpriteMaterial( { map: null, color: 0xffffff } );

@@ -414,7 +414,7 @@ export class GameMenu {
   }
 
   resize(){
-    //STUB
+    this.recalculatePosition();
   }
 
   triggerControllerAPress(){

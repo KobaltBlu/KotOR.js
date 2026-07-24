@@ -7,6 +7,7 @@ import { PathPoint } from "@/engine/pathfinding/PathPoint";
 import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
 import type { PathPointDfsResume } from "@/engine/pathfinding/ComputedPath";
 import { SMOOTH_SELECTION_BUDGET_MS } from "@/engine/pathfinding/smooth-select-nodes";
+import type { SmoothSelectionResume } from "@/engine/pathfinding/smooth-select-nodes";
 import { IClosestPathPointData } from "@/interface/engine/pathfinding/IClosestPathPointData";
 import type { ModuleArea } from "@/module/ModuleArea";
 import { Utility } from "@/utility/Utility";
@@ -17,6 +18,12 @@ import { hasDirectLine, farthestClearPoint } from "@/engine/pathfinding/test-dir
 import { plotGridPath } from "@/engine/pathfinding/plot-grid-path";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+
+type SmoothSession = {
+  origin: THREE.Vector3;
+  dest: THREE.Vector3;
+  points: THREE.Vector3[];
+};
 
 /**
 * ModulePath class.
@@ -48,6 +55,13 @@ export class ModulePath {
    * Survives ComputedPath teardown when MoveTo clears realtime paths.
    */
   private dfsResumeByOwner = new Map<number, PathPointDfsResume>();
+
+  /**
+   * Per-owner SmoothSelectionRestartable resume (field124 + densify cursor).
+   * Survives MoveTo realtime clear so smooth continues without re-DFS.
+   */
+  private smoothResumeByOwner = new Map<number, SmoothSelectionResume>();
+  private smoothSessionByOwner = new Map<number, SmoothSession>();
 
   helperColors: THREE.Float32BufferAttribute;
   helperPositions: THREE.Float32BufferAttribute;
@@ -405,8 +419,17 @@ export class ModulePath {
     const destPoint = PathPoint.FromVector3(dest);
     destPoint.setArea(this.area);
 
+    const ownerId = owner?.id;
+
+    // Smooth-only resume — same endpoints, skip DFS (PlotPath return-1 mid-smooth)
+    const smoothOnly = this.tryResumeSmoothOnly(owner, origin, dest, smooth);
+    if(smoothOnly){
+      return smoothOnly;
+    }
+
     // Stage 1: retail TestDirectLine first
     if(hasDirectLine(this.area, origin, dest, owner)){
+      this.clearSmoothSession(ownerId);
       return ComputedPath.FromPointsList([originPoint, destPoint]);
     }
 
@@ -415,7 +438,7 @@ export class ModulePath {
       const closest_origin_point = this.getClosestPathPoint(origin);
       const closest_destination_point = this.getClosestPathPoint(dest);
       if(!closest_origin_point || !closest_destination_point){
-        // Partial: farthest clear along the blocked line (PlotPathInArea recovery)
+        this.clearSmoothSession(ownerId);
         return this.partialClearPath(owner, origin, dest, originPoint);
       }
 
@@ -430,7 +453,6 @@ export class ModulePath {
 
       const path = new ComputedPath(owner, originPoint, destPoint);
       path.setOwner(owner);
-      const ownerId = owner?.id;
       const resume = ownerId != null ? this.dfsResumeByOwner.get(ownerId) : undefined;
       path.search({ resume });
 
@@ -449,42 +471,117 @@ export class ModulePath {
       }
 
       if(path.points.length){
-        // Incomplete DFS (time slice) — mark realtime so MoveTo repaths soon
+        // Incomplete DFS — defer SmoothSelection until search finishes
         if(path.incomplete){
           path.realtime = true;
           path.timer = Math.min(path.timer || 20, 8);
+          this.clearSmoothSession(ownerId);
+          return path;
         }
-        // SmoothSelectionRestartable time slice (~DAT_007a1b1c / 10ms) on realtime paths.
-        // Stage resume is intra-call; cross-frame field124 needs PlotPath session hold (Partial).
-        path.prunePathPoints({
-          timeBudgetMs: path.realtime ? SMOOTH_SELECTION_BUDGET_MS : undefined,
-        });
-        if(smooth) path.smoothCorners();
-        return path;
+        return this.finishWithSmoothSelection(path, owner, origin, dest, smooth);
       }
 
-      // DFS failed / timed out empty — try grid corridor before partial clear
+      this.clearSmoothSession(ownerId);
       const gridAfterPth = this.gridPathToComputed(owner, origin, dest, originPoint);
       if(gridAfterPth){
-        gridAfterPth.prunePathPoints({
-          timeBudgetMs: gridAfterPth.realtime ? SMOOTH_SELECTION_BUDGET_MS : undefined,
-        });
-        if(smooth) gridAfterPth.smoothCorners();
-        return gridAfterPth;
+        return this.finishWithSmoothSelection(gridAfterPth, owner, origin, dest, smooth);
       }
       return this.partialClearPath(owner, origin, dest, originPoint);
     }
 
     // Stage 3: no PTH — retail PlotGridPath @ 004c1a00
+    this.clearSmoothSession(ownerId);
     const gridPath = this.gridPathToComputed(owner, origin, dest, originPoint);
     if(gridPath){
-      gridPath.prunePathPoints({
-        timeBudgetMs: gridPath.realtime ? SMOOTH_SELECTION_BUDGET_MS : undefined,
-      });
-      if(smooth) gridPath.smoothCorners();
-      return gridPath;
+      return this.finishWithSmoothSelection(gridPath, owner, origin, dest, smooth);
     }
     return this.partialClearPath(owner, origin, dest, originPoint);
+  }
+
+  private endpointsMatch(
+    a: THREE.Vector3,
+    b: THREE.Vector3,
+    epsSq: number = 0.01
+  ): boolean {
+    return a.distanceToSquared(b) <= epsSq;
+  }
+
+  private clearSmoothSession(ownerId: number | undefined){
+    if(ownerId == null) return;
+    this.smoothResumeByOwner.delete(ownerId);
+    this.smoothSessionByOwner.delete(ownerId);
+  }
+
+  /**
+   * Continue SmoothSelectionRestartable without re-running PathPointDFS when
+   * the prior frame returned mid-pipeline (field124 + densify cursor).
+   */
+  private tryResumeSmoothOnly(
+    owner: ModuleObject,
+    origin: THREE.Vector3,
+    dest: THREE.Vector3,
+    smooth: boolean
+  ): ComputedPath | undefined {
+    const ownerId = owner?.id;
+    if(ownerId == null) return undefined;
+    const resume = this.smoothResumeByOwner.get(ownerId);
+    const session = this.smoothSessionByOwner.get(ownerId);
+    if(!resume || !session) return undefined;
+    if(
+      !this.endpointsMatch(session.origin, origin) ||
+      !this.endpointsMatch(session.dest, dest)
+    ){
+      this.clearSmoothSession(ownerId);
+      return undefined;
+    }
+
+    const pathPoints = session.points.map((v) => {
+      const p = PathPoint.FromVector3(v);
+      p.setArea(this.area);
+      return p;
+    });
+    if(pathPoints.length){
+      pathPoints[pathPoints.length - 1].end = true;
+    }
+    const path = ComputedPath.FromPointsList(pathPoints);
+    path.setOwner(owner);
+    return this.finishWithSmoothSelection(path, owner, origin, dest, smooth, resume);
+  }
+
+  /**
+   * Run SmoothSelectionRestartable (~10ms). On timeout, persist resume for next
+   * frame; on complete, clear session and optionally smoothCorners.
+   */
+  private finishWithSmoothSelection(
+    path: ComputedPath,
+    owner: ModuleObject,
+    origin: THREE.Vector3,
+    dest: THREE.Vector3,
+    smooth: boolean,
+    resume?: SmoothSelectionResume
+  ): ComputedPath {
+    const ownerId = owner?.id;
+    path.prunePathPoints({
+      timeBudgetMs: SMOOTH_SELECTION_BUDGET_MS,
+      resume: resume ?? (ownerId != null ? this.smoothResumeByOwner.get(ownerId) : undefined),
+    });
+
+    if(path.smoothResume && ownerId != null){
+      this.smoothResumeByOwner.set(ownerId, path.smoothResume);
+      this.smoothSessionByOwner.set(ownerId, {
+        origin: origin.clone(),
+        dest: dest.clone(),
+        points: path.points.map((p) => p.vector.clone()),
+      });
+      // MoveTo clears realtime paths → next calculatePath resumes smooth only
+      path.realtime = true;
+      path.timer = Math.min(path.timer || 20, 8);
+      return path;
+    }
+
+    this.clearSmoothSession(ownerId);
+    if(smooth) path.smoothCorners();
+    return path;
   }
 
   /**

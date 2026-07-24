@@ -226,6 +226,12 @@ export class MenuManager {
     for(let i = 0, len = MenuManager.activeMenus.length; i < len; i++){
       MenuManager.activeMenus[i].resize();
     }
+    for(let i = 0, len = MenuManager.activeModals.length; i < len; i++){
+      MenuManager.activeModals[i].resize();
+    }
+    if(MenuManager.InGameOverlay?.bVisible){
+      MenuManager.InGameOverlay.resize();
+    }
   }
 
   static Update(delta = 0){

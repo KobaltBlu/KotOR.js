@@ -1,6 +1,7 @@
 import { GameState } from "@/GameState";
 import { EngineMode } from "@/enums/engine/EngineMode";
-import { GameMenu, LBL_MapView } from "@/gui";
+import { FeedbackOption } from "@/enums/engine/FeedbackOption";
+import { GameMenu, LBL_MapView, GUIPanelCoordFlags } from "@/gui";
 import type { GUILabel, GUIButton, GUICheckBox, GUIProgressBar } from "@/gui";
 import { TextureLoader } from "@/loaders";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
@@ -223,6 +224,11 @@ export class InGameOverlay extends GameMenu {
     this.voidFill = false;
     this.enablePositionScaling = true;
     this.userCanClose = false;
+    // Retail HUD docks to 640×480 letterbox (not centered modal panels).
+    this.panelCoordFlags =
+      GUIPanelCoordFlags.UseExtentOffset |
+      GUIPanelCoordFlags.DockDesignX |
+      GUIPanelCoordFlags.DockDesignY;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -1300,11 +1306,34 @@ export class InGameOverlay extends GameMenu {
     }
   }
 
+  /**
+   * Retail CGuiInGame::GetMiniMapVisible / InitializeMap —
+   * Feedback Mini Map option and minigame gate HUD map border + MapView.
+   */
+  updateMiniMapVisibility(){
+    const hasMap = !!GameState.module?.area?.areaMap?.mapResX;
+    const show =
+      hasMap &&
+      GameState.FeedbackMessageManager.GetFeedbackTypeEnabled(FeedbackOption.MiniMap) &&
+      !GameState.module?.area?.miniGame;
+
+    if(show){
+      this.LBL_MAPBORDER?.show();
+      this.LBL_MAPVIEW?.show();
+      this.miniMap?.setVisible(true);
+    }else{
+      this.LBL_MAPBORDER?.hide();
+      this.LBL_MAPVIEW?.hide();
+      this.miniMap?.setVisible(false);
+    }
+  }
+
   update(delta = 0) {
     super.update(delta);
     if (!this.bVisible)
       return;
 
+    this.updateMiniMapVisibility();
     if (GameState.module.area.miniGame) { return; }
 
     const oPC = GameState.getCurrentPlayer();
@@ -1328,10 +1357,12 @@ export class InGameOverlay extends GameMenu {
       this.UpdateActionDescription();
     }
 
-    //update minimap
-    this.miniMap.setPosition(oPC.position.x, oPC.position.y);
-    this.miniMap.setRotation(GameState.controls.camera.rotation.z);
-    this.miniMap.render(delta);
+    //update minimap — retail uses creature yaw, not camera
+    if(this.miniMap?.visible){
+      this.miniMap.setPosition(oPC.position.x, oPC.position.y);
+      this.miniMap.setRotation(oPC.getFacing());
+      this.miniMap.render(delta);
+    }
 
     this.TogglePartyMember(0, false);
     this.TogglePartyMember(1, false);

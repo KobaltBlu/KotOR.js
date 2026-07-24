@@ -44,7 +44,7 @@ export class GUIProtoItem extends GUIControl{
       const vw = typeof list.getViewportWidth === 'function'
         ? list.getViewportWidth()
         : list.extent.width - (list.scrollbar ? list.scrollbar.extent.width : 0);
-      this.extent.width = Math.max(1, vw - list.padding * 2);
+      this.setExtentWidth(Math.max(1, asExtentInt(vw - list.padding * 2)));
     }
 
     this.onSelect = () => {

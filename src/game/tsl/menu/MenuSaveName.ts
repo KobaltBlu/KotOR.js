@@ -1,4 +1,4 @@
-import type { GUIButton, GUILabel } from "@/gui";
+import type { GUIButton, GUILabel, GUIEditBox } from "@/gui";
 import { MenuSaveName as K1_MenuSaveName } from "@/game/kotor/KOTOR";
 
 /**
@@ -16,7 +16,7 @@ export class MenuSaveName extends K1_MenuSaveName {
 
   declare BTN_OK: GUIButton;
   declare BTN_CANCEL: GUIButton;
-  declare EDITBOX: GUILabel;
+  declare EDITBOX: GUIEditBox;
   declare LBL_TITLE: GUILabel;
 
   constructor(){

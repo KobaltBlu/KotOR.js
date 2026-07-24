@@ -1,6 +1,6 @@
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
+import type { GUILabel, GUIButton, GUIEditBox } from "@/gui";
 
 /**
  * CharGenName class.
@@ -15,7 +15,7 @@ export class CharGenName extends GameMenu {
 
   MAIN_TITLE_LBL: GUILabel;
   SUB_TITLE_LBL: GUILabel;
-  NAME_BOX_EDIT: GUILabel;
+  NAME_BOX_EDIT: GUIEditBox;
   END_BTN: GUIButton;
   BTN_RANDOM: GUIButton;
   BTN_BACK: GUIButton;
@@ -31,7 +31,8 @@ export class CharGenName extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve) => {
-      this.NAME_BOX_EDIT.setEditable(true);
+      // Retail CSWGuiNameChargen max length 0x12
+      this.NAME_BOX_EDIT.setMaxLength(18);
 
       this.BTN_BACK.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -58,6 +59,8 @@ export class CharGenName extends GameMenu {
   show() {
     super.show();
     this.NAME_BOX_EDIT.setText(GameState.CharGenManager.selectedCreature.firstName);
+    this.manager.activeGUIElement = this.NAME_BOX_EDIT;
+    this.selectedControl = this.NAME_BOX_EDIT;
   }
   
 }

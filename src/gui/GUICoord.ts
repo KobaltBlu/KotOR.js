@@ -1,4 +1,5 @@
 import type { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 
 /**
  * Retail GUI design letterbox base (CSWGuiPanel HitCheckMouse / GetLocalMouseCoords).
@@ -8,22 +9,25 @@ export const GUI_DESIGN_WIDTH = 640;
 export const GUI_DESIGN_HEIGHT = 480;
 
 /**
- * Retail CSWGuiPanel bit_flags used by GetLocalMouseCoords / GetExtentAccountingForPanelOffset.
- * K1 Panel ctor seeds unrelated bits (`| 0x84`); callers may OR these as needed.
+ * Semantic panel coord flags for GetLocalMouseCoords / GetExtentAccountingForPanelOffset.
  *
- * TSL Aspyr @ 0090e4a0 uses the same 640×480 dock math but a slightly different gate:
- * dock applies when bit3 is clear, with dock-X/Y on bits 4/5 — no separate center path.
- * Our flag values follow K1; UseExtentOffset (bit0) is shared by both.
+ * K1 @ 0040aa00 bit layout: CenterInViewport=bit3, DockDesignX=bit5, DockDesignY=bit6.
+ * TSL Aspyr @ 0090e4a0 uses different raw bits for dock (bit4/bit5) and has no center path —
+ * callers still OR these semantic flags; the engine branch applies the correct gate.
+ * UseExtentOffset (bit0) is shared by both.
  */
 export enum GUIPanelCoordFlags {
   None = 0,
   /** When set: use GetExtentAccountingForPanelOffset (no 640×480 mouse letterbox). Bit 0. */
   UseExtentOffset = 0x1,
-  /** Center panel in viewport: left/top += (viewport - extent) / 2. Bit 3 (0x8). */
+  /**
+   * K1: center panel in viewport (bit 3).
+   * TSL Aspyr: when set, skip dock (bit 3 clear is required to dock).
+   */
   CenterInViewport = 0x8,
-  /** Dock X: left += (viewportWidth - 640) / 2. Bit 5 (0x20). */
+  /** Dock X: left += (viewportWidth - 640) / 2. Semantic; K1 bit5 / TSL Aspyr bit4. */
   DockDesignX = 0x20,
-  /** Dock Y: top += (viewportHeight - 480) / 2. Bit 6 (0x40). */
+  /** Dock Y: top += (viewportHeight - 480) / 2. Semantic; K1 bit6 / TSL Aspyr bit5. */
   DockDesignY = 0x40,
 }
 
@@ -47,27 +51,45 @@ export function copyExtentInt(src: IGUIControlExtent): IGUIControlExtent {
 }
 
 /**
- * Retail CSWGuiPanel::GetExtentAccountingForPanelOffset @ 0040aa00.
+ * Retail CSWGuiPanel::GetExtentAccountingForPanelOffset.
+ * K1 @ 0040aa00 — center (bit3) returns early; else dock X/Y (bits 5/6).
+ * TSL Aspyr @ 0090e4a0 — if bit3 set, copy only; else dock when dock flags set.
  */
 export function getExtentAccountingForPanelOffset(
   extent: IGUIControlExtent,
   viewportWidth: number,
   viewportHeight: number,
   flags: number = GUIPanelCoordFlags.None,
+  engine: GameEngineType = GameEngineType.KOTOR,
 ): IGUIControlExtent {
   const out = copyExtentInt(extent);
   const vpW = asExtentInt(viewportWidth);
   const vpH = asExtentInt(viewportHeight);
 
-  if ((flags & GUIPanelCoordFlags.CenterInViewport) !== 0) {
+  if(engine === GameEngineType.TSL){
+    // Aspyr @ 0090e4a0: CenterInViewport set → no dock; else apply DockDesignX/Y.
+    if((flags & GUIPanelCoordFlags.CenterInViewport) !== 0){
+      return out;
+    }
+    if((flags & GUIPanelCoordFlags.DockDesignX) !== 0){
+      out.left = out.left + truncDiv(vpW - GUI_DESIGN_WIDTH, 2);
+    }
+    if((flags & GUIPanelCoordFlags.DockDesignY) !== 0){
+      out.top = out.top + truncDiv(vpH - GUI_DESIGN_HEIGHT, 2);
+    }
+    return out;
+  }
+
+  // K1 @ 0040aa00
+  if((flags & GUIPanelCoordFlags.CenterInViewport) !== 0){
     out.left = out.left + truncDiv(vpW - out.width, 2);
     out.top = out.top + truncDiv(vpH - out.height, 2);
     return out;
   }
-  if ((flags & GUIPanelCoordFlags.DockDesignX) !== 0) {
+  if((flags & GUIPanelCoordFlags.DockDesignX) !== 0){
     out.left = out.left + truncDiv(vpW - GUI_DESIGN_WIDTH, 2);
   }
-  if ((flags & GUIPanelCoordFlags.DockDesignY) !== 0) {
+  if((flags & GUIPanelCoordFlags.DockDesignY) !== 0){
     out.top = out.top + truncDiv(vpH - GUI_DESIGN_HEIGHT, 2);
   }
   return out;
@@ -93,13 +115,14 @@ export function getLocalMouseCoords(
   screenWidth: number,
   screenHeight: number,
   flags: number = GUIPanelCoordFlags.UseExtentOffset,
+  engine: GameEngineType = GameEngineType.KOTOR,
 ): IGUILocalMouse {
   let x = asExtentInt(mouseX);
   let y = asExtentInt(mouseY);
   const screenW = asExtentInt(screenWidth);
   const screenH = asExtentInt(screenHeight);
 
-  if ((flags & GUIPanelCoordFlags.UseExtentOffset) === 0) {
+  if((flags & GUIPanelCoordFlags.UseExtentOffset) === 0){
     x = x - truncDiv(screenW - GUI_DESIGN_WIDTH, 2);
     y = y - truncDiv(screenH - GUI_DESIGN_HEIGHT, 2);
     x = x - asExtentInt(panelExtent.left);
@@ -107,7 +130,7 @@ export function getLocalMouseCoords(
     return { x, y };
   }
 
-  const adjusted = getExtentAccountingForPanelOffset(panelExtent, screenW, screenH, flags);
+  const adjusted = getExtentAccountingForPanelOffset(panelExtent, screenW, screenH, flags, engine);
   x = x - adjusted.left;
   y = y - adjusted.top;
   return { x, y };

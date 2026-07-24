@@ -3,7 +3,7 @@ import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleItem, ModuleObject, ModuleArea } from "@/module";
+import type { ModuleCreature, ModuleItem, ModuleObject, ModuleArea, ModuleWaypoint } from "@/module";
 import { BitWise } from "@/utility/BitWise";
 import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { NWScriptDef } from "@/nwscript/NWScriptDef";
@@ -2857,7 +2857,12 @@ NWScriptDefK2.Actions = {
     name: 'SetMapPinEnabled',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleWaypoint)) return;
+      const waypoint = args[0] as ModuleWaypoint;
+      if(!waypoint.hasMapNote) return;
+      waypoint.mapNoteEnabled = !!args[1];
+    }
   },
   387: {
     comment: '387: Create a Hit Point Change When Dying effect.\n- fHitPointChangePerRound: this can be positive or negative, but not zero.\n* Returns an effect of type EFFECT_TYPE_INVALIDEFFECT if fHitPointChangePerRound is 0.',
@@ -2985,7 +2990,11 @@ NWScriptDefK2.Actions = {
     name: 'ExploreAreaForPlayer',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleArea)){
+        (args[0] as ModuleArea).areaMap.revealEntireMap();
+      }
+    }
   },
   404: {
     comment: '404: The creature will equip the armour in its possession that has the highest\narmour class.',
@@ -3835,7 +3844,9 @@ NWScriptDefK2.Actions = {
     name: 'RevealMap',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.VECTOR, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [THREE.Vector3, number]){
+      GameState.module.area.areaMap.revealPosition(args[0].x, args[0].y, args[1]);
+    }
   },
   516: {
     comment: '516: SetTutorialWindowsEnabled\nSets whether or not the tutorial windows are enabled (ie. whether or not they will\nappear when certain things happen for the first time).',

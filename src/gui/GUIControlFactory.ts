@@ -2,6 +2,7 @@ import type { GFFStruct } from "@/resource/GFFStruct";
 import { GUIButton } from "@/gui/GUIButton";
 import { GUICheckBox } from "@/gui/GUICheckBox";
 import { GUIControl } from "@/gui/GUIControl";
+import { GUIEditBox } from "@/gui/GUIEditBox";
 import { GUILabel } from "@/gui/GUILabel";
 import { GUIListBox } from "@/gui/GUIListBox";
 import { GUIProgressBar } from "@/gui/GUIProgressBar";
@@ -23,6 +24,7 @@ export class GUIControlFactory {
 
   static GUIControl: typeof GUIControl = GUIControl;
   static GUILabel: typeof GUILabel = GUILabel;
+  static GUIEditBox: typeof GUIEditBox = GUIEditBox;
   static GUIButton: typeof GUIButton = GUIButton;
   static GUICheckBox: typeof GUICheckBox = GUICheckBox;
   static GUISlider: typeof GUISlider = GUISlider;
@@ -31,7 +33,16 @@ export class GUIControlFactory {
   static GUIProtoItem: typeof GUIProtoItem = GUIProtoItem;
   static GUIScrollBar: typeof GUIScrollBar = GUIScrollBar;
 
+  /**
+   * Retail InitControl constructs CSWGuiEditbox by TAG (NAME_BOX_EDIT / EDITBOX),
+   * not GFF CONTROLTYPE — chargen @ 006f9e70 / save-name @ 006cae70.
+   */
   static FromStruct(struct: GFFStruct, menu: GameMenu, parent: GUIControl, scale: boolean): GUIControl {
+    const tag = struct.hasField('TAG') ? String(struct.getFieldByLabel('TAG')?.getValue() ?? '') : '';
+    if(tag === 'NAME_BOX_EDIT' || tag === 'EDITBOX'){
+      return new GUIEditBox(menu, struct, parent, scale);
+    }
+
     const type = ( struct.hasField('CONTROLTYPE') ? struct.getFieldByLabel('CONTROLTYPE')?.getValue() : -1 );
     switch(type){
       case 4:

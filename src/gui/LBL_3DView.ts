@@ -3,6 +3,7 @@ import { GameState } from "@/GameState";
 import type { LightManager } from "@/managers";
 import { OdysseyModel3D, OdysseyLightingBinder } from "@/three/odyssey";
 import type { GUIControl } from "@/gui/GUIControl";
+import { asExtentInt } from "@/gui/GUICoord";
 
 /**
  * LBL_3DView class.
@@ -43,10 +44,11 @@ export class LBL_3DView {
    */
   lightFocus = new THREE.Vector3(0, 0, 0);
 
-  constructor(width: number = 800, height: number = 600){
+  /** Standalone fallback only; prefer control extent via setControl. */
+  constructor(width: number = 1, height: number = 1){
 
-    this.width = width;//window.innerWidth;
-    this.height = height;//window.innerHeight;
+    this.width = Math.max(1, asExtentInt(width));
+    this.height = Math.max(1, asExtentInt(height));
     this.visible = false;
     this.frustumMat4 = new THREE.Matrix4();
     this.viewportFrustum = new THREE.Frustum();
@@ -92,7 +94,11 @@ export class LBL_3DView {
 
   setControl(control: GUIControl){
     this.control = control;
-    
+
+    const w = Math.max(1, asExtentInt(control.extent?.width ?? this.width));
+    const h = Math.max(1, asExtentInt(control.extent?.height ?? this.height));
+    this.setSize(w, h);
+
     this.control.setFillTexture(this.texture.texture);
     // this.control.getFill().material.uniforms.map.value = this.texture.texture;
     this.control.getFill().material.uniforms.diffuse.value.setHex(0xFFFFFF);
@@ -123,8 +129,8 @@ export class LBL_3DView {
   }
 
   setSize(width = 0, height = 0){
-    this.width = width;
-    this.height = height;
+    this.width = Math.max(1, asExtentInt(width));
+    this.height = Math.max(1, asExtentInt(height));
     this.tDepth.setSize(this.width, this.height);
     this.updateRatio();
   }

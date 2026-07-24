@@ -1,4 +1,4 @@
-import type { GUILabel, GUIButton } from "@/gui";
+import type { GUILabel, GUIButton, GUIEditBox } from "@/gui";
 import { CharGenName as K1_CharGenName } from "@/game/kotor/KOTOR";
 
 /**
@@ -14,7 +14,7 @@ export class CharGenName extends K1_CharGenName {
 
   declare MAIN_TITLE_LBL: GUILabel;
   declare SUB_TITLE_LBL: GUILabel;
-  declare NAME_BOX_EDIT: GUILabel;
+  declare NAME_BOX_EDIT: GUIEditBox;
   declare END_BTN: GUIButton;
   declare BTN_RANDOM: GUIButton;
   declare BTN_BACK: GUIButton;

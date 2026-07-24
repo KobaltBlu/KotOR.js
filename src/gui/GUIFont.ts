@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { TXI } from "@/resource/TXI";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
@@ -43,10 +44,10 @@ export class GUIFont {
       this.ratio = texture.image.width / texture.image.height;
 
       // Retail CAurGUIStringInternal::GetFontPixelHeight / GetIdealPixelHeight
-      this.height = this.txi.fontheight     * 100 * this.scale;
-      this.bsline = this.txi.baselineheight * 100 * this.scale;
-      this.spaceR = this.txi.spacingr       * 100 * this.scale;
-      this.spaceB = this.txi.spacingb       * 100 * this.scale;
+      this.height = asExtentInt(this.txi.fontheight     * 100 * this.scale);
+      this.bsline = asExtentInt(this.txi.baselineheight * 100 * this.scale);
+      this.spaceR = asExtentInt(this.txi.spacingr       * 100 * this.scale);
+      this.spaceB = asExtentInt(this.txi.spacingb       * 100 * this.scale);
       this.lineStep = this.height + this.spaceB;
       this.charCount = this.txi.numchars;
 
@@ -263,7 +264,7 @@ export class GUIFont {
       if(horizontal == GUIControlAlignment.HorizontalLeft){
         lineX = 0;
       }else if(horizontal == GUIControlAlignment.HorizontalCenter){
-        lineX = (maxWidth - line.width) / 2;
+        lineX = truncDiv(maxWidth - line.width, 2);
       }else if(horizontal == GUIControlAlignment.HorizontalRight){
         lineX = maxWidth - line.width;
       }
@@ -363,7 +364,7 @@ export class GUIFontChar {
     this.lr = lrArr[idx] || {x: 0, y: 0, z: 0};
 
     // Retail: (lr.x - ul.x) * texturewidth  [world] → * 100 for GUI pixels
-    this.contentWidth = ((this.lr.x - this.ul.x) * font.txi.texturewidth) * font.scale * 100;
+    this.contentWidth = asExtentInt(((this.lr.x - this.ul.x) * font.txi.texturewidth) * font.scale * 100);
     this.width = this.contentWidth + font.spaceR;
     this.height = font.height;
   }

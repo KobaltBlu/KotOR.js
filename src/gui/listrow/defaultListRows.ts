@@ -118,8 +118,8 @@ export function createDefaultButtonRow(
   let ctrl: GUIControl;
   try {
     ctrl = new menu.factory.GUIButton(menu, protoTemplate.control, list, scale);
-    ctrl.extent.height = protoTemplate.extent.height;
-    ctrl.extent.width = protoTemplate.extent.width;
+    ctrl.setExtentHeight(protoTemplate.extent.height);
+    ctrl.setExtentWidth(protoTemplate.extent.width);
     ctrl.guiFont = protoTemplate.guiFont;
     ctrl.isProtoItem = false;
     ctrl.offset = list.offset;

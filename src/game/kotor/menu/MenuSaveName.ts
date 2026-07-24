@@ -1,5 +1,5 @@
 import { GameMenu } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
+import type { GUILabel, GUIButton, GUIEditBox } from "@/gui";
 
 /**
  * MenuSaveName class.
@@ -16,7 +16,7 @@ export class MenuSaveName extends GameMenu {
 
   BTN_OK: GUIButton;
   BTN_CANCEL: GUIButton;
-  EDITBOX: GUILabel;
+  EDITBOX: GUIEditBox;
   LBL_TITLE: GUILabel;
 
   onSave: ((name: string) => void) | undefined;
@@ -33,7 +33,7 @@ export class MenuSaveName extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve) => {
-      this.EDITBOX.setEditable(true);
+      // Retail save edit max length 0x10 (GUIEditBox default)
 
       this.BTN_OK.addEventListener('click', () => {
         const name = String(this.EDITBOX.getValue?.() ?? '').trim();

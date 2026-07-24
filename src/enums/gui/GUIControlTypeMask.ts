@@ -19,4 +19,5 @@ export enum GUIControlTypeMask {
   GUIProtoItem    = (1 << 7),
   GUIScrollBar    = (1 << 8),
   GUISlider       = (1 << 9),
+  GUIEditBox      = (1 << 10),
 }

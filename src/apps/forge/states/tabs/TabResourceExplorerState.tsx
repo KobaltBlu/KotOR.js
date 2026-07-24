@@ -621,33 +621,28 @@ export class TabResourceExplorerState extends TabState {
         const files = await KotOR.GameFileSystem.readdir('Saves', { recursive: true });
         const saveArchives = files.filter((filepath: string) => filepath.toLowerCase().endsWith('savegame.sav'));
 
+        // Enumerate only — load each SAVEGAME.sav ERF when the user expands it.
         for (const savePath of saveArchives) {
-          try {
-            const erf = new KotOR.ERFObject(savePath);
-            await erf.load();
-
-            const archiveNode = await TabResourceExplorerState.BuildArchiveBrowserNode(
-              erf,
-              savePath.split(path.sep).pop() || 'SAVEGAME.sav',
-              savePath,
-              undefined
-            );
-
-            // Keep save folder context for similarly named archive files.
-            if (archiveNode.nodes.length) {
-              const saveFolderName = path.dirname(savePath).split(path.sep).pop() || 'Save';
-              const saveFolderNode = new FileBrowserNode({
-                name: saveFolderName,
-                type: 'group',
-                nodes: [archiveNode],
-                canOrphan: false,
-              });
-              archiveNode.parent = saveFolderNode;
-              savesRoot.addChildNode(saveFolderNode);
-            }
-          } catch (e) {
-            console.error('LoadSaves: failed to load save archive', savePath, e);
-          }
+          const archiveName = savePath.split(path.sep).pop() || 'SAVEGAME.sav';
+          const saveFolderName = path.dirname(savePath).split(path.sep).pop() || 'Save';
+          const archiveNode = new FileBrowserNode({
+            name: archiveName,
+            type: 'group',
+            data: {
+              lazyArchive: { diskPath: savePath },
+              lazyLoaded: false,
+            },
+            nodes: [],
+            canOrphan: false,
+          });
+          const saveFolderNode = new FileBrowserNode({
+            name: saveFolderName,
+            type: 'group',
+            nodes: [archiveNode],
+            canOrphan: false,
+          });
+          archiveNode.parent = saveFolderNode;
+          savesRoot.addChildNode(saveFolderNode);
         }
 
         savesRoot.sort();
@@ -731,6 +726,21 @@ export class TabResourceExplorerState extends TabState {
     }
 
     try {
+      // Top-level disk archive (e.g. SAVEGAME.sav under Saves/)
+      if (typeof lazyMeta.diskPath === 'string' && lazyMeta.diskPath.length) {
+        const diskArchive = new KotOR.ERFObject(lazyMeta.diskPath);
+        await diskArchive.load();
+        const expandedNode = await TabResourceExplorerState.BuildArchiveBrowserNode(
+          diskArchive,
+          node.name,
+          lazyMeta.diskPath,
+          undefined
+        );
+        node.nodes = expandedNode.nodes;
+        node.data.lazyLoaded = true;
+        return;
+      }
+
       let parentArchive: KotOR.ERFObject | undefined;
       if (lazyMeta.parentArchivePath) {
         parentArchive = new KotOR.ERFObject(lazyMeta.parentArchivePath);

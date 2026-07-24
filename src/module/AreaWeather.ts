@@ -368,6 +368,8 @@ export class AreaWeather {
         if(this.models[i]) continue;
         const model = await OdysseyModel3D.FromMDL(mdl, { context: GameState });
         model.playAnimation(type === WeatherCondition.SNOW ? 'snow' : 'rain', true);
+        // Retail Gob::SetEmitterAsWeather(1) — PartEmitter+0x1f8
+        this.markEmittersAsWeather(model);
         this.models[i] = model;
         group.add(model);
       }
@@ -390,6 +392,15 @@ export class AreaWeather {
       console.error(e);
     }finally{
       this._loadingLightning = false;
+    }
+  }
+
+  /** Retail Gob::SetEmitterAsWeather — mark every emitter under the weather Gob. */
+  private markEmittersAsWeather(model: OdysseyModel3D){
+    const emitters = model.emitters;
+    if(!emitters) return;
+    for(let i = 0; i < emitters.length; i++){
+      emitters[i].isWeather = true;
     }
   }
 
