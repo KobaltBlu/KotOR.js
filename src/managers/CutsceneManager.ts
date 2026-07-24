@@ -37,10 +37,9 @@ import {
   type DialogPseudoRandomState,
 } from "@/managers/dialog-camera";
 import {
-  auroraPitchFromVector,
-  auroraYawFromVector,
-  auroraYawPitchRoll,
+  auroraCameraLookOrientation,
 } from "@/utility/aurora-camera-orientation";
+import { ConfigClient } from "@/utility/ConfigClient";
 
 export class CutsceneManager {
 
@@ -916,6 +915,7 @@ export class CutsceneManager {
     this.cameraState.camHeightOffset = entry.camHeightOffset ?? 0;
     this.cameraState.tarHeightOffset = entry.tarHeightOffset ?? 0;
     this.cameraState.closeUpExtra = 0;
+    this.cameraState.camFieldOfView = entry.camFieldOfView;
 
     // Animated cut: try SetAnimatedCamera when anim id in retail range; else shot framing
     const useAnimated =
@@ -977,6 +977,7 @@ export class CutsceneManager {
     this.cameraState.camHeightOffset = reply.camHeightOffset ?? 0;
     this.cameraState.tarHeightOffset = reply.tarHeightOffset ?? 0;
     this.cameraState.closeUpExtra = 0;
+    this.cameraState.camFieldOfView = reply.camFieldOfView;
 
     // Angle 5: restore pre-swap participants and skip SetShot
     if(angle == DLGCameraAngle.ANGLE_FOCUS_PLAYER){
@@ -1148,7 +1149,9 @@ export class CutsceneManager {
    */
   static setDialogCamera(nAngle: DLGCameraAngle) {
     GameState.currentCamera = GameState.camera_dialog;
-    GameState.camera_dialog.fov = DIALOG_CAMERA_FOV;
+    const fov = this.cameraState.camFieldOfView;
+    GameState.camera_dialog.fov =
+      (typeof fov === 'number' && fov > 0) ? fov : DIALOG_CAMERA_FOV;
     GameState.camera_dialog.updateProjectionMatrix();
     this.cameraState.mode = CameraMode.DIALOG;
     // Fallbacks that still pass ANGLE_RANDOM (placeable miss, etc.)
@@ -1193,7 +1196,10 @@ export class CutsceneManager {
     dialog.position.copy(src.position);
     dialog.quaternion.copy(src.quaternion);
 
-    const modded = isDialogGameModded(GameState.Flags.EnableOverride, false);
+    const modded = isDialogGameModded(
+      GameState.Flags.EnableOverride,
+      !!ConfigClient.get('look_in_override')
+    );
     const aspyrVanilla = GameState.GameKey === GameEngineType.TSL;
     if(!modded && aspyrVanilla){
       applyAspyrPlaceableCameraHack(
@@ -1506,7 +1512,10 @@ export class CutsceneManager {
     const lpApp = BitWise.InstanceOfObject(listenerObj, ModuleObjectType.ModuleCreature)
       ? (listenerObj as ModuleCreature).getAppearance()?.id ?? -1
       : -1;
-    const modded = isDialogGameModded(GameState.Flags.EnableOverride, false);
+    const modded = isDialogGameModded(
+      GameState.Flags.EnableOverride,
+      !!ConfigClient.get('look_in_override')
+    );
     const aspyrVanilla = GameState.GameKey === GameEngineType.TSL;
     const aspyr = resolveAspyrAppearanceCameraOverrides(
       spApp, lpApp, shotType, modded, aspyrVanilla
@@ -1532,7 +1541,9 @@ export class CutsceneManager {
       );
     }
 
-    GameState.camera_dialog.fov = DIALOG_CAMERA_FOV;
+    const fov = this.cameraState.camFieldOfView;
+    GameState.camera_dialog.fov =
+      (typeof fov === 'number' && fov > 0) ? fov : DIALOG_CAMERA_FOV;
     GameState.camera_dialog.position.copy(this.#tmpDialogCamPos);
     // Retail Control @ 006bcf50: YawPitchRoll from GetCameraParameters quat
     // (not THREE.lookAt, which can introduce non-Aurora roll).
@@ -1542,20 +1553,12 @@ export class CutsceneManager {
   }
 
   /**
-   * Orient camera_dialog toward a look point using Aurora yaw/pitch (roll 0).
+   * Orient camera_dialog toward a look point using Aurora yaw/pitch (roll 0)
+   * with the placeable-camera +90° bridge so THREE −Z equals the look direction.
    */
   static applyDialogCameraLookAt(pos: THREE.Vector3, look: THREE.Vector3) {
     this.#tmpCamDir.set(look.x - pos.x, look.y - pos.y, look.z - pos.z);
-    if(this.#tmpCamDir.lengthSq() < 1e-12){
-      this.#tmpCamDir.set(0, 1, 0);
-    }else{
-      this.#tmpCamDir.normalize();
-    }
-    // Camera looks along local −Z; facing vector for Aurora extractors is the
-    // world direction the camera faces (pos → look).
-    const yaw = auroraYawFromVector(this.#tmpCamDir.x, this.#tmpCamDir.y, this.#tmpCamDir.z);
-    const pitch = auroraPitchFromVector(this.#tmpCamDir.x, this.#tmpCamDir.y, this.#tmpCamDir.z);
-    auroraYawPitchRoll(yaw, pitch, 0, this.#tmpCamQuat);
+    auroraCameraLookOrientation(this.#tmpCamDir, this.#tmpCamQuat);
     const dialog = GameState.camera_dialog;
     dialog.up.set(0, 0, 1);
     dialog.quaternion.copy(this.#tmpCamQuat);

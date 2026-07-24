@@ -12,12 +12,17 @@ describe("flourish-wield-dispatch", () => {
     expect(meleeWieldAnimationRow(4)).toBe(376);
   });
 
-  it("maps MELEE_COMBAT_WIELD / FLOURISH to g*w1 fireforget rows", () => {
+  it("maps MELEE_COMBAT_WIELD / FLOURISH to the same g*w1 fireforget rows", () => {
     expect(meleeCombatWieldAnimationRow(1)).toBe(91);
     expect(meleeCombatWieldAnimationRow(2)).toBe(132);
-    expect(meleeCombatWieldAnimationRow(3)).toBe(214);
+    expect(meleeCombatWieldAnimationRow(3)).toBe(173);
+    expect(meleeCombatWieldAnimationRow(4)).toBe(214);
     expect(flourishAnimationRow(1)).toBe(91);
+    expect(flourishAnimationRow(2)).toBe(132);
     expect(flourishAnimationRow(3)).toBe(173);
+    expect(flourishAnimationRow(4)).toBe(214);
+    expect(meleeCombatWieldAnimationRow(3)).toBe(flourishAnimationRow(3));
+    expect(meleeCombatWieldAnimationRow(4)).toBe(flourishAnimationRow(4));
   });
 });
 

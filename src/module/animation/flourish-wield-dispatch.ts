@@ -30,52 +30,33 @@ export function meleeWieldAnimationRow(weaponType: number): number {
 }
 
 /**
- * MELEE_COMBAT_WIELD / FLOURISH-family fireforget g*w1 rows.
- * Partial enum map 2=132,3=214,4=173; else FLOURISH table.
+ * FLOURISH (10246) / MELEE_COMBAT_WIELD (10158) fireforget g*w1 rows.
+ * Same table for both (research §9.2). Combat weapon type → animations.2da row.
  */
-export function meleeCombatWieldAnimationRow(weaponType: number): number {
-  switch(weaponType){
-    case 1:
-      return 91;
-    case 2:
-      return 132;
-    case 3:
-      return 214;
-    case 4:
-      return 173;
-    case 5:
-      return 222;
-    case 6:
-      return 136;
-    case 7:
-    case 9:
-      return 244;
-    case 8:
-    default:
-      return 373;
-  }
-}
-
-/** Same table as FLOURISH server ID 10246. */
 export function flourishAnimationRow(weaponType: number): number {
   switch(weaponType){
     case 1:
-      return 91;
+      return 91;   // g1w1
     case 2:
-      return 132;
+      return 132;  // g2w1 — single saber / one-hand sword
     case 3:
-      return 173;
+      return 173;  // g3w1 — double-blade
     case 4:
-      return 214;
+      return 214;  // g4w1 — dual wield
     case 5:
-      return 222;
+      return 222;  // g5w1
     case 6:
-      return 136;
+      return 136;  // c3a2 (ranged dual)
     case 7:
     case 9:
-      return 244;
+      return 244;  // g7w1
     case 8:
     default:
-      return 373;
+      return 373;  // equip
   }
+}
+
+/** Same g*w1 table as FLOURISH. */
+export function meleeCombatWieldAnimationRow(weaponType: number): number {
+  return flourishAnimationRow(weaponType);
 }

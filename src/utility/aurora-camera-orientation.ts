@@ -104,3 +104,36 @@ export function placeableCameraOrientation(
   const roll = auroraRollFromQuaternion(orientation);
   return auroraYawPitchRoll(yaw, pitch, roll, out);
 }
+
+/**
+ * Orient a Z-up Three.js camera so local −Z equals `dir` (world look direction).
+ *
+ * Aurora facing pitch 0 is horizontal (+Y for identity), but THREE cameras look
+ * along −Z. Placeable cameras bridge this with GIT Pitch ≈ 90°; dialog look-at
+ * must apply the same +90° camera-space offset so shots aim at the speaker.
+ *
+ * Composition: YawPitchRoll(Yaw(dir), Pitch(dir)+90, 0) — matches
+ * `placeableCameraOrientation(yawOnlyQuat, 90)` for horizontal dirs.
+ */
+export function auroraCameraLookOrientation(
+  dir: THREE.Vector3,
+  out: THREE.Quaternion = new THREE.Quaternion()
+): THREE.Quaternion {
+  let x = dir.x;
+  let y = dir.y;
+  let z = dir.z;
+  const lenSq = x * x + y * y + z * z;
+  if(lenSq < 1e-12){
+    x = 0;
+    y = 1;
+    z = 0;
+  }else if(Math.abs(lenSq - 1) > 1e-6){
+    const inv = 1 / Math.sqrt(lenSq);
+    x *= inv;
+    y *= inv;
+    z *= inv;
+  }
+  const yaw = auroraYawFromVector(x, y, z);
+  const pitch = auroraPitchFromVector(x, y, z) + 90;
+  return auroraYawPitchRoll(yaw, pitch, 0, out);
+}

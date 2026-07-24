@@ -2251,17 +2251,20 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Play flourish clip on equipped weapon Gobs; schedule PowerItem off.
+   * Play flourish clip on equipped weapon Gobs.
+   * Does not schedule PowerItem off — sabers stay ignited until combat state expires.
    */
   startWeaponGesture(clipName: string, durationSec: number){
     if(!clipName){ return; }
     let played = false;
     if(this.equipment.RIGHTHAND?.playWeaponGesture(clipName)){ played = true; }
     if(this.equipment.LEFTHAND?.playWeaponGesture(clipName)){ played = true; }
+    // Only arm the timer when a clip actually played on an item Gob.
+    if(!played){ return; }
     this.weaponGestureState = {
       animationName: clipName,
       remaining: Math.max(durationSec, 0.1),
-      active: played || true,
+      active: true,
     };
   }
 
@@ -2753,20 +2756,25 @@ export class ModuleCreature extends ModuleObject {
       if(this.equipment.RIGHTHAND.model instanceof OdysseyModel3D){
         this.equipment.RIGHTHAND.model.update(delta)
       }
+      this.equipment.RIGHTHAND.updatePoweredAnimation?.();
     }
 
     if(this.equipment.LEFTHAND){
       if(this.equipment.LEFTHAND.model instanceof OdysseyModel3D){
         this.equipment.LEFTHAND.model.update(delta)
       }
+      this.equipment.LEFTHAND.updatePoweredAnimation?.();
     }
 
     if(this.weaponGestureState?.active){
       this.weaponGestureState.remaining -= delta;
       if(this.weaponGestureState.remaining <= 0){
         this.weaponGestureState.active = false;
-        this.weaponPowered(false);
         this.resetWeaponGestureState();
+        // Retail OnFlourishClipFinished → RestoreWeaponPoweredState (keep on while combat).
+        if(this.combatData.combatState){
+          this.weaponPowered(true);
+        }
       }
     }
 
@@ -2774,6 +2782,12 @@ export class ModuleCreature extends ModuleObject {
       this.gestureState.remaining -= delta;
       if(this.gestureState.remaining <= 0){
         this.resetGestureState();
+        if(this.combatData.combatState){
+          this.weaponPowered(true);
+          if(this.animationState.index == ModuleCreatureAnimState.MELEE_COMBAT_WIELD){
+            this.setAnimationState(ModuleCreatureAnimState.READY);
+          }
+        }
       }
     }
 
@@ -2926,19 +2940,7 @@ export class ModuleCreature extends ModuleObject {
           stopFlag: resolveOverlayStopFlags(ModuleCreatureAnimState.MELEE_WIELD),
         };
       }
-      // Best-effort item Gob companion (often missing clip on weapon MDLs).
-      const flourishAnim = this.animationConstantToAnimation(ModuleCreatureAnimState.FLOURISH);
-      const clipName = flourishAnim?.name?.toLowerCase() || '';
-      const duration = this.getAnimationLength(ModuleCreatureAnimState.FLOURISH) || 1.5;
-      if(clipName){
-        this.startWeaponGesture(clipName, duration);
-      }else{
-        this.weaponGestureState = {
-          animationName: '',
-          remaining: duration,
-          active: true,
-        };
-      }
+      // Retail does not play body g*w1 clips on weapon MDLs here — PowerItem only.
       return;
     }
 
@@ -2960,10 +2962,6 @@ export class ModuleCreature extends ModuleObject {
       remaining: duration,
       active: true,
     };
-    const clipName = (combatWield || this.animationState.animation)?.name?.toLowerCase() || '';
-    if(clipName){
-      this.startWeaponGesture(clipName, duration);
-    }
   }
 
   /**

@@ -123,7 +123,7 @@ export enum ModuleCreatureAnimState {
 
 
   //MELEE_COMBAT_WIELD - depends on equipped weapons
-  //2=132,3=214,4=173
+  // Same g*w1 table as FLOURISH: 1=91,2=132,3=173,4=214,5=222,6=136,7=244,8=373,9=244
   MELEE_COMBAT_WIELD = 10158,
   TREAT_INJURED = 10159,
   TREAT_INJURED_LP = 10160,

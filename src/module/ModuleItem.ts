@@ -756,33 +756,50 @@ export class ModuleItem extends ModuleObject {
     return name + value;
   }
 
+  /** Desired PowerItem state — true while combat-powered (retail field40_0x19c). */
+  poweredDesired: boolean = false;
+  /** Queue looping `powered` after non-looping `powerup` finishes (PowerItem @ 00647130). */
+  pendingPoweredAnim: boolean = false;
+
   /**
-   * Set the weapon powered state and update the powered animation
+   * Set the weapon powered state and update the powered animation.
+   * Retail PowerItem plays powerup then queues powered (flag 0x20 follow-up).
    * @param powered - Whether the weapon should be powered
    */
   setPowered(powered: boolean){
     if(!(this.model instanceof OdysseyModel3D)){ return; }
+    this.poweredDesired = powered;
     const currentAnimL = this.model.animationManager.currentAnimation || this.model.odysseyAnimationMap.get('off');
     if(!currentAnimL){ return; }
+    const name = (currentAnimL.name || '').toLowerCase();
 
     //power up
     if(powered){
-      switch(currentAnimL.name){
+      switch(name){
         case 'off':
+        case 'powerdown':
+          this.pendingPoweredAnim = true;
           this.model.playAnimation('powerup');
         break;
         case 'powerup':
+          this.pendingPoweredAnim = true;
+        break;
+        case 'powered':
+          this.pendingPoweredAnim = false;
         break;
         default:
+          this.pendingPoweredAnim = false;
           this.model.playAnimation('powered', true);
         break;
       }
       return;
     }
-    
+
+    this.pendingPoweredAnim = false;
     //power down
-    switch(currentAnimL.name){
+    switch(name){
       case 'powered':
+      case 'powerup':
         this.model.playAnimation('powerdown');
       break;
       case 'powerdown':
@@ -790,6 +807,23 @@ export class ModuleItem extends ModuleObject {
       default:
         this.model.playAnimation('off', true);
       break;
+    }
+  }
+
+  /**
+   * Advance powerup → powered chain after the item Gob updates.
+   * Call each frame from creature updateItems while the model is ticking.
+   */
+  updatePoweredAnimation(){
+    if(!this.pendingPoweredAnim || !(this.model instanceof OdysseyModel3D)){ return; }
+    const anim = this.model.animationManager.currentAnimation;
+    const name = (anim?.name || '').toLowerCase();
+    // powerup finished (cleared) or already past it
+    if(!anim || name !== 'powerup'){
+      this.pendingPoweredAnim = false;
+      if(this.poweredDesired){
+        this.model.playAnimation('powered', true);
+      }
     }
   }
 

@@ -31,6 +31,8 @@ export interface ICameraState {
    * field137_0xbb8 / SetShot field5). Cleared when shot type ≠ 1.
    */
   closeUpExtra?: number;
+  /** CamFieldOfView from active entry/reply; ≤0 means use default 55. */
+  camFieldOfView?: number;
   listener: ICameraParticipant;
   speaker: ICameraParticipant;
 }

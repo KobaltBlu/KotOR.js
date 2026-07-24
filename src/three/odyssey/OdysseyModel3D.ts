@@ -31,6 +31,10 @@ import {
   type DanglyGroupParams,
   updateModelDanglyWind,
 } from "@/odyssey/DanglyWindSimulator";
+import {
+  initSaberTrailMesh,
+  updateModelSaberTrails,
+} from "@/odyssey/SaberTrailSimulator";
 import { type OdysseyModelNodeSkin } from "@/odyssey/OdysseyModelNodeSkin";
 import { type OdysseyModelNodeAABB } from "@/odyssey/OdysseyModelNodeAABB";
 import { type OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
@@ -73,6 +77,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
   context: IGameContext = undefined;
   meshes: any[] = [];
   danglyMeshes: any[] = [];
+  /** Retail PartLightsaber meshes — updated by SaberTrailSimulator */
+  saberMeshes: THREE.Mesh[] = [];
   odysseyAnimations: OdysseyModelAnimation[] = [];
   odysseyAnimationMap: Map<string, OdysseyModelAnimation> = new Map<string, OdysseyModelAnimation>();
   emitters: OdysseyEmitter3D[] = [];
@@ -347,6 +353,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
       }
       this.meshes = [];
       this.danglyMeshes = [];
+      this.saberMeshes = [];
       this.odysseyAnimations = [];
       this.emitters = [];
       this.lights = [];
@@ -622,6 +629,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
     }
 
     updateModelDanglyWind(this, GameState.windManager, dt);
+    updateModelSaberTrails(this, dt);
 
     this.oddFrame = !this.oddFrame;
 
@@ -1273,9 +1281,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
   ){
     try{
       //Create geometry only if the mesh is visible or it is a walkmesh
+      const isSaber =
+        (odysseyNode.nodeType & OdysseyModelNodeType.Saber) === OdysseyModelNodeType.Saber;
 
-      //Make sure there is at least one face before we attempt to build the mesh
-      if(odysseyNode.faces.length ){
+      // Sabers often have empty faces[] but valid verts/indices — still build the mesh.
+      if(odysseyNode.faces.length || (isSaber && odysseyNode.vertices.length) ){
 
         if(!odysseyNode.isAnimDummyNode){
           //de-opt geometry if no uv's are present, we currently cannot handle this issue.
@@ -1299,23 +1309,23 @@ export class OdysseyModel3D extends OdysseyObject3D {
           if ((odysseyNode.nodeType & OdysseyModelNodeType.AABB) != OdysseyModelNodeType.AABB) {
 
             geometry = new THREE.BufferGeometry();
-            geometry.setIndex(odysseyNode.indices); //Works with indices
+            if(odysseyNode.indices.length){
+              geometry.setIndex(odysseyNode.indices);
+            }
 
             //Positions
             geometry.setAttribute( 'position', new THREE.Float32BufferAttribute( odysseyNode.vertices, 3 ) ); //Works with indices
 
             //Normals
-            geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( odysseyNode.normals, 3 ) );//.copyArray( odysseyNode.normals ) ); //Works with indices
+            if(odysseyNode.normals.length){
+              geometry.setAttribute( 'normal', new THREE.Float32BufferAttribute( odysseyNode.normals, 3 ) );
+            }
 
-            //Color
-            // // const color = new Float32Array( odysseyNode.vertices.length ); //Works with indices
-            // geometry.setAttribute( 'color', new THREE.Float32BufferAttribute( odysseyNode.vertices, 3 ) );//.copyArray( new Array(odysseyNode.vertices.length).fill(1, 0, odysseyNode.vertices.length) ) ); //Works with indices
-            
             //UV1
-            geometry.setAttribute(  'uv', new THREE.Float32BufferAttribute( odysseyNode.tvectors[0], 2 ) );//.copyArray( odysseyNode.tvectors[0] ) ); //Works with indices
+            geometry.setAttribute(  'uv', new THREE.Float32BufferAttribute( odysseyNode.tvectors[0], 2 ) );
             
             //UV2
-            geometry.setAttribute( 'uv2', new THREE.Float32BufferAttribute( odysseyNode.tvectors[1], 2 ) );//.copyArray( odysseyNode.tvectors[1] ) ); //Works with indices
+            geometry.setAttribute( 'uv2', new THREE.Float32BufferAttribute( odysseyNode.tvectors[1], 2 ) );
             
             //--------------------------//
             // SKIN GEOMETRY ATTRIBUTES
@@ -1409,22 +1419,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
           //Need to see if this affects memory usage
           mesh.userData.odysseyModel = odysseyModel;
 
-          // if((odysseyNode.NodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB && odysseyNode instanceof OdysseyModelNodeAABB){
-          //   odysseyModel.walkmesh = (mesh as THREE.Mesh);
-          //   mesh.material.visible = false;
-          // }
-          
-          //RenderOrder
-          // if(odysseyNode.BackgroundGeometry){
-          //   mesh.renderOrder = 1000;
-          // }else if(/* NodeParseContext.flags */ isChildrenDynamic){
-          //   mesh.renderOrder = 5000;
-          // }
-
           //----------------//
           // MERGE GEOMETRY
           //----------------//
-          if(!((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.backgroundGeometry && options.mergeStatic && !odysseyNode.isAnimDummyNode && odysseyNode.faces.length){
+          // Sabers must stay as live PartLightsaber meshes (trail rebuild each frame).
+          if(!isSaber && !((odysseyNode.nodeType & OdysseyModelNodeType.AABB) == OdysseyModelNodeType.AABB) && !odysseyNode.backgroundGeometry && options.mergeStatic && !odysseyNode.isAnimDummyNode && odysseyNode.faces.length){
 
             parentNode.getWorldPosition( mesh.position );
             parentNode.getWorldQuaternion( mesh.quaternion );
@@ -1475,6 +1474,10 @@ export class OdysseyModel3D extends OdysseyObject3D {
               initDanglyWindMesh(mesh, odysseyNode as OdysseyModelNodeDangly);
               odysseyModel.danglyMeshes.push(mesh);
             }
+            if (isSaber) {
+              initSaberTrailMesh(mesh, odysseyNode as OdysseyModelNodeSaber);
+              odysseyModel.saberMeshes.push(mesh);
+            }
             const isAabb = (odysseyNode.nodeType & OdysseyModelNodeType.AABB) === OdysseyModelNodeType.AABB;
             if(!isAabb || options.attachMdlAabbMesh){
               parentNode.add( mesh );
@@ -1483,8 +1486,9 @@ export class OdysseyModel3D extends OdysseyObject3D {
             if(!isAabb){
               // MDL flagShadow selects casters; options.castShadow forces casting for
               // creatures/placeables so stencil shadow disks have geometry to mask.
-              mesh.castShadow = !!odysseyNode.flagShadow || !!options.castShadow;
-              mesh.receiveShadow = options.receiveShadow;
+              // Sabers are additive ribbons — do not cast shadows.
+              mesh.castShadow = isSaber ? false : (!!odysseyNode.flagShadow || !!options.castShadow);
+              mesh.receiveShadow = isSaber ? false : options.receiveShadow;
             }else if(options.attachMdlAabbMesh){
               mesh.castShadow = false;
               mesh.receiveShadow = false;
@@ -1630,6 +1634,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
       if((odysseyNode.nodeType & OdysseyModelNodeType.Saber) == OdysseyModelNodeType.Saber){
         material.defines.IGNORE_LIGHTING = "";
         material.defines.SABER = "";
+        // Retail enableLightsaberBlurAdd — additive, no depth write, double-sided.
+        material.transparent = true;
+        material.blending = THREE.AdditiveBlending;
+        material.depthWrite = false;
+        material.side = THREE.DoubleSide;
       }
 
       if(options.isHologram){

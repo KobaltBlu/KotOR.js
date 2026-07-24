@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import * as THREE from "three";
 import {
+  auroraCameraLookOrientation,
   auroraPitchFromQuaternion,
   auroraYawFromQuaternion,
   auroraYawPitchRoll,
@@ -80,5 +81,55 @@ describe("aurora-camera-orientation", () => {
       expect(legacyLook.y).toBeCloseTo(retailLook.y, 4);
       expect(legacyLook.z).toBeCloseTo(retailLook.z, 4);
     }
+  });
+
+  describe("auroraCameraLookOrientation", () => {
+    it("aims THREE -Z along +Y (horizontal)", () => {
+      const q = auroraCameraLookOrientation(new THREE.Vector3(0, 1, 0));
+      const d = cameraLook(q);
+      expect(d.x).toBeCloseTo(0, 5);
+      expect(d.y).toBeCloseTo(1, 5);
+      expect(d.z).toBeCloseTo(0, 5);
+    });
+
+    it("aims along ±X horizontally", () => {
+      const qPos = auroraCameraLookOrientation(new THREE.Vector3(1, 0, 0));
+      const dPos = cameraLook(qPos);
+      expect(dPos.x).toBeCloseTo(1, 5);
+      expect(dPos.y).toBeCloseTo(0, 5);
+      expect(dPos.z).toBeCloseTo(0, 5);
+
+      const qNeg = auroraCameraLookOrientation(new THREE.Vector3(-1, 0, 0));
+      const dNeg = cameraLook(qNeg);
+      expect(dNeg.x).toBeCloseTo(-1, 5);
+      expect(dNeg.y).toBeCloseTo(0, 5);
+      expect(dNeg.z).toBeCloseTo(0, 5);
+    });
+
+    it("aims straight down and up", () => {
+      const qDown = auroraCameraLookOrientation(new THREE.Vector3(0, 0, -1));
+      const dDown = cameraLook(qDown);
+      expect(dDown.x).toBeCloseTo(0, 5);
+      expect(dDown.y).toBeCloseTo(0, 5);
+      expect(dDown.z).toBeCloseTo(-1, 5);
+
+      const qUp = auroraCameraLookOrientation(new THREE.Vector3(0, 0, 1));
+      const dUp = cameraLook(qUp);
+      expect(dUp.x).toBeCloseTo(0, 5);
+      expect(dUp.y).toBeCloseTo(0, 5);
+      expect(dUp.z).toBeCloseTo(1, 5);
+    });
+
+    it("matches placeableCameraOrientation(yawOnly, 90) for horizontal yaws", () => {
+      for(const yaw of [0, 45, -30, 78.75]){
+        const placeable = placeableCameraOrientation(auroraYawPitchRoll(yaw, 0, 0), 90);
+        const placeableLook = cameraLook(placeable).clone();
+        const look = auroraCameraLookOrientation(placeableLook);
+        const d = cameraLook(look);
+        expect(d.x).toBeCloseTo(placeableLook.x, 4);
+        expect(d.y).toBeCloseTo(placeableLook.y, 4);
+        expect(d.z).toBeCloseTo(placeableLook.z, 4);
+      }
+    });
   });
 });
