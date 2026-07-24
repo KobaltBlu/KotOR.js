@@ -17,9 +17,10 @@ import { GameState } from "@/GameState";
  *   field0_0x0  Vector3 center
  *   field1_0xc  float bearing — retail stores **degrees** (consumers DegToRad);
  *               KotOR.js stores **radians** (`leader.rotation.z`) and uses cos/sin directly
- *   field2_0x10 Vector3 lateral slot1
+ *   field2_0x10 Vector3 lateral slot1 — stamped at writeHead−2 via
+ *               ZQuat(bearing writeHead−1) * party_member.field10_0x38
  *   field3_0x1c Vector3 lateral slot2
- * Recalc/Teleport use center (field0); cold GetFollowPosition uses ±1.5 along (cos,sin) of radians.
+ * Recalc/Teleport use center (field0); laterals are write-side fidelity only.
  *
  * @file party-follow-path.ts
  */
@@ -31,8 +32,9 @@ const MIN_POINT_DIST_SQ = 0.25;
 const DEFAULT_FOLLOW_RANGE = 5.0;
 /** Stagger between party slots (retail field11_0x1c0 approx). */
 const SLOT_STAGGER = 0.35;
-/** Lateral offset left/right of trail bearing (±1.5 matches GetFollowPositionAtIndex). */
-const LATERAL_OFFSET = 1.5;
+/** Fallback formation locals when PartyManager unavailable (pattern 0). */
+const DEFAULT_FORMATION_SLOT1 = { x: 1.5, y: -0.7 };
+const DEFAULT_FORMATION_SLOT2 = { x: -1.5, y: 0.8 };
 
 export type FollowPathPoint = {
   x: number;
@@ -113,19 +115,46 @@ export class PartyFollowPath {
   private pushPoint(x: number, y: number, z: number, bearing: number){
     const p = this.points[this.writeHead];
     p.x = x; p.y = y; p.z = z; p.bearing = bearing;
-    // Lateral offsets in leader facing frame (ProcessPoint quaternion approx)
-    const cos = Math.cos(bearing);
-    const sin = Math.sin(bearing);
-    // Slot 1 = +lateral (right of facing), slot 2 = -lateral
-    p.offset1x = x - LATERAL_OFFSET * cos;
-    p.offset1y = y - LATERAL_OFFSET * sin;
-    p.offset1z = z;
-    p.offset2x = x + LATERAL_OFFSET * cos;
-    p.offset2y = y + LATERAL_OFFSET * sin;
-    p.offset2z = z;
+    // Laterals stamped after count≥3 on writeHead−2 (ProcessPoint @ 00636a30)
+    p.offset1x = x; p.offset1y = y; p.offset1z = z;
+    p.offset2x = x; p.offset2y = y; p.offset2z = z;
 
     this.writeHead = this.writeHead < FOLLOW_RING_SIZE - 1 ? this.writeHead + 1 : 0;
     if(this.count < FOLLOW_RING_SIZE) this.count++;
+
+    if(this.count >= 3){
+      this.stampProcessPointLaterals();
+    }
+  }
+
+  /**
+   * Retail ProcessPoint lateral stamp: center(writeHead−2) +
+   * ZQuat(bearing writeHead−1) * formation field10_0x38 for slots 1–2.
+   */
+  private stampProcessPointLaterals(){
+    const i1 = this.prevIndex(this.writeHead); // writeHead−1
+    const i2 = this.prevIndex(i1);             // writeHead−2
+    const entry = this.points[i2];
+    const bearing = this.points[i1].bearing;
+    const cos = Math.cos(bearing);
+    const sin = Math.sin(bearing);
+
+    const offs = GameState.PartyManager?.getFormationOffsets?.();
+    const slot1 = offs?.[1] ?? DEFAULT_FORMATION_SLOT1;
+    const slot2 = offs?.[2] ?? DEFAULT_FORMATION_SLOT2;
+
+    // Local (+X right, +Y forward) → world via Z rotation of trail bearing
+    const r1x = slot1.x * cos - slot1.y * sin;
+    const r1y = slot1.x * sin + slot1.y * cos;
+    entry.offset1x = entry.x + r1x;
+    entry.offset1y = entry.y + r1y;
+    entry.offset1z = entry.z;
+
+    const r2x = slot2.x * cos - slot2.y * sin;
+    const r2y = slot2.x * sin + slot2.y * cos;
+    entry.offset2x = entry.x + r2x;
+    entry.offset2y = entry.y + r2y;
+    entry.offset2z = entry.z;
   }
 
   /**

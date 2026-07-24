@@ -20,4 +20,5 @@ export * from "@/engine/pathfinding/follow-leader";
 export * from "@/engine/pathfinding/follow-leader-sm";
 export * from "@/engine/pathfinding/locomotion";
 export * from "@/engine/pathfinding/party-follow-path";
+export * from "@/engine/pathfinding/plot-path";
 export * from "@/engine/pathfinding/set-formation";

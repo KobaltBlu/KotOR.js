@@ -4,26 +4,22 @@ import { GameEventType } from "@/enums/events/GameEventType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
+import { GameState } from "@/GameState";
 
 /**
  * EventApplyEffect class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
+ * Delayed ApplyEffect from EventQueue — retail type ApplyEffect.
+ * Save/Load: effect nested under EventData (type 0x1111).
+ *
  * @file EventApplyEffect.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class EventApplyEffect extends GameEvent {
   effect: GameEffect;
   constructor(){
     super();
-
-    //Event Type
     this.type = GameEventType.EventApplyEffect;
-
     this.effect = undefined;
-
   }
 
   setEffect(effect: GameEffect){
@@ -37,23 +33,37 @@ export class EventApplyEffect extends GameEvent {
   }
 
   eventDataFromStruct(struct: GFFStruct){
-    if(struct instanceof GFFStruct){
-      
+    if(!(struct instanceof GFFStruct)) return;
+    // EventData may be the effect struct itself (has Type) or wrap it as a child STRUCT
+    if(struct.hasField('Type')){
+      this.effect = GameState.GameEffectFactory.EffectFromStruct(struct);
+      return;
+    }
+    const fields = struct.getFields?.() || [];
+    for(let i = 0; i < fields.length; i++){
+      const nested = fields[i].getChildStructs?.()?.[0];
+      if(nested){
+        this.effect = GameState.GameEffectFactory.EffectFromStruct(nested);
+        return;
+      }
     }
   }
 
   execute(){
-    
+    if(!this.effect) return;
+    const target = this.getObject();
+    if(!target) return;
+    target.addEffect(this.effect);
   }
 
   export(){
-    let struct = new GFFStruct( 0xABCD );
+    const struct = new GFFStruct( 0xABCD );
 
     struct.addField( new GFFField(GFFDataType.DWORD, 'CallerId') ).setValue( this.exportCallerId() );
     struct.addField( new GFFField(GFFDataType.DWORD, 'Day') ).setValue(this.day);
-    let eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
+    const eventData = struct.addField( new GFFField(GFFDataType.STRUCT, 'EventData') );
     if(this.effect instanceof GameEffect){
-      let effectStruct = this.effect.save();
+      const effectStruct = this.effect.save();
       effectStruct.setType(0x1111);
       eventData.addChildStruct( effectStruct );
     }
@@ -65,4 +75,3 @@ export class EventApplyEffect extends GameEvent {
   }
 
 }
-

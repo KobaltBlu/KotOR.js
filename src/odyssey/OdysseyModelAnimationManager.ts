@@ -225,29 +225,41 @@ export class OdysseyModelAnimationManager {
       !!(flags & AuroraAnimationFlag.OVERLAY_SLOT) ||
       !!(flags & AuroraAnimationFlag.ADDITIVE_GESTURE);
 
-    // Base same-name reuse (retail 0x40 spirit): keep elapsed, avoid weight-0 hitch
+    // Base same-name promote (retail 0x40 spirit): reuse any matching base on
+    // the stack — not only newest — so walk↔run chatter does not stack weight-0.
     if(!incomingOverlay){
-      const active = this.getActiveBaseRun();
-      if(
-        active &&
-        !active.fadingOut &&
-        !active.done &&
-        active.animation?.name?.toLowerCase() === anim.name?.toLowerCase()
-      ){
+      const want = anim.name?.toLowerCase();
+      let matchIdx = -1;
+      for(let i = 0; i < this.runs.length; i++){
+        const existing = this.runs[i];
+        if(isOverlayRun(existing) || existing.done) continue;
+        if(existing.animation?.name?.toLowerCase() === want){
+          matchIdx = i;
+          break;
+        }
+      }
+      if(matchIdx >= 0){
+        const existing = this.runs[matchIdx];
+        existing.fadingOut = false;
+        existing.done = false;
         if(state?.loop || (flags & AuroraAnimationFlag.LOOPING)){
-          active.state.loop = true;
-          active.flags |= AuroraAnimationFlag.LOOPING;
+          existing.state.loop = true;
+          existing.flags |= AuroraAnimationFlag.LOOPING;
         }
         if(flags & AuroraAnimationFlag.FIRE_FORGET){
-          active.flags |= AuroraAnimationFlag.FIRE_FORGET;
+          existing.flags |= AuroraAnimationFlag.FIRE_FORGET;
         }
-        if(typeof state?.speed === "number") active.state.speed = state.speed;
-        if(state?.animation !== undefined) active.state.animation = state.animation;
-        if(active.weight < 1){
-          // Ensure visible if somehow still ramping
-          active.weight = Math.max(active.weight, 0.01);
+        if(typeof state?.speed === "number") existing.state.speed = state.speed;
+        if(state?.animation !== undefined) existing.state.animation = state.animation;
+        // Keep elapsed; snap visible so pose does not freeze on a weight-0 insert
+        existing.weight = 1;
+        if(matchIdx !== this.runs.length - 1){
+          this.runs.splice(matchIdx, 1);
+          this.runs.push(existing);
         }
-        return active;
+        this.purgeOlderNonOverlay(existing);
+        this.syncLegacyLastAnimation();
+        return existing;
       }
     }
 

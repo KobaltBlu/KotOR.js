@@ -16,6 +16,11 @@ import {
   walkUpdateLocation,
   resetWalkSpeedFactor,
 } from "@/engine/pathfinding/walk-update-location";
+import {
+  plotPath,
+  PlotPathCode,
+  type PathFindInfoLite,
+} from "@/engine/pathfinding/plot-path";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
@@ -31,6 +36,9 @@ export class ActionMoveToPoint extends Action {
 
   target_position: THREE.Vector3 = new THREE.Vector3();
   real_target_position: THREE.Vector3 = new THREE.Vector3();
+
+  /** Lite PlotPath info — lastCode / endpoints for field28_0x88 early-out. */
+  pathFindInfo: PathFindInfoLite | undefined;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -279,7 +287,42 @@ export class ActionMoveToPoint extends Action {
   calculatePath(){
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
 
-    const path = GameState.module.area.path.traverseToPoint(this.owner, this.owner.position, this.target_position);
+    const area = GameState.module?.area;
+    if(!this.pathFindInfo){
+      this.pathFindInfo = {
+        ownerId: this.owner.id,
+        origin: this.owner.position.clone(),
+        dest: this.target_position.clone(),
+      };
+    }else{
+      this.pathFindInfo.ownerId = this.owner.id;
+      this.pathFindInfo.origin.copy(this.owner.position);
+      this.pathFindInfo.dest.copy(this.target_position);
+    }
+
+    const destAreaId = this.getParameter<number>(3);
+    if(typeof destAreaId === 'number'){
+      this.pathFindInfo.destAreaId = destAreaId;
+    }
+
+    const result = plotPath(area, this.owner, this.pathFindInfo);
+
+    if(result.code === PlotPathCode.Fail){
+      this.setComputedPath(undefined);
+      return;
+    }
+
+    // Ready without path — early-out; keep existing computedPath
+    if(result.code === PlotPathCode.Ready && !result.path){
+      return;
+    }
+
+    const path = result.path;
+    if(!path){
+      this.setComputedPath(undefined);
+      return;
+    }
+
     path.fixWalkEdges(getPathPersonalSpace(this.owner));
     path.setColor(this.owner.helperColor);
     this.setComputedPath(path);

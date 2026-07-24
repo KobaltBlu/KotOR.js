@@ -112,7 +112,7 @@ import {
   isChoreographedMeleeWeapon,
   resolveChoreographedState,
 } from "@/combat/combat-dueling";
-import { getAbilityEffectBonus, getAttackEffectBonus } from "@/effects/effect-bonuses";
+import { getAbilityEffectBonus, getAttackEffectBonus, getForceResistanceBonus } from "@/effects/effect-bonuses";
 import { Dice } from "@/utility/Dice";
 import {
   getCreatureSpeedRates,
@@ -264,6 +264,8 @@ export class ModuleCreature extends ModuleObject {
   encounterObjectId: number = ModuleObjectConstant.OBJECT_INVALID;
   /** Retail field408_0xa28 — already unlinked from encounter active count. */
   encounterUnlinked: boolean = false;
+  /** Retail field347_0x95c — item used for current spell cast (GetSpellCastItem). */
+  spellCastItem: ModuleItem = undefined;
   classes: CreatureClass[];
   comment: string;
   currentForce: number;
@@ -509,6 +511,7 @@ export class ModuleCreature extends ModuleObject {
     this.challengeRating = 0;
     this.encounterObjectId = ModuleObjectConstant.OBJECT_INVALID;
     this.encounterUnlinked = false;
+    this.spellCastItem = undefined;
     this.classes = [];
     this.comment = '';
     this.currentForce = 0;
@@ -1586,6 +1589,19 @@ export class ModuleCreature extends ModuleObject {
         }else if(GameState.Mode == EngineMode.DIALOG && this.animationState.index != ModuleCreatureAnimState.PAUSE){
           // Retail SetDialogAnimations owns the pose until the next entry — re-apply
           // looping talk/listen/READY instead of falling through to idle pause.
+          this.animationState.started = false;
+        }else if(
+          (
+            this.animationState.index == ModuleCreatureAnimState.RUNNING ||
+            this.animationState.index == ModuleCreatureAnimState.WALKING ||
+            this.animationState.index == ModuleCreatureAnimState.WALKING_BACK
+          ) &&
+          (
+            (this.playerControl?.lastAnimMoveSpeed ?? 0) > 0 ||
+            this.speed > 0
+          )
+        ){
+          // Still driving locomotion — re-play clip; never demote to PAUSE (freeze/slide).
           this.animationState.started = false;
         }else{
           this.setAnimationState(ModuleCreatureAnimState.PAUSE);
@@ -6912,6 +6928,58 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  /**
+   * Sync CCombatInformation fields from live equipment/stats before SaveData.
+   * Retail Compute/Update fills these before SaveData @ 00550f30.
+   */
+  syncCombatInformationForSave(){
+    const info = this.combatInformation;
+    if(!info) return;
+
+    info.arcaneSpellFail = this.arcaneSpellFailure | 0;
+    if(this.combatRound){
+      info.numAttacks =
+        ((this.combatRound.onHandAttacks || 0) + (this.combatRound.offHandAttacks || 0)) & 0xff;
+    }
+
+    const right = this.equipment.RIGHTHAND;
+    const left = this.equipment.LEFTHAND;
+    info.rightEquip = right?.id ?? 0;
+    info.leftEquip = left?.id ?? 0;
+    info.rightString = right?.getTag?.() || right?.getName?.() || '';
+    info.leftString = left?.getTag?.() || left?.getName?.() || '';
+    info.offHandWeaponEq = left ? 1 : 0;
+
+    try{
+      info.forceResistance = getForceResistanceBonus(this) & 0xff;
+    }catch{
+      /* keep prior */
+    }
+
+    if(right){
+      info.onHandCritRng = right.getCriticalThreatRangeMin?.() ?? info.onHandCritRng;
+      info.onHandCritMult = (right.getBaseItem?.()?.criticalHitMultiplier || 2) & 0xff;
+    }else{
+      // Unarmed defaults — CombatAttackData uses 1d4
+      info.unarmedDamDice = info.unarmedDamDice || 1;
+      info.unarmedDamDie = info.unarmedDamDie || 4;
+      info.onHandCritRng = info.onHandCritRng || 20;
+      info.onHandCritMult = info.onHandCritMult || 2;
+    }
+
+    if(left){
+      info.offHandCritRng = left.getCriticalThreatRangeMin?.() ?? info.offHandCritRng;
+      info.offHandCritMult = (left.getBaseItem?.()?.criticalHitMultiplier || info.offHandCritMult || 2) & 0xff;
+    }
+
+    // ACP: prefer prior loaded value; if zero and armor equipped with armorcheckpen flag, mark 1
+    // (full armor.2da accheck magnitude remains Low residual)
+    const armor = this.equipment.ARMOR;
+    if(armor?.getBaseItem?.()?.armorCheckPen && !info.armorCheckPen){
+      info.armorCheckPen = 1;
+    }
+  }
+
   save(){
 
     let gff = new GFFObject();
@@ -6962,14 +7030,8 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(this.colorTattoo2 | 0);
 
     let combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
-    // Retail CCombatInformation::SaveData @ 00550f30
-    this.combatInformation.arcaneSpellFail = this.arcaneSpellFailure | 0;
-    if(this.combatRound){
-      this.combatInformation.numAttacks =
-        ((this.combatRound.onHandAttacks || 0) + (this.combatRound.offHandAttacks || 0)) & 0xff;
-    }
-    this.combatInformation.leftEquip = this.equipment.LEFTHAND?.id ?? 0;
-    this.combatInformation.rightEquip = this.equipment.RIGHTHAND?.id ?? 0;
+    // Retail CCombatInformation::SaveData @ 00550f30 — sync live fields before write
+    this.syncCombatInformationForSave();
     combatInfoStruct.addChildStruct(this.combatInformation.toStruct(0xCAAA));
 
     let combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );

@@ -3,6 +3,7 @@ import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { PathPoint } from "@/engine/pathfinding/PathPoint";
 import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
+import { SMOOTH_SELECTION_BUDGET_MS } from "@/engine/pathfinding/smooth-select-nodes";
 
 /**
  * Approximate CSWSArea::SmoothCornerOptimize @ 004bfe20 + ComputeBestCorner @ 004be3a0.
@@ -10,48 +11,116 @@ import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
  * For sharp corners (BA·BC normalized < 0.9), binary-search a chord that cuts
  * the corner with TestDirectLine clearance.
  *
+ * Restartable variant is KotOR.js hitch hardening (retail runs corners sync after
+ * SmoothSelectionRestartable returns 0). Budget matches DAT_007a1b1c ≈ 10ms.
+ *
  * @file smooth-corner-optimize.ts
  */
 
 const DOT_SHARP = 0.9;
 const MIN_LEN = 0.0001;
 
+/** Mid-pass resume for SmoothCornerOptimize under a wall-clock budget. */
+export type SmoothCornerResume = {
+  /** Next interior vertex index in the source polyline (1..n-2). */
+  cornerIndex: number;
+  /** Partial output built so far (cloned PathPoint vectors). */
+  working: THREE.Vector3[];
+};
+
+export type SmoothCornerResult = {
+  points: PathPoint[];
+  timedOut: boolean;
+  resume?: SmoothCornerResume;
+};
+
+export type SmoothCornerOptions = {
+  timeBudgetMs?: number;
+  resume?: SmoothCornerResume;
+};
+
 /**
- * Corner-cut a path point list (2D xy). Returns a new PathPoint array.
+ * Corner-cut a path point list (2D xy). Sync convenience wrapper.
  */
 export function smoothCornerOptimize(
   area: ModuleArea | undefined,
   points: PathPoint[],
   owner?: ModuleObject
 ): PathPoint[] {
-  if(!area || points.length < 3) return points;
+  return smoothCornerOptimizeRestartable(area, points, owner).points;
+}
 
-  const out: PathPoint[] = [points[0]];
-  for(let i = 1; i < points.length - 1; i++){
-    const a = out[out.length - 1].vector;
-    const b = points[i].vector;
-    const c = points[i + 1].vector;
+/**
+ * Budgeted SmoothCornerOptimize — may return mid-loop with resume.
+ */
+export function smoothCornerOptimizeRestartable(
+  area: ModuleArea | undefined,
+  points: PathPoint[],
+  owner?: ModuleObject,
+  options: SmoothCornerOptions = {}
+): SmoothCornerResult {
+  if(!area || points.length < 3){
+    return { points, timedOut: false };
+  }
+
+  const budget = options.timeBudgetMs;
+  const t0 = typeof performance !== 'undefined' ? performance.now() : 0;
+  const timedOut = (): boolean =>
+    budget != null && budget >= 0 && (performance.now() - t0) >= budget;
+
+  const source = points;
+  let cornerIndex = options.resume?.cornerIndex ?? 1;
+  const workingVecs: THREE.Vector3[] = options.resume?.working?.length
+    ? options.resume.working.map((v) => v.clone())
+    : [source[0].vector.clone()];
+
+  for(; cornerIndex < source.length - 1; cornerIndex++){
+    if(timedOut()){
+      return {
+        points: vectorsToPathPoints(workingVecs, false),
+        timedOut: true,
+        resume: {
+          cornerIndex,
+          working: workingVecs.map((v) => v.clone()),
+        },
+      };
+    }
+
+    const a = workingVecs[workingVecs.length - 1];
+    const b = source[cornerIndex].vector;
+    const c = source[cornerIndex + 1].vector;
 
     const corner = computeBestCorner(area, a, b, c, owner);
     if(corner){
-      out.push(PathPoint.FromVector3(corner.p0));
-      out.push(PathPoint.FromVector3(corner.p1));
+      workingVecs.push(corner.p0.clone());
+      workingVecs.push(corner.p1.clone());
     }else{
-      out.push(points[i]);
+      workingVecs.push(b.clone());
     }
   }
-  out.push(points[points.length - 1]);
 
-  const pruned: PathPoint[] = [out[0]];
-  for(let i = 1; i < out.length; i++){
-    if(pruned[pruned.length - 1].vector.distanceToSquared(out[i].vector) > 0.0001){
-      pruned.push(out[i]);
+  workingVecs.push(source[source.length - 1].vector.clone());
+
+  const pruned = dedupeVectors(workingVecs);
+  return { points: vectorsToPathPoints(pruned, true), timedOut: false };
+}
+
+function dedupeVectors(vecs: THREE.Vector3[]): THREE.Vector3[] {
+  const pruned: THREE.Vector3[] = [vecs[0]];
+  for(let i = 1; i < vecs.length; i++){
+    if(pruned[pruned.length - 1].distanceToSquared(vecs[i]) > 0.0001){
+      pruned.push(vecs[i]);
     }
-  }
-  if(pruned.length >= 1){
-    pruned[pruned.length - 1].end = true;
   }
   return pruned;
+}
+
+function vectorsToPathPoints(vecs: THREE.Vector3[], markEnd: boolean): PathPoint[] {
+  const out = vecs.map((v) => PathPoint.FromVector3(v));
+  if(markEnd && out.length >= 1){
+    out[out.length - 1].end = true;
+  }
+  return out;
 }
 
 type CornerChord = { p0: THREE.Vector3; p1: THREE.Vector3 };
@@ -113,3 +182,5 @@ export function computeBestCorner(
 
   return found ? { p0: best0, p1: best1 } : undefined;
 }
+
+export { SMOOTH_SELECTION_BUDGET_MS as SMOOTH_CORNER_BUDGET_MS };

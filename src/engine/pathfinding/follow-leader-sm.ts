@@ -311,8 +311,7 @@ export function ensurePathToOffset(owner: ModuleCreature, offset: THREE.Vector3)
   if(!computed?.points?.length){
     return false;
   }
-  computed.prunePathPoints();
-  computed.smoothCorners();
+  // traverseToPoint already runs SmoothSelection + SmoothCorner (budgeted)
   computed.fixWalkEdges(getPathPersonalSpace(owner));
   computed.setColor(owner.helperColor);
   computed.realtime = true;

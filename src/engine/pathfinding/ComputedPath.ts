@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { PathPoint } from "@/engine/pathfinding/PathPoint";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { GameState } from "@/GameState";
-import { smoothCornerOptimize } from "@/engine/pathfinding/smooth-corner-optimize";
+import { smoothCornerOptimizeRestartable, type SmoothCornerResume } from "@/engine/pathfinding/smooth-corner-optimize";
 import {
   smoothSelectionRestartable,
   SMOOTH_SELECTION_BUDGET_MS,
@@ -36,6 +36,8 @@ export class ComputedPath {
   timer: number = 0;
   /** SmoothSelectionRestartable mid-pipeline resume (field124 + working). */
   smoothResume: SmoothSelectionResume | undefined;
+  /** SmoothCornerOptimize mid-pass resume (JS hitch hardening after selection). */
+  smoothCornerResume: SmoothCornerResume | undefined;
   /** True when DFS hit wall-clock budget without a full path (retail return 1). */
   incomplete: boolean = false;
   /** Populated on timeout for cross-frame TransTable reuse (retail field104_0x1b4). */
@@ -93,6 +95,7 @@ export class ComputedPath {
     this.incomplete = false;
     this.dfsResume = undefined;
     this.smoothResume = undefined;
+    this.smoothCornerResume = undefined;
     if(!this.origin || !this.destination){
       return this;
     }
@@ -461,12 +464,23 @@ export class ComputedPath {
 
   /**
    * Retail SmoothPointsOnPath second stage — corner chords via TestDirectLine.
-   * Prefer this over Catmull-Rom for pathfinding fidelity.
+   * Optional budget/resume for JS hitch hardening after SmoothSelection.
    */
-  smoothCorners(){
-    if(this.points.length < 3) return;
+  smoothCorners(options: {
+    timeBudgetMs?: number;
+    resume?: SmoothCornerResume;
+  } = {}){
+    if(this.points.length < 3){
+      this.smoothCornerResume = undefined;
+      return;
+    }
     const area = this.owner?.area ?? this.points[0]?.area;
-    this.points = smoothCornerOptimize(area, this.points, this.owner);
+    const result = smoothCornerOptimizeRestartable(area, this.points, this.owner, {
+      timeBudgetMs: options.timeBudgetMs,
+      resume: options.resume,
+    });
+    this.points = result.points;
+    this.smoothCornerResume = result.timedOut ? result.resume : undefined;
     this.origin = this.points[0];
     this.destination = this.points[this.points.length - 1];
     this.reIndex();

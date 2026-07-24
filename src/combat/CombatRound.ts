@@ -112,6 +112,8 @@ export class CombatRound {
 
   attackList: CombatAttackData[] = [];
   specialAttackList: any[] = []; // (?)
+  /** Retail special_attack_id_list (SpecAttackIdList GFF). */
+  specialAttackIdList: number[] = [];
   scheduledActionList: CombatRoundAction[] = [];
   action: CombatRoundAction;
 
@@ -2098,10 +2100,22 @@ export class CombatRound {
       specAttackList.addChildStruct(spec);
     }
 
-    // SpecAttackIdList — empty until special-attack id list is typed
-    struct.addField(new GFFField(GFFDataType.LIST, 'SpecAttackIdList'));
+    // SpecAttackIdList — retail special_attack_id_list @ SaveCombatRound 004d3ec0
+    const specAttackIdList = struct.addField(new GFFField(GFFDataType.LIST, 'SpecAttackIdList'));
+    for(let i = 0; i < this.specialAttackIdList.length; i++){
+      const spec = new GFFStruct(0xDAAE);
+      spec.addField(new GFFField(GFFDataType.WORD, 'SpecialAttackId')).setValue(
+        this.specialAttackIdList[i] | 0
+      );
+      specAttackIdList.addChildStruct(spec);
+    }
 
     const schedList = struct.addField(new GFFField(GFFDataType.LIST, 'SchedActionList'));
+    // Retail actions linked-list includes the in-flight head; JS keeps that on `action`
+    // after ActionCombat.shift — prepend so mid-combat saves do not drop it.
+    if(this.action){
+      schedList.addChildStruct(this.action.toStruct(0xDAEA));
+    }
     for(let i = 0; i < this.scheduledActionList.length; i++){
       schedList.addChildStruct(this.scheduledActionList[i].toStruct(0xDAEA));
     }
@@ -2174,6 +2188,16 @@ export class CombatRound {
       }
     }
 
+    this.specialAttackIdList = [];
+    if(struct.hasField('SpecAttackIdList')){
+      const list = struct.getFieldByLabel('SpecAttackIdList').getChildStructs();
+      for(let i = 0; i < list.length; i++){
+        if(list[i]?.hasField('SpecialAttackId')){
+          this.specialAttackIdList.push(list[i].getFieldByLabel('SpecialAttackId').getValue());
+        }
+      }
+    }
+
     this.scheduledActionList = [];
     if(struct.hasField('SchedActionList')){
       const list = struct.getFieldByLabel('SchedActionList').getChildStructs();
@@ -2184,7 +2208,38 @@ export class CombatRound {
       }
     }
 
+    // Retail AttackList has no damageApplyDelay — resume unapplied swings from CurrentAttack
+    this.restorePendingDamageTimers();
+
     return true;
+  }
+
+  /**
+   * After LoadCombatRound: attacks already past CurrentAttack are done; remaining
+   * AttackList entries with rolled damage resume via ReaxnDelay (or immediate).
+   */
+  private restorePendingDamageTimers(){
+    const current = this.currentAttack | 0;
+    for(let i = 0; i < 5; i++){
+      const attack = this.attackList[i];
+      if(!attack) continue;
+      if(i < current){
+        attack.damageApplied = true;
+        attack.damageApplyDelay = -1;
+        continue;
+      }
+      let hasDamage = false;
+      for(let d = 0; d < 15; d++){
+        const v = attack.damageList[d]?.damageValue;
+        if(typeof v === 'number' && v >= 0){
+          hasDamage = true;
+          break;
+        }
+      }
+      if(hasDamage && !attack.damageApplied){
+        attack.damageApplyDelay = Math.max(0, attack.reaxnDelay | 0);
+      }
+    }
   }
 
   /**

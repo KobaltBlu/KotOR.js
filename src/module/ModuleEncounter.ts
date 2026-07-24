@@ -97,6 +97,8 @@ export class ModuleEncounter extends ModuleObject {
     this.spawnPoolActive = 0;
     this.spawnPoolRecovered = 0;
     this.exhausted = 0;
+    this.currentSpawns = 0;
+    this.respawns = -1;
     this.lastSpawnDay = 0;
     this.lastSpawnTime = 0;
 
@@ -184,10 +186,10 @@ export class ModuleEncounter extends ModuleObject {
     }
 
     // Retail AIUpdate @ 00593fb0: Single-shot + Reset → re-activate after ResetTime
+    // Gate: current_spawns < max_spawns (Respawns) || max_spawns == -1
     if(
       this.spawnOption === 1 &&
       this.reset === 1 &&
-      this.exhausted &&
       this.lastSpawnDay &&
       this.lastSpawnTime
     ){
@@ -195,13 +197,19 @@ export class ModuleEncounter extends ModuleObject {
       if(tm){
         const elapsed = tm.getMilisecondsElapsed(this.lastSpawnDay, this.lastSpawnTime);
         if(elapsed >= (this.resetTime | 0) * 1000){
-          this.lastSpawnDay = 0;
-          this.lastSpawnTime = 0;
-          this.exhausted = 0;
-          this.active = 1;
-          this.spawnPoolRecovered = 0;
-          this.spawnPoolActive = 0;
-          spawnIfAppropriate(this);
+          const maxSpawns = this.respawns | 0;
+          const current = this.currentSpawns | 0;
+          if(current < maxSpawns || maxSpawns === -1){
+            this.currentSpawns = current + 1;
+            this.lastSpawnDay = 0;
+            this.lastSpawnTime = 0;
+            this.exhausted = 0;
+            this.active = 1;
+            // SpawnIfAppropriate → CalculateSpawnPool adds to recovered, then clear pools
+            spawnIfAppropriate(this);
+            this.spawnPoolRecovered = 0;
+            this.spawnPoolActive = 0;
+          }
         }
       }
     }
@@ -564,6 +572,9 @@ export class ModuleEncounter extends ModuleObject {
       if(this.template.RootNode.hasField('SpawnPoolActive'))
         this.spawnPoolActive = this.template.getFieldByLabel('SpawnPoolActive').getValue();
 
+      if(this.template.RootNode.hasField('SpawnPoolRecovered'))
+        this.spawnPoolRecovered = this.template.getFieldByLabel('SpawnPoolRecovered').getValue();
+
       this.loadActionList();
 
       this.initialized = true;
@@ -604,6 +615,7 @@ export class ModuleEncounter extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Exhausted') ).setValue(this.exhausted);
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CurrentSpawns') ).setValue(this.currentSpawns);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'SpawnPoolActive') ).setValue(this.spawnPoolActive);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'SpawnPoolRecovered') ).setValue(this.spawnPoolRecovered);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'LastEntered') ).setValue(this.lastEntered);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'LastLeft') ).setValue(this.lastLeft);
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CustomScriptId') ).setValue(this.customScriptId);

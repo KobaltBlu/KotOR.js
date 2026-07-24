@@ -26,6 +26,7 @@ import { IAreaListItem } from "@/interface/area/IAreaListItem";
 import type { GameEvent } from "@/events/GameEvent";
 import { ModuleArea } from "@/module/ModuleArea";
 import { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleItem } from "@/module/ModuleItem";
 import { ModuleTimeManager } from "@/module/ModuleTimeManager";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
@@ -83,6 +84,11 @@ export class Module {
   transition: any;
   transWP: string;
   lastItemAcquired: any = undefined;
+  /** Pass AG — OnItemActivated context for GetItemActivated* */
+  itemActivated: ModuleItem = undefined;
+  itemActivator: ModuleCreature = undefined;
+  itemActivatedTarget: any = undefined;
+  itemActivatedTargetLocation: EngineLocation = undefined;
 
   /**
    * List of Areas in the module
@@ -739,8 +745,10 @@ export class Module {
     const eventQueue = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'EventQueue') );
     for(let i = 0; i < this.eventQueue.length; i++){
       let event = this.eventQueue[i];
-      if(event){
-        eventQueue.addChildStruct( event.export() );
+      if(!event) continue;
+      const exported = event.export();
+      if(exported){
+        eventQueue.addChildStruct( exported );
       }
     }
 

@@ -556,6 +556,8 @@ export class ModuleItem extends ModuleObject {
     combatAction.animation = ModuleCreatureAnimState.CASTOUT1;
     combatAction.animationTime = 1500;
     oCaster.combatRound.addAction(combatAction);
+    // Retail GetSpellCastItem field347 — stamp caster for spell scripts
+    oCaster.spellCastItem = this;
 
     if(!oCaster.actionQueue.actionTypeExists(ActionType.ActionCombat)){
       const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
@@ -585,6 +587,7 @@ export class ModuleItem extends ModuleObject {
       }
 
       const spell = new TalentSpell(property.subType);
+      oCaster.spellCastItem = this;
       const cast = new SpellCastInstance(oCaster, oCaster, spell);
       cast.applySpellData();
       cast.conjureTime = 0;

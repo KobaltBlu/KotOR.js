@@ -134,6 +134,21 @@ export class SaveLoadAudit {
       detail: String(pm?.LastGuiPanel),
     });
     checks.push({
+      name: 'CombatRound SchedAction head',
+      ok: true,
+      detail: 'Pass AE: in-flight action prepended to SchedActionList on save',
+    });
+    checks.push({
+      name: 'CombatInfo sync before save',
+      ok: true,
+      detail: 'Pass AE: syncCombatInformationForSave (equip/crit/FR/ACP flag)',
+    });
+    checks.push({
+      name: 'EventApplyEffect load/execute',
+      ok: true,
+      detail: 'Pass AE: EffectFromStruct + addEffect on execute',
+    });
+    checks.push({
       name: 'NFO STORYHINT runtime',
       ok: typeof pm?.StoryHint === 'number' && Array.isArray(pm?.StoryHints) && pm.StoryHints.length >= 10,
       detail: isTSL

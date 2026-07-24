@@ -8,6 +8,7 @@ import { ComputedPath } from "@/engine/pathfinding/ComputedPath";
 import type { PathPointDfsResume } from "@/engine/pathfinding/ComputedPath";
 import { SMOOTH_SELECTION_BUDGET_MS } from "@/engine/pathfinding/smooth-select-nodes";
 import type { SmoothSelectionResume } from "@/engine/pathfinding/smooth-select-nodes";
+import type { SmoothCornerResume } from "@/engine/pathfinding/smooth-corner-optimize";
 import { IClosestPathPointData } from "@/interface/engine/pathfinding/IClosestPathPointData";
 import type { ModuleArea } from "@/module/ModuleArea";
 import { Utility } from "@/utility/Utility";
@@ -19,10 +20,14 @@ import { plotGridPath } from "@/engine/pathfinding/plot-grid-path";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
+type SmoothSessionStage = "selection" | "corner";
+
 type SmoothSession = {
   origin: THREE.Vector3;
   dest: THREE.Vector3;
   points: THREE.Vector3[];
+  stage: SmoothSessionStage;
+  cornerResume?: SmoothCornerResume;
 };
 
 /**
@@ -61,6 +66,7 @@ export class ModulePath {
    * Survives MoveTo realtime clear so smooth continues without re-DFS.
    */
   private smoothResumeByOwner = new Map<number, SmoothSelectionResume>();
+  private smoothCornerResumeByOwner = new Map<number, SmoothCornerResume>();
   private smoothSessionByOwner = new Map<number, SmoothSession>();
 
   helperColors: THREE.Float32BufferAttribute;
@@ -509,12 +515,19 @@ export class ModulePath {
   private clearSmoothSession(ownerId: number | undefined){
     if(ownerId == null) return;
     this.smoothResumeByOwner.delete(ownerId);
+    this.smoothCornerResumeByOwner.delete(ownerId);
     this.smoothSessionByOwner.delete(ownerId);
   }
 
+  /** True when SmoothSelection or SmoothCorner session is held for owner. */
+  hasPendingSmoothSession(ownerId: number | undefined): boolean {
+    if(ownerId == null) return false;
+    return this.smoothSessionByOwner.has(ownerId);
+  }
+
   /**
-   * Continue SmoothSelectionRestartable without re-running PathPointDFS when
-   * the prior frame returned mid-pipeline (field124 + densify cursor).
+   * Continue SmoothSelection / SmoothCorner without re-running PathPointDFS when
+   * the prior frame returned mid-pipeline.
    */
   private tryResumeSmoothOnly(
     owner: ModuleObject,
@@ -524,9 +537,8 @@ export class ModulePath {
   ): ComputedPath | undefined {
     const ownerId = owner?.id;
     if(ownerId == null) return undefined;
-    const resume = this.smoothResumeByOwner.get(ownerId);
     const session = this.smoothSessionByOwner.get(ownerId);
-    if(!resume || !session) return undefined;
+    if(!session) return undefined;
     if(
       !this.endpointsMatch(session.origin, origin) ||
       !this.endpointsMatch(session.dest, dest)
@@ -545,12 +557,21 @@ export class ModulePath {
     }
     const path = ComputedPath.FromPointsList(pathPoints);
     path.setOwner(owner);
+
+    if(session.stage === "corner"){
+      return this.finishWithCornerPass(
+        path, owner, origin, dest, smooth,
+        session.cornerResume ?? this.smoothCornerResumeByOwner.get(ownerId)
+      );
+    }
+
+    const resume = this.smoothResumeByOwner.get(ownerId);
     return this.finishWithSmoothSelection(path, owner, origin, dest, smooth, resume);
   }
 
   /**
    * Run SmoothSelectionRestartable (~10ms). On timeout, persist resume for next
-   * frame; on complete, clear session and optionally smoothCorners.
+   * frame; on complete, run budgeted SmoothCornerOptimize.
    */
   private finishWithSmoothSelection(
     path: ComputedPath,
@@ -568,19 +589,63 @@ export class ModulePath {
 
     if(path.smoothResume && ownerId != null){
       this.smoothResumeByOwner.set(ownerId, path.smoothResume);
+      this.smoothCornerResumeByOwner.delete(ownerId);
       this.smoothSessionByOwner.set(ownerId, {
         origin: origin.clone(),
         dest: dest.clone(),
         points: path.points.map((p) => p.vector.clone()),
+        stage: "selection",
       });
-      // MoveTo clears realtime paths → next calculatePath resumes smooth only
+      path.realtime = true;
+      path.timer = Math.min(path.timer || 20, 8);
+      return path;
+    }
+
+    if(ownerId != null){
+      this.smoothResumeByOwner.delete(ownerId);
+    }
+
+    if(!smooth){
+      this.clearSmoothSession(ownerId);
+      return path;
+    }
+
+    return this.finishWithCornerPass(path, owner, origin, dest, smooth);
+  }
+
+  /**
+   * Budgeted SmoothCornerOptimize after selection completes.
+   */
+  private finishWithCornerPass(
+    path: ComputedPath,
+    owner: ModuleObject,
+    origin: THREE.Vector3,
+    dest: THREE.Vector3,
+    _smooth: boolean,
+    resume?: SmoothCornerResume
+  ): ComputedPath {
+    const ownerId = owner?.id;
+    path.smoothCorners({
+      timeBudgetMs: SMOOTH_SELECTION_BUDGET_MS,
+      resume: resume ?? (ownerId != null ? this.smoothCornerResumeByOwner.get(ownerId) : undefined),
+    });
+
+    if(path.smoothCornerResume && ownerId != null){
+      this.smoothCornerResumeByOwner.set(ownerId, path.smoothCornerResume);
+      this.smoothResumeByOwner.delete(ownerId);
+      this.smoothSessionByOwner.set(ownerId, {
+        origin: origin.clone(),
+        dest: dest.clone(),
+        points: path.points.map((p) => p.vector.clone()),
+        stage: "corner",
+        cornerResume: path.smoothCornerResume,
+      });
       path.realtime = true;
       path.timer = Math.min(path.timer || 20, 8);
       return path;
     }
 
     this.clearSmoothSession(ownerId);
-    if(smooth) path.smoothCorners();
     return path;
   }
 

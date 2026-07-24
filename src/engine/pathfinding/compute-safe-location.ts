@@ -13,7 +13,11 @@ import { countVisibleToPlayers } from "@/engine/pathfinding/count-visible-to-pla
 
 /**
  * Retail CSWSArea::ComputeSafeLocation @ 004be860 /
- * ComputeNonVisibleLocation @ 004bee30.
+ * ComputeNonVisibleLocation @ 004bee30 (Pass AF).
+ *
+ * Safe: expanding ring of TestSafeLocationPoint (center first).
+ * NonVisible: prefers candidates with lower CountVisibleToPlayers; on total
+ * failure writes (−1,−1,−1) and returns false (spawn aborts / retries).
  *
  * @file compute-safe-location.ts
  */
@@ -135,10 +139,10 @@ export function computeSafeLocation(
 }
 
 /**
- * Approximate CSWSArea::ComputeNonVisibleLocation @ 004bee30.
- * Prefers safe points with fewer party LOS hits via CountVisibleToPlayers;
- * candidates within 30 of center need ClearLineOfSight from center.
- * On total failure sets out to (−1,−1,−1).
+ * Retail CSWSArea::ComputeNonVisibleLocation @ 004bee30 (Pass AF).
+ * Prefers safe points with fewer player LOS hits via CountVisibleToPlayers
+ * (30 m + eye Z); candidates within 30 of center need ClearLineOfSight from center.
+ * On total failure sets out to (−1,−1,−1) and returns false.
  */
 export function computeNonVisibleLocation(
   area: ModuleArea | undefined,

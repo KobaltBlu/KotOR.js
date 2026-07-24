@@ -519,6 +519,13 @@ export class PartyManager {
           color: s.hasField('PT_COM_MSG_COOR') ? (s.getFieldByLabel('PT_COM_MSG_COOR').getValue() | 0) : 0,
         });
       }
+      // Pass AE: restore combat log into Feedback/Messages UI
+      for(let i = 0; i < GameState.PartyManager.CombatMessages.length; i++){
+        const cm = GameState.PartyManager.CombatMessages[i];
+        if(cm.msg){
+          GameState.FeedbackMessageManager?.AddMessage?.(cm.msg, cm.color);
+        }
+      }
     }
 
     // Retail LoadTableInfo — restore per-baseitem cost multipliers

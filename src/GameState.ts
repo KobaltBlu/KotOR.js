@@ -1297,6 +1297,12 @@ export class GameState implements EngineContext {
           GameState.MenuManager.InGameOverlay.recalculatePosition();
           GameState.MenuManager.InGameOverlay.open();
           GameState.SetEngineMode(EngineMode.INGAME);
+          // Pass AE: PT_LAST_GUI_PNL — reopen death panel (GUI_PANEL_PLAYER_DEATH = 0)
+          const lastGui = GameState.PartyManager?.LastGuiPanel | 0;
+          const pc = GameState.PartyManager?.party?.[0];
+          if(lastGui === 0 && pc?.isDead?.()){
+            GameState.GameOverManager?.PopUpGUIPanel?.(pc, 0);
+          }
         }
         await GameState.module.area.initAreaObjects(runSpawnScripts);
         console.log('ModuleArea: ready to play');

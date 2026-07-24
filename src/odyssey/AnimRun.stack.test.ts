@@ -185,5 +185,25 @@ describe('AnimRun stack', () => {
     expect(mgr.runs.length).toBe(1);
     expect(r1.state.elapsed).toBe(0.4);
     expect(r1.state.speed).toBe(1.2);
+    expect(r1.weight).toBe(1);
+  });
+
+  test('same-name base promote from deeper stack entry', () => {
+    const mgr = makeManager();
+    const run = fakeAnim('run', 1, 0.25);
+    const walk = fakeAnim('walk', 1, 0.25);
+    const rRun = mgr.playAnimation(run, AuroraAnimationFlag.LOOPING, { loop: true })!;
+    rRun.weight = 1;
+    rRun.state.elapsed = 0.55;
+    mgr.playAnimation(walk, AuroraAnimationFlag.LOOPING, { loop: true });
+    expect(mgr.runs.length).toBe(2);
+    expect(mgr.currentAnimation?.name).toBe('walk');
+
+    const promoted = mgr.playAnimation(run, AuroraAnimationFlag.LOOPING, { loop: true });
+    expect(promoted).toBe(rRun);
+    expect(mgr.runs.length).toBe(1);
+    expect(mgr.currentAnimation?.name).toBe('run');
+    expect(rRun.weight).toBe(1);
+    expect(rRun.state.elapsed).toBe(0.55);
   });
 });
