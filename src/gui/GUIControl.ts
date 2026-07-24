@@ -27,6 +27,17 @@ import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { KeyMapAction } from "@/enums/controls/KeyMapAction";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
+import {
+  asExtentInt,
+  extentToCenteredPosition,
+  getLocalMouseCoords,
+  GUI_DESIGN_HEIGHT,
+  GUI_DESIGN_WIDTH,
+  GUIPanelCoordFlags,
+  hitCheckMouseLocal,
+  truncDiv,
+} from "@/gui/GUICoord";
+import { ResolutionManager } from "@/managers/ResolutionManager";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -596,41 +607,41 @@ export class GUIControl {
   }
 
   setExtentTop(top: number){
-    this.extent.top = top;
+    this.extent.top = asExtentInt(top);
     if(this.control.hasField('EXTENT')){
       const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
       if(extent){
-        extent.getFieldByLabel('TOP')?.setValue(top);
+        extent.getFieldByLabel('TOP')?.setValue(this.extent.top);
       }
     }
   }
 
   setExtentLeft(left: number){
-    this.extent.left = left;
+    this.extent.left = asExtentInt(left);
     if(this.control.hasField('EXTENT')){
       const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
       if(extent){
-        extent.getFieldByLabel('LEFT')?.setValue(left);
+        extent.getFieldByLabel('LEFT')?.setValue(this.extent.left);
       }
     }
   }
 
   setExtentWidth(width: number){
-    this.extent.width = width;
+    this.extent.width = asExtentInt(width);
     if(this.control.hasField('EXTENT')){
       const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
       if(extent){
-        extent.getFieldByLabel('WIDTH')?.setValue(width);
+        extent.getFieldByLabel('WIDTH')?.setValue(this.extent.width);
       }
     }
   }
 
   setExtentHeight(height: number){
-    this.extent.height = height;
+    this.extent.height = asExtentInt(height);
     if(this.control.hasField('EXTENT')){
       const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
       if(extent){
-        extent.getFieldByLabel('HEIGHT')?.setValue(height);
+        extent.getFieldByLabel('HEIGHT')?.setValue(this.extent.height);
       }
     }
   }
@@ -734,15 +745,15 @@ export class GUIControl {
 
     this.padding = ( control.hasField('PADDING') ? control.getFieldByLabel('PADDING')?.getValue() : 0 );
 
-    //Extent
+    //Extent — retail CSWGuiExtent::Load @ 00409dc0 (ReadFieldINT)
     this.hasExtent = control.hasField('EXTENT');
     if(this.hasExtent){
       let extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
       if(extent){
-        this.extent.top = extent.getFieldByLabel('TOP')?.getValue();
-        this.extent.left = extent.getFieldByLabel('LEFT')?.getValue();
-        this.extent.width = extent.getFieldByLabel('WIDTH')?.getValue();
-        this.extent.height = extent.getFieldByLabel('HEIGHT')?.getValue();
+        this.extent.top = asExtentInt(extent.getFieldByLabel('TOP')?.getValue());
+        this.extent.left = asExtentInt(extent.getFieldByLabel('LEFT')?.getValue());
+        this.extent.width = asExtentInt(extent.getFieldByLabel('WIDTH')?.getValue());
+        this.extent.height = asExtentInt(extent.getFieldByLabel('HEIGHT')?.getValue());
       }
     }
 
@@ -1584,141 +1595,216 @@ export class GUIControl {
     }
   }
 
+  /**
+   * Centered Y-up UI mouse as ints (same space as widget.position / box).
+   */
+  getCenteredUIMouseInt(): { x: number; y: number } {
+    const vpW = asExtentInt(ResolutionManager.getViewportWidth());
+    const vpH = asExtentInt(ResolutionManager.getViewportHeight());
+    return {
+      x: asExtentInt(Mouse.positionViewportInt.x) - truncDiv(vpW, 2),
+      y: truncDiv(vpH, 2) - asExtentInt(Mouse.positionViewportInt.y),
+    };
+  }
+
+  /**
+   * Panel-local mouse (top-left Y-down ints) for this control's menu root panel.
+   *
+   * Matches our Three.js projection: panel design rect is centered in the viewport
+   * (and optionally scaled on the root widget). This is retail GetLocalMouseCoords
+   * with CenterInViewport when UseExtentOffset is set; letterbox path when cleared.
+   */
+  getPanelLocalMouse(): { x: number; y: number } {
+    const panel = this.menu?.tGuiPanel;
+    const extent = panel?.extent ?? this.extent;
+    const flags = this.menu?.panelCoordFlags ?? (
+      GUIPanelCoordFlags.UseExtentOffset | GUIPanelCoordFlags.CenterInViewport
+    );
+    const vpW = asExtentInt(ResolutionManager.getViewportWidth());
+    const vpH = asExtentInt(ResolutionManager.getViewportHeight());
+
+    // Retail 640×480 letterbox path (bit0 clear)
+    if ((flags & GUIPanelCoordFlags.UseExtentOffset) === 0) {
+      return getLocalMouseCoords(
+        extent,
+        Mouse.positionViewportInt.x,
+        Mouse.positionViewportInt.y,
+        vpW,
+        vpH,
+        flags,
+      );
+    }
+
+    // Inverse of centered (and scaled) Three.js GUI projection → panel-local ints
+    let { x: uiX, y: uiY } = this.getCenteredUIMouseInt();
+    const scale = this.menu?.scale ?? 1;
+    if (scale !== 0 && scale !== 1) {
+      uiX = asExtentInt(uiX / scale);
+      uiY = asExtentInt(uiY / scale);
+    }
+
+    const panelW = asExtentInt(extent.width);
+    const panelH = asExtentInt(extent.height);
+    const panelLeft = asExtentInt(extent.left);
+    const panelTop = asExtentInt(extent.top);
+
+    // ui (0,0) is viewport center; panel design spans ±panelW/2, ±panelH/2 about origin
+    return {
+      x: uiX + truncDiv(panelW, 2) - panelLeft,
+      y: truncDiv(panelH, 2) - uiY - panelTop,
+    };
+  }
+
+  /**
+   * Retail CSWGuiControl::HitCheckMouse @ 004187c0 — inclusive int AABB.
+   * List rows store extents in list viewport-local space (HitCheckMouseLocal @ 0041a5e0).
+   * Anchored HUD controls are viewport-pinned; test their integer world box instead.
+   */
+  hitCheckMouse(localX: number, localY: number): boolean {
+    if (this.list) {
+      const list = this.list;
+      const listLocalX = asExtentInt(localX) - asExtentInt(list.extent.left);
+      const listLocalY = asExtentInt(localY) - asExtentInt(list.extent.top);
+      const borderSize = asExtentInt(list.getBorderSize());
+      const shrink = asExtentInt(list.getShrinkWidth());
+      const viewportX = list.isScrollBarLeft() ? borderSize + shrink : borderSize;
+      const viewportY = borderSize;
+      return hitCheckMouseLocal(this.extent, listLocalX - viewportX, listLocalY - viewportY);
+    }
+    if (this.anchor && this.anchor !== Anchor.None) {
+      const ui = this.getCenteredUIMouseInt();
+      // box is in world/UI space (root scale applied via getWorldPosition + sized extents)
+      return (
+        ui.x >= asExtentInt(this.box.min.x) && ui.x <= asExtentInt(this.box.max.x) &&
+        ui.y >= asExtentInt(this.box.min.y) && ui.y <= asExtentInt(this.box.max.y)
+      );
+    }
+    return hitCheckMouseLocal(this.extent, localX, localY);
+  }
+
   calculatePosition(){
     if(!this.autoCalculatePosition || this.list)
       return;
 
     let parentExtent = { width: this.menu.width, height: this.menu.height };
-    let parentOffsetX, parentOffsetY;
-    //if(!(this.parent instanceof THREE.Scene)){
-      //parentExtent = this.menu.tGuiPanel.extent;
-      //console.log(this.parent)
-      //parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x;
-      //parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y;
-
-    //}else{
-    //  parentOffsetX = parentOffsetY = 0;
-    //}
 
     if( this.parent && this.parent != this.menu.tGuiPanel && !this.scale){
       parentExtent = this.menu.tGuiPanel.extent;
-      parentOffsetX = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).x;
-      parentOffsetY = this.menu.tGuiPanel.widget.getWorldPosition(new THREE.Vector3()).y;
+      const parentW = asExtentInt(parentExtent.width);
+      const parentH = asExtentInt(parentExtent.height);
+      const posX = asExtentInt(this.extent.left) - truncDiv(parentW - asExtentInt(this.extent.width), 2);
+      const posY = asExtentInt(this.extent.top) - truncDiv(parentH - asExtentInt(this.extent.height), 2);
 
-      let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
-      let posY = ((this.extent.top - ( (parentExtent.height - this.extent.height) / 2 ) ));
+      this.widget.position.x = asExtentInt(this.offset.x + posX);
+      this.widget.position.y = asExtentInt(-posY + this.offset.y);
 
-      this.widget.position.x = this.offset.x + (posX);
-      this.widget.position.y = (-posY);
-      
       this.updateBounds();
-
       return;
-    }else{
-      parentOffsetX = this.menu.tGuiPanel.extent.left;
-      parentOffsetY = this.menu.tGuiPanel.extent.top;
     }
 
-    // let wRatio = ResolutionManager.getViewportWidth() / this.menu.tGuiPanel.extent.width;
-    // let hRatio = ResolutionManager.getViewportHeight() / this.menu.tGuiPanel.extent.height;
+    const parentW = asExtentInt(parentExtent.width);
+    const parentH = asExtentInt(parentExtent.height);
+    const centered = extentToCenteredPosition(this.extent, parentW, parentH);
+    this.anchorOffset = new THREE.Vector2(centered.x, centered.y);
 
-    let posX = (this.extent.left - ( (parentExtent.width  - this.extent.width) / 2 ) );
-    let posY = ((-this.extent.top + ( (parentExtent.height - this.extent.height) / 2 ) ));
-
-    this.anchorOffset = new THREE.Vector2(posX, posY);
-
-    let halfX = parentExtent.width/2;
-    let quatX = 25; //parentExtent.width/4;
-    let halfY = parentExtent.height/2;
-    let quatY = 25; //parentExtent.height/4;
+    const halfX = truncDiv(parentW, 2);
+    const quatX = 25;
+    const halfY = truncDiv(parentH, 2);
 
     if(this.scale && this.anchor == 'none'){
       if(this.extent.left == 0 && this.extent.top == 0){
         //Screen centered
       }else{
-        if(this.extent.left < (halfX/2) && this.extent.top > halfY){
+        if(this.extent.left < truncDiv(halfX, 2) && this.extent.top > halfY){
           this.anchor = Anchor.BottomLeft;
         }else if( ( this.extent.left > quatX && this.extent.left < (halfX+quatX) ) && this.extent.top > halfY){
           this.anchor = Anchor.BottomCenter;
-        }else if(this.extent.left > (halfX/2) && this.extent.top > halfY){
+        }else if(this.extent.left > truncDiv(halfX, 2) && this.extent.top > halfY){
           this.anchor = Anchor.BottomRight;
         }
 
-        if(this.extent.left < (halfX/2) && this.extent.top < halfY){
+        if(this.extent.left < truncDiv(halfX, 2) && this.extent.top < halfY){
           this.anchor = Anchor.TopLeft;
         }else if( ( this.extent.left > quatX && this.extent.left < (halfX+quatX) ) && this.extent.top < halfY){
           this.anchor = Anchor.TopCenter
-        }else if(this.extent.left > (halfX/2) && this.extent.top < halfY){
+        }else if(this.extent.left > truncDiv(halfX, 2) && this.extent.top < halfY){
           this.anchor = Anchor.TopRight;
         }
       }
     }
 
+    const vpW = asExtentInt(ResolutionManager.getViewportWidth());
+    const vpH = asExtentInt(ResolutionManager.getViewportHeight());
+    const w = asExtentInt(this.extent.width);
+    const h = asExtentInt(this.extent.height);
+    const left = asExtentInt(this.extent.left);
+    const top = asExtentInt(this.extent.top);
+    // HUD right/bottom dock previously hardcoded 800×600; use panel design size (often 800×600).
+    const designW = parentW > 0 ? parentW : GUI_DESIGN_WIDTH;
+    const designH = parentH > 0 ? parentH : GUI_DESIGN_HEIGHT;
+
     switch(this.anchor){
       case Anchor.TopLeft:
-        this.anchorOffset.x = -((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2)) + this.extent.left;
-        this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
+        this.anchorOffset.x = -truncDiv(vpW, 2) + truncDiv(w, 2) + left;
+        this.anchorOffset.y = truncDiv(vpH, 2) - (top + truncDiv(h, 2));
       break;
       case Anchor.TopCenter:
-        if(this.extent.left < halfX){
-          this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
-        }else{
-          this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
-        }
+        this.anchorOffset.y = truncDiv(vpH, 2) - (top + truncDiv(h, 2));
       break;
       case Anchor.TopRight:
-        this.anchorOffset.x = ((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
-        this.anchorOffset.y = ((GameState.ResolutionManager.getViewportHeight()) / 2) - (this.extent.top + (this.extent.height/2));
+        this.anchorOffset.x = truncDiv(vpW, 2) + truncDiv(w, 2) + (left - designW);
+        this.anchorOffset.y = truncDiv(vpH, 2) - (top + truncDiv(h, 2));
       break;
       case Anchor.BottomLeft:
-        this.anchorOffset.x = -((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2)) + this.extent.left;
-        this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+        this.anchorOffset.x = -truncDiv(vpW, 2) + truncDiv(w, 2) + left;
+        this.anchorOffset.y = -(truncDiv(vpH, 2) - (designH - top) + truncDiv(h, 2));
       break;
       case Anchor.BottomCenter:
-        if(this.extent.left < (halfX)){
-          this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
-        }else{
-          this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));  
-        }
+        this.anchorOffset.y = -(truncDiv(vpH, 2) - (designH - top) + truncDiv(h, 2));
       break;
       case Anchor.BottomRight:
-        this.anchorOffset.x = ((GameState.ResolutionManager.getViewportWidth()) / 2) + ((this.extent.width/2) + (this.extent.left - 800));
-        this.anchorOffset.y = -(((GameState.ResolutionManager.getViewportHeight()) / 2) - (600 - this.extent.top) + (this.extent.height/2));
+        this.anchorOffset.x = truncDiv(vpW, 2) + truncDiv(w, 2) + (left - designW);
+        this.anchorOffset.y = -(truncDiv(vpH, 2) - (designH - top) + truncDiv(h, 2));
       break;
       case Anchor.User: {
-        // Absolute top-left screen pixels → centered GUI widget coords (Y up)
-        const vpW = GameState.ResolutionManager.getViewportWidth();
-        const vpH = GameState.ResolutionManager.getViewportHeight();
-        this.anchorOffset.x = -vpW / 2 + this.extent.left + this.extent.width / 2;
-        this.anchorOffset.y = vpH / 2 - this.extent.top - this.extent.height / 2;
+        this.anchorOffset.x = -truncDiv(vpW, 2) + left + truncDiv(w, 2);
+        this.anchorOffset.y = truncDiv(vpH, 2) - top - truncDiv(h, 2);
       } break;
       default:
-        this.anchorOffset = new THREE.Vector2(posX, posY);
+        this.anchorOffset = new THREE.Vector2(centered.x, centered.y);
       break;
     }
 
-    this.widget.position.x = this.anchorOffset.x + this.offset.x;
-    this.widget.position.y = this.anchorOffset.y + this.offset.y;
+    this.widget.position.x = asExtentInt(this.anchorOffset.x + this.offset.x);
+    this.widget.position.y = asExtentInt(this.anchorOffset.y + this.offset.y);
 
     this.updateBounds();
-
   }
 
-  getActiveControls(){
+  getActiveControls(panelLocalX?: number, panelLocalY?: number){
 
     if(!this.widget.visible)
       return [];
 
+    let localX = panelLocalX;
+    let localY = panelLocalY;
+    if (localX === undefined || localY === undefined) {
+      const local = this.getPanelLocalMouse();
+      localX = local.x;
+      localY = local.y;
+    }
+
     let controls: GUIControl[] = [];
     for(let i = 0; i < this.children.length; i++){
       let control = this.children[i];
-      if(control.box && control.box.containsPoint(Mouse.positionUI) && (control.allowClick || control.editable)){
+      const hit = control.hitCheckMouse(localX, localY);
+      if(hit && (control.allowClick || control.editable)){
         controls.push(control);
-      }else{
+      }else if(!hit){
         this.menu.setWidgetHoverActive(control, false);
       }
-      if(control.box && control.box.containsPoint(Mouse.positionUI)){
-        controls = controls.concat( control.getActiveControls() );
+      if(hit){
+        controls = controls.concat( control.getActiveControls(localX, localY) );
       }
     }
     
@@ -1727,23 +1813,35 @@ export class GUIControl {
 
   updateBounds(){
     let worldPosition: THREE.Vector3 = new THREE.Vector3;
+    const w = asExtentInt(this.extent.width);
+    const h = asExtentInt(this.extent.height);
     if(this.list){
       worldPosition.copy(this.parent.widget.position.clone());
       // RTT content is drawn on list.targetMesh, which may be shifted for the scrollbar
       const rtt = (this.list as any).targetMesh as THREE.Mesh | undefined;
-      const ox = rtt?.position?.x ?? 0;
-      const oy = rtt?.position?.y ?? 0;
-      this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x + ox;
-      this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y + oy;
-      this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x + ox;
-      this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y + oy;
+      const ox = asExtentInt(rtt?.position?.x ?? 0);
+      const oy = asExtentInt(rtt?.position?.y ?? 0);
+      const wx = asExtentInt(this.widget.position.x);
+      const wy = asExtentInt(this.widget.position.y);
+      const px = asExtentInt(worldPosition.x);
+      const py = asExtentInt(worldPosition.y);
+      this.box.min.x = wx - truncDiv(w, 2) + px + ox;
+      this.box.min.y = wy - truncDiv(h, 2) + py + oy;
+      this.box.max.x = wx + truncDiv(w, 2) + px + ox;
+      this.box.max.y = wy + truncDiv(h, 2) + py + oy;
       
       for(let i = 0; i < this.children.length; i++){
         this.children[i].updateBounds();
       }
     }else{
       this.widget.getWorldPosition(worldPosition);
-      this.box.setFromCenterAndSize((new THREE.Vector2(worldPosition.x, worldPosition.y)), new THREE.Vector2(this.extent.width * this.menu.scale, this.extent.height * this.menu.scale));
+      const scale = this.menu?.scale ?? 1;
+      const bw = asExtentInt(w * scale);
+      const bh = asExtentInt(h * scale);
+      const cx = asExtentInt(worldPosition.x);
+      const cy = asExtentInt(worldPosition.y);
+      this.box.min.set(cx - truncDiv(bw, 2), cy - truncDiv(bh, 2));
+      this.box.max.set(cx + truncDiv(bw, 2), cy + truncDiv(bh, 2));
     }
   }
 
@@ -1774,11 +1872,11 @@ export class GUIControl {
       //parentExtent = this.parent.control.extent;
     //}
 
-    let left = this.extent.left - ( (parentExtent.width - this.extent.width) / 2 );
-    let top = -this.extent.top + ( (parentExtent.height - this.extent.height) / 2 );
+    let left = asExtentInt(this.extent.left) - truncDiv(asExtentInt(parentExtent.width) - asExtentInt(this.extent.width), 2);
+    let top = -asExtentInt(this.extent.top) + truncDiv(asExtentInt(parentExtent.height) - asExtentInt(this.extent.height), 2);
 
     // Retail SetExtent: only shift content left when scrollbar is on the left
-    const shrinkWidth = this.getShrinkWidth();
+    const shrinkWidth = asExtentInt(this.getShrinkWidth());
     if (shrinkWidth && this.flipLeft()) {
       left += shrinkWidth;
     }
@@ -1786,8 +1884,8 @@ export class GUIControl {
     return {
       top: top,
       left: left,
-      width: this.extent.width,
-      height: this.extent.height,
+      width: asExtentInt(this.extent.width),
+      height: asExtentInt(this.extent.height),
     };
 
   }

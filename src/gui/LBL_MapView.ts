@@ -7,10 +7,14 @@ import { MapMode } from "@/enums/engine/MapMode";
 import * as THREE from "three";
 import { GameEngineType } from "@/enums/engine";
 import { TextureLoader } from "@/loaders";
+import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 // import { ShaderManager, MenuManager, PartyManager } from "@/managers";
 
 const FOG_SIZE = 64;
 const FOG_SIZE_HALF = FOG_SIZE/2;
+/** Retail map texture design size (note pan clamp). */
+const MAP_TEX_WIDTH = 440;
+const MAP_TEX_HEIGHT = 256;
 
 const planeGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
 
@@ -292,9 +296,15 @@ export class LBL_MapView {
       const mesh = this.mapNotes[i];
       const note = mesh.userData.moduleObject;
       if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
-        this.bounds.min.set(mesh.position.x - (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y - (this.mapNoteDefaultScale*this.mapNoteSize/2));
-        this.bounds.max.set(mesh.position.x + (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y + (this.mapNoteDefaultScale*this.mapNoteSize/2));
-        if(this.bounds.containsPoint(this.mousePosition)){
+        const half = truncDiv(asExtentInt(this.mapNoteDefaultScale * this.mapNoteSize), 2);
+        const mx = asExtentInt(mesh.position.x);
+        const my = asExtentInt(mesh.position.y);
+        this.bounds.min.set(mx - half, my - half);
+        this.bounds.max.set(mx + half, my + half);
+        const px = asExtentInt(this.mousePosition.x);
+        const py = asExtentInt(this.mousePosition.y);
+        if(px >= this.bounds.min.x && px <= this.bounds.max.x &&
+           py >= this.bounds.min.y && py <= this.bounds.max.y){
           this.mapNoteSelected = note;
           return note;
         }
@@ -329,8 +339,8 @@ export class LBL_MapView {
     const mapPos = this.areaMap.toMapCoordinates(this.position.x, this.position.y);
     this.currentCamera.position.x = (scaleSize.width * mapPos.x);
     this.currentCamera.position.y = (scaleSize.height * mapPos.y);
-    const minX = this.width/2;
-    const maxX = Math.max(this.width/2, 440 - this.width/2)
+    const minX = truncDiv(asExtentInt(this.width), 2);
+    const maxX = Math.max(minX, MAP_TEX_WIDTH - minX);
 
     if(this.currentCamera.position.x < minX){
       this.currentCamera.position.x = minX;
@@ -340,8 +350,8 @@ export class LBL_MapView {
       this.currentCamera.position.x = maxX;
     }
 
-    const maxY = Math.max(this.height/2, 256 - this.height/2);
-    const minY = this.height/2;
+    const minY = truncDiv(asExtentInt(this.height), 2);
+    const maxY = Math.max(minY, MAP_TEX_HEIGHT - minY);
 
     if(this.currentCamera.position.y < minY){
       this.currentCamera.position.y = minY;
@@ -391,13 +401,21 @@ export class LBL_MapView {
         const note = mesh.userData.moduleObject;
         mesh.visible = note.mapNoteEnabled;
         if(this.areaMap.isMapPositionExplored(note.position.x, note.position.y)){
-          this.bounds.min.set(mesh.position.x - (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y - (this.mapNoteDefaultScale*this.mapNoteSize/2));
-          this.bounds.max.set(mesh.position.x + (this.mapNoteDefaultScale*this.mapNoteSize/2), mesh.position.y + (this.mapNoteDefaultScale*this.mapNoteSize/2));
+          const half = truncDiv(asExtentInt(this.mapNoteDefaultScale * this.mapNoteSize), 2);
+          const mx = asExtentInt(mesh.position.x);
+          const my = asExtentInt(mesh.position.y);
+          this.bounds.min.set(mx - half, my - half);
+          this.bounds.max.set(mx + half, my + half);
 
           if(this.mapNoteSelected == note){
             material.color.copy(this.LBL_MAPVIEW.defaultHighlightColor);
             mesh.scale.set(this.mapNoteSize*this.mapNodeHoverScale, this.mapNoteSize*this.mapNodeHoverScale, 1);
-          }else if(this.bounds.containsPoint(this.mousePosition)){
+          }else if(
+            asExtentInt(this.mousePosition.x) >= this.bounds.min.x &&
+            asExtentInt(this.mousePosition.x) <= this.bounds.max.x &&
+            asExtentInt(this.mousePosition.y) >= this.bounds.min.y &&
+            asExtentInt(this.mousePosition.y) <= this.bounds.max.y
+          ){
             material.color.copy(this.LBL_MAPVIEW.defaultHighlightColor);
             mesh.scale.set(this.mapNoteSize*this.mapNoteDefaultScale, this.mapNoteSize*this.mapNoteDefaultScale, 1);
           }else{
@@ -436,8 +454,8 @@ export class LBL_MapView {
   }
 
   getMapTextureScaleSize(): { width: number, height: number } {
-    let width = 440;
-    let height = 256;
+    let width = MAP_TEX_WIDTH;
+    let height = MAP_TEX_HEIGHT;
 
     if(GameState.GameKey == GameEngineType.TSL){
       width = 512;

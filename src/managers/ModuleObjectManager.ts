@@ -15,6 +15,7 @@ import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { isClientCombatMode } from "@/managers/reticle";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
+import { EngineState } from "@/enums/engine/EngineState";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 
 /** First non-MG object id — retail SWMG StackPushObject uses mgo_index 0..0xfe. */
@@ -29,7 +30,10 @@ const FRONT_CONE_DOT = 0.866;
 const FRONT_CONE_ORIGIN_BACK = 4;
 /** LOS grace while sticky target briefly occluded (field205_0x368). */
 const STICKY_LOS_GRACE_SEC = 1.0;
-const UPDATE_SELECTABLE_OBJECTS_INTERVAL = 0.5;
+/** Combat dead-target grace (retail target_changing = 0x3fc00000). */
+const TARGET_CHANGING_SEC = 1.5;
+/** Enemy / mine sighted latch (field216_0x394 / field219_0x3a0). */
+const SIGHTED_LATCH_SEC = 10.0;
 
 type NearestValid = { ok: boolean; hostile: boolean };
 type NearestLists = { around: ModuleObject[]; front: ModuleObject[] };
@@ -705,6 +709,14 @@ export class ModuleObjectManager {
   static #currentVisibleObjectIndex: number = 0;
   /** Sticky LOS grace timer (retail field205_0x368). */
   static #stickyLosGrace = 0;
+  /** Combat dead-target grace (retail target_changing). */
+  static #targetChanging = 0;
+  /** Enemy first-sight latch (retail enemy_sighted + field216_0x394). */
+  static #enemySighted = false;
+  static #enemySightedLatch = 0;
+  /** Mine first-sight latch (retail field194_0x328 + field219_0x3a0). */
+  static #mineSighted = false;
+  static #mineSightedLatch = 0;
   static #cachedFront: ModuleObject[] = [];
 
   static #tmpForward = new THREE.Vector3();
@@ -869,10 +881,10 @@ export class ModuleObjectManager {
   /**
    * Retail CClientExoAppInternal::ShowObject @ 005f9c60 (presentation subset).
    * @param doLookAt - param_2: creature LookAt
-   * @param doCameraFocus - param_3: SetLookAtTarget. Tab/SelectNearest passes true.
-   *   Combat-mode auto-focus is intentionally omitted here: continuous
-   *   FollowerCamera.focusObject yaw moves the floating target menu and
-   *   breaks BTN_TARGET clicks (security / attack).
+   * @param doCameraFocus - param_3: SetLookAtTarget. Tab/SelectNearest and
+   *   enemy/mine first-sight pass true. Continuous combat-mode auto-focus is
+   *   intentionally omitted: FollowerCamera.focusObject yaw moves the floating
+   *   target menu and breaks BTN_TARGET clicks (security / attack).
    */
   static showObject(
     obj: ModuleObject | undefined,
@@ -892,10 +904,11 @@ export class ModuleObjectManager {
     this.#currentVisibleObject = obj;
     this.#currentVisibleObjectIndex = this.playerSelectableObjects.indexOf(obj);
 
+    // Retail only touches camera when param_2 (LookAt) is set.
     if(doLookAt && doCameraFocus){
       FollowerCamera.setFocusObject(obj);
-    }else if(!doCameraFocus){
-      // Mouse / passive acquisition should not keep a prior Tab focus yaw
+    }else if(doLookAt && !doCameraFocus){
+      // New passive / mouse acquisition should not keep a prior Tab focus yaw
       FollowerCamera.clearFocusObject();
     }
   }
@@ -936,6 +949,14 @@ export class ModuleObjectManager {
     return this.playerSelectableObjects;
   }
 
+  /** True when object is a trap trigger suitable for MineSighted force-pick. */
+  static #isMineTarget(obj: ModuleObject): boolean {
+    return (
+      BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger) &&
+      (obj as ModuleTrigger).type === ModuleTriggerType.TRAP
+    );
+  }
+
   /**
    * Retail CClientExoAppInternal::DoPassiveSelection @ 005fa630.
    */
@@ -945,36 +966,156 @@ export class ModuleObjectManager {
       return;
     }
 
-    if(!this.playerSelectableObjects.length){
-      this.GetSelectableObjectsInRange(player);
-    }
+    // Retail rebuilds GetNearestObjects every DoPassiveSelection call
+    this.GetSelectableObjectsInRange(player);
 
     const around = this.playerSelectableObjects;
     const front = this.#cachedFront;
-    const last = GameState.CursorManager.selectedObject;
+    let last = GameState.CursorManager.selectedObject;
     const combat = isClientCombatMode();
+    const paused = GameState.State === EngineState.PAUSED;
+
+    let hasHostileInPool = false;
+    let hasMineInPool = false;
+    for(let i = 0; i < around.length; i++){
+      const obj = around[i];
+      if(!this.isNearestHostile(obj)) continue;
+      if(this.#isMineTarget(obj)){
+        hasMineInPool = true;
+      }else{
+        hasHostileInPool = true;
+      }
+    }
 
     const inAround = (obj: ModuleObject | undefined) =>
       !!obj && around.indexOf(obj) !== -1;
+
+    let keepSticky = false;
+    let forceLookAt = false;
+    let forceCameraFocus = false;
+
+    // Combat dead-target grace when last left the pool (retail target_changing)
+    if(last && !inAround(last) && combat && hasHostileInPool){
+      const cre = BitWise.InstanceOfObject(last, ModuleObjectType.ModuleCreature)
+        ? (last as ModuleCreature)
+        : undefined;
+      const dead = !!(cre && typeof cre.isDead === 'function' && cre.isDead());
+      if(dead){
+        if(this.#targetChanging <= 0){
+          this.#targetChanging = TARGET_CHANGING_SEC;
+          keepSticky = true;
+        }else{
+          this.#targetChanging -= delta;
+          if(this.#targetChanging > 0){
+            keepSticky = true;
+          }else{
+            this.#targetChanging = 0;
+          }
+        }
+      }else{
+        this.#targetChanging = 0;
+      }
+    }else if(inAround(last)){
+      this.#targetChanging = 0;
+    }
 
     // Sticky: keep last_target while still in pool
     if(last && inAround(last)){
       if(this.canSeeObject(player, last)){
         this.#stickyLosGrace = 0;
-        // Drop stale Tab focus on a different object so the floating menu stays put
-        if(FollowerCamera.focusObject && FollowerCamera.focusObject !== last){
-          FollowerCamera.clearFocusObject();
+        keepSticky = true;
+      }else{
+        this.#stickyLosGrace += delta;
+        if(this.#stickyLosGrace < STICKY_LOS_GRACE_SEC){
+          keepSticky = true;
+        }else{
+          this.#stickyLosGrace = 0;
+          keepSticky = false;
         }
-        return;
       }
-      this.#stickyLosGrace += delta;
-      if(this.#stickyLosGrace < STICKY_LOS_GRACE_SEC){
-        return;
+    }else if(!keepSticky){
+      this.#stickyLosGrace = 0;
+    }
+
+    // Enemy / mine CanSee scan + first-sight force acquisition
+    let sawHostileCanSee = false;
+    let sawMineCanSee = false;
+    const enemyRising = !this.#enemySighted;
+    const mineRising = !this.#mineSighted;
+
+    if(hasHostileInPool || hasMineInPool){
+      for(let i = 0; i < around.length; i++){
+        const obj = around[i];
+        if(!this.isNearestHostile(obj)) continue;
+        if(!this.canSeeObject(player, obj)) continue;
+
+        const isMine = this.#isMineTarget(obj);
+        if(isMine){
+          sawMineCanSee = true;
+        }else{
+          sawHostileCanSee = true;
+        }
+
+        // Retail skips force-pick while paused; first match wins, scan continues for latches
+        if(paused || forceCameraFocus) continue;
+
+        if(mineRising && isMine){
+          if(!combat){
+            GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.MineSighted);
+          }
+          last = obj;
+          keepSticky = true;
+          forceLookAt = true;
+          forceCameraFocus = true;
+          continue;
+        }
+
+        if(
+          enemyRising &&
+          !isMine &&
+          (
+            BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature) ||
+            BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)
+          )
+        ){
+          if(!combat){
+            GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
+          }
+          last = obj;
+          keepSticky = true;
+          forceLookAt = true;
+          forceCameraFocus = true;
+        }
       }
-      this.#stickyLosGrace = 0;
-      // Fall through to auto-pick
-    }else{
-      this.#stickyLosGrace = 0;
+    }
+
+    // Latch refresh / decay (retail field216_0x394 / field219_0x3a0)
+    if(sawHostileCanSee){
+      this.#enemySighted = true;
+      this.#enemySightedLatch = SIGHTED_LATCH_SEC;
+    }else if(this.#enemySighted){
+      this.#enemySightedLatch -= delta;
+      if(this.#enemySightedLatch <= 0){
+        this.#enemySighted = false;
+        this.#enemySightedLatch = 0;
+      }
+    }
+
+    if(sawMineCanSee){
+      this.#mineSighted = true;
+      this.#mineSightedLatch = SIGHTED_LATCH_SEC;
+    }else if(this.#mineSighted){
+      this.#mineSightedLatch -= delta;
+      if(this.#mineSightedLatch <= 0){
+        this.#mineSighted = false;
+        this.#mineSightedLatch = 0;
+      }
+    }
+
+    if(keepSticky && last){
+      // Retail sticky+CanSee: LookAt only when force-sight (local_2c) set
+      this.showObject(last, forceLookAt, forceCameraFocus);
+      return;
     }
 
     const firstCanSee = (list: ModuleObject[], hostileOnly: boolean): ModuleObject | undefined => {
@@ -1000,11 +1141,12 @@ export class ModuleObjectManager {
 
     if(pick){
       if(pick === last){
+        this.showObject(pick, false, false);
         return;
       }
-      // New acquisition: LookAt; camera focus if combat (handled inside showObject)
       this.showObject(pick, true, false);
-    }else if(last){
+    }else{
+      // Retail clears whenever presentation flag stays 0
       this.showObject(undefined, false, false);
     }
   }
@@ -1092,21 +1234,13 @@ export class ModuleObjectManager {
     return this.selectNearestObject(true);
   }
 
-  static tUpdateSelectable = 0;
-
   /**
-   * Rebuild nearest lists on interval; run DoPassiveSelection every tick.
+   * Run DoPassiveSelection every tick (rebuilds nearest lists internally).
    */
   static TickSelectableObjects(delta: number = 0){
     const player = PartyManager.party[0];
     if(!player){
       return;
-    }
-
-    this.tUpdateSelectable -= delta;
-    if(this.tUpdateSelectable <= 0){
-      this.GetSelectableObjectsInRange(player);
-      this.tUpdateSelectable = UPDATE_SELECTABLE_OBJECTS_INTERVAL;
     }
 
     this.doPassiveSelection(player, delta);

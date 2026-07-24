@@ -10,6 +10,7 @@ import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
+import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 
 /** K1 CSWGuiOptionsCheckbox fixed glyph size (`0x19`). */
 const OPTIONS_CHECKBOX_SIZE = 0x19;
@@ -397,7 +398,7 @@ export class GUICheckBox extends GUIControl{
    */
   getOptionsCheckboxCenter(): THREE.Vector2 {
     return new THREE.Vector2(
-      -(this.extent.width - OPTIONS_CHECKBOX_SIZE) / 2,
+      -truncDiv(asExtentInt(this.extent.width) - OPTIONS_CHECKBOX_SIZE, 2),
       -2
     );
   }
@@ -453,8 +454,8 @@ export class GUICheckBox extends GUIControl{
   getInnerSize(){
     if(this.isOptionsStyleLayout()){
       return {
-        width: Math.max(0, this.extent.width - OPTIONS_TEXT_OFFSET),
-        height: this.extent.height,
+        width: Math.max(0, asExtentInt(this.extent.width) - OPTIONS_TEXT_OFFSET),
+        height: asExtentInt(this.extent.height),
       };
     }
     return super.getInnerSize();
@@ -472,19 +473,20 @@ export class GUICheckBox extends GUIControl{
     this.widget.userData.text.position.z = this.zOffset;
 
     // Text strip starts at left + 0x1e (widget left is −width/2).
-    this.widget.userData.text.position.x = -(this.extent.width / 2) + OPTIONS_TEXT_OFFSET;
+    this.widget.userData.text.position.x = -truncDiv(asExtentInt(this.extent.width), 2) + OPTIONS_TEXT_OFFSET;
 
     const innerSize = this.getInnerSize();
     const vertical = this.text.alignment & GUIControlAlignment.VerticalMask;
     switch(vertical){
       case GUIControlAlignment.VerticalTop:
-        this.widget.userData.text.position.y = (innerSize.height / 2 - this.textSize.y / 2) + this.textSize.y / 2;
+        this.widget.userData.text.position.y = truncDiv(asExtentInt(innerSize.height), 2);
         break;
       case GUIControlAlignment.VerticalCenter:
-        this.widget.userData.text.position.y = this.textSize.y / 2;
+        this.widget.userData.text.position.y = truncDiv(asExtentInt(this.textSize.y), 2);
         break;
       case GUIControlAlignment.VerticalBottom:
-        this.widget.userData.text.position.y = -(innerSize.height / 2 - this.textSize.y / 2) + this.textSize.y / 2;
+        this.widget.userData.text.position.y =
+          -truncDiv(asExtentInt(innerSize.height), 2) + asExtentInt(this.textSize.y);
         break;
     }
   }

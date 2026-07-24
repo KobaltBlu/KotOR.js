@@ -77,8 +77,14 @@ export class Mouse {
   //MouseEvent client x/y
   static positionViewport: THREE.Vector2 = new THREE.Vector2();
 
-  //Game UI mouse position
+  //Game UI mouse position (centered Y-up; legacy float path for sliders/map)
   static positionUI: THREE.Vector2 = new THREE.Vector2();
+
+  /**
+   * Retail GuiManager mouse_x / mouse_y — top-left viewport pixel ints.
+   * Drive GUI HitCheckMouse / GetLocalMouseCoords from these.
+   */
+  static positionViewportInt: { x: number; y: number } = { x: 0, y: 0 };
 
   //UI Control State
   static downItem: GUIControl;
@@ -111,6 +117,9 @@ export class Mouse {
       Mouse.positionUI.x = Mouse.Vector.x = ( Mouse.positionViewport.x - (res.width/2) );
       Mouse.positionUI.y = Mouse.Vector.y = - ( Mouse.positionViewport.y -(res.height/2) );
     }
+
+    Mouse.positionViewportInt.x = Math.trunc(Mouse.positionViewport.x) | 0;
+    Mouse.positionViewportInt.y = Math.trunc(Mouse.positionViewport.y) | 0;
   }
 
   /**

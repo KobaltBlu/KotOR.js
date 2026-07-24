@@ -149,23 +149,27 @@ export class ActionMoveToPoint extends Action {
         this.computedPath.timer -= 10*delta;
       }
 
-      const timeout = this.getParameter<number>(8) - delta;
-      if(timeout <= 0){
-        this.stopMoving(owner);
-        // Timeout fallback — JumpToPoint (same as ForceMove retail)
-        const fallback_action = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
-        fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);
-        fallback_action.setParameter(1, ActionParameterType.FLOAT, this.real_target_position.y);
-        fallback_action.setParameter(2, ActionParameterType.FLOAT, this.real_target_position.z);
-        fallback_action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-        fallback_action.setParameter(4, ActionParameterType.INT, 0);
-        fallback_action.setParameter(5, ActionParameterType.FLOAT, 20.0);
-        fallback_action.setParameter(6, ActionParameterType.FLOAT, 0);
-        fallback_action.setParameter(7, ActionParameterType.FLOAT, 0);
-        owner.actionQueue.addFront(fallback_action);
-        return ActionStatus.FAILED;
+      // Retail AddMoveToPointAction: timeout 0 = no Jump; >0 = ForceMove countdown.
+      const moveTimeout = this.getParameter<number>(8);
+      if(typeof moveTimeout === 'number' && moveTimeout > 0){
+        const timeout = moveTimeout - delta;
+        if(timeout <= 0){
+          this.stopMoving(owner);
+          // ForceMove expiry — JumpToPoint (ExecuteCommandMoveTo* @ 0053fe00)
+          const fallback_action = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
+          fallback_action.setParameter(0, ActionParameterType.FLOAT, this.real_target_position.x);
+          fallback_action.setParameter(1, ActionParameterType.FLOAT, this.real_target_position.y);
+          fallback_action.setParameter(2, ActionParameterType.FLOAT, this.real_target_position.z);
+          fallback_action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+          fallback_action.setParameter(4, ActionParameterType.INT, 0);
+          fallback_action.setParameter(5, ActionParameterType.FLOAT, 20.0);
+          fallback_action.setParameter(6, ActionParameterType.FLOAT, 0);
+          fallback_action.setParameter(7, ActionParameterType.FLOAT, 0);
+          owner.actionQueue.addFront(fallback_action);
+          return ActionStatus.FAILED;
+        }
+        this.setParameter(8, ActionParameterType.FLOAT, timeout);
       }
-      this.setParameter(8, ActionParameterType.FLOAT, timeout);
 
       return ActionStatus.IN_PROGRESS;
     }else{
@@ -268,7 +272,7 @@ export class ActionMoveToPoint extends Action {
     move.setParameter(5, ActionParameterType.INT, moveFlags);
     move.setParameter(6, ActionParameterType.FLOAT, range);
     move.setParameter(7, ActionParameterType.INT, this.getParameter<number>(7) || 0);
-    move.setParameter(8, ActionParameterType.FLOAT, typeof timeout === 'number' ? timeout : 30.0);
+    move.setParameter(8, ActionParameterType.FLOAT, typeof timeout === 'number' ? timeout : 0);
     this.owner.actionQueue.addFront(move);
   }
 

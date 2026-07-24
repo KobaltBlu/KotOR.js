@@ -50,7 +50,7 @@ export class ModuleMGEnemy extends ModuleObject {
   boostVelocity: number;
   invince: number;
   alive: boolean;
-  /** Retail enemy Trigger byte — SWMG_IsTrigger when non-zero. */
+  /** Retail CSWMiniEnemy Trigger byte @ +0x1a0 — SWMG_IsTrigger / IsObstacle fallthrough. */
   isTrigger: boolean = false;
   sphere_geom: THREE.Mesh;
   sphere_radius: number;

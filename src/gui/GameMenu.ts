@@ -12,9 +12,9 @@ import { GUIControl } from "@/gui/GUIControl";
 import { GUIControlFactory } from "@/gui/GUIControlFactory";
 import { BitWise } from "@/utility/BitWise";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
-import { Mouse } from "@/controls/Mouse";
 import { KeyMapper } from "@/controls";
 import { shouldSuppressGameMenuHoverForListRow } from "@/gui/listrow/listRowHover";
+import { GUIPanelCoordFlags } from "@/gui/GUICoord";
 
 /**
  * GameMenu class.
@@ -53,6 +53,12 @@ export class GameMenu {
   userCanClose: boolean = true;
   width: number = 640;
   height: number = 480;
+  /**
+   * Retail CSWGuiPanel bit_flags for GetLocalMouseCoords.
+   * UseExtentOffset|CenterInViewport matches our centered Three.js panel projection
+   * (clear UseExtentOffset for retail 640×480 mouse letterbox).
+   */
+  panelCoordFlags: number = GUIPanelCoordFlags.UseExtentOffset | GUIPanelCoordFlags.CenterInViewport;
 
   background: string;
   backgroundSprite: THREE.Mesh;
@@ -102,8 +108,8 @@ export class GameMenu {
     this.tGuiPanel.allowClick = false;
     
     const extent = this.tGuiPanel.extent;
-    this.width = extent.width;
-    this.height = extent.height;
+    this.width = Math.trunc(extent.width) | 0;
+    this.height = Math.trunc(extent.height) | 0;
 
     const panelControl = this.tGuiPanel.createControl();
 
@@ -331,9 +337,10 @@ export class GameMenu {
     }
 
     if(this.activeControls.length){
+      const local = this.tGuiPanel?.getPanelLocalMouse?.();
       for(var i = this.activeControls.length; i--;){
         const control = this.activeControls[i];
-        if(!control.box.containsPoint(Mouse.positionUI)){
+        if(!local || !control.hitCheckMouse(local.x, local.y)){
           control.onHoverOut();
           this.activeControls.splice(i, 1);
         }

@@ -35,6 +35,8 @@ import { EngineMode } from "@/enums/engine/EngineMode";
 export class ModuleRoom extends ModuleObject {
   ambientScale: number = 0;
   envAudio: number = 0;
+  /** Retail ARE Rooms.DisableWeather — suppress weather FX in this room. */
+  disableWeather: boolean = false;
   roomName: string;
   visObject: VISObject;
 
@@ -73,6 +75,10 @@ export class ModuleRoom extends ModuleObject {
 
   setEnvAudio(audio: number){
     this.envAudio = audio;
+  }
+
+  setDisableWeather(disabled: boolean){
+    this.disableWeather = !!disabled;
   }
 
   #boxSize: THREE.Vector3 = new THREE.Vector3();

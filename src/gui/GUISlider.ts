@@ -3,19 +3,27 @@ import * as THREE from "three";
 import { TextureLoader } from "@/loaders";
 import { TextureType } from "@/enums/loaders/TextureType";
 import { GameState } from "@/GameState";
-import { Mouse } from "@/controls/Mouse";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUISliderDirection } from "@/enums/gui/GUISliderDirection";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { GUIControl } from "@/gui/GUIControl";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { asExtentInt, hitCheckMouseLocal, truncDiv } from "@/gui/GUICoord";
+
+/** Retail CSWGuiSlider::HitCheckSlider @ 00419060 result codes. */
+export enum SliderHit {
+  MISS = 0,
+  THUMB = 1,
+  BEFORE = 2,
+  AFTER = 3,
+}
 
 /**
  * GUISlider class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file GUISlider.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -56,8 +64,7 @@ export class GUISlider extends GUIControl{
     this.thumb.mesh = new THREE.Sprite( this.thumb.material );
     this.widget.add(this.thumb.mesh);
 
-    this.thumb.mesh.addEventListener('click', (e) => {
-      console.log('hello');
+    this.thumb.mesh.addEventListener('click', () => {
       this.mouseInside();
     });
 
@@ -66,19 +73,21 @@ export class GUISlider extends GUIControl{
 
       this.thumb.mesh.position.z = 2;
       this.thumb.mesh.name = 'SCROLLBAR thumb';
-      this.thumb.mesh.scale.x = this.thumb.width;
-      this.thumb.mesh.scale.y = this.thumb.height;
+      this.thumb.mesh.scale.x = asExtentInt(this.thumb.width);
+      this.thumb.mesh.scale.y = asExtentInt(this.thumb.height);
 
       let parentPos = this.widget.getWorldPosition(new THREE.Vector3());
+      const halfW = truncDiv(asExtentInt(this.extent.width), 2);
+      const halfH = truncDiv(asExtentInt(this.extent.height), 2);
 
       this.thumb.mesh.userData.box = new THREE.Box2(
         new THREE.Vector2(
-          (parentPos.x - this.extent.width/2),
-          (parentPos.y - this.extent.height/2)
+          asExtentInt(parentPos.x) - halfW,
+          asExtentInt(parentPos.y) - halfH
         ),
         new THREE.Vector2(
-          (parentPos.x + this.extent.width/2),
-          (parentPos.y + this.extent.height/2)
+          asExtentInt(parentPos.x) + halfW,
+          asExtentInt(parentPos.y) + halfH
         )
       )
 
@@ -88,9 +97,10 @@ export class GUISlider extends GUIControl{
           this.thumb.material.alphaTest = 0.5;
           this.thumb.material.needsUpdate = true;
           if(texture.header){
-            this.thumb.width = texture.header.width;
-            this.thumb.height = texture.header.height;
-            this.thumb.mesh.scale.set(texture.header.width, texture.header.height, 1);
+            this.thumb.width = asExtentInt(texture.header.width);
+            this.thumb.height = asExtentInt(texture.header.height);
+            this.thumb.mesh.scale.set(this.thumb.width, this.thumb.height, 1);
+            this.setValue(this.value);
           }
         });
         TextureLoader.LoadQueue();
@@ -103,26 +113,18 @@ export class GUISlider extends GUIControl{
 
     this.addEventListener('click', (e) =>{
       e.stopPropagation();
-      const mouseX = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidthScaled() / 2);
-      const mouseY = Mouse.positionViewport.y - (GameState.ResolutionManager.getViewportHeightScaled() / 2);
-      const scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
-      const scrollTop = ( this.thumb.mesh.position.y + (this.thumb.mesh.scale.y / 2) ) + mouseY;
-
-      this.mouseOffset.x = scrollLeft;
-      this.mouseOffset.y = scrollTop;
-
+      const local = this.getPanelLocalMouse();
+      const hit = this.hitCheckSlider(local.x, local.y);
+      if (hit === SliderHit.MISS) return;
       this.mouseInside();
     });
 
     this.addEventListener('mouseDown', (e) => {
       e.stopPropagation();
-      const mouseX = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidthScaled() / 2);
-      const mouseY = Mouse.positionViewport.y - (GameState.ResolutionManager.getViewportHeightScaled() / 2);
-      const scrollLeft = ( this.thumb.mesh.position.x + (this.thumb.mesh.scale.x / 2) ) + mouseX;
-      const scrollTop = ( this.thumb.mesh.position.y + (this.thumb.mesh.scale.y / 2) ) + mouseY;
-
-      this.mouseOffset.x = scrollLeft;
-      this.mouseOffset.y = scrollTop;
+      const local = this.getPanelLocalMouse();
+      const hit = this.hitCheckSlider(local.x, local.y);
+      if (hit === SliderHit.MISS) return;
+      this.mouseInside();
     });
 
     this.addEventListener('mouseUp', () => {
@@ -138,55 +140,80 @@ export class GUISlider extends GUIControl{
       this.setValue(GameState.iniConfig.getProperty(this.iniProperty) * .01);
   }
 
+  /**
+   * Retail CSWGuiSlider::HitCheckSlider @ 00419060.
+   * Thumb (1) / before (2) / after (3) / miss (0) in panel-local ints.
+   * Axis: vertical when extent.width < extent.height.
+   */
+  hitCheckSlider(panelLocalX: number, panelLocalY: number): SliderHit {
+    const x = asExtentInt(panelLocalX);
+    const y = asExtentInt(panelLocalY);
+    const left = asExtentInt(this.extent.left);
+    const top = asExtentInt(this.extent.top);
+    const w = asExtentInt(this.extent.width);
+    const h = asExtentInt(this.extent.height);
+    if (!hitCheckMouseLocal(this.extent, x, y)) {
+      return SliderHit.MISS;
+    }
+
+    const thumbW = asExtentInt(this.thumb.width);
+    const thumbH = asExtentInt(this.thumb.height);
+    const vertical = w < h;
+
+    if (vertical) {
+      const maxTravel = Math.max(0, h - thumbH);
+      const thumbTop = top + asExtentInt(maxTravel * (1 - this.value));
+      if (hitCheckMouseLocal({ left, top: thumbTop, width: w, height: thumbH }, x, y)) {
+        return SliderHit.THUMB;
+      }
+      if (y < thumbTop) return SliderHit.BEFORE;
+      if (y > thumbTop + thumbH) return SliderHit.AFTER;
+      return SliderHit.MISS;
+    }
+
+    const maxTravel = Math.max(0, w - thumbW);
+    const thumbLeft = left + asExtentInt(maxTravel * this.value);
+    if (hitCheckMouseLocal({ left: thumbLeft, top, width: thumbW, height: h }, x, y)) {
+      return SliderHit.THUMB;
+    }
+    if (x < thumbLeft) return SliderHit.BEFORE;
+    if (x > thumbLeft + thumbW) return SliderHit.AFTER;
+    return SliderHit.MISS;
+  }
+
   mouseInside(){
     if(this.disableSelection) return;
 
-    // const mouseX = Mouse.positionViewport.x - (GameState.ResolutionManager.getViewportWidthScaled() / 2);
-    const mouseY = -(Mouse.positionViewport.y - (GameState.ResolutionManager.getViewportHeightScaled() / 2));
-    const scrollBarWidth = this.extent.width;
-    const scrollBarHeight = this.extent.height;
+    const local = this.getPanelLocalMouse();
+    const left = asExtentInt(this.extent.left);
+    const top = asExtentInt(this.extent.top);
+    const w = asExtentInt(this.extent.width);
+    const h = asExtentInt(this.extent.height);
 
     let value = this.value;
     let valueChanged = false;
 
     if(this.direction == GUISliderDirection.Horizontal){
-      const maxWidth = (this.extent.width - this.thumb.width);
-      const minX = this.widget.position.x - maxWidth/2;
-      const maxX = this.widget.position.x + maxWidth/2;
-
-      let mouseX = Mouse.positionUI.x;
-
-      if(mouseX < minX){
-        mouseX = minX;
-      }
-
-      if(mouseX > maxX){
-        mouseX = maxX
-      }
-
-      const scrollX = ((mouseX - minX) / (maxX - minX));
-      this.thumb.mesh.position.x = maxWidth * (scrollX - 0.5);
+      const thumbW = asExtentInt(this.thumb.width);
+      const maxWidth = Math.max(0, w - thumbW);
+      let lx = asExtentInt(local.x) - left - truncDiv(thumbW, 2);
+      if (lx < 0) lx = 0;
+      if (lx > maxWidth) lx = maxWidth;
+      const scrollX = maxWidth > 0 ? lx / maxWidth : 0;
+      this.thumb.mesh.position.x = asExtentInt(maxWidth * (scrollX - 0.5));
       this.thumb.mesh.position.y = 0;
       valueChanged = (scrollX != this.value);
       value = scrollX;
     }else{
-      const maxHeight = (this.extent.height - this.thumb.height);
-      const minY = this.widget.position.y - maxHeight/2;
-      const maxY = this.widget.position.y + maxHeight/2;
-
-      let mouseY = Mouse.positionUI.y;
-
-      if(mouseY < minY){
-        mouseY = minY;
-      }
-
-      if(mouseY > maxY){
-        mouseY = maxY
-      }
-
-      const scrollY = ((mouseY - minY) / (maxY - minY));
+      const thumbH = asExtentInt(this.thumb.height);
+      const maxHeight = Math.max(0, h - thumbH);
+      // Panel Y-down: top = high value end for vertical (matches setValue)
+      let ly = asExtentInt(local.y) - top - truncDiv(thumbH, 2);
+      if (ly < 0) ly = 0;
+      if (ly > maxHeight) ly = maxHeight;
+      const scrollY = maxHeight > 0 ? 1 - (ly / maxHeight) : 0;
       this.thumb.mesh.position.x = 0;
-      this.thumb.mesh.position.y = maxHeight * (scrollY - 0.5);
+      this.thumb.mesh.position.y = asExtentInt(maxHeight * (scrollY - 0.5));
       valueChanged = (scrollY != this.value);
       value = scrollY;
     }
@@ -207,16 +234,16 @@ export class GUISlider extends GUIControl{
     this.value = value;
 
     if(this.direction == GUISliderDirection.Horizontal){
-      const maxWidth = (this.extent.width - this.thumb.width);
-      const threshold = maxWidth/2;
-      const thumbX = (maxWidth * value) - threshold;
+      const maxWidth = Math.max(0, asExtentInt(this.extent.width) - asExtentInt(this.thumb.width));
+      const threshold = truncDiv(maxWidth, 2);
+      const thumbX = asExtentInt((maxWidth * value) - threshold);
 
       this.thumb.mesh.position.x = thumbX;
       this.thumb.mesh.position.y = 0;
     }else{
-      const maxHeight = (this.extent.height - this.thumb.height);
-      const threshold = maxHeight/2;
-      const thumbY = (maxHeight * value) - threshold;
+      const maxHeight = Math.max(0, asExtentInt(this.extent.height) - asExtentInt(this.thumb.height));
+      const threshold = truncDiv(maxHeight, 2);
+      const thumbY = asExtentInt((maxHeight * value) - threshold);
 
       this.thumb.mesh.position.y = thumbY;
       this.thumb.mesh.position.x = 0;

@@ -230,9 +230,11 @@ export class MenuUpgrade extends GameMenu {
   }
 
   /**
-   * Retail CSWGuiUpgrade::Update3DView @ 005bdae4 —
+   * Retail CSWGuiUpgrade::Update3DView @ 005bdae4 (Aspyr) —
    * RemoveModel item, AddModel from GetModelResRef / armor path, camera on
    * camerahook{itemType}, parent to rotatehook{itemType}, play rotate / powered.
+   * itemType = baseitem +0xac (baseitems.2da itemtype); specials 0+baseId1 → 0a,
+   * 4+baseId0x14 → 4a, itemType 0x24..0x26 → hook 31; missing node falls back to camerahook.
    */
   async update3DView(){
     if(!this._3dView || !this.workingItem){ return; }
@@ -245,12 +247,13 @@ export class MenuUpgrade extends GameMenu {
     }
 
     const base = this.workingItem.getBaseItem?.() || this.workingItem.baseItem;
+    // Retail Format("camerahook%d", *(baseitem+0xac)) — itemtype column.
     const itemType = base?.itemType ?? 0;
     const baseId = this.workingItem.getBaseItemId?.() ?? this.workingItem.baseItemId ?? 0;
 
     let camHook = `camerahook${itemType}`;
     let rotHook = `rotatehook${itemType}`;
-    // Retail switch on baseitem itemType byte:
+    // Retail switch on *(baseitem+0xac) with baseId (item +0xc) specials:
     if(itemType === 0 && baseId === 1){
       camHook = 'camerahook0a';
       rotHook = 'rotatehook0a';

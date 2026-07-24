@@ -2688,7 +2688,7 @@ export class ModuleObject {
    * Look at an object
    * @param oObject 
    */
-  lookAt(oObject: ModuleObject){
+  lookAt(oObject: ModuleObject | undefined){
     return;
   }
 

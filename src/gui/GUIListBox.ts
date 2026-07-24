@@ -6,7 +6,6 @@ import { TextureLoader } from "@/loaders/TextureLoader";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { GameState } from "@/GameState";
 import { GameEngineType } from "@/enums/engine";
-import { Mouse } from "@/controls/Mouse";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIProtoItem } from "@/gui/GUIProtoItem";
 import type { GUIScrollBar } from "@/gui/GUIScrollBar";
@@ -21,6 +20,8 @@ import {
   createDefaultListBoxBitFlags,
   type ListBoxBitFlags,
 } from "@/gui/ListBoxBitFlags";
+import { asExtentInt, hitCheckMouseLocal, truncDiv } from "@/gui/GUICoord";
+import { ScrollBarHit } from "@/gui/GUIScrollBar";
 
 /**
  * GUIListBox — aligned with retail CSWGuiListBox (swkotor.exe).
@@ -782,14 +783,17 @@ export class GUIListBox extends GUIControl {
    */
   private placeItem(ctrl: GUIControl, top: number, height: number, width: number): void {
     const vh = this.getViewportInnerHeight();
-    const visibleTop = vh / 2;
-    ctrl.extent.left = this.padding;
-    ctrl.extent.height = height;
+    const visibleTop = truncDiv(asExtentInt(vh), 2);
+    const topI = asExtentInt(top);
+    const heightI = asExtentInt(height);
+    ctrl.extent.left = asExtentInt(this.padding);
+    ctrl.extent.top = topI;
+    ctrl.extent.height = heightI;
     if (width > 0) {
-      ctrl.extent.width = width;
+      ctrl.extent.width = asExtentInt(width);
     }
     ctrl.widget.position.x = 0;
-    ctrl.widget.position.y = visibleTop - top - height / 2;
+    ctrl.widget.position.y = asExtentInt(visibleTop - topI - truncDiv(heightI, 2));
     ctrl.updateBounds();
   }
 
@@ -1328,15 +1332,32 @@ export class GUIListBox extends GUIControl {
     return this.scrollDragStartValue;
   }
 
-  getActiveControls(){
+  getActiveControls(panelLocalX?: number, panelLocalY?: number){
 
     if(!this.widget.visible)
       return [];
 
+    let localX = panelLocalX;
+    let localY = panelLocalY;
+    if (localX === undefined || localY === undefined) {
+      const local = this.getPanelLocalMouse();
+      localX = local.x;
+      localY = local.y;
+    }
+
     let controls: GUIControl[] = [];
-    const vh = this.getViewportInnerHeight();
-    const visibleTop = vh / 2;
+    const vh = asExtentInt(this.getViewportInnerHeight());
     let hoveredRow: GUIControl | undefined;
+
+    const listLocalX = asExtentInt(localX) - asExtentInt(this.extent.left);
+    const listLocalY = asExtentInt(localY) - asExtentInt(this.extent.top);
+    const borderSize = asExtentInt(this.getBorderSize());
+    const shrink = asExtentInt(this.getShrinkWidth());
+    const viewportX = this.isScrollBarLeft() ? borderSize + shrink : borderSize;
+    const viewportY = borderSize;
+    // Retail HitCheckMouseLocal @ 0041a5e0 — viewport-local mouse for rows
+    const vx = listLocalX - viewportX;
+    const vy = listLocalY - viewportY;
 
     for(let i = 0; i < this.children.length; i++){
       let control = this.children[i];
@@ -1345,21 +1366,19 @@ export class GUIListBox extends GUIControl {
         continue;
       }
 
-      // Clip hit-tests to the list viewport (retail HitCheckMouseLocal uses viewport-local coords)
-      const cy = control.widget.position.y;
-      const rowH = control.extent?.height || 0;
-      const itemTop = visibleTop - (cy + rowH / 2);
+      const rowH = asExtentInt(control.extent?.height || 0);
+      const itemTop = asExtentInt(control.extent?.top || 0);
       if (!this.isRowInViewport(itemTop, rowH, vh)) {
         this.menu.setWidgetHoverActive(control, false);
         continue;
       }
 
-      if(control.box.containsPoint(Mouse.positionUI)){
+      if(hitCheckMouseLocal(control.extent, vx, vy)){
         if (!hoveredRow) {
           hoveredRow = control;
         }
         controls.push(control);
-        controls = controls.concat( control.getActiveControls() );
+        controls = controls.concat( control.getActiveControls(localX, localY) );
       }else{
         this.menu.setWidgetHoverActive(control, false);
       }
@@ -1369,19 +1388,13 @@ export class GUIListBox extends GUIControl {
     this.onRowHover(hoveredRow);
 
     if(this.scrollbar && this.scrollWrapper?.visible){
-      if(this.scrollbar.box.containsPoint(Mouse.positionUI)){
-        controls.push(this.scrollbar);
+      const sb = this.scrollbar;
+      const sbHit = sb.hitCheckScrollbar(localX, localY);
+      if(sbHit !== ScrollBarHit.MISS){
+        controls.push(sb);
       }
 
-      if(this.scrollbar.upArrow?.userData?.box?.containsPoint(Mouse.positionUI)){
-        controls.push(this.scrollbar);
-      }
-
-      if(this.scrollbar.downArrow?.userData?.box?.containsPoint(Mouse.positionUI)){
-        controls.push(this.scrollbar);
-      }
-
-      controls = controls.concat(this.scrollbar.getActiveControls());
+      controls = controls.concat(sb.getActiveControls(localX, localY));
     }
 
     return controls;
@@ -1389,11 +1402,17 @@ export class GUIListBox extends GUIControl {
 
   calculateBox(){
     let worldPosition = this.parent.widget.position.clone();
+    const w = asExtentInt(this.extent.width);
+    const h = asExtentInt(this.extent.height);
+    const wx = asExtentInt(this.widget.position.x);
+    const wy = asExtentInt(this.widget.position.y);
+    const px = asExtentInt(worldPosition.x);
+    const py = asExtentInt(worldPosition.y);
 
-    this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x;
-    this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y;
-    this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x;
-    this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y;
+    this.box.min.x = wx - truncDiv(w, 2) + px;
+    this.box.min.y = wy - truncDiv(h, 2) + py;
+    this.box.max.x = wx + truncDiv(w, 2) + px;
+    this.box.max.y = wy + truncDiv(h, 2) + py;
 
     for(let i = 0; i < this.children.length; i++){
       this.children[i].calculateBox();

@@ -1,5 +1,6 @@
 
 export * from "@/gui/GUIControlEvent";
+export * from "@/gui/GUICoord";
 export * from "@/gui/GUIControl";
 export * from "@/gui/GUIButton";
 export * from "@/gui/GUICheckBox";

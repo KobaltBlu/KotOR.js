@@ -5064,9 +5064,12 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.LOCATION, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [EngineLocation, number, number]){
-      // Retail ForceMoveToPoint == JumpToPoint (not a forced walk).
+      // Retail ExecuteCommandMoveToPoint @ 0053fe00 — AddMoveToPointAction with
+      // timeout (default 30). CSWSCreature::ForceMoveToPoint @ 004edba0 is Jump
+      // for ForcedAction, not this NWScript opcode.
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
-        (this.caller as ModuleCreature).jumpToLocation( args[0] );
+        const timeout = (typeof args[2] === 'number' && args[2] > 0) ? args[2] : 30.0;
+        (this.caller as ModuleCreature).moveToLocation( args[0], !!args[1], timeout );
       }
     }
   },
@@ -5076,9 +5079,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.FLOAT, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
-      // Retail ForceMoveToObject == JumpToObject (not a forced walk).
+      // Retail ExecuteCommandMoveToObject @ 0053fb00 — AddMoveToPointAction with
+      // timeout (default 30 when paramCount < 4).
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
-        (this.caller as ModuleCreature).jumpToObject( args[0] );
+        const timeout = (typeof args[3] === 'number' && args[3] > 0) ? args[3] : 30.0;
+        (this.caller as ModuleCreature).moveToObject( args[0], !!args[1], args[2], timeout );
       }
     }
   },
@@ -7604,7 +7609,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      // Retail: enemy + Trigger byte @ +0x1a0 non-zero.
+      // Retail IsSomething @ 005cbc80 jump table[3] → 005cbd0b:
+      // IsEnemy vtable (+0x1c returns this) then Trigger byte @ +0x1a0.
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
         return (args[0] as ModuleMGEnemy).isTrigger ? NW_TRUE : NW_FALSE;
       }
@@ -7617,7 +7623,16 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle) ? NW_TRUE : NW_FALSE;
+      // Retail IsSomething @ 005cbc80 jump table[4] → 005cbcfb:
+      // IsObstacle vtable (+0x20); then intentional fallthrough to IsTrigger
+      // epilogue @ 005cbd0b (enemy + Trigger@+0x1a0 also returns true).
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGObstacle)){
+        return NW_TRUE;
+      }
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        return (args[0] as ModuleMGEnemy).isTrigger ? NW_TRUE : NW_FALSE;
+      }
+      return NW_FALSE;
     }
   },
   604:{

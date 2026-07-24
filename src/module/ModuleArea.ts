@@ -1533,6 +1533,12 @@ export class ModuleArea extends ModuleObject {
     this.expansionList = [];
 
     this.flags = this.are.getFieldByLabel('Flags').getValue();
+    // Retail LoadAreaHeader: indoor (Flags & 1) clears weather chances / wind.
+    if(this.flags & 1){
+      this.weather.chanceLightning = 0;
+      this.weather.chanceRain = 0;
+      this.weather.chanceSnow = 0;
+    }
     this.grass = {
       ambient: this.are.getFieldByLabel('Grass_Ambient').getValue(),
       density: this.are.getFieldByLabel('Grass_Density').getValue(),
@@ -1618,6 +1624,9 @@ export class ModuleArea extends ModuleObject {
       room.area = this;
       room.setAmbientScale(ambientScale);
       room.setEnvAudio(envAudio);
+      if(strt.hasField('DisableWeather')){
+        room.setDisableWeather(!!this.are.getFieldByLabel('DisableWeather', strt.getFields()).getValue());
+      }
       this.rooms.push(room);
     }
 
@@ -1820,13 +1829,19 @@ export class ModuleArea extends ModuleObject {
       this.transWP = null;
     }
 
-    // Retail GIT weather fields (BYTE)
+    // Retail GIT weather fields (BYTE) — CurrentWeather type + WeatherStarted active flag.
+    // Indoor areas force clear (LoadGIT).
     if(this.git.RootNode.hasField('CurrentWeather')){
       this.weather.currentWeather = this.git.getFieldByLabel('CurrentWeather').getValue();
       this.weather.fromSave = true;
     }
     if(this.git.RootNode.hasField('WeatherStarted')){
       this.weather.started = !!this.git.getFieldByLabel('WeatherStarted').getValue();
+      this.weather.fromSave = true;
+    }
+    if(this.flags & 1){
+      this.weather.currentWeather = 0xFF;
+      this.weather.started = false;
     }
     if(this.git.RootNode.hasField('TransPending')){
       this.transPending = this.git.getFieldByLabel('TransPending').getValue() | 0;

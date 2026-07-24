@@ -10,6 +10,8 @@ import { GUIControl } from "@/gui/GUIControl";
 import type { GUIListBox } from "@/gui/GUIListBox";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { asExtentInt, hitCheckMouseLocal, truncDiv } from "@/gui/GUICoord";
+import type { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
 
 /** Retail CSWGuiScrollBarHitCheckResult */
 export enum ScrollBarHit {
@@ -116,7 +118,7 @@ export class GUIScrollBar extends GUIControl{
           this.upArrow.scale.y = this.arrowSize;
           this.upArrow.position.z = 5;
 
-          this.upArrow.position.y = this.extent.height/2 + this.arrowSize/2;
+          this.upArrow.position.y = truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2);
           this.upArrow.userData.worldPosition = new THREE.Vector3();
 
           this.upArrowMaterial.transparent = true;
@@ -124,15 +126,10 @@ export class GUIScrollBar extends GUIControl{
 
           this.upArrow.userData.updateBox = () => {
             this.upArrow.getWorldPosition(this.upArrow.userData.worldPosition);
+            const half = truncDiv(asExtentInt(this.extent.width), 2);
             this.upArrow.userData.box = new THREE.Box2(
-              new THREE.Vector2(
-                -this.extent.width/2,
-                -this.extent.width/2
-              ),
-              new THREE.Vector2(
-                this.extent.width/2,
-                this.extent.width/2
-              )
+              new THREE.Vector2(-half, -half),
+              new THREE.Vector2(half, half)
             );
             this.upArrow.userData.box.translate(this.upArrow.userData.worldPosition);
           };
@@ -148,7 +145,7 @@ export class GUIScrollBar extends GUIControl{
           this.downArrow.scale.x = this.arrowSize;
           this.downArrow.scale.y = this.arrowSize;
           this.downArrow.position.z = 5;
-          this.downArrow.position.y = -(this.extent.height/2 + this.arrowSize/2);
+          this.downArrow.position.y = -(truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2));
           this.downArrow.rotation.z = Math.PI;
           this.downArrow.userData.worldPosition = new THREE.Vector3();
 
@@ -157,15 +154,10 @@ export class GUIScrollBar extends GUIControl{
 
           this.downArrow.userData.updateBox = () => {
             this.downArrow.getWorldPosition(this.downArrow.userData.worldPosition);
+            const half = truncDiv(asExtentInt(this.extent.width), 2);
             this.downArrow.userData.box = new THREE.Box2(
-              new THREE.Vector2(
-                -this.extent.width/2,
-                -this.extent.width/2
-              ),
-              new THREE.Vector2(
-                this.extent.width/2,
-                this.extent.width/2
-              )
+              new THREE.Vector2(-half, -half),
+              new THREE.Vector2(half, half)
             );
             this.downArrow.userData.box.translate(this.downArrow.userData.worldPosition)
           };
@@ -184,20 +176,22 @@ export class GUIScrollBar extends GUIControl{
 
       this.widget.add(this.thumb);
       this.thumb.name = 'SCROLLBAR thumb';
-      this.thumb.scale.x = this.extent.width/2;
-      this.thumb.scale.y = this.extent.height/2;
+      this.thumb.scale.x = truncDiv(asExtentInt(this.extent.width), 2);
+      this.thumb.scale.y = truncDiv(asExtentInt(this.extent.height), 2);
       this.thumb.position.z = 5;
 
       let parentPos = this.worldPosition;
+      const halfW = truncDiv(asExtentInt(this.extent.width), 2);
+      const halfH = truncDiv(asExtentInt(this.extent.height), 2);
 
       this.thumb.userData.box = new THREE.Box2(
         new THREE.Vector2(
-          (parentPos.x - this.extent.width/2),
-          (parentPos.y - this.extent.height/2)
+          asExtentInt(parentPos.x) - halfW,
+          asExtentInt(parentPos.y) - halfH
         ),
         new THREE.Vector2(
-          (parentPos.x + this.extent.width/2),
-          (parentPos.y + this.extent.height/2)
+          asExtentInt(parentPos.x) + halfW,
+          asExtentInt(parentPos.y) + halfH
         )
       )
 
@@ -247,10 +241,11 @@ export class GUIScrollBar extends GUIControl{
       this.upArrow?.userData?.updateBox?.();
       this.downArrow?.userData?.updateBox?.();
 
-      const hit = this.hitCheckScrollbar();
+      const local = this.getPanelLocalMouse();
+      const hit = this.hitCheckScrollbar(local.x, local.y);
       if (hit === ScrollBarHit.BAR) {
         this.dragging = true;
-        this.dragStartMouseY = Mouse.positionViewport.y;
+        this.dragStartMouseY = Mouse.positionViewportInt.y;
         this.list?.beginScrollBarDrag();
         this.endHoldRepeat();
       } else if (
@@ -275,16 +270,16 @@ export class GUIScrollBar extends GUIControl{
    * Retail SetScrollBarExtent — match full list height; keep track = full − 2×arrows.
    */
   syncToListHeight(listHeight: number): void {
-    this.listMatchedHeight = Math.max(1, listHeight);
-    const arrowPad = (this.arrowSize + (this.border?.dimension || 0)) * 2;
+    this.listMatchedHeight = Math.max(1, asExtentInt(listHeight));
+    const arrowPad = (asExtentInt(this.arrowSize) + asExtentInt(this.border?.dimension || 0)) * 2;
     this.extent.height = Math.max(1, this.listMatchedHeight - arrowPad);
 
     if (this.upArrow) {
-      this.upArrow.position.y = this.extent.height / 2 + this.arrowSize / 2;
+      this.upArrow.position.y = truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2);
       this.upArrow.userData.updateBox?.();
     }
     if (this.downArrow) {
-      this.downArrow.position.y = -(this.extent.height / 2 + this.arrowSize / 2);
+      this.downArrow.position.y = -(truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2));
       this.downArrow.userData.updateBox?.();
     }
   }
@@ -341,7 +336,7 @@ export class GUIScrollBar extends GUIControl{
   layoutThumb(): void {
     if (!this.thumb) return;
 
-    const track = this.extent.height;
+    const track = asExtentInt(this.extent.height);
     // Retail: thumb = visible / (visible + max) * track when max > 1
     let scaleY: number;
     if (this.maxValue > 1) {
@@ -350,13 +345,13 @@ export class GUIScrollBar extends GUIControl{
       scaleY = 1;
     }
     scaleY = Math.min(1, Math.max(0.01, scaleY));
-    this.thumb.scale.y = track * scaleY;
-    this.thumb.scale.x = this.extent.width / 2;
+    this.thumb.scale.y = asExtentInt(track * scaleY) || 1;
+    this.thumb.scale.x = Math.max(1, truncDiv(asExtentInt(this.extent.width), 2));
 
-    const travel = Math.max(0, track - this.thumb.scale.y);
+    const travel = Math.max(0, track - asExtentInt(this.thumb.scale.y));
     const denom = Math.max(1, this.maxValue - 1);
     const t = this.maxValue <= 1 ? 0 : this.currentValue / denom;
-    this.thumb.position.y = (travel / 2) - t * travel;
+    this.thumb.position.y = asExtentInt(truncDiv(travel, 2) - t * travel);
 
     if (isNaN(this.thumb.position.y)) {
       this.thumb.position.y = 0;
@@ -446,7 +441,8 @@ export class GUIScrollBar extends GUIControl{
       return;
     }
 
-    const current = this.hitCheckScrollbar();
+    const local = this.getPanelLocalMouse();
+    const current = this.hitCheckScrollbar(local.x, local.y);
     if (current !== this.holdHit) {
       this.endHoldRepeat();
       return;
@@ -486,44 +482,89 @@ export class GUIScrollBar extends GUIControl{
   }
 
   /**
-   * Map local mouse to retail HitCheckScrollbar regions (vertical bar).
-   * Three.js Y-up: up arrow at +y (top), down arrow at -y (bottom).
+   * Panel-space extent of the full scrollbar (track + arrows), matching ListBox placement.
    */
-  hitCheckScrollbar(): ScrollBarHit {
-    if (!this.list) return ScrollBarHit.MISS;
-    const pos = Mouse.positionUI;
+  getPanelExtent(): IGUIControlExtent {
+    const w = asExtentInt(this.extent.width);
+    const fullH = asExtentInt(this.getFullHitHeight());
+    if (!this.list) {
+      return {
+        left: asExtentInt(this.extent.left),
+        top: asExtentInt(this.extent.top),
+        width: w,
+        height: fullH,
+      };
+    }
+    const listLeft = asExtentInt(this.list.extent.left);
+    const listTop = asExtentInt(this.list.extent.top);
+    const listW = asExtentInt(this.list.extent.width);
+    const left = this.list.isScrollBarLeft() ? listLeft : listLeft + listW - w;
+    return { left, top: listTop, width: w, height: fullH };
+  }
 
-    if (this.upArrow?.userData?.box?.containsPoint(pos)) {
+  /**
+   * Retail HitCheckScrollbar @ 004197c0 — int panel-local mouse vs arrow/thumb/track.
+   * Our mesh places scroll-up at visual top (panel Y-down top) and scroll-down at bottom.
+   */
+  hitCheckScrollbar(panelLocalX?: number, panelLocalY?: number): ScrollBarHit {
+    if (!this.list) return ScrollBarHit.MISS;
+
+    let x = panelLocalX;
+    let y = panelLocalY;
+    if (x === undefined || y === undefined) {
+      const local = this.getPanelLocalMouse();
+      x = local.x;
+      y = local.y;
+    }
+    x = asExtentInt(x);
+    y = asExtentInt(y);
+
+    const bar = this.getPanelExtent();
+    if (!hitCheckMouseLocal(bar, x, y)) {
+      return ScrollBarHit.MISS;
+    }
+
+    const arrow = asExtentInt(this.arrowSize);
+    const trackH = asExtentInt(this.extent.height);
+    const localX = x - bar.left;
+    const localY = y - bar.top;
+
+    // Up arrow = visual top (scroll up)
+    if (hitCheckMouseLocal({ left: 0, top: 0, width: bar.width, height: arrow }, localX, localY)) {
       return ScrollBarHit.UP_ARROW;
     }
-    if (this.downArrow?.userData?.box?.containsPoint(pos)) {
+    // Down arrow = visual bottom (scroll down)
+    if (hitCheckMouseLocal(
+      { left: 0, top: bar.height - arrow, width: bar.width, height: arrow },
+      localX,
+      localY,
+    )) {
       return ScrollBarHit.DOWN_ARROW;
     }
 
-    if (this.thumb?.userData?.box) {
-      // refresh thumb box
-      const parentPos = this.worldPosition;
-      const halfW = this.extent.width / 2;
-      const halfH = this.thumb.scale.y / 2;
-      const thumbWorld = parentPos.clone();
-      thumbWorld.y += this.thumb.position.y;
-      const thumbBox = new THREE.Box2(
-        new THREE.Vector2(thumbWorld.x - halfW, thumbWorld.y - halfH),
-        new THREE.Vector2(thumbWorld.x + halfW, thumbWorld.y + halfH),
-      );
-      this.thumb.userData.box = thumbBox;
-      if (thumbBox.containsPoint(pos)) {
-        return ScrollBarHit.BAR;
-      }
+    const trackTop = arrow;
+    const thumbH = this.thumb ? Math.max(1, asExtentInt(this.thumb.scale.y)) : 0;
+    const thumbYThree = this.thumb ? asExtentInt(this.thumb.position.y) : 0;
+    // Three.js Y-up thumb center → track-local Y-down top
+    const thumbCenterFromTrackTop = truncDiv(trackH, 2) - thumbYThree;
+    const thumbTop = trackTop + thumbCenterFromTrackTop - truncDiv(thumbH, 2);
+
+    if (this.thumb && hitCheckMouseLocal(
+      { left: 0, top: thumbTop, width: bar.width, height: thumbH },
+      localX,
+      localY,
+    )) {
+      return ScrollBarHit.BAR;
     }
 
-    if (this.inner_box?.containsPoint(pos)) {
-      const parentPos = this.worldPosition;
-      const thumbY = parentPos.y + (this.thumb?.position.y || 0);
-      if (pos.y > thumbY) {
-        return ScrollBarHit.BEFORE_BAR; // above thumb → page up
+    // Track page regions (before = above thumb = page up; after = below = page down)
+    if (localY > trackTop && localY < trackTop + trackH && localX >= 0 && localX <= bar.width) {
+      if (localY < thumbTop) {
+        return ScrollBarHit.BEFORE_BAR;
       }
-      return ScrollBarHit.AFTER_BAR;
+      if (localY > thumbTop + thumbH) {
+        return ScrollBarHit.AFTER_BAR;
+      }
     }
 
     return ScrollBarHit.MISS;
@@ -532,9 +573,9 @@ export class GUIScrollBar extends GUIControl{
   mouseInside(){
     if (!this.list || !this.thumb || !this.dragging) return;
 
-    const travel = Math.max(1, this.extent.height - this.thumb.scale.y);
+    const travel = Math.max(1, asExtentInt(this.extent.height) - asExtentInt(this.thumb.scale.y));
     const start = this.list.getScrollBarDragStartValue();
-    const deltaY = this.dragStartMouseY - Mouse.positionViewport.y;
+    const deltaY = asExtentInt(this.dragStartMouseY) - Mouse.positionViewportInt.y;
     const maxIdx = this.list.shouldScroll()
       ? Math.max(0, this.list.getPagesToScroll() - 1)
       : Math.max(0, this.maxValue - 1);
@@ -556,28 +597,24 @@ export class GUIScrollBar extends GUIControl{
   }
 
   calculatePosition(){
-    let parentExtent = { width: this.menu.width, height: this.menu.height };
-    let parentOffsetX, parentOffsetY;
-    if(!(this.parent.widget instanceof THREE.Scene)){
-      parentExtent = this.menu.tGuiPanel.extent;
-      parentOffsetX = this.menu.tGuiPanel.worldPosition.x + this.offset.x;
-      parentOffsetY = this.menu.tGuiPanel.worldPosition.y + this.offset.y;
-    }else{
-      parentOffsetX = parentOffsetY = 0;
-    }
-
     if(this.list){
       if(this.list.isScrollBarLeft()){
-        this.anchorOffset.set(-(this.list.extent.width/2 - this.extent.width/2), 0);
+        this.anchorOffset.set(
+          -(truncDiv(asExtentInt(this.list.extent.width), 2) - truncDiv(asExtentInt(this.extent.width), 2)),
+          0,
+        );
       }else{
-        this.anchorOffset.set((this.list.extent.width/2 - this.extent.width/2 ), 0);
+        this.anchorOffset.set(
+          truncDiv(asExtentInt(this.list.extent.width), 2) - truncDiv(asExtentInt(this.extent.width), 2),
+          0,
+        );
       }      
     }else{
       this.anchorOffset.set(0, 0);
     }
 
-    this.widget.position.x = this.anchorOffset.x;
-    this.widget.position.y = this.anchorOffset.y;
+    this.widget.position.x = asExtentInt(this.anchorOffset.x);
+    this.widget.position.y = asExtentInt(this.anchorOffset.y);
 
     let worldPosition = new THREE.Vector3();
     try{
@@ -587,41 +624,31 @@ export class GUIScrollBar extends GUIControl{
     }
     this.updateWorldPosition();
     const parentPos = this.worldPosition;
-    const fullH = this.getFullHitHeight();
+    const fullH = asExtentInt(this.getFullHitHeight());
+    const halfW = truncDiv(asExtentInt(this.extent.width), 2);
+    const halfFullH = truncDiv(fullH, 2);
+    const halfTrackH = truncDiv(asExtentInt(this.extent.height), 2);
+    const ax = asExtentInt(this.anchorOffset.x);
+    const ay = asExtentInt(this.anchorOffset.y);
+    const wx = asExtentInt(worldPosition.x);
+    const wy = asExtentInt(worldPosition.y);
 
     this.box = new THREE.Box2(
-      new THREE.Vector2(
-        this.anchorOffset.x - this.extent.width/2 + worldPosition.x,
-        this.anchorOffset.y - fullH/2 + worldPosition.y
-      ),
-      new THREE.Vector2(
-        this.anchorOffset.x + this.extent.width/2 + worldPosition.x,
-        this.anchorOffset.y + fullH/2 + worldPosition.y
-      )
+      new THREE.Vector2(ax - halfW + wx, ay - halfFullH + wy),
+      new THREE.Vector2(ax + halfW + wx, ay + halfFullH + wy)
     );
 
     this.inner_box = new THREE.Box2(
-      new THREE.Vector2(
-        this.anchorOffset.x - this.extent.width/2 + worldPosition.x,
-        this.anchorOffset.y - (this.extent.height)/2 + worldPosition.y
-      ),
-      new THREE.Vector2(
-        this.anchorOffset.x + this.extent.width/2 + worldPosition.x,
-        this.anchorOffset.y + (this.extent.height)/2 + worldPosition.y
-      )
+      new THREE.Vector2(ax - halfW + wx, ay - halfTrackH + wy),
+      new THREE.Vector2(ax + halfW + wx, ay + halfTrackH + wy)
     );
     if(this.thumb){
-      const halfW = this.extent.width / 2;
-      const halfH = this.thumb.scale.y / 2;
+      const halfThumbH = truncDiv(asExtentInt(this.thumb.scale.y), 2);
+      const px = asExtentInt(parentPos.x);
+      const py = asExtentInt(parentPos.y) + asExtentInt(this.thumb.position.y);
       this.thumb.userData.box = new THREE.Box2(
-        new THREE.Vector2(
-          parentPos.x - halfW,
-          parentPos.y + this.thumb.position.y - halfH
-        ),
-        new THREE.Vector2(
-          parentPos.x + halfW,
-          parentPos.y + this.thumb.position.y + halfH
-        )
+        new THREE.Vector2(px - halfW, py - halfThumbH),
+        new THREE.Vector2(px + halfW, py + halfThumbH)
       );
     }
 

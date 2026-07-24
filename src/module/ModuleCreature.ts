@@ -1632,7 +1632,11 @@ export class ModuleCreature extends ModuleObject {
     this.updateCollision();
   }
 
-  moveToObject(target: ModuleObject, bRun = true, distance = 1.0, timeout = 30.0){
+  /**
+   * Enqueue AIActionMoveToPoint. Retail AddMoveToPointAction: timeout 0 = no
+   * Jump fallback (ActionMoveTo*); timeout > 0 = ForceMove jump-on-expiry.
+   */
+  moveToObject(target: ModuleObject, bRun = true, distance = 1.0, timeout = 0){
 
     if(target instanceof ModuleObject){
         
@@ -1646,7 +1650,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
       action.setParameter(7, ActionParameterType.INT, 0);
-      action.setParameter(8, ActionParameterType.FLOAT, timeout > 0 ? timeout : 30.0);
+      action.setParameter(8, ActionParameterType.FLOAT, timeout > 0 ? timeout : 0);
       this.actionQueue.add(action);
     }
 
@@ -1688,7 +1692,11 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  moveToLocation(target: ModuleObject|EngineLocation, bRun = true, timeout = 30.0){
+  /**
+   * Enqueue AIActionMoveToPoint. Retail: ActionMoveToLocation timeout 0;
+   * ActionForceMoveToLocation passes script timeout (default 30).
+   */
+  moveToLocation(target: ModuleObject|EngineLocation, bRun = true, timeout = 0){
 
     if(target instanceof EngineLocation || target instanceof ModuleObject){
 
@@ -1730,7 +1738,7 @@ export class ModuleCreature extends ModuleObject {
       action.setParameter(5, ActionParameterType.INT, bRun ? 1 : 0);
       action.setParameter(6, ActionParameterType.FLOAT, Math.max(1.5, distance));
       action.setParameter(7, ActionParameterType.INT, 0);
-      action.setParameter(8, ActionParameterType.FLOAT, timeout > 0 ? timeout : 30.0);
+      action.setParameter(8, ActionParameterType.FLOAT, timeout > 0 ? timeout : 0);
       this.actionQueue.add(action);
 
     }
@@ -3087,7 +3095,7 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  lookAt(oObject: ModuleObject){
+  lookAt(oObject: ModuleObject | undefined){
     this.lookAtObject = oObject;
   }
 

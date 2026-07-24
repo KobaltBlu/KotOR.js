@@ -246,20 +246,24 @@ export class CursorManager {
 	 * @param options.lookAt - when false, skip creature LookAt (ShowObject param_2=0)
 	 */
 	public static setReticleSelectedObject(
-		object: ModuleObject,
+		object: ModuleObject | undefined,
 		options?: { lookAt?: boolean },
 	){
 		const doLookAt = options?.lookAt !== false;
 		const player = GameState.getCurrentPlayer();
-		if(doLookAt && player && object){
-			player.lookAt(object);
-		}
 		if(!object){
+			// Retail ShowObject(null) → LookAt(OBJECT_INVALID)
+			if(player && typeof player.lookAt === 'function'){
+				player.lookAt(undefined);
+			}
 			CursorManager.selectedObject = undefined;
 			CursorManager.selected = undefined;
 			CursorManager.combatReticlePulse.reset();
 			CursorManager.lastCombatReticleTargetId = -1;
 			return;
+		}
+		if(doLookAt && player){
+			player.lookAt(object);
 		}
 
 		CursorManager.selected = object.getReticleNode();
@@ -390,24 +394,12 @@ export class CursorManager {
 			}
 		}
 
-		const maxSelectableDistanceSquared = GameState.maxSelectableDistance * GameState.maxSelectableDistance;
-
 		CursorManager.arrow.visible = false;
-		if(CursorManager.selectedObject){
-			if(CursorManager.selectedObject.position.distanceToSquared(GameState.getCurrentPlayer().position) > maxSelectableDistanceSquared){
-				CursorManager.selectedObject = undefined;
-				CursorManager.selected = undefined;
-				CursorManager.combatReticlePulse.reset();
-				CursorManager.lastCombatReticleTargetId = -1;
-			}
 
-			if(CursorManager.selectedObject && !CursorManager.selectedObject.isUseable()){
-				CursorManager.selectedObject = undefined;
-				CursorManager.selected = undefined;
-				CursorManager.combatReticlePulse.reset();
-				CursorManager.lastCombatReticleTargetId = -1;
-			}
-		}
+		// Hard-target distance / useable clears are owned by DoPassiveSelection
+		// (showObject). Soft hover target may still clear here.
+
+		const maxSelectableDistanceSquared = GameState.maxSelectableDistance * GameState.maxSelectableDistance;
 
 		if(CursorManager.hoveredObject){
 			if(CursorManager.hoveredObject.position.distanceToSquared(GameState.getCurrentPlayer().position) > maxSelectableDistanceSquared){

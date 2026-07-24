@@ -9,6 +9,7 @@ import type { GFFStruct } from "@/resource/GFFStruct";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 
 /**
  * GUIProgressBar class.
@@ -190,24 +191,29 @@ export class GUIProgressBar extends GUIControl {
 
   setProgress(val: number = 100){
 
-    this.curValue = val < 0 ? 0 : val;
+    this.curValue = val < 0 ? 0 : asExtentInt(val);
     this.curValue = !this.curValue ? 0.000000000000001 : this.curValue;
     
-    let value = Math.min(this.curValue / this.maxValue, 1);
+    const maxV = asExtentInt(this.maxValue) || 1;
+    let value = Math.min(this.curValue / maxV, 1);
 
     let extent = this.getFillExtent();
     let sprite = this.progress.fill.mesh;
+    const fillW = asExtentInt(extent.width);
+    const fillH = asExtentInt(extent.height);
 
-    if(extent.width > extent.height){
-      sprite.scale.set( extent.width * value, extent.height, 1.0 );
-      let offsetX = (extent.width -(extent.width * value))/2;
+    if(fillW > fillH){
+      const scaledW = asExtentInt(fillW * value) || 1;
+      sprite.scale.set( scaledW, fillH, 1.0 );
+      let offsetX = truncDiv(fillW - scaledW, 2);
       if(this.startFromLeft)
         sprite.position.x = -offsetX;
       else
         sprite.position.x = +offsetX;
     }else{
-      sprite.scale.set( extent.width, extent.height * value, 1.0 );
-      let offsetY = (extent.height -(extent.height * value))/2;
+      const scaledH = asExtentInt(fillH * value) || 1;
+      sprite.scale.set( fillW, scaledH, 1.0 );
+      let offsetY = truncDiv(fillH - scaledH, 2);
       if(this.startFromLeft)
         sprite.position.y = +offsetY;
       else

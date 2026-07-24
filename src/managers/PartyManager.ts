@@ -173,10 +173,14 @@ export class PartyManager {
   /** TSL PT_COM_MSG_LIST entries */
   static CombatMessages: { msg: string; type: number; color: number }[] = [];
 
+  /** TSL partytable PT_SWOOP1..3 (SaveTableInfo @ 00700e00 / LoadTableInfo). */
   static SwoopUpgrade1: number = -1;
   static SwoopUpgrade2: number = -1;
   static SwoopUpgrade3: number = -1;
-  /** Extra slots written by CSWGuiSwoopUpgrade::OnAssemble (6 total). */
+  /**
+   * Extra runtime slots from CSWGuiSwoopUpgrade::OnAssemble (6 total).
+   * Retail partytable only persists PT_SWOOP1..3 — slots 4–6 are session-only.
+   */
   static SwoopUpgrade4: number = -1;
   static SwoopUpgrade5: number = -1;
   static SwoopUpgrade6: number = -1;
@@ -434,7 +438,7 @@ export class PartyManager {
       }
     }
 
-    // TSL SaveTableInfo — swoop upgrades, PC name, map/regen, forfeit
+    // TSL LoadTableInfo — PT_SWOOP1..3 only (no PT_SWOOP4..6 in retail).
     if(gff.RootNode.hasField('PT_SWOOP1')){
       GameState.PartyManager.SwoopUpgrade1 = gff.RootNode.getFieldByLabel('PT_SWOOP1').getValue() | 0;
     }
@@ -699,6 +703,7 @@ export class PartyManager {
         const pc = GameState.PartyManager.Player || GameState.getCurrentPlayer();
         const pcName = (pc && typeof pc.getName === 'function') ? (pc.getName() || '') : '';
         partytable.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'PT_PCNAME')).setValue(pcName);
+        // Retail SaveTableInfo @ 00700e00 — PT_SWOOP1..3 only.
         partytable.RootNode.addField(new GFFField(GFFDataType.DWORD, 'PT_SWOOP1')).setValue(
           GameState.PartyManager.SwoopUpgrade1 | 0
         );

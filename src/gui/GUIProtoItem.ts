@@ -6,7 +6,7 @@ import { Anchor } from "@/enums/gui/Anchor";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { ResolutionManager } from "@/managers/ResolutionManager";
 import type { GUIListBox } from "@/gui/GUIListBox";
-import { Mouse } from "@/controls/Mouse";
+import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 
 // build a normalized unit rect, scale to extent
 const points = [
@@ -143,12 +143,18 @@ export class GUIProtoItem extends GUIControl{
   calculateBox(){
     let worldPosition = this.parent.widget.position.clone();
     const rtt = (this.list as GUIListBox | undefined)?.targetMesh;
-    const ox = rtt?.position?.x ?? 0;
-    const oy = rtt?.position?.y ?? 0;
-    this.box.min.x = this.widget.position.x - this.extent.width/2 + worldPosition.x + ox;
-    this.box.min.y = this.widget.position.y - this.extent.height/2 + worldPosition.y + oy;
-    this.box.max.x = this.widget.position.x + this.extent.width/2 + worldPosition.x + ox;
-    this.box.max.y = this.widget.position.y + this.extent.height/2 + worldPosition.y + oy;
+    const ox = asExtentInt(rtt?.position?.x ?? 0);
+    const oy = asExtentInt(rtt?.position?.y ?? 0);
+    const w = asExtentInt(this.extent.width);
+    const h = asExtentInt(this.extent.height);
+    const wx = asExtentInt(this.widget.position.x);
+    const wy = asExtentInt(this.widget.position.y);
+    const px = asExtentInt(worldPosition.x);
+    const py = asExtentInt(worldPosition.y);
+    this.box.min.x = wx - truncDiv(w, 2) + px + ox;
+    this.box.min.y = wy - truncDiv(h, 2) + py + oy;
+    this.box.max.x = wx + truncDiv(w, 2) + px + ox;
+    this.box.max.y = wy + truncDiv(h, 2) + py + oy;
     
     for(let i = 0; i < this.children.length; i++){
       this.children[i].updateBounds();
