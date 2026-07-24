@@ -26,6 +26,11 @@ describe("overlay flags", () => {
     expect(resolveOverlayStartFlags(10030) & 0x08).toBe(0x08);
   });
 
+  it("ORs ADDITIVE_GESTURE (0x400) for additive start IDs", () => {
+    expect(resolveOverlayStartFlags(0x272e) & 0x400).toBe(0x400);
+    expect(resolveOverlayStartFlags(0x272e) & 0x08).toBe(0x08);
+  });
+
   it("uses 0x400 stop for additive listen IDs and 0x80 otherwise", () => {
     expect(resolveOverlayStopFlags(0x272e)).toBe(0x400);
     expect(resolveOverlayStopFlags(10000)).toBe(0x80);

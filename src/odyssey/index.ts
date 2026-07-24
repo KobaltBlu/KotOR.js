@@ -6,6 +6,7 @@ export * from "@/odyssey/OdysseyModelNode";
 export * from "@/odyssey/OdysseyModelNodeMesh";
 export * from "@/odyssey/OdysseyModelAnimation";
 export * from "@/odyssey/OdysseyModelAnimationManager";
+export * from "@/odyssey/AnimRun";
 export * from "@/odyssey/OdysseyModelAnimationNode";
 export * from "@/odyssey/OdysseyModelNodeAABB";
 export * from "@/odyssey/OdysseyModelNodeAnimMesh";

@@ -29,7 +29,6 @@ export class GUIFeatItem extends GUIProtoItem {
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl = null as any, scale = false){
     super(menu, control, parent, scale);
     this.disableSelection = true;
-    this.setExtentHeight(48);
   }
 
   buildFill(){}
@@ -41,7 +40,7 @@ export class GUIFeatItem extends GUIProtoItem {
     try{
       super.createControl();
 
-      const iconHeight = asExtentInt(this.extent.height);
+      const iconHeight = Math.max(1, asExtentInt(this.extent.height));
       const arrowHeight = 32;
       const featList = this.node;
       const backTex = getAbilityBackTextureName();

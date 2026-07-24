@@ -33,7 +33,6 @@ export class GUIKeyMapItem extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
-    this.setExtentHeight(71);
   }
 
   buildFill(){}
@@ -43,6 +42,8 @@ export class GUIKeyMapItem extends GUIProtoItem {
 
   createControl(){
     try{
+      // Documented override: keymap rows are taller than PROTOITEM default.
+      this.setExtentHeight(71);
       super.createControl();
 
       const spacing = 2;

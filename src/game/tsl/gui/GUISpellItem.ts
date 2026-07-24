@@ -29,7 +29,6 @@ export class GUISpellItem extends GUIProtoItem {
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl = null as any, scale = false){
     super(menu, control, parent, scale);
     this.disableSelection = true;
-    this.setExtentHeight(45);
   }
 
   buildFill(){}
@@ -41,7 +40,7 @@ export class GUISpellItem extends GUIProtoItem {
     try{
       super.createControl();
 
-      const iconHeight = asExtentInt(this.extent.height);
+      const iconHeight = Math.max(1, asExtentInt(this.extent.height));
       const arrowHeight = 32;
       const spellList = Array.isArray(this.node) ? this.node : [];
       const creature = GameState.PartyManager.party[0] || GameState.getCurrentPlayer();

@@ -31,7 +31,6 @@ export class GUICreatureSkill extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
-    this.setExtentHeight(44);
   }
 
   buildFill(){}

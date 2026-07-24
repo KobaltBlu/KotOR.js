@@ -49,6 +49,9 @@ export function resolvePlaybackMode(
 export function resolveOverlayStartFlags(serverId: number): number {
   let flags = 0x08; // OVERLAY_SLOT
   const id = serverId & 0xffff;
+  if(OVERLAY_ADDITIVE_SERVER_IDS.has(id)){
+    flags |= 0x400; // ADDITIVE_GESTURE
+  }
   // Retail ORs fire-forget (0x001) except for certain looping overlay bands.
   if(id < 0x273b){
     if(id > 0x2735){

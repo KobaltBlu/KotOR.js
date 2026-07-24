@@ -12,8 +12,18 @@ export function applyProtoTemplateSkin(row: GUIControl, template: GUIControl): v
 }
 
 /**
- * Custom row presenters: font from template; colors cloned in addItem path.
+ * Custom row presenters: font + PROTOITEM extent from template.
+ * Presenters may still override height for documented per-menu cases
+ * (inventory/equip/container, keymap).
  */
 export function applyCustomProtoRowSkin(row: GUIControl, template: GUIControl): void {
   row.guiFont = template.guiFont;
+  if(template.extent){
+    if(template.extent.width){
+      row.setExtentWidth(template.extent.width);
+    }
+    if(template.extent.height){
+      row.setExtentHeight(template.extent.height);
+    }
+  }
 }

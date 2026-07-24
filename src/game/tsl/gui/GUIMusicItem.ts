@@ -1,7 +1,6 @@
 import { GameState } from "@/GameState";
 import { GUIProtoItem } from "@/gui";
 import type { GameMenu, GUIControl } from "@/gui";
-import { asExtentInt } from "@/gui/GUICoord";
 import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
@@ -19,7 +18,6 @@ export class GUIMusicItem extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
-    this.setExtentHeight(40);
   }
 
   createControl(){
@@ -31,10 +29,6 @@ export class GUIMusicItem extends GUIProtoItem {
       console.error(e);
     }
     return this.widget;
-  }
-
-  getItemHeight(){
-    return asExtentInt(this.extent.height);
   }
 
 }

@@ -18,6 +18,7 @@ import { WindManager } from "@/managers/WindManager";
 import { IOdysseyModelLoaderOptions } from "@/interface/odyssey";
 import { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
 import { OdysseyModelAnimationManager } from "@/odyssey/OdysseyModelAnimationManager";
+import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 import { OdysseyWalkMesh } from "@/odyssey/OdysseyWalkMesh";
 import { type OdysseyModelNodeLight } from "@/odyssey/OdysseyModelNodeLight";
 import { type OdysseyModel } from "@/odyssey/OdysseyModel";
@@ -679,35 +680,39 @@ export class OdysseyModel3D extends OdysseyObject3D {
   playAnimation(anim: OdysseyModelAnimation|string|number, loop: boolean = false){
     const state: any = {
       loop: loop,
-      blend: true,
       cFrame: 0,
       elapsed: 0,
-      transElapsed: 0,
       lastTime: 0,
       delta: 0,
       lastEvent: -1,
       events: [],
       speed: 1,
     };
-    
+
+    let clip: OdysseyModelAnimation;
     if(typeof anim === 'number'){
-      this.animationManager.setCurrentAnimation(this.odysseyAnimations[anim], state);
+      clip = this.odysseyAnimations[anim];
     }else if(typeof anim === 'string'){
-      this.animationManager.setCurrentAnimation(this.odysseyAnimationMap.get(anim.toLowerCase().trim()), state);
+      clip = this.odysseyAnimationMap.get(anim.toLowerCase().trim());
     }else{
-      this.animationManager.setCurrentAnimation(anim, state);
+      clip = anim;
     }
 
-    if(typeof this.animationManager.currentAnimation != 'undefined'){
-      if(!this.animationManager.lastAnimation){
-        this.animationManager.setLastAnimation( this.animationManager.currentAnimation, state )
-      }
+    if(!clip){
+      return undefined;
+    }
 
+    let flags = loop ? AuroraAnimationFlag.LOOPING : AuroraAnimationFlag.FIRE_FORGET;
+    this.animationManager.playAnimation(clip, flags, state);
+
+    if(typeof this.animationManager.currentAnimation != 'undefined'){
       const animations2DA = TwoDAManager.datatables.get('animations');
-      for(let i = 0, len = animations2DA.rows.length; i < len; i++){
-        if(animations2DA.rows[i].name == this.animationManager.currentAnimation.name){
-          this.animationManager.currentAnimationState.animation = animations2DA.rows[i];
-          break;
+      if(animations2DA){
+        for(let i = 0, len = animations2DA.rows.length; i < len; i++){
+          if(animations2DA.rows[i].name == this.animationManager.currentAnimation.name){
+            this.animationManager.currentAnimationState.animation = animations2DA.rows[i];
+            break;
+          }
         }
       }
       return this.animationManager.currentAnimation;
@@ -715,30 +720,45 @@ export class OdysseyModel3D extends OdysseyObject3D {
     return undefined;
   }
 
-  playOverlayAnimation(anim: OdysseyModelAnimation|string|number, data: ITwoDAAnimation){
+  playOverlayAnimation(
+    anim: OdysseyModelAnimation|string|number,
+    data: ITwoDAAnimation,
+    flags?: number
+  ){
     const state: any = {
-      loop: data.looping == '1',
-      blend: true,
+      loop: data?.looping == '1',
       cFrame: 0,
       elapsed: 0,
-      transElapsed: 0,
       lastTime: 0,
       delta: 0,
       lastEvent: -1,
-      events: []
+      events: [],
+      animation: data,
     };
-    
+
+    let clip: OdysseyModelAnimation;
     if(typeof anim === 'number'){
-      this.animationManager.setOverlayAnimation(this.odysseyAnimations[anim], state);
+      clip = this.odysseyAnimations[anim];
     }else if(typeof anim === 'string'){
-      this.animationManager.setOverlayAnimation(this.odysseyAnimationMap.get(anim.toLowerCase().trim()), state);
+      clip = this.odysseyAnimationMap.get(anim.toLowerCase().trim());
     }else{
-      this.animationManager.setOverlayAnimation(anim, state);
+      clip = anim;
     }
 
-    if(typeof this.animationManager.overlayAnimationState != 'undefined'){
-      this.animationManager.overlayAnimationState.animation = data;
+    if(!clip){
+      return;
     }
+
+    let f = typeof flags === 'number' ? flags : AuroraAnimationFlag.OVERLAY_SLOT;
+    if(!(f & AuroraAnimationFlag.OVERLAY_SLOT) && !(f & AuroraAnimationFlag.ADDITIVE_GESTURE)){
+      f |= AuroraAnimationFlag.OVERLAY_SLOT;
+    }
+    if(state.loop){
+      f |= AuroraAnimationFlag.LOOPING;
+    }else if(!(f & AuroraAnimationFlag.FIRE_FORGET) && !(f & AuroraAnimationFlag.ADDITIVE_GESTURE)){
+      f |= AuroraAnimationFlag.FIRE_FORGET;
+    }
+    this.animationManager.playOverlayAnimation(clip, f, state);
   }
 
   stopAnimation(){

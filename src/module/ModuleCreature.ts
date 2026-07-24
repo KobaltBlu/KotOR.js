@@ -68,6 +68,7 @@ import { AnimationPlaybackMode } from "@/enums/animation/AnimationPlaybackMode";
 import {
   resolvePlaybackMode,
   resolveOverlayStopFlags,
+  resolveOverlayStartFlags,
 } from "@/module/animation/resolvePlaybackMode";
 import { WeaponWield } from "@/enums/combat/WeaponWield";
 import { WeaponType } from "@/enums/combat/WeaponType";
@@ -1545,7 +1546,17 @@ export class ModuleCreature extends ModuleObject {
       return;
 
     if(this.animationState.animation){
-      if(currentAnimation != this.animationState.animation.name?.toLowerCase()){
+      const desiredName = this.animationState.animation.name?.toLowerCase();
+      // During base crossfade, oldest run may still be on the stack; treat desired
+      // as playing if any active base run has that name (not only getAnimationName).
+      const playingOnStack =
+        !!desiredName &&
+        !!this.model.animationManager?.hasActiveBaseNamed?.(desiredName);
+      const nameMatches =
+        !!desiredName &&
+        currentAnimation?.toLowerCase() === desiredName;
+
+      if(!nameMatches && !playingOnStack){
         if(!this.animationState.started){
           this.animationState.started = true;
           let aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
@@ -1577,6 +1588,9 @@ export class ModuleCreature extends ModuleObject {
         }else{
           this.setAnimationState(ModuleCreatureAnimState.PAUSE);
         }
+      }else if(playingOnStack && !this.animationState.started){
+        // Clip already on stack (e.g. crossfade) — mark started without re-play
+        this.animationState.started = true;
       }
     }else if(this.isDead() || this.willDestroy){
       if(
@@ -2178,11 +2192,12 @@ export class ModuleCreature extends ModuleObject {
    * Retail CSWCAnimBaseHeadWield::SetOverlayAnimation @ 00699420 — body + head Gobs.
    */
   applyOverlayToBodyAndHead(name: string, data: ITwoDAAnimation){
+    const flags = resolveOverlayStartFlags(this.overlayAnimationState?.animationIndex || 0);
     if(this.model instanceof OdysseyModel3D){
-      this.model.playOverlayAnimation(name, data);
+      this.model.playOverlayAnimation(name, data, flags);
     }
     if(this.head instanceof OdysseyModel3D){
-      this.head.playOverlayAnimation(name, data);
+      this.head.playOverlayAnimation(name, data, flags);
     }
   }
 
