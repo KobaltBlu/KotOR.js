@@ -128,10 +128,12 @@ import {
   isDriveAnimRunning,
   playerApplyTurn,
   playerCombatFaceStep,
+  playerDesiredFacingRad,
   playerIntegrateRk4,
   playerKillReleasedAxisVelocity,
   playerSetSWAnimationSpeedMag,
   playerShouldApplyTurn,
+  playerStepAlongFacing,
   resolvePlayerDriveLimits,
   type PlayerCamRelativeState,
 } from "@/controls/player-cam-relative-control";
@@ -4690,7 +4692,6 @@ export class ModuleCreature extends ModuleObject {
     const prevAnimSpeed = ctrl.lastAnimMoveSpeed;
 
     const step = playerIntegrateRk4(ctrl, desired.x, desired.y, driveAccl, vmax, delta);
-    this.forceVector.set(step.dx, step.dy, 0);
     this.speed = step.speed;
     this.force = step.speed > 1e-4 ? 1 : 0;
 
@@ -4702,8 +4703,10 @@ export class ModuleCreature extends ModuleObject {
       if(animMoveSpeed > walkCap) animMoveSpeed = walkCap;
     }
 
-    if(step.speed > 1e-4){
-      const desiredFacing = Math.atan2(ctrl.velY, ctrl.velX) - Math.PI / 2;
+    // Retail: turn only while stick non-zero, toward stick world desired (not velocity).
+    // Full-release coast freezes facing.
+    if(!stickZero && step.speed > 1e-4){
+      const desiredFacing = playerDesiredFacingRad(desired.x, desired.y);
       let facingError = ((desiredFacing - this.rotation.z) * 180) / Math.PI;
       while(facingError > 180) facingError -= 360;
       while(facingError < -180) facingError += 360;
@@ -4726,6 +4729,7 @@ export class ModuleCreature extends ModuleObject {
       }
     }else if(
       stickZero &&
+      step.speed <= 1e-4 &&
       (GameState.clientCameraMode | 0) === ClientCameraMode.COMBAT
     ){
       // Retail Control camera_mode 6 idle face toward last hostile target @ 900°/s
@@ -4747,6 +4751,11 @@ export class ModuleCreature extends ModuleObject {
         }
       }
     }
+
+    // Retail: pos += normalize(orientation) * |RK4 delta| (facing-aligned; no slide).
+    const stepMag = Math.hypot(step.dx, step.dy);
+    const aligned = playerStepAlongFacing(stepMag, this.rotation.z);
+    this.forceVector.set(aligned.dx, aligned.dy, 0);
 
     // DriveAnimationUpdate @ 00615960: run when speed > 0.6*DriveMaxSpeed, else
     // walk while SetSWAnimationSpeed mag > 0. On key release, retail coasts:

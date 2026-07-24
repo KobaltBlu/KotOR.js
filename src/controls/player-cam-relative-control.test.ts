@@ -15,9 +15,11 @@ import {
   createPlayerCamRelativeState,
   driveAnimPlaybackRate,
   isDriveAnimRunning,
+  playerDesiredFacingRad,
   playerIntegrateRk4,
   playerKillReleasedAxisVelocity,
   playerSetSWAnimationSpeedMag,
+  playerStepAlongFacing,
 } from '@/controls/player-cam-relative-control';
 
 describe('playerKillReleasedAxisVelocity', () => {
@@ -126,5 +128,45 @@ describe('isDriveAnimRunning', () => {
     expect(isDriveAnimRunning(3.7, 6)).toBe(true);
     expect(isDriveAnimRunning(3.5, 6)).toBe(false);
     expect(isDriveAnimRunning(3, 6)).toBe(false);
+  });
+});
+
+describe('playerStepAlongFacing', () => {
+  test('facing 0, mag 1 → (cos(π/2), sin(π/2))', () => {
+    const step = playerStepAlongFacing(1, 0);
+    expect(step.dx).toBeCloseTo(Math.cos(Math.PI / 2), 5);
+    expect(step.dy).toBeCloseTo(Math.sin(Math.PI / 2), 5);
+  });
+
+  test('preserves magnitude along facing, not along velocity', () => {
+    const facing = Math.PI / 4;
+    const mag = 2.5;
+    const step = playerStepAlongFacing(mag, facing);
+    expect(Math.hypot(step.dx, step.dy)).toBeCloseTo(mag, 5);
+    expect(step.dx).toBeCloseTo(Math.cos(facing + Math.PI / 2) * mag, 5);
+    expect(step.dy).toBeCloseTo(Math.sin(facing + Math.PI / 2) * mag, 5);
+  });
+
+  test('zero mag yields zero step', () => {
+    expect(playerStepAlongFacing(0, 1.2)).toEqual({ dx: 0, dy: 0 });
+  });
+});
+
+describe('playerDesiredFacingRad', () => {
+  test('matches atan2(desired) − π/2', () => {
+    expect(playerDesiredFacingRad(1, 0)).toBeCloseTo(-Math.PI / 2, 5);
+    expect(playerDesiredFacingRad(0, 1)).toBeCloseTo(0, 5);
+    expect(playerDesiredFacingRad(-1, 0)).toBeCloseTo(Math.PI / 2, 5);
+  });
+
+  test('turn target follows stick desired, not velocity', () => {
+    // Stick wants +X; residual velocity still points +Y — facing target is stick.
+    const stickDesired = { x: 1, y: 0 };
+    const velocity = { x: 0, y: 4 };
+    const fromStick = playerDesiredFacingRad(stickDesired.x, stickDesired.y);
+    const fromVel = playerDesiredFacingRad(velocity.x, velocity.y);
+    expect(fromStick).toBeCloseTo(-Math.PI / 2, 5);
+    expect(fromVel).toBeCloseTo(0, 5);
+    expect(fromStick).not.toBeCloseTo(fromVel, 5);
   });
 });

@@ -8,9 +8,11 @@
  * change Vmax. Walk key only scales desired — it does not change Vmax.
  * Partial stick release kills velocity on the released camera axis; full release
  * leaves velocity for drag coast. SetSWAnimationSpeed mag = |v| (0 when |v|<=1).
- * Turn rate lerps MinTurnRate→MaxTurnRate (faster when slow); gated on
- * |facingError|>0.1 and |last SetSWAnimationSpeed|>0.1.
- * DriveAnimationUpdate: run when speed > DriveMaxSpeed * 0.6.
+ * Turn toward stick world desired (not velocity); only while stick non-zero.
+ * Rate lerps MinTurnRate→MaxTurnRate (faster when slow); gated on
+ * |facingError|>0.1 and |last SetSWAnimationSpeed|>0.1. Position step is
+ * facing × |RK4 delta| (no sideways slide). DriveAnimationUpdate: run when
+ * speed > DriveMaxSpeed * 0.6.
  *
  * @file player-cam-relative-control.ts
  */
@@ -372,6 +374,31 @@ export function cameraRelativeDesired(
   return {
     x: forwardX * iy + rightX * ix,
     y: forwardY * iy + rightY * ix,
+  };
+}
+
+/**
+ * Retail Control turn target: yaw of stick world desired (atan2 − π/2),
+ * not velocity. Returns 0 when desired is ~zero.
+ */
+export function playerDesiredFacingRad(desiredX: number, desiredY: number): number {
+  if(Math.abs(desiredX) < 1e-8 && Math.abs(desiredY) < 1e-8) return 0;
+  return Math.atan2(desiredY, desiredX) - Math.PI / 2;
+}
+
+/**
+ * Retail SetPrecalculatedPosition step: normalize(orientation) * |delta|.
+ * Forward = (cos(z+π/2), sin(z+π/2)) — same as legacy force-mover.
+ */
+export function playerStepAlongFacing(
+  stepMag: number,
+  facingRad: number
+): { dx: number; dy: number } {
+  const mag = Math.max(0, stepMag);
+  if(mag < 1e-12) return { dx: 0, dy: 0 };
+  return {
+    dx: Math.cos(facingRad + Math.PI / 2) * mag,
+    dy: Math.sin(facingRad + Math.PI / 2) * mag,
   };
 }
 
