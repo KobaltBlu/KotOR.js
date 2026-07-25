@@ -213,6 +213,16 @@ export const TabImageViewer = function(props: BaseTabProps){
       if(material.uniforms.time){
         material.uniforms.time.value += delta;
       }
+      // Retail CycleTIDTextureController::Control @ 00460970
+      KotOR.TextureAnimationManager.update(delta);
+      if(material.defines?.ANIMATED_UV != null && material.uniforms.animatedUVState && material.uniforms.animatedUV){
+        const state = material.uniforms.animatedUVState.value;
+        const uv = material.uniforms.animatedUV.value;
+        state.x += uv.x;
+        state.y += uv.y;
+        state.z += uv.w;
+        material.uniformsNeedUpdate = true;
+      }
       mesh.rotation.y += delta * 0.5;
       mesh.rotation.x = Math.sin(material.uniforms.time?.value || 0) * 0.12;
       texture.needsUpdate = true;

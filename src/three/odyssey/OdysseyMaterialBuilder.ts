@@ -2,6 +2,19 @@ import * as THREE from "three";
 import { TXIBlending } from "@/enums/graphics/txi/TXIBlending";
 import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
+import { TextureAnimationManager } from "@/managers/TextureAnimationManager";
+
+function applyWrapToCycleFrames(texture: OdysseyTexture): void {
+  const frames = texture?.cycleFrames;
+  if(!frames || frames.length < 2) return;
+  for(let i = 0; i < frames.length; i++){
+    const frame = frames[i];
+    if(!frame || frame === texture) continue;
+    frame.wrapS = texture.wrapS;
+    frame.wrapT = texture.wrapT;
+    frame.needsUpdate = true;
+  }
+}
 
 export type OdysseyTextureResolver = (resRef: string, noCache?: boolean) => Promise<OdysseyTexture>;
 
@@ -12,6 +25,25 @@ export interface ApplyTXIOptions {
 }
 
 export class OdysseyMaterialBuilder {
+  /**
+   * Current area DefaultEnvMap resref. Retail CSWCObject::SetEnvMap @ 0063cb70 resolves
+   * the envmap resref "DEFAULT" to the module area's DefaultEnvMap before binding.
+   * Set by ModuleArea (game) / ForgeArea (forge) when an area is loaded.
+   */
+  static defaultEnvMap: string = '';
+
+  /**
+   * Resolve an envmap resref like retail CSWCObject::SetEnvMap @ 0063cb70:
+   * "DEFAULT" maps to the current area's DefaultEnvMap; an empty result means skip binding.
+   */
+  static resolveEnvMapResRef(resRef: string): string {
+    if(!resRef){ return ''; }
+    if(resRef.trim().toUpperCase() === 'DEFAULT'){
+      return OdysseyMaterialBuilder.defaultEnvMap || '';
+    }
+    return resRef;
+  }
+
   static createOdysseyMaterial(map?: THREE.Texture): THREE.ShaderMaterial {
     const uniforms = THREE.UniformsUtils.clone((THREE.ShaderLib as any).odyssey.uniforms);
     uniforms.map.value = map ?? null;
@@ -52,6 +84,8 @@ export class OdysseyMaterialBuilder {
     if(!(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial)){
       return;
     }
+    TextureAnimationManager.unregisterMaterial(material);
+
     material.defines = material.defines || {};
     delete material.defines.CYCLE_MAP;
     delete material.defines.CYCLE_BUMP;
@@ -63,15 +97,13 @@ export class OdysseyMaterialBuilder {
     delete material.defines.ENVMAP_MODE_REFLECTION;
     delete material.defines.ENVMAP_BLENDING_ADD;
     delete material.defines.ENVMAP_BLENDING_MIX;
+    delete material.defines.ENVMAP_BLENDING_LERP;
 
-    if(material.uniforms.animationVectorMap){
-      material.uniforms.animationVectorMap.value.set(0, 0, 0, 0);
-    }
-    if(material.uniforms.animationVectorBump){
-      material.uniforms.animationVectorBump.value.set(0, 0, 0, 0);
-    }
     if(material.uniforms.envMap){
       material.uniforms.envMap.value = null;
+    }
+    if(material.uniforms.envMapAlpha){
+      material.uniforms.envMapAlpha.value = 1;
     }
     if(material.uniforms.waterAlpha){
       material.uniforms.waterAlpha.value = 1;
@@ -92,13 +124,22 @@ export class OdysseyMaterialBuilder {
       }
     };
 
-    let hasAnimatedBumpCycle = false;
+    // Object-level envmap override (appearance.2da ENVMAP / baseitems partEnvMap) wins over the
+    // TXI envmap — retail RenderEnvironmentMapped @ 0046ff70 checks the gob envmap first.
+    const envMapResRef = OdysseyMaterialBuilder.resolveEnvMapResRef(
+      (material.userData?.envMapOverride as string) || texture.txi.envMapTexture
+    );
 
-    if(!!texture.txi.envMapTexture){
-      const envmap: OdysseyTexture = await options.resolveTexture(texture.txi.envMapTexture, options.noCache ?? true);
+    if(!!envMapResRef){
+      const envmap: OdysseyTexture = await options.resolveTexture(envMapResRef, options.noCache ?? true);
       if(!!envmap){
         registerManagedTexture(envmap);
-        envmap.wrapS = envmap.wrapT = THREE.RepeatWrapping;
+        if((envmap as any).header?.isCubemap){
+          // Retail GLRender::CreateCubeTexture @ 00424000 — GL_CLAMP_TO_EDGE on S/T/R.
+          envmap.wrapS = envmap.wrapT = THREE.ClampToEdgeWrapping;
+        }else{
+          envmap.wrapS = envmap.wrapT = THREE.RepeatWrapping;
+        }
 
         if(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial){
           material.uniforms.envMap.value = envmap;
@@ -110,7 +151,17 @@ export class OdysseyMaterialBuilder {
           material.defines.USE_ENVMAP = "";
           material.defines.ENVMAP_TYPE_CUBE = "";
           material.defines.ENVMAP_MODE_REFLECTION = "";
-          material.defines.ENVMAP_BLENDING_ADD = "";
+          // Retail RenderEnvironmentMapped @ 0046ff70 LERPs unlit reflection against lit
+          // diffuse by diffuse texture alpha (one-pass ATI modes 0x13/0x14).
+          material.defines.ENVMAP_BLENDING_LERP = "";
+          if(material.uniforms.envMapAlpha){
+            material.uniforms.envMapAlpha.value = texture.txi.envMapAlpha ?? 1;
+          }
+          // TPC faces are uploaded in GL order (retail CreateCubeTexture). Do not apply
+          // Three's CubeTextureLoader X-flip (would mirror / look color-inverted).
+          if(material.uniforms.flipEnvMap){
+            material.uniforms.flipEnvMap.value = 1;
+          }
           material.uniformsNeedUpdate = true;
         }else{
           (material as any).envMap = envmap;
@@ -132,7 +183,7 @@ export class OdysseyMaterialBuilder {
           }
         }
       }else{
-        console.error(`Envmap missing: ${texture.txi.envMapTexture}`);
+        console.error(`Envmap missing: ${envMapResRef}`);
       }
     }
 
@@ -141,13 +192,13 @@ export class OdysseyMaterialBuilder {
       if(!!bumpMap){
         registerManagedTexture(bumpMap);
         bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
+        applyWrapToCycleFrames(bumpMap);
 
         if(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial){
           if(bumpMap.txi.procedureType){
             switch(bumpMap.txi.procedureType){
               case TXIPROCEDURETYPE.CYCLE:
-                hasAnimatedBumpCycle = true;
-                material.defines.CYCLE_BUMP = "";
+                // Retail swaps the bound texture — no CYCLE_BUMP UV offset
                 break;
               case TXIPROCEDURETYPE.RANDOM:
                 material.defines.RANDOM = "";
@@ -158,25 +209,6 @@ export class OdysseyMaterialBuilder {
               case TXIPROCEDURETYPE.WATER:
                 material.defines.WATER = "";
                 break;
-            }
-          }
-
-          if(material.uniforms.animationVectorBump){
-            if(bumpMap.txi.numx){
-              material.uniforms.animationVectorBump.value.x = bumpMap.txi.numx;
-              bumpMap.repeat.x = 1 / material.uniforms.animationVectorBump.value.x;
-              bumpMap.updateMatrix();
-            }
-            if(bumpMap.txi.numy){
-              material.uniforms.animationVectorBump.value.y = bumpMap.txi.numy;
-              bumpMap.repeat.y = 1 / material.uniforms.animationVectorBump.value.y;
-              bumpMap.updateMatrix();
-            }
-            if(bumpMap.txi.numx && bumpMap.txi.numy){
-              material.uniforms.animationVectorBump.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
-            }
-            if(bumpMap.txi.fps){
-              material.uniforms.animationVectorBump.value.w = bumpMap.txi.fps;
             }
           }
         }
@@ -191,6 +223,9 @@ export class OdysseyMaterialBuilder {
             (material as any).vertexTangents = true;
             (material as any).normalMapType = THREE.TangentSpaceNormalMap;
             material.defines.TANGENTSPACE_NORMALMAP = "";
+            if(bumpMap.txi.procedureType === TXIPROCEDURETYPE.CYCLE){
+              TextureAnimationManager.register(bumpMap, material, 'normalMap');
+            }
           }else{
             (material as any).normalMap = bumpMap;
             (material as any).normalMapType = THREE.ObjectSpaceNormalMap;
@@ -202,6 +237,9 @@ export class OdysseyMaterialBuilder {
             material.uniforms.bumpMap.value = bumpMap;
             material.defines.USE_BUMPMAP = "";
             material.uniformsNeedUpdate = true;
+            if(bumpMap.txi.procedureType === TXIPROCEDURETYPE.CYCLE){
+              TextureAnimationManager.register(bumpMap, material, 'bumpMap');
+            }
           }else{
             (material as any).bumpMap = bumpMap;
           }
@@ -217,6 +255,7 @@ export class OdysseyMaterialBuilder {
           material.defines.ENVMAP_BLENDING_MIX = "";
           delete material.defines.USE_NORMALMAP;
           delete material.defines.ENVMAP_BLENDING_ADD;
+          delete material.defines.ENVMAP_BLENDING_LERP;
           (material as any).combine = THREE.MixOperation;
 
           if(material.uniforms.bumpMap?.value){
@@ -233,10 +272,16 @@ export class OdysseyMaterialBuilder {
           material.blending = THREE.AdditiveBlending;
           material.uniforms.waterAlpha.value = texture.txi.waterAlpha;
 
-          material.uniforms.animationVectorBump.value.x = bumpMap.txi.numx;
-          material.uniforms.animationVectorBump.value.y = bumpMap.txi.numy;
-          material.uniforms.animationVectorBump.value.z = bumpMap.txi.numx * bumpMap.txi.numy;
-          material.uniforms.animationVectorBump.value.w = bumpMap.txi.fps;
+          // Water displacement uses the bump map — register for cycle swap too
+          if(material.uniforms.displacementMap){
+            material.uniforms.displacementMap.value = bumpMap;
+          }
+          if(bumpMap.txi.procedureType === TXIPROCEDURETYPE.CYCLE){
+            TextureAnimationManager.register(bumpMap, material, 'bumpMap');
+            if(material.uniforms.displacementMap){
+              TextureAnimationManager.register(bumpMap, material, 'displacementMap');
+            }
+         }
         }
       }
     }
@@ -253,11 +298,8 @@ export class OdysseyMaterialBuilder {
       if(texture.txi.procedureType){
         switch(texture.txi.procedureType){
           case TXIPROCEDURETYPE.CYCLE:
-            if(!hasAnimatedBumpCycle){
-              material.defines.CYCLE_MAP = "";
-            }else if(material.defines.hasOwnProperty("CYCLE_MAP")){
-              delete material.defines.CYCLE_MAP;
-            }
+            // Retail CycleTIDTextureController — swap bound map texture, do not remesh UVs
+            TextureAnimationManager.register(texture, material, 'map');
             break;
           case TXIPROCEDURETYPE.RANDOM:
             material.defines.RANDOM = "";
@@ -268,25 +310,6 @@ export class OdysseyMaterialBuilder {
           case TXIPROCEDURETYPE.WATER:
             material.defines.WATER = "";
             break;
-        }
-      }
-
-      if(material.uniforms.animationVectorMap){
-        if(texture.txi.numx){
-          material.uniforms.animationVectorMap.value.x = texture.txi.numx;
-          texture.repeat.x = 1 / material.uniforms.animationVectorMap.value.x;
-          texture.updateMatrix();
-        }
-        if(texture.txi.numy){
-          material.uniforms.animationVectorMap.value.y = texture.txi.numy;
-          texture.repeat.y = 1 / material.uniforms.animationVectorMap.value.y;
-          texture.updateMatrix();
-        }
-        if(texture.txi.numx && texture.txi.numy){
-          material.uniforms.animationVectorMap.value.z = texture.txi.numx * texture.txi.numy;
-        }
-        if(texture.txi.fps){
-          material.uniforms.animationVectorMap.value.w = texture.txi.fps;
         }
       }
     }

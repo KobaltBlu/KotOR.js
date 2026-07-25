@@ -214,6 +214,7 @@ export class ForgeArea extends ForgeGameObject{
     this.creatorId = this.are.getFieldByLabel('Creator_ID').getValue();
     this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
     this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
+    KotOR.OdysseyMaterialBuilder.defaultEnvMap = this.defaultEnvMap;
     this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
     this.expansionList = [];
 

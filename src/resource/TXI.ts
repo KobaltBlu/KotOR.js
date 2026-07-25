@@ -22,6 +22,8 @@ export class TXI {
   isbumpmap: boolean;
   bumpMapTexture: any;
   envMapTexture: any;
+  /** Reflection intensity scale — retail CAurTextureBasic::ParseField "envmapalpha" (float, default 1). */
+  envMapAlpha: number;
   waterAlpha: any;
   defaultWidth: number;
   defaultHeight: number;
@@ -57,6 +59,7 @@ export class TXI {
     this.isbumpmap = false;
     this.bumpMapTexture = null;
     this.envMapTexture = null;
+    this.envMapAlpha = 1;
 
     this.waterAlpha = null;
 
@@ -75,11 +78,11 @@ export class TXI {
     this.upperleftcoords = [];
     this.lowerrightcoords = [];
 
-    //Animation
+    //Animation — retail CycleTIDTextureController ctor defaults fps to 1.0 (@ 00463470)
     this.isAnimated = false;
     this.numx = 0;
     this.numy = 0;
-    this.fps = 0;
+    this.fps = 1;
 
     this.info = '';
 
@@ -162,6 +165,10 @@ export class TXI {
         case 'envmaptexture':
           this.envMapTexture = args[1].trim().replace(/\0[\s\S]*$/g,'');
         break;
+        case 'envmapalpha':
+          this.envMapAlpha = parseFloat(args[1]);
+          if(isNaN(this.envMapAlpha)) this.envMapAlpha = 1;
+        break;
         case 'wateralpha':
           this.waterAlpha = parseFloat(args[1]);
         break;
@@ -204,7 +211,9 @@ export class TXI {
           this.numy = parseInt(args[1]);
         break;
         case 'fps':
-          this.fps = parseInt(args[1]);
+          // Retail CycleTIDTextureController::ParseField @ 004634d0 — Parse_float
+          this.fps = parseFloat(args[1]);
+          if(isNaN(this.fps) || this.fps <= 0) this.fps = 1;
         break;
 
         //FONTS

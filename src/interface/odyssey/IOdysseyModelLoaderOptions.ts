@@ -28,6 +28,12 @@ export interface IOdysseyModelLoaderOptions {
   isForceShield?: boolean,
   parseChildren?: boolean,
   isHologram?: boolean,
+  /**
+   * Object-level envmap resref applied to mesh materials, like retail SetEnvMap
+   * (appearance.2da ENVMAP / baseitems partEnvMap). "DEFAULT" resolves to the
+   * area's DefaultEnvMap. Takes precedence over the diffuse TXI envmaptexture.
+   */
+  envMapOverride?: string,
   context?: any,
   onComplete?: Function,
   editorMode?: boolean,

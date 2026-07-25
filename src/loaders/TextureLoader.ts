@@ -67,6 +67,7 @@ export class TextureLoader {
     if(!!tga){
       tga.anisotropy = TextureLoader.Anisotropy;
       tga.wrapS = tga.wrapT = THREE.RepeatWrapping;
+      TextureLoader.applySamplerStateToCycleFrames(tga);
       if(!noCache) TextureLoader.textures.set(resRef, tga);
       return tga;
     }
@@ -74,7 +75,11 @@ export class TextureLoader {
     const texture = await TextureLoader.tpcLoader.fetch(resRef);
     if(!!texture){
       texture.anisotropy = TextureLoader.Anisotropy;
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      // Cubemaps keep GL_CLAMP_TO_EDGE set by TPCObject (retail CreateCubeTexture).
+      if(!(texture as any).header?.isCubemap){
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      }
+      TextureLoader.applySamplerStateToCycleFrames(texture);
       if(!noCache){
         if(texture.pack === 0){
           TextureLoader.guiTextures.set(resRef, texture);
@@ -86,6 +91,26 @@ export class TextureLoader {
     }
 
     return undefined;
+  }
+
+  /**
+   * Retail CreateTexture @ 00424980 applies wrap/filter to every cycle frame GL tid.
+   * TextureLoader only configures the returned texture (frame 0); copy that sampler
+   * state onto the rest of cycleFrames so animateuv scroll tiles correctly.
+   */
+  static applySamplerStateToCycleFrames(texture: OdysseyTexture): void {
+    const frames = texture?.cycleFrames;
+    if(!frames || frames.length < 2) return;
+    for(let i = 0; i < frames.length; i++){
+      const frame = frames[i];
+      if(!frame || frame === texture) continue;
+      frame.wrapS = texture.wrapS;
+      frame.wrapT = texture.wrapT;
+      frame.minFilter = texture.minFilter;
+      frame.magFilter = texture.magFilter;
+      frame.anisotropy = texture.anisotropy;
+      frame.needsUpdate = true;
+    }
   }
 
   static async LoadLocal(resRef: string, noCache: boolean = false): Promise<OdysseyTexture> {
@@ -232,7 +257,9 @@ export class TextureLoader {
           //Check to see if alpha value is set in the TPC Header
           //I think this has to do with alphaTesting... Not sure...
           if(typeof texture.header === 'object'){
-            if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null){
+            // An object-level envmap override consumes texture alpha as the reflection
+            // mask (retail RenderEnvironmentMapped), the same as a TXI envmap.
+            if(texture.header.alphaTest != 1 && texture.txi.envMapTexture == null && !tex.material.userData?.envMapOverride){
               if(texture.txi.blending != TXIBlending.PUNCHTHROUGH){
                 tex.material.transparent = true;
               }
@@ -291,7 +318,7 @@ export class TextureLoader {
             //Check to see if alpha value is set in the TPC Header
             //I think this has to do with alphaTesting... Not sure...
             if(typeof fallback.header === 'object'){
-              if(fallback.header.alphaTest != 1 && fallback.txi.envMapTexture == null){
+              if(fallback.header.alphaTest != 1 && fallback.txi.envMapTexture == null && !tex.material.userData?.envMapOverride){
                 if(fallback.txi.blending != TXIBlending.PUNCHTHROUGH){
                   tex.material.transparent = true;
                 }

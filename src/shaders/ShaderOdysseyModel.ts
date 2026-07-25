@@ -27,24 +27,12 @@ export class ShaderOdysseyModel extends Shader {
     uniform vec3 specular;
     uniform float shininess;
     uniform float opacity;
+    uniform float envMapAlpha;
     uniform float time;
-    uniform vec4 animatedUV;
-    uniform vec4 animationVectorMap;
-    uniform vec4 animationVectorBump;
 
     float randF(vec2 co) {
       return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
     }
-
-    vec2 UVJitter( vec2 p ) {
-      float x = (sin( (25.0 * p.y + 30.0 * p.x + 6.28 * 0.3477) + (randF(vec2(time, tan(time)))) ) * (animatedUV.z * 0.1));
-      float y = (sin( (25.0 * p.y + 30.0 * p.x + 6.28 * 0.7812) + (randF(vec2(time, tan(time)))) ) * (animatedUV.w * 0.1));
-      return vec2(p.x + x + ((animatedUV.x * 50.0) * time), p.y + y + ((animatedUV.y * 50.0) * time));
-    }
-
-    #ifdef CYCLE_BUMP
-      varying vec2 vUvBumpCycle;
-    #endif
 
     #ifdef WATER
       uniform float waterAlpha;
@@ -83,9 +71,6 @@ export class ShaderOdysseyModel extends Shader {
         uniform float bumpScale;
         vec2 dHdxy_fwd() {
           vec2 bumpUv = vUv;
-          #ifdef CYCLE_BUMP
-            bumpUv = vUvBumpCycle;
-          #endif
           vec2 dSTdx = dFdx( bumpUv );
           vec2 dSTdy = dFdy( bumpUv );
           float Hll = bumpScale * texture2D( bumpMap, bumpUv ).x;
@@ -120,11 +105,12 @@ export class ShaderOdysseyModel extends Shader {
 
       #include <logdepthbuf_fragment>
 
+      // Diffuse texture alpha before the opacity multiply — retail masks reflections on
+      // the texture alpha, so alpha controllers/opacity must not affect the env mask.
+      float odysseyDiffuseAlpha = 1.0;
       #ifdef USE_MAP
         vec4 sampledDiffuseColor = texture2D( map, vUv );
-        #if defined( ANIMATED_UV )
-          sampledDiffuseColor = texture2D( map, UVJitter(vUv) );
-        #endif
+        odysseyDiffuseAlpha = sampledDiffuseColor.a;
         diffuseColor *= sampledDiffuseColor;
       #endif
 
@@ -149,10 +135,16 @@ export class ShaderOdysseyModel extends Shader {
       vec3 indirectDiffuse = vec3( 0.0 );
 
       #ifdef USE_LIGHTMAP
-        // Retail: static lighting is baked into the lightmap (ComputeStaticLighting).
-        // Runtime GL/point lights must not re-light these surfaces (would double-light).
-        // Area sun/ambient also excluded — lightmap already includes that contribution.
+        // Retail bakes static (n_dynamic_type 0) and area lighting into the
+        // lightmap (ComputeStaticLighting), so area sun/ambient stays excluded.
+        // RenderStaticGeometry @ 00450c30 then calls EnableLightsDynamicOnly @
+        // 004a4480, so n_dynamic_type == 1 lights do overlay these surfaces.
         indirectDiffuse += texture2D( lightMap, vUv2 ).xyz * lightMapIntensity * materialDiffuseColor;
+        odysseyAccumulatePointLights(
+          geometryPosition, normal, geometryViewDir,
+          materialDiffuseColor, materialSpecularColor, materialShininess, specularStrength,
+          directDiffuse, directSpecular, indirectDiffuse
+        );
       #else
         #ifndef IGNORE_LIGHTING
           odysseyAccumulateLights(
@@ -180,7 +172,7 @@ export class ShaderOdysseyModel extends Shader {
 
       #ifdef IGNORE_LIGHTING
         // Unlit meshes: albedo (+ self-illum) only.
-        // Lightmapped rooms keep the baked USE_LIGHTMAP result above.
+        // Lightmapped rooms keep the USE_LIGHTMAP result computed above.
         #ifndef USE_LIGHTMAP
           outgoingLight = diffuseColor.rgb + totalEmissiveRadiance;
           #ifdef SELFILLUMCOLOR
@@ -217,11 +209,18 @@ export class ShaderOdysseyModel extends Shader {
         #else
           vec4 envColor = vec4( 0.0 );
         #endif
-        #ifdef ENVMAP_BLENDING_MULTIPLY
+        #ifdef ENVMAP_BLENDING_LERP
+          // Retail RenderEnvironmentMapped @ 0046ff70 (one-pass modes 0x13/0x14):
+          // final = mix(env, litDiffuse, diffuseTexAlpha) — the unlit reflection replaces
+          // lit diffuse where texture alpha is low, scaled by TXI envmapalpha.
+          float reflMask = (1.0 - odysseyDiffuseAlpha) * envMapAlpha * reflectivity;
+          outgoingLight = mix( outgoingLight, envColor.xyz, reflMask );
+        #elif defined( ENVMAP_BLENDING_MULTIPLY )
           outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - diffuseColor.a) );
         #elif defined( ENVMAP_BLENDING_MIX )
           outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity * (1.0 - diffuseColor.a) );
         #elif defined( ENVMAP_BLENDING_ADD )
+          // Rare environmentMapDest != 0 variant: diffuse + env*(1-a), additive.
           outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a);
         #endif
       #endif
@@ -275,13 +274,27 @@ export class ShaderOdysseyModel extends Shader {
       uniform float time;
     #endif
 
-    #ifdef CYCLE_MAP
-      uniform vec4 animationVectorMap;
-    #endif
+    // Retail MdlNodeTriMesh animateuv — ProceduralAnimateHierarchy @ 00483630
+    // animatedUV      = (uvDirectionX, uvDirectionY, uvJitter, uvJitterSpeed)
+    // animatedUVState = (accumOffsetX, accumOffsetY, jitterPhase, 0)
+    #ifdef ANIMATED_UV
+      uniform vec4 animatedUV;
+      uniform vec4 animatedUVState;
 
-    #ifdef CYCLE_BUMP
-      varying vec2 vUvBumpCycle;
-      uniform vec4 animationVectorBump;
+      float randF(vec2 co) {
+        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+      }
+
+      vec2 odysseyAnimateUV( vec2 p ) {
+        vec2 base = p + animatedUVState.xy;
+        float jitter = animatedUV.z;
+        if ( jitter == 0.0 ) return base;
+        float halfJitter = jitter * 0.5;
+        float phase = animatedUVState.z;
+        vec2 a = vec2( randF( p + floor( phase ) ), randF( p.yx + floor( phase ) ) );
+        vec2 b = vec2( randF( p + floor( phase ) + 1.0 ), randF( p.yx + floor( phase ) + 1.0 ) );
+        return base + ( mix( a, b, fract( phase ) ) * jitter - halfJitter );
+      }
     #endif
 
     #ifdef DANGLY
@@ -318,48 +331,10 @@ export class ShaderOdysseyModel extends Shader {
     void main() {
       #include <uv_vertex>
 
-      #ifdef CYCLE_MAP
-        float mapFramesX = animationVectorMap.x;
-        float mapFramesY = animationVectorMap.y;
-        float mapTotalFrames = animationVectorMap.z;
-        float mapFPS = animationVectorMap.w;
-
-        float mapDeltaMax = (1.0 / mapFPS) * mapTotalFrames;
-        float mapTime = mod(time, mapDeltaMax) / mapDeltaMax;
-        float mapFrameNumber = floor(mod(mapTime * mapTotalFrames, mapTotalFrames));
-        float mapColumn = floor(mod(mapFrameNumber, mapFramesX));
-        float mapRow = floor((mapFrameNumber - mapColumn) / mapFramesX);
-        float mapRowFlipped = mapRow;
-        float mapColumnNorm = mapColumn / mapFramesX;
-        float mapRowNorm = mapRowFlipped / mapFramesY;
-
-        mat3 cycleTransform = mat3(
-          uvTransform[0][0], uvTransform[0][1], uvTransform[0][2],
-          uvTransform[1][0], uvTransform[1][1], uvTransform[1][2],
-          mapColumnNorm, mapRowNorm, uvTransform[2][2]
-        );
+      #ifdef ANIMATED_UV
         #if defined( USE_UV ) || defined( USE_BUMPMAP ) || defined( USE_NORMALMAP ) || defined( USE_SPECULARMAP ) || defined( USE_ALPHAMAP ) || defined( USE_EMISSIVEMAP ) || defined( USE_ROUGHNESSMAP ) || defined( USE_METALNESSMAP )
-          vUv = ( cycleTransform * vec3( uv, 1 ) ).xy;
+          vUv = ( uvTransform * vec3( odysseyAnimateUV( uv ), 1 ) ).xy;
         #endif
-      #endif
-
-      #ifdef CYCLE_BUMP
-        float bumpFramesX = animationVectorBump.x;
-        float bumpFramesY = animationVectorBump.y;
-        float bumpTotalFrames = animationVectorBump.z;
-        float bumpFPS = animationVectorBump.w;
-
-        float bumpDeltaMax = (1.0 / bumpFPS) * bumpTotalFrames;
-        float bumpTime = mod(time, bumpDeltaMax) / bumpDeltaMax;
-        float bumpFrameNumber = floor(mod(bumpTime * bumpTotalFrames, bumpTotalFrames));
-        float bumpColumn = floor(mod(bumpFrameNumber, bumpFramesX));
-        float bumpRow = floor((bumpFrameNumber - bumpColumn) / bumpFramesX);
-        float bumpRowFlipped = bumpRow;
-        float bumpColumnNorm = bumpColumn / bumpFramesX;
-        float bumpRowNorm = bumpRowFlipped / bumpFramesY;
-        vec2 cycleUV = vec2(bumpColumnNorm, bumpRowNorm);
-        vec2 frameUV = uv / vec2(bumpFramesX, bumpFramesY);
-        vUvBumpCycle = cycleUV + frameUV;
       #endif
 
       #include <uv2_vertex>
@@ -379,11 +354,7 @@ export class ShaderOdysseyModel extends Shader {
       #include <skinning_vertex>
 
       #ifdef USE_DISPLACEMENTMAP
-        vec2 displacementUv = vUv;
-        #ifdef CYCLE_BUMP
-          displacementUv = vUvBumpCycle;
-        #endif
-        transformed += normalize( objectNormal ) * ( texture2D( displacementMap, displacementUv ).x * displacementScale + displacementBias );
+        transformed += normalize( objectNormal ) * ( texture2D( displacementMap, vUv ).x * displacementScale + displacementBias );
       #endif
 
       #ifdef DANGLY
@@ -426,9 +397,8 @@ export class ShaderOdysseyModel extends Shader {
       { alphaTest: { value: 0.0 } },
       { time: { value: 0.0 } },
       { animatedUV: { value: new THREE.Vector4(0, 0, 0, 0) } },
+      { animatedUVState: { value: new THREE.Vector4(0, 0, 0, 0) } },
       { waterAlpha: { value: 1 } },
-      { animationVectorMap : { value: new THREE.Vector4(0, 0, 0, 0) } },
-      { animationVectorBump : { value: new THREE.Vector4(0, 0, 0, 0) } },
       { danglyDisplacement: { value: 0 } },
       { danglyTightness: { value: 0 } },
       { danglyPeriod: { value: 0 } },

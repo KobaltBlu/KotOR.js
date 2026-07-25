@@ -1,9 +1,11 @@
 import { GameState } from "@/GameState";
 import { WindManager } from "@/managers/WindManager";
 import { DirtyTextureManager } from "@/managers/DirtyTextureManager";
+import { TextureAnimationManager } from "@/managers/TextureAnimationManager";
 import { GFFObject } from "@/resource/GFFObject";
 import type { OdysseyFace3 } from "@/three/odyssey/OdysseyFace3";
 import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
+import { OdysseyMaterialBuilder } from "@/three/odyssey/OdysseyMaterialBuilder";
 import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
 import { AreaMap } from "@/module/AreaMap";
 import { AreaWeather } from "@/module/AreaWeather";
@@ -502,6 +504,7 @@ export class ModuleArea extends ModuleObject {
 
     this.weather.destroy();
     DirtyTextureManager.dispose();
+    TextureAnimationManager.dispose();
   }
 
   update(delta: number = 0){
@@ -1532,6 +1535,9 @@ export class ModuleArea extends ModuleObject {
     this.creatorId = this.are.getFieldByLabel('Creator_ID').getValue();
     this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
     this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
+    // Retail CSWCObject::SetEnvMap @ 0063cb70 resolves the "DEFAULT" envmap resref
+    // against the current area's DefaultEnvMap.
+    OdysseyMaterialBuilder.defaultEnvMap = this.defaultEnvMap;
     this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
     this.applyDynAmbient();
     this.expansionList = [];

@@ -16,10 +16,12 @@ import {
   retailSelectIlluminationBump,
   retailSelectPrioritizeBump,
   retailSelectDistantStaticShadowLight,
+  retailSelectDynamicOnlyLights,
   retailModelLightSlots,
   retailVideoQualityRowIndex,
   RETAIL_GOB_LIGHT_RADIUS as RETAIL_GOB_LIGHT_RADIUS_CONST,
   RETAIL_MAX_LIGHTS_PER_MODEL,
+  RetailLightFadeChannel,
   RetailShadowLightMode,
   type IRetailLightSortKey,
 } from "@/utility/retailLighting";
@@ -86,6 +88,14 @@ export class LightManager {
    * bump_map_lights from PrioritizeIllumination (default) or PrioritizeBump.
    */
   bumpLights: OdysseyLight3D[] = [];
+  /**
+   * Retail exclusive_dynamic_lights: the fading pool built by
+   * EnableLightsDynamicOnly @ 004a4480 from the `n_dynamic_type == 1` subset of
+   * prioritized_lights. RenderStaticGeometry @ 00450c30 binds this set before
+   * drawing static/lightmapped geometry, so these are the only lights that
+   * overlay a bake.
+   */
+  exclusiveDynamicLights: OdysseyLight3D[] = [];
   lightsShown = new Set<string>();
 
   /** Room lights: selected/fading light set. */
@@ -94,7 +104,10 @@ export class LightManager {
   dynamicLights: IOdysseyLightUniformSlot = createLightUniformSet();
   /** Bump-map materials: at most one prioritized dynamic light. */
   bumpMapLights: IOdysseyLightUniformSlot = createLightUniformSet();
-  /** Lightmap materials: empty set — retail bakes static lights; no runtime overlay. */
+  /**
+   * Lightmap materials: exclusive_dynamic_lights packed with the secondary fade
+   * channel. Static (type 0) contribution is already in the bake.
+   */
   lightmapLights: IOdysseyLightUniformSlot = createLightUniformSet();
   /** Scratch buffer for per-object GetNearestLights packing. */
   objectLights: IOdysseyLightUniformSlot = createLightUniformSet();
@@ -146,6 +159,11 @@ export class LightManager {
   private _candidateScratch: OdysseyLight3D[] = [];
   /** Double-buffer for ControlLightsFade next bound set. */
   private _boundNextScratch: OdysseyLight3D[] = [];
+  /** Double-buffer for the exclusive_dynamic_lights fade pool. */
+  private _exclusiveNextScratch: OdysseyLight3D[] = [];
+  /** Reused EnableLightsDynamicOnly desired set (n_dynamic_type == 1). */
+  private _dynamicOnlyScratch: OdysseyLight3D[] = [];
+  private _exclusiveShownScratch = new Set<string>();
   private _desiredIndexScratch = new Map<string, number>();
   private _registeredScratch = new Set<string>();
   private _ambientScratch: OdysseyLight3D[] = [];
@@ -163,6 +181,7 @@ export class LightManager {
   private _prevGlobalCacheID = -1;
   private _prevBumpCacheID = -1;
   private _prevDynamicCacheID = -1;
+  private _prevLightmapCacheID = -1;
 
   init(context: any){
     this.context = context;
@@ -239,6 +258,7 @@ export class LightManager {
     this.boundLights = [];
     this.selectedLights = [];
     this.bumpLights = [];
+    this.exclusiveDynamicLights = [];
     this.shadowLights = [];
     this.staticMeshShadowLights = [];
     this.distantShadowLight = undefined;
@@ -284,6 +304,7 @@ export class LightManager {
     this.boundLights = this.boundLights.filter((entry) => entry !== light);
     this.selectedLights = this.selectedLights.filter((entry) => entry !== light);
     this.bumpLights = this.bumpLights.filter((entry) => entry !== light);
+    this.exclusiveDynamicLights = this.exclusiveDynamicLights.filter((entry) => entry !== light);
     this.shadowLights = this.shadowLights.filter((entry) => entry !== light);
     this.staticMeshShadowLights = this.staticMeshShadowLights.filter((entry) => entry !== light);
     if(this.distantShadowLight === light){ this.distantShadowLight = undefined; }
@@ -390,6 +411,9 @@ export class LightManager {
     this.updateBumpLightSelection(candidates);
 
     this.reclaimLights(delta, this.selectedLights);
+    // EnableLightsDynamicOnly scans the full prioritized list, not the capped
+    // room selection, so pass the sorted candidates.
+    this.reclaimExclusiveDynamicLights(delta, candidates);
     this.syncUniformBuffers();
   }
 
@@ -411,12 +435,37 @@ export class LightManager {
     this.fillUniformSet(this.bumpMapLights, this.bumpLights);
   }
 
+  /** Read the fade field ControlLightsFade selects for `channel`. */
+  private readFade(light: OdysseyLight3D, channel: RetailLightFadeChannel): number {
+    return channel === RetailLightFadeChannel.Secondary
+      ? light.dynamicOnlyFadeFactor
+      : light.fadeFactor;
+  }
+
+  private writeFade(light: OdysseyLight3D, channel: RetailLightFadeChannel, value: number){
+    if(channel === RetailLightFadeChannel.Secondary){
+      light.dynamicOnlyFadeFactor = value;
+    }else{
+      light.fadeFactor = value;
+    }
+  }
+
   /**
    * ControlLightsFade @ 004a4580: keep the bound render-light pool, fade with
    * ±deltaT, and apply fadingLightFlag only as the initial fade (0 vs 1).
    * Lights leaving the desired set always fade out — not only when isFading.
+   *
+   * `channel` selects the PartLight fade field (retail param_4), so the room
+   * pool and the static-geometry pool fade independently.
    */
-  reclaimLights(delta = 0, desiredLights: OdysseyLight3D[] = []){
+  private controlLightsFade(
+    boundPool: OdysseyLight3D[],
+    desiredLights: OdysseyLight3D[],
+    delta: number,
+    channel: RetailLightFadeChannel,
+    next: OdysseyLight3D[],
+    shown: Set<string>
+  ): OdysseyLight3D[] {
     const maxLights = LightManager.MAXLIGHTS;
     const desiredIndex = this._desiredIndexScratch;
     desiredIndex.clear();
@@ -428,19 +477,18 @@ export class LightManager {
     for(let i = 0, il = this.lights.length; i < il; i++){
       registered.add(this.lights[i].uuid);
     }
-    const next = this._boundNextScratch;
     next.length = 0;
 
-    for(let i = 0, il = this.boundLights.length; i < il; i++){
-      const light = this.boundLights[i];
+    for(let i = 0, il = boundPool.length; i < il; i++){
+      const light = boundPool[i];
       const index = desiredIndex.get(light.uuid);
       if(index !== undefined){
         if(index < maxLights){
-          light.fadeFactor = retailFadeStep(light.fadeFactor, 1, delta);
+          this.writeFade(light, channel, retailFadeStep(this.readFade(light, channel), 1, delta));
           next.push(light);
         }else{
-          light.fadeFactor = retailFadeStep(light.fadeFactor, 0, delta);
-          if(light.fadeFactor > 0){
+          this.writeFade(light, channel, retailFadeStep(this.readFade(light, channel), 0, delta));
+          if(this.readFade(light, channel) > 0){
             next.push(light);
           }
         }
@@ -450,29 +498,61 @@ export class LightManager {
       if(!registered.has(light.uuid)){
         continue;
       }
-      light.fadeFactor = retailFadeStep(light.fadeFactor, 0, delta);
-      if(light.fadeFactor > 0){
+      this.writeFade(light, channel, retailFadeStep(this.readFade(light, channel), 0, delta));
+      if(this.readFade(light, channel) > 0){
         next.push(light);
       }
     }
 
-    this.lightsShown.clear();
+    shown.clear();
     for(let i = 0; i < next.length; i++){
-      this.lightsShown.add(next[i].uuid);
+      shown.add(next[i].uuid);
     }
     for(let i = 0; i < desiredLights.length && i < maxLights; i++){
       if(next.length >= maxLights){ break; }
       const light = desiredLights[i];
-      if(this.lightsShown.has(light.uuid)){ continue; }
-      light.fadeFactor = retailFadeInit(!!light.isFading);
-      light.fadeFactor = retailFadeStep(light.fadeFactor, 1, delta);
+      if(shown.has(light.uuid)){ continue; }
+      this.writeFade(light, channel, retailFadeInit(!!light.isFading));
+      this.writeFade(light, channel, retailFadeStep(this.readFade(light, channel), 1, delta));
       next.push(light);
-      this.lightsShown.add(light.uuid);
+      shown.add(light.uuid);
     }
 
     this.prepareAndSort(next);
+    return next;
+  }
+
+  /** EnableLights @ 004a3080 → ControlLightsFade on the room/global pool. */
+  reclaimLights(delta = 0, desiredLights: OdysseyLight3D[] = []){
+    const next = this.controlLightsFade(
+      this.boundLights,
+      desiredLights,
+      delta,
+      RetailLightFadeChannel.Primary,
+      this._boundNextScratch,
+      this.lightsShown
+    );
     this._boundNextScratch = this.boundLights;
     this.boundLights = next;
+  }
+
+  /**
+   * EnableLightsDynamicOnly @ 004a4480: fade the `n_dynamic_type == 1` subset of
+   * the prioritized illumination list into exclusive_dynamic_lights. This is the
+   * pool RenderStaticGeometry @ 00450c30 binds for lightmapped geometry.
+   */
+  reclaimExclusiveDynamicLights(delta = 0, prioritizedLights: OdysseyLight3D[] = []){
+    const desired = retailSelectDynamicOnlyLights(prioritizedLights, this._dynamicOnlyScratch);
+    const next = this.controlLightsFade(
+      this.exclusiveDynamicLights,
+      desired,
+      delta,
+      RetailLightFadeChannel.Secondary,
+      this._exclusiveNextScratch,
+      this._exclusiveShownScratch
+    );
+    this._exclusiveNextScratch = this.exclusiveDynamicLights;
+    this.exclusiveDynamicLights = next;
   }
 
   /**
@@ -504,20 +584,30 @@ export class LightManager {
     }
     this.fillUniformSet(this.bumpMapLights, bumpBound);
 
-    // Lightmapped surfaces use baked lighting only. Keep a stable empty set so
-    // lightmap material cacheIDs do not thrash every frame.
-    if(this.lightmapLights.count !== 0){
-      this.clearUniformSet(this.lightmapLights);
-    }
+    // Lightmapped surfaces: the bake supplies static (type 0) and area lighting,
+    // so only the exclusive_dynamic_lights pool overlays it, faded on the
+    // secondary channel (ControlLightsFade param_4 = 1).
+    this.fillUniformSet(
+      this.lightmapLights,
+      this.exclusiveDynamicLights,
+      RetailLightFadeChannel.Secondary
+    );
 
     if(this.globalLights.cacheID !== this._prevGlobalCacheID ||
       this.bumpMapLights.cacheID !== this._prevBumpCacheID ||
-      this.dynamicLights.cacheID !== this._prevDynamicCacheID){
+      this.dynamicLights.cacheID !== this._prevDynamicCacheID ||
+      this.lightmapLights.cacheID !== this._prevLightmapCacheID){
       this.selectionEpoch++;
       this._prevGlobalCacheID = this.globalLights.cacheID;
       this._prevBumpCacheID = this.bumpMapLights.cacheID;
       this._prevDynamicCacheID = this.dynamicLights.cacheID;
+      this._prevLightmapCacheID = this.lightmapLights.cacheID;
     }
+  }
+
+  /** exclusive_dynamic_lights packed for USE_LIGHTMAP materials. */
+  getLightmapLightSet(): IOdysseyLightUniformSlot {
+    return this.lightmapLights;
   }
 
   /** Return the stable uniform set used by room/global materials. */
@@ -620,13 +710,13 @@ export class LightManager {
     radius = LightManager.RETAIL_GOB_LIGHT_RADIUS
   ): IOdysseyLightUniformSlot {
     const nearest = this.getLightsForObject(position, radius);
-    this.fillUniformSet(this.objectLights, nearest, false);
+    this.fillUniformSet(this.objectLights, nearest, RetailLightFadeChannel.None);
     return this.objectLights;
   }
 
   /** Pack the last `getLightsForObject` / `fingerprintNearestLights` result. */
   packLastNearestLights(): IOdysseyLightUniformSlot {
-    this.fillUniformSet(this.objectLights, this._nearestScratch, false);
+    this.fillUniformSet(this.objectLights, this._nearestScratch, RetailLightFadeChannel.None);
     return this.objectLights;
   }
 
@@ -663,15 +753,15 @@ export class LightManager {
   }
 
   /**
-   * @param applyFade true = ControlLightsFade (fade×multiplier×color);
-   *                  false = GetNearestLights (multiplier×color).
+   * @param channel fade field applied to the packed color (retail param_4);
+   *                `None` matches GetNearestLights (multiplier×color).
    * @param maxCount per-model shader light cap. Defaults to MAX_LIGHTS_PER_MODEL
    *                 minus one when the camera headlight is enabled.
    */
   private fillUniformSet(
     set: IOdysseyLightUniformSlot,
     lights: OdysseyLight3D[],
-    applyFade = true,
+    channel = RetailLightFadeChannel.Primary,
     maxCount = retailModelLightSlots(LightManager.MAX_LIGHTS_PER_MODEL, this.headLightEnabled)
   ){
     const count = Math.min(lights.length, maxCount, MAX_ODYSSEY_LIGHTS);
@@ -682,7 +772,9 @@ export class LightManager {
       const targetColor = set.odysseyLightColor[i];
       if(i < count){
         const light = lights[i];
-        if(applyFade){
+        if(channel === RetailLightFadeChannel.Secondary){
+          light.getDynamicOnlyColor(color);
+        }else if(channel === RetailLightFadeChannel.Primary){
           light.getEffectiveColor(color);
         }else{
           light.getIntensityColor(color);
@@ -845,6 +937,7 @@ export class LightManager {
         shadowRadius: light.getShadowRadius(),
         multiplier: light.multiplier,
         fadeFactor: light.fadeFactor,
+        dynamicOnlyFadeFactor: light.dynamicOnlyFadeFactor,
         shadowFadeFactor: light.shadowFadeFactor,
         priority: light.priority,
         authoredPriority: light.authoredPriority,
@@ -899,6 +992,7 @@ export class LightManager {
       selectedLightUuids: byUuid(this.selectedLights),
       boundLightUuids: byUuid(this.boundLights),
       bumpLightUuids: byUuid(this.bumpLights),
+      exclusiveDynamicLightUuids: byUuid(this.exclusiveDynamicLights),
       shadowLightUuids: byUuid(this.shadowLights),
       staticMeshShadowLightUuids: byUuid(this.staticMeshShadowLights),
       distantShadowLightUuid: this.distantShadowLight?.uuid ?? null,
@@ -946,6 +1040,7 @@ export interface ILightDebugDump {
   shadowRadius: number;
   multiplier: number;
   fadeFactor: number;
+  dynamicOnlyFadeFactor: number;
   shadowFadeFactor: number;
   priority: number;
   authoredPriority: number;
@@ -995,6 +1090,7 @@ export interface ILightManagerDebugDump {
   selectedLightUuids: string[];
   boundLightUuids: string[];
   bumpLightUuids: string[];
+  exclusiveDynamicLightUuids: string[];
   shadowLightUuids: string[];
   staticMeshShadowLightUuids: string[];
   distantShadowLightUuid: string | null;

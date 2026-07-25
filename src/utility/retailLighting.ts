@@ -264,6 +264,47 @@ export enum RetailShadowLightMode {
 }
 
 /**
+ * ControlLightsFade @ 004a4580 param_4 selects which PartLight fade field the
+ * pool advances, and GetNearestLights @ 004a3770 uses no fade at all.
+ */
+export enum RetailLightFadeChannel {
+  /** GetNearestLights → SetLightGL: multiplier × color only. */
+  None = 0,
+  /** param_4 = 0 → field10_0x78. Room / global light pool (EnableLights). */
+  Primary = 1,
+  /** param_4 = 1 → field11_0x7c. Static-geometry pool (EnableLightsDynamicOnly). */
+  Secondary = 2,
+}
+
+/**
+ * EnableLightsDynamicOnly @ 004a4480 eligibility. Retail compares
+ * `num_dynamic_types == 1` exactly, so baked static lights (type 0) and
+ * gob-only lights (type 2) are excluded from the static-geometry overlay.
+ */
+export function isRetailDynamicOnlyLight<T extends { dynamicType?: number }>(light: T): boolean {
+  return (light?.dynamicType | 0) === 1;
+}
+
+/**
+ * EnableLightsDynamicOnly @ 004a4480: filter the prioritized illumination list
+ * down to the `n_dynamic_type == 1` lights that light static geometry.
+ * Order is preserved — the caller already lightcmp-sorted the input.
+ */
+export function retailSelectDynamicOnlyLights<T extends { dynamicType?: number }>(
+  prioritizedLights: T[],
+  out: T[] = []
+): T[] {
+  out.length = 0;
+  for(let i = 0; i < prioritizedLights.length; i++){
+    const light = prioritizedLights[i];
+    if(isRetailDynamicOnlyLight(light)){
+      out.push(light);
+    }
+  }
+  return out;
+}
+
+/**
  * PrioritizeBump @ 004a3ee0: collect non-ambient dynamic lights from the
  * render/fade pool, lightcmp-sort, keep at most one.
  */

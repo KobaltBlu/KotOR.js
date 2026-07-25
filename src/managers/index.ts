@@ -8,6 +8,7 @@ export * from "@/managers/CheatConsoleManager";
 export * from "@/managers/ConfigManager";
 export * from "@/managers/CursorManager";
 export * from "@/managers/DirtyTextureManager";
+export * from "@/managers/TextureAnimationManager";
 export * from "@/managers/reticle";
 export * from "@/managers/DialogMessageManager";
 export * from "@/managers/ERFManager";

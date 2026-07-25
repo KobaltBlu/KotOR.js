@@ -8,8 +8,19 @@ import { ENCODING } from "@/enums/graphics/tpc/Encoding";
 import { OdysseyCompressedTexture } from "@/three/odyssey/OdysseyCompressedTexture";
 import { ITPCHeader } from "@/interface/resource/ITPCHeader";
 import { ITPCObjectOptions } from "@/interface/resource/ITPCObjectOptions";
+import { PixelManager } from "@/utility/PixelManager";
+import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
 
 const TPCHeaderLength = 128;
+
+/**
+ * Retail GLRender::CreateCubeTexture @ 00424000 (uncompressed cubemaps only):
+ * source face i is quarter-rotated clockwise CUBEMAP_FACE_ROTATIONS[i] times
+ * (tables @ 0078db38) and uploaded to GL face CUBEMAP_FACE_REMAP[i] (@ 0078db50).
+ * The DXT path (CreateProcessedCubeTexture) uploads faces in order, unrotated.
+ */
+const CUBEMAP_FACE_REMAP = [1, 0, 2, 3, 4, 5];
+const CUBEMAP_FACE_ROTATIONS = [3, 1, 0, 2, 2, 0];
 
 /**
  * TPCObject class.
@@ -76,9 +87,16 @@ export class TPCObject {
 
   }
 
-  getDDS( compressMipMaps: boolean = true ) {
+  /**
+   * Extract DDS/mipmap data from the TPC.
+   * @param compressMipMaps Keep DXT compressed (true) or decompress to RGBA (false).
+   * @param options.stitchCycleFrames When true, keep cycle textures as a full contact sheet
+   *   (Forge preview). Engine path splits into per-frame textures — retail CAurTextureBasic::glImage
+   *   @ 00420970 uploads one GL texture per frame via CreateTexture/CreateProcessedTexture.
+   */
+  getDDS( compressMipMaps: boolean = true, options?: { stitchCycleFrames?: boolean } ) {
 
-  	let dds = { mipmaps: [], width: 0, height: 0, format: null, mipmapCount: 1, isCubemap: false } as any;
+  	let dds = { mipmaps: [], width: 0, height: 0, format: null, mipmapCount: 1, isCubemap: false, frameCount: 1 } as any;
 
     // Parse header
     if(this.header === null)
@@ -120,13 +138,12 @@ export class TPCObject {
 
     let dataOffset = TPCHeaderLength;
 
-    //Detect Animated Textures
-    if(this.txi.procedureType == 1){
-      this.header.faces = this.txi.numx * this.txi.numy;
-      dds.width  = this.header.width / this.txi.numx;
-      dds.height  = this.header.height / this.txi.numy;
-      dds.mipmapCount = this.generateMipMapCount(dds.width, dds.height);
-    }
+    // Cycle TPCs store a contact sheet (full width x height mip chain), not sequential
+    // face blobs. TXI numx/numy describe the grid; retail splits at load
+    // (CreateTexture ImageGetSubImage / CreateProcessedTexture contact-sheet offsets).
+    const isCycle = this.txi.procedureType == TXIPROCEDURETYPE.CYCLE
+      && (this.txi.numx | 0) > 0 && (this.txi.numy | 0) > 0
+      && (this.txi.numx * this.txi.numy) > 1;
 
   	for ( let face = 0; face < this.header.faces; face++ ) {
 
@@ -199,85 +216,113 @@ export class TPCObject {
 
     }
 
-    ///////////////////////////////////
-    // REBUILD ANIMATED FRAMES
-    ///////////////////////////////////
-    
-    //Combine Extracted mipMaps into a single mipmap if this texture is a procedureType = cycle texture
-    if(this.txi.procedureType == 1){
-      try{
-        //console.log('TPCObject: Rebuilding Frames', this.filename);
-        let encoding = (this.header.encoding == ENCODING.RGB) ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5;
-        let mipmaps = [];
-
-        dds.width = this.header.width;
-        dds.height = this.header.height;
-
-        let imageWidth = this.header.width;
-        let imageHeight = this.header.height;
-        let frameWidth = (imageWidth / this.txi.numx);
-        let frameHeight = (imageHeight / this.txi.numy);
-        let frameCount = (this.txi.numx * this.txi.numy);
-
-        for(let m = 0; m < dds.mipmapCount; m++){
-          let frames = [];
-
-          //Create an OffsreenCanvas so we can stitch the frames back together
-          this.canvas[m] = new OffscreenCanvas(imageWidth, imageHeight);
-          let ctx = this.canvas[m].getContext('2d');
-
-          //Get the proper frames from the old mipmaps list
-          for(let i = 0; i < frameCount; i++){
-            let mipmap = dds.mipmaps[m + (i * dds.mipmapCount)];
-            //console.log(m + (i * dds.mipmapCount), mipmap);
-            let uint8 = Uint8ClampedArray.from( 
-              compressMipMaps ? dxtJs.decompress(mipmap.data, frameWidth, frameHeight, encoding) : mipmap.data
-              // (window as any).dxt.decompress(mipmap.data, frameWidth, frameHeight, encoding) 
-            );
-            //console.log(uint8, frameWidth, frameHeight);
-            frames.push(
-              new ImageData(uint8, frameWidth, frameHeight)
-            );
-          }
-
-          //Merge the frames onto the canvas
-          for(let y = 0; y < this.txi.numy; y++){
-            let frameY = (y * this.txi.numx);
-            for(let x = 0; x < this.txi.numx; x++){
-              //console.log(frameY + x, x * frameWidth2, y * frameHeight2);
-              ctx.putImageData(frames[frameY + x], x * frameWidth, y * frameHeight);
-            }
-          }
-          //console.log(imageWidth, imageHeight, frameWidth, frameHeight);
-          //Extract the merged image
-          let mergedImageData = ctx.getImageData(0, 0, imageWidth, imageHeight);
-
-          //Compress it with the proper DXT encoding
-          let mipmap_data = compressMipMaps ? dxtJs.compress(mergedImageData.data, imageWidth, imageHeight, encoding) : mergedImageData.data;
-
-          //Add it the the new mipmaps list
-          mipmaps.push({
-            data: mipmap_data, 
-            width: imageWidth, 
-            height: imageHeight
-          });
-
-          //Resize Next Frame
-          frameWidth = Math.max( frameWidth >> 1, 1 ); 
-          frameHeight = Math.max( frameHeight >> 1, 1 );
-          //Resize Next Image
-          imageWidth = Math.max( imageWidth >> 1, 1 );
-          imageHeight = Math.max( imageHeight >> 1, 1 );
-        }
-        dds.mipmaps = mipmaps;
-        return dds;
-      }catch(e){
-        console.error(e);
-      }
+    // Engine: split contact sheet into per-frame mip chains (retail gl_textures[]).
+    // Preview: keep the full sheet when stitchCycleFrames is requested.
+    if(isCycle && !options?.stitchCycleFrames){
+      dds = this.splitCycleContactSheet(dds, compressMipMaps);
+    }else if(isCycle){
+      dds.frameCount = 1;
     }
 
   	return dds;
 
+  }
+
+  /**
+   * Split a cycle contact sheet into numx*numy frame mip chains.
+   * Retail CreateTexture @ 00424980 ImageGetSubImage(x = (i%numx)*fw, y = (i/numx)*fh);
+   * CreateProcessedTexture @ 00424dd0 uses the equivalent for DXT block grids.
+   */
+  private splitCycleContactSheet(dds: any, compressMipMaps: boolean): any {
+    const numx = this.txi.numx | 0;
+    const numy = this.txi.numy | 0;
+    const frameCount = numx * numy;
+    const sheetMips = dds.mipmaps as { data: Uint8Array, width: number, height: number }[];
+    const mipmapCount = dds.mipmapCount;
+    const frameMips: { data: Uint8Array, width: number, height: number }[] = [];
+
+    const encoding = this.header.encoding;
+    const isDxt = this.header.compressed && compressMipMaps;
+
+    for(let i = 0; i < frameCount; i++){
+      const col = i % numx;
+      const row = Math.floor(i / numx);
+
+      for(let m = 0; m < mipmapCount; m++){
+        const sheet = sheetMips[m];
+        if(!sheet) continue;
+
+        const frameW = Math.max(1, Math.floor(sheet.width / numx));
+        const frameH = Math.max(1, Math.floor(sheet.height / numy));
+
+        let data: Uint8Array;
+        if(isDxt){
+          data = TPCObject.extractDxtSubImage(
+            sheet.data, sheet.width, sheet.height,
+            col * frameW, row * frameH, frameW, frameH, encoding
+          );
+        }else{
+          // Uncompressed path ends as RGBA (4 bpp) after getDDS conversion
+          data = TPCObject.extractRgbaSubImage(
+            sheet.data, sheet.width, sheet.height,
+            col * frameW, row * frameH, frameW, frameH
+          );
+        }
+
+        frameMips.push({ data, width: frameW, height: frameH });
+      }
+    }
+
+    dds.mipmaps = frameMips;
+    dds.width = Math.max(1, Math.floor(this.header.width / numx));
+    dds.height = Math.max(1, Math.floor(this.header.height / numy));
+    dds.frameCount = frameCount;
+    return dds;
+  }
+
+  /** Retail ImageGetSubImage @ 0045f000 — RGBA8 rectangle copy. */
+  static extractRgbaSubImage(
+    src: Uint8Array, srcW: number, srcH: number,
+    x: number, y: number, w: number, h: number
+  ): Uint8Array {
+    const out = new Uint8Array(w * h * 4);
+    const copyW = Math.min(w, Math.max(0, srcW - x));
+    const copyH = Math.min(h, Math.max(0, srcH - y));
+    for(let row = 0; row < copyH; row++){
+      const srcOff = ((y + row) * srcW + x) * 4;
+      const dstOff = row * w * 4;
+      out.set(src.subarray(srcOff, srcOff + copyW * 4), dstOff);
+    }
+    return out;
+  }
+
+  /**
+   * Extract a DXT1/DXT5 rectangle from a compressed contact-sheet mip.
+   * Block grid equivalent of ImageGetSubImage for CreateProcessedTexture.
+   */
+  static extractDxtSubImage(
+    src: Uint8Array, srcW: number, srcH: number,
+    x: number, y: number, w: number, h: number,
+    encoding: ENCODING
+  ): Uint8Array {
+    const blockBytes = encoding == ENCODING.RGB ? 8 : 16;
+    const srcBlocksW = Math.max(1, Math.floor((srcW + 3) / 4));
+    const dstBlocksW = Math.max(1, Math.floor((w + 3) / 4));
+    const dstBlocksH = Math.max(1, Math.floor((h + 3) / 4));
+    const blockX = Math.floor(x / 4);
+    const blockY = Math.floor(y / 4);
+    const out = new Uint8Array(dstBlocksW * dstBlocksH * blockBytes);
+
+    for(let by = 0; by < dstBlocksH; by++){
+      const srcRow = blockY + by;
+      const srcOff = (srcRow * srcBlocksW + blockX) * blockBytes;
+      const dstOff = by * dstBlocksW * blockBytes;
+      const copyBytes = dstBlocksW * blockBytes;
+      if(srcOff >= 0 && srcOff + copyBytes <= src.length){
+        out.set(src.subarray(srcOff, srcOff + copyBytes), dstOff);
+      }
+    }
+    return out;
   }
 
   generateMipMapCount(width = 0, height = 0){
@@ -476,52 +521,90 @@ export class TPCObject {
   }
 
   //Convert the TPC into a THREE.CompressedTexture for use in the engine
+  // Retail CAurTextureBasic::glImage @ 00420970 — cycle textures get one GL tid per frame.
   toCompressedTexture(){
     let images = [];
     let texDatas = this.getDDS( true );
-    let _texture: OdysseyCompressedTexture|THREE.CanvasTexture = new OdysseyCompressedTexture( texDatas.mipmaps, texDatas.width, texDatas.height );
+    const frameCount = texDatas.frameCount || 1;
+    const isCycle = this.txi.procedureType == TXIPROCEDURETYPE.CYCLE && frameCount > 1;
 
-    // if(this.canvas.length){
-    //   _texture = new THREE.CanvasTexture(this.canvas[0] as any);
-    // }else{
+    const buildFrameTexture = (mipmaps: any[], width: number, height: number): OdysseyCompressedTexture => {
+      const tex = new OdysseyCompressedTexture( mipmaps, width, height );
+      tex.name = this.filename;
+      if ( texDatas.mipmapCount === 1 ) {
+        tex.minFilter = THREE.LinearFilter;
+      }
+      tex.format = texDatas.format;
+      // Retail CreateTexture @ 00424980 — default wrap is GL_REPEAT when TXI clamp bits are clear.
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.needsUpdate = true;
+      (tex as any).bumpMapType = 'NORMAL';
+      (tex as any).header = this.header;
+      (tex as any).pack = this.pack;
+      (tex as any).txi = this.txi;
+      return tex;
+    };
+
+    if ( isCycle ) {
+      // Per-frame mip chains from splitCycleContactSheet — CreateProcessedTexture @ 00424dd0
+      const cycleFrames: OdysseyCompressedTexture[] = [];
+      for ( let f = 0; f < frameCount; f++ ) {
+        const start = f * texDatas.mipmapCount;
+        const frameMips = texDatas.mipmaps.slice(start, start + texDatas.mipmapCount);
+        const frameTex = buildFrameTexture(frameMips, texDatas.width, texDatas.height);
+        cycleFrames.push(frameTex);
+      }
+      // Index 0 is the returned texture itself (mirrors retail gl_textures[0] == first_gl_texture)
+      const _texture = cycleFrames[0];
+      _texture.cycleFrames = cycleFrames;
+      for ( let f = 1; f < cycleFrames.length; f++ ) {
+        cycleFrames[f].cycleFrames = cycleFrames;
+      }
+      (_texture as any).clone = function () {
+        let cloned = new this.constructor().copy( this );
+        cloned.format = this.format;
+        cloned.needsUpdate = true;
+        cloned.bumpMapType = this.bumpMapType;
+        cloned.header = this.header;
+        cloned.txi = this.txi;
+        cloned.cycleFrames = this.cycleFrames;
+        return this;
+      };
+      return _texture;
+    }
+
+    let _texture: OdysseyCompressedTexture|THREE.CanvasTexture = buildFrameTexture(
+      texDatas.mipmaps, texDatas.width, texDatas.height
+    );
+
       if ( texDatas.isCubemap ) {
-        let faces = texDatas.mipmaps.length / texDatas.mipmapCount;
+        const faces = texDatas.mipmaps.length / texDatas.mipmapCount;
+        // Only the uncompressed path is remapped/rotated by retail (CreateCubeTexture);
+        // DXT cubemaps (CreateProcessedCubeTexture) upload faces in order, unrotated.
+        const applyRetailOrientation = !this.header.compressed;
         for ( let f = 0; f < faces; f ++ ) {
-          images[ f ] = { mipmaps : [] } as any;
+          const targetFace = applyRetailOrientation ? CUBEMAP_FACE_REMAP[ f ] : f;
+          images[ targetFace ] = { mipmaps : [], width: texDatas.width, height: texDatas.height } as any;
           for ( let i = 0; i < texDatas.mipmapCount; i++ ) {
-            images[ f ].mipmaps.push( texDatas.mipmaps[ f * texDatas.mipmapCount + i ] );
-            images[ f ].format = THREE.CubeReflectionMapping;//texDatas.format;
-            images[ f ].width = texDatas.width;
-            images[ f ].height = texDatas.height;
-
-            _texture.mipmaps = images[ f ].mipmaps;
+            const mipmap = texDatas.mipmaps[ f * texDatas.mipmapCount + i ];
+            if(applyRetailOrientation){
+              for(let r = 0; r < CUBEMAP_FACE_ROTATIONS[ f ]; r++){
+                mipmap.data = PixelManager.Rotate90deg(mipmap.data, 4, mipmap.width, mipmap.height);
+              }
+            }
+            images[ targetFace ].mipmaps.push( mipmap );
           }
         }
         (_texture as any).image = images;
         _texture.image.width = texDatas.width;
         _texture.image.height = texDatas.height;
-      } else {
-        _texture.image.width = texDatas.width;
-        _texture.image.height = texDatas.height;
-        _texture.mipmaps = texDatas.mipmaps;
+        _texture.mipmaps = images[ 0 ].mipmaps;
+        // Retail CreateCubeTexture — GL_TEXTURE_CUBE_MAP with GL_CLAMP_TO_EDGE on S/T/R.
+        // Mark as CubeTexture so Three binds via setTextureCube (WebGLRenderer.initTexture).
+        (_texture as any).isCubeTexture = true;
+        _texture.mapping = THREE.CubeReflectionMapping;
+        _texture.wrapS = _texture.wrapT = THREE.ClampToEdgeWrapping;
       }
-    // }
-
-    _texture.name = this.filename;
-
-    if ( texDatas.mipmapCount === 1 ) {
-      _texture.minFilter = THREE.LinearFilter;
-    }
-
-    _texture.format = texDatas.format;
-    _texture.needsUpdate = true;
-    (_texture as any).bumpMapType = 'NORMAL';
-
-    (_texture as any).header = this.header;
-    (_texture as any).pack = this.pack;
-    (_texture as any).txi = null;
-
-    (_texture as any).txi = this.txi;
 
     (_texture as any).clone = function () {
       let cloned = new this.constructor().copy( this );
@@ -530,6 +613,7 @@ export class TPCObject {
       cloned.bumpMapType = this.bumpMapType;
       cloned.header = this.header;
       cloned.txi = this.txi;
+      cloned.cycleFrames = this.cycleFrames;
       return this;
     };
 

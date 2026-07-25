@@ -22,7 +22,7 @@ onmessage = function (e: any = {}){
   });
   tpc.header = e.data.Header;
 
-  const dds = tpc.getDDS(false);
+  const dds = tpc.getDDS(false, { stitchCycleFrames: true });
   let imagePixels = new Uint8Array(0);
 
   const width = tpc.header.width;

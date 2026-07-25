@@ -203,8 +203,10 @@ export class OdysseyLightingBinder {
     const defines = material.defines || {};
     const usesLightmap = Object.prototype.hasOwnProperty.call(defines, 'USE_LIGHTMAP');
     const ignoreLighting = Object.prototype.hasOwnProperty.call(defines, 'IGNORE_LIGHTING');
-    // Lightmap / unlit paths ignore runtime lights + area sun/ambient in the shader.
-    if(usesLightmap || ignoreLighting){
+    // Unlit meshes ignore runtime lights entirely. Lightmapped surfaces still
+    // receive the exclusive_dynamic_lights overlay (EnableLightsDynamicOnly @
+    // 004a4480) but never area sun/ambient — that is baked into the lightmap.
+    if(ignoreLighting && !usesLightmap){
       if(material.userData[cacheKey] === lightSet.cacheID &&
         material.userData.odysseyLightArraysSkipped === true){
         return;
@@ -225,12 +227,17 @@ export class OdysseyLightingBinder {
 
     const fp = this.areaFingerprint(lightManager, camera);
     const lightCacheOk = material.userData[cacheKey] === lightSet.cacheID;
-    const areaOk =
-      material.userData.odysseyAmbientBound === fp.ambientHex &&
-      material.userData.odysseySunAmbientBound === fp.sunAmbientHex &&
-      material.userData.odysseySunBound === fp.sunHex &&
-      material.userData.odysseyHeadLightBound === fp.headKey &&
-      material.userData.odysseyViewSunBound === fp.viewFp;
+    // Lightmapped materials bind no area uniforms, so only the view transform
+    // used for view-space light positions has to stay current.
+    const areaOk = usesLightmap
+      ? material.userData.odysseyViewSunBound === fp.viewFp
+      : (
+        material.userData.odysseyAmbientBound === fp.ambientHex &&
+        material.userData.odysseySunAmbientBound === fp.sunAmbientHex &&
+        material.userData.odysseySunBound === fp.sunHex &&
+        material.userData.odysseyHeadLightBound === fp.headKey &&
+        material.userData.odysseyViewSunBound === fp.viewFp
+      );
 
     if(lightCacheOk && areaOk && material.userData.odysseyLightArraysSkipped !== true){
       return;
@@ -265,15 +272,19 @@ export class OdysseyLightingBinder {
       material.uniforms.numOdysseyLights = { value: 0 };
     }
     material.uniforms.numOdysseyLights.value = count;
-    if(!areaOk){
+    if(!areaOk && !usesLightmap){
       this.writeAreaUniforms(material, camera, lightManager, fp.viewSun);
       this.writeHeadLightUniforms(material, lightManager);
     }
     material.userData[cacheKey] = lightSet.cacheID;
-    material.userData.odysseyAmbientBound = fp.ambientHex;
-    material.userData.odysseySunAmbientBound = fp.sunAmbientHex;
-    material.userData.odysseySunBound = fp.sunHex;
-    material.userData.odysseyHeadLightBound = fp.headKey;
+    // Leave the area bound keys unset for lightmapped materials so a material
+    // that later loses USE_LIGHTMAP still gets its area uniforms written.
+    if(!usesLightmap){
+      material.userData.odysseyAmbientBound = fp.ambientHex;
+      material.userData.odysseySunAmbientBound = fp.sunAmbientHex;
+      material.userData.odysseySunBound = fp.sunHex;
+      material.userData.odysseyHeadLightBound = fp.headKey;
+    }
     material.userData.odysseyViewSunBound = fp.viewFp;
     material.userData.odysseyLightArraysSkipped = false;
     material.uniformsNeedUpdate = true;
@@ -360,7 +371,7 @@ export class OdysseyLightingBinder {
       const defines = material.defines || {};
       // Empty-string define values are falsy; test key presence.
       if(lightManager && Object.prototype.hasOwnProperty.call(defines, 'USE_LIGHTMAP')){
-        this.bindMaterial(material, lightManager.lightmapLights, camera, 'lightmapLightCacheID', lightManager);
+        this.bindMaterial(material, lightManager.getLightmapLightSet(), camera, 'lightmapLightCacheID', lightManager);
         return;
       }
       if(lightManager && Object.prototype.hasOwnProperty.call(defines, 'USE_BUMPMAP')){
@@ -380,8 +391,9 @@ export class OdysseyLightingBinder {
 
   /**
    * Bind a self-contained scene model (main menu, forge preview, room mesh).
-   * Lightmapped → baked only; bump → bump light; else either room globals
-   * (ControlLightsFade) or gob GetNearestLights around `focus`.
+   * Lightmapped → exclusive_dynamic_lights overlay; bump → bump light; else
+   * either room globals (ControlLightsFade) or gob GetNearestLights around
+   * `focus`.
    *
    * @param lightPath `'room'` = PrioritizeIllumination globals (ARE rooms);
    *                  `'gob'` = GetNearestLights (RenderOnlyGobs / GUI AddModel).
@@ -400,7 +412,10 @@ export class OdysseyLightingBinder {
       const nearestFp = lightManager.fingerprintNearestLights(focusPos);
       const objectFp = this.mixHash(
         nearestFp,
-        this.mixHash(lightManager.lightsPoseEpoch, fp.areaFp)
+        this.mixHash(
+          lightManager.lightsPoseEpoch,
+          this.mixHash(lightManager.lightmapLights.cacheID, fp.areaFp)
+        )
       );
       if(model.userData.odysseyObjectBindFp === objectFp){
         return;
@@ -411,7 +426,7 @@ export class OdysseyLightingBinder {
         const usesLightmap = Object.prototype.hasOwnProperty.call(defines, 'USE_LIGHTMAP');
         const usesBump = Object.prototype.hasOwnProperty.call(defines, 'USE_BUMPMAP');
         const set = usesLightmap
-          ? lightManager.lightmapLights
+          ? lightManager.getLightmapLightSet()
           : (usesBump ? lightManager.getBumpMapLightSet() : nearest);
         const key = usesLightmap
           ? 'lightmapLightCacheID'
@@ -442,7 +457,7 @@ export class OdysseyLightingBinder {
       const usesLightmap = Object.prototype.hasOwnProperty.call(defines, 'USE_LIGHTMAP');
       const usesBump = Object.prototype.hasOwnProperty.call(defines, 'USE_BUMPMAP');
       const set = usesLightmap
-        ? lightManager.lightmapLights
+        ? lightManager.getLightmapLightSet()
         : (usesBump
           ? lightManager.getBumpMapLightSet()
           : lightManager.getGlobalLightSet());
@@ -494,7 +509,10 @@ export class OdysseyLightingBinder {
       const nearestFp = lightManager.fingerprintNearestLights(pos);
       const objectFp = this.mixHash(
         nearestFp,
-        this.mixHash(lightManager.lightsPoseEpoch, fp.areaFp)
+        this.mixHash(
+          lightManager.lightsPoseEpoch,
+          this.mixHash(lightManager.lightmapLights.cacheID, fp.areaFp)
+        )
       );
       if(model.userData.odysseyObjectBindFp === objectFp){
         continue;

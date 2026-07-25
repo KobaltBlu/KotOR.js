@@ -615,6 +615,16 @@ export class OdysseyModel3D extends OdysseyObject3D {
       if(material instanceof THREE.ShaderMaterial){
         if(material.type == 'ShaderMaterial'){
           material.uniforms.time.value += dt;
+          // Retail ProceduralAnimateHierarchy @ 00483630 — once per rendered frame, no deltaT:
+          // base += (uvDirectionX, uvDirectionY); jitter phase driven by uvJitterSpeed
+          if(material.defines?.ANIMATED_UV != null && material.uniforms.animatedUVState && material.uniforms.animatedUV){
+            const state = material.uniforms.animatedUVState.value;
+            const uv = material.uniforms.animatedUV.value;
+            state.x += uv.x;
+            state.y += uv.y;
+            state.z += uv.w;
+            material.uniformsNeedUpdate = true;
+          }
         }
       }
     }
@@ -1634,6 +1644,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
         material.visible = false;
       }
 
+      // Retail SetEnvMap (CSWCObject @ 0063cb70) — object-level envmap from appearance.2da
+      // ENVMAP / baseitems partEnvMap, applied to all parts and overriding the TXI envmap.
+      if(options.envMapOverride){
+        material.userData.envMapOverride = options.envMapOverride;
+      }
+
       odysseyModel.materials.push(material);
       
       if(odysseyNode.hasLightmap && tMap2.length){
@@ -1706,9 +1722,12 @@ export class OdysseyModel3D extends OdysseyObject3D {
           material.needsUpdate = true;
         }
 
-        //Set animated uv uniforms
+        //Set animated uv uniforms — retail ProceduralAnimateHierarchy @ 00483630
         if(odysseyNode.nAnimateUV){
           material.uniforms.animatedUV.value.set(odysseyNode.fUVDirectionX, odysseyNode.fUVDirectionY, odysseyNode.fUVJitter, odysseyNode.fUVJitterSpeed);
+          if(material.uniforms.animatedUVState){
+            material.uniforms.animatedUVState.value.set(0, 0, 0, 0);
+          }
           material.defines.ANIMATED_UV = '';
         }
       }

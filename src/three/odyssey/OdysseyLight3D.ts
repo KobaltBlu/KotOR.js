@@ -38,8 +38,13 @@ export class OdysseyLight3D extends OdysseyObject3D {
 
   intensity: number = 0;
   maxIntensity: number = 1;
-  /** Retail fade factor 0–1 (ControlLightsFade). */
+  /** Retail fade factor 0–1 (ControlLightsFade field10_0x78). */
   fadeFactor: number = 1;
+  /**
+   * Retail secondary fade 0–1 (ControlLightsFade field11_0x7c). Advanced only
+   * while the light is in the static-geometry pool (EnableLightsDynamicOnly).
+   */
+  dynamicOnlyFadeFactor: number = 0;
   /** Retail shadow fade 0–1 (GetShadowLights field29_0x90). */
   shadowFadeFactor: number = 0;
 
@@ -104,6 +109,15 @@ export class OdysseyLight3D extends OdysseyObject3D {
   /** Multiplier × color only (GetNearestLights → SetLightGL; no fade). */
   getIntensityColor(out: THREE.Color = new THREE.Color()): THREE.Color {
     return out.copy(this.color).multiplyScalar(this.getIntensity());
+  }
+
+  /**
+   * Effective RGB for the static-geometry pool: secondary fade × multiplier
+   * (ControlLightsFade with param_4 = 1 → SetLightGL).
+   */
+  getDynamicOnlyColor(out: THREE.Color = new THREE.Color()): THREE.Color {
+    const scale = this.dynamicOnlyFadeFactor * this.getIntensity();
+    return out.copy(this.color).multiplyScalar(scale);
   }
 
   isColorBlack(): boolean {

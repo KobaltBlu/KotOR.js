@@ -21,7 +21,7 @@ const getPixelData = async (image: KotOR.TPCObject | KotOR.TGAObject): Promise<U
   return new Promise<Uint8Array>((resolve, reject) => {
     if (image instanceof KotOR.TPCObject) {
       const tpc = image;
-      const dds = tpc.getDDS(false);
+      const dds = tpc.getDDS(false, { stitchCycleFrames: true });
       let imagePixels = new Uint8Array(0);
 
       const width = tpc.header.width;

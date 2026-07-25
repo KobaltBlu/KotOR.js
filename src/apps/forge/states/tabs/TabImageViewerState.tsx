@@ -230,7 +230,7 @@ export class TabImageViewerState extends TabState {
     return new Promise<Uint8Array>( (resolve, reject) => {
       if(this.image instanceof KotOR.TPCObject){
         const tpc = this.image;
-        const dds = tpc.getDDS(false);
+        const dds = tpc.getDDS(false, { stitchCycleFrames: true });
         let imagePixels = new Uint8Array(0);
 
         const width = tpc.header.width;

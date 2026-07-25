@@ -759,6 +759,9 @@ export class ModuleItem extends ModuleObject {
       const model = await OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
         lighting: true,
+        // Retail SetEnvMap — baseitems.2da PartEnvMap flags item parts to receive the
+        // area envmap ("DEFAULT" resolves to the area's DefaultEnvMap).
+        envMapOverride: this.baseItem.partEnvMap ? 'DEFAULT' : undefined,
         //castShadow: false,
         //receiveShadow: false
       });

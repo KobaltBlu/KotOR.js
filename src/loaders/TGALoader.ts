@@ -1,10 +1,16 @@
 import * as path from "path";
+import * as THREE from "three";
 import { ResourceLoader } from "@/loaders/ResourceLoader";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { TXI } from "@/resource/TXI";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import type { TextureLoader } from "@/loaders/TextureLoader";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
+
+/** TGA descriptor origin (flags bits 4–5). */
+const TGA_ORIGIN_BL = 0x00;
+const TGA_ORIGIN_BR = 0x01;
 
 /**
  * TGALoader class.
@@ -35,6 +41,7 @@ export class TGALoader {
 			}
 
 			texture.image = this.parse( buffer, resRef );
+			this.copyTgaOrigin(texture);
 			texture.needsUpdate = true;
 			texture.name = resRef;
 			texture.bumpMapType = 'BUMP';
@@ -48,6 +55,7 @@ export class TGALoader {
 
 				if(typeof txiBuffer !== 'undefined' && txiBuffer.length > 0){
 					texture.txi = new TXI(txiBuffer);
+					this.applyCycleFrames(texture);
 					return texture;
 				}
 
@@ -70,6 +78,7 @@ export class TGALoader {
 			const buffer = await GameFileSystem.readFile(path.join(dir, name)+'.tga');
 
 			texture.image = this.parse( buffer, name );
+			this.copyTgaOrigin(texture);
 			texture.needsUpdate = true;
 			texture.name = name;
 			texture.bumpMapType = 'BUMP';
@@ -82,6 +91,7 @@ export class TGALoader {
 
 			if(tpcCheck){
 				texture.txi = tpcCheck.txi;
+				this.applyCycleFrames(texture);
 				return texture;
 			}else{
 				texture.txi = new TXI('');
@@ -99,6 +109,7 @@ export class TGALoader {
 		try{
 			const buffer = await GameFileSystem.readFile(resRef);
 			texture.image = this.parse( buffer, resRef );
+			this.copyTgaOrigin(texture);
 			texture.needsUpdate = true;
 			texture.name = resRef;
 			texture.bumpMapType = 'BUMP';
@@ -176,6 +187,8 @@ export class TGALoader {
 				pixel_size: content[ offset ++ ],
 				flags:      content[ offset ++ ]
 			};
+
+		const tgaOrigin = ( header.flags & TGA_ORIGIN_MASK ) >> TGA_ORIGIN_SHIFT;
 
 		function tgaCheckHeader( header: any ) {
 
@@ -609,6 +622,7 @@ export class TGALoader {
 			let rgbaData = getTgaRGBA( imageData.data, header.width, header.height, result.pixel_data, result.palettes );
 
 			context.putImageData( imageData, 0, 0 );
+			(canvas as any).tgaOrigin = tgaOrigin;
 			return canvas;
 		}
 
@@ -625,6 +639,7 @@ export class TGALoader {
 			let rgbaData = getTgaRGBA( imageData.data, header.width, header.width, result.pixel_data, result.palettes );
 
 			context.putImageData( imageData, 0, 0 );
+			(canvas as any).tgaOrigin = tgaOrigin;
 
 			/*switch(i){
 				case 0:
@@ -653,6 +668,83 @@ export class TGALoader {
 
 		return canvases;
 
+	}
+
+	/** Copy TGA origin from the parsed canvas onto the OdysseyTexture. */
+	private copyTgaOrigin(texture: OdysseyTexture): void {
+		const img = texture.image as any;
+		if(img && typeof img.tgaOrigin === 'number'){
+			texture.tgaOrigin = img.tgaOrigin;
+		}else if(Array.isArray(img) && img[0] && typeof img[0].tgaOrigin === 'number'){
+			texture.tgaOrigin = img[0].tgaOrigin;
+		}
+	}
+
+	/**
+	 * Retail GLRender::CreateTexture @ 00424980 — uncompressed cycle sheets are
+	 * ImageGetSubImage'd at (i % numx)*subW, (i / numx)*subH into one GL tid per frame.
+	 * parse() remaps BL/BR into an upright canvas, so row indexing is inverted for those
+	 * origins to match retail's raw bottom-up buffer (frame 0 = bottom-left cell).
+	 */
+	applyCycleFrames(texture: OdysseyTexture): void {
+		const txi = texture.txi;
+		if(!txi || txi.procedureType !== TXIPROCEDURETYPE.CYCLE) return;
+		const numx = txi.numx | 0;
+		const numy = txi.numy | 0;
+		if(numx <= 1 && numy <= 1) return;
+		if(numx < 1 || numy < 1) return;
+
+		const src = texture.image as HTMLCanvasElement | HTMLImageElement;
+		if(!src || typeof (src as any).width !== 'number') return;
+
+		const sheetW = (src as any).width as number;
+		const sheetH = (src as any).height as number;
+		const frameW = Math.floor(sheetW / numx);
+		const frameH = Math.floor(sheetH / numy);
+		if(frameW < 1 || frameH < 1) return;
+
+		const origin = texture.tgaOrigin | 0;
+		const invertRows = origin === TGA_ORIGIN_BL || origin === TGA_ORIGIN_BR;
+
+		const frameCount = numx * numy;
+		const cycleFrames: OdysseyTexture[] = [];
+
+		for(let i = 0; i < frameCount; i++){
+			const col = i % numx;
+			const rowFromIndex = Math.floor(i / numx);
+			const row = invertRows ? (numy - 1 - rowFromIndex) : rowFromIndex;
+			const canvas = document.createElement('canvas');
+			canvas.width = frameW;
+			canvas.height = frameH;
+			const ctx = canvas.getContext('2d');
+			if(!ctx) continue;
+			ctx.drawImage(src as CanvasImageSource, col * frameW, row * frameH, frameW, frameH, 0, 0, frameW, frameH);
+
+			if(i === 0){
+				texture.image = canvas as any;
+				texture.needsUpdate = true;
+				cycleFrames.push(texture);
+			}else{
+				const frameTex = new OdysseyTexture(canvas as any);
+				frameTex.name = texture.name;
+				frameTex.txi = texture.txi;
+				frameTex.tgaOrigin = texture.tgaOrigin;
+				frameTex.bumpMapType = texture.bumpMapType;
+				frameTex.generateMipmaps = texture.generateMipmaps;
+				frameTex.wrapS = THREE.RepeatWrapping;
+				frameTex.wrapT = THREE.RepeatWrapping;
+				frameTex.minFilter = texture.minFilter;
+				frameTex.magFilter = texture.magFilter;
+				frameTex.needsUpdate = true;
+				cycleFrames.push(frameTex);
+			}
+		}
+
+		texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+		texture.cycleFrames = cycleFrames;
+		for(let f = 1; f < cycleFrames.length; f++){
+			(cycleFrames[f] as OdysseyTexture).cycleFrames = cycleFrames;
+		}
 	}
 
 }

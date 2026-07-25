@@ -59,6 +59,45 @@ vec3 odysseyBlinnPhong(
   return pow( dotNH, shininess ) * specularColor;
 }
 
+// Packed GL_LIGHT0..2 accumulation (SetLightGL @ 004a2a00). Split out so the
+// lightmapped path can overlay lights without re-adding baked area lighting.
+void odysseyAccumulatePointLights(
+  const in vec3 geometryPosition,
+  const in vec3 geometryNormal,
+  const in vec3 geometryViewDir,
+  const in vec3 diffuseColor,
+  const in vec3 specularColor,
+  const in float shininess,
+  const in float specularStrength,
+  inout vec3 directDiffuse,
+  inout vec3 directSpecular,
+  inout vec3 indirectDiffuse
+) {
+  for ( int i = 0; i < MAX_ODYSSEY_LIGHTS_LOOP; i ++ ) {
+    if ( i < numOdysseyLights ) {
+      vec4 lightPos = odysseyLightPos[ i ];
+      vec4 lightCol = odysseyLightColor[ i ];
+      // lightPos.xyz already view-space (OdysseyLightingBinder)
+      vec3 lVector = lightPos.xyz - geometryPosition;
+      float lightDistance = length( lVector );
+      float atten = odysseyRetailAttenuation( lightDistance, lightPos.w );
+      vec3 lightColor = lightCol.rgb * atten;
+      if ( lightColor != vec3( 0.0 ) ) {
+        if ( lightCol.w > 0.5 ) {
+          // Ambient-only PartLight — SetLightGL ambient channel, no N·L
+          indirectDiffuse += lightColor * odysseyDiffuse( diffuseColor );
+        } else {
+          vec3 lightDir = normalize( lVector );
+          float dotNL = max( dot( geometryNormal, lightDir ), 0.0 );
+          vec3 irradiance = dotNL * lightColor;
+          directDiffuse += irradiance * odysseyDiffuse( diffuseColor );
+          directSpecular += irradiance * odysseyBlinnPhong( lightDir, geometryViewDir, geometryNormal, specularColor, shininess ) * specularStrength;
+        }
+      }
+    }
+  }
+}
+
 void odysseyAccumulateLights(
   const in vec3 geometryPosition,
   const in vec3 geometryNormal,
@@ -98,33 +137,12 @@ void odysseyAccumulateLights(
     }
   }
 
-  for ( int i = 0; i < MAX_ODYSSEY_LIGHTS_LOOP; i ++ ) {
-    if ( i < numOdysseyLights ) {
-      vec4 lightPos = odysseyLightPos[ i ];
-      vec4 lightCol = odysseyLightColor[ i ];
-      // lightPos.xyz already view-space (OdysseyLightingBinder)
-      vec3 lVector = lightPos.xyz - geometryPosition;
-      float lightDistance = length( lVector );
-      float atten = odysseyRetailAttenuation( lightDistance, lightPos.w );
-      vec3 lightColor = lightCol.rgb * atten;
-      if ( lightColor != vec3( 0.0 ) ) {
-        if ( lightCol.w > 0.5 ) {
-          // Ambient-only PartLight — SetLightGL ambient channel, no N·L
-          indirectDiffuse += lightColor * odysseyDiffuse( diffuseColor );
-        } else {
-          vec3 lightDir = normalize( lVector );
-          float dotNL = max( dot( geometryNormal, lightDir ), 0.0 );
-          vec3 irradiance = dotNL * lightColor;
-          directDiffuse += irradiance * odysseyDiffuse( diffuseColor );
-          directSpecular += irradiance * odysseyBlinnPhong( lightDir, geometryViewDir, geometryNormal, specularColor, shininess ) * specularStrength;
-        }
-      }
-    }
-  }
+  odysseyAccumulatePointLights(
+    geometryPosition, geometryNormal, geometryViewDir,
+    diffuseColor, specularColor, shininess, specularStrength,
+    directDiffuse, directSpecular, indirectDiffuse
+  );
 }
-
-// Lightmapped path previously had a local-light overlay helper; retail bakes
-// static lighting into lightmaps, so runtime point lights are not accumulated.
 `;
 
 export function createEmptyOdysseyLightPosArray(): THREE.Vector4[] {
@@ -183,7 +201,11 @@ export function createOdysseyMaterialBaseUniforms(): Record<string, { value: unk
     displacementBias: { value: 0 },
     envMap: { value: null },
     envMapIntensity: { value: 1 },
-    flipEnvMap: { value: -1 },
+    /** Reflection intensity scale from TXI envmapalpha (retail default 1). */
+    envMapAlpha: { value: 1 },
+    // Retail samples cubemaps with GL_REFLECTION_MAP (no X flip). Three defaults
+    // CubeTexture to -1 for its loader convention; TPC faces are uploaded in GL order.
+    flipEnvMap: { value: 1 },
     reflectivity: { value: 1 },
     refractionRatio: { value: 0.98 },
     specularMap: { value: null },

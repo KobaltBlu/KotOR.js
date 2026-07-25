@@ -5845,11 +5845,15 @@ export class ModuleCreature extends ModuleObject {
     
     try{
       const mdl = await MDLLoader.loader.load(this.bodyModel);
+      // Retail CreateSimple @ 006985f0 / CreateBTypeBody @ 00697da5 — appearance.2da ENVMAP
+      // is applied to all body parts via SetEnvMap, falling back to "DEFAULT" when blank.
+      const envMapOverride = appearance.envmap?.length ? appearance.envmap : 'DEFAULT';
       const model = await OdysseyModel3D.FromMDL(mdl, {
         castShadow: true,
         receiveShadow: true,
         textureVar: this.bodyTexture,
         isHologram: this.isHologram,
+        envMapOverride: envMapOverride,
         context: this.context,
       });
 
