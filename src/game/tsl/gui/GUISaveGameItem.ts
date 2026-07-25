@@ -2,6 +2,8 @@ import type { SaveGame } from "@/engine/SaveGame";
 import { GameState } from "@/GameState";
 import { GUIProtoItem } from "@/gui";
 import type { GameMenu, GUIControl } from "@/gui";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import type { RetailRowExtent } from "@/gui/GUIProtoItem";
 import { GFFStruct } from "@/resource/GFFStruct";
 
 const toPaddedDigit = (num: number, len = 2) => {
@@ -23,6 +25,18 @@ export class GUISaveGameItem extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
+    // Fixed-pitch row: do not grow the extent to wrapped text.
+    this.listRowAlignExtentToWrappedText = false;
+  }
+
+  /**
+   * Retail base row extent — TSL CSWGuiSaveLoadEntry ctor @ 005d5140 builds
+   * {left 0, top 0, width 0, height 0x24} then scales height by GetResolutionTextScalar
+   * @ 008d03c0 (1.0 below 2048px) before CSWGuiButton::Initialize @ 00417970. Row height
+   * is 36 at base resolution; the PROTOITEM GFF height is never used for the row.
+   */
+  getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {
+    return { left: 0, top: 0, width: 0, height: 36 };
   }
 
   getNodeName(){

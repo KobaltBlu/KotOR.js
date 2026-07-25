@@ -118,7 +118,8 @@ export function createDefaultButtonRow(
   let ctrl: GUIControl;
   try {
     ctrl = new menu.factory.GUIButton(menu, protoTemplate.control, list, scale);
-    ctrl.setExtentHeight(protoTemplate.extent.height);
+    // Height comes from the GFF-loaded extent (unverified fallback for default button rows);
+    // retail supplies row height from menu/entry code, never the PROTOITEM template.
     ctrl.setExtentWidth(protoTemplate.extent.width);
     ctrl.guiFont = protoTemplate.guiFont;
     ctrl.isProtoItem = false;

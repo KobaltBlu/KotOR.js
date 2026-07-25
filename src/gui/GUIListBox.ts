@@ -15,13 +15,19 @@ import {
   createDefaultListRowByProtoType,
   type GUIListItemCallbacks,
 } from "@/gui/listrow/defaultListRows";
-import { applyCustomProtoRowSkin } from "@/gui/listrow/applyProtoTemplateSkin";
 import {
   createDefaultListBoxBitFlags,
   type ListBoxBitFlags,
 } from "@/gui/ListBoxBitFlags";
 import { asExtentInt, hitCheckMouseLocal, truncDiv } from "@/gui/GUICoord";
 import { ScrollBarHit } from "@/gui/GUIScrollBar";
+import {
+  listBoxLeftoverStretch,
+  snapshotListBoxExtent,
+  type ListBoxSavedExtent,
+} from "@/gui/listBoxSavedExtents";
+
+export type { ListBoxSavedExtent };
 
 /**
  * GUIListBox — aligned with retail CSWGuiListBox (swkotor.exe).
@@ -112,6 +118,11 @@ export class GUIListBox extends GUIControl {
   private mutationDepth = 0;
   private pendingPublish = false;
   private publishGeneration = 0;
+  /**
+   * Pass AN — retail control_extents parallel to children.
+   * Restored before GetHeight when layoutDirty (OrganizeControls @ 0041b140).
+   */
+  private savedExtents: ListBoxSavedExtent[] = [];
   /** Scrollbar thumb drag start (retail field5_0x7c). */
   private scrollDragStartValue = 0;
   private scrollBarDragState: 'none' | 'bar' | 'arrow_up' | 'arrow_down' | 'page_up' | 'page_down' = 'none';
@@ -373,6 +384,9 @@ export class GUIListBox extends GUIControl {
       if (index < this.listItems.length) {
         this.listItems.splice(index, 1);
       }
+      if (index < this.savedExtents.length) {
+        this.savedExtents.splice(index, 1);
+      }
       if (this.selectedItem === removed) {
         this.selectedItem = undefined;
         this.selectionIndex = -1;
@@ -448,6 +462,7 @@ export class GUIListBox extends GUIControl {
     }
     this.listItems = [];
     this.children = [];
+    this.savedExtents = [];
     this.topVisibleIndex = 0;
     this.bottomVisibleIndex = 0;
     this.scrollPosition = 1;
@@ -468,6 +483,8 @@ export class GUIListBox extends GUIControl {
 
   setProtoBuilder(ctor: typeof GUIProtoItem): void {
     this.GUIProtoItemClass = ctor;
+    // Custom proto rows use click-to-select (inventory/equip/container contract).
+    this.protoClickSelects = true;
   }
 
   setVariableItemHeight(value: boolean): void {
@@ -501,8 +518,7 @@ export class GUIListBox extends GUIControl {
 
   /**
    * Whether hover should change selection (retail HandleMouseMove @ 0041c400).
-   * Opt-in via setSelectOnLeftClick(false). Default is click-to-select so hover
-   * only highlights and does not override the last clicked selection.
+   * Retail ctor default selectOnLeftClick=false → hover-select unless protoClickSelects.
    */
   shouldHoverSelect(): boolean {
     if (this.bitFlags.noSelectMode) return false;
@@ -564,8 +580,10 @@ export class GUIListBox extends GUIControl {
       ctrl = created;
       idx = this.children.push(ctrl) - 1;
     }else{
-      ctrl = new this.GUIProtoItemClass(this.menu, control.control, this, this.scale);
-      applyCustomProtoRowSkin(ctrl, this.protoItem);
+      const protoRow = new this.GUIProtoItemClass(this.menu, control.control, this, this.scale);
+      // Retail: menu/entry class supplies the base extent, proto supplies params only.
+      protoRow.initializeRow(protoRow.getRetailBaseExtent(this), this.protoItem);
+      ctrl = protoRow;
       ctrl.isProtoItem = true;
       ctrl.offset = this.offset;
       ctrl.node = node;
@@ -599,6 +617,9 @@ export class GUIListBox extends GUIControl {
         });
       }
     }
+
+    // Retail AddControls: CExoArrayList<CSWGuiExtent>::Add(&control_extents, value->extent)
+    this.savedExtents.push(snapshotListBoxExtent(ctrl.extent));
 
     this.invalidateHeightCache();
     this.bitFlags.layoutDirty = true;
@@ -792,9 +813,34 @@ export class GUIListBox extends GUIControl {
     if (width > 0) {
       ctrl.setExtentWidth(asExtentInt(width));
     }
+    // Leftover stretch can change height after createControl — rebuild chrome to match.
+    ctrl.resizeControl();
+    // Re-center text for stretched slots; skip wrap→extent path (would re-enter organize).
+    if (ctrl.hasText && !ctrl.listRowAlignExtentToWrappedText) {
+      ctrl.alignText();
+    }
     ctrl.widget.position.x = 0;
     ctrl.widget.position.y = asExtentInt(visibleTop - topI - truncDiv(heightI, 2));
     ctrl.updateBounds();
+  }
+
+  /**
+   * Retail OrganizeControls layoutDirty: SetExtent from control_extents[i] before GetHeight.
+   */
+  private restoreSavedExtentsToChildren(): void {
+    const n = Math.min(this.children.length, this.savedExtents.length);
+    for (let i = 0; i < n; i++) {
+      const ctrl = this.children[i];
+      const saved = this.savedExtents[i];
+      ctrl.setExtentLeft(saved.left);
+      ctrl.setExtentTop(saved.top);
+      // A retail base extent may carry width 0 (save rows); OrganizeControls resolves the
+      // real width via SetExtent later. Skip restoring 0 so we don't reflow text and perturb GetHeight.
+      if (saved.width > 0) {
+        ctrl.setExtentWidth(saved.width);
+      }
+      ctrl.setExtentHeight(saved.height);
+    }
   }
 
   /**
@@ -840,6 +886,12 @@ export class GUIListBox extends GUIControl {
       this.calculateBox();
       this.markListRttDirty();
       return;
+    }
+
+    // Pass AN: restore control_extents before GetHeight when layoutDirty (0041b140).
+    if (this.bitFlags.layoutDirty) {
+      this.restoreSavedExtentsToChildren();
+      this.invalidateHeightCache();
     }
 
     const heights: number[] = [];
@@ -963,10 +1015,11 @@ export class GUIListBox extends GUIControl {
     const pad = this.padding;
     const itemWidth = Math.max(0, vw - pad * 2);
 
-    // leftover vertical space distributed across visible rows (retail OrganizeControls)
-    let leftover = (vh - ipp * pitch) - pad;
-    let extra = ipp > 0 ? Math.floor(leftover / ipp) : 0;
-    leftover = leftover - ipp * extra;
+    // Retail leftover stretch (@ 0041b140): distribute into visible slot heights.
+    // Place at original top; remainder bumps next cursor (+1), advance by pad + baseSlotH.
+    const { stretchPerItem, remainderPixels } = listBoxLeftoverStretch(vh, ipp, pitch, pad);
+    let rem = remainderPixels;
+    const baseSlotH = this.itemHeight + stretchPerItem;
 
     let cursorTop = pad - this.topVisibleIndex * pitch;
     const tops: number[] = new Array(count);
@@ -983,19 +1036,18 @@ export class GUIListBox extends GUIControl {
     let visibleEnd = this.topVisibleIndex + ipp;
     if (visibleEnd > count) visibleEnd = count;
 
-    const baseVisibleHeight = this.itemHeight + extra;
     for (let i = this.topVisibleIndex; i < visibleEnd; i++) {
-      let h = baseVisibleHeight;
-      let top = cursorTop;
-      if (leftover !== 0) {
-        h = baseVisibleHeight + 1;
-        top = cursorTop + 1;
-        leftover--;
+      let slotH = baseSlotH;
+      let nextTop = cursorTop;
+      if (rem !== 0) {
+        slotH = baseSlotH + 1;
+        nextTop = cursorTop + 1;
+        rem -= 1;
       }
-      tops[i] = top;
-      rowHeights[i] = h;
-      this.placeItem(this.children[i], top, h, itemWidth);
-      cursorTop = top + pad + h;
+      tops[i] = cursorTop;
+      rowHeights[i] = slotH;
+      this.placeItem(this.children[i], cursorTop, slotH, itemWidth);
+      cursorTop = nextTop + pad + baseSlotH;
     }
 
     this.bottomVisibleIndex = visibleEnd - 1;

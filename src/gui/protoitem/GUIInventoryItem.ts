@@ -1,6 +1,8 @@
 import { GameMenu, GUIButton, GUIControl, GUIProtoItem } from "@/gui";
-import { GameEngineType } from "@/enums/engine";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import type { RetailRowExtent } from "@/gui/GUIProtoItem";
 import { GameState } from "@/GameState";
+import { GameEngineType } from "@/enums/engine";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
@@ -36,31 +38,31 @@ export class GUIInventoryItem extends GUIProtoItem {
     this.listRowAlignExtentToWrappedText = false;
   }
 
+  /**
+   * Retail base row extent — CSWGuiInGameInventory::CreateItemEntry passes
+   * width = viewport_width - 2*padding into CSWGuiInGameItemEntry::Initialize, which calls
+   * SetExtent with a fixed height:
+   *   K1  @ 006b4db0: height 0x38 (56).
+   *   TSL @ 005a4b50: ftol(GetResolutionTextScalar() * 36.0) = 36 at base resolution.
+   * The PROTOITEM GFF height is never used for the row.
+   */
+  getRetailBaseExtent(list: GUIListBox): RetailRowExtent {
+    const vw = typeof list.getViewportWidth === 'function'
+      ? list.getViewportWidth()
+      : list.extent.width - (list.scrollbar ? list.scrollbar.extent.width : 0);
+    const width = Math.max(1, asExtentInt(vw - list.padding * 2));
+    const height = GameState.GameKey == GameEngineType.TSL ? 36 : 56;
+    return { left: 0, top: 0, width, height };
+  }
+
   buildFill(){}
   buildBorder(){}
   buildHighlight(){}
   buildText(){}
 
-  /** Per-menu row height overrides (PROTOITEM template used when unset). */
-  private applyRowHeight(): void {
-    const resref = this.menu.gui_resref;
-    const isContainer = resref == 'container' || resref == 'container_p';
-    const isTslInvEquip =
-      GameState.GameKey == GameEngineType.TSL &&
-      (resref == 'inventory' || resref == 'inventory_p' || resref == 'equip' || resref == 'equip_p');
-
-    if(isContainer){
-      this.setExtentHeight(60);
-    }else if(isTslInvEquip){
-      this.setExtentHeight(48);
-    }else if(resref == 'inventory' || resref == 'equip'){
-      this.setExtentHeight(52);
-    }
-  }
-
   createControl(){
     try{
-      this.applyRowHeight();
+      // Row height from getRetailBaseExtent (K1 56 / TSL 36); no resref hardcodes.
       super.createControl();
 
       const isContainer = this.menu.gui_resref == 'container' || this.menu.gui_resref == 'container_p';

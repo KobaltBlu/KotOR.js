@@ -12,18 +12,16 @@ export function applyProtoTemplateSkin(row: GUIControl, template: GUIControl): v
 }
 
 /**
- * Custom row presenters: font + PROTOITEM extent from template.
- * Presenters may still override height for documented per-menu cases
- * (inventory/equip/container, keymap).
+ * Pure skin rule for tests: the PROTOITEM template contributes font/texture only.
+ * Row extent (width AND height) is authoritative — retail derives height from the
+ * menu/entry-class base extent (GUIProtoItem.getRetailBaseExtent), never the template.
  */
-export function applyCustomProtoRowSkin(row: GUIControl, template: GUIControl): void {
-  row.guiFont = template.guiFont;
-  if(template.extent){
-    if(template.extent.width){
-      row.setExtentWidth(template.extent.width);
-    }
-    if(template.extent.height){
-      row.setExtentHeight(template.extent.height);
-    }
-  }
+export function customProtoRowExtentFromTemplate(
+  rowExtent: { width: number; height: number },
+  _templateExtent: { width: number; height: number },
+): { width: number; height: number } {
+  return {
+    width: rowExtent.width,
+    height: rowExtent.height,
+  };
 }

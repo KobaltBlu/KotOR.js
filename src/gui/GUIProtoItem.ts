@@ -7,6 +7,16 @@ import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { ResolutionManager } from "@/managers/ResolutionManager";
 import type { GUIListBox } from "@/gui/GUIListBox";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import { resolveProtoItemHeight } from "@/gui/listrow/protoItemHeight";
+import { applyProtoTemplateSkin } from "@/gui/listrow/applyProtoTemplateSkin";
+
+/** Retail CSWGuiExtent supplied to a row by menu/entry-class code (never the PROTOITEM GFF). */
+export type RetailRowExtent = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
 
 // build a normalized unit rect, scale to extent
 const points = [
@@ -58,6 +68,42 @@ export class GUIProtoItem extends GUIControl{
     this.addEventListener('mouseOut', (e) => {
       this.onSelectStateChanged();
     })
+  }
+
+  /**
+   * Retail base row extent — supplied by the menu / entry class, NOT the PROTOITEM GFF.
+   *
+   * In retail, PopulateGameList (K1 @ 006cc160), CSWGuiSaveLoadEntry (TSL @ 005d5140)
+   * and CSWGuiInGameItemEntry::Initialize (K1 @ 006b4db0) each construct a stack extent
+   * and pass it into CSWGuiButton::Initialize @ 00417970, which copies the extent then
+   * re-initializes border/text from the proto's PARAMS. The proto extent is never read
+   * for height. Override per row class with the Ghidra-sourced value.
+   *
+   * This base implementation is the UNVERIFIED fallback: it returns the PROTOITEM extent
+   * (matching legacy KotOR.js behavior) so unmigrated rows keep working.
+   */
+  getRetailBaseExtent(list: GUIListBox): RetailRowExtent {
+    return {
+      left: 0,
+      top: 0,
+      width: asExtentInt(this.extent.width),
+      height: asExtentInt(this.extent.height),
+    };
+  }
+
+  /**
+   * Mirrors CSWGuiButton::Initialize @ 00417970: assign the caller-supplied base extent,
+   * then take font/texture (params analog) from the PROTOITEM template. Must NOT read
+   * `template.extent` — retail derives row height only from the base extent above.
+   */
+  initializeRow(base: RetailRowExtent, template: GUIControl): void {
+    this.setExtentLeft(asExtentInt(base.left));
+    this.setExtentTop(asExtentInt(base.top));
+    if (asExtentInt(base.width) > 0) {
+      this.setExtentWidth(asExtentInt(base.width));
+    }
+    this.setExtentHeight(asExtentInt(base.height));
+    applyProtoTemplateSkin(this, template);
   }
 
   createControl(){
@@ -123,22 +169,25 @@ export class GUIProtoItem extends GUIControl{
   }
 
   getItemHeight(){
-    let height = asExtentInt(this.extent.height);
+    const height = asExtentInt(this.extent.height);
     if((this.objectType & GUIControlTypeMask.GUIButton)){
       return height;
     }
 
+    // Fixed-PROTOITEM rows (save/inventory): pitch from extent only.
+    if(!this.listRowAlignExtentToWrappedText){
+      return resolveProtoItemHeight(height, 0, false);
+    }
+
+    let textH = 0;
     if(this.text.geometry){
       this.text.geometry.computeBoundingBox();
       const tSize = new THREE.Vector3();
       this.text.geometry.boundingBox.getSize(tSize);
-      const textH = asExtentInt(tSize.y);
-      if(textH > height){
-        height = textH;
-      }
+      textH = asExtentInt(tSize.y);
     }
 
-    return height;
+    return resolveProtoItemHeight(height, textH, true);
   }
 
   calculateBox(){

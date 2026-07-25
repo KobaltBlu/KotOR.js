@@ -37,6 +37,7 @@ import {
   hitCheckMouseLocal,
   truncDiv,
 } from "@/gui/GUICoord";
+import { borderInnerExtent } from "@/gui/borderInnerExtent";
 import { ResolutionManager } from "@/managers/ResolutionManager";
 
 const itemSize = 2
@@ -606,9 +607,20 @@ export class GUIControl {
     }
   }
 
+  /** List-row extents must not mutate the shared PROTOITEM GFF template. */
+  private shouldSkipExtentGffWriteback(): boolean {
+    if (this.list || this.isProtoItem) {
+      return true;
+    }
+    if (this.parent && BitWise.InstanceOfObject(this.parent, GUIControlTypeMask.GUIListBox)) {
+      return true;
+    }
+    return false;
+  }
+
   setExtentTop(top: number){
     this.extent.top = asExtentInt(top);
-    if(this.control.hasField('EXTENT')){
+    if(!this.shouldSkipExtentGffWriteback() && this.control.hasField('EXTENT')){
       const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
       if(extent){
         extent.getFieldByLabel('TOP')?.setValue(this.extent.top);
@@ -618,7 +630,7 @@ export class GUIControl {
 
   setExtentLeft(left: number){
     this.extent.left = asExtentInt(left);
-    if(this.control.hasField('EXTENT')){
+    if(!this.shouldSkipExtentGffWriteback() && this.control.hasField('EXTENT')){
       const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
       if(extent){
         extent.getFieldByLabel('LEFT')?.setValue(this.extent.left);
@@ -628,7 +640,7 @@ export class GUIControl {
 
   setExtentWidth(width: number){
     this.extent.width = asExtentInt(width);
-    if(this.control.hasField('EXTENT')){
+    if(!this.shouldSkipExtentGffWriteback() && this.control.hasField('EXTENT')){
       const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
       if(extent){
         extent.getFieldByLabel('WIDTH')?.setValue(this.extent.width);
@@ -638,7 +650,7 @@ export class GUIControl {
 
   setExtentHeight(height: number){
     this.extent.height = asExtentInt(height);
-    if(this.control.hasField('EXTENT')){
+    if(!this.shouldSkipExtentGffWriteback() && this.control.hasField('EXTENT')){
       const extent = this.control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
       if(extent){
         extent.getFieldByLabel('HEIGHT')?.setValue(this.extent.height);
@@ -1922,18 +1934,37 @@ export class GUIControl {
     return n > 0 ? n : GUIControl.MESH_EPS;
   }
 
+  /**
+   * Inner (fill / viewport) extent — mirrors CSWGuiBorder::GetInnerExtent @ 00415240.
+   *
+   * Corner/edge sizes come from the border DIMENSION (retail GetBorderDim). When DIMENSION
+   * is 0 retail would derive them from the corner/edge image sizes; KotOR.js borders with
+   * DIMENSION 0 carry no corner/edge geometry, so we treat those sizes as 0 (unchanged from
+   * legacy behavior). INNEROFFSET is then applied — the previously missing step:
+   *   width  = (w - 2*corner) + 2*min(INNEROFFSET,  DIMENSION)
+   *   height = (h - 2*corner) + 2*INNEROFFSETY                 (raw, retail asymmetry)
+   * with retail's degenerate-collapse test (content smaller than half an edge tile → 0).
+   * Scrollbar shrink (listbox SetExtent @ 0041bf80) is subtracted after, separately.
+   */
   getFillExtent(){
-    let extent = this.getControlExtent();
-    let shrinkWidth = asExtentInt(this.getShrinkWidth());
-    const ew = asExtentInt(this.extent.width);
-    const eh = asExtentInt(this.extent.height);
-    const borderSize = Math.min(asExtentInt(this.getBorderSize()), truncDiv(ew, 2), truncDiv(eh, 2));
-    let width = Math.max(0, ew - 2 * borderSize - shrinkWidth);
-    let height = Math.max(0, eh - 2 * borderSize);
+    const extent = this.getControlExtent();
+    const shrinkWidth = asExtentInt(this.getShrinkWidth());
+
+    const inner = borderInnerExtent({
+      width: asExtentInt(this.extent.width),
+      height: asExtentInt(this.extent.height),
+      dimension: asExtentInt(this.getBorderSize()),
+      innerOffset: asExtentInt(this.border.inneroffset || 0),
+      innerOffsetY: asExtentInt(this.border.inneroffsety ?? this.border.inneroffset ?? 0),
+    });
+
+    // Scrollbar shrink (listbox SetExtent @ 0041bf80) is content-width only, applied after.
+    const width = Math.max(0, inner.width - shrinkWidth);
+    const height = Math.max(0, inner.height);
 
     return {
-      top: extent.top, 
-      left: extent.left, 
+      top: extent.top,
+      left: extent.left,
       width: this.meshSize(width),
       height: this.meshSize(height)
     };

@@ -20,9 +20,9 @@ export interface ListBoxBitFlags {
 
 export function createDefaultListBoxBitFlags(): ListBoxBitFlags {
   return {
-    // Click-to-select by default so hover does not override a committed click.
-    // Call setSelectOnLeftClick(false) for retail hover-select lists.
-    selectOnLeftClick: true,
+    // Retail CSWGuiListBox ctor @ 0041be40 — selectOnLeftClick = false (hover-select).
+    // setProtoBuilder sets protoClickSelects for click-to-select custom rows.
+    selectOnLeftClick: false,
     suppressControlCleanup: true,
     restoreSavedExtents: false,
     layoutDirty: true,

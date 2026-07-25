@@ -40,7 +40,7 @@ export class MainMovies extends K1_MainMovies {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.LB_MOVIES.protoItem.extent.height = 64;
+      this.LB_MOVIES.protoItem.extent.height = 64; // provisional until movies.gui PROTOITEM Ghidra-verified
       this.LB_MOVIES.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
       this.LB_MOVIES.protoItem.setTextColor(this.LB_MOVIES.defaultColor.r, this.LB_MOVIES.defaultColor.g, this.LB_MOVIES.defaultColor.b);
       this.LB_MOVIES.onClicked = (movie: GUIMovieItem) => {
