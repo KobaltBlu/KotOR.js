@@ -35,6 +35,8 @@ import {
   GUI_DESIGN_WIDTH,
   GUIPanelCoordFlags,
   hitCheckMouseLocal,
+  panelLocalFromCenteredUI,
+  applyPanelOffsetToLetterboxLocal,
   truncDiv,
 } from "@/gui/GUICoord";
 import { borderInnerExtent } from "@/gui/borderInnerExtent";
@@ -1623,8 +1625,11 @@ export class GUIControl {
    * Panel-local mouse (top-left Y-down ints) for this control's menu root panel.
    *
    * Matches our Three.js projection: panel design rect is centered in the viewport
-   * (and optionally scaled on the root widget). This is retail GetLocalMouseCoords
+   * (and optionally scaled / offset on the root widget). This is retail GetLocalMouseCoords
    * with CenterInViewport when UseExtentOffset is set; letterbox path when cleared.
+   *
+   * `tGuiPanel.offset` (MenuTop offset.y=198, CharGen offset.x/y, …) moves the widget in
+   * centered Y-up space; subtract it here so hitCheckMouseLocal extents track the translate.
    */
   getPanelLocalMouse(): { x: number; y: number } {
     const panel = this.menu?.tGuiPanel;
@@ -1634,17 +1639,23 @@ export class GUIControl {
     );
     const vpW = asExtentInt(ResolutionManager.getViewportWidth());
     const vpH = asExtentInt(ResolutionManager.getViewportHeight());
+    const offsetX = asExtentInt(panel?.offset?.x ?? 0);
+    const offsetY = asExtentInt(panel?.offset?.y ?? 0);
 
     // Retail 640×480 letterbox path (bit0 clear)
     if ((flags & GUIPanelCoordFlags.UseExtentOffset) === 0) {
-      return getLocalMouseCoords(
-        extent,
-        Mouse.positionViewportInt.x,
-        Mouse.positionViewportInt.y,
-        vpW,
-        vpH,
-        flags,
-        GameState.GameKey,
+      return applyPanelOffsetToLetterboxLocal(
+        getLocalMouseCoords(
+          extent,
+          Mouse.positionViewportInt.x,
+          Mouse.positionViewportInt.y,
+          vpW,
+          vpH,
+          flags,
+          GameState.GameKey,
+        ),
+        offsetX,
+        offsetY,
       );
     }
 
@@ -1656,16 +1667,7 @@ export class GUIControl {
       uiY = asExtentInt(uiY / scale);
     }
 
-    const panelW = asExtentInt(extent.width);
-    const panelH = asExtentInt(extent.height);
-    const panelLeft = asExtentInt(extent.left);
-    const panelTop = asExtentInt(extent.top);
-
-    // ui (0,0) is viewport center; panel design spans ±panelW/2, ±panelH/2 about origin
-    return {
-      x: uiX + truncDiv(panelW, 2) - panelLeft,
-      y: truncDiv(panelH, 2) - uiY - panelTop,
-    };
+    return panelLocalFromCenteredUI(uiX, uiY, extent, offsetX, offsetY);
   }
 
   /**

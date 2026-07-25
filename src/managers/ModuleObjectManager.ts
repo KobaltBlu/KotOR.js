@@ -908,10 +908,10 @@ export class ModuleObjectManager {
       if(!plc.isUseable()){
         return { ok: false, hostile: false };
       }
-      // Mine-like placeable with poor reputation → hostile flag
-      const mineLike = !!(plc.trapType || plc.trapDetectable);
-      const hostile = mineLike && typeof plc.isHostile === 'function' && plc.isHostile(player);
-      return { ok: true, hostile };
+      // Retail ValidNearest placeable @ 004f2c30: hostile only when
+      // field38_0x340 != 0 && reputation < 11. That field is not GFF-loaded
+      // and stays 0 for normal containers, so nearest-hostile is never set.
+      return { ok: true, hostile: false };
     }
 
     if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleDoor)){
@@ -1113,6 +1113,8 @@ export class ModuleObjectManager {
     const combat = isClientCombatMode();
     const paused = GameState.State === EngineState.PAUSED;
 
+    // Retail DoPassiveSelection first loop: creatures → hostile pool,
+    // trap triggers → mine pool. Placeables/doors never open either scan.
     let hasHostileInPool = false;
     let hasMineInPool = false;
     for(let i = 0; i < around.length; i++){
@@ -1120,7 +1122,7 @@ export class ModuleObjectManager {
       if(!this.isNearestHostile(obj)) continue;
       if(this.#isMineTarget(obj)){
         hasMineInPool = true;
-      }else{
+      }else if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)){
         hasHostileInPool = true;
       }
     }
@@ -1208,13 +1210,11 @@ export class ModuleObjectManager {
           continue;
         }
 
+        // Retail EnemySighted force-pick: creatures only (not placeables/doors).
         if(
           enemyRising &&
           !isMine &&
-          (
-            BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature) ||
-            BitWise.InstanceOfObject(obj, ModuleObjectType.ModulePlaceable)
-          )
+          BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)
         ){
           if(!combat){
             GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);

@@ -101,6 +101,45 @@ export interface IGUILocalMouse {
 }
 
 /**
+ * Convert centered Y-up UI mouse (relative to panel widget origin) into panel-local
+ * top-left Y-down ints. Panel widget origin is at `offset` in centered UI space
+ * (MenuTop offset.y=198, CharGen offset.x/y, …).
+ */
+export function panelLocalFromCenteredUI(
+  uiX: number,
+  uiY: number,
+  panelExtent: IGUIControlExtent,
+  offsetX: number = 0,
+  offsetY: number = 0,
+): IGUILocalMouse {
+  const relX = asExtentInt(uiX) - asExtentInt(offsetX);
+  const relY = asExtentInt(uiY) - asExtentInt(offsetY);
+  const panelW = asExtentInt(panelExtent.width);
+  const panelH = asExtentInt(panelExtent.height);
+  const panelLeft = asExtentInt(panelExtent.left);
+  const panelTop = asExtentInt(panelExtent.top);
+  return {
+    x: relX + truncDiv(panelW, 2) - panelLeft,
+    y: truncDiv(panelH, 2) - relY - panelTop,
+  };
+}
+
+/**
+ * Apply panel widget offset to letterbox-path panel-local mouse (Y-down).
+ * offset is Y-up (Three.js widget.position); invert Y when translating.
+ */
+export function applyPanelOffsetToLetterboxLocal(
+  local: IGUILocalMouse,
+  offsetX: number = 0,
+  offsetY: number = 0,
+): IGUILocalMouse {
+  return {
+    x: asExtentInt(local.x - asExtentInt(offsetX)),
+    y: asExtentInt(local.y + asExtentInt(offsetY)),
+  };
+}
+
+/**
  * Retail CSWGuiPanel::GetLocalMouseCoords @ 0040ba20 (K1) / @ 0090e350 (TSL Aspyr).
  * Both use design letterbox 640×480 (0x280 / 0x1e0). Returns mouse in panel-local
  * top-left Y-down integer space.

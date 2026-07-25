@@ -339,7 +339,8 @@ export class ModulePlaceable extends ModuleObject {
   isUseable(){
     // Hidden bags are looted via the retained corpse shell, not direct select
     if(this.isBodyBag && !this.isBodyBagVisible) return false;
-    return this.useable;
+    // Retail Static placeables are non-interactable (Bash / selection).
+    return !!this.useable && !this.static;
   }
 
   setBodyBagVisible(visible: boolean){
@@ -891,14 +892,16 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('PaletteID'))
       this.paletteID = this.template.getFieldByLabel('PaletteID').getValue();
 
-    if(this.template.RootNode.hasField('Plot'))
-      this.plot = this.template.getFieldByLabel('Plot').getValue();
+    // Retail LoadPlaceable: Invulnerable aliases Plot; missing Static → !Useable;
+    // Static forces plot = 1.
+    if(this.template.RootNode.hasField('Invulnerable')){
+      this.plot = !!this.template.getFieldByLabel('Invulnerable').getValue();
+    }else if(this.template.RootNode.hasField('Plot')){
+      this.plot = !!this.template.getFieldByLabel('Plot').getValue();
+    }
 
     if(this.template.RootNode.hasField('PartyInteract'))
       this.partyInteract = this.template.getFieldByLabel('PartyInteract').getValue();
-
-    if(this.template.RootNode.hasField('Plot'))
-      this.plot = this.template.getFieldByLabel('Plot').getValue();
 
     if(this.template.RootNode.hasField('PortraidId')){
       this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
@@ -908,8 +911,17 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('Ref'))
       this.ref = this.template.getFieldByLabel('Ref').getValue();
 
-    if(this.template.RootNode.hasField('Static'))
-      this.static = this.template.getFieldByLabel('Static').getValue();
+    if(this.template.RootNode.hasField('Useable'))
+      this.useable = this.template.getFieldByLabel('Useable').getValue();
+
+    if(this.template.RootNode.hasField('Static')){
+      this.static = !!this.template.getFieldByLabel('Static').getValue();
+    }else{
+      this.static = !this.useable;
+    }
+    if(this.static){
+      this.plot = true;
+    }
 
     if(this.template.RootNode.hasField('Tag'))
       this.tag = this.template.getFieldByLabel('Tag').getValue();
@@ -937,9 +949,6 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.hasField('TrapType'))
       this.trapType = this.template.getFieldByLabel('TrapType').getValue();
-
-    if(this.template.RootNode.hasField('Useable'))
-      this.useable = this.template.getFieldByLabel('Useable').getValue();
 
     if(this.template.RootNode.hasField('Will'))
       this.will = this.template.getFieldByLabel('Will').getValue();

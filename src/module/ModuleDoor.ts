@@ -1148,8 +1148,12 @@ export class ModuleDoor extends ModuleObject {
     if(this.template.RootNode.hasField('PaletteID'))
       this.paletteID = this.template.getFieldByLabel('PaletteID').getValue();
 
-    if(this.template.RootNode.hasField('Plot'))
-      this.plot = this.template.getFieldByLabel('Plot').getValue();
+    // Retail LoadDoor: Invulnerable aliases Plot; Static forces plot = 1.
+    if(this.template.RootNode.hasField('Invulnerable')){
+      this.plot = !!this.template.getFieldByLabel('Invulnerable').getValue();
+    }else if(this.template.RootNode.hasField('Plot')){
+      this.plot = !!this.template.getFieldByLabel('Plot').getValue();
+    }
 
     if(this.template.RootNode.hasField('PortraidId')){
       this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
@@ -1164,7 +1168,10 @@ export class ModuleDoor extends ModuleObject {
       this.secretDoorDC = this.template.getFieldByLabel('SecretDoorDC').getValue();
 
     if(this.template.RootNode.hasField('Static'))
-      this.static = this.template.getFieldByLabel('Static').getValue();
+      this.static = !!this.template.getFieldByLabel('Static').getValue();
+    if(this.static){
+      this.plot = true;
+    }
 
     if(this.template.RootNode.hasField('Useable'))
       this.useable = !!this.template.getFieldByLabel('Useable').getValue();
