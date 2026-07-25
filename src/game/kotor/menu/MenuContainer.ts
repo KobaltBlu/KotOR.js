@@ -103,6 +103,13 @@ export class MenuContainer extends GameMenu {
         }
       };
 
+      // K1 container.gui parks the dialog at design-canvas (164,68) ≈ centered on
+      // 640×480. KotOR.js centers by panel size at widget (0,0); keep that visual
+      // and zero the GFF origin so GetLocalMouseCoords / hit tests match (same
+      // pattern as InGameConfirm). Leaving LEFT/TOP=164/68 made hitboxes drift.
+      this.tGuiPanel.extent.left = 0;
+      this.tGuiPanel.extent.top = 0;
+
       resolve();
     });
   }

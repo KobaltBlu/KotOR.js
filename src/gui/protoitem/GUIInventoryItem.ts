@@ -70,10 +70,10 @@ export class GUIInventoryItem extends GUIProtoItem {
       // Icon must fit the retail row height (56/36); hardcoded 60 spilled into the next pitch.
       const iconWidth = Math.max(1, asExtentInt(this.extent.height));
       const iconHeight = iconWidth;
-      const labelWidth = asExtentInt((protoWidth - iconWidth) + 5);
+      const labelWidth = asExtentInt((protoWidth - iconWidth));
 
       this.buttonLabel = new GUIButton(this.menu, this.control, this, this.scale);
-      this.buttonLabel.setExtentLeft(0);
+      this.buttonLabel.setExtentLeft(5);
       this.buttonLabel.setExtentWidth(labelWidth);
       if(!isContainer){
         this.buttonLabel.setTextAlignment(GUIControlAlignment.HorizontalCenter | GUIControlAlignment.VerticalCenter);

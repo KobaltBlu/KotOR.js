@@ -4,9 +4,15 @@
 import { describe, expect, it } from "@jest/globals";
 import {
   applyPanelOffsetToLetterboxLocal,
+  extentToCenteredPosition,
   hitCheckMouseLocal,
   panelLocalFromCenteredUI,
 } from "@/gui/GUICoord";
+
+/** Zero GFF design origin so a size-centered panel matches hit tests (MenuContainer). */
+function centerPanelOrigin(panel: { left: number; top: number; width: number; height: number }) {
+  return { left: 0, top: 0, width: panel.width, height: panel.height };
+}
 
 describe("panel offset → hitbox (MenuTop / CharGen)", () => {
   const panel = { left: 0, top: 0, width: 640, height: 100 };
@@ -48,5 +54,28 @@ describe("panel offset → hitbox (MenuTop / CharGen)", () => {
     const restored = applyPanelOffsetToLetterboxLocal(fromVisualClick, 0, 198);
     expect(restored).toEqual({ x: 130, y: 40 });
     expect(hitCheckMouseLocal(btn, restored.x, restored.y)).toBe(true);
+  });
+});
+
+describe("centered overlay dialog hitbox (K1 container)", () => {
+  // container.gui GFF origin (164,68) ≈ centered on 640×480; KotOR.js centers by
+  // panel size at widget (0,0) and zeros the origin so hit tests agree.
+  const gffPanel = { left: 164, top: 68, width: 305, height: 327 };
+  const panel = centerPanelOrigin(gffPanel);
+  const btnOk = { left: 10, top: 243, width: 285, height: 22 };
+  const btnCentered = extentToCenteredPosition(btnOk, panel.width, panel.height);
+
+  it("size-centered widget stays at (0,0) after origin zeroing", () => {
+    expect(extentToCenteredPosition(panel, panel.width, panel.height)).toEqual({ x: 0, y: 0 });
+  });
+
+  it("click on the centered button hits when origin is zeroed", () => {
+    const local = panelLocalFromCenteredUI(btnCentered.x, btnCentered.y, panel, 0, 0);
+    expect(hitCheckMouseLocal(btnOk, local.x, local.y)).toBe(true);
+  });
+
+  it("regress guard: keeping GFF origin with centered draw makes the click miss", () => {
+    const local = panelLocalFromCenteredUI(btnCentered.x, btnCentered.y, gffPanel, 0, 0);
+    expect(hitCheckMouseLocal(btnOk, local.x, local.y)).toBe(false);
   });
 });
