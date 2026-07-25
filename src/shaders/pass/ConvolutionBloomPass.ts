@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { Pass, FullScreenQuad } from 'three/examples/jsm/postprocessing/Pass';
 import {
   BrightExtractShader,
-  KawaseBlurShader,
+  DownsampleShader,
+  BloomKernel5x5Shader,
   AdditiveCompositeShader,
   createBrightExtractLutTexture,
 } from '@/shaders/pass/ConvolutionBloomShader';
@@ -11,20 +12,24 @@ import {
  * ConvolutionBloomPass — retail FrameBufferModifications bit 0x02
  * (RenderOverlayConvolution @ 0042c6e0).
  *
- * Downsample → bright-extract LUT → blur cascade → additive composite.
+ * Retail cascade: bright-extract @ 512 → MipmapFilter 256/128/64 →
+ * BloomFilter 5×5 (bloomFiltersATI, alpha 0.35) → SRC_ALPHA/ONE composite.
  *
  * @file ConvolutionBloomPass.ts
  */
 export class ConvolutionBloomPass extends Pass {
   private lut: THREE.DataTexture;
   private extractMaterial: THREE.ShaderMaterial;
-  private blurMaterial: THREE.ShaderMaterial;
+  private downsampleMaterial: THREE.ShaderMaterial;
+  private bloomMaterial: THREE.ShaderMaterial;
   private compositeMaterial: THREE.ShaderMaterial;
   private fsQuad: FullScreenQuad;
 
-  private brightRT: THREE.WebGLRenderTarget | null = null;
-  private blurRT0: THREE.WebGLRenderTarget | null = null;
-  private blurRT1: THREE.WebGLRenderTarget | null = null;
+  private rt512: THREE.WebGLRenderTarget | null = null;
+  private rt256: THREE.WebGLRenderTarget | null = null;
+  private rt128: THREE.WebGLRenderTarget | null = null;
+  private rt64: THREE.WebGLRenderTarget | null = null;
+  private rtBloom: THREE.WebGLRenderTarget | null = null;
 
   constructor() {
     super();
@@ -40,13 +45,25 @@ export class ConvolutionBloomPass extends Pass {
     });
     this.extractMaterial.uniforms.tLut.value = this.lut;
 
-    this.blurMaterial = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.clone(KawaseBlurShader.uniforms),
-      vertexShader: KawaseBlurShader.vertexShader,
-      fragmentShader: KawaseBlurShader.fragmentShader,
+    this.downsampleMaterial = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.clone(DownsampleShader.uniforms),
+      vertexShader: DownsampleShader.vertexShader,
+      fragmentShader: DownsampleShader.fragmentShader,
       depthTest: false,
       depthWrite: false,
     });
+
+    this.bloomMaterial = new THREE.ShaderMaterial({
+      uniforms: THREE.UniformsUtils.clone(BloomKernel5x5Shader.uniforms),
+      vertexShader: BloomKernel5x5Shader.vertexShader,
+      fragmentShader: BloomKernel5x5Shader.fragmentShader,
+      depthTest: false,
+      depthWrite: false,
+    });
+    // UniformsUtils.clone can drop typed-array contents; restore retail kernel.
+    this.bloomMaterial.uniforms.kernel.value = Float32Array.from(
+      BloomKernel5x5Shader.uniforms.kernel.value as ArrayLike<number>
+    );
 
     this.compositeMaterial = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.clone(AdditiveCompositeShader.uniforms),
@@ -61,36 +78,50 @@ export class ConvolutionBloomPass extends Pass {
     this.clear = false;
   }
 
-  private ensureTargets(w: number, h: number) {
-    const bw = Math.max(1, Math.floor(w / 2));
-    const bh = Math.max(1, Math.floor(h / 2));
-    if(
-      this.brightRT &&
-      this.brightRT.width === bw &&
-      this.brightRT.height === bh
-    ){
-      return;
-    }
-    this.disposeTargets();
-    const opts: THREE.WebGLRenderTargetOptions = {
+  private makeRT(size: number): THREE.WebGLRenderTarget {
+    return new THREE.WebGLRenderTarget(size, size, {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       format: THREE.RGBAFormat,
       depthBuffer: false,
       stencilBuffer: false,
-    };
-    this.brightRT = new THREE.WebGLRenderTarget(bw, bh, opts);
-    this.blurRT0 = new THREE.WebGLRenderTarget(bw, bh, opts);
-    this.blurRT1 = new THREE.WebGLRenderTarget(bw, bh, opts);
+    });
+  }
+
+  private ensureTargets() {
+    if(this.rt512){ return; }
+    // Retail fixed pbuffer cascade sizes
+    this.rt512 = this.makeRT(512);
+    this.rt256 = this.makeRT(256);
+    this.rt128 = this.makeRT(128);
+    this.rt64 = this.makeRT(64);
+    this.rtBloom = this.makeRT(256);
   }
 
   private disposeTargets() {
-    this.brightRT?.dispose();
-    this.blurRT0?.dispose();
-    this.blurRT1?.dispose();
-    this.brightRT = null;
-    this.blurRT0 = null;
-    this.blurRT1 = null;
+    this.rt512?.dispose();
+    this.rt256?.dispose();
+    this.rt128?.dispose();
+    this.rt64?.dispose();
+    this.rtBloom?.dispose();
+    this.rt512 = null;
+    this.rt256 = null;
+    this.rt128 = null;
+    this.rt64 = null;
+    this.rtBloom = null;
+  }
+
+  private blit(
+    renderer: THREE.WebGLRenderer,
+    material: THREE.ShaderMaterial,
+    src: THREE.Texture,
+    dst: THREE.WebGLRenderTarget
+  ) {
+    material.uniforms.tDiffuse.value = src;
+    this.fsQuad.material = material;
+    renderer.setRenderTarget(dst);
+    renderer.clear();
+    this.fsQuad.render(renderer);
   }
 
   render(
@@ -99,39 +130,35 @@ export class ConvolutionBloomPass extends Pass {
     readBuffer: THREE.WebGLRenderTarget,
     _deltaTime?: number
   ) {
-    this.ensureTargets(readBuffer.width, readBuffer.height);
-    const bright = this.brightRT!;
-    const blur0 = this.blurRT0!;
-    const blur1 = this.blurRT1!;
+    this.ensureTargets();
+    const rt512 = this.rt512!;
+    const rt256 = this.rt256!;
+    const rt128 = this.rt128!;
+    const rt64 = this.rt64!;
+    const rtBloom = this.rtBloom!;
 
-    // 1) Bright extract into half-res
-    this.extractMaterial.uniforms.tDiffuse.value = readBuffer.texture;
-    this.fsQuad.material = this.extractMaterial;
-    renderer.setRenderTarget(bright);
+    // 1) Bright extract into 512² (retail convolutionHDCBuffer[3])
+    this.blit(renderer, this.extractMaterial, readBuffer.texture, rt512);
+
+    // 2) MipmapFilter chain: 512 → 256 → 128 → 64
+    this.blit(renderer, this.downsampleMaterial, rt512.texture, rt256);
+    this.blit(renderer, this.downsampleMaterial, rt256.texture, rt128);
+    this.blit(renderer, this.downsampleMaterial, rt128.texture, rt64);
+
+    // 3) BloomFilter 5×5 on 256² using the 256 mip (retail BloomFilter target)
+    this.bloomMaterial.uniforms.tDiffuse.value = rt256.texture;
+    this.bloomMaterial.uniforms.texelSize.value.set(1 / 256, 1 / 256);
+    this.fsQuad.material = this.bloomMaterial;
+    renderer.setRenderTarget(rtBloom);
+    renderer.clear();
     this.fsQuad.render(renderer);
 
-    // 2) Kawase-style blur passes (MipmapFilter / BloomFilter stand-in)
-    const ping = [blur0, blur1];
-    let readIdx = 0;
-    let writeSrc: THREE.WebGLRenderTarget = bright;
-    const offsets = [1.0, 2.0, 3.0, 2.0];
-    for(const o of offsets){
-      const dst = ping[readIdx];
-      this.blurMaterial.uniforms.tDiffuse.value = writeSrc.texture;
-      this.blurMaterial.uniforms.offset.value.set(
-        o / writeSrc.width,
-        o / writeSrc.height
-      );
-      this.fsQuad.material = this.blurMaterial;
-      renderer.setRenderTarget(dst);
-      this.fsQuad.render(renderer);
-      writeSrc = dst;
-      readIdx = 1 - readIdx;
-    }
+    // Touch rt64 so the full cascade stays live (matches retail mip usage)
+    void rt64;
 
-    // 3) Additive composite onto full-res scene
+    // 4) SRC_ALPHA, ONE composite onto full-res scene
     this.compositeMaterial.uniforms.tDiffuse.value = readBuffer.texture;
-    this.compositeMaterial.uniforms.tBloom.value = writeSrc.texture;
+    this.compositeMaterial.uniforms.tBloom.value = rtBloom.texture;
     this.fsQuad.material = this.compositeMaterial;
 
     if(this.renderToScreen){
@@ -146,7 +173,8 @@ export class ConvolutionBloomPass extends Pass {
 
   dispose() {
     this.extractMaterial.dispose();
-    this.blurMaterial.dispose();
+    this.downsampleMaterial.dispose();
+    this.bloomMaterial.dispose();
     this.compositeMaterial.dispose();
     this.fsQuad.dispose();
     this.lut.dispose();

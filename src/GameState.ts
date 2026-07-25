@@ -368,9 +368,15 @@ export class GameState implements EngineContext {
   static renderPassAA: SSAARenderPass;
   static odysseyShaderPass: OdysseyShaderPass;
   static forceDistortionPass: ForceDistortionPass;
-  /** Retail FrameBufferModifications bit 0x01. */
+  /**
+   * Retail FrameBufferModifications bit 0x01 + visualizePass1.
+   * Shipping visualizePass1 = 0 → stays disabled unless debug override.
+   */
   static overbrightenPass: OverbrightenPass;
-  /** Retail FrameBufferModifications bit 0x02. */
+  /**
+   * Retail FrameBufferModifications bit 0x02 + visualizePass2 (= 1).
+   * Always-on for roomed scenes when Frame Buffer INI is enabled.
+   */
   static convolutionBloomPass: ConvolutionBloomPass;
   /** K2 clairvoyance / dream distortion. */
   static dreamDistortionPass: DreamDistortionPass;
@@ -908,7 +914,8 @@ export class GameState implements EngineContext {
     // MG camera HUD after accumulation blur (retail screen-stable gauges).
     GameState.composer.addPass(GameState.renderPassMGHud);
     // Retail FrameBufferModifications order before GUI:
-    // 0x01 overbrighten → 0x02 convolution → 0x20 force distortion →
+    // 0x01 overbrighten (visualizePass1 off in shipping) →
+    // 0x02 convolution (visualizePass2 on) → 0x20 force distortion →
     // film/sat (VideoEffects) → K2 dream → K2 fury
     GameState.composer.addPass(GameState.overbrightenPass);
     GameState.composer.addPass(GameState.convolutionBloomPass);

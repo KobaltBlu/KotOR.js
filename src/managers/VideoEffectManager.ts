@@ -3,12 +3,16 @@ import { VideoEffect } from "@/engine/VideoEffect";
 import { GameState } from "@/GameState";
 import { TextureLoader } from "@/loaders";
 import type { TwoDAObject } from "@/resource/TwoDAObject";
+import { resolveAlwaysOnFrameBufferPasses } from "@/shaders/pass/FrameBufferEffectGates";
 
 /**
  * VideoEffectManager class.
  *
  * Retail EnableVideoEffect / DisableVideoEffect — drives saturation, film noise,
  * K2 clairvoyance/dream, fury, and force-sight framebuffer flags.
+ *
+ * Always-on FB stages (overbrighten / convolution) use retail visualizePass*
+ * gates via resolveAlwaysOnFrameBufferPasses — shipping leaves overbrighten off.
  *
  * @file VideoEffectManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -20,10 +24,16 @@ export class VideoEffectManager {
   static videoEffect: VideoEffect;
   static videoEffectId: number = -1;
 
-  /** AurEnableForceSight flag (DAT_00a29fac). */
+  /** AurEnableForceSight flag (DAT_00a29fac). Cubemap/scene path — not a color grade. */
   static forceSightActive: boolean = false;
   /** EffectForceSight refcount so VideoEffect + game effect can coexist. */
   static forceSightEffectCount: number = 0;
+
+  /**
+   * Debug override for retail visualizePass1 (overbrighten).
+   * Shipping default is false (BSS zero / never written).
+   */
+  static debugVisualizeOverbrighten: boolean = false;
 
   static filmNoiseTexture: THREE.Texture | null = null;
   static furyTexture: THREE.Texture | null = null;
@@ -50,7 +60,8 @@ export class VideoEffectManager {
 
   /**
    * Retail AurEnableForceSight / AurDisableForceSight.
-   * Cubemap path not yet ported — flag still gates FB interactions + stand-in look.
+   * Cubemap / material path not yet ported — flag retained for callers.
+   * Does not drive OdysseyShader color grade (that was non-retail).
    */
   static SetForceSight(active: boolean){
     if(active){
@@ -129,22 +140,16 @@ export class VideoEffectManager {
     const fbOn = GameState.isFrameBufferEffectsEnabled();
     const effect = VideoEffectManager.videoEffect;
 
-    // --- OdysseyShaderPass: saturation + film noise ---
+    // --- OdysseyShaderPass: saturation + film noise (VideoEffects only) ---
     if(GameState.odysseyShaderPass){
       const wantSat = !!(effect?.enableSaturation);
       const wantNoise = !!(effect?.enableScanNoise);
-      const wantForceSightLook = VideoEffectManager.forceSightActive;
 
       if(wantSat){
         GameState.odysseyShaderPass.uniforms.saturation.value = effect.saturation;
         GameState.odysseyShaderPass.uniforms.modulation.value.set(
           effect.modulation.red, effect.modulation.green, effect.modulation.blue
         );
-        GameState.odysseyShaderPass.uniforms.bmodulate.value = true;
-      }else if(wantForceSightLook){
-        // Stand-in until cubemap force-sight path: cool desaturation
-        GameState.odysseyShaderPass.uniforms.saturation.value = 0.35;
-        GameState.odysseyShaderPass.uniforms.modulation.value.set(0.75, 0.85, 1.15);
         GameState.odysseyShaderPass.uniforms.bmodulate.value = true;
       }else{
         GameState.odysseyShaderPass.uniforms.bmodulate.value = false;
@@ -163,8 +168,8 @@ export class VideoEffectManager {
         GameState.odysseyShaderPass.uniforms.bFilmNoise.value = false;
       }
 
-      GameState.odysseyShaderPass.enabled =
-        fbOn && (wantSat || wantNoise || wantForceSightLook);
+      // Force Sight is a scene/cubemap flag in retail — do not enable this pass for it.
+      GameState.odysseyShaderPass.enabled = fbOn && (wantSat || wantNoise);
     }
 
     // --- Dream distortion (clairvoyance) ---
@@ -197,19 +202,22 @@ export class VideoEffectManager {
       GameState.furyPass.enabled = fbOn && wantFury;
     }
 
-    // Always-on overbrighten + convolution when FB effects INI is on + roomed area
-    // (retail Scene::RenderSinglePass only applies mask 0x1F with a room)
+    // Always-on stages: retail mask 0x1F in a room, but visualizePass1 (overbrighten)
+    // stays 0 in shipping while visualizePass2 (convolution) stays 1.
     const rooms = GameState.module?.area?.rooms;
     const roomedOk = !!(rooms && rooms.length > 0);
-    const alwaysOn = fbOn && roomedOk;
+    const alwaysOn = resolveAlwaysOnFrameBufferPasses({
+      frameBufferIniEnabled: fbOn,
+      roomedArea: roomedOk,
+      visualizeOverbrighten: VideoEffectManager.debugVisualizeOverbrighten,
+    });
     if(GameState.overbrightenPass){
-      GameState.overbrightenPass.enabled = alwaysOn;
+      GameState.overbrightenPass.enabled = alwaysOn.overbrighten;
     }
     if(GameState.convolutionBloomPass){
-      GameState.convolutionBloomPass.enabled = alwaysOn;
+      GameState.convolutionBloomPass.enabled = alwaysOn.convolution;
     }
 
-    // silence unused
     void delta;
   }
 
@@ -225,8 +233,7 @@ export class VideoEffectManager {
       GameState.odysseyShaderPass.uniforms.saturation.value = 1;
       GameState.odysseyShaderPass.uniforms.modulation.value.set(1, 1, 1);
       GameState.odysseyShaderPass.uniforms.bFilmNoise.value = false;
-      GameState.odysseyShaderPass.enabled = VideoEffectManager.forceSightActive
-        && GameState.isFrameBufferEffectsEnabled();
+      GameState.odysseyShaderPass.enabled = false;
     }
     if(GameState.dreamDistortionPass){
       GameState.dreamDistortionPass.enabled = false;

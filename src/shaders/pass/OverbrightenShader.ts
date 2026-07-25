@@ -4,7 +4,12 @@ import * as THREE from 'three';
  * OverbrightenShader — retail RenderOverlayOverbrighten @ K1 004340f0 +
  * LUT init in InitializeFrameBufferModifications @ 00427c90.
  *
- * Per-channel remap through identical curves, then ADD (ARB: three TEX lookups).
+ * Full-screen REPLACE (glBlendFunc GL_ONE, GL_ZERO). ARBfp ADD_SAT only merges
+ * the three per-channel 1D LUT texels into RGB — it does not add to the scene.
+ *
+ * Shipping leaves this pass off: visualizePass1 is BSS-zero with no writers.
+ * Enable only via VideoEffectManager.debugVisualizeOverbrighten.
+ *
  * Curve (FLOAT_0078daec = 0.5):
  *   f >= 0.5 → sqrt((f-0.5)*0.5) + 0.5
  *   else     → 2*f*f
