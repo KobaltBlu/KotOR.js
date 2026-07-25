@@ -15,6 +15,7 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { IPazaakCard } from "@/interface/minigames/IPazaakCard";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import type { PazaakDeck } from "@/engine/minigames/PazaakDeck";
+import { pazaakSetOrMatchSfx } from "@/engine/minigames/pazaak-sfx";
 
 const MSG_CONFIRM_SIDE_DECK = 32322;
 const MSG_YOU_WIN = 32334;
@@ -565,19 +566,11 @@ export class PazaakManager {
       let result = -1;
       if(pScore > oScore){
         result = PazaakTurnMode.PLAYER;
-        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, [
-          playerPoints > this.TargetPoints || opponentPoints > this.TargetPoints ? 'mgs_winset' : 'mgs_winmatch'
-        ]);
       }else if(oScore > pScore){
         result = PazaakTurnMode.OPPONENT;
-        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, [
-          playerPoints > this.TargetPoints ? 'mgs_warnbust' : 'mgs_loseset'
-        ]);
-      }else{
-        result = -1;
-        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, ['mgs_warnbust']);
       }
 
+      // Retail DoGameSequence case 8/9 @ 006804c1: message first, then set/match SFX after score++.
       if(result == -1){
         this.AddAction(this.TurnMode, PazaakActionType.SHOW_MESSAGE, [MSG_TIED]);
       }else if(result == PazaakTurnMode.PLAYER){
@@ -590,8 +583,14 @@ export class PazaakManager {
 
       if(result == PazaakTurnMode.PLAYER){
         this.Tables[PazaakTurnMode.PLAYER].winCount++;
+        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, [
+          pazaakSetOrMatchSfx('player', this.Tables[PazaakTurnMode.PLAYER].winCount, this.TargetWins)
+        ]);
       }else if(result == PazaakTurnMode.OPPONENT){
         this.Tables[PazaakTurnMode.OPPONENT].winCount++;
+        this.AddAction(this.TurnMode, PazaakActionType.PLAY_GUI_SOUND, [
+          pazaakSetOrMatchSfx('opponent', this.Tables[PazaakTurnMode.OPPONENT].winCount, this.TargetWins)
+        ]);
       }
 
       if(this.Tables[PazaakTurnMode.PLAYER].winCount >= this.TargetWins){
@@ -653,11 +652,19 @@ export class PazaakManager {
        * Player: stand on 20 / bust ends round / full board ends turn.
        * Opponent: AI continues via queued AI_DETERMINE_MOVE (PlayAITurn state 1).
        */
+      // Retail DoGameSequence: drawmain after Draw*Card; warnbust when total > 20.
       if(tableIndex == PazaakTurnMode.PLAYER){
         if(table.points == this.TargetPoints){
           this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex, 1]);
+          if(cardDrawn){
+            this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_drawmain']);
+          }
         }else if(table.points > this.TargetPoints){
           this.AddActionFront(tableIndex, PazaakActionType.END_ROUND);
+          this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_warnbust']);
+          if(cardDrawn){
+            this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_drawmain']);
+          }
         }else if(!cardDrawn){
           this.AddActionFront(tableIndex, PazaakActionType.END_TURN, [tableIndex]);
         }else{
@@ -666,6 +673,9 @@ export class PazaakManager {
         }
       }else{
         this.AddActionFront(tableIndex, PazaakActionType.WAIT, [1, 0]);
+        if(table.points > this.TargetPoints){
+          this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_warnbust']);
+        }
         this.AddActionFront(tableIndex, PazaakActionType.PLAY_GUI_SOUND, ['mgs_drawmain']);
       }
       actionStatus = ActionStatus.COMPLETE;

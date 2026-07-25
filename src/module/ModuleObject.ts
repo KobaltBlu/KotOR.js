@@ -294,6 +294,10 @@ export class ModuleObject {
   trapOneShot: boolean;
   trapType: number;
   trapFlag: boolean;
+  /** Pass AL — creature object ids that have detected this trap (retail DetectedBy lists). */
+  trapDetectedByIds: number[] = [];
+  /** Visual / script “detected” latch (triggers); set by SetTrapDetectedBy / detectTrap. */
+  trapDetected: boolean = false;
   ownerDemolitions: number = -1;
 
   notBlastable: boolean = false;
@@ -2081,6 +2085,33 @@ export class ModuleObject {
     return trigger;
   }
 
+  /**
+   * Pass AL — SetTrapDetectedBy / GetTrapDetectedBy (retail DetectedBy object-id lists).
+   * Returns TRUE when the detector was newly added or already present.
+   */
+  setTrapDetectedBy(detector: ModuleObject): boolean {
+    if(!detector || detector.id == null){
+      return false;
+    }
+    const id = detector.id;
+    if(this.trapDetectedByIds.indexOf(id) < 0){
+      this.trapDetectedByIds.push(id);
+    }
+    this.trapDetected = true;
+    if(BitWise.InstanceOfObject(detector, ModuleObjectType.ModuleCreature)){
+      (detector as ModuleCreature).lastTrapDetected = this;
+    }
+    return true;
+  }
+
+  /** Pass AL — TRUE if oCreature's id is on this trap's DetectedBy list. */
+  isTrapDetectedBy(creature: ModuleObject): boolean {
+    if(!creature || creature.id == null){
+      return false;
+    }
+    return this.trapDetectedByIds.indexOf(creature.id) >= 0;
+  }
+
   //---------------//
   // STATUS CHECKS
   //---------------//
@@ -2663,7 +2694,7 @@ export class ModuleObject {
     const location = new EngineLocation(
       this.position.x, this.position.y, this.position.z,
       rotation.x, rotation.y, rotation.z,
-      GameState?.module?.area
+      this.area || GameState?.module?.area
     );
 
     return location;
@@ -3016,18 +3047,32 @@ export class ModuleObject {
   }
 
   /**
-   * Jump to an EngineLocation
-   * @param lLocation 
+   * Jump to an EngineLocation — retail JumpToLocation / AIActionJumpToPoint.
+   * Cross-area: AddToArea. Cross-module (party leader): LoadModule + spawn XYZ.
    */
   JumpToLocation(lLocation: EngineLocation){
-    if(lLocation){
-      this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
-      this.computeBoundingBox();
-
-      this.setFacing(-Math.atan2(lLocation.rotation.x, lLocation.rotation.y) + Math.PI/2, true);
-      this.collisionManager.groundFace = undefined;
-      this.collisionManager.lastGroundFace = undefined;
+    if(!lLocation) return;
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      const action = new GameState.ActionFactory.ActionJumpToPoint();
+      action.setParameter(0, ActionParameterType.FLOAT, lLocation.position.x);
+      action.setParameter(1, ActionParameterType.FLOAT, lLocation.position.y);
+      action.setParameter(2, ActionParameterType.FLOAT, lLocation.position.z);
+      const areaId = lLocation.area?.id ?? GameState.module?.area?.id ?? 0;
+      action.setParameter(3, ActionParameterType.DWORD, areaId);
+      action.setParameter(4, ActionParameterType.INT, 1);
+      action.setParameter(5, ActionParameterType.FLOAT, 20.0);
+      action.setParameter(6, ActionParameterType.FLOAT, lLocation.rotation.x);
+      action.setParameter(7, ActionParameterType.FLOAT, lLocation.rotation.y);
+      // Instant jump: run one update (retail AddActionToFront + process)
+      action.owner = this;
+      action.update(0);
+      return;
     }
+    this.position.set( lLocation.position.x, lLocation.position.y, lLocation.position.z );
+    this.computeBoundingBox();
+    this.setFacing(-Math.atan2(lLocation.rotation.x, lLocation.rotation.y) + Math.PI/2, true);
+    this.collisionManager.groundFace = undefined;
+    this.collisionManager.lastGroundFace = undefined;
   }
 
   /**

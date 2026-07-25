@@ -171,10 +171,14 @@ export function runTriggerOnDisarmScript(target: ModuleObject){
   }
 }
 
-export function markTrapDetected(target: ModuleObject){
+export function markTrapDetected(target: ModuleObject, detector?: ModuleObject){
   if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleTrigger)){
-    (target as any).detectTrap?.();
+    (target as any).detectTrap?.(detector);
     return;
   }
-  (target as any).trapFlag = true;
+  if(detector){
+    target.setTrapDetectedBy(detector);
+  }else{
+    target.trapDetected = true;
+  }
 }

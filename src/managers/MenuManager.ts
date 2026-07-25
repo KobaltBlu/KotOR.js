@@ -61,6 +61,8 @@ export class MenuManager {
   static MenuAutoPause: KOTOR.MenuAutoPause;
   static MenuCharacter: KOTOR.MenuCharacter;
   static MenuChemicals: TSL.MenuChemicals;
+  static MenuComponent: TSL.MenuComponent;
+  static MenuDatapad: TSL.MenuDatapad;
   static MenuContainer: KOTOR.MenuContainer;
   static MenuEquipment: KOTOR.MenuEquipment;
   static MenuFeedback: KOTOR.MenuFeedback;
@@ -92,6 +94,8 @@ export class MenuManager {
   static MenuMouse: KOTOR.MenuMouse;
   static MenuKeyboardMapping: KOTOR.MenuKeyboardMapping;
   static MenuKeyboardEntry: KOTOR.MenuKeyboardEntry;
+  static MenuQuestItem: KOTOR.MenuQuestItem;
+  static MenuScriptSelect: KOTOR.MenuScriptSelect;
   static MenuUpgrade: KOTOR.MenuUpgrade;
   static MenuUpgradeItems: KOTOR.MenuUpgradeItems;
   static MenuUpgradeSelect: KOTOR.MenuUpgradeSelect;
@@ -515,6 +519,8 @@ export class MenuManager {
           MenuManager.MenuGalaxyMap,
           MenuManager.MenuInventory,
           MenuManager.MenuJournal,
+          MenuManager.MenuQuestItem,
+          MenuManager.MenuScriptSelect,
           MenuManager.MenuLevelUp,
           MenuManager.MenuMap,
           MenuManager.MenuMessages,
@@ -543,6 +549,8 @@ export class MenuManager {
           MenuManager.GameMenuLoader(KOTOR.MenuGalaxyMap),
           MenuManager.GameMenuLoader(KOTOR.MenuInventory),
           MenuManager.GameMenuLoader(KOTOR.MenuJournal),
+          MenuManager.GameMenuLoader(KOTOR.MenuQuestItem),
+          MenuManager.GameMenuLoader(KOTOR.MenuScriptSelect),
           MenuManager.GameMenuLoader(KOTOR.MenuLevelUp),
           MenuManager.GameMenuLoader(KOTOR.MenuMap),
           MenuManager.GameMenuLoader(KOTOR.MenuMessages),
@@ -560,7 +568,8 @@ export class MenuManager {
           KOTOR.InGameAreaTransition, KOTOR.InGameBark, KOTOR.InGameComputer, KOTOR.InGameComputerCam,
           KOTOR.InGameDialog, KOTOR.InGameOverlay, KOTOR.InGamePause, KOTOR.MenuAbilities,
           KOTOR.MenuCharacter, KOTOR.MenuContainer, KOTOR.MenuEquipment, KOTOR.MenuGalaxyMap,
-          KOTOR.MenuInventory, KOTOR.MenuJournal, KOTOR.MenuLevelUp, KOTOR.MenuMap,
+          KOTOR.MenuInventory, KOTOR.MenuJournal, KOTOR.MenuQuestItem, KOTOR.MenuScriptSelect,
+          KOTOR.MenuLevelUp, KOTOR.MenuMap,
           KOTOR.MenuMessages, KOTOR.MenuOptions, KOTOR.MenuPartySelection,
           KOTOR.MenuStore, KOTOR.MenuTop, KOTOR.MenuUpgrade, KOTOR.MenuUpgradeItems,
           KOTOR.MenuUpgradeSelect, KOTOR.MenuPazaakWager, KOTOR.MenuPazaakGame, KOTOR.MenuPazaakSetup,
@@ -577,11 +586,15 @@ export class MenuManager {
           MenuManager.MenuAbilities,
           MenuManager.MenuCharacter,
           MenuManager.MenuChemicals,
+          MenuManager.MenuComponent,
+          MenuManager.MenuDatapad,
           MenuManager.MenuContainer,
           MenuManager.MenuEquipment,
           MenuManager.MenuGalaxyMap,
           MenuManager.MenuInventory,
           MenuManager.MenuJournal,
+          MenuManager.MenuQuestItem,
+          MenuManager.MenuScriptSelect,
           MenuManager.MenuLevelUp,
           MenuManager.MenuMap,
           MenuManager.MenuMessages,
@@ -608,11 +621,15 @@ export class MenuManager {
           MenuManager.GameMenuLoader(TSL.MenuAbilities),
           MenuManager.GameMenuLoader(TSL.MenuCharacter),
           MenuManager.GameMenuLoader(TSL.MenuChemicals),
+          MenuManager.GameMenuLoader(TSL.MenuComponent),
+          MenuManager.GameMenuLoader(TSL.MenuDatapad),
           MenuManager.GameMenuLoader(TSL.MenuContainer),
           MenuManager.GameMenuLoader(TSL.MenuEquipment),
           MenuManager.GameMenuLoader(TSL.MenuGalaxyMap),
           MenuManager.GameMenuLoader(TSL.MenuInventory),
           MenuManager.GameMenuLoader(TSL.MenuJournal),
+          MenuManager.GameMenuLoader(KOTOR.MenuQuestItem),
+          MenuManager.GameMenuLoader(KOTOR.MenuScriptSelect),
           MenuManager.GameMenuLoader(TSL.MenuLevelUp),
           MenuManager.GameMenuLoader(TSL.MenuMap),
           MenuManager.GameMenuLoader(TSL.MenuMessages),
@@ -631,8 +648,9 @@ export class MenuManager {
         ]) as [
           KOTOR.InGameAreaTransition, KOTOR.InGameBark, KOTOR.InGameComputer, KOTOR.InGameComputerCam,
           KOTOR.InGameDialog, KOTOR.InGameOverlay, KOTOR.InGamePause, KOTOR.MenuAbilities,
-          KOTOR.MenuCharacter, TSL.MenuChemicals, KOTOR.MenuContainer, KOTOR.MenuEquipment,
-          KOTOR.MenuGalaxyMap, KOTOR.MenuInventory, KOTOR.MenuJournal, KOTOR.MenuLevelUp,
+          KOTOR.MenuCharacter, TSL.MenuChemicals, TSL.MenuComponent, TSL.MenuDatapad, KOTOR.MenuContainer, KOTOR.MenuEquipment,
+          KOTOR.MenuGalaxyMap, KOTOR.MenuInventory, KOTOR.MenuJournal, KOTOR.MenuQuestItem, KOTOR.MenuScriptSelect,
+          KOTOR.MenuLevelUp,
           KOTOR.MenuMap, KOTOR.MenuMessages, KOTOR.MenuOptions,
           KOTOR.MenuPartySelection, KOTOR.MenuStore, KOTOR.MenuTop, KOTOR.MenuUpgrade,
           KOTOR.MenuUpgradeItems, KOTOR.MenuUpgradeSelect, KOTOR.MenuPazaakWager,

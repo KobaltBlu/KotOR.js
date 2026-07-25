@@ -89,6 +89,10 @@ export class Module {
   itemActivator: ModuleCreature = undefined;
   itemActivatedTarget: any = undefined;
   itemActivatedTargetLocation: EngineLocation = undefined;
+  /** Pass AL — ModuleAccess last-player slots (retail CSWSModule 0x16c / 0x170 / 0x174) */
+  lastPlayerDied: ModuleCreature = undefined;
+  lastPlayerDying: ModuleCreature = undefined;
+  lastRespawnButtonPresser: ModuleCreature = undefined;
 
   /**
    * List of Areas in the module
@@ -663,6 +667,39 @@ export class Module {
     if(onPlayerClientEnter){
       onPlayerClientEnter.enteringObject = GameState.PartyManager.party[0];
       onPlayerClientEnter.run(this.area, 0);
+    }
+  }
+
+  /** Pass AL — set lastPlayerDied + Mod_OnPlrDeath (retail ModuleAccess 0x16c). */
+  notifyPlayerDied(creature: ModuleCreature){
+    if(!creature) return;
+    this.lastPlayerDied = creature;
+    const script = this.scripts[ModuleObjectScript.ModuleOnPlayerDeath];
+    if(script){
+      const instance = script.newInstance();
+      instance.run(this.area ?? this, 0);
+    }
+  }
+
+  /** Pass AL — set lastPlayerDying + Mod_OnPlrDying (retail ModuleAccess 0x170). */
+  notifyPlayerDying(creature: ModuleCreature){
+    if(!creature) return;
+    this.lastPlayerDying = creature;
+    const script = this.scripts[ModuleObjectScript.ModuleOnPlayerDying];
+    if(script){
+      const instance = script.newInstance();
+      instance.run(this.area ?? this, 0);
+    }
+  }
+
+  /** Pass AL — set lastRespawnButtonPresser + Mod_OnSpawnBtnDn (retail ModuleAccess 0x174). */
+  notifyRespawnButtonPresser(creature: ModuleCreature){
+    if(!creature) return;
+    this.lastRespawnButtonPresser = creature;
+    const script = this.scripts[ModuleObjectScript.ModuleOnSpawnButtonDown];
+    if(script){
+      const instance = script.newInstance();
+      instance.run(this.area ?? this, 0);
     }
   }
 

@@ -45,7 +45,6 @@ export class ModuleTrigger extends ModuleObject {
   trapExplosionSound: string;
   trapTriggered: boolean;
   trapResRef: string;
-  trapDetected: boolean = false;
   declare type: ModuleTriggerType;
 
   constructor ( gff = new GFFObject() ) {
@@ -246,14 +245,17 @@ export class ModuleTrigger extends ModuleObject {
     GameState.group.triggers.add(this.container);
   }
 
-  detectTrap(){
-    if(this.trapDetected){ return; }
-    this.trapDetected = true;
+  detectTrap(detector?: ModuleObject){
+    if(detector){
+      this.setTrapDetectedBy(detector);
+    }else if(!this.trapDetected){
+      this.trapDetected = true;
+    }
 
     if(this.trapDetected){
-      this.model.playAnimation('detect', false);
+      this.model?.playAnimation?.('detect', false);
     }else{
-      this.model.playAnimation('default', false);
+      this.model?.playAnimation?.('default', false);
     }
   }
 

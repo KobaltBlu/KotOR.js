@@ -90,8 +90,10 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
 
       this.BTN_CREATEITEMS?.addEventListener('click', (e) => {
         e.stopPropagation();
-        // Create-item crafting is out of scope for this upgrade-menu alignment.
-        console.warn('ShowUpgradeScreen: item creation is not implemented');
+        GameState.MenuManager.MenuComponent?.open({
+          character: this.skillCharacter,
+          createItemString: this.createItemString,
+        });
       });
 
       this.BTN_BACK?.addEventListener('click', (e) => {
@@ -180,8 +182,11 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
     }
 
     if(this.disableUpgrade){
-      // Creation-only path: no implemented creation screen yet.
-      console.warn('ShowUpgradeScreen: nDisableUpgrade set but item creation is not implemented');
+      // Creation-only workshop — retail opens create panel; MenuComponent (itemcreate).
+      GameState.MenuManager.MenuComponent?.open({
+        character: this.skillCharacter,
+        createItemString: this.createItemString,
+      });
       return;
     }
 

@@ -39,12 +39,16 @@ export class MenuGameOver extends GameMenu {
       this.BTN_LASTSAVE?.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.buttonEnableDelay > 0) return;
+        const pc = GameState.PartyManager.party[0];
+        if(pc) GameState.module?.notifyRespawnButtonPresser?.(pc);
         GameOverManager.LoadMostRecentSave();
       });
 
       this.BTN_LOADGAME?.addEventListener('click', (e) => {
         e.stopPropagation();
         if(this.buttonEnableDelay > 0) return;
+        const pc = GameState.PartyManager.party[0];
+        if(pc) GameState.module?.notifyRespawnButtonPresser?.(pc);
         GameOverManager.OpenLoadGameFromDeath();
       });
 

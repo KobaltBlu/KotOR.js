@@ -4007,7 +4007,7 @@ NWScriptDefK2.Actions = {
   538: {
     comment: '538: Get the tag of the key that will open the lock on oObject.',
     name: 'GetLockKeyTag',
-    type: NWScriptDataType.INTEGER,
+    type: NWScriptDataType.STRING,
     args: [ NWScriptDataType.OBJECT ],
     action: undefined
   },
@@ -4185,6 +4185,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.FLOAT ],
     action: function(this: NWScriptInstance, args: [number, number]){
+      // Same gate as K1 AurEnableSpeedBlur; WebGL AfterimagePass stand-in.
       const ratio = typeof args[1] === 'number' ? args[1] : 0.75;
       GameState.SetSpeedBlurEffect(!!args[0], ratio);
     }
@@ -5658,36 +5659,64 @@ NWScriptDefK2.Actions = {
     comment: 'FAK-OEI 12/15/2003\n771: Get the number of components for an item',
     name: 'GetItemComponent',
     type: NWScriptDataType.INTEGER,
-    args: [],
-    action: undefined
+    // Retail nss/object pop (ExecuteCommandGetChemical pattern). Aspyr command table
+    // aliases 771→GetGold — KotOR.js returns party PT_ITEM_COMPONENT (intended).
+    args: [ NWScriptDataType.OBJECT ],
+    action: function(this: NWScriptInstance, _args: [ModuleObject]){
+      return GameState.PartyManager.ComponentCount | 0;
+    }
   },
   772: {
     comment: 'FAK-OEI 12/15/2003\n771: Get the number of components for an item in pieces',
     name: 'GetItemComponentPieceValue',
     type: NWScriptDataType.INTEGER,
-    args: [],
-    action: undefined
+    // Retail: CSWSItem::GetCost() / 0x14 (same as GetChemicalPieceValue @ 007936e0).
+    args: [ NWScriptDataType.OBJECT ],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        const cost = (args[0] as ModuleItem).getGoldPieceValue?.() ?? 0;
+        return Math.floor((cost | 0) / 20);
+      }
+      return 0;
+    }
   },
   773: {
     comment: 'FAK-OEI 12/15/2003\n773: Start the GUI for Chemical Workshop',
     name: 'ShowChemicalUpgradeScreen',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // CGuiInGame::ShowChemicalUpgradeScreen → CSWGuiCreateMedicalItem (chemical_p).
+      const character = BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)
+        ? (args[0] as ModuleCreature)
+        : undefined;
+      GameState.MenuManager.MenuChemicals?.open({ character });
+    }
   },
   774: {
     comment: 'FAK-OEI 12/15/2003\n774: Get the number of chemicals for an item',
     name: 'GetChemicals',
     type: NWScriptDataType.INTEGER,
-    args: [],
-    action: undefined
+    // ExecuteCommandGetChemical @ 007935e0 — creature GetChemical / placeable chem stack.
+    // KotOR.js stockpile is PartyManager.ChemicalCount (PT_ITEM_CHEMICAL).
+    args: [ NWScriptDataType.OBJECT ],
+    action: function(this: NWScriptInstance, _args: [ModuleObject]){
+      return GameState.PartyManager.ChemicalCount | 0;
+    }
   },
   775: {
     comment: 'FAK-OEI 12/15/2003\n775: Get the number of chemicals for an item in pieces',
     name: 'GetChemicalPieceValue',
     type: NWScriptDataType.INTEGER,
-    args: [],
-    action: undefined
+    // ExecuteCommandGetChemicalPieceValue @ 007936e0 — GetCost() / 0x14.
+    args: [ NWScriptDataType.OBJECT ],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        const cost = (args[0] as ModuleItem).getGoldPieceValue?.() ?? 0;
+        return Math.floor((cost | 0) / 20);
+      }
+      return 0;
+    }
   },
   776: {
     comment: 'DJS-OEI 12/30/2003\n776: Get the number of Force Points that were required to\ncast this spell. This includes modifiers such as Room Force\nRatings and the Force Body power.\n* Return value on error: 0',
@@ -6507,7 +6536,17 @@ NWScriptDefK2.Actions = {
     name: 'DisplayDatapad',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      // ExecuteCommandDisplayDatapad @ 007b15f0 — SetLocalBoolean(0x5E), DescIdentified → datapad_p
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleItem)){
+        return;
+      }
+      const menu = GameState.MenuManager?.MenuDatapad;
+      if(!menu){
+        return;
+      }
+      menu.openDatapad(args[0] as ModuleItem);
+    }
   },
   866: {
     comment: '866\nCTJ-OEI 09-29-04\nRemoves the heartbeat script on the placeable.  Useful for\nplaceables whose contents get populated in the heartbeat\nscript and then the heartbeat no longer needs to be called.',

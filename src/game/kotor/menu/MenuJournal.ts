@@ -108,6 +108,14 @@ export class MenuJournal extends GameMenu {
         this.UpdateLabels();
       });
 
+      // Retail CSWGuiInGameJournal HandleInputEvent 0x29 @ 006456e0 → AddPanel(CSWGuiQuestItem).
+      this.BTN_QUESTITEMS?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
+        this.manager.MenuQuestItem?.open?.();
+      });
+      this._button_x = this.BTN_QUESTITEMS;
+
       resolve();
     });
   }

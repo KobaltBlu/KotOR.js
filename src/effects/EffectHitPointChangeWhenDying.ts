@@ -54,6 +54,9 @@ export class EffectHitPointChangeWhenDying extends GameEffect {
       this.setExpireTime(future.pauseTime);
     }
 
+    // Pass AL — OnPlayerDying module context (GetLastPlayerDying)
+    GameState.module?.notifyPlayerDying?.(creature);
+
     super.onApply();
   }
 

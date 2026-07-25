@@ -95,7 +95,7 @@ export class ActionFlagMine extends Action {
 
     const check = resolveMineSkillCheck(owner, this.target, { flag: true });
     if(check.result === MineSkillResult.SUCCESS || check.result === MineSkillResult.OWNED){
-      markTrapDetected(this.target);
+      markTrapDetected(this.target, owner);
     }
 
     GameState.GuiTimingBarManager?.stopFor?.(owner);

@@ -158,6 +158,8 @@ export class MenuSaveLoad extends GameMenu {
       this._button_b = this.BTN_BACK;
 
       this.LB_GAMES.setProtoBuilder(GUISaveGameItem);
+      // Retail AddControls(..., varyItemHeights=0) @ PopulateGameList 006cc160
+      this.LB_GAMES.setVariableItemHeight(false);
       this.LB_GAMES.onSelected = (save: SaveGame) => {
         this.selected = save;
         this.UpdateSelected();

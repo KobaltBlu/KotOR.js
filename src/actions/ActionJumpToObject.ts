@@ -1,19 +1,21 @@
 import { ModuleObjectType } from "@/enums";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
+import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
-import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
+import { GameState } from "@/GameState";
+import {
+  classifyJumpDestination,
+} from "@/engine/jump-to-location";
+import { applyAddToArea, applyLocalJump } from "@/actions/ActionJumpToPoint";
 
 /**
- * ActionJumpToObject class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ * ActionJumpToObject — retail AIActionJumpToObject @ 0051d110.
+ * Uses target object's area; AddToArea when crossing loaded areas.
+ *
  * @file ActionJumpToObject.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionJumpToObject extends Action {
 
@@ -24,27 +26,59 @@ export class ActionJumpToObject extends Action {
     //PARAMS
     // 0 - dword: target object id
     // 1 - int: walkStraightLineToPoint 0 | 1
-    
   }
 
   update(delta: number = 0): ActionStatus {
-
     this.target = this.getParameter<ModuleObject>(0);
 
     if(!this.target)
       return ActionStatus.FAILED;
 
-    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
-      this.owner.setPosition(this.target.position);
-      this.owner.setFacing(this.target.rotation.z, false, TURN_SPEED_FAST);
-      this.owner.collisionManager.groundFace = undefined;
-      this.owner.collisionManager.lastGroundFace = undefined;
-      //this.getCurrentRoom();
-      this.owner.collisionManager.findWalkableFace();
-      return ActionStatus.COMPLETE;
+    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      return ActionStatus.FAILED;
     }
 
-    return ActionStatus.FAILED;
-  }
+    const creature = this.owner as ModuleCreature;
+    const destArea = this.target.area || GameState.module?.area;
+    const classified = classifyJumpDestination(
+      creature.area,
+      destArea,
+      GameState.module?.filename || ''
+    );
 
+    if(classified.kind === 'loadModule' && classified.moduleName){
+      const pc = GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
+      if(creature === pc || creature.controlled){
+        const rot = this.target.getRotationFromBearing?.() || this.target.rotation;
+        GameState.LoadModuleWithJumpSpawn(classified.moduleName.toLowerCase(), {
+          x: this.target.position.x,
+          y: this.target.position.y,
+          z: this.target.position.z,
+          ox: rot?.x ?? 0,
+          oy: rot?.y ?? 1,
+        });
+        return ActionStatus.COMPLETE;
+      }
+      return ActionStatus.FAILED;
+    }
+
+    if(classified.kind === 'reattach' && classified.area){
+      applyAddToArea(creature, classified.area);
+    }
+
+    applyLocalJump(
+      creature,
+      this.target.position.x,
+      this.target.position.y,
+      this.target.position.z,
+      this.target.rotation?.z ?? 0
+    );
+
+    const leader = GameState.PartyManager?.party?.[0];
+    if(creature === leader){
+      GameState.PartyManager.resetFollowPath(creature);
+    }
+
+    return ActionStatus.COMPLETE;
+  }
 }

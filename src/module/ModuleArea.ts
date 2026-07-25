@@ -2178,6 +2178,11 @@ export class ModuleArea extends ModuleObject {
   }
 
   getSpawnLocation(): EngineLocation {
+    if(GameState.pendingJumpSpawn){
+      const s = GameState.pendingJumpSpawn;
+      GameState.pendingJumpSpawn = undefined;
+      return new EngineLocation(s.x, s.y, s.z, s.ox, s.oy, 0);
+    }
     if(GameState.isLoadingSave){
       return new EngineLocation(
         GameState.PartyManager.PlayerTemplate.RootNode.getFieldByLabel('XPosition').getValue(),

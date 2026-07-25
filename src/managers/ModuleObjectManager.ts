@@ -589,6 +589,144 @@ export class ModuleObjectManager {
     return undefined;
   }
 
+  /**
+   * Pass AL — GetNearestCreatureToLocation (retail ExecuteCommandGetNearestObject @ 0054b550).
+   * Same criteria as GetNearestCreature; distance sorted vs location XYZ.
+   * Reputation/perception reference the party leader when present.
+   */
+  public static GetNearestCreatureToLocation(
+    nFirstCriteriaType: CreatureType,
+    nFirstCriteriaValue: any,
+    lLocation: EngineLocation,
+    nNth = 1,
+    nSecondCriteriaType = -1,
+    nSecondCriteriaValue = -1,
+    nThirdCriteriaType = -1,
+    nThirdCriteriaValue = -1,
+  ): ModuleCreature {
+    if(!lLocation?.position){
+      return undefined;
+    }
+    const oTarget = (PartyManager.party[0] || undefined) as ModuleObject;
+    if(!oTarget && nFirstCriteriaType !== CreatureType.IS_ALIVE){
+      return undefined;
+    }
+    const list = (this.module?.area?.creatures || []).concat(PartyManager.party);
+    const filtered: ModuleCreature[] = [];
+    let remaining = list.slice();
+    const criteriaTarget = oTarget || remaining[0];
+    if(!criteriaTarget) return undefined;
+
+    while(remaining.length){
+      const next = ModuleObjectManager.GetNearestCreature(
+        nFirstCriteriaType, nFirstCriteriaValue, criteriaTarget, 1,
+        nSecondCriteriaType, nSecondCriteriaValue, nThirdCriteriaType, nThirdCriteriaValue, remaining
+      );
+      if(!next) break;
+      filtered.push(next);
+      remaining = remaining.filter((c) => c !== next);
+    }
+    if(!filtered.length) return undefined;
+    filtered.sort((a, b) =>
+      lLocation.position.distanceTo(a.position) - lLocation.position.distanceTo(b.position)
+    );
+    return filtered[nNth - 1];
+  }
+
+  /**
+   * Pass AL — GetNearestObjectToLocation (retail ExecuteCommandGetNearestObject @ 0054b550).
+   */
+  public static GetNearestObjectToLocation(oType = 0, lLocation: EngineLocation, iNum = 0){
+    if(!lLocation?.position){
+      return undefined;
+    }
+    let results: ModuleObject[] = [];
+    const area = this.module?.area;
+    if(!area) return undefined;
+
+    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
+      results = results.concat(area.creatures);
+      results = results.concat(PartyManager.party);
+    }
+    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){
+      results = results.concat(area.items);
+    }
+    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){
+      results = results.concat(area.triggers);
+    }
+    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){
+      results = results.concat(area.doors);
+    }
+    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){
+      results = results.concat(area.waypoints);
+    }
+    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
+      results = results.concat(area.placeables);
+    }
+    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){
+      results = results.concat(area.stores);
+    }
+    if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){
+      results = results.concat(area.encounters);
+    }
+    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){
+      results = results.concat(area.sounds);
+    }
+
+    results.sort((a, b) => {
+      try{
+        return a.position.distanceTo(lLocation.position) - b.position.distanceTo(lLocation.position);
+      }catch(_e){
+        return 0;
+      }
+    });
+
+    return results.length ? results[iNum] : undefined;
+  }
+
+  /**
+   * Pass AL — GetNearestTrapToObject (retail ExecuteCommandGetNearestMine @ 0054a090).
+   * Trap objects = triggers/doors/placeables with trapFlag (or TRAP-type triggers).
+   */
+  public static GetNearestTrapToObject(oTarget: ModuleObject, nTrapDetected = 0): ModuleObject {
+    if(!oTarget?.position || !this.module?.area){
+      return undefined;
+    }
+    const area = this.module.area;
+    const traps: ModuleObject[] = [];
+
+    for(let i = 0; i < area.triggers.length; i++){
+      const t = area.triggers[i];
+      if(!t) continue;
+      if(t.type == ModuleTriggerType.TRAP || t.trapFlag){
+        traps.push(t);
+      }
+    }
+    for(let i = 0; i < area.doors.length; i++){
+      const d = area.doors[i];
+      if(d?.trapFlag) traps.push(d);
+    }
+    for(let i = 0; i < area.placeables.length; i++){
+      const p = area.placeables[i];
+      if(p?.trapFlag) traps.push(p);
+    }
+
+    let best: ModuleObject = undefined;
+    let bestDist = Number.POSITIVE_INFINITY;
+    for(let i = 0; i < traps.length; i++){
+      const trap = traps[i];
+      if(nTrapDetected){
+        if(!trap.isTrapDetectedBy(oTarget)) continue;
+      }
+      const d = oTarget.position.distanceToSquared(trap.position);
+      if(d < bestDist){
+        bestDist = d;
+        best = trap;
+      }
+    }
+    return best;
+  }
+
   public static GetObjectsInShape(shape = -1, size = 1, target: EngineLocation, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
 
     let object_pool: ModuleObject[] = [];

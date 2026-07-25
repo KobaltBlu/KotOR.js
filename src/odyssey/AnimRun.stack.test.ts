@@ -43,6 +43,34 @@ describe('AnimRun stack', () => {
     expect(isOverlayRun(run)).toBe(false);
   });
 
+  test('sole base insert snaps weight to 1 even with transition', () => {
+    const mgr = makeManager();
+    const run = mgr.playAnimation(
+      fakeAnim('walk', 1, 0.25),
+      AuroraAnimationFlag.LOOPING,
+      { loop: true }
+    )!;
+    expect(run.weight).toBe(1);
+    expect(mgr.runs.length).toBe(1);
+  });
+
+  test('second base keeps weight 0 for crossfade when partner exists', () => {
+    const mgr = makeManager();
+    const a = mgr.playAnimation(
+      fakeAnim('walk', 1, 0.25),
+      AuroraAnimationFlag.LOOPING,
+      { loop: true }
+    )!;
+    expect(a.weight).toBe(1);
+    const b = mgr.playAnimation(
+      fakeAnim('run', 1, 0.25),
+      AuroraAnimationFlag.LOOPING,
+      { loop: true }
+    )!;
+    expect(b.weight).toBe(0);
+    expect(mgr.runs.length).toBe(2);
+  });
+
   test('createAnimRun starts at weight 1 when transition is 0', () => {
     const run = createAnimRun(fakeAnim('pause', 1, 0), AuroraAnimationFlag.LOOPING);
     expect(run.weight).toBe(1);
@@ -135,6 +163,8 @@ describe('AnimRun stack', () => {
 
   test('weight ramps over transition', () => {
     const mgr = makeManager();
+    // Partner base required — sole insert snaps weight to 1
+    mgr.playAnimation(fakeAnim('pause', 2, 0), AuroraAnimationFlag.LOOPING, { loop: true });
     const run = mgr.playAnimation(
       fakeAnim('walk', 2, 0.5),
       AuroraAnimationFlag.LOOPING,

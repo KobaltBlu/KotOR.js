@@ -124,6 +124,15 @@ export class MenuCharacter extends GameMenu {
       });
       this._button_x = this.BTN_LEVELUP;
 
+      // Retail CSWGuiInGameCharacter HandleInputEvent 0x29 @ 006b2250 → ScriptSelect.
+      this.BTN_SCRIPTS?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const creature = GameState.PartyManager?.party?.[0];
+        if(!creature) return;
+        GameState.guiAudioEmitter?.playSoundFireAndForget?.('gui_click');
+        this.manager.MenuScriptSelect?.openForCreature?.(creature);
+      });
+
       this.BTN_CHANGE1?.addEventListener('click', (e) => {
         e.stopPropagation();
         if (GameState.PartyManager.party.length > 1) {

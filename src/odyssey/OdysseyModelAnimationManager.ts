@@ -269,6 +269,15 @@ export class OdysseyModelAnimationManager {
       run.flags |= AuroraAnimationFlag.LOOPING;
     }
 
+    // Retail transtime fades between two clips. With no partner base, weight-0
+    // lerps from a static skeleton (freeze/slide) — start fully visible.
+    if(!incomingOverlay){
+      const hasPartnerBase = this.runs.some((r) => !isOverlayRun(r) && !r.done);
+      if(!hasPartnerBase){
+        run.weight = 1;
+      }
+    }
+
     this.ensureStackCapacity(incomingOverlay);
     this.runs.push(run);
 

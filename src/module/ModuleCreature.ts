@@ -409,6 +409,8 @@ export class ModuleCreature extends ModuleObject {
   turning: number;
   deathAnimationPlayed: boolean;
   deathStarted: boolean;
+  /** Pass AL — last trap this creature detected (retail CSWSCreature field26_0x370). */
+  lastTrapDetected: ModuleObject;
   getUpAnimationPlayed: boolean;
   /** True once scheduleDestroyAsCorpse applied appearance DestroyObjectDelay / FadeDelayOnDeath. */
   corpseDestroyScheduled: boolean;
@@ -1368,7 +1370,7 @@ export class ModuleCreature extends ModuleObject {
       if(distance > range){ continue; }
 
       if(trig.setByPlayerParty && this.isPartyMember()){
-        trig.detectTrap();
+        trig.detectTrap(this);
         continue;
       }
 
@@ -1379,7 +1381,7 @@ export class ModuleCreature extends ModuleObject {
 
       const check = resolvePassiveMineDetect(this, trig, { detectMode });
       if(check.result === MineSkillResult.SUCCESS || check.result === MineSkillResult.OWNED){
-        trig.detectTrap();
+        trig.detectTrap(this);
         if(
           this == GameState.getCurrentPlayer() &&
           check.result === MineSkillResult.SUCCESS
@@ -1564,7 +1566,16 @@ export class ModuleCreature extends ModuleObject {
       if(!nameMatches && !playingOnStack){
         if(!this.animationState.started){
           this.animationState.started = true;
-          let aLooping = (!parseInt(this.animationState.animation.fireforget) && parseInt(this.animationState.animation.looping) == 1);
+          // Drive loco must loop — animations.2da often leaves walk/run as fireforget=0
+          // looping≠1 (e.g. walkSS/runSS), which would end the clip and freeze/slide.
+          const isDriveLoco =
+            this.animationState.index == ModuleCreatureAnimState.RUNNING ||
+            this.animationState.index == ModuleCreatureAnimState.WALKING ||
+            this.animationState.index == ModuleCreatureAnimState.WALKING_BACK;
+          let aLooping =
+            isDriveLoco ||
+            (!parseInt(this.animationState.animation.fireforget) &&
+              parseInt(this.animationState.animation.looping) == 1);
           this.model.playAnimation(this.animationState.animation.name?.toLowerCase(), aLooping);
           if(this.model.animationManager?.currentAnimationState){
             this.model.animationManager.currentAnimationState.speed =
@@ -1782,7 +1793,6 @@ export class ModuleCreature extends ModuleObject {
   }
 
   jumpToObject(target: ModuleObject){
-    console.log('jumpToObject', target, this);
     if(target instanceof ModuleObject){
 
       let action = new GameState.ActionFactory.ActionJumpToObject();
@@ -1795,13 +1805,13 @@ export class ModuleCreature extends ModuleObject {
   }
 
   jumpToLocation(target: EngineLocation){
-    console.log('jumpToLocation', target, this);
     if(target instanceof EngineLocation){
       let action = new GameState.ActionFactory.ActionJumpToPoint();
       action.setParameter(0, ActionParameterType.FLOAT, target.position.x);
       action.setParameter(1, ActionParameterType.FLOAT, target.position.y);
       action.setParameter(2, ActionParameterType.FLOAT, target.position.z);
-      action.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+      const areaId = target.area?.id ?? GameState.module?.area?.id ?? 0;
+      action.setParameter(3, ActionParameterType.DWORD, areaId);
       action.setParameter(4, ActionParameterType.INT, 0);
       action.setParameter(5, ActionParameterType.FLOAT, 20.0);
       action.setParameter(6, ActionParameterType.FLOAT, target.rotation.x);
@@ -2143,7 +2153,7 @@ export class ModuleCreature extends ModuleObject {
 
   setAnimationState(animState: ModuleCreatureAnimState){
     if(!animState){ return; }
-    
+
     this.animationState.index = animState;
     this.animationState.animation = this.animationConstantToAnimation(animState);
     this.animationState.started = false;
@@ -3321,6 +3331,8 @@ export class ModuleCreature extends ModuleObject {
     // Retail SetAutoPaused Party Killed when a party member dies (not full wipe)
     if(GameState.PartyManager.party.indexOf(this) >= 0){
       GameState.GameOverManager?.NotifyPartyMemberDeath?.(this);
+      // Pass AL — Mod_OnPlrDeath / GetLastPlayerDied
+      GameState.module?.notifyPlayerDied?.(this);
       const anyAlive = GameState.PartyManager.party.some((pm) => pm && pm !== this && !pm.isDead());
       if(anyAlive){
         GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.PartyMemberKilled);

@@ -116,6 +116,8 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
       this.LBL_PCNAME.setText('');
       this.LBL_TIMEPLAYED.setText('');
       this.LB_GAMES.setProtoBuilder(GUISaveGameItem);
+      // Retail AddControls(..., varyItemHeights=0) @ PopulateGameLB 005d16c0
+      this.LB_GAMES.setVariableItemHeight(false);
       this.LB_GAMES.onSelected = (save: SaveGame) => {
         this.selected = save;
         this.UpdateSelected();

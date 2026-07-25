@@ -230,6 +230,17 @@ export class GameState implements EngineContext {
   static holdWorldFadeInForDialog = false;
   /** True while waiting on area-transition pre-fade before LoadModule. */
   static areaTransitionPending = false;
+  /**
+   * Pass AI — JumpToPoint / JumpToLocation cross-module spawn override.
+   * Consumed by ModuleArea.getSpawnLocation after LoadModule.
+   */
+  static pendingJumpSpawn: {
+    x: number;
+    y: number;
+    z: number;
+    ox: number;
+    oy: number;
+  } | undefined = undefined;
   static autoRun = false;
   static AlphaTest = 0.5;
   static noClickTimer = 0;
@@ -403,8 +414,10 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail ExecuteCommandSWMG_SetSpeedBlurEffect @ 005435a0 —
-   * AurSetSpeedBlurRatio (default 0.75) + AurEnable/DisableSpeedBlur.
+   * Retail ExecuteCommandSWMG_SetSpeedBlurEffect @ 00543550 —
+   * AurSetSpeedBlurRatio @ 0044f130 (default 0.75) + AurEnable/DisableSpeedBlur @ 0044f0a0/0044f0b0.
+   * Retail applies accumulation via GLRender::FrameBufferModifications → RenderAccumulationBlur;
+   * WebGL uses AfterimagePass as an intentional stand-in (same enable/ratio gate).
    */
   static SetSpeedBlurEffect(enabled: boolean, ratio: number = 0.75){
     GameState.speedBlurEnabled = !!enabled;
@@ -1174,6 +1187,23 @@ export class GameState implements EngineContext {
       GameState.areaTransitionPending = false;
       void GameState.LoadModule(name, waypoint);
     }, delayMs);
+  }
+
+  /**
+   * Pass AI — fade then LoadModule, spawning at absolute XYZ (JumpToLocation cross-module).
+   */
+  static LoadModuleWithJumpSpawn(
+    name: string,
+    spawn: { x: number; y: number; z: number; ox: number; oy: number }
+  ){
+    if(GameState.loadingModule || GameState.areaTransitionPending){
+      return;
+    }
+    if(!name){
+      return;
+    }
+    GameState.pendingJumpSpawn = { ...spawn };
+    GameState.LoadModuleWithAreaTransitionFade(name, null);
   }
 
   /**
