@@ -90,6 +90,7 @@ export class OdysseyMaterialBuilder {
     delete material.defines.CYCLE_MAP;
     delete material.defines.CYCLE_BUMP;
     delete material.defines.WATER;
+    delete material.defines.USE_DISPLACEMENTMAP;
     delete material.defines.RANDOM;
     delete material.defines.RINGTEXDISTORT;
     delete material.defines.USE_ENVMAP;
@@ -151,10 +152,13 @@ export class OdysseyMaterialBuilder {
           material.defines.USE_ENVMAP = "";
           material.defines.ENVMAP_TYPE_CUBE = "";
           material.defines.ENVMAP_MODE_REFLECTION = "";
-          // Retail RenderEnvironmentMapped @ 0046ff70 LERPs unlit reflection against lit
-          // diffuse by diffuse texture alpha (one-pass ATI modes 0x13/0x14).
+          // Retail multipass RenderEnvironmentMapped @ 0046ff70 (environmentMapDest==0):
+          // albedo = mix(env, diffuse, texAlpha), then lit * albedo. Shader applies this as
+          // ENVMAP_BLENDING_LERP (not unlit replace; not the rare ADD dest path).
           material.defines.ENVMAP_BLENDING_LERP = "";
           if(material.uniforms.envMapAlpha){
+            // TXI envmapalpha — retail one-pass writes this to output alpha; multipass
+            // does not scale the RGB blend. Kept for alpha / gob scaling callers.
             material.uniforms.envMapAlpha.value = texture.txi.envMapAlpha ?? 1;
           }
           // TPC faces are uploaded in GL order (retail CreateCubeTexture). Do not apply
@@ -251,7 +255,9 @@ export class OdysseyMaterialBuilder {
         if(texture.txi.waterAlpha != null && (material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial)){
           material.defines = material.defines || {};
           material.defines.WATER = "";
-          material.defines.USE_DISPLACEMENTMAP = "";
+          // Retail uses height→normal bump lighting only (ConvertHeightFieldAndLoadNormalMapTexture
+          // @ 004260a0) — no vertex displacement.
+          delete material.defines.USE_DISPLACEMENTMAP;
           material.defines.ENVMAP_BLENDING_MIX = "";
           delete material.defines.USE_NORMALMAP;
           delete material.defines.ENVMAP_BLENDING_ADD;
@@ -263,6 +269,9 @@ export class OdysseyMaterialBuilder {
             material.uniforms.bumpMap.value.magFilter = THREE.LinearFilter;
             material.uniforms.bumpMap.value.generateMipmaps = false;
           }
+          if(material.uniforms.displacementMap){
+            material.uniforms.displacementMap.value = null;
+          }
 
           material.uniforms.bumpScale.value = bumpMap.txi.bumpMapScaling * 0.1;
           material.uniforms.reflectivity.value = 1;
@@ -272,16 +281,9 @@ export class OdysseyMaterialBuilder {
           material.blending = THREE.AdditiveBlending;
           material.uniforms.waterAlpha.value = texture.txi.waterAlpha;
 
-          // Water displacement uses the bump map — register for cycle swap too
-          if(material.uniforms.displacementMap){
-            material.uniforms.displacementMap.value = bumpMap;
-          }
           if(bumpMap.txi.procedureType === TXIPROCEDURETYPE.CYCLE){
             TextureAnimationManager.register(bumpMap, material, 'bumpMap');
-            if(material.uniforms.displacementMap){
-              TextureAnimationManager.register(bumpMap, material, 'displacementMap');
-            }
-         }
+          }
         }
       }
     }
