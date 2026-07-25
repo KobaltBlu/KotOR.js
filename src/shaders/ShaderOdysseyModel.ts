@@ -28,6 +28,8 @@ export class ShaderOdysseyModel extends Shader {
     uniform float shininess;
     uniform float opacity;
     uniform float envMapAlpha;
+    // Retail DoEnvMapTransform @ 0046f780 — camera world rotation (no translation).
+    uniform mat3 envMapRotation;
     uniform float time;
 
     float randF(vec2 co) {
@@ -130,26 +132,58 @@ export class ShaderOdysseyModel extends Shader {
       vec3 materialSpecularColor = specular;
       float materialShininess = max( shininess, 1e-4 );
 
+      // Retail multipass RenderEnvironmentMapped @ 0046ff70 (environmentMapDest==0):
+      //   final = lit * mix(env, diffuse, diffuseTexAlpha)
+      // Albedo is blended first; irradiance is applied afterward so reflections stay lit.
+      // (ATI one-pass 0x13 mixes unlit env — we target the common multipass path.)
+      vec3 albedo = materialDiffuseColor;
+      vec4 envColor = vec4( 0.0 );
+      #ifdef USE_ENVMAP
+        // Per-fragment sample (ENV_WORLDPOS define keeps Three worldpos/envmap varyings).
+        // FFP uses GL_REFLECTION_MAP (eye-space) then DoEnvMapTransform multiplies the
+        // texture matrix by camera orientation → world-space cubemap direction.
+        vec3 reflectVec;
+        #ifdef ENVMAP_MODE_REFLECTION
+          reflectVec = reflect( -normalize( vViewPosition ), normalize( normal ) );
+        #else
+          reflectVec = refract( -normalize( vViewPosition ), normalize( normal ), refractionRatio );
+        #endif
+        reflectVec = envMapRotation * reflectVec;
+        #ifdef ENVMAP_TYPE_CUBE
+          envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
+        #elif defined( ENVMAP_TYPE_CUBE_UV )
+          envColor = textureCubeUV( envMap, reflectVec, 0.0 );
+        #elif defined( ENVMAP_TYPE_EQUIREC )
+          reflectVec = normalize( reflectVec );
+          vec2 sampleUV = equirectUv( reflectVec );
+          envColor = texture2D( envMap, sampleUV );
+        #endif
+        #ifdef ENVMAP_BLENDING_LERP
+          // Diffuse tex alpha only — do not scale by envMapAlpha (retail multipass
+          // writes envmapalpha to output alpha, not the RGB blend mask).
+          albedo = mix( envColor.xyz, materialDiffuseColor, odysseyDiffuseAlpha );
+        #endif
+      #endif
+
+      // directDiffuse / indirectDiffuse = irradiance (no albedo yet)
       vec3 directDiffuse = vec3( 0.0 );
       vec3 directSpecular = vec3( 0.0 );
       vec3 indirectDiffuse = vec3( 0.0 );
 
       #ifdef USE_LIGHTMAP
-        // Retail bakes static (n_dynamic_type 0) and area lighting into the
-        // lightmap (ComputeStaticLighting), so area sun/ambient stays excluded.
-        // RenderStaticGeometry @ 00450c30 then calls EnableLightsDynamicOnly @
-        // 004a4480, so n_dynamic_type == 1 lights do overlay these surfaces.
-        indirectDiffuse += texture2D( lightMap, vUv2 ).xyz * lightMapIntensity * materialDiffuseColor;
+        // Bake supplies static irradiance; type-1 lights overlay (EnableLightsDynamicOnly).
+        // With envmap, both modulate the blended albedo (RenderEMLM / multipass).
+        indirectDiffuse += texture2D( lightMap, vUv2 ).xyz * lightMapIntensity;
         odysseyAccumulatePointLights(
           geometryPosition, normal, geometryViewDir,
-          materialDiffuseColor, materialSpecularColor, materialShininess, specularStrength,
+          materialSpecularColor, materialShininess, specularStrength,
           directDiffuse, directSpecular, indirectDiffuse
         );
       #else
         #ifndef IGNORE_LIGHTING
           odysseyAccumulateLights(
             geometryPosition, normal, geometryViewDir,
-            materialDiffuseColor, materialSpecularColor, materialShininess, specularStrength,
+            materialSpecularColor, materialShininess, specularStrength,
             directDiffuse, directSpecular, indirectDiffuse
           );
         #endif
@@ -160,62 +194,30 @@ export class ShaderOdysseyModel extends Shader {
         indirectDiffuse *= ambientOcclusion;
       #endif
 
-      vec3 outgoingLight = directDiffuse + indirectDiffuse + directSpecular + totalEmissiveRadiance;
+      vec3 outgoingLight = ( directDiffuse + indirectDiffuse ) * odysseyDiffuse( albedo ) + directSpecular + totalEmissiveRadiance;
 
       // Retail PartTriMesh::Mat @ 00473900 — SelfIllumColor → GL_EMISSION (additive).
       // FFP then modulates by texture: emission * albedo ≈ fullbright textured at 1,1,1.
       #ifndef IGNORE_LIGHTING
         #ifdef SELFILLUMCOLOR
-          outgoingLight += selfIllumColor * materialDiffuseColor;
+          outgoingLight += selfIllumColor * albedo;
         #endif
       #endif
 
       #ifdef IGNORE_LIGHTING
         // Unlit meshes: albedo (+ self-illum) only.
-        // Lightmapped rooms keep the USE_LIGHTMAP result computed above.
+        // Lightmapped rooms keep the USE_LIGHTMAP irradiance * albedo result above.
         #ifndef USE_LIGHTMAP
-          outgoingLight = diffuseColor.rgb + totalEmissiveRadiance;
+          outgoingLight = albedo + totalEmissiveRadiance;
           #ifdef SELFILLUMCOLOR
             outgoingLight *= max(vec3(0.25), selfIllumColor);
           #endif
         #endif
       #endif
 
+      // Water / rare blends — post-lighting combine (not the default multipass LERP).
       #ifdef USE_ENVMAP
-        #ifdef ENV_WORLDPOS
-          vec3 cameraToFrag;
-          if ( isOrthographic ) {
-            cameraToFrag = normalize( vec3( - viewMatrix[ 0 ][ 2 ], - viewMatrix[ 1 ][ 2 ], - viewMatrix[ 2 ][ 2 ] ) );
-          } else {
-            cameraToFrag = normalize( vWorldPosition - cameraPosition );
-          }
-          vec3 worldNormal = inverseTransformDirection( normal, viewMatrix );
-          #ifdef ENVMAP_MODE_REFLECTION
-            vec3 reflectVec = reflect( cameraToFrag, worldNormal );
-          #else
-            vec3 reflectVec = refract( cameraToFrag, worldNormal, refractionRatio );
-          #endif
-        #else
-          vec3 reflectVec = vReflect;
-        #endif
-        #ifdef ENVMAP_TYPE_CUBE
-          vec4 envColor = textureCube( envMap, vec3( flipEnvMap * reflectVec.x, reflectVec.yz ) );
-        #elif defined( ENVMAP_TYPE_CUBE_UV )
-          vec4 envColor = textureCubeUV( envMap, reflectVec, 0.0 );
-        #elif defined( ENVMAP_TYPE_EQUIREC )
-          reflectVec = normalize( reflectVec );
-          vec2 sampleUV = equirectUv( reflectVec );
-          vec4 envColor = texture2D( envMap, sampleUV );
-        #else
-          vec4 envColor = vec4( 0.0 );
-        #endif
-        #ifdef ENVMAP_BLENDING_LERP
-          // Retail RenderEnvironmentMapped @ 0046ff70 (one-pass modes 0x13/0x14):
-          // final = mix(env, litDiffuse, diffuseTexAlpha) — the unlit reflection replaces
-          // lit diffuse where texture alpha is low, scaled by TXI envmapalpha.
-          float reflMask = (1.0 - odysseyDiffuseAlpha) * envMapAlpha * reflectivity;
-          outgoingLight = mix( outgoingLight, envColor.xyz, reflMask );
-        #elif defined( ENVMAP_BLENDING_MULTIPLY )
+        #ifdef ENVMAP_BLENDING_MULTIPLY
           outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - diffuseColor.a) );
         #elif defined( ENVMAP_BLENDING_MIX )
           outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity * (1.0 - diffuseColor.a) );

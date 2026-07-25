@@ -28,7 +28,10 @@ export class OdysseyModelNodeEmitter extends OdysseyModelNode {
   twoSidedTex: number;
   loop: number;
   renderOrder: number;
-  /** MDL u16 after renderOrder — ascii `m_bFrameBlending`. Not referenced in K1 PartEmitter RenderStandard. */
+  /**
+   * MDL u8 after renderOrder — ascii `m_bFrameBlending`.
+   * Not referenced in K1 PartEmitter RenderStandard.
+   */
   frameBlending: number;
   /** 32-char depth texture resref; retail stores "NULL" when unused. */
   depthTextureName: string = '';
@@ -84,9 +87,12 @@ export class OdysseyModelNodeEmitter extends OdysseyModelNode {
     this.twoSidedTex = this.odysseyModel.mdlReader.readUInt32();
     this.loop = this.odysseyModel.mdlReader.readUInt32();
     this.renderOrder = this.odysseyModel.mdlReader.readUInt16();
-    this.frameBlending = this.odysseyModel.mdlReader.readUInt16();
+    // Layout: renderOrder u16, frameBlending u8, depthTextureName char[32], pad u8, nFlags u32.
+    // Reading frameBlending as u16 swallowed the 'N' of "NULL" (m_bFrameBlending 19968 / "ULL").
+    this.frameBlending = this.odysseyModel.mdlReader.readUInt8();
     // Must precede nFlags — omitting this misreads flags from the name field (e.g. "NULL" → 0x4C4C55).
     this.depthTextureName = this.odysseyModel.mdlReader.readChars(32).replace(/\0[\s\S]*$/g,'');
+    this.odysseyModel.mdlReader.readUInt8(); // padding to align nFlags
 
     this.nFlags = this.odysseyModel.mdlReader.readUInt32();
 

@@ -17,6 +17,7 @@
     "electron:icon": "npx --yes electron-icon-builder --input=src/assets/icon-256.png --output=src/assets/icons",
     "generate-manifest": "node scripts/generate-manifest.js",
     "compare-saves": "tsx scripts/compare-saves.ts",
+    "export-mdl-ascii": "tsx scripts/export-mdl-ascii.ts",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
     "test": "jest --verbose --coverage --no-cache ./src/tests",
     "test:upgrade": "jest --config jest.upgrade.config.js --no-cache"

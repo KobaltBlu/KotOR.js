@@ -212,21 +212,16 @@ export class ShaderOdysseyEmitter extends Shader {
       float framesY = textureAnimation.y;
       float loopCount = textureAnimation.w;
       float totalFrames = textureAnimation.z;
-      // Retail frameStart/frameEnd (PartEmitter +0x70/+0x6c): animate within [start, end].
+      // Retail updateParticleFrame @ 0048e460: frames advance only when fps > 0.
+      // fps <= 0 → stay on frameStart. Non-random clamps at frameEnd (one-shot).
       float startF = frameRange.x;
       float endF = frameRange.y;
       float span = max(endF - startF, 0.0) + 1.0;
 
       #ifdef FPS
-        float deltaMax = (1.0 / max(fps, 0.001)) * span;
-        float fTime = mod(time, deltaMax) / max(deltaMax, 1e-6);
-        float frameNumber = startF + mod( fTime * span, span );
+        float frameNumber = clamp(startF + floor(age * fps), startF, endF);
       #else
-        float frameNumber = startF + mod( positionInTime * span, span );
-      #endif
-      
-      #ifdef Aligned_to_Particle_Dir
-       frameNumber = startF + mod( ids * span, span );
+        float frameNumber = startF;
       #endif
 
       #ifdef RANDOM_PLAYBACK
@@ -347,14 +342,25 @@ export class ShaderOdysseyEmitter extends Shader {
                 vec3 worldPos = offset + t * (position.x * scaleF) + b * (position.y * scaleF);
                 gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
               }else{
-                vec4 vertex = vec4( position * scaleF, 1.0 ) * matrix;
-                vec3 worldPos = offset + vertex.xyz;
+                // Retail RenderStandard Aligned_to_Particle_Dir @ 0048f040:
+                // corners = center ± xdir(q)·(sizeX/2) ± zdir(q)·(sizeY/2).
+                // matrix = rotation-only emitter world quat (columns = ex,ey,ez).
+                // PlaneGeometry position ∈ [-0.5,0.5] → ×scale = half-extent.
+                // sizeY==0 falls back to sizeX (scaleFY already equals scaleF above).
+                vec3 ex = matrix[0].xyz;
+                vec3 ez = matrix[2].xyz;
+                vec3 worldPos = offset
+                  + ex * (position.x * scaleF)
+                  + ez * (position.y * scaleFY);
                 gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
               }
             #else
-              vec4 vertex = vec4( position, 1.0 ) * matrix;
-              vec3 newPos = offset + (vertex.xyz * scaleF);
-              gl_Position = projectionMatrix * modelViewMatrix * ( vec4(newPos, 1.0));
+              vec3 ex = matrix[0].xyz;
+              vec3 ez = matrix[2].xyz;
+              vec3 newPos = offset
+                + ex * (position.x * scaleF)
+                + ez * (position.y * scaleFY);
+              gl_Position = projectionMatrix * modelViewMatrix * vec4(newPos, 1.0);
             #endif
           #else
             // Apply non-square scaling to quad vertices

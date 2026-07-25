@@ -13,6 +13,49 @@
 /** Minimum radius used by SetLightGL @ 004a2a00 when computing quadratic atten. */
 export const RETAIL_LIGHT_ATTEN_MIN_RADIUS = 0.1;
 
+/**
+ * Retail multipass envmap albedo (`RenderEnvironmentMapped` @ 0046ff70,
+ * `environmentMapDest == 0`):
+ *   albedo = mix(envColor, diffuseColor, diffuseTexAlpha)
+ *   final  = lit * albedo
+ *
+ * Diffuse texture alpha is the blend mask (before material opacity). ATI one-pass
+ * mode 0x13 instead mixes unlit env — KotOR.js targets this multipass formula.
+ *
+ * When irradiance ≈ 1, lit LERP ≈ unlit LERP (no visible delta). Master ADD
+ * (`+= env*(1-a)`) was brighter than retail. Sampling uses view-space reflect +
+ * DoEnvMapTransform camera rotation (`envMapRotation`), with ENV_WORLDPOS defined
+ * for Three envmap/worldpos varyings. Shader edits require a full page reload
+ * (materials snapshot GLSL at create; HMR does not recompile live materials).
+ */
+export function retailEnvmapAlbedo(
+  envRgb: [number, number, number],
+  diffuseRgb: [number, number, number],
+  diffuseTexAlpha: number
+): [number, number, number] {
+  const a = Math.min(1, Math.max(0, diffuseTexAlpha));
+  const inv = 1 - a;
+  return [
+    envRgb[0] * inv + diffuseRgb[0] * a,
+    envRgb[1] * inv + diffuseRgb[1] * a,
+    envRgb[2] * inv + diffuseRgb[2] * a,
+  ];
+}
+
+/**
+ * Apply irradiance to blended albedo (FFP GL_MODULATE / multipass second factor).
+ */
+export function retailEnvmapLitColor(
+  irradiance: [number, number, number],
+  albedo: [number, number, number]
+): [number, number, number] {
+  return [
+    irradiance[0] * albedo[0],
+    irradiance[1] * albedo[1],
+    irradiance[2] * albedo[2],
+  ];
+}
+
 /** Retail quadratic attenuation coefficient for a light radius. */
 export function retailQuadraticAttenuation(radius: number): number {
   if(!(radius > 0)){

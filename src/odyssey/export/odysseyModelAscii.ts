@@ -252,7 +252,7 @@ function emitEmitter(em: OdysseyModelNodeEmitter, nl: string): string {
   s += nl + "  loop " + em.loop;
   s += nl + "  renderorder " + em.renderOrder;
   s += nl + "  m_bFrameBlending " + em.frameBlending;
-  s += nl + "  m_sDepthTextureName " + (em.depthTextureName || "");
+  s += nl + "  m_sDepthTextureName " + (em.depthTextureName || "NULL");
   const F = OdysseyModelEmitterFlag;
   const nf = em.nFlags;
   s += nl + "  p2p " + (nf & F.P2P ? 1 : 0);

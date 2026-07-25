@@ -99,6 +99,7 @@ export class OdysseyMaterialBuilder {
     delete material.defines.ENVMAP_BLENDING_ADD;
     delete material.defines.ENVMAP_BLENDING_MIX;
     delete material.defines.ENVMAP_BLENDING_LERP;
+    delete material.defines.ENV_WORLDPOS;
 
     if(material.uniforms.envMap){
       material.uniforms.envMap.value = null;
@@ -152,10 +153,16 @@ export class OdysseyMaterialBuilder {
           material.defines.USE_ENVMAP = "";
           material.defines.ENVMAP_TYPE_CUBE = "";
           material.defines.ENVMAP_MODE_REFLECTION = "";
+          // Per-fragment env sampling — same effect master got from #define PHONG
+          // (Three envmap chunks set ENV_WORLDPOS for worldpos/envmap varyings).
+          material.defines.ENV_WORLDPOS = "";
           // Retail multipass RenderEnvironmentMapped @ 0046ff70 (environmentMapDest==0):
           // albedo = mix(env, diffuse, texAlpha), then lit * albedo. Shader applies this as
           // ENVMAP_BLENDING_LERP (not unlit replace; not the rare ADD dest path).
           material.defines.ENVMAP_BLENDING_LERP = "";
+          // Envmapped meshes are lit in retail RenderFlat — clear IGNORE so the binder
+          // packs nearest lights (same pattern as lightmaps in TextureLoader).
+          delete material.defines.IGNORE_LIGHTING;
           if(material.uniforms.envMapAlpha){
             // TXI envmapalpha — retail one-pass writes this to output alpha; multipass
             // does not scale the RGB blend. Kept for alpha / gob scaling callers.

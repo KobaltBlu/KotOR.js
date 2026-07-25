@@ -59,13 +59,13 @@ vec3 odysseyBlinnPhong(
   return pow( dotNH, shininess ) * specularColor;
 }
 
-// Packed GL_LIGHT0..2 accumulation (SetLightGL @ 004a2a00). Split out so the
-// lightmapped path can overlay lights without re-adding baked area lighting.
+// Packed GL_LIGHT0..2 irradiance (SetLightGL @ 004a2a00). Diffuse terms are
+// lighting only — the caller multiplies by albedo afterward so envmap can
+// swap albedo (retail multipass: lit * mix(env, diffuse, texAlpha)).
 void odysseyAccumulatePointLights(
   const in vec3 geometryPosition,
   const in vec3 geometryNormal,
   const in vec3 geometryViewDir,
-  const in vec3 diffuseColor,
   const in vec3 specularColor,
   const in float shininess,
   const in float specularStrength,
@@ -85,12 +85,12 @@ void odysseyAccumulatePointLights(
       if ( lightColor != vec3( 0.0 ) ) {
         if ( lightCol.w > 0.5 ) {
           // Ambient-only PartLight — SetLightGL ambient channel, no N·L
-          indirectDiffuse += lightColor * odysseyDiffuse( diffuseColor );
+          indirectDiffuse += lightColor;
         } else {
           vec3 lightDir = normalize( lVector );
           float dotNL = max( dot( geometryNormal, lightDir ), 0.0 );
           vec3 irradiance = dotNL * lightColor;
-          directDiffuse += irradiance * odysseyDiffuse( diffuseColor );
+          directDiffuse += irradiance;
           directSpecular += irradiance * odysseyBlinnPhong( lightDir, geometryViewDir, geometryNormal, specularColor, shininess ) * specularStrength;
         }
       }
@@ -102,7 +102,6 @@ void odysseyAccumulateLights(
   const in vec3 geometryPosition,
   const in vec3 geometryNormal,
   const in vec3 geometryViewDir,
-  const in vec3 diffuseColor,
   const in vec3 specularColor,
   const in float shininess,
   const in float specularStrength,
@@ -111,35 +110,35 @@ void odysseyAccumulateLights(
   inout vec3 indirectDiffuse
 ) {
   // Scene light-model ambient (DynAmbientColor → CAurScene::SetAmbient)
-  indirectDiffuse += odysseyAmbientColor * odysseyDiffuse( diffuseColor );
+  indirectDiffuse += odysseyAmbientColor;
 
   // Directional sun/moon ambient channel (SetAsDay/Night vtable+0x18) — no N·L
-  indirectDiffuse += odysseySunAmbientColor * odysseyDiffuse( diffuseColor );
+  indirectDiffuse += odysseySunAmbientColor;
 
   // Area sun/moon diffuse (gidy_sun_diff) — direction is view-space
   vec3 sunDir = normalize( odysseySunDirection );
   float sunDotNL = max( dot( geometryNormal, sunDir ), 0.0 );
   if ( sunDotNL > 0.0 && length( odysseySunColor ) > 0.0 ) {
     vec3 sunIrradiance = sunDotNL * odysseySunColor;
-    directDiffuse += sunIrradiance * odysseyDiffuse( diffuseColor );
+    directDiffuse += sunIrradiance;
     directSpecular += sunIrradiance * odysseyBlinnPhong( sunDir, geometryViewDir, geometryNormal, specularColor, shininess ) * specularStrength;
   }
 
   // Camera headlight: ambient + view-space forward diffuse (reserved model slot).
   if ( odysseyHeadLightEnabled != 0 ) {
-    indirectDiffuse += odysseyHeadLightAmbient * odysseyDiffuse( diffuseColor );
+    indirectDiffuse += odysseyHeadLightAmbient;
     vec3 headDir = vec3( 0.0, 0.0, 1.0 );
     float headDotNL = max( dot( geometryNormal, headDir ), 0.0 );
     if ( headDotNL > 0.0 ) {
       vec3 headIrradiance = headDotNL * odysseyHeadLightDiffuse;
-      directDiffuse += headIrradiance * odysseyDiffuse( diffuseColor );
+      directDiffuse += headIrradiance;
       directSpecular += headIrradiance * odysseyBlinnPhong( headDir, geometryViewDir, geometryNormal, specularColor, shininess ) * specularStrength;
     }
   }
 
   odysseyAccumulatePointLights(
     geometryPosition, geometryNormal, geometryViewDir,
-    diffuseColor, specularColor, shininess, specularStrength,
+    specularColor, shininess, specularStrength,
     directDiffuse, directSpecular, indirectDiffuse
   );
 }
@@ -201,11 +200,13 @@ export function createOdysseyMaterialBaseUniforms(): Record<string, { value: unk
     displacementBias: { value: 0 },
     envMap: { value: null },
     envMapIntensity: { value: 1 },
-    /** Reflection intensity scale from TXI envmapalpha (retail default 1). */
+    /** TXI envmapalpha — retail one-pass output alpha; not an RGB blend scale. */
     envMapAlpha: { value: 1 },
     // Retail samples cubemaps with GL_REFLECTION_MAP (no X flip). Three defaults
     // CubeTexture to -1 for its loader convention; TPC faces are uploaded in GL order.
     flipEnvMap: { value: 1 },
+    /** DoEnvMapTransform @ 0046f780 — camera world rotation; identity until binder uploads. */
+    envMapRotation: { value: new THREE.Matrix3() },
     reflectivity: { value: 1 },
     refractionRatio: { value: 0.98 },
     specularMap: { value: null },

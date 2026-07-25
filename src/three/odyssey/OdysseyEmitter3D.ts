@@ -87,6 +87,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   particleCount: number = 0;
   referenceNode: OdysseyObject3D = new OdysseyObject3D();
+  /**
+   * True once setReferenceNode() assigns a real target (retail PartEmitter+0x1e4).
+   * P2P MoveFunc/RenderFunc no-op and skip drawing when unset.
+   */
+  hasReferenceTarget: boolean = false;
 
   // Lightning properties (PartEmitter+0xb8..0xc8)
   lightningZigZag: number = 0;
@@ -1070,15 +1075,23 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     // KotOR MDL can set P2P flags on Linked trail emitters (e.g. v_heal_imp); those must not early-return here.
     // (Fountain is updateMode — never compare it to renderMode.)
     if(this.node.flags.isP2P && this.node.renderMode !== 'Linked'){
-      this.emitterLog('tick:earlyReturn', { reason: this.node.flags.isP2PSel ? 'P2PBezier' : 'P2PGravity', delta });
-      if(this.node.flags.isP2PSel){
-        this.tickP2PBezier(delta);
+      // Retail MoveFunc @ 00494d40 / RenderFunc @ 0049b680: no target → no move, no draw.
+      // Fountain Update still ages/births (quota from consumeFountainBirthQuota above).
+      if(!this.hasReferenceTarget){
+        this.emitterLog('tick:earlyReturn', { reason: 'P2PNoTarget', delta });
+        if(this.material){
+          this.material.visible = false;
+        }
+        this.tickP2PNoTarget(delta, fountainBirthQuota);
       }else{
-        this.tickP2PGravity(delta);
+        this.emitterLog('tick:earlyReturn', { reason: this.node.flags.isP2PSel ? 'P2PBezier' : 'P2PGravity', delta });
+        if(this.node.flags.isP2PSel){
+          this.tickP2PBezier(delta, fountainBirthQuota);
+        }else{
+          this.tickP2PGravity(delta, fountainBirthQuota);
+        }
       }
-      // if(this.node.renderMode !== 'Linked' && this.node.flags.affectedByWind){
-      //   this.applyWindForces(delta);
-      // }
+      this.updateAlignedToParticleDirMatrix();
       this.commitInheritPose(currentWorldPos, currentWorldQuat);
       return;
     }
@@ -1381,11 +1394,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
     }
 
-    if(this.node.renderMode == "Aligned_to_Particle_Dir" && this.parent){
-      this.material.uniforms.matrix.value.copy(this.parent.matrix);
-      this.material.uniforms.matrix.value.setPosition(0, 0, 0);
-      this.material.uniformsNeedUpdate = true;
-    }
+    this.updateAlignedToParticleDirMatrix();
 
     if(updatePositions)
       this.offsets.needsUpdate = true;
@@ -1567,7 +1576,27 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   setReferenceNode( referenceNode: OdysseyObject3D ){
     if(referenceNode instanceof OdysseyObject3D){
       this.referenceNode = referenceNode;
+      this.hasReferenceTarget = true;
+      // Retail RenderFunc draws once field103 target is set; undo P2PNoTarget hide.
+      // birthRate==0 means disable() — leave hidden.
+      if(this.material && this.node.flags.isP2P && this.birthRate > 0){
+        this.material.visible = true;
+      }
     }
+  }
+
+  /**
+   * Retail RenderStandard Aligned_to_Particle_Dir @ 0048f040:
+   * quad axes from particle orientation quat (spawned as emitter world quat).
+   * Simplification: feed current emitter world orientation (static emitters / spread=0 match retail).
+   */
+  private updateAlignedToParticleDirMatrix(){
+    if(this.node.renderMode !== 'Aligned_to_Particle_Dir' || !this.material?.uniforms?.matrix){
+      return;
+    }
+    this.getWorldQuaternion(OdysseyEmitter3D._quat);
+    this.material.uniforms.matrix.value.makeRotationFromQuaternion(OdysseyEmitter3D._quat);
+    this.material.uniformsNeedUpdate = true;
   }
 
   /**
@@ -2717,17 +2746,87 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * P2P Gravity → moveParticleP2PGrav @ 00494200.
+   * P2P with no reference target: retail MoveFunc no-ops; Fountain Update still ages and births.
+   */
+  tickP2PNoTarget(delta: number, fountainBirthQuota: number = 0){
+    let updatePositions = false;
+    let updateVelocity = false;
+    let updateProperties = false;
+    let birthCount = 0;
+    const spawnableParticleCount = this.offsets.count;
+
+    for(let i = 0; i < spawnableParticleCount; i++){
+      let age = this.props.getX(i) || 0;
+      let maxAge = this.props.getY(i) || (this.lifeExp >= 0 ? this.lifeExp : -1);
+      let alive = this.props.getZ(i) == 1;
+
+      if(alive){
+        if(maxAge >= 0.0 && age >= maxAge){
+          this.props.setZ(i, 0);
+          this.particleCount -= 1;
+          age = 0;
+        }else{
+          age += delta;
+        }
+      }else if(this.tryP2PSpawn(i, delta, fountainBirthQuota, birthCount)){
+        updatePositions = true;
+        updateVelocity = true;
+        birthCount++;
+        age = 0;
+      }else{
+        age = 0;
+      }
+      this.props.setX(i, age || 0);
+      updateProperties = true;
+    }
+
+    if(updatePositions) this.offsets.needsUpdate = true;
+    if(updateVelocity) this.velocities.needsUpdate = true;
+    if(updateProperties) this.props.needsUpdate = true;
+    this.isDetonated = false;
+    this.sortParticles();
+  }
+
+  /** Shared P2P dead-slot birth (Fountain quota / Explosion / Single). */
+  private tryP2PSpawn(
+    i: number,
+    delta: number,
+    fountainBirthQuota: number,
+    birthCount: number
+  ): boolean {
+    let canSpawn = false;
+    let maxSpawn = 0;
+    if(this.node.updateMode == 'Explosion'){
+      canSpawn = this.isDetonated;
+      maxSpawn = Math.floor(this.birthRate) || 0;
+    }else if(this.node.updateMode == 'Single'){
+      canSpawn = this.particleCount < 1 && Math.floor(this.birthRate) > 0;
+      maxSpawn = 1;
+    }else{
+      // FountainEmitter::Update @ 00496e40 — same quota for P2P and non-P2P
+      canSpawn = fountainBirthQuota > 0;
+      maxSpawn = fountainBirthQuota;
+    }
+    if(canSpawn && birthCount < maxSpawn){
+      this.spawnParticle(i, delta);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * P2P Gravity → moveParticleP2PGrav @ 00493ae0.
+   * World-space offsets (matching spawnParticle / shader CPU_PHYSICS).
    * Retail: pos += vel*dt → wind → if |toRef|² < threshold² kill →
    * vel *= pow(drag, dt) → a = grav*normalize(toRef) → pos += a*dt²; vel += a*dt →
    * vel.z -= mass*9.81*dt → |scale*(1-dt)| → optional bounce.
    */
-  tickP2PGravity(delta: number){
+  tickP2PGravity(delta: number, fountainBirthQuota: number = 0){
     let updatePositions = false;
     let updateVelocity = false;
     let updateProperties = false;
 
-    // Target in world space (offsets are emitter-local; mixing with world ref was wrong and looked like pull toward origin).
+    // Target in world space — offsets are world-space (spawnParticle / getRandomPosition).
     const refW = OdysseyEmitter3D._v3A;
     this.referenceNode.getWorldPosition(refW);
 
@@ -2750,12 +2849,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       let alive = this.props.getZ(i) == 1;
 
       if(alive){
-        const px = this.offsets.getX(i);
-        const py = this.offsets.getY(i);
-        const pz = this.offsets.getZ(i);
-
-        pW.set(px, py, pz);
-        this.localToWorld(pW);
+        pW.set(
+          this.offsets.getX(i),
+          this.offsets.getY(i),
+          this.offsets.getZ(i)
+        );
 
         toRef.copy(refW).sub(pW);
         const distSq = toRef.lengthSq();
@@ -2781,6 +2879,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
           velW.multiplyScalar(dragPow);
 
+          // Retail: attract along normalize(target−pos) from before the vel predict.
           if(grav !== 0 && distSq > 1e-12){
             toRef.multiplyScalar(1.0 / Math.sqrt(distSq));
             const ax = grav * toRef.x * delta;
@@ -2800,8 +2899,6 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.velocities.setY(i, velW.y);
           this.velocities.setZ(i, velW.z);
 
-          this.worldToLocal(pW);
-
           this.offsets.setX(i, pW.x);
           this.offsets.setY(i, pW.y);
           this.offsets.setZ(i, pW.z);
@@ -2810,22 +2907,12 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           updatePositions = true;
           updateVelocity = true;
         }
+      }else if(this.tryP2PSpawn(i, delta, fountainBirthQuota, birthCount)){
+        updatePositions = true;
+        updateVelocity = true;
+        birthCount++;
+        age = 0;
       }else{
-        let canSpawn = !this._birthTimer;
-        let maxSpawn = 1;
-        if(this.node.updateMode == 'Explosion'){
-          canSpawn = this.isDetonated;
-          maxSpawn = Math.floor(this.birthRate) || 0;
-        }else if(this.node.updateMode == 'Single'){
-          canSpawn = this.particleCount < 1 && Math.floor(this.birthRate) > 0;
-          maxSpawn = 1;
-        }
-        if(canSpawn && birthCount < maxSpawn){
-          this.spawnParticle(i, delta);
-          updatePositions = true;
-          updateVelocity = true;
-          birthCount++;
-        }
         age = 0;
       }
       this.props.setX(i, age || 0);
@@ -2836,22 +2923,19 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(updateVelocity) this.velocities.needsUpdate = true;
     if(updateProperties) this.props.needsUpdate = true;
 
-    if(!this._birthTimer){
-      this._birthTimer = this.birthRate > 0 ? 1/this.birthRate : 1;
-    }
-
     this.isDetonated = false;
     this.sortParticles();
   }
 
   /**
    * P2P_SEL → moveParticleP2PBezier @ 00492ea0 (MoveFunc @ 00494d40).
+   * World-space offsets (matching spawnParticle / shader CPU_PHYSICS).
    * Retail: inherit rebase → pos+=vel×dt → wind → cubic Bezier(t=age/life)
    * P0=emitter, P1=emitter+ez×bezier2, P2=target+tz×bezier3, P3=target(+targetSize);
    * blend = Bezier×pow(t³,drag) + free×(1−pow); vel.z −= mass×9.81×dt; |1−dt| on
    * residual scale; optional HitCheck bounce.
    */
-  tickP2PBezier(delta: number){
+  tickP2PBezier(delta: number, fountainBirthQuota: number = 0){
     let updatePositions = false;
     let updateVelocity = false;
     let updateProperties = false;
@@ -2859,7 +2943,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     const startPos = OdysseyEmitter3D._v3A;
     this.getWorldPosition(startPos);
     const endPos = OdysseyEmitter3D._v3B;
-    if(this.referenceNode){
+    if(this.hasReferenceTarget){
       this.referenceNode.getWorldPosition(endPos);
     }else{
       endPos.copy(startPos).add(new THREE.Vector3(0, 0, 1));
@@ -2880,7 +2964,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     // Reference local Z for P2 (retail: zdir from ref orientation × bezier3)
     const refZ = OdysseyEmitter3D._v3D.set(0, 0, 1);
-    if(this.referenceNode){
+    if(this.hasReferenceTarget){
       this.referenceNode.getWorldQuaternion(OdysseyEmitter3D._quatB);
       refZ.applyQuaternion(OdysseyEmitter3D._quatB);
     }else{
@@ -2936,7 +3020,6 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           age = 0;
         }else{
           pW.set(this.offsets.getX(i), this.offsets.getY(i), this.offsets.getZ(i));
-          this.localToWorld(pW);
 
           // INHERIT rebase (bit 6) — same as fountain MoveFunc start
           if(doInherit){
@@ -2976,13 +3059,13 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           if(t > 1) t = 1;
           if(t < 0) t = 0;
           const omt = 1 - t;
-          const b0 = omt * omt * omt;
-          const b1 = 3 * omt * omt * t;
-          const b2w = 3 * omt * t * t;
-          const b3w = t * t * t;
-          const bx = p0x * b0 + p1x * b1 + p2x * b2w + p3x * b3w;
-          const by = p0y * b0 + p1y * b1 + p2y * b2w + p3y * b3w;
-          const bz = p0z * b0 + p1z * b1 + p2z * b2w + p3z * b3w;
+          const bz0 = omt * omt * omt;
+          const bz1 = 3 * omt * omt * t;
+          const bz2 = 3 * omt * t * t;
+          const bz3 = t * t * t;
+          const bx = p0x * bz0 + p1x * bz1 + p2x * bz2 + p3x * bz3;
+          const by = p0y * bz0 + p1y * bz1 + p2y * bz2 + p3y * bz3;
+          const bz = p0z * bz0 + p1z * bz1 + p2z * bz2 + p3z * bz3;
 
           // Retail: pow(t³, drag); drag==0 → pow(..,0)==1 → full Bezier
           const t3 = t * t * t;
@@ -3006,7 +3089,6 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           const prevY = this.offsets.getY(i);
           const prevZ = this.offsets.getZ(i);
 
-          this.worldToLocal(pW);
           this.offsets.setX(i, pW.x);
           this.offsets.setY(i, pW.y);
           this.offsets.setZ(i, pW.z);
@@ -3018,22 +3100,12 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           updatePositions = true;
           updateVelocity = true;
         }
+      }else if(this.tryP2PSpawn(i, delta, fountainBirthQuota, birthCount)){
+        updatePositions = true;
+        updateVelocity = true;
+        birthCount++;
+        age = 0;
       }else{
-        let canSpawn = !this._birthTimer;
-        let maxSpawn = 1;
-        if(this.node.updateMode == 'Explosion'){
-          canSpawn = this.isDetonated;
-          maxSpawn = Math.floor(this.birthRate) || 0;
-        }else if(this.node.updateMode == 'Single'){
-          canSpawn = this.particleCount < 1 && Math.floor(this.birthRate) > 0;
-          maxSpawn = 1;
-        }
-        if(canSpawn && birthCount < maxSpawn){
-          this.spawnParticle(i, delta);
-          updatePositions = true;
-          updateVelocity = true;
-          birthCount++;
-        }
         age = 0;
       }
       this.props.setX(i, age || 0);
@@ -3043,10 +3115,6 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(updatePositions) this.offsets.needsUpdate = true;
     if(updateVelocity) this.velocities.needsUpdate = true;
     if(updateProperties) this.props.needsUpdate = true;
-
-    if(!this._birthTimer){
-      this._birthTimer = this.birthRate > 0 ? 1/this.birthRate : 1;
-    }
 
     this.isDetonated = false;
     this.sortParticles();

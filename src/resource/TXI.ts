@@ -22,7 +22,7 @@ export class TXI {
   isbumpmap: boolean;
   bumpMapTexture: any;
   envMapTexture: any;
-  /** Reflection intensity scale — retail CAurTextureBasic::ParseField "envmapalpha" (float, default 1). */
+  /** TXI envmapalpha — retail one-pass fragment output alpha (default 1). */
   envMapAlpha: number;
   waterAlpha: any;
   defaultWidth: number;

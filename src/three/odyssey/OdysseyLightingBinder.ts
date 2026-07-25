@@ -6,6 +6,7 @@ import {
   createEmptyOdysseyLightPosArray,
   createEmptyOdysseyLightColorArray,
 } from "@/shaders/chunks/OdysseyLighting";
+import { envMapRotationFromCamera } from "@/utility/envMapRotation";
 
 /**
  * OdysseyLightingBinder — pushes packed Odyssey light + area ambient/sun
@@ -44,6 +45,8 @@ export class OdysseyLightingBinder {
   private static _viewSunCacheKey = 0;
   private static _viewSunCacheDir = new THREE.Vector3();
   private static _bindSeen = new Set<THREE.Material>();
+  private static _envMapRotation = new THREE.Matrix3();
+  private static _envMapRotationFp = 0;
 
   static setActiveManager(manager?: LightManager){
     this.activeManager = manager;
@@ -191,6 +194,38 @@ export class OdysseyLightingBinder {
     }
   }
 
+  /**
+   * DoEnvMapTransform @ 0046f780 — upload camera world rotation for cubemap sample.
+   * Called for USE_ENVMAP materials even when IGNORE_LIGHTING skips light arrays.
+   */
+  static writeEnvMapRotation(material: THREE.ShaderMaterial, camera?: THREE.Camera){
+    if(!material.uniforms){ return; }
+    const defines = material.defines || {};
+    if(!Object.prototype.hasOwnProperty.call(defines, 'USE_ENVMAP')){
+      return;
+    }
+    if(!material.uniforms.envMapRotation){
+      material.uniforms.envMapRotation = { value: new THREE.Matrix3() };
+    }
+    const viewFp = this.cameraViewFingerprint(camera);
+    if(material.userData.odysseyEnvMapRotFp === viewFp &&
+      material.userData.odysseyEnvMapRotOwned === true){
+      return;
+    }
+    // Own the Matrix3 — ShaderLib clone aliases the same identity across materials.
+    if(material.userData.odysseyEnvMapRotOwned !== true){
+      material.uniforms.envMapRotation.value = new THREE.Matrix3();
+      material.userData.odysseyEnvMapRotOwned = true;
+    }
+    if(viewFp !== this._envMapRotationFp){
+      envMapRotationFromCamera(camera, this._envMapRotation);
+      this._envMapRotationFp = viewFp;
+    }
+    (material.uniforms.envMapRotation.value as THREE.Matrix3).copy(this._envMapRotation);
+    material.userData.odysseyEnvMapRotFp = viewFp;
+    material.uniformsNeedUpdate = true;
+  }
+
   static bindMaterial(
     material: THREE.ShaderMaterial,
     lightSet: IOdysseyLightUniformSlot,
@@ -199,6 +234,8 @@ export class OdysseyLightingBinder {
     lightManager?: LightManager
   ){
     if(!material.uniforms){ return; }
+
+    this.writeEnvMapRotation(material, camera);
 
     const defines = material.defines || {};
     const usesLightmap = Object.prototype.hasOwnProperty.call(defines, 'USE_LIGHTMAP');

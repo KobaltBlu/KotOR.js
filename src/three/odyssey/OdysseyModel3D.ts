@@ -653,7 +653,7 @@ export class OdysseyModel3D extends OdysseyObject3D {
           // node.getWorldPosition(
           //   this.emitters[i].referenceNode.position
           // );
-          this.emitters[i].referenceNode = node;
+          this.emitters[i].setReferenceNode(node);
         }
       }
     }
