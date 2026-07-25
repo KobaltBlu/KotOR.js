@@ -13,7 +13,8 @@ import type { PerceptionType } from "@/enums/engine/PerceptionType";
  * @interface
  */
 export interface IPerceptionInfo {
-  object: ModuleObject;
+  /** Resolved live object, or undefined for stale / unresolved save nodes. */
+  object: ModuleObject | undefined;
   objectId: number;
   data: number;
 };

@@ -885,7 +885,8 @@ export class SaveGame {
 
   /**
    * Shared writer used by named saves, overwrite, autosave, and quicksave.
-   * Packs module ERF, sidecars (NFO/globals/party/pifo), and screenshot.
+   * Packs module ERF, sidecars (NFO/globals/party), and screenshot.
+   * pifo.ifo is written only for PC autosave (save_id === 1), matching retail DoPCAutosave.
    */
   static async writeSaveFolder(
     save_dir: string,
@@ -911,7 +912,16 @@ export class SaveGame {
     await SaveGame.ExportSaveNFO(save_dir, name, save_id, save_id === 1);
     await SaveGame.ExportGlobalVars( save_dir );
     await GameState.PartyManager.Export( save_dir );
-    await SaveGame.ExportPIFO( save_dir );
+    // Retail DoPCAutosave @ 004b908c copies TEMP:pifo only into 000001 - AUTOSAVE.
+    // Manual / quick saves never include pifo.ifo.
+    if(save_id === 1){
+      await SaveGame.ExportPIFO(save_dir);
+    }else{
+      const pifoPath = path.join(save_dir, 'pifo.ifo');
+      if(await GameFileSystem.exists(pifoPath)){
+        await GameFileSystem.unlink(pifoPath);
+      }
+    }
 
     try{
       const tga = await GameState.GetScreenShot();
@@ -999,7 +1009,24 @@ export class SaveGame {
   }
 
   /**
-   * Exports player template as pifo.ifo (retail copies TEMP:pifo into the save folder).
+   * Retail DoQuickLoad @ 00633c50 — load slot 000000 QUICKSAVE; no-op if missing.
+   */
+  static async QuickLoad(){
+    const save = SaveGame.saves.find(s => s.getIsQuickSave());
+    if(!save) return;
+    GameState.GameOverManager?.Reset?.();
+    GameState.MenuManager.ClearMenus();
+    if(GameState.module){
+      GameState.module.dispose();
+      GameState.module = undefined;
+    }
+    await save.load();
+  }
+
+  /**
+   * Exports player template as pifo.ifo.
+   * Retail only copies TEMP:pifo into the PC autosave folder (DoPCAutosave);
+   * callers must gate this to save_id === 1.
    */
   static async ExportPIFO(directory: string){
     const pifo = new GFFObject();

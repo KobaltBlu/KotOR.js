@@ -20,6 +20,7 @@ import { KeyMapper } from "@/controls/KeyMapper";
 import { AnalogInput } from "@/controls/AnalogInput";
 import { TGAObject } from "@/resource/TGAObject";
 import { GameFileSystem } from "@/utility/GameFileSystem";
+import { SaveGame } from "@/engine/SaveGame";
 import {
   applyDriveInput,
   abortDriveControl,
@@ -969,6 +970,19 @@ export class IngameControls {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
       if(GameState.Mode != EngineMode.INGAME) return;
       GameState.MenuManager.MenuOptions.open();
+    });
+
+    // Retail DoQuickSave @ 005f4b50 / DoQuickLoad @ 00633c50
+    KeyMapper.Actions[KeyMapAction.Quicksave]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      void SaveGame.QuickSave();
+    });
+
+    KeyMapper.Actions[KeyMapAction.QUICKLOAD]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      void SaveGame.QuickLoad();
     });
 
       // Handle movie skipping

@@ -3530,7 +3530,10 @@ export class ModuleObject {
   }
 
   /**
-   * Initialize the perception list
+   * Initialize the perception list.
+   * Retail SaveCreature @ 005009af writes every non-null CSWVisibilityNode
+   * verbatim (including stale / OBJECT_INVALID ids). Resolve object refs when
+   * possible, but never prune unresolved nodes — they must round-trip on save.
    */
   initPerceptionList(){
     let length = this.perceptionList.length;
@@ -3538,10 +3541,11 @@ export class ModuleObject {
       let perceptionObject = this.perceptionList[length];
       if(perceptionObject){
         if(typeof perceptionObject.object == 'undefined' && perceptionObject.objectId){
-          perceptionObject.object = GameState.ModuleObjectManager.GetObjectById(perceptionObject.objectId);
-          if(!(perceptionObject.object instanceof ModuleObject)){
-            this.perceptionList.splice(length, 1);
+          const resolved = GameState.ModuleObjectManager.GetObjectById(perceptionObject.objectId);
+          if(resolved instanceof ModuleObject){
+            perceptionObject.object = resolved;
           }
+          // else leave object undefined; keep objectId/data for save round-trip
         }
       }
     }

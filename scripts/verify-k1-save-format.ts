@@ -242,6 +242,20 @@ assert(creatureSave.includes('ControlledNPC === -1'), 'LvlStatList gated on Cont
 assert(creatureSave.includes('this.isPC ? 1 : 0'), 'IsPC serializes isPC not playerCreated');
 assert(creatureSrc.includes('saveLevelStatStruct'), 'Creature has saveLevelStatStruct');
 assert(creatureSrc.includes('levelStatRecordFromDraft'), 'applyLevelUp records level stats');
+assert(creatureSave.includes("'PerceptionList'"), 'Creature save writes PerceptionList');
+
+{
+  // Retail SaveCreature @ 005009af persists every visibility node; unresolved
+  // objectIds (PLAYER_ID / stale) must not be spliced out of perceptionList.
+  const moduleObjectSrc = read('src/module/ModuleObject.ts');
+  const initIdx = moduleObjectSrc.indexOf('initPerceptionList()');
+  assert(initIdx >= 0, 'ModuleObject has initPerceptionList');
+  const initBody = moduleObjectSrc.slice(initIdx, initIdx + 900);
+  assert(initBody.includes('GetObjectById'), 'initPerceptionList resolves objectIds');
+  assert(!initBody.includes('splice'), 'initPerceptionList does not prune unresolved nodes');
+  assert(initBody.includes('leave object undefined') || initBody.includes('round-trip'),
+    'initPerceptionList documents retaining unresolved nodes');
+}
 
 const playerSrc = read('src/module/ModulePlayer.ts');
 assert(playerSrc.includes('this.isPC = 1'), 'ModulePlayer ctor sets isPC = 1');
@@ -253,6 +267,34 @@ assert(charGenSrc.includes('seedInitialLevelStat'), 'CharGen seeds initial LvlSt
 const invSrc = read('src/managers/InventoryManager.ts');
 assert(invSrc.includes('.save()'), 'InventoryManager uses item.save()');
 assert(!invSrc.includes("'ObjectId'"), 'InventoryManager does not add ObjectId');
+
+{
+  // Retail DoPCAutosave @ 004b908c: pifo.ifo only in 000001 - AUTOSAVE
+  const saveGameSrc = read('src/engine/SaveGame.ts');
+  const writeIdx = saveGameSrc.indexOf('static async writeSaveFolder(');
+  assert(writeIdx >= 0, 'SaveGame has writeSaveFolder');
+  const writeBody = saveGameSrc.slice(writeIdx, writeIdx + 1800);
+  assert(writeBody.includes('save_id === 1'), 'writeSaveFolder gates ExportPIFO on save_id === 1');
+  assert(writeBody.includes('ExportPIFO'), 'writeSaveFolder calls ExportPIFO for autosave');
+  assert(writeBody.includes("'pifo.ifo'"), 'writeSaveFolder references pifo.ifo for non-autosave cleanup');
+  assert(writeBody.includes('unlink'), 'non-autosave path unlinks leftover pifo.ifo');
+}
+
+{
+  // Retail DoQuickSave / DoQuickLoad hotkey wiring
+  const saveGameSrc = read('src/engine/SaveGame.ts');
+  assert(saveGameSrc.includes('static async QuickLoad()'), 'SaveGame has QuickLoad');
+  assert(saveGameSrc.includes('getIsQuickSave()'), 'QuickLoad finds QUICKSAVE via getIsQuickSave');
+  const qlIdx = saveGameSrc.indexOf('static async QuickLoad()');
+  const qlBody = saveGameSrc.slice(qlIdx, qlIdx + 600);
+  assert(qlBody.includes('.load()'), 'QuickLoad calls save.load()');
+
+  const controlsSrc = read('src/controls/IngameControls.ts');
+  assert(controlsSrc.includes('KeyMapAction.Quicksave'), 'IngameControls wires Quicksave');
+  assert(controlsSrc.includes('KeyMapAction.QUICKLOAD'), 'IngameControls wires QUICKLOAD');
+  assert(controlsSrc.includes('SaveGame.QuickSave()'), 'Quicksave processor calls SaveGame.QuickSave');
+  assert(controlsSrc.includes('SaveGame.QuickLoad()'), 'QUICKLOAD processor calls SaveGame.QuickLoad');
+}
 
 const placeableItemSave = saveMethodBody(placeableSrc);
 assert(placeableItemSave.includes("DWORD, 'ObjectId'"), 'Placeable ItemList writes ObjectId');
@@ -292,6 +334,27 @@ assert(effectSave.includes('OBJECT_INVALID'), 'Effect ObjectList uses OBJECT_INV
     .getFieldByLabel('ObjectList').getChildStructs();
   assert(kids.length === 4, `Effect ObjectList count 4 (got ${kids.length})`);
   assert(kids.every((s: GFFStruct) => s.getType() === 6), 'Effect ObjectList struct types are 6');
+}
+
+// GFF roundtrip: PerceptionList ObjectId + PerceptionData (incl. PLAYER_ID / unresolved)
+{
+  const PLAYER_ID = 0x7fffffff;
+  const HEARD = 0x02;
+  const wrap = new GFFObject();
+  const list = wrap.RootNode.addField(new GFFField(GFFDataType.LIST, 'PerceptionList'));
+  for(const [objectId, data] of [[PLAYER_ID, HEARD], [284, HEARD]] as const){
+    const s = new GFFStruct(0);
+    s.addField(new GFFField(GFFDataType.DWORD, 'ObjectId')).setValue(objectId);
+    s.addField(new GFFField(GFFDataType.BYTE, 'PerceptionData')).setValue(data);
+    list.addChildStruct(s);
+  }
+  const reloaded = new GFFObject(wrap.getExportBuffer());
+  const kids = reloaded.RootNode.getFieldByLabel('PerceptionList').getChildStructs();
+  assert(kids.length === 2, `PerceptionList count 2 (got ${kids.length})`);
+  assert(kids[0].getFieldByLabel('ObjectId').getValue() === PLAYER_ID, 'PerceptionList[0] ObjectId = PLAYER_ID');
+  assert(kids[0].getFieldByLabel('PerceptionData').getValue() === HEARD, 'PerceptionList[0] PerceptionData = HEARD');
+  assert(kids[1].getFieldByLabel('ObjectId').getValue() === 284, 'PerceptionList[1] ObjectId = 284');
+  assert(kids[1].getFieldByLabel('PerceptionData').getValue() === HEARD, 'PerceptionList[1] PerceptionData = HEARD');
 }
 
 // GFF roundtrip: VECTOR/ORIENTATION set via setValue survive export (camera Position/Orientation fix)
