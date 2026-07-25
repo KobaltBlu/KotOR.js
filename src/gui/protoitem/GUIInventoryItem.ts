@@ -67,8 +67,9 @@ export class GUIInventoryItem extends GUIProtoItem {
 
       const isContainer = this.menu.gui_resref == 'container' || this.menu.gui_resref == 'container_p';
       const protoWidth = asExtentInt(this.extent.width);
-      const iconWidth = 60;
-      const iconHeight = 60;
+      // Icon must fit the retail row height (56/36); hardcoded 60 spilled into the next pitch.
+      const iconWidth = Math.max(1, asExtentInt(this.extent.height));
+      const iconHeight = iconWidth;
       const labelWidth = asExtentInt((protoWidth - iconWidth) + 5);
 
       this.buttonLabel = new GUIButton(this.menu, this.control, this, this.scale);

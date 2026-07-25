@@ -153,7 +153,7 @@ export class MenuEquipment extends K1_MenuEquipment {
       });
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
-      this.LB_ITEMS.padding = 2;
+      // Retail leaves GFF PADDING (equip_p.gui LB_ITEMS); do not force 2.
       this.LB_ITEMS.onSelected = (item: ModuleItem | any) => {
         this.updateSelected(item);
       };

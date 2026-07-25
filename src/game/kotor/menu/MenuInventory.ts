@@ -70,13 +70,12 @@ export class MenuInventory extends GameMenu {
       this._button_b = this.BTN_EXIT;
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
-      this.LB_ITEMS.padding = 5;
+      // Retail leaves GFF PADDING (inventory.gui LB_ITEMS = 0); do not force 5.
       this.LB_ITEMS.onSelected = (item: InventoryListNode) => {
         this.selected = item;
         this.UpdateSelected();
       }
 
-      this.LB_ITEMS.padding = 5;
       this.LB_ITEMS.offset.x = 0;
 
       this.BTN_CHANGE1?.addEventListener('click', (e) => {

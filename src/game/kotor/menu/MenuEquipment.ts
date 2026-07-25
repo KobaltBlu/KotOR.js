@@ -173,7 +173,7 @@ export class MenuEquipment extends GameMenu {
       });
 
       this.LB_ITEMS.setProtoBuilder(GUIInventoryItem);
-      this.LB_ITEMS.padding = 5;
+      // Retail leaves GFF PADDING (equip.gui LB_ITEMS = 0); do not force 5.
       this.LB_ITEMS.onSelected = (item: EquipListNode) => {
         this.updateSelected(item);
       };

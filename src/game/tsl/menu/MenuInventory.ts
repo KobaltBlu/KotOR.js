@@ -112,7 +112,7 @@ export class MenuInventory extends K1_MenuInventory {
         this.useSelectedItem();
       });
 
-      this.LB_ITEMS.padding = 5;
+      // Retail leaves GFF PADDING (inventory_p.gui LB_ITEMS); do not force 5.
       this.LB_ITEMS.offset.x = 0;
       resolve();
     });

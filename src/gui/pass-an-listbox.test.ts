@@ -103,6 +103,38 @@ describe("retail row Initialize contract (base extent, not PROTOITEM GFF)", () =
   });
 });
 
+describe("K1 inventory/equip list spacing (GFF PADDING=0)", () => {
+  // inventory.gui / equip.gui LB_ITEMS: EXTENT.H=294, BORDER.DIMENSION=4, PADDING=0
+  // getFillExtent → vh = (294 - 2*4) + 0 = 286; row base height 56 @ 006b4db0
+  const vh = borderInnerExtent({
+    width: 269,
+    height: 294,
+    dimension: 4,
+    innerOffset: 0,
+  }).height;
+
+  it("viewport height is 286 (294 − 2×4 border)", () => {
+    expect(vh).toBe(286);
+  });
+
+  it("pad=0 + itemH=56 → pitch 56, ipp 5, leftover stretch ≤ 1", () => {
+    const pad = 0;
+    const itemH = 56;
+    const pitch = listBoxRowPitch(pad, itemH);
+    expect(pitch).toBe(56);
+    const ipp = Math.floor(vh / pitch);
+    expect(ipp).toBe(5);
+    const { stretchPerItem, remainderPixels } = listBoxLeftoverStretch(vh, ipp, pitch, pad);
+    expect(stretchPerItem).toBeLessThanOrEqual(1);
+    expect(stretchPerItem + (remainderPixels > 0 ? 1 : 0)).toBeLessThanOrEqual(2);
+  });
+
+  it("forced pad=5 yields ipp 4 (the broken spacing that menus used to force)", () => {
+    const pitch = listBoxRowPitch(5, 56);
+    expect(Math.floor(vh / pitch)).toBe(4);
+  });
+});
+
 describe("border inner extent @ 00415240 (INNEROFFSET fix)", () => {
   it("K1 LB_GAMES: DIMENSION 0 / INNEROFFSET 0 → viewport equals extent", () => {
     const inner = borderInnerExtent({
