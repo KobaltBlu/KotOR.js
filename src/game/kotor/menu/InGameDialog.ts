@@ -6,6 +6,7 @@ import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
 import { DLGNode } from "@/resource/DLGNode";
 import { ConversationState } from "@/enums/dialog/ConversationState";
 import { EngineMode } from "@/enums/engine/EngineMode";
+import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 
 const LETTERBOX_HEIGHT = 100;
 
@@ -82,7 +83,9 @@ export class InGameDialog extends GameMenu {
 
   setDialogMode(state: ConversationState) {
     if(state == ConversationState.LISTENING_TO_SPEAKER){
-      this.LBL_MESSAGE.setText(GameState.CutsceneManager.lastSpokenString);
+      // Retail feedback Subtitles option gates speaker line; replies stay visible
+      const showSubtitles = GameState.FeedbackMessageManager.GetFeedbackTypeEnabled(FeedbackOption.Subtitles);
+      this.LBL_MESSAGE.setText(showSubtitles ? GameState.CutsceneManager.lastSpokenString : '');
       this.LB_REPLIES.hide();
       this.LB_REPLIES.setItems([]);
       this.updateTextPosition(true);

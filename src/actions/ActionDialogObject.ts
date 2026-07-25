@@ -37,11 +37,11 @@ export class ActionDialogObject extends Action {
     // 2 - int:     bPrivateConversation 
     // 3 - int:     (?) nConversationType
     // 4 - int:     ignoreStartRange
-    // 5 - dword:   listener object id (OBJECT_INVALID = use owner)
+    // 5 - dword:   listener object id (OBJECT_INVALID = use owner; bUseLeader → party[0])
     // 6-11 - string: sNameObjectToIgnore1-6 (DialogNonDependantList)
     // 12 - int:    TSL nBarkX (−1 default)
     // 13 - int:    TSL nBarkY (−1 default)
-    
+    // 14 - int:    TSL bUseLeader
   }
 
   update(delta: number = 0): ActionStatus {
@@ -66,6 +66,7 @@ export class ActionDialogObject extends Action {
     const barkY = this.getParameter<number>(13);
     const barkScreenX = typeof barkX === 'number' ? barkX : -1;
     const barkScreenY = typeof barkY === 'number' ? barkY : -1;
+    const bUseLeader = !!this.getParameter<number>(14);
 
     if(!this.target){
       return ActionStatus.FAILED;
@@ -84,9 +85,15 @@ export class ActionDialogObject extends Action {
 
     const dialog = this.conversation ? this.conversation : this.owner?.conversation;
 
+    // TSL bUseLeader — force party leader as the conversation listener
+    let effectiveListener = listener;
+    if(bUseLeader && GameState.PartyManager?.party?.[0]){
+      effectiveListener = GameState.PartyManager.party[0];
+    }
+
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
     {
-      GameState.CutsceneManager.startConversation(dialog, this.owner, this.target || listener, bPrivate, ignoreNames, barkScreenX, barkScreenY);
+      GameState.CutsceneManager.startConversation(dialog, this.owner, this.target || effectiveListener, bPrivate, ignoreNames, barkScreenX, barkScreenY);
       return ActionStatus.COMPLETE;
     }
 
@@ -121,7 +128,7 @@ export class ActionDialogObject extends Action {
       GameState.CutsceneManager.setDialogNonDependantNames(ignoreNames);
       this.target.onDialog(this.owner, -1, this.conversation);
     }else{
-      GameState.CutsceneManager.startConversation(dialog, this.target, listener, bPrivate, ignoreNames, barkScreenX, barkScreenY);
+      GameState.CutsceneManager.startConversation(dialog, this.target, effectiveListener, bPrivate, ignoreNames, barkScreenX, barkScreenY);
     }
     return ActionStatus.COMPLETE;
   }

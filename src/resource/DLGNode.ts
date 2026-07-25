@@ -259,8 +259,25 @@ export class DLGNode {
     return true;
   }
 
+  /**
+   * Retail SendDialogReplies @ 007562c0 — Logic 0=AND, 1=OR;
+   * a single present Active script is evaluated alone.
+   */
   runActiveScripts(){
-    return this.runActiveScript1() && this.runActiveScript2();
+    const hasActive1 = !!this.isActive;
+    const hasActive2 = !!this.isActive2;
+    if(hasActive1 && hasActive2){
+      const a = this.runActiveScript1();
+      const b = this.runActiveScript2();
+      return this.Logic ? (a || b) : (a && b);
+    }
+    if(hasActive1){
+      return this.runActiveScript1();
+    }
+    if(hasActive2){
+      return this.runActiveScript2();
+    }
+    return true;
   }
 
   getActiveReplies(): number[] {
@@ -281,6 +298,8 @@ export class DLGNode {
       const allowOverrideHigher = false;
       GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
     }
+    // Retail CSWSDialog::GiveDialogPlotXP @ 00758ad0
+    this.awardPlotIndexXP();
     if(!this.text || this.text.length == 0 || this.isContinueDialog()){
       console.warn(`No text found for ${this.text} on ${this.speaker?.getName()}. not saving to journal`, this.isContinueDialog());
       return;
@@ -299,6 +318,32 @@ export class DLGNode {
       )
     }catch(e){
       console.error(e);
+    }
+  }
+
+  /**
+   * Award plot.2da XP from PlotIndex + PlotXPPercentage (retail GiveDialogPlotXP).
+   */
+  awardPlotIndexXP(){
+    if(this.plotIndex === -1 || !(this.plotXPPercentage > 0)){
+      return;
+    }
+    const plotTable = GameState.TwoDAManager.datatables.get('plot');
+    if(!plotTable){
+      return;
+    }
+    const row = plotTable.getByID(this.plotIndex) || plotTable.rows[this.plotIndex];
+    if(!row){
+      return;
+    }
+    const baseXP = parseInt(row.xp, 10);
+    if(!(baseXP > 0)){
+      return;
+    }
+    const percentage = Math.ceil(this.plotXPPercentage * 100);
+    const award = Math.floor(baseXP * (percentage * 0.01));
+    if(award > 0){
+      GameState.PartyManager.GiveXP(award);
     }
   }
 
@@ -394,15 +439,36 @@ export class DLGNode {
           }
           return true;
         }
+        this.onVoiceOverFailed();
         return false;
       }catch(e){
-        this.checkList.voiceOverError = true;
+        this.onVoiceOverFailed();
         return false;
       }
     }else{
       this.checkList.voiceOverError = true;
       return false;
     }
+  }
+
+  /**
+   * VO resref exists but playback failed (missing/undecodable file or denied voice).
+   * Retail SendDialogEntry: when the sound file is not found and the explicit delay
+   * bit (0x10) is clear, the entry timer falls back to the spoken-time estimate
+   * instead of the node delay (often a 0s DelayEntry) — otherwise the line would
+   * advance on the next frame.
+   */
+  private onVoiceOverFailed(){
+    this.checkList.voiceOverError = true;
+    this.checkList.voiceOverComplete = true;
+    if((this.waitFlags & DLGNode.WAIT_EXPLICIT_DELAY) !== 0){
+      return;
+    }
+    // Animated cuts use a 0s delay in retail (SetDialogDelay(0.0) when camera dialog)
+    const delaySec = this.dialog?.isAnimatedCutscene
+      ? 0
+      : Math.max(0.01, DLGNode.estimateSpokenTimeSeconds(this.getCompiledString()));
+    this.setNodeDelay(delaySec * 1000);
   }
 
   getVoiceResRef(): string {
@@ -500,6 +566,13 @@ export class DLGNode {
       node.sound = struct.getFieldByLabel('Sound').getValue();
     }
 
+    // Retail LoadDialogBase @ 0074f4f0 — SoundExists default 0x80 when absent
+    if(struct.hasField('SoundExists')){
+      node.soundExists = struct.getFieldByLabel('SoundExists').getValue();
+    }else{
+      node.soundExists = 0x80;
+    }
+
     if(struct.hasField('CameraID')){
       node.cameraID = struct.getFieldByLabel('CameraID').getValue();
     }
@@ -529,6 +602,37 @@ export class DLGNode {
       }
     }
 
+    // Retail LoadDialogBase always reads ActionParam1-5/StrA with Script (not gated on Script2)
+    if(struct.hasField('ActionParam1')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.scriptParams.Param1 = struct.getFieldByLabel('ActionParam1').getValue();
+    }
+
+    if(struct.hasField('ActionParam2')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.scriptParams.Param2 = struct.getFieldByLabel('ActionParam2').getValue();
+    }
+
+    if(struct.hasField('ActionParam3')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.scriptParams.Param3 = struct.getFieldByLabel('ActionParam3').getValue();
+    }
+
+    if(struct.hasField('ActionParam4')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.scriptParams.Param4 = struct.getFieldByLabel('ActionParam4').getValue();
+    }
+
+    if(struct.hasField('ActionParam5')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.scriptParams.Param5 = struct.getFieldByLabel('ActionParam5').getValue();
+    }
+
+    if(struct.hasField('ActionParamStrA')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.scriptParams.String = struct.getFieldByLabel('ActionParamStrA').getValue();
+    }
+
     if(struct.hasField('Script2')){
       node.nodeEngineType = DLGNodeEngineType.K2;
       const resref = struct.getFieldByLabel('Script2').getValue();
@@ -539,57 +643,36 @@ export class DLGNode {
           node.script2.name = resref;
         }
       }
+    }
 
-      //k2 MODE
-      if(struct.hasField('ActionParam1')){
-        node.scriptParams.Param1 = struct.getFieldByLabel('ActionParam1').getValue();
-      }
+    if(struct.hasField('ActionParam1b')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.script2Params.Param1 = struct.getFieldByLabel('ActionParam1b').getValue();
+    }
 
-      if(struct.hasField('ActionParam2')){
-        node.scriptParams.Param2 = struct.getFieldByLabel('ActionParam2').getValue();
-      }
+    if(struct.hasField('ActionParam2b')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.script2Params.Param2 = struct.getFieldByLabel('ActionParam2b').getValue();
+    }
 
-      if(struct.hasField('ActionParam3')){
-        node.scriptParams.Param3 = struct.getFieldByLabel('ActionParam3').getValue();
-      }
+    if(struct.hasField('ActionParam3b')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.script2Params.Param3 = struct.getFieldByLabel('ActionParam3b').getValue();
+    }
 
-      if(struct.hasField('ActionParam4')){
-        node.scriptParams.Param4 = struct.getFieldByLabel('ActionParam4').getValue();
-      }
+    if(struct.hasField('ActionParam4b')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.script2Params.Param4 = struct.getFieldByLabel('ActionParam4b').getValue();
+    }
 
-      if(struct.hasField('ActionParam5')){
-        node.scriptParams.Param5 = struct.getFieldByLabel('ActionParam5').getValue();
-      }
+    if(struct.hasField('ActionParam5b')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.script2Params.Param5 = struct.getFieldByLabel('ActionParam5b').getValue();
+    }
 
-      if(struct.hasField('ActionParamStrA')){
-        node.scriptParams.String = struct.getFieldByLabel('ActionParamStrA').getValue();
-      }
-
-      //k2 MODE
-      if(struct.hasField('ActionParam1b')){
-        node.script2Params.Param1 = struct.getFieldByLabel('ActionParam1b').getValue();
-      }
-
-      if(struct.hasField('ActionParam2b')){
-        node.script2Params.Param2 = struct.getFieldByLabel('ActionParam2b').getValue();
-      }
-
-      if(struct.hasField('ActionParam3b')){
-        node.script2Params.Param3 = struct.getFieldByLabel('ActionParam3b').getValue();
-      }
-
-      if(struct.hasField('ActionParam4b')){
-        node.script2Params.Param4 = struct.getFieldByLabel('ActionParam4b').getValue();
-      }
-
-      if(struct.hasField('ActionParam5b')){
-        node.script2Params.Param5 = struct.getFieldByLabel('ActionParam5b').getValue();
-      }
-
-      if(struct.hasField('ActionParamStrB')){
-        node.script2Params.String = struct.getFieldByLabel('ActionParamStrB').getValue();
-      }
-
+    if(struct.hasField('ActionParamStrB')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.script2Params.String = struct.getFieldByLabel('ActionParamStrB').getValue();
     }
 
     if(struct.hasField('CamFieldOfView')){
@@ -854,6 +937,24 @@ export class DLGNode {
       }
     }
 
+    if(struct.hasField('AlienRaceNode')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.alienRaceNode = struct.getFieldByLabel('AlienRaceNode').getValue();
+    }
+
+    if(struct.hasField('Emotion')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.emotion = struct.getFieldByLabel('Emotion').getValue();
+    }
+
+    if(struct.hasField('FacialAnim')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
+      node.facialAnimation = struct.getFieldByLabel('FacialAnim').getValue();
+    }
+
+    // Retail LoadDialogBase alien VO resolve must run before delay/WaitFlags mutations
+    node.resolveAlienVO(dialog);
+
     // Retail CSWSDialog::LoadDialogBase fade / delay / WaitFlags mutations
     node.applyLoadDialogBaseMutations(dialog, fadeTypePresent);
 
@@ -863,19 +964,8 @@ export class DLGNode {
       node.skippable = true;
     }
 
-    if(struct.hasField('AlienRaceNode')){
-      node.alienRaceNode = struct.getFieldByLabel('AlienRaceNode').getValue();
-    }
-
-    if(struct.hasField('Emotion')){
-      node.emotion = struct.getFieldByLabel('Emotion').getValue();
-    }
-
-    if(struct.hasField('FacialAnim')){
-      node.facialAnimation = struct.getFieldByLabel('FacialAnim').getValue();
-    }
-
     if(struct.hasField('PostProcNode')){
+      node.nodeEngineType = DLGNodeEngineType.K2;
       node.postProcessNode = struct.getFieldByLabel('PostProcNode').getValue();
     }
 
@@ -892,6 +982,63 @@ export class DLGNode {
     }
 
     return node;
+  }
+
+  /**
+   * Retail LoadDialogBase @ 0074f4f0 alien/foreign-language VO resolution.
+   * When VO_ResRef is empty: race row from AlienRaceNode (or AlienRaceOwner for
+   * empty Speaker); emotion.2da[Emotion].LABEL names the alienvo.2da column.
+   */
+  resolveAlienVO(dialog: DLGObject){
+    if(this.vo_resref || this.sound){
+      return;
+    }
+    const speakerEmpty = !(this.speakerTag && String(this.speakerTag).trim().length);
+    let raceRow = 0;
+    if(!speakerEmpty){
+      // Tagged speaker: only AlienRaceNode > 0 (no owner fallback)
+      if(this.alienRaceNode > 0){
+        raceRow = this.alienRaceNode;
+      }
+    }else if(this.alienRaceNode > 0){
+      raceRow = this.alienRaceNode;
+    }else if((dialog?.alienRaceOwner ?? 0) > 0){
+      raceRow = dialog.alienRaceOwner;
+    }
+    if(!(raceRow > 0)){
+      return;
+    }
+
+    const emotionTable = GameState.TwoDAManager.datatables.get('emotion');
+    const alienVOTable = GameState.TwoDAManager.datatables.get('alienvo');
+    if(!emotionTable || !alienVOTable){
+      console.warn('DLGNode.resolveAlienVO: emotion.2da or alienvo.2da not loaded');
+      return;
+    }
+
+    const emotionRow = emotionTable.getByID(this.emotion) || emotionTable.rows[this.emotion];
+    if(!emotionRow){
+      return;
+    }
+    const column = String(emotionRow.label || emotionRow.LABEL || '').trim();
+    if(!column || column === '****'){
+      return;
+    }
+
+    const alienRow = alienVOTable.getByID(raceRow) || alienVOTable.rows[raceRow];
+    if(!alienRow){
+      return;
+    }
+    // Column names from emotion LABEL — try exact then lowercase (TwoDA column keys vary)
+    const resref = String(
+      alienRow[column] ?? alienRow[column.toLowerCase()] ?? alienRow[column.toUpperCase()] ?? ''
+    ).trim();
+    if(!resref || resref === '****'){
+      return;
+    }
+
+    this.vo_resref = resref;
+    this.soundExists = (this.soundExists | 3) >>> 0;
   }
 
   /**
@@ -934,14 +1081,16 @@ export class DLGNode {
   }
 
   /**
-   * Spoken-time estimate in seconds when Delay is unset and there is no VO (retail SetDialogDelay / text length).
+   * Spoken-time estimate in seconds when Delay is unset and there is no VO.
+   * Retail CExoLocString::GetSpokenTimeEstimate @ 005ea270: length * 0.11 + 1.0
+   * (empty text returns 0; CSWSDialog::SetDialogDelay floors the result to 0.01).
    */
   static estimateSpokenTimeSeconds(text: string): number {
     const cleaned = (text || '').trim();
     if(!cleaned.length){
-      return 0.01;
+      return 0;
     }
-    return Math.max(0.01, cleaned.length * 0.1125);
+    return cleaned.length * 0.11 + 1.0;
   }
 
   getCompiledString(): string {

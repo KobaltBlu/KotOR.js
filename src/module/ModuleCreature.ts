@@ -426,6 +426,12 @@ export class ModuleCreature extends ModuleObject {
     CLAW3: ModuleItem; 
     HIDE: ModuleItem; 
   };
+  /** Stashed equipment while dialog UnequipItems/UnequipHItem is active. */
+  dialogEquipmentStash: {
+    HEAD?: ModuleItem;
+    RIGHTHAND?: ModuleItem;
+    LEFTHAND?: ModuleItem;
+  } | undefined;
   regenTimer: number;
   regenTimerMax: number;
   /** Battle-music timer (ms). Retail field31_0x384 / ExcitedDuration.2da. */
@@ -6165,6 +6171,48 @@ export class ModuleCreature extends ModuleObject {
 
   UnequipHeadItem(){
     this.unequipSlot(ModuleCreatureArmorSlot.HEAD);
+  }
+
+  /**
+   * Dialog HideEquippedItems — stash slot refs then unequip so ShowEquippedItems
+   * can restore at conversation end (retail SetDialogDelay @ 00758c90).
+   */
+  hideEquippedItemsForDialog(unequipItems: boolean = false, unequipHead: boolean = false){
+    if(!this.dialogEquipmentStash){
+      this.dialogEquipmentStash = {};
+    }
+    if(unequipItems){
+      if(this.equipment.RIGHTHAND && this.dialogEquipmentStash.RIGHTHAND === undefined){
+        this.dialogEquipmentStash.RIGHTHAND = this.equipment.RIGHTHAND;
+      }
+      if(this.equipment.LEFTHAND && this.dialogEquipmentStash.LEFTHAND === undefined){
+        this.dialogEquipmentStash.LEFTHAND = this.equipment.LEFTHAND;
+      }
+      this.UnequipItems();
+    }
+    if(unequipHead){
+      if(this.equipment.HEAD && this.dialogEquipmentStash.HEAD === undefined){
+        this.dialogEquipmentStash.HEAD = this.equipment.HEAD;
+      }
+      this.UnequipHeadItem();
+    }
+  }
+
+  /**
+   * Dialog ShowEquippedItems — re-equip items stashed by hideEquippedItemsForDialog.
+   */
+  showEquippedItemsAfterDialog(){
+    const stash = this.dialogEquipmentStash;
+    if(!stash) return;
+    const restore = (slot: number, item: ModuleItem | undefined) => {
+      if(item){
+        void this.equipItem(slot, item);
+      }
+    };
+    restore(ModuleCreatureArmorSlot.RIGHTHAND, stash.RIGHTHAND);
+    restore(ModuleCreatureArmorSlot.LEFTHAND, stash.LEFTHAND);
+    restore(ModuleCreatureArmorSlot.HEAD, stash.HEAD);
+    this.dialogEquipmentStash = undefined;
   }
 
   GetItemInSlot(slot = 0){

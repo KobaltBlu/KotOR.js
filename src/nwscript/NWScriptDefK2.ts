@@ -1,5 +1,6 @@
 import { ModuleObjectScript, ModuleObjectType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { NWScriptDataType } from "@/enums/nwscript/NWScriptDataType";
 import { GameState } from "@/GameState";
@@ -1505,7 +1506,9 @@ NWScriptDefK2.Actions = {
         const ignoreStartRange = !!args[4];
         const ignoreNames = [args[5], args[6], args[7], args[8], args[9], args[10]]
           .filter((s) => typeof s === 'string' && s.trim().length > 0);
-        this.caller.actionDialogObject( args[0], args[1], ignoreStartRange, args[2], args[3], false, ignoreNames, args[12] ?? -1, args[13] ?? -1 );
+        // TSL bUseLeader (args[11]) — force party leader as listener/owner pairing
+        const bUseLeader = !!args[11];
+        this.caller.actionDialogObject( args[0], args[1], ignoreStartRange, args[2], args[3], false, ignoreNames, args[12] ?? -1, args[13] ?? -1, bUseLeader );
       }else{
         console.error('ActionStartConversation', 'Caller is not an instance of ModuleObject');
       }
@@ -5386,7 +5389,12 @@ NWScriptDefK2.Actions = {
     name: 'PlayMovie',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: async function(this: NWScriptInstance, args: [string, number]){
+      console.log('PlayMovie', args[0], args[1]);
+      GameState.SetEngineMode(EngineMode.MOVIE);
+      // K2 skippable arg — honor instead of always-skippable
+      await GameState.VideoManager.playMovie(args[0], !!args[1]);
+    }
   },
   734: {
     comment: '734. SaveNPCState\nTells the party table to save the state of a party member NPC',
@@ -6000,21 +6008,30 @@ NWScriptDefK2.Actions = {
     name: 'IsMoviePlaying',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.VideoManager.isMoviePlaying() ? 1 : 0;
+    }
   },
   806: {
     comment: '806 QueueMovie',
     name: 'QueueMovie',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string, number]){
+      GameState.VideoManager.queueMovie(args[0], args[1] === 1);
+    }
   },
   807: {
     comment: '807',
     name: 'PlayMovieQueue',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: async function(this: NWScriptInstance, args: [number]){
+      for(const movie of GameState.VideoManager.movieQueue){
+        movie.skippable = args[0] === NW_TRUE;
+      }
+      await GameState.VideoManager.playMovieQueue();
+    }
   },
   808: {
     comment: '808',
@@ -6118,7 +6135,9 @@ NWScriptDefK2.Actions = {
     name: 'SetKeepStealthInDialog',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.CutsceneManager.keepStealthInDialog = !!args[0];
+    }
   },
   820: {
     comment: '820\nRWT-OEI 04/06/04\nThis returns TRUE or FALSE if there is a clear line of sight from\nthe source vector to the target vector. This is used in the AI to\nhelp the creatures using ranged weapons find better places to shoot\nwhen the player moves out of sight.',

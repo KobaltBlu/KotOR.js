@@ -70,6 +70,16 @@ export class CutsceneManager {
   static state: ConversationState;
   static unequipHeadItem: boolean;
   static unequipItems: boolean;
+  /**
+   * Creatures that had dialog UnequipItems/UnequipHItem applied — restored via
+   * ShowEquippedItems-equivalent at conversation end (SetDialogDelay @ 00758c90).
+   */
+  static dialogUnequippedCreatures: ModuleCreature[] = [];
+  /**
+   * K2 SetKeepStealthInDialog — when true, skip UnstealthParty on dialog start
+   * (retail GuiInGame+0x102c check in LoadDialog).
+   */
+  static keepStealthInDialog: boolean = false;
   static isListening: boolean;
 
   static audioEmitter: AudioEmitter;
@@ -231,6 +241,7 @@ export class CutsceneManager {
     }
     this.unequipHeadItem = false;
     this.unequipItems = false;
+    this.dialogUnequippedCreatures = [];
     this.isListening = true;
     this.startingEntry = null;
     this.currentEntry = null;
@@ -247,6 +258,13 @@ export class CutsceneManager {
     }
 
     this.conversation_name = dialog.resref;
+    this.unequipHeadItem = !!dialog.unequipHeadItem;
+    this.unequipItems = !!dialog.unequipItems;
+    // Retail overlay stop when leaving dialog (SetOverlayAnimation param_3=0).
+    // Retail LoadDialog: non-computer convos UnstealthParty unless keepStealthInDialog.
+    if(dialog.getConversationType() != DLGConversationType.COMPUTER && !this.keepStealthInDialog){
+      this.unstealthPartyForDialog();
+    }
     // Retail CSWSDialog ctor → StartDuckingMusicAndAmbientSounds (0.2).
     // Retail SendDialogEntry: if GetSoundMode()!=0 → SetSoundMode(0) so VO is audible.
     const audio = AudioEngine.GetAudioEngine();
@@ -308,6 +326,8 @@ export class CutsceneManager {
       this.dialog.loadStuntActors(),
       this.dialog.loadBackgroundMusic()
     ]).then(() => {
+      // Apply root UnequipItems/UnequipHItem outside the stunt-actor path too
+      this.applyDialogUnequipFlags();
       switch (this.dialog.getConversationType()) {
         case DLGConversationType.COMPUTER:
           console.log('CutsceneManager.startConversation: Computer');
@@ -320,6 +340,76 @@ export class CutsceneManager {
       }
       this.showEntry(this.startingEntry);
     });
+  }
+
+  /**
+   * Retail UnstealthParty when entering a cinematic conversation.
+   */
+  static unstealthPartyForDialog(){
+    const party = GameState.PartyManager?.party;
+    if(!party?.length) return;
+    for(let i = 0; i < party.length; i++){
+      const member = party[i];
+      if(BitWise.InstanceOfObject(member, ModuleObjectType.ModuleCreature) && member.stealthMode){
+        (member as ModuleCreature).setStealthMode(false);
+      }
+    }
+  }
+
+  /**
+   * Apply root UnequipItems / UnequipHItem to dialog participants (party leader
+   * + owner/listener creatures) when not already handled via stunt actors.
+   */
+  static applyDialogUnequipFlags(){
+    if(!this.dialog || (!this.unequipItems && !this.unequipHeadItem)){
+      return;
+    }
+    const seen = new Set<ModuleCreature>();
+    const tryUnequip = (obj: ModuleObject | undefined) => {
+      if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) return;
+      const creature = obj as ModuleCreature;
+      if(seen.has(creature)) return;
+      seen.add(creature);
+      this.hideEquippedItemsForDialog(creature);
+    };
+    tryUnequip(GameState.PartyManager?.party?.[0]);
+    tryUnequip(this.owner);
+    tryUnequip(this.listener);
+    if(this.dialog.stuntActors){
+      for(const actor of this.dialog.stuntActors.values()){
+        tryUnequip(actor.moduleObject);
+      }
+    }
+  }
+
+  /**
+   * Stash + unequip for dialog (retail HideEquippedItems). Tracks creatures for
+   * restore at endConversation.
+   */
+  static hideEquippedItemsForDialog(creature: ModuleCreature){
+    if(!creature || (!this.unequipItems && !this.unequipHeadItem)) return;
+    if(typeof creature.hideEquippedItemsForDialog === 'function'){
+      creature.hideEquippedItemsForDialog(this.unequipItems, this.unequipHeadItem);
+      if(this.dialogUnequippedCreatures.indexOf(creature) < 0){
+        this.dialogUnequippedCreatures.push(creature);
+      }
+    }else{
+      if(this.unequipItems) creature.UnequipItems();
+      if(this.unequipHeadItem) creature.UnequipHeadItem();
+    }
+  }
+
+  /**
+   * Restore equipment after dialog (retail ShowEquippedItems via SetDialogDelay).
+   */
+  static showEquippedItemsAfterDialog(){
+    for(let i = 0; i < this.dialogUnequippedCreatures.length; i++){
+      const creature = this.dialogUnequippedCreatures[i];
+      if(creature && typeof creature.showEquippedItemsAfterDialog === 'function'){
+        creature.showEquippedItemsAfterDialog();
+      }
+    }
+    this.dialogUnequippedCreatures = [];
   }
 
   /**
@@ -346,6 +436,8 @@ export class CutsceneManager {
   static playerSkipEntry(currentEntry: DLGNode) {
     if(!this.currentEntry) { return; }
     if(this.paused) { return; }
+    // Root Skippable gates all entry skips; NodeUnskippable still applies per node
+    if(this.dialog && this.dialog.skippable === false) { return; }
     if(!this.currentEntry.skippable) { return; }
     if(this.currentEntry.checkList.isSkipped){ return; }
     if(this.currentEntry.repliesShown){ return; }
@@ -472,7 +564,8 @@ export class CutsceneManager {
       if(this.cutsceneMode == CutsceneMode.ANIMATED){
         return 0;
       }
-      return DLGNode.estimateSpokenTimeSeconds(entry.getCompiledString());
+      // Retail SetDialogDelay floors the spoken-time estimate to 0.01s
+      return Math.max(0.01, DLGNode.estimateSpokenTimeSeconds(entry.getCompiledString()));
     }
 
     if((entry.delay >>> 0) === DLGNode.DELAY_UNSET){
@@ -642,6 +735,8 @@ export class CutsceneManager {
         }
       }
       this.dialog.releaseStuntActors();
+      // Retail SetDialogDelay @ 00758c90 — re-show equipped items at conversation end
+      this.showEquippedItemsAfterDialog();
       if(this.cutsceneMode == CutsceneMode.ANIMATED){
         GameState.FadeOverlayManager.FadeInFromCutscene();
       }
@@ -886,10 +981,16 @@ export class CutsceneManager {
           return animations2DA.rows[561];
         case 504:
           return animations2DA.rows[562];
+        case 505:
+          return animations2DA.rows[563];
+        case 506:
+          return animations2DA.rows[564];
         case 507:
           return animations2DA.rows[565];
         case 508:
           return animations2DA.rows[566];
+        case 509:
+          return animations2DA.rows[567];
       }
     }
 

@@ -743,20 +743,26 @@ export class ModuleObject {
    * @param barkScreenX - TSL nBarkX (−1 default)
    * @param barkScreenY - TSL nBarkY (−1 default)
    */
-  actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false, ignoreObjectNames: string[] = [], barkScreenX: number = -1, barkScreenY: number = -1 ){
+  actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false, ignoreObjectNames: string[] = [], barkScreenX: number = -1, barkScreenY: number = -1, bUseLeader: boolean = false ){
     const action = new GameState.ActionFactory.ActionDialogObject();
     action.setParameter(0, ActionParameterType.DWORD, target.id);
     action.setParameter(1, ActionParameterType.STRING, dialogResRef);
     action.setParameter(2, ActionParameterType.INT, bPrivate ? 1 : 0);
     action.setParameter(3, ActionParameterType.INT, nConvoType);
     action.setParameter(4, ActionParameterType.INT, ignoreStartRange ? 1 : 0);
-    action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+    // bUseLeader: force party leader as listener (param 5); else OBJECT_INVALID → owner
+    if(bUseLeader && GameState.PartyManager?.party?.[0]){
+      action.setParameter(5, ActionParameterType.DWORD, GameState.PartyManager.party[0].id);
+    }else{
+      action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+    }
     // Params 6–11: ignore-object names (retail CGuiInGame::AddToDialogNonDependantList)
     for(let i = 0; i < 6; i++){
       action.setParameter(6 + i, ActionParameterType.STRING, ignoreObjectNames[i] ?? '');
     }
     action.setParameter(12, ActionParameterType.INT, barkScreenX);
     action.setParameter(13, ActionParameterType.INT, barkScreenY);
+    action.setParameter(14, ActionParameterType.INT, bUseLeader ? 1 : 0);
     action.clearable = clearable;
     console.log('ModuleObject.actionDialogObject', action);
     this.actionQueue.add(action);

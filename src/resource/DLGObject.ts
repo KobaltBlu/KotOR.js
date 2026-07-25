@@ -53,6 +53,8 @@ export class DLGObject {
   ambientTrack: string;
   unequipHeadItem: boolean;
   unequipItems: boolean;
+  /** Root Skippable BYTE — default true (retail LoadDialog @ 0074e160). */
+  skippable: boolean = true;
   isAnimatedCutscene: boolean;
   animatedCameraResRef: string;
   animatedCamera: OdysseyModel3D;
@@ -115,6 +117,13 @@ export class DLGObject {
       if(this.scripts.onEndConversation){
         this.scripts.onEndConversation.name = scriptName;
       }
+    }
+
+    // Retail LoadDialog default Skippable = 1
+    if(this.gff.RootNode.hasField('Skippable')){
+      this.skippable = this.gff.RootNode.getFieldByLabel('Skippable').getValue() ? true : false;
+    }else{
+      this.skippable = true;
     }
 
     if(this.gff.RootNode.hasField('AnimatedCut')){
@@ -370,11 +379,9 @@ export class DLGObject {
             if(this.isAnimatedCutscene)
               GameState.PartyManager.party[0].setFacing(0, true);
 
-            if(this.unequipItems)
-              GameState.PartyManager.party[0].UnequipItems();
-
-            if(this.unequipHeadItem)
-              GameState.PartyManager.party[0].UnequipHeadItem();
+            if(this.unequipItems || this.unequipHeadItem){
+              GameState.CutsceneManager.hideEquippedItemsForDialog(GameState.PartyManager.party[0]);
+            }
 
             actor.moduleObject = GameState.PartyManager.party[0];
             if(actor.moduleObject){
@@ -411,11 +418,9 @@ export class DLGObject {
 
               model.box = new THREE.Box3().setFromObject(model);
 
-              if(this.unequipItems && BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature))
-                (creature as ModuleCreature).UnequipItems();
-
-              if(this.unequipHeadItem && BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature))
-                (creature as ModuleCreature).UnequipHeadItem();
+              if((this.unequipItems || this.unequipHeadItem) && BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+                GameState.CutsceneManager.hideEquippedItemsForDialog(creature as ModuleCreature);
+              }
 
               actor.moduleObject = creature;
               if(actor.moduleObject){
