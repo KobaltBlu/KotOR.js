@@ -851,10 +851,22 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseDay') ).setValue(this.timeManager.pauseDay);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseTime') ).setValue(this.timeManager.pauseTime);
 
-    //Player
+    // Player — retail SavePlayers @ 004c78c6: list element type 0xBEAD + Mod_* wrapper fields
     const playerList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_PlayerList') );
     if(GameState.PartyManager.Player){
-      playerList.addChildStruct( GameState.PartyManager.Player.save().RootNode );
+      const player = GameState.PartyManager.Player;
+      const playerStruct = player.save().RootNode;
+      playerStruct.type = 0xBEAD;
+      const communityName = 'Bad StrRef';
+      playerStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_CommntyName') ).setValue(communityName);
+      playerStruct.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).setValue(1);
+      playerStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_FirstName') ).setValue(
+        player.firstName instanceof CExoLocString ? player.firstName : new CExoLocString()
+      );
+      playerStruct.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_LastName') ).setValue(
+        player.lastName instanceof CExoLocString ? player.lastName : new CExoLocString()
+      );
+      playerList.addChildStruct( playerStruct );
     }
 
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartDay') ).setValue(this.timeManager.day);
@@ -862,7 +874,7 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMiliSec') ).setValue(this.timeManager.milisecond);
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartMinute') ).setValue(this.timeManager.minute);
     ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_StartMonth') ).setValue(this.timeManager.month);
-    ifo.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Mod_StartMovie') ).setValue(this.startMovie || '');
+    // Retail SaveModuleIFOStart does not write Mod_StartMovie (load-only in LoadModuleStart)
     ifo.RootNode.addField( new GFFField(GFFDataType.WORD, 'Mod_StartSecond') ).setValue(this.timeManager.second);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_StartYear') ).setValue(this.timeManager.year);
     ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_Tag') ).setValue(this.tag);
@@ -877,8 +889,8 @@ export class Module {
     });
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Transition') ).setValue(this.timeManager.transition);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_Version') ).setValue(this.version);
-    ifo.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_VO_ID') ).setValue(this.voId || '');
-    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_XPScale') .setValue(this.xpScale));
+    // Retail SaveModuleIFOStart does not write Mod_VO_ID (K1/TSL)
+    ifo.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_XPScale') ).setValue(this.xpScale);
     // Module-level SWVarTable + named VarTable
     const swVarTable = ifo.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'SWVarTable') );
     swVarTable.addChildStruct( this.getModuleSWVarTableSaveStruct() );
@@ -888,6 +900,9 @@ export class Module {
     this.ifo = ifo;
 
     const sav = new ERFObject();
+    // Retail module saves are MOD V1.0 ERFs
+    sav.header.fileType = 'MOD ';
+    sav.header.fileVersion = 'V1.0';
     sav.addResource('module', ResourceTypes['ifo'], this.ifo.getExportBuffer());
     for(let i = 0; i < this.areas.length; i++){
       const area = this.areas[i];
@@ -1134,6 +1149,13 @@ export class Module {
       module.area.module = module;
       module.area.setTransitionWaypoint(module.transWP);
       await module.area.load();
+
+      // Retail area game ObjectId comes from Mod_Area_list (not ARE ID header).
+      // Apply before AddObjectById so IFO/save ObjectId is preserved.
+      if(module.areaList[0]?.objectId){
+        module.area.id = module.areaList[0].objectId >>> 0;
+      }
+      GameState.ModuleObjectManager.AddObjectById(module.area);
 
       if(module.nextObjId0)
         GameState.ModuleObjectManager.COUNT = module.nextObjId0;

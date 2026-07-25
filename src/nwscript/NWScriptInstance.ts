@@ -498,8 +498,8 @@ export class NWScriptInstance {
   }
 
   saveEventSituation(){
-    //STORE_STATE
-    let scriptSituation = new GFFStruct(0x7777);
+    // Retail SaveActionQueue case 5: AddStructToStruct("Value", 2) then SaveScriptSituation
+    let scriptSituation = new GFFStruct(2);
 
     scriptSituation.addField( new GFFField(GFFDataType.DWORD, 'CRC' ) ).setValue(0);
     scriptSituation.addField( new GFFField(GFFDataType.VOID, 'Code' ) ).setData( this.nwscript.code );
@@ -507,6 +507,8 @@ export class NWScriptInstance {
     scriptSituation.addField( new GFFField(GFFDataType.INT, 'InstructionPtr' ) ).setValue(this.address);
     scriptSituation.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name' ) ).setValue( this.name );
     scriptSituation.addField( new GFFField(GFFDataType.INT, 'SecondaryPtr' ) ).setValue(0);
+    // Retail SaveScriptSituation writes StackSize before nested Stack STRUCT
+    scriptSituation.addField( new GFFField(GFFDataType.INT, 'StackSize' ) ).setValue( this.stack?.stack?.length ?? 0 );
 
     let stack = scriptSituation.addField( new GFFField(GFFDataType.STRUCT, 'Stack') );
     stack.addChildStruct( this.stack.saveForEventSituation() );

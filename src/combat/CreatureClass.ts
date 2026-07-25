@@ -338,20 +338,26 @@ export class CreatureClass {
     return cls;
   }
 
+  /** Retail CSWClass::IsJedi — class ids 3, 4, 5 (Guardian/Consular/Sentinel). */
+  isJedi(): boolean {
+    return this.id === 3 || this.id === 4 || this.id === 5;
+  }
+
   save(){
     let _class = new GFFStruct(2);
     _class.addField( new GFFField(GFFDataType.INT, 'Class') ).setValue(this.id);
     _class.addField( new GFFField(GFFDataType.SHORT, 'ClassLevel') ).setValue(this.level);
 
-    //Spell Caster specific data
-    if(this.spellcaster){
-      //Not sure what this is or if it is used in KOTOR
+    // Retail SaveClassInfo: SpellsPerDayList only for Jedi classes
+    if(this.isJedi()){
       let spellsPerDay = _class.addField( new GFFField(GFFDataType.LIST, 'SpellsPerDayList') );
       let spellsPerDayStruct = new GFFStruct(17767);
       spellsPerDayStruct.addField( new GFFField(GFFDataType.BYTE, "NumSpellsLeft").setValue(0));
       spellsPerDay.addChildStruct(spellsPerDayStruct);
+    }
 
-      //List of known spells
+    // Retail SaveClassInfo: KnownList0 only when known_spells.size > 0
+    if(this.spells.length > 0){
       let knownList0 = _class.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
       for(let i = 0; i < this.spells.length; i++){
         knownList0.addChildStruct(this.spells[i].save());

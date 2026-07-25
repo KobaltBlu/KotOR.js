@@ -574,9 +574,13 @@ export class ModuleTrigger extends ModuleObject {
         
     if(this.template.RootNode.hasField('LoadScreenID'))
       this.loadScreenID = this.template.getFieldByLabel('LoadScreenID').getValue();
+    else if(this.template.RootNode.hasField('LoadscreenID'))
+      this.loadScreenID = this.template.getFieldByLabel('LoadscreenID').getValue();
 
     if(this.template.RootNode.hasField('LocalizedName'))
       this.localizedName = this.template.getFieldByLabel('LocalizedName').getCExoLocString();
+    else if(this.template.RootNode.hasField('LocName'))
+      this.localizedName = this.template.getFieldByLabel('LocName').getCExoLocString();
 
     if(this.template.RootNode.hasField('PortraidId')){
       this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
@@ -585,6 +589,8 @@ export class ModuleTrigger extends ModuleObject {
 
     if(this.template.RootNode.hasField('SetByPlayerParty'))
       this.setByPlayerParty = this.template.getFieldByLabel('SetByPlayerParty').getValue();
+    else if(this.template.RootNode.hasField('SetByPartyPlayer'))
+      this.setByPlayerParty = this.template.getFieldByLabel('SetByPartyPlayer').getValue();
 
     if(this.setByPlayerParty){
       this.trapFlag = this.setByPlayerParty;
@@ -682,6 +688,7 @@ export class ModuleTrigger extends ModuleObject {
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTT ';
+    gff.RootNode.type = 1;
 
     let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
@@ -692,7 +699,7 @@ export class ModuleTrigger extends ModuleObject {
 
     let geometry = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Geometry') );
     for(let i = 0; i < this.vertices.length; i++){
-      let vertStruct = new GFFStruct();
+      let vertStruct = new GFFStruct(3);
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointX') ).setValue(this.vertices[i].x);
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointY') ).setValue(this.vertices[i].y);
       vertStruct.addField( new GFFField(GFFDataType.FLOAT, 'PointZ') ).setValue(this.vertices[i].z);
@@ -704,8 +711,8 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'LinkedTo') ).setValue(this.linkedTo);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'LinkedToFlags') ).setValue(this.linkedToFlags);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'LinkedToModule') ).setValue(this.linkedToModule);
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'LoadscreenID') ).setValue(this.loadScreenID);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocName') ).setValue(this.locName);
+    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'LoadScreenID') ).setValue(this.loadScreenID);
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LocalizedName') ).setValue(this.localizedName || this.locName);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
     //Scripts
@@ -725,17 +732,15 @@ export class ModuleTrigger extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnExit) ).setValue(this.scripts[ModuleObjectScript.TriggerOnExit]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.TriggerOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.TriggerOnUserDefined]?.name || '');
 
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SetByPartyPlayer') ).setValue(this.setByPlayerParty);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SetByPlayerParty') ).setValue(this.setByPlayerParty);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin') ).setValue(this.transitionDestin);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmDC') ).setValue(this.trapDisarmDC);
+    // Retail SaveTrigger omits TrapDetectDC / TrapDisarmDC / TrapFlag (UTT-only)
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(this.trapFlag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Type') ).setValue(this.type);
+    gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Type') ).setValue(this.type);
     this.writeNamedVarTable(gff.RootNode);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.template.RootNode.getFieldByLabel('XOrientation').getValue());
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);

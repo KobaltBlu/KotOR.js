@@ -58,7 +58,7 @@ export class CharGenName extends GameMenu {
 
   show() {
     super.show();
-    this.NAME_BOX_EDIT.setText(GameState.CharGenManager.selectedCreature.firstName);
+    this.NAME_BOX_EDIT.setText(GameState.CharGenManager.selectedCreature.getName());
     this.manager.activeGUIElement = this.NAME_BOX_EDIT;
     this.selectedControl = this.NAME_BOX_EDIT;
   }

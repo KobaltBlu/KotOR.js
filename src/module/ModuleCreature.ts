@@ -50,8 +50,12 @@ import {
   addSpellToDraft,
   validateLevelUpDraft,
   LevelUpAbilityIndex,
+  levelStatRecordFromDraft,
+  createEmptyLevelStatRecord,
   type LevelUpDraft,
+  type LevelStatRecord,
 } from "@/engine/rules/level-up";
+import { SkillType } from "@/enums/nwscript/SkillType";
 import type { InterAreaWaypoint } from "@/engine/pathfinding/inter-area-path";
 import { plotPathAroundCreature } from "@/engine/pathfinding/plot-path-around-creature";
 import { bumpFriends } from "@/engine/pathfinding/bump-friends";
@@ -138,6 +142,33 @@ import {
   type PlayerCamRelativeState,
 } from "@/controls/player-cam-relative-control";
 import { ClientCameraMode } from "@/enums/engine/ClientCameraMode";
+
+/** Retail CSWSCreaturePartyFollowInfo fields (FollowInfo GFF struct). */
+export interface CreaturePartyFollowInfo {
+  followObject: number;
+  followLocation: THREE.Vector3;
+  lastLeaderPos: THREE.Vector3;
+  lastFollowerPos: THREE.Vector3;
+  maxSpeed: number;
+  stickToPos: number;
+  result: number;
+  timeElapsed: number;
+  inSafetyRange: number;
+}
+
+export function createDefaultPartyFollowInfo(): CreaturePartyFollowInfo {
+  return {
+    followObject: ModuleObjectConstant.OBJECT_INVALID,
+    followLocation: new THREE.Vector3(0, 0, 0),
+    lastLeaderPos: new THREE.Vector3(0, 0, 0),
+    lastFollowerPos: new THREE.Vector3(0, 0, 0),
+    maxSpeed: 0,
+    stickToPos: 0,
+    result: 2,
+    timeElapsed: 0,
+    inSafetyRange: 1,
+  };
+}
 
 /**
 * ModuleCreature class.
@@ -279,14 +310,18 @@ export class ModuleCreature extends ModuleObject {
   isHologram: boolean;
   experience: number;
   feats: TalentFeat[];
-  firstName: string;
+  firstName: CExoLocString;
   forcePoints: number;
   gender: number = 0;
   goodEvil: number = 50;
   hitPoints: number;
   interruptable: number;
   isPC: number;
-  lastName: string;
+  lastName: CExoLocString;
+  /** Retail CSWSCreaturePartyFollowInfo — present for party members. */
+  partyFollowInfo: CreaturePartyFollowInfo | undefined;
+  /** Retail CSWLevelStats history (LvlStatList) for the real PC. */
+  levelStats: LevelStatRecord[];
   maxHitPoints: number;
   naturalAC: number;
   noPermDeath: number;
@@ -552,14 +587,16 @@ export class ModuleCreature extends ModuleObject {
 
     this.experience = 0;
     this.feats = [];
-    this.firstName = '';
+    this.firstName = new CExoLocString();
     this.forcePoints = 0;
     this.gender = 0;
     this.goodEvil = 50;
     this.hitPoints = 0; //Base Maximum Hit Points, not considering any bonuses. See Section 3.4 for more details.   
     this.interruptable = 1;
     this.isPC = 0;
-    this.lastName = '';
+    this.lastName = new CExoLocString();
+    this.partyFollowInfo = undefined;
+    this.levelStats = [];
     this.maxHitPoints = 0; //Maximum Hit Points, after considering all bonuses and penalties.
     this.min1HP = false;
     this.naturalAC = 0;
@@ -4610,7 +4647,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getName(){
-    return this.firstName;
+    return this.firstName instanceof CExoLocString ? this.firstName.getValue() : (this.firstName || '');
   }
 
   getAppearance(): SWCreatureAppearance {
@@ -5088,6 +5125,7 @@ export class ModuleCreature extends ModuleObject {
     }catch(_e){ /* ignore */ }
 
     this.fireOnPlayerLevelUp();
+    this.levelStats.push(levelStatRecordFromDraft(draft));
     return true;
   }
 
@@ -6341,7 +6379,7 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(this.template.RootNode.hasField('FirstName'))
-        this.firstName = this.template.RootNode.getFieldByLabel('FirstName').getValue();
+        this.firstName = this.template.RootNode.getFieldByLabel('FirstName').getCExoLocString();
       
       if(this.template.RootNode.hasField('ForcePoints'))
         this.forcePoints = this.template.RootNode.getFieldByLabel('ForcePoints').getValue();
@@ -6361,8 +6399,78 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('IsPC'))
         this.isPC = this.template.getFieldByLabel('IsPC').getValue();
 
+      if(this.template.RootNode.hasField('FollowInfo')){
+        const followStruct = this.template.RootNode.getFieldByLabel('FollowInfo').getChildStructs()?.[0];
+        if(followStruct){
+          const info = createDefaultPartyFollowInfo();
+          if(followStruct.hasField('FollowObject'))
+            info.followObject = followStruct.getFieldByLabel('FollowObject').getValue() >>> 0;
+          if(followStruct.hasField('FollowLocation'))
+            info.followLocation.copy(followStruct.getFieldByLabel('FollowLocation').getVector());
+          if(followStruct.hasField('LastLeaderPos'))
+            info.lastLeaderPos.copy(followStruct.getFieldByLabel('LastLeaderPos').getVector());
+          if(followStruct.hasField('LastFollowerPos'))
+            info.lastFollowerPos.copy(followStruct.getFieldByLabel('LastFollowerPos').getVector());
+          if(followStruct.hasField('MaxSpeed'))
+            info.maxSpeed = followStruct.getFieldByLabel('MaxSpeed').getValue();
+          if(followStruct.hasField('StickToPos'))
+            info.stickToPos = followStruct.getFieldByLabel('StickToPos').getValue() | 0;
+          if(followStruct.hasField('Result'))
+            info.result = followStruct.getFieldByLabel('Result').getValue() >>> 0;
+          if(followStruct.hasField('TimeElapsed'))
+            info.timeElapsed = followStruct.getFieldByLabel('TimeElapsed').getValue() >>> 0;
+          if(followStruct.hasField('InSafetyRange'))
+            info.inSafetyRange = followStruct.getFieldByLabel('InSafetyRange').getValue() | 0;
+          this.partyFollowInfo = info;
+        }
+      }
+
+      if(this.template.RootNode.hasField('LvlStatList')){
+        this.levelStats = [];
+        const lvlList = this.template.RootNode.getFieldByLabel('LvlStatList').getChildStructs();
+        for(let i = 0; i < lvlList.length; i++){
+          const ls = lvlList[i];
+          const rec = createEmptyLevelStatRecord();
+          if(ls.hasField('LvlStatClass'))
+            rec.classId = ls.getFieldByLabel('LvlStatClass').getValue() | 0;
+          if(ls.hasField('LvlStatHitDie'))
+            rec.hpChange = ls.getFieldByLabel('LvlStatHitDie').getValue() | 0;
+          if(ls.hasField('LvlStatForce'))
+            rec.fpChange = ls.getFieldByLabel('LvlStatForce').getValue() | 0;
+          if(ls.hasField('LvlStatAbility'))
+            rec.attributeIndex = ls.getFieldByLabel('LvlStatAbility').getValue() | 0;
+          if(ls.hasField('SkillPoints'))
+            rec.skillPointsRemaining = ls.getFieldByLabel('SkillPoints').getValue() | 0;
+          if(ls.hasField('SkillList')){
+            const skills = ls.getFieldByLabel('SkillList').getChildStructs();
+            for(let s = 0; s < SkillType.MAX_SKILLS && s < skills.length; s++){
+              rec.skillRankChanges[s] = skills[s].getFieldByLabel('Rank')?.getValue() | 0;
+            }
+          }
+          if(ls.hasField('FeatList')){
+            const feats = ls.getFieldByLabel('FeatList').getChildStructs();
+            for(let f = 0; f < feats.length; f++){
+              rec.feats.push(feats[f].getFieldByLabel('Feat')?.getValue() | 0);
+            }
+          }
+          if(ls.hasField('KnownList0')){
+            const known = ls.getFieldByLabel('KnownList0').getChildStructs();
+            for(let k = 0; k < known.length; k++){
+              rec.spellsAdded.push(known[k].getFieldByLabel('Spell')?.getValue() | 0);
+            }
+          }
+          if(ls.hasField('KnownRemoveList0')){
+            const removed = ls.getFieldByLabel('KnownRemoveList0').getChildStructs();
+            for(let k = 0; k < removed.length; k++){
+              rec.spellsRemoved.push(removed[k].getFieldByLabel('Spell')?.getValue() | 0);
+            }
+          }
+          this.levelStats.push(rec);
+        }
+      }
+
       if(this.template.RootNode.hasField('LastName'))
-        this.lastName = this.template.getFieldByLabel('LastName').getValue();
+        this.lastName = this.template.getFieldByLabel('LastName').getCExoLocString();
 
       if(this.template.RootNode.hasField('MaxHitPoints')){
         this.maxHitPoints = this.template.getFieldByLabel('MaxHitPoints').getValue();
@@ -6467,8 +6575,12 @@ export class ModuleCreature extends ModuleObject {
       if(this.template.RootNode.hasField('TextureVar'))
         this.textureVar = this.template.getFieldByLabel('TextureVar').getValue();
 
-      if(this.template.RootNode.hasField('WalkRate'))
+      // Retail ReadStatsFromGff: MovementRate primary; WalkRate fallback if MovementRate missing
+      if(this.template.RootNode.hasField('MovementRate')){
+        this.walkRate = this.template.getFieldByLabel('MovementRate').getValue();
+      }else if(this.template.RootNode.hasField('WalkRate')){
         this.walkRate = this.template.getFieldByLabel('WalkRate').getValue();
+      }
 
       if(this.template.RootNode.hasField('Str'))
         this.str = this.template.getFieldByLabel('Str').getValue();
@@ -6956,8 +7068,8 @@ export class ModuleCreature extends ModuleObject {
 
     const right = this.equipment.RIGHTHAND;
     const left = this.equipment.LEFTHAND;
-    info.rightEquip = right?.id ?? 0;
-    info.leftEquip = left?.id ?? 0;
+    info.rightEquip = right?.id ?? ModuleObjectConstant.OBJECT_INVALID;
+    info.leftEquip = left?.id ?? ModuleObjectConstant.OBJECT_INVALID;
     info.rightString = right?.getTag?.() || right?.getName?.() || '';
     info.leftString = left?.getTag?.() || left?.getName?.() || '';
     info.offHandWeaponEq = left ? 1 : 0;
@@ -6992,27 +7104,58 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  /**
+   * Retail SaveClassInfo LvlStatList element (struct type 0).
+   * Omits LvlStatAbility for level index 0 or when no ability bump.
+   */
+  saveLevelStatStruct(rec: LevelStatRecord, levelIndex: number): GFFStruct {
+    const s = new GFFStruct(0);
+    if(levelIndex > 0 && rec.attributeIndex >= 0 && rec.attributeIndex !== LevelUpAbilityIndex.NONE){
+      s.addField( new GFFField(GFFDataType.BYTE, 'LvlStatAbility') ).setValue(rec.attributeIndex | 0);
+    }
+    s.addField( new GFFField(GFFDataType.BYTE, 'LvlStatHitDie') ).setValue(rec.hpChange | 0);
+    s.addField( new GFFField(GFFDataType.BYTE, 'LvlStatForce') ).setValue(rec.fpChange | 0);
+    s.addField( new GFFField(GFFDataType.BYTE, 'LvlStatClass') ).setValue(rec.classId | 0);
+    if(rec.spellsAdded.length > 0){
+      const known = s.addField( new GFFField(GFFDataType.LIST, 'KnownList0') );
+      for(let i = 0; i < rec.spellsAdded.length; i++){
+        const ks = new GFFStruct(0);
+        ks.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue(rec.spellsAdded[i] | 0);
+        known.addChildStruct(ks);
+      }
+    }
+    if(rec.spellsRemoved.length > 0){
+      const rem = s.addField( new GFFField(GFFDataType.LIST, 'KnownRemoveList0') );
+      for(let i = 0; i < rec.spellsRemoved.length; i++){
+        const rs = new GFFStruct(0);
+        rs.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue(rec.spellsRemoved[i] | 0);
+        rem.addChildStruct(rs);
+      }
+    }
+    s.addField( new GFFField(GFFDataType.WORD, 'SkillPoints') ).setValue(rec.skillPointsRemaining | 0);
+    const skillList = s.addField( new GFFField(GFFDataType.LIST, 'SkillList') );
+    for(let i = 0; i < SkillType.MAX_SKILLS; i++){
+      const sk = new GFFStruct(0);
+      sk.addField( new GFFField(GFFDataType.BYTE, 'Rank') ).setValue((rec.skillRankChanges[i] | 0) & 0xff);
+      skillList.addChildStruct(sk);
+    }
+    const featList = s.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
+    for(let i = 0; i < rec.feats.length; i++){
+      const fs = new GFFStruct(0);
+      fs.addField( new GFFField(GFFDataType.WORD, 'Feat') ).setValue(rec.feats[i] | 0);
+      featList.addChildStruct(fs);
+    }
+    return s;
+  }
+
   save(){
 
     let gff = new GFFObject();
     gff.FileType = 'UTC ';
+    // Retail Creature List element struct type
+    gff.RootNode.type = 4;
     
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Mod_CommntyName') ).setValue('Bad StrRef');
-    if(this.playerCreated){
-      gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Mod_IsPrimaryPlr') ).setValue(1);
-    }
-    
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_FirstName') ).setValue(
-      this.firstName instanceof CExoLocString
-        ? this.firstName
-        : new CExoLocString().addSubString(String(this.firstName || ''))
-    );
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'Mod_LastName') ).setValue(
-      this.lastName instanceof CExoLocString
-        ? this.lastName
-        : new CExoLocString().addSubString(String(this.lastName || ''))
-    );
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'AIState') ).setValue(this.aiState | 0);
 
@@ -7023,10 +7166,11 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Animation') ).setValue(this.animationState.index);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Appearance_Head') ).setValue(this.appearanceHead | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'Appearance_Type') ).setValue(this.appearance);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'AreaId') ).setValue(this.area?.id ?? 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'AreaId') ).setValue(
+      this.getSaveAreaId() || (this.savedAreaId >>> 0)
+    );
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ArmorClass') ).setValue(this.getAC());
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).setValue(this.bodyBag);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyVariation') ).setValue(this.bodyVariation | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Cha') ).setValue(this.cha);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ChallengeRating') ).setValue(this.challengeRating);
 
@@ -7034,6 +7178,18 @@ export class ModuleCreature extends ModuleObject {
     let classList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ClassList') );
     for(let i = 0; i < this.classes.length; i++){
       classList.addChildStruct( this.classes[i].save() );
+    }
+    // Retail SaveStats: MClassLevUpIn = class_count - 1
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'MClassLevUpIn') ).setValue(
+      Math.max(0, (this.classes?.length || 1) - 1)
+    );
+
+    // Retail SaveClassInfo: LvlStatList only for is_pc && pt_controlled_npc == -1
+    if(this.isPC && GameState.PartyManager.ControlledNPC === -1 && this.levelStats.length > 0){
+      const lvlStatList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'LvlStatList') );
+      for(let i = 0; i < this.levelStats.length; i++){
+        lvlStatList.addChildStruct( this.saveLevelStatStruct(this.levelStats[i], i) );
+      }
     }
     
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Hair') ).setValue(this.colorHair | 0);
@@ -7047,7 +7203,12 @@ export class ModuleCreature extends ModuleObject {
     combatInfoStruct.addChildStruct(this.combatInformation.toStruct(0xCAAA));
 
     let combatRoundDataStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatRoundData') );
-    combatRoundDataStruct.addChildStruct( this.combatRound.toStruct(0xCADA) );
+    // Retail SaveCreature: always add CombatRoundData (0xCADA); populate only when RoundStarted
+    if(this.combatRound.roundStarted){
+      combatRoundDataStruct.addChildStruct( this.combatRound.toStruct(0xCADA) );
+    }else{
+      combatRoundDataStruct.addChildStruct( new GFFStruct(0xCADA) );
+    }
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.getCommadable() ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Con') ).setValue(this.con);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
@@ -7071,111 +7232,52 @@ export class ModuleCreature extends ModuleObject {
       effectList.addChildStruct( this.effects[i].save() );
     }
 
-    //Equipment
+    //Equipment — retail SaveCreature walks slot bits 1<<0 .. 1<<17 (18 slots)
     let equipItemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
-
-    if(this.equipment.ARMOR){
-      let equipItem = this.equipment.ARMOR.save();
-      equipItem.setType(ModuleCreatureArmorSlot.ARMOR);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.ARMS){
-      let equipItem = this.equipment.ARMS.save();
-      equipItem.setType(ModuleCreatureArmorSlot.ARMS);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.BELT){
-      let equipItem = this.equipment.BELT.save();
-      equipItem.setType(ModuleCreatureArmorSlot.BELT);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.CLAW1){
-      let equipItem = this.equipment.CLAW1.save();
-      equipItem.setType(ModuleCreatureArmorSlot.CLAW1);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.CLAW2){
-      let equipItem = this.equipment.CLAW2.save();
-      equipItem.setType(ModuleCreatureArmorSlot.CLAW2);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.CLAW3){
-      let equipItem = this.equipment.CLAW3.save();
-      equipItem.setType(ModuleCreatureArmorSlot.CLAW3);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.HEAD){
-      let equipItem = this.equipment.HEAD.save();
-      equipItem.setType(ModuleCreatureArmorSlot.HEAD);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.HIDE){
-      let equipItem = this.equipment.HIDE.save();
-      equipItem.setType(ModuleCreatureArmorSlot.HIDE);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.IMPLANT){
-      let equipItem = this.equipment.IMPLANT.save();
-      equipItem.setType(ModuleCreatureArmorSlot.IMPLANT);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.LEFTARMBAND){
-      let equipItem = this.equipment.LEFTARMBAND.save();
-      equipItem.setType(ModuleCreatureArmorSlot.LEFTARMBAND);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.LEFTHAND){
-      let equipItem = this.equipment.LEFTHAND.save();
-      equipItem.setType(ModuleCreatureArmorSlot.LEFTHAND);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.RIGHTARMBAND){
-      let equipItem = this.equipment.RIGHTARMBAND.save();
-      equipItem.setType(ModuleCreatureArmorSlot.RIGHTARMBAND);
-      equipItemList.addChildStruct(equipItem)
-    }
-
-    if(this.equipment.RIGHTHAND){
-      let equipItem = this.equipment.RIGHTHAND.save();
-      equipItem.setType(ModuleCreatureArmorSlot.RIGHTHAND);
-      equipItemList.addChildStruct(equipItem)
+    for(let slot = 1, n = 0; n < 18; slot <<= 1, n++){
+      const equipped = this.GetItemInSlot(slot);
+      if(!equipped) continue;
+      const equipItem = equipped.save();
+      // Retail SaveCreature writes ObjectId before SaveItem (inventory.res omits it)
+      equipItem.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(equipped.id >>> 0);
+      equipItem.setType(slot);
+      equipItemList.addChildStruct(equipItem);
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Experience') ).setValue(this.experience);
     
-    let expressionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ExpressionList') );
+    // Retail SaveListenData: ExpressionList only when size > 0; element struct type 5
     let expressions = Object.keys(this.listeningPatterns);
-    for(let i = 0; i < expressions.length; i++){
-      let expressionString = expressions[i];
-      let expressionId = this.listeningPatterns[expressionString];
+    if(expressions.length > 0){
+      let expressionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ExpressionList') );
+      for(let i = 0; i < expressions.length; i++){
+        let expressionString = expressions[i];
+        let expressionId = this.listeningPatterns[expressionString];
 
-      let expressionStruct = new GFFStruct();
-      expressionStruct.addField( new GFFField(GFFDataType.INT, 'ExpressionId') ).setValue( expressionId );
-      expressionStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'ExpressionString') ).setValue( expressionString );
-      expressionList.addChildStruct(expressionStruct);
+        let expressionStruct = new GFFStruct(5);
+        expressionStruct.addField( new GFFField(GFFDataType.INT, 'ExpressionId') ).setValue( expressionId );
+        expressionStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'ExpressionString') ).setValue( expressionString );
+        expressionList.addChildStruct(expressionStruct);
+      }
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'FactionID') ).setValue(this.faction ? this.faction.id : this.factionId);
 
-    //Feats
-    let featList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
-    for(let i = 0; i < this.feats.length; i++){
-      featList.addChildStruct( this.feats[i].save() );
+    //Feats — retail SaveClassInfo only writes FeatList when feats.size > 0
+    if(this.feats.length > 0){
+      let featList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'FeatList') );
+      for(let i = 0; i < this.feats.length; i++){
+        const featStruct = this.feats[i].save();
+        // Retail FeatList element struct type is 1
+        if(typeof featStruct.setType === 'function') featStruct.setType(1);
+        featList.addChildStruct(featStruct);
+      }
     }
 
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue( this.firstName );
-    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).setValue(this.getFP());
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'FirstName') ).setValue(
+      this.firstName instanceof CExoLocString ? this.firstName : new CExoLocString()
+    );
+    gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'ForcePoints') ).setValue(this.forcePoints | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'FortSaveThrow') ).setValue(this.fortitudeSaveThrow);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Gender') ).setValue(this.gender);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Gold') ).setValue(this.gold || 0);
@@ -7184,7 +7286,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Int') ).setValue(this.int);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Interruptable') ).setValue(this.interruptable ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsDestroyable') ).setValue(this.isDestroyable ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsPC') ).setValue( this.playerCreated ? 1 : 0);
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsPC') ).setValue( this.isPC ? 1 : 0 );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsRaiseable') ).setValue(this.isRaisable ? 1 : 0);
     if(this.playerCreated){
       gff.RootNode.addField( new GFFField(GFFDataType.INT, 'PlayerCreated') ).setValue(1);
@@ -7193,12 +7295,17 @@ export class ModuleCreature extends ModuleObject {
     //Creature Inventory
     let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.inventory.length; i++){
-      let itemStruct = this.inventory[i].save();
+      const invItem = this.inventory[i];
+      let itemStruct = invItem.save();
+      // Retail SaveCreature writes ObjectId before SaveItem
+      itemStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(invItem.id >>> 0);
       itemList.addChildStruct(itemStruct);
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'JoiningXP') ).setValue( this.joiningXP ? this.joiningXP : 0 );
-    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') ).setValue( this.lastName );
+    gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'LastName') ).setValue(
+      this.lastName instanceof CExoLocString ? this.lastName : new CExoLocString()
+    );
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Listening') ).setValue( this.isListening );
 
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'MaxForcePoints') ).setValue(this.maxForcePoints);
@@ -7206,7 +7313,10 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'MovementRate') ).setValue(this.getMovementRate());
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NaturalAC') ).setValue(this.naturalAC);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NoPermDeath') ).setValue(this.noPermDeath ? 1 : 0);
+    // NoPermDeath is not a K1 save field (absent from K1 binary)
+    if(GameState.GameKey == GameEngineType.TSL){
+      gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NoPermDeath') ).setValue(this.noPermDeath ? 1 : 0);
+    }
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'NotReorienting') ).setValue(this.notReorienting);
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PM_IsDisguised') ).setValue( this.hasEffect(GameEffectType.EffectDisguise) ? 1 : 0 );
@@ -7227,8 +7337,7 @@ export class ModuleCreature extends ModuleObject {
       perceptionList.addChildStruct(perceptionStruct);
     }
 
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PerceptionRange') ).setValue(this.perceptionRange?.id || 0);
-
+    // PerceptionRange is not written by retail SaveCreature / SaveStats (GIT)
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Phenotype') ).setValue(this.phenotype);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
@@ -7264,16 +7373,18 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SkillPoints') ).setValue( this.skillPoints ? this.skillPoints : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'SoundSetFile') ).setValue(this.soundSetFile);
 
-    // Retail SaveClassInfo SpecAbilityList (struct type 4)
-    const specAbilityList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpecAbilityList') );
-    for(let i = 0; i < this.specialAbilities.length; i++){
-      const sa = this.specialAbilities[i];
-      if(!sa) continue;
-      const saStruct = new GFFStruct(4);
-      saStruct.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue((sa.spell ?? 0) | 0);
-      saStruct.addField( new GFFField(GFFDataType.BYTE, 'SpellFlags') ).setValue((sa.spellFlags ?? 0) | 0);
-      saStruct.addField( new GFFField(GFFDataType.BYTE, 'SpellCasterLevel') ).setValue((sa.spellCasterLevel ?? 0) | 0);
-      specAbilityList.addChildStruct(saStruct);
+    // Retail SaveClassInfo: SpecAbilityList only when special_abilities.size > 0
+    if(this.specialAbilities.length > 0){
+      const specAbilityList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'SpecAbilityList') );
+      for(let i = 0; i < this.specialAbilities.length; i++){
+        const sa = this.specialAbilities[i];
+        if(!sa) continue;
+        const saStruct = new GFFStruct(4);
+        saStruct.addField( new GFFField(GFFDataType.WORD, 'Spell') ).setValue((sa.spell ?? 0) | 0);
+        saStruct.addField( new GFFField(GFFDataType.BYTE, 'SpellFlags') ).setValue((sa.spellFlags ?? 0) | 0);
+        saStruct.addField( new GFFField(GFFDataType.BYTE, 'SpellCasterLevel') ).setValue((sa.spellCasterLevel ?? 0) | 0);
+        specAbilityList.addChildStruct(saStruct);
+      }
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'StartingPackage') ).setValue(this.startingPackage | 0);
@@ -7283,8 +7394,6 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SubraceIndex') ).setValue(this.subraceIndex | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Tail') ).setValue(this.tail | 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TextureVar') ).setValue(this.textureVar | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'UseBackupHead') ).setValue(this.useBackupHead ? 1 : 0);
     this.writeNamedVarTable(gff.RootNode);
     gff.RootNode.addField( new GFFField(GFFDataType.CHAR, 'WillSaveThrow') ).setValue(this.willSaveThrow);
@@ -7300,6 +7409,24 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue( 1 * Math.cos(theta) );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue( 1 * Math.sin(theta) );
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZOrientation') ).setValue( 0 );
+
+    // Retail SaveCreature: FollowInfo when party_follow_info allocated (party members)
+    if(this.isPM){
+      const follow = this.partyFollowInfo || createDefaultPartyFollowInfo();
+      this.partyFollowInfo = follow;
+      const followField = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'FollowInfo') );
+      const followStruct = new GFFStruct(0);
+      followStruct.addField( new GFFField(GFFDataType.DWORD, 'FollowObject') ).setValue(follow.followObject >>> 0);
+      followStruct.addField( new GFFField(GFFDataType.VECTOR, 'FollowLocation') ).setValue(follow.followLocation.clone());
+      followStruct.addField( new GFFField(GFFDataType.VECTOR, 'LastLeaderPos') ).setValue(follow.lastLeaderPos.clone());
+      followStruct.addField( new GFFField(GFFDataType.VECTOR, 'LastFollowerPos') ).setValue(follow.lastFollowerPos.clone());
+      followStruct.addField( new GFFField(GFFDataType.FLOAT, 'MaxSpeed') ).setValue(follow.maxSpeed);
+      followStruct.addField( new GFFField(GFFDataType.BYTE, 'StickToPos') ).setValue(follow.stickToPos | 0);
+      followStruct.addField( new GFFField(GFFDataType.DWORD, 'Result') ).setValue(follow.result >>> 0);
+      followStruct.addField( new GFFField(GFFDataType.DWORD, 'TimeElapsed') ).setValue(follow.timeElapsed >>> 0);
+      followStruct.addField( new GFFField(GFFDataType.BYTE, 'InSafetyRange') ).setValue(follow.inSafetyRange | 0);
+      followField.addChildStruct(followStruct);
+    }
 
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'fortbonus') ).setValue(this.fortbonus);
     gff.RootNode.addField( new GFFField(GFFDataType.SHORT, 'refbonus') ).setValue(this.refbonus);

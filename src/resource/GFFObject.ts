@@ -845,7 +845,7 @@ export class GFFObject {
             this.BWFieldData.writeChars(field.value);
             break;
           case GFFDataType.CHAR:
-            this.BWFields.writeUInt32(field.value.charCodeAt());
+            this.BWFields.writeUInt32((Number(field.value) << 24) >> 24);
             break;
           case GFFDataType.DOUBLE:
             this.BWFields.writeUInt32(this.BWFieldData.position);

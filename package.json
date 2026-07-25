@@ -16,6 +16,7 @@
     "electron:release": "npm run webpack:prod && npm run electron:compile && npm run electron:icon && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npx --yes electron-builder build --publish=never",
     "electron:icon": "npx --yes electron-icon-builder --input=src/assets/icon-256.png --output=src/assets/icons",
     "generate-manifest": "node scripts/generate-manifest.js",
+    "compare-saves": "tsx scripts/compare-saves.ts",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
     "test": "jest --verbose --coverage --no-cache ./src/tests",
     "test:upgrade": "jest --config jest.upgrade.config.js --no-cache"

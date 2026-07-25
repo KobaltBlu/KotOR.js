@@ -182,17 +182,37 @@ export class ERFObject {
       return new Uint8Array(0);
     }
 
+    if(resource.data instanceof Uint8Array && resource.data.byteLength === resource.size){
+      return resource.data;
+    }
+
     const buffer = new Uint8Array(resource.size);
 
     if(this.inMemory){
-      buffer.set(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
+      buffer.set(this.buffer.subarray(resource.offset, resource.offset + resource.size));
+      resource.data = buffer;
       return buffer;
     }else{
       const fd = await this.getFileDescription();
       await GameFileSystem.read(fd, buffer, 0, buffer.length, resource.offset);
+      resource.data = buffer;
     }
 
     return buffer;
+  }
+
+  /**
+   * Ensure every resource has an in-memory `data` buffer before rebuild/export.
+   * Disk-loaded ERFs only store offset/size until this is called.
+   */
+  async loadAllResourceData(): Promise<void> {
+    for(let i = 0; i < this.resources.length; i++){
+      const res = this.resources[i];
+      if(!(res.data instanceof Uint8Array) || res.data.byteLength !== res.size){
+        await this.getResourceBuffer(res);
+      }
+    }
+    await this.dispose();
   }
 
   hasResource(resRef: string, resType: number): boolean {
@@ -231,13 +251,11 @@ export class ERFObject {
     }
     
     if(this.inMemory){
-        const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
+      const buffer = await this.getResourceBuffer(resource);
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
     }else{
-      let buffer = new Uint8Array(resource.size);
-      const fd = await GameFileSystem.open(this.resource_path, 'r');
-      await GameFileSystem.read(fd, buffer, 0, resource.size, resource.offset);
+      let buffer = await this.getResourceBuffer(resource);
       // console.log('ERF Export', 'Writing File', path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)));
       await GameFileSystem.writeFile(
         path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer
@@ -246,7 +264,19 @@ export class ERFObject {
     }
   }
 
+  /**
+   * Add or replace a resource by resRef + resType.
+   * Replacing avoids duplicate keys when patching an already-loaded ERF (e.g. module.ifo).
+   */
   addResource(resRef: string, resType: number, buffer: Uint8Array){
+    const keyName = (resRef || '').toLowerCase();
+    const existing = this.getResourceInfo(keyName, resType);
+    if(existing){
+      existing.data = buffer;
+      existing.size = buffer.length;
+      existing.offset = -1;
+      return;
+    }
 
     const resId = this.resources.push({
       offset: -1,
@@ -255,34 +285,36 @@ export class ERFObject {
     }) - 1;
 
     this.keyList.push({
-      resRef: resRef,
+      resRef: keyName,
       resId: resId,
       resType: resType,
       unused: 0
     });
 
+    this._resourceIndex.set(`${keyName}:${resType}`, this.resources[resId]);
   }
 
   export( file: string, onExport?: Function, onError?: Function ){
-    return new Promise( (resolve: Function, reject: Function) => {
+    return new Promise( async (resolve: Function, reject: Function) => {
 
       if(!file){
         reject('Failed to export: Missing file path.');
         return;
       }
 
-      let buffer = this.getExportBuffer();
-      GameFileSystem.writeFile( file, buffer ).then( () => {
+      try{
+        await this.loadAllResourceData();
+        let buffer = this.getExportBuffer();
+        await GameFileSystem.writeFile( file, buffer );
         if(typeof onExport === 'function')
           onExport();
-
         resolve();
-      }).catch( (err) => {
+      }catch(err){
         console.error(err);
         if(typeof onError === 'function')
           onError(err);
-        reject();
-      });
+        reject(err);
+      }
 
     });
   }
@@ -299,8 +331,22 @@ export class ERFObject {
       locStringsLen += (this.localizedStrings[i].value.length + 8);
     }
 
+    // Prefer in-memory payloads; fall back to declared size only if data missing
+    for(let i = 0; i < this.resources.length; i++){
+      const res = this.resources[i];
+      if(res.data instanceof Uint8Array){
+        res.size = res.data.byteLength;
+      }else if(!res.size){
+        res.data = new Uint8Array(0);
+        res.size = 0;
+      }else{
+        throw new Error(`ERFObject.getExportBuffer: resource ${i} has size ${res.size} but no data — call loadAllResourceData() first`);
+      }
+    }
+
     this.header.offsetToLocalizedString = ERF_HEADER_SIZE;
     this.header.languageCount = this.localizedStrings.length;
+    this.header.localizedStringSize = locStringsLen;
     this.header.entryCount = this.keyList.length;
     this.header.offsetToKeyList = ERF_HEADER_SIZE + locStringsLen;
     this.header.offsetToResourceList = ERF_HEADER_SIZE + locStringsLen + (this.header.entryCount * keyEleLen);

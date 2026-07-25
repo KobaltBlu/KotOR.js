@@ -448,13 +448,14 @@ export class Action {
     const struct = new GFFStruct(0);
     struct.addField(new GFFField(GFFDataType.DWORD, 'ActionId', this.type));
     struct.addField(new GFFField(GFFDataType.WORD, 'GroupActionId', this.groupId));
-    struct.addField(new GFFField(GFFDataType.WORD, 'NumParams', this.parameters.length));
+
+    // Only emit defined params; NumParams must match list length (retail LoadActionQueue loops NumParams)
+    const definedParams = this.parameters.filter((p) => !!p);
+    struct.addField(new GFFField(GFFDataType.WORD, 'NumParams', definedParams.length));
 
     const params = struct.addField(new GFFField(GFFDataType.LIST, 'Paramaters'));
-    for(let i = 0, len = this.parameters.length; i < len; i++){
-      if(this.parameters[i]){
-        params.addChildStruct(this.parameters[i].toStruct());
-      }
+    for(let i = 0, len = definedParams.length; i < len; i++){
+      params.addChildStruct(definedParams[i].toStruct());
     }
 
     return struct;

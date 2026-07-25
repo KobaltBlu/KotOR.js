@@ -10,6 +10,8 @@ import {
   validateLevelUpDraft,
   addFeatToDraft,
   createEmptyDraft,
+  levelStatRecordFromDraft,
+  createEmptyLevelStatRecord,
 } from "@/engine/rules/level-up";
 import { computeSkillPointsGained } from "@/engine/rules/skill-points";
 
@@ -81,5 +83,25 @@ describe("level-up rules", () => {
     expect(validateLevelUpDraft(draft)).toBe(false);
     expect(addFeatToDraft(draft, 42)).toBe(true);
     expect(validateLevelUpDraft(draft)).toBe(true);
+  });
+
+  it("levelStatRecordFromDraft snapshots retail LvlStat fields", () => {
+    const draft = createEmptyDraft();
+    draft.classId = 2;
+    draft.hpChange = 6;
+    draft.fpChange = 0;
+    draft.attributeIndex = LevelUpAbilityIndex.NONE;
+    draft.skillRankChanges = [0, 4, 4, 4, 0, 0, 4, 2];
+    draft.skillPointsRemaining = 0;
+    draft.feats = [5, 8, 31];
+    draft.spellsAdded = [];
+    const rec = levelStatRecordFromDraft(draft);
+    expect(rec.classId).toBe(2);
+    expect(rec.hpChange).toBe(6);
+    expect(rec.fpChange).toBe(0);
+    expect(rec.attributeIndex).toBe(LevelUpAbilityIndex.NONE);
+    expect(rec.skillRankChanges).toEqual([0, 4, 4, 4, 0, 0, 4, 2]);
+    expect(rec.feats).toEqual([5, 8, 31]);
+    expect(createEmptyLevelStatRecord().feats).toEqual([]);
   });
 });

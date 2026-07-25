@@ -2,6 +2,7 @@ import { GameState } from "@/GameState";
 import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 // import { ModuleObjectManager } from "@/managers/ModuleObjectManager";
 import type { Module, ModuleObject } from "@/module";
@@ -284,13 +285,17 @@ export class GameEffect {
     effectStruct.addField( new GFFField(GFFDataType.DWORD, 'CreatorId') ).setValue( typeof this.creator === 'object' ? this.creator.id : 2130706432 );
     effectStruct.addField( new GFFField(GFFDataType.DWORD, 'SpellId') ).setValue(this.getSpellId() >= 0 ? this.getSpellId() : 4294967295);
     effectStruct.addField( new GFFField(GFFDataType.INT, 'IsExposed') ).setValue(this.isExposed ? 1 : 0);
-    effectStruct.addField( new GFFField(GFFDataType.INT, 'NumIntegers') ).setValue(8);
+    // Retail SaveGameEffect: NumIntegers + IntList length match; ObjectList is exactly 4 × type 6
+    const numIntegers = (this.numIntegers | 0) > 0 ? (this.numIntegers | 0) : 8;
+    effectStruct.addField( new GFFField(GFFDataType.INT, 'NumIntegers') ).setValue(numIntegers);
 
-    let intList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'IntList') );
-    for(let i = 0; i < 8; i++){
-      let intStruct = new GFFStruct(3);
-      intStruct.addField( new GFFField(GFFDataType.INT, "Value").setValue(this.getInt(i) || 0));
-      intList.addChildStruct(intStruct);
+    if(numIntegers > 0){
+      let intList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'IntList') );
+      for(let i = 0; i < numIntegers; i++){
+        let intStruct = new GFFStruct(3);
+        intStruct.addField( new GFFField(GFFDataType.INT, "Value").setValue(this.getInt(i) || 0));
+        intList.addChildStruct(intStruct);
+      }
     }
 
     let floatList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'FloatList') );
@@ -308,9 +313,13 @@ export class GameEffect {
     }
 
     let objectList = effectStruct.addField( new GFFField(GFFDataType.LIST, 'ObjectList') );
-    for(let i = 0; i < 6; i++){
-      let objectStruct = new GFFStruct(5);
-      objectStruct.addField( new GFFField(GFFDataType.DWORD, "Value").setValue( this.getObject(i) ? this.getObject(i).id : 2130706432 ));
+    for(let i = 0; i < 4; i++){
+      let objectStruct = new GFFStruct(6);
+      const obj = this.getObject(i);
+      const oid = (obj && typeof obj === 'object') ? (obj.id | 0) : 0;
+      objectStruct.addField( new GFFField(GFFDataType.DWORD, "Value").setValue(
+        oid ? oid : ModuleObjectConstant.OBJECT_INVALID
+      ));
       objectList.addChildStruct(objectStruct);
     }
 

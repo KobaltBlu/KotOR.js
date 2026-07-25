@@ -509,20 +509,27 @@ export class SaveGame {
     for(let i = 0; i < catLocations.length; i++){
       let locCat = catLocations[i];
       let locLabel = locCat.getFieldByLabel('Name').getValue();
-
-      GameState.GlobalVariableManager.Globals.Location.set(
-        locLabel.toLowerCase(), { 
-          name: locLabel, 
-          value: new EngineLocation(
-            locBytes.readSingle(),
-            locBytes.readSingle(),
-            locBytes.readSingle(),
-            locBytes.readSingle(),
-            locBytes.readSingle(),
-            locBytes.readSingle(),
-          )
-        }
+      const locValue = new EngineLocation(
+        locBytes.readSingle(),
+        locBytes.readSingle(),
+        locBytes.readSingle(),
+        locBytes.readSingle(),
+        locBytes.readSingle(),
+        locBytes.readSingle(),
       );
+      const key = locLabel.toLowerCase();
+      // Update in place to preserve Init/catalog Map insertion order
+      if(GameState.GlobalVariableManager.Globals.Location.has(key)){
+        const entry = GameState.GlobalVariableManager.Globals.Location.get(key);
+        entry.name = locLabel;
+        entry.value = locValue;
+      }else{
+        GameState.GlobalVariableManager.Globals.Location.set(key, {
+          name: locLabel,
+          value: locValue,
+        });
+        console.warn('Global Location: missing', key);
+      }
     }
 
     let boolBytes = this.globalVars.RootNode.getFieldByLabel('ValBoolean').getVoid();
@@ -560,6 +567,23 @@ export class SaveGame {
           console.warn('Global String: missing', strLabel.toLowerCase(), strValue);
         }
       }
+    }
+
+    // Rebuild Catalog from Cat* list order so load→save preserves retail identifier order
+    const GVM = GameState.GlobalVariableManager;
+    const catalog: { name: string; type: 'Boolean' | 'Number' | 'String' | 'Location' }[] = [];
+    const pushCat = (structs: any[], type: 'Boolean' | 'Number' | 'String' | 'Location') => {
+      for(let i = 0; i < structs.length; i++){
+        const name = structs[i]?.getFieldByLabel?.('Name')?.getValue?.();
+        if(name) catalog.push({ name, type });
+      }
+    };
+    pushCat(catBooleans || [], 'Boolean');
+    pushCat(catNumbers || [], 'Number');
+    pushCat(catLocations || [], 'Location');
+    pushCat(catStrings || [], 'String');
+    if(catalog.length){
+      GVM.Catalog = catalog;
     }
   }
 
@@ -1088,61 +1112,68 @@ export class SaveGame {
     let gvt = new GFFObject();
     gvt.FileType = 'GVT ';
 
+    const GVM = GameState.GlobalVariableManager;
+    // Retail WriteTable walks identifiers in globalcat row order per type.
+    const boolEntries = GVM.getCatalogByType('Boolean');
+    const locEntries = GVM.getCatalogByType('Location');
+    const numEntries = GVM.getCatalogByType('Number');
+    const strEntries = GVM.getCatalogByType('String');
+
     //Global Booleans
     const catBooleanList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatBoolean'));
     // Retail WriteTable: ValBoolean size = (boolean_count >> 3) + 1
-    const boolCount = GameState.GlobalVariableManager.Globals.Boolean.size;
+    const boolCount = boolEntries.length;
     const boolBuffer = new Uint8Array( (boolCount >> 3) + 1 );
-    let i = 0;
-    GameState.GlobalVariableManager.Globals.Boolean.forEach( (globBool, key: string) => {
-      let boolean = globBool;
-      let byte_offset = Math.floor( i / 8 );
-      let bit_index = (i % 8);
+    for(let i = 0; i < boolEntries.length; i++){
+      const entry = boolEntries[i];
+      const boolean = GVM.Globals.Boolean.get(entry.name.toLowerCase());
+      const byte_offset = Math.floor( i / 8 );
+      const bit_index = (i % 8);
 
       // Retail MSB-first packing (CSWGlobalVariableTable::WriteTable / SetBit)
-      if(boolean.value){
+      if(boolean?.value){
         boolBuffer[byte_offset] |= 1 << (7 - bit_index);
       }
 
-      let boolStruct = new GFFStruct();
-      boolStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(boolean.name);
+      const boolStruct = new GFFStruct();
+      boolStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(boolean?.name ?? entry.name);
       catBooleanList.addChildStruct(boolStruct);
-      i++;
-    });
+    }
 
     //Global Locations
     const catLocationList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatLocation'));
     const locationBuffer = new Uint8Array(24 * 100);
     const locationDataView = new DataView(locationBuffer.buffer);
 
-    i = 0;
-    GameState.GlobalVariableManager.Globals.Location.forEach( (location, key: string) => {
-      locationDataView.setFloat32( (24 * i) + 0, location.value.position.x, true );
-      locationDataView.setFloat32( (24 * i) + 4, location.value.position.y, true );
-      locationDataView.setFloat32( (24 * i) + 8, location.value.position.z, true );
-      locationDataView.setFloat32( (24 * i) + 12, location.value.rotation.x, true );
-      locationDataView.setFloat32( (24 * i) + 16, location.value.rotation.y, true );
-      locationDataView.setFloat32( (24 * i) + 20, location.value.rotation.z, true );
+    for(let i = 0; i < locEntries.length; i++){
+      const entry = locEntries[i];
+      const location = GVM.Globals.Location.get(entry.name.toLowerCase());
+      const value = location?.value;
+      locationDataView.setFloat32( (24 * i) + 0, value?.position?.x ?? 0, true );
+      locationDataView.setFloat32( (24 * i) + 4, value?.position?.y ?? 0, true );
+      locationDataView.setFloat32( (24 * i) + 8, value?.position?.z ?? 0, true );
+      locationDataView.setFloat32( (24 * i) + 12, value?.rotation?.x ?? 0, true );
+      locationDataView.setFloat32( (24 * i) + 16, value?.rotation?.y ?? 0, true );
+      locationDataView.setFloat32( (24 * i) + 20, value?.rotation?.z ?? 0, true );
 
-      let locStruct = new GFFStruct();
-      locStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(location.name);
+      const locStruct = new GFFStruct();
+      locStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(location?.name ?? entry.name);
       catLocationList.addChildStruct(locStruct);
-      i++;
-    });
+    }
 
     //Global Numbers
     const catNumberList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatNumber'));
-    const numberBuffer = new Uint8Array(GameState.GlobalVariableManager.Globals.Number.size);
+    const numberBuffer = new Uint8Array(numEntries.length);
 
-    i = 0;
-    GameState.GlobalVariableManager.Globals.Number.forEach( (numberObj, key: string) => {
-      numberBuffer[i] = (numberObj.value & 0xFF);
+    for(let i = 0; i < numEntries.length; i++){
+      const entry = numEntries[i];
+      const numberObj = GVM.Globals.Number.get(entry.name.toLowerCase());
+      numberBuffer[i] = ((numberObj?.value ?? 0) & 0xFF);
 
       const numberStruct = new GFFStruct();
-      numberStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(numberObj.name);
+      numberStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(numberObj?.name ?? entry.name);
       catNumberList.addChildStruct(numberStruct);
-      i++;
-    });
+    }
 
     
     const catStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'CatString'));
@@ -1152,18 +1183,18 @@ export class SaveGame {
     gvt.RootNode.addField(new GFFField(GFFDataType.VOID, 'ValNumber')).setData( numberBuffer );
 
     const valStringList  = gvt.RootNode.addField(new GFFField(GFFDataType.LIST, 'ValString'));
-    i = 0;
-    GameState.GlobalVariableManager.Globals.String.forEach( (stringObj, key: string) => {
+    for(let i = 0; i < strEntries.length; i++){
+      const entry = strEntries[i];
+      const stringObj = GVM.Globals.String.get(entry.name.toLowerCase());
+
       const stringCatStruct = new GFFStruct();
-      stringCatStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(stringObj.name);
+      stringCatStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Name') ).setValue(stringObj?.name ?? entry.name);
       catStringList.addChildStruct(stringCatStruct);
 
-
       const stringValStruct = new GFFStruct();
-      stringValStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'String') ).setValue(stringObj.value);
+      stringValStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'String') ).setValue(stringObj?.value ?? '');
       valStringList.addChildStruct(stringValStruct);
-      i++;
-    });
+    }
 
     await gvt.export(path.join(directory, 'GLOBALVARS.res'));
   }

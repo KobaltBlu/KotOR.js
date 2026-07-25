@@ -5,7 +5,7 @@ import * as path from "path";
 import * as THREE from "three";
 import EngineLocation from "@/engine/EngineLocation";
 import { CurrentGame } from "@/engine/CurrentGame";
-import { ModuleCreature } from "@/module/ModuleCreature";
+import { ModuleCreature, createDefaultPartyFollowInfo } from "@/module/ModuleCreature";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
@@ -528,7 +528,8 @@ export class PartyManager {
       }
     }
 
-    // Retail LoadTableInfo — restore per-baseitem cost multipliers
+    // Retail LoadTableInfo — restore per-baseitem cost multipliers (CSWBaseItem+0xc4),
+    // independent of baseitems.itemmultiplier used by GetCost.
     const costMultField =
       gff.RootNode.getFieldByLabel('PT_COST_MULT_LIST') ||
       gff.RootNode.getFieldByLabel('PT_COST_MULT_LIS');
@@ -536,9 +537,13 @@ export class PartyManager {
       const list = costMultField.getChildStructs();
       const baseItems = GameState.SWRuleSet?.baseItems || [];
       for(let i = 0; i < list.length && i < baseItems.length; i++){
-        const v = list[i].getFieldByLabel('PT_COST_MULT_VALUE')?.getValue();
+        const v =
+          list[i].getFieldByLabel('PT_COST_MULT_VALUE')?.getValue() ??
+          list[i].getFieldByLabel('PT_COST_MULT_VAL')?.getValue();
         if(typeof v === 'number' && Number.isFinite(v)){
-          baseItems[i].itemMultiplier = v;
+          baseItems[i].costMultiplier = v;
+        }else{
+          baseItems[i].costMultiplier = 1;
         }
       }
     }
@@ -641,20 +646,22 @@ export class PartyManager {
         availNPCSList.addChildStruct(availStruct);
       }
 
-      partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CHEAT_USED')).setValue(GameState.PartyManager.CheatUsed ? 1 : 0);
+      // Retail SaveTableInfo WriteFieldBYTE PT_CHEAT_USED
+      partytable.RootNode.addField(new GFFField(GFFDataType.BYTE, 'PT_CHEAT_USED')).setValue(GameState.PartyManager.CheatUsed ? 1 : 0);
       const controlledIdx = GameState.getCurrentPlayer() == GameState.PartyManager.Player
         ? -1
         : GameState.PartyManager.party.indexOf(GameState.getCurrentPlayer());
       GameState.PartyManager.ControlledNPC = controlledIdx;
       partytable.RootNode.addField(new GFFField(GFFDataType.INT, 'PT_CONTROLLED_NPC')).setValue(controlledIdx);
 
-      // Retail SaveTableInfo @ 00565000 — one PT_COST_MULT_VALUE per baseitems row
+      // Retail SaveTableInfo — one PT_COST_MULT_VALUE per baseitems row (default 1.0)
       const costMultList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_COST_MULT_LIST'));
       const baseItems = GameState.SWRuleSet?.baseItems || [];
       for(let i = 0; i < baseItems.length; i++){
         const costStruct = new GFFStruct(0);
+        const mult = Number(baseItems[i]?.costMultiplier);
         costStruct.addField(new GFFField(GFFDataType.FLOAT, 'PT_COST_MULT_VALUE')).setValue(
-          Number(baseItems[i]?.itemMultiplier) || 1
+          Number.isFinite(mult) ? mult : 1
         );
         costMultList.addChildStruct(costStruct);
       }
@@ -1630,6 +1637,9 @@ export class PartyManager {
     partyMember.npcId = npcId;
     partyMember.isPM = true;
     partyMember.load();
+    if(!partyMember.partyFollowInfo){
+      partyMember.partyFollowInfo = createDefaultPartyFollowInfo();
+    }
     partyMember.clearAllActions();
     partyMember.loadModel().then( (model: OdysseyModel3D) => {
       model.userData.moduleObject = partyMember;
@@ -1955,6 +1965,9 @@ export class PartyManager {
    * @returns void
    */
   static async ExportPlayerCharacter(){
+    // Retail GAMEINPROGRESS:PC only while controlling an NPC (pt_controlled_npc != -1)
+    const player = GameState.PartyManager.Player;
+    if(!(player?.npcId >= 0)){ return; }
     if(!GameState.PartyManager.ActualPlayerTemplate){ return; }
     const gff = GameState.PartyManager.ActualPlayerTemplate;
     await gff.export( path.join( CurrentGame.gameinprogress_dir, 'pc.utc'));

@@ -28,6 +28,11 @@ import { TalentFeat } from "@/talents";
 import type { CreatureClass } from "@/combat/CreatureClass";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { CExoLocString } from "@/resource/CExoLocString";
+import {
+  createEmptyLevelStatRecord,
+  LevelUpAbilityIndex,
+} from "@/engine/rules/level-up";
+import { createDefaultPartyFollowInfo } from "@/module/ModuleCreature";
 
 /** Retail CSWGuiQuickPanel step indices. */
 export enum CharGenQuickStep {
@@ -144,11 +149,11 @@ export class CharGenManager {
   static setCreatureName(name: string) {
     const creature = CharGenManager.selectedCreature;
     if(!creature) return;
-    creature.firstName = name;
+    const loc = new CExoLocString();
+    loc.addSubString(name, 0);
+    creature.firstName = loc;
     const field = creature.template?.RootNode?.getFieldByLabel('FirstName');
     if(field){
-      const loc = new CExoLocString();
-      loc.addSubString(name, 0);
       field.setValue(loc);
     }
   }
@@ -167,6 +172,12 @@ export class CharGenManager {
       equipList.childStructs = [];
     }
 
+    CharGenManager.seedInitialLevelStat(creature);
+    creature.isPC = 1;
+    if(!creature.partyFollowInfo){
+      creature.partyFollowInfo = createDefaultPartyFollowInfo();
+    }
+
     GameState.GlobalVariableManager.Init();
     GameState.PartyManager.PlayerTemplate = creature.save();
     GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
@@ -174,6 +185,31 @@ export class CharGenManager {
     CurrentGame.InitGameInProgressFolder(true).then( () => {
       GameState.LoadModule(CharGenManager.getStartModuleResRef());
     });
+  }
+
+  /**
+   * Seed LvlStatList[0] for a newly created PC (retail CharGen / first level).
+   */
+  static seedInitialLevelStat(creature: ModulePlayer) {
+    if(!creature) return;
+    const cls = creature.classes?.[0];
+    if(!cls) return;
+    const rec = createEmptyLevelStatRecord();
+    rec.classId = cls.id | 0;
+    rec.hpChange = cls.hitdie | 0;
+    rec.fpChange = cls.forcedie | 0;
+    rec.attributeIndex = LevelUpAbilityIndex.NONE;
+    for(let i = 0; i < SkillType.MAX_SKILLS; i++){
+      rec.skillRankChanges[i] = creature.skills?.[i]?.rank | 0;
+    }
+    rec.skillPointsRemaining = creature.skillPoints | 0;
+    rec.feats = (creature.feats || []).map((f) => f.id | 0);
+    // Known powers at level 1 (jedi) if any
+    const spells = cls.spells || [];
+    for(let i = 0; i < spells.length; i++){
+      rec.spellsAdded.push(spells[i].id | 0);
+    }
+    creature.levelStats = [rec];
   }
 
   /**

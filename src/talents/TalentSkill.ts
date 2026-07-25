@@ -90,8 +90,12 @@ export class TalentSkill extends TalentObject {
         ? oItemUsed as ModuleItem
         : undefined;
 
+      // Both medpac and repair-kit use AIActionHeal @ 00517a60 (skill always Treat Injury).
       if(!kit && this.id == SkillType.TREAT_INJURY){
         kit = caster.getInventory().find((item) => item.baseItemId === BaseItemType.MEDICAL_EQUIPMENT);
+      }
+      if(!kit && this.id == SkillType.REPAIR){
+        kit = caster.getInventory().find((item) => item.baseItemId === BaseItemType.DROID_REPAIR_EQUIPMENT);
       }
 
       if(!kit){
@@ -101,8 +105,8 @@ export class TalentSkill extends TalentObject {
       const action = new GameState.ActionFactory.ActionHeal();
       action.setParameter(0, ActionParameterType.DWORD, oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
       action.setParameter(1, ActionParameterType.DWORD, kit);
-      action.setParameter(2, ActionParameterType.INT, this.id);
-      action.setParameter(3, ActionParameterType.INT, 1);
+      action.setParameter(2, ActionParameterType.INT, 0); // requeue scratch — not skill
+      action.setParameter(3, ActionParameterType.INT, 1); // bAllowMove
       caster.actionQueue.add(action);
     }
   }

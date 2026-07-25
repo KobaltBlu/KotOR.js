@@ -223,11 +223,12 @@ export class ModuleCamera {
     gff.RootNode.type = 14;
 
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'CameraID') ).setValue(this.cameraID);
-    gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'FieldOfView') ).setValue(this.fov);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Height') ).setValue(this.height);
+    // Retail SavePlaceableCameras — FieldOfView / Height / Pitch are FLOAT
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'FieldOfView') ).setValue(this.fov);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Height') ).setValue(this.height);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'MicRange') ).setValue(this.micRange);
     gff.RootNode.addField( new GFFField(GFFDataType.ORIENTATION, 'Orientation') ).setValue({x: this.orientation.x, y: this.orientation.y, z: this.orientation.z, w: this.orientation.w});
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Pitch') ).setValue(this.pitch);
+    gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Pitch') ).setValue(this.pitch);
     gff.RootNode.addField( new GFFField(GFFDataType.VECTOR, 'Position') ).setValue({x: this.position.x, y: this.position.y, z: this.position.z});
 
     this.template = gff;

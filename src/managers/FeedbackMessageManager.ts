@@ -103,8 +103,38 @@ export class FeedbackMessageManager {
     0xe: 0x596,
     0xf: 0x597,
     0x10: 0x598,
+    // AIActionHeal @ 00517a60 — GUI-string mapped TLKs (fallback message if missing)
+    0x37: 0x5c1,
+    0x38: 0x5c2,
     // 0xd = already-locked etc. needs object context — callers use dedicated paths
   };
+
+  /**
+   * Retail BroadcastSkillData @ 004ec700 — skill check summary to feedback.
+   * Full CC message path is net-oriented; we surface roll/rank/DC/result in the log.
+   */
+  static BroadcastSkillData(data: {
+    skillBroadcastId: number;
+    roll: number;
+    rank: number;
+    dc: number;
+    autoFlag: number;
+    result: number;
+  }){
+    const roll = data.roll | 0;
+    const rank = data.rank | 0;
+    const dc = data.dc | 0;
+    const total = roll + rank;
+    const outcome =
+      data.result === 1 ? "success" :
+      data.result === 3 ? "auto-fail" :
+      "fail";
+    this.AddMessage(
+      `Skill check (${data.skillBroadcastId | 0}): ${roll}+${rank}=${total} vs DC ${dc} — ${outcome}`,
+      FeebackMessageColor.INFO,
+      data.skillBroadcastId | 0,
+    );
+  }
 
   /**
    * Send a retail combat/action feedback message by ID.

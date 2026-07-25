@@ -51,6 +51,8 @@ export class ModuleItem extends ModuleObject {
   addCost: number;
   cost: number;
   modelVariation: number;
+  /** Retail item BodyVariation BYTE (A=1, B=2, …); used when baseItem.modelType == 1. */
+  bodyVariation: number;
   textureVariation: number;
   palleteID: number;
   loaded: boolean;
@@ -107,6 +109,7 @@ export class ModuleItem extends ModuleObject {
     this.addCost = 0;
     this.cost = 0;
     this.modelVariation = 0;
+    this.bodyVariation = 0;
     this.textureVariation = 1;
     this.palleteID = 0;
     this.loaded = false;
@@ -150,8 +153,22 @@ export class ModuleItem extends ModuleObject {
     return this.baseItem;
   }
 
+  /** Appearance body letter from baseitems.2da (e.g. 'B'). */
   getBodyVariation(){
-    return this.baseItem.bodyVar;
+    return this.baseItem?.bodyVar;
+  }
+
+  /**
+   * Retail SaveItem BodyVariation BYTE when modeltype == 1.
+   * Falls back to bodyVar letter → A=1, B=2, …
+   */
+  getBodyVariationByte(): number {
+    if(this.bodyVariation > 0) return this.bodyVariation | 0;
+    const letter = this.baseItem?.bodyVar;
+    if(typeof letter === 'string' && letter.length){
+      return Math.max(0, letter.toUpperCase().charCodeAt(0) - 64);
+    }
+    return 0;
   }
 
   getModelVariation(){
@@ -891,6 +908,16 @@ export class ModuleItem extends ModuleObject {
       this.baseItem = BaseItem.From2DA(this.baseItemId);
     }
 
+    if(this.template.RootNode.hasField('BodyVariation')){
+      this.bodyVariation = this.template.getFieldByLabel('BodyVariation').getValue();
+    }else if(this.baseItem?.modelType == 1){
+      // Retail LoadDataFromGff seeds body_variation from baseitems when modeltype == 1
+      const letter = this.baseItem.bodyVar;
+      if(typeof letter === 'string' && letter.length){
+        this.bodyVariation = Math.max(0, letter.toUpperCase().charCodeAt(0) - 64);
+      }
+    }
+
     if(this.template.RootNode.hasField('Charges'))
       this.charges = this.template.getFieldByLabel('Charges').getValue();
 
@@ -1078,9 +1105,7 @@ export class ModuleItem extends ModuleObject {
   save(){
     let itemStruct = new GFFStruct(0);
 
-    if(this.id >= 0)
-      itemStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
-    
+    // Retail CSWSItem::SaveItem does not write ObjectId
     itemStruct.addField( new GFFField(GFFDataType.INT, 'BaseItem') ).setValue(this.getBaseItemId());
     itemStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Identified') ).setValue(this.identified);
@@ -1109,6 +1134,11 @@ export class ModuleItem extends ModuleObject {
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Dropable') ).setValue(this.dropable);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).setValue(this.pickpocketable ? 1 : 0);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'ModelVariation') ).setValue(this.modelVariation);
+    // Retail SaveItem: BodyVariation + TextureVar only when baseitems.modeltype == 1
+    if(this.baseItem?.modelType == 1){
+      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'BodyVariation') ).setValue(this.getBodyVariationByte());
+      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'TextureVar') ).setValue(this.getTextureVariation());
+    }
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Charges') ).setValue(this.charges);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'MaxCharges') ).setValue(this.maxCharges);
     itemStruct.addField( new GFFField(GFFDataType.DWORD, 'Cost') ).setValue(this.cost);
@@ -1117,7 +1147,10 @@ export class ModuleItem extends ModuleObject {
 
     let propertiesList = itemStruct.addField( new GFFField(GFFDataType.LIST, 'PropertiesList') );
     for(let i = 0; i < this.properties.length; i++){
-      propertiesList.addChildStruct( this.properties[i].save() );
+      const propStruct = this.properties[i].save();
+      // Retail SaveItemProperties: list element struct id = index
+      propStruct.setType(i);
+      propertiesList.addChildStruct( propStruct );
     }
 
     itemStruct.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);

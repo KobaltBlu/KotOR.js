@@ -308,7 +308,8 @@ export class AreaMap {
   }
 
   exportData(){
-    let dataStruct = new GFFStruct(14);
+    // Retail SaveMaps @ 0050622c — AreaMap struct type 0x65 (101)
+    let dataStruct = new GFFStruct(0x65);
 
     this.data.fill(0);
     let byteIndex = 0;

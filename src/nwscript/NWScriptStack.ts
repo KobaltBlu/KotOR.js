@@ -224,35 +224,37 @@ export class NWScriptStack {
 
     // Retail CVirtualMachineStack::SaveStack stores dword indices; load multiplies by 4.
     struct.addField( new GFFField(GFFDataType.INT, 'BasePointer') ).setValue(this.basePointer / 4);
-
-    let stack = struct.addField( new GFFField(GFFDataType.LIST, 'Stack') ).setValue(this.pointer);
-    for(let i = 0; i < this.stack.length; i++){
-      let element = this.stack[i];
-      let elementStruct = new GFFStruct(i);
-
-      elementStruct.addField( new GFFField(GFFDataType.CHAR, 'Type') ).setValue( element.type );
-      switch(element.type){
-        case NWScriptDataType.OBJECT:
-          elementStruct.addField( new GFFField(GFFDataType.DWORD, 'Value') ).setValue( typeof element.value === 'object' ? element.value.id : 2130706432 );
-        break;
-        case NWScriptDataType.INTEGER:
-          elementStruct.addField( new GFFField(GFFDataType.INT, 'Value') ).setValue( element.value );
-        break;
-        case NWScriptDataType.FLOAT:
-          elementStruct.addField( new GFFField(GFFDataType.FLOAT, 'Value') ).setValue( element.value );
-        break;
-        case NWScriptDataType.STRING:
-          elementStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Value') ).setValue( element.value );
-        break;
-        case NWScriptDataType.EFFECT:
-          let gameDefinedStruct = new GFFStruct(0);
-        break;
-      }
-      stack.addChildStruct(elementStruct);
-    }
-
     struct.addField( new GFFField(GFFDataType.INT, 'StackPointer') ).setValue(this.pointer / 4);
     struct.addField( new GFFField(GFFDataType.INT, 'TotalSize') ).setValue(this.stack.length);
+
+    // Retail SaveStack only emits Stack LIST when total_size > 0
+    if(this.stack.length > 0){
+      let stack = struct.addField( new GFFField(GFFDataType.LIST, 'Stack') );
+      for(let i = 0; i < this.stack.length; i++){
+        let element = this.stack[i];
+        let elementStruct = new GFFStruct(i);
+
+        elementStruct.addField( new GFFField(GFFDataType.CHAR, 'Type') ).setValue( element.type );
+        switch(element.type){
+          case NWScriptDataType.OBJECT:
+            elementStruct.addField( new GFFField(GFFDataType.DWORD, 'Value') ).setValue( typeof element.value === 'object' ? element.value.id : 2130706432 );
+          break;
+          case NWScriptDataType.INTEGER:
+            elementStruct.addField( new GFFField(GFFDataType.INT, 'Value') ).setValue( element.value );
+          break;
+          case NWScriptDataType.FLOAT:
+            elementStruct.addField( new GFFField(GFFDataType.FLOAT, 'Value') ).setValue( element.value );
+          break;
+          case NWScriptDataType.STRING:
+            elementStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Value') ).setValue( element.value );
+          break;
+          case NWScriptDataType.EFFECT:
+            let gameDefinedStruct = new GFFStruct(0);
+          break;
+        }
+        stack.addChildStruct(elementStruct);
+      }
+    }
   
     return struct;
   }

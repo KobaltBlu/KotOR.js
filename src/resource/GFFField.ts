@@ -442,13 +442,9 @@ export class GFFField {
         this.value = val;
       break;
       case GFFDataType.CHAR:
-        if(!val)
-          val = '';
-
-        if(typeof val !== 'string')
-          val = val.toString()
-
-        this.value = val.toString();
+        // Retail CHAR is a signed byte; store as number (not string) so export
+        // writes the numeric value instead of charCodeAt("2") === 50.
+        this.value = (Number(val || 0) << 24) >> 24;
       break;
       case GFFDataType.BYTE:
         if(typeof val === 'undefined'){
@@ -510,11 +506,40 @@ export class GFFField {
           this.value = val;
         }
       break;
+      case GFFDataType.DWORD64: {
+        // Exporter writes field.data (8 LE bytes); keep dataView in sync with value
+        const n = typeof val === 'bigint' ? val : BigInt(Math.trunc(Number(val) || 0));
+        this.data = new Uint8Array(8);
+        this.dataView = new DataView(this.data.buffer);
+        this.dataView.setBigUint64(0, n < 0n ? 0n : n, true);
+        this.value = n < 0n ? 0n : n;
+      break;
+      }
+      case GFFDataType.INT64: {
+        const n = typeof val === 'bigint' ? val : BigInt(Math.trunc(Number(val) || 0));
+        this.data = new Uint8Array(8);
+        this.dataView = new DataView(this.data.buffer);
+        this.dataView.setBigInt64(0, n, true);
+        this.value = n;
+      break;
+      }
       case GFFDataType.VOID:
         if(val instanceof Uint8Array){
           this.value = val;
         }else if(val instanceof ArrayBuffer){
           this.value = new Uint8Array(val);
+        }
+      break;
+      case GFFDataType.VECTOR:
+        // Exporter serializes from this.vector, not this.value
+        if(typeof val == 'object' && typeof val.x == 'number' && typeof val.y == 'number' && typeof val.z == 'number'){
+          this.vector = {x: val.x, y: val.y, z: val.z};
+        }
+      break;
+      case GFFDataType.ORIENTATION:
+        // Exporter serializes from this.orientation, not this.value
+        if(typeof val == 'object' && typeof val.x == 'number' && typeof val.y == 'number' && typeof val.z == 'number' && typeof val.w == 'number'){
+          this.orientation = {x: val.x, y: val.y, z: val.z, w: val.w};
         }
       break;
       default:

@@ -2,6 +2,13 @@ import EngineLocation from "@/engine/EngineLocation";
 import { IEngineGlobals } from "@/interface/engine/IEngineGlobals";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 
+export type GlobalVariableCatalogType = 'Boolean' | 'Number' | 'String' | 'Location';
+
+export interface GlobalVariableCatalogEntry {
+  name: string;
+  type: GlobalVariableCatalogType;
+}
+
 /**
  * GlobalVariableManager class.
  * 
@@ -19,29 +26,53 @@ export class GlobalVariableManager {
     String    : new Map(), 
     Location  : new Map(), 
   };
+
+  /**
+   * Retail CSWGlobalVariableTable identifiers walk order from globalcat.2da
+   * (row index 0 .. RowCount-1). ExportGlobalVars emits Cat and Val lists in this order.
+   */
+  static Catalog: GlobalVariableCatalogEntry[] = [];
   
   public static Init(){
-    let _initGlobals = TwoDAManager.datatables.get('globalcat').rows;
-    for (let key in _initGlobals) {
-      if (_initGlobals.hasOwnProperty(key)) {
-        let globItem = _initGlobals[key];
+    GlobalVariableManager.Globals.Boolean.clear();
+    GlobalVariableManager.Globals.Number.clear();
+    GlobalVariableManager.Globals.String.clear();
+    GlobalVariableManager.Globals.Location.clear();
+    GlobalVariableManager.Catalog = [];
 
-        switch(globItem.type){
-          case 'Boolean':
-            GlobalVariableManager.Globals.Boolean.set(globItem.name.toLowerCase(), {name: globItem.name, value: false});
+    const table = TwoDAManager.datatables.get('globalcat');
+    if(!table){ return; }
+
+    const rowCount = table.RowCount | 0;
+    for (let i = 0; i < rowCount; i++) {
+      const globItem = table.rows[i] || table.getRowByIndex?.(i);
+      if(!globItem || !globItem.name){ continue; }
+
+      const type = String(globItem.type || '') as GlobalVariableCatalogType;
+      switch(type){
+        case 'Boolean':
+          GlobalVariableManager.Globals.Boolean.set(globItem.name.toLowerCase(), {name: globItem.name, value: false});
+          GlobalVariableManager.Catalog.push({ name: globItem.name, type });
           break;
-          case 'Location':
-            GlobalVariableManager.Globals.Location.set(globItem.name.toLowerCase(), {name: globItem.name, value: new EngineLocation()});
+        case 'Location':
+          GlobalVariableManager.Globals.Location.set(globItem.name.toLowerCase(), {name: globItem.name, value: new EngineLocation()});
+          GlobalVariableManager.Catalog.push({ name: globItem.name, type });
           break;
-          case 'Number':
-            GlobalVariableManager.Globals.Number.set(globItem.name.toLowerCase(), {name: globItem.name, value: 0});
+        case 'Number':
+          GlobalVariableManager.Globals.Number.set(globItem.name.toLowerCase(), {name: globItem.name, value: 0});
+          GlobalVariableManager.Catalog.push({ name: globItem.name, type });
           break;
-          case 'String':
-            GlobalVariableManager.Globals.String.set(globItem.name.toLowerCase(), {name: globItem.name, value: ''});
+        case 'String':
+          GlobalVariableManager.Globals.String.set(globItem.name.toLowerCase(), {name: globItem.name, value: ''});
+          GlobalVariableManager.Catalog.push({ name: globItem.name, type });
           break;
-        }
       }
     }
+  }
+
+  /** Catalog entries of a given type in retail identifier / globalcat row order. */
+  public static getCatalogByType(type: GlobalVariableCatalogType): GlobalVariableCatalogEntry[] {
+    return GlobalVariableManager.Catalog.filter((e) => e.type === type);
   }
   
   public static SetGlobalBoolean(name = '', value = false){

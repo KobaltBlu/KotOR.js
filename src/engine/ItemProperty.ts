@@ -241,14 +241,15 @@ export class ItemProperty {
     let propStruct = new GFFStruct(0);
 
     propStruct.addField( new GFFField(GFFDataType.WORD, 'PropertyName') )?.setValue( this.propertyName == -1 ? 255 : this.propertyName);
-    propStruct.addField( new GFFField(GFFDataType.WORD, 'SubType') )?.setValue( this.subType == -1 ? 255 : this.subType);
+    // Retail item property labels: Subtype / Useable (load already accepts these)
+    propStruct.addField( new GFFField(GFFDataType.WORD, 'Subtype') )?.setValue( this.subType == -1 ? 255 : this.subType);
     propStruct.addField( new GFFField(GFFDataType.BYTE, 'CostTable') )?.setValue( this.costTable == -1 ? 255 : this.costTable);
     propStruct.addField( new GFFField(GFFDataType.WORD, 'CostValue') )?.setValue( this.costValue == -1 ? 255 : this.costValue);
     propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1') )?.setValue( this.param1 == -1 ? 255 : this.param1);
     propStruct.addField( new GFFField(GFFDataType.BYTE, 'Param1Value') )?.setValue( this.param1Value == -1 ? 255 : this.param1Value);
     propStruct.addField( new GFFField(GFFDataType.BYTE, 'ChanceAppear') )?.setValue( this.chanceAppear == -1 ? 255 : this.chanceAppear);
     propStruct.addField( new GFFField(GFFDataType.BYTE, 'UsesPerDay') )?.setValue( this.usesPerDay == -1 ? 255 : this.usesPerDay);
-    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Usable') )?.setValue( this.useable == -1 ? 255 : this.useable);
+    propStruct.addField( new GFFField(GFFDataType.BYTE, 'Useable') )?.setValue( this.useable == -1 ? 255 : this.useable);
     propStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeType') )?.setValue( this.upgradeType == -1 ? 255 : this.upgradeType);
 
     return propStruct;

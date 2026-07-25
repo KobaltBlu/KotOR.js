@@ -62,3 +62,4 @@ export * from "@/actions/ActionStanceMeditative";
 export * from "@/actions/ActionCheckPath";
 export * from "@/actions/ActionFactory";
 export * from "@/actions/use-range";
+export * from "@/actions/item-transfer";

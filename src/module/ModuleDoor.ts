@@ -31,6 +31,8 @@ import { BitWise } from "@/utility/BitWise";
 import { AudioEmitterType } from "@/enums/audio/AudioEmitterType";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { CombatActionType, ModulePlaceableObjectSound, SkillType } from "@/enums";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import type { ModuleCreature } from "@/module/ModuleCreature";
@@ -106,6 +108,8 @@ export class ModuleDoor extends ModuleObject {
 
   collisionDelay: number = 0;
   doorAppearance: SWDoorAppearance;
+  /** Retail door script resrefs (ctor defaults all slots to "default"). */
+  scriptResRefs: Partial<Record<string, string>> = {};
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -122,6 +126,8 @@ export class ModuleDoor extends ModuleObject {
     this.appearance = 0;
     this.autoRemoveKey = false;
     this.closeLockDC = 0;
+    // Retail LoadObjectState Commandable default = 1
+    this.commandable = true;
     this.currentHP = 0;
     this.description = new CExoLocString();
     this.disarmDC = 0;
@@ -1012,6 +1018,7 @@ export class ModuleDoor extends ModuleObject {
       ModuleObjectScript.DoorOnClosed,
       ModuleObjectScript.DoorOnDamaged,
       ModuleObjectScript.DoorOnDeath,
+      ModuleObjectScript.DoorOnDialog,
       ModuleObjectScript.DoorOnDisarm,
       ModuleObjectScript.DoorOnFailToOpen,
       ModuleObjectScript.DoorOnHeartbeat,
@@ -1028,14 +1035,17 @@ export class ModuleDoor extends ModuleObject {
     const scriptsNode = this.template?.RootNode;
     if(!scriptsNode){ return; }
     for(const scriptKey of scriptKeys){
+      // Retail CSWSDoor ctor seeds all slots to "default"; LoadDoor overwrites with the
+      // template value including an explicit empty resref (must persist "" on save).
+      let resRef = 'default';
       if(scriptsNode.hasField(scriptKey)){
-        const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
-        if(!resRef){ continue; }
-        const nwscript = GameState.NWScript.Load(resRef);
-        if(!nwscript){ continue; }
-        nwscript.caller = this;
-        this.scripts[scriptKey] = nwscript;
+        resRef = String(scriptsNode.getFieldByLabel(scriptKey).getValue() ?? '');
       }
+      this.scriptResRefs[scriptKey] = resRef;
+      const nwscript = GameState.NWScript.Load(resRef);
+      if(!nwscript){ continue; }
+      nwscript.caller = this;
+      this.scripts[scriptKey] = nwscript;
     }
   }
 
@@ -1078,6 +1088,9 @@ export class ModuleDoor extends ModuleObject {
 
     if(this.template.RootNode.hasField('CloseLockDC'))
       this.closeLockDC = this.template.getFieldByLabel('CloseLockDC').getValue();
+
+    if(this.template.RootNode.hasField('Commandable'))
+      this.commandable = !!this.template.getFieldByLabel('Commandable').getValue();
 
     if(this.template.RootNode.hasField('Conversation')){
       this.conversation = DLGObject.FromResRef(this.template.getFieldByLabel('Conversation').getValue());
@@ -1155,10 +1168,17 @@ export class ModuleDoor extends ModuleObject {
       this.plot = !!this.template.getFieldByLabel('Plot').getValue();
     }
 
-    if(this.template.RootNode.hasField('PortraidId')){
+    if(this.template.RootNode.hasField('PortraitId')){
+      this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
+    }else if(this.template.RootNode.hasField('PortraidId')){
+      // Legacy typo in some templates
       this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
-      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
+    // Retail LoadDoor: PortraitId == 0 → 0x22E (558)
+    if((this.portraitId | 0) === 0){
+      this.portraitId = 0x22E;
+    }
+    this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
 
 
     if(this.template.RootNode.hasField('Ref'))
@@ -1242,6 +1262,20 @@ export class ModuleDoor extends ModuleObject {
       }
     }
 
+    // Retail CSWSDoor::PostProcess @ 00589d40 — hardness applies a permanent
+    // DamageResistance effect (subtype |= 2, int0 = 0x3FFF, int1 = hardness, is_exposed = 0).
+    if((this.hardness | 0) > 0 && !this.effects.some(e => e.type === GameEffectType.EffectDamageResistance)){
+      const eDamageResist = new GameEffectFactory.EffectDamageResistance();
+      // Retail PostProcess: subtype & 0xfff8 | 2 (PERMANENT only — not MAGICAL|PERMANENT = 10)
+      eDamageResist.setSubTypeUnMasked(GameEffectDurationType.PERMANENT);
+      // Retail ApplyEffect with field97_0x1ec = 1 during PostProcess → SkipOnLoad = 1
+      eDamageResist.setSkipOnLoad(true);
+      eDamageResist.setInt(0, 0x3FFF);
+      eDamageResist.setInt(1, this.hardness | 0);
+      eDamageResist.setIsExposed(false);
+      this.addEffect(eDamageResist);
+    }
+
     this.loadActionList();
 
     if(this.template.RootNode.hasField('LinkedTo'))
@@ -1283,12 +1317,12 @@ export class ModuleDoor extends ModuleObject {
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTD ';
+    gff.RootNode.type = 8;
 
     let actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Appearance') ).setValue(this.appearance);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AutoRemoveKey') ).setValue(this.autoRemoveKey);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'Bearing') ).setValue(this.bearing);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'BodyBag') ).setValue(this.bodyBag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CloseLockDC') ).setValue(this.closeLockDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Conversation') ).setValue(this.conversation ? this.conversation.resref : '');
@@ -1321,27 +1355,39 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
-    //Scripts
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnClick) ).setValue(this.scripts[ModuleObjectScript.DoorOnClick]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnClosed) ).setValue(this.scripts[ModuleObjectScript.DoorOnClosed]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnDamaged) ).setValue(this.scripts[ModuleObjectScript.DoorOnDamaged]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnDeath) ).setValue(this.scripts[ModuleObjectScript.DoorOnDeath]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnDisarm) ).setValue(this.scripts[ModuleObjectScript.DoorOnDisarm]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnFailToOpen) ).setValue(this.scripts[ModuleObjectScript.DoorOnFailToOpen]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnHeartbeat) ).setValue(this.scripts[ModuleObjectScript.DoorOnHeartbeat]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnLock) ).setValue(this.scripts[ModuleObjectScript.DoorOnLock]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnMeleeAttacked) ).setValue(this.scripts[ModuleObjectScript.DoorOnMeleeAttacked]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnOpen) ).setValue(this.scripts[ModuleObjectScript.DoorOnOpen]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnSpellCastAt) ).setValue(this.scripts[ModuleObjectScript.DoorOnSpellCastAt]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnTrapTriggered) ).setValue(this.scripts[ModuleObjectScript.DoorOnTrapTriggered]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnUnlock) ).setValue(this.scripts[ModuleObjectScript.DoorOnUnlock]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.DoorOnUserDefined]?.name || '');
+    // Scripts — retail SaveDoor @ 00588ad0 includes OnDialog; omits non-retail extras
+    // Retail ctor defaults all slots to "default"; persist the loaded resref (including "")
+    // even if the NCS failed to load. Absent-field slots fall back to "default".
+    const scriptResRef = (key: string) => {
+      if(typeof this.scriptResRefs[key] === 'string') return this.scriptResRefs[key];
+      return this.scripts[key]?.name || 'default';
+    };
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnClick) ).setValue(scriptResRef(ModuleObjectScript.DoorOnClick));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnClosed) ).setValue(scriptResRef(ModuleObjectScript.DoorOnClosed));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnDamaged) ).setValue(scriptResRef(ModuleObjectScript.DoorOnDamaged));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnDeath) ).setValue(scriptResRef(ModuleObjectScript.DoorOnDeath));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnDialog) ).setValue(scriptResRef(ModuleObjectScript.DoorOnDialog));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnDisarm) ).setValue(scriptResRef(ModuleObjectScript.DoorOnDisarm));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnFailToOpen) ).setValue(scriptResRef(ModuleObjectScript.DoorOnFailToOpen));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnHeartbeat) ).setValue(scriptResRef(ModuleObjectScript.DoorOnHeartbeat));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnLock) ).setValue(scriptResRef(ModuleObjectScript.DoorOnLock));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnMeleeAttacked) ).setValue(scriptResRef(ModuleObjectScript.DoorOnMeleeAttacked));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnOpen) ).setValue(scriptResRef(ModuleObjectScript.DoorOnOpen));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnSpellCastAt) ).setValue(scriptResRef(ModuleObjectScript.DoorOnSpellCastAt));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnTrapTriggered) ).setValue(scriptResRef(ModuleObjectScript.DoorOnTrapTriggered));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnUnlock) ).setValue(scriptResRef(ModuleObjectScript.DoorOnUnlock));
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.DoorOnUserDefined) ).setValue(scriptResRef(ModuleObjectScript.DoorOnUserDefined));
     
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenState') ).setValue(this.openState);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'AnimationState') ).setValue(this.animationState | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
+    // Retail SaveDoor: PortraitId if id != -1, else Portrait RESREF
+    if((this.portraitId | 0) !== 0xFFFF && (this.portraitId | 0) !== -1){
+      gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
+    }else{
+      const portraitResRef = (this.portrait as any)?.resref || (this.portrait as any)?.baseresre || '';
+      gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Portrait') ).setValue(portraitResRef || '');
+    }
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
 
     //SWVarTable
@@ -1351,7 +1397,6 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'SecretDoorDC') ).setValue(this.secretDoorDC | 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOLOCSTRING, 'TransitionDestin') ).setValue(this.transitionDestin);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
@@ -1359,7 +1404,6 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapFlag') ).setValue(this.trapFlag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapOneShot') ).setValue(this.trapOneShot);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapType') ).setValue(this.trapType);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Useable') ).setValue(this.useable);
     this.writeNamedVarTable(gff.RootNode);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Will') ).setValue(this.will);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'X') ).setValue(this.position.x);
@@ -1443,7 +1487,7 @@ export class ModuleDoor extends ModuleObject {
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') );
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PaletteId') ).setValue(6);
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') );
-    template.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraidId') );
+    template.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') );
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') );
     template.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') );
     template.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') );

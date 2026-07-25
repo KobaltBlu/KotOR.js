@@ -26,9 +26,7 @@ export class CurrentGame {
         GameFileSystem.readdir(CurrentGame.gameinprogress_dir).then( (files) => {
           for(let i = 0, len = files.length; i < len; i++){
             let file = files[i];
-            let file_path = path.join( CurrentGame.gameinprogress_dir, file );
             let file_info = path.parse(file);
-            let ext = file_info.ext.split('.').pop();
             if(file_info.name.toLowerCase() == name.toLowerCase()){
               resolve(true);
               return;
@@ -146,28 +144,31 @@ export class CurrentGame {
    */
   static async markModulesAsSaveGame(){
     try{
+      // readdir returns paths relative to ApplicationProfile.directory (e.g. gameinprogress/x.sav)
       const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
       for(let i = 0; i < files.length; i++){
-        const file = files[i];
-        const file_info = path.parse(file);
+        const file_path = files[i];
+        const file_info = path.parse(file_path);
         if((file_info.ext || '').toLowerCase() !== '.sav') continue;
-        const file_path = path.join(CurrentGame.gameinprogress_dir, file);
         try{
+          // Load full file into memory so resource payloads survive rebuild/export
           const data = await GameFileSystem.readFile(file_path);
           const moduleErf = new ERFObject(data);
           await moduleErf.load();
+          await moduleErf.loadAllResourceData();
           const ifoBuf = await moduleErf.getResourceBufferByResRef('module', ResourceTypes.ifo);
-          if(!ifoBuf) continue;
+          if(!ifoBuf?.byteLength) continue;
           const ifo = new GFFObject(ifoBuf);
           if(ifo.RootNode.hasField('Mod_IsSaveGame')){
             ifo.RootNode.getFieldByLabel('Mod_IsSaveGame').setValue(1);
           }else{
             ifo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Mod_IsSaveGame')).setValue(1);
           }
+          // Replaces existing module.ifo in-place (does not duplicate the key)
           moduleErf.addResource('module', ResourceTypes.ifo, ifo.getExportBuffer());
           await moduleErf.export(file_path);
         }catch(e){
-          console.warn('CurrentGame.markModulesAsSaveGame', file, e);
+          console.warn('CurrentGame.markModulesAsSaveGame', file_path, e);
         }
       }
     }catch(e){
@@ -182,22 +183,30 @@ export class CurrentGame {
     sav.header.fileType = 'MOD ';
     sav.header.fileVersion = 'V1.0';
     try{
+      // readdir returns paths relative to ApplicationProfile.directory (e.g. gameinprogress/x.sav)
       const files = await GameFileSystem.readdir(CurrentGame.gameinprogress_dir);
       for(let i = 0; i < files.length; i++){
-        const file = files[i];
-        const file_path = path.join( CurrentGame.gameinprogress_dir, file );
-        const file_info = path.parse(file);
-        const ext = file_info.ext.split('.').pop();
-        if(typeof ResourceTypes[ext] != 'undefined'){
-          try{
-            const data = await GameFileSystem.readFile( file_path);
-            // Retail inventory resource is lowercase inventory.res
-            const resName = file_info.name.toLowerCase() === 'inventory' ? 'inventory' : file_info.name;
-            sav.addResource(resName, ResourceTypes[ext], data);
-          }catch(e){
-            console.error(e);
+        const file_path = files[i];
+        const file_info = path.parse(file_path);
+        const ext = (file_info.ext || '').replace(/^\./, '').toLowerCase();
+        if(typeof ResourceTypes[ext] == 'undefined') continue;
+        try{
+          const data = await GameFileSystem.readFile(file_path);
+          if(!data?.byteLength){
+            console.warn('CurrentGame.ExportToSaveFolder: skipping empty file', file_path);
+            continue;
           }
+          // Retail inventory resource is lowercase inventory.res
+          const resName = file_info.name.toLowerCase() === 'inventory' ? 'inventory' : file_info.name.toLowerCase();
+          sav.addResource(resName, ResourceTypes[ext], data);
+        }catch(e){
+          console.error('CurrentGame.ExportToSaveFolder', file_path, e);
         }
+      }
+      if(!sav.keyList.length){
+        console.error('CurrentGame.ExportToSaveFolder: gameinprogress produced 0 resources — SAVEGAME.sav would be empty');
+      }else{
+        console.log('CurrentGame.ExportToSaveFolder: packing', sav.keyList.length, 'resources into SAVEGAME.sav');
       }
       await sav.export( path.join(folder, 'SAVEGAME.sav') );
     }catch(e){

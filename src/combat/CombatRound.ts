@@ -2062,7 +2062,10 @@ export class CombatRound {
     struct.addField(new GFFField(GFFDataType.INT, 'Engaged')).setValue(this.engaged ? 1 : 0);
     struct.addField(new GFFField(GFFDataType.INT, 'Master')).setValue(this.master ? 1 : 0);
     struct.addField(new GFFField(GFFDataType.DWORD, 'MasterID')).setValue(objId(this.masterID));
-    struct.addField(new GFFField(GFFDataType.DWORD, 'DuelPartner')).setValue(objId(this.duelPartner));
+    // DuelPartner is not written by retail K1 SaveCombatRound @ 004d3ec0
+    if(GameState.GameKey == GameEngineType.TSL){
+      struct.addField(new GFFField(GFFDataType.DWORD, 'DuelPartner')).setValue(objId(this.duelPartner));
+    }
     struct.addField(new GFFField(GFFDataType.BYTE, 'RoundPaused')).setValue(this.roundPaused ? 1 : 0);
     struct.addField(new GFFField(GFFDataType.DWORD, 'RoundPausedBy')).setValue(objId(this.roundPausedBy));
     struct.addField(new GFFField(GFFDataType.BYTE, 'InfinitePause')).setValue(this.infinitePause ? 1 : 0);

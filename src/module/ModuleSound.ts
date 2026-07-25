@@ -33,6 +33,11 @@ export class ModuleSound extends ModuleObject {
   audioEngine: AudioEngine;
   soundType: AudioEmitterType = AudioEmitterType.GLOBAL;
   active: boolean = true;
+  /**
+   * Client-only time-of-day gate (retail CSWCSoundObject field7_0x114).
+   * Does not persist — never overwrite Active from UpdateTimeOfDay.
+   */
+  timeOfDayActive: boolean = true;
   continuous: boolean = false;
   fixedVariance: number = 0;
   generatedType: AudioGeneratedType = AudioGeneratedType.MANUALLY_PLACED;
@@ -195,7 +200,7 @@ export class ModuleSound extends ModuleObject {
     }
     this.audioEmitter = new AudioEmitter(this.audioEngine, AudioEngineChannel.SFX);
     this.audioEmitter.name = this.tag;
-    this.audioEmitter.isActive = this.active;
+    this.audioEmitter.isActive = this.active && (this.timeOfDayActive ?? true);
     this.audioEmitter.isLooping = this.looping;
     this.audioEmitter.isContinuous = this.continuous;
     this.audioEmitter.isRandom = this.random;
@@ -235,31 +240,33 @@ export class ModuleSound extends ModuleObject {
   /**
    * Retail CSWCSoundObject::UpdateTimeOfDay @ 0066ae90.
    * Times: 0 = Hours bitmask, 1 = day-only, 2 = night-only, other = always.
+   * Client-only: updates timeOfDayActive; never mutates persisted Active.
    */
   updateTimeOfDay(phase: ModuleDayPhase, hour = 0){
-    let active = true;
+    let timeOfDayActive = true;
     const times = this.times | 0;
     if(times === 0){
-      active = ((1 << ((hour | 0) & 0x1f)) & (this.hours | 0)) !== 0;
+      timeOfDayActive = ((1 << ((hour | 0) & 0x1f)) & (this.hours | 0)) !== 0;
     }else{
       switch(phase){
         case ModuleDayPhase.Day:
         case ModuleDayPhase.Dawn:
-          active = times !== 2;
+          timeOfDayActive = times !== 2;
           break;
         case ModuleDayPhase.Night:
         case ModuleDayPhase.Dusk:
-          active = times !== 1;
+          timeOfDayActive = times !== 1;
           break;
       }
     }
-    this.active = active;
+    this.timeOfDayActive = timeOfDayActive;
     if(this.audioEmitter){
+      const combined = this.active && (this.timeOfDayActive ?? true);
       const wasActive = this.audioEmitter.isActive;
-      this.audioEmitter.isActive = active;
-      if(wasActive && !active){
+      this.audioEmitter.isActive = combined;
+      if(wasActive && !combined){
         this.audioEmitter.stop(this.audioEmitter.getPriorityFadeTime());
-      }else if(!wasActive && active){
+      }else if(!wasActive && combined){
         this.audioEmitter.start();
       }
     }
@@ -297,8 +304,11 @@ export class ModuleSound extends ModuleObject {
     // Retail CSWSSoundObject::Play sets Active = 1 before starting the source.
     this.active = true;
     if(this.audioEmitter){
-      this.audioEmitter.isActive = true;
-      this.audioEmitter.start();
+      const combined = this.active && (this.timeOfDayActive ?? true);
+      this.audioEmitter.isActive = combined;
+      if(combined){
+        this.audioEmitter.start();
+      }
     }
     return this;
   }
@@ -319,7 +329,7 @@ export class ModuleSound extends ModuleObject {
   fadeAndStop(fadeSeconds: number = 0): ModuleSound {
     this.active = false;
     if(this.audioEmitter){
-      this.audioEmitter.isActive = false;
+      this.audioEmitter.isActive = this.active && (this.timeOfDayActive ?? true);
       const t = Math.max(0, fadeSeconds);
       this.audioEmitter.stop(t);
     }
@@ -455,7 +465,8 @@ export class ModuleSound extends ModuleObject {
     gff.FileType = 'UTS ';
     gff.RootNode.type = 6;
 
-    // Retail CSWSSoundObject::Save field set (no TemplateResRef / Priority / Elevation / Commandable)
+    // Retail CSWSSoundObject::Save field set (no TemplateResRef / Priority / Elevation).
+    // Commandable is written by retail CSWSObject::SaveObjectState after Save.
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Positional') ).setValue(this.positional ? 1 : 0);
@@ -479,6 +490,9 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
+
+    // Retail CSWSObject::SaveObjectState writes Commandable for every object
+    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
 
     // KotOR.js engine extras (ObjectId / locals / actions) for round-trip within engine
     gff.RootNode.addField( this.actionQueueToActionList() );

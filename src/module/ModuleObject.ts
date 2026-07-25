@@ -546,7 +546,11 @@ export class ModuleObject {
       this.distanceToCamera = this.position.distanceTo(GameState.currentCameraPosition);
     }
 
-    if(this.spawned){
+    // Triggers/doors are static — roomCheck findWalkableFace would snap Z by +0.005.
+    // They attach rooms via their own getCurrentRoom() without mutating position.
+    if(this.spawned
+      && !BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger)
+      && !BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)){
       this.collisionManager.roomCheck(delta);
     }
 
@@ -2867,6 +2871,13 @@ export class ModuleObject {
       effect.setAttachedObject(this);
       effect.onApply(this);
     }
+  }
+
+  /**
+   * Retail object.area_id for save export — area game ObjectId, not ARE template ID.
+   */
+  getSaveAreaId(): number {
+    return (this.area?.id ?? GameState.module?.area?.id ?? 0) >>> 0;
   }
 
   /**

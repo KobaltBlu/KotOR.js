@@ -24,6 +24,8 @@ import { AudioEngine } from "@/audio/AudioEngine";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
+import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { ModuleObject } from "@/module/ModuleObject";
 import { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleArea } from "@/module/ModuleArea";
@@ -130,6 +132,8 @@ export class ModulePlaceable extends ModuleObject {
     this.autoRemoveKey = false;
     this.bodyBag = 0;
     this.closeLockDC = 0;
+    // Retail LoadObjectState Commandable default = 1
+    this.commandable = true;
     this.currentHP = 0;
     this.description = new CExoLocString();
     this.disarmDC = 0;
@@ -151,7 +155,8 @@ export class ModulePlaceable extends ModuleObject {
     this.paletteID = 0;
     this.partyInteract = false;
     this.plot = false;
-    this.portraitId = 0;
+    // Retail CSWSObject ctor portrait_id = 0xFFFF (save writes empty Portrait when unset)
+    this.portraitId = 0xFFFF;
     this.ref = 0;
     this.static = false;
     this.tag = '';
@@ -675,6 +680,7 @@ export class ModulePlaceable extends ModuleObject {
       ModuleObjectScript.PlaceableOnClosed,
       ModuleObjectScript.PlaceableOnDamaged,
       ModuleObjectScript.PlaceableOnDeath,
+      ModuleObjectScript.PlaceableOnDialog,
       ModuleObjectScript.PlaceableOnDisarm,
       ModuleObjectScript.PlaceableOnEndDialogue,
       ModuleObjectScript.PlaceableOnHeartbeat,
@@ -817,6 +823,9 @@ export class ModulePlaceable extends ModuleObject {
       this.conversation = DLGObject.FromResRef(this.template.getFieldByLabel('Conversation').getValue());
     }
 
+    if(this.template.RootNode.hasField('Commandable'))
+      this.commandable = !!this.template.getFieldByLabel('Commandable').getValue();
+
     if(this.template.RootNode.hasField('CurrentHP'))
       this.currentHP = this.template.getFieldByLabel('CurrentHP').getValue();
 
@@ -903,7 +912,11 @@ export class ModulePlaceable extends ModuleObject {
     if(this.template.RootNode.hasField('PartyInteract'))
       this.partyInteract = this.template.getFieldByLabel('PartyInteract').getValue();
 
-    if(this.template.RootNode.hasField('PortraidId')){
+    if(this.template.RootNode.hasField('PortraitId')){
+      this.portraitId = this.template.getFieldByLabel('PortraitId').getValue();
+      this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
+    }else if(this.template.RootNode.hasField('PortraidId')){
+      // Legacy typo in some templates
       this.portraitId = this.template.getFieldByLabel('PortraidId').getValue();
       this.portrait = GameState.SWRuleSet.portraits[this.portraitId];
     }
@@ -996,7 +1009,26 @@ export class ModulePlaceable extends ModuleObject {
         }
       }
     }
-    
+
+    // Retail LoadPlaceable: closed placeables settle on CLOSE (10076) rather than DEFAULT
+    if(this.animState === ModulePlaceableAnimState.DEFAULT && !this.isOpen()){
+      this.setAnimationState(ModulePlaceableAnimState.CLOSE);
+    }
+
+    // Retail CSWSPlaceable::PostProcess @ 00584870 — hardness applies a permanent
+    // DamageResistance effect (subtype |= 2, int0 = 0x3FFF, int1 = hardness, is_exposed = 0).
+    if((this.hardness | 0) > 0 && !this.effects.some(e => e.type === GameEffectType.EffectDamageResistance)){
+      const eDamageResist = new GameEffectFactory.EffectDamageResistance();
+      // Retail PostProcess: subtype & 0xfff8 | 2 (PERMANENT only — not MAGICAL|PERMANENT = 10)
+      eDamageResist.setSubTypeUnMasked(GameEffectDurationType.PERMANENT);
+      // Retail ApplyEffect with field97_0x1ec = 1 during PostProcess → SkipOnLoad = 1
+      eDamageResist.setSkipOnLoad(true);
+      eDamageResist.setInt(0, 0x3FFF);
+      eDamageResist.setInt(1, this.hardness | 0);
+      eDamageResist.setIsExposed(false);
+      this.addEffect(eDamageResist);
+    }
+
     this.loadActionList();
 
     this.initialized = true;
@@ -1048,6 +1080,8 @@ export class ModulePlaceable extends ModuleObject {
   save(){
     let gff = new GFFObject();
     gff.FileType = 'UTP ';
+    // Retail Placeable List element struct type
+    gff.RootNode.type = 9;
 
     const actionList = gff.RootNode.addField( this.actionQueueToActionList() );
     gff.RootNode.addField( new GFFField(GFFDataType.INT, 'Animation') ).setValue(this.animState);
@@ -1081,13 +1115,15 @@ export class ModulePlaceable extends ModuleObject {
     // Shells are never saved — persist visible so reload shows the bag
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsBodyBagVisible') ).setValue(this.isBodyBagVisible ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsCorpse') ).setValue(this.isCorpse ? 1 : 0);
-    gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'IsDestroyable') ).setValue(this.isDestroyable ? 1 : 0);
 
-    const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
-    //Object Inventory
+    // Retail SavePlaceable: ItemList only when inventory non-empty
     if(this.inventory.length){
+      const itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
       for(let i = 0; i < this.inventory.length; i++){
-        const itemStruct = this.inventory[i].save();
+        const invItem = this.inventory[i];
+        const itemStruct = invItem.save();
+        // Retail SavePlaceable writes ObjectId before SaveItem
+        itemStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(invItem.id >>> 0);
         itemList.addChildStruct(itemStruct);
       }
     }
@@ -1101,28 +1137,35 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
-    //Scripts
+    //Scripts — retail SavePlaceable field order includes OnDialog
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnClosed) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnClosed]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnDamaged) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnDamaged]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnDeath) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnDeath]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnDisarm) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnDisarm]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnEndDialogue) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnEndDialogue]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnHeartbeat) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnHeartbeat]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnInvDisturbed) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnInvDisturbed]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnLock) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnLock]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnMeleeAttacked) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnMeleeAttacked]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnOpen) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnOpen]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnSpellCastAt) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnSpellCastAt]?.name || '');
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnTrapTriggered) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnTrapTriggered]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnUnlock) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnUnlock]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnUsed) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnUsed]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnUserDefined) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnUserDefined]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnDialog) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnDialog]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnEndDialogue) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnEndDialogue]?.name || '');
+    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnTrapTriggered) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnTrapTriggered]?.name || '');
     
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Open') ).setValue(this.isOpen() ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Plot') ).setValue(this.plot);
-    gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
+    // Retail SavePlaceable: PortraitId if id != -1, else Portrait RESREF
+    if((this.portraitId | 0) !== 0xFFFF && (this.portraitId | 0) !== -1){
+      gff.RootNode.addField( new GFFField(GFFDataType.WORD, 'PortraitId') ).setValue(this.portraitId);
+    }else{
+      const portraitResRef = (this.portrait as any)?.resref || (this.portrait as any)?.baseresre || '';
+      gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'Portrait') ).setValue(portraitResRef || '');
+    }
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Ref') ).setValue(this.ref);
 
     //SWVarTable
@@ -1131,7 +1174,6 @@ export class ModulePlaceable extends ModuleObject {
 
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Static') ).setValue(this.static);
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
-    gff.RootNode.addField( new GFFField(GFFDataType.RESREF, 'TemplateResRef') ).setValue(this.templateResRef || '');
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectDC') ).setValue(this.trapDetectDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDetectable') ).setValue(this.trapDetectable);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TrapDisarmable') ).setValue(this.trapDisarmable);

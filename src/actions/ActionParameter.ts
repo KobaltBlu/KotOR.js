@@ -131,7 +131,8 @@ export class ActionParameter {
 
   toStruct(){
     const struct = new GFFStruct(1);
-    struct.addField(new GFFField(GFFDataType.INT, 'Type', this.type));
+    // Retail SaveActionQueue @ 004cc890 — Type is DWORD (INT breaks LoadActionQueue ReadFieldDWORD)
+    struct.addField(new GFFField(GFFDataType.DWORD, 'Type', this.type));
     switch(this.type){
       case ActionParameterType.INT:
         struct.addField(new GFFField(GFFDataType.INT, 'Value', this.value));

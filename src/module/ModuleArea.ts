@@ -112,6 +112,8 @@ export class ModuleArea extends ModuleObject {
   visObject: VISObject;
   layout: LYTObject;
   areaMap: AreaMap;
+  /** ARE template `ID` header (retail LoadAreaHeader header_info[0]) — not the game ObjectId */
+  areId: number = 0;
   /** Retail GIT TransPending / TransPendCurrID / TransPendNextID */
   transPending: number = 0;
   transPendCurrId: number = 0;
@@ -1514,6 +1516,8 @@ export class ModuleArea extends ModuleObject {
 
     //BEGIN AREA LOAD
 
+    // ARE ObjectId (when present, e.g. embedded save ARE) is the game object id.
+    // ARE ID header is separate (retail header_info[0]) — never overwrite this.id with it.
     if(this.are.RootNode.hasField('ObjectId'))
       this.id = this.are.getFieldByLabel('ObjectId').getValue();
 
@@ -1562,7 +1566,7 @@ export class ModuleArea extends ModuleObject {
       ],
     };
 
-    this.id = this.are.getFieldByLabel('ID').getValue();
+    this.areId = this.are.getFieldByLabel('ID').getValue();
     this.isNight = this.are.getFieldByLabel('IsNight').getValue();
     this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
     this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
@@ -1701,6 +1705,9 @@ export class ModuleArea extends ModuleObject {
     }
     if(areaPropsStruct.hasField('StealthXPLoss')){
       this.stealthXPLoss = areaPropsStruct.getFieldByLabel('StealthXPLoss').getValue() | 0;
+    }
+    if(areaPropsStruct.hasField('StealthXPEnabled')){
+      this.stealthXPEnabled = areaPropsStruct.getFieldByLabel('StealthXPEnabled').getValue() | 0;
     }
     if(areaPropsStruct.hasField('StealthXPMax')){
       this.stealthXPMax = areaPropsStruct.getFieldByLabel('StealthXPMax').getValue() | 0;
@@ -2970,7 +2977,8 @@ export class ModuleArea extends ModuleObject {
   }
 
   getAreaPropertiesStruct(){
-    let struct = new GFFStruct();
+    // Retail SaveProperties @ 00506090 — AreaProperties struct type 100
+    let struct = new GFFStruct(100);
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).setValue(this.audio.ambient.day);
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDayVol') ).setValue(this.audio.ambient.dayVolume);
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNight') ).setValue(this.audio.ambient.night);
@@ -2984,7 +2992,8 @@ export class ModuleArea extends ModuleObject {
 
     struct.addField( new GFFField(GFFDataType.BYTE, 'RestrictMode') ).setValue(this.restrictMode ? 1 : 0);
     struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPCurrent') ).setValue(this.stealthXP | 0);
-    struct.addField( new GFFField(GFFDataType.BYTE, 'StealthXPLoss') ).setValue(this.stealthXPLoss | 0);
+    struct.addField( new GFFField(GFFDataType.BYTE, 'StealthXPEnabled') ).setValue(this.stealthXPEnabled | 0);
+    struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPLoss') ).setValue(this.stealthXPLoss | 0);
     struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPMax') ).setValue(this.stealthXPMax | 0);
     struct.addField( new GFFField(GFFDataType.DWORD, 'SunFogColor') ).setValue(this.sun?.fogColor | 0);
     
@@ -2996,7 +3005,8 @@ export class ModuleArea extends ModuleObject {
   }
 
   saveAreaListStruct(){
-    let areaStruct = new GFFStruct();
+    // Retail SaveModuleIFOStart — Mod_Area_list element type 6
+    let areaStruct = new GFFStruct(6);
     areaStruct.addField( new GFFField(GFFDataType.RESREF, 'Area_Name') ).setValue(this.name);
     areaStruct.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
     //unescapable

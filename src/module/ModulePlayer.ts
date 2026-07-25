@@ -1,4 +1,4 @@
-import { ModuleCreature } from "@/module/ModuleCreature";
+import { ModuleCreature, createDefaultPartyFollowInfo } from "@/module/ModuleCreature";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 // import { PartyManager } from "@/managers/PartyManager";
 import { GFFObject } from "@/resource/GFFObject";
@@ -23,6 +23,10 @@ export class ModulePlayer extends ModuleCreature {
     this.objectType |= ModuleObjectType.ModulePlayer;
     this.isPM = true;
     this.isPlayer = true;
+    this.isPC = 1;
+    if(!this.partyFollowInfo){
+      this.partyFollowInfo = createDefaultPartyFollowInfo();
+    }
   }
 
   update(delta: number = 0){

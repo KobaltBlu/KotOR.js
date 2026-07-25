@@ -47,6 +47,49 @@ export interface LevelUpDraft {
   hasPowersStep: boolean;
 }
 
+/** Persisted retail CSWLevelStats entry (LvlStatList element). */
+export interface LevelStatRecord {
+  classId: number;
+  hpChange: number;
+  fpChange: number;
+  /** Ability bump index; -1 / NONE means omit LvlStatAbility on save. */
+  attributeIndex: LevelUpAbilityIndex;
+  skillRankChanges: number[];
+  skillPointsRemaining: number;
+  feats: number[];
+  spellsAdded: number[];
+  spellsRemoved: number[];
+}
+
+export function createEmptyLevelStatRecord(): LevelStatRecord {
+  return {
+    classId: 0,
+    hpChange: 0,
+    fpChange: 0,
+    attributeIndex: LevelUpAbilityIndex.NONE,
+    skillRankChanges: new Array(SkillType.MAX_SKILLS).fill(0),
+    skillPointsRemaining: 0,
+    feats: [],
+    spellsAdded: [],
+    spellsRemoved: [],
+  };
+}
+
+/** Snapshot a committed level-up draft into a LvlStatList record. */
+export function levelStatRecordFromDraft(draft: LevelUpDraft): LevelStatRecord {
+  return {
+    classId: draft.classId | 0,
+    hpChange: draft.hpChange | 0,
+    fpChange: draft.fpChange | 0,
+    attributeIndex: draft.attributeIndex,
+    skillRankChanges: draft.skillRankChanges.slice(0, SkillType.MAX_SKILLS),
+    skillPointsRemaining: draft.skillPointsRemaining | 0,
+    feats: draft.feats.slice(),
+    spellsAdded: draft.spellsAdded.slice(),
+    spellsRemoved: draft.spellsRemoved.slice(),
+  };
+}
+
 export function primaryAbilityToIndex(primary: string): LevelUpAbilityIndex {
   switch((primary || '').toLowerCase()){
     case 'str': return LevelUpAbilityIndex.STR;

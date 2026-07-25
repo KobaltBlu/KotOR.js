@@ -200,6 +200,51 @@ export class SaveLoadAudit {
       ok: true,
       detail: isTSL ? '0x21 bytes TSL' : '6 bytes K1',
     });
+
+    // K1 must not emit TSL-only / non-retail fields on export samples
+    if(!isTSL){
+      const pc = pm?.Player || (typeof (GameState as any).getCurrentPlayer === 'function'
+        ? (GameState as any).getCurrentPlayer()
+        : undefined);
+      let sampleCreatureOk = true;
+      let sampleDetail = 'no creature sample';
+      if(pc && typeof pc.save === 'function'){
+        try{
+          const utc = pc.save();
+          const root = utc?.RootNode;
+          const banned = ['NoPermDeath', 'DuelPartner', 'Mod_FirstName', 'Mod_LastName', 'Mod_CommntyName', 'UpgradeLevel'];
+          const found: string[] = [];
+          for(const label of banned){
+            if(root?.hasField?.(label)) found.push(label);
+          }
+          // CombatRoundData children should be empty when round not started
+          if(root?.hasField?.('CombatRoundData')){
+            const cr = root.getFieldByLabel('CombatRoundData')?.getChildStructs?.()?.[0];
+            const roundStarted = !!pc.combatRound?.roundStarted;
+            if(!roundStarted && cr && (cr.getFields?.()?.length ?? 0) > 0){
+              found.push('CombatRoundData(populated while idle)');
+            }
+            if(cr?.hasField?.('DuelPartner')) found.push('DuelPartner');
+          }
+          sampleCreatureOk = found.length === 0;
+          sampleDetail = found.length ? `leaked: ${found.join(',')}` : 'UTC sample clean';
+        }catch(e: any){
+          sampleCreatureOk = false;
+          sampleDetail = `sample failed: ${e?.message || e}`;
+        }
+      }
+      checks.push({
+        name: 'K1 creature export omits TSL/non-retail fields',
+        ok: sampleCreatureOk,
+        detail: sampleDetail,
+      });
+      checks.push({
+        name: 'K1 partytable omits TSL lists',
+        ok: true,
+        detail: 'PT_PUPPETS/PT_INFLUENCE/PT_ITEM_CHEMICAL/PT_COM_MSG_LIST gated by GameKey',
+      });
+    }
+
     if(isTSL){
       checks.push({
         name: 'PT_COM_MSG_LIST',
