@@ -685,6 +685,7 @@ export class GameState implements EngineContext {
     GameState.depthTarget.depthBuffer = true;
     GameState.depthTarget.depthTexture = new THREE.DepthTexture(GameState.ResolutionManager.getViewportWidth(), GameState.ResolutionManager.getViewportHeight());
     GameState.depthTarget.depthTexture.type = THREE.UnsignedShortType;
+    GameState.syncDepthTargetTextureSize();
 
     GameState.clock = new THREE.Clock();
     GameState.stats = Stats();
@@ -1145,6 +1146,7 @@ export class GameState implements EngineContext {
     GameState.MenuManager.Resize();
 
     GameState.depthTarget.setSize(GameState.ResolutionManager.getViewportWidth() * GameState.rendererUpscaleFactor, GameState.ResolutionManager.getViewportHeight() * GameState.rendererUpscaleFactor);
+    GameState.syncDepthTargetTextureSize();
 
     if(GameState.ResolutionManager.vpScaleFactor){
       GameState.canvas.style.transform = 'scale('+GameState.ResolutionManager.vpScaleFactor+')';
@@ -2011,6 +2013,20 @@ export class GameState implements EngineContext {
     for(let i = 0; i < hidden.length; i++){
       hidden[i].visible = true;
     }
+  }
+
+  /** Keep DepthTexture.image size in sync after WebGLRenderTarget.setSize. */
+  static syncDepthTargetTextureSize(): void {
+    const rt = GameState.depthTarget;
+    const dt = rt?.depthTexture;
+    if(!rt || !dt) return;
+    if(!dt.image){
+      dt.image = { width: rt.width, height: rt.height } as any;
+    }else{
+      dt.image.width = rt.width;
+      dt.image.height = rt.height;
+    }
+    dt.needsUpdate = true;
   }
 
   static updateTime(delta: number = 0){

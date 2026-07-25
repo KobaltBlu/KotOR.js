@@ -3,6 +3,8 @@ import {
   compareRetailLights,
   retailDynamicRank,
   retailEffectivePriority,
+  retailEnvmapAdd,
+  retailEnvmapAlbedo,
   retailFadeInit,
   retailFadeStep,
   retailIlluminationScore,
@@ -199,5 +201,27 @@ describe('retailLighting', () => {
     expect(retailVideoQualityRowIndex(4, 1)).toBe(1);
     expect(retailVideoQualityRowIndex(4)).toBe(3);
     expect(retailVideoQualityRowIndex(4, 99)).toBe(3);
+  });
+
+  test('envmap ADD keeps lit diffuse and layers env by (1-alpha)', () => {
+    const lit: [number, number, number] = [0.5, 0.4, 0.3];
+    const env: [number, number, number] = [0.1, 0.1, 0.2];
+    expect(retailEnvmapAdd(lit, env, 1)).toEqual([0.5, 0.4, 0.3]);
+    expect(retailEnvmapAdd(lit, env, 0)).toEqual([0.6, 0.5, 0.5]);
+    const mid = retailEnvmapAdd(lit, env, 0.5);
+    expect(mid[0]).toBeCloseTo(0.55);
+    expect(mid[1]).toBeCloseTo(0.45);
+    expect(mid[2]).toBeCloseTo(0.4);
+  });
+
+  test('envmap ADD preserves armor under dark cubemap; LERP crushes it', () => {
+    const lit: [number, number, number] = [0.6, 0.55, 0.5];
+    const darkEnv: [number, number, number] = [0.05, 0.05, 0.05]; // CM_Baremetal-like
+    const chromeAlpha = 0.1;
+    const added = retailEnvmapAdd(lit, darkEnv, chromeAlpha);
+    const lerped = retailEnvmapAlbedo(darkEnv, lit, chromeAlpha);
+    // ADD stays near armor luminance; LERP pulls toward near-black env.
+    expect(added[0]).toBeGreaterThan(0.55);
+    expect(lerped[0]).toBeLessThan(0.15);
   });
 });

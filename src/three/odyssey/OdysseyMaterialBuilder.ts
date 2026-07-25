@@ -156,10 +156,11 @@ export class OdysseyMaterialBuilder {
           // Per-fragment env sampling — same effect master got from #define PHONG
           // (Three envmap chunks set ENV_WORLDPOS for worldpos/envmap varyings).
           material.defines.ENV_WORLDPOS = "";
-          // Retail multipass RenderEnvironmentMapped @ 0046ff70 (environmentMapDest==0):
-          // albedo = mix(env, diffuse, texAlpha), then lit * albedo. Shader applies this as
-          // ENVMAP_BLENDING_LERP (not unlit replace; not the rare ADD dest path).
-          material.defines.ENVMAP_BLENDING_LERP = "";
+          // Default TXI envmaps use ADD (master / retail environmentMapDest!=0 @
+          // 0046ff70: glBlendFunc(ONE_MINUS_DST_ALPHA, ONE) → litDiffuse + env*(1-a)).
+          // dest==0 LERP replaces albedo with the cubemap and crushes dark maps
+          // like CM_Baremetal; ADD keeps armor color and layers sparse highlights.
+          material.defines.ENVMAP_BLENDING_ADD = "";
           // Envmapped meshes are lit in retail RenderFlat — clear IGNORE so the binder
           // packs nearest lights (same pattern as lightmaps in TextureLoader).
           delete material.defines.IGNORE_LIGHTING;

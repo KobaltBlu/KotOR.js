@@ -132,10 +132,8 @@ export class ShaderOdysseyModel extends Shader {
       vec3 materialSpecularColor = specular;
       float materialShininess = max( shininess, 1e-4 );
 
-      // Retail multipass RenderEnvironmentMapped @ 0046ff70 (environmentMapDest==0):
-      //   final = lit * mix(env, diffuse, diffuseTexAlpha)
-      // Albedo is blended first; irradiance is applied afterward so reflections stay lit.
-      // (ATI one-pass 0x13 mixes unlit env — we target the common multipass path.)
+      // Default TXI envmaps: sample cubemap first, light diffuse albedo, then ADD
+      // env * (1-texAlpha) after lighting (master / retail environmentMapDest!=0).
       vec3 albedo = materialDiffuseColor;
       vec4 envColor = vec4( 0.0 );
       #ifdef USE_ENVMAP
@@ -158,11 +156,6 @@ export class ShaderOdysseyModel extends Shader {
           vec2 sampleUV = equirectUv( reflectVec );
           envColor = texture2D( envMap, sampleUV );
         #endif
-        #ifdef ENVMAP_BLENDING_LERP
-          // Diffuse tex alpha only — do not scale by envMapAlpha (retail multipass
-          // writes envmapalpha to output alpha, not the RGB blend mask).
-          albedo = mix( envColor.xyz, materialDiffuseColor, odysseyDiffuseAlpha );
-        #endif
       #endif
 
       // directDiffuse / indirectDiffuse = irradiance (no albedo yet)
@@ -172,7 +165,6 @@ export class ShaderOdysseyModel extends Shader {
 
       #ifdef USE_LIGHTMAP
         // Bake supplies static irradiance; type-1 lights overlay (EnableLightsDynamicOnly).
-        // With envmap, both modulate the blended albedo (RenderEMLM / multipass).
         indirectDiffuse += texture2D( lightMap, vUv2 ).xyz * lightMapIntensity;
         odysseyAccumulatePointLights(
           geometryPosition, normal, geometryViewDir,
@@ -215,15 +207,16 @@ export class ShaderOdysseyModel extends Shader {
         #endif
       #endif
 
-      // Water / rare blends — post-lighting combine (not the default multipass LERP).
+      // Post-lighting env combine. Default ADD uses pre-opacity tex alpha so opacity
+      // controllers do not kill reflections (dark cubes like CM_Baremetal only glint).
       #ifdef USE_ENVMAP
         #ifdef ENVMAP_BLENDING_MULTIPLY
-          outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - diffuseColor.a) );
+          outgoingLight = mix( outgoingLight, outgoingLight * envColor.xyz, (specularStrength * reflectivity) * (1.0 - odysseyDiffuseAlpha) );
         #elif defined( ENVMAP_BLENDING_MIX )
-          outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity * (1.0 - diffuseColor.a) );
+          outgoingLight = mix( outgoingLight, envColor.xyz, specularStrength * reflectivity * (1.0 - odysseyDiffuseAlpha) );
         #elif defined( ENVMAP_BLENDING_ADD )
-          // Rare environmentMapDest != 0 variant: diffuse + env*(1-a), additive.
-          outgoingLight += (envColor.xyz * specularStrength * reflectivity) * (1.0 - diffuseColor.a);
+          // litDiffuse + env*(1-texAlpha) — retail dest!=0 / master path.
+          outgoingLight += envColor.xyz * ( 1.0 - odysseyDiffuseAlpha );
         #endif
       #endif
 
@@ -236,6 +229,14 @@ export class ShaderOdysseyModel extends Shader {
       #ifdef SABER
         sampledDiffuseColor = texture2D( map, vUv );
         gl_FragColor = sampledDiffuseColor;
+      #elif defined( USE_ENVMAP )
+        // Diffuse tex alpha is the reflection mask (already applied to RGB above), NOT
+        // framebuffer alpha. Writing the mask as .a made chrome composite wrong on the
+        // alpha:true canvas (translucent GUI overlap "fixed" it by raising dst alpha).
+        // Retail one-pass writes TXI envmapalpha × gob alpha to output alpha
+        // (RenderEnvironmentMapped @ 0046ff70) — envmapalpha defaults to 1;
+        // opacity keeps fade controllers working.
+        gl_FragColor = vec4( outgoingLight, envMapAlpha * opacity );
       #else
         gl_FragColor = vec4( outgoingLight, diffuseColor.a );
       #endif

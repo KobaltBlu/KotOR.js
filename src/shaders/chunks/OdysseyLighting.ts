@@ -60,8 +60,8 @@ vec3 odysseyBlinnPhong(
 }
 
 // Packed GL_LIGHT0..2 irradiance (SetLightGL @ 004a2a00). Diffuse terms are
-// lighting only — the caller multiplies by albedo afterward so envmap can
-// swap albedo (retail multipass: lit * mix(env, diffuse, texAlpha)).
+// lighting only — the caller multiplies by albedo afterward. Default TXI
+// envmaps ADD env*(1-texAlpha) after lighting (not albedo LERP).
 void odysseyAccumulatePointLights(
   const in vec3 geometryPosition,
   const in vec3 geometryNormal,

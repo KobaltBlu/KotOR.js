@@ -14,19 +14,36 @@
 export const RETAIL_LIGHT_ATTEN_MIN_RADIUS = 0.1;
 
 /**
- * Retail multipass envmap albedo (`RenderEnvironmentMapped` @ 0046ff70,
- * `environmentMapDest == 0`):
+ * KotOR.js default TXI envmap combine — master / retail `environmentMapDest != 0`
+ * at `RenderEnvironmentMapped` @ 0046ff70 (`GL_ONE_MINUS_DST_ALPHA`, `GL_ONE`):
+ *   final = litDiffuse + envColor * (1 - diffuseTexAlpha)
+ *
+ * Diffuse texture alpha is the mask (before material opacity). Dark cubemaps like
+ * CM_Baremetal only contribute sparse highlights; LERP (dest==0) would replace
+ * armor albedo with near-black and crush chrome. Water still uses MIX.
+ *
+ * Sampling uses view-space reflect + DoEnvMapTransform camera rotation
+ * (`envMapRotation`), with ENV_WORLDPOS defined for Three envmap/worldpos
+ * varyings. Shader edits require a full page reload (materials snapshot GLSL
+ * at create; HMR does not recompile live materials).
+ */
+export function retailEnvmapAdd(
+  litDiffuseRgb: [number, number, number],
+  envRgb: [number, number, number],
+  diffuseTexAlpha: number
+): [number, number, number] {
+  const a = Math.min(1, Math.max(0, diffuseTexAlpha));
+  const inv = 1 - a;
+  return [
+    litDiffuseRgb[0] + envRgb[0] * inv,
+    litDiffuseRgb[1] + envRgb[1] * inv,
+    litDiffuseRgb[2] + envRgb[2] * inv,
+  ];
+}
+
+/**
+ * Retail dest==0 multipass albedo (not KotOR.js default — dark cubes crush chrome):
  *   albedo = mix(envColor, diffuseColor, diffuseTexAlpha)
- *   final  = lit * albedo
- *
- * Diffuse texture alpha is the blend mask (before material opacity). ATI one-pass
- * mode 0x13 instead mixes unlit env — KotOR.js targets this multipass formula.
- *
- * When irradiance ≈ 1, lit LERP ≈ unlit LERP (no visible delta). Master ADD
- * (`+= env*(1-a)`) was brighter than retail. Sampling uses view-space reflect +
- * DoEnvMapTransform camera rotation (`envMapRotation`), with ENV_WORLDPOS defined
- * for Three envmap/worldpos varyings. Shader edits require a full page reload
- * (materials snapshot GLSL at create; HMR does not recompile live materials).
  */
 export function retailEnvmapAlbedo(
   envRgb: [number, number, number],
@@ -43,7 +60,7 @@ export function retailEnvmapAlbedo(
 }
 
 /**
- * Apply irradiance to blended albedo (FFP GL_MODULATE / multipass second factor).
+ * Apply irradiance to blended albedo (FFP GL_MODULATE / dest==0 second factor).
  */
 export function retailEnvmapLitColor(
   irradiance: [number, number, number],

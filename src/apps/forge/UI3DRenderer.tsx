@@ -1167,6 +1167,21 @@ export class UI3DRenderer extends EventListenerModel {
     this.depthTarget.depthBuffer = true;
     this.depthTarget.depthTexture = new THREE.DepthTexture(window.innerWidth, window.innerHeight);
     this.depthTarget.depthTexture.type = THREE.UnsignedShortType;
+    this.syncDepthTargetTextureSize();
+  }
+
+  /** Keep DepthTexture.image size in sync after WebGLRenderTarget.setSize. */
+  private syncDepthTargetTextureSize(): void {
+    const rt = this.depthTarget;
+    const dt = rt?.depthTexture;
+    if(!rt || !dt) return;
+    if(!dt.image){
+      dt.image = { width: rt.width, height: rt.height } as any;
+    }else{
+      dt.image.width = rt.width;
+      dt.image.height = rt.height;
+    }
+    dt.needsUpdate = true;
   }
 
   setSize( width = 100, height = 100){
@@ -1178,6 +1193,7 @@ export class UI3DRenderer extends EventListenerModel {
     this.camera.aspect = this.width / this.height;
     this.camera.updateProjectionMatrix();
     this.depthTarget.setSize( this.width, this.height );
+    this.syncDepthTargetTextureSize();
     this.ensureSceneTarget();
 
     this.guiCamera.left = this.width / -2;

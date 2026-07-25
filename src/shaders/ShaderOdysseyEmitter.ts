@@ -41,7 +41,10 @@ export class ShaderOdysseyEmitter extends Shader {
       { tintColor: { value: new THREE.Color(1, 1, 1) } },
       { deadSpace: { value: 0.0 } },
       { resolution: { value: new THREE.Vector2(1, 1) } },
-      { softFactor: { value: 10.0 } },
+      /** World-unit soft fade distance (DEPTH_TEXTURE). */
+      { softFactor: { value: 0.5 } },
+      { cameraNear: { value: 0.1 } },
+      { cameraFar: { value: 1000.0 } },
       { parentAlpha: { value: 1.0 } },
       // Retail RenderStandard: percentStart==255 → start↔end; else three-key breakpoints
       { lifePercents: { value: new THREE.Vector3(255, 0.5, 1) } },
@@ -452,7 +455,10 @@ export class ShaderOdysseyEmitter extends Shader {
     #ifdef DEPTH_TEXTURE
       uniform sampler2D tDepth;
       uniform vec2 resolution;
+      // softFactor = world-unit soft distance (not a raw-depth multiplier)
       uniform float softFactor;
+      uniform float cameraNear;
+      uniform float cameraFar;
     #endif
 
     varying vec4 vSpriteSheet;
@@ -461,6 +467,27 @@ export class ShaderOdysseyEmitter extends Shader {
     varying vec2 vUv;
 
     ${THREE.ShaderChunk[ "logdepthbuf_pars_fragment" ]}
+
+    #ifdef DEPTH_TEXTURE
+      // Three packing.glsl — perspective depth [0,1] → view Z (negative for RH cameras).
+      float perspectiveDepthToViewZ( const in float invClipZ, const in float near, const in float far ) {
+        return ( near * far ) / ( ( far - near ) * invClipZ - far );
+      }
+
+      /**
+       * Convert DepthTexture / gl_FragDepth sample to view-Z.
+       * Log path recovers clip-w written by Three logarithmicDepthBuffer
+       * (gl_FragDepth = log2(1+w) * logDepthBufFC * 0.5), then viewZ = -w.
+       */
+      float softParticleViewZ( const in float depth ) {
+        #if defined( USE_LOGDEPTHBUF ) && defined( USE_LOGDEPTHBUF_EXT )
+          float w = exp2( depth / ( logDepthBufFC * 0.5 ) ) - 1.0;
+          return -w;
+        #else
+          return perspectiveDepthToViewZ( depth, cameraNear, cameraFar );
+        #endif
+      }
+    #endif
 
     void main() {
 
@@ -482,12 +509,16 @@ export class ShaderOdysseyEmitter extends Shader {
 
       #ifdef DEPTH_TEXTURE
         float sceneDepth = texture2D(tDepth, gl_FragCoord.xy / resolution).r;
-        // Match logarithmicDepthBuffer encoding written into DepthTexture
         float particleDepth = gl_FragCoord.z;
         #if defined( USE_LOGDEPTHBUF ) && defined( USE_LOGDEPTHBUF_EXT )
+          // Same encoding Three writes into DepthTexture / gl_FragDepth
           particleDepth = vIsPerspective == 0.0 ? gl_FragCoord.z : log2( vFragDepth ) * logDepthBufFC * 0.5;
         #endif
-        float fade = clamp((sceneDepth - particleDepth) * softFactor, 0.0, 1.0);
+        // View-Z is negative in front of the camera; scene is farther when sceneViewZ < particleViewZ.
+        float sceneViewZ = softParticleViewZ( sceneDepth );
+        float particleViewZ = softParticleViewZ( particleDepth );
+        float softDistance = max( softFactor, 1e-4 );
+        float fade = clamp( ( particleViewZ - sceneViewZ ) / softDistance, 0.0, 1.0 );
         finalAlpha *= fade;
       #endif
 

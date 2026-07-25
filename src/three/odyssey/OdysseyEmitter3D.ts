@@ -1479,6 +1479,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     return 1;
   }
 
+  /** World-unit soft fade distance for DEPTH_TEXTURE emitters. */
+  private static readonly SOFT_PARTICLE_DISTANCE = 0.5;
+
   /** Bind GameState/context depth target for soft-particle DEPTH_TEXTURE emitters. */
   private updateDepthTextureUniforms(): void {
     if(!this.node?.flags?.isDepthTexture || !this.material) return;
@@ -1490,21 +1493,35 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       GameState.depthTarget?.depthTexture ||
       null;
 
-    if(depthTex){
-      if(!('DEPTH_TEXTURE' in this.material.defines)){
-        this.material.defines.DEPTH_TEXTURE = '';
-        this.material.needsUpdate = true;
-      }
-      u.tDepth.value = depthTex;
-      const rt = this.context?.depthTarget || GameState.depthTarget;
-      const w = rt?.width || GameState.ResolutionManager?.getViewportWidth?.() || 1;
-      const h = rt?.height || GameState.ResolutionManager?.getViewportHeight?.() || 1;
-      u.resolution.value.set(w, h);
-      // Request depth prepass before the next composed frame
-      GameState.softDepthNeeded = true;
-      if(this.context){
-        this.context.softDepthNeeded = true;
-      }
+    if(!depthTex) return;
+
+    if(!('DEPTH_TEXTURE' in this.material.defines)){
+      this.material.defines.DEPTH_TEXTURE = '';
+      // Retail RenderStandard: glDepthMask(0) — soft emitters must not write depth
+      this.material.depthWrite = false;
+      this.material.needsUpdate = true;
+    }
+
+    u.tDepth.value = depthTex;
+    const rt = this.context?.depthTarget || GameState.depthTarget;
+    const w = rt?.width || GameState.ResolutionManager?.getViewportWidth?.() || 1;
+    const h = rt?.height || GameState.ResolutionManager?.getViewportHeight?.() || 1;
+    u.resolution.value.set(w, h);
+
+    const cam = (this.context?.currentCamera || GameState.currentCamera) as
+      THREE.PerspectiveCamera | THREE.OrthographicCamera | undefined;
+    if(cam && 'near' in cam && 'far' in cam){
+      if(u.cameraNear) u.cameraNear.value = cam.near;
+      if(u.cameraFar) u.cameraFar.value = cam.far;
+    }
+    if(u.softFactor){
+      u.softFactor.value = OdysseyEmitter3D.SOFT_PARTICLE_DISTANCE;
+    }
+
+    // Request depth prepass before the next composed frame
+    GameState.softDepthNeeded = true;
+    if(this.context){
+      this.context.softDepthNeeded = true;
     }
   }
 
