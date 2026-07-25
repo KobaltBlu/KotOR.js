@@ -40,6 +40,7 @@ import { EngineContext } from "@/engine/EngineContext";
 
 import { ConfigClient } from "@/utility/ConfigClient";
 import { FollowerCamera } from "@/engine/FollowerCamera";
+import { asExtentInt, orthoFrustumInt } from "@/gui/GUICoord";
 import { OdysseyShaderPass } from "@/shaders/pass/OdysseyShaderPass";
 import { ForceDistortionPass } from "@/shaders/pass/ForceDistortionPass";
 import { OverbrightenPass } from "@/shaders/pass/OverbrightenPass";
@@ -704,11 +705,15 @@ export class GameState implements EngineContext {
     GameState.camera.position.set( .1, 5, 1 );              // offset the camera a bit
     GameState.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
     
+    const guiFrustum = orthoFrustumInt(
+      GameState.ResolutionManager.getViewportWidth(),
+      GameState.ResolutionManager.getViewportHeight(),
+    );
     GameState.camera_gui = new THREE.OrthographicCamera(
-      GameState.ResolutionManager.getViewportWidth() / -2,
-      GameState.ResolutionManager.getViewportWidth() / 2,
-      GameState.ResolutionManager.getViewportHeight() / 2,
-      GameState.ResolutionManager.getViewportHeight() / -2,
+      guiFrustum.left,
+      guiFrustum.right,
+      guiFrustum.top,
+      guiFrustum.bottom,
       1, 1000
     );
     GameState.camera_gui.up = new THREE.Vector3( 0, 0, 1 );
@@ -1092,8 +1097,8 @@ export class GameState implements EngineContext {
 
   static EventOnResize(){
     GameState.ResolutionManager.recalculate();
-    let width = GameState.ResolutionManager.getViewportWidth();
-    let height = GameState.ResolutionManager.getViewportHeight();
+    let width = asExtentInt(GameState.ResolutionManager.getViewportWidth());
+    let height = asExtentInt(GameState.ResolutionManager.getViewportHeight());
 
     GameState.composer.setSize(width * GameState.rendererUpscaleFactor, height * GameState.rendererUpscaleFactor);
 
@@ -1101,10 +1106,11 @@ export class GameState implements EngineContext {
 
     GameState.VideoManager.resize(width, height);
 
-    GameState.camera_gui.left = width / -2;
-    GameState.camera_gui.right = width / 2;
-    GameState.camera_gui.top = height / 2;
-    GameState.camera_gui.bottom = height / -2;
+    const guiFrustum = orthoFrustumInt(width, height);
+    GameState.camera_gui.left = guiFrustum.left;
+    GameState.camera_gui.right = guiFrustum.right;
+    GameState.camera_gui.top = guiFrustum.top;
+    GameState.camera_gui.bottom = guiFrustum.bottom;
 
     GameState.camera_gui.updateProjectionMatrix();
 

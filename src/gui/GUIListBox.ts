@@ -21,9 +21,11 @@ import {
 } from "@/gui/ListBoxBitFlags";
 import {
   asExtentInt,
+  centeredExtentMax,
   hitCheckMouseLocal,
   hitCheckMouseWorldBox,
   listLocalFromWorldBox,
+  orthoFrustumInt,
   truncDiv,
 } from "@/gui/GUICoord";
 import { ScrollBarHit } from "@/gui/GUIScrollBar";
@@ -191,9 +193,10 @@ export class GUIListBox extends GUIControl {
     // RTT covers content viewport only (border-inner / fill), matching retail AurGUISetupViewport
     this.syncRttSizeFromViewport();
 
+    const rttFrustum = orthoFrustumInt(this.width, this.height);
     this.camera = new THREE.OrthographicCamera(
-      -truncDiv(asExtentInt(this.width), 2), truncDiv(asExtentInt(this.width), 2),
-      truncDiv(asExtentInt(this.height), 2), -truncDiv(asExtentInt(this.height), 2),
+      rttFrustum.left, rttFrustum.right,
+      rttFrustum.top, rttFrustum.bottom,
       1, 500
     );
     this.camera.position.z = 100;
@@ -1502,8 +1505,8 @@ export class GUIListBox extends GUIControl {
 
     this.box.min.x = wx - truncDiv(w, 2) + px;
     this.box.min.y = wy - truncDiv(h, 2) + py;
-    this.box.max.x = wx + truncDiv(w, 2) + px;
-    this.box.max.y = wy + truncDiv(h, 2) + py;
+    this.box.max.x = wx + centeredExtentMax(w) + px;
+    this.box.max.y = wy + centeredExtentMax(h) + py;
 
     for(let i = 0; i < this.children.length; i++){
       this.children[i].calculateBox();
@@ -1617,12 +1620,11 @@ export class GUIListBox extends GUIControl {
   }
 
   private updateCamera() {
-    const halfW = truncDiv(asExtentInt(this.width), 2);
-    const halfH = truncDiv(asExtentInt(this.height), 2);
-    this.camera.left = -halfW;
-    this.camera.right = halfW;
-    this.camera.top = halfH;
-    this.camera.bottom = -halfH;
+    const frustum = orthoFrustumInt(this.width, this.height);
+    this.camera.left = frustum.left;
+    this.camera.right = frustum.right;
+    this.camera.top = frustum.top;
+    this.camera.bottom = frustum.bottom;
     this.camera.updateProjectionMatrix();
   }
 

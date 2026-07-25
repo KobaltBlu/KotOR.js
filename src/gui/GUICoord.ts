@@ -41,6 +41,35 @@ export function asExtentInt(n: number): number {
   return Math.trunc(n) | 0;
 }
 
+/**
+ * Inclusive max of a TL span in centered space: [−truncDiv(n,2), n−truncDiv(n,2)].
+ * Prefer this over +truncDiv(n,2) so odd sizes keep the extra pixel on the max side.
+ */
+export function centeredExtentMax(n: number): number {
+  const size = asExtentInt(n);
+  return size - truncDiv(size, 2);
+}
+
+/**
+ * Integer orthographic frustum matching TL-centered GUI space.
+ * Avoids float `width/2` half-pixel edges when the viewport size is odd (thin L/R GUI strokes).
+ */
+export function orthoFrustumInt(width: number, height: number): {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+} {
+  const w = asExtentInt(width);
+  const h = asExtentInt(height);
+  return {
+    left: -truncDiv(w, 2),
+    right: centeredExtentMax(w),
+    top: centeredExtentMax(h),
+    bottom: -truncDiv(h, 2),
+  };
+}
+
 export function copyExtentInt(src: IGUIControlExtent): IGUIControlExtent {
   return {
     left: asExtentInt(src.left),
