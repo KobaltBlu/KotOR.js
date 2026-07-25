@@ -69,7 +69,8 @@ export class InGameComputer extends GameMenu {
     return new Promise<void>((resolve, reject) => {
       this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
       this.LB_REPLIES.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
-      this.LB_REPLIES.onSelected = (entry: DLGNode, control: any, index: number) => {
+      this.LB_REPLIES.onClicked = (_entry: DLGNode, _control: any, index: number) => {
+        if (index < 0) return;
         GameState.CutsceneManager.selectReplyAtIndex(index);
       }
       resolve();

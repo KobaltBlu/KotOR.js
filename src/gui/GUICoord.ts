@@ -194,6 +194,44 @@ export function hitCheckMouseLocal(
 }
 
 /**
+ * Convert centered Y-up UI mouse into list-control-local top-left Y-down ints
+ * using the list's world/UI AABB (`GUIControl.box` / `calculateBox`).
+ *
+ * Prefer this over `panelLocal - list.extent` when the list widget is docked in
+ * viewport space while `extent.left/top` still hold design (or hacked) values —
+ * e.g. InGameDialog LB_REPLIES.
+ */
+export function listLocalFromWorldBox(
+  uiX: number,
+  uiY: number,
+  boxMinX: number,
+  boxMinY: number,
+  boxMaxY: number,
+): IGUILocalMouse {
+  return {
+    x: asExtentInt(uiX) - asExtentInt(boxMinX),
+    y: asExtentInt(boxMaxY) - asExtentInt(uiY),
+  };
+}
+
+/** Inclusive UI-space AABB test (anchored HUD / viewport-docked list). */
+export function hitCheckMouseWorldBox(
+  uiX: number,
+  uiY: number,
+  boxMinX: number,
+  boxMinY: number,
+  boxMaxX: number,
+  boxMaxY: number,
+): boolean {
+  const x = asExtentInt(uiX);
+  const y = asExtentInt(uiY);
+  return (
+    x >= asExtentInt(boxMinX) && x <= asExtentInt(boxMaxX) &&
+    y >= asExtentInt(boxMinY) && y <= asExtentInt(boxMaxY)
+  );
+}
+
+/**
  * Convert retail TL Y-down extent to centered Y-up widget center (Three.js ortho).
  * Uses truncating integer math so widget XY stay on the pixel grid.
  */

@@ -19,7 +19,13 @@ import {
   createDefaultListBoxBitFlags,
   type ListBoxBitFlags,
 } from "@/gui/ListBoxBitFlags";
-import { asExtentInt, hitCheckMouseLocal, truncDiv } from "@/gui/GUICoord";
+import {
+  asExtentInt,
+  hitCheckMouseLocal,
+  hitCheckMouseWorldBox,
+  listLocalFromWorldBox,
+  truncDiv,
+} from "@/gui/GUICoord";
 import { ScrollBarHit } from "@/gui/GUIScrollBar";
 import {
   listBoxLeftoverStretch,
@@ -1384,6 +1390,40 @@ export class GUIListBox extends GUIControl {
     return this.scrollDragStartValue;
   }
 
+  /**
+   * List-control-local mouse from the world/UI box (not panelLocal − extent).
+   * Keeps row picking correct when the list is viewport-docked (dialog replies).
+   */
+  getListLocalMouseFromBox(): { x: number; y: number } {
+    const ui = this.getCenteredUIMouseInt();
+    return listLocalFromWorldBox(
+      ui.x,
+      ui.y,
+      this.box.min.x,
+      this.box.min.y,
+      this.box.max.y,
+    );
+  }
+
+  /**
+   * Viewport-docked lists (InGameDialog LB_REPLIES) write viewport coords into
+   * extent.left/top for layout; panel-local AABB misses. Use world/UI box.
+   */
+  hitCheckMouse(_localX: number, _localY: number): boolean {
+    if (!this.widget.visible) {
+      return false;
+    }
+    const ui = this.getCenteredUIMouseInt();
+    return hitCheckMouseWorldBox(
+      ui.x,
+      ui.y,
+      this.box.min.x,
+      this.box.min.y,
+      this.box.max.x,
+      this.box.max.y,
+    );
+  }
+
   getActiveControls(panelLocalX?: number, panelLocalY?: number){
 
     if(!this.widget.visible)
@@ -1401,15 +1441,14 @@ export class GUIListBox extends GUIControl {
     const vh = asExtentInt(this.getViewportInnerHeight());
     let hoveredRow: GUIControl | undefined;
 
-    const listLocalX = asExtentInt(localX) - asExtentInt(this.extent.left);
-    const listLocalY = asExtentInt(localY) - asExtentInt(this.extent.top);
+    const listLocal = this.getListLocalMouseFromBox();
     const borderSize = asExtentInt(this.getBorderSize());
     const shrink = asExtentInt(this.getShrinkWidth());
     const viewportX = this.isScrollBarLeft() ? borderSize + shrink : borderSize;
     const viewportY = borderSize;
     // Retail HitCheckMouseLocal @ 0041a5e0 — viewport-local mouse for rows
-    const vx = listLocalX - viewportX;
-    const vy = listLocalY - viewportY;
+    const vx = listLocal.x - viewportX;
+    const vy = listLocal.y - viewportY;
 
     for(let i = 0; i < this.children.length; i++){
       let control = this.children[i];

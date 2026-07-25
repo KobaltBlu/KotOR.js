@@ -50,7 +50,8 @@ export class InGameDialog extends GameMenu {
       this.LB_REPLIES.extent.top = (GameState.ResolutionManager.getViewportHeight()/2) - this.LB_REPLIES.extent.height/2;
       this.LB_REPLIES.calculatePosition();
       this.LB_REPLIES.calculateBox();
-      this.LB_REPLIES.onSelected = (entry: DLGNode, control: any, index: number) => {
+      this.LB_REPLIES.onClicked = (_entry: DLGNode, _control: any, index: number) => {
+        if (index < 0) return;
         GameState.CutsceneManager.selectReplyAtIndex(index);
       }
 

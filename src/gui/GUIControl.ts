@@ -35,6 +35,8 @@ import {
   GUI_DESIGN_WIDTH,
   GUIPanelCoordFlags,
   hitCheckMouseLocal,
+  hitCheckMouseWorldBox,
+  listLocalFromWorldBox,
   panelLocalFromCenteredUI,
   applyPanelOffsetToLetterboxLocal,
   truncDiv,
@@ -1673,25 +1675,36 @@ export class GUIControl {
   /**
    * Retail CSWGuiControl::HitCheckMouse @ 004187c0 — inclusive int AABB.
    * List rows store extents in list viewport-local space (HitCheckMouseLocal @ 0041a5e0).
+   * Row mouse is derived from the list world/UI box so viewport-docked lists
+   * (dialog LB_REPLIES) still pick correctly when extent.left/top are not panel-local.
    * Anchored HUD controls are viewport-pinned; test their integer world box instead.
    */
   hitCheckMouse(localX: number, localY: number): boolean {
     if (this.list) {
       const list = this.list;
-      const listLocalX = asExtentInt(localX) - asExtentInt(list.extent.left);
-      const listLocalY = asExtentInt(localY) - asExtentInt(list.extent.top);
+      const ui = this.getCenteredUIMouseInt();
+      const listLocal = listLocalFromWorldBox(
+        ui.x,
+        ui.y,
+        list.box.min.x,
+        list.box.min.y,
+        list.box.max.y,
+      );
       const borderSize = asExtentInt(list.getBorderSize());
       const shrink = asExtentInt(list.getShrinkWidth());
       const viewportX = list.isScrollBarLeft() ? borderSize + shrink : borderSize;
       const viewportY = borderSize;
-      return hitCheckMouseLocal(this.extent, listLocalX - viewportX, listLocalY - viewportY);
+      return hitCheckMouseLocal(this.extent, listLocal.x - viewportX, listLocal.y - viewportY);
     }
     if (this.anchor && this.anchor !== Anchor.None) {
       const ui = this.getCenteredUIMouseInt();
-      // box is in world/UI space (root scale applied via getWorldPosition + sized extents)
-      return (
-        ui.x >= asExtentInt(this.box.min.x) && ui.x <= asExtentInt(this.box.max.x) &&
-        ui.y >= asExtentInt(this.box.min.y) && ui.y <= asExtentInt(this.box.max.y)
+      return hitCheckMouseWorldBox(
+        ui.x,
+        ui.y,
+        this.box.min.x,
+        this.box.min.y,
+        this.box.max.x,
+        this.box.max.y,
       );
     }
     return hitCheckMouseLocal(this.extent, localX, localY);

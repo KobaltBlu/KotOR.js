@@ -37,7 +37,8 @@ export class InGameDialog extends K1_InGameDialog {
       this.LB_REPLIES.calculatePosition();
       this.LB_REPLIES.calculateBox();
       this.LB_REPLIES.padding = 5;
-      this.LB_REPLIES.onSelected = (entry: any, control: any, index: number) => {
+      this.LB_REPLIES.onClicked = (_entry: any, _control: any, index: number) => {
+        if (index < 0) return;
         GameState.CutsceneManager.selectReplyAtIndex(index);
       }
 
