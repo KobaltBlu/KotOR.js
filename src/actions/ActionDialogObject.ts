@@ -4,7 +4,6 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
-import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
@@ -120,16 +119,15 @@ export class ActionDialogObject extends Action {
 
     this.owner.heardStrings = [];
     this.target.heardStrings = [];
-    const onDialog = BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
-      ? this.target.scripts[ModuleObjectScript.CreatureOnDialog]
-      : undefined;
-    if(onDialog){
-      // Ignore names still apply if OnDialog starts the cutscene path later
+    if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
+      // Ignore names still apply if OnDialog starts the cutscene path later.
+      // onDialog applies retail empty/"default" → k_hen_dialogue01 fallback.
       GameState.CutsceneManager.setDialogNonDependantNames(ignoreNames);
-      this.target.onDialog(this.owner, -1, this.conversation);
-    }else{
-      GameState.CutsceneManager.startConversation(dialog, this.target, effectiveListener, bPrivate, ignoreNames, barkScreenX, barkScreenY);
+      if(this.target.onDialog(this.owner, -1, this.conversation)){
+        return ActionStatus.COMPLETE;
+      }
     }
+    GameState.CutsceneManager.startConversation(dialog, this.target, effectiveListener, bPrivate, ignoreNames, barkScreenX, barkScreenY);
     return ActionStatus.COMPLETE;
   }
 

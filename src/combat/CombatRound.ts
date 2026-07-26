@@ -24,6 +24,7 @@ import { CombatAttackData } from "@/combat/CombatAttackData";
 import type { CombatRoundAction } from "@/combat/CombatRoundAction";
 import { CombatRoundAction as CombatRoundActionClass } from "@/combat/CombatRoundAction";
 import { createNewAttackActions } from "@/combat/create-new-attack-actions";
+import { canSyncMeleeReaction, pickMeleeReaction, resolveMeleeReactionPlayback } from "@/combat/combat-reaction-eligibility";
 import {
   getProjectileMissLocation,
   getProjectileTravelDelayMs,
@@ -1927,29 +1928,7 @@ export class CombatRound {
     }
     this.decrementRoundLength(animLength);
 
-    const pickReaction = (result: AttackResult): number => {
-      if(
-        result === AttackResult.HIT_SUCCESSFUL ||
-        result === AttackResult.CRITICAL_HIT ||
-        result === AttackResult.AUTOMATIC_HIT
-      ){
-        return ModuleCreatureAnimState.DAMAGE;
-      }
-      if(
-        result === AttackResult.PARRIED ||
-        result === AttackResult.DEFLECTED
-      ){
-        return ModuleCreatureAnimState.PARRY;
-      }
-      if(
-        result === AttackResult.MISS ||
-        result === AttackResult.ATTACK_RESISTED ||
-        result === AttackResult.ATTACK_FAILED
-      ){
-        return ModuleCreatureAnimState.DODGE;
-      }
-      return ModuleCreatureAnimState.READY;
-    };
+    const pickReaction = pickMeleeReaction;
 
     const attackAnim = this.engaged && combatAction.animation === ModuleCreatureAnimState.ATTACK_DUELING
       ? ModuleCreatureAnimState.ATTACK_DUELING
@@ -1972,45 +1951,42 @@ export class CombatRound {
         primary.reaxnDelay = 0;
       }
 
-      // Engaged (ResolveMeleeAnimations): CheckActionLengthAtTime or hit/parry always syncs
-      // Retail: resultsCalculated (param_5) ORs into CheckActionLengthAtTime for force-react
-      // Unengaged: only react if target idle/ready and targeting attacker
-      const engagedCanReact = !!(
-        this.engaged &&
-        target.combatRound &&
-        (
-          target.combatRound.checkActionLengthAtTime(creature, animLength, 0) ||
-          combatAction.resultsCalculated ||
-          combatAction.attackResult === AttackResult.HIT_SUCCESSFUL ||
-          combatAction.attackResult === AttackResult.CRITICAL_HIT ||
-          combatAction.attackResult === AttackResult.AUTOMATIC_HIT ||
-          combatAction.attackResult === AttackResult.PARRIED ||
-          combatAction.attackResult === AttackResult.DEFLECTED
-        )
-      );
-      const unengagedCanReact = !(
-        this.engaged
-      ) && (
-        (
-          target.animationState.index == ModuleCreatureAnimState.IDLE ||
-          target.animationState.index == ModuleCreatureAnimState.READY
-        ) &&
-        target.combatData.lastAttackTarget == creature
-      );
-
-      const shouldReact = engagedCanReact || unengagedCanReact;
+      // Engaged (ResolveMeleeAnimations): CheckActionLengthAtTime or hit/parry always syncs.
+      // Retail: resultsCalculated (param_5) force-reacts when engaged. CutsceneAttack now
+      // starts non-engaged to avoid mutual infinitePause, so also force-react when
+      // resultsCalculated even without engaged (without stealing the defender round timer).
+      const shouldReact = canSyncMeleeReaction({
+        engaged: this.engaged,
+        resultsCalculated: !!combatAction.resultsCalculated,
+        hasTargetCombatRound: !!target.combatRound,
+        checkActionLengthOk: !!target.combatRound?.checkActionLengthAtTime(
+          creature,
+          animLength,
+          0
+        ),
+        attackResult: combatAction.attackResult,
+        targetAnimIndex: target.animationState.index,
+        targetLastAttackIsAttacker: target.combatData.lastAttackTarget == creature,
+      });
 
       if(shouldReact && reaction !== ModuleCreatureAnimState.READY){
+        // Prefer combatanimations-mapped clip; if missing, retail SetAnimation(reaction)
+        // so hits never leave a stale ATTACK clip (playTwoDAAnimation no-ops on undefined).
+        let mapped: ReturnType<ModuleCreature['getDamageAnimation']> | undefined;
         if(reaction === ModuleCreatureAnimState.DAMAGE){
-          target.playTwoDAAnimation( target.getDamageAnimation( this.action.animationName ) );
-          target.animationState.index = ModuleCreatureAnimState.DAMAGE;
+          mapped = target.getDamageAnimation( this.action.animationName );
         }else if(reaction === ModuleCreatureAnimState.PARRY){
-          target.playTwoDAAnimation( target.getParryAnimation( this.action.animationName ) );
-          target.animationState.index = ModuleCreatureAnimState.PARRY;
+          mapped = target.getParryAnimation( this.action.animationName );
         }else if(reaction === ModuleCreatureAnimState.DODGE){
-          target.playTwoDAAnimation( target.getDodgeAnimation( this.action.animationName ) );
-          target.animationState.index = ModuleCreatureAnimState.DODGE;
+          mapped = target.getDodgeAnimation( this.action.animationName );
         }
+        if(resolveMeleeReactionPlayback(mapped).mode === 'mapped'){
+          target.playTwoDAAnimation(mapped);
+          target.animationState.index = reaction;
+        }else{
+          target.setAnimationState(reaction);
+        }
+        // Only engaged duels shrink the defender round; cutscene force-react must not.
         if(this.engaged && target.combatRound){
           target.combatRound.decrementRoundLength(animLength);
         }

@@ -37,11 +37,8 @@ export class MenuLevelUp extends K1_MenuLevelUp {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
+    await super.menuControlInitializer(skipInit);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
-      resolve();
-    });
   }
   
 }

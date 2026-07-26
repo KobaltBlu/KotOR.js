@@ -140,42 +140,42 @@ export class CreatureClass {
     return this.savingThrows[this.level - 1]?.willsave ?? 0;
   }
 
-  isFeatAvailable( feat: any ){
-    if(typeof feat != 'undefined'){
-      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
-      if(isNaN(status)){
-        return false;
-      }
-
-      if(status != 4){ //UNAVAILABLE
-        return true;
-      }
+  /** Resolve class feat list column (TalentFeat.getList or legacy 2DA row key). */
+  private resolveFeatListStatus(feat: any): number {
+    if(typeof feat === 'undefined' || feat === null) return -1;
+    if(typeof feat.getList === 'function'){
+      const status = feat.getList(this);
+      return typeof status === 'number' && !isNaN(status) ? status : -1;
     }
-    return false;
+    const status = parseInt(feat[this.featstable.toLowerCase() + '_list'], 10);
+    return isNaN(status) ? -1 : status;
+  }
+
+  /** Resolve class feat granted level (TalentFeat.getGranted or legacy 2DA row key). */
+  private resolveFeatGrantedLevel(feat: any): number {
+    if(typeof feat === 'undefined' || feat === null) return -1;
+    if(typeof feat.getGranted === 'function'){
+      const granted = feat.getGranted(this);
+      return typeof granted === 'number' && !isNaN(granted) ? granted : -1;
+    }
+    const granted = parseInt(feat[this.featstable.toLowerCase() + '_granted'], 10);
+    return isNaN(granted) ? -1 : granted;
+  }
+
+  isFeatAvailable( feat: any ){
+    const status = this.resolveFeatListStatus(feat);
+    if(status < 0) return false;
+    return status != 4; // UNAVAILABLE
   }
 
   getFeatStatus( feat: any ){
-    if(typeof feat != 'undefined'){
-      let status = parseInt(feat[this.featstable.toLowerCase()+'_list']);
-      if(isNaN(status)){
-        return false;
-      }
-
-      return status;
-    }
-    return -1;
+    const status = this.resolveFeatListStatus(feat);
+    if(status < 0) return false;
+    return status;
   }
 
   getFeatGrantedLevel( feat: any ){
-    if(typeof feat != 'undefined'){
-      let granted = parseInt(feat[this.featstable.toLowerCase()+'_granted']);
-      if(isNaN(granted)){
-        return -1;
-      }
-
-      return granted;
-    }
-    return -1;
+    return this.resolveFeatGrantedLevel(feat);
   }
 
   static FromCreatureClassStruct(cls_struct: GFFStruct){

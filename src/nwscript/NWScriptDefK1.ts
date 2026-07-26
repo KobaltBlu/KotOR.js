@@ -43,7 +43,7 @@ import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { CombatRound } from "@/combat/CombatRound";
 import { findMostDamagingMelee, findMostDamagingRanged } from "@/combat/equip-most-damaging";
 import { BitWise } from "@/utility/BitWise";
-import { testStringAgainstPattern, ASSOCIATE_LISTEN_PATTERNS } from "@/utility/listen-pattern";
+import { testStringAgainstPattern } from "@/utility/listen-pattern";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 import { ExperienceType } from "@/enums/engine/ExperienceType";
@@ -2521,9 +2521,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.STRING, NWScriptDataType.STRING],
     action: function(this: NWScriptInstance, args: [string, string]){
-      // NWScript arg order: sPattern, sStringToTest
+      // Retail ExecuteCommandTestString builds a stack-local CSWSExpression and
+      // destroys it after pushing the boolean — no matched-substring side effect.
       const result = testStringAgainstPattern(args[0] || '', args[1] || '');
-      this.matchedSubstrings = result.matched ? result.substrings : [];
       return result.matched ? NW_TRUE : NW_FALSE;
     }
   },
@@ -2533,11 +2533,17 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.STRING,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      const idx = args[0] | 0;
-      if(!this.matchedSubstrings || idx < 0 || idx >= this.matchedSubstrings.length){
+      // Retail reads CSWSObject.matched_expression_strings on the caller object.
+      const caller = this.caller;
+      if(!BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleObject)){
         return '';
       }
-      return this.matchedSubstrings[idx];
+      const list = caller.matchedSubstrings;
+      const idx = args[0] | 0;
+      if(!list || idx < 0 || idx >= list.length){
+        return '';
+      }
+      return list[idx];
     }
   },
   179:{
@@ -2546,11 +2552,13 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(!this.matchedSubstrings || this.matchedSubstrings.length === 0){
-        // Retail: -1 when no string matched (e.g. dialogue click event)
-        return -1;
+      // Retail ExecuteCommandGetMatchedStringsCount returns the array size (0 when empty).
+      // The nwscript.nss "-1" comment does not match swkotor.exe behavior.
+      const caller = this.caller;
+      if(!BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleObject)){
+        return 0;
       }
-      return this.matchedSubstrings.length;
+      return caller.matchedSubstrings ? caller.matchedSubstrings.length : 0;
     }
   },
   180:{
@@ -4498,17 +4506,8 @@ NWScriptDefK1.Actions = {
     name: "SetAssociateListenPatterns",
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT],
-    action: function(this: NWScriptInstance, args: [ModuleObject]){
-      const target = args[0] || this.caller;
-      if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
-        return;
-      }
-      target.setListening(true);
-      for(let i = 0; i < ASSOCIATE_LISTEN_PATTERNS.length; i++){
-        const p = ASSOCIATE_LISTEN_PATTERNS[i];
-        target.setListeningPattern(p.pattern, p.number);
-      }
-    }
+    // Retail has no ExecuteCommand for this opcode (no associate listen table in
+    // swkotor.exe). NWN ASSOCIATE_LISTEN_PATTERNS / NW_* tokens are not present.
   },
   328:{
     comment: "328: Get the last weapon that oCreature used in an attack.\n* Returns OBJECT_INVALID if oCreature did not attack, or has no weapon equipped.\n",

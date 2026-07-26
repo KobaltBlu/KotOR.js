@@ -1,195 +1,398 @@
 /**
- * Aurora/NWN listen-pattern matcher (KotOR inherits the same engine rules).
+ * Odyssey CSWSExpression listen-pattern matcher (K1 + K2 parity).
  *
- * From Noel (BioWare) / NWN Lexicon SetListenPattern:
- * - `**` — zero or more characters
- * - `*w` — one or more whitespace
- * - `*n` — one or more numeric
- * - `*p` — one or more punctuation
- * - `*a` — one or more alphabetic
- * - `|` — or
- * - `( )` — grouping blocks
+ * Grounded in swkotor.exe / swkotor2_aspyr.exe:
+ * - CSWSExpression::ParseString @ 0059dab0 (K1)
+ * - CSWSExpression::TestString  @ 0059e170 (K1) / FUN_006a34a0 (K2 Aspyr)
+ * - CSWSExpression::NewNode     @ 0059d860
  *
- * Matching is case-insensitive. Captures for `**` wildcards (and literal
- * segments between them) populate matched substrings for GetMatchedSubstring.
+ * Node types (NewNode param):
+ *   0 LITERAL, 1 ANY (**), 2 ALT, 3 JOIN, 4 *w, 5 *p, 6 *a, 7 *n, 8 *A, 9 END
+ *
+ * Character classes consume exactly one character per successful visit. Because
+ * TestString re-enters non-literal nodes on backtrack (advancing from that
+ * node's prior endPos), a lone `*n` / `*w` / `*a` / `*p` effectively matches
+ * one-or-more of that class — the same outcome NWN Lexicon documented, produced
+ * by Odyssey's backtracker rather than a greedy quantifier in the grammar.
+ *
+ * Captures returned here are the per-node slices EventHandler case 7 stores on
+ * the object (TestString substrings[1..n], skipping the full-input slot).
  *
  * @file listen-pattern.ts
  */
 
+/** Retail CSWSExpressionNode type values. */
+export const enum ExprNodeType {
+  LITERAL = 0,
+  ANY = 1,
+  ALT = 2,
+  JOIN = 3,
+  SPACE = 4,
+  PUNCT = 5,
+  ALPHA = 6,
+  DIGIT = 7,
+  ALNUM = 8,
+  END = 9,
+}
+
+interface ExprNode {
+  type: ExprNodeType;
+  /** Literal text (type LITERAL only). Already lowercased when !caseSensitive. */
+  text?: string;
+  next: ExprNode | null;
+  /** Left-side chain for ALT. */
+  child: ExprNode | null;
+  visits: number;
+  endPos: number;
+}
+
+interface ExprList {
+  head: ExprNode | null;
+  last: ExprNode | null;
+  tail: ExprNode | null;
+}
+
 export interface ListenPatternMatchResult {
   matched: boolean;
-  /** Captured pieces for GetMatchedSubstring; empty when no match. */
+  /**
+   * Per-node captures in order (literals, **, single-char classes).
+   * Equivalent to what GetMatchedSubstring indexes after a listen event.
+   */
   substrings: string[];
 }
 
+function newNode(type: ExprNodeType, text?: string): ExprNode {
+  return { type, text, next: null, child: null, visits: 0, endPos: 0 };
+}
+
+function newList(): ExprList {
+  return { head: null, last: null, tail: null };
+}
+
+function appendNode(list: ExprList, node: ExprNode): void {
+  if(!list.head){
+    list.head = node;
+    list.last = node;
+    list.tail = node;
+    return;
+  }
+  node.next = list.last!.next;
+  list.last!.next = node;
+  if(list.last === list.tail){
+    list.tail = node;
+  }
+  list.last = node;
+}
+
 /**
- * Convert an Aurora listen pattern to a RegExp + capture map.
- * Returns null if the pattern cannot be compiled.
+ * Parse an Aurora/Odyssey listen pattern into a node list.
+ * Returns null on parse error (invalid escape, unbalanced groups, empty `|` left side).
  */
-function buildPatternRegex(pattern: string): RegExp | null {
+export function parsePattern(pattern: string, caseSensitive = false): ExprNode | null {
   if(typeof pattern !== 'string'){ return null; }
+
+  let source = pattern;
+  if(!caseSensitive){
+    source = source.toLowerCase();
+  }
+
+  const stack: ExprList[] = [newList()];
+  let depth = 0;
   let i = 0;
-  let out = '^';
-  const len = pattern.length;
+  const len = source.length;
 
   while(i < len){
-    const c = pattern[i];
-    if(c === '*' && i + 1 < len){
-      const n = pattern[i + 1];
-      if(n === '*'){
-        // zero or more of any char — capturing
-        out += '(.*)';
-        i += 2;
-        continue;
-      }
-      if(n === 'w' || n === 'W'){
-        out += '(\\s+)';
-        i += 2;
-        continue;
-      }
-      if(n === 'n' || n === 'N'){
-        out += '(\\d+)';
-        i += 2;
-        continue;
-      }
-      if(n === 'p' || n === 'P'){
-        out += '([^\\w\\s]+)';
-        i += 2;
-        continue;
-      }
-      if(n === 'a' || n === 'A'){
-        out += '([A-Za-z]+)';
-        i += 2;
-        continue;
-      }
-    }
+    const c = source[i];
+    const list = stack[depth];
+
     if(c === '('){
-      out += '(?:';
+      depth += 1;
+      stack.push(newList());
       i += 1;
       continue;
     }
+
     if(c === ')'){
-      out += ')';
+      if(depth < 1){ return null; }
+      const child = stack.pop()!;
+      depth -= 1;
+      const parent = stack[depth];
+      if(child.head){
+        // Retail CSWSExpression::ParseString `)` case: parent.last becomes
+        // child.tail (true chain end / JOIN), NOT child.last (alt insert point).
+        if(!parent.head){
+          parent.head = child.head;
+          parent.tail = child.tail;
+        }else{
+          if(child.tail){
+            child.tail.next = parent.last!.next;
+          }
+          parent.last!.next = child.head;
+          if(parent.last === parent.tail){
+            parent.tail = child.tail;
+          }
+        }
+        parent.last = child.tail;
+      }
       i += 1;
       continue;
     }
+
     if(c === '|'){
-      out += '|';
+      if(!list.head){ return null; }
+      const join = newNode(ExprNodeType.JOIN);
+      appendNode(list, join);
+      const alt = newNode(ExprNodeType.ALT);
+      alt.child = list.head;
+      alt.next = join;
+      list.head = alt;
+      list.last = alt;
       i += 1;
       continue;
     }
-    // Escape regex metacharacters for literal match
-    if(/[\\^$.+?{}[\]()]/.test(c)){
-      out += '\\' + c;
-    }else{
-      out += c;
+
+    if(c === '*'){
+      i += 1;
+      if(i >= len){ return null; }
+      const n = source[i];
+      let type: ExprNodeType;
+      switch(n){
+        case '*': type = ExprNodeType.ANY; break;
+        case 'w': type = ExprNodeType.SPACE; break;
+        case 'p': type = ExprNodeType.PUNCT; break;
+        case 'a': type = ExprNodeType.ALPHA; break;
+        case 'n': type = ExprNodeType.DIGIT; break;
+        case 'A': type = ExprNodeType.ALNUM; break;
+        default: return null;
+      }
+      appendNode(list, newNode(type));
+      i += 1;
+      continue;
     }
-    i += 1;
+
+    let lit = '';
+    while(i < len){
+      const ch = source[i];
+      if(ch === '*' || ch === '|' || ch === '(' || ch === ')'){ break; }
+      lit += ch;
+      i += 1;
+    }
+    if(lit.length){
+      appendNode(list, newNode(ExprNodeType.LITERAL, lit));
+    }
   }
-  out += '$';
-  try{
-    return new RegExp(out, 'i');
-  }catch{
-    return null;
+
+  if(depth > 0){ return null; }
+
+  const root = stack[0];
+  const end = newNode(ExprNodeType.END);
+  if(!root.head){
+    root.head = end;
+  }else if(root.tail){
+    root.tail.next = end;
+  }else{
+    let n = root.head;
+    while(n.next){ n = n.next; }
+    n.next = end;
+  }
+  return root.head;
+}
+
+function charMatchesClass(type: ExprNodeType, ch: string): boolean {
+  switch(type){
+    case ExprNodeType.SPACE: return ch === ' ';
+    case ExprNodeType.PUNCT: return ch === '.' || ch === '?' || ch === '!';
+    case ExprNodeType.ALPHA: return ch >= 'a' && ch <= 'z';
+    case ExprNodeType.DIGIT: return ch >= '0' && ch <= '9';
+    case ExprNodeType.ALNUM:
+      return (ch >= 'a' && ch <= 'z') || (ch >= '0' && ch <= '9');
+    default: return false;
+  }
+}
+
+function resetVisits(node: ExprNode | null): void {
+  const seen = new Set<ExprNode>();
+  const stack: ExprNode[] = [];
+  if(node){ stack.push(node); }
+  while(stack.length){
+    const n = stack.pop()!;
+    if(seen.has(n)){ continue; }
+    seen.add(n);
+    n.visits = 0;
+    n.endPos = 0;
+    if(n.next){ stack.push(n.next); }
+    if(n.child){ stack.push(n.child); }
   }
 }
 
 /**
- * Test `text` against an Aurora listen `pattern`.
- * On success, `substrings` holds capture groups in order (for GetMatchedSubstring).
+ * Test `text` against an Odyssey listen `pattern`.
+ * On success, `substrings` holds per-node captures (EventHandler case 7 list).
  */
-export function testStringAgainstPattern(pattern: string, text: string): ListenPatternMatchResult {
+export function testStringAgainstPattern(
+  pattern: string,
+  text: string,
+  caseSensitive = false
+): ListenPatternMatchResult {
   const empty: ListenPatternMatchResult = { matched: false, substrings: [] };
   if(typeof pattern !== 'string' || typeof text !== 'string'){
     return empty;
   }
-  const re = buildPatternRegex(pattern);
-  if(!re){ return empty; }
-  const m = re.exec(text);
-  if(!m){ return empty; }
-  // m[0] is full match; captures are m[1..]
-  const substrings: string[] = [];
-  for(let i = 1; i < m.length; i++){
-    substrings.push(m[i] ?? '');
-  }
-  // Retail FOO** on "foobar" → ["foo","bar"]: when pattern has a leading
-  // literal before **, the engine also exposes the literal as substring 0.
-  // Our capturing `**` only yields the wildcard parts. Reconstruct by
-  // walking the pattern for literal segments adjacent to `**`.
-  const reconstructed = reconstructSubstrings(pattern, text, substrings);
-  return { matched: true, substrings: reconstructed };
-}
 
-/**
- * NWN GetMatchedSubstring semantics for patterns like `FOO**` / `**foo**bar**`:
- * alternating literal + wildcard pieces are all returned as substrings.
- */
-function reconstructSubstrings(
-  pattern: string,
-  text: string,
-  captures: string[]
-): string[] {
-  // If the pattern has no `**`, return typed captures (*w/*n/*p/*a) as-is.
-  if(pattern.indexOf('**') < 0){
+  const head = parsePattern(pattern, caseSensitive);
+  if(!head){ return empty; }
+
+  const original = text;
+  const input = caseSensitive ? text : text.toLowerCase();
+  const len = input.length;
+
+  resetVisits(head);
+
+  // path[0] is a dummy JOIN (retail pushes NewNode(3) before walking).
+  const path: ExprNode[] = [newNode(ExprNodeType.JOIN)];
+
+  let pos = 0;
+  let node: ExprNode | null = head;
+  let steps = 0;
+  const STEP_LIMIT = 100000;
+
+  const buildCaptures = (): string[] => {
+    const captures: string[] = [];
+    let prev = 0;
+    for(let i = 1; i < path.length; i++){
+      const n = path[i];
+      if(n.type === ExprNodeType.ALT){ continue; }
+      captures.push(original.substring(prev, n.endPos));
+      prev = n.endPos;
+    }
     return captures;
-  }
+  };
 
-  const parts: string[] = [];
-  let i = 0;
-  let captureIdx = 0;
-  const len = pattern.length;
-  let textPos = 0;
-  const lowerText = text.toLowerCase();
+  /**
+   * Pop path entries until a retriable (non-literal) node is found.
+   * Restores `pos` to that node's endPos (retail local_38 = node[2]).
+   */
+  const backtrack = (): ExprNode | null => {
+    while(path.length > 1){
+      const top = path.pop()!;
+      pos = top.endPos;
+      if(top.type === ExprNodeType.LITERAL){
+        continue;
+      }
+      return top;
+    }
+    return null;
+  };
 
-  while(i < len){
-    if(pattern[i] === '*' && i + 1 < len && pattern[i + 1] === '*'){
-      const cap = captures[captureIdx++] ?? '';
-      parts.push(cap);
-      textPos += cap.length;
-      i += 2;
-      continue;
-    }
-    if(pattern[i] === '*' && i + 1 < len && /[wnpaWNPA]/.test(pattern[i + 1])){
-      const cap = captures[captureIdx++] ?? '';
-      parts.push(cap);
-      textPos += cap.length;
-      i += 2;
-      continue;
-    }
-    if(pattern[i] === '(' || pattern[i] === ')' || pattern[i] === '|'){
-      // Grouping/or — fall back to raw captures; full reconstruct is ambiguous.
-      return captures.length ? captures : parts;
-    }
-    // Literal run until next special
-    let lit = '';
-    while(i < len){
-      if(pattern[i] === '*' || pattern[i] === '(' || pattern[i] === ')' || pattern[i] === '|'){
+  while(node){
+    if(++steps > STEP_LIMIT){ return empty; }
+    node.visits += 1;
+    let failed = false;
+
+    switch(node.type){
+      case ExprNodeType.LITERAL: {
+        path.push(node);
+        const lit = node.text || '';
+        let ok = true;
+        for(let j = 0; j < lit.length; j++){
+          if(pos + j >= len || input[pos + j] !== lit[j]){
+            ok = false;
+            break;
+          }
+        }
+        if(!ok){
+          failed = true;
+          break;
+        }
+        pos += lit.length;
+        node.endPos = pos;
+        node = node.next;
+        if(node){ node.visits = 0; }
         break;
       }
-      lit += pattern[i];
-      i += 1;
+
+      case ExprNodeType.ANY: {
+        path.push(node);
+        if(pos === len){
+          if(node.visits > 1){
+            // Cannot expand past end — hard fail (retail clears and returns 0).
+            return empty;
+          }
+        }else if(node.visits > 1){
+          pos += 1;
+        }
+        node.endPos = pos;
+        node = node.next;
+        if(node){ node.visits = 0; }
+        break;
+      }
+
+      case ExprNodeType.ALT: {
+        path.push(node);
+        node.endPos = pos;
+        if(node.visits === 1){
+          // Right side first (retail).
+          node = node.next;
+        }else if(node.visits === 2 && node.child){
+          node.child.visits = 0;
+          node = node.child;
+        }else{
+          // Exhausted both sides — pop self before further backtrack (retail deleteAt).
+          path.pop();
+          failed = true;
+          break;
+        }
+        if(node){ node.visits = 0; }
+        break;
+      }
+
+      case ExprNodeType.JOIN: {
+        node = node.next;
+        if(node){ node.visits = 0; }
+        break;
+      }
+
+      case ExprNodeType.SPACE:
+      case ExprNodeType.PUNCT:
+      case ExprNodeType.ALPHA:
+      case ExprNodeType.DIGIT:
+      case ExprNodeType.ALNUM: {
+        if(pos === len){
+          return empty;
+        }
+        path.push(node);
+        if(!charMatchesClass(node.type, input[pos])){
+          // Retail pops the just-pushed node before general backtrack.
+          path.pop();
+          failed = true;
+          break;
+        }
+        pos += 1;
+        node.endPos = pos;
+        node = node.next;
+        if(node){ node.visits = 0; }
+        break;
+      }
+
+      case ExprNodeType.END: {
+        if(pos === len){
+          return { matched: true, substrings: buildCaptures() };
+        }
+        failed = true;
+        break;
+      }
+
+      default:
+        node = node.next;
+        if(node){ node.visits = 0; }
+        break;
     }
-    if(lit.length){
-      parts.push(lit);
-      // Advance textPos past this literal (case-insensitive)
-      const idx = lowerText.indexOf(lit.toLowerCase(), textPos);
-      if(idx >= 0){ textPos = idx + lit.length; }
+
+    if(failed){
+      node = backtrack();
+      if(!node){ return empty; }
     }
   }
-  return parts.length ? parts : captures;
-}
 
-/** Standard associate listen-pattern number → speech token (Aurora ASSOCIATE_COMMAND_*). */
-export const ASSOCIATE_LISTEN_PATTERNS: ReadonlyArray<{ pattern: string; number: number }> = [
-  { pattern: 'NW_ATTACK_MY_TARGET', number: -3 },
-  { pattern: 'NW_FOLLOW_ME', number: -5 },
-  { pattern: 'NW_GUARD_ME', number: -7 },
-  { pattern: 'NW_STAND_GROUND', number: -2 },
-  { pattern: 'NW_HEAL_ME', number: -4 },
-  { pattern: 'NW_MASTER_FAILED_CLOSE', number: -11 },
-  { pattern: 'NW_MASTER_FAILED_OPEN', number: -12 },
-  { pattern: 'NW_MASTER_SAW_TRAP', number: -13 },
-  { pattern: 'NW_MASTER_UNDER_ATTACK', number: -6 },
-  { pattern: 'NW_PICKLOCK', number: -9 },
-  { pattern: 'NW_DISARMTRAP', number: -10 },
-];
+  return empty;
+}

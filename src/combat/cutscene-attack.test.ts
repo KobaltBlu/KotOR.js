@@ -32,9 +32,12 @@ jest.mock('@/odyssey', () => ({
 }));
 
 import { CombatRoundAction, resolveAnimations2DARow } from '@/combat/CombatRoundAction';
+import { resolveMasterState } from '@/combat/combat-dueling';
+import { canSyncMeleeReaction, pickMeleeReaction, resolveMeleeReactionPlayback } from '@/combat/combat-reaction-eligibility';
 import { CombatActionType } from '@/enums/combat/CombatActionType';
 import { AttackResult } from '@/enums/combat/AttackResult';
 import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
+import { ModuleObjectType } from '@/enums/module/ModuleObjectType';
 
 describe('resolveAnimations2DARow', () => {
   it('resolves CutsceneAttack nAnimation as animations.2da row', () => {
@@ -101,6 +104,122 @@ describe('AddCutsceneAttackAction field contract', () => {
     expect(param7).toBe(239);
     expect(param8).toBe(AttackResult.HIT_SUCCESSFUL);
     expect(param9).toBe(12);
+  });
+});
+
+describe('CutsceneAttack duel timing', () => {
+  // Mirror the ActionPhysicalAttacks branch decision: engaged duels only
+  // enter master/slave pairing when the round is NOT a scripted cutscene swing.
+  const usesNonEngagedStart = (
+    duelEngaged: boolean,
+    resultsCalculated: boolean
+  ) => !duelEngaged || resultsCalculated;
+
+  it('resultsCalculated forces non-engaged start even when duel is engaged', () => {
+    expect(usesNonEngagedStart(true, true)).toBe(true);
+  });
+
+  it('normal engaged duel still uses the engaged master/slave path', () => {
+    expect(usesNonEngagedStart(true, false)).toBe(false);
+  });
+
+  it('non-engaged attack always uses the non-engaged start', () => {
+    expect(usesNonEngagedStart(false, false)).toBe(true);
+  });
+
+  it('resolveMasterState yields when partner already masters this pair', () => {
+    const attacker: any = { objectType: ModuleObjectType.ModuleCreature };
+    const target: any = {
+      objectType: ModuleObjectType.ModuleCreature,
+      combatRound: { engaged: true, master: true, duelPartner: attacker },
+      combatData: { lastAttackTarget: attacker },
+    };
+    // Without the guard, targetLastAttack === attacker would return master=true
+    expect(resolveMasterState(attacker, target, true)).toBe(false);
+  });
+
+  it('resolveMasterState still masters when partner is not driving the pair', () => {
+    const attacker: any = { objectType: ModuleObjectType.ModuleCreature };
+    const target: any = {
+      objectType: ModuleObjectType.ModuleCreature,
+      combatRound: { engaged: false, master: false, duelPartner: undefined },
+      combatData: { lastAttackTarget: attacker },
+    };
+    expect(resolveMasterState(attacker, target, true)).toBe(true);
+  });
+
+  it('resolveMasterState returns false when not engaged', () => {
+    const attacker: any = { objectType: ModuleObjectType.ModuleCreature };
+    const target: any = { objectType: ModuleObjectType.ModuleCreature };
+    expect(resolveMasterState(attacker, target, false)).toBe(false);
+  });
+});
+
+describe('CutsceneAttack force-react eligibility', () => {
+  const base = {
+    hasTargetCombatRound: true,
+    checkActionLengthOk: false,
+    attackResult: AttackResult.MISS,
+    targetAnimIndex: ModuleCreatureAnimState.ATTACK,
+    targetLastAttackIsAttacker: false,
+  };
+
+  it('resultsCalculated forces react even when non-engaged and mid-swing', () => {
+    expect(canSyncMeleeReaction({
+      ...base,
+      engaged: false,
+      resultsCalculated: true,
+    })).toBe(true);
+  });
+
+  it('non-cutscene unengaged does not force-react while mid-swing', () => {
+    expect(canSyncMeleeReaction({
+      ...base,
+      engaged: false,
+      resultsCalculated: false,
+    })).toBe(false);
+  });
+
+  it('non-cutscene unengaged reacts when idle and targeting attacker', () => {
+    expect(canSyncMeleeReaction({
+      ...base,
+      engaged: false,
+      resultsCalculated: false,
+      targetAnimIndex: ModuleCreatureAnimState.READY,
+      targetLastAttackIsAttacker: true,
+    })).toBe(true);
+  });
+
+  it('engaged duel still reacts on hit without resultsCalculated', () => {
+    expect(canSyncMeleeReaction({
+      ...base,
+      engaged: true,
+      resultsCalculated: false,
+      attackResult: AttackResult.HIT_SUCCESSFUL,
+    })).toBe(true);
+  });
+});
+
+describe('CutsceneAttack hit DAMAGE reaction playback', () => {
+  it('pickMeleeReaction maps landing hits to DAMAGE', () => {
+    expect(pickMeleeReaction(AttackResult.HIT_SUCCESSFUL)).toBe(ModuleCreatureAnimState.DAMAGE);
+    expect(pickMeleeReaction(AttackResult.CRITICAL_HIT)).toBe(ModuleCreatureAnimState.DAMAGE);
+    expect(pickMeleeReaction(AttackResult.AUTOMATIC_HIT)).toBe(ModuleCreatureAnimState.DAMAGE);
+  });
+
+  it('pickMeleeReaction maps miss/parry to dodge/parry', () => {
+    expect(pickMeleeReaction(AttackResult.MISS)).toBe(ModuleCreatureAnimState.DODGE);
+    expect(pickMeleeReaction(AttackResult.PARRIED)).toBe(ModuleCreatureAnimState.PARRY);
+  });
+
+  it('prefers mapped clip when present', () => {
+    expect(resolveMeleeReactionPlayback({ name: 'g2d1' })).toEqual({ mode: 'mapped' });
+  });
+
+  it('falls back to setAnimationState when mapped clip is missing', () => {
+    // Never flip only index — that leaves a stale ATTACK clip on the defender
+    expect(resolveMeleeReactionPlayback(undefined)).toEqual({ mode: 'setAnimationState' });
+    expect(resolveMeleeReactionPlayback(null)).toEqual({ mode: 'setAnimationState' });
   });
 });
 

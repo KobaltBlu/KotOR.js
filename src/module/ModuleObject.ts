@@ -207,7 +207,16 @@ export class ModuleObject {
   heardStrings: IHeardString[] = [];
   perceptionList: IPerceptionInfo[] = [];
   isListening: boolean;
-  listeningPatterns: any = {};
+  /**
+   * Registered listen expressions in registration order (retail expression_list).
+   * Keyed by pattern number via SetListenExpression; first match wins on scan.
+   */
+  listeningPatterns: Array<{ pattern: string; number: number }> = [];
+  /**
+   * Per-node captures from the last listen match (retail matched_expression_strings).
+   * Indexed by GetMatchedSubstring after OnDialogue.
+   */
+  matchedSubstrings: string[] = [];
   perceptionRange: SWRange;
   
   spawned: boolean = false;
@@ -398,7 +407,8 @@ export class ModuleObject {
     ];
     
     this.isListening = false;
-    this.listeningPatterns = {};
+    this.listeningPatterns = [];
+    this.matchedSubstrings = [];
     this.combatData.initiative = 0;
 
     this.spawned = false;
@@ -1275,6 +1285,14 @@ export class ModuleObject {
           }
         break;
         case ModuleCreatureAnimState.DODGE:
+          if(this.isSimpleCreature()){
+            return animations2DA.rows[281];
+          }else{
+            return animations2DA.rows[302];
+          }
+        break;
+        case ModuleCreatureAnimState.PARRY:
+          // Same pose family as dodge for SetAnimation(PARRY) fallback
           if(this.isSimpleCreature()){
             return animations2DA.rows[281];
           }else{
@@ -2342,8 +2360,9 @@ export class ModuleObject {
 
     const rangeSquared = range * range;
     let cDistanceSquared = 0;
-    // console.log('SpeakString', this.getName(), str, volume, range);
-    const speakString = str.toLowerCase();
+    // Keep original case — CSWSExpression captures slice from the original-case
+    // input; matching lowercases internally when case-insensitive.
+    const spoken = str;
 
     if(notifyPCs){
       for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
@@ -2351,10 +2370,10 @@ export class ModuleObject {
         if(creature != (this as any) && !creature.isDead()){
           cDistanceSquared = this.position.distanceToSquared(creature.position);
           if(cDistanceSquared > rangeSquared){ continue; }
-          creature.heardStrings.push({ 
-            speaker: this, 
-            string: speakString, 
-            volume: talkVolume 
+          creature.heardStrings.push({
+            speaker: this,
+            string: spoken,
+            volume: talkVolume
           });
         }
       }
@@ -2369,14 +2388,14 @@ export class ModuleObject {
 
           creature.heardStrings.push({
             speaker: this,
-            string: speakString, 
+            string: spoken,
             volume: talkVolume
           });
         }
       }
     }
   }
-  
+
   /**
    * Reset the excited duration
    */
@@ -3429,12 +3448,31 @@ export class ModuleObject {
   }
 
   /**
-   * Set the listening pattern
-   * @param sString 
-   * @param iNum 
+   * Set the listening pattern (retail CSWSObject::SetListenExpression).
+   * Re-parses in place when the pattern number already exists.
+   * @param sString
+   * @param iNum
    */
   setListeningPattern(sString = '', iNum = 0){
-    this.listeningPatterns[sString] = iNum;
+    const number = iNum | 0;
+    const pattern = typeof sString === 'string' ? sString : '';
+    for(let i = 0; i < this.listeningPatterns.length; i++){
+      if(this.listeningPatterns[i].number === number){
+        this.listeningPatterns[i].pattern = pattern;
+        return;
+      }
+    }
+    this.listeningPatterns.push({ pattern, number });
+  }
+
+  /** Clear matched substrings (retail ClearMatchedExpressionStrings). */
+  clearMatchedSubstrings(){
+    this.matchedSubstrings = [];
+  }
+
+  /** Store listen-match captures for GetMatchedSubstring (EventHandler case 7). */
+  setMatchedSubstrings(substrings: string[]){
+    this.matchedSubstrings = substrings ? substrings.slice() : [];
   }
 
   /**

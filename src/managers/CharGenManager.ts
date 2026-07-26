@@ -307,7 +307,7 @@ export class CharGenManager {
     CharGenManager.resetSkillPoints();
     CharGenManager.skillRankBaseline = [0, 0, 0, 0, 0, 0, 0, 0];
     CharGenManager.availSkillPoints = CharGenManager.getMaxSkillPoints();
-    const skillOrder = CharGenManager.getRecommendedOrder();
+    const skillOrder = CharGenManager.getRecommendedOrder(creature);
 
     let guard = 0;
     const maxIterations = CharGenManager.availSkillPoints * SkillType.MAX_SKILLS + 8;
@@ -583,22 +583,35 @@ export class CharGenManager {
     );
   }
 
-  static getSkillTableColumn() {
-    return CharGenManager.selectedCreature.classes[0].skillstable.toLowerCase() + '_class';
+  /** Retail uses the last (most recently gained) class for skill table columns. */
+  static getCreatureSkillClass(creature?: { classes?: { skillstable?: string }[] }) {
+    const c = creature ?? CharGenManager.selectedCreature;
+    const classes = c?.classes;
+    if(!classes?.length) return undefined;
+    return classes[classes.length - 1] ?? classes[0];
   }
 
-  static getSkillTableColumnRecommended() {
-    return CharGenManager.selectedCreature.classes[0].skillstable.toLowerCase() + '_reco';
+  static getSkillTableColumn(creature?: { classes?: { skillstable?: string }[] }) {
+    const cls = CharGenManager.getCreatureSkillClass(creature);
+    if(!cls?.skillstable) return '';
+    return cls.skillstable.toLowerCase() + '_class';
+  }
+
+  static getSkillTableColumnRecommended(creature?: { classes?: { skillstable?: string }[] }) {
+    const cls = CharGenManager.getCreatureSkillClass(creature);
+    if(!cls?.skillstable) return '';
+    return cls.skillstable.toLowerCase() + '_reco';
   }
 
   /** Returns skill indices in recommended spend order (-1 = unused slot). */
-  static getRecommendedOrder(): number[] {
+  static getRecommendedOrder(creature?: { classes?: { skillstable?: string }[] }): number[] {
     const skillOrder: number[] = [-1, -1, -1, -1, -1, -1, -1, -1];
     const table = TwoDAManager.datatables.get('skills');
-    if(!table) return skillOrder;
+    const column = CharGenManager.getSkillTableColumnRecommended(creature);
+    if(!table || !column) return skillOrder;
 
     for (let i = 0; i < 8; i++) {
-      const value = table.rows[i][this.getSkillTableColumnRecommended()];
+      const value = table.rows[i]?.[column];
       if (value != '****' && value != null && value !== '') {
         const order = parseInt(String(value), 10) - 1;
         if(order >= 0 && order < 8){

@@ -214,9 +214,19 @@ export class CharGenSkills extends GameMenu {
     if(!creature) return;
 
     const mgr = GameState.CharGenManager;
-    mgr.resetSkillPoints();
-    mgr.availSkillPoints = mgr.getMaxSkillPoints();
-    const skillOrder = mgr.getRecommendedOrder();
+    // Retail CSWGuiSkillsCharGen::OnRecommendButton:
+    // CharGen clears ranks + recalculates points; level-up restores baseline + budget.
+    if(this.levelUpMode){
+      const draft = GameState.LevelUpManager?.draft;
+      for(let i = 0; i < SkillType.MAX_SKILLS; i++){
+        mgr.setTempSkillRank(i, mgr.skillRankBaseline[i] | 0);
+      }
+      mgr.availSkillPoints = draft?.skillPointsBudget ?? draft?.skillPointsRemaining ?? 0;
+    }else{
+      mgr.resetSkillPoints();
+      mgr.availSkillPoints = mgr.getMaxSkillPoints();
+    }
+    const skillOrder = mgr.getRecommendedOrder(creature);
 
     let guard = 0;
     const maxIterations = mgr.availSkillPoints * SkillType.MAX_SKILLS + 8;
@@ -267,6 +277,15 @@ export class CharGenSkills extends GameMenu {
     super.show();
     const mgr = GameState.CharGenManager;
     const creature = this.getCreature();
+
+    if(this.levelUpMode){
+      // MenuLevelUp.openSkillsStep seeds baseline, temps, and point budget.
+      this.selectedSkillIndex = SkillType.COMPUTER_USE;
+      this.updateButtonStates();
+      this.selectSkill(this.selectedSkillIndex);
+      return;
+    }
+
     // CharGen baseline is always 0; reload any previously accepted ranks into temps.
     mgr.skillRankBaseline = [0, 0, 0, 0, 0, 0, 0, 0];
     if(creature?.skills){

@@ -690,7 +690,8 @@ export class ModuleCreature extends ModuleObject {
     this.moveDirOverride = undefined;
 
     this.isListening = false;
-    this.listeningPatterns = {};
+    this.listeningPatterns = [];
+    this.matchedSubstrings = [];
     this.heardStrings = [];
 
     this.targetPositions = [];
@@ -1295,19 +1296,17 @@ export class ModuleCreature extends ModuleObject {
     const str = this.heardStrings[0];
     if(!this.isListening || !str){ return;  }
 
-    // Exact key first (legacy / associate tokens), then Aurora pattern match.
-    let patternNum: number | undefined = this.listeningPatterns[str.string];
+    // Retail CSWSObject::TestListenExpression — scan registered expressions in
+    // order; first match wins. No exact-string fast path.
+    let patternNum: number | undefined;
     let matchedSubstrings: string[] = [];
-    if(typeof patternNum === 'undefined'){
-      const expressions = Object.keys(this.listeningPatterns);
-      for(let i = 0; i < expressions.length; i++){
-        const expression = expressions[i];
-        const result = testStringAgainstPattern(expression, str.string);
-        if(result.matched){
-          patternNum = this.listeningPatterns[expression];
-          matchedSubstrings = result.substrings;
-          break;
-        }
+    for(let i = 0; i < this.listeningPatterns.length; i++){
+      const entry = this.listeningPatterns[i];
+      const result = testStringAgainstPattern(entry.pattern, str.string);
+      if(result.matched){
+        patternNum = entry.number;
+        matchedSubstrings = result.substrings;
+        break;
       }
     }
     if(typeof patternNum === 'undefined'){ return; }
@@ -2669,12 +2668,12 @@ export class ModuleCreature extends ModuleObject {
     let attackAnimIndex = -1;
 
     let modeltype = this.creatureAppearance.modeltype;
-    let attackKey = this.getCombatAnimationAttackType();
     let weaponWield = this.getCombatAnimationWeaponType();
     
     let anims = GameState.TwoDAManager.datatables.get('animations');
+    const attackName = (attackAnim || '').toLowerCase();
     for(let i = 0; i < anims.RowCount; i++){
-      if(anims.rows[i].name == attackAnim){
+      if((anims.rows[i].name || '').toLowerCase() == attackName){
         attackAnimIndex = i;
         break;
       }
@@ -2685,7 +2684,7 @@ export class ModuleCreature extends ModuleObject {
     if(combatAnimation){
       let damageAnimIndex = combatAnimation['damage'+weaponWield];
       let damageAnim = anims.getByID(damageAnimIndex);
-      if(damageAnim && this.model.odysseyAnimationMap.get(damageAnim.name.toLowerCase().trim())){
+      if(damageAnim && this.model?.odysseyAnimationMap?.get(damageAnim.name.toLowerCase().trim())){
         //console.log('damage anim', this.getName(), damageAnim.name)
         return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
       }
@@ -2694,24 +2693,31 @@ export class ModuleCreature extends ModuleObject {
     switch(modeltype){
       case 'S':
       case 'L':
-        return OdysseyModelAnimation.GetAnimation2DA('cdamages');
+        return OdysseyModelAnimation.GetAnimation2DA('cdamages')
+          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
     }
     //console.log(attackAnim);
     
-    switch(attackAnim){
+    switch((attackAnim || '').toLowerCase()){
       case 'c2a1':
         return OdysseyModelAnimation.GetAnimation2DA('c2d1')
+          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
       case 'c2a2':
         return OdysseyModelAnimation.GetAnimation2DA('c2d2')
+          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
       case 'c2a3':
         return OdysseyModelAnimation.GetAnimation2DA('c2d3')
+          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
       case 'c2a4':
         return OdysseyModelAnimation.GetAnimation2DA('c2d4')
+          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
       case 'c2a5':
         return OdysseyModelAnimation.GetAnimation2DA('c2d5')
+          || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
     }
 
-    return OdysseyModelAnimation.GetAnimation2DA('g'+weaponWield+'d1');
+    return OdysseyModelAnimation.GetAnimation2DA('g'+weaponWield+'d1')
+      || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
 
   }
 
@@ -2740,7 +2746,7 @@ export class ModuleCreature extends ModuleObject {
         let damageAnim = anims.getByID(damageAnimIndex);
         if(damageAnim && this.model.odysseyAnimationMap.get(damageAnim.name.toLowerCase().trim())){
           //console.log('dodge/parry anim', this.getName(), damageAnim.name)
-          return damageAnim.name;
+          return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
         }
       }
       
@@ -3847,13 +3853,25 @@ export class ModuleCreature extends ModuleObject {
   }
 
   onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []){
-    const nwscript = this.scripts[ModuleObjectScript.CreatureOnDialog];
+    // Retail EventHandler case 7: store captures on the object, then run OnDialogue.
+    this.setMatchedSubstrings(matchedSubstrings || []);
+
+    let nwscript = this.scripts[ModuleObjectScript.CreatureOnDialog];
+    // Retail: empty or "default" OnDialogue resref → k_hen_dialogue01 (written back into the slot).
+    const resRef = nwscript?.name || '';
+    if(!nwscript || !resRef || resRef.toLowerCase() === 'default'){
+      const fallback = GameState.NWScript.Load('k_hen_dialogue01');
+      if(fallback){
+        fallback.caller = this;
+        this.scripts[ModuleObjectScript.CreatureOnDialog] = fallback;
+        nwscript = fallback;
+      }
+    }
     if(!nwscript){ return false; }
     const instance = nwscript.newInstance();
     instance.listenPatternNumber = listenPatternNumber;
     instance.listenPatternSpeaker = oSpeaker;
     instance.conversation = conversation;
-    instance.matchedSubstrings = matchedSubstrings || [];
     instance.run(this, 0);
     return true;
   }
@@ -5872,10 +5890,6 @@ export class ModuleCreature extends ModuleObject {
     this.isListening = bVal ? true : false;
   }
 
-  setListeningPattern(sString = '', iNum = 0){
-    this.listeningPatterns[sString] = iNum;
-  }
-
   /** NWScript GetPersonalSpace — appearance.perspace. */
   getPersonalSpace(){
     return this.creatureAppearance.perspace;
@@ -7438,16 +7452,13 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Experience') ).setValue(this.experience);
     
     // Retail SaveListenData: ExpressionList only when size > 0; element struct type 5
-    let expressions = Object.keys(this.listeningPatterns);
-    if(expressions.length > 0){
+    if(this.listeningPatterns.length > 0){
       let expressionList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ExpressionList') );
-      for(let i = 0; i < expressions.length; i++){
-        let expressionString = expressions[i];
-        let expressionId = this.listeningPatterns[expressionString];
-
+      for(let i = 0; i < this.listeningPatterns.length; i++){
+        const entry = this.listeningPatterns[i];
         let expressionStruct = new GFFStruct(5);
-        expressionStruct.addField( new GFFField(GFFDataType.INT, 'ExpressionId') ).setValue( expressionId );
-        expressionStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'ExpressionString') ).setValue( expressionString );
+        expressionStruct.addField( new GFFField(GFFDataType.INT, 'ExpressionId') ).setValue( entry.number );
+        expressionStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'ExpressionString') ).setValue( entry.pattern );
         expressionList.addChildStruct(expressionStruct);
       }
     }

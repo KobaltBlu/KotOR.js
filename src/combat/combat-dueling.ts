@@ -141,6 +141,14 @@ export function resolveMasterState(
     return true;
   }
 
+  // Mutual-master guard: if the target is already driving this exact pair as
+  // master, yield so only one fighter drives the duel. Prevents both rounds
+  // infinitePausing each other (wait-for-each-other deadlock).
+  const targetRound = targetCreature.combatRound;
+  if(targetRound?.engaged && targetRound?.master && targetRound?.duelPartner === attacker){
+    return false;
+  }
+
   const targetLastAttack = targetCreature.combatData?.lastAttackTarget;
   let master = !targetLastAttack;
   if(targetLastAttack === attacker && !targetCreature.combatRound?.master){

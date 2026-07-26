@@ -176,7 +176,12 @@ export class ActionPhysicalAttacks extends Action {
     if(!combatRound.roundPaused) {
       const featId = combatRound.action?.featId || 0;
 
-      if(!duel.engaged){
+      // CutsceneAttack (resultsCalculated) never enters engaged duel pairing —
+      // mutual scripted swings would both claim master and infinitePause each
+      // other. Run as an independent non-engaged round instead.
+      const cutsceneAttack = !!combatRound.action?.resultsCalculated;
+
+      if(!duel.engaged || cutsceneAttack){
         // Non-duel: StartCombatRound(target, engaged=0, master)
         combatRound.startCombatRound(target, false, duel.master, featId);
         if(combatRound.action){

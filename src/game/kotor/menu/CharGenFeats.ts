@@ -84,10 +84,10 @@ export class CharGenFeats extends GameMenu {
 
   show() {
     super.show();
-    if(!this.creature){
-      this.creature = this.levelUpMode
-        ? GameState.LevelUpManager?.creature
-        : GameState.CharGenManager.selectedCreature;
+    if(this.levelUpMode){
+      this.creature = GameState.LevelUpManager?.creature || this.creature;
+    }else if(!this.creature){
+      this.creature = GameState.CharGenManager.selectedCreature;
     }
     this.chosenFeats = [];
     if(this.levelUpMode && GameState.LevelUpManager?.draft){
@@ -224,46 +224,55 @@ export class CharGenFeats extends GameMenu {
   buildFeatList() {
     const feats = GameState.SWRuleSet.feats;
     const featCount = GameState.SWRuleSet.featCount;
-    let list = [];
+    const list = [];
     if(this.creature){
       const mainClass = this.creature.getMainClass();
       if(mainClass){
         for (let i = 0; i < featCount; i++) {
           const feat = feats[i];
-          if (feat.constant != '****') {
-            if (mainClass.isFeatAvailable(feat)) {
-              const status = mainClass.getFeatStatus(feat);
-              if (this.creature.getHasFeat(i) || status == 0 || status == 1) {
-                list.push(feat);
-              }
-            }
+          if (!feat || feat.constant == '****') continue;
+          if (!mainClass.isFeatAvailable(feat)) continue;
+          const status = mainClass.getFeatStatus(feat);
+          if (this.creature.getHasFeat(i) || status == 0 || status == 1) {
+            list.push(feat);
           }
         }
       }
     }
-    let groups = [];
+
+    const isUnsetPrereq = (id: any) => {
+      if(id == null || id === '****') return true;
+      const n = id | 0;
+      return n < 0 || n === 0xFFFFFFFF || !feats[n];
+    };
+    const groups = [];
     for (let i = 0; i < list.length; i++) {
       const feat = list[i];
+      // Retail CreateFeatChart: only root feats (no prereq) start a group.
+      if (!isUnsetPrereq(feat.prereqFeat1) || !isUnsetPrereq(feat.prereqFeat2)) continue;
+
       const group = [];
-      const prereqfeat1 = GameState.SWRuleSet.feats[feat.prereqFeat1];
-      const prereqfeat2 = GameState.SWRuleSet.feats[feat.prereqFeat2];
-      if (!prereqfeat1 && !prereqfeat2) {
-        group.push(feat);
-        for (let j = 0; j < featCount; j++) {
-          const chainFeat = GameState.SWRuleSet.feats[j];
-          if (chainFeat.prereqFeat1 == feat.id || chainFeat.prereqFeat2 == feat.id ||
-              chainFeat.prereqFeat1 == i || chainFeat.prereqFeat2 == i) {
-            if (chainFeat.prereqFeat1 != -1 && chainFeat.prereqFeat2 != -1) {
-              group[2] = chainFeat;
-            } else {
-              group[1] = chainFeat;
-            }
-          }
+      group.push(feat);
+      const rootId = this.getFeatId(feat);
+      for (let j = 0; j < featCount; j++) {
+        const chainFeat = feats[j];
+        if (!chainFeat || chainFeat.constant == '****') continue;
+        if (chainFeat.prereqFeat1 != rootId && chainFeat.prereqFeat2 != rootId) continue;
+        if (!isUnsetPrereq(chainFeat.prereqFeat1) && !isUnsetPrereq(chainFeat.prereqFeat2)) {
+          group[2] = chainFeat;
+        } else {
+          group[1] = chainFeat;
         }
       }
-      groups.push(group);
+      if (group.length) {
+        groups.push(group);
+      }
     }
-    groups.sort((groupa, groupb) => groupa[0].toolsCategories > groupb[0].toolsCategories ? 1 : -1);
+    groups.sort((groupa, groupb) => {
+      const a = groupa[0]?.toolsCategories ?? 0;
+      const b = groupb[0]?.toolsCategories ?? 0;
+      return a > b ? 1 : -1;
+    });
     this.LB_FEATS.setItems(groups);
   }
   
