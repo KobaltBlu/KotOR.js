@@ -593,9 +593,9 @@ export class MenuEquipment extends GameMenu {
     this.selectedItem = item;
     let description = '';
     if (item instanceof ModuleItem) {
-      description = item.getDescription();
+      description = item.getPropertyDescription();
     } else if(item instanceof GUIItemEquipped) {
-      description = item.node.getDescription();
+      description = item.node.getPropertyDescription();
     }
     this.LB_DESC?.setItem(description || null);
 

@@ -150,7 +150,7 @@ export class MenuUpgradeSelect extends K1_MenuUpgradeSelect {
 
   onItemSelected(item: ModuleItem) {
     this.selectedItem = item;
-    this.LB_DESCRIPTION?.setItem?.(item ? item.getDescription() : null);
+    this.LB_DESCRIPTION?.setItem?.(item ? item.getPropertyDescription() : null);
     this.BTN_UPGRADEITEMS.disableSelection = !item;
   }
 

@@ -66,7 +66,7 @@ export class MenuUpgradeItems extends GameMenu {
   setSelected(item: ModuleItem) {
     this.selected = item;
     this.selectedSource = this.sources.find(s => s.item === item);
-    this.LB_DESCRIPTION.setItem(item ? item.getDescription() : null);
+    this.LB_DESCRIPTION.setItem(item ? item.getPropertyDescription() : null);
     this.BTN_UPGRADEITEM.disableSelection = !item;
   }
 

@@ -88,7 +88,7 @@ export class MenuQuestItem extends GameMenu {
   UpdateSelected(){
     const item = unwrapInventoryListNode(this.selected);
     if(item instanceof ModuleItem){
-      this.LB_ITEM_DESCRIPTION?.setItem(item.getDescription());
+      this.LB_ITEM_DESCRIPTION?.setItem(item.getPropertyDescription());
     }else{
       this.LB_ITEM_DESCRIPTION?.setItem('');
     }

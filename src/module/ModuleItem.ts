@@ -20,6 +20,7 @@ import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
 import { ItemProperty } from "@/engine/ItemProperty";
+import { getItemPropertyDescription } from "@/module/item-property-description";
 import { GameState } from "@/GameState";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ActionParameterType, ActionType, CombatActionType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@/enums";
@@ -144,6 +145,14 @@ export class ModuleItem extends ModuleObject {
       return this.descIdentified.getValue();
     }
     return this.descIdentified;
+  }
+
+  /**
+   * Retail CSWSItem::GetPropertyDescription — stats/properties + DescIdentified
+   * for equip / inventory / store description panes.
+   */
+  getPropertyDescription(): string {
+    return getItemPropertyDescription(this);
   }
 
   getBaseItemId(): number {

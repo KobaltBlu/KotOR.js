@@ -299,7 +299,7 @@ export class MenuStore extends GameMenu {
 
   onItemSelected(item: ModuleItem){
     this.updateSelectedItemLabels(item);
-    this.LB_DESCRIPTION.setItem(item.getDescription());
+    this.LB_DESCRIPTION.setItem(item.getPropertyDescription());
     this.LB_DESCRIPTION.show();
   }
 

@@ -223,7 +223,7 @@ export class MenuInventory extends GameMenu {
   UpdateSelected(){
     const item = unwrapInventoryListNode(this.selected);
     if(item instanceof ModuleItem){
-      this.LB_DESCRIPTION?.setItem(item.getDescription());
+      this.LB_DESCRIPTION?.setItem(item.getPropertyDescription());
       clearInventoryItemNewFlag(item);
     }else{
       this.LB_DESCRIPTION?.setItem('');
