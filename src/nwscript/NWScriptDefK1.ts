@@ -7351,7 +7351,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.PartyManager.party[0];
+      // Retail CServerExoAppInternal::GetFirstPCObject walks the player list.
+      // Minigame loads leave party[] empty (ModuleArea.loadPlayer) but keep
+      // PartyManager.Player — swoop heartbeat AssignCommand(GetFirstPC(),
+      // DelayCommand(3.0, StartNewModule(...))) needs that object.
+      return GameState.PartyManager.party[0] ?? GameState.PartyManager.Player;
     }
   },
   549:{
