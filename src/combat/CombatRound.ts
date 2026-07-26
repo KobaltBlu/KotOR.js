@@ -986,38 +986,21 @@ export class CombatRound {
     this.offHandTaken = false;
     this.pendingDischargeVisuals.length = 0;
 
-    // Retail resultsCalculated (field31_0x74): keep scripted result/damage; still fill AttackList
-    if(combatAction.resultsCalculated){
-      combatAction.calculateAttackAnimation();
-      const attack = this.attackList[0];
-      if(attack){
-        // Retail ResolveAttackRoll @ 005baca0 — stamp attack_result when resultsCalculated
-        attack.attackResult = combatAction.attackResult;
-        attack.reactObject = combatAction.target;
-        if(
-          attack.attackResult == AttackResult.HIT_SUCCESSFUL ||
-          attack.attackResult == AttackResult.CRITICAL_HIT ||
-          attack.attackResult == AttackResult.AUTOMATIC_HIT
-        ){
-          attack.attackWeapon = creature.equipment.RIGHTHAND;
-          // Retail ResolveDamage @ 005bb440 — SetBaseDamage(scripted)
-          attack.damageList[DamageType.BASE].damageValue = combatAction.attackDamage;
-        }
-        this.currentAttack = Math.max(this.currentAttack, 1);
-      }
-    }else{
+    // Retail ResolveAttack @ 005bba80 — always branch melee/ranged.
+    // resultsCalculated only short-circuits roll/damage dice inside those paths.
+    if(!combatAction.resultsCalculated){
       combatAction.attackResult = (hasAssuredHit) ? AttackResult.AUTOMATIC_HIT : AttackResult.MISS;
       combatAction.attackDamage = 0;
+    }
 
-      if(creature && creature.isSimpleCreature()){
-        this.resolveSimpleCreatureAttacks(creature, combatAction);
-      }else if(creature){
-        const mainWeapon = creature.equipment.RIGHTHAND;
-        if(mainWeapon?.isRangedWeapon?.()){
-          this.resolveRangedAttack(creature, combatAction);
-        }else{
-          this.resolveMeleeAttack(creature, combatAction);
-        }
+    if(creature && creature.isSimpleCreature()){
+      this.resolveSimpleCreatureAttacks(creature, combatAction);
+    }else if(creature){
+      const mainWeapon = creature.equipment.RIGHTHAND;
+      if(mainWeapon?.isRangedWeapon?.()){
+        this.resolveRangedAttack(creature, combatAction);
+      }else{
+        this.resolveMeleeAttack(creature, combatAction);
       }
     }
 
@@ -1037,20 +1020,13 @@ export class CombatRound {
     // Schedule damage for the animation Hit event instead of applying instantly
     const damageDelayMs = Math.max(0, (attackDamageDelay || 0.5) * 1000);
 
-    if(combatAction.resultsCalculated){
-      const attack = this.attackList[0];
-      if(attack){
-        attack.damageApplyDelay = damageDelayMs;
-      }
-    }else{
-      for(let i = 0; i < this.currentAttack; i++){
-        const attack = this.attackList[i];
-        if(!attack) continue;
-        // Ranged resolveRangedAttack already set discharge + travel delays
-        if(attack.damageApplyDelay >= 0) continue;
-        // Stagger multi-attacks slightly (retail GetWeaponImpactTime per swing)
-        attack.damageApplyDelay = damageDelayMs + (i * 200);
-      }
+    for(let i = 0; i < this.currentAttack; i++){
+      const attack = this.attackList[i];
+      if(!attack) continue;
+      // Ranged resolveRangedAttack already set discharge + travel delays
+      if(attack.damageApplyDelay >= 0) continue;
+      // Stagger multi-attacks slightly (retail GetWeaponImpactTime per swing)
+      attack.damageApplyDelay = damageDelayMs + (i * 200);
     }
   }
 
@@ -1107,23 +1083,29 @@ export class CombatRound {
     this.attackGroup = (this.attackGroup + 1) & 0xff;
     this.pendingDischargeVisuals.length = 0;
 
-    // Preview combat anim name (same formula as calculateRoundAnimations for ranged)
-    const attackKey = creature.getCombatAnimationAttackType() || 'b';
-    const weaponWield = creature.getCombatAnimationWeaponType() || 5;
-    let attackType = 1;
-    if(combatAction.feat){
-      // Feat-specific ranged attack types mirror calculateAttackAnimation
-      const fid = combatAction.feat.id;
-      if(fid === CombatFeatType.RAPID_SHOT || fid === CombatFeatType.IMPROVED_RAPID_SHOT || fid === CombatFeatType.MASTER_RAPID_SHOT){
-        attackType = 2;
-      }else if(fid === CombatFeatType.SNIPER_SHOT || fid === CombatFeatType.IMPROVED_SNIPER_SHOT || fid === CombatFeatType.MASTER_SNIPER_SHOT){
-        attackType = 3;
-      }else if(fid === CombatFeatType.POWER_BLAST || fid === CombatFeatType.IMPROVED_POWER_BLAST || fid === CombatFeatType.MASTER_POWER_BLAST){
-        attackType = 4;
+    // Retail ResolveRangedAttack: when resultsCalculated, GetWeaponDischargeShots uses
+    // the designer animations.2da row (param_5); otherwise GetClientRangedAnimation.
+    let animName: string;
+    if(combatAction.resultsCalculated){
+      combatAction.calculateAttackAnimation();
+      animName = combatAction.animationName || '';
+    }else{
+      const attackKey = creature.getCombatAnimationAttackType() || 'b';
+      const weaponWield = creature.getCombatAnimationWeaponType() || 5;
+      let attackType = 1;
+      if(combatAction.feat){
+        const fid = combatAction.feat.id;
+        if(fid === CombatFeatType.RAPID_SHOT || fid === CombatFeatType.IMPROVED_RAPID_SHOT || fid === CombatFeatType.MASTER_RAPID_SHOT){
+          attackType = 2;
+        }else if(fid === CombatFeatType.SNIPER_SHOT || fid === CombatFeatType.IMPROVED_SNIPER_SHOT || fid === CombatFeatType.MASTER_SNIPER_SHOT){
+          attackType = 3;
+        }else if(fid === CombatFeatType.POWER_BLAST || fid === CombatFeatType.IMPROVED_POWER_BLAST || fid === CombatFeatType.MASTER_POWER_BLAST){
+          attackType = 4;
+        }
       }
+      animName = `${attackKey}${weaponWield}a${attackType}`;
+      combatAction.animationName = animName;
     }
-    const animName = `${attackKey}${weaponWield}a${attackType}`;
-    combatAction.animationName = animName;
 
     const discharge = getWeaponDischargeInfo(creature, animName);
     const shots = discharge?.shots ?? totalAttacks;
@@ -1815,12 +1797,43 @@ export class CombatRound {
       return;
     }
     const swingIndex = this.currentAttack;
+    const attack = this.attackList[this.currentAttack];
+    let isCritical = false;
+
+    attack.reactObject = combatAction.target;
+    attack.attackWeapon = weapon;
+    attack.attackGroup = this.attackGroup;
+    attack.rangedAttack = !!(weapon?.isRangedWeapon());
+    attack.sneakAttack = false;
+    attack.coupDeGrace = false;
+    attack.weaponAttackType = weaponSlot == ModuleCreatureArmorSlot.LEFTHAND ? 2 : 1;
+
+    // Retail ResolveAttackRoll / ResolveDamage when resultsCalculated:
+    // stamp designer result + SetBaseDamage(scripted); skip dice and on-hit visuals.
+    if(combatAction.resultsCalculated){
+      attack.attackResult = combatAction.attackResult;
+      if(
+        attack.attackResult == AttackResult.HIT_SUCCESSFUL ||
+        attack.attackResult == AttackResult.CRITICAL_HIT ||
+        attack.attackResult == AttackResult.AUTOMATIC_HIT
+      ){
+        attack.damageList[DamageType.BASE].damageValue = combatAction.attackDamage;
+      }
+      this.logAttackResult(
+        creature,
+        weapon,
+        combatAction,
+        attack.attackResult == AttackResult.CRITICAL_HIT,
+        false
+      );
+      this.currentAttack++;
+      return;
+    }
+
     const naturalRoll = this.rollD20();
     const attackMod = this.getAttackModifierVersus(creature, weapon, weaponSlot, combatAction);
     const attackTotal = naturalRoll + attackMod;
     const hasAssuredHit = creature.hasEffect(GameEffectType.EffectAssuredHit);
-    const attack = this.attackList[this.currentAttack];
-    let isCritical = false;
 
     const targetCreature = BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)
       ? combatAction.target as ModuleCreature
@@ -1830,13 +1843,6 @@ export class CombatRound {
       ? targetCreature.getArmorClassVersus(creature, false)
       : 0;
 
-    attack.reactObject = combatAction.target;
-    attack.attackWeapon = weapon;
-    attack.attackGroup = this.attackGroup;
-    attack.rangedAttack = !!(weapon?.isRangedWeapon());
-    attack.sneakAttack = false;
-    attack.coupDeGrace = false;
-    attack.weaponAttackType = weaponSlot == ModuleCreatureArmorSlot.LEFTHAND ? 2 : 1;
     attack.toHitTotal = attackTotal;
     attack.targetDefense = targetAC;
 
@@ -2040,10 +2046,14 @@ export class CombatRound {
     // dead (GetDeadTemp), never on predicted killingBlow — hits must react.
     if(target && !target.isDead?.()){
       const reaction = pickReaction(combatAction.attackResult);
+      // Retail ResolveMeleeAnimations stamps reaction metadata; do not wipe
+      // ranged travel delay (ResolveRangedHit/Miss reaxn_delay) used for bolt flight.
       if(primary){
         primary.reaxnAnimation = reaction;
         primary.reaxnAnimLength = animLength;
-        primary.reaxnDelay = 0;
+        if(!primary.rangedAttack){
+          primary.reaxnDelay = 0;
+        }
       }
 
       // Retail ResolveMeleeAnimations @ 005b7470:

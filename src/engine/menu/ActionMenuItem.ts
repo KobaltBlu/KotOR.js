@@ -20,6 +20,10 @@ export class ActionMenuItem {
   /** Retail field7 bit0: false → dimmed / inactive icon. */
   enabled: boolean = true;
   name: string = '';
+  /** TSL GetBehaviors — ActionMenuSelectBehavior AISTATE value. */
+  aiState?: number;
+  /** TSL GetStances — ActionMenuForm spell id. */
+  formId?: number;
 
   constructor( props: any = {} ){
     props = Object.assign({
@@ -30,6 +34,8 @@ export class ActionMenuItem {
       item: undefined,
       enabled: true,
       name: '',
+      aiState: undefined,
+      formId: undefined,
     }, props);
     this.action = props.action;
     this.talent = props.talent;
@@ -38,6 +44,8 @@ export class ActionMenuItem {
     this.item = props.item;
     this.enabled = props.enabled !== false;
     this.name = props.name || '';
+    this.aiState = props.aiState;
+    this.formId = props.formId;
   }
 
 }

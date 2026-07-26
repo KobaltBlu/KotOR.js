@@ -6,6 +6,8 @@ export const ItemTypeCategory = {
   MEDICAL_B: 0x2f,
   MEDICAL_C: 0x1a,
   MINE: 0x1c,
+  /** Security / programming spikes (baseitems ItemType). */
+  SECURITY_SPIKES: 0x1b,
   GRENADE: 6,
   /** Droid utility / shield / forearm bands — CastSpell under OTHER mask. */
   DROID_UTILITY: 0x0c,

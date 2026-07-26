@@ -215,7 +215,12 @@ export class ModuleItem extends ModuleObject {
   }
 
   isLightsaber(): boolean {
-    return this.baseItemId == 8 || this.baseItemId == 9 || this.baseItemId == 10;
+    // Base rows 8/9/10, or TSL ItemType 0x27/0x28/0x29 (short/double/standard).
+    if(this.baseItemId == 8 || this.baseItemId == 9 || this.baseItemId == 10){
+      return true;
+    }
+    const itemType = this.baseItem?.itemType | 0;
+    return itemType === 0x27 || itemType === 0x28 || itemType === 0x29;
   }
 
   /** Whether this item should be transferred into a body bag. */

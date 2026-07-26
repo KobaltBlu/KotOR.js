@@ -1,4 +1,5 @@
 import { GameState } from "@/GameState";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 // import { TwoDAManager, TLKManager } from "@/managers";
 import { GFFField } from "@/resource/GFFField";
@@ -338,9 +339,17 @@ export class CreatureClass {
     return cls;
   }
 
-  /** Retail CSWClass::IsJedi — class ids 3, 4, 5 (Guardian/Consular/Sentinel). */
+  /**
+   * Retail CSWClass::IsJedi — K1: 3/4/5; TSL also 0xB–0x10 (prestige Jedi).
+   */
   isJedi(): boolean {
-    return this.id === 3 || this.id === 4 || this.id === 5;
+    const id = this.id | 0;
+    if(id === 3 || id === 4 || id === 5) return true;
+    if(GameState.GameKey === GameEngineType.TSL){
+      return id === 0xb || id === 0xc || id === 0xd ||
+        id === 0xe || id === 0xf || id === 0x10;
+    }
+    return false;
   }
 
   save(){

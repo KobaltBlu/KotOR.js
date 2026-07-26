@@ -318,3 +318,84 @@ export function isGrenadeHostileItem(item: ModuleItem): boolean {
   // Retail CreateHostileItemEntry: item_type == 6 only.
   return getItemType(item) === ItemTypeCategory.GRENADE;
 }
+
+/**
+ * Retail GetDoorInterfaceMines / GetPlaceableInterfaceMines — Trap subtype
+ * whitelist for planting on locked doors/placeables.
+ */
+const DOOR_PLACEABLE_MINE_SUBTYPES = new Set([
+  3, 4, 5, 6, 7, 8,
+  0xe, 0xf, 0x10,
+  0x13, 0x14, 0x15, 0x16,
+  0x19, 0x1a,
+]);
+
+function getUseableTrapSubtype(item: ModuleItem): number {
+  if(!item) return -1;
+  for(let i = 0; i < item.properties.length; i++){
+    const prop = item.properties[i];
+    if(prop.isUseable() && prop.is(ModuleItemProperty.Trap) && prop.subType != null){
+      return prop.subType | 0;
+    }
+  }
+  return -1;
+}
+
+/** Retail GetSpikeDetails(param=1): ItemType 0x1b + ThievesTools. */
+export function isSecuritySpikeItem(item: ModuleItem): boolean {
+  if(!item) return false;
+  if(getItemType(item) !== ItemTypeCategory.SECURITY_SPIKES) return false;
+  for(let i = 0; i < item.properties.length; i++){
+    const prop = item.properties[i];
+    if(prop.isUseable() && prop.is(ModuleItemProperty.ThievesTools)){
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Retail GetDoorInterfaceMines / GetPlaceableInterfaceMines mine row:
+ * non-plot, ItemType 0x1c, Trap subtype in the door/placeable whitelist.
+ */
+export function isDoorOrPlaceableMineItem(item: ModuleItem): boolean {
+  if(!item || item.plot) return false;
+  if(getItemType(item) !== ItemTypeCategory.MINE) return false;
+  return DOOR_PLACEABLE_MINE_SUBTYPES.has(getUseableTrapSubtype(item));
+}
+
+/**
+ * Retail placeable GetUseItems: CastSpell with spells.ItemTargeting == 2.
+ */
+export function isPlaceableTargetUseItem(item: ModuleItem): boolean {
+  if(!item) return false;
+  for(let i = 0; i < item.properties.length; i++){
+    const prop = item.properties[i];
+    if(
+      !prop.isUseable() ||
+      !prop.is(ModuleItemProperty.CastSpell) ||
+      prop.subType == null
+    ){
+      continue;
+    }
+    const spell = GameState.SWRuleSet?.spells?.[prop.subType];
+    if(spell && (spell.itemtargeting | 0) === 2){
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Retail CSWCTrigger::GetMineStrengthLevel — maps traps.2da row → strength tier.
+ * Returns -1 when the trap type has no Force-counter path.
+ */
+export function getMineStrengthLevel(trapType: number): number {
+  const t = trapType | 0;
+  if(t === 0 || t === 3 || t === 6 || t === 9 || t === 0xe) return 0;
+  if(t === 1 || t === 4 || t === 7 || t === 10 || t === 0xf) return 1;
+  if(t === 0x11 || t === 0x13 || t === 0x15 || t === 0x17 || t === 0x19) return 2;
+  if(t === 2 || t === 5 || t === 8 || t === 0xb || t === 0x10) return 3;
+  if(t === 0x12 || t === 0x14 || t === 0x16 || t === 0x18 || t === 0x1a) return 4;
+  return -1;
+}
