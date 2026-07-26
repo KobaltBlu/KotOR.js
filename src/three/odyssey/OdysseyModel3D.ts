@@ -646,15 +646,18 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   }
 
-  setEmitterTarget(node: OdysseyModel3D){
-    if(node instanceof OdysseyModel3D){
-      for(let i = 0; i < this.emitters.length; i++){
-        if(this.emitters[i].referenceNode instanceof OdysseyModel3D){
-          // node.getWorldPosition(
-          //   this.emitters[i].referenceNode.position
-          // );
-          this.emitters[i].setReferenceNode(node);
-        }
+  setEmitterTarget(node: OdysseyObject3D | OdysseyModel3D | THREE.Object3D){
+    if(!node) return;
+    for(let i = 0; i < this.emitters.length; i++){
+      const em = this.emitters[i];
+      // Lightning / P2P beams retarget via EffectBeam (e.g. v_coldray_dur).
+      // Do not use !!referenceNode — emitters always hold a default placeholder Object3D.
+      if(
+        em.node?.updateMode === 'Lightning' ||
+        em.node?.flags?.isP2P ||
+        em.hasReferenceTarget
+      ){
+        em.setReferenceNode(node);
       }
     }
   };

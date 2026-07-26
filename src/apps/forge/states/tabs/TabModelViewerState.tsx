@@ -221,7 +221,14 @@ export class TabModelViewerState extends TabState {
     }
 
     next.emitters.map((emitter) => {
-      emitter.referenceNode = this.ui3DRenderer.referenceNode as any;
+      // Lightning / P2P: override MDL omenref (e.g. v_coldray_dur) with the gizmo.
+      if(
+        emitter.node?.updateMode === 'Lightning' ||
+        emitter.node?.flags?.isP2P ||
+        emitter.hasReferenceTarget
+      ){
+        emitter.setReferenceNode(this.ui3DRenderer.referenceNode);
+      }
     });
 
     this.ui3DRenderer.sceneGraphManager.rebuild();
@@ -409,7 +416,13 @@ export class TabModelViewerState extends TabState {
               this.paused = true;
 
               model.emitters.map( (emitter) => {
-                emitter.referenceNode = this.ui3DRenderer.referenceNode as any;
+                if(
+                  emitter.node?.updateMode === 'Lightning' ||
+                  emitter.node?.flags?.isP2P ||
+                  emitter.hasReferenceTarget
+                ){
+                  emitter.setReferenceNode(this.ui3DRenderer.referenceNode);
+                }
               })
 
               if(model.camerahook){

@@ -231,8 +231,6 @@ export class ModuleMGPlayer extends ModuleObject {
 
     this.setTrack(this.track);
 
-    this._heartbeatTimerOffset = -2900;
-
     const geometry = new THREE.SphereGeometry( 1, 16, 16 );
     const material = new THREE.MeshBasicMaterial( { color: 0x0000FF } );
     material.transparent = true;
@@ -313,7 +311,6 @@ export class ModuleMGPlayer extends ModuleObject {
     this.inertiaReady = false;
     this.clearInertiaKeyBuffers();
     this.onCreateRun = false;
-    this._heartbeatTimeout = 0;
     // Retail Go RegisterCallBack(OnAnimKeyEvent) on track Gob.
     this.bindAnimPlayEvent(this.track);
   }
@@ -396,15 +393,10 @@ export class ModuleMGPlayer extends ModuleObject {
     this.getHitModelWorld(this.hitModelSegFrom);
     this.hitModelSegReady = true;
 
-    // Retail object heartbeat cadence (~3s); MG was calling every frame and
-    // never set spawned, so OnHeartbeat (tunnels/gear/timer) never ran.
-    if(this._heartbeatTimeout <= 0){
-      if(GameState.module){
-        this.triggerHeartbeat();
-      }
-      this._heartbeatTimeout = 3000;
-    }else{
-      this._heartbeatTimeout -= 1000 * delta;
+    // Retail CSWMiniGameObject::Update @ 0066c0a0 — OnHeartbeat (script index 4)
+    // every frame when the ResRef is set; delta is unused (no 3s/6s timer).
+    if(GameState.module){
+      this.triggerHeartbeat();
     }
 
     this.sphere.radius = this.sphere_radius;

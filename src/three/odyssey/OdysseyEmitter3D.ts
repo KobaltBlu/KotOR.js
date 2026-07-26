@@ -613,13 +613,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   getMaxParticleCount(){
     if(this.node.renderMode == 'Linked'){
       if(this.updateType == 'Lightning'){
-        // Retail: (int)birthRate = bolt sample count (field4_0x58). Each sample → L/R verts.
-        // Mesh floor of 2 when authored rate is 0 (Linked needs at least one segment).
+        // Retail: ftol(birthRate) samples. Beam MDLs ship birthRate 0 and use
+        // dist×SubDiv+2 at runtime — reserve the full sample cap for that path.
+        const br = Math.floor(this.birthRate);
         const n = Math.max(
           2,
           Math.min(
             OdysseyEmitter3D.LIGHTNING_MAX_SAMPLES,
-            Math.floor(this.birthRate)
+            br > 0 ? br : OdysseyEmitter3D.LIGHTNING_MAX_SAMPLES
           )
         );
         return n * 2;
@@ -1595,14 +1596,16 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this._hasLastWorldQuat = true;
   }
 
-  setReferenceNode( referenceNode: OdysseyObject3D ){
-    if(referenceNode instanceof OdysseyObject3D){
-      this.referenceNode = referenceNode;
+  setReferenceNode( referenceNode: THREE.Object3D ){
+    if(referenceNode){
+      this.referenceNode = referenceNode as OdysseyObject3D;
       this.hasReferenceTarget = true;
       // Retail RenderFunc draws once field103 target is set; undo P2PNoTarget hide.
-      // birthRate==0 means disable() — leave hidden.
-      if(this.material && this.node.flags.isP2P && this.birthRate > 0){
-        this.material.visible = true;
+      // birthRate==0 means disable() — leave hidden for P2P fountain; Lightning uses SubDiv density.
+      if(this.material){
+        if(this.node.updateMode === 'Lightning' || (this.node.flags.isP2P && this.birthRate > 0)){
+          this.material.visible = true;
+        }
       }
     }
   }
@@ -1628,36 +1631,47 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
   /**
    * LightningEmitter::Update @ 00498b80 + UpdateControlPoints @ 00497c60.
-   * Retail: (int)birthRate = sample count; lightningDelay gates zigzag/fractal regen;
+   * Retail: (int)birthRate = sample count; lightningDelay gates zigzag regen;
    * ControlPTCount/Delay/Radius + TangentLength build Hermite CPs; zigZag° spins
-   * offset axis; SubDiv>0 → RecursiveFractal @ 0048e700; numBranches → UpdateBranches
-   * @ 00491a50; RenderLinked camera ribbon (sizeStart×0.5 half-width).
+   * offset axis; K1 always zigzag (DAT_0083049c stays 0); numBranches → UpdateBranches
+   * @ 00491a50; RenderLinked camera ribbon with per-sample size taper.
+   *
+   * Reference: MDL omenref child (e.g. v_coldray_dur omenref01) wires via
+   * setReferenceNode; EffectBeam / Forge retarget. Retail clears when field89==0.
    */
   tickLightning(delta: number = 0){
+    // Retail LightningEmitter::Update: birthRate==0 OR no reference → destroy samples.
+    if(!this.hasReferenceTarget || !this.referenceNode){
+      this.clearLightningRibbon();
+      return;
+    }
+
     const start = OdysseyEmitter3D._v3A;
     this.getWorldPosition(start);
     const target = OdysseyEmitter3D._v3B;
-    if(this.referenceNode){
-      this.referenceNode.getWorldPosition(target);
-    }else{
-      target.copy(start);
-      target.z += 1;
-    }
-
-    // Retail LightningEmitter::Update @ 00498b80: sampleCount = ftol(birthRate).
-    // Mesh floor of 2 keeps Linked L/R geometry valid when authored rate is 0.
-    const sampleCount = Math.max(
-      2,
-      Math.min(
-        OdysseyEmitter3D.LIGHTNING_MAX_SAMPLES,
-        Math.floor(this.birthRate)
-      )
-    );
+    this.referenceNode.getWorldPosition(target);
 
     const bolt = OdysseyEmitter3D._v3C.subVectors(target, start);
     const dist = bolt.length();
     if(dist > 1e-6) bolt.multiplyScalar(1 / dist);
     else bolt.set(0, 0, 1);
+
+    // Retail: sampleCount = ftol(birthRate). Beam MDLs ship birthRate 0 — use the
+    // same dist×SubDiv+2 density as UpdateBranches when rate is unset.
+    const br = Math.floor(this.birthRate);
+    const sampleCount = Math.max(
+      2,
+      Math.min(
+        OdysseyEmitter3D.LIGHTNING_MAX_SAMPLES,
+        br > 0 ? br : Math.floor(dist * (this.lightningSubDiv || 0)) + 2
+      )
+    );
+
+    if(br === 0 && !(this.lightningSubDiv > 0)){
+      // No authored rate and no SubDiv density → nothing to draw (retail destroy).
+      this.clearLightningRibbon();
+      return;
+    }
 
     const basisU = OdysseyEmitter3D._v3D;
     basisU.set(0, 0, 1).cross(bolt);
@@ -1678,19 +1692,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
 
     if(needZigZagRegen){
       this._lightningDelay = 0;
-      // Asset-driven: SubDiv>0 → fractal path. Retail gates on DAT_0083049c
-      // (Lightning Update @ 00498b80): ==0 → zigzag, !=0 → RecursiveFractal.
-      // K1 has no writers to DAT_0083049c (BSS stays 0 → always zigzag); SubDiv
-      // proxy keeps fractal available for assets that author subdivision.
-      if(this.lightningSubDiv > 0){
-        this.regenerateLightningFractalOffsets(
-          sampleCount, dist, bolt, basisU, vX, vY, vZ
-        );
-      }else{
-        this.regenerateLightningMidOffsets(
-          sampleCount, start, target, bolt, basisU, vX, vY, vZ
-        );
-      }
+      // K1 retail: DAT_0083049c stays 0 → always zigzag (not RecursiveFractal).
+      // SubDiv still drives branch sample density / birthRate==0 sample count.
+      this.regenerateLightningMidOffsets(
+        sampleCount, start, target, bolt, basisU, vX, vY, vZ
+      );
       // Child bolts also refresh zigzag (Update forced with delay+0.01)
       for(let b = 0; b < this._lightningBranchActive; b++){
         this.regenBranchMidOffsets(this._lightningBranches[b]);
@@ -1757,10 +1763,6 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       needZigZagRegen
     );
 
-    // Ribbon half-width — RenderLinked field18_0x90 * 0.5
-    let halfW = (this.sizes[0] || 0) * 0.5;
-    if(!(halfW > 0)) halfW = 0.02;
-
     const cam = (this.context?.currentCamera || GameState.currentCamera) as
       | THREE.Camera
       | undefined;
@@ -1777,7 +1779,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       sampleCount,
       bolt.x, bolt.y, bolt.z,
       basisU.x, basisU.y, basisU.z,
-      halfW,
+      1,
       cam,
       vertices,
       normals,
@@ -1843,14 +1845,13 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         buy /= buLen;
         buz /= buLen;
       }
-      const bHalf = halfW * branch.sizeScale;
       const vertBase = vertices.length / 3;
       this.appendLightningRibbon(
         branch.centers,
         bCount,
         bdx, bdy, bdz,
         bux, buy, buz,
-        bHalf,
+        branch.sizeScale,
         cam,
         vertices,
         normals,
@@ -1874,9 +1875,31 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this.offsets = this.geometry.getAttribute('position') as THREE.BufferAttribute;
     this.particleCount = totalSamples;
 
+    const maxHalfW = Math.max(
+      this.sizes[0] || 0,
+      this.sizes[1] || 0,
+      this.sizes[2] || 0,
+      0.04
+    ) * 0.5;
     if(this.geometry.boundingSphere){
-      this.geometry.boundingSphere.radius = Math.max(dist, halfW * 2);
+      this.geometry.boundingSphere.radius = Math.max(dist, maxHalfW * 2);
     }
+  }
+
+  /** Retail Lightning Update: no reference / birthRate 0 → empty particle list. */
+  private clearLightningRibbon(){
+    if(!this.geometry) return;
+    this.geometry.setIndex([]);
+    this.geometry.setAttribute('position', new THREE.Float32BufferAttribute([], 3));
+    this.geometry.setAttribute('offset', new THREE.Float32BufferAttribute([], 4));
+    this.geometry.setAttribute('props', new THREE.Float32BufferAttribute([], 4));
+    this.geometry.setAttribute('normal', new THREE.Float32BufferAttribute([], 3));
+    this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute([], 2));
+    this.velocities = this.geometry.getAttribute('offset') as THREE.BufferAttribute;
+    this.props = this.geometry.getAttribute('props') as THREE.BufferAttribute;
+    this.offsets = this.geometry.getAttribute('position') as THREE.BufferAttribute;
+    this.particleCount = 0;
+    this._lightningBranchActive = 0;
   }
 
   /** TangentLength controller, else binary controlPTSmoothing. */
@@ -2555,7 +2578,64 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
   }
 
-  /** Camera-facing L/R ribbon strip into shared geometry buffers. */
+  /**
+   * RenderLinked lightning size lifecycle @ 00495b20.
+   * t = i / sampleCount. percentStart==255 → two-key start→end; else start/mid/end
+   * with authored percent breakpoints (0 is valid — e.g. v_coldray_dur percentMid 0).
+   * When all sizeY keys are 0, retail falls back to sizeX for the along-pad basis.
+   */
+  private lerpLightningSizeAt(t: number): { sizeX: number; sizeY: number } {
+    const sx0 = this.sizes[0] || 0;
+    const sx1 = this.sizes[1] || 0;
+    const sx2 = this.sizes[2] || 0;
+    const sy0 = this.sizesY[0] || 0;
+    const sy1 = this.sizesY[1] || 0;
+    const sy2 = this.sizesY[2] || 0;
+    const hasSizeY = sy0 !== 0 || sy1 !== 0 || sy2 !== 0;
+
+    let sizeX: number;
+    let sizeY: number;
+    if(this.percentStart === 255){
+      sizeX = sx0 + (sx2 - sx0) * t;
+      sizeY = hasSizeY ? sy0 + (sy2 - sy0) * t : sizeX;
+    }else{
+      // Retail: if (t < percentEnd) { if (t < percentMid) { … } else mid→end } else end
+      const pStart = this.percentStart;
+      const pMid = this.percentMid;
+      const pEnd = this.percentEnd;
+      if(!(t < pEnd)){
+        sizeX = sx2;
+        sizeY = hasSizeY ? sy2 : sizeX;
+      }else if(t < pMid){
+        if(pStart <= t){
+          const denom = pMid - pStart;
+          const u = denom > 1e-6 ? (t - pStart) / denom : 0;
+          sizeX = sx0 + (sx1 - sx0) * u;
+          sizeY = hasSizeY ? sy0 + (sy1 - sy0) * u : sizeX;
+        }else{
+          sizeX = sx0;
+          sizeY = hasSizeY ? sy0 : sizeX;
+        }
+      }else{
+        const denom = pEnd - pMid;
+        const u = denom > 1e-6 ? (t - pMid) / denom : 0;
+        sizeX = sx1 + (sx2 - sx1) * u;
+        sizeY = hasSizeY ? sy1 + (sy2 - sy1) * u : sizeX;
+      }
+    }
+    // Allow authored taper to 0 (coldray sizeEnd). Floor only if no sizes at all.
+    if(!(sizeX > 0) && !(sx0 > 0 || sx1 > 0 || sx2 > 0)){
+      sizeX = 0.04;
+      if(!hasSizeY) sizeY = sizeX;
+    }
+    return { sizeX, sizeY };
+  }
+
+  /**
+   * Camera-facing L/R ribbon strip into shared geometry buffers.
+   * RenderLinked lightning: halfW = sizeX*0.5; along-pad = (sizeY or sizeX)*0.25
+   * (retail half then ×0.5 again). sizeScale multiplies lerped width (branch SizeScale).
+   */
   private appendLightningRibbon(
     centers: Float32Array,
     sampleCount: number,
@@ -2565,7 +2645,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     basisUX: number,
     basisUY: number,
     basisUZ: number,
-    halfW: number,
+    sizeScale: number,
     cam: THREE.Camera | undefined,
     vertices: number[],
     normals: number[],
@@ -2575,9 +2655,16 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     indices: number[],
     vertBase: number
   ){
-    const denom = Math.max(1, sampleCount - 1);
+    // Retail: fVar5 = i / count (not count-1)
+    const count = Math.max(1, sampleCount);
+    const scale = sizeScale > 0 ? sizeScale : 1;
     for(let i = 0; i < sampleCount; i++){
-      const t = i / denom;
+      const t = i / count;
+      const { sizeX, sizeY } = this.lerpLightningSizeAt(t);
+      const halfW = sizeX * 0.5 * scale;
+      // Retail: fStack_1d8 = (sizeY half or sizeX half) * 0.5 → ×0.25 of basis
+      const alongPad = sizeY * 0.25 * scale;
+
       const cx = centers[i * 3];
       const cy = centers[i * 3 + 1];
       const cz = centers[i * 3 + 2];
@@ -2630,8 +2717,13 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       sy = (sy / sLen) * halfW;
       sz = (sz / sLen) * halfW;
 
-      vertices.push(cx - sx, cy - sy, cz - sz);
-      vertices.push(cx + sx, cy + sy, cz + sz);
+      // Along-bolt pad (retail fStack_1d8) — same shift on L/R (no shear).
+      const ax = tx * alongPad;
+      const ay = ty * alongPad;
+      const az = tz * alongPad;
+
+      vertices.push(cx - sx - ax, cy - sy - ay, cz - sz - az);
+      vertices.push(cx + sx - ax, cy + sy - ay, cz + sz - az);
       normals.push(0, 0, 1, 0, 0, 1);
       uvs.push(0, 1 - t, 1, 1 - t);
       velocities.push(0, 0, 0, 0, 0, 0, 0, 0);

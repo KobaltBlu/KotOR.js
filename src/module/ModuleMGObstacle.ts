@@ -79,13 +79,9 @@ export class ModuleMGObstacle extends ModuleObject {
       this.models[i]?.update?.(delta);
     }
 
-    if(this._heartbeatTimeout <= 0){
-      if(GameState.module){
-        this.triggerHeartbeat();
-      }
-      this._heartbeatTimeout = 3000;
-    }else{
-      this._heartbeatTimeout -= 1000 * delta;
+    // Retail CSWMiniGameObject::Update @ 0066c0a0 — OnHeartbeat every frame.
+    if(GameState.module){
+      this.triggerHeartbeat();
     }
   }
 
