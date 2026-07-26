@@ -34,6 +34,7 @@ jest.mock('@/odyssey', () => ({
 import { CombatRoundAction, resolveAnimations2DARow } from '@/combat/CombatRoundAction';
 import { resolveMasterState } from '@/combat/combat-dueling';
 import { canSyncMeleeReaction, pickMeleeReaction, resolveMeleeReactionPlayback } from '@/combat/combat-reaction-eligibility';
+import { resolveAttackPauseMs, shouldEndRoundOnPauseExpiry, shouldSnapCombatReady } from '@/combat/combat-round-pause';
 import { CombatActionType } from '@/enums/combat/CombatActionType';
 import { AttackResult } from '@/enums/combat/AttackResult';
 import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
@@ -262,6 +263,60 @@ describe('CutsceneAttack hit DAMAGE reaction playback', () => {
     // Never flip only index — that leaves a stale ATTACK clip on the defender
     expect(resolveMeleeReactionPlayback(undefined)).toEqual({ mode: 'setAnimationState' });
     expect(resolveMeleeReactionPlayback(null)).toEqual({ mode: 'setAnimationState' });
+  });
+});
+
+describe('duel post-swing READY remainder', () => {
+  const ROUND_LENGTH = 3000;
+
+  it('pauses for the action animation time, not the whole round', () => {
+    expect(resolveAttackPauseMs(undefined, 1500, ROUND_LENGTH)).toBe(1500);
+    expect(resolveAttackPauseMs(0, 1200, ROUND_LENGTH)).toBe(1200);
+  });
+
+  it('prefers the explicit animation time parameter', () => {
+    expect(resolveAttackPauseMs(900, 1500, ROUND_LENGTH)).toBe(900);
+  });
+
+  it('falls back to half the round when no animation time is known', () => {
+    expect(resolveAttackPauseMs(undefined, undefined, ROUND_LENGTH)).toBe(1500);
+    expect(resolveAttackPauseMs(undefined, undefined, 1)).toBe(1);
+  });
+
+  it('snaps a live fighter to combat READY on pause expiry', () => {
+    expect(shouldSnapCombatReady({
+      dead: false,
+      debilitated: false,
+      resultsCalculated: false,
+    })).toBe(true);
+  });
+
+  it('leaves scripted, dead, and debilitated fighters posed', () => {
+    // Retail field9_0x940 — cutscene rounds keep their posed animation
+    expect(shouldSnapCombatReady({
+      dead: false,
+      debilitated: false,
+      resultsCalculated: true,
+    })).toBe(false);
+    expect(shouldSnapCombatReady({
+      dead: true,
+      debilitated: false,
+      resultsCalculated: false,
+    })).toBe(false);
+    expect(shouldSnapCombatReady({
+      dead: false,
+      debilitated: true,
+      resultsCalculated: false,
+    })).toBe(false);
+  });
+
+  it('keeps the round running when the target is still alive', () => {
+    expect(shouldEndRoundOnPauseExpiry({ hasTarget: true, targetDead: false })).toBe(false);
+  });
+
+  it('ends the round when the target is dead or gone', () => {
+    expect(shouldEndRoundOnPauseExpiry({ hasTarget: true, targetDead: true })).toBe(true);
+    expect(shouldEndRoundOnPauseExpiry({ hasTarget: false, targetDead: false })).toBe(true);
   });
 });
 

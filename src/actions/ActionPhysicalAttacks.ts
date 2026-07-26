@@ -7,6 +7,7 @@ import {
   maxAttackRange,
 } from "@/combat/attack-range";
 import { resolveDuelRoundFlags } from "@/combat/combat-dueling";
+import { resolveAttackPauseMs } from "@/combat/combat-round-pause";
 import { duelLog, duelWho } from "@/combat/duel-debug";
 import { hasTargetBeenDetected } from "@/combat/nearest-enemy";
 import { tryStuckLosRetarget } from "@/combat/initialize-new-attack-target";
@@ -189,6 +190,12 @@ export class ActionPhysicalAttacks extends Action {
 
     const featId = combatRound.action?.featId || 0;
 
+    const pauseMs = resolveAttackPauseMs(
+      this.getParameter<number>(4),
+      combatRound.action?.animationTime,
+      CombatRound.ROUND_LENGTH
+    );
+
     duelLog(owner, 'duel-flags', {
       target: duelWho(target),
       choreographed: duel.choreographed,
@@ -207,7 +214,7 @@ export class ActionPhysicalAttacks extends Action {
       if(combatRound.action){
         combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
       }
-      combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+      combatRound.pauseRound(owner, pauseMs);
     }else if(duel.master){
       // Engaged master: start both rounds; slave paused with infinitePause
       duelLog(owner, 'branch:master-start', { slave: duelWho(target) });
@@ -217,7 +224,7 @@ export class ActionPhysicalAttacks extends Action {
           ? ModuleCreatureAnimState.ATTACK_DUELING
           : ModuleCreatureAnimState.ATTACK;
       }
-      combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+      combatRound.pauseRound(owner, pauseMs);
 
       if(target.combatRound){
         target.combatRound.startCombatRound(owner, true, false, 0);
@@ -227,7 +234,7 @@ export class ActionPhysicalAttacks extends Action {
             : ModuleCreatureAnimState.ATTACK;
         }
         // Retail SetPauseTimer(slave, …, infinitePause=1) while master drives
-        target.combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH, true);
+        target.combatRound.pauseRound(owner, pauseMs, true);
       }
     }else{
       // Engaged slave: master already StartCombatRound'd us — just ensure anim
@@ -242,7 +249,7 @@ export class ActionPhysicalAttacks extends Action {
         return ActionStatus.IN_PROGRESS;
       }
       duelLog(owner, 'branch:slave-resolve', { master: duelWho(target) });
-      combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+      combatRound.pauseRound(owner, pauseMs);
     }
 
     if(combatRound.roundStarted){

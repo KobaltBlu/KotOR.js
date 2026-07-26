@@ -26,6 +26,7 @@ import { CombatRoundAction as CombatRoundActionClass } from "@/combat/CombatRoun
 import { createNewAttackActions } from "@/combat/create-new-attack-actions";
 import { canSyncMeleeReaction, pickMeleeReaction, resolveMeleeReactionPlayback } from "@/combat/combat-reaction-eligibility";
 import { duelLog, duelWho } from "@/combat/duel-debug";
+import { shouldEndRoundOnPauseExpiry, shouldSnapCombatReady } from "@/combat/combat-round-pause";
 import {
   getProjectileMissLocation,
   getProjectileTravelDelayMs,
@@ -88,6 +89,8 @@ export class CombatRound {
   roundPaused: boolean = false;
   roundPausedBy: ModuleObject;
   infinitePause: boolean = false;
+  /** Retail field9_0x940 — round started from a scripted (CutsceneAttack) action. */
+  resultsCalculated: boolean = false;
   pauseTimer: number = 0;
   timer: number = 0;
   roundLength: number = 0;
@@ -144,6 +147,7 @@ export class CombatRound {
     this.roundPaused = false;
     this.roundPausedBy = undefined;
     this.infinitePause = false;
+    this.resultsCalculated = false;
     this.pauseTimer = 0;
     this.timer = 0;
     this.roundLength = CombatRound.ROUND_LENGTH;
@@ -228,6 +232,9 @@ export class CombatRound {
     this.roundPaused = false;
     this.pauseTimer = 0;
     this.roundPausedBy = undefined;
+    // Retail StartCombatRound param_5 → field9_0x940; scripted rounds skip the
+    // ResetCombatAnimations READY snap so cutscene poses are preserved.
+    this.resultsCalculated = !!this.action?.resultsCalculated;
     this.spellCastRound = false;
     this.roundLength = CombatRound.ROUND_LENGTH;
     this.offHandTaken = false;
@@ -482,13 +489,34 @@ export class CombatRound {
     this.processPendingDamage(deltaMs);
 
     if(this.roundPaused){
+      const pauseTimerBefore = this.pauseTimer;
       this.pauseTimer -= deltaMs;
       if(this.pauseTimer < 0) this.pauseTimer = 0;
       if(this.pauseTimer <= 0 && !this.infinitePause){
         this.flushPendingDamage();
-        this.roundPaused = false;
-        this.pauseTimer = 0;
-        this.endCombatRound();
+        // Retail UpdateCombatRoundTimer @ 004faf20 — the expired pause resets the
+        // combat animations (both duel partners when master) and the round keeps
+        // running until the timer reaches roundLength. Only a dead/invalid target
+        // ends the round early.
+        const overshoot = Math.max(0, deltaMs - pauseTimerBefore);
+        this.resetCombatAnimations(overshoot);
+        if(this.master && this.duelPartner?.combatRound){
+          this.duelPartner.combatRound.resetCombatAnimations(overshoot);
+        }
+        const target = this.dodgeTarget || this.action?.target;
+        const targetInvalid = shouldEndRoundOnPauseExpiry({
+          hasTarget: !!target,
+          targetDead: !!target?.isDead?.(),
+        });
+        duelLog(this.owner, 'round:pause-expired', {
+          overshoot,
+          target: duelWho(target),
+          targetInvalid,
+          master: this.master,
+        });
+        if(targetInvalid){
+          this.endCombatRound();
+        }
       }
     }else{
       this.timer += deltaMs;
@@ -750,6 +778,36 @@ export class CombatRound {
       this.roundPaused = false;
       this.pauseTimer = 0;
     }
+  }
+
+  /**
+   * Retail CSWSCreature::ResetCombatAnimations @ 004f1250 —
+   * clear the pause, carry the overshoot into the round timer, and drop the
+   * owner into combat READY for the remainder of the round (cinematic duel
+   * stance). Scripted rounds (resultsCalculated) keep their posed animation.
+   */
+  resetCombatAnimations(overshootMs: number = 0){
+    this.roundPaused = false;
+    this.roundPausedBy = undefined;
+    this.infinitePause = false;
+    this.pauseTimer = 0;
+    this.timer += Math.max(0, overshootMs);
+
+    const owner = this.owner as ModuleCreature;
+    const ready = typeof owner?.setAnimationState === 'function' && shouldSnapCombatReady({
+      dead: !!owner.isDead?.(),
+      debilitated: !!owner.isDebilitated?.(),
+      resultsCalculated: this.resultsCalculated,
+    });
+    if(ready){
+      owner.setAnimationState(ModuleCreatureAnimState.READY);
+    }
+    duelLog(this.owner, 'round:reset-anims', {
+      overshoot: Math.max(0, overshootMs),
+      ready,
+      timer: this.timer,
+      roundLength: this.roundLength,
+    });
   }
 
   /**
