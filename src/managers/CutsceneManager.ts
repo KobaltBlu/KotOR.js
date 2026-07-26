@@ -33,6 +33,7 @@ import {
   lookupDialogCloseUpExtra,
   resolveAspyrAppearanceCameraOverrides,
   isDialogGameModded,
+  isAspyrCarthDialogCameraHack,
   applyAspyrPlaceableCameraHack,
   type DialogPseudoRandomState,
 } from "@/managers/dialog-camera";
@@ -90,8 +91,17 @@ export class CutsceneManager {
    * WaitFlags / VO / camera keep ticking.
    */
   static paused: boolean = false;
-  /** Retail field13_0x48 — deferred advance after pause while entry completed. */
+  /**
+   * Retail field13_0x48 — deferred SendDialogEntry / SendDialogReplies while
+   * paused (flushed by update when pause clears, not by Resume itself).
+   */
   static pendingAdvance: boolean = false;
+  /**
+   * Retail field14_0x4c — when pendingAdvance and this is set, flush shows that
+   * entry; when pendingAdvance and this is undefined, flush shows replies
+   * (retail 0xFFFFFFFF sentinel).
+   */
+  static pendingEntry: DLGNode | undefined = undefined;
   /**
    * Actors that received dialog AnimList / default talk/listen this entry —
    * polled for WAIT_ANIM (IsAnimationPlayingInDialog @ 0062d570).
@@ -100,6 +110,12 @@ export class CutsceneManager {
   /** TSL ActionStartConversation nBarkX/nBarkY (−1 = default layout). */
   static barkScreenX: number = -1;
   static barkScreenY: number = -1;
+  /**
+   * Post-dialog character switch restore (CancelPostDialogCharacterSwitch @ 757).
+   * When set, endConversation switches controlled party member back to this npcId
+   * (−1 = original PC). Cleared by cancelPostDialogCharacterSwitch.
+   */
+  static postDialogRestoreNpcId: number | undefined = undefined;
   static readonly #tmpCamDir = new THREE.Vector3();
   static readonly #tmpCamQuat = new THREE.Quaternion();
 
@@ -136,6 +152,20 @@ export class CutsceneManager {
     }
   }
 
+  /**
+   * Schedule a post-dialog SwitchPlayerCharacter restore (npcId; −1 = PC).
+   * Only records the first schedule so nested switches keep the original.
+   */
+  static schedulePostDialogCharacterSwitch(restoreNpcId: number) {
+    if(typeof this.postDialogRestoreNpcId === 'number'){ return; }
+    this.postDialogRestoreNpcId = restoreNpcId | 0;
+  }
+
+  /** NWScript CancelPostDialogCharacterSwitch (757). */
+  static cancelPostDialogCharacterSwitch() {
+    this.postDialogRestoreNpcId = undefined;
+  }
+
   /** Retail CGuiInGame::IsOnDialogNonDependantList @ 0062f840 (case-insensitive). */
   static isDialogNonDependant(participant: string): boolean {
     if(!participant) return false;
@@ -169,7 +199,8 @@ export class CutsceneManager {
 
   /**
    * Retail AIActionResumeDialog @ 0057b320 — clear pause, ActivityManager(2),
-   * clear dialog-stop bit, clear stealth bit; flush deferred SendDialogEntry.
+   * clear dialog-stop bit, clear stealth bit. Deferred advance is flushed by
+   * update() (UpdateDialog @ 004cd580), not here.
    */
   static resumeConversation() {
     if(!this.dialog) return;
@@ -181,12 +212,29 @@ export class CutsceneManager {
       creature.setActivity(4, false, 0);
       creature.setActivity(1, false, 0);
     }
-    if(this.pendingAdvance && this.currentEntry && !this.currentEntry.repliesShown){
-      this.pendingAdvance = false;
+  }
+
+  /** Clear retail field13_0x48 / field14_0x4c pending state. */
+  static clearPendingDialog() {
+    this.pendingAdvance = false;
+    this.pendingEntry = undefined;
+  }
+
+  /**
+   * Retail UpdateDialog @ 004cd580 pending flush: when !paused and field13 set,
+   * field14 == 0xFFFFFFFF → SendDialogReplies, else SendDialogEntry(field14).
+   */
+  static flushPendingDialog() {
+    if(this.paused || !this.pendingAdvance) return;
+    const stashedEntry = this.pendingEntry;
+    this.clearPendingDialog();
+    if(stashedEntry){
+      this.showEntry(stashedEntry);
+      return;
+    }
+    if(this.currentEntry && !this.currentEntry.repliesShown){
       this.currentEntry.repliesShown = true;
       this.showReplies(this.currentEntry);
-    }else{
-      this.pendingAdvance = false;
     }
   }
 
@@ -230,9 +278,15 @@ export class CutsceneManager {
     this.owner = owner;
     this.listener = listener;
     this.paused = false;
-    this.pendingAdvance = false;
+    this.clearPendingDialog();
     this.dialogAnimParticipants = [];
     this.ended = false;
+    // If the party leader is a switched CNPC (ControlledNPC >= 0), schedule
+    // restore to the prior controlled character after dialog unless cancelled.
+    const controlled = GameState.PartyManager?.ControlledNPC;
+    if(typeof controlled === 'number' && controlled >= 0){
+      this.schedulePostDialogCharacterSwitch(-1);
+    }
     this.currentEntry = null;
     this.state = ConversationState.INVALID;
     if (owner.isPlayer && !listener.isPlayer) {
@@ -279,6 +333,11 @@ export class CutsceneManager {
     
     //todo trigger updateTextPosition
     this.isListening = true;
+    if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
+      GameState.MenuManager.InGameComputer.updateTextPosition?.(true);
+    }else{
+      GameState.MenuManager.InGameDialog.updateTextPosition?.(true);
+    }
     this.startingEntry = this.getNextEntry(this.dialog.startingList);
     if(!this.startingEntry){
       console.warn('CutsceneManager.startConversation: No starting entry found');
@@ -331,6 +390,7 @@ export class CutsceneManager {
       switch (this.dialog.getConversationType()) {
         case DLGConversationType.COMPUTER:
           console.log('CutsceneManager.startConversation: Computer');
+          GameState.MenuManager.InGameComputer.setType(this.dialog.computerType ?? 0);
           GameState.MenuManager.InGameComputer.open();
           break;
         default:
@@ -421,7 +481,7 @@ export class CutsceneManager {
     if (!entryLinks.length) { return; }
     this.isListening = true;
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
-      // GameState.MenuManager.InGameComputer.updateTextPosition();
+      GameState.MenuManager.InGameComputer.updateTextPosition?.(true);
     }else{
       GameState.MenuManager.InGameDialog.updateTextPosition();
     }
@@ -453,11 +513,12 @@ export class CutsceneManager {
    */
   static showEntry(entry: DLGNode) {
     if(this.paused){
-      // Retail SendDialogEntry defers while field15_0x50 set — stash as pending show.
+      // Retail SendDialogEntry @ 004cd460 — stash field14_0x4c entry index, field13=1.
       this.pendingAdvance = true;
+      this.pendingEntry = entry;
       return;
     }
-    this.pendingAdvance = false;
+    this.clearPendingDialog();
     this.dialogAnimParticipants = [];
     this.currentEntry = entry;
     this.currentEntry.repliesShown = false;
@@ -477,7 +538,11 @@ export class CutsceneManager {
     this.state = ConversationState.LISTENING_TO_SPEAKER;
     if (GameState.Mode != EngineMode.DIALOG)
       return;
-    GameState.VideoEffectManager.SetVideoEffect(entry.getVideoEffect());
+    GameState.VideoEffectManager.SetVideoEffect(
+      isComputerCameraEntry
+        ? this.resolveComputerCamVidEffect(entry)
+        : entry.getVideoEffect()
+    );
     this.lastSpokenString = entry.getCompiledString();
     if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
       GameState.MenuManager.InGameComputer.setEntry(entry);
@@ -486,18 +551,21 @@ export class CutsceneManager {
       GameState.MenuManager.InGameDialog.setDialogMode(ConversationState.LISTENING_TO_SPEAKER);
     }
 
-    // N16: only force look-at on dialog participants (speaker/listener).
-    if(BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)){
-      const creature = this.currentEntry.speaker as ModuleCreature;
-      if(this.isDialogParticipant(creature)){
-        creature.lookAt(this.currentEntry.listener);
+    // Retail UpdateShotCamera: skip participant look-at when computer panel active.
+    if(this.dialog.getConversationType() != DLGConversationType.COMPUTER){
+      // N16: only force look-at on dialog participants (speaker/listener).
+      if(BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)){
+        const creature = this.currentEntry.speaker as ModuleCreature;
+        if(this.isDialogParticipant(creature)){
+          creature.lookAt(this.currentEntry.listener);
+        }
       }
-    }
-    
-    if(BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)){
-      const creature = this.currentEntry.listener as ModuleCreature;
-      if(this.isDialogParticipant(creature)){
-        creature.lookAt(this.currentEntry.speaker);
+
+      if(BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)){
+        const creature = this.currentEntry.listener as ModuleCreature;
+        if(this.isDialogParticipant(creature)){
+          creature.lookAt(this.currentEntry.speaker);
+        }
       }
     }
 
@@ -510,23 +578,30 @@ export class CutsceneManager {
       this.setEntryAnimations(entry);
     }
 
-    //participant facing
-    if (this.cutsceneMode == CutsceneMode.DIALOG) {
+    //participant facing — skip for computer (retail no head-look framing)
+    if (this.cutsceneMode == CutsceneMode.DIALOG && this.dialog.getConversationType() != DLGConversationType.COMPUTER) {
       if (BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleObject) && BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleObject)) {
-        if (!this.currentEntry.listener.lockDialogOrientation && BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)) {
+        const listenerCre = this.currentEntry.listener as ModuleCreature;
+        const speakerCre = this.currentEntry.speaker as ModuleCreature;
+        if (
+          !this.currentEntry.listener.lockDialogOrientation &&
+          BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature) &&
+          listenerCre.orientOnClick !== false
+        ) {
           this.currentEntry.listener.FacePoint(this.currentEntry.speaker.position);
         }
-        if (!this.currentEntry.speaker.lockDialogOrientation && BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)) {
+        if (
+          !this.currentEntry.speaker.lockDialogOrientation &&
+          BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature) &&
+          speakerCre.orientOnClick !== false
+        ) {
           this.currentEntry.speaker.FacePoint(this.currentEntry.listener.position);
         }
       }
     }
 
     // Node delay (retail CSWSDialog::SendDialogEntry / SetDialogDelay) — seconds → ms
-    let delaySec = this.computeEntryDelaySeconds(entry);
-    if(isComputerCameraEntry){
-      delaySec = 5;
-    }
+    const delaySec = this.computeEntryDelaySeconds(entry);
     entry.setNodeDelay(delaySec * 1000);
     //Node camera
     this.setEntryCamera(entry);
@@ -572,6 +647,27 @@ export class CutsceneManager {
       return 0;
     }
     return entry.delay >>> 0;
+  }
+
+  /**
+   * Retail SetComputerCameraShot @ 004d6890 CamVidEffect mapping for computer
+   * placeable entries: -1 → 0 (enable effect 0), -2 → disable (-1), else pass-through.
+   */
+  static resolveComputerCamVidEffect(entry: DLGNode): number {
+    if(!entry || entry.cameraAngle != DLGCameraAngle.ANGLE_PLACEABLE_CAMERA){
+      return -1;
+    }
+    const v = entry.camVidEffect;
+    if(v === -2){ return -1; }
+    if(v === -1){ return 0; }
+    return v;
+  }
+
+  /**
+   * Retail SetLiveFeedMessageVisible — hide when CamVidEffect is -2 or 10.
+   */
+  static isComputerLiveFeedVisible(camVidEffect: number): boolean {
+    return camVidEffect !== -2 && camVidEffect !== 10;
   }
 
   /**
@@ -701,7 +797,7 @@ export class CutsceneManager {
     const wasBark = this.cutsceneMode == CutsceneMode.BARK;
     this.active = false;
     this.paused = false;
-    this.pendingAdvance = false;
+    this.clearPendingDialog();
     this.dialogAnimParticipants = [];
     this.barkScreenX = -1;
     this.barkScreenY = -1;
@@ -711,7 +807,6 @@ export class CutsceneManager {
       this.audioEmitter.stop();
       if(this.dialog?.getConversationType() == DLGConversationType.COMPUTER){
         GameState.MenuManager.InGameComputer.close();
-        // GameState.MenuManager.InGameComputerCam.close();
         GameState.MenuManager.InGameComputerCam.hide();
       }else{
         GameState.MenuManager.InGameDialog.close();
@@ -755,6 +850,17 @@ export class CutsceneManager {
     this.dialog = undefined;
     this.cutsceneMode = CutsceneMode.DIALOG;
     GameState.VideoEffectManager.SetVideoEffect(-1);
+
+    // Post-dialog character switch restore (unless CancelPostDialogCharacterSwitch).
+    if(typeof this.postDialogRestoreNpcId === 'number'){
+      const restoreId = this.postDialogRestoreNpcId;
+      this.postDialogRestoreNpcId = undefined;
+      try{
+        GameState.PartyManager.SwitchPlayerCharacter(restoreId);
+      }catch(e){
+        console.warn('CutsceneManager.endConversation: post-dialog character switch failed', e);
+      }
+    }
 
     // Retail overlay stop when leaving dialog (SetOverlayAnimation param_3=0).
     const stopOverlayOn = (obj: ModuleObject | undefined) => {
@@ -854,18 +960,56 @@ export class CutsceneManager {
   }
 
   /**
+   * Retail SetDialogAnimations @ 004d8bd0 — speaker default 0x2736 / 0x27aa when
+   * IsInjured (current/max HP < 0.2).
+   */
+  static getDialogTalkAnimation(actor: ModuleObject | undefined): ModuleCreatureAnimState {
+    return actor?.isInjured?.() ? ModuleCreatureAnimState.TALK_INJURED : ModuleCreatureAnimState.TALK_NORMAL;
+  }
+
+  /**
+   * Retail SetDialogAnimations @ 004d8bd0 — listener default 0x272e / 0x27ab when
+   * IsInjured (current/max HP < 0.2).
+   */
+  static getDialogListenAnimation(actor: ModuleObject | undefined): ModuleCreatureAnimState {
+    return actor?.isInjured?.() ? ModuleCreatureAnimState.LISTEN_INJURED : ModuleCreatureAnimState.LISTEN;
+  }
+
+  /**
+   * Retail CanPlayDialogAnimations @ 004dfbe0 — skip when dead or debilitated.
+   */
+  static canPlayDialogAnimations(actor: ModuleObject | undefined): boolean {
+    if(!actor){ return false; }
+    if(actor.isDead?.()){ return false; }
+    if(actor.isDebilitated?.()){ return false; }
+    return true;
+  }
+
+  /**
    * Set the participant animations for a normal dialog entry
    * @param entry - The entry to set the participant animations for
    */
   static setEntryAnimations(entry: DLGNode) {
-    //Speaker Animation — retail default 0x2736 (TALK_NORMAL)
-    if (BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature)) {
-      this.playDialogCreatureAnimation(this.currentEntry.speaker, ModuleCreatureAnimState.TALK_NORMAL);
+    // Speaker — retail SetDialogAnimations @ 004d8bd0 (0x2736 / 0x27aa)
+    if (
+      BitWise.InstanceOfObject(this.currentEntry.speaker, ModuleObjectType.ModuleCreature) &&
+      this.canPlayDialogAnimations(this.currentEntry.speaker)
+    ) {
+      this.playDialogCreatureAnimation(
+        this.currentEntry.speaker,
+        this.getDialogTalkAnimation(this.currentEntry.speaker)
+      );
     }
 
-    //Listener Animation — retail default 0x272E (LISTEN)
-    if (BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature)) {
-      this.playDialogCreatureAnimation(this.currentEntry.listener, ModuleCreatureAnimState.LISTEN);
+    // Listener — retail SetDialogAnimations @ 004d8bd0 (0x272e / 0x27ab)
+    if (
+      BitWise.InstanceOfObject(this.currentEntry.listener, ModuleObjectType.ModuleCreature) &&
+      this.canPlayDialogAnimations(this.currentEntry.listener)
+    ) {
+      this.playDialogCreatureAnimation(
+        this.currentEntry.listener,
+        this.getDialogListenAnimation(this.currentEntry.listener)
+      );
     }
 
     for (let i = 0; i < entry.animations.length; i++) {
@@ -1286,6 +1430,23 @@ export class CutsceneManager {
     this.cameraState.cameraID = nCamera;
     // Reply phase clears currentEntry — keep any swap already applied by setReplyCamera.
     this.bindCameraParticipantsFromActiveNode();
+    // Apply placeable MicRange to dialog audio falloff when present.
+    this.applyPlaceableMicRange(nCamera);
+  }
+
+  /**
+   * Retail placeable cameras persist MicRange — apply as dialog AudioEmitter maxDistance.
+   */
+  static applyPlaceableMicRange(cameraId: number) {
+    const cams = GameState.module?.area?.cameras;
+    if(!cams || !this.audioEmitter){ return; }
+    for(let i = 0; i < cams.length; i++){
+      const cam = cams[i];
+      if(cam?.cameraID === cameraId && typeof cam.micRange === 'number' && cam.micRange > 0){
+        this.audioEmitter.setMaxDistance?.(cam.micRange);
+        return;
+      }
+    }
   }
 
   /**
@@ -1301,7 +1462,10 @@ export class CutsceneManager {
       GameState.Flags.EnableOverride,
       !!ConfigClient.get('look_in_override')
     );
-    const aspyrVanilla = GameState.GameKey === GameEngineType.TSL;
+    // Retail StartDialog @ 006ac619 gates the Aspyr placeable hack on the
+    // "carth" conversation flag (DAT_00a1347c); other dialogs leave it clear.
+    const aspyrVanilla = GameState.GameKey === GameEngineType.TSL
+      && isAspyrCarthDialogCameraHack(this.dialog?.resref || this.conversation_name);
     if(!modded && aspyrVanilla){
       applyAspyrPlaceableCameraHack(
         dialog.position, dialog.quaternion, modded, true,
@@ -1358,13 +1522,18 @@ export class CutsceneManager {
       const updateComplete = this.currentEntry.update(delta);
       if(updateComplete && !this.currentEntry.repliesShown){
         if(this.paused){
+          // Retail SendDialogReplies @ 004cd500 — field13=1, field14=0xFFFFFFFF.
           this.pendingAdvance = true;
+          this.pendingEntry = undefined;
         }else{
           this.currentEntry.repliesShown = true;
           this.showReplies(this.currentEntry);
         }
       }
     }
+
+    // Retail UpdateDialog @ 004cd580 — flush deferred advance once unpaused.
+    this.flushPendingDialog();
   }
 
   /**
@@ -1460,6 +1629,10 @@ export class CutsceneManager {
       if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
         GameState.MenuManager.InGameComputer.hide();
         GameState.MenuManager.InGameComputerCam.show();
+        const camVid = this.currentEntry?.camVidEffect ?? -1;
+        GameState.MenuManager.InGameComputerCam.setLiveFeedVisible(
+          this.isComputerLiveFeedVisible(camVid)
+        );
       }
       return;
     }
@@ -1617,7 +1790,9 @@ export class CutsceneManager {
       GameState.Flags.EnableOverride,
       !!ConfigClient.get('look_in_override')
     );
-    const aspyrVanilla = GameState.GameKey === GameEngineType.TSL;
+    // Same retail gate as the placeable hack (DAT_00a1347c / "carth" dialog).
+    const aspyrVanilla = GameState.GameKey === GameEngineType.TSL
+      && isAspyrCarthDialogCameraHack(this.dialog?.resref || this.conversation_name);
     const aspyr = resolveAspyrAppearanceCameraOverrides(
       spApp, lpApp, shotType, modded, aspyrVanilla
     );
@@ -1640,6 +1815,17 @@ export class CutsceneManager {
         this.#tmpDialogCamPos, this.#tmpDialogCamLook,
         { collided: true, side, heightBias, focusHeightBias }
       );
+      // Pull camera in along look↔cam when the fallback shot is still obstructed.
+      const maxDist = this.#tmpDialogCamPos.distanceTo(this.#tmpDialogCamLook);
+      if(maxDist > 0.01){
+        const adjusted = this.adjustCameraDistanceForCollision(
+          this.#tmpDialogCamPos, this.#tmpDialogCamLook, maxDist
+        );
+        if(adjusted < maxDist - 1e-3){
+          this.#tmpCamDir.copy(this.#tmpDialogCamPos).sub(this.#tmpDialogCamLook).normalize();
+          this.#tmpDialogCamPos.copy(this.#tmpDialogCamLook).addScaledVector(this.#tmpCamDir, adjusted);
+        }
+      }
     }
 
     const fov = this.cameraState.camFieldOfView;
@@ -1815,54 +2001,40 @@ export class CutsceneManager {
 
   /**
    * checkCameraCollision
-   * Checks if a camera position would collide with walkmesh geometry
-   * @param cameraPosition - The proposed camera position
-   * @param targetPosition - The target position to look at (for ray direction)
-   * @returns true if collision detected, false otherwise
+   * Walkmesh approximation of retail Scene::HitCheck — tests the complete
+   * target↔camera segment (both directions) against room/door walkmeshes.
+   * Full retail HitCheck (model AABB / complex geometry) remains a residual.
    */
   static checkCameraCollision(cameraPosition: THREE.Vector3, targetPosition: THREE.Vector3): boolean {
     if (!GameState.module?.area) {
       return false;
     }
 
-    const speaker = this.cameraState.speaker.participant;
-    const listener = this.cameraState.listener.participant;
-
-    if(!speaker.room || !listener.room || (speaker.room !== listener.room)){
+    const speaker = this.cameraState.speaker?.participant;
+    const listener = this.cameraState.listener?.participant;
+    if(!speaker && !listener){
       return false;
     }
 
     const area = GameState.module.area;
     const raycaster = GameState.raycaster;
-    
-    // Calculate direction from camera to target
-    const direction = targetPosition.clone().sub(cameraPosition).normalize();
-    
-    // Set up raycaster for collision detection
-    raycaster.set(cameraPosition, direction);
-    raycaster.far = cameraPosition.distanceTo(targetPosition);
-    
-    // Collect walkmesh faces for collision testing
-    const aabbFaces: any[] = [];
-    
-    // Add room walkmesh faces
-    if (speaker.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
-      aabbFaces.push({
-        object: speaker.room,
-        faces: speaker.room.collisionManager.walkmesh.faces
-      });
-    }
+    const dist = cameraPosition.distanceTo(targetPosition);
+    if(dist < 1e-4){ return false; }
 
-    if (listener.room !== speaker.room) {
-      if (listener.room?.collisionManager?.walkmesh?.aabbNodes?.length) {
+    // Collect walkmesh faces — both participant rooms when available.
+    const aabbFaces: any[] = [];
+    const rooms = new Set<any>();
+    if(speaker?.room) rooms.add(speaker.room);
+    if(listener?.room) rooms.add(listener.room);
+    rooms.forEach((room: any) => {
+      if(room?.collisionManager?.walkmesh?.aabbNodes?.length){
         aabbFaces.push({
-          object: listener.room,
-          faces: listener.room.collisionManager.walkmesh.faces
+          object: room,
+          faces: room.collisionManager.walkmesh.faces
         });
       }
-    }
-    
-    // Add door walkmesh faces (closed doors only)
+    });
+
     for (let j = 0, jl = area.doors.length; j < jl; j++) {
       const door = area.doors[j];
       if (door?.collisionManager?.walkmesh && !door.isOpen()) {
@@ -1872,16 +2044,30 @@ export class CutsceneManager {
         });
       }
     }
-    
-    // Test for collisions
+
+    if(!aabbFaces.length){ return false; }
+
+    const dir = this.#tmpCamDir;
+    // Camera → target
+    dir.copy(targetPosition).sub(cameraPosition).normalize();
+    raycaster.set(cameraPosition, dir);
+    raycaster.far = dist;
     for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
       const castableFaces = aabbFaces[k];
       const intersects = castableFaces.object.collisionManager.walkmesh.raycast(raycaster, castableFaces.faces) || [];
-      
-      // Retail Scene::HitCheck tests the complete target↔camera segment.
       if (intersects.length > 0) return true;
     }
-    
+
+    // Target → camera (complete segment parity with Scene::HitCheck)
+    dir.copy(cameraPosition).sub(targetPosition).normalize();
+    raycaster.set(targetPosition, dir);
+    raycaster.far = dist;
+    for (let k = 0, kl = aabbFaces.length; k < kl; k++) {
+      const castableFaces = aabbFaces[k];
+      const intersects = castableFaces.object.collisionManager.walkmesh.raycast(raycaster, castableFaces.faces) || [];
+      if (intersects.length > 0) return true;
+    }
+
     return false;
   }
 

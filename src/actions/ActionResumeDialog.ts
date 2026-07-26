@@ -6,8 +6,9 @@ import { Action } from "@/actions/Action";
 /**
  * ActionResumeDialog class.
  *
- * Retail AIActionResumeDialog @ 0057b320 — clears pause and flushes any
- * deferred SendDialogEntry pending while paused.
+ * Retail AIActionResumeDialog @ 0057b320 — clears pause; deferred
+ * SendDialogEntry / SendDialogReplies flush happens in UpdateDialog
+ * (CutsceneManager.update), not here.
  *
  * @file ActionResumeDialog.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>

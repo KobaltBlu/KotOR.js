@@ -71,6 +71,8 @@ export class NWScriptInstance {
   //ListenPattern
   listenPatternNumber: number = -1;
   listenPatternSpeaker: ModuleObject = undefined;
+  /** Matched substrings from the last TestStringAgainstPattern / listen match. */
+  matchedSubstrings: string[] = [];
   conversation: DLGObject;
 
   talent: TalentObject;
@@ -443,6 +445,9 @@ export class NWScriptInstance {
     instance.lastPerceived = parentInstance.lastPerceived;
     instance.listenPatternNumber = parentInstance.listenPatternNumber;
     instance.listenPatternSpeaker = parentInstance.listenPatternSpeaker;
+    instance.matchedSubstrings = parentInstance.matchedSubstrings
+      ? parentInstance.matchedSubstrings.slice()
+      : [];
     instance.conversation = parentInstance.conversation;
     instance.lastSpeaker = parentInstance.lastSpeaker;
     instance.lastSpellCaster = parentInstance.lastSpellCaster;

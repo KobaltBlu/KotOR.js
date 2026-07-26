@@ -312,6 +312,10 @@ export class NWScript {
       instance.parentUUID = parentInstance.uuid;
       instance.lastPerceived = parentInstance.lastPerceived;
       instance.listenPatternNumber = parentInstance.listenPatternNumber;
+      instance.listenPatternSpeaker = parentInstance.listenPatternSpeaker;
+      instance.matchedSubstrings = parentInstance.matchedSubstrings
+        ? parentInstance.matchedSubstrings.slice()
+        : [];
     }
 
     instance.sendToDebugger(IPCMessageType.CreateScript);

@@ -596,20 +596,14 @@ export class CollisionManager {
     const walkmesh = placeable?.collisionManager?.walkmesh;
     if (!walkmesh?.walkableFaces?.length) return false;
 
-    const testPoint = CollisionPool.getVector();
-    testPoint.copy(point);
-
     for (const face of walkmesh.walkableFaces) {
-      if (!face?.triangle) continue;
-      // Align test point to face plane for stable containsPoint checks
-      testPoint.z = face.triangle.a.z;
-      if (face.triangle.containsPoint(testPoint)) {
-        CollisionPool.releaseVector(testPoint);
+      if (!face?.pointInFace2d) continue;
+      // 2D test matches pathfinding / ground-face lookup (Z-independent)
+      if (face.pointInFace2d(point)) {
         return true;
       }
     }
 
-    CollisionPool.releaseVector(testPoint);
     return false;
   }
 
@@ -938,10 +932,11 @@ export class CollisionManager {
     this.groundFace = undefined;
 
     if (this.object.room) {
-      const face = this.object.room.findWalkableFace(this.object);
-      if (!face) {
-        this.findWalkableFace();
-      }
+      this.object.room.findWalkableFace(this.object);
+    }
+    // Gate on groundFace (not the return value) so a miss always tries area-wide search
+    if (!this.groundFace) {
+      this.findWalkableFace();
     }
 
     // Handle case where no valid ground face found
@@ -962,13 +957,11 @@ export class CollisionManager {
 
   findWalkableFace(object: ModuleObject = this.object){
     const objectPos = object.position;
-    let face;
-    let room;
     if(!object.area){
-      return;
+      return undefined;
     }
     for(let i = 0, il = object.area.rooms.length; i < il; i++){
-      room = object.area.rooms[i];
+      const room = object.area.rooms[i];
       if(!room.collisionManager.walkmesh){
         continue;
       }
@@ -976,8 +969,9 @@ export class CollisionManager {
       const walkableFaces = room.collisionManager.walkmesh.walkableFaces;
 
       for(let j = 0, jl = walkableFaces.length; j < jl; j++){
-        face = walkableFaces[j];
-        if(!face.triangle.containsPoint(objectPos)){
+        const face = walkableFaces[j];
+        // 2D test matches pathfinding; 3D containsPoint fails when Z is off-plane after combat.
+        if(!face.pointInFace2d(objectPos)){
           continue;
         }
         this.groundFace = face;
@@ -986,9 +980,10 @@ export class CollisionManager {
         object.attachToRoom(room);
         face.triangle.closestPointToPoint(objectPos, this.wm_c_point);
         objectPos.z = this.wm_c_point.z + .005;
+        return face;
       }
     }
-    return face;
+    return undefined;
   }
 
   // Room checking

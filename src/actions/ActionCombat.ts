@@ -69,7 +69,7 @@ export class ActionCombat extends Action {
       case CombatActionType.ATTACK:
       case CombatActionType.ATTACK_USE_FEAT: {
         const attackAction = new GameState.ActionFactory.ActionPhysicalAttacks();
-        attackAction.setParameter(0, ActionParameterType.INT, combatAction.resultsCalculated);
+        attackAction.setParameter(0, ActionParameterType.INT, combatAction.resultsCalculated ? 1 : 0);
         attackAction.setParameter(1, ActionParameterType.DWORD, combatAction.target.id);
         attackAction.setParameter(2, ActionParameterType.INT, combatAction.actionType);
         attackAction.setParameter(3, ActionParameterType.INT, combatAction.animation);
@@ -165,16 +165,32 @@ export class ActionCombat extends Action {
       }
 
       case CombatActionType.ATTACK_CUTSCENE_MOVE: {
-        // Retail case 0xC — move toward target / point then continue combat
+        // Retail AIActionCombat case 0xC @ 005b6210 — MoveToPoint/Object then continue combat
         const moveTarget = combatAction.target;
+        const pos = combatAction.moveToPosition;
+        const run = combatAction.shouldRun ? 1 : 0;
+        const areaId = this.owner.area?.id ?? ModuleObjectConstant.OBJECT_INVALID;
+
         if(moveTarget && BitWise.InstanceOfObject(moveTarget, ModuleObjectType.ModuleObject)){
           const actionMove = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
           actionMove.setParameter(0, ActionParameterType.FLOAT, moveTarget.position.x);
           actionMove.setParameter(1, ActionParameterType.FLOAT, moveTarget.position.y);
           actionMove.setParameter(2, ActionParameterType.FLOAT, moveTarget.position.z);
-          actionMove.setParameter(3, ActionParameterType.DWORD, moveTarget.area?.id ?? ModuleObjectConstant.OBJECT_INVALID);
+          actionMove.setParameter(3, ActionParameterType.DWORD, moveTarget.area?.id ?? areaId);
           actionMove.setParameter(4, ActionParameterType.DWORD, moveTarget.id);
-          actionMove.setParameter(5, ActionParameterType.INT, 1);
+          actionMove.setParameter(5, ActionParameterType.INT, run);
+          actionMove.setParameter(6, ActionParameterType.FLOAT, 0.2);
+          actionMove.setParameter(7, ActionParameterType.INT, 0);
+          actionMove.setParameter(8, ActionParameterType.FLOAT, 30.0);
+          this.owner.actionQueue.unshift(actionMove);
+        }else if(pos){
+          const actionMove = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
+          actionMove.setParameter(0, ActionParameterType.FLOAT, pos.x);
+          actionMove.setParameter(1, ActionParameterType.FLOAT, pos.y);
+          actionMove.setParameter(2, ActionParameterType.FLOAT, pos.z);
+          actionMove.setParameter(3, ActionParameterType.DWORD, areaId);
+          actionMove.setParameter(4, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
+          actionMove.setParameter(5, ActionParameterType.INT, run);
           actionMove.setParameter(6, ActionParameterType.FLOAT, 0.2);
           actionMove.setParameter(7, ActionParameterType.INT, 0);
           actionMove.setParameter(8, ActionParameterType.FLOAT, 30.0);

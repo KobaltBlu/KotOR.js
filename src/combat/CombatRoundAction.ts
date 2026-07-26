@@ -36,12 +36,23 @@ export class CombatRoundAction {
   targetRepository: ModuleObject;
 
   isUserAction: boolean = false; //Was this action created by the player
-  isCutsceneAttack: boolean = false;
 
+  /**
+   * Retail CSWSCombatRoundAction field31_0x74 — designer-precomputed attack
+   * (CutsceneAttack). Distinct from `resolved`, which gates ResolveAttack once.
+   */
   resultsCalculated: boolean = false;
-  attackAnimation: number = 10001;
+  /** Set once ResolveAttack has run for this scheduled action. */
+  resolved: boolean = false;
+  /** animations.2da row index when resultsCalculated (retail `animation`). */
+  attackAnimation: number = 0;
   attackResult: AttackResult = AttackResult.MISS;
   attackDamage: number = 0;
+
+  /** CutsceneMove destination (retail move_to_position). */
+  moveToPosition?: { x: number; y: number; z: number };
+  /** CutsceneMove run flag (retail should_run). */
+  shouldRun: number = 0;
 
   iconResRef: string;
 
@@ -159,8 +170,14 @@ export class CombatRoundAction {
     }
     
     let animation = attackKey+weaponWield+'a'+attackType;
-    if(this.isCutsceneAttack){
-      animation = this.animationName;
+    // Retail GetClientMeleeAnimation @ 005f32e0 — resultsCalculated returns nAnimation row
+    if(this.resultsCalculated && this.attackAnimation){
+      const row = resolveAnimations2DARow(this.attackAnimation);
+      if(row?.name){
+        animation = String(row.name);
+      }else if(this.animationName){
+        animation = this.animationName;
+      }
     }
 
     this.animationName = animation;
@@ -223,4 +240,17 @@ function resolveObjectId(id: number): ModuleObject | undefined {
   }catch{
     return undefined;
   }
+}
+
+/** Resolve animations.2da row by label id or array index. */
+export function resolveAnimations2DARow(animationRow: number): ITwoDAAnimation | undefined {
+  const table = GameState.TwoDAManager?.datatables?.get?.('animations');
+  if(!table || animationRow == null || animationRow < 0) return undefined;
+  if(typeof table.getByID === 'function'){
+    const byId = table.getByID(animationRow);
+    if(byId) return byId as ITwoDAAnimation;
+  }
+  const rows = table.rows;
+  if(rows && rows[animationRow]) return rows[animationRow] as ITwoDAAnimation;
+  return undefined;
 }

@@ -918,12 +918,12 @@ export class ModuleRoom extends ModuleObject {
       point.z < this.model.box.min.z || point.z > this.model.box.max.z ? false : true;
   }
 
-  findWalkableFace( object?: ModuleObject ) : OdysseyFace3 {
-    let face;
+  findWalkableFace( object?: ModuleObject ) : OdysseyFace3 | undefined {
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleObject) && this.collisionManager.walkmesh){
       for(let j = 0, jl = this.collisionManager.walkmesh.walkableFaces.length; j < jl; j++){
-        face = this.collisionManager.walkmesh.walkableFaces[j];
-        if(face.triangle.containsPoint(object.position)){
+        const face = this.collisionManager.walkmesh.walkableFaces[j];
+        // 2D test matches pathfinding (isPointWalkable); 3D containsPoint fails when Z is off-plane after combat.
+        if(face.pointInFace2d(object.position)){
           object.collisionManager.groundFace = face;
           object.collisionManager.lastGroundFace = object.collisionManager.groundFace;
           object.collisionManager.surfaceId = object.collisionManager.groundFace.walkIndex;
@@ -935,7 +935,7 @@ export class ModuleRoom extends ModuleObject {
         }
       }
     }
-    return face;
+    return undefined;
   }
 
   destroy(): void {

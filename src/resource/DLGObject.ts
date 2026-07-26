@@ -36,6 +36,8 @@ export class DLGObject {
   resref: string;
   gff: GFFObject;
   conversationType: number;
+  /** Root ComputerType BYTE — default 0 (retail LoadDialog @ 0074e160). */
+  computerType: number = 0;
   entryList: DLGNode[] = [];
   replyList: DLGNode[] = [];
   startingList: DLGNode[] = [];
@@ -71,6 +73,7 @@ export class DLGObject {
     this.resref = resref;
 
     this.conversationType = 0;
+    this.computerType = 0;
     this.entryList = [];
     this.replyList = [];
     this.startingList = [];
@@ -85,6 +88,13 @@ export class DLGObject {
     let conversationType = this.gff.RootNode.getFieldByLabel('ConversationType');
     if(conversationType){
       this.conversationType = conversationType.getValue();
+    }
+
+    // Retail LoadDialog default ComputerType = 0
+    if(this.gff.RootNode.hasField('ComputerType')){
+      this.computerType = this.gff.RootNode.getFieldByLabel('ComputerType').getValue() & 0xff;
+    }else{
+      this.computerType = 0;
     }
 
     if(this.gff.RootNode.hasField('VO_ID')){
@@ -161,7 +171,7 @@ export class DLGObject {
     if(this.gff.RootNode.hasField('EntryList')){
       const entries = this.gff.RootNode.getFieldByLabel('EntryList').getChildStructs();
       for(let i = 0; i < entries.length; i++){
-        let node = DLGNode.FromDialogStruct(entries[i], this);
+        let node = DLGNode.FromDialogStruct(entries[i], this, this.delayEntry);
         node.nodeType = DLGNodeType.ENTRY;
         this.entryList.push( node );
       }
@@ -170,7 +180,7 @@ export class DLGObject {
     if(this.gff.RootNode.hasField('ReplyList')){
       const replies = this.gff.RootNode.getFieldByLabel('ReplyList').getChildStructs();
       for(let i = 0; i < replies.length; i++){
-        let node = DLGNode.FromDialogStruct(replies[i], this);
+        let node = DLGNode.FromDialogStruct(replies[i], this, this.delayReply);
         node.nodeType = DLGNodeType.REPLY;
         this.replyList.push( node );
       }

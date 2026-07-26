@@ -30,6 +30,7 @@ import { OdysseyModel, OdysseyModelAnimation } from "@/odyssey";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { LIPObject } from "@/resource/LIPObject";
 import { Utility } from "@/utility/Utility";
+import { testStringAgainstPattern } from "@/utility/listen-pattern";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { SSFType } from "@/enums/resource/SSFType";
@@ -92,7 +93,7 @@ import {
   COMBAT_MODE_ACTIVITY_BIT,
   COMBAT_MODE_ACTIVITY_MASK,
 } from "@/enums/combat/CombatMode";
-import { CombatRoundAction } from "@/combat";
+import { CombatRound, CombatRoundAction, resolveAnimations2DARow } from "@/combat";
 import { CombatInformation } from "@/combat/CombatInformation";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import type { Action } from "@/actions/Action";
@@ -463,6 +464,8 @@ export class ModuleCreature extends ModuleObject {
    * Head tracking enabled
    */
   headTrackingEnabled: boolean = true;
+  /** K2 SetOrientOnClick — when false, skip facing the player on dialog click. Default true. */
+  orientOnClick: boolean = true;
   /**
    * Head tracking angle
    */
@@ -1291,13 +1294,26 @@ export class ModuleCreature extends ModuleObject {
 
     const str = this.heardStrings[0];
     if(!this.isListening || !str){ return;  }
-    //console.log('HeardString', this.id, str, this.isListening, this);
 
-    const pattern = this.listeningPatterns[str.string];
-    if(typeof pattern === 'undefined'){ return; }
+    // Exact key first (legacy / associate tokens), then Aurora pattern match.
+    let patternNum: number | undefined = this.listeningPatterns[str.string];
+    let matchedSubstrings: string[] = [];
+    if(typeof patternNum === 'undefined'){
+      const expressions = Object.keys(this.listeningPatterns);
+      for(let i = 0; i < expressions.length; i++){
+        const expression = expressions[i];
+        const result = testStringAgainstPattern(expression, str.string);
+        if(result.matched){
+          patternNum = this.listeningPatterns[expression];
+          matchedSubstrings = result.substrings;
+          break;
+        }
+      }
+    }
+    if(typeof patternNum === 'undefined'){ return; }
 
     this.heardStrings.shift();
-    this.onDialog(str.speaker, pattern);
+    this.onDialog(str.speaker, patternNum, undefined, matchedSubstrings);
   }
 
   updatePerceptionList(delta = 0){
@@ -1498,19 +1514,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateCasting(delta = 0){
-    //Update active spells
-    for(let i = 0, len = this.casting.length; i < len; i++){
-      this.casting[i].spell.update(this.casting[i].target, this, this.casting[i], delta);
-    }
-
-    //Remove completed spells
-    let i = this.casting.length;
-    while (i--) {
-      if(this.casting[i].completed){
-        this.casting.splice(i, 1);
-      }
-    }
-
+    // Live spell casts are owned by area.spellInstances (ticked/disposed in ModuleArea).
+    // The legacy per-creature casting[] array is never populated; nothing to tick here.
   }
 
   clearTarget(){
@@ -1697,6 +1702,19 @@ export class ModuleCreature extends ModuleObject {
       this.onDamaged();
   }
 
+  /** True while this creature owns an in-progress spell cast (area.spellInstances). */
+  hasActiveSpellCast(): boolean {
+    const instances = this.area?.spellInstances;
+    if(!instances?.length) return false;
+    for(let i = 0; i < instances.length; i++){
+      const inst = instances[i];
+      if(inst && inst.owner === this && !inst.completed){
+        return true;
+      }
+    }
+    return false;
+  }
+
   canMove(){
     return !this.isParalyzed() && !this.isStunned() && (
       this.animationState.index != ModuleCreatureAnimState.DEAD && 
@@ -1705,7 +1723,7 @@ export class ModuleCreature extends ModuleObject {
       this.animationState.index != ModuleCreatureAnimState.DIE1 && 
       this.animationState.index != ModuleCreatureAnimState.GET_UP_DEAD && 
       this.animationState.index != ModuleCreatureAnimState.GET_UP_DEAD1
-    ) && !this.casting.length;
+    ) && !this.hasActiveSpellCast();
   }
 
   getCurrentAction(){
@@ -1977,6 +1995,17 @@ export class ModuleCreature extends ModuleObject {
       this.combatData.lastAttackTarget = undefined;
       this.combatData.lastAttemptedSpellTarget = undefined;
       this.combatData.lastSpellTarget = undefined;
+      // Retail SetCombatState(0) @ 004f2610: ClearAllAttacks + RemoveAllActions, then
+      // EndCombatRound if a round is in progress. Mirrors combat-round teardown here.
+      if(this.combatRound){
+        if(this.combatRound.specialAttackList){
+          this.combatRound.specialAttackList.length = 0;
+        }
+        this.combatRound.clearActions();
+        if(this.combatRound.roundStarted){
+          this.combatRound.endCombatRound({ skipCreateNewAttackActions: true });
+        }
+      }
       // Client SetCombatMode(0) @ 005ede80 → RestoreCamera
       if(this === GameState.getCurrentPlayer()){
         FollowerCamera.setCombatCameraActive(false);
@@ -2116,10 +2145,27 @@ export class ModuleCreature extends ModuleObject {
     return resolveChoreographedState(this, oObject);
   }
 
+  /**
+   * Queue a normal attack (or feat attack). CutsceneAttack uses
+   * {@link addCutsceneAttackActions} instead.
+   */
   attackCreature(
-    target: ModuleObject, feat?: TalentFeat, isCutsceneAttack = false, 
-    attackDamage = 0, attackAnimation?: string, attackResult?: AttackResult
+    target: ModuleObject, feat?: TalentFeat, _isCutsceneAttack = false,
+    attackDamage = 0, attackAnimation?: number | string, attackResult?: AttackResult
   ){
+    // Legacy CutsceneAttack callers still pass the 3rd-arg true path
+    if(_isCutsceneAttack){
+      const animRow = typeof attackAnimation === 'number'
+        ? attackAnimation
+        : -1;
+      this.addCutsceneAttackActions(
+        target,
+        animRow,
+        attackResult ?? AttackResult.MISS,
+        attackDamage
+      );
+      return;
+    }
 
     if(target == undefined)
       return;
@@ -2138,19 +2184,10 @@ export class ModuleCreature extends ModuleObject {
     combatAction.target = target;
     combatAction.animation = ModuleCreatureAnimState.ATTACK;
     combatAction.animationTime = 1500;
-    combatAction.isCutsceneAttack = isCutsceneAttack;
 
     if(feat){
       combatAction.actionType = CombatActionType.ATTACK_USE_FEAT;
       combatAction.setFeat(feat);
-    }
-
-    combatAction.attackResult = attackResult;
-    combatAction.attackDamage = attackDamage;
-
-    if(isCutsceneAttack){
-      combatAction.animationName = attackAnimation;
-      combatAction.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(attackAnimation);
     }
 
     this.combatRound.addAction(combatAction);
@@ -2163,6 +2200,88 @@ export class ModuleCreature extends ModuleObject {
       this.actionQueue.add(action);
     }
 
+  }
+
+  /**
+   * Retail CSWSCreature::AddCutsceneAttackActions @ 004f9fb0 /
+   * CSWSCombatRound::AddCutsceneAttackAction @ 004d3810.
+   */
+  addCutsceneAttackActions(
+    target: ModuleObject,
+    animationRow: number,
+    attackResult: AttackResult,
+    damage: number
+  ){
+    if(!target || target == this){
+      target = GameState.PartyManager.party[0];
+    }
+    if(!target){
+      return;
+    }
+
+    this.combatData.setAttemptedAttackTargetIfInvalid(target);
+
+    const combatAction = new CombatRoundAction(this);
+    combatAction.actionType = CombatActionType.ATTACK;
+    combatAction.target = target;
+    // Retail animation_id = 0x2719 (ATTACK)
+    combatAction.animation = ModuleCreatureAnimState.ATTACK;
+    // Retail (combatStretch + 3000) / 2 — stretch defaults to 0
+    combatAction.animationTime = Math.floor((0 + CombatRound.ROUND_LENGTH) / 2);
+    combatAction.resultsCalculated = true;
+    combatAction.attackAnimation = animationRow | 0;
+    combatAction.attackResult = attackResult;
+    combatAction.attackDamage = damage | 0;
+
+    const row = resolveAnimations2DARow(combatAction.attackAnimation);
+    if(row?.name){
+      combatAction.animationName = String(row.name);
+      combatAction.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(combatAction.animationName);
+    }
+
+    this.combatRound.addAction(combatAction);
+
+    // Retail: no BroadcastCombatStateToParty on cutscene path
+    // Retail PC: ComputeAIState + ClearAllActions when client object present
+    if(this.isPC || this.isPartyMember?.()){
+      this.actionQueue.clear();
+    }
+
+    if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
+      const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
+      this.actionQueue.add(action);
+    }
+  }
+
+  /**
+   * Retail CSWSCreature::AddCutsceneMoveActions @ 004fa050 /
+   * CSWSCombatRound::AddCutsceneMoveActions @ 004d3b30.
+   */
+  addCutsceneMoveActions(
+    destObject: ModuleObject | undefined,
+    position: { x: number; y: number; z: number },
+    shouldRun: number
+  ){
+    const combatAction = new CombatRoundAction(this);
+    combatAction.actionType = CombatActionType.ATTACK_CUTSCENE_MOVE;
+    combatAction.target = destObject;
+    combatAction.moveToPosition = {
+      x: position.x,
+      y: position.y,
+      z: position.z,
+    };
+    combatAction.shouldRun = shouldRun ? 1 : 0;
+
+    this.combatRound.addAction(combatAction);
+
+    if(this.isPC || this.isPartyMember?.()){
+      this.actionQueue.clear();
+    }
+
+    if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
+      const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
+      this.actionQueue.add(action);
+    }
   }
 
   useTalent(talent: TalentObject, oTarget: ModuleObject): Action {
@@ -2399,18 +2518,24 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Retail CSWSCreature::CancelCombat @ 004fdaa0.
+   * ClearAllActions(1) → SetCombatState(0) → SetLastHostileActor(INVALID) →
+   * ClearHostileActionsVersus(null) → EndCombatRound → client SetCombatMode(0).
    */
   cancelCombat(){
     this.clearAllActions(true);
+    // Heavy SetCombatState(0) already clears combat-round attacks/actions + ends the round.
     this.setCombatState(false);
-    this.cancelExcitedDuration();
     this.clearTarget();
+    // ClearHostileActionsVersus(null): drop every queued hostile action group.
+    this.clearHostileActionsVersus(undefined);
     if(this.combatRound){
       if(this.combatRound.roundStarted){
         this.combatRound.endCombatRound({ skipCreateNewAttackActions: true });
       }
       this.combatRound.clearActions();
     }
+    // Client SetCombatMode(0): drop stance/counterspell mode.
+    this.clearCombatMode();
     this.resetOverlayAnimationState();
     if(this.animationState.index == ModuleCreatureAnimState.READY){
       this.setAnimationState(ModuleCreatureAnimState.PAUSE);
@@ -2466,14 +2591,27 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Retail CSWSCreature::ClearHostileActionsVersus @ 004f61d0 —
-   * drop queued action groups that target `versus`.
+   * drop queued action groups whose head is a hostile action (Attack 0xC /
+   * CastSpell 0xF / ItemCastSpell 0x2E). When `versus` is provided the group
+   * must also target it; when omitted (retail null) every hostile group is dropped.
    */
-  clearHostileActionsVersus(versus: ModuleCreature){
-    if(!versus || !this.actionQueue?.length) return;
+  clearHostileActionsVersus(versus?: ModuleCreature){
+    if(!this.actionQueue?.length) return;
+    const hostileTypes = [
+      ActionType.ActionPhysicalAttacks,
+      ActionType.ActionCastSpell,
+      ActionType.ActionItemCastSpell,
+    ];
     const groups = new Set<number>();
     for(let i = 0; i < this.actionQueue.length; i++){
       const action = this.actionQueue[i];
-      if(!action?.parameters?.length) continue;
+      if(!action) continue;
+      if(!hostileTypes.includes(action.type)) continue;
+      if(!versus){
+        groups.add(action.groupId);
+        continue;
+      }
+      if(!action.parameters?.length) continue;
       for(let p = 0; p < action.parameters.length; p++){
         if(action.getParameter(p) === versus){
           groups.add(action.groupId);
@@ -3708,13 +3846,14 @@ export class ModuleCreature extends ModuleObject {
     this.disposeCreatureVisuals();
   }
 
-  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined){
+  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []){
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnDialog];
     if(!nwscript){ return false; }
     const instance = nwscript.newInstance();
     instance.listenPatternNumber = listenPatternNumber;
     instance.listenPatternSpeaker = oSpeaker;
     instance.conversation = conversation;
+    instance.matchedSubstrings = matchedSubstrings || [];
     instance.run(this, 0);
     return true;
   }

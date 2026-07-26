@@ -27,7 +27,7 @@ export interface ICombatAction {
   isRanged?: boolean,
   hits?: boolean,
   ready: boolean,
-  isCutsceneAttack?: boolean,
+  resultsCalculated?: boolean,
   attackResult?: AttackResult,
   damage?: number,
   conjureTime?: number,

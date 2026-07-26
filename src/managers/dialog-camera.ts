@@ -402,6 +402,17 @@ export function isDialogGameModded(enableOverride?: boolean, lookInOverride?: bo
   return !!enableOverride || !!lookInOverride;
 }
 
+/**
+ * TSL Aspyr `CSWSObject::StartDialog` @ 006ac619 — the vanilla camera hacks
+ * (placeable +110° pitch / offset and appearance-pair overrides) are gated on
+ * `DAT_00a1347c`, which is set only when the conversation resref equals
+ * `"carth"` (`CResRef::operator==("carth")`, case-insensitive). Every other
+ * dialog leaves the flag clear, so the hacks must not run.
+ */
+export function isAspyrCarthDialogCameraHack(resref?: string): boolean {
+  return (resref || '').toLowerCase() === 'carth';
+}
+
 export interface AspyrDialogCameraOverrides {
   distance: number;
   height: number;

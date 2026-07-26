@@ -411,7 +411,17 @@ NWScriptDefK2.Actions = {
     name: 'CancelCombat',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        if(GameState.PartyManager.party.indexOf(args[0] as ModuleCreature) >= 0){
+          for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
+            GameState.PartyManager.party[i].cancelCombat();
+          }
+        }else{
+          (args[0] as ModuleCreature).cancelCombat();
+        }
+      }
+    }
   },
   55: {
     comment: '55:\nreturns the current force points for the creature',
@@ -1520,9 +1530,9 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        this.caller.actionQueue.add( new GameState.ActionFactory.ActionPauseDialog() );
-      }
+      // Retail ExecuteCommandActionPauseConversation @ 0052d330 — sets
+      // field15_0x50 immediately (does not AddAction). Resume stays queued.
+      GameState.CutsceneManager.pauseConversation();
     }
   },
   206: {
@@ -5920,7 +5930,11 @@ NWScriptDefK2.Actions = {
     name: 'SetOrientOnClick',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.OBJECT, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [ModuleObject, number]){
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
+        (args[0] as ModuleCreature).orientOnClick = !!args[1];
+      }
+    }
   },
   795: {
     comment: 'DJS-OEI 1/29/2004\n795: Gets the PC\'s influence on the alignment of a CNPC.\nParameters:\nnNPC - NPC_* constant identifying the CNPC we\'re interested in.\nIf this character is not an available party member, the return\nvalue with be 0. If the character is in the party, but has an\nattitude of Ambivalent, this will be -1.',

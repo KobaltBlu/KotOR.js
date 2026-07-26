@@ -1,5 +1,6 @@
 import { maxCleaveRange } from "@/combat/attack-range";
 import { getNearestEnemy } from "@/combat/nearest-enemy";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
@@ -27,11 +28,15 @@ export function createNewAttackActions(creature: ModuleCreature): boolean {
   const maxRange = maxCleaveRange(creature);
   const next = getNearestEnemy(creature, maxRange);
   if(!next){
-    // Retail: SetLockOrientationToObject(INVALID), SetCombatMode(0), ClearAllSpecialAttacks
+    // Retail @ 005b6980 no-enemy: SetLockOrientationToObject(INVALID), idle anim 10000,
+    // SetCombatMode(0), ClearAllSpecialAttacks. Does NOT SetCombatState(0) — the 8s
+    // combat timer keeps running (updateCombatStateTimer owns that exit).
     creature.clearCombatMode();
-    creature.setCombatState(false);
     if(round.specialAttackList){
       round.specialAttackList.length = 0;
+    }
+    if(creature.animationState.index == ModuleCreatureAnimState.READY){
+      creature.setAnimationState(ModuleCreatureAnimState.PAUSE);
     }
     return false;
   }

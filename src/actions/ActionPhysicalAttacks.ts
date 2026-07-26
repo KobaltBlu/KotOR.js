@@ -47,16 +47,16 @@ export class ActionPhysicalAttacks extends Action {
     this.type = ActionType.ActionPhysicalAttacks;
 
     //PARAMS
-    // 0 - (?)
+    // 0 - resultsCalculated (INT) — retail CutsceneAttack precomputed flag
     // 1 - Target (DWORD)
-    // 2 - (?)
+    // 2 - actionType (INT)
     // 3 - AnimationIndex (INT)
     // 4 - AnimationLength (INT)
-    // 5 - (?)
-    // 6 - (?)
-    // 7 - (?)
-    // 8 - (?)
-    // 9 - (?)
+    // 5 - numAttacks (INT)
+    // 6 - featId (INT)
+    // 7 - attackAnimation row (INT) when resultsCalculated
+    // 8 - attackResult (INT) when resultsCalculated
+    // 9 - attackDamage (INT) when resultsCalculated
   }
 
   update(delta: number = 0): ActionStatus {
@@ -76,42 +76,27 @@ export class ActionPhysicalAttacks extends Action {
 
     owner.resetExcitedDuration();
 
-    if(target.isDead()){
+    // Retail AIActionPhysicalAttacks @ 005bbbf0 — load params 0/7/8/9 onto current action
+    const combatRound = owner.combatRound;
+    if(combatRound?.action){
+      const resultsCalculated = !!this.getParameter<number>(0);
+      if(resultsCalculated){
+        combatRound.action.resultsCalculated = true;
+        combatRound.action.attackAnimation = this.getParameter<number>(7) | 0;
+        combatRound.action.attackResult = this.getParameter<number>(8) as any;
+        combatRound.action.attackDamage = this.getParameter<number>(9) | 0;
+      }
+    }
+
+    if(typeof (target as any).isDead === 'function' && target.isDead()){
       if(owner.combatRound?.roundStarted){
         owner.combatRound.endCombatRound();
       }
       return ActionStatus.FAILED;
     }
 
-    // CutsceneAttack: designer-placed poses — skip detection/range/move and play the swing.
-    const cutsceneAttack = !!owner.combatRound?.action?.isCutsceneAttack;
-    if(cutsceneAttack){
-      owner.force = 0;
-      owner.speed = 0;
-      const combatRound = owner.combatRound;
-      if(!combatRound.roundPaused){
-        combatRound.startCombatRound(target, false, true, combatRound.action?.featId || 0);
-        if(combatRound.action){
-          combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
-        }
-        combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
-        if(combatRound.roundStarted){
-          combatRound.calculateAttackDamage(owner, combatRound.action);
-          owner.setFacing(
-            Math.atan2(
-              owner.position.y - target.position.y,
-              owner.position.x - target.position.x
-            ) + Math.PI/2,
-            false,
-            TURN_SPEED_FAST
-          );
-          return ActionStatus.COMPLETE;
-        }
-      }
-      return ActionStatus.IN_PROGRESS;
-    }
-
     // Retail HasTargetBeenDetected @ 005b48f0 — doors/placeables always; creatures need SEEN
+    // (CutsceneAttack does NOT skip detection/range — only ResolveAttackRoll/Damage short-circuit)
     if(!hasTargetBeenDetected(owner, target)){
       return ActionStatus.FAILED;
     }
@@ -184,11 +169,10 @@ export class ActionPhysicalAttacks extends Action {
     owner.force = 0;
     owner.speed = 0;
 
-    if(!owner.combatRound){
+    if(!combatRound){
       return ActionStatus.FAILED;
     }
 
-    const combatRound = owner.combatRound;
     if(!combatRound.roundPaused) {
       const featId = combatRound.action?.featId || 0;
 

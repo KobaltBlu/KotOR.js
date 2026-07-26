@@ -43,6 +43,7 @@ import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { CombatRound } from "@/combat/CombatRound";
 import { findMostDamagingMelee, findMostDamagingRanged } from "@/combat/equip-most-damaging";
 import { BitWise } from "@/utility/BitWise";
+import { testStringAgainstPattern, ASSOCIATE_LISTEN_PATTERNS } from "@/utility/listen-pattern";
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 import { ExperienceType } from "@/enums/engine/ExperienceType";
@@ -2518,19 +2519,39 @@ NWScriptDefK1.Actions = {
     comment: "177: * Returns TRUE if sStringToTest matches sPattern.\n",
     name: "TestStringAgainstPattern",
     type: NWScriptDataType.INTEGER,
-    args: [NWScriptDataType.STRING, NWScriptDataType.STRING]
+    args: [NWScriptDataType.STRING, NWScriptDataType.STRING],
+    action: function(this: NWScriptInstance, args: [string, string]){
+      // NWScript arg order: sPattern, sStringToTest
+      const result = testStringAgainstPattern(args[0] || '', args[1] || '');
+      this.matchedSubstrings = result.matched ? result.substrings : [];
+      return result.matched ? NW_TRUE : NW_FALSE;
+    }
   },
   178:{
     comment: "178: Get the appropriate matched string (this should only be used in\nOnConversation scripts).\n* Returns the appropriate matched string, otherwise returns ''\n",
     name: "GetMatchedSubstring",
     type: NWScriptDataType.STRING,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      const idx = args[0] | 0;
+      if(!this.matchedSubstrings || idx < 0 || idx >= this.matchedSubstrings.length){
+        return '';
+      }
+      return this.matchedSubstrings[idx];
+    }
   },
   179:{
     comment: "179: Get the number of string parameters available.\n* Returns -1 if no string matched (this could be because of a dialogue event)\n",
     name: "GetMatchedSubstringsCount",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      if(!this.matchedSubstrings || this.matchedSubstrings.length === 0){
+        // Retail: -1 when no string matched (e.g. dialogue click event)
+        return -1;
+      }
+      return this.matchedSubstrings.length;
+    }
   },
   180:{
     comment: "180: * Create a Visual Effect that can be applied to an object.\n- nVisualEffectId\n- nMissEffect: if this is TRUE, a random vector near or past the target will\nbe generated, on which to play the effect\n",
@@ -2900,10 +2921,9 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
-        this.caller.actionQueue.add( new GameState.ActionFactory.ActionPauseDialog() );
-      }
-      console.log('script', this.name, 'PauseConversation', this.caller);
+      // Retail ExecuteCommandActionPauseConversation @ 0052d330 — sets
+      // field15_0x50 immediately (does not AddAction). Resume stays queued.
+      GameState.CutsceneManager.pauseConversation();
     }
   },
   206:{
@@ -3313,7 +3333,24 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return GameState.PartyManager.party[0];
+      // Retail: PC (listener) in the active conversation; leader fallback.
+      const cm = GameState.CutsceneManager;
+      if(cm?.active && cm.dialog){
+        const listener = cm.listener;
+        if(BitWise.InstanceOfObject(listener, ModuleObjectType.ModuleObject) && (listener as any).isPlayer){
+          return listener;
+        }
+        const owner = cm.owner;
+        if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleObject) && (owner as any).isPlayer){
+          return owner;
+        }
+        // Prefer party member acting as listener
+        if(BitWise.InstanceOfObject(listener, ModuleObjectType.ModuleCreature) &&
+          GameState.PartyManager?.party?.indexOf(listener as any) >= 0){
+          return listener;
+        }
+      }
+      return GameState.PartyManager?.party?.[0] || undefined;
     }
   },
   239:{
@@ -4460,7 +4497,18 @@ NWScriptDefK1.Actions = {
     comment: "327: Initialise oTarget to listen for the standard Associates commands.\n",
     name: "SetAssociateListenPatterns",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT]
+    args: [NWScriptDataType.OBJECT],
+    action: function(this: NWScriptInstance, args: [ModuleObject]){
+      const target = args[0] || this.caller;
+      if(!BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
+        return;
+      }
+      target.setListening(true);
+      for(let i = 0; i < ASSOCIATE_LISTEN_PATTERNS.length; i++){
+        const p = ASSOCIATE_LISTEN_PATTERNS[i];
+        target.setListeningPattern(p.pattern, p.number);
+      }
+    }
   },
   328:{
     comment: "328: Get the last weapon that oCreature used in an attack.\n* Returns OBJECT_INVALID if oCreature did not attack, or has no weapon equipped.\n",
@@ -6722,11 +6770,20 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [ModuleObject, number, number, number]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModulePlaceable)){
-        this.caller.attackCreature(args[0], undefined, true, args[3], GameState.TwoDAManager.datatables.get('animations').rows[args[1]].name, args[2]);
-      }else{
-        console.error('attackCreature', args[0]);
+      // Retail ExecuteCommandCutsceneAttack @ 0052e890 → AddCutsceneAttackActions @ 004f9fb0
+      // Caller must be a creature; target validated later in ResolveAttack (creature/door/placeable).
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
       }
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return;
+      }
+      (this.caller as ModuleCreature).addCutsceneAttackActions(
+        args[0],
+        args[1] | 0,
+        args[2] as AttackResult,
+        args[3] | 0
+      );
     }
   },
   504:{
@@ -6777,7 +6834,24 @@ NWScriptDefK1.Actions = {
     comment: "507: CutsceneMoveToPoint\nUsed by the cutscene system to allow designers to script combat\n",
     name: "CutsceneMove",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.OBJECT, NWScriptDataType.VECTOR, NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.OBJECT, NWScriptDataType.VECTOR, NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [ModuleObject, THREE.Vector3, number]){
+      // Retail ExecuteCommandCutsceneMove @ 0052e950 → AddCutsceneMoveActions @ 004fa050
+      // Caller (AssignCommand subject) moves toward oTarget / vPosition.
+      if(!BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
+        return;
+      }
+      const dest = args[1];
+      if(!dest){ return; }
+      const destObj = BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)
+        ? args[0]
+        : undefined;
+      (this.caller as ModuleCreature).addCutsceneMoveActions(
+        destObj,
+        { x: dest.x, y: dest.y, z: dest.z },
+        args[2] ? 1 : 0
+      );
+    }
   },
   508:{
     comment: "508: EnableVideoEffect\nEnables the video frame buffer effect specified by nEffectType, which is\nan index into VideoEffects.2da. This video effect will apply indefinitely,\nand so it should *always* be cleared by a call to DisableVideoEffect().\n",
@@ -8973,7 +9047,14 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      return (GameState.Mode == EngineMode.DIALOG) ? NW_TRUE : NW_FALSE;
+      // Active cutscene/dialog OR bark-style conversation still running.
+      if(GameState.CutsceneManager?.active && GameState.CutsceneManager?.dialog && !GameState.CutsceneManager?.ended){
+        return NW_TRUE;
+      }
+      if(GameState.Mode == EngineMode.DIALOG){
+        return NW_TRUE;
+      }
+      return NW_FALSE;
     }
   },
   702:{
@@ -9615,7 +9696,10 @@ NWScriptDefK1.Actions = {
     comment: "757: CancelPostDialogCharacterSwitch()\nIf a dialog has been started by an NPC on a Non PartyMemeberCanInteract object\ncalling this function will cancel the Post Dialog switching back to the NPC\nthat did the initiating.\n",
     name: "CancelPostDialogCharacterSwitch",
     type: NWScriptDataType.VOID,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      GameState.CutsceneManager?.cancelPostDialogCharacterSwitch?.();
+    }
   },
   758:{
     comment: "758: SetMaxHitPoints\nSet the maximum hitpoints of oObject\nThe objects maximum AND current hitpoints will be nMaxHP after the function is called\n",

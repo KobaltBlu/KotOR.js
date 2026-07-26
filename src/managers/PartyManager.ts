@@ -1399,6 +1399,12 @@ export class PartyManager {
     }
      
     const oldPC = PartyManager.Player;
+    const oldNpcId = typeof oldPC?.npcId === 'number' ? oldPC.npcId : -1;
+    // While a conversation is active, schedule restore of the prior controlled
+    // character at dialog end (CancelPostDialogCharacterSwitch clears it).
+    if(GameState.CutsceneManager?.active){
+      GameState.CutsceneManager.schedulePostDialogCharacterSwitch(oldNpcId);
+    }
     PartyManager.Player = partyMember;
 
     if(PartyManager.Player.isPlayer && npcId >= 0){

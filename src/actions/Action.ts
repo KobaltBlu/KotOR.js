@@ -64,9 +64,6 @@ export class Action {
   /** Associated combat action data */
   combatAction: ICombatAction;
 
-  /** Reference to parent cutscene attack action */
-  isCutsceneAttack: Action;
-
   /** The queue this action belongs to */
   queue: ActionQueue;
 

@@ -2274,7 +2274,7 @@ export class ModuleObject {
    * @param conversation 
    * @returns 
    */
-  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined): boolean {
+  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, _matchedSubstrings: string[] = []): boolean {
     //stub
     return false;
   }
@@ -3811,13 +3811,13 @@ export class ModuleObject {
   }
 
   /**
-   * Attack a creature
-   * @param target 
-   * @param feat 
-   * @param isCutsceneAttack 
-   * @param attackDamage 
-   * @param attackAnimation 
-   * @param attackResult 
+   * Attack a creature. CutsceneAttack uses ModuleCreature.addCutsceneAttackActions.
+   * @param target
+   * @param feat
+   * @param isCutsceneAttack - legacy; when true delegates to addCutsceneAttackActions
+   * @param attackDamage
+   * @param attackAnimation - animations.2da row when cutscene
+   * @param attackResult
    */
   attackCreature(target: ModuleObject, feat?: any, isCutsceneAttack: boolean = false, attackDamage:number = 0, attackAnimation?: any, attackResult?: any) {
     console.warn("Method not implemented.", this.tag, target);

@@ -472,6 +472,11 @@ export class DLGNode {
   }
 
   getVoiceResRef(): string {
+    // Retail SoundExists: 0 → no VO playback (even if Sound/VO_ResRef strings present).
+    // Default when field absent is 0x80; alien VO success sets bits via | 3.
+    if((this.soundExists >>> 0) === 0){
+      return '';
+    }
     if (this.sound != '') {
       return this.sound;
     }else if (this.vo_resref != '') {
@@ -530,7 +535,7 @@ export class DLGNode {
     };
   }
 
-  static FromDialogStruct( struct: GFFStruct, dialog: DLGObject ){
+  static FromDialogStruct( struct: GFFStruct, dialog: DLGObject, defaultUnsetDelay?: number ){
     let node = new DLGNode(dialog);
     node.setDialog(dialog);
 
@@ -956,7 +961,7 @@ export class DLGNode {
     node.resolveAlienVO(dialog);
 
     // Retail CSWSDialog::LoadDialogBase fade / delay / WaitFlags mutations
-    node.applyLoadDialogBaseMutations(dialog, fadeTypePresent);
+    node.applyLoadDialogBaseMutations(dialog, fadeTypePresent, defaultUnsetDelay);
 
     if(struct.hasField('NodeUnskippable')){
       node.skippable = !struct.getFieldByLabel('NodeUnskippable').getValue();
@@ -1043,10 +1048,19 @@ export class DLGNode {
 
   /**
    * Retail CSWSDialog::LoadDialogBase post-load mutations for Delay, WaitFlags, and fade fields.
+   * @param defaultUnsetDelay — DelayEntry for entries, DelayReply for replies.
    */
-  applyLoadDialogBaseMutations(dialog: DLGObject, fadeTypePresent: boolean = true){
+  applyLoadDialogBaseMutations(
+    dialog: DLGObject,
+    fadeTypePresent: boolean = true,
+    defaultUnsetDelay?: number
+  ){
     const hasSound = !!(this.sound || this.vo_resref);
-    const delayEntry = (dialog?.delayEntry ?? 0) >>> 0;
+    const delayDefault = (
+      typeof defaultUnsetDelay === 'number'
+        ? defaultUnsetDelay
+        : (dialog?.delayEntry ?? 0)
+    ) >>> 0;
     // Normalize in case callers stored a signed -1 from a bitwise op
     this.delay = this.delay >>> 0;
 
@@ -1055,10 +1069,10 @@ export class DLGNode {
         if(this.waitFlags === 0){
           // leave delay unset; SendDialogEntry will use spoken-time estimate
         }else{
-          this.delay = delayEntry;
+          this.delay = delayDefault;
         }
       }else{
-        this.delay = delayEntry;
+        this.delay = delayDefault;
         if(this.waitFlags === 0){
           this.waitFlags = DLGNode.WAIT_VOICE;
         }

@@ -18,6 +18,7 @@
     "generate-manifest": "node scripts/generate-manifest.js",
     "compare-saves": "tsx scripts/compare-saves.ts",
     "export-mdl-ascii": "tsx scripts/export-mdl-ascii.ts",
+    "export-dlg-json": "tsx scripts/export-dlg-json.ts",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
     "test": "jest --verbose --coverage --no-cache ./src/tests",
     "test:upgrade": "jest --config jest.upgrade.config.js --no-cache"

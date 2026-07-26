@@ -2,7 +2,7 @@
  * CutsceneManager dialog delay helpers.
  * @jest-environment node
  */
-import { describe, expect, test, jest } from '@jest/globals';
+import { describe, expect, test, jest, beforeEach, afterEach } from '@jest/globals';
 
 jest.mock('@/GameState', () => ({
   GameState: {
@@ -79,6 +79,7 @@ jest.mock('@/resource/DLGNode', () => {
 import { CutsceneManager } from '@/managers/CutsceneManager';
 import { DLGNode } from '@/resource/DLGNode';
 import { CutsceneMode } from '@/enums/dialog/CutsceneMode';
+import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
 
 describe('CutsceneManager.computeEntryDelaySeconds', () => {
   test('floors spoken estimate to at least 0.01', () => {
@@ -103,5 +104,145 @@ describe('CutsceneManager.computeEntryDelaySeconds', () => {
     entry.vo_resref = '';
     const expected = Math.max(0.01, 'Hi'.length * 0.11 + 1.0);
     expect(CutsceneManager.computeEntryDelaySeconds(entry)).toBeCloseTo(expected, 5);
+  });
+});
+
+describe('CutsceneManager dialog talk/listen defaults (SetDialogAnimations @ 004d8bd0)', () => {
+  test('healthy speaker/listener → TALK_NORMAL / LISTEN', () => {
+    const actor = { isInjured: () => false } as any;
+    expect(CutsceneManager.getDialogTalkAnimation(actor)).toBe(ModuleCreatureAnimState.TALK_NORMAL);
+    expect(CutsceneManager.getDialogListenAnimation(actor)).toBe(ModuleCreatureAnimState.LISTEN);
+  });
+
+  test('injured speaker/listener → TALK_INJURED / LISTEN_INJURED', () => {
+    const actor = { isInjured: () => true } as any;
+    expect(CutsceneManager.getDialogTalkAnimation(actor)).toBe(ModuleCreatureAnimState.TALK_INJURED);
+    expect(CutsceneManager.getDialogListenAnimation(actor)).toBe(ModuleCreatureAnimState.LISTEN_INJURED);
+  });
+
+  test('undefined actor defaults to healthy talk/listen', () => {
+    expect(CutsceneManager.getDialogTalkAnimation(undefined)).toBe(ModuleCreatureAnimState.TALK_NORMAL);
+    expect(CutsceneManager.getDialogListenAnimation(undefined)).toBe(ModuleCreatureAnimState.LISTEN);
+  });
+
+  test('canPlayDialogAnimations gates dead/debilitated (CanPlayDialogAnimations @ 004dfbe0)', () => {
+    expect(CutsceneManager.canPlayDialogAnimations(undefined)).toBe(false);
+    expect(CutsceneManager.canPlayDialogAnimations({
+      isDead: () => true,
+      isDebilitated: () => false,
+    } as any)).toBe(false);
+    expect(CutsceneManager.canPlayDialogAnimations({
+      isDead: () => false,
+      isDebilitated: () => true,
+    } as any)).toBe(false);
+    expect(CutsceneManager.canPlayDialogAnimations({
+      isDead: () => false,
+      isDebilitated: () => false,
+    } as any)).toBe(true);
+  });
+});
+
+describe('CutsceneManager pause/resume pending (UpdateDialog @ 004cd580)', () => {
+  beforeEach(() => {
+    CutsceneManager.active = true;
+    CutsceneManager.dialog = { stuntActors: new Map() } as any;
+    CutsceneManager.paused = false;
+    CutsceneManager.clearPendingDialog();
+    CutsceneManager.currentEntry = null as any;
+    CutsceneManager.owner = undefined as any;
+  });
+
+  afterEach(() => {
+    CutsceneManager.clearPendingDialog();
+    CutsceneManager.paused = false;
+    CutsceneManager.active = false;
+    CutsceneManager.dialog = undefined as any;
+    CutsceneManager.currentEntry = null as any;
+  });
+
+  test('resume clears pause without flushing pending (AIActionResumeDialog)', () => {
+    CutsceneManager.pauseConversation();
+    CutsceneManager.pendingAdvance = true;
+    CutsceneManager.resumeConversation();
+    expect(CutsceneManager.paused).toBe(false);
+    expect(CutsceneManager.pendingAdvance).toBe(true);
+  });
+
+  test('showEntry while paused stashes entry (SendDialogEntry field14)', () => {
+    CutsceneManager.paused = true;
+    const entry = { repliesShown: false } as any;
+    CutsceneManager.showEntry(entry);
+    expect(CutsceneManager.pendingAdvance).toBe(true);
+    expect(CutsceneManager.pendingEntry).toBe(entry);
+    expect(CutsceneManager.currentEntry).toBeFalsy();
+  });
+
+  test('flushPendingDialog shows stashed entry when unpaused', () => {
+    const entry = { repliesShown: false } as any;
+    CutsceneManager.pendingAdvance = true;
+    CutsceneManager.pendingEntry = entry;
+    const spy = jest.spyOn(CutsceneManager, 'showEntry').mockImplementation(() => {});
+    CutsceneManager.flushPendingDialog();
+    expect(spy).toHaveBeenCalledWith(entry);
+    expect(CutsceneManager.pendingAdvance).toBe(false);
+    expect(CutsceneManager.pendingEntry).toBeUndefined();
+    spy.mockRestore();
+  });
+
+  test('entry-complete pending replies flush via showReplies (field14 == 0xFFFFFFFF)', () => {
+    const current = { repliesShown: false } as any;
+    CutsceneManager.currentEntry = current;
+    CutsceneManager.pendingAdvance = true;
+    CutsceneManager.pendingEntry = undefined;
+    const spy = jest.spyOn(CutsceneManager, 'showReplies').mockImplementation(() => {});
+    CutsceneManager.flushPendingDialog();
+    expect(spy).toHaveBeenCalledWith(current);
+    expect(current.repliesShown).toBe(true);
+    expect(CutsceneManager.pendingAdvance).toBe(false);
+    spy.mockRestore();
+  });
+
+  test('flushPendingDialog is a no-op while paused', () => {
+    CutsceneManager.paused = true;
+    CutsceneManager.pendingAdvance = true;
+    const entry = { repliesShown: false } as any;
+    CutsceneManager.pendingEntry = entry;
+    const showEntrySpy = jest.spyOn(CutsceneManager, 'showEntry').mockImplementation(() => {});
+    const showRepliesSpy = jest.spyOn(CutsceneManager, 'showReplies').mockImplementation(() => {});
+    CutsceneManager.flushPendingDialog();
+    expect(showEntrySpy).not.toHaveBeenCalled();
+    expect(showRepliesSpy).not.toHaveBeenCalled();
+    expect(CutsceneManager.pendingAdvance).toBe(true);
+    showEntrySpy.mockRestore();
+    showRepliesSpy.mockRestore();
+  });
+
+  test('near-zero-delay entry while paused defers replies until resume+update', () => {
+    const current = {
+      repliesShown: false,
+      update: () => true,
+      checkList: {},
+    } as any;
+    CutsceneManager.currentEntry = current;
+    CutsceneManager.paused = true;
+    jest.spyOn(CutsceneManager, 'updateCamera').mockImplementation(() => {});
+    jest.spyOn(CutsceneManager, 'pollParticipantAnimationWait').mockImplementation(() => {});
+    const showRepliesSpy = jest.spyOn(CutsceneManager, 'showReplies').mockImplementation(() => {});
+
+    CutsceneManager.update(0.016);
+    expect(CutsceneManager.pendingAdvance).toBe(true);
+    expect(CutsceneManager.pendingEntry).toBeUndefined();
+    expect(showRepliesSpy).not.toHaveBeenCalled();
+
+    CutsceneManager.resumeConversation();
+    expect(showRepliesSpy).not.toHaveBeenCalled();
+
+    CutsceneManager.update(0.016);
+    expect(showRepliesSpy).toHaveBeenCalledWith(current);
+    expect(CutsceneManager.pendingAdvance).toBe(false);
+
+    showRepliesSpy.mockRestore();
+    (CutsceneManager.updateCamera as any).mockRestore?.();
+    (CutsceneManager.pollParticipantAnimationWait as any).mockRestore?.();
   });
 });

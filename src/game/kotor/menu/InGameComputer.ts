@@ -1,4 +1,3 @@
-import { AudioLoader } from "@/audio/AudioLoader";
 import { GameState } from "@/GameState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameMenu } from "@/gui";
@@ -6,16 +5,21 @@ import type { GUIListBox, GUILabel } from "@/gui";
 import { ModuleObject } from "@/module";
 import { DLGObject } from "@/resource/DLGObject";
 import { DLGNode } from "@/resource/DLGNode";
-import { DLGConversationType } from "@/enums/dialog/DLGConversationType";
-import { DLGCameraAngle } from "@/enums/dialog/DLGCameraAngle";
-import { AudioEngine } from "@/audio/AudioEngine";
 import { ConversationState } from "@/enums/dialog/ConversationState";
+import { SkillType } from "@/enums/nwscript/SkillType";
+import { AudioEmitter } from "@/audio/AudioEmitter";
+import { AudioEngine } from "@/audio/AudioEngine";
+import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
+import { TextureLoader } from "@/loaders";
+import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 
 /**
  * InGameComputer class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
+ * Retail CSWGuiDialogComputer — computer terminal dialog UI.
+ * SetType backgrounds follow K1 @ 006a8490 (Aspyr TSL SetType @ 005b1ef0 is a stub).
+ * UpdateSkills @ 005b1b10; ambient computer_lp_04 @ ctor 005b0d70.
+ *
  * @file InGameComputer.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -44,7 +48,7 @@ export class InGameComputer extends GameMenu {
 
   owner: ModuleObject;
   listener: ModuleObject;
-  
+
   ended: boolean = false;
 
   dialog: DLGObject;
@@ -55,6 +59,11 @@ export class InGameComputer extends GameMenu {
   state: number = 0;
 
   conversation_name: string = '';
+  computerType: number = 0;
+
+  /** Retail looping ambient — volume 0x1e (30). */
+  private ambientEmitter: AudioEmitter | undefined;
+  private ambientPlaying: boolean = false;
 
   constructor(){
     super();
@@ -66,7 +75,7 @@ export class InGameComputer extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
       this.LB_MESSAGE.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
       this.LB_REPLIES.setTextColor(this.LB_MESSAGE.defaultColor.r, this.LB_MESSAGE.defaultColor.g, this.LB_MESSAGE.defaultColor.b);
       this.LB_REPLIES.onClicked = (_entry: DLGNode, _control: any, index: number) => {
@@ -77,9 +86,121 @@ export class InGameComputer extends GameMenu {
     });
   }
 
+  /**
+   * Retail K1 CSWGuiDialogComputer::SetType @ 006a8490 —
+   * comptypes.2da[ComputerType].ComputerBackground → panel background.
+   * Out-of-range index clamps to row 0.
+   */
+  setType(computerType: number = 0) {
+    this.computerType = computerType & 0xff;
+    const table = GameState.TwoDAManager.datatables.get('comptypes');
+    if(!table){
+      return;
+    }
+    let rowIndex = this.computerType;
+    const rowCount = table.RowCount | 0;
+    if(rowCount <= 0){
+      return;
+    }
+    if(rowIndex >= rowCount){
+      rowIndex = 0;
+    }
+    const row = table.getByID(rowIndex) || table.rows[rowIndex];
+    if(!row){
+      return;
+    }
+    const bg = String(
+      row.ComputerBackground ?? row.computerbackground ?? row.computerBackground ?? ''
+    ).trim();
+    if(!bg){
+      return;
+    }
+    this.background = bg;
+    void this.refreshBackgroundTexture(bg);
+  }
+
+  private async refreshBackgroundTexture(resRef: string) {
+    try {
+      const texture: OdysseyTexture = await TextureLoader.tpcLoader.fetch(resRef);
+      if(!texture){ return; }
+      if(this.backgroundMaterial?.uniforms?.map){
+        this.backgroundMaterial.uniforms.map.value = texture;
+      }
+    } catch (e) {
+      console.warn('InGameComputer.setType: failed to load background', resRef, e);
+    }
+  }
+
+  /**
+   * Retail UpdateSkills @ 005b1b10 — Computer Use / Repair ranks and
+   * k_computer_spike / k_repair_part stack totals for party leader.
+   */
+  updateSkills() {
+    const leader =
+      GameState.PartyManager?.party?.[0] ||
+      GameState.getCurrentPlayer?.();
+    const computerRank = leader?.getSkillRank?.(SkillType.COMPUTER_USE) ?? 0;
+    const repairRank = leader?.getSkillRank?.(SkillType.REPAIR) ?? 0;
+
+    let spikes = 0;
+    let parts = 0;
+    const inventory = GameState.InventoryManager?.getInventory?.() || [];
+    for(let i = 0; i < inventory.length; i++){
+      const item = inventory[i];
+      const tag = String(item?.getTag?.() || '').toLowerCase();
+      const stack = item?.getStackSize?.() ?? 1;
+      if(tag === 'k_computer_spike'){
+        spikes += stack;
+      }else if(tag === 'k_repair_part'){
+        parts += stack;
+      }
+    }
+
+    this.LBL_COMP_SKILL_VAL?.setText?.(String(computerRank | 0));
+    this.LBL_REP_SKILL_VAL?.setText?.(String(repairRank | 0));
+    this.LBL_COMP_SPIKES_VAL?.setText?.(String(spikes | 0));
+    this.LBL_REP_UNITS_VAL?.setText?.(String(parts | 0));
+  }
+
+  private ensureAmbientEmitter() {
+    if(this.ambientEmitter){ return this.ambientEmitter; }
+    const engine = AudioEngine.GetAudioEngine();
+    if(!engine){ return undefined; }
+    this.ambientEmitter = new AudioEmitter(engine, AudioEngineChannel.GUI);
+    this.ambientEmitter.isLooping = true;
+    this.ambientEmitter.setVolume(0x1e);
+    void this.ambientEmitter.load();
+    return this.ambientEmitter;
+  }
+
+  /** Retail computer_lp_04 loop @ volume 0x1e. */
+  startAmbient() {
+    if(this.ambientPlaying){ return; }
+    const emitter = this.ensureAmbientEmitter();
+    if(!emitter){ return; }
+    this.ambientPlaying = true;
+    void emitter.playSound('computer_lp_04');
+  }
+
+  stopAmbient() {
+    if(!this.ambientPlaying && !this.ambientEmitter){ return; }
+    this.ambientPlaying = false;
+    this.ambientEmitter?.stop?.(0);
+  }
+
   show(){
     super.show();
     GameState.SetEngineMode(EngineMode.DIALOG);
+    this.startAmbient();
+  }
+
+  hide(){
+    super.hide();
+  }
+
+  close(){
+    this.stopAmbient();
+    super.close();
   }
 
   setReplies(replies: DLGNode[]) {
@@ -88,27 +209,47 @@ export class InGameComputer extends GameMenu {
       .map((r, i) => (i + 1) + '. ' + r.getCompiledString());
     this.LB_REPLIES.setItems(texts);
     this.LB_REPLIES.show();
+    this.updateSkills();
   }
 
   setEntry(entry: DLGNode) {
     this.currentEntry = entry;
     this.LB_MESSAGE.setItem(entry.getCompiledString() || null);
     this.LB_MESSAGE.show();
+    this.updateSkills();
   }
 
   setDialogMode(state: ConversationState) {
-    // if(state == ConversationState.LISTENING_TO_SPEAKER){
-    //   this.LB_MESSAGE.show();
-    //   this.LB_MESSAGE.clearItems();
-    //   if (!!GameState.CutsceneManager.lastSpokenString) {
-    //     this.LB_MESSAGE.addItem(GameState.CutsceneManager.lastSpokenString);
-    //   }
-    //   this.LB_MESSAGE.updateList();
-    // }else{
-    //   this.LB_MESSAGE.show();
-    //   this.LB_MESSAGE.clearItems();
-    //   this.LB_MESSAGE.updateList();
-    // }
+    // Retail computer panel keeps message + replies listboxes; toggle replies
+    // visibility for listening vs PC choice (mirrors InGameDialog layout swap).
+    if(state == ConversationState.LISTENING_TO_SPEAKER){
+      this.LB_REPLIES?.hide?.();
+      this.LB_MESSAGE?.show?.();
+      this.updateTextPosition(true);
+    }else{
+      this.LB_REPLIES?.show?.();
+      this.updateTextPosition(false);
+    }
+    this.updateSkills();
   }
-  
+
+  /**
+   * Layout tweak for listening vs choice — positions message list near bottom
+   * while listening and leaves room for replies when choosing.
+   */
+  updateTextPosition(isListening: boolean = false) {
+    if(!this.LB_MESSAGE){ return; }
+    try{
+      const panel = this.LB_MESSAGE as any;
+      if(panel.extent && typeof panel.calculatePosition === 'function'){
+        // Soft offset: listening keeps message mid-panel; choice nudges up.
+        if(typeof panel.widget?.position?.y === 'number'){
+          panel.widget.position.y = isListening ? 0 : 40;
+        }
+      }
+    }catch(_e){
+      // Layout controls may not be fully initialized in tests.
+    }
+  }
+
 }

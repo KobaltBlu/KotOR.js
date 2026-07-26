@@ -886,12 +886,12 @@ export class CombatRound {
    * Retail CSWSCreature::ResolveAttack @ 005bba80
    */
   resolveAttack(creature: ModuleCreature, combatAction: CombatRoundAction){
-    if(!combatAction || combatAction.resultsCalculated)
+    if(!combatAction || combatAction.resolved)
       return;
 
     creature.weaponPowered(true);
 
-    combatAction.resultsCalculated = true;
+    combatAction.resolved = true;
     // Retail ResolveAttack @ 005bba80 — GetAttackTarget (field66_0x504) = attackee
     if(combatAction.target){
       creature.combatData.lastAttackTarget = combatAction.target;
@@ -901,7 +901,26 @@ export class CombatRound {
     this.offHandTaken = false;
     this.pendingDischargeVisuals.length = 0;
 
-    if(!combatAction.isCutsceneAttack){
+    // Retail resultsCalculated (field31_0x74): keep scripted result/damage; still fill AttackList
+    if(combatAction.resultsCalculated){
+      combatAction.calculateAttackAnimation();
+      const attack = this.attackList[0];
+      if(attack){
+        // Retail ResolveAttackRoll @ 005baca0 — stamp attack_result when resultsCalculated
+        attack.attackResult = combatAction.attackResult;
+        attack.reactObject = combatAction.target;
+        if(
+          attack.attackResult == AttackResult.HIT_SUCCESSFUL ||
+          attack.attackResult == AttackResult.CRITICAL_HIT ||
+          attack.attackResult == AttackResult.AUTOMATIC_HIT
+        ){
+          attack.attackWeapon = creature.equipment.RIGHTHAND;
+          // Retail ResolveDamage @ 005bb440 — SetBaseDamage(scripted)
+          attack.damageList[DamageType.BASE].damageValue = combatAction.attackDamage;
+        }
+        this.currentAttack = Math.max(this.currentAttack, 1);
+      }
+    }else{
       combatAction.attackResult = (hasAssuredHit) ? AttackResult.AUTOMATIC_HIT : AttackResult.MISS;
       combatAction.attackDamage = 0;
 
@@ -917,34 +936,26 @@ export class CombatRound {
       }
     }
 
-    combatAction.target.combatData.lastAttacker = creature;
-    creature.combatData.lastAttackResult = combatAction.attackResult;
-    combatAction.target.onAttacked(combatAction.actionType);
+    if(combatAction.target){
+      combatAction.target.combatData.lastAttacker = creature;
+      creature.combatData.lastAttackResult = combatAction.attackResult;
+      combatAction.target.onAttacked(combatAction.actionType);
+    }
 
     this.calculateRoundAnimations(creature, combatAction);
 
-    let attackAnimation = creature.model.odysseyAnimationMap.get(combatAction.animationName.toLowerCase().trim());
-    let attackDamageDelay = attackAnimation?.getDamageDelay() || 0;
+    let attackAnimation = creature.model?.odysseyAnimationMap?.get?.(
+      (combatAction.animationName || '').toLowerCase().trim()
+    );
+    let attackDamageDelay = attackAnimation?.getDamageDelay?.() || 0;
 
     // Schedule damage for the animation Hit event instead of applying instantly
     const damageDelayMs = Math.max(0, (attackDamageDelay || 0.5) * 1000);
 
-    if(combatAction.isCutsceneAttack){
+    if(combatAction.resultsCalculated){
       const attack = this.attackList[0];
       if(attack){
-        attack.attackResult = combatAction.attackResult;
-        attack.reactObject = this.action.target;
-        if(
-          attack.attackResult == AttackResult.HIT_SUCCESSFUL ||
-          attack.attackResult == AttackResult.CRITICAL_HIT ||
-          attack.attackResult == AttackResult.AUTOMATIC_HIT
-        ){
-          attack.attackWeapon = creature.equipment.RIGHTHAND;
-          attack.attackResult = combatAction.attackResult;
-          attack.damageList[DamageType.BASE].damageValue = combatAction.attackDamage;
-        }
         attack.damageApplyDelay = damageDelayMs;
-        this.currentAttack = Math.max(this.currentAttack, 1);
       }
     }else{
       for(let i = 0; i < this.currentAttack; i++){
@@ -1890,12 +1901,19 @@ export class CombatRound {
     }
 
     // Prefer anim name already chosen by resolveRangedAttack (feat-aware + discharge row)
+    // or CutsceneAttack calculateAttackAnimation (GetClientMeleeAnimation row).
+    if(combatAction.resultsCalculated){
+      combatAction.calculateAttackAnimation();
+    }
     if(combatAction.animationName){
       this.action.animationName = combatAction.animationName;
     }else{
       this.action.animationName = attackKey+weaponWield+'a'+attackType;
     }
     this.action.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(this.action.animationName);
+    if(combatAction.resultsCalculated && combatAction.twoDAAnimation){
+      this.action.twoDAAnimation = combatAction.twoDAAnimation;
+    }
 
     const animLength = Math.max(
       1,
@@ -1933,99 +1951,71 @@ export class CombatRound {
       return ModuleCreatureAnimState.READY;
     };
 
-    if(combatAction.isCutsceneAttack){
+    const attackAnim = this.engaged && combatAction.animation === ModuleCreatureAnimState.ATTACK_DUELING
+      ? ModuleCreatureAnimState.ATTACK_DUELING
+      : ModuleCreatureAnimState.ATTACK;
 
-      if(creature){
-        creature.playTwoDAAnimation(combatAction.twoDAAnimation);
-        creature.animationState.index = ModuleCreatureAnimState.ATTACK;
+    if(creature){
+      creature.playTwoDAAnimation( combatAction.twoDAAnimation || this.action.twoDAAnimation );
+      creature.animationState.index = attackAnim;
+    }
+
+    const target = BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)
+      ? combatAction.target as ModuleCreature
+      : undefined;
+
+    if(target && !target.isDead?.() && !this.attacksIncludeKillingBlow()){
+      const reaction = pickReaction(combatAction.attackResult);
+      if(primary){
+        primary.reaxnAnimation = reaction;
+        primary.reaxnAnimLength = animLength;
+        primary.reaxnDelay = 0;
       }
 
-      if(combatAction.target){
-        const target: ModuleCreature = combatAction.target as any;
-        switch(combatAction.attackResult){
-          case AttackResult.HIT_SUCCESSFUL:
-          case AttackResult.CRITICAL_HIT:
-          case AttackResult.AUTOMATIC_HIT:
-            target.playTwoDAAnimation( target.getDamageAnimation( combatAction.animationName ) );
-            target.animationState.index = ModuleCreatureAnimState.DAMAGE;
-          break;
-          case AttackResult.PARRIED:
-            target.playTwoDAAnimation( target.getParryAnimation( combatAction.animationName ) );
-            target.animationState.index = ModuleCreatureAnimState.PARRY;
-          break;
-          default:
-            target.playTwoDAAnimation( target.getDamageAnimation( combatAction.animationName ) );
-            target.animationState.index = ModuleCreatureAnimState.DAMAGE;
-          break;
+      // Engaged (ResolveMeleeAnimations): CheckActionLengthAtTime or hit/parry always syncs
+      // Retail: resultsCalculated (param_5) ORs into CheckActionLengthAtTime for force-react
+      // Unengaged: only react if target idle/ready and targeting attacker
+      const engagedCanReact = !!(
+        this.engaged &&
+        target.combatRound &&
+        (
+          target.combatRound.checkActionLengthAtTime(creature, animLength, 0) ||
+          combatAction.resultsCalculated ||
+          combatAction.attackResult === AttackResult.HIT_SUCCESSFUL ||
+          combatAction.attackResult === AttackResult.CRITICAL_HIT ||
+          combatAction.attackResult === AttackResult.AUTOMATIC_HIT ||
+          combatAction.attackResult === AttackResult.PARRIED ||
+          combatAction.attackResult === AttackResult.DEFLECTED
+        )
+      );
+      const unengagedCanReact = !(
+        this.engaged
+      ) && (
+        (
+          target.animationState.index == ModuleCreatureAnimState.IDLE ||
+          target.animationState.index == ModuleCreatureAnimState.READY
+        ) &&
+        target.combatData.lastAttackTarget == creature
+      );
+
+      const shouldReact = engagedCanReact || unengagedCanReact;
+
+      if(shouldReact && reaction !== ModuleCreatureAnimState.READY){
+        if(reaction === ModuleCreatureAnimState.DAMAGE){
+          target.playTwoDAAnimation( target.getDamageAnimation( this.action.animationName ) );
+          target.animationState.index = ModuleCreatureAnimState.DAMAGE;
+        }else if(reaction === ModuleCreatureAnimState.PARRY){
+          target.playTwoDAAnimation( target.getParryAnimation( this.action.animationName ) );
+          target.animationState.index = ModuleCreatureAnimState.PARRY;
+        }else if(reaction === ModuleCreatureAnimState.DODGE){
+          target.playTwoDAAnimation( target.getDodgeAnimation( this.action.animationName ) );
+          target.animationState.index = ModuleCreatureAnimState.DODGE;
         }
-      }
-
-    }else{
-
-      const attackAnim = this.engaged && combatAction.animation === ModuleCreatureAnimState.ATTACK_DUELING
-        ? ModuleCreatureAnimState.ATTACK_DUELING
-        : ModuleCreatureAnimState.ATTACK;
-
-      if(creature){
-        creature.playTwoDAAnimation( combatAction.twoDAAnimation || this.action.twoDAAnimation );
-        creature.animationState.index = attackAnim;
-      }
-
-      const target = BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)
-        ? combatAction.target as ModuleCreature
-        : undefined;
-
-      if(target && !target.isDead?.() && !this.attacksIncludeKillingBlow()){
-        const reaction = pickReaction(combatAction.attackResult);
-        if(primary){
-          primary.reaxnAnimation = reaction;
-          primary.reaxnAnimLength = animLength;
-          primary.reaxnDelay = 0;
+        if(this.engaged && target.combatRound){
+          target.combatRound.decrementRoundLength(animLength);
         }
-
-        // Engaged (ResolveMeleeAnimations): CheckActionLengthAtTime or hit/parry always syncs
-        // Unengaged: only react if target idle/ready and targeting attacker
-        const engagedCanReact = !!(
-          this.engaged &&
-          target.combatRound &&
-          (
-            target.combatRound.checkActionLengthAtTime(creature, animLength, 0) ||
-            combatAction.attackResult === AttackResult.HIT_SUCCESSFUL ||
-            combatAction.attackResult === AttackResult.CRITICAL_HIT ||
-            combatAction.attackResult === AttackResult.AUTOMATIC_HIT ||
-            combatAction.attackResult === AttackResult.PARRIED ||
-            combatAction.attackResult === AttackResult.DEFLECTED
-          )
-        );
-        const unengagedCanReact = !(
-          this.engaged
-        ) && (
-          (
-            target.animationState.index == ModuleCreatureAnimState.IDLE ||
-            target.animationState.index == ModuleCreatureAnimState.READY
-          ) &&
-          target.combatData.lastAttackTarget == creature
-        );
-
-        const shouldReact = engagedCanReact || unengagedCanReact;
-
-        if(shouldReact && reaction !== ModuleCreatureAnimState.READY){
-          if(reaction === ModuleCreatureAnimState.DAMAGE){
-            target.playTwoDAAnimation( target.getDamageAnimation( this.action.animationName ) );
-            target.animationState.index = ModuleCreatureAnimState.DAMAGE;
-          }else if(reaction === ModuleCreatureAnimState.PARRY){
-            target.playTwoDAAnimation( target.getParryAnimation( this.action.animationName ) );
-            target.animationState.index = ModuleCreatureAnimState.PARRY;
-          }else if(reaction === ModuleCreatureAnimState.DODGE){
-            target.playTwoDAAnimation( target.getDodgeAnimation( this.action.animationName ) );
-            target.animationState.index = ModuleCreatureAnimState.DODGE;
-          }
-          if(this.engaged && target.combatRound){
-            target.combatRound.decrementRoundLength(animLength);
-          }
-        }else if(primary && this.engaged){
-          primary.reaxnAnimation = ModuleCreatureAnimState.READY;
-        }
+      }else if(primary && this.engaged){
+        primary.reaxnAnimation = ModuleCreatureAnimState.READY;
       }
     }
 
