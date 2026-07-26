@@ -614,11 +614,12 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     if(this.node.renderMode == 'Linked'){
       if(this.updateType == 'Lightning'){
         // Retail: (int)birthRate = bolt sample count (field4_0x58). Each sample → L/R verts.
+        // Mesh floor of 2 when authored rate is 0 (Linked needs at least one segment).
         const n = Math.max(
           2,
           Math.min(
             OdysseyEmitter3D.LIGHTNING_MAX_SAMPLES,
-            Math.floor(this.birthRate) || 10
+            Math.floor(this.birthRate)
           )
         );
         return n * 2;
@@ -1066,6 +1067,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     // SingleEmitter::Update @ 004979c0 — before Fountain/P2P birth loops
     if(this.node.updateMode == 'Single' && this.node.renderMode !== 'Linked'){
       this.tickSingle(delta);
+      this.updateEmitterOrientationMatrix();
       this.commitInheritPose(currentWorldPos, currentWorldQuat);
       return;
     }
@@ -1091,7 +1093,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.tickP2PGravity(delta, fountainBirthQuota);
         }
       }
-      this.updateAlignedToParticleDirMatrix();
+      this.updateEmitterOrientationMatrix();
       this.commitInheritPose(currentWorldPos, currentWorldQuat);
       return;
     }
@@ -1327,8 +1329,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         if(this.prevOffsets) this.prevOffsets.needsUpdate = true;
       }
 
-      if(this.node.flags.canInheritLocal && this._hasLastWorldPos){
-        // Retail moveParticleStandard bit 8 (without bit 6 INHERIT):
+      if(this.node.flags.canInheritLocal && !this.node.flags.canInherit && this._hasLastWorldPos){
+        // Retail moveParticleStandard bit 8 only when bit 6 INHERIT is unset @ 00492450:
         // particle += (object.pos − prevObject.pos). Emitter world delta matches a
         // placeable-rooted emitter. Do not transform/subtract — that scrambled spray
         // when pose scratches were also aliased (see _frameWorldPos).
@@ -1337,7 +1339,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
             this.offsets.setX(i, this.offsets.getX(i) + this._worldPosDelta.x);
             this.offsets.setY(i, this.offsets.getY(i) + this._worldPosDelta.y);
             this.offsets.setZ(i, this.offsets.getZ(i) + this._worldPosDelta.z);
-            if(this.prevOffsets && !this.node.flags.canInherit){
+            if(this.prevOffsets){
               this.prevOffsets.setX(i, this.prevOffsets.getX(i) + this._worldPosDelta.x);
               this.prevOffsets.setY(i, this.prevOffsets.getY(i) + this._worldPosDelta.y);
               this.prevOffsets.setZ(i, this.prevOffsets.getZ(i) + this._worldPosDelta.z);
@@ -1394,7 +1396,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       }
     }
 
-    this.updateAlignedToParticleDirMatrix();
+    this.updateEmitterOrientationMatrix();
 
     if(updatePositions)
       this.offsets.needsUpdate = true;
@@ -1603,12 +1605,17 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   }
 
   /**
-   * Retail RenderStandard Aligned_to_Particle_Dir @ 0048f040:
-   * quad axes from particle orientation quat (spawned as emitter world quat).
-   * Simplification: feed current emitter world orientation (static emitters / spread=0 match retail).
+   * Feed emitter world orientation into the shader `matrix` uniform.
+   * Retail RenderStandard @ 0048f040:
+   * - Aligned_to_Particle_Dir: particle orientation (approx. emitter world quat)
+   * - Billboard_to_Local_Z: emitter world quat (localZ branch uses field76_0x1a4)
    */
-  private updateAlignedToParticleDirMatrix(){
-    if(this.node.renderMode !== 'Aligned_to_Particle_Dir' || !this.material?.uniforms?.matrix){
+  private updateEmitterOrientationMatrix(){
+    const mode = this.node.renderMode;
+    if(
+      (mode !== 'Aligned_to_Particle_Dir' && mode !== 'Billboard_to_Local_Z') ||
+      !this.material?.uniforms?.matrix
+    ){
       return;
     }
     this.getWorldQuaternion(OdysseyEmitter3D._quat);
@@ -1634,11 +1641,13 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       target.z += 1;
     }
 
+    // Retail LightningEmitter::Update @ 00498b80: sampleCount = ftol(birthRate).
+    // Mesh floor of 2 keeps Linked L/R geometry valid when authored rate is 0.
     const sampleCount = Math.max(
       2,
       Math.min(
         OdysseyEmitter3D.LIGHTNING_MAX_SAMPLES,
-        Math.floor(this.birthRate) || 10
+        Math.floor(this.birthRate)
       )
     );
 

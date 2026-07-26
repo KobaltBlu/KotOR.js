@@ -397,11 +397,21 @@ export class ShaderOdysseyEmitter extends Shader {
                   worldZMatrix[3][2] = mvCenter.z;
                   gl_Position = projectionMatrix * worldZMatrix * ( vec4(scaledPos, 1.0) * rotationZ(rotate * age) );
                 #else
-                  // Billboard_to_Local_Z / default: camera-facing at world offset
-                  vec4 mvPos = viewMatrix * vec4(offset, 1.0);
-                  vec4 local = vec4(scaledPos, 1.0) * rotationZ(rotate * age);
-                  mvPos.xy += local.xy;
-                  gl_Position = projectionMatrix * mvPos;
+                  #ifdef Billboard_to_Local_Z
+                    // Retail RenderStandard localZ @ 0048f040: emitter world quat
+                    // (matrix) + particleRot about emitter Z. Plane = emitter XY.
+                    vec3 ex = matrix[0].xyz;
+                    vec3 ey = matrix[1].xyz;
+                    vec4 rotated = vec4(scaledPos, 1.0) * rotationZ(rotate * age);
+                    vec3 worldPos = offset + ex * rotated.x + ey * rotated.y;
+                    gl_Position = projectionMatrix * viewMatrix * vec4(worldPos, 1.0);
+                  #else
+                    // Default (other instanced modes): camera-facing at world offset
+                    vec4 mvPos = viewMatrix * vec4(offset, 1.0);
+                    vec4 local = vec4(scaledPos, 1.0) * rotationZ(rotate * age);
+                    mvPos.xy += local.xy;
+                    gl_Position = projectionMatrix * mvPos;
+                  #endif
                 #endif
               #endif
               }
