@@ -101,6 +101,21 @@ export class ActionItemCastSpell extends Action {
     // The action already held the wind-up through its conjure gate — retail
     // enters at the impact call, so only the projectile flight remains.
     spellCastInstance.conjureTime = 0;
+    // Stamp talent/combat targets before init so impact scripts see them
+    if(this.spell){
+      this.spell.oTarget = this.target;
+    }
+    const owner = this.owner as ModuleCreature;
+    if(owner.combatData){
+      owner.combatData.lastSpellTarget = this.target;
+    }
+    if(this.target){
+      if(this.target.combatData){
+        this.target.combatData.lastSpellAttacker = owner;
+      }
+      spellCastInstance.targetLocation.copy(this.target.position);
+    }
+    owner.spellTargetPosition.copy(spellCastInstance.targetLocation);
     this.owner.area.attachSpellInstance(spellCastInstance);
     spellCastInstance.init();
     this.spellCastInstance = spellCastInstance;

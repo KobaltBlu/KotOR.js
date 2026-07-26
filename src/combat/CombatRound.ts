@@ -39,13 +39,13 @@ import { signalRangedImpactVfx } from "@/combat/ranged-impact-vfx";
 import { getProjectileImpactPosition, spawnCombatProjectile } from "@/combat/combat-projectile";
 import { GameState } from "@/GameState";
 import { getAttackEffectBonus } from "@/effects/effect-bonuses";
-import { FeedbackOption } from "@/enums/engine/FeedbackOption";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import type { TalentFeat } from "@/talents";
 import { formatAttackSummaryFeedback, AttackSummaryStrRef } from "@/combat/attack-summary-feedback";
+import { shouldShowCombatFloaty } from "@/combat/combat-floaty";
 import * as THREE from 'three';
 
 const SPELL_FORCE_DEFLECTION = 162;
@@ -613,7 +613,8 @@ export class CombatRound {
       signalRangedImpactVfx(attack, owner);
     }
 
-    const showFloaty = GameState.FeedbackMessageManager.GetFeedbackTypeEnabled(FeedbackOption.FloatingNumbers);
+    // Retail OnApplyDamage / SignalMeleeDamage — floaty only for player attacker
+    const showFloaty = shouldShowCombatFloaty(owner);
 
     const tlkFloaty = (strRef: number) =>
       GameState.TLKManager.GetStringById(strRef)?.getDisplayText?.() ||
@@ -1824,10 +1825,10 @@ export class CombatRound {
     const targetCreature = BitWise.InstanceOfObject(combatAction.target, ModuleObjectType.ModuleCreature)
       ? combatAction.target as ModuleCreature
       : undefined;
-    // Retail ResolveAttackRoll → GetArmorClassVersus(defender, attacker, touch=0)
+    // Retail ResolveAttackRoll — AC only via GetArmorClassVersus on creatures; else 0
     const targetAC = targetCreature
       ? targetCreature.getArmorClassVersus(creature, false)
-      : combatAction.target.getAC();
+      : 0;
 
     attack.reactObject = combatAction.target;
     attack.attackWeapon = weapon;

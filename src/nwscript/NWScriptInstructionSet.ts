@@ -138,6 +138,7 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
   const action_definition: INWScriptDefAction = instruction.actionDefinition;
   const args: any[] = [];
 
+
   for(let i = 0, len = action_definition.args.length; i < len; i++){
     switch(action_definition.args[i]){
       case NWScriptDataType.OBJECT:
@@ -184,6 +185,7 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
   }else{
     console.warn(`NWScript Action ${action_definition.name} not found`, action_definition);
   }
+
 
 }
 
@@ -1136,7 +1138,6 @@ export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: N
   this.state.push(state);
   state.script.state = this.state.slice();
 
-  //console.log('STORE_STATE', state.script);
 
 }
 

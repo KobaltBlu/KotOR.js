@@ -51,8 +51,9 @@ function createLightUniformSet(): IOdysseyLightUniformSlot {
 
 /**
  * Dynamic lighting aligned with retail K1 LightManager / PartLight selection,
- * fade, multiplier, ambient flag, and quadratic attenuation. This manager
- * deliberately owns only Odyssey light data; no THREE.Light instances exist.
+ * fade, ambient flag, and quadratic attenuation. Shader RGB follows the VP
+ * path (fade×color / color; no PartLight.multiplier). This manager deliberately
+ * owns only Odyssey light data; no THREE.Light instances exist.
  */
 export class LightManager {
   /**
@@ -572,7 +573,7 @@ export class LightManager {
     this.appendUnique(dynamic, ambient);
     this.fillUniformSet(this.dynamicLights, dynamic);
 
-    // Bump materials: single prioritized dynamic light (fade×multiplier×color).
+    // Bump materials: single prioritized dynamic light (fade×color; VP-aligned).
     // Prefer the bump selection still present in the bound/fading pool.
     const bumpBound = this._bumpBoundScratch;
     bumpBound.length = 0;
@@ -642,7 +643,8 @@ export class LightManager {
 
   /**
    * Retail GetNearestLights: walk registration order, first 3 sphere overlaps.
-   * Color packing uses multiplier×rgb (no fade) — see packLightsForObject.
+   * Shader color packing uses authored rgb only (no fade / no multiplier) —
+   * VP-aligned; see packLightsForObject.
    * Returns a reused scratch array — copy if you need to retain across calls.
    */
   getLightsForObject(
@@ -704,7 +706,7 @@ export class LightManager {
     return h | 0;
   }
 
-  /** Pack GetNearestLights for one object (multiplier×color, no fade). */
+  /** Pack GetNearestLights for one object (authored color; VP-aligned). */
   packLightsForObject(
     position: THREE.Vector3,
     radius = LightManager.RETAIL_GOB_LIGHT_RADIUS
@@ -754,7 +756,7 @@ export class LightManager {
 
   /**
    * @param channel fade field applied to the packed color (retail param_4);
-   *                `None` matches GetNearestLights (multiplier×color).
+   *                `None` is nearest/gob: authored color only (VP-aligned).
    * @param maxCount per-model shader light cap. Defaults to MAX_LIGHTS_PER_MODEL
    *                 minus one when the camera headlight is enabled.
    */

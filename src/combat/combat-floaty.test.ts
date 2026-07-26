@@ -1,0 +1,51 @@
+/**
+ * Retail combat floaty eligibility helper.
+ * @jest-environment node
+ */
+import { describe, expect, it, beforeEach, jest } from '@jest/globals';
+
+const mockGetFeedback = jest.fn(() => true);
+const mockPlayer = { id: 1 };
+const mockCompanion = { id: 2 };
+
+jest.mock('@/GameState', () => ({
+  GameState: {
+    FeedbackMessageManager: {
+      GetFeedbackTypeEnabled: (...args: unknown[]) => mockGetFeedback(...args),
+    },
+    getCurrentPlayer: () => mockPlayer,
+    DEBUG_COMBAT_FLOATY_ALL_ATTACKERS: false,
+  },
+}));
+
+import { GameState } from '@/GameState';
+import { shouldShowCombatFloaty } from '@/combat/combat-floaty';
+
+describe('shouldShowCombatFloaty', () => {
+  beforeEach(() => {
+    mockGetFeedback.mockReturnValue(true);
+    GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS = false;
+  });
+
+  it('returns false when Floating Numbers is off', () => {
+    mockGetFeedback.mockReturnValue(false);
+    expect(shouldShowCombatFloaty(mockPlayer as any)).toBe(false);
+  });
+
+  it('returns true for player attacker (retail)', () => {
+    expect(shouldShowCombatFloaty(mockPlayer as any)).toBe(true);
+  });
+
+  it('returns false for companion/NPC attacker by default', () => {
+    expect(shouldShowCombatFloaty(mockCompanion as any)).toBe(false);
+  });
+
+  it('returns true for any attacker when DEBUG_COMBAT_FLOATY_ALL_ATTACKERS', () => {
+    GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS = true;
+    expect(shouldShowCombatFloaty(mockCompanion as any)).toBe(true);
+  });
+
+  it('returns false for undefined attacker', () => {
+    expect(shouldShowCombatFloaty(undefined)).toBe(false);
+  });
+});

@@ -33,6 +33,7 @@ import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
 import { SWCostTable } from "@/engine/rules/SWCostTable";
 import { SWFootStep } from "@/engine/rules/SWFootStep";
 import { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
+import { SWGrenadeSound } from "@/engine/rules/SWGrenadeSound";
 import { SWAnimation } from "@/engine/rules/SWAnimation";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 
@@ -128,6 +129,9 @@ export class SWRuleSet {
 
   static weaponSounds: SWWeaponSound[] = [];
   static weaponSoundCount: number = 0;
+
+  static grenadeSounds: SWGrenadeSound[] = [];
+  static grenadeSoundCount: number = 0;
 
   static animations: SWAnimation[] = [];
   static animationCount: number = 0;
@@ -501,6 +505,18 @@ export class SWRuleSet {
       SWRuleSet.weaponSounds = new Array(SWRuleSet.weaponSoundCount);
       for(let i = 0; i < weaponSounds.RowCount; i++){
         SWRuleSet.weaponSounds[i] = SWWeaponSound.From2DA(weaponSounds.rows[i]);
+      }
+    }
+
+    /**
+     * Initialize Grenade Sounds (surface → bounce/impact; retail GrenadeSND.2da)
+     */
+    const grenadeSounds = GameState.TwoDAManager.datatables.get('grenadesnd');
+    if(grenadeSounds){
+      SWRuleSet.grenadeSoundCount = grenadeSounds.RowCount;
+      SWRuleSet.grenadeSounds = new Array(SWRuleSet.grenadeSoundCount);
+      for(let i = 0; i < grenadeSounds.RowCount; i++){
+        SWRuleSet.grenadeSounds[i] = SWGrenadeSound.From2DA(grenadeSounds.rows[i]);
       }
     }
 

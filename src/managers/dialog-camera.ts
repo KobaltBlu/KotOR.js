@@ -171,6 +171,15 @@ export function resolveReplyCameraAngle(
 }
 
 /**
+ * Retail CGuiInGame::IsLoopingDialogStuntAnimation @ 0062ab70.
+ * CUT ids in the `l` / `wl` bands (1401..1727) loop; base / `w` cuts are one-shot.
+ */
+export function isLoopingDialogStuntAnimation(animationId: number): boolean {
+  const id = animationId | 0;
+  return id > 0x577 && id < 0x6c0;
+}
+
+/**
  * Retail GetCameraAnimationName @ 006288f0.
  * Ranges: 1000+ base, 1200+ w, 1400+ l, 1600+ wl; 0x2772 → none.
  * Note: cut029 is missing — offs 28 and 38 map to cut039.

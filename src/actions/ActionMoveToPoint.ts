@@ -119,6 +119,11 @@ export class ActionMoveToPoint extends Action {
       this.calculatePath();
     }
 
+    // Retail: Incomplete (1) continues; Fail (3) fails — no replot grace
+    if(this.pathFindInfo?.lastCode === PlotPathCode.Incomplete && !this.computedPath?.points?.length){
+      return ActionStatus.IN_PROGRESS;
+    }
+
     if(!this.computedPath?.points?.length){
       this.stopMoving(owner);
       this.setComputedPath(undefined);

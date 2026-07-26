@@ -337,13 +337,17 @@ export class ModuleDoor extends ModuleObject {
     return (this.openState == ModuleDoorOpenState.OPEN1 || this.openState == ModuleDoorOpenState.OPEN2);
   }
 
-  /** Retail NoNonWalkPolysInDoor indexes surface_mesh[open_state]. */
+  /**
+   * Retail NoNonWalkPolysInDoor @ 005890f0 indexes surface_mesh[open_state].
+   * Missing open1/open2 BWM must NOT fall back to closed — retail LoadMesh leaves
+   * an empty mesh for that slot, and NoNonWalkPolys with no faces returns clear.
+   */
   getWalkmeshForOpenState(openState: ModuleDoorOpenState = this.openState): OdysseyWalkMesh | undefined {
     switch(openState){
       case ModuleDoorOpenState.OPEN1:
-        return this.walkmeshOpen1 || this.walkmeshClosed;
+        return this.walkmeshOpen1;
       case ModuleDoorOpenState.OPEN2:
-        return this.walkmeshOpen2 || this.walkmeshClosed;
+        return this.walkmeshOpen2;
       case ModuleDoorOpenState.DESTROYED:
         return undefined;
       default:
@@ -375,12 +379,9 @@ export class ModuleDoor extends ModuleObject {
         const idx = this.area.doorWalkmeshes.indexOf(next);
         if(idx == -1){ this.area.doorWalkmeshes.push(next); }
       }
-    }else if(prev?.mesh){
-      GameState.group.room_walkmeshes.remove(prev.mesh);
-      if(this.area?.doorWalkmeshes){
-        const idx = this.area.doorWalkmeshes.indexOf(prev);
-        if(idx >= 0){ this.area.doorWalkmeshes.splice(idx, 1); }
-      }
+    }else{
+      // OPEN1/OPEN2 with missing DWK, or DESTROYED — no blocking geo (retail empty mesh)
+      this.collisionManager.setWalkmesh(undefined);
     }
   }
 
@@ -482,7 +483,6 @@ export class ModuleDoor extends ModuleObject {
 
     // open_state or in-flight also_open_state (deferred open still counts as opening)
     if(this.openState || this.alsoOpenState){
-      console.log('ModuleDoor', this.getTag(), this.getName(), 'already open');
       return;
     }
 

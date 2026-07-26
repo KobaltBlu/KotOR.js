@@ -2,7 +2,6 @@ import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModuleObject } from "@/module/ModuleObject";
@@ -30,11 +29,14 @@ export class ActionOpenDoor extends Action {
 
     this.target = this.getParameter<ModuleObject>(0);
 
-    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor))
+    if(!BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleDoor)){
       return ActionStatus.FAILED;
+    }
 
-    if((this.target as ModuleDoor).isOpen())
+    const door = this.target as ModuleDoor;
+    if(door.isOpen()){
       return ActionStatus.FAILED;
+    }
 
     if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       const owner = this.owner as ModuleCreature;
@@ -46,11 +48,12 @@ export class ActionOpenDoor extends Action {
       owner.force = 0;
       owner.speed = 0;
       owner.setFacingObject(this.target);
-      this.target.use(GameState.PartyManager.party[0]);
+      door.use(owner);
       return ActionStatus.COMPLETE;
     }
 
-    this.target.use(this.owner);
+    // AssignCommand(oDoor, ActionOpenDoor(oDoor)) — open directly (parity with ActionCloseDoor)
+    door.openDoor(this.owner);
     return ActionStatus.COMPLETE;
   }
 

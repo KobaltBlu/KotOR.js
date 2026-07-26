@@ -193,7 +193,16 @@ export class ModuleItem extends ModuleObject {
   }
 
   isRangedWeapon(){
+    // Retail grenade baseitems set RangedWeapon=1 but they are UseItem casts,
+    // never equipped weapons — exclude ItemType 6 so inventory classifiers
+    // cannot treat a grenade as a blaster.
+    if(isGrenadeItemType(this.baseItem?.itemType)) return false;
     return this.baseItem.rangedWeapon;
+  }
+
+  /** baseitems ItemType 6 — inventory CastSpell grenades. */
+  isGrenade(){
+    return isGrenadeItemType(this.baseItem?.itemType);
   }
 
   isLightsaber(): boolean {

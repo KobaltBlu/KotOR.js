@@ -8,12 +8,12 @@ import {
   SMOOTH_SELECTION_BUDGET_MS,
   type SmoothSelectionResume,
 } from "@/engine/pathfinding/smooth-select-nodes";
-import { testDirectLine } from "@/engine/pathfinding/test-direct-line";
 import { computeCreatureEdgeDetour } from "@/engine/pathfinding/path-point-creature-detour";
 import { pathPointDfsSearch } from "@/engine/pathfinding/path-point-dfs";
 import type { PathPointDfsTransTable } from "@/engine/pathfinding/path-point-dfs-trans-table";
 import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
+import { isPthEdgeBlockedByObject } from "@/engine/pathfinding/pth-edge-block";
 
 /** Resume state for PlotPathPointPath field104 / field111 across timed-out searches. */
 export type PathPointDfsResume = {
@@ -164,7 +164,8 @@ export class ComputedPath {
 
   /**
    * Edge cost for PTH expansion (GenerateSuccessors @ 004bdb00).
-   * cost < 0 = blocked (NoNonWalk door/placeable / wall).
+   * cost < 0 = blocked (static door / placeable).
+   * Non-static doors do not prune edges — plot through while scripted open finishes.
    * Creature on line → retail detour length + splice waypoint.
    */
   private evaluateEdge(from: PathPoint, to: PathPoint): { cost: number; detour?: THREE.Vector3 } {
@@ -172,12 +173,7 @@ export class ComputedPath {
     const area = from.area ?? this.owner?.area;
     if(!area) return { cost: dist };
 
-    // Retail: NoNonWalkPolysDetailed after creature check — skip door/placeable edges
-    const polys = noNonWalkPolysDetailed(area, from.vector, to.vector);
-    if(!polys.clear){
-      return { cost: -1 };
-    }
-
+    // Retail order: NoCreaturesOnLine, then NoNonWalkPolysDetailed
     const creatures = noCreaturesOnLine(area, from.vector, to.vector, {
       owner: this.owner,
       allowPartyCreatures: true,
@@ -193,14 +189,16 @@ export class ComputedPath {
       return { cost: dist + Math.max(1.0, dist * 0.5) };
     }
 
-    // Wall / walkmesh LOS (non-creature)
-    const hit = testDirectLine(area, from.vector, to.vector, {
-      owner: this.owner,
-      checkCreatures: false,
-      allowPartyCreatures: true,
-    });
-    if(hit.ok) return { cost: dist };
-    return { cost: -1 };
+    const polys = noNonWalkPolysDetailed(area, from.vector, to.vector);
+    if(!polys.clear){
+      const obj = GameState.ModuleObjectManager?.GetObjectById?.(polys.blockingObjectId);
+      // Placeable or static door → drop edge; non-static door → keep successor
+      if(isPthEdgeBlockedByObject(obj)){
+        return { cost: -1 };
+      }
+    }
+
+    return { cost: dist };
   }
 
   /**

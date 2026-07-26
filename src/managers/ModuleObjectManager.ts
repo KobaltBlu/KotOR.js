@@ -12,6 +12,7 @@ import { PerceptionMask } from "@/enums/engine/PerceptionMask";
 import { GameState } from "@/GameState";
 import { ModuleTriggerType } from "@/enums/module/ModuleTriggerType";
 import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
+import { isPointInShape } from "@/combat/objects-in-shape";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { isClientCombatMode } from "@/managers/reticle";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
@@ -143,6 +144,14 @@ export class ModuleObjectManager {
     OBJECT_TYPE_ALL              = 32767;*/
 
     sTag = sTag.toLowerCase();
+    // Retail FindObjectByTagOrdinal matches "" like any tag against the module
+    // tag lookup table. The PC's tag is empty, so an empty lookup resolves to
+    // the player — scripts rely on this (e.g. k_pend_traskdl40 moves Trask to
+    // GetObjectByTag("")). Alias both '' and 'player' to party[0].
+    if(sTag === '' || sTag === 'player'){
+      return PartyManager.party[0];
+    }
+
     let results: ModuleObject[] = [];
     let obj: any = undefined;
     if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
@@ -217,9 +226,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if(sTag == '' || sTag == 'player'){
-      return PartyManager.party[0];
-    }else if(results.length){
+    if(results.length){
       return results[iNum];
     }
 
@@ -772,7 +779,7 @@ export class ModuleObjectManager {
     }
 
     if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){ //AOE
-              
+      object_pool = object_pool.concat(this.module.area.areaOfEffects || []);
     }
 
     if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){ //WAYPOINTS
@@ -784,34 +791,38 @@ export class ModuleObjectManager {
     }
 
     if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){ //STORE
-          
+      object_pool = object_pool.concat(this.module.area.stores || []);
     }
     
     if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){ //ENCOUNTER
-          
+      object_pool = object_pool.concat(this.module.area.encounters || []);
     }
     
     if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){ //SOUND
       object_pool = object_pool.concat(this.module.area.sounds);
     }
 
+    const center = target?.position || new THREE.Vector3();
+    const originPos =
+      (origin && (origin.x !== 0 || origin.y !== 0 || origin.z !== 0))
+        ? origin
+        : center;
+
     for(let i = 0, len = object_pool.length; i < len; i++){
       if(BitWise.InstanceOf(object_pool[i]?.objectType, ModuleObjectType.ModuleObject)){
-        if(object_pool[i].position.distanceTo(target.position) < size){
-          if(lineOfSight){
-            const from =
-              (origin && (origin.x !== 0 || origin.y !== 0 || origin.z !== 0))
-                ? origin
-                : target.position;
-            if(!clearLineOfSight(this.module?.area, from, object_pool[i].position, {
-              ignoreObject: object_pool[i],
-              eyeHeight: 1.5,
-            })){
-              continue;
-            }
-          }
-          results.push(object_pool[i]);
+        if(!isPointInShape(shape, object_pool[i].position, center, size, originPos)){
+          continue;
         }
+        if(lineOfSight){
+          const from = originPos;
+          if(!clearLineOfSight(this.module?.area, from, object_pool[i].position, {
+            ignoreObject: object_pool[i],
+            eyeHeight: 1.5,
+          })){
+            continue;
+          }
+        }
+        results.push(object_pool[i]);
       }
     }
 

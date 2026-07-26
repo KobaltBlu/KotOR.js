@@ -1657,7 +1657,7 @@ NWScriptDefK2.Actions = {
     name: 'GetSpellTargetLocation',
     type: NWScriptDataType.LOCATION,
     args: [],
-    action: undefined
+    action: NWScriptDefK1.Actions[222]?.action
   },
   223: {
     comment: '223: Get the position vector from lLocation.',

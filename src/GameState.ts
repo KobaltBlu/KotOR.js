@@ -179,6 +179,12 @@ export class GameState implements EngineContext {
    */
   static DEBUG_PC_DAMAGE_SCALE = 1;
 
+  /**
+   * When true, combat floaties spawn for any attacker (pre-retail gate).
+   * Default false = retail: only GetPlayerCreatureId attacker/damager.
+   */
+  static DEBUG_COMBAT_FLOATY_ALL_ATTACKERS = false;
+
   /** Retail CClientOptions.turbo_enabled — GetMaxSpeed returns 15 when set. */
   static turboEnabled = false;
   /** Retail party invulnerability cheat (server immortal for party). */

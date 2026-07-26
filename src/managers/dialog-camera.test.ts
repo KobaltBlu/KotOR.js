@@ -8,7 +8,30 @@ import {
   isAspyrCarthDialogCameraHack,
   applyAspyrPlaceableCameraHack,
   resolveAspyrAppearanceCameraOverrides,
+  isLoopingDialogStuntAnimation,
 } from '@/managers/dialog-camera';
+
+describe('isLoopingDialogStuntAnimation (IsLoopingDialogStuntAnimation @ 0062ab70)', () => {
+  it('is false for base and w CUT bands', () => {
+    expect(isLoopingDialogStuntAnimation(1000)).toBe(false);
+    expect(isLoopingDialogStuntAnimation(1200)).toBe(false);
+    expect(isLoopingDialogStuntAnimation(0x577)).toBe(false);
+  });
+
+  it('is true for l and wl CUT bands (1401..1727)', () => {
+    expect(isLoopingDialogStuntAnimation(1401)).toBe(true);
+    expect(isLoopingDialogStuntAnimation(0x578)).toBe(true);
+    expect(isLoopingDialogStuntAnimation(1600)).toBe(true);
+    expect(isLoopingDialogStuntAnimation(0x6bf - 1)).toBe(true);
+  });
+
+  it('is false outside the valid looping window', () => {
+    expect(isLoopingDialogStuntAnimation(0)).toBe(false);
+    expect(isLoopingDialogStuntAnimation(999)).toBe(false);
+    expect(isLoopingDialogStuntAnimation(0x6c0)).toBe(false);
+    expect(isLoopingDialogStuntAnimation(0x2772)).toBe(false);
+  });
+});
 
 describe('isAspyrCarthDialogCameraHack', () => {
   it('matches the retail "carth" conversation (case-insensitive)', () => {

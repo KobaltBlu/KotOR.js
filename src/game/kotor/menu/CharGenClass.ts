@@ -152,7 +152,7 @@ export class CharGenClass extends GameMenu {
 
       if(_3dViewModel) _3dViewModel.removeFromParent();
 
-      OdysseyModel3D.FromMDL(GameState.CharGenManager.cgmain_light, {
+      OdysseyModel3D.FromMDL(GameState.CharGenManager.cgbody_light, {
         onComplete: (background_model: OdysseyModel3D) => {
           GameState.CharGenManager.models.set(nth, background_model);
           _3dViewModel = background_model;

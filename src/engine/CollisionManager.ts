@@ -167,7 +167,7 @@ export class CollisionManager {
   foundEnemyCreature: ModuleObject;
 
   // Ground/walkmesh state
-  walkmesh: OdysseyWalkMesh;
+  walkmesh: OdysseyWalkMesh | undefined;
   surfaceId: number;
   groundFace: OdysseyFace3;
   lastGroundFace: OdysseyFace3;
@@ -206,9 +206,9 @@ export class CollisionManager {
     this.object = object;
   }
 
-  setWalkmesh(walkmesh: OdysseyWalkMesh): void {
+  setWalkmesh(walkmesh: OdysseyWalkMesh | undefined): void {
     this.walkmesh = walkmesh;
-    this.edges = Array.from(walkmesh.edges.values());
+    this.edges = walkmesh?.edges ? Array.from(walkmesh.edges.values()) : [];
   }
 
   /**

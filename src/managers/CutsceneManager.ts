@@ -1,3 +1,4 @@
+import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { DLGObject } from "@/resource/DLGObject";
@@ -27,6 +28,7 @@ import {
   ANIMATED_CAMERA_NEAR,
   ANIMATED_CAMERA_FAR,
   getCameraAnimationName,
+  isLoopingDialogStuntAnimation,
   createDialogPseudoRandomState,
   resolveEntryCameraAngle,
   resolveReplyCameraAngle,
@@ -903,7 +905,7 @@ export class CutsceneManager {
             const odysseyAnimation = actor.animations ? actor.animations.find( a => a.name.toLocaleLowerCase() == animationName.toLocaleLowerCase()) : undefined;
             if(odysseyAnimation){
               this.registerDialogAnimParticipant(creature);
-              creature.dialogPlayOdysseyAnimation(odysseyAnimation);
+              creature.dialogPlayOdysseyAnimation(odysseyAnimation, participant.animation);
             }
           }
         } catch (e: any) {
@@ -1305,6 +1307,7 @@ export class CutsceneManager {
   /**
    * Retail CGuiInGame::SetAnimatedCamera @ 0062bfa0 —
    * succeeds only when 999 < animId < 0x6c0 and CameraModel is loaded.
+   * Play mode from IsLoopingDialogStuntAnimation @ 0062ab70 (l/wl → loop, else one-shot).
    * @returns true if animated camera was applied
    */
   static trySetAnimatedCamera(nCamera: number, nFOV: number = -1): boolean {
@@ -1323,11 +1326,16 @@ export class CutsceneManager {
       return false;
     }
 
-    const animationState = this.dialog.animatedCamera.animationManager.createAnimationState();
+    const manager = this.dialog.animatedCamera.animationManager;
+    const looping = isLoopingDialogStuntAnimation(nCamera);
+    // Do not assign via currentAnimation setter — it always forces LOOPING.
+    if(looping){
+      manager.playAnimation(animation, AuroraAnimationFlag.LOOPING, { loop: true });
+    }else{
+      manager.playAnimation(animation, AuroraAnimationFlag.FIRE_FORGET, { loop: false });
+    }
     this.cameraState.currentCameraAnimation = animation;
     this.cameraState.currentCameraAnimationElapsed = 0;
-    this.dialog.animatedCamera.animationManager.currentAnimation = animation;
-    this.dialog.animatedCamera.animationManager.currentAnimationState = animationState;
     if(this.currentEntry){
       this.currentEntry.checkList.cameraAnimationComplete = false;
     }

@@ -191,8 +191,14 @@ export const CheatConsole = () => {
     setDebugTick(debugTick + 1);
   }
 
+  const onToggleFloatyAllAttackers = () => {
+    KotOR.GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS = !KotOR.GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS;
+    setDebugTick(debugTick + 1);
+  }
+
   const formatDebugLabel = (label: string) => label.replace(/_/g, ' ');
   const pcDamageScale = KotOR.GameState.DEBUG_PC_DAMAGE_SCALE;
+  const floatyAllAttackers = KotOR.GameState.DEBUG_COMBAT_FLOATY_ALL_ATTACKERS;
 
   return (
     <div className={`console on ${gameKey}`}>
@@ -291,6 +297,15 @@ export const CheatConsole = () => {
                       {preset}
                     </button>
                   ))}
+                </div>
+                <div className="console-submenu-buttons">
+                  <button
+                    className={`console-btn console-btn-small flex-1 ${floatyAllAttackers ? 'on' : 'off'}`}
+                    onClick={onToggleFloatyAllAttackers}
+                    title="When on, combat floaties show for any attacker (pre-retail). Off = player attacker only."
+                  >
+                    Floaty All Attackers
+                  </button>
                 </div>
               </div>
             </div>

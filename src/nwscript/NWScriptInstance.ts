@@ -381,7 +381,20 @@ export class NWScriptInstance {
       /**
        * Run the current instruction's logic function
        */
-      this.currentInstruction.opCall.call(this, this.currentInstruction);
+      try{
+        this.currentInstruction.opCall.call(this, this.currentInstruction);
+      }catch(error){
+        console.error('[NWScript VM] instruction failed', {
+          script: this.name,
+          address: this.currentInstruction.address,
+          opcode: this.currentInstruction.codeName || this.currentInstruction.code,
+          pointer: this.stack?.pointer,
+          stackLength: this.stack?.stack?.length,
+          storedStates: this.state?.length,
+          error,
+        });
+        throw error;
+      }
 
       /**
        * If we are in debug mode and we are in stepOver mode, 

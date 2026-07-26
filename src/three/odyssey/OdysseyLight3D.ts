@@ -100,24 +100,33 @@ export class OdysseyLight3D extends OdysseyObject3D {
     return this.shadowRadius > 0 ? this.shadowRadius : this.radius;
   }
 
-  /** Effective RGB after fade × multiplier (ControlLightsFade → SetLightGL). */
+  /**
+   * VP-aligned room/global RGB: fade × color.
+   * SetUpVertexProgramLightShaderConstants @ 004a50d0 (param_2 == 0) never
+   * multiplies PartLight.multiplier (field15_0x8c). FFP ControlLightsFade →
+   * SetLightGL does fade × color × multiplier; Odyssey GLSL follows the VP path.
+   */
   getEffectiveColor(out: THREE.Color = new THREE.Color()): THREE.Color {
-    const scale = this.fadeFactor * this.getIntensity();
-    return out.copy(this.color).multiplyScalar(scale);
-  }
-
-  /** Multiplier × color only (GetNearestLights → SetLightGL; no fade). */
-  getIntensityColor(out: THREE.Color = new THREE.Color()): THREE.Color {
-    return out.copy(this.color).multiplyScalar(this.getIntensity());
+    return out.copy(this.color).multiplyScalar(this.fadeFactor);
   }
 
   /**
-   * Effective RGB for the static-geometry pool: secondary fade × multiplier
-   * (ControlLightsFade with param_4 = 1 → SetLightGL).
+   * VP-aligned nearest/gob RGB: authored color only (no fade, no multiplier).
+   * Used when packing GetNearestLights results into Odyssey shader uniforms.
+   * FFP GetNearestLights → SetLightGL uses multiplier × color; VP upload does not.
+   */
+  getIntensityColor(out: THREE.Color = new THREE.Color()): THREE.Color {
+    return out.copy(this.color);
+  }
+
+  /**
+   * VP-aligned static-geometry pool RGB: secondary fade × color
+   * (SetUpVertexProgramLightShaderConstants with param_2 != 0 uses fade 1 and
+   * still omits multiplier; we keep the secondary fade channel from
+   * EnableLightsDynamicOnly / ControlLightsFade param_4 = 1).
    */
   getDynamicOnlyColor(out: THREE.Color = new THREE.Color()): THREE.Color {
-    const scale = this.dynamicOnlyFadeFactor * this.getIntensity();
-    return out.copy(this.color).multiplyScalar(scale);
+    return out.copy(this.color).multiplyScalar(this.dynamicOnlyFadeFactor);
   }
 
   isColorBlack(): boolean {

@@ -11,6 +11,10 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { getCounterSpellRange } from "@/combat/spell-range";
+import { playGrenadeBounceAtPosition } from "@/combat/grenade-sound";
+import { isGrenadeItemType } from "@/combat/item-cast-grenade";
+import type { ModuleItem } from "@/module/ModuleItem";
+import { EventBroadcastSafeProjectile } from "@/events/EventBroadcastSafeProjectile";
 
 /**
  * SpellCastInstance class.
@@ -96,6 +100,51 @@ export class SpellCastInstance {
     return n;
   }
 
+  /**
+   * Stamp retail spell-target fields so GetSpellTargetLocation / GetSpellTargetObject
+   * work for item casts that never called useTalentOnObject.
+   */
+  stampSpellTarget(){
+    if(this.spell){
+      this.spell.oTarget = this.target;
+    }
+    const owner = this.owner as ModuleCreature;
+    if(owner?.combatData){
+      owner.combatData.lastSpellTarget = this.target;
+    }
+    if(this.target){
+      this.targetLocation.copy(this.target.position);
+      this.projectileTarget.copy(this.target.position);
+      if(this.target.combatData){
+        this.target.combatData.lastSpellAttacker = this.owner;
+      }
+    }
+    this.owner.spellTargetPosition.copy(this.targetLocation);
+  }
+
+  /**
+   * Notify the single-process BroadcastSafeProjectile path. SpellCastInstance
+   * already owns the projmodel when one loaded — mark alreadySpawned so the
+   * event does not double-spawn.
+   */
+  private notifySafeProjectileBroadcast(){
+    const flightMs = Math.max(1, this.castTime | 0);
+    const hasProjModel = !!(this.spell?.projmodel && String(this.spell.projmodel).trim() && this.spell.projmodel !== '****');
+    const evt = new EventBroadcastSafeProjectile();
+    evt.setCaller(this.owner);
+    evt.setObject(this.owner);
+    evt.spellId = this.spell?.id ?? -1;
+    evt.targetId = this.target?.id ?? 0x7F000000;
+    evt.flightMs = flightMs;
+    evt.projectilePath = 6;
+    evt.origin.copy(this.owner.position);
+    evt.destination.copy(this.projectileTarget || this.targetLocation);
+    // SpellCastInstance loads projmodel asynchronously — skip the event spawn
+    // whenever the spell has a projectile model so we do not double-draw.
+    evt.alreadySpawned = hasProjModel;
+    evt.execute();
+  }
+
   init(){
     this.projectileHook = undefined;
     this.projectileOrigin = new THREE.Vector3();
@@ -115,6 +164,8 @@ export class SpellCastInstance {
       this.projectileTarget.copy(this.targetLocation);
       this.projectileCurve.v2.copy(this.projectileTarget);
     }
+
+    this.stampSpellTarget();
 
     if(this.spell?.projmodel != ''){
       MDLLoader.loader.load(this.spell.projmodel.toLowerCase())
@@ -136,6 +187,8 @@ export class SpellCastInstance {
         });
       });
     }
+
+    this.notifySafeProjectileBroadcast();
   }
 
   /**
@@ -282,6 +335,14 @@ export class SpellCastInstance {
   impact(){
     if(this.impacted || this.interrupted) return;
     this.impacted = true;
+
+    this.stampSpellTarget();
+
+    // Retail GrenadeSND bounce at impact point for grenade item casts
+    const castItem = (this.owner as ModuleCreature)?.spellCastItem as ModuleItem | undefined;
+    if(isGrenadeItemType(castItem?.baseItem?.itemType)){
+      playGrenadeBounceAtPosition(this.projectileTarget || this.targetLocation, this.owner);
+    }
 
     if(this.impactscript != ''){
       const instance = GameState.NWScript.Load(this.impactscript);

@@ -2484,18 +2484,20 @@ export class ModuleCreature extends ModuleObject {
     };
   }
 
-  dialogPlayOdysseyAnimation(anim: OdysseyModelAnimation){
+  dialogPlayOdysseyAnimation(anim: OdysseyModelAnimation, animationId: number = -1){
     console.log('dialogPlayOdysseyAnimation', anim)
     if(!this.model){ 
       console.warn('dialogPlayOdysseyAnimation failed');
       console.log(this, anim);
       return; 
     }
+    // Retail IsLoopingDialogStuntAnimation @ 0062ab70 — l/wl CUT ids loop.
+    const looping = animationId > 0x577 && animationId < 0x6c0;
     this.dialogAnimation = {
       animation: anim,
       data: {
-        fireforget: 1,
-        looping: 0
+        fireforget: looping ? 0 : 1,
+        looping: looping ? 1 : 0
       } as any,
       started: false,
     };

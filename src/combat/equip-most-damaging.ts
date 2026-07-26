@@ -1,4 +1,5 @@
 import { WeaponWield } from "@/enums/combat/WeaponWield";
+import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 
@@ -26,6 +27,8 @@ export function isMeleeWeaponItem(item: ModuleItem | undefined): boolean {
 
 export function isRangedWeaponItem(item: ModuleItem | undefined): boolean {
   if(!item?.baseItem) return false;
+  // Grenades are rangedWeapon=1 in baseitems but never WeaponWield blasters
+  if(isGrenadeItemType(item.baseItem.itemType)) return false;
   const w = item.baseItem.weaponWield;
   return (
     w === WeaponWield.BLASTER_PISTOL ||

@@ -34,7 +34,9 @@ uniform vec3 odysseyHeadLightAmbient;
 uniform vec3 odysseyHeadLightDiffuse;
 // xyz = view-space position (binder-transformed), w = quadratic attenuation coeff (4.5/r²)
 uniform vec4 odysseyLightPos[ MAX_ODYSSEY_LIGHTS ];
-// rgb = light color (fade×multiplier for rooms; multiplier-only for nearest), w = ambientOnly
+// rgb = light color (fade×color for rooms; authored color for nearest/gob —
+// VP SetUpVertexProgramLightShaderConstants @ 004a50d0; no PartLight.multiplier),
+// w = ambientOnly
 uniform vec4 odysseyLightColor[ MAX_ODYSSEY_LIGHTS ];
 
 float odysseyRetailAttenuation( const in float lightDistance, const in float quadratic ) {

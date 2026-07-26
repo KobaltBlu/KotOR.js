@@ -261,6 +261,12 @@ export class ModuleObject {
   fp_land_played: any;
   fp_getup_played: any;
 
+  /**
+   * Retail CSWSObject::spell_target_position — stamped by item/force casts for
+   * GetSpellTargetLocation when the spell has no creature target.
+   */
+  spellTargetPosition: THREE.Vector3 = new THREE.Vector3();
+
   deferEventUpdate: any;
   distanceToCamera: any;
   facingAnim: boolean;

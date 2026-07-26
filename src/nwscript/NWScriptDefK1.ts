@@ -2944,7 +2944,6 @@ NWScriptDefK1.Actions = {
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleObject)){
         this.caller.actionQueue.add( new GameState.ActionFactory.ActionResumeDialog() );
       }
-      console.log('script', this.name, 'ResumeConversation', this.caller);
     }
   },
   207:{
@@ -3149,8 +3148,26 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.LOCATION,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(BitWise.InstanceOfObject(this.talent, TalentObjectType.TalentObject) && BitWise.InstanceOfObject(this.talent.oTarget, ModuleObjectType.ModuleObject)){
-        this.talent.oTarget.getLocation();
+      // Prefer the talent's object target when present
+      if(
+        BitWise.InstanceOfObject(this.talent, TalentObjectType.TalentObject) &&
+        BitWise.InstanceOfObject(this.talent.oTarget, ModuleObjectType.ModuleObject)
+      ){
+        return this.talent.oTarget.getLocation();
+      }
+      // Retail spell_target_position on the caster when target is OBJECT_INVALID
+      const caster = this.caller;
+      if(BitWise.InstanceOfObject(caster, ModuleObjectType.ModuleObject) && caster.spellTargetPosition){
+        const p = caster.spellTargetPosition;
+        const rot = caster.getRotationFromBearing?.() || { x: 0, y: 0, z: 0 };
+        return new EngineLocation(
+          p.x, p.y, p.z,
+          rot.x, rot.y, rot.z,
+          caster.area || GameState?.module?.area
+        );
+      }
+      if(BitWise.InstanceOfObject(caster, ModuleObjectType.ModuleObject)){
+        return caster.getLocation();
       }
       return new EngineLocation();
     }

@@ -40,7 +40,8 @@ function segmentHitsBox(a: THREE.Vector3, b: THREE.Vector3, box: THREE.Box3): bo
 
 /**
  * Door walkmesh — retail NoNonWalkPolysInDoor @ 005890f0 runs CSWCollisionMesh
- * on the open_state surface mesh. Fallback: facing-plane (GetDoorCrossed).
+ * on the open_state surface mesh. Missing/empty open mesh = clear (no faces).
+ * Facing-plane fallback is closed-only (GetDoorCrossed).
  */
 function closedDoorBlocksLine(
   door: ModuleDoor,
@@ -51,8 +52,15 @@ function closedDoorBlocksLine(
 ): boolean {
   if(!door) return false;
 
-  const wok = door.collisionManager?.walkmesh;
-  if(wok?.faces?.length){
+  const wok =
+    (typeof door.getWalkmeshForOpenState === 'function'
+      ? door.getWalkmeshForOpenState()
+      : undefined) ?? door.collisionManager?.walkmesh;
+
+  // Empty / missing open-state mesh → clear (retail LoadMesh with no faces)
+  if(!wok?.faces?.length){
+    if(typeof door.isOpen === 'function' && door.isOpen()) return false;
+  }else{
     // AABB pre-cull when box available
     if(door.box){
       const minX = Math.min(from.x, to.x) - expand;
@@ -75,8 +83,7 @@ function closedDoorBlocksLine(
     return false;
   }
 
-  // Fallback facing-plane when no door wok (closed only — open meshes absent)
-  if(typeof door.isOpen === 'function' && door.isOpen()) return false;
+  // Fallback facing-plane when closed and no door wok
   if(!door.box) return false;
 
   const minX = Math.min(from.x, to.x) - expand;

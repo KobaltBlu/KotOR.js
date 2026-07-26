@@ -37,6 +37,7 @@ jest.mock('@/managers/dialog-camera', () => ({
   ANIMATED_CAMERA_NEAR: 0.1,
   ANIMATED_CAMERA_FAR: 10000,
   getCameraAnimationName: jest.fn(() => 'none'),
+  isLoopingDialogStuntAnimation: jest.fn((id: number) => (id | 0) > 0x577 && (id | 0) < 0x6c0),
   createDialogPseudoRandomState: jest.fn(),
   resolveEntryCameraAngle: jest.fn((a: number) => a),
   resolveReplyCameraAngle: jest.fn((a: number) => a),

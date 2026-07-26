@@ -286,7 +286,7 @@ export function isRetailLightColorBlack(r: number, g: number, b: number): boolea
 
 /**
  * Retail PrioritizeShadow @ 004a3e30 color gate:
- * keep light if any raw PartLight.color channel > 0.1 (not fade×multiplier).
+ * keep light if any raw PartLight.color channel > 0.1 (not fade×color).
  */
 export function isRetailShadowColorVisible(r: number, g: number, b: number): boolean {
   return r > 0.1 || g > 0.1 || b > 0.1;
@@ -328,11 +328,15 @@ export enum RetailShadowLightMode {
  * pool advances, and GetNearestLights @ 004a3770 uses no fade at all.
  */
 export enum RetailLightFadeChannel {
-  /** GetNearestLights → SetLightGL: multiplier × color only. */
+  /**
+   * GetNearestLights / gob packing for Odyssey GLSL: authored color only
+   * (SetUpVertexProgramLightShaderConstants omits PartLight.multiplier;
+   * FFP SetLightGL still uses multiplier × color).
+   */
   None = 0,
-  /** param_4 = 0 → field10_0x78. Room / global light pool (EnableLights). */
+  /** param_4 = 0 → field10_0x78. Room / global pool; shader RGB = fade × color. */
   Primary = 1,
-  /** param_4 = 1 → field11_0x7c. Static-geometry pool (EnableLightsDynamicOnly). */
+  /** param_4 = 1 → field11_0x7c. Static-geometry pool; shader RGB = secondaryFade × color. */
   Secondary = 2,
 }
 

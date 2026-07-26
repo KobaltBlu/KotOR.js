@@ -524,6 +524,13 @@ export class ModuleArea extends ModuleObject {
       this.areaOfEffects[i]?.update(delta);
     }
 
+    // Doors before creatures/party: scripts often AssignCommand(door, ActionOpenDoor)
+    // then ActionMoveToObject on a creature in the same frame (k_pend_traskdl40).
+    // Opening must start before the mover's first PlotPath attempt.
+    for(let i = 0; i < this.doors.length; i++){
+      this.doors[i]?.update(delta);
+    }
+
     //update party
     for(let i = 0; i < GameState.PartyManager.party.length; i++){
       GameState.PartyManager.party[i]?.update(delta);
@@ -537,11 +544,6 @@ export class ModuleArea extends ModuleObject {
     //update placeables
     for(let i = 0; i < this.placeables.length; i++){
       this.placeables[i]?.update(delta);
-    }
-    
-    //update doors
-    for(let i = 0; i < this.doors.length; i++){
-      this.doors[i]?.update(delta);
     }
 
     //unset party controlled
@@ -639,6 +641,11 @@ export class ModuleArea extends ModuleObject {
       this.areaOfEffects[i]?.updatePaused(delta);
     }
 
+    // Doors before creatures/party (same ordering as update)
+    for(let i = 0; i < this.doors.length; i++){
+      this.doors[i]?.updatePaused(delta);
+    }
+
     //update party (TimeStop exclusions keep full update — retail exclusion list)
     for(let i = 0; i < GameState.PartyManager.party.length; i++){
       const pm = GameState.PartyManager.party[i];
@@ -664,11 +671,6 @@ export class ModuleArea extends ModuleObject {
     //update placeables
     for(let i = 0; i < this.placeables.length; i++){
       this.placeables[i]?.updatePaused(delta);
-    }
-    
-    //update doors
-    for(let i = 0; i < this.doors.length; i++){
-      this.doors[i]?.updatePaused(delta);
     }
 
     if(GameState.Mode == EngineMode.MINIGAME){
