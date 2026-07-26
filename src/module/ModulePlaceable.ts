@@ -217,8 +217,9 @@ export class ModulePlaceable extends ModuleObject {
     
     super.update(delta);
 
-    if(this.collisionManager.walkmesh && this.model){
-      this.collisionManager.walkmesh.matrixWorld.copy(this.model.matrix);
+    if(this.collisionManager.walkmesh && this.container){
+      this.container.updateMatrixWorld(true);
+      this.collisionManager.walkmesh.matrixWorld.copy(this.container.matrixWorld);
     }
 
     if(this.model instanceof OdysseyModel3D){

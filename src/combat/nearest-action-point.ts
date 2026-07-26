@@ -56,8 +56,15 @@ function pushMeshUsePositions(obj: ModuleObject, out: THREE.Vector3[]): void {
   const walkmesh = getWalkmesh(obj);
   if(!walkmesh?.getRelativeUsePositionWorld) return;
 
-  if((obj as any).model?.matrix && walkmesh.matrixWorld){
-    walkmesh.matrixWorld.copy((obj as any).model.matrix);
+  // Position lives on container (not model.matrix). Sync before LocalToWorld so
+  // spawned placeables/bodybags with identity mat4 get absolute use points.
+  const container = (obj as any).container as THREE.Object3D | undefined;
+  if(container?.matrixWorld && walkmesh.matrixWorld){
+    container.updateMatrixWorld?.(true);
+    walkmesh.matrixWorld.copy(container.matrixWorld);
+  }else if((obj as any).model?.matrixWorld && walkmesh.matrixWorld){
+    (obj as any).model.updateMatrixWorld?.(true);
+    walkmesh.matrixWorld.copy((obj as any).model.matrixWorld);
   }
 
   const p1 = walkmesh.getRelativeUsePositionWorld(1, _tmpA);

@@ -13,6 +13,8 @@ import { IPerimeter } from "@/interface/odyssey";
 import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
 import { clearWalkCheckMaterialMaskCache } from "@/engine/pathfinding/walk-check-material-mask";
 
+const _identityMatrix4 = new THREE.Matrix4();
+
 /**
  * OdysseyWalkMesh class.
  * 
@@ -589,6 +591,9 @@ export class OdysseyWalkMesh {
    * World-space relative use/action point —
    * retail CSWCollisionMesh::LocalToWorld @ 00596aa0 of relative_use_position_1/2.
    * Returns undefined when the local vector is zero (GetNearestActionPoint fallback).
+   *
+   * Baked area PWK/DWK use non-identity mat4; parented/spawned placeables (bodybags)
+   * keep identity mat4 and transform via matrixWorld (container world pose).
    */
   getRelativeUsePositionWorld(index: 1 | 2 = 1, out?: THREE.Vector3): THREE.Vector3 | undefined {
     const local = index === 2 ? this.relativeUsePosition2 : this.relativeUsePosition1;
@@ -597,7 +602,7 @@ export class OdysseyWalkMesh {
     }
     const result = out || new THREE.Vector3();
     result.copy(local);
-    if(this.mat4){
+    if(this.mat4 && !this.mat4.equals(_identityMatrix4)){
       result.applyMatrix4(this.mat4);
     }else if(this.matrixWorld){
       result.applyMatrix4(this.matrixWorld);
