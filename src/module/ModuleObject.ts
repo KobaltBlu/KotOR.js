@@ -46,6 +46,7 @@ import {
   meleeCombatWieldAnimationRow,
   meleeWieldAnimationRow,
 } from "@/module/animation/flourish-wield-dispatch";
+import { AILevel } from "@/enums/module/AILevel";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import type { IPerceptionInfo } from "@/interface/engine/IPerceptionInfo";
@@ -202,6 +203,17 @@ export class ModuleObject {
   heartbeatTimer: any;
   _heartbeatTimerOffset: number;
   _heartbeatTimeout: number;
+  /**
+   * Retail CSWSObject::ai_level — priority in CServerAIMaster lists.
+   * INVALID until registered via ServerAIMaster.addObject.
+   */
+  aiLevel: AILevel = AILevel.INVALID;
+  /** Elapsed world-time accumulator for the per-object 6s heartbeat (ms). */
+  _aiHeartbeatElapsedMs: number = 0;
+  /** World time (ms) of the last aiUpdate — used to accumulate skipped-frame delta. */
+  _lastAIUpdateWorldMs: number = 0;
+  /** Set by ServerAIMaster quick-walk pass so aiUpdate skips re-processing move actions. */
+  _quickWalkedThisFrame: boolean = false;
 
   //Perception
   heardStrings: IHeardString[] = [];
@@ -398,7 +410,12 @@ export class ModuleObject {
 
     this.context = GameState;
     this._heartbeatTimerOffset = Math.floor(Math.random() * 600) + 100;
-    this._heartbeatTimeout = 0 + this._heartbeatTimerOffset;
+    // Retail object heartbeat fires every 5999ms; stagger start like the old 3s path.
+    this._heartbeatTimeout = 6000;
+    this._aiHeartbeatElapsedMs = this._heartbeatTimerOffset;
+    this.aiLevel = AILevel.INVALID;
+    this._lastAIUpdateWorldMs = 0;
+    this._quickWalkedThisFrame = false;
 
     //Combat Info
     this.combatData.initialize();
@@ -527,7 +544,39 @@ export class ModuleObject {
   }
 
   /**
-   * Update the object
+   * Retail CSWSObject::AIUpdate — scheduled by ServerAIMaster (budgeted, may skip frames).
+   * Heartbeat (6s), effect list, and subclass action-queue work.
+   * @param delta Accumulated world-time seconds since last aiUpdate (or frame delta when first run).
+   */
+  aiUpdate(delta = 0){
+    if(this.willDestroy || this.destroyed){
+      if(this.actionQueue && this.actionQueue.length > 0){
+        this.actionQueue.clear();
+      }
+      return;
+    }
+
+    // Retail heartbeat threshold: 5999ms
+    this._aiHeartbeatElapsedMs += 1000 * delta;
+    if(this._aiHeartbeatElapsedMs > 5999){
+      if(GameState.module){
+        this.triggerHeartbeat();
+      }
+      this._aiHeartbeatElapsedMs = 0;
+    }
+
+    if(!this.deferEventUpdate){
+      for(let i = 0, len = this.effects.length; i < len; i++){
+        const effect = this.effects[i];
+        if(effect) effect.update(delta);
+      }
+    }
+  }
+
+  /**
+   * Per-frame client/visual update (retail CClientAIMaster object pass).
+   * Destroy fade, camera distance, room check, shadow blob, sphere sync.
+   * Server AI (heartbeat / effects / actions) lives in aiUpdate.
    * @param delta 
    */
   update(delta = 0){
@@ -538,24 +587,6 @@ export class ModuleObject {
         this.actionQueue.clear();
       }
       return;
-    }
-    
-    //Process the heartbeat timer
-    if(this._heartbeatTimeout <= 0){
-      if(GameState.module){
-        this.triggerHeartbeat();
-      }
-      this._heartbeatTimeout = 3000;
-    }else{
-      this._heartbeatTimeout -= 1000*delta;
-    }
-
-    //Loop through and update the effects
-    if(!this.deferEventUpdate){
-      for(let i = 0, len = this.effects.length; i < len; i++){
-        const effect = this.effects[i];
-        if(effect) effect.update(delta);
-      }
     }
 
     if(GameState.currentCamera){

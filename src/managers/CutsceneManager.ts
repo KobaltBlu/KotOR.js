@@ -12,6 +12,7 @@ import { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { AILevel } from "@/enums/module/AILevel";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
@@ -283,6 +284,12 @@ export class CutsceneManager {
     this.clearPendingDialog();
     this.dialogAnimParticipants = [];
     this.ended = false;
+    // Retail ExecuteCommandActionStartConversation — promote VERY_LOW participants to LOW
+    for(const participant of [owner, listener]){
+      if(participant && participant.aiLevel === AILevel.VERY_LOW){
+        GameState.ServerAIMaster?.setAILevel?.(participant, AILevel.LOW);
+      }
+    }
     // If the party leader is a switched CNPC (ControlledNPC >= 0), schedule
     // restore to the prior controlled character after dialog unless cancelled.
     const controlled = GameState.PartyManager?.ControlledNPC;

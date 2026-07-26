@@ -202,6 +202,17 @@ export class ModulePlaceable extends ModuleObject {
     }
   }
 
+  /**
+   * Retail CSWSPlaceable::AIUpdate — heartbeat/effects + action queue.
+   */
+  aiUpdate(delta = 0){
+    super.aiUpdate(delta);
+    if(this.willDestroy || this.destroyed) return;
+
+    this.action = this.actionQueue[0];
+    this.actionQueue.process(delta);
+  }
+
   update(delta = 0){
     
     super.update(delta);
@@ -227,7 +238,7 @@ export class ModulePlaceable extends ModuleObject {
     }
 
     this.action = this.actionQueue[0];
-    this.actionQueue.process( delta );
+    // Action queue processed in aiUpdate
 
     // if(this.animState == ModulePlaceableAnimState.DEFAULT){
     //   if(this.isOpen()){

@@ -117,10 +117,13 @@ export class ModuleEncounter extends ModuleObject {
 
   }
 
-  update(delta = 0){
-    
-    super.update(delta);
-    
+  /**
+   * Retail CSWSEncounter::AIUpdate — occupancy, spawn reset, spawn queue.
+   */
+  aiUpdate(delta = 0){
+    super.aiUpdate(delta);
+    if(this.willDestroy || this.destroyed) return;
+
     this.getCurrentRoom();
     
     //Check Module Creatures
@@ -221,6 +224,11 @@ export class ModuleEncounter extends ModuleObject {
 
     this.mesh.visible = ConfigClient.get('Game.debug.trigger_geometry_show') ? true : false;
 
+  }
+
+  update(delta = 0){
+    // Visual/client pass — occupancy/spawn logic lives in aiUpdate
+    super.update(delta);
   }
 
   onEnter(object: ModuleObject){

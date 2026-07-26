@@ -3,6 +3,7 @@ import { CreatureType } from "@/enums/nwscript/CreatureType";
 import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { AILevel } from "@/enums/module/AILevel";
 import { ReputationType } from "@/enums/nwscript/ReputationType";
 import { BitWise } from "@/utility/BitWise";
 import { PartyManager } from "@/managers/PartyManager";
@@ -105,10 +106,15 @@ export class ModuleObjectManager {
       }
     }
     this.ObjectList.set(object.id, object);
+    // Retail CSWS* ctor AddObject(aiMaster, VERY_LOW) — only if not already registered
+    if(object.aiLevel === AILevel.INVALID){
+      GameState.ServerAIMaster?.addObject?.(object);
+    }
   }
 
   static RemoveObject(object: ModuleObject){
     if(!object) return;
+    GameState.ServerAIMaster?.removeObject?.(object);
     this.RemoveObjectById(object.id);
     GameState.CursorManager.notifyObjectDestroyed(object);
   }
@@ -117,6 +123,8 @@ export class ModuleObjectManager {
     if(isNaN(id)) return false;
     //Remove the object from the global list of objects
     if(id >= 1 && this.ObjectList.has(id)){
+      const obj = this.ObjectList.get(id);
+      if(obj) GameState.ServerAIMaster?.removeObject?.(obj);
       return this.ObjectList.delete(id);
     }
     return false;
@@ -127,6 +135,7 @@ export class ModuleObjectManager {
     this.PLAYER_ID = ModuleObjectConstant.PLAYER_ID;
     this.ObjectList.clear();
     MiniGameObjectArray.clear();
+    GameState.ServerAIMaster?.Reset?.();
   }
 
   public static GetObjectByTag(sTag = '', iNum = 0, oType = NWModuleObjectType.ALL){

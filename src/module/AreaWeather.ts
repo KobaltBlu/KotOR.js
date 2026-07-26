@@ -249,7 +249,17 @@ export class AreaWeather {
   }
 
   /**
-   * Per-frame update: auto-roll, transition, FX placement, lightning.
+   * Retail CSWSArea::AIUpdate weather re-roll (every 300s).
+   * Visual FX continue in update().
+   */
+  aiUpdate(delta: number = 0){
+    if(this.isIndoor()) return;
+    this.updateAutoRoll(delta * 1000);
+  }
+
+  /**
+   * Per-frame update: transition, FX placement, lightning.
+   * Weather re-roll lives in aiUpdate (retail CSWSArea::AIUpdate).
    */
   update(delta: number = 0){
     if(this.isIndoor()){
@@ -258,7 +268,6 @@ export class AreaWeather {
 
     const deltaMs = delta * 1000;
 
-    this.updateAutoRoll(deltaMs);
     this.updateTransition(deltaMs);
     this.updateWeatherPositions(delta);
     this.updateLightning(delta);

@@ -246,8 +246,13 @@ export class ModuleAreaOfEffect extends ModuleObject {
     GameState.module.addEvent(event);
   }
 
-  update(delta = 0){
+  /**
+   * Retail CSWSAreaOfEffectObject::AIUpdate — follow, occupants, 6s AoE heartbeat.
+   */
+  aiUpdate(delta = 0){
     if(this.destroyRequested || this.destroyed) return;
+
+    super.aiUpdate(delta);
 
     // Follow linked creature (retail circle + linked_to_object)
     if(
@@ -302,6 +307,11 @@ export class ModuleAreaOfEffect extends ModuleObject {
         hb.run(this);
       }
     }
+  }
+
+  update(delta = 0){
+    // Visual/client pass — AoE work lives in aiUpdate
+    super.update(delta);
   }
 
   updatePaused(delta = 0){

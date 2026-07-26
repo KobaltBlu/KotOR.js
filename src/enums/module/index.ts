@@ -1,3 +1,4 @@
+export * from "@/enums/module/AILevel";
 export * from "@/enums/module/AreaMapDirection";
 export * from "@/enums/module/AreaOfEffectShape";
 export * from "@/enums/module/AreaTerrainFlag";

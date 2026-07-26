@@ -23,6 +23,7 @@ import { PazaakCards } from "@/enums/minigames/PazaakCards";
 import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
 import { type SWPortrait } from "@/engine/rules/SWPortrait";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { AILevel } from "@/enums/module/AILevel";
 import { BitWise } from "@/utility/BitWise";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
@@ -919,6 +920,10 @@ export class PartyManager {
     //Remove the partymember from the module
     partyMember.isPM = false;
     PartyManager.party.splice(pmIndex, 1);
+    // Retail SetInParty(0) → AI level NORMAL when left in world
+    if(leaveInWorld){
+      GameState.ServerAIMaster?.setAILevel?.(partyMember, AILevel.NORMAL);
+    }
     PartyManager.RebuildPortraitOrder();
 
     if(!leaveInWorld){
@@ -1377,6 +1382,8 @@ export class PartyManager {
     PartyManager.NPCS[slot].moduleObject = creature;
     //Add the creature to the party array
     PartyManager.party.push(creature);
+    // Retail SetInParty → AI level VERY_HIGH
+    GameState.ServerAIMaster?.setAILevel?.(creature, AILevel.VERY_HIGH);
     //Check to see if the creature needs to be removed from the creatures array
     let cIdx = GameState.module.area.creatures.indexOf(creature);
     if(cIdx > -1){

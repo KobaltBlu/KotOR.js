@@ -324,6 +324,17 @@ export class ModuleTrigger extends ModuleObject {
     return this.isHostile(object) && (!this.triggered || !this.trapOneShot);
   }
 
+  /**
+   * Retail CSWSTrigger::AIUpdate — heartbeat/effects + action queue.
+   */
+  aiUpdate(delta = 0){
+    super.aiUpdate(delta);
+    if(this.willDestroy || this.destroyed) return;
+
+    this.action = this.actionQueue[0];
+    this.actionQueue.process(delta);
+  }
+
   update(delta = 0){
     
     super.update(delta);
@@ -335,7 +346,7 @@ export class ModuleTrigger extends ModuleObject {
     }catch(e){}
 
     this.action = this.actionQueue[0];
-    this.actionQueue.process( delta );
+    // Action queue processed in aiUpdate
 
     if(this.trapModel){
       this.trapModel.update(delta);

@@ -22,6 +22,7 @@ import { IngameControls } from "@/controls/IngameControls";
 // import { Mouse } from "@/controls/Mouse";
 
 import { INIConfig } from "@/engine/INIConfig";
+import { ServerAIMaster } from "@/engine/ServerAIMaster";
 import { consumeAreaTransitionLoadBackground } from "@/engine/area-transition-bmp";
 
 // import { OdysseyObject3D } from "@/three/odyssey";
@@ -120,6 +121,7 @@ export class GameState implements EngineContext {
   static MenuManager: typeof MenuManager;
   static ModuleObjectManager: typeof ModuleObjectManager;
   static PartyManager: typeof PartyManager;
+  static ServerAIMaster: typeof ServerAIMaster = ServerAIMaster;
   static ResolutionManager: typeof ResolutionManager;
   static ShaderManager: typeof ShaderManager;
   static TLKManager: typeof TLKManager;

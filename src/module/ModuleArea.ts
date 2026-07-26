@@ -33,6 +33,7 @@ import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
 import { AudioEngine } from "@/audio";
 import { AREA_MUSIC_FADE_MS, AMBIENT_SOUND_FADE_MS } from "@/audio/AudioEngine";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { AILevel } from "@/enums/module/AILevel";
 import { BitWise } from "@/utility/BitWise";
 import { IAmbientSource } from "@/interface/area/IAmbientSource";
 import { IGrassProperties } from "@/interface/area/IGrassProperties";
@@ -114,6 +115,11 @@ export class ModuleArea extends ModuleObject {
   visObject: VISObject;
   layout: LYTObject;
   areaMap: AreaMap;
+  /** Elapsed ms since last area OnHeartbeat (retail 5999ms). */
+  _areaHeartbeatElapsedMs: number = 0;
+  _areaHeartbeatInitialized: boolean = false;
+  /** Players currently in this area — drives Increase/DecreaseAILevelPriority. */
+  playersInArea: number = 0;
   /** ARE template `ID` header (retail LoadAreaHeader header_info[0]) — not the game ObjectId */
   areId: number = 0;
   /** Retail GIT TransPending / TransPendCurrID / TransPendNextID */
@@ -507,41 +513,61 @@ export class ModuleArea extends ModuleObject {
     TextureAnimationManager.dispose();
   }
 
-  update(delta: number = 0){
+  /**
+   * Retail CSWSArea::AIUpdate — weather re-roll + OnHeartbeat every 5999ms.
+   */
+  aiUpdate(delta: number = 0){
+    this.weather?.aiUpdate?.(delta);
+
+    if(!this._areaHeartbeatInitialized){
+      this._areaHeartbeatInitialized = true;
+      this._areaHeartbeatElapsedMs = 0;
+      return;
+    }
+    this._areaHeartbeatElapsedMs += 1000 * delta;
+    if(this._areaHeartbeatElapsedMs > 5999){
+      this._areaHeartbeatElapsedMs = 0;
+      const onHeartbeat = this.scripts[ModuleObjectScript.AreaOnHeartbeat];
+      if(onHeartbeat){
+        try{
+          onHeartbeat.run(this as any, 0);
+        }catch(e){
+          console.error('ModuleArea.aiUpdate OnHeartbeat', e);
+        }
+      }
+    }
+  }
+
+  /**
+   * Per-frame client/visual pass (retail CClientAIMaster + CSWCArea visuals).
+   * Server AI for game objects is driven by ServerAIMaster.
+   */
+  clientUpdate(delta: number = 0){
     // Re-read lengths each iteration: destroy/detach can splice mid-update
-    //update triggers
     for(let i = 0; i < this.triggers.length; i++){
       this.triggers[i]?.update(delta);
     }
 
-    //update encounters
     for(let i = 0; i < this.encounters.length; i++){
       this.encounters[i]?.update(delta);
     }
     
-    //update aoe
     for(let i = 0; i < this.areaOfEffects.length; i++){
       this.areaOfEffects[i]?.update(delta);
     }
 
-    // Doors before creatures/party: scripts often AssignCommand(door, ActionOpenDoor)
-    // then ActionMoveToObject on a creature in the same frame (k_pend_traskdl40).
-    // Opening must start before the mover's first PlotPath attempt.
     for(let i = 0; i < this.doors.length; i++){
       this.doors[i]?.update(delta);
     }
 
-    //update party
     for(let i = 0; i < GameState.PartyManager.party.length; i++){
       GameState.PartyManager.party[i]?.update(delta);
     }
     
-    //update creatures
     for(let i = 0; i < this.creatures.length; i++){
       this.creatures[i]?.update(delta);
     }
 
-    //update placeables
     for(let i = 0; i < this.placeables.length; i++){
       this.placeables[i]?.update(delta);
     }
@@ -625,39 +651,40 @@ export class ModuleArea extends ModuleObject {
     this.updateMusic(delta);
   }
 
+  /** @deprecated Prefer clientUpdate — kept for callers that still use area.update */
+  update(delta: number = 0){
+    this.clientUpdate(delta);
+  }
+
   updatePaused(delta: number = 0){
-    //update triggers
+    // Visual pass while paused; TimeStop exclusions already got aiUpdate via ServerAIMaster
     for(let i = 0; i < this.triggers.length; i++){
       this.triggers[i]?.updatePaused(delta);
     }
 
-    //update encounters
     for(let i = 0; i < this.encounters.length; i++){
       this.encounters[i]?.updatePaused(delta);
     }
 
-    //update aoe
     for(let i = 0; i < this.areaOfEffects.length; i++){
       this.areaOfEffects[i]?.updatePaused(delta);
     }
 
-    // Doors before creatures/party (same ordering as update)
     for(let i = 0; i < this.doors.length; i++){
       this.doors[i]?.updatePaused(delta);
     }
 
-    //update party (TimeStop exclusions keep full update — retail exclusion list)
     for(let i = 0; i < GameState.PartyManager.party.length; i++){
       const pm = GameState.PartyManager.party[i];
       if(!pm) continue;
       if(GameState.timeStopActive && GameState.timeStopExclusions?.has(pm.id)){
+        // Full visual update for TimeStop exclusions (aiUpdate already ran)
         pm.update(delta);
       }else{
         pm.updatePaused(delta);
       }
     }
     
-    //update creatures
     for(let i = 0; i < this.creatures.length; i++){
       const c = this.creatures[i];
       if(!c) continue;
@@ -668,7 +695,6 @@ export class ModuleArea extends ModuleObject {
       }
     }
     
-    //update placeables
     for(let i = 0; i < this.placeables.length; i++){
       this.placeables[i]?.updatePaused(delta);
     }
@@ -676,11 +702,6 @@ export class ModuleArea extends ModuleObject {
     if(GameState.Mode == EngineMode.MINIGAME){
       this.miniGame.tickPaused(delta);
     }
-
-    //update rooms
-    // for(let i = 0; i < roomCount; i++){
-    //   this.rooms[i].hide();
-    // }
 
     this.updateRoomVisibility(delta);
     FollowerCamera.update(delta, this);
@@ -2184,6 +2205,26 @@ export class ModuleArea extends ModuleObject {
       this.cleanupUninitializedObjects();
       this.detectRoomObjects();
 
+      // Retail IncreaseAILevelPriority when players occupy the area
+      this.playersInArea = GameState.PartyManager?.party?.length || 0;
+      if(this.playersInArea > 0){
+        const aiObjects = [
+          ...this.creatures,
+          ...this.doors,
+          ...this.placeables,
+          ...this.triggers,
+          ...this.encounters,
+          ...this.areaOfEffects,
+          ...(GameState.PartyManager?.party || []),
+        ];
+        GameState.ServerAIMaster?.increaseAILevelPriority?.(aiObjects);
+        // Party / PC always VERY_HIGH
+        for(let i = 0; i < (GameState.PartyManager?.party?.length || 0); i++){
+          const pm = GameState.PartyManager.party[i];
+          if(pm) GameState.ServerAIMaster?.setAILevel?.(pm, AILevel.VERY_HIGH);
+        }
+      }
+
       if(GameState.group.grass){
         GameState.group.grass.visible = !!GameState.iniConfig.getProperty('Graphics Options.Grass');
       }
@@ -2295,6 +2336,13 @@ export class ModuleArea extends ModuleObject {
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleRoom)){
       if(this.rooms.indexOf(object as ModuleRoom) >= 0) return;
       this.rooms.push(object as ModuleRoom);
+    }
+
+    // Retail AddToArea: promote VERY_LOW → LOW while players occupy the area
+    if(this.playersInArea > 0 && object.aiLevel === AILevel.VERY_LOW){
+      if(GameState.ServerAIMaster?.shouldPromoteOnAreaEntry?.(object)){
+        GameState.ServerAIMaster.setAILevel(object, AILevel.LOW);
+      }
     }
   }
 

@@ -219,6 +219,14 @@ export class Module {
   filename: string;
   readyToProcessEvents: boolean = false;
   isSaveGame: boolean = false;
+  /**
+   * Retail CSWSModule::DoUpdate flip-flop — alternates module vs area AIUpdate each frame.
+   * 1 = next doUpdate runs module.aiUpdate; 0 = area.aiUpdate.
+   */
+  _doUpdateFlip: number = 1;
+  /** Elapsed ms since last module heartbeat (retail 5999ms threshold). */
+  _moduleHeartbeatElapsedMs: number = 0;
+  _moduleHeartbeatInitialized: boolean = false;
 
   constructor(){
     this.scripts = {} as { [key in ModuleObjectScript]?: NWScriptInstance };
@@ -579,25 +587,20 @@ export class Module {
 
     if(this.readyToProcessEvents){
 
-      //Process EventQueue
-      let eqLen = this.eventQueue.length - 1;
-      for(let i = eqLen; i >= 0; i--){
-        let event = this.eventQueue[i];
-        // Compare full calendar span (day wrap-safe) — not pauseDay && pauseTime
-        if(this.timeManager.getMilisecondsElapsed(event.day, event.time) >= 0){
-          event.execute();
-          this.eventQueue.splice(i, 1);
-        }
-      }
-
-      //Process EffectList
+      //Process EffectList (module-level VFX / effects still tick every frame)
       let elLen = this.effects.length - 1;
       for(let i = elLen; i >= 0; i--){
         this.effects[i].update(delta);
       }
 
+      // Retail CServerAIMaster::UpdateState — budgeted AI + event drain + quick-walk
+      GameState.ServerAIMaster.updateState(delta);
+
+      // Retail CSWSModule::DoUpdate — alternate module / area heartbeat
+      this.doUpdate(delta);
+
       if(this.area){
-        this.area.update(delta);
+        this.area.clientUpdate(delta);
       }
 
       this.timeManager.update(delta);
@@ -606,8 +609,50 @@ export class Module {
 
   }
 
+  /**
+   * Retail CSWSModule::DoUpdate @ 004c6dc0 — alternates each frame between
+   * module AIUpdate and area AIUpdate.
+   */
+  doUpdate(delta: number = 0){
+    if(this._doUpdateFlip){
+      this._doUpdateFlip = 0;
+      this.aiUpdate(delta);
+    }else{
+      this._doUpdateFlip = 1;
+      if(this.area){
+        this.area.aiUpdate(delta);
+      }
+    }
+  }
+
+  /**
+   * Retail CSWSModule::AIUpdate — Mod_OnHeartbeat every 5999ms.
+   */
+  aiUpdate(delta: number = 0){
+    if(!this._moduleHeartbeatInitialized){
+      this._moduleHeartbeatInitialized = true;
+      this._moduleHeartbeatElapsedMs = 0;
+      return;
+    }
+    this._moduleHeartbeatElapsedMs += 1000 * delta;
+    if(this._moduleHeartbeatElapsedMs > 5999){
+      this._moduleHeartbeatElapsedMs = 0;
+      const onHeartbeat = this.scripts[ModuleObjectScript.ModuleOnHeartbeat];
+      if(onHeartbeat){
+        try{
+          // Module scripts run against the area object (see initScripts)
+          onHeartbeat.run(this.area ?? this, 0);
+        }catch(e){
+          console.error('Module.aiUpdate Mod_OnHeartbeat', e);
+        }
+      }
+    }
+  }
+
   tickPaused(delta = 0){
     if(this.readyToProcessEvents){
+      // TimeStop exclusions still receive aiUpdate while paused
+      GameState.ServerAIMaster.updateStatePaused(delta);
       if(this.area){
         this.area.updatePaused(delta);
       }

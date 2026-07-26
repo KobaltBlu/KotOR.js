@@ -10,6 +10,7 @@ import { EffectRacialType } from "@/effects";
 import { animForSetState, getActiveSetStateType } from "@/effects/set-state";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { AILevel } from "@/enums/module/AILevel";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
@@ -728,6 +729,143 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
+  /**
+   * Retail WalkUpdateLocation_QuickWalk — every-frame locomotion for movers.
+   * Advances the head MoveTo/Follow/Drive action so motion never skips frames
+   * when aiUpdate is budget-deferred. Sets _quickWalkedThisFrame so aiUpdate
+   * does not re-process the same action.
+   */
+  quickWalkUpdate(delta: number = 0){
+    if(this.destroyed || this.willDestroy || this.isRetainedCorpse) return;
+    if(this.isDead() || this.isDebilitated()) return;
+    if(!GameState.module?.readyToProcessEvents) return;
+
+    const action = this.actionQueue?.[0];
+    if(!action) return;
+    const type = action.type;
+    if(
+      type !== ActionType.ActionMoveToPoint &&
+      type !== ActionType.ActionFollowLeader &&
+      type !== ActionType.ActionForceFollowObject &&
+      type !== ActionType.ActionDrive
+    ){
+      return;
+    }
+
+    this.actionQueue.process(delta);
+    this.action = this.actionQueue[0];
+    this._quickWalkedThisFrame = true;
+  }
+
+  /**
+   * Retail CSWSCreature::AIUpdate @ 004fe210 — scheduled by ServerAIMaster.
+   * Heartbeat/effects (super), damage, action queue, perception, combat timers,
+   * regen, AI-level self-adjustment.
+   */
+  aiUpdate(delta: number = 0){
+    if(this.destroyed || this.isRetainedCorpse) return;
+
+    super.aiUpdate(delta);
+
+    if(this.destroyed || this.willDestroy) return;
+    if(!this.isReady) return;
+
+    if(GameState.Mode != EngineMode.INGAME && GameState.Mode != EngineMode.MINIGAME && GameState.Mode != EngineMode.DIALOG){
+      this._quickWalkedThisFrame = false;
+      return;
+    }
+
+    this.action = this.actionQueue[0];
+    this.area = GameState.module.area;
+
+    if(!this.isDead()){
+      // Process DamageList
+      let elLen = this.damageList.length - 1;
+      for(let i = elLen; i >= 0; i--){
+        this.damageList[i].delay -= delta;
+        if(this.damageList[i].delay <= 0){
+          this.subtractHP(this.damageList[i].amount);
+
+          let painsound = THREE.MathUtils.randInt(0, 1);
+          switch(painsound){
+            case 1:
+              this.playSoundSet(SSFType.PAIN_2);
+            break;
+            default:
+              this.playSoundSet(SSFType.PAIN_1);
+            break;
+          }
+
+          this.damageList.splice(i, 1);
+        }
+      }
+
+      this.deathStarted = false;
+
+      if(this.animationState.index != ModuleCreatureAnimState.DEAD){
+        if(!this._quickWalkedThisFrame){
+          this.updateActionQueue(delta);
+        }else{
+          this.action = this.actionQueue[0];
+        }
+      }
+    }else{
+      this.damageList = [];
+    }
+
+    this.updateCombatStateTimer(delta);
+    this.updateExcitedDuration(delta);
+    this.updateCombat(delta);
+    this.updateCasting(delta);
+
+    this.updatePerceptionList(delta);
+    this.updateListeningPatterns();
+
+    // Deferred effects (when deferEventUpdate was set)
+    if(this.deferEventUpdate){
+      for(let i = 0, len = this.effects.length; i < len; i++){
+        const effect = this.effects[i];
+        if(effect) effect.update(delta);
+      }
+    }
+
+    this.updateRegen(delta);
+    this.adjustAILevel();
+
+    this._quickWalkedThisFrame = false;
+  }
+
+  /**
+   * Retail CSWSCreature::AIUpdate AI-level self-adjustment.
+   * Party/PC → VERY_HIGH; combat → NORMAL; else LOW (area occupied) or VERY_LOW.
+   */
+  adjustAILevel(){
+    const master = GameState.ServerAIMaster;
+    if(!master) return;
+
+    // Party / PC always VERY_HIGH
+    if((this.isPlayer || this.isPM || this.isPartyMember()) && this.aiLevel !== AILevel.VERY_HIGH){
+      master.setAILevel(this, AILevel.VERY_HIGH);
+      return;
+    }
+
+    if(this.isPlayer || this.isPM || this.isPartyMember()) return;
+
+    if(this.combatData?.combatState){
+      if(this.aiLevel !== AILevel.NORMAL && this.aiLevel !== AILevel.VERY_HIGH){
+        master.setAILevel(this, AILevel.NORMAL);
+      }
+      return;
+    }
+
+    // Demote non-combat NORMAL → LOW/VERY_LOW based on players in area
+    if(this.aiLevel === AILevel.NORMAL){
+      const areaOccupied = (this.area as any)?.playersInArea > 0 ||
+        (GameState.PartyManager?.party?.length > 0 && this.area === GameState.module?.area);
+      master.setAILevel(this, areaOccupied ? AILevel.LOW : AILevel.VERY_LOW);
+    }
+  }
+
   update( delta = 0 ){
 
     if(this.destroyed){
@@ -797,7 +935,7 @@ export class ModuleCreature extends ModuleObject {
       }*/
 
       if(!this.isDead() && (
-          this.animationState.index == ModuleCreatureAnimState.DEAD ||
+        this.animationState.index == ModuleCreatureAnimState.DEAD ||
           this.animationState.index == ModuleCreatureAnimState.DEAD1 ||
           this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD || 
           this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD1
@@ -808,33 +946,7 @@ export class ModuleCreature extends ModuleObject {
       }
 
       if(!this.isDead()){
-
-        //Process DamageList
-        let elLen = this.damageList.length - 1;
-        for(let i = elLen; i >= 0; i--){
-          this.damageList[i].delay -= delta;
-          if(this.damageList[i].delay <= 0){
-            this.subtractHP(this.damageList[i].amount);
-
-            let painsound = THREE.MathUtils.randInt(0, 1);
-            switch(painsound){
-              case 1:
-                this.playSoundSet(SSFType.PAIN_2);
-              break;
-              default:
-                this.playSoundSet(SSFType.PAIN_1);
-              break;
-            }
-      
-            this.damageList.splice(i, 1);
-          }
-        }
-
-        this.deathStarted = false;
-        
-        if(this.animationState.index != ModuleCreatureAnimState.DEAD){
-          this.updateActionQueue(delta);
-        }
+        // Damage list + action queue moved to aiUpdate / quickWalkUpdate
 
         if(this.dialogAnimation && (GameState.Mode == EngineMode.DIALOG) && (!this.action || this.action.type != ActionType.ActionPlayAnimation)){
           if(this.model){
@@ -872,7 +984,6 @@ export class ModuleCreature extends ModuleObject {
           this.dialogAnimation = null;
         }
       }else{
-        this.damageList = [];
         this.getUpAnimationPlayed = false;
         if(
           this.deathStarted && 
@@ -1035,13 +1146,10 @@ export class ModuleCreature extends ModuleObject {
         this.setAnimationState(ModuleCreatureAnimState.READY);
       }
 
-      this.updateCombatStateTimer(delta);
-      this.updateExcitedDuration(delta);
-      this.updateCombat(delta);
-      this.updateCasting(delta);
+      // Combat / casting / perception / regen moved to aiUpdate
       this.updateAnimationState();
       this.updateItems(delta);
-      
+
       if(this.model instanceof OdysseyModel3D && this.model.bonesInitialized){
 
         //BEGIN: Animation Optimization
@@ -1108,8 +1216,7 @@ export class ModuleCreature extends ModuleObject {
         this.updateCollision(delta);
       }
 
-      this.updatePerceptionList(delta);
-      this.updateListeningPatterns();
+      // Perception / listening moved to aiUpdate
 
 
       // Party companion stuck: prefer follow-ring TeleportForward; give hex/avoidance time first
@@ -1203,13 +1310,7 @@ export class ModuleCreature extends ModuleObject {
         this.equipment.CLAW3.update(delta);
       }
 
-      //Loop through and update the effects
-      if(this.deferEventUpdate){
-        for(let i = 0, len = this.effects.length; i < len; i++){
-          const effect = this.effects[i];
-          if(effect) effect.update(delta);
-        }
-      }
+      // Effects / regen moved to aiUpdate
 
       if(!this.position.equals(this.lastPosition)){
         this.lastPosition.copy(this.position);
@@ -1223,8 +1324,6 @@ export class ModuleCreature extends ModuleObject {
       this.updateAnimationState();
       this.updateItems(delta);
     }
-
-    this.updateRegen(delta);
 
     // Decay stuck timer only when not in contact (CollisionManager increments while colliding)
     if(!this.collisionManager?.blockingObject){
