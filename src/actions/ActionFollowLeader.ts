@@ -106,6 +106,7 @@ export class ActionFollowLeader extends Action {
       owner.force = 0;
       owner.speed = 0;
       owner.moveDirOverride = undefined;
+      owner.clearLocomotionAnimation?.();
       return ActionStatus.IN_PROGRESS;
     }
 
@@ -122,6 +123,7 @@ export class ActionFollowLeader extends Action {
     owner.locomotionScale = 1;
     owner.moveDirOverride = undefined;
     owner.setComputedPath(undefined);
+    owner.clearLocomotionAnimation?.();
     // Party field426 creatures aren't BumpFriends targets — soft-separate when idle
     partySoftSeparate(owner);
   }

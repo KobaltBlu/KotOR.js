@@ -4964,6 +4964,9 @@ export class ModuleCreature extends ModuleObject {
     this.locomotionScale = 1;
     this.moveDirOverride = undefined;
     resetWalkSpeedFactor(this);
+    // Retail WalkUpdateLocation @ 0051bb10 end-of-path: SetAnimation(10000 / PAUSE).
+    // Walk/run clips are forced looping, so they never demote on their own.
+    this.clearLocomotionAnimation();
     if(resetPlayerControl && this.playerControl){
       this.playerControl.active = false;
       this.playerControl.axisForward = 0;
@@ -4975,6 +4978,20 @@ export class ModuleCreature extends ModuleObject {
       this.playerControl.facingErrorDeg = 0;
       this.playerControl.lastAnimMoveSpeed = 0;
       this.playerControl.driveFlags = 0;
+    }
+  }
+
+  /**
+   * Drop sticky walk/run/back to idle. Combat / counterspell promote on next update.
+   */
+  clearLocomotionAnimation(){
+    const idx = this.animationState?.index;
+    if(
+      idx === ModuleCreatureAnimState.RUNNING ||
+      idx === ModuleCreatureAnimState.WALKING ||
+      idx === ModuleCreatureAnimState.WALKING_BACK
+    ){
+      this.setAnimationState(ModuleCreatureAnimState.PAUSE);
     }
   }
 

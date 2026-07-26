@@ -124,6 +124,7 @@ export class ActionForceFollowObject extends Action {
     owner.locomotionScale = 1;
     owner.moveDirOverride = undefined;
     owner.setComputedPath(undefined);
+    owner.clearLocomotionAnimation?.();
     return ActionStatus.IN_PROGRESS;
   }
 

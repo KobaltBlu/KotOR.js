@@ -14,7 +14,6 @@ import { beginInterAreaPath } from "@/engine/pathfinding/inter-area-path";
 import { WALK_BACK_DOT } from "@/engine/pathfinding/locomotion";
 import {
   walkUpdateLocation,
-  resetWalkSpeedFactor,
 } from "@/engine/pathfinding/walk-update-location";
 import {
   plotPath,
@@ -249,12 +248,8 @@ export class ActionMoveToPoint extends Action {
   }
 
   private stopMoving(owner: ModuleCreature){
-    owner.force = 0;
-    owner.speed = 0;
-    owner.walk = false;
-    owner.locomotionScale = 1;
-    owner.moveDirOverride = undefined;
-    resetWalkSpeedFactor(owner);
+    // Physics + walk/run anim — retail WalkUpdateLocation end sets anim 10000
+    owner.clearLocomotionState(false);
   }
 
   shouldRepathToMovingTarget(distanceToLive: number): boolean {
