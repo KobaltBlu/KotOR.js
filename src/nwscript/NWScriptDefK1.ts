@@ -9171,12 +9171,12 @@ NWScriptDefK1.Actions = {
     }
   },
   709:{
-    comment: "709: GetNPCSelectability\n",
+    comment: "709: GetNPCSelectability\nRetail CSWPartyTable::GetNPCSelectability — -1 if unavailable, else selectability (0/1).\n",
     name: "GetNPCSelectability",
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      return GameState.PartyManager.IsSelectable(args[0]) ? NW_TRUE : NW_FALSE;
+      return GameState.PartyManager.GetNPCSelectability(args[0]);
     }
   },
   710:{
@@ -9209,10 +9209,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [string, number, number]){
-      //Setting ignoreUnescapable = TRUE allows the exithawk script to manage the party ingoring the unescapable flag
-      //set in the area properties. This is my current understanding of how I think it should work...
-      GameState.MenuManager.MenuPartySelection.open( args[0], args[1], args[2] );
-      GameState.MenuManager.MenuPartySelection.ignoreUnescapable = true;
+      // Retail ExecuteCommandShowPartySelectionGUI always passes requireAccept=1.
+      GameState.MenuManager.MenuPartySelection.open( args[0], args[1], args[2], 0, true );
     }
   },
   713:{

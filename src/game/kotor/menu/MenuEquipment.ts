@@ -551,11 +551,13 @@ export class MenuEquipment extends GameMenu {
     });
 
     if(selectDefault){
-      // Prefer last inventory item like prior code, or equipped row if present.
+      // Retail OnSelectSlot: SetSelectedControl(1) only when the slot is occupied.
+      // Empty slots leave selection cleared — user must click a row to preview-equip.
       const kids = this.LB_ITEMS.children;
-      if(kids.length > 0){
-        const equippedIdx = equipped ? 1 : -1;
-        this.LB_ITEMS.select(kids[equippedIdx >= 0 ? equippedIdx : kids.length - 1]);
+      if(equipped && kids.length > 1){
+        this.LB_ITEMS.select(kids[1]);
+      }else{
+        this.updateSelected(undefined);
       }
     }
     this._suppressPreview = false;

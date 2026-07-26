@@ -5225,11 +5225,13 @@ NWScriptDefK2.Actions = {
     action: undefined
   },
   709: {
-    comment: '709: GetNPCSelectability\nnNPC - NPC_\nreturns 1 if in current party, 0 if selectable as a party member\n-1 if not in party at all',
+    comment: '709: GetNPCSelectability\nRetail CSWPartyTable::GetNPCSelectability — -1 if unavailable, else selectability (0/1).',
     name: 'GetNPCSelectability',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      return GameState.PartyManager.GetNPCSelectability(args[0]);
+    }
   },
   710: {
     comment: '710: Clear all the effects of the caller.\n* No return value, but if an error occurs, the log file will contain\n  \'ClearAllEffects failed.\'.',
@@ -5250,7 +5252,10 @@ NWScriptDefK2.Actions = {
     name: 'ShowPartySelectionGUI',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.STRING, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [string, number, number, number]){
+      const allowCancel = args.length > 3 ? args[3] : 0;
+      GameState.MenuManager.MenuPartySelection.open(args[0], args[1], args[2], allowCancel, true);
+    }
   },
   713: {
     comment: '713: GetStandardFaction\nFind out which standard faction oObject belongs to.\n* Returns INVALID_STANDARD_FACTION if oObject does not belong to\n  a Standard Faction, or an error has occurred.',

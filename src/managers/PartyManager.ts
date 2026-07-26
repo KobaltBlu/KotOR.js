@@ -1063,6 +1063,15 @@ export class PartyManager {
   static IsSelectable(nID = 0){
     return PartyManager.NPCS[nID]?.canSelect ? true : false;
   }
+
+  /**
+   * Retail CSWPartyTable::GetNPCSelectability — -1 if unavailable, else canSelect (0/1).
+   */
+  static GetNPCSelectability(nID = 0): number {
+    if(nID < 0 || nID >= PartyManager.MaxPartyCount) return -1;
+    if(!PartyManager.IsAvailable(nID)) return -1;
+    return PartyManager.IsSelectable(nID) ? 1 : 0;
+  }
   
   /**
    * Check if the NPC is available
