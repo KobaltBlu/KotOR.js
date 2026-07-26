@@ -11,6 +11,7 @@ import { NWScriptDef } from "@/nwscript/NWScriptDef";
 import { NWScriptDefK1 } from "@/nwscript/NWScriptDefK1";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import EngineLocation from "@/engine/EngineLocation";
+import { playVisualAreaEffect } from "@/effects/play-visual-area-effect";
 import { SaveGame } from "@/engine/SaveGame";
 import * as THREE from "three";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
@@ -5002,7 +5003,9 @@ NWScriptDefK2.Actions = {
     name: 'PlayVisualAreaEffect',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.LOCATION ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number, EngineLocation]){
+      playVisualAreaEffect(args[0], args[1], this.caller);
+    }
   },
   678: {
     comment: '678: SetJournalQuestEntryPicture\nSets the picture for the quest entry on this object (creature)',

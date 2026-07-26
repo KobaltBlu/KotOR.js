@@ -39,7 +39,7 @@ function segmentHitsBox(a: THREE.Vector3, b: THREE.Vector3, box: THREE.Box3): bo
 }
 
 /**
- * Closed door — retail NoNonWalkPolysInDoor @ 005890f0 runs CSWCollisionMesh
+ * Door walkmesh — retail NoNonWalkPolysInDoor @ 005890f0 runs CSWCollisionMesh
  * on the open_state surface mesh. Fallback: facing-plane (GetDoorCrossed).
  */
 function closedDoorBlocksLine(
@@ -50,7 +50,6 @@ function closedDoorBlocksLine(
   hit?: WalkHitInfo
 ): boolean {
   if(!door) return false;
-  if(typeof door.isOpen === 'function' && door.isOpen()) return false;
 
   const wok = door.collisionManager?.walkmesh;
   if(wok?.faces?.length){
@@ -76,7 +75,8 @@ function closedDoorBlocksLine(
     return false;
   }
 
-  // Fallback facing-plane when no door wok
+  // Fallback facing-plane when no door wok (closed only — open meshes absent)
+  if(typeof door.isOpen === 'function' && door.isOpen()) return false;
   if(!door.box) return false;
 
   const minX = Math.min(from.x, to.x) - expand;

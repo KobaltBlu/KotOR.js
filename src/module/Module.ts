@@ -535,8 +535,10 @@ export class Module {
 
     effect.loadModel();
     const object: any = {
+      context: GameState,
       model: new THREE.Object3D(),
       position: lLocation.position,
+      effects: [] as GameEffect[],
       dispose: function(){
         this.onRemove();
         this.removeEffect(this);
@@ -559,7 +561,9 @@ export class Module {
     object.model.position.copy(lLocation.position);
 
     effect.setCreator(object);
-    effect.setAttachedObject(this);
+    // Attach to the location node, not the module — impact models hang off
+    // object.model so the VFX renders at lLocation.
+    effect.setAttachedObject(object);
     effect.onApply(object);
     this.effects.push(effect);
 

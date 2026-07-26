@@ -2531,25 +2531,13 @@ export class ModuleArea extends ModuleObject {
         // door.position.y = door.getY();
         // door.position.z = door.getZ();
         door.rotation.set(0, 0, door.getBearing());
+        door.facing = door.getBearing();
         const model = await door.loadModel();
         door.computeBoundingBox();
         const dwk = await door.loadWalkmesh(model.name);
 
         try{
           model.userData.walkmesh = dwk;
-          door.collisionManager.setWalkmesh(dwk);
-          GameState.walkmeshList.push( dwk.mesh );
-
-          if(dwk.mesh instanceof THREE.Object3D){
-            dwk.mat4.makeRotationFromEuler(door.rotation);
-            dwk.mat4.setPosition( door.position.x, door.position.y, door.position.z);
-            dwk.mesh.geometry.applyMatrix4(dwk.mat4);
-            dwk.updateMatrix();
-            //dwk.mesh.position.copy(door.position);
-            // if(!door.isOpen()){
-            //   GameState.group.room_walkmeshes.add( dwk.mesh );
-            // }
-          }
         }catch(e){
           console.error('Failed to add dwk', model.name, dwk, e);
         }

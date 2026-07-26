@@ -25,6 +25,7 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ActionParameterType, ActionType, CombatActionType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@/enums";
 import { CombatRoundAction, SpellCastInstance } from "@/combat";
 import { castAmmunitionProjectile } from "@/combat/combat-projectile";
+import { GRENADE_PAUSE_MS, isGrenadeItemType, resolveGrenadeThrowAnim } from "@/combat/item-cast-grenade";
 import type { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
 
 /** Retail InstantUseItem combat lockout (field436_0xab0 = 3000). */
@@ -570,8 +571,19 @@ export class ModuleItem extends ModuleObject {
     combatAction.domainLevel = 1;
     combatAction.isUserAction = !!options.isUserAction;
     combatAction.setSpell(new TalentSpell(spellId));
-    combatAction.animation = ModuleCreatureAnimState.CASTOUT1;
-    combatAction.animationTime = 1500;
+    // Retail AIActionItemCastSpell case 6 — seed the throw arc so the round
+    // preview matches before ActionItemCastSpell re-resolves it on tick.
+    if(isGrenadeItemType(this.baseItem?.itemType)){
+      const modeltype = oCaster.creatureAppearance?.modeltype;
+      const distanceSq = oTarget
+        ? oTarget.position.distanceToSquared(oCaster.position)
+        : 0;
+      combatAction.animation = resolveGrenadeThrowAnim(modeltype, distanceSq);
+      combatAction.animationTime = GRENADE_PAUSE_MS;
+    }else{
+      combatAction.animation = ModuleCreatureAnimState.CASTOUT1;
+      combatAction.animationTime = 1500;
+    }
     oCaster.combatRound.addAction(combatAction);
     // Retail GetSpellCastItem field347 — stamp caster for spell scripts
     oCaster.spellCastItem = this;

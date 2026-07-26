@@ -57,7 +57,10 @@ interface AnimStateInfo {
 * @memberof KotOR
 */
 export class ModuleDoor extends ModuleObject {
+  /** Collision / GetIsOpen state — deferred until open/close anim completes (retail open_state). */
   openState: ModuleDoorOpenState = ModuleDoorOpenState.DEFAULT;
+  /** Target open state set when open/close begins (retail also_open_state_). */
+  alsoOpenState: ModuleDoorOpenState = ModuleDoorOpenState.DEFAULT;
   objectInteractSide: ModuleDoorInteractSide = ModuleDoorInteractSide.SIDE_1;
 
   lastObjectEntered: ModuleObject;
@@ -106,10 +109,25 @@ export class ModuleDoor extends ModuleObject {
   };
   destroyAnimationPlayed: boolean = false;
 
-  collisionDelay: number = 0;
+  /** Closed-state DWK (model0.dwk). */
+  walkmeshClosed: OdysseyWalkMesh;
+  /** Open side-1 DWK (model1.dwk). */
+  walkmeshOpen1: OdysseyWalkMesh;
+  /** Open side-2 DWK (model2.dwk). */
+  walkmeshOpen2: OdysseyWalkMesh;
+
   doorAppearance: SWDoorAppearance;
   /** Retail door script resrefs (ctor defaults all slots to "default"). */
   scriptResRefs: Partial<Record<string, string>> = {};
+
+  /** Retail MoveNextDoorState @ 00683f00 — "door" or doneopening / doneclosing events. */
+  private static readonly _doorAnimDoneRe = /^done(opening|closing)/i;
+  private doorAnimPlayEventHandler = (event: THREE.Event & { event?: string }) => {
+    const name = String(event?.event ?? '');
+    if(name === 'door' || ModuleDoor._doorAnimDoneRe.test(name)){
+      this.moveToNextOpenState();
+    }
+  };
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -319,26 +337,50 @@ export class ModuleDoor extends ModuleObject {
     return (this.openState == ModuleDoorOpenState.OPEN1 || this.openState == ModuleDoorOpenState.OPEN2);
   }
 
-  updateCollisionState(): void {
-    // if(!this.collisionManager?.walkmesh?.mesh){ return; }
-
-    // Keep DWK WorldToLocal matrix in sync with model (open/close / anim).
-    this.syncWalkmeshMatrix();
-
-    let idx = -1;
-    switch(this.openState){
-      case ModuleDoorOpenState.DESTROYED:
+  /** Retail NoNonWalkPolysInDoor indexes surface_mesh[open_state]. */
+  getWalkmeshForOpenState(openState: ModuleDoorOpenState = this.openState): OdysseyWalkMesh | undefined {
+    switch(openState){
       case ModuleDoorOpenState.OPEN1:
+        return this.walkmeshOpen1 || this.walkmeshClosed;
       case ModuleDoorOpenState.OPEN2:
-        GameState.group.room_walkmeshes.remove( this.collisionManager.walkmesh.mesh );
-        idx = this.area.doorWalkmeshes.indexOf(this.collisionManager.walkmesh);
-        if(idx >= 0){ this.area.doorWalkmeshes.splice(idx, 1); }
-      break;
+        return this.walkmeshOpen2 || this.walkmeshClosed;
+      case ModuleDoorOpenState.DESTROYED:
+        return undefined;
       default:
-        GameState.group.room_walkmeshes.add( this.collisionManager.walkmesh.mesh );
-        idx = this.area.doorWalkmeshes.indexOf(this.collisionManager.walkmesh);
-        if(idx == -1){ this.area.doorWalkmeshes.push(this.collisionManager.walkmesh); }
-      break;
+        return this.walkmeshClosed;
+    }
+  }
+
+  updateCollisionState(): void {
+    const prev = this.collisionManager?.walkmesh;
+    const next = this.getWalkmeshForOpenState(this.openState);
+
+    if(prev && prev !== next){
+      if(prev.mesh){
+        GameState.group.room_walkmeshes.remove(prev.mesh);
+      }
+      if(this.area?.doorWalkmeshes){
+        const idx = this.area.doorWalkmeshes.indexOf(prev);
+        if(idx >= 0){ this.area.doorWalkmeshes.splice(idx, 1); }
+      }
+    }
+
+    if(next){
+      this.collisionManager.setWalkmesh(next);
+      this.syncWalkmeshMatrix();
+      if(next.mesh){
+        GameState.group.room_walkmeshes.add(next.mesh);
+      }
+      if(this.area?.doorWalkmeshes){
+        const idx = this.area.doorWalkmeshes.indexOf(next);
+        if(idx == -1){ this.area.doorWalkmeshes.push(next); }
+      }
+    }else if(prev?.mesh){
+      GameState.group.room_walkmeshes.remove(prev.mesh);
+      if(this.area?.doorWalkmeshes){
+        const idx = this.area.doorWalkmeshes.indexOf(prev);
+        if(idx >= 0){ this.area.doorWalkmeshes.splice(idx, 1); }
+      }
     }
   }
 
@@ -350,16 +392,35 @@ export class ModuleDoor extends ModuleObject {
     }
   }
 
-  setOpenState(openState: ModuleDoorOpenState = ModuleDoorOpenState.CLOSED){
-    const currentOpenState = this.openState;
-    this.openState = openState;
+  /**
+   * Retail CSWSDoor::MoveToNextOpenState @ 00589680 —
+   * commit also_open_state_ → open_state when open/close anim finishes.
+   */
+  moveToNextOpenState(): void {
+    const prev = this.openState;
+    this.openState = this.alsoOpenState;
+    if(prev !== this.openState){
+      this.updateCollisionState();
+    }
+  }
 
-    this.updateCollisionState();
+  /**
+   * Retail CSWSDoor::SetOpenState @ 00589600 —
+   * always sets also_open_state_; open_state only when animate == false.
+   */
+  setOpenState(openState: ModuleDoorOpenState = ModuleDoorOpenState.CLOSED, animate: boolean = true){
+    const currentOpenState = this.openState;
+    this.alsoOpenState = openState;
+
+    if(!animate){
+      this.openState = openState;
+      this.updateCollisionState();
+    }
 
     const wasClosed = (currentOpenState == ModuleDoorOpenState.CLOSED);
     const attemptingOpen = (openState == ModuleDoorOpenState.OPEN1 || openState == ModuleDoorOpenState.OPEN2);
     if(attemptingOpen){
-      if(wasClosed){
+      if(animate && wasClosed){
         if(openState == ModuleDoorOpenState.OPEN1){
           this.setAnimationState(ModuleDoorAnimState.OPENING1);
         }else if(openState == ModuleDoorOpenState.OPEN2){
@@ -377,18 +438,38 @@ export class ModuleDoor extends ModuleObject {
 
     const attemptingClose = (openState == ModuleDoorOpenState.CLOSED);
     if(attemptingClose){
-      const needsToAnimate = (currentOpenState == ModuleDoorOpenState.OPEN1 || currentOpenState == ModuleDoorOpenState.OPEN2);
+      const needsToAnimate = animate && (currentOpenState == ModuleDoorOpenState.OPEN1 || currentOpenState == ModuleDoorOpenState.OPEN2);
       if(needsToAnimate){
         if(currentOpenState == ModuleDoorOpenState.OPEN1){
           this.setAnimationState(ModuleDoorAnimState.CLOSING1);
         }else{
           this.setAnimationState(ModuleDoorAnimState.CLOSING2);
         }
+      }else{
+        this.setAnimationState(ModuleDoorAnimState.CLOSED);
       }
-    }else{
-      this.setAnimationState(ModuleDoorAnimState.CLOSED);
+      return;
     }
 
+    // DESTROYED / other
+    this.setAnimationState(ModuleDoorAnimState.DEFAULT);
+  }
+
+  /**
+   * Retail CSWSDoor::OpenDoor @ 00589c70 — side from facing-plane dot product.
+   */
+  detectInteractSide(object: ModuleObject): ModuleDoorInteractSide {
+    let side = ModuleDoorInteractSide.SIDE_2;
+    if(object){
+      const ox = Math.cos(this.bearing);
+      const oy = Math.sin(this.bearing);
+      const dx = object.position.x - this.position.x;
+      const dy = object.position.y - this.position.y;
+      if(dx * ox + dy * oy > 0){
+        side = ModuleDoorInteractSide.SIDE_1;
+      }
+    }
+    return side;
   }
 
   onClick(callee: ModuleObject){
@@ -399,8 +480,8 @@ export class ModuleDoor extends ModuleObject {
 
     this.lastUsedBy = object;
 
-    // If the door is already open, do nothing
-    if(this.openState){
+    // open_state or in-flight also_open_state (deferred open still counts as opening)
+    if(this.openState || this.alsoOpenState){
       console.log('ModuleDoor', this.getTag(), this.getName(), 'already open');
       return;
     }
@@ -509,22 +590,15 @@ export class ModuleDoor extends ModuleObject {
 
     this.playObjectSound(ModulePlaceableObjectSound.OPENED);
 
-    // if(GameState.selectedObject == this){
-    //   GameState.selectedObject = GameState.selected = undefined;
-    // }
-    
-    //TODO: detect the correct side that the creature interacted from
+    // Retail OpenDoor @ 00589c70 — orientation-plane side detection
+    this.objectInteractSide = this.detectInteractSide(object);
     switch(this.objectInteractSide){
       case ModuleDoorInteractSide.SIDE_1:
-        this.setOpenState(ModuleDoorOpenState.OPEN1);
+        this.setOpenState(ModuleDoorOpenState.OPEN1, true);
       break;
       default:
-        this.setOpenState(ModuleDoorOpenState.OPEN2);
+        this.setOpenState(ModuleDoorOpenState.OPEN2, true);
       break;
-    }
-
-    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh){
-      this.collisionManager.walkmesh.mesh.removeFromParent();
     }
 
     //Notice all creatures within range that someone opened this door
@@ -556,20 +630,9 @@ export class ModuleDoor extends ModuleObject {
     if(onDeath){
       onDeath.run(this);
     }
-    
-    //TODO: detect the correct side that the creature interacted from
-    switch(this.objectInteractSide){
-      case ModuleDoorInteractSide.SIDE_1:
-        this.setOpenState(ModuleDoorOpenState.OPEN1);
-      break;
-      default:
-        this.setOpenState(ModuleDoorOpenState.OPEN2);
-      break;
-    }
 
-    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh){
-      this.collisionManager.walkmesh.mesh.removeFromParent();
-    }
+    // Retail EventHandler death @ 0058ba8c — SetOpenState(3)
+    this.setOpenState(ModuleDoorOpenState.DESTROYED, true);
 
   }
 
@@ -581,11 +644,7 @@ export class ModuleDoor extends ModuleObject {
 
     this.playObjectSound(ModulePlaceableObjectSound.CLOSED);
 
-    if(this.collisionManager.walkmesh && this.collisionManager.walkmesh.mesh){
-      this.collisionManager.walkmesh.mesh.removeFromParent();
-    }
-
-    this.setOpenState(ModuleDoorOpenState.CLOSED);
+    this.setOpenState(ModuleDoorOpenState.CLOSED, true);
 
   }
 
@@ -697,17 +756,7 @@ export class ModuleDoor extends ModuleObject {
 
     this.updateAnimationState(delta);
 
-    if(
-      this.animStateInfo.currentAnimState != ModuleDoorAnimState.CLOSING1 &&
-      this.animStateInfo.currentAnimState != ModuleDoorAnimState.CLOSING2
-    ){
-      this.collisionDelay = 0;
-    }else{
-      this.collisionDelay -= delta;
-      if(this.collisionDelay < 0) this.collisionDelay = 0;
-    }
-
-    if(this.isDead() && !this.isOpen()){
+    if(this.isDead() && !this.isOpen() && this.alsoOpenState !== ModuleDoorOpenState.DESTROYED && this.openState !== ModuleDoorOpenState.DESTROYED){
       this.openDoor(this);
     }
 
@@ -756,17 +805,11 @@ export class ModuleDoor extends ModuleObject {
       if(animation){
         if(currentAnimation != animation.name?.toLowerCase()){
           if(!this.animStateInfo.started){
-            if(
-              this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING1 || 
-              this.animStateInfo.currentAnimState == ModuleDoorAnimState.CLOSING2
-            ){
-              this.collisionDelay = 0.75;
-            }
             this.animStateInfo.started = true;
             const aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
             this.getModel().playAnimation(animation.name?.toLowerCase(), aLooping);
           }else{
-            //Animation completed
+            // Animation completed — retail MoveNextDoorState fires doneopening*/doneclosing*
             switch(this.animStateInfo.currentAnimState){
               //loop default animations
               case ModuleDoorAnimState.OPENED1:
@@ -781,16 +824,22 @@ export class ModuleDoor extends ModuleObject {
 
               //transition animations
               case ModuleDoorAnimState.OPENING1:
+                this.moveToNextOpenState();
                 this.setAnimationState(ModuleDoorAnimState.OPENED1);
               break;
               case ModuleDoorAnimState.OPENING2:
+                this.moveToNextOpenState();
                 this.setAnimationState(ModuleDoorAnimState.OPENED2);
               break;
               case ModuleDoorAnimState.CLOSING1:
               case ModuleDoorAnimState.CLOSING2:
+                this.moveToNextOpenState();
                 this.setAnimationState(ModuleDoorAnimState.CLOSED);
               break;
               default:
+                if(this.alsoOpenState === ModuleDoorOpenState.DESTROYED){
+                  this.moveToNextOpenState();
+                }
                 this.setAnimationState(ModuleDoorAnimState.DEFAULT);
               break;
             }
@@ -974,6 +1023,8 @@ export class ModuleDoor extends ModuleObject {
           this.model.userData.moduleObject = this;
           this.model.name = modelName;
           this.container.add(this.model);
+          this.model.removeEventListener?.('playEvent', this.doorAnimPlayEventHandler);
+          this.model.addEventListener('playEvent', this.doorAnimPlayEventHandler);
 
           this.trans = this.model.trans;
           if(this.trans instanceof THREE.Object3D){
@@ -998,7 +1049,7 @@ export class ModuleDoor extends ModuleObject {
               this.setAnimationState(ModuleDoorAnimState.OPENED2);
             break;
             default:
-              this.setOpenState(ModuleDoorOpenState.CLOSED);
+              this.setOpenState(ModuleDoorOpenState.CLOSED, false);
             break;
           }
 
@@ -1050,19 +1101,47 @@ export class ModuleDoor extends ModuleObject {
   }
 
   async loadWalkmesh(resRef = ''): Promise<OdysseyWalkMesh> {
-    try{
-      const buffer = await ResourceLoader.loadResource(ResourceTypes['dwk'], resRef+'0');
-      const walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
-      walkmesh.mesh.name = walkmesh.name = resRef;
-      walkmesh.mesh.userData.moduleObject = walkmesh.moduleObject = this;
-      this.collisionManager.setWalkmesh(walkmesh);
-  
-      this.updateCollisionState();
-  
-      return this.collisionManager.walkmesh;
-    }catch(e){
-      console.error(e);
+    const loadSlot = async (suffix: string): Promise<OdysseyWalkMesh | undefined> => {
+      try{
+        const buffer = await ResourceLoader.loadResource(ResourceTypes['dwk'], resRef + suffix);
+        const walkmesh = new OdysseyWalkMesh(new BinaryReader(buffer));
+        walkmesh.mesh.name = walkmesh.name = resRef + suffix;
+        walkmesh.mesh.userData.moduleObject = walkmesh.moduleObject = this;
+        this.bakeWalkmeshTransform(walkmesh);
+        return walkmesh;
+      }catch(e){
+        if(suffix === '0'){
+          console.error(e);
+        }
+        return undefined;
+      }
+    };
+
+    this.walkmeshClosed = await loadSlot('0');
+    this.walkmeshOpen1 = await loadSlot('1');
+    this.walkmeshOpen2 = await loadSlot('2');
+
+    if(this.walkmeshClosed){
+      GameState.walkmeshList.push(this.walkmeshClosed.mesh);
     }
+    if(this.walkmeshOpen1){
+      GameState.walkmeshList.push(this.walkmeshOpen1.mesh);
+    }
+    if(this.walkmeshOpen2){
+      GameState.walkmeshList.push(this.walkmeshOpen2.mesh);
+    }
+
+    this.updateCollisionState();
+    return this.collisionManager.walkmesh || this.walkmeshClosed;
+  }
+
+  /** Bake door position/rotation into DWK geometry (once at load). */
+  bakeWalkmeshTransform(dwk: OdysseyWalkMesh): void {
+    if(!(dwk?.mesh instanceof THREE.Object3D)){ return; }
+    dwk.mat4.makeRotationFromEuler(this.rotation);
+    dwk.mat4.setPosition(this.position.x, this.position.y, this.position.z);
+    dwk.mesh.geometry.applyMatrix4(dwk.mat4);
+    dwk.updateMatrix();
   }
 
   initProperties(){
@@ -1155,8 +1234,10 @@ export class ModuleDoor extends ModuleObject {
     if(this.template.RootNode.hasField('OpenLockDC'))
       this.openLockDC = this.template.getFieldByLabel('OpenLockDC').getValue();
 
-    if(this.template.RootNode.hasField('OpenState'))
+    if(this.template.RootNode.hasField('OpenState')){
       this.openState = this.template.getFieldByLabel('OpenState').getValue();
+      this.alsoOpenState = this.openState;
+    }
 
     if(this.template.RootNode.hasField('PaletteID'))
       this.paletteID = this.template.getFieldByLabel('PaletteID').getValue();
@@ -1235,8 +1316,10 @@ export class ModuleDoor extends ModuleObject {
     if(this.template.RootNode.hasField('Z'))
       this.z = this.position.z = this.template.RootNode.getFieldByLabel('Z').getValue();
 
-    if(this.template.RootNode.hasField('Bearing'))
+    if(this.template.RootNode.hasField('Bearing')){
       this.bearing = this.rotation.z = this.template.RootNode.getFieldByLabel('Bearing').getValue();
+      this.facing = this.bearing;
+    }
 
     if(this.template.RootNode.hasField('SWVarTable')){
       let localBools = this.template.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();

@@ -11,7 +11,22 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
+import { CombatRound } from "@/combat/CombatRound";
+import {
+  GRENADE_PAUSE_MS,
+  isGrenadeItemType,
+  resolveGrenadeGateMs,
+  resolveGrenadeThrowAnim,
+} from "@/combat/item-cast-grenade";
 import * as THREE from "three";
+
+/** Retail AIActionItemCastSpell per-item-type animation + gate + pause. */
+type ItemCastTiming = {
+  grenade: boolean;
+  animation: ModuleCreatureAnimState;
+  gateMs: number;
+  pauseMs: number;
+};
 
 /**
  * ActionItemCastSpell class.
@@ -27,6 +42,10 @@ export class ActionItemCastSpell extends Action {
   spellCastInstance: SpellCastInstance | undefined;
   private castStarted = false;
   private chargesConsumed = false;
+  /** Retail elapsed-since-action-start used for the conjure gate / pause. */
+  private elapsedMs = 0;
+  private throwAnim: ModuleCreatureAnimState | undefined;
+  private timing: ItemCastTiming | undefined;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -75,10 +94,46 @@ export class ActionItemCastSpell extends Action {
       spellCastInstance.targetLocation.set(x, y, z);
       spellCastInstance.projectileTarget.set(x, y, z);
     }
+    // Retail SpellCastAndImpact runs the spell's impact script; item casts are
+    // not force powers, so they can never be counterspelled.
+    spellCastInstance.applySpellData();
+    spellCastInstance.allowCounterSpell = false;
+    // The action already held the wind-up through its conjure gate — retail
+    // enters at the impact call, so only the projectile flight remains.
+    spellCastInstance.conjureTime = 0;
     this.owner.area.attachSpellInstance(spellCastInstance);
     spellCastInstance.init();
     this.spellCastInstance = spellCastInstance;
     this.castStarted = true;
+  }
+
+  /**
+   * Retail AIActionItemCastSpell @ 0050f170 switch on baseitems ItemType.
+   * Grenades (case 6) lob with THROW_HIGH / THROW_LOW and a fixed 1500 ms pause.
+   */
+  private resolveItemCastTiming(oItem: ModuleItem, targetPosition: THREE.Vector3): ItemCastTiming {
+    const itemType = oItem?.baseItem?.itemType;
+    if(!isGrenadeItemType(itemType)){
+      return {
+        grenade: false,
+        animation: ModuleCreatureAnimState.CASTOUT1,
+        gateMs: 1,
+        pauseMs: this.owner.combatRound?.roundLength || CombatRound.ROUND_LENGTH,
+      };
+    }
+
+    const creature = this.owner as ModuleCreature;
+    const modeltype = creature.creatureAppearance?.modeltype
+      ?? creature.getAppearance?.()?.modeltype;
+    const distanceSq = targetPosition.distanceToSquared(this.owner.position);
+    const animation = resolveGrenadeThrowAnim(modeltype, distanceSq);
+
+    return {
+      grenade: true,
+      animation,
+      gateMs: resolveGrenadeGateMs(animation),
+      pauseMs: GRENADE_PAUSE_MS,
+    };
   }
 
   update(delta: number = 0): ActionStatus {
@@ -109,14 +164,9 @@ export class ActionItemCastSpell extends Action {
         return ActionStatus.FAILED;
       }
       if(this.spellCastInstance.completed){
-        // Retail DecrementUses at SpellCastAndImpact
-        this.consumeItemCharges(oItem);
+        // Impact resolved — retail still holds the action until the pause ends
         this.spellCastInstance = undefined;
-        const creature = this.owner as ModuleCreature;
-        creature.combatRound?.processPendingCombatActions?.();
-        return ActionStatus.COMPLETE;
       }
-      return ActionStatus.IN_PROGRESS;
     }
 
     const targetPosition = this.target
@@ -127,7 +177,7 @@ export class ActionItemCastSpell extends Action {
           this.getParameter<number>(4) || 0
         );
 
-    if(this.target && !this.spell.inRange(this.target, this.owner)){
+    if(!this.castStarted && this.target && !this.spell.inRange(this.target, this.owner)){
       const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(-1, this.groupId);
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, targetPosition.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, targetPosition.y);
@@ -150,21 +200,52 @@ export class ActionItemCastSpell extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(combatRound.roundPaused && this.castStarted){
+    // Resolved once — retail picks the throw arc from the distance at wind-up
+    if(!this.timing){
+      this.timing = this.resolveItemCastTiming(oItem, targetPosition);
+    }
+    const timing = this.timing;
+    this.elapsedMs += delta * 1000;
+
+    if(!combatRound.roundPaused && !this.castStarted){
+      combatRound.beginCombatRound();
+      combatRound.pauseRound(this.owner, timing.pauseMs);
+    }
+
+    if(combatRound.action){
+      combatRound.action.animation = timing.animation;
+      combatRound.action.animationTime = timing.pauseMs;
+    }
+
+    // Retail holds the throw/cast pose until the conjure gate, then releases.
+    if(this.throwAnim !== timing.animation){
+      this.throwAnim = timing.animation;
+      owner.setAnimationState(timing.animation);
+    }
+
+    if(this.target){
+      owner.setFacingObject(this.target);
+    }
+
+    if(this.elapsedMs < timing.gateMs){
       return ActionStatus.IN_PROGRESS;
     }
 
-    if(!combatRound.roundPaused){
-      combatRound.beginCombatRound();
-      combatRound.pauseRound(this.owner, combatRound.roundLength);
-      if(combatRound.action){
-        combatRound.action.animation = ModuleCreatureAnimState.CASTOUT1;
-      }
+    if(!this.castStarted && combatRound.roundStarted){
+      const spellTarget = this.target || this.owner;
+      this.startSpellInstance(spellTarget);
+      // Retail DecrementUses fires with SpellCastAndImpact, not at round end
+      this.consumeItemCharges(oItem);
+    }
 
-      if(combatRound.roundStarted && !this.castStarted){
-        const spellTarget = this.target || this.owner;
-        this.startSpellInstance(spellTarget);
-      }
+    if(this.elapsedMs >= timing.pauseMs){
+      owner.setAnimationState(ModuleCreatureAnimState.READY);
+      // Retail SpellCastAndImpact is a fire-and-forget event — a grenade still
+      // in flight must finish on the area, not be interrupted by dispose().
+      this.spellCastInstance = undefined;
+      combatRound.removeSpellActionFromRound?.();
+      combatRound.processPendingCombatActions?.();
+      return ActionStatus.COMPLETE;
     }
 
     return ActionStatus.IN_PROGRESS;

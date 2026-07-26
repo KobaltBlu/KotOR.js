@@ -7,6 +7,7 @@ import { OdysseyFace3 } from "@/three/odyssey";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { EngineDebugType } from "@/enums/engine/EngineDebugType";
+import { ModuleDoorOpenState } from "@/enums/module/ModuleDoorOpenState";
 
 // =============================================
 // TYPE DEFINITIONS
@@ -515,7 +516,7 @@ export class CollisionManager {
 
     for (const door of doors) {
       if (!door?.collisionManager?.walkmesh) continue;
-      if (door.isOpen() || door.collisionDelay) continue;
+      if (door.openState === ModuleDoorOpenState.DESTROYED) continue;
 
       const mesh = door.collisionManager.walkmesh.mesh;
       this.tmpMatrix3.getNormalMatrix(mesh.matrixWorld);

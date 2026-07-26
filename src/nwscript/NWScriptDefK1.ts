@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import EngineLocation from "@/engine/EngineLocation";
+import { playVisualAreaEffect } from "@/effects/play-visual-area-effect";
 import { AttackResult } from "@/enums/combat/AttackResult";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionType } from "@/enums/actions/ActionType";
@@ -8773,7 +8774,10 @@ NWScriptDefK1.Actions = {
     comment: "677: PlayVisualAreaEffect\n",
     name: "PlayVisualAreaEffect",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION]
+    args: [NWScriptDataType.INTEGER, NWScriptDataType.LOCATION],
+    action: function(this: NWScriptInstance, args: [number, EngineLocation]){
+      playVisualAreaEffect(args[0], args[1], this.caller);
+    }
   },
   678:{
     comment: "678: SetJournalQuestEntryPicture\nSets the picture for the quest entry on this object (creature)\n",
