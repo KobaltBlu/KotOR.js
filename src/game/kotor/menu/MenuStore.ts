@@ -3,6 +3,7 @@ import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot"
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import type { ModuleCreature, ModuleItem, ModuleStore } from "@/module";
 import { BitWise } from "@/utility/BitWise";
 
@@ -78,6 +79,9 @@ export class MenuStore extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve) => {
+      this.LB_SHOPITEMS?.setProtoBuilder?.(GUIInventoryItem);
+      this.LB_INVITEMS?.setProtoBuilder?.(GUIInventoryItem);
+
       this.BTN_Cancel?.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();

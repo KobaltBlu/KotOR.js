@@ -3511,6 +3511,20 @@ NWScriptDefK1.Actions = {
             return undefined;
           }
         break;
+        case 128: // Store — retail ExecuteCommandCreateObject case 0x80 @ 0052f820
+          buffer = ResourceLoader.loadCachedResource(ResourceTypes['utm'], args[1]);
+          if(buffer){
+            const store = new GameState.Module.ModuleArea.ModuleStore(new GFFObject(buffer));
+            store.load();
+            store.position.copy(args[2].position);
+            store.setFacing(args[2].getFacing(), true);
+            args[2].area.attachObject(store);
+            return store;
+          }else{
+            console.error('Failed to load store template', args);
+            return undefined;
+          }
+        break;
       }
       return undefined;
     }

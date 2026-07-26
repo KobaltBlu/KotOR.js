@@ -57,15 +57,17 @@ export class ModuleStore extends ModuleObject {
   }
 
   load(){
-    if(this.getResRef()){
+    // GIT StoreList / UTM use ResRef (not TemplateResRef). Prefer ResRef; fall back for odd templates.
+    const resRef = this.getResRef() || this.getTemplateResRef();
+    if(resRef){
       //Load template and merge fields
-      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utm'], this.getTemplateResRef());
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utm'], resRef);
       if(buffer){
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();
       }else{
-        console.error('Failed to load ModuleStore template');
+        console.error('Failed to load ModuleStore template', resRef);
         if(this.template instanceof GFFObject){
           this.initProperties();
         }
@@ -148,6 +150,10 @@ export class ModuleStore extends ModuleObject {
     }
             
     if(this.template.RootNode.hasField('ItemList')){
+      // Avoid duplicating stock if initProperties runs again after a template merge.
+      while(this.inventory.length){
+        this.inventory.pop();
+      }
       let items = this.template.RootNode.getFieldByLabel('ItemList').getChildStructs() || [];
       for(let i = 0; i < items.length; i++){
         const moduleItem = new ModuleItem(GFFObject.FromStruct(items[i]));
