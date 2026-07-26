@@ -273,19 +273,21 @@ export class ActionMenuManager {
             icon: securityTalent.getIcon()
           }));
         }
-        // Retail placeable slot 0: Bash when closed/useable/not blastable and
-        // area restrict_mode == 0 (independent of lock state).
+        // Retail placeable slot 0: Bash when locked (client can_use_actions_
+        // mirrors Locked after object-update 0x10), closed, !Plot, useable,
+        // and area restrict_mode == 0.
         if(
           !restricted &&
+          ActionMenuManager.oTarget.isLocked() &&
           !ActionMenuManager.oTarget.isOpen() &&
           ActionMenuManager.oTarget.isUseable() &&
+          !ActionMenuManager.oTarget.plot &&
           !ActionMenuManager.oTarget.notBlastable
         ){
           const player = GameState.PartyManager.Player;
-          // Retail dims Bash on a locked placeable when a companion is acting,
-          // the player creature is dead/in-party, and PartyInteract is false.
+          // Retail dims Bash when a companion is acting, the player creature
+          // is dead/in-party, and PartyInteract is false.
           const bashEnabled = (
-            !ActionMenuManager.oTarget.isLocked() ||
             !player ||
             ActionMenuManager.oPC === player ||
             !player.isPartyMember() ||
@@ -313,9 +315,10 @@ export class ActionMenuManager {
           ActionMenuManager.populateHostileForcePowers();
         }
       }else if(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleDoor){
-        // Retail door slot 1: Security when useable, KeyRequired == 0, and
-        // GetCanUseSkill(Security). Unlock action itself still needs locked.
+        // Retail door slot 1: Security when locked (can_use_actions_ mirrors
+        // Locked), KeyRequired == 0, and GetCanUseSkill(Security).
         if(
+          ActionMenuManager.oTarget.isLocked() &&
           ActionMenuManager.oTarget.isUseable() &&
           !ActionMenuManager.oTarget.keyRequired &&
           bCanUseSecurity
@@ -347,12 +350,15 @@ export class ActionMenuManager {
             name: 'Cut Open',
           }));
         }
-        // Retail door slot 0: Bash when anim is not OPENED1/OPENED2, open
-        // flag is clear, NotBlastable == 0, Useable, and restrict_mode == 0.
+        // Retail door slot 0: Bash when locked (client can_use_actions_ mirrors
+        // Locked after object-update 0x10), anim not OPENED1/OPENED2, open flag
+        // clear, !Plot, Useable, and restrict_mode == 0.
         if(
           !restricted &&
+          ActionMenuManager.oTarget.isLocked() &&
           !ActionMenuManager.oTarget.isOpen() &&
           ActionMenuManager.oTarget.isUseable() &&
+          !ActionMenuManager.oTarget.plot &&
           !ActionMenuManager.oTarget.notBlastable
         ){
           ActionMenuManager.ActionPanels.targetPanels[0].addAction(new GameState.ActionMenuManager.ActionMenuItem({
