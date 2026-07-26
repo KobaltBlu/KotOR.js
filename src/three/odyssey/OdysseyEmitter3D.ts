@@ -1461,11 +1461,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
    * If emitterWorldZ − modelRootZ > 5 → multiply alpha by deadspace, else 1.
    * Ref is the CAurObject / OdysseyModel3D root (retail MdlNode abs Z mistyped as
    * children.size in Ghidra). Used by RenderStandard, RenderMotionBlurred, RenderLinked.
+   *
+   * deadSpace == 0 disables this fade (same gate as Aligned_to_Particle_Dir DEADSPACE).
+   * Returning 0 would wipe alpha for tall emitters (e.g. m45ac_bmap red_fighters on rotdummy).
    */
   private getEmitterFadeAlpha(): number {
     const EMITTER_FADE_HEIGHT = 5.0;
     const dead = this.node?.deadSpace;
-    if(dead === undefined || dead === null) return 1;
+    if(dead === undefined || dead === null || dead === 0) return 1;
 
     this.getWorldPosition(OdysseyEmitter3D._v3A);
     let refZ = OdysseyEmitter3D._v3A.z;

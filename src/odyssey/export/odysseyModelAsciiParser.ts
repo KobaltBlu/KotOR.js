@@ -396,6 +396,18 @@ function parseAabbPreorder(s: MdlAsciiTokenStream, faces: OdysseyFace3[]): IOdys
 }
 
 function parseMeshBody(model: OdysseyModel, mesh: OdysseyModelNodeMesh, s: MdlAsciiTokenStream): void {
+  // readBinary initializes these; ASCII path must too before tverts/faces.
+  if (!mesh.vertices) mesh.vertices = [];
+  if (!mesh.normals) mesh.normals = [];
+  if (!mesh.colors) mesh.colors = [];
+  if (!mesh.tvectors) mesh.tvectors = [[], [], [], []];
+  if (!mesh.texCords) mesh.texCords = [[], [], [], []];
+  if (!mesh.tangents) mesh.tangents = [[], [], [], []];
+  if (!mesh.indexArray) mesh.indexArray = [];
+  if (!mesh.uvs) mesh.uvs = [];
+  if (!mesh.faces) mesh.faces = [];
+  if (!mesh.indices) mesh.indices = [];
+
   const verts: number[] = [];
   let mdxFlags = 0;
   while (!s.eof) {
