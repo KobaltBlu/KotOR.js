@@ -123,7 +123,9 @@ function makeDevServer() {
       watch: false,
     },
     devMiddleware: {
-      writeToDisk: true,
+      // Keep dist/ in sync for F5 debugging, but never write HMR payloads —
+      // each update uses a unique hash and would otherwise accumulate forever.
+      writeToDisk: (filePath) => !/\.hot-update\./.test(filePath),
     },
     historyApiFallback: {
       rewrites: [
