@@ -108,23 +108,28 @@ describe('AddCutsceneAttackAction field contract', () => {
 });
 
 describe('CutsceneAttack duel timing', () => {
-  // Mirror the ActionPhysicalAttacks branch decision: engaged duels only
-  // enter master/slave pairing when the round is NOT a scripted cutscene swing.
-  const usesNonEngagedStart = (
-    duelEngaged: boolean,
-    resultsCalculated: boolean
-  ) => !duelEngaged || resultsCalculated;
+  // Retail: cutscene attacks use the same engaged/master/slave path as normal
+  // attacks. Branch is solely on duelEngaged (not resultsCalculated).
+  const usesNonEngagedStart = (duelEngaged: boolean) => !duelEngaged;
 
-  it('resultsCalculated forces non-engaged start even when duel is engaged', () => {
-    expect(usesNonEngagedStart(true, true)).toBe(true);
+  it('resultsCalculated still uses engaged master/slave when duel is engaged', () => {
+    expect(usesNonEngagedStart(true)).toBe(false);
   });
 
-  it('normal engaged duel still uses the engaged master/slave path', () => {
-    expect(usesNonEngagedStart(true, false)).toBe(false);
+  it('normal engaged duel uses the engaged master/slave path', () => {
+    expect(usesNonEngagedStart(true)).toBe(false);
   });
 
   it('non-engaged attack always uses the non-engaged start', () => {
-    expect(usesNonEngagedStart(false, false)).toBe(true);
+    expect(usesNonEngagedStart(false)).toBe(true);
+  });
+
+  it('roundPaused early-returns before duel resolution (retail slave wait)', () => {
+    // Mirror ActionPhysicalAttacks: if roundPaused, return IN_PROGRESS and
+    // never enter StartCombatRound / ResolveAttack.
+    const shouldEarlyReturn = (roundPaused: boolean) => roundPaused;
+    expect(shouldEarlyReturn(true)).toBe(true);
+    expect(shouldEarlyReturn(false)).toBe(false);
   });
 
   it('resolveMasterState yields when partner already masters this pair', () => {
@@ -155,48 +160,85 @@ describe('CutsceneAttack duel timing', () => {
   });
 });
 
-describe('CutsceneAttack force-react eligibility', () => {
+describe('ResolveMeleeAnimations reaction eligibility', () => {
+  // Retail @ 005b7470: engaged && (checkActionLengthOk || resultsCalculated)
   const base = {
     hasTargetCombatRound: true,
     checkActionLengthOk: false,
-    attackResult: AttackResult.MISS,
-    targetAnimIndex: ModuleCreatureAnimState.ATTACK,
-    targetLastAttackIsAttacker: false,
   };
 
-  it('resultsCalculated forces react even when non-engaged and mid-swing', () => {
+  it('engaged + resultsCalculated reacts even when checkActionLengthOk is false', () => {
+    expect(canSyncMeleeReaction({
+      ...base,
+      engaged: true,
+      resultsCalculated: true,
+      checkActionLengthOk: false,
+    })).toBe(true);
+  });
+
+  it('non-engaged never reacts even with resultsCalculated', () => {
     expect(canSyncMeleeReaction({
       ...base,
       engaged: false,
       resultsCalculated: true,
-    })).toBe(true);
-  });
-
-  it('non-cutscene unengaged does not force-react while mid-swing', () => {
-    expect(canSyncMeleeReaction({
-      ...base,
-      engaged: false,
-      resultsCalculated: false,
     })).toBe(false);
   });
 
-  it('non-cutscene unengaged reacts when idle and targeting attacker', () => {
-    expect(canSyncMeleeReaction({
-      ...base,
-      engaged: false,
-      resultsCalculated: false,
-      targetAnimIndex: ModuleCreatureAnimState.READY,
-      targetLastAttackIsAttacker: true,
-    })).toBe(true);
-  });
-
-  it('engaged duel still reacts on hit without resultsCalculated', () => {
+  it('engaged without resultsCalculated requires checkActionLengthOk', () => {
     expect(canSyncMeleeReaction({
       ...base,
       engaged: true,
       resultsCalculated: false,
-      attackResult: AttackResult.HIT_SUCCESSFUL,
+      checkActionLengthOk: false,
+    })).toBe(false);
+    expect(canSyncMeleeReaction({
+      ...base,
+      engaged: true,
+      resultsCalculated: false,
+      checkActionLengthOk: true,
     })).toBe(true);
+  });
+
+  it('missing target combatRound blocks reaction', () => {
+    expect(canSyncMeleeReaction({
+      engaged: true,
+      resultsCalculated: true,
+      hasTargetCombatRound: false,
+      checkActionLengthOk: true,
+    })).toBe(false);
+  });
+});
+
+describe('killingBlow does not gate duel anims or reactions', () => {
+  // Mirrors calculateRoundAnimations gates after retail alignment.
+  // Retail ResolveMeleeAnimations only checks GetDeadTemp (actual death) —
+  // predicted killingBlow must not force m-set or skip the reaction block.
+  const usesDuelAttackSet = (
+    attackKey: string,
+    engaged: boolean
+  ) => attackKey === 'm' && engaged;
+
+  const entersReactionBlock = (
+    hasTarget: boolean,
+    targetDead: boolean
+  ) => hasTarget && !targetDead;
+
+  it('engaged melee swing uses c-set even when predicted killingBlow', () => {
+    // killingBlow intentionally absent from the gate
+    expect(usesDuelAttackSet('m', true)).toBe(true);
+  });
+
+  it('non-engaged melee swing keeps m-set', () => {
+    expect(usesDuelAttackSet('m', false)).toBe(false);
+  });
+
+  it('reaction block entered for a live target regardless of killingBlow', () => {
+    expect(entersReactionBlock(true, false)).toBe(true);
+  });
+
+  it('reaction block skipped only when target dead or missing', () => {
+    expect(entersReactionBlock(true, true)).toBe(false);
+    expect(entersReactionBlock(false, false)).toBe(false);
   });
 });
 

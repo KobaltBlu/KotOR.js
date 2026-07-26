@@ -7,6 +7,7 @@ import {
   maxAttackRange,
 } from "@/combat/attack-range";
 import { resolveDuelRoundFlags } from "@/combat/combat-dueling";
+import { duelLog, duelWho } from "@/combat/duel-debug";
 import { hasTargetBeenDetected } from "@/combat/nearest-enemy";
 import { tryStuckLosRetarget } from "@/combat/initialize-new-attack-target";
 import { getNearestActionPoint } from "@/combat/nearest-action-point";
@@ -173,92 +174,117 @@ export class ActionPhysicalAttacks extends Action {
       return ActionStatus.FAILED;
     }
 
-    if(!combatRound.roundPaused) {
-      const featId = combatRound.action?.featId || 0;
-
-      // CutsceneAttack (resultsCalculated) never enters engaged duel pairing —
-      // mutual scripted swings would both claim master and infinitePause each
-      // other. Run as an independent non-engaged round instead.
-      const cutsceneAttack = !!combatRound.action?.resultsCalculated;
-
-      if(!duel.engaged || cutsceneAttack){
-        // Non-duel: StartCombatRound(target, engaged=0, master)
-        combatRound.startCombatRound(target, false, duel.master, featId);
-        if(combatRound.action){
-          combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
-        }
-        combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
-      }else if(duel.master){
-        // Engaged master: start both rounds; slave paused with infinitePause
-        combatRound.startCombatRound(target, true, true, featId);
-        if(combatRound.action){
-          combatRound.action.animation = duel.useDuelingAnim
-            ? ModuleCreatureAnimState.ATTACK_DUELING
-            : ModuleCreatureAnimState.ATTACK;
-        }
-        combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
-
-        if(target.combatRound){
-          target.combatRound.startCombatRound(owner, true, false, 0);
-          if(target.combatRound.action){
-            target.combatRound.action.animation = duel.useDuelingAnim
-              ? ModuleCreatureAnimState.ATTACK_DUELING
-              : ModuleCreatureAnimState.ATTACK;
-          }
-          // Retail SetPauseTimer(slave, …, infinitePause=1) while master drives
-          target.combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH, true);
-        }
-      }else{
-        // Engaged slave: master already StartCombatRound'd us — just ensure anim
-        if(combatRound.action){
-          combatRound.action.animation = duel.useDuelingAnim
-            ? ModuleCreatureAnimState.ATTACK_DUELING
-            : ModuleCreatureAnimState.ATTACK;
-        }
-        if(!combatRound.roundStarted){
-          // Master hasn't synced yet — wait
-          return ActionStatus.IN_PROGRESS;
-        }
-        combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
-      }
-
-      if(combatRound.roundStarted){
-
-        if(BitWise.InstanceOfObject(combatRound.newAttackTarget, ModuleObjectType.ModuleObject)){
-          combatRound.setAttackTarget(combatRound.newAttackTarget);
-          this.setParameter(1, ActionParameterType.DWORD, combatRound.newAttackTarget.id);
-          this.target = combatRound.newAttackTarget;
-          combatRound.newAttackTarget = undefined;
-        }
-
-        combatRound.calculateAttackDamage(owner, combatRound.action);
-
-        owner.setFacing(
-          Math.atan2(
-            owner.position.y - target.position.y,
-            owner.position.x - target.position.x
-          ) + Math.PI/2,
-          false,
-          TURN_SPEED_FAST
-        );
-
-        const attack_sound = THREE.MathUtils.randInt(0, 2);
-        switch(attack_sound){
-          case 1:
-            owner.playSoundSet(SSFType.ATTACK_2);
-          break;
-          case 2:
-            owner.playSoundSet(SSFType.ATTACK_3);
-          break;
-          default:
-            owner.playSoundSet(SSFType.ATTACK_1);
-          break;
-        }
-
-        return ActionStatus.COMPLETE;
-      }
-
+    // Retail AIActionPhysicalAttacks @ 005bbbf0 — round_paused early return
+    // before duel resolution. Infinite-paused duel slaves wait here and never
+    // resolve their own swing while the master drives the round.
+    if(combatRound.roundPaused){
+      duelLog(owner, 'wait:roundPaused', {
+        infinite: combatRound.infinitePause,
+        pausedBy: duelWho(combatRound.roundPausedBy),
+        engaged: combatRound.engaged,
+        master: combatRound.master,
+      });
+      return ActionStatus.IN_PROGRESS;
     }
+
+    const featId = combatRound.action?.featId || 0;
+
+    duelLog(owner, 'duel-flags', {
+      target: duelWho(target),
+      choreographed: duel.choreographed,
+      engaged: duel.engaged,
+      master: duel.master,
+      duelingAnim: duel.useDuelingAnim,
+      cutscene: !!combatRound.action?.resultsCalculated,
+    });
+
+    // CutsceneAttack (resultsCalculated) uses the same engaged/master/slave
+    // path as normal attacks — retail never forces them non-engaged.
+    if(!duel.engaged){
+      // Non-duel: StartCombatRound(target, engaged=0, master)
+      duelLog(owner, 'branch:non-engaged-start', { target: duelWho(target) });
+      combatRound.startCombatRound(target, false, duel.master, featId);
+      if(combatRound.action){
+        combatRound.action.animation = ModuleCreatureAnimState.ATTACK;
+      }
+      combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+    }else if(duel.master){
+      // Engaged master: start both rounds; slave paused with infinitePause
+      duelLog(owner, 'branch:master-start', { slave: duelWho(target) });
+      combatRound.startCombatRound(target, true, true, featId);
+      if(combatRound.action){
+        combatRound.action.animation = duel.useDuelingAnim
+          ? ModuleCreatureAnimState.ATTACK_DUELING
+          : ModuleCreatureAnimState.ATTACK;
+      }
+      combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+
+      if(target.combatRound){
+        target.combatRound.startCombatRound(owner, true, false, 0);
+        if(target.combatRound.action){
+          target.combatRound.action.animation = duel.useDuelingAnim
+            ? ModuleCreatureAnimState.ATTACK_DUELING
+            : ModuleCreatureAnimState.ATTACK;
+        }
+        // Retail SetPauseTimer(slave, …, infinitePause=1) while master drives
+        target.combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH, true);
+      }
+    }else{
+      // Engaged slave: master already StartCombatRound'd us — just ensure anim
+      if(combatRound.action){
+        combatRound.action.animation = duel.useDuelingAnim
+          ? ModuleCreatureAnimState.ATTACK_DUELING
+          : ModuleCreatureAnimState.ATTACK;
+      }
+      if(!combatRound.roundStarted){
+        // Master hasn't synced yet — wait
+        duelLog(owner, 'branch:slave-wait-master', { master: duelWho(target) });
+        return ActionStatus.IN_PROGRESS;
+      }
+      duelLog(owner, 'branch:slave-resolve', { master: duelWho(target) });
+      combatRound.pauseRound(owner, CombatRound.ROUND_LENGTH);
+    }
+
+    if(combatRound.roundStarted){
+
+      if(BitWise.InstanceOfObject(combatRound.newAttackTarget, ModuleObjectType.ModuleObject)){
+        combatRound.setAttackTarget(combatRound.newAttackTarget);
+        this.setParameter(1, ActionParameterType.DWORD, combatRound.newAttackTarget.id);
+        this.target = combatRound.newAttackTarget;
+        combatRound.newAttackTarget = undefined;
+      }
+
+      duelLog(owner, 'resolve-attack', {
+        target: duelWho(target),
+        cutscene: !!combatRound.action?.resultsCalculated,
+      });
+      combatRound.calculateAttackDamage(owner, combatRound.action);
+
+      owner.setFacing(
+        Math.atan2(
+          owner.position.y - target.position.y,
+          owner.position.x - target.position.x
+        ) + Math.PI/2,
+        false,
+        TURN_SPEED_FAST
+      );
+
+      const attack_sound = THREE.MathUtils.randInt(0, 2);
+      switch(attack_sound){
+        case 1:
+          owner.playSoundSet(SSFType.ATTACK_2);
+        break;
+        case 2:
+          owner.playSoundSet(SSFType.ATTACK_3);
+        break;
+        default:
+          owner.playSoundSet(SSFType.ATTACK_1);
+        break;
+      }
+
+      return ActionStatus.COMPLETE;
+    }
+
     return ActionStatus.IN_PROGRESS;
   }
 

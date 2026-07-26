@@ -25,6 +25,7 @@ import type { CombatRoundAction } from "@/combat/CombatRoundAction";
 import { CombatRoundAction as CombatRoundActionClass } from "@/combat/CombatRoundAction";
 import { createNewAttackActions } from "@/combat/create-new-attack-actions";
 import { canSyncMeleeReaction, pickMeleeReaction, resolveMeleeReactionPlayback } from "@/combat/combat-reaction-eligibility";
+import { duelLog, duelWho } from "@/combat/duel-debug";
 import {
   getProjectileMissLocation,
   getProjectileTravelDelayMs,
@@ -188,11 +189,23 @@ export class CombatRound {
     this.engaged = !!engaged;
     this.master = !!master;
 
-    // Retail: engaged slave re-enters via EndCombatRound mid-start
+    duelLog(owner, 'round:start', {
+      target: duelWho(target),
+      engaged: this.engaged,
+      master: this.master,
+      featId,
+      cutscene: !!this.action?.resultsCalculated,
+    });
+
+    // Retail: engaged slave re-enters via EndCombatRound mid-start.
+    // endCombatRound clears engaged/master, so re-apply the slave flags —
+    // otherwise the master's ResolveMeleeAnimations sees engaged=false later.
     if(this.engaged && !this.master){
       const savedAction = this.action;
       this.endCombatRound({ skipCreateNewAttackActions: true });
       this.action = savedAction;
+      this.engaged = true;
+      this.master = false;
     }
 
     if(!this.master){
@@ -344,6 +357,12 @@ export class CombatRound {
    * Retail EndCombatRound @ 004d4620 — master clears slave engaged link.
    */
   endCombatRound(options?: { skipCreateNewAttackActions?: boolean }){
+    duelLog(this.owner, 'round:end', {
+      engaged: this.engaged,
+      master: this.master,
+      slave: duelWho(this.duelPartner),
+      reentry: !!options?.skipCreateNewAttackActions,
+    });
     const shouldAutoPause = (
       !options?.skipCreateNewAttackActions &&
       !!this.action &&
@@ -382,6 +401,7 @@ export class CombatRound {
 
     // Master ends → release duel slave (retail field51 clear)
     if(this.master && this.duelPartner?.combatRound){
+      duelLog(this.owner, 'round:release-slave', { slave: duelWho(this.duelPartner) });
       const slave = this.duelPartner.combatRound;
       slave.roundPaused = false;
       slave.roundPausedBy = undefined;
@@ -702,6 +722,11 @@ export class CombatRound {
    * Retail SetRoundPaused + SetPauseTimer — infinitePause holds slave until master ends.
    */
   pauseRound(pauseOwner: ModuleObject, pauseTimer: number = 0, infinitePause: boolean = false){
+    duelLog(this.owner, 'round:pause', {
+      by: duelWho(pauseOwner),
+      timer: pauseTimer,
+      infinite: !!infinitePause,
+    });
     this.roundPaused = true;
     this.roundPausedBy = pauseOwner;
     this.infinitePause = !!infinitePause;
@@ -1893,12 +1918,12 @@ export class CombatRound {
     let weaponWield = creature.getCombatAnimationWeaponType();
     let attackType = 1;
 
-    // Engaged melee choreography uses c*aN attack set (retail duel anims)
-    if(attackKey == 'm'){
-      if(this.engaged && !this.attacksIncludeKillingBlow()){
-        attackKey = 'c';
-        attackType = Math.round(Math.random()*4)+1;
-      }
+    // Engaged melee choreography uses c*aN attack set (retail duel anims).
+    // Do NOT gate on predicted killingBlow — retail only checks actual death
+    // (GetDeadTemp) later in ResolveMeleeAnimations, so hits/crits still duel.
+    if(attackKey == 'm' && this.engaged){
+      attackKey = 'c';
+      attackType = Math.round(Math.random()*4)+1;
     }
 
     // Prefer anim name already chosen by resolveRangedAttack (feat-aware + discharge row)
@@ -1935,6 +1960,15 @@ export class CombatRound {
       : ModuleCreatureAnimState.ATTACK;
 
     if(creature){
+      duelLog(creature, 'anim:attack', {
+        name: this.action.animationName,
+        hasClip: !!(combatAction.twoDAAnimation || this.action.twoDAAnimation),
+        length: animLength,
+        result: AttackResult[combatAction.attackResult] ?? combatAction.attackResult,
+        engaged: this.engaged,
+        dueling: attackAnim === ModuleCreatureAnimState.ATTACK_DUELING,
+        cutscene: !!combatAction.resultsCalculated,
+      });
       creature.playTwoDAAnimation( combatAction.twoDAAnimation || this.action.twoDAAnimation );
       creature.animationState.index = attackAnim;
     }
@@ -1943,7 +1977,9 @@ export class CombatRound {
       ? combatAction.target as ModuleCreature
       : undefined;
 
-    if(target && !target.isDead?.() && !this.attacksIncludeKillingBlow()){
+    // Retail ResolveMeleeAnimations gates only on the target being actually
+    // dead (GetDeadTemp), never on predicted killingBlow — hits must react.
+    if(target && !target.isDead?.()){
       const reaction = pickReaction(combatAction.attackResult);
       if(primary){
         primary.reaxnAnimation = reaction;
@@ -1951,10 +1987,9 @@ export class CombatRound {
         primary.reaxnDelay = 0;
       }
 
-      // Engaged (ResolveMeleeAnimations): CheckActionLengthAtTime or hit/parry always syncs.
-      // Retail: resultsCalculated (param_5) force-reacts when engaged. CutsceneAttack now
-      // starts non-engaged to avoid mutual infinitePause, so also force-react when
-      // resultsCalculated even without engaged (without stealing the defender round timer).
+      // Retail ResolveMeleeAnimations @ 005b7470:
+      // engaged && (CheckActionLengthAtTime || resultsCalculated).
+      // resultsCalculated only bypasses the action-length check.
       const shouldReact = canSyncMeleeReaction({
         engaged: this.engaged,
         resultsCalculated: !!combatAction.resultsCalculated,
@@ -1964,9 +1999,6 @@ export class CombatRound {
           animLength,
           0
         ),
-        attackResult: combatAction.attackResult,
-        targetAnimIndex: target.animationState.index,
-        targetLastAttackIsAttacker: target.combatData.lastAttackTarget == creature,
       });
 
       if(shouldReact && reaction !== ModuleCreatureAnimState.READY){
@@ -1980,19 +2012,40 @@ export class CombatRound {
         }else if(reaction === ModuleCreatureAnimState.DODGE){
           mapped = target.getDodgeAnimation( this.action.animationName );
         }
+        duelLog(creature, 'anim:reaction', {
+          target: duelWho(target),
+          reaction: ModuleCreatureAnimState[reaction] ?? reaction,
+          playback: mapped ? `mapped:${(mapped as any)?.name ?? '?'}` : 'setAnimationState',
+          attackAnim: this.action.animationName,
+        });
         if(resolveMeleeReactionPlayback(mapped).mode === 'mapped'){
           target.playTwoDAAnimation(mapped);
           target.animationState.index = reaction;
         }else{
           target.setAnimationState(reaction);
         }
-        // Only engaged duels shrink the defender round; cutscene force-react must not.
-        if(this.engaged && target.combatRound){
+        // Retail always decrements defender round length when reaction plays
+        if(target.combatRound){
           target.combatRound.decrementRoundLength(animLength);
         }
-      }else if(primary && this.engaged){
+      }else if(primary){
+        duelLog(creature, 'anim:reaction-skip', {
+          target: duelWho(target),
+          reaction: ModuleCreatureAnimState[reaction] ?? reaction,
+          shouldReact,
+          engaged: this.engaged,
+          cutscene: !!combatAction.resultsCalculated,
+          checkActionLengthOk: !!target.combatRound?.checkActionLengthAtTime(creature, animLength, 0),
+        });
+        // Retail else path: reaxn_animation = READY (0x2711)
         primary.reaxnAnimation = ModuleCreatureAnimState.READY;
       }
+    }else{
+      duelLog(creature, 'anim:reaction-blocked', {
+        hasTarget: !!target,
+        dead: !!target?.isDead?.(),
+        killingBlow: this.attacksIncludeKillingBlow(),
+      });
     }
 
   }

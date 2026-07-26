@@ -2,44 +2,23 @@ import { AttackResult } from '@/enums/combat/AttackResult';
 import { ModuleCreatureAnimState } from '@/enums/module/ModuleCreatureAnimState';
 
 /**
- * Whether ResolveMeleeAnimations should sync a defender reaction.
- * CutsceneAttack starts non-engaged (no infinitePause pairing) but still
- * force-reacts when resultsCalculated — matching retail param_5 intent
- * without requiring this.engaged.
+ * Retail ResolveMeleeAnimations @ 005b7470 reaction gate:
+ * target has combatRound && attacker.engaged &&
+ * (CheckActionLengthAtTime || resultsCalculated).
+ * resultsCalculated (param_5) only bypasses the action-length check —
+ * reactions still require engaged.
  */
 export function canSyncMeleeReaction(opts: {
   engaged: boolean;
   resultsCalculated: boolean;
   hasTargetCombatRound: boolean;
   checkActionLengthOk: boolean;
-  attackResult: AttackResult;
-  targetAnimIndex: number;
-  targetLastAttackIsAttacker: boolean;
 }): boolean {
-  const forceCutsceneReact = !!opts.resultsCalculated;
-  const engagedCanReact = !!(
+  return !!(
     opts.hasTargetCombatRound &&
-    (opts.engaged || forceCutsceneReact) &&
-    (
-      forceCutsceneReact ||
-      opts.checkActionLengthOk ||
-      opts.attackResult === AttackResult.HIT_SUCCESSFUL ||
-      opts.attackResult === AttackResult.CRITICAL_HIT ||
-      opts.attackResult === AttackResult.AUTOMATIC_HIT ||
-      opts.attackResult === AttackResult.PARRIED ||
-      opts.attackResult === AttackResult.DEFLECTED
-    )
+    opts.engaged &&
+    (opts.checkActionLengthOk || opts.resultsCalculated)
   );
-  const unengagedCanReact = !(
-    opts.engaged
-  ) && !forceCutsceneReact && (
-    (
-      opts.targetAnimIndex === ModuleCreatureAnimState.IDLE ||
-      opts.targetAnimIndex === ModuleCreatureAnimState.READY
-    ) &&
-    opts.targetLastAttackIsAttacker
-  );
-  return engagedCanReact || unengagedCanReact;
 }
 
 /**
