@@ -1067,7 +1067,18 @@ export class CutsceneManager {
     if (index >= 1000 && index < 10000) {
       const name = getCameraAnimationName(index);
       if(name === 'none') return undefined;
-      return { name, looping: '1' };
+      // Retail IsFireForgetDialogAnimation / IsLoopingDialogStuntAnimation:
+      //   1000–0x52F (cut / cut*w) → fire-forget dialog CUT
+      //   0x578–0x6BF (cut*l / cut*wl) → looping stunt CUT
+      // Marking base CUT as looping made WAIT_ANIM (e.g. 101awake entry 9 /
+      // cut012) never clear after FadeType 4 — screen stuck black until skip.
+      const looping = index >= 0x578 && index <= 0x6bf;
+      return {
+        name,
+        looping: looping ? '1' : '0',
+        fireforget: looping ? '0' : '1',
+        dialog: '1',
+      };
     } else if (index >= 10000) {
       const animations2DA = GameState.TwoDAManager.datatables.get('animations');
       if(!animations2DA){ return; }
@@ -1576,7 +1587,12 @@ export class CutsceneManager {
     entry.checkList.participantAnimationComplete = true;
   }
 
-  /** True while a dialog fire-forget / looping anim is still driving the model. */
+  /** True while a dialog fire-forget / looping anim is still driving the model.
+   * Retail AnimationDialog + IsAnimationPlayingInDialog: WAIT_ANIM holds while
+   * the current clip is a dialog FF/looping type; clears when that clip ends
+   * (FF) or is replaced. Looping holds only until the clip has started — a
+   * forever-loop must not block entry advance (Delay still applies).
+   */
   static isDialogAnimationPlaying(obj: ModuleObject): boolean {
     if(!BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) return false;
     const creature = obj as ModuleCreature;
@@ -1584,11 +1600,14 @@ export class CutsceneManager {
     if(da){
       const looping = !!parseInt(String(da.data?.looping ?? 0));
       const fireforget = !!parseInt(String(da.data?.fireforget ?? 0));
-      // Looping dialog anims keep WAIT_ANIM held while dialogAnimation is set.
-      if(looping) return true;
       if(fireforget){
         if(!da.started) return true;
         if(creature.model?.animationManager?.currentAnimation === da.animation) return true;
+        return false;
+      }
+      if(looping){
+        // Wait until the looping dialog clip has begun, then allow Delay to finish.
+        return !da.started;
       }
       // Non-classified dialog clip still playing
       if(da.animation && creature.model?.animationManager?.currentAnimation === da.animation){
@@ -1603,9 +1622,11 @@ export class CutsceneManager {
       const looping = !!parseInt(String(anim.looping ?? 0));
       const dialog = !!parseInt(String((anim as any).dialog ?? 0));
       if(dialog && (fireforget || looping)){
-        if(looping) return true;
         if(fireforget && creature.model?.animationManager?.currentAnimation){
           return true;
+        }
+        if(looping){
+          return false;
         }
       }
     }
