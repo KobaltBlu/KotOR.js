@@ -89,19 +89,27 @@ export class InGameConfirm extends GameMenu {
       return;
   }
 
-  ShowTutorialMessage(id = 0, nth = 0) {
-    console.log('ShowTutorialMessage', id, nth);
-    if(GameState.TutorialWindowTracker[id]){
-      return;
+  /**
+   * Show tutorial.2da row `id` (message / message_pc + nth).
+   * Marks PT_TUT_WND_SHOWN bit when opened. Returns true if dialog opened.
+   */
+  ShowTutorialMessage(id = 0, nth = 0): boolean {
+    if(GameState.TutorialManager && !GameState.TutorialManager.isPopupAllowed()){
+      return false;
     }
-    const row = GameState.TwoDAManager.datatables.get('tutorial').rows[id];
+    if(GameState.TutorialWindowTracker?.[id]){
+      return false;
+    }
+    const table = GameState.TwoDAManager?.datatables?.get('tutorial');
+    const row = table?.rows?.[id];
     if(!row){
-      return;
+      return false;
     }
-    
-    const strRef = TwoDAObject.normalizeValue(row[(GameState.GameKey == GameEngineType.KOTOR ? 'message' : 'message_pc') + nth], 'number', 0);
+
+    const col = (GameState.GameKey == GameEngineType.KOTOR ? 'message' : 'message_pc') + nth;
+    const strRef = TwoDAObject.normalizeValue(row[col], 'number', 0);
     if(strRef <= 0){
-      return;
+      return false;
     }
 
     this.LB_MESSAGE.extent.top = 0;
@@ -117,8 +125,18 @@ export class InGameConfirm extends GameMenu {
 
     this.onOk = () => {};
     this.onCancel = () => {};
-    
+
+    if(GameState.TutorialManager){
+      GameState.TutorialManager.markSeen(id);
+    }else{
+      if(!GameState.TutorialWindowTracker){
+        GameState.TutorialWindowTracker = [];
+      }
+      GameState.TutorialWindowTracker[id] = 1;
+    }
+
     this.open();
+    return true;
   }
 
   showConfirmDialog(strRef = 0, onOk?: () => void, onCancel?: () => void) {

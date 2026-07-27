@@ -441,10 +441,14 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail CSWMiniGame::Go @ 006714e0 (K1 Win GOG) —
+   * Retail CSWMiniGame::Go @ 006714e0 (K1) / @ 0055cd00 (TSL Aspyr) —
+   * TSL: when type==1 (swoop), clear global FORFEIT_SWOOPRACE before follower Go/music.
    * player/enemies Go(); if streaming source set, Play(musicResRef, STREAMMUSIC=8, loop).
    */
   go(){
+    if(this.type === MiniGameType.SWOOPRACE){
+      GameState.GlobalVariableManager.SetGlobalBoolean('FORFEIT_SWOOPRACE', false);
+    }
     this.player?.go();
     for(let i = 0; i < this.enemies.length; i++){
       this.enemies[i]?.go();

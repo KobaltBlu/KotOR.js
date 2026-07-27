@@ -1997,14 +1997,18 @@ NWScriptDefK2.Actions = {
     name: 'GetButtonMashCheck',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.TutorialManager.buttonMashCheck ? 1 : 0;
+    }
   },
   268: {
     comment: '268: SetButtonMashCheck\nThis function sets the button mash check variable, and is used for turning the check on and off',
     name: 'SetButtonMashCheck',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.TutorialManager.buttonMashCheck = !!args[0];
+    }
   },
   269: {
     comment: '269: EffectForcePushTargeted\nThis effect is exactly the same as force push, except it takes a location parameter that specifies\nwhere the location of the force push is to be done from.  All orientations are also based on this location.\nAMF:  The new ignore test direct line variable should be used with extreme caution\nIt overrides geometry checks for force pushes, so that the object that the effect is applied to\nis guaranteed to move that far, ignoring collisions.  It is best used for cutscenes.',
@@ -3867,7 +3871,9 @@ NWScriptDefK2.Actions = {
     name: 'SetTutorialWindowsEnabled',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.TutorialManager.windowsEnabled = !!args[0];
+    }
   },
   517: {
     comment: '517: ShowTutorialWindow\nnWindow - A row index from Tutorial.2DA specifying the message to display.\nPops up the specified tutorial window.  If the tutorial window has already popped\nup once before, this will do nothing.',
@@ -3875,7 +3881,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
     action: function(this: NWScriptInstance, args: [number]){
-      GameState.MenuManager.InGameConfirm.ShowTutorialMessage(args[0]);
+      GameState.TutorialManager.showWindow(args[0]);
     }
   },
   518: {

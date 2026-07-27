@@ -783,19 +783,20 @@ export class PartyManager {
 
       /**
        * Pazaak Cards
+       * PT_PAZAAKCARDS — struct index = card enum.
+       * K1: 19 entries (0–17 INT + legacy unused BYTE at 18).
+       * TSL: MAX_CARDS (23) INT entries for gold 18–22.
        */
       const pazaakCardsList = partytable.RootNode.addField(new GFFField(GFFDataType.LIST, 'PT_PAZAAKCARDS'));
-      for(let i = 0; i < PazaakCards.MAX_CARDS + 1; i++){
+      const pazaakSaveCount = GameState.GameKey == GameEngineType.TSL
+        ? PazaakCards.MAX_CARDS
+        : 19;
+      for(let i = 0; i < pazaakSaveCount; i++){
         let cardStruct = new GFFStruct(0);
         const card = GameState.PazaakManager.Cards.get(i);
-        const isUnusedCard = i == PazaakCards.UNUSED_CARD;
-        /**
-         * Pazaak Unused Card
-         * - index 0-17: set the card count
-         * - index 18, unknown card, not sure if it's used at all
-         */
-        cardStruct.addField(new GFFField( isUnusedCard ? GFFDataType.BYTE : GFFDataType.INT, 'PT_PAZAAKCOUNT'))
-          .setValue(isUnusedCard ? 0 : card.count);
+        const isLegacyPad = GameState.GameKey != GameEngineType.TSL && i === 18;
+        cardStruct.addField(new GFFField( isLegacyPad ? GFFDataType.BYTE : GFFDataType.INT, 'PT_PAZAAKCOUNT'))
+          .setValue(isLegacyPad ? 0 : (card?.count ?? 0));
         pazaakCardsList.addChildStruct(cardStruct);
       }
 

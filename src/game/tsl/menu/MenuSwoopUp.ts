@@ -4,9 +4,11 @@ import { GUIInventoryItem } from "@/gui/protoitem/GUIInventoryItem";
 import { GameState } from "@/GameState";
 import { PartyManager } from "@/managers/PartyManager";
 import { InventoryManager } from "@/managers/InventoryManager";
-import { MDLLoader, TextureLoader } from "@/loaders";
-import type { ModuleItem } from "@/module/ModuleItem";
+import { MDLLoader, ResourceLoader, TextureLoader } from "@/loaders";
+import { ModuleItem } from "@/module/ModuleItem";
 import { OdysseyModel } from "@/odyssey";
+import { GFFObject } from "@/resource/GFFObject";
+import { ResourceTypes } from "@/resource/ResourceTypes";
 import type { TwoDAObject } from "@/resource/TwoDAObject";
 import { OdysseyModel3D } from "@/three/odyssey";
 
@@ -196,8 +198,32 @@ export class MenuSwoopUp extends GameMenu {
 
   show() {
     super.show();
+    this.applyLayoutVisibility();
+    this.updateSlotIcons();
     this.onSlotSelected(this.selectedSlot);
     this.updateUpgradeCount();
+  }
+
+  /**
+   * Swoop GUI ships both standard and `_LS` chrome; use non-LS as the active layout
+   * (retail FUN_005ccfb0 layout toggle — swoop has no lightsaber category).
+   */
+  applyLayoutVisibility(){
+    const setVisible = (ctrl: any, visible: boolean) => {
+      if(!ctrl) return;
+      if(visible) ctrl.show?.(); else ctrl.hide?.();
+    };
+    setVisible(this.LB_DESC, true);
+    setVisible(this.LBL_DESCBG, true);
+    setVisible(this._3D_MODEL, true);
+    setVisible(this.LBL_SLOTNAME, true);
+    setVisible(this.LB_DESC_LS, false);
+    setVisible(this.LBL_DESCBG_LS, false);
+    setVisible(this._3D_MODEL_LS, false);
+    setVisible(this.LBL_LSSLOTNAME, false);
+    setVisible(this.LBL_UPGRADES, true);
+    setVisible(this.LBL_UPGRADE_COUNT, true);
+    setVisible(this.LBL_PROPERTY, true);
   }
 
   loadUpgradeTable(){
@@ -206,15 +232,80 @@ export class MenuSwoopUp extends GameMenu {
       GameState.TwoDAManager?.datatables?.get('SwoopUpgrade');
   }
 
+  getSlotLabels(): (GUILabel | undefined)[] {
+    return [
+      this.LBL_UPGRADE31,
+      this.LBL_UPGRADE32,
+      this.LBL_UPGRADE33,
+      this.LBL_UPGRADE41,
+      this.LBL_UPGRADE42,
+      this.LBL_UPGRADE43,
+    ];
+  }
+
+  /** Fill slot BTN/LBL icons from equipped upgrade row templates. */
+  updateSlotIcons(){
+    const buttons = this.getSlotButtons();
+    const labels = this.getSlotLabels();
+    const table = this.upgradeTable;
+    for(let i = 0; i < buttons.length; i++){
+      const rowId = this.slotRows[i];
+      let icon = '';
+      let slotName = `Slot ${i + 1}`;
+      if(rowId >= 0 && table?.rows){
+        const row = table.rows[String(rowId)] || Object.values(table.rows).find(
+          (r: any) => r?.__index === rowId
+        );
+        if(row){
+          const template = String(row.template ?? row.Template ?? '')
+            .replace(/\0[\s\S]*$/g, '')
+            .toLowerCase();
+          const item = template ? InventoryManager.getItemByTag(template) : undefined;
+          icon = (item ? item.getIcon?.() : '') || String(row.icon ?? row.Icon ?? '') || '';
+          slotName = (item ? item.getName?.() : '') || template || slotName;
+        }
+      }
+      if(buttons[i] && icon){
+        buttons[i].setFillTextureName?.(icon);
+      }
+      if(labels[i] && icon){
+        labels[i]?.setFillTextureName?.(icon);
+      }
+      if(i === this.selectedSlot){
+        this.LBL_SLOTNAME?.setText?.(slotName);
+        this.LBL_PROPERTY?.setText?.(rowId >= 0 ? slotName : '');
+      }
+    }
+  }
+
   onSlotSelected(slot: number){
     this.selectedSlot = slot;
     this.choices = this.collectChoicesForSlot(slot);
     if(this.LB_ITEMS){
       this.LB_ITEMS.setItems(this.choices);
     }
+    this.updateSlotIcons();
+    const rowId = this.slotRows[slot];
+    if(rowId < 0){
+      this.setDescription('(None)');
+      return;
+    }
+    const choice = this.choices.find((c) => c.rowIndex === rowId);
+    if(choice){
+      this.setDescription(choice.item?.getDescription?.() || choice.getName());
+      return;
+    }
+    // Equipped from partytable but not in inventory choices — resolve from 2DA.
+    const table = this.upgradeTable;
+    const row = table?.rows?.[String(rowId)];
+    const template = row
+      ? String(row.template ?? row.Template ?? '').replace(/\0[\s\S]*$/g, '')
+      : '';
+    const item = template ? InventoryManager.getItemByTag(template.toLowerCase()) : undefined;
     this.setDescription(
-      `Slot ${slot + 1}` +
-      (this.slotRows[slot] >= 0 ? ` — row ${this.slotRows[slot]}` : ' — empty')
+      (item ? item.getDescription?.() : '') ||
+      (item ? item.getName?.() : '') ||
+      template || ''
     );
   }
 
@@ -283,20 +374,22 @@ export class MenuSwoopUp extends GameMenu {
 
     if(choice.rowIndex < 0 || !choice.template){
       this.slotRows[slot] = -1;
-      this.setDescription(`Slot ${slot + 1} cleared`);
+      this.updateSlotIcons();
+      this.setDescription('(None)');
       this.updateUpgradeCount();
       this.onSlotSelected(slot);
       return;
     }
 
     // Consume one from inventory (retail RemoveItem / stack--).
-    const owned = choice.item || InventoryManager.getItemByTag(choice.template);
+    const owned = choice.item || InventoryManager.getItemByTag(choice.template) || undefined;
     if(owned){
       InventoryManager.removeItem(owned, 1);
       this.slotConsumedTags[slot] = choice.template;
     }
     this.slotRows[slot] = choice.rowIndex;
-    this.setDescription(`${choice.getName()} → slot ${slot + 1}`);
+    this.updateSlotIcons();
+    this.setDescription(owned?.getDescription?.() || choice.getName());
     this.updateUpgradeCount();
     this.onSlotSelected(slot);
   }
@@ -310,8 +403,9 @@ export class MenuSwoopUp extends GameMenu {
       return;
     }
     try{
-      // ModuleItem accepts UTI ResRef string (same as creature equip load path).
-      const item = new GameState.Module.ModuleArea.ModuleItem(tag);
+      const buffer = ResourceLoader.loadCachedResource(ResourceTypes.uti, tag);
+      if(!buffer){ return; }
+      const item = new ModuleItem(new GFFObject(buffer));
       item.initProperties?.();
       item.setStackSize?.(1);
       InventoryManager.addItem(item);
@@ -364,6 +458,8 @@ export class MenuSwoopUp extends GameMenu {
 
   setDescription(text: string){
     this.LB_DESC?.setItem?.(text || null);
+    // Keep LS desc in sync if layout ever toggles.
+    this.LB_DESC_LS?.setItem?.(text || null);
   }
 
 }

@@ -7,6 +7,11 @@ import { GUISpellItem } from "@/game/tsl/gui/GUISpellItem";
 import { GUICreatureSkill } from "@/game/tsl/gui/GUICreatureSkill";
 import { type TalentFeat } from "@/talents/TalentFeat";
 import type { TalentSkill } from "@/talents/TalentSkill";
+import {
+  createInGameFeatChart,
+  createInGamePowerChart,
+} from "@/engine/menu/skill-flow-chart";
+import { SWRuleSet } from "@/engine/rules/SWRuleSet";
 
 enum AbilityFilter {
   SKILLS = 1,
@@ -177,134 +182,20 @@ export class MenuAbilities extends GameMenu {
     }
   }
 
+  /**
+   * Retail CSWGuiSkillFlowChart::CreateFeatChart @ 006ce370 (in-game SetCharacter).
+   */
   buildFeatList(creature: ModuleCreature): any[][] {
-    const feats = GameState.SWRuleSet.feats;
-    const featCount = feats.length;
-    const knownFeats: TalentFeat[] = creature ? creature.feats : [];
-    const groups = [];
-    for (let i = 0; i < knownFeats.length; i++) {
-      const feat = knownFeats[i];
-      const group: TalentFeat[] = [];
-      const prereqfeat1 = feats[feat.prereqFeat1];
-      const prereqfeat2 = feats[feat.prereqFeat2];
-      if (!prereqfeat1 && !prereqfeat2) {
-        group.push(feat);
-        for (let j = 0; j < featCount; j++) {
-          const chainFeat = feats[j];
-          if (chainFeat.prereqFeat1 == feat.id || chainFeat.prereqFeat2 == feat.id) {
-            if (chainFeat.prereqFeat1 != -1 && chainFeat.prereqFeat2 != -1) {
-              group[2] = chainFeat;
-            } else {
-              group[1] = chainFeat;
-            }
-          }
-        }
-      }
-      if(group && group.length){
-        groups.push(group);
-      }
-    }
-    return groups;
+    const feats = GameState.SWRuleSet?.feats ?? SWRuleSet.feats ?? [];
+    return createInGameFeatChart(creature, feats);
   }
 
+  /**
+   * Retail CSWGuiSkillFlowChart::CreatePowerChart @ 006ce0f0 (CreatePowerList param_2=0).
+   */
   buildSpellsList(creature: ModuleCreature): any[][] {
-    const spellsTable = GameState.TwoDAManager.datatables.get('spells');
-    if(!spellsTable) return [];
-    const spells = spellsTable.rows;
-    const spellCount = spellsTable.RowCount;
-    const allowedTypes = [1, 6];
-    const unknownSpells: number[] = [176, 177, 178, 179, 180, 181, 182];
-
-    const parsePriority = (spell: any): number => {
-      const n = parseInt(String(spell.forcepriority ?? ''), 10);
-      return Number.isFinite(n) ? n : -1;
-    };
-
-    const parsePrereqs = (spell: any): number[] => {
-      const raw = String(spell.prerequisites ?? '');
-      if(!raw || raw === '****') return [];
-      return raw.split('_').map((sid: string) => parseInt(sid, 10)).filter((n) => Number.isFinite(n));
-    };
-
-    const familyKey = (spell: any): string => {
-      const hostile = parseInt(String(spell.forcehostile ?? ''), 10);
-      const friendly = parseInt(String(spell.forcefriendly ?? ''), 10);
-      if(Number.isFinite(hostile) && hostile >= 0) return `h:${hostile}`;
-      if(Number.isFinite(friendly) && friendly >= 0) return `f:${friendly}`;
-      return `id:${spell.__index}`;
-    };
-
-    const allowedSpells: any[] = [];
-    for (let i = 0; i < spellCount; i++) {
-      const spell = spells[i];
-      if(!spell) continue;
-      const id = spell.__index;
-      const usertype = parseInt(String(spell.usertype), 10);
-
-      if(allowedTypes.indexOf(usertype) == -1){ continue; }
-      if(!creature.getHasSpell(id) && unknownSpells.indexOf(id) == -1){ continue; }
-
-      allowedSpells.push(spell);
-    }
-
-    // Group by forcehostile/forcefriendly family (retail chain), slot by forcepriority.
-    const mapSpells = new Map<string, any[]>();
-    const claimed = new Set<number>();
-
-    for (let i = 0; i < allowedSpells.length; i++) {
-      const spell = allowedSpells[i];
-      const priority = parsePriority(spell);
-      const key = familyKey(spell);
-      let group = mapSpells.get(key);
-      if(!group){
-        group = [];
-        mapSpells.set(key, group);
-      }
-      const slot = priority >= 0 && priority <= 2 ? priority : group.filter(Boolean).length;
-      if(!group[slot]){
-        group[slot] = spell;
-        claimed.add(spell.__index);
-      }
-    }
-
-    // Fallback: attach mid/end via prerequisites when family columns are missing.
-    for (let i = 0; i < allowedSpells.length; i++) {
-      const spell = allowedSpells[i];
-      if(claimed.has(spell.__index)) continue;
-      const prereqs = parsePrereqs(spell);
-      if(!prereqs.length) continue;
-      for (const [, group] of mapSpells) {
-        const root = group[0];
-        const mid = group[1];
-        if(root && prereqs[0] == root.__index){
-          const slot = parsePriority(spell);
-          group[slot >= 0 && slot <= 2 ? slot : 1] = spell;
-          claimed.add(spell.__index);
-          break;
-        }
-        if(mid && prereqs[0] == mid.__index){
-          group[2] = spell;
-          claimed.add(spell.__index);
-          break;
-        }
-      }
-    }
-
-    // Orphans (known powers with no family/root) still need a row.
-    for (let i = 0; i < allowedSpells.length; i++) {
-      const spell = allowedSpells[i];
-      if(claimed.has(spell.__index)) continue;
-      mapSpells.set(`orphan:${spell.__index}`, [spell]);
-      claimed.add(spell.__index);
-    }
-
-    const groups: any[][] = [];
-    for (const group of mapSpells.values()) {
-      // Compact sparse slots so GUISpellItem never walks undefined holes.
-      const compact = group.filter((s) => !!s);
-      if(compact.length) groups.push(compact);
-    }
-    return groups;
+    const spells = GameState.SWRuleSet?.spells ?? SWRuleSet.spells ?? [];
+    return createInGamePowerChart(creature, spells);
   }
 
   private tlk(strRef: number): string {
@@ -328,6 +219,11 @@ export class MenuAbilities extends GameMenu {
     this.LBL_NAME?.setText('');
     this.LB_DESC?.setItem?.(null);
     this.LB_DESC_FEATS?.setItem?.(null);
+  }
+
+  /** K1 abilities.gui has only LB_DESC; TSL abilities_p also has LB_DESC_FEATS for feats. */
+  private featDescriptionList(): GUIListBox | undefined {
+    return this.LB_DESC_FEATS ?? this.LB_DESC;
   }
 
   /**
@@ -442,7 +338,7 @@ export class MenuAbilities extends GameMenu {
     );
 
     const description = !isNaN(descRef) && descRef >= 0 ? this.tlk(descRef) : '';
-    this.LB_DESC_FEATS?.setItem?.(description || null);
+    this.featDescriptionList()?.setItem?.(description || null);
   }
 
   private firstPowerInList(items: any[][]): any | undefined {
@@ -492,7 +388,7 @@ export class MenuAbilities extends GameMenu {
     switch(this.filter){
       case AbilityFilter.SKILLS:
         this.LB_ABILITY.setProtoBuilder(GUICreatureSkill);
-        this.LB_ABILITY.padding = 0;
+        // GFF LB_ABILITY PADDING=0 — do not override (inventory Pass AN lesson).
         this.LB_DESC?.show();
         this.LBL_BONUS?.show();
         this.LBL_BONUSVAL?.show();
@@ -511,7 +407,6 @@ export class MenuAbilities extends GameMenu {
       break;
       case AbilityFilter.POWERS:
         this.LB_ABILITY.setProtoBuilder(GUISpellItem);
-        this.LB_ABILITY.padding = 5.5;
         this.LB_DESC?.show();
         this.LBL_BONUS?.show();
         this.LBL_BONUSVAL?.show();
@@ -535,8 +430,8 @@ export class MenuAbilities extends GameMenu {
       break;
       case AbilityFilter.FEATS:
         this.LB_ABILITY.setProtoBuilder(GUIFeatItem);
-        this.LB_ABILITY.padding = 5.5;
-        this.LB_DESC_FEATS?.show();
+        // K1: only LB_DESC exists. TSL: LB_DESC_FEATS for feats tab.
+        this.featDescriptionList()?.show();
         this.LBL_BONUS?.hide();
         this.LBL_BONUSVAL?.hide();
         this.LBL_TOTAL?.hide();

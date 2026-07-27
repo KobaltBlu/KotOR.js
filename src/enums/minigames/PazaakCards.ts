@@ -1,8 +1,11 @@
 /**
  * Pazaak Cards enum.
- * 
+ *
+ * TSL gold side indices match CSWGuiPazaakCard::SetCard @ 0054c6b0:
+ * 0x12 Tie Breaker, 0x13 Double, 0x14 Flip2&4, 0x15 Flip3&6, 0x16 ±1/±2 (CHANGE).
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file PazaakCards.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -27,8 +30,21 @@ export enum PazaakCards {
   PLUS_MINUS_4 = 15,
   PLUS_MINUS_5 = 16,
   PLUS_MINUS_6 = 17,
-  UNUSED_CARD = 18, //appears to be unused
-  MAX_CARDS = 18,
+  /** TSL gold — SetCard case 0x12 */
+  TIE_BREAKER = 18,
+  /** TSL gold — SetCard case 0x13 */
+  DOUBLE = 19,
+  /** TSL gold — SetCard case 0x14 */
+  FLIP_2_AND_4 = 20,
+  /** TSL gold — SetCard case 0x15 */
+  FLIP_3_AND_6 = 21,
+  /**
+   * TSL gold — SetCard case 0x16 / HandleChangeHandCard type 0x16.
+   * FLIP toggles sign; CHANGE (swapValueCards) toggles magnitude 1↔2.
+   */
+  PLUS_MINUS_1_OR_2 = 22,
+  /** Exclusive upper bound for side-deck inventory indices (0 .. MAX_CARDS-1). */
+  MAX_CARDS = 23,
   MAIN_CARD_1 = 101,
   MAIN_CARD_2 = 102,
   MAIN_CARD_3 = 103,
@@ -40,5 +56,3 @@ export enum PazaakCards {
   MAIN_CARD_9 = 109,
   MAIN_CARD_10 = 110
 };
-  
-  

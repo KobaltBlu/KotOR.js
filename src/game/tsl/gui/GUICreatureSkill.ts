@@ -1,4 +1,6 @@
 import { GameMenu, GUIButton, GUIControl, GUIProtoItem } from "@/gui";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import type { RetailRowExtent } from "@/gui/GUIProtoItem";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
@@ -31,6 +33,19 @@ export class GUICreatureSkill extends GUIProtoItem {
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl, scale: boolean = false){
     super(menu, control, parent, scale);
+    this.listRowAlignExtentToWrappedText = false;
+  }
+
+  /**
+   * Retail CSWGuiInGameSkillEntry::Initialize — SetExtent width = viewport - 2*padding,
+   * height 0x2a (42). K1 @ 006ac930; TSL @ 005958f0 ftol(scalar * 42.0).
+   */
+  getRetailBaseExtent(list: GUIListBox): RetailRowExtent {
+    const vw = typeof list.getViewportWidth === 'function'
+      ? list.getViewportWidth()
+      : list.extent.width - (list.scrollbar ? list.scrollbar.extent.width : 0);
+    const width = Math.max(1, asExtentInt(vw - list.padding * 2));
+    return { left: 0, top: 0, width, height: 42 };
   }
 
   buildFill(){}

@@ -168,11 +168,8 @@ export class ModuleMGGunBullet extends ModuleObject {
       }
     }
 
-    // No hitbullet part: proximity stand-in at layout position.
-    const pos = obstacle.layout?.position ?? obstacle.position;
-    if(!pos){ return false; }
-    const r = 1.0;
-    return this.position.distanceToSquared(pos) <= r * r;
+    // Retail HitCheckBullet @ 006730a0 — no hitbullet part → miss (no proximity stand-in).
+    return false;
   }
 
   /**

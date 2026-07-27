@@ -1,8 +1,11 @@
 import { GUIProtoItem, GUIButton } from "@/gui";
 import type { GUIControl, GameMenu } from "@/gui";
+import type { GUIListBox } from "@/gui/GUIListBox";
+import type { RetailRowExtent } from "@/gui/GUIProtoItem";
 import * as THREE from "three";
 import type { GFFStruct } from "@/resource/GFFStruct";
 import { GameState } from "@/GameState";
+import { GameEngineType } from "@/enums/engine";
 import { TextureLoader } from "@/loaders";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import {
@@ -29,6 +32,22 @@ export class GUISpellItem extends GUIProtoItem {
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl = null as any, scale = false){
     super(menu, control, parent, scale);
     this.disableSelection = true;
+    this.listRowAlignExtentToWrappedText = false;
+  }
+
+  /**
+   * Retail CSWGuiSkillFlowChart::AddPowerSet SetExtent (same as AddFeatSet):
+   *   K1 @ 006cd7e0: {0,0,0xf2 (242), 0x28 (40)}
+   *   TSL: width 0x106 (262), height ftol(scalar * 40.0)
+   */
+  getRetailBaseExtent(_list: GUIListBox): RetailRowExtent {
+    const isTsl = GameState.GameKey == GameEngineType.TSL;
+    return {
+      left: 0,
+      top: 0,
+      width: isTsl ? 262 : 242,
+      height: 40,
+    };
   }
 
   buildFill(){}

@@ -375,13 +375,14 @@ export const PazaakConfig = {
           'pcards_dblneg_p'
         ]
       },
+      // Retail CSWGuiPazaakCard::SetCard @ 0054c6b0 — gold order 0x12..0x16
       {
-        name: "1±2",
-        type: 1,
-        modifier: [1, 2],
-        modifierLabel: "1±2",
+        name: "Tie Breaker",
+        type: 0x12,
+        modifier: [1, -1],
+        modifierLabel: "±1T",
         reversible: true,
-        negateModifier: true,
+        negateModifier: false,
         textures: [
           'pcards_gold_p',
           'pcards_gold_p'
@@ -389,8 +390,8 @@ export const PazaakConfig = {
       },
       {
         name: "Double",
-        type: 1,
-        modifier: [1, 0],
+        type: 0x13,
+        modifier: [0, 0],
         modifierLabel: "D",
         reversible: false,
         negateModifier: false,
@@ -400,10 +401,10 @@ export const PazaakConfig = {
         ]
       },
       {
-        name: "Tie Breaker",
-        type: 1,
-        modifier: [1, 0],
-        modifierLabel: "±1T",
+        name: "Flip2&4",
+        type: 0x14,
+        modifier: [0, 0],
+        modifierLabel: "2&4",
         reversible: false,
         negateModifier: false,
         textures: [
@@ -412,11 +413,11 @@ export const PazaakConfig = {
         ]
       },
       {
-        name: "Flip2&4",
-        type: 1,
-        modifier: [-1, -1],
-        modifierLabel: "2&4",
-        reversible: true,
+        name: "Flip 3&6",
+        type: 0x15,
+        modifier: [0, 0],
+        modifierLabel: "3&6",
+        reversible: false,
         negateModifier: false,
         textures: [
           'pcards_gold_p',
@@ -424,12 +425,13 @@ export const PazaakConfig = {
         ]
       },
       {
-        name: "Flip 3&6",
-        type: 1,
-        modifier: [-1, -1],
-        modifierLabel: "3&6",
+        // HandleChangeHandCard @ 00555dd0 — type 0x16 cycles state 0/1↔2 (magnitude)
+        name: "1±2",
+        type: 0x16,
+        modifier: [1, 2],
+        modifierLabel: "±1/2",
         reversible: true,
-        negateModifier: false,
+        negateModifier: true,
         textures: [
           'pcards_gold_p',
           'pcards_gold_p'

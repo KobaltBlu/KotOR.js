@@ -1,11 +1,16 @@
 import type { GUILabel, GUIButton } from "@/gui";
 import { MenuPazaakSetup as K1_MenuPazaakSetup } from "@/game/kotor/KOTOR";
+import { PazaakCards } from "@/enums/minigames/PazaakCards";
+import { GameState } from "@/GameState";
 
 /**
- * MenuPazaakSetup class.
- * 
+ * MenuPazaakSetup class (TSL).
+ *
+ * Restores K1 AVAIL/side-deck click wiring (skipInit must be false).
+ * AVAIL30–35 cover gold cards 18–22 (row 3).
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuPazaakSetup.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -119,11 +124,37 @@ export class MenuPazaakSetup extends K1_MenuPazaakSetup {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
+    await super.menuControlInitializer(false);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
+      this.BTN_CLEARCARDS?.addEventListener('click', () => {
+        for(let i = 0; i < 10; i++){
+          const card = GameState.PazaakManager.PlayerSideDeck.get(i);
+          if(card != undefined && card != PazaakCards.INVALID){
+            GameState.PazaakManager.MoveSideDeckCardToMainDeck(i);
+          }
+        }
+        this.rebuild();
+      });
       resolve();
     });
+  }
+
+  rebuild(){
+    super.rebuild();
+    // Gold side cards use config textures / labels (floor(card/6) only covers 0–17).
+    for(let i = 0; i < 10; i++){
+      const cardId = GameState.PazaakManager.PlayerSideDeck.get(i);
+      const button = this.getSideCardButton(i);
+      const label = this.getSideCardLabel(i);
+      if(!button || !label){ continue; }
+      if(typeof cardId !== 'number' || cardId === PazaakCards.INVALID){ continue; }
+      if(cardId < PazaakCards.TIE_BREAKER){ continue; }
+      const cfg = GameState.PazaakManager.Config.data.sideDeckCards[cardId];
+      if(!cfg){ continue; }
+      button.setFillTextureName(cfg.textures[0], false);
+      label.setText(cfg.modifierLabel);
+    }
   }
 
   show(): void {
@@ -133,5 +164,5 @@ export class MenuPazaakSetup extends K1_MenuPazaakSetup {
   hide(): void {
     super.hide();
   }
-  
+
 }

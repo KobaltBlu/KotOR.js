@@ -60,6 +60,22 @@ function resolveKeyboardForwardAxis(): number {
 }
 
 /**
+ * Retail ProcessInput @ 00623a37–00623a6f (swkotor.exe):
+ * When chase-cam look is active (`rightClickHeld`, inverted if Mouse Look) and
+ * `leftMouseDown`, inject forward if the keyboard/stick up_down axis is 0.
+ * Retail writes raw up_down = -1.0 (stick-forward); our axisForward is +forward.
+ * Mouse Look on: look is active while RMB is up → LMB alone walks/runs forward.
+ * Classic: RMB look + LMB → forward while turning the camera.
+ */
+function resolvePlayerForwardAxis(): number {
+  let forward = resolveKeyboardForwardAxis();
+  if(Math.abs(forward) < 1e-4 && Mouse.leftDown && Mouse.isCameraHoldDesired()){
+    forward = 1;
+  }
+  return forward;
+}
+
+/**
  * Build swoop/turret lateral axis from A+D together (same race-avoidance as resolveKeyboardForwardAxis).
  * Retail keys feed UpdateAxis as ±1.
  */
@@ -519,13 +535,13 @@ export class IngameControls {
     KeyMapper.BindKeyboard(this.keyboard, GameState.iniConfig);
     KeyMapper.BindGamepad(this.gamePad);
 
-    //W / S — resolve both keys together (see resolveKeyboardForwardAxis)
+    //W / S / dual-mouse — resolve forward together (see resolvePlayerForwardAxis)
     const applyWasdMove = () => {
       if(this.gamePadMovement) return;
       const followee = GameState.PartyManager.party[0] as ModuleCreature | undefined;
       if(!followee?.canMove?.()) return;
 
-      const forward = resolveKeyboardForwardAxis();
+      const forward = resolvePlayerForwardAxis();
       const walking = !!followee.walk;
 
       if(isDriveControlActive(followee)){

@@ -111,8 +111,9 @@ export class CharGenFeats extends GameMenu {
       }
     };
 
-    // Retail OnPanelAdded → ShowGranted when granted feats exist
+    // Retail OnPanelAdded → ShowTutorialWindow(0x12) then ShowGranted when granted feats exist
     if(grantedIds.length && !this.levelUpMode){
+      GameState.TutorialManager?.showWindow?.(0x12);
       void this.showGrantedFeats(grantedIds).then(finishIfNoPicks);
     }else{
       finishIfNoPicks();

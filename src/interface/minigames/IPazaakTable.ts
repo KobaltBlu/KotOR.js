@@ -46,4 +46,8 @@ export interface IPazaakTable {
    * Cards with swapped values in the player's hand (TSL Only)
    */
   swapValueCards: Map<PazaakHandSlots, boolean>;
+  /**
+   * TSL Tie Breaker gold card played this round — wins equal non-bust totals.
+   */
+  tieBreaker: boolean;
 }

@@ -1,11 +1,21 @@
 import type { GUILabel, GUIButton } from "@/gui";
 import { MenuPazaakGame as K1_MenuPazaakGame } from "@/game/kotor/KOTOR";
+import { GameState } from "@/GameState";
+import { PazaakTurnMode } from "@/enums/minigames/PazaakTurnMode";
+import { PazaakHandSlots } from "@/enums/minigames/PazaakHandSlots";
+import { PazaakTutorial } from "@/engine/minigames/pazaak-tutorial";
+
+/** Retail HandleForfeitButton @ 005560c0 — MessageBox strref 0xa5b9. */
+const TLK_FORFEIT_PAZAAK_CONFIRM = 0xa5b9;
 
 /**
- * MenuPazaakGame class.
- * 
+ * MenuPazaakGame class (TSL).
+ *
+ * Restores K1 FLIP/play/stand wiring (skipInit must be false), then adds
+ * CHANGE (HandleChangeHandCard @ 00555dd0) and FORFEIT (HandleForfeitButton @ 005560c0).
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuPazaakGame.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -102,15 +112,101 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
-    await super.menuControlInitializer(true);
+    // Must run K1 listeners (FLIP / play / stand); previous skipInit=true left TSL unwired.
+    await super.menuControlInitializer(false);
     if(skipInit) return;
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve) => {
+      for(let i = 0; i < PazaakHandSlots.MAX_SLOTS; i++){
+        const btn = this.getHandCardChangeButton(i);
+        if(!btn){ continue; }
+        const handIndex = i;
+        btn.addEventListener('click', () => {
+          if(this.noClicks() || GameState.PazaakManager.Tables[0].handCardPlayed){
+            return;
+          }
+          this.changeHandCard(PazaakTurnMode.PLAYER, handIndex);
+        });
+      }
+
+      this.BTN_FORFEITGAME?.addEventListener('click', () => {
+        if(this.noClicks()){
+          return;
+        }
+        GameState.MenuManager.InGameConfirm.showConfirmDialog(
+          TLK_FORFEIT_PAZAAK_CONFIRM,
+          () => {
+            GameState.PazaakManager.AddForfeitAction();
+          },
+          () => { /* cancel */ }
+        );
+      });
+
       resolve();
     });
+  }
+
+  /**
+   * Retail HandleChangeHandCard @ 00555dd0 — type 0x16 cycles state 0/1↔2.
+   */
+  changeHandCard(tableIndex: number, cardIndex: number){
+    const swapped = GameState.PazaakManager.Tables[tableIndex].swapValueCards.get(cardIndex);
+    GameState.PazaakManager.Tables[tableIndex].swapValueCards.set(cardIndex, !swapped);
+  }
+
+  getHandCardChangeButton(cardIndex: number){
+    return this.getControlByName(`BTN_CHANGE${cardIndex}`) as GUIButton | undefined;
+  }
+
+  playHandCard(tableIndex: number, cardIndex: number){
+    const table = GameState.PazaakManager.Tables[tableIndex];
+    const flipped = !!table.flipCards.get(cardIndex);
+    const swapped = !!table.swapValueCards.get(cardIndex);
+    // Retail HandlePlayHandCard @ 0067ede0 — warn if tutorial + total < 13.
+    if(tableIndex === PazaakTurnMode.PLAYER && PazaakTutorial.enabled){
+      if(table.points < 13){
+        GameState.PazaakManager.queueTutorialHelp(
+          PazaakTutorial.beginPlaySideLowWarn(cardIndex)
+        );
+        return;
+      }
+    }
+    GameState.PazaakManager.AddPlayHandCardAction(tableIndex, cardIndex, flipped, swapped);
+  }
+
+  rebuild(){
+    super.rebuild();
+
+    for(let j = 0; j < PazaakHandSlots.MAX_SLOTS; j++){
+      const table = GameState.PazaakManager.Tables[PazaakTurnMode.PLAYER];
+      const slot = table.handCards.get(j);
+      const changeBtn = this.getHandCardChangeButton(j);
+      const handCardLabel = this.getHandCardLabel(PazaakTurnMode.PLAYER, j);
+      if(slot == undefined || slot == -1){
+        changeBtn?.hide();
+        continue;
+      }
+      const card = GameState.PazaakManager.Config.data.sideDeckCards[slot];
+      const flipped = !!table.flipCards.get(j);
+      const swapped = !!table.swapValueCards.get(j);
+      if(handCardLabel){
+        handCardLabel.setText(
+          GameState.PazaakManager.getHandCardLabelText(slot, flipped, swapped)
+        );
+      }
+      if(changeBtn){
+        // Retail only cycles type 0x16; negateModifier marks that card in config.
+        if(card?.negateModifier || card?.type === 0x16){
+          changeBtn.show();
+          changeBtn.disableSelection = this.noClicks() || table.handCardPlayed;
+        }else{
+          changeBtn.hide();
+        }
+      }
+    }
   }
 
   hide(): void {
     super.hide();
   }
-  
+
 }

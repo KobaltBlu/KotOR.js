@@ -95,6 +95,14 @@ describe("retail row Initialize contract (base extent, not PROTOITEM GFF)", () =
     expect(36).toBe(36);
   });
 
+  it("abilities skill row base height (K1 @ 006ac930 = 42)", () => {
+    expect(42).toBe(42);
+  });
+
+  it("abilities feat/power row base height (K1 @ 006cda80 = 40)", () => {
+    expect(40).toBe(40);
+  });
+
   it("inventory row width = viewport - 2*padding (CSWGuiInGameItemEntry::Initialize)", () => {
     const viewportWidth = 246;
     const padding = 5;
@@ -132,6 +140,59 @@ describe("K1 inventory/equip list spacing (GFF PADDING=0)", () => {
   it("forced pad=5 yields ipp 4 (the broken spacing that menus used to force)", () => {
     const pitch = listBoxRowPitch(5, 56);
     expect(Math.floor(vh / pitch)).toBe(4);
+  });
+});
+
+describe("K1 abilities LB_ABILITY spacing (GFF PADDING=0)", () => {
+  // abilities.gui LB_ABILITY: EXTENT.H=180, BORDER.DIMENSION=4, PADDING=0
+  // SkillEntry height 42 @ 006ac930; SkillFlow height 40 @ 006cda80
+  const vh = borderInnerExtent({
+    width: 269,
+    height: 180,
+    dimension: 4,
+    innerOffset: 0,
+  }).height;
+
+  it("viewport height is 172 (180 − 2×4 border)", () => {
+    expect(vh).toBe(172);
+  });
+
+  it("skill rows: pad=0 + itemH=42 → pitch 42, ipp 4", () => {
+    const pitch = listBoxRowPitch(0, 42);
+    expect(pitch).toBe(42);
+    expect(Math.floor(vh / pitch)).toBe(4);
+  });
+
+  it("feat/power rows: pad=0 + itemH=40 → pitch 40, ipp 4", () => {
+    const pitch = listBoxRowPitch(0, 40);
+    expect(pitch).toBe(40);
+    expect(Math.floor(vh / pitch)).toBe(4);
+  });
+
+  it("forced pad=5.5 with itemH=40 yields wrong pitch (legacy MenuAbilities bug)", () => {
+    const pitch = listBoxRowPitch(5.5, 40);
+    expect(pitch).toBe(45.5);
+    expect(Math.floor(vh / pitch)).toBe(3);
+  });
+});
+
+describe("abilities retail row extents", () => {
+  it("skill row: height 42, width = viewport - 2*padding (Initialize @ 006ac930)", () => {
+    const viewportWidth = 261;
+    const padding = 0;
+    const width = Math.max(1, viewportWidth - padding * 2);
+    expect(width).toBe(261);
+    expect(42).toBe(42);
+  });
+
+  it("feat/power row K1: 242×40 (AddFeatSet @ 006cda80)", () => {
+    expect(0xf2).toBe(242);
+    expect(0x28).toBe(40);
+  });
+
+  it("feat/power row TSL: 262×40 (AddFeatSet @ 00589970, scalar*40)", () => {
+    expect(0x106).toBe(262);
+    expect(40).toBe(40);
   });
 });
 

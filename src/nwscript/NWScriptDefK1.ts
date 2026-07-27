@@ -3837,13 +3837,19 @@ NWScriptDefK1.Actions = {
     comment: "267: GetButtonMashCheck\nThis function returns whether the button mash check, used for the combat tutorial, is on\n",
     name: "GetButtonMashCheck",
     type: NWScriptDataType.INTEGER,
-    args: []
+    args: [],
+    action: function(this: NWScriptInstance, args: []){
+      return GameState.TutorialManager.buttonMashCheck ? 1 : 0;
+    }
   },
   268:{
     comment: "268: SetButtonMashCheck\nThis function sets the button mash check variable, and is used for turning the check on and off\n",
     name: "SetButtonMashCheck",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.TutorialManager.buttonMashCheck = !!args[0];
+    }
   },
   269:{
     comment: "269: EffectForcePushTargeted\nThis effect is exactly the same as force push, except it takes a location parameter that specifies\nwhere the location of the force push is to be done from.  All orientations are also based on this location.\nAMF:  The new ignore test direct line variable should be used with extreme caution\nIt overrides geometry checks for force pushes, so that the object that the effect is applied to\nis guaranteed to move that far, ignoring collisions.  It is best used for cutscenes.\n",
@@ -6991,7 +6997,10 @@ NWScriptDefK1.Actions = {
     comment: "516: SetTutorialWindowsEnabled\nSets whether or not the tutorial windows are enabled (ie. whether or not they will\nappear when certain things happen for the first time).\n",
     name: "SetTutorialWindowsEnabled",
     type: NWScriptDataType.VOID,
-    args: [NWScriptDataType.INTEGER]
+    args: [NWScriptDataType.INTEGER],
+    action: function(this: NWScriptInstance, args: [number]){
+      GameState.TutorialManager.windowsEnabled = !!args[0];
+    }
   },
   517:{
     comment: "517: ShowTutorialWindow\nPops up the specified tutorial window.  If the tutorial window has already popped\nup once before, this will do nothing.\n",
@@ -6999,22 +7008,18 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      //KotOR unlike TSL hardcodes these values instead of using the tutorial.2da as a lookup table
-      //It might be worth overriding the scripts in the game to use 2da values to keep it inline with TSL
-      //making it more extendable.
+      // K1 scripts historically pass a few non-row ids that map into tutorial.2da.
+      // Default: treat arg as 2DA row (CharGen ShowTutorialWindow(0x12), etc.).
       switch(args[0]){
-        case 2: //Movement_Keys - end_m01aa - k_pend_pctut.ncs
-          GameState.MenuManager.InGameConfirm.ShowTutorialMessage(42);
-        break;
-        case 1:
-          // ???
-        break;
-        case 0: //Start_Swoop_Race - tar_m03mg - heartbeat.ncs
-          GameState.MenuManager.InGameConfirm.ShowTutorialMessage(9);
-        break;
+        case 2: // Movement_Keys - end_m01aa - k_pend_pctut.ncs
+          GameState.TutorialManager.showWindow(42);
+          break;
+        case 0: // Start_Swoop_Race - tar_m03mg - heartbeat.ncs
+          GameState.TutorialManager.showWindow(9);
+          break;
         default:
-          // ???
-        break;
+          GameState.TutorialManager.showWindow(args[0]);
+          break;
       }
     }
   },

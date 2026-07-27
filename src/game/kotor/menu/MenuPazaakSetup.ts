@@ -1,6 +1,7 @@
 import { PazaakCards } from "@/enums/minigames/PazaakCards";
 import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
 import { PazaakCardGUITextures } from "@/enums/minigames/PazaakCardGUITextures";
+import { PazaakTutorial } from "@/engine/minigames/pazaak-tutorial";
 import { GameState } from "@/GameState";
 import { GameMenu } from "@/gui";
 import type { GUIControl } from "@/gui";
@@ -195,7 +196,9 @@ export class MenuPazaakSetup extends GameMenu {
     if(GameState.PazaakManager.MaxWager > 0){
       GameState.MenuManager.MenuPazaakWager.open();
     }
-    // ShowTutorial is retained for future UI polish; setup still opens without wager.
+    // Retail CSWGuiPazaakStart::OnPanelAdded @ 0067f750 — setup help 0x96e3..0x96e5.
+    PazaakTutorial.setEnabled(!!GameState.PazaakManager.ShowTutorial);
+    GameState.PazaakManager.queueTutorialHelp(PazaakTutorial.beginSetup());
     this.knownCards.clear();
     for(let i = 0; i < PazaakCards.MAX_CARDS; i++){
       const card = GameState.PazaakManager.Cards.get(i);
