@@ -871,9 +871,16 @@ NWScriptDefK1.Actions = {
         return;
       }
 
+      // args: spell, target, metamagic, bCheat, domainLevel, path, instant
+      const bCheat = !!args[3];
+      const classIndex = bCheat
+        ? -1
+        : (typeof (this.caller as ModuleCreature).getForceSpellClassIndex === 'function'
+          ? (this.caller as ModuleCreature).getForceSpellClassIndex()
+          : 0);
       const action = new GameState.ActionFactory.ActionCastSpell();
       action.setParameter(0, ActionParameterType.INT, args[0]); //Spell Id
-      action.setParameter(1, ActionParameterType.INT, -1);
+      action.setParameter(1, ActionParameterType.INT, classIndex);
       action.setParameter(2, ActionParameterType.INT, args[4]); //DomainLevel
       action.setParameter(3, ActionParameterType.INT, 0);
       action.setParameter(4, ActionParameterType.INT, 0);
@@ -3293,9 +3300,16 @@ NWScriptDefK1.Actions = {
         return;
       }
 
+      // args: spell, location, metamagic, bCheat, path, instant
+      const bCheat = !!args[3];
+      const classIndex = bCheat
+        ? -1
+        : (typeof (this.caller as ModuleCreature).getForceSpellClassIndex === 'function'
+          ? (this.caller as ModuleCreature).getForceSpellClassIndex()
+          : 0);
       const action = new GameState.ActionFactory.ActionCastSpell();
       action.setParameter(0, ActionParameterType.INT, args[0]); //Spell Id
-      action.setParameter(1, ActionParameterType.INT, -1);
+      action.setParameter(1, ActionParameterType.INT, classIndex);
       action.setParameter(2, ActionParameterType.INT, 0); //DomainLevel (N/A at location)
       action.setParameter(3, ActionParameterType.INT, 0);
       action.setParameter(4, ActionParameterType.INT, 0);
@@ -3303,7 +3317,6 @@ NWScriptDefK1.Actions = {
       action.setParameter(6, ActionParameterType.FLOAT, args[1].position.x); //Target X
       action.setParameter(7, ActionParameterType.FLOAT, args[1].position.y); //Target Y
       action.setParameter(8, ActionParameterType.FLOAT, args[1].position.z); //Target Z
-      // args: path=4, instant=5 (NWScript ActionCastSpellAtLocation)
       action.setParameter(9, ActionParameterType.INT, (args[4] | 0) | (args[5] ? 0x40000000 : 0));
       action.setParameter(10, ActionParameterType.INT, -1);
       action.setParameter(11, ActionParameterType.INT, -1);
@@ -4337,9 +4350,12 @@ NWScriptDefK1.Actions = {
 
       // Spells at a location use the cast-spell location path (handles range itself).
       if(talent.objectType & TalentObjectType.TalentSpell){
+        const classIndex = typeof (this.caller as ModuleCreature).getForceSpellClassIndex === 'function'
+          ? (this.caller as ModuleCreature).getForceSpellClassIndex()
+          : 0;
         const action = new GameState.ActionFactory.ActionCastSpell();
         action.setParameter(0, ActionParameterType.INT, talent.id);
-        action.setParameter(1, ActionParameterType.INT, -1);
+        action.setParameter(1, ActionParameterType.INT, classIndex);
         action.setParameter(2, ActionParameterType.INT, 0);
         action.setParameter(3, ActionParameterType.INT, 0);
         action.setParameter(4, ActionParameterType.INT, 0);

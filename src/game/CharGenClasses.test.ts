@@ -3,14 +3,23 @@ import { CharGenClasses } from "@/game/CharGenClasses";
 
 describe("CharGenClasses slot mapping", () => {
   it("maps UI slots to retail class ids (soldier/scout/scoundrel)", () => {
-    // Male: soldier, scoundrel, scout
+    // Male: scoundrel, scout, soldier (retail staticInitClassSelection)
     expect(CharGenClasses[0].id).toBe(2);
     expect(CharGenClasses[1].id).toBe(1);
     expect(CharGenClasses[2].id).toBe(0);
-    // Female: scout, scoundrel, soldier
+    // Female: soldier, scout, scoundrel
     expect(CharGenClasses[3].id).toBe(0);
     expect(CharGenClasses[4].id).toBe(1);
     expect(CharGenClasses[5].id).toBe(2);
+  });
+
+  it("uses retail classSelection soundsets (male 85 / female 83)", () => {
+    expect(CharGenClasses[0].soundset).toBe(85);
+    expect(CharGenClasses[1].soundset).toBe(85);
+    expect(CharGenClasses[2].soundset).toBe(85);
+    expect(CharGenClasses[3].soundset).toBe(83);
+    expect(CharGenClasses[4].soundset).toBe(83);
+    expect(CharGenClasses[5].soundset).toBe(83);
   });
 
   it("keeps male scoundrel appearances on the +3 sequence", () => {

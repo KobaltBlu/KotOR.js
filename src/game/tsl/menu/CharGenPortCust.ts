@@ -1,13 +1,12 @@
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIButton } from "@/gui";
-import { CharGenClasses } from "@/game/CharGenClasses";
 import { CharGenPortCust as K1_CharGenPortCust } from "@/game/kotor/KOTOR";
 
 /**
  * CharGenPortCust class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenPortCust.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -43,58 +42,18 @@ export class CharGenPortCust extends K1_CharGenPortCust {
     this.voidFill = false;
   }
 
-  private async cycleAppearance(direction: -1 | 1) {
-    if(this.isCharLoading) return;
-    this.isCharLoading = true;
-    try{
-      const creature = GameState.CharGenManager.selectedCreature;
-      const appearances = CharGenClasses[GameState.CharGenManager.selectedClass].appearances;
-      let idx = appearances.indexOf(creature.appearance);
-      if(direction < 0){
-        creature.appearance = idx <= 0 ? appearances[appearances.length - 1] : appearances[idx - 1];
-      }else{
-        creature.appearance = idx >= appearances.length - 1 ? appearances[0] : appearances[idx + 1];
-      }
-      creature.setAppearance(creature.appearance);
-
-      for(let i = 0; i < GameState.SWRuleSet.portraits.length; i++){
-        const port = GameState.SWRuleSet.portraits[i];
-        if(
-          port.appearancenumber == creature.appearance ||
-          port.appearance_l == creature.appearance ||
-          port.appearance_s == creature.appearance
-        ){
-          creature.portraitId = i;
-          creature.portrait = port;
-          break;
-        }
-      }
-
-      const model = await creature.loadModel();
-      this.updateCamera();
-      this.UpdatePortrait();
-      if(model){
-        model.rotation.z = -Math.PI/2;
-        model.removeFromParent();
-        this._3dView.addModel(model);
-      }
-    }finally{
-      this.isCharLoading = false;
-    }
-  }
-
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer(true);
     if(skipInit) return;
 
     this.BTN_ARRL.addEventListener('click', async (e) => {
       e.stopPropagation();
-      await this.cycleAppearance(-1);
+      await this.cyclePortrait(-1);
     });
 
     this.BTN_ARRR.addEventListener('click', async (e) => {
       e.stopPropagation();
-      await this.cycleAppearance(1);
+      await this.cyclePortrait(1);
     });
 
     this.BTN_BACK.addEventListener('click', async (e) => {
@@ -103,12 +62,12 @@ export class CharGenPortCust extends K1_CharGenPortCust {
       if(this.exiting) return;
       this.exiting = true;
       try{
-        creature.appearance = this.appearance;
-        creature.portraitId = this.portraitId;
-        if(GameState.SWRuleSet.portraits?.[this.portraitId]){
-          creature.portrait = GameState.SWRuleSet.portraits[this.portraitId];
-        }
-        creature.setAppearance(creature.appearance);
+        GameState.CharGenManager.applyPortraitAppearance(
+          creature,
+          this.appearance,
+          this.portraitId
+        );
+        creature.appearanceHead = this.appearanceHead;
         await creature.loadModel();
         this.close();
       }finally{
@@ -120,8 +79,18 @@ export class CharGenPortCust extends K1_CharGenPortCust {
     this.BTN_ACCEPT.addEventListener('click', (e) => {
       e.stopPropagation();
       const creature = GameState.CharGenManager.selectedCreature;
-      creature.template.getFieldByLabel('Appearance_Type').setValue(creature.appearance);
-      creature.template.getFieldByLabel('PortraitId').setValue(creature.portraitId);
+      const entry = this.portraitList[this.portraitListIndex];
+      if(entry){
+        GameState.CharGenManager.applyPortraitAppearance(
+          creature,
+          entry.appearanceId,
+          entry.portraitId
+        );
+      }else{
+        creature.template.getFieldByLabel('Appearance_Type')?.setValue(creature.appearance);
+        creature.template.getFieldByLabel('PortraitId')?.setValue(creature.portraitId);
+        creature.template.getFieldByLabel('Appearance_Head')?.setValue(creature.appearanceHead);
+      }
       this.manager.CharGenQuickPanel?.portraitCreationCompleted?.();
       this.manager.CharGenCustomPanel?.portraitCreationCompleted?.();
       this.manager.CharGenMain?.updateAttributes?.();
@@ -137,5 +106,5 @@ export class CharGenPortCust extends K1_CharGenPortCust {
 
     this.Init3D();
   }
-  
+
 }

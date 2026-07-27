@@ -11,8 +11,6 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
-import { CombatRound } from "@/combat/CombatRound";
-import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import {
   resolveItemCastTiming,
   type ItemCastTimingResolved,
@@ -23,7 +21,11 @@ import {
 } from "@/combat/spell-projectile-time";
 import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { isWithinSpellCastRange } from "@/combat/spell-range";
+import { shouldFailItemCastForNoUses } from "@/combat/item-property-uses";
 import * as THREE from "three";
+
+/** Retail AIActionItemCastSpell SendFeedbackMessage when uses left == 0. */
+const FEEDBACK_ITEM_NO_USES = 0x17;
 
 /** Retail AIActionItemCastSpell per-item-type animation + gate + pause. */
 type ItemCastTiming = ItemCastTimingResolved;
@@ -64,6 +66,7 @@ export class ActionItemCastSpell extends Action {
     // 9 - int: projectileSpellId
     // 10 - dword: oItem
     // 11 - string: impactScript
+    // 12 - int: activePropertyIndex
   }
 
   dispose(){
@@ -77,8 +80,9 @@ export class ActionItemCastSpell extends Action {
   private consumeItemCharges(oItem: ModuleItem){
     if(this.chargesConsumed || !oItem) return;
     this.chargesConsumed = true;
-    // Retail DecrementUses — stack cost_value 1 / charges (ModuleItem.decrementUses)
-    oItem.decrementUses(this.owner as ModuleCreature);
+    const propIndex = this.getParameter<number>(12) ?? 0;
+    // Retail DecrementUses — cost_value stack / charges / uses-per-day
+    oItem.decrementUses(this.owner as ModuleCreature, propIndex);
   }
 
   private startSpellInstance(castTarget: ModuleObject | undefined){
@@ -143,16 +147,11 @@ export class ActionItemCastSpell extends Action {
     const modeltype = creature.creatureAppearance?.modeltype
       ?? creature.getAppearance?.()?.modeltype;
     const distanceSq = targetPosition.distanceToSquared(this.owner.position);
-    const spellCastMs = SpellCastInstance.parseTimeMs?.(
-      this.spell?.getCastTime?.() ?? this.spell?.casttime,
-      1500
-    ) ?? 1500;
-
     return resolveItemCastTiming(
       oItem?.baseItem?.itemType,
       modeltype,
       distanceSq,
-      typeof spellCastMs === 'number' ? spellCastMs : 1500
+      ActionItemCastSpell.parseSpellCastTimeMs(this.spell)
     );
   }
 
@@ -245,20 +244,28 @@ export class ActionItemCastSpell extends Action {
     this.elapsedMs += delta * 1000;
 
     if(!combatRound.roundPaused && !this.castStarted){
-      // Retail grenade StartCombatRound(engaged=1, master=1); hostile item
-      // spells also BroadcastCombatStateToParty / SetExcitedState(SpellCast).
+      // Retail: hostilesetting==0 → ActivityManager(2); else ActivityManager(1)
+      // + SetCombatState(1,1). Grenades force StartCombatRound(engaged=1).
+      const hostile = (this.spell.hostilesetting | 0) === 1;
+      owner.activityManager(hostile ? 1 : 2);
+      if(hostile){
+        owner.setCombatState(true, ExcitedDurationRow.SpellCast);
+      }
+
       if(timing.grenade){
         combatRound.startCombatRound(this.target, true, true, 0);
       }else{
         combatRound.beginCombatRound();
       }
+      // Retail SetSpellCastRound(0, 0) before pause
+      combatRound.setSpellCastRound(0, 0);
       combatRound.pauseRound(this.owner, timing.pauseMs);
       combatRound.decrementRoundLength(timing.pauseMs);
 
-      if(timing.grenade || this.spell.hostilesetting == 1){
-        owner.broadcastCombatStateToParty?.(owner);
-        owner.setExcitedState?.(ExcitedDurationRow.SpellCast);
-        owner.removeCombatInvisibilityEffects?.();
+      if(timing.grenade || hostile){
+        owner.broadcastCombatStateToParty(owner);
+        owner.setExcitedState(ExcitedDurationRow.SpellCast);
+        owner.removeCombatInvisibilityEffects();
       }
     }
 
@@ -268,9 +275,16 @@ export class ActionItemCastSpell extends Action {
     }
 
     // Retail holds the throw/cast pose until the conjure gate, then releases.
+    // Medical / OTHER (0x19, 0x2d, 0x2f) play the anim on the target when present.
     if(this.throwAnim !== timing.animation){
       this.throwAnim = timing.animation;
-      owner.setAnimationState(timing.animation);
+      const animTarget =
+        timing.animOnTarget &&
+        this.target &&
+        BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
+          ? (this.target as ModuleCreature)
+          : owner;
+      animTarget.setAnimationState(timing.animation);
     }
 
     // Retail AddItemCastSpellActions queues ChangeFacingObject / FacingPoint
@@ -293,14 +307,43 @@ export class ActionItemCastSpell extends Action {
     }
 
     if(!this.castStarted && combatRound.roundStarted){
+      const propIndex = this.getParameter<number>(12) ?? 0;
+      const prop =
+        oItem.getActiveCastSpellProperty?.(propIndex) ||
+        oItem.properties?.[propIndex | 0];
+      // Retail GetUsedActivePropertyUsesLeft — abort with feedback 0x17
+      if(
+        shouldFailItemCastForNoUses(
+          prop,
+          oItem.charges | 0,
+          oItem.getStackSize?.() | 0
+        )
+      ){
+        owner.setAnimationState(ModuleCreatureAnimState.READY);
+        GameState.FeedbackMessageManager?.SendFeedbackMessage?.(FEEDBACK_ITEM_NO_USES);
+        combatRound.removeSpellActionFromRound?.();
+        combatRound.processPendingCombatActions?.();
+        return ActionStatus.FAILED;
+      }
+
       // Object target only when present — never fall back to owner (location casts)
       this.startSpellInstance(this.target || undefined);
       // Retail DecrementUses fires with SpellCastAndImpact, not at round end
       this.consumeItemCharges(oItem);
+      // Retail AIActionItemCastSpell @ 0050f170 — after SpellCastAndImpact,
+      // RemoveSpellAction if GetSpellActionPending (clears combat-queue icon).
+      combatRound.removeSpellAction();
     }
 
     if(this.elapsedMs >= timing.pauseMs){
       owner.setAnimationState(ModuleCreatureAnimState.READY);
+      if(
+        timing.animOnTarget &&
+        this.target &&
+        BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
+      ){
+        (this.target as ModuleCreature).setAnimationState(ModuleCreatureAnimState.READY);
+      }
       // Retail SpellCastAndImpact is a fire-and-forget event — a grenade still
       // in flight must finish on the area, not be interrupted by dispose().
       this.spellCastInstance = undefined;

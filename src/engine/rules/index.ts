@@ -29,3 +29,4 @@ export * from "@/engine/rules/SWPlaceableAppearance";
 export * from "@/engine/rules/skill-points";
 export * from "@/engine/rules/level-up";
 export * from "@/engine/rules/ability-points";
+export * from "@/engine/rules/chargen-appearance";

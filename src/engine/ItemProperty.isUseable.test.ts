@@ -39,6 +39,14 @@ describe('ItemProperty.isUseable UpgradeType sentinel', () => {
     expect(propWithUpgrade(3, 0).isUseable()).toBe(false);
     expect(propWithUpgrade(3, 1 << 3).isUseable()).toBe(true);
   });
+
+  it('blocks when Useable flag is 0 (DecrementUses exhausted)', () => {
+    const prop = propWithUpgrade(-1, 0);
+    prop.useable = 0;
+    expect(prop.isUseable()).toBe(false);
+    prop.useable = 1;
+    expect(prop.isUseable()).toBe(true);
+  });
 });
 
 describe('grenade action-menu activate path', () => {

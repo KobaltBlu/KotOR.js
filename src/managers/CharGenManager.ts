@@ -32,6 +32,10 @@ import {
   createEmptyLevelStatRecord,
   LevelUpAbilityIndex,
 } from "@/engine/rules/level-up";
+import {
+  getCharGenSlotSoundSet,
+  resolveCharGenAppearanceHead,
+} from "@/engine/rules/chargen-appearance";
 import { createDefaultPartyFollowInfo } from "@/module/ModuleCreature";
 
 /** Retail CSWGuiQuickPanel step indices. */
@@ -417,12 +421,17 @@ export class CharGenManager {
       }
     }
     const gender = nth < 3 ? 0 : 1;
+    const appearanceHead = resolveCharGenAppearanceHead(
+      GameState.SWRuleSet.appearances,
+      appearanceIdx
+    );
+    const soundSet = CharGenClasses[nth]?.soundset ?? getCharGenSlotSoundSet(nth);
     template.RootNode.addField(new GFFField(GFFDataType.INT, 'AIState')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.LIST, 'ActionList'));
     template.RootNode.addField(new GFFField(GFFDataType.INT, 'Age')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'AmbientAnimState')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.INT, 'Animation')).setValue(10000);
-    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Appearance_Head')).setValue(1);
+    template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Appearance_Head')).setValue(appearanceHead);
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'Appearance_Type')).setValue(appearanceIdx);
     template.RootNode.addField(new GFFField(GFFDataType.SHORT, 'ArmorClass')).setValue(10);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'BodyBag')).setValue(0);
@@ -437,20 +446,21 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.WORD, 'CurrentForce')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Gender')).setValue(gender);
     let equipment = template.RootNode.addField(new GFFField(GFFDataType.LIST, 'Equip_ItemList'));
+    // Retail SaveCharGenCreature script set @ 006123e0
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptAttacked')).setValue('k_hen_attacked01');
-    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDamaged')).setValue('k_hen_damage01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDamaged')).setValue('k_def_damage01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDeath')).setValue('');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDialogue')).setValue('k_hen_dialogue01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptDisturbed')).setValue('');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptEndDialogu')).setValue('');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptEndRound')).setValue('k_hen_combend01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptHeartbeat')).setValue('k_hen_heartbt01');
-    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked')).setValue('k_hen_blocked01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptOnBlocked')).setValue('k_def_blocked01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptOnNotice')).setValue('k_hen_percept01');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptRested')).setValue('');
     template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptSpawn')).setValue('k_hen_spawn01');
-    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptSpellAt')).setValue('');
-    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptUserDefine')).setValue('');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptSpellAt')).setValue('k_def_spellat01');
+    template.RootNode.addField(new GFFField(GFFDataType.RESREF, 'ScriptUserDefine')).setValue('k_def_userdef01');
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'GoodEvil')).setValue(50);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'NaturalAC')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Con')).setValue(8);
@@ -478,21 +488,7 @@ export class CharGenManager {
     let armorStruct = new GFFStruct(ModuleCreatureArmorSlot.ARMOR);
     armorStruct.addField(new GFFField(GFFDataType.RESREF, 'EquippedRes')).setValue('g_a_clothes01');
     equipment.addChildStruct(armorStruct);
-    if (appearanceIdx >= 91 && appearanceIdx <= 105) {
-      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(83);
-    } else if (appearanceIdx >= 106 && appearanceIdx <= 120) {
-      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(82);
-    } else if (appearanceIdx >= 121 && appearanceIdx <= 135) {
-      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(83);
-    } else if (appearanceIdx >= 136 && appearanceIdx <= 150) {
-      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(85);
-    } else if (appearanceIdx >= 151 && appearanceIdx <= 165) {
-      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(84);
-    } else if (appearanceIdx >= 166 && appearanceIdx <= 180) {
-      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(85);
-    } else {
-      template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(nth < 3 ? 85 : 83);
-    }
+    template.RootNode.addField(new GFFField(GFFDataType.WORD, 'SoundSetFile')).setValue(soundSet);
     template.RootNode.addField(new GFFField(GFFDataType.BYTE, 'Race')).setValue(6);
     template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'XPosition')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'YPosition')).setValue(0);
@@ -501,6 +497,30 @@ export class CharGenManager {
     template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'YOrientation')).setValue(0);
     template.RootNode.addField(new GFFField(GFFDataType.FLOAT, 'ZOrientation')).setValue(0);
     return template;
+  }
+
+  /**
+   * Apply portrait/appearance choice (retail UpdatePortraitButton / OnSelectDisplayButton).
+   * Soundset stays on the class slot (retail does not retarget it on cycle).
+   */
+  static applyPortraitAppearance(creature: ModulePlayer, appearanceId: number, portraitId: number) {
+    if(!creature) return;
+    creature.appearance = appearanceId | 0;
+    creature.portraitId = portraitId | 0;
+    if(GameState.SWRuleSet.portraits?.[portraitId]){
+      creature.portrait = GameState.SWRuleSet.portraits[portraitId];
+    }
+    creature.setAppearance(creature.appearance);
+    creature.appearanceHead = resolveCharGenAppearanceHead(
+      GameState.SWRuleSet.appearances,
+      creature.appearance
+    );
+    const root = creature.template?.RootNode;
+    if(root){
+      root.getFieldByLabel('Appearance_Type')?.setValue(creature.appearance);
+      root.getFieldByLabel('PortraitId')?.setValue(creature.portraitId);
+      root.getFieldByLabel('Appearance_Head')?.setValue(creature.appearanceHead);
+    }
   }
 
   /** Baseline ranks when the skills panel opened (minus cannot go below). */

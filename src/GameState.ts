@@ -1056,14 +1056,15 @@ export class GameState implements EngineContext {
       );
       void GameState.ensureForceDistortionTexture();
 
+      // Retail BeginIntro: K1 queues leclogo/biologo/legal BIKs; TSL queues
+      // leclogo/obsidianent then CSWGuiLegalScreen (texture), not a Legal movie.
       if(GameState.GameKey == GameEngineType.KOTOR){
         GameState.VideoManager.queueMovie('leclogo', true);
         GameState.VideoManager.queueMovie('biologo', true);
         GameState.VideoManager.queueMovie('legal', true);
       }else if(GameState.GameKey == GameEngineType.TSL){
         GameState.VideoManager.queueMovie('leclogo', true);
-        GameState.VideoManager.queueMovie('ObsidianEnt', true);
-        GameState.VideoManager.queueMovie('Legal', true);
+        GameState.VideoManager.queueMovie('obsidianent', true);
       }
 
       GameState.Ready = true;
@@ -1082,29 +1083,24 @@ export class GameState implements EngineContext {
       GameState.OnReadyCalled = true;
       GameState.processEventListener('ready');
       window.dispatchEvent(new Event('resize'));
-      
-      // if(GameState.GameKey == GameEngineType.TSL){
-      //   GameState.SetEngineMode(EngineMode.LEGAL);
-      //   GameState.State = EngineState.RUNNING;
-      //   GameState.Update();
-      //   return;
-      // }
 
-      GameState.VideoManager.playMovieQueue( () => {
+      const onIntroComplete = () => {
         window.dispatchEvent(new Event('resize'));
+        // TSL retail: after PlayMovieQueue, CSWGuiLegalScreen then main menu
+        if(GameState.GameKey == GameEngineType.TSL){
+          GameState.LegalScreenManager.Start();
+          return;
+        }
         GameState.MenuManager.MainMenu.Start();
         GameState.SetEngineMode(EngineMode.GUI);
         GameState.State = EngineState.RUNNING;
         AudioEngine.Unmute(AudioEngineChannel.ALL);
         AudioEngine.Mute(AudioEngineChannel.MOVIE);
-      }).catch((e) => {
+      };
+
+      GameState.VideoManager.playMovieQueue(onIntroComplete).catch((e) => {
         console.error(e);
-        window.dispatchEvent(new Event('resize'));
-        GameState.MenuManager.MainMenu.Start();
-        GameState.SetEngineMode(EngineMode.GUI);
-        GameState.State = EngineState.RUNNING;
-        AudioEngine.Unmute(AudioEngineChannel.ALL);
-        AudioEngine.Mute(AudioEngineChannel.MOVIE);
+        onIntroComplete();
       });
       //Start the game update loop
       GameState.Update();
@@ -1825,7 +1821,7 @@ export class GameState implements EngineContext {
 
   static UpdateLegal(delta: number = 0){
     GameState.LegalScreenManager.Update(delta);
-    GameState.renderer.render(this.scene, GameState.camera_gui);
+    GameState.renderer.render(GameState.LegalScreenManager.scene, GameState.camera_gui);
     GameState.processEventListener('afterRender', [delta]);
   }
 

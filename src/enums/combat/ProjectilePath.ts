@@ -1,8 +1,6 @@
 /**
- * ProjectilePath enum.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ * ProjectilePath enum — NWScript PROJECTILE_PATH_TYPE_* plus KotOR path 6 (grenade).
+ *
  * @file ProjectilePath.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -14,4 +12,8 @@ export enum ProjectilePath {
   BALLISTIC      = 2,
   HIGH_BALLISTIC = 3,
   ACCELERATING   = 4,
+  /** Retail SpellCastAndImpact / CalculateLastSpellProjectileTime path 6 (+2500 ms). */
+  GRENADE        = 6,
+  /** Retail path 7 — used when SpellCastAndImpact param_8 != 0. */
+  SPELL_IMPACT_ALT = 7,
 }

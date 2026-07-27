@@ -486,7 +486,36 @@ export class CursorManager {
 	static pointLOSOffset = 1;
 
 	/**
+	 * Nearest door-walkmesh hit along the current raycaster ray.
+	 * Used to occlude interactable picks through closed doors.
+	 */
+	static findNearestDoorWalkmeshHit(): { distance: number; door: ModuleObject } | undefined {
+		const doorWoks = GameState.module?.area?.doorWalkmeshes;
+		if(!doorWoks?.length) return undefined;
+
+		const raycaster = CursorManager.raycaster;
+		let bestDist = Infinity;
+		let bestDoor: ModuleObject | undefined;
+
+		for(let i = 0; i < doorWoks.length; i++){
+			const wok = doorWoks[i];
+			if(!wok?.faces?.length || !wok.mesh) continue;
+			const hits = wok.raycast(raycaster) || [];
+			for(let h = 0; h < hits.length; h++){
+				const hit = hits[h];
+				if(hit.distance >= bestDist) continue;
+				bestDist = hit.distance;
+				bestDoor = wok.moduleObject;
+			}
+		}
+
+		if(!bestDoor || !Number.isFinite(bestDist)) return undefined;
+		return { distance: bestDist, door: bestDoor };
+	}
+
+	/**
 	 * Performs a ray test against interactable objects using a point cloud proxy.
+	 * Door walkmeshes occlude hits behind them (retail SceneHitCheck / CanSee door block).
 	 */
 	public static onMouseHitInteractive(): ModuleObject | undefined {
 		
@@ -527,11 +556,21 @@ export class CursorManager {
 		CursorManager.raycaster.params.Points.threshold = CursorManager.pointThreshold;
 		CursorManager.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
 		const intersectsT = CursorManager.raycaster.intersectObject( CursorManager.testPoints, false );
-		const intersect = intersectsT[0];
 		CursorManager.raycaster.params.Points.threshold = pThresholdCache;
+
+		const doorHit = CursorManager.findNearestDoorWalkmeshHit();
 		CursorManager.raycaster.far = farCache;
-		if(intersect && intersect.object == CursorManager.testPoints){
-			return objects[intersect.index];
+
+		for(let i = 0; i < intersectsT.length; i++){
+			const intersect = intersectsT[i];
+			if(intersect.object != CursorManager.testPoints) continue;
+			const obj = objects[intersect.index];
+			if(!obj) continue;
+			// Door DWK in front of this candidate blocks pick-through; allow the door itself
+			if(doorHit && doorHit.distance < intersect.distance && doorHit.door !== obj){
+				continue;
+			}
+			return obj;
 		}
 		return undefined;
 	}

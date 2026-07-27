@@ -8,6 +8,7 @@ import { TwoDAManager } from "@/managers/TwoDAManager";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ActionCombat } from "@/actions/ActionCombat";
 import { CombatRoundAction, ExcitedDurationRow, isWithinSpellCastRange, resolveSpellCastRange } from "@/combat";
+import { canTargetSpellCastByPerception } from "@/combat/spell-cast-gates";
 import { getSpellCastAnimState, getSpellConjureAnimState } from "@/combat/spell-cast-anims";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { CombatActionType } from "@/enums/combat/CombatActionType";
@@ -192,19 +193,43 @@ export class TalentSpell extends TalentObject {
   useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject, options?: { isUserAction?: boolean }){
     super.useTalentOnObject(oTarget, oCaster);
 
+    // Retail AddCastSpellActions visibility (non-party field426==0)
+    if(oTarget && oTarget !== oCaster){
+      const isPartyUI = !!(
+        (oCaster as any).isPartyMember?.() ||
+        (oCaster as any).isPlayer ||
+        (oCaster as any).isPM
+      );
+      const entry = (oCaster as any).perceptionList?.find(
+        (o: any) => o.object === oTarget || o.objectId === oTarget.id
+      );
+      if(!canTargetSpellCastByPerception(entry?.data, {
+        isPartyOrPlayerUI: isPartyUI,
+        isSelf: false,
+      })){
+        return;
+      }
+    }
+
     oCaster.combatData.lastSpellTarget = oTarget;
     oTarget.combatData.lastSpellAttacker = oCaster;
     if(this.hostilesetting == 1){
-      // Retail hostile cast → BroadcastCombatStateToParty (not caster-only setCombatEngaged)
+      // Retail hostile cast → ActivityManager(1) + BroadcastCombatStateToParty
+      if(typeof (oCaster as any).activityManager === 'function'){
+        (oCaster as any).activityManager(1);
+      }
       if(typeof (oCaster as any).broadcastCombatStateToParty === 'function'){
         (oCaster as any).broadcastCombatStateToParty(oCaster);
         (oCaster as any).setExcitedState?.(ExcitedDurationRow.SpellCast);
+        (oCaster as any).setCombatState?.(true, ExcitedDurationRow.SpellCast);
         (oCaster as any).removeCombatInvisibilityEffects?.();
       }else if(typeof (oCaster as any).setCombatEngaged === 'function'){
         (oCaster as any).setCombatEngaged(ExcitedDurationRow.SpellCast);
       }else{
         oCaster.resetExcitedDuration();
       }
+    }else if(typeof (oCaster as any).activityManager === 'function'){
+      (oCaster as any).activityManager(2);
     }
 
     const combatAction = new CombatRoundAction();

@@ -267,7 +267,9 @@ export class CharGenClass extends GameMenu {
     await this.load3D();
   }
 
-  GetRandomAnimation() {
+  GetRandomAnimation(): string {
+    // Retail CSWCCreature::CGPauseCycle initial branch — pause1 or pause2
+    return Math.random() < 0.5 ? 'pause1' : 'pause2';
   }
 
 }

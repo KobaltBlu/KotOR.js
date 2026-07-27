@@ -30,6 +30,7 @@ import {
   isDroidForceMenuCaster,
   isForceMenuSpellEnabled,
 } from "@/engine/menu/action-menu-force-powers";
+import { shouldShowCounterSpellAction } from "@/combat/spell-cast-gates";
 
 /** TSL GetStances / GetMenuInfo form spell id range (0x102–0x10C). */
 const STANCE_FORM_SPELL_MIN = 0x102;
@@ -248,6 +249,37 @@ export class ActionMenuManager {
         name: item.getName(),
       }));
     }
+  }
+
+  /**
+   * Retail GetTargetActions CounterSpell when the hostile target is mid-cast
+   * (SpellCastRound / live SpellCastInstance). Slot 1 (hostile Force panel).
+   */
+  static populateCounterSpell(){
+    if(!ActionMenuManager.oPC || !ActionMenuManager.oTarget) return;
+    if(!(ActionMenuManager.oTarget instanceof GameState.Module.ModuleArea.ModuleCreature)) return;
+    const target = ActionMenuManager.oTarget as ModuleCreature;
+    if(!shouldShowCounterSpellAction({
+      restricted: ActionMenuManager.areaIsRestricted(),
+      isSelf: target === ActionMenuManager.oPC,
+      targetDead: !!target.isDead?.(),
+      hasActiveSpellCast: !!target.hasActiveSpellCast?.(),
+      spellCastRound: !!target.combatRound?.spellCastRound,
+    })){
+      return;
+    }
+
+    ActionMenuManager.ActionPanels.targetPanels[1].addAction(new GameState.ActionMenuManager.ActionMenuItem({
+      action: {
+        type: ActionType.ActionCounterSpell,
+        object: target,
+        talent: undefined,
+      },
+      target,
+      icon: 'ir_counter',
+      name: 'Counter Spell',
+      enabled: true,
+    }));
   }
 
   /**
@@ -640,6 +672,7 @@ export class ActionMenuManager {
             ActionMenuManager.ActionPanels.targetPanels[0].actions.length - 1;
 
           ActionMenuManager.populateHostileForcePowers();
+          ActionMenuManager.populateCounterSpell();
           ActionMenuManager.populateHostileItems();
         }
 

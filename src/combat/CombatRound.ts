@@ -678,14 +678,19 @@ export class CombatRound {
 
   /**
    * Retail RemoveSpellAction @ 004d3ba0 —
-   * drop pending CAST_SPELL entries from the scheduled list and clear spellCastRound.
+   * drop pending spell/item-cast entries (retail action-type byte 2 covers both)
+   * from the scheduled list and clear the active round action when it is a cast.
    */
   removeSpellAction(){
     this.scheduledActionList = this.scheduledActionList.filter(
-      (a) => a?.actionType !== CombatActionType.CAST_SPELL
+      (a) => {
+        const t = a?.actionType;
+        return t !== CombatActionType.CAST_SPELL && t !== CombatActionType.ITEM_CAST_SPELL;
+      }
     );
     this.spellCastRound = false;
-    if(this.action?.actionType === CombatActionType.CAST_SPELL){
+    const cur = this.action?.actionType;
+    if(cur === CombatActionType.CAST_SPELL || cur === CombatActionType.ITEM_CAST_SPELL){
       this.action = undefined;
     }
   }

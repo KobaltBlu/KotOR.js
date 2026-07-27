@@ -96,6 +96,7 @@ export class MenuManager {
   static MenuKeyboardEntry: KOTOR.MenuKeyboardEntry;
   static MenuQuestItem: KOTOR.MenuQuestItem;
   static MenuScriptSelect: KOTOR.MenuScriptSelect;
+  static MenuSkillInfo: KOTOR.MenuSkillInfo;
   static MenuUpgrade: KOTOR.MenuUpgrade;
   static MenuUpgradeItems: KOTOR.MenuUpgradeItems;
   static MenuUpgradeSelect: KOTOR.MenuUpgradeSelect;
@@ -458,6 +459,19 @@ export class MenuManager {
           KOTOR.CharGenQuickPanel, KOTOR.CharGenSkills,
         ];
       }
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  /** Lazy-load skill-info box (retail CSWGuiSkillInfoBox / CharGen ShowGranted). */
+  static async EnsureSkillInfoMenu(){
+    if(MenuManager.MenuSkillInfo) return;
+    const isTSL = GameState.GameKey == GameEngineType.TSL;
+    try{
+      MenuManager.MenuSkillInfo = await MenuManager.GameMenuLoader(
+        isTSL ? TSL.MenuSkillInfo : KOTOR.MenuSkillInfo
+      ) as KOTOR.MenuSkillInfo;
     }catch(e){
       console.error(e);
     }

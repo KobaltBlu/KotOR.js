@@ -49,4 +49,9 @@ describe('resolveSpellProjectilePathType', () => {
     expect(resolveSpellProjectilePathType('****')).toBe(0);
     expect(resolveSpellProjectilePathType(undefined)).toBe(0);
   });
+
+  it('maps named projtype strings used by spells.2da', () => {
+    expect(resolveSpellProjectilePathType('grenade')).toBe(6);
+    expect(resolveSpellProjectilePathType('homing')).toBe(1);
+  });
 });

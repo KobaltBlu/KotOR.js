@@ -7,11 +7,12 @@ import {
   INSTANT_CAST_ANIM,
   INSTANT_CAST_PAUSE_MS,
 } from "@/combat/spell-cast-anims";
+import { passesSpellKnownGate, passesSpellPrerequisiteGate, canTargetSpellCastByPerception } from "@/combat/spell-cast-gates";
+import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { ModuleObjectType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GameState } from "@/GameState";
 import { BitWise } from "@/utility/BitWise";
@@ -54,7 +55,7 @@ export class ActionCastSpell extends Action {
 
     //PARAMS
     // 0 - int: nSpellId
-    // 1 - int: Unknown: -1 if cheat enabled
+    // 1 - int: classIndex (ForceMenu) OR -1 if cheat
     // 2 - int: nDomainLevel
     // 3 - int: Unknown: Always 0?
     // 4 - int: Unknown: Always 0?
@@ -64,7 +65,7 @@ export class ActionCastSpell extends Action {
     // 8 - float: target z
     // 9 - int: nProjectilePath (+ bit 30 = bInstantSpell)
     // 10 - int: Unknown: Always -1?
-    // 11 - int: Unknown: -1 if cheat enabled
+    // 11 - int: override spell id (−1 = none)
     // 12 - int: fake cast (1 = visuals only)
 
   }
@@ -76,6 +77,14 @@ export class ActionCastSpell extends Action {
   /** Retail AIActionCastSpell instant path (param flags bit 30). */
   get isInstant(): boolean {
     return ((this.getParameter<number>(9) || 0) & INSTANT_CAST_FLAG) !== 0;
+  }
+
+  /**
+   * Cheat cast — param 1 === -1 (NWScript bCheat / FakeSpell).
+   * Param 11 is override spell id (−1 = none), not a cheat flag.
+   */
+  get isCheat(): boolean {
+    return this.getParameter<number>(1) === -1;
   }
 
   dispose(){
@@ -205,10 +214,41 @@ export class ActionCastSpell extends Action {
     }
   }
 
+  private faceCastTarget(owner: ModuleCreature){
+    // Retail AddCastSpellActions queues ChangeFacingObject / FacingPoint —
+    // animate turn (FacePoint snaps every tick).
+    if(this.target){
+      owner.setFacingObject(this.target);
+    }else{
+      owner.setFacing(
+        Math.atan2(
+          owner.position.y - this.targetPosition.y,
+          owner.position.x - this.targetPosition.x
+        ) + Math.PI / 2,
+        false
+      );
+    }
+  }
+
+  /**
+   * Retail hostilesetting → ActivityManager(1)+SetCombatState /
+   * ActivityManager(2) for non-hostile (mirrors AIActionItemCastSpell).
+   */
+  private applyHostileActivity(owner: ModuleCreature, castSpell: any){
+    const hostile = (castSpell?.hostilesetting | 0) === 1;
+    owner.activityManager?.(hostile ? 1 : 2);
+    if(hostile){
+      owner.setCombatState?.(true, ExcitedDurationRow.SpellCast);
+      owner.broadcastCombatStateToParty?.(owner);
+      owner.setExcitedState?.(ExcitedDurationRow.SpellCast);
+      owner.removeCombatInvisibilityEffects?.();
+    }
+  }
+
   private startSpellInstance(castTarget: ModuleObject | undefined, castSpell: any, fake: boolean): boolean {
     const owner = this.owner as ModuleCreature;
     // Retail DecrementSpellReadyCount / UnReadySpell at cast-start gate
-    if(!fake && !this.forceSpent){
+    if(!fake && !this.isCheat && !this.forceSpent){
       if(!owner.unreadySpell(castSpell)){
         return false;
       }
@@ -218,6 +258,11 @@ export class ActionCastSpell extends Action {
     if(!castTarget){
       spellCastInstance.targetLocation.copy(this.targetPosition);
       spellCastInstance.projectileTarget.copy(this.targetPosition);
+    }
+    // ActionCombat param 9 may carry path type (sans instant bit)
+    const pathParam = (this.getParameter<number>(9) || 0) & ~INSTANT_CAST_FLAG;
+    if(pathParam > 0){
+      spellCastInstance.projectilePathOverride = pathParam;
     }
     spellCastInstance.applySpellData({ fake });
     this.owner.area.attachSpellInstance(spellCastInstance);
@@ -264,11 +309,7 @@ export class ActionCastSpell extends Action {
       }else{
         this.applyCastAnim(owner, this.spellCastInstance.spell || this.spell);
       }
-      if(this.target){
-        owner.setFacingObject(this.target);
-      }else{
-        owner.FacePoint(this.targetPosition);
-      }
+      this.faceCastTarget(owner);
       return ActionStatus.IN_PROGRESS;
     }
 
@@ -288,6 +329,30 @@ export class ActionCastSpell extends Action {
     // Retail force-item forbid/require masks
     if(this.failsForceItemMask(owner, this.spell)){
       return this.failCast(owner, ActionStatus.ERROR);
+    }
+
+    // Retail spell-tree / feat prerequisite gate (N8 residual)
+    if(!this.isCheat && !this.isFake && !passesSpellPrerequisiteGate(owner, this.spell)){
+      return this.failCast(owner, ActionStatus.FAILED);
+    }
+
+    // Retail known-spell gate (skipped for cheat / fake)
+    if(!this.isCheat && !this.isFake && !passesSpellKnownGate(owner, this.spell?.id ?? this.getParameter<number>(0))){
+      return this.failCast(owner, ActionStatus.FAILED);
+    }
+
+    // Retail AddCastSpellActions visibility (non-party field426==0)
+    if(this.target && this.target !== owner && !this.isCheat && !this.isFake){
+      const isPartyUI = !!(owner.isPartyMember?.() || owner.isPlayer || owner.isPM);
+      const entry = owner.perceptionList?.find(
+        (o) => o.object === this.target || o.objectId === this.target.id
+      );
+      if(!canTargetSpellCastByPerception(entry?.data, {
+        isPartyOrPlayerUI: isPartyUI,
+        isSelf: false,
+      })){
+        return this.failCast(owner, ActionStatus.FAILED);
+      }
     }
 
     const rangeTarget = (this.target || { position: this.targetPosition }) as ModuleObject;
@@ -310,11 +375,7 @@ export class ActionCastSpell extends Action {
     owner.force = 0;
     owner.speed = 0;
 
-    if(this.target){
-      owner.setFacingObject(this.target);
-    }else{
-      owner.FacePoint(this.targetPosition);
-    }
+    this.faceCastTarget(owner);
 
     if(this.isFake){
       this.applyConjureAnim(owner, this.spell);
@@ -357,6 +418,7 @@ export class ActionCastSpell extends Action {
       if(!combatRound.roundStarted){
         combatRound.beginCombatRound();
       }
+      this.applyHostileActivity(owner, castSpell);
       combatRound.setSpellCastRound(castSpell?.id ?? this.getParameter<number>(0) ?? -1, 0);
       this.pauseCasterAndPartner(owner, INSTANT_CAST_PAUSE_MS);
       if(combatRound.action){
@@ -393,6 +455,7 @@ export class ActionCastSpell extends Action {
       if(!combatRound.roundStarted){
         combatRound.beginCombatRound();
       }
+      this.applyHostileActivity(owner, castSpell);
       combatRound.setSpellCastRound(castSpell?.id ?? this.getParameter<number>(0) ?? -1, 0);
       this.pauseCasterAndPartner(owner, pauseMs);
 

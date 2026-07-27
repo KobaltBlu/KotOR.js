@@ -113,7 +113,11 @@ export class ItemProperty {
 
   //Determine if the property requires an upgrade to use, or if it is always useable.
   // GFF BYTE 255 = "none" (same sentinel as UpgradeSlot* / save path -1↔255).
+  // Retail usable==0 (DecrementUses) also blocks.
   isUseable(){
+    if(this.useable === 0){
+      return false;
+    }
     const upgradeType = this.upgradeType;
     if(upgradeType == null || upgradeType < 0 || upgradeType === 255){
       return true;

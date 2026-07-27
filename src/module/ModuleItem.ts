@@ -26,7 +26,13 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ActionParameterType, ActionType, CombatActionType, GameEffectDurationType, ModuleCreatureAnimState, SkillType } from "@/enums";
 import { CombatRoundAction, SpellCastInstance } from "@/combat";
 import { castAmmunitionProjectile } from "@/combat/combat-projectile";
-import { GRENADE_PAUSE_MS, isGrenadeItemType, resolveGrenadeThrowAnim } from "@/combat/item-cast-grenade";
+import { isGrenadeItemType } from "@/combat/item-cast-grenade";
+import { resolveItemCastTiming } from "@/combat/item-cast-timing";
+import {
+  applyDecrementUses,
+  getUsedActivePropertyUsesLeft,
+  canTargetItemCastByPerception,
+} from "@/combat/item-property-uses";
 import type { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
 
 /** Retail InstantUseItem combat lockout (field436_0xab0 = 3000). */
@@ -311,6 +317,30 @@ export class ModuleItem extends ModuleObject {
     return this.stackSize;
   }
 
+  /**
+   * Retail CSWSItem::GetUsedActivePropertyUsesLeft @ 00555a60.
+   */
+  getUsedActivePropertyUsesLeft(propertyIndex: number = 0): number {
+    const prop = this.properties?.[propertyIndex | 0];
+    return getUsedActivePropertyUsesLeft(prop, this.charges | 0, this.getStackSize() | 0);
+  }
+
+  /**
+   * Active CastSpell property used by a combat-round item cast.
+   */
+  getActiveCastSpellProperty(propertyIndex: number = 0){
+    const prop = this.properties?.[propertyIndex | 0];
+    if(prop && prop.is?.(ModuleItemProperty.CastSpell)){
+      return prop;
+    }
+    for(let i = 0; i < (this.properties?.length || 0); i++){
+      if(this.properties[i]?.is?.(ModuleItemProperty.CastSpell)){
+        return this.properties[i];
+      }
+    }
+    return undefined;
+  }
+
   setStackSize(value: number){
     return this.stackSize = value;
   }
@@ -586,6 +616,19 @@ export class ModuleItem extends ModuleObject {
   scheduleItemCastSpell(oCaster: ModuleCreature, oTarget: ModuleObject, spellId: number, options: { isUserAction?: boolean; activePropertyIndex?: number } = {}){
     if(!oCaster?.combatRound) return;
 
+    // Retail AddItemCastSpellActions visibility (non-party field426==0)
+    if(oTarget && oTarget !== oCaster){
+      const isPartyUI = !!(oCaster.isPartyMember?.() || oCaster.isPlayer || oCaster.isPM);
+      const entry = oCaster.perceptionList?.find((o) => o.object === oTarget || o.objectId === oTarget.id);
+      if(!canTargetItemCastByPerception(entry?.data, {
+        isPartyOrPlayerUI: isPartyUI,
+        isSelf: false,
+      })){
+        return;
+      }
+    }
+
+    const hadPending = oCaster.combatRound.getActionPending();
     const combatAction = new CombatRoundAction();
     combatAction.actionType = CombatActionType.ITEM_CAST_SPELL;
     combatAction.target = oTarget;
@@ -594,22 +637,34 @@ export class ModuleItem extends ModuleObject {
     combatAction.domainLevel = 1;
     combatAction.isUserAction = !!options.isUserAction;
     combatAction.setSpell(new TalentSpell(spellId));
-    // Retail AIActionItemCastSpell case 6 — seed the throw arc so the round
-    // preview matches before ActionItemCastSpell re-resolves it on tick.
-    if(isGrenadeItemType(this.baseItem?.itemType)){
-      const modeltype = oCaster.creatureAppearance?.modeltype;
-      const distanceSq = oTarget
-        ? oTarget.position.distanceToSquared(oCaster.position)
-        : 0;
-      combatAction.animation = resolveGrenadeThrowAnim(modeltype, distanceSq);
-      combatAction.animationTime = GRENADE_PAUSE_MS;
-    }else{
-      combatAction.animation = ModuleCreatureAnimState.CASTOUT1;
-      combatAction.animationTime = 1500;
+    // Grenade / medpac spells often have **** iconresref — use inventory icon
+    const spellIcon = String(combatAction.spell?.iconresref || '').trim();
+    if(!spellIcon || spellIcon === '****'){
+      combatAction.iconResRef = this.getIcon?.() || combatAction.iconResRef;
     }
+
+    const modeltype = oCaster.creatureAppearance?.modeltype;
+    const distanceSq = oTarget
+      ? oTarget.position.distanceToSquared(oCaster.position)
+      : 0;
+    const timing = resolveItemCastTiming(
+      this.baseItem?.itemType,
+      modeltype,
+      distanceSq,
+      1500
+    );
+    combatAction.animation = timing.animation;
+    combatAction.animationTime = timing.pauseMs;
+
     oCaster.combatRound.addAction(combatAction);
     // Retail GetSpellCastItem field347 — stamp caster for spell scripts
     oCaster.spellCastItem = this;
+
+    // Retail AddItemCastSpellActions (param_9==0): player with pending combat
+    // action → ClearAllActions on the action queue (combat round list kept).
+    if(hadPending && oCaster === GameState.getCurrentPlayer?.()){
+      oCaster.actionQueue.clear();
+    }
 
     if(!oCaster.actionQueue.actionTypeExists(ActionType.ActionCombat)){
       const action = new GameState.ActionFactory.ActionCombat(0xFFFF);
@@ -618,25 +673,47 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail CSWSItem::DecrementUses @ 0055de20 — CastSpell cost_value 1 burns
-   * stack size (destroy when stack < 2); charge cost_values 2–6 burn charges.
-   * Simplified: charges first when present, else stack (matches InstantUseItem).
+   * Retail CSWSItem::DecrementUses @ 0055de20 — cost_value drives stack /
+   * charge / uses-per-day burn; may mark the property unusable and destroy.
    */
-  decrementUses(oCaster?: ModuleCreature): void {
+  decrementUses(oCaster?: ModuleCreature, propertyIndex: number = 0): void {
     if(GameState.infiniteUses) return;
-    if(this.charges > 1){
-      this.charges -= 1;
+    const prop =
+      this.getActiveCastSpellProperty?.(propertyIndex) ||
+      this.properties?.[propertyIndex | 0];
+    if(!prop){
+      // Fallback: legacy charges→stack when property missing
+      if(this.charges > 1){
+        this.charges -= 1;
+        return;
+      }
+      if(this.charges === 1){
+        oCaster?.removeItem?.(this, 1);
+        return;
+      }
+      const stack = this.getStackSize();
+      if(stack <= 1){
+        oCaster?.removeItem?.(this, 1);
+      }else{
+        this.setStackSize(stack - 1);
+      }
       return;
     }
-    if(this.charges === 1){
+
+    const result = applyDecrementUses({
+      costValue: prop.costValue | 0,
+      charges: this.charges | 0,
+      stackSize: this.getStackSize() | 0,
+      usesPerDay: prop.usesPerDay | 0,
+      useable: prop.useable,
+      itemType: this.baseItem?.itemType,
+    });
+    this.charges = result.charges;
+    this.setStackSize(result.stackSize);
+    prop.usesPerDay = result.usesPerDay;
+    prop.useable = result.useable;
+    if(result.destroyItem){
       oCaster?.removeItem?.(this, 1);
-      return;
-    }
-    const stack = this.getStackSize();
-    if(stack <= 1){
-      oCaster?.removeItem?.(this, 1);
-    }else{
-      this.setStackSize(stack - 1);
     }
   }
 

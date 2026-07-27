@@ -135,6 +135,7 @@ export class ActionCombat extends Action {
         itemSpellAction.setParameter(9, ActionParameterType.INT, -1);
         itemSpellAction.setParameter(10, ActionParameterType.DWORD, combatAction.item?.id || ModuleObjectConstant.OBJECT_INVALID);
         itemSpellAction.setParameter(11, ActionParameterType.STRING, '');
+        itemSpellAction.setParameter(12, ActionParameterType.INT, combatAction.activePropertyIndex ?? 0);
         itemSpellAction.isUserAction = combatAction.isUserAction;
         this.owner.actionQueue.unshift(itemSpellAction);
         return ActionStatus.WAITING;

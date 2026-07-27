@@ -6,6 +6,7 @@ import { ProjectilePath } from "@/enums/combat/ProjectilePath";
 import { OdysseyModelAnimation } from "@/odyssey";
 import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import { SpellCastInstance } from "@/combat/SpellCastInstance";
+import { resolveSpellProjectilePathType } from "@/combat/spell-projectile-time";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums";
@@ -97,7 +98,15 @@ export class CombatRoundAction {
     }
     this.spell = spell;
     this.spellId = spell.id;
-    this.iconResRef = spell.iconresref;
+    const icon = String(spell.iconresref || '').trim();
+    this.iconResRef = (!icon || icon === '****')
+      ? (this.item?.getIcon?.() || this.iconResRef || 'i_attack')
+      : icon;
+    // Carry spells.2da projtype into ActionCombat param 9
+    const path = resolveSpellProjectilePathType(spell.projtype);
+    if(path !== ProjectilePath.DEFAULT){
+      this.projectilePath = path;
+    }
   }
 
   addSpellInstance(spellInstance: SpellCastInstance) {

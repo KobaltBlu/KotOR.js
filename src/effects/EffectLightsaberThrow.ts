@@ -7,6 +7,10 @@ import { DiceType } from "@/enums/combat/DiceType";
 import { BitWise } from "@/utility/BitWise";
 import { Dice } from "@/utility/Dice";
 import { GameState } from "@/GameState";
+import {
+  spawnLightsaberThrowMesh,
+  type LightsaberThrowMeshHandle,
+} from "@/combat/lightsaber-throw-mesh";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 
@@ -21,10 +25,13 @@ const VFX_THROW_IMPACT = 0x1771;
  * EffectLightsaberThrow — retail OnApplyLightsaberThrow @ 004de600 / OnRemove @ 004dece0.
  * object[0..2] = up to 3 targets; int[0] selects spell speed row (0→spell 0x31, else 4).
  * Schedules travel VFX + ENERGY damage along the path, then return to thrower.
+ * Client: hides hand saber and flies a weapon-model copy along the path.
  *
  * @file EffectLightsaberThrow.ts
  */
 export class EffectLightsaberThrow extends GameEffect {
+  private throwMesh: LightsaberThrowMeshHandle | undefined;
+
   constructor(){
     super();
     this.type = GameEffectType.EffectLightSaberThrow;
@@ -133,6 +140,17 @@ export class EffectLightsaberThrow extends GameEffect {
     const level = thrower.getTotalClassLevel(false);
     const diceCount = Math.max(1, Math.floor(level * 0.5));
 
+    // Client projectile: hide hand saber + fly weapon mesh along path
+    const weapon = thrower.equipment.RIGHTHAND;
+    void spawnLightsaberThrowMesh({
+      thrower,
+      weapon,
+      path,
+      throwRate,
+    }).then((handle) => {
+      this.throwMesh = handle;
+    });
+
     let elapsedMs = 0;
     // Segments 1..n: travel to each node; damage on non-thrower destinations
     for(let seg = 1; seg < path.length; seg++){
@@ -161,6 +179,8 @@ export class EffectLightsaberThrow extends GameEffect {
 
   onRemove(){
     super.onRemove();
+    this.throwMesh?.dispose();
+    this.throwMesh = undefined;
     if(!BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)) return;
     (this.object as ModuleCreature).throwingLightsaber = false;
   }

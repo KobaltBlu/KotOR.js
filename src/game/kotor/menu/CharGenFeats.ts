@@ -90,17 +90,76 @@ export class CharGenFeats extends GameMenu {
       this.creature = GameState.CharGenManager.selectedCreature;
     }
     this.chosenFeats = [];
+    // Retail InitiateFeats @ 006f3460
+    const grantedIds = this.collectAndAddGrantedFeats();
     if(this.levelUpMode && GameState.LevelUpManager?.draft){
       this.selectionsRemaining = GameState.LevelUpManager.draft.featPicksRemaining | 0;
     }else{
       const classData = this.creature?.getMainClass?.() || this.creature?.classes?.[0];
-      const picks = classData ? getFeatPicksForLevel(classData as any, 1) : 1;
-      this.selectionsRemaining = picks > 0 ? picks : 1;
+      const picks = classData ? getFeatPicksForLevel(classData as any, 1) : 0;
+      this.selectionsRemaining = picks > 0 ? picks : 0;
     }
-    this.addGrantedFeats();
     this.LB_FEATS.setProtoBuilder(this.getFeatItemClass());
     this.buildFeatList();
     this.updateSelectionsLabel();
+
+    const finishIfNoPicks = () => {
+      // Retail: if no picks remain, auto OnAcceptButton
+      if(this.selectionsRemaining <= 0 && !this.levelUpMode){
+        this.manager.CharGenCustomPanel?.featCreationCompleted?.();
+        this.close();
+      }
+    };
+
+    // Retail OnPanelAdded → ShowGranted when granted feats exist
+    if(grantedIds.length && !this.levelUpMode){
+      void this.showGrantedFeats(grantedIds).then(finishIfNoPicks);
+    }else{
+      finishIfNoPicks();
+    }
+  }
+
+  /** Retail AddGrantedFeats + return newly granted feat ids for ShowGranted. */
+  collectAndAddGrantedFeats(): number[] {
+    const granted: number[] = [];
+    if(!this.creature) return granted;
+    const featCount = GameState.SWRuleSet.featCount;
+    for (let i = 0; i < featCount; i++) {
+      const feat = GameState.SWRuleSet.feats[i];
+      if(!feat || feat.constant == '****') continue;
+      const mainClass = this.creature.getMainClass();
+      if(!mainClass || !mainClass.isFeatAvailable?.(feat)) continue;
+      const status = mainClass.getFeatStatus(feat);
+      if (status == 3 && this.creature.getTotalClassLevel() >= mainClass.getFeatGrantedLevel(feat)) {
+        if (!this.creature.getHasFeat(i)) {
+          this.creature.addFeat(TalentFeat.From2DA(feat));
+          granted.push(i);
+        }
+      }
+    }
+    return granted;
+  }
+
+  /** Retail ShowGranted @ 006f2c40 — TLK 0xa512 (42258). */
+  async showGrantedFeats(featIds: number[]): Promise<void> {
+    await GameState.MenuManager.EnsureSkillInfoMenu?.();
+    const skillInfo = GameState.MenuManager.MenuSkillInfo;
+    if(!skillInfo?.openWithContent) return;
+    const message =
+      GameState.TLKManager.GetStringById?.(42258)?.Value
+      ?? GameState.TLKManager.TLKStrings?.[42258]?.Value
+      ?? 'You have been granted the following feats:';
+    const names = featIds.map((id) => {
+      const feat = GameState.SWRuleSet.feats[id];
+      if(!feat) return String(id);
+      return GameState.TLKManager.GetStringById?.(feat.name)?.Value
+        ?? GameState.TLKManager.TLKStrings?.[feat.name]?.Value
+        ?? feat.constant
+        ?? String(id);
+    });
+    await new Promise<void>((resolve) => {
+      skillInfo.openWithContent(message, names, () => resolve());
+    });
   }
 
   protected getFeatItemClass() {
@@ -190,10 +249,10 @@ export class CharGenFeats extends GameMenu {
     }
     this.chosenFeats = [];
     const classData = this.creature?.getMainClass?.() || this.creature?.classes?.[0];
-    const picks = classData ? getFeatPicksForLevel(classData as any, 1) : 1;
+    const picks = classData ? getFeatPicksForLevel(classData as any, 1) : 0;
     this.selectionsRemaining = this.levelUpMode && GameState.LevelUpManager?.draft
       ? (GameState.LevelUpManager.draft.featPicksRemaining | 0)
-      : (picks > 0 ? picks : 1);
+      : (picks > 0 ? picks : 0);
   }
 
   updateSelectionsLabel() {
@@ -201,24 +260,9 @@ export class CharGenFeats extends GameMenu {
     this.STD_SELECTIONS_REMAINING_LBL?.setText(String(this.selectionsRemaining));
   }
 
+  /** @deprecated use collectAndAddGrantedFeats */
   addGrantedFeats() {
-    const featCount = GameState.SWRuleSet.featCount;
-    for (let i = 0; i < featCount; i++) {
-      const feat = GameState.SWRuleSet.feats[i];
-      if(this.creature){
-        const mainClass = this.creature.getMainClass();
-        if (mainClass && feat.constant != '****') {
-          if (mainClass.isFeatAvailable(feat)) {
-            const status = mainClass.getFeatStatus(feat);
-            if (status == 3 && this.creature.getTotalClassLevel() >= mainClass.getFeatGrantedLevel(feat)) {
-              if (!this.creature.getHasFeat(i)) {
-                this.creature.addFeat(TalentFeat.From2DA(feat));
-              }
-            }
-          }
-        }
-      }
-    }
+    this.collectAndAddGrantedFeats();
   }
 
   buildFeatList() {

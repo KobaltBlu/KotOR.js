@@ -173,6 +173,17 @@ describe('ForceMenuAction spellClassIndex', () => {
   });
 });
 
+describe('ActionCastSpell isCheat encoding', () => {
+  it('treats only param 1 === -1 as cheat (param 11 is override id)', () => {
+    // CombatRound casts pass classIndex in param 1 and -1 override in param 11 —
+    // that must still spend FP / apply gates.
+    const isCheat = (param1: number, _param11: number) => param1 === -1;
+    expect(isCheat(0, -1)).toBe(false);
+    expect(isCheat(1, -1)).toBe(false);
+    expect(isCheat(-1, -1)).toBe(true);
+  });
+});
+
 describe('activateMenuItem talent-before-item preference', () => {
   it('Force-menu entries with talent+item prefer CastSpell talent path', () => {
     const menuItem = {

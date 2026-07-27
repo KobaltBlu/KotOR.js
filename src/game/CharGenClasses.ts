@@ -1,17 +1,22 @@
 
 export interface CharGenClassInterface {
   id: number;
+  /** Retail CHAR_TYPE.soundset from CSWGuiClassSelection::classSelection. */
+  soundset: number;
   strings: {
     name: number,
     gender: number,
     description: number,
   },
+  /** Fallback appearance ids; portrait UI prefers portraits.2da via buildCharGenPortraitList. */
   appearances: number[]
 }
 
+/** Retail staticInitClassSelection + classSelection CHAR_TYPE[6] @ 007a2684. */
 export const CharGenClasses: {[key: number]: CharGenClassInterface} = {
   0: {
     id: 2,
+    soundset: 85,
     strings: {
       name: 135,
       gender: 358,
@@ -21,6 +26,7 @@ export const CharGenClasses: {[key: number]: CharGenClassInterface} = {
   },
   1: {
     id: 1,
+    soundset: 85,
     strings: {
       name: 133,
       gender: 358,
@@ -30,6 +36,7 @@ export const CharGenClasses: {[key: number]: CharGenClassInterface} = {
   },
   2: {
     id: 0,
+    soundset: 85,
     strings: {
       name: 134,
       gender: 358,
@@ -39,6 +46,7 @@ export const CharGenClasses: {[key: number]: CharGenClassInterface} = {
   },
   3: {
     id: 0,
+    soundset: 83,
     strings: {
       name: 134,
       gender: 359,
@@ -48,6 +56,7 @@ export const CharGenClasses: {[key: number]: CharGenClassInterface} = {
   },
   4: {
     id: 1,
+    soundset: 83,
     strings: {
       name: 133,
       gender: 359,
@@ -57,6 +66,7 @@ export const CharGenClasses: {[key: number]: CharGenClassInterface} = {
   },
   5: {
     id: 2,
+    soundset: 83,
     strings: {
       name: 135,
       gender: 359,

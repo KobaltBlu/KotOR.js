@@ -11,10 +11,16 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { getCounterSpellRange } from "@/combat/spell-range";
+import {
+  calculateLastSpellProjectileTimeMs,
+  resolveSpellProjectilePathType,
+  shouldDelaySpellImpactToLanding,
+} from "@/combat/spell-projectile-time";
 import { playGrenadeBounceAtPosition } from "@/combat/grenade-sound";
 import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { EventBroadcastSafeProjectile } from "@/events/EventBroadcastSafeProjectile";
+import { ProjectilePath } from "@/enums/combat/ProjectilePath";
 
 /**
  * SpellCastInstance class.
@@ -65,6 +71,8 @@ export class SpellCastInstance {
   impactAtProjectileLanding: boolean = false;
   /** Initial flight duration when impactAtProjectileLanding (for progress 1→0). */
   private flightDurationMs = 0;
+  /** Optional path override from ActionCastSpell param 9. */
+  projectilePathOverride: number = -1;
   conjureTime = 3000;
   conjuring: boolean = false;
   castTime: number = 0;
@@ -139,19 +147,51 @@ export class SpellCastInstance {
   private notifySafeProjectileBroadcast(){
     const flightMs = Math.max(1, this.castTime | 0);
     const hasProjModel = !!(this.spell?.projmodel && String(this.spell.projmodel).trim() && this.spell.projmodel !== '****');
+    const pathType = this.resolveProjectilePathType();
     const evt = new EventBroadcastSafeProjectile();
     evt.setCaller(this.owner);
     evt.setObject(this.owner);
     evt.spellId = this.spell?.id ?? -1;
     evt.targetId = this.target?.id ?? 0x7F000000;
     evt.flightMs = flightMs;
-    evt.projectilePath = 6;
+    evt.projectilePath = pathType;
     evt.origin.copy(this.owner.position);
     evt.destination.copy(this.projectileTarget || this.targetLocation);
     // SpellCastInstance loads projmodel asynchronously — skip the event spawn
     // whenever the spell has a projectile model so we do not double-draw.
     evt.alreadySpawned = hasProjModel;
     evt.execute();
+  }
+
+  private resolveProjectilePathType(): number {
+    if(this.projectilePathOverride >= 0){
+      return this.projectilePathOverride | 0;
+    }
+    const fromType = resolveSpellProjectilePathType(this.spell?.projtype);
+    if(fromType !== ProjectilePath.DEFAULT){
+      return fromType;
+    }
+    // Retail SpellCastAndImpact item/throw path defaults to 6 when spawning
+    if(shouldDelaySpellImpactToLanding(this.spell, this.impactAtProjectileLanding)){
+      return ProjectilePath.GRENADE;
+    }
+    return ProjectilePath.DEFAULT;
+  }
+
+  /**
+   * Retail projspwnpoint: hand/throw → rhand; otherwise body position origin.
+   */
+  private resolveProjectileHook(): any {
+    const spawn = String(this.spell?.projspwnpoint ?? '').toLowerCase().trim();
+    const model = this.owner?.model;
+    if(!model) return undefined;
+    if(spawn === 'hand' || spawn === 'throw' || spawn === 'rhand' || !spawn || spawn === '****'){
+      return model.rhand || undefined;
+    }
+    if(spawn === 'lhand' || spawn === 'left'){
+      return model.lhand || model.rhand || undefined;
+    }
+    return model.rhand || undefined;
   }
 
   init(){
@@ -176,19 +216,36 @@ export class SpellCastInstance {
 
     this.stampSpellTarget();
 
-    if(this.spell?.projmodel != ''){
-      MDLLoader.loader.load(this.spell.projmodel.toLowerCase())
+    // Retail CalculateLastSpellProjectileTime for delayed-impact throws / L / W
+    if(shouldDelaySpellImpactToLanding(this.spell, this.impactAtProjectileLanding)){
+      this.impactAtProjectileLanding = true;
+      const origin = this.owner.position;
+      const dest = this.projectileTarget || this.targetLocation;
+      const distance = origin.distanceTo(dest);
+      const pathType = this.resolveProjectilePathType() || ProjectilePath.GRENADE;
+      const flightMs = calculateLastSpellProjectileTimeMs(distance, pathType);
+      this.castTime = Math.max(this.castTime || 0, flightMs);
+    }
+
+    const projModel = this.spell?.projmodel;
+    if(projModel && String(projModel).trim() && projModel !== '****'){
+      MDLLoader.loader.load(String(projModel).toLowerCase())
       .then((mdl: OdysseyModel) => {
         OdysseyModel3D.FromMDL(mdl, {
           context: this.owner.context
         }).then((model: OdysseyModel3D) => {
           this.projectile = model;
           if(this.owner.model){
-            if(this.owner.model.rhand){
+            const hook = this.resolveProjectileHook();
+            if(hook){
               this.owner.context.group.effects.add(model);
-              this.projectileHook = this.owner.model.rhand;
+              this.projectileHook = hook;
             }else{
-              this.projectile.dispose();
+              // No hand hook — spawn at body and still fly
+              this.owner.context.group.effects.add(model);
+              this.projectileOrigin.copy(this.owner.position);
+              this.projectileCurve.v0.copy(this.projectileOrigin);
+              model.position.copy(this.projectileOrigin);
             }
           }else{
             this.projectile.dispose();
@@ -281,11 +338,10 @@ export class SpellCastInstance {
       return;
     }
 
-    const delayImpactToLanding =
-      this.impactAtProjectileLanding ||
-      this.spell?.range === 'L' ||
-      this.spell?.range === 'W';
-
+    const delayImpactToLanding = shouldDelaySpellImpactToLanding(
+      this.spell,
+      this.impactAtProjectileLanding
+    );
     if(this.conjureTime > 0){
       this.conjuring = true;
 
