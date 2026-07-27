@@ -295,24 +295,23 @@ export class ModuleMGGunBullet extends ModuleObject {
     return new Promise<void>( (resolve, reject) => {
       this.loadModel().then( () => {
         resolve();
-      });
+      }).catch(reject);
     });
   }
 
   loadModel(){
     const resref = this.model_name.replace(/\0[\s\S]*$/g,'').toLowerCase();
-    return new Promise<void>( (resolve, reject) => {
-      MDLLoader.loader.load(resref).then(
-        (mdl: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(mdl, {
-            context: this.context,
-            onComplete: (model: OdysseyModel3D) => {
-              this.model = model;
-              resolve();
-            }
-          });
-        }
-      )
+    if(!resref){
+      return Promise.reject(new Error('ModuleMGGunBullet: empty Bullet_Model'));
+    }
+    return MDLLoader.loader.load(resref).then(
+      (mdl: OdysseyModel) => OdysseyModel3D.FromMDL(mdl, {
+        context: this.context,
+        castShadow: false,
+        receiveShadow: false,
+      })
+    ).then((model: OdysseyModel3D) => {
+      this.model = model;
     });
   }
 

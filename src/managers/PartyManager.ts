@@ -702,7 +702,8 @@ export class PartyManager {
       let numMembers = 0;
       for(let i = 0; i < GameState.PartyManager.party.length; i++){
         let member = GameState.PartyManager.party[i];
-        if(member != GameState.PartyManager.Player){
+        // Retail GetNPCObject: unavailable CNPCs are not active party members
+        if(member != GameState.PartyManager.Player && PartyManager.IsAvailable(member.npcId)){
           let memberStruct = new GFFStruct();
           memberStruct.addField( new GFFField(GFFDataType.BYTE, 'PT_IS_LEADER') ).setValue( GameState.getCurrentPlayer() == member ? 1 : 0 );
           memberStruct.addField( new GFFField(GFFDataType.INT, 'PT_MEMBER_ID') ).setValue( member.npcId );
@@ -1098,14 +1099,15 @@ export class PartyManager {
   }
 
   /**
-   * Set the PartyMember to unavailable
+   * Set the PartyMember to unavailable.
+   * Retail CSWPartyTable::RemoveNPC @ 00700490 — clears available only.
    * @param npcId - The ID of the NPC to set to unavailable
    * @returns void
    */
   static RemoveAvailableNPC(npcId = 0){
+    if(!PartyManager.NPCS[npcId]) return;
     PartyManager.NPCS[npcId].available = false;
     PartyManager.NPCS[npcId].canSelect = false;
-    PartyManager.NPCS[npcId].template;
   }
 
 
@@ -1461,18 +1463,22 @@ export class PartyManager {
   }
 
   /**
-   * Save the current party member templates
+   * Save the current party member templates.
+   * Retail GetNPCObject requires availability — unavailable CNPCs (e.g. prologue
+   * 3CFD after RemoveAvailableNPC(NPC_MIRA)) must not remain in PT_MEMBERS /
+   * CurrentMembers or they will respawn on the next module load.
    * @returns void
    */
   static Save(){
-    const npcs = PartyManager.party.filter( (pm) => pm.npcId >= 0 );
+    const npcs = PartyManager.party.filter(
+      (pm) => pm.npcId >= 0 && PartyManager.IsAvailable(pm.npcId)
+    );
+    PartyManager.CurrentMembers = npcs.map((pm, i) => ({
+      isLeader: i == 0,
+      memberID: pm.npcId
+    }));
     for(let i = 0; i < npcs.length; i++){
-      const pm = npcs[i];
-      PartyManager.CurrentMembers[i] = {
-        isLeader: i == 0 ? true : false,
-        memberID: pm.npcId
-      };
-      PartyManager.SavePartyMember(pm.npcId);
+      PartyManager.SavePartyMember(npcs[i].npcId);
     }
   }
 
@@ -1577,12 +1583,26 @@ export class PartyManager {
 
   /**
    * Load the PartyMember by it's index in the CurrentMembers array.
+   * Retail CSWPartyTable::GetNPCObject @ 00700660 — unavailable → OBJECT_INVALID
+   * (SpawnNPC no-ops). Prologue skip uses RemoveAvailableNPC(7) for 3CFD.
    * @param nIdx - The index of the party member to load
    * @returns void
    */
   static async LoadPartyMember(nIdx: number = 0){
-    const npc = PartyManager.NPCS[PartyManager.CurrentMembers[nIdx].memberID];
-    const template = npc.template;
+    const member = PartyManager.CurrentMembers[nIdx];
+    if(!member){
+      return;
+    }
+    const memberID = member.memberID;
+    if(!PartyManager.IsAvailable(memberID)){
+      return;
+    }
+
+    const npc = PartyManager.NPCS[memberID];
+    const template = npc?.template;
+    if(!template){
+      return;
+    }
     template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
     const partyMember = new ModuleCreature(template);
 
@@ -1596,7 +1616,7 @@ export class PartyManager {
     try{
       if(!(currentSlot instanceof ModuleCreature)){
         partyMember.isPM = true;
-        partyMember.npcId = PartyManager.CurrentMembers[nIdx].memberID;
+        partyMember.npcId = memberID;
         partyMember.load();
         partyMember.clearAllActions();
         //PartyManager.party[nIdx+1] = partyMember;

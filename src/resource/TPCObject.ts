@@ -90,9 +90,9 @@ export class TPCObject {
   /**
    * Extract DDS/mipmap data from the TPC.
    * @param compressMipMaps Keep DXT compressed (true) or decompress to RGBA (false).
-   * @param options.stitchCycleFrames When true, keep cycle textures as a full contact sheet
-   *   (Forge preview). Engine path splits into per-frame textures — retail CAurTextureBasic::glImage
-   *   @ 00420970 uploads one GL texture per frame via CreateTexture/CreateProcessedTexture.
+   * @param options.stitchCycleFrames When true, rebuild cycle frames into one contact-sheet
+   *   atlas (Forge preview). Engine path keeps frames split — retail CAurTextureBasic::glImage
+   *   @ 00420970 uploads one GL texture per frame.
    */
   getDDS( compressMipMaps: boolean = true, options?: { stitchCycleFrames?: boolean } ) {
 
@@ -138,12 +138,21 @@ export class TPCObject {
 
     let dataOffset = TPCHeaderLength;
 
-    // Cycle TPCs store a contact sheet (full width x height mip chain), not sequential
-    // face blobs. TXI numx/numy describe the grid; retail splits at load
-    // (CreateTexture ImageGetSubImage / CreateProcessedTexture contact-sheet offsets).
+    // TXI proceduretype cycle:
+    //  - Compressed (CreateProcessedTexture @ 00424dd0): sequential per-frame mip chains
+    //    with stride from GetCompressedContactSheetOffset @ 00424d70 (full chain, square frameW).
+    //  - Uncompressed (CreateTexture @ 00424980): 2D contact sheet + ImageGetSubImage.
     const isCycle = this.txi.procedureType == TXIPROCEDURETYPE.CYCLE
       && (this.txi.numx | 0) > 0 && (this.txi.numy | 0) > 0
       && (this.txi.numx * this.txi.numy) > 1;
+
+    if(isCycle && this.header.compressed){
+      return this.getDDSCompressedCycle(dds, compressMipMaps, !!options?.stitchCycleFrames);
+    }
+
+    if(isCycle && !this.header.compressed){
+      // Uncompressed contact sheet — dimensions stay full sheet until split below
+    }
 
   	for ( let face = 0; face < this.header.faces; face++ ) {
 
@@ -216,12 +225,13 @@ export class TPCObject {
 
     }
 
-    // Engine: split contact sheet into per-frame mip chains (retail gl_textures[]).
-    // Preview: keep the full sheet when stitchCycleFrames is requested.
-    if(isCycle && !options?.stitchCycleFrames){
-      dds = this.splitCycleContactSheet(dds, compressMipMaps);
-    }else if(isCycle){
-      dds.frameCount = 1;
+    // Uncompressed cycle: ImageGetSubImage each cell into its own mip chain.
+    if(isCycle && !this.header.compressed){
+      if(options?.stitchCycleFrames){
+        dds.frameCount = 1;
+      }else{
+        dds = this.splitUncompressedCycleContactSheet(dds);
+      }
     }
 
   	return dds;
@@ -229,20 +239,130 @@ export class TPCObject {
   }
 
   /**
-   * Split a cycle contact sheet into numx*numy frame mip chains.
-   * Retail CreateTexture @ 00424980 ImageGetSubImage(x = (i%numx)*fw, y = (i/numx)*fh);
-   * CreateProcessedTexture @ 00424dd0 uses the equivalent for DXT block grids.
+   * Compressed cycle TPCs — retail CreateProcessedTexture @ 00424dd0 /
+   * GetCompressedContactSheetOffset @ 00424d70.
+   *
+   * On disk: [frame0 full mip chain][frame1 full mip chain]... with stride
+   * = sum of DXT sizes for square frameW down to 1x1 (header.mipMapCount may be 1;
+   * lower mips still occupy the stride). Header width/height are the logical sheet size.
    */
-  private splitCycleContactSheet(dds: any, compressMipMaps: boolean): any {
+  private getDDSCompressedCycle(dds: any, compressMipMaps: boolean, stitchCycleFrames: boolean): any {
+    const numx = this.txi.numx | 0;
+    const numy = this.txi.numy | 0;
+    const frameCount = numx * numy;
+    const frameW = Math.max(1, Math.floor(this.header.width / numx));
+    const frameH = Math.max(1, Math.floor(this.header.height / numy));
+    // Retail GetBPP: DXT5 → 4, DXT1 → 3
+    const bpp = this.header.encoding == ENCODING.RGBA ? 4 : 3;
+    const uploadMips = Math.max(1, this.header.mipMapCount);
+    const dxtFlag = this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5;
+
+    dds.width = frameW;
+    dds.height = frameH;
+    dds.mipmapCount = uploadMips;
+    dds.frameCount = frameCount;
+    dds.mipmaps = [];
+
+    for(let f = 0; f < frameCount; f++){
+      let dataOffset = TPCHeaderLength + TPCObject.getCompressedContactSheetOffset(f, frameW, bpp);
+      let width = frameW;
+      let height = frameH;
+
+      for(let m = 0; m < uploadMips; m++){
+        const dataLength = Math.max(
+          this.header.minDataSize,
+          TPCObject.getCompressedMipByteLength(width, height, this.header.encoding)
+        );
+        let byteArray = this.file.slice(dataOffset, dataOffset + dataLength);
+        if(!compressMipMaps){
+          byteArray = Uint8Array.from(dxtJs.decompress(byteArray, width, height, dxtFlag));
+        }
+        dds.mipmaps.push({ data: byteArray, width, height });
+        dataOffset += dataLength;
+        width = Math.max(width >> 1, 1);
+        height = Math.max(height >> 1, 1);
+      }
+      // Bytes past uploadMips within frameStride are skipped; next frame starts at stride*(f+1).
+    }
+
+    if(stitchCycleFrames){
+      return this.stitchCompressedCycleFrames(dds, compressMipMaps);
+    }
+    return dds;
+  }
+
+  /**
+   * Forge preview: rebuild sequential cycle frames into a numx×numy contact sheet.
+   */
+  private stitchCompressedCycleFrames(dds: any, compressMipMaps: boolean): any {
+    const numx = this.txi.numx | 0;
+    const numy = this.txi.numy | 0;
+    const frameCount = numx * numy;
+    const frameW = dds.width as number;
+    const frameH = dds.height as number;
+    const mipmapCount = dds.mipmapCount as number;
+    const encoding = this.header.encoding == ENCODING.RGB ? dxtJs.flags.DXT1 : dxtJs.flags.DXT5;
+    const mipmaps: { data: Uint8Array, width: number, height: number }[] = [];
+
+    let imageWidth = this.header.width;
+    let imageHeight = this.header.height;
+    let mipFrameW = frameW;
+    let mipFrameH = frameH;
+
+    for(let m = 0; m < mipmapCount; m++){
+      const sheetRgba = new Uint8ClampedArray(imageWidth * imageHeight * 4);
+
+      for(let i = 0; i < frameCount; i++){
+        const mipmap = dds.mipmaps[m + (i * mipmapCount)];
+        if(!mipmap) continue;
+        const rgba = Uint8ClampedArray.from(
+          compressMipMaps
+            ? dxtJs.decompress(mipmap.data, mipFrameW, mipFrameH, encoding)
+            : mipmap.data
+        );
+        const col = i % numx;
+        const row = Math.floor(i / numx);
+        const destX = col * mipFrameW;
+        const destY = row * mipFrameH;
+        for(let y = 0; y < mipFrameH; y++){
+          const srcOff = y * mipFrameW * 4;
+          const dstOff = ((destY + y) * imageWidth + destX) * 4;
+          sheetRgba.set(rgba.subarray(srcOff, srcOff + mipFrameW * 4), dstOff);
+        }
+      }
+
+      mipmaps.push({
+        data: compressMipMaps
+          ? dxtJs.compress(sheetRgba, imageWidth, imageHeight, encoding)
+          : new Uint8Array(sheetRgba.buffer, sheetRgba.byteOffset, sheetRgba.byteLength),
+        width: imageWidth,
+        height: imageHeight,
+      });
+
+      mipFrameW = Math.max(mipFrameW >> 1, 1);
+      mipFrameH = Math.max(mipFrameH >> 1, 1);
+      imageWidth = Math.max(imageWidth >> 1, 1);
+      imageHeight = Math.max(imageHeight >> 1, 1);
+    }
+
+    dds.mipmaps = mipmaps;
+    dds.width = this.header.width;
+    dds.height = this.header.height;
+    dds.frameCount = 1;
+    return dds;
+  }
+
+  /**
+   * Uncompressed cycle contact sheet → per-frame mip chains.
+   * Retail CreateTexture @ 00424980 ImageGetSubImage(x = (i%numx)*fw, y = (i/numx)*fh).
+   */
+  private splitUncompressedCycleContactSheet(dds: any): any {
     const numx = this.txi.numx | 0;
     const numy = this.txi.numy | 0;
     const frameCount = numx * numy;
     const sheetMips = dds.mipmaps as { data: Uint8Array, width: number, height: number }[];
     const mipmapCount = dds.mipmapCount;
     const frameMips: { data: Uint8Array, width: number, height: number }[] = [];
-
-    const encoding = this.header.encoding;
-    const isDxt = this.header.compressed && compressMipMaps;
 
     for(let i = 0; i < frameCount; i++){
       const col = i % numx;
@@ -254,21 +374,10 @@ export class TPCObject {
 
         const frameW = Math.max(1, Math.floor(sheet.width / numx));
         const frameH = Math.max(1, Math.floor(sheet.height / numy));
-
-        let data: Uint8Array;
-        if(isDxt){
-          data = TPCObject.extractDxtSubImage(
-            sheet.data, sheet.width, sheet.height,
-            col * frameW, row * frameH, frameW, frameH, encoding
-          );
-        }else{
-          // Uncompressed path ends as RGBA (4 bpp) after getDDS conversion
-          data = TPCObject.extractRgbaSubImage(
-            sheet.data, sheet.width, sheet.height,
-            col * frameW, row * frameH, frameW, frameH
-          );
-        }
-
+        const data = TPCObject.extractRgbaSubImage(
+          sheet.data, sheet.width, sheet.height,
+          col * frameW, row * frameH, frameW, frameH
+        );
         frameMips.push({ data, width: frameW, height: frameH });
       }
     }
@@ -297,32 +406,21 @@ export class TPCObject {
   }
 
   /**
-   * Extract a DXT1/DXT5 rectangle from a compressed contact-sheet mip.
-   * Block grid equivalent of ImageGetSubImage for CreateProcessedTexture.
+   * Retail GetCompressedContactSheetOffset @ 00424d70.
+   * Returns byte offset to frameIndex's mip chain. Assumes square frames (retail uses frameW only).
+   * bpp == 4 → DXT5 (16-byte blocks), else DXT1 (8-byte blocks).
    */
-  static extractDxtSubImage(
-    src: Uint8Array, srcW: number, srcH: number,
-    x: number, y: number, w: number, h: number,
-    encoding: ENCODING
-  ): Uint8Array {
-    const blockBytes = encoding == ENCODING.RGB ? 8 : 16;
-    const srcBlocksW = Math.max(1, Math.floor((srcW + 3) / 4));
-    const dstBlocksW = Math.max(1, Math.floor((w + 3) / 4));
-    const dstBlocksH = Math.max(1, Math.floor((h + 3) / 4));
-    const blockX = Math.floor(x / 4);
-    const blockY = Math.floor(y / 4);
-    const out = new Uint8Array(dstBlocksW * dstBlocksH * blockBytes);
-
-    for(let by = 0; by < dstBlocksH; by++){
-      const srcRow = blockY + by;
-      const srcOff = (srcRow * srcBlocksW + blockX) * blockBytes;
-      const dstOff = by * dstBlocksW * blockBytes;
-      const copyBytes = dstBlocksW * blockBytes;
-      if(srcOff >= 0 && srcOff + copyBytes <= src.length){
-        out.set(src.subarray(srcOff, srcOff + copyBytes), dstOff);
-      }
+  static getCompressedContactSheetOffset(frameIndex: number, frameWidth: number, bpp: number): number {
+    const blockBytes = (bpp === 4) ? 16 : 8;
+    let fw = frameWidth | 0;
+    let blocks = (fw + 3) >> 2;
+    let mipChain = blocks * blocks * blockBytes;
+    while(fw > 1){
+      fw >>= 1;
+      blocks = (fw + 3) >> 2;
+      mipChain += blocks * blocks * blockBytes;
     }
-    return out;
+    return mipChain * frameIndex;
   }
 
   generateMipMapCount(width = 0, height = 0){
@@ -546,7 +644,7 @@ export class TPCObject {
     };
 
     if ( isCycle ) {
-      // Per-frame mip chains from splitCycleContactSheet — CreateProcessedTexture @ 00424dd0
+      // Per-frame mip chains — CreateProcessedTexture @ 00424dd0 / GetCompressedContactSheetOffset
       const cycleFrames: OdysseyCompressedTexture[] = [];
       for ( let f = 0; f < frameCount; f++ ) {
         const start = f * texDatas.mipmapCount;

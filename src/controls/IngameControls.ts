@@ -838,7 +838,13 @@ export class IngameControls {
     });
 
     KeyMapper.Actions[KeyMapAction.MGshoot].setProcessor( (keymap) => {
-      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      // Held fire — GunBank RoF timer gates spawn (retail BehaviorFire).
+      const keyOrPad = !!(keymap.keyboardInput?.down || keymap.gamepadInput?.down || keymap.gamepadInput?.pressed);
+      const mouseFire =
+        GameState.Mode === EngineMode.MINIGAME &&
+        GameState.module?.area?.miniGame?.type === MiniGameType.TURRET &&
+        Mouse.leftDown;
+      if(!keyOrPad && !mouseFire) return;
       if(GameState.State != EngineState.RUNNING) return;
       // player may be cleared after death (SetPlayer null) — no-op until restart.
       GameState.module?.area?.miniGame?.player?.shoot();

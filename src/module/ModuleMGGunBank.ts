@@ -401,12 +401,16 @@ export class ModuleMGGunBank extends ModuleObject {
   }
 
   spawnBulletFromHook(hook: THREE.Object3D){
+    if(!this.bulletTemplate){
+      console.warn('ModuleMGGunBank: cannot spawn — no Bullet template', this.bankID);
+      return;
+    }
     const bullet = new ModuleMGGunBullet( this.bulletTemplate, this );
     bullet.load().then( () => {
-      if(this.disabled || !hook){ return; }
+      if(this.disabled || !hook || !bullet.model){ return; }
       // Retail FireGunCallback @ 00673a40 — GetPartPosition(bullethook) → pos + ori.
-      hook.getWorldPosition(bullet.position);
       hook.updateMatrixWorld?.(true);
+      hook.getWorldPosition(bullet.position);
 
       // Targeting banks overwrite ori (aim + inaccuracy); else keep bullethook world ori.
       if(this.isTargetting() && this.aimBulletAtPlayer(bullet)){
@@ -417,12 +421,34 @@ export class ModuleMGGunBank extends ModuleObject {
         bullet.direction.set(0, 1, 0).applyQuaternion(bullet.quaternion);
       }
 
-      GameState.group.placeables.add(bullet.model);
+      // Retail: PlayAnimation("ready") → AttachToScene → SetPosition/Orientation.
+      // Sync mesh before the next bank update or the bolt sits at world origin for a frame.
+      const model = bullet.model as OdysseyModel3D;
+      model.position.copy(bullet.position);
+      model.quaternion.copy(bullet.quaternion);
+      model.updateMatrixWorld(true);
+
+      const ready =
+        model.odysseyAnimationMap?.get?.('ready') ||
+        model.odysseyAnimationMap?.get?.('Ready_01');
+      if(ready){
+        model.playAnimation(ready, true);
+      }else if(typeof model.playAnimation === 'function'){
+        model.playAnimation('ready', true);
+      }
+
+      // Effect-class bolts (mgb_*) — same scene group as combat projectiles.
+      GameState.group.effects.add(model);
+      // Seed emitters / alpha controllers once (async attach can land mid-frame).
+      model.update?.(0);
+
       this.bullets.push(bullet);
       GameState.module?.area?.miniGame?.recordBulletFired?.(
         bullet.damage_amt || 0,
         bullet.target_type || 0
       );
+    }).catch((e) => {
+      console.error('ModuleMGGunBank.spawnBulletFromHook: bullet load failed', e);
     });
   }
 
@@ -698,9 +724,20 @@ export class ModuleMGGunBank extends ModuleObject {
     if(this.template.RootNode.hasField('Vert_Spread'))
       this.vertSpread = this.template.getFieldByLabel('Vert_Spread').getValue() || 0
       
-    this.bulletTemplate = GFFObject.FromStruct(this.template.RootNode.getFieldByLabel('Bullet').getChildStructs()[0]);
-    this.proto_bullet = new ModuleMGGunBullet(this.bulletTemplate, this);
-    this.proto_bullet.initProperties();
+    this.bulletTemplate = (() => {
+      const field = this.template.RootNode.getFieldByLabel('Bullet');
+      if(!field){ return undefined; }
+      const struct =
+        field.getFieldStruct?.() ||
+        field.getChildStructs?.()?.[0];
+      return struct ? GFFObject.FromStruct(struct) : undefined;
+    })();
+    if(this.bulletTemplate){
+      this.proto_bullet = new ModuleMGGunBullet(this.bulletTemplate, this);
+      this.proto_bullet.initProperties();
+    }else{
+      console.warn('ModuleMGGunBank: missing Bullet struct', this.bankID);
+    }
 
   }
 
