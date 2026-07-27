@@ -8222,17 +8222,27 @@ NWScriptDefK1.Actions = {
     }
   },
   623:{
-    comment: "623: SWMG_GetPosition\n",
+    comment: "623: SWMG_GetPosition\nreturns track/modelhook local position (tar_m03mg heartbeat uses Y as race progress)\n",
     name: "SWMG_GetPosition",
     type: NWScriptDataType.VECTOR,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGPlayer) || BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleMGEnemy)){
+        const follower = args[0] as ModuleMGPlayer | ModuleMGEnemy;
+        const track = follower.track;
+        const hook = track?.getObjectByName?.('modelhook');
+        if(hook){
+          // Track anim drives modelhook local Position — Y advances along the course.
+          return new THREE.Vector3(hook.position.x, hook.position.y, hook.position.z);
+        }
+        if(track){
+          return new THREE.Vector3(track.position.x, track.position.y, track.position.z);
+        }
         const vec3 = new THREE.Vector3();
-        args[0].model.getWorldPosition(vec3)
+        (follower as ModuleMGPlayer).container?.getWorldPosition?.(vec3);
         return vec3;
       }
-      return {x: 0, y: 0, z: 0};
+      return new THREE.Vector3(0, 0, 0);
     }
   },
   624:{
@@ -8502,7 +8512,7 @@ NWScriptDefK1.Actions = {
       }else{
         player.playerOffset.copy(args[0]);
         player.keepInTunnel(player.playerOffset);
-        player.container.position.copy(player.playerOffset);
+        player.applySwoopTunnelOffset();
       }
     }
   },

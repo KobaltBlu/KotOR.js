@@ -306,7 +306,7 @@ export class ModuleMGPlayer extends ModuleObject {
       // Start_Offset_* are degrees for type-2 aim; sync rotation.
       this.applyTurretOffsetRotation();
     }else{
-      this.container.position.set(this.playerOffset.x, this.playerOffset.y, this.playerOffset.z);
+      this.applySwoopTunnelOffset();
     }
     this.inertiaReady = false;
     this.clearInertiaKeyBuffers();
@@ -509,11 +509,7 @@ export class ModuleMGPlayer extends ModuleObject {
         }
 
         this.keepInTunnel(this.playerOffset);
-        this.container.position.set(
-          this.playerOffset.x,
-          this.playerOffset.y,
-          this.playerOffset.z
-        );
+        this.applySwoopTunnelOffset();
 
         if(this.boostVelocity > 0){
           this.boostVelocity -= (2 * delta);
@@ -552,11 +548,21 @@ export class ModuleMGPlayer extends ModuleObject {
 
     if(this.camera instanceof OdysseyModel3D && this.camera.bonesInitialized && this.camera.visible){
       this.camera.update(delta);
+      // Re-apply after anim — retail Control writes offset controllers after model tick.
+      if(GameState.module?.area?.miniGame?.type === MiniGameType.SWOOPRACE){
+        this.applySwoopTunnelOffset();
+      }
     }
     else if(!this.camera){
-      let camerahook = this.container.getObjectByName('camerahook');
-      if(camerahook)
-        this.camera = camerahook.parent.parent as OdysseyModel3D;
+      // Prefer Models-list / Camera ResRef gob; fall back to any camerahook under container or track.
+      this.resolveCameraModel();
+      if(!this.camera){
+        const camerahook =
+          this.container.getObjectByName('camerahook') ||
+          this.track?.getObjectByName?.('camerahook');
+        if(camerahook)
+          this.camera = camerahook.parent.parent as OdysseyModel3D;
+      }
     }
     
   }
@@ -1293,6 +1299,28 @@ export class ModuleMGPlayer extends ModuleObject {
     );
   }
 
+  /**
+   * Retail Control @ 0066d640 — after KeepInTunnel, write offset to rotating
+   * model controllers (0x3ea) and camera Gob controller (0x3eb).
+   * CameraRotate==0 parents the camera to modelhook as a sibling of container;
+   * both must share playerOffset so the bike stays tunnel-centered on screen.
+   */
+  applySwoopTunnelOffset(){
+    this.container.position.set(
+      this.playerOffset.x,
+      this.playerOffset.y,
+      this.playerOffset.z
+    );
+    const camera = this.camera;
+    if(camera instanceof OdysseyModel3D && camera.parent !== this.container){
+      camera.position.set(
+        this.playerOffset.x,
+        this.playerOffset.y,
+        this.playerOffset.z
+      );
+    }
+  }
+
   rotate(axis = 'x', amount = 0){
     // Turret tunnels are degrees in GFF; rotation is stored in radians.
     const toRadLimit = (deg: number) => THREE.MathUtils.degToRad(deg);
@@ -1685,12 +1713,33 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
+   * Prefer Camera ResRef gob; else first Models-list Gob that owns a camerahook
+   * (tar_m03mg: empty Camera field, m17mg_camera in Models).
+   */
+  resolveCameraModel(): OdysseyModel3D | undefined {
+    if(this.camera instanceof OdysseyModel3D){
+      return this.camera;
+    }
+    for(let i = 0; i < this.models.length; i++){
+      const model = this.models[i];
+      if(model instanceof OdysseyModel3D && model.camerahook){
+        this.camera = model;
+        // Match loadCamera — HUD after AfterimagePass so speed blur does not smear it.
+        model.traverse((o) => { o.layers.set(RenderLayer.MG_CAMERA_HUD); });
+        return model;
+      }
+    }
+    return undefined;
+  }
+
+  /**
    * Retail CSWMiniPlayer::SetCameraHook @ 0066d030 —
-   * CameraRotate==0 → AttachToObject behavior 0; else GetAttachType (turret=2).
-   * Attach camera Gob to track modelhook (not under rotating container).
+   * CameraRotate==0 → AttachToObject(modelhook, behavior 0); else GetAttachType.
+   * Swoop: camera Gob is a modelhook sibling of the bike container; Control then
+   * writes the same tunnel offset to both (applySwoopTunnelOffset).
    */
   setCameraHook(cameraRotateFlag: number = 0){
-    const camera = this.camera;
+    const camera = this.resolveCameraModel();
     if(!(camera instanceof OdysseyModel3D)){ return; }
 
     camera.removeFromParent();
@@ -1700,14 +1749,21 @@ export class ModuleMGPlayer extends ModuleObject {
     }else{
       GameState.group?.creatures?.add?.(camera);
     }
+    // Fresh attach — identity local pose; offset applied each frame by Control.
+    camera.position.set(0, 0, 0);
+    camera.quaternion.identity();
+    camera.scale.set(1, 1, 1);
 
-    // Non-zero CameraRotate → inherit attach-type orientation (rotating models share this).
-    // Behavior 0 leaves camera fixed to modelhook without container aim rotation.
+    // Non-zero CameraRotate → parent under container so aim carries camera/HUD.
     const useAttach = !!cameraRotateFlag;
     if(useAttach && this.trackAttachType){
-      // Parent under container so aim (container.rotation) carries the camera/HUD.
       camera.removeFromParent();
       this.container.add(camera);
+      camera.position.set(0, 0, 0);
+      camera.quaternion.identity();
+      camera.scale.set(1, 1, 1);
+    }else if(GameState.module?.area?.miniGame?.type === MiniGameType.SWOOPRACE){
+      this.applySwoopTunnelOffset();
     }
   }
 

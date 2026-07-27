@@ -57,17 +57,18 @@ export class NWScriptStack {
         console.warn('NWScriptStack', data, type);
 
       if(type == NWScriptDataType.VECTOR){
+        // Retail: X deepest, Z on top (push x, y, z). Matches CONSTF / vector locals.
         if(typeof data == 'object'){
-          this.stack.push( new NWScriptStackVariable({ value: data.z || 0.0, type: NWScriptDataType.FLOAT }) );
-          this.stack.push( new NWScriptStackVariable({ value: data.y || 0.0, type: NWScriptDataType.FLOAT }) );
           this.stack.push( new NWScriptStackVariable({ value: data.x || 0.0, type: NWScriptDataType.FLOAT }) );
-          //Increase the pointer by 8 to account for Y and X
+          this.stack.push( new NWScriptStackVariable({ value: data.y || 0.0, type: NWScriptDataType.FLOAT }) );
+          this.stack.push( new NWScriptStackVariable({ value: data.z || 0.0, type: NWScriptDataType.FLOAT }) );
+          //Increase the pointer by 8 to account for Y and Z
           this.pointer += 8;
         }else{
           this.stack.push( new NWScriptStackVariable({ value: 0.0, type: NWScriptDataType.FLOAT }) );
           this.stack.push( new NWScriptStackVariable({ value: 0.0, type: NWScriptDataType.FLOAT }) );
           this.stack.push( new NWScriptStackVariable({ value: 0.0, type: NWScriptDataType.FLOAT }) );
-          //Increase the pointer by 8 to account for Y and X
+          //Increase the pointer by 8 to account for Y and Z
           this.pointer += 8;
         }
       }else{

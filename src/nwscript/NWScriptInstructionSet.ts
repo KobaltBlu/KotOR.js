@@ -159,13 +159,13 @@ export const CALL_ACTION = function( this: NWScriptInstance, instruction: NWScri
       case NWScriptDataType.ACTION:
         args.push( this.state.pop() );
       break;
-      case NWScriptDataType.VECTOR:
-        args.push(new THREE.Vector3(
-          this.stack.pop()?.value,
-          this.stack.pop()?.value,
-          this.stack.pop()?.value
-        ))
-      break;
+      case NWScriptDataType.VECTOR: {
+        // Retail: Z on top — pop z, y, x into Vector3(x, y, z).
+        const z = this.stack.pop()?.value;
+        const y = this.stack.pop()?.value;
+        const x = this.stack.pop()?.value;
+        args.push(new THREE.Vector3(x, y, z));
+      } break;
       default:
         //Pop the function variables off the stack after we are done with them
         args.push(this.stack.pop()?.value);
