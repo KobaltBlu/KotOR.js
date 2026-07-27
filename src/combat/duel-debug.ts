@@ -14,7 +14,7 @@
  */
 
 export const DuelDebug = {
-  enabled: true,
+  enabled: false,
 };
 
 declare global {

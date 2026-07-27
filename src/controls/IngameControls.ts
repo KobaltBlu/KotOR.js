@@ -885,6 +885,42 @@ export class IngameControls {
       GameState.getCurrentPlayer().flourish();
     });
 
+    // HUD action-menu activate (retail Personal*/Target*Act digit binds)
+    const actionMenuPressed = (keymap: { keyboardInput?: { pressed?: boolean }; gamepadInput?: { pressed?: boolean } }) =>
+      !!(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed);
+    const actionMenuInGame = () =>
+      GameState.Mode == EngineMode.INGAME &&
+      GameState.MenuManager.GetCurrentMenu() == GameState.MenuManager.InGameOverlay;
+
+    KeyMapper.Actions[KeyMapAction.PersonalPowerAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onSelfMenuAction(0);
+    });
+    KeyMapper.Actions[KeyMapAction.PersonalMedicalAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onSelfMenuAction(1);
+    });
+    KeyMapper.Actions[KeyMapAction.PersonalOtherAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onSelfMenuAction(2);
+    });
+    KeyMapper.Actions[KeyMapAction.PersonalMinesAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onSelfMenuAction(3);
+    });
+    KeyMapper.Actions[KeyMapAction.TargetLeftAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onTargetMenuAction(0);
+    });
+    KeyMapper.Actions[KeyMapAction.TargetMiddleAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onTargetMenuAction(1);
+    });
+    KeyMapper.Actions[KeyMapAction.TargetRightAct].setProcessor( (keymap) => {
+      if(!actionMenuPressed(keymap) || !actionMenuInGame()) return;
+      GameState.ActionMenuManager.onTargetMenuAction(2);
+    });
+
     KeyMapper.Actions[KeyMapAction.FlyUp].setProcessor( (keymap, delta = 0) => {
       if(!keymap.keyboardInput?.down && !keymap.gamepadInput?.pressed) return;
       if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){

@@ -675,10 +675,17 @@ export class ModuleObject {
 
   /**
    * Clear all actions
-   * @param skipUnclearable 
+   * @param skipUnclearable — retail ActionManager(1) player-input clear: keep
+   *   unclearable actions (dialog) and interrupt combat-round pause so a newly
+   *   queued CAST_SPELL / attack can dispatch via ActionCombat immediately.
    */
   clearAllActions(skipUnclearable = false){
     this.combatRound.clearActions();
+    // Player ActionManager clear: drop roundPaused / infinitePause so the next
+    // scheduled combat action is not stuck behind a cancelled attack pause.
+    if(skipUnclearable && this.combatRound?.roundPaused){
+      this.combatRound.resetCombatAnimations?.(0);
+    }
     this.setComputedPath(undefined);
     //Reset the anim state
     //this.animState = 0;

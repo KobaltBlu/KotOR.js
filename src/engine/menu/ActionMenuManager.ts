@@ -755,6 +755,13 @@ export class ActionMenuManager {
       return;
     }
 
+    // Force-menu entries (incl. droid equipment powers) carry talent; prefer
+    // CastSpell / ForceMenuAction over UseItem when both item + talent are set.
+    if(menuItem.talent instanceof TalentSpell){
+      menuItem.talent.useTalentOnObject(target || pc, pc, { isUserAction: true });
+      return;
+    }
+
     if(menuItem.item){
       const useTarget = target || pc;
       menuItem.item.useItemOnObject(pc, useTarget as ModuleObject, { isUserAction: true });
@@ -762,11 +769,7 @@ export class ActionMenuManager {
     }
 
     if(menuItem.talent instanceof TalentObject){
-      if(menuItem.talent instanceof TalentSpell){
-        menuItem.talent.useTalentOnObject(target || pc, pc, { isUserAction: true });
-      }else{
-        menuItem.talent.useTalentOnObject(target || pc, pc);
-      }
+      menuItem.talent.useTalentOnObject(target || pc, pc);
     }
   }
 

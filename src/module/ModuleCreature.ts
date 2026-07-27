@@ -24,6 +24,7 @@ import { TalentFeat } from "@/talents/TalentFeat";
 import { TalentObject } from "@/talents/TalentObject";
 import { TalentSkill } from "@/talents/TalentSkill";
 import { TalentSpell } from "@/talents/TalentSpell";
+import { TalentObjectType } from "@/enums/engine/TalentObjectType";
 import { getCanUseSkill as getCanUseSkillRetail } from "@/talents/skill-usability";
 import { getSkillRankRetail } from "@/talents/skill-rank";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
@@ -43,7 +44,11 @@ import { AttackResult } from "@/enums/combat/AttackResult";
 // import { ICombatAction } from "@/interface/combat/ICombatAction";
 import { DLGObject } from "@/resource/DLGObject";
 import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
-import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
+import {
+  APPEARANCE_EVIL_BODY_ALIGN_MAX,
+  SWCreatureAppearance,
+} from "@/engine/rules/SWCreatureAppearance";
+import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { SWBodyBag } from "@/engine/rules/SWBodyBag";
 import {
   beginLevelUpDraft,
@@ -331,7 +336,7 @@ export class ModuleCreature extends ModuleObject {
   palletID: number;
   partyInteract: number;
   phenotype: number;
-  /** Retail Appearance_Head */
+  /** Retail Appearance_Head (0xFF = use appearance.2da normalhead/backuphead). */
   appearanceHead: number;
   /** Retail Color_Hair / Color_Skin / Color_Tattoo* */
   colorHair: number;
@@ -616,7 +621,8 @@ export class ModuleCreature extends ModuleObject {
     this.partyInteract = 0;
     this.perceptionRange = GameState.SWRuleSet.ranges[11];
     this.phenotype = 0;
-    this.appearanceHead = 0;
+    /** Retail Appearance_Head 0xFF = use appearance.2da normalhead/backuphead. */
+    this.appearanceHead = 255;
     this.colorHair = 0;
     this.colorSkin = 0;
     this.colorTattoo1 = 0;
@@ -998,6 +1004,7 @@ export class ModuleCreature extends ModuleObject {
           this.deathStarted = true;
           this.clearAllActions();
           this.onDeath();
+          this.playAppearanceDeathVFX();
           this.playSoundSet(SSFType.DEAD);
           this.resetOverlayAnimationState();
           this.setAnimationState(ModuleCreatureAnimState.DIE);
@@ -2382,30 +2389,38 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  /**
+   * NWScript ActionUseTalentOnObject — talent.objectType is a bitfield
+   * (TalentObject|Spell/Feat/Skill), not a 0/1/2 enum.
+   */
   useTalent(talent: TalentObject, oTarget: ModuleObject): Action {
     let action: Action;
-    if(talent instanceof TalentObject){
+    if(!(talent instanceof TalentObject)){
+      return action;
+    }
+
+    if((talent.objectType & TalentObjectType.TalentSpell) !== 0){
+      (talent as TalentSpell).useTalentOnObject(oTarget, this);
+      return action;
+    }
+
+    if((talent.objectType & TalentObjectType.TalentFeat) !== 0){
       const combatAction = new CombatRoundAction();
-      switch(talent.objectType){
-        case 1: //FEAT
-          combatAction.actionType = CombatActionType.ATTACK_USE_FEAT;
-          combatAction.target = oTarget;
-          combatAction.setFeat(talent as TalentFeat);
-          this.combatRound.addAction(combatAction);
-        break;
-        case 2: //SKILL
-          if(talent.id == 6){ //Security
-            action = new GameState.ActionFactory.ActionUnlockObject();
-            action.setParameter(0, ActionParameterType.DWORD, oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
-            this.actionQueue.add(action);
-          }
-        break;
-        case 0: //SPELL
-          combatAction.actionType = CombatActionType.CAST_SPELL;
-          combatAction.setSpell(talent as TalentSpell);
-          combatAction.target = oTarget;
-          this.combatRound.addAction(combatAction);
-        break;
+      combatAction.actionType = CombatActionType.ATTACK_USE_FEAT;
+      combatAction.target = oTarget;
+      combatAction.setFeat(talent as TalentFeat);
+      this.combatRound.addAction(combatAction);
+      if(!this.actionQueue.actionTypeExists(ActionType.ActionCombat)){
+        this.actionQueue.add(new GameState.ActionFactory.ActionCombat(0xFFFF));
+      }
+      return action;
+    }
+
+    if((talent.objectType & TalentObjectType.TalentSkill) !== 0){
+      if(talent.id == 6){ //Security
+        action = new GameState.ActionFactory.ActionUnlockObject();
+        action.setParameter(0, ActionParameterType.DWORD, oTarget.id || ModuleObjectConstant.OBJECT_INVALID);
+        this.actionQueue.add(action);
       }
     }
     return action;
@@ -4340,6 +4355,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.isPartyMember()){
       GameState.UINotificationManager.EnableUINotificationIconType(value >= oldValue ? UIIconTimerType.LIGHT_SHIFT : UIIconTimerType.DARK_SHIFT);
     }
+    this.refreshAppearanceAlignment(oldValue);
   }
 
   /**
@@ -4347,12 +4363,14 @@ export class ModuleCreature extends ModuleObject {
    * @param value - The amount to add to the alignment.
    */
   addGoodEvil(value: number = 0){
+    const oldValue = this.goodEvil;
     this.goodEvil += value;
     if(this.goodEvil < 0) this.goodEvil = 0;
     if(this.goodEvil > 100) this.goodEvil = 100;
     if(this.isPartyMember()){
       GameState.UINotificationManager.EnableUINotificationIconType(value >= 0 ? UIIconTimerType.LIGHT_SHIFT : UIIconTimerType.DARK_SHIFT);
     }
+    this.refreshAppearanceAlignment(oldValue);
   }
 
   /**
@@ -4404,6 +4422,23 @@ export class ModuleCreature extends ModuleObject {
     if(this.goodEvil > 100) this.goodEvil = 100;
     if(this.isPartyMember() && (alignmentShifted == 2 || alignmentShifted == 3)){
       GameState.UINotificationManager.EnableUINotificationIconType(alignmentShifted == 2 ? UIIconTimerType.LIGHT_SHIFT : UIIconTimerType.DARK_SHIFT);
+    }
+    this.refreshAppearanceAlignment(oldValue);
+  }
+
+  /**
+   * Retail SetAppearanceAlignment — reload body/head when GoodEvil crosses
+   * headtex bands or the TEX*Evil threshold (GoodEvil &lt; 0x29).
+   */
+  refreshAppearanceAlignment(oldGoodEvil: number){
+    if(!this.isReady || !this.model) return;
+    const headBand = (v: number) => Math.min(4, Math.floor(Math.min(v | 0, 50) / 10));
+    const bodyEvil = (v: number) => (v | 0) < APPEARANCE_EVIL_BODY_ALIGN_MAX;
+    if(
+      headBand(oldGoodEvil) !== headBand(this.goodEvil) ||
+      bodyEvil(oldGoodEvil) !== bodyEvil(this.goodEvil)
+    ){
+      void this.loadModel();
     }
   }
 
@@ -4545,14 +4580,32 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Spend adjusted FP for a spell at cast-start. Returns false if insufficient.
+   * Retail CSWSCreatureStats::UnReadySpell @ 005a55c0 — drain adjusted FP
+   * (clamp at 0). Always succeeds when the spell row is valid; menu enable is
+   * the soft FP/HP gate (GetSelfForcePowers / GetHostileForcePowers).
    */
-  unreadySpell(spell: { forcepoints?: number; goodEvil?: string }): boolean {
+  unreadySpell(spell: { forcepoints?: number; goodEvil?: string } | null | undefined): boolean {
+    if(!spell) return false;
     const cost = this.getAdjustedForcePointCost(spell);
-    if(cost <= 0) return true;
-    if(this.getFP() < cost) return false;
-    this.subtractFP(cost);
+    if(cost > 0){
+      this.subtractFP(cost);
+    }
     return true;
+  }
+
+  /**
+   * Retail ForceMenuAction class-slot pick — first Jedi class (3/4/5) in the
+   * first two class slots; otherwise 0.
+   */
+  getForceSpellClassIndex(): number {
+    const limit = Math.min(2, this.classes?.length || 0);
+    for(let i = 0; i < limit; i++){
+      const id = this.classes[i]?.id | 0;
+      if(id === 3 || id === 4 || id === 5){
+        return i;
+      }
+    }
+    return 0;
   }
 
   getCameraHeight(){
@@ -5920,16 +5973,15 @@ export class ModuleCreature extends ModuleObject {
   }
 
   hasTalent(talent: TalentObject){
-    //console.log('hasTalent', talent);
-    if(typeof talent != 'undefined'){
-      switch(talent.objectType){
-        case 0: //Force / Spell
-          return this.getHasSpell(talent.id) ? true : false;
-        case 1: //Feat
-          return this.getHasFeat(talent.id) ? true : false;
-        case 2: //Skill
-          return this.getHasSkill(talent.id) ? true : false;
-      }
+    if(typeof talent == 'undefined') return false;
+    if((talent.objectType & TalentObjectType.TalentSpell) !== 0){
+      return this.getHasSpell(talent.id) ? true : false;
+    }
+    if((talent.objectType & TalentObjectType.TalentFeat) !== 0){
+      return this.getHasFeat(talent.id) ? true : false;
+    }
+    if((talent.objectType & TalentObjectType.TalentSkill) !== 0){
+      return this.getHasSkill(talent.id) ? true : false;
     }
     return false;
   }
@@ -6111,7 +6163,17 @@ export class ModuleCreature extends ModuleObject {
     let appearance = this.creatureAppearance;
     let bodyVariation: string = this.equipment.ARMOR?.getBodyVariation() || '';
     let textureVariation: number = this.equipment.ARMOR?.getTextureVariation() || 1;
-    const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(bodyVariation, textureVariation);
+    const hasBodyVariation = !!(bodyVariation && bodyVariation.length);
+    const maxBodyIndex = SWCreatureAppearance.maxBodyVariationIndex(
+      GameState.GameKey === GameEngineType.TSL
+    );
+    const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(
+      bodyVariation,
+      textureVariation,
+      maxBodyIndex,
+      this.getGoodEvil(),
+      hasBodyVariation,
+    );
     this.bodyModel = bodyModel;
     this.bodyTexture = bodyTexture;
 
@@ -6177,9 +6239,44 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
+  /**
+   * Resolve the live heads.2da row for rendered creatures.
+   * Retail creature appearance selection uses appearance.2da NORMALHEAD /
+   * BACKUPHEAD for normal creatures; do not treat UTC Appearance_Head as a
+   * global render override here or NPCs collapse onto a shared heads row.
+   */
+  resolveAppearanceHeadId(): number {
+    const appearance = this.creatureAppearance;
+    if(!appearance) return -1;
+    if(this.useBackupHead){
+      return appearance.backuphead;
+    }
+    return appearance.normalhead;
+  }
+
+  /**
+   * Retail death anim path — play appearance.DeathVFX (visualeffects.2da id).
+   * EffectVisualEffect attaches to the model's impact node (retail DeathVFXNode default).
+   */
+  playAppearanceDeathVFX(){
+    const appearance = this.creatureAppearance;
+    const vfxId = appearance?.deathvfx;
+    if(!(typeof vfxId === 'number' && vfxId >= 0)) return;
+
+    const vfx = new GameState.GameEffectFactory.EffectVisualEffect();
+    vfx.setInt(0, vfxId);
+    vfx.setDurationType(GameEffectDurationType.INSTANT);
+    vfx.setCreator(this);
+    const nodeName = (appearance.deathvfxnode || 'impact').replace(/\0[\s\S]*$/g, '').trim();
+    if(nodeName){
+      vfx.setString(0, nodeName);
+    }
+    this.addEffect(vfx);
+  }
+
   async loadHead(): Promise<OdysseyModel3D> {
     let appearance = this.creatureAppearance;
-    let headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
+    let headId = this.resolveAppearanceHeadId();
     this.headModel = undefined;
     if(!( headId >= 0 && appearance.modeltype == 'B' )){
       return;

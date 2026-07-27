@@ -260,7 +260,15 @@ export class EffectVisualEffect extends GameEffect {
               }
               this.impact_model = model;
               if(this.object.model){
-                if(this.object.model.impact){
+                const attachNodeName = (this.getString(0) || 'impact').toLowerCase();
+                const namedNode =
+                  (this.object.model as any)[attachNodeName] ||
+                  this.object.model.nodes?.get?.(attachNodeName) ||
+                  this.object.getModelNodeByName?.(attachNodeName);
+                if(namedNode?.add){
+                  namedNode.add(this.impact_model);
+                  TextureLoader.LoadQueue();
+                }else if(this.object.model.impact){
                   this.object.model.impact.add(this.impact_model);
                   TextureLoader.LoadQueue();
                 }else{

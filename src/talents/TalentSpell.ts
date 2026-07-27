@@ -215,6 +215,10 @@ export class TalentSpell extends TalentObject {
     combatAction.animationName = this.getConjureAnimation();
     combatAction.animationTime = 1500;
     combatAction.isUserAction = !!options?.isUserAction;
+    // Retail ForceMenuAction / AddCastSpellActions classIndex (Jedi 3/4/5 in first two slots)
+    if(typeof (oCaster as any).getForceSpellClassIndex === 'function'){
+      combatAction.spellClassIndex = (oCaster as any).getForceSpellClassIndex();
+    }
     // SpellCastInstance is created later by ActionCastSpell.startSpellInstance
     oCaster.combatRound.addAction(combatAction);
 

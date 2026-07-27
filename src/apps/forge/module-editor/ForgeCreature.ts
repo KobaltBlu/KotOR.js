@@ -398,7 +398,17 @@ export class ForgeCreature extends ForgeGameObject {
     const appearance = this.creatureAppearance;
     let bodyVariation: string = this.templateSlots.armorItem?.bodyVariation || '';
     let textureVariation: number = this.templateSlots.armorItem?.textureVariation || 1;
-    const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(bodyVariation || '', textureVariation || 1);
+    const hasBodyVariation = !!(bodyVariation && bodyVariation.length);
+    const maxBodyIndex = KotOR.SWCreatureAppearance.maxBodyVariationIndex(
+      KotOR.GameState.GameKey === KotOR.GameEngineType.TSL
+    );
+    const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(
+      bodyVariation || '',
+      textureVariation || 1,
+      maxBodyIndex,
+      this.goodEvil ?? 50,
+      hasBodyVariation,
+    );
 
     try{
       const mdl = await KotOR.MDLLoader.loader.load(bodyModel);
