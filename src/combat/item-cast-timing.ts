@@ -29,6 +29,16 @@ export const ITEM_CAST_FOREARM_PAUSE_MS = 1000;
 /** Droid utility (0x0c) default gate when client anim length is unavailable. */
 export const ITEM_CAST_DROID_UTILITY_GATE_MS = 300;
 
+/**
+ * Retail droid utility gate: GetAnimationLength(0x2AF9) - 50ms, else 300ms.
+ */
+export function resolveDroidUtilityGateMs(animationLengthSec: number): number {
+  if(!(animationLengthSec > 0)){
+    return ITEM_CAST_DROID_UTILITY_GATE_MS;
+  }
+  return Math.max(1, Math.floor(animationLengthSec * 1000) - 0x32);
+}
+
 export type ItemCastTimingResolved = {
   grenade: boolean;
   /** Play INJECT / activate on the object target instead of the caster. */
@@ -36,6 +46,11 @@ export type ItemCastTimingResolved = {
   animation: ModuleCreatureAnimState;
   gateMs: number;
   pauseMs: number;
+  /**
+   * Retail AIActionItemCastSpell droid utility (0x0c): after SpellCastAndImpact
+   * hold anim 0x2AFA until pause ends (field19 post-impact phase).
+   */
+  postImpactAnim?: ModuleCreatureAnimState;
 };
 
 /**
@@ -108,8 +123,9 @@ export function resolveItemCastTiming(
       return {
         grenade: false,
         animOnTarget: false,
-        // Retail 0x2AF9 / 0x2AFA — mapped to activate for usable body anims
-        animation: resolveActivateItemAnim(modeltype),
+        // Retail gate anim 0x2AF9 / post-impact 0x2AFA
+        animation: ModuleCreatureAnimState.DROID_UTILITY_USE,
+        postImpactAnim: ModuleCreatureAnimState.DROID_UTILITY_USE_LP,
         gateMs: ITEM_CAST_DROID_UTILITY_GATE_MS,
         pauseMs: GRENADE_PAUSE_MS,
       };

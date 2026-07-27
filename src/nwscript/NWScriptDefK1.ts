@@ -1322,6 +1322,10 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: [ModuleObject]){
       if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
         const c = args[0] as ModuleCreature;
+        // Retail field349_0x964 — item SpellCastAndImpact stamps base_class_level
+        if(c.itemSpellCastActive){
+          return c.baseClassLevel | 0;
+        }
         // Prefer spellcaster class levels; else total level
         const spellLv = c.getSpellCasterLevel?.() || 0;
         return spellLv > 0 ? spellLv : (c.getTotalClassLevel?.() || 0);
@@ -1331,6 +1335,9 @@ NWScriptDefK1.Actions = {
         const creator = aoe.creator;
         if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
           const c = creator as ModuleCreature;
+          if(c.itemSpellCastActive){
+            return c.baseClassLevel | 0;
+          }
           const spellLv = c.getSpellCasterLevel() || 0;
           return spellLv > 0 ? spellLv : (c.getTotalClassLevel() || 0);
         }

@@ -79,6 +79,14 @@ describe('resolveItemCastTiming', () => {
     expect(t.pauseMs).toBe(1331);
   });
 
+  it('droid utility uses 0x2AF9/0x2AFA and exposes post-impact hold', () => {
+    const t = resolveItemCastTiming(ItemTypeCategory.DROID_UTILITY, 'S', 0, 1330);
+    expect(t.animation).toBe(ModuleCreatureAnimState.DROID_UTILITY_USE);
+    expect(t.postImpactAnim).toBe(ModuleCreatureAnimState.DROID_UTILITY_USE_LP);
+    expect(t.gateMs).toBe(300);
+    expect(t.pauseMs).toBe(1500);
+  });
+
   it('MEDICAL_C injects on caster, not target', () => {
     const t = resolveItemCastTiming(ItemTypeCategory.MEDICAL_C, 'B', 0, 1330);
     expect(t.animation).toBe(ModuleCreatureAnimState.INJECT);

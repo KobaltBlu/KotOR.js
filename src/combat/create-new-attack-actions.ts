@@ -1,5 +1,9 @@
 import { maxCleaveRange } from "@/combat/attack-range";
-import { getNearestEnemy } from "@/combat/nearest-enemy";
+import {
+  explainNearestEnemyMiss,
+  getNearestEnemy,
+} from "@/combat/nearest-enemy";
+import { duelLog, duelWho } from "@/combat/duel-debug";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
@@ -31,6 +35,10 @@ export function createNewAttackActions(creature: ModuleCreature): boolean {
     // Retail @ 005b6980 no-enemy: SetLockOrientationToObject(INVALID), idle anim 10000,
     // SetCombatMode(0), ClearAllSpecialAttacks. Does NOT SetCombatState(0) — the 8s
     // combat timer keeps running (updateCombatStateTimer owns that exit).
+    duelLog(creature, 'create-new-attack:none', {
+      maxRange,
+      ...explainNearestEnemyMiss(creature, maxRange),
+    });
     creature.clearCombatMode();
     if(round.specialAttackList){
       round.specialAttackList.length = 0;
@@ -41,6 +49,7 @@ export function createNewAttackActions(creature: ModuleCreature): boolean {
     return false;
   }
 
+  duelLog(creature, 'create-new-attack:ok', { target: duelWho(next), maxRange });
   creature.combatData.lastAttackTarget = next;
   creature.combatData.lastAttemptedAttackTarget = next;
   round.newAttackTarget = next;

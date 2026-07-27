@@ -199,6 +199,10 @@ export enum ModuleCreatureAnimState {
   CASTOUT3 = 11000,
   CRITICAL_STRIKE2_SS = 11001,
   CRITICAL_STRIKE3_SS = 11002,
+  /** Retail AIActionItemCastSpell droid utility gate anim 0x2AF9. */
+  DROID_UTILITY_USE = 11001,
+  /** Retail AIActionItemCastSpell droid utility post-impact hold 0x2AFA. */
+  DROID_UTILITY_USE_LP = 11002,
 
   KNEEL_TALK_ANGRY = 10031,
   KNEEL_TALK_SAD = 10385,

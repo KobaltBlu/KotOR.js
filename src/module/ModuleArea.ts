@@ -33,6 +33,8 @@ import { IAreaAudioProperties } from "@/interface/area/IAreaAudioProperties";
 import { AudioEngine } from "@/audio";
 import { AREA_MUSIC_FADE_MS, AMBIENT_SOUND_FADE_MS } from "@/audio/AudioEngine";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
+import { ActionType } from "@/enums/actions/ActionType";
 import { AILevel } from "@/enums/module/AILevel";
 import { BitWise } from "@/utility/BitWise";
 import { IAmbientSource } from "@/interface/area/IAmbientSource";
@@ -2273,8 +2275,17 @@ export class ModuleArea extends ModuleObject {
 
   getPlayerTemplate(): GFFObject {
     if(GameState.PartyManager.PlayerTemplate){
-      GameState.PartyManager.PlayerTemplate.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
-      return GameState.PartyManager.PlayerTemplate;
+      const tpl = GameState.PartyManager.PlayerTemplate;
+      const savedId = tpl.RootNode.hasField('ObjectId')
+        ? tpl.getFieldByLabel('ObjectId').getValue()
+        : 0;
+      // Do not overwrite a saved ObjectId — mid-combat CombatRound refs depend on it.
+      if(!savedId || savedId === ModuleObjectConstant.OBJECT_INVALID){
+        tpl.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(
+          GameState.ModuleObjectManager.GetNextPlayerId()
+        );
+      }
+      return tpl;
     }else{
       return GameState.PartyManager.GeneratePlayerTemplate();
     }
@@ -2422,8 +2433,10 @@ export class ModuleArea extends ModuleObject {
           GameState.group.party.add( GameState.PartyManager.Player.container );
         }
 
-        //Reset the players actions between modules
-        GameState.PartyManager.Player.clearAllActions();
+        // Reset actions between modules; preserve mid-combat ActionList on save load.
+        if(!GameState.isLoadingSave){
+          GameState.PartyManager.Player.clearAllActions();
+        }
         GameState.PartyManager.Player.force = 0;
         GameState.PartyManager.Player.collisionManager.groundFace = undefined;
         GameState.PartyManager.Player.collisionManager.lastGroundFace = undefined;
@@ -2506,7 +2519,25 @@ export class ModuleArea extends ModuleObject {
     }
     for(let i = 0; i < creatures.length; i++){
       const creature = creatures[i];
-      creature?.combatRound?.resolveObjectReferences?.();
+      if(!creature){
+        continue;
+      }
+      creature.resolveEffectObjectReferences?.();
+      if(!creature.combatRound){
+        continue;
+      }
+      creature.combatRound.resolveObjectReferences();
+      // Mid-combat load may have ActionCombat WAITING-spliced before save;
+      // ensure a dispatcher exists while the round is still started.
+      if(
+        creature.combatRound.roundStarted &&
+        !creature.actionQueue?.actionTypeExists?.(ActionType.ActionCombat)
+      ){
+        creature.actionQueue?.add?.(
+          new GameState.ActionFactory.ActionCombat(0xFFFF)
+        );
+      }
+      creature.combatRound.recoverEmptyOrInvalidScheduleAfterLoad();
     }
   }
 

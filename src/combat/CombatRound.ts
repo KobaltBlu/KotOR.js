@@ -24,6 +24,7 @@ import { CombatAttackData } from "@/combat/CombatAttackData";
 import type { CombatRoundAction } from "@/combat/CombatRoundAction";
 import { CombatRoundAction as CombatRoundActionClass } from "@/combat/CombatRoundAction";
 import { createNewAttackActions } from "@/combat/create-new-attack-actions";
+import { filterLiveAttackActions } from "@/combat/prune-dead-attack-actions";
 import { canSyncMeleeReaction, pickMeleeReaction, resolveMeleeReactionPlayback } from "@/combat/combat-reaction-eligibility";
 import { duelLog, duelWho } from "@/combat/duel-debug";
 import { shouldEndRoundOnPauseExpiry, shouldSnapCombatReady } from "@/combat/combat-round-pause";
@@ -468,12 +469,17 @@ export class CombatRound {
       this.owner.temporaryForce = this.owner.getMaxFP();
     }
 
+    // Drop scheduled physical attacks whose target is already dead/invalid so
+    // EndCombatRound can CreateNewAttackActions (retail sticky-target clear).
+    this.pruneDeadAttackActions();
+
     // Retail EndCombatRound auto-pause fires before CreateNewAttackActions.
     if(shouldAutoPause){
       GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.CombatRoundEnd);
     }
 
     // Retail EndCombatRound → CreateNewAttackActions for controlled PC @ 004d4620
+    // (no CombatState / hostile-engagement gate — only controlled PC + alive + empty sched).
     if(
       !options?.skipCreateNewAttackActions &&
       BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)
@@ -482,12 +488,20 @@ export class CombatRound {
       if(
         GameState.getCurrentPlayer() === creature &&
         !creature.isDead() &&
-        creature.isHostileCombatEngaged() &&
         !this.scheduledActionList.length
       ){
         createNewAttackActions(creature);
       }
     }
+  }
+
+  /**
+   * Remove ATTACK / ATTACK_USE_FEAT sched entries whose target is dead or missing.
+   * Prevents a backlog of dead-target swings from blocking CreateNewAttackActions.
+   */
+  pruneDeadAttackActions(){
+    if(!this.scheduledActionList.length) return;
+    this.scheduledActionList = filterLiveAttackActions(this.scheduledActionList);
   }
 
     /**
@@ -1001,6 +1015,8 @@ export class CombatRound {
     creature.weaponPowered(true);
 
     combatAction.resolved = true;
+    // Retail ResolveAttack @ 005bba80 — ActivityManager(4) clears stealth/dialog soft modes
+    creature.activityManager?.(4);
     // Retail ResolveAttack @ 005bba80 — GetAttackTarget (field66_0x504) = attackee
     if(combatAction.target){
       creature.combatData.lastAttackTarget = combatAction.target;
@@ -1152,7 +1168,7 @@ export class CombatRound {
       if(!attackShotSet.has(shot)){
         // Retail: discharge-only → ResolveRangedMiss + sub_attack (no AttackList roll)
         if(this.pendingDischargeVisuals.length >= 16) continue;
-        const impactPos = getProjectileMissLocation(creature, combatAction.target);
+        const impactPos = getProjectileMissLocation(creature, combatAction.target, AttackResult.MISS);
         const travelMs = getProjectileTravelDelayMs(creature.position, impactPos);
         this.pendingDischargeVisuals.push({
           muzzleRemainingMs: muzzleMs,
@@ -1200,7 +1216,7 @@ export class CombatRound {
         attack.rangedTargetY = impactPos.y;
         attack.rangedTargetZ = impactPos.z;
       }else{
-        impactPos = getProjectileMissLocation(creature, combatAction.target);
+        impactPos = getProjectileMissLocation(creature, combatAction.target, attack.attackResult);
         attack.rangedTargetX = impactPos.x;
         attack.rangedTargetY = impactPos.y;
         attack.rangedTargetZ = impactPos.z;
@@ -2385,6 +2401,128 @@ export class CombatRound {
           this.action?.target ||
           this.scheduledActionList[0]?.target;
       }
+    }
+
+    this.wireBidirectionalDuelLinks();
+    this.rehydrateCombatTargets();
+  }
+
+  /**
+   * After individual resolve: ensure master ↔ slave duelPartner / masterID agree
+   * so EndCombatRound can release the slave (retail field51).
+   */
+  wireBidirectionalDuelLinks(){
+    if(!this.engaged || !this.owner){
+      return;
+    }
+    if(this.master && this.duelPartner?.combatRound){
+      const slave = this.duelPartner.combatRound;
+      if(!slave.duelPartner){
+        slave.duelPartner = this.owner;
+      }
+      if(!slave.masterID){
+        slave.masterID = this.owner;
+      }
+      slave.engaged = true;
+      slave.master = false;
+    }else if(!this.master && this.masterID?.combatRound){
+      const masterRound = this.masterID.combatRound;
+      if(masterRound.engaged && masterRound.master && !masterRound.duelPartner){
+        masterRound.duelPartner = this.owner;
+      }
+    }
+  }
+
+  /**
+   * After load resolve: if the round is started but every attack sched target is
+   * missing, retarget from DodgeTarget/NewAttackTarget or end the round so
+   * OnEndRound / CreateNewAttackActions can requeue.
+   */
+  recoverEmptyOrInvalidScheduleAfterLoad(){
+    if(!this.roundStarted){
+      return;
+    }
+
+    const attackTypes = [
+      CombatActionType.ATTACK,
+      CombatActionType.ATTACK_USE_FEAT,
+    ];
+    const sched = this.scheduledActionList;
+    const attackActions = sched.filter(
+      (a) => a && attackTypes.indexOf(a.actionType) >= 0
+    );
+
+    // Non-attack sched (spell/equip) still present — leave alone.
+    if(sched.length && !attackActions.length){
+      return;
+    }
+
+    const hasValidAttackTarget = attackActions.some(
+      (a) => !!(a.target?.id && a.target.id !== ModuleObjectConstant.OBJECT_INVALID)
+    );
+    if(hasValidAttackTarget){
+      return;
+    }
+
+    // Empty schedule, or attack entries with no resolvable targets.
+    const fallback =
+      this.newAttackTarget ||
+      this.dodgeTarget ||
+      (this.owner as ModuleCreature)?.combatData?.lastAttackTarget ||
+      this.duelPartner ||
+      (!this.master ? this.masterID : undefined);
+
+    if(fallback && fallback.id && fallback.id !== ModuleObjectConstant.OBJECT_INVALID){
+      for(let i = sched.length - 1; i >= 0; i--){
+        const a = sched[i];
+        if(
+          attackTypes.indexOf(a.actionType) >= 0 &&
+          !(a.target?.id && a.target.id !== ModuleObjectConstant.OBJECT_INVALID)
+        ){
+          sched.splice(i, 1);
+        }
+      }
+      if(!sched.length && BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+        const creature = this.owner as ModuleCreature;
+        creature.combatData.lastAttackTarget = fallback;
+        creature.combatData.lastAttemptedAttackTarget = fallback;
+        this.newAttackTarget = fallback;
+        this.setAttackTarget(fallback);
+        createNewAttackActions(creature);
+      }
+      return;
+    }
+
+    this.endCombatRound();
+  }
+
+  /**
+   * Seed CombatData attack targets from resolved CombatRound refs.
+   * Retail does not GFF-persist lastAttackTarget — reconstruct after load.
+   */
+  rehydrateCombatTargets(){
+    if(!this.roundStarted || !this.owner){
+      return;
+    }
+    const cd = (this.owner as ModuleCreature).combatData;
+    if(!cd){
+      return;
+    }
+    const target =
+      this.newAttackTarget ||
+      this.dodgeTarget ||
+      this.action?.target ||
+      this.scheduledActionList[0]?.target ||
+      (!this.master ? this.masterID : undefined) ||
+      this.duelPartner;
+    if(!target){
+      return;
+    }
+    if(!cd.lastAttackTarget){
+      cd.lastAttackTarget = target;
+    }
+    if(!cd.lastAttemptedAttackTarget){
+      cd.lastAttemptedAttackTarget = target;
     }
   }
 

@@ -33,6 +33,7 @@ import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot"
 import { LIPObject } from "@/resource/LIPObject";
 import { Utility } from "@/utility/Utility";
 import { testStringAgainstPattern } from "@/utility/listen-pattern";
+import { drainHeardStringHead } from "@/combat/speak-string-broadcast";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { SSFType } from "@/enums/resource/SSFType";
@@ -304,6 +305,13 @@ export class ModuleCreature extends ModuleObject {
   encounterUnlinked: boolean = false;
   /** Retail field347_0x95c — item used for current spell cast (GetSpellCastItem). */
   spellCastItem: ModuleItem = undefined;
+  /**
+   * Retail base_class_level — stamped before item SpellCastAndImpact from the
+   * last class level; GetCasterLevel returns this while itemSpellCastActive.
+   */
+  baseClassLevel: number = 0;
+  /** Retail field349_0x964 — true during item SpellCastAndImpact / delayed impact. */
+  itemSpellCastActive: boolean = false;
   classes: CreatureClass[];
   comment: string;
   currentForce: number;
@@ -566,6 +574,8 @@ export class ModuleCreature extends ModuleObject {
     this.encounterObjectId = ModuleObjectConstant.OBJECT_INVALID;
     this.encounterUnlinked = false;
     this.spellCastItem = undefined;
+    this.baseClassLevel = 0;
+    this.itemSpellCastActive = false;
     this.classes = [];
     this.comment = '';
     this.currentForce = 0;
@@ -1417,9 +1427,11 @@ export class ModuleCreature extends ModuleObject {
         break;
       }
     }
+    // Always drain the head — unmatched shouts must not stall the queue.
+    // Retail BroadcastDialog only enqueues OnDialogue on a match (no backlog).
+    drainHeardStringHead(this.heardStrings);
     if(typeof patternNum === 'undefined'){ return; }
 
-    this.heardStrings.shift();
     this.onDialog(str.speaker, patternNum, undefined, matchedSubstrings);
   }
 
@@ -2021,9 +2033,15 @@ export class ModuleCreature extends ModuleObject {
       if(!otherCreature){
         return ExcitedDurationRow.SpellCast;
       }
-      const attempted = otherCreature.combatData.lastAttemptedAttackTarget;
-      const attemptedSpell = otherCreature.combatData.lastAttemptedSpellTarget;
-      if(attempted === subject || attemptedSpell === subject){
+      // Retail BroadcastCombatStateToParty @ 004fbbe0 —
+      // reason 1 (Damage) when other's last attack/spell target is subject.
+      const data = otherCreature.combatData;
+      if(
+        data.lastAttackTarget === subject ||
+        data.lastSpellTarget === subject ||
+        data.lastAttemptedAttackTarget === subject ||
+        data.lastAttemptedSpellTarget === subject
+      ){
         return ExcitedDurationRow.Damage;
       }
       return ExcitedDurationRow.SpellCast;
@@ -3594,7 +3612,9 @@ export class ModuleCreature extends ModuleObject {
     if(this.combatData.lastAttemptedAttackTarget instanceof ModuleObject && this.combatData.lastAttemptedAttackTarget.isDead())
       this.combatData.lastAttemptedAttackTarget = undefined;
 
-    if(this.isDead() || !this.combatData.combatState)
+    // Retail EndCombatRound fires ScriptEndRound without a CombatState gate.
+    // Keep the dead check only so corpses do not re-run OnEndRound AI.
+    if(this.isDead())
       return true;
     
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnEndRound];
@@ -6666,7 +6686,15 @@ export class ModuleCreature extends ModuleObject {
       
       if(!this.initialized){
         if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlayer)){
-          this.id = GameState.ModuleObjectManager.GetNextPlayerId();
+          // Prefer saved ObjectId from pc.utc so mid-combat Target/MasterID refs resolve.
+          const savedId = this.template?.RootNode?.hasField('ObjectId')
+            ? this.template.getFieldByLabel('ObjectId').getValue()
+            : 0;
+          if(savedId && savedId !== ModuleObjectConstant.OBJECT_INVALID){
+            this.id = savedId;
+          }else{
+            this.id = GameState.ModuleObjectManager.GetNextPlayerId();
+          }
         }else if(this.template.RootNode.hasField('ObjectId')){
           this.id = this.template.getFieldByLabel('ObjectId').getValue();
         }else if(this.template.RootNode.hasField('ID')){
@@ -7190,7 +7218,12 @@ export class ModuleCreature extends ModuleObject {
           const crStructs = crField.getChildStructs?.() || [];
           const crStruct = crStructs[0];
           if(crStruct){
-            this.combatRound.fromStruct(crStruct);
+            if(this.combatRound.fromStruct(crStruct)){
+              // Retail does not GFF-persist CombatState; mid-round load must
+              // re-enter combat so EndCombatRound / OnEndRound / CreateNewAttackActions work.
+              this.setCombatState(true, ExcitedDurationRow.Damage);
+              this.setExcitedState(ExcitedDurationRow.Damage);
+            }
           }
         }
       }catch(e: any){
@@ -7211,6 +7244,9 @@ export class ModuleCreature extends ModuleObject {
       }catch(e: any){
         console.error('ModuleCreature.initProperties CombatInfo', e);
       }
+
+      // After CombatInfo fromStruct: rebind equip DWORDs to live item objects.
+      this.rebindCombatInfoEquipIds();
 
       //PerceptionList
       try{
@@ -7291,6 +7327,19 @@ export class ModuleCreature extends ModuleObject {
         }
       }
     }
+  }
+
+  /**
+   * Point CombatInfo LeftEquip/RightEquip at live hand-item ids after load.
+   */
+  rebindCombatInfoEquipIds(){
+    if(!this.combatInformation){
+      return;
+    }
+    this.combatInformation.rightEquip =
+      this.equipment.RIGHTHAND?.id ?? ModuleObjectConstant.OBJECT_INVALID;
+    this.combatInformation.leftEquip =
+      this.equipment.LEFTHAND?.id ?? ModuleObjectConstant.OBJECT_INVALID;
   }
 
   loadSoundSet(){

@@ -149,3 +149,56 @@ export function getNearestEnemy(
 
   return best;
 }
+
+/**
+ * Diagnostic counts for why GetNearestEnemy returned nothing (duelLog / tests).
+ */
+export function explainNearestEnemyMiss(
+  attacker: ModuleCreature,
+  maxRange?: number,
+  options?: GetNearestEnemyOptions
+): {
+  candidates: number;
+  hostileAlive: number;
+  seen: number;
+  inRange: number;
+  los: number;
+  maxRange: number;
+} {
+  const range = typeof maxRange === 'number'
+    ? maxRange
+    : (options?.maxRange ?? maxCleaveRange(attacker));
+  const exclude = options?.exclude ?? attacker;
+  const excludeId = exclude?.id;
+
+  let candidates = 0;
+  let hostileAlive = 0;
+  let seen = 0;
+  let inRange = 0;
+  let los = 0;
+
+  if(!attacker?.area){
+    return { candidates: 0, hostileAlive: 0, seen: 0, inRange: 0, los: 0, maxRange: range };
+  }
+
+  const list = collectAreaCreatures(attacker);
+  for(let i = 0; i < list.length; i++){
+    const candidate = list[i];
+    if(!candidate || candidate === attacker) continue;
+    if(excludeId !== undefined && candidate.id === excludeId) continue;
+    if(!BitWise.InstanceOfObject(candidate, ModuleObjectType.ModuleCreature)) continue;
+    candidates++;
+    if(candidate.isDead?.()) continue;
+    if(!attacker.isHostile(candidate)) continue;
+    hostileAlive++;
+    if(!hasPerceptionSeen(attacker, candidate)) continue;
+    seen++;
+    const gap = getEnemyGapDistance(attacker, candidate);
+    if(!(gap < range)) continue;
+    inRange++;
+    if(!hasCombatLineOfSight(attacker, candidate, range)) continue;
+    los++;
+  }
+
+  return { candidates, hostileAlive, seen, inRange, los, maxRange: range };
+}

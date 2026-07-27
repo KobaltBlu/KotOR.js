@@ -2,7 +2,10 @@ import { GameState } from "@/GameState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
+import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { getPathPersonalSpace } from "@/combat/attack-range";
+import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
+import { BitWise } from "@/utility/BitWise";
 import * as THREE from "three";
 
 /**
@@ -204,29 +207,93 @@ export function getProjectileTravelDelayMs(
 }
 
 /**
- * Simplified ResolveProjectileMissLocation @ 005b4aa0 —
- * lateral offset by ~2/3 target perspace, random side.
+ * ResolveProjectileMissLocation @ 005b4aa0 —
+ * lateral miss beside target (perspace * 2/3), optional wide scatter when
+ * attack_result == 10, then eye→far ray with ClearLineOfSight.
  */
 export function getProjectileMissLocation(
   attacker: ModuleObject,
-  target: ModuleObject
+  target: ModuleObject,
+  attackResult?: number
 ): THREE.Vector3 {
-  const origin = target.position.clone();
-  const dx = attacker.position.x - target.position.x;
-  const dy = attacker.position.y - target.position.y;
-  const len = Math.sqrt(dx * dx + dy * dy) || 1;
-  // Perpendicular in XY
-  let px = -dy / len;
-  let py = dx / len;
-  if(Math.random() < 0.5){
-    px = -px;
-    py = -py;
+  if(!target){
+    return attacker.position.clone();
   }
-  const scale = getPathPersonalSpace(target as any) * 0.6667;
-  origin.x += px * scale;
-  origin.y += py * scale;
-  origin.z += 0.5 + Math.random() * 0.5;
-  return origin;
+
+  // Retail defaults when target is not a creature
+  let lateralScale = 0.40002003;
+  let scatterMul = 1.0;
+
+  if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleCreature)){
+    lateralScale = getPathPersonalSpace(target) * 0.6667;
+    // attack_result == '\n' (10) → sum of three rand()%3
+    if((attackResult | 0) === 10){
+      scatterMul =
+        (Math.floor(Math.random() * 3)) +
+        (Math.floor(Math.random() * 3)) +
+        (Math.floor(Math.random() * 3));
+    }
+  }
+
+  // Direction target → attacker, then cross(up) for a side miss
+  const toAttacker = new THREE.Vector3().subVectors(attacker.position, target.position);
+  const distSq = toAttacker.lengthSq();
+  if(distSq > 1e-8){
+    toAttacker.normalize();
+  }else{
+    toAttacker.set(1, 0, 0);
+  }
+  const perp = new THREE.Vector3().crossVectors(toAttacker, new THREE.Vector3(0, 0, 1));
+  // Retail: flip when (rand & 1) != 0
+  if((Math.floor(Math.random() * 2) & 1) !== 0){
+    perp.negate();
+  }
+  perp.multiplyScalar(scatterMul);
+
+  const missBeside = new THREE.Vector3(
+    target.position.x + perp.x * lateralScale,
+    target.position.y + perp.y * lateralScale,
+    target.position.z + perp.z * lateralScale
+  );
+
+  // Z variance from distance² * 0.015
+  const zRange = distSq * 0.015;
+  const eye = new THREE.Vector3(
+    attacker.position.x,
+    attacker.position.y,
+    attacker.position.z + 1.5
+  );
+  const dir = new THREE.Vector3(
+    missBeside.x - eye.x,
+    missBeside.y - eye.y,
+    ((1.5 - zRange * (2 / 3)) + Math.random() * zRange * 0.75 + missBeside.z) - eye.z
+  );
+  if(dir.lengthSq() > 1e-8){
+    dir.normalize();
+  }else{
+    dir.set(px, py, 0);
+  }
+  const far = eye.clone().addScaledVector(dir, 1000);
+
+  const hitPoint = new THREE.Vector3();
+  const area = attacker.area;
+  if(area && typeof clearLineOfSight === 'function'){
+    const clear = clearLineOfSight(area, eye, far, {
+      ignoreSource: attacker,
+      ignoreObject: target,
+      eyeHeight: 0,
+      hitPoint,
+    });
+    if(clear){
+      return far;
+    }
+    if(hitPoint.lengthSq() > 0){
+      return hitPoint;
+    }
+  }
+
+  // No LOS helper / no hit — use the beside-target miss point
+  return missBeside;
 }
 
 /** SwitchMask digit for discharge hand (0/1) at shot index. */

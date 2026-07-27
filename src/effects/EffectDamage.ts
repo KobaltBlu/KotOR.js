@@ -6,6 +6,7 @@ import {
   mitigateDamageAmount,
   sumDamageChannels,
 } from "@/combat/damage-mitigation";
+import { applyPartyDifficultyDamage } from "@/combat/diff-settings";
 import { GameState } from "@/GameState";
 import { BitWise } from "@/utility/BitWise";
 
@@ -103,6 +104,11 @@ export class EffectDamage extends GameEffect {
     const scale = GameState.DEBUG_PC_DAMAGE_SCALE;
     if(scale !== 1 && scale >= 0 && this.creator && GameState.PartyManager?.party?.indexOf(this.creator as any) >= 0){
       amount = Math.floor(amount * scale);
+    }
+
+    // Retail DoDamage @ 004f39c0 — difficultyopt MULTIPLIER + DiffSettings MinHP1
+    if(typeof (this.object as any)?.isPartyMember === 'function'){
+      amount = applyPartyDifficultyDamage(this.object as any, amount);
     }
 
     this.resolvedDamage = amount;

@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { OdysseyModel } from "@/odyssey";
 import { GameState } from "@/GameState";
-import { MDLLoader } from "@/loaders";
+import { MDLLoader, TextureLoader } from "@/loaders";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
@@ -16,11 +16,17 @@ import {
   resolveSpellProjectilePathType,
   shouldDelaySpellImpactToLanding,
 } from "@/combat/spell-projectile-time";
+import { resolveSpellProjectileModelResRef } from "@/combat/spell-projectile-model";
+import { sampleSpellProjectilePosition } from "@/combat/spell-projectile-motion";
+import { playSpellProjectileTravelAnimation } from "@/combat/combat-projectile";
 import { playGrenadeBounceAtPosition } from "@/combat/grenade-sound";
 import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import type { ModuleItem } from "@/module/ModuleItem";
 import { EventBroadcastSafeProjectile } from "@/events/EventBroadcastSafeProjectile";
 import { ProjectilePath } from "@/enums/combat/ProjectilePath";
+import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
+
+const _projLookAhead = new THREE.Vector3();
 
 /**
  * SpellCastInstance class.
@@ -73,6 +79,10 @@ export class SpellCastInstance {
   private flightDurationMs = 0;
   /** Optional path override from ActionCastSpell param 9. */
   projectilePathOverride: number = -1;
+  /** Item used for cast (grenade model fallback when projmodel empty). */
+  castItem: ModuleItem | undefined;
+  /** Retail SetBehaviorListSpiral rand handedness (±1). */
+  private spiralSign: number = 1;
   conjureTime = 3000;
   conjuring: boolean = false;
   castTime: number = 0;
@@ -140,13 +150,11 @@ export class SpellCastInstance {
   }
 
   /**
-   * Notify the single-process BroadcastSafeProjectile path. SpellCastInstance
-   * already owns the projmodel when one loaded — mark alreadySpawned so the
-   * event does not double-spawn.
+   * Notify the single-process BroadcastSafeProjectile path. Only skip the
+   * event spawn when this instance already attached a projectile mesh.
    */
-  private notifySafeProjectileBroadcast(){
+  private notifySafeProjectileBroadcast(alreadySpawned: boolean){
     const flightMs = Math.max(1, this.castTime | 0);
-    const hasProjModel = !!(this.spell?.projmodel && String(this.spell.projmodel).trim() && this.spell.projmodel !== '****');
     const pathType = this.resolveProjectilePathType();
     const evt = new EventBroadcastSafeProjectile();
     evt.setCaller(this.owner);
@@ -155,11 +163,19 @@ export class SpellCastInstance {
     evt.targetId = this.target?.id ?? 0x7F000000;
     evt.flightMs = flightMs;
     evt.projectilePath = pathType;
-    evt.origin.copy(this.owner.position);
+    evt.itemId =
+      this.castItem?.id ??
+      (this.owner as ModuleCreature)?.spellCastItem?.id ??
+      0;
+    const hookPos = new THREE.Vector3();
+    if(this.projectileHook?.getWorldPosition){
+      this.projectileHook.getWorldPosition(hookPos);
+      evt.origin.copy(hookPos);
+    }else{
+      evt.origin.copy(this.owner.position);
+    }
     evt.destination.copy(this.projectileTarget || this.targetLocation);
-    // SpellCastInstance loads projmodel asynchronously — skip the event spawn
-    // whenever the spell has a projectile model so we do not double-draw.
-    evt.alreadySpawned = hasProjModel;
+    evt.alreadySpawned = alreadySpawned;
     evt.execute();
   }
 
@@ -179,19 +195,30 @@ export class SpellCastInstance {
   }
 
   /**
-   * Retail projspwnpoint: hand/throw → rhand; otherwise body position origin.
+   * Retail HandleServerToPlayerSafeProjectileSpell projspwnpoint byte:
+   * 1/hand → handconjure, 2/head → headconjure, 3/rhand → rhand, else root.
    */
   private resolveProjectileHook(): any {
     const spawn = String(this.spell?.projspwnpoint ?? '').toLowerCase().trim();
     const model = this.owner?.model;
     if(!model) return undefined;
-    if(spawn === 'hand' || spawn === 'throw' || spawn === 'rhand' || !spawn || spawn === '****'){
-      return model.rhand || undefined;
+    const asNum = parseInt(spawn, 10);
+    const kind = Number.isFinite(asNum) && String(asNum) === spawn
+      ? asNum
+      : spawn;
+    if(kind === 1 || kind === 'hand' || kind === 'handconjure' || kind === 'throw' || !spawn || spawn === '****'){
+      return model.handconjure || model.rhand || undefined;
     }
-    if(spawn === 'lhand' || spawn === 'left'){
+    if(kind === 2 || kind === 'head' || kind === 'headconjure'){
+      return model.headconjure || model.head || model.rhand || undefined;
+    }
+    if(kind === 3 || kind === 'rhand' || kind === 'right'){
+      return model.rhand || model.handconjure || undefined;
+    }
+    if(kind === 'lhand' || kind === 'left'){
       return model.lhand || model.rhand || undefined;
     }
-    return model.rhand || undefined;
+    return model.rhand || model.handconjure || undefined;
   }
 
   init(){
@@ -227,34 +254,97 @@ export class SpellCastInstance {
       this.castTime = Math.max(this.castTime || 0, flightMs);
     }
 
-    const projModel = this.spell?.projmodel;
-    if(projModel && String(projModel).trim() && projModel !== '****'){
-      MDLLoader.loader.load(String(projModel).toLowerCase())
-      .then((mdl: OdysseyModel) => {
-        OdysseyModel3D.FromMDL(mdl, {
-          context: this.owner.context
-        }).then((model: OdysseyModel3D) => {
-          this.projectile = model;
-          if(this.owner.model){
-            const hook = this.resolveProjectileHook();
-            if(hook){
-              this.owner.context.group.effects.add(model);
-              this.projectileHook = hook;
-            }else{
-              // No hand hook — spawn at body and still fly
-              this.owner.context.group.effects.add(model);
-              this.projectileOrigin.copy(this.owner.position);
-              this.projectileCurve.v0.copy(this.projectileOrigin);
-              model.position.copy(this.projectileOrigin);
-            }
-          }else{
-            this.projectile.dispose();
-          }
-        });
-      });
+    const castItem =
+      this.castItem ||
+      (this.owner as ModuleCreature)?.spellCastItem as ModuleItem | undefined;
+    if(castItem && BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      (this.owner as ModuleCreature).spellCastItem = castItem;
     }
 
-    this.notifySafeProjectileBroadcast();
+    // Single-process: SpellCastInstance.castTime IS the retail AddEventDeltaTime
+    // delay — run impactscript in impact() at landing. Do not also queue
+    // EventSpellImpact here (that path skipped impact() and often never fired).
+    this.spiralSign = Math.random() < 0.5 ? -1 : 1;
+    void this.spawnProjectileModel(castItem);
+  }
+
+  /**
+   * Load spells.2da projmodel, falling back to the thrown item MDL (grenades).
+   * Retail CSWCProjectile loads projmodel; empty grenade rows use the item mesh.
+   */
+  private async spawnProjectileModel(castItem: ModuleItem | undefined){
+    const primary = resolveSpellProjectileModelResRef(this.spell, castItem);
+    const itemOnly = resolveSpellProjectileModelResRef(undefined, castItem);
+    const candidates = [primary, itemOnly].filter((r, i, a) => !!r && a.indexOf(r) === i);
+
+    for(const resRef of candidates){
+      if(this.completed || this.interrupted) return;
+      try{
+        const mdl = await MDLLoader.loader.load(resRef);
+        if(!mdl || this.completed || this.interrupted) continue;
+        const model = await OdysseyModel3D.FromMDL(mdl, {
+          context: this.owner.context,
+          lighting: true,
+        });
+        if(!model || this.completed || this.interrupted){
+          model?.dispose?.();
+          continue;
+        }
+        const group = this.owner.context?.group?.effects;
+        if(!group){
+          model.dispose();
+          continue;
+        }
+        this.projectile = model;
+        group.add(model);
+        TextureLoader.LoadQueue?.();
+        this.attachProjectileToHook(model);
+        playSpellProjectileTravelAnimation(model);
+        this.playProjectileLaunchSound();
+        // Mesh attached — skip BroadcastSafeProjectile duplicate
+        this.notifySafeProjectileBroadcast(true);
+        return;
+      }catch(_e){
+        // try next candidate
+      }
+    }
+
+    if(!this.completed && !this.interrupted){
+      this.notifySafeProjectileBroadcast(false);
+    }
+  }
+
+  private attachProjectileToHook(model: OdysseyModel3D){
+    const hook = this.owner.model ? this.resolveProjectileHook() : undefined;
+    if(hook){
+      this.projectileHook = hook;
+      hook.getWorldPosition(model.position);
+      this.projectileOrigin.copy(model.position);
+      this.projectileCurve.v0.copy(this.projectileOrigin);
+    }else{
+      this.projectileOrigin.copy(this.owner.position);
+      this.projectileCurve.v0.copy(this.projectileOrigin);
+      model.position.copy(this.projectileOrigin);
+    }
+  }
+
+  /** Retail HandleServerToPlayerSafeProjectileSpell Play3DOneShotSound(projsound). */
+  private playProjectileLaunchSound(){
+    const resRef = String(this.spell?.projsound ?? '').trim().toLowerCase();
+    if(!resRef || resRef === '****') return;
+    const emitter = (this.owner as ModuleCreature).audioEmitter;
+    if(!emitter?.playSoundFireAndForget) return;
+    const pos = this.projectileOrigin || this.owner.position;
+    emitter.setPosition?.(pos.x, pos.y, pos.z);
+    emitter.setPriorityGroupId?.(AudioPriorityGroup.NORMAL_SPELL_EFFECTS);
+    emitter.playSoundFireAndForget(resRef);
+  }
+
+  private syncProjectileOrientation(from: THREE.Vector3, to: THREE.Vector3){
+    if(!this.projectile) return;
+    if(to.distanceToSquared(from) > 0.0001){
+      this.projectile.lookAt(to);
+    }
   }
 
   /**
@@ -275,6 +365,9 @@ export class SpellCastInstance {
 
   private clearOwnerSpellRound(options: { unpause?: boolean } = {}){
     const round = (this.owner as any)?.combatRound;
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
+      (this.owner as ModuleCreature).itemSpellCastActive = false;
+    }
     if(!round){
       return;
     }
@@ -360,8 +453,8 @@ export class SpellCastInstance {
     }else if(this.castTime > 0){
       this.conjuring = false;
 
-      // Item casts skip conjure — sample rhand origin once before flight
-      if(this.projectile && this.projectileHook && this.projectileOrigin.lengthSq() === 0){
+      // Item casts skip conjure — keep mesh on handconjure until flight starts
+      if(this.projectile && this.projectileHook && !this.projectileDistance){
         this.projectileHook.getWorldPosition(this.projectile.position);
         this.projectileOrigin.copy(this.projectile.position);
         this.projectileCurve.v0.copy(this.projectileOrigin);
@@ -392,8 +485,6 @@ export class SpellCastInstance {
 
       if(this.projectile && !this.projectileDistance){
         this.projectileDistance = this.projectileTarget.clone().sub(this.projectileOrigin);
-        this.projectileCurve.v1.copy(this.projectileDistance).multiplyScalar(0.25).add(this.projectileOrigin);
-        this.projectileCurve.v1.z += 2
       }
 
       // Instant non-projectile spells impact at cast-start; throws / L impact on land
@@ -402,7 +493,26 @@ export class SpellCastInstance {
       }
 
       if(this.projectile && this.projectileDistance){
-        this.projectile.position.copy( this.projectileCurve.getPoint((1 - this.castTimeProgress)) );
+        const t = 1 - this.castTimeProgress;
+        const pathType = this.resolveProjectilePathType();
+        const flightMs = this.flightDurationMs || this.castTime;
+        sampleSpellProjectilePosition(
+          pathType,
+          this.projectileOrigin,
+          this.projectileTarget,
+          t,
+          this.projectile.position,
+          { totalMs: flightMs, spiralSign: this.spiralSign }
+        );
+        sampleSpellProjectilePosition(
+          pathType,
+          this.projectileOrigin,
+          this.projectileTarget,
+          Math.min(1, t + 0.05),
+          _projLookAhead,
+          { totalMs: flightMs, spiralSign: this.spiralSign }
+        );
+        this.syncProjectileOrientation(this.projectile.position, _projLookAhead);
       }
 
       this.castTime -= (1000 * delta);
@@ -433,17 +543,22 @@ export class SpellCastInstance {
     this.stampSpellTarget();
 
     // Retail GrenadeSND bounce at impact point for grenade item casts
-    const castItem = (this.owner as ModuleCreature)?.spellCastItem as ModuleItem | undefined;
+    const castItem =
+      this.castItem ||
+      (this.owner as ModuleCreature)?.spellCastItem as ModuleItem | undefined;
     if(isGrenadeItemType(castItem?.baseItem?.itemType)){
       playGrenadeBounceAtPosition(this.projectileTarget || this.targetLocation, this.owner);
     }
 
-    if(this.impactscript != ''){
-      const instance = GameState.NWScript.Load(this.impactscript);
+    // Retail EventSpellImpact (0x08) runs the impactscript after flight.
+    // SpellCastInstance.castTime is that delay in-process — run it here.
+    const script = String(this.impactscript || '').trim();
+    if(script && script !== '****'){
+      const instance = GameState.NWScript.Load(script);
       if(instance) {
         instance.talent = this.spell;
         instance.run(this.owner, 0);
-      };
+      }
     }
 
     if(this.casthandvisual != ''){
@@ -455,8 +570,13 @@ export class SpellCastInstance {
           this.casthandmodel = model;
 
           if(this.owner.model){
-            if(this.owner.model.lhand){
-              this.owner.model.lhand.add(this.casthandmodel);
+            // Retail LoadCastVisual attaches to conjure hooks (handconjure / rhand)
+            const hand =
+              this.owner.model.handconjure ||
+              this.owner.model.rhand ||
+              this.owner.model.lhand;
+            if(hand){
+              hand.add(this.casthandmodel);
 
               const anim = this.casthandmodel.playAnimation('cast01', false);
               setTimeout(() => {
@@ -475,6 +595,7 @@ export class SpellCastInstance {
 
     if(this.projectile){
       this.projectile.dispose();
+      this.projectile = undefined as any;
     }
 
   }

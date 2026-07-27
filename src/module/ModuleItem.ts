@@ -29,6 +29,11 @@ import { castAmmunitionProjectile } from "@/combat/combat-projectile";
 import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import { resolveItemCastTiming } from "@/combat/item-cast-timing";
 import {
+  calculateLastSpellProjectileTimeMs,
+  resolveSpellProjectilePathType,
+  shouldDelaySpellImpactToLanding,
+} from "@/combat/spell-projectile-time";
+import {
   applyDecrementUses,
   getUsedActivePropertyUsesLeft,
   canTargetItemCastByPerception,
@@ -742,13 +747,32 @@ export class ModuleItem extends ModuleObject {
       oCaster.spellCastItem = this;
       const cast = new SpellCastInstance(oCaster, oCaster, spell);
       cast.applySpellData();
+      cast.castItem = this;
       cast.conjureTime = 0;
-      cast.castTime = 0;
       cast.allowCounterSpell = false;
-      oCaster.area?.attachSpellInstance?.(cast);
-      cast.init();
-      cast.impact();
-      cast.completed = true;
+      // Retail InstantUseItem still SpellCastAndImpact — stamp caster level /
+      // GetSpellCastItem; delay impact when the spell is a throw / projectile.
+      const lastClass = oCaster.classes?.[oCaster.classes.length - 1];
+      oCaster.baseClassLevel = (lastClass?.level | 0);
+      oCaster.itemSpellCastActive = true;
+      spell.setCasterLevel?.(oCaster.baseClassLevel);
+
+      if(shouldDelaySpellImpactToLanding(spell, false)){
+        cast.impactAtProjectileLanding = true;
+        const pathType = resolveSpellProjectilePathType(spell.projtype) || 6;
+        // Self-target InstantUse — flight distance ~0; still honor path-6 hang
+        const flightMs = calculateLastSpellProjectileTimeMs(0.01, pathType);
+        cast.castTime = Math.max(1, flightMs);
+        oCaster.area?.attachSpellInstance?.(cast);
+        cast.init();
+      }else{
+        cast.castTime = 0;
+        oCaster.area?.attachSpellInstance?.(cast);
+        cast.init();
+        cast.impact();
+        cast.completed = true;
+        oCaster.itemSpellCastActive = false;
+      }
 
       this.decrementUses(oCaster);
 

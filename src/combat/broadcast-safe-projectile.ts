@@ -1,7 +1,12 @@
 import { GameState } from "@/GameState";
 import { MDLLoader } from "@/loaders";
-import { OdysseyModel } from "@/odyssey";
 import { OdysseyModel3D } from "@/three/odyssey";
+import { playSpellProjectileTravelAnimation } from "@/combat/combat-projectile";
+import { resolveSpellProjectileModelResRef } from "@/combat/spell-projectile-model";
+import { sampleSpellProjectilePosition } from "@/combat/spell-projectile-motion";
+import { resolveSpellProjectilePathType } from "@/combat/spell-projectile-time";
+import { ProjectilePath } from "@/enums/combat/ProjectilePath";
+import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { TalentSpell } from "@/talents";
 import * as THREE from "three";
@@ -21,7 +26,11 @@ export type SafeProjectileSpellOpts = {
   origin: THREE.Vector3;
   destination: THREE.Vector3;
   spell: TalentSpell | undefined;
+  /** Grenade / item cast — fallback model when spell.projmodel is empty. */
+  item?: ModuleItem;
   flightMs: number;
+  /** Retail SetProjectileType path id. */
+  projectilePath?: number;
   /** When true, SpellCastInstance already owns the visual — no-op. */
   alreadySpawned?: boolean;
 };
@@ -34,8 +43,8 @@ export async function broadcastSafeProjectileSpell(
   opts: SafeProjectileSpellOpts
 ): Promise<OdysseyModel3D | undefined> {
   if(opts.alreadySpawned) return undefined;
-  const projmodel = String(opts.spell?.projmodel || '').trim();
-  if(!projmodel || projmodel === '****') return undefined;
+  const projmodel = resolveSpellProjectileModelResRef(opts.spell, opts.item);
+  if(!projmodel) return undefined;
 
   try{
     const mdl = await MDLLoader.loader.load(projmodel.toLowerCase());
@@ -48,19 +57,32 @@ export async function broadcastSafeProjectileSpell(
     const group = (opts.caster.context || GameState).group?.effects;
     group?.add(model);
     model.position.copy(opts.origin);
+    playSpellProjectileTravelAnimation(model);
 
-    // Fire-and-forget travel: lerp to destination over flightMs then dispose.
     const flight = Math.max(1, opts.flightMs | 0);
     const start = performance.now();
     const from = opts.origin.clone();
     const to = opts.destination.clone();
-    const mid = from.clone().lerp(to, 0.5);
-    mid.z += 2;
-    const curve = new THREE.QuadraticBezierCurve3(from, mid, to);
+    const pathType =
+      (opts.projectilePath | 0) ||
+      resolveSpellProjectilePathType(opts.spell?.projtype) ||
+      ProjectilePath.GRENADE;
+    const spiralSign = Math.random() < 0.5 ? -1 : 1;
+    const lookAhead = new THREE.Vector3();
 
     const tick = () => {
       const t = Math.min(1, (performance.now() - start) / flight);
-      model.position.copy(curve.getPoint(t));
+      sampleSpellProjectilePosition(pathType, from, to, t, model.position, {
+        totalMs: flight,
+        spiralSign,
+      });
+      sampleSpellProjectilePosition(
+        pathType, from, to, Math.min(1, t + 0.05), lookAhead,
+        { totalMs: flight, spiralSign }
+      );
+      if(lookAhead.distanceToSquared(model.position) > 0.0001){
+        model.lookAt(lookAhead);
+      }
       if(t < 1){
         requestAnimationFrame(tick);
       }else{

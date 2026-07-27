@@ -22,6 +22,14 @@ import {
 } from "@/combat/damage-mitigation";
 import { getDamageIncreaseBonusesByChannel } from "@/effects/effect-bonuses";
 import { resolveDamageShields } from "@/combat/damage-shields";
+import {
+  getCombatModeDamageBonus,
+  getMassiveCriticalBonus,
+} from "@/combat/damage-composition";
+import {
+  getWeaponMaxDice,
+  weightWeaponDiceRoll,
+} from "@/combat/diff-settings";
 import { GameState } from "@/GameState";
 import {
   lookupCombatObjectById,
@@ -230,7 +238,14 @@ export class CombatAttackData {
     // Unarmed: roll weapon dice once per critical-hit multiplier
     if(!this.attackWeapon){
       for(let i = 0; i < critMultiplier; i++){
-        this.damageList[DamageType.BLUDGEONING].addDamage(Dice.roll(1, DiceType.d4));
+        const unarmedRoll = Dice.roll(1, DiceType.d4);
+        const weighted = weightWeaponDiceRoll(
+          unarmedRoll,
+          4,
+          creature,
+          this.reactObject
+        );
+        this.damageList[DamageType.BLUDGEONING].addDamage(weighted);
       }
       const strMod = CombatAttackData.GetAbilityMod(creature.getSTR());
       for(let i = 0; i < critMultiplier; i++){
@@ -252,8 +267,16 @@ export class CombatAttackData {
 
     // Roll weapon dice once per critical-hit multiplier
     if(!creature.isSimpleCreature()){
+      const maxDice = getWeaponMaxDice(this.attackWeapon);
       for(let i = 0; i < critMultiplier; i++){
-        this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(this.attackWeapon.getBaseDamage());
+        const baseRoll = this.attackWeapon.getBaseDamage();
+        const weighted = weightWeaponDiceRoll(
+          baseRoll,
+          maxDice,
+          creature,
+          this.reactObject
+        );
+        this.damageList[this.attackWeapon.getBaseDamageType()].addDamage(weighted);
       }
       if(this.attackWeapon.hasDamageBonus()){
         for(let i = 0; i < critMultiplier; i++){
@@ -261,8 +284,10 @@ export class CombatAttackData {
         }
       }
 
-      // Active special-attack feat damage bonus only
-      const specialDamage = feat?.getDamageBonus?.() || 0;
+      // Retail GetDamageBonus @ 005a8be0 — combat-mode Power Attack (mode 2=+5, 3=+10)
+      // plus ResolveSpecialAttackDamageBonus (feat attack_type) @ 005a4fb0.
+      const modeDamage = getCombatModeDamageBonus(creature);
+      const specialDamage = (feat?.getDamageBonus?.() || 0) + modeDamage;
       if(specialDamage > 0){
         for(let i = 0; i < critMultiplier; i++){
           this.damageList[DamageType.BASE].addDamage(specialDamage);
@@ -273,6 +298,14 @@ export class CombatAttackData {
       if(specBonus > 0){
         for(let i = 0; i < critMultiplier; i++){
           this.damageList[DamageType.BASE].addDamage(specBonus);
+        }
+      }
+
+      // Retail GetDamageRoll Massive Criticals (IP 0x31) — once on crit, not × multiplier
+      if(isCritial){
+        const massive = getMassiveCriticalBonus(this.attackWeapon);
+        if(massive > 0){
+          this.damageList[DamageType.BASE].addDamage(massive);
         }
       }
     }else{

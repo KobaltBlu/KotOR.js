@@ -21,6 +21,8 @@ import { GFFStruct } from "@/resource/GFFStruct";
  */
 export class GameEffect {
   creator: any;
+  /** Saved CreatorId DWORD for deferred resolve. */
+  creatorObjectId: number = 0;
   duration: number;
   expireDay: number;
   expireTime: number;
@@ -35,6 +37,8 @@ export class GameEffect {
   floatList: number[] = [];
   stringList: string[] = [];
   objectList: ModuleObject[] = [];
+  /** Saved ObjectList DWORDs for deferred resolve. */
+  objectListIds: number[] = [];
   object: ModuleObject;
   type: GameEffectType;
   /** Retail CGameEffect::id — DWORD64 allocated from Module.effectNextId */
@@ -44,6 +48,7 @@ export class GameEffect {
   
   constructor(){
     this.creator = undefined;
+    this.creatorObjectId = 0;
     this.duration = 0;
     this.expireDay = 0;
     this.expireTime = 0;
@@ -63,6 +68,7 @@ export class GameEffect {
     this.floatList = [];
     this.stringList = [];
     this.objectList = [];
+    this.objectListIds = [];
 
   }
 
@@ -70,20 +76,67 @@ export class GameEffect {
     if(this.initialized)
       return this;
 
-    if(!isNaN(this.creator)){
-      this.creator = GameState.ModuleObjectManager.GetObjectById(this.creator);
-    }
-
+    this.resolveObjectReferences();
     this.initialized = true;
     return this;
+  }
+
+  /**
+   * Resolve CreatorId / ObjectList DWORDs via GetObjectById.
+   * Safe to call again after all creatures are registered (PerceptionList pattern).
+   */
+  resolveObjectReferences(){
+    if(typeof this.creator === 'number' || (!this.creator && this.creatorObjectId)){
+      const id = typeof this.creator === 'number' ? this.creator : this.creatorObjectId;
+      if(id && id !== ModuleObjectConstant.OBJECT_INVALID){
+        this.creatorObjectId = id;
+        this.creator = GameState.ModuleObjectManager.GetObjectById(id) ?? this.creator;
+      }
+    }else if(this.creator && typeof this.creator === 'object' && this.creator.id){
+      this.creatorObjectId = this.creator.id;
+    }
+
+    const idCount = Math.max(this.objectListIds.length, this.objectList.length);
+    for(let i = 0; i < idCount; i++){
+      const existing = this.objectList[i];
+      if(existing && typeof existing === 'object'){
+        if((existing as ModuleObject).id){
+          this.objectListIds[i] = (existing as ModuleObject).id;
+        }
+        continue;
+      }
+      const rawId = this.objectListIds[i]
+        ?? (typeof existing === 'number' ? existing : 0);
+      if(rawId && rawId !== ModuleObjectConstant.OBJECT_INVALID){
+        this.objectListIds[i] = rawId;
+        const resolved = GameState.ModuleObjectManager.GetObjectById(rawId);
+        if(resolved){
+          this.objectList[i] = resolved;
+        }else{
+          this.objectList[i] = rawId as any;
+        }
+      }
+    }
   }
 
   loadModel(){
     return;
   }
 
-  setCreator(oCreator: ModuleObject){
+  setCreator(oCreator: ModuleObject | number){
+    if(typeof oCreator === 'number'){
+      this.creatorObjectId = oCreator && oCreator !== ModuleObjectConstant.OBJECT_INVALID
+        ? oCreator
+        : 0;
+      this.creator = this.creatorObjectId
+        ? (GameState.ModuleObjectManager.GetObjectById(this.creatorObjectId) ?? oCreator)
+        : undefined;
+      return;
+    }
     this.creator = oCreator;
+    this.creatorObjectId = oCreator?.id && oCreator.id !== ModuleObjectConstant.OBJECT_INVALID
+      ? oCreator.id
+      : 0;
   }
 
   setDuration(duration = 0){
@@ -169,14 +222,31 @@ export class GameEffect {
     this.stringList[nOffset] = nValue;
   }
 
-  setObjectList(objectList: ModuleObject[] = []){
-    if(Array.isArray(objectList)){
-      this.objectList = objectList;
+  setObjectList(objectList: Array<ModuleObject | number> = []){
+    if(!Array.isArray(objectList)){
+      return;
+    }
+    this.objectList = [];
+    this.objectListIds = [];
+    for(let i = 0; i < objectList.length; i++){
+      this.setObject(i, objectList[i] as any);
     }
   }
 
-  setObject(nOffset = 0, nValue: ModuleObject){
+  setObject(nOffset = 0, nValue: ModuleObject | number){
+    if(typeof nValue === 'number'){
+      this.objectListIds[nOffset] = nValue && nValue !== ModuleObjectConstant.OBJECT_INVALID
+        ? nValue
+        : 0;
+      this.objectList[nOffset] = this.objectListIds[nOffset]
+        ? (GameState.ModuleObjectManager.GetObjectById(this.objectListIds[nOffset]) as any ?? nValue as any)
+        : undefined as any;
+      return;
+    }
     this.objectList[nOffset] = nValue;
+    this.objectListIds[nOffset] = nValue?.id && nValue.id !== ModuleObjectConstant.OBJECT_INVALID
+      ? nValue.id
+      : 0;
   }
 
   setAttachedObject( oObject: ModuleObject|Module ){
@@ -224,7 +294,20 @@ export class GameEffect {
   }
 
   getObject(nOffset = 0){
-    return this.objectList[nOffset];
+    const entry = this.objectList[nOffset];
+    if(typeof entry === 'object' && entry){
+      return entry;
+    }
+    const id = this.objectListIds[nOffset]
+      ?? (typeof entry === 'number' ? entry : 0);
+    if(id && id !== ModuleObjectConstant.OBJECT_INVALID){
+      const resolved = GameState.ModuleObjectManager.GetObjectById(id);
+      if(resolved){
+        this.objectList[nOffset] = resolved;
+        return resolved;
+      }
+    }
+    return entry;
   }
 
   update(delta: number = 0){

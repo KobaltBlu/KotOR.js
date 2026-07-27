@@ -23,6 +23,8 @@ export class EventBroadcastSafeProjectile extends GameEvent {
   targetId: number = 0x7F000000;
   flightMs: number = 0;
   projectilePath: number = 6;
+  /** Optional item id for grenade projmodel fallback. */
+  itemId: number = 0;
   origin: THREE.Vector3 = new THREE.Vector3();
   destination: THREE.Vector3 = new THREE.Vector3();
   /** When SpellCastInstance already owns the projectile, skip spawn. */
@@ -43,6 +45,7 @@ export class EventBroadcastSafeProjectile extends GameEvent {
     this.targetId = num('TargetId', 0x7F000000);
     this.flightMs = num('FlightMs', 0);
     this.projectilePath = num('PathType', 6);
+    this.itemId = num('ItemId', 0);
     if(struct.getFieldByLabel('OriginX')){
       this.origin.set(num('OriginX'), num('OriginY'), num('OriginZ'));
     }
@@ -60,13 +63,19 @@ export class EventBroadcastSafeProjectile extends GameEvent {
       this.targetId !== 0x7F000000
         ? GameState.ModuleObjectManager.GetObjectById(this.targetId)
         : undefined;
+    const item =
+      this.itemId
+        ? GameState.ModuleObjectManager.GetObjectById(this.itemId)
+        : undefined;
     void broadcastSafeProjectileSpell({
       caster,
       target,
       origin: this.origin,
       destination: this.destination,
       spell,
+      item: item as any,
       flightMs: this.flightMs,
+      projectilePath: this.projectilePath,
       alreadySpawned: this.alreadySpawned,
     });
   }
@@ -82,6 +91,7 @@ export class EventBroadcastSafeProjectile extends GameEvent {
     data.addField(new GFFField(GFFDataType.DWORD, 'TargetId')).setValue(this.targetId);
     data.addField(new GFFField(GFFDataType.INT, 'FlightMs')).setValue(this.flightMs);
     data.addField(new GFFField(GFFDataType.INT, 'PathType')).setValue(this.projectilePath);
+    data.addField(new GFFField(GFFDataType.DWORD, 'ItemId')).setValue(this.itemId);
     data.addField(new GFFField(GFFDataType.FLOAT, 'OriginX')).setValue(this.origin.x);
     data.addField(new GFFField(GFFDataType.FLOAT, 'OriginY')).setValue(this.origin.y);
     data.addField(new GFFField(GFFDataType.FLOAT, 'OriginZ')).setValue(this.origin.z);

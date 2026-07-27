@@ -26,6 +26,8 @@ export * from "@/combat/damage-shields";
 export * from "@/combat/spell-range";
 export * from "@/combat/spell-projectile-time";
 export * from "@/combat/spell-cast-gates";
+export * from "@/combat/spell-projectile-model";
+export * from "@/combat/spell-projectile-motion";
 export * from "@/combat/lightsaber-throw-mesh";
 export * from "@/combat/item-cast-grenade";
 export * from "@/combat/item-cast-timing";

@@ -32,6 +32,7 @@ import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from "@/module";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { ExcitedDurationRow } from "@/combat/combat-engagement";
+import { getSpeakStringNotifyPlan } from "@/combat/speak-string-broadcast";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { DLGObject } from "@/resource/DLGObject";
 import { Faction } from "@/engine/Faction";
@@ -2371,70 +2372,47 @@ export class ModuleObject {
   }
 
   speakString(str: string, volume: TalkVolume){
-    //https://nwnlexicon.com/index.php?title=SpeakString
-    let notifyCreatures = false;
-    let notifyPCs = false;
-    let talkVolume = volume;
-
-    let range = 5;
-    switch(talkVolume){
-      case TalkVolume.TALK:
-        range = 5;
-        notifyCreatures = true;
-      break;
-      case TalkVolume.WHISPER:
-        range = 2;
-        notifyCreatures = true;
-      break;
-      case TalkVolume.SHOUT:
-        range = 40;
-        notifyCreatures = true;
-        notifyPCs = true;
-      break;
-      case TalkVolume.SILENT_TALK:
-        range = 20;
-        notifyCreatures = true;
-      break;
-      case TalkVolume.SILENT_SHOUT:
-        range = 1000;
-        notifyCreatures = true;
-        notifyPCs = true;
-      break;
-    }
-
-    const rangeSquared = range * range;
-    let cDistanceSquared = 0;
+    // Retail CSWSObject::BroadcastDialog @ 004cd760 — area objects in range with
+    // listening set. Party members live in PartyManager.party (not always in
+    // area.creatures), so they must be notified for every volume that notifies.
+    const plan = getSpeakStringNotifyPlan(volume);
+    const talkVolume = volume;
+    const rangeSquared = plan.range * plan.range;
     // Keep original case — CSWSExpression captures slice from the original-case
     // input; matching lowercases internally when case-insensitive.
     const spoken = str;
+    const notified = new Set<number>();
 
-    if(notifyPCs){
-      for(let i = 0, len = GameState.PartyManager.party.length; i < len; i++){
-        const creature = GameState.PartyManager.party[i];
-        if(creature != (this as any) && !creature.isDead()){
-          cDistanceSquared = this.position.distanceToSquared(creature.position);
-          if(cDistanceSquared > rangeSquared){ continue; }
-          creature.heardStrings.push({
-            speaker: this,
-            string: spoken,
-            volume: talkVolume
-          });
+    const pushHeard = (creature: any) => {
+      if(!creature || creature === (this as any) || creature.isDead?.()) return;
+      const id = creature.id;
+      if(id != null){
+        if(notified.has(id)) return;
+        notified.add(id);
+      }
+      const d2 = this.position.distanceToSquared(creature.position);
+      if(d2 > rangeSquared) return;
+      creature.heardStrings.push({
+        speaker: this,
+        string: spoken,
+        volume: talkVolume
+      });
+    };
+
+    if(plan.notifyParty){
+      const party = GameState.PartyManager?.party;
+      if(party){
+        for(let i = 0, len = party.length; i < len; i++){
+          pushHeard(party[i]);
         }
       }
     }
 
-    if(notifyCreatures){
-      for(let i = 0, len = GameState.module.area.creatures.length; i < len; i++){
-        const creature = GameState.module.area.creatures[i];
-        if(creature != (this as any) && !creature.isDead()){
-          cDistanceSquared = this.position.distanceToSquared(creature.position);
-          if(cDistanceSquared > rangeSquared){ continue; }
-
-          creature.heardStrings.push({
-            speaker: this,
-            string: spoken,
-            volume: talkVolume
-          });
+    if(plan.notifyCreatures){
+      const creatures = GameState.module?.area?.creatures;
+      if(creatures){
+        for(let i = 0, len = creatures.length; i < len; i++){
+          pushHeard(creatures[i]);
         }
       }
     }
@@ -2941,6 +2919,15 @@ export class ModuleObject {
       //effect.setCreator(this);
       effect.setAttachedObject(this);
       effect.onApply(this);
+    }
+  }
+
+  /**
+   * Re-resolve effect CreatorId / ObjectList after all creatures are registered.
+   */
+  resolveEffectObjectReferences(){
+    for(let i = 0, len = this.effects.length; i < len; i++){
+      this.effects[i]?.resolveObjectReferences?.();
     }
   }
 

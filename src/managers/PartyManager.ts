@@ -23,6 +23,7 @@ import { PazaakCards } from "@/enums/minigames/PazaakCards";
 import { PazaakSideDeckSlots } from "@/enums/minigames/PazaakSideDeckSlots";
 import { type SWPortrait } from "@/engine/rules/SWPortrait";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { AILevel } from "@/enums/module/AILevel";
 import { BitWise } from "@/utility/BitWise";
 import { getPathPersonalSpace } from "@/combat/attack-range";
@@ -1603,7 +1604,15 @@ export class PartyManager {
     if(!template){
       return;
     }
-    template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue( GameState.ModuleObjectManager.GetNextPlayerId() );
+    // Prefer saved ObjectId so CombatRound Target/MasterID refs still resolve after load.
+    const savedId = template.RootNode.hasField('ObjectId')
+      ? template.getFieldByLabel('ObjectId').getValue()
+      : 0;
+    if(!savedId || savedId === ModuleObjectConstant.OBJECT_INVALID){
+      template.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(
+        GameState.ModuleObjectManager.GetNextPlayerId()
+      );
+    }
     const partyMember = new ModuleCreature(template);
 
     if(nIdx < 0 || nIdx > 1){
@@ -1618,7 +1627,8 @@ export class PartyManager {
         partyMember.isPM = true;
         partyMember.npcId = memberID;
         partyMember.load();
-        partyMember.clearAllActions();
+        // Do not clearAllActions after load — that wipes restored ActionList /
+        // CombatRound SchedActionList / combat targets (mid-combat save resume).
         //PartyManager.party[nIdx+1] = partyMember;
 
         /*if(PartyManager.CurrentMembers[nIdx].isLeader){

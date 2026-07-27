@@ -13,6 +13,7 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import {
   resolveItemCastTiming,
+  resolveDroidUtilityGateMs,
   type ItemCastTimingResolved,
 } from "@/combat/item-cast-timing";
 import {
@@ -85,7 +86,7 @@ export class ActionItemCastSpell extends Action {
     oItem.decrementUses(this.owner as ModuleCreature, propIndex);
   }
 
-  private startSpellInstance(castTarget: ModuleObject | undefined){
+  private startSpellInstance(castTarget: ModuleObject | undefined, oItem?: ModuleItem){
     // Location-only casts (grenades after FORCEHOSTILE clear) must not bind the
     // caster as oTarget — that makes GetSpellTargetLocation / stampSpellTarget
     // overwrite the throw point and hide the explosion at the wrong place.
@@ -101,6 +102,12 @@ export class ActionItemCastSpell extends Action {
     // not force powers, so they can never be counterspelled.
     spellCastInstance.applySpellData();
     spellCastInstance.allowCounterSpell = false;
+    spellCastInstance.castItem = oItem;
+    // ActionCombat param 8 — projectile path override (same as CastSpell param 9)
+    const pathParam = this.getParameter<number>(8) | 0;
+    if(pathParam > 0){
+      spellCastInstance.projectilePathOverride = pathParam;
+    }
     // The action already held the wind-up through its conjure gate — retail
     // enters at the impact call, so only the projectile flight remains.
     spellCastInstance.conjureTime = 0;
@@ -113,7 +120,9 @@ export class ActionItemCastSpell extends Action {
       // SpellCastInstance BroadcastSafeProjectile uses path 6 for throws;
       // empty projtype defaults to 6 so +2500 ms hang matches retail grenades.
       const pathType =
-        resolveSpellProjectilePathType(this.spell?.projtype) || 6;
+        pathParam > 0
+          ? pathParam
+          : (resolveSpellProjectilePathType(this.spell?.projtype) || 6);
       const flightMs = calculateLastSpellProjectileTimeMs(distance, pathType);
       spellCastInstance.castTime = Math.max(spellCastInstance.castTime || 0, flightMs);
       spellCastInstance.impactAtProjectileLanding = true;
@@ -123,6 +132,16 @@ export class ActionItemCastSpell extends Action {
       this.spell.oTarget = castTarget;
     }
     const owner = this.owner as ModuleCreature;
+    if(oItem){
+      owner.spellCastItem = oItem;
+    }
+    // Retail AIActionItemCastSpell: base_class_level = GetClassLevel(last), field349=1
+    const lastClass = owner.classes?.[owner.classes.length - 1];
+    owner.baseClassLevel = (lastClass?.level | 0);
+    owner.itemSpellCastActive = true;
+    if(this.spell?.setCasterLevel){
+      this.spell.setCasterLevel(owner.baseClassLevel);
+    }
     if(owner.combatData){
       owner.combatData.lastSpellTarget = castTarget;
     }
@@ -147,12 +166,18 @@ export class ActionItemCastSpell extends Action {
     const modeltype = creature.creatureAppearance?.modeltype
       ?? creature.getAppearance?.()?.modeltype;
     const distanceSq = targetPosition.distanceToSquared(this.owner.position);
-    return resolveItemCastTiming(
+    const timing = resolveItemCastTiming(
       oItem?.baseItem?.itemType,
       modeltype,
       distanceSq,
       ActionItemCastSpell.parseSpellCastTimeMs(this.spell)
     );
+    // Retail case 0xc: gate = GetAnimationLength(0x2AF9) - 0x32
+    if(timing.postImpactAnim){
+      const lenSec = creature.getAnimationLength?.(timing.animation) || 0;
+      timing.gateMs = resolveDroidUtilityGateMs(lenSec);
+    }
+    return timing;
   }
 
   /** Parse spell casttime the same way SpellCastInstance does (ms, or seconds if < 20). */
@@ -327,12 +352,17 @@ export class ActionItemCastSpell extends Action {
       }
 
       // Object target only when present — never fall back to owner (location casts)
-      this.startSpellInstance(this.target || undefined);
+      this.startSpellInstance(this.target || undefined, oItem);
       // Retail DecrementUses fires with SpellCastAndImpact, not at round end
       this.consumeItemCharges(oItem);
       // Retail AIActionItemCastSpell @ 0050f170 — after SpellCastAndImpact,
       // RemoveSpellAction if GetSpellActionPending (clears combat-queue icon).
       combatRound.removeSpellAction();
+      // Retail droid utility (0x0c): field19 post-impact phase holds 0x2AFA
+      if(timing.postImpactAnim){
+        owner.setAnimationState(timing.postImpactAnim);
+        this.throwAnim = timing.postImpactAnim;
+      }
     }
 
     if(this.elapsedMs >= timing.pauseMs){

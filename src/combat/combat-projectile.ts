@@ -155,7 +155,7 @@ function playShotSound(resRef: string, position: THREE.Vector3, creature: Module
 }
 
 /** Retail CSWCAnimBaseProjectile::SetAnimation case 1 → travel01. */
-function playTravelAnimation(model: OdysseyModel3D){
+export function playSpellProjectileTravelAnimation(model: OdysseyModel3D){
   if(model.playAnimation('travel01', true)){
     // Apply t=0 controllers immediately (travel01 length is often 0) so birthRate is live
     // before the first emitter tick.
@@ -188,6 +188,11 @@ function playMuzzleFlashAnimation(model: OdysseyModel3D){
     return;
   }
   try{ model.playAnimation('default', true); }catch(_e){ /* ignore */ }
+}
+
+/** @deprecated Use {@link playSpellProjectileTravelAnimation}. */
+function playTravelAnimation(model: OdysseyModel3D){
+  playSpellProjectileTravelAnimation(model);
 }
 
 /**

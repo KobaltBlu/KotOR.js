@@ -12,7 +12,7 @@ import { duelLog, duelWho } from "@/combat/duel-debug";
 import { hasTargetBeenDetected } from "@/combat/nearest-enemy";
 import { tryStuckLosRetarget } from "@/combat/initialize-new-attack-target";
 import { getNearestActionPoint } from "@/combat/nearest-action-point";
-import { getMeleeBackoffPosition } from "@/combat/melee-backoff";
+import { resolveMeleeBackoff } from "@/combat/melee-backoff";
 import { ModuleObjectConstant, ModuleObjectType, SSFType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
@@ -91,7 +91,9 @@ export class ActionPhysicalAttacks extends Action {
     }
 
     if(typeof (target as any).isDead === 'function' && target.isDead()){
-      if(owner.combatRound?.roundStarted){
+      // Always tear down / retarget — even when roundStarted is already false
+      // (remaining sched swings at a corpse must not block CreateNewAttackActions).
+      if(owner.combatRound){
         owner.combatRound.endCombatRound();
       }
       return ActionStatus.FAILED;
@@ -125,9 +127,10 @@ export class ActionPhysicalAttacks extends Action {
       let arriveRange = getAttackMoveArriveRange(owner, target, choreographed);
       let target_position = getNearestActionPoint(target, owner.position, owner);
 
-      // Too close: DesiredAttackRange back-off + TestDirectLine-style walkable clip
+      // Too close: DesiredAttackRange back-off + TestDirectLine / CWalkHitInfo clip
       if(tooClose && !tooFar){
-        target_position = getMeleeBackoffPosition(owner, target, desired);
+        const backoff = resolveMeleeBackoff(owner, target, desired);
+        target_position = backoff.position;
         arriveRange = 0;
       }else if(owner.area?.getNearestWalkablePoint){
         target_position = owner.area.getNearestWalkablePoint(
