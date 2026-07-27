@@ -618,6 +618,29 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
+   * Retail CSWSItem::DecrementUses @ 0055de20 — CastSpell cost_value 1 burns
+   * stack size (destroy when stack < 2); charge cost_values 2–6 burn charges.
+   * Simplified: charges first when present, else stack (matches InstantUseItem).
+   */
+  decrementUses(oCaster?: ModuleCreature): void {
+    if(GameState.infiniteUses) return;
+    if(this.charges > 1){
+      this.charges -= 1;
+      return;
+    }
+    if(this.charges === 1){
+      oCaster?.removeItem?.(this, 1);
+      return;
+    }
+    const stack = this.getStackSize();
+    if(stack <= 1){
+      oCaster?.removeItem?.(this, 1);
+    }else{
+      this.setStackSize(stack - 1);
+    }
+  }
+
+  /**
    * Retail InstantUseItem @ 004efe30 — inventory Use Item (immediate SpellCastAndImpact).
    * During combat sets a 3s lockout (TLK 42409 / one item per round).
    */
@@ -650,20 +673,7 @@ export class ModuleItem extends ModuleObject {
       cast.impact();
       cast.completed = true;
 
-      if(!GameState.infiniteUses){
-        if(this.charges > 1){
-          this.charges -= 1;
-        }else if(this.charges === 1){
-          oCaster.removeItem(this, 1);
-        }else{
-          const stack = this.getStackSize();
-          if(stack <= 1){
-            oCaster.removeItem(this, 1);
-          }else{
-            this.setStackSize(stack - 1);
-          }
-        }
-      }
+      this.decrementUses(oCaster);
 
       if(oCaster.combatData?.combatState){
         oCaster.instantItemCooldownMs = INSTANT_ITEM_USE_COOLDOWN_MS;

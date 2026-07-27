@@ -12,21 +12,21 @@ import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { CombatRound } from "@/combat/CombatRound";
+import { isGrenadeItemType } from "@/combat/item-cast-grenade";
 import {
-  GRENADE_PAUSE_MS,
-  isGrenadeItemType,
-  resolveGrenadeGateMs,
-  resolveGrenadeThrowAnim,
-} from "@/combat/item-cast-grenade";
+  resolveItemCastTiming,
+  type ItemCastTimingResolved,
+} from "@/combat/item-cast-timing";
+import {
+  calculateLastSpellProjectileTimeMs,
+  resolveSpellProjectilePathType,
+} from "@/combat/spell-projectile-time";
+import { ExcitedDurationRow } from "@/combat/combat-engagement";
+import { isWithinSpellCastRange } from "@/combat/spell-range";
 import * as THREE from "three";
 
 /** Retail AIActionItemCastSpell per-item-type animation + gate + pause. */
-type ItemCastTiming = {
-  grenade: boolean;
-  animation: ModuleCreatureAnimState;
-  gateMs: number;
-  pauseMs: number;
-};
+type ItemCastTiming = ItemCastTimingResolved;
 
 /**
  * ActionItemCastSpell class.
@@ -77,20 +77,19 @@ export class ActionItemCastSpell extends Action {
   private consumeItemCharges(oItem: ModuleItem){
     if(this.chargesConsumed || !oItem) return;
     this.chargesConsumed = true;
-    if(GameState.infiniteUses){ return; }
-    if(oItem.charges > 1){
-      oItem.charges -= 1;
-    }else if(oItem.charges === 1){
-      this.owner.removeItem(oItem, 1);
-    }
+    // Retail DecrementUses — stack cost_value 1 / charges (ModuleItem.decrementUses)
+    oItem.decrementUses(this.owner as ModuleCreature);
   }
 
-  private startSpellInstance(castTarget: ModuleObject){
-    const spellCastInstance = new SpellCastInstance(this.owner, castTarget, this.spell);
-    if(!this.target){
-      const x = this.getParameter<number>(2) || 0;
-      const y = this.getParameter<number>(3) || 0;
-      const z = this.getParameter<number>(4) || 0;
+  private startSpellInstance(castTarget: ModuleObject | undefined){
+    // Location-only casts (grenades after FORCEHOSTILE clear) must not bind the
+    // caster as oTarget — that makes GetSpellTargetLocation / stampSpellTarget
+    // overwrite the throw point and hide the explosion at the wrong place.
+    const spellCastInstance = new SpellCastInstance(this.owner, castTarget as ModuleObject, this.spell);
+    const x = this.getParameter<number>(2) || 0;
+    const y = this.getParameter<number>(3) || 0;
+    const z = this.getParameter<number>(4) || 0;
+    if(!castTarget){
       spellCastInstance.targetLocation.set(x, y, z);
       spellCastInstance.projectileTarget.set(x, y, z);
     }
@@ -101,19 +100,33 @@ export class ActionItemCastSpell extends Action {
     // The action already held the wind-up through its conjure gate — retail
     // enters at the impact call, so only the projectile flight remains.
     spellCastInstance.conjureTime = 0;
+    // Grenade / throw: impact after CalculateLastSpellProjectileTime (@ 004cb9e0),
+    // not at cast-start like instant non-L spells.
+    if(this.timing?.grenade){
+      const origin = this.owner.position;
+      const dest = spellCastInstance.targetLocation;
+      const distance = origin.distanceTo(dest);
+      // SpellCastInstance BroadcastSafeProjectile uses path 6 for throws;
+      // empty projtype defaults to 6 so +2500 ms hang matches retail grenades.
+      const pathType =
+        resolveSpellProjectilePathType(this.spell?.projtype) || 6;
+      const flightMs = calculateLastSpellProjectileTimeMs(distance, pathType);
+      spellCastInstance.castTime = Math.max(spellCastInstance.castTime || 0, flightMs);
+      spellCastInstance.impactAtProjectileLanding = true;
+    }
     // Stamp talent/combat targets before init so impact scripts see them
     if(this.spell){
-      this.spell.oTarget = this.target;
+      this.spell.oTarget = castTarget;
     }
     const owner = this.owner as ModuleCreature;
     if(owner.combatData){
-      owner.combatData.lastSpellTarget = this.target;
+      owner.combatData.lastSpellTarget = castTarget;
     }
-    if(this.target){
-      if(this.target.combatData){
-        this.target.combatData.lastSpellAttacker = owner;
+    if(castTarget){
+      if(castTarget.combatData){
+        castTarget.combatData.lastSpellAttacker = owner;
       }
-      spellCastInstance.targetLocation.copy(this.target.position);
+      spellCastInstance.targetLocation.copy(castTarget.position);
     }
     owner.spellTargetPosition.copy(spellCastInstance.targetLocation);
     this.owner.area.attachSpellInstance(spellCastInstance);
@@ -124,31 +137,32 @@ export class ActionItemCastSpell extends Action {
 
   /**
    * Retail AIActionItemCastSpell @ 0050f170 switch on baseitems ItemType.
-   * Grenades (case 6) lob with THROW_HIGH / THROW_LOW and a fixed 1500 ms pause.
    */
   private resolveItemCastTiming(oItem: ModuleItem, targetPosition: THREE.Vector3): ItemCastTiming {
-    const itemType = oItem?.baseItem?.itemType;
-    if(!isGrenadeItemType(itemType)){
-      return {
-        grenade: false,
-        animation: ModuleCreatureAnimState.CASTOUT1,
-        gateMs: 1,
-        pauseMs: this.owner.combatRound?.roundLength || CombatRound.ROUND_LENGTH,
-      };
-    }
-
     const creature = this.owner as ModuleCreature;
     const modeltype = creature.creatureAppearance?.modeltype
       ?? creature.getAppearance?.()?.modeltype;
     const distanceSq = targetPosition.distanceToSquared(this.owner.position);
-    const animation = resolveGrenadeThrowAnim(modeltype, distanceSq);
+    const spellCastMs = SpellCastInstance.parseTimeMs?.(
+      this.spell?.getCastTime?.() ?? this.spell?.casttime,
+      1500
+    ) ?? 1500;
 
-    return {
-      grenade: true,
-      animation,
-      gateMs: resolveGrenadeGateMs(animation),
-      pauseMs: GRENADE_PAUSE_MS,
-    };
+    return resolveItemCastTiming(
+      oItem?.baseItem?.itemType,
+      modeltype,
+      distanceSq,
+      typeof spellCastMs === 'number' ? spellCastMs : 1500
+    );
+  }
+
+  /** Parse spell casttime the same way SpellCastInstance does (ms, or seconds if < 20). */
+  private static parseSpellCastTimeMs(spell: any): number {
+    const value = spell?.getCastTime?.() ?? spell?.casttime;
+    const n = typeof value === 'number' ? value : parseFloat(String(value ?? ''));
+    if(isNaN(n) || n < 0) return 1500;
+    if(n > 0 && n < 20) return n * 1000;
+    return n;
   }
 
   update(delta: number = 0): ActionStatus {
@@ -192,7 +206,15 @@ export class ActionItemCastSpell extends Action {
           this.getParameter<number>(4) || 0
         );
 
-    if(!this.castStarted && this.target && !this.spell.inRange(this.target, this.owner)){
+    // Retail still MoveTo vs spell range after FORCEHOSTILE clears oTarget
+    const inRange = this.target
+      ? this.spell.inRange(this.target, this.owner)
+      : isWithinSpellCastRange(
+          this.spell.range,
+          this.owner.position.distanceTo(targetPosition),
+          false
+        );
+    if(!this.castStarted && !inRange){
       const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint(-1, this.groupId);
       actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, targetPosition.x);
       actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, targetPosition.y);
@@ -223,8 +245,21 @@ export class ActionItemCastSpell extends Action {
     this.elapsedMs += delta * 1000;
 
     if(!combatRound.roundPaused && !this.castStarted){
-      combatRound.beginCombatRound();
+      // Retail grenade StartCombatRound(engaged=1, master=1); hostile item
+      // spells also BroadcastCombatStateToParty / SetExcitedState(SpellCast).
+      if(timing.grenade){
+        combatRound.startCombatRound(this.target, true, true, 0);
+      }else{
+        combatRound.beginCombatRound();
+      }
       combatRound.pauseRound(this.owner, timing.pauseMs);
+      combatRound.decrementRoundLength(timing.pauseMs);
+
+      if(timing.grenade || this.spell.hostilesetting == 1){
+        owner.broadcastCombatStateToParty?.(owner);
+        owner.setExcitedState?.(ExcitedDurationRow.SpellCast);
+        owner.removeCombatInvisibilityEffects?.();
+      }
     }
 
     if(combatRound.action){
@@ -238,8 +273,19 @@ export class ActionItemCastSpell extends Action {
       owner.setAnimationState(timing.animation);
     }
 
+    // Retail AddItemCastSpellActions queues ChangeFacingObject / FacingPoint
+    // before ItemCastSpell; combat-round dispatch skips that — animate turn
+    // (FacePoint is instant and snaps every tick).
     if(this.target){
       owner.setFacingObject(this.target);
+    }else{
+      owner.setFacing(
+        Math.atan2(
+          owner.position.y - targetPosition.y,
+          owner.position.x - targetPosition.x
+        ) + Math.PI / 2,
+        false
+      );
     }
 
     if(this.elapsedMs < timing.gateMs){
@@ -247,8 +293,8 @@ export class ActionItemCastSpell extends Action {
     }
 
     if(!this.castStarted && combatRound.roundStarted){
-      const spellTarget = this.target || this.owner;
-      this.startSpellInstance(spellTarget);
+      // Object target only when present — never fall back to owner (location casts)
+      this.startSpellInstance(this.target || undefined);
       // Retail DecrementUses fires with SpellCastAndImpact, not at round end
       this.consumeItemCharges(oItem);
     }

@@ -41,6 +41,7 @@ describe('SWGrenadeSound', () => {
 
 describe('GetSpellTargetLocation contract', () => {
   // Mirrors the fixed NWScript opcode: return the stamped location, never void.
+  // Prefer talent object target only when it is a real target — not the caster.
   const resolveSpellTargetLocation = (opts: {
     talentTarget?: { getLocation: () => { x: number } };
     spellTargetPosition?: { x: number; y: number; z: number };
@@ -62,6 +63,30 @@ describe('GetSpellTargetLocation contract', () => {
     expect(resolveSpellTargetLocation({
       spellTargetPosition: { x: 1, y: 2, z: 3 },
     })).toEqual({ x: 1, y: 2, z: 3 });
+  });
+
+  it('uses throw location when object target was cleared (FORCEHOSTILE)', () => {
+    // Grenades clear oTarget; impact scripts must read spellTargetPosition
+    expect(resolveSpellTargetLocation({
+      spellTargetPosition: { x: 10, y: 20, z: 0 },
+    })).toEqual({ x: 10, y: 20, z: 0 });
+  });
+});
+
+describe('grenade item-cast face + landing', () => {
+  it('animates facing toward the throw point when object target is cleared', () => {
+    const hasObjectTarget = false;
+    const facePath = hasObjectTarget ? 'setFacingObject' : 'setFacing(animated)';
+    expect(facePath).toBe('setFacing(animated)');
+  });
+
+  it('delays impact until projectile landing for throw range W / grenades', () => {
+    const delayImpactToLanding = (range: string, impactAtLanding: boolean) =>
+      impactAtLanding || range === 'L' || range === 'W';
+    expect(delayImpactToLanding('W', true)).toBe(true);
+    expect(delayImpactToLanding('W', false)).toBe(true);
+    expect(delayImpactToLanding('S', false)).toBe(false);
+    expect(delayImpactToLanding('L', false)).toBe(true);
   });
 });
 

@@ -23,6 +23,7 @@ export * from "@/combat/attack-summary-feedback";
 export * from "@/combat/damage-bonus";
 export * from "@/combat/damage-shields";
 export * from "@/combat/spell-range";
+export * from "@/combat/spell-projectile-time";
 export * from "@/combat/spell-cast-anims";
 export * from "@/combat/saving-throw";
 export * from "@/combat/combat-floaty";

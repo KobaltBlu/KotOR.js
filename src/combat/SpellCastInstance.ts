@@ -58,6 +58,13 @@ export class SpellCastInstance {
   interrupted: boolean = false;
   /** When false, skip counterspell scan (fake / item casts may opt out). */
   allowCounterSpell: boolean = true;
+  /**
+   * When true, run impact at end of projectile flight (grenade / throw),
+   * matching retail SpellCastAndImpact delayed impact — not at cast-start.
+   */
+  impactAtProjectileLanding: boolean = false;
+  /** Initial flight duration when impactAtProjectileLanding (for progress 1→0). */
+  private flightDurationMs = 0;
   conjureTime = 3000;
   conjuring: boolean = false;
   castTime: number = 0;
@@ -106,13 +113,15 @@ export class SpellCastInstance {
    */
   stampSpellTarget(){
     if(this.spell){
+      // Keep undefined / invalid for location casts — do not stamp the caster
       this.spell.oTarget = this.target;
     }
     const owner = this.owner as ModuleCreature;
     if(owner?.combatData){
       owner.combatData.lastSpellTarget = this.target;
     }
-    if(this.target){
+    // Only overwrite the throw location when we have a real object target
+    if(this.target && this.target !== this.owner){
       this.targetLocation.copy(this.target.position);
       this.projectileTarget.copy(this.target.position);
       if(this.target.combatData){
@@ -272,6 +281,11 @@ export class SpellCastInstance {
       return;
     }
 
+    const delayImpactToLanding =
+      this.impactAtProjectileLanding ||
+      this.spell?.range === 'L' ||
+      this.spell?.range === 'W';
+
     if(this.conjureTime > 0){
       this.conjuring = true;
 
@@ -290,11 +304,34 @@ export class SpellCastInstance {
     }else if(this.castTime > 0){
       this.conjuring = false;
 
-      const halfCast = Math.max(1, (this.spell.getCastTime?.() as any) || this.castTime || 1);
-      const halfCastMs = SpellCastInstance.parseTimeMs(halfCast, this.castTime) * 0.5;
-      this.castTimeProgress = this.castTime / Math.max(1, halfCastMs);
-      if(this.castTimeProgress > 1){
-        this.castTimeProgress = 1;
+      // Item casts skip conjure — sample rhand origin once before flight
+      if(this.projectile && this.projectileHook && this.projectileOrigin.lengthSq() === 0){
+        this.projectileHook.getWorldPosition(this.projectile.position);
+        this.projectileOrigin.copy(this.projectile.position);
+        this.projectileCurve.v0.copy(this.projectileOrigin);
+      }
+
+      const durationForProgress = Math.max(
+        1,
+        this.impactAtProjectileLanding
+          ? this.castTime
+          : SpellCastInstance.parseTimeMs(
+              (this.spell.getCastTime?.() as any) || this.castTime || 1,
+              this.castTime
+            ) * 0.5
+      );
+      // Progress 1→0 as remaining castTime drains (curve uses 1 - progress)
+      if(!this.impactAtProjectileLanding){
+        this.castTimeProgress = this.castTime / durationForProgress;
+        if(this.castTimeProgress > 1){
+          this.castTimeProgress = 1;
+        }
+      }else{
+        if(this.flightDurationMs <= 0){
+          this.flightDurationMs = this.castTime;
+        }
+        const flight = Math.max(1, this.flightDurationMs);
+        this.castTimeProgress = Math.min(1, Math.max(0, this.castTime / flight));
       }
 
       if(this.projectile && !this.projectileDistance){
@@ -303,7 +340,8 @@ export class SpellCastInstance {
         this.projectileCurve.v1.z += 2
       }
 
-      if(this.spell.range != 'L'){
+      // Instant non-projectile spells impact at cast-start; throws / L impact on land
+      if(!delayImpactToLanding){
         this.impact();
       }
 
@@ -315,7 +353,7 @@ export class SpellCastInstance {
     }else{
       this.conjuring = false;
 
-      if(this.spell.range == 'L'){
+      if(delayImpactToLanding){
         this.impact();
       }
 

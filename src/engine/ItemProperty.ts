@@ -111,14 +111,15 @@ export class ItemProperty {
     return this.costTableDefinition?.rows[this.costValue];
   }
 
-  //Determine if the property requires an upgrade to use, or if it is always useable
+  //Determine if the property requires an upgrade to use, or if it is always useable.
+  // GFF BYTE 255 = "none" (same sentinel as UpgradeSlot* / save path -1↔255).
   isUseable(){
-    const upgrade_flag = (1 << this.upgradeType);
-    //If no upgrade is required or the upgrade is present on the item
-    if(this.upgradeType == -1 || ((this.item.upgrades & upgrade_flag) == upgrade_flag)){
+    const upgradeType = this.upgradeType;
+    if(upgradeType == null || upgradeType < 0 || upgradeType === 255){
       return true;
     }
-    return false;
+    const upgrade_flag = (1 << upgradeType);
+    return ((this.item.upgrades & upgrade_flag) == upgrade_flag);
   }
 
   is(property: any, subType: any = undefined){
@@ -233,8 +234,13 @@ export class ItemProperty {
     if(this.template.RootNode.hasField('Useable'))
       this.useable = this.template.RootNode.getFieldByLabel('Useable').getValue();
 
-    if(this.template.RootNode.hasField('UpgradeType'))
-      this.upgradeType = this.template.RootNode.getFieldByLabel('UpgradeType').getValue();
+    if(this.template.RootNode.hasField('UpgradeType')){
+      const v = this.template.RootNode.getFieldByLabel('UpgradeType').getValue();
+      // GFF BYTE 255 = none (mirrors UpgradeSlot* load normalization)
+      this.upgradeType = (v === 255 ? -1 : v);
+    }else if(typeof this.upgradeType !== 'number'){
+      this.upgradeType = -1;
+    }
   }
 
   save(){
