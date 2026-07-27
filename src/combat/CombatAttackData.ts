@@ -23,6 +23,10 @@ import {
 import { getDamageIncreaseBonusesByChannel } from "@/effects/effect-bonuses";
 import { resolveDamageShields } from "@/combat/damage-shields";
 import { GameState } from "@/GameState";
+import {
+  lookupCombatObjectById,
+  normalizeCombatObjectId,
+} from "@/combat/resolve-combat-object-id";
 
 /**
  * CombatAttackData class.
@@ -48,6 +52,8 @@ export class CombatAttackData {
    * The missed by object for the attack
    */
   missedBy: ModuleObject = undefined;
+  /** Saved MissedBy DWORD for deferred resolve. */
+  missedByObjectId: number = 0;
 
   /**
    * The attack result for the attack
@@ -58,6 +64,8 @@ export class CombatAttackData {
    * The reaction object for the attack
    */
   reactObject: ModuleObject = undefined;
+  /** Saved ReactObject DWORD for deferred resolve. */
+  reactObjectId: number = 0;
 
   /**
    * The reaction delay for the attack
@@ -165,6 +173,8 @@ export class CombatAttackData {
    * The ammo item that is being used for the attack
    */
   ammoItem: ModuleObject = undefined;
+  /** Saved AmmoItem DWORD for deferred resolve. */
+  ammoItemObjectId: number = 0;
 
   /**
    * The debug text for the attack
@@ -531,9 +541,12 @@ export class CombatAttackData {
     const missedById = get('MissedBy', ModuleObjectConstant.OBJECT_INVALID);
     const reactId = get('ReactObject', ModuleObjectConstant.OBJECT_INVALID);
     const ammoId = get('AmmoItem', ModuleObjectConstant.OBJECT_INVALID);
-    this.missedBy = resolveObjectId(missedById);
-    this.reactObject = resolveObjectId(reactId);
-    this.ammoItem = resolveObjectId(ammoId);
+    this.missedByObjectId = normalizeCombatObjectId(missedById);
+    this.reactObjectId = normalizeCombatObjectId(reactId);
+    this.ammoItemObjectId = normalizeCombatObjectId(ammoId);
+    this.missedBy = lookupCombatObjectById(this.missedByObjectId);
+    this.reactObject = lookupCombatObjectById(this.reactObjectId);
+    this.ammoItem = lookupCombatObjectById(this.ammoItemObjectId);
 
     if(struct.hasField('DamageList')){
       const list = struct.getFieldByLabel('DamageList').getChildStructs();
@@ -548,17 +561,23 @@ export class CombatAttackData {
     }
   }
 
+  /**
+   * Re-resolve MissedBy / ReactObject / AmmoItem after all creatures are registered.
+   */
+  resolveObjectReferences(){
+    if(this.missedByObjectId && !this.missedBy){
+      this.missedBy = lookupCombatObjectById(this.missedByObjectId);
+    }
+    if(this.reactObjectId && !this.reactObject){
+      this.reactObject = lookupCombatObjectById(this.reactObjectId);
+    }
+    if(this.ammoItemObjectId && !this.ammoItem){
+      this.ammoItem = lookupCombatObjectById(this.ammoItemObjectId);
+    }
+  }
+
   static GetAbilityMod(abilityScore: number = 10): number {
     return Math.floor((abilityScore - 10) / 2);
   }
 
-}
-
-function resolveObjectId(id: number): ModuleObject | undefined {
-  if(!id || id === ModuleObjectConstant.OBJECT_INVALID) return undefined;
-  try{
-    return GameState.ModuleObjectManager?.GetObjectById?.(id);
-  }catch{
-    return undefined;
-  }
 }

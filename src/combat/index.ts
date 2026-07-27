@@ -1,4 +1,5 @@
 
+export * from "@/combat/resolve-combat-object-id";
 export * from "@/combat/CombatAttackDamage";
 export * from "@/combat/CombatAttackData";
 export * from "@/combat/CombatData";

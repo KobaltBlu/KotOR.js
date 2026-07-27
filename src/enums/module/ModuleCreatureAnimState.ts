@@ -203,3 +203,21 @@ export enum ModuleCreatureAnimState {
   KNEEL_TALK_ANGRY = 10031,
   KNEEL_TALK_SAD = 10385,
 };
+
+/**
+ * Transient combat swing / reaction indices stamped mid-round for save.
+ * They are not mapped in animationConstantToAnimation — demote on load.
+ */
+export function isTransientCombatAnimIndex(anim: number): boolean {
+  switch(anim){
+    case ModuleCreatureAnimState.ATTACK:
+    case ModuleCreatureAnimState.ATTACK_DUELING:
+    case ModuleCreatureAnimState.DODGE:
+    case ModuleCreatureAnimState.PARRY:
+    case ModuleCreatureAnimState.DAMAGE:
+    case ModuleCreatureAnimState.DAMAGE2:
+      return true;
+    default:
+      return false;
+  }
+}

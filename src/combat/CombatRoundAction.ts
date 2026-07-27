@@ -15,6 +15,10 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GameState } from "@/GameState";
+import {
+  lookupCombatObjectById,
+  normalizeCombatObjectId,
+} from "@/combat/resolve-combat-object-id";
 
 export class CombatRoundAction {
   owner: ModuleObject;
@@ -28,6 +32,8 @@ export class CombatRoundAction {
   numAttacks: number = 0;
   actionType: CombatActionType = CombatActionType.INVALID;
   target: ModuleObject;
+  /** Saved Target DWORD — kept for post-load re-resolve (PerceptionList pattern). */
+  targetObjectId: number = 0;
   retargettable: number = 0;
   /**
    * Equipment slot for ITEM_EQUIP (retail InventorySlot dword).
@@ -35,6 +41,8 @@ export class CombatRoundAction {
    */
   inventorySlot: number = 0;
   targetRepository: ModuleObject;
+  /** Saved TargetRepository DWORD for deferred resolve. */
+  targetRepositoryObjectId: number = 0;
 
   isUserAction: boolean = false; //Was this action created by the player
 
@@ -235,20 +243,25 @@ export class CombatRoundAction {
     const targetId = get('Target', ModuleObjectConstant.OBJECT_INVALID);
     const invSlot = get('InventorySlot', 0);
     const repoId = get('TargetRepository', ModuleObjectConstant.OBJECT_INVALID);
-    this.target = resolveObjectId(targetId);
+    this.targetObjectId = normalizeCombatObjectId(targetId);
+    this.targetRepositoryObjectId = normalizeCombatObjectId(repoId);
+    this.target = lookupCombatObjectById(this.targetObjectId);
     this.inventorySlot = invSlot;
-    this.targetRepository = resolveObjectId(repoId);
+    this.targetRepository = lookupCombatObjectById(this.targetRepositoryObjectId);
   }
 
-}
-
-function resolveObjectId(id: number): ModuleObject | undefined {
-  if(!id || id === ModuleObjectConstant.OBJECT_INVALID) return undefined;
-  try{
-    return GameState.ModuleObjectManager?.GetObjectById?.(id);
-  }catch{
-    return undefined;
+  /**
+   * Re-resolve Target / TargetRepository after all creatures are registered.
+   */
+  resolveObjectReferences(){
+    if(this.targetObjectId && !this.target){
+      this.target = lookupCombatObjectById(this.targetObjectId);
+    }
+    if(this.targetRepositoryObjectId && !this.targetRepository){
+      this.targetRepository = lookupCombatObjectById(this.targetRepositoryObjectId);
+    }
   }
+
 }
 
 /** Resolve animations.2da row by label id or array index. */

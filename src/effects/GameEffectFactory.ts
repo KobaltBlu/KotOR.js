@@ -410,6 +410,9 @@ export class GameEffectFactory {
       case GameEffectType.EffectConcealment:
         effect = new EffectConcealment();
       break;
+      case GameEffectType.EffectAssuredHit:
+        effect = new EffectAssuredHit();
+      break;
       case GameEffectType.EffectTemporaryForce:
         effect = new EffectTemporaryForce();
       break;

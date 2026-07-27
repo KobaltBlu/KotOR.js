@@ -46,6 +46,10 @@ import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import type { TalentFeat } from "@/talents";
 import { formatAttackSummaryFeedback, AttackSummaryStrRef } from "@/combat/attack-summary-feedback";
 import { shouldShowCombatFloaty } from "@/combat/combat-floaty";
+import {
+  lookupCombatObjectById,
+  normalizeCombatObjectId,
+} from "@/combat/resolve-combat-object-id";
 import * as THREE from 'three';
 
 const SPELL_FORCE_DEFLECTION = 162;
@@ -79,15 +83,25 @@ export class CombatRound {
   deflectArrow: boolean = true;
   weaponSucks: boolean = false;
   dodgeTarget: ModuleObject;
+  /** Saved DodgeTarget DWORD for deferred resolve. */
+  dodgeTargetObjectId: number = 0;
   newAttackTarget: ModuleObject; //the new target to switch to after this combat round has ended
+  /** Saved NewAttackTarget DWORD for deferred resolve. */
+  newAttackTargetObjectId: number = 0;
   engaged: boolean = false; // ResolveEngagedState / StartCombatRound
   master: boolean = false; // ResolveMasterState — drives duel pair
   masterID: ModuleObject; // creature that owns this duel group
+  /** Saved MasterID DWORD for deferred resolve. */
+  masterIDObjectId: number = 0;
   /** Retail field51_0x9c4 — duel slave when this round is master. */
   duelPartner: ModuleObject;
+  /** Saved DuelPartner DWORD (TSL) for deferred resolve. */
+  duelPartnerObjectId: number = 0;
 
   roundPaused: boolean = false;
   roundPausedBy: ModuleObject;
+  /** Saved RoundPausedBy DWORD for deferred resolve. */
+  roundPausedByObjectId: number = 0;
   infinitePause: boolean = false;
   /** Retail field9_0x940 — round started from a scripted (CutsceneAttack) action. */
   resultsCalculated: boolean = false;
@@ -139,13 +153,18 @@ export class CombatRound {
     this.deflectArrow = true;
     this.weaponSucks = false;
     this.dodgeTarget = undefined;
+    this.dodgeTargetObjectId = 0;
     this.newAttackTarget = undefined;
+    this.newAttackTargetObjectId = 0;
     this.engaged = false;
     this.master = false;
     this.masterID = undefined;
+    this.masterIDObjectId = 0;
     this.duelPartner = undefined;
+    this.duelPartnerObjectId = 0;
     this.roundPaused = false;
     this.roundPausedBy = undefined;
+    this.roundPausedByObjectId = 0;
     this.infinitePause = false;
     this.resultsCalculated = false;
     this.pauseTimer = 0;
@@ -2238,16 +2257,31 @@ export class CombatRound {
     this.spellCastRound = !!get('SpellCastRound');
     this.deflectArrow = !!get('DeflectArrow', 1);
     this.weaponSucks = !!get('WeaponSucks');
-    this.dodgeTarget = resolveObjectId(get('DodgeTarget', ModuleObjectConstant.OBJECT_INVALID));
-    this.newAttackTarget = resolveObjectId(get('NewAttackTarget', ModuleObjectConstant.OBJECT_INVALID));
+    this.dodgeTargetObjectId = normalizeCombatObjectId(
+      get('DodgeTarget', ModuleObjectConstant.OBJECT_INVALID)
+    );
+    this.newAttackTargetObjectId = normalizeCombatObjectId(
+      get('NewAttackTarget', ModuleObjectConstant.OBJECT_INVALID)
+    );
+    this.dodgeTarget = lookupCombatObjectById(this.dodgeTargetObjectId);
+    this.newAttackTarget = lookupCombatObjectById(this.newAttackTargetObjectId);
     this.roundPaused = !!get('RoundPaused');
-    this.roundPausedBy = resolveObjectId(get('RoundPausedBy', ModuleObjectConstant.OBJECT_INVALID));
+    this.roundPausedByObjectId = normalizeCombatObjectId(
+      get('RoundPausedBy', ModuleObjectConstant.OBJECT_INVALID)
+    );
+    this.roundPausedBy = lookupCombatObjectById(this.roundPausedByObjectId);
     this.infinitePause = false; // retail clears after load
     this.pauseTimer = get('PauseTimer');
     this.engaged = !!get('Engaged');
     this.master = !!get('Master');
-    this.masterID = resolveObjectId(get('MasterID', ModuleObjectConstant.OBJECT_INVALID));
-    this.duelPartner = resolveObjectId(get('DuelPartner', ModuleObjectConstant.OBJECT_INVALID));
+    this.masterIDObjectId = normalizeCombatObjectId(
+      get('MasterID', ModuleObjectConstant.OBJECT_INVALID)
+    );
+    this.masterID = lookupCombatObjectById(this.masterIDObjectId);
+    this.duelPartnerObjectId = normalizeCombatObjectId(
+      get('DuelPartner', ModuleObjectConstant.OBJECT_INVALID)
+    );
+    this.duelPartner = lookupCombatObjectById(this.duelPartnerObjectId);
     this.timer = get('Timer');
     this.roundLength = get('RoundLength', CombatRound.ROUND_LENGTH);
     this.overlapAmount = get('OverlapAmount');
@@ -2308,6 +2342,50 @@ export class CombatRound {
     this.restorePendingDamageTimers();
 
     return true;
+  }
+
+  /**
+   * Re-resolve CombatRound object refs after all creatures/party are registered.
+   * Mirrors PerceptionList deferred resolve — fromStruct may run before partners exist.
+   */
+  resolveObjectReferences(){
+    if(this.dodgeTargetObjectId && !this.dodgeTarget){
+      this.dodgeTarget = lookupCombatObjectById(this.dodgeTargetObjectId);
+    }
+    if(this.newAttackTargetObjectId && !this.newAttackTarget){
+      this.newAttackTarget = lookupCombatObjectById(this.newAttackTargetObjectId);
+    }
+    if(this.roundPausedByObjectId && !this.roundPausedBy){
+      this.roundPausedBy = lookupCombatObjectById(this.roundPausedByObjectId);
+    }
+    if(this.masterIDObjectId && !this.masterID){
+      this.masterID = lookupCombatObjectById(this.masterIDObjectId);
+    }
+    if(this.duelPartnerObjectId && !this.duelPartner){
+      this.duelPartner = lookupCombatObjectById(this.duelPartnerObjectId);
+    }
+
+    for(let i = 0; i < this.attackList.length; i++){
+      this.attackList[i]?.resolveObjectReferences?.();
+    }
+    if(this.action){
+      this.action.resolveObjectReferences();
+    }
+    for(let i = 0; i < this.scheduledActionList.length; i++){
+      this.scheduledActionList[i]?.resolveObjectReferences();
+    }
+
+    // K1 does not persist DuelPartner; reconstruct from MasterID / targets when engaged.
+    if(this.engaged && !this.duelPartner){
+      if(!this.master && this.masterID){
+        this.duelPartner = this.masterID;
+      }else if(this.master){
+        this.duelPartner =
+          this.dodgeTarget ||
+          this.action?.target ||
+          this.scheduledActionList[0]?.target;
+      }
+    }
   }
 
   /**
@@ -2385,13 +2463,4 @@ export class CombatRound {
     return Math.floor( ( val - 10 ) / 2 );
   }
 
-}
-
-function resolveObjectId(id: number): ModuleObject | undefined {
-  if(!id || id === ModuleObjectConstant.OBJECT_INVALID) return undefined;
-  try{
-    return GameState.ModuleObjectManager?.GetObjectById?.(id);
-  }catch{
-    return undefined;
-  }
 }

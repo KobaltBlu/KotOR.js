@@ -2487,6 +2487,27 @@ export class ModuleArea extends ModuleObject {
     GameState.PartyManager.ApplyControlledNPC();
     // Retail PositionParty → ResetAllFollowData after placing the party.
     GameState.PartyManager.resetFollowPath(GameState.PartyManager.party[0]);
+    // CombatRound fromStruct may run before partners are registered — re-resolve now.
+    this.resolveCombatRoundObjectReferences();
+  }
+
+  /**
+   * Deferred CombatRound object-ID resolve (PerceptionList pattern).
+   * Call after loadCreatures + loadParty so GetObjectById can find duel partners.
+   */
+  resolveCombatRoundObjectReferences(){
+    const creatures = [
+      ...(this.creatures || []),
+      ...(GameState.PartyManager?.party || []),
+    ];
+    const player = GameState.PartyManager?.Player;
+    if(player && creatures.indexOf(player) < 0){
+      creatures.push(player);
+    }
+    for(let i = 0; i < creatures.length; i++){
+      const creature = creatures[i];
+      creature?.combatRound?.resolveObjectReferences?.();
+    }
   }
 
   /**

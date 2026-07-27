@@ -68,9 +68,16 @@ export class ActionCombat extends Action {
     switch(combatAction.actionType){
       case CombatActionType.ATTACK:
       case CombatActionType.ATTACK_USE_FEAT: {
+        const targetId = combatAction.target?.id;
+        if(!targetId || targetId === ModuleObjectConstant.OBJECT_INVALID){
+          // Unresolved SchedAction target after mid-combat load — skip, do not throw.
+          return scheduledActionList.length
+            ? ActionStatus.IN_PROGRESS
+            : (combatRound.roundStarted ? ActionStatus.IN_PROGRESS : ActionStatus.COMPLETE);
+        }
         const attackAction = new GameState.ActionFactory.ActionPhysicalAttacks();
         attackAction.setParameter(0, ActionParameterType.INT, combatAction.resultsCalculated ? 1 : 0);
-        attackAction.setParameter(1, ActionParameterType.DWORD, combatAction.target.id);
+        attackAction.setParameter(1, ActionParameterType.DWORD, targetId);
         attackAction.setParameter(2, ActionParameterType.INT, combatAction.actionType);
         attackAction.setParameter(3, ActionParameterType.INT, combatAction.animation);
         attackAction.setParameter(4, ActionParameterType.INT, combatAction.animationTime);

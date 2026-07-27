@@ -9,7 +9,7 @@ import { CreatureClass } from "@/combat/CreatureClass";
 import { EffectRacialType } from "@/effects";
 import { animForSetState, getActiveSetStateType } from "@/effects/set-state";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
-import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleCreatureAnimState, isTransientCombatAnimIndex } from "@/enums/module/ModuleCreatureAnimState";
 import { AILevel } from "@/enums/module/AILevel";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
@@ -456,6 +456,8 @@ export class ModuleCreature extends ModuleObject {
   instantItemCooldownMs: number;
   turning: number;
   deathAnimationPlayed: boolean;
+  /** One-shot guard for Animation Missing console spam. */
+  private animationMissingLogged: boolean = false;
   deathStarted: boolean;
   /** Pass AL — last trap this creature detected (retail CSWSCreature field26_0x370). */
   lastTrapDetected: ModuleObject;
@@ -1783,7 +1785,10 @@ export class ModuleCreature extends ModuleObject {
         this.deathAnimationPlayed = true;
       }
     }else{
-      console.error('Animation Missing', this.getTag(), this.getName(), this.animationState);
+      if(!this.animationMissingLogged){
+        this.animationMissingLogged = true;
+        console.error('Animation Missing', this.getTag(), this.getName(), this.animationState);
+      }
       this.setAnimationState(
         this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
       );
@@ -2432,6 +2437,9 @@ export class ModuleCreature extends ModuleObject {
     this.animationState.index = animState;
     this.animationState.animation = this.animationConstantToAnimation(animState);
     this.animationState.started = false;
+    if(this.animationState.animation){
+      this.animationMissingLogged = false;
+    }
   }
   
   resetAnimationState(){
@@ -7241,6 +7249,13 @@ export class ModuleCreature extends ModuleObject {
     }
     if(!anim || anim === 0xFFFFFFFF){
       anim = ModuleCreatureAnimState.PAUSE;
+    }
+    // Mid-duel saves stamp ATTACK/ATTACK_DUELING which have no 2DA mapping —
+    // demote to READY/PAUSE so load does not spam Animation Missing.
+    const resolved = this.animationConstantToAnimation(anim);
+    const inCombat = !!(this.combatData?.combatState || this.combatRound?.roundStarted);
+    if(!resolved || isTransientCombatAnimIndex(anim)){
+      anim = inCombat ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE;
     }
     this.setAnimationState(anim);
 
