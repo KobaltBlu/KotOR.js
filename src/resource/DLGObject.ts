@@ -480,8 +480,10 @@ export class DLGObject {
     const bgm = await AudioLoader.LoadMusic(this.ambientTrack);
     if(!bgm){ return; }
     audio.setAudioBuffer('DIALOG', bgm.buffer as ArrayBuffer, this.ambientTrack);
-    // Retail Play(..., 1, ...) — loop; layers over ducked area BGM (do not stop area).
-    audio.dialogMusicAudioEmitter.play(true);
+    // Retail: new CExoStreamingSoundSource → looping field[2]=0; Play never SetLooping.
+    // AIL loop_count = (field[2]==0) → 1 (play once). Play's 4th arg is STREAMMUSIC path, not loop.
+    // Layers over ducked area BGM (do not stop area).
+    audio.dialogMusicAudioEmitter.play(false);
   }
 
   async load(){

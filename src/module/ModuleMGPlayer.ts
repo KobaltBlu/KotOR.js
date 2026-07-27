@@ -1735,8 +1735,8 @@ export class ModuleMGPlayer extends ModuleObject {
   /**
    * Retail CSWMiniPlayer::SetCameraHook @ 0066d030 —
    * CameraRotate==0 → AttachToObject(modelhook, behavior 0); else GetAttachType.
-   * Swoop: camera Gob is a modelhook sibling of the bike container; Control then
-   * writes the same tunnel offset to both (applySwoopTunnelOffset).
+   * Swoop (flag 0): camera Gob is a modelhook sibling; Control writes shared offset.
+   * Turret (flag 1, attach 2): parent under aim container so cam/HUD follow rotation.
    */
   setCameraHook(cameraRotateFlag: number = 0){
     const camera = this.resolveCameraModel();
@@ -1749,14 +1749,17 @@ export class ModuleMGPlayer extends ModuleObject {
     }else{
       GameState.group?.creatures?.add?.(camera);
     }
-    // Fresh attach — identity local pose; offset applied each frame by Control.
+    // Fresh attach — identity local pose; offset/aim applied by Control each frame.
     camera.position.set(0, 0, 0);
     camera.quaternion.identity();
     camera.scale.set(1, 1, 1);
 
-    // Non-zero CameraRotate → parent under container so aim carries camera/HUD.
     const useAttach = !!cameraRotateFlag;
-    if(useAttach && this.trackAttachType){
+    const attachType = useAttach
+      ? (GameState.module?.area?.miniGame?.getAttachType?.() ?? this.trackAttachType)
+      : 0;
+    if(useAttach && attachType){
+      // Parent under container so aim (container.rotation) carries the camera/HUD.
       camera.removeFromParent();
       this.container.add(camera);
       camera.position.set(0, 0, 0);

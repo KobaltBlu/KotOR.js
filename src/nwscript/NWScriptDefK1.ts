@@ -8437,17 +8437,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VECTOR,
     args: [],
     action: function(this: NWScriptInstance, args: []){
-      if(GameState.module.area.miniGame.type == 2){
-        const rot = GameState.module.area.miniGame.player.rotation;
-        return new THREE.Vector3(
-          THREE.MathUtils.radToDeg(rot.x),
-          THREE.MathUtils.radToDeg(rot.y),
-          THREE.MathUtils.radToDeg(rot.z)
-        );
-      }else{
-        // Retail translation offset (KeepInTunnel space), not world position.
-        return GameState.module.area.miniGame.player.playerOffset.clone();
-      }
+      // Retail offset (degrees for turret, meters for swoop) — KeepInTunnel space.
+      return GameState.module.area.miniGame.player.playerOffset.clone();
     }
   },
   642:{

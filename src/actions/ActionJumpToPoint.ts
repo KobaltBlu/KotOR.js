@@ -7,7 +7,6 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
 import * as THREE from "three";
-import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import { GameState } from "@/GameState";
 import {
   classifyJumpDestination,
@@ -150,7 +149,8 @@ export function applyLocalJump(
   facing: number
 ){
   creature.setPosition(new THREE.Vector3(x, y, z));
-  creature.setFacing(facing, false, TURN_SPEED_FAST);
+  // Retail AIActionJumpToPoint → CSWSObject::SetOrientation (instant).
+  creature.setFacing(facing, true);
   if(creature.collisionManager){
     creature.collisionManager.groundFace = undefined;
     creature.collisionManager.lastGroundFace = undefined;

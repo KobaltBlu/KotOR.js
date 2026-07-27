@@ -2767,16 +2767,18 @@ export class ModuleObject {
   }
 
   /**
-   * Get the rotation from bearing
-   * @param bearing 
-   * @returns 
+   * Creature/object forward as an EngineLocation orientation vector.
+   * Matches EngineLocation.setFacing and FollowerCamera.getCreatureForwardXY:
+   * (−sin(θ), cos(θ)) for model yaw θ (rotation.z).
+   * Retail GetLocation / GetScriptLocation copies this live orientation.
+   * @param bearing model yaw in radians (defaults to this.rotation.z)
    */
   getRotationFromBearing( bearing: number = undefined ){
     const theta = (typeof bearing == 'number') ? bearing : this.rotation.z;
 
     return new THREE.Vector3(
+      -Math.sin(theta),
       Math.cos(theta),
-      Math.sin(theta),
       0
     );
   }

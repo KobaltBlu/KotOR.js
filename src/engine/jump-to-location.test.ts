@@ -55,4 +55,34 @@ describe("Pass AI classifyJumpDestination", () => {
     expect(jumpFacingFromOrientation(0, 1)).toBeCloseTo(0, 5);
     expect(jumpFacingFromOrientation(1, 0)).toBeCloseTo(-Math.PI / 2, 5);
   });
+
+  it("orientation ↔ facing roundtrip matches creature forward (−sin, cos)", () => {
+    // EngineLocation.setFacing / getRotationFromBearing / getCreatureForwardXY
+    const orientationFromFacing = (theta: number) => ({
+      ox: -Math.sin(theta),
+      oy: Math.cos(theta),
+    });
+
+    for (const theta of [0, Math.PI / 2, Math.PI, -Math.PI / 2, 2.552]) {
+      const { ox, oy } = orientationFromFacing(theta);
+      expect(jumpFacingFromOrientation(ox, oy)).toBeCloseTo(theta, 5);
+    }
+  });
+
+  it("101per WP_player_start GetLocation→Jump preserves GIT facing", () => {
+    // exports/k2/module/101per/git — WP_player_start
+    const ox = -0.5555790662765503;
+    const oy = -0.8314636945724487;
+    const facing = jumpFacingFromOrientation(ox, oy);
+    // Old getRotationFromBearing used (cos, sin) → ≈ −90° error after jump
+    const wrongOx = Math.cos(facing);
+    const wrongOy = Math.sin(facing);
+    expect(jumpFacingFromOrientation(wrongOx, wrongOy)).not.toBeCloseTo(facing, 1);
+
+    const rightOx = -Math.sin(facing);
+    const rightOy = Math.cos(facing);
+    expect(rightOx).toBeCloseTo(ox, 5);
+    expect(rightOy).toBeCloseTo(oy, 5);
+    expect(jumpFacingFromOrientation(rightOx, rightOy)).toBeCloseTo(facing, 5);
+  });
 });

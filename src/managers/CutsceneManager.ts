@@ -885,7 +885,8 @@ export class CutsceneManager {
     stopOverlayOn(this.listener);
 
     const audioEngine = AudioEngine.GetAudioEngine();
-    // Retail ~CSWSDialog: StopDucking only — area BGM keeps playing; AmbientTrack left until UnloadArea.
+    // Retail ~CSWSDialog: StopDucking only — area BGM keeps playing.
+    // AmbientTrack is play-once; leftover source cleared on UnloadArea (500ms fade).
     audioEngine.bgmTimer = 0;
     audioEngine.stopDuckingMusicAndAmbientSounds();
 

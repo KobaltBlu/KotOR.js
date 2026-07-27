@@ -24,7 +24,9 @@ export class InGamePause extends GameMenu {
     this.gui_resref = 'pause';
     this.background = '';
     this.voidFill = false;
-    this.isOverlayGUI = false;
+    // Overlay only — do not SetEngineMode(INGAME). Minigame Escape pause must
+    // keep Mode==MINIGAME so FollowerCamera stays on camerahook.
+    this.isOverlayGUI = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

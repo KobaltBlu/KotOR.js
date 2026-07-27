@@ -10,6 +10,7 @@ import { CExoLocString } from "@/resource/CExoLocString";
 import { ResourceLoader } from "@/loaders";
 import { GameState } from "@/GameState";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import EngineLocation from "@/engine/EngineLocation";
 
 /**
 * ModuleWaypoint class.
@@ -58,6 +59,18 @@ export class ModuleWaypoint extends ModuleObject {
 
   getZOrientation(){
     return this.zOrientation;
+  }
+
+  /**
+   * Retail CSWSObject::GetScriptLocation — copy live X/Y/ZOrientation from the waypoint
+   * (GIT fields), not a bearing rebuild.
+   */
+  getLocation(){
+    return new EngineLocation(
+      this.position.x, this.position.y, this.position.z,
+      this.getXOrientation(), this.getYOrientation(), this.getZOrientation() || 0,
+      this.area || GameState?.module?.area
+    );
   }
 
   getTag(){

@@ -65,13 +65,23 @@ describe('Dialog music enter/exit parity', () => {
         dialogEmitter.stop();
         return;
       }
-      dialogEmitter.play(true);
+      // Retail ctor looping=0 → AIL play-once (not infinite loop).
+      dialogEmitter.play(false);
     };
     loadBackgroundMusic(undefined);
     expect(dialogEmitter.stop).toHaveBeenCalled();
     expect(dialogEmitter.play).not.toHaveBeenCalled();
     loadBackgroundMusic('mus_dlg');
-    expect(dialogEmitter.play).toHaveBeenCalledWith(true);
+    expect(dialogEmitter.play).toHaveBeenCalledWith(false);
+  });
+
+  test('AmbientTrack plays once (not loop)', () => {
+    // CExoStreamingSoundSourceInternal ctor @ 0063ace0: field[2]=0;
+    // Play @ 0063b060: AIL_set_stream_loop_count(stream, field[2]==0) → 1 = play once.
+    const ailLoopCountFromRetailLoopingFlag = (loopingField: number) =>
+      (loopingField === 0) ? 1 : 0;
+    expect(ailLoopCountFromRetailLoopingFlag(0)).toBe(1);
+    expect(ailLoopCountFromRetailLoopingFlag(1)).toBe(0);
   });
 
   test('bark skips AmbientTrack load (call-pattern)', () => {

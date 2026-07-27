@@ -369,7 +369,7 @@ export class AudioEngine {
     // PlayAmbientSound → 4, PlayMusic/PlayBattleMusic → 2, PlayStinger → 1.
     // Retail CSWCAmbientSound SetPriorityGroup:
     // PlayAmbientSound → 4, PlayMusic/PlayBattleMusic → 2, PlayStinger → 1.
-    // LoadAmbientTrackForDialog @ 004d4750 → SetPriorityGroup(4).
+    // LoadAmbientTrackForDialog @ 004d4750 → SetPriorityGroup(4); play-once (ctor looping=0).
     this.ambientAudioDayEmitter.setPriorityGroupId(AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS);
     this.ambientAudioNightEmitter.setPriorityGroupId(AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS);
     this.areaMusicDayAudioEmitter.setPriorityGroupId(AudioPriorityGroup.MUSIC_STREAMS);

@@ -249,8 +249,19 @@ export class ShaderOdysseyModel extends Shader {
         gl_FragColor.a = waterAlpha;
       #endif
       #ifdef HOLOGRAM
-        vec2 uv = vUv;
-        vec3 col = texture2D(map, vUv).rgb;
+        // map / vUv are only declared when USE_MAP / USE_UV are set.
+        // Hologram materials enable HOLOGRAM at mesh build time; USE_MAP arrives
+        // later (or never, for untextured parts) — sample only when available.
+        #ifdef USE_UV
+          vec2 uv = vUv;
+        #else
+          vec2 uv = vec2( 0.5 );
+        #endif
+        #ifdef USE_MAP
+          vec3 col = texture2D( map, uv ).rgb;
+        #else
+          vec3 col = diffuseColor.rgb;
+        #endif
         float gray = dot(col, vec3(0.299, 0.587, 0.114));
         col.r = gray * 0.33;
         col.g = gray * 0.75;

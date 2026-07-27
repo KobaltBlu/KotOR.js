@@ -303,6 +303,9 @@ export class OdysseyMaterialBuilder {
         material.uniforms.uvTransform.value = material.uniforms.map.value.matrix;
         material.uniforms.map.value.updateMatrix();
         material.uniformsNeedUpdate = true;
+        // Recompile so HOLOGRAM / map_pars pick up USE_MAP (needsUpdate may have
+        // already been set earlier in TextureLoader before this define existed).
+        material.needsUpdate = true;
       }
 
       if(texture.txi.procedureType){
