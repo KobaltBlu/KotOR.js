@@ -375,8 +375,9 @@ export class ShaderOdysseyModel extends Shader {
         odyssey_apply_dangly_vertex(transformed, objectNormal, modelMatrix);
       #endif
 
+      // Retail bumped-out VP (c[12].x): MAD pos, normal, scale — EnableBumpedOutShell @ 006a1220 uses 0.02
       #ifdef FORCE_SHIELD
-        transformed += objectNormal * 0.01;
+        transformed += objectNormal * 0.02;
       #endif
 
       #include <project_vertex>

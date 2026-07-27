@@ -1019,60 +1019,72 @@ export class OdysseyModel3D extends OdysseyObject3D {
     this.matrixAutoUpdate = true;
   }
 
+  /**
+   * Retail CSWCObject::EnableBumpedOutShell @ 0063d440 — clone skinned meshes onto the
+   * same parents/skeleton so the shell inherits creature transform + bone animation.
+   */
   generateForceShieldGeometry( shieldTexName = '' ){
     //Start by making sure there are not any lingering forceShieldGeometries
     this.disposeForceShieldGeometry();
 
-    //Clone the skins 
     for(let i = 0, len = this.skins.length; i < len; i++){
-      let originalSkinMesh = this.skins[i];
-      let skinMesh = originalSkinMesh.clone();
-      let skinMaterial = new THREE.ShaderMaterial({
+      const originalSkinMesh = this.skins[i];
+      if(!(originalSkinMesh instanceof THREE.SkinnedMesh))
+        continue;
+      if(!originalSkinMesh.parent || !originalSkinMesh.skeleton || !originalSkinMesh.geometry)
+        continue;
+
+      // Do not use SkinnedMesh.clone() — recursive copy walks Odyssey node children and
+      // can hit undefined refs in Material/Object3D.toJSON. Share geometry + skeleton only.
+      const skinMaterial = new THREE.ShaderMaterial({
         fragmentShader: THREE.ShaderLib.odyssey.fragmentShader,
         vertexShader: THREE.ShaderLib.odyssey.vertexShader,
         uniforms: THREE.UniformsUtils.clone(THREE.ShaderLib.odyssey.uniforms),
-        side:THREE.FrontSide,
+        side: THREE.FrontSide,
         lights: false,
         fog: true,
         skinning: true
       } as any);
       skinMaterial.defines.FORCE_SHIELD = '';
+      skinMaterial.defines.IGNORE_LIGHTING = '';
       skinMaterial.defines.AURORA = '';
       skinMaterial.defines.USE_UV = '';
+      skinMaterial.defines.USE_MAP = '';
       skinMaterial.defines.USE_SKINNING = '';
       skinMaterial.defines.MAX_ODYSSEY_LIGHTS = '8';
-      skinMaterial.uniforms.diffuse.value.r = 0.5;
-
-      // skinMaterial.opacity = 0.5;
-      // skinMaterial.transparent = true;
-      // skinMaterial.blending = 2;
-      // skinMaterial.needsUpdate = true;
+      skinMaterial.uniforms.diffuse.value.setRGB(1, 1, 1);
 
       if(typeof shieldTexName == 'string' && shieldTexName.length){
         skinMaterial.userData.shield = shieldTexName;
         TextureLoader.enQueue(shieldTexName, skinMaterial, TextureType.TEXTURE);
       }
 
-      //Reuse the same skeleton
+      const skinMesh = new THREE.SkinnedMesh(originalSkinMesh.geometry, skinMaterial);
+      skinMesh.bindMode = originalSkinMesh.bindMode;
+      skinMesh.bindMatrix.copy(originalSkinMesh.bindMatrix);
+      skinMesh.bindMatrixInverse.copy(originalSkinMesh.bindMatrixInverse);
       skinMesh.skeleton = originalSkinMesh.skeleton;
-      //Apply the new material
-      skinMesh.material = skinMaterial;
+      skinMesh.position.copy(originalSkinMesh.position);
+      skinMesh.quaternion.copy(originalSkinMesh.quaternion);
+      skinMesh.scale.copy(originalSkinMesh.scale);
+      skinMesh.matrixAutoUpdate = true;
+      skinMesh.frustumCulled = originalSkinMesh.frustumCulled;
+      skinMesh.userData.isForceShield = true;
+      skinMesh.castShadow = false;
+      skinMesh.receiveShadow = false;
+      skinMesh.name = (originalSkinMesh.name || 'skin') + '_forceshield';
 
       originalSkinMesh.matrixAutoUpdate = true;
-      skinMesh.matrixAutoUpdate = true;
-
       originalSkinMesh.parent.add(skinMesh);
       this.forceShieldGeometry.push(skinMesh);
     }
-
-    //Load the Texture Queue
-    //TextureLoader.LoadQueue();
   };
 
+  /** Retail CSWCObject::DisableBumpedOutShell @ 0063d460 */
   disposeForceShieldGeometry(){
     while(this.forceShieldGeometry.length){
       let object = this.forceShieldGeometry.splice(0, 1)[0];
-      this.remove(object);
+      object.removeFromParent();
 
       if(Array.isArray(object.material)){
         while(object.material.length){
@@ -1080,11 +1092,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
           this.disposeMaterial(material);
           material.dispose();
         }
-      }else{
+      }else if(object.material){
         this.disposeMaterial(object.material);
         object.material.dispose();
       }
-      object.geometry.dispose();
+      // Geometry is shared with the creature skin — never dispose it here.
     }
   };
 

@@ -34,6 +34,8 @@ export class EffectVisualEffect extends GameEffect {
   private disposed: boolean = false;
   /** In-flight impact/root/head/progFX model loads. */
   private pendingImpactLoads: number = 0;
+  /** Retail ApplyBumpedOutShell — shell lives on creature model, not this.model. */
+  private bumpedOutShell: boolean = false;
 
   constructor(){
     super();
@@ -138,8 +140,10 @@ export class EffectVisualEffect extends GameEffect {
         }
       }
 
+      // Facing lives on the object container (rotation.z), not model.rotation.
       this.model.position.copy(this.object.position);
-      this.model.rotation.copy(this.object.model.rotation);
+      this.model.rotation.copy(this.object.rotation);
+      this.model.quaternion.copy(this.object.quaternion);
 
       this.model.update(delta);
 
@@ -361,132 +365,54 @@ export class EffectVisualEffect extends GameEffect {
     }
   }
 
-  progFX_Impact(){
-
-    if(this.visualEffect.progfx_impact == '****')
+  /**
+   * Retail ApplyBumpedOutShell @ 006a1220 / EnableBumpedOutShell @ 0063d440.
+   * ProgFX 1400–1499 attaches a normal-offset shell to the target creature (and head)
+   * so it inherits transform + skinning — not a separate scene-rooted model.
+   */
+  private applyBumpedOutShell(progFX: number | string){
+    if(progFX == '****' || progFX == null)
+      return;
+    const id = Number(progFX);
+    if(!(id > 1400 && id < 1500))
+      return;
+    if(!BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature))
       return;
 
-    //ForceShield progFX_impact
-    if(this.visualEffect.progfx_impact > 1400 && this.visualEffect.progfx_impact < 1500){
-      let fx_tex = this.getProgFXTexture(this.visualEffect.progfx_impact);
-      
-      if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
-        const creature = this.object as ModuleCreature;
-        MDLLoader.loader.load(creature.bodyModel)
-        .then(
-          (mdl: OdysseyModel) => {
-            if(this.disposed) return;
-            OdysseyModel3D.FromMDL(mdl, {
-              textureVar: fx_tex,
-              isForceShield: true,
-              context: this.object.context
-            }).then((model: OdysseyModel3D) => {
-              if(this.disposed){
-                model.dispose();
-                return;
-              }
-              this.model = model;
-              GameState.scene.add(model);
-              model.position.copy(this.object.position);
-              model.rotation.copy(this.object.rotation);
-              model.quaternion.copy(this.object.quaternion);
-              //model.disableMatrixUpdate();
-              
-              if(creature.headModel){
-                MDLLoader.loader.load(creature.headModel).then(
-                  (mdl: OdysseyModel) => {
-                  if(this.disposed) return;
-                  OdysseyModel3D.FromMDL(mdl, {
-                    textureVar: fx_tex,
-                    context: this.object.context,
-                    isForceShield: true,
-                  }).then((head: OdysseyModel3D) => {
-                    if(this.disposed){
-                      head.dispose();
-                      return;
-                    }
-                    this.model.attachHead(head);
-                    //head.disableMatrixUpdate();
-                    TextureLoader.LoadQueue();
-                  })
-                })
-              }else{
-                TextureLoader.LoadQueue();
-              }
-            })
-          }
-        );
-      }
-    }
+    const creature = this.object as ModuleCreature;
+    if(!(creature.model instanceof OdysseyModel3D))
+      return;
 
+    const fx_tex = this.getProgFXTexture(id);
+    creature.model.generateForceShieldGeometry(fx_tex);
+    this.bumpedOutShell = true;
+    TextureLoader.LoadQueue();
+  }
+
+  progFX_Impact(){
+    if(this.visualEffect.progfx_impact == '****')
+      return;
+    this.applyBumpedOutShell(this.visualEffect.progfx_impact);
   }
 
   progFX_Duration(){
-
     if(this.visualEffect.progfx_duration == '****')
       return;
-
-    //ForceShield progFX_duration
-    if(this.visualEffect.progfx_duration > 1400 && this.visualEffect.progfx_duration < 1500){
-      let fx_tex = this.getProgFXTexture(this.visualEffect.progfx_duration);
-      
-      if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
-        const creature = this.object as ModuleCreature;
-        MDLLoader.loader.load(creature.bodyModel)
-        .then(
-          (mdl: OdysseyModel) => {
-            if(this.disposed) return;
-            OdysseyModel3D.FromMDL(mdl, {
-              textureVar: fx_tex,
-              isForceShield: true,
-              context: this.object.context
-            }).then((model: OdysseyModel3D) => {
-              if(this.disposed){
-                model.dispose();
-                return;
-              }
-              this.model = model;
-              GameState.scene.add(model);
-              model.position.copy(this.object.position);
-              model.rotation.copy(this.object.rotation);
-              model.quaternion.copy(this.object.quaternion);
-              //model.disableMatrixUpdate();
-              
-              if(creature.headModel){
-                MDLLoader.loader.load(creature.headModel).then(
-                  (mdl: OdysseyModel) => {
-                  if(this.disposed) return;
-                  OdysseyModel3D.FromMDL(mdl, {
-                    textureVar: fx_tex,
-                    context: this.object.context,
-                    isForceShield: true,
-                  }).then((head: OdysseyModel3D) => {
-                    if(this.disposed){
-                      head.dispose();
-                      return;
-                    }
-                    this.model.attachHead(head);
-                    //head.disableMatrixUpdate();
-                    TextureLoader.LoadQueue();
-                  }).catch(() => {
-                    TextureLoader.LoadQueue();
-                  });
-                }).catch(() => {
-                  TextureLoader.LoadQueue();
-                });
-              }else{
-                TextureLoader.LoadQueue();
-              }
-            });
-          }
-        );
-      }
-
-    }
+    this.applyBumpedOutShell(this.visualEffect.progfx_duration);
   }
 
   onRemove(){
     this.disposed = true;
+
+    if(this.bumpedOutShell){
+      this.bumpedOutShell = false;
+      if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
+        const creature = this.object as ModuleCreature;
+        if(creature.model instanceof OdysseyModel3D){
+          creature.model.disposeForceShieldGeometry();
+        }
+      }
+    }
 
     if(this.model instanceof OdysseyModel3D){
       this.model.dispose();
