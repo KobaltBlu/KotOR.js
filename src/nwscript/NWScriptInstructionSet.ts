@@ -1135,6 +1135,13 @@ export const CALL_STORE_STATE = function( this: NWScriptInstance, instruction: N
   state.script.listenPatternNumber = this.listenPatternNumber;
   state.script.listenPatternSpeaker = this.listenPatternSpeaker;
   state.script.scriptVar = this.scriptVar;
+  // DelayCommand / ActionDoCommand must keep GetSpellId / talent context
+  state.script.talent = this.talent;
+  state.script.lastSpell = this.lastSpell;
+  state.script.lastSpellCaster = this.lastSpellCaster;
+  state.script.lastSpellAttacker = this.lastSpellAttacker;
+  state.script.lastSpellHarmful = this.lastSpellHarmful;
+  state.script.objectInShapeResults = this.objectInShapeResults;
   this.state.push(state);
   state.script.state = this.state.slice();
 

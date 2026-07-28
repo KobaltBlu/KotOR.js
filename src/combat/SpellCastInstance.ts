@@ -3,7 +3,6 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { TalentSpell } from "@/talents";
 import * as THREE from "three";
 import { OdysseyModel3D } from "@/three/odyssey";
-import { OdysseyModel } from "@/odyssey";
 import { GameState } from "@/GameState";
 import { MDLLoader, TextureLoader } from "@/loaders";
 import { ActionType } from "@/enums/actions/ActionType";
@@ -64,8 +63,13 @@ export class SpellCastInstance {
   castTimeProgress: number = 0;
   projectileDistance: THREE.Vector3;
   casthandmodel: OdysseyModel3D;
+  castheadmodel: OdysseyModel3D;
+  castgrndmodel: OdysseyModel3D;
   impactscript: string;
   casthandvisual: string;
+  castheadvisual: string;
+  castgrndvisual: string;
+  castsound: string;
   flags: number;
 
   impacted: boolean = false;
@@ -86,6 +90,8 @@ export class SpellCastInstance {
   castItem: ModuleItem | undefined;
   /** Snapshot of MDL resrefs at cast start — survives item destroy. */
   projectileModelCandidates: string[] = [];
+  /** Retail LoadCastVisual + castsound fired once at cast-phase start. */
+  private castPhaseStarted = false;
   /** Retail SetBehaviorListSpiral rand handedness (±1). */
   private spiralSign: number = 1;
   conjureTime = 3000;
@@ -116,6 +122,9 @@ export class SpellCastInstance {
     this.conjureTime = conjMs;
     this.castTime = castMs;
     this.casthandvisual = this.spell?.casthandvisual || '';
+    this.castheadvisual = this.spell?.castheadvisual || '';
+    this.castgrndvisual = this.spell?.castgrndvisual || '';
+    this.castsound = this.spell?.castsound || '';
   }
 
   private static parseTimeMs(value: unknown, fallback: number): number {
@@ -248,7 +257,8 @@ export class SpellCastInstance {
 
     this.stampSpellTarget();
 
-    // Retail CalculateLastSpellProjectileTime for delayed-impact throws / L / W
+    // Retail CalculateLastSpellProjectileTime for delayed-impact throws / L / W.
+    // proj==0 only means no projectile delay — keep spells.2da casttime for VFX.
     if(shouldDelaySpellImpactToLanding(this.spell, this.impactAtProjectileLanding)){
       this.impactAtProjectileLanding = true;
       const origin = this.owner.position;
@@ -263,7 +273,6 @@ export class SpellCastInstance {
       this.castTime = Math.max(this.castTime || 0, flightMs);
     }else if(typeof this.spell?.proj === 'number' && (this.spell.proj | 0) === 0){
       this.impactAtProjectileLanding = false;
-      this.castTime = 0;
     }
 
     const castItem =
@@ -420,6 +429,103 @@ export class SpellCastInstance {
     emitter.playSoundFireAndForget(resRef);
   }
 
+  private static isEmptyVisualResRef(value: unknown): boolean {
+    const s = String(value ?? '').trim();
+    return !s || s === '****';
+  }
+
+  /**
+   * Retail LoadCastVisual @ 00696250 + castsound — once at cast-phase start.
+   * Head → headconjure, hand → handconjure, ground → root; loop cast01.
+   */
+  private beginCastPhase(){
+    if(this.castPhaseStarted || this.completed || this.interrupted) return;
+    this.castPhaseStarted = true;
+    this.playCastSound();
+    void this.loadCastVisuals();
+    LOG('beginCastPhase', {
+      spellId: this.spell?.id,
+      castsound: this.castsound,
+      castheadvisual: this.castheadvisual,
+      casthandvisual: this.casthandvisual,
+      castgrndvisual: this.castgrndvisual,
+      castTime: this.castTime,
+    });
+  }
+
+  private playCastSound(){
+    const resRef = String(this.castsound ?? '').trim().toLowerCase();
+    if(SpellCastInstance.isEmptyVisualResRef(resRef)) return;
+    const emitter = (this.owner as ModuleCreature).audioEmitter;
+    if(!emitter?.playSoundFireAndForget) return;
+    const pos = this.owner.position;
+    emitter.setPosition?.(pos.x, pos.y, pos.z);
+    emitter.setPriorityGroupId?.(AudioPriorityGroup.NORMAL_SPELL_EFFECTS);
+    emitter.playSoundFireAndForget(resRef);
+  }
+
+  private async loadCastVisuals(){
+    const model = this.owner?.model;
+    if(!model) return;
+
+    const specs: {
+      resRef: string;
+      hook: any;
+      assign: (m: OdysseyModel3D) => void;
+    }[] = [];
+
+    if(!SpellCastInstance.isEmptyVisualResRef(this.castheadvisual)){
+      specs.push({
+        resRef: String(this.castheadvisual).trim().toLowerCase(),
+        hook: model.headconjure || model.head || undefined,
+        assign: (m) => { this.castheadmodel = m; },
+      });
+    }
+    if(!SpellCastInstance.isEmptyVisualResRef(this.casthandvisual)){
+      specs.push({
+        resRef: String(this.casthandvisual).trim().toLowerCase(),
+        hook: model.handconjure || model.rhand || model.lhand || undefined,
+        assign: (m) => { this.casthandmodel = m; },
+      });
+    }
+    if(!SpellCastInstance.isEmptyVisualResRef(this.castgrndvisual)){
+      specs.push({
+        resRef: String(this.castgrndvisual).trim().toLowerCase(),
+        hook: model.root || model || undefined,
+        assign: (m) => { this.castgrndmodel = m; },
+      });
+    }
+
+    for(const spec of specs){
+      if(this.completed || this.interrupted) return;
+      try{
+        const mdl = await MDLLoader.loader.load(spec.resRef);
+        if(!mdl || this.completed || this.interrupted) continue;
+        const visual = await OdysseyModel3D.FromMDL(mdl, {
+          context: this.owner.context,
+        });
+        if(!visual || this.completed || this.interrupted){
+          visual?.dispose?.();
+          continue;
+        }
+        if(spec.hook?.add){
+          spec.hook.add(visual);
+        }else if(model.add){
+          model.add(visual);
+        }else{
+          visual.dispose();
+          continue;
+        }
+        TextureLoader.LoadQueue?.();
+        // Retail PlayAnimation("cast01", loop=1)
+        visual.playAnimation('cast01', true);
+        spec.assign(visual);
+      }catch(e){
+        LOG('cast visual load error', { resRef: spec.resRef, error: String(e) });
+      }
+    }
+  }
+
   private syncProjectileOrientation(from: THREE.Vector3, to: THREE.Vector3){
     if(!this.projectile) return;
     if(to.distanceToSquared(from) > 0.0001){
@@ -538,6 +644,7 @@ export class SpellCastInstance {
       }
     }else if(this.castTime > 0){
       this.conjuring = false;
+      this.beginCastPhase();
 
       // Item casts skip conjure — keep mesh on handconjure until flight starts
       if(this.projectile && this.projectileHook && !this.projectileDistance){
@@ -605,7 +712,11 @@ export class SpellCastInstance {
     }else{
       this.conjuring = false;
 
-      if(delayImpactToLanding){
+      // Instant spells with casttime 0 still get castsound / cast visuals once
+      this.beginCastPhase();
+
+      // Delayed throws impact on landing; instant / proj==0 impact when conjure ends
+      if(delayImpactToLanding || !this.impacted){
         this.impact();
       }
 
@@ -613,8 +724,14 @@ export class SpellCastInstance {
       this.clearOwnerSpellRound({ unpause: false });
     }
 
+    if(this.castheadmodel){
+      this.castheadmodel.update(delta);
+    }
     if(this.casthandmodel){
       this.casthandmodel.update(delta);
+    }
+    if(this.castgrndmodel){
+      this.castgrndmodel.update(delta);
     }
 
     if(this.projectile){
@@ -631,6 +748,8 @@ export class SpellCastInstance {
       return;
     }
     this.impacted = true;
+    // InstantUseItem / zero-casttime paths may call impact() without update()
+    this.beginCastPhase();
 
     this.stampSpellTarget();
 
@@ -675,37 +794,8 @@ export class SpellCastInstance {
       });
     }
 
-    if(this.casthandvisual != ''){
-      MDLLoader.loader.load(this.casthandvisual)
-      .then((mdl: OdysseyModel) => {
-        OdysseyModel3D.FromMDL(mdl, {
-          context: this.owner.context
-        }).then((model: OdysseyModel3D) => {
-          this.casthandmodel = model;
-
-          if(this.owner.model){
-            // Retail LoadCastVisual attaches to conjure hooks (handconjure / rhand)
-            const hand =
-              this.owner.model.handconjure ||
-              this.owner.model.rhand ||
-              this.owner.model.lhand;
-            if(hand){
-              hand.add(this.casthandmodel);
-
-              const anim = this.casthandmodel.playAnimation('cast01', false);
-              setTimeout(() => {
-                this.casthandmodel.dispose();
-              }, (anim ? anim.length * 1000 : 1500) )
-            }else{
-              this.casthandmodel.dispose();
-            }
-          }else{
-            this.casthandmodel.dispose();
-          }
-
-        });
-      });
-    }
+    // Cast visuals are owned by beginCastPhase / LoadCastVisual for the full
+    // casttime window — do not re-spawn a one-shot hand glow here.
 
     if(this.projectile){
       this.projectile.dispose();
@@ -716,12 +806,20 @@ export class SpellCastInstance {
 
   dispose(){
     try{
+      if(this.castheadmodel) this.castheadmodel.dispose();
+    }catch(_e){ /* already disposed */ }
+    try{
       if(this.casthandmodel) this.casthandmodel.dispose();
+    }catch(_e){ /* already disposed */ }
+    try{
+      if(this.castgrndmodel) this.castgrndmodel.dispose();
     }catch(_e){ /* already disposed */ }
     try{
       if(this.projectile) this.projectile.dispose();
     }catch(_e){ /* already disposed */ }
+    this.castheadmodel = undefined as any;
     this.casthandmodel = undefined as any;
+    this.castgrndmodel = undefined as any;
     this.projectile = undefined as any;
     if(this.container) this.container.removeFromParent();
   }

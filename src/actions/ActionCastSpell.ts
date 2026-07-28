@@ -88,7 +88,13 @@ export class ActionCastSpell extends Action {
   }
 
   dispose(){
-    if(this.spellCastInstance && !this.spellCastInstance.completed){
+    // Retail SpellCastAndImpact is fire-and-forget — after castStarted the
+    // area.spellInstances flight must not be interrupted by action dispose.
+    if(
+      !this.castStarted &&
+      this.spellCastInstance &&
+      !this.spellCastInstance.completed
+    ){
       this.spellCastInstance.interrupt();
     }
     this.spellCastInstance = undefined;
