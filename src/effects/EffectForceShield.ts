@@ -14,6 +14,9 @@ import { GameEffect } from "@/effects/GameEffect";
  */
 export class EffectForceShield extends GameEffect {
   forceShield: any;
+  /** Child VFX + damage resistance spawned by onApply — torn down together. */
+  private children: GameEffect[] = [];
+
   constructor(){
     super();
     this.type = GameEffectType.EffectForceShield;
@@ -50,6 +53,7 @@ export class EffectForceShield extends GameEffect {
     eVisualEffect.initialize();
     this.object.addEffect(eVisualEffect);
     eVisualEffect.setSkipOnLoad(true);
+    this.children.push(eVisualEffect);
 
     let eDamageResistEffect = new GameState.GameEffectFactory.EffectDamageResistance();
     eDamageResistEffect.setCreator(this.getCreator());
@@ -61,12 +65,24 @@ export class EffectForceShield extends GameEffect {
     eDamageResistEffect.initialize();
     this.object.addEffect(eDamageResistEffect);
     eDamageResistEffect.setSkipOnLoad(true);
+    this.children.push(eDamageResistEffect);
 
     eDamageResistEffect.setInt(0, this.forceShield.damageflags);
     eDamageResistEffect.setInt(1, this.forceShield.resistance);
     eDamageResistEffect.setInt(2, this.forceShield.amount);
     eDamageResistEffect.setInt(3, this.forceShield.vulnerflags);
 
+  }
+
+  onRemove(){
+    super.onRemove();
+    const object = this.object;
+    const children = this.children;
+    this.children = [];
+    if(!object || !children.length) return;
+    for(let i = 0; i < children.length; i++){
+      object.removeEffect(children[i]);
+    }
   }
 
 }

@@ -42,3 +42,20 @@ export function resolveSpellProjectileModelResRef(
   }
   return resolveItemModelResRef(item);
 }
+
+/**
+ * Ordered unique resrefs to try when spawning a spell projectile mesh.
+ * Snapshot at cast start so async load survives item destroy after DecrementUses.
+ */
+export function resolveSpellProjectileModelCandidates(
+  spell: Pick<TalentSpell, 'projmodel' | 'proj'> | undefined,
+  item?: ModuleItem
+): string[] {
+  // Retail client skips CSWCProjectile when spells.2da proj == 0
+  if(spell && typeof spell.proj === 'number' && (spell.proj | 0) === 0){
+    return [];
+  }
+  const primary = resolveSpellProjectileModelResRef(spell, item);
+  const itemOnly = resolveSpellProjectileModelResRef(undefined, item);
+  return [primary, itemOnly].filter((r, i, a) => !!r && a.indexOf(r) === i);
+}

@@ -758,6 +758,9 @@ export class ModuleCreature extends ModuleObject {
     if(this.isDead() || this.isDebilitated()) return;
     if(!GameState.module?.readyToProcessEvents) return;
 
+    // aiUpdate is budget-deferred; keep area current for every-frame follow/move.
+    this.area = GameState.module.area;
+
     const action = this.actionQueue?.[0];
     if(!action) return;
     const type = action.type;

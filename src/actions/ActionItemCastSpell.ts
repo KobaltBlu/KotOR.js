@@ -17,8 +17,7 @@ import {
   type ItemCastTimingResolved,
 } from "@/combat/item-cast-timing";
 import {
-  calculateLastSpellProjectileTimeMs,
-  resolveSpellProjectilePathType,
+  calculateSpellProjectileImpactDelayMs,
 } from "@/combat/spell-projectile-time";
 import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { isWithinSpellCastRange } from "@/combat/spell-range";
@@ -30,6 +29,9 @@ const FEEDBACK_ITEM_NO_USES = 0x17;
 
 /** Retail AIActionItemCastSpell per-item-type animation + gate + pause. */
 type ItemCastTiming = ItemCastTimingResolved;
+
+/** Debug prefix — filter console on `[ItemCast]`. */
+const LOG = (...args: unknown[]) => console.log('[ItemCast]', ...args);
 
 /**
  * ActionItemCastSpell class.
@@ -49,6 +51,9 @@ export class ActionItemCastSpell extends Action {
   private elapsedMs = 0;
   private throwAnim: ModuleCreatureAnimState | undefined;
   private timing: ItemCastTiming | undefined;
+  /** Cached after first resolve — item may leave ObjectList after DecrementUses. */
+  private cachedItem: ModuleItem | undefined;
+  private cachedSpell: any = undefined;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -71,8 +76,19 @@ export class ActionItemCastSpell extends Action {
   }
 
   dispose(){
-    if(this.spellCastInstance && !this.spellCastInstance.completed){
-      this.spellCastInstance.interrupt();
+    // Retail SpellCastAndImpact is fire-and-forget — after castStarted the
+    // area.spellInstances flight must not be interrupted by action dispose.
+    const wouldInterrupt =
+      !this.castStarted &&
+      !!this.spellCastInstance &&
+      !this.spellCastInstance.completed;
+    LOG('dispose', {
+      castStarted: this.castStarted,
+      wouldInterrupt,
+      hasInstance: !!this.spellCastInstance,
+    });
+    if(wouldInterrupt){
+      this.spellCastInstance!.interrupt();
     }
     this.spellCastInstance = undefined;
     super.dispose();
@@ -82,6 +98,13 @@ export class ActionItemCastSpell extends Action {
     if(this.chargesConsumed || !oItem) return;
     this.chargesConsumed = true;
     const propIndex = this.getParameter<number>(12) ?? 0;
+    LOG('decrementUses', {
+      itemId: oItem.id,
+      tag: oItem.getTag?.(),
+      stack: oItem.getStackSize?.(),
+      propIndex,
+      party: !!(this.owner as ModuleCreature)?.isPartyMember?.(),
+    });
     // Retail DecrementUses — cost_value stack / charges / uses-per-day
     oItem.decrementUses(this.owner as ModuleCreature, propIndex);
   }
@@ -113,19 +136,25 @@ export class ActionItemCastSpell extends Action {
     spellCastInstance.conjureTime = 0;
     // Grenade / throw: impact after CalculateLastSpellProjectileTime (@ 004cb9e0),
     // not at cast-start like instant non-L spells.
+    let flightMs = 0;
     if(this.timing?.grenade){
+      // Retail CalculateLastSpellProjectileTime: proj==0 → delay 0, no mesh
       const origin = this.owner.position;
       const dest = spellCastInstance.targetLocation;
       const distance = origin.distanceTo(dest);
-      // SpellCastInstance BroadcastSafeProjectile uses path 6 for throws;
-      // empty projtype defaults to 6 so +2500 ms hang matches retail grenades.
-      const pathType =
-        pathParam > 0
-          ? pathParam
-          : (resolveSpellProjectilePathType(this.spell?.projtype) || 6);
-      const flightMs = calculateLastSpellProjectileTimeMs(distance, pathType);
-      spellCastInstance.castTime = Math.max(spellCastInstance.castTime || 0, flightMs);
-      spellCastInstance.impactAtProjectileLanding = true;
+      const pathOverride = pathParam > 0 ? pathParam : -1;
+      flightMs = calculateSpellProjectileImpactDelayMs(
+        this.spell,
+        distance,
+        pathOverride
+      );
+      if(flightMs <= 0){
+        spellCastInstance.castTime = 0;
+        spellCastInstance.impactAtProjectileLanding = false;
+      }else{
+        spellCastInstance.castTime = Math.max(spellCastInstance.castTime || 0, flightMs);
+        spellCastInstance.impactAtProjectileLanding = true;
+      }
     }
     // Stamp talent/combat targets before init so impact scripts see them
     if(this.spell){
@@ -152,9 +181,29 @@ export class ActionItemCastSpell extends Action {
       spellCastInstance.targetLocation.copy(castTarget.position);
     }
     owner.spellTargetPosition.copy(spellCastInstance.targetLocation);
+    const loc = spellCastInstance.targetLocation;
+    LOG('SpellCastAndImpact', {
+      spellId: this.spell?.id,
+      impactscript: spellCastInstance.impactscript,
+      proj: this.spell?.proj,
+      projmodel: this.spell?.projmodel,
+      projtype: this.spell?.projtype,
+      grenade: !!this.timing?.grenade,
+      flightMs,
+      impactAtLanding: spellCastInstance.impactAtProjectileLanding,
+      castTime: spellCastInstance.castTime,
+      castTargetId: castTarget?.id,
+      targetLoc: { x: loc.x, y: loc.y, z: loc.z },
+      paramsXYZ: { x, y, z },
+      itemId: oItem?.id,
+      itemTag: oItem?.getTag?.(),
+      itemType: oItem?.baseItem?.itemType,
+      itemModel: oItem?.baseItem?.defaultModel,
+    });
     this.owner.area.attachSpellInstance(spellCastInstance);
     spellCastInstance.init();
-    this.spellCastInstance = spellCastInstance;
+    // Fire-and-forget: area owns the instance; dispose must not interrupt it.
+    this.spellCastInstance = undefined;
     this.castStarted = true;
   }
 
@@ -192,10 +241,25 @@ export class ActionItemCastSpell extends Action {
   update(delta: number = 0): ActionStatus {
     this.target = this.getParameter<ModuleObject>(0);
     const spellId = this.getParameter<number>(5);
-    const oItem = this.getParameter<ModuleItem>(10);
-    this.spell = new GameState.TalentSpell(spellId);
+    const oItemParam = this.getParameter<ModuleItem>(10);
+    if(oItemParam){
+      this.cachedItem = oItemParam;
+    }
+    if(!this.cachedSpell){
+      this.cachedSpell = new GameState.TalentSpell(spellId);
+    }
+    this.spell = this.cachedSpell;
+    const oItem = this.cachedItem || oItemParam;
 
-    if(!this.spell || !oItem){
+    // Before SpellCastAndImpact the item must resolve; after cast, retail may
+    // DestroyItem while the action still holds until pause ends.
+    if(!this.castStarted && (!this.spell || !oItem)){
+      LOG('FAIL pre-cast missing spell/item', {
+        spellId,
+        hasSpell: !!this.spell,
+        itemParam: !!oItemParam,
+        cachedItem: !!this.cachedItem,
+      });
       return ActionStatus.FAILED;
     }
 
@@ -205,9 +269,14 @@ export class ActionItemCastSpell extends Action {
 
     const owner = this.owner as ModuleCreature;
     if(owner.isDead() || owner.isDebilitated()){
-      if(this.spellCastInstance && !this.spellCastInstance.completed){
+      if(
+        !this.castStarted &&
+        this.spellCastInstance &&
+        !this.spellCastInstance.completed
+      ){
         this.spellCastInstance.interrupt();
       }
+      this.spellCastInstance = undefined;
       return ActionStatus.ERROR;
     }
 
@@ -262,8 +331,21 @@ export class ActionItemCastSpell extends Action {
     }
 
     // Resolved once — retail picks the throw arc from the distance at wind-up
-    if(!this.timing){
+    if(!this.timing && oItem){
       this.timing = this.resolveItemCastTiming(oItem, targetPosition);
+      LOG('timing', {
+        grenade: this.timing.grenade,
+        gateMs: this.timing.gateMs,
+        pauseMs: this.timing.pauseMs,
+        animation: this.timing.animation,
+        itemType: oItem.baseItem?.itemType,
+      });
+    }
+    if(!this.timing){
+      if(!this.castStarted){
+        LOG('FAIL no timing and no item');
+      }
+      return this.castStarted ? ActionStatus.IN_PROGRESS : ActionStatus.FAILED;
     }
     const timing = this.timing;
     this.elapsedMs += delta * 1000;
@@ -331,7 +413,7 @@ export class ActionItemCastSpell extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    if(!this.castStarted && combatRound.roundStarted){
+    if(!this.castStarted && combatRound.roundStarted && oItem){
       const propIndex = this.getParameter<number>(12) ?? 0;
       const prop =
         oItem.getActiveCastSpellProperty?.(propIndex) ||
@@ -344,6 +426,11 @@ export class ActionItemCastSpell extends Action {
           oItem.getStackSize?.() | 0
         )
       ){
+        LOG('FAIL no uses left', {
+          charges: oItem.charges,
+          stack: oItem.getStackSize?.(),
+          costValue: prop?.costValue,
+        });
         owner.setAnimationState(ModuleCreatureAnimState.READY);
         GameState.FeedbackMessageManager?.SendFeedbackMessage?.(FEEDBACK_ITEM_NO_USES);
         combatRound.removeSpellActionFromRound?.();
@@ -376,6 +463,11 @@ export class ActionItemCastSpell extends Action {
       }
       // Retail SpellCastAndImpact is a fire-and-forget event — a grenade still
       // in flight must finish on the area, not be interrupted by dispose().
+      LOG('COMPLETE pause ended', {
+        elapsedMs: this.elapsedMs,
+        pauseMs: timing.pauseMs,
+        castStarted: this.castStarted,
+      });
       this.spellCastInstance = undefined;
       combatRound.removeSpellActionFromRound?.();
       combatRound.processPendingCombatActions?.();

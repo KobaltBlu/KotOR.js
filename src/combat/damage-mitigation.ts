@@ -99,7 +99,17 @@ export function applyDamageResistance(
     absorb = Math.min(absorb, limit);
     const remaining = limit - absorb;
     if(remaining <= 0){
+      // Shield HP depleted — drop parent EffectForceShield so its VFX shell
+      // (bumped-out progFX) is removed with the resistance package.
+      const spellId = bestEffect.getSpellId();
       target.removeEffect(bestEffect);
+      if(typeof spellId === 'number' && spellId >= 0){
+        for(const effect of collectEffects(target, GameEffectType.EffectForceShield)){
+          if(effect.getSpellId() === spellId){
+            target.removeEffect(effect);
+          }
+        }
+      }
     }else{
       bestEffect.setInt(2, remaining);
     }

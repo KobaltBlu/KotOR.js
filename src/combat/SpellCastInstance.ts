@@ -16,7 +16,7 @@ import {
   resolveSpellProjectilePathType,
   shouldDelaySpellImpactToLanding,
 } from "@/combat/spell-projectile-time";
-import { resolveSpellProjectileModelResRef } from "@/combat/spell-projectile-model";
+import { resolveSpellProjectileModelCandidates } from "@/combat/spell-projectile-model";
 import { sampleSpellProjectilePosition } from "@/combat/spell-projectile-motion";
 import { playSpellProjectileTravelAnimation } from "@/combat/combat-projectile";
 import { playGrenadeBounceAtPosition } from "@/combat/grenade-sound";
@@ -27,6 +27,9 @@ import { ProjectilePath } from "@/enums/combat/ProjectilePath";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 
 const _projLookAhead = new THREE.Vector3();
+
+/** Debug prefix — filter console on `[SpellCast]`. */
+const LOG = (...args: unknown[]) => console.log('[SpellCast]', ...args);
 
 /**
  * SpellCastInstance class.
@@ -53,8 +56,8 @@ export class SpellCastInstance {
   hostilesetting: number;
   iconresref: any;
   projectileHook: any;
-  projectileOrigin: THREE.Vector3;
-  projectileTarget: THREE.Vector3;
+  projectileOrigin: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  projectileTarget: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
   projectileCurve: THREE.QuadraticBezierCurve3;
 
   projectile: OdysseyModel3D;
@@ -81,6 +84,8 @@ export class SpellCastInstance {
   projectilePathOverride: number = -1;
   /** Item used for cast (grenade model fallback when projmodel empty). */
   castItem: ModuleItem | undefined;
+  /** Snapshot of MDL resrefs at cast start — survives item destroy. */
+  projectileModelCandidates: string[] = [];
   /** Retail SetBehaviorListSpiral rand handedness (±1). */
   private spiralSign: number = 1;
   conjureTime = 3000;
@@ -249,9 +254,16 @@ export class SpellCastInstance {
       const origin = this.owner.position;
       const dest = this.projectileTarget || this.targetLocation;
       const distance = origin.distanceTo(dest);
-      const pathType = this.resolveProjectilePathType() || ProjectilePath.GRENADE;
+      // Delay uses spell path field (+2500 only when path==6); do not force 6
+      const pathType =
+        this.projectilePathOverride >= 0
+          ? this.projectilePathOverride
+          : resolveSpellProjectilePathType(this.spell?.projtype);
       const flightMs = calculateLastSpellProjectileTimeMs(distance, pathType);
       this.castTime = Math.max(this.castTime || 0, flightMs);
+    }else if(typeof this.spell?.proj === 'number' && (this.spell.proj | 0) === 0){
+      this.impactAtProjectileLanding = false;
+      this.castTime = 0;
     }
 
     const castItem =
@@ -261,37 +273,93 @@ export class SpellCastInstance {
       (this.owner as ModuleCreature).spellCastItem = castItem;
     }
 
+    // Snapshot resrefs before DecrementUses may destroy the item object
+    this.projectileModelCandidates = resolveSpellProjectileModelCandidates(
+      this.spell,
+      castItem
+    );
+
+    LOG('init', {
+      spellId: this.spell?.id,
+      impactscript: this.impactscript,
+      proj: this.spell?.proj,
+      projmodel: this.spell?.projmodel,
+      projtype: this.spell?.projtype,
+      candidates: this.projectileModelCandidates.slice(),
+      castTime: this.castTime,
+      impactAtLanding: this.impactAtProjectileLanding,
+      conjureTime: this.conjureTime,
+      targetId: this.target?.id,
+      targetLoc: {
+        x: this.projectileTarget?.x,
+        y: this.projectileTarget?.y,
+        z: this.projectileTarget?.z,
+      },
+      spellTargetPos: {
+        x: this.owner.spellTargetPosition?.x,
+        y: this.owner.spellTargetPosition?.y,
+        z: this.owner.spellTargetPosition?.z,
+      },
+      hasEffectsGroup: !!this.owner.context?.group?.effects,
+      castItemId: castItem?.id,
+    });
+
     // Single-process: SpellCastInstance.castTime IS the retail AddEventDeltaTime
     // delay — run impactscript in impact() at landing. Do not also queue
     // EventSpellImpact here (that path skipped impact() and often never fired).
     this.spiralSign = Math.random() < 0.5 ? -1 : 1;
-    void this.spawnProjectileModel(castItem);
+    void this.spawnProjectileModel();
   }
 
   /**
    * Load spells.2da projmodel, falling back to the thrown item MDL (grenades).
    * Retail CSWCProjectile loads projmodel; empty grenade rows use the item mesh.
    */
-  private async spawnProjectileModel(castItem: ModuleItem | undefined){
-    const primary = resolveSpellProjectileModelResRef(this.spell, castItem);
-    const itemOnly = resolveSpellProjectileModelResRef(undefined, castItem);
-    const candidates = [primary, itemOnly].filter((r, i, a) => !!r && a.indexOf(r) === i);
+  private async spawnProjectileModel(){
+    const candidates =
+      this.projectileModelCandidates.length > 0
+        ? this.projectileModelCandidates
+        : resolveSpellProjectileModelCandidates(this.spell, this.castItem);
+
+    LOG('spawnProjectileModel start', { candidates: candidates.slice() });
 
     for(const resRef of candidates){
-      if(this.completed || this.interrupted) return;
+      if(this.completed || this.interrupted){
+        LOG('spawn aborted (completed/interrupted)', {
+          completed: this.completed,
+          interrupted: this.interrupted,
+          resRef,
+        });
+        return;
+      }
       try{
         const mdl = await MDLLoader.loader.load(resRef);
-        if(!mdl || this.completed || this.interrupted) continue;
+        if(!mdl || this.completed || this.interrupted){
+          LOG('spawn mdl miss or aborted', {
+            resRef,
+            hasMdl: !!mdl,
+            completed: this.completed,
+            interrupted: this.interrupted,
+          });
+          continue;
+        }
         const model = await OdysseyModel3D.FromMDL(mdl, {
           context: this.owner.context,
           lighting: true,
         });
         if(!model || this.completed || this.interrupted){
+          LOG('spawn FromMDL miss or aborted', {
+            resRef,
+            hasModel: !!model,
+            completed: this.completed,
+            interrupted: this.interrupted,
+          });
           model?.dispose?.();
           continue;
         }
         const group = this.owner.context?.group?.effects;
         if(!group){
+          LOG('spawn FAIL no effects group', { resRef });
           model.dispose();
           continue;
         }
@@ -301,15 +369,27 @@ export class SpellCastInstance {
         this.attachProjectileToHook(model);
         playSpellProjectileTravelAnimation(model);
         this.playProjectileLaunchSound();
+        LOG('spawn OK', {
+          resRef,
+          origin: {
+            x: this.projectileOrigin?.x,
+            y: this.projectileOrigin?.y,
+            z: this.projectileOrigin?.z,
+          },
+          hook: !!this.projectileHook,
+        });
         // Mesh attached — skip BroadcastSafeProjectile duplicate
         this.notifySafeProjectileBroadcast(true);
         return;
-      }catch(_e){
-        // try next candidate
+      }catch(e){
+        LOG('spawn candidate error', { resRef, error: String(e) });
       }
     }
 
     if(!this.completed && !this.interrupted){
+      LOG('spawn FALLBACK BroadcastSafeProjectile', {
+        candidatesTried: candidates.slice(),
+      });
       this.notifySafeProjectileBroadcast(false);
     }
   }
@@ -354,6 +434,12 @@ export class SpellCastInstance {
     if(this.completed || this.interrupted){
       return;
     }
+    LOG('interrupt', {
+      spellId: this.spell?.id,
+      impacted: this.impacted,
+      castTime: this.castTime,
+      hasProjectile: !!this.projectile,
+    });
     this.interrupted = true;
     this.conjuring = false;
     this.conjureTime = 0;
@@ -537,10 +623,31 @@ export class SpellCastInstance {
   }
 
   impact(){
-    if(this.impacted || this.interrupted) return;
+    if(this.impacted || this.interrupted){
+      LOG('impact skipped', {
+        impacted: this.impacted,
+        interrupted: this.interrupted,
+      });
+      return;
+    }
     this.impacted = true;
 
     this.stampSpellTarget();
+
+    const impactPos = this.projectileTarget || this.targetLocation;
+    LOG('impact', {
+      spellId: this.spell?.id,
+      impactscript: this.impactscript,
+      impactPos: impactPos
+        ? { x: impactPos.x, y: impactPos.y, z: impactPos.z }
+        : undefined,
+      spellTargetPos: {
+        x: this.owner.spellTargetPosition?.x,
+        y: this.owner.spellTargetPosition?.y,
+        z: this.owner.spellTargetPosition?.z,
+      },
+      talentTargetId: this.spell?.oTarget?.id,
+    });
 
     // Retail GrenadeSND bounce at impact point for grenade item casts
     const castItem =
@@ -556,9 +663,16 @@ export class SpellCastInstance {
     if(script && script !== '****'){
       const instance = GameState.NWScript.Load(script);
       if(instance) {
+        LOG('impactscript run', { script });
         instance.talent = this.spell;
         instance.run(this.owner, 0);
+      }else{
+        LOG('impactscript LOAD FAILED', { script });
       }
+    }else{
+      LOG('impactscript empty — no AoE/VFX from NSS', {
+        raw: this.impactscript,
+      });
     }
 
     if(this.casthandvisual != ''){

@@ -85,4 +85,10 @@ describe('shouldDelaySpellImpactToLanding', () => {
     expect(shouldDelaySpellImpactToLanding({ range: 'M', proj: 1 })).toBe(true);
     expect(shouldDelaySpellImpactToLanding({ range: 'M' })).toBe(false);
   });
+
+  it('does not delay when spells.2da proj is explicitly 0', () => {
+    expect(shouldDelaySpellImpactToLanding({ range: 'L', proj: 0 })).toBe(false);
+    expect(shouldDelaySpellImpactToLanding({ range: 'M', projtype: 'grenade', proj: 0 })).toBe(false);
+    expect(shouldDelaySpellImpactToLanding({ proj: 0 }, true)).toBe(false);
+  });
 });

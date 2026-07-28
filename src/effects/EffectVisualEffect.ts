@@ -36,6 +36,12 @@ export class EffectVisualEffect extends GameEffect {
   private pendingImpactLoads: number = 0;
   /** Retail ApplyBumpedOutShell — shell lives on creature model, not this.model. */
   private bumpedOutShell: boolean = false;
+  /**
+   * Retail impact-phase hardcoded VFX timer (field38_0x9c).
+   * Default 1000ms from FUN_006a0620 — then RemoveBumpedOutShell for type_fd 'F'.
+   * Undefined = inactive; <0 = already fired.
+   */
+  private impactProgFXTimerMs: number | undefined = undefined;
 
   constructor(){
     super();
@@ -65,6 +71,16 @@ export class EffectVisualEffect extends GameEffect {
 
     if(this.durationEnded && this.getDurationType() == GameEffectDurationType.TEMPORARY){
       return;
+    }
+
+    // Retail CSWCVisualEffectOnObject::Update — impact progFX expires after ~1s
+    if(this.impactProgFXTimerMs != null && this.impactProgFXTimerMs >= 0){
+      this.impactProgFXTimerMs -= 1000 * delta;
+      if(this.impactProgFXTimerMs <= 0){
+        this.impactProgFXTimerMs = -1;
+        this.removeBumpedOutShell();
+        this.tryFinishFireAndForget();
+      }
     }
 
     //Impact Node
@@ -159,11 +175,12 @@ export class EffectVisualEffect extends GameEffect {
     this[key] = undefined;
   }
 
-  /** Fire-and-forget (type_fd 'F'): remove effect once all impact models finish. */
+  /** Fire-and-forget (type_fd 'F'): remove effect once all impact models / impact progFX finish. */
   private tryFinishFireAndForget(){
     if(this.disposed) return;
     if(this.visualEffect?.type_fd != 'F') return;
     if(this.pendingImpactLoads > 0) return;
+    if(this.impactProgFXTimerMs != null && this.impactProgFXTimerMs >= 0) return;
     if(this.impact_model || this.impact_root_model || this.impact_head_model || this.model) return;
     if(this.object){
       this.object.removeEffect(this);
@@ -210,6 +227,9 @@ export class EffectVisualEffect extends GameEffect {
       //Beam
       if(this.visualEffect.type_fd == 'B'){
       }
+
+      // F-type with no impact models / only progFX: finish once impact timer clears.
+      this.tryFinishFireAndForget();
 
     }else if(typeof this.object != 'undefined'){
       this.impact();
@@ -375,8 +395,8 @@ export class EffectVisualEffect extends GameEffect {
 
   /**
    * Retail ApplyBumpedOutShell @ 006a1220 / EnableBumpedOutShell @ 0063d440.
-   * ProgFX 1400–1499 attaches a normal-offset shell to the target creature (and head)
-   * so it inherits transform + skinning — not a separate scene-rooted model.
+   * ProgFX 1400–1499 attaches a normal-offset shell to the target creature (and head
+   * item) so it inherits transform + skinning — not a separate scene-rooted model.
    */
   private applyBumpedOutShell(progFX: number | string){
     if(progFX == '****' || progFX == null)
@@ -393,14 +413,39 @@ export class EffectVisualEffect extends GameEffect {
 
     const fx_tex = this.getProgFXTexture(id);
     creature.model.generateForceShieldGeometry(fx_tex);
+    // Retail also EnableBumpedOutShell on equipped Head item
+    const headItem = creature.equipment?.HEAD;
+    if(headItem?.model instanceof OdysseyModel3D){
+      headItem.model.generateForceShieldGeometry(fx_tex);
+    }
     this.bumpedOutShell = true;
     TextureLoader.LoadQueue();
+  }
+
+  /** Retail RemoveBumpedOutShell @ 006a1470 */
+  private removeBumpedOutShell(){
+    if(!this.bumpedOutShell) return;
+    this.bumpedOutShell = false;
+    if(!BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature))
+      return;
+    const creature = this.object as ModuleCreature;
+    if(creature.model instanceof OdysseyModel3D){
+      creature.model.disposeForceShieldGeometry();
+    }
+    const headItem = creature.equipment?.HEAD;
+    if(headItem?.model instanceof OdysseyModel3D){
+      headItem.model.disposeForceShieldGeometry();
+    }
   }
 
   progFX_Impact(){
     if(this.visualEffect.progfx_impact == '****')
       return;
     this.applyBumpedOutShell(this.visualEffect.progfx_impact);
+    // Retail FUN_006a0620 default — impact hardcoded VFX lasts 1000ms
+    if(this.bumpedOutShell){
+      this.impactProgFXTimerMs = 1000;
+    }
   }
 
   progFX_Duration(){
@@ -411,16 +456,8 @@ export class EffectVisualEffect extends GameEffect {
 
   onRemove(){
     this.disposed = true;
-
-    if(this.bumpedOutShell){
-      this.bumpedOutShell = false;
-      if(BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature)){
-        const creature = this.object as ModuleCreature;
-        if(creature.model instanceof OdysseyModel3D){
-          creature.model.disposeForceShieldGeometry();
-        }
-      }
-    }
+    this.impactProgFXTimerMs = -1;
+    this.removeBumpedOutShell();
 
     if(this.model instanceof OdysseyModel3D){
       this.model.dispose();

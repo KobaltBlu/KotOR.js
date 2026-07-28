@@ -693,12 +693,12 @@ export class ModuleItem extends ModuleObject {
         return;
       }
       if(this.charges === 1){
-        oCaster?.removeItem?.(this, 1);
+        this.removeFromCasterInventory(oCaster, 1);
         return;
       }
       const stack = this.getStackSize();
       if(stack <= 1){
-        oCaster?.removeItem?.(this, 1);
+        this.removeFromCasterInventory(oCaster, 1);
       }else{
         this.setStackSize(stack - 1);
       }
@@ -718,8 +718,20 @@ export class ModuleItem extends ModuleObject {
     prop.usesPerDay = result.usesPerDay;
     prop.useable = result.useable;
     if(result.destroyItem){
-      oCaster?.removeItem?.(this, 1);
+      this.removeFromCasterInventory(oCaster, 1);
     }
+  }
+
+  /**
+   * Party inventory lives in InventoryManager; creature inventory on ModuleObject.
+   */
+  private removeFromCasterInventory(oCaster: ModuleCreature | undefined, nCount: number = 1): void {
+    if(!oCaster) return;
+    if(oCaster.isPartyMember?.() || oCaster.isPlayer || oCaster.isPM){
+      GameState.InventoryManager.removeItem(this, nCount);
+      return;
+    }
+    oCaster.removeItem?.(this, nCount);
   }
 
   /**

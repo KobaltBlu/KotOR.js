@@ -92,14 +92,45 @@ export function resolveSpellProjectilePathType(projtype: unknown): number {
 /**
  * Whether SpellCastAndImpact should delay impact until projectile landing
  * (retail range L / W, or explicit grenade / impactAtProjectileLanding).
+ * Retail CalculateLastSpellProjectileTime: proj==0 → field88=0 (no delay).
  */
 export function shouldDelaySpellImpactToLanding(
   spell: { range?: string; proj?: number; projtype?: unknown } | undefined,
   impactAtProjectileLanding: boolean = false
 ): boolean {
+  // Explicit spells.2da proj==0 → no projectile / immediate impact
+  if(spellHasProjectileFlag(spell) && (spell!.proj | 0) === 0){
+    return false;
+  }
   if(impactAtProjectileLanding) return true;
   const range = String(spell?.range ?? '').toUpperCase();
   if(range === 'L' || range === 'W') return true;
   const path = resolveSpellProjectilePathType(spell?.projtype);
   return path === ProjectilePath.GRENADE || (spell?.proj | 0) === 1;
+}
+
+/** True when the spell object carries an explicit numeric proj field. */
+function spellHasProjectileFlag(
+  spell: { proj?: number } | undefined
+): boolean {
+  return !!spell && typeof spell.proj === 'number';
+}
+
+/**
+ * Retail CalculateLastSpellProjectileTime entry: proj==0 → delay 0.
+ * Otherwise flight ms from distance + path (path 6 adds +2500).
+ */
+export function calculateSpellProjectileImpactDelayMs(
+  spell: { proj?: number; projtype?: unknown } | undefined,
+  distance: number,
+  pathOverride: number = -1
+): number {
+  if(spellHasProjectileFlag(spell) && (spell!.proj | 0) === 0){
+    return 0;
+  }
+  const pathType =
+    pathOverride >= 0
+      ? pathOverride
+      : resolveSpellProjectilePathType(spell?.projtype);
+  return calculateLastSpellProjectileTimeMs(distance, pathType);
 }

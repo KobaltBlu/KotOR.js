@@ -7,6 +7,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   SPELL_PROJECTILE_PATH6_EXTRA_MS,
   calculateLastSpellProjectileTimeMs,
+  calculateSpellProjectileImpactDelayMs,
   resolveSpellProjectilePathType,
 } from '@/combat/spell-projectile-time';
 
@@ -39,6 +40,24 @@ describe('calculateLastSpellProjectileTimeMs', () => {
     const speed = (Math.log(distance) * 3 + 2) * 2;
     const expected = Math.floor((distance / speed) * 1000);
     expect(calculateLastSpellProjectileTimeMs(distance, 1)).toBe(expected);
+  });
+});
+
+describe('calculateSpellProjectileImpactDelayMs', () => {
+  it('returns 0 when spell.proj is explicitly 0', () => {
+    expect(calculateSpellProjectileImpactDelayMs({ proj: 0 }, 20, 6)).toBe(0);
+  });
+
+  it('uses path type for flight when proj is set', () => {
+    const distance = 12;
+    expect(calculateSpellProjectileImpactDelayMs({ proj: 1, projtype: '6' }, distance))
+      .toBe(calculateLastSpellProjectileTimeMs(distance, 6));
+  });
+
+  it('honors path override over spell projtype', () => {
+    const distance = 10;
+    expect(calculateSpellProjectileImpactDelayMs({ proj: 1, projtype: '1' }, distance, 6))
+      .toBe(calculateLastSpellProjectileTimeMs(distance, 6));
   });
 });
 

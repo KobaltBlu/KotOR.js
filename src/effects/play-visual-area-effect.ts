@@ -18,6 +18,17 @@ export function playVisualAreaEffect(
   location: EngineLocation,
   creator?: ModuleObject
 ): void {
+  console.log('[ItemCast]', 'PlayVisualAreaEffect', {
+    visualEffectId,
+    pos: location?.position
+      ? {
+          x: location.position.x,
+          y: location.position.y,
+          z: location.position.z,
+        }
+      : undefined,
+    hasModule: !!GameState.module,
+  });
   if(!location || !GameState.module) return;
 
   const effect = new GameState.GameEffectFactory.EffectVisualEffect();

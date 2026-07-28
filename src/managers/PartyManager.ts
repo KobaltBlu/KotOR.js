@@ -1895,10 +1895,24 @@ export class PartyManager {
     if(!creature)
       return new THREE.Vector3();
 
+    const area = creature.area ?? GameState.module?.area;
+    const snapWalkable = (point: THREE.Vector3) => {
+      if(!area || typeof area.isPointWalkable !== 'function'){
+        return point;
+      }
+      return area.isPointWalkable(point)
+        ? point
+        : (typeof area.getNearestWalkablePoint === 'function'
+          ? area.getNearestWalkablePoint(point, getPathPersonalSpace(creature))
+          : point);
+    };
+
     if(idx >= 1 && idx <= 2 && partyFollowPath.getFollowGoal(idx, this.#tmpFollowPosition)){
-      return (creature.area?.isPointWalkable?.(this.#tmpFollowPosition))
-        ? this.#tmpFollowPosition
-        : creature.area.getNearestWalkablePoint(this.#tmpFollowPosition, getPathPersonalSpace(creature));
+      return snapWalkable(this.#tmpFollowPosition);
+    }
+
+    if(!leader){
+      return this.#tmpFollowPosition.copy(creature.position);
     }
 
     const offsets = PartyManager.getFormationOffsets();
@@ -1913,8 +1927,7 @@ export class PartyManager {
     );
     this.#tmpFollowPosition.copy(leader.position).sub(this.#tmpFollowPositionTarget);
 
-    return (creature.area.isPointWalkable(this.#tmpFollowPosition)) ?
-      this.#tmpFollowPosition : creature.area.getNearestWalkablePoint(this.#tmpFollowPosition, getPathPersonalSpace(creature));
+    return snapWalkable(this.#tmpFollowPosition);
   }
 
   /**
