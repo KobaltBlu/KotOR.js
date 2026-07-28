@@ -126,7 +126,7 @@ export class OdysseyModelAnimation {
 
   getDamageDelay(){
     for(let i = 0, len = this.events.length; i < len; i++){
-      if(this.events[i].name == 'Hit'){
+      if(this.events[i].name?.toLowerCase() == 'hit'){
         return this.events[i].length;
       }
     }

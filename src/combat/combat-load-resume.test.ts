@@ -44,8 +44,13 @@ jest.mock('@/combat/combat-projectile', () => ({
   spawnCombatProjectile: jest.fn(),
 }));
 
+jest.mock('@/combat/on-hit-visuals', () => ({
+  resolveOnHitVisuals: jest.fn(),
+}));
+
 jest.mock('@/combat/ranged-impact-vfx', () => ({
   signalRangedImpactVfx: jest.fn(),
+  spawnWorldImpactVfx: jest.fn(),
 }));
 
 jest.mock('@/combat/attack-summary-feedback', () => ({
@@ -59,7 +64,11 @@ jest.mock('@/combat/combat-floaty', () => ({
 
 jest.mock('@/combat/combat-reaction-eligibility', () => ({
   canSyncMeleeReaction: () => false,
+  canSyncRangedReaction: () => false,
   pickMeleeReaction: () => 0,
+  pickRangedReaction: () => 0,
+  rangedAttackHadLandingHit: () => false,
+  isRangedDodgeBlockedAnimation: () => false,
   resolveMeleeReactionPlayback: () => {},
 }));
 

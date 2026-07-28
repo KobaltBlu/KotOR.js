@@ -33,7 +33,15 @@ jest.mock('@/odyssey', () => ({
 
 import { CombatRoundAction, resolveAnimations2DARow } from '@/combat/CombatRoundAction';
 import { resolveMasterState } from '@/combat/combat-dueling';
-import { canSyncMeleeReaction, pickMeleeReaction, resolveMeleeReactionPlayback } from '@/combat/combat-reaction-eligibility';
+import {
+  canSyncMeleeReaction,
+  canSyncRangedReaction,
+  isRangedDodgeBlockedAnimation,
+  pickMeleeReaction,
+  pickRangedReaction,
+  rangedAttackHadLandingHit,
+  resolveMeleeReactionPlayback,
+} from '@/combat/combat-reaction-eligibility';
 import { resolveAttackPauseMs, shouldEndRoundOnPauseExpiry, shouldSnapCombatReady } from '@/combat/combat-round-pause';
 import { CombatActionType } from '@/enums/combat/CombatActionType';
 import { AttackResult } from '@/enums/combat/AttackResult';
@@ -263,6 +271,78 @@ describe('CutsceneAttack hit DAMAGE reaction playback', () => {
     // Never flip only index — that leaves a stale ATTACK clip on the defender
     expect(resolveMeleeReactionPlayback(undefined)).toEqual({ mode: 'setAnimationState' });
     expect(resolveMeleeReactionPlayback(null)).toEqual({ mode: 'setAnimationState' });
+  });
+});
+
+describe('ResolveRangedAnimations reaction eligibility', () => {
+  // Retail @ 005b6c40 — dodge only when target round engaged; no resultsCalculated bypass.
+  const dodgeReady = {
+    anyHit: false,
+    targetLightsaberEquipped: false,
+    targetCastingBusy: false,
+    targetEngaged: true,
+  };
+
+  it('picks DODGE only for clean misses against an engaged non-saber target', () => {
+    expect(pickRangedReaction(dodgeReady)).toBe(ModuleCreatureAnimState.DODGE);
+  });
+
+  it('does not dodge while the target is still closing (target.engaged false)', () => {
+    expect(pickRangedReaction({
+      ...dodgeReady,
+      targetEngaged: false,
+    })).toBe(ModuleCreatureAnimState.READY);
+  });
+
+  it('does not dodge when any AttackList roll landed', () => {
+    expect(pickRangedReaction({
+      ...dodgeReady,
+      anyHit: true,
+    })).toBe(ModuleCreatureAnimState.READY);
+  });
+
+  it('does not dodge vs lightsaber or casting-busy poses', () => {
+    expect(pickRangedReaction({
+      ...dodgeReady,
+      targetLightsaberEquipped: true,
+    })).toBe(ModuleCreatureAnimState.READY);
+    expect(pickRangedReaction({
+      ...dodgeReady,
+      targetCastingBusy: true,
+    })).toBe(ModuleCreatureAnimState.READY);
+  });
+
+  it('rangedAttackHadLandingHit matches retail local_4 hit band', () => {
+    expect(rangedAttackHadLandingHit([AttackResult.MISS])).toBe(false);
+    expect(rangedAttackHadLandingHit([AttackResult.PARRIED])).toBe(false);
+    expect(rangedAttackHadLandingHit([AttackResult.HIT_SUCCESSFUL])).toBe(true);
+    expect(rangedAttackHadLandingHit([AttackResult.MISS, AttackResult.CRITICAL_HIT])).toBe(true);
+  });
+
+  it('isRangedDodgeBlockedAnimation covers casting / throw-saber (FUN_005b55a0)', () => {
+    expect(isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.RUNNING)).toBe(false);
+    expect(isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.DODGE)).toBe(false);
+    expect(isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.CASTOUT1)).toBe(true);
+    expect(isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.CASTOUT4_LP)).toBe(true);
+    expect(isRangedDodgeBlockedAnimation(ModuleCreatureAnimState.THROW_SABER_LP)).toBe(true);
+  });
+
+  it('canSyncRangedReaction requires attacker engaged + action length (no cutscene bypass)', () => {
+    expect(canSyncRangedReaction({
+      attackerEngaged: true,
+      hasTargetCombatRound: true,
+      checkActionLengthOk: true,
+    })).toBe(true);
+    expect(canSyncRangedReaction({
+      attackerEngaged: true,
+      hasTargetCombatRound: true,
+      checkActionLengthOk: false,
+    })).toBe(false);
+    expect(canSyncRangedReaction({
+      attackerEngaged: false,
+      hasTargetCombatRound: true,
+      checkActionLengthOk: true,
+    })).toBe(false);
   });
 });
 

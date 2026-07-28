@@ -101,6 +101,7 @@ import {
   COMBAT_MODE_ACTIVITY_MASK,
 } from "@/enums/combat/CombatMode";
 import { CombatRound, CombatRoundAction, resolveAnimations2DARow } from "@/combat";
+import { showLightSaberContactVisual } from "@/combat/lightsaber-contact-vfx";
 import { CombatInformation } from "@/combat/CombatInformation";
 import { GameEffectFactory } from "@/effects/GameEffectFactory";
 import type { Action } from "@/actions/Action";
@@ -498,6 +499,11 @@ export class ModuleCreature extends ModuleObject {
    * Head max vertical angle
    */
   headMaxVerticalAngle: number = Math.PI / 3;
+  /**
+   * Bumps on each loadModel() so overlapping armor/head rebuilds discard stale
+   * bodies instead of disposing live hand/headgear models attached to them.
+   */
+  private modelLoadGeneration: number = 0;
 
   constructor ( gff = new GFFObject() ) {
     super(gff);
@@ -3206,22 +3212,40 @@ export class ModuleCreature extends ModuleObject {
     return AudioPriorityGroup.NON_PLAYER_CHAT;
   }
 
+  /**
+   * Retail PlaySwingSound @ 0060dc50 — weaponsounds row from weaponmattype,
+   * preferring off-hand when it is a lightsaber.
+   */
+  private getPlaySwingWeaponSound(){
+    const rh = this.equipment.RIGHTHAND;
+    const lh = this.equipment.LEFTHAND;
+    if(lh?.isLightsaber?.()){
+      return lh.weaponSound;
+    }
+    return rh?.weaponSound || lh?.weaponSound;
+  }
+
   playEvent(event: THREE.Event){
     this.audioEmitter.setPosition(this.position.x, this.position.y, this.position.z);
     this.footstepEmitter.setPosition(this.position.x, this.position.y, this.position.z);
     this.footstepEmitter.setPriorityGroupId(this.getFootstepPriorityGroup());
     
     const appearance = this.creatureAppearance;
+    const swingSounds = this.getPlaySwingWeaponSound();
     const rhSounds = this.equipment.RIGHTHAND?.weaponSound;
     const lhSounds = this.equipment.LEFTHAND?.weaponSound;
     const footstepSounds = GameState.SWRuleSet.footSteps[appearance.footsteptype];
 
+    let weaponSoundResRef = '';
     let rhWeaponSoundResRef = '';
     let lhWeaponSoundResRef = '';
     let footstepSoundResRef = '';
     let footstepIsLooping = false;
 
-    switch(event.event){
+    // MDL event names match retail RegisterCallbacks casing; compare case-insensitively.
+    const eventName = String(event.event || '').toLowerCase();
+
+    switch(eventName){
       case 'snd_footstep':
         if(footstepSounds){
           const isRolling = footstepSounds.isRolling();
@@ -3229,27 +3253,28 @@ export class ModuleCreature extends ModuleObject {
           footstepIsLooping = isRolling;
         }
       break;
-      case 'Swingshort':
-        rhWeaponSoundResRef = rhSounds?.getSwingShortResRef() || '';
-        lhWeaponSoundResRef = lhSounds?.getSwingShortResRef() || '';
+      case 'swingshort':
+        weaponSoundResRef = swingSounds?.getSwingShortResRef() || '';
       break;
-      case 'Swinglong':
-        rhWeaponSoundResRef = rhSounds?.getSwingLongResRef() || '';
-        lhWeaponSoundResRef = lhSounds?.getSwingLongResRef() || '';
+      case 'swinglong':
+        weaponSoundResRef = swingSounds?.getSwingLongResRef() || '';
       break;
-      case 'HitParry':
-        rhWeaponSoundResRef = rhSounds?.getHitParryResRef() || '';
-        lhWeaponSoundResRef = lhSounds?.getHitParryResRef() || '';
+      case 'swingtwirl':
+        weaponSoundResRef = swingSounds?.getSwingTwirlResRef() || '';
       break;
-      case 'Contact':
-        rhWeaponSoundResRef = rhSounds?.getClashResRef() || '';
-        lhWeaponSoundResRef = lhSounds?.getClashResRef() || '';
+      case 'hitparry':
+        // Retail HitParryEvent → PlaySwingSound("Parry", 2)
+        weaponSoundResRef = swingSounds?.getHitParryResRef() || '';
       break;
-      case 'Clash':
-        rhWeaponSoundResRef = rhSounds?.getClashResRef() || '';
-        lhWeaponSoundResRef = lhSounds?.getClashResRef() || '';
+      case 'contact':
+        // Retail HitContactEvent → ShowLightSaberContactVisual (VFX only)
+        showLightSaberContactVisual(this);
       break;
-      case 'Hit':
+      case 'clash':
+        // Retail HitClashEvent → PlaySwingSound("Clash", 2)
+        weaponSoundResRef = swingSounds?.getClashResRef() || '';
+      break;
+      case 'hit':
         if(this.combatData.combatAction && this.combatData.combatAction.hits && this.combatData.combatAction.damage){
           this.combatData.combatAction.target.damage(this.combatData.combatAction.damage, this);
         }
@@ -3266,7 +3291,10 @@ export class ModuleCreature extends ModuleObject {
       this.footstepEmitter.playSoundFireAndForget(footstepSoundResRef);
     }
 
-    if(rhWeaponSoundResRef || lhWeaponSoundResRef){
+    if(weaponSoundResRef){
+      this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.COMBAT);
+      this.audioEmitter.playSoundFireAndForget(weaponSoundResRef);
+    }else if(rhWeaponSoundResRef || lhWeaponSoundResRef){
       this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.COMBAT);
       if(rhWeaponSoundResRef){
         this.audioEmitter.playSoundFireAndForget(rhWeaponSoundResRef);
@@ -6180,17 +6208,49 @@ export class ModuleCreature extends ModuleObject {
   }
 
   async loadModel (): Promise<OdysseyModel3D> {
+    const generation = ++this.modelLoadGeneration;
     this.isReady = false;
     await this.loadEquipmentModels();
-    await this.loadBody();
-    await this.loadHead();
+    if(generation !== this.modelLoadGeneration){
+      return this.model;
+    }
+    await this.loadBody(generation);
+    if(generation !== this.modelLoadGeneration){
+      return this.model;
+    }
+    await this.loadHead(generation);
+    if(generation !== this.modelLoadGeneration){
+      return this.model;
+    }
     this.isReady = true;
     this.updateCollision(0.0000000000000000000001);
     this.update(0.0000000000000000000001);
     return this.model;
   }
 
-  async loadBody() {
+  /**
+   * Detach equipment / head meshes before disposing a body so recursive dispose
+   * cannot destroy live ModuleItem.model instances that will be re-parented.
+   */
+  private detachEquippedModelsFromBody(){
+    try{
+      const rh = this.equipment.RIGHTHAND?.model;
+      if(rh?.parent) rh.parent.remove(rh);
+    }catch(e){}
+    try{
+      const lh = this.equipment.LEFTHAND?.model;
+      if(lh?.parent) lh.parent.remove(lh);
+    }catch(e){}
+    try{
+      const helm = this.equipment.HEAD?.model;
+      if(helm?.parent) helm.parent.remove(helm);
+    }catch(e){}
+    try{
+      if(this.head?.parent) this.head.parent.remove(this.head);
+    }catch(e){}
+  }
+
+  async loadBody(generation?: number) {
     let appearance = this.creatureAppearance;
     let bodyVariation: string = this.equipment.ARMOR?.getBodyVariation() || '';
     let textureVariation: number = this.equipment.ARMOR?.getTextureVariation() || 1;
@@ -6209,6 +6269,14 @@ export class ModuleCreature extends ModuleObject {
     this.bodyTexture = bodyTexture;
 
     if(!this.bodyModel || this.bodyModel.length === 0){
+      if(generation !== undefined && generation !== this.modelLoadGeneration){
+        return this.model;
+      }
+      this.detachEquippedModelsFromBody();
+      if(this.model){
+        this.model.removeFromParent();
+        try{ this.model.dispose(); }catch(e){}
+      }
       this.model = new OdysseyModel3D();
       return this.model;
     }
@@ -6227,6 +6295,12 @@ export class ModuleCreature extends ModuleObject {
         context: this.context,
       });
 
+      if(generation !== undefined && generation !== this.modelLoadGeneration){
+        try{ model.dispose(); }catch(e){}
+        return this.model;
+      }
+
+      this.detachEquippedModelsFromBody();
       if(this.model){
         this.model.removeFromParent();
         try{ this.model.dispose(); }catch(e){}
@@ -6305,7 +6379,7 @@ export class ModuleCreature extends ModuleObject {
     this.addEffect(vfx);
   }
 
-  async loadHead(): Promise<OdysseyModel3D> {
+  async loadHead(generation?: number): Promise<OdysseyModel3D> {
     let appearance = this.creatureAppearance;
     let headId = this.resolveAppearanceHeadId();
     this.headModel = undefined;
@@ -6332,9 +6406,19 @@ export class ModuleCreature extends ModuleObject {
 
     try
     {
-      if(this.head instanceof OdysseyModel3D && this.head.parent){
-        this.head.parent.remove(this.head);
-        this.head.dispose();
+      if(generation !== undefined && generation !== this.modelLoadGeneration){
+        try{ head.dispose(); }catch(e){}
+        return this.head;
+      }
+
+      try{
+        const helm = this.equipment.HEAD?.model;
+        if(helm?.parent) helm.parent.remove(helm);
+      }catch(e){}
+
+      if(this.head instanceof OdysseyModel3D){
+        try{ this.head.parent?.remove(this.head); }catch(e){}
+        try{ this.head.dispose(); }catch(e){}
       }
 
       this.head = head;
@@ -6372,7 +6456,9 @@ export class ModuleCreature extends ModuleObject {
       return;
     }
 
-    this.unequipSlot(slot);
+    // Skip appearance reload on unequip — ARMOR/HEAD re-equip awaits loadModel once.
+    // An unawaited unequip reload races the awaited one and disposes hand weapons.
+    this.unequipSlot(slot, false);
     item.onEquip(this);
     await item.loadModel();
     switch(slot){
@@ -6432,7 +6518,11 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  unequipSlot(slot = 0x1){
+  /**
+   * @param reloadModel When false, skip the body reload after clearing ARMOR/HEAD
+   * (caller will reload). Default true for standalone unequip.
+   */
+  unequipSlot(slot = 0x1, reloadModel: boolean = true){
     try{
       switch(slot){
         case ModuleCreatureArmorSlot.IMPLANT:
@@ -6452,7 +6542,9 @@ export class ModuleCreature extends ModuleObject {
             try{ item.model?.parent?.remove(item.model); }catch(e){}
             this.equipment.HEAD = undefined;
             item.onUnEquip(this);
-            this.loadModel();
+            if(reloadModel){
+              this.loadModel();
+            }
           }
         break;
         case ModuleCreatureArmorSlot.ARMS:
@@ -6495,7 +6587,9 @@ export class ModuleCreature extends ModuleObject {
           }
 
           this.equipment.ARMOR = undefined;
-          this.loadModel();
+          if(reloadModel){
+            this.loadModel();
+          }
         break;
         case ModuleCreatureArmorSlot.RIGHTHAND:
           try{

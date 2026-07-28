@@ -680,8 +680,8 @@ export class SpellCastInstance {
         this.projectileDistance = this.projectileTarget.clone().sub(this.projectileOrigin);
       }
 
-      // Instant non-projectile spells impact at cast-start; throws / L impact on land
-      if(!delayImpactToLanding){
+      // Instant non-projectile spells impact once at cast-start; throws / L on land
+      if(!delayImpactToLanding && !this.impacted){
         this.impact();
       }
 
@@ -741,10 +741,6 @@ export class SpellCastInstance {
 
   impact(){
     if(this.impacted || this.interrupted){
-      LOG('impact skipped', {
-        impacted: this.impacted,
-        interrupted: this.interrupted,
-      });
       return;
     }
     this.impacted = true;

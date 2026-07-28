@@ -26,6 +26,10 @@ import type { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
  */
 export class InGameComputer extends GameMenu {
 
+  // GameMenu.show() applies this.engineMode — must be DIALOG, not GUI default.
+  // updateCamera re-shows this every tick; GUI would spam SetEngineMode(0↔3).
+  engineMode: EngineMode = EngineMode.DIALOG;
+
   LBL_STATIC1: GUILabel;
   LBL_STATIC3: GUILabel;
   LBL_STATIC4: GUILabel;

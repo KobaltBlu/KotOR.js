@@ -1213,7 +1213,8 @@ export class ModuleItem extends ModuleObject {
     if(this.template.RootNode.hasField('PaletteID'))
       this.palleteID = this.template.RootNode.getFieldByLabel('PaletteID').getValue();
 
-    this.weaponSound = GameState.SWRuleSet.weaponSounds[this.baseItem?.poweredItem];
+    // Retail PlaySwingSound indexes weaponsounds by baseitems.weaponmattype
+    this.weaponSound = GameState.SWRuleSet.weaponSounds[this.baseItem?.weaponMaterialType];
 
     this.initialized = true
 

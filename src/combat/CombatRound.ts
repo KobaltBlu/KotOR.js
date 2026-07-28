@@ -25,7 +25,15 @@ import type { CombatRoundAction } from "@/combat/CombatRoundAction";
 import { CombatRoundAction as CombatRoundActionClass } from "@/combat/CombatRoundAction";
 import { createNewAttackActions } from "@/combat/create-new-attack-actions";
 import { filterLiveAttackActions } from "@/combat/prune-dead-attack-actions";
-import { canSyncMeleeReaction, pickMeleeReaction, resolveMeleeReactionPlayback } from "@/combat/combat-reaction-eligibility";
+import {
+  canSyncMeleeReaction,
+  canSyncRangedReaction,
+  isRangedDodgeBlockedAnimation,
+  pickMeleeReaction,
+  pickRangedReaction,
+  rangedAttackHadLandingHit,
+  resolveMeleeReactionPlayback,
+} from "@/combat/combat-reaction-eligibility";
 import { duelLog, duelWho } from "@/combat/duel-debug";
 import { shouldEndRoundOnPauseExpiry, shouldSnapCombatReady } from "@/combat/combat-round-pause";
 import {
@@ -36,7 +44,7 @@ import {
   pickAttackShotIndices,
   type PendingDischargeVisual,
 } from "@/combat/weapon-discharge";
-import { signalRangedImpactVfx } from "@/combat/ranged-impact-vfx";
+import { resolveOnHitVisuals } from "@/combat/on-hit-visuals";
 import { getProjectileImpactPosition, spawnCombatProjectile } from "@/combat/combat-projectile";
 import { GameState } from "@/GameState";
 import { getAttackEffectBonus } from "@/effects/effect-bonuses";
@@ -642,9 +650,8 @@ export class CombatRound {
     attack.damageApplyDelay = -1;
 
     const owner = this.owner as ModuleCreature;
-    if(attack.rangedAttack){
-      signalRangedImpactVfx(attack, owner);
-    }
+    // Retail ResolveOnHitVisuals @ 005b9040 (+ ranged miss ground splat)
+    resolveOnHitVisuals(attack, owner);
 
     // Retail OnApplyDamage / SignalMeleeDamage — floaty only for player attacker
     const showFloaty = shouldShowCombatFloaty(owner);
@@ -2014,7 +2021,9 @@ export class CombatRound {
   /**
    * Calculate the round animations for the given creature and combat action.
    * Retail ResolveMeleeAnimations @ 005b7470 / ResolveRangedAnimations @ 005b6c40 —
-   * engaged duels sync target reaction (DAMAGE/PARRY/DODGE) when CheckActionLengthAtTime.
+   * engaged duels sync target reaction when CheckActionLengthAtTime.
+   * Ranged dodge requires the *target* round engaged (not merely the shooter),
+   * so a melee PC closing distance does not dodge-slide mid-sprint.
    */
   calculateRoundAnimations(creature: ModuleCreature, combatAction: CombatRoundAction){
     if(!combatAction) return;
@@ -2058,7 +2067,10 @@ export class CombatRound {
     }
     this.decrementRoundLength(animLength);
 
-    const pickReaction = pickMeleeReaction;
+    const isRanged = !!(
+      primary?.rangedAttack ||
+      creature.equipment?.RIGHTHAND?.isRangedWeapon?.()
+    );
 
     const attackAnim = this.engaged && combatAction.animation === ModuleCreatureAnimState.ATTACK_DUELING
       ? ModuleCreatureAnimState.ATTACK_DUELING
@@ -2071,6 +2083,7 @@ export class CombatRound {
         length: animLength,
         result: AttackResult[combatAction.attackResult] ?? combatAction.attackResult,
         engaged: this.engaged,
+        ranged: isRanged,
         dueling: attackAnim === ModuleCreatureAnimState.ATTACK_DUELING,
         cutscene: !!combatAction.resultsCalculated,
       });
@@ -2082,12 +2095,54 @@ export class CombatRound {
       ? combatAction.target as ModuleCreature
       : undefined;
 
-    // Retail ResolveMeleeAnimations gates only on the target being actually
+    // Retail ResolveMelee/RangedAnimations gates only on the target being actually
     // dead (GetDeadTemp), never on predicted killingBlow — hits must react.
     if(target && !target.isDead?.()){
-      const reaction = pickReaction(combatAction.attackResult);
-      // Retail ResolveMeleeAnimations stamps reaction metadata; do not wipe
-      // ranged travel delay (ResolveRangedHit/Miss reaxn_delay) used for bolt flight.
+      let reaction: number;
+      let shouldReact: boolean;
+      const checkActionLengthOk = !!target.combatRound?.checkActionLengthAtTime(
+        creature,
+        animLength,
+        0
+      );
+
+      if(isRanged){
+        // Retail ResolveRangedAnimations @ 005b6c40
+        const rolled: AttackResult[] = [];
+        for(let i = 0; i < this.currentAttack; i++){
+          const r = this.attackList[i]?.attackResult;
+          if(typeof r === 'number') rolled.push(r);
+        }
+        if(!rolled.length && typeof combatAction.attackResult === 'number'){
+          rolled.push(combatAction.attackResult);
+        }
+        reaction = pickRangedReaction({
+          anyHit: rangedAttackHadLandingHit(rolled),
+          targetLightsaberEquipped: this.isLightsaberEquipped(target),
+          targetCastingBusy: isRangedDodgeBlockedAnimation(
+            target.animationState?.index ?? 0
+          ),
+          targetEngaged: !!target.combatRound?.engaged,
+        });
+        shouldReact = canSyncRangedReaction({
+          attackerEngaged: this.engaged,
+          hasTargetCombatRound: !!target.combatRound,
+          checkActionLengthOk,
+        });
+      }else{
+        reaction = pickMeleeReaction(combatAction.attackResult);
+        // Retail ResolveMeleeAnimations @ 005b7470:
+        // engaged && (CheckActionLengthAtTime || resultsCalculated).
+        shouldReact = canSyncMeleeReaction({
+          engaged: this.engaged,
+          resultsCalculated: !!combatAction.resultsCalculated,
+          hasTargetCombatRound: !!target.combatRound,
+          checkActionLengthOk,
+        });
+      }
+
+      // Retail stamps reaction metadata; do not wipe ranged travel delay
+      // (ResolveRangedHit/Miss reaxn_delay) used for bolt flight.
       if(primary){
         primary.reaxnAnimation = reaction;
         primary.reaxnAnimLength = animLength;
@@ -2095,20 +2150,6 @@ export class CombatRound {
           primary.reaxnDelay = 0;
         }
       }
-
-      // Retail ResolveMeleeAnimations @ 005b7470:
-      // engaged && (CheckActionLengthAtTime || resultsCalculated).
-      // resultsCalculated only bypasses the action-length check.
-      const shouldReact = canSyncMeleeReaction({
-        engaged: this.engaged,
-        resultsCalculated: !!combatAction.resultsCalculated,
-        hasTargetCombatRound: !!target.combatRound,
-        checkActionLengthOk: !!target.combatRound?.checkActionLengthAtTime(
-          creature,
-          animLength,
-          0
-        ),
-      });
 
       if(shouldReact && reaction !== ModuleCreatureAnimState.READY){
         // Prefer combatanimations-mapped clip; if missing, retail SetAnimation(reaction)
@@ -2126,6 +2167,7 @@ export class CombatRound {
           reaction: ModuleCreatureAnimState[reaction] ?? reaction,
           playback: mapped ? `mapped:${(mapped as any)?.name ?? '?'}` : 'setAnimationState',
           attackAnim: this.action.animationName,
+          ranged: isRanged,
         });
         if(resolveMeleeReactionPlayback(mapped).mode === 'mapped'){
           target.playTwoDAAnimation(mapped);
@@ -2143,8 +2185,10 @@ export class CombatRound {
           reaction: ModuleCreatureAnimState[reaction] ?? reaction,
           shouldReact,
           engaged: this.engaged,
+          targetEngaged: !!target.combatRound?.engaged,
+          ranged: isRanged,
           cutscene: !!combatAction.resultsCalculated,
-          checkActionLengthOk: !!target.combatRound?.checkActionLengthAtTime(creature, animLength, 0),
+          checkActionLengthOk,
         });
         // Retail else path: reaxn_animation = READY (0x2711)
         primary.reaxnAnimation = ModuleCreatureAnimState.READY;

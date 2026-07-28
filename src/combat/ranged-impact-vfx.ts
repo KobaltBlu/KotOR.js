@@ -9,10 +9,11 @@ import { OdysseyModel3D } from "@/three/odyssey";
 import type { CombatAttackData } from "@/combat/CombatAttackData";
 
 /**
- * Retail ranged impact visuals —
+ * Retail ranged impact helpers —
  * ResolveProjectileMissImpact @ 005b4e30 (VFX 4032 / 0xFC0 at miss pos),
- * damagehitvisual Blaster rangedeffect 4024 on hit.
+ * spawnWorldImpactVfx for fire-and-forget world models.
  *
+ * Full on-hit / parry visuals live in on-hit-visuals.ts (ResolveOnHitVisuals).
  * Traveling CombatProjectile bolts spawn at muzzle time (see combat-projectile.ts).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

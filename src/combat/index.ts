@@ -18,6 +18,8 @@ export * from "@/combat/weapon-discharge";
 export * from "@/combat/melee-backoff";
 export * from "@/combat/combat-dueling";
 export * from "@/combat/ranged-impact-vfx";
+export * from "@/combat/lightsaber-contact-vfx";
+export * from "@/combat/on-hit-visuals";
 export * from "@/combat/combat-projectile";
 export * from "@/combat/equip-most-damaging";
 export * from "@/combat/attack-summary-feedback";

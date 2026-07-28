@@ -1646,10 +1646,27 @@ export class CutsceneManager {
   static updateCamera(delta: number = 0) {
     if (!this.dialog || this.cutsceneMode == CutsceneMode.BARK) return;
 
-    if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
-      GameState.MenuManager.InGameComputer.show();
-      GameState.MenuManager.InGameComputerCam.hide();
-    }else{
+    const isComputer = this.dialog.getConversationType() == DLGConversationType.COMPUTER;
+    // Computer panel vs placeable-cam overlay — toggle only on visibility change.
+    // (Previously show()/hide() every tick; InGameComputer defaulted engineMode GUI
+    // and spammed SetEngineMode 0↔3.)
+    if(isComputer){
+      if(this.cameraState.mode == CameraMode.PLACEABLE){
+        if(GameState.MenuManager.InGameComputer.isVisible()){
+          GameState.MenuManager.InGameComputer.hide();
+        }
+        if(!GameState.MenuManager.InGameComputerCam.isVisible()){
+          GameState.MenuManager.InGameComputerCam.show();
+        }
+      }else{
+        if(!GameState.MenuManager.InGameComputer.isVisible()){
+          GameState.MenuManager.InGameComputer.show();
+        }
+        if(GameState.MenuManager.InGameComputerCam.isVisible()){
+          GameState.MenuManager.InGameComputerCam.hide();
+        }
+      }
+    }else if(GameState.MenuManager.InGameComputerCam.isVisible()){
       GameState.MenuManager.InGameComputerCam.hide();
     }
 
@@ -1663,9 +1680,7 @@ export class CutsceneManager {
       // Re-apply each tick like Control @ 006bcf50 type-6 (stored shot → dialog cam).
       this.setPlaceableCamera(this.cameraState.cameraID);
       GameState.forwardVector.set(0, 0, -1).applyQuaternion(GameState.camera_dialog.quaternion);
-      if(this.dialog.getConversationType() == DLGConversationType.COMPUTER){
-        GameState.MenuManager.InGameComputer.hide();
-        GameState.MenuManager.InGameComputerCam.show();
+      if(isComputer){
         const camVid = this.currentEntry?.camVidEffect ?? -1;
         GameState.MenuManager.InGameComputerCam.setLiveFeedVisible(
           this.isComputerLiveFeedVisible(camVid)

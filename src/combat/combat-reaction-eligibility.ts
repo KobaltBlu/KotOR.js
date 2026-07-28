@@ -22,6 +22,23 @@ export function canSyncMeleeReaction(opts: {
 }
 
 /**
+ * Retail ResolveRangedAnimations @ 005b6c40 play gate:
+ * CheckActionLengthAtTime && attacker.engaged.
+ * Unlike melee, resultsCalculated does not bypass the action-length check.
+ */
+export function canSyncRangedReaction(opts: {
+  attackerEngaged: boolean;
+  hasTargetCombatRound: boolean;
+  checkActionLengthOk: boolean;
+}): boolean {
+  return !!(
+    opts.hasTargetCombatRound &&
+    opts.attackerEngaged &&
+    opts.checkActionLengthOk
+  );
+}
+
+/**
  * Retail ResolveMeleeAnimations reaction pick — hits → DAMAGE (0x271e),
  * parry/deflect → PARRY, miss/resist/fail → DODGE.
  */
@@ -47,6 +64,76 @@ export function pickMeleeReaction(result: AttackResult): number {
     return ModuleCreatureAnimState.DODGE;
   }
   return ModuleCreatureAnimState.READY;
+}
+
+/**
+ * Retail ResolveRangedAnimations @ 005b6c40 reaction pick —
+ * DODGE (0x271b) only when no landing hit (local_4==0), target has no
+ * lightsaber, target is not in a casting-busy anim (FUN_005b55a0), and
+ * target.combat_round.engaged. Otherwise READY (0x2711).
+ *
+ * This is why a melee PC closing on a shooter must not dodge mid-sprint:
+ * their round is not engaged until they enter attack range.
+ */
+export function pickRangedReaction(opts: {
+  anyHit: boolean;
+  targetLightsaberEquipped: boolean;
+  targetCastingBusy: boolean;
+  targetEngaged: boolean;
+}): number {
+  if(
+    !opts.anyHit &&
+    !opts.targetLightsaberEquipped &&
+    !opts.targetCastingBusy &&
+    opts.targetEngaged
+  ){
+    return ModuleCreatureAnimState.DODGE;
+  }
+  return ModuleCreatureAnimState.READY;
+}
+
+/**
+ * Retail ResolveRangedAttack local_4 — any AttackList roll in the hit band
+ * (results 0–3 / HIT_SUCCESSFUL–AUTOMATIC_HIT). Parry/deflect do not set it.
+ */
+export function rangedAttackHadLandingHit(
+  results: Array<AttackResult | number | undefined | null>
+): boolean {
+  for(let i = 0; i < results.length; i++){
+    const r = results[i];
+    if(
+      r === AttackResult.HIT_SUCCESSFUL ||
+      r === AttackResult.CRITICAL_HIT ||
+      r === AttackResult.AUTOMATIC_HIT
+    ){
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Retail FUN_005b55a0 @ 005b55a0 — animation constants that block ranged dodge.
+ * Casting (0x271f–0x2724), throw-saber loop (0x274d), inject (0x2756–0x2757),
+ * and a few higher specials.
+ */
+export function isRangedDodgeBlockedAnimation(anim: number): boolean {
+  const param = anim | 0;
+  if(param < 0x2758){
+    if(param < 0x2756){
+      if(param < 0x271f){
+        return false;
+      }
+      if(param > 0x2724 && param !== 0x274d){
+        return false;
+      }
+    }
+    return true;
+  }
+  if(param !== 0x28a1 && param !== 11000){
+    return false;
+  }
+  return true;
 }
 
 /**
