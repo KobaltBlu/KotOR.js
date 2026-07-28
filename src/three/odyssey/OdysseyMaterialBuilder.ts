@@ -339,6 +339,7 @@ export class OdysseyMaterialBuilder {
       case TXIBlending.ADDITIVE:
         material.transparent = false;
         material.blending = THREE.AdditiveBlending;
+        material.depthWrite = false;
         break;
       case TXIBlending.PUNCHTHROUGH:
         material.transparent = false;
