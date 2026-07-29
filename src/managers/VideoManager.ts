@@ -3,7 +3,7 @@ import { BIKObject } from "@/resource/BIKObject";
 import { GameState } from "@/GameState";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { AudioEngine } from "@/audio/AudioEngine";
-import { YUVFrame } from "@/video/binkvideo";
+import { YUVFrame, computeBinkFrameLayout, binkChromaVisibleWidth } from "@/video/binkvideo";
 import { MainMovies } from "@/game/kotor/menu/MainMovies";
 import { SoundMode } from "@/enums/audio/SoundMode";
 
@@ -78,21 +78,25 @@ export class VideoManager {
         uniform sampler2D uTex;
         uniform sampler2D vTex;
         uniform vec2 uYTexSize;
+        uniform vec2 uYScale;
+        uniform vec2 uUVScale;
         uniform float uSharpness;
         void main() {
+          vec2 yCoord = vec2(v_texCoord.x * uYScale.x, v_texCoord.y);
+          vec2 uvCoord = vec2(v_texCoord.x * uUVScale.x, v_texCoord.y);
           vec2 texel = 1.0 / uYTexSize;
-          float yC = texture2D(yTex, v_texCoord).r;
+          float yC = texture2D(yTex, yCoord).r;
           float y = yC;
           if (uSharpness > 0.0) {
-            float yL = texture2D(yTex, v_texCoord - vec2(texel.x, 0.0)).r;
-            float yR = texture2D(yTex, v_texCoord + vec2(texel.x, 0.0)).r;
-            float yT = texture2D(yTex, v_texCoord + vec2(0.0, texel.y)).r;
-            float yB = texture2D(yTex, v_texCoord - vec2(0.0, texel.y)).r;
+            float yL = texture2D(yTex, yCoord - vec2(texel.x, 0.0)).r;
+            float yR = texture2D(yTex, yCoord + vec2(texel.x, 0.0)).r;
+            float yT = texture2D(yTex, yCoord + vec2(0.0, texel.y)).r;
+            float yB = texture2D(yTex, yCoord - vec2(0.0, texel.y)).r;
             y = yC + uSharpness * (4.0 * yC - yL - yR - yT - yB);
             y = clamp(y, 0.0, 1.0);
           }
-          float u = texture2D(uTex, v_texCoord).r;
-          float v = texture2D(vTex, v_texCoord).r;
+          float u = texture2D(uTex, uvCoord).r;
+          float v = texture2D(vTex, uvCoord).r;
           vec3 R_cf = vec3(1.164383,  0.000000,  1.596027);
           vec3 G_cf = vec3(1.164383, -0.391762, -0.812968);
           vec3 B_cf = vec3(1.164383,  2.017232,  0.000000);
@@ -110,6 +114,8 @@ export class VideoManager {
         uTex: { value: null as THREE.DataTexture | null },
         vTex: { value: null as THREE.DataTexture | null },
         uYTexSize: { value: new THREE.Vector2(1, 1) },
+        uYScale: { value: new THREE.Vector2(1, 1) },
+        uUVScale: { value: new THREE.Vector2(1, 1) },
         uSharpness: { value: 0.35 },
       },
     });
@@ -135,10 +141,7 @@ export class VideoManager {
     VideoManager.videoWidth = width;
     VideoManager.videoHeight = height;
 
-    const yStride = width;
-    const cStride = (width + 1) >> 1;
-    const yBh = ((height + 7) >> 3) << 3;
-    const cBh = ((height + 15) >> 4) << 3;
+    const { yStride, cStride, yBh, cBh } = computeBinkFrameLayout(width, height);
 
     const yBuffer = new Uint8Array(yStride * yBh);
     const uBuffer = new Uint8Array(cStride * cBh);
@@ -159,6 +162,9 @@ export class VideoManager {
       VideoManager.material.uniforms.uTex.value = VideoManager.uTex;
       VideoManager.material.uniforms.vTex.value = VideoManager.vTex;
       VideoManager.material.uniforms.uYTexSize.value.set(yStride, yBh);
+      // Sample only visible pixels; exclude horizontal stride padding (floor-half chroma).
+      VideoManager.material.uniforms.uYScale.value.set(width / yStride, 1);
+      VideoManager.material.uniforms.uUVScale.value.set(binkChromaVisibleWidth(width) / cStride, 1);
       VideoManager.yTex.needsUpdate = true;
       VideoManager.uTex.needsUpdate = true;
       VideoManager.vTex.needsUpdate = true;
@@ -180,6 +186,8 @@ export class VideoManager {
     VideoManager.vTex.needsUpdate = true;
     if (VideoManager.material.uniforms?.uYTexSize) {
       VideoManager.material.uniforms.uYTexSize.value.set(yuv.linesizeY, yBh);
+      VideoManager.material.uniforms.uYScale.value.set(yuv.width / yuv.linesizeY, 1);
+      VideoManager.material.uniforms.uUVScale.value.set(binkChromaVisibleWidth(yuv.width) / yuv.linesizeU, 1);
       VideoManager.material.uniformsNeedUpdate = true;
     }
   }

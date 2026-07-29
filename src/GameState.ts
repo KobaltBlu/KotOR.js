@@ -57,9 +57,10 @@ import { SSAARenderPass } from "three/examples/jsm/postprocessing/SSAARenderPass
 import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass";
 import { BloomPass } from "three/examples/jsm/postprocessing/BloomPass";
 import { BokehPass } from "three/examples/jsm/postprocessing/BokehPass";
-import { AfterimagePass } from "three/examples/jsm/postprocessing/AfterimagePass";
 import { ColorCorrectionShader } from "three/examples/jsm/shaders/ColorCorrectionShader";
 import { CopyShader } from "three/examples/jsm/shaders/CopyShader";
+import { AccumulationBlurPass } from "@/shaders/pass/AccumulationBlurPass";
+import { resolveSpeedBlurPass } from "@/shaders/pass/FrameBufferEffectGates";
 import Stats from 'three/examples/jsm/libs/stats.module'
 // import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
@@ -393,14 +394,22 @@ export class GameState implements EngineContext {
   static furyPass: FuryPass;
   static copyPass: ShaderPass;
   static renderPassGUI: RenderPass;
-  /** MG camera HUD after AfterimagePass — retail screen-stable gauges stay sharp. */
+  /** MG camera HUD after AccumulationBlurPass — retail screen-stable gauges stay sharp. */
   static renderPassMGHud: RenderPass;
   static bloomPass: BloomPass;
   static bokehPass: BokehPass;
-  /** Retail AurEnable/DisableSpeedBlur + AurSetSpeedBlurRatio (SWMG_SetSpeedBlurEffect). */
-  static speedBlurPass: AfterimagePass;
+  /**
+   * Retail AurEnable/DisableSpeedBlur + AurSetSpeedBlurRatio
+   * (SWMG_SetSpeedBlurEffect / Force Speed ApplyMotionBlur).
+   */
+  static speedBlurPass: AccumulationBlurPass;
   static speedBlurEnabled: boolean = false;
   static speedBlurRatio: number = 0.75;
+  /**
+   * Retail motionBlurVFXCount — Force Speed progFX 0x641/0x642 refcount
+   * (ApplyMotionBlur @ 006a14e0 / RemoveMotionBlur @ 006a1570).
+   */
+  static motionBlurVFXCount: number = 0;
   
   static module: Module;
   static loadingModule: boolean = false;
@@ -432,17 +441,93 @@ export class GameState implements EngineContext {
   /**
    * Retail ExecuteCommandSWMG_SetSpeedBlurEffect @ 00543550 —
    * AurSetSpeedBlurRatio @ 0044f130 (default 0.75) + AurEnable/DisableSpeedBlur @ 0044f0a0/0044f0b0.
-   * Retail applies accumulation via GLRender::FrameBufferModifications → RenderAccumulationBlur;
-   * WebGL uses AfterimagePass as an intentional stand-in (same enable/ratio gate).
+   * Accumulation via AccumulationBlurPass (RenderAccumulationBlur + 128^2 RenderFrameToTexture).
    */
   static SetSpeedBlurEffect(enabled: boolean, ratio: number = 0.75){
+    const wasEnabled = GameState.speedBlurEnabled;
     GameState.speedBlurEnabled = !!enabled;
     if(typeof ratio === 'number' && Number.isFinite(ratio)){
       GameState.speedBlurRatio = ratio;
     }
     if(GameState.speedBlurPass){
-      GameState.speedBlurPass.uniforms.damp.value = GameState.speedBlurRatio;
-      GameState.speedBlurPass.enabled = GameState.speedBlurEnabled;
+      GameState.speedBlurPass.ratio = GameState.speedBlurRatio;
+      if(!GameState.speedBlurEnabled && wasEnabled){
+        GameState.speedBlurPass.resetAccumulation();
+      }
+    }
+  }
+
+  /**
+   * Retail ApplyMotionBlur @ 006a14e0 — progFX 0x641/0x642 on the player (not during MG).
+   */
+  static applyMotionBlurVFX(target: ModuleCreature | undefined, progFX: number){
+    if(progFX !== 0x641 && progFX !== 0x642){
+      return;
+    }
+    GameState.motionBlurVFXCount++;
+    const player = GameState.PartyManager?.Player || GameState.getCurrentPlayer();
+    const isPlayerTarget = !player || !!(target && player === target);
+    const inMiniGame = !!GameState.module?.area?.miniGame;
+    if(isPlayerTarget && GameState.motionBlurVFXCount === 1 && !inMiniGame){
+      GameState.SetSpeedBlurEffect(true, 0.75);
+    }
+  }
+
+  /**
+   * Retail RemoveMotionBlur @ 006a1570 — disable when refcount hits zero (outside MG).
+   */
+  static removeMotionBlurVFX(){
+    GameState.motionBlurVFXCount--;
+    if(GameState.motionBlurVFXCount < 0){
+      GameState.motionBlurVFXCount = 0;
+      return;
+    }
+    if(GameState.motionBlurVFXCount !== 0){
+      return;
+    }
+    if(!GameState.module?.area?.miniGame){
+      GameState.SetSpeedBlurEffect(false);
+    }
+  }
+
+  /**
+   * Retail UpdateMotionBlur @ 006a5920 — ratio = clamp(speed/driveMax, 1) * 0.75.
+   *
+   * Must run AFTER locomotion this frame. WASD calls cancelLocomotionActions
+   * (zeros speed) in controls.Update before creature.update; pathfinding
+   * quickWalk sets speed before clientUpdate. Syncing here (Render) sees the
+   * post-movement speed for both.
+   *
+   * Prefers playerControl.lastAnimMoveSpeed (retail field164) when live,
+   * else creature.speed (WalkUpdateLocation).
+   */
+  static syncMotionBlurRatio(){
+    if(GameState.motionBlurVFXCount <= 0 || !GameState.speedBlurEnabled){
+      return;
+    }
+    // SWMG_SetSpeedBlurEffect owns ratio during minigames.
+    if(GameState.module?.area?.miniGame){
+      return;
+    }
+    const creature =
+      GameState.PartyManager?.Player || GameState.getCurrentPlayer();
+    if(!creature){
+      return;
+    }
+    const driveMax = creature.getAppearance()?.drivemaxspeed || 0;
+    if(!(driveMax > 0)){
+      return;
+    }
+    const anim = creature.playerControl?.lastAnimMoveSpeed ?? 0;
+    const raw = typeof creature.speed === 'number' ? creature.speed : 0;
+    // Pathfinding never writes lastAnimMoveSpeed; WASD does (field164).
+    const speed = anim > 0 ? anim : raw;
+    let t = speed / driveMax;
+    if(t > 1) t = 1;
+    if(t < 0) t = 0;
+    GameState.speedBlurRatio = t * 0.75;
+    if(GameState.speedBlurPass){
+      GameState.speedBlurPass.ratio = GameState.speedBlurRatio;
     }
   }
 
@@ -866,7 +951,7 @@ export class GameState implements EngineContext {
     GameState.copyPass = new ShaderPass(CopyShader);
     GameState.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
     GameState.renderPassMGHud = new RenderPass(GameState.scene, GameState.currentCamera);
-    // Swap camera layer mask for HUD-only draw after AfterimagePass.
+    // Swap camera layer mask for HUD-only draw after AccumulationBlurPass.
     const mgHudRender = GameState.renderPassMGHud.render.bind(GameState.renderPassMGHud);
     GameState.renderPassMGHud.render = (
       renderer: THREE.WebGLRenderer,
@@ -895,7 +980,7 @@ export class GameState implements EngineContext {
       // height: ResolutionManager.getViewportHeight()
     });
 
-    GameState.speedBlurPass = new AfterimagePass(GameState.speedBlurRatio);
+    GameState.speedBlurPass = new AccumulationBlurPass(GameState.speedBlurRatio);
     GameState.speedBlurPass.enabled = false;
 
     GameState.renderPassAA.sampleLevel = 1;
@@ -1836,6 +1921,18 @@ export class GameState implements EngineContext {
 
     GameState.renderDepthPrepass();
 
+    // Retail UpdateMotionBlur — after WASD / path locomotion this frame.
+    GameState.syncMotionBlurRatio();
+
+    // Retail FrameBufferModifications bit 0x10 — speed blur / Force Speed.
+    if(GameState.speedBlurPass){
+      GameState.speedBlurPass.ratio = GameState.speedBlurRatio;
+      GameState.speedBlurPass.enabled = resolveSpeedBlurPass({
+        frameBufferIniEnabled: GameState.isFrameBufferEffectsEnabled(),
+        enableSpeedBlur: GameState.speedBlurEnabled,
+      });
+    }
+
     // Retail doFrameBufferFX (INI "Graphics Options"."Frame Buffer") + nonempty
     // forcePushBucket → RenderForceDistortion before GUI.
     if(GameState.forceDistortionPass){
@@ -1880,7 +1977,7 @@ export class GameState implements EngineContext {
       hudPass.enabled = !!mgCamera;
     }
     if(cam){
-      // World pass: exclude MG camera HUD (drawn after AfterimagePass).
+      // World pass: exclude MG camera HUD (drawn after AccumulationBlurPass).
       cam.layers.enable(RenderLayer.DEFAULT);
       cam.layers.disable(RenderLayer.MG_CAMERA_HUD);
     }

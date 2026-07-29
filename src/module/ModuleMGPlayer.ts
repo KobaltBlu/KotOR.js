@@ -1691,7 +1691,7 @@ export class ModuleMGPlayer extends ModuleObject {
               try{
                 this.camera = camera;
                 camera.name = this.cameraName;
-                // Draw after AfterimagePass so speed blur does not smear HUD.
+                // Draw after AccumulationBlurPass so speed blur does not smear HUD.
                 camera.traverse((o) => { o.layers.set(RenderLayer.MG_CAMERA_HUD); });
                 resolve(true);
               }catch(e){
@@ -1724,7 +1724,7 @@ export class ModuleMGPlayer extends ModuleObject {
       const model = this.models[i];
       if(model instanceof OdysseyModel3D && model.camerahook){
         this.camera = model;
-        // Match loadCamera — HUD after AfterimagePass so speed blur does not smear it.
+        // Match loadCamera — HUD after AccumulationBlurPass so speed blur does not smear it.
         model.traverse((o) => { o.layers.set(RenderLayer.MG_CAMERA_HUD); });
         return model;
       }

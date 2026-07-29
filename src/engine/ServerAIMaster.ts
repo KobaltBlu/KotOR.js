@@ -328,6 +328,14 @@ export class ServerAIMaster {
   }
 
   private static creatureNeedsQuickWalk(creature: ModuleCreature): boolean {
+    // Retail field427_0xa8c ∈ {4,5,6} — Force Push QuickWalk even while debilitated.
+    if(
+      creature.forcePushLocoState === 4 ||
+      creature.forcePushLocoState === 5 ||
+      creature.forcePushLocoState === 6
+    ){
+      return true;
+    }
     const action = creature.actionQueue?.[0] ?? creature.action;
     const type = action?.type;
     if(
@@ -338,7 +346,7 @@ export class ServerAIMaster {
     ){
       return true;
     }
-    // Retail field427_0xa8c ∈ {4,5,6} — locomotion / drive states. Map to anim states.
+    // Retail locomotion / drive anim states.
     const anim = creature.animationState?.index;
     if(
       anim === ModuleCreatureAnimState.WALKING ||

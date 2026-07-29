@@ -152,11 +152,11 @@ export class SpellCastInstance {
     if(owner?.combatData){
       owner.combatData.lastSpellTarget = this.target;
     }
-    // Only overwrite the throw location when we have a real object target
-    if(this.target && this.target !== this.owner){
+    // Object target (incl. self): keep location in sync for GetSpellTargetLocation
+    if(this.target){
       this.targetLocation.copy(this.target.position);
       this.projectileTarget.copy(this.target.position);
-      if(this.target.combatData){
+      if(this.target !== this.owner && this.target.combatData){
         this.target.combatData.lastSpellAttacker = this.owner;
       }
     }

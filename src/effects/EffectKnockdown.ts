@@ -1,16 +1,19 @@
 import { GameEffect } from "@/effects/GameEffect";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
+import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { GameState } from "@/GameState";
 import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { hasImmunityType } from "@/effects/haste-slow";
+import { IMMUNITY_KNOCKDOWN } from "@/effects/set-state";
 import * as THREE from "three";
 
 /**
- * EffectKnockdown — retail OnApplyKnockdown @ 004d99b0 / OnRemove @ 004d9c50.
- * Immunity 0x1C; pause combat round; play knockdown anim (front/back);
- * OnRemove unpause + get-up.
+ * EffectKnockdown — retail OnApplyKnockdown @ 004d99b0 / K2 @ 0073e1c0.
+ * Immunity 0x1C; pause combat; play fall anim; apply companion SetState 0x0E.
  *
  * @file EffectKnockdown.ts
  */
@@ -32,8 +35,11 @@ export class EffectKnockdown extends GameEffect {
     if(creature.plot || creature.isDead?.()){
       return;
     }
-    // IMMUNITY_TYPE_KNOCKDOWN = 0x1C
-    if(hasImmunityType(creature, 0x1C)){
+    if(hasImmunityType(creature, IMMUNITY_KNOCKDOWN)){
+      return;
+    }
+    // Retail: skip if already in knockdown SetState 0x0E
+    if(creature.hasSetState?.(GameEffectSetStateType.KNOCKDOWN)){
       return;
     }
 
@@ -69,6 +75,19 @@ export class EffectKnockdown extends GameEffect {
     creature.setAnimationState?.(
       fromBehind ? ModuleCreatureAnimState.KNOCKED_DOWN2 : ModuleCreatureAnimState.KNOCKED_DOWN
     );
+
+    // Retail: apply SetState type 8, int0=0x0E (companion hold)
+    const setState = new GameState.GameEffectFactory.EffectSetState();
+    setState.setCreator(this.getCreator() || this.creator);
+    setState.setSpellId(this.getSpellId());
+    setState.setDurationType(this.getDurationType());
+    setState.setDuration(this.duration);
+    setState.setExpireDay(this.expireDay);
+    setState.setExpireTime(this.expireTime);
+    setState.setSubType(GameEffectSubType.MAGICAL);
+    setState.setSkipOnLoad(true);
+    setState.setInt(0, GameEffectSetStateType.KNOCKDOWN);
+    creature.addEffect(setState, setState.getDurationType(), setState.duration);
   }
 
   onRemove(){

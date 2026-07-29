@@ -253,7 +253,15 @@ export class ModuleItem extends ModuleObject {
   }
 
   isInfinite(){
-    return this.infinite;
+    return !!(this.infinite | 0);
+  }
+
+  /** Retail item bit 2 (0x4) — store Infinite stock only; player copies clear this. */
+  setInfinite(value: number = 0){
+    this.infinite = value ? 1 : 0;
+    if(this.template?.RootNode?.hasField?.('Infinite')){
+      this.template.RootNode.getFieldByLabel('Infinite').setValue(this.infinite);
+    }
   }
 
   /**

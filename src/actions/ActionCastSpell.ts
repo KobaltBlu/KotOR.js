@@ -8,6 +8,7 @@ import {
   INSTANT_CAST_PAUSE_MS,
 } from "@/combat/spell-cast-anims";
 import { passesSpellKnownGate, passesSpellPrerequisiteGate, canTargetSpellCastByPerception } from "@/combat/spell-cast-gates";
+import { shouldBindSpellCastToCaster } from "@/combat/spell-self-target";
 import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { ModuleObjectType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
@@ -330,6 +331,13 @@ export class ActionCastSpell extends Action {
     this.spell = new GameState.TalentSpell( this.getParameter<number>(0));
     if(!this.spell){
       return this.failCast(owner, ActionStatus.FAILED);
+    }
+
+    // Retail GetSelfForcePowers / range P — rebind after resolve so a selected
+    // party member never becomes MoveTo / GetSpellTargetObject.
+    if(shouldBindSpellCastToCaster(this.spell, { isUserAction: this.isUserAction })){
+      this.target = owner;
+      this.targetPosition.copy(owner.position);
     }
 
     // Retail force-item forbid/require masks

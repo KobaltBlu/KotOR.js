@@ -390,7 +390,7 @@ export class GameEffectFactory {
         effect = new EffectLimitMovementSpeed();
       break;
       case GameEffectType.EffectForcePushed: //ForcePushed
-
+        effect = new EffectForcePushed();
       break;
       case GameEffectType.EffectDamageShield: //DamageShield
         effect = new EffectDamageShield();

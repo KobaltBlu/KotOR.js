@@ -113,7 +113,7 @@ export function ensureYUVWebGL(
   const gl = canvas.getContext("webgl", { alpha: false, premultipliedAlpha: false });
   if (!gl) return null;
 
-  if (prev && prev.width === width && prev.height === height && prev.linesizeY === linesizeY) {
+  if (prev && prev.width === width && prev.height === height && prev.linesizeY === linesizeY && prev.linesizeU === linesizeU) {
     return prev;
   }
 

@@ -7,7 +7,7 @@ import { ModuleObjectConstant, ModuleObjectType } from "@/enums";
 import { BitWise } from "@/utility/BitWise";
 import { GameState } from "@/GameState";
 import { CombatRound } from "@/combat/CombatRound";
-
+import { resolveSpellCastTarget } from "@/combat/spell-self-target";
 /**
  * ActionCombat class.
  *
@@ -97,16 +97,25 @@ export class ActionCombat extends Action {
         return ActionStatus.IN_PROGRESS;
 
       case CombatActionType.CAST_SPELL: {
+        // Retail GetSelfForcePowers / range P — bind to caster before queueing
+        // ActionCastSpell (look-at companion must not become MoveTo destination).
+        const castTarget = resolveSpellCastTarget(
+          combatAction.spell,
+          combatAction.target as any,
+          this.owner,
+          { isUserAction: combatAction.isUserAction }
+        );
+        combatAction.target = castTarget;
         const spellAction = new GameState.ActionFactory.ActionCastSpell();
         spellAction.setParameter(0, ActionParameterType.INT, combatAction.spell ? combatAction.spell.id : 0);
         spellAction.setParameter(1, ActionParameterType.INT, combatAction.spellClassIndex);
         spellAction.setParameter(2, ActionParameterType.INT, combatAction.domainLevel);
         spellAction.setParameter(3, ActionParameterType.INT, 0);
         spellAction.setParameter(4, ActionParameterType.INT, 0);
-        spellAction.setParameter(5, ActionParameterType.DWORD, combatAction.target?.id || ModuleObjectConstant.OBJECT_INVALID);
-        spellAction.setParameter(6, ActionParameterType.FLOAT, combatAction.target?.position?.x || 0);
-        spellAction.setParameter(7, ActionParameterType.FLOAT, combatAction.target?.position?.y || 0);
-        spellAction.setParameter(8, ActionParameterType.FLOAT, combatAction.target?.position?.z || 0);
+        spellAction.setParameter(5, ActionParameterType.DWORD, castTarget?.id || ModuleObjectConstant.OBJECT_INVALID);
+        spellAction.setParameter(6, ActionParameterType.FLOAT, castTarget?.position?.x || 0);
+        spellAction.setParameter(7, ActionParameterType.FLOAT, castTarget?.position?.y || 0);
+        spellAction.setParameter(8, ActionParameterType.FLOAT, castTarget?.position?.z || 0);
         spellAction.setParameter(9, ActionParameterType.INT, combatAction.projectilePath);
         spellAction.setParameter(10, ActionParameterType.INT, -1);
         spellAction.setParameter(11, ActionParameterType.INT, combatAction.overrideSpell ? combatAction.overrideSpell.id : -1);

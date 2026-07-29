@@ -26,6 +26,7 @@ export * from "@/combat/attack-summary-feedback";
 export * from "@/combat/damage-bonus";
 export * from "@/combat/damage-shields";
 export * from "@/combat/spell-range";
+export * from "@/combat/spell-self-target";
 export * from "@/combat/spell-projectile-time";
 export * from "@/combat/spell-cast-gates";
 export * from "@/combat/spell-projectile-model";

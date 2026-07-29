@@ -4,24 +4,56 @@ import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { GameEffectSubType } from "@/enums/effects/GameEffectSubType";
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
+import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbientState";
 import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
 import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { animForSetState, VFX_DROID_STUN, VFX_STUN } from "@/effects/set-state";
-import * as THREE from "three";
+import {
+  applyForcePushAIActivityMask,
+  clearForcePushLoco,
+  stampForcePushAttackSummary,
+  updateForcePushAnimFlags,
+} from "@/engine/pathfinding/force-push-quick-walk";
 
 /**
- * EffectSetStateInternal — retail type 0x09 (OnApplySetStateInternal @ 004da330).
- * Clears actions (except ForcePush), pauses combat, applies child VFX/saves, sets anim.
+ * EffectSetStateInternal — retail type 0x09 (OnApplySetStateInternal @ 004da330 /
+ * K2 @ 00740720). Clears actions (except ForcePush), pauses combat, applies
+ * child VFX/saves, sets ambient / anim.
  *
  * @file EffectSetStateInternal.ts
  */
+
+function usesSetStateAIMaskNeg3(state: number): boolean {
+  return (
+    state === GameEffectSetStateType.CHOKE ||
+    state === GameEffectSetStateType.CUT_SCENE_HORRIFIED ||
+    state === GameEffectSetStateType.FORCEPUSH ||
+    state === GameEffectSetStateType.WHIRLWIND ||
+    state === GameEffectSetStateType.KNOCKDOWN ||
+    state === GameEffectSetStateType.CRUSH ||
+    state === GameEffectSetStateType.HELD ||
+    state === GameEffectSetStateType.CUT_SCENE_STUNNED ||
+    state === GameEffectSetStateType.MIND_TRICK ||
+    state === GameEffectSetStateType.DROID_SCRAMBLE ||
+    state === GameEffectSetStateType.DROID_STUN
+  );
+}
+
+function firesOnUserDefined(state: number): boolean {
+  // Retail OnRemoveSetStateInternal @ 00741150: 1, 3–10, 0x0E–0x13
+  return (
+    state === GameEffectSetStateType.CONFUSED ||
+    (state >= GameEffectSetStateType.DROID_STUN && state <= GameEffectSetStateType.WHIRLWIND) ||
+    (state >= GameEffectSetStateType.KNOCKDOWN && state <= GameEffectSetStateType.DROID_SCRAMBLE)
+  );
+}
+
 export class EffectSetStateInternal extends GameEffect {
   private children: GameEffect[] = [];
   elapsed = 0;
-  fp_distance = 0;
 
   constructor(){
     super();
@@ -54,15 +86,22 @@ export class EffectSetStateInternal extends GameEffect {
 
     this.applyChildEffects(creature, state);
 
-    if(state !== GameEffectSetStateType.FORCEPUSH){
-      creature.setAnimationState?.(animForSetState(state));
+    if(usesSetStateAIMaskNeg3(state)){
+      applyForcePushAIActivityMask(creature);
     }
+
+    this.applyAmbientAndAnim(creature, state);
   }
 
   update(delta: number = 0){
     super.update(delta);
     if(this.getInt(0) === GameEffectSetStateType.FORCEPUSH){
-      this.updateForcePush(delta);
+      if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
+        const creature = this.object as ModuleCreature;
+        if(!creature._quickWalkedThisFrame){
+          updateForcePushAnimFlags(creature, delta);
+        }
+      }
     }
     this.elapsed += delta;
   }
@@ -72,6 +111,11 @@ export class EffectSetStateInternal extends GameEffect {
     if(BitWise.InstanceOfObject(this.object, ModuleObjectType.ModuleCreature)){
       const creature = this.object as ModuleCreature;
       const state = this.getInt(0) | 0;
+      this.clearAmbient(creature, state);
+      if(state === GameEffectSetStateType.FORCEPUSH){
+        clearForcePushLoco(creature);
+        creature.setComputedPath?.(undefined);
+      }
       const round = creature.combatRound;
       if(round){
         round.infinitePause = false;
@@ -85,12 +129,7 @@ export class EffectSetStateInternal extends GameEffect {
         );
       }
 
-      // Retail OnRemoveSetStateInternal @ 004da870 —
-      // OnUserDefined for states 1,3–10 (not FRIGHTENED=2); then ClearVisibleList.
-      if(
-        state === GameEffectSetStateType.CONFUSED ||
-        (state >= GameEffectSetStateType.DROID_STUN && state <= GameEffectSetStateType.WHIRLWIND)
-      ){
+      if(firesOnUserDefined(state)){
         const onUserDefined = creature.scripts?.[ModuleObjectScript.CreatureOnUserDefined];
         onUserDefined?.run?.(creature, 0);
       }
@@ -100,6 +139,78 @@ export class EffectSetStateInternal extends GameEffect {
       this.object?.removeEffect?.(this.children[i]);
     }
     this.children.length = 0;
+  }
+
+  private applyAmbientAndAnim(creature: ModuleCreature, state: number){
+    switch(state){
+      case GameEffectSetStateType.FORCEPUSH:
+        creature.ambientAnimState = ModuleCreatureAmbientState.PRONE_FORCE_PUSHED;
+        {
+          const creator = this.getCreator();
+          if(BitWise.InstanceOfObject(creator, ModuleObjectType.ModuleCreature)){
+            stampForcePushAttackSummary(creator as ModuleCreature, creature);
+          }
+        }
+        break;
+      case GameEffectSetStateType.WHIRLWIND:
+        creature.ambientAnimState = ModuleCreatureAmbientState.WHIRLWIND;
+        creature.setAnimationState?.(animForSetState(state));
+        break;
+      case GameEffectSetStateType.KNOCKDOWN:
+        // Retail case 0x0E → ambient 0x0F
+        creature.ambientAnimState = ModuleCreatureAmbientState.KNOCKDOWN;
+        creature.setAnimationState?.(animForSetState(state));
+        break;
+      case GameEffectSetStateType.CRUSH:
+        creature.ambientAnimState = ModuleCreatureAmbientState.CRUSH;
+        creature.setAnimationState?.(animForSetState(state));
+        break;
+      case GameEffectSetStateType.CUT_SCENE_STUNNED:
+      case GameEffectSetStateType.MIND_TRICK:
+      case GameEffectSetStateType.DROID_SCRAMBLE:
+        // Retail cases 4 / 0x12 / 0x13 → ambient 2
+        creature.ambientAnimState = ModuleCreatureAmbientState.PAUSE_POISONED;
+        creature.setAnimationState?.(animForSetState(state));
+        break;
+      case GameEffectSetStateType.HELD:
+        // Retail case 0x11 RecomputeAmbient else → ambient 0
+        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
+        creature.setAnimationState?.(animForSetState(state));
+        break;
+      default:
+        // DROID_CONFUSED (0x10): no Internal Recompute — leave ambient alone
+        creature.setAnimationState?.(animForSetState(state));
+        break;
+    }
+  }
+
+  private clearAmbient(creature: ModuleCreature, state: number){
+    const ambient = creature.ambientAnimState | 0;
+    if(state === GameEffectSetStateType.FORCEPUSH){
+      if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_PUSHED){
+        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
+      }
+    }else if(state === GameEffectSetStateType.WHIRLWIND){
+      if(ambient === ModuleCreatureAmbientState.WHIRLWIND){
+        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
+      }
+    }else if(state === GameEffectSetStateType.KNOCKDOWN){
+      if(ambient === ModuleCreatureAmbientState.KNOCKDOWN){
+        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
+      }
+    }else if(state === GameEffectSetStateType.CRUSH){
+      if(ambient === ModuleCreatureAmbientState.CRUSH){
+        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
+      }
+    }else if(
+      state === GameEffectSetStateType.CUT_SCENE_STUNNED ||
+      state === GameEffectSetStateType.MIND_TRICK ||
+      state === GameEffectSetStateType.DROID_SCRAMBLE
+    ){
+      if(ambient === ModuleCreatureAmbientState.PAUSE_POISONED){
+        creature.ambientAnimState = ModuleCreatureAmbientState.IDLE;
+      }
+    }
   }
 
   private applyChildEffects(creature: ModuleCreature, state: number){
@@ -114,6 +225,9 @@ export class EffectSetStateInternal extends GameEffect {
         this.addSaveDecrease(creature, 2, 0, raceCount);
         break;
       case GameEffectSetStateType.CUT_SCENE_STUNNED:
+      case GameEffectSetStateType.MIND_TRICK:
+      case GameEffectSetStateType.DROID_SCRAMBLE:
+        // Retail cases 4 / 0x12 / 0x13 share VFX_STUN 0x7d2
         this.addVfx(creature, VFX_STUN);
         break;
       default:
@@ -155,43 +269,5 @@ export class EffectSetStateInternal extends GameEffect {
     child.setExpireTime(this.expireTime);
     child.setSubType(GameEffectSubType.MAGICAL);
     child.setSkipOnLoad(true);
-  }
-
-  /** Ported from prior EffectSetState ForcePush motion. */
-  private updateForcePush(delta: number = 0){
-    if(!this.object) return;
-    const v1 = new THREE.Vector3(
-      this.getFloat(0),
-      this.getFloat(1),
-      this.getFloat(2)
-    );
-    const v2 = new THREE.Vector3(
-      this.getFloat(3),
-      this.getFloat(4),
-      this.getFloat(5)
-    );
-    this.fp_distance = this.getFloat(6);
-
-    const anim_push_length = 0.4666600227355957 * (this.fp_distance / 5);
-    const anim_land_length = 1.0666699409484863;
-    const anim_getup_length = 1.466670036315918;
-
-    if(this.elapsed < anim_push_length){
-      const f_push_move_delta = (this.elapsed / anim_push_length);
-      this.object.position.copy(v1.lerp(v2, f_push_move_delta));
-      this.object.box?.setFromObject?.(this.object.model);
-    }else if(this.elapsed < anim_push_length + anim_land_length){
-      this.object.position.set(
-        this.getFloat(3),
-        this.getFloat(4),
-        this.getFloat(5)
-      );
-      this.object.box?.setFromObject?.(this.object.model);
-      this.object.fp_push_played = true;
-    }else if(this.elapsed < anim_push_length + anim_land_length + anim_getup_length){
-      this.object.fp_land_played = true;
-    }else{
-      this.object.fp_getup_played = true;
-    }
   }
 }

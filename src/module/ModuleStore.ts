@@ -197,7 +197,10 @@ export class ModuleStore extends ModuleObject {
 
     let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.inventory.length; i++){
-      itemList.addChildStruct( this.inventory[i].save() );
+      // Retail CSWSStore::SaveStore writes Infinite before SaveItem.
+      const itemStruct = this.inventory[i].save();
+      itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Infinite') ).setValue(this.inventory[i].isInfinite() ? 1 : 0);
+      itemList.addChildStruct( itemStruct );
     }
 
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);

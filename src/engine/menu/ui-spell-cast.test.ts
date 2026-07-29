@@ -199,3 +199,52 @@ describe('activateMenuItem talent-before-item preference', () => {
     expect(path).toBe('talent');
   });
 });
+
+/**
+ * Retail GetSelfForcePowers / ForceMenuAction — friendly-only and personal
+ * powers cast on the controlled creature, not the look-at target.
+ */
+function parseForceMenuIndex(raw: unknown): number {
+  if(typeof raw === 'number' && Number.isFinite(raw)) return raw;
+  if(raw === '****' || raw == null || raw === '') return -1;
+  const n = parseInt(String(raw), 10);
+  return Number.isFinite(n) ? n : -1;
+}
+
+function resolveUserForceCastTarget(
+  spell: { range?: string; forcehostile?: number | string; forcefriendly?: number | string },
+  oTarget: object,
+  oCaster: object,
+  isUserAction: boolean
+): object {
+  const rangeKey = String(spell.range || '').toUpperCase();
+  const friendlyOnly =
+    parseForceMenuIndex(spell.forcehostile) < 0 &&
+    parseForceMenuIndex(spell.forcefriendly) >= 0;
+  if(rangeKey === 'P' || (isUserAction && friendlyOnly)){
+    return oCaster;
+  }
+  return oTarget;
+}
+
+describe('self / friendly force cast target', () => {
+  const caster = { id: 1, name: 'pc' };
+  const companion = { id: 2, name: 'kreia' };
+
+  it('Force Speed (range P) always targets the caster', () => {
+    const spell = { range: 'P', forcehostile: -1, forcefriendly: 2 };
+    expect(resolveUserForceCastTarget(spell, companion, caster, true)).toBe(caster);
+    expect(resolveUserForceCastTarget(spell, companion, caster, false)).toBe(caster);
+  });
+
+  it('Heal (FORCEFRIENDLY-only, range T) retargets on user action even with **** forcehostile', () => {
+    const spell = { range: 'T', forcehostile: '****' as any, forcefriendly: 0 };
+    expect(resolveUserForceCastTarget(spell, companion, caster, true)).toBe(caster);
+    expect(resolveUserForceCastTarget(spell, companion, caster, false)).toBe(companion);
+  });
+
+  it('hostile powers keep the selected target', () => {
+    const spell = { range: 'M', forcehostile: 2, forcefriendly: -1 };
+    expect(resolveUserForceCastTarget(spell, companion, caster, true)).toBe(companion);
+  });
+});

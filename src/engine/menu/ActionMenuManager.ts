@@ -791,7 +791,11 @@ export class ActionMenuManager {
     // Force-menu entries (incl. droid equipment powers) carry talent; prefer
     // CastSpell / ForceMenuAction over UseItem when both item + talent are set.
     if(menuItem.talent instanceof TalentSpell){
-      menuItem.talent.useTalentOnObject(target || pc, pc, { isUserAction: true });
+      // Self-panel stamps oPC; still pass caster as both args so look-at cannot win.
+      const castTarget = (defaultTarget === pc || menuItem.target === pc)
+        ? pc
+        : (target || pc);
+      menuItem.talent.useTalentOnObject(castTarget, pc, { isUserAction: true });
       return;
     }
 
@@ -821,6 +825,9 @@ export class ActionMenuManager {
     const action = ActionMenuManager.ActionPanels.selfPanels[index].getSelectedAction();
     if(!action){ return; }
 
+    // Retail GetSelfForcePowers stamps the controlled creature's object id onto
+    // every entry; ForceMenuAction casts at that id — never the look-at target.
+    action.target = ActionMenuManager.oPC;
     ActionMenuManager.activateMenuItem(action, ActionMenuManager.oPC);
   }
 

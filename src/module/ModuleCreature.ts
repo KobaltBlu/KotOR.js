@@ -135,6 +135,11 @@ import {
 } from "@/engine/pathfinding/movement-rate";
 import { resetWalkSpeedFactor } from "@/engine/pathfinding/walk-update-location";
 import {
+  forcePushQuickWalkUpdate,
+  isForcePushLocoActive,
+  updateForcePushAnimFlags,
+} from "@/engine/pathfinding/force-push-quick-walk";
+import {
   cameraRelativeDesired,
   createPlayerCamRelativeState,
   driveAnimPlaybackRate,
@@ -376,6 +381,17 @@ export class ModuleCreature extends ModuleObject {
   textureVar: number;
   walkRate: number;
   blockingTimer: number;
+  /**
+   * Retail field427_0xa8c — Force Push QuickWalk modes {4,5,6}.
+   * Set by OnApplyForcePush; cleared when SetState FORCEPUSH ends.
+   */
+  forcePushLocoState: number;
+  /** Retail field428_0xa90 — distance traveled during Force Push slide. */
+  forcePushDistanceTraveled: number;
+  /** True once QuickWalk_ForcePushed reaches path end (land/getup phase). */
+  forcePushArrived: boolean;
+  /** Seconds since force-push arrival (drives fp_land / fp_getup). */
+  forcePushArriveElapsed: number;
   /**
    * Retail WalkUpdateLocation field37_0xb8 — previous frame speed factor.
    */
@@ -703,6 +719,10 @@ export class ModuleCreature extends ModuleObject {
     this.fp_push_played = false;
     this.fp_land_played = false;
     this.fp_getup_played = false;
+    this.forcePushLocoState = 0;
+    this.forcePushDistanceTraveled = 0;
+    this.forcePushArrived = false;
+    this.forcePushArriveElapsed = 0;
 
     // this.groundFace = undefined;
     this.groundTilt = new THREE.Vector3();
@@ -758,14 +778,24 @@ export class ModuleCreature extends ModuleObject {
    * Advances the head MoveTo/Follow/Drive action so motion never skips frames
    * when aiUpdate is budget-deferred. Sets _quickWalkedThisFrame so aiUpdate
    * does not re-process the same action.
+   * Force Push (field427 ∈ {4,5,6}) runs even while debilitated.
    */
   quickWalkUpdate(delta: number = 0){
     if(this.destroyed || this.willDestroy || this.isRetainedCorpse) return;
-    if(this.isDead() || this.isDebilitated()) return;
+    if(this.isDead()) return;
     if(!GameState.module?.readyToProcessEvents) return;
 
     // aiUpdate is budget-deferred; keep area current for every-frame follow/move.
     this.area = GameState.module.area;
+
+    if(isForcePushLocoActive(this)){
+      forcePushQuickWalkUpdate(this, delta);
+      updateForcePushAnimFlags(this, delta);
+      this._quickWalkedThisFrame = true;
+      return;
+    }
+
+    if(this.isDebilitated()) return;
 
     const action = this.actionQueue?.[0];
     if(!action) return;
@@ -1083,13 +1113,32 @@ export class ModuleCreature extends ModuleObject {
       // Direct WASD/stick overrides path actions while axes are held. Keep
       // running the controller after release so retail drag can decelerate.
       // Dialog mode still ticks creatures; sticky axes must not keep coasting.
+      // Retail Force Push: QuickWalk_ForcePushed only SetPosition — no cam turn.
+      const forcePushLocked =
+        this.isForcePushed() ||
+        this.forcePushLocoState === 4 ||
+        this.forcePushLocoState === 5 ||
+        this.forcePushLocoState === 6;
       const usePlayerControl =
+        !forcePushLocked &&
         GameState.Mode != EngineMode.DIALOG &&
         (!!this.playerControl?.active || playerControlMoving) &&
         (this.controlled || this === GameState.getCurrentPlayer());
 
       if(usePlayerControl){
         this.applyPlayerCamRelativeControl(delta);
+      }else if(forcePushLocked){
+        // Hold still for player RK4; QuickWalk owns the slide.
+        this.forceVector.set(0, 0, 0);
+        this.force = 0;
+        this.speed = 0;
+        if(this.playerControl){
+          this.playerControl.velX = 0;
+          this.playerControl.velY = 0;
+          this.playerControl.accelX = 0;
+          this.playerControl.accelY = 0;
+          this.playerControl.lastAnimMoveSpeed = 0;
+        }
       }else if(serverLocomotionActive){
         this.forceVector.set(0, 0, 0);
         this.force = 0;
@@ -4268,10 +4317,40 @@ export class ModuleCreature extends ModuleObject {
     return this.hasSetState(10);
   }
 
+  /** K2 EffectCrush — SetState 15 */
+  isCrushed(){
+    return this.hasSetState(15);
+  }
+
+  /** K2 companion SetState from Knockdown — SetState 14 */
+  isKnockdownHeld(){
+    return this.hasSetState(14);
+  }
+
+  /** K2 EffectDroidConfused — SetState 16 (not IsDebilitated in retail) */
+  isDroidConfused(){
+    return this.hasSetState(16);
+  }
+
+  /** K2 SetState 0x11 */
+  isHeld(){
+    return this.hasSetState(17);
+  }
+
+  /** K2 EffectMindTrick — SetState 18 */
+  isMindTricked(){
+    return this.hasSetState(18);
+  }
+
+  /** K2 EffectDroidScramble — SetState 19 */
+  isDroidScrambled(){
+    return this.hasSetState(19);
+  }
+
   isKnockedDown(){
     return !!(this.effects || []).find(
       e => e?.type === GameEffectType.EffectKnockdown && e.applied
-    );
+    ) || this.isKnockdownHeld();
   }
 
   /** Retail EffectEntangle — aborts AIActionCastSpell mid-cast. */
@@ -4290,6 +4369,10 @@ export class ModuleCreature extends ModuleObject {
       || this.isForcePushed()
       || this.isHorrified()
       || this.isWhirlwind()
+      || this.isCrushed()
+      || this.isHeld()
+      || this.isMindTricked()
+      || this.isDroidScrambled()
       || this.isKnockedDown();
   }
 

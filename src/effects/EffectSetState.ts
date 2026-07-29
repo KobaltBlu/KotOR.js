@@ -4,7 +4,7 @@ import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 import type { ModuleCreature } from "@/module/ModuleCreature";
-import { isSetStateImmune, rebalanceSetState } from "@/effects/set-state";
+import { isSetStateImmune, rebalanceSetState, SET_STATE_OUTER_AI_ACTIVITY_MASK } from "@/effects/set-state";
 
 /**
  * EffectSetState — retail outer type 0x08 (OnApplySetState @ 004e1c20).
@@ -42,6 +42,8 @@ export class EffectSetState extends GameEffect {
     }
 
     super.onApply();
+    // Retail OnApplySetState: SETAISTATE −0x101 → activity &= 0xFEFF
+    creature.activity = (creature.activity | 0) & SET_STATE_OUTER_AI_ACTIVITY_MASK;
     rebalanceSetState(creature, this);
   }
 

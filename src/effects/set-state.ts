@@ -20,15 +20,25 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
  */
 
 /** IMMUNITY_TYPE_* used by OnApplySetState */
+export const IMMUNITY_MIND = 1;
 export const IMMUNITY_FEAR = 4;
 export const IMMUNITY_PARALYZE = 6;
 export const IMMUNITY_STUN = 0x0c;
 export const IMMUNITY_SLEEP = 0x0d;
 export const IMMUNITY_CONFUSED = 0x10;
+export const IMMUNITY_KNOCKDOWN = 0x1c;
+/** K2 — EffectDroidConfused (always checked; no cutscene int1 bypass) */
+export const IMMUNITY_DROID_CONFUSED = 0x21;
 
 /** VFX ids from OnApplySetStateInternal */
 export const VFX_DROID_STUN = 0x3ef;
 export const VFX_STUN = 0x7d2;
+
+/**
+ * Retail OnApplySetState always applies SETAISTATE −0x101 before Internal —
+ * activity &= 0xFEFF (clears bit 0x100).
+ */
+export const SET_STATE_OUTER_AI_ACTIVITY_MASK = 0xfeff;
 
 export function getActiveSetStateType(creature: ModuleCreature): number {
   let highest = 0;
@@ -67,6 +77,15 @@ export function isSetStateImmune(
     case GameEffectSetStateType.CUT_SCENE_HORRIFIED:
       if(ignoreImmunity) return false;
       return !!creature.getHasFeat?.(CombatFeatType.FORCE_IMMUNITY_FEAR);
+    case GameEffectSetStateType.KNOCKDOWN:
+      if(ignoreImmunity) return false;
+      return hasImmunityType(creature, IMMUNITY_KNOCKDOWN, versus);
+    case GameEffectSetStateType.DROID_CONFUSED:
+      // Retail: no int1 cutscene bypass
+      return hasImmunityType(creature, IMMUNITY_DROID_CONFUSED, versus);
+    case GameEffectSetStateType.MIND_TRICK:
+      if(ignoreImmunity) return false;
+      return hasImmunityType(creature, IMMUNITY_MIND, versus);
     default:
       return false;
   }
@@ -79,7 +98,12 @@ export function animForSetState(state: number): ModuleCreatureAnimState {
     case GameEffectSetStateType.CUT_SCENE_PARALYZE:
       return ModuleCreatureAnimState.PARALYZED;
     case GameEffectSetStateType.CHOKE:
+    case GameEffectSetStateType.CRUSH:
+    case GameEffectSetStateType.HELD:
+      // Crush/Held share choke-like lock pose; ambient set separately.
       return ModuleCreatureAnimState.CHOKE;
+    case GameEffectSetStateType.KNOCKDOWN:
+      return ModuleCreatureAnimState.KNOCKED_DOWN;
     case GameEffectSetStateType.WHIRLWIND:
       return ModuleCreatureAnimState.WHIRLWIND;
     case GameEffectSetStateType.DROID_STUN:
@@ -87,6 +111,9 @@ export function animForSetState(state: number): ModuleCreatureAnimState {
     case GameEffectSetStateType.CUT_SCENE_HORRIFIED:
       return ModuleCreatureAnimState.SPASM;
     case GameEffectSetStateType.CUT_SCENE_STUNNED:
+    case GameEffectSetStateType.MIND_TRICK:
+    case GameEffectSetStateType.DROID_SCRAMBLE:
+    case GameEffectSetStateType.DROID_CONFUSED:
     case GameEffectSetStateType.CONFUSED:
     case GameEffectSetStateType.FRIGHTENED:
     case GameEffectSetStateType.FORCEPUSH:
@@ -173,11 +200,5 @@ export function rebalanceSetState(creature: ModuleCreature, trigger?: GameEffect
     internal.setSkipOnLoad(true);
   }
   internal.setInt(0, highest);
-  // Force-push motion floats live on the outer SetState (EffectForcePushed)
-  if(highest === GameEffectSetStateType.FORCEPUSH && highestEffect){
-    for(let f = 0; f < 7; f++){
-      internal.setFloat(f, highestEffect.getFloat(f));
-    }
-  }
   creature.addEffect(internal, internal.getDurationType(), internal.duration);
 }

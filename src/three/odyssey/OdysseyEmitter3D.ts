@@ -57,6 +57,10 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   /** Minimum linked ribbon samples when sizing the buffer (see getMaxParticleCount). */
   private static readonly LINKED_MIN_SAMPLES = 32;
 
+  /** Scratch age arrays for rebuildLinkedTrailMesh (avoid per-frame alloc). */
+  private static _linkedAgeScratch = new Float32Array(0);
+  private static _linkedMaxAgeScratch = new Float32Array(0);
+
   /** Set to false to silence `[emitterName]` tick logs (see `emitterLog`). */
   static EMITTER_TICK_DEBUG = false;
 
@@ -220,6 +224,18 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   /** Previous ribbon sample center (world) for tangent along linked trail */
   private _lastRibbonCenter: THREE.Vector3 = new THREE.Vector3();
   private _hasRibbonCenter: boolean = false;
+
+  /**
+   * Non-lightning Linked trail: retail-style live sample list (world centers + age).
+   * Mesh geometry is rebuilt each tick from these only — never draws spare 0,0,0 slots.
+   * RenderLinked @ 00495b20 builds quads from field83_0x1cc particles the same way.
+   */
+  private _linkedCenters: Float32Array = new Float32Array(0);
+  private _linkedAges: Float32Array = new Float32Array(0);
+  private _linkedMaxAges: Float32Array = new Float32Array(0);
+  private _linkedCapacity: number = 0;
+  /** Scratch for chronological center order when rebuilding the ribbon mesh. */
+  private _linkedDrawCenters: Float32Array = new Float32Array(0);
 
   // Chunk emitter state (ChunkyParticle presentation — InstancedMesh approx of per-particle Gob)
   private _chunkGeometry: THREE.BufferGeometry = null;
@@ -577,8 +593,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
           this.geometry.setAttribute( 'offset', this.velocities );
           this.geometry.setAttribute( 'props', this.props );
           this.geometry.setAttribute( 'ids', this.ids );
-          
+          this.geometry.setIndex([]);
+
           this.mesh = new THREE.Mesh( this.geometry, this.material );
+          // World-space ribbon verts (viewMatrix * position). Keep mesh matrixWorld
+          // identity so parenting under the emitter cannot double-transform.
+          this.mesh.onBeforeRender = () => {
+            this.mesh.matrixWorld.identity();
+          };
         break;
         default:
           // Motion_Blur + billboards: instanced quads (offset = world pos for Motion_Blur)
@@ -625,14 +647,13 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         );
         return n * 2;
       }else{
-        // Each logical sample = 2 verts (L/R). `le`/`br` use ceil so fractional MDL values size conservatively.
+        // Sample-center ring capacity (not L/R verts). Geometry is rebuilt live each tick.
         const le = Math.max(1, Math.ceil(this.lifeExp >= 0 ? this.lifeExp : 1));
         const br = Math.max(1, Math.ceil(this.birthRate || 0));
-        const samples = Math.min(
+        return Math.min(
           OdysseyEmitter3D.LINKED_MAX_SAMPLES,
           Math.max(OdysseyEmitter3D.LINKED_MIN_SAMPLES, le * br * 2)
         );
-        return samples * 2;
       }
     }else{
       // lifeExp 0.05 → ceil=1; birthRate 0 → keep a small buffer so resize can grow when travel01 sets rate
@@ -840,82 +861,34 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   private logSpawnParticleAttributes(slotIndex: number, delta: number){
     if(!OdysseyEmitter3D.EMITTER_TICK_DEBUG) return;
     if(this.node.renderMode === 'Linked'){
-      const base = slotIndex * 2;
-      const propAt = (vi: number) => {
-        const p = base + vi;
-        return {
-          age: this.props.getX(p),
-          maxAge: this.props.getY(p),
-          alive: this.props.getZ(p),
-          w: this.props.getW(p),
-        };
-      };
-      const posAt = (vi: number) => {
-        const p = base + vi;
-        return { x: this.offsets.getX(p), y: this.offsets.getY(p), z: this.offsets.getZ(p) };
-      };
-      const velAt = (vi: number) => {
-        const p = base + vi;
-        return {
-          x: this.velocities.getX(p),
-          y: this.velocities.getY(p),
-          z: this.velocities.getZ(p),
-          w: this.velocities.getW(p),
-        };
-      };
-      let uvL = { x: 0, y: 0 };
-      let uvR = { x: 0, y: 0 };
-      const uvAttr = this.geometry.getAttribute('uv') as THREE.BufferAttribute | undefined;
-      if(uvAttr && uvAttr.count > base + 1){
-        uvL = { x: uvAttr.getX(base), y: uvAttr.getY(base) };
-        uvR = { x: uvAttr.getX(base + 1), y: uvAttr.getY(base + 1) };
-      }
-      this.emitterLog('spawn', {
-        ringSlot: slotIndex,
-        delta,
-        positionLeft: posAt(0),
-        positionRight: posAt(1),
-        centerApprox: {
-          x: (this.offsets.getX(base) + this.offsets.getX(base + 1)) * 0.5,
-          y: (this.offsets.getY(base) + this.offsets.getY(base + 1)) * 0.5,
-          z: (this.offsets.getZ(base) + this.offsets.getZ(base + 1)) * 0.5,
-        },
-        propsLeft: propAt(0),
-        propsRight: propAt(1),
-        velocityLeft: velAt(0),
-        velocityRight: velAt(1),
-        uvLeft: uvL,
-        uvRight: uvR,
-        idLeft: this.ids.getX(base),
-        idRight: this.ids.getX(base + 1),
-      });
-    }else{
-      const i = slotIndex;
-      let uv = { x: 0, y: 0 };
-      const uvAttr = this.geometry.getAttribute('uv') as THREE.BufferAttribute | undefined;
-      if(uvAttr && uvAttr.count > i){
-        uv = { x: uvAttr.getX(i), y: uvAttr.getY(i) };
-      }
-      this.emitterLog('spawn', {
-        particleIndex: i,
-        delta,
-        position: { x: this.offsets.getX(i), y: this.offsets.getY(i), z: this.offsets.getZ(i) },
-        props: {
-          age: this.props.getX(i),
-          maxAge: this.props.getY(i),
-          alive: this.props.getZ(i),
-          w: this.props.getW(i),
-        },
-        velocity: {
-          x: this.velocities.getX(i),
-          y: this.velocities.getY(i),
-          z: this.velocities.getZ(i),
-          w: this.velocities.getW(i),
-        },
-        uv,
-        id: this.ids.getX(i),
-      });
+      // Non-lightning Linked logs from spawnLinkedSample; lightning uses its own path.
+      return;
     }
+    const i = slotIndex;
+    let uv = { x: 0, y: 0 };
+    const uvAttr = this.geometry.getAttribute('uv') as THREE.BufferAttribute | undefined;
+    if(uvAttr && uvAttr.count > i){
+      uv = { x: uvAttr.getX(i), y: uvAttr.getY(i) };
+    }
+    this.emitterLog('spawn', {
+      particleIndex: i,
+      delta,
+      position: { x: this.offsets.getX(i), y: this.offsets.getY(i), z: this.offsets.getZ(i) },
+      props: {
+        age: this.props.getX(i),
+        maxAge: this.props.getY(i),
+        alive: this.props.getZ(i),
+        w: this.props.getW(i),
+      },
+      velocity: {
+        x: this.velocities.getX(i),
+        y: this.velocities.getY(i),
+        z: this.velocities.getZ(i),
+        w: this.velocities.getW(i),
+      },
+      uv,
+      id: this.ids.getX(i),
+    });
   }
 
   //Update the emitter
@@ -927,11 +900,9 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     // Retail DoEmitterBucket @ 004509b0: AnimateParticles(min(dt, 0.1)) then RenderFunc
     delta = Math.min(delta, OdysseyEmitter3D.MAX_ANIMATE_DT);
 
-    if ( this.parent === null ) {
-      this.matrixWorld.copy( this.matrix );
-    } else {
-      this.matrixWorld.multiplyMatrices( this.parent.matrixWorld, this.matrix );
-    }
+    // Keep emitter matrixWorld current before birth / trail sampling.
+    // Manual parent*local can lag when ancestors use matrixAutoUpdate=false.
+    this.updateWorldMatrix(true, false);
 
     // Track emitter world pose delta for inherit/trail (AnimateParticles field71/74).
     // Dedicated fields — birth/randomDirection reuse static scratches and must not clobber these
@@ -988,6 +959,13 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     let maxParticleCount = this.getMaxParticleCount();
     let resizeArrays = (maxParticleCount > this.offsets.count);
     this.maxParticleCount = maxParticleCount;
+
+    // Non-lightning Linked: sample centers live in `_linkedCenters`; mesh rebuilt each
+    // tick from live samples only (RenderLinked). Skip fat position-buffer resize.
+    if(this.node.renderMode === 'Linked' && this.updateType !== 'Lightning'){
+      resizeArrays = false;
+      this.ensureLinkedSampleCapacity(maxParticleCount);
+    }
 
     if(resizeArrays){
       let offsets = new Float32Array(this.maxParticleCount * 3);
@@ -1047,10 +1025,6 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         updateVelocity = true;
       updateProperties = true;
       this.ensureInheritVelCapacity(this.maxParticleCount);
-      if(this.node.renderMode === 'Linked'){
-        this.particleIndex = 0;
-        this.linkedTotalSpawns = 0;
-      }
       this.emitterLog('bufferResize', {
         maxParticleCount: this.maxParticleCount,
         newVertCount: this.offsets.count,
@@ -1125,72 +1099,39 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     const attrPerVertex = 1;
 
     if(this.node.renderMode == 'Linked'){
-      const av = 2;
-      spawnableParticleCount = Math.floor(this.offsets.count / av) || 0;
-
-      // Age drives shader alpha via positionInTime; recycling dead slots is by ring overwrite on spawn (no props.z flip).
-      for(let i = 0; i < spawnableParticleCount; i++){
-        let age = this.props.getX(i * av) || 0;
-        const maxAge = this.props.getY(i * av) || this.lifeExp;
-        const alive = this.props.getZ(i * av) == 1;
-
-        if(alive){
+      const cap = this._linkedCapacity;
+      if(cap < 1){
+        this.clearLinkedTrailMesh();
+      }else{
+        const liveSlots = Math.min(this.linkedTotalSpawns, cap);
+        // Age samples (retail particle+0x70). Slots stay until ring overwrite.
+        for(let i = 0; i < liveSlots; i++){
+          let age = this._linkedAges[i] || 0;
+          const maxAge = this._linkedMaxAges[i] || (this.lifeExp >= 0 ? this.lifeExp : 100);
           if(maxAge >= 0.0 && age >= maxAge){
             age = maxAge;
           }else{
             age += delta;
           }
-        }else{
-          age = 0;
+          this._linkedAges[i] = age || 0;
         }
 
-        this.props.setX(i * av, age || 0);
-        updateProperties = true;
-
-        for(let pI = 1; pI < av; pI++){
-          this.props.setX((i * av) + pI, this.props.getX(i * av));
-          this.props.setY((i * av) + pI, this.props.getY(i * av));
-          this.props.setZ((i * av) + pI, this.props.getZ(i * av));
-          this.props.setW((i * av) + pI, this.props.getW(i * av));
+        let toSpawn = 0;
+        if(this.node.spaceType === 1 && trailBirthCount > 0){
+          toSpawn = Math.min(trailBirthCount, cap);
+        }else if(this.birthRate > 0 && !this._birthTimer){
+          toSpawn = 1;
         }
-      }
 
-      let toSpawn = 0;
-      if(this.node.spaceType === 1 && trailBirthCount > 0){
-        toSpawn = Math.min(trailBirthCount, spawnableParticleCount);
-      }else if(this.birthRate > 0 && !this._birthTimer){
-        toSpawn = 1;
-      }
-
-      for(let s = 0; s < toSpawn; s++){
-        if(spawnableParticleCount <= 0) break;
-        const idx = this.particleIndex % spawnableParticleCount;
-        this.spawnParticle(idx, delta);
-        this.particleIndex = (this.particleIndex + 1) % spawnableParticleCount;
-        this.linkedTotalSpawns++;
-        updatePositions = true;
-        updateVelocity = true;
-      }
-
-      const logicalDraw = Math.min(this.linkedTotalSpawns, spawnableParticleCount);
-      const activeVertCount = logicalDraw * av;
-      this.rebuildLinkedRibbonIndexBuffer(activeVertCount);
-
-      if(logicalDraw > 0 && activeVertCount < this.offsets.count){
-        const lastWritten = (this.particleIndex + spawnableParticleCount - 1) % spawnableParticleCount;
-        const lastBase = lastWritten * av;
-        for(let v = activeVertCount; v < this.offsets.count; v++){
-          const src = lastBase + (v % av);
-          this.offsets.setX(v, this.offsets.getX(src));
-          this.offsets.setY(v, this.offsets.getY(src));
-          this.offsets.setZ(v, this.offsets.getZ(src));
-          this.velocities.setX(v, this.velocities.getX(src));
-          this.velocities.setY(v, this.velocities.getY(src));
-          this.velocities.setZ(v, this.velocities.getZ(src));
-          this.velocities.setW(v, this.velocities.getW(src));
+        for(let s = 0; s < toSpawn; s++){
+          this.spawnLinkedSample(currentWorldPos, delta);
+          updatePositions = true;
         }
+
+        this.rebuildLinkedTrailMesh();
       }
 
+      const logicalDraw = Math.min(this.linkedTotalSpawns, this._linkedCapacity);
       this.emitterLog('linkedTick', {
         delta,
         worldPos: { x: currentWorldPos.x, y: currentWorldPos.y, z: currentWorldPos.z },
@@ -1203,16 +1144,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         birthRate: this.birthRate,
         trailBirthScale: OdysseyEmitter3D.TRAIL_BIRTH_SCALE,
         birthTimer: this._birthTimer,
-        toSpawn,
         particleIndex: this.particleIndex,
         linkedTotalSpawns: this.linkedTotalSpawns,
-        spawnableParticleCount,
+        linkedCapacity: this._linkedCapacity,
         logicalDraw,
-        activeVertCount,
         lifeExp: this.lifeExp,
-        vertCount: this.offsets.count,
-        maxParticleCount: this.maxParticleCount,
-        hasRibbonCenter: this._hasRibbonCenter,
       });
     }
 
@@ -3244,125 +3180,365 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   /**
    * Linked mode: ribbon — two world-space vertices per sample (left, right) in strip order
    * L0,R0,L1,R1,… so triangle-strip indices connect consecutive segments.
+   * @deprecated Non-lightning Linked uses spawnLinkedSample + rebuildLinkedTrailMesh.
    */
   setLinkedVertexPosition(logicalIndex = 0, position = new THREE.Vector3){
-    const base = logicalIndex * 2;
-    const center = position;
-    const tangent = OdysseyEmitter3D._v3A;
-    if(this._hasRibbonCenter){
-      tangent.subVectors(center, this._lastRibbonCenter);
-    }else if(this._hasLastWorldPos && this._worldPosDelta.lengthSq() > 1e-10){
-      tangent.copy(this._worldPosDelta);
-    }else{
-      tangent.set(0, 0, -1);
-    }
-    if(tangent.lengthSq() < 1e-10){
-      tangent.set(0, 1, 0);
-    }else{
-      tangent.normalize();
-    }
-
-    const toCam = OdysseyEmitter3D._v3B;
-    const cam = this.context?.currentCamera as THREE.Camera | undefined;
-    if(cam){
-      toCam.subVectors(cam.position, center);
-    }else{
-      toCam.set(0, 0, 1);
-    }
-    const side = OdysseyEmitter3D._v3D.crossVectors(tangent, toCam);
-    if(side.lengthSq() < 1e-10){
-      side.crossVectors(tangent, new THREE.Vector3(0, 1, 0));
-    }
-    side.normalize();
-
-    const avgScale = Math.max(
-      this.sizes[0],
-      this.sizes[1],
-      this.sizes[2],
-      this.size.length() || 0,
-      0.15
-    );
-    const halfW = Math.max(0.05, avgScale * 0.5);
-
-    const left = OdysseyEmitter3D._v3C.copy(center).addScaledVector(side, -halfW);
-    const right = OdysseyEmitter3D._v3D.copy(center).addScaledVector(side, halfW);
-
-    this._lastRibbonCenter.copy(center);
-    this._hasRibbonCenter = true;
-
-    this.ensureLinkedUvCapacity();
-    const uvAttr = this.geometry.getAttribute('uv') as THREE.BufferAttribute;
-    const tUv = (logicalIndex * 0.0625) % 1.0;
-
-    this.offsets.setXYZ(base, left.x, left.y, left.z);
-    this.offsets.setXYZ(base + 1, right.x, right.y, right.z);
-    this.velocities.setXYZW(base, 0, 0, 0, this.mass);
-    this.velocities.setXYZW(base + 1, 0, 0, 0, this.mass);
-    uvAttr.setXY(base, 0, tUv);
-    uvAttr.setXY(base + 1, 1, tUv);
-    uvAttr.needsUpdate = true;
+    // Kept for any external callers; trail path no longer uses baked L/R slots.
+    void logicalIndex;
+    void position;
   }
 
-  private ensureLinkedUvCapacity(){
-    if(this.node.renderMode !== 'Linked') return;
-    const n = this.offsets.count;
-    let uv = this.geometry.getAttribute('uv') as THREE.BufferAttribute | undefined;
-    if(!uv || uv.count !== n){
-      const arr = new Float32Array(n * 2);
-      if(uv?.array?.length){
-        arr.set(uv.array as ArrayLike<number>);
+  /** Grow/shrink the world sample-center ring used by non-lightning Linked trails. */
+  private ensureLinkedSampleCapacity(samples: number){
+    const n = Math.max(0, Math.min(OdysseyEmitter3D.LINKED_MAX_SAMPLES, Math.floor(samples) || 0));
+    if(n === this._linkedCapacity && this._linkedCenters.length >= n * 3) return;
+    const prevCenters = this._linkedCenters;
+    const prevAges = this._linkedAges;
+    const prevMaxAges = this._linkedMaxAges;
+    const prevCap = this._linkedCapacity;
+    this._linkedCenters = new Float32Array(n * 3);
+    this._linkedAges = new Float32Array(n);
+    this._linkedMaxAges = new Float32Array(n);
+
+    const copy = Math.min(prevCap, n);
+    if(copy > 0){
+      const wasFull = this.linkedTotalSpawns >= prevCap;
+      if(wasFull){
+        // Compact oldest→newest into [0..copy) so new empty slots are not drawn as 0,0,0.
+        for(let k = 0; k < copy; k++){
+          const slot = (this.particleIndex + k) % prevCap;
+          const s3 = slot * 3;
+          const d3 = k * 3;
+          this._linkedCenters[d3] = prevCenters[s3];
+          this._linkedCenters[d3 + 1] = prevCenters[s3 + 1];
+          this._linkedCenters[d3 + 2] = prevCenters[s3 + 2];
+          this._linkedAges[k] = prevAges[slot];
+          this._linkedMaxAges[k] = prevMaxAges[slot];
+        }
+        this.particleIndex = copy % n;
+        this.linkedTotalSpawns = copy;
+      }else{
+        const live = Math.min(this.linkedTotalSpawns, copy);
+        this._linkedCenters.set(prevCenters.subarray(0, live * 3));
+        this._linkedAges.set(prevAges.subarray(0, live));
+        this._linkedMaxAges.set(prevMaxAges.subarray(0, live));
+        if(this.particleIndex > n) this.particleIndex = live % Math.max(1, n);
+        this.linkedTotalSpawns = live;
       }
-      uv = new THREE.BufferAttribute(arr, 2).setUsage(THREE.DynamicDrawUsage);
-      this.geometry.setAttribute('uv', uv);
+    }else{
+      this.particleIndex = 0;
+      this.linkedTotalSpawns = 0;
+    }
+
+    this._linkedCapacity = n;
+    if(n > 0 && this._linkedDrawCenters.length < n * 3){
+      this._linkedDrawCenters = new Float32Array(n * 3);
     }
   }
 
   /**
-   * Triangle list equivalent to a triangle strip (L,R,L,R,…) along the trail in spawn order.
-   * Linked mode stores samples in a ring buffer: after wrap, buffer index order is not chronological;
-   * this maps strip order to actual buffer slots from oldest sample to newest.
+   * Birth one Linked trail sample at world `center` (retail particle list push).
+   * Ring overwrite recycles the oldest slot once capacity is full.
    */
-  private rebuildLinkedRibbonIndexBuffer(activeVertCount?: number){
-    const slotCount = Math.floor(this.offsets.count / 2) || 0;
-    if(slotCount < 1){
-      this.geometry.setIndex(null);
+  private spawnLinkedSample(center: THREE.Vector3, delta: number = 0){
+    const cap = this._linkedCapacity;
+    if(cap < 1) return;
+    const idx = this.particleIndex % cap;
+    const i3 = idx * 3;
+    this._linkedCenters[i3] = center.x;
+    this._linkedCenters[i3 + 1] = center.y;
+    this._linkedCenters[i3 + 2] = center.z;
+    this._linkedAges[idx] = 0;
+    this._linkedMaxAges[idx] = this.lifeExp >= 0 ? this.lifeExp : 100;
+    this.particleIndex = (this.particleIndex + 1) % cap;
+    this.linkedTotalSpawns++;
+    this.particleCount++;
+    this._lastRibbonCenter.copy(center);
+    this._hasRibbonCenter = true;
+    if(OdysseyEmitter3D.EMITTER_TICK_DEBUG){
+      this.emitterLog('spawn', {
+        ringSlot: idx,
+        delta,
+        center: { x: center.x, y: center.y, z: center.z },
+        maxAge: this._linkedMaxAges[idx],
+        linkedTotalSpawns: this.linkedTotalSpawns,
+      });
+    }
+  }
+
+  /** Empty draw — no live Linked trail samples. */
+  private clearLinkedTrailMesh(){
+    if(!this.geometry) return;
+    this.geometry.setIndex([]);
+    this.geometry.setAttribute('position', new THREE.Float32BufferAttribute([], 3));
+    this.geometry.setAttribute('offset', new THREE.Float32BufferAttribute([], 4));
+    this.geometry.setAttribute('props', new THREE.Float32BufferAttribute([], 4));
+    this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute([], 2));
+    this.velocities = this.geometry.getAttribute('offset') as THREE.BufferAttribute;
+    this.props = this.geometry.getAttribute('props') as THREE.BufferAttribute;
+    this.offsets = this.geometry.getAttribute('position') as THREE.BufferAttribute;
+  }
+
+  /**
+   * RenderLinked @ 00495b20 for non-lightning: rebuild camera ribbon from live
+   * world sample centers only (no spare buffer slots at world origin).
+   * Size taper uses particle age / lifeExp (retail particle+0x70 path).
+   */
+  private rebuildLinkedTrailMesh(){
+    const cap = this._linkedCapacity;
+    const live = Math.min(this.linkedTotalSpawns, cap);
+    if(live < 2){
+      this.clearLinkedTrailMesh();
       return;
     }
-    const cap = activeVertCount !== undefined
-      ? Math.min(Math.floor(activeVertCount / 2), slotCount)
-      : Math.min(this.linkedTotalSpawns, slotCount);
-    const logicalDraw = Math.max(0, cap);
-    const nVert = logicalDraw * 2;
-    if(nVert < 3){
-      this.geometry.setIndex(null);
-      return;
+
+    const full = this.linkedTotalSpawns >= cap;
+    if(this._linkedDrawCenters.length < live * 3){
+      this._linkedDrawCenters = new Float32Array(live * 3);
     }
-    const full = this.linkedTotalSpawns >= slotCount;
-    const strip: number[] = [];
-    for(let k = 0; k < logicalDraw; k++){
-      const slot = full ? (this.particleIndex + k) % slotCount : k;
-      const base = slot * 2;
-      strip.push(base, base + 1);
+    const drawCenters = this._linkedDrawCenters;
+
+    if(OdysseyEmitter3D._linkedAgeScratch.length < live){
+      OdysseyEmitter3D._linkedAgeScratch = new Float32Array(Math.max(live, 64));
     }
-    const numberOfTriangles = nVert - 2;
-    const indices: number[] = [];
-    for(let newI = 0; newI < numberOfTriangles; newI++){
-      const a = strip[newI];
-      const b = strip[newI + 1];
-      const c = strip[newI + 2];
-      if(newI % 2 === 0){
-        indices.push(a, b, c);
+    const ageArr = OdysseyEmitter3D._linkedAgeScratch;
+    if(OdysseyEmitter3D._linkedMaxAgeScratch.length < live){
+      OdysseyEmitter3D._linkedMaxAgeScratch = new Float32Array(Math.max(live, 64));
+    }
+    const maxAgeArr = OdysseyEmitter3D._linkedMaxAgeScratch;
+
+    for(let k = 0; k < live; k++){
+      const slot = full ? (this.particleIndex + k) % cap : k;
+      const s3 = slot * 3;
+      const d3 = k * 3;
+      drawCenters[d3] = this._linkedCenters[s3];
+      drawCenters[d3 + 1] = this._linkedCenters[s3 + 1];
+      drawCenters[d3 + 2] = this._linkedCenters[s3 + 2];
+      ageArr[k] = this._linkedAges[slot] || 0;
+      maxAgeArr[k] = this._linkedMaxAges[slot] || (this.lifeExp >= 0 ? this.lifeExp : 100);
+    }
+
+    // Default bolt tangent from first→last when a segment degenerates
+    let boltX = drawCenters[(live - 1) * 3] - drawCenters[0];
+    let boltY = drawCenters[(live - 1) * 3 + 1] - drawCenters[1];
+    let boltZ = drawCenters[(live - 1) * 3 + 2] - drawCenters[2];
+    const boltLen = Math.sqrt(boltX * boltX + boltY * boltY + boltZ * boltZ);
+    if(boltLen > 1e-6){
+      boltX /= boltLen;
+      boltY /= boltLen;
+      boltZ /= boltLen;
+    }else if(this._hasLastWorldPos && this._worldPosDelta.lengthSq() > 1e-10){
+      boltX = this._worldPosDelta.x;
+      boltY = this._worldPosDelta.y;
+      boltZ = this._worldPosDelta.z;
+      const dLen = Math.sqrt(boltX * boltX + boltY * boltY + boltZ * boltZ);
+      if(dLen > 1e-6){
+        boltX /= dLen;
+        boltY /= dLen;
+        boltZ /= dLen;
       }else{
-        indices.push(c, b, a);
+        boltX = 0;
+        boltY = 0;
+        boltZ = -1;
       }
-    }
-    const useUint32 = this.offsets.count > 65535;
-    if(useUint32){
-      this.geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
     }else{
-      this.geometry.setIndex(new THREE.Uint16BufferAttribute(indices, 1));
+      boltX = 0;
+      boltY = 0;
+      boltZ = -1;
     }
+
+    // basisU ⊥ bolt (same as lightning tick)
+    let basisUX = -boltY;
+    let basisUY = boltX;
+    let basisUZ = 0;
+    let buLen = Math.sqrt(basisUX * basisUX + basisUY * basisUY + basisUZ * basisUZ);
+    if(buLen < 1e-8){
+      // cross(bolt, X)
+      basisUX = 0;
+      basisUY = boltZ;
+      basisUZ = -boltY;
+      buLen = Math.sqrt(basisUX * basisUX + basisUY * basisUY + basisUZ * basisUZ);
+    }
+    if(buLen > 1e-8){
+      basisUX /= buLen;
+      basisUY /= buLen;
+      basisUZ /= buLen;
+    }else{
+      basisUX = 1;
+      basisUY = 0;
+      basisUZ = 0;
+    }
+
+    const cam = (this.context?.currentCamera || GameState.currentCamera) as
+      | THREE.Camera
+      | undefined;
+
+    const indices: number[] = [];
+    const vertices: number[] = [];
+    const normals: number[] = [];
+    const uvs: number[] = [];
+    const velocities: number[] = [];
+    const props: number[] = [];
+
+    this.appendLinkedTrailRibbon(
+      drawCenters,
+      live,
+      ageArr,
+      maxAgeArr,
+      boltX, boltY, boltZ,
+      basisUX, basisUY, basisUZ,
+      cam,
+      vertices,
+      normals,
+      uvs,
+      velocities,
+      props,
+      indices
+    );
+
+    this.geometry.setIndex(indices);
+    this.geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    this.geometry.setAttribute('offset', new THREE.Float32BufferAttribute(velocities, 4));
+    this.geometry.setAttribute('props', new THREE.Float32BufferAttribute(props, 4));
+    this.geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    this.geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    this.velocities = this.geometry.getAttribute('offset') as THREE.BufferAttribute;
+    this.props = this.geometry.getAttribute('props') as THREE.BufferAttribute;
+    this.offsets = this.geometry.getAttribute('position') as THREE.BufferAttribute;
     this.geometry.clearGroups();
+    if(this.material) this.material.visible = true;
+
+    // Loose bounds from sample span (frustumCulled is false; keeps helpers honest)
+    let minX = Infinity, minY = Infinity, minZ = Infinity;
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity;
+    for(let i = 0; i < live; i++){
+      const x = drawCenters[i * 3], y = drawCenters[i * 3 + 1], z = drawCenters[i * 3 + 2];
+      if(x < minX) minX = x; if(y < minY) minY = y; if(z < minZ) minZ = z;
+      if(x > maxX) maxX = x; if(y > maxY) maxY = y; if(z > maxZ) maxZ = z;
+    }
+    const cx = (minX + maxX) * 0.5, cy = (minY + maxY) * 0.5, cz = (minZ + maxZ) * 0.5;
+    const rx = maxX - minX, ry = maxY - minY, rz = maxZ - minZ;
+    const radius = 0.5 * Math.sqrt(rx * rx + ry * ry + rz * rz) + Math.max(this.sizes[0], this.sizes[1], this.sizes[2], 0.04);
+    if(!this.geometry.boundingSphere){
+      this.geometry.boundingSphere = new THREE.Sphere();
+    }
+    this.geometry.boundingSphere.center.set(cx, cy, cz);
+    this.geometry.boundingSphere.radius = radius;
+  }
+
+  /**
+   * Camera-facing L/R strip for Linked trails (RenderLinked non-lightning).
+   * Size/color lifecycle uses age/maxAge (particle+0x70), not i/count.
+   */
+  private appendLinkedTrailRibbon(
+    centers: Float32Array,
+    sampleCount: number,
+    ages: Float32Array,
+    maxAges: Float32Array,
+    boltX: number,
+    boltY: number,
+    boltZ: number,
+    basisUX: number,
+    basisUY: number,
+    basisUZ: number,
+    cam: THREE.Camera | undefined,
+    vertices: number[],
+    normals: number[],
+    uvs: number[],
+    velocities: number[],
+    props: number[],
+    indices: number[]
+  ){
+    const lifeInv = this.lifeExp > 0 ? 1 / this.lifeExp : 0.01;
+    for(let i = 0; i < sampleCount; i++){
+      const maxAge = maxAges[i] > 0 ? maxAges[i] : (this.lifeExp >= 0 ? this.lifeExp : 100);
+      const age = ages[i] || 0;
+      // Retail: age * (1/lifeExp); fall back to index fraction if lifeExp unset
+      const t = maxAge > 0 && this.lifeExp > 0
+        ? Math.min(1, Math.max(0, age * lifeInv))
+        : i / Math.max(1, sampleCount);
+      const { sizeX, sizeY } = this.lerpLightningSizeAt(t);
+      const halfW = sizeX * 0.5;
+      const alongPad = sizeY * 0.25;
+
+      const cx = centers[i * 3];
+      const cy = centers[i * 3 + 1];
+      const cz = centers[i * 3 + 2];
+
+      let tx = boltX;
+      let ty = boltY;
+      let tz = boltZ;
+      if(i < sampleCount - 1){
+        tx = centers[(i + 1) * 3] - cx;
+        ty = centers[(i + 1) * 3 + 1] - cy;
+        tz = centers[(i + 1) * 3 + 2] - cz;
+        const tLen = Math.sqrt(tx * tx + ty * ty + tz * tz);
+        if(tLen > 1e-6){
+          tx /= tLen;
+          ty /= tLen;
+          tz /= tLen;
+        }else{
+          tx = boltX;
+          ty = boltY;
+          tz = boltZ;
+        }
+      }
+
+      let toCamX = 0;
+      let toCamY = 0;
+      let toCamZ = 1;
+      if(cam){
+        const cp = cam.position;
+        toCamX = cp.x - cx;
+        toCamY = cp.y - cy;
+        toCamZ = cp.z - cz;
+        const cLen = Math.sqrt(toCamX * toCamX + toCamY * toCamY + toCamZ * toCamZ);
+        if(cLen > 1e-6){
+          toCamX /= cLen;
+          toCamY /= cLen;
+          toCamZ /= cLen;
+        }
+      }
+      let sx = ty * toCamZ - tz * toCamY;
+      let sy = tz * toCamX - tx * toCamZ;
+      let sz = tx * toCamY - ty * toCamX;
+      let sLen = Math.sqrt(sx * sx + sy * sy + sz * sz);
+      if(sLen < 1e-6){
+        sx = basisUX;
+        sy = basisUY;
+        sz = basisUZ;
+        sLen = 1;
+      }
+      sx = (sx / sLen) * halfW;
+      sy = (sy / sLen) * halfW;
+      sz = (sz / sLen) * halfW;
+
+      const ax = tx * alongPad;
+      const ay = ty * alongPad;
+      const az = tz * alongPad;
+
+      vertices.push(cx - sx - ax, cy - sy - ay, cz - sz - az);
+      vertices.push(cx + sx - ax, cy + sy - ay, cz + sz - az);
+      normals.push(0, 0, 1, 0, 0, 1);
+      const vUv = 1 - (i / Math.max(1, sampleCount));
+      uvs.push(0, vUv, 1, vUv);
+      velocities.push(0, 0, 0, 0, 0, 0, 0, 0);
+      // props: age, maxAge, alive — shader lifetime alpha/color
+      props.push(age, maxAge, 1, 0, age, maxAge, 1, 0);
+    }
+
+    for(let i = 0; i < sampleCount - 1; i++){
+      const a = i * 2;
+      const b = a + 1;
+      const c = a + 2;
+      const d = a + 3;
+      indices.push(a, c, b);
+      indices.push(b, c, d);
+    }
+  }
+
+  private ensureLinkedUvCapacity(){
+    // No-op: Linked trail UVs are written in rebuildLinkedTrailMesh.
   }
 
   spawnParticle(i = 0, delta: number = 0){
@@ -3379,46 +3555,31 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         this.prevOffsets.needsUpdate = true;
       }
     }else{
-      this.setLinkedVertexPosition(i, newPosition);
+      this.spawnLinkedSample(newPosition, delta);
+      return;
     }
 
-    if(this.node.renderMode != 'Linked'){
-      // Retail Particle::initialize @ 004921d0 (Fountain + Explosion + Single):
-      // world quat → optional randomDirection(spread) → (velocity+randvel)×zdir.
-      const quat = OdysseyEmitter3D._quat;
-      this.getWorldQuaternion(quat);
-      if(this.spread !== 0){
-        this.randomDirectionRetail(quat, newPosition);
-      }
-      this.birthVelocityFromQuat(quat, this.vec3);
-      this.velocities.setX(i, this.vec3.x);
-      this.velocities.setY(i, this.vec3.y);
-      this.velocities.setZ(i, this.vec3.z);
-
-      // Retail inheritVelocity @ 0048d9e0: fill scale×accel (MoveFunc), do not bake into birth vel.
-      this.setBirthInheritVelocity(i, newPosition, delta);
+    // Retail Particle::initialize @ 004921d0 (Fountain + Explosion + Single):
+    // world quat → optional randomDirection(spread) → (velocity+randvel)×zdir.
+    const quat = OdysseyEmitter3D._quat;
+    this.getWorldQuaternion(quat);
+    if(this.spread !== 0){
+      this.randomDirectionRetail(quat, newPosition);
     }
+    this.birthVelocityFromQuat(quat, this.vec3);
+    this.velocities.setX(i, this.vec3.x);
+    this.velocities.setY(i, this.vec3.y);
+    this.velocities.setZ(i, this.vec3.z);
 
-    if(this.node.renderMode != 'Linked'){
-      this.velocities.setW(i, this.mass);
-      this.props.setY(i, this.getRandomMaxAge());
-      this.props.setZ(i, 1);
-      this.props.setW(i, 0); // reset splat flag
-    }else{
-      // Must reset age (props.x) — age runs before spawn each tick; ring overwrites would keep stale age≈maxAge otherwise.
-      for(let vi = 0; vi < 2; vi++){
-        const p = (i * 2) + vi;
-        this.props.setX(p, 0);
-        this.props.setY(p, (this.lifeExp >= 0 ? this.lifeExp : 100));
-        this.props.setZ(p, 1);
-      }
-    }
+    // Retail inheritVelocity @ 0048d9e0: fill scale×accel (MoveFunc), do not bake into birth vel.
+    this.setBirthInheritVelocity(i, newPosition, delta);
 
-    if(this.node.renderMode == 'Linked'){
-      for(let v = 0; v < 2; v++){
-        this.ids.setX(i * 2 + v, i);
-      }
-    }else if(this.node.flags.isRandom){
+    this.velocities.setW(i, this.mass);
+    this.props.setY(i, this.getRandomMaxAge());
+    this.props.setZ(i, 1);
+    this.props.setW(i, 0); // reset splat flag
+
+    if(this.node.flags.isRandom){
       // FountainEmitter::Update RANDOM bit5: birth frame ∈ [frameStart, frameEnd]
       const start = Math.trunc(this.material.uniforms.frameRange.value.x);
       const end = Math.trunc(this.material.uniforms.frameRange.value.y);
@@ -3626,12 +3787,16 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
       this.particleIndex = 0;
       this.linkedTotalSpawns = 0;
       this.resetRibbonTangentState();
+      if(this.updateType !== 'Lightning'){
+        this._linkedAges.fill(0);
+        this.clearLinkedTrailMesh();
+      }
     }
-    let spawnableParticleCount = this.offsets.count;
+    let spawnableParticleCount = this.offsets?.count || 0;
     for(let i = 0; i < spawnableParticleCount; i++){
       this.props.setX(i, 0);
     }
-    this.props.needsUpdate = true;
+    if(this.props) this.props.needsUpdate = true;
     this.material.uniforms.time.value = 0;
     this.material.uniformsNeedUpdate = true;
 
@@ -3849,6 +4014,11 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this.resetTrailSpawnState();
     if(this.node.renderMode === 'Linked'){
       this.resetRibbonTangentState();
+      if(this.updateType !== 'Lightning'){
+        this.particleIndex = 0;
+        this.linkedTotalSpawns = 0;
+        this.clearLinkedTrailMesh();
+      }
     }
     if(this.material){
       this.material.visible = false;

@@ -210,6 +210,17 @@ export class CombatAttackData {
   damageApplied: boolean = false;
 
   /**
+   * Retail field122_0x12d — SetState type stamped by OnApplySetStateInternal
+   * (FORCEPUSH=9) for attack-summary feedback.
+   */
+  setStateType: number = 0;
+
+  /**
+   * Retail field134_0x13c — set when a SetState effect was applied during this attack.
+   */
+  setStateApplied: boolean = false;
+
+  /**
    * Whether the traveling bolt / ShotSound has been spawned at muzzle time.
    */
   projectileSpawned: boolean = false;

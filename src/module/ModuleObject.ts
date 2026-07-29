@@ -9,6 +9,7 @@ import type { GameEffect } from "@/effects/GameEffect";
 import EngineLocation from "@/engine/EngineLocation";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
+import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModulePlaceableAnimState } from "@/enums/module/ModulePlaceableAnimState";
 import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
@@ -65,6 +66,8 @@ import type { IHeardString } from "@/interface/dialog/IHeardString";
 import type { SWRange } from "@/engine/rules/SWRange";
 import { TURN_SPEED_SLOW } from "@/engine/TurnSpeeds";
 import { getForceResistanceBonus, getSavingThrowEffectBonus } from "@/effects/effect-bonuses";
+import { getActiveSetStateType } from "@/effects/set-state";
+import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbientState";
 import {
   SAVING_THROW_FORTITUDE,
   SAVING_THROW_REFLEX,
@@ -1103,9 +1106,22 @@ export class ModuleObject {
     const animations2DA = GameState.TwoDAManager.datatables.get('animations');
     if(animations2DA){
 
-      const debilitatedEffect = this.effects.find( e => e.type == GameEffectType.EffectSetState );
-      if(debilitatedEffect){
-        switch(debilitatedEffect.getInt(0)){
+      const debilitatedState = (() => {
+        // Prefer highest SetState (retail field_0x8ed priority).
+        if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+          const highest = getActiveSetStateType(this as ModuleCreature);
+          if(highest > 0) return highest;
+          // Retail ambient_animation_state = 9 while force-pushed.
+          const ambient = (this as ModuleCreature).ambientAnimState | 0;
+          if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_PUSHED){
+            return GameEffectSetStateType.FORCEPUSH;
+          }
+        }
+        const e = this.effects.find(eff => eff?.type == GameEffectType.EffectSetState);
+        return e ? (e.getInt(0) | 0) : 0;
+      })();
+      if(debilitatedState > 0){
+        switch(debilitatedState){
           case 1: //Confused
             return animations2DA.rows[15];
           case 2: //Frightened
@@ -1137,6 +1153,25 @@ export class ModuleObject {
           break;
           case 10: //Whirlwind
             return animations2DA.rows[75];
+          case 14: //Knockdown hold (K2 SetState 0x0E)
+            return animations2DA.rows[85];
+          case 15: //Crush (K2) — choke-like victim pose; ambient 16 set separately
+            if(this.isSimpleCreature()){
+              return animations2DA.rows[264];
+            }else{
+              return animations2DA.rows[72];
+            }
+          case 16: //Droid Confused — confused pose; not IsDebilitated in retail
+            return animations2DA.rows[15];
+          case 17: //Held (K2 0x11) — choke-like lock
+            if(this.isSimpleCreature()){
+              return animations2DA.rows[264];
+            }else{
+              return animations2DA.rows[72];
+            }
+          case 18: //Mind Trick — stun cohort
+          case 19: //Droid Scramble — stun cohort
+            return animations2DA.rows[78];
         }
       }
       

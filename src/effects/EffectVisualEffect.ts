@@ -11,6 +11,10 @@ import { OdysseyModel3D } from "@/three/odyssey";
 import { BitWise } from "@/utility/BitWise";
 import { Utility } from "@/utility/Utility";
 import { GameEffect } from "@/effects/GameEffect";
+import {
+  MOTION_BLUR_PROGFX_ENABLE,
+  isMotionBlurProgFX,
+} from "@/shaders/pass/FrameBufferEffectGates";
 
 /**
  * EffectVisualEffect class.
@@ -42,6 +46,8 @@ export class EffectVisualEffect extends GameEffect {
    * Undefined = inactive; <0 = already fired.
    */
   private impactProgFXTimerMs: number | undefined = undefined;
+  /** Retail ApplyMotionBlur — this effect holds a motionBlurVFXCount ref. */
+  private motionBlurActive: boolean = false;
 
   constructor(){
     super();
@@ -442,6 +448,7 @@ export class EffectVisualEffect extends GameEffect {
     if(this.visualEffect.progfx_impact == '****')
       return;
     this.applyBumpedOutShell(this.visualEffect.progfx_impact);
+    this.applyMotionBlurProgFX(this.visualEffect.progfx_impact);
     // Retail FUN_006a0620 default — impact hardcoded VFX lasts 1000ms
     if(this.bumpedOutShell){
       this.impactProgFXTimerMs = 1000;
@@ -452,12 +459,42 @@ export class EffectVisualEffect extends GameEffect {
     if(this.visualEffect.progfx_duration == '****')
       return;
     this.applyBumpedOutShell(this.visualEffect.progfx_duration);
+    this.applyMotionBlurProgFX(this.visualEffect.progfx_duration);
+  }
+
+  /**
+   * Retail ApplyHardCodedVisualEffect → ApplyMotionBlur @ 006a14e0
+   * for progFX in [0x640, 0x6a4). Only 0x641/0x642 enable AurEnableSpeedBlur
+   * (VFX_DUR_SPEED progfx_duration = 1601).
+   */
+  private applyMotionBlurProgFX(progFX: number | string){
+    if(progFX == '****' || progFX == null)
+      return;
+    const id = Number(progFX);
+    if(!isMotionBlurProgFX(id))
+      return;
+    if(!MOTION_BLUR_PROGFX_ENABLE.has(id))
+      return;
+    if(this.motionBlurActive)
+      return;
+    if(!BitWise.InstanceOf(this.object?.objectType, ModuleObjectType.ModuleCreature))
+      return;
+    GameState.applyMotionBlurVFX(this.object as ModuleCreature, id);
+    this.motionBlurActive = true;
+  }
+
+  /** Retail RemoveHardCodedVisualEffect → RemoveMotionBlur @ 006a1570. */
+  private removeMotionBlurProgFX(){
+    if(!this.motionBlurActive) return;
+    this.motionBlurActive = false;
+    GameState.removeMotionBlurVFX();
   }
 
   onRemove(){
     this.disposed = true;
     this.impactProgFXTimerMs = -1;
     this.removeBumpedOutShell();
+    this.removeMotionBlurProgFX();
 
     if(this.model instanceof OdysseyModel3D){
       this.model.dispose();

@@ -856,6 +856,11 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.OBJECT,
     args: [],
     action: function(this: NWScriptInstance, args: []){
+      // Prefer talent.oTarget stamped by SpellCastInstance (retail spell context).
+      if(BitWise.InstanceOfObject(this.talent, TalentObjectType.TalentObject) &&
+         BitWise.InstanceOfObject(this.talent.oTarget, ModuleObjectType.ModuleObject)){
+        return this.talent.oTarget;
+      }
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleCreature)){
         return this.caller.combatData.lastSpellTarget;
       }
@@ -7547,7 +7552,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.INTEGER, NWScriptDataType.FLOAT],
     action: function(this: NWScriptInstance, args: [number, number]){
-      // ExecuteCommandSWMG_SetSpeedBlurEffect @ 00543550 — AurEnableSpeedBlur; AfterimagePass stand-in
+      // ExecuteCommandSWMG_SetSpeedBlurEffect @ 00543550 — AurEnableSpeedBlur; AccumulationBlurPass
       const ratio = typeof args[1] === 'number' ? args[1] : 0.75;
       GameState.SetSpeedBlurEffect(!!args[0], ratio);
     }

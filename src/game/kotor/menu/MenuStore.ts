@@ -1,4 +1,5 @@
 import { GameState } from "@/GameState";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameMenu } from "@/gui";
@@ -263,7 +264,20 @@ export class MenuStore extends GameMenu {
     return count;
   }
 
-  /** Update cost / stock / on-hand labels for the selected item (retail OnControlEntered). */
+  setStockValueText(count: number, infinite: boolean = false){
+    if(count < 0 || infinite){
+      this.LBL_STOCK_VALUE?.setText(GameState.TLKManager.GetStringById(TLK_INFINITE).Value);
+    }else{
+      this.LBL_STOCK_VALUE?.setText(String(count));
+    }
+  }
+
+  /**
+   * Retail CSWGuiStore::OnControlEntered stock / on-hand labels.
+   * K1: LBL_STOCK_VALUE is always the selected item's stack (or Infinite on that item).
+   * K2 buy: STOCK = store item stack/Infinite; ONHAND = party matching count.
+   * K2 sell: STOCK = store matching count; ONHAND = party possession of selected item.
+   */
   updateSelectedItemLabels(item: ModuleItem | null | undefined){
     if(!item){
       this.LBL_COST_VALUE?.setText('');
@@ -272,22 +286,23 @@ export class MenuStore extends GameMenu {
       return;
     }
 
+    const isTSL = GameState.GameKey == GameEngineType.TSL;
+
     if(this.sellMode){
       this.LBL_COST_VALUE?.setText(String(this.getItemSellPrice(item)));
-      const storeStock = this.countStoreStock(item);
-      if(storeStock < 0 || item.isInfinite?.()){
-        this.LBL_STOCK_VALUE?.setText(GameState.TLKManager.GetStringById(TLK_INFINITE).Value);
+      if(isTSL){
+        // Store matching count only — do not use the player item's Infinite flag.
+        this.setStockValueText(this.countStoreStock(item), false);
+        this.setOnHandValue(String(this.countPartyOnHand(item)));
       }else{
-        this.LBL_STOCK_VALUE?.setText(String(storeStock));
+        // K1 has no on-hand label — stock is the selected inventory stack.
+        // Infinite is store-stock only; party items always show StackSize.
+        this.setStockValueText(item.getStackSize?.() || 1, false);
+        this.setOnHandValue('');
       }
-      this.setOnHandValue(String(this.countPartyOnHand(item)));
     }else{
       this.LBL_COST_VALUE?.setText(String(this.getItemBuyPrice(item)));
-      if(item.isInfinite?.()){
-        this.LBL_STOCK_VALUE?.setText(GameState.TLKManager.GetStringById(TLK_INFINITE).Value);
-      }else{
-        this.LBL_STOCK_VALUE?.setText(String(item.getStackSize?.() || 1));
-      }
+      this.setStockValueText(item.getStackSize?.() || 1, !!item.isInfinite?.());
       this.setOnHandValue(String(this.countPartyOnHand(item)));
     }
   }
@@ -303,6 +318,10 @@ export class MenuStore extends GameMenu {
     this.LB_DESCRIPTION.show();
   }
 
+  /**
+   * Retail CSWSStore::SellItem — infinite store stock is copied with Infinite cleared
+   * and StackSize=1 before AcquireItem.
+   */
   buyItem(item: ModuleItem){
     if(!this.storeObject) return;
     const price = this.getItemBuyPrice(item);
@@ -311,6 +330,7 @@ export class MenuStore extends GameMenu {
     }
     GameState.PartyManager.AddGold(-price);
     this.LBL_CREDITS_VALUE?.setText(String(GameState.PartyManager.Gold || 0));
+    // InventoryManager.addItem clears Infinite (retail CSWSStore::SellItem / CreatureAcquireItem).
     GameState.InventoryManager.addItem(item.template, true);
     if(!item.isInfinite?.()){
       item.setStackSize(item.getStackSize() - 1);
@@ -335,6 +355,8 @@ export class MenuStore extends GameMenu {
       const sold = new GameState.Module.ModuleArea.ModuleItem(item.template);
       sold.initProperties?.();
       sold.setStackSize?.(1);
+      // Sold player items are finite store stock, not Infinite.
+      sold.setInfinite?.(0);
       sold.setPossessor?.(this.storeObject);
       this.storeObject.getInventory().push(sold);
     }catch(_e){ /* optional stock return */ }
@@ -389,6 +411,12 @@ export class MenuStore extends GameMenu {
 
   getFilteredSellInventory(): ModuleItem[] {
     const inv = GameState.InventoryManager.getSellableInventory().filter((item) => this.checkFilter(item));
+    // Infinite is store-stock only; clear any leaked flags on party items before display.
+    for(let i = 0; i < inv.length; i++){
+      if(inv[i].isInfinite?.()){
+        inv[i].setInfinite?.(0);
+      }
+    }
     return this.sortStoreItems(inv);
   }
 

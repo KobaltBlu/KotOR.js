@@ -5,6 +5,9 @@ import {
   RETAIL_BLOOM_FILTER_MULTIPLIER,
   RETAIL_BLOOM_KERNEL_5X5,
   resolveAlwaysOnFrameBufferPasses,
+  resolveSpeedBlurPass,
+  isMotionBlurProgFX,
+  MOTION_BLUR_PROGFX_ENABLE,
   retailOverbrightenCurve,
 } from '@/shaders/pass/FrameBufferEffectGates';
 
@@ -73,4 +76,35 @@ describe('FrameBufferEffectGates', () => {
     expect(RETAIL_BLOOM_KERNEL_5X5[0]).toBeCloseTo(0.12);
     expect(RETAIL_BLOOM_KERNEL_5X5[24]).toBeCloseTo(0.12);
   });
+
+  test('resolveSpeedBlurPass requires enableSpeedBlur and Frame Buffer INI', () => {
+    expect(resolveSpeedBlurPass({
+      frameBufferIniEnabled: true,
+      enableSpeedBlur: true,
+    })).toBe(true);
+    expect(resolveSpeedBlurPass({
+      frameBufferIniEnabled: false,
+      enableSpeedBlur: true,
+    })).toBe(false);
+    expect(resolveSpeedBlurPass({
+      frameBufferIniEnabled: true,
+      enableSpeedBlur: false,
+    })).toBe(false);
+  });
+
+  test('Force Speed progFX 1601/1602 are motion-blur enable ids', () => {
+    expect(isMotionBlurProgFX(0x641)).toBe(true);
+    expect(isMotionBlurProgFX(0x642)).toBe(true);
+    expect(isMotionBlurProgFX(0x63f)).toBe(false);
+    expect(isMotionBlurProgFX(0x6a4)).toBe(false);
+    expect(MOTION_BLUR_PROGFX_ENABLE.has(0x641)).toBe(true);
+    expect(MOTION_BLUR_PROGFX_ENABLE.has(0x642)).toBe(true);
+    expect(MOTION_BLUR_PROGFX_ENABLE.has(0x640)).toBe(false);
+  });
+
+  test('SpeedBlur bit is 0x10 in the dispatcher mask', () => {
+    expect(FrameBufferModBit.SpeedBlur).toBe(0x10);
+    expect(0x1f & FrameBufferModBit.SpeedBlur).toBeTruthy();
+  });
+
 });

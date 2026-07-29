@@ -11,6 +11,10 @@
 export enum ModuleCreatureAmbientState {
   IDLE =               0,
   READY =              1,
+  /**
+   * Retail ambient 2: poisoned pause, and also stun / Mind Trick / Droid Scramble
+   * (RecomputeAmbientAnimationState maps SetState 4 / 0x12 / 0x13 → 2).
+   */
   PAUSE_POISONED =     2,
   DEAD2 =              3,
   DEAD =               4,
@@ -24,4 +28,8 @@ export enum ModuleCreatureAmbientState {
   PARALYZED =          12,
   PRONE_FORCE_JUMP =   13,
   PRONE_DEAD =         14,
+  /** K2 RecomputeAmbient: SetState 0x0E (Knockdown) → ambient 0x0F */
+  KNOCKDOWN =          15,
+  /** K2 RecomputeAmbientAnimationState: SetState 0x0F → ambient 0x10 */
+  CRUSH =              16,
 }

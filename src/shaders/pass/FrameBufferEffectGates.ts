@@ -76,6 +76,14 @@ export interface FrameBufferPassEnableInput {
   visualizeConvolution?: boolean;
 }
 
+export interface SpeedBlurPassEnableInput {
+  frameBufferIniEnabled: boolean;
+  /** AurEnableSpeedBlur / SWMG_SetSpeedBlurEffect / Force Speed VFX. */
+  enableSpeedBlur: boolean;
+  /** Debug override for visualizePass6; default matches retail shipping (true). */
+  visualizeSpeedBlur?: boolean;
+}
+
 /**
  * Resolve which always-on FB stages should run this frame.
  * Mirrors (mask & bit) && visualizePassN && doFrameBufferFX && room.
@@ -94,4 +102,22 @@ export function resolveAlwaysOnFrameBufferPasses(input: FrameBufferPassEnableInp
     overbrighten: base && visOver,
     convolution: base && visConv,
   };
+}
+
+/**
+ * Retail visualizePass6 && enableSpeedBlur && (mask & 0x10) && doFrameBufferFX.
+ * Not room-gated here — ApplyMotionBlur / SWMG own their enablement; swoop has no rooms.
+ */
+export function resolveSpeedBlurPass(input: SpeedBlurPassEnableInput): boolean {
+  const vis =
+    input.visualizeSpeedBlur ?? RetailVisualizePassDefaults.speedBlur;
+  return input.frameBufferIniEnabled && input.enableSpeedBlur && vis;
+}
+
+/** Retail progFX ids that call ApplyMotionBlur with AurEnableSpeedBlur (0x641 / 0x642). */
+export const MOTION_BLUR_PROGFX_ENABLE = new Set([0x641, 0x642]);
+
+/** Retail hardcoded class range for ApplyMotionBlur / RemoveMotionBlur. */
+export function isMotionBlurProgFX(id: number): boolean {
+  return id >= 0x640 && id < 0x6a4;
 }

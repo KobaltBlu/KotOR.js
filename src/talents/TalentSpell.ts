@@ -7,7 +7,7 @@ import { OdysseyModel3D } from "@/three/odyssey";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { ActionType } from "@/enums/actions/ActionType";
 import { ActionCombat } from "@/actions/ActionCombat";
-import { CombatRoundAction, ExcitedDurationRow, isWithinSpellCastRange, resolveSpellCastRange } from "@/combat";
+import { CombatRoundAction, ExcitedDurationRow, isWithinSpellCastRange, resolveSpellCastRange, resolveSpellCastTarget } from "@/combat";
 import { canTargetSpellCastByPerception } from "@/combat/spell-cast-gates";
 import { getSpellCastAnimState, getSpellConjureAnimState } from "@/combat/spell-cast-anims";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
@@ -117,9 +117,11 @@ export class TalentSpell extends TalentObject {
 
   setId( value = 0 ){
     this.id = value;
-    //Merge the spell properties from the spells.2da row with this spell
-    if(TwoDAManager.datatables.get('spells').rows[this.id]){
-      Object.assign(this, TwoDAManager.datatables.get('spells').rows[this.id]);
+    const spells = TwoDAManager.datatables.get('spells');
+    // Must use parseTwoDARow — raw Object.assign leaves **** strings and breaks
+    // forcehostile / forcefriendly self-target gates.
+    if(spells?.rows?.[this.id]){
+      this.parseTwoDARow(spells.rows[this.id]);
     }
   }
 
@@ -191,6 +193,12 @@ export class TalentSpell extends TalentObject {
    * @param options.isUserAction — player HUD/input (CombatRoundAction.isUserAction)
    */
   useTalentOnObject(oTarget: ModuleObject, oCaster: ModuleObject, options?: { isUserAction?: boolean }){
+    // Retail GetSelfForcePowers / range P — never cast personal/friendly HUD
+    // powers at the look-at party member.
+    if(oCaster){
+      oTarget = resolveSpellCastTarget(this, oTarget, oCaster, options);
+    }
+
     super.useTalentOnObject(oTarget, oCaster);
 
     // Retail AddCastSpellActions visibility (non-party field426==0)

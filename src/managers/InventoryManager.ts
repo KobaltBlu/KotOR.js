@@ -116,6 +116,9 @@ export class InventoryManager {
     }
 
     item.initProperties();
+    // Retail CreatureAcquireItem / CSWSStore::SellItem clear Infinite (bit 2) on
+    // copies that enter creature inventory — Infinite is store-stock only.
+    item.setInfinite(0);
     if(item.getBaseItemId() == BaseItemType.CREDITS){
       GameState.PartyManager.AddGold(item.getStackSize());
       GameState.UINotificationManager.EnableUINotificationIconType(UIIconTimerType.CREDITS_RECEIVED);
@@ -129,6 +132,9 @@ export class InventoryManager {
       // Retail stacks only identical items; differently upgraded variants must not merge.
       const canStack = hasItem && InventoryManager.canStackItems(hasItem as ModuleItem, item);
       if(hasItem && canStack){
+
+        // Sanitize legacy Infinite flags left on party stacks from store buys.
+        (hasItem as ModuleItem).setInfinite(0);
 
         if(!limitOne){
           (hasItem as ModuleItem).setStackSize((hasItem as ModuleItem).getStackSize() + item.getStackSize());

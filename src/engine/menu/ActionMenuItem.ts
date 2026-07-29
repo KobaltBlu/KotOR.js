@@ -1,4 +1,3 @@
-import { GameState } from "@/GameState";
 import type { ModuleItem } from "@/module/ModuleItem";
 
 /**
@@ -29,7 +28,9 @@ export class ActionMenuItem {
     props = Object.assign({
       action: undefined,
       talent: undefined,
-      target: GameState.ActionMenuManager.oTarget,
+      // Do not default to oTarget — self/force entries must stamp the caster
+      // (retail GetSelfForcePowers). Missing target falls through to activateMenuItem.
+      target: undefined,
       icon: '',
       item: undefined,
       enabled: true,

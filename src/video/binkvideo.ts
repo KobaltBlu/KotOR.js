@@ -21,6 +21,78 @@ export interface YUVFrame {
     linesizeV: number;
 }
 
+/** Visible chroma width — FFmpeg floor-half (`avctx->width >> is_chroma`). */
+export function binkChromaVisibleWidth(width: number): number {
+    return width >> 1;
+}
+
+/**
+ * Horizontally padded strides matching the block grid (and SCALED_BLOCK 16-wide writes).
+ * Vertical sizes stay ceil-to-block as in FFmpeg's padded allocation.
+ */
+export function computeBinkFrameLayout(width: number, height: number): {
+    yStride: number;
+    cStride: number;
+    yBh: number;
+    cBh: number;
+    chromaVisibleW: number;
+    chromaVisibleH: number;
+} {
+    const yStride = ((width + 15) >> 4) << 4;
+    const cStride = ((width + 15) >> 4) << 3;
+    const yBh = ((height + 7) >> 3) << 3;
+    const cBh = ((height + 15) >> 4) << 3;
+    return {
+        yStride,
+        cStride,
+        yBh,
+        cBh,
+        chromaVisibleW: binkChromaVisibleWidth(width),
+        chromaVisibleH: (height + 1) >> 1,
+    };
+}
+
+/**
+ * FFmpeg ref_end offset: last valid 8×8 block start in the plane.
+ * `ref_end = ref_start + (bw - 1 + linesize * (bh - 1)) * 8`
+ */
+export function binkRefMaxOffset(bw: number, bh: number, stride: number): number {
+    return ((bw - 1) + stride * (bh - 1)) * 8;
+}
+
+/** Zero luma and set chroma to neutral (128). Used on pool checkout. */
+export function clearYUVFrame(frame: YUVFrame): void {
+    frame.y.fill(0);
+    frame.u.fill(128);
+    frame.v.fill(128);
+}
+
+/**
+ * Copy a scaled 16×16 block into a plane with row/column clamps so writes never
+ * cross the stride (next row) or exceed the allocated buffer.
+ */
+export function writeScaledBlockClamped(
+    dst: Uint8Array,
+    dstOff: number,
+    stride: number,
+    tmp: Uint8Array,
+    blockRow: number,
+    planeHeight: number,
+): void {
+    const rowsToWrite = Math.min(16, Math.max(0, planeHeight - blockRow * 8));
+    const colInRow = dstOff - Math.floor(dstOff / stride) * stride;
+    const colsToWrite = Math.min(16, Math.max(0, stride - colInRow));
+    for (let j = 0; j < rowsToWrite; j++) {
+        const s = j * 16;
+        const d = dstOff + j * stride;
+        if (colsToWrite === 16) {
+            dst.set(tmp.subarray(s, s + 16), d);
+        } else if (colsToWrite > 0) {
+            dst.set(tmp.subarray(s, s + colsToWrite), d);
+        }
+    }
+}
+
 /**
  * BinkVideoDecoder class.
  * 
@@ -63,12 +135,9 @@ export class BinkVideoDecoder {
     decodePacketToFrame(pkt: Uint8Array): YUVFrame {
         try {
             const w = this.width, h = this.height;
-            const yStride = w, cStride = (w + 1) >> 1;
-            // Allocate block-aligned buffers: luma bh*8 rows, chroma bh_chroma*8 rows.
-            // This matches FFmpeg's padded allocation and prevents out-of-bounds writes
-            // when the block grid extends beyond the visible area.
-            const yBh = ((h + 7) >> 3) << 3;           // ceil to 8px rows for luma
-            const cBh = ((h + 15) >> 4) << 3;           // ceil to 16px then *8 for chroma block rows
+            // Horizontally padded strides (16-aligned luma, block-grid chroma) + vertical
+            // block padding — matches FFmpeg get_buffer linesize padding enough for SCALED_BLOCK.
+            const { yStride, cStride, yBh, cBh } = computeBinkFrameLayout(w, h);
             const frame = this.getFrameBuffer(w, h, yStride, cStride, yBh, cBh);
 
             const br = new BitReaderLE(pkt);
@@ -147,11 +216,8 @@ export class BinkVideoDecoder {
         const frame = this.framePool[this.framePoolIndex];
         frame.width = w;
         frame.height = h;
-        this.clearPlanePadding(frame.y, frame.linesizeY, w, h);
-        const chromaW = (w + 1) >> 1;
-        const chromaH = (h + 1) >> 1;
-        this.clearPlanePadding(frame.u, frame.linesizeU, chromaW, chromaH);
-        this.clearPlanePadding(frame.v, frame.linesizeV, chromaW, chromaH);
+        // Full clear: two-frame pool would otherwise leak N−2 pixels in undecoded regions.
+        clearYUVFrame(frame);
         return frame;
     }
 
@@ -159,18 +225,21 @@ export class BinkVideoDecoder {
         for (let plane = planesDecoded; plane < 3; plane++) {
             const plane_idx = (!plane || !this.swapPlanes) ? plane : (plane ^ 3);
             const isChroma = plane !== 0;
-            const w = isChroma ? ((this.width + 1) >> 1) : this.width;
+            // Floor-half chroma visible width (FFmpeg); padding cleared via clearPlanePadding.
+            const w = isChroma ? binkChromaVisibleWidth(this.width) : this.width;
             const h = isChroma ? ((this.height + 1) >> 1) : this.height;
             const stride = plane_idx === 0 ? frame.linesizeY : (plane_idx === 1 ? frame.linesizeU : frame.linesizeV);
             const base = plane_idx === 0 ? frame.y : (plane_idx === 1 ? frame.u : frame.v);
+            const fill = isChroma ? 128 : 0;
             for (let row = 0; row < h; row++) {
-                base.fill(0, row * stride, row * stride + w);
+                base.fill(fill, row * stride, row * stride + w);
             }
             this.clearPlanePadding(base, stride, w, h);
         }
     }
 
     private clearPlanePadding(base: Uint8Array, stride: number, visibleW: number, visibleH: number): void {
+        // Padding stays 0; visible chroma is neutralized separately when needed.
         if (stride > visibleW) {
             for (let row = 0; row < visibleH; row++) {
                 const rowOff = row * stride;
@@ -190,7 +259,7 @@ export class BinkVideoDecoder {
         const bw = isChroma ? ((this.width + 15) >> 4) : ((this.width + 7) >> 3);
         const bh = isChroma ? ((this.height + 15) >> 4) : ((this.height + 7) >> 3);
 
-        const c = new PlaneContext(br, this.version, w, bw, base, stride, this.getPrevPlane(plane_idx));
+        const c = new PlaneContext(br, this.version, w, bw, bh, base, stride, this.getPrevPlane(plane_idx));
 
         // BIKk plane fill shortcut: if bit is set, fill entire plane with next 8-bit value
         if (this.version === 'k') {
@@ -215,31 +284,33 @@ export class BinkVideoDecoder {
             for (let bx = 0; bx < bw; bx++, dstOff += 8, prevOff += 8) {
                 const blk = c.getBlockType();
                 if (((by & 1) || (bx & 1)) && blk === BlockType.SCALED_BLOCK) {
-                    bx++; dstOff += 8; prevOff += 8; continue;
+                    // Second half of a 16×16 block — skip without walking past the row.
+                    if (bx + 1 < bw) {
+                        bx++;
+                        dstOff += 8;
+                        prevOff += 8;
+                    }
+                    continue;
                 }
                 // Optimized switch with inlined simple cases
                 switch (blk) {
                     case BlockType.SKIP_BLOCK: {
-                        const ref = c.getRefPtr(dstOff, stride);
-                        if (!ref) {
-                            for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-                        } else {
-                            this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
-                        }
+                        // FFmpeg: put_pixels from prev at same offset (falls back to current if no last).
+                        this.copyRefBlock(c, base, dstOff, stride, dstOff);
                         break;
                     }
                     case BlockType.SCALED_BLOCK:
                         this.decodeScaledBlock(c, base, dstOff, stride, by, h);
-                        bx++; dstOff += 8; prevOff += 8;
+                        // 16×16 occupies two block columns; guard odd bw right edge.
+                        if (bx + 1 < bw) {
+                            bx++;
+                            dstOff += 8;
+                            prevOff += 8;
+                        }
                         break;
                     case BlockType.MOTION_BLOCK: {
                         const { xoff, yoff } = c.getMotion();
-                        const ref = c.getRefPtr(dstOff + xoff + yoff * stride, stride);
-                        if (!ref) {
-                            for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-                        } else {
-                            this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
-                        }
+                        this.copyRefBlock(c, base, dstOff, stride, dstOff + xoff + yoff * stride);
                         break;
                     }
                     case BlockType.RUN_BLOCK:
@@ -248,12 +319,7 @@ export class BinkVideoDecoder {
                     case BlockType.RESIDUE_BLOCK:
                         {
                             const { xoff, yoff } = c.getMotion();
-                            const ref = c.getRefPtr(dstOff + xoff + yoff * stride, stride);
-                            if (!ref) {
-                                for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-                            } else {
-                                this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
-                            }
+                            this.copyRefBlock(c, base, dstOff, stride, dstOff + xoff + yoff * stride);
                         }
                         this.decodeResidueAdd(c, base, dstOff, stride);
                         break;
@@ -268,12 +334,7 @@ export class BinkVideoDecoder {
                     case BlockType.INTER_BLOCK:
                         {
                             const { xoff, yoff } = c.getMotion();
-                            const ref = c.getRefPtr(dstOff + xoff + yoff * stride, stride);
-                            if (!ref) {
-                                for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-                            } else {
-                                this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
-                            }
+                            this.copyRefBlock(c, base, dstOff, stride, dstOff + xoff + yoff * stride);
                         }
                         this.decodeInterAdd(c, base, dstOff, stride);
                         break;
@@ -284,12 +345,8 @@ export class BinkVideoDecoder {
                         this.decodeRaw(c, base, dstOff, stride);
                         break;
                     default: {
-                        const ref = c.getRefPtr(dstOff, stride);
-                        if (!ref) {
-                            for (let i = 0; i < 8; i++) base.fill(0, dstOff + i * stride, dstOff + i * stride + 8);
-                        } else {
-                            this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
-                        }
+                        // Unknown type: prefer colocated skip over solid black (FFmpeg errors).
+                        this.copyRefBlock(c, base, dstOff, stride, dstOff);
                         break;
                     }
                 }
@@ -298,6 +355,19 @@ export class BinkVideoDecoder {
 
         // Align to 32-bit boundary at plane end
         if (br.getBitPos() & 31) br.skipBits(32 - (br.getBitPos() & 31));
+    }
+
+    /**
+     * Copy an 8×8 from the reference plane. On OOB motion, fall back to the
+     * colocated block (SKIP) instead of painting solid black.
+     */
+    private copyRefBlock(c: PlaneContext, base: Uint8Array, dstOff: number, stride: number, refOff: number): void {
+        let ref = c.getRefPtr(refOff, stride);
+        if (!ref && refOff !== dstOff) {
+            ref = c.getRefPtr(dstOff, stride);
+        }
+        if (!ref) return; // leave cleared pixels
+        this.copyBlock8(base, dstOff, stride, ref.buf, ref.off, ref.stride);
     }
 
     /** Copy 8x8 block from src to dest without allocating subarray views. */
@@ -432,11 +502,7 @@ export class BinkVideoDecoder {
         }
         const tmp = BinkVideoDecoder.scaledTmp;
         scaleBlock(ublk, tmp, 16);
-        const rowsToWrite = Math.min(16, planeHeight - blockRow * 8);
-        for (let j = 0; j < rowsToWrite; j++) {
-            const s = j * 16; const d = dstOff + j * stride;
-            dst.set(tmp.subarray(s, s + 16), d);
-        }
+        writeScaledBlockClamped(dst, dstOff, stride, tmp, blockRow, planeHeight);
     }
 }
 
@@ -463,18 +529,28 @@ class PlaneContext {
     private version: string;
     private width: number;
     private bw: number;
+    private bh: number;
     private base: Uint8Array;
     private stride: number;
-    private ref?: { data: Uint8Array, stride: number };
+    private ref: { data: Uint8Array, stride: number };
     private readonly _motion = { xoff: 0, yoff: 0 };
 
     bundle: Bundle[] = Array.from({ length: 9 }, () => new Bundle());
     col_high: Tree[] = Array.from({ length: 16 }, () => ({ vlc_num: 0, syms: Array.from({ length: 16 }, (_, i) => i) }));
     col_lastval = 0;
 
-    constructor(br: BitReaderLE, version: string, width: number, bw: number, base: Uint8Array, stride: number, prev?: { data: Uint8Array, stride: number }) {
-        this.br = br; this.version = version; this.width = Math.max(width, 8); this.bw = bw; this.base = base; this.stride = stride; this.ref = prev;
-        this.initLengths(); this.initBundleBuffers();
+    constructor(br: BitReaderLE, version: string, width: number, bw: number, bh: number, base: Uint8Array, stride: number, prev?: { data: Uint8Array, stride: number }) {
+        this.br = br;
+        this.version = version;
+        this.width = Math.max(width, 8);
+        this.bw = bw;
+        this.bh = Math.max(bh, 1);
+        this.base = base;
+        this.stride = stride;
+        // Match FFmpeg: when no previous frame, motion/skip reference the current plane.
+        this.ref = prev ?? { data: base, stride };
+        this.initLengths();
+        this.initBundleBuffers();
     }
 
     readAllTrees() {
@@ -687,13 +763,14 @@ class PlaneContext {
         return this._motion;
     }
 
-    getRefPtr(dstOff: number, stride: number): { buf: Uint8Array, off: number, stride: number } | undefined {
-        if (!this.ref) return undefined;
-        const height = (this.ref.data.length / this.ref.stride) | 0;
-        const width = this.width | 0;
-        const maxOff = ((height - 8) * this.ref.stride + (width - 8)) | 0;
+    getRefPtr(dstOff: number, _stride: number): { buf: Uint8Array, off: number, stride: number } | undefined {
         const off = dstOff | 0;
+        // FFmpeg: ref_end = ref_start + (bw - 1 + linesize * (bh - 1)) * 8
+        const maxOff = binkRefMaxOffset(this.bw, this.bh, this.ref.stride);
         if (off < 0 || off > maxOff) return undefined;
+        // Ensure the 8×8 block stays inside the allocated buffer.
+        const lastByte = off + 7 * this.ref.stride + 7;
+        if (lastByte >= this.ref.data.length) return undefined;
         return { buf: this.ref.data, off, stride: this.ref.stride };
     }
 }

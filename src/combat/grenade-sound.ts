@@ -69,8 +69,7 @@ export function getGrenadeSoundByLabel(label: string): SWGrenadeSound | undefine
 }
 
 /**
- * Resolve surfacemat walkIndex under a world position (same scan as
- * EffectForcePushed.validateWalkablePosition).
+ * Resolve surfacemat walkIndex under a world position (walkable-face scan).
  */
 export function resolveSurfaceIdAtPosition(position: THREE.Vector3): number {
   const rooms = GameState.module?.area?.rooms;

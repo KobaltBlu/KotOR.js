@@ -2015,7 +2015,17 @@ NWScriptDefK2.Actions = {
     name: 'EffectForcePushTargeted',
     type: NWScriptDataType.EFFECT,
     args: [ NWScriptDataType.LOCATION, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: function(this: NWScriptInstance, args: [EngineLocation, number]){
+      const effect = new GameState.GameEffectFactory.EffectForcePushed();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 1);
+      effect.setInt(1, args[1]);
+      effect.setFloat(0, args[0].position.x);
+      effect.setFloat(1, args[0].position.y);
+      effect.setFloat(2, args[0].position.z);
+      return effect.initialize();
+    }
   },
   270: {
     comment: '270: Create a Haste effect.',
@@ -2931,7 +2941,12 @@ NWScriptDefK2.Actions = {
     name: 'EffectForcePushed',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      const effect = new GameState.GameEffectFactory.EffectForcePushed();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      return effect.initialize();
+    }
   },
   393: {
     comment: '393: Gives nXpAmount to oCreature.',
@@ -4205,7 +4220,7 @@ NWScriptDefK2.Actions = {
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.FLOAT ],
     action: function(this: NWScriptInstance, args: [number, number]){
-      // Same gate as K1 AurEnableSpeedBlur; WebGL AfterimagePass stand-in.
+      // Same gate as K1 AurEnableSpeedBlur; AccumulationBlurPass (RenderAccumulationBlur).
       const ratio = typeof args[1] === 'number' ? args[1] : 0.75;
       GameState.SetSpeedBlurEffect(!!args[0], ratio);
     }
@@ -5193,7 +5208,14 @@ NWScriptDefK2.Actions = {
     name: 'EffectWhirlWind',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // ExecuteCommandEffectWhirlwind @ 0078d030 — SetState int0=10
+      const effect = new GameState.GameEffectFactory.EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 10);
+      return effect.initialize();
+    }
   },
   704: {
     comment: '704.\nReturns the party ai style',
@@ -5796,7 +5818,14 @@ NWScriptDefK2.Actions = {
     name: 'EffectCrush',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // ExecuteCommandEffectCrush @ 00787e10 — SetState type 0x08, int0=0x0F
+      const effect = new GameState.GameEffectFactory.EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 15);
+      return effect.initialize();
+    }
   },
   782: {
     comment: 'FAK - OEI 1/12/04\n782: Minigame grabs a swoop bike upgrade',
@@ -6073,7 +6102,14 @@ NWScriptDefK2.Actions = {
     name: 'EffectDroidConfused',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // EffectComplex @ 007881d5 — SetState int0=0x10
+      const effect = new GameState.GameEffectFactory.EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 16);
+      return effect.initialize();
+    }
   },
   810: {
     comment: '810\nDJS-OEI 3/8/2004\nDetermines if the given creature is in Stealth mode or not.\n0 = Creature is not stealthed.\n1 = Creature is stealthed.\nThis function will return 0 for any non-creature.',
@@ -6442,7 +6478,14 @@ NWScriptDefK2.Actions = {
     name: 'EffectMindTrick',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // EffectComplex @ 00788241 — SetState int0=0x12
+      const effect = new GameState.GameEffectFactory.EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 18);
+      return effect.initialize();
+    }
   },
   849: {
     comment: '849\nCreate a Faction Modifier effect.',
@@ -6472,7 +6515,14 @@ NWScriptDefK2.Actions = {
     name: 'EffectDroidScramble',
     type: NWScriptDataType.EFFECT,
     args: [],
-    action: undefined
+    action: function(this: NWScriptInstance, args: []){
+      // EffectComplex @ 00788265 — SetState int0=0x13
+      const effect = new GameState.GameEffectFactory.EffectSetState();
+      effect.setCreator(this.caller);
+      effect.setSpellId(this.getSpellId());
+      effect.setInt(0, 19);
+      return effect.initialize();
+    }
   },
   853: {
     comment: '853\nActionSwitchWeapons\nForces the creature to switch between Config 1 and Config 2\nof their equipment. Does not work in dialogs. Works with\nAssignCommand()',
