@@ -70,6 +70,24 @@ export function orthoFrustumInt(width: number, height: number): {
   };
 }
 
+/**
+ * XY corners for Three.js `PlaneGeometry(1, 1, 1, 1)` so edges match {@link orthoFrustumInt}.
+ * Vertex order matches Three's grid (top row then bottom). Prefer this over
+ * `mesh.scale.set(w, h)` which spans float ±w/2 and thins odd-size RTT blits.
+ */
+export function orthoAlignedUnitPlanePositions(
+  width: number,
+  height: number
+): [[number, number], [number, number], [number, number], [number, number]] {
+  const f = orthoFrustumInt(width, height);
+  return [
+    [f.left, f.top],
+    [f.right, f.top],
+    [f.left, f.bottom],
+    [f.right, f.bottom],
+  ];
+}
+
 export function copyExtentInt(src: IGUIControlExtent): IGUIControlExtent {
   return {
     left: asExtentInt(src.left),

@@ -25,6 +25,7 @@ import {
   hitCheckMouseLocal,
   hitCheckMouseWorldBox,
   listLocalFromWorldBox,
+  orthoAlignedUnitPlanePositions,
   orthoFrustumInt,
   truncDiv,
 } from "@/gui/GUICoord";
@@ -201,9 +202,11 @@ export class GUIListBox extends GUIControl {
     );
     this.camera.position.z = 100;
 
+    // Mag nearest matches LBL_3DView / LBL_MapView — Linear mag softens 1–3px row borders
+    // against alpha-0 clear when the RTT is blitted to the GUI scene.
     this.texture = new THREE.WebGLRenderTarget(Math.max(1, this.width), Math.max(1, this.height), {
       minFilter: THREE.LinearFilter,
-      magFilter: THREE.LinearFilter,
+      magFilter: THREE.NearestFilter,
       format: THREE.RGBAFormat,
       type: THREE.UnsignedByteType,
     });
@@ -239,8 +242,16 @@ export class GUIListBox extends GUIControl {
 
   /** Position the RTT quad over the content area (shifted away from the scrollbar). */
   private layoutRttQuad(): void {
-    if (!this.targetMesh) return;
-    this.targetMesh.scale.set(this.width, this.height, 1);
+    if (!this.targetMesh || !this.targetGeometry) return;
+    // Integer TL-centered edges matching the RTT camera (not unit plane × float ±w/2).
+    const corners = orthoAlignedUnitPlanePositions(this.width, this.height);
+    const pos = this.targetGeometry.getAttribute("position") as THREE.BufferAttribute;
+    for (let i = 0; i < 4; i++) {
+      pos.setXYZ(i, corners[i][0], corners[i][1], 0);
+    }
+    pos.needsUpdate = true;
+    this.targetGeometry.computeBoundingSphere();
+    this.targetMesh.scale.set(1, 1, 1);
     const shrink = asExtentInt(this.getShrinkWidth());
     // Content is centered with -truncDiv(shrink, 2) offset (see getBorderExtent); match that.
     this.targetMesh.position.x = this.isScrollBarLeft() ? truncDiv(shrink, 2) : -truncDiv(shrink, 2);

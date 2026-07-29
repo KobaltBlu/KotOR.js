@@ -2,7 +2,12 @@
  * @jest-environment node
  */
 import { describe, expect, it } from "@jest/globals";
-import { centeredExtentMax, orthoFrustumInt, truncDiv } from "@/gui/GUICoord";
+import {
+  centeredExtentMax,
+  orthoAlignedUnitPlanePositions,
+  orthoFrustumInt,
+  truncDiv,
+} from "@/gui/GUICoord";
 import { borderSideExtent } from "@/gui/borderSideExtent";
 
 /** Outer X span of a vertical edge/corner plane (thickness along X after rotation). */
@@ -115,5 +120,32 @@ describe("orthoFrustumInt (odd viewport half-pixel guard)", () => {
     // Old float path: ±960.5 — that is what thinned L/R GUI strokes
     expect(f.left).not.toBe(1921 / -2);
     expect(f.right).not.toBe(1921 / 2);
+  });
+});
+
+describe("orthoAlignedUnitPlanePositions (RTT blit vs orthoFrustumInt)", () => {
+  it("even size matches symmetric ±half (same as float scale)", () => {
+    expect(orthoAlignedUnitPlanePositions(200, 100)).toEqual([
+      [-100, 50],
+      [100, 50],
+      [-100, -50],
+      [100, -50],
+    ]);
+  });
+
+  it("odd size uses integer frustum edges, not float ±w/2", () => {
+    const corners = orthoAlignedUnitPlanePositions(201, 101);
+    expect(corners).toEqual([
+      [-100, 51],
+      [101, 51],
+      [-100, -50],
+      [101, -50],
+    ]);
+    // Old unit plane × scale(201,101) spanned ±100.5 / ±50.5
+    expect(corners[0][0]).not.toBe(-(201 / 2));
+    expect(corners[1][0]).not.toBe(201 / 2);
+    const f = orthoFrustumInt(201, 101);
+    expect(corners[1][0] - corners[0][0]).toBe(f.right - f.left);
+    expect(corners[0][1] - corners[2][1]).toBe(f.top - f.bottom);
   });
 });
