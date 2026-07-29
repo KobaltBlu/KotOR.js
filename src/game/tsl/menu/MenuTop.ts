@@ -130,6 +130,15 @@ export class MenuTop extends K1_MenuTop {
         this.manager.MenuEquipment.open();
       });
 
+      this.bindTopHighlight(this.BTN_EQU, this.LBLH_EQU, () => this.manager.MenuEquipment);
+      this.bindTopHighlight(this.BTN_INV, this.LBLH_INV, () => this.manager.MenuInventory);
+      this.bindTopHighlight(this.BTN_CHAR, this.LBLH_CHA, () => this.manager.MenuCharacter);
+      this.bindTopHighlight(this.BTN_ABI, this.LBLH_ABI, () => this.manager.MenuAbilities);
+      this.bindTopHighlight(this.BTN_MSG, this.LBLH_MSG, () => this.manager.MenuPartySelection);
+      this.bindTopHighlight(this.BTN_JOU, this.LBLH_JOU, () => this.manager.MenuJournal);
+      this.bindTopHighlight(this.BTN_MAP, this.LBLH_MAP, () => this.manager.MenuMap);
+      this.bindTopHighlight(this.BTN_OPT, this.LBLH_OPT, () => this.manager.MenuOptions);
+
       this.BTN_CHANGE2.addEventListener('click', (e) => {
         GameState.PartyManager.SwitchLeaderAtIndex(1);
       });

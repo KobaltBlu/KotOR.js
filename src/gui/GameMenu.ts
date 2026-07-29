@@ -376,6 +376,10 @@ export class GameMenu {
     }catch(e){ console.error(e); }
   }
 
+  /**
+   * Retail mouse-over is a single control (CSWGuiManager field2_0x8 /
+   * CSWGuiPanel::SetActiveControl). Activating one clears any other hover.
+   */
   setWidgetHoverActive(control: GUIControl, bActive: boolean = false){
 
     if(!BitWise.InstanceOfObject(control, GUIControlTypeMask.GUIControl))
@@ -388,6 +392,16 @@ export class GameMenu {
     let idx = this.activeControls.indexOf(control);
 
     if(bActive){
+      // Deactivate every other hovered control first (retail one-at-a-time).
+      for(let i = this.activeControls.length - 1; i >= 0; i--){
+        const other = this.activeControls[i];
+        if(other === control){
+          continue;
+        }
+        other.onHoverOut();
+        this.activeControls.splice(i, 1);
+      }
+      idx = this.activeControls.indexOf(control);
       if(idx == -1){
         this.activeControls.push(control);
         if(control){

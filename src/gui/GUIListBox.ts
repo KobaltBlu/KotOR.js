@@ -1453,43 +1453,50 @@ export class GUIListBox extends GUIControl {
     const vx = listLocal.x - viewportX;
     const vy = listLocal.y - viewportY;
 
+    // Retail HitCheckMouseLocal — scrollbar is tested before rows and wins if hit.
+    if(this.scrollbar && this.scrollWrapper?.visible){
+      const sb = this.scrollbar;
+      const sbHit = sb.hitCheckScrollbar(localX, localY);
+      if(sbHit !== ScrollBarHit.MISS){
+        for(let i = 0; i < this.children.length; i++){
+          this.children[i].clearHoverTree();
+        }
+        this.onRowHover(undefined);
+        controls.push(sb);
+        return controls.concat(sb.getActiveControls(localX, localY));
+      }
+    }
+
+    // Forward walk, first row hit only (retail HitCheckMouseLocal).
     for(let i = 0; i < this.children.length; i++){
       let control = this.children[i];
       if(!control.widget.visible){
-        this.menu.setWidgetHoverActive(control, false);
+        control.clearHoverTree();
         continue;
       }
 
       const rowH = asExtentInt(control.extent?.height || 0);
       const itemTop = asExtentInt(control.extent?.top || 0);
       if (!this.isRowInViewport(itemTop, rowH, vh)) {
-        this.menu.setWidgetHoverActive(control, false);
+        control.clearHoverTree();
         continue;
       }
 
       if(hitCheckMouseLocal(control.extent, vx, vy)){
         if (!hoveredRow) {
           hoveredRow = control;
+          controls.push(control);
+          controls = controls.concat( control.getActiveControls(localX, localY) );
+        }else{
+          control.clearHoverTree();
         }
-        controls.push(control);
-        controls = controls.concat( control.getActiveControls(localX, localY) );
       }else{
-        this.menu.setWidgetHoverActive(control, false);
+        control.clearHoverTree();
       }
     }
 
     // Retail HandleMouseMove @ 0041c400 — hover-select when !selectOnLeftClick
     this.onRowHover(hoveredRow);
-
-    if(this.scrollbar && this.scrollWrapper?.visible){
-      const sb = this.scrollbar;
-      const sbHit = sb.hitCheckScrollbar(localX, localY);
-      if(sbHit !== ScrollBarHit.MISS){
-        controls.push(sb);
-      }
-
-      controls = controls.concat(sb.getActiveControls(localX, localY));
-    }
 
     return controls;
   }

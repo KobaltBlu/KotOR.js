@@ -88,9 +88,39 @@ export class MenuTop extends GameMenu {
         this.manager.MenuEquipment.open();
       });
 
+      // LBLH_* are CSWGuiLabelHilight overlays — decorative, not mouse targets.
+      // Drive their hover chrome from the paired BTN (retail GetIsSelectable skips labels).
+      this.bindTopHighlight(this.BTN_EQU, this.LBLH_EQU, () => this.manager.MenuEquipment);
+      this.bindTopHighlight(this.BTN_INV, this.LBLH_INV, () => this.manager.MenuInventory);
+      this.bindTopHighlight(this.BTN_CHAR, this.LBLH_CHA, () => this.manager.MenuCharacter);
+      this.bindTopHighlight(this.BTN_ABI, this.LBLH_ABI, () => this.manager.MenuAbilities);
+      this.bindTopHighlight(this.BTN_MSG, this.LBLH_MSG, () => this.manager.MenuMessages);
+      this.bindTopHighlight(this.BTN_JOU, this.LBLH_JOU, () => this.manager.MenuJournal);
+      this.bindTopHighlight(this.BTN_MAP, this.LBLH_MAP, () => this.manager.MenuMap);
+      this.bindTopHighlight(this.BTN_OPT, this.LBLH_OPT, () => this.manager.MenuOptions);
+
       this.tGuiPanel.offset.y = 198;
       this.recalculatePosition();
       resolve();
+    });
+  }
+
+  /**
+   * Show LBLH highlight while its BTN is hovered; keep it lit when that tab's
+   * menu is current (menus call LBLH.onHoverIn on open).
+   */
+  protected bindTopHighlight(
+    btn: GUIButton,
+    lbl: GUIControl,
+    isSelectedMenu: () => GameMenu | undefined,
+  ){
+    btn.addEventListener('hover', () => {
+      lbl.onHoverIn();
+    });
+    btn.addEventListener('mouseOut', () => {
+      if(this.manager.GetCurrentMenu() !== isSelectedMenu()){
+        lbl.onHoverOut();
+      }
     });
   }
 

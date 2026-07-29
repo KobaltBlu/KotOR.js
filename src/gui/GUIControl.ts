@@ -40,6 +40,7 @@ import {
   listLocalFromWorldBox,
   panelLocalFromCenteredUI,
   applyPanelOffsetToLetterboxLocal,
+  selectTopmostHitChildIndex,
   truncDiv,
 } from "@/gui/GUICoord";
 import { borderInnerExtent } from "@/gui/borderInnerExtent";
@@ -1125,6 +1126,21 @@ export class GUIControl {
     return (this.eventListeners['click'].length || this.onClick) && this.isVisible() && !this.disableSelection;
   }
 
+  /**
+   * Retail CSWGuiControl::GetIsSelectable — mouse hover / click targets are
+   * navigable controls (buttons, etc.), not decorative labels (LBLH_*, slot
+   * icon LBL_INV_*). Labels only qualify when they actually have click handlers.
+   */
+  receivesGuiMouseHover(): boolean {
+    if(!this.isVisible() || this.disableHover || this.disableSelection){
+      return false;
+    }
+    if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUILabel)){
+      return this.isClickable();
+    }
+    return this.allowClick || this.editable || this.isClickable();
+  }
+
   isVisible(){
     return this.widget.visible;
   }
@@ -1845,6 +1861,21 @@ export class GUIControl {
     this.updateBounds();
   }
 
+  /**
+   * Clear hover on this control and descendants (occluded sibling subtrees).
+   */
+  clearHoverTree(){
+    this.menu?.setWidgetHoverActive(this, false);
+    for(let i = 0; i < this.children.length; i++){
+      this.children[i].clearHoverTree();
+    }
+  }
+
+  /**
+   * Retail CSWGuiPanel::HitCheckMouse @ 0040b690 — walk children reverse (topmost
+   * first) and return only the first hit branch. Overlapping siblings do not both
+   * receive hover/click.
+   */
   getActiveControls(panelLocalX?: number, panelLocalY?: number){
 
     if(!this.widget.visible)
@@ -1858,17 +1889,26 @@ export class GUIControl {
       localY = local.y;
     }
 
+    const childHit: boolean[] = new Array(this.children.length);
+    const childSelectable: boolean[] = new Array(this.children.length);
+    for(let i = 0; i < this.children.length; i++){
+      childHit[i] = this.children[i].hitCheckMouse(localX, localY);
+      childSelectable[i] = this.children[i].receivesGuiMouseHover();
+    }
+    const topmost = selectTopmostHitChildIndex(childHit, childSelectable);
+
     let controls: GUIControl[] = [];
     for(let i = 0; i < this.children.length; i++){
-      let control = this.children[i];
-      const hit = control.hitCheckMouse(localX, localY);
-      if(hit && (control.allowClick || control.editable)){
-        controls.push(control);
-      }else if(!hit){
-        this.menu.setWidgetHoverActive(control, false);
-      }
-      if(hit){
+      const control = this.children[i];
+      if(i === topmost){
+        if(control.receivesGuiMouseHover() || control.editable){
+          controls.push(control);
+        }
         controls = controls.concat( control.getActiveControls(localX, localY) );
+      }else{
+        // Miss or occluded — clear mouse hover. Sticky LBLH_* (direct onHoverIn,
+        // not in activeControls) are left alone by setWidgetHoverActive(false).
+        control.clearHoverTree();
       }
     }
     

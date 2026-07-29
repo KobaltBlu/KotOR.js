@@ -223,6 +223,34 @@ export function hitCheckMouseLocal(
 }
 
 /**
+ * Retail CSWGuiPanel::HitCheckMouse @ 0040b690 — children walked last→first;
+ * first hit wins. Overlapping siblings do not both receive input.
+ * `childHit[i]` is true when child i's HitCheckMouse succeeds.
+ *
+ * When `childSelectable` is provided, prefer the topmost *selectable* hit
+ * (retail HandleMouseMove / GetIsSelectable — decorative labels like LBLH_*
+ * and equip LBL_INV_* must not steal hover from their buttons).
+ */
+export function selectTopmostHitChildIndex(
+  childHit: readonly boolean[],
+  childSelectable?: readonly boolean[],
+): number {
+  if (childSelectable && childSelectable.length === childHit.length) {
+    for (let i = childHit.length - 1; i >= 0; i--) {
+      if (childHit[i] && childSelectable[i]) {
+        return i;
+      }
+    }
+  }
+  for (let i = childHit.length - 1; i >= 0; i--) {
+    if (childHit[i]) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/**
  * Convert centered Y-up UI mouse into list-control-local top-left Y-down ints
  * using the list's world/UI AABB (`GUIControl.box` / `calculateBox`).
  *

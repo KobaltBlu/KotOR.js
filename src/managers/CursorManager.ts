@@ -380,10 +380,12 @@ export class CursorManager {
 				continue;
 			}
 
-			if(!guiHoverCaptured){
+			// Retail HandleMouseMove — only selectable controls get mouse-over
+			// (GetIsSelectable). Decorative labels under the cursor are skipped.
+			if(!guiHoverCaptured && control.receivesGuiMouseHover()){
 				let cMenu = control.menu;
 				cMenu.setWidgetHoverActive(control, true);
-				guiHoverCaptured = false;
+				guiHoverCaptured = true;
 			}
 
 			if(typeof control.isClickable == 'function'){
