@@ -1554,6 +1554,9 @@ export class GUIControl {
       this.border.fill.material.uniforms.map.value.updateMatrix();
       this.border.fill.material.defines.USE_UV = '';
       this.border.fill.material.defines.USE_MAP = '';
+      this.border.fill.material.depthTest = false;
+      this.border.fill.material.depthWrite = false;
+      this.border.fill.material.transparent = true;
     }else{
       this.border.fill.material.visible = false;
     }
