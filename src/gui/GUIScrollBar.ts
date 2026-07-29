@@ -121,6 +121,8 @@ export class GUIScrollBar extends GUIControl{
           this.upArrow.position.y = truncDiv(asExtentInt(this.extent.height), 2) + truncDiv(asExtentInt(this.arrowSize), 2);
           this.upArrow.userData.worldPosition = new THREE.Vector3();
 
+          this.upArrowMaterial.depthTest = false;
+          this.upArrowMaterial.depthWrite = false;
           this.upArrowMaterial.transparent = true;
           this.upArrowMaterial.needsUpdate = true;
 
@@ -149,6 +151,8 @@ export class GUIScrollBar extends GUIControl{
           this.downArrow.rotation.z = Math.PI;
           this.downArrow.userData.worldPosition = new THREE.Vector3();
 
+          this.downArrowMaterial.depthTest = false;
+          this.downArrowMaterial.depthWrite = false;
           this.downArrowMaterial.transparent = true;
           this.downArrowMaterial.needsUpdate = true;
 
@@ -172,6 +176,9 @@ export class GUIScrollBar extends GUIControl{
 
       this.geometry = new THREE.PlaneGeometry( 1, 1, 1 );
       this.thumbMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0xFFFFFF), side: THREE.DoubleSide} );
+      this.thumbMaterial.depthTest = false;
+      this.thumbMaterial.depthWrite = false;
+      this.thumbMaterial.transparent = true;
       this.thumb = new THREE.Mesh( this.geometry, this.thumbMaterial );
 
       this.widget.add(this.thumb);

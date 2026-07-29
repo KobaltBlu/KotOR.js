@@ -93,9 +93,11 @@ export class GUISlider extends GUIControl{
 
       if(this.thumbStruct.hasField('IMAGE')){
         TextureLoader.enQueue(this.thumbStruct.getFieldByLabel('IMAGE').getValue(), this.thumb.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
-          this.thumb.material.transparent = false;
           this.thumb.material.alphaTest = 0.5;
           this.thumb.material.needsUpdate = true;
+          this.thumb.material.depthTest = false;
+          this.thumb.material.depthWrite = false;
+          this.thumb.material.transparent = true;
           if(texture.header){
             this.thumb.width = asExtentInt(texture.header.width);
             this.thumb.height = asExtentInt(texture.header.height);

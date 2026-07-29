@@ -73,6 +73,8 @@ export class GameMenu {
   eventListenters: Map<String, Function[]> = new Map<String, Function[]>();
   context: any = GameState;
 
+  menuGroup: THREE.Group = new THREE.Group();
+
   constructor(){
     this._button_a = undefined;
     this._button_b = undefined;
@@ -114,12 +116,14 @@ export class GameMenu {
     const panelControl = this.tGuiPanel.createControl();
 
     if(this.voidFill){
-      this.tGuiPanel.widget.add(this.backgroundVoidSprite);
+      this.menuGroup.add(this.backgroundVoidSprite);
     }
 
     if(this.backgroundSprite){
-      this.tGuiPanel.widget.add(this.backgroundSprite);
+      this.menuGroup.add(this.backgroundSprite);
     }
+
+    this.menuGroup.add(panelControl);
     
     panelControl.position.x = 0;
     panelControl.position.y = 0;
@@ -233,13 +237,19 @@ export class GameMenu {
         ]),
         vertexShader: ShaderManager.Shaders.get('void-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('void-gui').getFragment(),
-      })
+        defines: {
+          GUI_SORT: ''
+        }
+      });
       this.backgroundVoidSprite = new THREE.Mesh( geometry, this.backgroundVoidMaterial );
       this.backgroundVoidSprite.position.z = -6;
       this.backgroundVoidSprite.renderOrder = -6;
 
       // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.0, 0.658824, 0.980392);
       this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.10196078568697, 0.69803923368454, 0.549019634723663);
+      this.backgroundVoidMaterial.depthTest = false;
+      this.backgroundVoidMaterial.depthWrite = false;
+      this.backgroundVoidMaterial.transparent = true;
       // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(1.0, 1.0, 1.0);
     }
 
@@ -255,8 +265,13 @@ export class GameMenu {
         ]),
         vertexShader: ShaderManager.Shaders.get('background-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('background-gui').getFragment(),
+        defines: {
+          GUI_SORT: ''
+        }
       });
       this.backgroundMaterial.transparent = true;
+      this.backgroundMaterial.depthTest = false;
+      this.backgroundMaterial.depthWrite = false;
       this.backgroundSprite = new THREE.Mesh( geometry, this.backgroundMaterial );
       this.backgroundSprite.position.z = -5;
       this.backgroundSprite.renderOrder = -5;
@@ -279,7 +294,7 @@ export class GameMenu {
 
   hide(){
     this.bVisible = false;
-    GameState.scene_gui.remove(this.tGuiPanel.getControl());
+    GameState.scene_gui.remove(this.menuGroup);
 
     //Handle the child menu if it is set
     if(this.childMenu instanceof GameMenu)
@@ -292,7 +307,7 @@ export class GameMenu {
       GameState.SetEngineMode(this.engineMode);
       
     this.bVisible = true;
-    GameState.scene_gui.add(this.tGuiPanel.getControl());
+    GameState.scene_gui.add(this.menuGroup);
 
     //Handle the child menu if it is set
     if(this.childMenu instanceof GameMenu)

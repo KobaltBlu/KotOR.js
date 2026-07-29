@@ -75,7 +75,10 @@ export class GUIProgressBar extends GUIControl {
       fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     this.progress.edge_material.defines.USE_MAP = '';
     this.progress.edge_material.uniforms.diffuse.value = this.progress.color;
@@ -88,7 +91,10 @@ export class GUIProgressBar extends GUIControl {
       fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.progress.corner_material.defines.USE_MAP = '';
     this.progress.corner_material.uniforms.diffuse.value = this.progress.color;
@@ -108,7 +114,10 @@ export class GUIProgressBar extends GUIControl {
       fragmentShader: ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.progress.fill.material.defines.USE_MAP = '';
     this.progress.fill.material.uniforms.diffuse.value = this.progress.color;

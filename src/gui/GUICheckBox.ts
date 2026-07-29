@@ -85,7 +85,10 @@ export class GUICheckBox extends GUIControl{
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     this.borderSelected.edge_material.defines.USE_MAP = '';
     this.borderSelected.edge_material.uniforms.diffuse.value = this.borderSelected.color;
@@ -98,7 +101,10 @@ export class GUICheckBox extends GUIControl{
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.borderSelected.corner_material.defines.USE_MAP = '';
     this.borderSelected.corner_material.uniforms.diffuse.value = this.borderSelected.color;
@@ -118,7 +124,10 @@ export class GUICheckBox extends GUIControl{
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.borderSelected.fill.material.defines.USE_MAP = '';
     this.borderSelected.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
@@ -175,7 +184,10 @@ export class GUICheckBox extends GUIControl{
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.highlightSelected.corner_material.defines.USE_MAP = '';
     this.highlightSelected.corner_material.uniforms.diffuse.value = this.highlightSelected.color;
@@ -195,7 +207,10 @@ export class GUICheckBox extends GUIControl{
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.highlightSelected.fill.material.defines.USE_MAP = '';
     this.highlightSelected.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);

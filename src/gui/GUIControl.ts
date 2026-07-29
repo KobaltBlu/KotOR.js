@@ -326,7 +326,10 @@ export class GUIControl {
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.border.edge_material.defines.USE_UV = '';
     //this.border.edge_material.defines.USE_MAP = '';
@@ -340,7 +343,10 @@ export class GUIControl {
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.border.corner_material.defines.USE_UV = '';
     //this.border.corner_material.defines.USE_MAP = '';
@@ -361,7 +367,10 @@ export class GUIControl {
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.border.fill.material.defines.USE_UV = '';
     //this.border.fill.material.defines.USE_MAP = '';
@@ -406,7 +415,10 @@ export class GUIControl {
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.highlight.edge_material.defines.USE_MAP = '';
     this.highlight.edge_material.uniforms.diffuse.value = this.highlight.color;
@@ -419,7 +431,10 @@ export class GUIControl {
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.highlight.corner_material.defines.USE_MAP = '';
     this.highlight.corner_material.uniforms.diffuse.value = this.highlight.color;
@@ -439,7 +454,10 @@ export class GUIControl {
       fragmentShader: GameState.ShaderManager.Shaders.get('odyssey-gui').getFragment(),
       side: THREE.FrontSide,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.highlight.fill.material.defines.USE_MAP = '';
     this.highlight.fill.material.uniforms.diffuse.value = new THREE.Color(0xFFFFFF);
@@ -486,7 +504,10 @@ export class GUIControl {
       side: THREE.DoubleSide,
       transparent: true,
       fog: false,
-      visible: true
+      visible: true,
+      defines: {
+        GUI_SORT: ''
+      }
     });
     //this.text.material.defines.USE_MAP = '';
     this.text.material.uniforms.diffuse.value = this.text.color;
@@ -1556,7 +1577,13 @@ export class GUIControl {
     if(bUpdateHighlight) this.highlight.fill.texture = name;
     TextureLoader.enQueue(this.border.fill.texture, this.border.fill.material, TextureType.TEXTURE, (texture: OdysseyTexture) => {
       this.setFillTexture(texture)
+      this.border.fill.material.depthTest = false;
+      this.border.fill.material.depthWrite = false;
+      this.border.fill.material.transparent = true;
       if(bUpdateHighlight) this.setHighlightFillTexture(texture);
+      this.highlight.fill.material.depthTest = false;
+      this.highlight.fill.material.depthWrite = false;
+      this.highlight.fill.material.transparent = true;
       return texture;
     });
     return;
