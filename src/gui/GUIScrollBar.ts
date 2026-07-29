@@ -11,6 +11,11 @@ import type { GUIListBox } from "@/gui/GUIListBox";
 import type { GameMenu } from "@/gui/GameMenu";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { asExtentInt, hitCheckMouseLocal, truncDiv } from "@/gui/GUICoord";
+import {
+  scrollBarDragValue,
+  scrollBarThumbCenterY,
+  scrollBarThumbSize,
+} from "@/gui/scrollBarThumb";
 import type { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
 
 /** Retail CSWGuiScrollBarHitCheckResult */
@@ -62,6 +67,8 @@ export class GUIScrollBar extends GUIControl{
 
   private dragStartMouseY = 0;
   private dragging = false;
+  /** Retail field5_0x7c — scroll index at BAR mouse-down (1-based when shouldScroll). */
+  private dragStartValue = 0;
 
   /** Retail hold-repeat while mouse captured on arrow/page (Draw @ 0041a3e0). */
   private holdHit: ScrollBarHit = ScrollBarHit.MISS;
@@ -183,7 +190,8 @@ export class GUIScrollBar extends GUIControl{
 
       this.widget.add(this.thumb);
       this.thumb.name = 'SCROLLBAR thumb';
-      this.thumb.scale.x = Math.max(1, asExtentInt(this.extent.width));
+      // Width filled in layoutThumb from border GetInnerExtent (not full control width).
+      this.thumb.scale.x = 1;
       this.thumb.scale.y = Math.max(1, asExtentInt(this.extent.height));
       this.thumb.position.z = 5;
 
@@ -252,8 +260,10 @@ export class GUIScrollBar extends GUIControl{
       const hit = this.hitCheckScrollbar(local.x, local.y);
       if (hit === ScrollBarHit.BAR) {
         this.dragging = true;
-        this.dragStartMouseY = Mouse.positionViewportInt.y;
+        // Retail HandleLMouseDown @ 0041c4a0 — store panel-local mouse Y.
+        this.dragStartMouseY = asExtentInt(local.y);
         this.list?.beginScrollBarDrag();
+        this.dragStartValue = this.list?.getScrollBarDragStartValue() ?? this.currentValue;
         this.endHoldRepeat();
       } else if (
         hit === ScrollBarHit.UP_ARROW ||
@@ -343,22 +353,22 @@ export class GUIScrollBar extends GUIControl{
   layoutThumb(): void {
     if (!this.thumb) return;
 
-    const track = asExtentInt(this.extent.height);
-    // Retail: thumb = visible / (visible + max) * track when max > 1
-    let scaleY: number;
-    if (this.maxValue > 1) {
-      scaleY = this.visibleItemCount / (this.visibleItemCount + this.maxValue);
-    } else {
-      scaleY = 1;
-    }
-    scaleY = Math.min(1, Math.max(0.01, scaleY));
-    this.thumb.scale.y = asExtentInt(track * scaleY) || 1;
-    this.thumb.scale.x = Math.max(1, asExtentInt(this.extent.width));
+    const size = scrollBarThumbSize({
+      trackWidth: this.extent.width,
+      trackHeight: this.extent.height,
+      borderDimension: this.border?.dimension || 0,
+      innerOffset: this.border?.inneroffset || 0,
+      innerOffsetY: this.border?.inneroffsety ?? this.border?.inneroffset ?? 0,
+      maxValue: this.maxValue,
+      visibleItemCount: this.visibleItemCount,
+    });
 
-    const travel = Math.max(0, track - asExtentInt(this.thumb.scale.y));
+    this.thumb.scale.y = size.height;
+    this.thumb.scale.x = size.width;
+
     const denom = Math.max(1, this.maxValue - 1);
     const t = this.maxValue <= 1 ? 0 : this.currentValue / denom;
-    this.thumb.position.y = asExtentInt(truncDiv(travel, 2) - t * travel);
+    this.thumb.position.y = scrollBarThumbCenterY(size.travel, t);
 
     if (isNaN(this.thumb.position.y)) {
       this.thumb.position.y = 0;
@@ -551,13 +561,15 @@ export class GUIScrollBar extends GUIControl{
 
     const trackTop = arrow;
     const thumbH = this.thumb ? Math.max(1, asExtentInt(this.thumb.scale.y)) : 0;
+    const thumbW = this.thumb ? Math.max(1, asExtentInt(this.thumb.scale.x)) : bar.width;
     const thumbYThree = this.thumb ? asExtentInt(this.thumb.position.y) : 0;
     // Three.js Y-up thumb center → track-local Y-down top
     const thumbCenterFromTrackTop = truncDiv(trackH, 2) - thumbYThree;
     const thumbTop = trackTop + thumbCenterFromTrackTop - truncDiv(thumbH, 2);
+    const thumbLeft = truncDiv(asExtentInt(bar.width) - thumbW, 2);
 
     if (this.thumb && hitCheckMouseLocal(
-      { left: 0, top: thumbTop, width: bar.width, height: thumbH },
+      { left: thumbLeft, top: thumbTop, width: thumbW, height: thumbH },
       localX,
       localY,
     )) {
@@ -580,16 +592,42 @@ export class GUIScrollBar extends GUIControl{
   mouseInside(){
     if (!this.list || !this.thumb || !this.dragging) return;
 
-    const travel = Math.max(1, asExtentInt(this.extent.height) - asExtentInt(this.thumb.scale.y));
-    const start = this.list.getScrollBarDragStartValue();
-    const deltaY = asExtentInt(this.dragStartMouseY) - Mouse.positionViewportInt.y;
-    const maxIdx = this.list.shouldScroll()
-      ? Math.max(0, this.list.getPagesToScroll() - 1)
-      : Math.max(0, this.maxValue - 1);
+    // Retail HandleMouseCapturedMovement @ 0041b670 —
+    // deltaY = currentPanelLocalY - scroll_mouse_y (Y-down);
+    // travel = inner.height - thumbHeight.
+    const local = this.getPanelLocalMouse();
+    const deltaY = asExtentInt(local.y) - asExtentInt(this.dragStartMouseY);
+    const size = scrollBarThumbSize({
+      trackWidth: this.extent.width,
+      trackHeight: this.extent.height,
+      borderDimension: this.border?.dimension || 0,
+      innerOffset: this.border?.inneroffset || 0,
+      innerOffsetY: this.border?.inneroffsety ?? this.border?.inneroffset ?? 0,
+      maxValue: this.maxValue,
+      visibleItemCount: this.visibleItemCount,
+    });
 
-    const delta = Math.round((deltaY / travel) * maxIdx);
-    const next = Math.max(0, Math.min(maxIdx, start + delta));
-    this.list.applyScrollBarDragValue(next);
+    if (this.list.shouldScroll()) {
+      const pages = this.list.getPagesToScroll();
+      const next = scrollBarDragValue({
+        deltaY,
+        travel: size.travel,
+        startValue: this.dragStartValue,
+        maxIndex: Math.max(0, pages - 1),
+        oneBased: true,
+      });
+      // applyScrollBarDragValue expects 0-based for shouldScroll path
+      this.list.applyScrollBarDragValue(next - 1);
+    } else {
+      const next = scrollBarDragValue({
+        deltaY,
+        travel: size.travel,
+        startValue: this.dragStartValue,
+        maxIndex: Math.max(0, this.maxValue - 1),
+        oneBased: false,
+      });
+      this.list.applyScrollBarDragValue(next);
+    }
   }
 
   setList(list: GUIListBox){
@@ -650,12 +688,13 @@ export class GUIScrollBar extends GUIControl{
       new THREE.Vector2(ax + halfW + wx, ay + halfTrackH + wy)
     );
     if(this.thumb){
+      const halfThumbW = truncDiv(asExtentInt(this.thumb.scale.x), 2);
       const halfThumbH = truncDiv(asExtentInt(this.thumb.scale.y), 2);
       const px = asExtentInt(parentPos.x);
       const py = asExtentInt(parentPos.y) + asExtentInt(this.thumb.position.y);
       this.thumb.userData.box = new THREE.Box2(
-        new THREE.Vector2(px - halfW, py - halfThumbH),
-        new THREE.Vector2(px + halfW, py + halfThumbH)
+        new THREE.Vector2(px - halfThumbW, py - halfThumbH),
+        new THREE.Vector2(px + halfThumbW, py + halfThumbH)
       );
     }
 

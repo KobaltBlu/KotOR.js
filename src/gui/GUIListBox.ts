@@ -1382,7 +1382,8 @@ export class GUIListBox extends GUIControl {
 
   beginScrollBarDrag(): void {
     if (this.shouldScroll()) {
-      this.scrollDragStartValue = this.scrollPosition - 1;
+      // Retail field5_0x7c = scroll_position (1-based)
+      this.scrollDragStartValue = this.scrollPosition;
     } else {
       this.scrollDragStartValue = this.scrollbar?.currentValue ?? this.topVisibleIndex;
     }
