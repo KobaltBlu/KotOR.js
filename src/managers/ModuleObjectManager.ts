@@ -217,6 +217,13 @@ export class ModuleObjectManager {
     this.tagLookup.length = 0;
     MiniGameObjectArray.clear();
     GameState.ServerAIMaster?.Reset?.();
+    // Clear Enemy/Mine Sighted latches so post-load rising edge is deterministic
+    this.#enemySighted = false;
+    this.#enemySightedLatch = 0;
+    this.#mineSighted = false;
+    this.#mineSightedLatch = 0;
+    this.#stickyLosGrace = 0;
+    this.#targetChanging = 0;
   }
 
   public static GetObjectByTag(sTag = '', iNum = 0, oType = NWModuleObjectType.ALL){
@@ -1221,10 +1228,21 @@ export class ModuleObjectManager {
 
   /**
    * Run DoPassiveSelection every tick (rebuilds nearest lists internally).
+   * Retail MainLoop skips while IsGlobalFading / IsGlobalFadeObscuring
+   * (and while area_not_ready_to_display).
    */
   static TickSelectableObjects(delta: number = 0){
     const player = PartyManager.party[0];
     if(!player){
+      return;
+    }
+
+    // Retail: DoPassiveSelection only after world fade is clear
+    const fade = GameState.FadeOverlayManager;
+    if(fade?.isFading?.() || fade?.isObscuring?.()){
+      return;
+    }
+    if(GameState.loadingModule){
       return;
     }
 

@@ -1442,6 +1442,9 @@ export class GameState implements EngineContext {
         await GameState.module.area.initAreaObjects(runSpawnScripts);
         console.log('ModuleArea: ready to play');
         GameState.module.readyToProcessEvents = true;
+        // Prime PC room VIS before any TickSelectableObjects (retail UpdateRoom)
+        GameState.module.area.updateRoomVisibility(0);
+        GameState.module.area.syncObjectModelVisibility();
 
         if(GameState.Mode == EngineMode.INGAME){
           const anyCanLevel = GameState.PartyManager.party.some((p) => p.canLevelUp());
@@ -1723,7 +1726,12 @@ export class GameState implements EngineContext {
   }
 
   static UpdateIngame(delta: number = 0){
-    //Get Selectable Objects In Range
+    // Retail MainLoop: UpdateRoom(pos) before DoPassiveSelection
+    if(GameState.module?.readyToProcessEvents && GameState.module.area){
+      GameState.module.area.updateRoomVisibility(0);
+    }
+
+    //Get Selectable Objects In Range (gated on fade inside TickSelectableObjects)
     GameState.ModuleObjectManager.TickSelectableObjects(delta);
 
     //Update Mode Camera

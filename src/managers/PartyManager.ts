@@ -1708,12 +1708,16 @@ export class PartyManager {
         model.hasCollision = true;
         GameState.group.party.add( partyMember.container );
 
+        partyMember.getCurrentRoom();
         partyMember.onSpawn();
       }else{
         const spawn = PartyManager.GetSpawnLocation(currentSlot);
         const spawnFacing = -Math.atan2(spawn.rotation.x, spawn.rotation.y);
         currentSlot.position.copy(spawn.position);
         currentSlot.setFacing(spawnFacing, true);
+        if(!currentSlot.room){
+          currentSlot.getCurrentRoom();
+        }
       }
     }catch(e){
       console.error(e);

@@ -646,7 +646,17 @@ export class ModuleObject {
     // this.force = 0;
     // this.forceVector.set(0, 0, 0);
     if(this.spawned){
-      this.updateModelVisibility();
+      // Allow PC/party room attach while paused so auto-pause cannot leave a blank VIS
+      if(
+        !this.room &&
+        this.area &&
+        !BitWise.InstanceOfObject(this, ModuleObjectType.ModuleTrigger) &&
+        !BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)
+      ){
+        this.collisionManager.roomCheck(delta);
+      }else{
+        this.updateModelVisibility();
+      }
     }
   }
 

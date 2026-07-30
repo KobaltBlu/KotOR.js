@@ -660,6 +660,8 @@ export class ModuleArea extends ModuleObject {
     }
 
     this.updateRoomVisibility(delta);
+    // Same-frame object cull after room VIS (avoids one-frame blank props/doors)
+    this.syncObjectModelVisibility();
     FollowerCamera.update(delta, this);
 
     this.weather.update(delta);
@@ -725,6 +727,7 @@ export class ModuleArea extends ModuleObject {
     }
 
     this.updateRoomVisibility(delta);
+    this.syncObjectModelVisibility();
     FollowerCamera.update(delta, this);
 
     this.updateDayNightCycle();
@@ -1473,13 +1476,25 @@ export class ModuleArea extends ModuleObject {
       default:
         const player = GameState.getCurrentPlayer();
         if(!player){ return; }
+
+        // Retail UpdateRoom(pos) → GetRoomIndex: resolve room from position when unset
+        if(!player.room){
+          player.getCurrentRoom();
+        }
+
         //Check to see if the player has moved to a new room
         if(this.lastRoom && this.lastRoom == player.room){
           return;
         }
+
+        // Retail: invalid room index returns early without clearing prior visibility
+        if(!player.room){
+          return;
+        }
+
         this.lastRoom = player.room;
 
-        // Retail UpdateRoom @ 00430340 — SetDesiredEnvironment + SetDesiredAmbientScale.
+        // Retail UpdateRoom @ 005ee860 — SetDesiredEnvironment + SetDesiredAmbientScale.
         if(this.lastRoom?.envAudio >= 0){
           AudioEngine.GetAudioEngine().setDesiredEnvironment(this.lastRoom.envAudio || 0);
         }
@@ -1494,13 +1509,28 @@ export class ModuleArea extends ModuleObject {
           room.hide();
         }
 
-        if(!player.room){
-          return;
-        }
-
         //Show the current room and all of it's linked rooms
         player.room.show(true);
       break;
+    }
+  }
+
+  /**
+   * Re-sync object model visibility to current room.model.visible.
+   * Call after updateRoomVisibility so same-frame props/doors match room cull.
+   */
+  syncObjectModelVisibility(){
+    for(let i = 0; i < this.doors.length; i++){
+      this.doors[i]?.updateModelVisibility?.();
+    }
+    for(let i = 0; i < this.placeables.length; i++){
+      this.placeables[i]?.updateModelVisibility?.();
+    }
+    for(let i = 0; i < this.creatures.length; i++){
+      this.creatures[i]?.updateModelVisibility?.();
+    }
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      GameState.PartyManager.party[i]?.updateModelVisibility?.();
     }
   }
 
@@ -2610,6 +2640,14 @@ export class ModuleArea extends ModuleObject {
     GameState.PartyManager.ApplyControlledNPC();
     // Retail PositionParty → ResetAllFollowData after placing the party.
     GameState.PartyManager.resetFollowPath(GameState.PartyManager.party[0]);
+    // Attach every party member to a room (companions skip this in LoadPartyMember;
+    // controlled NPC as party[0] must have a room for UpdateRoom VIS).
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      const pm = GameState.PartyManager.party[i];
+      if(pm && !pm.room){
+        pm.getCurrentRoom();
+      }
+    }
     // CombatRound fromStruct may run before partners are registered — re-resolve now.
     this.resolveCombatRoundObjectReferences();
   }
