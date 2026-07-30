@@ -436,10 +436,16 @@ export class ComputedPath {
 
   fixWalkEdges(safeDistance = 1.5){
     if(!this.owner) return;
+    const area = this.owner.area;
+    if(!area) return;
     for(let i = 0; i < this.points.length; i++){
-      this.points[i].vector.copy(
-        this.owner.area.getNearestWalkablePoint(this.points[i].vector, safeDistance)
-      );
+      const v = this.points[i].vector;
+      // PreferWalkable: keep points already on a walk face. Re-snapping with
+      // owner perspace shoved doorway / dialog approach points across the room.
+      if(typeof area.isPointWalkable === 'function' && area.isPointWalkable(v)){
+        continue;
+      }
+      v.copy(area.getNearestWalkablePoint(v, safeDistance));
     }
   }
 
