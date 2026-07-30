@@ -3192,69 +3192,78 @@ export class ModuleArea extends ModuleObject {
   }
 
   getNearestWalkablePoint(point: THREE.Vector3, safeDistance = 1.5){
+    // PositionWalkable keep — do not re-snap points already on a walk face.
+    // Re-snapping allowed NaN-poisoned degenerate faces to yank the point
+    // across the room ("walk away then speak/use").
+    if(this.isPointWalkable(point)){
+      return point.clone();
+    }
+
     let nearest = Infinity;
     let nearest_point = point.clone();
-    let distance = 0;
     const tmpPoint = new THREE.Vector3();
-
     const tmp1 = new THREE.Vector3();
     const tmp2 = new THREE.Vector3();
     const tmpN = new THREE.Vector3();
     const inwardDirection = new THREE.Vector3();
-    // const dir = new THREE.Vector3();
-    // const isOOB = this.isPointWalkable(point);
+    const edgeScratch = new THREE.Vector3();
+
     for(let i = 0, len = this.walkFaces.length; i < len; i++){
       const f = this.walkFaces[i];
       f.triangle.closestPointToPoint(point, tmpPoint);
-
-      // Calculate the normal of the triangle
-      const edge1 = tmp1.subVectors(f.triangle.b, f.triangle.a);
-      const edge2 = tmp2.subVectors(f.triangle.c, f.triangle.a);
-      const normal = tmpN.crossVectors(edge1, edge2).normalize();
-
-      // Determine the inward direction
-      inwardDirection.set(0, 0, 0);
-      if (f.adjacent[0] == -1 && f.pointIsOnEdge(tmpPoint, 'a')) {
-        inwardDirection.add(new THREE.Vector3().crossVectors(normal, edge1).normalize());
-        tmpPoint.add(inwardDirection.multiplyScalar(safeDistance));
-      } else if (f.adjacent[1] == -1 && f.pointIsOnEdge(tmpPoint, 'b')) {
-        inwardDirection.add(new THREE.Vector3().crossVectors(normal, new THREE.Vector3().subVectors(f.triangle.c, f.triangle.b)).normalize());
-        tmpPoint.add(inwardDirection.multiplyScalar(safeDistance));
-      } else if (f.adjacent[2] == -1 && f.pointIsOnEdge(tmpPoint, 'c')) {
-        inwardDirection.add(new THREE.Vector3().crossVectors(normal, new THREE.Vector3().subVectors(f.triangle.a, f.triangle.c)).normalize());
-        tmpPoint.add(inwardDirection.multiplyScalar(safeDistance));
+      if(
+        !Number.isFinite(tmpPoint.x) ||
+        !Number.isFinite(tmpPoint.y) ||
+        !Number.isFinite(tmpPoint.z)
+      ){
+        continue;
       }
 
-      distance = point.distanceTo(tmpPoint);
-      if(distance >= nearest)
+      const edge1 = tmp1.subVectors(f.triangle.b, f.triangle.a);
+      const edge2 = tmp2.subVectors(f.triangle.c, f.triangle.a);
+      const normal = tmpN.crossVectors(edge1, edge2);
+      const normalLenSq = normal.lengthSq();
+      // Degenerate faces → NaN after normalize; skip inward pad (still allow
+      // the closest point if it stayed finite).
+      if(normalLenSq > 1e-12){
+        normal.multiplyScalar(1 / Math.sqrt(normalLenSq));
+        inwardDirection.set(0, 0, 0);
+        let padEdge: THREE.Vector3 | undefined;
+        if(f.adjacent[0] == -1 && f.pointIsOnEdge(tmpPoint, 'a')){
+          padEdge = edge1;
+        }else if(f.adjacent[1] == -1 && f.pointIsOnEdge(tmpPoint, 'b')){
+          padEdge = edgeScratch.subVectors(f.triangle.c, f.triangle.b);
+        }else if(f.adjacent[2] == -1 && f.pointIsOnEdge(tmpPoint, 'c')){
+          padEdge = edgeScratch.subVectors(f.triangle.a, f.triangle.c);
+        }
+        if(padEdge){
+          inwardDirection.crossVectors(normal, padEdge);
+          const padLenSq = inwardDirection.lengthSq();
+          if(padLenSq > 1e-12){
+            inwardDirection.multiplyScalar(safeDistance / Math.sqrt(padLenSq));
+            tmpPoint.add(inwardDirection);
+            if(
+              !Number.isFinite(tmpPoint.x) ||
+              !Number.isFinite(tmpPoint.y) ||
+              !Number.isFinite(tmpPoint.z)
+            ){
+              continue;
+            }
+          }
+        }
+      }
+
+      // Walkmesh is XY-driven — prefer 2D distance over 3D.
+      const dx = tmpPoint.x - point.x;
+      const dy = tmpPoint.y - point.y;
+      const distance = Math.hypot(dx, dy);
+      if(!Number.isFinite(distance) || distance >= nearest){
         continue;
-      
-      nearest_point.copy(tmpPoint);//this.walkableFaces[i].centroid;
+      }
+
+      nearest_point.copy(tmpPoint);
       nearest = distance;
     }
-
-    // const repellingForce = new THREE.Vector3();
-    // const safeDistance = 1;
-
-    // const closestPoint = new THREE.Vector3();
-    // this.walkEdges.forEach(edge => {
-    //   const line = edge.line;
-    //   line.closestPointToPoint(nearest_point, true, closestPoint);
-
-    //   const distance = nearest_point.distanceTo(closestPoint);
-
-    //   if (distance < safeDistance) {
-    //     // Calculate the repelling vector
-    //     const repelDirection = new THREE.Vector3().subVectors(nearest_point, closestPoint).normalize();
-    //     const repelStrength = safeDistance - distance;
-
-    //     // Accumulate the repelling force
-    //     repellingForce.add(repelDirection.multiplyScalar(repelStrength));
-    //   }
-    // });
-
-    // // Update the position by applying the accumulated repelling force
-    // return nearest_point.add(repellingForce);
 
     return nearest_point;
   }

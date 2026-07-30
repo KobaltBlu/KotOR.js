@@ -71,6 +71,8 @@ import { getUseRange } from "@/actions/use-range";
 import { ModulePlaceable } from "@/module/ModulePlaceable";
 import type { ModuleEncounter } from "@/module/ModuleEncounter";
 import { BaseItemType } from "@/enums/combat/BaseItemType";
+import { collectSurrenderNearbyCreatures } from "@/module/surrender-nearby";
+import { resolveEnterDeadTransition } from "@/module/enter-dead-transition";
 
 import { ICreatureAnimationState } from "@/interface/animation/ICreatureAnimationState";
 import { IOverlayAnimationState } from "@/interface/animation/IOverlayAnimationState";
@@ -859,7 +861,11 @@ export class ModuleCreature extends ModuleObject {
 
       this.deathStarted = false;
 
-      if(this.animationState.index != ModuleCreatureAnimState.DEAD){
+      // Corpses lock the action queue on DEAD; living NPCs in a scripted dead
+      // pose (ActionPlayAnimation) must still tick their timed action.
+      const corpseActionLock =
+        this.isDead() && this.animationState.index == ModuleCreatureAnimState.DEAD;
+      if(!corpseActionLock){
         if(!this._quickWalkedThisFrame){
           this.updateActionQueue(delta);
         }else{
@@ -991,11 +997,15 @@ export class ModuleCreature extends ModuleObject {
         }
       }*/
 
-      if(!this.isDead() && (
-        this.animationState.index == ModuleCreatureAnimState.DEAD ||
-          this.animationState.index == ModuleCreatureAnimState.DEAD1 ||
-          this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD || 
-          this.animationState.index == ModuleCreatureAnimState.GET_UP_DEAD1
+      // Scripted defeat (e.g. k_ptar_dueler_ud ActionPlayAnimation(DEAD, …, 360))
+      // must hold the corpse pose on living Min1HP/plot NPCs. Only auto get-up
+      // when recovering from a real death (deathAnimationPlayed from DIE→DEAD).
+      if(
+        !this.isDead() &&
+        this.deathAnimationPlayed &&
+        (
+          this.animationState.index == ModuleCreatureAnimState.DEAD ||
+          this.animationState.index == ModuleCreatureAnimState.DEAD1
         )
       ){
         this.deathAnimationPlayed = false;
@@ -1797,8 +1807,16 @@ export class ModuleCreature extends ModuleObject {
             this.animationState.index == ModuleCreatureAnimState.RUNNING ||
             this.animationState.index == ModuleCreatureAnimState.WALKING ||
             this.animationState.index == ModuleCreatureAnimState.WALKING_BACK;
+          // Living NPCs holding ActionPlayAnimation(DEAD) need a looping corpse pose.
+          const scriptedDeadPose =
+            !this.isDead() &&
+            (
+              this.animationState.index == ModuleCreatureAnimState.DEAD ||
+              this.animationState.index == ModuleCreatureAnimState.DEAD1
+            );
           let aLooping =
             isDriveLoco ||
+            scriptedDeadPose ||
             (!parseInt(this.animationState.animation.fireforget) &&
               parseInt(this.animationState.animation.looping) == 1);
           this.model.playAnimation(this.animationState.animation.name?.toLowerCase(), aLooping);
@@ -1806,15 +1824,26 @@ export class ModuleCreature extends ModuleObject {
             this.model.animationManager.currentAnimationState.speed =
               this.animationState.speed < 0 ? this.animationState.speed : (this.animationState.speed || 1);
           }
-        }else if(this.isDead() || this.willDestroy){
-          // DIE fireforget finished → DEAD; never drop corpses to PAUSE/READY.
-          if(
-            this.animationState.index == ModuleCreatureAnimState.DIE ||
+        }else if(
+          this.animationState.index == ModuleCreatureAnimState.DIE ||
+          this.animationState.index == ModuleCreatureAnimState.DIE1
+        ){
+          // DIE fireforget finished → DEAD (corpses and living Min1HP scripted defeat).
+          // Retail SetAnimation keeps looping DEAD while DIE FAF plays; we promote here.
+          const deadPose =
             this.animationState.index == ModuleCreatureAnimState.DIE1
-          ){
-            this.setAnimationState(ModuleCreatureAnimState.DEAD);
+              ? ModuleCreatureAnimState.DEAD1
+              : ModuleCreatureAnimState.DEAD;
+          this.setAnimationState(deadPose);
+          if(this.isDead() || this.willDestroy){
             this.deathAnimationPlayed = true;
           }
+        }else if(
+          this.animationState.index == ModuleCreatureAnimState.DEAD ||
+          this.animationState.index == ModuleCreatureAnimState.DEAD1
+        ){
+          // Scripted living dead pose — re-loop; never fall through to READY/PAUSE.
+          this.animationState.started = false;
         }else if(this.combatData.combatState){
           // Retail GetPauseReadyAnimation while engaged — don't drop to out-of-combat pause.
           if(this.animationState.index == ModuleCreatureAnimState.READY){
@@ -2510,6 +2539,9 @@ export class ModuleCreature extends ModuleObject {
   setAnimationState(animState: ModuleCreatureAnimState){
     if(!animState){ return; }
 
+    // Retail CSWCObject::SetAnimation @ 0063e930 — insert DIE/DIE1 before looping DEAD.
+    animState = resolveEnterDeadTransition(animState, this.animationState?.index);
+
     this.animationState.index = animState;
     this.animationState.animation = this.animationConstantToAnimation(animState);
     this.animationState.started = false;
@@ -2749,12 +2781,18 @@ export class ModuleCreature extends ModuleObject {
     this.cancelCombat();
     this.clearAllEffects(retainSelfBuffs);
 
-    const area = this.area;
-    if(area?.creatures?.length){
+    // Retail walks area game_objects (GetCreatureByGameObjectID). Party members
+    // are removed from area.creatures on join — include them like GetObjectsInShape.
+    const nearby = collectSurrenderNearbyCreatures(
+      this.area?.creatures,
+      GameState.PartyManager?.party,
+    );
+
+    if(nearby.length){
       const origin = this.position;
       const radiusSq = 250 * 250; // retail 62500 — not the NWScript 10m comment
-      for(let i = 0; i < area.creatures.length; i++){
-        const other = area.creatures[i];
+      for(let i = 0; i < nearby.length; i++){
+        const other = nearby[i];
         if(!other || other === this) continue;
         const dx = other.position.x - origin.x;
         const dy = other.position.y - origin.y;

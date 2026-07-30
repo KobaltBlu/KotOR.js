@@ -29,13 +29,15 @@ export function resolveAttackPauseMs(
  * Retail ResetCombatAnimations only snaps to GetPauseReadyAnimation when the
  * creature can still fight and the round was not started from a scripted
  * action (field9_0x940) — cutscene poses are left alone.
+ * Living scripted DEAD (e.g. Min1HP + ActionPlayAnimation) must not snap to READY.
  */
 export function shouldSnapCombatReady(opts: {
   dead: boolean;
   debilitated: boolean;
   resultsCalculated: boolean;
+  scriptedDead?: boolean;
 }): boolean {
-  return !opts.dead && !opts.debilitated && !opts.resultsCalculated;
+  return !opts.dead && !opts.debilitated && !opts.resultsCalculated && !opts.scriptedDead;
 }
 
 /**

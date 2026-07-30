@@ -388,6 +388,13 @@ describe('duel post-swing READY remainder', () => {
       debilitated: true,
       resultsCalculated: false,
     })).toBe(false);
+    // Living Min1HP ActionPlayAnimation(DEAD) / enter-DEAD DIE — do not READY-snap
+    expect(shouldSnapCombatReady({
+      dead: false,
+      debilitated: false,
+      resultsCalculated: false,
+      scriptedDead: true,
+    })).toBe(false);
   });
 
   it('keeps the round running when the target is still alive', () => {

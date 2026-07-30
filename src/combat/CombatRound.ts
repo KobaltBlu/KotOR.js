@@ -840,10 +840,18 @@ export class CombatRound {
     this.timer += Math.max(0, overshootMs);
 
     const owner = this.owner as ModuleCreature;
+    const animIndex = owner?.animationState?.index;
+    const scriptedDead = !owner?.isDead?.() && (
+      animIndex === ModuleCreatureAnimState.DEAD ||
+      animIndex === ModuleCreatureAnimState.DEAD1 ||
+      animIndex === ModuleCreatureAnimState.DIE ||
+      animIndex === ModuleCreatureAnimState.DIE1
+    );
     const ready = typeof owner?.setAnimationState === 'function' && shouldSnapCombatReady({
       dead: !!owner.isDead?.(),
       debilitated: !!owner.isDebilitated?.(),
       resultsCalculated: this.resultsCalculated,
+      scriptedDead,
     });
     if(ready){
       owner.setAnimationState(ModuleCreatureAnimState.READY);
