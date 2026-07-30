@@ -82,7 +82,11 @@ export class ActionDialogObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    const dialog = this.conversation ? this.conversation : this.owner?.conversation;
+    // Retail StartDialog @ 004cf490 / GetDialogResref: blank sDialogResRef uses
+    // oObjectToConverseWith's Conversation, not the action owner's.
+    const dialog = this.conversation
+      ? this.conversation
+      : this.target?.getConversation();
 
     // TSL bUseLeader — force party leader as the conversation listener
     let effectiveListener = listener;
@@ -122,6 +126,8 @@ export class ActionDialogObject extends Action {
     if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
       // Ignore names still apply if OnDialog starts the cutscene path later.
       // onDialog applies retail empty/"default" → k_hen_dialogue01 fallback.
+      // Pass only an explicit resref DLG; blank leaves instance.conversation unset so
+      // BeginConversation falls through to OBJECT_SELF (target) Conversation.
       GameState.CutsceneManager.setDialogNonDependantNames(ignoreNames);
       if(this.target.onDialog(this.owner, -1, this.conversation)){
         return ActionStatus.COMPLETE;

@@ -1758,7 +1758,13 @@ export class ModuleObject {
     }
     
     if(!onUserDefined){ return; }
-    onUserDefined.run(this, parseInt(event.getInt(0)));
+    // Match onDamaged / onSpellAt: always newInstance(). Reusing the stored
+    // template instance can leave STORE_STATE / stack residue across UD events
+    // (Deadeye duel latch GetLocalBoolean(0) observed stuck after a partial run).
+    const instance = onUserDefined.nwscript
+      ? onUserDefined.nwscript.newInstance()
+      : onUserDefined.newInstance();
+    instance.run(this, parseInt(event.getInt(0)));
   }
 
   /**

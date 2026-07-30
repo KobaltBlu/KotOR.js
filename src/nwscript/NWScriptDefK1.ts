@@ -1888,14 +1888,14 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.EVENT],
     action: function(this: NWScriptInstance, args: [ModuleObject, GameEvent]){
-      //This needs to happen once the script has completed
+      // Retail queues an AI event — defer until this script returns (see NWScriptInstance.runScript).
       const event = args[1];
       if(!(event instanceof NWScriptEvent)){
         console.warn('SignalEvent', 'Invalid event argument', args);
         return;
       }
 
-      // Retail CSWSModule::EventHandler @ 004c5120 â€” GetModule() is not a ModuleObject in JS
+      // Retail CSWSModule::EventHandler @ 004c5120 — GetModule() is not a ModuleObject in JS
       if(args[0] === (GameState.module as any)){
         if(event.type === NWScriptEventType.EventUserDefined){
           const onUserDefined = GameState.module.scripts[ModuleObjectScript.ModuleOnUserDefined];
@@ -1925,12 +1925,13 @@ NWScriptDefK1.Actions = {
         return;
       }
 
-      if(!(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject))){
-        args[0] = GameState.module.area;
+      let target = args[0];
+      if(!(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject))){
+        target = GameState.module.area;
       }
 
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
-        args[0].scriptEventHandler( event );
+      if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
+        this.pendingSignalEvents.push({ target, event: event as NWScriptEvent });
       }else{
         console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
       }

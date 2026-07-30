@@ -14,6 +14,7 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFStruct } from "@/resource/GFFStruct";
 import type { TalentObject, TalentSpell } from "@/talents";
 import type { NWScript } from "@/nwscript/NWScript";
+import type { NWScriptEvent } from "@/nwscript/events/NWScriptEvent";
 import type { NWScriptInstruction } from "@/nwscript/NWScriptInstruction";
 import { NWScriptStack } from "@/nwscript/NWScriptStack";
 import type { NWScriptStackVariable } from "@/nwscript/NWScriptStackVariable";
@@ -52,6 +53,8 @@ export class NWScriptInstance {
   verified: boolean;
   stack: NWScriptStack = new NWScriptStack();
   delayCommands: EventTimedEvent[] = [];
+  /** SignalEvent targets deferred until this script finishes (retail AI event queue). */
+  pendingSignalEvents: { target: ModuleObject; event: NWScriptEvent }[] = [];
   address: number;
   offset: number;
   
@@ -276,6 +279,7 @@ export class NWScriptInstance {
     this.stack = new NWScriptStack();
     this.state = [];
     this.delayCommands = [];
+    this.pendingSignalEvents = [];
 
     this.lastSpeaker = undefined;
 
@@ -431,6 +435,19 @@ export class NWScriptInstance {
      */
     for(let i = 0, len = this.delayCommands.length; i < len; i++){
       GameState.module.eventQueue.push(this.delayCommands[i]);
+    }
+
+    /**
+     * Retail SignalEvent queues an AI event — run after this script returns so
+     * OnDamaged → k_ai_master does not re-enter UD mid-script (Deadeye duel latch).
+     */
+    const pendingSignals = this.pendingSignalEvents.slice();
+    this.pendingSignalEvents = [];
+    for(let i = 0; i < pendingSignals.length; i++){
+      const { target, event } = pendingSignals[i];
+      if(target && typeof (target as any).scriptEventHandler === 'function'){
+        (target as any).scriptEventHandler(event);
+      }
     }
 
     /**
