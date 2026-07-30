@@ -1105,6 +1105,8 @@ export class GUIControl {
         this.text.material.uniforms.map.value = texture;
         this.text.material.uniforms.diffuse = { value: this.text.color };
         this.text.material.alphaTest = 0;
+        this.text.material.depthTest = false;
+        this.text.material.depthWrite = false;
         this.text.material.transparent = true;
         this.text.material.needsUpdate = true;
         texture.anisotropy = 1;
