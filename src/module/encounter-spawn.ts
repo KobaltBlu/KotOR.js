@@ -476,7 +476,7 @@ export function spawnCreatureFromSpawnList(encounter: ModuleEncounter): ModuleCr
   );
   encounter.spawnList.shift();
 
-  GameState.ModuleObjectManager.AddObjectById(creature);
+  GameState.ModuleObjectManager.RegisterObject(creature);
   area.attachObject(creature);
   void creature.loadModel?.().then((model: OdysseyModel3D) => {
     if(!model) return;

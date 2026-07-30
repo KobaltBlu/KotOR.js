@@ -96,7 +96,7 @@ export class ModuleItem extends ModuleObject {
   upgradeSlot5: number = -1;
   weaponSound: SWWeaponSound;
 
-  constructor ( gff = new GFFObject() ) {
+  constructor ( gff: GFFObject | string = new GFFObject(), deferInit = false ) {
     super();
     this.objectType |= ModuleObjectType.ModuleItem;
 
@@ -107,16 +107,6 @@ export class ModuleItem extends ModuleObject {
     }else{
       this.template = gff;
     }
-
-    // if(gff instanceof GFFObject && gff.RootNode.hasField('ObjectId')){
-    //   this.id = gff.getFieldByLabel('ObjectId').getValue();
-    // }else if(gff instanceof GFFObject && gff.RootNode.hasField('ID')){
-    //   this.id = gff.getFieldByLabel('ID').getValue();
-    // }else{
-    //   this.id = -1;
-    // }
-
-    //this.id = -1;
 
     this.baseItemId = 0;
     this.addCost = 0;
@@ -131,7 +121,10 @@ export class ModuleItem extends ModuleObject {
     this.placedInWorld = false;
     this.possessor = undefined;
 
-    this.initProperties();
+    // GIT ground items defer until loadItems → load() (retail LoadItems + AddToArea).
+    if(!deferInit){
+      this.initProperties();
+    }
 
   }
 
@@ -1059,14 +1052,13 @@ export class ModuleItem extends ModuleObject {
       return;
     }
     
-    if(!this.initialized){
+    const needsRegister = !this.initialized;
+    if(needsRegister){
       if(this.template.RootNode.hasField('ObjectId')){
         this.id = this.template.getFieldByLabel('ObjectId').getValue();
       }else if(this.template.RootNode.hasField('ID')){
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
-      
-      GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('AddCost'))
@@ -1223,6 +1215,10 @@ export class ModuleItem extends ModuleObject {
 
     // Retail PlaySwingSound indexes weaponsounds by baseitems.weaponmattype
     this.weaponSound = GameState.SWRuleSet.weaponSounds[this.baseItem?.weaponMaterialType];
+
+    if(needsRegister){
+      GameState.ModuleObjectManager.RegisterObject(this);
+    }
 
     this.initialized = true
 

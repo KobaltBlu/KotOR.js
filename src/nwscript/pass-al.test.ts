@@ -3,23 +3,28 @@
  */
 import { describe, expect, it, jest } from "@jest/globals";
 import * as THREE from "three";
+import { insertByDistSq, type NearestCandidate } from "@/managers/nearest-object";
 
 jest.mock("@/GameState", () => ({ GameState: {} }));
 
-/** Mirror of ModuleObjectManager.GetNearestObjectToLocation distance sort. */
+/** Mirror of retail nearest insert by squared world distance. */
 function nearestObjectToLocation(
   objects: { position: THREE.Vector3 }[],
   origin: THREE.Vector3,
   iNum = 0,
 ) {
-  const results = objects.slice().sort((a, b) =>
-    a.position.distanceTo(origin) - b.position.distanceTo(origin)
-  );
-  return results[iNum];
+  const candidates: NearestCandidate[] = [];
+  for(const obj of objects){
+    const dx = obj.position.x - origin.x;
+    const dy = obj.position.y - origin.y;
+    const dz = obj.position.z - origin.z;
+    insertByDistSq(candidates, obj as NearestCandidate["obj"], dx * dx + dy * dy + dz * dz);
+  }
+  return candidates[iNum]?.obj;
 }
 
 describe("Pass AL GetNearestObjectToLocation sort", () => {
-  it("returns nearer object first by location XYZ", () => {
+  it("returns nearer object first by location XYZ distSq", () => {
     const near = { position: new THREE.Vector3(1, 0, 0) };
     const far = { position: new THREE.Vector3(10, 0, 0) };
     const origin = new THREE.Vector3(0, 0, 0);
@@ -29,14 +34,20 @@ describe("Pass AL GetNearestObjectToLocation sort", () => {
 });
 
 describe("Pass AL GetNearestCreatureToLocation IS_ALIVE sort", () => {
-  it("sorts alive creatures by location distance", () => {
+  it("sorts alive creatures by location distSq", () => {
     const near = { position: new THREE.Vector3(2, 0, 0), isDead: () => false };
     const far = { position: new THREE.Vector3(20, 0, 0), isDead: () => false };
     const dead = { position: new THREE.Vector3(0.5, 0, 0), isDead: () => true };
     const alive = [far, near, dead].filter((c) => !c.isDead());
     const origin = new THREE.Vector3(0, 0, 0);
-    alive.sort((a, b) => a.position.distanceTo(origin) - b.position.distanceTo(origin));
-    expect(alive[0]).toBe(near);
+    const candidates: NearestCandidate[] = [];
+    for(const c of alive){
+      const dx = c.position.x - origin.x;
+      const dy = c.position.y - origin.y;
+      const dz = c.position.z - origin.z;
+      insertByDistSq(candidates, c as NearestCandidate["obj"], dx * dx + dy * dy + dz * dz);
+    }
+    expect(candidates[0].obj).toBe(near);
   });
 });
 

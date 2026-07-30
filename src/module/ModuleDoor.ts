@@ -1157,14 +1157,13 @@ export class ModuleDoor extends ModuleObject {
 
   initProperties(){
     
-    if(!this.initialized){
+    const needsRegister = !this.initialized;
+    if(needsRegister){
       if(this.template.RootNode.hasField('ObjectId')){
         this.id = this.template.getFieldByLabel('ObjectId').getValue();
       }else if(this.template.RootNode.hasField('ID')){
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
-      
-      GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('AnimationState'))
@@ -1394,6 +1393,10 @@ export class ModuleDoor extends ModuleObject {
     if(this.template.RootNode.hasField('NotBlastable'))
       this.notBlastable = !!this.template.getFieldByLabel('NotBlastable').getValue();
     //END: TSL Properties
+
+    if(needsRegister){
+      GameState.ModuleObjectManager.RegisterObject(this);
+    }
 
     this.initialized = true
 

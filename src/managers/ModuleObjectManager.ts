@@ -19,9 +19,20 @@ import { isClientCombatMode } from "@/managers/reticle";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { EngineState } from "@/enums/engine/EngineState";
 import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
+import {
+  addObjectToLookupTable,
+  findObjectIdByTagOrdinal,
+  findTagPositionInTable,
+  removeObjectFromLookupTable,
+  removeObjectFromLookupTableById,
+  type TagLookupNode,
+} from "@/managers/tag-lookup-table";
+import { findNearestInArea } from "@/managers/nearest-object";
 
 /** First non-MG object id — retail SWMG StackPushObject uses mgo_index 0..0xfe. */
 const FIRST_MODULE_OBJECT_ID = MiniGameObjectArray.CAPACITY + 1; // 0x100
+
+export type { TagLookupNode };
 
 /** Retail GetNearestObjects / DoPassiveSelection range (√900). */
 const NEAREST_OBJECT_RANGE = 30;
@@ -55,6 +66,11 @@ export class ModuleObjectManager {
   static module: Module;
 
   static ObjectList: Map<any, ModuleObject> = new Map();
+  /**
+   * Retail CSWSModule::object_lookup_table — sorted by tag; equal tags keep insertion order.
+   * FindObjectByTagOrdinal @ 004c5fe0 / AddObjectToLookupTable @ 004c7de0.
+   */
+  static tagLookup: TagLookupNode[] = [];
   /** Start above mgo_index range (0..0xfe) so module ids never collide with SWMG object ids. */
   static COUNT: number = FIRST_MODULE_OBJECT_ID;
   static PLAYER_ID = ModuleObjectConstant.PLAYER_ID;
@@ -112,8 +128,69 @@ export class ModuleObjectManager {
     }
   }
 
+  /**
+   * Retail AddToArea / Load* registration: ObjectList + tag lookup after Tag is known.
+   * Call at end of initProperties (after Tag field read), not mid-init.
+   */
+  static RegisterObject(object: ModuleObject){
+    if(!object) return;
+    this.AddObjectById(object);
+    this.RemoveObjectFromLookupTableById(object.id);
+    const tag = String(object.getTag?.() ?? '').toLowerCase();
+    this.AddObjectToLookupTable(tag, object.id);
+  }
+
+  /**
+   * Retail FindTagPositionInTable @ 004c5e60 — first index where tag >= needle (lower_bound).
+   */
+  static FindTagPositionInTable(tag: string): number {
+    return findTagPositionInTable(this.tagLookup, tag);
+  }
+
+  /**
+   * Retail AddObjectToLookupTable @ 004c7de0 — insert after last equal-tag entry.
+   */
+  static AddObjectToLookupTable(tag: string, id: number){
+    addObjectToLookupTable(this.tagLookup, tag, id);
+  }
+
+  /**
+   * Retail RemoveObjectFromLookupTable @ 004c5ef0 — remove by tag + id.
+   */
+  static RemoveObjectFromLookupTable(tag: string, id: number): boolean {
+    return removeObjectFromLookupTable(this.tagLookup, tag, id);
+  }
+
+  /** Remove any lookup entries for this object id (tag may have changed). */
+  static RemoveObjectFromLookupTableById(id: number){
+    removeObjectFromLookupTableById(this.tagLookup, id);
+  }
+
+  /**
+   * Map ModuleObjectType flags → NWScript OBJECT_TYPE bitmask for GetObjectByTag filters.
+   */
+  static getNWObjectTypeMask(object: ModuleObject): number {
+    if(!object) return 0;
+    let mask = 0;
+    const t = object.objectType | 0;
+    if(BitWise.InstanceOf(t, ModuleObjectType.ModuleCreature) || BitWise.InstanceOf(t, ModuleObjectType.ModulePlayer)){
+      mask |= NWModuleObjectType.CREATURE;
+    }
+    if(BitWise.InstanceOf(t, ModuleObjectType.ModuleItem)) mask |= NWModuleObjectType.ITEM;
+    if(BitWise.InstanceOf(t, ModuleObjectType.ModuleTrigger)) mask |= NWModuleObjectType.TRIGGER;
+    if(BitWise.InstanceOf(t, ModuleObjectType.ModuleDoor)) mask |= NWModuleObjectType.DOOR;
+    if(BitWise.InstanceOf(t, ModuleObjectType.ModuleAreaOfEffect)) mask |= NWModuleObjectType.AOE;
+    if(BitWise.InstanceOf(t, ModuleObjectType.ModuleWaypoint)) mask |= NWModuleObjectType.WAYPOINT;
+    if(BitWise.InstanceOf(t, ModuleObjectType.ModulePlaceable)) mask |= NWModuleObjectType.PLACEABLE;
+    if(BitWise.InstanceOf(t, ModuleObjectType.ModuleStore)) mask |= NWModuleObjectType.STORE;
+    if(BitWise.InstanceOf(t, ModuleObjectType.ModuleEncounter)) mask |= NWModuleObjectType.ENCOUNTER;
+    if(BitWise.InstanceOf(t, ModuleObjectType.ModuleSound)) mask |= NWModuleObjectType.SOUND;
+    return mask;
+  }
+
   static RemoveObject(object: ModuleObject){
     if(!object) return;
+    this.RemoveObjectFromLookupTableById(object.id);
     GameState.ServerAIMaster?.removeObject?.(object);
     this.RemoveObjectById(object.id);
     GameState.CursorManager.notifyObjectDestroyed(object);
@@ -124,7 +201,10 @@ export class ModuleObjectManager {
     //Remove the object from the global list of objects
     if(id >= 1 && this.ObjectList.has(id)){
       const obj = this.ObjectList.get(id);
-      if(obj) GameState.ServerAIMaster?.removeObject?.(obj);
+      if(obj){
+        this.RemoveObjectFromLookupTableById(id);
+        GameState.ServerAIMaster?.removeObject?.(obj);
+      }
       return this.ObjectList.delete(id);
     }
     return false;
@@ -134,23 +214,12 @@ export class ModuleObjectManager {
     this.COUNT = FIRST_MODULE_OBJECT_ID;
     this.PLAYER_ID = ModuleObjectConstant.PLAYER_ID;
     this.ObjectList.clear();
+    this.tagLookup.length = 0;
     MiniGameObjectArray.clear();
     GameState.ServerAIMaster?.Reset?.();
   }
 
   public static GetObjectByTag(sTag = '', iNum = 0, oType = NWModuleObjectType.ALL){
-
-    /*ModuleObjectType.CREATURE         = 1;
-    ModuleObjectType.ITEM             = 2;
-    ModuleObjectType.TRIGGER          = 4;
-    ModuleObjectType.DOOR             = 8;
-    ModuleObjectType.AOE   = 16;
-    ModuleObjectType.WAYPOINT         = 32;
-    ModuleObjectType.PLACEABLE        = 64;
-    ModuleObjectType.STORE            = 128;
-    ModuleObjectType.ENCOUNTER        = 256;
-    ModuleObjectType.SOUND            = 512;
-    OBJECT_TYPE_ALL              = 32767;*/
 
     sTag = sTag.toLowerCase();
     // Retail FindObjectByTagOrdinal matches "" like any tag against the module
@@ -161,230 +230,56 @@ export class ModuleObjectManager {
       return PartyManager.party[0];
     }
 
-    let results: ModuleObject[] = [];
-    let obj: any = undefined;
-    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
-      for(let i = 0, len = this.module.area.placeables.length; i < len; i++){
-        obj = this.module.area.placeables[i];
-        if(obj && obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
+    // Retail FindObjectByTagOrdinal @ 004c5fe0 / FindObjectByTagTypeOrdinal @ 004c60b0
+    const filterType = oType | 0;
+    const useTypeFilter = filterType !== NWModuleObjectType.ALL;
+    const id = findObjectIdByTagOrdinal(
+      this.tagLookup,
+      sTag,
+      iNum,
+      useTypeFilter
+        ? (oid) => {
+            const obj = this.GetObjectById(oid);
+            return !!obj && (this.getNWObjectTypeMask(obj) & filterType) !== 0;
+          }
+        : undefined
+    );
+    if(id === undefined){
+      return undefined;
     }
-
-    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
-      for(let i = 0, len = this.module.area.creatures.length; i < len; i++){
-        obj = this.module.area.creatures[i];
-        if(obj && obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
-      // party[] can be sparse: LoadPartyMember assigns by PortraitOrder index,
-      // and minigame loads skip placing the PC at [0].
-      for(let i = 0, len = PartyManager.party.length; i < len; i++){
-        obj = PartyManager.party[i];
-        if(obj && obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){
-      for(let i = 0, len = this.module.area.stores.length; i < len; i++){
-        obj = this.module.area.stores[i];
-        if(obj && obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){
-      for(let i = 0, len = this.module.area.doors.length; i < len; i++){
-        obj = this.module.area.doors[i];
-        if(obj && obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){
-      for(let i = 0, len = this.module.area.triggers.length; i < len; i++){
-        obj = this.module.area.triggers[i];
-        if(obj && obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){
-      for(let i = 0, len = this.module.area.waypoints.length; i < len; i++){
-        obj = this.module.area.waypoints[i];
-        if(obj && obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){
-      for(let i = 0, len = this.module.area.sounds.length; i < len; i++){
-        obj = this.module.area.sounds[i];
-        if(obj && obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){
-      for(let i = 0, len = this.module.area.items.length; i < len; i++){
-        obj = this.module.area.items[i];
-        if(obj && obj.getTag().toLowerCase() == sTag)
-          results.push(obj);
-      }
-    }
-
-    if(results.length){
-      return results[iNum];
-    }
-
-    return undefined;
+    return this.GetObjectById(id);
 
   }
 
   public static GetNearestObjectByTag(sTag = '', oObject: ModuleObject, iNum = 0){
     sTag = sTag.toLowerCase();
-    let results: ModuleObject[] = [];
-    let obj: any = undefined;
-    let len = this.module.area.placeables.length;
-    for(let i = 0; i < len; i++){
-      obj = this.module.area.placeables[i];
-      if(obj && obj.getTag().toLowerCase() == sTag)
-        if(oObject != obj)
-          results.push(obj);
+    const area = this.module?.area;
+    if(!area || !oObject?.position){
+      return undefined;
     }
-
-    len = PartyManager.party.length;
-    for(let i = 0; i < len; i++){
-      obj = PartyManager.party[i];
-      if(obj && obj.getTag().toLowerCase() == sTag)
-        if(oObject != obj)
-          results.push(obj);
-    }
-
-    len = this.module.area.creatures.length;
-    for(let i = 0; i < len; i++){
-      obj = this.module.area.creatures[i];
-      if(obj && obj.getTag().toLowerCase() == sTag)
-        if(oObject != obj)
-          results.push(obj);
-    }
-
-    len = this.module.area.items.length;
-    for(let i = 0; i < len; i++){
-      obj = this.module.area.items[i];
-      if(obj && obj.getTag().toLowerCase() == sTag)
-        if(oObject != obj)
-          results.push(obj);
-    }
-
-    len = this.module.area.doors.length;
-    for(let i = 0; i < len; i++){
-      obj = this.module.area.doors[i];
-      if(obj && obj.getTag().toLowerCase() == sTag)
-        if(oObject != obj)
-          results.push(obj);
-    }
-
-    len = this.module.area.triggers.length;
-    for(let i = 0; i < len; i++){
-      obj = this.module.area.triggers[i];
-      if(obj && obj.getTag().toLowerCase() == sTag)
-        if(oObject != obj)
-          results.push(obj);
-    }
-
-    len = this.module.area.waypoints.length;
-    for(let i = 0; i < len; i++){
-      obj = this.module.area.waypoints[i];
-      if(obj && obj.getTag().toLowerCase() == sTag)
-        if(oObject != obj)
-          results.push(obj);
-    }
-
-    len = this.module.area.sounds.length;
-    for(let i = 0; i < len; i++){
-      obj = this.module.area.sounds[i];
-      if(obj && obj.getTag().toLowerCase() == sTag)
-        if(oObject != obj)
-          results.push(obj);
-    }
-
-    results.sort(
-      function(a,b) {
-        try{
-          let distanceA = a.getModel().position.distanceTo(oObject.getModel().position);
-          let distanceB = b.getModel().position.distanceTo(oObject.getModel().position);
-          return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
-          return 0;
-        }
-      }
-    );
-
-    if(results.length){
-      return results[iNum];
-    }
-
-    return undefined;
-
+    return findNearestInArea({
+      area,
+      origin: oObject.position,
+      nth: iNum,
+      excludeId: oObject.id,
+      matches: (obj) => (obj.getTag?.() || '').toLowerCase() === sTag,
+    });
   }
 
   public static GetNearestObject(oType = 0, oObject: ModuleObject, iNum = 0){
-    let results: ModuleObject[] = [];
-
-    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
-      results = results.concat(this.module.area.creatures);
+    const area = this.module?.area;
+    if(!area || !oObject?.position){
+      return undefined;
     }
-    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){
-      results = results.concat(this.module.area.items);
-    }
-    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){
-      results = results.concat(this.module.area.triggers);
-    }
-    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){
-      results = results.concat(this.module.area.doors);
-    }
-    if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){
-      //results = results.concat([]);
-    }
-    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){
-      results = results.concat(this.module.area.waypoints);
-    }
-    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
-      results = results.concat(this.module.area.placeables);
-    }
-    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){
-      results = results.concat(this.module.area.stores);
-    }
-    if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){
-      results = results.concat(this.module.area.encounters);
-    }
-    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){
-      results = results.concat(this.module.area.sounds);
-    }
-
-    results.sort(
-      function(a,b) {
-        try{
-          let distanceA = a.position.distanceTo(oObject.position);
-          let distanceB = b.position.distanceTo(oObject.position);
-          return (distanceB > distanceA) ? -1 : ((distanceA > distanceB) ? 1 : 0);
-        }catch(e){
-          return 0;
-        }
-      }
-    );
-
-    if(results.length){
-      return results[iNum];
-    }
-
-    return undefined;
-
+    const typeMask = oType | 0;
+    const matchAll = (typeMask & NWModuleObjectType.ALL) === NWModuleObjectType.ALL;
+    return findNearestInArea({
+      area,
+      origin: oObject.position,
+      nth: iNum,
+      excludeId: oObject.id,
+      matches: (obj) => matchAll || (this.getNWObjectTypeMask(obj) & typeMask) !== 0,
+    });
   }
 
   public static GetFirstObjectInArea(oArea = this.module.area, oType = 0){
@@ -411,7 +306,7 @@ export class ModuleObjectManager {
       results = results.concat(this.module.area.doors);
     }
     if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){
-      //results = results.concat([]);
+      results = results.concat(this.module.area.areaOfEffects);
     }
     if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
       results = results.concat(this.module.area.creatures);
@@ -459,7 +354,7 @@ export class ModuleObjectManager {
       results = results.concat(this.module.area.doors);
     }
     if((oType & NWModuleObjectType.AOE) == NWModuleObjectType.AOE){
-      //results = results.concat([]);
+      results = results.concat(this.module.area.areaOfEffects);
     }
     if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
       results = results.concat(this.module.area.creatures);
@@ -486,134 +381,95 @@ export class ModuleObjectManager {
     return undefined;
   }
 
-  public static GetNearestCreature(nFirstCriteriaType: CreatureType, nFirstCriteriaValue: any, oTarget: ModuleObject, nNth=1, nSecondCriteriaType=-1, nSecondCriteriaValue=-1, nThirdCriteriaType=-1,  nThirdCriteriaValue=-1, list?: ModuleCreature[] ): ModuleCreature {
-    
-    if(!list){
-      list = this.module.area.creatures;
-      list = list.concat(PartyManager.party);
+  /**
+   * Single CREATURE_TYPE_* criterion for GetNearestCreature* (retail @ 0054b550).
+   */
+  private static creatureMatchesNearestCriterion(
+    creature: ModuleCreature,
+    oTarget: ModuleObject,
+    criteriaType: CreatureType,
+    criteriaValue: any,
+  ): boolean {
+    if(criteriaType < 0 || criteriaValue === 0xffffffff){
+      return true;
     }
-
-    let results: ModuleCreature[] = [];
-    
-    switch(nFirstCriteriaType){
+    switch(criteriaType){
       case CreatureType.RACIAL_TYPE:
-
-      break;
       case CreatureType.PLAYER_CHAR:
-
-      break;
       case CreatureType.CLASS:
-
-      break;
-      case CreatureType.REPUTATION:
-        switch(nFirstCriteriaValue){
-          case ReputationType.FRIEND:
-            for(let i = 0; i < list.length; i++){
-              if(list[i].isDead()){ continue; }
-              if(list[i].isFriendly(oTarget) && oTarget.hasLineOfSight(list[i])){
-                results.push(list[i]);
-              }
-            }
-          break;
-          case ReputationType.ENEMY:
-            for(let i = 0; i < list.length; i++){
-              if(list[i].isDead()){ continue; }
-              if(list[i].isHostile(oTarget) && oTarget.hasLineOfSight(list[i])){
-                results.push(list[i]);
-              }
-            }
-          break;  
-          case ReputationType.NEUTRAL:
-            for(let i = 0; i < list.length; i++){
-              if(list[i].isDead()){ continue; }
-              if(list[i].isNeutral(oTarget) && oTarget.hasLineOfSight(list[i])){
-                results.push(list[i]);
-              }
-            }
-          break;
-        }
-      break;
-      case CreatureType.IS_ALIVE:
-        for(let i = 0; i < list.length; i++){
-          if(list[i].isDead()){ continue; }
-          results.push(list[i]);
-        }
-      break;
       case CreatureType.HAS_SPELL_EFFECT:
-
-      break;
       case CreatureType.DOES_NOT_HAVE_SPELL_EFFECT:
-
-      break;
-      case CreatureType.PERCEPTION:
-        for(let i = 0; i < list.length; i++){
-          switch(nFirstCriteriaValue){
-            case 0:// PERCEPTION_SEEN_AND_HEARD	0	Both seen and heard (Spot beats Hide, Listen beats Move Silently).
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !!(o.data & PerceptionMask.SEEN_AND_HEARD) ).length){
-                if(list[i].isDead()){ continue; }
-                results.push(list[i]);
-              }
-            break;
-            case 1:// PERCEPTION_NOT_SEEN_AND_NOT_HEARD	1	Neither seen nor heard (Hide beats Spot, Move Silently beats Listen).
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !(o.data & PerceptionMask.SEEN_AND_HEARD) ).length){
-                if(list[i].isDead()){ continue; }
-                results.push(list[i]);
-              }
-            break;
-            case 2:// PERCEPTION_HEARD_AND_NOT_SEEN	2	 Heard only (Hide beats Spot, Listen beats Move Silently). Usually arouses suspicion for a creature to take a closer look.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !(o.data & PerceptionMask.SEEN) && !!(o.data & PerceptionMask.HEARD) ).length){
-                if(list[i].isDead()){ continue; }
-                results.push(list[i]);
-              }
-            break;
-            case 3:// PERCEPTION_SEEN_AND_NOT_HEARD	3	Seen only (Spot beats Hide, Move Silently beats Listen). Usually causes a creature to take instant notice.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !!(o.data & PerceptionMask.SEEN) && !(o.data & PerceptionMask.HEARD) ).length){
-                if(list[i].isDead()){ continue; }
-                results.push(list[i]);
-              }
-            break;
-            case 4:// PERCEPTION_NOT_HEARD 4 Not heard (Move Silently beats Listen), no line of sight.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !(o.data & PerceptionMask.HEARD) ).length){
-                if(list[i].isDead()){ continue; }
-                results.push(list[i]);
-              }
-            break;
-            case 5:// PERCEPTION_HEARD 5 Heard (Listen beats Move Silently), no line of sight.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !!(o.data & PerceptionMask.HEARD) ).length){
-                if(list[i].isDead()){ continue; }
-                results.push(list[i]);
-              }
-            break;
-            case 6:// PERCEPTION_NOT_SEEN	6	Not seen (Hide beats Spot), too far away to heard or magically silcenced.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !(o.data & PerceptionMask.SEEN) ).length){
-                if(list[i].isDead()){ continue; }
-                results.push(list[i]);
-              }
-            break;
-            case 7:// PERCEPTION_SEEN	7	Seen (Spot beats Hide), too far away to heard or magically silcenced.
-              if(oTarget.perceptionList.filter( (o) => o.object == list[i] && !!(o.data & PerceptionMask.SEEN)  ).length){
-                if(list[i].isDead()){ continue; }
-                results.push(list[i]);
-              }
-            break;
-          }
-
+        return false;
+      case CreatureType.REPUTATION:
+        if(!oTarget) return false;
+        switch(criteriaValue){
+          case ReputationType.FRIEND:
+            return creature.isFriendly(oTarget) && !!oTarget.hasLineOfSight?.(creature);
+          case ReputationType.ENEMY:
+            return creature.isHostile(oTarget) && !!oTarget.hasLineOfSight?.(creature);
+          case ReputationType.NEUTRAL:
+            return creature.isNeutral(oTarget) && !!oTarget.hasLineOfSight?.(creature);
+          default:
+            return false;
         }
-      break;
+      case CreatureType.IS_ALIVE:
+        return !creature.isDead();
+      case CreatureType.PERCEPTION:
+        if(!oTarget?.perceptionList) return false;
+        switch(criteriaValue){
+          case 0:// PERCEPTION_SEEN_AND_HEARD
+            return oTarget.perceptionList.filter( (o) => o.object == creature && !!(o.data & PerceptionMask.SEEN_AND_HEARD) ).length > 0;
+          case 1:// PERCEPTION_NOT_SEEN_AND_NOT_HEARD
+            return oTarget.perceptionList.filter( (o) => o.object == creature && !(o.data & PerceptionMask.SEEN_AND_HEARD) ).length > 0;
+          case 2:// PERCEPTION_HEARD_AND_NOT_SEEN
+            return oTarget.perceptionList.filter( (o) => o.object == creature && !(o.data & PerceptionMask.SEEN) && !!(o.data & PerceptionMask.HEARD) ).length > 0;
+          case 3:// PERCEPTION_SEEN_AND_NOT_HEARD
+            return oTarget.perceptionList.filter( (o) => o.object == creature && !!(o.data & PerceptionMask.SEEN) && !(o.data & PerceptionMask.HEARD) ).length > 0;
+          case 4:// PERCEPTION_NOT_HEARD
+            return oTarget.perceptionList.filter( (o) => o.object == creature && !(o.data & PerceptionMask.HEARD) ).length > 0;
+          case 5:// PERCEPTION_HEARD
+            return oTarget.perceptionList.filter( (o) => o.object == creature && !!(o.data & PerceptionMask.HEARD) ).length > 0;
+          case 6:// PERCEPTION_NOT_SEEN
+            return oTarget.perceptionList.filter( (o) => o.object == creature && !(o.data & PerceptionMask.SEEN) ).length > 0;
+          case 7:// PERCEPTION_SEEN
+            return oTarget.perceptionList.filter( (o) => o.object == creature && !!(o.data & PerceptionMask.SEEN) ).length > 0;
+          default:
+            return false;
+        }
+      default:
+        return false;
+    }
+  }
+
+  private static isNearestCreatureCandidate(obj: ModuleObject): obj is ModuleCreature {
+    const t = obj?.objectType | 0;
+    return BitWise.InstanceOf(t, ModuleObjectType.ModuleCreature)
+      || BitWise.InstanceOf(t, ModuleObjectType.ModulePlayer);
+  }
+
+  public static GetNearestCreature(nFirstCriteriaType: CreatureType, nFirstCriteriaValue: any, oTarget: ModuleObject, nNth=1, nSecondCriteriaType=-1, nSecondCriteriaValue=-1, nThirdCriteriaType=-1,  nThirdCriteriaValue=-1, _list?: ModuleCreature[] ): ModuleCreature {
+    const area = this.module?.area;
+    if(!area || !oTarget?.position){
+      return undefined;
     }
 
-    if(nSecondCriteriaType >= 0){
-      return ModuleObjectManager.GetNearestCreature(nSecondCriteriaType, nSecondCriteriaValue, oTarget, nNth, nThirdCriteriaType, nThirdCriteriaValue, -1, -1, results);
-    }
+    const matches = (obj: ModuleObject): boolean => {
+      if(!this.isNearestCreatureCandidate(obj)) return false;
+      const creature = obj as ModuleCreature;
+      if(creature.isDead()) return false;
+      if(!this.creatureMatchesNearestCriterion(creature, oTarget, nFirstCriteriaType, nFirstCriteriaValue)) return false;
+      if(nSecondCriteriaType >= 0 && !this.creatureMatchesNearestCriterion(creature, oTarget, nSecondCriteriaType, nSecondCriteriaValue)) return false;
+      if(nThirdCriteriaType >= 0 && !this.creatureMatchesNearestCriterion(creature, oTarget, nThirdCriteriaType, nThirdCriteriaValue)) return false;
+      return true;
+    };
 
-    if(results.length){
-      results.sort((a: any, b: any) => {
-        return oTarget.position.distanceTo(a.position) - oTarget.position.distanceTo(b.position);
-      });
-      return results[nNth-1];
-    }
-
-    return undefined;
+    return findNearestInArea({
+      area,
+      origin: oTarget.position,
+      nth: Math.max(0, (nNth | 0) - 1),
+      excludeId: oTarget.id,
+      matches,
+    }) as ModuleCreature;
   }
 
   /**
@@ -631,84 +487,55 @@ export class ModuleObjectManager {
     nThirdCriteriaType = -1,
     nThirdCriteriaValue = -1,
   ): ModuleCreature {
-    if(!lLocation?.position){
+    const area = this.module?.area;
+    if(!area || !lLocation?.position){
       return undefined;
     }
     const oTarget = (PartyManager.party[0] || undefined) as ModuleObject;
     if(!oTarget && nFirstCriteriaType !== CreatureType.IS_ALIVE){
       return undefined;
     }
-    const list = (this.module?.area?.creatures || []).concat(PartyManager.party);
-    const filtered: ModuleCreature[] = [];
-    let remaining = list.slice();
-    const criteriaTarget = oTarget || remaining[0];
-    if(!criteriaTarget) return undefined;
+    const criteriaTarget = oTarget;
 
-    while(remaining.length){
-      const next = ModuleObjectManager.GetNearestCreature(
-        nFirstCriteriaType, nFirstCriteriaValue, criteriaTarget, 1,
-        nSecondCriteriaType, nSecondCriteriaValue, nThirdCriteriaType, nThirdCriteriaValue, remaining
-      );
-      if(!next) break;
-      filtered.push(next);
-      remaining = remaining.filter((c) => c !== next);
-    }
-    if(!filtered.length) return undefined;
-    filtered.sort((a, b) =>
-      lLocation.position.distanceTo(a.position) - lLocation.position.distanceTo(b.position)
-    );
-    return filtered[nNth - 1];
+    const matches = (obj: ModuleObject): boolean => {
+      if(!this.isNearestCreatureCandidate(obj)) return false;
+      const creature = obj as ModuleCreature;
+      if(creature.isDead()) return false;
+      if(nFirstCriteriaType === CreatureType.IS_ALIVE){
+        // IS_ALIVE only needs a live creature; other criteria still apply when set.
+      }else if(!criteriaTarget){
+        return false;
+      }
+      if(!this.creatureMatchesNearestCriterion(creature, criteriaTarget, nFirstCriteriaType, nFirstCriteriaValue)) return false;
+      if(nSecondCriteriaType >= 0 && !this.creatureMatchesNearestCriterion(creature, criteriaTarget, nSecondCriteriaType, nSecondCriteriaValue)) return false;
+      if(nThirdCriteriaType >= 0 && !this.creatureMatchesNearestCriterion(creature, criteriaTarget, nThirdCriteriaType, nThirdCriteriaValue)) return false;
+      return true;
+    };
+
+    return findNearestInArea({
+      area,
+      origin: lLocation.position,
+      nth: Math.max(0, (nNth | 0) - 1),
+      matches,
+    }) as ModuleCreature;
   }
 
   /**
    * Pass AL — GetNearestObjectToLocation (retail ExecuteCommandGetNearestObject @ 0054b550).
    */
   public static GetNearestObjectToLocation(oType = 0, lLocation: EngineLocation, iNum = 0){
-    if(!lLocation?.position){
+    const area = this.module?.area;
+    if(!area || !lLocation?.position){
       return undefined;
     }
-    let results: ModuleObject[] = [];
-    const area = this.module?.area;
-    if(!area) return undefined;
-
-    if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){
-      results = results.concat(area.creatures);
-      results = results.concat(PartyManager.party);
-    }
-    if((oType & NWModuleObjectType.ITEM) == NWModuleObjectType.ITEM){
-      results = results.concat(area.items);
-    }
-    if((oType & NWModuleObjectType.TRIGGER) == NWModuleObjectType.TRIGGER){
-      results = results.concat(area.triggers);
-    }
-    if((oType & NWModuleObjectType.DOOR) == NWModuleObjectType.DOOR){
-      results = results.concat(area.doors);
-    }
-    if((oType & NWModuleObjectType.WAYPOINT) == NWModuleObjectType.WAYPOINT){
-      results = results.concat(area.waypoints);
-    }
-    if((oType & NWModuleObjectType.PLACEABLE) == NWModuleObjectType.PLACEABLE){
-      results = results.concat(area.placeables);
-    }
-    if((oType & NWModuleObjectType.STORE) == NWModuleObjectType.STORE){
-      results = results.concat(area.stores);
-    }
-    if((oType & NWModuleObjectType.ENCOUNTER) == NWModuleObjectType.ENCOUNTER){
-      results = results.concat(area.encounters);
-    }
-    if((oType & NWModuleObjectType.SOUND) == NWModuleObjectType.SOUND){
-      results = results.concat(area.sounds);
-    }
-
-    results.sort((a, b) => {
-      try{
-        return a.position.distanceTo(lLocation.position) - b.position.distanceTo(lLocation.position);
-      }catch(_e){
-        return 0;
-      }
+    const typeMask = oType | 0;
+    const matchAll = (typeMask & NWModuleObjectType.ALL) === NWModuleObjectType.ALL;
+    return findNearestInArea({
+      area,
+      origin: lLocation.position,
+      nth: iNum,
+      matches: (obj) => matchAll || (this.getNWObjectTypeMask(obj) & typeMask) !== 0,
     });
-
-    return results.length ? results[iNum] : undefined;
   }
 
   /**
@@ -716,42 +543,31 @@ export class ModuleObjectManager {
    * Trap objects = triggers/doors/placeables with trapFlag (or TRAP-type triggers).
    */
   public static GetNearestTrapToObject(oTarget: ModuleObject, nTrapDetected = 0): ModuleObject {
-    if(!oTarget?.position || !this.module?.area){
+    const area = this.module?.area;
+    if(!oTarget?.position || !area){
       return undefined;
     }
-    const area = this.module.area;
-    const traps: ModuleObject[] = [];
-
-    for(let i = 0; i < area.triggers.length; i++){
-      const t = area.triggers[i];
-      if(!t) continue;
-      if(t.type == ModuleTriggerType.TRAP || t.trapFlag){
-        traps.push(t);
-      }
-    }
-    for(let i = 0; i < area.doors.length; i++){
-      const d = area.doors[i];
-      if(d?.trapFlag) traps.push(d);
-    }
-    for(let i = 0; i < area.placeables.length; i++){
-      const p = area.placeables[i];
-      if(p?.trapFlag) traps.push(p);
-    }
-
-    let best: ModuleObject = undefined;
-    let bestDist = Number.POSITIVE_INFINITY;
-    for(let i = 0; i < traps.length; i++){
-      const trap = traps[i];
-      if(nTrapDetected){
-        if(!trap.isTrapDetectedBy(oTarget)) continue;
-      }
-      const d = oTarget.position.distanceToSquared(trap.position);
-      if(d < bestDist){
-        bestDist = d;
-        best = trap;
-      }
-    }
-    return best;
+    return findNearestInArea({
+      area,
+      origin: oTarget.position,
+      nth: 0,
+      excludeId: oTarget.id,
+      matches: (obj) => {
+        const t = obj?.objectType | 0;
+        let isTrap = false;
+        if(BitWise.InstanceOf(t, ModuleObjectType.ModuleTrigger)){
+          const trig = obj as ModuleTrigger;
+          isTrap = trig.type == ModuleTriggerType.TRAP || !!trig.trapFlag;
+        }else if(BitWise.InstanceOf(t, ModuleObjectType.ModuleDoor)){
+          isTrap = !!(obj as ModuleDoor).trapFlag;
+        }else if(BitWise.InstanceOf(t, ModuleObjectType.ModulePlaceable)){
+          isTrap = !!(obj as ModulePlaceable).trapFlag;
+        }
+        if(!isTrap) return false;
+        if(nTrapDetected && !obj.isTrapDetectedBy?.(oTarget)) return false;
+        return true;
+      },
+    });
   }
 
   public static GetObjectsInShape(shape = -1, size = 1, target: EngineLocation, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){

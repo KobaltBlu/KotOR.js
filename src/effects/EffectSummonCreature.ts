@@ -84,7 +84,7 @@ export class EffectSummonCreature extends GameEffect {
     if(BitWise.InstanceOfObject(owner, ModuleObjectType.ModuleCreature)){
       creature.setFacing?.(owner.getFacing?.() ?? 0, true);
     }
-    GameState.ModuleObjectManager.AddObjectById(creature);
+    GameState.ModuleObjectManager.RegisterObject(creature);
     this.setObject(1, creature);
 
     const vfxId = this.getInt(0);

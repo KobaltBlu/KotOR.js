@@ -409,14 +409,13 @@ export class ModuleEncounter extends ModuleObject {
 
   initProperties(){
     
-    if(!this.initialized){
+    const needsRegister = !this.initialized;
+    if(needsRegister){
       if(this.template.RootNode.hasField('ObjectId')){
         this.id = this.template.getFieldByLabel('ObjectId').getValue();
       }else if(this.template.RootNode.hasField('ID')){
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
-      
-      GameState.ModuleObjectManager.AddObjectById(this);
 
       if(this.template.RootNode.hasField('Geometry')){
         this.geometry = this.template.getFieldByLabel('Geometry').getChildStructs();
@@ -584,6 +583,10 @@ export class ModuleEncounter extends ModuleObject {
         this.spawnPoolRecovered = this.template.getFieldByLabel('SpawnPoolRecovered').getValue();
 
       this.loadActionList();
+
+      if(needsRegister){
+        GameState.ModuleObjectManager.RegisterObject(this);
+      }
 
       this.initialized = true;
     }

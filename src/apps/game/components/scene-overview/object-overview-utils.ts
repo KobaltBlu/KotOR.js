@@ -1,8 +1,11 @@
 import * as KotOR from "@/apps/game/KotOR";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
+import { ModuleDayPhase } from "@/enums/module/ModuleDayPhase";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { WeatherCondition } from "@/enums/module/WeatherCondition";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { ModuleCalendar } from "@/module/ModuleCalendar";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { GFFField } from "@/resource/GFFField";
 import type { GFFStruct } from "@/resource/GFFStruct";
@@ -797,5 +800,147 @@ export function snapshotLiveObject(obj: ModuleObject): LiveObjectSnapshot {
     facing,
     distanceToPlayer,
     sections,
+  };
+}
+
+const DAY_PHASE_LABELS: Record<number, string> = {
+  [ModuleDayPhase.Day]: 'Day',
+  [ModuleDayPhase.Night]: 'Night',
+  [ModuleDayPhase.Dawn]: 'Dawn',
+  [ModuleDayPhase.Dusk]: 'Dusk',
+};
+
+const WEATHER_LABELS: Record<number, string> = {
+  [WeatherCondition.CLEAR]: 'Clear',
+  [WeatherCondition.RAIN]: 'Rain',
+  [WeatherCondition.SNOW]: 'Snow',
+};
+
+function locStringValue(loc: any): string {
+  if(!loc){ return ''; }
+  if(typeof loc === 'string'){ return loc; }
+  if(typeof loc.getValue === 'function'){
+    try{ return String(loc.getValue() || ''); }catch{ return ''; }
+  }
+  return '';
+}
+
+function pad2(n: number): string {
+  return (n | 0).toString().padStart(2, '0');
+}
+
+export interface ModuleAreaSnapshot {
+  loaded: boolean;
+  moduleFilename: string;
+  moduleName: string;
+  moduleTag: string;
+  entryArea: string;
+  areaResRef: string;
+  areaName: string;
+  areaTag: string;
+  time: string;
+  dayPhase: string;
+  dawnHour: number;
+  duskHour: number;
+  calendar: string;
+  weather: string;
+  rooms: number;
+  dayNightCycle: boolean;
+  noRest: boolean;
+  partyGold: number;
+  partySize: number;
+  objectCounts: {
+    creatures: number;
+    doors: number;
+    placeables: number;
+    triggers: number;
+    waypoints: number;
+    sounds: number;
+    stores: number;
+    encounters: number;
+    items: number;
+  };
+}
+
+export function snapshotModuleAreaInfo(): ModuleAreaSnapshot {
+  const emptyCounts = {
+    creatures: 0, doors: 0, placeables: 0, triggers: 0, waypoints: 0,
+    sounds: 0, stores: 0, encounters: 0, items: 0,
+  };
+  const module = KotOR.GameState.module;
+  if(!module){
+    return {
+      loaded: false,
+      moduleFilename: '',
+      moduleName: '',
+      moduleTag: '',
+      entryArea: '',
+      areaResRef: '',
+      areaName: '',
+      areaTag: '',
+      time: '',
+      dayPhase: '',
+      dawnHour: 0,
+      duskHour: 0,
+      calendar: '',
+      weather: '',
+      rooms: 0,
+      dayNightCycle: false,
+      noRest: false,
+      partyGold: KotOR.GameState.PartyManager?.Gold ?? 0,
+      partySize: (KotOR.GameState.PartyManager?.party || []).length,
+      objectCounts: emptyCounts,
+    };
+  }
+
+  const area = module.area;
+  const tm = module.timeManager;
+  const hour = tm?.hour ?? 0;
+  const minute = tm?.minute ?? 0;
+  const phase = tm?.dayPhase;
+  let calendarText = '';
+  if(tm){
+    calendarText = ModuleCalendar.formatPauseDayLabel(tm.pauseDay);
+  }
+
+  const weatherVal = area?.weather?.currentWeather;
+  let weatherLabel = '';
+  if(weatherVal != null && weatherVal !== 0xFF){
+    weatherLabel = WEATHER_LABELS[weatherVal as number] || String(weatherVal);
+  }else if(weatherVal === 0xFF){
+    weatherLabel = 'Unset';
+  }
+
+  return {
+    loaded: true,
+    moduleFilename: String(module.filename || ''),
+    moduleName: locStringValue(module.name),
+    moduleTag: String(module.tag || ''),
+    entryArea: String(module.entryArea || module.areaName || ''),
+    areaResRef: String(area?.name || ''),
+    areaName: locStringValue(area?.areaName),
+    areaTag: String(area?.tag || ''),
+    time: `${pad2(hour)}:${pad2(minute)}`,
+    dayPhase: DAY_PHASE_LABELS[phase as number] || String(phase ?? ''),
+    dawnHour: tm?.dawnHour ?? 0,
+    duskHour: tm?.duskHour ?? 0,
+    calendar: calendarText,
+    weather: weatherLabel,
+    rooms: area?.rooms?.length ?? 0,
+    dayNightCycle: !!area?.dayNightCycle,
+    noRest: !!area?.noRest,
+    partyGold: KotOR.GameState.PartyManager?.Gold ?? 0,
+    partySize: (KotOR.GameState.PartyManager?.party || []).length,
+    objectCounts: {
+      creatures: (area?.creatures || []).length,
+      doors: (area?.doors || []).length,
+      placeables: (area?.placeables || []).length,
+      triggers: (area?.triggers || []).length,
+      waypoints: (area?.waypoints || []).length,
+      sounds: (area?.sounds || []).length,
+      stores: (area?.stores || []).length,
+      encounters: (area?.encounters || []).length,
+      items: (area?.items || []).length,
+    },
   };
 }

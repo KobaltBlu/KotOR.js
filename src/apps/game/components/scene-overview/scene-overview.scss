@@ -23,10 +23,62 @@
     border-bottom: 1px solid #d4a03d66;
   }
 
+  .scene-overview-chrome-text {
+    flex: 1;
+    min-width: 0;
+  }
+
   .scene-overview-title {
     font-weight: bold;
     font-size: 1rem;
-    flex: 1;
+  }
+
+  .scene-overview-subtitle {
+    font-size: 0.72rem;
+    opacity: 0.75;
+    font-family: Consolas, "Lucida Console", monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .scene-overview-module-info {
+    padding: 6px 12px 8px;
+    border-bottom: 1px solid #d4a03d44;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .scene-overview-info-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    align-items: baseline;
+
+    &.counts {
+      opacity: 0.9;
+    }
+  }
+
+  .scene-overview-info-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 0.72rem;
+    line-height: 1.3;
+  }
+
+  .scene-overview-info-label {
+    opacity: 0.6;
+  }
+
+  .scene-overview-info-value {
+    word-break: break-word;
+
+    &.mono {
+      font-family: Consolas, "Lucida Console", monospace;
+    }
   }
 
   .scene-overview-check {
@@ -362,7 +414,8 @@
 
     .scene-overview-filters,
     .scene-overview-map,
-    .scene-overview-section-head {
+    .scene-overview-section-head,
+    .scene-overview-module-info {
       border-color: #1a5f4e44;
     }
 

@@ -31,7 +31,7 @@ export class ModuleWaypoint extends ModuleObject {
     this.objectType |= ModuleObjectType.ModuleWaypoint;
 
     this.template = gff;
-    this.initProperties();
+    // Defer initProperties until loadWaypoints → load() (retail Load* + AddToArea).
 
   }
 

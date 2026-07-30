@@ -6857,6 +6857,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   initProperties(){
+    const needsRegister = !this.initialized;
     try{
       this.classes = [];
       this.feats = [];
@@ -6864,7 +6865,7 @@ export class ModuleCreature extends ModuleObject {
         return skill.clone();
       });
       
-      if(!this.initialized){
+      if(needsRegister){
         if(BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlayer)){
           // Prefer saved ObjectId from pc.utc so mid-combat Target/MasterID refs resolve.
           const savedId = this.template?.RootNode?.hasField('ObjectId')
@@ -6880,8 +6881,6 @@ export class ModuleCreature extends ModuleObject {
         }else if(this.template.RootNode.hasField('ID')){
           this.id = this.template.getFieldByLabel('ID').getValue();
         }
-        
-        GameState.ModuleObjectManager.AddObjectById(this);
       }
 
       if(this.template.RootNode.hasField('Appearance_Type')){
@@ -7474,6 +7473,10 @@ export class ModuleCreature extends ModuleObject {
       anim = inCombat ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE;
     }
     this.setAnimationState(anim);
+
+    if(needsRegister){
+      GameState.ModuleObjectManager.RegisterObject(this);
+    }
 
     this.initialized = true;
 

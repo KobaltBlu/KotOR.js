@@ -1204,7 +1204,7 @@ export class Module {
       if(module.areaList[0]?.objectId){
         module.area.id = module.areaList[0].objectId >>> 0;
       }
-      GameState.ModuleObjectManager.AddObjectById(module.area);
+      GameState.ModuleObjectManager.RegisterObject(module.area);
 
       if(module.nextObjId0)
         GameState.ModuleObjectManager.COUNT = module.nextObjId0;

@@ -9,6 +9,11 @@ import { OdysseyMaterialBuilder } from "@/three/odyssey/OdysseyMaterialBuilder";
 import { OdysseyLightingBinder } from "@/three/odyssey/OdysseyLightingBinder";
 import { AreaMap } from "@/module/AreaMap";
 import { AreaWeather } from "@/module/AreaWeather";
+import {
+  RETAIL_INIT_AREA_OBJECT_ORDER,
+  RETAIL_LOAD_GIT_OBJECT_ORDER,
+  RETAIL_LOAD_SCENE_OBJECT_ORDER,
+} from "@/module/area-load-order";
 import * as THREE from "three";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
@@ -85,6 +90,13 @@ type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ModuleArea extends ModuleObject {
+
+  /** Retail CSWSArea::LoadGIT object sequence — see area-load-order.ts */
+  static readonly LOAD_GIT_OBJECT_ORDER = RETAIL_LOAD_GIT_OBJECT_ORDER;
+  /** loadScene object asset order (rooms/path/music excluded) */
+  static readonly LOAD_SCENE_OBJECT_ORDER = RETAIL_LOAD_SCENE_OBJECT_ORDER;
+  /** initAreaObjects iteration order */
+  static readonly INIT_AREA_OBJECT_ORDER = RETAIL_INIT_AREA_OBJECT_ORDER;
 
   static ModuleObject: typeof ModuleObject = ModuleObject;
   static ModuleAreaOfEffect: typeof ModuleAreaOfEffect = ModuleAreaOfEffect;
@@ -178,6 +190,13 @@ export class ModuleArea extends ModuleObject {
   triggers: ModuleTrigger[] = [];
   waypoints: ModuleWaypoint[] = [];
   areaOfEffects: ModuleAreaOfEffect[] = [];
+  /**
+   * Retail CSWSArea::game_objects — X-sorted for GetNearestObject spiral
+   * (GetFirstObjectIndiceByX @ 00506f20 / ExecuteCommandGetNearestObject @ 0054b550).
+   */
+  gameObjects: ModuleObject[] = [];
+  /** When true, gameObjects must be rebuilt before nearest queries. */
+  gameObjectsDirty: boolean = true;
   miniGame: ModuleMiniGame;
   walkmesh_rooms: ModuleRoom[] = [];
   /** Reused list for updateRoomAnimatedLights (creatures/placeables/doors/…). */
@@ -1697,7 +1716,9 @@ export class ModuleArea extends ModuleObject {
       GameState.scene.fog = undefined;
     }
 
-    //BEGIN GIT LOAD
+    // BEGIN GIT LOAD — retail CSWSArea::LoadGIT @ 0050dd80 (K1) / 0071ae10 (TSL)
+    // Order: weather/vars → creatures → items → doors → triggers → encounters →
+    // waypoints → sounds → placeables → stores → AOEs → properties → maps → cameras
 
     const areaMap = this.git.getFieldByLabel('AreaMap');
     const areaProps = this.git.getFieldByLabel('AreaProperties');
@@ -1713,64 +1734,35 @@ export class ModuleArea extends ModuleObject {
     const triggers = this.git.getFieldByLabel('TriggerList');
     const waypoints = this.git.getFieldByLabel('WaypointList');
 
-    const areaPropsField = areaProps.getChildStructs()[0].getFields();
-    this.audio.ambient.day = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
-    this.audio.ambient.dayVolume = this.git.getFieldByLabel('AmbientSndDayVol', areaPropsField).getValue();
-    this.audio.ambient.night = this.git.getFieldByLabel('AmbientSndNight', areaPropsField).getValue();
-    this.audio.ambient.nightVolume = this.git.getFieldByLabel('AmbientSndNitVol', areaPropsField).getValue();
-    if(areaProps.getChildStructs()[0].hasField('EnvAudio')){
-      this.audio.environmentAudio = this.git.getFieldByLabel('EnvAudio', areaPropsField).getValue();
-    }else{
-      this.audio.environmentAudio = -1;
+    // Retail LoadGIT start (when from save): weather + var tables before objects.
+    // Indoor areas force clear (LoadGIT flags & 1).
+    if(this.git.RootNode.hasField('CurrentWeather')){
+      this.weather.currentWeather = this.git.getFieldByLabel('CurrentWeather').getValue();
+      this.weather.fromSave = true;
     }
-    
-    this.audio.music.battle = this.git.getFieldByLabel('MusicBattle', areaPropsField).getValue();
-    this.audio.music.day = this.git.getFieldByLabel('MusicDay', areaPropsField).getValue();
-    this.audio.music.delay = this.git.getFieldByLabel('MusicDelay', areaPropsField).getValue();
-    this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
-    AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
-
-    const areaPropsStruct = areaProps.getChildStructs()[0];
-    if(areaPropsStruct.hasField('StealthXPCurrent')){
-      this.stealthXP = areaPropsStruct.getFieldByLabel('StealthXPCurrent').getValue() | 0;
+    if(this.git.RootNode.hasField('WeatherStarted')){
+      this.weather.started = !!this.git.getFieldByLabel('WeatherStarted').getValue();
+      this.weather.fromSave = true;
     }
-    if(areaPropsStruct.hasField('StealthXPLoss')){
-      this.stealthXPLoss = areaPropsStruct.getFieldByLabel('StealthXPLoss').getValue() | 0;
+    if(this.flags & 1){
+      this.weather.currentWeather = 0xFF;
+      this.weather.started = false;
     }
-    if(areaPropsStruct.hasField('StealthXPEnabled')){
-      this.stealthXPEnabled = areaPropsStruct.getFieldByLabel('StealthXPEnabled').getValue() | 0;
+    if(this.git.RootNode.hasField('VarTable')){
+      this.loadNamedVarTable(this.git.getFieldByLabel('VarTable'));
     }
-    if(areaPropsStruct.hasField('StealthXPMax')){
-      this.stealthXPMax = areaPropsStruct.getFieldByLabel('StealthXPMax').getValue() | 0;
-    }
-    if(areaPropsStruct.hasField('RestrictMode')){
-      this.restrictMode = areaPropsStruct.getFieldByLabel('RestrictMode').getValue() | 0;
-    }
-    if(areaPropsStruct.hasField('Unescapable')){
-      this.unescapable = !!areaPropsStruct.getFieldByLabel('Unescapable').getValue();
-    }
-    if(areaPropsStruct.hasField('SunFogColor')){
-      this.sun.fogColor = areaPropsStruct.getFieldByLabel('SunFogColor').getValue();
-    }
-
-    //Cameras
-    if(cameras){
-      for(let i = 0; i < cameras.childStructs.length; i++){
-        const strt = cameras.childStructs[i];
-        const camera = new ModuleCamera(GFFObject.FromStruct(strt) );
-        this.cameras.push(camera);
+    if(this.git.RootNode.hasField('SWVarTable')){
+      console.log("SWVarTable", this.git);
+      let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
+      for(let i = 0; i < localBools.length; i++){
+        let data = localBools[i].getFieldByLabel('Variable').getValue();
+        for(let bit = 0; bit < 32; bit++){
+          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
+        }
       }
     }
 
-    //AreaEffects
-    if(areaEffects){
-      for(let i = 0; i < areaEffects.childStructs.length; i++){
-        const strt = areaEffects.childStructs[i];
-        this.attachObject( new ModuleAreaOfEffect(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    //Creatures
+    // Creatures
     if(creatures){
       for(let i = 0; i < creatures.childStructs.length; i++){
         const strt = creatures.childStructs[i];
@@ -1778,31 +1770,15 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
-    //Ground items (GIT List)
+    // Ground items (GIT List)
     if(groundItems){
       for(let i = 0; i < groundItems.childStructs.length; i++){
         const strt = groundItems.childStructs[i];
-        this.attachObject( new ModuleItem(GFFObject.FromStruct(strt)) );
+        this.attachObject( new ModuleItem(GFFObject.FromStruct(strt), true) );
       }
     }
 
-    //Triggers
-    if(triggers){
-      for(let i = 0; i < triggers.childStructs.length; i++){
-        const strt = triggers.childStructs[i];
-        this.attachObject( new ModuleTrigger(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    //Encounter
-    if(encounters){
-      for(let i = 0; i < encounters.childStructs.length; i++){
-        const strt = encounters.childStructs[i];
-        this.attachObject( new ModuleEncounter(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    //Doors
+    // Doors
     if(doors){
       for(let i = 0; i < doors.childStructs.length; i++ ){
         const strt = doors.childStructs[i];
@@ -1810,31 +1786,23 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
-    //Placeables
-    if(placeables){
-      for(let i = 0; i < placeables.childStructs.length; i++ ){
-        const strt = placeables.childStructs[i];
-        this.attachObject( new ModulePlaceable(GFFObject.FromStruct(strt)) );
+    // Triggers
+    if(triggers){
+      for(let i = 0; i < triggers.childStructs.length; i++){
+        const strt = triggers.childStructs[i];
+        this.attachObject( new ModuleTrigger(GFFObject.FromStruct(strt)) );
       }
     }
 
-    //Sounds
-    if(sounds){
-      for(let i = 0; i < sounds.childStructs.length; i++ ){
-        const strt = sounds.childStructs[i];
-        this.attachObject( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
+    // Encounters
+    if(encounters){
+      for(let i = 0; i < encounters.childStructs.length; i++){
+        const strt = encounters.childStructs[i];
+        this.attachObject( new ModuleEncounter(GFFObject.FromStruct(strt)) );
       }
     }
 
-    //Stores
-    if(stores){
-      for(let i = 0; i < stores.childStructs.length; i++ ){
-        const strt = stores.childStructs[i];
-        this.attachObject( new ModuleStore(GFFObject.FromStruct(strt)) );
-      }
-    }
-
-    //Waypoints
+    // Waypoints
     if(waypoints){
       for(let i = 0; i < waypoints.childStructs.length; i++ ){
         const strt = waypoints.childStructs[i];
@@ -1855,32 +1823,93 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
-    //AreaMapData
-    if(areaMap){
-      const areaMapStruct = areaMap.getChildStructs()[0];
-      if(areaMapStruct){
-        this.areaMap.loadDataStruct(areaMapStruct);
+    // Sounds
+    if(sounds){
+      for(let i = 0; i < sounds.childStructs.length; i++ ){
+        const strt = sounds.childStructs[i];
+        this.attachObject( new ModuleSound(GFFObject.FromStruct(strt), AudioEngine.GetAudioEngine()) );
       }
     }
 
-    if(!(this.transWP instanceof GFFObject)){
-      this.transWP = null;
+    // Placeables
+    if(placeables){
+      for(let i = 0; i < placeables.childStructs.length; i++ ){
+        const strt = placeables.childStructs[i];
+        this.attachObject( new ModulePlaceable(GFFObject.FromStruct(strt)) );
+      }
     }
 
-    // Retail GIT weather fields (BYTE) — CurrentWeather type + WeatherStarted active flag.
-    // Indoor areas force clear (LoadGIT).
-    if(this.git.RootNode.hasField('CurrentWeather')){
-      this.weather.currentWeather = this.git.getFieldByLabel('CurrentWeather').getValue();
-      this.weather.fromSave = true;
+    // Stores
+    if(stores){
+      for(let i = 0; i < stores.childStructs.length; i++ ){
+        const strt = stores.childStructs[i];
+        this.attachObject( new ModuleStore(GFFObject.FromStruct(strt)) );
+      }
     }
-    if(this.git.RootNode.hasField('WeatherStarted')){
-      this.weather.started = !!this.git.getFieldByLabel('WeatherStarted').getValue();
-      this.weather.fromSave = true;
+
+    // AreaEffects
+    if(areaEffects){
+      for(let i = 0; i < areaEffects.childStructs.length; i++){
+        const strt = areaEffects.childStructs[i];
+        this.attachObject( new ModuleAreaOfEffect(GFFObject.FromStruct(strt)) );
+      }
     }
-    if(this.flags & 1){
-      this.weather.currentWeather = 0xFF;
-      this.weather.started = false;
+
+    // LoadProperties — AreaProperties + ambient (retail after stores/AOEs)
+    if(areaProps){
+      const areaPropsStruct = areaProps.getChildStructs()[0];
+      if(areaPropsStruct){
+        const areaPropsField = areaPropsStruct.getFields();
+        this.audio.ambient.day = this.git.getFieldByLabel('AmbientSndDay', areaPropsField).getValue();
+        this.audio.ambient.dayVolume = this.git.getFieldByLabel('AmbientSndDayVol', areaPropsField).getValue();
+        this.audio.ambient.night = this.git.getFieldByLabel('AmbientSndNight', areaPropsField).getValue();
+        this.audio.ambient.nightVolume = this.git.getFieldByLabel('AmbientSndNitVol', areaPropsField).getValue();
+        if(areaPropsStruct.hasField('EnvAudio')){
+          this.audio.environmentAudio = this.git.getFieldByLabel('EnvAudio', areaPropsField).getValue();
+        }else{
+          this.audio.environmentAudio = -1;
+        }
+
+        this.audio.music.battle = this.git.getFieldByLabel('MusicBattle', areaPropsField).getValue();
+        this.audio.music.day = this.git.getFieldByLabel('MusicDay', areaPropsField).getValue();
+        this.audio.music.delay = this.git.getFieldByLabel('MusicDelay', areaPropsField).getValue();
+        this.audio.music.night = this.git.getFieldByLabel('MusicNight', areaPropsField).getValue();
+        AudioEngine.GetAudioEngine().setAreaAudioProperties(this.audio);
+
+        if(areaPropsStruct.hasField('StealthXPCurrent')){
+          this.stealthXP = areaPropsStruct.getFieldByLabel('StealthXPCurrent').getValue() | 0;
+        }
+        if(areaPropsStruct.hasField('StealthXPLoss')){
+          this.stealthXPLoss = areaPropsStruct.getFieldByLabel('StealthXPLoss').getValue() | 0;
+        }
+        if(areaPropsStruct.hasField('StealthXPEnabled')){
+          this.stealthXPEnabled = areaPropsStruct.getFieldByLabel('StealthXPEnabled').getValue() | 0;
+        }
+        if(areaPropsStruct.hasField('StealthXPMax')){
+          this.stealthXPMax = areaPropsStruct.getFieldByLabel('StealthXPMax').getValue() | 0;
+        }
+        if(areaPropsStruct.hasField('RestrictMode')){
+          this.restrictMode = areaPropsStruct.getFieldByLabel('RestrictMode').getValue() | 0;
+        }
+        if(areaPropsStruct.hasField('Unescapable')){
+          this.unescapable = !!areaPropsStruct.getFieldByLabel('Unescapable').getValue();
+        }
+        if(areaPropsStruct.hasField('SunFogColor')){
+          this.sun.fogColor = areaPropsStruct.getFieldByLabel('SunFogColor').getValue();
+        }
+        // Retail LoadProperties also reads transition pending from AreaProperties.
+        if(areaPropsStruct.hasField('TransPending')){
+          this.transPending = areaPropsStruct.getFieldByLabel('TransPending').getValue() | 0;
+        }
+        if(areaPropsStruct.hasField('TransPendCurrID')){
+          this.transPendCurrId = areaPropsStruct.getFieldByLabel('TransPendCurrID').getValue() | 0;
+        }
+        if(areaPropsStruct.hasField('TransPendNextID')){
+          this.transPendNextId = areaPropsStruct.getFieldByLabel('TransPendNextID').getValue() | 0;
+        }
+      }
     }
+    // KotOR savegame GIT root still carries TransPending* (SaveGIT); prefer root if present.
     if(this.git.RootNode.hasField('TransPending')){
       this.transPending = this.git.getFieldByLabel('TransPending').getValue() | 0;
     }
@@ -1891,21 +1920,25 @@ export class ModuleArea extends ModuleObject {
       this.transPendNextId = this.git.getFieldByLabel('TransPendNextID').getValue() | 0;
     }
 
-    // Retail GIT named VarTable
-    if(this.git.RootNode.hasField('VarTable')){
-      this.loadNamedVarTable(this.git.getFieldByLabel('VarTable'));
+    // LoadMaps
+    if(areaMap){
+      const areaMapStruct = areaMap.getChildStructs()[0];
+      if(areaMapStruct){
+        this.areaMap.loadDataStruct(areaMapStruct);
+      }
     }
 
-    if(this.git.RootNode.hasField('SWVarTable')){
-      console.log("SWVarTable", this.git);
-      let localBools = this.git.RootNode.getFieldByLabel('SWVarTable').getChildStructs()[0].getFieldByLabel('BitArray').getChildStructs();
-      //console.log(localBools);
-      for(let i = 0; i < localBools.length; i++){
-        let data = localBools[i].getFieldByLabel('Variable').getValue();
-        for(let bit = 0; bit < 32; bit++){
-          this._locals.Booleans[bit + (i*32)] = ( (data>>bit) % 2 != 0);
-        }
+    // LoadPlaceableCameras — last among GIT lists
+    if(cameras){
+      for(let i = 0; i < cameras.childStructs.length; i++){
+        const strt = cameras.childStructs[i];
+        const camera = new ModuleCamera(GFFObject.FromStruct(strt) );
+        this.cameras.push(camera);
       }
+    }
+
+    if(!(this.transWP instanceof GFFObject)){
+      this.transWP = null;
     }
 
     GameState.AlphaTest = this.alphaTest;
@@ -2112,6 +2145,13 @@ export class ModuleArea extends ModuleObject {
       } 
     }
 
+    i = this.items.length
+    while (i--) {
+      if (!(this.items[i] instanceof ModuleItem) || !this.items[i].initialized) {
+        this.items.splice(i, 1);
+      }
+    }
+
   }
 
   async loadScene(){
@@ -2128,41 +2168,45 @@ export class ModuleArea extends ModuleObject {
       // Retail Scene ctor loads dirtytex* before room models bind dirt overlays.
       try { await DirtyTextureManager.loadForArea(this); } catch(e){ console.error(e); }
 
+      // Retail LoadArea @ 0050e190: rooms → LoadGIT objects → LoadPathPoints
       try { await this.loadRooms(); } catch(e){ console.error(e); }
-
-      await this.loadPath();
 
       this.roomWalkmeshes = this.rooms.filter( (r) => { return r?.model?.wok}).map( (r) => { return r.model.wok; });
 
       GameState.MenuManager.LoadScreen.setProgress(10);
-      
+
+      // GIT object asset order matches LoadGIT @ 0050dd80 (player/party adjacent to creatures)
+      try { await this.loadCreatures(); } catch(e){ console.error(e); }
       try { await this.loadPlayer(); } catch(e){ console.error(e); }
-
-      try { await this.loadCameras(); } catch(e){ console.error(e); }
-
-      try { await this.loadPlaceables(); } catch(e){ console.error(e); }
+      try { await this.loadParty(); } catch(e){ console.error(e); }
 
       GameState.MenuManager.LoadScreen.setProgress(20);
 
-      try { await this.loadWaypoints(); } catch(e){ console.error(e); }
+      try { await this.loadItems(); } catch(e){ console.error(e); }
+      try { await this.loadDoors(); } catch(e){ console.error(e); }
+
+      this.doorWalkmeshes = this.doors.filter( (d) => { return d?.collisionManager?.walkmesh}).map( (d) => { return d.collisionManager.walkmesh; });
 
       GameState.MenuManager.LoadScreen.setProgress(30);
 
-      try { await this.loadAreaEffects(); } catch(e){ console.error(e); }
-      try { await this.loadCreatures(); } catch(e){ console.error(e); }
-      try { await this.loadParty(); } catch(e){ console.error(e); }
+      try { await this.loadTriggers(); } catch(e){ console.error(e); }
+      try { await this.loadEncounters(); } catch(e){ console.error(e); }
+      try { await this.loadWaypoints(); } catch(e){ console.error(e); }
 
       GameState.MenuManager.LoadScreen.setProgress(40);
 
       try { await this.loadsounds(); } catch(e){ console.error(e); }
+      try { await this.loadPlaceables(); } catch(e){ console.error(e); }
 
       GameState.MenuManager.LoadScreen.setProgress(50);
 
-      try { await this.loadTriggers(); } catch(e){ console.error(e); }
-
-      try { await this.loadEncounters(); } catch(e){ console.error(e); }
+      try { await this.loadStores(); } catch(e){ console.error(e); }
+      try { await this.loadAreaEffects(); } catch(e){ console.error(e); }
+      try { await this.loadCameras(); } catch(e){ console.error(e); }
 
       GameState.MenuManager.LoadScreen.setProgress(60);
+
+      await this.loadPath();
 
       if(this.miniGame){
         try {
@@ -2174,17 +2218,7 @@ export class ModuleArea extends ModuleObject {
         }
       }
 
-      GameState.MenuManager.LoadScreen.setProgress(70);
-
-      try { await this.loadDoors(); } catch(e){ console.error(e); }
-
-      this.doorWalkmeshes = this.doors.filter( (d) => { return d?.collisionManager?.walkmesh}).map( (d) => { return d.collisionManager.walkmesh; });
-
-      try { await this.loadStores(); } catch(e){ console.error(e); }
-
       GameState.MenuManager.LoadScreen.setProgress(80);
-
-      GameState.MenuManager.LoadScreen.setProgress(90);
 
       try{
         await this.loadAreaMusic();
@@ -2304,6 +2338,11 @@ export class ModuleArea extends ModuleObject {
       this.creatures.push(object as ModuleCreature);
     }
 
+    if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleItem)){
+      if(this.items.indexOf(object as ModuleItem) >= 0) return;
+      this.items.push(object as ModuleItem);
+    }
+
     if(BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModulePlaceable)){
       if(this.placeables.indexOf(object as ModulePlaceable) >= 0) return;
       this.placeables.push(object as ModulePlaceable);
@@ -2354,6 +2393,10 @@ export class ModuleArea extends ModuleObject {
       if(GameState.ServerAIMaster?.shouldPromoteOnAreaEntry?.(object)){
         GameState.ServerAIMaster.setAILevel(object, AILevel.LOW);
       }
+    }
+
+    if(!BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleRoom)){
+      this.gameObjectsDirty = true;
     }
   }
 
@@ -2420,6 +2463,68 @@ export class ModuleArea extends ModuleObject {
     }else{
       console.warn(`destroyObject: unhandled objectType, ${object.objectType}`);
     }
+
+    if(!BitWise.InstanceOf(object?.objectType, ModuleObjectType.ModuleRoom)){
+      this.gameObjectsDirty = true;
+    }
+  }
+
+  /**
+   * Rebuild retail game_objects sorted by position.x for nearest spiral scans.
+   * Includes party members in the active area (deduped by id).
+   */
+  ensureGameObjectsSorted(): void {
+    // Always rebuild so live X positions stay correct after movement.
+    const seen = new Set<number>();
+    const list: ModuleObject[] = [];
+    const add = (arr: ModuleObject[] | undefined) => {
+      if(!arr) return;
+      for(let i = 0; i < arr.length; i++){
+        const obj = arr[i];
+        if(!obj) continue;
+        const id = obj.id | 0;
+        if(id && seen.has(id)) continue;
+        if(id) seen.add(id);
+        list.push(obj);
+      }
+    };
+    add(this.creatures);
+    add(GameState.PartyManager?.party as ModuleObject[]);
+    add(this.items);
+    add(this.doors);
+    add(this.triggers);
+    add(this.encounters);
+    add(this.waypoints);
+    add(this.sounds);
+    add(this.placeables);
+    add(this.stores);
+    add(this.areaOfEffects);
+    list.sort((a, b) => {
+      const dx = a.position.x - b.position.x;
+      if(dx !== 0) return dx;
+      return (a.id | 0) - (b.id | 0);
+    });
+    this.gameObjects = list;
+    this.gameObjectsDirty = false;
+  }
+
+  /**
+   * Retail GetFirstObjectIndiceByX @ 00506f20 — lower_bound on position.x.
+   */
+  getFirstObjectIndexByX(x: number): number {
+    this.ensureGameObjectsSorted();
+    const table = this.gameObjects;
+    let lo = 0;
+    let hi = table.length;
+    while(lo < hi){
+      const mid = (lo + hi) >> 1;
+      if(table[mid].position.x < x){
+        lo = mid + 1;
+      }else{
+        hi = mid;
+      }
+    }
+    return lo;
   }
 
   async loadPlayer(): Promise<void> {
@@ -2842,6 +2947,32 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
+   * Load ground items (GIT List) — retail LoadItems / AddToArea after creatures.
+   * Scene placement matches ActionDropItem (model under placeables group).
+   */
+  async loadItems(): Promise<void> {
+    console.log('Loading Items');
+    for(let i = 0; i < this.items.length; i++){
+      try{
+        const item = this.items[i];
+        item.placedInWorld = true;
+        item.load();
+        const model = await item.loadModel();
+        if(!model){ continue; }
+        model.userData.moduleObject = item;
+        model.name = item.getTag();
+        model.position.copy(item.position);
+        if(model.parent !== GameState.group.placeables){
+          GameState.group.placeables.add(model);
+        }
+        item.getCurrentRoom();
+      }catch(e){
+        console.error(e);
+      }
+    }
+  }
+
+  /**
    * Load the area's stores
    */
   async loadStores(): Promise<void> {
@@ -2897,16 +3028,27 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
+  /**
+   * Post-load OnSpawn pass — iterate types in retail LoadGIT order.
+   * Only creatures (and party) currently run spawn scripts; other types call
+   * onSpawn for init side-effects without inventing non-retail script slots.
+   */
   async initAreaObjects(runSpawnScripts = false){
-    for(let i = 0; i < this.doors.length; i++){
-      if(this.doors[i] instanceof ModuleObject){
-        this.doors[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.creatures.length; i++){
+      if(this.creatures[i] instanceof ModuleObject){
+        this.creatures[i].onSpawn(runSpawnScripts);
       }
     }
 
-    for(let i = 0; i < this.placeables.length; i++){
-      if(this.placeables[i] instanceof ModuleObject){
-        this.placeables[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.items.length; i++){
+      if(this.items[i] instanceof ModuleObject){
+        this.items[i].onSpawn(false);
+      }
+    }
+
+    for(let i = 0; i < this.doors.length; i++){
+      if(this.doors[i] instanceof ModuleObject){
+        this.doors[i].onSpawn(runSpawnScripts);
       }
     }
 
@@ -2916,15 +3058,39 @@ export class ModuleArea extends ModuleObject {
       }
     }
 
+    for(let i = 0; i < this.encounters.length; i++){
+      if(this.encounters[i] instanceof ModuleObject){
+        this.encounters[i].onSpawn(false);
+      }
+    }
+
     for(let i = 0; i < this.waypoints.length; i++){
       if(this.waypoints[i] instanceof ModuleObject){
         this.waypoints[i].onSpawn(runSpawnScripts);
       }
     }
 
-    for(let i = 0; i < this.creatures.length; i++){
-      if(this.creatures[i] instanceof ModuleObject){
-        this.creatures[i].onSpawn(runSpawnScripts);
+    for(let i = 0; i < this.sounds.length; i++){
+      if(this.sounds[i] instanceof ModuleObject){
+        this.sounds[i].onSpawn(false);
+      }
+    }
+
+    for(let i = 0; i < this.placeables.length; i++){
+      if(this.placeables[i] instanceof ModuleObject){
+        this.placeables[i].onSpawn(runSpawnScripts);
+      }
+    }
+
+    for(let i = 0; i < this.stores.length; i++){
+      if(this.stores[i] instanceof ModuleObject){
+        this.stores[i].onSpawn(false);
+      }
+    }
+
+    for(let i = 0; i < this.areaOfEffects.length; i++){
+      if(this.areaOfEffects[i] instanceof ModuleObject){
+        this.areaOfEffects[i].onSpawn(false);
       }
     }
 

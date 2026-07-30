@@ -80,14 +80,13 @@ export class ModuleStore extends ModuleObject {
 
   initProperties(){
     
-    if(!this.initialized){
+    const needsRegister = !this.initialized;
+    if(needsRegister){
       if(this.template.RootNode.hasField('ObjectId')){
         this.id = this.template.getFieldByLabel('ObjectId').getValue();
       }else if(this.template.RootNode.hasField('ID')){
         this.id = this.template.getFieldByLabel('ID').getValue();
       }
-      
-      GameState.ModuleObjectManager.AddObjectById(this);
     }
 
     if(this.template.RootNode.hasField('BuySellFlag'))
@@ -164,6 +163,10 @@ export class ModuleStore extends ModuleObject {
     }
     
     this.loadActionList();
+
+    if(needsRegister){
+      GameState.ModuleObjectManager.RegisterObject(this);
+    }
 
     this.initialized = true;
 

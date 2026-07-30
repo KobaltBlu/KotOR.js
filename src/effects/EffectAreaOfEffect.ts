@@ -69,7 +69,7 @@ export class EffectAreaOfEffect extends GameEffect {
     }
 
     aoe.area = area;
-    GameState.ModuleObjectManager.AddObjectById(aoe);
+    GameState.ModuleObjectManager.RegisterObject(aoe);
     area.attachObject(aoe);
     aoe.loadScripts();
 

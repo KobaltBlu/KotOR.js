@@ -338,6 +338,15 @@ export class ModuleAreaOfEffect extends ModuleObject {
   }
 
   initProperties(): void {
+    const needsRegister = !this.initialized;
+    if(needsRegister){
+      if(this.template.RootNode.hasField('ObjectId')){
+        this.id = this.template.getFieldByLabel('ObjectId').getValue();
+      }else if(this.template.RootNode.hasField('ID')){
+        this.id = this.template.getFieldByLabel('ID').getValue();
+      }
+    }
+
     if(this.template.RootNode.hasField('AreaEffectId'))
       this.areaEffectId = this.template.getFieldByLabel('AreaEffectId').getValue();
 
@@ -445,6 +454,15 @@ export class ModuleAreaOfEffect extends ModuleObject {
         }
       }
     }
+
+    if(this.template.RootNode.hasField('Tag')){
+      this.tag = this.template.getFieldByLabel('Tag').getValue();
+    }
+
+    if(needsRegister){
+      GameState.ModuleObjectManager.RegisterObject(this);
+    }
+    this.initialized = true;
   }
 
   save(): GFFObject {
