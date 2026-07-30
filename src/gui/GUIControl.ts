@@ -1101,6 +1101,10 @@ export class GUIControl {
           return;
         }
 
+        texture.anisotropy = 1;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        texture.needsUpdate = true;
         this.text.texture = texture;
         this.text.material.uniforms.map.value = texture;
         this.text.material.uniforms.diffuse = { value: this.text.color };
@@ -1109,10 +1113,6 @@ export class GUIControl {
         this.text.material.depthWrite = false;
         this.text.material.transparent = true;
         this.text.material.needsUpdate = true;
-        texture.anisotropy = 1;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        texture.needsUpdate = true;
         this.guiFont = new GUIFont(texture);
         this.onFontTextureLoaded();
         this.text.material.visible = true;
