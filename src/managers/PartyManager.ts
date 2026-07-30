@@ -904,43 +904,87 @@ export class PartyManager {
   }
 
   /**
-   * Remove the NPC by the ID
+   * Remove the NPC by the ID.
+   * Retail RemovePartyMember updates the active party list; CurrentMembers (PT_MEMBERS)
+   * must stay in sync or GetPartyMemberCount vs IsNPCPartyMember diverge (k_ptar_duelring).
    * @param npcId - The ID of the NPC to remove
    * @param leaveInWorld - Whether to leave the NPC in the world
-   * @returns void
+   * @returns whether a party creature was removed
    */
   static RemoveNPCById(npcId = 0, leaveInWorld = false): boolean {
     const partyMember = PartyManager.GetPartyMemberByNPCId(npcId);
     if(!partyMember){
+      // Keep CurrentMembers aligned even if the live creature was already gone
+      PartyManager.RemoveCurrentMemberByNPCId(npcId);
       return false;
     }
 
     const pmIndex = PartyManager.party.indexOf(partyMember);
     if(pmIndex == -1){
+      PartyManager.RemoveCurrentMemberByNPCId(npcId);
       return false;
     }
 
-    //Remove the partymember from the module
     partyMember.isPM = false;
     PartyManager.party.splice(pmIndex, 1);
+    PartyManager.RemoveCurrentMemberByNPCId(npcId);
+    PartyManager.RebuildPortraitOrder();
+
     // Retail SetInParty(0) → AI level NORMAL when left in world
     if(leaveInWorld){
       GameState.ServerAIMaster?.setAILevel?.(partyMember, AILevel.NORMAL);
-    }
-    PartyManager.RebuildPortraitOrder();
-
-    if(!leaveInWorld){
-      partyMember.destroy();
-    }else{
       if(partyMember.container){
         partyMember.container.removeFromParent();
       }
       GameState.group.creatures.add(partyMember.container);
       GameState.module.area.attachObject(partyMember);
+    }else{
+      partyMember.destroy();
     }
-    
-    PartyManager.RemoveCurrentMemberByNPCId(npcId);
+
     return true;
+  }
+
+  /**
+   * Remove a specific party creature (when scripts pass an OBJECT into RemovePartyMember).
+   */
+  static RemovePartyMemberCreature(creature: ModuleCreature, leaveInWorld = false): boolean {
+    if(!BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+      return false;
+    }
+    if(creature === PartyManager.Player){
+      return false;
+    }
+
+    const npcId = creature.npcId;
+    const pmIndex = PartyManager.party.indexOf(creature);
+    if(pmIndex >= 0){
+      creature.isPM = false;
+      PartyManager.party.splice(pmIndex, 1);
+      PartyManager.RebuildPortraitOrder();
+
+      if(leaveInWorld){
+        GameState.ServerAIMaster?.setAILevel?.(creature, AILevel.NORMAL);
+        if(creature.container){
+          creature.container.removeFromParent();
+        }
+        GameState.group.creatures.add(creature.container);
+        GameState.module.area.attachObject(creature);
+      }else{
+        creature.destroy();
+      }
+    }
+
+    if(typeof npcId === 'number' && npcId >= 0){
+      PartyManager.RemoveCurrentMemberByNPCId(npcId);
+      if(pmIndex < 0){
+        // npcId known but reference wasn't in party — still try id-based party remove
+        return PartyManager.RemoveNPCById(npcId, leaveInWorld);
+      }
+      return true;
+    }
+
+    return pmIndex >= 0;
   }
 
   static GetPartyMemberByNPCId(npcId = 0){
@@ -1086,14 +1130,16 @@ export class PartyManager {
   }
 
   /**
-   * Check if the NPC is in the party
+   * Check if the NPC is in the live party.
+   * Must use PartyManager.party (same source as GetPartyMemberCount) — not CurrentMembers
+   * alone, or scripts like k_ptar_duelring desync and loop forever.
    * @param npcId - The ID of the NPC to check if it is in the party
    * @returns boolean
    */
   static IsNPCInParty(npcId: number){
-    for(let i = 0; i < PartyManager.CurrentMembers.length; i++){
-      const cpm = PartyManager.CurrentMembers[i];
-      if(cpm.memberID == npcId){
+    for(let i = 0; i < PartyManager.party.length; i++){
+      const pm = PartyManager.party[i];
+      if(pm && pm.npcId == npcId){
         return true;
       }
     }
@@ -1388,13 +1434,23 @@ export class PartyManager {
 
     creature = creature as ModuleCreature;
     creature.isPM = true;
+    creature.npcId = slot;
     creature.clearAllActions();
     PartyManager.NPCS[slot].available = true;
     //PartyManager.NPCS[nID].canSelect = true;
     PartyManager.NPCS[slot].template = creature.template;
     PartyManager.NPCS[slot].moduleObject = creature;
     //Add the creature to the party array
-    PartyManager.party.push(creature);
+    if(PartyManager.party.indexOf(creature) == -1){
+      PartyManager.party.push(creature);
+    }
+    // Keep PT_MEMBERS / CurrentMembers in sync with live party
+    if(!PartyManager.GetCurrentMemberByNPCId(slot)){
+      PartyManager.CurrentMembers.push({
+        isLeader: false,
+        memberID: slot,
+      });
+    }
     // Retail SetInParty → AI level VERY_HIGH
     GameState.ServerAIMaster?.setAILevel?.(creature, AILevel.VERY_HIGH);
     //Check to see if the creature needs to be removed from the creatures array

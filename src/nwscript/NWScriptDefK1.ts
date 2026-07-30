@@ -1888,7 +1888,8 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.OBJECT, NWScriptDataType.EVENT],
     action: function(this: NWScriptInstance, args: [ModuleObject, GameEvent]){
-      // Retail queues an AI event — defer until this script returns (see NWScriptInstance.runScript).
+      // TODO: Retail queues an AI event; do not sync-flush at end of runScript
+      // (that re-enters nested SignalEvent chains and hangs scripts like k_ptar_duelring).
       const event = args[1];
       if(!(event instanceof NWScriptEvent)){
         console.warn('SignalEvent', 'Invalid event argument', args);
@@ -1931,7 +1932,7 @@ NWScriptDefK1.Actions = {
       }
 
       if(BitWise.InstanceOfObject(target, ModuleObjectType.ModuleObject)){
-        this.pendingSignalEvents.push({ target, event: event as NWScriptEvent });
+        target.scriptEventHandler(event);
       }else{
         console.log('SignalEvent', 'ObjectType Mismatch', args, this, this.caller);
       }
@@ -7701,9 +7702,14 @@ NWScriptDefK1.Actions = {
     name: "RemovePartyMember",
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER],
-    action: function(this: NWScriptInstance, args: [number]){
-      const ok = GameState.PartyManager.RemoveNPCById(args[0], true);
-      return ok ? NW_TRUE : NW_FALSE;
+    action: function(this: NWScriptInstance, args: [number | ModuleCreature]){
+      // k_ptar_duelring may pass GetPartyMemberByIndex() (OBJECT) in this INTEGER cell.
+      const arg = args[0];
+      if(BitWise.InstanceOfObject(arg, ModuleObjectType.ModuleCreature)){
+        return GameState.PartyManager.RemovePartyMemberCreature(arg as ModuleCreature, true)
+          ? NW_TRUE : NW_FALSE;
+      }
+      return GameState.PartyManager.RemoveNPCById(arg as number, true) ? NW_TRUE : NW_FALSE;
     }
   },
   576:{
@@ -7756,8 +7762,14 @@ NWScriptDefK1.Actions = {
     name: "SetGlobalNumber",
     type: NWScriptDataType.VOID,
     args: [NWScriptDataType.STRING, NWScriptDataType.INTEGER],
-    action: function(this: NWScriptInstance, args: [string, number]){
-      GameState.GlobalVariableManager.SetGlobalNumber( args[0], args[1] );
+    action: function(this: NWScriptInstance, args: [string, number | ModuleCreature]){
+      // k_ptar_duelring SetGlobalNumber("TAR_ARENANPC"+n, oPM) — oPM is OBJECT on
+      // the stack; duelend restores via NPC_* 0..8, so store npcId for creatures.
+      let value: number = args[1] as number;
+      if(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleCreature)){
+        value = (args[1] as ModuleCreature).npcId;
+      }
+      GameState.GlobalVariableManager.SetGlobalNumber( args[0], value );
     }
   },
   582:{
