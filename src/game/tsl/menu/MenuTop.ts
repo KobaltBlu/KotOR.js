@@ -68,18 +68,18 @@ export class MenuTop extends K1_MenuTop {
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
 
-      this.LBLH_OPT.widget.position.z = 5;
-      this.LBLH_MAP.widget.position.z = 5;
-      this.LBLH_JOU.widget.position.z = 5;
-      this.LBLH_MSG.widget.position.z = 5;
-      this.LBLH_ABI.widget.position.z = 5;
-      this.LBLH_CHA.widget.position.z = 5;
-      this.LBLH_INV.widget.position.z = 5;
-      this.LBLH_EQU.widget.position.z = 5;
-      this.BTN_CHAR.widget.position.z = 5;
-      this.LBL_CHAR1.widget.position.z = 5;
-      this.LBL_CHAR2.widget.position.z = 5;
-      this.LBL_CHAR3.widget.position.z = 5;
+      // this.LBLH_OPT.widget.position.z = 5;
+      // this.LBLH_MAP.widget.position.z = 5;
+      // this.LBLH_JOU.widget.position.z = 5;
+      // this.LBLH_MSG.widget.position.z = 5;
+      // this.LBLH_ABI.widget.position.z = 5;
+      // this.LBLH_CHA.widget.position.z = 5;
+      // this.LBLH_INV.widget.position.z = 5;
+      // this.LBLH_EQU.widget.position.z = 5;
+      // this.BTN_CHAR.widget.position.z = 5;
+      // this.LBL_CHAR1.widget.position.z = 5;
+      // this.LBL_CHAR2.widget.position.z = 5;
+      // this.LBL_CHAR3.widget.position.z = 5;
 
       this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();

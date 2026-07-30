@@ -254,12 +254,6 @@ export class TextureLoader {
 
           await TextureLoader.ParseTXI(texture, tex);
 
-          if(tex.material && tex.material.defines?.hasOwnProperty('GUI_SORT')){
-            tex.material.depthTest = false;
-            tex.material.depthWrite = false;
-            tex.material.transparent = true;
-          }
-
           //Check to see if alpha value is set in the TPC Header
           //I think this has to do with alphaTesting... Not sure...
           if(typeof texture.header === 'object'){
@@ -287,6 +281,12 @@ export class TextureLoader {
               //if(!texture.txi.blending)
               //  tex.material.alphaTest = texture.header.alphaTest;
             }
+          }
+
+          if(tex.material && tex.material.defines?.hasOwnProperty('GUI_SORT')){
+            tex.material.depthTest = false;
+            tex.material.depthWrite = false;
+            tex.material.transparent = true;
           }
 
           //tex.material.needsUpdate = true;

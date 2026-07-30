@@ -28,6 +28,7 @@ import { ModuleMiniGame } from "@/module/ModuleMiniGame";
 import { ModuleMGTrack } from "@/module/ModuleMGTrack";
 import { hitCheckPart } from "@/module/minigame/MGHitCheck";
 import { FollowerCamera } from "@/engine/FollowerCamera";
+import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 
 /** Retail SWMGKeyInfo (0x24) appended by OnReportKey @ 0066dd60. */
 export interface SWMGKeyInfo {
@@ -417,8 +418,11 @@ export class ModuleMGPlayer extends ModuleObject {
     }
 
     for(let i = 0; i < this.container.children.length; i++){
-      const model = this.container.children[i];
-      if(model instanceof OdysseyModel3D && model.bonesInitialized && model.visible){
+      const model = this.container.children[i] as OdysseyModel3D;
+      if(!model){
+        continue;
+      }
+      if(model.bonesInitialized && model.visible){
         model.update(delta);
       }
     }
@@ -778,7 +782,8 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * TSL-only swoop hop: OnFire scripts (SWMG_SetJumpSpeed @ 007fc210), else PLAYER_JUMP_SPEED.
+   * TSL-only swoop hop: prefer OnBrake (211TEL OnBrake=onjump → SWMG_SetJumpSpeed),
+   * else OnFire for K1-style bindings; else PLAYER_JUMP_SPEED.
    * K1 HandleInputEvent always MiniPlayer::Fire (guns) — no jumpSpeed.
    */
   jump(){
@@ -787,7 +792,11 @@ export class ModuleMGPlayer extends ModuleObject {
     if(!miniGame || miniGame.type !== MiniGameType.SWOOPRACE){ return; }
 
     const before = miniGame.jumpSpeed;
-    this.onFire();
+    if(this.scripts[ModuleObjectScript.MGPlayerOnBrake]){
+      this.onBrake();
+    }else{
+      this.onFire();
+    }
     if(miniGame.jumpSpeed === before && miniGame.jumpSpeed <= 0){
       miniGame.setJumpSpeed(ModuleMiniGame.PLAYER_JUMP_SPEED);
     }
@@ -1910,6 +1919,12 @@ export class ModuleMGPlayer extends ModuleObject {
 
   onFire(){
     const instance = this.scripts[ModuleObjectScript.MGPlayerOnFire];
+    if(!instance){ return; }
+    instance.run(this, 0);
+  }
+
+  onBrake(){
+    const instance = this.scripts[ModuleObjectScript.MGPlayerOnBrake];
     if(!instance){ return; }
     instance.run(this, 0);
   }

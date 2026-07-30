@@ -840,6 +840,7 @@ export class IngameControls {
     });
 
     // Keys feed UpdateAxis via resolveMinigameKeyAxis* — do not rotate here.
+    // Swoop accelerate (MGActionUp) is polled in ProcessInput → onAccelerate().
     KeyMapper.Actions[KeyMapAction.MGActionUp].setProcessor( (_keymap, _delta = 0) => {});
 
     KeyMapper.Actions[KeyMapAction.MGActionDown].setProcessor( (_keymap, _delta = 0) => {});
@@ -1224,6 +1225,16 @@ export class IngameControls {
           // Retail ProcessInput: clamp(Poll(L)+Poll(R), -1, 1) — stick and keys sum.
           const x = Math.max(-1, Math.min(1, stickX + keyX));
           mg.updateAxis(x, 0, 0, delta);
+          // Swoop accelerate (W / MGActionUp / pad up) → OnAccelerate every frame while held.
+          // onaccelerate.ncs gates on MIN_RACE_GEAR / speed thresholds (gear 0 → 1+).
+          const accelHeld =
+            !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.keyboardInput?.down
+            || !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.gamepadInput?.pressed
+            || !!KeyMapper.Actions[KeyMapAction.MGActionUp]?.gamepadInput?.down
+            || !!KeyMapper.Actions[KeyMapAction.ActionUp]?.keyboardInput?.down;
+          if(accelHeld && GameState.State == EngineState.RUNNING && mg.player?.running){
+            mg.player.onAccelerate();
+          }
         }else if(mg.type === MiniGameType.TURRET){
           // Retail: UpdateAxis(x,0,z); optional negate Z for Reverse Minigame YAxis.
           const x = Math.max(-1, Math.min(1, stickX + keyX));

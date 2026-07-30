@@ -2490,9 +2490,14 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Load the active party members
+   * Load the active party members.
+   * Minigame areas leave party empty (see loadPlayer) — companions would otherwise
+   * land at PortraitOrder indices with party[0] unset, which breaks GetObjectByTag.
    */
   async loadParty(): Promise<void> {
+    if(this.miniGame){
+      return;
+    }
     console.log('Loading Party Member');
     for(let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++){
       await GameState.PartyManager.LoadPartyMember(i);
