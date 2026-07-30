@@ -1777,11 +1777,12 @@ export class GameState implements EngineContext {
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
     
-    //Handle the visibility of the PAUSE overlay
+    //Handle the visibility of the PAUSE overlay (retail SetPaused reason set)
     if(
       GameState.State == EngineState.PAUSED &&
       !GameState.timeStopActive &&
-      GameState.MenuManager.InGameOverlay.isVisible()
+      GameState.MenuManager.InGameOverlay.isVisible() &&
+      GameState.AutoPauseManager.ShowsPauseOverlay(GameState.AutoPauseManager.CurrentReason)
     ){
       if(!GameState.MenuManager.InGamePause.isVisible())
         GameState.MenuManager.InGamePause.show();
@@ -1821,11 +1822,12 @@ export class GameState implements EngineContext {
     GameState.module.area.updateRoomWindUniforms();
     GameState.CameraShakeManager.update(delta, GameState.currentCamera);
     
-    //Handle the visibility of the PAUSE overlay
+    //Handle the visibility of the PAUSE overlay (retail SetPaused reason set)
     if(
       GameState.State == EngineState.PAUSED &&
       !GameState.timeStopActive &&
-      GameState.MenuManager.InGameOverlay.isVisible()
+      GameState.MenuManager.InGameOverlay.isVisible() &&
+      GameState.AutoPauseManager.ShowsPauseOverlay(GameState.AutoPauseManager.CurrentReason)
     ){
       if(!GameState.MenuManager.InGamePause.isVisible())
         GameState.MenuManager.InGamePause.show();
@@ -1861,7 +1863,8 @@ export class GameState implements EngineContext {
     // Pause banner — MG has no InGameOverlay, so do not gate on it.
     if(
       GameState.State == EngineState.PAUSED &&
-      !GameState.timeStopActive
+      !GameState.timeStopActive &&
+      GameState.AutoPauseManager.ShowsPauseOverlay(GameState.AutoPauseManager.CurrentReason)
     ){
       if(!GameState.MenuManager.InGamePause.isVisible())
         GameState.MenuManager.InGamePause.show();

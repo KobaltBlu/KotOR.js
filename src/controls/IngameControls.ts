@@ -851,7 +851,8 @@ export class IngameControls {
 
     KeyMapper.Actions[KeyMapAction.PauseMinigame].setProcessor( (keymap) => {
       if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
-      GameState.State = ( GameState.State == EngineState.PAUSED ? EngineState.RUNNING : EngineState.PAUSED );
+      // Same manual combat-pause reason 4 as TB_PAUSE (retail pause overlay path)
+      GameState.AutoPauseManager.ToggleManualPause();
     });
 
     KeyMapper.Actions[KeyMapAction.MGshoot].setProcessor( (keymap) => {
@@ -887,11 +888,8 @@ export class IngameControls {
 
       const currentMenu = GameState.MenuManager.GetCurrentMenu();
       if(currentMenu == GameState.MenuManager.InGameOverlay){
-        if(GameState.State == EngineState.RUNNING){
-          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
-        }else{
-          GameState.AutoPauseManager.Unpause();
-        }
+        // Retail pause key — same as TB_PAUSE / OnPauseButtonPressed (reason 4)
+        GameState.AutoPauseManager.ToggleManualPause();
       }else if( currentMenu == GameState.MenuManager.InGameConfirm){
         GameState.MenuManager.InGameConfirm.close();
       }

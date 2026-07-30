@@ -1,4 +1,3 @@
-import { EngineState } from "@/enums/engine/EngineState";
 import { Anchor } from "@/enums/gui/Anchor";
 import { GameState } from "@/GameState";
 import { LBL_MapView } from "@/gui";
@@ -266,15 +265,10 @@ export class InGameOverlay extends K1_InGameOverlay {
         this.manager.MenuEquipment.open();
       });
 
+      // Retail OnPauseButtonPressed — SetPausedByCombat toggle reason 4, clear auto-pause
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
-        
-        if(GameState.State == EngineState.PAUSED){
-          GameState.AutoPauseManager.Unpause();
-        }else{
-          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
-        }
-
+        GameState.AutoPauseManager.ToggleManualPause();
       });
 
       this.TB_SOLO.addEventListener('click', (e) => {

@@ -9,7 +9,6 @@ import * as THREE from "three";
 import { Anchor } from "@/enums/gui/Anchor";
 import { SSFType } from "@/enums/resource/SSFType";
 import { TalentObject } from "@/talents";
-import { EngineState } from "@/enums/engine/EngineState";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { BitWise } from "@/utility/BitWise";
 import { KeyMapAction, ModuleObjectType } from "@/enums";
@@ -350,15 +349,10 @@ export class InGameOverlay extends GameMenu {
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_EQUIPMENT].Value
       );
 
+      // Retail OnPauseButtonPressed — SetPausedByCombat toggle reason 4, clear auto-pause
       this.TB_PAUSE.addEventListener('click', (e) => {
         e.stopPropagation();
-
-        if(GameState.State == EngineState.PAUSED){
-          GameState.AutoPauseManager.Unpause();
-        }else{
-          GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.Generic);
-        }
-
+        GameState.AutoPauseManager.ToggleManualPause();
       }).setKeymapAction(KeyMapAction.Pause).setTooltipText(
         GameState.TLKManager.TLKStrings[TLK_TOOLTIP_PAUSE].Value
       );
