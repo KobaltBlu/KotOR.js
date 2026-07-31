@@ -15,7 +15,7 @@ jest.mock('@/engine/pathfinding/test-direct-line', () => ({
   })),
 }));
 
-import { getMeleeBackoffIdeal, resolveMeleeBackoff } from '@/combat/melee-backoff';
+import { getMeleeBackoffIdeal, resolveMeleeBackoff, resolveMeleeTooCloseHysteresis } from '@/combat/melee-backoff';
 import { testDirectLine } from '@/engine/pathfinding/test-direct-line';
 
 describe('getMeleeBackoffIdeal', () => {
@@ -70,5 +70,35 @@ describe('resolveMeleeBackoff', () => {
     expect(r.position.x).toBeCloseTo(6, 5);
     expect(r.clippedDesired).toBeCloseTo(4, 5);
     attacker.area = undefined;
+  });
+});
+
+describe('resolveMeleeTooCloseHysteresis', () => {
+  const desired = 2.1;
+  const desiredSq = desired * desired;
+
+  it('enters tooClose only below desired²−0.2', () => {
+    const justInside = resolveMeleeTooCloseHysteresis(desiredSq - 0.1, desiredSq, false);
+    expect(justInside.tooClose).toBe(false);
+    expect(justInside.active).toBe(false);
+
+    const deep = resolveMeleeTooCloseHysteresis(desiredSq - 0.25, desiredSq, false);
+    expect(deep.tooClose).toBe(true);
+    expect(deep.active).toBe(true);
+  });
+
+  it('stays active until dist² ≥ desired² (no immediate re-queue at Desired)', () => {
+    let latch = resolveMeleeTooCloseHysteresis(desiredSq - 0.25, desiredSq, false);
+    expect(latch.active).toBe(true);
+
+    // At Desired−ε still tooClose while latched
+    latch = resolveMeleeTooCloseHysteresis(desiredSq - 0.05, desiredSq, true);
+    expect(latch.tooClose).toBe(true);
+    expect(latch.active).toBe(true);
+
+    // At/above Desired — leave backoff
+    latch = resolveMeleeTooCloseHysteresis(desiredSq, desiredSq, true);
+    expect(latch.tooClose).toBe(false);
+    expect(latch.active).toBe(false);
   });
 });

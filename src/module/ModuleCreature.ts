@@ -182,7 +182,9 @@ export function createDefaultPartyFollowInfo(): CreaturePartyFollowInfo {
     stickToPos: 0,
     result: 2,
     timeElapsed: 0,
-    inSafetyRange: 1,
+    // Retail party-member field22 defaults 0 after place/reset; only saved
+    // FollowInfo.InSafetyRange=1 should hold chase until leader ≥7.
+    inSafetyRange: 0,
   };
 }
 

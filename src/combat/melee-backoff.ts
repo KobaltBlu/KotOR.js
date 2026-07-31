@@ -34,6 +34,25 @@ export type MeleeBackoffResult = {
 };
 
 /**
+ * NPC melee too-close latch — enter at desired²−0.2, leave only when
+ * dist² ≥ desired² (stops Desired↔tooClose bounce on mutual sprint).
+ */
+export function resolveMeleeTooCloseHysteresis(
+  distSq: number,
+  desiredSq: number,
+  active: boolean
+): { tooClose: boolean; active: boolean } {
+  if(active){
+    const tooClose = distSq < desiredSq;
+    return { tooClose, active: tooClose };
+  }
+  if(distSq < desiredSq - 0.2){
+    return { tooClose: true, active: true };
+  }
+  return { tooClose: false, active: false };
+}
+
+/**
  * Ideal stand point at `desired` meters from `target` on the attacker side
  * of the target (retail: target − normalize(towardTarget) * desired).
  */

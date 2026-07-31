@@ -2362,11 +2362,17 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleCreature)){
-        const obj = args[0] as ModuleCreature;
-        return obj.getCommadable() ? NW_TRUE : NW_FALSE;
+      // Retail reads CSWSObject commandable (field49_0xe8) for any object —
+      // placeables (e.g. k_ptar_invis_speaker) must pass GetCommandable so
+      // k_ai_master OnDialog can BeginConversation after duels.
+      if(BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        const obj = args[0] as ModuleObject;
+        if(typeof (obj as any).getCommadable === 'function'){
+          return (obj as any).getCommadable() ? NW_TRUE : NW_FALSE;
+        }
+        return obj.commandable ? NW_TRUE : NW_FALSE;
       }
-      return 0;
+      return NW_FALSE;
     }
   },
   164:{

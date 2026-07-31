@@ -12,7 +12,7 @@ import { duelLog, duelWho } from "@/combat/duel-debug";
 import { hasTargetBeenDetected } from "@/combat/nearest-enemy";
 import { tryStuckLosRetarget } from "@/combat/initialize-new-attack-target";
 import { getNearestActionPoint } from "@/combat/nearest-action-point";
-import { resolveMeleeBackoff } from "@/combat/melee-backoff";
+import { resolveMeleeBackoff, resolveMeleeTooCloseHysteresis } from "@/combat/melee-backoff";
 import { ModuleObjectConstant, ModuleObjectType, SSFType } from "@/enums";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
@@ -43,6 +43,9 @@ import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionPhysicalAttacks extends Action {
+
+  /** NPC melee backoff latch — leave only when dist² ≥ desired². */
+  private meleeBackoffActive = false;
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -116,9 +119,19 @@ export class ActionPhysicalAttacks extends Action {
     const desiredSq = desired * desired;
 
     // Retail: too far OR (too close by desired²−0.2 when not party-ui) OR no LOS
+    // Hysteresis: enter at desired²−0.2, stay until dist² ≥ desired²
     const tooFar = distSq > maxSq;
-    const tooClose = distSq < desiredSq - 0.2;
     const isPartyMember = GameState.PartyManager.party.indexOf(owner) >= 0;
+    let tooClose = false;
+    if(!isPartyMember && !owner.isRangedEquipped()){
+      const latch = resolveMeleeTooCloseHysteresis(
+        distSq,
+        desiredSq,
+        this.meleeBackoffActive
+      );
+      tooClose = latch.tooClose;
+      this.meleeBackoffActive = latch.active;
+    }
     const hasLos = hasCombatLineOfSight(owner, target, max);
     const needCloseOrBack =
       tooFar || (tooClose && !isPartyMember && !owner.isRangedEquipped());

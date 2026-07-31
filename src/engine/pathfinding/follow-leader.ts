@@ -18,12 +18,24 @@ export const FOLLOW_COMFORT = 2.0;
 export const FOLLOW_REPATH = 3.5;
 /** Retail local_44 >= 16 → dist >= 4 to offset goal uses run. */
 export const FOLLOW_RUN_DIST = 4.0;
+/** Drop run only below this after having been running (hysteresis). */
+export const FOLLOW_RUN_DROP = 3.0;
 /** Retail local_44 >= 225 → dist 15; beyond this we teleport forward. */
 export const FOLLOW_TELEPORT_DIST = 15.0;
 /** Seconds of failed/short hops while Moving → teleport. */
 export const FOLLOW_STUCK_SEC = 2.5;
 /** Retail field11_0x44 abort → Reset after 50 inner iterations. */
 export const FOLLOW_STUCK_ITERATIONS = 50;
+/**
+ * Retail WaitingForPath @ 005127d0 — hold until follow ring count > 4
+ * (`field3_0xfa8`).
+ */
+export const FOLLOW_RING_WARM_COUNT = 4;
+/**
+ * Retail field22_0x70 safety gate: chase only when not in-safety OR
+ * leader distance² ≥ 49 (dist ≥ 7).
+ */
+export const FOLLOW_SAFETY_DIST_SQ = 49.0;
 
 /**
  * Retail party-member field1_0x4 cases from
@@ -66,6 +78,15 @@ export type FollowLeaderRuntime = {
   pathPointX: number;
   pathPointY: number;
   pathPointZ: number;
+  /**
+   * Retail party-member field22_0x70 / FollowInfo.InSafetyRange —
+   * when set, WaitingForPath holds until leader is ≥7 units away.
+   */
+  inSafetyRange: number;
+  /** Run/walk hysteresis latch for shouldFollowRun. */
+  wasRunning: boolean;
+  /** True when Offset Advanced along the trail this frame (don't parkIdle). */
+  offsetStepped: boolean;
 };
 
 export function createFollowRuntime(): FollowLeaderRuntime {
@@ -83,17 +104,26 @@ export function createFollowRuntime(): FollowLeaderRuntime {
     pathPointX: 0,
     pathPointY: 0,
     pathPointZ: 0,
+    inSafetyRange: 0,
+    wasRunning: false,
+    offsetStepped: false,
   };
 }
 
 /**
- * Distance-based run flag (retail scales rate by dist² bands).
+ * Distance-based run flag with hysteresis (enter ≥4, leave &lt;3).
  */
 export function shouldFollowRun(
   distToLeader: number,
-  distToOffset: number
+  distToOffset: number,
+  wasRunning: boolean = false
 ): boolean {
-  return distToLeader >= FOLLOW_RUN_DIST || distToOffset >= FOLLOW_RUN_DIST;
+  const enter = distToLeader >= FOLLOW_RUN_DIST || distToOffset >= FOLLOW_RUN_DIST;
+  if(enter) return true;
+  if(wasRunning){
+    return distToLeader >= FOLLOW_RUN_DROP || distToOffset >= FOLLOW_RUN_DROP;
+  }
+  return false;
 }
 
 export function isFollowMovingState(state: FollowLeaderState): boolean {
@@ -118,15 +148,33 @@ export function isFollowWaitState(state: FollowLeaderState): boolean {
 /**
  * High-level entry: far/stuck → Teleport; else keep or enter approach states.
  * Detailed transitions happen inside stepFollowLeaderState.
+ *
+ * Retail Teleport (10) is ring soft-catch-up (TeleportForward → MovingToPath),
+ * not JumpToPoint. Do not force Teleport while the follow ring is still cold —
+ * Jump fallback would target feet (cold GetFollowPosition) and spam.
  */
 export function resolveFollowEntryState(
   distToLeader: number,
   distToOffset: number,
   current: FollowLeaderState,
-  stuckTimer: number
+  stuckTimer: number,
+  ringCount: number = 99
 ): FollowLeaderState {
-  if(distToLeader >= FOLLOW_TELEPORT_DIST || stuckTimer >= FOLLOW_STUCK_SEC){
+  if(stuckTimer >= FOLLOW_STUCK_SEC){
     return FollowLeaderState.Teleport;
+  }
+
+  if(distToLeader >= FOLLOW_TELEPORT_DIST){
+    // Need a warm ring for TeleportForward; otherwise hold/wait
+    if(ringCount > FOLLOW_RING_WARM_COUNT){
+      return FollowLeaderState.Teleport;
+    }
+    if(isFollowWaitState(current) || current === FollowLeaderState.Reset){
+      return current === FollowLeaderState.Reset
+        ? FollowLeaderState.WaitingForPath
+        : current;
+    }
+    return FollowLeaderState.WaitingForPath;
   }
 
   if(current === FollowLeaderState.Reset){

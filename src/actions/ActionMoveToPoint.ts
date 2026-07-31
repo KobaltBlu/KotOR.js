@@ -102,9 +102,8 @@ export class ActionMoveToPoint extends Action {
       }
 
       if(this.shouldRepathToMovingTarget(distanceToLive)){
-        this.enqueueMoveToLiveTarget(range, moveFlags);
-        this.setComputedPath(undefined);
-        return ActionStatus.COMPLETE;
+        // In-place live chase — keep walkSpeedFactor (no COMPLETE / dispose)
+        this.repathToLiveTargetInPlace();
       }
     }
 
@@ -188,9 +187,15 @@ export class ActionMoveToPoint extends Action {
       if(chaseLive){
         const liveDist = Utility.Distance2D(owner.position, this.target.position);
         if(liveDist > range){
-          this.enqueueMoveToLiveTarget(range, moveFlags);
-          this.setComputedPath(undefined);
-          return ActionStatus.COMPLETE;
+          // Arrived at stale path end but live target still out — repath in place
+          this.repathToLiveTargetInPlace();
+          if(this.computedPath?.points?.length){
+            const next = this.computedPath.points[0];
+            if(next){
+              this.stepWalkUpdate(owner, next.vector, run, delta);
+            }
+            return ActionStatus.IN_PROGRESS;
+          }
         }
       }
       this.stopMoving(owner);
@@ -206,7 +211,20 @@ export class ActionMoveToPoint extends Action {
     owner.walk = !run;
     owner.force = 0;
 
-    const remaining = this.pathRemaining(owner);
+    let remaining = this.pathRemaining(owner);
+    // Live chase: ease against distance-to-target−arrive so SQRT engages earlier
+    if(
+      this.target &&
+      BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
+    ){
+      const range = this.getParameter<number>(6) || 0.1;
+      const liveGap = Math.max(
+        0,
+        Utility.Distance2D(owner.position, this.target.position) - range
+      );
+      remaining = Math.max(remaining, liveGap);
+    }
+
     const shortPath = (this.computedPath?.points?.length ?? 0) <= 2;
     const dx = goal.x - owner.position.x;
     const dy = goal.y - owner.position.y;
@@ -260,6 +278,31 @@ export class ActionMoveToPoint extends Action {
     if(storedToLive < 0.001) return false;
     const threshold = Math.max(2.0, distanceToLive * 0.4);
     return storedToLive > threshold;
+  }
+
+  /**
+   * Update dest + replot on the same action — preserves walkSpeedFactor.
+   * Used instead of COMPLETE → enqueueMoveToLiveTarget for ordinary chase drift.
+   */
+  repathToLiveTargetInPlace(){
+    if(!this.target || !this.owner?.area) return;
+
+    let dest = this.real_target_position.clone();
+    if(typeof this.owner.area.getNearestWalkablePoint === 'function'){
+      dest = this.owner.area.getNearestWalkablePoint(dest, getPathPersonalSpace(this.owner));
+    }
+
+    this.target_position.copy(dest);
+    this.setParameter(0, ActionParameterType.FLOAT, dest.x);
+    this.setParameter(1, ActionParameterType.FLOAT, dest.y);
+    this.setParameter(2, ActionParameterType.FLOAT, dest.z);
+    // Clear path only — do not stopMoving / clearLocomotionState
+    this.setComputedPath(undefined);
+    if(this.pathFindInfo){
+      this.pathFindInfo.dest.copy(dest);
+      this.pathFindInfo.origin.copy(this.owner.position);
+    }
+    this.calculatePath();
   }
 
   enqueueMoveToLiveTarget(range: number, moveFlags: number){

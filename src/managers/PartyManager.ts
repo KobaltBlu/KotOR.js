@@ -1945,8 +1945,9 @@ export class PartyManager {
 
   /**
    * Get the follow position of the creature at the index.
-   * Prefers RecaulateFollowPoint center-trail goal when the ring is warm
-   * (retail @ 006359c0); falls back to lateral offset behind the live leader.
+   * Prefers formation-lateral approach goal on a warm ring (count > 4);
+   * Recalc/Teleport still use center trail. Cold ring returns the companion's
+   * current position so WaitingForPath does not chase a live ±1.5m lateral.
    */
   static GetFollowPositionAtIndex(idx: number = 1){
     const leader = PartyManager.party[0];
@@ -1967,6 +1968,15 @@ export class PartyManager {
           : point);
     };
 
+    // Retail WaitingForPath holds until count > 4 — keep cold goals at feet
+    if(partyFollowPath.count <= 4){
+      return this.#tmpFollowPosition.copy(creature.position);
+    }
+
+    if(idx >= 1 && idx <= 2 && partyFollowPath.getApproachGoal(idx, this.#tmpFollowPosition)){
+      return snapWalkable(this.#tmpFollowPosition);
+    }
+
     if(idx >= 1 && idx <= 2 && partyFollowPath.getFollowGoal(idx, this.#tmpFollowPosition)){
       return snapWalkable(this.#tmpFollowPosition);
     }
@@ -1975,9 +1985,9 @@ export class PartyManager {
       return this.#tmpFollowPosition.copy(creature.position);
     }
 
+    // Warm-ring fallback only (should be rare): live formation lateral
     const offsets = PartyManager.getFormationOffsets();
     const targetOffset = (idx == 2) ? (offsets[2]?.x ?? -1.5) : (offsets[1]?.x ?? 1.5);
-    // Prefer active formation lateral X; fall back to ±1.5 when pattern-1 zeros.
     const lateral = Math.abs(targetOffset) > 1e-4 ? targetOffset : (idx == 2 ? -1.5 : 1.5);
 
     this.#tmpFollowPositionTarget.set(

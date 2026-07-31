@@ -122,12 +122,17 @@ export class ActionDialogObject extends Action {
     // Retail ActionDialogObject fires OnDialog on oObjectToConverseWith (creatures,
     // doors, placeables). Pass only an explicit resref DLG; blank leaves
     // instance.conversation unset so BeginConversation matches StartDialog.
+    // If OnDialog runs but does not enter dialog (e.g. GetCommandable failed),
+    // fall through to direct start — Deadeye invis speaker depends on this.
     GameState.CutsceneManager.setDialogNonDependantNames(ignoreNames);
-    if(typeof this.target.onDialog === 'function' && this.target.onDialog(this.owner, -1, this.conversation)){
-      return ActionStatus.COMPLETE;
+    if(typeof this.target.onDialog === 'function'){
+      this.target.onDialog(this.owner, -1, this.conversation);
+      if(GameState.Mode == EngineMode.DIALOG || GameState.CutsceneManager?.active){
+        return ActionStatus.COMPLETE;
+      }
     }
 
-    // No OnDialog script — same ownership/resref rules as BeginConversation.
+    // No OnDialog script / dialog not started — same ownership/resref rules as BeginConversation.
     const dialogOwner = resolveDialogStartOwner(this.target, this.owner);
     const other = dialogOwner === this.target ? (effectiveListener || this.owner) : this.target;
     const dialog = resolveBeginConversationDialog('', this.conversation, dialogOwner);

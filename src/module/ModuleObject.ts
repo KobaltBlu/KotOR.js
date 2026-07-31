@@ -251,7 +251,7 @@ export class ModuleObject {
   linkedTo: string = '';
   transitionDestin: CExoLocString = new CExoLocString();
   description: any;
-  commandable: any;
+  commandable: any = true;
   autoRemoveKey: any;
   animState: any;
   keyName: any;
@@ -2477,11 +2477,18 @@ export class ModuleObject {
   }
 
   /**
-   * Set the commadable
-   * @param arg0 
+   * Set the commandable state (retail CSWSObject field49_0xe8).
    */
   setCommadable(arg0: any) {
-    console.warn("Method not implemented.", this.tag);
+    this.commandable = !!arg0;
+  }
+
+  /**
+   * Get the commandable state. Placeables default true; creatures override
+   * with isCommandable (debuffs / SetCommandable).
+   */
+  getCommadable(){
+    return !!this.commandable;
   }
 
   /**
@@ -3949,7 +3956,7 @@ export class ModuleObject {
    * @param arg0 
    */
   setCommandable(arg0: boolean) {
-    console.warn("Method not implemented.", this.tag);
+    this.setCommadable(arg0);
   }
 
   /**

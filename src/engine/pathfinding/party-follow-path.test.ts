@@ -87,3 +87,42 @@ describe("ProcessPoint formation laterals", () => {
     expect(entry.offset1y).toBeCloseTo(entry.y + r1y, 5);
   });
 });
+
+describe("advancePointOnPath", () => {
+  it("advances toward the goal cursor by budget and clamps when within budget", () => {
+    const ring = new PartyFollowPath();
+    const leader = {
+      position: new THREE.Vector3(0, 0, 0),
+      rotation: { z: 0 },
+    } as unknown as ModuleCreature;
+
+    for(let i = 0; i < 25; i++){
+      leader.position.set(i * 0.6, 0, 0);
+      ring.processPoint(leader, undefined);
+    }
+    ring.recalculateFollowPoints();
+
+    const goal = new THREE.Vector3();
+    expect(ring.getFollowGoal(1, goal)).toBe(true);
+    // Point cursor at the Recalc goal ring index so we walk toward it
+    ring.memberCursor[1] = ring.memberGoalIndex[1];
+
+    const from = goal.clone();
+    from.x -= 2.0;
+
+    const out = new THREE.Vector3();
+    const idx = { value: 0 };
+    const left = ring.advancePointOnPath(1.0, 1, from, out, idx);
+
+    expect(out.x).toBeGreaterThan(from.x);
+    expect(out.x).toBeLessThanOrEqual(goal.x + 1e-4);
+    expect(left).toBeGreaterThanOrEqual(0);
+
+    // Large budget snaps to Recalc goal
+    const snapped = new THREE.Vector3();
+    const idx2 = { value: 0 };
+    ring.advancePointOnPath(50, 1, from, snapped, idx2);
+    expect(snapped.x).toBeCloseTo(goal.x, 4);
+    expect(snapped.y).toBeCloseTo(goal.y, 4);
+  });
+});
