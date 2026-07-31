@@ -7,7 +7,7 @@ import type { GFFStruct } from "@/resource/GFFStruct";
 import { GameState } from "@/GameState";
 import { GameEngineType } from "@/enums/engine";
 import { TextureLoader } from "@/loaders";
-import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import { asExtentInt, truncDiv, skillFlowArrowExtentLeft, skillFlowCenteredXFromExtentLeft, skillFlowSlotExtentLeft } from "@/gui/GUICoord";
 import {
   ABILITY_LOCKED_ICON_ALPHA,
   applyAbilityButtonTexture,
@@ -82,8 +82,11 @@ export class GUISpellItem extends GUIProtoItem {
         buttonIcon.disableTextAlignment();
         buttonIcon.setExtentWidth(iconHeight);
         buttonIcon.setExtentHeight(iconHeight);
-        buttonIcon.setExtentTop(0);
-        buttonIcon.setExtentLeft(0);
+        const iconW = asExtentInt(buttonIcon.extent.width);
+        const iconH = asExtentInt(buttonIcon.extent.height);
+        const slotLeft = skillFlowSlotExtentLeft(i, protoWidth, iconW);
+        buttonIcon.setExtentLeft(slotLeft);
+        buttonIcon.setExtentTop(truncDiv(iconHeight - iconH, 2));
         buttonIcon.hasBorder = false;
         buttonIcon.hasHighlight = false;
         buttonIcon.hasText = false;
@@ -91,17 +94,7 @@ export class GUISpellItem extends GUIProtoItem {
         this.children.push(buttonIcon);
 
         const _buttonIconWidget = buttonIcon.createControl();
-        switch(i){
-          case 2:
-            _buttonIconWidget.position.x = truncDiv(protoWidth - asExtentInt(buttonIcon.extent.width), 2);
-            break;
-          case 1:
-            _buttonIconWidget.position.x = 0;
-            break;
-          default:
-            _buttonIconWidget.position.x = -truncDiv(protoWidth - asExtentInt(buttonIcon.extent.width), 2);
-            break;
-        }
+        _buttonIconWidget.position.x = skillFlowCenteredXFromExtentLeft(slotLeft, iconW, protoWidth);
         _buttonIconWidget.position.y = 0;
         _buttonIconWidget.position.z = this.zIndex + 1;
         this.widget.add(_buttonIconWidget);
@@ -145,7 +138,6 @@ export class GUISpellItem extends GUIProtoItem {
 
         _buttonIconWidget.add(iconSprite);
 
-        const arrowOffset = truncDiv(truncDiv(protoWidth - asExtentInt(buttonIcon.extent.width), 2), 2);
         if(i > 0){
           const arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
           arrowIcon.name = 'ARROW';
@@ -153,8 +145,9 @@ export class GUISpellItem extends GUIProtoItem {
           arrowIcon.disableTextAlignment();
           arrowIcon.setExtentWidth(arrowHeight);
           arrowIcon.setExtentHeight(arrowHeight);
-          arrowIcon.setExtentTop(0);
-          arrowIcon.setExtentLeft(0);
+          const arrowLeft = skillFlowArrowExtentLeft(i, protoWidth, iconW, arrowHeight);
+          arrowIcon.setExtentLeft(arrowLeft);
+          arrowIcon.setExtentTop(truncDiv(iconHeight - arrowHeight, 2));
           arrowIcon.hasBorder = false;
           arrowIcon.hasHighlight = false;
           arrowIcon.disableBorder();
@@ -164,14 +157,7 @@ export class GUISpellItem extends GUIProtoItem {
           this.children.push(arrowIcon);
 
           const _arrowIconWidget = arrowIcon.createControl();
-          switch(i){
-            case 2:
-              _arrowIconWidget.position.x = arrowOffset;
-              break;
-            case 1:
-              _arrowIconWidget.position.x = -arrowOffset;
-              break;
-          }
+          _arrowIconWidget.position.x = skillFlowCenteredXFromExtentLeft(arrowLeft, arrowHeight, protoWidth);
           _arrowIconWidget.position.y = 0;
           _arrowIconWidget.position.z = this.zIndex + 1;
           this.widget.add(_arrowIconWidget);

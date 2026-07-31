@@ -269,6 +269,40 @@ export function selectTopmostHitChildIndex(
 }
 
 /**
+ * Skill-flow row slot extent.left (parent-local, top-left) for feat/power icons.
+ * Indices 0/1/2 = left / center / right; matches centered widget.position.x layout.
+ */
+export function skillFlowSlotExtentLeft(slotIndex: number, protoWidth: number, slotWidth: number): number {
+  const pw = asExtentInt(protoWidth);
+  const w = asExtentInt(slotWidth);
+  switch (slotIndex) {
+    case 2: return pw - w;
+    case 1: return truncDiv(pw - w, 2);
+    default: return 0;
+  }
+}
+
+/** Centered Three.js X within the row from a parent-local extent.left. */
+export function skillFlowCenteredXFromExtentLeft(extentLeft: number, slotWidth: number, protoWidth: number): number {
+  return asExtentInt(extentLeft) + truncDiv(asExtentInt(slotWidth), 2) - truncDiv(asExtentInt(protoWidth), 2);
+}
+
+/**
+ * Arrow between slots: centered X is ±trunc(trunc(protoW - iconW, 2), 2).
+ * Returns parent-local extent.left for hit-testing.
+ */
+export function skillFlowArrowExtentLeft(
+  slotIndex: number,
+  protoWidth: number,
+  iconWidth: number,
+  arrowWidth: number,
+): number {
+  const gapHalf = truncDiv(truncDiv(asExtentInt(protoWidth) - asExtentInt(iconWidth), 2), 2);
+  const centeredX = slotIndex === 2 ? gapHalf : -gapHalf;
+  return asExtentInt(centeredX) + truncDiv(asExtentInt(protoWidth), 2) - truncDiv(asExtentInt(arrowWidth), 2);
+}
+
+/**
  * Convert centered Y-up UI mouse into list-control-local top-left Y-down ints
  * using the list's world/UI AABB (`GUIControl.box` / `calculateBox`).
  *

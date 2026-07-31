@@ -1727,6 +1727,8 @@ export class GUIControl {
    * List rows store extents in list viewport-local space (HitCheckMouseLocal @ 0041a5e0).
    * Row mouse is derived from the list world/UI box so viewport-docked lists
    * (dialog LB_REPLIES) still pick correctly when extent.left/top are not panel-local.
+   * Nested children of a list row keep parent-local extents — compose with ancestor
+   * row extents before HitCheckMouseLocal (feat/power skill-flow slots).
    * Anchored HUD controls are viewport-pinned; test their integer world box instead.
    */
   hitCheckMouse(localX: number, localY: number): boolean {
@@ -1744,7 +1746,32 @@ export class GUIControl {
       const shrink = asExtentInt(list.getShrinkWidth());
       const viewportX = list.isScrollBarLeft() ? borderSize + shrink : borderSize;
       const viewportY = borderSize;
-      return hitCheckMouseLocal(this.extent, listLocal.x - viewportX, listLocal.y - viewportY);
+      const vx = listLocal.x - viewportX;
+      const vy = listLocal.y - viewportY;
+
+      // Nested under a list row: extent is parent-local, not list-viewport-local.
+      if (this.parent && this.parent !== list) {
+        let left = asExtentInt(this.extent.left);
+        let top = asExtentInt(this.extent.top);
+        let ancestor: GUIControl | undefined = this.parent;
+        while (ancestor && ancestor !== list) {
+          left += asExtentInt(ancestor.extent.left);
+          top += asExtentInt(ancestor.extent.top);
+          ancestor = ancestor.parent;
+        }
+        return hitCheckMouseLocal(
+          {
+            left,
+            top,
+            width: asExtentInt(this.extent.width),
+            height: asExtentInt(this.extent.height),
+          },
+          vx,
+          vy,
+        );
+      }
+
+      return hitCheckMouseLocal(this.extent, vx, vy);
     }
     if (this.anchor && this.anchor !== Anchor.None) {
       const ui = this.getCenteredUIMouseInt();
