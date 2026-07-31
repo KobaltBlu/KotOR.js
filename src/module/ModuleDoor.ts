@@ -984,7 +984,7 @@ export class ModuleDoor extends ModuleObject {
   onExit(object: ModuleObject){
     object.lastDoorEntered = undefined;
     if(this.getLinkedToModule()){
-      GameState.MenuManager.InGameAreaTransition.setTransitionObject(undefined);
+      GameState.MenuManager.InGameAreaTransition.unsetTransitionObject(this);
     }
   }
 

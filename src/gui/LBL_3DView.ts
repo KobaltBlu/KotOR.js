@@ -6,6 +6,12 @@ import type { GUIControl } from "@/gui/GUIControl";
 import { asExtentInt } from "@/gui/GUICoord";
 
 /**
+ * Retail Camera::SetViewAngle value used by ClassSel / MainCG / PORTCUST /
+ * Setup3DScene / Upgrade (0x41b5ced9 ≈ 22.726).
+ */
+export const GUI_3D_VIEW_FOV = 22.72;
+
+/**
  * LBL_3DView class.
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -44,6 +50,9 @@ export class LBL_3DView {
    */
   lightFocus = new THREE.Vector3(0, 0, 0);
 
+  /** Scratch for AttachTranslate local-space offsets. */
+  private static readonly _tmpOffset = new THREE.Vector3();
+
   /** Standalone fallback only; prefer control extent via setControl. */
   constructor(width: number = 1, height: number = 1){
 
@@ -54,7 +63,7 @@ export class LBL_3DView {
     this.viewportFrustum = new THREE.Frustum();
 
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera( 22.5, this.width/this.height, 0.1, 15000 );
+    this.camera = new THREE.PerspectiveCamera( GUI_3D_VIEW_FOV, this.width/this.height, 0.1, 15000 );
     this.texture = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.NearestFilter});
 		this.tDepth = new THREE.WebGLRenderTarget( this.width, this.height, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat } );
     this.clearColor = new THREE.Color(0x000000);
@@ -102,6 +111,36 @@ export class LBL_3DView {
     this.control.setFillTexture(this.texture.texture);
     // this.control.getFill().material.uniforms.map.value = this.texture.texture;
     this.control.getFill().material.uniforms.diffuse.value.setHex(0xFFFFFF);
+  }
+
+  /** Retail Camera::SetViewAngle — ClassSel / MainCG / PORTCUST / Setup3DScene. */
+  setViewAngle(fov: number = GUI_3D_VIEW_FOV){
+    this.camera.fov = fov;
+    this.camera.updateProjectionMatrix();
+  }
+
+  /**
+   * Copy pose from a light-model camerahook (retail Camera::AttachToObject).
+   * Optional AttachTranslate offset:
+   * - worldSpace true  → field2_0x48=1 (Setup3DScene / MainCG): position += offset
+   * - worldSpace false → field2_0x48=0 (PORTCUST): rotate offset by camera orientation
+   */
+  attachCameraToHook(
+    hook: THREE.Object3D | undefined,
+    translate?: THREE.Vector3Like,
+    worldSpace: boolean = true,
+  ){
+    if(!hook) return;
+    this.camera.position.copy(hook.position);
+    this.camera.quaternion.copy(hook.quaternion);
+    if(translate){
+      const offset = LBL_3DView._tmpOffset.set(translate.x, translate.y, translate.z);
+      if(!worldSpace){
+        offset.applyQuaternion(this.camera.quaternion);
+      }
+      this.camera.position.add(offset);
+    }
+    this.camera.updateProjectionMatrix();
   }
 
   getCamera(){

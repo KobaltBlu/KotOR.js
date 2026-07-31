@@ -1,6 +1,7 @@
 import { GameState } from "@/GameState";
 import type { GUILabel, GUIButton } from "@/gui";
 import { CharGenPortCust as K1_CharGenPortCust } from "@/game/kotor/KOTOR";
+import * as THREE from "three";
 
 /**
  * CharGenPortCust class.
@@ -100,9 +101,9 @@ export class CharGenPortCust extends K1_CharGenPortCust {
     this.tGuiPanel.widget.userData.fill.position.z = -0.5
 
     this._3dView.visible = true;
-    this._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
-    this._3dView.camera.updateProjectionMatrix();
-    this.LBL_HEAD.setFillTexture(this._3dView.texture.texture);
+    this._3dView.setControl(this.LBL_HEAD);
+    this._3dView.setViewAngle();
+    (this.LBL_HEAD.getFill().material as THREE.ShaderMaterial).transparent = false;
 
     this.Init3D();
   }

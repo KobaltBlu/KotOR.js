@@ -101,9 +101,8 @@ export class CharGenClass extends GameMenu {
         let control = this.getControlByName('_3D_MODEL'+(i+1));
         let _3dView = GameState.CharGenManager.lbl_3d_views.get(i);
         _3dView.visible = true;
-        _3dView.camera.aspect = control.extent.width / control.extent.height;
-        _3dView.camera.updateProjectionMatrix();
-        control.setFillTexture(_3dView.texture.texture);
+        _3dView.setControl(control);
+        _3dView.setViewAngle();
         (control.getFill().material as THREE.ShaderMaterial).transparent = true;
         (control.getFill().material as THREE.ShaderMaterial).blending = 1;
       }
@@ -157,9 +156,10 @@ export class CharGenClass extends GameMenu {
           GameState.CharGenManager.models.set(nth, background_model);
           _3dViewModel = background_model;
           _3dView.addModel(_3dViewModel);
-          _3dView.camera.position.copy(_3dViewModel.camerahook.position);
-          _3dView.camera.quaternion.copy(_3dViewModel.camerahook.quaternion);
-          _3dView.camera.position.z = 0.9;
+          // Retail ClassSel: AttachToObject(camerahook, behavior 0) + SetViewAngle 22.726
+          // — no forced camera.z override.
+          _3dView.attachCameraToHook(_3dViewModel.camerahook);
+          _3dView.setViewAngle();
           creature.load();
           creature.loadModel().then((creature_model: OdysseyModel3D) => {
             creature.model.position.set(0, 0, 0);
@@ -168,6 +168,10 @@ export class CharGenClass extends GameMenu {
             TextureLoader.LoadQueue().then(() => {
               this.manager.LoadScreen.setProgress((nth + 1) / 6 * 100);
               _3dViewModel.playAnimation(0, true);
+              // Retail CGPauseCycle(0, 1) — pause1 or pause2
+              try {
+                creature.model?.playAnimation?.(this.GetRandomAnimation(), true);
+              } catch (e) {}
               resolve();
             });
           });

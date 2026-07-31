@@ -16,7 +16,9 @@ import { GameState } from "@/GameState";
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * Retail CSWGuiPortraitCharGen @ 006f9430 (PORTCUST).
+ * Retail CSWGuiPortraitCharGen @ 006f9430 (PORTCUST) —
+ * gui3D_room + cghead_light, camerahookm/f, SetViewAngle 22.726,
+ * AttachTranslate (0, headHeight, 0) local-space (field2_0x48=0).
  *
  * @file CharGenPortCust.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -119,9 +121,8 @@ export class CharGenPortCust extends GameMenu {
     this.tGuiPanel.widget.userData.fill.position.z = -0.5
 
     this._3dView.visible = true;
-    this._3dView.camera.aspect = this.LBL_HEAD.extent.width / this.LBL_HEAD.extent.height;
-    this._3dView.camera.updateProjectionMatrix();
-    this.LBL_HEAD.setFillTexture(this._3dView.texture.texture);
+    this._3dView.setControl(this.LBL_HEAD);
+    this._3dView.setViewAngle();
     (this.LBL_HEAD.getFill().material as THREE.ShaderMaterial).transparent = false;
 
     this.Init3D();
@@ -220,14 +221,9 @@ export class CharGenPortCust extends GameMenu {
       try{
         this.sceneModel3D = sceneModel3D;
         this._3dView.addModel(this.sceneModel3D);
-        if(creature.getGender()){
-          this._3dView.camera.position.copy(this.sceneModel3D.camerahookf.position);
-          this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookf.quaternion);
-        }else{
-          this._3dView.camera.position.copy(this.sceneModel3D.camerahookm.position);
-          this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookm.quaternion);
-        }
-        this.sceneModel3D.playAnimation(0, true);
+        // Retail PlayAnimation("default") on cghead_light
+        this.sceneModel3D.playAnimation('default', true);
+        this.updateCamera();
       }catch(e){
         console.error(e);
       }
@@ -284,19 +280,18 @@ export class CharGenPortCust extends GameMenu {
     this.UpdatePortrait();
   }
 
+  /**
+   * Retail UpdatePortraitButton AttachTranslate @ 006f8ad0 —
+   * camerahookm/f pose + local-space (0, getCameraHeight(), 0).
+   */
   updateCamera() {
     const creature = GameState.CharGenManager.selectedCreature;
     if(!this.sceneModel3D) return;
-    if (creature.getGender() == 0) {
-      this._3dView.camera.position.copy(this.sceneModel3D.camerahookm.position);
-      this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookm.quaternion);
-    } else {
-      this._3dView.camera.position.copy(this.sceneModel3D.camerahookf.position);
-      this._3dView.camera.quaternion.copy(this.sceneModel3D.camerahookf.quaternion);
-    }
-    let v3 = new THREE.Vector3();
-    creature.model?.camerahook?.getWorldPosition?.(v3);
-    this._3dView.camera.position.z = v3.z;
+    const hook = (creature.getGender() == 0)
+      ? this.sceneModel3D.camerahookm
+      : this.sceneModel3D.camerahookf;
+    const headHeight = creature.getCameraHeight?.() ?? 1.5;
+    this._3dView.attachCameraToHook(hook, { x: 0, y: headHeight, z: 0 }, false);
   }
 
 }

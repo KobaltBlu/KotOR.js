@@ -1,5 +1,6 @@
 import { LBL_3DView, type GUILabel } from "@/gui";
 import { CharGenMain as K1_CharGenMain } from "@/game/kotor/KOTOR";
+import * as THREE from "three";
 
 /**
  * CharGenMain class.
@@ -62,9 +63,8 @@ export class CharGenMain extends K1_CharGenMain {
 
       this._3dView = new LBL_3DView();
       this._3dView.visible = true;
-      this._3dView.camera.aspect = this.MODEL_LBL.extent.width / this.MODEL_LBL.extent.height;
-      this._3dView.camera.updateProjectionMatrix();
-      this.MODEL_LBL.setFillTexture(this._3dView.texture.texture);
+      this._3dView.setControl(this.MODEL_LBL);
+      this._3dView.setViewAngle();
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).transparent = true;
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
 

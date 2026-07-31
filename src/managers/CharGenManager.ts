@@ -97,6 +97,8 @@ export class CharGenManager {
   static cgmain_light: OdysseyModel;
   static cgbody_light: OdysseyModel;
   static cghead_light: OdysseyModel;
+  /** Retail MainCG / Setup3DScene light model (not cgbody_light). */
+  static charrec_light: OdysseyModel;
 
   /** Highest unlocked quick-panel step (portrait → name → play). */
   static quickStep: number = CharGenQuickStep.PORTRAIT;
@@ -370,6 +372,7 @@ export class CharGenManager {
     await CharGenManager.LoadCGMainLight();
     await CharGenManager.LoadCGBodyLight();
     await CharGenManager.LoadCGHeadLight();
+    await CharGenManager.LoadCharRecLight();
   }
 
   static async LoadCGMainLight(): Promise<void> {
@@ -385,6 +388,11 @@ export class CharGenManager {
   static async LoadCGHeadLight(): Promise<void> {
     const mdl = await MDLLoader.loader.load('cghead_light')
     CharGenManager.cghead_light = mdl;
+  }
+
+  static async LoadCharRecLight(): Promise<void> {
+    const mdl = await MDLLoader.loader.load('charrec_light')
+    CharGenManager.charrec_light = mdl;
   }
 
   static InitializeCreatureTemplate(){

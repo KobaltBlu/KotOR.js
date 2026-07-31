@@ -1521,7 +1521,7 @@ export class GameState implements EngineContext {
         GameState.MenuManager.InGameBark.close();
   
       if(GameState.MenuManager.InGameAreaTransition)
-        GameState.MenuManager.InGameAreaTransition.hide();
+        GameState.MenuManager.InGameAreaTransition.hideAreaTransition();
     }
 
     // Minigame: keep party InGameOverlay off the menu stack so GUI pop
@@ -1658,8 +1658,6 @@ export class GameState implements EngineContext {
     TextureAnimationManager.update(delta);
 
     GameState.MenuManager.Update(delta);
-    if(GameState.MenuManager.InGameAreaTransition)
-      GameState.MenuManager.InGameAreaTransition.hide();
 
     if(!GameState.loadingTextures && TextureLoader.queue.length){
       GameState.loadingTextures = true;
@@ -1690,6 +1688,10 @@ export class GameState implements EngineContext {
         GameState.UpdateFreeLook(delta);
         break;
     }
+
+    // Retail MainLoop: UpdateAreaTransitionGUI after world/object updates (00632180 / 004dee80).
+    if(GameState.MenuManager.InGameAreaTransition)
+      GameState.MenuManager.InGameAreaTransition.updateAreaTransitionGUI();
 
     AudioEngine.GetAudioEngine().update(delta, GameState.currentCamera.position, GameState.currentCamera.rotation, GameState.forwardVector);
 
@@ -1800,9 +1802,6 @@ export class GameState implements EngineContext {
     }else{
       if(GameState.MenuManager.InGamePause.isVisible())
         GameState.MenuManager.InGamePause.hide();
-    }
-    if(GameState.MenuManager.InGameAreaTransition.transitionObject){
-      GameState.MenuManager.InGameAreaTransition.show();
     }
   }
 

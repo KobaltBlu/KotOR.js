@@ -5,12 +5,17 @@ import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { CharGenClasses } from "@/game/CharGenClasses";
 import { GameState } from "@/GameState";
+import * as THREE from "three";
 
 /**
  * CharGenMain class.
- * 
+ *
+ * Retail CSWGuiMainCharGen @ 006eb420 — gui3D_room + charrec_light (not
+ * cgbody_light), Setup3DScene camera on camerahook with AttachTranslate
+ * world Z = getCameraHeight(), SetViewAngle 22.726.
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CharGenMain.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -79,9 +84,8 @@ export class CharGenMain extends GameMenu {
 
       this._3dView = new LBL_3DView();
       this._3dView.visible = true;
-      this._3dView.camera.aspect = this.MODEL_LBL.extent.width / this.MODEL_LBL.extent.height;
-      this._3dView.camera.updateProjectionMatrix();
-      this.MODEL_LBL.setFillTexture(this._3dView.texture.texture);
+      this._3dView.setControl(this.MODEL_LBL);
+      this._3dView.setViewAngle();
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).transparent = true;
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
 
@@ -91,17 +95,33 @@ export class CharGenMain extends GameMenu {
   }
 
   Init3D() {
-    OdysseyModel3D.FromMDL(GameState.CharGenManager.cgbody_light, {
+    const lightMdl = GameState.CharGenManager.charrec_light
+      ?? GameState.CharGenManager.cgbody_light;
+    OdysseyModel3D.FromMDL(lightMdl, {
       onComplete: (model: OdysseyModel3D) => {
         this._3dViewModel = model;
         this._3dView.addModel(this._3dViewModel);
-        this._3dView.camera.position.copy(this._3dViewModel.camerahook.position);
-        this._3dView.camera.quaternion.copy(this._3dViewModel.camerahook.quaternion);
-        this._3dViewModel.playAnimation(0, true);
+        this.updateCamera();
+        // Setup3DScene plays alignment anim on charrec_light; chargen starts neutral.
+        this._3dViewModel.playAnimation('align10', true);
       },
-      // manageLighting: false,
       context: this._3dView
     });
+  }
+
+  /**
+   * Retail Setup3DScene AttachTranslate @ 006100f0 —
+   * camerahook pose + world-space (0, 0, getCameraHeight()).
+   */
+  updateCamera() {
+    if(!this._3dViewModel?.camerahook) return;
+    const creature = GameState.CharGenManager.selectedCreature;
+    const headHeight = creature?.getCameraHeight?.() ?? 1.5;
+    this._3dView.attachCameraToHook(
+      this._3dViewModel.camerahook,
+      { x: 0, y: 0, z: headHeight },
+      true,
+    );
   }
 
   update(delta = 0) {
@@ -134,6 +154,7 @@ export class CharGenMain extends GameMenu {
     }
     this._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
     GameState.CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;
+    this.updateCamera();
     this.updateAttributes();
   }
 

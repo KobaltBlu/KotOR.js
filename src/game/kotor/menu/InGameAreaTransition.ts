@@ -1,15 +1,19 @@
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameMenu } from "@/gui";
+import { GameMenu, GUIPanelCoordFlags } from "@/gui";
 import type { GUILabel } from "@/gui";
 import type { ModuleObject } from "@/module";
+import { GameState } from "@/GameState";
 import { BitWise } from "@/utility/BitWise";
 
 /**
  * InGameAreaTransition class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
+ * Retail CSWGuiInGameAreaTransition + CGuiInGame::UpdateAreaTransitionGUI /
+ * HideAreaTransition (K1 @ 00632180 / 0062eb10, K2 @ 004dee80 / 004df070).
+ *
  * @file InGameAreaTransition.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -17,10 +21,19 @@ import { BitWise } from "@/utility/BitWise";
 export class InGameAreaTransition extends GameMenu {
 
   engineMode: EngineMode = EngineMode.INGAME;
+  /** Overlay so show() does not force EngineMode via GameMenu.show. */
+  isOverlayGUI = true;
+  /**
+   * Retail ctor: bit_flags = flags & ~DockDesignY | DockDesignX
+   * (K1 @ 006c7d50).
+   */
+  panelCoordFlags: number = GUIPanelCoordFlags.UseExtentOffset | GUIPanelCoordFlags.DockDesignX;
+
   LBL_ICON: GUILabel;
   LBL_TEXTBG: GUILabel;
   LBL_DESCRIPTION: GUILabel;
 
+  /** Object currently driving the destination label (retail field5_0x430). */
   transitionObject: ModuleObject;
 
   constructor(){
@@ -42,18 +55,71 @@ export class InGameAreaTransition extends GameMenu {
     this.LBL_DESCRIPTION.setText(text);
   }
 
-  setTransitionObject(object: ModuleObject){
-    if(!object) return;
+  /**
+   * Retail CSWGuiInGameAreaTransition::SetTransitionObject @ 006c7ec0.
+   * Pass undefined / falsy to clear (OBJECT_INVALID / 0x7F000000).
+   */
+  setTransitionObject(object: ModuleObject | undefined){
+    if(!object){
+      this.transitionObject = undefined;
+      return;
+    }
 
     if(BitWise.InstanceOfObject(object, ModuleObjectType.ModuleDoor) || BitWise.InstanceOfObject(object, ModuleObjectType.ModuleTrigger)){
-      this.transitionObject = object;
-      this.SetDescription(object.getTransitionDestin());
+      if(this.transitionObject !== object){
+        this.transitionObject = object;
+        this.SetDescription(object.getTransitionDestin());
+      }
     }
   }
 
   unsetTransitionObject(object: ModuleObject){
     if(this.transitionObject == object){
       this.transitionObject = undefined;
+    }
+  }
+
+  /**
+   * Retail CGuiInGame::UpdateAreaTransitionGUI.
+   * Show when a candidate object is set and TransPending is clear; otherwise hide
+   * (keeping the panel during TransPending).
+   */
+  updateAreaTransitionGUI(){
+    const area = GameState.module?.area;
+    // Retail: require module/area/server area and sw_gui_status == 1 (in-game).
+    if(!area || GameState.Mode !== EngineMode.INGAME){
+      this.hideAreaTransition();
+      return;
+    }
+
+    if(!this.transitionObject){
+      this.hideAreaTransition();
+      return;
+    }
+
+    if(area.transPending){
+      // Retail: PanelExists → SendPanelToBack; do not RemovePanel.
+      return;
+    }
+
+    if(!this.isVisible()){
+      this.show();
+    }
+  }
+
+  /**
+   * Retail CGuiInGame::HideAreaTransition.
+   * While TransPending, leave the panel up (SendPanelToBack). Otherwise clear the
+   * transition object and RemovePanel.
+   */
+  hideAreaTransition(){
+    const area = GameState.module?.area;
+    if(area?.transPending){
+      return;
+    }
+    this.transitionObject = undefined;
+    if(this.isVisible()){
+      this.hide();
     }
   }
   
