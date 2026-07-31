@@ -6,6 +6,7 @@ import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState"
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { GameState } from "@/GameState";
+import { resolveBeginConversationDialog, resolveDialogStartOwner } from "@/managers/dialog-start";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { DLGObject } from "@/resource/DLGObject";
 import { BitWise } from "@/utility/BitWise";
@@ -71,6 +72,9 @@ export class ActionDialogObject extends Action {
       return ActionStatus.FAILED;
     }
 
+    // Only resolve an explicit ActionStartConversation resref here (retail field78).
+    // Blank leaves this.conversation unset so OnDialog → BeginConversation uses
+    // StartDialog GetDialogResref on the retail dialog owner (often the last speaker).
     if(!this.validate_conversation_resref){
       this.validate_conversation_resref = true;
       if(conversation_resref){
@@ -82,58 +86,55 @@ export class ActionDialogObject extends Action {
       return ActionStatus.FAILED;
     }
 
-    // Retail StartDialog @ 004cf490 / GetDialogResref: blank sDialogResRef uses
-    // oObjectToConverseWith's Conversation, not the action owner's.
-    const dialog = this.conversation
-      ? this.conversation
-      : this.target?.getConversation();
-
     // TSL bUseLeader — force party leader as the conversation listener
     let effectiveListener = listener;
     if(bUseLeader && GameState.PartyManager?.party?.[0]){
       effectiveListener = GameState.PartyManager.party[0];
     }
 
-    if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
+    if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature))
     {
-      GameState.CutsceneManager.startConversation(dialog, this.owner, this.target || effectiveListener, bPrivate, ignoreNames, barkScreenX, barkScreenY);
-      return ActionStatus.COMPLETE;
+      const distance = Utility.Distance2D(this.owner.position, this.target.position);
+      if(distance > 4.5 && !ignoreStartRange){
+        const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
+        actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
+        actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
+        actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
+        actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
+        actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
+        actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
+        actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 4.5 );
+        actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
+        actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
+        this.owner.actionQueue.addFront(actionMoveToTarget);
+
+        return ActionStatus.IN_PROGRESS;
+      }
+
+      this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
+      // Zero path + cam-relative locomotion (WASD/stick axes survive mode change otherwise)
+      (this.owner as any).clearLocomotionState?.(true);
     }
-
-    const distance = Utility.Distance2D(this.owner.position, this.target.position);
-    if(distance > 4.5 && !ignoreStartRange){
-      const actionMoveToTarget = new GameState.ActionFactory.ActionMoveToPoint();
-      actionMoveToTarget.setParameter(0, ActionParameterType.FLOAT, this.target.position.x);
-      actionMoveToTarget.setParameter(1, ActionParameterType.FLOAT, this.target.position.y);
-      actionMoveToTarget.setParameter(2, ActionParameterType.FLOAT, this.target.position.z);
-      actionMoveToTarget.setParameter(3, ActionParameterType.DWORD, GameState.module.area.id);
-      actionMoveToTarget.setParameter(4, ActionParameterType.DWORD, this.target.id);
-      actionMoveToTarget.setParameter(5, ActionParameterType.INT, 1);
-      actionMoveToTarget.setParameter(6, ActionParameterType.FLOAT, 4.5 );
-      actionMoveToTarget.setParameter(7, ActionParameterType.INT, 0);
-      actionMoveToTarget.setParameter(8, ActionParameterType.FLOAT, 30.0);
-      this.owner.actionQueue.addFront(actionMoveToTarget);
-
-      return ActionStatus.IN_PROGRESS;
-    }
-
-    this.owner.setAnimationState(ModuleCreatureAnimState.IDLE);
-    // Zero path + cam-relative locomotion (WASD/stick axes survive mode change otherwise)
-    (this.owner as any).clearLocomotionState?.(true);
 
     this.owner.heardStrings = [];
     this.target.heardStrings = [];
-    if(BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)){
-      // Ignore names still apply if OnDialog starts the cutscene path later.
-      // onDialog applies retail empty/"default" → k_hen_dialogue01 fallback.
-      // Pass only an explicit resref DLG; blank leaves instance.conversation unset so
-      // BeginConversation falls through to OBJECT_SELF (target) Conversation.
-      GameState.CutsceneManager.setDialogNonDependantNames(ignoreNames);
-      if(this.target.onDialog(this.owner, -1, this.conversation)){
-        return ActionStatus.COMPLETE;
-      }
+
+    // Retail ActionDialogObject fires OnDialog on oObjectToConverseWith (creatures,
+    // doors, placeables). Pass only an explicit resref DLG; blank leaves
+    // instance.conversation unset so BeginConversation matches StartDialog.
+    GameState.CutsceneManager.setDialogNonDependantNames(ignoreNames);
+    if(typeof this.target.onDialog === 'function' && this.target.onDialog(this.owner, -1, this.conversation)){
+      return ActionStatus.COMPLETE;
     }
-    GameState.CutsceneManager.startConversation(dialog, this.target, effectiveListener, bPrivate, ignoreNames, barkScreenX, barkScreenY);
+
+    // No OnDialog script — same ownership/resref rules as BeginConversation.
+    const dialogOwner = resolveDialogStartOwner(this.target, this.owner);
+    const other = dialogOwner === this.target ? (effectiveListener || this.owner) : this.target;
+    const dialog = resolveBeginConversationDialog('', this.conversation, dialogOwner);
+    if(!dialog){
+      return ActionStatus.FAILED;
+    }
+    GameState.CutsceneManager.startConversation(dialog, dialogOwner, other, bPrivate, ignoreNames, barkScreenX, barkScreenY);
     return ActionStatus.COMPLETE;
   }
 

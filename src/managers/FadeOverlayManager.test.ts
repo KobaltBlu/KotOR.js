@@ -42,4 +42,8 @@ describe('FadeOverlayManager.holdForScript', () => {
     FadeOverlayManager.FadeIn(0, 0, 0, 0, 0);
     expect(FadeOverlayManager.state).toBe(FadeOverlayState.FADED_IN);
   });
+
+  test('party dialog switch fade-out length matches retail 0.75s', () => {
+    expect(FadeOverlayManager.PARTY_DIALOG_SWITCH_FADE_OUT_LENGTH).toBe(0.75);
+  });
 });

@@ -194,6 +194,32 @@ export class ModulePlaceable extends ModuleObject {
     GameState.getCurrentPlayer().actionUseObject( this );
   }
 
+  /**
+   * Retail CSWSPlaceable::EventHandler script case 7 (OnDialog).
+   * Empty or "default" OnDialog → k_hen_dialogue01.
+   */
+  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []): boolean {
+    this.setMatchedSubstrings(matchedSubstrings || []);
+
+    let nwscript = this.scripts[ModuleObjectScript.PlaceableOnDialog];
+    const resRef = nwscript?.name || '';
+    if(!nwscript || !resRef || resRef.toLowerCase() === 'default'){
+      const fallback = GameState.NWScript.Load('k_hen_dialogue01');
+      if(fallback){
+        fallback.caller = this;
+        this.scripts[ModuleObjectScript.PlaceableOnDialog] = fallback;
+        nwscript = fallback;
+      }
+    }
+    if(!nwscript){ return false; }
+    const instance = nwscript.newInstance();
+    instance.listenPatternNumber = listenPatternNumber;
+    instance.listenPatternSpeaker = oSpeaker;
+    instance.conversation = conversation;
+    instance.run(this, 0);
+    return true;
+  }
+
   detachFromRoom(room: ModuleRoom): void {
     if(!room) return;
     const index = room.placeables.indexOf(this);

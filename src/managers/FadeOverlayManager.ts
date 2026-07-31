@@ -61,6 +61,13 @@ export class FadeOverlayManager {
   /** Door/trigger area transition StartGlobalFade(0, wait=0, length=0.5). */
   static readonly AREA_TRANSITION_FADE_LENGTH = 0.5;
 
+  /**
+   * AIActionDialogObject party-leader→PC swap before StartDialog
+   * (K1 @ 0057ad6d / K2 @ 006b37a0): StartGlobalFade(0, wait=0, length=0.75).
+   * Fade-in uses holdWorldFadeInForDialog → HOLD_WORLD_FADE_IN_* on first entry.
+   */
+  static readonly PARTY_DIALOG_SWITCH_FADE_OUT_LENGTH = 0.75;
+
   /** CSWGuiFade::SetFade seeds elapsed to 0.1 (0x3dcccccd). */
   static readonly ELAPSED_SEED = 0.1;
 

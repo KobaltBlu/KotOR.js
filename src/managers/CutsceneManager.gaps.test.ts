@@ -8,16 +8,26 @@ jest.mock('@/GameState', () => ({
   GameState: {
     TwoDAManager: { datatables: new Map() },
     PartyManager: {
-      party: [{ id: 1, isPlayer: true, npcId: -1 }],
+      party: [{ id: 1, isPlayer: true, npcId: -1, isPM: true }],
+      Player: { id: 1, isPlayer: true, npcId: -1, isPM: true },
       ControlledNPC: -1,
       SwitchPlayerCharacter: jest.fn(),
+      MakePlayerLeader: jest.fn(),
+      IsPlayerPartyLeader: jest.fn(() => true),
       getInventory: () => [],
     },
     InventoryManager: { getInventory: () => [] },
     getCurrentPlayer: jest.fn(() => null),
     MenuManager: {},
     VideoEffectManager: { SetVideoEffect: jest.fn() },
-    FadeOverlayManager: {},
+    FadeOverlayManager: {
+      FadeOut: jest.fn(),
+      FadeIn: jest.fn(),
+      isFading: jest.fn(() => false),
+      PARTY_DIALOG_SWITCH_FADE_OUT_LENGTH: 0.75,
+      HOLD_WORLD_FADE_IN_LENGTH: 1.0,
+      HOLD_WORLD_FADE_IN_WAIT: 0,
+    },
     CutsceneManager: {},
     SetEngineMode: jest.fn(),
     Mode: 0,
@@ -134,6 +144,7 @@ import { CutsceneManager } from '@/managers/CutsceneManager';
 import { ConversationState } from '@/enums/dialog/ConversationState';
 import { InGameComputer } from '@/game/kotor/menu/InGameComputer';
 import { DLGNode } from '@/resource/DLGNode';
+import { GameState } from '@/GameState';
 
 describe('CutsceneManager post-dialog character switch', () => {
   beforeEach(() => {
@@ -151,6 +162,74 @@ describe('CutsceneManager post-dialog character switch', () => {
     CutsceneManager.schedulePostDialogCharacterSwitch(-1);
     CutsceneManager.schedulePostDialogCharacterSwitch(3);
     expect(CutsceneManager.postDialogRestoreNpcId).toBe(-1);
+  });
+});
+
+describe('CutsceneManager party-dialog leader switch fade', () => {
+  const npc = { id: 10, isPlayer: false, isPM: false, partyInteract: 0 };
+  const cnpcLeader = { id: 2, isPlayer: false, isPM: true, npcId: 0 };
+  const pc = { id: 1, isPlayer: true, isPM: true, npcId: -1 };
+
+  beforeEach(() => {
+    CutsceneManager.pendingPartyDialogSwitch = undefined;
+    CutsceneManager.active = false;
+    GameState.holdWorldFadeInForDialog = false;
+    (GameState.FadeOverlayManager.FadeOut as jest.Mock).mockClear();
+    (GameState.FadeOverlayManager.isFading as jest.Mock).mockReturnValue(false);
+    (GameState.PartyManager.MakePlayerLeader as jest.Mock).mockClear();
+    (GameState.PartyManager.IsPlayerPartyLeader as jest.Mock).mockReturnValue(false);
+    GameState.PartyManager.party = [cnpcLeader as any, pc as any];
+    GameState.PartyManager.Player = pc as any;
+  });
+
+  test('needs switch when CNPC leads and target PartyInteract is clear', () => {
+    expect(CutsceneManager.needsPartyDialogLeaderSwitch(npc as any, cnpcLeader as any)).toBe(true);
+  });
+
+  test('skips switch when PartyInteract is set (retail gate)', () => {
+    expect(CutsceneManager.needsPartyDialogLeaderSwitch(
+      { ...npc, partyInteract: 1 } as any,
+      cnpcLeader as any,
+    )).toBe(false);
+  });
+
+  test('skips switch when PC is already party leader', () => {
+    (GameState.PartyManager.IsPlayerPartyLeader as jest.Mock).mockReturnValue(true);
+    expect(CutsceneManager.needsPartyDialogLeaderSwitch(npc as any, pc as any)).toBe(false);
+  });
+
+  test('startConversation fades out and defers while CNPC is leader', () => {
+    const dialog = { resref: 'test' } as any;
+    CutsceneManager.startConversation(dialog, npc as any, cnpcLeader as any);
+    expect(CutsceneManager.active).toBe(false);
+    expect(CutsceneManager.pendingPartyDialogSwitch).toBeDefined();
+    expect(GameState.holdWorldFadeInForDialog).toBe(true);
+    expect(GameState.FadeOverlayManager.FadeOut).toHaveBeenCalledWith(0.75, 0, 0, 0, 0);
+  });
+
+  test('tickPendingPartyDialogSwitch waits while fading then swaps and resumes', () => {
+    CutsceneManager.pendingPartyDialogSwitch = {
+      dialog: { resref: 'test' } as any,
+      owner: npc as any,
+      listener: cnpcLeader as any,
+      privateConversation: false,
+      ignoreObjectNames: [],
+      barkScreenX: -1,
+      barkScreenY: -1,
+    };
+    (GameState.FadeOverlayManager.isFading as jest.Mock).mockReturnValue(true);
+    CutsceneManager.tickPendingPartyDialogSwitch();
+    expect(GameState.PartyManager.MakePlayerLeader).not.toHaveBeenCalled();
+    expect(CutsceneManager.pendingPartyDialogSwitch).toBeDefined();
+
+    (GameState.FadeOverlayManager.isFading as jest.Mock).mockReturnValue(false);
+    GameState.PartyManager.party = [pc as any, cnpcLeader as any];
+    const resume = jest.spyOn(CutsceneManager, 'startConversation').mockImplementation(() => {});
+    CutsceneManager.tickPendingPartyDialogSwitch();
+    expect(GameState.PartyManager.MakePlayerLeader).toHaveBeenCalled();
+    expect(CutsceneManager.pendingPartyDialogSwitch).toBeUndefined();
+    expect(resume).toHaveBeenCalled();
+    resume.mockRestore();
   });
 });
 

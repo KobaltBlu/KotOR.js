@@ -119,6 +119,20 @@ export class CutsceneManager {
    * (−1 = original PC). Cleared by cancelPostDialogCharacterSwitch.
    */
   static postDialogRestoreNpcId: number | undefined = undefined;
+  /**
+   * Retail AIActionDialogObject @ 0057a470 / 006b37a0 — when a non-PC party leader
+   * starts a conversation, fade out, wait for IsGlobalFading to clear, swap the PC
+   * into the leader slot/position, then StartDialog. Fade-in is holdWorldFadeInForDialog.
+   */
+  static pendingPartyDialogSwitch: {
+    dialog: DLGObject;
+    owner: ModuleObject;
+    listener: ModuleObject;
+    privateConversation: boolean;
+    ignoreObjectNames: string[];
+    barkScreenX: number;
+    barkScreenY: number;
+  } | undefined = undefined;
   static readonly #tmpCamDir = new THREE.Vector3();
   static readonly #tmpCamQuat = new THREE.Quaternion();
 
@@ -167,6 +181,50 @@ export class CutsceneManager {
   /** NWScript CancelPostDialogCharacterSwitch (757). */
   static cancelPostDialogCharacterSwitch() {
     this.postDialogRestoreNpcId = undefined;
+  }
+
+  /**
+   * True when the conversation listener is a party member and the real PC is not
+   * already party leader — retail AIActionDialogObject CNPC→PC swap gate.
+   */
+  static needsPartyDialogLeaderSwitch(
+    owner: ModuleObject | undefined,
+    listener: ModuleObject | undefined,
+  ): boolean {
+    let resolvedOwner = owner;
+    let resolvedListener = listener ?? GameState.PartyManager?.party?.[0];
+    if(resolvedOwner?.isPlayer && resolvedListener && !resolvedListener.isPlayer){
+      const tmp = resolvedOwner;
+      resolvedOwner = resolvedListener;
+      resolvedListener = tmp;
+    }
+    if(!resolvedListener?.isPM){ return false; }
+    if(GameState.PartyManager?.IsPlayerPartyLeader?.()){ return false; }
+    // Retail: only when the converse-with object has PartyInteract == 0.
+    const target = resolvedOwner as { partyInteract?: number | boolean } | undefined;
+    if(target && !!target.partyInteract){ return false; }
+    return true;
+  }
+
+  /**
+   * Resume startConversation after the party-dialog switch fade-out completes.
+   * Call from UpdateIngame (still INGAME while fading — CutsceneManager.update is DIALOG-only).
+   */
+  static tickPendingPartyDialogSwitch() {
+    const pending = this.pendingPartyDialogSwitch;
+    if(!pending){ return; }
+    if(GameState.FadeOverlayManager?.isFading?.()){ return; }
+    this.pendingPartyDialogSwitch = undefined;
+    GameState.PartyManager.MakePlayerLeader();
+    this.startConversation(
+      pending.dialog,
+      pending.owner,
+      GameState.PartyManager.party[0] ?? pending.listener,
+      pending.privateConversation,
+      pending.ignoreObjectNames,
+      pending.barkScreenX,
+      pending.barkScreenY,
+    );
   }
 
   /** Retail CGuiInGame::IsOnDialogNonDependantList @ 0062f840 (case-insensitive). */
@@ -271,6 +329,27 @@ export class CutsceneManager {
     barkScreenX: number = -1,
     barkScreenY: number = -1,
   ) {
+    // Retail AIActionDialogObject: StartGlobalFade(0, 0, 0.75) then wait while
+    // IsGlobalFading before position-swap + ChangeCharacter + StartDialog.
+    if(this.needsPartyDialogLeaderSwitch(owner, listener)){
+      this.pendingPartyDialogSwitch = {
+        dialog,
+        owner,
+        listener: listener ?? GameState.PartyManager.party[0],
+        privateConversation: !!privateConversation,
+        ignoreObjectNames: ignoreObjectNames || [],
+        barkScreenX: typeof barkScreenX === 'number' ? barkScreenX : -1,
+        barkScreenY: typeof barkScreenY === 'number' ? barkScreenY : -1,
+      };
+      GameState.holdWorldFadeInForDialog = true;
+      GameState.FadeOverlayManager.FadeOut(
+        GameState.FadeOverlayManager.PARTY_DIALOG_SWITCH_FADE_OUT_LENGTH,
+        0, 0, 0, 0
+      );
+      return;
+    }
+    this.pendingPartyDialogSwitch = undefined;
+
     this.active = true;
     this.privateConversation = !!privateConversation;
     this.setDialogNonDependantNames(ignoreObjectNames);
@@ -378,9 +457,13 @@ export class CutsceneManager {
     //normal dialog entry
     this.cutsceneMode = (this.dialog.isAnimatedCutscene) ? CutsceneMode.ANIMATED : CutsceneMode.DIALOG;
 
-    if(this.listener.isPM){
-      GameState.PartyManager.MakePlayerLeader();
-      this.listener = this.dialog.listener = GameState.PartyManager.party[0];
+    // Safety net: primary CNPC→PC swap + fade runs before active (pendingPartyDialogSwitch).
+    if(this.listener.isPM && !GameState.PartyManager.IsPlayerPartyLeader()){
+      const speakTarget = this.owner as { partyInteract?: number | boolean };
+      if(!speakTarget?.partyInteract){
+        GameState.PartyManager.MakePlayerLeader();
+        this.listener = this.dialog.listener = GameState.PartyManager.party[0];
+      }
     }
 
     if(this.dialog.getConversationType() != DLGConversationType.COMPUTER){
@@ -804,6 +887,8 @@ export class CutsceneManager {
    */
   static endConversation(aborted = false) {
     const wasBark = this.cutsceneMode == CutsceneMode.BARK;
+    const hadPendingPartySwitch = !!this.pendingPartyDialogSwitch;
+    this.pendingPartyDialogSwitch = undefined;
     this.active = false;
     this.paused = false;
     this.clearPendingDialog();
@@ -847,7 +932,8 @@ export class CutsceneManager {
     }
 
     // Retail SetGlobalDialogState(0): release any remaining holdWorldFadeInForDialog
-    if(GameState.holdWorldFadeInForDialog){
+    // (also covers aborting a pending party-dialog switch fade before StartDialog).
+    if(GameState.holdWorldFadeInForDialog || hadPendingPartySwitch){
       GameState.holdWorldFadeInForDialog = false;
       GameState.FadeOverlayManager.FadeIn(
         GameState.FadeOverlayManager.HOLD_WORLD_FADE_IN_LENGTH,

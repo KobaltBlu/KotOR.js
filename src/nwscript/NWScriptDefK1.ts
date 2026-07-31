@@ -40,6 +40,7 @@ import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { DLGObject } from "@/resource/DLGObject";
 import { ResourceLoader } from "@/loaders";
+import { resolveBeginConversationDialog, resolveDialogStartOwner } from "@/managers/dialog-start";
 import { NW_FALSE, NW_TRUE } from "@/nwscript/NWScriptConstants";
 import { CombatRound } from "@/combat/CombatRound";
 import { findMostDamagingMelee, findMostDamagingRanged } from "@/combat/equip-most-damaging";
@@ -3675,33 +3676,33 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.STRING, NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [string, ModuleObject]){
-      if(!(BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject))){
-        args[1] = this.listenPatternSpeaker;
+      // Retail ExecuteCommandBeginConversation @ 0052e9f0
+      let listener = args[1];
+      if(!(BitWise.InstanceOfObject(listener, ModuleObjectType.ModuleObject))){
+        listener = this.listenPatternSpeaker;
       }
-  
-      if(!BitWise.InstanceOfObject(args[1], ModuleObjectType.ModuleObject)){
-        console.warn('BeginConversation', 'args[1] is not an instanceof ModuleObject');
+
+      if(!BitWise.InstanceOfObject(listener, ModuleObjectType.ModuleObject)){
+        console.warn('BeginConversation', 'listener is not an instanceof ModuleObject');
         return NW_FALSE;
       }
 
-      if(args[0] != ''){
-        const dlg = DLGObject.FromResRef(args[0]);
-        if(!dlg){ return NW_FALSE; }
-        GameState.CutsceneManager.startConversation(dlg, this.caller, args[1] as any);
-        return NW_TRUE;
-      }else if(this.conversation){
-        GameState.CutsceneManager.startConversation(this.conversation, this.caller, args[1] as any);
-        return NW_TRUE;
-      }else if(this.caller.conversation){
-        GameState.CutsceneManager.startConversation(this.caller.conversation, this.caller, args[1] as any);
-        return NW_TRUE;
-      }else if(this.listenPatternSpeaker.conversation){
-        GameState.CutsceneManager.startConversation(this.listenPatternSpeaker.conversation, this.caller, this.listenPatternSpeaker as any);
-        return NW_TRUE;
-      }else{
+      const caller = this.caller as ModuleObject;
+      if(!BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleObject)){
+        console.warn('BeginConversation', 'caller is not an instanceof ModuleObject');
+        return NW_FALSE;
+      }
+
+      const dialogOwner = resolveDialogStartOwner(caller, listener);
+      const other = dialogOwner === caller ? listener : caller;
+      const dialog = resolveBeginConversationDialog(args[0] || '', this.conversation, dialogOwner);
+      if(!dialog){
         console.warn('BeginConversation', 'no dialog condition met');
         return NW_FALSE;
       }
+
+      GameState.CutsceneManager.startConversation(dialog, dialogOwner, other as any);
+      return NW_TRUE;
     }
   },
   256:{

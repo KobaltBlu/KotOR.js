@@ -477,6 +477,32 @@ export class ModuleDoor extends ModuleObject {
     GameState.getCurrentPlayer().actionOpenDoor( this );
   }
 
+  /**
+   * Retail CSWSDoor::EventHandler script case 7 (OnDialog).
+   * OnDialog "default" → k_hen_dialogue01 (doors do not treat empty like creatures).
+   */
+  onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []): boolean {
+    this.setMatchedSubstrings(matchedSubstrings || []);
+
+    let nwscript = this.scripts[ModuleObjectScript.DoorOnDialog];
+    const resRef = nwscript?.name || '';
+    if(!nwscript || resRef.toLowerCase() === 'default'){
+      const fallback = GameState.NWScript.Load('k_hen_dialogue01');
+      if(fallback){
+        fallback.caller = this;
+        this.scripts[ModuleObjectScript.DoorOnDialog] = fallback;
+        nwscript = fallback;
+      }
+    }
+    if(!nwscript){ return false; }
+    const instance = nwscript.newInstance();
+    instance.listenPatternNumber = listenPatternNumber;
+    instance.listenPatternSpeaker = oSpeaker;
+    instance.conversation = conversation;
+    instance.run(this, 0);
+    return true;
+  }
+
   use(object: ModuleObject){
 
     this.lastUsedBy = object;

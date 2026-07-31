@@ -1747,6 +1747,10 @@ export class GameState implements EngineContext {
     //Get Selectable Objects In Range (gated on fade inside TickSelectableObjects)
     GameState.ModuleObjectManager.TickSelectableObjects(delta);
 
+    // Retail AIActionDialogObject waits on IsGlobalFading then swaps PC into the
+    // leader slot — still INGAME until startConversation resumes after fade-out.
+    GameState.CutsceneManager.tickPendingPartyDialogSwitch();
+
     //Update Mode Camera
     //Make sure we are using the follower camera while ingame
     GameState.currentCamera = GameState.camera;
