@@ -118,8 +118,197 @@ export function getAbilityArrowTextureName(): string {
   return GameState.GameKey == GameEngineType.TSL ? 'uibit_abi_arrow' : 'lbl_skarr';
 }
 
-/** Retail SetSkillStatus locked/unavailable icon alpha (case 0 / 3). */
+/**
+ * Retail CSWGuiSkillFlow::SetSkillStatus status byte (K1 @ 006ccfd0 / TSL @ 00587c00).
+ * CharGen BuildButtons @ 006f30f0 assigns these; in-game SetCharacter uses InGame (6) for all.
+ */
+export enum SkillFlowStatus {
+  /** Available to pick — icon alpha 0.25; yellow border when selected. */
+  Available = 0,
+  /** Already owned — green border; border alpha 0.5 when not selected. */
+  Owned = 1,
+  /** Granted this level — same chrome as Owned. */
+  Granted = 2,
+  /** Locked / unmet prereqs — icon+arrow alpha 0.25; red border when selected. */
+  Locked = 3,
+  /**
+   * Chosen this CharGen/level-up session (retail field27 / BuildButtons status 4).
+   * Green border; Select button shows Remove Feat.
+   */
+  Chosen = 4,
+  /** Partial / mid-chain visual — yellow-ish; arrow alpha 0.25. */
+  Partial = 5,
+  /** In-game abilities — border hidden unless selected (yellow pulse). */
+  InGame = 6,
+}
+
+/** Retail SetSkillStatus locked/unavailable icon alpha (case 0 / 3 @ 0x3e800000). */
 export const ABILITY_LOCKED_ICON_ALPHA = 0.25;
+
+/** Retail SetSkillStatus case 1/2 unselected border_params.alpha. */
+export const ABILITY_OWNED_BORDER_ALPHA = 0.5;
+
+/** Retail colorYellow / COLOR_YELLOW. */
+export const SKILL_FLOW_COLOR_YELLOW = { r: 0.980392, g: 1, b: 0 };
+/** Retail colorGreen. */
+export const SKILL_FLOW_COLOR_GREEN = { r: 0, g: 1, b: 0 };
+/** Retail colorRed. */
+export const SKILL_FLOW_COLOR_RED = { r: 1, g: 0, b: 0 };
+
+export type SkillFlowSlotVisuals = {
+  button: GUIButton;
+  status: SkillFlowStatus | number;
+  selected: boolean;
+  iconMaterial?: THREE.SpriteMaterial;
+  arrowButton?: GUIButton;
+  /** True when this slot is mid/end (has a preceding arrow). */
+  hasArrow?: boolean;
+};
+
+/**
+ * Apply retail CSWGuiSkillFlow::SetSkillStatus visuals for one feat/power slot.
+ * Pass `chromeOnly: false` (default) for full status; use `alphasOnly` after
+ * GUIControl.update so locked icon/fill alphas stick without killing pulse.
+ */
+export function applySkillFlowStatus(
+  slot: SkillFlowSlotVisuals,
+  opts?: { alphasOnly?: boolean },
+): void {
+  const { button, status, selected, iconMaterial, arrowButton, hasArrow } = slot;
+  if(!button) return;
+
+  const isTsl = GameState.GameKey == GameEngineType.TSL;
+  const statusNum = status | 0;
+  const alphasOnly = !!opts?.alphasOnly;
+
+  // Defaults — full alpha, white chrome; selection flag drives pulse separately.
+  let iconAlpha = 1;
+  let arrowAlpha = 1;
+  let borderAlpha = 1;
+  let borderColor = { r: 1, g: 1, b: 1 };
+  let showBorder = false;
+  let pulse = false;
+
+  switch(statusNum){
+    case SkillFlowStatus.Available:
+      iconAlpha = ABILITY_LOCKED_ICON_ALPHA;
+      if(selected){
+        borderColor = SKILL_FLOW_COLOR_YELLOW;
+        showBorder = true;
+        pulse = true;
+      }
+      break;
+    case SkillFlowStatus.Owned:
+    case SkillFlowStatus.Granted:
+      borderColor = SKILL_FLOW_COLOR_GREEN;
+      showBorder = true;
+      if(selected){
+        pulse = true;
+        borderAlpha = 1;
+      }else{
+        borderAlpha = ABILITY_OWNED_BORDER_ALPHA;
+      }
+      break;
+    case SkillFlowStatus.Locked:
+      iconAlpha = ABILITY_LOCKED_ICON_ALPHA;
+      arrowAlpha = ABILITY_LOCKED_ICON_ALPHA;
+      if(selected){
+        borderColor = SKILL_FLOW_COLOR_RED;
+        showBorder = true;
+        pulse = true;
+      }
+      break;
+    case SkillFlowStatus.Chosen:
+      borderColor = SKILL_FLOW_COLOR_GREEN;
+      showBorder = true;
+      if(selected) pulse = true;
+      break;
+    case SkillFlowStatus.Partial:
+      if(selected){
+        borderColor = SKILL_FLOW_COLOR_YELLOW;
+        showBorder = true;
+        pulse = true;
+      }
+      if(hasArrow) arrowAlpha = ABILITY_LOCKED_ICON_ALPHA;
+      break;
+    case SkillFlowStatus.InGame:
+    default:
+      // K1 case 6: border alpha 0 unless selected (yellow pulse).
+      // TSL case 6: tint yellow when selected.
+      if(selected){
+        borderColor = SKILL_FLOW_COLOR_YELLOW;
+        showBorder = true;
+        pulse = true;
+      }else{
+        showBorder = false;
+        borderAlpha = 0;
+      }
+      break;
+  }
+
+  if(iconMaterial){
+    iconMaterial.transparent = true;
+    iconMaterial.opacity = iconAlpha;
+    iconMaterial.needsUpdate = true;
+  }
+
+  // Keep indent/back fill visible; dim only when locked (retail field2 alpha on case 3).
+  const fillMat = button.getFill?.()?.material as THREE.ShaderMaterial | undefined;
+  if(fillMat?.uniforms?.opacity){
+    fillMat.uniforms.opacity.value = statusNum === SkillFlowStatus.Locked
+      ? ABILITY_LOCKED_ICON_ALPHA
+      : 1;
+    fillMat.transparent = true;
+  }
+
+  if(arrowButton){
+    const arrowFill = arrowButton.getFill?.()?.material as THREE.ShaderMaterial | undefined;
+    if(arrowFill?.uniforms?.opacity){
+      arrowFill.uniforms.opacity.value = arrowAlpha;
+      arrowFill.transparent = true;
+    }
+  }
+
+  if(alphasOnly){
+    // Owned-unselected uses border alpha 0.5; resetPulse would force 1.0.
+    // Do not touch opacity while pulsing — MenuManager.pulseOpacity owns that.
+    if(!pulse && showBorder){
+      if(button.border?.edge_material){
+        button.border.edge_material.uniforms.opacity.value = borderAlpha;
+      }
+      if(button.border?.corner_material){
+        button.border.corner_material.uniforms.opacity.value = borderAlpha;
+      }
+    }
+    return;
+  }
+
+  button.pulsing = pulse;
+  button.setBorderColor(borderColor.r, borderColor.g, borderColor.b);
+  if(isTsl && selected){
+    button.setFillColor?.(borderColor.r, borderColor.g, borderColor.b);
+  }else if(isTsl){
+    button.setFillColor?.(1, 1, 1);
+  }
+
+  if(showBorder){
+    button.enableBorder?.();
+    button.borderEnabled = true;
+    if(button.border?.edge_material){
+      button.border.edge_material.uniforms.opacity.value = borderAlpha;
+      button.border.edge_material.visible = true;
+    }
+    if(button.border?.corner_material){
+      button.border.corner_material.uniforms.opacity.value = borderAlpha;
+      button.border.corner_material.visible = true;
+    }
+    if(button.border?.mesh) button.border.mesh.visible = true;
+  }else{
+    button.borderEnabled = false;
+    if(button.border?.edge_material) button.border.edge_material.visible = false;
+    if(button.border?.corner_material) button.border.corner_material.visible = false;
+  }
+}
 
 export function applyAbilityButtonTexture(
   buttonIcon: GUIButton,
@@ -138,6 +327,21 @@ export function applyAbilityButtonTexture(
       fillMat.uniforms.opacity.value = lockedAlpha;
     }
   }
+}
+
+/** Resolve feat id from a TalentFeat / 2DA row. */
+export function getFeatId(feat: { id?: number; __index?: number } | null | undefined): number {
+  if(!feat) return -1;
+  if(typeof feat.id === 'number' && Number.isFinite(feat.id)) return feat.id | 0;
+  if(typeof feat.__index === 'number' && Number.isFinite(feat.__index)) return feat.__index | 0;
+  return -1;
+}
+
+/** True when prereq feat id is unset (**** / -1 / 0xFFFFFFFF). */
+export function isUnsetFeatPrereq(id: number | string | null | undefined): boolean {
+  if(id == null || id === '****') return true;
+  const n = typeof id === 'number' ? id : parseInt(String(id), 10);
+  return !Number.isFinite(n) || n < 0 || n === 0xffffffff;
 }
 
 /**

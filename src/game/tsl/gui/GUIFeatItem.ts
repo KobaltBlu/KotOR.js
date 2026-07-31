@@ -9,12 +9,23 @@ import { GameEngineType } from "@/enums/engine";
 import { TextureLoader } from "@/loaders";
 import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import {
-  ABILITY_LOCKED_ICON_ALPHA,
+  SkillFlowStatus,
   applyAbilityButtonTexture,
+  applySkillFlowStatus,
   enqueueProtoTexture,
   getAbilityArrowTextureName,
   getAbilityBackTextureName,
+  getFeatId,
+  isUnsetFeatPrereq,
 } from "@/gui/protoitem/protoItemHelpers";
+
+type FeatSlot = {
+  feat: any;
+  button: GUIButton;
+  iconMaterial: THREE.SpriteMaterial;
+  arrowButton?: GUIButton;
+  slotIndex: number;
+};
 
 /**
  * GUIFeatItem class.
@@ -29,6 +40,8 @@ import {
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class GUIFeatItem extends GUIProtoItem {
+
+  private featSlots: FeatSlot[] = [];
 
   constructor(menu: GameMenu, control: GFFStruct, parent: GUIControl = null as any, scale = false){
     super(menu, control, parent, scale);
@@ -59,6 +72,7 @@ export class GUIFeatItem extends GUIProtoItem {
   createControl(){
     try{
       super.createControl();
+      this.featSlots = [];
 
       const iconHeight = Math.max(1, asExtentInt(this.extent.height));
       const arrowHeight = 32;
@@ -71,16 +85,6 @@ export class GUIFeatItem extends GUIProtoItem {
         const feat = featList[i];
         if(!feat) continue;
 
-        const prereq1 = feat.prereqFeat1 ?? feat.prereqfeat1;
-        const prereq2 = feat.prereqFeat2 ?? feat.prereqfeat2;
-        // In-game abilities: party leader. CharGen: selected creature.
-        const creature = GameState.PartyManager?.party?.[0]
-          || GameState.CharGenManager?.selectedCreature
-          || GameState.getCurrentPlayer();
-        const hasPrereqfeat1 = !creature || (prereq1 == '****' || prereq1 == -1 || prereq1 == null || creature.getHasFeat(prereq1));
-        const hasPrereqfeat2 = !creature || (prereq2 == '****' || prereq2 == -1 || prereq2 == null || creature.getHasFeat(prereq2));
-        const locked = !hasPrereqfeat1 || !hasPrereqfeat2;
-
         const buttonIcon = new GUIButton(this.menu, this.control, this, this.scale);
         buttonIcon.name = 'BUTTON';
         buttonIcon.setText('');
@@ -89,10 +93,21 @@ export class GUIFeatItem extends GUIProtoItem {
         buttonIcon.setExtentHeight(iconHeight);
         buttonIcon.setExtentTop(0);
         buttonIcon.setExtentLeft(0);
-        buttonIcon.hasBorder = false;
         buttonIcon.hasHighlight = false;
+        buttonIcon.disableHighlight();
+        // Must remain selectable for MenuGetActiveUIElements / click-to-focus.
+        buttonIcon.disableHover = false;
         buttonIcon.hasText = false;
         buttonIcon.autoCalculatePosition = false;
+        if(!buttonIcon.border.edge){
+          buttonIcon.border.edge = 'border1d';
+          buttonIcon.border.corner = 'border2d';
+          buttonIcon.initTextures();
+        }
+        if(!(buttonIcon.border.dimension > 0)){
+          buttonIcon.border.dimension = 3;
+        }
+        buttonIcon.hasBorder = true;
         this.children.push(buttonIcon);
 
         const _buttonIconWidget = buttonIcon.createControl();
@@ -111,8 +126,12 @@ export class GUIFeatItem extends GUIProtoItem {
         _buttonIconWidget.position.z = this.zIndex + 1;
         this.widget.add(_buttonIconWidget);
 
+        const status = this.resolveSlotStatus(feat);
+        const locked = status === SkillFlowStatus.Locked || status === SkillFlowStatus.Available;
+
         enqueueProtoTexture(this as any, backTex, this.border.fill.material, (texture) => {
           applyAbilityButtonTexture(buttonIcon, texture, locked);
+          this.refreshSlotVisuals();
         });
 
         buttonIcon.addEventListener('click', (e) => {
@@ -130,24 +149,21 @@ export class GUIFeatItem extends GUIProtoItem {
         iconSprite.scale.y = 32;
         iconSprite.position.z = 5;
         iconSprite.renderOrder = 5;
-        this.widget.userData.iconMaterial = iconMaterial;
-        this.widget.userData.iconSprite = iconSprite;
 
         enqueueProtoTexture(this as any, feat.icon, iconMaterial, (texture) => {
           if(!texture) return;
           if(texture.image?.width) iconSprite.scale.x = texture.image.width;
           if(texture.image?.height) iconSprite.scale.y = texture.image.height;
-          if(locked){
-            iconMaterial.opacity = ABILITY_LOCKED_ICON_ALPHA;
-          }
           iconMaterial.needsUpdate = true;
+          this.refreshSlotVisuals();
         });
 
         _buttonIconWidget.add(iconSprite);
 
+        let arrowIcon: GUIButton | undefined;
         const arrowOffset = truncDiv(truncDiv(protoWidth - asExtentInt(buttonIcon.extent.width), 2), 2);
         if(i > 0){
-          const arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
+          arrowIcon = new GUIButton(this.menu, this.control, this, this.scale);
           arrowIcon.name = 'ARROW';
           arrowIcon.setText('');
           arrowIcon.disableTextAlignment();
@@ -159,6 +175,7 @@ export class GUIFeatItem extends GUIProtoItem {
           arrowIcon.hasHighlight = false;
           arrowIcon.disableBorder();
           arrowIcon.disableHighlight();
+          arrowIcon.disableHover = true;
           arrowIcon.hasText = false;
           arrowIcon.autoCalculatePosition = false;
           this.children.push(arrowIcon);
@@ -177,17 +194,81 @@ export class GUIFeatItem extends GUIProtoItem {
           this.widget.add(_arrowIconWidget);
 
           enqueueProtoTexture(this as any, arrowTex, this.border.fill.material, (texture) => {
-            applyAbilityButtonTexture(arrowIcon, texture, locked);
+            applyAbilityButtonTexture(arrowIcon!, texture, locked);
+            this.refreshSlotVisuals();
           });
         }
+
+        this.featSlots.push({
+          feat,
+          button: buttonIcon,
+          iconMaterial,
+          arrowButton: arrowIcon,
+          slotIndex: i,
+        });
       }
 
+      this.refreshSlotVisuals();
       TextureLoader.LoadQueue();
       return this.widget;
     }catch(e){
       console.error(e);
     }
     return this.widget;
+  }
+
+  update(delta: number){
+    super.update(delta);
+    this.refreshSlotVisuals(true);
+  }
+
+  wantsPulseAnimation(): boolean {
+    if(super.wantsPulseAnimation()) return true;
+    for(let i = 0; i < this.featSlots.length; i++){
+      if(this.featSlots[i].button?.pulsing) return true;
+    }
+    return false;
+  }
+
+  refreshSlotVisuals(alphasOnly = false){
+    const menu = this.menu as any;
+    const selectedFeat = menu?.selectedFeat;
+    const selectedId = getFeatId(selectedFeat);
+
+    for(let i = 0; i < this.featSlots.length; i++){
+      const slot = this.featSlots[i];
+      const status = this.resolveSlotStatus(slot.feat);
+      const featId = getFeatId(slot.feat);
+      applySkillFlowStatus({
+        button: slot.button,
+        status,
+        selected: selectedId >= 0 && featId === selectedId,
+        iconMaterial: slot.iconMaterial,
+        arrowButton: slot.arrowButton,
+        hasArrow: slot.slotIndex > 0,
+      }, { alphasOnly });
+    }
+  }
+
+  private resolveSlotStatus(feat: any): SkillFlowStatus {
+    const menu = this.menu as any;
+    if(typeof menu.getFeatSlotStatus === 'function'){
+      return menu.getFeatSlotStatus(feat) | 0;
+    }
+
+    const creature = GameState.PartyManager?.party?.[0]
+      || GameState.CharGenManager?.selectedCreature
+      || GameState.getCurrentPlayer();
+    if(!creature) return SkillFlowStatus.InGame;
+
+    const prereq1 = feat.prereqFeat1 ?? feat.prereqfeat1;
+    const prereq2 = feat.prereqFeat2 ?? feat.prereqfeat2;
+    const hasPrereq1 = isUnsetFeatPrereq(prereq1) || creature.getHasFeat(prereq1);
+    const hasPrereq2 = isUnsetFeatPrereq(prereq2) || creature.getHasFeat(prereq2);
+    if(!hasPrereq1 || !hasPrereq2){
+      return SkillFlowStatus.Locked;
+    }
+    return SkillFlowStatus.InGame;
   }
 
 }

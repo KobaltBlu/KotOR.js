@@ -5,6 +5,15 @@ import type { ModuleCreature } from "@/module";
 import { TalentFeat } from "@/talents";
 import { GameState } from "@/GameState";
 import { getFeatPicksForLevel } from "@/engine/rules/level-up";
+import {
+  SkillFlowStatus,
+  SKILL_FLOW_COLOR_YELLOW,
+  getFeatId as resolveFeatId,
+  isUnsetFeatPrereq,
+} from "@/gui/protoitem/protoItemHelpers";
+
+/** Retail colorBlue for enabled Select button text. */
+const COLOR_SELECT_ENABLED = { r: 0, g: 0.658824, b: 0.980392 };
 
 /**
  * CharGenFeats class.
@@ -70,7 +79,7 @@ export class CharGenFeats extends GameMenu {
 
       this.BTN_SELECT?.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.pickSelectedFeat();
+        this.onSelectButton();
       });
 
       this.BTN_RECOMMENDED?.addEventListener('click', (e) => {
@@ -111,10 +120,31 @@ export class CharGenFeats extends GameMenu {
       }
     };
 
-    // Retail OnPanelAdded → ShowTutorialWindow(0x12) then ShowGranted when granted feats exist
+    const showGrantedThenFinish = () => {
+      if(grantedIds.length && !this.levelUpMode){
+        void this.showGrantedFeats(grantedIds).then(finishIfNoPicks);
+      }else{
+        finishIfNoPicks();
+      }
+    };
+
+    // Retail OnPanelAdded @ 006f2f30:
+    // if granted flag: ShowTutorialWindow(0x12); if shown, SetCallback(ShowGranted);
+    // else AddPanel(skill_info_box) immediately.
     if(grantedIds.length && !this.levelUpMode){
-      GameState.TutorialManager?.showWindow?.(0x12);
-      void this.showGrantedFeats(grantedIds).then(finishIfNoPicks);
+      const tutorialShown = GameState.TutorialManager?.showWindow?.(0x12) === true;
+      if(tutorialShown){
+        const confirm = GameState.MenuManager.InGameConfirm;
+        if(confirm){
+          confirm.onOk = () => {
+            showGrantedThenFinish();
+          };
+        }else{
+          showGrantedThenFinish();
+        }
+      }else{
+        showGrantedThenFinish();
+      }
     }else{
       finishIfNoPicks();
     }
@@ -185,25 +215,167 @@ export class CharGenFeats extends GameMenu {
       : '';
     this.LBL_NAME?.setText(name);
     this.LB_DESC?.setItem?.(desc);
+    this.updateSelectButtonState();
+    this.refreshFeatSlotVisuals();
+  }
+
+  /**
+   * Retail CSWGuiFeatsCharGen::DetermineFeat / BuildButtons:
+   * chosen-this-session (field27) → 4 / button Remove;
+   * owned → 1; available (CanChooseFeat) → 0; else locked → 3.
+   */
+  getFeatSlotStatus(feat: any): SkillFlowStatus {
+    if(!feat || !this.creature) return SkillFlowStatus.Locked;
+    const featId = this.getFeatId(feat);
+    if(this.chosenFeats.indexOf(featId) >= 0) return SkillFlowStatus.Chosen;
+    if(this.creature.getHasFeat(featId)) return SkillFlowStatus.Owned;
+    if(this.canChooseFeat(feat)) return SkillFlowStatus.Available;
+    return SkillFlowStatus.Locked;
+  }
+
+  /**
+   * Retail OnEnterFeat — enable Select for Available (Add Feat) and Chosen (Remove Feat).
+   * TLK 0x9637 "Add" / 0x9638 "Remove" + 0xa5f7 "Feat".
+   */
+  updateSelectButtonState(){
+    const btn = this.BTN_SELECT;
+    if(!btn) return;
+    const status = this.getFeatSlotStatus(this.selectedFeat);
+    const enabled = status === SkillFlowStatus.Available || status === SkillFlowStatus.Chosen;
+    // disableSelection removes the control from MenuGetActiveUIElements — use only when disabled.
+    btn.disableSelection = !enabled;
+    const verbRef = status === SkillFlowStatus.Chosen ? 0x9638 : 0x9637;
+    const verb =
+      GameState.TLKManager.GetStringById?.(verbRef)?.Value
+      ?? GameState.TLKManager.TLKStrings?.[verbRef]?.Value
+      ?? (status === SkillFlowStatus.Chosen ? 'Remove' : 'Add');
+    const noun =
+      GameState.TLKManager.GetStringById?.(0xa5f7)?.Value
+      ?? GameState.TLKManager.TLKStrings?.[0xa5f7]?.Value
+      ?? 'Feat';
+    btn.setText?.(`${verb} ${noun}`);
+    if(enabled){
+      btn.setBorderColor?.(
+        SKILL_FLOW_COLOR_YELLOW.r,
+        SKILL_FLOW_COLOR_YELLOW.g,
+        SKILL_FLOW_COLOR_YELLOW.b,
+      );
+      btn.setTextColor?.(COLOR_SELECT_ENABLED.r, COLOR_SELECT_ENABLED.g, COLOR_SELECT_ENABLED.b);
+    }else{
+      btn.setTextColor?.(0.5, 0.5, 0.5);
+    }
+  }
+
+  refreshFeatSlotVisuals(){
+    const children = this.LB_FEATS?.children;
+    if(!children) return;
+    for(let i = 0; i < children.length; i++){
+      const row = children[i] as any;
+      if(typeof row.refreshSlotVisuals === 'function'){
+        row.refreshSlotVisuals();
+      }
+    }
   }
 
   private getFeatId(feat: any): number {
-    return typeof feat?.id === 'number' ? feat.id : (feat?.__index | 0);
+    return resolveFeatId(feat);
   }
 
+  /**
+   * Retail OnFeatPicked @ 006f3c20 — Add (status 0) or Remove (status 1) chosen feat.
+   */
+  onSelectButton() {
+    if(!this.creature || !this.selectedFeat) return;
+    const status = this.getFeatSlotStatus(this.selectedFeat);
+    if(status === SkillFlowStatus.Chosen){
+      this.removeChosenFeat(this.getFeatId(this.selectedFeat));
+      return;
+    }
+    if(status === SkillFlowStatus.Available){
+      this.addChosenFeat(this.getFeatId(this.selectedFeat));
+    }
+  }
+
+  /** @deprecated use onSelectButton */
   pickSelectedFeat() {
-    if(!this.creature || !this.selectedFeat || this.selectionsRemaining <= 0) return;
-    const featId = this.getFeatId(this.selectedFeat);
-    if(this.creature.getHasFeat(featId)) return;
-    if(!this.canChooseFeat(this.selectedFeat)) return;
+    this.onSelectButton();
+  }
+
+  /**
+   * Retail AddChosenFeat @ 006f37e0 — move feat into session picks, spend a selection.
+   */
+  addChosenFeat(featId: number) {
+    if(!this.creature || this.selectionsRemaining <= 0) return;
+    if(this.chosenFeats.indexOf(featId) >= 0) return;
+    if(this.creature.getHasFeat(featId) && this.chosenFeats.indexOf(featId) < 0){
+      // Permanently owned — not a session pick.
+      return;
+    }
+    const feat = GameState.SWRuleSet.feats[featId];
+    if(!feat || !this.canChooseFeat(feat)) return;
     this.creature.addFeat(new TalentFeat(featId));
     this.chosenFeats.push(featId);
     this.selectionsRemaining--;
     this.updateSelectionsLabel();
     this.buildFeatList();
+    // Keep focus on the feat just added so Remove Feat is available.
+    this.selectFeat(feat);
   }
 
-  /** Prereq + class list gate before adding a pick. */
+  /**
+   * Retail RemoveChosenFeat @ 006f3990 — unpick session feat and cascade dependents.
+   */
+  removeChosenFeat(featId: number) {
+    if(!this.creature) return;
+    const idx = this.chosenFeats.indexOf(featId);
+    if(idx < 0) return;
+
+    const removeOne = (id: number) => {
+      const cIdx = this.chosenFeats.indexOf(id);
+      if(cIdx < 0) return;
+      this.chosenFeats.splice(cIdx, 1);
+      const fIdx = this.creature.feats?.findIndex((f: any) => f.id == id) ?? -1;
+      if(fIdx >= 0) this.creature.feats.splice(fIdx, 1);
+      this.selectionsRemaining++;
+    };
+
+    removeOne(featId);
+
+    // Cascade: drop chosen feats whose prereqs are no longer met.
+    let changed = true;
+    while(changed){
+      changed = false;
+      for(let i = this.chosenFeats.length - 1; i >= 0; i--){
+        const id = this.chosenFeats[i];
+        const feat = GameState.SWRuleSet.feats[id];
+        if(!feat) continue;
+        const p1 = feat.prereqFeat1 ?? feat.prereqfeat1;
+        const p2 = feat.prereqFeat2 ?? feat.prereqfeat2;
+        const hasP1 = isUnsetFeatPrereq(p1) || this.hasFeatOrChosen(p1 | 0);
+        const hasP2 = isUnsetFeatPrereq(p2) || this.hasFeatOrChosen(p2 | 0);
+        if(!hasP1 || !hasP2){
+          removeOne(id);
+          changed = true;
+        }
+      }
+    }
+
+    this.updateSelectionsLabel();
+    this.buildFeatList();
+    const feat = GameState.SWRuleSet.feats[featId];
+    if(feat) this.selectFeat(feat);
+  }
+
+  /** Owned on creature or picked this session (retail FeatAcquired + field27). */
+  private hasFeatOrChosen(featId: number): boolean {
+    if(this.chosenFeats.indexOf(featId) >= 0) return true;
+    return !!this.creature?.getHasFeat(featId);
+  }
+
+  /**
+   * Retail HasFeatPrereq + class list gate before adding a pick.
+   * Tier-3 feats stay locked until tier-2 (prereq) is owned or chosen this session.
+   */
   canChooseFeat(feat: any): boolean {
     if(!this.creature || !feat) return false;
     const mainClass = this.creature.getMainClass?.() || this.creature.classes?.[0];
@@ -211,10 +383,13 @@ export class CharGenFeats extends GameMenu {
     if(mainClass.isFeatAvailable && !mainClass.isFeatAvailable(feat)) return false;
     const status = mainClass.getFeatStatus?.(feat);
     if(status === 4 || status === false) return false;
-    const p1 = feat.prereqFeat1 | 0;
-    const p2 = feat.prereqFeat2 | 0;
-    if(p1 >= 0 && p1 !== 0xFFFFFFFF && p1 !== -1 && !this.creature.getHasFeat(p1)) return false;
-    if(p2 >= 0 && p2 !== 0xFFFFFFFF && p2 !== -1 && !this.creature.getHasFeat(p2)) return false;
+    const featId = this.getFeatId(feat);
+    if(this.hasFeatOrChosen(featId)) return false;
+    if(this.selectionsRemaining <= 0) return false;
+    const p1 = feat.prereqFeat1 ?? feat.prereqfeat1;
+    const p2 = feat.prereqFeat2 ?? feat.prereqfeat2;
+    if(!isUnsetFeatPrereq(p1) && !this.hasFeatOrChosen(p1 | 0)) return false;
+    if(!isUnsetFeatPrereq(p2) && !this.hasFeatOrChosen(p2 | 0)) return false;
     return true;
   }
 
@@ -319,6 +494,14 @@ export class CharGenFeats extends GameMenu {
       return a > b ? 1 : -1;
     });
     this.LB_FEATS.setItems(groups);
+    // Keep selection chrome after rebuild (e.g. after picking a prereq feat).
+    if(this.selectedFeat){
+      this.refreshFeatSlotVisuals();
+      this.updateSelectButtonState();
+    }else{
+      const first = groups[0]?.[0];
+      if(first) this.selectFeat(first);
+    }
   }
   
 }

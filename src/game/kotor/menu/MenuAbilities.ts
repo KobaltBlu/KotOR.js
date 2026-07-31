@@ -12,6 +12,7 @@ import {
   createInGamePowerChart,
 } from "@/engine/menu/skill-flow-chart";
 import { SWRuleSet } from "@/engine/rules/SWRuleSet";
+import { SkillFlowStatus } from "@/gui/protoitem/protoItemHelpers";
 
 enum AbilityFilter {
   SKILLS = 1,
@@ -64,6 +65,8 @@ export class MenuAbilities extends GameMenu {
   BTN_CHANGE2: GUIButton;
 
   filter: AbilityFilter = AbilityFilter.SKILLS;
+  /** Currently focused feat in the skill-flow chart (SetSelectedSkill). */
+  selectedFeat: TalentFeat | any = null;
 
   constructor(){
     super();
@@ -322,9 +325,21 @@ export class MenuAbilities extends GameMenu {
   }
 
   /**
+   * Retail in-game feat slots are always SetSkillStatus(6).
+   * Selection chrome is the yellow pulsing border (SetSelectedSkill).
+   */
+  getFeatSlotStatus(_feat: TalentFeat | any): SkillFlowStatus {
+    return SkillFlowStatus.InGame;
+  }
+
+  /**
    * Retail CSWGuiInGameAbilities::OnEnterFeat — name + description only.
+   * Also mirrors SetSelectedSkill selection visuals on feat proto items.
    */
   selectFeat(feat: TalentFeat | any) {
+    this.selectedFeat = feat || null;
+    this.refreshFeatSlotVisuals();
+
     if(!feat){
       this.clearDetailPanel();
       return;
@@ -339,6 +354,18 @@ export class MenuAbilities extends GameMenu {
 
     const description = !isNaN(descRef) && descRef >= 0 ? this.tlk(descRef) : '';
     this.featDescriptionList()?.setItem?.(description || null);
+  }
+
+  /** Refresh SetSkillStatus selection chrome on visible GUIFeatItem rows. */
+  refreshFeatSlotVisuals(){
+    const children = this.LB_ABILITY?.children;
+    if(!children) return;
+    for(let i = 0; i < children.length; i++){
+      const row = children[i] as any;
+      if(typeof row.refreshSlotVisuals === 'function'){
+        row.refreshSlotVisuals();
+      }
+    }
   }
 
   private firstPowerInList(items: any[][]): any | undefined {

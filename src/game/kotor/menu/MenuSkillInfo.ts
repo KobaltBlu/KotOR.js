@@ -24,6 +24,8 @@ export class MenuSkillInfo extends GameMenu {
     this.gui_resref = 'skillinfo';
     this.background = '';
     this.voidFill = false;
+    // Overlay so CharGen stays under it and MenuGetActiveUIElements hits this panel.
+    this.isOverlayGUI = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -33,6 +35,10 @@ export class MenuSkillInfo extends GameMenu {
       e.stopPropagation();
       this.dismiss();
     });
+    this._button_a = this.BTN_OK;
+    if(this.tGuiPanel?.widget){
+      this.tGuiPanel.widget.position.z = 10;
+    }
   }
 
   /** Open with message + string list (feat / skill names). */
