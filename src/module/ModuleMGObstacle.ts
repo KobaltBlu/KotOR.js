@@ -46,6 +46,8 @@ export class ModuleMGObstacle extends ModuleObject {
   constructor(template: GFFObject, layout: ILayoutObstacle){
     super(template);
     this.objectType |= ModuleObjectType.ModuleMGObstacle;
+    // Match ModuleMGPlayer / ModuleMGEnemy — ModuleObject ctor leaves template undefined.
+    this.template = template;
     this.name = '';
     this.invince = 0;
     this.hit_points = 0;
@@ -135,7 +137,8 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   /**
-   * Retail AddObstacle @ 00672250 — NewCAurObject(LYT name), SetPosition, PlayAnimation("ready").
+   * Retail AddObstacle @ 00672240 — NewCAurObject(LYT name), SetPosition once on Gob,
+   * AttachToScene(main_scene), PlayAnimation("ready"). Model stays at local origin.
    */
   async loadModel(): Promise<void> {
     const resref = (this.name || this.layout?.name || '')
@@ -146,16 +149,20 @@ export class ModuleMGObstacle extends ModuleObject {
 
     try{
       const mdl: OdysseyModel = await MDLLoader.loader.load(resref);
+      // Same lit path as placeables / MG player & enemies — GetNearestLights via
+      // collectLightingModels. Authored flagShadow still selects casters.
       const model = await OdysseyModel3D.FromMDL(mdl, {
         context: this.context,
         castShadow: true,
         receiveShadow: true,
       });
       model.name = resref;
+      // Single SetPosition on the container (this.position === container.position).
+      // Do not also offset the child model — that doubled LYT coords past Far_Clip.
       if(this.layout?.position){
-        model.position.copy(this.layout.position);
         this.position.copy(this.layout.position);
       }
+      // model.position.set(0, 0, 0);
       this.models.push(model);
       this.container.add(model);
       GameState.scene?.add?.(this.container);

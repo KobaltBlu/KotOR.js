@@ -743,6 +743,7 @@ export class ModuleMiniGame {
   /**
    * Retail ForceSetTrack path — NewCAurObject(trackResRef) per follower, not a shared LYT mesh.
    * attachType: SetPlayer passes GetAttachType (1/2); AddEnemy passes 0.
+   * Returns false when Track has no LYT proto (retail AddEnemy skips the follower entirely).
    */
   async bindFollowerTrack(
     follower: {
@@ -750,15 +751,16 @@ export class ModuleMiniGame {
       setTrack: (model: any, owns?: boolean, attachType?: number) => void;
     },
     attachType: number = 0,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const proto = this.findTrackByName(follower.trackName);
     if(!proto){
       console.warn('ModuleMiniGame.bindFollowerTrack: no proto for', follower.trackName);
-      return;
+      return false;
     }
     const model = await proto.createFollowerModel();
     GameState.group.creatures.add(model);
     follower.setTrack(model, true, attachType);
+    return true;
   }
 
   /**
@@ -766,6 +768,10 @@ export class ModuleMiniGame {
    * Caller may restore area BGM afterward.
    */
   dispose(){
+    // SWMG_SetSpeedBlurEffect may leave AurEnableSpeedBlur on; clear so
+    // AccumulationBlurPass does not carry into the next module / restart.
+    GameState.SetSpeedBlurEffect(false);
+
     this.stopMusic();
     if(this.musicEmitter){
       this.musicEmitter.dispose?.();
@@ -881,7 +887,12 @@ export class ModuleMiniGame {
       player.accel_lateral_secs = this.lateralAccel;
     }
     // Retail SetPlayer order: models → ForceSetTrack → SetCameraHook(CameraRotate).
-    await this.bindFollowerTrack(player, this.getAttachType());
+    const bound = await this.bindFollowerTrack(player, this.getAttachType());
+    if(!bound){
+      throw new Error(
+        `ModuleMiniGame: player Track [${player.trackName}] has no LYT proto`
+      );
+    }
     // CameraRotate BYTE is SetCameraHook attach flag (0 vs GetAttachType), not yaw degrees.
     player.setCameraHook(player.cameraRotate ? 1 : 0);
     player.getCurrentRoom();
@@ -899,12 +910,34 @@ export class ModuleMiniGame {
   }
 
   async loadMGEnemies(): Promise<void> {
-    for(let i = 0; i < this.enemies.length; i++){
+    // Retail AddEnemy @ 00671e40 — invalid Track skips the follower (no orphan Gob).
+    // initProperties (via load) must run first — Track lives on the ARE template.
+    for(let i = this.enemies.length - 1; i >= 0; i--){
       const enemy = this.enemies[i];
+      if(!enemy){
+        this.enemies.splice(i, 1);
+        continue;
+      }
       await enemy.load();
+      const trackName = ModuleMGTrack.normalizeName(enemy.trackName);
+      if(!trackName || !this.findTrackByName(trackName)){
+        console.warn(
+          'ModuleMiniGame.loadMGEnemies: skipping enemy — no LYT track for',
+          enemy.trackName
+        );
+        enemy.disposeFollower?.();
+        this.enemies.splice(i, 1);
+        continue;
+      }
+      enemy.trackName = trackName;
       await enemy.loadModel();
       await enemy.loadGunBanks();
-      await this.bindFollowerTrack(enemy, 0);
+      const bound = await this.bindFollowerTrack(enemy, 0);
+      if(!bound){
+        enemy.disposeFollower?.();
+        this.enemies.splice(i, 1);
+        continue;
+      }
       enemy.computeBoundingBox();
       enemy.getCurrentRoom();
     }
@@ -929,56 +962,48 @@ export class ModuleMiniGame {
 
   /**
    * Push MG OdysseyModel3Ds into the area lighting dynamics list.
-   * ModuleMG* `.model` is the container (no materials) — bind each child model/camera/gun.
+   * ModuleMG* `.model` / `.position` is the container (tunnel-local for followers) —
+   * omit position so OdysseyLightingBinder uses each child model's world pose
+   * (same GetNearestLights query point as scene AttachToObject gobs).
+   * Camera HUD stays unlit (IGNORE_LIGHTING / MG_CAMERA_HUD) — do not bind it.
    */
   collectLightingModels(
     out: Array<{ model?: unknown; position?: THREE.Vector3 }>
   ): void {
-    const pushModels = (
-      models: OdysseyModel3D[] | undefined,
-      position: THREE.Vector3
-    ) => {
+    const pushModels = (models: OdysseyModel3D[] | undefined) => {
       if(!models){ return; }
       for(let i = 0; i < models.length; i++){
         const model = models[i];
         if(model?.materials){
-          out.push({ model, position });
+          out.push({ model });
         }
       }
     };
 
-    const pushGunBanks = (
-      gunBanks: { guns?: OdysseyModel3D[] }[] | undefined,
-      position: THREE.Vector3
-    ) => {
+    const pushGunBanks = (gunBanks: { guns?: OdysseyModel3D[] }[] | undefined) => {
       if(!gunBanks){ return; }
       for(let i = 0; i < gunBanks.length; i++){
-        pushModels(gunBanks[i]?.guns, position);
+        pushModels(gunBanks[i]?.guns);
       }
     };
 
     const player = this.player;
     if(player){
-      const pos = player.position;
-      pushModels(player.models, pos);
-      if(player.camera?.materials){
-        out.push({ model: player.camera, position: pos });
-      }
-      pushGunBanks(player.gunBanks, pos);
+      pushModels(player.models);
+      pushGunBanks(player.gunBanks);
     }
 
     for(let i = 0; i < this.enemies.length; i++){
       const enemy = this.enemies[i];
       if(!enemy){ continue; }
-      const pos = enemy.position;
-      pushModels(enemy.models, pos);
-      pushGunBanks(enemy.gunBanks, pos);
+      pushModels(enemy.models);
+      pushGunBanks(enemy.gunBanks);
     }
 
     for(let i = 0; i < this.obstacles.length; i++){
       const obstacle = this.obstacles[i];
       if(!obstacle){ continue; }
-      pushModels(obstacle.models, obstacle.position);
+      pushModels(obstacle.models);
     }
   }
 

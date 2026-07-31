@@ -1534,6 +1534,10 @@ export class GameState implements EngineContext {
     }else{
       if(prev == EngineMode.MINIGAME){
         FollowerCamera.detachMinigameCamera();
+        // MG scripts may leave SWMG_SetSpeedBlurEffect on; Force Speed VFX keeps it.
+        if(GameState.motionBlurVFXCount <= 0){
+          GameState.SetSpeedBlurEffect(false);
+        }
       }
       if(mode == EngineMode.INGAME && GameState.module && !GameState.module.area?.miniGame){
         const overlay = GameState.MenuManager.InGameOverlay;
@@ -1577,6 +1581,13 @@ export class GameState implements EngineContext {
     GameState.holdWorldFadeInForDialog = false;
     GameState.areaTransitionPending = false;
     GameState.FadeOverlayManager.Reset();
+    // SWMG_SetSpeedBlurEffect / Force Speed leave AurEnableSpeedBlur set; clear so
+    // AccumulationBlurPass does not smear the next module (retail AurDisableSpeedBlur).
+    GameState.motionBlurVFXCount = 0;
+    GameState.SetSpeedBlurEffect(false);
+    if(GameState.speedBlurPass){
+      GameState.speedBlurPass.enabled = false;
+    }
     const audioEngine = AudioEngine.GetAudioEngine();
     audioEngine.reset();
 

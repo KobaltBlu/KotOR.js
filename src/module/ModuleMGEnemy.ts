@@ -93,6 +93,8 @@ export class ModuleMGEnemy extends ModuleObject {
   collided: boolean = false;
   /** Last HP delta for SWMG_GetLastHPChange / OnDamage. */
   lastHPChange: number = 0;
+  /** World pose for sphere / audio — container.position is local under modelhook. */
+  private static _worldPos = new THREE.Vector3();
 
   constructor(template: GFFObject){
     super();
@@ -177,19 +179,32 @@ export class ModuleMGEnemy extends ModuleObject {
     }
   }
 
+  /**
+   * Sphere + engine audio need world coords. Do not write container.position
+   * (local under modelhook) — that would break attach pose.
+   */
+  syncWorldSphereAndAudio(){
+    this.container.updateMatrixWorld?.(true);
+    this.container.getWorldPosition(ModuleMGEnemy._worldPos);
+    this.sphere.center.copy(ModuleMGEnemy._worldPos);
+    if(this.sphere_geom){
+      this.sphere_geom.position.copy(ModuleMGEnemy._worldPos);
+    }
+    this.trackFollowerAudio.updatePosition(
+      ModuleMGEnemy._worldPos.x,
+      ModuleMGEnemy._worldPos.y,
+      ModuleMGEnemy._worldPos.z
+    );
+  }
+
   update(delta: number = 0){
 
     this.invince -= delta;
     if(this.invince < 0) this.invince = 0;
 
     this.sphere.radius = this.sphere_radius;
-    // this.model.getWorldPosition(this.position);
-    this.sphere.center.copy(this.position);
-
+    this.syncWorldSphereAndAudio();
     this.sphere_geom.scale.setScalar(this.sphere_radius);
-    this.sphere_geom.position.copy(this.sphere.center);
-
-    this.trackFollowerAudio.updatePosition(this.position.x, this.position.y, this.position.z);
 
     for(let i = 0; i < this.animationManagers.length; i++){
       const aManager = this.animationManagers[i];
@@ -498,7 +513,12 @@ export class ModuleMGEnemy extends ModuleObject {
     this.setFollowerSpeed(this.speed);
     this.ensureTrackAnimation();
     this.running = true;
-    this.trackFollowerAudio.go(this.position.x, this.position.y, this.position.z);
+    this.syncWorldSphereAndAudio();
+    this.trackFollowerAudio.go(
+      ModuleMGEnemy._worldPos.x,
+      ModuleMGEnemy._worldPos.y,
+      ModuleMGEnemy._worldPos.z
+    );
   }
 
   /**

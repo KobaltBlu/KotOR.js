@@ -177,6 +177,8 @@ export class ModuleMGPlayer extends ModuleObject {
   private hitModelSegReady: boolean = false;
   private static _tmpHitBump = new THREE.Vector3();
   private static _tmpHitModel = new THREE.Vector3();
+  /** World pose for sphere / audio — container.position holds swoop tunnel offset. */
+  private static _worldPos = new THREE.Vector3();
   /**
    * Retail OnAnimKeyEvent @ 0066fe50 — bound playEvent listeners on track + models.
    * Detached in disposeFollower.
@@ -401,11 +403,9 @@ export class ModuleMGPlayer extends ModuleObject {
     }
 
     this.sphere.radius = this.sphere_radius;
-    // this.model.parent.getWorldPosition(this.position);
-    this.sphere.center.copy(this.position);
-
+    // Sphere/audio use world pose; container.position is KeepInTunnel local offset.
+    this.syncWorldSphereAndAudio();
     this.sphere_geom.scale.setScalar(this.sphere_radius);
-    this.sphere_geom.position.copy(this.sphere.center);
 
     for(let i = 0; i < this.animationManagers.length; i++){
       const aManager = this.animationManagers[i];
@@ -542,13 +542,9 @@ export class ModuleMGPlayer extends ModuleObject {
     for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i].update(delta);
     }
-    
-    // this.model.parent.getWorldPosition(this.position);
 
-    this.sphere.center.copy(this.position);
-    this.sphere_geom.position.copy(this.sphere.center);
-
-    this.trackFollowerAudio.updatePosition(this.position.x, this.position.y, this.position.z);
+    // After track/physics — refresh world sphere for bumps / audio.
+    this.syncWorldSphereAndAudio();
 
     if(this.camera instanceof OdysseyModel3D && this.camera.bonesInitialized && this.camera.visible){
       this.camera.update(delta);
@@ -650,7 +646,12 @@ export class ModuleMGPlayer extends ModuleObject {
     this.ensureTrackAnimation();
     this.running = true;
     this.clearInertiaKeyBuffers();
-    this.trackFollowerAudio.go(this.position.x, this.position.y, this.position.z);
+    this.syncWorldSphereAndAudio();
+    this.trackFollowerAudio.go(
+      ModuleMGPlayer._worldPos.x,
+      ModuleMGPlayer._worldPos.y,
+      ModuleMGPlayer._worldPos.z
+    );
   }
 
   /**
@@ -1217,6 +1218,24 @@ export class ModuleMGPlayer extends ModuleObject {
     offset.x = clampAxis(offset.x, this.tunnelInfinite.x, this.origin.x, this.tunnel.neg.x, this.tunnel.pos.x);
     offset.y = clampAxis(offset.y, this.tunnelInfinite.y, this.origin.y, this.tunnel.neg.y, this.tunnel.pos.y);
     offset.z = clampAxis(offset.z, this.tunnelInfinite.z, this.origin.z, this.tunnel.neg.z, this.tunnel.pos.z);
+  }
+
+  /**
+   * Sphere + engine audio need world coords. container.position is KeepInTunnel
+   * local offset under modelhook — do not overwrite it.
+   */
+  syncWorldSphereAndAudio(){
+    this.container.updateMatrixWorld?.(true);
+    this.container.getWorldPosition(ModuleMGPlayer._worldPos);
+    this.sphere.center.copy(ModuleMGPlayer._worldPos);
+    if(this.sphere_geom){
+      this.sphere_geom.position.copy(ModuleMGPlayer._worldPos);
+    }
+    this.trackFollowerAudio?.updatePosition?.(
+      ModuleMGPlayer._worldPos.x,
+      ModuleMGPlayer._worldPos.y,
+      ModuleMGPlayer._worldPos.z
+    );
   }
 
   /**
