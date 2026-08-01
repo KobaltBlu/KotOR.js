@@ -1108,7 +1108,6 @@ export class GameState implements EngineContext {
       GameState.scene.add( GameState.CursorManager.reticle );
       GameState.scene.add( GameState.CursorManager.reticle2 );
       GameState.scene_gui.add( GameState.CursorManager.arrow );
-      GameState.scene.add( GameState.CursorManager.testPoints );
       console.log('CursorManager: Complete');
 
       PerformanceMonitor.start('PartyManager.Initialize');

@@ -3,6 +3,7 @@ import { TextureLoader } from "@/loaders";
 import { Mouse } from "@/controls/Mouse";
 import type { ModuleObject } from "@/module";
 import type { ModuleCreature } from "@/module/ModuleCreature";
+import type { ModuleDoor } from "@/module/ModuleDoor";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { EngineMode, GameEngineType } from "@/enums/engine";
 import type { MenuManager } from "@/managers/MenuManager";
@@ -19,12 +20,20 @@ import {
 	getSelectedReticleStyle,
 	pixelSizeToWorldScale,
 } from "@/managers/reticle";
+import {
+	getStickyMouseThresholdSq,
+	MOUSE_PICK_RANGE_SQ,
+	passesMousePickGates,
+	screenDistanceSq,
+} from "@/managers/mouse-pick";
 
 /**
  * Manages the in-game cursor, reticles, and selection/hover logic.
  *
  * Retail: CSWGuiMainInterface::UpdateStickyTarget @ 006889c0 /
  * UpdateIndicator @ 0068a310 — distance size, combatreticle pulse, off-screen hide.
+ * Mouse hover/click pick: CClientExoAppInternal::ProcessInput @ 006227e0 —
+ * Camera::HitCheck then GetStickyMouseThreshhold sticky fallback.
  *
  * @file CursorManager.ts
  * @author KobaltBlu
@@ -61,28 +70,11 @@ export class CursorManager {
 	
 	/** Subset of module objects considered for selection/hover */
 	static visibleObjects: ModuleObject[];
-	
-	/** Dynamic geometry used as point proxies for interactable ray tests */
-	static pointGeomerty = new THREE.BufferGeometry();
-	/** Material for point proxy cloud used for raycasting */
-	static pointMaterial = new THREE.PointsMaterial({
-		color: 0xff0000,
-		sizeAttenuation: false,
-		fog: false,
-		visible: false
-	});
-	
-	/** Points instance used as a single occlusion/raycast target for interactables */
-	static testPoints: THREE.Points;
-	
-	/** Debug sphere geometry (optional visualization) */
-	static sphereGeometry = new THREE.SphereGeometry( 1, 16, 8 ); 
-	/** Debug sphere material (optional visualization) */
-	static sphereMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000 } ); 
-	/** Debug sphere mesh (optional visualization) */
-	static sphere: THREE.Mesh;
 
 	static #tmpWorld = new THREE.Vector3();
+	static #tmpHit = new THREE.Vector3();
+	static #tmpNdc = new THREE.Vector3();
+	static #tmpBox = new THREE.Box3();
 	
 	/**
 	 * Initializes cursor/reticle materials and sprites, and loads textures.
@@ -161,13 +153,6 @@ export class CursorManager {
 
 		TextureLoader.enQueue('friendlyarrow', CursorManager.cursorMaterials.get('arrowF'));
 		TextureLoader.enQueue('hostilearrow', CursorManager.cursorMaterials.get('arrowH'));
-
-		CursorManager.pointGeomerty.attributes.position = new THREE.Float32BufferAttribute([], 3);
-		CursorManager.pointGeomerty.attributes.size = new THREE.Float32BufferAttribute([], 1);
-		CursorManager.testPoints = new THREE.Points(CursorManager.pointGeomerty, CursorManager.pointMaterial);
-		CursorManager.testPoints.frustumCulled = false;
-
-		CursorManager.sphere = new THREE.Mesh( CursorManager.sphereGeometry, CursorManager.sphereMaterial );
 
 		await TextureLoader.LoadQueue();
 
@@ -480,101 +465,203 @@ export class CursorManager {
 
 	/** Shared raycaster for interactable hit-testing */
 	static raycaster = new THREE.Raycaster();
-	/** Point size used for the proxy point cloud */
-	static pointSize = 0.2;
-	/** Raycaster threshold for points intersections */
-	static pointThreshold = 1;
-	/** Line of sight z offset for the point cloud */
-	static pointLOSOffset = 1;
 
 	/**
-	 * Nearest door-walkmesh hit along the current raycaster ray.
-	 * Used to occlude interactable picks through closed doors.
+	 * Nearest walkmesh occlusion along the current raycaster ray.
+	 * Approximates retail SceneHitCheck room CheckAABBAll + closed-door DWKs.
 	 */
-	static findNearestDoorWalkmeshHit(): { distance: number; door: ModuleObject } | undefined {
-		const doorWoks = GameState.module?.area?.doorWalkmeshes;
-		if(!doorWoks?.length) return undefined;
+	static findNearestSceneOccluder(): { distance: number; door?: ModuleObject } | undefined {
+		const area = GameState.module?.area;
+		if(!area) return undefined;
 
 		const raycaster = CursorManager.raycaster;
 		let bestDist = Infinity;
 		let bestDoor: ModuleObject | undefined;
 
-		for(let i = 0; i < doorWoks.length; i++){
-			const wok = doorWoks[i];
-			if(!wok?.faces?.length || !wok.mesh) continue;
-			const hits = wok.raycast(raycaster) || [];
+		const rooms = area.rooms || [];
+		for(let i = 0; i < rooms.length; i++){
+			const room: any = rooms[i];
+			const wok = room?.collisionManager?.walkmesh;
+			if(!wok?.faces?.length) continue;
+			const hits = wok.raycast(raycaster, wok.faces) || [];
 			for(let h = 0; h < hits.length; h++){
-				const hit = hits[h];
-				if(hit.distance >= bestDist) continue;
-				bestDist = hit.distance;
-				bestDoor = wok.moduleObject;
+				if(hits[h].distance < bestDist){
+					bestDist = hits[h].distance;
+					bestDoor = undefined;
+				}
 			}
 		}
 
-		if(!bestDoor || !Number.isFinite(bestDist)) return undefined;
+		const doorWoks = area.doorWalkmeshes;
+		if(doorWoks?.length){
+			for(let i = 0; i < doorWoks.length; i++){
+				const wok = doorWoks[i];
+				if(!wok?.faces?.length || !wok.mesh) continue;
+				const door = wok.moduleObject;
+				if(
+					door &&
+					BitWise.InstanceOf(door.objectType, ModuleObjectType.ModuleDoor) &&
+					(door as ModuleDoor).isOpen()
+				){
+					continue;
+				}
+				const hits = wok.raycast(raycaster) || [];
+				for(let h = 0; h < hits.length; h++){
+					if(hits[h].distance < bestDist){
+						bestDist = hits[h].distance;
+						bestDoor = door;
+					}
+				}
+			}
+		}
+
+		if(!Number.isFinite(bestDist) || bestDist === Infinity) return undefined;
 		return { distance: bestDist, door: bestDoor };
 	}
 
 	/**
-	 * Performs a ray test against interactable objects using a point cloud proxy.
-	 * Door walkmeshes occlude hits behind them (retail SceneHitCheck / CanSee door block).
+	 * Project an object's GetReticlePoint into viewport pixel space.
+	 * Mirrors retail GetReticlePoint screen write used by the sticky path.
+	 */
+	static projectReticleToScreen(
+		object: ModuleObject,
+		camera: THREE.Camera,
+		out: { x: number; y: number },
+	): boolean {
+		const node = object.getReticleNode?.();
+		if(node){
+			node.getWorldPosition(CursorManager.#tmpWorld);
+		}else{
+			CursorManager.#tmpWorld.copy(object.position);
+			CursorManager.#tmpWorld.z += 1;
+		}
+
+		CursorManager.#tmpNdc.copy(CursorManager.#tmpWorld).project(camera);
+		if(!Number.isFinite(CursorManager.#tmpNdc.x) || !Number.isFinite(CursorManager.#tmpNdc.y)){
+			return false;
+		}
+
+		const vpW = GameState.ResolutionManager.getViewportWidth();
+		const vpH = GameState.ResolutionManager.getViewportHeight();
+		out.x = (CursorManager.#tmpNdc.x * 0.5 + 0.5) * vpW;
+		out.y = (-CursorManager.#tmpNdc.y * 0.5 + 0.5) * vpH;
+		return true;
+	}
+
+	/**
+	 * Retail ProcessInput mouse pick @ 006227e0 / Android 00305304:
+	 * 1) Camera::HitCheck-style AABB ray against selectable objects (SceneHitCheck
+	 *    walkmesh occluders reject hits behind geometry)
+	 * 2) Sticky fallback — nearest CanSee GetReticlePoint within
+	 *    GetStickyMouseThreshhold `(w/10)²+(h/10)²`
 	 */
 	public static onMouseHitInteractive(): ModuleObject | undefined {
-		
-		const objects = GameState.ModuleObjectManager.playerHoverableObjects;
-		const objCount = objects.length;
-		
-		const points: number[] = [];
-		const sizes: number[] = [];
+		const player = GameState.getCurrentPlayer();
+		const camera = GameState.currentCamera;
+		if(!player || !camera){
+			return undefined;
+		}
 
-		const losZ = CursorManager.pointLOSOffset;
-		
+		const objects = GameState.ModuleObjectManager.playerSelectableObjects;
+		const objCount = objects.length;
+		if(objCount < 1){
+			return undefined;
+		}
+
+		const farCache = CursorManager.raycaster.far;
+		CursorManager.raycaster.far = Math.max(
+			camera instanceof THREE.PerspectiveCamera ? camera.far : 1000,
+			GameState.maxSelectableDistance,
+		);
+		CursorManager.raycaster.setFromCamera(Mouse.position, camera);
+
+		const occluder = CursorManager.findNearestSceneOccluder();
+		const ray = CursorManager.raycaster.ray;
+
+		let bestObj: ModuleObject | undefined;
+		let bestDist = Infinity;
+
 		for(let i = 0; i < objCount; i++){
 			const obj = objects[i];
-			points.push(obj.position.x, obj.position.y, obj.position.z + losZ);
-			sizes.push(CursorManager.pointSize);
-		}
-
-		if(objCount != CursorManager.pointGeomerty.attributes.size.count){
-			CursorManager.pointGeomerty.attributes.position = new THREE.Float32BufferAttribute(points, 3);
-			CursorManager.pointGeomerty.attributes.size = new THREE.Float32BufferAttribute(sizes, 1);
-		}else{
-			const positionAttribute = CursorManager.pointGeomerty.attributes.position as THREE.BufferAttribute;
-			const sizeAttribute = CursorManager.pointGeomerty.attributes.size as THREE.BufferAttribute;
-			for(let i = 0; i < objCount; i++){
-				positionAttribute.setX(i*3, objects[i].position.x);
-				positionAttribute.setY(i*3, objects[i].position.y);
-				positionAttribute.setZ(i*3, objects[i].position.z + losZ);
-				sizeAttribute.setX(i, CursorManager.pointSize);
-			}
-		}
-
-		CursorManager.pointGeomerty.computeBoundingBox();
-		CursorManager.pointGeomerty.computeBoundingSphere();
-		
-		const farCache = CursorManager.raycaster.far;
-		const pThresholdCache = CursorManager.raycaster.params.Points.threshold;
-		CursorManager.raycaster.far = GameState.maxSelectableDistance;
-		CursorManager.raycaster.params.Points.threshold = CursorManager.pointThreshold;
-		CursorManager.raycaster.setFromCamera( Mouse.position, GameState.currentCamera );
-		const intersectsT = CursorManager.raycaster.intersectObject( CursorManager.testPoints, false );
-		CursorManager.raycaster.params.Points.threshold = pThresholdCache;
-
-		const doorHit = CursorManager.findNearestDoorWalkmeshHit();
-		CursorManager.raycaster.far = farCache;
-
-		for(let i = 0; i < intersectsT.length; i++){
-			const intersect = intersectsT[i];
-			if(intersect.object != CursorManager.testPoints) continue;
-			const obj = objects[intersect.index];
-			if(!obj) continue;
-			// Door DWK in front of this candidate blocks pick-through; allow the door itself
-			if(doorHit && doorHit.distance < intersect.distance && doorHit.door !== obj){
+			if(!passesMousePickGates(player.position, camera.position, obj.position, MOUSE_PICK_RANGE_SQ)){
 				continue;
 			}
-			return obj;
+
+			// Prefer cached model AABB (Gob bounding volume). Rebuild only if empty.
+			let box = obj.box;
+			if(!box || box.isEmpty()){
+				if(typeof obj.computeBoundingBox === 'function'){
+					obj.computeBoundingBox();
+					box = obj.box;
+				}
+			}
+			if(!box || box.isEmpty()){
+				const radius = typeof obj.getHitDistance === 'function'
+					? Math.max(0.25, obj.getHitDistance())
+					: 0.5;
+				CursorManager.#tmpBox.min.set(
+					obj.position.x - radius,
+					obj.position.y - radius,
+					obj.position.z,
+				);
+				CursorManager.#tmpBox.max.set(
+					obj.position.x + radius,
+					obj.position.y + radius,
+					obj.position.z + radius * 2,
+				);
+				box = CursorManager.#tmpBox;
+			}
+			if(!ray.intersectBox(box, CursorManager.#tmpHit)){
+				continue;
+			}
+
+			const dist = ray.origin.distanceTo(CursorManager.#tmpHit);
+			if(occluder && dist > occluder.distance && occluder.door !== obj){
+				continue;
+			}
+			if(dist < bestDist){
+				bestDist = dist;
+				bestObj = obj;
+			}
 		}
-		return undefined;
+
+		if(bestObj){
+			CursorManager.raycaster.far = farCache;
+			return bestObj;
+		}
+
+		// Sticky fallback — retail GetStickyMouseThreshhold + GetReticlePoint
+		const threshSq = getStickyMouseThresholdSq(
+			GameState.ResolutionManager.getViewportWidth(),
+			GameState.ResolutionManager.getViewportHeight(),
+		);
+		const mouseX = Mouse.positionViewport.x;
+		const mouseY = Mouse.positionViewport.y;
+		const screen = { x: 0, y: 0 };
+		let bestSticky: ModuleObject | undefined;
+		let bestStickyDist = Infinity;
+
+		for(let i = 0; i < objCount; i++){
+			const obj = objects[i];
+			if(!GameState.ModuleObjectManager.canSeeObject(player, obj)){
+				continue;
+			}
+			if(!passesMousePickGates(player.position, camera.position, obj.position, MOUSE_PICK_RANGE_SQ)){
+				continue;
+			}
+			if(!CursorManager.projectReticleToScreen(obj, camera, screen)){
+				continue;
+			}
+			const distSq = screenDistanceSq(mouseX, mouseY, screen.x, screen.y);
+			if(distSq > threshSq || distSq >= bestStickyDist){
+				continue;
+			}
+			bestStickyDist = distSq;
+			bestSticky = obj;
+		}
+
+		CursorManager.raycaster.far = farCache;
+		return bestSticky;
 	}
 
 }

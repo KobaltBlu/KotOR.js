@@ -10,6 +10,7 @@ export * from "@/managers/CursorManager";
 export * from "@/managers/DirtyTextureManager";
 export * from "@/managers/TextureAnimationManager";
 export * from "@/managers/reticle";
+export * from "@/managers/mouse-pick";
 export * from "@/managers/DialogMessageManager";
 export * from "@/managers/ERFManager";
 export * from "@/managers/FactionManager";
