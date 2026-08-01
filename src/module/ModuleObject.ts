@@ -708,6 +708,10 @@ export class ModuleObject {
    *   interrupt combat-round pause so a newly queued CAST_SPELL / attack can
    *   dispatch via ActionCombat immediately.
    *
+   * Retail CSWSObject::ClearAllActions @ 004ccd80 (commandable path) keeps
+   * conversation control actions via a per-action callback. EffectHorrified /
+   * SetState must not drop Pause/Wait/Resume or dialogs hang (tar08_calo082).
+   *
    * Retail CSWSObject::ClearAllActions @ 004ccd80 does **not** RemoveAllActions
    * on the combat-round schedule — that is a separate call (GUI ClearAll /
    * CancelCombat / SetCombatState(0)). Keeping the schedule lets the player
@@ -735,7 +739,18 @@ export class ModuleObject {
       let i = this.actionQueue.length;
       while(i--){
         let action = this.actionQueue[i];
-        if(action.type == ActionType.ActionDialogObject){ continue; }
+        // Retail CSWSObject::ClearAllActions @ 004ccd80 (commandable path) uses
+        // a per-action keep/drop callback. Conversation Pause/Wait/Resume must
+        // survive SetState clears (EffectHorrified in k_ptar_calofade) or the
+        // dialog stays paused forever with pendingAdvance.
+        if(
+          action.type == ActionType.ActionDialogObject ||
+          action.type == ActionType.ActionPauseDialog ||
+          action.type == ActionType.ActionResumeDialog ||
+          action.type == ActionType.ActionWait
+        ){
+          continue;
+        }
         if(typeof action.clearable !== 'undefined'){
           if(action.clearable){
             this.actionQueue.splice(i, 1).map((a) => a.dispose());

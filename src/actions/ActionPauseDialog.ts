@@ -20,6 +20,8 @@ export class ActionPauseDialog extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionPauseDialog;
+    // Keep with ActionResumeDialog — see ClearAllActions skipUnclearable path.
+    this.clearable = false;
   }
 
   update(delta: number = 0): ActionStatus {

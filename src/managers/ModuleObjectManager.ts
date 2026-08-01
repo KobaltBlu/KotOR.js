@@ -89,7 +89,16 @@ export class ModuleObjectManager {
     }
 
     if(this.ObjectList.has(id)){
-      return this.ObjectList.get(id);
+      const obj = this.ObjectList.get(id) as ModuleObject & {
+        destroyed?: boolean;
+        serverDestroyed?: boolean;
+        isRetainedCorpse?: boolean;
+      };
+      // Retail GetGameObject fails after event 0xb; KeepCorpse is client-only.
+      if(obj?.destroyed || obj?.serverDestroyed || obj?.isRetainedCorpse){
+        return undefined;
+      }
+      return obj;
     }
 
     // Retail SWMG_* StackPopObject → GetMiniGameObject(mgo_index).

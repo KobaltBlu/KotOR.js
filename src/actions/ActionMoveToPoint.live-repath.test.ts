@@ -297,4 +297,52 @@ describe("ActionMoveToPoint live-chase repath", () => {
     expect(action.update(1 / 60)).toBe(ActionStatus.COMPLETE);
     expect(mockIsInUseRange).toHaveBeenCalled();
   });
+
+  it("completes door/placeable use-range move when isInUseRange even if dist > param range", () => {
+    // Same WalkUpdate UseRange early-out as live chase — without this, OpenDoor /
+    // UseObject never run after walking into range (must re-click).
+    const owner = {
+      id: 1,
+      position: new THREE.Vector3(0, 0, 0),
+      rotation: { z: 0 },
+      area: {
+        id: 1,
+        getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
+        isPointWalkable: () => true,
+      },
+      walkSpeedFactor: 1,
+      locomotionScale: 1,
+      movementSpeed: 1,
+      helperColor: 0,
+      setComputedPath: jest.fn(),
+      getComputedPath: jest.fn(),
+      clearLocomotionState: jest.fn(),
+      setFacing: jest.fn(),
+      setAnimationState: jest.fn(),
+      getWalkSpeed: () => 1.7,
+      getRunSpeed: () => 5.4,
+      openSpot: undefined,
+      force: 0,
+      speed: 0,
+      animState: 0,
+      collisionTimer: 0,
+      blockingTimer: 0,
+    } as unknown as ModuleCreature;
+
+    mockIsInUseRange.mockReturnValue(true);
+
+    const action = new ActionMoveToPoint();
+    action.setOwner(owner);
+    action.setParameter(0, ActionParameterType.FLOAT, 1.174);
+    action.setParameter(1, ActionParameterType.FLOAT, 0);
+    action.setParameter(2, ActionParameterType.FLOAT, 0);
+    action.setParameter(3, ActionParameterType.DWORD, 1);
+    // OBJECT_INVALID would skip use-range completion; any real target id counts
+    action.setParameter(4, ActionParameterType.DWORD, 2);
+    action.setParameter(5, ActionParameterType.INT, 1);
+    action.setParameter(6, ActionParameterType.FLOAT, 1.1);
+
+    expect(action.update(1 / 60)).toBe(ActionStatus.COMPLETE);
+    expect(owner.clearLocomotionState).toHaveBeenCalled();
+  });
 });

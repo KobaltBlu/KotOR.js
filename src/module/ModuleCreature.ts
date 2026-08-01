@@ -1450,9 +1450,10 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateActionQueue(delta = 0){
-    if(this.isDebilitated() && this.area.module.readyToProcessEvents)
-      return;
-
+    // Retail CSWSCreature::AIUpdate @ 004fe210 always calls RunActions — there is
+    // no debilitated early-out. Locomotion is gated in quickWalkUpdate / move
+    // actions; conversation Wait/Resume (k_ptar_calofade after EffectHorrified)
+    // must still tick or Pause hangs forever.
     if(!GameState.module.readyToProcessEvents)
       return;
 
@@ -3795,9 +3796,19 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    // Retail: body bag spawns on destroy when destroyable; OnDeath only scripts + schedule remove
+    // Retail OnApplyDeath: GetDeadTemp (party + HP≤0) skips DestroyObjectDelay / KeepCorpse.
+    // Dead PMs stay until TempDeath resurrection or party wipe — do not bag them.
     this.scheduleDestroyAsCorpse();
     return true;
+  }
+
+  /**
+   * Retail CSWSCreature::GetDeadTemp @ 004ef890 — true when this creature is in the
+   * client party and current HP < 1 (awaiting combat-clear resurrection).
+   */
+  getDeadTemp(): boolean {
+    if(!this.isPartyMember()) return false;
+    return this.getHP() < 1;
   }
 
   /**
@@ -3806,10 +3817,13 @@ export class ModuleCreature extends ModuleObject {
    * then event `0xb` spawns the bag and either SetFadeOutTime (FadeDelayOnDeath ms)
    * or SetKeepCorpse (missing FadeDelayOnDeath) — not an 8s fade-as-authority.
    * Non-destroyable corpses stay selectable with loot on the creature.
+   * GetDeadTemp party members skip this path entirely.
    */
   scheduleDestroyAsCorpse(){
     if(!this.isDestroyable) return;
     if(this.destroyed || this.serverDestroyed || this.isRetainedCorpse) return;
+    // Retail GetDeadTemp branch — no event 0xb / KeepCorpse for live party members
+    if(this.isPartyMember()) return;
     // Re-apply after OnDeath DestroyObject(OBJECT_SELF) defaults so bare willDestroy
     // with delay 0 does not skip DestroyObjectDelay / FadeDelayOnDeath.
     if(this.corpseDestroyScheduled) return;
@@ -4015,12 +4029,14 @@ export class ModuleCreature extends ModuleObject {
     // Corpse-model bags (Rancor/Krayt) show the placeable; no KeepCorpse shell
     if(this.keepCorpseOnDestroy && !bagIsCorpseModel){
       this.enterRetainedCorpse();
-      return;
-    }
-
-    if(bag){
+    }else if(bag){
       bag.setBodyBagVisible(true);
     }
+
+    // Retail event 0xb removes the object from GetGameObject / tag lookup so
+    // GetIsObjectValid / GetObjectByTag fail (k_ptar_ramp Calo082 gate). KeepCorpse
+    // shells stay in area.creatures for visuals only.
+    GameState.ModuleObjectManager.RemoveObject(this);
     // Fade path continues via willDestroy / updateDestroyFade → destroy()
   }
 
@@ -4098,6 +4114,35 @@ export class ModuleCreature extends ModuleObject {
     if(this.model instanceof OdysseyModel3D && this.model.bonesInitialized){
       this.model.animateFrame = true;
       this.model.update(delta);
+    }
+  }
+
+  /**
+   * Undo KeepCorpse / pending destroy without disposing the creature.
+   * Used by EffectResurrection when a party member was wrongly bagged, or after
+   * any TempDeath revive that must restore normal AI updates.
+   */
+  clearCorpseDestroyState(){
+    const wasScriptHidden = !!(this.isRetainedCorpse || this.serverDestroyed);
+    const stillInObjectList = GameState.ModuleObjectManager.ObjectList.has(this.id);
+    if(this.isRetainedCorpse){
+      const area = this.area || GameState.module?.area;
+      area?.corpseCache?.remove(this);
+      this.isRetainedCorpse = false;
+    }
+    this.corpseDestroyScheduled = false;
+    this.serverDestroyed = false;
+    this.keepCorpseOnDestroy = false;
+    this.retainedCorpseFadeRemaining = -1;
+    this.retainedCorpseFadeTotal = 0;
+    this.setWillDestroy(false);
+    this.setDelayUntilDestroy(0);
+    this.setDelayUntilFade(0);
+    this.setNoFadeOnDestroy(false);
+    this.setOpacity(1);
+    // Party TempDeath revive after KeepCorpse removed the object from script tables
+    if(wasScriptHidden && !stillInObjectList){
+      GameState.ModuleObjectManager.RegisterObject(this);
     }
   }
 
@@ -4634,8 +4679,21 @@ export class ModuleCreature extends ModuleObject {
   }
 
   setHP(nAmount = 0){
-    let bonus = this.maxHitPoints - this.hitPoints;
-    this.currentHitPoints = nAmount - bonus;
+    // Keep currentHitPoints consistent with getHP() for every subrace.
+    // Default: getHP = maxHitPoints + currentHitPoints - hitPoints
+    // Wookiee/Beast: getHP = hitPoints + currentHitPoints
+    // EffectDeath setHP(-11) used only the default inversion, so beast NPCs
+    // (e.g. Calo on Taris) stayed at positive HP with EffectDeath applied —
+    // GetIsObjectValid stayed true and k_ptar_ramp never started tar08_ramp.
+    switch(this.subraceIndex){
+      case 1: // WOOKIE
+      case 2: // BEAST
+        this.currentHitPoints = nAmount - this.hitPoints;
+        break;
+      default:
+        this.currentHitPoints = nAmount - (this.maxHitPoints - this.hitPoints);
+        break;
+    }
   }
 
   addHP(nAmount = 0, ignoreMaxHitPoints = false){

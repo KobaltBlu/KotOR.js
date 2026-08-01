@@ -87,29 +87,42 @@ export class ActionMoveToPoint extends Action {
       this.target &&
       BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleCreature)
     );
+    // queueMoveIntoUseRange / MoveToObject set param-4 to the use target.
+    // WalkUpdateLocation UseRange early-out (@ 00516630) stops locomotion once
+    // GetIsInUseRange — Move must complete then too, or OpenDoor/UseObject sit
+    // behind a never-finishing Move (arrive + re-click to interact).
+    const useRangeTarget = !!(
+      this.target &&
+      BitWise.InstanceOfObject(this.target, ModuleObjectType.ModuleObject)
+    );
 
-    if(chaseLive){
-      this.real_target_position.copy(this.target.position);
-      if( this.target.isDead() ){
-        this.stopMoving(owner);
-        this.setComputedPath(undefined);
-        return ActionStatus.FAILED;
+    if(useRangeTarget){
+      if(chaseLive){
+        this.real_target_position.copy(this.target.position);
+        if( this.target.isDead() ){
+          this.stopMoving(owner);
+          this.setComputedPath(undefined);
+          return ActionStatus.FAILED;
+        }
       }
 
       // Retail MoveToObject completion uses GetIsInUseRange (+0.1 slack), not the
       // raw param-6 distance alone. WalkUpdateLocation's UseRange early-out can
       // freeze locomotion while dist is still slightly above param-6 — that left
-      // end_m01aa k_pend_traskdl40 Pause→Move→Resume stuck forever.
+      // end_m01aa k_pend_traskdl40 Pause→Move→Resume stuck forever, and the same
+      // gap blocked door/placeable UseObject after walking into range.
       if(isInUseRange(owner, this.target) || Utility.Distance2D(owner.position, this.real_target_position) <= range){
         this.stopMoving(owner);
         this.setComputedPath(undefined);
         return ActionStatus.COMPLETE;
       }
 
-      const distanceToLive = Utility.Distance2D(owner.position, this.real_target_position);
-      if(this.shouldRepathToMovingTarget(distanceToLive)){
-        // In-place live chase — keep walkSpeedFactor (no COMPLETE / dispose)
-        this.repathToLiveTargetInPlace();
+      if(chaseLive){
+        const distanceToLive = Utility.Distance2D(owner.position, this.real_target_position);
+        if(this.shouldRepathToMovingTarget(distanceToLive)){
+          // In-place live chase — keep walkSpeedFactor (no COMPLETE / dispose)
+          this.repathToLiveTargetInPlace();
+        }
       }
     }
 

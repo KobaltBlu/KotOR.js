@@ -19,6 +19,10 @@ export class ActionResumeDialog extends Action {
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
     this.type = ActionType.ActionResumeDialog;
+    // Retail ClearAllActions @ 004ccd80 (SetState path) keeps conversation
+    // control actions — losing Resume while Pause is set hangs the dialog
+    // (tar08_calo082 / k_ptar_calofade: Pause → Wait → Resume, then Horrified).
+    this.clearable = false;
   }
 
   update(delta: number = 0): ActionStatus {

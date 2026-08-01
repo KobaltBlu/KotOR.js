@@ -774,7 +774,21 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.OBJECT],
     action: function(this: NWScriptInstance, args: [ModuleObject]){
-      return BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject) ? NW_TRUE : NW_FALSE;
+      // Retail ExecuteCommandGetIsObjectValid @ 0053c720 — GetGameObject(id) != null.
+      // KeepCorpse / server-destroyed shells are removed from ObjectList; also reject
+      // lingering refs so GetObjectByTag gates (e.g. k_ptar_ramp / Calo082) work.
+      if(!BitWise.InstanceOfObject(args[0], ModuleObjectType.ModuleObject)){
+        return NW_FALSE;
+      }
+      const obj = args[0] as ModuleObject & {
+        destroyed?: boolean;
+        serverDestroyed?: boolean;
+        isRetainedCorpse?: boolean;
+      };
+      if(obj.destroyed || obj.serverDestroyed || obj.isRetainedCorpse){
+        return NW_FALSE;
+      }
+      return NW_TRUE;
     }
   },
   43:{

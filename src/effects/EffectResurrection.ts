@@ -37,7 +37,12 @@ export class EffectResurrection extends GameEffect {
     }
 
     creature.clearAllActions?.(true);
+    // Retail restores listening / ambient anim authority; clear our death pipeline flags
+    // and any KeepCorpse shell so AIUpdate (excited timer, movement) runs again.
     creature.deathStarted = false;
+    creature.deathAnimationPlayed = false;
+    creature.getUpAnimationPlayed = false;
+    creature.clearCorpseDestroyState?.();
 
     // Strip temporary HitPointChangeWhenDying (subtype dur TEMPORARY == 1)
     const effects = creature.effects ? creature.effects.slice() : [];

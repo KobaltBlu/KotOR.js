@@ -7,7 +7,7 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
 import { Action } from "@/actions/Action";
-import { isInUseRange, queueMoveIntoUseRange } from "@/actions/use-range";
+import { queueMoveIntoUseRange } from "@/actions/use-range";
 
 /**
  * ActionUseObject class.
@@ -42,10 +42,9 @@ export class ActionUseObject extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    if(!isInUseRange(owner, this.target)){
-      return ActionStatus.FAILED;
-    }
-
+    // Match ActionOpenDoor: once GetIsInUseRange (queueMove returned false), use.
+    // Do not FAILED-out — WalkUpdate can leave us in the +0.1 slack band where a
+    // second isInUseRange flake would drop the interaction (re-click required).
     owner.setAnimationState(ModuleCreatureAnimState.IDLE);
     owner.force = 0;
     owner.speed = 0;
