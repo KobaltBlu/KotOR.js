@@ -2028,16 +2028,39 @@ export class GUIControl {
     };
   }
 
+  /**
+   * Text layout box — retail sets CSWGuiText extent from border GetInnerExtent
+   * (Label/EditBox @ 004176f0 / 00418450). Buttons / hilight-labels use the
+   * intersection of border + hilight GetInnerExtent (CSWGuiButton::SetExtent @ 00417a50).
+   * Both rects are centered on the control, so intersecting sizes is enough.
+   */
   getInnerSize(){
-    // Retail CSWGuiBorder::GetInnerExtent @ 00415240 — int inset from border dim
-    const dim = asExtentInt(this.border.dimension || this.highlight.dimension || 0);
-    let width = Math.max(0, asExtentInt(this.extent.width) - dim);
-    let height = Math.max(0, asExtentInt(this.extent.height) - dim);
+    const ew = asExtentInt(this.extent.width);
+    const eh = asExtentInt(this.extent.height);
 
-    return {
-      width: width,
-      height: height
-    };
+    const borderInner = borderInnerExtent({
+      width: ew,
+      height: eh,
+      dimension: asExtentInt(this.getBorderSize()),
+      innerOffset: asExtentInt(this.border.inneroffset || 0),
+      innerOffsetY: asExtentInt(this.border.inneroffsety ?? this.border.inneroffset ?? 0),
+    });
+
+    if(this.hasHighlight){
+      const hilightInner = borderInnerExtent({
+        width: ew,
+        height: eh,
+        dimension: asExtentInt(this.getHightlightSize()),
+        innerOffset: asExtentInt(this.highlight.inneroffset || 0),
+        innerOffsetY: asExtentInt(this.highlight.inneroffsety ?? this.highlight.inneroffset ?? 0),
+      });
+      return {
+        width: Math.min(borderInner.width, hilightInner.width),
+        height: Math.min(borderInner.height, hilightInner.height),
+      };
+    }
+
+    return borderInner;
   }
 
   getOuterSize(){

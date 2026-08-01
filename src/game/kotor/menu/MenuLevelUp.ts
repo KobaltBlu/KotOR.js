@@ -100,9 +100,8 @@ export class MenuLevelUp extends GameMenu {
     LevelUpManager.clear();
     if(this.manager.CharGenMain?.levelUpMode){
       this.manager.CharGenMain.closeLevelUp();
-    }else{
-      this.close();
     }
+    this.close();
   }
 
   acceptLevelUp() {

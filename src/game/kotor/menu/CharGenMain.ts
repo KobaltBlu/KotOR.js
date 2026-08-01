@@ -79,6 +79,9 @@ export class CharGenMain extends GameMenu {
 
   /** True while hosting in-game level-up (CSWGuiLevelUpCharGen). */
   levelUpMode: boolean = false;
+  /** Portrait clone for level-up — never the live party model (retail uses a CSWCCreature copy). */
+  portraitModel: OdysseyModel3D;
+  portraitGen: number = 0;
 
   constructor(){
     super();
@@ -182,9 +185,48 @@ export class CharGenMain extends GameMenu {
 
   /** Exit level-up host and clear child panel (CancelLevelUp pops both modals). */
   closeLevelUp() {
+    this.clearLevelUpPortrait();
     this.levelUpMode = false;
     this.childMenu = undefined;
     this.close();
+  }
+
+  clearLevelUpPortrait() {
+    this.portraitGen++;
+    if(this.portraitModel){
+      try{ this.portraitModel.removeFromParent(); }catch(e){}
+      try{ this.portraitModel.dispose?.(); }catch(e){}
+      this.portraitModel = undefined;
+    }
+  }
+
+  /**
+   * Build a disposable appearance clone for level-up 3D (retail SetAppearance on
+   * a dedicated CSWCCreature — never reparent the live party model).
+   */
+  attachLevelUpPortrait(source: ModuleCreature) {
+    if(!source || !this._3dView) return;
+    this.clearLevelUpPortrait();
+    const gen = this.portraitGen;
+
+    const clone = new GameState.Module.ModuleArea.ModuleCreature();
+    clone.setAppearance(source.appearance);
+    clone.goodEvil = source.goodEvil | 0;
+    if(source.equipment?.ARMOR){
+      clone.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(source.equipment.ARMOR.template);
+    }
+    void clone.loadModel().then((model: OdysseyModel3D) => {
+      if(gen !== this.portraitGen || !this.levelUpMode){
+        try{ model?.dispose?.(); }catch(e){}
+        return;
+      }
+      model.position.set(0, 0, 0);
+      model.rotation.set(0, 0, -Math.PI / 2);
+      this.portraitModel = model;
+      this._3dView.scene.add(model);
+      this.updateCamera();
+      TextureLoader.LoadQueue();
+    });
   }
 
   update(delta = 0) {
@@ -193,7 +235,11 @@ export class CharGenMain extends GameMenu {
       return;
     try {
       let modelControl = this.MODEL_LBL;
-      this.getDisplayCreature()?.update?.(delta);
+      if(this.levelUpMode){
+        this.portraitModel?.update?.(delta);
+      }else{
+        this.getDisplayCreature()?.update?.(delta);
+      }
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
     } catch (e: any) {
@@ -202,6 +248,9 @@ export class CharGenMain extends GameMenu {
   }
 
   hide() {
+    if(this.levelUpMode){
+      this.clearLevelUpPortrait();
+    }
     super.hide();
   }
 
@@ -212,12 +261,16 @@ export class CharGenMain extends GameMenu {
       this.LBL_LEVEL_VAL?.show();
       this.OLD_LBL?.hide();
       this.NEW_LBL?.hide();
-    }else{
-      this.LBL_LEVEL?.hide();
-      this.LBL_LEVEL_VAL?.hide();
-      this.OLD_LBL?.hide();
-      this.NEW_LBL?.hide();
+      this.attachLevelUpPortrait(this.getDisplayCreature());
+      this.updateCamera();
+      this.updateAttributes();
+      return;
     }
+
+    this.LBL_LEVEL?.hide();
+    this.LBL_LEVEL_VAL?.hide();
+    this.OLD_LBL?.hide();
+    this.NEW_LBL?.hide();
     const creature = this.getDisplayCreature();
     if(!creature?.model){
       this.updateAttributes();

@@ -131,25 +131,19 @@ export class MenuCharacter extends K1_MenuCharacter {
       });
 
       MDLLoader.loader.load('charmain_light').then((mdl: OdysseyModel) => {
+        this._3dView = new LBL_3DView(this.LBL_3DCHAR.extent.width, this.LBL_3DCHAR.extent.height);
+        this._3dView.setControl(this.LBL_3DCHAR);
+        this._3dView.setViewAngle();
+        this._3dView.visible = true;
+        (this.LBL_3DCHAR.getFill().material as any).transparent = false;
+
         OdysseyModel3D.FromMDL(mdl, {
           context: this._3dView,
-          // manageLighting: false,
         }).then((model: OdysseyModel3D) => {
           try{
-            this._3dView = new LBL_3DView();
-            this._3dView.visible = true;
-            this._3dView.camera.aspect = this.LBL_3DCHAR.extent.width / this.LBL_3DCHAR.extent.height;
-            this._3dView.camera.updateProjectionMatrix();
-            (this.LBL_3DCHAR.getFill().material as any).uniforms.map.value = this._3dView.texture.texture;
-            (this.LBL_3DCHAR.getFill().material as any).transparent = false;
-            this._3dView.setControl(this.LBL_3DCHAR);
-            (this.LBL_3DCHAR.getFill().material as any).visible = true;
-
             this._3dViewModel = model;
             this._3dView.addModel(this._3dViewModel);
-
-            this._3dView.camera.position.copy(model.camerahook.position);
-            this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
+            this.attachPortraitCamera();
           }catch(e){
             console.error(e);
             resolve();
@@ -171,25 +165,10 @@ export class MenuCharacter extends K1_MenuCharacter {
     });
   }
 
-  update(delta: number) {
-    super.update(delta);
-    if (!this.bVisible)
-      return;
-    if (this.char)
-      this.char.update(delta);
-    try {
-      this._3dView.render(delta);
-      (this.LBL_3DCHAR.getFill().material as any).needsUpdate = true;
-    } catch (e: any) { }
-  }
-
   show() {
     super.show();
     try {
       this.recalculatePosition();
-      this.updateCharacterPortrait(GameState.PartyManager.party[0]);
-      this.updateCharacterStats(GameState.PartyManager.party[0]);
-      this.updatePartyMemberPortraitButtons();
     } catch (e) {
       console.error(e);
     }

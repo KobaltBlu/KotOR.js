@@ -87,6 +87,10 @@ export class MenuCharacter extends GameMenu {
   _3dViewModel: OdysseyModel3D;
   _3dView: LBL_3DView;
   char: OdysseyModel3D;
+  /** Invalidate overlapping async portrait loads (prevents duplicate meshes). */
+  portraitGen: number = 0;
+  /** Yaw applied by BTN_3DCHAR rotate (retail RotateCharacter ±10°). */
+  portraitYaw: number = 0;
 
   constructor(){
     super();
@@ -152,6 +156,13 @@ export class MenuCharacter extends GameMenu {
         }
       });
 
+      // Retail RotateCharacterLeft/Right @ 006aed90 / 006aede0 — ±10° yaw while held.
+      // Approximate with click nudges until hold-axis input is wired.
+      this.BTN_3DCHAR?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.rotatePortrait(10);
+      });
+
       GameState.PartyManager.AddEventListener('change', () => {
         if (!this.bVisible) return;
         this.updateCharacterPortrait(GameState.PartyManager.party[0]);
@@ -164,6 +175,7 @@ export class MenuCharacter extends GameMenu {
         //this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
         this._3dView = new LBL_3DView(this.LBL_3DCHAR.extent.width, this.LBL_3DCHAR.extent.height);
         this._3dView.setControl(this.LBL_3DCHAR);
+        this._3dView.setViewAngle();
         this._3dView.visible = true;
 
         this.LBL_GOOD1?.hide();
@@ -188,14 +200,7 @@ export class MenuCharacter extends GameMenu {
           //console.log('Model Loaded', model);
           this._3dViewModel = model;
           this._3dView.addModel(this._3dViewModel);
-
-          this._3dView.camera.position.copy(
-            model.camerahook.position
-          );
-
-          this._3dView.camera.quaternion.copy(
-            model.camerahook.quaternion
-          );
+          this.attachPortraitCamera();
 
           TextureLoader.LoadQueue().then(() => {
             this.LBL_3DCHAR.setFillTexture(this.LBL_3DCHAR.getFillTexture());
@@ -210,6 +215,35 @@ export class MenuCharacter extends GameMenu {
         resolve();
       });
     });
+  }
+
+  /**
+   * Retail AttachModel @ 006aebf0 — camerahook + world Z = getCameraHeight().
+   */
+  attachPortraitCamera(creature?: ModuleCreature) {
+    if(!this._3dView || !this._3dViewModel?.camerahook) return;
+    const headHeight = creature?.getCameraHeight?.() ?? 1.5;
+    this._3dView.attachCameraToHook(
+      this._3dViewModel.camerahook,
+      { x: 0, y: 0, z: headHeight },
+      true,
+    );
+  }
+
+  /** Retail RotateCharacter — yaw degrees about upright axis. */
+  rotatePortrait(yawDeg: number) {
+    if(!this.char) return;
+    this.portraitYaw += (yawDeg * Math.PI) / 180;
+    this.char.rotation.z = -Math.PI / 2 + this.portraitYaw;
+  }
+
+  clearPortraitChar() {
+    this.portraitGen++;
+    if(this.char){
+      try{ this.char.removeFromParent(); }catch(e){}
+      try{ this.char.dispose?.(); }catch(e){}
+      this.char = undefined;
+    }
   }
 
   update(delta = 0) {
@@ -298,122 +332,91 @@ export class MenuCharacter extends GameMenu {
     super.show();
     this.manager.MenuTop.LBLH_CHA.onHoverIn();
     this.recalculatePosition();
-    this.SLD_ALIGN?.setValue(0.5);
+    this.portraitYaw = 0;
     this.updateCharacterPortrait(GameState.PartyManager.party[0]);
     this.updateCharacterStats(GameState.PartyManager.party[0]);
     this.updatePartyMemberPortraitButtons();
   }
 
+  hide() {
+    this.clearPortraitChar();
+    super.hide();
+  }
+
+  /**
+   * Retail SetStats 3D path @ 006afda0 — copy appearance onto a dedicated
+   * client creature, identity pose + Setup3DScene (never the live party model).
+   */
   updateCharacterPortrait( creature: ModuleCreature ){
-    if(!creature) return;
+    if(!creature || !this._3dView) return;
 
-    this.SLD_ALIGN?.setValue(creature.getGoodEvil()/100);
+    // Retail SetCurValue(sld_align, 100 - goodEvil)
+    const goodEvil = creature.getGoodEvil?.() ?? creature.goodEvil | 0;
+    this.SLD_ALIGN?.setValue((100 - goodEvil) / 100);
 
-    const portraitAttachRoot = this._3dViewModel?.getRootOdysseyNode?.() || this._3dViewModel;
+    this.clearPortraitChar();
+    const gen = this.portraitGen;
+    this.attachPortraitCamera(creature);
+    this.playCharRecAlignmentAnim(goodEvil);
 
-    if (this.char) {
-      this.char.removeFromParent();
+    const objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
+    objectCreature.setAppearance(creature.appearance);
+    objectCreature.goodEvil = goodEvil;
+    if (creature.equipment?.ARMOR) {
+      objectCreature.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(creature.equipment.ARMOR.template);
     }
-    if(creature){
-      this._3dView.camera.position.z = 1;
-      let objectCreature = new GameState.Module.ModuleArea.ModuleCreature();
-      let clone = creature;
-      objectCreature.setAppearance(clone.appearance);
-      if (clone.equipment.ARMOR) {
-        objectCreature.equipment.ARMOR = new GameState.Module.ModuleArea.ModuleItem(clone.equipment.ARMOR.template);
+
+    void objectCreature.loadModel().then( (model: OdysseyModel3D) => {
+      if(gen !== this.portraitGen || !this.bVisible){
+        try{ model?.dispose?.(); }catch(e){}
+        return;
       }
-      if (clone.goodEvil >= 95) {
-        this._3dViewModel.playAnimation('good');
-      } else if (clone.goodEvil >= 90) {
-        this._3dViewModel.playAnimation('align18');
-      } else if (clone.goodEvil >= 85) {
-        this._3dViewModel.playAnimation('align17');
-      } else if (clone.goodEvil >= 80) {
-        this._3dViewModel.playAnimation('align16');
-      } else if (clone.goodEvil >= 75) {
-        this._3dViewModel.playAnimation('align15');
-      } else if (clone.goodEvil >= 70) {
-        this._3dViewModel.playAnimation('align14');
-      } else if (clone.goodEvil >= 65) {
-        this._3dViewModel.playAnimation('align13');
-      } else if (clone.goodEvil >= 60) {
-        this._3dViewModel.playAnimation('align12');
-      } else if (clone.goodEvil >= 55) {
-        this._3dViewModel.playAnimation('align11');
-      } else if (clone.goodEvil >= 50) {
-        this._3dViewModel.playAnimation('align10');
-      } else if (clone.goodEvil >= 45) {
-        this._3dViewModel.playAnimation('align9');
-      } else if (clone.goodEvil >= 40) {
-        this._3dViewModel.playAnimation('align8');
-      } else if (clone.goodEvil >= 35) {
-        this._3dViewModel.playAnimation('align7');
-      } else if (clone.goodEvil >= 30) {
-        this._3dViewModel.playAnimation('align6');
-      } else if (clone.goodEvil >= 25) {
-        this._3dViewModel.playAnimation('align5');
-      } else if (clone.goodEvil >= 20) {
-        this._3dViewModel.playAnimation('align4');
-      } else if (clone.goodEvil >= 15) {
-        this._3dViewModel.playAnimation('align3');
-      } else if (clone.goodEvil >= 10) {
-        this._3dViewModel.playAnimation('align2');
-      } else if (clone.goodEvil >= 5) {
-        this._3dViewModel.playAnimation('align1');
-      } else if (clone.goodEvil >= 0) {
-        this._3dViewModel.playAnimation('evil');
-      }
-      objectCreature.loadModel().then( (model: OdysseyModel3D) => {
-        model.position.set(0, 0, 0);
-        model.rotation.z = -Math.PI / 2;
-        model.box = new THREE.Box3().setFromObject(model);
-        this.char = model;
-        portraitAttachRoot?.add(this.char);
-        TextureLoader.LoadQueue().then(() => {
-          if (clone.goodEvil >= 95) {
-            this.char.playAnimation('good', true);
-          } else if (clone.goodEvil >= 90) {
-            this.char.playAnimation('good', true);
-          } else if (clone.goodEvil >= 85) {
-            this.char.playAnimation('good', true);
-          } else if (clone.goodEvil >= 80) {
-            this.char.playAnimation('good', true);
-          } else if (clone.goodEvil >= 75) {
-            this.char.playAnimation('good', true);
-          } else if (clone.goodEvil >= 70) {
-            this.char.playAnimation('good', true);
-          } else if (clone.goodEvil >= 65) {
-            this.char.playAnimation('good', true);
-          } else if (clone.goodEvil >= 60) {
-            this.char.playAnimation('good', true);
-          } else if (clone.goodEvil >= 55) {
-            this.char.playAnimation('neutral', true);
-          } else if (clone.goodEvil >= 50) {
-            this.char.playAnimation('neutral', true);
-          } else if (clone.goodEvil >= 45) {
-            this.char.playAnimation('neutral', true);
-          } else if (clone.goodEvil >= 40) {
-            this.char.playAnimation('evil', true);
-          } else if (clone.goodEvil >= 35) {
-            this.char.playAnimation('evil', true);
-          } else if (clone.goodEvil >= 30) {
-            this.char.playAnimation('evil', true);
-          } else if (clone.goodEvil >= 25) {
-            this.char.playAnimation('evil', true);
-          } else if (clone.goodEvil >= 20) {
-            this.char.playAnimation('evil', true);
-          } else if (clone.goodEvil >= 15) {
-            this.char.playAnimation('evil', true);
-          } else if (clone.goodEvil >= 10) {
-            this.char.playAnimation('evil', true);
-          } else if (clone.goodEvil >= 5) {
-            this.char.playAnimation('evil', true);
-          } else if (clone.goodEvil >= 0) {
-            this.char.playAnimation('evil', true);
-          }
-        });
+      model.position.set(0, 0, 0);
+      // Facing offset for charrec_light camerahook space (+ optional BTN_3DCHAR yaw)
+      model.rotation.set(0, 0, -Math.PI / 2 + this.portraitYaw);
+      model.box = new THREE.Box3().setFromObject(model);
+      this.char = model;
+      const portraitAttachRoot = this._3dViewModel?.getRootOdysseyNode?.() || this._3dViewModel;
+      portraitAttachRoot?.add(this.char);
+      void TextureLoader.LoadQueue().then(() => {
+        if(gen !== this.portraitGen || !this.char) return;
+        this.char.playAnimation(this.getPortraitIdleAnim(goodEvil), true);
       });
-    }
+    });
+  }
+
+  /** Retail Setup3DScene light-room anim from alignment. */
+  playCharRecAlignmentAnim(goodEvil: number) {
+    if(!this._3dViewModel) return;
+    let anim = 'align10';
+    if (goodEvil >= 95) anim = 'good';
+    else if (goodEvil >= 90) anim = 'align18';
+    else if (goodEvil >= 85) anim = 'align17';
+    else if (goodEvil >= 80) anim = 'align16';
+    else if (goodEvil >= 75) anim = 'align15';
+    else if (goodEvil >= 70) anim = 'align14';
+    else if (goodEvil >= 65) anim = 'align13';
+    else if (goodEvil >= 60) anim = 'align12';
+    else if (goodEvil >= 55) anim = 'align11';
+    else if (goodEvil >= 50) anim = 'align10';
+    else if (goodEvil >= 45) anim = 'align9';
+    else if (goodEvil >= 40) anim = 'align8';
+    else if (goodEvil >= 35) anim = 'align7';
+    else if (goodEvil >= 30) anim = 'align6';
+    else if (goodEvil >= 25) anim = 'align5';
+    else if (goodEvil >= 20) anim = 'align4';
+    else if (goodEvil >= 15) anim = 'align3';
+    else if (goodEvil >= 10) anim = 'align2';
+    else if (goodEvil >= 5) anim = 'align1';
+    else anim = 'evil';
+    this._3dViewModel.playAnimation(anim);
+  }
+
+  /** Retail Setup3DScene creature idle: good / neutral / evil thresholds. */
+  getPortraitIdleAnim(goodEvil: number): string {
+    if (goodEvil >= 60) return 'good';
+    if (goodEvil >= 40) return 'neutral';
+    return 'evil';
   }
 
   triggerControllerBumperLPress() {
