@@ -1223,6 +1223,10 @@ export class ModuleCreature extends ModuleObject {
         if(this.speed > 0){
           this.speed = 0;
         }
+        // Retail WalkUpdateLocation @ 0051bb10 end-of-path: vtable+0x7c(0x2710 / PAUSE).
+        // Walk/run clips are forced looping — without this, a transit or cancelled
+        // move leaves the creature frozen on the last walk frame forever.
+        this.clearLocomotionAnimation();
       }
 
       //-----------------------//

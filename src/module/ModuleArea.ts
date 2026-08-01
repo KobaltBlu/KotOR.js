@@ -2648,6 +2648,14 @@ export class ModuleArea extends ModuleObject {
         GameState.PartyManager.party.push(player);
       }
     }
+    // Area transit reuses locomotion state from the prior module (WASD walk into
+    // a door, etc.). Retail PositionParty leaves creatures in PAUSE (10000).
+    for(let i = 0; i < GameState.PartyManager.party.length; i++){
+      const pm = GameState.PartyManager.party[i];
+      if(pm && typeof pm.clearLocomotionState === 'function'){
+        pm.clearLocomotionState(true);
+      }
+    }
     GameState.PartyManager.ApplyControlledNPC();
     // Retail PositionParty → ResetAllFollowData after placing the party.
     GameState.PartyManager.resetFollowPath(GameState.PartyManager.party[0]);
