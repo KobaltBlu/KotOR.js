@@ -29,13 +29,15 @@ jest.mock("@/GameState", () => ({
   GameState: mockGameState,
 }));
 
+const mockTestDirectLine = jest.fn(() => ({
+  ok: true,
+  code: 1,
+  clearPoint: new THREE.Vector3(),
+  clearT: 1,
+}));
+
 jest.mock("@/engine/pathfinding/test-direct-line", () => ({
-  testDirectLine: () => ({
-    ok: true,
-    code: 1,
-    clearPoint: new THREE.Vector3(),
-    clearT: 1,
-  }),
+  testDirectLine: (...args: unknown[]) => mockTestDirectLine(...args),
   TestDirectLineCode: { Ok: 1, NonWalk: 2, Creature: -3 },
   hasDirectLine: () => true,
 }));
@@ -59,11 +61,14 @@ import {
   FollowLeaderState,
   FOLLOW_RING_WARM_COUNT,
 } from "@/engine/pathfinding/follow-leader";
-import { stepFollowLeaderState } from "@/engine/pathfinding/follow-leader-sm";
+import {
+  driveTowardOffset,
+  stepFollowLeaderState,
+} from "@/engine/pathfinding/follow-leader-sm";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
 function makeCreature(x: number, y: number, z = 0): ModuleCreature {
-  return {
+  const creature = {
     position: new THREE.Vector3(x, y, z),
     rotation: { z: 0 },
     area: undefined,
@@ -72,8 +77,16 @@ function makeCreature(x: number, y: number, z = 0): ModuleCreature {
     setComputedPath: () => {},
     setAnimationState: () => {},
     setFacing: () => {},
+    setPosition(v: THREE.Vector3 | number, yy = 0, zz = 0){
+      if(typeof v === 'object'){
+        creature.position.copy(v);
+      }else{
+        creature.position.set(v, yy, zz);
+      }
+    },
     getWalkSpeed: () => 1.7,
     getRunSpeed: () => 5.4,
+    movementSpeed: 1,
     walkSpeedFactor: 0.8,
     walk: false,
     force: 0,
@@ -81,7 +94,8 @@ function makeCreature(x: number, y: number, z = 0): ModuleCreature {
     collisionTimer: 0,
     moveDirOverride: undefined,
     helperColor: 0,
-  } as unknown as ModuleCreature;
+  };
+  return creature as unknown as ModuleCreature;
 }
 
 function seedRing(ring: PartyFollowPath, count: number){
@@ -115,6 +129,13 @@ describe("WaitingForPath cold-ring hold", () => {
     mockParty.length = 0;
     partyFollowPath.reset();
     mockGameState.PartyManager.FollowState = 0;
+    mockTestDirectLine.mockReset();
+    mockTestDirectLine.mockImplementation(() => ({
+      ok: true,
+      code: 1,
+      clearPoint: new THREE.Vector3(),
+      clearT: 1,
+    }));
   });
 
   it("holds Moving* while ring count ≤ 4 even when far from cold lateral", () => {
@@ -262,7 +283,7 @@ describe("SmoothFollowPath densify", () => {
   });
 });
 
-describe("Offset continuous trail WalkUpdate", () => {
+describe("Offset direct trail stepping", () => {
   beforeEach(() => {
     mockParty.length = 0;
     partyFollowPath.reset();
@@ -320,6 +341,37 @@ describe("Offset continuous trail WalkUpdate", () => {
     expect(runtime.offsetStepped).toBe(true);
   });
 
+  it("scales Offset direct step budget by movementSpeed", () => {
+    const runOffsetFrame = (movementSpeed: number) => {
+      mockParty.length = 0;
+      partyFollowPath.reset();
+      const leader = makeCreature(0, 0, 0);
+      const companion = makeCreature(2.5, -0.5, 0) as ModuleCreature & { movementSpeed: number };
+      companion.movementSpeed = movementSpeed;
+      mockParty.push(leader, companion);
+      seedRing(partyFollowPath, 30);
+      partyFollowPath.recalculateFollowPoints();
+
+      const runtime = createFollowRuntime();
+      runtime.state = FollowLeaderState.Offset;
+      runtime.lastSampleX = companion.position.x;
+      runtime.lastSampleY = companion.position.y;
+      runtime.lastSampleZ = companion.position.z;
+      runtime.pathPointX = companion.position.x;
+      runtime.pathPointY = companion.position.y;
+      runtime.pathPointZ = companion.position.z;
+
+      const offset = new THREE.Vector3(1.5, -0.7, 0);
+      stepFollowLeaderState(runtime, companion, leader, offset, 0.1);
+      return Math.hypot(companion.position.x - 2.5, companion.position.y + 0.5);
+    };
+
+    const normal = runOffsetFrame(1.0);
+    const hasted = runOffsetFrame(1.5);
+
+    expect(hasted).toBeGreaterThan(normal * 1.35);
+  });
+
   it("leaves Offset for MovingToPath when distOffset ≥ REPATH", () => {
     const leader = makeCreature(0, 0, 0);
     const companion = makeCreature(0, 0, 0);
@@ -332,5 +384,147 @@ describe("Offset continuous trail WalkUpdate", () => {
 
     stepFollowLeaderState(runtime, companion, leader, farOffset, 0.016);
     expect(runtime.state).not.toBe(FollowLeaderState.Offset);
+  });
+});
+
+describe("Moving direct follow rate scaling", () => {
+  it("scales Moving* direct step budget by movementSpeed", () => {
+    const runMove = (movementSpeed: number) => {
+      const companion = makeCreature(0, 0, 0) as ModuleCreature & { movementSpeed: number };
+      companion.movementSpeed = movementSpeed;
+      (companion as { getWalkSpeed: () => number }).getWalkSpeed = () => 2.0;
+      driveTowardOffset(companion, new THREE.Vector3(10, 0, 0), 1.0, false);
+      return companion.position.x;
+    };
+
+    const normal = runMove(1.0);
+    const hasted = runMove(1.5);
+
+    expect(normal).toBeCloseTo(2.4, 5);
+    expect(hasted).toBeCloseTo(3.6, 5);
+  });
+});
+
+describe("Offset stale field17 LOS (Carth stuck walk)", () => {
+  beforeEach(() => {
+    mockParty.length = 0;
+    partyFollowPath.reset();
+    mockGameState.PartyManager.FollowState = 0;
+    mockTestDirectLine.mockReset();
+  });
+
+  it("refreshes lastSample to feet when stale sample LOS fails but feet LOS ok", () => {
+    const leader = makeCreature(10, 0, 0);
+    const companion = makeCreature(8.5, 0, 0);
+    mockParty.push(leader, companion);
+    seedRing(partyFollowPath, 20);
+    partyFollowPath.recalculateFollowPoints();
+
+    mockTestDirectLine.mockImplementation((
+      _area: unknown,
+      from: THREE.Vector3
+    ) => {
+      const fromFeet =
+        Math.hypot(from.x - companion.position.x, from.y - companion.position.y) < 0.6;
+      return {
+        ok: fromFeet,
+        code: fromFeet ? 1 : -3,
+        clearT: fromFeet ? 1 : 0.5,
+        clearPoint: from.clone(),
+      };
+    });
+
+    (companion as { area: object }).area = {
+      path: {
+        traverseToPoint: (_o: unknown, _from: THREE.Vector3, to: THREE.Vector3) => ({
+          points: [{ vector: to.clone() }],
+          fixWalkEdges: () => {},
+          setColor: () => {},
+          realtime: true,
+          timer: 20,
+          pop: () => {},
+        }),
+      },
+      getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
+      isPointWalkable: () => true,
+    };
+
+    const runtime = createFollowRuntime();
+    runtime.state = FollowLeaderState.Offset;
+    runtime.lastSampleX = -5;
+    runtime.lastSampleY = 0;
+    runtime.lastSampleZ = 0;
+    runtime.pathPointX = companion.position.x;
+    runtime.pathPointY = companion.position.y;
+    runtime.pathPointZ = companion.position.z;
+
+    const offset = companion.position.clone();
+    offset.x -= 1.5;
+
+    stepFollowLeaderState(runtime, companion, leader, offset, 0.05);
+
+    // Should not thrash to MovingToPath when feet LOS is clear
+    expect(runtime.state).toBe(FollowLeaderState.Offset);
+    // Stale sample must be discarded (updated to feet then lateral)
+    expect(runtime.lastSampleX).not.toBe(-5);
+    expect(runtime.lastSampleX).toBeGreaterThan(0);
+    expect(mockTestDirectLine.mock.calls.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("WaitDest ring-index logic (G4)", () => {
+  beforeEach(() => {
+    mockParty.length = 0;
+    partyFollowPath.reset();
+    mockGameState.PartyManager.FollowState = 0;
+  });
+
+  it("leaves OffsetWaitDest same frame when cursor already at goal", () => {
+    const leader = makeCreature(0, 0, 0);
+    const companion = makeCreature(1, 0, 0);
+    mockParty.push(leader, companion);
+    seedRing(partyFollowPath, 20);
+
+    partyFollowPath.memberCursor[1] = 5;
+    partyFollowPath.memberGoalIndex[1] = 5;
+    // writeHead past goal so walk finds goalIdx before writeHead
+    expect(partyFollowPath.writeHead).toBeGreaterThan(5);
+
+    const runtime = createFollowRuntime();
+    runtime.state = FollowLeaderState.OffsetWaitDest;
+    const p = partyFollowPath.points[5];
+    // pathPoint farther than goal → leave WaitDest
+    runtime.pathPointX = p.x + 10;
+    runtime.pathPointY = p.y;
+    runtime.pathPointZ = p.z;
+    runtime.goalX = p.x;
+    runtime.goalY = p.y;
+    runtime.goalZ = p.z;
+
+    stepFollowLeaderState(
+      runtime, companion, leader, companion.position.clone(), 0.016
+    );
+    expect(runtime.state).toBe(FollowLeaderState.Offset);
+  });
+
+  it("stays in WaitDest while goal is still ahead of writeHead walk", () => {
+    const leader = makeCreature(0, 0, 0);
+    const companion = makeCreature(1, 0, 0);
+    mockParty.push(leader, companion);
+    seedRing(partyFollowPath, 12);
+
+    partyFollowPath.memberCursor[1] = 2;
+    partyFollowPath.memberGoalIndex[1] = 90; // beyond current writeHead
+
+    const runtime = createFollowRuntime();
+    runtime.state = FollowLeaderState.OffsetWaitDest;
+    runtime.pathPointX = companion.position.x;
+    runtime.pathPointY = companion.position.y;
+    runtime.pathPointZ = companion.position.z;
+
+    stepFollowLeaderState(
+      runtime, companion, leader, companion.position.clone(), 0.016
+    );
+    expect(runtime.state).toBe(FollowLeaderState.OffsetWaitDest);
   });
 });

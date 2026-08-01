@@ -811,16 +811,8 @@ export class AudioEmitter {
     if(this.channel === AudioEngineChannel.SFX && this.engine){
       gain *= this.engine.currentAmbientScale;
     }
-    // Retail streaming SetVolume: group 4/5 (and music slider) × duck scale @ sound+0x0.
-    if(this.engine && (
-      this.priority === AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS ||
-      this.priority === AudioPriorityGroup.LOOPING_POSITIONAL_AMBIENTS
-    )){
-      const duck = this.engine.musicAmbientDuckScale;
-      if(typeof duck === 'number' && duck !== 1){
-        gain *= duck;
-      }
-    }
+    // Retail oneshot SetVolume does not multiply by K2 sound+0 duck scale
+    // (only CExoStreamingSoundSourceInternal::SetVolume does for music/4/5).
     // Retail DoObstructionWork / AIL_set_sample_obstruction → volume × (1 − factor).
     if(this.type === AudioEmitterType.POSITIONAL){
       gain *= obstructionVolumeScale(this.obstructionFactor);

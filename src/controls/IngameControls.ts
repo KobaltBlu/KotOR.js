@@ -900,6 +900,22 @@ export class IngameControls {
       GameState.getCurrentPlayer().flourish();
     });
 
+    // Retail CancleCombat (action240 / BTN_CLEARALL) — ClearAllActions GUI path
+    KeyMapper.Actions[KeyMapAction.CancleCombat]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+      GameState.MenuManager.InGameOverlay.onClearAllButtonPressed();
+    });
+
+    // Retail ClearOneAction (action245 / BTN_CLEARONE) — OnCombatYButton
+    KeyMapper.Actions[KeyMapAction.ClearOneAction]?.setProcessor( (keymap) => {
+      if(!keymap.keyboardInput?.pressed && !keymap.gamepadInput?.pressed) return;
+      if(GameState.Mode != EngineMode.INGAME) return;
+      if(GameState.MenuManager.GetCurrentMenu() != GameState.MenuManager.InGameOverlay) return;
+      GameState.MenuManager.InGameOverlay.onClearOneButtonPressed();
+    });
+
     // HUD action-menu activate (retail Personal*/Target*Act digit binds)
     const actionMenuPressed = (keymap: { keyboardInput?: { pressed?: boolean }; gamepadInput?: { pressed?: boolean } }) =>
       !!(keymap.keyboardInput?.pressed || keymap.gamepadInput?.pressed);

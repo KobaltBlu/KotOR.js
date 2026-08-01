@@ -401,6 +401,11 @@ export class ModuleCreature extends ModuleObject {
    */
   walkSpeedFactor: number;
   /**
+   * Retail pathfind-info field141_0x268 — consecutive WalkUpdateDistance
+   * TestDistance fails before giving up (hex while &lt; 6).
+   */
+  pathBlockFailCount: number;
+  /**
    * Camera-relative client controller state (CSWPlayerControlCamRelative).
    * Used for direct WASD / stick; ActionDrive remains the discrete server path.
    */
@@ -718,6 +723,7 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
     this.blockingTimer = 0;
     this.walkSpeedFactor = 0;
+    this.pathBlockFailCount = 0;
     this.playerControl = createPlayerCamRelativeState();
 
     this.fp_push_played = false;
@@ -1308,14 +1314,13 @@ export class ModuleCreature extends ModuleObject {
       // Perception / listening moved to aiUpdate
 
 
-      // Party companion stuck: prefer follow-ring TeleportForward; give hex/avoidance time first
+      // Party companion stuck: prefer follow-ring TeleportForward; give hex/WalkUpdate recovery time first.
+      // Retail FollowLeader TeleportForward advances safe ring slots; it does not hard-snap to GetFollowPosition.
       if(this.npcId != undefined && this != (GameState.getCurrentPlayer() as any) && this.collisionTimer >= 2){
         const following = this.action?.type === ActionType.ActionFollowLeader;
         const dest = new THREE.Vector3();
         if(following && GameState.PartyManager.teleportFollowForward(this, dest)){
           this.setPosition(dest);
-        }else{
-          this.setPosition(GameState.PartyManager.GetFollowPosition(this));
         }
         this.collisionTimer = 0;
       }

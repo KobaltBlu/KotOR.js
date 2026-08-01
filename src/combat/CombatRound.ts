@@ -963,6 +963,19 @@ export class CombatRound {
   }
 
   /**
+   * Clear the last scheduled combat-round action.
+   * Retail CSWSCombatRound::RemoveLastAction @ 004d37b0 (RemoveTail).
+   * @returns True if an action was removed
+   */
+  removeLastAction(): boolean {
+    if(!this.scheduledActionList.length){
+      return false;
+    }
+    this.scheduledActionList.pop();
+    return true;
+  }
+
+  /**
    * Clear all actions
    */
   clearActions(){

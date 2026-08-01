@@ -34,7 +34,8 @@ export class AmbientAudioEmitter extends EventListener {
 
   /**
    * prioritygroups.2da row.
-   * Retail: ambient=4, area/battle/dialog music=2, stingers=1.
+   * Retail: ambient=4, area/battle music=2, stingers=1,
+   * dialog AmbientTrack=4 (LoadAmbientTrackForDialog).
    */
   priorityGroupId: number = undefined;
 
@@ -62,9 +63,7 @@ export class AmbientAudioEmitter extends EventListener {
   setPriorityGroupId(priorityGroupId: number): this {
     this.priorityGroupId = priorityGroupId;
     this.refreshPriorityGroupVolume();
-    if(this.gainNode){
-      this.gainNode.gain.value = this.getEffectiveVolume();
-    }
+    this.applyEffectiveGain();
     return this;
   }
 
@@ -77,23 +76,41 @@ export class AmbientAudioEmitter extends EventListener {
     this.priorityGroupVolume = Math.max(0, Math.min(127, group?.volume ?? 127));
   }
 
-  /** volume × (groupVolume / 127) × dialog duck — retail streaming SetVolume compose. */
+  /**
+   * volume × (groupVolume / 127) × dialog duck — retail streaming SetVolume compose.
+   * Duck (K2 sound+0) applies when slider type is music (groups 1/2) or group is 4/5.
+   * Result is Miles volume_levels / Web Audio GainNode linear amplitude (0–1).
+   */
   getEffectiveVolume(): number {
     let gain = this.volume * (this.priorityGroupVolume / 127);
-    // Retail: music slider OR group 4/5 multiply by CExoSoundInternal[0] duck scale.
-    const duck = this.engine?.musicAmbientDuckScale;
-    if(typeof duck === 'number' && duck !== 1){
-      gain *= duck;
+    if(this.shouldApplyMusicAmbientDuck()){
+      const duck = this.engine?.musicAmbientDuckScale;
+      if(typeof duck === 'number' && duck !== 1){
+        gain *= duck;
+      }
     }
     return gain;
   }
 
+  /** Retail streaming SetVolume: music slider (groups 1/2) or priority 4/5. */
+  shouldApplyMusicAmbientDuck(): boolean {
+    const g = this.priorityGroupId;
+    return g === 1 || g === 2 || g === 4 || g === 5;
+  }
+
   setVolume(volume: number){
     this.volume = volume;
-    if(this.gainNode){
-      this.gainNode.gain.value = this.getEffectiveVolume();
-    }
+    this.applyEffectiveGain();
     return this;
+  }
+
+  /** Push getEffectiveVolume() onto the GainNode (cancels fade automation). */
+  applyEffectiveGain(){
+    if(!this.gainNode || !this.engine?.audioCtx){ return; }
+    const t = this.engine.audioCtx.currentTime;
+    const g = this.gainNode.gain;
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(Math.max(0, this.getEffectiveVolume()), t);
   }
 
   /**
@@ -197,7 +214,7 @@ export class AmbientAudioEmitter extends EventListener {
     node.start(0, 0);
     node.connect(this.gainNode);
     this.gainNode.connect(this.destination);
-    this.gainNode.gain.value = this.getEffectiveVolume();
+    this.applyEffectiveGain();
     this.playing = true;
     this.loaded = true;
     node.onended = () => {
@@ -263,7 +280,6 @@ export class AmbientAudioEmitter extends EventListener {
     const currentTime = this.engine.audioCtx.currentTime;
     const currentGain = this.gainNode.gain.value;
 
-    // Set up the fade out curve
     this.gainNode.gain.cancelScheduledValues(currentTime);
     this.gainNode.gain.setValueAtTime(currentGain, currentTime);
     this.gainNode.gain.linearRampToValueAtTime(0, currentTime + duration);
@@ -303,10 +319,12 @@ export class AmbientAudioEmitter extends EventListener {
 
     const currentTime = this.engine.audioCtx.currentTime;
     const currentGain = this.gainNode.gain.value;
+    const target = this.getEffectiveVolume();
 
     // Set up the fade in curve
+    this.gainNode.gain.cancelScheduledValues(currentTime);
     this.gainNode.gain.setValueAtTime(currentGain, currentTime);
-    this.gainNode.gain.linearRampToValueAtTime(this.getEffectiveVolume(), currentTime + duration);
+    this.gainNode.gain.linearRampToValueAtTime(target, currentTime + duration);
     return this;
   }
 

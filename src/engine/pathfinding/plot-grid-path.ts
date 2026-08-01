@@ -4,18 +4,14 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 import { hasDirectLine, testDirectLine } from "@/engine/pathfinding/test-direct-line";
-import { BinaryHeap } from "@/engine/pathfinding/BinaryHeap";
 import { smoothSelection } from "@/engine/pathfinding/smooth-select-nodes";
 import { getPathStepTolerance } from "@/engine/pathfinding/path-point-creature-detour";
 
 /**
- * Approximate CSWSArea::PlotGridPath @ 004c1a00 + GridDFSearch @ 004c0930.
+ * CSWSArea::PlotGridPath @ 004c1a00 + GridDFSearch @ 004c0930.
  *
- * Retail builds a corridor grid along start→end with cell size ≈ personal_space,
- * then DFS with lateral successors validated by TestDirectLine.
- *
- * JS: corridor frame + A* with retail-ish Moore successors + step leaps;
- * walkable + direct-line neighbor checks. Used when an area has no PTH path points.
+ * Corridor grid along start→end (cell ≈ personal_space), then DFS with
+ * Moore successors + TransTable prune + expanding lateral budget.
  *
  * @file plot-grid-path.ts
  */
@@ -23,23 +19,41 @@ import { getPathStepTolerance } from "@/engine/pathfinding/path-point-creature-d
 const MAX_ALONG = 96;
 /** Retail PlotGridPath expands DFS budget up to along + 0x24 (36). */
 const MAX_LATERAL = 36;
+/** Retail field38 abort after 0x3f recursive frames. */
+const MAX_DFS_DEPTH = 64;
 const MAX_NODES = 12000;
 
 type GridKey = string;
 
-type GridNode = {
+type GridCell = {
   along: number;
   lateral: number;
-  g: number;
-  h: number;
-  f: number;
-  parent?: GridNode;
-  closed: boolean;
-  key: GridKey;
+  parent?: GridCell;
 };
 
-function keyOf(along: number, lateral: number): GridKey {
-  return `${along},${lateral}`;
+/** Integer-key TransTable for grid DFS (along, lateral). */
+class GridDfsTransTable {
+  private readonly g = new Map<GridKey, number>();
+  private readonly rem = new Map<GridKey, number>();
+
+  reset(){
+    this.g.clear();
+    this.rem.clear();
+  }
+
+  shouldPrune(along: number, lateral: number, gCost: number, remaining: number): boolean {
+    const k = `${along},${lateral}`;
+    const prevG = this.g.get(k);
+    if(prevG === undefined) return false;
+    const prevRem = this.rem.get(k) ?? 0;
+    return prevG < gCost || remaining <= prevRem;
+  }
+
+  put(along: number, lateral: number, gCost: number, remaining: number){
+    const k = `${along},${lateral}`;
+    this.g.set(k, gCost);
+    this.rem.set(k, remaining);
+  }
 }
 
 function cellPosition(
@@ -61,9 +75,6 @@ function cellPosition(
 /**
  * Plot a path on a personal-space corridor grid (no PTH required).
  * Returns world waypoints including origin and dest, or undefined if unreachable.
- *
- * Retail PlotGridPath @ 004c1a00: alongCount = round(dist / personal_space),
- * then GridDFSearch with expanding lateral budget (along+2 … along+36).
  */
 export function plotGridPath(
   area: ModuleArea | undefined,
@@ -95,7 +106,6 @@ export function plotGridPath(
       ?? (options.owner ? getPathPersonalSpace(options.owner as ModuleCreature) : 0.5)
   );
   const cell = perspace;
-  // Retail: __ftol2(dist / personal_space + 0.5) → round
   const alongCount = Math.min(MAX_ALONG, Math.max(1, Math.round(dist / cell)));
   const maxLateralCap = Math.min(
     MAX_LATERAL,
@@ -103,7 +113,6 @@ export function plotGridPath(
   );
 
   const forward = new THREE.Vector3(dx / dist, dy / dist, 0);
-  // Retail lateral = (fy, -fx) * cell; CCW (-fy, fx) is equivalent chirality
   const right = new THREE.Vector3(-forward.y, forward.x, 0);
   const tmpA = new THREE.Vector3();
   const tmpB = new THREE.Vector3();
@@ -128,7 +137,6 @@ export function plotGridPath(
     if(typeof area.isPointWalkable === 'function' && !area.isPointWalkable(tmpB)){
       return false;
     }
-    // Neighbor micro-steps: skip room-graph (cells are within corridor)
     const hit = testDirectLine(area, tmpA, tmpB, {
       owner: options.owner,
       personalSpace: perspace,
@@ -140,7 +148,7 @@ export function plotGridPath(
     return hit.ok || hit.clearT >= 0.85;
   };
 
-  // Retail widens search: along+2, +2 … along+36. Try increasing lateral caps.
+  // Retail widens: along+2 … along+36
   const lateralPasses = [8, 16, maxLateralCap].filter(
     (v, i, arr) => v > 0 && v <= maxLateralCap && arr.indexOf(v) === i
   );
@@ -150,7 +158,7 @@ export function plotGridPath(
 
   for(let pass = 0; pass < lateralPasses.length; pass++){
     const maxLateral = lateralPasses[pass];
-    const result = searchGrid(
+    const result = searchGridDfs(
       origin,
       dest,
       forward,
@@ -171,7 +179,7 @@ export function plotGridPath(
   return undefined;
 }
 
-function searchGrid(
+function searchGridDfs(
   origin: THREE.Vector3,
   dest: THREE.Vector3,
   forward: THREE.Vector3,
@@ -186,27 +194,10 @@ function searchGrid(
   perspace: number,
   tmpA: THREE.Vector3
 ): THREE.Vector3[] | undefined {
-  const startKey = keyOf(0, 0);
-  const start: GridNode = {
-    along: 0,
-    lateral: 0,
-    g: 0,
-    h: alongCount,
-    f: alongCount,
-    closed: false,
-    key: startKey,
-  };
+  const table = new GridDfsTransTable();
+  table.reset();
 
-  const open = new BinaryHeap<GridNode>((n) => n.f);
-  const nodes = new Map<GridKey, GridNode>();
-  nodes.set(startKey, start);
-  open.push(start);
-
-  let visited = 0;
-  let bestGoal: GridNode | undefined;
-
-  // Retail GridDFSGenerateSuccessors @ 004bcee0: 3×3 Moore (Δalong,Δlateral ∈ [-1,1])
-  // plus occasional longer forward leaps (step_tolerance / depth%6==4).
+  // Moore 3×3 + forward leaps (GridDFSGenerateSuccessors @ 004bcee0)
   const neighbors: number[][] = [];
   for(let da = -1; da <= 1; da++){
     for(let dl = -1; dl <= 1; dl++){
@@ -218,104 +209,95 @@ function searchGrid(
   for(let leap = 2; leap <= stepTol; leap++){
     neighbors.push([leap, 0], [leap, 1], [leap, -1]);
   }
-  // Prefer lower |Δ| first (retail sorts successors by manhattan)
   neighbors.sort((a, b) => (Math.abs(a[0]) + Math.abs(a[1])) - (Math.abs(b[0]) + Math.abs(b[1])));
 
-  while(open.size() > 0 && visited < MAX_NODES){
-    const current = open.pop();
-    if(!current || current.closed) continue;
-    current.closed = true;
+  let visited = 0;
+  let aborted = false;
+  let bestGoal: GridCell | undefined;
+  let bestManhattan = Infinity;
+
+  const remainingBudget = (along: number, lateral: number) =>
+    (alongCount - along) + Math.abs(lateral);
+
+  const dfs = (
+    along: number,
+    lateral: number,
+    gCost: number,
+    depth: number,
+    parent: GridCell | undefined
+  ): boolean => {
+    if(aborted || visited >= MAX_NODES) return false;
     visited++;
 
-    if(current.along >= alongCount){
-      bestGoal = current;
-      break;
+    if(depth > MAX_DFS_DEPTH){
+      aborted = true;
+      return false;
     }
 
-    cellPosition(origin, forward, right, cell, current.along, current.lateral, tmpA);
-    if(current.along === 0 && current.lateral === 0) tmpA.copy(origin);
+    const rem = remainingBudget(along, lateral);
+    if(table.shouldPrune(along, lateral, gCost, rem)){
+      return false;
+    }
+    table.put(along, lateral, gCost, rem);
 
-    // Retail: periodic / near-goal TestDirectLine snap to end_point
+    const cellNode: GridCell = { along, lateral, parent };
+    const manh = Math.abs(alongCount - along) + Math.abs(lateral);
+    if(manh < bestManhattan){
+      bestManhattan = manh;
+      bestGoal = cellNode;
+    }
+
+    // Goal / step_tolerance early-out
+    if(along >= alongCount && Math.abs(lateral) === 0){
+      bestGoal = cellNode;
+      return true;
+    }
+    if(along >= alongCount && Math.abs(lateral) <= stepTol){
+      bestGoal = cellNode;
+      return true;
+    }
+
+    cellPosition(origin, forward, right, cell, along, lateral, tmpA);
+    if(along === 0 && lateral === 0) tmpA.copy(origin);
+
+    // Periodic / near-goal snap to dest
     const trySnap =
-      current.along >= alongCount - 1 ||
-      visited % 6 === 4 ||
-      current.along >= Math.floor(alongCount * 0.75);
+      along >= alongCount - 1 ||
+      depth % 6 === 4 ||
+      along >= Math.floor(alongCount * 0.75);
     if(trySnap && hasDirectLine(area, tmpA, dest, owner)){
-      const goalKey = keyOf(alongCount, 0);
-      let goal = nodes.get(goalKey);
-      const gCost = current.g + 1;
-      if(!goal){
-        goal = {
-          along: alongCount,
-          lateral: 0,
-          g: gCost,
-          h: 0,
-          f: gCost,
-          parent: current,
-          closed: false,
-          key: goalKey,
-        };
-        nodes.set(goalKey, goal);
-      }else if(gCost < goal.g){
-        goal.g = gCost;
-        goal.f = gCost;
-        goal.parent = current;
-      }
-      bestGoal = goal;
-      break;
+      bestGoal = { along: alongCount, lateral: 0, parent: cellNode };
+      return true;
     }
 
     for(let i = 0; i < neighbors.length; i++){
+      if(aborted) break;
       const da = neighbors[i][0];
       const dl = neighbors[i][1];
-      const na = current.along + da;
-      const nl = current.lateral + dl;
+      const na = along + da;
+      const nl = lateral + dl;
       if(na < 0 || na > alongCount) continue;
       if(Math.abs(nl) > maxLateral) continue;
       if(na < alongCount && !isWalkableCell(na, nl)) continue;
-      if(!canStep(current.along, current.lateral, na, nl)) continue;
+      if(!canStep(along, lateral, na, nl)) continue;
 
-      const nk = keyOf(na, nl);
-      const stepCost = Math.abs(da) + Math.abs(dl) * 1.15;
-      const tentativeG = current.g + stepCost;
-      let node = nodes.get(nk);
-      if(node?.closed) continue;
-
-      const h = (alongCount - na) + Math.abs(nl) * 0.5;
-      if(!node){
-        node = {
-          along: na,
-          lateral: nl,
-          g: tentativeG,
-          h,
-          f: tentativeG + h,
-          parent: current,
-          closed: false,
-          key: nk,
-        };
-        nodes.set(nk, node);
-        open.push(node);
-      }else if(tentativeG < node.g){
-        node.g = tentativeG;
-        node.h = h;
-        node.f = tentativeG + h;
-        node.parent = current;
-        const idx = open.content.indexOf(node);
-        if(idx >= 0){
-          open.rescoreElement(node);
-        }else{
-          open.push(node);
-        }
+      const stepCost = Math.abs(da) + Math.abs(dl);
+      if(dfs(na, nl, gCost + stepCost, depth + 1, cellNode)){
+        return true;
       }
     }
-  }
+    return false;
+  };
 
-  if(!bestGoal){
+  dfs(0, 0, 0, 0, undefined);
+
+  // Reject if we never progressed ~halfway along the corridor
+  if(!bestGoal || bestGoal.along < Math.max(1, Math.floor(alongCount * 0.5))){
     return undefined;
   }
 
-  const cells: GridNode[] = [];
-  let curr: GridNode | undefined = bestGoal;
+  const cells: GridCell[] = [];
+  let curr: GridCell | undefined = bestGoal;
   while(curr){
     cells.push(curr);
     curr = curr.parent;

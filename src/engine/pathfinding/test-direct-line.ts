@@ -167,7 +167,9 @@ function getWalkRoomAdjacency(area: ModuleArea): Map<string, Set<string>> {
   return adj;
 }
 
-/** BFS on walkmesh-transition room graph. */
+/** BFS on walkmesh-transition room graph (endpoint coarse check; depth-capped). */
+const ROOM_BFS_MAX_DEPTH = 16;
+
 function roomsAreWalkConnected(
   area: ModuleArea,
   start: ModuleRoom,
@@ -180,20 +182,37 @@ function roomsAreWalkConnected(
   // No transition data → cannot prove disconnect; allow (avoid false fails)
   if(!startLinks?.size && !destLinks?.size) return true;
 
-  const open: string[] = [start.roomName];
+  // Retail TestDirectLine walks GetAdjacentRoom along the clip (hop = transitions).
+  // Cap BFS depth so distant graph paths are not treated as LOS-clear.
+  type Node = { name: string; depth: number };
+  const open: Node[] = [{ name: start.roomName, depth: 0 }];
   const seen = new Set<string>([start.roomName]);
   while(open.length){
-    const name = open.pop()!;
-    const links = adj.get(name);
+    const cur = open.pop()!;
+    if(cur.depth >= ROOM_BFS_MAX_DEPTH) continue;
+    const links = adj.get(cur.name);
     if(!links) continue;
     for(const next of links){
       if(seen.has(next)) continue;
       if(next === dest.roomName) return true;
       seen.add(next);
-      open.push(next);
+      open.push({ name: next, depth: cur.depth + 1 });
     }
   }
   return false;
+}
+
+/** True if `next` is the same room or a 1-hop walkmesh neighbor of `cur`. */
+function roomsAreAdjacentOrSame(
+  area: ModuleArea,
+  cur: ModuleRoom,
+  next: ModuleRoom
+): boolean {
+  if(cur === next || cur.roomName === next.roomName) return true;
+  const adj = getWalkRoomAdjacency(area);
+  const links = adj.get(cur.roomName);
+  if(!links?.size) return true; // no data → allow
+  return links.has(next.roomName);
 }
 
 function adaptiveSteps(origin: THREE.Vector3, dest: THREE.Vector3, requested?: number): number {
@@ -294,6 +313,8 @@ export function testDirectLine(
   let prevZ = getWalkHeightAt(area, origin);
   if(isNaN(prevZ)) prevZ = origin.z;
   const prevSample = origin.clone();
+  // Retail walks GetAdjacentRoom along the clip — track current room, 1-hop only
+  let walkRoom = startRoom;
 
   for(let i = 1; i <= steps; i++){
     const t = i / steps;
@@ -324,9 +345,9 @@ export function testDirectLine(
       };
     }
 
-    if(checkRooms && startRoom){
+    if(checkRooms && walkRoom){
       const sampleRoom = getRoomAtPoint(area, _sample);
-      if(sampleRoom && !roomsAreWalkConnected(area, startRoom, sampleRoom)){
+      if(sampleRoom && !roomsAreAdjacentOrSame(area, walkRoom, sampleRoom)){
         refineClearPoint(area, origin, dest, clearT, t, clearPoint, perspace);
         return {
           ok: false,
@@ -335,6 +356,7 @@ export function testDirectLine(
           clearT,
         };
       }
+      if(sampleRoom) walkRoom = sampleRoom;
     }
 
     const z = getWalkHeightAt(area, _sample);

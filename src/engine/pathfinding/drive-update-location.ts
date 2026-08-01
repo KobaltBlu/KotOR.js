@@ -137,7 +137,11 @@ export function driveResolveMoveTarget(
       area.creatures?.find((c) => c.id === creatures.blockingCreatureId) ??
       GameState.PartyManager?.party?.find((c) => c.id === creatures.blockingCreatureId);
     if(BitWise.InstanceOfObject(blocker, ModuleObjectType.ModuleCreature)){
-      bumpFriends(creature, blocker as ModuleCreature, ideal, origin);
+      if(!bumpFriends(creature, blocker as ModuleCreature, ideal, origin)){
+        return origin.clone();
+      }
+    }else{
+      return origin.clone();
     }
   }
 

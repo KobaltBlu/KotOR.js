@@ -14,6 +14,8 @@ import {
   OBSTRUCTION_REUSE_AGE_MS,
   OBSTRUCTION_REUSE_DIST,
 } from "@/engine/pathfinding/get-obstruction-factor";
+import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { GameState } from "@/GameState";
 
 /** Retail SetSoundMode stack size (+0xf4 … +0x11c, max depth 9). */
 const SOUND_MODE_STACK_MAX = 9;
@@ -278,12 +280,18 @@ export class AudioEngine {
   private static soundModeMovieFlag: boolean = false;
 
   /**
-   * Retail CExoSoundInternal offset 0 — StartDuckingMusicAndAmbientSounds sets 0.2,
-   * StopDucking restores 1.0. Applied to music streams + ambient groups 4/5 in SetVolume.
+   * Retail K2 CExoSoundInternal offset 0 — StartDuckingMusicAndAmbientSounds sets 0.2,
+   * StopDucking restores 1.0. Streaming SetVolume multiplies music slider (groups 1/2)
+   * and ambient groups 4/5 by this scale into AIL_set_*_volume_levels (linear 0–1).
+   * Web Audio GainNode uses the same linear amplitude unit — no curve conversion.
+   * K1 has no duck field / API.
    */
   musicAmbientDuckScale: number = 1;
 
-  /** Retail StartDuckingMusicAndAmbientSounds @ 00633cb0 (0x3e4ccccd = 0.2). */
+  /**
+   * Retail K2 StartDuckingMusicAndAmbientSounds @ 00633cb0 (0x3e4ccccd = 0.2).
+   * Miles volume_levels and Web Audio GainNode are both linear amplitude 0–1.
+   */
   static DIALOG_MUSIC_AMBIENT_DUCK = 0.2;
 
   static get GAIN_MUSIC(){
@@ -621,21 +629,24 @@ export class AudioEngine {
   }
 
   /**
-   * Retail StartDuckingMusicAndAmbientSounds — CSWSDialog ctor.
-   * Multiplies music + areawide ambient streaming volumes by 0.2.
+   * Retail K2 StartDuckingMusicAndAmbientSounds — CSWSDialog ctor.
+   * Multiplies streaming music + ambient (groups 4/5) volumes by 0.2 via SetVolume.
+   * No-op on K1 (API / sound+0 duck field do not exist).
    */
   startDuckingMusicAndAmbientSounds(){
+    if(GameState.GameKey !== GameEngineType.TSL){ return; }
     this.setMusicAmbientDuckScale(AudioEngine.DIALOG_MUSIC_AMBIENT_DUCK);
   }
 
   /**
-   * Retail StopDuckingMusicAndAmbientSounds — CSWSDialog dtor.
+   * Retail K2 StopDuckingMusicAndAmbientSounds — CSWSDialog dtor.
    */
   stopDuckingMusicAndAmbientSounds(){
     this.setMusicAmbientDuckScale(1);
   }
 
   setMusicAmbientDuckScale(scale: number){
+    // Identity map: Miles AIL_*_volume_levels ↔ GainNode.gain (linear amplitude).
     const next = Number.isFinite(scale) ? Math.max(0, Math.min(1, scale)) : 1;
     if(next === this.musicAmbientDuckScale){ return; }
     this.musicAmbientDuckScale = next;
@@ -654,21 +665,10 @@ export class AudioEngine {
     ];
     for(let i = 0; i < ambientEmitters.length; i++){
       const em = ambientEmitters[i];
-      if(em?.gainNode){
-        em.gainNode.gain.value = em.getEffectiveVolume();
-      }
+      em?.applyEffectiveGain?.();
     }
-    // Retail SetVolume also ducks oneshot/positional sources in groups 4 and 5.
-    if(this.emitters){
-      for(let i = 0, il = this.emitters.length; i < il; i++){
-        const em = this.emitters[i];
-        if(!em?.gainNode) continue;
-        if(em.priority === AudioPriorityGroup.LOOPING_AREAWIDE_AMBIENTS ||
-           em.priority === AudioPriorityGroup.LOOPING_POSITIONAL_AMBIENTS){
-          em.gainNode.gain.value = em.getVolume();
-        }
-      }
-    }
+    // Retail streaming SetVolume ducks groups 4/5; oneshot SetVolume does not
+    // multiply by sound+0 (only streaming music/ambient paths do).
   }
 
   update ( delta: number, position = new THREE.Vector3(), rotation = new THREE.Euler(), forward = new THREE.Vector3() ) {

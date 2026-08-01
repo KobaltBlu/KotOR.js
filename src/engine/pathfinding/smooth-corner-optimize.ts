@@ -6,10 +6,11 @@ import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
 import { SMOOTH_SELECTION_BUDGET_MS } from "@/engine/pathfinding/smooth-select-nodes";
 
 /**
- * Approximate CSWSArea::SmoothCornerOptimize @ 004bfe20 + ComputeBestCorner @ 004be3a0.
+ * CSWSArea::SmoothCornerOptimize @ 004bfe20 + ComputeBestCorner @ 004be3a0.
  *
  * For sharp corners (BA·BC normalized < 0.9), binary-search a chord that cuts
- * the corner with TestDirectLine clearance.
+ * the corner, then nested CBC passes refine near/far sides of the chord
+ * (retail SmoothCornerOptimize control flow).
  *
  * Restartable variant is KotOR.js hitch hardening (retail runs corners sync after
  * SmoothSelectionRestartable returns 0). Budget matches DAT_007a1b1c ≈ 10ms.
@@ -90,12 +91,27 @@ export function smoothCornerOptimizeRestartable(
     const b = source[cornerIndex].vector;
     const c = source[cornerIndex + 1].vector;
 
-    const corner = computeBestCorner(area, a, b, c, owner);
-    if(corner){
-      workingVecs.push(corner.p0.clone());
-      workingVecs.push(corner.p1.clone());
-    }else{
+    // Retail SmoothCornerOptimize @ 004bfe20 — nested ComputeBestCorner passes
+    const chord = computeBestCorner(area, a, b, c, owner);
+    if(!chord){
       workingVecs.push(b.clone());
+      continue;
+    }
+    const near = computeBestCorner(area, a, chord.p0, chord.p1, owner);
+    if(near){
+      const far = computeBestCorner(area, near.p1, chord.p1, c, owner);
+      if(far){
+        workingVecs.push(near.p0.clone(), near.p1.clone(), far.p0.clone(), far.p1.clone());
+      }else{
+        workingVecs.push(near.p0.clone(), near.p1.clone(), chord.p1.clone());
+      }
+    }else{
+      const far = computeBestCorner(area, chord.p0, chord.p1, c, owner);
+      if(far){
+        workingVecs.push(chord.p0.clone(), far.p0.clone(), far.p1.clone());
+      }else{
+        workingVecs.push(chord.p0.clone(), chord.p1.clone());
+      }
     }
   }
 

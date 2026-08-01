@@ -14,9 +14,9 @@ import {
   type FollowLeaderRuntime,
 } from "@/engine/pathfinding/follow-leader";
 import { getFollowRateScale } from "@/engine/pathfinding/locomotion";
-import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
+import { partyFollowPath, FOLLOW_RING_SIZE } from "@/engine/pathfinding/party-follow-path";
 import { testDirectLine, TestDirectLineCode } from "@/engine/pathfinding/test-direct-line";
-import { walkUpdateLocation } from "@/engine/pathfinding/walk-update-location";
+import { testSafeLocationPoint } from "@/engine/pathfinding/test-safe-location-point";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
@@ -24,8 +24,6 @@ import { Utility } from "@/utility/Utility";
 
 /** Repath when live follow goal drifts this far from path end. */
 export const FOLLOW_PATH_REPATH_DRIFT = 1.25;
-/** WaitDest holds this many frames before advancing (retail WaitDest stubs). */
-const WAIT_DEST_FRAMES = 2;
 
 export type FollowStepResult = {
   /** Spend remaining inner-loop budget (retail iVar14 == 1). */
@@ -39,12 +37,17 @@ const _tmp = new THREE.Vector3();
 const _center = new THREE.Vector3();
 const _lateral = new THREE.Vector3();
 const _sample = new THREE.Vector3();
+const _moveGoal = new THREE.Vector3();
 
-export type FollowAvoidanceFn = (
-  delta: number,
-  offset: THREE.Vector3,
-  faceTarget?: ModuleCreature
-) => void;
+function getEffectiveFollowRate(owner: ModuleCreature, run: boolean): number {
+  const base = run
+    ? (owner.getRunSpeed?.() || 5.4)
+    : (owner.getWalkSpeed?.() || 1.7);
+  const movement = typeof owner.movementSpeed === 'number' && owner.movementSpeed > 0
+    ? owner.movementSpeed
+    : 1;
+  return base * movement;
+}
 
 /**
  * Drive one FollowLeader SM iteration (retail do/while switch @ 0051c360).
@@ -54,8 +57,7 @@ export function stepFollowLeaderState(
   owner: ModuleCreature,
   leader: ModuleCreature,
   offset: THREE.Vector3,
-  delta: number,
-  onAvoidance?: FollowAvoidanceFn
+  delta: number
 ): FollowStepResult {
   const distLeader = Utility.Distance2D(owner.position, leader.position);
   const distOffset = Utility.Distance2D(owner.position, offset);
@@ -107,18 +109,18 @@ export function stepFollowLeaderState(
     case FollowLeaderState.PathWaitDest:
     case FollowLeaderState.ToOffsetWaitDest:
     case FollowLeaderState.ToPathWaitDest:
-      return handleWaitDest(runtime);
+      return handleWaitDest(runtime, owner, delta);
 
     case FollowLeaderState.Offset:
       return handleOffset(
-        runtime, owner, leader, offset, delta, distLeader, distOffset, onAvoidance
+        runtime, owner, leader, offset, delta, distLeader, distOffset
       );
 
     case FollowLeaderState.MovingToPath:
     case FollowLeaderState.FollowingPath:
     case FollowLeaderState.MovingToOffset:
       return handleMoving(
-        runtime, owner, leader, offset, delta, distLeader, distOffset, onAvoidance
+        runtime, owner, leader, offset, delta, distLeader, distOffset
       );
 
     case FollowLeaderState.Teleport:
@@ -233,28 +235,90 @@ function hasFollowLos(
   return hit.ok || hit.code === TestDirectLineCode.Ok;
 }
 
-function handleWaitDest(runtime: FollowLeaderRuntime): FollowStepResult {
-  // Retail WaitDest clears field11_0x44 and returns 2
-  runtime.stuckCounter = 0;
-  runtime.waitFrames++;
-  if(runtime.waitFrames < WAIT_DEST_FRAMES){
+/**
+ * Retail OffsetWaitDest @ 00512a60 / PathWaitDest @ 00512b40 —
+ * walk ring indices from cursor→goal; hold while writeHead not yet at goal,
+ * else → Offset (1) or FollowingPath (3).
+ */
+function handleWaitDest(
+  runtime: FollowLeaderRuntime,
+  owner: ModuleCreature,
+  delta: number = 0
+): FollowStepResult {
+  // Do not clear stuckCounter here — WaitDest hold/thrash must still
+  // accumulate toward Reset / Teleport when the companion never advances.
+  const partyIdx = GameState.PartyManager?.party?.indexOf?.(owner) ?? -1;
+  const slot = partyIdx === 2 ? 2 : 1;
+  const writeHead = partyFollowPath.writeHead;
+  let cursor = partyFollowPath.memberCursor[slot] ?? 0;
+  const goalIdx = partyFollowPath.memberGoalIndex[slot] ?? cursor;
+
+  // Walk forward from cursor toward writeHead looking for goalIdx
+  let i = cursor;
+  let foundGoal = false;
+  let hitWriteHead = false;
+  for(let steps = 0; steps < 100; steps++){
+    if(i === writeHead){
+      hitWriteHead = true;
+      break;
+    }
+    if(i === goalIdx){
+      foundGoal = true;
+      break;
+    }
+    i = i < 99 ? i + 1 : 0;
+  }
+
+  if(hitWriteHead && !foundGoal){
+    // Ring has not advanced to goal yet — keep waiting; tick stuck clock
+    runtime.stuckTimer += Math.max(0, delta);
     return { continueInner: false, teleport: false };
   }
+
+  if(foundGoal && goalIdx === cursor){
+    // At goal index: stay waiting if pathPoint is closer to ring[cursor]
+    // than Recalc goal (retail dist² compare)
+    const p = partyFollowPath.points[cursor];
+    if(p){
+      const dPath =
+        (p.x - runtime.pathPointX) ** 2 +
+        (p.y - runtime.pathPointY) ** 2 +
+        (p.z - runtime.pathPointZ) ** 2;
+      const dGoal =
+        (p.x - runtime.goalX) ** 2 +
+        (p.y - runtime.goalY) ** 2 +
+        (p.z - runtime.goalZ) ** 2;
+      if(dPath <= dGoal){
+        return { continueInner: false, teleport: false };
+      }
+    }
+  }
+
   runtime.waitFrames = 0;
   if(
     runtime.state === FollowLeaderState.OffsetWaitDest ||
     runtime.state === FollowLeaderState.ToOffsetWaitDest
   ){
-    runtime.state = FollowLeaderState.MovingToOffset;
+    // Retail OffsetWaitDest → Offset (1) when already in formation band.
+    // If still outside comfort, enter MovingToPath so we actually walk —
+    // otherwise FindPath↔WaitDest↔Offset thrash freezes companions far away.
+    const distGoal = Math.hypot(
+      owner.position.x - runtime.goalX,
+      owner.position.y - runtime.goalY
+    );
+    runtime.state = distGoal > FOLLOW_COMFORT
+      ? FollowLeaderState.MovingToPath
+      : FollowLeaderState.Offset;
   }else{
-    runtime.state = FollowLeaderState.MovingToPath;
+    // Retail PathWaitDest → FollowingPath (3)
+    runtime.state = FollowLeaderState.FollowingPath;
   }
   return { continueInner: true, teleport: false };
 }
 
 /**
  * Retail Offset @ 00511290 — AdvancePointOnPath + formation lateral sample,
- * continuous WalkUpdate toward that sample (no parkIdle). Leave → MovingToPath
+ * direct SetPosition toward that sample (no parkIdle). Leave → MovingToPath
  * only on LOS fail or distOffset ≥ FOLLOW_REPATH.
  */
 function handleOffset(
@@ -264,8 +328,7 @@ function handleOffset(
   offset: THREE.Vector3,
   delta: number,
   distLeader: number,
-  distOffset: number,
-  onAvoidance?: FollowAvoidanceFn
+  distOffset: number
 ): FollowStepResult {
   // Retail Offset success path clears field11_0x44
   runtime.stuckTimer = 0;
@@ -282,9 +345,7 @@ function handleOffset(
 
   const run = shouldFollowRun(distLeader, distOffset, runtime.wasRunning);
   runtime.wasRunning = run;
-  const rate = run
-    ? (owner.getRunSpeed?.() || 5.4)
-    : (owner.getWalkSpeed?.() || 1.7);
+  const rate = getEffectiveFollowRate(owner, run);
   const followScale = getFollowRateScale(distOffset);
   const budget = Math.max(0, rate * Math.max(0, delta) * followScale);
 
@@ -312,12 +373,38 @@ function handleOffset(
   runtime.pathPointY = _center.y;
   runtime.pathPointZ = _center.z;
 
-  const bearing = partyFollowPath.points[idxBox.value]?.bearing ?? 0;
+  // Retail Offset @ 00511290 — lerp formation laterals between ring[idx] and ring[idx−1]
+  const idx = idxBox.value;
+  const prevIdx = idx > 0 ? idx - 1 : FOLLOW_RING_SIZE - 1;
+  const curr = partyFollowPath.points[idx];
+  const prev = partyFollowPath.points[prevIdx];
+  const bearingCurr = curr?.bearing ?? 0;
+  const bearingPrev = prev?.bearing ?? bearingCurr;
   partyFollowPath.applyFormationLateral(
-    slot, _center.x, _center.y, _center.z, bearing, _lateral
+    slot, curr?.x ?? _center.x, curr?.y ?? _center.y, curr?.z ?? _center.z, bearingCurr, _lateral
   );
-  // Prefer live GetFollowPosition when ring lateral is cold / far from offset
-  if(Utility.Distance2D(_lateral, offset) > FOLLOW_COMFORT){
+  if(prev && curr){
+    partyFollowPath.applyFormationLateral(
+      slot, prev.x, prev.y, prev.z, bearingPrev, _tmp
+    );
+    const segDx = curr.x - prev.x;
+    const segDy = curr.y - prev.y;
+    const segDz = curr.z - prev.z;
+    const segLen = Math.sqrt(segDx * segDx + segDy * segDy + segDz * segDz) || 1;
+    const advDx = _center.x - prev.x;
+    const advDy = _center.y - prev.y;
+    const advDz = _center.z - prev.z;
+    const t = Math.min(1, Math.max(0, Math.sqrt(advDx * advDx + advDy * advDy + advDz * advDz) / segLen));
+    _lateral.set(
+      _tmp.x + (_lateral.x - _tmp.x) * t,
+      _tmp.y + (_lateral.y - _tmp.y) * t,
+      _tmp.z + (_lateral.z - _tmp.z) * t
+    );
+  }
+  // Prefer live GetFollowPosition only when ring is cold
+  if(partyFollowPath.count <= FOLLOW_RING_WARM_COUNT){
+    _lateral.copy(offset);
+  }else if(Utility.Distance2D(_lateral, offset) > FOLLOW_REPATH){
     _lateral.copy(offset);
   }
 
@@ -331,10 +418,24 @@ function handleOffset(
     _sample.copy(owner.position);
   }
 
-  // Retail: LOS field17 → new lateral; fail → MovingToPath
+  // Retail: LOS field17 → new lateral; fail → MovingToPath.
+  // If field17 is stale (NPC stood on the old sample), retry from feet so
+  // Offset↔Moving thrash cannot freeze lastSample forever.
   if(area && !hasFollowLos(area, owner, _sample, _lateral)){
-    runtime.state = FollowLeaderState.MovingToPath;
-    return { continueInner: true, teleport: false };
+    const sampleDist = Utility.Distance2D(owner.position, _sample);
+    if(sampleDist > 0.5 && hasFollowLos(area, owner, owner.position, _lateral)){
+      _sample.copy(owner.position);
+      runtime.lastSampleX = owner.position.x;
+      runtime.lastSampleY = owner.position.y;
+      runtime.lastSampleZ = owner.position.z;
+    }else{
+      // Refresh field17 to feet before pathing so a later Offset re-entry is live
+      runtime.lastSampleX = owner.position.x;
+      runtime.lastSampleY = owner.position.y;
+      runtime.lastSampleZ = owner.position.z;
+      runtime.state = FollowLeaderState.MovingToPath;
+      return { continueInner: true, teleport: false };
+    }
   }
 
   runtime.lastSampleX = _lateral.x;
@@ -352,7 +453,9 @@ function handleOffset(
     ) > 0.02;
 
   if(distToSample > 0.05 || sampleMoved){
-    driveTowardOffset(owner, _lateral, leader, delta, run, onAvoidance);
+    // Retail FollowLeader @ 0051c360 — after Advance burns budget into field17,
+    // SetPosition toward that sample (not WalkUpdate trapezoid).
+    applyFollowSetPosition(owner, _lateral, budget, delta, run);
     runtime.offsetStepped = true;
   }
 
@@ -366,8 +469,7 @@ function handleMoving(
   offset: THREE.Vector3,
   delta: number,
   distLeader: number,
-  distOffset: number,
-  onAvoidance?: FollowAvoidanceFn
+  distOffset: number
 ): FollowStepResult {
   // Enter Offset only at/under comfort (hysteresis vs FOLLOW_REPATH leave)
   if(distOffset <= FOLLOW_COMFORT){
@@ -385,6 +487,11 @@ function handleMoving(
       runtime.pathPointY = owner.position.y;
       runtime.pathPointZ = owner.position.z;
     }
+    // Keep field17 at feet when re-entering Offset from Moving* so a stale
+    // sample behind an NPC cannot immediately bounce us back to MovingToPath.
+    runtime.lastSampleX = owner.position.x;
+    runtime.lastSampleY = owner.position.y;
+    runtime.lastSampleZ = owner.position.z;
     return { continueInner: true, teleport: false };
   }
   runtime.stuckTimer += delta;
@@ -399,35 +506,182 @@ function handleMoving(
 
   const run = shouldFollowRun(distLeader, distOffset, runtime.wasRunning);
   runtime.wasRunning = run;
-  driveTowardOffset(
+  const moved = driveTowardOffset(
     owner,
     offset,
-    leader,
     delta,
-    run,
-    onAvoidance
+    run
   );
-  runtime.stuckCounter = 0;
+  if(moved === FollowMoveResult.BlockedByWorldCreature){
+    runtime.state = FollowLeaderState.Teleport;
+    runtime.stuckTimer = 0;
+  }else if(moved === FollowMoveResult.Blocked){
+    owner.setComputedPath?.(undefined);
+    runtime.state = FollowLeaderState.FindPath;
+    runtime.stuckTimer = 0;
+  }else{
+    runtime.stuckCounter = 0;
+  }
   return { continueInner: false, teleport: false };
 }
 
 /**
- * WalkUpdateLocation toward follow offset (shared by FollowLeader + ForceFollow).
+ * Retail FollowLeader outer SetPosition toward field17 (@ 0051c360).
+ * Budget already burned by AdvancePointOnPath; step toward sample with
+ * TestDirectLine / TestSafeLocationPoint gate.
+ */
+function applyFollowSetPosition(
+  owner: ModuleCreature,
+  goal: THREE.Vector3,
+  budget: number,
+  delta: number,
+  run: boolean
+){
+  if(owner.blockingTimer >= 5 || owner.collisionTimer >= 0.5){
+    owner.blockingTimer = 0;
+    owner.collisionTimer = 0;
+  }
+
+  const dx = goal.x - owner.position.x;
+  const dy = goal.y - owner.position.y;
+  const dist = Math.hypot(dx, dy);
+  if(dist < 1e-6 || budget <= 0){
+    faceToward(owner, goal);
+    owner.force = 0;
+    owner.speed = 0;
+    owner.walk = false;
+    return;
+  }
+
+  const step = Math.min(budget, dist);
+  _tmp.set(
+    owner.position.x + (dx / dist) * step,
+    owner.position.y + (dy / dist) * step,
+    owner.position.z
+  );
+
+  const area = owner.area ?? GameState.module?.area;
+  if(area){
+    const hit = testDirectLine(area, owner.position, _tmp, {
+      owner,
+      personalSpace: getPathPersonalSpace(owner),
+      allowPartyCreatures: true,
+    });
+    if(!hit.ok && hit.code !== TestDirectLineCode.Ok){
+      if(hit.clearPoint){
+        _tmp.copy(hit.clearPoint);
+      }else if(!testSafeLocationPoint(area, _tmp, owner)){
+        faceToward(owner, goal);
+        return;
+      }
+    }
+    if(typeof area.getNearestWalkablePoint === 'function'){
+      _tmp.copy(area.getNearestWalkablePoint(_tmp, getPathPersonalSpace(owner) * 0.5));
+    }
+  }
+
+  faceToward(owner, goal);
+  owner.walk = !run;
+  owner.force = 0;
+  owner.speed = 0;
+  owner.moveDirOverride = undefined;
+  owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
+  owner.setPosition(_tmp);
+}
+
+export enum FollowMoveResult {
+  OK = 1,
+  Arrived = 2,
+  Blocked = 3,
+  BlockedByWorldCreature = 4,
+}
+
+function isPartyCreatureId(id: number | undefined): boolean {
+  if(id == null) return false;
+  const party = GameState.PartyManager?.party;
+  if(!party?.length) return false;
+  return party.some((creature) => creature?.id === id);
+}
+
+/**
+ * Retail FollowLeader Moving* step: direct TestDirectLine to the next follow
+ * path/sample point. Unlike generic WalkUpdateLocation, this does not call
+ * BumpFriends, so followers cannot shove ambient creatures out of the way.
+ */
+function applyFollowDirectMove(
+  owner: ModuleCreature,
+  goal: THREE.Vector3,
+  budget: number,
+  delta: number,
+  run: boolean
+): FollowMoveResult {
+  const dx = goal.x - owner.position.x;
+  const dy = goal.y - owner.position.y;
+  const dist = Math.hypot(dx, dy);
+  if(dist < 1e-6){
+    owner.force = 0;
+    owner.speed = 0;
+    return FollowMoveResult.Arrived;
+  }
+  if(budget <= 0){
+    owner.force = 0;
+    owner.speed = 0;
+    return FollowMoveResult.OK;
+  }
+
+  const step = Math.min(budget, dist);
+  _tmp.set(
+    owner.position.x + (dx / dist) * step,
+    owner.position.y + (dy / dist) * step,
+    owner.position.z
+  );
+
+  const area = owner.area ?? GameState.module?.area;
+  if(area){
+    const hit = testDirectLine(area, owner.position, _tmp, {
+      owner,
+      personalSpace: Math.max(0.05, getPathPersonalSpace(owner) - 0.1),
+      allowPartyCreatures: true,
+    });
+    if(!hit.ok && hit.code !== TestDirectLineCode.Ok){
+      owner.force = 0;
+      owner.speed = 0;
+      if(
+        hit.code === TestDirectLineCode.Creature &&
+        !isPartyCreatureId(hit.blockingCreatureId)
+      ){
+        return FollowMoveResult.BlockedByWorldCreature;
+      }
+      return FollowMoveResult.Blocked;
+    }
+    if(typeof area.getNearestWalkablePoint === 'function'){
+      _tmp.copy(area.getNearestWalkablePoint(_tmp, getPathPersonalSpace(owner) * 0.5));
+    }
+  }
+
+  owner.walk = !run;
+  owner.force = 0;
+  owner.speed = 0;
+  owner.moveDirOverride = undefined;
+  owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
+  owner.setPosition(_tmp);
+  return step >= dist ? FollowMoveResult.Arrived : FollowMoveResult.OK;
+}
+
+/**
+ * Retail direct-line motion toward follow offset / path sample (Moving* states).
  */
 export function driveTowardOffset(
   owner: ModuleCreature,
   offset: THREE.Vector3,
-  faceTarget: ModuleCreature | undefined,
   delta: number,
-  run: boolean,
-  onAvoidance?: (delta: number, offset: THREE.Vector3, faceTarget?: ModuleCreature) => void
-){
+  run: boolean
+): FollowMoveResult {
   ensurePathToOffset(owner, offset);
 
   if(owner.blockingTimer >= 5 || owner.collisionTimer >= 0.5){
     owner.blockingTimer = 0;
     owner.collisionTimer = 0;
-    onAvoidance?.(delta, offset, faceTarget);
   }
 
   const path = owner.getComputedPath();
@@ -435,27 +689,16 @@ export function driveTowardOffset(
   if(point && Utility.Distance2D(owner.position, point.vector) <= 0.5){
     path.pop();
   }
-  const goal = path?.points?.[0]?.vector ?? offset;
-  faceToward(owner, goal);
+  _moveGoal.copy(path?.points?.[0]?.vector ?? offset);
+  faceToward(owner, _moveGoal);
 
-  owner.walk = !run;
   owner.force = 0;
   owner.moveDirOverride = undefined;
-  owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
 
-  let remaining = Utility.Distance2D(owner.position, goal);
-  const pts = path?.points;
-  if(pts?.length){
-    remaining = Utility.Distance2D(owner.position, pts[0].vector);
-    for(let i = 1; i < pts.length; i++){
-      remaining += Utility.Distance2D(pts[i - 1].vector, pts[i].vector);
-    }
-  }
-
-  walkUpdateLocation(owner, goal, run, delta, {
-    remainingDistance: remaining,
-    followScale: getFollowRateScale(Utility.Distance2D(owner.position, offset)),
-  });
+  const rate = getEffectiveFollowRate(owner, run);
+  const followScale = getFollowRateScale(Utility.Distance2D(owner.position, offset));
+  const budget = Math.max(0, rate * Math.max(0, delta) * followScale);
+  return applyFollowDirectMove(owner, _moveGoal, budget, delta, run);
 }
 
 export function ensurePathToOffset(owner: ModuleCreature, offset: THREE.Vector3): boolean {

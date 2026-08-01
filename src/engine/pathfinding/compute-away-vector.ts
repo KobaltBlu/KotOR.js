@@ -1,12 +1,17 @@
 import * as THREE from "three";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import { getPathPersonalSpace } from "@/combat/attack-range";
+import {
+  farthestClearPoint,
+  testDirectLine,
+  TestDirectLineCode,
+} from "@/engine/pathfinding/test-direct-line";
 
 /**
  * Retail CSWSArea::ComputeAwayVector @ 004bdf80 —
  * Try 8 directions at 45° around the creature→threat axis, prefer 180°
- * (away), clip with walkable line samples (TestDirectLine approx), pick
- * best by distance-from-threat × angle weight.
+ * (away), clip with TestDirectLine / farthestClearPoint, pick best by
+ * distance-from-threat × angle weight.
  *
  * @file compute-away-vector.ts
  */
@@ -17,31 +22,29 @@ const ANGLE_WEIGHT = [1, 4, 16, 64, 256, 64, 16, 4];
 
 const _toward = new THREE.Vector3();
 const _candidate = new THREE.Vector3();
-const _sample = new THREE.Vector3();
 
 /**
- * Clip destination along origin→ideal to last walkable sample.
+ * Clip destination along origin→ideal via TestDirectLine.
  */
 function clipDirectLine(
-  area: { isPointWalkable?: (p: THREE.Vector3) => boolean },
+  area: NonNullable<ModuleCreature["area"]>,
+  owner: ModuleCreature,
   origin: THREE.Vector3,
   ideal: THREE.Vector3
 ): THREE.Vector3 {
-  let best = origin.clone();
-  const steps = 8;
-  for(let i = 1; i <= steps; i++){
-    const t = i / steps;
-    _sample.set(
-      origin.x + (ideal.x - origin.x) * t,
-      origin.y + (ideal.y - origin.y) * t,
-      origin.z + (ideal.z - origin.z) * t
-    );
-    if(typeof area.isPointWalkable === 'function' && !area.isPointWalkable(_sample)){
-      break;
-    }
-    best.copy(_sample);
+  const perspace = getPathPersonalSpace(owner);
+  const hit = testDirectLine(area, origin, ideal, {
+    owner,
+    personalSpace: perspace,
+    allowPartyCreatures: false,
+  });
+  if(hit.ok || hit.code === TestDirectLineCode.Ok){
+    return ideal.clone();
   }
-  return best;
+  return farthestClearPoint(area, origin, ideal, {
+    owner,
+    personalSpace: perspace,
+  });
 }
 
 /**
@@ -97,42 +100,39 @@ export function computeAwayVector(
     let dest = _candidate.clone();
     if(area){
       // Full line blocked → binary-scale toward origin (retail local_b8 *= 0.5)
-      if(typeof area.isPointWalkable === 'function'){
-        let scale = 1.0;
-        let cleared = false;
-        while(scale >= 0.005){
-          _candidate.set(origin.x + dx * scale, origin.y + dy * scale, origin.z);
-          const clipped = clipDirectLine(area, origin, _candidate);
-          const reached =
-            Math.abs(clipped.x - _candidate.x) < 0.15 &&
-            Math.abs(clipped.y - _candidate.y) < 0.15;
-          if(reached || scale < 0.01){
-            dest.copy(clipped);
-            cleared = true;
-            break;
-          }
-          // Prefer clipped point if it improved distance vs start
-          const cDist =
-            (clipped.x - threat.x) * (clipped.x - threat.x) +
-            (clipped.y - threat.y) * (clipped.y - threat.y);
-          if(cDist > startDistSq * 0.25){
-            dest.copy(clipped);
-            cleared = true;
-            break;
-          }
-          scale *= 0.5;
+      let scale = 1.0;
+      let cleared = false;
+      while(scale >= 0.005){
+        _candidate.set(origin.x + dx * scale, origin.y + dy * scale, origin.z);
+        const clipped = clipDirectLine(area, creature, origin, _candidate);
+        const reached =
+          Math.abs(clipped.x - _candidate.x) < 0.15 &&
+          Math.abs(clipped.y - _candidate.y) < 0.15;
+        if(reached || scale < 0.01){
+          dest.copy(clipped);
+          cleared = true;
+          break;
         }
-        if(!cleared){
-          continue;
+        const cDist =
+          (clipped.x - threat.x) * (clipped.x - threat.x) +
+          (clipped.y - threat.y) * (clipped.y - threat.y);
+        if(cDist > startDistSq * 0.25){
+          dest.copy(clipped);
+          cleared = true;
+          break;
         }
-        // Reject if closer to threat than we started (retail goto skip)
-        const newDist =
-          (dest.x - threat.x) * (dest.x - threat.x) +
-          (dest.y - threat.y) * (dest.y - threat.y) +
-          (dest.z - threat.z) * (dest.z - threat.z);
-        if(newDist < startDistSq){
-          continue;
-        }
+        scale *= 0.5;
+      }
+      if(!cleared){
+        continue;
+      }
+      // Reject if closer to threat than we started (retail goto skip)
+      const newDist =
+        (dest.x - threat.x) * (dest.x - threat.x) +
+        (dest.y - threat.y) * (dest.y - threat.y) +
+        (dest.z - threat.z) * (dest.z - threat.z);
+      if(newDist < startDistSq){
+        continue;
       }
     }
 

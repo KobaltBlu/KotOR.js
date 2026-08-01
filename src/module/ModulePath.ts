@@ -410,10 +410,11 @@ export class ModulePath {
   }
 
   /**
-   * Retail PlotPathInArea @ 004c3260 (subset):
-   * 1. TestDirectLine → 2-point path
-   * 2. Else PTH A* (PlotPathPointPath approx)
-   * 3. Else partial clear toward dest (no blind through-wall fallback)
+   * Retail PlotPathInArea @ 004c3260:
+   * 1. TestDirectLine → 2-point path when clear
+   * 2. Else PathPointDFS (PlotPathPointPath)
+   * 3. Else PlotGridPath / GridDFS when no PTH / DFS fail
+   * 4. Else farthestClearPoint partial (no blind through-wall fallback)
    * Empty path = unreachable (caller should ERROR).
    */
   traverseToPoint(owner: ModuleObject, origin: THREE.Vector3, dest: THREE.Vector3, smooth: boolean = true): ComputedPath {

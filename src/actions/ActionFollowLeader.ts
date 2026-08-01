@@ -94,8 +94,7 @@ export class ActionFollowLeader extends Action {
         owner,
         leader,
         offset,
-        delta,
-        (d, g, face) => this.runCreatureAvoidance(d, g, face)
+        delta
       );
       if(step.teleport){
         teleport = true;
@@ -122,13 +121,21 @@ export class ActionFollowLeader extends Action {
       return ActionStatus.IN_PROGRESS;
     }
 
-    // Offset — continuous trail walk; only soft-park when Advance produced no step
+    // Offset — continuous trail walk. Soft-park only after a short idle hold so
+    // intermittent zero-step frames cannot restart AnimRun mid run↔pause blend
+    // (frozen gait while SetPosition still advances = slide).
     if(this.followRuntime.state === FollowLeaderState.Offset){
       if(this.followRuntime.offsetStepped){
-        this.lookAtLeader(owner, leader);
+        this.followRuntime.offsetIdleTime = 0;
         return ActionStatus.IN_PROGRESS;
       }
-      this.parkIdleSoft(owner);
+      this.followRuntime.offsetIdleTime += Math.max(0, delta);
+      owner.force = 0;
+      owner.speed = 0;
+      owner.moveDirOverride = undefined;
+      if(this.followRuntime.offsetIdleTime >= 0.25){
+        this.parkIdleSoft(owner);
+      }
       this.lookAtLeader(owner, leader);
       return ActionStatus.IN_PROGRESS;
     }
@@ -153,15 +160,17 @@ export class ActionFollowLeader extends Action {
   }
 
   /**
-   * Soft park when Offset sample is stationary — keep walkSpeedFactor so the
-   * next Offset/Moving frame does not ramp from zero.
+   * Soft park when Offset sample has been stationary ≥0.25s — keep walkSpeedFactor
+   * so the next Offset/Moving frame does not ramp from zero. Clear sticky run/walk
+   * anim so companions do not moonwalk in place once truly parked on field17.
    */
   private parkIdleSoft(owner: ModuleCreature){
     owner.force = 0;
     owner.speed = 0;
     owner.walk = false;
     owner.moveDirOverride = undefined;
-    // Do not clearLocomotionAnimation / resetWalkSpeedFactor / setComputedPath
+    owner.clearLocomotionAnimation?.();
+    // Do not resetWalkSpeedFactor / setComputedPath
     partySoftSeparate(owner);
   }
 

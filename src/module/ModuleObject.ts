@@ -8,8 +8,10 @@ import type { EffectLink } from "@/effects";
 import type { GameEffect } from "@/effects/GameEffect";
 import EngineLocation from "@/engine/EngineLocation";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
+import { GameEngineType } from "@/enums/engine";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 import { ModulePlaceableAnimState } from "@/enums/module/ModulePlaceableAnimState";
 import { NWScriptEventType } from "@/enums/nwscript/NWScriptEventType";
@@ -28,6 +30,10 @@ import { LIPObject } from "@/resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
 import { Utility } from "@/utility/Utility";
 import { ComputedPath } from "@/engine/pathfinding";
+import {
+  applyMobilityMovementBonus,
+  clampMovementRateFactor,
+} from "@/engine/pathfinding/locomotion";
 import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from "@/module";
@@ -522,6 +528,7 @@ export class ModuleObject {
    * Recalc movement_rate_factor from MSI/MSD effects.
    * Retail: best increase (absolute %) × (100 − best decrease %) / 100,
    * clamped to [0.125, 1.5] like GetWalkRate / GetRunRate.
+   * TSL GetMovementRateFactor @ 0068f140: Mobility feat (0xc3) adds +0.1 before clamp.
    */
   updateMovementSpeed(){
     let bestIncrease = 100;
@@ -542,9 +549,16 @@ export class ModuleObject {
     }
 
     let factor = (bestIncrease / 100) * ((100 - bestDecrease) / 100);
-    if(factor < 0.125) factor = 0.125;
-    else if(factor > 1.5) factor = 1.5;
-    this.movementSpeed = factor;
+    // TSL Mobility (feat 0xc3 / 195) — GetMovementRateFactor +0.1
+    const hasMobility =
+      typeof (this as { getHasFeat?: (id: number) => boolean }).getHasFeat === 'function' &&
+      (this as { getHasFeat: (id: number) => boolean }).getHasFeat(CombatFeatType.MOBILITY);
+    factor = applyMobilityMovementBonus(
+      factor,
+      hasMobility,
+      GameState.GameKey === GameEngineType.TSL
+    );
+    this.movementSpeed = clampMovementRateFactor(factor);
   }
 
   /**
@@ -760,11 +774,18 @@ export class ModuleObject {
 
   /**
    * Clear the combat action
-   * @param combatAction 
+   * @param combatAction - Specific scheduled action, or omit to clear the current round action
    * @returns 
    */
   clearCombatAction(combatAction: CombatRoundAction = undefined){
-    return this.combatRound.clearAction(combatAction);
+    if(combatAction){
+      return this.combatRound.clearAction(combatAction);
+    }
+    if(this.combatRound?.action){
+      this.combatRound.action = undefined;
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -773,7 +794,8 @@ export class ModuleObject {
    * @returns 
    */
   clearCombatActionAtIndex(index: number = 0): boolean {
-    if(index <= 0) return;
+    if(index < 0 || !this.combatRound?.scheduledActionList?.length) return false;
+    if(index >= this.combatRound.scheduledActionList.length) return false;
     return !!this.combatRound.scheduledActionList.splice(index, 1).length;
   }
 

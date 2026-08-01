@@ -13,12 +13,17 @@ import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { BitWise } from "@/utility/BitWise";
 import { KeyMapAction, ModuleObjectType } from "@/enums";
 import type { ModuleObject } from "@/module/ModuleObject";
+import { FollowerCamera } from "@/engine/FollowerCamera";
 
 const TLK_TOOLTIP_FULL_HEALTH = 42498;
 
 const TLK_TOOLTIP_SOLOMODE = 48035;
 const TLK_TOOLTIP_STEALTH = 247;
 const TLK_TOOLTIP_PAUSE = 48019;
+/** Retail clear_all_button field4_0x24 / CancleCombat tooltip */
+const TLK_TOOLTIP_CLEARALL = 48518;
+/** Retail clear_one_button field4_0x24 / ClearOneAction tooltip */
+const TLK_TOOLTIP_CLEARONE = 48456;
 
 const TLK_TOOLTIP_QUEST     = 48218;
 const TLK_TOOLTIP_EQUIPMENT = 48219;
@@ -290,6 +295,8 @@ export class InGameOverlay extends GameMenu {
 
       this.LBL_CMBTMSGBG?.hide();
       this.LBL_CMBTMODEMSG?.hide();
+      // Retail ShowActionQueue(0) — combat queue starts hidden
+      this.hideCombatUI();
       //this.BTN_CLEARALL.hideBorder();
 
 
@@ -409,12 +416,29 @@ export class InGameOverlay extends GameMenu {
         }
       });
 
+      // Retail OnClearAllButtonPressed → ClearAllActions @ 006887d0 (keymap CancleCombat / 0xf0)
       this.BTN_CLEARALL.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearAllActions();
-        GameState.getCurrentPlayer().combatData.combatState = false;
-        GameState.getCurrentPlayer().cancelCombat();
-      });
+        this.onClearAllButtonPressed();
+      }).setKeymapAction(KeyMapAction.CancleCombat).setTooltipText(
+        GameState.TLKManager.TLKStrings[TLK_TOOLTIP_CLEARALL]?.Value ?? ''
+      );
+
+      // Retail OnClearOneButtonPressed → OnCombatYButton @ 006880c0 (keymap ClearOneAction / 0xf5)
+      const onClearOne = (e: { stopPropagation: () => void }) => {
+        e.stopPropagation();
+        this.onClearOneButtonPressed();
+      };
+      if(this.BTN_CLEARONE){
+        this.BTN_CLEARONE.addEventListener('click', onClearOne)
+          .setKeymapAction(KeyMapAction.ClearOneAction)
+          .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_CLEARONE]?.Value ?? '');
+      }
+      if(this.BTN_CLEARONE2){
+        this.BTN_CLEARONE2.addEventListener('click', onClearOne)
+          .setKeymapAction(KeyMapAction.ClearOneAction)
+          .setTooltipText(GameState.TLKManager.TLKStrings[TLK_TOOLTIP_CLEARONE]?.Value ?? '');
+      }
 
       this.LBL_QUEUE0.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -566,9 +590,35 @@ export class InGameOverlay extends GameMenu {
     };
   }
 
+  /**
+   * Retail CSWGuiMainInterface::ClearAllActions @ 006887d0
+   * (OnClearAllButtonPressed / CancleCombat keymap).
+   * Client SetCombatMode(0) → restore combat camera, then ClearAllActions(1)
+   * + RemoveAllActions (via clearAllActions). Does not CancelCombat / SetCombatState(0).
+   */
+  onClearAllButtonPressed() {
+    const oPC = GameState.getCurrentPlayer();
+    if(!oPC) return;
+    FollowerCamera.setCombatCameraActive(false);
+    oPC.clearAllActions(true);
+  }
+
+  /**
+   * Retail OnCombatYButton @ 006880c0 (OnClearOneButtonPressed / ClearOneAction).
+   * RemoveLastAction from the combat round; if the schedule was empty, ClearAllActions(1).
+   */
+  onClearOneButtonPressed() {
+    const oPC = GameState.getCurrentPlayer();
+    if(!oPC?.combatRound) return;
+    if(!oPC.combatRound.removeLastAction()){
+      oPC.clearAllActions(true);
+    }
+  }
+
   showCombatUI() {
     this.BTN_CLEARALL?.show();
     this.BTN_CLEARONE?.show();
+    this.BTN_CLEARONE2?.show();
     this.LBL_COMBATBG1?.show();
     this.LBL_COMBATBG2?.show();
     this.LBL_COMBATBG3?.show();
@@ -581,6 +631,7 @@ export class InGameOverlay extends GameMenu {
   hideCombatUI() {
     this.BTN_CLEARALL?.hide();
     this.BTN_CLEARONE?.hide();
+    this.BTN_CLEARONE2?.hide();
     this.LBL_COMBATBG1?.hide();
     this.LBL_COMBATBG2?.hide();
     this.LBL_COMBATBG3?.hide();

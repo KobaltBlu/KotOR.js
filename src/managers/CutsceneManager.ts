@@ -407,7 +407,8 @@ export class CutsceneManager {
     if(dialog.getConversationType() != DLGConversationType.COMPUTER && !this.keepStealthInDialog){
       this.unstealthPartyForDialog();
     }
-    // Retail CSWSDialog ctor → StartDuckingMusicAndAmbientSounds (0.2).
+    // Retail K2 CSWSDialog ctor → StartDuckingMusicAndAmbientSounds (sound+0 = 0.2).
+    // AudioEngine no-ops on K1 (no duck API). Miles volume_levels ↔ GainNode linear.
     // Retail SendDialogEntry: if GetSoundMode()!=0 → SetSoundMode(0) so VO is audible.
     const audio = AudioEngine.GetAudioEngine();
     if(AudioEngine.GetSoundMode() !== SoundMode.POP){
@@ -971,7 +972,8 @@ export class CutsceneManager {
     stopOverlayOn(this.listener);
 
     const audioEngine = AudioEngine.GetAudioEngine();
-    // Retail ~CSWSDialog: StopDucking only — area BGM keeps playing.
+    // Retail K2 ~CSWSDialog: StopDucking only — area BGM keeps playing.
+    // K1 never ducked; stop is still safe (restores scale 1).
     // AmbientTrack is play-once; leftover source cleared on UnloadArea (500ms fade).
     audioEngine.bgmTimer = 0;
     audioEngine.stopDuckingMusicAndAmbientSounds();

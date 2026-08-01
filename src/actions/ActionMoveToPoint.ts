@@ -13,6 +13,7 @@ import { getPathPersonalSpace } from "@/combat/attack-range";
 import { beginInterAreaPath } from "@/engine/pathfinding/inter-area-path";
 import { WALK_BACK_DOT } from "@/engine/pathfinding/locomotion";
 import {
+  WalkUpdateResult,
   walkUpdateLocation,
 } from "@/engine/pathfinding/walk-update-location";
 import {
@@ -50,7 +51,7 @@ export class ActionMoveToPoint extends Action {
 
     const owner = this.owner as ModuleCreature;
 
-    const destAreaId = this.getParameter<number>(3);
+    const destAreaId = this.getRawNumberParameter(3);
     const ownerAreaId = owner.area?.id ?? GameState.module?.area?.id;
     if(
       typeof destAreaId === 'number' &&
@@ -130,26 +131,27 @@ export class ActionMoveToPoint extends Action {
 
     const distance = Utility.Distance2D(owner.position, this.target_position);
     if(distance > (this.computedPath.points.length > 1 ? 0.5 : range)){
-
-      if((owner as any).blockingTimer >= 5 || owner.collisionTimer >= 0.5){
-        (owner as any).blockingTimer = 0;
-        owner.collisionTimer = 0;
-        this.runCreatureAvoidance(delta, this.target_position, this.target);
-      }
+      let walkResult: WalkUpdateResult | undefined;
 
       const point = this.computedPath.points[0];
       if(point){
         const pointDistance = Utility.Distance2D(owner.position, point.vector);
         const arriveAtPoint = this.computedPath.points.length > 1 ? 0.5 : range;
         if(pointDistance > arriveAtPoint){
-          this.stepWalkUpdate(owner, point.vector, run, delta);
+          walkResult = this.stepWalkUpdate(owner, point.vector, run, delta);
         }else{
           this.computedPath.pop();
           const next = this.computedPath.points[0];
           if(next){
-            this.stepWalkUpdate(owner, next.vector, run, delta);
+            walkResult = this.stepWalkUpdate(owner, next.vector, run, delta);
           }
         }
+      }
+
+      if(walkResult === WalkUpdateResult.ARRIVED){
+        this.consumeArrivedPathPoint(owner, range);
+      }else if(walkResult === WalkUpdateResult.BLOCKED){
+        this.syncBlockedComputedPath(owner);
       }
 
       if(this.computedPath.timer < 0){
@@ -207,7 +209,12 @@ export class ActionMoveToPoint extends Action {
   /**
    * WalkUpdateLocation step toward the next waypoint.
    */
-  private stepWalkUpdate(owner: ModuleCreature, goal: THREE.Vector3, run: boolean, delta: number){
+  private stepWalkUpdate(
+    owner: ModuleCreature,
+    goal: THREE.Vector3,
+    run: boolean,
+    delta: number
+  ): WalkUpdateResult {
     owner.walk = !run;
     owner.force = 0;
 
@@ -249,10 +256,27 @@ export class ActionMoveToPoint extends Action {
       owner.setAnimationState(run ? ModuleCreatureAnimState.RUNNING : ModuleCreatureAnimState.WALKING);
     }
 
-    walkUpdateLocation(owner, goal, run, delta, {
+    return walkUpdateLocation(owner, goal, run, delta, {
       remainingDistance: remaining,
       allowWalkBack,
+      useRangeTargetId: this.pathFindInfo?.targetObjectId,
     });
+  }
+
+  private consumeArrivedPathPoint(owner: ModuleCreature, range: number): void {
+    const point = this.computedPath?.points?.[0];
+    if(!point) return;
+    const arriveAtPoint = (this.computedPath?.points?.length ?? 0) > 1 ? 0.5 : range;
+    if(Utility.Distance2D(owner.position, point.vector) <= arriveAtPoint){
+      this.computedPath.pop();
+    }
+  }
+
+  private syncBlockedComputedPath(owner: ModuleCreature): void {
+    const ownerPath = owner.getComputedPath?.();
+    if(ownerPath !== this.computedPath){
+      this.computedPath = ownerPath;
+    }
   }
 
   private pathRemaining(owner: ModuleCreature): number {
@@ -330,7 +354,7 @@ export class ActionMoveToPoint extends Action {
   calculatePath(){
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) return;
 
-    const area = GameState.module?.area;
+    const area = this.owner?.area ?? GameState.module?.area;
     if(!this.pathFindInfo){
       this.pathFindInfo = {
         ownerId: this.owner.id,
@@ -343,9 +367,15 @@ export class ActionMoveToPoint extends Action {
       this.pathFindInfo.dest.copy(this.target_position);
     }
 
-    const destAreaId = this.getParameter<number>(3);
+    const destAreaId = this.getRawNumberParameter(3);
     if(typeof destAreaId === 'number'){
       this.pathFindInfo.destAreaId = destAreaId;
+    }
+    const liveTargetId = this.getRawNumberParameter(4);
+    if(typeof liveTargetId === 'number' && liveTargetId > 0){
+      this.pathFindInfo.targetObjectId = liveTargetId;
+    }else if(this.target?.id){
+      this.pathFindInfo.targetObjectId = this.target.id;
     }
 
     const result = plotPath(area, this.owner, this.pathFindInfo);
@@ -369,6 +399,11 @@ export class ActionMoveToPoint extends Action {
     path.fixWalkEdges(getPathPersonalSpace(this.owner));
     path.setColor(this.owner.helperColor);
     this.setComputedPath(path);
+  }
+
+  private getRawNumberParameter(index: number): number | undefined {
+    const value = this.parameters[index]?.value;
+    return typeof value === 'number' ? value : undefined;
   }
 
 }

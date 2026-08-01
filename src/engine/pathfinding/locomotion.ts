@@ -25,6 +25,19 @@ export function clampMovementRateFactor(factor: number): number {
 }
 
 /**
+ * TSL GetMovementRateFactor @ 0068f140 — Mobility feat (0xc3) adds +0.1 before clamp.
+ * K1 has no equivalent bonus.
+ */
+export function applyMobilityMovementBonus(
+  factor: number,
+  hasMobilityFeat: boolean,
+  isTsl: boolean
+): number {
+  if(!isTsl || !hasMobilityFeat) return factor;
+  return factor + 0.1;
+}
+
+/**
  * Normalize EffectMovementSpeedIncrease int to absolute speed percent.
  * NWScript: n < 100 → n+100; n >= 100 used as-is (100 = unchanged, 150 = 1.5×).
  */

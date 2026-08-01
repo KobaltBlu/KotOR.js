@@ -1,7 +1,7 @@
 import * as THREE from "three";
 
 /**
- * Approximate retail CWalkHitInfo (used by NoCreaturesOnLine / NoNonWalkPolys).
+ * Retail-aligned CWalkHitInfo helpers (NoCreaturesOnLine / NoNonWalkPolys).
  *
  * @file walk-hit-info.ts
  */
@@ -92,5 +92,72 @@ export function setHitInfoForCreature(
   // Tangent edge for Initialize-style payload
   hit.edgeA = new THREE.Vector3(hit.hitPoint.x - ny, hit.hitPoint.y + nx, hit.hitPoint.z);
   hit.edgeB = new THREE.Vector3(hit.hitPoint.x + ny, hit.hitPoint.y - nx, hit.hitPoint.z);
+  return true;
+}
+
+/**
+ * Fill WalkHitInfo from AABB ∩ segment (placeable / door box fallbacks).
+ * Approximate CWalkHitInfo Initialize type 1 (edge) with box-face contact.
+ */
+export function setHitInfoForAabb(
+  box: { min: THREE.Vector3; max: THREE.Vector3 },
+  lineStart: THREE.Vector3,
+  lineEnd: THREE.Vector3,
+  hit: WalkHitInfo,
+  objectId?: number
+): boolean {
+  const ax = lineStart.x;
+  const ay = lineStart.y;
+  const bx = lineEnd.x;
+  const by = lineEnd.y;
+  const abx = bx - ax;
+  const aby = by - ay;
+  const abLenSq = abx * abx + aby * aby;
+  if(abLenSq < 1e-12) return false;
+
+  // Sample along segment for first point inside expanded box
+  let hitT = -1;
+  for(let i = 0; i <= 16; i++){
+    const t = i / 16;
+    const px = ax + abx * t;
+    const py = ay + aby * t;
+    if(
+      px >= box.min.x && px <= box.max.x &&
+      py >= box.min.y && py <= box.max.y
+    ){
+      hitT = t;
+      break;
+    }
+  }
+  if(hitT < 0){
+    // Closest point on segment to box center
+    const cx = (box.min.x + box.max.x) * 0.5;
+    const cy = (box.min.y + box.max.y) * 0.5;
+    let t = ((cx - ax) * abx + (cy - ay) * aby) / abLenSq;
+    t = Math.max(0, Math.min(1, t));
+    hitT = t;
+  }
+
+  const hx = ax + abx * hitT;
+  const hy = ay + aby * hitT;
+  const cx = (box.min.x + box.max.x) * 0.5;
+  const cy = (box.min.y + box.max.y) * 0.5;
+  let nx = hx - cx;
+  let ny = hy - cy;
+  const nlen = Math.hypot(nx, ny);
+  if(nlen > 1e-8){
+    nx /= nlen;
+    ny /= nlen;
+  }else{
+    nx = 1;
+    ny = 0;
+  }
+
+  hit.kind = WalkHitKind.Edge;
+  hit.hitPoint.set(hx, hy, lineStart.z);
+  hit.normal.set(nx, ny, 0);
+  hit.objectId = objectId;
+  hit.edgeA = new THREE.Vector3(hx - ny, hy + nx, lineStart.z);
+  hit.edgeB = new THREE.Vector3(hx + ny, hy - nx, lineStart.z);
   return true;
 }

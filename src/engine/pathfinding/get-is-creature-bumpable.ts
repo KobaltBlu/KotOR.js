@@ -11,7 +11,7 @@ import { GameState } from "@/GameState";
  * Retail gates:
  * - reputation > 9
  * - other.field426_0xa88 == 0 (non-party / non-player-UI) — mirrored as !isPartyMember
- * - Player mover: never bumpable (retail sets local_4 = field426 == 0 after busy check)
+ * - Party / player-UI mover: never bumps world creatures out of the way
  * - NPC mover: other not player, empty action queue, round not paused
  *
  * @file get-is-creature-bumpable.ts
@@ -57,6 +57,8 @@ export function getIsCreatureBumpable(
 
   // Retail: param_1->field426_0xa88 == 0
   if(isPartyUiCreature(other)) return false;
+  // Party followers use FollowLeader direct-line recovery, not world-creature pushes.
+  if(isPartyUiCreature(self)) return false;
 
   const player = getPlayerCreature();
   const front = other.actionQueue?.[0] as { type?: number } | undefined;

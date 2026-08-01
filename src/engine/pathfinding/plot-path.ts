@@ -28,6 +28,8 @@ export type PathFindInfoLite = {
   origin: THREE.Vector3;
   dest: THREE.Vector3;
   destAreaId?: number;
+  /** Retail pathfind field12 — live chase / UseRange target object id. */
+  targetObjectId?: number;
   /** Last code; Ready + unchanged endpoints → early-out like field28_0x88. */
   lastCode?: PlotPathCode;
   lastOrigin?: THREE.Vector3;

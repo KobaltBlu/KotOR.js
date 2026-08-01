@@ -87,6 +87,11 @@ export type FollowLeaderRuntime = {
   wasRunning: boolean;
   /** True when Offset Advanced along the trail this frame (don't parkIdle). */
   offsetStepped: boolean;
+  /**
+   * Seconds of consecutive Offset frames with no Advance step.
+   * Used so parkIdleSoft does not thrash AnimRun run↔pause mid-transition.
+   */
+  offsetIdleTime: number;
 };
 
 export function createFollowRuntime(): FollowLeaderRuntime {
@@ -107,6 +112,7 @@ export function createFollowRuntime(): FollowLeaderRuntime {
     inSafetyRange: 0,
     wasRunning: false,
     offsetStepped: false,
+    offsetIdleTime: 0,
   };
 }
 

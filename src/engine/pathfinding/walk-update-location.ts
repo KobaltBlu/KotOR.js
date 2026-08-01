@@ -12,15 +12,19 @@ import {
 } from "@/engine/pathfinding/locomotion";
 import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
 import { bumpFriends } from "@/engine/pathfinding/bump-friends";
+import { plotPathAroundCreature } from "@/engine/pathfinding/plot-path-around-creature";
+import { isInUseRange } from "@/actions/use-range";
 import { GameState } from "@/GameState";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
+import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 
 /**
  * Retail CSWSCreature::WalkUpdateLocation @ 0051bb10.
  *
  * SQRT approach + persistent speed-factor ramp (field37) + trapezoidal step,
  * then DriveUpdateLocation walkable clip / door-cross / NoCreaturesOnLine.
+ * Mid-step creature block → BumpFriends / PlotPathAroundCreature (field141).
  *
  * @file walk-update-location.ts
  */
@@ -37,6 +41,8 @@ export interface WalkUpdateOptions {
   allowWalkBack?: boolean;
   /** Extra locomotion scale (FollowLeader bands). */
   followScale?: number;
+  /** Retail pathfind field12 — UseRange early-out target id. */
+  useRangeTargetId?: number;
 }
 
 /**
@@ -50,6 +56,23 @@ export function walkUpdateLocation(
   options: WalkUpdateOptions = {}
 ): DriveUpdateResult {
   if(!creature?.area || !dest) return DriveUpdateResult.BLOCKED;
+
+  // Retail WalkUpdateLocationDistance UseRange early-out (@ 00516630 field12)
+  if(options.useRangeTargetId != null && options.useRangeTargetId !== 0x7f000000){
+    const target = GameState.ModuleObjectManager?.GetObjectById?.(options.useRangeTargetId);
+    if(
+      target &&
+      BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature) &&
+      typeof isInUseRange === 'function' &&
+      isInUseRange(creature, target)
+    ){
+      creature.force = 0;
+      creature.speed = 0;
+      creature.walk = false;
+      creature.setAnimationState?.(ModuleCreatureAnimState.PAUSE);
+      return DriveUpdateResult.ARRIVED;
+    }
+  }
 
   const walk = creature.getWalkSpeed?.() || 1.7;
   const run = creature.getRunSpeed?.() || 5.4;
@@ -94,7 +117,7 @@ export function walkUpdateLocation(
   }
 
   // Retail WalkUpdateLocationTestDistance: test the actual frame step, then
-  // BumpFriends before the final NoCreaturesOnLine in DriveUpdateLocation.
+  // BumpFriends; on fail field141 < 6 → PlotPathAroundCreature (@ 00516630).
   const toX = dest.x - creature.position.x;
   const toY = dest.y - creature.position.y;
   const toLen = Math.hypot(toX, toY);
@@ -112,12 +135,61 @@ export function walkUpdateLocation(
       { owner: creature, allowPartyCreatures: false }
     );
     if(!creatures.clear && creatures.blockingCreatureId != null){
+      if(
+        options.useRangeTargetId != null &&
+        options.useRangeTargetId !== 0x7f000000 &&
+        creatures.blockingCreatureId === options.useRangeTargetId
+      ){
+        // Retail WalkUpdateLocationDistance stops when the intended use target
+        // itself blocks the final approach; do not shove or hex around it.
+        creature.setComputedPath?.(undefined);
+        creature.pathBlockFailCount = 0;
+        creature.walkSpeedFactor = 0;
+        creature.setAnimationState?.(ModuleCreatureAnimState.PAUSE);
+        creature.locomotionScale = savedScale;
+        return DriveUpdateResult.ARRIVED;
+      }
+
       const blocker =
         creature.area.creatures?.find((c) => c.id === creatures.blockingCreatureId) ??
         GameState.PartyManager?.party?.find((c) => c.id === creatures.blockingCreatureId);
       if(BitWise.InstanceOfObject(blocker, ModuleObjectType.ModuleCreature)){
-        bumpFriends(creature, blocker as ModuleCreature, _probe, creature.position);
+        const bumped = bumpFriends(
+          creature,
+          blocker as ModuleCreature,
+          _probe,
+          creature.position
+        );
+        if(bumped){
+          creature.pathBlockFailCount = 0;
+        }else{
+          const fails = (creature.pathBlockFailCount | 0) + 1;
+          creature.pathBlockFailCount = fails;
+          if(fails < 6){
+            const hex = plotPathAroundCreature(creature, blocker as ModuleCreature);
+            if(hex.spliced){
+              creature.pathBlockFailCount = 0;
+              creature.locomotionScale = savedScale;
+              return DriveUpdateResult.BLOCKED;
+            }
+            // Retail PlotPathAroundCreature fail → PauseReady, stay put (@ 00516630)
+            creature.setAnimationState?.(ModuleCreatureAnimState.PAUSE);
+            creature.locomotionScale = savedScale;
+            creature.blockingTimer = (creature.blockingTimer || 0) + 1;
+            return DriveUpdateResult.BLOCKED;
+          }else{
+            // Retail: clear path / pause after 6 fails
+            creature.setComputedPath?.(undefined);
+            creature.pathBlockFailCount = 0;
+            creature.walkSpeedFactor = 0;
+            creature.setAnimationState?.(ModuleCreatureAnimState.PAUSE);
+            creature.locomotionScale = savedScale;
+            return DriveUpdateResult.BLOCKED;
+          }
+        }
       }
+    }else{
+      creature.pathBlockFailCount = 0;
     }
   }
 
@@ -126,8 +198,8 @@ export function walkUpdateLocation(
 
   creature.locomotionScale = savedScale;
   if(result === DriveUpdateResult.BLOCKED){
+    // Discrete path-block count only — collisionTimer seconds owned by CollisionManager
     creature.blockingTimer = (creature.blockingTimer || 0) + 1;
-    creature.collisionTimer += Math.max(0, delta);
   }else{
     creature.blockingTimer = Math.max(0, (creature.blockingTimer || 0) - 1);
   }

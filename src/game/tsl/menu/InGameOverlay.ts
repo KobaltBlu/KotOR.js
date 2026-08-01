@@ -220,6 +220,7 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.LBL_CMBTMSGBG.hide();
       this.LBL_CMBTMODEMSG.hide();
       this.BTN_CLEARALL.hideBorder();
+      this.hideCombatUI();
 
       this.LBL_MOULDING3.widget.position.z = -1;
       this.LBL_MENUBG.widget.position.z = -1;
@@ -295,9 +296,17 @@ export class InGameOverlay extends K1_InGameOverlay {
 
       this.BTN_CLEARALL.addEventListener('click', (e) => {
         e.stopPropagation();
-        GameState.getCurrentPlayer().clearAllActions();
-        GameState.getCurrentPlayer().combatData.combatState = false;
-        GameState.getCurrentPlayer().cancelCombat();
+        this.onClearAllButtonPressed();
+      });
+
+      this.BTN_CLEARONE?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.onClearOneButtonPressed();
+      });
+
+      this.BTN_CLEARONE2?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.onClearOneButtonPressed();
       });
 
       this.LBL_QUEUE0.addEventListener('click', (e) => {

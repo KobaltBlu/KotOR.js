@@ -6,6 +6,7 @@ import { describe, expect, test, jest, beforeEach, afterEach } from '@jest/globa
 
 jest.mock('@/GameState', () => ({
   GameState: {
+    GameKey: 'KOTOR',
     TwoDAManager: { datatables: new Map() },
     PartyManager: { party: [] },
     MenuManager: {},

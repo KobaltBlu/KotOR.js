@@ -3,14 +3,18 @@ import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleDoor } from "@/module/ModuleDoor";
 import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import { noNonWalkPolysOnAreaMesh, noNonWalkPolysOnWalkMesh } from "@/engine/pathfinding/no-non-walk-polys-mesh";
-import type { WalkHitInfo } from "@/engine/pathfinding/walk-hit-info";
+import {
+  setHitInfoForAabb,
+  type WalkHitInfo,
+} from "@/engine/pathfinding/walk-hit-info";
 
 /**
- * Approximate CSWSArea::NoNonWalkPolysDetailed @ 00506650 +
+ * CSWSArea::NoNonWalkPolysDetailed @ 00506650 +
  * NoNonWalkPolysOnRoom @ 00579680 (doors / placeables / mesh).
  *
  * Retail: static-object AABBs + room surface-mesh walk-check materials.
- * JS: closed doors (mesh @ 005890f0) + static placeables + non-walk wok corridor.
+ * JS: closed doors + static placeables + non-walk wok corridor; AABB/door
+ * hits fill WalkHitInfo via setHitInfoForAabb (G11).
  *
  * @file no-non-walk-polys.ts
  */
@@ -103,7 +107,12 @@ function closedDoorBlocksLine(
     (to.x - door.position.x) * fx +
     (to.y - door.position.y) * fy;
   if((dStart > 0) === (dEnd > 0)) return false;
-  if(hit) hit.objectId = door.id;
+  if(hit){
+    hit.objectId = door.id;
+    if(door.box){
+      setHitInfoForAabb(door.box, from, to, hit, door.id);
+    }
+  }
   return true;
 }
 
@@ -111,7 +120,8 @@ function placeableBlocksLine(
   placeable: ModulePlaceable,
   from: THREE.Vector3,
   to: THREE.Vector3,
-  expand: number
+  expand: number,
+  hit?: WalkHitInfo
 ): boolean {
   const box = placeable?.box;
   if(!box) return false;
@@ -122,7 +132,11 @@ function placeableBlocksLine(
   const maxY = Math.max(from.y, to.y) + expand;
   if(maxX < box.min.x || minX > box.max.x) return false;
   if(maxY < box.min.y || minY > box.max.y) return false;
-  return segmentHitsBox(from, to, box);
+  if(!segmentHitsBox(from, to, box)) return false;
+  if(hit){
+    setHitInfoForAabb(box, from, to, hit, placeable.id);
+  }
+  return true;
 }
 
 /**
@@ -191,7 +205,7 @@ export function noNonWalkPolysDetailed(
         }
         continue;
       }
-      if(placeableBlocksLine(plc, _from, _to, expand)){
+      if(placeableBlocksLine(plc, _from, _to, expand, options.hit)){
         return { clear: false, blockingObjectId: plc.id };
       }
     }

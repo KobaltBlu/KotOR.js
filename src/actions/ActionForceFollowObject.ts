@@ -2,20 +2,8 @@ import { GameState } from "@/GameState";
 import { ActionParameterType, ModuleObjectType } from "@/enums";
 import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { ActionType } from "@/enums/actions/ActionType";
-import {
-  createFollowRuntime,
-  FollowLeaderState,
-  FOLLOW_COMFORT,
-  FOLLOW_REPATH,
-  FOLLOW_STUCK_SEC,
-  FOLLOW_TELEPORT_DIST,
-  resolveFollowState,
-  shouldFollowRun,
-  type FollowLeaderRuntime,
-} from "@/engine/pathfinding/follow-leader";
-import {
-  driveTowardOffset,
-} from "@/engine/pathfinding/follow-leader-sm";
+import { getPathPersonalSpace } from "@/combat/attack-range";
+import { partyFollowPath } from "@/engine/pathfinding/party-follow-path";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { BitWise } from "@/utility/BitWise";
@@ -25,17 +13,23 @@ import * as THREE from "three";
 
 const _followGoal = new THREE.Vector3();
 
+/** Retail Wait duration @ 005132e0 — 0x3e800000. */
+const FORCE_FOLLOW_WAIT = 0.25;
+/** Party field426 wait — 0x3ccccccd. */
+const FORCE_FOLLOW_WAIT_PARTY = 0.1;
+
 /**
  * ActionForceFollowObject class.
- * NWScript ForceFollow (0x37) — path + WalkUpdate toward live target.
- * Shares Moving_To_Offset helpers with FollowLeader; not the party ring SM.
+ *
+ * Retail AIActionForceFollowObject @ 005132e0 —
+ * when outside range: front-load MoveTo + Wait + CheckForceFollow;
+ * when in range: hold (IN_PROGRESS). Not a continuous WalkUpdate SM.
  *
  * @file ActionForceFollowObject.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 export class ActionForceFollowObject extends Action {
-  private followRuntime: FollowLeaderRuntime = createFollowRuntime();
 
   constructor( actionId: number = -1, groupId: number = -1 ){
     super(actionId, groupId);
@@ -60,110 +54,96 @@ export class ActionForceFollowObject extends Action {
     }
 
     const followTarget = this.target as ModuleCreature;
-    const followDistance = fDistance > 0 ? fDistance : 2.0;
-    const comfort = Math.max(FOLLOW_COMFORT * 0.5, followDistance * 0.85);
-    const repath = Math.max(FOLLOW_REPATH * 0.5, followDistance * 1.15);
-    const teleportAt = Math.max(FOLLOW_TELEPORT_DIST, followDistance * 4);
+    // NWScript fFollowDistance; retail re-queue also uses GetFollowRange
+    const scriptDist = fDistance > 0 ? fDistance : 0;
+    const partyRange = partyFollowPath.getFollowRange?.() ?? 5.0;
+    const followDistance = scriptDist > 0 ? scriptDist : partyRange;
 
     this.computeFollowGoal(owner, followTarget, followDistance, _followGoal);
     const goal = _followGoal;
-    const dist = Utility.Distance2D(owner.position, followTarget.position);
     const distGoal = Utility.Distance2D(owner.position, goal);
+    // Retail: GetFollowRange² vs |goal − follower|² (hold when inside)
+    const holdRange = scriptDist > 0 ? followDistance : partyRange;
 
-    if(this.followRuntime.state === FollowLeaderState.MovingToOffset){
-      if(distGoal > comfort + 0.25){
-        this.followRuntime.stuckTimer += delta;
-      }else{
-        this.followRuntime.stuckTimer = 0;
-      }
-    }else{
-      this.followRuntime.stuckTimer = 0;
-    }
-
-    // ForceFollow uses Offset / MovingToOffset / Teleport only (not full party SM)
-    let next = resolveFollowState(
-      dist,
-      distGoal,
-      this.followRuntime.state,
-      this.followRuntime.stuckTimer
-    );
-    // Scale teleport/repath with NWScript distance param
-    if(dist >= teleportAt || this.followRuntime.stuckTimer >= FOLLOW_STUCK_SEC){
-      next = FollowLeaderState.Teleport;
-    }else if(next === FollowLeaderState.MovingToOffset || next === FollowLeaderState.Offset){
-      if(distGoal <= comfort){
-        next = FollowLeaderState.Offset;
-      }else if(distGoal >= repath || dist >= repath){
-        next = FollowLeaderState.MovingToOffset;
-      }
-    }
-    this.followRuntime.state = next;
-
-    if(next === FollowLeaderState.Teleport){
-      this.teleportNearTarget(owner, followTarget, goal);
-      this.followRuntime.state = FollowLeaderState.Offset;
-      this.followRuntime.stuckTimer = 0;
+    if(distGoal <= holdRange){
+      this.parkHold(owner);
       return ActionStatus.IN_PROGRESS;
     }
 
-    if(next === FollowLeaderState.MovingToOffset){
-      driveTowardOffset(
-        owner,
-        goal,
-        followTarget,
-        delta,
-        shouldFollowRun(dist, distGoal),
-        (d, g, face) => this.runCreatureAvoidance(d, g, face)
-      );
-      return ActionStatus.IN_PROGRESS;
-    }
-
-    owner.force = 0;
-    owner.speed = 0;
-    owner.walk = false;
-    owner.locomotionScale = 1;
-    owner.moveDirOverride = undefined;
-    owner.setComputedPath(undefined);
-    owner.clearLocomotionAnimation?.();
-    return ActionStatus.IN_PROGRESS;
+    // Outside range — retail AddMoveToFront + Wait + Check(0x37), then pop self
+    this.enqueueCatchUp(owner, followTarget, goal, holdRange);
+    return ActionStatus.COMPLETE;
   }
 
   /**
-   * Jump to walkable near live follow goal (parity with FollowLeader Teleport path).
+   * Retail order via successive AddActionToFront:
+   * MoveTo → Wait → CheckForceFollow (re-enters ForceFollow).
    */
-  private teleportNearTarget(
+  private enqueueCatchUp(
     owner: ModuleCreature,
     followTarget: ModuleCreature,
-    goal: THREE.Vector3
+    goal: THREE.Vector3,
+    arriveRange: number
   ){
     const area = owner.area ?? GameState.module?.area;
-    const dest = new THREE.Vector3().copy(goal);
-    if(area?.getNearestWalkablePoint){
-      dest.copy(area.getNearestWalkablePoint(goal, 0.5));
+    let dest = goal.clone();
+    if(area && typeof area.getNearestWalkablePoint === 'function'){
+      dest = area.getNearestWalkablePoint(dest, getPathPersonalSpace(owner));
     }
-    owner.force = 0;
-    owner.speed = 0;
-    owner.locomotionScale = 1;
-    owner.moveDirOverride = undefined;
-    owner.setComputedPath(undefined);
-    const jump = new GameState.ActionFactory.ActionJumpToPoint(undefined, this.groupId);
-    jump.setParameter(0, ActionParameterType.FLOAT, dest.x);
-    jump.setParameter(1, ActionParameterType.FLOAT, dest.y);
-    jump.setParameter(2, ActionParameterType.FLOAT, dest.z);
-    jump.setParameter(3, ActionParameterType.DWORD, area?.id ?? GameState.module.area.id);
-    jump.setParameter(4, ActionParameterType.INT, 0);
-    jump.setParameter(5, ActionParameterType.FLOAT, 20.0);
-    jump.setParameter(6, ActionParameterType.FLOAT, followTarget.rotation?.z ?? 0);
-    jump.setParameter(7, ActionParameterType.FLOAT, 0);
-    owner.actionQueue.addFront(jump);
+
+    const isParty = typeof owner.isPartyMember === 'function'
+      ? owner.isPartyMember()
+      : (GameState.PartyManager?.party?.indexOf?.(owner) ?? -1) >= 0;
+    const waitSec = isParty ? FORCE_FOLLOW_WAIT_PARTY : FORCE_FOLLOW_WAIT;
+
+    const check = new GameState.ActionFactory.ActionCheckForceFollowObject(undefined, this.groupId);
+    check.setParameter(0, ActionParameterType.DWORD, followTarget.id);
+    check.setParameter(1, ActionParameterType.FLOAT, this.getParameter<number>(1) || arriveRange);
+
+    const wait = new GameState.ActionFactory.ActionWait(undefined, this.groupId);
+    wait.setParameter(0, ActionParameterType.FLOAT, waitSec);
+
+    const move = new GameState.ActionFactory.ActionMoveToPoint(undefined, this.groupId);
+    move.setParameter(0, ActionParameterType.FLOAT, dest.x);
+    move.setParameter(1, ActionParameterType.FLOAT, dest.y);
+    move.setParameter(2, ActionParameterType.FLOAT, dest.z);
+    move.setParameter(3, ActionParameterType.DWORD, followTarget.area?.id ?? area?.id ?? 0);
+    move.setParameter(4, ActionParameterType.DWORD, followTarget.id);
+    move.setParameter(5, ActionParameterType.INT, 1); // run
+    move.setParameter(6, ActionParameterType.FLOAT, Math.max(0.1, arriveRange * 0.5));
+    move.setParameter(7, ActionParameterType.INT, 0);
+    move.setParameter(8, ActionParameterType.FLOAT, 0);
+
+    // Front-load in reverse execution order (Check last among the three)
+    owner.actionQueue.addFront(check);
+    owner.actionQueue.addFront(wait);
+    owner.actionQueue.addFront(move);
   }
 
+  /** Soft hold — do not clear walkSpeedFactor / Jump. */
+  private parkHold(owner: ModuleCreature){
+    owner.force = 0;
+    owner.speed = 0;
+    owner.walk = false;
+    owner.moveDirOverride = undefined;
+  }
+
+  /**
+   * Formation-style goal: party follow position when target is party leader;
+   * else radial point at followDistance on the attacker side of the target.
+   */
   private computeFollowGoal(
     owner: ModuleCreature,
     followTarget: ModuleCreature,
     followDistance: number,
     out: THREE.Vector3
   ): THREE.Vector3 {
+    const party = GameState.PartyManager?.party;
+    if(party?.[0] === followTarget && typeof GameState.PartyManager?.GetFollowPosition === 'function'){
+      out.copy(GameState.PartyManager.GetFollowPosition(owner));
+      return out;
+    }
+
     const dx = owner.position.x - followTarget.position.x;
     const dy = owner.position.y - followTarget.position.y;
     const len = Math.hypot(dx, dy);
