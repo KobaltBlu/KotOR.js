@@ -2564,7 +2564,7 @@ export class ModuleArea extends ModuleObject {
         GameState.PartyManager.Player.npcId = -1;
 
         if(!this.miniGame){
-          GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(GameState.currentLeader) ] = GameState.currentLeader;
+          GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(GameState.PartyManager.Player) ] = GameState.PartyManager.Player;
           GameState.group.party.add( GameState.PartyManager.Player.container );
         }
 
@@ -2636,6 +2636,17 @@ export class ModuleArea extends ModuleObject {
     console.log('Loading Party Member');
     for(let i = 0; i < GameState.PartyManager.CurrentMembers.length; i++){
       await GameState.PartyManager.LoadPartyMember(i);
+    }
+    // Portrait-order mismatch can leave Player in the scene but not in party[].
+    // initAreaObjects only onSpawns party members — re-insert if missing.
+    const player = GameState.PartyManager.Player;
+    if(player && GameState.PartyManager.party.indexOf(player) < 0){
+      const idx = GameState.PartyManager.GetCreatureStartingPartyIndex(player);
+      if(!GameState.PartyManager.party[idx]){
+        GameState.PartyManager.party[idx] = player;
+      }else{
+        GameState.PartyManager.party.push(player);
+      }
     }
     GameState.PartyManager.ApplyControlledNPC();
     // Retail PositionParty → ResetAllFollowData after placing the party.

@@ -1621,22 +1621,46 @@ export class PartyManager {
   }
 
   /**
+   * True if orderResRef is this creature's current portrait or any Good/Evil
+   * variant of the same portraits.2da row (NFO PORTRAIT* can lag live GoodEvil).
+   */
+  static portraitResRefMatches(creature: ModuleCreature, orderResRef: string = ''): boolean {
+    if(!creature || !orderResRef){ return false; }
+    const order = orderResRef.toLowerCase();
+    const current = creature.getPortraitResRef()?.toLowerCase();
+    if(current && current == order){ return true; }
+    const portrait = creature.portrait;
+    if(!portrait){ return false; }
+    const variants = [
+      portrait.baseresref,
+      portrait.baseresrefe,
+      portrait.baseresrefve,
+      portrait.baseresrefvve,
+      portrait.baseresrefvvve,
+    ];
+    for(let i = 0; i < variants.length; i++){
+      if(variants[i] && variants[i].toLowerCase() == order){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Get the index of the creature in the party array by the order of it's portrait resref in the PortraitOrder array
    * @param creature - The creature to get the index of
    * @returns number
    */
   static GetCreatureStartingPartyIndex(creature: ModuleCreature){
-
-    if(PartyManager.PortraitOrder[0]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
-      return 0
-    }else if(PartyManager.PortraitOrder[1]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
-      return 1;
-    }else if(PartyManager.PortraitOrder[2]?.toLowerCase() == creature.getPortraitResRef().toLowerCase()){
-      return 2
+    if(!creature){
+      return PartyManager.party.length;
     }
-
+    for(let i = 0; i < 3; i++){
+      if(PartyManager.portraitResRefMatches(creature, PartyManager.PortraitOrder[i])){
+        return i;
+      }
+    }
     return PartyManager.party.length;
-
   }
 
   /**
