@@ -42,6 +42,7 @@ import {
   applyPanelOffsetToLetterboxLocal,
   selectTopmostHitChildIndex,
   truncDiv,
+  writeOrthoAlignedPlanePositions,
 } from "@/gui/GUICoord";
 import { borderInnerExtent } from "@/gui/borderInnerExtent";
 import { borderSideExtent } from "@/gui/borderSideExtent";
@@ -2214,16 +2215,64 @@ export class GUIControl {
     return this.flipLeft() ? half : -half;
   }
 
+  /**
+   * Size a unit PlaneGeometry with TL-centered int edges (not float ±w/2 scale).
+   * Odd sizes otherwise leave a 0.5px gap against borderSideExtent inners.
+   */
+  private layoutOrthoPlane(
+    geometry: THREE.BufferGeometry,
+    width: number,
+    height: number,
+  ): void {
+    const pos = geometry.getAttribute('position') as THREE.BufferAttribute;
+    if(!pos || pos.count < 4) return;
+    writeOrthoAlignedPlanePositions(
+      pos,
+      Math.max(0, asExtentInt(width)),
+      Math.max(0, asExtentInt(height)),
+    );
+    geometry.computeBoundingBox();
+  }
+
+  /** Border/highlight fill quad: int-aligned hole, scale left at 1. */
+  private layoutFillMesh(mesh: THREE.Mesh, extent: { width: number; height: number }): void {
+    mesh.scale.set(1, 1, 1);
+    this.layoutOrthoPlane(mesh.geometry as THREE.BufferGeometry, extent.width, extent.height);
+    mesh.position.z = this.zOffset;
+    mesh.position.x = this.getFillShrinkOffsetX();
+    mesh.position.y = 0;
+  }
+
   buildFill(){
     const extent = this.getFillExtent();
     
     if(this.border.fill.mesh){
       this.border.fill.mesh.name = this.widget.name+' center fill';
-      this.border.fill.mesh.scale.x = extent.width || 0.000001;
-      this.border.fill.mesh.scale.y = extent.height || 0.000001;
-      this.border.fill.mesh.position.z = this.zOffset;
-      this.border.fill.mesh.position.x = this.getFillShrinkOffsetX();
+      this.layoutFillMesh(this.border.fill.mesh, extent);
     }
+  }
+
+  /**
+   * Edge/corner piece sized with symmetric PlaneGeometry (±w/2), then rotated for UVs.
+   * Do not TL-frustum these quads: 180°/−90° UV flips reverse odd-width asymmetry and
+   * “fixing” that with a pre-mirror cancels the UV rotation (right-edge seam on BTN_AUTO).
+   * Fill quads stay TL-centered via {@link layoutFillMesh}.
+   */
+  private createBorderSidePlane(
+    extent: { left: number; top: number; width: number; height: number },
+    rotateZ: number = 0,
+  ): THREE.PlaneGeometry {
+    const plane = new THREE.PlaneGeometry(
+      Math.max(GUIControl.MESH_EPS, extent.width),
+      Math.max(GUIControl.MESH_EPS, extent.height),
+      1,
+      1,
+    );
+    if(rotateZ !== 0){
+      plane.rotateZ(rotateZ);
+    }
+    plane.translate(extent.left, extent.top, 0);
+    return plane;
   }
 
   buildBorder(){
@@ -2233,55 +2282,32 @@ export class GUIControl {
     const geomCount = edgeGeometries + cornerGeometries;
 
     const planes: THREE.BufferGeometry[] = [];
-    let extent;
 
     for(let i = 0; i < geomCount; i++){
       switch(i){
         case 0: //top-border
-          extent = this.getBorderExtent('top');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getBorderExtent('top'), Math.PI);
         break;
         case 1: //right-border
-          extent = this.getBorderExtent('right');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(-Math.PI/2);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getBorderExtent('right'), -Math.PI/2);
         break;
         case 2: //bottom-border
-          extent = this.getBorderExtent('bottom');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getBorderExtent('bottom'));
         break;
         case 3: //left-border
-          extent = this.getBorderExtent('left');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI/2);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getBorderExtent('left'), Math.PI/2);
         break;
         case 4: //top-left-corner
-          extent = this.getBorderExtent('topLeft');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getBorderExtent('topLeft'));
         break;
         case 5: //top-right-corner
-          extent = this.getBorderExtent('topRight');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(-Math.PI/2);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getBorderExtent('topRight'), -Math.PI/2);
         break;
         case 6: //bottom-right-corner
-          extent = this.getBorderExtent('bottomRight');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getBorderExtent('bottomRight'), Math.PI);
         break;
         case 7: //bottom-left-corner
-          extent = this.getBorderExtent('bottomLeft');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI/2);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getBorderExtent('bottomLeft'), Math.PI/2);
         break;
       }
     }
@@ -2318,55 +2344,32 @@ export class GUIControl {
     let geomCount = edgeGeometries + cornerGeometries;
 
     let planes: THREE.BufferGeometry[] = [];
-    let extent;
 
     for(let i = 0; i < geomCount; i++){
       switch(i){
         case 0: //top-border
-          extent = this.getHighlightExtent('top');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('top'), Math.PI);
         break;
         case 1: //right-border
-          extent = this.getHighlightExtent('right');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(-Math.PI/2);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('right'), -Math.PI/2);
         break;
         case 2: //bottom-border
-          extent = this.getHighlightExtent('bottom');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('bottom'));
         break;
         case 3: //left-border
-          extent = this.getHighlightExtent('left');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI/2);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('left'), Math.PI/2);
         break;
         case 4: //top-left-corner
-          extent = this.getHighlightExtent('topLeft');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('topLeft'));
         break;
         case 5: //top-right-corner
-          extent = this.getHighlightExtent('topRight');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(-Math.PI/2);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('topRight'), -Math.PI/2);
         break;
         case 6: //bottom-right-corner
-          extent = this.getHighlightExtent('bottomRight');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('bottomRight'), Math.PI);
         break;
         case 7: //bottom-left-corner
-          extent = this.getHighlightExtent('bottomLeft');
-          planes[i] = new THREE.PlaneGeometry(extent.width, extent.height, 1, 1);
-          planes[i].rotateZ(Math.PI/2);
-          planes[i].translate(extent.left, extent.top, 0);
+          planes[i] = this.createBorderSidePlane(this.getHighlightExtent('bottomLeft'), Math.PI/2);
         break;
       }
     }
@@ -2400,10 +2403,7 @@ export class GUIControl {
     let extent = this.getFillExtent();
     if(this.highlight.fill.mesh){
       this.highlight.fill.mesh.name = this.widget.name+' center fill';
-      this.highlight.fill.mesh.scale.x = extent.width || 0.000001;
-      this.highlight.fill.mesh.scale.y = extent.height || 0.000001;
-      this.highlight.fill.mesh.position.z = this.zOffset;
-      this.highlight.fill.mesh.position.x = this.getFillShrinkOffsetX();
+      this.layoutFillMesh(this.highlight.fill.mesh, extent);
     }
   }
 
@@ -2662,19 +2662,13 @@ export class GUIControl {
 
   resizeFill(){
     if(this.border.fill.mesh){
-      let extent = this.getFillExtent();
-      this.border.fill.mesh.scale.x = extent.width || 0.000001;
-      this.border.fill.mesh.scale.y = extent.height || 0.000001;
-      this.border.fill.mesh.position.x = this.getFillShrinkOffsetX();
+      this.layoutFillMesh(this.border.fill.mesh, this.getFillExtent());
     }
   }
 
   resizeHighlightFill(){
     if(this.highlight.fill.mesh){
-      let extent = this.getFillExtent();
-      this.highlight.fill.mesh.scale.x = extent.width || 0.000001;
-      this.highlight.fill.mesh.scale.y = extent.height || 0.000001;
-      this.highlight.fill.mesh.position.x = this.getFillShrinkOffsetX();
+      this.layoutFillMesh(this.highlight.fill.mesh, this.getFillExtent());
     }
   }
 

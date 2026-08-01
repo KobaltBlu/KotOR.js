@@ -10,7 +10,7 @@ import { IGUIControlBorder } from "@/interface/gui/IGUIControlBorder";
 import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
-import { asExtentInt, truncDiv } from "@/gui/GUICoord";
+import { asExtentInt, truncDiv, writeOrthoAlignedPlanePositions } from "@/gui/GUICoord";
 
 /** K1 CSWGuiOptionsCheckbox fixed glyph size (`0x19`). */
 const OPTIONS_CHECKBOX_SIZE = 0x19;
@@ -434,7 +434,13 @@ export class GUICheckBox extends GUIControl{
 
     for(const mesh of fills){
       if(!mesh) continue;
-      mesh.scale.set(cbSize, cbSize, 1);
+      // Odd 25×25 glyph: int frustum edges, not float ±scale/2
+      mesh.scale.set(1, 1, 1);
+      const pos = (mesh.geometry as THREE.BufferGeometry).getAttribute('position') as THREE.BufferAttribute;
+      if(pos && pos.count >= 4){
+        writeOrthoAlignedPlanePositions(pos, cbSize, cbSize);
+        (mesh.geometry as THREE.BufferGeometry).computeBoundingBox();
+      }
       mesh.position.set(center.x, center.y, this.zOffset);
     }
   }

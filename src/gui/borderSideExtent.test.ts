@@ -123,6 +123,21 @@ describe("orthoFrustumInt (odd viewport half-pixel guard)", () => {
   });
 });
 
+describe("writeOrthoAlignedPlanePositions vs float ±w/2 fill gap", () => {
+  it("odd fill width 95 meets TL-centered L/R inners at −47 / +48", () => {
+    const fw = 95;
+    const floatSpan = { min: -fw / 2, max: fw / 2 };
+    const intSpan = { min: -truncDiv(fw, 2), max: centeredExtentMax(fw) };
+    // Border inners for odd control (BTN_AUTO hole): left maxX=-47, right minX=48
+    expect(intSpan).toEqual({ min: -47, max: 48 });
+    expect(floatSpan.max).toBe(47.5);
+    expect(48 - floatSpan.max).toBe(0.5); // classic right-side gap
+    expect(floatSpan.min - -47).toBe(-0.5); // left-side overlap
+    expect(intSpan.min).toBe(-47);
+    expect(intSpan.max).toBe(48);
+  });
+});
+
 describe("orthoAlignedUnitPlanePositions (RTT blit vs orthoFrustumInt)", () => {
   it("even size matches symmetric ±half (same as float scale)", () => {
     expect(orthoAlignedUnitPlanePositions(200, 100)).toEqual([

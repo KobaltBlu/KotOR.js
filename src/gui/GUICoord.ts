@@ -88,6 +88,30 @@ export function orthoAlignedUnitPlanePositions(
   ];
 }
 
+/** Minimal position-attribute surface (Three BufferAttribute). */
+export interface OrthoPlanePositionAttr {
+  setXYZ(index: number, x: number, y: number, z: number): void;
+  needsUpdate: boolean;
+}
+
+/**
+ * Write TL-centered int edges into a `PlaneGeometry(1,1,1,1)` position attribute.
+ * Odd widths/heights keep the extra pixel on max X/Y so fills meet border inners
+ * instead of leaving a 0.5px gap from float ±w/2 scale.
+ */
+export function writeOrthoAlignedPlanePositions(
+  position: OrthoPlanePositionAttr,
+  width: number,
+  height: number,
+  z: number = 0,
+): void {
+  const corners = orthoAlignedUnitPlanePositions(width, height);
+  for(let i = 0; i < 4; i++){
+    position.setXYZ(i, corners[i][0], corners[i][1], z);
+  }
+  position.needsUpdate = true;
+}
+
 export function copyExtentInt(src: IGUIControlExtent): IGUIControlExtent {
   return {
     left: asExtentInt(src.left),
