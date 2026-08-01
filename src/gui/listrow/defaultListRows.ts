@@ -68,6 +68,11 @@ export function createDefaultLabelOrProtoItemRow(
   ctrl.setHighlightColor(ctrl.defaultHighlightColor.r, ctrl.defaultHighlightColor.g, ctrl.defaultHighlightColor.b);
   ctrl.setBorderColor(ctrl.defaultColor.r, ctrl.defaultColor.g, ctrl.defaultColor.b);
 
+  // Scroll-only description rows: hit-test OK, no hover hilight/pulse chrome.
+  if (list.bitFlags.noSelectMode) {
+    ctrl.disableHover = true;
+  }
+
   wireDefaultRowClick(list, ctrl, node, options);
   return ctrl;
 }

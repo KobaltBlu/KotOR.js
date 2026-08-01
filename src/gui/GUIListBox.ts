@@ -617,6 +617,11 @@ export class GUIListBox extends GUIControl {
       ctrl.setList(this);
 
       this.itemGroup.add(widget);
+
+      // Description / noSelectMode rows must not take hover hilight chrome.
+      if (this.bitFlags.noSelectMode) {
+        ctrl.disableHover = true;
+      }
           
       if (!ctrl.disableSelection && !this.bitFlags.noSelectMode) {
         if (this.bitFlags.selectOnLeftClick || this.protoClickSelects) {

@@ -3019,6 +3019,14 @@ export class ModuleObject {
    * Initialize all effects for the object
    */
   initEffects(){
+    // Drop any EffectDamage that was incorrectly persisted (retail OnApplyDamage
+    // returns 1 → never inserted into EffectList). Re-applying would re-deal HP.
+    for(let i = this.effects.length - 1; i >= 0; i--){
+      if(this.effects[i]?.type === GameEffectType.EffectDamage){
+        this.effects.splice(i, 1);
+      }
+    }
+
     for(let i = 0, len = this.effects.length; i < len; i++){
       const effect = this.effects[i];
       if(!effect ){ continue; }
@@ -3094,6 +3102,12 @@ export class ModuleObject {
     effect.onApply(this);
     // Immunities / invalid modes return before super.onApply() — do not keep rejected effects
     if(!effect.applied){
+      return;
+    }
+    // Retail CSWSObject::ApplyEffect @ 004d14f0 — OnApplyDamage returns 1 so the
+    // effect is freed and never inserted into EffectList. Keeping it caused
+    // re-apply (and OnDamaged) during initEffects on module load.
+    if(effect.type === GameEffectType.EffectDamage){
       return;
     }
     this.effects.push(effect);

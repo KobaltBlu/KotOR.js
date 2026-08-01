@@ -145,10 +145,11 @@ export class FactionManager {
     // -> 0-10 means oSource is hostile to oTarget
     // -> 11-89 means oSource is neutral to oTarget
     // -> 90-100 means oSource is friendly to oTarget
+    // Retail CSWSObject::GetReputation @ 0057cb80 — missing faction → 0x32 (50)
     if(!(BitWise.InstanceOf(oSource?.objectType, ModuleObjectType.ModuleObject)) || !(BitWise.InstanceOf(oTarget?.objectType, ModuleObjectType.ModuleObject)))
       return 0;
 
-    if(oSource.faction){
+    if(oSource.faction && oTarget.faction){
       let reputation = oSource.faction.reputations[oTarget.faction.id];
       if(reputation instanceof Reputation){
         return reputation.reputation;

@@ -74,7 +74,7 @@ export class Faction {
   }
 
   getCreatureReputation(oTarget: ModuleObject){
-    if(oTarget instanceof ModuleCreature){
+    if(oTarget instanceof ModuleCreature && oTarget.faction){
       let reputation = this.reputations[oTarget.faction.id];
       if(reputation instanceof Reputation){
         return reputation.reputation;

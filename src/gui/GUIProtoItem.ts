@@ -57,17 +57,12 @@ export class GUIProtoItem extends GUIControl{
       this.setExtentWidth(Math.max(1, asExtentInt(vw - list.padding * 2)));
     }
 
+    // Retail CSWGuiListBox::SetSelectedControl @ 0041c040 drives row chrome via
+    // HandleInputEvent on selection change — not mouse hover. Hover-select lists
+    // still pulse because hover calls SetSelectedControl first.
     this.onSelect = () => {
       this.onSelectStateChanged();
     };
-
-    this.addEventListener('mouseIn', (e) => {
-      this.onSelectStateChanged();
-    })
-
-    this.addEventListener('mouseOut', (e) => {
-      this.onSelectStateChanged();
-    })
   }
 
   /**
@@ -117,8 +112,13 @@ export class GUIProtoItem extends GUIControl{
     return widget;
   }
 
+  /**
+   * Selected-row chrome only. Do not key off hover — description panes
+   * (LB_DESC / noSelectMode) are hoverable for scroll hit-tests but must not
+   * pulse or take the highlight text color (retail OptionsMain sets field22_0x2c1).
+   */
   onSelectStateChanged(){
-    if(this.selected || this.hover){
+    if(this.selected){
       this.showHighlight();
       this.hideBorder();
       this.pulsing = true;

@@ -4220,20 +4220,9 @@ export class ModuleCreature extends ModuleObject {
     if(this.isDead())
       return true;
 
-    // Retail creature OnApplyDamage does not BroadcastCombatState (engagement is OnAttacked /
-    // harmful OnSpellCastAt). Refresh ExcitedDuration Damage row when HP is lost.
-    const damager = this.combatData.lastDamager ?? this.combatData.lastAttacker;
-    if(BitWise.InstanceOfObject(damager, ModuleObjectType.ModuleCreature)){
-      const dmg = damager as ModuleCreature;
-      dmg.broadcastCombatStateToParty(this);
-      dmg.setExcitedState(ExcitedDurationRow.SpellCast);
-      dmg.removeCombatInvisibilityEffects();
-    }
-    this.broadcastCombatStateToParty(
-      BitWise.InstanceOfObject(damager, ModuleObjectType.ModuleObject)
-        ? (damager as ModuleObject)
-        : undefined
-    );
+    // Retail OnApplyDamage @ 004dfa40 — creatures do not BroadcastCombatStateToParty
+    // (engagement is OnAttacked / harmful OnSpellCastAt). Door/placeable path is on
+    // ModuleObject.onDamaged. Refresh ExcitedDuration Damage row when HP is lost.
     this.setExcitedState(ExcitedDurationRow.Damage);
 
     const nwscript = this.scripts[ModuleObjectScript.CreatureOnDamaged];
