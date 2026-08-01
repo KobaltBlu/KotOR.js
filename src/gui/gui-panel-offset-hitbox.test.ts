@@ -79,3 +79,21 @@ describe("centered overlay dialog hitbox (K1 container)", () => {
     expect(hitCheckMouseLocal(btnOk, local.x, local.y)).toBe(false);
   });
 });
+
+describe("centered overlay dialog hitbox (K1 skillinfo / CharGen ShowGranted)", () => {
+  // skillinfo.gui GFF origin (154,118); same zero-origin fix as MenuContainer.
+  const gffPanel = { left: 154, top: 118, width: 333, height: 231 };
+  const panel = centerPanelOrigin(gffPanel);
+  const btnOk = { left: 117, top: 201, width: 100, height: 22 };
+  const btnCentered = extentToCenteredPosition(btnOk, panel.width, panel.height);
+
+  it("click on BTN_OK hits when origin is zeroed", () => {
+    const local = panelLocalFromCenteredUI(btnCentered.x, btnCentered.y, panel, 0, 0);
+    expect(hitCheckMouseLocal(btnOk, local.x, local.y)).toBe(true);
+  });
+
+  it("regress guard: keeping GFF origin (154,118) makes BTN_OK miss", () => {
+    const local = panelLocalFromCenteredUI(btnCentered.x, btnCentered.y, gffPanel, 0, 0);
+    expect(hitCheckMouseLocal(btnOk, local.x, local.y)).toBe(false);
+  });
+});

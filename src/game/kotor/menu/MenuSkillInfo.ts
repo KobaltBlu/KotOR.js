@@ -36,8 +36,16 @@ export class MenuSkillInfo extends GameMenu {
       this.dismiss();
     });
     this._button_a = this.BTN_OK;
-    if(this.tGuiPanel?.widget){
-      this.tGuiPanel.widget.position.z = 10;
+
+    // skillinfo.gui parks the dialog at design-canvas (154,118) ≈ centered on
+    // 640×480. KotOR.js centers by panel size at widget (0,0); zero the GFF
+    // origin so GetLocalMouseCoords / hit tests match (MenuContainer / InGameConfirm).
+    if(this.tGuiPanel){
+      this.tGuiPanel.extent.left = 0;
+      this.tGuiPanel.extent.top = 0;
+      if(this.tGuiPanel.widget){
+        this.tGuiPanel.widget.position.z = 10;
+      }
     }
   }
 
