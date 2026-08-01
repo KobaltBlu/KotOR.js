@@ -29,6 +29,7 @@ module.exports = {
     '<rootDir>/src/module/ModuleMiniGame.turret-m12ab.test.ts',
     '<rootDir>/src/nwscript/NWScriptVectorStack.test.ts',
     '<rootDir>/src/audio/AudioEmitter.Continuous.test.ts',
+    '<rootDir>/src/audio/AudioEmitter.playStreamWave.test.ts',
     '<rootDir>/src/audio/ModuleSound.audio.test.ts',
     '<rootDir>/src/engine/pathfinding/get-obstruction-factor.test.ts',
   ],
