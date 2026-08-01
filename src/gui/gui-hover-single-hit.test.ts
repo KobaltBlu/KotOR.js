@@ -56,6 +56,60 @@ describe("overlapping AABB + topmost pick", () => {
   });
 });
 
+/**
+ * abchrgen / skchrgen nest PLUS/MINUS/LBL under POINTS_BTN (Obj_Parent) while
+ * keeping panel-absolute extents that extend outside the POINTS AABB.
+ * Parent hit must include descendants or getActiveControls never reaches PLUS.
+ */
+describe("chargen POINTS_BTN nested PLUS/MINUS extents (abchrgen STR_*)", () => {
+  const points = { left: 251, top: 137, width: 42, height: 43 };
+  const minus = { left: 225, top: 143, width: 27, height: 32 };
+  const plus = { left: 292, top: 143, width: 27, height: 32 };
+  const lbl = { left: 51, top: 137, width: 175, height: 43 };
+
+  /** Mirror GUIControl.hitCheckMouse: self AABB or any nested child AABB. */
+  const parentOrDescendantHit = (x: number, y: number) =>
+    hitCheckMouseLocal(points, x, y) ||
+    [minus, plus, lbl].some((e) => hitCheckMouseLocal(e, x, y));
+
+  it("PLUS center lies outside POINTS AABB but inside PLUS", () => {
+    const x = plus.left + 13;
+    const y = plus.top + 16;
+    expect(hitCheckMouseLocal(points, x, y)).toBe(false);
+    expect(hitCheckMouseLocal(plus, x, y)).toBe(true);
+    expect(parentOrDescendantHit(x, y)).toBe(true);
+  });
+
+  it("MINUS center lies outside POINTS AABB but inside MINUS", () => {
+    const x = minus.left + 13;
+    const y = minus.top + 16;
+    expect(hitCheckMouseLocal(points, x, y)).toBe(false);
+    expect(hitCheckMouseLocal(minus, x, y)).toBe(true);
+    expect(parentOrDescendantHit(x, y)).toBe(true);
+  });
+
+  it("ability name LBL is fully outside POINTS AABB", () => {
+    const x = lbl.left + 80;
+    const y = lbl.top + 20;
+    expect(hitCheckMouseLocal(points, x, y)).toBe(false);
+    expect(hitCheckMouseLocal(lbl, x, y)).toBe(true);
+    expect(parentOrDescendantHit(x, y)).toBe(true);
+  });
+
+  it("among POINTS children, selectable PLUS wins over POINTS on PLUS center", () => {
+    const x = plus.left + 13;
+    const y = plus.top + 16;
+    // Nested under POINTS: [LBL, MINUS, PLUS] order varies by row; STR is LBL, MINUS, PLUS.
+    const childHit = [
+      hitCheckMouseLocal(lbl, x, y),
+      hitCheckMouseLocal(minus, x, y),
+      hitCheckMouseLocal(plus, x, y),
+    ];
+    const childSelectable = [false, true, true];
+    expect(selectTopmostHitChildIndex(childHit, childSelectable)).toBe(2);
+  });
+});
+
 describe("skill-flow slot extents (list-row nested hit)", () => {
   const protoW = 242;
   const iconW = 40;

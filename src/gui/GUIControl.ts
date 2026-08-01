@@ -1730,6 +1730,12 @@ export class GUIControl {
    * Nested children of a list row keep parent-local extents — compose with ancestor
    * row extents before HitCheckMouseLocal (feat/power skill-flow slots).
    * Anchored HUD controls are viewport-pinned; test their integer world box instead.
+   *
+   * Nested Obj_Parent children may extend outside this control's AABB (abchrgen /
+   * skchrgen: STR_POINTS_BTN → STR_PLUS_BTN / STR_LBL). Retail CSWGuiPanel::HitCheckMouse
+   * @ 0040b690 walks a flat panel control list, so those children are tested directly.
+   * With a nested children[] tree, treat descendant hits as a hit on this control so
+   * {@link getActiveControls} can recurse into the branch and prefer the child.
    */
   hitCheckMouse(localX: number, localY: number): boolean {
     if (this.list) {
@@ -1784,7 +1790,15 @@ export class GUIControl {
         this.box.max.y,
       );
     }
-    return hitCheckMouseLocal(this.extent, localX, localY);
+    if (hitCheckMouseLocal(this.extent, localX, localY)) {
+      return true;
+    }
+    for (let i = 0, len = this.children.length; i < len; i++) {
+      if (this.children[i].hitCheckMouse(localX, localY)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   calculatePosition(){
