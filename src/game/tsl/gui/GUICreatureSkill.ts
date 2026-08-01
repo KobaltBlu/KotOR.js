@@ -5,16 +5,24 @@ import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { GFFStruct } from "@/resource/GFFStruct";
 import * as THREE from "three";
 import type { TalentSkill } from "@/talents/TalentSkill";
+import type { TalentFeat } from "@/talents/TalentFeat";
 import {
   applyProtoItemHexMap,
   applyProtoSelectVisuals,
   enqueueProtoIconLoad,
 } from "@/gui/protoitem/protoItemHelpers";
 
+/** Duck type for InGameSkillEntry::SetSkill payloads (skill / feat / power). */
+export type SkillEntryNode = {
+  getName: () => string;
+  getIcon: () => string;
+};
+
 /**
  * GUICreatureSkill class.
  *
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
+ * Retail CSWGuiInGameSkillEntry — icon + name row used by abilities skills list
+ * and CSWGuiSkillInfoBox (granted feats popup).
  *
  * @file GUICreatureSkill.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -22,7 +30,7 @@ import {
  */
 export class GUICreatureSkill extends GUIProtoItem {
 
-  declare node: TalentSkill;
+  declare node: TalentSkill | TalentFeat | SkillEntryNode;
 
   buttonLabel: GUIButton;
   buttonIcon: GUIButton;
@@ -53,6 +61,22 @@ export class GUICreatureSkill extends GUIProtoItem {
   buildHighlight(){}
   buildText(){}
 
+  private resolveName(): string {
+    const node = this.node as SkillEntryNode;
+    if(typeof node?.getName === 'function'){
+      return node.getName() || '';
+    }
+    return '';
+  }
+
+  private resolveIcon(): string {
+    const node = this.node as SkillEntryNode;
+    if(typeof node?.getIcon === 'function'){
+      return node.getIcon() || 'inone';
+    }
+    return 'inone';
+  }
+
   createControl(){
     try{
       super.createControl();
@@ -68,7 +92,7 @@ export class GUICreatureSkill extends GUIProtoItem {
       this.buttonLabel.setExtentLeft(0);
       this.buttonLabel.setExtentWidth(labelWidth);
       this.buttonLabel.setExtentHeight(protoHeight);
-      this.buttonLabel.setText(this.node.getName() || '');
+      this.buttonLabel.setText(this.resolveName());
       this.buttonLabel.autoCalculatePosition = false;
       this.children.push(this.buttonLabel);
 
@@ -146,7 +170,7 @@ export class GUICreatureSkill extends GUIProtoItem {
     const flag = { value: this._iconLoadStarted };
     enqueueProtoIconLoad(
       this as any,
-      this.node.getIcon?.(),
+      this.resolveIcon(),
       this.iconMaterial,
       flag,
     );

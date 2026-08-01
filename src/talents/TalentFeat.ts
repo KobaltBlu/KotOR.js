@@ -334,6 +334,18 @@ export class TalentFeat extends TalentObject {
     return (classData?.featstable || '').toLowerCase();
   }
 
+  /** Retail CSWGuiInGameSkillEntry::SetSkill (feat branch) — icon resref. */
+  getIcon(){
+    return this.icon || '';
+  }
+
+  /** Retail CSWGuiInGameSkillEntry::SetSkill (feat branch) — name TLK. */
+  getName(){
+    return this.name != null && this.name != -1
+      ? (GameState.TLKManager.GetStringById(this.name)?.Value ?? this.label ?? '')
+      : (this.label || '');
+  }
+
   getGranted(classData: CreatureClass): number {
     switch(this.getFeatTableKey(classData)){
       case 'scd':

@@ -180,16 +180,12 @@ export class CharGenFeats extends GameMenu {
       GameState.TLKManager.GetStringById?.(42258)?.Value
       ?? GameState.TLKManager.TLKStrings?.[42258]?.Value
       ?? 'You have been granted the following feats:';
-    const names = featIds.map((id) => {
-      const feat = GameState.SWRuleSet.feats[id];
-      if(!feat) return String(id);
-      return GameState.TLKManager.GetStringById?.(feat.name)?.Value
-        ?? GameState.TLKManager.TLKStrings?.[feat.name]?.Value
-        ?? feat.constant
-        ?? String(id);
-    });
+    // Retail SetSkillList(feats, 1) — InGameSkillEntry::SetSkill feat branch.
+    const feats = featIds
+      .map((id) => GameState.SWRuleSet.feats[id])
+      .filter((f): f is NonNullable<typeof f> => !!f);
     await new Promise<void>((resolve) => {
-      skillInfo.openWithContent(message, names, () => resolve());
+      skillInfo.openWithContent(message, feats, () => resolve());
     });
   }
 

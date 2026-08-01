@@ -154,6 +154,14 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   load( onLoad?: Function ){
+    // GIT TriggerList entries only carry TemplateResRef + geometry. initProperties is
+    // deferred until load(), so templateResRef is still unset here — read it from the
+    // GFF before choosing the UTT-merge path. Skipping this took the savegame branch
+    // on new games (no Tag/ScriptOnEnter), so triggers never fired scripts.
+    if(!this.templateResRef && this.template?.RootNode?.hasField('TemplateResRef')){
+      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+    }
+
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utt'], this.getTemplateResRef());
@@ -396,35 +404,40 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   /**
-   * Update the objectsInside array
-   * @param object 
-   * @returns 
+   * Update the objectsInside array and fire enter/exit for occupancy changes.
+   *
+   * Retail CSWSCreature::HandleSubAreaStateChanges @ 00516020 queues OnObjectEnter
+   * (0xc) for every newly occupied generic/transition trigger — no hostility or
+   * global one-shot gate. A previous `!triggered && isHostile` lock meant the first
+   * NPC through a Faction=1 trigger on new-game spawn set `triggered` and blocked
+   * the player's later enter (save loads usually skip that NPC traffic).
+   *
+   * Trap one-shot / hostility stays on {@link canTrigger} only.
    */
   updateObjectInside(object: ModuleObject){
-    //Check if the creature is inside the bounding box
-    const isInside = this.isInsideBoundingBox(object);  
+    const isInside = this.isInsideBoundingBox(object);
     if(isInside){
-      //If the creature is inside the bounding box, attempt to add it to the objectsInside array
       const added = this.addObjectInside(object);
       if(!added){ return; }
-      if(!this.triggered && this.isHostile(object)){
-        object.lastTriggerEntered = this;
-        this.lastObjectEntered = object;
 
-        this.onEnter(object);
+      if(this.type == ModuleTriggerType.TRAP && !this.canTrigger(object)){
+        return;
+      }
+
+      object.lastTriggerEntered = this;
+      this.lastObjectEntered = object;
+      this.onEnter(object);
+      if(this.type == ModuleTriggerType.TRAP){
         this.triggered = true;
       }
       return;
     }
 
-    //If the creature is not inside the bounding box, attempt to remove it from the objectsInside array
     const removed = this.removeObjectInside(object);
     if(!removed){ return; }
-    if(!this.triggered && this.isHostile(object)){
-      object.lastTriggerExited = this;
-      this.lastObjectExited = object;
-      this.onExit(object);
-    }
+    object.lastTriggerExited = this;
+    this.lastObjectExited = object;
+    this.onExit(object);
   }
 
   /**

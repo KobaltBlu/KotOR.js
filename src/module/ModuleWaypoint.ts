@@ -82,6 +82,12 @@ export class ModuleWaypoint extends ModuleObject {
   }
 
   load(){
+    // GIT entries only carry TemplateResRef until load(); initProperties is deferred,
+    // so read the GFF field before choosing the UTW-merge path (same as ModuleTrigger).
+    if(!this.templateResRef && this.template?.RootNode?.hasField('TemplateResRef')){
+      this.templateResRef = this.template.getFieldByLabel('TemplateResRef').getValue();
+    }
+
     if(this.getTemplateResRef()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['utw'], this.getTemplateResRef());

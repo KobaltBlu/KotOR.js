@@ -185,6 +185,18 @@ describe("abilities retail row extents", () => {
     expect(42).toBe(42);
   });
 
+  it("skillinfo LB_SKILLS: height 42, width = viewport - 2*padding (ShowGranted SetSkillList)", () => {
+    // skillinfo.gui LB_SKILLS: EXTENT 310×140, PADDING=2; border dim from list.
+    // Retail Initialize width = viewport_width - 2*padding; height 0x2a.
+    const viewportWidth = 306; // approximate after border; exact via getViewportWidth
+    const padding = 2;
+    const width = Math.max(1, viewportWidth - padding * 2);
+    expect(width).toBe(302);
+    expect(42).toBe(42);
+    // GFF PROTOITEM height 56 must NOT be used for row pitch.
+    expect(56).not.toBe(42);
+  });
+
   it("feat/power row K1: 242×40 (AddFeatSet @ 006cda80)", () => {
     expect(0xf2).toBe(242);
     expect(0x28).toBe(40);

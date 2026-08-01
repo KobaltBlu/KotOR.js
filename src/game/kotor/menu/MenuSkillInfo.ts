@@ -1,11 +1,14 @@
 import { GameMenu } from "@/gui";
 import type { GUIListBox, GUILabel, GUIButton } from "@/gui";
+import { GUICreatureSkill } from "@/game/tsl/gui/GUICreatureSkill";
+import type { TalentFeat } from "@/talents/TalentFeat";
 
 /**
  * MenuSkillInfo class.
  *
  * Retail CSWGuiSkillInfoBox — used by CSWGuiFeatsCharGen::ShowGranted @ 006f2c40
  * to list feats granted when CharGen feats panel opens (TLK 0xa512 = 42258).
+ * Rows are CSWGuiInGameSkillEntry (K1 @ 006ac930) via {@link GUICreatureSkill}.
  *
  * @file MenuSkillInfo.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -47,14 +50,33 @@ export class MenuSkillInfo extends GameMenu {
         this.tGuiPanel.widget.position.z = 10;
       }
     }
+
+    // Retail ctor @ 006ce7c0: noSelectMode + SetEnabled(0) on LB_SKILLS;
+    // rows are InGameSkillEntry (GUICreatureSkill), not raw PROTOITEM text.
+    if(this.LB_SKILLS){
+      this.LB_SKILLS.setProtoBuilder(GUICreatureSkill);
+      this.LB_SKILLS.disableSelection = true;
+      this.LB_SKILLS.bitFlags.noSelectMode = true;
+    }
   }
 
-  /** Open with message + string list (feat / skill names). */
-  openWithContent(message: string, items: string[], onDismiss?: () => void) {
+  /**
+   * Open with message + talent list (feats / skills / powers).
+   * Retail SetSkillList @ 006cdfc0 — AddControls of InGameSkillEntry rows.
+   */
+  openWithContent(message: string, items: Array<TalentFeat | { getName?: () => string; getIcon?: () => string } | string>, onDismiss?: () => void) {
     this.onDismiss = onDismiss;
     this.LBL_MESSAGE?.setText(message || '');
-    if(typeof this.LB_SKILLS?.setItems === 'function'){
-      this.LB_SKILLS.setItems(items || []);
+    if(this.LB_SKILLS){
+      this.LB_SKILLS.setProtoBuilder(GUICreatureSkill);
+      this.LB_SKILLS.bitFlags.noSelectMode = true;
+      const nodes = (items || []).map((item) => {
+        if(typeof item === 'string'){
+          return { getName: () => item, getIcon: () => 'inone' };
+        }
+        return item;
+      });
+      this.LB_SKILLS.setItems(nodes, { requestNoSelect: true });
     }
     this.open();
   }
