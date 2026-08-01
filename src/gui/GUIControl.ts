@@ -2088,32 +2088,28 @@ export class GUIControl {
   }
 
   /**
-   * Inner (fill / viewport) extent — mirrors CSWGuiBorder::GetInnerExtent @ 00415240.
+   * Center-fill image size — CSWGuiBorder::Draw @ 004168c0 fill pass.
    *
-   * Corner/edge sizes come from the border DIMENSION (retail GetBorderDim). When DIMENSION
-   * is 0 retail would derive them from the corner/edge image sizes; KotOR.js borders with
-   * DIMENSION 0 carry no corner/edge geometry, so we treat those sizes as 0 (unchanged from
-   * legacy behavior). INNEROFFSET is then applied — the previously missing step:
-   *   width  = (w - 2*corner) + 2*min(INNEROFFSET,  DIMENSION)
-   *   height = (h - 2*corner) + 2*INNEROFFSETY                 (raw, retail asymmetry)
-   * with retail's degenerate-collapse test (content smaller than half an edge tile → 0).
+   * Draw sizes the fill to the hole inside the corner/edge tiles (w−2·dim × h−2·dim),
+   * not GetInnerExtent. INNEROFFSET expands text/viewport only ({@link getInnerSize});
+   * applying it here made thick-border fills (e.g. character BTN_AUTO) cover the frame.
    * Scrollbar shrink (listbox SetExtent @ 0041bf80) is subtracted after, separately.
    */
   getFillExtent(){
     const extent = this.getControlExtent();
     const shrinkWidth = asExtentInt(this.getShrinkWidth());
 
-    const inner = borderInnerExtent({
+    const hole = borderInnerExtent({
       width: asExtentInt(this.extent.width),
       height: asExtentInt(this.extent.height),
       dimension: asExtentInt(this.getBorderSize()),
-      innerOffset: asExtentInt(this.border.inneroffset || 0),
-      innerOffsetY: asExtentInt(this.border.inneroffsety ?? this.border.inneroffset ?? 0),
+      innerOffset: 0,
+      innerOffsetY: 0,
     });
 
     // Scrollbar shrink (listbox SetExtent @ 0041bf80) is content-width only, applied after.
-    const width = Math.max(0, inner.width - shrinkWidth);
-    const height = Math.max(0, inner.height);
+    const width = Math.max(0, hole.width - shrinkWidth);
+    const height = Math.max(0, hole.height);
 
     return {
       top: extent.top,

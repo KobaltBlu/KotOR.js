@@ -235,9 +235,9 @@ export class GUIListBox extends GUIControl {
    * Scrollbar sits on the widget beside this quad — not inside the render target.
    */
   private syncRttSizeFromViewport(): void {
-    const fill = this.getFillExtent();
-    this.width = Math.max(1, asExtentInt(fill.width));
-    this.height = Math.max(1, asExtentInt(fill.height));
+    // RTT matches list viewport (GetInnerExtent), not the border Draw fill hole.
+    this.width = Math.max(1, asExtentInt(this.getViewportWidth()));
+    this.height = Math.max(1, asExtentInt(this.getViewportInnerHeight()));
   }
 
   /** Position the RTT quad over the content area (shifted away from the scrollbar). */
@@ -769,12 +769,13 @@ export class GUIListBox extends GUIControl {
 
   getViewportInnerHeight(): number {
     // Retail SetExtent @ 0041bf80: viewport_height = border GetInnerExtent height
-    return this.getFillExtent().height;
+    // (INNEROFFSET applied — not the Draw fill hole from getFillExtent)
+    return this.getInnerSize().height;
   }
 
   getViewportWidth(): number {
-    // Retail viewport_width after scrollbar shrink + border inset
-    return this.getFillExtent().width;
+    // Retail viewport_width = GetInnerExtent width after scrollbar shrink
+    return Math.max(0, this.getInnerSize().width - asExtentInt(this.getShrinkWidth()));
   }
 
   /** Retail shouldScroll @ 0041a290 — single item taller than viewport. */
