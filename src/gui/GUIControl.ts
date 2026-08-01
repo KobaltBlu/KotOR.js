@@ -2254,24 +2254,44 @@ export class GUIControl {
 
   /**
    * Edge/corner piece sized with symmetric PlaneGeometry (±w/2), then rotated for UVs.
-   * Do not TL-frustum these quads: 180°/−90° UV flips reverse odd-width asymmetry and
-   * “fixing” that with a pre-mirror cancels the UV rotation (right-edge seam on BTN_AUTO).
+   * Odd sizes: nudge the post-rotation center by +0.5 on each odd axis so ±half spans
+   * TL ints [−⌊n/2⌋, n−⌊n/2⌋] and meets neighboring pieces (e.g. top ±47.5 → [-47,48]
+   * against corners at -47/48). Do not rewrite vertex frustums — that breaks UV flips.
    * Fill quads stay TL-centered via {@link layoutFillMesh}.
    */
   private createBorderSidePlane(
     extent: { left: number; top: number; width: number; height: number },
     rotateZ: number = 0,
   ): THREE.PlaneGeometry {
+    const w = asExtentInt(extent.width);
+    const h = asExtentInt(extent.height);
     const plane = new THREE.PlaneGeometry(
-      Math.max(GUIControl.MESH_EPS, extent.width),
-      Math.max(GUIControl.MESH_EPS, extent.height),
+      Math.max(GUIControl.MESH_EPS, w),
+      Math.max(GUIControl.MESH_EPS, h),
       1,
       1,
     );
     if(rotateZ !== 0){
       plane.rotateZ(rotateZ);
     }
-    plane.translate(extent.left, extent.top, 0);
+
+    // Translate is widget-space (after rot). Map local odd axes → world nudge.
+    let tx = extent.left;
+    let ty = extent.top;
+    const twoPi = Math.PI * 2;
+    const norm = ((rotateZ % twoPi) + twoPi) % twoPi;
+    const is90 = Math.abs(norm - Math.PI / 2) < 1e-6;
+    const isNeg90 = Math.abs(norm - (Math.PI * 3) / 2) < 1e-6;
+    if(is90 || isNeg90){
+      // local X → world Y, local Y → world X (sign ignored for +0.5 span)
+      if(w & 1) ty += 0.5;
+      if(h & 1) tx += 0.5;
+    }else{
+      // 0 or 180°: local axes stay aligned with world
+      if(w & 1) tx += 0.5;
+      if(h & 1) ty += 0.5;
+    }
+    plane.translate(tx, ty, 0);
     return plane;
   }
 
