@@ -39,7 +39,8 @@ export class MenuPowerLevelUp extends GameMenu {
       this.BACK_BTN?.addEventListener('click', (e) => {
         e.stopPropagation();
         this.close();
-        GameState.MenuManager.MenuLevelUp?.show?.();
+        // Return to MAINCG host + LEVELUPPNL child
+        GameState.MenuManager.CharGenMain?.show?.();
       });
 
       this.ACCEPT_BTN?.addEventListener('click', (e) => {
@@ -50,7 +51,7 @@ export class MenuPowerLevelUp extends GameMenu {
         LevelUpManager.powersStepDone = true;
         this.close();
         GameState.MenuManager.MenuLevelUp?.applyStepVisibility?.();
-        GameState.MenuManager.MenuLevelUp?.show?.();
+        GameState.MenuManager.CharGenMain?.show?.();
       });
 
       this.SELECT_BTN?.addEventListener('click', (e) => {

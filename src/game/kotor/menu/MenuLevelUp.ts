@@ -33,8 +33,8 @@ export class MenuLevelUp extends GameMenu {
   constructor(){
     super();
     this.gui_resref = 'leveluppnl';
-    this.background = '1600x1200back';
-    this.voidFill = true;
+    this.background = '';
+    this.voidFill = false;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
@@ -71,27 +71,47 @@ export class MenuLevelUp extends GameMenu {
         this.acceptLevelUp();
       });
 
+
+      this.tGuiPanel.offset.x = -180;
+      this.tGuiPanel.offset.y = 100;
+      this.recalculatePosition();
       resolve();
     });
   }
 
-  openFor(creature: ModuleCreature) {
+  /**
+   * Prepare LEVELUPPNL as CharGenMain.childMenu (retail CSWGuiLevelUpPanel).
+   * Do not Add() this menu to the stack — the MAINCG host owns visibility.
+   */
+  prepareFor(creature: ModuleCreature) {
     if(!LevelUpManager.active || LevelUpManager.creature !== creature){
       if(!LevelUpManager.begin(creature)) return;
     }
     this.applyStepVisibility();
-    this.open();
+  }
+
+  /** @deprecated Prefer CharGenMain.openForLevelUp → prepareFor as childMenu. */
+  openFor(creature: ModuleCreature) {
+    this.prepareFor(creature);
+    this.manager.CharGenMain?.openForLevelUp?.(creature);
   }
 
   cancelLevelUp() {
     LevelUpManager.clear();
-    this.close();
+    if(this.manager.CharGenMain?.levelUpMode){
+      this.manager.CharGenMain.closeLevelUp();
+    }else{
+      this.close();
+    }
   }
 
   acceptLevelUp() {
     if(!LevelUpManager.canAccept()) return;
     const creature = LevelUpManager.creature;
     const ok = LevelUpManager.commit();
+    if(this.manager.CharGenMain?.levelUpMode){
+      this.manager.CharGenMain.closeLevelUp();
+    }
     this.close();
     if(ok){
       GameState.MenuManager.MenuCharacter?.updateCharacterStats?.(creature);
@@ -113,7 +133,8 @@ export class MenuLevelUp extends GameMenu {
       LevelUpManager.abilityStepDone = true;
       menu.levelUpMode = false;
       this.applyStepVisibility();
-      this.show();
+      // Reshow MAINCG host (and this child panel)
+      this.manager.CharGenMain?.show?.();
     };
     menu.open();
   }
@@ -142,7 +163,7 @@ export class MenuLevelUp extends GameMenu {
       LevelUpManager.skillsStepDone = true;
       menu.levelUpMode = false;
       this.applyStepVisibility();
-      this.show();
+      this.manager.CharGenMain?.show?.();
     };
     menu.open();
   }
@@ -164,7 +185,7 @@ export class MenuLevelUp extends GameMenu {
       LevelUpManager.featsStepDone = true;
       menu.levelUpMode = false;
       this.applyStepVisibility();
-      this.show();
+      this.manager.CharGenMain?.show?.();
     };
     menu.open();
   }

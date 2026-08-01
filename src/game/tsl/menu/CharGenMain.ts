@@ -68,8 +68,10 @@ export class CharGenMain extends K1_CharGenMain {
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).transparent = true;
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
 
-      this.Init3D();
-      resolve(); 
+      void this.Init3D().then(() => resolve()).catch((e) => {
+        console.error('CharGenMain.Init3D', e);
+        resolve();
+      });
     });
   }
   

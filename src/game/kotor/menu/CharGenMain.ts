@@ -5,7 +5,12 @@ import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { CharGenClasses } from "@/game/CharGenClasses";
 import { GameState } from "@/GameState";
+import type { ModuleCreature } from "@/module/ModuleCreature";
+import { LevelUpManager } from "@/managers/LevelUpManager";
 import * as THREE from "three";
+
+/** Retail CSWGuiLevelUpCharGen MAIN_TITLE_LBL SetStrRef @ 006e8ef0 */
+const TLK_LEVEL_UP_TITLE = 0x42f; // 1071
 
 /**
  * CharGenMain class.
@@ -13,6 +18,9 @@ import * as THREE from "three";
  * Retail CSWGuiMainCharGen @ 006eb420 — gui3D_room + charrec_light (not
  * cgbody_light), Setup3DScene camera on camerahook with AttachTranslate
  * world Z = getCameraHeight(), SetViewAngle 22.726.
+ *
+ * Also hosts in-game level-up as retail CSWGuiLevelUpCharGen (same MAINCG
+ * layout) with MenuLevelUp (LEVELUPPNL) as childMenu.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -69,6 +77,9 @@ export class CharGenMain extends GameMenu {
   _3dView: LBL_3DView;
   _3dViewModel: OdysseyModel3D;
 
+  /** True while hosting in-game level-up (CSWGuiLevelUpCharGen). */
+  levelUpMode: boolean = false;
+
   constructor(){
     super();
     this.gui_resref = 'maincg';
@@ -89,23 +100,46 @@ export class CharGenMain extends GameMenu {
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).transparent = true;
       (this.MODEL_LBL.getFill().material as THREE.ShaderMaterial).blending = 1;
 
-      this.Init3D();
-      resolve(); 
+      void this.Init3D().then(() => resolve()).catch((e) => {
+        console.error('CharGenMain.Init3D', e);
+        resolve();
+      });
     });
   }
 
-  Init3D() {
-    const lightMdl = GameState.CharGenManager.charrec_light
-      ?? GameState.CharGenManager.cgbody_light;
-    OdysseyModel3D.FromMDL(lightMdl, {
-      onComplete: (model: OdysseyModel3D) => {
-        this._3dViewModel = model;
-        this._3dView.addModel(this._3dViewModel);
-        this.updateCamera();
-        // Setup3DScene plays alignment anim on charrec_light; chargen starts neutral.
-        this._3dViewModel.playAnimation('align10', true);
-      },
-      context: this._3dView
+  /**
+   * Retail MAINCG / LevelUpCharGen uses charrec_light. Chargen Init loads it;
+   * in-game level-up (EnsureLevelUpMenus) must load it lazily.
+   */
+  async Init3D() {
+    const CG = GameState.CharGenManager;
+    if(!CG.charrec_light){
+      try{ await CG.LoadCharRecLight?.(); }catch(e){ console.error(e); }
+    }
+    if(!CG.cgbody_light){
+      try{ await CG.LoadCGBodyLight?.(); }catch(e){ console.error(e); }
+    }
+    const lightMdl = CG.charrec_light ?? CG.cgbody_light;
+    if(!lightMdl){
+      console.error('CharGenMain.Init3D: missing charrec_light / cgbody_light');
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      OdysseyModel3D.FromMDL(lightMdl, {
+        onComplete: (model: OdysseyModel3D) => {
+          if(!model){
+            resolve();
+            return;
+          }
+          this._3dViewModel = model;
+          this._3dView.addModel(this._3dViewModel);
+          this.updateCamera();
+          // Setup3DScene plays alignment anim on charrec_light; chargen starts neutral.
+          this._3dViewModel.playAnimation?.('align10', true);
+          resolve();
+        },
+        context: this._3dView
+      });
     });
   }
 
@@ -115,7 +149,7 @@ export class CharGenMain extends GameMenu {
    */
   updateCamera() {
     if(!this._3dViewModel?.camerahook) return;
-    const creature = GameState.CharGenManager.selectedCreature;
+    const creature = this.getDisplayCreature();
     const headHeight = creature?.getCameraHeight?.() ?? 1.5;
     this._3dView.attachCameraToHook(
       this._3dViewModel.camerahook,
@@ -124,13 +158,42 @@ export class CharGenMain extends GameMenu {
     );
   }
 
+  getDisplayCreature(): ModuleCreature | undefined {
+    if(this.levelUpMode){
+      return LevelUpManager.creature ?? undefined;
+    }
+    return GameState.CharGenManager.selectedCreature;
+  }
+
+  /**
+   * Retail CSWGuiInGameCharacter::ShowLevelUpGUI @ 006b0bb0 —
+   * opens MAINCG with LEVELUPPNL attached (our childMenu).
+   */
+  openForLevelUp(creature: ModuleCreature) {
+    if(!creature) return;
+    this.levelUpMode = true;
+    this.childMenu = this.manager.MenuLevelUp;
+    const title = GameState.TLKManager.GetStringById(TLK_LEVEL_UP_TITLE)?.Value;
+    if(title){
+      this.MAIN_TITLE_LBL?.setText(title);
+    }
+    this.open();
+  }
+
+  /** Exit level-up host and clear child panel (CancelLevelUp pops both modals). */
+  closeLevelUp() {
+    this.levelUpMode = false;
+    this.childMenu = undefined;
+    this.close();
+  }
+
   update(delta = 0) {
     super.update(delta);
     if (!this.bVisible)
       return;
     try {
       let modelControl = this.MODEL_LBL;
-      GameState.CharGenManager.selectedCreature.update(delta);
+      this.getDisplayCreature()?.update?.(delta);
       this._3dView.render(delta);
       (modelControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
     } catch (e: any) {
@@ -144,22 +207,34 @@ export class CharGenMain extends GameMenu {
 
   show() {
     super.show();
-    this.LBL_LEVEL?.hide();
-    this.LBL_LEVEL_VAL?.hide();
-    this.OLD_LBL?.hide();
-    this.NEW_LBL?.hide();
+    if(this.levelUpMode){
+      this.LBL_LEVEL?.show();
+      this.LBL_LEVEL_VAL?.show();
+      this.OLD_LBL?.hide();
+      this.NEW_LBL?.hide();
+    }else{
+      this.LBL_LEVEL?.hide();
+      this.LBL_LEVEL_VAL?.hide();
+      this.OLD_LBL?.hide();
+      this.NEW_LBL?.hide();
+    }
+    const creature = this.getDisplayCreature();
+    if(!creature?.model){
+      this.updateAttributes();
+      return;
+    }
     try {
-      GameState.CharGenManager.selectedCreature.model.removeFromParent();
+      creature.model.removeFromParent();
     } catch (e: any) {
     }
-    this._3dView.scene.add(GameState.CharGenManager.selectedCreature.model);
-    GameState.CharGenManager.selectedCreature.model.rotation.z = -Math.PI / 2;
+    this._3dView.scene.add(creature.model);
+    creature.model.rotation.z = -Math.PI / 2;
     this.updateCamera();
     this.updateAttributes();
   }
 
   updateAttributes() {
-    const creature = GameState.CharGenManager.selectedCreature;
+    const creature = this.getDisplayCreature();
     if(!creature) return;
 
     this.STR_AB_LBL?.setText(String(creature.str | 0));
@@ -180,9 +255,20 @@ export class CharGenMain extends GameMenu {
     this.NEW_WILL_LBL?.setText(String(will));
 
     this.LBL_NAME?.setText(creature.getName() || '');
-    this.LBL_CLASS?.setText(
-      GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.selectedClass].strings.name].Value
-    );
+
+    if(this.levelUpMode){
+      const draft = LevelUpManager.draft;
+      const cls = (draft
+        ? creature.classes?.find((c) => c.id === draft.classId)
+        : undefined) ?? creature.classes?.[creature.classes.length - 1];
+      this.LBL_CLASS?.setText(cls?.getName?.() || '');
+      const levelVal = draft?.newClassLevel ?? ((cls?.level | 0) + 1);
+      this.LBL_LEVEL_VAL?.setText(String(levelVal));
+    }else{
+      this.LBL_CLASS?.setText(
+        GameState.TLKManager.TLKStrings[CharGenClasses[GameState.CharGenManager.selectedClass].strings.name].Value
+      );
+    }
 
     const portraitResRef = creature.getPortraitResRef?.();
     if(portraitResRef && this.PORTRAIT_LBL){

@@ -477,10 +477,19 @@ export class MenuManager {
     }
   }
 
-  /** Lazy-load CharGen ability/skill/feat panels + power level-up for in-game leveling. */
+  /**
+   * Lazy-load in-game level-up UI.
+   * Retail CSWGuiInGameCharacter::ShowLevelUpGUI → CSWGuiLevelUpCharGen (MAINCG)
+   * with child CSWGuiLevelUpPanel (LEVELUPPNL), plus step panels.
+   */
   static async EnsureLevelUpMenus(){
     const isTSL = GameState.GameKey == GameEngineType.TSL;
     try{
+      if(!MenuManager.CharGenMain){
+        MenuManager.CharGenMain = await MenuManager.GameMenuLoader(
+          isTSL ? TSL.CharGenMain : KOTOR.CharGenMain
+        ) as KOTOR.CharGenMain;
+      }
       if(!MenuManager.CharGenAbilities){
         MenuManager.CharGenAbilities = await MenuManager.GameMenuLoader(
           isTSL ? TSL.CharGenAbilities : KOTOR.CharGenAbilities

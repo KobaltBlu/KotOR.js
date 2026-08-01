@@ -365,8 +365,7 @@ export class MenuCharacter extends GameMenu {
       }
       objectCreature.loadModel().then( (model: OdysseyModel3D) => {
         model.position.set(0, 0, 0);
-        model.rotation.x = -Math.PI / 2;
-        model.rotation.z = Math.PI;
+        model.rotation.z = -Math.PI / 2;
         model.box = new THREE.Box3().setFromObject(model);
         this.char = model;
         portraitAttachRoot?.add(this.char);

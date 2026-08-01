@@ -90,18 +90,22 @@ export class LevelUpManager {
 
   /**
    * Open the level-up wizard. Returns TRUE if shown (NWScript ShowLevelUpGUI).
+   * Retail CGuiInGame::ShowLevelUpGUI → CSWGuiInGameCharacter::ShowLevelUpGUI @ 006b0bb0
+   * creates CSWGuiLevelUpCharGen (MAINCG / CharGenMain) hosting LEVELUPPNL.
    */
   static async showLevelUpGUIAsync(creature?: ModuleCreature): Promise<boolean> {
     const target = creature || GameState.getCurrentPlayer?.() || GameState.PartyManager?.party?.[0];
     if(!target || !target.canLevelUp()) return false;
     await GameState.MenuManager.EnsureLevelUpMenus();
     if(!LevelUpManager.begin(target)) return false;
-    const menu = GameState.MenuManager?.MenuLevelUp;
-    if(!menu){
+    const main = GameState.MenuManager?.CharGenMain;
+    const panel = GameState.MenuManager?.MenuLevelUp;
+    if(!main || !panel){
       LevelUpManager.clear();
       return false;
     }
-    menu.openFor?.(target);
+    panel.prepareFor?.(target);
+    main.openForLevelUp?.(target);
     return true;
   }
 
