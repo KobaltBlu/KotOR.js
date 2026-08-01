@@ -1845,7 +1845,10 @@ export class CutsceneManager {
   }
 
   /**
-   * Validate the camera participants are in the same room
+   * Same-room gate for dialog shots that interpolate across both participants
+   * (OTS / two-shot). Cross-room pairs make GetCameraParameters type 2/3 pull
+   * the camera outside the module; retail Scene::HitCheck then sets field9 and
+   * reframes as type 1 — we short-circuit to that outcome when rooms differ.
    */
   static validateCameraParticipants(){
     const listener = this.cameraState.listener.participant;
@@ -2081,10 +2084,19 @@ export class CutsceneManager {
     );
   }
 
-  /** Over-the-shoulder — shot type 2; collision → type 1. */
+  /**
+   * Over-the-shoulder — shot type 2; collision → type 1.
+   * Different rooms: retail Scene::HitCheck forces field9 → type-1 close-up; our
+   * walkmesh approx can miss below-floor OTS pulls across the map, so gate here.
+   */
   static updateCameraAngleSpeakerBehindPlayer(_delta: number = 0){
     const speaker = this.cameraState.speaker.participant;
     const listener = this.cameraState.listener.participant;
+    if(!this.validateCameraParticipants()){
+      this.cameraState.cameraAngle = DLGCameraAngle.ANGLE_SPEAKER;
+      this.updateCameraAngleSpeaker();
+      return;
+    }
     const ok = this.applyDialogCameraShot(
       dlgAngleToShotType(DLGCameraAngle.ANGLE_SPEAKER_BEHIND_PLAYER),
       this.getDialogFramingPosition(speaker),
@@ -2095,7 +2107,7 @@ export class CutsceneManager {
     }
   }
 
-  /** Two-shot — shot type 3; collision → OTS fallback. */
+  /** Two-shot — shot type 3; collision / different room → OTS (then type 1 if needed). */
   static updateCameraAngleTwoShot(_delta: number = 0){
     const speaker = this.cameraState.speaker.participant;
     const listener = this.cameraState.listener.participant;
@@ -2148,18 +2160,14 @@ export class CutsceneManager {
 
   /**
    * checkCameraCollision
-   * Walkmesh approximation of retail Scene::HitCheck — tests the complete
-   * target↔camera segment (both directions) against room/door walkmeshes.
-   * Full retail HitCheck (model AABB / complex geometry) remains a residual.
+   * Walkmesh approximation of retail SceneHitCheck @ 0060f1e0 — tests the
+   * complete target↔camera segment against **all** area room walkmeshes
+   * (CheckAABBAll loop) plus closed doors. Participant-only rooms missed
+   * geometry when the camera sat in a third room (e.g. OTS across the map).
+   * Full retail model-AABB HitCheck remains a residual.
    */
   static checkCameraCollision(cameraPosition: THREE.Vector3, targetPosition: THREE.Vector3): boolean {
     if (!GameState.module?.area) {
-      return false;
-    }
-
-    const speaker = this.cameraState.speaker?.participant;
-    const listener = this.cameraState.listener?.participant;
-    if(!speaker && !listener){
       return false;
     }
 
@@ -2168,19 +2176,18 @@ export class CutsceneManager {
     const dist = cameraPosition.distanceTo(targetPosition);
     if(dist < 1e-4){ return false; }
 
-    // Collect walkmesh faces — both participant rooms when available.
+    // Retail SceneHitCheck walks every CSWSArea room via CheckAABBAll.
     const aabbFaces: any[] = [];
-    const rooms = new Set<any>();
-    if(speaker?.room) rooms.add(speaker.room);
-    if(listener?.room) rooms.add(listener.room);
-    rooms.forEach((room: any) => {
+    const rooms = area.rooms || [];
+    for(let i = 0, il = rooms.length; i < il; i++){
+      const room: any = rooms[i];
       if(room?.collisionManager?.walkmesh?.aabbNodes?.length){
         aabbFaces.push({
           object: room,
           faces: room.collisionManager.walkmesh.faces
         });
       }
-    });
+    }
 
     for (let j = 0, jl = area.doors.length; j < jl; j++) {
       const door = area.doors[j];
