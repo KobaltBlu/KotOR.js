@@ -10,6 +10,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import type { ModuleObject } from "@/module/ModuleObject";
 import { TURN_SPEED_FAST } from "@/engine/TurnSpeeds";
 import { getPathPersonalSpace } from "@/combat/attack-range";
+import { isInUseRange } from "@/actions/use-range";
 import { beginInterAreaPath } from "@/engine/pathfinding/inter-area-path";
 import { WALK_BACK_DOT } from "@/engine/pathfinding/locomotion";
 import {
@@ -95,13 +96,17 @@ export class ActionMoveToPoint extends Action {
         return ActionStatus.FAILED;
       }
 
-      const distanceToLive = Utility.Distance2D(owner.position, this.real_target_position);
-      if( distanceToLive <= range ){
+      // Retail MoveToObject completion uses GetIsInUseRange (+0.1 slack), not the
+      // raw param-6 distance alone. WalkUpdateLocation's UseRange early-out can
+      // freeze locomotion while dist is still slightly above param-6 — that left
+      // end_m01aa k_pend_traskdl40 Pause→Move→Resume stuck forever.
+      if(isInUseRange(owner, this.target) || Utility.Distance2D(owner.position, this.real_target_position) <= range){
         this.stopMoving(owner);
         this.setComputedPath(undefined);
         return ActionStatus.COMPLETE;
       }
 
+      const distanceToLive = Utility.Distance2D(owner.position, this.real_target_position);
       if(this.shouldRepathToMovingTarget(distanceToLive)){
         // In-place live chase — keep walkSpeedFactor (no COMPLETE / dispose)
         this.repathToLiveTargetInPlace();
@@ -187,16 +192,18 @@ export class ActionMoveToPoint extends Action {
       return ActionStatus.IN_PROGRESS;
     }else{
       if(chaseLive){
-        const liveDist = Utility.Distance2D(owner.position, this.target.position);
-        if(liveDist > range){
-          // Arrived at stale path end but live target still out — repath in place
-          this.repathToLiveTargetInPlace();
-          if(this.computedPath?.points?.length){
-            const next = this.computedPath.points[0];
-            if(next){
-              this.stepWalkUpdate(owner, next.vector, run, delta);
+        if(!isInUseRange(owner, this.target)){
+          const liveDist = Utility.Distance2D(owner.position, this.target.position);
+          if(liveDist > range){
+            // Arrived at stale path end but live target still out — repath in place
+            this.repathToLiveTargetInPlace();
+            if(this.computedPath?.points?.length){
+              const next = this.computedPath.points[0];
+              if(next){
+                this.stepWalkUpdate(owner, next.vector, run, delta);
+              }
+              return ActionStatus.IN_PROGRESS;
             }
-            return ActionStatus.IN_PROGRESS;
           }
         }
       }

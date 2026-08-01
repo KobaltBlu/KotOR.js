@@ -8,12 +8,16 @@ import { BitWise } from "@/utility/BitWise";
 /**
  * Retail ExecuteCommandBeginConversation @ 0052e9f0 → StartDialog ownership.
  *
- * When OBJECT_SELF is a party CNPC (field426 / isPartyMember, not the player) and
- * the listener is not the player, StartDialog runs on the listener (last speaker).
- * Otherwise StartDialog runs on OBJECT_SELF (the BeginConversation caller).
+ * The if-condition assigns pCVar8/uVar6 with C short-circuit side effects:
+ *   1. listener == player → StartDialog(caller, listener)
+ *   2. caller == player   → StartDialog(listener, caller)  // reassigns before check
+ *   3. !creature / !party → StartDialog(caller, listener)
+ *   else (party CNPC)     → StartDialog(listener, caller)
  *
- * This is why blank ActionStartConversation(oPartyMember) from a door uses the
- * door's Conversation, not the companion's personal dialog.
+ * (2) is why Trask ActionStartConversation(PC, "") → OnDialog on PC →
+ * BeginConversation → StartDialog(Trask) with Trask's Conversation.
+ * (else) is why blank ActionStartConversation(oPartyMember) from a door uses
+ * the door's Conversation, not the companion's personal dialog.
  */
 export function resolveDialogStartOwner(
   caller: ModuleObject,
@@ -32,8 +36,14 @@ export function resolveDialogStartOwner(
   const callerIsCreature = BitWise.InstanceOfObject(caller, ModuleObjectType.ModuleCreature);
   const callerIsParty = callerIsCreature && !!(caller as ModuleCreature).isPartyMember?.();
 
-  // Retail: listener==player || caller==player || !creature || field426==0 → StartDialog(caller)
-  if(listenerIsPlayer || callerIsPlayer || !callerIsCreature || !callerIsParty){
+  // Order matches retail || short-circuit (listener check before caller check).
+  if(listenerIsPlayer){
+    return caller;
+  }
+  if(callerIsPlayer){
+    return listener;
+  }
+  if(!callerIsCreature || !callerIsParty){
     return caller;
   }
   // Party CNPC → StartDialog(listener) — last speaker / ActionStartConversation caller

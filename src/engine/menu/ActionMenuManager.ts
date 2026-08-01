@@ -742,8 +742,10 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail player input: ActionManager(1) clears the queue, then UseItem / CastSpell /
-   * AddAttackActions (HandlePlayerToServerInputMessage cases 2/9/0x12).
+   * Retail player input: ActionManager(1) only when **not** already in combat
+   * (HandlePlayerToServerInputMessage UseItem case 9 / CastSpell case 0x12).
+   * Attack case 2 calls AddAttackActions with clear=0 so the combat-round
+   * schedule appends — never wipe it here.
    */
   static activateMenuItem(menuItem: ActionMenuItem, defaultTarget?: ModuleObject){
     if(!ActionMenuManager.oPC || !menuItem) return;
@@ -773,8 +775,10 @@ export class ActionMenuManager {
       return;
     }
 
-    // Mirror CSWSCreature::ActionManager(1) before UseItem / CastSpell / Attack
-    pc.clearAllActions(true);
+    // Retail: ActionManager(1) only when combat state is off.
+    if(!pc.combatData?.combatState){
+      pc.clearAllActions(true);
+    }
 
     if(menuItem.action && menuItem.action.type == ActionType.ActionPhysicalAttacks){
       pc.attackCreature(target as ModuleCreature, undefined);

@@ -869,6 +869,10 @@ export class CombatRound {
    * @param action - The action to add
    */
   addAction(action: CombatRoundAction){
+    // Retail CSWSCombatRound::AddAction @ 004d36a0 — reject when count > 3 (max 4).
+    if(this.scheduledActionList.length > 3){
+      return;
+    }
     action.owner = this.owner;
     this.scheduledActionList.push(action);
   }
@@ -963,6 +967,16 @@ export class CombatRound {
   }
 
   /**
+   * Retail CSWSCombatRound::ClearAllAttacks @ 004d37e0 —
+   * reset AttackList[5] swing data. Does **not** clear the scheduled action list.
+   */
+  clearAllAttacks(){
+    for(let i = 0; i < this.attackList.length; i++){
+      this.attackList[i]?.reset?.();
+    }
+  }
+
+  /**
    * Clear the last scheduled combat-round action.
    * Retail CSWSCombatRound::RemoveLastAction @ 004d37b0 (RemoveTail).
    * @returns True if an action was removed
@@ -976,7 +990,8 @@ export class CombatRound {
   }
 
   /**
-   * Clear all actions
+   * Clear all scheduled combat-round actions (and the current action).
+   * Retail CSWSCombatRound::RemoveAllActions @ 004d3770.
    */
   clearActions(){
     this.action = undefined;

@@ -703,12 +703,25 @@ export class ModuleObject {
 
   /**
    * Clear all actions
-   * @param skipUnclearable — retail ActionManager(1) player-input clear: keep
-   *   unclearable actions (dialog) and interrupt combat-round pause so a newly
-   *   queued CAST_SPELL / attack can dispatch via ActionCombat immediately.
+   * @param skipUnclearable — retail ActionManager(1) / ClearAllActions(1): keep
+   *   unclearable actions (dialog), ClearAllAttacks on the combat round, and
+   *   interrupt combat-round pause so a newly queued CAST_SPELL / attack can
+   *   dispatch via ActionCombat immediately.
+   *
+   * Retail CSWSObject::ClearAllActions @ 004ccd80 does **not** RemoveAllActions
+   * on the combat-round schedule — that is a separate call (GUI ClearAll /
+   * CancelCombat / SetCombatState(0)). Keeping the schedule lets the player
+   * queue multiple attacks/spells while in combat.
    */
   clearAllActions(skipUnclearable = false){
-    this.combatRound.clearActions();
+    // Retail ClearAllActions(1) → ClearAllAttacks only (not RemoveAllActions).
+    // clearAllActions(false) is our aggressive reset (party/dialog) — also
+    // RemoveAllActions so leftover combat-queue entries cannot resume.
+    if(skipUnclearable){
+      this.combatRound?.clearAllAttacks?.();
+    }else{
+      this.combatRound?.clearActions?.();
+    }
     // Player ActionManager clear: drop roundPaused / infinitePause so the next
     // scheduled combat action is not stuck behind a cancelled attack pause.
     if(skipUnclearable && this.combatRound?.roundPaused){

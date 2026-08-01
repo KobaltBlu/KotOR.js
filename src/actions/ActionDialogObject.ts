@@ -82,8 +82,12 @@ export class ActionDialogObject extends Action {
       }
     }
 
+    // Wait out an active conversation instead of discarding the action.
+    // end_m01aa: k_pend_trastk_en AssignCommand(Trask, ActionWait(2) +
+    // ActionStartConversation(PC)) often becomes ready while m01aa_c01 still
+    // holds DIALOG mode; failing here drops Trask's post-cutscene talk.
     if(GameState.Mode == EngineMode.DIALOG){
-      return ActionStatus.FAILED;
+      return ActionStatus.IN_PROGRESS;
     }
 
     // TSL bUseLeader — force party leader as the conversation listener
@@ -124,10 +128,17 @@ export class ActionDialogObject extends Action {
     // instance.conversation unset so BeginConversation matches StartDialog.
     // If OnDialog runs but does not enter dialog (e.g. GetCommandable failed),
     // fall through to direct start — Deadeye invis speaker depends on this.
+    // Bark one-liners endConversation immediately (active=false, Mode stays INGAME),
+    // so also watch conversationEpoch for BeginConversation that already barked.
     GameState.CutsceneManager.setDialogNonDependantNames(ignoreNames);
     if(typeof this.target.onDialog === 'function'){
+      const epoch = GameState.CutsceneManager.conversationEpoch;
       this.target.onDialog(this.owner, -1, this.conversation);
-      if(GameState.Mode == EngineMode.DIALOG || GameState.CutsceneManager?.active){
+      if(
+        GameState.Mode == EngineMode.DIALOG ||
+        GameState.CutsceneManager?.active ||
+        GameState.CutsceneManager.conversationEpoch !== epoch
+      ){
         return ActionStatus.COMPLETE;
       }
     }

@@ -64,16 +64,27 @@ describe("resolveDialogStartOwner", () => {
     expect(resolveDialogStartOwner(bastila, door)).toBe(door);
   });
 
-  it("uses the player when the player begins conversation", () => {
-    expect(resolveDialogStartOwner(player, door)).toBe(player);
+  it("uses the NPC when the player is the BeginConversation caller (Trask→PC)", () => {
+    // Retail: caller==player reassigns StartDialog owner to the listener
+    expect(resolveDialogStartOwner(player, npc)).toBe(npc);
   });
 
-  it("uses a non-party NPC caller as dialog owner", () => {
+  it("uses the caller when the listener is the player (click NPC / Deadeye)", () => {
     expect(resolveDialogStartOwner(npc, player)).toBe(npc);
+    expect(resolveDialogStartOwner(door, player)).toBe(door);
   });
 
-  it("uses a door caller as dialog owner", () => {
-    expect(resolveDialogStartOwner(door, player)).toBe(door);
+  it("uses the caller when both are the player", () => {
+    expect(resolveDialogStartOwner(player, player)).toBe(player);
+  });
+
+  it("uses a non-party NPC caller when listener is not the player", () => {
+    const other = mockCreature({ id: 5, isPlayer: false, isPM: false });
+    expect(resolveDialogStartOwner(npc, other)).toBe(npc);
+  });
+
+  it("uses a door caller when listener is not the player", () => {
+    expect(resolveDialogStartOwner(door, bastila)).toBe(door);
   });
 });
 

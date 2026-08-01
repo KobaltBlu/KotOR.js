@@ -473,8 +473,14 @@ export class IngameControls {
 
               if(GameState.CursorManager.selectedObject == moduleObject && distance <= distanceThreshold){
                 if(typeof moduleObject.onClick === 'function'){
-                  GameState.getCurrentPlayer().clearAllActions();
-                  moduleObject.onClick(GameState.getCurrentPlayer());
+                  // Retail case-2 attack → AddAttackActions(clear=0) appends with no
+                  // ClearAllActions. Only clear the action queue when not already
+                  // fighting (exploration → combat), matching ActionManager(1).
+                  const pc = GameState.getCurrentPlayer();
+                  if(!pc.combatData?.combatState){
+                    pc.clearAllActions(true);
+                  }
+                  moduleObject.onClick(pc);
                 }else{
                   let distance = GameState.getCurrentPlayer().position.distanceTo(moduleObject.position);
                   if(distance > 1.5){

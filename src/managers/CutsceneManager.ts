@@ -48,6 +48,12 @@ import { ConfigClient } from "@/utility/ConfigClient";
 export class CutsceneManager {
 
   static active: boolean = false;
+  /**
+   * Incremented each time startConversation commits (including bark one-liners
+   * that end immediately). ActionDialogObject uses this so OnDialog →
+   * BeginConversation bark is not double-started on fallthrough.
+   */
+  static conversationEpoch: number = 0;
   /** Retail CSWSDialog pseudo-random camera angle state (@ 0059f220 / 005a13d0). */
   static dialogCameraPrng: DialogPseudoRandomState | undefined;
   /** When true, conversation is private (scripted bPrivateConversation). */
@@ -351,6 +357,7 @@ export class CutsceneManager {
     this.pendingPartyDialogSwitch = undefined;
 
     this.active = true;
+    this.conversationEpoch++;
     this.privateConversation = !!privateConversation;
     this.setDialogNonDependantNames(ignoreObjectNames);
     this.barkScreenX = typeof barkScreenX === 'number' ? barkScreenX : -1;

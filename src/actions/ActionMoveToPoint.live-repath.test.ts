@@ -24,7 +24,16 @@ jest.mock("@/GameState", () => ({
     module: { area: { id: 1 } },
     ActionFactory: {},
     ModuleObjectManager: {
-      GetObjectById: (id: number) => (id === 2 ? { id: 2 } : undefined),
+      GetObjectById: (id: number) => {
+        if(id === 2){
+          return {
+            id: 2,
+            position: { x: 1.174, y: 0, z: 0 },
+            isDead: () => false,
+          };
+        }
+        return undefined;
+      },
     },
     PartyManager: { party: [] },
   },
@@ -46,8 +55,8 @@ jest.mock("@/engine/pathfinding/inter-area-path", () => ({
 
 jest.mock("@/utility/BitWise", () => ({
   BitWise: {
-    InstanceOfObject: () => true,
-    InstanceOf: () => true,
+    InstanceOfObject: (value: unknown) => typeof value === "object" && value !== null,
+    InstanceOf: (value: unknown) => typeof value === "object" && value !== null,
   },
 }));
 
@@ -55,8 +64,15 @@ jest.mock("@/combat/attack-range", () => ({
   getPathPersonalSpace: () => 0.5,
 }));
 
+const mockIsInUseRange = jest.fn(() => false);
+
+jest.mock("@/actions/use-range", () => ({
+  isInUseRange: (...args: unknown[]) => mockIsInUseRange(...args),
+}));
+
 import { ActionMoveToPoint } from "@/actions/ActionMoveToPoint";
 import { ActionParameterType } from "@/enums/actions/ActionParameterType";
+import { ActionStatus } from "@/enums/actions/ActionStatus";
 import { PlotPathCode } from "@/engine/pathfinding/plot-path";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
@@ -64,6 +80,8 @@ describe("ActionMoveToPoint live-chase repath", () => {
   beforeEach(() => {
     mockPlotPath.mockReset();
     mockWalkUpdate.mockReset();
+    mockIsInUseRange.mockReset();
+    mockIsInUseRange.mockReturnValue(false);
     mockWalkUpdate.mockReturnValue(1);
     mockPlotPath.mockReturnValue({
       code: PlotPathCode.Ready,
@@ -231,5 +249,52 @@ describe("ActionMoveToPoint live-chase repath", () => {
 
     expect(mockWalkUpdate).toHaveBeenCalled();
     expect((action as { computedPath?: unknown }).computedPath).toBeUndefined();
+  });
+
+  it("completes live chase when isInUseRange even if dist > param range", () => {
+    // end_m01aa k_pend_traskdl40: WalkUpdate early-outs at use.range+0.1 while
+    // MoveToPoint used only param-6 — hung PauseConversation forever.
+    const owner = {
+      id: 1,
+      position: new THREE.Vector3(0, 0, 0),
+      rotation: { z: 0 },
+      area: {
+        id: 1,
+        getNearestWalkablePoint: (p: THREE.Vector3) => p.clone(),
+        isPointWalkable: () => true,
+      },
+      walkSpeedFactor: 1,
+      locomotionScale: 1,
+      movementSpeed: 1,
+      helperColor: 0,
+      setComputedPath: jest.fn(),
+      getComputedPath: jest.fn(),
+      clearLocomotionState: jest.fn(),
+      setFacing: jest.fn(),
+      setAnimationState: jest.fn(),
+      getWalkSpeed: () => 1.7,
+      getRunSpeed: () => 5.4,
+      openSpot: undefined,
+      force: 0,
+      speed: 0,
+      animState: 0,
+      collisionTimer: 0,
+      blockingTimer: 0,
+    } as unknown as ModuleCreature;
+
+    mockIsInUseRange.mockReturnValue(true);
+
+    const action = new ActionMoveToPoint();
+    action.setOwner(owner);
+    action.setParameter(0, ActionParameterType.FLOAT, 1.174);
+    action.setParameter(1, ActionParameterType.FLOAT, 0);
+    action.setParameter(2, ActionParameterType.FLOAT, 0);
+    action.setParameter(3, ActionParameterType.DWORD, 1);
+    action.setParameter(4, ActionParameterType.DWORD, 2);
+    action.setParameter(5, ActionParameterType.INT, 1);
+    action.setParameter(6, ActionParameterType.FLOAT, 1.1);
+
+    expect(action.update(1 / 60)).toBe(ActionStatus.COMPLETE);
+    expect(mockIsInUseRange).toHaveBeenCalled();
   });
 });

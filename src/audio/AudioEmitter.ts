@@ -79,6 +79,11 @@ export class AudioEmitter {
   /** Held for sequenced/looping playback (start/playNextSound). */
   currentVoiceId: number = undefined;
   currentSound: AudioBufferSourceNode = undefined;
+  /**
+   * Bumped on each playStreamWave call so in-flight async loads that lose the
+   * race do not start orphan BufferSources (bark/dialog VO pile-up).
+   */
+  private streamWaveGeneration: number = 0;
   buffers: Map<string, AudioBuffer> = new Map<string, AudioBuffer>();
   channel: AudioEngineChannel = AudioEngineChannel.SFX;
   type: AudioEmitterType = AudioEmitterType.GLOBAL;
@@ -681,6 +686,7 @@ export class AudioEmitter {
   }
 
   async playStreamWave(resRef =''): Promise<AudioBufferSourceNode> {
+    const generation = ++this.streamWaveGeneration;
     this.disposeCurrentSound();
     this.releaseCurrentVoice();
 
@@ -697,19 +703,27 @@ export class AudioEmitter {
     }
 
     const begin = (buffer: AudioBuffer) => {
+      if(generation !== this.streamWaveGeneration){
+        // Newer playStreamWave already released our voice at call start.
+        return;
+      }
       if(!this.mainNode){
         console.warn('AudioEmitter', 'playStreamWave: mainNode not loaded', resRef);
         this.releaseCurrentVoice();
         return;
       }
+      // Drop any source that slipped in while we were awaiting load.
+      this.disposeCurrentSound();
       this.currentSound = this.engine.audioCtx.createBufferSource();
       this.currentSound.buffer = buffer;
       (this.currentSound as any).name = resRef;
       this.currentSound.start(this.engine.audioCtx.currentTime);
       this.currentSound.connect(this.mainNode);
       this.currentSound.onended = () => {
-        this.releaseCurrentVoice();
-        this.currentSound = null;
+        if(generation === this.streamWaveGeneration){
+          this.releaseCurrentVoice();
+          this.currentSound = null;
+        }
       };
       return this.currentSound;
     };
@@ -722,17 +736,27 @@ export class AudioEmitter {
     //load from disk
     try{
       const data = await AudioLoader.LoadStreamWave(resRef);
+      if(generation !== this.streamWaveGeneration){
+        return;
+      }
       try{
         const buffer = await this.addSound(resRef, data);
+        if(generation !== this.streamWaveGeneration){
+          return;
+        }
         return begin(buffer);
       }catch(e: any){
-        console.log('AudioEmitter', 'Sound not added to emitter', resRef);
-        this.releaseCurrentVoice();
+        if(generation === this.streamWaveGeneration){
+          console.log('AudioEmitter', 'Sound not added to emitter', resRef);
+          this.releaseCurrentVoice();
+        }
         throw e;
       }
     }catch(e){
-      console.log('AudioEmitter', 'Failed to locate StreamWave', resRef);
-      this.releaseCurrentVoice();
+      if(generation === this.streamWaveGeneration){
+        console.log('AudioEmitter', 'Failed to locate StreamWave', resRef);
+        this.releaseCurrentVoice();
+      }
       throw e;
     }
   }

@@ -28,6 +28,8 @@ export class InGameBark extends GameMenu {
 
   audioNode: AudioBufferSourceNode;
   currentEntry: DLGNode;
+  /** Cancels in-flight playStreamWave callbacks when a newer bark replaces them. */
+  private barkAudioGeneration: number = 0;
 
   constructor(){
     super();
@@ -60,18 +62,9 @@ export class InGameBark extends GameMenu {
       return;
     }
 
+    const audioGeneration = ++this.barkAudioGeneration;
     this.resetCurrentEntryLIP();
-
-    //reset the last audioNode
-    if(this.audioNode){
-      this.audioNode.onended = undefined;
-      try {
-        this.audioNode.stop(0);
-      } catch {
-        // Source may already be stopped.
-      }
-      this.audioNode = undefined;
-    }
+    this.stopBarkAudio();
 
     if(entry.dialog){
       entry.initProperties();
@@ -105,12 +98,24 @@ export class InGameBark extends GameMenu {
       console.log('lip', entry.getVoiceResRef());
       void entry.loadLIP();
       GameState.CutsceneManager.audioEmitter.playStreamWave(entry.getVoiceResRef()).then((audioNode) => {
+        if(audioGeneration !== this.barkAudioGeneration){
+          try { audioNode?.stop?.(0); } catch { /* superseded */ }
+          return;
+        }
+        if(!audioNode){
+          this.bHasAudio = false;
+          this.bAudioPlayed = true;
+          return;
+        }
         this.audioNode = audioNode;
         this.bHasAudio = true;
         audioNode.onended = () => {
-          this.bAudioPlayed = true;
+          if(audioGeneration === this.barkAudioGeneration){
+            this.bAudioPlayed = true;
+          }
         };
-      }).catch((e) => {
+      }).catch(() => {
+        if(audioGeneration !== this.barkAudioGeneration){ return; }
         this.bHasAudio = false;
         this.bAudioPlayed = true;
       });
@@ -155,15 +160,24 @@ export class InGameBark extends GameMenu {
 
   close(){
     super.close();
-    if(this.audioNode){
-      this.audioNode.onended = undefined;
-      this.audioNode = undefined;
-    }
+    this.barkAudioGeneration++;
+    this.stopBarkAudio();
     this.resetCurrentEntryLIP();
     this.currentEntry = undefined;
     this.bHasAudio = false;
     this.bAudioPlayed = false;
     this.barkTimer = 0;
+  }
+
+  stopBarkAudio(){
+    if(!this.audioNode){ return; }
+    this.audioNode.onended = undefined;
+    try {
+      this.audioNode.stop(0);
+    } catch {
+      // Source may already be stopped.
+    }
+    this.audioNode = undefined;
   }
 
   resetCurrentEntryLIP(){

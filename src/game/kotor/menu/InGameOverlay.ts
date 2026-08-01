@@ -594,13 +594,16 @@ export class InGameOverlay extends GameMenu {
    * Retail CSWGuiMainInterface::ClearAllActions @ 006887d0
    * (OnClearAllButtonPressed / CancleCombat keymap).
    * Client SetCombatMode(0) → restore combat camera, then ClearAllActions(1)
-   * + RemoveAllActions (via clearAllActions). Does not CancelCombat / SetCombatState(0).
+   * + RemoveAllActions (server ClearAllActions path). Does not CancelCombat /
+   * SetCombatState(0).
    */
   onClearAllButtonPressed() {
     const oPC = GameState.getCurrentPlayer();
     if(!oPC) return;
     FollowerCamera.setCombatCameraActive(false);
     oPC.clearAllActions(true);
+    // Retail CServerExoApp::ClearAllActions also RemoveAllActions on the round.
+    oPC.combatRound?.clearActions?.();
   }
 
   /**
@@ -1520,8 +1523,12 @@ export class InGameOverlay extends GameMenu {
   triggerControllerAPress() {
     if (GameState.CursorManager.selectedObject) {
       if (typeof GameState.CursorManager.selectedObject.onClick === 'function') {
-        GameState.getCurrentPlayer().clearAllActions();
-        GameState.CursorManager.selectedObject.onClick(GameState.getCurrentPlayer());
+        const pc = GameState.getCurrentPlayer();
+        // Retail AddAttackActions(clear=0) while fighting — do not ClearAllActions.
+        if (!pc.combatData?.combatState) {
+          pc.clearAllActions(true);
+        }
+        GameState.CursorManager.selectedObject.onClick(pc);
       } else {
         let distance = GameState.getCurrentPlayer().position.distanceTo(GameState.CursorManager.selectedObject.position);
         if (distance > 1.5) {
