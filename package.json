@@ -21,6 +21,7 @@
     "export-dlg-json": "tsx scripts/export-dlg-json.ts",
     "typedoc": "typedoc --out ./wiki ./src/KotOR.ts",
     "test": "jest --verbose --coverage --no-cache ./src/tests",
+    "test:pathing": "jest --config jest.pathing.config.js --coverage=false --no-cache",
     "test:upgrade": "jest --config jest.upgrade.config.js --no-cache"
   },
   "author": "KobaltBlu",

@@ -24,6 +24,8 @@ module.exports = {
     '<rootDir>/src/audio/MGTrackFollowerAudio.test.ts',
     '<rootDir>/src/audio/ModuleMiniGame.music.test.ts',
     '<rootDir>/src/module/ModuleMiniGame.swoop-steer.test.ts',
+    '<rootDir>/src/module/ModuleMiniGame.swoop-render.test.ts',
+    '<rootDir>/src/module/ModuleMGPlayer.swoop-start.test.ts',
     '<rootDir>/src/module/ModuleMiniGame.turret-m12ab.test.ts',
     '<rootDir>/src/nwscript/NWScriptVectorStack.test.ts',
     '<rootDir>/src/audio/AudioEmitter.Continuous.test.ts',
