@@ -237,18 +237,13 @@ describe("ActionMoveToPoint live-chase repath", () => {
     action.target_position.set(5, 0, 0);
 
     action.calculatePath();
-    const result = (action as any).stepWalkUpdate(
-      owner,
-      path.points[0].vector,
-      true,
-      1 / 60
-    );
-    if(result === 3){
-      (action as any).syncBlockedComputedPath(owner);
-    }
+    // Full update path: BLOCKED clears owner path, syncs undefined onto the
+    // action — must not throw on computedPath.timer (quickWalk crash).
+    const status = action.update(1 / 60);
 
     expect(mockWalkUpdate).toHaveBeenCalled();
     expect((action as { computedPath?: unknown }).computedPath).toBeUndefined();
+    expect(status).toBe(ActionStatus.IN_PROGRESS);
   });
 
   it("completes live chase when isInUseRange even if dist > param range", () => {

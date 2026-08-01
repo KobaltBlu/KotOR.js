@@ -172,12 +172,16 @@ export class ActionMoveToPoint extends Action {
         this.syncBlockedComputedPath(owner);
       }
 
-      if(this.computedPath.timer < 0){
-        if(this.computedPath.realtime){
-          this.setComputedPath(undefined);
+      // WalkUpdate may clear the owner path on hard block (6 fails) — sync leaves
+      // computedPath undefined; skip timer until next frame replot.
+      if(this.computedPath){
+        if(this.computedPath.timer < 0){
+          if(this.computedPath.realtime){
+            this.setComputedPath(undefined);
+          }
+        }else{
+          this.computedPath.timer -= 10*delta;
         }
-      }else{
-        this.computedPath.timer -= 10*delta;
       }
 
       // Retail AddMoveToPointAction: timeout 0 = no Jump; >0 = ForceMove countdown.
