@@ -3955,7 +3955,7 @@ export class ModuleCreature extends ModuleObject {
     for(let i = 0; i < slots.length; i++){
       if(this.equipment[slots[i]]?.isDropable?.()) return true;
     }
-    return !!this.inventory.length;
+    return false;
   }
 
   /** Whether the player can loot this corpse (hostile, selectable dead, or linked bag). */
@@ -7421,11 +7421,9 @@ export class ModuleCreature extends ModuleObject {
             let strt = equipment[i];
             let equipped_item = undefined;
             let slot_type = strt.type;
-            if(strt.hasField('EquippedRes')){
-              equipped_item = new GameState.Module.ModuleArea.ModuleItem(strt.getFieldByLabel('EquippedRes').getValue());
-            }else{
-              equipped_item = new GameState.Module.ModuleArea.ModuleItem(GFFObject.FromStruct(strt));
-            }
+            // Always FromStruct so Equip_ItemList Dropable/Pickpocketable survive UTI merge
+            // (retail ReadItemsFromGff: LoadFromTemplate then re-apply Dropable from the struct).
+            equipped_item = new GameState.Module.ModuleArea.ModuleItem(GFFObject.FromStruct(strt));
             
             switch(slot_type){
               case ModuleCreatureArmorSlot.HEAD:

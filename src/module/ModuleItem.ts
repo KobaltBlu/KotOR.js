@@ -227,9 +227,12 @@ export class ModuleItem extends ModuleObject {
     return itemType === 0x27 || itemType === 0x28 || itemType === 0x29;
   }
 
-  /** Whether this item should be transferred into a body bag. */
+  /**
+   * Whether this item should be transferred into a body bag.
+   * Retail CSWSItem Dropable bit (flags & 8): missing field defaults to 0 (not droppable).
+   */
   isDropable(): boolean {
-    return this.dropable === undefined || this.dropable === null ? true : !!this.dropable;
+    return !!this.dropable;
   }
 
   hasKeen(): boolean {
@@ -857,6 +860,28 @@ export class ModuleItem extends ModuleObject {
   }
 
   load(){
+    // Retail CSWSItem::LoadItem: LoadFromTemplate then re-apply instance Dropable /
+    // Pickpocketable from the Equip_ItemList / ItemList struct (default 0 if absent).
+    const hadDropable = this.template?.RootNode?.hasField('Dropable');
+    const instanceDropable = hadDropable
+      ? this.template.getFieldByLabel('Dropable').getValue()
+      : undefined;
+    const hadPickpocketable = this.template?.RootNode?.hasField('Pickpocketable');
+    const instancePickpocketable = hadPickpocketable
+      ? this.template.getFieldByLabel('Pickpocketable').getValue()
+      : undefined;
+    const applyInstanceFlags = () => {
+      if(hadDropable){
+        this.dropable = instanceDropable;
+      }else if(this.getEquippedRes() || this.getInventoryRes()){
+        // Template-resref inventory/equip entries: missing Dropable → not droppable
+        this.dropable = 0;
+      }
+      if(hadPickpocketable){
+        this.pickpocketable = instancePickpocketable;
+      }
+    };
+
     if(!this.loaded && this.getEquippedRes()){
       //Load template and merge fields
       const buffer = ResourceLoader.loadCachedResource(ResourceTypes['uti'], this.getEquippedRes());
@@ -864,11 +889,13 @@ export class ModuleItem extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();
+        applyInstanceFlags();
         return true;
       }else{
         console.error('Failed to load ModuleItem template');
         if(this.template instanceof GFFObject){
           this.initProperties();
+          applyInstanceFlags();
         }
         return false;
       }
@@ -879,11 +906,13 @@ export class ModuleItem extends ModuleObject {
         const gff = new GFFObject(buffer);
         this.template.merge(gff);
         this.initProperties();
+        applyInstanceFlags();
         return true;
       }else{
         console.error('Failed to load ModuleItem template');
         if(this.template instanceof GFFObject){
           this.initProperties();
+          applyInstanceFlags();
         }
         return false;
       }
@@ -1094,8 +1123,11 @@ export class ModuleItem extends ModuleObject {
     if(this.template.RootNode.hasField('Description'))
       this.description = this.template.getFieldByLabel('Description').getCExoLocString();
 
+    // Retail LoadDataFromGff / ReadItemsFromGff: Dropable BYTE default 0
     if(this.template.RootNode.hasField('Dropable'))
       this.dropable = this.template.getFieldByLabel('Dropable').getValue();
+    else if(this.dropable === undefined || this.dropable === null)
+      this.dropable = 0;
       
     if(this.template.RootNode.hasField('EquippedRes'))
       this.equippedRes = this.template.getFieldByLabel('EquippedRes').getValue();
@@ -1297,7 +1329,7 @@ export class ModuleItem extends ModuleObject {
       itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot4') ).setValue(this.upgradeSlot4 == -1 ? 255 : this.upgradeSlot4);
       itemStruct.addField( new GFFField(GFFDataType.BYTE, 'UpgradeSlot5') ).setValue(this.upgradeSlot5 == -1 ? 255 : this.upgradeSlot5);
     }
-    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Dropable') ).setValue(this.dropable);
+    itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Dropable') ).setValue(this.isDropable() ? 1 : 0);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Pickpocketable') ).setValue(this.pickpocketable ? 1 : 0);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'ModelVariation') ).setValue(this.modelVariation);
     // Retail SaveItem: BodyVariation + TextureVar only when baseitems.modeltype == 1
