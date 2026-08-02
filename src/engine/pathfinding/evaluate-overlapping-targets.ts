@@ -37,8 +37,12 @@ export function evaluateOverlappingTargets(
   const distSq = dx * dx + dy * dy;
   const r2 = combinedRadius * combinedRadius;
 
-  // Already intersecting the start point → soft allow (stacked at origin)
-  if(distSq < r2){
+  // Already intersecting the start point → soft allow (stacked at origin).
+  // Include exact boundary (and a tiny epsilon): exact creperspace contact must
+  // soft-clear or WalkUpdate probes stay blocked while PlotPathAroundCreature
+  // re-splices without advancing (stunt12 Malak vs bridge officer).
+  const eps = 1e-3;
+  if(distSq <= r2 + eps){
     return { allow: true };
   }
 

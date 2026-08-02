@@ -172,7 +172,11 @@ export function walkUpdateLocation(
               creature.locomotionScale = savedScale;
               return DriveUpdateResult.BLOCKED;
             }
-            // Retail PlotPathAroundCreature fail → PauseReady, stay put (@ 00516630)
+            // Retail PlotPathAroundCreature return 0 → PauseReady + ResetAtEndOfPath
+            // via WalkUpdateLocationDistance return-1 / ARRIVED (@ 00516630).
+            // Clearing here drops a poisoned path (e.g. FindEntryAndExit miss) so
+            // ActionMoveToPoint replots instead of walking a stale far waypoint.
+            creature.setComputedPath?.(undefined);
             creature.setAnimationState?.(ModuleCreatureAnimState.PAUSE);
             creature.locomotionScale = savedScale;
             creature.blockingTimer = (creature.blockingTimer || 0) + 1;

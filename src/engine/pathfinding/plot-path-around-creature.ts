@@ -273,6 +273,13 @@ function scoreArc(
 
 /**
  * Try to detour around blocker. Returns splice result + optional enemy on arc.
+ *
+ * Retail CAvoidCreature::PlotPathAroundCreature @ 005d0840: FindEntryAndExit
+ * miss → return 0 (no splice). We pop consumed waypoints (retail keeps them and
+ * advances field33), so the remaining path may be only the destination while the
+ * blocker sits on the creature→dest segment. Prepend the live position for
+ * FindEntryAndExit / splice so that segment is visible — still fail closed when
+ * entry/exit cannot be resolved (no distance fallback; that grew paths unboundedly).
  */
 export function plotPathAroundCreature(
   creature: ModuleCreature,
@@ -302,44 +309,26 @@ export function plotPathAroundCreature(
     return { spliced: false };
   }
 
-  const ee = findEntryAndExit(path.points, hex);
-  let entryIdx: number;
-  let exitIdx: number;
-  let from: THREE.Vector3;
-  let to: THREE.Vector3;
-  let startHex = 0;
+  // Retail FindEntryAndExit walks the full paths_ array (unconsumed prefix kept).
+  // After ComputedPath.pop(), prepend live position when the next waypoint is not
+  // already at the creature so creature→dest can intersect the hex.
+  const head = path.points[0].vector;
+  const headDistSq =
+    (head.x - creature.position.x) ** 2 + (head.y - creature.position.y) ** 2;
+  const prependPos = headDistSq > 0.25; // > 0.5m — not the same as arriveAtPoint
+  const workPoints: { vector: THREE.Vector3 }[] = prependPos
+    ? [{ vector: creature.position.clone() }, ...path.points]
+    : path.points;
 
-  if(ee){
-    entryIdx = ee.entryPathIdx;
-    exitIdx = ee.exitPathIdx;
-    from = ee.entryPoint;
-    to = ee.exitPoint;
-    startHex = ee.entryHexEdge;
-  }else{
-    // Distance fallback when no segment×edge hit
-    entryIdx = 0;
-    exitIdx = path.points.length - 1;
-    const blockerDist = (v: THREE.Vector3) =>
-      (v.x - blocker.position.x) ** 2 + (v.y - blocker.position.y) ** 2;
-    for(let i = 0; i < path.points.length; i++){
-      if(blockerDist(path.points[i].vector) < r * r){
-        entryIdx = Math.max(0, i - 1);
-        break;
-      }
-    }
-    for(let i = path.points.length - 1; i >= 0; i--){
-      if(blockerDist(path.points[i].vector) < r * r){
-        exitIdx = Math.min(path.points.length - 1, i + 1);
-        break;
-      }
-    }
-    if(exitIdx <= entryIdx){
-      exitIdx = Math.min(path.points.length - 1, entryIdx + 1);
-    }
-    from = path.points[entryIdx].vector;
-    to = path.points[exitIdx].vector;
+  // Retail: FindEntryAndExit == 0 → return 0 (do not splice)
+  const ee = findEntryAndExit(workPoints, hex);
+  if(!ee){
+    return { spliced: false };
   }
 
+  const from = ee.entryPoint;
+  const to = ee.exitPoint;
+  const startHex = ee.entryHexEdge;
   const ignoreIds = [blocker.id];
 
   // Prefer arcs starting at entry hex edge; also score cands for fallback
@@ -370,7 +359,7 @@ export function plotPathAroundCreature(
   const best = cands[0].idx;
 
   // Dual FindPath: CW and CCW — pick higher IsPathClear score (retail uVar10 vs uVar9)
-  const endEdge = ee?.exitHexEdge ?? best;
+  const endEdge = ee.exitHexEdge ?? best;
   const arcs = [
     buildArcBetween(hex, best, endEdge, 1),
     buildArcBetween(hex, best, endEdge, -1),
@@ -399,17 +388,47 @@ export function plotPathAroundCreature(
     foundEnemyId = single.blockingCreatureId;
   }
 
-  const before = path.points.slice(0, entryIdx + 1);
-  const after = path.points.slice(exitIdx);
+  // Map workPoints indices back onto path.points (skip synthetic prepend at 0).
+  // Retail InsertPathSegmentBetween: keep [0..entry] + arc + [exit..end].
+  if(ee.exitPathIdx <= ee.entryPathIdx){
+    return { spliced: false };
+  }
+
+  const oldFirst = path.points[0].vector.clone();
+  const lenBefore = path.points.length;
+
+  let before: PathPoint[];
+  let after: PathPoint[];
+  if(prependPos){
+    // work[0] = live position (dropped); work[i]=path[i-1]
+    before = ee.entryPathIdx <= 0 ? [] : path.points.slice(0, ee.entryPathIdx);
+    after = path.points.slice(Math.max(0, ee.exitPathIdx - 1));
+  }else{
+    before = path.points.slice(0, ee.entryPathIdx + 1);
+    after = path.points.slice(ee.exitPathIdx);
+  }
+
   const mid = bestArc.map((v) => {
     const p = PathPoint.FromVector3(v);
     p.setArea(creature.area);
     return p;
   });
-  path.points = before.concat(mid, after);
-  if(path.points.length){
-    path.points[path.points.length - 1].end = true;
+  const next = before.concat(mid, after);
+  if(!next.length){
+    return { spliced: false };
   }
+
+  // Reject no-op growth: same next waypoint + longer path (stunt12 Malak cancer).
+  const newFirst = next[0].vector;
+  if(
+    next.length > lenBefore &&
+    (newFirst.x - oldFirst.x) ** 2 + (newFirst.y - oldFirst.y) ** 2 < 1e-6
+  ){
+    return { spliced: false };
+  }
+
+  path.points = next;
+  path.points[path.points.length - 1].end = true;
 
   let foundEnemyOnPath: ModuleCreature | undefined;
   if(foundEnemyId != null && creature.area?.creatures){

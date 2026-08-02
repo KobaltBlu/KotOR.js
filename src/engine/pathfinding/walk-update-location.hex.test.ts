@@ -114,7 +114,7 @@ describe("walkUpdateLocation mid-step hex (G2)", () => {
     expect(owner.pathBlockFailCount).toBe(0); // reset on successful splice
   });
 
-  it("pauses without drive when hex fails (retail PlotPathAroundCreature miss)", () => {
+  it("pauses and clears path when hex fails (retail PlotPathAroundCreature miss)", () => {
     noCreaturesMock.mockReturnValue({ clear: false, blockingCreatureId: 9 });
     bumpFriendsMock.mockReturnValue(false);
     plotHexMock.mockReturnValue({ spliced: false });
@@ -123,6 +123,7 @@ describe("walkUpdateLocation mid-step hex (G2)", () => {
 
     expect(plotHexMock).toHaveBeenCalledTimes(1);
     expect(owner.setAnimationState).toHaveBeenCalled();
+    expect(owner.setComputedPath).toHaveBeenCalledWith(undefined);
     expect(owner.pathBlockFailCount).toBe(1);
   });
 
