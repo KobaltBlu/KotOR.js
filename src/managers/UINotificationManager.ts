@@ -1,4 +1,5 @@
 import { UIIconTimerType } from "@/enums/engine/UIIconTimerType";
+import { GameState } from "@/GameState";
 
 const UI_TIMER_DURATION = 10;
 
@@ -25,6 +26,11 @@ export class UINotificationManager {
   static bNotificationSoundQueued: boolean = false;
 
   static EnableUINotificationIconType(type: UIIconTimerType) {
+    // Save restore re-adds inventory / party state through the same acquire
+    // paths as gameplay — do not flash Item Given / Lost / etc. during load.
+    if(GameState.isLoadingSave){
+      return;
+    }
     this.bNotificationSoundQueued = true;
     switch(type) {
       case UIIconTimerType.ITEM_LOST:
