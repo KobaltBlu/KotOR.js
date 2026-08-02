@@ -246,7 +246,8 @@ export class GameMenu {
       this.backgroundVoidSprite.renderOrder = -6;
 
       // this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.0, 0.658824, 0.980392);
-      this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.10196078568697, 0.69803923368454, 0.549019634723663);
+      // Cool steel grey with a blue-metal hint (matches KotOR GUI panel metal).
+      this.backgroundVoidMaterial.uniforms.u_color.value.setRGB(0.42, 0.50, 0.60);
       this.backgroundVoidMaterial.depthTest = false;
       this.backgroundVoidMaterial.depthWrite = false;
       this.backgroundVoidMaterial.transparent = true;

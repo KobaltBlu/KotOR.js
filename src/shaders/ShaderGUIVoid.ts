@@ -4,10 +4,9 @@ import * as THREE from "three";
 /**
  * ShaderGUIVoid class.
  *
- * Fullscreen muted void behind menus that use voidFill.
- * Radial wash + legacy Perlin shimmer + nebula + soft stars, with an
- * extra slow smoke curl, film dust, and hairline scratches for variance.
- * Brightness stays gated by u_intensity / u_colorIntensity (retail-menu feel).
+ * Fullscreen ethereal void behind menus that use voidFill.
+ * Blue-metal grey Perlin fog, soft god rays, layered depth, and
+ * drifting luminous dust. Matches the cool steel of KotOR GUI panels.
  *
  * @file ShaderGUIVoid.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -28,114 +27,165 @@ export class ShaderGUIVoid extends Shader {
 
     #include <shadertoy_perlin>
 
-    // Soft point lights from high-power simplex peaks (no cell grid).
+    // Cool steel grey with a blue-metal hint (KotOR GUI panel feel).
+    const vec3 METAL = vec3( 0.42, 0.50, 0.60 );
+    const vec3 METAL_HI = vec3( 0.58, 0.66, 0.78 );
+
     float softStars( vec2 uv, float t ) {
-      float s1 = simplex3d( vec3( uv * 28.0, t * 0.15 ) );
-      float s2 = simplex3d( vec3( uv * 41.0 + 13.0, t * 0.11 + 3.0 ) );
+      vec2 farUv = uv * 0.85 + vec2( t * 0.0012, -t * 0.0008 );
+      float s1 = simplex3d( vec3( farUv * 26.0, t * 0.06 ) );
+      float s2 = simplex3d( vec3( farUv * 38.0 + 13.0, t * 0.045 + 3.0 ) );
       s1 = s1 * 0.5 + 0.5;
       s2 = s2 * 0.5 + 0.5;
-      float twinkle = 0.7 + 0.3 * sin( t * 1.7 + s1 * 20.0 );
-      return ( pow( s1, 18.0 ) * 0.7 + pow( s2, 22.0 ) * 0.9 ) * twinkle;
+      float twinkle = 0.8 + 0.2 * sin( t * 0.85 + s1 * 14.0 );
+      return ( pow( s1, 19.0 ) * 0.55 + pow( s2, 24.0 ) * 0.75 ) * twinkle;
     }
 
-    vec3 mutedNebula( vec2 uv, float t, vec3 tint ) {
-      vec3 pSlow = vec3( uv * vec2( 1.2, 1.8 ) + vec2( t * 0.012, -t * 0.008 ), t * 0.025 );
-      vec3 pMid  = vec3( uv * vec2( 2.4, 3.4 ) + vec2( -t * 0.02, t * 0.012 ), t * 0.04 );
-      vec3 pFine = vec3( uv * 5.5 + vec2( t * 0.025, t * 0.012 ), t * 0.05 );
+    // Stronger multi-octave Perlin fog in blue-metal grey.
+    vec3 metalFog( vec2 uv, float t ) {
+      vec3 pFar = vec3( uv * vec2( 0.85, 1.25 ) + vec2( t * 0.006, -t * 0.004 ), t * 0.018 );
+      vec3 pMid = vec3( uv * vec2( 1.6, 2.3 ) + vec2( -t * 0.014, t * 0.009 ), t * 0.028 );
+      vec3 pNear = vec3( uv * vec2( 2.8, 3.6 ) + vec2( t * 0.02, t * 0.012 ), t * 0.04 );
 
-      float n1 = simplex3d_fractal( pSlow * 1.1 + 3.0 );
-      float n2 = simplex3d_fractal( pMid + 7.0 );
-      float n3 = simplex3d( pFine * rot1 + 11.0 );
+      float far = simplex3d_fractal( pFar * 2.0 + 2.0 );
+      float mid = simplex3d_fractal( pMid * 2.6 + 6.0 );
+      float near = simplex3d( pNear * rot1 + 10.0 );
 
-      n1 = n1 * 0.5 + 0.5;
-      n2 = n2 * 0.5 + 0.5;
-      n3 = n3 * 0.5 + 0.5;
+      far = far * 0.5 + 0.5;
+      mid = mid * 0.5 + 0.5;
+      near = near * 0.5 + 0.5;
 
-      float ridge = 1.0 - abs( n2 * 2.0 - 1.0 );
-      ridge = pow( ridge, 2.8 );
+      float ridge = pow( 1.0 - abs( mid * 2.0 - 1.0 ), 2.4 );
 
-      float density = smoothstep( 0.32, 0.8, n1 );
-      density *= mix( 0.3, 1.0, ridge );
+      float dFar = smoothstep( 0.28, 0.78, far );
+      float dMid = smoothstep( 0.32, 0.8, mid ) * mix( 0.35, 1.0, ridge );
+      float dNear = smoothstep( 0.45, 0.85, near ) * 0.45;
 
-      vec3 deep = vec3( 0.0 );
-      vec3 mid = tint * 0.55;
-      vec3 hot = mix( tint, vec3( 0.85 ), 0.25 ) * 0.75;
+      float density = dFar * 0.55 + dMid * 0.7 + dNear * 0.35;
+      density = clamp( density, 0.0, 1.0 );
 
-      vec3 col = mix( deep, mid, density );
-      col = mix( col, hot, ridge * density * 0.55 );
-      col += tint * pow( n3, 10.0 ) * 0.16;
-      return col;
+      vec3 col = mix( METAL * 0.35, METAL, density );
+      col = mix( col, METAL_HI, ridge * dMid * 0.55 );
+      col += METAL_HI * pow( near, 8.0 ) * 0.12;
+      return col * density;
     }
 
-    // Extra low-contrast smoke layer for slow large-scale variance.
     float smokeCurl( vec2 uv, float t ) {
-      vec3 p3 = vec3( uv + vec2( t * 0.008, -t * 0.005 ), t * 0.02 );
-      float smoke = simplex3d_fractal( p3 * 3.5 + 4.0 );
+      vec3 p3 = vec3( uv + vec2( t * 0.006, -t * 0.004 ), t * 0.016 );
+      float smoke = simplex3d_fractal( p3 * 3.0 + 4.0 );
       smoke = smoke * 0.5 + 0.5;
-      return mix( 0.42, 0.58, smoke );
+      return mix( 0.46, 0.58, smoke );
     }
 
-    // Fine floating dust — continuous noise peaks, no cell grid.
-    float filmDust( vec2 uv, float t ) {
-      float grain = simplex3d( vec3( uv * 95.0, t * 0.35 ) );
-      grain = grain * 0.5 + 0.5;
-      float moteA = simplex3d( vec3( uv * 48.0 + vec2( t * 0.03, -t * 0.02 ), t * 0.2 ) );
-      float moteB = simplex3d( vec3( uv * 72.0 + vec2( -t * 0.025, t * 0.018 ) + 9.0, t * 0.28 ) );
-      moteA = pow( moteA * 0.5 + 0.5, 16.0 );
-      moteB = pow( moteB * 0.5 + 0.5, 20.0 );
-      return grain * 0.06 + moteA * 0.55 + moteB * 0.4;
+    // Soft volumetric god rays from an upper-center light well.
+    float godRays( vec2 uv, float t, float fogDensity ) {
+      // Light origin slightly above center (menu “sky”).
+      vec2 lightPos = vec2( 0.0, 0.28 );
+      vec2 delta = uv - lightPos;
+      float dist = length( delta );
+      float angle = atan( delta.y, delta.x );
+
+      // Shaft pattern — angular bands with slow drift.
+      float shafts = 0.0;
+      shafts += pow( max( 0.0, sin( angle * 10.0 + t * 0.15 ) ), 6.0 );
+      shafts += pow( max( 0.0, sin( angle * 16.0 - t * 0.11 + 1.7 ) ), 8.0 ) * 0.65;
+      shafts += pow( max( 0.0, sin( angle * 7.0 + t * 0.08 ) ), 4.0 ) * 0.4;
+      shafts = clamp( shafts, 0.0, 1.0 );
+
+      // Soften with fog so rays feel volumetric, not hard streaks.
+      float fogGate = mix( 0.35, 1.0, fogDensity );
+      float falloff = exp( -dist * 1.55 ) * smoothstep( 1.4, 0.05, dist );
+      // Slight noise break-up along the ray.
+      float breakUp = simplex3d( vec3( angle * 2.0, dist * 3.0, t * 0.05 ) );
+      breakUp = breakUp * 0.5 + 0.5;
+      breakUp = mix( 0.7, 1.15, breakUp );
+
+      return shafts * falloff * fogGate * breakUp;
     }
 
-    // Hairline film scratches — stretched simplex ridges.
-    float filmScratches( vec2 uv, float t ) {
-      // Mostly vertical streaks with a slow lateral drift.
-      vec2 sUv = vec2( uv.x * 78.0 + t * 0.04, uv.y * 1.15 );
-      float n1 = abs( simplex3d( vec3( sUv, 2.5 ) ) );
-      float line1 = pow( 1.0 - smoothstep( 0.0, 0.018, n1 ), 3.0 );
-      // Sparse gate so scratches don't cover the whole frame.
-      float gate1 = smoothstep( 0.55, 0.85, simplex3d( vec3( uv.x * 6.0, t * 0.08, 1.0 ) ) * 0.5 + 0.5 );
+    vec2 filmDust( vec2 uv, float t ) {
+      float core = 0.0;
+      float halo = 0.0;
 
-      // Occasional diagonal hairline.
-      vec2 dUv = vec2( ( uv.x + uv.y * 0.15 ) * 64.0 - t * 0.03, uv.y * 0.9 );
-      float n2 = abs( simplex3d( vec3( dUv, 7.0 ) ) );
-      float line2 = pow( 1.0 - smoothstep( 0.0, 0.014, n2 ), 4.0 );
-      float gate2 = smoothstep( 0.72, 0.92, simplex3d( vec3( uv.x * 4.0 + 3.0, t * 0.05, 4.0 ) ) * 0.5 + 0.5 );
+      for( int i = 0; i < 4; i++ ){
+        float fi = float( i );
+        float depthT = fi / 3.0;
+        float scale = 11.0 + fi * 9.0;
+        float speed = 0.012 + depthT * 0.038;
+        vec2 drift = vec2(
+          t * speed * ( i == 1 || i == 3 ? -1.0 : 1.0 ),
+          t * speed * 0.62 * ( i == 2 ? -1.0 : 1.0 )
+        );
+        vec2 pUv = uv * scale * mix( 0.75, 1.15, depthT ) + drift + vec2( fi * 7.3, fi * 4.1 );
 
-      return line1 * gate1 * 0.7 + line2 * gate2 * 0.45;
+        float n = simplex3d( vec3( pUv, fi * 2.3 ) );
+        n = n * 0.5 + 0.5;
+
+        float softness = mix( 6.5, 10.5, depthT );
+        float mote = pow( n, softness );
+        mote = smoothstep( mix( 0.06, 0.12, depthT ), 0.95, mote );
+
+        float id = simplex3d( vec3( pUv * 0.32 + 11.0, fi * 4.2 ) );
+        id = id * 0.5 + 0.5;
+        float brightness = mix( 0.2, 1.2, pow( id, 1.4 ) );
+        brightness *= mix( 0.35, 1.05, depthT );
+
+        float breathe = 0.78 + 0.22 * sin( t * ( 0.4 + depthT * 0.45 ) + id * 9.0 );
+        float layerGain = mix( 0.35, 0.7, depthT );
+        float lit = mote * brightness * breathe * layerGain;
+
+        core += lit;
+
+        float glowPow = mix( 3.2, 5.5, depthT );
+        float glow = pow( n, glowPow ) * brightness;
+        glow = smoothstep( 0.04, mix( 0.55, 0.7, depthT ), glow );
+        halo += glow * breathe * mix( 0.45, 0.22, depthT );
+      }
+
+      return vec2( clamp( core, 0.0, 1.6 ), clamp( halo, 0.0, 1.4 ) );
     }
 
     void main(){
-      // Soft radial wash (center tint).
       vec2 uv = 2.0 * gl_FragCoord.xy / u_resolution.xy - 1.0;
-      float Length = length( uv );
-      Length = 1.0 - smoothstep( Length, 0.0, 0.5 );
-      vec3 base = u_color * Length * u_colorIntensity;
+      float radial = length( uv );
+      float Length = 1.0 - smoothstep( radial, 0.0, 0.5 );
+      // Prefer metal palette; u_color still tints slightly.
+      vec3 washTint = mix( METAL, u_color, 0.25 );
+      vec3 base = washTint * Length * u_colorIntensity;
 
       vec2 p = gl_FragCoord.xy / max( u_resolution.x, 1.0 );
       float t = u_time;
 
-      // Legacy single-octave wash (familiar shimmer).
-      float value = simplex3d_fractal( vec3( p, t * 0.025 ) * 8.0 + 8.0 );
+      float centerGlow = exp( -radial * radial * 1.4 ) * 0.28;
+      float depthVignette = mix( 1.05, 0.7, smoothstep( 0.15, 1.35, radial ) );
+
+      float value = simplex3d_fractal( vec3( p, t * 0.018 ) * 6.5 + 8.0 );
       value = ( value + 0.5 ) * 0.5;
 
-      vec3 nebula = mutedNebula( p, t, u_color );
-      float stars = softStars( p + vec2( t * 0.003, -t * 0.002 ), t );
+      vec3 fog = metalFog( p, t );
+      float fogAmt = clamp( length( fog ) * 1.8, 0.0, 1.0 );
+      float stars = softStars( p, t );
       float smoke = smokeCurl( p, t );
-      float dust = filmDust( p, t );
-      float scratches = filmScratches( p, t );
+      float rays = godRays( uv, t, fogAmt );
+      vec2 dust = filmDust( p, t );
 
-      // Slight edge darkening so depth sits behind the panel.
-      float depth = mix( 1.0, 0.78, smoothstep( 0.4, 1.35, length( uv ) ) );
+      vec3 etherLift = mix( METAL, METAL_HI, 0.45 ) * ( centerGlow + value * 0.18 );
 
-      vec3 rgb = base + vec3( value ) * 0.65;
-      rgb += nebula * 0.55;
-      rgb += u_color * stars * 0.45;
-      // Smoke curl on top — additional large-scale disturbance.
-      rgb = mix( rgb, rgb * smoke * 1.35 + u_color * smoke * 0.12, 0.55 );
-      // Dust & scratches — muted film-plate wear.
-      rgb += vec3( dust ) * 0.22;
-      rgb += vec3( scratches ) * 0.28;
-      rgb *= depth;
+      vec3 rgb = base * 0.75 + etherLift;
+      // Stronger Perlin metal fog.
+      rgb += fog * 0.95;
+      rgb += METAL * value * 0.35;
+      rgb += METAL_HI * stars * 0.65;
+      rgb = mix( rgb, rgb * smoke * 1.18 + METAL * ( smoke - 0.5 ) * 0.2, 0.35 );
+
+      // God rays in luminous blue-metal.
+      rgb += mix( METAL, METAL_HI, 0.6 ) * rays * 0.85;
+
+      rgb += vec3( dust.x ) * 0.75;
+      rgb += mix( METAL_HI, vec3( 0.85 ), 0.25 ) * dust.y * 0.55;
+      rgb += METAL * dust.y * dust.y * 0.15;
+
+      rgb *= depthVignette;
 
       gl_FragColor = vec4( rgb * u_intensity, 1.0 );
     }
@@ -151,9 +201,9 @@ export class ShaderGUIVoid extends Shader {
       {
         u_time: { value: 0.0 },
         u_resolution: { value: new THREE.Vector2() },
-        u_color: { value: new THREE.Color(0xFFFFFF) },
-        u_colorIntensity: {value: 0.25 },
-        u_intensity: {value: 0.15 },
+        u_color: { value: new THREE.Color(0.42, 0.50, 0.60) },
+        u_colorIntensity: {value: 0.5 },
+        u_intensity: {value: 0.48 },
       }
     ])
   }
