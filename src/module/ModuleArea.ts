@@ -1444,25 +1444,63 @@ export class ModuleArea extends ModuleObject {
   }
 
   lastRoom: ModuleRoom = undefined;
+  /**
+   * Retail GetRoomIndex for a world position — AABB hit, then XZ footprint
+   * (dialog cameras often sit above the walkmesh).
+   */
+  getRoomAtPosition(pos: THREE.Vector3): ModuleRoom | undefined {
+    if(!pos){ return undefined; }
+    for(let i = 0, roomCount = this.rooms.length; i < roomCount; i++){
+      const room = this.rooms[i];
+      if(room?.box?.containsPoint(pos)){
+        return room;
+      }
+    }
+    for(let i = 0, roomCount = this.rooms.length; i < roomCount; i++){
+      const room = this.rooms[i];
+      const box = room?.box;
+      if(!box){ continue; }
+      if(
+        pos.x >= box.min.x && pos.x <= box.max.x &&
+        pos.y >= box.min.y && pos.y <= box.max.y
+      ){
+        return room;
+      }
+    }
+    return undefined;
+  }
+
   updateRoomVisibility(delta: number = 0){
     switch(GameState.Mode){
-      case EngineMode.DIALOG:
-        this.lastRoom = undefined;
-        const roomInView: boolean[] = [];
-        const pos = GameState.currentCamera.position.clone().add(GameState.playerFeetOffset);
+      case EngineMode.DIALOG: {
+        // Retail MainLoop @ 00603a79: while dialog (field45_0xb4), UpdateRoom uses
+        // GetDialogCameraPosition — SetCurrentRoom + VIS links, not frustum OR.
+        const cam = GameState.currentCamera;
+        if(!cam){ return; }
+        const cameraRoom = this.getRoomAtPosition(cam.position);
+        if(this.lastRoom && this.lastRoom == cameraRoom){
+          return;
+        }
+        // Retail: invalid room index returns early without clearing prior visibility
+        if(!cameraRoom){
+          return;
+        }
 
+        this.lastRoom = cameraRoom;
+
+        if(cameraRoom.envAudio >= 0){
+          AudioEngine.GetAudioEngine().setDesiredEnvironment(cameraRoom.envAudio || 0);
+        }
+        if(Number.isFinite(cameraRoom.ambientScale)){
+          AudioEngine.GetAudioEngine().setDesiredAmbientScale(cameraRoom.ambientScale);
+        }
 
         for(let i = 0, roomCount = this.rooms.length; i < roomCount; i++){
-          const room = this.rooms[i];
-          const inCamera = GameState.viewportFrustum.intersectsBox(room.box);
-          roomInView[i] = (!room.visObject || room.box.containsPoint(pos) || inCamera);
-          if(!roomInView[i]){
-            room.hide();
-            continue;
-          }
-          room.show(false);
+          this.rooms[i].hide();
         }
+        cameraRoom.show(true);
       break;
+      }
       case EngineMode.MINIGAME:
         this.lastRoom = undefined;
         for(let i = 0, len = this.rooms.length; i < len; i++){

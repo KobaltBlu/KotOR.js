@@ -41,6 +41,8 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 import { ExcitedDurationRow } from "@/combat/combat-engagement";
 import { getSpeakStringNotifyPlan } from "@/combat/speak-string-broadcast";
 import { EngineMode } from "@/enums/engine/EngineMode";
+import { CutsceneMode } from "@/enums/dialog/CutsceneMode";
+import { resolveDialogModelVisibility } from "@/module/dialog-model-visibility";
 import { DLGObject } from "@/resource/DLGObject";
 import { Faction } from "@/engine/Faction";
 import { ScriptVarTable } from "@/engine/ScriptVarTable";
@@ -695,9 +697,16 @@ export class ModuleObject {
       }
       return;
     }
-    
+
     if(GameState.Mode == EngineMode.DIALOG || GameState.Mode == EngineMode.MINIGAME){
-      this.model.visible = true;
+      this.model.visible = resolveDialogModelVisibility({
+        mode: GameState.Mode,
+        cutsceneMode: GameState.CutsceneManager?.cutsceneMode ?? CutsceneMode.DIALOG,
+        isPartyMember: this.isPartyMember(),
+        objectCutsceneMode: !!this.cutsceneMode,
+        hasRoom: !!this.room,
+        roomModelVisible: this.room?.model?.visible,
+      });
     }
   }
 

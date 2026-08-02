@@ -44,10 +44,22 @@ import {
   auroraCameraLookOrientation,
 } from "@/utility/aurora-camera-orientation";
 import { ConfigClient } from "@/utility/ConfigClient";
+import {
+  areRequiredDialogParticipantsReady,
+  DIALOG_PARTICIPANT_RETRY_MS,
+} from "@/managers/dialog-participant-ready";
 
 export class CutsceneManager {
 
   static active: boolean = false;
+  /**
+   * Retail SendDialogEntryNode field63_0x120 — ms remaining while required
+   * AnimList participants are missing before HandleDialogEntry proceeds.
+   */
+  static participantRetryRemainingMs = 0;
+  /** Entry deferred until participants bind (or retry window expires). */
+  static pendingParticipantEntry: DLGNode | undefined = undefined;
+  static participantRebindInFlight = false;
   /**
    * Incremented each time startConversation commits (including bark one-liners
    * that end immediately). ActionDialogObject uses this so OnDialog →
@@ -285,6 +297,99 @@ export class CutsceneManager {
   static clearPendingDialog() {
     this.pendingAdvance = false;
     this.pendingEntry = undefined;
+  }
+
+  /** Clear SendDialogEntryNode participant-retry window. */
+  static clearParticipantRetry() {
+    this.pendingParticipantEntry = undefined;
+    this.participantRetryRemainingMs = 0;
+    this.participantRebindInFlight = false;
+  }
+
+  /**
+   * Resolve AnimList / StuntList participant for readiness checks.
+   * PLAYER / OWNER mirror SendDialogEntryNode name compares.
+   */
+  static resolveDialogParticipantObject(participant: string): ModuleObject | undefined {
+    const key = (participant || '').toLocaleLowerCase();
+    if(!key){ return undefined; }
+    if(key === 'player'){
+      return GameState.PartyManager.party[0];
+    }
+    if(key === 'owner'){
+      return this.owner || this.dialog?.owner;
+    }
+    if(key === 'npc1'){
+      return GameState.PartyManager.party[1];
+    }
+    if(key === 'npc2'){
+      return GameState.PartyManager.party[2];
+    }
+    return GameState.ModuleObjectManager.GetObjectByTag(participant);
+  }
+
+  /**
+   * Retail SendDialogEntryNode required-participant gate.
+   * StuntList actors need moduleObject + model + CUT animations.
+   */
+  static areRequiredEntryParticipantsReady(entry: DLGNode): boolean {
+    if(!entry?.animations?.length){ return true; }
+    return areRequiredDialogParticipantsReady(entry.animations, {
+      isNonDependant: (name) => this.isDialogNonDependant(name),
+      getStuntActor: (name) => this.dialog?.stuntActors?.get(name.toLocaleLowerCase()),
+      getLiveObject: (name) => this.resolveDialogParticipantObject(name),
+    });
+  }
+
+  /** Async rebind for SpawnAvailableNPC races during the retry window. */
+  static async rebindMissingStuntActors() {
+    if(!this.dialog || this.participantRebindInFlight){ return; }
+    this.participantRebindInFlight = true;
+    try{
+      await this.dialog.reloadMissingStuntActors();
+    }finally{
+      this.participantRebindInFlight = false;
+    }
+  }
+
+  /**
+   * Retail SendDialogEntryNode: defer HandleDialogEntry while required
+   * participants are missing; arm 1500ms retry, then proceed anyway.
+   * @returns true when the entry may begin now
+   */
+  static tryBeginEntryParticipants(entry: DLGNode, forceAfterTimeout = false): boolean {
+    if(forceAfterTimeout || this.areRequiredEntryParticipantsReady(entry)){
+      this.clearParticipantRetry();
+      return true;
+    }
+    if(!this.pendingParticipantEntry){
+      this.participantRetryRemainingMs = DIALOG_PARTICIPANT_RETRY_MS;
+    }
+    this.pendingParticipantEntry = entry;
+    void this.rebindMissingStuntActors();
+    return false;
+  }
+
+  /**
+   * Poll deferred entry until participants ready or retail 1500ms elapses.
+   */
+  static tickParticipantRetry(delta: number = 0) {
+    const entry = this.pendingParticipantEntry;
+    if(!entry || !this.dialog){ return; }
+
+    if(this.areRequiredEntryParticipantsReady(entry)){
+      this.clearParticipantRetry();
+      this.showEntry(entry);
+      return;
+    }
+
+    void this.rebindMissingStuntActors();
+
+    this.participantRetryRemainingMs -= Math.max(0, delta) * 1000;
+    if(this.participantRetryRemainingMs <= 0){
+      this.clearParticipantRetry();
+      this.showEntry(entry, true);
+    }
   }
 
   /**
@@ -610,12 +715,17 @@ export class CutsceneManager {
   /**
    * Show a dialog entry
    * @param entry - The entry to show
+   * @param forceParticipantReady - retail retry timeout elapsed; play even if missing
    */
-  static showEntry(entry: DLGNode) {
+  static showEntry(entry: DLGNode, forceParticipantReady = false) {
     if(this.paused){
       // Retail SendDialogEntry @ 004cd460 — stash field14_0x4c entry index, field13=1.
       this.pendingAdvance = true;
       this.pendingEntry = entry;
+      return;
+    }
+    // Retail SendDialogEntryNode @ 005a13d0 — wait for required AnimList objects.
+    if(!this.tryBeginEntryParticipants(entry, forceParticipantReady)){
       return;
     }
     this.clearPendingDialog();
@@ -900,6 +1010,7 @@ export class CutsceneManager {
     this.active = false;
     this.paused = false;
     this.clearPendingDialog();
+    this.clearParticipantRetry();
     this.dialogAnimParticipants = [];
     this.barkScreenX = -1;
     this.barkScreenY = -1;
@@ -997,25 +1108,45 @@ export class CutsceneManager {
   static setAnimatedEntryAnimations(entry: DLGNode) {
     for (let i = 0; i < entry.animations.length; i++) {
       const participant = entry.animations[i];
-      console.log('participant', participant)
-      if (this.dialog.stuntActors.has(participant.participant)) {
+      const stuntKey = (participant.participant || '').toLocaleLowerCase();
+      if (this.dialog.stuntActors.has(stuntKey)) {
         try {
-          const actor = this.dialog.stuntActors.get(participant.participant);
+          const actor = this.dialog.stuntActors.get(stuntKey);
           if(!actor){ continue; }
-          if(BitWise.InstanceOfObject(actor.moduleObject, ModuleObjectType.ModuleCreature)){
-            const creature = actor.moduleObject as ModuleCreature;
-            const animationName = this.getCUTAnimationName(participant.animation);
-            const odysseyAnimation = actor.animations ? actor.animations.find( a => a.name.toLocaleLowerCase() == animationName.toLocaleLowerCase()) : undefined;
-            if(odysseyAnimation){
-              this.registerDialogAnimParticipant(creature);
-              creature.dialogPlayOdysseyAnimation(odysseyAnimation, participant.animation);
+          // Unbound after SpawnAvailableNPC race — try live tag; retry window
+          // reloads stunt CUT anims via rebindMissingStuntActors.
+          if(!BitWise.InstanceOfObject(actor.moduleObject, ModuleObjectType.ModuleCreature)){
+            const live = this.resolveDialogParticipantObject(participant.participant);
+            if(BitWise.InstanceOfObject(live, ModuleObjectType.ModuleCreature)){
+              actor.moduleObject = live;
+              live.setCutsceneMode(true);
+            }else{
+              if(!this.isDialogNonDependant(participant.participant)){
+                console.warn('CutsceneManager: dialog missing stunt participant', participant.participant);
+              }
+              continue;
             }
+          }
+          const creature = actor.moduleObject as ModuleCreature;
+          if(!creature.model || !actor.animations?.length){
+            if(!this.isDialogNonDependant(participant.participant)){
+              console.warn('CutsceneManager: stunt participant not ready', participant.participant);
+            }
+            continue;
+          }
+          const animationName = this.getCUTAnimationName(participant.animation);
+          const odysseyAnimation = actor.animations.find(
+            (a) => a.name.toLocaleLowerCase() == animationName.toLocaleLowerCase()
+          );
+          if(odysseyAnimation){
+            this.registerDialogAnimParticipant(creature);
+            creature.dialogPlayOdysseyAnimation(odysseyAnimation, participant.animation);
           }
         } catch (e: any) {
           console.error(e);
         }
       } else {
-        const actor = GameState.ModuleObjectManager.GetObjectByTag(participant.participant);
+        const actor = this.resolveDialogParticipantObject(participant.participant);
         if(!actor){
           // Retail: missing + NonDependant → skip; missing + required → retry wait
           if(!this.isDialogNonDependant(participant.participant)){
@@ -1023,7 +1154,6 @@ export class CutsceneManager {
           }
           continue;
         }
-        console.log('actor', actor);
         if (participant.animation >= 10000) {
           if (actor.animationConstantToAnimation(participant.animation)) {
             this.playDialogCreatureAnimation(actor, participant.animation);
@@ -1032,7 +1162,6 @@ export class CutsceneManager {
           }
         }else{
           const anim = this.getDialogAnimation(participant.animation);
-          console.log('anim', anim)
           if (anim) {
             this.registerDialogAnimParticipant(actor);
             actor.dialogPlayAnimation(anim);
@@ -1627,6 +1756,9 @@ export class CutsceneManager {
   static update(delta: number = 0) {
     if (!this.dialog)
       return;
+
+    // Retail SendDialogEntryNode retry — before current-entry WaitFlags tick.
+    this.tickParticipantRetry(delta);
 
     this.dialog.stuntActors.forEach( async (actor) => {
       const moduleObject = actor.moduleObject;

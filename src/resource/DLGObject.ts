@@ -1,6 +1,5 @@
 import { GameState } from "@/GameState";
 import type { ModuleCreature, ModuleObject } from "@/module";
-import { OdysseyModel } from "@/odyssey";
 import { OdysseyModel3D } from "@/three/odyssey";
 import { DLGNode } from "@/resource/DLGNode";
 import { GFFObject } from "@/resource/GFFObject";
@@ -374,82 +373,105 @@ export class DLGObject {
     }
   }
 
-  async loadStuntActor( actor: IDLGStuntActor ){
-    return new Promise<void>( (resolve, reject) => {
-      let model: any;
-      if(actor.participant == 'PLAYER'){
-        model = GameState.PartyManager.party[0].model;
-        //Load the actor's supermodel
-        MDLLoader.loader.load(actor.resref)
-        .then((actorModel: OdysseyModel) => {
-          OdysseyModel3D.FromMDL(actorModel)
-          .then((actorSuperModel: OdysseyModel3D) => {
-            actor.animations = actorSuperModel.odysseyAnimations;
+  /**
+   * Bind a StuntList participant. Returns false when the object/model is not
+   * ready yet (SpawnAvailableNPC race) so the caller can retry.
+   */
+  async loadStuntActor(actor: IDLGStuntActor): Promise<boolean> {
+    try{
+      const key = (actor.participant || '').toLocaleLowerCase();
+      let creature: ModuleObject | undefined;
 
-            if(this.isAnimatedCutscene)
-              GameState.PartyManager.party[0].setFacing(0, true);
-
-            if(this.unequipItems || this.unequipHeadItem){
-              GameState.CutsceneManager.hideEquippedItemsForDialog(GameState.PartyManager.party[0]);
-            }
-
-            actor.moduleObject = GameState.PartyManager.party[0];
-            if(actor.moduleObject){
-              actor.moduleObject.setCutsceneMode(true);
-            }
-            resolve();
-          }).catch(resolve);
-        }).catch(resolve);
-      }else if(actor.participant == 'OWNER'){
-
-        actor.moduleObject = this.owner;
-        if(this.isAnimatedCutscene)
-          this.owner.setFacing(0, true);
-
-        if(actor.moduleObject){
-          actor.moduleObject.setCutsceneMode(true);
-        }
-        
-        resolve();
-
+      if(key === 'player'){
+        creature = GameState.PartyManager.party[0];
+      }else if(key === 'owner'){
+        creature = this.owner;
       }else{
-        let creature = GameState.ModuleObjectManager.GetObjectByTag(actor.participant);
-        if(creature){
-          model = creature.model;
-          //Load the actor's supermodel
-          MDLLoader.loader.load(actor.resref)
-          .then((actorModel: OdysseyModel) => {
-            OdysseyModel3D.FromMDL(actorModel)
-            .then((actorSuperModel: OdysseyModel3D) => {
-              actor.animations = actorSuperModel.odysseyAnimations;
+        creature = GameState.ModuleObjectManager.GetObjectByTag(actor.participant);
+      }
 
-              if(this.isAnimatedCutscene)
-                creature.setFacing(0, true);
+      if(!creature){
+        return false;
+      }
 
-              model.box = new THREE.Box3().setFromObject(model);
-
-              if((this.unequipItems || this.unequipHeadItem) && BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
-                GameState.CutsceneManager.hideEquippedItemsForDialog(creature as ModuleCreature);
-              }
-
-              actor.moduleObject = creature;
-              if(actor.moduleObject){
-                actor.moduleObject.setCutsceneMode(true);
-              }
-              resolve();
-            }).catch(resolve);
-          }).catch(resolve);
-        }else{
-          resolve();
+      // SpawnAvailableNPC returns before loadModel finishes. Poll first so we
+      // don't bump modelLoadGeneration and discard the in-flight spawn load.
+      if(BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)){
+        const c = creature as ModuleCreature;
+        if(!c.model){
+          await DLGObject.waitForCreatureModel(c, 1500);
+        }
+        if(!c.model){
+          await c.loadModel();
+        }
+        if(!c.model){
+          return false;
         }
       }
-    });
+
+      if(actor.resref){
+        const actorModel = await MDLLoader.loader.load(actor.resref);
+        if(actorModel){
+          const actorSuperModel = await OdysseyModel3D.FromMDL(actorModel);
+          if(actorSuperModel){
+            actor.animations = actorSuperModel.odysseyAnimations;
+          }
+        }
+      }
+
+      if(this.isAnimatedCutscene){
+        creature.setFacing?.(0, true);
+      }
+
+      if(
+        (this.unequipItems || this.unequipHeadItem) &&
+        BitWise.InstanceOfObject(creature, ModuleObjectType.ModuleCreature)
+      ){
+        GameState.CutsceneManager.hideEquippedItemsForDialog(creature as ModuleCreature);
+      }
+
+      actor.moduleObject = creature;
+      creature.setCutsceneMode?.(true);
+
+      if(creature.model){
+        try{
+          creature.model.box = new THREE.Box3().setFromObject(creature.model);
+        }catch(_e){ /* model may still be assembling skins */ }
+      }
+
+      return !!(actor.animations?.length || !actor.resref);
+    }catch(e){
+      console.error('DLGObject.loadStuntActor', actor.participant, e);
+      return false;
+    }
+  }
+
+  /** Wait for an in-flight ModuleCreature.loadModel without starting another. */
+  static async waitForCreatureModel(creature: ModuleCreature, timeoutMs: number): Promise<void> {
+    const deadline = Date.now() + Math.max(0, timeoutMs);
+    while(!creature.model && Date.now() < deadline){
+      await new Promise<void>((resolve) => setTimeout(resolve, 16));
+    }
   }
 
   async loadStuntActors(){
-    for (var [key, actor] of this.stuntActors.entries()) {
+    for(const actor of this.stuntActors.values()){
       await this.loadStuntActor(actor);
-    };
+    }
+  }
+
+  /** Re-attempt StuntList binds that failed because models were still loading. */
+  async reloadMissingStuntActors(){
+    for(const actor of this.stuntActors.values()){
+      const needsReload =
+        !actor.moduleObject ||
+        (BitWise.InstanceOfObject(actor.moduleObject, ModuleObjectType.ModuleCreature) &&
+          !(actor.moduleObject as ModuleCreature).model) ||
+        (actor.resref && !actor.animations?.length);
+      if(needsReload){
+        await this.loadStuntActor(actor);
+      }
+    }
   }
 
   releaseStuntActors(){

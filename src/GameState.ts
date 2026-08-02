@@ -801,7 +801,8 @@ export class GameState implements EngineContext {
     GameState.camera_dialog.up = new THREE.Vector3( 0, 0, 1 );
     // Animated clip defaults match SetAnimatedCamera @ 00641010 (0.1, 10000)
     GameState.camera_animated = new THREE.PerspectiveCamera( 55, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.1, 10000 );
-    GameState.camera_animated.up = new THREE.Vector3( 0, 1, 0 );
+    // Match dialog / follower cameras — Aurora world is Z-up.
+    GameState.camera_animated.up = new THREE.Vector3( 0, 0, 1 );
     GameState.camera.up = new THREE.Vector3( 0, 0, 1 );
     GameState.camera.position.set( .1, 5, 1 );              // offset the camera a bit
     GameState.camera.lookAt(new THREE.Vector3( 0, 0, 0 ));
