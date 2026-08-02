@@ -18,6 +18,7 @@ import { AudioEngine } from "@/audio/AudioEngine";
 import { SoundMode } from "@/enums/audio/SoundMode";
 import { SaveLoadAudit } from "@/engine/SaveLoadAudit";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
+import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
 
 const winEpoch = new Date("01-01-1601 UTC").getTime();
 
@@ -341,6 +342,7 @@ export class SaveGame {
     localStorage.setItem(`${GameState.GameKey}_last_save_id`, SaveGame.saves.indexOf(this).toString());
     GameState.isLoadingSave = true;
     GameState.TutorialWindowTracker = [];
+    ModuleSaveTable.clearAutoSaveTimer();
 
     try{
       GameState.time = this.TIMEPLAYED;
@@ -887,13 +889,16 @@ export class SaveGame {
    * Shared writer used by named saves, overwrite, autosave, and quicksave.
    * Packs module ERF, sidecars (NFO/globals/party), and screenshot.
    * pifo.ifo is written only for PC autosave (save_id === 1), matching retail DoPCAutosave.
+   *
+   * @param nfoModuleName - Optional LASTMODULE / AreaName override (module-enter autosave uses destination).
    */
   static async writeSaveFolder(
     save_dir: string,
     save_dir_name: string,
     name: string,
     save_id: number,
-    showUI = true
+    showUI = true,
+    nfoModuleName?: string
   ){
     if(!GameState.module){ return; }
 
@@ -909,7 +914,7 @@ export class SaveGame {
     await CurrentGame.ExportToSaveFolder( save_dir );
     if(showUI) GameState.MenuManager.LoadScreen.setProgress(75);
 
-    await SaveGame.ExportSaveNFO(save_dir, name, save_id, save_id === 1);
+    await SaveGame.ExportSaveNFO(save_dir, name, save_id, save_id === 1, nfoModuleName);
     await SaveGame.ExportGlobalVars( save_dir );
     await GameState.PartyManager.Export( save_dir );
     // Retail DoPCAutosave @ 004b908c copies TEMP:pifo only into 000001 - AUTOSAVE.
@@ -941,6 +946,8 @@ export class SaveGame {
       SaveGame.AddSaveGame(newEntry);
     }
     await newEntry.loadNFO();
+
+    ModuleSaveTable.clearAutoSaveTimer();
 
     if(showUI){
       GameState.MenuManager.LoadScreen.setProgress(100);
@@ -990,6 +997,23 @@ export class SaveGame {
       await GameFileSystem.mkdir(save_dir);
     }
     await SaveGame.writeSaveFolder(save_dir, save_dir_name, '', 1, true);
+  }
+
+  /**
+   * Retail DoPCAutosave during StartNewModule — NFO LASTMODULE/AREANAME use the destination module.
+   * LoadScreen is already open for the transition, so UI chrome is suppressed.
+   */
+  static async AutoSaveOnModuleEnter(destinationModule: string){
+    if(!GameState.module){ return; }
+    if(!(await GameFileSystem.exists(SaveGame.base_directory))){
+      await GameFileSystem.mkdir(SaveGame.base_directory);
+    }
+    const save_dir_name = '000001 - AUTOSAVE';
+    const save_dir = path.join(SaveGame.base_directory, save_dir_name);
+    if(!(await GameFileSystem.exists(save_dir))){
+      await GameFileSystem.mkdir(save_dir);
+    }
+    await SaveGame.writeSaveFolder(save_dir, save_dir_name, '', 1, false, destinationModule);
   }
 
   /**
@@ -1060,16 +1084,32 @@ export class SaveGame {
    * await SaveGame.ExportSaveNFO('Saves/000001 - Game1', 'My Adventure');
    * // savenfo.res file created with metadata
    */
-  static async ExportSaveNFO( directory: string, savename: string, saveNumber = 0, isPCAutoSave = false){
+  static async ExportSaveNFO( directory: string, savename: string, saveNumber = 0, isPCAutoSave = false, nfoModuleName?: string){
     console.log('ExportSaveNFO', directory, savename);
     const nfo = new GFFObject();
     nfo.FileType = 'NFO ';
 
+    const moduleResRef = (nfoModuleName || GameState.module.filename || '').toLowerCase();
+    let areaName = '';
+    if(nfoModuleName){
+      areaName = ModuleSaveTable.getAreaNameForModule(nfoModuleName);
+    }
+    if(!areaName){
+      areaName = ModuleSaveTable.getAreaNameForModule(GameState.module.filename);
+    }
+    if(!areaName){
+      try{
+        areaName = GameState.module.area.areaName.getValue();
+      }catch(e){
+        areaName = '';
+      }
+    }
+
     const cheatUsed = GameState.PartyManager.CheatUsed ? 1 : 0;
-    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).value = GameState.module.area.areaName.getValue();
+    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'AREANAME')).value = areaName;
     nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'CHEATUSED')).value = cheatUsed;
     nfo.RootNode.addField(new GFFField(GFFDataType.BYTE, 'GAMEPLAYHINT')).value = GameState.PartyManager.GameplayHint | 0;
-    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).value = GameState.module.filename.toUpperCase();
+    nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LASTMODULE')).value = moduleResRef.toUpperCase();
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE1')).value = '';
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE2')).value = '';
     nfo.RootNode.addField(new GFFField(GFFDataType.CEXOSTRING, 'LIVE3')).value = '';

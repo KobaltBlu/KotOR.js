@@ -1,26 +1,20 @@
 import { GameState } from "@/GameState";
 import { GameMenu, LBL_3DView } from "@/gui";
-import type { GUILabel, GUIButton } from "@/gui";
+import type { GUILabel, GUIButton, GUIControl } from "@/gui";
 import { MDLLoader, TextureLoader } from "@/loaders";
 import { NWScript } from "@/nwscript/NWScript";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
-import { OdysseyModel } from "@/odyssey";
 import { Planet, Planetary } from "@/engine/Planetary";
 import { OdysseyModel3D } from "@/three/odyssey";
-
-const STR_ALREADY_AT_THAT_LOCATION = 125629;
-
-interface PlanetAnimStateInfo {
-  lastAnimState: 'zoomin'|'rotate';
-  currentAnimState: 'zoomin'|'rotate';
-  started: boolean;
-};
+import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 
 /**
  * MenuGalaxyMap class.
- * 
+ *
+ * Aligned with retail CSWGuiInGameGalaxyMap (K1 swkotor.exe).
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file MenuGalaxyMap.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -51,18 +45,24 @@ export class MenuGalaxyMap extends GameMenu {
   script: NWScriptInstance;
   _3dView: LBL_3DView;
   _3dViewModel: OdysseyModel3D;
-  selectedPlanet: any;
 
   _3dViewPlanet: LBL_3DView;
   _3dViewPlanetModel: OdysseyModel3D;
 
-  activePlanet: Planet;
+  /** Retail DisplayPlanet current_planet — last model shown (-1 = none). */
+  currentPlanet: number = -1;
 
-  planetModelAnimationState: PlanetAnimStateInfo = {
-    lastAnimState: undefined,
-    currentAnimState: undefined,
-    started: false
-  }
+  /**
+   * TSL OnPanelAdded snapshots the selected planet at open for the
+   * already-at-location Accept check. K1 ignores this.
+   */
+  planetAtOpen: number = -1;
+
+  /** Selected planet button held in highlight (retail Draw SetActive(1)). */
+  private activePlanetControl: GUIControl | undefined;
+
+  /** After DisplayPlanet, wait for zoomin to finish then start rotate. */
+  private pendingPlanetRotate: boolean = false;
 
   constructor(){
     super();
@@ -74,28 +74,18 @@ export class MenuGalaxyMap extends GameMenu {
   async menuControlInitializer(skipInit: boolean = false) {
     await super.menuControlInitializer();
     if(skipInit) return;
+
     this.BTN_BACK.addEventListener('click', (e) => {
       e.stopPropagation();
       this.close();
-      // Planetary.SetSelectedPlanet(GameState.GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
     });
     this._button_b = this.BTN_BACK;
 
     this.BTN_ACCEPT.addEventListener('click', (e) => {
       e.stopPropagation();
-      if(!this.activePlanet?.selectable){
-        if(this.activePlanet.lockedOutReason >= 0){
-          GameState.MenuManager.InGameConfirm.fromStringRef(this.activePlanet.lockedOutReason);
-        }
-      }else if(this.activePlanet.id == Planetary.selectedIndex){
-        GameState.MenuManager.InGameConfirm.fromStringRef(STR_ALREADY_AT_THAT_LOCATION);
-      }else{
-        if(this.script instanceof NWScriptInstance){
-          this.script.run(GameState.PartyManager.party[0]);
-        }
-        this.close();
-      }
+      this.onAccept();
     });
+    this._button_a = this.BTN_ACCEPT;
 
     this._3dViewPlanet = new LBL_3DView();
     this._3dViewPlanet.visible = true;
@@ -112,36 +102,184 @@ export class MenuGalaxyMap extends GameMenu {
     this._3dView = new LBL_3DView();
     this._3dView.visible = true;
     this._3dView.setControl(this._3D_PlanetDisplay);
-    
+
     GameState.PerformanceMonitor.start('MenuGalaxyMap.loadGalaxyModel.FromMDL');
     const model = await OdysseyModel3D.FromMDL(mdl, {
       context: this._3dView
     });
-
     GameState.PerformanceMonitor.stop('MenuGalaxyMap.loadGalaxyModel.FromMDL');
-    //console.log('Model Loaded', model);
+
     this._3dViewModel = model;
-    
     this._3dView.camera.position.copy(model.camerahook.position);
     this._3dView.camera.quaternion.copy(model.camerahook.quaternion);
-
     this._3dView.addModel(this._3dViewModel);
+    // Retail PlayAnimation("default", 1.0, 0) — keep spinning for visual parity
+    this._3dViewModel.playAnimation('default', true);
+
+    this.bindPlanetButtons();
+
     GameState.PerformanceMonitor.start('MenuGalaxyMap.loadGalaxyModel.TextureLoader.LoadQueue');
     TextureLoader.LoadQueue().then(() => {
       GameState.PerformanceMonitor.stop('MenuGalaxyMap.loadGalaxyModel.TextureLoader.LoadQueue');
     });
   }
 
+  /**
+   * Retail ctor: InitControl from planetary.2da GUITag, Icon fill on both
+   * borders, custom_value = row, AButton → OnPlanetClicked.
+   */
+  protected bindPlanetButtons(){
+    const planets = Planetary.planets;
+    if(!planets){ return; }
+
+    for(let i = 0; i < 16 && i < planets.length; i++){
+      const planet = planets[i];
+      if(!planet?.guitag){ continue; }
+
+      const control = this.getControlByName(planet.guitag) as GUIButton;
+      if(!control){ continue; }
+
+      if(planet.icon && planet.icon !== '****'){
+        control.setFillTextureName(planet.icon);
+      }
+
+      control.disableBorder();
+      control.removeEventListener('click');
+      control.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.onPlanetClicked(planet);
+      });
+    }
+  }
+
+  /**
+   * K1 Accept: PlayGuiSound + RunScript(k_sup_galaxymap, OBJECT_INVALID) + hide.
+   * TSL overrides for already-at / LockedOutReason.
+   */
+  onAccept(){
+    if(this.script instanceof NWScriptInstance){
+      this.script.run(undefined);
+    }
+    this.close();
+  }
+
+  /**
+   * Retail OnPlanetClicked — SetSelectedPlanet then DisplayPlanet(…, animate).
+   */
+  onPlanetClicked(planet: Planet){
+    if(!planet){ return; }
+    if(planet.id === Planetary.selectedIndex){ return; }
+
+    const previous = Planetary.selectedIndex;
+    Planetary.SetSelectedPlanet(planet.id);
+    if(Planetary.selectedIndex === previous){
+      // Not available+selectable — retail SetSelectedPlanet no-ops
+      return;
+    }
+
+    this.setPlanetButtonActive(previous, false);
+    this.setPlanetButtonActive(Planetary.selectedIndex, true);
+    this.displayPlanet(Planetary.selectedIndex, true);
+  }
+
+  /**
+   * Retail DisplayPlanet — name/desc TLK, replace 3D model, zoomin + queued rotate.
+   */
+  displayPlanet(planetIndex: number, animate: boolean){
+    if(planetIndex === -1 || planetIndex === this.currentPlanet){
+      return;
+    }
+
+    const planet = Planetary.GetPlanetByIndex(planetIndex);
+    if(!planet){ return; }
+
+    this.LBL_PLANETNAME.setText(planet.getName());
+    this.LBL_DESC.setText(planet.getDescription());
+
+    if(Planetary.models.has(planet.model)){
+      this._3dViewPlanet.removeModel(this._3dViewPlanetModel);
+      const mdl = Planetary.models.get(planet.model);
+      OdysseyModel3D.FromMDL(mdl, {
+        context: this._3dViewPlanet
+      }).then((model: OdysseyModel3D) => {
+        this._3dViewPlanetModel = model;
+        this._3dViewPlanet.camera.position.copy(model.camerahook.position);
+        this._3dViewPlanet.camera.quaternion.copy(model.camerahook.quaternion);
+        this._3dViewPlanet.addModel(this._3dViewPlanetModel);
+
+        this.pendingPlanetRotate = false;
+        if(animate){
+          // Retail: PlayAnimation("zoomin", FIRE_FORGET) then
+          // PlayAnimation("rotate", QUEUE=0x20). Manager QUEUE support is
+          // incomplete, so hand off to rotate when zoomin ends.
+          const zoomin = model.odysseyAnimationMap.get('zoomin');
+          if(zoomin){
+            model.animationManager.playAnimation(zoomin, AuroraAnimationFlag.FIRE_FORGET, { loop: false });
+            this.pendingPlanetRotate = true;
+          }else{
+            const rotate = model.odysseyAnimationMap.get('rotate');
+            if(rotate){
+              model.animationManager.playAnimation(rotate, AuroraAnimationFlag.LOOPING, { loop: true });
+            }
+          }
+        }
+
+        TextureLoader.LoadQueue();
+      });
+    }
+
+    this.currentPlanet = planetIndex;
+  }
+
+  /**
+   * Retail Draw SetActive on the selected planet button (highlight).
+   */
+  setPlanetButtonActive(planetIndex: number, active: boolean){
+    if(planetIndex < 0){ return; }
+    const planet = Planetary.GetPlanetByIndex(planetIndex);
+    if(!planet?.guitag){ return; }
+    const control = this.getControlByName(planet.guitag);
+    if(!control){ return; }
+
+    if(active){
+      if(this.activePlanetControl && this.activePlanetControl !== control){
+        this.activePlanetControl.hideHighlight();
+        this.activePlanetControl.showBorder();
+        this.activePlanetControl.hover = false;
+      }
+      this.activePlanetControl = control;
+      control.showHighlight();
+      if(control.highlight?.edge){
+        control.hideBorder();
+      }
+      control.hover = true;
+    }else if(this.activePlanetControl === control){
+      control.hideHighlight();
+      control.showBorder();
+      control.hover = false;
+      this.activePlanetControl = undefined;
+    }
+  }
+
   update(delta = 0) {
     super.update(delta);
-    this.UpdateScale();
+    // Retail Draw: keep selected planet SetActive(1)
+    if(Planetary.selectedIndex !== -1){
+      this.setPlanetButtonActive(Planetary.selectedIndex, true);
+    }
+    this.updateGalaxyMapView(delta);
     this.updatePlanetView(delta);
   }
 
   updateGalaxyMapView(delta: number = 0){
     try {
-      this._3dView.render(delta);
-      (this._3D_PlanetDisplay.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
+      // LBL_3DView.render ticks OdysseyModel3D (emitters + anim). Do not
+      // call model.update here or particles age/birth twice per frame.
+      this._3dView?.render(delta);
+      const fill = this._3D_PlanetDisplay?.getFill();
+      if(fill?.material){
+        (fill.material as THREE.ShaderMaterial).needsUpdate = true;
+      }
     } catch (e: any) {
       console.error(e);
     }
@@ -149,124 +287,152 @@ export class MenuGalaxyMap extends GameMenu {
 
   updatePlanetView(delta: number = 0){
     try {
-      const planetControl = this._3D_PlanetModel;
       const planetModel = this._3dViewPlanetModel;
       const _3dView = this._3dViewPlanet;
       if(planetModel){
-        const currentAnimation = planetModel.getAnimationName();
-        if(!currentAnimation){
-          if(!this.planetModelAnimationState.started){
-            this.planetModelAnimationState.started = true;
-            planetModel.playAnimation(this.planetModelAnimationState.currentAnimState, false);
-          }else{
-            if(this.planetModelAnimationState.currentAnimState == 'rotate'){
-              this.planetModelAnimationState.lastAnimState = 'zoomin';
-              this.planetModelAnimationState.currentAnimState = 'rotate';
-              this.planetModelAnimationState.started = false;
-            }else{
-              this.planetModelAnimationState.lastAnimState = 'rotate';
-              this.planetModelAnimationState.currentAnimState = 'rotate';
-              this.planetModelAnimationState.started = false;
-            }
-          }
+        // Update once for zoomin/rotate, then sync camerahook before RTT.
+        planetModel.update(delta);
+        if(planetModel.camerahook){
+          _3dView.camera.position.copy(planetModel.camerahook.position);
+          _3dView.camera.quaternion.copy(planetModel.camerahook.quaternion);
         }
 
-        planetModel.update(delta);
-        _3dView.camera.position.copy(planetModel.camerahook.position);
-        _3dView.camera.quaternion.copy(planetModel.camerahook.quaternion);
+        if(this.pendingPlanetRotate){
+          const name = planetModel.getAnimationName()?.toLowerCase();
+          if(!name || name !== 'zoomin'){
+            const rotate = planetModel.odysseyAnimationMap.get('rotate');
+            if(rotate){
+              planetModel.animationManager.playAnimation(
+                rotate,
+                AuroraAnimationFlag.LOOPING,
+                { loop: true }
+              );
+            }
+            this.pendingPlanetRotate = false;
+          }
+        }
       }
 
-      _3dView.render(delta);
-      (planetControl.getFill().material as THREE.ShaderMaterial).needsUpdate = true;
+      _3dView?.render(delta, { skipModelUpdate: true });
+      const fill = this._3D_PlanetModel?.getFill();
+      if(fill?.material){
+        (fill.material as THREE.ShaderMaterial).needsUpdate = true;
+      }
     } catch (e: any) {
       console.error(e);
     }
   }
 
-  UpdateScale() {
-    let controls = this.manager.MenuGalaxyMap.tGuiPanel.children;
-    for (let i = 0; i < controls.length; i++) {
-      let control = controls[i];
-      let plnt = Planetary.GetPlanetByGUITag(control.name);
-      if (plnt) {
-        if (plnt.enabled) {
-          control.show();
-          if (plnt == Planetary.selected) {
-            control.widget.scale.setScalar(1.25);
-          } else {
-            control.widget.scale.setScalar(1);
-          }
-        }else{
-          control.hide();
+  /**
+   * Retail NextPlanet — wrap 0..15, only available+selectable.
+   */
+  nextPlanet(){
+    const start = Planetary.selectedIndex;
+    if(start === -1){ return; }
+
+    this.setPlanetButtonActive(start, false);
+    let planetId = start + 1;
+    do {
+      if(planetId > 15){ planetId = 0; }
+      const planet = Planetary.GetPlanetByIndex(planetId);
+      if(planet?.enabled && planet?.selectable){
+        Planetary.SetSelectedPlanet(planetId);
+        break;
+      }
+      planetId++;
+    } while(planetId !== start);
+
+    this.setPlanetButtonActive(Planetary.selectedIndex, true);
+    this.displayPlanet(Planetary.selectedIndex, true);
+  }
+
+  /**
+   * Retail PrevPlanet — wrap 0..15, only available+selectable.
+   */
+  prevPlanet(){
+    const start = Planetary.selectedIndex;
+    if(start === -1){ return; }
+
+    this.setPlanetButtonActive(start, false);
+    let planetId = start - 1;
+    do {
+      if(planetId < 0){ planetId = 15; }
+      const planet = Planetary.GetPlanetByIndex(planetId);
+      if(planet?.enabled && planet?.selectable){
+        Planetary.SetSelectedPlanet(planetId);
+        break;
+      }
+      planetId--;
+    } while(planetId !== start);
+
+    this.setPlanetButtonActive(Planetary.selectedIndex, true);
+    this.displayPlanet(Planetary.selectedIndex, true);
+  }
+
+  /**
+   * Retail OnPanelAdded — default selection, visibility from available, DisplayPlanet.
+   */
+  show() {
+    super.show();
+
+    // Snapshot for TSL already-at Accept check
+    this.planetAtOpen = Planetary.selectedIndex;
+
+    if(Planetary.selectedIndex === -1){
+      for(let i = 0; i < 16; i++){
+        const planet = Planetary.GetPlanetByIndex(i);
+        if(planet?.enabled && planet?.selectable){
+          Planetary.SetSelectedPlanet(i);
+          break;
         }
       }
     }
-  }
 
-  changePlanet(planet: Planet){
-    if(!planet){ return; }
-
-    this.LBL_PLANETNAME.setText(planet.getName());
-    this.LBL_DESC.setText(planet.getDescription());
-    this.activePlanet = planet;
-    // Planetary.SetSelectedPlanet(planet.getId());
-    if(Planetary.models.has(planet.model)){
-      this._3dViewPlanet.removeModel(this._3dViewPlanetModel);
-      const mdl = Planetary.models.get(planet.model);
-      OdysseyModel3D.FromMDL(mdl, {
-        context: this._3dView
-      }).then((model: OdysseyModel3D) => {
-        this._3dViewPlanetModel = model;
-        
-        this._3dViewPlanet.camera.position.copy(model.camerahook.position);
-        this._3dViewPlanet.camera.quaternion.copy(model.camerahook.quaternion);
-
-        this._3dViewPlanet.addModel(this._3dViewPlanetModel);
-        this.planetModelAnimationState.started = false;
-        this.planetModelAnimationState.lastAnimState = undefined;
-        this.planetModelAnimationState.currentAnimState = 'zoomin';
-
-        TextureLoader.LoadQueue();
-      });
-    }
-  }
-
-  show() {
-    super.show();
-    // Planetary.SetSelectedPlanet(GameState.GlobalVariableManager.GetGlobalNumber('K_CURRENT_PLANET'));
-    this.changePlanet(Planetary.selected);
-    this.UpdateScale();
     const planets = Planetary.planets;
-    for (let i = 0; i < planets.length; i++) {
+    for(let i = 0; i < 16 && i < (planets?.length ?? 0); i++){
       const planet = planets[i];
-
-      if(!planet){
-        console.warn('invalid planet index', i);
-        continue;
-      }
-
+      if(!planet?.guitag){ continue; }
       const control = this.getControlByName(planet.guitag);
-      if (!control) {
-        console.warn('invalid guitag', planet.guitag);
-        continue;
-      }
+      if(!control){ continue; }
 
-      control.removeEventListener('click');
-      console.log(planet.label, planet.enabled);
-
-      if (!planet.enabled) {
+      // Retail: bit_flags visibility from GetPlanetAvailable only
+      if(planet.enabled){
+        control.show();
+      }else{
         control.hide();
-        control.disableBorder();
-        continue;
       }
+    }
 
-      control.show();
-      control.disableBorder();
-      control.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.changePlanet(planet);
-      });
+    if(Planetary.selectedIndex !== -1){
+      this.setPlanetButtonActive(Planetary.selectedIndex, true);
+    }
+    this.displayPlanet(Planetary.selectedIndex, true);
+  }
+
+  hide() {
+    // Retail OnPanelRemoved — clear active highlights, reset current_planet
+    for(let i = 0; i < 16; i++){
+      this.setPlanetButtonActive(i, false);
+    }
+    this.currentPlanet = -1;
+    this.activePlanetControl = undefined;
+    super.hide();
+  }
+
+  triggerControllerDLeftPress() {
+    this.prevPlanet();
+  }
+
+  triggerControllerDRightPress() {
+    this.nextPlanet();
+  }
+
+  triggerControllerLStickXPress(positive = false) {
+    if(positive){
+      this.nextPlanet();
+    }else{
+      this.prevPlanet();
     }
   }
-  
+
 }

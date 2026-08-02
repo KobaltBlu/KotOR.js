@@ -13,6 +13,11 @@ export enum AuroraAnimationFlag {
   LOOPING = 0x004,
   /** Overlay slot — stack without clearing locomotion base. */
   OVERLAY_SLOT = 0x008,
+  /**
+   * Queue behind current base (Gob::PlayAnimation 0x20) — e.g. planet
+   * `rotate` after `zoomin` on the galaxy map.
+   */
+  QUEUE = 0x020,
   /** Overlay stop / remove semantics. */
   OVERLAY_STOP = 0x080,
   /** Additive gesture — weight fade; common for combat/dialog gestures. */

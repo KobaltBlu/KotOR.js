@@ -180,7 +180,7 @@ export class LBL_3DView {
     this.camera.updateProjectionMatrix();
   }
 
-  render(delta = 0){
+  render(delta = 0, options?: { skipModelUpdate?: boolean }){
 
     if(!this.visible)
       return;
@@ -189,10 +189,12 @@ export class LBL_3DView {
       this.emitters[emitter].tick(delta);
     }
 
-    for(let i = 0; i < this.scene.children.length; i++){
-      let element = this.scene.children[i];
-      if(element instanceof OdysseyModel3D){
-        element.update(delta);
+    if(!options?.skipModelUpdate){
+      for(let i = 0; i < this.scene.children.length; i++){
+        let element = this.scene.children[i];
+        if(element instanceof OdysseyModel3D){
+          element.update(delta);
+        }
       }
     }
 

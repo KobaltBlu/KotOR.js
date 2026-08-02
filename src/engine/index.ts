@@ -7,3 +7,4 @@ export * from "@/engine/INIConfig";
 export * from "@/engine/TurnSpeeds";
 export * from "@/engine/area-transition-bmp";
 export * from "@/engine/ServerAIMaster";
+export * from "@/engine/ModuleSaveTable";

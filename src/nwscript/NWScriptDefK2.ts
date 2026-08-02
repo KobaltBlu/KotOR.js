@@ -5482,42 +5482,42 @@ NWScriptDefK2.Actions = {
     name: 'ShowGalaxyMap',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: NWScriptDefK1.Actions[739]?.action
   },
   740: {
     comment: '740: SetPlanetSelectable\nSets \'nPlanet\' selectable on the Galaxy Map Gui.',
     name: 'SetPlanetSelectable',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: NWScriptDefK1.Actions[740]?.action
   },
   741: {
     comment: '741: GetPlanetSelectable\nReturns wheter or not \'nPlanet\' is selectable.',
     name: 'GetPlanetSelectable',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: NWScriptDefK1.Actions[741]?.action
   },
   742: {
     comment: '742: SetPlanetAvailable\nSets \'nPlanet\' available on the Galaxy Map Gui.',
     name: 'SetPlanetAvailable',
     type: NWScriptDataType.VOID,
     args: [ NWScriptDataType.INTEGER, NWScriptDataType.INTEGER ],
-    action: undefined
+    action: NWScriptDefK1.Actions[742]?.action
   },
   743: {
     comment: '743: GetPlanetAvailable\nReturns wheter or not \'nPlanet\' is available.',
     name: 'GetPlanetAvailable',
     type: NWScriptDataType.INTEGER,
     args: [ NWScriptDataType.INTEGER ],
-    action: undefined
+    action: NWScriptDefK1.Actions[743]?.action
   },
   744: {
     comment: '744: GetSelectedPlanet\nReturns the ID of the currently selected planet.  Check Planetary.2da\nfor which planet the return value corresponds to. If the return is -1\nno planet is selected.',
     name: 'GetSelectedPlanet',
     type: NWScriptDataType.INTEGER,
     args: [],
-    action: undefined
+    action: NWScriptDefK1.Actions[744]?.action
   },
   745: {
     comment: '745: SoundObjectFadeAndStop\nFades a sound object for \'fSeconds\' and then stops it.',

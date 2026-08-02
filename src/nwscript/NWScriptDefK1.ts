@@ -9625,7 +9625,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      return Planetary.planets[args[0]].selectable ? NW_TRUE : NW_FALSE;
+      return Planetary.GetPlanetSelectable(args[0]) ? NW_TRUE : NW_FALSE;
     }
   },
   742:{
@@ -9643,7 +9643,7 @@ NWScriptDefK1.Actions = {
     type: NWScriptDataType.INTEGER,
     args: [NWScriptDataType.INTEGER],
     action: function(this: NWScriptInstance, args: [number]){
-      return Planetary.planets[args[0]].enabled ? NW_TRUE : NW_FALSE;
+      return Planetary.GetPlanetAvailable(args[0]) ? NW_TRUE : NW_FALSE;
     }
   },
   744:{

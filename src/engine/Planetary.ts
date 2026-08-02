@@ -47,17 +47,41 @@ export class Planetary {
 
   }
 
+  /**
+   * Retail CSWPartyTable::SetSelectedPlanet — only commits when the planet is
+   * both available and selectable (index in 0..15).
+   */
   static SetSelectedPlanet( index = 0 ){
+    if(index < 0 || index >= 16){
+      return;
+    }
+    const planet = Planetary.planets[index];
+    if(!planet || !planet.enabled || !planet.selectable){
+      return;
+    }
     Planetary.selectedIndex = index;
-    Planetary.selected = Planetary.planets[index];
+    Planetary.selected = planet;
   }
 
+  /**
+   * Retail CSWPartyTable::SetPlanetAvailable — no-op unless index in 0..15.
+   */
   static SetPlanetAvailable(index: number, bState: boolean){
-    Planetary.planets[index].enabled = bState;
+    if((index >>> 0) >= 16){ return; }
+    const planet = Planetary.planets[index];
+    if(!planet){ return; }
+    planet.enabled = bState;
   }
 
+  /**
+   * Retail CSWPartyTable::SetPlanetSelectable — no-op unless index in 0..15.
+   * Scripts may pass live-content index 16 or scripting constants; retail ignores those.
+   */
   static SetPlanetSelectable(index: number, bState: boolean){
-    Planetary.planets[index].selectable = bState;
+    if((index >>> 0) >= 16){ return; }
+    const planet = Planetary.planets[index];
+    if(!planet){ return; }
+    planet.selectable = bState;
   }
 
   static GetPlanetByGUITag(sTag = ''): Planet{
@@ -73,6 +97,18 @@ export class Planetary {
   
   static GetPlanetByIndex(index: number = 0): Planet {
     return Planetary.planets[index];
+  }
+
+  /** Retail GetPlanetAvailable — 0 when index out of 0..15. */
+  static GetPlanetAvailable(index: number): boolean {
+    if((index >>> 0) >= 16){ return false; }
+    return !!Planetary.planets[index]?.enabled;
+  }
+
+  /** Retail GetPlanetSelectable — 0 when index out of 0..15. */
+  static GetPlanetSelectable(index: number): boolean {
+    if((index >>> 0) >= 16){ return false; }
+    return !!Planetary.planets[index]?.selectable;
   }
 
   static SaveStruct(){

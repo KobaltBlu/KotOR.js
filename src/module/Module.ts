@@ -32,6 +32,7 @@ import { ModuleObjectScript } from "@/enums/module/ModuleObjectScript";
 import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ScriptVarTable } from "@/engine/ScriptVarTable";
+import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
 
 export interface ModuleExpansionEntry {
   name: CExoLocString;
@@ -970,15 +971,12 @@ export class Module {
     await GameState.FactionManager.Export( path.join(CurrentGame.gameinprogress_dir, 'repute.fac') );
   }
 
+  /**
+   * Retail IncludeModuleInSave (modulesave.2da IncludeInSave).
+   * Default true when the table/row is missing.
+   */
   includeInSave(){
-    const modulesave2DA = GameState.TwoDAManager.datatables.get('modulesave');
-    if(modulesave2DA){
-      const moduleSave = modulesave2DA.getRowByColumnAndValue('modulename', this.filename);
-      if(moduleSave){
-        return parseInt(moduleSave.includeInSave) == 0 ? false : true;
-      }
-    }
-    return true;
+    return ModuleSaveTable.includeInSave(this.filename);
   }
 
   static async GetModuleMod(resRef = ''){

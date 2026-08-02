@@ -6,8 +6,8 @@ import * as THREE from "three";
  *
  * Fullscreen muted void behind menus that use voidFill.
  * Radial wash + legacy Perlin shimmer + nebula + soft stars, with an
- * extra slow smoke curl for variance. Brightness stays gated by
- * u_intensity / u_colorIntensity (retail-menu feel).
+ * extra slow smoke curl, film dust, and hairline scratches for variance.
+ * Brightness stays gated by u_intensity / u_colorIntensity (retail-menu feel).
  *
  * @file ShaderGUIVoid.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -75,6 +75,35 @@ export class ShaderGUIVoid extends Shader {
       return mix( 0.42, 0.58, smoke );
     }
 
+    // Fine floating dust — continuous noise peaks, no cell grid.
+    float filmDust( vec2 uv, float t ) {
+      float grain = simplex3d( vec3( uv * 95.0, t * 0.35 ) );
+      grain = grain * 0.5 + 0.5;
+      float moteA = simplex3d( vec3( uv * 48.0 + vec2( t * 0.03, -t * 0.02 ), t * 0.2 ) );
+      float moteB = simplex3d( vec3( uv * 72.0 + vec2( -t * 0.025, t * 0.018 ) + 9.0, t * 0.28 ) );
+      moteA = pow( moteA * 0.5 + 0.5, 16.0 );
+      moteB = pow( moteB * 0.5 + 0.5, 20.0 );
+      return grain * 0.06 + moteA * 0.55 + moteB * 0.4;
+    }
+
+    // Hairline film scratches — stretched simplex ridges.
+    float filmScratches( vec2 uv, float t ) {
+      // Mostly vertical streaks with a slow lateral drift.
+      vec2 sUv = vec2( uv.x * 78.0 + t * 0.04, uv.y * 1.15 );
+      float n1 = abs( simplex3d( vec3( sUv, 2.5 ) ) );
+      float line1 = pow( 1.0 - smoothstep( 0.0, 0.018, n1 ), 3.0 );
+      // Sparse gate so scratches don't cover the whole frame.
+      float gate1 = smoothstep( 0.55, 0.85, simplex3d( vec3( uv.x * 6.0, t * 0.08, 1.0 ) ) * 0.5 + 0.5 );
+
+      // Occasional diagonal hairline.
+      vec2 dUv = vec2( ( uv.x + uv.y * 0.15 ) * 64.0 - t * 0.03, uv.y * 0.9 );
+      float n2 = abs( simplex3d( vec3( dUv, 7.0 ) ) );
+      float line2 = pow( 1.0 - smoothstep( 0.0, 0.014, n2 ), 4.0 );
+      float gate2 = smoothstep( 0.72, 0.92, simplex3d( vec3( uv.x * 4.0 + 3.0, t * 0.05, 4.0 ) ) * 0.5 + 0.5 );
+
+      return line1 * gate1 * 0.7 + line2 * gate2 * 0.45;
+    }
+
     void main(){
       // Soft radial wash (center tint).
       vec2 uv = 2.0 * gl_FragCoord.xy / u_resolution.xy - 1.0;
@@ -92,6 +121,8 @@ export class ShaderGUIVoid extends Shader {
       vec3 nebula = mutedNebula( p, t, u_color );
       float stars = softStars( p + vec2( t * 0.003, -t * 0.002 ), t );
       float smoke = smokeCurl( p, t );
+      float dust = filmDust( p, t );
+      float scratches = filmScratches( p, t );
 
       // Slight edge darkening so depth sits behind the panel.
       float depth = mix( 1.0, 0.78, smoothstep( 0.4, 1.35, length( uv ) ) );
@@ -101,6 +132,9 @@ export class ShaderGUIVoid extends Shader {
       rgb += u_color * stars * 0.45;
       // Smoke curl on top — additional large-scale disturbance.
       rgb = mix( rgb, rgb * smoke * 1.35 + u_color * smoke * 0.12, 0.55 );
+      // Dust & scratches — muted film-plate wear.
+      rgb += vec3( dust ) * 0.22;
+      rgb += vec3( scratches ) * 0.28;
       rgb *= depth;
 
       gl_FragColor = vec4( rgb * u_intensity, 1.0 );

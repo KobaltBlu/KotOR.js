@@ -24,6 +24,7 @@ import { IngameControls } from "@/controls/IngameControls";
 import { INIConfig } from "@/engine/INIConfig";
 import { ServerAIMaster } from "@/engine/ServerAIMaster";
 import { consumeAreaTransitionLoadBackground } from "@/engine/area-transition-bmp";
+import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
 
 // import { OdysseyObject3D } from "@/three/odyssey";
 import { AudioEngine, AudioEmitter } from "@/audio";
@@ -1384,8 +1385,21 @@ export class GameState implements EngineContext {
       if(GameState.module){
         // Retail StallEventSaveGame → SaveModuleStart sets is_save_game = 1
         // TransPending remains set from LoadModuleWithAreaTransitionFade until after stall save
-        try{ await GameState.module.save(true); }catch(e){
-          console.error(e);
+        // Skip stall-save when restoring a save (isLoadingSave) — GAMEINPROGRESS already extracted
+        if(!GameState.isLoadingSave){
+          try{ await GameState.module.save(true); }catch(e){
+            console.error(e);
+          }
+          // Retail StartNewModule: DoModuleEnterSaveCleanup then AutoSaveOnEnteringModule → DoPCAutosave
+          try{
+            await ModuleSaveTable.doModuleEnterSaveCleanup(name);
+            if(ModuleSaveTable.shouldAutoSaveOnEnteringModule(name)){
+              const { SaveGame } = await import('@/engine/SaveGame');
+              await SaveGame.AutoSaveOnModuleEnter(name);
+            }
+          }catch(e){
+            console.error(e);
+          }
         }
         if(GameState.module.area){
           GameState.module.area.setTransitionPending(false);
@@ -1795,6 +1809,11 @@ export class GameState implements EngineContext {
 
     // Party wipe / combat-clear resurrect (TempDeathUpdate) — wall-clock delta
     GameState.GameOverManager.TempDeathUpdate(delta);
+
+    // Retail UpdateAutoSaveTimer — drives AutoSaveOnEnter=yes on next module transition
+    if(GameState.State != EngineState.PAUSED && !GameState.isLoadingSave){
+      ModuleSaveTable.updateAutoSaveTimer(delta);
+    }
 
     GameState.FadeOverlayManager.Update(delta);
     GameState.updateViewportFrustum();
