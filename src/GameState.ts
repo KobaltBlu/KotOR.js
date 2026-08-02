@@ -48,6 +48,8 @@ import { OverbrightenPass } from "@/shaders/pass/OverbrightenPass";
 import { ConvolutionBloomPass } from "@/shaders/pass/ConvolutionBloomPass";
 import { DreamDistortionPass } from "@/shaders/pass/DreamDistortionPass";
 import { FuryPass } from "@/shaders/pass/FuryPass";
+import { MiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMaskPass";
+import { resolveMiniGameAspectMaskPass } from "@/shaders/pass/MiniGameAspectMaskGates";
 import { ResourceLoader, TextureLoader } from "@/loaders";
 
 //THREE.js imports
@@ -392,6 +394,11 @@ export class GameState implements EngineContext {
   static dreamDistortionPass: DreamDistortionPass;
   /** K2 force fury overlay (fx_Fury01/02/03). */
   static furyPass: FuryPass;
+  /**
+   * Widescreen soft 4:3 cockpit mask for swoop / turret.
+   * After FB FX + MG HUD, before GUI (menus stay full-bleed).
+   */
+  static miniGameAspectMaskPass: MiniGameAspectMaskPass;
   static copyPass: ShaderPass;
   static renderPassGUI: RenderPass;
   /** MG camera HUD after AccumulationBlurPass — retail screen-stable gauges stay sharp. */
@@ -949,6 +956,8 @@ export class GameState implements EngineContext {
     GameState.dreamDistortionPass.enabled = false;
     GameState.furyPass = new FuryPass();
     GameState.furyPass.enabled = false;
+    GameState.miniGameAspectMaskPass = new MiniGameAspectMaskPass();
+    GameState.miniGameAspectMaskPass.enabled = false;
     GameState.copyPass = new ShaderPass(CopyShader);
     GameState.renderPassGUI = new RenderPass(GameState.scene_gui, GameState.camera_gui);
     GameState.renderPassMGHud = new RenderPass(GameState.scene, GameState.currentCamera);
@@ -1019,6 +1028,8 @@ export class GameState implements EngineContext {
     GameState.composer.addPass(GameState.odysseyShaderPass);
     GameState.composer.addPass(GameState.dreamDistortionPass);
     GameState.composer.addPass(GameState.furyPass);
+    // Soft 4:3 cockpit mask for swoop/turret — after world FX, before GUI.
+    GameState.composer.addPass(GameState.miniGameAspectMaskPass);
     // GameState.composer.addPass(GameState.bokehPass);
     // GameState.composer.addPass(GameState.renderPassAA);
     // GameState.composer.addPass(GameState.bloomPass);
@@ -1996,10 +2007,22 @@ export class GameState implements EngineContext {
 
     const cam = GameState.currentCamera;
     const prevCamLayers = cam?.layers?.mask;
-    const mgCamera = GameState.module?.area?.miniGame?.player?.camera;
+    const miniGame = GameState.module?.area?.miniGame;
+    const mgCamera = miniGame?.player?.camera;
     const hudPass = GameState.renderPassMGHud;
     if(hudPass){
       hudPass.enabled = !!mgCamera;
+    }
+    if(GameState.miniGameAspectMaskPass){
+      const maskOn = resolveMiniGameAspectMaskPass({
+        engineMode: GameState.Mode,
+        hasMiniGame: !!miniGame,
+        miniGameType: miniGame?.type,
+      });
+      GameState.miniGameAspectMaskPass.enabled = maskOn;
+      if(maskOn){
+        GameState.miniGameAspectMaskPass.setMiniGameType(miniGame?.type);
+      }
     }
     if(cam){
       // World pass: exclude MG camera HUD (drawn after AccumulationBlurPass).
