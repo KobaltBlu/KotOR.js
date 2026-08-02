@@ -279,7 +279,8 @@ export function testDirectLine(
     }
   }
 
-  // Retail NoNonWalkPolysDetailed + OnRoom after clip (−2 DetailedBlock)
+  // Retail NoNonWalkPolysDetailed + OnRoom after clip (−2 DetailedBlock).
+  // Full-segment block still reports farthest clear fraction (PlotPath partial).
   if(checkClip){
     const polys = noNonWalkPolysDetailed(area, origin, dest, {
       personalSpace: perspace,
@@ -287,11 +288,19 @@ export function testDirectLine(
       skipMesh: options.skipClippedLine === true,
     });
     if(!polys.clear){
+      const clearT = refineDetailedClearT(
+        area,
+        origin,
+        dest,
+        perspace,
+        options.skipClippedLine === true,
+        clearPoint
+      );
       return {
         ok: false,
         code: TestDirectLineCode.DetailedBlock,
         clearPoint,
-        clearT: 0,
+        clearT,
         blockingObjectId: polys.blockingObjectId,
         walkHit,
       };
@@ -435,6 +444,45 @@ export function testDirectLine(
     clearT,
     walkHit,
   };
+}
+
+/**
+ * Binary-search farthest t where origin→lerp(t) clears NoNonWalkPolysDetailed.
+ * Retail PlotPathInArea partial recovery needs clearT > 0 when a static object
+ * only blocks near the destination (e.g. console placeable beside a waypoint).
+ */
+function refineDetailedClearT(
+  area: ModuleArea,
+  origin: THREE.Vector3,
+  dest: THREE.Vector3,
+  perspace: number,
+  skipMesh: boolean,
+  out: THREE.Vector3
+): number {
+  let lo = 0;
+  let hi = 1;
+  out.copy(origin);
+  for(let k = 0; k < 10; k++){
+    const mid = (lo + hi) * 0.5;
+    _sample.set(
+      origin.x + (dest.x - origin.x) * mid,
+      origin.y + (dest.y - origin.y) * mid,
+      origin.z + (dest.z - origin.z) * mid
+    );
+    const midPolys = noNonWalkPolysDetailed(area, origin, _sample, {
+      personalSpace: perspace,
+      skipMesh,
+    });
+    if(midPolys.clear){
+      lo = mid;
+      out.copy(_sample);
+      const z = getWalkHeightAt(area, _sample);
+      if(!isNaN(z)) out.z = z;
+    }else{
+      hi = mid;
+    }
+  }
+  return lo;
 }
 
 /** Binary search last walkable t in (lo, hi). */

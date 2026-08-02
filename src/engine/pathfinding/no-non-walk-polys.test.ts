@@ -67,3 +67,27 @@ describe("noNonWalkPolysDetailed door open mesh", () => {
     expect(result.blockingObjectId).toBe(door.id);
   });
 });
+
+describe("noNonWalkPolysDetailed static placeables", () => {
+  it("static placeable without surface wok does not AABB-block", () => {
+    // Retail CSWSPlaceable::NoNonWalkPolys only tests CSWCollisionMesh.
+    const plc = {
+      id: 301,
+      isStatic: () => true,
+      box: new THREE.Box3(
+        new THREE.Vector3(-0.5, -0.5, 0),
+        new THREE.Vector3(0.5, 0.5, 1),
+      ),
+      position: new THREE.Vector3(0, 0, 0),
+      collisionManager: { walkmesh: undefined },
+    };
+    const area = {
+      doors: [],
+      placeables: [plc],
+    } as unknown as ModuleArea;
+    const from = new THREE.Vector3(-2, 0, 0);
+    const to = new THREE.Vector3(2, 0, 0);
+    const result = noNonWalkPolysDetailed(area, from, to, { skipMesh: true });
+    expect(result.clear).toBe(true);
+  });
+});

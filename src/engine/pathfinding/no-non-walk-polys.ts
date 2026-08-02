@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import type { ModuleArea } from "@/module/ModuleArea";
 import type { ModuleDoor } from "@/module/ModuleDoor";
-import type { ModulePlaceable } from "@/module/ModulePlaceable";
 import { noNonWalkPolysOnAreaMesh, noNonWalkPolysOnWalkMesh } from "@/engine/pathfinding/no-non-walk-polys-mesh";
 import {
   setHitInfoForAabb,
@@ -12,9 +11,9 @@ import {
  * CSWSArea::NoNonWalkPolysDetailed @ 00506650 +
  * NoNonWalkPolysOnRoom @ 00579680 (doors / placeables / mesh).
  *
- * Retail: static-object AABBs + room surface-mesh walk-check materials.
- * JS: closed doors + static placeables + non-walk wok corridor; AABB/door
- * hits fill WalkHitInfo via setHitInfoForAabb (G11).
+ * Retail static placeables: CSWSPlaceable::NoNonWalkPolys @ 00585350 →
+ * CSWCollisionMesh only (no bare AABB). Closed doors keep facing-plane /
+ * door-wok tests; room non-walk materials via NoNonWalkPolysOnRoom.
  *
  * @file no-non-walk-polys.ts
  */
@@ -116,29 +115,6 @@ function closedDoorBlocksLine(
   return true;
 }
 
-function placeableBlocksLine(
-  placeable: ModulePlaceable,
-  from: THREE.Vector3,
-  to: THREE.Vector3,
-  expand: number,
-  hit?: WalkHitInfo
-): boolean {
-  const box = placeable?.box;
-  if(!box) return false;
-
-  const minX = Math.min(from.x, to.x) - expand;
-  const maxX = Math.max(from.x, to.x) + expand;
-  const minY = Math.min(from.y, to.y) - expand;
-  const maxY = Math.max(from.y, to.y) + expand;
-  if(maxX < box.min.x || minX > box.max.x) return false;
-  if(maxY < box.min.y || minY > box.max.y) return false;
-  if(!segmentHitsBox(from, to, box)) return false;
-  if(hit){
-    setHitInfoForAabb(box, from, to, hit, placeable.id);
-  }
-  return true;
-}
-
 /**
  * Test static non-walk blockers on the segment (doors + placeables + mesh).
  * Returns clear=false → retail TestDirectLine −2 (DetailedBlock).
@@ -178,34 +154,30 @@ export function noNonWalkPolysDetailed(
     }
   }
 
+  // Retail NoNoneWalkPolysInStaticObject @ 004bbe20 → CSWSPlaceable::NoNonWalkPolys
+  // @ 00585350 → CSWCollisionMesh only. Static placeables with no surface wok
+  // (InfoTerm / invisible cameras / speak placeholders) must not AABB-block.
   const placeables = area.placeables;
   if(placeables?.length){
     for(let i = 0; i < placeables.length; i++){
       const plc = placeables[i];
       if(!plc || isIgnored(plc.id)) continue;
       const wok = plc.collisionManager?.walkmesh;
-      const solid = plc.isStatic?.() || !!wok;
-      if(!solid) continue;
-      if(wok?.faces?.length){
-        if(plc.box){
-          const minX = Math.min(_from.x, _to.x) - expand;
-          const maxX = Math.max(_from.x, _to.x) + expand;
-          const minY = Math.min(_from.y, _to.y) - expand;
-          const maxY = Math.max(_from.y, _to.y) + expand;
-          if(maxX < plc.box.min.x || minX > plc.box.max.x) continue;
-          if(maxY < plc.box.min.y || minY > plc.box.max.y) continue;
-        }
-        const mesh = noNonWalkPolysOnWalkMesh(wok, _from, _to, {
-          personalSpace: expand,
-          hit: options.hit,
-          blockAllFaces: true,
-        });
-        if(!mesh.clear){
-          return { clear: false, blockingObjectId: plc.id };
-        }
-        continue;
+      if(!wok?.faces?.length) continue;
+      if(plc.box){
+        const minX = Math.min(_from.x, _to.x) - expand;
+        const maxX = Math.max(_from.x, _to.x) + expand;
+        const minY = Math.min(_from.y, _to.y) - expand;
+        const maxY = Math.max(_from.y, _to.y) + expand;
+        if(maxX < plc.box.min.x || minX > plc.box.max.x) continue;
+        if(maxY < plc.box.min.y || minY > plc.box.max.y) continue;
       }
-      if(placeableBlocksLine(plc, _from, _to, expand, options.hit)){
+      // Placeable surface meshes use walkcheck material bits (unlike door geo).
+      const mesh = noNonWalkPolysOnWalkMesh(wok, _from, _to, {
+        personalSpace: expand,
+        hit: options.hit,
+      });
+      if(!mesh.clear){
         return { clear: false, blockingObjectId: plc.id };
       }
     }
