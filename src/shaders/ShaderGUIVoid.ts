@@ -171,19 +171,19 @@ export class ShaderGUIVoid extends Shader {
 
       vec3 etherLift = mix( METAL, METAL_HI, 0.45 ) * ( centerGlow + value * 0.18 );
 
-      vec3 rgb = base * 0.75 + etherLift;
+      vec3 rgb = base * 0.7 + etherLift * 0.85;
       // Stronger Perlin metal fog.
-      rgb += fog * 0.95;
-      rgb += METAL * value * 0.35;
-      rgb += METAL_HI * stars * 0.65;
-      rgb = mix( rgb, rgb * smoke * 1.18 + METAL * ( smoke - 0.5 ) * 0.2, 0.35 );
+      rgb += fog * 0.8;
+      rgb += METAL * value * 0.28;
+      rgb += METAL_HI * stars * 0.55;
+      rgb = mix( rgb, rgb * smoke * 1.15 + METAL * ( smoke - 0.5 ) * 0.16, 0.32 );
 
       // God rays in luminous blue-metal.
-      rgb += mix( METAL, METAL_HI, 0.6 ) * rays * 0.85;
+      rgb += mix( METAL, METAL_HI, 0.6 ) * rays * 0.7;
 
-      rgb += vec3( dust.x ) * 0.75;
-      rgb += mix( METAL_HI, vec3( 0.85 ), 0.25 ) * dust.y * 0.55;
-      rgb += METAL * dust.y * dust.y * 0.15;
+      rgb += vec3( dust.x ) * 0.65;
+      rgb += mix( METAL_HI, vec3( 0.85 ), 0.25 ) * dust.y * 0.45;
+      rgb += METAL * dust.y * dust.y * 0.12;
 
       rgb *= depthVignette;
 
@@ -202,8 +202,8 @@ export class ShaderGUIVoid extends Shader {
         u_time: { value: 0.0 },
         u_resolution: { value: new THREE.Vector2() },
         u_color: { value: new THREE.Color(0.42, 0.50, 0.60) },
-        u_colorIntensity: {value: 0.5 },
-        u_intensity: {value: 0.48 },
+        u_colorIntensity: {value: 0.42 },
+        u_intensity: {value: 0.38 },
       }
     ])
   }
