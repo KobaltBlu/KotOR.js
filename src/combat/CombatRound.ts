@@ -272,6 +272,14 @@ export class CombatRound {
     this.dodgeTarget = target;
     this.pendingDischargeVisuals.length = 0;
 
+    // Retail StartCombatRound @ TSL 00772e3e — NewAttackTarget (0xb20) sticky:
+    // set to attack target, or INVALID when targeting self.
+    if(target && target !== owner){
+      this.newAttackTarget = target;
+    }else{
+      this.newAttackTarget = undefined;
+    }
+
     for(let i = 0; i < 5; i++){
       this.attackList[i]?.reset?.();
     }
@@ -481,13 +489,27 @@ export class CombatRound {
     // EndCombatRound can CreateNewAttackActions (retail sticky-target clear).
     this.pruneDeadAttackActions();
 
+    // Retail EndCombatRound: if NewAttackTarget sticky died, force GetNearestEnemy
+    // (TSL local_14 / CreateNewAttackActions param_1). Alive sticky keeps focus.
+    let forceNearest = false;
+    const sticky = this.newAttackTarget;
+    if(sticky){
+      const stickyDead = typeof (sticky as ModuleCreature).isDead === 'function'
+        ? !!(sticky as ModuleCreature).isDead()
+        : false;
+      if(stickyDead){
+        this.newAttackTarget = undefined;
+        forceNearest = true;
+      }
+    }
+
     // Retail EndCombatRound auto-pause fires before CreateNewAttackActions.
     if(shouldAutoPause){
       GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.CombatRoundEnd);
     }
 
-    // Retail EndCombatRound → CreateNewAttackActions for controlled PC @ 004d4620
-    // (no CombatState / hostile-engagement gate — only controlled PC + alive + empty sched).
+    // Retail EndCombatRound → CreateNewAttackActions for controlled PC.
+    // CreateNewAttackActions itself keeps a non-empty schedule when sticky lives.
     if(
       !options?.skipCreateNewAttackActions &&
       BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)
@@ -495,10 +517,9 @@ export class CombatRound {
       const creature = this.owner as ModuleCreature;
       if(
         GameState.getCurrentPlayer() === creature &&
-        !creature.isDead() &&
-        !this.scheduledActionList.length
+        !creature.isDead()
       ){
-        createNewAttackActions(creature);
+        createNewAttackActions(creature, { forceNearest });
       }
     }
   }
@@ -2076,9 +2097,14 @@ export class CombatRound {
       attackType = Math.round(Math.random()*4)+1;
     }
 
-    // Prefer anim name already chosen by resolveRangedAttack (feat-aware + discharge row)
-    // or CutsceneAttack calculateAttackAnimation (GetClientMeleeAnimation row).
-    if(combatAction.resultsCalculated){
+    // Prefer anim name already chosen by resolveRangedAttack (feat-aware + discharge
+    // row), or GetClientMeleeAnimation via calculateAttackAnimation for cutscene
+    // rows / live melee feats (Power Attack → f*a3, Flurry → f*a2, Crit → f*a1).
+    // Basic engaged choreography (c*aN) stays below when no feat stamped a name.
+    if(
+      combatAction.resultsCalculated ||
+      (combatAction.feat && !combatAction.animationName)
+    ){
       combatAction.calculateAttackAnimation();
     }
     if(combatAction.animationName){

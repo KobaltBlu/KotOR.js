@@ -122,7 +122,7 @@ import {
   getExcitedDurationMs,
 } from "@/combat/combat-engagement";
 import { createNewAttackActions } from "@/combat/create-new-attack-actions";
-import { hasTargetBeenDetected, getNearestEnemy } from "@/combat/nearest-enemy";
+import { getNearestEnemy } from "@/combat/nearest-enemy";
 import {
   isChoreographedMeleeWeapon,
   resolveChoreographedState,
@@ -1680,29 +1680,12 @@ export class ModuleCreature extends ModuleObject {
     }
 
     // Auto-requeue only for hostile Damage engagement — not flourish (SpellCast reason).
-    // Retail CreateNewAttackActions / GetNearestEnemy: SEEN + LOS + MaxCleaveRange.
+    // Retail CreateNewAttackActions prefers combat-round sticky / keeps queued
+    // actions; never retarget to lastAttacker (who just hit the PC).
     if(this.isHostileCombatEngaged()){
       if(GameState.getCurrentPlayer() == this){
         if(!this.combatRound.scheduledActionList.length && !this.combatRound.action){
-          const last = this.combatData.lastAttackTarget;
-          const attacker = this.combatData.lastAttacker;
-          if(
-            last &&
-            !last.isDead() &&
-            this.isHostile(last) &&
-            hasTargetBeenDetected(this, last)
-          ){
-            this.attackCreature(last, undefined);
-          }else if(
-            attacker &&
-            !attacker.isDead() &&
-            this.isHostile(attacker) &&
-            hasTargetBeenDetected(this, attacker)
-          ){
-            this.attackCreature(attacker, undefined);
-          }else{
-            createNewAttackActions(this);
-          }
+          createNewAttackActions(this);
         }
       }
     }else if(!this.combatData.combatState){
@@ -1916,8 +1899,16 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.lastDamager = oAttacker;
     this.combatData.lastAttacker = oAttacker;
 
-    if(this.combatData.lastAttackTarget == undefined || (this.combatData.lastAttackTarget instanceof ModuleObject && this.combatData.lastAttackTarget.isDead()))
+    // Only adopt the damager as attack target when we have no live focus —
+    // including sticky attempted target — so a hit from another creature cannot
+    // pull the PC off a queued combat target.
+    const attackTarget = this.combatData.lastAttackTarget;
+    const attempted = this.combatData.lastAttemptedAttackTarget;
+    const attackTargetGone = !(attackTarget instanceof ModuleObject) || attackTarget.isDead();
+    const attemptedGone = !(attempted instanceof ModuleObject) || attempted.isDead();
+    if(attackTargetGone && attemptedGone){
       this.combatData.lastAttackTarget = oAttacker;
+    }
 
     if(typeof oAttacker != 'undefined')
       this.onDamaged();

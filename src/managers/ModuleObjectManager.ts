@@ -1074,6 +1074,8 @@ export class ModuleObjectManager {
         }
 
         // Retail EnemySighted force-pick: creatures only (not placeables/doors).
+        // Do not steal UI focus from a live sticky selection while already in
+        // combat — queued attacks keep the current combat target.
         if(
           enemyRising &&
           !isMine &&
@@ -1082,10 +1084,12 @@ export class ModuleObjectManager {
           if(!combat){
             GameState.AutoPauseManager.SignalAutoPauseEvent(AutoPauseState.EnemySighted);
           }
-          last = obj;
-          keepSticky = true;
-          forceLookAt = true;
-          forceCameraFocus = true;
+          if(!combat || !keepSticky){
+            last = obj;
+            keepSticky = true;
+            forceLookAt = true;
+            forceCameraFocus = true;
+          }
         }
       }
     }

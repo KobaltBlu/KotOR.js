@@ -9,6 +9,7 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ActionType } from "@/enums/actions/ActionType";
 import { SkillType } from "@/enums/nwscript/SkillType";
 import { ActionParameterType, ModuleObjectConstant, ModuleTriggerType } from "@/enums";
+import { TalentFeat } from "@/talents/TalentFeat";
 import { TalentObject } from "@/talents/TalentObject";
 import { TalentSpell } from "@/talents/TalentSpell";
 import {
@@ -62,6 +63,12 @@ export class ActionMenuManager {
 
   static oPC: ModuleCreature;
   static oTarget: ModuleObject;
+  /**
+   * When the look-at / selected target changes, slot 0 defaults to Attack
+   * (retail appends Attack after combat feats). Per-frame rebuilds must not
+   * reset the player's cycled selection (Power Attack, Flurry, …).
+   */
+  static #preferDefaultAttack = false;
 
   static ActionPanels: IActionPanelLists = {
     targetPanels: [],
@@ -73,6 +80,9 @@ export class ActionMenuManager {
   }
 
   static SetTarget(oTarget: ModuleObject){
+    if(ActionMenuManager.oTarget !== oTarget){
+      ActionMenuManager.#preferDefaultAttack = true;
+    }
     ActionMenuManager.oTarget = oTarget;
   }
 
@@ -517,6 +527,7 @@ export class ActionMenuManager {
     }
 
     if(!ActionMenuManager.oPC){
+      ActionMenuManager.#preferDefaultAttack = false;
       return ActionMenuManager.ActionPanels;
     }
 
@@ -667,9 +678,9 @@ export class ActionMenuManager {
             icon: 'i_attack',
             name: 'Attack',
           }));
-          // Default click stays Attack (retail appends Attack after feats).
-          ActionMenuManager.ActionPanels.targetPanels[0].selectedIndex =
-            ActionMenuManager.ActionPanels.targetPanels[0].actions.length - 1;
+          // Default to Attack only on target change — keep cycled feat selection
+          // across per-frame UpdateMenuActions rebuilds.
+          ActionMenuManager.applyDefaultAttackSelectionIfNeeded();
 
           ActionMenuManager.populateHostileForcePowers();
           ActionMenuManager.populateCounterSpell();
@@ -722,6 +733,12 @@ export class ActionMenuManager {
       ActionMenuManager.populateStances();
     }
 
+    // Clear target-change default if the hostile combat path did not run
+    // (empty / non-hostile target) so the flag cannot stick across frames.
+    if(ActionMenuManager.#preferDefaultAttack){
+      ActionMenuManager.applyDefaultAttackSelectionIfNeeded();
+    }
+
     return ActionMenuManager.ActionPanels;
   }
 
@@ -742,10 +759,30 @@ export class ActionMenuManager {
   }
 
   /**
+   * After slot-0 combat feats + Attack are built: default to Attack when the
+   * selected target just changed. Otherwise preserve selectedIndex so cycling
+   * to Power Attack / Flurry / etc. survives the next UpdateMenuActions.
+   */
+  static applyDefaultAttackSelectionIfNeeded(){
+    const panel = ActionMenuManager.ActionPanels.targetPanels[0];
+    if(!panel){
+      ActionMenuManager.#preferDefaultAttack = false;
+      return;
+    }
+    if(ActionMenuManager.#preferDefaultAttack){
+      if(panel.actions.length){
+        panel.selectedIndex = panel.actions.length - 1;
+      }
+      ActionMenuManager.#preferDefaultAttack = false;
+    }
+  }
+
+  /**
    * Retail player input: ActionManager(1) only when **not** already in combat
    * (HandlePlayerToServerInputMessage UseItem case 9 / CastSpell case 0x12).
    * Attack case 2 calls AddAttackActions with clear=0 so the combat-round
    * schedule appends — never wipe it here.
+   * Feat attacks: SendPlayerToServerInput_Attack(target, featId).
    */
   static activateMenuItem(menuItem: ActionMenuItem, defaultTarget?: ModuleObject){
     if(!ActionMenuManager.oPC || !menuItem) return;
@@ -778,6 +815,13 @@ export class ActionMenuManager {
     // Retail: ActionManager(1) only when combat state is off.
     if(!pc.combatData?.combatState){
       pc.clearAllActions(true);
+    }
+
+    // Combat feats (Power Attack, Flurry, …) before basic Attack — retail
+    // SendPlayerToServerInput_Attack(targetId, featId).
+    if(menuItem.talent instanceof TalentFeat){
+      pc.attackCreature(target as ModuleCreature, menuItem.talent);
+      return;
     }
 
     if(menuItem.action && menuItem.action.type == ActionType.ActionPhysicalAttacks){
