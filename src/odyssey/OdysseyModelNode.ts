@@ -156,11 +156,16 @@ export class OdysseyModelNode {
       
       let tmpQuat = new THREE.Quaternion();
 
-      // Always set so OdysseyControllerFactory can build emitter-specific controllers (SizeStart, etc.).
-      // When geometry is already parsed, prefer its nodeType so flags match the mesh instance.
+      // Animation nodes reuse geometry names; prefer the geometry node's type so
+      // controller column layouts match the mesh. Do NOT copy onto geometry nodes —
+      // duplicate names (e.g. c_jawa skin "lhand" then hook "lhand") would corrupt
+      // the later node's type into Skin/Mesh and break hooks / ASCII export.
       controller.nodeType = this.nodeType;
-      if(this.odysseyModel.nodes.has(this.name)){
-        controller.nodeType = this.nodeType = this.odysseyModel.nodes.get(this.name).nodeType;
+      if(this instanceof OdysseyModelAnimationNode && this.odysseyModel.nodes.has(this.name)){
+        const geo = this.odysseyModel.nodes.get(this.name);
+        if(geo){
+          controller.nodeType = this.nodeType = geo.nodeType;
+        }
       }
 
       if(controller.frameCount != -1){

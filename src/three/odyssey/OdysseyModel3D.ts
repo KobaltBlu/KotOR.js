@@ -230,7 +230,8 @@ export class OdysseyModel3D extends OdysseyObject3D {
         if(node == rootNode) return;
 
         if(node instanceof THREE.SkinnedMesh){
-          node.userData.boneNames = [...head.nodes.keys()];
+          // bone_parts indexes the head model's names[] (node numbers), not Map insertion order
+          node.userData.boneNames = head.names;
           this.skins.push(node);
           let m_node = node.parent;
           let n_parent = this.nodes.get(m_node.parent?.name);
@@ -785,6 +786,18 @@ export class OdysseyModel3D extends OdysseyObject3D {
     return undefined;
   }
 
+  /**
+   * Bind each skin to its bone slots.
+   *
+   * Retail (ExecuteSkinTransforms / RenderSkinned @ 00487570 / 0048a0d0):
+   * - MDX bone index → bone_parts[slot] → absolute node number
+   * - qbone_ref_inv / tbone_ref_inv are sized to the node list and indexed by that node number
+   * - GatherBones walks the part tree in node-number order
+   *
+   * Do not resolve bones via `nodes` Map key order — duplicate names (e.g. talkdummy,
+   * lhand/rhand skins) shift indices and leave high node numbers undefined, which makes
+   * THREE treat those slots as identity and stretch verts when the model leaves the origin.
+   */
   buildSkeleton(){
     this.bonesInitialized = false;
     this.oldAnim = this.animationManager.currentAnimation;
@@ -794,23 +807,32 @@ export class OdysseyModel3D extends OdysseyObject3D {
     for(let i = 0; i < this.skins.length; i++){
       const skinNode = this.skins[i];
       if(typeof skinNode.userData.boneNames === 'undefined'){
-        skinNode.userData.boneNames = [...this.nodes.keys()];
+        skinNode.userData.boneNames = this.names;
       }
-      const odysseyModelNode = skinNode.userData.odysseyModelNode;
+      const odysseyModelNode = skinNode.userData.odysseyModelNode as OdysseyModelNodeSkin | undefined;
       if(typeof odysseyModelNode?.bone_parts !== 'undefined'){
-        const bones = [];
-        const inverses = [];
-        // let parts = Array.from(this.nodes.values());
-        const boneNames = skinNode.userData.boneNames;
+        const bones: THREE.Object3D[] = [];
+        const inverses: THREE.Matrix4[] = [];
+        const boneNames: string[] = skinNode.userData.boneNames;
+        const inverseMats = odysseyModelNode.bone_inverse_matrix;
+        const nodeIndexedInverses = inverseMats.length === boneNames.length;
+
         for(let j = 0; j < odysseyModelNode.bone_parts.length; j++){
-          const boneName = boneNames[odysseyModelNode.bone_parts[j]];
-          const boneNode = this.nodes.get(boneName);
-          if(typeof boneNode != 'undefined'){
-            bones[j] = boneNode;
-            inverses[j] = odysseyModelNode.bone_inverse_matrix[j];
+          const nodeIndex = odysseyModelNode.bone_parts[j];
+          // Unused slots are typically 0xFFFF; garbage past the used range is also skipped
+          if(nodeIndex === 0xFFFF || nodeIndex < 0 || nodeIndex >= boneNames.length){
+            continue;
           }
+          const boneName = boneNames[nodeIndex];
+          const boneNode = this.nodes.get(boneName);
+          if(typeof boneNode === 'undefined'){
+            continue;
+          }
+          bones[j] = boneNode;
+          // Retail indexes QBone/TBone by node number; fall back to slot index for odd files
+          const inv = nodeIndexedInverses ? inverseMats[nodeIndex] : inverseMats[j];
+          inverses[j] = inv ?? new THREE.Matrix4();
         }
-        // (skinNode.geometry as any).bones = bones;
         skinNode.bind(new THREE.Skeleton( bones as any[], inverses ));
         skinNode.skeleton.update();
         skinNode.updateMatrixWorld();
