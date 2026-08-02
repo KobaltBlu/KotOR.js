@@ -58,7 +58,7 @@ export class OrientationController extends OdysseyController {
       manager.modelNode.quaternion.set(data.x, data.y, data.z, data.w);
     // }
 
-    manager.modelNode.updateMatrix();
+    manager.markNodeTransformDirty();
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
@@ -91,7 +91,7 @@ export class OrientationController extends OdysseyController {
       }
       //manager.modelNode.quaternion.copy(last);
     }
-    manager.modelNode.updateMatrix();
+    manager.markNodeTransformDirty();
   }
 
 }

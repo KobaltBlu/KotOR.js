@@ -197,22 +197,8 @@ export class ModuleDoor extends ModuleObject {
 
   }
 
-  computeBoundingBox(force?: boolean): void {
-    if(this.container){
-      this.container.updateMatrixWorld(true);
-      this.container.updateMatrix();
-      if(force){
-        this.container.traverse( n => {
-          n.updateMatrixWorld(true);
-          n.updateMatrix();
-        })
-      }
-    }
-
-    if(this.model){
-      this.model.updateMatrixWorld(true);
-      this.model.updateMatrix();
-    }
+  computeBoundingBox(force: boolean = false){
+    return super.computeBoundingBox(force);
   }
 
   isOnScreen(frustum: THREE.Frustum = GameState.viewportFrustum): boolean {
@@ -371,6 +357,7 @@ export class ModuleDoor extends ModuleObject {
 
     if(next){
       this.collisionManager.setWalkmesh(next);
+      this.markCollisionBoundsDirty('walkmesh');
       this.syncWalkmeshMatrix();
       if(next.mesh){
         GameState.group.room_walkmeshes.add(next.mesh);
@@ -382,6 +369,7 @@ export class ModuleDoor extends ModuleObject {
     }else{
       // OPEN1/OPEN2 with missing DWK, or DESTROYED — no blocking geo (retail empty mesh)
       this.collisionManager.setWalkmesh(undefined);
+      this.markCollisionBoundsDirty('walkmesh');
     }
   }
 
@@ -1060,6 +1048,7 @@ export class ModuleDoor extends ModuleObject {
           this.model.userData.moduleObject = this;
           this.model.name = modelName;
           this.container.add(this.model);
+          this.markCollisionBoundsDirty('model');
           this.model.removeEventListener?.('playEvent', this.doorAnimPlayEventHandler);
           this.model.addEventListener('playEvent', this.doorAnimPlayEventHandler);
 
@@ -1169,6 +1158,7 @@ export class ModuleDoor extends ModuleObject {
     }
 
     this.updateCollisionState();
+    this.markCollisionBoundsDirty('walkmesh');
     return this.collisionManager.walkmesh || this.walkmeshClosed;
   }
 

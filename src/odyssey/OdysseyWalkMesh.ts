@@ -14,12 +14,17 @@ import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
 import { clearWalkCheckMaterialMaskCache } from "@/engine/pathfinding/walk-check-material-mask";
 
 const _identityMatrix4 = new THREE.Matrix4();
+const _raycastInverseMatrix = new THREE.Matrix4();
+const _raycastLocalRay = new THREE.Ray();
+const _raycastLocalHit = new THREE.Vector3();
+const _raycastWorldHit = new THREE.Vector3();
+const _faceBoxScratch = new THREE.Box3();
 
 /**
  * OdysseyWalkMesh class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file OdysseyWalkMesh.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -73,13 +78,13 @@ export class OdysseyWalkMesh {
   aabbGroup: THREE.Object3D;
   aabbRoot: IOdysseyModelAABBNode;
   uuid: string = crypto.randomUUID();
-  
+
   constructor( wokReader?: BinaryReader ){
 
     this.header = {
       walkMeshType: OdysseyWalkMeshType.NONE
     };
-    
+
     this.rootNode = null;
     this.mesh = new THREE.Mesh();
     this.box = new THREE.Box3();
@@ -121,7 +126,7 @@ export class OdysseyWalkMesh {
         face.adjacentWalkableFaces.c = this.faces[(face.adjacent || [] )[2]];
 
         if(face.adjacentWalkableFaces.a instanceof WalkmeshEdge ||
-           face.adjacentWalkableFaces.b instanceof WalkmeshEdge || 
+           face.adjacentWalkableFaces.b instanceof WalkmeshEdge ||
            face.adjacentWalkableFaces.c instanceof WalkmeshEdge){
           this.walkableFacesWithEdge.push(face);
         }
@@ -160,7 +165,7 @@ export class OdysseyWalkMesh {
           face.adjacentWalkableFaces.c.update();
         }
       }
-      
+
       //Is this face grassy
       if(face.surfacemat.grass){
         this.grassFaces.push(face);
@@ -183,7 +188,7 @@ export class OdysseyWalkMesh {
     //this.geometry.boundingBox = this.boundingBox;
 
     this.buildBufferedGeometry();
-    
+
     // this.geometry.vertices = this.vertices;
     // this.geometry.faces = this.faces;
 
@@ -203,7 +208,7 @@ export class OdysseyWalkMesh {
 
     this.aabbGroup = new THREE.Object3D;
     this.mesh.add(this.aabbGroup);
-    
+
     for(let i = 0; i < this.aabbNodes.length; i++){
       let node = this.aabbNodes[i];
       //node.boxHelper = new THREE.Box3Helper( node.box, 0xffff00 );
@@ -258,7 +263,7 @@ export class OdysseyWalkMesh {
 
     //Color
     const colors32 = new Float32Array( colors );
-    this.geometry.setAttribute( 'color', new THREE.BufferAttribute( colors32, 3 ) ); 
+    this.geometry.setAttribute( 'color', new THREE.BufferAttribute( colors32, 3 ) );
   }
 
   updateMatrix(){
@@ -266,7 +271,7 @@ export class OdysseyWalkMesh {
     this.edges.forEach( (edge) => {
       edge.update();
     });
-    
+
     //transform vertex positions
     for(let i = 0, len = this.vertices.length; i < len; i++){
       this.vertices[i].copy(this._vertices[i]);
@@ -375,7 +380,7 @@ export class OdysseyWalkMesh {
         let adj1 = this.wokReader.readInt32();
         let adj2 = this.wokReader.readInt32();
         let adj3 = this.wokReader.readInt32();
-                    
+
         let adj = [-1, -1, -1];
         let diff = [-1, -1, -1];
 
@@ -429,23 +434,23 @@ export class OdysseyWalkMesh {
       const adjFace = this.faces[i];
       if(adjFace == face)
         continue;
-      
+
       for(let j = 0; j < 3; j++){
         if(j == 0 && aEdge){
-          if( (face.a == adjFace.a && face.b == adjFace.b) || (face.a == adjFace.b && face.b == adjFace.a) || 
-            (face.a == adjFace.b && face.b == adjFace.c) || (face.a == adjFace.c && face.b == adjFace.b) || 
+          if( (face.a == adjFace.a && face.b == adjFace.b) || (face.a == adjFace.b && face.b == adjFace.a) ||
+            (face.a == adjFace.b && face.b == adjFace.c) || (face.a == adjFace.c && face.b == adjFace.b) ||
             (face.a == adjFace.c && face.b == adjFace.a) || (face.a == adjFace.a && face.b == adjFace.c)){
             aEdge = false;
           }
         }else if(j == 1 && bEdge){
-          if( (face.b == adjFace.a && face.c == adjFace.b) || (face.b == adjFace.b && face.c == adjFace.a) || 
-            (face.b == adjFace.b && face.c == adjFace.c) || (face.b == adjFace.c && face.c == adjFace.b) || 
+          if( (face.b == adjFace.a && face.c == adjFace.b) || (face.b == adjFace.b && face.c == adjFace.a) ||
+            (face.b == adjFace.b && face.c == adjFace.c) || (face.b == adjFace.c && face.c == adjFace.b) ||
             (face.b == adjFace.c && face.c == adjFace.a) || (face.b == adjFace.a && face.c == adjFace.c)){
             bEdge = false;
           }
         }else if(j == 2 && cEdge){
-          if( (face.c == adjFace.a && face.a == adjFace.b) || (face.c == adjFace.b && face.a == adjFace.a) || 
-            (face.c == adjFace.b && face.a == adjFace.c) || (face.c == adjFace.c && face.a == adjFace.b) || 
+          if( (face.c == adjFace.a && face.a == adjFace.b) || (face.c == adjFace.b && face.a == adjFace.a) ||
+            (face.c == adjFace.b && face.a == adjFace.c) || (face.c == adjFace.c && face.a == adjFace.b) ||
             (face.c == adjFace.c && face.a == adjFace.a) || (face.c == adjFace.a && face.a == adjFace.c)){
             cEdge = false;
           }
@@ -580,7 +585,7 @@ export class OdysseyWalkMesh {
       distance = point.distanceTo(target);
       if(distance >= nearest)
         continue;
-      
+
       nearest_point.copy(target);//this.walkableFaces[i].centroid;
       nearest = distance;
     }
@@ -636,6 +641,67 @@ export class OdysseyWalkMesh {
     return false;
   }
 
+  private faceOverlapsBox(face: OdysseyFace3 | undefined, box: THREE.Box3): boolean {
+    if(!face) return false;
+    const a = this.vertices[face.a];
+    const b = this.vertices[face.b];
+    const c = this.vertices[face.c];
+    if(!a || !b || !c) return false;
+    _faceBoxScratch.makeEmpty();
+    _faceBoxScratch.expandByPoint(a);
+    _faceBoxScratch.expandByPoint(b);
+    _faceBoxScratch.expandByPoint(c);
+    return _faceBoxScratch.intersectsBox(box) || _faceBoxScratch.containsBox(box);
+  }
+
+  private collectAABBFaces(
+    box: THREE.Box3,
+    node: IOdysseyModelAABBNode | undefined,
+    out: OdysseyFace3[]
+  ): OdysseyFace3[] {
+    if(!node || !this.containsPointOrBox(node.box, box)) return out;
+    if(node.faceIdx > -1){
+      const face = this.faces[node.faceIdx];
+      if(face && this.faceOverlapsBox(face, box)){
+        out.push(face);
+      }
+      return out;
+    }
+    this.collectAABBFaces(box, node.leftNode, out);
+    this.collectAABBFaces(box, node.rightNode, out);
+    return out;
+  }
+
+  getFacesInBox(box: THREE.Box3, out: OdysseyFace3[] = []): OdysseyFace3[] {
+    out.length = 0;
+    if(!this.faces?.length) return out;
+    if(this.aabbRoot){
+      return this.collectAABBFaces(box, this.aabbRoot, out);
+    }
+    for(let i = 0, len = this.faces.length; i < len; i++){
+      if(this.faceOverlapsBox(this.faces[i], box)){
+        out.push(this.faces[i]);
+      }
+    }
+    return out;
+  }
+
+  getEdgesInBox(box: THREE.Box3, out: WalkmeshEdge[] = []): WalkmeshEdge[] {
+    out.length = 0;
+    if(!this.edges?.size) return out;
+    const tmpBox = _faceBoxScratch;
+    for(const edge of this.edges.values()){
+      if(!edge?.line) continue;
+      tmpBox.makeEmpty();
+      tmpBox.expandByPoint(edge.line.start);
+      tmpBox.expandByPoint(edge.line.end);
+      if(tmpBox.intersectsBox(box) || tmpBox.containsBox(box)){
+        out.push(edge);
+      }
+    }
+    return out;
+  }
+
   getAABBCollisionFaces(box = new THREE.Box3, node?: IOdysseyModelAABBNode, collisions: any[] = []){
 
     if(this.header.walkMeshType == OdysseyWalkMeshType.AABB){
@@ -660,7 +726,7 @@ export class OdysseyWalkMesh {
           if(node.faceIdx > -1)
             collisions.push(this.faces[node.faceIdx]);
         }
-      
+
       }else{
 
         if(this.containsPointOrBox(node.box, box)){
@@ -687,10 +753,14 @@ export class OdysseyWalkMesh {
         return [];
       }
     }
-    
+
   }
 
-  raycast(raycaster: THREE.Raycaster, faces: any[] = []): THREE.Intersection[] {
+  raycast(raycaster: THREE.Raycaster, faces: OdysseyFace3[] = []): THREE.Intersection[] {
+    if(faces?.length){
+      return this.raycastFaces(raycaster, faces);
+    }
+
     let _intersects: THREE.Intersection[] = [];
     this.mesh.raycast(raycaster, _intersects);
     _intersects = _intersects.map<THREE.Intersection>( (face) => {
@@ -701,6 +771,47 @@ export class OdysseyWalkMesh {
       return face;
     })
     return _intersects;
+  }
+
+  raycastFaces(raycaster: THREE.Raycaster, faces: OdysseyFace3[] = []): THREE.Intersection[] {
+    if(!faces?.length) return [];
+
+    const matrixWorld = this.mesh?.matrixWorld || this.matrixWorld || _identityMatrix4;
+    _raycastInverseMatrix.copy(matrixWorld).invert();
+    _raycastLocalRay.copy(raycaster.ray).applyMatrix4(_raycastInverseMatrix);
+
+    const intersects: THREE.Intersection[] = [];
+    const near = raycaster.near ?? 0;
+    const far = raycaster.far ?? Infinity;
+
+    for(let i = 0, len = faces.length; i < len; i++){
+      const face = faces[i];
+      if(!face) continue;
+      const a = this.vertices[face.a];
+      const b = this.vertices[face.b];
+      const c = this.vertices[face.c];
+      if(!a || !b || !c) continue;
+
+      const hit = _raycastLocalRay.intersectTriangle(a, b, c, false, _raycastLocalHit);
+      if(!hit) continue;
+
+      _raycastWorldHit.copy(hit).applyMatrix4(matrixWorld);
+      const distance = raycaster.ray.origin.distanceTo(_raycastWorldHit);
+      if(distance < near || distance > far) continue;
+
+      const intersection = {
+        distance,
+        point: _raycastWorldHit.clone(),
+        object: this.mesh,
+        face,
+        faceIndex: this.faces.indexOf(face),
+      } as THREE.Intersection;
+      (intersection as any).walkIndex = face.walkIndex;
+      intersects.push(intersection);
+    }
+
+    intersects.sort((a, b) => a.distance - b.distance);
+    return intersects;
   }
 
   static Init(){
@@ -714,7 +825,7 @@ export class OdysseyWalkMesh {
         );
       }
     }
-    
+
     const surfacemat2DA = TwoDAManager.datatables.get('surfacemat');
     if(surfacemat2DA){
       OdysseyModelUtility.SURFACEMATERIALS = [];
@@ -747,7 +858,7 @@ export class OdysseyWalkMesh {
         const _sideA = (_a && _b);
         const _sideB = (_b && _c);
         const _sideC = (_c && _a);
-        
+
         return _sideA || _sideB || _sideC;
       } return false;
     });
@@ -1159,7 +1270,7 @@ export class OdysseyWalkMesh {
         }
       }
     };
-    
+
     while(edges.length){
       if(!current_perimeter){
         console.log('Walkmesh perimeter start...');
@@ -1408,4 +1519,3 @@ export class OdysseyWalkMesh {
   }
 
 }
-  

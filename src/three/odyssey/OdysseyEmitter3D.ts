@@ -36,9 +36,14 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   private static _quatB = new THREE.Quaternion();
   private static _quatC = new THREE.Quaternion();
   private static _mat4 = new THREE.Matrix4();
+  private static _boxA = new THREE.Box3();
+  private static _bounceFaceScratch: any[] = [];
 
   /** Retail DoEmitterBucket / UpdateEmitters: AnimateParticles(min(dt, 0.1)). */
   private static readonly MAX_ANIMATE_DT = 0.1;
+  private static readonly BOUNCE_HIT_CHECK_MAX_PER_FRAME = 64;
+  private static readonly BOUNCE_HIT_CHECK_MIN_PER_FRAME = 8;
+  private static readonly BOUNCE_HIT_CHECK_FRACTION = 0.25;
 
   static BirthTime: number = 1;
   static PlaneGeometry: THREE.PlaneGeometry = new THREE.PlaneGeometry(1, 1, 1, 1);
@@ -90,6 +95,7 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
   private inheritVels: Float32Array = new Float32Array(0);
 
   particleCount: number = 0;
+  private _bounceHitCursor: number = 0;
   referenceNode: OdysseyObject3D = new OdysseyObject3D();
   /**
    * True once setReferenceNode() assigns a real target (retail PartEmitter+0x1e4).
@@ -3596,6 +3602,26 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     this.particleCount++;
   }
 
+  private getBounceHitBudget(count: number): number {
+    if(count <= OdysseyEmitter3D.BOUNCE_HIT_CHECK_MAX_PER_FRAME) return count;
+    return Math.min(
+      count,
+      OdysseyEmitter3D.BOUNCE_HIT_CHECK_MAX_PER_FRAME,
+      Math.max(
+        OdysseyEmitter3D.BOUNCE_HIT_CHECK_MIN_PER_FRAME,
+        Math.ceil(count * OdysseyEmitter3D.BOUNCE_HIT_CHECK_FRACTION)
+      )
+    );
+  }
+
+  private shouldRunBounceHitCheck(index: number, count: number, budget: number, start: number): boolean {
+    if(budget >= count) return true;
+    const end = start + budget;
+    return end <= count
+      ? index >= start && index < end
+      : index >= start || index < (end % count);
+  }
+
   /**
    * Retail moveParticleStandard HitCheck @ 00492450 (DAT_00798ba0 == 1):
    * Scene::HitCheck(prev, curr, &curr) snaps position; then either zero vel
@@ -3635,11 +3661,18 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     const hitNormal = OdysseyEmitter3D._v3D.set(0, 0, 1);
     let found = false;
 
+    const segmentBox = OdysseyEmitter3D._boxA.makeEmpty();
+    segmentBox.expandByPoint(origin);
+    segmentBox.expandByPoint(OdysseyEmitter3D._v3C.set(currX, currY, currZ));
+    segmentBox.expandByScalar(0.05);
+
     try {
       for(let r = 0; r < area.rooms.length; r++){
         const wok = area.rooms[r]?.collisionManager?.walkmesh;
         if(!wok?.faces?.length) continue;
-        const hits = wok.raycast(raycaster, wok.faces);
+        const faces = wok.getFacesInBox(segmentBox, OdysseyEmitter3D._bounceFaceScratch);
+        if(!faces.length) continue;
+        const hits = wok.raycast(raycaster, faces);
         if(!hits?.length) continue;
         for(let k = 0; k < hits.length; k++){
           const hit = hits[k];
@@ -3841,6 +3874,8 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
     }
     const wm = doWind ? GameState.windManager : undefined;
     const doBounce = !!this.node.flags.canBounce;
+    const bounceBudget = doBounce ? this.getBounceHitBudget(count) : 0;
+    const bounceStart = doBounce && count > 0 ? this._bounceHitCursor % count : 0;
     const doInheritVel = !!this.node.flags.canInheritVelocity;
     if(doInheritVel){
       this.ensureInheritVelCapacity(count);
@@ -3913,11 +3948,15 @@ export class OdysseyEmitter3D extends OdysseyObject3D {
         this.inheritVels[ib + 2] = iz * inheritDecay;
       }
 
-      if(doBounce){
+      if(doBounce && this.shouldRunBounceHitCheck(i, count, bounceBudget, bounceStart)){
         this.applyBounceHitCheck(i, prevX, prevY, prevZ, delta);
       }
 
       changed = true;
+    }
+
+    if(doBounce && count > 0 && bounceBudget > 0){
+      this._bounceHitCursor = (bounceStart + bounceBudget) % count;
     }
 
     return changed;

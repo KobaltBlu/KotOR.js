@@ -24,6 +24,10 @@ export type NoNonWalkMeshResult = {
 };
 
 const _sample = new THREE.Vector3();
+const _queryBox = new THREE.Box3();
+const _queryMin = new THREE.Vector3();
+const _queryMax = new THREE.Vector3();
+const _faceScratch: OdysseyFace3[] = [];
 
 function isBlockingFace(face: OdysseyFace3 | undefined): boolean {
   return isWalkCheckBlockingFace(face);
@@ -380,6 +384,11 @@ export function noNonWalkPolysOnAreaMesh(
   const minY = Math.min(from.y, to.y) - expand;
   const maxY = Math.max(from.y, to.y) + expand;
 
+  const queryBox = _queryBox.set(
+    _queryMin.set(minX, minY, Math.min(from.z, to.z) - expand),
+    _queryMax.set(maxX, maxY, Math.max(from.z, to.z) + expand)
+  );
+
   const rooms = area.rooms;
   if(rooms?.length){
     for(let r = 0; r < rooms.length; r++){
@@ -387,8 +396,8 @@ export function noNonWalkPolysOnAreaMesh(
       const wok =
         room.collisionManager?.walkmesh ??
         (room as { model?: { wok?: OdysseyWalkMesh } }).model?.wok;
-      const faces = meshFaces(wok);
-      if(!faces) continue;
+      const faces = wok?.getFacesInBox ? wok.getFacesInBox(queryBox, _faceScratch) : meshFaces(wok);
+      if(!faces?.length) continue;
       for(let i = 0, len = faces.length; i < len; i++){
         const face = faces[i];
         if(!isBlockingFace(face)) continue;

@@ -22,6 +22,8 @@ const _dir = new THREE.Vector3();
 const _fromEye = new THREE.Vector3();
 const _toEye = new THREE.Vector3();
 const _hitPoint = new THREE.Vector3();
+const _losBox = new THREE.Box3();
+const _losFaceScratch: any[] = [];
 
 /**
  * True if eye-height ClearLineOfSight from→to succeeds.
@@ -44,6 +46,21 @@ export function clearLineOfSight(
   const dist = a.distanceTo(b);
   if(dist < 0.05) return true;
 
+  const canMemoize = !options.hitPoint;
+  const ignoreA = options.ignoreSource?.id ?? '';
+  const ignoreB = options.ignoreObject?.id ?? '';
+  const cacheKey = canMemoize
+    ? [a.x, a.y, a.z, b.x, b.y, b.z, eye, ignoreA, ignoreB].map((value) =>
+      typeof value === 'number' ? value.toFixed(3) : value
+    ).join('|')
+    : '';
+  const losCache = canMemoize ? area.frameLosCache : undefined;
+  if(losCache?.has(cacheKey)) return losCache.get(cacheKey)!;
+  const finish = (result: boolean) => {
+    losCache?.set(cacheKey, result);
+    return result;
+  };
+
   const ignoreIds: number[] = [];
   if(options.ignoreSource?.id != null) ignoreIds.push(options.ignoreSource.id);
   if(options.ignoreObject?.id != null) ignoreIds.push(options.ignoreObject.id);
@@ -64,7 +81,7 @@ export function clearLineOfSight(
         options.hitPoint.copy(b);
       }
     }
-    return false;
+    return finish(false);
   }
 
   _dir.copy(b).sub(a).normalize();
@@ -74,7 +91,8 @@ export function clearLineOfSight(
 
   // Retail step 2: CheckAABBLineOfSight / los_material_mask on room woks
   const rooms = area.rooms;
-  if(!rooms?.length) return true;
+  if(!rooms?.length) return finish(true);
+  _losBox.setFromPoints([a, b]).expandByScalar(0.05);
 
   let bestDistSq = Infinity;
   let blocked = false;
@@ -82,7 +100,8 @@ export function clearLineOfSight(
     const room = rooms[r];
     const wok = room?.collisionManager?.walkmesh;
     if(!wok?.aabbNodes?.length && !wok?.faces?.length) continue;
-    const faces = wok.faces;
+    const faces = wok.getFacesInBox?.(_losBox, _losFaceScratch) ?? wok.faces;
+    if(!faces.length) continue;
     const intersects = wok.raycast
       ? wok.raycast(GameState.raycaster, faces)
       : undefined;
@@ -105,7 +124,7 @@ export function clearLineOfSight(
 
   if(blocked){
     if(options.hitPoint) options.hitPoint.copy(_hitPoint);
-    return false;
+    return finish(false);
   }
-  return true;
+  return finish(true);
 }

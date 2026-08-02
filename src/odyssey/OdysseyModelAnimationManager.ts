@@ -57,6 +57,9 @@ export class OdysseyModelAnimationManager {
   _animQuaternion2: THREE.Quaternion = new THREE.Quaternion();
 
   private _emptyState: OdysseyModelAnimationManagerState;
+  private _matrixBatchDepth = 0;
+  private _touchedTransformNodes: OdysseyObject3D[] = [];
+  private _touchedTransformNodeSet = new Set<OdysseyObject3D>();
 
   constructor(model: OdysseyModel3D){
     this.model = model;
@@ -65,6 +68,40 @@ export class OdysseyModelAnimationManager {
     this.lastAnimationState = this.createAnimationState();
     this.trans = false;
     this.modelNode = undefined;
+  }
+
+  markNodeTransformDirty(node: OdysseyObject3D = this.modelNode): void {
+    if(!node) return;
+    if(this._matrixBatchDepth === 0){
+      node.updateMatrix();
+      node.matrixWorldNeedsUpdate = true;
+      return;
+    }
+    if(!this._touchedTransformNodeSet.has(node)){
+      this._touchedTransformNodeSet.add(node);
+      this._touchedTransformNodes.push(node);
+    }
+  }
+
+  private beginMatrixBatch(): void {
+    this._matrixBatchDepth++;
+  }
+
+  private endMatrixBatch(): void {
+    this._matrixBatchDepth = Math.max(0, this._matrixBatchDepth - 1);
+    if(this._matrixBatchDepth === 0){
+      this.flushTouchedNodeMatrices();
+    }
+  }
+
+  private flushTouchedNodeMatrices(): void {
+    for(let i = 0, len = this._touchedTransformNodes.length; i < len; i++){
+      const node = this._touchedTransformNodes[i];
+      node.updateMatrix();
+      node.matrixWorldNeedsUpdate = true;
+    }
+    this._touchedTransformNodes.length = 0;
+    this._touchedTransformNodeSet.clear();
   }
 
   createAnimationState(): OdysseyModelAnimationManagerState {
@@ -429,8 +466,10 @@ export class OdysseyModelAnimationManager {
       }
     }
 
-    // Pose: oldest → newest, blend by weight
-    if(this.model.bonesInitialized && this.model.animateFrame){
+    this.beginMatrixBatch();
+    try{
+      // Pose: oldest -> newest, blend by weight
+      if(this.model.bonesInitialized && this.model.animateFrame){
       for(let i = 0; i < this.runs.length; i++){
         const run = this.runs[i];
         if(!run.animation || run.weight <= 1e-4) continue;
@@ -441,8 +480,8 @@ export class OdysseyModelAnimationManager {
       }
     }
 
-    // World Model Animation Loops (unchanged path)
-    if(this.model.bonesInitialized && this.model.animLoops.length){
+      // World Model Animation Loops (unchanged path)
+      if(this.model.bonesInitialized && this.model.animLoops.length){
       for(let i = 0, len = this.model.animLoops.length; i < len; i++){
         if(!this.animLoopStates.has(i)){
           this.animLoopStates.set(i, {
@@ -458,6 +497,9 @@ export class OdysseyModelAnimationManager {
         }
         this.updateAnimation(this.model.animLoops[i], this.animLoopStates.get(i), delta);
       }
+      }
+    }finally{
+      this.endMatrixBatch();
     }
 
     this.syncLegacyLastAnimation();
@@ -606,10 +648,16 @@ export class OdysseyModelAnimationManager {
       return false;
     }
 
-    if(this.model.animateFrame){
-      for(let i = 0, nl = anim.nodes.length; i < nl; i++){
-        this.updateAnimationNode(anim, anim.nodes[i], state, 1);
+    const standaloneMatrixBatch = this._matrixBatchDepth === 0;
+    if(standaloneMatrixBatch) this.beginMatrixBatch();
+    try{
+      if(this.model.animateFrame){
+        for(let i = 0, nl = anim.nodes.length; i < nl; i++){
+          this.updateAnimationNode(anim, anim.nodes[i], state, 1);
+        }
       }
+    }finally{
+      if(standaloneMatrixBatch) this.endMatrixBatch();
     }
 
     state.lastTime = state.elapsed;
@@ -751,7 +799,7 @@ export class OdysseyModelAnimationManager {
         }
         this._animPosition2.copy(this.modelNode.position);
         this.modelNode.position.copy(this._animPosition).lerp(this._animPosition2, w);
-        this.modelNode.updateMatrix();
+        this.markNodeTransformDirty(this.modelNode);
       }else if(controller.type == OdysseyModelControllerType.Orientation){
         this._animQuaternion.copy(this.modelNode.quaternion);
         if(controller.frameCount == 1){
@@ -761,7 +809,7 @@ export class OdysseyModelAnimationManager {
         }
         this._animQuaternion2.copy(this.modelNode.quaternion);
         this.modelNode.quaternion.copy(this._animQuaternion).slerp(this._animQuaternion2, w);
-        this.modelNode.updateMatrix();
+        this.markNodeTransformDirty(this.modelNode);
       }else{
         // Non-transform controllers: apply only when weight is significant
         if(w >= 0.5){

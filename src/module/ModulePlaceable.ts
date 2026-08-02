@@ -56,11 +56,11 @@ enum ModulePlaceableEvent {
 
 /**
 * ModulePlaceable class.
-* 
+*
 * Class representing placeable objects found in modules areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModulePlaceable.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -225,6 +225,7 @@ export class ModulePlaceable extends ModuleObject {
     const index = room.placeables.indexOf(this);
     if(index >= 0){
       room.placeables.splice(index, 1);
+      this.markCollisionBoundsDirty('room');
     }
   }
 
@@ -240,19 +241,27 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   update(delta = 0){
-    
+
     super.update(delta);
 
     if(this.collisionManager.walkmesh && this.container){
-      this.container.updateMatrixWorld(true);
-      this.collisionManager.walkmesh.matrixWorld.copy(this.container.matrixWorld);
+      if(!this.isStatic() || this.collisionMatrixDirty){
+        this.container.updateMatrix();
+        this.container.updateMatrixWorld(!this.isStatic());
+        this.collisionManager.walkmesh.matrixWorld.copy(this.container.matrixWorld);
+        this.collisionMatrixDirty = false;
+      }
     }
 
     if(this.model instanceof OdysseyModel3D){
       if(this.room){
         if(this.room.model instanceof OdysseyModel3D){
           if(this.model){
-            this.model.visible = this.room.model.visible;
+            const visible = this.room.model.visible;
+            if(this.model.visible !== visible){
+              this.model.visible = visible;
+              this.markCollisionBoundsDirty('visibility');
+            }
           }
         }
       }
@@ -368,6 +377,7 @@ export class ModulePlaceable extends ModuleObject {
 
   setOpenState(state: ModulePlaceableState){
     this.state = state;
+    this.markCollisionBoundsDirty('state');
     if(this.state == ModulePlaceableState.OPEN || this.state == ModulePlaceableState.DEAD){
       this.openState = true;
     }else{
@@ -394,6 +404,7 @@ export class ModulePlaceable extends ModuleObject {
     if(this.model){
       this.model.visible = this.isBodyBagVisible;
     }
+    this.markCollisionBoundsDirty('visibility');
   }
 
   /**
@@ -546,7 +557,7 @@ export class ModulePlaceable extends ModuleObject {
           GameState.MenuManager.MenuContainer.AttachContainer(this);
           GameState.MenuManager.MenuContainer.open();
         }
-    
+
         this.scripts[ModuleObjectScript.PlaceableOnOpen]?.run(this)
       break;
       case ModulePlaceableEvent.CLOSE_START:
@@ -576,7 +587,7 @@ export class ModulePlaceable extends ModuleObject {
         this.triggerEvent(ModulePlaceableEvent.OPEN_END);
       }
     }
-  
+
     const instance = this.scripts[ModuleObjectScript.PlaceableOnUsed];
     if(!instance){ return; }
     instance.run(this);
@@ -602,7 +613,7 @@ export class ModulePlaceable extends ModuleObject {
   lock(object: ModuleObject){
     if(this.locked){ return; }
     this.locked = true;
-    
+
     const instance = this.scripts[ModuleObjectScript.PlaceableOnLock];
     if(!instance){ return; }
     instance.run(this);
@@ -611,7 +622,7 @@ export class ModulePlaceable extends ModuleObject {
   unlock(object: ModuleObject){
     if(!this.locked){ return; }
     this.locked = false;
-    
+
     const instance = this.scripts[ModuleObjectScript.PlaceableOnUnlock];
     if(!instance){ return; }
     instance.run(this);
@@ -702,6 +713,7 @@ export class ModulePlaceable extends ModuleObject {
       this.model.name = modelName;
 
       this.container.add(this.model);
+      this.markCollisionBoundsDirty('model');
 
       this.model.disableMatrixUpdate();
       const shadowSize = this.getAppearance()?.shadowsize ?? 1;
@@ -735,15 +747,15 @@ export class ModulePlaceable extends ModuleObject {
 
     const scriptsNode = this.template?.RootNode;
     if(!scriptsNode){ return; }
-    
+
     for(const scriptKey of scriptKeys){
       if(scriptsNode.hasField(scriptKey)){
         const resRef = scriptsNode.getFieldByLabel(scriptKey).getValue();
         if(!resRef){ continue; }
         const nwscript = GameState.NWScript.Load(resRef);
-        if(!nwscript){ 
+        if(!nwscript){
           console.warn(`ModulePlaceable.loadScripts: Failed to load script [${scriptKey}]:${resRef} for object ${this.name}`);
-          continue; 
+          continue;
         }
         nwscript.caller = this;
         this.scripts[scriptKey] = nwscript;
@@ -782,6 +794,12 @@ export class ModulePlaceable extends ModuleObject {
       walkmesh.moduleObject = this;
       this.collisionManager.setWalkmesh(walkmesh);
       this.model.add(walkmesh.mesh);
+      if(this.isStatic() && walkmesh.mesh){
+        walkmesh.mesh.matrixAutoUpdate = false;
+        walkmesh.mesh.updateMatrix();
+        walkmesh.mesh.updateMatrixWorld(true);
+      }
+      this.markCollisionBoundsDirty('walkmesh');
 
       return walkmesh;
     }catch(e){
@@ -790,13 +808,14 @@ export class ModulePlaceable extends ModuleObject {
       walkmesh.name = resRef;
       walkmesh.moduleObject = this;
       this.collisionManager.setWalkmesh(walkmesh);
+      this.markCollisionBoundsDirty('walkmesh');
 
       return this.collisionManager.walkmesh;
     }
   }
 
   initProperties(){
-    
+
     const needsRegister = !this.initialized;
     if(needsRegister){
       if(this.template.RootNode.hasField('ObjectId')){
@@ -879,7 +898,7 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.hasField('Fort'))
       this.fort = this.template.getFieldByLabel('Fort').getValue();
-        
+
     if(this.template.RootNode.hasField('HP'))
       this.hp = this.template.RootNode.getFieldByLabel('HP').getValue();
 
@@ -889,7 +908,7 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.hasField('Hardness'))
       this.hardness = this.template.RootNode.getFieldByLabel('Hardness').getValue();
-    
+
     if(this.template.RootNode.hasField('HasInventory'))
       this.hasInventory = this.template.RootNode.getFieldByLabel('HasInventory').getValue();
 
@@ -913,10 +932,10 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.hasField('Interruptable'))
       this.interruptable = this.template.RootNode.getFieldByLabel('Interruptable').getValue();
-        
+
     if(this.template.RootNode.hasField('KeyName'))
       this.keyName = this.template.RootNode.getFieldByLabel('KeyName').getValue();
-  
+
     if(this.template.RootNode.hasField('KeyRequired'))
       this.keyRequired = this.template.RootNode.getFieldByLabel('KeyRequired').getValue();
 
@@ -981,13 +1000,13 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.hasField('TrapDetectDC'))
       this.trapDetectDC = this.template.getFieldByLabel('TrapDetectDC').getValue();
-  
+
     if(this.template.RootNode.hasField('TrapDetectable'))
       this.trapDetectable = !!this.template.RootNode.getFieldByLabel('TrapDetectable').getValue();
 
     if(this.template.RootNode.hasField('TrapDisarmable'))
       this.trapDisarmable = !!this.template.RootNode.getFieldByLabel('TrapDisarmable').getValue();
-  
+
     if(this.template.RootNode.hasField('TrapFlag'))
       this.trapFlag = !!this.template.RootNode.getFieldByLabel('TrapFlag').getValue();
 
@@ -1014,10 +1033,10 @@ export class ModulePlaceable extends ModuleObject {
 
     if(this.template.RootNode.hasField('Bearing'))
       this.bearing = this.template.RootNode.getFieldByLabel('Bearing').getValue();
-    
+
     if(this.template.RootNode.hasField('TweakColor'))
       this.tweakColor = this.template.getFieldByLabel('TweakColor').getValue();
-    
+
     if(this.template.RootNode.hasField('UseTweakColor'))
       this.useTweakColor = this.template.getFieldByLabel('UseTweakColor').getValue();
 
@@ -1101,7 +1120,7 @@ export class ModulePlaceable extends ModuleObject {
       }
       this.inventory.splice(0, 1);
     }
-    
+
     try{
       const wmIdx = GameState.walkmeshList.indexOf(this.collisionManager.walkmesh.mesh);
       if(wmIdx >= 0) GameState.walkmeshList.splice(wmIdx, 1);
@@ -1195,7 +1214,7 @@ export class ModulePlaceable extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnDialog) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnDialog]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnEndDialogue) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnEndDialogue]?.name || '');
     gff.RootNode.addField( new GFFField(GFFDataType.RESREF, ModuleObjectScript.PlaceableOnTrapTriggered) ).setValue(this.scripts[ModuleObjectScript.PlaceableOnTrapTriggered]?.name || '');
-    
+
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Open') ).setValue(this.isOpen() ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'OpenLockDC') ).setValue(this.openLockDC);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'PartyInteract') ).setValue(this.partyInteract);
@@ -1236,7 +1255,7 @@ export class ModulePlaceable extends ModuleObject {
     const animations2DA = GameState.TwoDAManager.datatables.get('animations');
     if(animations2DA){
       switch( animation_constant ){
-        case ModulePlaceableAnimState.DEFAULT:        //10000, //304 - 
+        case ModulePlaceableAnimState.DEFAULT:        //10000, //304 -
           return animations2DA.rows[304];
         case ModulePlaceableAnimState.DAMAGE:         //10014, //305 - damage
           return animations2DA.rows[305];
@@ -1272,7 +1291,7 @@ export class ModulePlaceable extends ModuleObject {
           return animations2DA.rows[323];
         case ModulePlaceableAnimState.ANIMLOOP09:     //10115, //324 - NWSCRIPT Constant: 212
           return animations2DA.rows[324];
-        case ModulePlaceableAnimState.ANIMLOOP10:     //10116, //325 - NWSCRIPT Constant: 213 
+        case ModulePlaceableAnimState.ANIMLOOP10:     //10116, //325 - NWSCRIPT Constant: 213
           return animations2DA.rows[325];
       }
 
@@ -1561,8 +1580,9 @@ export class ModulePlaceable extends ModuleObject {
     }catch(e){}
 
     this.getCurrentRoom();
+    this.markCollisionBoundsDirty('placement');
     this.computeBoundingBox?.();
+    this.room?.markCollisionPlaceablesDirty?.();
     this.onSpawn(false);
   }
 }
-

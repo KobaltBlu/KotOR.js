@@ -80,11 +80,11 @@ type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
 
 /**
  * ModuleArea class.
- * 
+ *
  * Class representing an ingame area.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ModuleArea.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -132,6 +132,7 @@ export class ModuleArea extends ModuleObject {
   /** Elapsed ms since last area OnHeartbeat (retail 5999ms). */
   _areaHeartbeatElapsedMs: number = 0;
   _areaHeartbeatInitialized: boolean = false;
+  frameLosCache: Map<string, boolean> = new Map();
   /** Players currently in this area — drives Increase/DecreaseAILevelPriority. */
   playersInArea: number = 0;
   /** ARE template `ID` header (retail LoadAreaHeader header_info[0]) — not the game ObjectId */
@@ -201,6 +202,8 @@ export class ModuleArea extends ModuleObject {
   walkmesh_rooms: ModuleRoom[] = [];
   /** Reused list for updateRoomAnimatedLights (creatures/placeables/doors/…). */
   private _lightingDynamicsScratch: Array<{ model?: unknown; position?: THREE.Vector3 }> = [];
+  private _walkCandidateFaceScratch: OdysseyFace3[] = [];
+  private _walkCandidateEdgeScratch: WalkmeshEdge[] = [];
 
   scriptResRefs: Map<AreaScriptKeys, string> = new Map<AreaScriptKeys, string>();
 
@@ -244,12 +247,12 @@ export class ModuleArea extends ModuleObject {
   dayNightCycle: boolean = false;
 
   /**
-   * 
+   *
    */
   defaultEnvMap = '';
 
   /**
-   * 
+   *
    */
   dynamicAmbientColor = 6312778;
 
@@ -272,7 +275,7 @@ export class ModuleArea extends ModuleObject {
     ambient: 0,
     density: 0,
     diffuse: 0,
-    probability: { 
+    probability: {
       lowerLeft: 0.25,
       lowerRight: 0.25,
       upperLeft: 0.25,
@@ -328,7 +331,7 @@ export class ModuleArea extends ModuleObject {
   lightingScheme = 0;
 
   /**
-   * Index into loadscreens.2da. Default loading screen to use when loading this area. 
+   * Index into loadscreens.2da. Default loading screen to use when loading this area.
    * @remarks Note that a Door or Trigger that has an area transition can override the loading screen of the destination area
    * not supported by KotOR or TSL. not sure if we will add support for this in the engine
    */
@@ -373,7 +376,7 @@ export class ModuleArea extends ModuleObject {
   };
 
   /**
-   * Name of area as seen in game. 
+   * Name of area as seen in game.
    * ToDo: If there is a colon (:) in the name, then the game does not show any of the text up to and including the first colon
    */
   areaName: CExoLocString;
@@ -387,15 +390,15 @@ export class ModuleArea extends ModuleObject {
    * Determines if the player can rest
    */
   noRest: boolean;
-  
+
   playerOnly: boolean = false;
 
   /**
-   * Index into pvpsettings.2da. 
+   * Index into pvpsettings.2da.
    * Note that the settings are actually hard-coded into the game, and pvpsettings.2da serves only to provide text descriptions of the settings
    */
   playerVsPlayer: boolean = false;
-  
+
   /**
    * Opacity of shadows (0-100)
    */
@@ -572,7 +575,7 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < this.encounters.length; i++){
       this.encounters[i]?.update(delta);
     }
-    
+
     for(let i = 0; i < this.areaOfEffects.length; i++){
       this.areaOfEffects[i]?.update(delta);
     }
@@ -584,7 +587,7 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < GameState.PartyManager.party.length; i++){
       GameState.PartyManager.party[i]?.update(delta);
     }
-    
+
     for(let i = 0; i < this.creatures.length; i++){
       this.creatures[i]?.update(delta);
     }
@@ -707,7 +710,7 @@ export class ModuleArea extends ModuleObject {
         pm.updatePaused(delta);
       }
     }
-    
+
     for(let i = 0; i < this.creatures.length; i++){
       const c = this.creatures[i];
       if(!c) continue;
@@ -717,7 +720,7 @@ export class ModuleArea extends ModuleObject {
         c.updatePaused(delta);
       }
     }
-    
+
     for(let i = 0; i < this.placeables.length; i++){
       this.placeables[i]?.updatePaused(delta);
     }
@@ -1402,7 +1405,7 @@ export class ModuleArea extends ModuleObject {
         audioEngine.setAudioBuffer('AMBIENT_DAY', data.buffer as ArrayBuffer, ambientDay.resource);
       }catch(e){
         console.error('Ambient Audio not found', ambientDay);
-      } 
+      }
     }
   }
 
@@ -1422,7 +1425,7 @@ export class ModuleArea extends ModuleObject {
         audioEngine.setAudioBuffer('AMBIENT_NIGHT', data.buffer as ArrayBuffer, ambientNight.resource);
       }catch(e){
         console.error('Ambient Audio not found', ambientNight);
-      } 
+      }
     }
   }
 
@@ -1579,7 +1582,7 @@ export class ModuleArea extends ModuleObject {
     //Cleanup texture cache
     Array.from(TextureLoader.textures.keys()).forEach( (key) => {
       TextureLoader.textures.get(key).dispose();
-      TextureLoader.textures.delete(key); 
+      TextureLoader.textures.delete(key);
     });
 
 
@@ -1603,7 +1606,7 @@ export class ModuleArea extends ModuleObject {
       await placeable.loadModel();
     }
 
-    for(let i = 0; i < this.doors.length; i++){   
+    for(let i = 0; i < this.doors.length; i++){
       const door = this.doors[i];
       await door.loadModel();
     }
@@ -1886,7 +1889,7 @@ export class ModuleArea extends ModuleObject {
             }
           }
         }
-        
+
         this.attachObject( new ModuleWaypoint(GFFObject.FromStruct(strt)) );
       }
     }
@@ -2101,7 +2104,7 @@ export class ModuleArea extends ModuleObject {
         for(let i = 0; i < this.layout.tracks.length; i++){
           this.miniGame.tracks.push(new ModuleMGTrack(this.layout.tracks[i]));
         }
-  
+
         for(let i = 0; i < this.layout.obstacles.length; i++){
           const layoutObs = this.layout.obstacles[i];
           const name = ModuleMiniGame.normalizeMgoName(layoutObs?.name);
@@ -2166,51 +2169,51 @@ export class ModuleArea extends ModuleObject {
 
     let i = this.creatures.length
     while (i--) {
-      if (!(this.creatures[i] instanceof ModuleCreature) || !this.creatures[i].initialized) { 
+      if (!(this.creatures[i] instanceof ModuleCreature) || !this.creatures[i].initialized) {
         this.creatures.splice(i, 1);
-      } 
+      }
     }
 
     i = this.placeables.length
     while (i--) {
-      if (!(this.placeables[i] instanceof ModulePlaceable) || !this.placeables[i].initialized) { 
+      if (!(this.placeables[i] instanceof ModulePlaceable) || !this.placeables[i].initialized) {
         this.placeables.splice(i, 1);
-      } 
+      }
     }
 
     i = this.doors.length
     while (i--) {
-      if (!(this.doors[i] instanceof ModuleDoor) || !this.doors[i].initialized) { 
+      if (!(this.doors[i] instanceof ModuleDoor) || !this.doors[i].initialized) {
         this.doors.splice(i, 1);
-      } 
+      }
     }
 
     i = this.sounds.length
     while (i--) {
-      if (!(this.sounds[i] instanceof ModuleSound) || !this.sounds[i].initialized) { 
+      if (!(this.sounds[i] instanceof ModuleSound) || !this.sounds[i].initialized) {
         this.sounds.splice(i, 1);
-      } 
+      }
     }
 
     i = this.waypoints.length
     while (i--) {
-      if (!(this.waypoints[i] instanceof ModuleWaypoint) || !this.waypoints[i].initialized) { 
+      if (!(this.waypoints[i] instanceof ModuleWaypoint) || !this.waypoints[i].initialized) {
         this.waypoints.splice(i, 1);
-      } 
+      }
     }
 
     i = this.triggers.length
     while (i--) {
-      if (!(this.triggers[i] instanceof ModuleTrigger) || !this.triggers[i].initialized) { 
+      if (!(this.triggers[i] instanceof ModuleTrigger) || !this.triggers[i].initialized) {
         this.triggers.splice(i, 1);
-      } 
+      }
     }
 
     i = this.stores.length
     while (i--) {
-      if (!(this.stores[i] instanceof ModuleStore) || !this.stores[i].initialized) { 
+      if (!(this.stores[i] instanceof ModuleStore) || !this.stores[i].initialized) {
         this.stores.splice(i, 1);
-      } 
+      }
     }
 
     i = this.items.length
@@ -2631,11 +2634,11 @@ export class ModuleArea extends ModuleObject {
       }else{
         let player = new ModulePlayer( this.getPlayerTemplate() );
         player.npcId = -1;
-        
+
         player.load();
         // GameState.currentLeader = player;
         GameState.PartyManager.Player = player;
-      
+
         if(!this.miniGame){
           GameState.PartyManager.party[ GameState.PartyManager.GetCreatureStartingPartyIndex(player) ] = player;
           GameState.group.party.add( player.container );
@@ -2765,7 +2768,7 @@ export class ModuleArea extends ModuleObject {
     console.log('Loading Rooms');
     this.walkEdges = [];
     this.walkFaces = [];
-    
+
     for(let i = 0; i < this.rooms.length; i++){
       const room = this.rooms[i];
       const model = await room.loadModel();
@@ -2783,12 +2786,17 @@ export class ModuleArea extends ModuleObject {
           this.walkEdges = [...this.walkEdges, ...model.wok.edges.values()];
           this.walkFaces = [...this.walkFaces, ...model.wok.walkableFaces];
         }
-        
+
         model.name = room.roomName;
         GameState.group.rooms.add(room.container);
 
         room.computeBoundingBox();
         room.model.updateMatrix();
+        if(room.collisionManager.walkmesh?.mesh){
+          room.collisionManager.walkmesh.mesh.matrixAutoUpdate = false;
+          room.collisionManager.walkmesh.mesh.updateMatrix();
+          room.collisionManager.walkmesh.mesh.updateMatrixWorld(true);
+        }
       }
     }
 
@@ -2885,6 +2893,11 @@ export class ModuleArea extends ModuleObject {
         pwk.mat4.setPosition( plc.position.x, plc.position.y, plc.position.z + .01 );
         pwk.mesh.geometry.applyMatrix4(pwk.mat4);
         pwk.updateMatrix();
+        if(plc.isStatic() && pwk.mesh){
+          pwk.mesh.matrixAutoUpdate = false;
+          pwk.mesh.updateMatrix();
+          pwk.mesh.updateMatrixWorld(true);
+        }
         pwk.buildEdgeNormalHelpers();
         //pwk.mesh.position.copy(plc.position);
         GameState.group.room_walkmeshes.add( pwk.mesh );
@@ -2892,7 +2905,9 @@ export class ModuleArea extends ModuleObject {
 
       plc.getCurrentRoom();
       plc.position.set(plc.getX(), plc.getY(), plc.getZ());
+      plc.markCollisionBoundsDirty('placement');
       plc.computeBoundingBox();
+      plc.room?.markCollisionPlaceablesDirty?.();
     }
   }
 
@@ -3023,7 +3038,7 @@ export class ModuleArea extends ModuleObject {
         creature.load();
         const model = await creature.loadModel();
         creature.model.userData.moduleObject = creature;
-        
+
         //creature.setFacing(Math.atan2(creature.getXOrientation(), creature.getYOrientation()) + Math.PI/2, true);
         creature.setFacing(-Math.atan2(creature.getXOrientation(), creature.getYOrientation()), true);
 
@@ -3220,12 +3235,50 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
+  /** Collect room walkmesh faces and edges whose local AABBs overlap `box`. */
+  getWalkCandidatesForBox(
+    box: THREE.Box3,
+    out: { faces?: OdysseyFace3[]; edges?: WalkmeshEdge[]; rooms?: ModuleRoom[] } = {}
+  ): { faces: OdysseyFace3[]; edges: WalkmeshEdge[]; rooms: ModuleRoom[] } {
+    const faces = out.faces || [];
+    const edges = out.edges || [];
+    const rooms = out.rooms || [];
+    faces.length = 0;
+    edges.length = 0;
+    rooms.length = 0;
+
+    const faceScratch = this._walkCandidateFaceScratch;
+    const edgeScratch = this._walkCandidateEdgeScratch;
+    for(let i = 0, len = this.rooms.length; i < len; i++){
+      const room = this.rooms[i];
+      const wok = room?.collisionManager?.walkmesh;
+      if(!wok?.faces?.length) continue;
+      wok.getFacesInBox(box, faceScratch);
+      if(faceScratch.length){
+        rooms.push(room);
+        for(let f = 0, fl = faceScratch.length; f < fl; f++){
+          if(faceScratch[f]?.walk){
+            faces.push(faceScratch[f]);
+          }
+        }
+      }
+      wok.getEdgesInBox(box, edgeScratch);
+      if(edgeScratch.length){
+        for(let e = 0, el = edgeScratch.length; e < el; e++){
+          edges.push(edgeScratch[e]);
+        }
+      }
+    }
+
+    return { faces, edges, rooms };
+  }
+
   /**
    * Determines the distance score from the edge of all walkable faces
    * A low score means that the point is near a walkmesh perimiter
    * A high scror means that the point is further away from all walkmesh pemimiters
    * @param point point to examine
-   * @returns 
+   * @returns
    */
   scorePointEdgeDistance(point: THREE.Vector3){
     let distance = Infinity;
@@ -3355,7 +3408,7 @@ export class ModuleArea extends ModuleObject {
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNight') ).setValue(this.audio.ambient.night);
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndNitVol') ).setValue(this.audio.ambient.nightVolume);
     struct.addField( new GFFField(GFFDataType.INT, 'EnvAudio') ).setValue(this.audio.environmentAudio);
-    
+
     struct.addField( new GFFField(GFFDataType.INT, 'MusicBattle') ).setValue(this.audio.music.battle);
     struct.addField( new GFFField(GFFDataType.INT, 'MusicDay') ).setValue(this.audio.music.day);
     struct.addField( new GFFField(GFFDataType.INT, 'MusicDelay') ).setValue(this.audio.music.delay);
@@ -3367,7 +3420,7 @@ export class ModuleArea extends ModuleObject {
     struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPLoss') ).setValue(this.stealthXPLoss | 0);
     struct.addField( new GFFField(GFFDataType.DWORD, 'StealthXPMax') ).setValue(this.stealthXPMax | 0);
     struct.addField( new GFFField(GFFDataType.DWORD, 'SunFogColor') ).setValue(this.sun?.fogColor | 0);
-    
+
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(this.transPendCurrId | 0);
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(this.transPendNextId | 0);
     struct.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(this.transPending | 0);
@@ -3451,7 +3504,7 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < this.stores.length; i++){
       storeList.addChildStruct( this.stores[i].save().RootNode );
     }
-    
+
     git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPendCurrID') ).setValue(this.transPendCurrId | 0);
     git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPendNextID') ).setValue(this.transPendNextId | 0);
     git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'TransPending') ).setValue(this.transPending | 0);
@@ -3467,7 +3520,7 @@ export class ModuleArea extends ModuleObject {
     for(let i = 0; i < this.waypoints.length; i++){
       waypointList.addChildStruct( this.waypoints[i].save().RootNode );
     }
-    
+
     git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'WeatherStarted') ).setValue(this.weather.started ? 1 : 0);
 
     this.git = git;

@@ -8,6 +8,7 @@ import { Utility } from "@/utility/Utility";
 import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
 import { clippedLineSegmentWalkable } from "@/engine/pathfinding/clipped-line-segment";
 import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
+import type { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 import {
   createWalkHitInfo,
   type WalkHitInfo,
@@ -53,6 +54,10 @@ export type TestDirectLineHit = {
 const _sample = new THREE.Vector3();
 const _lateral = new THREE.Vector3();
 const _heightProbe = new THREE.Vector3();
+const _lineBox = new THREE.Box3();
+const _candidateFaces: any[] = [];
+const _candidateEdges: WalkmeshEdge[] = [];
+const _candidateRooms: ModuleRoom[] = [];
 
 /**
  * Sample walkmesh Z at a 2D point (first matching walk face).
@@ -60,11 +65,13 @@ const _heightProbe = new THREE.Vector3();
  */
 export function getWalkHeightAt(
   area: ModuleArea | undefined,
-  point: THREE.Vector3
+  point: THREE.Vector3,
+  candidateFaces?: Array<{ pointInFace2d?: (point: THREE.Vector3) => boolean; triangle?: THREE.Triangle }>
 ): number {
-  if(!area?.walkFaces?.length) return NaN;
-  for(let i = 0, len = area.walkFaces.length; i < len; i++){
-    const f = area.walkFaces[i];
+  const faces = candidateFaces ?? area?.walkFaces;
+  if(!faces?.length) return NaN;
+  for(let i = 0, len = faces.length; i < len; i++){
+    const f = faces[i];
     if(f.pointInFace2d(point)){
       f.triangle.closestPointToPoint(point, _heightProbe);
       return _heightProbe.z;
@@ -77,12 +84,29 @@ export function getWalkHeightAt(
  * True if segment crosses a non-transition walk edge (wall).
  * Same rule as PathPoint.hasLOS / retail ClippedLine exit when GetAdjacentRoom==-1.
  */
+function isCandidatePointWalkable(
+  area: ModuleArea,
+  point: THREE.Vector3,
+  candidateFaces?: Array<{ pointInFace2d?: (point: THREE.Vector3) => boolean }>
+): boolean {
+  if(candidateFaces){
+    for(let i = 0, len = candidateFaces.length; i < len; i++){
+      if(candidateFaces[i]?.pointInFace2d?.(point)){
+        return true;
+      }
+    }
+    return false;
+  }
+  return typeof area.isPointWalkable === "function" ? area.isPointWalkable(point) : true;
+}
+
 export function segmentCrossesBlockingWalkEdge(
   area: ModuleArea | undefined,
   a: THREE.Vector3,
-  b: THREE.Vector3
+  b: THREE.Vector3,
+  candidateEdges?: WalkmeshEdge[]
 ): boolean {
-  const edges = area?.walkEdges;
+  const edges = candidateEdges ?? area?.walkEdges;
   if(!edges?.length) return false;
   for(let j = 0, len = edges.length; j < len; j++){
     const edge = edges[j];
@@ -105,8 +129,19 @@ export function segmentCrossesBlockingWalkEdge(
  */
 export function getRoomAtPoint(
   area: ModuleArea | undefined,
-  point: THREE.Vector3
+  point: THREE.Vector3,
+  candidateFaces?: any[]
 ): ModuleRoom | undefined {
+  if(candidateFaces?.length){
+    for(let i = 0, len = candidateFaces.length; i < len; i++){
+      const face = candidateFaces[i];
+      if(face?.pointInFace2d?.(point)){
+        const room = face.walkmesh?.moduleObject as ModuleRoom | undefined;
+        if(room) return room;
+      }
+    }
+  }
+
   const rooms = area?.rooms;
   if(!rooms?.length) return undefined;
 
@@ -264,6 +299,16 @@ export function testDirectLine(
   const checkRooms = options.skipRoomCheck !== true && !!area.rooms?.length;
   const checkClip = options.skipClippedLine !== true;
   const walkHit = options.collectHitInfo ? createWalkHitInfo() : undefined;
+  const candidateSource = (area as any).getWalkCandidatesForBox;
+  const candidates = typeof candidateSource === "function"
+    ? candidateSource.call(
+      area,
+      _lineBox.setFromPoints([origin, dest]).expandByScalar(Math.max(0.1, perspace + 0.1)),
+      { faces: _candidateFaces, edges: _candidateEdges, rooms: _candidateRooms }
+    )
+    : undefined;
+  const candidateFaces = candidates?.faces as any[] | undefined;
+  const candidateEdges = candidates?.edges as WalkmeshEdge[] | undefined;
 
   // Retail: ClippedLineSegmentWalkable per room before NoNonWalk / creatures
   if(checkClip && area.walkFaces?.length){
@@ -309,8 +354,8 @@ export function testDirectLine(
 
   let startRoom: ModuleRoom | undefined;
   if(checkRooms){
-    startRoom = getRoomAtPoint(area, origin);
-    const endRoom = getRoomAtPoint(area, dest);
+    startRoom = getRoomAtPoint(area, origin, candidateFaces);
+    const endRoom = getRoomAtPoint(area, dest, candidateFaces);
     // Only fail when both endpoints map to walk faces AND walk-transition
     // graph proves disconnect (VIS linkedRooms are wrong for this).
     if(startRoom && endRoom && !roomsAreWalkConnected(area, startRoom, endRoom)){
@@ -319,7 +364,7 @@ export function testDirectLine(
   }
 
   let clearT = 0;
-  let prevZ = getWalkHeightAt(area, origin);
+  let prevZ = getWalkHeightAt(area, origin, candidateFaces);
   if(isNaN(prevZ)) prevZ = origin.z;
   const prevSample = origin.clone();
   // Retail walks GetAdjacentRoom along the clip — track current room, 1-hop only
@@ -334,7 +379,7 @@ export function testDirectLine(
     );
 
     // Non-transition walk edge = wall (retail GetAdjacentRoom -1)
-    if(segmentCrossesBlockingWalkEdge(area, prevSample, _sample)){
+    if(segmentCrossesBlockingWalkEdge(area, prevSample, _sample, candidateEdges)){
       refineClearPoint(area, origin, dest, clearT, t, clearPoint, perspace);
       return {
         ok: false,
@@ -344,7 +389,7 @@ export function testDirectLine(
       };
     }
 
-    if(typeof area.isPointWalkable === 'function' && !area.isPointWalkable(_sample)){
+    if(!isCandidatePointWalkable(area, _sample, candidateFaces)){
       refineClearPoint(area, origin, dest, clearT, t, clearPoint, perspace);
       return {
         ok: false,
@@ -355,7 +400,7 @@ export function testDirectLine(
     }
 
     if(checkRooms && walkRoom){
-      const sampleRoom = getRoomAtPoint(area, _sample);
+      const sampleRoom = getRoomAtPoint(area, _sample, candidateFaces);
       if(sampleRoom && !roomsAreAdjacentOrSame(area, walkRoom, sampleRoom)){
         refineClearPoint(area, origin, dest, clearT, t, clearPoint, perspace);
         return {
@@ -368,7 +413,7 @@ export function testDirectLine(
       if(sampleRoom) walkRoom = sampleRoom;
     }
 
-    const z = getWalkHeightAt(area, _sample);
+    const z = getWalkHeightAt(area, _sample, candidateFaces);
     if(!isNaN(z)){
       if(Math.abs(z - prevZ) > maxDz){
         refineClearPoint(area, origin, dest, clearT, t, clearPoint, perspace);
@@ -392,7 +437,7 @@ export function testDirectLine(
           _sample.y + Math.sin(ang) * perspace * 0.5,
           _sample.z
         );
-        if(typeof area.isPointWalkable === 'function' && !area.isPointWalkable(_lateral)){
+        if(!isCandidatePointWalkable(area, _lateral, candidateFaces)){
           ringBlocked = true;
           break;
         }

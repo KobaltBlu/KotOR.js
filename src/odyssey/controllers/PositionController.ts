@@ -42,7 +42,7 @@ export class PositionController extends OdysseyController {
     //}else{
       manager.modelNode.position.copy(anim._position.add(data as any));
     //}
-    manager.modelNode.updateMatrix();
+    manager.markNodeTransformDirty();
   }
 
   animate(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, last: IOdysseyControllerFrameGeneric, next: IOdysseyControllerFrameGeneric, fl: number = 0){
@@ -116,7 +116,7 @@ export class PositionController extends OdysseyController {
       // }
       manager.modelNode.position.lerp(manager._vec3, fl);
     }
-    manager.modelNode.updateMatrix();
+    manager.markNodeTransformDirty();
   }
 
 }

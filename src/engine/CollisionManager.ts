@@ -149,9 +149,9 @@ class CollisionState {
 
 /**
  * CollisionManager class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file CollisionManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -180,6 +180,13 @@ export class CollisionManager {
   rayLine3 = new THREE.Line3();
   scratchVec3 = new THREE.Vector3(0, 0, 2);
   closestPoint = new THREE.Vector3(0, 0, 0);
+  private cachedLocalBounds = new THREE.Box3();
+  private cachedBoundsSource?: THREE.Object3D;
+  private cachedBoundsScale = new THREE.Vector3(NaN, NaN, NaN);
+  private cachedBoundsInverse = new THREE.Matrix4();
+  private placeableEdgeScratch: WalkmeshEdge[] = [];
+  private placeablePointBox = new THREE.Box3();
+  private placeablePointBoxSize = new THREE.Vector3();
 
   // Temporary position vector for calculations
   tempPosition = new THREE.Vector3();
@@ -209,6 +216,7 @@ export class CollisionManager {
   setWalkmesh(walkmesh: OdysseyWalkMesh | undefined): void {
     this.walkmesh = walkmesh;
     this.edges = walkmesh?.edges ? Array.from(walkmesh.edges.values()) : [];
+    this.object?.markCollisionBoundsDirty?.('walkmesh');
   }
 
   /**
@@ -276,7 +284,7 @@ export class CollisionManager {
 
     this.object.forceVector.copy(finalVelocity);
   }
-  
+
   // =============================================
   // MAIN COLLISION UPDATE METHOD
   // =============================================
@@ -398,13 +406,40 @@ export class CollisionManager {
     }
   }
 
-  private updateBoundingBox(): void {
-    if (this.object.container && this.object.box) {
-      this.object.box.setFromObject(this.object.container);
-      this.object.sphere = this.object.box.getBoundingSphere(this.object.sphere);
-      this.box = this.object.box.clone();
-      this.box.translate(this.object.forceVector);
+  refreshObjectBounds(forceLocal: boolean = false, sweptForce?: THREE.Vector3): void {
+    const source = this.object.model instanceof THREE.Object3D
+      ? this.object.model
+      : this.object.container;
+    const transformRoot = this.object.container || source;
+    if(!source || !transformRoot || !this.object.box) return;
+
+    if(forceLocal || this.object.collisionMatrixDirty || transformRoot.matrixWorldNeedsUpdate){
+      transformRoot.updateMatrix();
+      transformRoot.updateMatrixWorld(forceLocal);
+      this.object.collisionMatrixDirty = false;
     }
+
+    const scaleChanged = !this.cachedBoundsScale.equals(transformRoot.scale);
+    if(this.cachedBoundsSource !== source || this.cachedLocalBounds.isEmpty() || scaleChanged || forceLocal || this.object.collisionBoundsDirty){
+      source.updateMatrixWorld(forceLocal);
+      this.cachedLocalBounds.setFromObject(source);
+      this.cachedBoundsInverse.copy(transformRoot.matrixWorld).invert();
+      this.cachedLocalBounds.applyMatrix4(this.cachedBoundsInverse);
+      this.cachedBoundsSource = source;
+      this.cachedBoundsScale.copy(transformRoot.scale);
+      this.object.collisionBoundsDirty = false;
+    }
+
+    this.object.box.copy(this.cachedLocalBounds).applyMatrix4(transformRoot.matrixWorld);
+    this.object.sphere = this.object.box.getBoundingSphere(this.object.sphere);
+    this.box.copy(this.object.box);
+    if(sweptForce){
+      this.box.translate(sweptForce);
+    }
+  }
+
+  private updateBoundingBox(): void {
+    this.refreshObjectBounds(false, this.object.forceVector);
   }
 
   private setupGravityRaycast(): void {
@@ -482,13 +517,18 @@ export class CollisionManager {
 
     return collision;
   }
-    
+
   private handlePlaceableCollisions(): void {
-    const placeables = this.object.room.placeables;
+    const room = this.object.room;
+    const placeables = room.getCollisionPlaceablesForBox?.(this.box) ?? room.placeables;
     for (const placeable of placeables) {
       if (!this.isValidPlaceableForCollision(placeable)) continue;
 
-      const collisions = this.detectEdgeCollisions(placeable.collisionManager.edges);
+      const walkmesh = placeable.collisionManager.walkmesh;
+      const edges = walkmesh?.getEdgesInBox?.(this.box, this.placeableEdgeScratch) ?? placeable.collisionManager.edges;
+      if (!edges.length) continue;
+
+      const collisions = this.detectEdgeCollisions(edges);
       for (const collision of collisions) {
         this.collisionState.addCollision(CollisionType.PLACEABLE, collision);
       }
@@ -580,7 +620,10 @@ export class CollisionManager {
     const nextPosition = CollisionPool.getVector();
     nextPosition.copy(this.object.position).add(this.object.forceVector);
 
-    for (const placeable of this.object.room.placeables) {
+    this.placeablePointBoxSize.setScalar(this.collisionState.hitDistance * 2);
+    this.placeablePointBox.setFromCenterAndSize(nextPosition, this.placeablePointBoxSize);
+    const placeables = this.object.room.getCollisionPlaceablesForBox?.(this.placeablePointBox) ?? this.object.room.placeables;
+    for (const placeable of placeables) {
       if (!placeable?.model?.visible) continue;
       if (!placeable?.collisionManager?.walkmesh) continue;
 
@@ -617,8 +660,9 @@ export class CollisionManager {
       return false;
     }
 
-    // Update bounding box for intersection test
-    placeable.box.setFromObject(placeable.container);
+    if(placeable.collisionBoundsDirty || !placeable.isStatic?.()){
+      placeable.computeBoundingBox?.();
+    }
     return placeable.box.intersectsBox(this.box) || placeable.box.containsBox(this.box);
   }
 
@@ -926,6 +970,7 @@ export class CollisionManager {
   private finalizePositionUpdate(): void {
     // Apply final position update
     this.object.position.add(this.object.forceVector);
+    this.object.markCollisionMatrixDirty("movement");
 
     // Update ground face detection
     this.lastRoom = this.object.room;
@@ -944,6 +989,7 @@ export class CollisionManager {
     if (!this.groundFace) {
       this.object.forceVector.set(0, 0, 0);
       this.object.position.copy(this.originalPosition);
+      this.object.markCollisionMatrixDirty("movement-rollback");
       this.groundFace = this.lastGroundFace;
       this.object.attachToRoom(this.lastRoom);
       this.object.forceVector.set(0, 0, 0);

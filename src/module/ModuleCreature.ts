@@ -1343,6 +1343,7 @@ export class ModuleCreature extends ModuleObject {
           this.rotation.z = Utility.NormalizeRadian(current + Math.sign(remaining) * step);
           this.turning = Math.sign(remaining);
         }
+        this.markCollisionMatrixDirty("facing");
       }
 
       // Stationary turn animations (body turn when idle/pause/ready; not head look)
@@ -6481,7 +6482,8 @@ export class ModuleCreature extends ModuleObject {
       this.model = model;
       this.model.userData.moduleObject = this;
       this.container.add(this.model);
-      this.box.setFromObject(this.container);
+      this.markCollisionBoundsDirty('model');
+      this.computeBoundingBox();
 
       try{
         if(this.model.lhand instanceof OdysseyObject3D){

@@ -152,6 +152,7 @@ export class ServerAIMaster {
     this.frameDelta = delta;
     const module = GameState.module;
     if(!module?.readyToProcessEvents) return;
+    module.area?.frameLosCache?.clear();
 
     let remainingUs = AI_BUDGET_US;
     const frameStart = performance.now();
@@ -346,7 +347,10 @@ export class ServerAIMaster {
     ){
       return true;
     }
-    // Retail locomotion / drive anim states.
+    // Retail locomotion / drive anim states. Animation-only quick-walk can skip idle movers.
+    if(!creature.forceVector || creature.forceVector.lengthSq() <= 0.000001){
+      return false;
+    }
     const anim = creature.animationState?.index;
     if(
       anim === ModuleCreatureAnimState.WALKING ||
