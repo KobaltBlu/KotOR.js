@@ -90,7 +90,6 @@ import { CombatFeatType } from "@/enums/combat/CombatFeatType";
 import { AutoPauseState } from "@/enums/engine/AutoPauseState";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
-import { GameEffectDurationType } from "@/enums/effects/GameEffectDurationType";
 import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { PerceptionType } from "@/enums/engine/PerceptionType";
