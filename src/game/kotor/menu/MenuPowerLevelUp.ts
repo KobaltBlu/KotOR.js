@@ -94,7 +94,7 @@ export class MenuPowerLevelUp extends GameMenu {
     const list: any[] = [];
     for(let i = 0; i < spells.length; i++){
       const spell = spells[i];
-      if(!spell || spell.constant == '****') continue;
+      if(!spell || spell.label == '****') continue;
       const id = typeof spell.id === 'number' ? spell.id : i;
       if(creature?.getHasSpell?.(id)) continue;
       if(draft?.spellsAdded.indexOf(id) >= 0) continue;
@@ -155,7 +155,7 @@ export class MenuPowerLevelUp extends GameMenu {
     for(let recom = 1; recom <= 40 && draft.powerPicksRemaining > 0; recom++){
       for(let i = 0; i < spells.length && draft.powerPicksRemaining > 0; i++){
         const spell = spells[i];
-        if(!spell || spell.constant == '****') continue;
+        if(!spell || spell.label == '****') continue;
         const id = typeof spell.id === 'number' ? spell.id : i;
         if(creature.getHasSpell(id) || draft.spellsAdded.indexOf(id) >= 0) continue;
         if(typeof (spell as any).getRecom === 'function'){

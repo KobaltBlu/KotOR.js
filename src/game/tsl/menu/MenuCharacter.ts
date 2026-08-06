@@ -93,7 +93,7 @@ export class MenuCharacter extends K1_MenuCharacter {
       this.BTN_AUTO.addEventListener('click', (e) => {
         e.stopPropagation();
         if(GameState.getCurrentPlayer().canLevelUp()){
-          GameState.getCurrentPlayer().autoLevelUp();
+          GameState.LevelUpManager.autoLevelUp(GameState.getCurrentPlayer());
           this.updateCharacterStats(GameState.getCurrentPlayer());
         }
       });
