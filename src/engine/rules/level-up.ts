@@ -175,7 +175,7 @@ export function beginLevelUpDraft(
   gameKey: GameEngineType,
   classData?: CreatureClass
 ): LevelUpDraft | null {
-  const cls = classData || creature.getMainClass?.() || creature.classes?.[creature.classes.length - 1];
+  const cls = classData || creature.getMainClass() || creature.classes?.[creature.classes.length - 1];
   if(!cls) return null;
 
   const currentClassLevel = cls.level | 0;
