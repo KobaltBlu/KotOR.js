@@ -6,7 +6,8 @@ import { ModuleObjectConstant } from "@/enums/module/ModuleObjectConstant";
 import { GameState } from "@/GameState";
 import { ICombatAction } from "@/interface/combat/ICombatAction";
 // import { ModuleObjectManager, PartyManager } from "@/managers";
-import { type ModuleObject } from "@/module";
+import { type ModuleObject } from "@/module/ModuleObject";
+import { type ModuleCreature } from "@/module/ModuleCreature";
 // import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GFFField } from "@/resource/GFFField";
@@ -104,10 +105,6 @@ export class Action {
    * The destructor for this action
    */
   dispose(){
-    if(this.owner && this.computedPath && this.owner.getComputedPath?.() === this.computedPath){
-      this.owner.setComputedPath(undefined);
-    }
-    this.computedPath = undefined;
     // Movement actions leave walk / locomotionScale / moveDirOverride sticky otherwise
     if(
       this.type === ActionType.ActionMoveToPoint ||
@@ -116,7 +113,14 @@ export class Action {
       this.type === ActionType.ActionDrive
     ){
       // Path sticky only — do not zero cam-relative playerControl (WASD re-asserts each frame)
-      (this.owner as any)?.clearLocomotionState?.(false);
+      if(BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)) {
+        const creature = this.owner as ModuleCreature;
+        creature.clearLocomotionState(false);
+        const computedPath = creature.getComputedPath();
+        if(!!computedPath && computedPath === this.computedPath){
+          creature.setComputedPath(undefined);
+        }
+      }
     }
   }
 
