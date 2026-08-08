@@ -59,7 +59,6 @@ export class MenuResolutions extends K1_MenuResolutions {
     this.LB_RESOLUTIONS.setItems(this.supportedResolutions, {
       selectIndex: 0,
     } as any);
-    this.tGuiPanel.widget.position.z = 10;
   }
   
 }

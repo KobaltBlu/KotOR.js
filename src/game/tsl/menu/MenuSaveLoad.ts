@@ -123,7 +123,6 @@ export class MenuSaveLoad extends K1_MenuSaveLoad {
         this.UpdateSelected();
       };
 
-      this.tGuiPanel.getFill().position.z = -1;
       resolve();
     });
   }

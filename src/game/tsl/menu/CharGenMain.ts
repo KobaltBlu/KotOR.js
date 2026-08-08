@@ -59,8 +59,6 @@ export class CharGenMain extends K1_CharGenMain {
     await super.menuControlInitializer(true);
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.tGuiPanel.getFill().position.z = -0.5;
-
       this._3dView = new LBL_3DView();
       this._3dView.visible = true;
       this._3dView.setControl(this.MODEL_LBL);

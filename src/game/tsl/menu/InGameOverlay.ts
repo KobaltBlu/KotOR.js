@@ -222,9 +222,6 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.BTN_CLEARALL.hideBorder();
       this.hideCombatUI();
 
-      this.LBL_MOULDING3.widget.position.z = -1;
-      this.LBL_MENUBG.widget.position.z = -1;
-
 
       this.BTN_MSG.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -393,7 +390,6 @@ export class InGameOverlay extends K1_InGameOverlay {
       this.namePlateArrow = new THREE.Mesh( arrowGeometry, arrowMaterial );
       this.namePlateArrow.scale.x = 32;
       this.namePlateArrow.scale.y = 32;
-      this.namePlateArrow.position.z = 5;
       this.namePlateArrow.renderOrder = 5;
       this.namePlateArrow.visible = true;
       this.tGuiPanel.widget.add(this.namePlateArrow);

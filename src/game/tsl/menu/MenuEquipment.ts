@@ -492,9 +492,6 @@ export class MenuEquipment extends K1_MenuEquipment {
   show() {
     this.currentNPCIndex = 0;
     super.show();
-    if(this.LBL_BACK1?.widget){
-      this.LBL_BACK1.widget.position.z = 0;
-    }
   }
 
   triggerControllerAPress() {
