@@ -63,7 +63,6 @@ export class MenuContainer extends GameMenu {
 
       this.BTN_CANCEL.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.closeContainerObject();
         this.close();
       });
       this._button_b = this.BTN_CANCEL;
@@ -124,6 +123,11 @@ export class MenuContainer extends GameMenu {
 
   open() {
     super.open();
+  }
+
+  close() {
+    super.close();
+    this.closeContainerObject();
   }
 
   show() {
