@@ -103,7 +103,6 @@ export class MenuPazaakWager extends GameMenu {
 
   show() {
     super.show();
-    this.tGuiPanel.widget.position.z = 100;
     this.rebuild();
   }
 

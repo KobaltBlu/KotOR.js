@@ -72,7 +72,6 @@ export class InGameConfirm extends GameMenu {
 
       this.tGuiPanel.extent.top = 0;
       this.tGuiPanel.extent.left = 0;
-      this.tGuiPanel.widget.position.z = 10;
       resolve();
     });
   }

@@ -95,8 +95,6 @@ export class CharGenClass extends GameMenu {
         this.selectClassSlot(5);
       });
 
-      this.tGuiPanel.getFill().position.z = -0.5;
-
       for(let i = 0; i < 6; i++){
         let control = this.getControlByName('_3D_MODEL'+(i+1));
         let _3dView = GameState.CharGenManager.lbl_3d_views.get(i);

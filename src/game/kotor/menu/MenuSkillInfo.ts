@@ -46,9 +46,6 @@ export class MenuSkillInfo extends GameMenu {
     if(this.tGuiPanel){
       this.tGuiPanel.extent.left = 0;
       this.tGuiPanel.extent.top = 0;
-      if(this.tGuiPanel.widget){
-        this.tGuiPanel.widget.position.z = 10;
-      }
     }
 
     // Retail ctor @ 006ce7c0: noSelectMode + SetEnabled(0) on LB_SKILLS;

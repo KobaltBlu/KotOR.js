@@ -172,7 +172,6 @@ export class MenuCharacter extends GameMenu {
 
       MDLLoader.loader.load('charrec_light').then((mdl: OdysseyModel) => {
 
-        //this.tGuiPanel.widget.children[2].children[0].position.z = -0.5;
         this._3dView = new LBL_3DView(this.LBL_3DCHAR.extent.width, this.LBL_3DCHAR.extent.height);
         this._3dView.setControl(this.LBL_3DCHAR);
         this._3dView.setViewAngle();

@@ -94,7 +94,6 @@ export class CharGenMain extends GameMenu {
     await super.menuControlInitializer();
     if(skipInit) return;
     return new Promise<void>((resolve, reject) => {
-      this.tGuiPanel.getFill().position.z = -0.5;
 
       this._3dView = new LBL_3DView();
       this._3dView.visible = true;

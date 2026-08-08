@@ -63,7 +63,6 @@ export class MenuToolTip extends GameMenu {
     this.tooltip.extent.left = Math.min(Math.max(0, x), maxX);
     this.tooltip.extent.top = Math.min(Math.max(0, y), maxY);
     this.tooltip.resizeControl();
-    this.tooltip.widget.position.z = 5;
     this.recalculatePosition();
     this.show();
   }

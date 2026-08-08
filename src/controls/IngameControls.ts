@@ -884,6 +884,10 @@ export class IngameControls {
           }
         break;
         default:
+          if(GameState.MenuManager.activeModals.length > 0){
+            GameState.MenuManager.activeModals[GameState.MenuManager.activeModals.length - 1].close();
+            return;
+          }
           GameState.MenuManager.MenuOptions.open();
         break;
       }

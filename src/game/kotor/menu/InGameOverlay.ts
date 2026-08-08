@@ -540,7 +540,6 @@ export class InGameOverlay extends GameMenu {
       this.namePlateArrow = new THREE.Mesh( arrowGeometry, arrowMaterial );
       this.namePlateArrow.scale.x = 32;
       this.namePlateArrow.scale.y = 32;
-      this.namePlateArrow.position.z = 5;
       this.namePlateArrow.renderOrder = 5;
       this.namePlateArrow.visible = false;
       this.tGuiPanel.widget.add(this.namePlateArrow);
@@ -743,7 +742,6 @@ export class InGameOverlay extends GameMenu {
         guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
         guiControl.border.fill.material.transparent = true;
         guiControl.highlight.fill.material.transparent = true;
-        guiControl.widget.position.z = 5;
         this.applyActionIconEnabled(guiControl, action.enabled !== false);
       });
     } else {
@@ -763,7 +761,6 @@ export class InGameOverlay extends GameMenu {
           guiControl.setMaterialTexture(guiControl.highlight.fill.material, texture);
           guiControl.border.fill.material.transparent = true;
           guiControl.highlight.fill.material.transparent = true;
-          guiControl.widget.position.z = 5;
           this.applyActionIconEnabled(guiControl, action.enabled !== false);
         });
       } else if (action) {
@@ -1093,7 +1090,6 @@ export class InGameOverlay extends GameMenu {
     // Mesh lives in panel-centered GUI space (Y up)
     this.namePlateArrow.position.x = -vpW / 2 + arrowLeft + size / 2;
     this.namePlateArrow.position.y = vpH / 2 - arrowTop - size / 2;
-    this.namePlateArrow.position.z = 5;
     this.namePlateArrow.rotation.z = rotation;
     this.namePlateArrow.scale.set(size, size, 1);
     this.namePlateArrow.renderOrder = 5;

@@ -62,7 +62,6 @@ export class MenuResolutions extends GameMenu {
     this.LB_RESOLUTIONS.setItems(this.supportedResolutions, {
       selectIndex: 0,
     } as any);
-    this.tGuiPanel.widget.position.z = 10;
   }
   
 }

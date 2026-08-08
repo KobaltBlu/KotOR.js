@@ -56,7 +56,6 @@ export class MenuSaveName extends GameMenu {
   }
 
   show() {
-    this.tGuiPanel.widget.position.z = 10;
     this.EDITBOX.setText('');
     super.show();
     this.manager.activeGUIElement = this.EDITBOX;

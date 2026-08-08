@@ -48,7 +48,6 @@ export class InGameBark extends GameMenu {
         this.bAudioPlayed = true;
         this.barkTimer = 0;
       });
-      this.tGuiPanel.widget.position.z = 5;
       resolve();
     });
   }

@@ -165,7 +165,6 @@ export class MenuSaveLoad extends GameMenu {
         this.UpdateSelected();
       };
 
-      this.tGuiPanel.getFill().position.z = -1;
       resolve();
     });
   }
