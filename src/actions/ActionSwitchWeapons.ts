@@ -44,7 +44,7 @@ export class ActionSwitchWeapons extends Action {
     }
 
     const owner = this.owner as ModuleCreature;
-    if(owner.isDead?.() || owner.isDebilitated?.()){
+    if(owner.isDead() || owner.isDebilitated()){
       return ActionStatus.ERROR;
     }
 
