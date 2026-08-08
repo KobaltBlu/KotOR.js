@@ -277,7 +277,12 @@ export class GameMenu {
       const geometry = new THREE.PlaneGeometry( 1600, 1200, 1 );
       this.backgroundMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
-          ShaderManager.Shaders.get('background-gui').getUniforms()
+          ShaderManager.Shaders.get('background-gui').getUniforms(),
+          {
+            u_voidFill: {
+              value: this.voidFill ? 1.0 : 0.0
+            }
+          }
         ]),
         vertexShader: ShaderManager.Shaders.get('background-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('background-gui').getFragment(),
