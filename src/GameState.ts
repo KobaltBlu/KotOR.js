@@ -1273,7 +1273,7 @@ export class GameState implements EngineContext {
   static ResetModuleAudio(){                        
     GameState.CutsceneManager.audioEmitter = 
     this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine(), AudioEngineChannel.VO);
-    this.audioEmitter.maxDistance = 50;
+    // this.audioEmitter.maxDistance = 50;
     this.audioEmitter.type = AudioEmitterType.GLOBAL;
     // Retail dialog VO uses One_Shot_Streams (group 3), not Unmaskable.
     this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.ONE_SHOT_STREAMS);

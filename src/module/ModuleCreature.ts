@@ -760,13 +760,13 @@ export class ModuleCreature extends ModuleObject {
 
       this.audioEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
       this.audioEmitter.type = AudioEmitterType.POSITIONAL;
-      this.audioEmitter.setMaxDistance(50);
+      // this.audioEmitter.setMaxDistance(50);
       this.audioEmitter.setPriorityGroupId(AudioPriorityGroup.COMBAT);
       this.audioEmitter.load();
 
       this.footstepEmitter = new AudioEmitter(AudioEngine.GetAudioEngine());
       this.footstepEmitter.type = AudioEmitterType.POSITIONAL;
-      this.footstepEmitter.setMaxDistance(50);
+      // this.footstepEmitter.setMaxDistance(10);
       this.footstepEmitter.setPriorityGroupId(AudioPriorityGroup.MEDIUM_AND_SMALL_CREATURE_FOOTSTEPS);
       this.footstepEmitter.load();
     }catch(e){

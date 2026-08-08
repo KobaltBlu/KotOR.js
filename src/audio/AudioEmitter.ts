@@ -186,6 +186,9 @@ export class AudioEmitter {
     if(this.gainNode){
       this.gainNode.gain.value = this.getVolume();
     }
+    this.playbackRateVariation = priorityGroup?.playbackvariance ?? 0;
+    this.setMinDistance(priorityGroup?.maxvolumedist ?? 0);
+    this.setMaxDistance(priorityGroup?.minvolumedist ?? 0);
   }
 
   setMinDistance(minDistance: number): void {
@@ -924,7 +927,7 @@ export class AudioEmitter {
       const buffer: AudioBuffer = await this.engine.audioCtx.decodeAudioData(data.buffer as ArrayBuffer );
       this.buffers.set(resRef, buffer);
       return buffer;
-    }catch(e){
+    }catch(e: any){
       console.error('AudioEmitter.addSound: Failed to decodeAudioData');
       if (e.name === 'DataCloneError') {
         console.error('AudioEmitter.addSound: ArrayBuffer is detached. This usually happens when the buffer was transferred to another context.');

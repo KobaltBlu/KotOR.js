@@ -1,288 +1,188 @@
 import { EAXPresets } from "@/audio/EAXPresets";
+import type { EAXPreset, EAXReverbParams, EAXReverbProcessorMessage } from "./EAXReverbTypes";
+
+export interface ReverbEngineOptions {
+  /**
+   * URL of the compiled EAXReverbProcessor.worklet.js module.
+   *
+   * AudioWorklet modules are loaded asynchronously and need to be emitted as a
+   * standalone browser module by your bundler/build pipeline.
+   */
+  workletModuleUrl: string | URL;
+
+  /** Keep legacy behavior and connect the engine output to context.destination. */
+  autoConnectDestination?: boolean;
+
+  /** Initial dry level for sources connected through connectSource(). */
+  dryLevel?: number;
+
+  /** Global multiplier applied to the worklet's wet output. */
+  wetLevel?: number;
+
+  /** Default preset morph time in seconds. */
+  transitionTime?: number;
+}
+
+export interface ReverbSourceConnection {
+  readonly send: GainNode;
+  setSendLevel(level: number, rampSeconds?: number): void;
+  disconnect(): void;
+}
 
 /**
- * ReverbEngine class.
- * 
- * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
- * @file ReverbEngine.ts
- * @author KobaltBlu <https://github.com/KobaltBlu>
- * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ * Browser EAX/EFX-style environmental reverb.
+ *
+ * The class is deliberately split into two layers:
+ *   - ReverbEngine: graph/routing, preset selection and game-facing API.
+ *   - EAXReverbProcessor: early reflections + diffusion + 4-line FDN DSP.
+ *
+ * Use one shared instance per active acoustic environment. Do not create one
+ * ReverbEngine per sound source.
  */
 export class ReverbEngine {
-  private context: AudioContext;
+  readonly ready: Promise<void>;
 
-  private currentPreset: number = 0;
+  private readonly context: AudioContext;
+  private readonly options: Required<Omit<ReverbEngineOptions, "workletModuleUrl">> & {
+    workletModuleUrl: string | URL;
+  };
 
-  // Core nodes
-  private convolver: ConvolverNode;
-  private wetGain: GainNode;
-  private dryGain: GainNode;
-  private output: GainNode;
+  private readonly input: GainNode;
+  private readonly wetInput: GainNode;
+  private readonly dryGain: GainNode;
+  private readonly wetGain: GainNode;
+  private readonly output: GainNode;
 
-  // Early reflections
-  private earlyReflections: DelayNode;
-  private earlyGain: GainNode;
-  private earlyPanner: StereoPannerNode;
+  private processor?: AudioWorkletNode;
+  private currentPreset = -1;
+  private currentParams?: EAXReverbParams;
+  private enabled = true;
+  private disposed = false;
 
-  // Late reverb
-  private lateDelay: DelayNode;
-  private lateGain: GainNode;
-  private latePanner: StereoPannerNode;
+  private readonly sourceConnections = new Set<ReverbSourceConnection>();
 
-  // Filters for HF/LF shaping
-  private hfFilter: BiquadFilterNode;
-  private lfFilter: BiquadFilterNode;
-  private airAbsorptionFilter: BiquadFilterNode;
-
-  // Echo
-  private echoDelay: DelayNode;
-  private echoGain: GainNode;
-
-  // Modulation (LFO on late delay)
-  private lfo: OscillatorNode;
-  private lfoGain: GainNode;
-
-  // EAX-specific parameters
-  private density: number = 1.0;
-  private diffusion: number = 1.0;
-  private decayHFRatio: number = 1.0;
-  private decayLFRatio: number = 1.0;
-  private cachedWetGain: number = 0;
-  
-  // Missing EAX features
-  private reflectionsPan: [number, number, number] = [0, 0, 0];
-  private lateReverbPan: [number, number, number] = [0, 0, 0];
-  private echoTime: number = 0.25;
-  private echoDepth: number = 0.0;
-  private modulationTime: number = 0.25;
-  private modulationDepth: number = 0.0;
-  private decayHFLimit: boolean = false;
-
-  // 3D Audio Processing
+  // Retained for compatibility with the old API. Spatial source rendering
+  // should remain in the engine's normal 3D audio path, not in the room DSP.
   private listenerPosition: [number, number, number] = [0, 0, 0];
   private listenerOrientation: [number, number, number] = [0, 0, 1];
 
-  constructor(context: AudioContext) {
-    console.log("Initializing ReverbEngine");
+  constructor(context: AudioContext, options: ReverbEngineOptions) {
     this.context = context;
-    this.currentPreset = 0;
+    this.options = {
+      workletModuleUrl: options.workletModuleUrl,
+      autoConnectDestination: options.autoConnectDestination ?? true,
+      dryLevel: options.dryLevel ?? 1,
+      wetLevel: options.wetLevel ?? 1,
+      transitionTime: options.transitionTime ?? 0.08,
+    };
 
-    this.convolver = context.createConvolver();
-    this.wetGain = context.createGain();
+    this.input = context.createGain();
+    this.wetInput = context.createGain();
     this.dryGain = context.createGain();
+    this.wetGain = context.createGain();
     this.output = context.createGain();
 
-    this.earlyReflections = context.createDelay(0.2);
-    this.earlyGain = context.createGain();
-    this.earlyPanner = context.createStereoPanner();
+    this.dryGain.gain.value = this.options.dryLevel;
+    this.wetGain.gain.value = this.options.wetLevel;
 
-    this.lateDelay = context.createDelay(0.2);
-    this.lateGain = context.createGain();
-    this.latePanner = context.createStereoPanner();
-
-    this.hfFilter = context.createBiquadFilter();
-    this.hfFilter.type = "lowshelf";
-    this.hfFilter.frequency.value = 5000;
-    this.hfFilter.gain.value = 0;
-
-    this.lfFilter = context.createBiquadFilter();
-    this.lfFilter.type = "highshelf";
-    this.lfFilter.frequency.value = 250;
-    this.lfFilter.gain.value = 0;
-
-    this.airAbsorptionFilter = context.createBiquadFilter();
-    this.airAbsorptionFilter.type = "lowpass";
-    this.airAbsorptionFilter.frequency.value = 5000;
-    this.airAbsorptionFilter.Q.value = 0.5;
-
-    this.echoDelay = context.createDelay(0.5);
-    this.echoGain = context.createGain();
-
-    this.lfo = context.createOscillator();
-    this.lfo.type = "sine";
-    this.lfoGain = context.createGain();
-    this.lfo.connect(this.lfoGain);
-    this.lfoGain.connect(this.lateDelay.delayTime);
-    this.lfo.start();
-
-    this.earlyReflections.connect(this.earlyGain).connect(this.earlyPanner).connect(this.convolver);
-    this.convolver.connect(this.hfFilter).connect(this.lfFilter).connect(this.airAbsorptionFilter).connect(this.wetGain);
-    this.wetGain.connect(this.lateDelay).connect(this.lateGain).connect(this.latePanner).connect(this.output);
+    // Legacy/full-bus input path: one input can feed both direct and room audio.
+    this.input.connect(this.dryGain);
+    this.input.connect(this.wetInput);
     this.dryGain.connect(this.output);
-    this.output.connect(context.destination);
+    this.wetGain.connect(this.output);
 
-    this.density = 1.0;
-    this.diffusion = 1.0;
-    this.decayHFRatio = 1.0;
-    this.decayLFRatio = 1.0;
-    this.cachedWetGain = 0;
-    this.reflectionsPan = [0, 0, 0];
-    this.lateReverbPan = [0, 0, 0];
-    this.echoTime = 0.25;
-    this.echoDepth = 0.0;
-    this.modulationTime = 0.25;
-    this.modulationDepth = 0.0;
-    this.decayHFLimit = false;
-    this.listenerPosition = [0, 0, 0];
-    this.listenerOrientation = [0, 0, 1];
+    if (this.options.autoConnectDestination) {
+      this.output.connect(context.destination);
+    }
+
+    this.ready = this.initializeWorklet();
   }
 
-  /**
-   * Load preset and apply all parameters with correct EAX mapping
-   */
-  loadPreset(index: number) {
-    console.log("Loading preset:", index);
-    if (this.currentPreset === index) return;
-
-    const preset = EAXPresets.PresetFromIndex(index);
-    if (!preset) {
-      console.error('EAX preset not found', index);
-      return;
+  private async initializeWorklet(): Promise<void> {
+    if (!this.context.audioWorklet) {
+      throw new Error("AudioWorklet is required by ReverbEngine");
     }
 
-    this.currentPreset = index;
-    this.density = preset.density;
-    this.diffusion = preset.diffusion;
-    this.decayHFRatio = preset.decayHFRatio;
-    this.decayLFRatio = preset.decayLFRatio;
-    this.reflectionsPan = preset.reflectionsPan || [0, 0, 0];
-    this.lateReverbPan = preset.lateReverbPan || [0, 0, 0];
-    this.echoTime = preset.echoTime || 0.25;
-    this.echoDepth = preset.echoDepth || 0.0;
-    this.modulationTime = preset.modulationTime || 0.25;
-    this.modulationDepth = preset.modulationDepth || 0.0;
-    this.decayHFLimit = preset.decayHFLimit || false;
+    await this.context.audioWorklet.addModule(this.options.workletModuleUrl.toString());
+    if (this.disposed) return;
 
-    this.hfFilter.gain.value = -10 * (1 - this.decayHFRatio);
-    this.lfFilter.gain.value = 10 * (this.decayLFRatio - 1);
-    this.airAbsorptionFilter.frequency.value = preset.airAbsorptionGainHF * 5000;
-    this.earlyPanner.pan.value = this.reflectionsPan[0];
-    this.latePanner.pan.value = this.lateReverbPan[0];
-    this.earlyReflections.delayTime.value = preset.reflectionsDelay;
-    this.lateDelay.delayTime.value = preset.lateReverbDelay;
-    this.lfo.frequency.value = 1 / this.modulationTime;
-    this.lfoGain.gain.value = this.modulationDepth * 0.001;
-    this.echoDelay.delayTime.value = this.echoTime;
-    this.echoGain.gain.value = this.echoDepth;
+    const processor = new AudioWorkletNode(this.context, "eax-reverb-processor", {
+      numberOfInputs: 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [2],
+      channelCount: 2,
+      channelCountMode: "clamped-max",
+      channelInterpretation: "speakers",
+    });
 
-    this.convolver.buffer = this.generateEAXImpulse(preset);
+    this.processor = processor;
+    this.wetInput.connect(processor);
+    processor.connect(this.wetGain);
 
-    const reverbLevel = preset.gain * preset.lateReverbGain;
-    this.wetGain.gain.value = reverbLevel;
-    this.cachedWetGain = reverbLevel;
-    this.dryGain.gain.value = 1.0 - preset.gain;
-
-  }
-
-  /**
-   * Generate proper EAX impulse response with early reflections and late reverb
-   */
-  private generateEAXImpulse(preset: any): AudioBuffer {
-    console.log("Generating EAX impulse for preset");
-    const sampleRate = this.context.sampleRate;
-    const length = Math.ceil(preset.decayTime * sampleRate);
-    const buffer = this.context.createBuffer(2, length, sampleRate);
-    const left = buffer.getChannelData(0);
-    const right = buffer.getChannelData(1);
-
-    const decay = Math.exp(-Math.log(1000) / (preset.decayTime * sampleRate));
-    for (let i = 0; i < length; i++) {
-      const noise = Math.random() * 2 - 1;
-      const envelope = Math.pow(decay, i);
-      left[i] = noise * envelope * preset.gain;
-      right[i] = noise * envelope * preset.gain;
-    }
-
-    this.applyDiffusion(left, right, sampleRate, preset.diffusion);
-    this.applyEcho(left, sampleRate, length);
-    this.applyEcho(right, sampleRate, length);
-    this.applyModulation(left, sampleRate, length);
-    this.applyModulation(right, sampleRate, length);
-    this.applyDecayHFLimit(left, sampleRate, length);
-    this.applyDecayHFLimit(right, sampleRate, length);
-
-    let maxAmp = 0;
-    for (let i = 0; i < length; i++) {
-      maxAmp = Math.max(maxAmp, Math.abs(left[i]), Math.abs(right[i]));
-    }
-    if (maxAmp > 0) {
-      const scale = 0.9 / maxAmp;
-      for (let i = 0; i < length; i++) {
-        left[i] *= scale;
-        right[i] *= scale;
-      }
-    }
-
-    return buffer;
-  }
-
-  applyDiffusion(data: Float32Array, dataRight: Float32Array, sampleRate: number, diffusion: number) {
-    const delaySamples = Math.floor(0.05 * sampleRate);
-    const gain = 0.7 * diffusion;
-    const temp = new Float32Array(data.length);
-    const tempRight = new Float32Array(dataRight.length);
-
-    for (let i = delaySamples; i < data.length; i++) {
-      temp[i] = -gain * data[i] + data[i - delaySamples] + gain * temp[i - delaySamples];
-      tempRight[i] = -gain * dataRight[i] + dataRight[i - delaySamples] + gain * tempRight[i - delaySamples];
-    }
-
-    for (let i = 0; i < data.length; i++) {
-      data[i] = temp[i];
-      dataRight[i] = tempRight[i];
-    }
-  }
-
-  applyEcho(data: Float32Array, sampleRate: number, length: number) {
-    if (this.echoDepth <= 0) return;
-
-    const echoDelaySamples = Math.floor(this.echoTime * sampleRate);
-    const echoGain = this.echoDepth;
-
-    for (let i = echoDelaySamples; i < length; i++) {
-      if (i - echoDelaySamples >= 0) {
-        data[i] += data[i - echoDelaySamples] * echoGain;
-      }
-    }
-  }
-
-  applyModulation(data: Float32Array, sampleRate: number, length: number) {
-    if (this.modulationDepth <= 0) return;
-
-    const modulationRate = 1.0 / this.modulationTime;
-    const modulationDepth = this.modulationDepth * 0.01;
-
-    for (let i = 0; i < length; i++) {
-      const t = i / sampleRate;
-      const modulation = Math.sin(2 * Math.PI * modulationRate * t) * modulationDepth;
-      const delaySamples = Math.floor(modulation * sampleRate * 0.001);
-      if (i + delaySamples < length && i + delaySamples >= 0) {
-        data[i] += data[i + delaySamples] * modulationDepth;
-      }
-    }
-  }
-
-  applyDecayHFLimit(data: Float32Array, sampleRate: number, length: number) {
-    if (!this.decayHFLimit) return;
-
-    const hfLimitTime = 0.1;
-    const hfLimitSamples = Math.floor(hfLimitTime * sampleRate);
-
-    for (let i = hfLimitSamples; i < length; i++) {
-      const progress = (i - hfLimitSamples) / (length - hfLimitSamples);
-      const hfLimitFactor = Math.exp(-progress * 5);
-      data[i] *= hfLimitFactor;
+    if (this.currentParams) {
+      this.postMessage({ type: "params", params: this.currentParams });
     }
   }
 
   /**
-   * Connect audio source into the engine - proper EAX routing
+   * Legacy entry point: routes a source through both dry and wet paths.
+   * For a real game mixer, prefer createReverbSend() so direct audio keeps its
+   * existing spatialization path and only the environment send enters here.
    */
-  connectSource(source: AudioNode) {
-    console.log("Connecting source to ReverbEngine");
-    source.connect(this.earlyReflections);
-    source.connect(this.dryGain);
+  connectSource(source: AudioNode): void {
+    source.connect(this.input);
+  }
+
+  disconnectSource(source: AudioNode): void {
+    try {
+      source.disconnect(this.input);
+    } catch {
+      // The source may already have been disconnected/disposed by its owner.
+    }
+  }
+
+  /**
+   * Preferred game-engine routing: create an auxiliary send into the shared
+   * environment processor without duplicating the source's direct path.
+   */
+  createReverbSend(source: AudioNode, initialLevel = 1): ReverbSourceConnection {
+    const send = this.context.createGain();
+    send.gain.value = Math.max(0, initialLevel);
+    source.connect(send);
+    send.connect(this.wetInput);
+
+    let connected = true;
+    const connection: ReverbSourceConnection = {
+      send,
+      setSendLevel: (level: number, rampSeconds = 0.03) => {
+        if (!connected) return;
+        const gain = Math.max(0, level);
+        const now = this.context.currentTime;
+        send.gain.cancelScheduledValues(now);
+        send.gain.setValueAtTime(send.gain.value, now);
+        send.gain.linearRampToValueAtTime(gain, now + Math.max(0.001, rampSeconds));
+      },
+      disconnect: () => {
+        if (!connected) return;
+        connected = false;
+        try { source.disconnect(send); } catch { /* source may be gone */ }
+        try { send.disconnect(this.wetInput); } catch { /* already disconnected */ }
+        this.sourceConnections.delete(connection);
+      },
+    };
+
+    this.sourceConnections.add(connection);
+    return connection;
+  }
+
+  /** Connect an already-mixed environmental send bus directly to the DSP. */
+  getWetInput(): AudioNode {
+    return this.wetInput;
+  }
+
+  /** Full input that feeds both dry and wet paths. */
+  getInput(): AudioNode {
+    return this.input;
   }
 
   getOutput(): AudioNode {
@@ -290,125 +190,190 @@ export class ReverbEngine {
   }
 
   /**
-   * Get current EAX parameters for debugging
+   * Loads an EFX preset without rebuilding an impulse response. Parameters are
+   * morphed inside the worklet, preserving the existing reverb tail.
    */
-  getEAXParameters() {
+  loadPreset(index: number, transitionTime = this.options.transitionTime): void {
+    if (this.currentPreset === index) return;
+
+    const preset = EAXPresets.PresetFromIndex(index) as EAXPreset | undefined;
+    if (!preset) {
+      console.error("EAX preset not found", index);
+      return;
+    }
+
+    this.currentPreset = index;
+    this.currentParams = this.toProcessorParams(preset, transitionTime);
+    this.postMessage({ type: "params", params: this.currentParams });
+  }
+
+  /** Apply a custom EFX parameter block without adding it to EAXPresets. */
+  setParameters(preset: EAXPreset, transitionTime = this.options.transitionTime): void {
+    this.currentPreset = -1;
+    this.currentParams = this.toProcessorParams(preset, transitionTime);
+    this.postMessage({ type: "params", params: this.currentParams });
+  }
+
+  private toProcessorParams(preset: EAXPreset, transitionTime: number): EAXReverbParams {
     return {
-      density: this.density,
-      diffusion: this.diffusion,
-      decayHFRatio: this.decayHFRatio,
-      decayLFRatio: this.decayLFRatio,
-      wetGain: this.wetGain.gain.value,
-      dryGain: this.dryGain.gain.value,
-      earlyGain: this.earlyGain.gain.value,
-      lateGain: this.lateGain.gain.value,
-      hfFilterFreq: this.hfFilter.frequency.value,
-      lfFilterFreq: this.lfFilter.frequency.value,
-      airAbsorptionFreq: this.airAbsorptionFilter.frequency.value
+      ...preset,
+      reflectionsPan: [...(preset.reflectionsPan ?? [0, 0, 0])] as [number, number, number],
+      lateReverbPan: [...(preset.lateReverbPan ?? [0, 0, 0])] as [number, number, number],
+      transitionTime: Math.max(0.005, transitionTime),
+    };
+  }
+
+  setEnabled(enabled: boolean, rampSeconds = 0.04): void {
+    if (this.enabled === enabled) return;
+    this.enabled = enabled;
+
+    // Keep DSP alive while disabled so a quick re-enable can retain the tail,
+    // but ramp the audible wet bus to avoid clicks.
+    const now = this.context.currentTime;
+    this.wetGain.gain.cancelScheduledValues(now);
+    this.wetGain.gain.setValueAtTime(this.wetGain.gain.value, now);
+    this.wetGain.gain.linearRampToValueAtTime(
+      enabled ? this.options.wetLevel : 0,
+      now + Math.max(0.001, rampSeconds),
+    );
+
+  }
+
+  setWetLevel(level: number, rampSeconds = 0.03): void {
+    this.options.wetLevel = Math.max(0, level);
+    if (!this.enabled) return;
+
+    const now = this.context.currentTime;
+    this.wetGain.gain.cancelScheduledValues(now);
+    this.wetGain.gain.setValueAtTime(this.wetGain.gain.value, now);
+    this.wetGain.gain.linearRampToValueAtTime(
+      this.options.wetLevel,
+      now + Math.max(0.001, rampSeconds),
+    );
+  }
+
+  setDryLevel(level: number, rampSeconds = 0.03): void {
+    this.options.dryLevel = Math.max(0, level);
+    const now = this.context.currentTime;
+    this.dryGain.gain.cancelScheduledValues(now);
+    this.dryGain.gain.setValueAtTime(this.dryGain.gain.value, now);
+    this.dryGain.gain.linearRampToValueAtTime(
+      this.options.dryLevel,
+      now + Math.max(0.001, rampSeconds),
+    );
+  }
+
+  /** Clear the current room tail immediately, e.g. after loading a save/module. */
+  reset(): void {
+    this.postMessage({ type: "reset" });
+  }
+
+  getEAXParameters(): EAXReverbParams | undefined {
+    if (!this.currentParams) return undefined;
+    return {
+      ...this.currentParams,
+      reflectionsPan: [...this.currentParams.reflectionsPan],
+      lateReverbPan: [...this.currentParams.lateReverbPan],
     };
   }
 
   /**
-   * Enable/disable reverb processing
+   * EFX room rolloff belongs on the source's reverb send, not in the global DSP.
+   * This helper gives the game mixer a cheap scalar for that send.
    */
-  setEnabled(enabled: boolean) {
-    if (enabled) {
-      this.wetGain.gain.value = this.cachedWetGain; // Restore cached value
-    } else {
-      this.cachedWetGain = this.wetGain.gain.value; // Cache current value
-      this.wetGain.gain.value = 0;
-    }
+  calculateReverbSend(distance: number, baseSend = 1): number {
+    const rolloff = this.currentParams?.roomRolloffFactor ?? 0;
+    if (rolloff <= 0 || distance <= 0) return Math.max(0, baseSend);
+    return Math.max(0, baseSend) / (1 + rolloff * distance);
   }
 
-  /**
-   * Update listener position and orientation for 3D audio processing
-   */
-  updateListener(position: [number, number, number], orientation: [number, number, number]) {
+  updateListener(
+    position: [number, number, number],
+    orientation: [number, number, number],
+  ): void {
     this.listenerPosition = position;
-    this.listenerOrientation = orientation;
+    const length = Math.hypot(orientation[0], orientation[1], orientation[2]) || 1;
+    this.listenerOrientation = [
+      orientation[0] / length,
+      orientation[1] / length,
+      orientation[2] / length,
+    ];
   }
 
   /**
-   * Calculate proper 3D positioning using EAX-style spatial processing
+   * Compatibility helper from the old implementation. Prefer the Web Audio
+   * PannerNode/HRTF path for source spatialization; room reverb should not own it.
    */
-  calculate3DPosition(relativePos: [number, number, number], channel: number) {
-    const distance = Math.sqrt(
-      relativePos[0] ** 2 + relativePos[1] ** 2 + relativePos[2] ** 2
-    );
-    if (distance < 0.01) return 1.0;
+  calculate3DPosition(relativePos: [number, number, number], channel: number): number {
+    const distance = Math.hypot(relativePos[0], relativePos[1], relativePos[2]);
+    if (distance < 0.01) return 1;
 
-    const orientX = this.listenerOrientation[0];
-    const orientY = this.listenerOrientation[1];
-    const orientZ = this.listenerOrientation[2];
-    const relativeX = relativePos[0] / distance;
-    const relativeY = relativePos[1] / distance;
-    const relativeZ = relativePos[2] / distance;
-
-    const dotProduct = relativeX * orientX + relativeY * orientY + relativeZ * orientZ;
-    const angle = Math.acos(Math.max(-1, Math.min(1, dotProduct / distance)));
-
-    const azimuth = Math.atan2(relativeX, relativeZ);
-    const elevation = Math.asin(relativeY / distance);
-
-    const leftGain = this.calculateChannelGain(azimuth, elevation, distance, 0);
-    const rightGain = this.calculateChannelGain(azimuth, elevation, distance, 1);
-
-    return channel === 0 ? leftGain : rightGain;
+    const x = relativePos[0] / distance;
+    const y = relativePos[1] / distance;
+    const z = relativePos[2] / distance;
+    const sourceHeading = Math.atan2(x, z);
+    const listenerHeading = Math.atan2(this.listenerOrientation[0], this.listenerOrientation[2]);
+    let azimuth = sourceHeading - listenerHeading;
+    if (azimuth > Math.PI) azimuth -= Math.PI * 2;
+    else if (azimuth < -Math.PI) azimuth += Math.PI * 2;
+    const elevation = Math.asin(Math.max(-1, Math.min(1, y)));
+    return this.calculateChannelGain(azimuth, elevation, distance, channel);
   }
 
-  /**
-   * Calculate channel gain using EAX-style HRTF simulation
-   */
-  calculateChannelGain(azimuth: number, elevation: number, distance: number, channel: number) {
-    const azimuthDeg = (azimuth * 180 / Math.PI + 360) % 360;
-    const headShadow = this.calculateHeadShadow(azimuthDeg, channel);
-    const distanceAttenuation = this.calculateDistanceAttenuation(distance);
-    const elevationFilter = this.calculateElevationFilter(elevation);
-    return headShadow * distanceAttenuation * elevationFilter;
+  calculateWorld3DPosition(worldPos: [number, number, number], channel: number): number {
+    return this.calculate3DPosition([
+      worldPos[0] - this.listenerPosition[0],
+      worldPos[1] - this.listenerPosition[1],
+      worldPos[2] - this.listenerPosition[2],
+    ], channel);
   }
 
-  calculateHeadShadow(azimuthDeg: number, channel: number) {
-    const isLeftChannel = channel === 0;
-    const isLeftSide = azimuthDeg > 180;
+  calculateChannelGain(
+    azimuth: number,
+    elevation: number,
+    distance: number,
+    channel: number,
+  ): number {
+    const pan = Math.sin(azimuth);
+    const angle = (pan + 1) * Math.PI * 0.25;
+    const panGain = channel === 0 ? Math.cos(angle) : Math.sin(angle);
+    const distanceGain = this.calculateDistanceAttenuation(distance);
 
-    if (isLeftChannel && isLeftSide) {
-      return 1.0;
-    } else if (!isLeftChannel && !isLeftSide) {
-      return 1.0;
-    } else {
-      const shadowAngle = Math.abs(azimuthDeg - (isLeftChannel ? 0 : 360));
-      const shadowFactor = Math.cos(shadowAngle * Math.PI / 180) * 0.3 + 0.7;
-      return Math.max(0.1, shadowFactor);
-    }
+    // Small elevation compensation only; actual HRTF belongs in PannerNode.
+    const elevationAmount = Math.abs(Math.sin(elevation));
+    const elevationGain = 1 - elevationAmount * 0.04;
+    return panGain * distanceGain * elevationGain;
   }
 
-  calculateDistanceAttenuation(distance: number) {
-    const minDistance = 1.0;
-    const maxDistance = 100.0;
-    const rolloffFactor = 1.0;
-
-    if (distance <= minDistance) {
-      return 1.0;
-    }
-
-    const attenuation = minDistance / (minDistance + rolloffFactor * (distance - minDistance));
-    return Math.max(0.0, Math.min(1.0, attenuation));
+  calculateDistanceAttenuation(distance: number): number {
+    const minDistance = 1;
+    if (distance <= minDistance) return 1;
+    return Math.max(0, Math.min(1, minDistance / distance));
   }
 
-  calculateElevationFilter(elevation: number) {
-    const elevationDeg = elevation * 180 / Math.PI;
-
-    if (elevationDeg > 45) {
-      return 1.1;
-    } else if (elevationDeg < -45) {
-      return 0.9;
-    } else {
-      return 1.0;
-    }
-  }
-
-  calculatePanFactor(pan: [number, number, number], channel: number) {
+  calculatePanFactor(pan: [number, number, number], channel: number): number {
     return this.calculate3DPosition(pan, channel);
   }
 
+  dispose(): void {
+    if (this.disposed) return;
+    this.disposed = true;
+
+    for (const connection of Array.from(this.sourceConnections)) {
+      connection.disconnect();
+    }
+
+    try { this.input.disconnect(); } catch { /* noop */ }
+    try { this.wetInput.disconnect(); } catch { /* noop */ }
+    try { this.dryGain.disconnect(); } catch { /* noop */ }
+    try { this.wetGain.disconnect(); } catch { /* noop */ }
+    try { this.processor?.disconnect(); } catch { /* noop */ }
+    try { this.output.disconnect(); } catch { /* noop */ }
+    this.processor?.port.close();
+    this.processor = undefined;
+  }
+
+  private postMessage(message: EAXReverbProcessorMessage): void {
+    this.processor?.port.postMessage(message);
+  }
 }

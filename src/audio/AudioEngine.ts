@@ -7,7 +7,7 @@ import { BackgroundMusicMode } from "@/enums/audio/BackgroundMusicMode";
 import { BackgroundMusicState } from "@/enums/audio/BackgroundMusicState";
 import { AudioEngineChannel } from "@/enums/audio/AudioEngineChannel";
 import { SoundMode } from "@/enums/audio/SoundMode";
-import { ReverbEngine } from "@/audio/ReverbEngine";
+import { ReverbEngine, type ReverbSourceConnection } from "@/audio/ReverbEngine";
 import { AudioPriorityManager } from "@/audio/AudioPriorityManager";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
 import {
@@ -78,15 +78,15 @@ class AudioChannel {
   mute(){
     if(this.muted){ return; }
     this.muted = true;
+    // Keep the audio graph intact. SFX/VO have auxiliary reverb sends, and a
+    // blanket disconnect() would destroy those connections as a side effect.
     this.#gainNode.gain.value = 0;
-    this.getGainNode().disconnect();
   }
 
   unmute(){
     if(!this.muted){ return; }
     this.muted = false;
     this.applyGain();
-    this.getGainNode().connect( this.audioCtx.destination );
   }
 }
 
@@ -214,6 +214,11 @@ export class AudioEngine {
   ambientNightLoaded: boolean;
 
   reverbEngine: ReverbEngine;
+  readonly reverbReady: Promise<void>;
+  private sfxReverbSend!: ReverbSourceConnection;
+  private voReverbSend!: ReverbSourceConnection;
+  private dryOutputGain: GainNode;
+  dryAudioEnabled: boolean = true;
   reverbEnabled: boolean = false;
 
   /**
@@ -336,11 +341,22 @@ export class AudioEngine {
 
   constructor () {
 
-    // this.reverbLF = new Reverb(this.audioCtx);
-    // this.reverbHF = new Reverb(this.audioCtx);
-    // this.reverbLF.filterType = 'highpass';
-    // this.reverbHF.filterType = 'lowpass';
-    this.reverbEngine = new ReverbEngine(this.audioCtx);
+    // One shared EAX environment processor. The webpack entry
+    // `eax-reverb-worklet` emits /eax-reverb-worklet.js as a standalone module.
+    this.reverbEngine = new ReverbEngine(this.audioCtx, {
+      workletModuleUrl: "/eax-reverb-worklet.js",
+      autoConnectDestination: false,
+      wetLevel: 1,
+      transitionTime: 0.08,
+    });
+
+    // The ReverbEngine output is a wet return bus in this integration. Connect it
+    // once; individual game buses keep their normal direct paths below.
+    this.reverbEngine.getOutput().connect(this.audioCtx.destination);
+    this.reverbReady = this.reverbEngine.ready.catch((error) => {
+      this.reverbEnabled = false;
+      console.error("Failed to initialize EAX AudioWorklet", error);
+    });
 
     AudioEngine.sfxChannel = new AudioChannel(AudioEngineChannel.SFX, this.audioCtx);
     AudioEngine.musicChannel = new AudioChannel(AudioEngineChannel.MUSIC, this.audioCtx);
@@ -354,13 +370,35 @@ export class AudioEngine {
     AudioEngine.movieChannel.setGain(AudioEngine.GAIN_MOVIE);
     AudioEngine.guiChannel.setGain(AudioEngine.GAIN_GUI);
 
-    // AudioEngine.sfxChannel.getGainNode().connect(this.audioCtx.destination);
-    this.reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
+    // SFX/VO dry audio shares one monitor gain before reaching the destination.
+    // This lets us listen to the EAX wet return in isolation without touching the
+    // source buses or their auxiliary reverb sends. Music/movie/GUI are not part
+    // of the EAX send, so they keep their normal direct paths.
+    this.dryOutputGain = this.audioCtx.createGain();
+    this.dryOutputGain.gain.value = 1;
+    this.dryOutputGain.connect(this.audioCtx.destination);
+
+    AudioEngine.sfxChannel.getGainNode().connect(this.dryOutputGain);
     AudioEngine.musicChannel.getGainNode().connect(this.audioCtx.destination);
-    // AudioEngine.voChannel.getGainNode().connect(this.audioCtx.destination);
-    this.reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
+    AudioEngine.voChannel.getGainNode().connect(this.dryOutputGain);
     AudioEngine.movieChannel.getGainNode().connect(this.audioCtx.destination);
     AudioEngine.guiChannel.getGainNode().connect(this.audioCtx.destination);
+
+    // One send per mixed bus keeps the cost independent of the number of active
+    // emitters. Per-emitter sends can be added later for obstruction/room-rolloff
+    // fidelity without creating additional reverb processors.
+    this.sfxReverbSend = this.reverbEngine.createReverbSend(
+      AudioEngine.sfxChannel.getGainNode(),
+      1,
+    );
+    this.voReverbSend = this.reverbEngine.createReverbSend(
+      AudioEngine.voChannel.getGainNode(),
+      1,
+    );
+
+    // Areas opt into EAX through SetCurrentEnvironment. Start with the wet return
+    // inaudible while still allowing a preset to be queued before the worklet is ready.
+    this.reverbEngine.setEnabled(false, 0.001);
 
     this.emitters = [];
     this.priorityManager = new AudioPriorityManager();
@@ -488,20 +526,54 @@ export class AudioEngine {
   }
 
   setReverbState(eaxEnabled = false){
-    if(eaxEnabled == this.reverbEnabled) return;
+    if(eaxEnabled === this.reverbEnabled) return;
     this.reverbEnabled = eaxEnabled;
-    //reset the sfx and vo channels destinations
-    AudioEngine.sfxChannel.getGainNode().disconnect();
-    AudioEngine.voChannel.getGainNode().disconnect();
-    if(eaxEnabled){
-      //connect the sfx and vo channels to the reverb engine
-      this.reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
-      this.reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
-    }else{
-      //disconnect the sfx and vo channels from the reverb engine
-      AudioEngine.sfxChannel.getGainNode().connect(this.audioCtx.destination);
-      AudioEngine.voChannel.getGainNode().connect(this.audioCtx.destination);
+
+    // Keep routing static. Enabling/disabling EAX only changes the shared wet
+    // return, avoiding disconnect/reconnect churn and accidental duplicate paths.
+    this.reverbEngine.setEnabled(eaxEnabled);
+  }
+
+  /**
+   * Enable/disable the direct SFX + VO signal while leaving the EAX wet return
+   * untouched. Useful for listening to the reverb tail in isolation.
+   *
+   * Music, movie, and GUI buses are intentionally unaffected because they are not
+   * currently sent through the shared EAX environment processor.
+   */
+  setDryAudioEnabled(enabled = true, transitionTime = 0.02){
+    const next = !!enabled;
+    this.dryAudioEnabled = next;
+
+    const gain = this.dryOutputGain?.gain;
+    if(!gain){ return; }
+
+    const now = this.audioCtx.currentTime;
+    const duration = Number.isFinite(transitionTime)
+      ? Math.max(0, transitionTime)
+      : 0.02;
+
+    gain.cancelScheduledValues(now);
+    gain.setValueAtTime(gain.value, now);
+
+    if(duration <= 0){
+      gain.setValueAtTime(next ? 1 : 0, now);
+      return;
     }
+
+    // A tiny ramp avoids clicks when toggling the dry monitor during playback.
+    gain.linearRampToValueAtTime(next ? 1 : 0, now + duration);
+  }
+
+  /** Toggle direct SFX + VO monitoring. Returns the new enabled state. */
+  toggleDryAudio(transitionTime = 0.02): boolean {
+    this.setDryAudioEnabled(!this.dryAudioEnabled, transitionTime);
+    return this.dryAudioEnabled;
+  }
+
+  /** True when the direct SFX + VO path is currently enabled. */
+  isDryAudioEnabled(): boolean {
+    return this.dryAudioEnabled;
   }
 
   /**
@@ -524,8 +596,10 @@ export class AudioEngine {
       this.setReverbState(false);
       return;
     }
-    this.setReverbState(true);
+    // Queue/apply the room first, then fade the wet return in. loadPreset() is
+    // safe before reverbReady resolves; ReverbEngine forwards it once initialized.
     this.reverbEngine.loadPreset(next);
+    this.setReverbState(true);
   }
 
   /**
@@ -671,7 +745,7 @@ export class AudioEngine {
     // multiply by sound+0 (only streaming music/ambient paths do).
   }
 
-  update ( delta: number, position = new THREE.Vector3(), rotation = new THREE.Euler(), forward = new THREE.Vector3() ) {
+  update ( delta: number, position = new THREE.Vector3(), _rotation = new THREE.Euler(), forward = new THREE.Vector3() ) {
     this.listenerPosition.x = position.x;
     this.listenerPosition.y = position.y;
     this.listenerPosition.z = position.z;
@@ -732,10 +806,11 @@ export class AudioEngine {
     // Retail OcclusionRender @ 00635fd0 — amortized obstruction for positional sources.
     this.updateOcclusion();
 
-    // Update reverb engine 3D positioning
+    // ReverbEngine expects a direction vector here, not Euler angles. Source
+    // HRTF/panning remains in the normal Web Audio spatialization path.
     this.reverbEngine.updateListener(
       [position.x, position.y, position.z],
-      [rotation.x, rotation.y, rotation.z]
+      [forward.x, forward.y, forward.z]
     );
 
     //Handle the background music loop (retail CSWCAmbientSound::Update @ 00557ba0)
@@ -947,7 +1022,11 @@ export class AudioEngine {
    */
   destroy(){
     this.reset();
-    this.audioCtx.close();
+    this.sfxReverbSend?.disconnect();
+    this.voReverbSend?.disconnect();
+    try { this.dryOutputGain?.disconnect(); } catch { /* noop */ }
+    this.reverbEngine.dispose();
+    void this.audioCtx.close();
   }
 
   /**
@@ -966,6 +1045,12 @@ export class AudioEngine {
     this.battleMusicAudioEmitter.dispose();
     this.battleStingerAudioEmitter.dispose();
     this.dialogMusicAudioEmitter.dispose();
+
+    // Do not carry an old room tail into the next area/module.
+    this.reverbEngine.reset();
+    this.reverbEngine.setEnabled(false, 0.01);
+    this.reverbEnabled = false;
+    this.currentEnvironment = -1;
 
     AudioEngine.resetSoundModeState();
   }
@@ -1341,21 +1426,27 @@ export class AudioEngine {
   }
 
   static OnWindowFocusChange(focused: boolean){
-    if(focused == AudioEngine.focused) return;
+    if(focused === AudioEngine.focused) return;
     AudioEngine.focused = focused;
+
+    const engine = AudioEngine.engines[0];
+    if(!engine){ return; }
+    const destination = engine.audioCtx.destination;
+
     if(!focused){
-      // Disconnect all channels
-      AudioEngine.sfxChannel.getGainNode().disconnect();
-      AudioEngine.musicChannel.getGainNode().disconnect();
-      AudioEngine.voChannel.getGainNode().disconnect();
-      AudioEngine.movieChannel.getGainNode().disconnect();
-      AudioEngine.guiChannel.getGainNode().disconnect();
+      // Disconnect only destination-facing returns. SFX/VO remain connected to
+      // dryOutputGain and their reverb sends, so the internal graph stays intact.
+      try { engine.dryOutputGain.disconnect(destination); } catch { /* noop */ }
+      try { AudioEngine.musicChannel.getGainNode().disconnect(destination); } catch { /* noop */ }
+      try { AudioEngine.movieChannel.getGainNode().disconnect(destination); } catch { /* noop */ }
+      try { AudioEngine.guiChannel.getGainNode().disconnect(destination); } catch { /* noop */ }
+      try { engine.reverbEngine.getOutput().disconnect(destination); } catch { /* noop */ }
     }else{
-      AudioEngine.engines[0].reverbEngine.connectSource(AudioEngine.sfxChannel.getGainNode());
-      AudioEngine.engines[0].reverbEngine.connectSource(AudioEngine.voChannel.getGainNode());
-      AudioEngine.musicChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
-      AudioEngine.movieChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
-      AudioEngine.guiChannel.getGainNode().connect(AudioEngine.engines[0].audioCtx.destination);
+      engine.dryOutputGain.connect(destination);
+      AudioEngine.musicChannel.getGainNode().connect(destination);
+      AudioEngine.movieChannel.getGainNode().connect(destination);
+      AudioEngine.guiChannel.getGainNode().connect(destination);
+      engine.reverbEngine.getOutput().connect(destination);
     }
   }
 
