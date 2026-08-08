@@ -18,6 +18,8 @@ import { GUIPanelCoordFlags } from "@/gui/GUICoord";
 import { getGodRayTexture } from "@/shaders/datatextures/godray.datatexture";
 import { createGUIFogVolumeTexture } from "@/shaders/datatextures/fog.datatexture";
 
+let fogVolumeTexture: THREE.DataTexture = undefined;
+
 /**
  * GameMenu class.
  * 
@@ -244,7 +246,7 @@ export class GameMenu {
               value: getGodRayTexture(1024)
             },
             u_fogVolumeMap: {
-              value: createGUIFogVolumeTexture(GameState.renderer)
+              value: fogVolumeTexture || createGUIFogVolumeTexture(GameState.renderer)
             }
           }
         ]),
