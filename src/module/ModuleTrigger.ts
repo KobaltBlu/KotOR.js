@@ -118,7 +118,7 @@ export class ModuleTrigger extends ModuleObject {
       let model = room.model;
       if(model instanceof OdysseyModel3D){
         let pos = this.position.clone();
-        if(model.box.containsPoint(pos)){
+        if(this.boxContainsPoint(pos)){
           let roomCenter = model.box.getCenter(new THREE.Vector3()).clone();
           let distance = pos.distanceTo(roomCenter);
           if(distance < _distance){
@@ -236,7 +236,6 @@ export class ModuleTrigger extends ModuleObject {
     }
 
     this.mesh = new THREE.Mesh( trigGeom, material );
-    this.mesh.position.copy(this.position);
     this.box.setFromObject(this.mesh);
     this.box.min.z -= 100;
     this.box.max.z += 100;
@@ -279,7 +278,7 @@ export class ModuleTrigger extends ModuleObject {
       for(let i = 0; i < partyLen; i++){
         const partymember = GameState.PartyManager.party[i];
         const pos = partymember.position;
-        if(!this.box.containsPoint(pos)){ continue; }
+        if(!this.boxContainsPoint(pos)){ continue; }
         const added = this.addObjectInside(partymember);
         if(!added){ continue; }
         
@@ -292,7 +291,7 @@ export class ModuleTrigger extends ModuleObject {
       for(let i = 0; i < creatureLen; i++){
         const creature = GameState.module.area.creatures[i];
         const pos = creature.position;
-        if(!this.box.containsPoint(pos)){ continue; }
+        if(!this.boxContainsPoint(pos)){ continue; }
 
         const added = this.addObjectInside(creature);
         if(!added){ continue; }
@@ -303,7 +302,7 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   isInsideBoundingBox(object: ModuleObject): boolean {
-    return this.box.containsPoint(object.position);
+    return this.boxContainsPoint(object.position);
   }
 
   isInside(object: ModuleObject): boolean {
@@ -391,8 +390,8 @@ export class ModuleTrigger extends ModuleObject {
     this.#autoObjectsInsideTimer = 0;
 
     const creaturesToCheck = [
-      ...GameState.module.area.creatures.filter(object => this.box.containsPoint(object.position)), 
-      ...GameState.PartyManager.party.filter(object => this.box.containsPoint(object.position))
+      ...GameState.module.area.creatures.filter(object => this.boxContainsPoint(object.position)), 
+      ...GameState.PartyManager.party.filter(object => this.boxContainsPoint(object.position))
     ];
 
     //Check Creatures in Area

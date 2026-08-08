@@ -131,7 +131,7 @@ export class ModuleEncounter extends ModuleObject {
     for(let i = 0; i < creatureLen; i++){
       let creature = GameState.module.area.creatures[i];
       let pos = creature.position.clone();
-      if(this.box.containsPoint(pos)){
+      if(this.boxContainsPoint(pos)){
         if(this.objectsInside.indexOf(creature) == -1){
           this.objectsInside.push(creature);
           if(this.isHostile(creature)){
@@ -162,7 +162,7 @@ export class ModuleEncounter extends ModuleObject {
       let partymember = GameState.PartyManager.party[i];
       let pos = partymember.position.clone();
       
-      if(this.box.containsPoint(pos)){
+      if(this.boxContainsPoint(pos)){
         if(this.objectsInside.indexOf(partymember) == -1){
           this.objectsInside.push(partymember);
           if(this.isHostile(partymember)){
@@ -346,7 +346,6 @@ export class ModuleEncounter extends ModuleObject {
     });
 
     this.mesh = new THREE.Mesh( trigGeom, material );
-    this.mesh.position.copy(this.position);
     this.box.setFromObject(this.mesh);
     this.box.min.z -= 100;
     this.box.max.z += 100;

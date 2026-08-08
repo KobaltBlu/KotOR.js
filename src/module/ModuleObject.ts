@@ -3576,6 +3576,11 @@ export class ModuleObject {
     return this.box;
   }
 
+  boxContainsPoint(point: THREE.Vector3){
+    return point.x >= this.box.min.x && point.x <= this.box.max.x &&
+      point.y >= this.box.min.y && point.y <= this.box.max.y;
+  }
+
   /**
    * Check if the object is on screen
    * @param frustum

@@ -1874,7 +1874,7 @@ export class ModuleCreature extends ModuleObject {
     }else{
       if(!this.animationMissingLogged){
         this.animationMissingLogged = true;
-        console.error('Animation Missing', this.getTag(), this.getName(), this.animationState);
+        // console.error('Animation Missing', this.getTag(), this.getName(), this.animationState);
       }
       this.setAnimationState(
         this.combatData.combatState ? ModuleCreatureAnimState.READY : ModuleCreatureAnimState.PAUSE
