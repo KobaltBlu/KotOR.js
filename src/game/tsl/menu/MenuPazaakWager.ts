@@ -25,8 +25,8 @@ export class MenuPazaakWager extends K1_MenuPazaakWager {
   constructor(){
     super();
     this.gui_resref = 'pazaakwager_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

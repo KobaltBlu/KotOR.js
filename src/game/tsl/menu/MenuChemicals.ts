@@ -71,7 +71,7 @@ export class MenuChemicals extends GameMenu {
   constructor(){
     super();
     this.gui_resref = 'chemical_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

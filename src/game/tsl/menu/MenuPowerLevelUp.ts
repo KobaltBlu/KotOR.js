@@ -29,7 +29,7 @@ export class MenuPowerLevelUp extends K1_MenuPowerLevelUp {
   constructor(){
     super();
     this.gui_resref = 'pwrlvlup_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

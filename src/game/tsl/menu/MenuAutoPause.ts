@@ -30,7 +30,7 @@ export class MenuAutoPause extends K1_MenuAutoPause {
   constructor(){
     super();
     this.gui_resref = 'optautopause_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
   

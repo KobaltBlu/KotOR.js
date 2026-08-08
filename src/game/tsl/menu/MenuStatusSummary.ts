@@ -43,7 +43,7 @@ export class MenuStatusSummary extends K1_MenuStatusSummary {
   constructor(){
     super();
     this.gui_resref = 'statussummary_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

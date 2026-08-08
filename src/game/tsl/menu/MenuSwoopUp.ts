@@ -90,7 +90,7 @@ export class MenuSwoopUp extends GameMenu {
   constructor(){
     super();
     this.gui_resref = 'swoopup_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

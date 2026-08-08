@@ -114,17 +114,17 @@ export class GuiTimingBarManager {
     this.elapsed += delta;
     const progress = this.getProgress();
 
-    if(overlay?.LBL_ACTIONDESC){
-      const remaining = Math.max(0, this.duration - this.elapsed);
-      const pct = Math.floor(progress * 100);
-      const text = this.label
-        ? `${this.label} (${pct}%)`
-        : `${remaining.toFixed(1)}s`;
-      overlay.LBL_ACTIONDESC.setText(text);
-      overlay.LBL_ACTIONDESC.show();
-      overlay.LBL_ACTIONDESCBG?.show();
-      this.applyFillProgress(overlay, progress);
-    }
+    // if(overlay?.LBL_ACTIONDESC){
+    //   const remaining = Math.max(0, this.duration - this.elapsed);
+    //   const pct = Math.floor(progress * 100);
+    //   const text = this.label
+    //     ? `${this.label} (${pct}%)`
+    //     : `${remaining.toFixed(1)}s`;
+    //   overlay.LBL_ACTIONDESC.setText(text);
+    //   overlay.LBL_ACTIONDESC.show();
+    //   overlay.LBL_ACTIONDESCBG?.show();
+    //   this.applyFillProgress(overlay, progress);
+    // }
 
     if(this.elapsed >= this.duration){
       this.restoreFill(overlay);

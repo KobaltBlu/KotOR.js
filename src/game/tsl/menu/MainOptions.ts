@@ -39,7 +39,7 @@ export class MainOptions extends K1_MainOptions {
   constructor(){
     super();
     this.gui_resref = 'optionsmain_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

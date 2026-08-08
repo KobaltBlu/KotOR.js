@@ -21,7 +21,7 @@ export class MenuScriptSelect extends K1_MenuScriptSelect {
   constructor(){
     super();
     this.gui_resref = 'scriptselect_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

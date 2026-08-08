@@ -41,7 +41,7 @@ export class MenuAbilities extends K1_MenuAbilities {
   constructor(){
     super();
     this.gui_resref = 'abilities_p';
-    this.background = '1600x1200back';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

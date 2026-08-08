@@ -40,7 +40,7 @@ export class MenuGameplay extends K1_MenuGameplay {
   constructor(){
     super();
     this.gui_resref = 'optgameplay_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

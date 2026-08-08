@@ -37,7 +37,7 @@ export class MenuSound extends K1_MenuSound {
   constructor(){
     super();
     this.gui_resref = 'optsound_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

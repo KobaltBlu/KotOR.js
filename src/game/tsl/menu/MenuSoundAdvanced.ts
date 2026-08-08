@@ -29,7 +29,7 @@ export class MenuSoundAdvanced extends K1_MenuSoundAdvanced {
   constructor(){
     super();
     this.gui_resref = 'optsoundadv_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

@@ -58,8 +58,8 @@ export class CharGenAbilities extends K1_CharGenAbilities {
   constructor(){
     super();
     this.gui_resref = 'abchrgen_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

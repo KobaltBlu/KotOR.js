@@ -27,7 +27,7 @@ export class MenuMouse extends K1_MenuMouse {
   constructor(){
     super();
     this.gui_resref = 'optmouse_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

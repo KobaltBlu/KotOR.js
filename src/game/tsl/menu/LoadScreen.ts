@@ -25,7 +25,7 @@ export class LoadScreen extends K1_LoadScreen {
     super();
     this.gui_resref = 'loadscreen_p';
     this.background = 'blackfill';
-    this.voidFill = false;
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

@@ -32,7 +32,7 @@ export class MenuLevelUp extends K1_MenuLevelUp {
   constructor(){
     super();
     this.gui_resref = 'leveluppnl_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

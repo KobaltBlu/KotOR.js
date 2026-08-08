@@ -27,7 +27,7 @@ export class MainMovies extends K1_MainMovies {
   constructor(){
     super();
     this.gui_resref = 'titlemovie_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

@@ -39,8 +39,8 @@ export class CharGenPortCust extends K1_CharGenPortCust {
   constructor(){
     super();
     this.gui_resref = 'portcust_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

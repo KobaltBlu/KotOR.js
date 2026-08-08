@@ -77,7 +77,7 @@ export class MenuComponent extends GameMenu {
   constructor(){
     super();
     this.gui_resref = 'component_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

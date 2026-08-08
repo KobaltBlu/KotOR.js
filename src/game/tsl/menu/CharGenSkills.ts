@@ -61,8 +61,8 @@ export class CharGenSkills extends K1_CharGenSkills {
   constructor(){
     super();
     this.gui_resref = 'skchrgen_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

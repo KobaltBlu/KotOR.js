@@ -119,8 +119,8 @@ export class MenuPazaakSetup extends K1_MenuPazaakSetup {
   constructor(){
     super();
     this.gui_resref = 'pazaaksetup_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

@@ -42,7 +42,7 @@ export class MenuStore extends K1_MenuStore {
   constructor(){
     super();
     this.gui_resref = 'store_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

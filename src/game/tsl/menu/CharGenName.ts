@@ -22,8 +22,8 @@ export class CharGenName extends K1_CharGenName {
   constructor(){
     super();
     this.gui_resref = 'name_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

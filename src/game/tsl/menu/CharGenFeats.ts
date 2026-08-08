@@ -30,8 +30,8 @@ export class CharGenFeats extends K1_CharGenFeats {
   constructor(){
     super();
     this.gui_resref = 'ftchrgen_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

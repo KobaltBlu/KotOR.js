@@ -49,7 +49,7 @@ export class MenuGalaxyMap extends K1_MenuGalaxyMap {
   constructor(){
     super();
     this.gui_resref = 'galaxymap_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

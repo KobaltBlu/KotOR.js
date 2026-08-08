@@ -41,7 +41,7 @@ export class MainMenu extends K1_MainMenu {
   constructor(){
     super();
     this.gui_resref = 'mainmenu8x6_p';
-    this.background = '';
+    this.background = 'blackfill';
     this.voidFill = true;
     this.userCanClose = false;
   }

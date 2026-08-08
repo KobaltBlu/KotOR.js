@@ -107,8 +107,8 @@ export class MenuPazaakGame extends K1_MenuPazaakGame {
   constructor(){
     super();
     this.gui_resref = 'pazaakgame_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

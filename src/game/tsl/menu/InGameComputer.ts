@@ -33,7 +33,7 @@ export class InGameComputer extends K1_InGameComputer {
   constructor(){
     super();
     this.gui_resref = 'computer_p';
-    this.background = 'black';
+    this.background = 'blackfill';
     this.voidFill = true;
   }
 

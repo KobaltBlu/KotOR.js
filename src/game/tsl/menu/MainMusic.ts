@@ -56,8 +56,8 @@ export class MainMusic extends GameMenu {
   constructor(){
     super();
     this.gui_resref = 'titlemusic_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {

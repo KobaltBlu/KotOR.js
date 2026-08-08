@@ -35,8 +35,8 @@ export class CharGenClass extends K1_CharGenClass {
   constructor(){
     super();
     this.gui_resref = 'classsel_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
     this.userCanClose = false;
   }
 

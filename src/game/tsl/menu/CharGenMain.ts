@@ -51,8 +51,8 @@ export class CharGenMain extends K1_CharGenMain {
   constructor(){
     super();
     this.gui_resref = 'maincg_p';
-    this.background = '';
-    this.voidFill = false;
+    this.background = 'blackfill';
+    this.voidFill = true;
   }
 
   async menuControlInitializer(skipInit: boolean = false) {
