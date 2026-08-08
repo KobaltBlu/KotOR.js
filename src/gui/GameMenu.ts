@@ -16,6 +16,7 @@ import { KeyMapper } from "@/controls";
 import { shouldSuppressGameMenuHoverForListRow } from "@/gui/listrow/listRowHover";
 import { GUIPanelCoordFlags } from "@/gui/GUICoord";
 import { getGodRayTexture } from "@/shaders/datatextures/godray.datatexture";
+import { createGUIFogVolumeTexture } from "@/shaders/datatextures/fog.datatexture";
 
 /**
  * GameMenu class.
@@ -236,8 +237,14 @@ export class GameMenu {
         uniforms: THREE.UniformsUtils.merge([
           ShaderManager.Shaders.get('void-gui').getUniforms(),
           {
+            u_aspect: {
+              value: ResolutionManager.getViewportWidth() / ResolutionManager.getViewportHeight()
+            },
             u_godRayMap: {
               value: getGodRayTexture(1024)
+            },
+            u_fogVolumeMap: {
+              value: createGUIFogVolumeTexture(GameState.renderer)
             }
           }
         ]),
@@ -349,8 +356,8 @@ export class GameMenu {
 
     if(this.voidFill){
       this.backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
-      this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
       this.backgroundVoidSprite.scale.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), 1);
+      this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
       /*
        * The shader receives precomputed cos/sin.
        *
