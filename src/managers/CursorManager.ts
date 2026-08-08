@@ -156,10 +156,13 @@ export class CursorManager {
 
 		await TextureLoader.LoadQueue();
 
-		for(const key of ['reticleF', 'reticleF2', 'reticleH', 'reticleH2', 'reticleCombat'] as const){
+		for(const key of CursorManager.cursorMaterials.keys()){
 			const mat = CursorManager.cursorMaterials.get(key);
 			if(mat){
 				mat.depthTest = false;
+				mat.depthWrite = false;
+				mat.transparent = true;
+				mat.alphaTest = 0.51;
 			}
 		}
 	}
