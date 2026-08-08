@@ -15,6 +15,7 @@ import { GUIControlTypeMask } from "@/enums/gui/GUIControlTypeMask";
 import { KeyMapper } from "@/controls";
 import { shouldSuppressGameMenuHoverForListRow } from "@/gui/listrow/listRowHover";
 import { GUIPanelCoordFlags } from "@/gui/GUICoord";
+import { getGodRayTexture } from "@/shaders/datatextures/godray.datatexture";
 
 /**
  * GameMenu class.
@@ -233,7 +234,12 @@ export class GameMenu {
       // this.backgroundVoidMaterial = new THREE.MeshBasicMaterial( {color: new THREE.Color(0x000000), side: THREE.DoubleSide} );
       this.backgroundVoidMaterial = new THREE.ShaderMaterial({
         uniforms: THREE.UniformsUtils.merge([
-          ShaderManager.Shaders.get('void-gui').getUniforms()
+          ShaderManager.Shaders.get('void-gui').getUniforms(),
+          {
+            u_godRayMap: {
+              value: getGodRayTexture(1024)
+            }
+          }
         ]),
         vertexShader: ShaderManager.Shaders.get('void-gui').getVertex(),
         fragmentShader: ShaderManager.Shaders.get('void-gui').getFragment(),
@@ -345,6 +351,22 @@ export class GameMenu {
       this.backgroundVoidMaterial.uniforms.u_time.value = this.context.deltaTimeFixed;
       this.backgroundVoidMaterial.uniforms.u_resolution.value.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight());
       this.backgroundVoidSprite.scale.set(ResolutionManager.getViewportWidth(), ResolutionManager.getViewportHeight(), 1);
+      /*
+       * The shader receives precomputed cos/sin.
+       *
+       * This means rotation is only:
+       *
+       * mul
+       * add
+       *
+       * per fragment.
+      */
+      const rayAngle = this.context.deltaTimeFixed * 0.025;
+
+      this.backgroundVoidMaterial.uniforms.u_godRayRotation.value.set(
+        Math.cos(rayAngle),
+        Math.sin(rayAngle)
+      );
     }
 
     if(this.background){
