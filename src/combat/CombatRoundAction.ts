@@ -4,7 +4,7 @@ import { TalentFeat, TalentSpell } from "@/talents";
 import { AttackResult } from "@/enums/combat/AttackResult";
 import { ProjectilePath } from "@/enums/combat/ProjectilePath";
 import { OdysseyModelAnimation } from "@/odyssey";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import { SpellCastInstance } from "@/combat/SpellCastInstance";
 import { resolveSpellProjectilePathType } from "@/combat/spell-projectile-time";
 import { CombatFeatType } from "@/enums/combat/CombatFeatType";
@@ -27,7 +27,7 @@ export class CombatRoundAction {
   animation: number = 0;
   animationTime: number = 0;
   animationName: string = '';
-  twoDAAnimation: ITwoDAAnimation;
+  swAnimation: SWAnimation;
 
   numAttacks: number = 0;
   actionType: CombatActionType = CombatActionType.INVALID;
@@ -186,19 +186,17 @@ export class CombatRoundAction {
       }
     }
     
-    let animation = attackKey+weaponWield+'a'+attackType;
+    let animationName = attackKey+weaponWield+'a'+attackType;
     // Retail GetClientMeleeAnimation @ 005f32e0 — resultsCalculated returns nAnimation row
     if(this.resultsCalculated && this.attackAnimation){
-      const row = resolveAnimations2DARow(this.attackAnimation);
-      if(row?.name){
-        animation = String(row.name);
-      }else if(this.animationName){
-        animation = this.animationName;
+      const animFromId = GameState.SWRuleSet.animationIdMap.get(this.attackAnimation);
+      if(animFromId){
+        animationName = animFromId.name || animationName;
       }
     }
 
-    this.animationName = animation;
-    this.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(animation);
+    this.animationName = animationName;
+    this.swAnimation = OdysseyModelAnimation.GetAnimation2DA(animationName);
   }
 
   /**
@@ -265,14 +263,8 @@ export class CombatRoundAction {
 }
 
 /** Resolve animations.2da row by label id or array index. */
-export function resolveAnimations2DARow(animationRow: number): ITwoDAAnimation | undefined {
-  const table = GameState.TwoDAManager?.datatables?.get?.('animations');
-  if(!table || animationRow == null || animationRow < 0) return undefined;
-  if(typeof table.getByID === 'function'){
-    const byId = table.getByID(animationRow);
-    if(byId) return byId as ITwoDAAnimation;
-  }
-  const rows = table.rows;
-  if(rows && rows[animationRow]) return rows[animationRow] as ITwoDAAnimation;
-  return undefined;
+export function resolveAnimations2DARow(animationRow: number): SWAnimation | undefined {
+  const animFromId = GameState.SWRuleSet.animationIdMap.get(animationRow);
+  if(animFromId) return animFromId;
+  return GameState.SWRuleSet.animations[animationRow];
 }

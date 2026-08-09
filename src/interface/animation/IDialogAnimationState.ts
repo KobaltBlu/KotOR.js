@@ -1,5 +1,5 @@
 import type { OdysseyModelAnimation } from "@/odyssey/OdysseyModelAnimation";
-import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
 /**
  * IDialogAnimationState interface.
@@ -14,6 +14,6 @@ import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 export interface IDialogAnimationState {
   animationIndex: number;
   animation: OdysseyModelAnimation;
-  data: ITwoDAAnimation,
+  data: SWAnimation,
   started: boolean;
 }

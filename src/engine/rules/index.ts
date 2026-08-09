@@ -26,6 +26,8 @@ export * from "@/engine/rules/SWBaseItem";
 export * from "@/engine/rules/SWCreatureAppearance";
 export * from "@/engine/rules/SWDoorAppearance";
 export * from "@/engine/rules/SWPlaceableAppearance";
+export * from "@/engine/rules/SWCombatAnimation";
+export * from "@/engine/rules/SWAnimation";
 export * from "@/engine/rules/skill-points";
 export * from "@/engine/rules/level-up";
 export * from "@/engine/rules/ability-points";

@@ -44,7 +44,6 @@ import { FollowerCamera } from "@/engine/FollowerCamera";
 import { AttackResult } from "@/enums/combat/AttackResult";
 // import { ICombatAction } from "@/interface/combat/ICombatAction";
 import { DLGObject } from "@/resource/DLGObject";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import {
   APPEARANCE_EVIL_BODY_ALIGN_MAX,
   SWCreatureAppearance,
@@ -150,6 +149,13 @@ import {
   type PlayerCamRelativeState,
 } from "@/controls/player-cam-relative-control";
 import { ClientCameraMode } from "@/enums/engine/ClientCameraMode";
+import {
+  applyMobilityMovementBonus,
+  clampMovementRateFactor,
+} from "@/engine/pathfinding/locomotion";
+import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbientState";
+import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
 /** Retail CSWSCreaturePartyFollowInfo fields (FollowInfo GFF struct). */
 export interface CreaturePartyFollowInfo {
@@ -776,6 +782,41 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
+   * Recalc movement_rate_factor from MSI/MSD effects.
+   * Retail: best increase (absolute %) × (100 − best decrease %) / 100,
+   * clamped to [0.125, 1.5] like GetWalkRate / GetRunRate.
+   * TSL GetMovementRateFactor @ 0068f140: Mobility feat (0xc3) adds +0.1 before clamp.
+   */
+  updateMovementSpeed(){
+    let bestIncrease = 100;
+    let bestDecrease = 0;
+
+    for(let i = 0, len = this.effects.length; i < len; i++){
+      const effect = this.effects[i];
+      if(effect.type == GameEffectType.EffectMovementSpeedIncrease){
+        let pct = effect.getInt(0) | 0;
+        if(pct < 100) pct += 100;
+        if(pct > bestIncrease) bestIncrease = pct;
+      }else if(effect.type == GameEffectType.EffectMovementSpeedDecrease){
+        const pct = effect.getInt(0) | 0;
+        if(pct > 0 && pct < 100 && pct > bestDecrease){
+          bestDecrease = pct;
+        }
+      }
+    }
+
+    let factor = (bestIncrease / 100) * ((100 - bestDecrease) / 100);
+    // TSL Mobility (feat 0xc3 / 195) — GetMovementRateFactor +0.1
+    const hasMobility = this.getHasFeat(CombatFeatType.MOBILITY);
+    factor = applyMobilityMovementBonus(
+      factor,
+      hasMobility,
+      GameState.GameKey === GameEngineType.TSL
+    );
+    this.movementSpeed = clampMovementRateFactor(factor);
+  }
+
+  /**
    * Retail WalkUpdateLocation_QuickWalk — every-frame locomotion for movers.
    * Advances the head MoveTo/Follow/Drive action so motion never skips frames
    * when aiUpdate is budget-deferred. Sets _quickWalkedThisFrame so aiUpdate
@@ -1026,7 +1067,7 @@ export class ModuleCreature extends ModuleObject {
                 if(!_animIsPlaying && !this.dialogAnimation.started){
                   let _newAnim = this.dialogAnimation.animation;
                   if(_newAnim instanceof OdysseyModelAnimation){
-                    this.model.playAnimation( _newAnim, !!parseInt(this.dialogAnimation.data.looping) );
+                    this.model.playAnimation( _newAnim, this.dialogAnimation.data.looping );
                     this.dialogAnimation.started = true;
                   }else{
                     //Kill the dialogAnimation if the animation isn't valid
@@ -1805,8 +1846,10 @@ export class ModuleCreature extends ModuleObject {
           let aLooping =
             isDriveLoco ||
             scriptedDeadPose ||
-            (!parseInt(this.animationState.animation.fireforget) &&
-              parseInt(this.animationState.animation.looping) == 1);
+            (
+              !this.animationState.animation.fireforget &&
+              this.animationState.animation.looping
+            );
           this.model.playAnimation(this.animationState.animation.name?.toLowerCase(), aLooping);
           if(this.model.animationManager?.currentAnimationState){
             this.model.animationManager.currentAnimationState.speed =
@@ -2447,7 +2490,7 @@ export class ModuleCreature extends ModuleObject {
     const row = resolveAnimations2DARow(combatAction.attackAnimation);
     if(row?.name){
       combatAction.animationName = String(row.name);
-      combatAction.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(combatAction.animationName);
+      combatAction.swAnimation = OdysseyModelAnimation.GetAnimation2DA(combatAction.animationName);
     }
 
     this.combatRound.addAction(combatAction);
@@ -2532,6 +2575,84 @@ export class ModuleCreature extends ModuleObject {
     return action;
   }
 
+  getDebilitatedState(): number {
+    // Prefer highest SetState (retail field_0x8ed priority).
+    if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
+      const highest = getActiveSetStateType(this as ModuleCreature);
+      if(highest > 0) return highest;
+      // Retail ambient_animation_state = 9 while force-pushed.
+      const ambient = (this as ModuleCreature).ambientAnimState | 0;
+      if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_PUSHED){
+        return GameEffectSetStateType.FORCEPUSH;
+      }
+    }
+    const e = this.effects.find(eff => eff?.type == GameEffectType.EffectSetState);
+    return e ? (e.getInt(0) | 0) : 0;
+  }
+
+  animationConstantToAnimation( animation_constant = 10000 ): SWAnimation{
+    const val = super.animationConstantToAnimation(animation_constant);
+
+    const debilitatedState = this.getDebilitatedState();
+    if(debilitatedState > 0){
+      const animations = GameState.SWRuleSet.animations;
+      switch(debilitatedState){
+        case 1: //Confused
+          return animations[15];
+        case 2: //Frightened
+          return animations[73];
+        case 3: //Droid Stun
+          return animations[270];
+        case 4: //Stunned
+          return animations[78];
+        case 5: //Paralyzed
+          return animations[78];
+        case 6: //Sleep
+          return animations[76];
+        case 7: //Choke
+          if(this.isSimpleCreature()){
+            return animations[264];
+          }else{
+            return animations[72];
+          }
+        break;
+        case 8: //Horrified
+          return animations[74];
+        case 9: //Force Pushed
+          if(!this.fp_push_played)
+            return animations[84];
+          if(!this.fp_land_played)
+            return animations[85];
+          if(!this.fp_getup_played)
+            return animations[86];
+        break;
+        case 10: //Whirlwind
+          return animations[75];
+        case 14: //Knockdown hold (K2 SetState 0x0E)
+          return animations[85];
+        case 15: //Crush (K2) — choke-like victim pose; ambient 16 set separately
+          if(this.isSimpleCreature()){
+            return animations[264];
+          }else{
+            return animations[72];
+          }
+        case 16: //Droid Confused — confused pose; not IsDebilitated in retail
+          return animations[15];
+        case 17: //Held (K2 0x11) — choke-like lock
+          if(this.isSimpleCreature()){
+            return animations[264];
+          }else{
+            return animations[72];
+          }
+        case 18: //Mind Trick — stun cohort
+        case 19: //Droid Scramble — stun cohort
+          return animations[78];
+      }
+    }
+
+    return val;
+  }
+
   setAnimationState(animState: ModuleCreatureAnimState){
     if(!animState){ return; }
 
@@ -2555,7 +2676,7 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  playTwoDAAnimation(animation: ITwoDAAnimation){
+  playTwoDAAnimation(animation: SWAnimation){
     if(animation){
       // Retail combat/cutscene swings use SetAnimation — clear dialog slot so
       // updateAnimationState is not blocked by a lingering dialog READY pose.
@@ -2606,7 +2727,7 @@ export class ModuleCreature extends ModuleObject {
   /**
    * Retail CSWCAnimBaseHeadWield::SetOverlayAnimation @ 00699420 — body + head Gobs.
    */
-  applyOverlayToBodyAndHead(name: string, data: ITwoDAAnimation){
+  applyOverlayToBodyAndHead(name: string, data: SWAnimation){
     const flags = resolveOverlayStartFlags(this.overlayAnimationState?.animationIndex || 0);
     if(this.model instanceof OdysseyModel3D){
       this.model.playOverlayAnimation(name, data, flags);
@@ -2729,7 +2850,7 @@ export class ModuleCreature extends ModuleObject {
     };
   }
 
-  dialogPlayAnimation(data: ITwoDAAnimation = {} as ITwoDAAnimation){
+  dialogPlayAnimation(data: SWAnimation = {} as SWAnimation){
     console.log('dialogPlayAnimation', data)
     if(!this.model){ 
       console.warn('dialogPlayAnimation failed');
@@ -2897,29 +3018,26 @@ export class ModuleCreature extends ModuleObject {
     }
   }
 
-  getDamageAnimation( attackAnim: string ): ITwoDAAnimation {
+  getModelAnimationByName( name: string ): OdysseyModelAnimation {
+    return this.model.odysseyAnimationMap.get(name.toLowerCase().trim());
+  }
+
+  getDamageAnimation( attackAnimName: string ): SWAnimation {
+
+    const attackAnimNamel = attackAnimName.toLowerCase().trim();
     
     let attackAnimIndex = -1;
 
     let modeltype = this.creatureAppearance.modeltype;
     let weaponWield = this.getCombatAnimationWeaponType();
     
-    let anims = GameState.TwoDAManager.datatables.get('animations');
-    const attackName = (attackAnim || '').toLowerCase();
-    for(let i = 0; i < anims.RowCount; i++){
-      if((anims.rows[i].name || '').toLowerCase() == attackName){
-        attackAnimIndex = i;
-        break;
-      }
-    }
+    const attackAnim = GameState.SWRuleSet.animationNameMap.get(attackAnimNamel);
 
-    let combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
-    //console.log('getDamageAnimation', this.getName(), attackAnim, attackAnimIndex, combatAnimation, 'damage'+weaponWield);
+    const combatAnimation = attackAnim?.combatAnimation;
     if(combatAnimation){
-      let damageAnimIndex = combatAnimation['damage'+weaponWield];
-      let damageAnim = anims.getByID(damageAnimIndex);
-      if(damageAnim && this.model?.odysseyAnimationMap?.get(damageAnim.name.toLowerCase().trim())){
-        //console.log('damage anim', this.getName(), damageAnim.name)
+      const damageAnimID = combatAnimation.getDamageAnimation(weaponWield);
+      const damageAnim = GameState.SWRuleSet.animationIdMap.get(damageAnimID);
+      if(damageAnim && this.getModelAnimationByName(damageAnim.name)){
         return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
       }
     }
@@ -2932,7 +3050,7 @@ export class ModuleCreature extends ModuleObject {
     }
     //console.log(attackAnim);
     
-    switch((attackAnim || '').toLowerCase()){
+    switch((attackAnimName || '').toLowerCase()){
       case 'c2a1':
         return OdysseyModelAnimation.GetAnimation2DA('c2d1')
           || this.animationConstantToAnimation(ModuleCreatureAnimState.DAMAGE);
@@ -2955,40 +3073,32 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  getDodgeAnimation( attackAnim: string ): ITwoDAAnimation {
+  getDodgeAnimation( attackAnimName: string ): SWAnimation {
 
-    let attackAnimIndex = -1;
+    const attackAnimNamel = attackAnimName.toLowerCase().trim();
 
-    let modeltype = this.creatureAppearance.modeltype;
-    let attackKey = this.getCombatAnimationAttackType();
-    let weaponWield = this.getCombatAnimationWeaponType();
+    const modeltype = this.creatureAppearance.modeltype;
+    const attackKey = this.getCombatAnimationAttackType();
+    const weaponWield = this.getCombatAnimationWeaponType();
     
-    let anims = GameState.TwoDAManager.datatables.get('animations');
-    for(let i = 0; i < anims.RowCount; i++){
-      if(anims.rows[i].name == attackAnim){
-        attackAnimIndex = i;
-        break;
-      }
-    }
+    const attackAnim = GameState.SWRuleSet.animationNameMap.get(attackAnimNamel);
 
-    //console.log('getDodgeAnimation', this.getName(), attackAnim, attackAnimIndex);
-
-    let combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
+    const combatAnimation = attackAnim?.combatAnimation;
     if(combatAnimation){
       if(combatAnimation.hits == 1 && [4, 2, 3].indexOf(weaponWield) >= 0){
-        let damageAnimIndex = combatAnimation['parry'+weaponWield];
-        let damageAnim = anims.getByID(damageAnimIndex);
-        if(damageAnim && this.model.odysseyAnimationMap.get(damageAnim.name.toLowerCase().trim())){
+        const dodgeAnimID = combatAnimation.getDodgeAnimation(weaponWield);
+        const dodgeAnim = GameState.SWRuleSet.animationIdMap.get(dodgeAnimID);
+        if(dodgeAnim && this.getModelAnimationByName(dodgeAnim.name)){
           //console.log('dodge/parry anim', this.getName(), damageAnim.name)
-          return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
+          return OdysseyModelAnimation.GetAnimation2DA(dodgeAnim.name);
         }
       }
       
-      let damageAnimIndex = combatAnimation['dodge'+weaponWield];
-      let damageAnim = anims.getByID(damageAnimIndex);
-      if(damageAnim && this.model.odysseyAnimationMap.get(damageAnim.name.toLowerCase().trim())){
-        //console.log('dodge anim', this.getName(), damageAnim.name)
-        return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
+      const dodgeAnimID = combatAnimation.getDodgeAnimation(weaponWield);
+      const dodgeAnim = GameState.SWRuleSet.animationIdMap.get(dodgeAnimID);
+      if(dodgeAnim && this.getModelAnimationByName(dodgeAnim.name)){
+        //console.log('dodge anim', this.getName(), dodgeAnim.name)
+        return OdysseyModelAnimation.GetAnimation2DA(dodgeAnim.name);
       }
     }
 
@@ -2997,9 +3107,8 @@ export class ModuleCreature extends ModuleObject {
       case 'L':
         return OdysseyModelAnimation.GetAnimation2DA('cdodgeg');
     }
-    //console.log(attackAnim);
     
-    switch(attackAnim){
+    switch(attackAnimNamel){
       case 'c2a1':
         return OdysseyModelAnimation.GetAnimation2DA('c2d1')
       case 'c2a2':
@@ -3016,30 +3125,23 @@ export class ModuleCreature extends ModuleObject {
 
   }
 
-  getParryAnimation( attackAnim: string ): ITwoDAAnimation {
+  getParryAnimation( attackAnimName: string ): SWAnimation {
 
-    let attackAnimIndex = -1;
+    const attackAnimNamel = attackAnimName.toLowerCase();
 
-    let modeltype = this.creatureAppearance.modeltype;
-    let attackKey = this.getCombatAnimationAttackType();
-    let weaponWield = this.getCombatAnimationWeaponType();
+    const modeltype = this.creatureAppearance.modeltype;
+    const attackKey = this.getCombatAnimationAttackType();
+    const weaponWield = this.getCombatAnimationWeaponType();
     
-    let anims = GameState.TwoDAManager.datatables.get('animations');
-    for(let i = 0; i < anims.RowCount; i++){
-      if(anims.rows[i].name == attackAnim){
-        attackAnimIndex = i;
-        break;
-      }
-    }
+    const attackAnim = GameState.SWRuleSet.animationNameMap.get(attackAnimNamel);
 
-    //console.log('getParryAnimation', this.getName(), attackAnim, attackAnimIndex);
-    let combatAnimation = GameState.TwoDAManager.datatables.get('combatanimations').getByID(attackAnimIndex);
+    /** Get the combat animation from the attack animation. */
+    const combatAnimation = attackAnim?.combatAnimation;
     if(combatAnimation){
-      let damageAnimIndex = combatAnimation['parry'+weaponWield];
-      let damageAnim = anims.getByID(damageAnimIndex);
-      if(damageAnim && this.model.odysseyAnimationMap.get(damageAnim.name.toLowerCase().trim())){
-        //console.log('parry anim', this.getName(), damageAnim.name)
-        return OdysseyModelAnimation.GetAnimation2DA(damageAnim.name);
+      const parryAnimID = combatAnimation.getParryAnimation(weaponWield);
+      const parryAnim = GameState.SWRuleSet.animationIdMap.get(parryAnimID);
+      if(parryAnim && this.getModelAnimationByName(parryAnim.name)){
+        return OdysseyModelAnimation.GetAnimation2DA(parryAnim.name);
       }
     }
 
@@ -3049,7 +3151,7 @@ export class ModuleCreature extends ModuleObject {
         return OdysseyModelAnimation.GetAnimation2DA('cdodgeg');
     }
     //console.log(attackAnim);
-    switch(attackAnim){
+    switch(attackAnimNamel){
       case 'c2a1':
         return OdysseyModelAnimation.GetAnimation2DA('c2p1')
       case 'c2a2':
@@ -3683,7 +3785,7 @@ export class ModuleCreature extends ModuleObject {
       GameState.getCurrentPlayer().attackCreature(this, undefined);
     }else if(this.isDead() && this.canLootAsCorpse(callee)){
       this.clearAllActions();
-      GameState.getCurrentPlayer().actionUseObject(this.getLootUseTarget());
+      GameState.getCurrentPlayer().actionUseObject(this.getLootUseTarget() as ModuleObject);
     }else if(!this.isDead()){
       this.clearAllActions();
       if(this.getConversation() && this.getConversation().resref){
@@ -3914,7 +4016,7 @@ export class ModuleCreature extends ModuleObject {
 
   getBodyBagPlaceable(): ModulePlaceable | undefined {
     if(!this.bodyBagObjectId) return undefined;
-    const bag = GameState.ModuleObjectManager.GetObjectById(this.bodyBagObjectId);
+    const bag = GameState.ModuleObjectManager.GetObjectById(this.bodyBagObjectId) as unknown as ModulePlaceable;
     if(BitWise.InstanceOfObject(bag, ModuleObjectType.ModulePlaceable)){
       return bag as ModulePlaceable;
     }
@@ -3922,7 +4024,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /** Target for ActionUseObject when looting a dead creature (bag if present, else corpse). */
-  getLootUseTarget(): ModuleObject {
+  getLootUseTarget(): ModulePlaceable | ModuleCreature {
     const bag = this.getBodyBagPlaceable();
     if(bag && !bag.destroyed){
       return bag;
@@ -6923,11 +7025,11 @@ export class ModuleCreature extends ModuleObject {
           if(followStruct.hasField('FollowObject'))
             info.followObject = followStruct.getFieldByLabel('FollowObject').getValue() >>> 0;
           if(followStruct.hasField('FollowLocation'))
-            info.followLocation.copy(followStruct.getFieldByLabel('FollowLocation').getVector());
+            info.followLocation.copy(followStruct.getFieldByLabel('FollowLocation').getVector() as THREE.Vector3);
           if(followStruct.hasField('LastLeaderPos'))
-            info.lastLeaderPos.copy(followStruct.getFieldByLabel('LastLeaderPos').getVector());
+            info.lastLeaderPos.copy(followStruct.getFieldByLabel('LastLeaderPos').getVector() as THREE.Vector3);
           if(followStruct.hasField('LastFollowerPos'))
-            info.lastFollowerPos.copy(followStruct.getFieldByLabel('LastFollowerPos').getVector());
+            info.lastFollowerPos.copy(followStruct.getFieldByLabel('LastFollowerPos').getVector() as THREE.Vector3);
           if(followStruct.hasField('MaxSpeed'))
             info.maxSpeed = followStruct.getFieldByLabel('MaxSpeed').getValue();
           if(followStruct.hasField('StickToPos'))
@@ -7342,7 +7444,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.template.RootNode.hasField('Animation')){
       anim = this.template.getFieldByLabel('Animation').getValue();
     }
-    if(!anim || anim === 0xFFFFFFFF){
+    if(!anim || anim === ModuleCreatureAnimState.INVALID){
       anim = ModuleCreatureAnimState.PAUSE;
     }
     // Mid-duel saves stamp ATTACK/ATTACK_DUELING which have no 2DA mapping —

@@ -1,4 +1,5 @@
 import { TwoDAObject } from "@/resource/TwoDAObject";
+import { SWCombatAnimation } from "./SWCombatAnimation";
 
 /**
  * One row of `animations.2da` (see `research/2da-csv/animations.csv`).
@@ -13,6 +14,8 @@ import { TwoDAObject } from "@/resource/TwoDAObject";
 export class SWAnimation {
   /** Row index in the 2DA (`__index`). */
   index: number = 0;
+  /** Animation index in the 2DA (`__rowlabel`). */
+  animationId: number = 0;
   /** Animation resref / name (column `name`). */
   name: string = "";
   nameLower: string = "";
@@ -32,6 +35,8 @@ export class SWAnimation {
   attack: boolean = false;
   hideequippeditems: boolean = false;
 
+  combatAnimation: SWCombatAnimation | undefined = undefined;
+
   constructor(index: number = 0) {
     this.index = index;
   }
@@ -43,6 +48,7 @@ export class SWAnimation {
 
   apply2DA(row: any): void {
     this.index = TwoDAObject.normalizeValue(row.__index, "number", 0);
+    this.animationId = TwoDAObject.normalizeValue(row.__rowlabel, "number", 0);
     this.name = TwoDAObject.normalizeValue(row.name, "string", "");
     this.nameLower = this.name.toLowerCase();
 

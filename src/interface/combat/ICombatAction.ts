@@ -3,7 +3,7 @@ import type { ActionType } from "@/enums/actions/ActionType";
 import type { ModuleObject } from "@/module";
 import type { TalentFeat, TalentSpell } from "@/talents";
 import type { Action } from "@/actions";
-import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
 /**
  * ICombatAction interface.
@@ -20,7 +20,7 @@ export interface ICombatAction {
   target: ModuleObject;
   type: ActionType;
   icon: string;
-  animation: ITwoDAAnimation;
+  animation: SWAnimation;
   feat?: TalentFeat,
   spell?: TalentSpell,
   isMelee?: boolean,

@@ -34,6 +34,7 @@ export class ActionSwitchWeapons extends Action {
   }
 
   update(_delta: number = 0): ActionStatus {
+    console.log('ActionSwitchWeapons update', this);
     if(!BitWise.InstanceOfObject(this.owner, ModuleObjectType.ModuleCreature)){
       return ActionStatus.ERROR;
     }

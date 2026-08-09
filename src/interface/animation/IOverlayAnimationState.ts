@@ -1,4 +1,4 @@
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
 /**
  * IOverlayAnimationState interface.
@@ -13,7 +13,7 @@ import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 export interface IOverlayAnimationState {
   animationIndex: number;
   animationName: string;
-  animation: ITwoDAAnimation;
+  animation: SWAnimation;
   started: boolean;
   speed: number;
   /** Aurora stop flag from resolveOverlayStopFlags (0x80 or 0x400). */

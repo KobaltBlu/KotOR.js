@@ -6,7 +6,7 @@ import { ModulePlaceableState } from "@/enums/module/ModulePlaceableState";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GameState } from "@/GameState";
 import { SSFType } from "@/enums/resource/SSFType";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import { NWScript } from "@/nwscript/NWScript";
 import { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { OdysseyModel, OdysseyWalkMesh } from "@/odyssey";
@@ -300,7 +300,7 @@ export class ModulePlaceable extends ModuleObject {
         if(currentAnimation != animation.name?.toLowerCase()){
           if(!this.animStateInfo.started){
             this.animStateInfo.started = true;
-            const aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
+            const aLooping = (!animation.fireforget && animation.looping);
             this.getModel().playAnimation(animation.name?.toLowerCase(), aLooping);
           }else{
             //Animation completed
@@ -1251,52 +1251,49 @@ export class ModulePlaceable extends ModuleObject {
     return gff;
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation {
-    const animations2DA = GameState.TwoDAManager.datatables.get('animations');
-    if(animations2DA){
-      switch( animation_constant ){
-        case ModulePlaceableAnimState.DEFAULT:        //10000, //304 -
-          return animations2DA.rows[304];
-        case ModulePlaceableAnimState.DAMAGE:         //10014, //305 - damage
-          return animations2DA.rows[305];
-        case ModulePlaceableAnimState.DEAD: 	        //10072, //307
-          return animations2DA.rows[307];
-        case ModulePlaceableAnimState.ACTIVATE: 	    //10073, //308 - NWSCRIPT Constant: 200
-          return animations2DA.rows[308];
-        case ModulePlaceableAnimState.DEACTIVATE:     //10074, //309 - NWSCRIPT Constant: 201
-          return animations2DA.rows[309];
-        case ModulePlaceableAnimState.OPEN: 			    //10075, //310 - NWSCRIPT Constant: 202
-          return animations2DA.rows[310];
-        case ModulePlaceableAnimState.CLOSE:          //10076, //311 - NWSCRIPT Constant: 203
-          return animations2DA.rows[311];
-        case ModulePlaceableAnimState.CLOSE_OPEN: 	  //10077, //312
-          return animations2DA.rows[312];
-        case ModulePlaceableAnimState.OPEN_CLOSE:     //10078, //313
-          return animations2DA.rows[313];
-        case ModulePlaceableAnimState.ANIMLOOP01:     //10106, //316 - NWSCRIPT Constant: 204
-          return animations2DA.rows[316];
-        case ModulePlaceableAnimState.ANIMLOOP02:     //10107, //317 - NWSCRIPT Constant: 205
-          return animations2DA.rows[317];
-        case ModulePlaceableAnimState.ANIMLOOP03:     //10108, //318 - NWSCRIPT Constant: 206
-          return animations2DA.rows[318];
-        case ModulePlaceableAnimState.ANIMLOOP04:     //10110, //319 - NWSCRIPT Constant: 207
-          return animations2DA.rows[319];
-        case ModulePlaceableAnimState.ANIMLOOP05:     //10111, //320 - NWSCRIPT Constant: 208
-          return animations2DA.rows[320];
-        case ModulePlaceableAnimState.ANIMLOOP06:     //10112, //321 - NWSCRIPT Constant: 209
-          return animations2DA.rows[321];
-        case ModulePlaceableAnimState.ANIMLOOP07:     //10113, //322 - NWSCRIPT Constant: 210
-          return animations2DA.rows[322];
-        case ModulePlaceableAnimState.ANIMLOOP08:     //10114, //323 - NWSCRIPT Constant: 211
-          return animations2DA.rows[323];
-        case ModulePlaceableAnimState.ANIMLOOP09:     //10115, //324 - NWSCRIPT Constant: 212
-          return animations2DA.rows[324];
-        case ModulePlaceableAnimState.ANIMLOOP10:     //10116, //325 - NWSCRIPT Constant: 213
-          return animations2DA.rows[325];
-      }
-
-      return super.animationConstantToAnimation( animation_constant );
+  animationConstantToAnimation( animation_constant = 10000 ): SWAnimation {
+    switch( animation_constant ){
+      case ModulePlaceableAnimState.DEFAULT:        //10000, //304 -
+        return GameState.SWRuleSet.animationIdMap.get(304);
+      case ModulePlaceableAnimState.DAMAGE:         //10014, //305 - damage
+        return GameState.SWRuleSet.animationIdMap.get(305);
+      case ModulePlaceableAnimState.DEAD: 	        //10072, //307
+        return GameState.SWRuleSet.animationIdMap.get(307);
+      case ModulePlaceableAnimState.ACTIVATE: 	    //10073, //308 - NWSCRIPT Constant: 200
+        return GameState.SWRuleSet.animationIdMap.get(308);
+      case ModulePlaceableAnimState.DEACTIVATE:     //10074, //309 - NWSCRIPT Constant: 201
+        return GameState.SWRuleSet.animationIdMap.get(309);
+      case ModulePlaceableAnimState.OPEN: 			    //10075, //310 - NWSCRIPT Constant: 202
+        return GameState.SWRuleSet.animationIdMap.get(310);
+      case ModulePlaceableAnimState.CLOSE:          //10076, //311 - NWSCRIPT Constant: 203
+        return GameState.SWRuleSet.animationIdMap.get(311);
+      case ModulePlaceableAnimState.CLOSE_OPEN: 	  //10077, //312
+        return GameState.SWRuleSet.animationIdMap.get(312);
+      case ModulePlaceableAnimState.OPEN_CLOSE:     //10078, //313
+        return GameState.SWRuleSet.animationIdMap.get(313);
+      case ModulePlaceableAnimState.ANIMLOOP01:     //10106, //316 - NWSCRIPT Constant: 204
+        return GameState.SWRuleSet.animationIdMap.get(316);
+      case ModulePlaceableAnimState.ANIMLOOP02:     //10107, //317 - NWSCRIPT Constant: 205
+        return GameState.SWRuleSet.animationIdMap.get(317);
+      case ModulePlaceableAnimState.ANIMLOOP03:     //10108, //318 - NWSCRIPT Constant: 206
+        return GameState.SWRuleSet.animationIdMap.get(318);
+      case ModulePlaceableAnimState.ANIMLOOP04:     //10110, //319 - NWSCRIPT Constant: 207
+        return GameState.SWRuleSet.animationIdMap.get(319);
+      case ModulePlaceableAnimState.ANIMLOOP05:     //10111, //320 - NWSCRIPT Constant: 208
+        return GameState.SWRuleSet.animationIdMap.get(320);
+      case ModulePlaceableAnimState.ANIMLOOP06:     //10112, //321 - NWSCRIPT Constant: 209
+        return GameState.SWRuleSet.animationIdMap.get(321);
+      case ModulePlaceableAnimState.ANIMLOOP07:     //10113, //322 - NWSCRIPT Constant: 210
+        return GameState.SWRuleSet.animationIdMap.get(322);
+      case ModulePlaceableAnimState.ANIMLOOP08:     //10114, //323 - NWSCRIPT Constant: 211
+        return GameState.SWRuleSet.animationIdMap.get(323);
+      case ModulePlaceableAnimState.ANIMLOOP09:     //10115, //324 - NWSCRIPT Constant: 212
+        return GameState.SWRuleSet.animationIdMap.get(324);
+      case ModulePlaceableAnimState.ANIMLOOP10:     //10116, //325 - NWSCRIPT Constant: 213
+        return GameState.SWRuleSet.animationIdMap.get(325);
     }
+
+    return super.animationConstantToAnimation( animation_constant );
   }
 
   static GenerateTemplate(){

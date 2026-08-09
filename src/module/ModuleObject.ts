@@ -30,10 +30,6 @@ import { LIPObject } from "@/resource/LIPObject";
 import { OdysseyModel3D, OdysseyObject3D } from "@/three/odyssey";
 import { Utility } from "@/utility/Utility";
 import { ComputedPath } from "@/engine/pathfinding";
-import {
-  applyMobilityMovementBonus,
-  clampMovementRateFactor,
-} from "@/engine/pathfinding/locomotion";
 import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import type { ModuleArea, ModuleDoor, ModuleItem, ModuleRoom } from "@/module";
@@ -46,7 +42,6 @@ import { resolveDialogModelVisibility } from "@/module/dialog-model-visibility";
 import { DLGObject } from "@/resource/DLGObject";
 import { Faction } from "@/engine/Faction";
 import { ScriptVarTable } from "@/engine/ScriptVarTable";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import { SWPlaceableAppearance } from "@/engine/rules/SWPlaceableAppearance";
 import { SWCreatureAppearance } from "@/engine/rules/SWCreatureAppearance";
 import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
@@ -87,6 +82,7 @@ import {
   applyTrapGroundGeometry,
   trapKitResRefFromRow,
 } from "@/actions/trap-geometry";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
 
 /**
@@ -171,7 +167,7 @@ export class ModuleObject {
 
   dialogAnimation: {
     animation: OdysseyModelAnimation,
-    data: ITwoDAAnimation,
+    data: SWAnimation,
     started: boolean,
   };
 
@@ -543,43 +539,6 @@ export class ModuleObject {
    */
   getHitDistance(){
     return 1;
-  }
-
-  /**
-   * Recalc movement_rate_factor from MSI/MSD effects.
-   * Retail: best increase (absolute %) × (100 − best decrease %) / 100,
-   * clamped to [0.125, 1.5] like GetWalkRate / GetRunRate.
-   * TSL GetMovementRateFactor @ 0068f140: Mobility feat (0xc3) adds +0.1 before clamp.
-   */
-  updateMovementSpeed(){
-    let bestIncrease = 100;
-    let bestDecrease = 0;
-
-    for(let i = 0, len = this.effects.length; i < len; i++){
-      const effect = this.effects[i];
-      if(effect.type == GameEffectType.EffectMovementSpeedIncrease){
-        let pct = effect.getInt(0) | 0;
-        if(pct < 100) pct += 100;
-        if(pct > bestIncrease) bestIncrease = pct;
-      }else if(effect.type == GameEffectType.EffectMovementSpeedDecrease){
-        const pct = effect.getInt(0) | 0;
-        if(pct > 0 && pct < 100 && pct > bestDecrease){
-          bestDecrease = pct;
-        }
-      }
-    }
-
-    let factor = (bestIncrease / 100) * ((100 - bestDecrease) / 100);
-    // TSL Mobility (feat 0xc3 / 195) — GetMovementRateFactor +0.1
-    const hasMobility =
-      typeof (this as { getHasFeat?: (id: number) => boolean }).getHasFeat === 'function' &&
-      (this as { getHasFeat: (id: number) => boolean }).getHasFeat(CombatFeatType.MOBILITY);
-    factor = applyMobilityMovementBonus(
-      factor,
-      hasMobility,
-      GameState.GameKey === GameEngineType.TSL
-    );
-    this.movementSpeed = clampMovementRateFactor(factor);
   }
 
   /**
@@ -1189,602 +1148,532 @@ export class ModuleObject {
    * @param animation_constant
    * @returns
    */
-  animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation{
+  animationConstantToAnimation( animation_constant = 10000 ): SWAnimation | undefined {
 
-    const animations2DA = GameState.TwoDAManager.datatables.get('animations');
-    if(animations2DA){
+    const animations = GameState.SWRuleSet.animations;
 
-      const debilitatedState = (() => {
-        // Prefer highest SetState (retail field_0x8ed priority).
-        if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
-          const highest = getActiveSetStateType(this as ModuleCreature);
-          if(highest > 0) return highest;
-          // Retail ambient_animation_state = 9 while force-pushed.
-          const ambient = (this as ModuleCreature).ambientAnimState | 0;
-          if(ambient === ModuleCreatureAmbientState.PRONE_FORCE_PUSHED){
-            return GameEffectSetStateType.FORCEPUSH;
+    switch( animation_constant ){
+      case ModuleCreatureAnimState.PAUSE:
+      case ModuleCreatureAnimState.PAUSE_ALT:
+        if(this.isPoisoned() || this.isDiseased()) return animations[15];
+        if(this.isSimpleCreature()){
+          return animations[256];
+        }else{
+          return this.isInjured() ? animations[8] : animations[6];
+        }
+      break;
+      case ModuleCreatureAnimState.PAUSE2:
+        if(this.isPoisoned() || this.isDiseased()) return animations[15];
+        if(this.isSimpleCreature()){
+          return animations[257];
+        }else{
+          return this.isInjured() ? animations[8] : animations[7];
+        }
+      break;
+      case ModuleCreatureAnimState.PAUSE3:
+        if(this.isPoisoned() || this.isDiseased()) return animations[15];
+        return this.isInjured() ? animations[8] : animations[359];
+      break;
+      case ModuleCreatureAnimState.PAUSE4:
+        if(this.isPoisoned() || this.isDiseased()) return animations[15];
+        return this.isInjured() ? animations[8] : animations[357];
+      break;
+      case ModuleCreatureAnimState.PAUSE_SCRATCH_HEAD:
+        if(this.isPoisoned()) return animations[15];
+        if(this.isSimpleCreature()){
+          return animations[12];
+        }else{
+          return this.isInjured() ? animations[8] : animations[7];
+        }
+      break;
+      case ModuleCreatureAnimState.PAUSE_BORED:
+        return animations[13];
+      break;
+      case ModuleCreatureAnimState.PAUSE_TIRED:
+        return animations[14];
+      break;
+      case ModuleCreatureAnimState.PAUSE_DRUNK:
+        return animations[15];
+      break;
+      case ModuleCreatureAnimState.PAUSE_INJ:
+        return animations[8];
+      break;
+      case ModuleCreatureAnimState.DEAD:
+        if(this.isSimpleCreature()){
+          return animations[275];
+        }else{
+          return animations[81];
+        }
+      break;
+      case ModuleCreatureAnimState.DEAD1:
+        if(this.isSimpleCreature()){
+          return animations[275];
+        }else{
+          return animations[83];
+        }
+      break;
+      case ModuleCreatureAnimState.DIE:
+        if(this.isSimpleCreature()){
+          return animations[274];
+        }else{
+          return animations[80];
+        }
+      break;
+      case ModuleCreatureAnimState.DIE1:
+        return animations[82];
+      break;
+      case ModuleCreatureAnimState.GET_UP_DEAD:
+        return animations[381];
+      break;
+      case ModuleCreatureAnimState.GET_UP_DEAD1:
+        return animations[382];
+      break;
+      case ModuleCreatureAnimState.WALK_INJ:
+        if(this.isSimpleCreature()){
+          return animations[254];
+        }else{
+          return animations[1];
+        }
+      break;
+      case ModuleCreatureAnimState.WALKING:
+        if(this.isSimpleCreature()){
+          return this.isInjured() ? animations[254] : animations[253];
+        }else{
+          if(!this.isInjured()){
+            switch(this.getCombatAnimationWeaponType()){
+              case 2:
+                return animations[338];
+              case 3:
+                return animations[341];
+              case 4:
+                return animations[339];
+              case 7:
+                return animations[340];
+              case 9:
+                return animations[340];
+              default:
+                return animations[0];
+            }
+          }else{
+            return animations[1];
           }
         }
-        const e = this.effects.find(eff => eff?.type == GameEffectType.EffectSetState);
-        return e ? (e.getInt(0) | 0) : 0;
-      })();
-      if(debilitatedState > 0){
-        switch(debilitatedState){
-          case 1: //Confused
-            return animations2DA.rows[15];
-          case 2: //Frightened
-            return animations2DA.rows[73];
-          case 3: //Droid Stun
-            return animations2DA.rows[270];
-          case 4: //Stunned
-            return animations2DA.rows[78];
-          case 5: //Paralyzed
-            return animations2DA.rows[78];
-          case 6: //Sleep
-            return animations2DA.rows[76];
-          case 7: //Choke
-            if(this.isSimpleCreature()){
-              return animations2DA.rows[264];
-            }else{
-              return animations2DA.rows[72];
+      break;
+      // Retail anim 0x2713 — walk-back uses same weapon walk set (reverse playback)
+      case ModuleCreatureAnimState.WALKING_BACK:
+        if(this.isSimpleCreature()){
+          return animations[253];
+        }else{
+          if(!this.isInjured()){
+            switch(this.getCombatAnimationWeaponType()){
+              case 2:
+                return animations[338];
+              case 3:
+                return animations[341];
+              case 4:
+                return animations[339];
+              case 7: 
+                return animations[340];
+              case 9:
+                return animations[340];
+              default:
+                return animations[0];
             }
-          break;
-          case 8: //Horrified
-            return animations2DA.rows[74];
-          case 9: //Force Pushed
-            if(!this.fp_push_played)
-              return animations2DA.rows[84];
-            if(!this.fp_land_played)
-              return animations2DA.rows[85];
-            if(!this.fp_getup_played)
-              return animations2DA.rows[86];
-          break;
-          case 10: //Whirlwind
-            return animations2DA.rows[75];
-          case 14: //Knockdown hold (K2 SetState 0x0E)
-            return animations2DA.rows[85];
-          case 15: //Crush (K2) — choke-like victim pose; ambient 16 set separately
-            if(this.isSimpleCreature()){
-              return animations2DA.rows[264];
-            }else{
-              return animations2DA.rows[72];
-            }
-          case 16: //Droid Confused — confused pose; not IsDebilitated in retail
-            return animations2DA.rows[15];
-          case 17: //Held (K2 0x11) — choke-like lock
-            if(this.isSimpleCreature()){
-              return animations2DA.rows[264];
-            }else{
-              return animations2DA.rows[72];
-            }
-          case 18: //Mind Trick — stun cohort
-          case 19: //Droid Scramble — stun cohort
-            return animations2DA.rows[78];
+          }else{
+            return animations[1];
+          }
         }
-      }
-
-      switch( animation_constant ){
-        case ModuleCreatureAnimState.PAUSE:
-        case ModuleCreatureAnimState.PAUSE_ALT:
-          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[256];
-          }else{
-            return this.isInjured() ? animations2DA.rows[8] : animations2DA.rows[6];
-          }
-        break;
-        case ModuleCreatureAnimState.PAUSE2:
-          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[257];
-          }else{
-            return this.isInjured() ? animations2DA.rows[8] : animations2DA.rows[7];
-          }
-        break;
-        case ModuleCreatureAnimState.PAUSE3:
-          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
-          return this.isInjured() ? animations2DA.rows[8] : animations2DA.rows[359];
-        break;
-        case ModuleCreatureAnimState.PAUSE4:
-          if(this.isPoisoned() || this.isDiseased()) return animations2DA.rows[15];
-          return this.isInjured() ? animations2DA.rows[8] : animations2DA.rows[357];
-        break;
-        case ModuleCreatureAnimState.PAUSE_SCRATCH_HEAD:
-          if(this.isPoisoned()) return animations2DA.rows[15];
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[12];
-          }else{
-            return this.isInjured() ? animations2DA.rows[8] : animations2DA.rows[7];
-          }
-        break;
-        case ModuleCreatureAnimState.PAUSE_BORED:
-          return animations2DA.rows[13];
-        break;
-        case ModuleCreatureAnimState.PAUSE_TIRED:
-          return animations2DA.rows[14];
-        break;
-        case ModuleCreatureAnimState.PAUSE_DRUNK:
-          return animations2DA.rows[15];
-        break;
-        case ModuleCreatureAnimState.PAUSE_INJ:
-          return animations2DA.rows[8];
-        break;
-        case ModuleCreatureAnimState.DEAD:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[275];
-          }else{
-            return animations2DA.rows[81];
-          }
-        break;
-        case ModuleCreatureAnimState.DEAD1:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[275];
-          }else{
-            return animations2DA.rows[83];
-          }
-        break;
-        case ModuleCreatureAnimState.DIE:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[274];
-          }else{
-            return animations2DA.rows[80];
-          }
-        break;
-        case ModuleCreatureAnimState.DIE1:
-          return animations2DA.rows[82];
-        break;
-        case ModuleCreatureAnimState.GET_UP_DEAD:
-          return animations2DA.rows[381];
-        break;
-        case ModuleCreatureAnimState.GET_UP_DEAD1:
-          return animations2DA.rows[382];
-        break;
-        case ModuleCreatureAnimState.WALK_INJ:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[254];
-          }else{
-            return animations2DA.rows[1];
-          }
-        break;
-        case ModuleCreatureAnimState.WALKING:
-          if(this.isSimpleCreature()){
-            return this.isInjured() ? animations2DA.rows[254] : animations2DA.rows[253];
-          }else{
-            if(!this.isInjured()){
-              switch(this.getCombatAnimationWeaponType()){
-                case 2:
-                  return animations2DA.rows[338];
-                case 3:
-                  return animations2DA.rows[341];
-                case 4:
-                  return animations2DA.rows[339];
-                case 7:
-                  return animations2DA.rows[340];
-                case 9:
-                  return animations2DA.rows[340];
-                default:
-                  return animations2DA.rows[0];
-              }
-            }else{
-              return animations2DA.rows[1];
-            }
-          }
-        break;
-        // Retail anim 0x2713 — walk-back uses same weapon walk set (reverse playback)
-        case ModuleCreatureAnimState.WALKING_BACK:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[253];
-          }else{
-            if(!this.isInjured()){
-              switch(this.getCombatAnimationWeaponType()){
-                case 2:
-                  return animations2DA.rows[338];
-                case 3:
-                  return animations2DA.rows[341];
-                case 4:
-                  return animations2DA.rows[339];
-                case 7:
-                  return animations2DA.rows[340];
-                case 9:
-                  return animations2DA.rows[340];
-                default:
-                  return animations2DA.rows[0];
-              }
-            }else{
-              return animations2DA.rows[1];
-            }
-          }
-        break;
-        case ModuleCreatureAnimState.RUNNING:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[255];
-          }else{
-            if(!this.isInjured()){
-              switch(this.getCombatAnimationWeaponType()){
-                case 1:
-                  return animations2DA.rows[343];
-                case 2:
-                  return animations2DA.rows[345];
-                case 3:
-                  return animations2DA.rows[345];
-                case 4:
-                  return animations2DA.rows[3];
-                case 7:
-                  return animations2DA.rows[340];
-                case 9:
-                  return animations2DA.rows[340];
-                default:
-                  return animations2DA.rows[2];
-              }
-            }else{
-              return animations2DA.rows[4];
-            }
-          }
-        break;
-        case ModuleCreatureAnimState.RUN_INJ:
-          return animations2DA.rows[4];
-        break;
-        //COMBAT READY
-        case ModuleCreatureAnimState.READY:
-        case ModuleCreatureAnimState.READY_ALT:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[278];
-          }else{
+      break;
+      case ModuleCreatureAnimState.RUNNING:
+        if(this.isSimpleCreature()){
+          return animations[255];
+        }else{
+          if(!this.isInjured()){
             switch(this.getCombatAnimationWeaponType()){
               case 1:
-                return animations2DA.rows[92];
+                return animations[343];
               case 2:
-                return animations2DA.rows[133];
+                return animations[345];
               case 3:
-                return animations2DA.rows[174];
+                return animations[345];
               case 4:
-                return animations2DA.rows[215];
-              case 5:
-                return animations2DA.rows[223];
-              case 6:
-                return animations2DA.rows[237];
+                return animations[3];
               case 7:
-                return animations2DA.rows[245];
+                return animations[340];
               case 9:
-                return animations2DA.rows[84]; //84 == pushed | 85 == hit ground prone back | 86 == get up from ground prone
+                return animations[340];
               default:
-                return animations2DA.rows[249];
+                return animations[2];
             }
-          }
-        break;
-        case ModuleCreatureAnimState.DODGE:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[281];
           }else{
-            return animations2DA.rows[302];
+            return animations[4];
           }
-        break;
-        case ModuleCreatureAnimState.PARRY:
-          // Same pose family as dodge for SetAnimation(PARRY) fallback
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[281];
-          }else{
-            return animations2DA.rows[302];
+        }
+      break;
+      case ModuleCreatureAnimState.RUN_INJ:
+        return animations[4];
+      break;
+      //COMBAT READY
+      case ModuleCreatureAnimState.READY:
+      case ModuleCreatureAnimState.READY_ALT:
+        if(this.isSimpleCreature()){
+          return animations[278];
+        }else{
+          switch(this.getCombatAnimationWeaponType()){
+            case 1:
+              return animations[92];
+            case 2:
+              return animations[133];
+            case 3:
+              return animations[174];
+            case 4:
+              return animations[215];
+            case 5:
+              return animations[223];
+            case 6:
+              return animations[237];
+            case 7:
+              return animations[245];
+            case 9:
+              return animations[84]; //84 == pushed | 85 == hit ground prone back | 86 == get up from ground prone
+            default:
+              return animations[249];
           }
-        break;
-        case ModuleCreatureAnimState.SPASM:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[268];
-          }else{
-            return animations2DA.rows[77];
-          }
-        break;
-        case ModuleCreatureAnimState.TAUNT:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[263];
-          }else{
-            return animations2DA.rows[33];
-          }
-        break;
-        case ModuleCreatureAnimState.GREETING:
-          return animations2DA.rows[31];
-        break;
-        case ModuleCreatureAnimState.LISTEN:
-          return animations2DA.rows[18];
-        break;
-        case ModuleCreatureAnimState.LISTEN_INJURED:
-          return animations2DA.rows[371];
-        break;
-        case ModuleCreatureAnimState.TALK_NORMAL:
-          return animations2DA.rows[25];
-        break;
-        case ModuleCreatureAnimState.TALK_PLEADING:
-          return animations2DA.rows[27];
-        break;
-        case ModuleCreatureAnimState.TALK_FORCEFUL:
-          return animations2DA.rows[26];
-        break;
-        case ModuleCreatureAnimState.TALK_LAUGHING:
-          return animations2DA.rows[29];
-        break;
-        case ModuleCreatureAnimState.TALK_SAD:
-          return animations2DA.rows[28];
-        break;
-        case ModuleCreatureAnimState.TALK_INJURED:
-          return animations2DA.rows[370];
-        break;
-        case ModuleCreatureAnimState.SALUTE:
-          return animations2DA.rows[16];
-        break;
-        case ModuleCreatureAnimState.BOW:
-          return animations2DA.rows[19];
-        break;
-        case ModuleCreatureAnimState.VICTORY:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[260];
-          }else{
-            return animations2DA.rows[17];
-          }
-        break;
-        case ModuleCreatureAnimState.HEAD_TURN_LEFT:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[258];
-          }else{
-            return animations2DA.rows[11];
-          }
-        break;
-        case ModuleCreatureAnimState.HEAD_TURN_RIGHT:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[259];
-          }else{
-            return animations2DA.rows[10];
-          }
-        break;
-        case ModuleCreatureAnimState.TURN_LEFT:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[253];
-          }else{
-            return animations2DA.rows[290];
-          }
-        break;
-        case ModuleCreatureAnimState.TURN_RIGHT:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[253];
-          }else{
-            return animations2DA.rows[291];
-          }
-        break;
-        case ModuleCreatureAnimState.GET_LOW:
-          return animations2DA.rows[40];
-        break;
-        case ModuleCreatureAnimState.GET_MID:
-          return animations2DA.rows[41];
-        break;
-        case ModuleCreatureAnimState.INJECT:
-          return animations2DA.rows[37];
-        break;
-        case ModuleCreatureAnimState.DAMAGE:
-          return animations2DA.rows[303];
-        break;
-        case ModuleCreatureAnimState.USE_COMPUTER_LP:
-          return animations2DA.rows[44];
-        break;
-        case ModuleCreatureAnimState.WHIRLWIND:
-          return animations2DA.rows[75];
-        break;
-        case ModuleCreatureAnimState.DEACTIVATE:
-          return animations2DA.rows[270];
-        break;
-        case ModuleCreatureAnimState.FLIRT:
-          return animations2DA.rows[32];
-        break;
-        case ModuleCreatureAnimState.USE_COMPUTER:
-          return animations2DA.rows[43];
-        break;
-        case ModuleCreatureAnimState.DANCE:
-          return animations2DA.rows[53];
-        break;
-        case ModuleCreatureAnimState.DANCE1:
-          return animations2DA.rows[54];
-        break;
-        case ModuleCreatureAnimState.HORROR:
-          return animations2DA.rows[74];
-        break;
-        case ModuleCreatureAnimState.USE_COMPUTER2:
-          return animations2DA.rows[43];
-        break;
-        case ModuleCreatureAnimState.PERSUADE:
-          return animations2DA.rows[68];
-        break;
-        case ModuleCreatureAnimState.ACTIVATE_ITEM:
-          return animations2DA.rows[38];
-        break;
-        case ModuleCreatureAnimState.UNLOCK_DOOR:
-          return animations2DA.rows[47];
-        break;
-        case ModuleCreatureAnimState.THROW_HIGH:
-          return animations2DA.rows[57];
-        break;
-        case ModuleCreatureAnimState.THROW_LOW:
-          return animations2DA.rows[58];
-        break;
-        case ModuleCreatureAnimState.UNLOCK_CONTAINER:
-          return animations2DA.rows[48];
-        break;
-        case ModuleCreatureAnimState.DISABLE_MINE:
-          return animations2DA.rows[51];
-        break;
-        case ModuleCreatureAnimState.WALK_STEALTH:
-          return animations2DA.rows[5];
-        break;
-        case ModuleCreatureAnimState.UNLOCK_DOOR2:
-          return animations2DA.rows[47];
-        break;
-        case ModuleCreatureAnimState.UNLOCK_CONTAINER2:
-          return animations2DA.rows[48];
-        break;
-        case ModuleCreatureAnimState.ACTIVATE_ITEM2:
-          return animations2DA.rows[38];
-        break;
-        case ModuleCreatureAnimState.SLEEP:
-          return animations2DA.rows[76];
-        break;
-        case ModuleCreatureAnimState.PARALYZED:
-          return animations2DA.rows[78];
-        break;
-        case ModuleCreatureAnimState.PRONE:
-          return animations2DA.rows[79];
-        break;
-        case ModuleCreatureAnimState.SET_MINE:
-          return animations2DA.rows[52];
-        break;
-        case ModuleCreatureAnimState.DISABLE_MINE2:
-          return animations2DA.rows[51];
-        break;
-        case ModuleCreatureAnimState.CUSTOM01:
-          return animations2DA.rows[346];
-        break;
-        case ModuleCreatureAnimState.FBLOCK:
-          return animations2DA.rows[355];
-        break;
-        case ModuleCreatureAnimState.CHOKE:
-          if(this.isSimpleCreature()){
-            return animations2DA.rows[264];
-          }else{
-            return animations2DA.rows[72];
-          }
-        break;
-        case ModuleCreatureAnimState.WELD:
-          return animations2DA.rows[360];
-        break;
-        case ModuleCreatureAnimState.TREAT_INJURED:
-          return animations2DA.rows[34];
-        break;
-        case ModuleCreatureAnimState.TREAT_INJURED_LP:
-          return animations2DA.rows[35];
-        break;
-        case ModuleCreatureAnimState.CATCH_SABER:
-          return animations2DA.rows[71];
-        break;
-        case ModuleCreatureAnimState.THROW_SABER_LP:
-          return animations2DA.rows[70];
-        break;
-        case ModuleCreatureAnimState.THROW_SABER:
-          return animations2DA.rows[69];
-        break;
-        case ModuleCreatureAnimState.KNEEL_TALK_ANGRY:
-          return animations2DA.rows[384];
-        break;
-        case ModuleCreatureAnimState.KNEEL_TALK_SAD:
-          return animations2DA.rows[385];
-        break;
-        case ModuleCreatureAnimState.KNOCKED_DOWN:
-          return animations2DA.rows[85];
-        break;
-        case ModuleCreatureAnimState.KNOCKED_DOWN2:
-          return animations2DA.rows[85];
-        break;
-        case ModuleCreatureAnimState.DEAD_PRONE:
-          return animations2DA.rows[375];
-        break;
-        case ModuleCreatureAnimState.KNEEL:
-          return animations2DA.rows[23];
-        break;
-        case ModuleCreatureAnimState.KNEEL1:
-          return animations2DA.rows[23];
-        break;
-        // MELEE_WIELD (10157 / 0x27ad) — SetOverlayAnimation while moving (PlayerFlourishWeapons).
-        case ModuleCreatureAnimState.MELEE_WIELD:
-          return animations2DA.rows[meleeWieldAnimationRow(this.getCombatAnimationWeaponType())];
-        // MELEE_COMBAT_WIELD (10158 / 0x27ae) — standing InsertFireForgetAnimation path.
-        case ModuleCreatureAnimState.MELEE_COMBAT_WIELD:
-          return animations2DA.rows[meleeCombatWieldAnimationRow(this.getCombatAnimationWeaponType())];
-        case ModuleCreatureAnimState.FLOURISH:
-          return animations2DA.rows[flourishAnimationRow(this.getCombatAnimationWeaponType())];
-        break;
+        }
+      break;
+      case ModuleCreatureAnimState.DODGE:
+        if(this.isSimpleCreature()){
+          return animations[281];
+        }else{
+          return animations[302];
+        }
+      break;
+      case ModuleCreatureAnimState.PARRY:
+        // Same pose family as dodge for SetAnimation(PARRY) fallback
+        if(this.isSimpleCreature()){
+          return animations[281];
+        }else{
+          return animations[302];
+        }
+      break;
+      case ModuleCreatureAnimState.SPASM:
+        if(this.isSimpleCreature()){
+          return animations[268];
+        }else{
+          return animations[77];
+        }
+      break;
+      case ModuleCreatureAnimState.TAUNT:
+        if(this.isSimpleCreature()){
+          return animations[263];
+        }else{
+          return animations[33];
+        }
+      break;
+      case ModuleCreatureAnimState.GREETING:
+        return animations[31];
+      break;
+      case ModuleCreatureAnimState.LISTEN:
+        return animations[18];
+      break;
+      case ModuleCreatureAnimState.LISTEN_INJURED:
+        return animations[371];
+      break;
+      case ModuleCreatureAnimState.TALK_NORMAL:
+        return animations[25];
+      break;
+      case ModuleCreatureAnimState.TALK_PLEADING:
+        return animations[27];
+      break;
+      case ModuleCreatureAnimState.TALK_FORCEFUL:
+        return animations[26];
+      break;
+      case ModuleCreatureAnimState.TALK_LAUGHING:
+        return animations[29];
+      break;
+      case ModuleCreatureAnimState.TALK_SAD:
+        return animations[28];
+      break;
+      case ModuleCreatureAnimState.TALK_INJURED:
+        return animations[370];
+      break;
+      case ModuleCreatureAnimState.SALUTE:
+        return animations[16];
+      break;
+      case ModuleCreatureAnimState.BOW:
+        return animations[19];
+      break;
+      case ModuleCreatureAnimState.VICTORY:
+        if(this.isSimpleCreature()){
+          return animations[260];
+        }else{
+          return animations[17];
+        }
+      break;
+      case ModuleCreatureAnimState.HEAD_TURN_LEFT:
+        if(this.isSimpleCreature()){
+          return animations[258];
+        }else{
+          return animations[11];
+        }
+      break;
+      case ModuleCreatureAnimState.HEAD_TURN_RIGHT:
+        if(this.isSimpleCreature()){
+          return animations[259];
+        }else{
+          return animations[10];
+        }
+      break;
+      case ModuleCreatureAnimState.TURN_LEFT:
+        if(this.isSimpleCreature()){
+          return animations[253];
+        }else{
+          return animations[290];
+        }
+      break;
+      case ModuleCreatureAnimState.TURN_RIGHT:
+        if(this.isSimpleCreature()){
+          return animations[253];
+        }else{
+          return animations[291];
+        }
+      break;
+      case ModuleCreatureAnimState.GET_LOW:
+        return animations[40];
+      break;
+      case ModuleCreatureAnimState.GET_MID:
+        return animations[41];
+      break;
+      case ModuleCreatureAnimState.INJECT:
+        return animations[37];
+      break;
+      case ModuleCreatureAnimState.DAMAGE:
+        return animations[303];
+      break;
+      case ModuleCreatureAnimState.USE_COMPUTER_LP:
+        return animations[44];
+      break;
+      case ModuleCreatureAnimState.WHIRLWIND:
+        return animations[75];
+      break;
+      case ModuleCreatureAnimState.DEACTIVATE:
+        return animations[270];
+      break;
+      case ModuleCreatureAnimState.FLIRT:
+        return animations[32];
+      break;
+      case ModuleCreatureAnimState.USE_COMPUTER:
+        return animations[43];
+      break;
+      case ModuleCreatureAnimState.DANCE:
+        return animations[53];
+      break;
+      case ModuleCreatureAnimState.DANCE1:
+        return animations[54];
+      break;
+      case ModuleCreatureAnimState.HORROR:
+        return animations[74];
+      break;
+      case ModuleCreatureAnimState.USE_COMPUTER2:
+        return animations[43];
+      break;
+      case ModuleCreatureAnimState.PERSUADE:
+        return animations[68];
+      break;
+      case ModuleCreatureAnimState.ACTIVATE_ITEM:
+        return animations[38];
+      break;
+      case ModuleCreatureAnimState.UNLOCK_DOOR:
+        return animations[47];
+      break;
+      case ModuleCreatureAnimState.THROW_HIGH:
+        return animations[57];
+      break;
+      case ModuleCreatureAnimState.THROW_LOW:
+        return animations[58];
+      break;
+      case ModuleCreatureAnimState.UNLOCK_CONTAINER:
+        return animations[48];
+      break;
+      case ModuleCreatureAnimState.DISABLE_MINE:
+        return animations[51];
+      break;
+      case ModuleCreatureAnimState.WALK_STEALTH:
+        return animations[5];
+      break;
+      case ModuleCreatureAnimState.UNLOCK_DOOR2:
+        return animations[47];
+      break;
+      case ModuleCreatureAnimState.UNLOCK_CONTAINER2:
+        return animations[48];
+      break;
+      case ModuleCreatureAnimState.ACTIVATE_ITEM2:
+        return animations[38];
+      break;
+      case ModuleCreatureAnimState.SLEEP:
+        return animations[76];
+      break;
+      case ModuleCreatureAnimState.PARALYZED:
+        return animations[78];
+      break;
+      case ModuleCreatureAnimState.PRONE:
+        return animations[79];
+      break;
+      case ModuleCreatureAnimState.SET_MINE:
+        return animations[52];
+      break;
+      case ModuleCreatureAnimState.DISABLE_MINE2:
+        return animations[51];
+      break;
+      case ModuleCreatureAnimState.CUSTOM01:
+        return animations[346];
+      break;
+      case ModuleCreatureAnimState.FBLOCK:
+        return animations[355];
+      break;
+      case ModuleCreatureAnimState.CHOKE:
+        if(this.isSimpleCreature()){
+          return animations[264];
+        }else{
+          return animations[72];
+        }
+      break;
+      case ModuleCreatureAnimState.WELD:
+        return animations[360];
+      break;
+      case ModuleCreatureAnimState.TREAT_INJURED:
+        return animations[34];
+      break;
+      case ModuleCreatureAnimState.TREAT_INJURED_LP:
+        return animations[35];
+      break;
+      case ModuleCreatureAnimState.CATCH_SABER:
+        return animations[71];
+      break;
+      case ModuleCreatureAnimState.THROW_SABER_LP:
+        return animations[70];
+      break;
+      case ModuleCreatureAnimState.THROW_SABER:
+        return animations[69];
+      break;
+      case ModuleCreatureAnimState.KNEEL_TALK_ANGRY:
+        return animations[384];
+      break;
+      case ModuleCreatureAnimState.KNEEL_TALK_SAD:
+        return animations[385];
+      break;
+      case ModuleCreatureAnimState.KNOCKED_DOWN:
+        return animations[85];
+      break;
+      case ModuleCreatureAnimState.KNOCKED_DOWN2:
+        return animations[85];
+      break;
+      case ModuleCreatureAnimState.DEAD_PRONE:
+        return animations[375];
+      break;
+      case ModuleCreatureAnimState.KNEEL:
+        return animations[23];
+      break;
+      case ModuleCreatureAnimState.KNEEL1:
+        return animations[23];
+      break;
+      // MELEE_WIELD (10157 / 0x27ad) — SetOverlayAnimation while moving (PlayerFlourishWeapons).
+      case ModuleCreatureAnimState.MELEE_WIELD:
+        return animations[meleeWieldAnimationRow(this.getCombatAnimationWeaponType())];
+      // MELEE_COMBAT_WIELD (10158 / 0x27ae) — standing InsertFireForgetAnimation path.
+      case ModuleCreatureAnimState.MELEE_COMBAT_WIELD:
+        return animations[meleeCombatWieldAnimationRow(this.getCombatAnimationWeaponType())];
+      case ModuleCreatureAnimState.FLOURISH:
+        return animations[flourishAnimationRow(this.getCombatAnimationWeaponType())];
+      break;
 
-        //BEGIN TSL ANIMATIONS
-        case ModuleCreatureAnimState.TOUCH_HEART:
-          return animations2DA.rows[462];
-        break;
-        case ModuleCreatureAnimState.ROLL_EYES:
-          return animations2DA.rows[463];
-        break;
-        case ModuleCreatureAnimState.USE_ITEM_ON_OTHER:
-          return animations2DA.rows[464];
-        break;
-        case ModuleCreatureAnimState.STAND_ATTENTION:
-          return animations2DA.rows[465];
-        break;
-        case ModuleCreatureAnimState.NOD_YES:
-          return animations2DA.rows[466];
-        break;
-        case ModuleCreatureAnimState.NOD_NO:
-          return animations2DA.rows[467];
-        break;
-        case ModuleCreatureAnimState.POINT:
-          return animations2DA.rows[468];
-        break;
-        case ModuleCreatureAnimState.POINT_LP:
-          return animations2DA.rows[469];
-        break;
-        case ModuleCreatureAnimState.POINT_DOWN:
-          return animations2DA.rows[470];
-        break;
-        case ModuleCreatureAnimState.SCANNING:
-          return animations2DA.rows[471];
-        break;
-        case ModuleCreatureAnimState.SHRUG:
-          return animations2DA.rows[472];
-        break;
-        case ModuleCreatureAnimState.SIT_CHAIR:
-          return animations2DA.rows[316];
-        break;
-        case ModuleCreatureAnimState.SIT_CHAIR_DRUNK:
-          return animations2DA.rows[317];
-        break;
-        case ModuleCreatureAnimState.SIT_CHAIR_PAZAAK:
-          return animations2DA.rows[318];
-        break;
-        case ModuleCreatureAnimState.SIT_CHAIR_COMP1:
-          return animations2DA.rows[316];
-        break;
-        case ModuleCreatureAnimState.SIT_CHAIR_COMP2:
-          return animations2DA.rows[316];
-        break;
-        case ModuleCreatureAnimState.CUT_HANDS:
-          return animations2DA.rows[557];
-        break;
-        case ModuleCreatureAnimState.L_HAND_CHOP:
-          return animations2DA.rows[558];
-        break;
-        case ModuleCreatureAnimState.COLLAPSE:
-          return animations2DA.rows[559];
-        break;
-        case ModuleCreatureAnimState.COLLAPSE_LP:
-          return animations2DA.rows[560];
-        break;
-        case ModuleCreatureAnimState.COLLAPSE_STAND:
-          return animations2DA.rows[561];
-        break;
-        case ModuleCreatureAnimState.BAO_DUR_POWER_PUNCH:
-          return animations2DA.rows[562];
-        break;
-        case ModuleCreatureAnimState.POINT_UP:
-          return animations2DA.rows[563];
-        break;
-        case ModuleCreatureAnimState.POINT_UP_LOWER:
-          return animations2DA.rows[564];
-        break;
-        case ModuleCreatureAnimState.HOOD_OFF:
-          return animations2DA.rows[565];
-        break;
-        case ModuleCreatureAnimState.HOOD_ON:
-          return animations2DA.rows[566];
-        break;
-        case ModuleCreatureAnimState.DIVE_ROLL:
-          return animations2DA.rows[567];
-        break;
-        //END TSL ANIMATIONS
-
-      }
-
+      //BEGIN TSL ANIMATIONS
+      case ModuleCreatureAnimState.TOUCH_HEART:
+        return animations[462];
+      break;
+      case ModuleCreatureAnimState.ROLL_EYES:
+        return animations[463];
+      break;
+      case ModuleCreatureAnimState.USE_ITEM_ON_OTHER:
+        return animations[464];
+      break;
+      case ModuleCreatureAnimState.STAND_ATTENTION:
+        return animations[465];
+      break;
+      case ModuleCreatureAnimState.NOD_YES:
+        return animations[466];
+      break;
+      case ModuleCreatureAnimState.NOD_NO:
+        return animations[467];
+      break;
+      case ModuleCreatureAnimState.POINT:
+        return animations[468];
+      break;
+      case ModuleCreatureAnimState.POINT_LP:
+        return animations[469];
+      break;
+      case ModuleCreatureAnimState.POINT_DOWN:
+        return animations[470];
+      break;
+      case ModuleCreatureAnimState.SCANNING:
+        return animations[471];
+      break;
+      case ModuleCreatureAnimState.SHRUG:
+        return animations[472];
+      break;
+      case ModuleCreatureAnimState.SIT_CHAIR:
+        return animations[316];
+      break;
+      case ModuleCreatureAnimState.SIT_CHAIR_DRUNK:
+        return animations[317];
+      break;
+      case ModuleCreatureAnimState.SIT_CHAIR_PAZAAK:
+        return animations[318];
+      break;
+      case ModuleCreatureAnimState.SIT_CHAIR_COMP1:
+        return animations[316];
+      break;
+      case ModuleCreatureAnimState.SIT_CHAIR_COMP2:
+        return animations[316];
+      break;
+      case ModuleCreatureAnimState.CUT_HANDS:
+        return animations[557];
+      break;
+      case ModuleCreatureAnimState.L_HAND_CHOP:
+        return animations[558];
+      break;
+      case ModuleCreatureAnimState.COLLAPSE:
+        return animations[559];
+      break;
+      case ModuleCreatureAnimState.COLLAPSE_LP:
+        return animations[560];
+      break;
+      case ModuleCreatureAnimState.COLLAPSE_STAND:
+        return animations[561];
+      break;
+      case ModuleCreatureAnimState.BAO_DUR_POWER_PUNCH:
+        return animations[562];
+      break;
+      case ModuleCreatureAnimState.POINT_UP:
+        return animations[563];
+      break;
+      case ModuleCreatureAnimState.POINT_UP_LOWER:
+        return animations[564];
+      break;
+      case ModuleCreatureAnimState.HOOD_OFF:
+        return animations[565];
+      break;
+      case ModuleCreatureAnimState.HOOD_ON:
+        return animations[566];
+      break;
+      case ModuleCreatureAnimState.DIVE_ROLL:
+        return animations[567];
+      break;
+      //END TSL ANIMATIONS
     }
+
+    console.warn(`ModuleObject.animationConstantToAnimation: Unhandled animation constant ${animation_constant}`);
+    return undefined;
 
   }
 
@@ -4012,7 +3901,7 @@ export class ModuleObject {
    * Play an animation
    * @param anim
    */
-  dialogPlayAnimation(anim: ITwoDAAnimation = {} as ITwoDAAnimation){
+  dialogPlayAnimation(anim: SWAnimation = {} as SWAnimation){
     console.log('dialogPlayAnimation',anim);
     if(!this.model){
       console.warn('dialogPlayAnimation failed');

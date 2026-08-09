@@ -11,7 +11,7 @@ import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUti
 import { OdysseyController } from "@/odyssey/controllers";
 import { IOdysseyModelHeader } from "@/interface/odyssey/IOdysseyModelHeader";
 import { Lensflare, LensflareElement } from "three/examples/jsm/objects/Lensflare";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import { TwoDAManager } from "@/managers/TwoDAManager";
 import { DirtyTextureManager } from "@/managers/DirtyTextureManager";
 import { WindManager } from "@/managers/WindManager";
@@ -736,11 +736,11 @@ export class OdysseyModel3D extends OdysseyObject3D {
 
   playOverlayAnimation(
     anim: OdysseyModelAnimation|string|number,
-    data: ITwoDAAnimation,
+    data: SWAnimation,
     flags?: number
   ){
     const state: any = {
-      loop: data?.looping == '1',
+      loop: data?.looping,
       cFrame: 0,
       elapsed: 0,
       lastTime: 0,

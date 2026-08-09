@@ -586,7 +586,9 @@ export class ModuleObjectManager {
     });
   }
 
-  public static GetObjectsInShape(shape = -1, size = 1, target: EngineLocation, lineOfSight = false, oType = -1, origin = new THREE.Vector3, idx = -1){
+  public static GetObjectsInShape(
+    shape = -1, size = 1, target: EngineLocation, lineOfSight = false, oType = -1, origin = new THREE.Vector3
+  ) : ModuleObject[] {
 
     let object_pool: ModuleObject[] = [];
     let results: ModuleObject[] = [];
@@ -604,8 +606,6 @@ export class ModuleObjectManager {
     int    ModuleObjectType.SOUND            = 512;
     int    OBJECT_TYPE_ALL              = 32767;
     */
-
-    //console.log('GetObjectsInShape', objectFilter, shape);
 
     if((oType & NWModuleObjectType.CREATURE) == NWModuleObjectType.CREATURE){ //CREATURE
       // Party members are removed from area.creatures on join — include them like GetNearestCreature
@@ -678,12 +678,7 @@ export class ModuleObjectManager {
       }
     }
 
-    if(idx == -1){
-      return results;
-    }else{
-      return results[idx];
-    }
-
+    return results;
   }
 
   public static GetAttackerByIndex(oTarget: ModuleObject, index: number = 0): ModuleObject {

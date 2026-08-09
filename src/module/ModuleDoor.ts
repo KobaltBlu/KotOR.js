@@ -23,7 +23,7 @@ import { ModuleDoorInteractSide } from "@/enums/module/ModuleDoorInteractSide";
 import { MDLLoader, ResourceLoader } from "@/loaders";
 import { EngineMode } from "@/enums/engine/EngineMode";
 import { DLGObject } from "@/resource/DLGObject";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 import { SWDoorAppearance } from "@/engine/rules/SWDoorAppearance";
 import { AudioEngine } from "@/audio/AudioEngine";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
@@ -831,7 +831,7 @@ export class ModuleDoor extends ModuleObject {
         if(currentAnimation != animation.name?.toLowerCase()){
           if(!this.animStateInfo.started){
             this.animStateInfo.started = true;
-            const aLooping = (!parseInt(animation.fireforget) && parseInt(animation.looping) == 1);
+            const aLooping = (!animation.fireforget && animation.looping);
             this.getModel().playAnimation(animation.name?.toLowerCase(), aLooping);
           }else{
             // Animation completed — retail MoveNextDoorState fires doneopening*/doneclosing*
@@ -1527,34 +1527,31 @@ export class ModuleDoor extends ModuleObject {
     return gff;
   }
 
-  animationConstantToAnimation( animation_constant = 10000 ): ITwoDAAnimation {
-    const animations2DA = GameState.TwoDAManager.datatables.get('animations');
-    if(animations2DA){
-      switch( animation_constant ){
-        case ModuleDoorAnimState.DEFAULT:       //10000, //327 - 
-          return animations2DA.rows[327];
-        case ModuleDoorAnimState.OPENED1:       //10050, //331 - 
-          return animations2DA.rows[331];
-        case ModuleDoorAnimState.OPENED2:       //10051, //332 - 
-          return animations2DA.rows[332];
-        case ModuleDoorAnimState.CLOSED:        //10022, //333 - 
-          return animations2DA.rows[333];
-        case ModuleDoorAnimState.OPENING1:      //10052, //334 - 
-          return animations2DA.rows[334];
-        case ModuleDoorAnimState.OPENING2:      //10053, //335 - 
-          return animations2DA.rows[335];
-        case ModuleDoorAnimState.CLOSING1:      //10054, //336 - 
-          return animations2DA.rows[336];
-        case ModuleDoorAnimState.CLOSING2:      //10055, //337 - 
-          return animations2DA.rows[337];
-        case ModuleDoorAnimState.BUSTED:        //10153, //366 - 
-          return animations2DA.rows[366];
-        case ModuleDoorAnimState.TRANS:         //10269, //344 - 
-          return animations2DA.rows[344];
-      }
-
-      return super.animationConstantToAnimation( animation_constant );
+  animationConstantToAnimation( animation_constant = 10000 ): SWAnimation {
+    switch( animation_constant ){
+      case ModuleDoorAnimState.DEFAULT:       //10000, //327 - 
+        return GameState.SWRuleSet.animationIdMap.get(327);
+      case ModuleDoorAnimState.OPENED1:       //10050, //331 - 
+        return GameState.SWRuleSet.animationIdMap.get(331);
+      case ModuleDoorAnimState.OPENED2:       //10051, //332 - 
+        return GameState.SWRuleSet.animationIdMap.get(332);
+      case ModuleDoorAnimState.CLOSED:        //10022, //333 - 
+        return GameState.SWRuleSet.animationIdMap.get(333);
+      case ModuleDoorAnimState.OPENING1:      //10052, //334 - 
+        return GameState.SWRuleSet.animationIdMap.get(334);
+      case ModuleDoorAnimState.OPENING2:      //10053, //335 - 
+        return GameState.SWRuleSet.animationIdMap.get(335);
+      case ModuleDoorAnimState.CLOSING1:      //10054, //336 - 
+        return GameState.SWRuleSet.animationIdMap.get(336);
+      case ModuleDoorAnimState.CLOSING2:      //10055, //337 - 
+        return GameState.SWRuleSet.animationIdMap.get(337);
+      case ModuleDoorAnimState.BUSTED:        //10153, //366 - 
+        return GameState.SWRuleSet.animationIdMap.get(366);
+      case ModuleDoorAnimState.TRANS:         //10269, //344 - 
+        return GameState.SWRuleSet.animationIdMap.get(344);
     }
+
+    return super.animationConstantToAnimation( animation_constant );
   }
 
   static GenerateTemplate(){

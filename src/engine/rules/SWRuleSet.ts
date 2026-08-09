@@ -36,6 +36,7 @@ import { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
 import { SWGrenadeSound } from "@/engine/rules/SWGrenadeSound";
 import { SWAnimation } from "@/engine/rules/SWAnimation";
 import { AudioPriorityGroup } from "@/enums/audio/AudioPriorityGroup";
+import { SWCombatAnimation } from "./SWCombatAnimation";
 
 /**
  * SWRuleSet class.
@@ -134,7 +135,14 @@ export class SWRuleSet {
   static grenadeSoundCount: number = 0;
 
   static animations: SWAnimation[] = [];
+  static animationNameMap: Map<string, SWAnimation> = new Map();
+  static animationIdMap: Map<number, SWAnimation> = new Map();
+
   static animationCount: number = 0;
+
+  static combatAnimations: SWCombatAnimation[] = [];
+  static combatAnimationCount: number = 0;
+  static combatAnimationIdMap: Map<number, SWCombatAnimation> = new Map();
 
   static getPriorityGroupById(id: number = AudioPriorityGroup.DEFAULT): SWPriorityGroup {
     if(Number.isFinite(id) && SWRuleSet.priorityGroups[id]){
@@ -564,7 +572,27 @@ export class SWRuleSet {
       SWRuleSet.animationCount = animations.RowCount;
       SWRuleSet.animations = new Array(SWRuleSet.animationCount);
       for(let i = 0; i < animations.RowCount; i++){
-        SWRuleSet.animations[i] = SWAnimation.From2DA(animations.rows[i]);
+        const animation = SWAnimation.From2DA(animations.rows[i]);
+        SWRuleSet.animations[i] = animation;
+        SWRuleSet.animationIdMap.set(animation.animationId, animation);
+        SWRuleSet.animationNameMap.set(animation.name.toLowerCase(), animation);
+      }
+    }
+
+    /**
+     * Initialize Combat Animations
+     */
+    const combatAnimations = GameState.TwoDAManager.datatables.get('combatanimations');
+    if(combatAnimations){
+      SWRuleSet.combatAnimationCount = combatAnimations.RowCount;
+      SWRuleSet.combatAnimations = new Array(SWRuleSet.combatAnimationCount);
+      for(let i = 0; i < combatAnimations.RowCount; i++){
+        const combatAnimation = SWCombatAnimation.From2DA(combatAnimations.rows[i]);
+        SWRuleSet.combatAnimations[i] = combatAnimation;
+        const animation = SWRuleSet.animationIdMap.get(combatAnimation.animationId);
+        if(animation){
+          animation.combatAnimation = combatAnimation;
+        }
       }
     }
   }

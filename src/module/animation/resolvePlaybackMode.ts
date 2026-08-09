@@ -1,5 +1,5 @@
 import { AnimationPlaybackMode } from "@/enums/animation/AnimationPlaybackMode";
-import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
 /**
  * Retail reverse-mode special server ID (SetAnimation mode tables).
@@ -26,7 +26,7 @@ const OVERLAY_ADDITIVE_SERVER_IDS = new Set<number>([
  */
 export function resolvePlaybackMode(
   serverId: number,
-  twoDA?: ITwoDAAnimation | null
+  twoDA?: SWAnimation | null
 ): AnimationPlaybackMode {
   if(serverId === ANIMATION_REVERSE_SERVER_ID){
     return AnimationPlaybackMode.REVERSE;

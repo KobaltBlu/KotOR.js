@@ -2112,9 +2112,9 @@ export class CombatRound {
     }else{
       this.action.animationName = attackKey+weaponWield+'a'+attackType;
     }
-    this.action.twoDAAnimation = OdysseyModelAnimation.GetAnimation2DA(this.action.animationName);
-    if(combatAction.resultsCalculated && combatAction.twoDAAnimation){
-      this.action.twoDAAnimation = combatAction.twoDAAnimation;
+    this.action.swAnimation = OdysseyModelAnimation.GetAnimation2DA(this.action.animationName);
+    if(combatAction.resultsCalculated && combatAction.swAnimation){
+      this.action.swAnimation = combatAction.swAnimation;
     }
 
     const animLength = Math.max(
@@ -2141,7 +2141,7 @@ export class CombatRound {
     if(creature){
       duelLog(creature, 'anim:attack', {
         name: this.action.animationName,
-        hasClip: !!(combatAction.twoDAAnimation || this.action.twoDAAnimation),
+        hasClip: !!(combatAction.swAnimation || this.action.swAnimation),
         length: animLength,
         result: AttackResult[combatAction.attackResult] ?? combatAction.attackResult,
         engaged: this.engaged,
@@ -2149,7 +2149,7 @@ export class CombatRound {
         dueling: attackAnim === ModuleCreatureAnimState.ATTACK_DUELING,
         cutscene: !!combatAction.resultsCalculated,
       });
-      creature.playTwoDAAnimation( combatAction.twoDAAnimation || this.action.twoDAAnimation );
+      creature.playTwoDAAnimation( combatAction.swAnimation || this.action.swAnimation );
       creature.animationState.index = attackAnim;
     }
 

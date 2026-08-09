@@ -94,7 +94,7 @@ describe('AddCutsceneAttackAction field contract', () => {
     action.attackAnimation = 416;
     action.calculateAttackAnimation();
     expect(action.animationName).toBe('2HS_Perform_Flurry_3');
-    expect(action.twoDAAnimation?.name).toBe('2HS_Perform_Flurry_3');
+    expect(action.swAnimation?.name).toBe('2HS_Perform_Flurry_3');
   });
 
   it('ActionCombat-style params pack resultsCalculated + row/result/damage', () => {

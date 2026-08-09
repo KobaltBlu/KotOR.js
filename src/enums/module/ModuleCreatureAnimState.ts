@@ -206,6 +206,8 @@ export enum ModuleCreatureAnimState {
 
   KNEEL_TALK_ANGRY = 10031,
   KNEEL_TALK_SAD = 10385,
+
+  INVALID = 0xFFFFFFFF,
 };
 
 /**

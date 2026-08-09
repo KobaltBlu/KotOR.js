@@ -9,7 +9,7 @@ import { GameEffectType } from "@/enums/effects/GameEffectType";
 import { ModuleCreatureArmorSlot } from "@/enums/module/ModuleCreatureArmorSlot";
 import { NWModuleObjectType } from "@/enums/nwscript/NWModuleObjectType";
 import { GameState } from "@/GameState";
-import type { ModuleCreature, ModuleObject, ModuleArea, ModuleAreaOfEffect, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint } from "@/module";
+import type { ModuleCreature, ModuleObject, ModuleArea, ModuleAreaOfEffect, ModuleDoor, ModuleEncounter, ModuleItem, ModuleMGEnemy, ModuleMGObstacle, ModuleMGPlayer, ModulePlaceable, ModuleSound, ModuleStore, ModuleTrigger, ModuleWaypoint, ModuleMGGunBullet } from "@/module";
 import type { TalentObject } from "@/talents/TalentObject";
 import type { GameEffect } from "@/effects/GameEffect";
 import type { GameEvent } from "@/events/GameEvent";
@@ -5508,6 +5508,7 @@ NWScriptDefK1.Actions = {
       const offHand = !!args[1];
       const equipped = offHand ? creature.equipment.LEFTHAND : creature.equipment.RIGHTHAND;
       const weapon = findMostDamagingMelee(creature, offHand);
+      console.log('ActionEquipMostDamagingMelee', weapon, equipped, this.caller, args[0], args[1]);
       if(!weapon || weapon === equipped){
         return;
       }
@@ -7900,7 +7901,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: []){
       // Retail DefaultImpl â†’ OnHitBullet(1) â€” engine default, skip nested script preference.
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGPlayer)){
-        (this.caller as ModuleMGPlayer).onHitBullet(this.mgBullet);
+        (this.caller as ModuleMGPlayer).onHitBullet(this.mgBullet as ModuleMGGunBullet);
       }else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGEnemy)){
         (this.caller as ModuleMGEnemy).onHitBullet();
       }else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGObstacle)){
@@ -7916,7 +7917,7 @@ NWScriptDefK1.Actions = {
     action: function(this: NWScriptInstance, args: []){
       // Retail DefaultImpl â†’ OnHitObstacle(1) â€” skip nested script, then OnDeath(0).
       if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGPlayer)){
-        (this.caller as ModuleMGPlayer).onHitObstacle(this.mgObstacle, true);
+        (this.caller as ModuleMGPlayer).onHitObstacle(this.mgObstacle as ModuleMGObstacle, true);
       }else if(BitWise.InstanceOfObject(this.caller, ModuleObjectType.ModuleMGEnemy)){
         (this.caller as ModuleMGEnemy).onHitObstacle(true);
       }

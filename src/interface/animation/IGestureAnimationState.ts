@@ -1,4 +1,4 @@
-import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
 /**
  * Standing fire-forget body gesture that may share the base slot when not driving.
@@ -12,7 +12,7 @@ import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
  */
 export interface IGestureAnimationState {
   serverId: number;
-  animation: ITwoDAAnimation;
+  animation: SWAnimation;
   started: boolean;
   remaining: number;
   active: boolean;

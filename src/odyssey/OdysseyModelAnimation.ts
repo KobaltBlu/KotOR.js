@@ -1,10 +1,10 @@
 import * as THREE from 'three';
-import { TwoDAManager } from "@/managers/TwoDAManager";
-import { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
 import { OdysseyModelAnimationNode } from "@/odyssey/OdysseyModelAnimationNode";
 import type { OdysseyModel } from "@/odyssey/OdysseyModel";
 import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
 import { IOdysseyAnimationEvent } from "@/interface/odyssey/IOdysseyAnimationEvent";
+import { GameState } from "@/GameState";
+import type { SWAnimation } from '@/engine/rules/SWAnimation';
 
 /**
  * OdysseyModelAnimation class.
@@ -133,16 +133,12 @@ export class OdysseyModelAnimation {
     return 0.5;
   }
 
-  static GetAnimation2DA(name = ''): ITwoDAAnimation {
-    const animations2DA = TwoDAManager.datatables.get('animations');
-    if(animations2DA){
-      for(let i = 0, len = animations2DA.RowCount; i < len; i++){
-        if(animations2DA.rows[i].name.toLowerCase() == name.toLowerCase()){
-          return animations2DA.rows[i];
-        }
-      }
+  static GetAnimation2DA(name = ''): SWAnimation {
+    const animation = GameState.SWRuleSet.animationNameMap.get(name.toLowerCase());
+    if(animation){
+      return animation;
     }
-    return undefined;
+    return {} as SWAnimation;
   }
 
 }

@@ -1,5 +1,5 @@
 import type { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
-import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
+import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
 /**
  * ICreatureAnimationState interface.
@@ -13,7 +13,7 @@ import type { ITwoDAAnimation } from "@/interface/twoDA/ITwoDAAnimation";
  */
 export interface ICreatureAnimationState {
   index: ModuleCreatureAnimState;
-  animation: ITwoDAAnimation;
+  animation: SWAnimation;
   started: boolean;
   speed: number;
 }
