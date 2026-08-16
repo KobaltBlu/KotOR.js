@@ -3,196 +3,19 @@ import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
 import { TabUTSEditorState } from "@/apps/forge/states/tabs";
 import * as KotOR from "@/apps/forge/KotOR";
 import "@/apps/forge/components/tabs/tab-uts-editor/tab-uts-editor.scss";
-import { ForgeButton, ForgeDialog } from "@/apps/forge/components/ui";
-import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
 import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
-
-const SoundSelector = function(props: {onSelect: (resRef: string) => void, onClose: () => void}){
-  const [soundResRef, setSoundResRef] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [sounds, setSounds] = useState<FileBrowserNode[]>([]);
-  const [soundMap, setSoundMap] = useState<Map<string, FileBrowserNode>>(new Map());
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const audioBufferRef = useRef<AudioBufferSourceNode | null>(null);
-
-  useEffect(() => {
-    const nodes = [...ForgeState.resourceExplorerTab.getStreamSounds(), ...ForgeState.resourceExplorerTab.getBifSounds()].sort((a, b) => a.name.localeCompare(b.name));
-    setSounds(nodes);
-    setSoundMap(new Map(nodes.map( (node: FileBrowserNode) => [node.name, node] )));
-  }, []);
-
-  const close = () => {
-    // Stop any playing audio
-    if(audioBufferRef.current){
-      audioBufferRef.current.disconnect();
-      audioBufferRef.current = null;
-    }
-    setIsPlaying(false);
-    setSoundResRef('');
-    setSearchQuery('');
-    props.onClose();
-  }
-
-  const select = () => {
-    props.onSelect(soundResRef);
-    close();
-  }
-
-  const handleSoundClick = (sound: FileBrowserNode) => {
-    setSoundResRef(sound.name.split('.')[0]);
-  }
-
-  const handleManualInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSoundResRef(e.target.value);
-  }
-
-  const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value.toLowerCase());
-  }
-
-  const previewSound = async () => {
-    if(!soundResRef.trim()) return;
-    
-    try {
-      // Stop any currently playing audio
-      if(audioBufferRef.current){
-        audioBufferRef.current.disconnect();
-        audioBufferRef.current = null;
-      }
-      
-      setIsPlaying(true);
-      
-      // Load and play the sound
-      const data = await KotOR.AudioLoader.LoadSound(soundResRef);
-      const audioCtx = KotOR.AudioEngine.GetAudioEngine().audioCtx;
-      const buffer = await audioCtx.decodeAudioData(data.buffer as ArrayBuffer);
-      
-      const bufferSourceNode = audioCtx.createBufferSource();
-      bufferSourceNode.buffer = buffer;
-      bufferSourceNode.connect(KotOR.AudioEngine.sfxChannel.getGainNode());
-      
-      // Handle when playback ends
-      bufferSourceNode.onended = () => {
-        setIsPlaying(false);
-        audioBufferRef.current = null;
-      };
-      
-      bufferSourceNode.start(0, 0);
-      audioBufferRef.current = bufferSourceNode;
-      
-    } catch (error) {
-      console.error('Error playing sound:', error);
-      setIsPlaying(false);
-    }
-  }
-
-  const stopPreview = () => {
-    if(audioBufferRef.current){
-      audioBufferRef.current.disconnect();
-      audioBufferRef.current = null;
-    }
-    setIsPlaying(false);
-  }
-
-  // Filter sounds based on search query
-  const filteredSounds = sounds.filter(sound => 
-    sound.name.toLowerCase().includes(searchQuery)
-  );
-
-  return (
-    <ForgeDialog 
-      show={true} 
-      onHide={props.onClose} 
-      backdrop="static" 
-      keyboard={false}
-      size="lg"
-    >
-      <ForgeDialog.Header closeButton onClick={close}>
-        <ForgeDialog.Title>Select Sound</ForgeDialog.Title>
-      </ForgeDialog.Header>
-
-      <ForgeDialog.Body>
-        <div className="sound-selector">
-          {/* Search input */}
-          <div className="mb-3">
-            <input 
-              type="text" 
-              className="form-control" 
-              placeholder="Search sounds..." 
-              value={searchQuery}
-              onChange={handleSearchInput}
-            />
-          </div>
-
-          {/* File browser grid */}
-          <div className="file-browser-container">
-            <div className="file-browser-grid">
-              {filteredSounds.map((sound, index) => (
-                <div 
-                  className={`file-browser-item ${soundResRef === sound.name ? 'selected' : ''}`}
-                  key={`sound-item-${index}-${sound.name}`}
-                  onClick={() => handleSoundClick(sound)}
-                  title={sound.name}
-                >
-                  <div className="file-icon">
-                    <i className="fa-solid fa-music"></i>
-                  </div>
-                  <div className="file-name">
-                    {sound.name}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Manual input */}
-          <div className="mt-3">
-            <label className="form-label">Or enter ResRef manually:</label>
-            <input 
-              type="text" 
-              className="form-control" 
-              placeholder="Enter Sound ResRef" 
-              value={soundResRef} 
-              onChange={handleManualInput} 
-            />
-          </div>
-        </div>
-      </ForgeDialog.Body>
-
-      <ForgeDialog.Footer>
-        <ForgeButton 
-          onClick={isPlaying ? stopPreview : previewSound}
-          disabled={!soundResRef.trim()}
-          className="me-2"
-        >
-          {isPlaying ? (
-            <>
-              <i className="fa-solid fa-stop me-1"></i>
-              Stop Preview
-            </>
-          ) : (
-            <>
-              <i className="fa-solid fa-play me-1"></i>
-              Preview
-            </>
-          )}
-        </ForgeButton>
-        <ForgeButton variant="primary" onClick={select} disabled={!soundResRef.trim()}>
-          Select
-        </ForgeButton>
-      </ForgeDialog.Footer>
-    </ForgeDialog>
-  )
-}
+import { openResRefBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
+import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
+import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
 
 export const TabUTSEditor = function(props: BaseTabProps){
 
   const tab: TabUTSEditorState = props.tab as TabUTSEditorState;
+  useForgeHasGameData();
   const [selectedTab, setSelectedTab] = useState<string>('basic');
-  const [showSoundSelector, setShowSoundSelector] = useState<boolean>(false);
 
   const [locName, setLocName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
   const [tag, setTag] = useState<string>('');
@@ -242,13 +65,15 @@ export const TabUTSEditor = function(props: BaseTabProps){
 
     const resRef = sounds[index];
     KotOR.AudioLoader.LoadSound(resRef).then((data: any) => {
-      KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data.buffer as ArrayBuffer ).then((buffer: AudioBuffer) => {
+      return KotOR.AudioEngine.GetAudioEngine().audioCtx.decodeAudioData(data.buffer as ArrayBuffer).then((buffer: AudioBuffer) => {
         const bufferSourceNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
         bufferSourceNode.buffer = buffer;
         bufferSourceNode.connect(KotOR.AudioEngine.sfxChannel.getGainNode());
         bufferSourceNode.start(0, 0);
         audioBugfferRef.current = bufferSourceNode;
       });
+    }).catch((error) => {
+      console.warn(`Failed to play sound ${resRef}`, error);
     });
   }
 
@@ -402,7 +227,19 @@ export const TabUTSEditor = function(props: BaseTabProps){
               </tr>
               <tr>
                 <td><label>Priority</label></td>
-                <td><label>{KotOR.SWRuleSet.priorityGroups[priority]?.label}</label></td>
+                <td>
+                  <ForgeTwoDAIndexField
+                    table="prioritygroups"
+                    value={priority}
+                    emptyLabel="prioritygroups.2da not loaded"
+                    onChange={(value) => {
+                      const next = clampByte(value);
+                      setPriority(next);
+                      tab.sound.setProperty('priority', next);
+                      tab.updateFile();
+                    }}
+                  />
+                </td>
               </tr>
               <tr>
                 <td>
@@ -410,13 +247,10 @@ export const TabUTSEditor = function(props: BaseTabProps){
                 </td>
                 <td>
                   <div className="forge-btn-group">
-                    <button className="forge-btn forge-btn--primary" onClick={(e) => setShowSoundSelector(true)}><i className="fa-solid fa-plus"></i> Add Sound</button>
+                    <button className="forge-btn forge-btn--primary" onClick={() => openResRefBrowser('wav', (resRef) => onBtnAddSound(resRef))}>
+                      <i className="fa-solid fa-plus"></i> Add Sound
+                    </button>
                   </div>
-                  {showSoundSelector && (
-                    <div className="sound-selector">
-                      <SoundSelector onSelect={onBtnAddSound} onClose={() => setShowSoundSelector(false)} />
-                    </div>
-                  )}
                   <div className="sound-items">
                     {sounds.map((sound, index) => (
                       <div className="sound-item" key={`sound-item-${index}-${sound}`}>

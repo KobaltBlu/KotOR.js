@@ -36,8 +36,9 @@ import { TabUTWEditorState } from "@/apps/forge/states/tabs/TabUTWEditorState";
 import { TabLIPEditorState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorState";
 import { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { tabCanCompile, tabCanSave } from "@/apps/forge/commands/editorCommandGuards";
+import { tabCanCompile, tabCanOpenAsGff, tabCanSave } from "@/apps/forge/commands/editorCommandGuards";
 import * as KotOR from "@/apps/forge/KotOR";
+import { openTabAsGffEditor } from "@/apps/forge/helpers/openTabAsGff";
 
 function currentTab(): TabState | undefined {
   return ForgeState.tabManager?.currentTab;
@@ -154,6 +155,15 @@ export function registerForgeCommands(): void {
   });
 
   registerCommand({
+    id: "forge.file.openAsGff",
+    title: "Open as GFF Editor",
+    category: "File",
+    keywords: ["gff", "template", "utc", "utp", "blueprint"],
+    when: () => tabCanOpenAsGff(currentTab()),
+    run: () => openTabAsGffEditor(currentTab()),
+  });
+
+  registerCommand({
     id: "forge.file.settings",
     title: "Settings...",
     category: "File",
@@ -197,6 +207,24 @@ export function registerForgeCommands(): void {
         console.error(error);
         const message = error instanceof Error ? error.message : "Could not install this color theme.";
         window.alert(message);
+      }
+    },
+  });
+
+  registerCommand({
+    id: "forge.file.loadGameData",
+    title: "Load Game Directory...",
+    category: "File",
+    keywords: ["chitin", "bif", "game", "kotor", "tsl", "data"],
+    run: async () => {
+      const bound = await ForgeState.promptAndBindGameDirectory();
+      if (!bound) {
+        window.alert("The selected folder does not contain chitin.key. Choose a KotOR or TSL install directory.");
+        return;
+      }
+      const loaded = await ForgeState.attachGameData();
+      if (!loaded) {
+        window.alert("Could not load game archives from that folder. Editors will stay in fallback mode.");
       }
     },
   });

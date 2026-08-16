@@ -9,6 +9,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 export interface ModalGrantAccessProps {
   onUserGrant: Function,
   onUserCancel: Function
+  onContinueWithoutGame?: Function
 }
 
 export const ModalGrantAccess = function(props: ModalGrantAccessProps){
@@ -28,22 +29,22 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
   });
 
   const onBtnGrant = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    let handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
-    if(handle){
-      KotOR.ApplicationProfile.directoryHandle = handle;
-      KotOR.ApplicationProfile.profile.directory_handle = handle;
-      KotOR.ConfigClient.set(`Profiles.${KotOR.ApplicationProfile.profile.key}.directory_handle`, handle);
-      
-
-      ForgeState.VerifyGameDirectory(() => {
-        console.log('Game Directory', 'verified');
-        setShowGrantModal(false);
-        props.onUserGrant();
-      }, () => {
-        console.warn('Game Directory', 'not found');
-        // setShowGrantModal(true);
-      });
+    e.preventDefault();
+    const bound = await ForgeState.promptAndBindGameDirectory();
+    if(bound){
+      console.log('Game Directory', 'verified');
+      setShowGrantModal(false);
+      props.onUserGrant();
+      return;
     }
+    console.warn('Game Directory', 'not found');
+    window.alert('The selected folder does not contain chitin.key. Choose a KotOR or TSL install, or continue without game data.');
+  }
+
+  const onBtnContinue = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setShowGrantModal(false);
+    props.onContinueWithoutGame?.();
   }
 
   const onBtnClose = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -58,9 +59,16 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
         <div className="modal-content-wrapper">
           <h1>Grant Access</h1>
           <GrantAccessModalContent gameKey={KotOR.ApplicationProfile.GameKey} />
+          <p className="grant-access-editor-only">
+            You can continue without game data to create and edit local files and projects.
+            The BIF browser, 2DA dropdowns, and TLK preview need a game folder — use File → Load Game Directory… later.
+          </p>
         </div>
         <div className="modal-button-wrapper">
           <button id="btn-grant-access" className="modal-button grant" onClick={onBtnGrant}>Grant Access</button>
+          {props.onContinueWithoutGame ? (
+            <button id="btn-continue-without-game" className="modal-button skip" onClick={onBtnContinue}>Continue without game data</button>
+          ) : null}
           <button id="btn-quit" className="modal-button quit" onClick={onBtnClose}>Quit</button>
         </div>
       </div>

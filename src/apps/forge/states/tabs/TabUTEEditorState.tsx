@@ -6,6 +6,7 @@ import { TabUTEEditor } from "@/apps/forge/components/tabs/tab-ute-editor/TabUTE
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { EncounterDifficulty } from "@/apps/forge/interfaces/EncounterDifficulty";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
+import { encounterDifficultyValueAt } from "@/apps/forge/helpers/encounterDifficultyValue";
 
 export class TabUTEEditorState extends TabState {
   tabName: string = `UTE`;
@@ -43,8 +44,7 @@ export class TabUTEEditorState extends TabState {
 
     this.addEventListener('onPropertyChange', (property: string, value: any) => {
       if(property === 'difficultyIndex'){
-        // Difficulty should match the VALUE from encdifficulty.2da (obsolete but must match)
-        this.encounter.difficulty = this.encounterDifficulties[value].value;
+        this.encounter.difficulty = encounterDifficultyValueAt(value, this.encounterDifficulties);
       }
     });
 

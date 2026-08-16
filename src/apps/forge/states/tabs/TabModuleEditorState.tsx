@@ -19,8 +19,8 @@ import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
 import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
 import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
 import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
-import { ModalBlueprintBrowserState, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+import { openBlueprintBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
 import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
 
 export enum TabModuleEditorControlMode {
@@ -539,15 +539,12 @@ export class TabModuleEditorState extends TabState {
   }
 
   openBlueprintBrowserForType(blueprintType: BlueprintType){
-    const modal = new ModalBlueprintBrowserState(blueprintType, (blueprint, type) => {
-      // Map blueprint type to GameObjectType
+    openBlueprintBrowser(blueprintType, (blueprint, type) => {
       const gameObjectType = this.getGameObjectTypeFromBlueprintType(type);
       if(gameObjectType){
         this.setGameObjectControlOptions(gameObjectType, blueprint.resref, type);
       }
     });
-    modal.attachToModalManager(ForgeState.modalManager);
-    modal.open();
   }
 
   setGameObjectControlOptions(gameObjectType: GameObjectType, resref: string, resType: typeof KotOR.ResourceTypes){

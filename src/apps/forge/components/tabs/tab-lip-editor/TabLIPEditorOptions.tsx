@@ -90,7 +90,7 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
     };
   });
 
-  const onPreviewHeadChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const onPreviewHeadChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const head = e.target.value.trim().toLowerCase();
     setSelectedHead(head);
     parentTab.loadHead(head);
@@ -113,7 +113,7 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
     parentTab.fitDurationToKeyFrames();
   };
 
-  const heads = Object.values(KotOR.TwoDAManager.datatables.get("heads")?.rows);
+  const heads = Object.values(KotOR.TwoDAManager.datatables.get("heads")?.rows ?? {});
   const headList: string[] = (heads ?? [])
     .map((row: any) => String(row?.head ?? "").trim().toLowerCase())
     .filter(Boolean);
@@ -248,20 +248,26 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
           <label className="lip-sidebar__label" htmlFor="lip-head-select">
             Head
           </label>
-          <ForgeSelect
-            id="lip-head-select"
-            className="lip-sidebar__select"
-            onChange={onPreviewHeadChange}
-            value={headSelectValue}
-          >
-            {headList.length ? (
-              headList.map((head: string) => (
+          {headList.length ? (
+            <ForgeSelect
+              id="lip-head-select"
+              className="lip-sidebar__select"
+              onChange={onPreviewHeadChange}
+              value={headSelectValue}
+            >
+              {headList.map((head: string) => (
                 <option key={head} value={head}>{head}</option>
-              ))
-            ) : (
-              <option value={headSelectValue}>{headSelectValue}</option>
-            )}
-          </ForgeSelect>
+              ))}
+            </ForgeSelect>
+          ) : (
+            <ForgeInput
+              id="lip-head-select"
+              className="lip-sidebar__select"
+              title="heads.2da not loaded — enter a head resref"
+              value={headSelectValue}
+              onChange={onPreviewHeadChange}
+            />
+          )}
         </div>
       </SectionContainer>
 

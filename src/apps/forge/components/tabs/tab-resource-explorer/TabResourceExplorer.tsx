@@ -4,7 +4,8 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { EditorFile } from "@/apps/forge/EditorFile";
-import { ForgeProgress, ForgeInput, ForgeInputGroup } from "@/apps/forge/components/ui";
+import { ForgeProgress, ForgeInput, ForgeInputGroup, ForgeButton } from "@/apps/forge/components/ui";
+import { executeCommand } from "@/apps/forge/commands/forgeCommands";
 import "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer.scss";
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
 import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
@@ -26,6 +27,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
   const [loading, setLoading] = useState<boolean>(false);
   const [visibleItems, setVisibleItems] = useState<FileBrowserNode[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
+  const [hasGameData, setHasGameData] = useState(ForgeState.hasGameData);
   const ITEMS_PER_PAGE = 100; // Virtual scrolling chunk size
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
   let searchQuery = '';
@@ -258,6 +260,11 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
         updateVisibleItems(TabResourceExplorerState.Resources);
       }
     }
+    const onGameData = () => setHasGameData(ForgeState.hasGameData);
+    ForgeState.addEventListener("onGameDataChanged", onGameData);
+    return () => {
+      ForgeState.removeEventListener("onGameDataChanged", onGameData);
+    };
   });
 
   const onSearchInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -351,6 +358,17 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
       {loading ? (
         <div className="resource-explorer__progress">
           <ForgeProgress striped animated={true} value={100} label="Searching..." />
+        </div>
+      ) : !hasGameData && resourceList.length === 0 ? (
+        <div className="resource-explorer__empty">
+          <p>No game directory is loaded. Open local files from File, or load KotOR/TSL data to browse BIFs and 2DAs.</p>
+          <ForgeButton
+            size="sm"
+            variant="secondary"
+            onClick={() => { void executeCommand("forge.file.loadGameData"); }}
+          >
+            Load Game Directory…
+          </ForgeButton>
         </div>
       ) : (
         <div className="resource-explorer__tree">

@@ -4,6 +4,19 @@ import { EditorFile } from "@/apps/forge/EditorFile";
 import * as KotOR from "@/apps/forge/KotOR";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabGFFEditor } from "@/apps/forge/components/tabs/tab-gff-editor/TabGFFEditor";
+import { UTX_TEMPLATE_EXTENSIONS } from "@/apps/forge/commands/editorCommandGuards";
+
+function gffSaveTypesForExt(ext?: string): FilePickerAcceptType[] {
+  const key = (ext || "gff").replace(/^\./, "").toLowerCase() || "gff";
+  return [
+    {
+      description: `${key.toUpperCase()} File`,
+      accept: {
+        "application/octet-stream": [`.${key}`],
+      },
+    },
+  ];
+}
 
 
 export type TabGFFEditorStateEventListenerTypes =
@@ -26,14 +39,7 @@ export class TabGFFEditorState extends TabState {
     super(options);
     this.setContentView(<TabGFFEditor tab={this}></TabGFFEditor>);
     this.openFile();
-    this.saveTypes = [
-      {
-        description: 'Generic File Format (GFF)',
-        accept: {
-          'application/octet-stream': ['.gff']
-        }
-      }
-    ];
+    this.saveTypes = gffSaveTypesForExt(this.file?.ext);
   }
 
   public openFile(file?: EditorFile){
@@ -45,6 +51,11 @@ export class TabGFFEditorState extends TabState {
       if(file instanceof EditorFile){
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
+        const ext = String(this.file.ext || "").toLowerCase().replace(/^\./, "");
+        if ((UTX_TEMPLATE_EXTENSIONS as readonly string[]).indexOf(ext) >= 0) {
+          this.tabName = `${this.tabName} [GFF]`;
+        }
+        this.saveTypes = gffSaveTypesForExt(ext);
   
         file.readFile().then( (response) => {
           this.gff = new KotOR.GFFObject(response.buffer);
@@ -53,6 +64,13 @@ export class TabGFFEditorState extends TabState {
         });
       }
     });
+  }
+
+  async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
+    if (this.gff) {
+      return this.gff.getExportBuffer();
+    }
+    return super.getExportBuffer(resref, ext);
   }
 
   show(): void {

@@ -168,7 +168,7 @@ export class TabTextEditorState extends TabState {
 
     this.setContentView(<TabTextEditor tab={this}></TabTextEditor>);
     const textDecoder = new TextDecoder();
-    this.nwScriptParser = new NWScriptParser(textDecoder.decode(ForgeState.nwscript_nss));
+    this.nwScriptParser = new NWScriptParser(textDecoder.decode(ForgeState.nwscript_nss ?? new Uint8Array(0)));
     this.openFile();
 
     this.saveTypes = [

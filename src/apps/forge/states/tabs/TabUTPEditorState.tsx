@@ -8,6 +8,11 @@ import { TabUTPEditor } from "@/apps/forge/components/tabs/tab-utp-editor/TabUTP
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { ForgePlaceable } from "@/apps/forge/module-editor/ForgePlaceable";
+import {
+  attachUtxModelPreview,
+  bindUtxPreviewOnGameData,
+  utxShouldShow3DPreview,
+} from "@/apps/forge/helpers/utxPreview3D";
 
 export class TabUTPEditorState extends TabState {
   tabName: string = `UTP`;
@@ -24,6 +29,7 @@ export class TabUTPEditorState extends TabState {
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    bindUtxPreviewOnGameData(this);
 
     this.setContentView(<TabUTPEditor tab={this}></TabUTPEditor>);
     this.openFile();
@@ -50,9 +56,7 @@ export class TabUTPEditorState extends TabState {
   
         file.readFile().then( async (response) => {
           this.placeable = new ForgePlaceable(response.buffer, file.resref);
-          this.placeable.setContext(this.ui3DRenderer);
-          await this.placeable.load();
-          this.ui3DRenderer.attachObject(this.placeable.container, false);
+          await this.attachPreview();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
@@ -61,6 +65,10 @@ export class TabUTPEditorState extends TabState {
   }
 
 
+
+  async attachPreview(): Promise<void> {
+    await attachUtxModelPreview(this.ui3DRenderer, this.placeable);
+  }
 
   box: THREE.Box3 = new THREE.Box3();
   center: THREE.Vector3 = new THREE.Vector3();
@@ -90,6 +98,7 @@ export class TabUTPEditorState extends TabState {
 
   show(): void {
     super.show();
+    if (!utxShouldShow3DPreview()) return;
     this.ui3DRenderer.enabled = true;
     this.updateCameraFocus();
     this.ui3DRenderer.render();

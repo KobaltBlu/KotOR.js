@@ -8,10 +8,14 @@ import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-chec
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
 import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
+import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
+import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
 
 export const TabUTTEditor = function(props: BaseTabProps){
 
   const tab: TabUTTEditorState = props.tab as TabUTTEditorState;
+  useForgeHasGameData();
 
   const [autoRemoveKey, setAutoRemoveKey] = useState<boolean>(false);
   const [comment, setComment] = useState<string>('');
@@ -214,7 +218,17 @@ export const TabUTTEditor = function(props: BaseTabProps){
                 <ForgeCheckbox label="Enabled" value={trapFlag} onChange={onUpdateForgeCheckboxField(setTrapFlag, 'trapFlag')} />
               </FormField>
               <FormField label="Trap Type" info="Index into traps.2da.">
-                <input type="number" min={0} value={trapType} onChange={onUpdateByteField(setTrapType, 'trapType')} />
+                <ForgeTwoDAIndexField
+                  table="traps"
+                  value={trapType}
+                  emptyLabel="traps.2da not loaded"
+                  onChange={(value) => {
+                    const next = clampByte(value);
+                    setTrapType(next);
+                    tab.trigger.setProperty('trapType', next);
+                    tab.updateFile();
+                  }}
+                />
               </FormField>
               <FormField label="Disarm DC" info="Base DC to disarm (1-250).">
                 <input type="number" min={0} max={255} value={disarmDC} onChange={onUpdateByteField(setDisarmDC, 'disarmDC')} />

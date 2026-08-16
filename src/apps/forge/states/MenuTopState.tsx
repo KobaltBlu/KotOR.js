@@ -151,6 +151,7 @@ export class MenuTopState {
           { separator: true },
           this.commandItem('forge.file.openFile'),
           this.commandItem('forge.file.openProject'),
+          this.commandItem('forge.file.loadGameData'),
           { label: 'Open Recent', children: recentChildren },
           { separator: true },
           this.commandItem('forge.file.save'),
@@ -158,6 +159,7 @@ export class MenuTopState {
           this.commandItem('forge.file.saveAll'),
           { separator: true },
           this.commandItem('forge.file.closeEditor'),
+          this.commandItem('forge.file.openAsGff'),
           this.commandItem('forge.file.closeProject'),
           { separator: true },
           {

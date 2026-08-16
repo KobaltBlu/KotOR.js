@@ -198,7 +198,10 @@ export class ForgeItem extends ForgeGameObject {
       return this.kBaseItem;
     }
     const twodaObject = KotOR.TwoDAManager.datatables.get('baseitems');
-    if(!twodaObject) return;
+    if(!twodaObject){
+      this.kBaseItem = this.kBaseItem || {};
+      return this.kBaseItem;
+    }
     return this.kBaseItem = twodaObject.getRowByIndex(this.baseItem);
   }
 
@@ -223,8 +226,8 @@ export class ForgeItem extends ForgeGameObject {
       return this.model;
     }
 
-    const itemclass = this.stringCleaner(this.kBaseItem.itemclass);
-    let defaultModel = this.stringCleaner(this.kBaseItem.defaultmodel);
+    const itemclass = this.stringCleaner(this.kBaseItem?.itemclass);
+    let defaultModel = this.stringCleaner(this.kBaseItem?.defaultmodel);
 
     if(defaultModel != 'i_null'){
       defaultModel = this.nthStringConverter(defaultModel, this.modelVariation);

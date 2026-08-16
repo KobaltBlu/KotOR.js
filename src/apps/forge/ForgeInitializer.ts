@@ -91,7 +91,7 @@ export class ForgeInitializer {
     ForgeInitializer.ProcessEventListener('on-loader-message', [message]);
   }
 
-  static async Init(game: KotOR.GameEngineType){
+  static async Init(game: KotOR.GameEngineType, options?: { loadGameData?: boolean }): Promise<boolean> {
 
     KotOR.GameState.GameKey = game;
     KotOR.ResourceLoader.InitCache();
@@ -145,103 +145,96 @@ export class ForgeInitializer {
     KotOR.GameState.GameEventFactory = KotOR.GameEventFactory;
     KotOR.GameState.VideoEffectManager = KotOR.VideoEffectManager;
 
-    await KotOR.CurrentGame.CleanGameInProgressFolder();
-
-    //Keeps the initializer from loading the same game twice if it's already loaded
-    if(ForgeInitializer.currentGame == game){
-      return;
-    }
-
     ForgeInitializer.currentGame = game;
 
     KotOR.PerformanceMonitor.start('configclient');
     await KotOR.ConfigClient.Init();
     KotOR.PerformanceMonitor.stop('configclient');
-    
+
+    if(options?.loadGameData === false){
+      return false;
+    }
+
+    return ForgeInitializer.LoadGameData();
+  }
+
+  static async LoadGameData(): Promise<boolean> {
+
     ForgeInitializer.SetLoadingMessage("Loading Keys");
     KotOR.PerformanceMonitor.start('keys');
-    await KotOR.KEYManager.Load('chitin.key');
+    const keysLoaded = await KotOR.KEYManager.Load('chitin.key');
     KotOR.PerformanceMonitor.stop('keys');
+    if(!keysLoaded){
+      return false;
+    }
 
-    KotOR.PerformanceMonitor.start('globalcache');
-    await KotOR.ResourceLoader.InitGlobalCache();
-    KotOR.PerformanceMonitor.stop('globalcache');
+    await ForgeInitializer.tryStep('globalcache', async () => {
+      await KotOR.ResourceLoader.InitGlobalCache();
+    });
 
     ForgeInitializer.SetLoadingMessage("Loading Game Resources");
-    KotOR.PerformanceMonitor.start('gameresources');
-    await ForgeInitializer.LoadGameResources();
-    KotOR.PerformanceMonitor.stop('gameresources');
+    await ForgeInitializer.tryStep('gameresources', async () => {
+      await ForgeInitializer.LoadGameResources();
+    });
 
-    /**
-     * Initialize Journal
-     */
     ForgeInitializer.SetLoadingMessage("Loading JRL File");
-    KotOR.PerformanceMonitor.start('journal');
-    await KotOR.JournalManager.LoadJournal();
-    KotOR.PerformanceMonitor.stop('journal');
+    await ForgeInitializer.tryStep('journal', async () => {
+      await KotOR.JournalManager.LoadJournal();
+    });
 
-    /**
-     * Initialize TLK
-     */
     ForgeInitializer.SetLoadingMessage("Loading TLK File");
-    KotOR.PerformanceMonitor.start('tlk');
-    await KotOR.TLKManager.LoadTalkTable();
-    KotOR.PerformanceMonitor.stop('tlk');
+    await ForgeInitializer.tryStep('tlk', async () => {
+      await KotOR.TLKManager.LoadTalkTable();
+    });
 
     ForgeInitializer.SetLoadingMessage("Initializing Controls");
-    /**
-     * Initialize Controls
-     */
-    KotOR.KeyMapper.Init();
-    KotOR.GamePad.Init();
-
-    /**
-     * Initialize SWRuleSet
-     */
-    KotOR.GameState.SWRuleSet.Init();
-
-    /**
-     * Initialize AppearanceManager
-     */
-    KotOR.GameState.AppearanceManager.Init();
+    try{
+      KotOR.KeyMapper.Init();
+      KotOR.GamePad.Init();
+      KotOR.GameState.SWRuleSet.Init();
+      KotOR.GameState.AppearanceManager.Init();
+    }catch(e){
+      console.warn('ForgeInitializer: controls/rules init failed', e);
+    }
 
     ForgeInitializer.SetLoadingMessage("Loading INI File");
-    /**
-     * Initialize INIConfig
-     */
-    if(KotOR.GameState.GameKey == KotOR.GameEngineType.TSL){
-      KotOR.GameState.iniConfig = new KotOR.INIConfig('swkotor2.ini', KotOR.INIConfig.defaultConfigs.swKotOR2);
-    }else{
-      KotOR.GameState.iniConfig = new KotOR.INIConfig('swkotor.ini', KotOR.INIConfig.defaultConfigs.swKotOR);
-    }
-    await KotOR.GameState.iniConfig.load();
-    KotOR.GameState.SWRuleSet.setIniConfig(KotOR.GameState.iniConfig);
-    KotOR.GameState.AutoPauseManager.INIConfig = KotOR.GameState.iniConfig;
+    await ForgeInitializer.tryStep('ini', async () => {
+      if(KotOR.GameState.GameKey == KotOR.GameEngineType.TSL){
+        KotOR.GameState.iniConfig = new KotOR.INIConfig('swkotor2.ini', KotOR.INIConfig.defaultConfigs.swKotOR2);
+      }else{
+        KotOR.GameState.iniConfig = new KotOR.INIConfig('swkotor.ini', KotOR.INIConfig.defaultConfigs.swKotOR);
+      }
+      await KotOR.GameState.iniConfig.load();
+      KotOR.GameState.SWRuleSet.setIniConfig(KotOR.GameState.iniConfig);
+      KotOR.GameState.AutoPauseManager.INIConfig = KotOR.GameState.iniConfig;
+      KotOR.GameState.AutoPauseManager.Init();
+      KotOR.GameState.GlobalVariableManager.Init();
+    });
 
-    /**
-     * Initialize AutoPauseManager
-     */
-    KotOR.GameState.AutoPauseManager.Init();
-
-    /**
-     * Initialize GLobal Variabled
-     */
-    KotOR.GameState.GlobalVariableManager.Init();
-
-    /**
-     * Initialize Planetary
-     */
-    await KotOR.GameState.Planetary.Init()
+    await ForgeInitializer.tryStep('planetary', async () => {
+      await KotOR.GameState.Planetary.Init();
+    });
 
     ForgeInitializer.SetLoadingMessage("Initializing SaveGame Folder");
-    /**
-     * Initialize SaveGame Folder
-     */
-    KotOR.PerformanceMonitor.start('SaveGame.GetSaveGames');
-    await KotOR.SaveGame.GetSaveGames();
-    KotOR.PerformanceMonitor.stop('SaveGame.GetSaveGames');
+    await ForgeInitializer.tryStep('saves', async () => {
+      await KotOR.SaveGame.GetSaveGames();
+    });
 
-    KotOR.VideoEffectManager.Init2DA(KotOR.TwoDAManager.datatables.get('videoeffects') as any);
+    try{
+      KotOR.VideoEffectManager.Init2DA(KotOR.TwoDAManager.datatables.get('videoeffects') as any);
+    }catch(e){
+      console.warn('ForgeInitializer: videoeffects 2DA init failed', e);
+    }
+
+    return true;
+  }
+
+  private static async tryStep(label: string, fn: () => Promise<void>): Promise<void> {
+    try{
+      await fn();
+    }catch(e){
+      console.warn(`ForgeInitializer: ${label} failed`, e);
+    }
   }
 
   static async LoadGameResources(){
@@ -265,31 +258,39 @@ export class ForgeInitializer {
       return;
     }
     KotOR.PerformanceMonitor.start('RIMManager.Load');
-    await KotOR.RIMManager.Load();
+    try{
+      await KotOR.RIMManager.Load();
+    }catch(e){
+      console.warn('ForgeInitializer.LoadRIMs: Failed to load RIMs', e);
+    }
     KotOR.PerformanceMonitor.stop('RIMManager.Load');
   }
 
   static async LoadLips(){
     KotOR.PerformanceMonitor.start('ForgeInitializer.LoadLips');
-    const data_dir = 'lips';
-    const filenames = await KotOR.GameFileSystem.readdir(data_dir);
-    const modules = filenames.map(function(file) {
-      const filename = file.split(path.sep).pop() as string;
-      const args = filename.split('.');
-      return {
-        ext: args[1].toLowerCase(), 
-        name: args[0], 
-        filename: filename
-      };
-    }).filter(function(file_obj){
-      return file_obj.ext == 'mod';
-    });
-    await Promise.all(modules.map(async (module_obj) => {
-      const mod = new KotOR.ERFObject(path.join(data_dir, module_obj.filename));
-      await mod.load();
-      mod.group = 'Lips';
-      KotOR.ERFManager.addERF(module_obj.name, mod);
-    }));
+    try{
+      const data_dir = 'lips';
+      const filenames = await KotOR.GameFileSystem.readdir(data_dir);
+      const modules = filenames.map(function(file) {
+        const filename = file.split(path.sep).pop() as string;
+        const args = filename.split('.');
+        return {
+          ext: args[1].toLowerCase(), 
+          name: args[0], 
+          filename: filename
+        };
+      }).filter(function(file_obj){
+        return file_obj.ext == 'mod';
+      });
+      await Promise.all(modules.map(async (module_obj) => {
+        const mod = new KotOR.ERFObject(path.join(data_dir, module_obj.filename));
+        await mod.load();
+        mod.group = 'Lips';
+        KotOR.ERFManager.addERF(module_obj.name, mod);
+      }));
+    }catch(e){
+      console.warn('ForgeInitializer.LoadLips: Failed to load lips', e);
+    }
     KotOR.PerformanceMonitor.stop('ForgeInitializer.LoadLips');
   }
 
@@ -341,7 +342,11 @@ export class ForgeInitializer {
 
   static async Load2DAs(){
     KotOR.PerformanceMonitor.start('ForgeInitializer.Load2DAs');
-    await KotOR.GameState.TwoDAManager.Load2DATables();
+    try{
+      await KotOR.GameState.TwoDAManager.Load2DATables();
+    }catch(e){
+      console.warn('ForgeInitializer.Load2DAs: Failed to load 2DA tables', e);
+    }
     KotOR.PerformanceMonitor.stop('ForgeInitializer.Load2DAs');
   }
 

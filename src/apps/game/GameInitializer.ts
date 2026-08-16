@@ -162,8 +162,11 @@ export class GameInitializer {
     
     GameInitializer.SetLoadingMessage("Loading Keys");
     KotOR.PerformanceMonitor.start('keys');
-    await KotOR.KEYManager.Load('chitin.key');
+    const keysLoaded = await KotOR.KEYManager.Load('chitin.key');
     KotOR.PerformanceMonitor.stop('keys');
+    if(!keysLoaded){
+      throw new Error('KEYManager.Load: chitin.key not found');
+    }
 
     // KotOR.PerformanceMonitor.start('globalcache');
     KotOR.ResourceLoader.InitGlobalCache();

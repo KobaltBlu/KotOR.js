@@ -412,7 +412,7 @@ export const App = (props: any) => {
         )}
       </div>
       <ModalManager manager={ForgeState.modalManager}></ModalManager>
-      <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
+      <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel} onContinueWithoutGame={onUserGrant}></ModalGrantAccess>
       <LoadingScreen active={showLoadingScreen} message={loadingScreenMessage} backgroundURL={loadingScreenBackgroundURL} logoURL={loadingScreenLogoURL} />
     </>
   );

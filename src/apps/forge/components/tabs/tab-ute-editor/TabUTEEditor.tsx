@@ -11,9 +11,13 @@ import "@/apps/forge/components/tabs/tab-ute-editor/TabUTEEditor.scss";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost/SubTabHost";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
 import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
+import { encounterDifficultyValueAt } from "@/apps/forge/helpers/encounterDifficultyValue";
+import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
 
 export const TabUTEEditor = function(props: BaseTabProps){
   const tab: TabUTEEditorState = props.tab as TabUTEEditorState;
+  useForgeHasGameData();
   const [encounterDifficulties, setEncounterDifficulties] = useState<EncounterDifficulty[]>([]);
 
   const [active, setActive] = useState<boolean>(false);
@@ -175,11 +179,18 @@ export const TabUTEEditor = function(props: BaseTabProps){
                 label="Difficulty"
                 info="The difficulty level of this encounter."
               >
-                <select value={difficultyIndex} onChange={(e) => { setDifficultyIndex(Number(e.target.value)); tab.encounter.difficultyIndex = Number(e.target.value); tab.encounter.difficulty = tab.encounterDifficulties[Number(e.target.value)].value; tab.updateFile(); }} className="tab-ute-editor__select">
-                  {encounterDifficulties.map((diff, idx) => (
-                    <option key={idx} value={idx}>{diff.label}</option>
-                  ))}
-                </select>
+                <ForgeTwoDAIndexField
+                  table="encdifficulty"
+                  value={difficultyIndex}
+                  emptyLabel="encdifficulty.2da not loaded"
+                  onChange={(value) => {
+                    const index = Number(value) || 0;
+                    setDifficultyIndex(index);
+                    tab.encounter.difficultyIndex = index;
+                    tab.encounter.difficulty = encounterDifficultyValueAt(index, tab.encounterDifficulties);
+                    tab.updateFile();
+                  }}
+                />
               </FormField>
               <FormField
                 label="Faction"

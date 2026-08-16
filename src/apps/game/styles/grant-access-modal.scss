@@ -45,6 +45,13 @@
         text-transform: none;
       }
 
+      .grant-access-editor-only {
+        margin: 16px 0 0;
+        font-size: 0.875rem;
+        line-height: 1.45;
+        color: #c9dde6;
+      }
+
       p {
         margin: 0;
         color: #ccc;
@@ -91,6 +98,17 @@
           &:hover {
             border-color: #2196f3;
             background: #255d8e;
+          }
+        }
+
+        &.skip {
+          color: #e6eef4;
+          border-color: #4a5560;
+          background: #3a4650;
+
+          &:hover {
+            border-color: #6c7a86;
+            background: #46535e;
           }
         }
 

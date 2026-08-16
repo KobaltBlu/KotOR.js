@@ -7,6 +7,11 @@ import { TabUTIEditor } from "@/apps/forge/components/tabs/tab-uti-editor/TabUTI
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import * as THREE from "three";
 import { ForgeItem, ItemPropertyEntry } from "@/apps/forge/module-editor/ForgeItem";
+import {
+  attachUtxModelPreview,
+  bindUtxPreviewOnGameData,
+  utxShouldShow3DPreview,
+} from "@/apps/forge/helpers/utxPreview3D";
 
 export type { ItemPropertyEntry };
 
@@ -33,6 +38,7 @@ export class TabUTIEditorState extends TabState {
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    bindUtxPreviewOnGameData(this);
     this.setContentView(<TabUTIEditor tab={this}></TabUTIEditor>);
     this.openFile();
     this.saveTypes = [
@@ -64,14 +70,16 @@ export class TabUTIEditorState extends TabState {
   
         file.readFile().then( async (response) => {
           this.item = new ForgeItem(response.buffer, file.resref);
-          this.item.setContext(this.ui3DRenderer);
-          await this.item.load();
-          this.ui3DRenderer.attachObject(this.item.container, false);
+          await this.attachPreview();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
       }
     });
+  }
+
+  async attachPreview(): Promise<void> {
+    await attachUtxModelPreview(this.ui3DRenderer, this.item);
   }
 
   box3: THREE.Box3 = new THREE.Box3();
@@ -114,6 +122,7 @@ export class TabUTIEditorState extends TabState {
 
   show(): void {
     super.show();
+    if (!utxShouldShow3DPreview()) return;
     this.ui3DRenderer.enabled = true;
     this.updateCameraFocus();
     this.ui3DRenderer.render();

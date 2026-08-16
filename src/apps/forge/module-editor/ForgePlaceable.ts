@@ -404,7 +404,11 @@ export class ForgePlaceable extends ForgeGameObject {
       return this.model;
     }
 
-    const modelName = this.stringCleaner(this.kPlaceableAppearance.modelname) || 'plc_invis';
+    const modelName = this.stringCleaner(this.kPlaceableAppearance?.modelname);
+    if(!modelName){
+      this.model = new KotOR.OdysseyModel3D();
+      return this.model;
+    }
 
     try{
       const mdl = await KotOR.MDLLoader.loader.load(modelName);

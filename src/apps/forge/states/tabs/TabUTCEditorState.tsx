@@ -7,6 +7,11 @@ import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabUTCEditor } from "@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor";
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
+import {
+  attachUtxModelPreview,
+  bindUtxPreviewOnGameData,
+  utxShouldShow3DPreview,
+} from "@/apps/forge/helpers/utxPreview3D";
 
 export class TabUTCEditorState extends TabState {
   tabName: string = `UTC`;
@@ -23,6 +28,7 @@ export class TabUTCEditorState extends TabState {
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    bindUtxPreviewOnGameData(this);
 
     this.setContentView(<TabUTCEditor tab={this}></TabUTCEditor>);
     this.openFile();
@@ -47,11 +53,9 @@ export class TabUTCEditorState extends TabState {
         if(this.file != file) this.file = file;
         this.tabName = this.file.getFilename();
   
-        file.readFile().then( (response) => {
+        file.readFile().then( async (response) => {
           this.creature = new ForgeCreature(response.buffer, file.resref);
-          this.creature.setContext(this.ui3DRenderer);
-          this.creature.load();
-          this.ui3DRenderer.attachObject(this.creature.container, false);
+          await this.attachPreview();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
@@ -63,6 +67,10 @@ export class TabUTCEditorState extends TabState {
   center: THREE.Vector3 = new THREE.Vector3();
   size: THREE.Vector3 = new THREE.Vector3();
   origin: THREE.Vector3 = new THREE.Vector3();
+
+  async attachPreview(): Promise<void> {
+    await attachUtxModelPreview(this.ui3DRenderer, this.creature);
+  }
 
   updateCameraFocus(){
     const model = this.creature.model;
@@ -87,6 +95,7 @@ export class TabUTCEditorState extends TabState {
 
   show(): void {
     super.show();
+    if (!utxShouldShow3DPreview()) return;
     this.ui3DRenderer.enabled = true;
     this.ui3DRenderer.render();
   }

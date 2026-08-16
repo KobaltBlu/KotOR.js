@@ -51,11 +51,15 @@ export class ForgeGameObject extends EventListenerModel {
 
   async loadBlueprint(){
     if(!this.templateResRef || this.templateResType === KotOR.ResourceTypes.NA) return;
-    const buffer = await KotOR.ResourceLoader.loadResource(this.templateResType, this.templateResRef);
-    if(buffer){
-      const gff = new KotOR.GFFObject(buffer);
-      this.blueprint = gff;
-      this.loadFromBlueprint();
+    try{
+      const buffer = await KotOR.ResourceLoader.loadResource(this.templateResType, this.templateResRef);
+      if(buffer){
+        const gff = new KotOR.GFFObject(buffer);
+        this.blueprint = gff;
+        this.loadFromBlueprint();
+      }
+    }catch(e){
+      console.warn(`loadBlueprint failed for ${this.templateResRef}.${KotOR.ResourceTypes.getKeyByValue?.(this.templateResType) || this.templateResType}`, e);
     }
   }
 
