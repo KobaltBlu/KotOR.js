@@ -11,6 +11,7 @@ import { Launcher } from "@/apps/launcher/context/Launcher";
 import { applyProfileSeo } from "@/apps/common/seo/applyProfileSeo";
 import { buildProfileSeo } from "@/apps/common/seo/profileSeo";
 import { applyForgeTheme } from "@/apps/forge/settings/forgeTheme";
+import { restoreGameDirectoryHandlesToProfiles } from "@/utility/gameDirectoryAccess";
 
 TXILanguageService.initTXILanguage();
 
@@ -42,6 +43,7 @@ const loadReactApplication = () => {
 ( async () => {
   await KotOR.ConfigClient.Init();
   await Launcher.InitProfiles();
+  await restoreGameDirectoryHandlesToProfiles();
   const getProfile = () => {
     const rawKey = query.get("key");
     const key =

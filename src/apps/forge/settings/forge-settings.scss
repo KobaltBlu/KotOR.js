@@ -153,6 +153,12 @@
   }
 }
 
+.forge-setting-row__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .forge-settings-filetype-group {
   margin-bottom: 18px;
 }

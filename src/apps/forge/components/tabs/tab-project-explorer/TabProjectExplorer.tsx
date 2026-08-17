@@ -15,6 +15,12 @@ import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
 import { ContextMenuItem, useContextMenu } from "@/apps/forge/components/common/ContextMenu";
 import { ForgeButton } from "@/apps/forge/components/ui";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { RecentProject } from "@/apps/forge/RecentProject";
+import {
+  ListedVirtualProjectFolder,
+  isOriginPrivateFileSystemAvailable,
+  loadVirtualProjectFoldersForRestore,
+} from "@/apps/forge/virtual/VirtualProjectFolder";
 import {
   copyTextToClipboard,
   explorerCopyPath,
@@ -27,6 +33,7 @@ import {
   sanitizeProjectEntryName,
 } from "@/apps/forge/helpers/projectExplorerActions";
 import { retargetOpenProjectEditors } from "@/apps/forge/helpers/retargetProjectTabs";
+import "@/apps/forge/components/tabs/tab-project-explorer/TabProjectExplorer.scss";
 
 const GFF_LIKE_EXTENSIONS = new Set([
   "are",
@@ -150,11 +157,18 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
   const [bulkRunning, setBulkRunning] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ "": true });
+  const [virtualProjects, setVirtualProjects] = useState<ListedVirtualProjectFolder[]>([]);
+  const [restoringName, setRestoringName] = useState<string | null>(null);
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
 
   const refreshExplorer = useCallback(async () => {
     await TabProjectExplorerState.RefreshQuiet(props.tab as TabProjectExplorerState);
   }, [props.tab]);
+
+  const refreshVirtualProjects = useCallback(async () => {
+    const listed = await loadVirtualProjectFoldersForRestore(ForgeState.recentProjects);
+    setVirtualProjects(listed);
+  }, []);
 
   const createFileAt = useCallback(async (dirRel: string) => {
     const name = promptEntryName("New File", "untitled.txt");
@@ -366,9 +380,17 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
     if (tab) {
       tab.onReload = () => {
         setResourceList([...TabProjectExplorerState.Resources]);
+        if (!ForgeState.project) {
+          void refreshVirtualProjects();
+        }
       };
       setResourceList([...TabProjectExplorerState.Resources]);
     }
+    ForgeState.addEventListener("onRecentProjectsUpdated", refreshVirtualProjects);
+    void refreshVirtualProjects();
+    return () => {
+      ForgeState.removeEventListener("onRecentProjectsUpdated", refreshVirtualProjects);
+    };
   });
 
   const handleOpenProject = () => {
@@ -379,6 +401,26 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
     const newProjectModalState = new ModalNewProjectState();
     ForgeState.modalManager.addModal(newProjectModalState);
     newProjectModalState.open();
+  };
+
+  const restoreVirtualProject = async (entry: ListedVirtualProjectFolder) => {
+    if (restoringName || ForgeState.project) {
+      return;
+    }
+    setRestoringName(entry.name);
+    try {
+      const opened = await Project.OpenRecent(new RecentProject({
+        name: entry.name,
+        handle: entry.handle,
+        virtual: true,
+      }));
+      if (!opened) {
+        window.alert(`Could not restore "${entry.name}".`);
+        await refreshVirtualProjects();
+      }
+    } finally {
+      setRestoringName(null);
+    }
   };
 
   const runBulkCompileAllNss = async () => {
@@ -408,29 +450,13 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
 
   const hasProject = !!ForgeState.project;
   if (!hasProject) {
+    const canListVirtual = isOriginPrivateFileSystemAvailable() || virtualProjects.length > 0;
     return (
-      <div
-        className="scroll-container"
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexDirection: "column",
-          gap: "16px",
-        }}
-      >
-        <div
-          style={{
-            color: "var(--forge-text-muted)",
-            fontSize: "14px",
-            textAlign: "center",
-          }}
-        >
+      <div className="project-explorer-welcome">
+        <div className="project-explorer-welcome__message">
           No project is currently open.
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div className="project-explorer-welcome__actions">
           <ForgeButton variant="primary" onClick={handleNewProject}>
             New Project
           </ForgeButton>
@@ -438,6 +464,36 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
             Open Project
           </ForgeButton>
         </div>
+        {canListVirtual ? (
+          <div className="project-explorer-welcome__virtual">
+            <h2 className="project-explorer-welcome__virtual-title">Virtual Projects</h2>
+            {virtualProjects.length > 0 ? (
+              <ul className="project-explorer-welcome__virtual-list">
+                {virtualProjects.map((entry) => (
+                  <li key={entry.name}>
+                    <button
+                      type="button"
+                      className="project-explorer-welcome__virtual-item"
+                      disabled={!!restoringName}
+                      title={`Restore ${entry.name}`}
+                      onClick={() => { void restoreVirtualProject(entry); }}
+                    >
+                      <i className="fa-solid fa-folder" aria-hidden="true" />
+                      <span className="project-explorer-welcome__virtual-name">{entry.name}</span>
+                      <span className="project-explorer-welcome__virtual-action">
+                        {restoringName === entry.name ? "Restoring..." : "Restore"}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="project-explorer-welcome__virtual-hint">
+                Virtual folders created in this browser are kept here so you can restore them later.
+              </p>
+            )}
+          </div>
+        ) : null}
       </div>
     );
   }

@@ -1,620 +1,412 @@
-import React, { ChangeEvent, useEffect, useState, useCallback, memo, useMemo } from "react"
-import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps"
+import React, { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
+import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-
 import { TabGFFEditorState, TabGFFEditorStateEventListenerTypes } from "@/apps/forge/states/tabs";
-
 import * as KotOR from "@/apps/forge/KotOR";
-import { ForgeInputGroup, ForgeInput } from "@/apps/forge/components/ui";
+import { ForgeButton, ForgeInput } from "@/apps/forge/components/ui";
 import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
 import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
-import { createGFFContextMenuItems } from "@/apps/forge/components/tabs/tab-gff-editor/GFFContextMenu";
-
+import {
+  createGFFFieldContextMenuItems,
+  createGFFStructContextMenuItems,
+} from "@/apps/forge/components/tabs/tab-gff-editor/GFFContextMenu";
+import { GFFProperties } from "@/apps/forge/components/tabs/tab-gff-editor/GFFProperties";
+import { clampGffLabel, fieldPreview, gffTypeName, structListTitle } from "@/apps/forge/helpers/gffFieldValue";
+import {
+  countGffFields,
+  GFF_ROOT_PATH,
+  gffChildStructPath,
+  gffFieldPath,
+} from "@/apps/forge/helpers/gffTreePath";
+import { getGffMemoryClipboard } from "@/apps/forge/helpers/gffJsonCodec";
 import "@/apps/forge/components/tabs/tab-gff-editor/TabGFFEditor.scss";
 
 export const TabGFFEditor = function(props: BaseTabProps){
-
   const tab: TabGFFEditorState = props.tab as TabGFFEditorState;
-  const [gff, setGFF] = useState<KotOR.GFFObject>();
-  const [selectedNode, setSelectedNode] = useState<KotOR.GFFField|KotOR.GFFStruct>();
-  const [render, rerender] = useState<boolean>(true);
+  const [generation, setGeneration] = useState(tab.generation);
+  const initialWidth = Number.isFinite(tab.treeWidthPercent) ? tab.treeWidthPercent : 50;
+  const [treeWidth, setTreeWidth] = useState(Math.min(80, Math.max(20, initialWidth)));
+  const searchRef = useRef<HTMLInputElement>(null);
+  const splitRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
 
-  const onEditorFileLoad = function(tab: TabGFFEditorState){
-    setGFF(tab.gff);
-  };
+  const refresh = () => setGeneration(tab.generation);
 
-  const onNodeSelected = function(node: KotOR.GFFField|KotOR.GFFStruct){
-    setSelectedNode(node);
-    rerender(!render);
-  };
-
-  useEffectOnce( () => { //constructor
-    tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onEditorFileLoad', onEditorFileLoad);
-    tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onNodeSelected', onNodeSelected);
-
-    return () => { //destructor
-      tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onEditorFileLoad', onEditorFileLoad);
-      tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onNodeSelected', onNodeSelected);
+  useEffectOnce(() => {
+    const onTreeChanged = () => refresh();
+    const onFileLoad = () => refresh();
+    const onNodeSelected = () => refresh();
+    const onFocusSearch = () => {
+      searchRef.current?.focus();
+      searchRef.current?.select();
     };
-  })
+    const onKeyDown = (e: KeyboardEvent) => tab.handleEditorKeyDown(e);
+    tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onTreeChanged', onTreeChanged);
+    tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onEditorFileLoad', onFileLoad);
+    tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onNodeSelected', onNodeSelected);
+    tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onFocusSearch', onFocusSearch);
+    tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onKeyDown', onKeyDown);
+    if (tab.gff && tab.generation === 0) {
+      tab.notifyTree();
+    }
+    return () => {
+      tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onTreeChanged', onTreeChanged);
+      tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onEditorFileLoad', onFileLoad);
+      tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onNodeSelected', onNodeSelected);
+      tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onFocusSearch', onFocusSearch);
+      tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onKeyDown', onKeyDown);
+    };
+  });
+
+  useEffect(() => {
+    const path = tab.selectedPath;
+    if (!path && path !== GFF_ROOT_PATH) {
+      return;
+    }
+    const root = splitRef.current;
+    if (!root) {
+      return;
+    }
+    const escaped = (typeof CSS !== "undefined" && CSS.escape) ? CSS.escape(path) : path.replace(/"/g, '\\"');
+    const el = root.querySelector(`[data-gff-path="${escaped}"] .tree-node-content`) as HTMLElement | null;
+    el?.scrollIntoView({ block: "nearest" });
+  }, [tab.selectedPath, generation]);
+
+  const onSplitDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    dragging.current = true;
+    const onMove = (ev: MouseEvent) => {
+      if (!dragging.current || !splitRef.current) {
+        return;
+      }
+      const rect = splitRef.current.getBoundingClientRect();
+      const percent = ((ev.clientX - rect.left) / rect.width) * 100;
+      const next = Math.min(80, Math.max(20, percent));
+      tab.treeWidthPercent = next;
+      setTreeWidth(next);
+    };
+    const onUp = () => {
+      dragging.current = false;
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
+  const matchLabel = tab.searchMatches.length
+    ? `${tab.searchMatchIndex + 1}/${tab.searchMatches.length}`
+    : tab.searchQuery.trim() ? "0/0" : "";
 
   return (
-<>
-  <div id="gffContainer" style={{position: 'relative', overflow: 'auto', height: '100%', width:'50%', float: 'left'}}>
-    <ForgeTreeView>
-      {
-        (
-          gff ? <GFFStructElement struct={ gff.RootNode } key={ gff.RootNode.uuid } open={true} tab={tab} depth={0} /> : <></>
-        )
-      }
-    </ForgeTreeView>
-  </div>
-  <div id="gffProperties" className="gff-properties" style={{position: 'relative', overflow: 'auto', height: '100%', width:'50%', padding:'10px', float: 'left'}}>
-    {(
-      selectedNode ? (
-        selectedNode instanceof KotOR.GFFField ? 
-          <GFFFieldProperties node={selectedNode} tab={tab} /> :
-        selectedNode instanceof KotOR.GFFStruct ? 
-          <GFFStructProperties node={selectedNode} /> : 
-        <></>
-      ) : 
-      <></>
-    )}
-  </div>
-</>);
-
+    <div className="tab-gff-editor" ref={splitRef}>
+      <div className="gff-toolbar">
+        <ForgeInput
+          ref={searchRef}
+          className="gff-toolbar__search"
+          placeholder="Filter fields by name, type, or value…"
+          value={tab.searchQuery}
+          onChange={(e: ChangeEvent<HTMLInputElement>) => tab.setSearchQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              if (e.shiftKey) {
+                tab.prevSearchMatch();
+              } else {
+                tab.nextSearchMatch();
+              }
+            }
+          }}
+        />
+        <span className="gff-toolbar__matches">{matchLabel}</span>
+        <ForgeButton size="sm" onClick={() => tab.prevSearchMatch()} disabled={!tab.searchMatches.length}>Prev</ForgeButton>
+        <ForgeButton size="sm" onClick={() => tab.nextSearchMatch()} disabled={!tab.searchMatches.length}>Next</ForgeButton>
+        <ForgeButton size="sm" onClick={() => tab.expandAll()}>Expand all</ForgeButton>
+        <ForgeButton size="sm" onClick={() => tab.collapseAll()}>Collapse all</ForgeButton>
+        <span className="gff-toolbar__spacer" />
+        <ForgeButton size="sm" onClick={() => { void tab.exportJson(); }}>Export JSON</ForgeButton>
+        <ForgeButton size="sm" onClick={() => { void tab.importJson(); }}>Import JSON</ForgeButton>
+      </div>
+      <div className="gff-body">
+        <div className="gff-tree-pane" id="gffContainer" style={{ width: `${treeWidth}%` }}>
+          <ForgeTreeView>
+            {tab.gff ? (
+              <GFFStructElement
+                struct={tab.gff.RootNode}
+                path={GFF_ROOT_PATH}
+                tab={tab}
+                depth={0}
+                generation={generation}
+              />
+            ) : null}
+          </ForgeTreeView>
+        </div>
+        <div className="gff-splitter" onMouseDown={onSplitDown} title="Resize" />
+        <div className="gff-properties gff-properties-pane" id="gffProperties">
+          <GFFProperties tab={tab} generation={generation} />
+        </div>
+      </div>
+      <div className="gff-statusbar">
+        <span>{(tab.gff?.FileType || "GFF ").trim() || "GFF"}</span>
+        <span>{countGffFields(tab.gff?.RootNode)} fields</span>
+        <span>{tab.selectedPath || "Root"}</span>
+      </div>
+    </div>
+  );
 };
 
-const GFFStructElement = memo(function GFFStructElement(props: any){
-  const tab: TabGFFEditorState = props.tab as TabGFFEditorState;
-  const [openState, setOpenState] = useState<boolean>(!!props.open);
-  const struct: KotOR.GFFStruct = props.struct;
-  const [render, rerender] = useState<boolean>(true);
-  const depth: number = props.depth || 0;
+interface GFFStructElementProps {
+  struct: KotOR.GFFStruct;
+  path: string;
+  tab: TabGFFEditorState;
+  depth: number;
+  generation: number;
+}
+
+const GFFStructElement = function GFFStructElement(props: GFFStructElementProps){
+  const { struct, path, tab, depth } = props;
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
+  const selected = tab.selectedPath === path;
+  const filtering = tab.isSearchFiltering();
+  const expanded = tab.isExpanded(path) || filtering;
+  const matched = tab.isSearchMatch(path);
+  const isRoot = path === GFF_ROOT_PATH;
 
   const handleToggle = useCallback(() => {
-    setOpenState(prev => !prev);
-  }, []);
+    tab.toggleExpanded(path);
+  }, [tab, path]);
 
   const handleClick = useCallback(() => {
-    tab.setSelectedField(struct);
-  }, [tab, struct]);
-
-  const handleDoubleClick = useCallback(() => {
-    // Add double-click logic if needed
-  }, []);
+    tab.setSelectedPath(path);
+  }, [tab, path]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    const contextMenuItems = createGFFContextMenuItems({
-      struct,
-      onFieldAdded: () => rerender(!render),
-      onBeforeMutate: () => {
-        tab.captureUndoSnapshot();
-        tab.markUnsaved();
-      },
-      onStructCut: () => console.log('Cut STRUCT'),
-      onStructCopy: () => console.log('Copy STRUCT'),
-      onFieldPaste: () => console.log('Paste FIELD'),
-      onStructDelete: () => console.log('Delete Struct'),
-      onNew: () => console.log('New'),
-      onOpen: () => console.log('Open'),
-      onClose: () => console.log('Close')
-    });
+    const clipboard = getGffMemoryClipboard();
+    showContextMenu(e.clientX, e.clientY, createGFFStructContextMenuItems({
+      isRoot,
+      canPaste: clipboard?.kind === "field",
+      onAddField: (type) => tab.addField(type, path),
+      onCut: () => tab.cutPath(path),
+      onCopy: () => { tab.copyPath(path); },
+      onPaste: () => { void tab.pasteInto(path); },
+      onDuplicate: () => tab.duplicatePath(path),
+      onDelete: () => { tab.deletePath(path); },
+    }));
+  }, [struct, path, tab, isRoot, showContextMenu]);
 
-    showContextMenu(e.clientX, e.clientY, contextMenuItems);
-  }, [struct, render, showContextMenu, tab]);
+  if (!struct || !tab.isSearchVisible(path)) {
+    return <></>;
+  }
 
-  const handleSelect = useCallback((nodeId: string) => {
-    tab.setSelectedField(struct);
-  }, [tab, struct]);
-
-  const onAddField = useCallback(() => {
-    tab.captureUndoSnapshot();
-    struct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'New Field [Untitled]', 0));
-    tab.markUnsaved();
-    rerender(!render);
-  }, [struct, render, tab]);
-
-  // Memoize child nodes to prevent unnecessary re-renders
-  const childNodes = useMemo(() => {
-    if (!openState || !struct) return null;
-    
-    const fieldNodes = struct.getFields().map((field: KotOR.GFFField) => (
-      <GFFFieldElement 
-        field={field} 
-        key={field.uuid} 
-        tab={props.tab}
-        depth={depth + 1}
-      />
-    ));
-
-    const addFieldNode = (
-      <li className="gff-field add" onClick={onAddField} key="add-field">
-        <span className="field-icon">
-          <i className="fa-solid fa-plus"></i>
-        </span>
-        <span className="field-label">
-          <a>[Add Field]</a>
-        </span>
-      </li>
-    );
-
-    return [...fieldNodes, addFieldNode];
-  }, [openState, struct, props.tab, depth, onAddField]);
-
-  if(!struct) return <></>;
-
-  const hasChildren = struct.getFields().length > 0;
+  const fields = struct.getFields();
+  const childNodes = expanded ? (
+    <>
+      {fields.map((field: KotOR.GFFField) => {
+        const fieldPath = gffFieldPath(path, field.getLabel());
+        if (filtering && !tab.isSearchVisible(fieldPath)) {
+          return null;
+        }
+        return (
+          <GFFFieldElement
+            key={`${path}.${field.getLabel()}.${field.getType()}.${field.uuid}.${props.generation}`}
+            field={field}
+            path={fieldPath}
+            tab={tab}
+            depth={depth + 1}
+            generation={props.generation}
+          />
+        );
+      })}
+      {filtering ? null : (
+        <li className="gff-field add" onClick={() => tab.addField(KotOR.GFFDataType.BYTE, path)}>
+          <span className="field-icon"><i className="fa-solid fa-plus"></i></span>
+          <span className="field-label"><a>[Add Field]</a></span>
+        </li>
+      )}
+    </>
+  ) : null;
 
   return (
     <>
       <ListItemNode
-        id={struct.uuid}
-        name={`[Struct ID: ${struct.getType()}]`}
-        hasChildren={hasChildren}
-        isExpanded={openState}
-        isSelected={false}
+        id={path || "gff-root"}
+        name={isRoot ? `[Root] Struct ID ${struct.getType()}` : structListTitle(struct)}
+        className={matched ? "gff-match" : ""}
+        hasChildren={true}
+        isExpanded={expanded}
+        isSelected={selected}
         depth={depth}
         icon="fa-cube"
         iconType="folder"
         hasContextMenu={true}
         onToggle={handleToggle}
         onClick={handleClick}
-        onDoubleClick={handleDoubleClick}
         onContextMenu={handleContextMenu}
-        onSelect={handleSelect}
         dataAttributes={{
-          'data-struct-id': struct.getType(),
-          'data-uuid': struct.uuid
+          "data-struct-id": struct.getType(),
+          "data-uuid": struct.uuid,
+          "data-gff-path": path,
         }}
+        labelContent={
+          <span className="gff-node-label gff-node-label--struct">
+            {isRoot ? "[Root] " : ""}
+            <span className="gff-node-label__title">{isRoot ? `Struct ID ${struct.getType()}` : structListTitle(struct)}</span>
+          </span>
+        }
       >
         {childNodes}
       </ListItemNode>
       {ContextMenuComponent}
     </>
   );
-});
+};
 
-const GFFFieldElement = memo(function GFFFieldElement(props: any){
-  const tab: TabGFFEditorState = props.tab as TabGFFEditorState;
-  const [openState, setOpenState] = useState<boolean>(!!props.open);
-  const [render, rerender] = useState<boolean>(true);
-  const field: KotOR.GFFField = props.field;
-  const depth: number = props.depth || 0;
+interface GFFFieldElementProps {
+  field: KotOR.GFFField;
+  path: string;
+  tab: TabGFFEditorState;
+  depth: number;
+  generation: number;
+}
+
+const GFFFieldElement = function GFFFieldElement(props: GFFFieldElementProps){
+  const { field, path, tab, depth } = props;
+  const { showContextMenu, ContextMenuComponent } = useContextMenu();
+  const selected = tab.selectedPath === path;
+  const type = field.getType();
+  const typeName = gffTypeName(type);
+  const isList = type === KotOR.GFFDataType.LIST || type === KotOR.GFFDataType.STRUCT;
+  const hasChildren = isList;
+  const expanded = hasChildren && (tab.isExpanded(path) || tab.isSearchFiltering());
+  const matched = tab.isSearchMatch(path);
+  const renaming = tab.renamingPath === path;
+  const preview = fieldPreview(field);
 
   const handleToggle = useCallback(() => {
-    setOpenState(prev => !prev);
-  }, []);
+    tab.toggleExpanded(path);
+  }, [tab, path]);
 
   const handleClick = useCallback(() => {
-    tab.setSelectedField(field);
-  }, [tab, field]);
+    tab.setSelectedPath(path);
+  }, [tab, path]);
 
   const handleDoubleClick = useCallback(() => {
-    // Add double-click logic if needed
-  }, []);
+    tab.renamingPath = path;
+    tab.notifyTree();
+  }, [tab, path]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
-    // Add context menu logic if needed
-  }, []);
+    e.preventDefault();
+    e.stopPropagation();
+    const clipboard = getGffMemoryClipboard();
+    const canPaste = type === KotOR.GFFDataType.LIST ? clipboard?.kind === "struct" : clipboard?.kind === "field";
+    showContextMenu(e.clientX, e.clientY, createGFFFieldContextMenuItems({
+      isList: type === KotOR.GFFDataType.LIST,
+      canPaste: !!canPaste,
+      onAddStruct: () => tab.addListStruct(path),
+      onChangeType: (nextType) => tab.changeFieldType(path, nextType),
+      onRename: () => { tab.renamingPath = path; tab.notifyTree(); },
+      onCut: () => tab.cutPath(path),
+      onCopy: () => { tab.copyPath(path); },
+      onPaste: () => { void tab.pasteInto(path); },
+      onDuplicate: () => tab.duplicatePath(path),
+      onDelete: () => { tab.deletePath(path); },
+    }));
+  }, [field, path, tab, type, showContextMenu]);
 
-  const handleSelect = useCallback((nodeId: string) => {
-    tab.setSelectedField(field);
-  }, [tab, field]);
-
-  const onAddStruct = useCallback(() => {
-    if(field.getType() == KotOR.GFFDataType.LIST){
-      tab.captureUndoSnapshot();
-      const struct = new KotOR.GFFStruct(-1);
-      field.addChildStruct(struct);
-      tab.markUnsaved();
-      rerender(!render);
+  const commitRename = (value: string) => {
+    const next = clampGffLabel(value);
+    if (!next || next === field.getLabel()) {
+      tab.renamingPath = null;
+      tab.notifyTree();
+      return;
     }
-  }, [field, render, tab]);
+    tab.renameField(path, next);
+  };
 
-  if(!field) return <></>;
-
-  let is_list = false;
-  let field_value = '';
-  switch(field.getType()){
-    case KotOR.GFFDataType.BYTE:
-    case KotOR.GFFDataType.CHAR:
-    case KotOR.GFFDataType.WORD:
-    case KotOR.GFFDataType.SHORT:
-    case KotOR.GFFDataType.DWORD:
-    case KotOR.GFFDataType.INT:
-    case KotOR.GFFDataType.DWORD64:
-    case KotOR.GFFDataType.DOUBLE:
-    case KotOR.GFFDataType.FLOAT:
-    case KotOR.GFFDataType.RESREF:
-    case KotOR.GFFDataType.CEXOSTRING:
-      field_value = `Value: ${field.getValue()}`;
-    break;
-    case KotOR.GFFDataType.LIST:
-      field_value = `Structs: ${field.getChildStructs().length}`;
-      is_list = true;
-    break;
-    case KotOR.GFFDataType.STRUCT:
-      field_value = '';
-      is_list = true;
-    break;
-    default:
-      field_value = '';
-    break;
+  if (!tab.isSearchVisible(path)) {
+    return <></>;
   }
 
-  // Memoize child nodes to prevent unnecessary re-renders
-  const childNodes = useMemo(() => {
-    if (!openState || !field) return null;
-    
-    const structNodes = field.getChildStructs().map((struct: KotOR.GFFStruct) => (
-      <GFFStructElement 
-        struct={struct} 
-        key={struct.uuid} 
-        tab={props.tab}
-        depth={depth + 1}
-      />
-    ));
-
-    const addStructNode = field.getType() === KotOR.GFFDataType.LIST ? (
-      <li className="gff-struct add" onClick={onAddStruct} key="add-struct">
-        <span className="struct-icon">
-          <i className="fa-solid fa-plus"></i>
-        </span>
-        <span className="struct-label">
-          <a>[Add Struct]</a>
-        </span>
-      </li>
-    ) : null;
-
-    return addStructNode ? [...structNodes, addStructNode] : structNodes;
-  }, [openState, field, props.tab, depth, onAddStruct]);
-
-  const hasChildren = field.getChildStructs().length > 0 || field.getType() === KotOR.GFFDataType.LIST;
-  const fieldName = `${field.getLabel()} [${KotOR.GFFObject.TypeValueToString(field.getType())}] ${field_value}`;
+  const childStructs = field.getChildStructs();
+  const childNodes = expanded ? (
+    <>
+      {childStructs.map((struct: KotOR.GFFStruct, index: number) => (
+        <GFFStructElement
+          key={`${gffChildStructPath(path, index)}.${struct.uuid}.${props.generation}`}
+          struct={struct}
+          path={gffChildStructPath(path, index)}
+          tab={tab}
+          depth={depth + 1}
+          generation={props.generation}
+        />
+      ))}
+      {type === KotOR.GFFDataType.LIST && !tab.isSearchFiltering() ? (
+        <li className="gff-struct add" onClick={() => tab.addListStruct(path)}>
+          <span className="struct-icon"><i className="fa-solid fa-plus"></i></span>
+          <span className="struct-label"><a>[Add Struct]</a></span>
+        </li>
+      ) : null}
+    </>
+  ) : null;
 
   return (
-    <ListItemNode
-      id={field.uuid}
-      name={fieldName}
-      hasChildren={hasChildren}
-      isExpanded={openState}
-      isSelected={false}
-      depth={depth}
-      icon={is_list ? "fa-list" : "fa-file"}
-      iconType={is_list ? "folder" : "file"}
-      onToggle={handleToggle}
-      onClick={handleClick}
-      onDoubleClick={handleDoubleClick}
-      onContextMenu={handleContextMenu}
-      onSelect={handleSelect}
-      dataAttributes={{
-        'data-field-type': field.getType(),
-        'data-field-label': field.getLabel(),
-        'data-uuid': field.uuid
-      }}
-    >
-      {childNodes}
-    </ListItemNode>
+    <>
+      <ListItemNode
+        id={path}
+        name={`${field.getLabel()} [${typeName}] ${preview}`}
+        className={`gff-field-node ${matched ? "gff-match" : ""}`}
+        hasChildren={hasChildren}
+        isExpanded={expanded}
+        isSelected={selected}
+        depth={depth}
+        icon={isList ? "fa-list" : "fa-file"}
+        iconType={isList ? "folder" : "file"}
+        hasContextMenu={true}
+        onToggle={handleToggle}
+        onClick={handleClick}
+        onDoubleClick={handleDoubleClick}
+        onContextMenu={handleContextMenu}
+        dataAttributes={{
+          "data-field-type": type,
+          "data-field-label": field.getLabel(),
+          "data-uuid": field.uuid,
+          "data-gff-path": path,
+        }}
+        labelContent={
+          renaming ? (
+            <input
+              className="gff-inline-rename"
+              autoFocus
+              defaultValue={field.getLabel()}
+              maxLength={16}
+              onClick={(e) => e.stopPropagation()}
+              onBlur={(e) => commitRename(e.target.value)}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter") {
+                  commitRename((e.target as HTMLInputElement).value);
+                } else if (e.key === "Escape") {
+                  tab.renamingPath = null;
+                  tab.notifyTree();
+                }
+              }}
+            />
+          ) : (
+            <span className="gff-node-label">
+              <span className="gff-node-label__name">{field.getLabel()}</span>
+              <span className={`gff-node-label__type field-type ${typeName}`}>{typeName}</span>
+              {preview ? <span className="gff-node-label__value">{preview}</span> : null}
+            </span>
+          )
+        }
+      >
+        {childNodes}
+      </ListItemNode>
+      {ContextMenuComponent}
+    </>
   );
-});
-
-const GFFStructProperties = function(props: any){
-  const node: KotOR.GFFStruct = props.node;
-
-  return <></>;
-}
-
-const GFFFieldProperties = function(props: any){
-  const node: KotOR.GFFField = props.node;
-  const tab: TabGFFEditorState = props.tab;
-
-  const [value, setValue] = useState<any>( '' );
-  const [valueX, setValueX] = useState<any>( 0 );
-  const [valueY, setValueY] = useState<any>( 0 );
-  const [valueZ, setValueZ] = useState<any>( 0 );
-  const [valueW, setValueW] = useState<any>( 0 );
-
-  const [valueStrRef, setValueStrRef] = useState<any>( -1 );
-
-  useEffect( () => {
-    if(node instanceof KotOR.GFFField){
-      setValue(node.getValue());
-      if(node.getType() == KotOR.GFFDataType.VECTOR){
-        setValueX(node.getVector().x);
-        setValueY(node.getVector().y);
-        setValueZ(node.getVector().z);
-      }
-      
-      if(node.getType() == KotOR.GFFDataType.ORIENTATION){
-        setValueX(node.getOrientation().x);
-        setValueY(node.getOrientation().y);
-        setValueZ(node.getOrientation().z);
-        setValueW(node.getOrientation().w);
-      }
-
-      if(node.getType() == KotOR.GFFDataType.CEXOLOCSTRING){
-        setValueStrRef(node.getCExoLocString().getRESREF());
-      }
-    }
-  });
-
-  const onSimpleValueChange = function(e: ChangeEvent<HTMLInputElement>){
-    let value: any = e.target.value;
-    if(node.getType() == KotOR.GFFDataType.RESREF){
-      value = value.substring(0, 16);
-    }
-
-    if(node.getType() == KotOR.GFFDataType.CEXOSTRING){
-      value = new String(value);
-    }
-
-    if(node.getType() == KotOR.GFFDataType.FLOAT){
-      value = parseFloat(value);
-    }
-
-    if(node.getType() == KotOR.GFFDataType.DOUBLE){
-      value = parseFloat(value);
-    }
-
-    if(node.getType() == KotOR.GFFDataType.BYTE){
-      value = parseInt(value) & 0xFF;
-    }
-
-    if(node.getType() == KotOR.GFFDataType.CHAR){
-      value = parseInt(value) << 24 >> 24;
-    }
-
-    if(node.getType() == KotOR.GFFDataType.WORD){
-      value = parseInt(value) & 0xFFFF;
-    }
-
-    if(node.getType() == KotOR.GFFDataType.SHORT){
-      value = parseInt(value) << 16 >> 16;
-    }
-
-    if(node.getType() == KotOR.GFFDataType.DWORD){
-      value = parseInt(value) & 0xFFFFFFFF;
-    }
-
-    if(node.getType() == KotOR.GFFDataType.INT){
-      value = parseInt(value) << 0 >> 0;
-    }
-
-    if(node.getType() == KotOR.GFFDataType.DWORD64){
-      value = value;
-    }
-
-    if(node.getType() == KotOR.GFFDataType.INT64){
-      value = value;
-    }
-
-    tab?.captureCoalescedUndo(node.uuid);
-    node.setValue(value);
-    tab?.markUnsaved();
-    setValue(node.getValue());
-  }
-
-  const onVectorValueChange = function(e: ChangeEvent<HTMLInputElement>, mode: 'x'|'y'|'z'){
-    tab?.captureCoalescedUndo(`${node.uuid}:vec`);
-    node.getVector()[mode] = parseFloat(e.target.value);
-    tab?.markUnsaved();
-    switch(mode){
-      case 'x':
-        setValueX(parseFloat(e.target.value));
-      break;
-      case 'y':
-        setValueY(parseFloat(e.target.value));
-      break;
-      case 'z':
-        setValueZ(parseFloat(e.target.value));
-      break;
-    }
-  }
-
-  const onOrientationValueChange = function(e: ChangeEvent<HTMLInputElement>, mode: 'x'|'y'|'z'|'w'){
-    tab?.captureCoalescedUndo(`${node.uuid}:ori`);
-    node.getOrientation()[mode] = parseFloat(e.target.value);
-    tab?.markUnsaved();
-    switch(mode){
-      case 'x':
-        setValueX(parseFloat(e.target.value));
-      break;
-      case 'y':
-        setValueY(parseFloat(e.target.value));
-      break;
-      case 'z':
-        setValueZ(parseFloat(e.target.value));
-      break;
-      case 'w':
-        setValueW(parseFloat(e.target.value));
-      break;
-    }
-  }
-
-  if(node instanceof KotOR.GFFField){
-    switch(node.getType()){
-      case KotOR.GFFDataType.BYTE:
-      case KotOR.GFFDataType.CHAR:
-      case KotOR.GFFDataType.WORD:
-      case KotOR.GFFDataType.SHORT:
-      case KotOR.GFFDataType.DWORD:
-      case KotOR.GFFDataType.INT:
-      case KotOR.GFFDataType.DWORD64:
-      case KotOR.GFFDataType.INT64:
-      case KotOR.GFFDataType.DOUBLE:
-      case KotOR.GFFDataType.FLOAT:
-      case KotOR.GFFDataType.RESREF:
-      case KotOR.GFFDataType.CEXOSTRING:
-        return (
-          <fieldset>
-            <legend>[{KotOR.GFFDataType[node.getType()]}] - {node.getLabel()}</legend>
-            <ForgeInputGroup>
-              <ForgeInputGroup.Text>Value</ForgeInputGroup.Text>
-              <ForgeInput
-                placeholder=""
-                aria-label=""
-                aria-describedby="basic-addon1"
-                type="text"
-                value={value}
-                onChange={ (e: ChangeEvent<HTMLInputElement>) => onSimpleValueChange(e) }
-              />
-            </ForgeInputGroup>
-          </fieldset>
-        );
-      break;
-      case KotOR.GFFDataType.LIST:
-        return (
-          <fieldset>
-            <legend>[{KotOR.GFFDataType[node.getType()]}]</legend>
-          </fieldset>
-        );
-      break;
-      case KotOR.GFFDataType.STRUCT:
-        return (
-          <fieldset>
-            <legend>[{KotOR.GFFDataType[node.getType()]}]</legend>
-          </fieldset>
-        );
-      break;
-      case KotOR.GFFDataType.VECTOR:
-        return (
-          <fieldset>
-            <legend>[{KotOR.GFFDataType[node.getType()]}]</legend>
-            <ForgeInputGroup>
-              <ForgeInputGroup.Text>X</ForgeInputGroup.Text>
-              <ForgeInput
-                placeholder=""
-                aria-label=""
-                aria-describedby="basic-addon1"
-                type="number"
-                value={valueX}
-                onChange={ (e: ChangeEvent<HTMLInputElement>) => onVectorValueChange(e, 'x') }
-              />
-            </ForgeInputGroup>
-            <ForgeInputGroup>
-              <ForgeInputGroup.Text>Y</ForgeInputGroup.Text>
-              <ForgeInput
-                placeholder=""
-                aria-label=""
-                aria-describedby="basic-addon1"
-                type="number"
-                value={valueY}
-                onChange={ (e: ChangeEvent<HTMLInputElement>) => onVectorValueChange(e, 'y') }
-              />
-            </ForgeInputGroup>
-            <ForgeInputGroup>
-              <ForgeInputGroup.Text>Z</ForgeInputGroup.Text>
-              <ForgeInput
-                placeholder=""
-                aria-label=""
-                aria-describedby="basic-addon1"
-                type="number"
-                value={valueZ}
-                onChange={ (e: ChangeEvent<HTMLInputElement>) => onVectorValueChange(e, 'z') }
-              />
-            </ForgeInputGroup>
-          </fieldset>
-        );
-      break;
-      case KotOR.GFFDataType.ORIENTATION:
-        return (
-          <fieldset>
-            <legend>[{KotOR.GFFDataType[node.getType()]}]</legend>
-            <ForgeInputGroup>
-              <ForgeInputGroup.Text>X</ForgeInputGroup.Text>
-              <ForgeInput
-                placeholder=""
-                aria-label=""
-                aria-describedby="basic-addon1"
-                type="number"
-                value={valueX}
-                onChange={ (e: ChangeEvent<HTMLInputElement>) => onOrientationValueChange(e, 'x') }
-              />
-            </ForgeInputGroup>
-            <ForgeInputGroup>
-              <ForgeInputGroup.Text>Y</ForgeInputGroup.Text>
-              <ForgeInput
-                placeholder=""
-                aria-label=""
-                aria-describedby="basic-addon1"
-                type="number"
-                value={valueY}
-                onChange={ (e: ChangeEvent<HTMLInputElement>) => onOrientationValueChange(e, 'y') }
-              />
-            </ForgeInputGroup>
-            <ForgeInputGroup>
-              <ForgeInputGroup.Text>Z</ForgeInputGroup.Text>
-              <ForgeInput
-                placeholder=""
-                aria-label=""
-                aria-describedby="basic-addon1"
-                type="number"
-                value={valueZ}
-                onChange={ (e: ChangeEvent<HTMLInputElement>) => onOrientationValueChange(e, 'z') }
-              />
-            </ForgeInputGroup>
-            <ForgeInputGroup>
-              <ForgeInputGroup.Text>W</ForgeInputGroup.Text>
-              <ForgeInput
-                placeholder=""
-                aria-label=""
-                aria-describedby="basic-addon1"
-                type="number"
-                value={valueW}
-                onChange={ (e: ChangeEvent<HTMLInputElement>) => onOrientationValueChange(e, 'w') }
-              />
-            </ForgeInputGroup>
-          </fieldset>
-        );
-      break;
-      case KotOR.GFFDataType.CEXOLOCSTRING:
-        return (
-          <>
-          <fieldset>
-            <legend>CExoLocString</legend>
-            <ForgeInputGroup>
-              <ForgeInputGroup.Text>StringRef</ForgeInputGroup.Text>
-              <ForgeInput
-                placeholder=""
-                aria-label=""
-                aria-describedby="basic-addon1"
-                type="number"
-                value={valueStrRef}
-                onChange={ (e: ChangeEvent<HTMLInputElement>) => console.log(e) }
-              />
-            </ForgeInputGroup>
-            <ForgeInputGroup>
-              <ForgeInputGroup.Text>Text</ForgeInputGroup.Text>
-              <ForgeInput
-                disabled={true}
-                placeholder=""
-                aria-label=""
-                aria-describedby="basic-addon1"
-                type="text"
-                value={node.getCExoLocString().getValue()}
-                as="textarea" rows={5}
-              />
-            </ForgeInputGroup>
-          </fieldset>
-          <fieldset>
-            <legend>Sub String</legend>
-          </fieldset>
-          </>
-        );
-      break;
-      default:
-        return (
-          <><b>Invalid Field Type: {node.getType()}</b></>
-        );
-      break;
-    }
-  }
-
-  return <></>
-}
+};

@@ -7,6 +7,7 @@ import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
 import { gffFromSnapshot, snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
+import { pthCanLoadRoomModels } from "@/apps/forge/helpers/pthMap2D";
 import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
 import {
   DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY,
@@ -36,6 +37,8 @@ export class TabPTHEditorState extends TabState {
   layoutModels: KotOR.OdysseyModel3D[] = [];
   walkmeshes: KotOR.OdysseyWalkMesh[] = [];
   modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY };
+  roomsLoaded: boolean = false;
+  fitPathMap?: () => void;
 
   controlMode: TabPTHEditorControlMode = TabPTHEditorControlMode.SELECT;
   selectedPointIndex: number = -1;
@@ -116,8 +119,8 @@ export class TabPTHEditorState extends TabState {
   
       if(file instanceof EditorFile){
         if(this.file != file) {
-          // Dispose of previous layout when switching files
           this.disposeLayout();
+          this.roomsLoaded = false;
           this.file = file;
         }
         this.file.isBlueprint = true;
@@ -126,12 +129,10 @@ export class TabPTHEditorState extends TabState {
         file.readFile().then( async (response) => {
           this.blueprint = new KotOR.GFFObject(response.buffer);
           this.setPropsFromBlueprint();
-          
-          // Try to load the corresponding LYT file
-          await this.loadLayoutFile();
-
+          this.roomsLoaded = false;
           this.clearUndoHistory();
           this.processEventListener('onEditorFileLoad', [this]);
+          this.notifyPathChanged();
           resolve(this.blueprint);
         });
       }
@@ -165,6 +166,10 @@ export class TabPTHEditorState extends TabState {
     }
     
     this.processEventListener('onControlModeChange', [mode]); 
+  }
+
+  notifyPathChanged(): void {
+    this.processEventListener('onPathChanged', [this]);
   }
 
   private bindTransformControlsHistory(): void {
@@ -213,6 +218,7 @@ export class TabPTHEditorState extends TabState {
 
     // Update visualization after parsing
     this.updatePathVisualization();
+    this.notifyPathChanged();
   }
 
   private updateCameraFocus(): void {
@@ -244,12 +250,28 @@ export class TabPTHEditorState extends TabState {
     }
   }
   
-  private handlePointPlacement(intersect: THREE.Intersection | undefined): void {
-    // Find walkable face intersection at current mouse position
+  private handlePointPlacement(_intersect: THREE.Intersection | undefined): void {
     const walkableIntersect = this.findWalkableFaceIntersection();
     if(walkableIntersect && walkableIntersect.point){
       this.addPathPoint(walkableIntersect.point);
+      return;
     }
+    const planeHit = this.findGroundPlaneIntersection();
+    if(planeHit){
+      this.addPathPoint(planeHit);
+    }
+  }
+
+  private findGroundPlaneIntersection(): THREE.Vector3 | null {
+    if(!this.ui3DRenderer.canvas) return null;
+    this.ui3DRenderer.raycaster.setFromCamera(KotOR.Mouse.Vector, this.ui3DRenderer.camera);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const hit = new THREE.Vector3();
+    if(this.ui3DRenderer.raycaster.ray.intersectPlane(plane, hit)){
+    hit.z = 0;
+      return hit;
+    }
+    return null;
   }
   
   private handleConnection(intersect: THREE.Intersection | undefined): void {
@@ -341,8 +363,15 @@ export class TabPTHEditorState extends TabState {
     const walkableIntersect = this.findWalkableFaceIntersection();
     if(walkableIntersect && walkableIntersect.point){
       this.previewPosition.copy(walkableIntersect.point);
-      this.previewPosition.z += POINT_OFFSET_HEIGHT; // Offset above surface
+      this.previewPosition.z += POINT_OFFSET_HEIGHT;
       this.ghostPreviewMesh.position.copy(this.previewPosition);
+      this.ghostPreviewMesh.visible = true;
+      this.previewValid = true;
+      return;
+    }
+    const planeHit = this.findGroundPlaneIntersection();
+    if(planeHit){
+      this.ghostPreviewMesh.position.set(planeHit.x, planeHit.y, POINT_OFFSET_HEIGHT);
       this.ghostPreviewMesh.visible = true;
       this.previewValid = true;
     } else {
@@ -351,7 +380,7 @@ export class TabPTHEditorState extends TabState {
     }
   }
   
-  private addPathPoint(position: THREE.Vector3): void {
+  addPathPoint(position: THREE.Vector3): void {
     const newPoint = new KotOR.PathPoint({
       id: this.points.length,
       connections: [],
@@ -365,18 +394,20 @@ export class TabPTHEditorState extends TabState {
     this.points.push(newPoint);
     this.updatePathVisualization();
     this.markUnsaved();
+    this.notifyPathChanged();
   }
   
-  private connectPoints(pointA: KotOR.PathPoint, pointB: KotOR.PathPoint): void {
+  connectPoints(pointA: KotOR.PathPoint, pointB: KotOR.PathPoint): void {
     if(!pointA || !pointB || pointA === pointB) return;
 
     this.captureUndoSnapshot();
     pointA.addConnection(pointB);
     this.updatePathVisualization();
     this.markUnsaved();
+    this.notifyPathChanged();
   }
   
-  private deleteSelectedPoint(): void {
+  deleteSelectedPoint(): void {
     // Only delete in SELECT mode
     if(this.controlMode !== TabPTHEditorControlMode.SELECT) return;
     
@@ -409,20 +440,25 @@ export class TabPTHEditorState extends TabState {
     // Update visualization
     this.updatePathVisualization();
     this.markUnsaved();
+    this.notifyPathChanged();
   }
-  private selectPoint(pointIndex: number = -1): void {
-    this.ui3DRenderer.transformControls.detach();
+
+  selectPoint(pointIndex: number = -1): void {
     this.selectedPointIndex = pointIndex;
+    const controls = this.ui3DRenderer.transformControls;
+    if(controls){
+      controls.detach();
+    }
     const point = this.points[pointIndex];
-    if(point){
+    if(point && this.roomsLoaded && controls){
       const mesh = this.pointMeshes[pointIndex] as THREE.Mesh;
       if(mesh){
-        this.ui3DRenderer.transformControls.attach(mesh);
-        this.ui3DRenderer.transformControls.size = 0.5;
-        this.ui3DRenderer.transformControls.showZ = false;
+        controls.attach(mesh);
+        controls.size = 0.5;
+        controls.showZ = false;
       }
     }
-    // this.updatePathVisualization();
+    this.notifyPathChanged();
   }
   
   private onTransformControlsMouseDown(): void {
@@ -447,6 +483,17 @@ export class TabPTHEditorState extends TabState {
     // Update connection lines
     this.updateConnectionLines();
     this.markUnsaved();
+    this.notifyPathChanged();
+  }
+
+  movePointXY(index: number, x: number, y: number): void {
+    const point = this.points[index];
+    if(!point) return;
+    this.captureCoalescedUndo(`pth-move:${index}`);
+    point.vector.x = x;
+    point.vector.y = y;
+    this.markUnsaved();
+    this.notifyPathChanged();
   }
   
   private updateConnectionLines(): void {
@@ -501,6 +548,9 @@ export class TabPTHEditorState extends TabState {
   }
 
   private updatePathVisualization(): void {
+    if(!this.roomsLoaded){
+      return;
+    }
     // Clear existing meshes
     this.pointMeshes.forEach(mesh => {
       this.ui3DRenderer.selectable.remove(mesh);
@@ -572,6 +622,31 @@ export class TabPTHEditorState extends TabState {
       this.connectionLines = new THREE.LineSegments(connectionGeometry, connectionMaterial);
       this.pathHelperGroup.add(this.connectionLines);
     }
+  }
+
+  public async loadRoomModels(): Promise<boolean> {
+    if(!pthCanLoadRoomModels(utxShouldShow3DPreview())){
+      return false;
+    }
+    await this.loadLayoutFile();
+    this.roomsLoaded = true;
+    this.ui3DRenderer.enabled = true;
+    this.updatePathVisualization();
+    this.updateCameraFocus();
+    this.ui3DRenderer.render();
+    this.processEventListener('onRoomsLoaded', [this]);
+    return true;
+  }
+
+  public unloadRoomModels(): void {
+    this.roomsLoaded = false;
+    this.disposeLayout();
+    this.ui3DRenderer.enabled = false;
+    if(this.ui3DRenderer.transformControls){
+      this.ui3DRenderer.transformControls.detach();
+    }
+    this.processEventListener('onRoomsLoaded', [this]);
+    this.notifyPathChanged();
   }
 
   private async loadLayoutFile(): Promise<void> {
@@ -762,7 +837,6 @@ export class TabPTHEditorState extends TabState {
   }
 
   private disposeLayout(): void {
-    // Remove and dispose of all layout models
     this.layoutModels.forEach(model => {
       this.ui3DRenderer.removeObjectFromGroup(model, GroupType.ROOMS);
       try {
@@ -772,6 +846,20 @@ export class TabPTHEditorState extends TabState {
       }
     });
     this.layoutModels = [];
+    this.walkmeshes.forEach((walkmesh) => {
+      if(walkmesh?.mesh){
+        this.ui3DRenderer.unselectable.remove(walkmesh.mesh);
+        walkmesh.mesh.geometry?.dispose();
+        const material = walkmesh.mesh.material;
+        if(Array.isArray(material)){
+          material.forEach((m) => m.dispose());
+        } else if(material){
+          material.dispose();
+        }
+      }
+    });
+    this.walkmeshes = [];
+    this.layout = undefined as any;
   }
   
   public destroy(): void {
@@ -794,8 +882,10 @@ export class TabPTHEditorState extends TabState {
 
   public show(): void {
     super.show();
-    this.ui3DRenderer.enabled = true;
-    this.ui3DRenderer.render();
+    if(this.roomsLoaded){
+      this.ui3DRenderer.enabled = true;
+      this.ui3DRenderer.render();
+    }
   }
 
   public hide(): void {
@@ -827,6 +917,7 @@ export class TabPTHEditorState extends TabState {
     }
     this.setPropsFromBlueprint();
     this.markUnsaved();
+    this.notifyPathChanged();
   }
 
   updateFile(){

@@ -36,7 +36,8 @@ import { TabUTWEditorState } from "@/apps/forge/states/tabs/TabUTWEditorState";
 import { TabLIPEditorState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorState";
 import { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { tabCanCompile, tabCanOpenAsGff, tabCanSave } from "@/apps/forge/commands/editorCommandGuards";
+import { TabGFFEditorState } from "@/apps/forge/states/tabs/TabGFFEditorState";
+import { tabCanCompile, tabCanOpenAsGff, tabCanSave, tabIsGffEditor } from "@/apps/forge/commands/editorCommandGuards";
 import * as KotOR from "@/apps/forge/KotOR";
 import { openTabAsGffEditor } from "@/apps/forge/helpers/openTabAsGff";
 
@@ -173,6 +174,34 @@ export function registerForgeCommands(): void {
   });
 
   registerCommand({
+    id: "forge.file.exportGffJson",
+    title: "Export GFF as JSON...",
+    category: "File",
+    keywords: ["gff", "json", "export"],
+    when: () => tabIsGffEditor(currentTab()),
+    run: () => {
+      const tab = currentTab();
+      if (tab instanceof TabGFFEditorState) {
+        void tab.exportJson();
+      }
+    },
+  });
+
+  registerCommand({
+    id: "forge.file.importGffJson",
+    title: "Import GFF JSON...",
+    category: "File",
+    keywords: ["gff", "json", "import"],
+    when: () => tabIsGffEditor(currentTab()),
+    run: () => {
+      const tab = currentTab();
+      if (tab instanceof TabGFFEditorState) {
+        void tab.importJson();
+      }
+    },
+  });
+
+  registerCommand({
     id: "forge.file.settings",
     title: "Settings...",
     category: "File",
@@ -226,15 +255,38 @@ export function registerForgeCommands(): void {
     category: "File",
     keywords: ["chitin", "bif", "game", "kotor", "tsl", "data"],
     run: async () => {
-      const bound = await ForgeState.promptAndBindGameDirectory();
-      if (!bound) {
-        window.alert("The selected folder does not contain chitin.key. Choose a KotOR or TSL install directory.");
-        return;
-      }
+    const bound = await ForgeState.promptAndBindGameDirectory();
+    if (bound === "cancelled") {
+      return;
+    }
+    if (bound !== "ok") {
+      window.alert("The selected folder does not contain chitin.key. Choose a KotOR or TSL install directory.");
+      return;
+    }
       const loaded = await ForgeState.attachGameData();
       if (!loaded) {
         window.alert("Could not load game archives from that folder. Editors will stay in fallback mode.");
       }
+    },
+  });
+
+  registerCommand({
+    id: "forge.file.removeGameDirectory",
+    title: "Remove Game Directory",
+    category: "File",
+    keywords: ["chitin", "game", "unbind", "offline", "directory", "folder"],
+    when: () => ForgeState.hasBoundGameDirectory(),
+    run: async () => {
+      const label = ForgeState.getBoundGameDirectoryLabel();
+      const confirmed = window.confirm(
+        label
+          ? `Remove the bound game directory (${label})? Forge will work offline until you choose a folder again.`
+          : "Remove the bound game directory? Forge will work offline until you choose a folder again.",
+      );
+      if (!confirmed) {
+        return;
+      }
+      await ForgeState.unbindGameDirectory();
     },
   });
 

@@ -17,6 +17,9 @@ export interface ListItemNodeProps {
   icon?: string;
   iconType?: 'folder' | 'file' | 'expanded';
   fileType?: string;
+  className?: string;
+  /** When set, rendered instead of the plain `name` string. */
+  labelContent?: React.ReactNode;
   
   // Event handlers
   onToggle?: () => void;
@@ -46,6 +49,8 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
     icon,
     iconType = 'file',
     fileType,
+    className = '',
+    labelContent,
     onToggle,
     onClick,
     onDoubleClick,
@@ -255,7 +260,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
 
   return (
     <li 
-      className={`tree-item ${fileTypeClass} ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''}`}
+      className={`tree-item ${fileTypeClass} ${isSelected ? 'selected' : ''} ${isHovered ? 'hovered' : ''} ${className}`.trim()}
       {...dataAttributes}
     >
       {/* Node content wrapper - arrow, icon, and label */}
@@ -287,7 +292,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
         
         {/* Label */}
         <span className="tree-label" title={name}>
-          {name}
+          {labelContent ?? name}
         </span>
       </div>
       

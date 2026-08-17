@@ -649,7 +649,7 @@ export class GameFileSystem {
       if ((await handle.queryPermission({ mode: 'readwrite' })) === 'granted') {
         return true;
       }
-      return false;
+      return (await handle.requestPermission({ mode: 'readwrite' })) === 'granted';
     }catch(e){
       console.error(e);
       return false;

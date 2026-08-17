@@ -28,6 +28,12 @@ import {
   isPersistableDirectoryHandle,
   isProjectDirectoryHandle,
 } from "@/apps/forge/virtual/VirtualProjectFolder";
+import {
+  boundGameDirectoryLabel,
+  clearGameDirectoryBinding,
+  persistGameDirectoryHandle,
+  persistGameDirectoryPath,
+} from "@/utility/gameDirectoryAccess";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -133,30 +139,101 @@ export class ForgeState {
     }
   }
 
-  static async promptAndBindGameDirectory(): Promise<boolean> {
+  static gameProfileKey(): string {
+    return String(KotOR.ApplicationProfile.profile?.key || KotOR.ApplicationProfile.key || "").toLowerCase();
+  }
+
+  static getBoundGameDirectoryLabel(): string {
+    const env = KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON ? "electron" : "browser";
+    return boundGameDirectoryLabel({
+      directory: KotOR.ApplicationProfile.directory || KotOR.ApplicationProfile.profile?.directory,
+      directory_handle: KotOR.ApplicationProfile.directoryHandle || KotOR.ApplicationProfile.profile?.directory_handle,
+    }, env);
+  }
+
+  static hasBoundGameDirectory(): boolean {
+    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+      return !!(KotOR.ApplicationProfile.directory || KotOR.ApplicationProfile.profile?.directory);
+    }
+    return !!(KotOR.ApplicationProfile.directoryHandle || KotOR.ApplicationProfile.profile?.directory_handle);
+  }
+
+  static async promptAndBindGameDirectory(): Promise<"ok" | "cancelled" | "invalid"> {
+    const profileKey = ForgeState.gameProfileKey();
+    if(!KotOR.ApplicationProfile.profile){
+      KotOR.ApplicationProfile.profile = { key: profileKey };
+    }
+    const previousDirectory = KotOR.ApplicationProfile.directory;
+    const previousHandle = KotOR.ApplicationProfile.directoryHandle;
+    const previousProfileDirectory = KotOR.ApplicationProfile.profile.directory;
+    const previousProfileHandle = KotOR.ApplicationProfile.profile.directory_handle;
+
+    const restorePrevious = () => {
+      KotOR.ApplicationProfile.directory = previousDirectory;
+      KotOR.ApplicationProfile.directoryHandle = previousHandle;
+      KotOR.ApplicationProfile.profile.directory = previousProfileDirectory;
+      KotOR.ApplicationProfile.profile.directory_handle = previousProfileHandle;
+    };
+
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
       try{
         const dir = await (window as any).dialog?.locateDirectoryDialog?.();
         if(!dir){
-          return false;
+          return "cancelled";
         }
         KotOR.ApplicationProfile.profile.directory = dir;
         KotOR.ApplicationProfile.directory = dir;
-        KotOR.ConfigClient.set(`Profiles.${KotOR.ApplicationProfile.profile.key}.directory`, dir);
+        if(!(await ForgeState.hasChitinKey())){
+          restorePrevious();
+          return "invalid";
+        }
+        persistGameDirectoryPath(profileKey, dir);
       }catch(e){
         console.error(e);
-        return false;
+        restorePrevious();
+        return "cancelled";
       }
     }else{
       const handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
       if(!handle){
-        return false;
+        return "cancelled";
       }
       KotOR.ApplicationProfile.directoryHandle = handle;
       KotOR.ApplicationProfile.profile.directory_handle = handle;
-      KotOR.ConfigClient.set(`Profiles.${KotOR.ApplicationProfile.profile.key}.directory_handle`, handle);
+      if(!(await ForgeState.hasChitinKey())){
+        restorePrevious();
+        return "invalid";
+      }
+      await persistGameDirectoryHandle(profileKey, handle);
     }
-    return ForgeState.hasChitinKey();
+    return "ok";
+  }
+
+  static async unbindGameDirectory(): Promise<void> {
+    await clearGameDirectoryBinding(ForgeState.gameProfileKey());
+    KotOR.ApplicationProfile.directory = undefined as any;
+    KotOR.ApplicationProfile.directoryHandle = undefined as any;
+    if(KotOR.ApplicationProfile.profile){
+      delete KotOR.ApplicationProfile.profile.directory;
+      delete KotOR.ApplicationProfile.profile.directory_handle;
+    }
+    try{
+      KotOR.KEYManager.Key = new KotOR.KEYObject();
+      KotOR.BIFManager.Clear();
+    }catch(e){
+      console.warn('ForgeState.unbindGameDirectory: archive reset failed', e);
+    }
+    try{
+      KotOR.TLKManager.TLKStrings = [];
+      KotOR.TLKManager.TLKObject = undefined as any;
+    }catch(e){
+      console.warn('ForgeState.unbindGameDirectory: tlk reset failed', e);
+    }
+    ForgeState.setHasGameData(false);
+    ForgeState.invalidateGameCatalogCaches();
+    TabResourceExplorerState.Resources.length = 0;
+    ForgeState.resourceExplorerTab?.reload();
+    MenuTopState.rebuild();
   }
 
   static invalidateGameCatalogCaches(): void {

@@ -31,13 +31,15 @@ export const ModalGrantAccess = function(props: ModalGrantAccessProps){
   const onBtnGrant = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     const bound = await ForgeState.promptAndBindGameDirectory();
-    if(bound){
+    if(bound === "ok"){
       console.log('Game Directory', 'verified');
       setShowGrantModal(false);
       props.onUserGrant();
       return;
     }
-    console.warn('Game Directory', 'not found');
+    if(bound === "cancelled"){
+      return;
+    }
     window.alert('The selected folder does not contain chitin.key. Choose a KotOR or TSL install, or continue without game data.');
   }
 

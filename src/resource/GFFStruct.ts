@@ -255,6 +255,18 @@ export class GFFStruct {
   }
 
   /**
+   * Removes a field from this structure by instance.
+   */
+  removeField(field: GFFField): boolean {
+    const index = this.fields.indexOf(field);
+    if(index >= 0){
+      this.fields.splice(index, 1);
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Gets the type identifier of this structure.
    * 
    * @returns {number} The type identifier

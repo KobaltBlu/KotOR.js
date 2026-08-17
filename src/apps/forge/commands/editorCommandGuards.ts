@@ -48,3 +48,7 @@ export function tabCanOpenAsGff(tab: { type?: string; file?: { ext?: string } } 
   }
   return (UTX_TAB_TYPES as readonly string[]).indexOf(String(tab.type || "")) >= 0;
 }
+
+export function tabIsGffEditor(tab: { type?: string } | null | undefined): boolean {
+  return String(tab?.type || "") === "TabGFFEditorState";
+}
