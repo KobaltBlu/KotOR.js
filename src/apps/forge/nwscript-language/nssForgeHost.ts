@@ -37,7 +37,7 @@ export function createForgeNssLanguageHost(): NssLanguageHost {
 
     listProjectNss: async () => {
       const files: ProjectNssFile[] = [];
-      if (!ProjectFileSystem.rootDirectoryPath && !ProjectFileSystem.rootDirectoryHandle) {
+      if (!ProjectFileSystem.hasRoot()) {
         return files;
       }
       let entries: string[] = [];

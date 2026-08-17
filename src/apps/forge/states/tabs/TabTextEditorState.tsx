@@ -67,6 +67,105 @@ export class TabTextEditorState extends TabState {
     return (this.file?.ext || '').toLowerCase() === 'nss';
   }
 
+  get canUndo(): boolean {
+    return this.getActiveTextModel()?.canUndo() ?? false;
+  }
+
+  get canRedo(): boolean {
+    return this.getActiveTextModel()?.canRedo() ?? false;
+  }
+
+  private historyDisposables: monacoEditor.IDisposable[] = [];
+  private lastCanUndo: boolean = false;
+  private lastCanRedo: boolean = false;
+
+  getActiveMonacoEditor(): monacoEditor.editor.IStandaloneCodeEditor | undefined {
+    if (this.isDiffMode && this.diffEditor) {
+      return this.diffEditor.getModifiedEditor();
+    }
+    return this.editor;
+  }
+
+  private getActiveTextModel(): monacoEditor.editor.ITextModel | null {
+    const editor = this.getActiveMonacoEditor();
+    return editor?.getModel() ?? null;
+  }
+
+  protected override shouldHandleUndoKeyboard(e: KeyboardEvent): boolean {
+    const editor = this.getActiveMonacoEditor();
+    if (!editor) {
+      return false;
+    }
+    const target = e.target as HTMLElement | null;
+    if (target?.closest?.(".monaco-editor")) {
+      return false;
+    }
+    if (target instanceof HTMLElement) {
+      const tag = target.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  undo(): void {
+    const editor = this.getActiveMonacoEditor();
+    if (!editor) {
+      return;
+    }
+    editor.focus();
+    editor.trigger("keyboard", "undo", null);
+    this.processEventListener("onUndoApplied", []);
+    this.notifyHistoryChangedIfNeeded();
+  }
+
+  redo(): void {
+    const editor = this.getActiveMonacoEditor();
+    if (!editor) {
+      return;
+    }
+    editor.focus();
+    editor.trigger("keyboard", "redo", null);
+    this.processEventListener("onRedoApplied", []);
+    this.notifyHistoryChangedIfNeeded();
+  }
+
+  private unbindMonacoHistory(): void {
+    for (let i = 0; i < this.historyDisposables.length; i++) {
+      this.historyDisposables[i].dispose();
+    }
+    this.historyDisposables = [];
+  }
+
+  private bindMonacoHistory(): void {
+    this.unbindMonacoHistory();
+    const editor = this.getActiveMonacoEditor();
+    if (!editor) {
+      this.lastCanUndo = false;
+      this.lastCanRedo = false;
+      return;
+    }
+    this.historyDisposables.push(editor.onDidChangeModelContent(() => {
+      this.notifyHistoryChangedIfNeeded();
+    }));
+    this.historyDisposables.push(editor.onDidChangeModel(() => {
+      this.notifyHistoryChangedIfNeeded();
+    }));
+    this.notifyHistoryChangedIfNeeded(true);
+  }
+
+  private notifyHistoryChangedIfNeeded(force = false): void {
+    const canUndo = this.canUndo;
+    const canRedo = this.canRedo;
+    if (!force && canUndo === this.lastCanUndo && canRedo === this.lastCanRedo) {
+      return;
+    }
+    this.lastCanUndo = canUndo;
+    this.lastCanRedo = canRedo;
+    this.processEventListener("onHistoryChanged", []);
+  }
+
   applyDecompile(script: KotOR.NWScript): void {
     const decompiler = new NWScriptDecompiler(script);
     const result = decompiler.decompileWithLineMap();
@@ -229,22 +328,32 @@ export class TabTextEditorState extends TabState {
 
   }
 
+  destroy() {
+    this.unbindMonacoHistory();
+    super.destroy();
+  }
+
   getSouthTabManager(){
     return this.#southTabManager;
   }
 
   setCode(code: string = ``){
+    const changed = this.code !== code;
     this.code = code;
     // Update diff editor modified model if in diff mode
     if(this.isDiffMode && this.modifiedModel && this.modifiedModel.getValue() !== code) {
       this.modifiedModel.setValue(code);
     }
     this.triggerLinterTimeout();
+    if(changed){
+      this.updateFile();
+    }
   }
 
   setEditor(editor: monacoEditor.editor.IStandaloneCodeEditor){
     this.editor = editor;
     this.applyEditorSettings();
+    this.bindMonacoHistory();
   }
 
   setTabSize(size: number): void {
@@ -308,6 +417,7 @@ export class TabTextEditorState extends TabState {
   setDiffEditor(diffEditor: monacoEditor.editor.IStandaloneDiffEditor){
     this.diffEditor = diffEditor;
     this.applyEditorSettings();
+    this.bindMonacoHistory();
   }
 
   switchToDiffMode(): void {
@@ -354,6 +464,7 @@ export class TabTextEditorState extends TabState {
     
     this.isDiffMode = false;
     this.originalText = ``;
+    this.unbindMonacoHistory();
     this.processEventListener('onDiffModeChanged');
   }
 

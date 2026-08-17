@@ -59,7 +59,7 @@ async function nssBufferFromProject(
   resref: string,
   projectIndex?: Map<string, string>,
 ): Promise<Uint8Array | undefined> {
-  if (!ProjectFileSystem.rootDirectoryPath && !ProjectFileSystem.rootDirectoryHandle) {
+  if (!ProjectFileSystem.hasRoot()) {
     return undefined;
   }
   const index = projectIndex ?? await indexProjectNssFiles();
@@ -75,7 +75,7 @@ async function nssBufferFromProject(
 
 async function indexProjectNssFiles(): Promise<Map<string, string>> {
   const index = new Map<string, string>();
-  if (!ProjectFileSystem.rootDirectoryPath && !ProjectFileSystem.rootDirectoryHandle) {
+  if (!ProjectFileSystem.hasRoot()) {
     return index;
   }
   let entries: string[] = [];
@@ -294,7 +294,7 @@ async function mkdirParentOfProjectRelativeFile(projectRelTargetPath: string): P
 
 /** Recursively enumerate `.nss`, compile with `{COMPILED_DIR}/` mirrored output. */
 export async function compileAllNssInProject(): Promise<BulkProjectNssCompileOutcome> {
-  if (!ProjectFileSystem.rootDirectoryPath && !ProjectFileSystem.rootDirectoryHandle) {
+  if (!ProjectFileSystem.hasRoot()) {
     return {
       total: 0,
       succeeded: 0,

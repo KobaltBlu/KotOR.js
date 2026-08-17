@@ -24,6 +24,10 @@ import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageSer
 import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
 import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
 import { RecentProject } from "@/apps/forge/RecentProject";
+import {
+  isPersistableDirectoryHandle,
+  isProjectDirectoryHandle,
+} from "@/apps/forge/virtual/VirtualProjectFolder";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -481,28 +485,25 @@ export class ForgeState {
   static async addRecentProject(projectPathOrHandle: string | FileSystemDirectoryHandle, handle?: FileSystemDirectoryHandle){
     try{
       let project: RecentProject | null = null;
+      const asHandle = isProjectDirectoryHandle(projectPathOrHandle)
+        ? projectPathOrHandle
+        : (isProjectDirectoryHandle(handle) ? handle : undefined);
 
-      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-        // For Electron, projectPathOrHandle is a string path
-        if(typeof projectPathOrHandle === 'string' && projectPathOrHandle){
+      if(asHandle){
+        project = new RecentProject({
+          handle: asHandle,
+          name: asHandle.name,
+          virtual: ProjectFileSystem.isVirtual,
+        });
+      } else if(typeof projectPathOrHandle === 'string' && projectPathOrHandle){
+        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
           const normalizedPath = projectPathOrHandle.replace(/\\/g, '/');
           project = new RecentProject({ path: normalizedPath });
-        }
-      } else {
-        // For Browser, projectPathOrHandle could be a handle or a string name
-        if(projectPathOrHandle instanceof FileSystemDirectoryHandle){
-          project = new RecentProject({ 
-            handle: projectPathOrHandle,
-            name: projectPathOrHandle.name 
+        } else {
+          project = new RecentProject({
+            name: projectPathOrHandle,
+            virtual: ProjectFileSystem.isVirtual,
           });
-        } else if(handle instanceof FileSystemDirectoryHandle){
-          project = new RecentProject({ 
-            handle: handle,
-            name: typeof projectPathOrHandle === 'string' ? projectPathOrHandle : handle.name 
-          });
-        } else if(typeof projectPathOrHandle === 'string'){
-          // Fallback: just store the name if handle is not available
-          project = new RecentProject({ name: projectPathOrHandle });
         }
       }
 
@@ -519,18 +520,15 @@ export class ForgeState {
         ForgeState.recentProjects = ForgeState.recentProjects.slice(0, 10);
       }
 
-      // Sync with ConfigClient (handles are stored in IndexedDB via idb-keyval)
-      // We serialize the project data, but handles are stored separately
       const { set } = await import('idb-keyval');
       KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
         const serialized: any = {
           path: proj.path,
-          name: proj.name
+          name: proj.name,
+          virtual: !!proj.virtual,
         };
-        // Store handle separately in IndexedDB if available
-        if(proj.handle){
+        if(isPersistableDirectoryHandle(proj.handle)){
           const handleKey = `project_handle_${proj.getIdentifier()}`;
-          // Store handle in IndexedDB (idb-keyval handles FileSystemDirectoryHandle)
           set(handleKey, proj.handle).catch((e) => {
             console.warn('Failed to store handle in IndexedDB:', e);
           });
@@ -579,9 +577,10 @@ export class ForgeState {
       KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
         const serialized: any = {
           path: proj.path,
-          name: proj.name
+          name: proj.name,
+          virtual: !!proj.virtual,
         };
-        if(proj.handle){
+        if(isPersistableDirectoryHandle(proj.handle)){
           const handleKey = `project_handle_${proj.getIdentifier()}`;
           set(handleKey, proj.handle).catch((e) => {
             console.warn('Failed to store handle in IndexedDB:', e);

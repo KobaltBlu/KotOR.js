@@ -1,7 +1,9 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import * as KotOR from "@/apps/forge/KotOR";
+import { snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
+import { beginUtxFileUpdate, finishUtxUndoApply } from "@/apps/forge/helpers/UTxEditorHelpers";
 import * as THREE from 'three';
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabUTSEditor } from "@/apps/forge/components/tabs/tab-uts-editor/TabUTSEditor";
@@ -53,6 +55,7 @@ export class TabUTSEditorState extends TabState {
   
         file.readFile().then( (response) => {
           this.sound = new ForgeSound(response.buffer, file.resref);
+          this.clearUndoHistory();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
@@ -93,11 +96,13 @@ export class TabUTSEditorState extends TabState {
 
   removeSound(index: number){
     this.sound.soundResRefs.splice(index, 1);
+    this.updateFile();
     this.processEventListener('onSoundChange', [this]);
   }
 
   addSound(sound: string){
     this.sound.soundResRefs.push(sound);
+    this.updateFile();
     this.processEventListener('onSoundChange', [this]);
   }
 
@@ -106,6 +111,7 @@ export class TabUTSEditorState extends TabState {
       const sound = this.sound.soundResRefs[index];
       this.sound.soundResRefs.splice(index, 1);
       this.sound.soundResRefs.splice(index - 1, 0, sound);
+      this.updateFile();
       this.processEventListener('onSoundChange', [this]);
     }
   }
@@ -115,6 +121,7 @@ export class TabUTSEditorState extends TabState {
       const sound = this.sound.soundResRefs[index];
       this.sound.soundResRefs.splice(index, 1);
       this.sound.soundResRefs.splice(index + 1, 0, sound);
+      this.updateFile();
       this.processEventListener('onSoundChange', [this]);
     }
   }
@@ -151,14 +158,24 @@ export class TabUTSEditorState extends TabState {
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     if(!!resref && ext == 'uts'){
       this.sound.templateResRef = resref;
-      this.updateFile();
+      this.updateFile({ skipHistory: true });
       return this.sound.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
   }
-  
-  updateFile(){
+
+  updateFile(options?: UpdateFileOptions){
+    beginUtxFileUpdate(this, options);
     this.sound.exportToBlueprint();
+  }
+
+  protected captureUndoState(): Uint8Array | undefined {
+    return snapshotGff(this.blueprint);
+  }
+
+  protected applyUndoState(state: Uint8Array): void {
+    this.sound = new ForgeSound(state, this.file?.resref);
+    finishUtxUndoApply(this);
   }
 
 }

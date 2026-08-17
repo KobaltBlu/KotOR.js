@@ -5,6 +5,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 export interface GFFContextMenuProps {
   struct: KotOR.GFFStruct;
   onFieldAdded: () => void;
+  onBeforeMutate?: () => void;
   onStructCut?: () => void;
   onStructCopy?: () => void;
   onFieldPaste?: () => void;
@@ -18,6 +19,7 @@ export const createGFFContextMenuItems = (props: GFFContextMenuProps): ContextMe
   const {
     struct,
     onFieldAdded,
+    onBeforeMutate,
     onStructCut,
     onStructCopy,
     onFieldPaste,
@@ -52,6 +54,7 @@ export const createGFFContextMenuItems = (props: GFFContextMenuProps): ContextMe
     id: `add-field-${fieldType.label.toLowerCase()}`,
     label: `Add ${fieldType.label}`,
     onClick: () => {
+      onBeforeMutate?.();
       struct.addField(new KotOR.GFFField(fieldType.type, 'New Field [Untitled]', 0));
       onFieldAdded();
     }

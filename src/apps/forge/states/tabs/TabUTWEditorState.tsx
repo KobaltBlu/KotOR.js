@@ -1,7 +1,9 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import * as KotOR from "@/apps/forge/KotOR";
+import { snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
+import { beginUtxFileUpdate, finishUtxUndoApply } from "@/apps/forge/helpers/UTxEditorHelpers";
 import * as THREE from 'three';
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabUTWEditor } from "@/apps/forge/components/tabs/tab-utw-editor/TabUTWEditor";
@@ -47,6 +49,7 @@ export class TabUTWEditorState extends TabState {
   
         file.readFile().then( (response) => {
           this.waypoint = new ForgeWaypoint(response.buffer, file.resref);
+          this.clearUndoHistory();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
@@ -69,14 +72,24 @@ export class TabUTWEditorState extends TabState {
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     if(!!resref && ext == 'utw'){
       this.waypoint.templateResRef = resref;
-      this.updateFile();
+      this.updateFile({ skipHistory: true });
       return this.waypoint.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
   }
-  
-  updateFile(){
+
+  updateFile(options?: UpdateFileOptions){
+    beginUtxFileUpdate(this, options);
     this.waypoint.exportToBlueprint();
+  }
+
+  protected captureUndoState(): Uint8Array | undefined {
+    return snapshotGff(this.blueprint);
+  }
+
+  protected applyUndoState(state: Uint8Array): void {
+    this.waypoint = new ForgeWaypoint(state, this.file?.resref);
+    finishUtxUndoApply(this);
   }
 
 }

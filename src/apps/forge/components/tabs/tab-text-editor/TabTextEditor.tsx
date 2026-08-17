@@ -22,6 +22,7 @@ import {
   removeForgeEditorSettingsListener,
   toMonacoEditorOptions,
 } from "@/apps/forge/settings/forgeEditorSettings";
+import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
 
 export const TabTextEditor = function(props: any){
   const tab: TabTextEditorState = props.tab;
@@ -185,6 +186,8 @@ export const TabTextEditor = function(props: any){
     tab.addEventListener('onDiffModeChanged', onDiffModeChanged);
     tab.addEventListener('onRevealNss', onRevealNss);
     tab.addEventListener('onCompile', onCompileOrNcsChange);
+    const onHistoryChanged = () => forceUpdate({});
+    tab.addEventListener('onHistoryChanged', onHistoryChanged);
     
     // Create diff editor if already in diff mode
     if(tab.isDiffMode && tab.monaco) {
@@ -213,6 +216,7 @@ export const TabTextEditor = function(props: any){
       tab.removeEventListener('onDiffModeChanged', onDiffModeChanged);
       tab.removeEventListener('onRevealNss', onRevealNss);
       tab.removeEventListener('onCompile', onCompileOrNcsChange);
+      tab.removeEventListener('onHistoryChanged', onHistoryChanged);
       if(tab.diffEditor) {
         tab.diffEditor.dispose();
       }
@@ -283,6 +287,25 @@ export const TabTextEditor = function(props: any){
     {
       label: 'Edit',
       children: [
+        {
+          label: 'Undo',
+          shortcut: formatKeybinding('Mod+Z'),
+          onClick: () => {
+            tab.undo();
+          },
+          disabled: !tab.canUndo,
+        },
+        {
+          label: 'Redo',
+          shortcut: formatKeybinding('Mod+Y'),
+          onClick: () => {
+            tab.redo();
+          },
+          disabled: !tab.canRedo,
+        },
+        {
+          separator: true
+        },
         {
           label: 'Format Document',
           onClick: () => {

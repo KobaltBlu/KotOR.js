@@ -8,7 +8,7 @@ import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayCompone
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowPointer, faCircle, faCircleNodes, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
-import { CameraView } from "@/apps/forge/UI3DRenderer";
+import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
 
 const MODEL_VIEWER_LAYER_LABELS: Record<ModelViewerLayerKey, string> = {
   lights: 'Lights',
@@ -73,11 +73,18 @@ const UI3DToolPalette = function(props: any){
 export const TabPTHEditor = function(props: BaseTabProps){
   const tab: TabPTHEditorState = props.tab as TabPTHEditorState;
   const [layerMenuGen, setLayerMenuGen] = useState(0);
+  const [historyGen, setHistoryGen] = useState(0);
 
   useEffect(() => {
     const onLayers = () => setLayerMenuGen((g) => g + 1);
     tab.addEventListener('onModelViewerLayersChange', onLayers);
     return () => tab.removeEventListener('onModelViewerLayersChange', onLayers);
+  }, [tab]);
+
+  useEffect(() => {
+    const onHistory = () => setHistoryGen((g) => g + 1);
+    tab.addEventListener('onHistoryChanged', onHistory);
+    return () => tab.removeEventListener('onHistoryChanged', onHistory);
   }, [tab]);
 
   const layerToggle = (key: ModelViewerLayerKey): MenuItem => ({
@@ -87,6 +94,23 @@ export const TabPTHEditor = function(props: BaseTabProps){
   });
 
   const menuItems: MenuItem[] = useMemo(() => [
+    {
+      label: 'Edit',
+      children: [
+        {
+          label: 'Undo',
+          shortcut: formatKeybinding('Mod+Z'),
+          onClick: () => tab.undo(),
+          disabled: !tab.canUndo,
+        },
+        {
+          label: 'Redo',
+          shortcut: formatKeybinding('Mod+Y'),
+          onClick: () => tab.redo(),
+          disabled: !tab.canRedo,
+        },
+      ],
+    },
     {
       label: 'View',
       children: [
@@ -132,7 +156,7 @@ export const TabPTHEditor = function(props: BaseTabProps){
         },
       ],
     },
-  ], [tab, layerMenuGen]);
+  ], [tab, layerMenuGen, historyGen]);
 
   const eastPanel = (<>
     <SceneGraphTreeView manager={tab.ui3DRenderer.sceneGraphManager} />

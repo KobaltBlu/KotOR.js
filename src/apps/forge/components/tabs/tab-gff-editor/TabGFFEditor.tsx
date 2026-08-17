@@ -54,7 +54,7 @@ export const TabGFFEditor = function(props: BaseTabProps){
     {(
       selectedNode ? (
         selectedNode instanceof KotOR.GFFField ? 
-          <GFFFieldProperties node={selectedNode} /> :
+          <GFFFieldProperties node={selectedNode} tab={tab} /> :
         selectedNode instanceof KotOR.GFFStruct ? 
           <GFFStructProperties node={selectedNode} /> : 
         <></>
@@ -93,6 +93,10 @@ const GFFStructElement = memo(function GFFStructElement(props: any){
     const contextMenuItems = createGFFContextMenuItems({
       struct,
       onFieldAdded: () => rerender(!render),
+      onBeforeMutate: () => {
+        tab.captureUndoSnapshot();
+        tab.markUnsaved();
+      },
       onStructCut: () => console.log('Cut STRUCT'),
       onStructCopy: () => console.log('Copy STRUCT'),
       onFieldPaste: () => console.log('Paste FIELD'),
@@ -103,16 +107,18 @@ const GFFStructElement = memo(function GFFStructElement(props: any){
     });
 
     showContextMenu(e.clientX, e.clientY, contextMenuItems);
-  }, [struct, render, showContextMenu]);
+  }, [struct, render, showContextMenu, tab]);
 
   const handleSelect = useCallback((nodeId: string) => {
     tab.setSelectedField(struct);
   }, [tab, struct]);
 
   const onAddField = useCallback(() => {
+    tab.captureUndoSnapshot();
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'New Field [Untitled]', 0));
+    tab.markUnsaved();
     rerender(!render);
-  }, [struct, render]);
+  }, [struct, render, tab]);
 
   // Memoize child nodes to prevent unnecessary re-renders
   const childNodes = useMemo(() => {
@@ -203,11 +209,13 @@ const GFFFieldElement = memo(function GFFFieldElement(props: any){
 
   const onAddStruct = useCallback(() => {
     if(field.getType() == KotOR.GFFDataType.LIST){
+      tab.captureUndoSnapshot();
       const struct = new KotOR.GFFStruct(-1);
       field.addChildStruct(struct);
+      tab.markUnsaved();
       rerender(!render);
     }
-  }, [field, render]);
+  }, [field, render, tab]);
 
   if(!field) return <></>;
 
@@ -304,6 +312,7 @@ const GFFStructProperties = function(props: any){
 
 const GFFFieldProperties = function(props: any){
   const node: KotOR.GFFField = props.node;
+  const tab: TabGFFEditorState = props.tab;
 
   const [value, setValue] = useState<any>( '' );
   const [valueX, setValueX] = useState<any>( 0 );
@@ -385,12 +394,16 @@ const GFFFieldProperties = function(props: any){
       value = value;
     }
 
+    tab?.captureCoalescedUndo(node.uuid);
     node.setValue(value);
+    tab?.markUnsaved();
     setValue(node.getValue());
   }
 
   const onVectorValueChange = function(e: ChangeEvent<HTMLInputElement>, mode: 'x'|'y'|'z'){
+    tab?.captureCoalescedUndo(`${node.uuid}:vec`);
     node.getVector()[mode] = parseFloat(e.target.value);
+    tab?.markUnsaved();
     switch(mode){
       case 'x':
         setValueX(parseFloat(e.target.value));
@@ -405,7 +418,9 @@ const GFFFieldProperties = function(props: any){
   }
 
   const onOrientationValueChange = function(e: ChangeEvent<HTMLInputElement>, mode: 'x'|'y'|'z'|'w'){
+    tab?.captureCoalescedUndo(`${node.uuid}:ori`);
     node.getOrientation()[mode] = parseFloat(e.target.value);
+    tab?.markUnsaved();
     switch(mode){
       case 'x':
         setValueX(parseFloat(e.target.value));

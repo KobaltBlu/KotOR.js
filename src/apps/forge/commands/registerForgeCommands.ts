@@ -104,6 +104,15 @@ export function registerForgeCommands(): void {
   });
 
   registerCommand({
+    id: "forge.file.saveProjectToFolder",
+    title: "Save Project To Folder...",
+    category: "File",
+    keywords: ["virtual", "export", "copy", "folder"],
+    when: hasProject,
+    run: () => Project.SaveToFolder(),
+  });
+
+  registerCommand({
     id: "forge.file.closeProject",
     title: "Close Project",
     category: "File",

@@ -123,7 +123,7 @@ export class ModalResRefBrowserState extends ModalState {
       const [override, project, streams] = await Promise.all([
         listDirectoryResrefs(() => KotOR.GameFileSystem.readdir("Override", { recursive: true }), spec.extensions),
         listDirectoryResrefs(async () => {
-          if (!ProjectFileSystem.rootDirectoryPath && !ProjectFileSystem.rootDirectoryHandle) {
+          if (!ProjectFileSystem.hasRoot()) {
             return [];
           }
           return ProjectFileSystem.readdir("", { recursive: true });

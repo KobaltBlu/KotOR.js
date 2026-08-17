@@ -4,6 +4,7 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { TabHexEditorState } from "@/apps/forge/states/tabs/tab-hex-editor/TabHexEditorState";
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 import { ForgeButton, ForgeDialog, ForgeInput } from "@/apps/forge/components/ui";
+import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
 import {
   HEX_BYTES_PER_ROW,
   asciiChar,
@@ -102,8 +103,11 @@ export const TabHexEditor = function (props: BaseTabProps) {
 
   useEffectOnce(() => {
     tab.addEventListener("onEditorFileLoad", onFileLoad);
+    const onHistoryChanged = () => setDataVersion((v) => v + 1);
+    tab.addEventListener("onHistoryChanged", onHistoryChanged);
     return () => {
       tab.removeEventListener("onEditorFileLoad", onFileLoad);
+      tab.removeEventListener("onHistoryChanged", onHistoryChanged);
     };
   });
 
@@ -147,6 +151,7 @@ export const TabHexEditor = function (props: BaseTabProps) {
       const v = parseByteHex2(hex2);
       if (v === null) return;
       if (bytes[offset] === v) return;
+      tab.captureUndoSnapshot();
       bytes[offset] = v;
       if (tab.file) tab.file.unsaved_changes = true;
       tab.editorFileUpdated();
@@ -254,6 +259,23 @@ export const TabHexEditor = function (props: BaseTabProps) {
         label: "Edit",
         children: [
           {
+            label: "Undo",
+            shortcut: formatKeybinding("Mod+Z"),
+            onClick: () => {
+              tab.undo();
+            },
+            disabled: !tab.canUndo,
+          },
+          {
+            label: "Redo",
+            shortcut: formatKeybinding("Mod+Y"),
+            onClick: () => {
+              tab.redo();
+            },
+            disabled: !tab.canRedo,
+          },
+          { separator: true },
+          {
             label: "Go to offset…",
             onClick: () => {
               setGoToInput("");
@@ -279,7 +301,7 @@ export const TabHexEditor = function (props: BaseTabProps) {
         ],
       },
     ],
-    [tab, byteLength, offsetDisplay],
+    [tab, byteLength, offsetDisplay, dataVersion],
   );
 
   const virtualHeight = rowsTotal * ROW_HEIGHT;

@@ -6,13 +6,14 @@ import { CameraFocusMode, GroupType, ObjectType, UI3DRenderer, UI3DRendererEvent
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
+import { gffFromSnapshot, snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
+import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
 import {
   DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY,
   ModelViewerLayerKey,
   ModelViewerLayerVisibility,
   TabModelViewerState,
 } from "@/apps/forge/states/tabs/TabModelViewerState";
-import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
 
 const POINT_OFFSET_HEIGHT = 1;
 
@@ -74,15 +75,13 @@ export class TabPTHEditorState extends TabState {
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onSelect', this.onSelect.bind(this));
 
     // Listen to transform controls changes to update point positions
-    // Add listener immediately if transform controls exist, otherwise wait for canvas attachment
+    this.onTransformControlsChange = this.onTransformControlsChange.bind(this);
+    this.onTransformControlsMouseDown = this.onTransformControlsMouseDown.bind(this);
     if(this.ui3DRenderer.transformControls){
-      this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
+      this.bindTransformControlsHistory();
     } else {
-      // Wait for canvas to be attached so transform controls are built
       this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => {
-        if(this.ui3DRenderer.transformControls){
-          this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
-        }
+        this.bindTransformControlsHistory();
       });
     }
 
@@ -130,7 +129,8 @@ export class TabPTHEditorState extends TabState {
           
           // Try to load the corresponding LYT file
           await this.loadLayoutFile();
-          
+
+          this.clearUndoHistory();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
@@ -165,6 +165,20 @@ export class TabPTHEditorState extends TabState {
     }
     
     this.processEventListener('onControlModeChange', [mode]); 
+  }
+
+  private bindTransformControlsHistory(): void {
+    const controls = this.ui3DRenderer.transformControls;
+    if(!controls) return;
+    controls.addEventListener('change', this.onTransformControlsChange);
+    controls.addEventListener('mouseDown', this.onTransformControlsMouseDown);
+  }
+
+  private markUnsaved(): void {
+    if(this.file){
+      this.file.unsaved_changes = true;
+      this.editorFileUpdated();
+    }
   }
 
   public setPropsFromBlueprint(): void {
@@ -346,28 +360,20 @@ export class TabPTHEditorState extends TabState {
       vector: position.clone()
     });
     newPoint.vector.z += POINT_OFFSET_HEIGHT; // Offset above surface
-    
+
+    this.captureUndoSnapshot();
     this.points.push(newPoint);
     this.updatePathVisualization();
-    
-    // Mark file as having unsaved changes
-    if(this.file){
-      this.file.unsaved_changes = true;
-      this.editorFileUpdated();
-    }
+    this.markUnsaved();
   }
   
   private connectPoints(pointA: KotOR.PathPoint, pointB: KotOR.PathPoint): void {
     if(!pointA || !pointB || pointA === pointB) return;
-    
+
+    this.captureUndoSnapshot();
     pointA.addConnection(pointB);
     this.updatePathVisualization();
-    
-    // Mark file as having unsaved changes
-    // if(this.file){
-    //   this.file.unsaved_changes = true;
-    //   this.editorFileUpdated();
-    // }
+    this.markUnsaved();
   }
   
   private deleteSelectedPoint(): void {
@@ -377,6 +383,7 @@ export class TabPTHEditorState extends TabState {
     const pointToDelete = this.points[this.selectedPointIndex];
     if(!pointToDelete) return;
 
+    this.captureUndoSnapshot();
     console.log('selectedPointIndex', this.selectedPointIndex);
     console.log('pointToDelete', pointToDelete);
     
@@ -401,12 +408,7 @@ export class TabPTHEditorState extends TabState {
     
     // Update visualization
     this.updatePathVisualization();
-    
-    // Mark file as having unsaved changes
-    // if(this.file){
-    //   this.file.unsaved_changes = true;
-    //   this.editorFileUpdated();
-    // }
+    this.markUnsaved();
   }
   private selectPoint(pointIndex: number = -1): void {
     this.ui3DRenderer.transformControls.detach();
@@ -423,6 +425,11 @@ export class TabPTHEditorState extends TabState {
     // this.updatePathVisualization();
   }
   
+  private onTransformControlsMouseDown(): void {
+    if(this.selectedPointIndex < 0) return;
+    this.captureCoalescedUndo(`pth-move:${this.selectedPointIndex}`);
+  }
+
   private onTransformControlsChange(): void {
     if(this.selectedPointIndex < 0 || this.selectedPointIndex >= this.points.length) return;
     
@@ -431,18 +438,15 @@ export class TabPTHEditorState extends TabState {
     
     const point = this.points[this.selectedPointIndex];
     if(!point) return;
+
+    this.captureCoalescedUndo(`pth-move:${this.selectedPointIndex}`);
     
     // Update point vector from mesh position
     point.vector.copy(mesh.position);
     
     // Update connection lines
     this.updateConnectionLines();
-    
-    // Mark file as having unsaved changes
-    if(this.file){
-      this.file.unsaved_changes = true;
-      this.editorFileUpdated();
-    }
+    this.markUnsaved();
   }
   
   private updateConnectionLines(): void {
@@ -805,6 +809,24 @@ export class TabPTHEditorState extends TabState {
       return this.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
+  }
+
+  protected captureUndoState(): Uint8Array | undefined {
+    this.updateFile();
+    return snapshotGff(this.blueprint);
+  }
+
+  protected applyUndoState(state: Uint8Array): void {
+    this.blueprint = gffFromSnapshot(state);
+    this.points = [];
+    this.selectedPointIndex = -1;
+    this.selectedPointA = undefined as any;
+    this.selectedPointB = undefined as any;
+    if(this.ui3DRenderer.transformControls){
+      this.ui3DRenderer.transformControls.detach();
+    }
+    this.setPropsFromBlueprint();
+    this.markUnsaved();
   }
 
   updateFile(){

@@ -157,6 +157,7 @@ export class MenuTopState {
           this.commandItem('forge.file.save'),
           this.commandItem('forge.file.saveAs'),
           this.commandItem('forge.file.saveAll'),
+          this.commandItem('forge.file.saveProjectToFolder'),
           { separator: true },
           this.commandItem('forge.file.closeEditor'),
           this.commandItem('forge.file.openAsGff'),

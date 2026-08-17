@@ -5,6 +5,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabGFFEditor } from "@/apps/forge/components/tabs/tab-gff-editor/TabGFFEditor";
 import { UTX_TEMPLATE_EXTENSIONS } from "@/apps/forge/commands/editorCommandGuards";
+import { gffFromSnapshot, snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
 
 function gffSaveTypesForExt(ext?: string): FilePickerAcceptType[] {
   const key = (ext || "gff").replace(/^\./, "").toLowerCase() || "gff";
@@ -59,6 +60,7 @@ export class TabGFFEditorState extends TabState {
   
         file.readFile().then( (response) => {
           this.gff = new KotOR.GFFObject(response.buffer);
+          this.clearUndoHistory();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.gff);
         });
@@ -86,6 +88,24 @@ export class TabGFFEditorState extends TabState {
       this.selectedNode = node;
       this.processEventListener('onNodeSelected', [node]);
     }
+  }
+
+  markUnsaved(): void {
+    if (this.file instanceof EditorFile) {
+      this.file.unsaved_changes = true;
+    }
+    this.editorFileUpdated();
+  }
+
+  protected captureUndoState(): Uint8Array | undefined {
+    return snapshotGff(this.gff);
+  }
+
+  protected applyUndoState(state: Uint8Array): void {
+    this.gff = gffFromSnapshot(state);
+    this.selectedNode = undefined as any;
+    this.markUnsaved();
+    this.processEventListener('onEditorFileLoad', [this]);
   }
 
 }

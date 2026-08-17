@@ -10,6 +10,7 @@ import { supportedFileDialogTypes, supportedFilePickerTypes } from "@/apps/forge
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { editorFileProjectRelativePath } from "@/apps/forge/helpers/editorFileProjectPath";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -29,6 +30,11 @@ export interface TabStateEventListeners {
   onUndoApplied: Function[],
   onRedoApplied: Function[],
   onHistoryChanged: Function[],
+}
+
+export interface UpdateFileOptions {
+  skipHistory?: boolean;
+  coalesceKey?: string;
 }
 
 export class TabState extends EventListenerModel {
@@ -58,6 +64,8 @@ export class TabState extends EventListenerModel {
   protected undoStack: any[] = [];
   protected redoStack: any[] = [];
   protected suppressUndoCapture: boolean = false;
+  protected undoCoalesceKey: string | null = null;
+  protected undoCoalesceTimer: ReturnType<typeof setTimeout> | undefined;
 
   /**
    * Push the current state onto the undo stack before making a change.
@@ -65,12 +73,36 @@ export class TabState extends EventListenerModel {
    * snapshot. Clears the redo stack on every new change.
    */
   captureUndoSnapshot(): void {
+    this.undoCoalesceKey = null;
+    if (this.undoCoalesceTimer !== undefined) {
+      clearTimeout(this.undoCoalesceTimer);
+      this.undoCoalesceTimer = undefined;
+    }
     if (this.suppressUndoCapture) return;
     const state = this.captureUndoState();
     if (state === undefined) return;
     this.undoStack.push(state);
     this.redoStack = [];
     this.processEventListener('onHistoryChanged', []);
+  }
+
+  /**
+   * Snapshot once per `key` until `delayMs` elapses. Later edits with the
+   * same key (typing, sliders) stay one undo step.
+   */
+  captureCoalescedUndo(key: string, delayMs: number = 400): void {
+    if (this.suppressUndoCapture) return;
+    if (this.undoCoalesceKey !== key) {
+      this.captureUndoSnapshot();
+      this.undoCoalesceKey = key;
+    }
+    if (this.undoCoalesceTimer !== undefined) {
+      clearTimeout(this.undoCoalesceTimer);
+    }
+    this.undoCoalesceTimer = setTimeout(() => {
+      this.undoCoalesceKey = null;
+      this.undoCoalesceTimer = undefined;
+    }, delayMs);
   }
 
   /** Return the current state as a snapshot. Override in subclasses. */
@@ -112,6 +144,11 @@ export class TabState extends EventListenerModel {
   }
 
   clearUndoHistory(): void {
+    this.undoCoalesceKey = null;
+    if (this.undoCoalesceTimer !== undefined) {
+      clearTimeout(this.undoCoalesceTimer);
+      this.undoCoalesceTimer = undefined;
+    }
     this.undoStack = [];
     this.redoStack = [];
     this.processEventListener('onHistoryChanged', []);
@@ -317,7 +354,7 @@ export class TabState extends EventListenerModel {
   }
 
 
-  updateFile(){
+  updateFile(_options?: UpdateFileOptions){
     //stub method to be overridden by subclasses
   }
 
@@ -325,6 +362,26 @@ export class TabState extends EventListenerModel {
     let currentFile = this.getFile();
     if(currentFile.archive_path || currentFile.archive_path2){
       return this.saveAs();
+    }
+    const projectRel = editorFileProjectRelativePath(currentFile);
+    if(projectRel){
+      try{
+        const { ProjectFileSystem } = await import("@/apps/forge/ProjectFileSystem");
+        if(ProjectFileSystem.hasRoot()){
+          const pathInfo = pathParse(projectRel);
+          const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+          const ok = await ProjectFileSystem.writeFile(projectRel, saveBuffer);
+          if(ok){
+            currentFile.buffer = saveBuffer;
+            currentFile.unsaved_changes = false;
+            return true;
+          }
+          return false;
+        }
+      }catch(e){
+        console.error(e);
+        return false;
+      }
     }
     return new Promise<boolean>( async (resolve, reject) => {
       try{

@@ -7,7 +7,7 @@ import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/Forge
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { Project } from "@/apps/forge/Project";
-import path from "path";
+import { createOrOpenVirtualProjectFolder } from "@/apps/forge/virtual/VirtualProjectFolder";
 
 type GameModule = {
   moduleName: string;
@@ -31,6 +31,12 @@ interface ProjectDirectory {
   handle?: FileSystemDirectoryHandle;
 }
 
+type ProjectStorageMode = 'virtual' | 'local';
+
+function defaultStorageMode(): ProjectStorageMode {
+  return KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER ? 'virtual' : 'local';
+}
+
 export const ModalNewProject = (props: BaseModalProps) => {
   const modal = props.modal;
   const [show, setShow] = useState(modal.visible);
@@ -41,6 +47,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
   const [moduleName, setModuleName] = useState<string>('');
   const [areaName, setAreaName] = useState<string>('');
   const [projectDirectory, setProjectDirectory] = useState<ProjectDirectory>();
+  const [storageMode, setStorageMode] = useState<ProjectStorageMode>(defaultStorageMode());
 
   const onHide = () => {
     setShow(false);
@@ -95,55 +102,51 @@ export const ModalNewProject = (props: BaseModalProps) => {
 
   const handleCreateProject = async () => {
     console.log('handleCreateProject', projectName, selectedGameModule);
-    if(!projectDirectory){
+    const useVirtual = storageMode === 'virtual';
+    if(!useVirtual && !projectDirectory){
       return;
     }
-    const project = new Project();
-    project.settings.game = KotOR.GameState.GameKey;
-    project.settings.name = projectName;
-    project.settings.type = projectType;
-    project.settings.open_files = [];
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-      if(!projectDirectory.path){
-        console.error('Project directory path is required');
+    try{
+      ProjectFileSystem.clearDirectoryCache();
+      if(useVirtual){
+        const folder = await createOrOpenVirtualProjectFolder(projectName);
+        ProjectFileSystem.rootDirectoryHandle = folder.handle;
+        ProjectFileSystem.rootDirectoryPath = undefined as unknown as string;
+        ProjectFileSystem.isVirtual = true;
+      }else if(projectDirectory?.handle){
+        ProjectFileSystem.rootDirectoryHandle = projectDirectory.handle;
+        ProjectFileSystem.rootDirectoryPath = undefined as unknown as string;
+        ProjectFileSystem.isVirtual = false;
+      }else if(projectDirectory?.path){
+        ProjectFileSystem.rootDirectoryPath = projectDirectory.path;
+        ProjectFileSystem.rootDirectoryHandle = undefined as unknown as FileSystemDirectoryHandle;
+        ProjectFileSystem.isVirtual = false;
+      }else{
+        console.error('Project directory path or handle is required');
         return;
       }
-      ProjectFileSystem.rootDirectoryPath = projectDirectory.path;
-      ProjectFileSystem.rootDirectoryHandle = undefined as unknown as FileSystemDirectoryHandle;
-      ForgeState.project = project;
-      project.saveSettings();
+
+      const project = new Project();
+      project.settings.game = KotOR.GameState.GameKey;
+      project.settings.name = projectName;
+      project.settings.type = projectType;
+      project.settings.open_files = [];
+      await project.saveSettings();
       if(projectType === ProjectType.MODULE){
         const gameModule = gameModules[selectedGameModule];
         if(gameModule){
           console.log('selectedGameModule', gameModule.entryArea);
           await copyTemplateAreaLayouts(gameModule.entryArea, areaName);
         }
-        const { ifo, are, git } = await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
+        await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
       }
       modal.close();
-      return;
-    }
-    
-    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
-      if(!projectDirectory.handle){
-        console.error('Project directory handle is required');
-        return;
+      await project.open();
+      if(ForgeState.project instanceof Project){
+        await ProjectFileSystem.initializeProjectExplorer();
       }
-      ProjectFileSystem.rootDirectoryPath = undefined as unknown as string;
-      ProjectFileSystem.rootDirectoryHandle = projectDirectory.handle;
-      console.log('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
-      ForgeState.project = project;
-      project.saveSettings();
-      if(projectType === ProjectType.MODULE){
-        const gameModule = gameModules[selectedGameModule];
-        if(gameModule){
-          console.log('selectedGameModule', gameModule.entryArea);
-          await copyTemplateAreaLayouts(gameModule.entryArea, areaName);
-        }
-        const { ifo, are, git } = await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
-      }
-      modal.close();
-      return;
+    }catch(e){
+      console.error('Failed to create project', e);
     }
   };
 
@@ -205,10 +208,20 @@ export const ModalNewProject = (props: BaseModalProps) => {
           </ForgeInputGroup>
 
           <ForgeInputGroup>
-            <ForgeInputGroup.Text>Directory</ForgeInputGroup.Text>
-            <ForgeInput type="text" value={projectDirectory?.name} onChange={(e) => setProjectDirectory({ path: e.target.value })} />
-            <ForgeButton variant="primary" onClick={handleSelectProjectDirectory}>Locate</ForgeButton>
+            <ForgeInputGroup.Text>Storage</ForgeInputGroup.Text>
+            <ForgeSelect value={storageMode} onChange={(e) => setStorageMode(e.target.value as ProjectStorageMode)}>
+              <option value="virtual">Virtual folder</option>
+              <option value="local">Local folder</option>
+            </ForgeSelect>
           </ForgeInputGroup>
+
+          {storageMode === 'local' && (
+            <ForgeInputGroup>
+              <ForgeInputGroup.Text>Directory</ForgeInputGroup.Text>
+              <ForgeInput type="text" value={projectDirectory?.name || ''} onChange={(e) => setProjectDirectory({ path: e.target.value })} />
+              <ForgeButton variant="primary" onClick={handleSelectProjectDirectory}>Locate</ForgeButton>
+            </ForgeInputGroup>
+          )}
 
           <ForgeInputGroup>
             <ForgeInputGroup.Text>Type</ForgeInputGroup.Text>
@@ -246,7 +259,13 @@ export const ModalNewProject = (props: BaseModalProps) => {
 
       <ForgeDialog.Footer>
         <ForgeButton variant="secondary" onClick={handleClose}>Close</ForgeButton>
-        <ForgeButton variant="primary" onClick={handleCreateProject}>Create Project</ForgeButton>
+        <ForgeButton
+          variant="primary"
+          onClick={handleCreateProject}
+          disabled={storageMode === 'local' && !projectDirectory?.path && !projectDirectory?.handle}
+        >
+          Create Project
+        </ForgeButton>
       </ForgeDialog.Footer>
     </ForgeDialog>
   );

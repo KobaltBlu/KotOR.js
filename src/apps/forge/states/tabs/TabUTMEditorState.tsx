@@ -1,7 +1,9 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import * as KotOR from "@/apps/forge/KotOR";
+import { snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
+import { beginUtxFileUpdate, finishUtxUndoApply } from "@/apps/forge/helpers/UTxEditorHelpers";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabUTMEditor } from "@/apps/forge/components/tabs/tab-utm-editor/TabUTMEditor";
 import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
@@ -50,6 +52,7 @@ export class TabUTMEditorState extends TabState {
   
         file.readFile().then( (response) => {
           this.store = new ForgeStore(response.buffer, file.resref);
+          this.clearUndoHistory();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
@@ -73,18 +76,28 @@ export class TabUTMEditorState extends TabState {
     if(!!resref && ext == 'utm'){
       this.store.templateResRef = resref;
       this.store.resref = resref;
-      this.updateFile();
+      this.updateFile({ skipHistory: true });
       return this.store.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
   }
-  
-  updateFile(){
+
+  updateFile(options?: UpdateFileOptions){
+    beginUtxFileUpdate(this, options);
     this.store.exportToBlueprint();
     if(this.file){
       this.file.buffer = this.store.blueprint.getExportBuffer();
       this.processEventListener('onEditorFileChange', [this]);
     }
+  }
+
+  protected captureUndoState(): Uint8Array | undefined {
+    return snapshotGff(this.blueprint);
+  }
+
+  protected applyUndoState(state: Uint8Array): void {
+    this.store = new ForgeStore(state, this.file?.resref);
+    finishUtxUndoApply(this);
   }
 }
 

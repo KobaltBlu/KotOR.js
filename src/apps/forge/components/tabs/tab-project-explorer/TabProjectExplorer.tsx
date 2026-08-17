@@ -8,11 +8,46 @@ import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
 import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { Project } from "@/apps/forge/Project";
+import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
 import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompile";
 import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
 import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
 import { ContextMenuItem, useContextMenu } from "@/apps/forge/components/common/ContextMenu";
 import { ForgeButton } from "@/apps/forge/components/ui";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import {
+  copyTextToClipboard,
+  explorerCopyPath,
+  explorerCopyRelativePath,
+  explorerNodeRelPath,
+  explorerTargetDir,
+  isExplorerRootNode,
+  isProtectedExplorerPath,
+  joinProjectRel,
+  sanitizeProjectEntryName,
+} from "@/apps/forge/helpers/projectExplorerActions";
+import { retargetOpenProjectEditors } from "@/apps/forge/helpers/retargetProjectTabs";
+
+const GFF_LIKE_EXTENSIONS = new Set([
+  "are",
+  "bic",
+  "dlg",
+  "fac",
+  "git",
+  "gff",
+  "ifo",
+  "jrl",
+  "res",
+  "utc",
+  "utd",
+  "ute",
+  "uti",
+  "utm",
+  "utp",
+  "uts",
+  "utt",
+  "utw",
+]);
 
 function folderExpanded(expanded: Record<string, boolean>, relKey: string): boolean {
   if (expanded[relKey] !== undefined) return expanded[relKey] as boolean;
@@ -24,11 +59,12 @@ function ExplorerTreeBranch(props: {
   expanded: Record<string, boolean>;
   setExpanded: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   depth: number;
-  onResourceContextMenu?: (event: React.MouseEvent, node: FileBrowserNode) => void;
+  onNodeContextMenu?: (event: React.MouseEvent, node: FileBrowserNode) => void;
 }) {
-  const { node, expanded, setExpanded, depth, onResourceContextMenu } = props;
+  const { node, expanded, setExpanded, depth, onNodeContextMenu } = props;
+  const isFolder = node.type === "group";
 
-  if (node.type === "resource") {
+  if (!isFolder) {
     const resPath = node.data?.path as string | undefined;
     return (
       <ListItemNode
@@ -39,8 +75,8 @@ function ExplorerTreeBranch(props: {
         isExpanded={false}
         iconType="file"
         onContextMenu={(e) => {
-          if (resPath && typeof onResourceContextMenu === "function") {
-            onResourceContextMenu(e, node);
+          if (typeof onNodeContextMenu === "function") {
+            onNodeContextMenu(e, node);
           }
         }}
         onDoubleClick={() => {
@@ -58,7 +94,6 @@ function ExplorerTreeBranch(props: {
 
   const relKey = String(node.data?.relPath ?? "");
   const isExp = folderExpanded(expanded, relKey);
-  const hasChildren = node.nodes.length > 0;
 
   const toggle = () => {
     setExpanded((prev) => {
@@ -72,26 +107,42 @@ function ExplorerTreeBranch(props: {
       id={`folder:${relKey || "__root__"}`}
       name={node.name}
       depth={depth}
-      hasChildren={hasChildren}
-      isExpanded={isExp && hasChildren}
+      hasChildren={true}
+      isExpanded={isExp}
       iconType="folder"
       onToggle={toggle}
       onClick={toggle}
+      onContextMenu={(e) => {
+        if (typeof onNodeContextMenu === "function") {
+          onNodeContextMenu(e, node);
+        }
+      }}
     >
-      {hasChildren
-        ? node.nodes.map((child: FileBrowserNode) => (
-            <ExplorerTreeBranch
-              key={`${child.type}-${child.data?.relPath ?? child.data?.path ?? ""}-${child.id}`}
-              node={child}
-              expanded={expanded}
-              setExpanded={setExpanded}
-              depth={depth + 1}
-              onResourceContextMenu={onResourceContextMenu}
-            />
-          ))
-        : null}
+      {node.nodes.map((child: FileBrowserNode) => (
+        <ExplorerTreeBranch
+          key={`${child.type}-${child.data?.relPath ?? child.data?.path ?? ""}-${child.id}`}
+          node={child}
+          expanded={expanded}
+          setExpanded={setExpanded}
+          depth={depth + 1}
+          onNodeContextMenu={onNodeContextMenu}
+        />
+      ))}
     </ListItemNode>
   );
+}
+
+function promptEntryName(title: string, initial: string): string | undefined {
+  const raw = window.prompt(title, initial);
+  if (raw == null) {
+    return undefined;
+  }
+  const name = sanitizeProjectEntryName(raw);
+  if (!name) {
+    window.alert("Enter a valid name. The name cannot be empty or contain \\ / : * ? \" < > |");
+    return undefined;
+  }
+  return name;
 }
 
 export const TabProjectExplorer = function (props: BaseTabProps) {
@@ -101,70 +152,213 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ "": true });
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
 
-  const onResourceContextMenu = useCallback(
-    (event: React.MouseEvent, node: FileBrowserNode) => {
-      const nodeExt = (node.name?.split(".").pop() || "").toLowerCase();
-      const gffLikeExtensions = new Set([
-        "are",
-        "bic",
-        "dlg",
-        "fac",
-        "git",
-        "gff",
-        "ifo",
-        "jrl",
-        "res",
-        "utc",
-        "utd",
-        "ute",
-        "uti",
-        "utm",
-        "utp",
-        "uts",
-        "utt",
-        "utw",
-      ]);
-      const canOpenWithGff =
-        node.type === "resource" && !!node.data?.path && gffLikeExtensions.has(nodeExt);
-      const canOpenWithHex = node.type === "resource" && !!node.data?.path;
+  const refreshExplorer = useCallback(async () => {
+    await TabProjectExplorerState.RefreshQuiet(props.tab as TabProjectExplorerState);
+  }, [props.tab]);
 
-      const items: ContextMenuItem[] = [];
-      if (canOpenWithGff) {
-        items.push({
-          id: "open-with-gff",
-          label: "Open with GFF",
-          onClick: () => {
-            ForgeState.tabManager.addTab(
-              new TabGFFEditorState({
-                editorFile: new EditorFile({
-                  path: node.data!.path,
+  const createFileAt = useCallback(async (dirRel: string) => {
+    const name = promptEntryName("New File", "untitled.txt");
+    if (!name) {
+      return;
+    }
+    const rel = joinProjectRel(dirRel, name);
+    if (await ProjectFileSystem.exists(rel)) {
+      window.alert(`A file or folder named "${name}" already exists.`);
+      return;
+    }
+    const parent = dirRel;
+    if (parent && !(await ProjectFileSystem.exists(parent))) {
+      const made = await ProjectFileSystem.mkdir(parent, { recursive: true });
+      if (!made) {
+        window.alert("Could not create the parent folder.");
+        return;
+      }
+    }
+    const written = await ProjectFileSystem.writeFile(rel, new Uint8Array(0));
+    if (!written) {
+      window.alert("Could not create the file.");
+      return;
+    }
+    setExpanded((prev) => ({ ...prev, [dirRel]: true }));
+    await refreshExplorer();
+    FileTypeManager.onOpenResource(
+      new EditorFile({
+        path: EditorFile.referenceURIForProjectRelative(rel),
+        useProjectFileSystem: true,
+      })
+    );
+  }, [refreshExplorer]);
+
+  const createFolderAt = useCallback(async (dirRel: string) => {
+    const name = promptEntryName("New Folder", "New Folder");
+    if (!name) {
+      return;
+    }
+    const rel = joinProjectRel(dirRel, name);
+    if (await ProjectFileSystem.exists(rel)) {
+      window.alert(`A file or folder named "${name}" already exists.`);
+      return;
+    }
+    const made = await ProjectFileSystem.mkdir(rel, { recursive: true });
+    if (!made) {
+      window.alert("Could not create the folder.");
+      return;
+    }
+    setExpanded((prev) => ({ ...prev, [dirRel]: true, [rel]: true }));
+    await refreshExplorer();
+  }, [refreshExplorer]);
+
+  const renameNode = useCallback(async (node: FileBrowserNode) => {
+    if (isExplorerRootNode(node)) {
+      return;
+    }
+    const rel = explorerNodeRelPath(node);
+    if (!rel.length || isProtectedExplorerPath(rel)) {
+      return;
+    }
+    const name = promptEntryName("Rename", node.name);
+    if (!name || name === node.name) {
+      return;
+    }
+    const parentDir = node.type === "group"
+      ? (rel.includes("/") ? rel.slice(0, rel.lastIndexOf("/")) : "")
+      : explorerTargetDir(node);
+    const dest = joinProjectRel(parentDir, name);
+    if (await ProjectFileSystem.exists(dest)) {
+      window.alert(`A file or folder named "${name}" already exists.`);
+      return;
+    }
+    const ok = await ProjectFileSystem.rename(rel, dest);
+    if (!ok) {
+      window.alert("Could not rename.");
+      return;
+    }
+    retargetOpenProjectEditors(rel, dest);
+    await refreshExplorer();
+  }, [refreshExplorer]);
+
+  const deleteNode = useCallback(async (node: FileBrowserNode) => {
+    if (isExplorerRootNode(node)) {
+      return;
+    }
+    const rel = explorerNodeRelPath(node);
+    if (!rel.length || isProtectedExplorerPath(rel)) {
+      return;
+    }
+    const kind = node.type === "group" ? "folder" : "file";
+    if (!window.confirm(`Are you sure you want to delete the ${kind} '${node.name}'?`)) {
+      return;
+    }
+    const ok = node.type === "group"
+      ? await ProjectFileSystem.rmdir(rel, { recursive: true })
+      : await ProjectFileSystem.unlink(rel);
+    if (!ok) {
+      window.alert("Could not delete.");
+      return;
+    }
+    await refreshExplorer();
+  }, [refreshExplorer]);
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: FileBrowserNode) => {
+      const isRoot = isExplorerRootNode(node);
+      const isFolder = node.type === "group";
+      const rel = explorerNodeRelPath(node);
+      const protectedPath = isRoot || isProtectedExplorerPath(rel);
+      const nodeExt = (node.name?.split(".").pop() || "").toLowerCase();
+      const canOpenWithGff = !isFolder && !!node.data?.path && GFF_LIKE_EXTENSIONS.has(nodeExt);
+      const canOpenWithHex = !isFolder && !!node.data?.path;
+      const targetDir = explorerTargetDir(node);
+
+      const items: ContextMenuItem[] = [
+        {
+          id: "new-file",
+          label: "New File...",
+          onClick: () => { void createFileAt(targetDir); },
+        },
+        {
+          id: "new-folder",
+          label: "New Folder...",
+          onClick: () => { void createFolderAt(targetDir); },
+        },
+      ];
+
+      if (!isFolder && node.data?.path) {
+        items.push(
+          { id: "sep-open", separator: true },
+          {
+            id: "open",
+            label: "Open",
+            onClick: () => {
+              FileTypeManager.onOpenResource(
+                new EditorFile({
+                  path: node.data.path,
                   useProjectFileSystem: true,
                 }),
-              }),
-            );
+              );
+            },
           },
-        });
-      }
-      if (canOpenWithHex) {
-        if (items.length) {
-          items.push({ id: "sep-open-with-hex", separator: true });
+        );
+        if (canOpenWithGff) {
+          items.push({
+            id: "open-with-gff",
+            label: "Open with GFF",
+            onClick: () => {
+              ForgeState.tabManager.addTab(
+                new TabGFFEditorState({
+                  editorFile: new EditorFile({
+                    path: node.data!.path,
+                    useProjectFileSystem: true,
+                  }),
+                }),
+              );
+            },
+          });
         }
-        items.push({
-          id: "open-with-hex",
-          label: "Open in hex editor",
-          onClick: () => {
-            FileTypeManager.openHexEditor({
-              path: node.data!.path,
-              useProjectFileSystem: true,
-            });
-          },
-        });
+        if (canOpenWithHex) {
+          items.push({
+            id: "open-with-hex",
+            label: "Open in Hex Editor",
+            onClick: () => {
+              FileTypeManager.openHexEditor({
+                path: node.data!.path,
+                useProjectFileSystem: true,
+              });
+            },
+          });
+        }
       }
-      if (items.length) {
-        showContextMenu(event.clientX, event.clientY, items);
-      }
+
+      items.push(
+        { id: "sep-copy", separator: true },
+        {
+          id: "copy-path",
+          label: "Copy Path",
+          onClick: () => { void copyTextToClipboard(explorerCopyPath(node, ProjectFileSystem.rootDirectoryPath)); },
+        },
+        {
+          id: "copy-relative-path",
+          label: "Copy Relative Path",
+          onClick: () => { void copyTextToClipboard(explorerCopyRelativePath(node)); },
+        },
+        { id: "sep-mutate", separator: true },
+        {
+          id: "rename",
+          label: "Rename...",
+          disabled: protectedPath,
+          onClick: () => { void renameNode(node); },
+        },
+        {
+          id: "delete",
+          label: "Delete",
+          disabled: protectedPath,
+          onClick: () => { void deleteNode(node); },
+        },
+      );
+
+      showContextMenu(event.clientX, event.clientY, items);
     },
-    [showContextMenu],
+    [createFileAt, createFolderAt, deleteNode, renameNode, showContextMenu],
   );
 
   useEffectOnce(() => {
@@ -179,6 +373,12 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
 
   const handleOpenProject = () => {
     Project.OpenByDirectory();
+  };
+
+  const handleNewProject = () => {
+    const newProjectModalState = new ModalNewProjectState();
+    ForgeState.modalManager.addModal(newProjectModalState);
+    newProjectModalState.open();
   };
 
   const runBulkCompileAllNss = async () => {
@@ -230,9 +430,14 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
         >
           No project is currently open.
         </div>
-        <ForgeButton variant="primary" onClick={handleOpenProject}>
-          Open Project
-        </ForgeButton>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <ForgeButton variant="primary" onClick={handleNewProject}>
+            New Project
+          </ForgeButton>
+          <ForgeButton variant="primary" onClick={handleOpenProject}>
+            Open Project
+          </ForgeButton>
+        </div>
       </div>
     );
   }
@@ -248,7 +453,7 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
               expanded={expanded}
               setExpanded={setExpanded}
               depth={0}
-              onResourceContextMenu={onResourceContextMenu}
+              onNodeContextMenu={onNodeContextMenu}
             />
           ))}
         </ForgeTreeView>

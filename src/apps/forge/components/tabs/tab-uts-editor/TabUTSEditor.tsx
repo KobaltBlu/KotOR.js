@@ -274,7 +274,7 @@ export const TabUTSEditor = function(props: BaseTabProps){
                 <td>
                   <div className="flex-horizontal">
                     <label className="form-label pr-2" style={{width: '100px'}}>{volume}</label>
-                    <input type="range" min="0" max="127" step="1" value={volume} onChange={(e) => { setVolume(Number(e.target.value)); tab.sound.volume = Number(e.target.value); tab.updateFile(); }} title={volume.toString()} />
+                    <input type="range" min="0" max="127" step="1" value={volume} onChange={(e) => { setVolume(Number(e.target.value)); tab.sound.volume = Number(e.target.value); tab.updateFile({ coalesceKey: 'volume' }); }} title={volume.toString()} />
                   </div>
                 </td>
               </tr>
@@ -285,7 +285,7 @@ export const TabUTSEditor = function(props: BaseTabProps){
                 <td>
                   <div className="flex-horizontal">
                     <label className="form-label pr-2" style={{width: '100px'}}>{volumeVariation}</label>
-                    <input type="range" min="0" max="127" step="1" value={volumeVariation} onChange={(e) => { setVolumeVariation(Number(e.target.value)); tab.sound.volumeVariation = Number(e.target.value); tab.updateFile(); }} title={volumeVariation.toString()} />
+                    <input type="range" min="0" max="127" step="1" value={volumeVariation} onChange={(e) => { setVolumeVariation(Number(e.target.value)); tab.sound.volumeVariation = Number(e.target.value); tab.updateFile({ coalesceKey: 'volumeVariation' }); }} title={volumeVariation.toString()} />
                   </div>
                 </td>
               </tr>
@@ -296,7 +296,7 @@ export const TabUTSEditor = function(props: BaseTabProps){
                 <td>
                   <div className="flex-horizontal">
                     <label className="form-label pr-2" style={{width: '100px'}}>{pitchVariation.toFixed(2)}</label>
-                    <input type="range" min="0" max="1" step="0.01" value={pitchVariation} onChange={(e) => { setPitchVariation(Number(e.target.value)); tab.sound.pitchVariation = Number(e.target.value); tab.updateFile(); }} title={pitchVariation.toFixed(2)} />
+                    <input type="range" min="0" max="1" step="0.01" value={pitchVariation} onChange={(e) => { setPitchVariation(Number(e.target.value)); tab.sound.pitchVariation = Number(e.target.value); tab.updateFile({ coalesceKey: 'pitchVariation' }); }} title={pitchVariation.toFixed(2)} />
                   </div>
                 </td>
               </tr>
