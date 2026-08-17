@@ -47,6 +47,10 @@
   color: var(--forge-text-muted, var(--forge-text));
   font-size: 12px;
   line-height: 1.4;
+  text-align: center;
+  button {
+    margin: 0 auto;
+  }
 }
 
 .resource-explorer__load-more {

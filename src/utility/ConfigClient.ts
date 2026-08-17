@@ -239,6 +239,19 @@ const defaults: any = {
     userThemes: [],
     themeCustomizations: {},
     defaultEditors: {},
+    editor: {
+      fontFamily: 'ui-monospace, "Cascadia Code", Consolas, monospace',
+      fontSize: 14,
+      fontLigatures: false,
+      tabSize: 2,
+      insertSpaces: true,
+      wordWrap: 'off',
+      minimap: true,
+      lineNumbers: 'on',
+      renderWhitespace: 'selection',
+      scrollBeyondLastLine: true,
+      mouseWheelZoom: false,
+    },
   },
 };
 

@@ -12,6 +12,7 @@ import {
   ModelViewerLayerVisibility,
   TabModelViewerState,
 } from "@/apps/forge/states/tabs/TabModelViewerState";
+import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
 
 const POINT_OFFSET_HEIGHT = 1;
 
@@ -571,6 +572,7 @@ export class TabPTHEditorState extends TabState {
 
   private async loadLayoutFile(): Promise<void> {
     if(!this.file) return;
+    if(!utxShouldShow3DPreview()) return;
 
     try {
       // Get the resref (filename without extension) from the PTH file
@@ -599,6 +601,7 @@ export class TabPTHEditorState extends TabState {
     this.disposeLayout();
 
     if(!this.layout || !this.layout.rooms || this.layout.rooms.length === 0) return;
+    if(!utxShouldShow3DPreview()) return;
 
     // Load each room model
     for(let i = 0; i < this.layout.rooms.length; i++){
@@ -640,7 +643,11 @@ export class TabPTHEditorState extends TabState {
     }
 
     // Load textures
-    await KotOR.TextureLoader.LoadQueue();
+    try {
+      await KotOR.TextureLoader.LoadQueue();
+    } catch (e) {
+      console.warn('TabPTHEditorState: texture queue failed', e);
+    }
 
     // Update point Z positions based on walkmesh raycasting
     await this.updatePointsFromWalkmesh();

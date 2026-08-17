@@ -42,7 +42,7 @@ export const ForgeStatusBar = function ForgeStatusBar() {
 
   return (
     <div className="forge-statusbar">
-      <span className="forge-statusbar__game">{hasGameData ? gameKey : "No game"}</span>
+      <span className="forge-statusbar__game" title={hasGameData ? 'Game install directory loaded and online' : "Game install directory not loaded, forge experience will be limited"}>{gameKey}{!hasGameData ? " [Offline]" : ''}</span>
       <span className="forge-statusbar__tab" title={tabLabel}>{tabLabel || "Ready"}</span>
       <span className="forge-statusbar__idle">Ready</span>
     </div>

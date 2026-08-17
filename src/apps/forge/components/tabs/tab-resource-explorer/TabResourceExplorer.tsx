@@ -6,7 +6,7 @@ import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import { ForgeProgress, ForgeInput, ForgeInputGroup, ForgeButton } from "@/apps/forge/components/ui";
 import { executeCommand } from "@/apps/forge/commands/forgeCommands";
-import "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer.scss";
+import  "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer.scss";
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
 import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { ResourceListNode } from "@/apps/forge/components/treeview/ResourceListNode";
@@ -361,7 +361,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
         </div>
       ) : !hasGameData && resourceList.length === 0 ? (
         <div className="resource-explorer__empty">
-          <p>No game directory is loaded. Open local files from File, or load KotOR/TSL data to browse BIFs and 2DAs.</p>
+          <p>No game directory is loaded. Open your game directory to browse resources and level up your editing experience.</p>
           <ForgeButton
             size="sm"
             variant="secondary"

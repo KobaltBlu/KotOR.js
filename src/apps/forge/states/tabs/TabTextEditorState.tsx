@@ -28,6 +28,7 @@ import {
   type NssCodeLineMap,
 } from "@/nwscript/inspect/nssCodeLineMap";
 import { getMonacoThemeForLanguage } from "@/apps/forge/settings/forgeTheme";
+import { getEditorSettings, setEditorSettings, toMonacoEditorOptions, toMonacoModelOptions } from "@/apps/forge/settings/forgeEditorSettings";
 
 export class TabTextEditorState extends TabState {
 
@@ -55,7 +56,7 @@ export class TabTextEditorState extends TabState {
   modifiedModel: monacoEditor.editor.ITextModel | null = null;
 
   resolvedIncludes: Map<string, string> = new Map();
-  tabSize: number = 2;
+  tabSize: number = getEditorSettings().tabSize;
   manualLanguageId: string | null = null; // Override for manual language selection
 
   isNcsFile(): boolean {
@@ -243,20 +244,36 @@ export class TabTextEditorState extends TabState {
 
   setEditor(editor: monacoEditor.editor.IStandaloneCodeEditor){
     this.editor = editor;
-    this.updateTabSize();
+    this.applyEditorSettings();
   }
 
   setTabSize(size: number): void {
-    this.tabSize = size;
+    setEditorSettings({ tabSize: size });
+    this.applyEditorSettings();
+  }
+
+  applyEditorSettings(): void {
+    const settings = getEditorSettings();
+    this.tabSize = settings.tabSize;
+    const editorOptions = toMonacoEditorOptions(settings);
+    if(this.editor) {
+      this.editor.updateOptions(editorOptions);
+    }
+    if(this.diffEditor) {
+      this.diffEditor.updateOptions(editorOptions);
+      this.diffEditor.getOriginalEditor().updateOptions(editorOptions);
+      this.diffEditor.getModifiedEditor().updateOptions(editorOptions);
+    }
     this.updateTabSize();
   }
 
   updateTabSize(): void {
+    const modelOptions = toMonacoModelOptions();
     // Update regular editor model (tabSize is a model option, not editor option)
     if(this.editor) {
       const model = this.editor.getModel();
       if(model) {
-        model.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+        model.updateOptions(modelOptions);
       }
     }
     
@@ -268,19 +285,19 @@ export class TabTextEditorState extends TabState {
       const modifiedModel = modifiedEditor.getModel();
       
       if(originalModel) {
-        originalModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+        originalModel.updateOptions(modelOptions);
       }
       if(modifiedModel) {
-        modifiedModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+        modifiedModel.updateOptions(modelOptions);
       }
     }
     
     // Update standalone models if they exist
     if(this.originalModel) {
-      this.originalModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+      this.originalModel.updateOptions(modelOptions);
     }
     if(this.modifiedModel) {
-      this.modifiedModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+      this.modifiedModel.updateOptions(modelOptions);
     }
   }
 
@@ -290,6 +307,7 @@ export class TabTextEditorState extends TabState {
 
   setDiffEditor(diffEditor: monacoEditor.editor.IStandaloneDiffEditor){
     this.diffEditor = diffEditor;
+    this.applyEditorSettings();
   }
 
   switchToDiffMode(): void {
@@ -303,9 +321,10 @@ export class TabTextEditorState extends TabState {
     this.originalModel = this.monaco.editor.createModel(this.originalText, langId);
     this.modifiedModel = this.monaco.editor.createModel(this.code, langId);
     
-    // Apply tab size to models
-    this.originalModel.updateOptions({ tabSize: this.tabSize });
-    this.modifiedModel.updateOptions({ tabSize: this.tabSize });
+    // Apply indent settings to models
+    const modelOptions = toMonacoModelOptions();
+    this.originalModel.updateOptions(modelOptions);
+    this.modifiedModel.updateOptions(modelOptions);
     
     this.isDiffMode = true;
     this.processEventListener('onDiffModeChanged');

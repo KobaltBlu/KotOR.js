@@ -20,6 +20,7 @@ import {
   createProgressModal,
 } from "@/apps/forge/helpers/AssetExtraction";
 import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
+import { isNonEmptyEditorBuffer } from "@/apps/forge/helpers/editorFileBuffer";
 
 declare const dialog: any;
 
@@ -272,7 +273,9 @@ export class TabModelViewerState extends TabState {
     this.ui3DRenderer.sceneGraphManager.sceneNode.addChildNode(this.layoutSceneGraphNode);
 
     this.setContentView(<TabModelViewer tab={this}></TabModelViewer>);
-    this.openFile();
+    this.openFile().catch((err) => {
+      console.warn('TabModelViewerState.openFile failed', err);
+    });
   }
 
   protected captureUndoState(): ModelViewerUndoSnapshot | undefined {
@@ -376,6 +379,12 @@ export class TabModelViewerState extends TabState {
         this.tabName = this.file.getFilename();
   
         file.readFile().then( (response) => {
+          if(!isNonEmptyEditorBuffer(response?.buffer)){
+            console.warn('TabModelViewerState: empty MDL buffer', this.file?.getFilename());
+            this.processEventListener('onEditorFileLoad', [this]);
+            resolve(this.model);
+            return;
+          }
           this.mdl = response.buffer;
           this.mdx = (response.buffer2 as Buffer) ?? new Uint8Array(0);
           const head = new TextDecoder("utf-8", { fatal: false }).decode(
@@ -396,6 +405,9 @@ export class TabModelViewerState extends TabState {
             editorMode: true, 
             disableMatrixUpdate: false,
             onComplete: (model: KotOR.OdysseyModel3D) => {
+              if(!model){
+                return;
+              }
               this.model = model;
               model.addEventListener('odysseyInstanceReplaced', this.onOdysseyInstanceReplaced as any);
               this.ui3DRenderer.attachObject(this.model, true);
@@ -431,7 +443,15 @@ export class TabModelViewerState extends TabState {
               this.processEventListener<TabModelViewerStateEventListenerTypes>('onKeyframeEditorChange', [this]);
               resolve(this.model);
             }
+          }).catch((err) => {
+            console.warn('TabModelViewerState: FromMDL failed', err);
+            this.processEventListener('onEditorFileLoad', [this]);
+            resolve(this.model);
           });
+        }).catch((err) => {
+          console.warn('TabModelViewerState: readFile failed', err);
+          this.processEventListener('onEditorFileLoad', [this]);
+          resolve(this.model);
         });
       }
     });

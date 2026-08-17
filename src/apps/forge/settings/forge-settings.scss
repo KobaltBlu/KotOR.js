@@ -107,6 +107,15 @@
   color: var(--forge-text-muted);
 }
 
+.forge-settings-page__section {
+  margin: 16px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--forge-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .forge-setting-row {
   display: flex;
   align-items: flex-start;
@@ -137,7 +146,8 @@
   max-width: 220px;
 
   .forge-select,
-  .forge-btn {
+  .forge-btn,
+  .forge-input {
     width: 100%;
     margin-bottom: 0;
   }

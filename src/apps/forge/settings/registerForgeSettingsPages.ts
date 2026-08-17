@@ -7,5 +7,6 @@
  */
 
 import "@/apps/forge/settings/pages/GeneralSettingsPage";
+import "@/apps/forge/settings/pages/EditorSettingsPage";
 import "@/apps/forge/settings/pages/FileTypesSettingsPage";
 import "@/apps/forge/settings/pages/AppearanceSettingsPage";

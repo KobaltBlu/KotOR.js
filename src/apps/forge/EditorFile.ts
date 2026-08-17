@@ -456,6 +456,7 @@ export class EditorFile extends EventListenerModel {
 
   async readFile(): Promise<EditorFileReadResponse> {
     return new Promise<EditorFileReadResponse>( async (resolve, reject) => {
+      try {
       if (this.reskey == KotOR.ResourceTypes.mdl || this.reskey == KotOR.ResourceTypes.mdx) {
         if (this.mdlAsciiOnly) {
           resolve(await this.readMdlAsciiOnlyFile());
@@ -527,7 +528,7 @@ export class EditorFile extends EventListenerModel {
                         buffer: this.buffer,
                       });
                     }).catch( (err: any) => {
-                      throw err;
+                      reject(err);
                     });
                   }else if(this.useProjectFileSystem){
                     ProjectFileSystem.readFile(this.path).then( (buffer: Uint8Array) => {
@@ -537,12 +538,15 @@ export class EditorFile extends EventListenerModel {
                         buffer: this.buffer,
                       });
                     }).catch( (err: any) => {
-                      throw err;
+                      reject(err);
                     });
                   }else{
                     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
                       fs.readFile(this.path, (err, buffer) => {
-                        if(err) throw err;
+                        if(err){
+                          reject(err);
+                          return;
+                        }
       
                         this.buffer = new Uint8Array(buffer);
                         resolve({
@@ -588,6 +592,9 @@ export class EditorFile extends EventListenerModel {
           }
   
         }
+      }
+      } catch (err) {
+        reject(err);
       }
     });
   }
@@ -649,20 +656,24 @@ export class EditorFile extends EventListenerModel {
       if(this.archive_path){
         switch(this.protocol){
           case EditorFileProtocol.BIF:
-            const key_mdl = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdl']);
-            const key_mdx = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdx']);
+            try{
+              const key_mdl = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdl']);
+              const key_mdx = KotOR.KEYManager.Key.getFileKey(this.resref, KotOR.ResourceTypes['mdx']);
 
-            if((!(this.buffer instanceof Uint8Array) || !this.buffer?.length) && key_mdl){
-              this.buffer = await KotOR.KEYManager.Key.getFileBuffer(key_mdl);
-            }
+              if((!(this.buffer instanceof Uint8Array) || !this.buffer?.length) && key_mdl){
+                this.buffer = await KotOR.KEYManager.Key.getFileBuffer(key_mdl);
+              }
 
-            if((!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length) && key_mdx){
-              this.buffer2 = await KotOR.KEYManager.Key.getFileBuffer(key_mdx);
+              if((!(this.buffer2 instanceof Uint8Array) || !this.buffer2?.length) && key_mdx){
+                this.buffer2 = await KotOR.KEYManager.Key.getFileBuffer(key_mdx);
+              }
+            }catch(e){
+              console.warn('EditorFile.readMdlMdxFile BIF read failed', e);
             }
             
             resolve({
-              buffer: this.buffer,
-              buffer2: this.buffer2
+              buffer: this.buffer instanceof Uint8Array ? this.buffer : new Uint8Array(0),
+              buffer2: this.buffer2 instanceof Uint8Array ? this.buffer2 : new Uint8Array(0),
             });
           break;
           case EditorFileProtocol.ERF:

@@ -1,6 +1,7 @@
 import React from "react";
 import { ModalNewProject } from "@/apps/forge/components/modal/ModalNewProject";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { listDirectoryOrEmpty } from "@/apps/forge/helpers/listDirectoryOrEmpty";
 import * as KotOR from "@/apps/forge/KotOR";
 import path from "path";
 
@@ -20,7 +21,10 @@ const GameModules: Map<string, GameModule> = new Map();
 
 const loadGameModules = async () => {
   const results: GameModule[] = [];
-  const module_paths = await KotOR.GameFileSystem.readdir('modules');
+  const module_paths = await listDirectoryOrEmpty(
+    (relativePath) => KotOR.GameFileSystem.readdir(relativePath),
+    'modules'
+  );
   const rim_module_paths = module_paths.filter(module_path => module_path.endsWith('.rim'));
   const lookupMap = new Map<string, string>();
 
@@ -91,6 +95,9 @@ export class ModalNewProjectState extends ModalState {
     this.setView(<ModalNewProject modal={this} />);
     loadGameModules().then(modules => {
       this.processEventListener('onGameModulesLoaded', [modules]);
+    }).catch((e) => {
+      console.warn('loadGameModules failed', e);
+      this.processEventListener('onGameModulesLoaded', [[]]);
     });
   }
 }

@@ -17,6 +17,11 @@ import {
   setNcsInspectorDrawerWidth,
 } from "@/apps/forge/components/tabs/tab-ncs-inspector/ncsInspectorConfig";
 import { addForgeThemeChangeListener, removeForgeThemeChangeListener } from "@/apps/forge/settings/forgeTheme";
+import {
+  addForgeEditorSettingsListener,
+  removeForgeEditorSettingsListener,
+  toMonacoEditorOptions,
+} from "@/apps/forge/settings/forgeEditorSettings";
 
 export const TabTextEditor = function(props: any){
   const tab: TabTextEditorState = props.tab;
@@ -31,15 +36,18 @@ export const TabTextEditor = function(props: any){
   const [, forceUpdate] = useState({});
   const diffEditorContainerRef = useRef<HTMLDivElement>(null);
 
+  const editorVisualOptions = toMonacoEditorOptions();
   const options: monacoEditor.editor.IEditorOptions = {
-    automaticLayout: true
+    automaticLayout: true,
+    ...editorVisualOptions,
   };
 
   const diffOptions: monacoEditor.editor.IDiffEditorOptions = {
     automaticLayout: true,
     readOnly: false,
     originalEditable: false,
-    enableSplitViewResizing: true
+    enableSplitViewResizing: true,
+    ...editorVisualOptions,
   };
 
   const onChange = (newValue: any, e: any) => {
@@ -191,10 +199,16 @@ export const TabTextEditor = function(props: any){
       }
       forceUpdate({});
     };
+    const onEditorSettingsChange = () => {
+      tab.applyEditorSettings();
+      forceUpdate({});
+    };
     addForgeThemeChangeListener(onThemeChange);
+    addForgeEditorSettingsListener(onEditorSettingsChange);
 
     return () => {
       removeForgeThemeChangeListener(onThemeChange);
+      removeForgeEditorSettingsListener(onEditorSettingsChange);
       tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
       tab.removeEventListener('onDiffModeChanged', onDiffModeChanged);
       tab.removeEventListener('onRevealNss', onRevealNss);
@@ -313,7 +327,8 @@ export const TabTextEditor = function(props: any){
                 setTimeout(() => {
                   tab.setTabSize(2);
                 }, 0);
-              }
+              },
+              checked: tab.tabSize === 2
             },
             {
               label: '4 Spaces',
@@ -321,7 +336,8 @@ export const TabTextEditor = function(props: any){
                 setTimeout(() => {
                   tab.setTabSize(4);
                 }, 0);
-              }
+              },
+              checked: tab.tabSize === 4
             },
             {
               label: '8 Spaces',
@@ -329,7 +345,8 @@ export const TabTextEditor = function(props: any){
                 setTimeout(() => {
                   tab.setTabSize(8);
                 }, 0);
-              }
+              },
+              checked: tab.tabSize === 8
             }
           ]
         },

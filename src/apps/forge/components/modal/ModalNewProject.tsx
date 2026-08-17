@@ -74,6 +74,25 @@ export const ModalNewProject = (props: BaseModalProps) => {
     setGameModules([...modules]);
   };
 
+  const copyTemplateAreaLayouts = async (entryArea: string, destAreaName: string) => {
+    try {
+      const lyt = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, entryArea);
+      if(lyt){
+        await ProjectFileSystem.writeFile(destAreaName + '.lyt', lyt);
+      }
+    }catch(e){
+      console.warn(`Could not copy layout ${entryArea}.lyt`, e);
+    }
+    try {
+      const vis = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, entryArea);
+      if(vis){
+        await ProjectFileSystem.writeFile(destAreaName + '.vis', vis);
+      }
+    }catch(e){
+      console.warn(`Could not copy visibility ${entryArea}.vis`, e);
+    }
+  };
+
   const handleCreateProject = async () => {
     console.log('handleCreateProject', projectName, selectedGameModule);
     if(!projectDirectory){
@@ -97,14 +116,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
         const gameModule = gameModules[selectedGameModule];
         if(gameModule){
           console.log('selectedGameModule', gameModule.entryArea);
-          const lyt = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, gameModule.entryArea);
-          if(lyt){  
-            await ProjectFileSystem.writeFile(areaName + '.lyt', lyt);
-          }
-          const vis = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, gameModule.entryArea);
-          if(vis){
-            await ProjectFileSystem.writeFile(areaName + '.vis', vis);
-          }
+          await copyTemplateAreaLayouts(gameModule.entryArea, areaName);
         }
         const { ifo, are, git } = await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
       }
@@ -126,14 +138,7 @@ export const ModalNewProject = (props: BaseModalProps) => {
         const gameModule = gameModules[selectedGameModule];
         if(gameModule){
           console.log('selectedGameModule', gameModule.entryArea);
-          const lyt = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.lyt, gameModule.entryArea);
-          if(lyt){  
-            await ProjectFileSystem.writeFile(areaName + '.lyt', lyt);
-          }
-          const vis = await KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.vis, gameModule.entryArea);
-          if(vis){
-            await ProjectFileSystem.writeFile(areaName + '.vis', vis);
-          }
+          await copyTemplateAreaLayouts(gameModule.entryArea, areaName);
         }
         const { ifo, are, git } = await project.buildModuleAndArea(moduleName, areaName, gameModule?.rooms || []);
       }

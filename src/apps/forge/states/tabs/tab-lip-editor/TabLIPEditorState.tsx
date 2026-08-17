@@ -16,6 +16,7 @@ import { EnergyWindowPhonemeService } from "@/apps/forge/states/tabs/tab-lip-edi
 import { convertTimedPhonemesToKeyframes, mapPhonemeToShape, PHN_INVALID, TimedPhonemeResult } from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
+import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
 
 /** Default LIP preview head resref; persisted under `lip_head` in localStorage. */
 export const LIP_EDITOR_DEFAULT_HEAD = 'p_bastilah';
@@ -282,6 +283,12 @@ export class TabLIPEditorState extends TabState {
     return new Promise<void>( (resolve, reject) => {
       const resolved = this.resolvePreviewHead(model_name || DEFAULT_HEAD);
       if(this.current_head === resolved && this.head instanceof THREE.Object3D){
+        this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadChange', []);
+        resolve();
+        return;
+      }
+      if(!utxShouldShow3DPreview()){
+        this.current_head = resolved;
         this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadChange', []);
         resolve();
         return;

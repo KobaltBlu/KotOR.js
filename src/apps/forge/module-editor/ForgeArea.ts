@@ -23,7 +23,7 @@ export class ForgeArea extends ForgeGameObject{
   git: KotOR.GFFObject;
   are: KotOR.GFFObject;
   layout: KotOR.LYTObject;
-  visObject: KotOR.VISObject;
+  visObject?: KotOR.VISObject;
 
   module: ForgeModule;
 
@@ -687,13 +687,17 @@ export class ForgeArea extends ForgeGameObject{
     
     for(let i = 0; i < this.rooms.length; i++){
       const room = this.rooms[i];
-      await room.load();
+      try {
+        await room.load();
+      }catch(e){
+        console.warn(`Failed to load room ${room.roomName}`, e);
+      }
       const model = room.model;
       
       if(model instanceof KotOR.OdysseyModel3D){
         model.name = room.roomName;
-        this.context.addObjectToGroup(room.container, GroupType.ROOMS);
       }
+      this.context.addObjectToGroup(room.container, GroupType.ROOMS);
     }
     
     // Invalidate cache after loading rooms (containers now have children)
@@ -712,8 +716,8 @@ export class ForgeArea extends ForgeGameObject{
         let room2 = this.rooms[j];
         //console.log(room2.linked_rooms);
         if(room2 instanceof ForgeRoom){
-          const room1_room_links = this.visObject.getRoom(room1.roomName)?.rooms || [];
-          const room2_room_links = this.visObject.getRoom(room2.roomName)?.rooms || [];
+          const room1_room_links = this.visObject?.getRoom(room1.roomName)?.rooms || [];
+          const room2_room_links = this.visObject?.getRoom(room2.roomName)?.rooms || [];
           const room2_links_to_room1 = room2_room_links.indexOf(room1.roomName) >= 0;
           const room1_links_to_room2 = room1_room_links.indexOf(room2.roomName) >= 0;
 

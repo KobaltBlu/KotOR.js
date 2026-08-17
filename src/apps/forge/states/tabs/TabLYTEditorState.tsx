@@ -14,6 +14,7 @@ import {
   ModelViewerLayerVisibility,
   TabModelViewerState,
 } from "@/apps/forge/states/tabs/TabModelViewerState";
+import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
 import {
   promptForDirectory,
   collectModelAssets,
@@ -173,6 +174,15 @@ export class TabLYTEditorState extends TabState {
 
     if (!this.lyt || !this.lyt.rooms.length) return;
 
+    if (!utxShouldShow3DPreview()) {
+      for (let i = 0; i < this.lyt.rooms.length; i++) {
+        this.roomEntries.push({ lytRoom: this.lyt.rooms[i] });
+      }
+      this.refreshModelViewerLayers();
+      this.processEventListener('onRoomsLoaded', [this.roomEntries]);
+      return;
+    }
+
     for (let i = 0; i < this.lyt.rooms.length; i++) {
       const room = this.lyt.rooms[i];
       const entry: LYTRoomEntry = { lytRoom: room };
@@ -201,7 +211,11 @@ export class TabLYTEditorState extends TabState {
       this.roomEntries.push(entry);
     }
 
-    await KotOR.TextureLoader.LoadQueue();
+    try {
+      await KotOR.TextureLoader.LoadQueue();
+    } catch (e) {
+      console.warn('TabLYTEditorState: texture queue failed', e);
+    }
 
     if (this.ui3DRenderer.renderer) {
       this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);

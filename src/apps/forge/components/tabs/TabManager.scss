@@ -118,7 +118,7 @@
       align-items: center;
       justify-content: center;
       gap: 16px;
-      pointer-events: none;
+      // pointer-events: none;
 
       &__logo {
         width: min(260px, 40vw);
