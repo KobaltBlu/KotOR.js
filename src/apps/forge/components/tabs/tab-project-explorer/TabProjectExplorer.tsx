@@ -18,6 +18,7 @@ import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { RecentProject } from "@/apps/forge/RecentProject";
 import {
   ListedVirtualProjectFolder,
+  deleteStoredVirtualProjectFolder,
   isOriginPrivateFileSystemAvailable,
   loadVirtualProjectFoldersForRestore,
 } from "@/apps/forge/virtual/VirtualProjectFolder";
@@ -423,6 +424,31 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
     }
   };
 
+  const deleteVirtualProject = async (entry: ListedVirtualProjectFolder) => {
+    if (restoringName || ForgeState.project) {
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to delete the virtual project '${entry.name}'? This cannot be undone.`)) {
+      return;
+    }
+    setRestoringName(entry.name);
+    try {
+      const deleted = await deleteStoredVirtualProjectFolder(entry.name);
+      if (!deleted) {
+        window.alert(`Could not delete "${entry.name}".`);
+        return;
+      }
+      await ForgeState.removeRecentProject(new RecentProject({
+        name: entry.name,
+        handle: entry.handle,
+        virtual: true,
+      }));
+      await refreshVirtualProjects();
+    } finally {
+      setRestoringName(null);
+    }
+  };
+
   const runBulkCompileAllNss = async () => {
     if (bulkRunning) return;
     setBulkRunning(true);
@@ -470,7 +496,7 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
             {virtualProjects.length > 0 ? (
               <ul className="project-explorer-welcome__virtual-list">
                 {virtualProjects.map((entry) => (
-                  <li key={entry.name}>
+                  <li key={entry.name} className="project-explorer-welcome__virtual-row">
                     <button
                       type="button"
                       className="project-explorer-welcome__virtual-item"
@@ -481,8 +507,18 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
                       <i className="fa-solid fa-folder" aria-hidden="true" />
                       <span className="project-explorer-welcome__virtual-name">{entry.name}</span>
                       <span className="project-explorer-welcome__virtual-action">
-                        {restoringName === entry.name ? "Restoring..." : "Restore"}
+                        {restoringName === entry.name ? "Working..." : "Restore"}
                       </span>
+                    </button>
+                    <button
+                      type="button"
+                      className="project-explorer-welcome__virtual-delete"
+                      disabled={!!restoringName}
+                      title={`Delete ${entry.name}`}
+                      aria-label={`Delete ${entry.name}`}
+                      onClick={() => { void deleteVirtualProject(entry); }}
+                    >
+                      <i className="fa-solid fa-xmark" aria-hidden="true" />
                     </button>
                   </li>
                 ))}

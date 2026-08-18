@@ -221,3 +221,51 @@ export async function loadVirtualProjectFoldersForRestore(
   const stored = await listStoredVirtualProjectFolders();
   return mergeVirtualProjectFolderEntries(stored, recents);
 }
+
+function virtualProjectFolderDeleteName(name: string): string | undefined {
+  const trimmed = String(name || "").trim();
+  if (!trimmed.length || trimmed === "." || trimmed === ".." || /[\\/]/.test(trimmed)) {
+    return undefined;
+  }
+  return trimmed;
+}
+
+export async function deleteVirtualProjectFolderFromDirectory(
+  projectsDir: { removeEntry: (name: string, options?: { recursive?: boolean }) => Promise<void> },
+  name: string,
+): Promise<boolean> {
+  const folderName = virtualProjectFolderDeleteName(name);
+  if (!folderName) {
+    return false;
+  }
+  try {
+    await projectsDir.removeEntry(folderName, { recursive: true });
+    return true;
+  } catch (e) {
+    if ((e as { name?: string })?.name === "NotFoundError") {
+      return true;
+    }
+    console.warn("VirtualProjectFolder: could not delete folder", folderName, e);
+    return false;
+  }
+}
+
+export async function deleteStoredVirtualProjectFolder(name: string): Promise<boolean> {
+  if (!virtualProjectFolderDeleteName(name)) {
+    return false;
+  }
+  if (!isOriginPrivateFileSystemAvailable()) {
+    return true;
+  }
+  try {
+    const root = await navigator.storage.getDirectory();
+    const projects = await root.getDirectoryHandle(OPFS_VIRTUAL_PROJECTS_DIR, { create: false });
+    return await deleteVirtualProjectFolderFromDirectory(projects, name);
+  } catch (e) {
+    if ((e as { name?: string })?.name === "NotFoundError") {
+      return true;
+    }
+    console.warn("VirtualProjectFolder: could not delete stored folder", name, e);
+    return false;
+  }
+}

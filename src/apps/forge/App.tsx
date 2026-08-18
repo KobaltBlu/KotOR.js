@@ -9,7 +9,6 @@ import { ForgeStatusBar } from "@/apps/forge/components/shell/ForgeStatusBar";
 import { MenuTop } from "@/apps/forge/components/MenuTop";
 import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import ModalGrantAccess from "@/apps/forge/components/modal/ModalGrantAccess";
 import { ModalChangeGame } from "@/apps/forge/components/modal/ModalChangeGame";
 import { ModalSettings } from "@/apps/forge/components/modal/ModalSettings";
 import { ModalAbout } from "@/apps/forge/components/modal/ModalAbout";
@@ -33,7 +32,6 @@ export const App = (props: any) => {
 
   const appContext = useApp();
   const [appReady, setAppReady] = appContext.appReady;
-  const [showGrantModal, setShowGrantModal] = appContext.showGrantModal;
   const [showLoadingScreen] = appContext.showLoadingScreen;
   const [loadingScreenMessage] = appContext.loadingScreenMessage;
   const [loadingScreenBackgroundURL] = appContext.loadingScreenBackgroundURL;
@@ -46,11 +44,6 @@ export const App = (props: any) => {
     return !!types && Array.from(types).includes('Files');
   };
 
-
-  const onUserGrant = () => {
-    setShowGrantModal(false);
-    beginInit();
-  }
 
   const beginInit = () => {
     ForgeState.InitializeApp().then( () => {
@@ -70,20 +63,19 @@ export const App = (props: any) => {
     // })
   };
 
-  const onUserCancel = () => {
-    setShowGrantModal(true);
-    window.close();
-  }
-
   useEffectOnce( () => {
+    const profile = KotOR.ApplicationProfile.profile;
+    if (profile) {
+      ForgeState.loaderInit(profile.background, profile.logo);
+      ForgeState.loaderShow();
+    }
 
     ForgeState.VerifyGameDirectory(() => {
       console.log('Game Directory', 'verified');
-      setShowGrantModal(false);
       beginInit();
     }, () => {
-      console.warn('Game Directory', 'not found');
-      setShowGrantModal(true);
+      console.warn('Game Directory', 'not found; starting without game data');
+      beginInit();
     });
 
     return () => {
@@ -412,7 +404,6 @@ export const App = (props: any) => {
         )}
       </div>
       <ModalManager manager={ForgeState.modalManager}></ModalManager>
-      <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel} onContinueWithoutGame={onUserGrant}></ModalGrantAccess>
       <LoadingScreen active={showLoadingScreen} message={loadingScreenMessage} backgroundURL={loadingScreenBackgroundURL} logoURL={loadingScreenLogoURL} />
     </>
   );

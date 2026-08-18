@@ -55,11 +55,19 @@
   gap: 2px;
 }
 
+.project-explorer-welcome__virtual-row {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+}
+
 .project-explorer-welcome__virtual-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   margin: 0;
   padding: 6px 8px;
   border: 1px solid transparent;
@@ -99,4 +107,28 @@
   flex-shrink: 0;
   font-size: 11px;
   color: var(--forge-text-muted);
+}
+
+.project-explorer-welcome__virtual-delete {
+  flex-shrink: 0;
+  width: 28px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--forge-radius);
+  background: transparent;
+  color: var(--forge-text-muted);
+  cursor: pointer;
+}
+
+.project-explorer-welcome__virtual-delete:hover:not(:disabled),
+.project-explorer-welcome__virtual-delete:focus-visible {
+  background: var(--forge-danger);
+  border-color: var(--forge-danger);
+  color: var(--forge-text-bright);
+}
+
+.project-explorer-welcome__virtual-delete:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
