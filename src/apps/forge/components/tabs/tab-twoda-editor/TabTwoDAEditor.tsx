@@ -8,7 +8,7 @@ import { TwoDAEditorRow } from "@/apps/forge/components/TwoDAEditorRow";
 import { TwoDAEditorColumnHeader } from "@/apps/forge/components/TwoDAEditorColumnHeader";
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
-import "@/apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor.scss";
+import { forgeTwoDASettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 import * as KotOR from "@/apps/forge/KotOR";
 
@@ -19,6 +19,7 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
   // Incremented whenever undo/redo stacks change so the menu re-renders with
   // correct disabled states for Undo / Redo.
   const [historyVersion, setHistoryVersion] = useState<number>(0);
+  const [tableSettings, setTableSettings] = useState(() => forgeTwoDASettings.get());
   const importRef = useRef<HTMLInputElement>(null);
   // Tracks the last (rowIndex, column) for which a snapshot was captured so
   // that navigating within the same cell doesn't produce duplicate snapshots.
@@ -38,8 +39,11 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
 
   useEffectOnce(() => {
     tab.addEventListener('onEditorFileLoad', onFileLoad);
+    const onTableSettings = () => setTableSettings(forgeTwoDASettings.get());
+    forgeTwoDASettings.addListener(onTableSettings);
     return () => {
       tab.removeEventListener('onEditorFileLoad', onFileLoad);
+      forgeTwoDASettings.removeListener(onTableSettings);
     };
   });
 
@@ -198,12 +202,14 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
       <MenuBar items={menuItems} />
 
       <div className="twoda-table-area">
-        <table className="twoda">
+        <table className={`twoda${tableSettings.wrapCells ? " twoda--wrap" : ""}`}>
           <thead>
             <tr>
               {
                 twoDAObject.columns.map((column: string, cIndex: number) => (
-                  <TwoDAEditorColumnHeader key={cIndex} twoDAObject={twoDAObject} column={column} />
+                  column === "__rowlabel" && !tableSettings.showRowLabel ? null : (
+                    <TwoDAEditorColumnHeader key={cIndex} twoDAObject={twoDAObject} column={column} />
+                  )
                 ))
               }
             </tr>
@@ -222,6 +228,7 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
                     row={row}
                     index={rIndex}
                     twoDAObject={twoDAObject}
+                    showRowLabel={tableSettings.showRowLabel}
                   />
                 );
               })

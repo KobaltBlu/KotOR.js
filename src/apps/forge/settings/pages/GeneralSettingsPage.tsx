@@ -8,6 +8,7 @@
 
 import React, { useState } from "react";
 import { ForgeButton } from "@/apps/forge/components/ui";
+import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { executeCommand } from "@/apps/forge/commands/forgeCommands";
 import { ModalChangeGameState } from "@/apps/forge/components/modal/ModalChangeGame";
 import { ModalSettingsState } from "@/apps/forge/components/modal/ModalSettingsState";
@@ -15,15 +16,23 @@ import { SettingRow } from "@/apps/forge/settings/SettingRow";
 import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
+import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
+import { forgeSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
 import * as KotOR from "@/apps/forge/KotOR";
 
 export function GeneralSettingsPage() {
   const [, setRevision] = useState(0);
   const bump = () => setRevision((value) => value + 1);
+  const [session, setSession] = useForgeSettings(forgeSessionSettings);
 
   useEffectOnce(() => {
     ForgeState.addEventListener("onGameDataChanged", bump);
-    return () => ForgeState.removeEventListener("onGameDataChanged", bump);
+    ForgeState.addEventListener("onExplorerPaneToggle", bump);
+    return () => {
+      ForgeState.removeEventListener("onGameDataChanged", bump);
+      ForgeState.removeEventListener("onExplorerPaneToggle", bump);
+    };
   });
 
   const gameKey = KotOR.ApplicationProfile.GameKey === KotOR.GameEngineType.TSL
@@ -81,6 +90,62 @@ export function GeneralSettingsPage() {
           ) : null}
         </div>
       </SettingRow>
+
+      <h4 className="forge-settings-page__section">Session</h4>
+      <SettingRow
+        label="Restore open tabs"
+        description="Reopen the previous editor tabs when Forge starts. Open tabs are still saved if this is off."
+        keywords={["restore", "session", "tabs", "startup"]}
+      >
+        <ForgeCheckbox
+          label=""
+          value={session.restoreOpenTabs}
+          onChange={(value) => setSession({ restoreOpenTabs: value })}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Confirm close unsaved tabs"
+        description="Ask before closing a tab that has unsaved changes."
+        keywords={["confirm", "close", "unsaved", "dirty"]}
+      >
+        <ForgeCheckbox
+          label=""
+          value={session.confirmCloseUnsaved}
+          onChange={(value) => setSession({ confirmCloseUnsaved: value })}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Explorer open on launch"
+        description="Show the resource / project explorer pane when Forge starts. Also applies immediately."
+        keywords={["explorer", "sidebar", "pane", "west"]}
+      >
+        <ForgeCheckbox
+          label=""
+          value={session.explorerOpenOnLaunch}
+          onChange={(value) => {
+            setSession({ explorerOpenOnLaunch: value });
+            ForgeState.setExplorerPaneOpen(value);
+          }}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Show floating mini-player by default"
+        description="Show the floating audio mini-player on launch. View → Mini Player can still hide it for this session."
+        keywords={["audio", "mini player", "player", "floating"]}
+      >
+        <ForgeCheckbox
+          label=""
+          value={session.showFloatingMiniPlayer}
+          onChange={(value) => {
+            setSession({ showFloatingMiniPlayer: value });
+            if (value) {
+              AudioPlayerState.showFloatingMiniPlayer();
+            } else {
+              AudioPlayerState.hideFloatingMiniPlayer();
+            }
+          }}
+        />
+      </SettingRow>
     </div>
   );
 }
@@ -88,7 +153,8 @@ export function GeneralSettingsPage() {
 registerSettingsPage({
   id: "general",
   label: "General",
+  group: "application",
   icon: "fa-solid fa-gear",
-  keywords: ["general", "app", "application", "game", "profile", "directory", "folder"],
+  keywords: ["general", "app", "application", "game", "profile", "directory", "folder", "session", "tabs", "explorer"],
   render: () => React.createElement(GeneralSettingsPage),
 });

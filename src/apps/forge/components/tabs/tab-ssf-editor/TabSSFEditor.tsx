@@ -7,7 +7,7 @@ import { ForgeButton, ForgeSpinner, ForgeInput } from "@/apps/forge/components/u
 import * as KotOR from "@/apps/forge/KotOR";
 import { SSFType } from "@/enums/resource/SSFType";
 
-import "@/apps/forge/components/tabs/tab-ssf-editor/TabSSFEditor.scss";
+import { forgeSsfSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 export const TabSSFEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabSSFEditorState;
@@ -256,7 +256,18 @@ export const TabSSFEditor = function (props: BaseTabProps) {
                 const playing = previewPlayingSlot === slot;
 
                 return (
-                  <div className="tab-ssf-editor__grid-row" key={slot}>
+                  <div
+                    className="tab-ssf-editor__grid-row"
+                    key={slot}
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest("button, input")) {
+                        return;
+                      }
+                      if (forgeSsfSettings.get().autoplayOnSelect) {
+                        void togglePreview(slot);
+                      }
+                    }}
+                  >
                     <div className="tab-ssf-editor__slot-label">{label}</div>
                     <div>
                       <ForgeInput

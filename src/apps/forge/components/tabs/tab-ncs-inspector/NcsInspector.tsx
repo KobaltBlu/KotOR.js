@@ -165,6 +165,16 @@ export const NcsInspector: React.FC<NcsInspectorProps> = ({
   const [compareName, setCompareName] = useState<string>("");
   const searchRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const sync = () => {
+      setLayoutMode(getNcsInspectorLayoutMode());
+      setShowFunctions(getNcsInspectorShowFunctions(!compact));
+      setShowDetails(getNcsInspectorShowDetails(false));
+    };
+    window.addEventListener("forge-ncs-inspector-settings-change", sync);
+    return () => window.removeEventListener("forge-ncs-inspector-settings-change", sync);
+  }, [compact]);
+
   const inspection = useMemo<NcsInspection>(
     () => inspectNcs(bytes, { script, recoveredFunctions, actionsMap: script?.actionsMap }),
     [bytes, script, recoveredFunctions],

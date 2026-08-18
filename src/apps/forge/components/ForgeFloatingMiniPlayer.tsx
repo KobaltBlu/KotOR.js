@@ -3,6 +3,7 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
+import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
 import { AudioPlayer } from "@/apps/forge/components/AudioPlayer";
 
 import "@/apps/forge/components/ForgeFloatingMiniPlayer.scss";
@@ -11,11 +12,17 @@ const MARGIN = 10;
 
 function readDismissedFromStorage(): boolean {
   try {
-    // Hidden unless user explicitly opted in (`"0"`). `"1"` = dismissed from chrome.
-    return localStorage.getItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED) !== "0";
+    const stored = localStorage.getItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED);
+    if (stored === "0") {
+      return false;
+    }
+    if (stored === "1") {
+      return true;
+    }
   } catch {
-    return true;
+    /* ignore */
   }
+  return !getSessionSettings().showFloatingMiniPlayer;
 }
 
 function readBoundsFromStorage(): { left: number; top: number } | null {

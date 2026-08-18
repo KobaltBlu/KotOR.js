@@ -366,6 +366,7 @@ function ThemeColorRow(props: {
 registerSettingsPage({
   id: "appearance",
   label: "Appearance",
+  group: "application",
   icon: "fa-solid fa-palette",
   keywords: ["appearance", "theme", "accent", "color", "light", "dark", "kotor", "tsl", "export", "install", "uninstall"],
   render: () => React.createElement(AppearanceSettingsPage),

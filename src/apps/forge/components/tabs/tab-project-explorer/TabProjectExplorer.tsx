@@ -10,6 +10,7 @@ import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { Project } from "@/apps/forge/Project";
 import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
 import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompile";
+import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
 import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
 import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
 import { ContextMenuItem, useContextMenu } from "@/apps/forge/components/common/ContextMenu";
@@ -297,6 +298,13 @@ export const TabProjectExplorer = function (props: BaseTabProps) {
           onClick: () => { void createFolderAt(targetDir); },
         },
       ];
+      if (isRoot) {
+        items.push({
+          id: "import-module",
+          label: "Import Module...",
+          onClick: () => openImportModuleWizard(),
+        });
+      }
 
       if (!isFolder && node.data?.path) {
         items.push(

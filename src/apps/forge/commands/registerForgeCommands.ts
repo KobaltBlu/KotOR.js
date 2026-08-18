@@ -14,6 +14,7 @@ import { ModalChangeGameState } from "@/apps/forge/components/modal/ModalChangeG
 import { ModalAboutState } from "@/apps/forge/components/modal/ModalAboutState";
 import { ModalSettingsState } from "@/apps/forge/components/modal/ModalSettingsState";
 import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompile";
+import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
 import { exportForgeThemeToFile, installForgeThemeFromFile } from "@/apps/forge/settings/forgeTheme";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
@@ -479,6 +480,15 @@ export function registerForgeCommands(): void {
     category: "View",
     keywords: ["audio", "player"],
     run: () => AudioPlayerState.toggleFloatingMiniPlayer(),
+  });
+
+  registerCommand({
+    id: "forge.project.importModule",
+    title: "Import Module...",
+    category: "Project",
+    keywords: ["rim", "mod", "erf", "ifo", "area"],
+    when: hasProject,
+    run: () => openImportModuleWizard(),
   });
 
   registerCommand({

@@ -70,6 +70,9 @@ export const TwoDAEditorRow = function(props: any){
         twoDAObject.columns.map((column: string, cIndex: number) => {
           const value: string = row[column] ?? '';
           const isRowLabel = column === '__rowlabel';
+          if (isRowLabel && props.showRowLabel === false) {
+            return null;
+          }
           const tabIdx = (rIndex * columnCount) + cIndex;
           return (
             <td

@@ -8,7 +8,7 @@ import { GameFileSystem } from "@/utility/GameFileSystem";
 import { AudioLoader } from "@/audio/AudioLoader";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
+import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
 
 declare const dialog: any;
 
@@ -139,10 +139,17 @@ export class AudioPlayerState {
 
   static isFloatingMiniPlayerVisible(): boolean {
     try {
-      return localStorage.getItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED) === "0";
+      const stored = localStorage.getItem(AudioPlayerState.FLOATING_MINI_LS_DISMISSED);
+      if (stored === "0") {
+        return true;
+      }
+      if (stored === "1") {
+        return false;
+      }
     } catch {
-      return false;
+      /* ignore */
     }
+    return getSessionSettings().showFloatingMiniPlayer;
   }
 
   static toggleFloatingMiniPlayer(): void {
@@ -809,7 +816,6 @@ export class AudioPlayerState {
     AudioPlayerState.pausedAt = 0;
     AudioPlayerState.playing = false;
     AudioPlayerState.loading = false;
-    AudioPlayerState.loop = false;
 
     if(!AudioPlayerState.gainNode){
       AudioPlayerState.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();

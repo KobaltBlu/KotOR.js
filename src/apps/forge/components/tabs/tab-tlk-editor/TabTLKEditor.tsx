@@ -9,9 +9,8 @@ import { TLKSearchResult } from "@/managers/TLKManager";
 import { TLKStringUpdate } from "@/resource/TLKObject";
 import { normalizeSoundResRef } from "@/apps/forge/states/tabs/ssfEditorTlkHelpers";
 
-import "@/apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor.scss";
+import { forgeTlkSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
-const RESULT_LIMIT = 500;
 const ROW_HEIGHT = 32;
 const SEARCH_DEBOUNCE_MS = 250;
 const VIEWPORT_OVERSCAN_ROWS = 4;
@@ -43,6 +42,7 @@ export const TabTLKEditor = function (props: BaseTabProps) {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const pendingAutoplay = useRef(false);
 
   const listScrollRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -128,11 +128,12 @@ export const TabTLKEditor = function (props: BaseTabProps) {
       window.setTimeout(() => {
         if (generation !== searchGenerationRef.current) return;
 
-        const results = tab.search(query, { limit: RESULT_LIMIT + 1, includeResRef: true });
-        const hitLimit = results.length > RESULT_LIMIT;
+        const limit = forgeTlkSettings.get().searchResultCap;
+        const results = tab.search(query, { limit: limit + 1, includeResRef: true });
+        const hitLimit = results.length > limit;
         applySearchResults(
           query,
-          hitLimit ? results.slice(0, RESULT_LIMIT) : results,
+          hitLimit ? results.slice(0, limit) : results,
           hitLimit,
         );
       }, 0);
@@ -416,6 +417,14 @@ export const TabTLKEditor = function (props: BaseTabProps) {
     }
   }, [previewPlaying, selectedString, stopPreview, stopWebAudioPreview]);
 
+  useEffect(() => {
+    if (!pendingAutoplay.current || selectedIndex < 0 || !selectedString) {
+      return;
+    }
+    pendingAutoplay.current = false;
+    void togglePreview();
+  }, [selectedIndex, selectedString, togglePreview]);
+
   const menuItems: MenuItem[] = [
     {
       label: "File",
@@ -489,7 +498,7 @@ export const TabTLKEditor = function (props: BaseTabProps) {
       return `${listCount.toLocaleString()} entr${listCount === 1 ? "y" : "ies"}`;
     }
     if (limitReached) {
-      return `${RESULT_LIMIT.toLocaleString()}+ matches for “${activeQuery}” — refine your search`;
+      return `${forgeTlkSettings.get().searchResultCap.toLocaleString()}+ matches for “${activeQuery}” — refine your search`;
     }
     if (searchResults.length === 0) {
       return `No matches for “${activeQuery}”`;
@@ -606,6 +615,7 @@ export const TabTLKEditor = function (props: BaseTabProps) {
                         }`}
                         style={{ top: row * ROW_HEIGHT, height: ROW_HEIGHT }}
                         onClick={() => {
+                          pendingAutoplay.current = forgeTlkSettings.get().autoplayVo;
                           setSelectedIndex(result.index);
                           stopPreview();
                         }}

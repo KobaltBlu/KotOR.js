@@ -9,6 +9,7 @@ import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutC
 import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
+import { forgeGuiSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 // import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
 
 export const TabGUIEditor = function(props: BaseTabProps){
@@ -40,10 +41,9 @@ export const TabGUIEditor = function(props: BaseTabProps){
   const onMouseWheel = function(e: WheelEvent){
     if(!!e.ctrlKey){
       let tmpCanvasScale = menu?.tGuiPanel.widget.scale.x || 0;
-      const maxScale = 5;
-      const minScale = 0.1;
-      tmpCanvasScale += (e.deltaY < 0) ? 0.25 : -0.25;
-      tmpCanvasScale = Math.max(Math.min(tmpCanvasScale, maxScale), minScale);
+      const gui = forgeGuiSettings.get();
+      tmpCanvasScale += (e.deltaY < 0) ? gui.zoomStep : -gui.zoomStep;
+      tmpCanvasScale = Math.max(Math.min(tmpCanvasScale, gui.zoomMax), gui.zoomMin);
       menu?.tGuiPanel.widget.scale.setScalar(tmpCanvasScale);
     }
   };

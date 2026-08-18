@@ -9,12 +9,12 @@ import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import { TabLYTEditor } from "@/apps/forge/components/tabs/tab-lyt-editor/TabLYTEditor";
 import { ILayoutRoom } from "@/interface/resource/ILayoutRoom";
 import {
-  DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY,
   ModelViewerLayerKey,
   ModelViewerLayerVisibility,
   TabModelViewerState,
 } from "@/apps/forge/states/tabs/TabModelViewerState";
 import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
+import { forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import {
   promptForDirectory,
   collectModelAssets,
@@ -39,7 +39,7 @@ export class TabLYTEditorState extends TabState {
   code: string = '';
   roomEntries: LYTRoomEntry[] = [];
   selectedRoomIndex: number = -1;
-  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY };
+  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...forgeViewportSettings.get().layers };
   groundGridGroup: THREE.Group = new THREE.Group();
 
   editor: monacoEditor.editor.IStandaloneCodeEditor;
@@ -63,6 +63,7 @@ export class TabLYTEditorState extends TabState {
     grid2.rotation.x = -Math.PI / 2;
 
     this.ui3DRenderer = new UI3DRenderer();
+    this.ui3DRenderer.windowPower = forgeViewportSettings.get().windPower;
     this.ui3DRenderer.setCameraFocusMode(CameraFocusMode.SELECTABLE);
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
     this.groundGridGroup.add(grid1);

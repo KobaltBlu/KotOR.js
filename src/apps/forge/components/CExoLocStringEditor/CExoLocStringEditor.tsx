@@ -2,6 +2,13 @@ import React, { useState, useEffect } from "react";
 import * as KotOR from "@/apps/forge/KotOR";
 import { TLKSearchModal } from "@/apps/forge/components/TLKSearchModal";
 import { forgeTlkLookup, resolveDlgLineText } from "@/apps/forge/dlg/dlgLocString";
+import {
+  FORGE_LOC_GENDERS,
+  FORGE_LOC_LANGUAGES,
+  getLocalizationSettings,
+  locStringId,
+} from "@/apps/forge/settings/forgeLocalizationSettings";
+import { forgeBlueprintsSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor.scss";
 
 export interface CExoLocStringEditorProps {
@@ -12,23 +19,8 @@ export interface CExoLocStringEditorProps {
   preview?: string;
 }
 
-const LANGUAGES = [
-  { id: 0, name: 'English' },
-  { id: 1, name: 'French' },
-  { id: 2, name: 'German' },
-  { id: 3, name: 'Italian' },
-  { id: 4, name: 'Spanish' },
-  { id: 5, name: 'Polish' },
-  { id: 6, name: 'Korean' },
-  { id: 7, name: 'Chinese (Traditional)' },
-  { id: 8, name: 'Chinese (Simplified)' },
-  { id: 9, name: 'Japanese' },
-];
-
-const GENDERS = [
-  { id: 0, name: 'Male' },
-  { id: 1, name: 'Female' },
-];
+const LANGUAGES = FORGE_LOC_LANGUAGES;
+const GENDERS = FORGE_LOC_GENDERS;
 
 export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
   value,
@@ -36,7 +28,7 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
   label,
   preview,
 }) => {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(() => forgeBlueprintsSettings.get().autoExpandLocString);
   const [resref, setResref] = useState(value.RESREF);
   const [substrings, setSubstrings] = useState(value.getStrings());
   const [showTLKModal, setShowTLKModal] = useState(false);
@@ -84,7 +76,8 @@ export const CExoLocStringEditor: React.FC<CExoLocStringEditorProps> = ({
   };
 
   const handleAddSubstring = () => {
-    const newSubstring = new KotOR.CExoLocSubString(0, '');
+    const loc = getLocalizationSettings();
+    const newSubstring = new KotOR.CExoLocSubString(locStringId(loc.language, loc.gender), '');
     const updatedSubstrings = [...substrings, newSubstring];
     setSubstrings(updatedSubstrings);
     

@@ -19,10 +19,12 @@ export function ImageToolRail(props: { tab: TabImageViewerState }) {
           key={tool.id}
           type="button"
           title={`${tool.label} (${tool.shortcut})`}
+          aria-label={`${tool.label} (${tool.shortcut})`}
+          aria-pressed={tab.tool === tool.id}
           className={`image-tool-rail__btn${tab.tool === tool.id ? " is-active" : ""}`}
           onClick={() => tab.setTool(tool.id)}
         >
-          {tool.label.slice(0, 3)}
+          <i className={`fa-solid ${tool.icon}`} aria-hidden />
         </button>
       ))}
     </div>

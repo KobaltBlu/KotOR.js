@@ -73,12 +73,12 @@ export const DEFAULT_ENCODE_POLICY: ImageEncodePolicy = {
 export const DEFAULT_RGBA_WHITE: ImageRgba = { r: 255, g: 255, b: 255, a: 255 };
 export const DEFAULT_RGBA_BLACK: ImageRgba = { r: 0, g: 0, b: 0, a: 255 };
 
-export const IMAGE_TOOLS: { id: ImageToolId; label: string; shortcut: string }[] = [
-  { id: "move", label: "Move", shortcut: "V" },
-  { id: "marquee", label: "Marquee", shortcut: "M" },
-  { id: "crop", label: "Crop", shortcut: "C" },
-  { id: "brush", label: "Brush", shortcut: "B" },
-  { id: "eraser", label: "Eraser", shortcut: "E" },
-  { id: "fill", label: "Fill", shortcut: "G" },
-  { id: "eyedropper", label: "Eyedropper", shortcut: "I" },
+export const IMAGE_TOOLS: { id: ImageToolId; label: string; shortcut: string; icon: string }[] = [
+  { id: "move", label: "Move", shortcut: "V", icon: "fa-up-down-left-right" },
+  { id: "marquee", label: "Marquee", shortcut: "M", icon: "fa-object-ungroup" },
+  { id: "crop", label: "Crop", shortcut: "C", icon: "fa-crop" },
+  { id: "brush", label: "Brush", shortcut: "B", icon: "fa-paintbrush" },
+  { id: "eraser", label: "Eraser", shortcut: "E", icon: "fa-eraser" },
+  { id: "fill", label: "Fill", shortcut: "G", icon: "fa-fill-drip" },
+  { id: "eyedropper", label: "Eyedropper", shortcut: "I", icon: "fa-eye-dropper" },
 ];

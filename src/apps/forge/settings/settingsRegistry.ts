@@ -8,11 +8,19 @@
 
 import React, { createContext, useContext } from "react";
 
+export type SettingsPageGroup = "application" | "editors";
+
+export const SETTINGS_PAGE_GROUPS: ReadonlyArray<{ id: SettingsPageGroup; label: string }> = [
+  { id: "application", label: "Application" },
+  { id: "editors", label: "Editors" },
+];
+
 export interface SettingsPage {
   id: string;
   label: string;
   icon: string;
   keywords: string[];
+  group?: SettingsPageGroup;
   render: () => React.ReactNode;
   matchesQuery?: (query: string) => boolean;
 }
@@ -30,6 +38,10 @@ export function registerSettingsPage(page: SettingsPage): void {
 
 export function getSettingsPages(): SettingsPage[] {
   return pages;
+}
+
+export function getSettingsPageGroup(page: SettingsPage): SettingsPageGroup {
+  return page.group || "application";
 }
 
 export function pageMatchesQuery(page: SettingsPage, query: string): boolean {

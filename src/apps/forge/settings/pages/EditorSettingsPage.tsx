@@ -218,7 +218,8 @@ export function EditorSettingsPage() {
 
 registerSettingsPage({
   id: "editor",
-  label: "Editor",
+  label: "Text / NSS",
+  group: "editors",
   icon: "fa-solid fa-code",
   keywords: [
     "editor",

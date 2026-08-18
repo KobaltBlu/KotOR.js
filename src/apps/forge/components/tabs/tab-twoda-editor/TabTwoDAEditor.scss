@@ -21,9 +21,13 @@
  * TABLE
  * --------------------------------------------------------------------- */
 
-table.twoda {
-  white-space: nowrap;
-  border-collapse: collapse;
+table.twoda.twoda--wrap {
+  white-space: normal;
+}
+
+table.twoda.twoda--wrap > thead > tr > th,
+table.twoda.twoda--wrap input {
+  white-space: normal;
 }
 
 table.twoda > thead > tr > th {

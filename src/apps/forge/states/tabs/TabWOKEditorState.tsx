@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes } from "@/apps/forge/UI3DRenderer";
 import { TabWOKEditor } from "@/apps/forge/components/tabs/tab-wok-editor/TabWOKEditor";
+import { forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 export enum TabWOKEditorControlMode {
   FACE = 0,
@@ -67,9 +68,10 @@ export class TabWOKEditorState extends TabState {
   controlMode: TabWOKEditorControlMode = TabWOKEditorControlMode.FACE;
 
   paintWalkIndex: number = 0;
-  wireframeVisible: boolean = true;
+  wireframeVisible: boolean = forgeViewportSettings.get().wokWireframe;
   edgeNormalHelpersVisible: boolean = true;
   faceNormalHelpersVisible: boolean = false;
+  gridGroup: THREE.Group = new THREE.Group();
 
   selectedFaceIndex: number = -1;
   selectedVertexIndex: number = -1;
@@ -117,10 +119,13 @@ export class TabWOKEditorState extends TabState {
     this.faceHelperMaterial.visible = false;
     this.faceHelperMesh = new THREE.Mesh(this.faceHelperGeometry, this.faceHelperMaterial)
 
+    this.gridGroup.add(grid1);
+    this.gridGroup.add(grid2);
+    this.gridGroup.visible = forgeViewportSettings.get().wokGrid;
+
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
-    this.ui3DRenderer.scene.add(grid1);
-    this.ui3DRenderer.scene.add(grid2);
+    this.ui3DRenderer.scene.add(this.gridGroup);
     this.ui3DRenderer.scene.add(this.faceHelperMesh);
     this.ui3DRenderer.group.light_helpers.visible = false;
     this.ui3DRenderer.setCameraFocusMode(CameraFocusMode.SELECTABLE);

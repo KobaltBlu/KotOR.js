@@ -44,6 +44,19 @@
   outline: none;
 }
 
+.forge-settings__nav-group {
+  margin-bottom: 10px;
+}
+
+.forge-settings__nav-group-label {
+  padding: 8px 8px 4px;
+  color: var(--forge-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .forge-settings__nav-item {
   display: flex;
   align-items: center;

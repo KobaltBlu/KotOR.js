@@ -9,8 +9,8 @@ import * as THREE from 'three';
 import { gffFromSnapshot, snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
 import { pthCanLoadRoomModels } from "@/apps/forge/helpers/pthMap2D";
 import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
+import { forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import {
-  DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY,
   ModelViewerLayerKey,
   ModelViewerLayerVisibility,
   TabModelViewerState,
@@ -36,7 +36,7 @@ export class TabPTHEditorState extends TabState {
   layout: KotOR.LYTObject;
   layoutModels: KotOR.OdysseyModel3D[] = [];
   walkmeshes: KotOR.OdysseyWalkMesh[] = [];
-  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY };
+  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...forgeViewportSettings.get().layers };
   roomsLoaded: boolean = false;
   fitPathMap?: () => void;
 
@@ -58,6 +58,7 @@ export class TabPTHEditorState extends TabState {
     super(options);
     
     this.ui3DRenderer = new UI3DRenderer();
+    this.ui3DRenderer.windowPower = forgeViewportSettings.get().windPower;
     this.ui3DRenderer.setCameraFocusMode(CameraFocusMode.SELECTABLE);
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
 

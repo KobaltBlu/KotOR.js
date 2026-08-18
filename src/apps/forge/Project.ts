@@ -9,8 +9,8 @@ import { TabModuleEditorState, TabProjectExplorerState, TabQuickStartState } fro
 import { RecentProject } from "@/apps/forge/RecentProject";
 
 import * as KotOR from "@/apps/forge/KotOR";
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
 import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
@@ -25,13 +25,6 @@ import {
 } from "@/apps/forge/virtual/VirtualProjectFolder";
 
 const DIR_FORGE = '.forge';
-const DIR_BLUEPRINTS = 'blueprints';
-const DIR_MODELS = 'models';
-const DIR_TEXTURES = 'textures';
-const DIR_DIALOGS = 'dialogs';
-const DIR_SOUNDS = 'sounds';
-const DIR_MUSIC = 'music';
-const DIR_SCRIPTS = 'scripts';
 
 export class Project {
 
@@ -250,7 +243,7 @@ export class Project {
     for(let i = 0; i < tabs.length; i++){
       const tab = tabs[i];
       if(tab?.isClosable){
-        tab.remove();
+        tab.remove({ skipUnsavedConfirm: true });
       }
     }
     this.moduleEditor = undefined;
@@ -379,7 +372,6 @@ export class Project {
       }
 
       await ForgeInitializer.Init(this.settings.game);
-      //This is where we initialize ProjectType specific operations
       if(!deferInit){
         await this.initializeProject();
       }
@@ -400,16 +392,13 @@ export class Project {
 
   }
 
+  hasModule(): boolean {
+    return !!this.module_ifo;
+  }
+
   async initializeProject(){
-    switch(this.settings.type){
-      case ProjectType.MODULE:
-        //Initialize the Map Editor
-        if(this.settings.module_editor.open)
-          await this.initEditor();
-      break;
-      case ProjectType.OTHER:
-        //TODO: Implement other project types
-      break;
+    if(this.hasModule() && this.settings.module_editor.open){
+      await this.initEditor();
     }
     console.log('Project Init');
 
@@ -445,9 +434,13 @@ export class Project {
     if(this.moduleEditor instanceof TabModuleEditorState){
       ForgeState.tabManager.addTab(this.moduleEditor);
       this.moduleEditor.show();
-    }else{
-      this.initEditor();
+      return;
     }
+    if(this.hasModule()){
+      void this.initEditor();
+      return;
+    }
+    openImportModuleWizard();
   }
 
   getTemplatesByType ( restype = '' ) {
@@ -567,33 +560,9 @@ export class Project {
     return { ifo, are, git };
   }
 
+  /** Asset folders are created when files are added. `.forge/` is ensured by save/loadSettings. */
   async initDirectoryStructure(){
-    if(!await ProjectFileSystem.exists(`${DIR_BLUEPRINTS}`)){
-      console.log('Creating directory', `./${DIR_BLUEPRINTS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_BLUEPRINTS}`, { recursive: false });
-    }
-    if(!await ProjectFileSystem.exists(`${DIR_MODELS}`)){
-      console.log('Creating directory', `./${DIR_MODELS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_MODELS}`, { recursive: false });
-    }
-    if(!await ProjectFileSystem.exists(`${DIR_TEXTURES}`)){
-      console.log('Creating directory', `./${DIR_TEXTURES}/`);
-      await ProjectFileSystem.mkdir(`${DIR_TEXTURES}`, { recursive: false });
-    }
-    if(!await ProjectFileSystem.exists(`${DIR_DIALOGS}`)){
-      console.log('Creating directory', `./${DIR_DIALOGS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_DIALOGS}`, { recursive: false });
-    }
-    // if(!await ProjectFileSystem.exists(`${DIR_SOUNDS}`)){
-    //   await ProjectFileSystem.mkdir(`${DIR_SOUNDS}`, { recursive: false });
-    // }
-    // if(!await ProjectFileSystem.exists(`${DIR_MUSIC}`)){
-    //   await ProjectFileSystem.mkdir(`${DIR_MUSIC}`, { recursive: false });
-    // }
-    if(!await ProjectFileSystem.exists(`${DIR_SCRIPTS}`)){
-      console.log('Creating directory', `./${DIR_SCRIPTS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_SCRIPTS}`, { recursive: false });
-    }
+    return;
   }
 
   async saveSettings(){

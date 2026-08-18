@@ -1,5 +1,5 @@
 import React from "react";
-import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType } from "@/apps/forge/UI3DRenderer";
+import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType, ObjectType } from "@/apps/forge/UI3DRenderer";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabState } from "@/apps/forge/states/tabs";
 import * as THREE from 'three';
@@ -22,6 +22,11 @@ import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
 import { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
 import { openBlueprintBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
 import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
+import {
+  forgeModuleSettings,
+  MODULE_HELPER_TYPES,
+  type ModuleHelperType,
+} from "@/apps/forge/settings/forgeEditorsSettings";
 
 export enum TabModuleEditorControlMode {
   SELECT = 0,
@@ -69,6 +74,7 @@ export class TabModuleEditorState extends TabState {
   
   // Mouse vector for raycasting (reused to avoid allocation)
   private mouseVector: THREE.Vector2 = new THREE.Vector2();
+  private unsubModuleHelpers: (() => void) | undefined;
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -77,6 +83,10 @@ export class TabModuleEditorState extends TabState {
     
     // Create UI3DRenderer first
     this.ui3DRenderer = new UI3DRenderer();
+    this.applyModuleHelperVisibility();
+    this.unsubModuleHelpers = forgeModuleSettings.subscribe(() => {
+      this.applyModuleHelperVisibility();
+    });
     
     // Geometry
     this.groundColor = new THREE.Color(0.5, 0.5, 0.5);
@@ -150,7 +160,30 @@ export class TabModuleEditorState extends TabState {
     this.ui3DRenderer.enabled = false;
   }
 
+  applyModuleHelperVisibility(): void {
+    const helpers = forgeModuleSettings.get().helpers;
+    const mapping: Record<ModuleHelperType, { group: GroupType; objectType: ObjectType }> = {
+      creature: { group: GroupType.CREATURE, objectType: ObjectType.CREATURE },
+      door: { group: GroupType.DOOR, objectType: ObjectType.DOOR },
+      encounter: { group: GroupType.ENCOUNTER, objectType: ObjectType.ENCOUNTER },
+      placeable: { group: GroupType.PLACEABLE, objectType: ObjectType.PLACEABLE },
+      merchant: { group: GroupType.STORE, objectType: ObjectType.STORE },
+      sound: { group: GroupType.SOUND, objectType: ObjectType.SOUND },
+      trigger: { group: GroupType.TRIGGER, objectType: ObjectType.TRIGGER },
+      waypoint: { group: GroupType.WAYPOINT, objectType: ObjectType.WAYPOINT },
+    };
+    for (let i = 0; i < MODULE_HELPER_TYPES.length; i++) {
+      const key = MODULE_HELPER_TYPES[i];
+      const visible = helpers[key];
+      const target = mapping[key];
+      this.ui3DRenderer.group[target.group].visible = visible;
+      this.ui3DRenderer.visibilityState[target.objectType] = visible;
+    }
+  }
+
   destroy(): void {
+    this.unsubModuleHelpers?.();
+    this.unsubModuleHelpers = undefined;
     // Dispose ghost preview
     if(this.ghostPreviewMesh){
       this.ui3DRenderer.scene.remove(this.ghostPreviewMesh);

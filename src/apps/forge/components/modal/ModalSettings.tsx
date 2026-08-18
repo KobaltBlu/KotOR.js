@@ -12,6 +12,8 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { ModalSettingsState } from "@/apps/forge/components/modal/ModalSettingsState";
 import {
   SettingsSearchContext,
+  SETTINGS_PAGE_GROUPS,
+  getSettingsPageGroup,
   getSettingsPages,
   pageMatchesQuery,
 } from "@/apps/forge/settings/settingsRegistry";
@@ -99,20 +101,31 @@ export function ModalSettings() {
             tabIndex={0}
             onKeyDown={onCategoryKeyDown}
           >
-            {visiblePages.map((page) => {
-              const selectedPage = selected?.id === page.id;
+            {SETTINGS_PAGE_GROUPS.map((group) => {
+              const groupPages = visiblePages.filter((page) => getSettingsPageGroup(page) === group.id);
+              if (!groupPages.length) {
+                return null;
+              }
               return (
-                <button
-                  key={page.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={selectedPage}
-                  className={`forge-settings__nav-item${selectedPage ? " is-active" : ""}`}
-                  onClick={() => setActiveId(page.id)}
-                >
-                  <span className={page.icon} aria-hidden="true" />
-                  <span>{page.label}</span>
-                </button>
+                <div key={group.id} className="forge-settings__nav-group">
+                  <div className="forge-settings__nav-group-label">{group.label}</div>
+                  {groupPages.map((page) => {
+                    const selectedPage = selected?.id === page.id;
+                    return (
+                      <button
+                        key={page.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={selectedPage}
+                        className={`forge-settings__nav-item${selectedPage ? " is-active" : ""}`}
+                        onClick={() => setActiveId(page.id)}
+                      >
+                        <span className={page.icon} aria-hidden="true" />
+                        <span>{page.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               );
             })}
           </div>

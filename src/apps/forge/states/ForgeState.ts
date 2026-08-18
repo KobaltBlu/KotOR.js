@@ -34,6 +34,8 @@ import {
   persistGameDirectoryHandle,
   persistGameDirectoryPath,
 } from "@/utility/gameDirectoryAccess";
+import { getSessionSettings, shouldRestoreOpenTabs } from "@/apps/forge/settings/forgeSessionSettings";
+import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -341,9 +343,17 @@ export class ForgeState {
         if(!ForgeState.#shellInitialized){
           ForgeState.tabManager.clearAllTabs();
           ForgeState.explorerTabManager.clearAllTabs();
-          
+
+          const session = getSessionSettings();
+          ForgeState.setExplorerPaneOpen(session.explorerOpenOnLaunch);
+          AudioPlayerState.volume = forgeAudioSettings.get().volume;
+          AudioPlayerState.loop = forgeAudioSettings.get().loop;
+          if (session.showFloatingMiniPlayer) {
+            AudioPlayerState.showFloatingMiniPlayer();
+          }
+
           const tabStates: TabStoreState[] = KotOR.ConfigClient.get('open_tabs', []);
-          if(tabStates.length){
+          if(shouldRestoreOpenTabs(session.restoreOpenTabs, tabStates)){
             for(let i = 0; i < tabStates.length; i++){
               const tabState = tabStates[i];
               this.tabManager.restoreTabState(tabState);
@@ -812,4 +822,12 @@ export class ForgeState {
 window.addEventListener('beforeunload', (event) => { 
   console.log('Saving Editor Config');
   ForgeState.saveOpenTabsState();
+  const session = getSessionSettings();
+  if (session.confirmCloseUnsaved) {
+    const dirty = ForgeState.tabManager.tabs.some((tab) => tab.isClosable && tab.file?.unsaved_changes);
+    if (dirty) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+  }
 });

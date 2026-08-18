@@ -10,7 +10,7 @@ import { supportedFileDialogTypes, supportedFilePickerTypes } from "@/apps/forge
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
-import { editorFileProjectRelativePath } from "@/apps/forge/helpers/editorFileProjectPath";
+import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -311,7 +311,19 @@ export class TabState extends EventListenerModel {
     window.removeEventListener('keyup', this.#_onKeyUp);
   }
 
-  remove(){
+  remove(options?: { skipUnsavedConfirm?: boolean }){
+    if(
+      !options?.skipUnsavedConfirm
+      && this.isClosable
+      && this.file?.unsaved_changes
+      && getSessionSettings().confirmCloseUnsaved
+    ){
+      const ok = typeof window === "undefined"
+        || window.confirm(`Close "${this.tabName}" without saving?`);
+      if(!ok){
+        return;
+      }
+    }
     this.visible = false;
     if(ForgeState.project && this.file instanceof EditorFile){
       ForgeState.project.removeFromOpenFileList(this.file);

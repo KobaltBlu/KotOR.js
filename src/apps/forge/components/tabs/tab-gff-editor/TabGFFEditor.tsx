@@ -20,6 +20,7 @@ import {
   gffFieldPath,
 } from "@/apps/forge/helpers/gffTreePath";
 import { getGffMemoryClipboard } from "@/apps/forge/helpers/gffJsonCodec";
+import { forgeGffSettings, truncateGffPreview } from "@/apps/forge/settings/forgeEditorsSettings";
 import "@/apps/forge/components/tabs/tab-gff-editor/TabGFFEditor.scss";
 
 export const TabGFFEditor = function(props: BaseTabProps){
@@ -47,6 +48,8 @@ export const TabGFFEditor = function(props: BaseTabProps){
     tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onNodeSelected', onNodeSelected);
     tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onFocusSearch', onFocusSearch);
     tab.addEventListener<TabGFFEditorStateEventListenerTypes>('onKeyDown', onKeyDown);
+    const onGffSettings = () => refresh();
+    forgeGffSettings.addListener(onGffSettings);
     if (tab.gff && tab.generation === 0) {
       tab.notifyTree();
     }
@@ -56,6 +59,7 @@ export const TabGFFEditor = function(props: BaseTabProps){
       tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onNodeSelected', onNodeSelected);
       tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onFocusSearch', onFocusSearch);
       tab.removeEventListener<TabGFFEditorStateEventListenerTypes>('onKeyDown', onKeyDown);
+      forgeGffSettings.removeListener(onGffSettings);
     };
   });
 
@@ -283,7 +287,8 @@ const GFFFieldElement = function GFFFieldElement(props: GFFFieldElementProps){
   const expanded = hasChildren && (tab.isExpanded(path) || tab.isSearchFiltering());
   const matched = tab.isSearchMatch(path);
   const renaming = tab.renamingPath === path;
-  const preview = fieldPreview(field);
+  const gffSettings = forgeGffSettings.get();
+  const previewText = gffSettings.showPreview ? truncateGffPreview(preview, gffSettings.previewMaxLength) : "";
 
   const handleToggle = useCallback(() => {
     tab.toggleExpanded(path);
@@ -357,7 +362,7 @@ const GFFFieldElement = function GFFFieldElement(props: GFFFieldElementProps){
     <>
       <ListItemNode
         id={path}
-        name={`${field.getLabel()} [${typeName}] ${preview}`}
+        name={`${field.getLabel()}${gffSettings.showType ? ` [${typeName}]` : ""}${previewText ? ` ${previewText}` : ""}`}
         className={`gff-field-node ${matched ? "gff-match" : ""}`}
         hasChildren={hasChildren}
         isExpanded={expanded}
@@ -398,8 +403,10 @@ const GFFFieldElement = function GFFFieldElement(props: GFFFieldElementProps){
           ) : (
             <span className="gff-node-label">
               <span className="gff-node-label__name">{field.getLabel()}</span>
-              <span className={`gff-node-label__type field-type ${typeName}`}>{typeName}</span>
-              {preview ? <span className="gff-node-label__value">{preview}</span> : null}
+              {gffSettings.showType ? (
+                <span className={`gff-node-label__type field-type ${typeName}`}>{typeName}</span>
+              ) : null}
+              {previewText ? <span className="gff-node-label__value">{previewText}</span> : null}
             </span>
           )
         }

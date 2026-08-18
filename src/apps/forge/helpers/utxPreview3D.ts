@@ -9,10 +9,11 @@
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { forgeBlueprintsSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import * as THREE from "three";
 
 export function utxShouldShow3DPreview(): boolean {
-  return ForgeState.hasGameData;
+  return ForgeState.hasGameData && forgeBlueprintsSettings.get().show3DPreview;
 }
 
 export interface UtxPreviewObject {

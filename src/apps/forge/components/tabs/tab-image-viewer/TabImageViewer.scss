@@ -29,16 +29,22 @@
 }
 
 .image-tool-rail__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 36px;
   height: 36px;
   border: 1px solid var(--forge-border);
   border-radius: 4px;
   background: var(--forge-bg);
   color: var(--forge-text);
-  font-size: 10px;
-  letter-spacing: 0.02em;
+  font-size: 14px;
   cursor: pointer;
-  padding: 0 2px;
+  padding: 0;
+}
+
+.image-tool-rail__btn i {
+  pointer-events: none;
 }
 
 .image-tool-rail__btn.is-active {
@@ -124,7 +130,15 @@
 
 .image-canvas-stack canvas {
   display: block;
+}
+
+.image-canvas-stack--nearest canvas {
   image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.image-canvas-stack--linear canvas {
+  image-rendering: auto;
 }
 
 .image-status {

@@ -21,6 +21,7 @@ import {
 } from "@/apps/forge/helpers/AssetExtraction";
 import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 import { isNonEmptyEditorBuffer } from "@/apps/forge/helpers/editorFileBuffer";
+import { DEFAULT_VIEWPORT_LAYERS, forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 declare const dialog: any;
 
@@ -100,16 +101,7 @@ export enum TabModelViewerControlMode {
 }
 
 export const DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY: ModelViewerLayerVisibility = {
-  lights: true,
-  emitters: true,
-  walkmeshes: false,
-  trimesh: true,
-  skin: true,
-  dangly: true,
-  saber: true,
-  childModels: true,
-  layout: true,
-  ground: true,
+  ...DEFAULT_VIEWPORT_LAYERS,
 };
 
 export type TabModelViewerStateEventListenerTypes =
@@ -234,7 +226,7 @@ export class TabModelViewerState extends TabState {
     this.processEventListener<TabModelViewerStateEventListenerTypes>('onKeyframeEditorChange', [this]);
   };
 
-  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY };
+  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...forgeViewportSettings.get().layers };
 
   constructor(options: BaseTabStateOptions = {}){
     super(options);
@@ -253,6 +245,7 @@ export class TabModelViewerState extends TabState {
     // this.unselectable.add( this.groundMesh );
     
     this.ui3DRenderer = new UI3DRenderer();
+    this.ui3DRenderer.windowPower = forgeViewportSettings.get().windPower;
     this.bindTransformControlsEvents();
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => this.bindTransformControlsEvents());
     this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onBeforeRender', this.animate.bind(this));

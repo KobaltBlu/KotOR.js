@@ -31,12 +31,19 @@ function readInspector(): Record<string, unknown> {
   return value && typeof value === "object" ? { ...value } : {};
 }
 
+function notifyInspectorChange(): void {
+  if (typeof window !== "undefined" && typeof window.dispatchEvent === "function") {
+    window.dispatchEvent(new CustomEvent("forge-ncs-inspector-settings-change"));
+  }
+}
+
 function writeInspector(patch: Record<string, unknown>): void {
   ConfigClient.set("Editor.NcsInspector", {
     ...(hasCurrentExperience() ? readInspector() : EXPERIENCE_DEFAULTS),
     ...patch,
     experienceVersion: EXPERIENCE_VERSION,
   });
+  notifyInspectorChange();
 }
 
 function hasCurrentExperience(): boolean {
