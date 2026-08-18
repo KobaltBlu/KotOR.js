@@ -109,6 +109,7 @@ export const TabImageViewer = function (props: BaseTabProps) {
         { label: "Export PNG", onClick: () => { void tab.exportAs("png"); } },
         { label: "Export JPG", onClick: () => { void tab.exportAs("jpg"); } },
         { label: "Export TPC", onClick: () => { void tab.exportAs("tpc"); } },
+        { label: "Export PSD", onClick: () => { void tab.exportAs("psd"); } },
       ],
     },
     {

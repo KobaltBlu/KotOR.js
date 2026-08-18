@@ -338,6 +338,14 @@ export function registerForgeCommands(): void {
   });
 
   registerCommand({
+    id: "forge.file.new.tpc",
+    title: "New Texture (.tpc)",
+    category: "File",
+    keywords: ["texture", "tpc", "image", "dxt"],
+    run: () => addUntitled(TabImageViewerState, "untitled", KotOR.ResourceTypes.tpc),
+  });
+
+  registerCommand({
     id: "forge.file.new.nss",
     title: "New NWScript Source File",
     category: "File",

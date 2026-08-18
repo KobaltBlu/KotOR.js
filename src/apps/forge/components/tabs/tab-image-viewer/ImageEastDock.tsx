@@ -9,12 +9,8 @@
 import React, { useEffect, useState } from "react";
 import MonacoEditor from "react-monaco-editor";
 import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
-import {
-  IMAGE_BLEND_MODES,
-  getActiveLayer,
-  type ImageBlendMode,
-  type ImageEastPane,
-} from "@/apps/forge/image";
+import { IMAGE_TPC_FORMATS, type ImageEastPane, type ImageTpcFormat } from "@/apps/forge/image";
+import { ImageLayerPanel } from "@/apps/forge/components/tabs/tab-image-viewer/ImageLayerPanel";
 import { validateTxi } from "@/apps/forge/txi/txiSchema";
 import {
   addForgeThemeChangeListener,
@@ -54,106 +50,25 @@ export function ImageEastDock(props: { tab: TabImageViewerState }) {
   );
 }
 
-function ImageLayerPanel(props: { tab: TabImageViewerState }) {
-  const tab = props.tab;
-  const layers = tab.document.layers.slice().reverse();
-  return (
-    <div className="image-layers">
-      <div className="image-layers__toolbar">
-        <button type="button" className="image-btn" onClick={() => tab.newLayer()}>New</button>
-        <button type="button" className="image-btn image-btn--secondary" onClick={() => tab.duplicateActiveLayer()}>Dup</button>
-        <button type="button" className="image-btn image-btn--secondary" onClick={() => tab.deleteActiveLayer()}>Del</button>
-        <button type="button" className="image-btn image-btn--secondary" onClick={() => tab.moveActiveLayer(1)}>Up</button>
-        <button type="button" className="image-btn image-btn--secondary" onClick={() => tab.moveActiveLayer(-1)}>Down</button>
-      </div>
-      <div className="image-layers__list">
-        {layers.map((layer) => (
-          <div
-            key={layer.id}
-            className={`image-layer${layer.id === tab.document.activeLayerId ? " is-active" : ""}`}
-            onClick={() => {
-              tab.document.activeLayerId = layer.id;
-              tab.notifyUi();
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={layer.visible}
-              onChange={(e) => {
-                e.stopPropagation();
-                tab.mutate((doc) => {
-                  const found = doc.layers.find((item) => item.id === layer.id);
-                  if (found) found.visible = e.target.checked;
-                });
-              }}
-            />
-            <input
-              className="image-layer__name"
-              value={layer.name}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                const name = e.target.value;
-                tab.mutate((doc) => {
-                  const found = doc.layers.find((item) => item.id === layer.id);
-                  if (found) found.name = name;
-                }, { history: false });
-              }}
-            />
-            <select
-              value={layer.blend}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                const blend = e.target.value as ImageBlendMode;
-                tab.mutate((doc) => {
-                  const found = doc.layers.find((item) => item.id === layer.id);
-                  if (found) found.blend = blend;
-                });
-              }}
-            >
-              {IMAGE_BLEND_MODES.map((mode) => (
-                <option key={mode} value={mode}>{mode}</option>
-              ))}
-            </select>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round(layer.opacity * 100)}
-              onClick={(e) => e.stopPropagation()}
-              onChange={(e) => {
-                const opacity = Number(e.target.value) / 100;
-                tab.mutate((doc) => {
-                  const found = doc.layers.find((item) => item.id === layer.id);
-                  if (found) found.opacity = opacity;
-                }, { history: false });
-              }}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="image-layers__toolbar">
-        <label>
-          <input
-            type="checkbox"
-            checked={!!getActiveLayer(tab.document)?.lockTransparent}
-            onChange={(e) => {
-              tab.mutate((doc) => {
-                const layer = getActiveLayer(doc);
-                if (layer) layer.lockTransparent = e.target.checked;
-              });
-            }}
-          />
-          Lock transparent
-        </label>
-      </div>
-    </div>
-  );
-}
-
 function ImageEncodePanel(props: { tab: TabImageViewerState }) {
   const encode = props.tab.document.encode;
   return (
     <div className="image-encode">
+      <label>
+        Format
+        <select
+          value={encode.format}
+          onChange={(e) => {
+            props.tab.mutate((doc) => {
+              doc.encode.format = e.target.value as ImageTpcFormat;
+            });
+          }}
+        >
+          {IMAGE_TPC_FORMATS.map((format) => (
+            <option key={format.id} value={format.id}>{format.label}</option>
+          ))}
+        </select>
+      </label>
       <label>
         Mip maps
         <select
@@ -182,7 +97,7 @@ function ImageEncodePanel(props: { tab: TabImageViewerState }) {
           <option value="strict-alpha">Any alpha &lt; 255</option>
         </select>
       </label>
-      {encode.alphaPolicy === "opaque-threshold" ? (
+      {encode.alphaPolicy === "opaque-threshold" && encode.format === "auto" ? (
         <label>
           Opaque threshold
           <input
@@ -198,7 +113,39 @@ function ImageEncodePanel(props: { tab: TabImageViewerState }) {
           />
         </label>
       ) : null}
-      <p style={{ fontSize: 11, opacity: 0.75 }}>TPC save uses DXT1 when the composite is opaque, DXT5 when alpha is meaningful.</p>
+      <label>
+        Alpha test
+        <input
+          type="number"
+          min={0}
+          max={1}
+          step={0.01}
+          value={encode.alphaTest}
+          onChange={(e) => {
+            props.tab.mutate((doc) => {
+              const next = Number(e.target.value);
+              doc.encode.alphaTest = Number.isFinite(next) ? next : 1;
+            }, { history: false });
+          }}
+        />
+      </label>
+      <label>
+        <input
+          type="checkbox"
+          checked={encode.isCubemap}
+          onChange={(e) => {
+            props.tab.mutate((doc) => {
+              doc.encode.isCubemap = e.target.checked;
+            });
+          }}
+        />
+        Cubemap (6 stacked faces)
+      </label>
+      <p style={{ fontSize: 11, opacity: 0.75 }}>
+        {encode.format === "auto"
+          ? "Auto TPC save uses DXT1 when the composite is opaque, DXT5 when alpha is meaningful."
+          : "TPC save writes the selected Odyssey encoding, including uncompressed gray / RGB / RGBA / BGRA."}
+      </p>
     </div>
   );
 }

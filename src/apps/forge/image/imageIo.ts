@@ -90,6 +90,13 @@ export function tpcDecodedToDisplayRgba(raw: Uint8Array, width: number, height: 
   return new Uint8ClampedArray(copy);
 }
 
+/** Convert display-space RGBA into TPC file pixels (top-down, inverse of decode). */
+export function displayRgbaToTpc(rgba: Uint8Array | Uint8ClampedArray, width: number, height: number): Uint8Array {
+  const copy = new Uint8Array(rgba);
+  flipYInPlace(copy, width, height);
+  return copy;
+}
+
 export function hasMeaningfulAlpha(pixelData: Uint8Array | Uint8ClampedArray, policy: ImageEncodePolicy): boolean {
   if (policy.alphaPolicy === "strict-alpha") {
     for (let i = 3; i < pixelData.length; i += 4) {

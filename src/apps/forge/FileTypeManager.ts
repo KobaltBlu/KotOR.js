@@ -141,6 +141,7 @@ export class FileTypeManager {
       case 'png':
       case 'jpg':
       case 'jpeg':
+      case 'psd':
         ForgeState.tabManager.addTab(new TabImageViewerState({editorFile: res}));
       break;
       case 'utc':

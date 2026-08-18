@@ -107,6 +107,7 @@ export const ListItemNode = memo(function ListItemNode(props: ListItemNodeProps)
       case 'gif': return 'fa-file-image';
       case 'svg': return 'fa-file-image';
       case 'ico': return 'fa-file-image';
+      case 'psd': return 'fa-file-image';
       case 'wav': return 'fa-file-audio';
       case 'mp3': return 'fa-file-audio';
       case 'ogg': return 'fa-file-audio';

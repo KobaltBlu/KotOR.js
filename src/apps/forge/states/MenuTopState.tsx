@@ -130,6 +130,7 @@ export class MenuTopState {
               { header: true, label: 'Engine Resource' },
               this.commandItem('forge.file.new.lip', { label: 'Lip Sync File (.lip)' }),
               this.commandItem('forge.file.new.image', { label: 'Texture (.tga)' }),
+              this.commandItem('forge.file.new.tpc', { label: 'Texture (.tpc)' }),
               this.commandItem('forge.file.new.nss', { label: 'NWScript Source File' }),
               this.commandItem('forge.file.new.dlg', { label: 'Conversation (.dlg)' }),
               { header: true, label: 'Blueprints' },

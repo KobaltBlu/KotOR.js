@@ -8,6 +8,7 @@ import { PixelManager } from "@/utility/PixelManager";
 import {
   addLayer,
   buildTpcExportBuffer,
+  encodePolicyFromTpc,
   canvasSize,
   clearSelected,
   cloneDocument,
@@ -27,8 +28,10 @@ import {
   getActiveLayer,
   invertLayer,
   invertSelection,
+  isLayerEditable,
   mergeDown,
   moveLayer,
+  readForgePsd,
   resizeDocument,
   rotateDocument90,
   selectAll,
@@ -37,6 +40,7 @@ import {
   tgaToDisplayRgba,
   tpcDecodedToDisplayRgba,
   translateLayerPixels,
+  writeForgePsd,
   type ImageDocument,
   type ImageEastPane,
   type ImageRect,
@@ -62,7 +66,7 @@ const concatenate = (resultConstructor: any, ...arrays: any) => {
 export type ImageViewChannel = "rgba" | "r" | "g" | "b" | "a";
 
 /**
- * Layered image editor for TPC / TGA / PNG / JPG.
+ * Layered image editor for TPC / TGA / PNG / JPG / PSD.
  *
  * @file TabImageViewerState.tsx
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -91,7 +95,7 @@ export class TabImageViewerState extends TabState {
   liveRect: ImageRect | null = null;
   dragKind: "none" | "marquee" | "crop" | "move" | "stroke" = "none";
 
-  private forcedExportExt?: "tga" | "png" | "jpg" | "tpc";
+  private forcedExportExt?: "tga" | "png" | "jpg" | "tpc" | "psd";
   private dragOrigin = { x: 0, y: 0 };
   private lastStroke = { x: 0, y: 0 };
   private moveStartPixels: Uint8ClampedArray | null = null;
@@ -157,6 +161,8 @@ export class TabImageViewerState extends TabState {
         return { description: "PNG Image File", accept: { "image/*": [".png"] } };
       case "jpg":
         return { description: "JPG Image File", accept: { "image/*": [".jpg"] } };
+      case "psd":
+        return { description: "Photoshop Document", accept: { "image/vnd.adobe.photoshop": [".psd"] } };
       default:
         return undefined;
     }
@@ -175,6 +181,7 @@ export class TabImageViewerState extends TabState {
       TabImageViewerState.getSaveTypeForExtension("tga"),
       TabImageViewerState.getSaveTypeForExtension("png"),
       TabImageViewerState.getSaveTypeForExtension("jpg"),
+      TabImageViewerState.getSaveTypeForExtension("psd"),
     ];
   }
 
@@ -237,7 +244,7 @@ export class TabImageViewerState extends TabState {
     };
   }
 
-  async exportAs(ext: "tga" | "png" | "jpg" | "tpc") {
+  async exportAs(ext: "tga" | "png" | "jpg" | "tpc" | "psd") {
     const saveType = TabImageViewerState.getSaveTypeForExtension(ext);
     if (!saveType) {
       return false;
@@ -298,6 +305,7 @@ export class TabImageViewerState extends TabState {
                 decoded.width,
                 decoded.height,
                 tpc.txi?.info || "",
+                encodePolicyFromTpc(tpc),
               ));
             } else if (ext === "png" || ext === "jpg" || ext === "jpeg") {
               const raster = await TabImageViewerState.decodeImage(response.buffer, ext === "jpeg" ? "jpeg" : ext);
@@ -307,6 +315,8 @@ export class TabImageViewerState extends TabState {
                 raster.header.height,
                 "",
               ));
+            } else if (ext === "psd") {
+              this.applyLoadedDocument(readForgePsd(response.buffer));
             } else {
               this.applyLoadedDocument(createUntitledDocument(256, 256));
             }
@@ -456,7 +466,7 @@ export class TabImageViewerState extends TabState {
     if (this.tool === "fill") {
       this.mutate((doc) => {
         const layer = getActiveLayer(doc);
-        if (!layer) return;
+        if (!isLayerEditable(layer)) return;
         floodFill(layer, doc, x, y, doc.foreground, this.fillTolerance);
       });
       return;
@@ -470,7 +480,7 @@ export class TabImageViewerState extends TabState {
     }
     if (this.tool === "move") {
       const layer = getActiveLayer(this.document);
-      if (!layer) return;
+      if (!isLayerEditable(layer)) return;
       this.captureUndoSnapshot();
       this.dragKind = "move";
       this.dragOrigin = { x, y };
@@ -478,6 +488,7 @@ export class TabImageViewerState extends TabState {
       return;
     }
     if (this.tool === "brush" || this.tool === "eraser") {
+      if (!isLayerEditable(getActiveLayer(this.document))) return;
       this.captureUndoSnapshot();
       this.dragKind = "stroke";
       this.lastStroke = { x, y };
@@ -543,7 +554,7 @@ export class TabImageViewerState extends TabState {
   private paintAt(x0: number, y0: number, x1: number, y1: number, history: boolean): void {
     this.mutate((doc) => {
       const layer = getActiveLayer(doc);
-      if (!layer) return;
+      if (!isLayerEditable(layer)) return;
       strokeBrush(
         layer,
         doc,
@@ -570,7 +581,7 @@ export class TabImageViewerState extends TabState {
   deleteSelection(): void {
     this.mutate((doc) => {
       const layer = getActiveLayer(doc);
-      if (layer) clearSelected(layer, doc);
+      if (isLayerEditable(layer)) clearSelected(layer, doc);
     });
   }
 
@@ -596,13 +607,13 @@ export class TabImageViewerState extends TabState {
   invert(): void {
     this.mutate((doc) => {
       const layer = getActiveLayer(doc);
-      if (layer) invertLayer(layer, doc);
+      if (isLayerEditable(layer)) invertLayer(layer, doc);
     });
   }
   desaturate(): void {
     this.mutate((doc) => {
       const layer = getActiveLayer(doc);
-      if (layer) desaturateLayer(layer, doc);
+      if (isLayerEditable(layer)) desaturateLayer(layer, doc);
     });
   }
   resize(width: number, height: number): void { this.mutate((doc) => { resizeDocument(doc, width, height); }); }
@@ -657,6 +668,10 @@ export class TabImageViewerState extends TabState {
 
     if (normalizedExt == "tpc") {
       return buildTpcExportBuffer(pixelData, width, height, this.document.txiText, this.document.encode);
+    }
+
+    if (normalizedExt == "psd") {
+      return writeForgePsd(this.document);
     }
 
     return super.getExportBuffer(resref, ext);

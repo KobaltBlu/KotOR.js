@@ -6,7 +6,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-import { isSelected, transparentPixels } from "@/apps/forge/image/imageDocument";
+import { clearPsdPassthrough, hasPaintBuffer, isSelected, transparentPixels } from "@/apps/forge/image/imageDocument";
 import type { ImageDocument, ImageLayer, ImageRect } from "@/apps/forge/image/imageTypes";
 
 function pixelCount(width: number, height: number): number {
@@ -122,7 +122,9 @@ function transformSelection(
 }
 
 export function flipDocumentHorizontal(doc: ImageDocument): void {
+  clearPsdPassthrough(doc, { dropNonRaster: true });
   for (let i = 0; i < doc.layers.length; i++) {
+    if (!hasPaintBuffer(doc.layers[i], doc.width, doc.height)) continue;
     flipHorizontal(doc.layers[i].pixels, doc.width, doc.height);
   }
   doc.selection = transformSelection(
@@ -136,7 +138,9 @@ export function flipDocumentHorizontal(doc: ImageDocument): void {
 }
 
 export function flipDocumentVertical(doc: ImageDocument): void {
+  clearPsdPassthrough(doc, { dropNonRaster: true });
   for (let i = 0; i < doc.layers.length; i++) {
+    if (!hasPaintBuffer(doc.layers[i], doc.width, doc.height)) continue;
     flipVertical(doc.layers[i].pixels, doc.width, doc.height);
   }
   doc.selection = transformSelection(
@@ -151,10 +155,14 @@ export function flipDocumentVertical(doc: ImageDocument): void {
 
 export function rotateDocument90(doc: ImageDocument, times = 1): void {
   const count = ((times % 4) + 4) % 4;
+  if (count) {
+    clearPsdPassthrough(doc, { dropNonRaster: true });
+  }
   for (let n = 0; n < count; n++) {
     const width = doc.width;
     const height = doc.height;
     for (let i = 0; i < doc.layers.length; i++) {
+      if (!hasPaintBuffer(doc.layers[i], width, height)) continue;
       doc.layers[i].pixels = rotate90(doc.layers[i].pixels, width, height);
     }
     doc.selection = transformSelection(
@@ -171,6 +179,7 @@ export function rotateDocument90(doc: ImageDocument, times = 1): void {
 }
 
 export function invertLayer(layer: ImageLayer, doc: ImageDocument): void {
+  if (!hasPaintBuffer(layer, doc.width, doc.height)) return;
   for (let y = 0; y < doc.height; y++) {
     for (let x = 0; x < doc.width; x++) {
       if (!isSelected(doc, x, y)) continue;
@@ -184,6 +193,7 @@ export function invertLayer(layer: ImageLayer, doc: ImageDocument): void {
 }
 
 export function desaturateLayer(layer: ImageLayer, doc: ImageDocument): void {
+  if (!hasPaintBuffer(layer, doc.width, doc.height)) return;
   for (let y = 0; y < doc.height; y++) {
     for (let x = 0; x < doc.width; x++) {
       if (!isSelected(doc, x, y)) continue;
@@ -203,7 +213,9 @@ export function resizeDocument(doc: ImageDocument, width: number, height: number
   if (w === doc.width && h === doc.height) {
     return;
   }
+  clearPsdPassthrough(doc, { dropNonRaster: true });
   for (let i = 0; i < doc.layers.length; i++) {
+    if (!hasPaintBuffer(doc.layers[i], doc.width, doc.height)) continue;
     doc.layers[i].pixels = resizeBilinear(doc.layers[i].pixels, doc.width, doc.height, w, h);
   }
   if (doc.selection) {
@@ -233,9 +245,11 @@ export function canvasSize(doc: ImageDocument, width: number, height: number, an
   if (w === doc.width && h === doc.height) {
     return;
   }
+  clearPsdPassthrough(doc, { dropNonRaster: true });
   const ox = Math.round((w - doc.width) * anchorX);
   const oy = Math.round((h - doc.height) * anchorY);
   for (let i = 0; i < doc.layers.length; i++) {
+    if (!hasPaintBuffer(doc.layers[i], doc.width, doc.height)) continue;
     const src = doc.layers[i].pixels;
     const next = transparentPixels(w, h);
     copyRect(src, doc.width, doc.height, 0, 0, doc.width, doc.height, next, w, ox, oy);
@@ -263,7 +277,9 @@ export function cropDocument(doc: ImageDocument, rect: ImageRect): void {
   const y = Math.max(0, Math.min(doc.height, Math.round(rect.y)));
   const w = Math.max(1, Math.min(doc.width - x, Math.round(rect.w)));
   const h = Math.max(1, Math.min(doc.height - y, Math.round(rect.h)));
+  clearPsdPassthrough(doc, { dropNonRaster: true });
   for (let i = 0; i < doc.layers.length; i++) {
+    if (!hasPaintBuffer(doc.layers[i], doc.width, doc.height)) continue;
     const next = transparentPixels(w, h);
     copyRect(doc.layers[i].pixels, doc.width, doc.height, x, y, w, h, next, w, 0, 0);
     doc.layers[i].pixels = next;
@@ -315,12 +331,14 @@ export function copyRect(
 
 export function translateLayerPixels(layer: ImageLayer, doc: ImageDocument, dx: number, dy: number): void {
   if (!dx && !dy) return;
+  if (!hasPaintBuffer(layer, doc.width, doc.height)) return;
   const next = transparentPixels(doc.width, doc.height);
   copyRect(layer.pixels, doc.width, doc.height, 0, 0, doc.width, doc.height, next, doc.width, dx, dy);
   layer.pixels = next;
 }
 
 export function clearSelected(layer: ImageLayer, doc: ImageDocument): void {
+  if (!hasPaintBuffer(layer, doc.width, doc.height)) return;
   for (let y = 0; y < doc.height; y++) {
     for (let x = 0; x < doc.width; x++) {
       if (!isSelected(doc, x, y)) continue;

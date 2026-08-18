@@ -59,7 +59,7 @@ export function flattenDocument(doc: ImageDocument): Uint8ClampedArray {
   const out = new Uint8ClampedArray(doc.width * doc.height * 4);
   for (let i = 0; i < doc.layers.length; i++) {
     const layer = doc.layers[i];
-    if (!layer.visible) {
+    if (!layer.visible || (layer.kind || "raster") !== "raster") {
       continue;
     }
     compositeLayer(out, layer.pixels, layer.opacity, layer.blend);
