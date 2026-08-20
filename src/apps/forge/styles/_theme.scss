@@ -30,6 +30,8 @@
   --forge-danger: #c75050;
   --forge-danger-hover: #d96a6a;
   --forge-success: #3d9a55;
+  --forge-warning: #e0a800;
+  --forge-info: #00b8b8;
 
   --forge-font: system-ui, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   --forge-font-mono: ui-monospace, "Cascadia Code", "Consolas", monospace;
@@ -83,6 +85,8 @@ html[data-forge-color-scheme="light"] {
   --forge-danger: #c75050;
   --forge-danger-hover: #a33d3d;
   --forge-success: #2e7d3a;
+  --forge-warning: #b8860b;
+  --forge-info: #008a8a;
   --forge-shadow-menu: 0 4px 12px rgba(0, 0, 0, 0.18);
 }
 

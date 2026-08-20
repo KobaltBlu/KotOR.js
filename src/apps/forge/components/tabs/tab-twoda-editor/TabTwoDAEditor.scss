@@ -8,6 +8,8 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  background: var(--forge-bg);
+  color: var(--forge-text);
 }
 
 
@@ -44,12 +46,13 @@
   gap: 16px;
   flex-shrink: 0;
   padding: 2px 8px;
-  font-size: 11px;
-  color: var(--forge-text-muted, #aaa);
-  border-top: 1px solid var(--forge-border, #333);
+  font-size: var(--forge-font-size-sm, 11px);
+  color: var(--forge-text-muted);
+  border-top: 1px solid var(--forge-border);
+  background: var(--forge-bg);
 
   &__unsaved {
-    color: var(--forge-warning, #e0a800);
+    color: var(--forge-warning);
   }
 }
 
@@ -61,6 +64,7 @@
 table.twoda {
   white-space: nowrap;
   border-collapse: collapse;
+  color: var(--forge-text);
 }
 
 table.twoda.twoda--wrap {
@@ -74,19 +78,25 @@ table.twoda.twoda--wrap input {
 
 table.twoda > thead > tr > th {
   padding: 5px 8px;
-  background-color: #265c8c;
-  border-right: 1px solid #192631;
+  background-color: var(--forge-accent);
+  color: var(--forge-text-bright);
+  border-right: 1px solid var(--forge-border);
   position: sticky;
   top: 0;
-  font-size: 12px;
+  font-size: var(--forge-font-size-sm, 12px);
   user-select: none;
   white-space: nowrap;
   overflow: hidden;
+  cursor: pointer;
 }
 
 table.twoda > thead > tr > th.cell-sticky {
   left: 0;
   z-index: 2;
+}
+
+table.twoda > thead > tr > th.twoda-col-sorted {
+  background-color: color-mix(in srgb, var(--forge-accent) 78%, var(--forge-bg) 22%);
 }
 
 .twoda-col-label {
@@ -117,22 +127,23 @@ table.twoda > thead > tr > th.cell-sticky {
 
   &:hover::after,
   &:active::after {
-    background: rgba(255, 255, 255, 0.35);
+    background: color-mix(in srgb, var(--forge-text-bright) 35%, transparent);
   }
-}
-
-table.twoda > tbody > tr:nth-child(odd) > td {
-  background: #212121;
 }
 
 table.twoda > tbody > tr > td {
   padding: 0;
-  border: 1px solid #192631;
+  background: var(--forge-bg);
+  border: 1px solid var(--forge-border);
   transition: background .15s ease-in-out, border-color .15s ease-in-out;
 }
 
+table.twoda > tbody > tr:nth-child(odd) > td {
+  background: var(--forge-bg-elevated);
+}
+
 table.twoda > tbody > tr > td.cell-sticky {
-  background: #212121;
+  background: var(--forge-bg-elevated);
   position: sticky;
   left: 0;
   z-index: 1;
@@ -146,24 +157,24 @@ table.twoda > tbody > tr > td.cell-sticky:before {
   position: absolute;
   top: 0;
   left: -1px;
-  background: #192631;
+  background: var(--forge-border);
 }
 
 table.twoda > tbody > tr.focus > td.cell-sticky:before {
-  background: #337ab7;
+  background: var(--forge-accent);
 }
 
 table.twoda > tbody > tr.focus > td {
-  background: #1f2e3c;
-  border: 1px solid #337ab7 !important;
+  background: var(--forge-accent-muted);
+  border: 1px solid var(--forge-accent) !important;
 }
 
 table.twoda > tbody > tr.focus-before > td {
-  border-bottom: 1px solid #337ab7 !important;
+  border-bottom: 1px solid var(--forge-accent) !important;
 }
 
 table.twoda > tbody > tr.focus-after > td {
-  border-top: 1px solid #337ab7 !important;
+  border-top: 1px solid var(--forge-accent) !important;
 }
 
 table.twoda.fixed {
@@ -178,32 +189,24 @@ table.twoda.fixed {
  * --------------------------------------------------------------------- */
 
 table.twoda > tbody > tr > td.cell-match {
-  box-shadow: inset 0 0 0 1px rgba(255, 193, 7, 0.55);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--forge-warning) 55%, transparent);
 }
 
 table.twoda > tbody > tr > td.cell-match-current {
-  box-shadow: inset 0 0 0 2px #ffc107;
-  background: rgba(255, 193, 7, 0.12);
+  box-shadow: inset 0 0 0 2px var(--forge-warning);
+  background: color-mix(in srgb, var(--forge-warning) 12%, transparent);
 }
 
 table.twoda > tbody > tr.focus > td.cell-match-current {
-  background: rgba(255, 193, 7, 0.18);
+  background: color-mix(in srgb, var(--forge-warning) 18%, transparent);
 }
 
 table.twoda > tbody > tr > td.cell-selected {
-  background: rgba(51, 122, 183, 0.28) !important;
+  background: var(--forge-accent-muted) !important;
 }
 
 table.twoda > tbody > tr > td.cell-active {
-  box-shadow: inset 0 0 0 2px #5dade2;
-}
-
-table.twoda > thead > tr > th.twoda-col-sorted {
-  background-color: #1f4f7a;
-}
-
-table.twoda > thead > tr > th {
-  cursor: pointer;
+  box-shadow: inset 0 0 0 2px var(--forge-accent-hover);
 }
 
 .twoda-col-dialog-field {
@@ -213,8 +216,8 @@ table.twoda > thead > tr > th {
   margin: 0;
 
   span {
-    font-size: 11px;
-    color: var(--forge-text-muted, #aaa);
+    font-size: var(--forge-font-size-sm, 11px);
+    color: var(--forge-text-muted);
   }
 }
 
@@ -232,19 +235,19 @@ table.twoda > tbody > tr > td > input {
   border: none;
   outline: none;
   color: inherit;
-  font-size: 12px;
-  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: var(--forge-font-size-sm, 12px);
+  font-family: var(--forge-font-mono);
   cursor: default;
   box-sizing: border-box;
 
   &:focus {
     cursor: text;
-    background: rgba(255, 255, 255, 0.04);
+    background: color-mix(in srgb, var(--forge-bg-hover) 55%, transparent);
   }
 }
 
 table.twoda > tbody > tr > td.cell-rowlabel > input {
-  color: #777;
+  color: var(--forge-text-muted);
   cursor: default;
 
   &:focus {
@@ -259,10 +262,10 @@ table.twoda > tbody > tr > td.cell-rowlabel > input {
 
 /* HEX Values */
 table.twoda > tbody > tr > td[data-value^="0x"] {
-  color: #00dada;
+  color: var(--forge-info);
 }
 
 /* NULL Values */
 table.twoda > tbody > tr > td[data-value="****"] {
-  color: #a00000;
+  color: var(--forge-danger);
 }
