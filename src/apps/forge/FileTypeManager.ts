@@ -3,12 +3,13 @@ import { EditorFileOptions } from "@/apps/forge/interfaces/EditorFileOptions";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { 
-  TabBIKPlayerState, TabDLGEditorState, TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabHexEditorState, TabImageViewerState, TabLIPEditorState, TabLYTEditorState, TabModelViewerState, TabPTHEditorState, TabSSFEditorState, TabTextEditorState, TabTLKEditorState, TabTwoDAEditorState, TabUTCEditorState, 
+  TabBIKPlayerState, TabDLGEditorState, TabERFEditorState, TabGFFEditorState, TabGUIEditorState, TabHexEditorState, TabImageViewerState, TabLIPEditorState, TabLYTEditorState, TabModelViewerState, TabPTHEditorState, TabSaveGameEditorState, TabSSFEditorState, TabTextEditorState, TabTLKEditorState, TabTwoDAEditorState, TabUTCEditorState,
   TabUTDEditorState, TabUTEEditorState, TabUTIEditorState, TabUTMEditorState, TabUTPEditorState, TabUTSEditorState, TabUTTEditorState, TabUTWEditorState, TabWOKEditorState 
 } from "@/apps/forge/states/tabs";
 import { ResourceTypes } from "@/KotOR";
 import { sniffBufferLooksLikeBinary } from "@/apps/forge/helpers/sniffBufferLooksLikeBinary";
 import { DefaultEditorKind, getDefaultEditor } from "@/apps/forge/settings/forgeSettings";
+import { isTopLevelSaveGameSav } from "@/apps/forge/savegame/saveGamePaths";
 
 /**
  * FileTypeManager class.
@@ -118,8 +119,14 @@ export class FileTypeManager {
       break;
       case 'erf':
       case 'mod':
-      case 'sav':
         ForgeState.tabManager.addTab(new TabERFEditorState({editorFile: res}));
+      break;
+      case 'sav':
+        if (isTopLevelSaveGameSav(res)) {
+          ForgeState.tabManager.addTab(new TabSaveGameEditorState({editorFile: res}));
+        } else {
+          ForgeState.tabManager.addTab(new TabERFEditorState({editorFile: res}));
+        }
       break;
       case 'mdl':
       case 'mdx':

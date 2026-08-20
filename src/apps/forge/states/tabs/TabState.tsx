@@ -375,109 +375,17 @@ export class TabState extends EventListenerModel {
     if(currentFile.archive_path || currentFile.archive_path2){
       return this.saveAs();
     }
-    const projectRel = editorFileProjectRelativePath(currentFile);
-    if(projectRel){
-      try{
-        const { ProjectFileSystem } = await import("@/apps/forge/ProjectFileSystem");
-        if(ProjectFileSystem.hasRoot()){
-          const pathInfo = pathParse(projectRel);
-          const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-          const ok = await ProjectFileSystem.writeFile(projectRel, saveBuffer);
-          if(ok){
-            currentFile.buffer = saveBuffer;
-            currentFile.unsaved_changes = false;
-            return true;
-          }
-          return false;
-        }
-      }catch(e){
-        console.error(e);
-        return false;
+    try{
+      const pathInfo = pathParse(this.getSaveSuggestedName());
+      const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+      const ok = await currentFile.writeBuffer(saveBuffer);
+      if(ok){
+        return true;
       }
+    }catch(e){
+      console.error(e);
     }
-    return new Promise<boolean>( async (resolve, reject) => {
-      try{
-        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-          if(currentFile.path?.length){
-            console.log('saveFile', currentFile.path);
-            //trigger a Save
-            try{
-              const pathInfo = pathParse(currentFile.path);
-              let saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-              fs.writeFile(currentFile.path, saveBuffer, () => {
-                currentFile.buffer = saveBuffer;
-                currentFile.unsaved_changes = false;
-                resolve(true);
-              });
-            }catch(e){
-              console.error(e);
-              resolve(false);
-            }
-          }else{
-            this.saveAs().then( (status: boolean) => {
-              resolve(status);
-            })
-          }
-        }else{
-          try{
-            if(currentFile.handle instanceof FileSystemFileHandle){
-              let granted = (await currentFile.handle.queryPermission({mode: 'readwrite'})) === 'granted';
-              if(!granted){
-                granted = (await currentFile.handle.requestPermission({mode: 'readwrite'})) === 'granted';
-              }
-              if(granted){
-                try{
-                  const pathInfo = pathParse(currentFile.handle.name);
-                  let saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-                  let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
-                  await ws.write(saveBuffer as any);
-                  currentFile.buffer = saveBuffer;
-                  currentFile.unsaved_changes = false;
-                  await ws.close();
-                  resolve(true);
-                }catch(e){
-                  console.error(e);
-                  resolve(false);
-                }
-              }else{
-                console.error('Write permissions could not be obtained to save this file');
-                resolve(false);
-              }
-            }else{
-              let newHandle = await window.showSaveFilePicker({
-                suggestedName: this.getSaveSuggestedName(),
-                types: this.saveTypes.length ? this.saveTypes : undefined
-              });
-              if(newHandle){
-                currentFile.handle = newHandle;
-                try{
-                  let ws: FileSystemWritableFileStream = await newHandle.createWritable();
-                  const pathInfo = pathParse(newHandle.name);
-                  const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-                  await ws.write(saveBuffer as any || new Uint8Array(0) as any);
-                  await ws.close();
-                  currentFile.buffer = saveBuffer;
-                  currentFile.unsaved_changes = false;
-                  resolve(true);
-                }catch(e){
-                  console.error(e);
-                  resolve(false);
-                }
-              }else{
-                console.error('save handle invalid');
-                resolve(false);
-              }
-            }
-          }catch(e){
-            console.error(e);
-            resolve(false);
-          }
-        }
-      }catch(e){
-        console.error(e);
-        resolve(false);
-      }
-    });
+    return this.saveAs();
   }
 
   getSaveTypes(): any {

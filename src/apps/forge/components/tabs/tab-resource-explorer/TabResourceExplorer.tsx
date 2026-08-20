@@ -14,7 +14,7 @@ import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/
 import { promptForDirectory, fileExists, writeFile, ArchiveReadCache, createThrottledProgress, createConcurrencyGate, WRITE_CONCURRENCY } from "@/apps/forge/helpers/AssetExtraction";
 import { createProgressModal, showExtractionResults } from "@/apps/forge/helpers/AssetExtraction";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabGFFEditorState, TabSSFEditorState, TabTLKEditorState } from "@/apps/forge/states/tabs";
+import { TabERFEditorState, TabGFFEditorState, TabSSFEditorState, TabTLKEditorState } from "@/apps/forge/states/tabs";
 
 
 export interface TabResourceExplorerProps extends BaseTabProps {
@@ -155,7 +155,11 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
     const canOpenWithGff = node.type === 'resource' && !!node.data?.path && gffLikeExtensions.has(nodeExt);
     const canOpenWithSsf = node.type === 'resource' && !!node.data?.path && nodeExt === 'ssf';
     const canOpenWithTlk = node.type === 'resource' && !!node.data?.path && nodeExt === 'tlk';
-    const canOpenWithHex = node.type === 'resource' && !!node.data?.path;
+    const canOpenWithHex = !!node.data?.path && (node.type === 'resource' || !!node.data?.saveGameFolder);
+    const canOpenWithErf = !!node.data?.path && (
+      !!node.data?.saveGameFolder ||
+      (node.type === 'resource' && (nodeExt === 'sav' || nodeExt === 'erf' || nodeExt === 'mod'))
+    );
 
     const items: ContextMenuItem[] = [
       {
@@ -225,6 +229,24 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
             }));
           },
         }
+      );
+    }
+
+    if (canOpenWithErf) {
+      items.push(
+        { id: 'sep-open-with-erf', separator: true },
+        {
+          id: 'open-with-erf',
+          label: 'Open as ERF',
+          onClick: () => {
+            ForgeState.tabManager.addTab(new TabERFEditorState({
+              editorFile: new EditorFile({
+                path: node.data.path,
+                useGameFileSystem: true,
+              }),
+            }));
+          },
+        },
       );
     }
 

@@ -17,6 +17,20 @@ export function normalizeProjectRel(rel: string): string {
   return String(rel || "").trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
 }
 
+function stripVirtualRoot(rawPath: string, host: "project.dir" | "game.dir"): string | undefined {
+  const raw = String(rawPath || "").trim().replace(/\\/g, "/");
+  if (!raw.length) {
+    return undefined;
+  }
+  const hostRe = host === "project.dir" ? /^project\.dir\/?/i : /^game\.dir\/?/i;
+  const stripped = raw
+    .replace(/^file:\/\//i, "")
+    .replace(/^\/+/, "")
+    .replace(hostRe, "")
+    .replace(/^\/+/, "");
+  return stripped.length ? stripped : undefined;
+}
+
 export function editorFileProjectRelativePath(file: ProjectSaveFileLike | undefined): string | undefined {
   if (!file?.useProjectFileSystem) {
     return undefined;
@@ -24,16 +38,24 @@ export function editorFileProjectRelativePath(file: ProjectSaveFileLike | undefi
   if (file.archive_path || file.archive_path2) {
     return undefined;
   }
-  const raw = String(file.path || "").trim().replace(/\\/g, "/");
-  if (!raw.length) {
+  return stripVirtualRoot(String(file.path || ""), "project.dir");
+}
+
+export interface GameSaveFileLike {
+  useGameFileSystem?: boolean;
+  path?: string;
+  archive_path?: string;
+  archive_path2?: string;
+}
+
+export function editorFileGameRelativePath(file: GameSaveFileLike | undefined): string | undefined {
+  if (!file?.useGameFileSystem) {
     return undefined;
   }
-  const stripped = raw
-    .replace(/^file:\/\//i, "")
-    .replace(/^\/+/, "")
-    .replace(/^project\.dir\/?/i, "")
-    .replace(/^\/+/, "");
-  return stripped.length ? stripped : undefined;
+  if (file.archive_path || file.archive_path2) {
+    return undefined;
+  }
+  return stripVirtualRoot(String(file.path || ""), "game.dir");
 }
 
 /**

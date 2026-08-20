@@ -8,6 +8,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
+import { groupGameSaveFolderFiles, isSaveGameSavFileName } from "@/apps/forge/savegame/saveGamePaths";
 
 export class TabResourceExplorerState extends TabState {
 
@@ -619,34 +620,57 @@ export class TabResourceExplorerState extends TabState {
 
       try {
         const files = await KotOR.GameFileSystem.readdir('Saves', { recursive: true });
-        const saveArchives = files.filter((filepath: string) => filepath.toLowerCase().endsWith('savegame.sav'));
+        const groups = groupGameSaveFolderFiles(Array.isArray(files) ? files : []);
 
-        for (const savePath of saveArchives) {
-          try {
-            const erf = new KotOR.ERFObject(savePath);
-            await erf.load();
+        for (const group of groups) {
+          const saveFolderNode = new FileBrowserNode({
+            name: group.folderName,
+            type: 'group',
+            nodes: [],
+            canOrphan: false,
+          });
 
-            const archiveNode = await TabResourceExplorerState.BuildArchiveBrowserNode(
-              erf,
-              savePath.split(path.sep).pop() || 'SAVEGAME.sav',
-              savePath,
-              undefined
-            );
-
-            // Keep save folder context for similarly named archive files.
-            if (archiveNode.nodes.length) {
-              const saveFolderName = path.dirname(savePath).split(path.sep).pop() || 'Save';
-              const saveFolderNode = new FileBrowserNode({
-                name: saveFolderName,
-                type: 'group',
-                nodes: [archiveNode],
-                canOrphan: false,
-              });
-              archiveNode.parent = saveFolderNode;
-              savesRoot.addChildNode(saveFolderNode);
+          for (const entry of group.files) {
+            if (isSaveGameSavFileName(entry.fileName)) {
+              let archiveNode: FileBrowserNode;
+              try {
+                const erf = new KotOR.ERFObject(entry.relPath);
+                await erf.load();
+                archiveNode = await TabResourceExplorerState.BuildArchiveBrowserNode(
+                  erf,
+                  entry.fileName.split('/').pop() || 'SAVEGAME.sav',
+                  entry.relPath,
+                  undefined
+                );
+              } catch (e) {
+                console.error('LoadSaves: failed to load save archive', entry.relPath, e);
+                archiveNode = new FileBrowserNode({
+                  name: entry.fileName.split('/').pop() || 'SAVEGAME.sav',
+                  type: 'group',
+                  nodes: [],
+                  canOrphan: false,
+                });
+              }
+              archiveNode.data = {
+                ...(archiveNode.data || {}),
+                path: EditorFile.referenceURIForGameRelative(entry.relPath),
+                saveGameFolder: true,
+              };
+              saveFolderNode.addChildNode(archiveNode);
+              continue;
             }
-          } catch (e) {
-            console.error('LoadSaves: failed to load save archive', savePath, e);
+
+            saveFolderNode.addChildNode(new FileBrowserNode({
+              name: entry.fileName,
+              type: 'resource',
+              data: { path: EditorFile.referenceURIForGameRelative(entry.relPath) },
+              nodes: [],
+            }));
+          }
+
+          if (saveFolderNode.nodes.length) {
+            saveFolderNode.sort();
+            savesRoot.addChildNode(saveFolderNode);
           }
         }
 

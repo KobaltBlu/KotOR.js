@@ -4,7 +4,7 @@ import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import { 
   TabBIKPlayerState, TabGFFEditorState, TabHexEditorState, TabImageViewerState, TabModelViewerState, 
   TabModuleEditorState, TabQuickStartState, TabSSFEditorState, TabTLKEditorState, TabTwoDAEditorState, 
-  TabDLGEditorState, TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabState
+  TabDLGEditorState, TabUTCEditorState, TabUTDEditorState, TabUTPEditorState, TabSaveGameEditorState, TabState
 } from "@/apps/forge/states/tabs";
 
 export type TabManagerEventListenerTypes =
@@ -236,6 +236,11 @@ export class EditorTabManager extends EventListenerModel {
       case 'TabUTPEditorState':
         this.addTab(
           new TabUTPEditorState({editorFile: tabState.file})
+        );
+      break;
+      case 'TabSaveGameEditorState':
+        this.addTab(
+          new TabSaveGameEditorState({editorFile: tabState.file})
         );
       break;
       case 'TabBIKPlayerState':

@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { IGameFileSystemReadDirOptions } from "@/interface/filesystem/IGameFileSystemReadDirOptions";
+import { isUsableDirectoryHandle } from "@/utility/gameDirectoryAccess";
 declare const dialog: any;
 
 const webHandleHasRemove = typeof (FileSystemFileHandle.prototype as any).remove === 'function'
@@ -37,10 +38,37 @@ const spleep = (time: number = 0) => {
 export class GameFileSystem {
 
   private static normalizePath(filepath: string){
-    filepath = filepath.trim();
+    filepath = String(filepath ?? '').trim();
+    filepath = filepath.replace(/\\/g, '/');
+    filepath = filepath.replace(/^file:\/\//i, '');
+    filepath = filepath.replace(/^game\.dir\/?/i, '');
     filepath = filepath.replace(/^\/+/, '').replace(/\/+$/, '');
-    filepath = filepath.replace(/^\\+/, '').replace(/\\+$/, '');
     return filepath;
+  }
+
+  private static decodePathSegment(segment: string): string {
+    try {
+      return decodeURIComponent(segment);
+    } catch {
+      return segment;
+    }
+  }
+
+  private static splitRelativePath(filepath: string): string[] {
+    return this.normalizePath(filepath).split('/').filter(Boolean).map((part) => this.decodePathSegment(part));
+  }
+
+  private static getRootDirectoryHandle(): FileSystemDirectoryHandle | undefined {
+    const candidates = [
+      ApplicationProfile.directoryHandle,
+      ApplicationProfile.profile?.directory_handle,
+    ];
+    for(let i = 0; i < candidates.length; i++){
+      if(isUsableDirectoryHandle(candidates[i])){
+        return candidates[i];
+      }
+    }
+    return undefined;
   }
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
@@ -63,16 +91,25 @@ export class GameFileSystem {
       const filename = dirs.pop();
       const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
       if(dirHandle){
-        const file = await dirHandle.getFileHandle(filename, {
-          create: false
-        });
-        if(file){
-          return file;
-        }else{
-          throw new Error('Failed to read file');
+        try {
+          const file = await dirHandle.getFileHandle(filename, {
+            create: false
+          });
+          if(file){
+            return file;
+          }
+        } catch {
+          // Fall through to a case-insensitive scan (File System Access API is case-sensitive).
         }
+        const want = String(filename || '').toLowerCase();
+        for await (const entry of dirHandle.values()){
+          if(entry.kind === 'file' && entry.name.toLowerCase() === want){
+            return await dirHandle.getFileHandle(entry.name, { create: false });
+          }
+        }
+        throw new Error('Failed to read file: ' + filepath);
       }else{
-        throw new Error('Failed to locate file directory');
+        throw new Error('Failed to locate file directory: ' + filepath);
       }
     }
   }
@@ -127,7 +164,10 @@ export class GameFileSystem {
     if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
       return new Promise<Uint8Array>( (resolve, reject) => {
         fs.readFile(path.join(ApplicationProfile.directory, filepath), options, (err, buffer) => {
-          if(err) reject(undefined);
+          if(err){
+            reject(err);
+            return;
+          }
           resolve(new Uint8Array(buffer));
         })
       });
@@ -142,39 +182,68 @@ export class GameFileSystem {
 
   //filepath should be relative to the rootDirectoryPath or ApplicationProfile.directory
   static async writeFile(filepath: string, data: Uint8Array): Promise<boolean> {
-    return new Promise<boolean>( async (resolve, reject) => {
-      if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+    if(ApplicationProfile.ENV == ApplicationEnvironment.ELECTRON){
+      return new Promise<boolean>((resolve) => {
         fs.writeFile(path.join(ApplicationProfile.directory, filepath), data, (err) => {
           resolve(!err);
-        })
-      }else{
-        filepath = this.normalizePath(filepath);
-        const dirs = filepath.split('/');
-        const filename = dirs.pop();
-        const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
-        
-        if(!dirHandle) throw new Error('Failed to locate file directory');
-        
-        const newFile = await dirHandle.getFileHandle(filename, {
-          create: true
         });
+      });
+    }
 
-        if(!newFile) throw new Error('Failed to create file');
-
-        try{
-          let stream = await newFile.createWritable();
-          await stream.write(data as any);
-          await stream.close();
-          resolve(true);
-          return;
-        }catch(e){
-          console.error(e);
-          resolve(false);
-          return;
-          // throw new Error('Failed to write file');
-        }
+    try {
+      filepath = this.normalizePath(filepath);
+      const parts = this.splitRelativePath(filepath);
+      const filename = parts.pop();
+      if(!filename){
+        console.error('GameFileSystem.writeFile: missing filename', filepath);
+        return false;
       }
-    });
+
+      const root = this.getRootDirectoryHandle();
+      if(!root){
+        console.error('GameFileSystem.writeFile: no game directory handle');
+        return false;
+      }
+
+      const granted = await this.validateDirectoryHandle(root);
+      if(!granted){
+        console.error('GameFileSystem.writeFile: write permission denied');
+        return false;
+      }
+
+      const dirHandle = await this.resolveFilePathDirectoryHandle(filepath);
+      if(!dirHandle){
+        console.error('GameFileSystem.writeFile: failed to locate directory', filepath);
+        return false;
+      }
+
+      let fileHandle: FileSystemFileHandle;
+      try {
+        fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+      } catch {
+        let found: FileSystemFileHandle | undefined;
+        const want = filename.toLowerCase();
+        for await (const entry of dirHandle.values()){
+          if(entry.kind === 'file' && entry.name.toLowerCase() === want){
+            found = await dirHandle.getFileHandle(entry.name, { create: false });
+            break;
+          }
+        }
+        if(!found){
+          console.error('GameFileSystem.writeFile: failed to create file', filepath);
+          return false;
+        }
+        fileHandle = found;
+      }
+
+      const stream = await fileHandle.createWritable();
+      await stream.write(data as any);
+      await stream.close();
+      return true;
+    } catch(e) {
+      console.error('GameFileSystem.writeFile', filepath, e);
+      return false;
+    }
   }
 
   static async readdir(
@@ -190,13 +259,15 @@ export class GameFileSystem {
   private static async readdir_web(pathOrHandle: string|FileSystemDirectoryHandle = '', opts: any = {},  files: any[] = [], dirbase: string = ''){
     try{
       if(typeof pathOrHandle === 'string'){
-        const dirPath = pathOrHandle as string;
+        const dirPath = this.normalizePath(pathOrHandle as string);
         pathOrHandle = await this.resolvePathDirectoryHandle(pathOrHandle);
         if(!pathOrHandle) throw new Error('Failed to locate directory inside game folder: '+dirPath);
-        dirbase = pathOrHandle.name;
+        // Paths must stay relative to the game root. Handle.name is only the last segment
+        // (e.g. "000001 - AUTOSAVE"), which would make nested reads miss Saves/.
+        dirbase = dirPath;
       }
 
-      if(pathOrHandle instanceof FileSystemDirectoryHandle){
+      if(isUsableDirectoryHandle(pathOrHandle)){
         // Convert async iterator to array for parallel processing
         const entries = [];
         for await (const entry of pathOrHandle.values()) {
@@ -414,8 +485,11 @@ export class GameFileSystem {
   }
 
   static async opendir_web(dirPath: string = ''): Promise<FileSystemDirectoryHandle|undefined> {
-    const details = path.parse(dirPath);
-    return await this.resolvePathDirectoryHandle(dirPath);
+    try{
+      return await this.resolvePathDirectoryHandle(dirPath);
+    }catch{
+      return undefined;
+    }
   }
 
   static exists(dirOrFilePath: string): Promise<boolean> {
@@ -530,8 +604,9 @@ export class GameFileSystem {
   }
 
   private static async resolvePathDirectoryHandle(filepath: string, parent = false): Promise<FileSystemDirectoryHandle> {
-    if(ApplicationProfile.directoryHandle){
-      const dirs = filepath.length ? filepath.split('/') : [];
+    const root = this.getRootDirectoryHandle();
+    if(root){
+      const dirs = this.splitRelativePath(filepath);
       const cacheKey = dirs.join('/');
       if(this.directoryCache.has(cacheKey)){
         const cached = this.directoryCache.get(cacheKey)!;
@@ -542,8 +617,8 @@ export class GameFileSystem {
         return this.directoryInflight.get(cacheKey)!;
       }
       const promise = (async () => {
-        let lastDirectoryHandle = ApplicationProfile.directoryHandle;
-        let currentDirHandle = ApplicationProfile.directoryHandle;
+        let lastDirectoryHandle = root;
+        let currentDirHandle = root;
         for(let i = 0, len = dirs.length; i < len; i++){
           lastDirectoryHandle = currentDirHandle;
           const partialKey = dirs.slice(0, i + 1).join('/');
@@ -587,8 +662,9 @@ export class GameFileSystem {
   private static fileSnapshotCache = new WeakMap<FileSystemFileHandle, File>();
 
   private static async resolveFilePathDirectoryHandle(filepath: string): Promise<FileSystemDirectoryHandle> {
-    if(ApplicationProfile.directoryHandle){
-      const dirs = filepath.split('/');
+    const root = this.getRootDirectoryHandle();
+    if(root){
+      const dirs = this.splitRelativePath(filepath);
       dirs.pop(); // remove filename
       const cacheKey = dirs.join('/');
       if(this.directoryCache.has(cacheKey)){
@@ -598,7 +674,7 @@ export class GameFileSystem {
         return this.directoryInflight.get(cacheKey)!;
       }
       const promise = (async () => {
-        let currentDirHandle = ApplicationProfile.directoryHandle;
+        let currentDirHandle = root;
         for(let i = 0, len = dirs.length; i < len; i++){
           const partialKey = dirs.slice(0, i + 1).join('/');
           if(this.directoryCache.has(partialKey)){

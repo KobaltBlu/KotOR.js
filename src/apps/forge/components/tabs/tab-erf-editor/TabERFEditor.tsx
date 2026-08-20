@@ -45,9 +45,11 @@ export const TabERFEditor = function(props: BaseTabProps) {
   useEffect(() => {
     if(!selectedEntry) return;
     const { resource, archive } = selectedEntry.data || {};
-    const res = archive.getResource(resource?.resRef, resource?.resType);
-    setSelectedFilename(resource?.resRef);
-    setSelectedFiletype(KotOR.ResourceTypes.getKeyByValue(resource?.resType));
+    if(!archive || !resource) return;
+    const res = archive.getResourceInfo?.(resource.resRef, resource.resType)
+      || archive.getResource?.(resource.resRef, resource.resType);
+    setSelectedFilename(resource.resRef);
+    setSelectedFiletype(KotOR.ResourceTypes.getKeyByValue(resource.resType));
     setSelectedFilesize(KotOR.Utility.bytesToSize( res ? res.size : 0 ));
   }, [selectedEntry]);
 

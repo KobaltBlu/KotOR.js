@@ -16,6 +16,19 @@ export function gameDirectoryHandleIdbKey(gameKey: string): string {
   return `game_directory_handle_${String(gameKey || "").toLowerCase()}`;
 }
 
+/**
+ * True for a live File System Access handle. Do not use `instanceof`:
+ * webpack/HMR and JSON stubs (`{ name }`) make that check fail while
+ * `getDirectoryHandle` still works on the native object.
+ */
+export function isUsableDirectoryHandle(handle: unknown): handle is FileSystemDirectoryHandle {
+  if (!handle || typeof handle !== "object") {
+    return false;
+  }
+  const dir = handle as FileSystemDirectoryHandle;
+  return typeof dir.getDirectoryHandle === "function" && typeof dir.getFileHandle === "function";
+}
+
 export async function persistGameDirectoryHandle(
   gameKey: string,
   handle: FileSystemDirectoryHandle,
@@ -42,7 +55,7 @@ export async function restoreGameDirectoryHandlesToProfiles(): Promise<void> {
     if (!slot || typeof slot !== "object") {
       continue;
     }
-    if (slot.directory_handle) {
+    if (isUsableDirectoryHandle(slot.directory_handle)) {
       continue;
     }
     const stored = await get(gameDirectoryHandleIdbKey(key));

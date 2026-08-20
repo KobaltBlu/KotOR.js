@@ -288,6 +288,7 @@ const GFFFieldElement = function GFFFieldElement(props: GFFFieldElementProps){
   const matched = tab.isSearchMatch(path);
   const renaming = tab.renamingPath === path;
   const gffSettings = forgeGffSettings.get();
+  const preview = fieldPreview(field);
   const previewText = gffSettings.showPreview ? truncateGffPreview(preview, gffSettings.previewMaxLength) : "";
 
   const handleToggle = useCallback(() => {

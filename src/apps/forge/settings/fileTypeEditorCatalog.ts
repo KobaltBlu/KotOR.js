@@ -100,7 +100,7 @@ export const FILE_TYPE_EDITOR_GROUPS: FileTypeEditorGroup[] = [
     entries: [
       { ext: "erf", label: "ERF archive", editors: ["native", "hex"] },
       { ext: "mod", label: "Module archive (MOD)", editors: ["native", "hex"] },
-      { ext: "sav", label: "Save archive (SAV)", editors: ["native", "hex"] },
+      { ext: "sav", label: "Save game / save archive (SAV)", editors: ["native", "hex"] },
     ],
   },
   {

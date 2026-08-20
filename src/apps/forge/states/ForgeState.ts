@@ -31,6 +31,7 @@ import {
 import {
   boundGameDirectoryLabel,
   clearGameDirectoryBinding,
+  isUsableDirectoryHandle,
   persistGameDirectoryHandle,
   persistGameDirectoryPath,
 } from "@/utility/gameDirectoryAccess";
@@ -278,10 +279,10 @@ export class ForgeState {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         KotOR.ApplicationProfile.directory = KotOR.ApplicationProfile.profile.directory;
       }else{
-        const profileHandle = KotOR.ApplicationProfile.profile?.directory_handle as FileSystemDirectoryHandle | undefined;
-        if(profileHandle instanceof FileSystemDirectoryHandle){
+        const profileHandle = KotOR.ApplicationProfile.profile?.directory_handle;
+        if(isUsableDirectoryHandle(profileHandle)){
           KotOR.ApplicationProfile.directoryHandle = profileHandle;
-        }else if(KotOR.ApplicationProfile.directoryHandle instanceof FileSystemDirectoryHandle){
+        }else if(isUsableDirectoryHandle(KotOR.ApplicationProfile.directoryHandle)){
           KotOR.ApplicationProfile.profile.directory_handle = KotOR.ApplicationProfile.directoryHandle;
         }else{
           KotOR.ApplicationProfile.directoryHandle = undefined as any;
@@ -327,7 +328,7 @@ export class ForgeState {
               const handleKey = `project_handle_${proj.getIdentifier()}`;
               try {
                 const handle = await get(handleKey);
-                if(handle instanceof FileSystemDirectoryHandle){
+                if(isUsableDirectoryHandle(handle) || isProjectDirectoryHandle(handle)){
                   proj.handle = handle;
                 }
               } catch(e) {
