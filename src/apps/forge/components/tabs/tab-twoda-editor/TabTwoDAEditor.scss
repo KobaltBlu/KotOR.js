@@ -190,6 +190,34 @@ table.twoda > tbody > tr.focus > td.cell-match-current {
   background: rgba(255, 193, 7, 0.18);
 }
 
+table.twoda > tbody > tr > td.cell-selected {
+  background: rgba(51, 122, 183, 0.28) !important;
+}
+
+table.twoda > tbody > tr > td.cell-active {
+  box-shadow: inset 0 0 0 2px #5dade2;
+}
+
+table.twoda > thead > tr > th.twoda-col-sorted {
+  background-color: #1f4f7a;
+}
+
+table.twoda > thead > tr > th {
+  cursor: pointer;
+}
+
+.twoda-col-dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+
+  span {
+    font-size: 11px;
+    color: var(--forge-text-muted, #aaa);
+  }
+}
+
 
 /* -----------------------------------------------------------------------
  * INPUTS INSIDE CELLS

@@ -67,9 +67,13 @@ export interface ForgeGffSettings {
   previewMaxLength: number;
 }
 
+export type TwoDACsvDelimiter = "," | "\t" | ";";
+
 export interface ForgeTwoDASettings {
   wrapCells: boolean;
   showRowLabel: boolean;
+  csvDelimiter: TwoDACsvDelimiter;
+  csvHasHeader: boolean;
 }
 
 export interface ForgeTlkSettings {
@@ -155,6 +159,8 @@ export const DEFAULT_FORGE_GFF_SETTINGS: ForgeGffSettings = {
 export const DEFAULT_FORGE_TWODA_SETTINGS: ForgeTwoDASettings = {
   wrapCells: false,
   showRowLabel: true,
+  csvDelimiter: ",",
+  csvHasHeader: true,
 };
 
 export const DEFAULT_FORGE_TLK_SETTINGS: ForgeTlkSettings = {
@@ -329,6 +335,12 @@ export function sanitizeTwoDASettings(value: unknown): ForgeTwoDASettings {
   return {
     wrapCells: sanitizeBoolean(raw.wrapCells, DEFAULT_FORGE_TWODA_SETTINGS.wrapCells),
     showRowLabel: sanitizeBoolean(raw.showRowLabel, DEFAULT_FORGE_TWODA_SETTINGS.showRowLabel),
+    csvDelimiter: sanitizeEnum(
+      raw.csvDelimiter,
+      [",", "\t", ";"] as const,
+      DEFAULT_FORGE_TWODA_SETTINGS.csvDelimiter,
+    ),
+    csvHasHeader: sanitizeBoolean(raw.csvHasHeader, DEFAULT_FORGE_TWODA_SETTINGS.csvHasHeader),
   };
 }
 

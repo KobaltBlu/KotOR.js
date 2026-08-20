@@ -7,11 +7,12 @@
  */
 
 import React from "react";
+import { ForgeSelect } from "@/apps/forge/components/ui";
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { SettingRow } from "@/apps/forge/settings/SettingRow";
 import { registerSettingsPage } from "@/apps/forge/settings/settingsRegistry";
 import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
-import { forgeTwoDASettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { forgeTwoDASettings, TwoDACsvDelimiter } from "@/apps/forge/settings/forgeEditorsSettings";
 
 export function TwoDASettingsPage() {
   const [settings, setSettings] = useForgeSettings(forgeTwoDASettings);
@@ -36,6 +37,31 @@ export function TwoDASettingsPage() {
       >
         <ForgeCheckbox label="" value={settings.showRowLabel} onChange={(value) => setSettings({ showRowLabel: value })} />
       </SettingRow>
+      <SettingRow
+        label="CSV import delimiter"
+        description="Delimiter used when importing CSV into a 2DA tab."
+        keywords={["2da", "csv", "delimiter", "tab", "import"]}
+      >
+        <ForgeSelect
+          value={settings.csvDelimiter === "\t" ? "tab" : settings.csvDelimiter}
+          onChange={(e) => {
+            const v = e.target.value;
+            const csvDelimiter: TwoDACsvDelimiter = v === "tab" ? "\t" : (v as "," | ";");
+            setSettings({ csvDelimiter });
+          }}
+        >
+          <option value=",">Comma (,)</option>
+          <option value="tab">Tab</option>
+          <option value=";">Semicolon (;)</option>
+        </ForgeSelect>
+      </SettingRow>
+      <SettingRow
+        label="CSV has header row"
+        description="Treat the first CSV row as column names when importing."
+        keywords={["2da", "csv", "header", "import"]}
+      >
+        <ForgeCheckbox label="" value={settings.csvHasHeader} onChange={(value) => setSettings({ csvHasHeader: value })} />
+      </SettingRow>
     </div>
   );
 }
@@ -45,6 +71,6 @@ registerSettingsPage({
   label: "2DA",
   group: "editors",
   icon: "fa-solid fa-table",
-  keywords: ["2da", "table", "csv", "row", "wrap"],
+  keywords: ["2da", "table", "csv", "row", "wrap", "delimiter"],
   render: () => React.createElement(TwoDASettingsPage),
 });
