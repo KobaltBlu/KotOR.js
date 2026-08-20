@@ -10,6 +10,7 @@ import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
 import { forgeTwoDASettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
+import "@/apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor.scss";
 import * as KotOR from "@/apps/forge/KotOR";
 
 export const TabTwoDAEditor = function(props: BaseTabProps){
