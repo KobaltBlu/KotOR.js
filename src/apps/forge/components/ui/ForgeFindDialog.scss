@@ -1,0 +1,47 @@
+.forge-find-dialog {
+  .forge-dialog__body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .forge-dialog__footer {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}
+
+.forge-find-dialog__mode {
+  display: flex;
+  gap: 6px;
+}
+
+.forge-find-dialog__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+}
+
+.forge-find-dialog__label {
+  font-size: 11px;
+  color: var(--forge-text-muted, #aaa);
+}
+
+.forge-find-dialog__options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+
+  .forge-checkbox {
+    margin: 0;
+    font-size: 12px;
+  }
+}
+
+.forge-find-dialog__matches {
+  font-size: 12px;
+  color: var(--forge-text-muted, #aaa);
+  min-height: 1.2em;
+}

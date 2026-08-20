@@ -7,6 +7,7 @@ export const TwoDAEditorColumnHeader = function(props: any){
   const twoDAObject: KotOR.TwoDAObject = props.twoDAObject;
   const column = props.column;
   const index = twoDAObject.columns.indexOf(column);
+  const isRowLabel = column === '__rowlabel';
   const thRef = useRef<HTMLTableCellElement>(null);
 
   const onResizeMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -50,7 +51,7 @@ export const TwoDAEditorColumnHeader = function(props: any){
     if(!table) return;
 
     const colIndex = Array.from(th.parentElement!.children).indexOf(th);
-    const label = !index ? 'ID' : column;
+    const label = isRowLabel ? 'ID' : column;
 
     // Use an offscreen canvas to measure text widths without touching the DOM layout.
     const canvas = document.createElement('canvas');
@@ -78,9 +79,14 @@ export const TwoDAEditorColumnHeader = function(props: any){
     th.style.minWidth = `${newWidth}px`;
   };
 
+  const thClass = [
+    isRowLabel ? 'cell-rowlabel' : '',
+    isRowLabel ? 'cell-sticky' : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <th ref={thRef}>
-      <span className="twoda-col-label">{!index ? 'ID' : column}</span>
+    <th ref={thRef} className={thClass || undefined}>
+      <span className="twoda-col-label">{isRowLabel ? 'ID' : column}</span>
       <div
         className="twoda-col-resize-handle"
         onMouseDown={onResizeMouseDown}

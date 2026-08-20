@@ -2,6 +2,10 @@ import React, { useRef } from "react";
 
 import * as KotOR from "@/apps/forge/KotOR";
 
+export interface TwoDASearchMatch {
+  row: number;
+  column: string;
+}
 
 export const TwoDAEditorRow = function(props: any){
   const twoDAObject: KotOR.TwoDAObject = props.twoDAObject;
@@ -11,7 +15,11 @@ export const TwoDAEditorRow = function(props: any){
   const onCellSelectedCallback = props.onCellSelected as Function;
   const onBeforeEdit = props.onBeforeEdit as ((rowIndex: number, column: string) => void) | undefined;
   const onAfterEdit = props.onAfterEdit as (() => void) | undefined;
-  const columnCount = twoDAObject.ColumnCount;
+  const onRowContextMenu = props.onRowContextMenu as ((e: React.MouseEvent, rowIndex: number) => void) | undefined;
+  const matchColumns = props.matchColumns as Set<string> | undefined;
+  const currentMatchColumn = props.currentMatchColumn as string | undefined;
+  // ColumnCount excludes __rowlabel; use full columns length for stable tabindex spacing.
+  const columnCount = twoDAObject.columns.length;
 
   const tdRefs = useRef<(HTMLTableCellElement | null)[]>([]);
 
@@ -28,8 +36,15 @@ export const TwoDAEditorRow = function(props: any){
     onCellSelectedCallback(row, column, rIndex);
   };
 
-  const onClickRow = (e: React.MouseEvent<HTMLTableRowElement>) => {
+  const onClickRow = (_e: React.MouseEvent<HTMLTableRowElement>) => {
     onCellSelectedCallback(row, undefined, rIndex);
+  };
+
+  const onContextMenu = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    if(!onRowContextMenu) return;
+    e.preventDefault();
+    onCellSelectedCallback(row, undefined, rIndex);
+    onRowContextMenu(e, rIndex);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, cIndex: number) => {
@@ -65,7 +80,12 @@ export const TwoDAEditorRow = function(props: any){
   };
 
   return (
-    <tr className={selected ? `focus` : ``} onClick={onClickRow}>
+    <tr
+      className={selected ? `focus` : ``}
+      data-row-index={rIndex}
+      onClick={onClickRow}
+      onContextMenu={onContextMenu}
+    >
       {
         twoDAObject.columns.map((column: string, cIndex: number) => {
           const value: string = row[column] ?? '';
@@ -74,11 +94,20 @@ export const TwoDAEditorRow = function(props: any){
             return null;
           }
           const tabIdx = (rIndex * columnCount) + cIndex;
+          const isMatch = matchColumns?.has(column) ?? false;
+          const isCurrentMatch = currentMatchColumn === column;
+          const className = [
+            isRowLabel ? 'cell-rowlabel' : '',
+            isRowLabel ? 'cell-sticky' : '',
+            isMatch ? 'cell-match' : '',
+            isCurrentMatch ? 'cell-match-current' : '',
+          ].filter(Boolean).join(' ');
           return (
             <td
               key={`cell-${tabIdx}`}
               data-value={value}
-              className={isRowLabel ? 'cell-rowlabel' : ''}
+              data-column={column}
+              className={className || undefined}
               ref={(el) => { tdRefs.current[cIndex] = el; }}
             >
               <input
