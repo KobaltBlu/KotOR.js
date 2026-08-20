@@ -13,7 +13,7 @@ export const WebviewPromoItem = function(props: ProfilePromoItemProps){
 
   return (
     <div className="promo-element webview">
-      <iframe src={element.url} width="646" height="190" />
+      <iframe src={element.url} title={element.title || 'Promo'} />
     </div>
   );
 

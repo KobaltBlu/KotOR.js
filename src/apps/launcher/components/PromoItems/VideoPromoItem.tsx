@@ -47,7 +47,7 @@ export const VideoPromoItem = function(props: ProfilePromoItemProps){
 
   return (
     <div className="promo-element video" onClick={onVideoClick}>
-      <video ref={videoElement} src={element.url} loop autoPlay style={{height: '250px'}} onLoadStart={() => { if(videoElement?.current){ videoElement.current.volume=0 } }} onDoubleClick={onVideoDoubleClick}></video>
+      <video ref={videoElement} src={element.url} loop autoPlay muted playsInline onLoadStart={() => { if(videoElement?.current){ videoElement.current.volume=0 } }} onDoubleClick={onVideoDoubleClick}></video>
     </div>
   );
 

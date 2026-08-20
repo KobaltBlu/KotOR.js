@@ -27,6 +27,7 @@ const App = function() {
   const [profileCategoriesValue, setProfilesCategories] = appContext.profileCategories;
   const [backgroundImageValue, setBackgroundImage] = appContext.backgroundImage;
   const [discordWidgetOpen, setDiscordWidgetOpen] = appContext.discordWidgetOpen;
+  const [profilesDrawerOpen, setProfilesDrawerOpen] = appContext.profilesDrawerOpen;
   const [showMenuTopRight, setShowMenuTopRight] = useState(ApplicationProfile.ENV != ApplicationEnvironment.BROWSER);
 
   const [selectedTab, setSelectedTab] = useState('apps');
@@ -145,21 +146,46 @@ const App = function() {
     const tabId = e.currentTarget.href.split('#').pop();
     if(!tabId){ return; }
     setSelectedTab(tabId);
+    setProfilesDrawerOpen(false);
   }
 
   const onDiscordToggle = (e: React.MouseEvent<HTMLLIElement>) => {
     e.preventDefault();
+    setProfilesDrawerOpen(false);
     setDiscordWidgetOpen(!discordWidgetOpen);
+  }
+
+  const onProfilesDrawerToggle = (e: React.MouseEvent<HTMLLIElement>) => {
+    e.preventDefault();
+    setDiscordWidgetOpen(false);
+    setProfilesDrawerOpen(!profilesDrawerOpen);
+  }
+
+  const onProfilesDrawerBackdrop = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setProfilesDrawerOpen(false);
   }
 
   return (
     <>
-      <div id="container" className={`${appReady ? 'ready': ''} ${discordWidgetOpen ? 'discord_widget_open' : ''}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
+      <div id="container" className={`${appReady ? 'ready': ''} ${discordWidgetOpen ? 'discord_widget_open' : ''} ${profilesDrawerOpen ? 'profiles_drawer_open' : ''}`} style={{'backgroundImage': `url("${backgroundImageValue}")`}}>
         <div className="launcher-menu">
           <h1 className="sr-only">KotOR.js Web Launcher</h1>
           <div className="launcher-menu-background"></div>
           <div className="menu-accent"><div className="inner"></div></div>
           <ul className="top-nav">
+            {selectedTab === 'apps' && (
+              <li
+                className="tab-btn profiles-drawer-toggle"
+                role="button"
+                aria-label={profilesDrawerOpen ? "Hide apps menu" : "Show apps menu"}
+                aria-expanded={profilesDrawerOpen}
+                onClick={onProfilesDrawerToggle}
+                title={profilesDrawerOpen ? "Hide apps menu" : "Show apps menu"}
+              >
+                <i className="fas fa-bars"></i>
+              </li>
+            )}
             <li className="tab-btn nav-logo"><img src="images/kotor-js-logo.png" alt="KotOR.js" /></li>
             <li className="tab-btn"><a href="#apps" onClick={onTabClicked}>Apps</a></li>
             <li className="tab-btn"><a href="#community" onClick={onTabClicked}>Community</a></li>
@@ -185,6 +211,11 @@ const App = function() {
         <div className="tab-host">
           {(selectedTab == 'apps' && <div className="tab selected">
             <h2 className="sr-only">Apps</h2>
+            <div
+              className="profiles-drawer-backdrop"
+              aria-hidden={!profilesDrawerOpen}
+              onClick={onProfilesDrawerBackdrop}
+            ></div>
             <div className="launcher-options">
               {Object.values(profileCategoriesValue).map((category: any, i: number) => {
                 return (
