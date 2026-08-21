@@ -48,6 +48,9 @@
   background: var(--forge-bg-panel);
   border: 1px solid var(--forge-border);
   box-shadow: var(--forge-shadow-menu);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 
   &--flyout {
     top: 0;

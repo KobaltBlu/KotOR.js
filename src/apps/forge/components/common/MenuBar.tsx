@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback } from "react";
 import { ForgeMenuItem } from "@/apps/forge/components/common/forgeMenuItem";
 
 export type { ForgeMenuItem } from "@/apps/forge/components/common/forgeMenuItem";
@@ -13,6 +13,8 @@ interface MenuBarProps {
 }
 
 const SUBMENU_CLOSE_DELAY_MS = 220;
+const MENU_EDGE_PAD_PX = 4;
+const MENU_MIN_HEIGHT_PX = 96;
 
 function isSelectable(item: ForgeMenuItem | undefined): boolean {
   if (!item) {
@@ -22,6 +24,46 @@ function isSelectable(item: ForgeMenuItem | undefined): boolean {
     return false;
   }
   return true;
+}
+
+/** Bottom edge of the nearest height-clipped ancestor (tab pane) or the viewport. */
+function resolveMenuClipBottom(from: HTMLElement): number {
+  let clipBottom = window.innerHeight;
+  let el: HTMLElement | null = from.parentElement;
+  while (el && el !== document.documentElement) {
+    const style = window.getComputedStyle(el);
+    const overflowY = style.overflowY;
+    const clips =
+      overflowY === "hidden" ||
+      overflowY === "auto" ||
+      overflowY === "scroll" ||
+      overflowY === "clip" ||
+      el.classList.contains("tab-pane") ||
+      el.classList.contains("tab-pane-content");
+    if (clips) {
+      const rect = el.getBoundingClientRect();
+      if (rect.height > 0) {
+        clipBottom = Math.min(clipBottom, rect.bottom);
+      }
+    }
+    el = el.parentElement;
+  }
+  return clipBottom;
+}
+
+function clearMenuMaxHeights(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>(".forge-menu").forEach((menu) => {
+    menu.style.removeProperty("max-height");
+  });
+}
+
+function applyMenuMaxHeights(root: HTMLElement) {
+  const clipBottom = resolveMenuClipBottom(root);
+  root.querySelectorAll<HTMLElement>(".forge-menu").forEach((menu) => {
+    const top = menu.getBoundingClientRect().top;
+    const available = Math.floor(clipBottom - top - MENU_EDGE_PAD_PX);
+    menu.style.maxHeight = `${Math.max(MENU_MIN_HEIGHT_PX, available)}px`;
+  });
 }
 
 export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", className = "" }) => {
@@ -69,6 +111,48 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [closeAllMenus]);
+
+  useLayoutEffect(() => {
+    const root = menuRef.current;
+    if (!root) {
+      return;
+    }
+    if (openMenu === null) {
+      clearMenuMaxHeights(root);
+      return;
+    }
+
+    applyMenuMaxHeights(root);
+
+    const onResize = () => applyMenuMaxHeights(root);
+    window.addEventListener("resize", onResize);
+
+    const clipParent = root.parentElement;
+    let ro: ResizeObserver | undefined;
+    if (clipParent && typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(onResize);
+      ro.observe(clipParent);
+      let ancestor: HTMLElement | null = clipParent.parentElement;
+      while (ancestor && ancestor !== document.body) {
+        const style = window.getComputedStyle(ancestor);
+        if (
+          style.overflowY === "hidden" ||
+          style.overflowY === "auto" ||
+          style.overflowY === "scroll" ||
+          ancestor.classList.contains("tab-pane")
+        ) {
+          ro.observe(ancestor);
+          break;
+        }
+        ancestor = ancestor.parentElement;
+      }
+    }
+
+    return () => {
+      window.removeEventListener("resize", onResize);
+      ro?.disconnect();
+    };
+  }, [openMenu, openSubmenu, items]);
 
   const selectableTopIndexes = items
     .map((item, index) => (item.disabled || (!item.children?.length && !item.onClick) ? -1 : index))
@@ -148,6 +232,11 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
         if (child?.children?.length) {
           setOpenSubmenu(`${openMenu}-${next}`);
         }
+        requestAnimationFrame(() => {
+          menuRef.current
+            ?.querySelector(`.forge-menu__item.is-open`)
+            ?.scrollIntoView({ block: "nearest" });
+        });
         return;
       }
       if (event.key === "ArrowUp") {
@@ -155,6 +244,11 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
         const pos = selectable.indexOf(currentChild);
         const next = selectable[(pos - 1 + selectable.length) % selectable.length];
         setActivePath(`${openMenu}-${next}`);
+        requestAnimationFrame(() => {
+          menuRef.current
+            ?.querySelector(`.forge-menu__item.is-open`)
+            ?.scrollIntoView({ block: "nearest" });
+        });
         return;
       }
       if (event.key === "Enter") {

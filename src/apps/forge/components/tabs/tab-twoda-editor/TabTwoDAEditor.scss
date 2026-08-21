@@ -76,6 +76,12 @@ table.twoda.twoda--wrap input {
   white-space: normal;
 }
 
+/* Virtualized rows stay fixed-height; wrap clips vertically. */
+table.twoda.twoda--wrap > tbody > tr > td,
+table.twoda.twoda--wrap > tbody > tr > td > input {
+  overflow: hidden;
+}
+
 table.twoda > thead > tr > th {
   padding: 5px 8px;
   background-color: var(--forge-accent);
@@ -133,13 +139,31 @@ table.twoda > thead > tr > th.twoda-col-sorted {
 
 table.twoda > tbody > tr > td {
   padding: 0;
+  height: 26px;
+  max-height: 26px;
   background: var(--forge-bg);
   border: 1px solid var(--forge-border);
   transition: background .15s ease-in-out, border-color .15s ease-in-out;
+  overflow: hidden;
+  vertical-align: middle;
 }
 
-table.twoda > tbody > tr:nth-child(odd) > td {
+table.twoda > tbody > tr.twoda-row-odd > td {
   background: var(--forge-bg-elevated);
+}
+
+table.twoda > tbody > tr.twoda-spacer > td {
+  height: auto;
+  max-height: none;
+  padding: 0;
+  border: none;
+  background: transparent !important;
+  line-height: 0;
+}
+
+table.twoda > tbody > tr.twoda-spacer .twoda-spacer-inner {
+  width: 1px;
+  pointer-events: none;
 }
 
 table.twoda > tbody > tr > td.cell-sticky {
@@ -147,6 +171,10 @@ table.twoda > tbody > tr > td.cell-sticky {
   position: sticky;
   left: 0;
   z-index: 1;
+}
+
+table.twoda > tbody > tr.twoda-row-odd > td.cell-sticky {
+  background: var(--forge-bg-elevated);
 }
 
 table.twoda > tbody > tr > td.cell-sticky:before {
@@ -230,6 +258,8 @@ table.twoda > tbody > tr > td > input {
   display: block;
   width: 100%;
   min-width: 60px;
+  height: 26px;
+  max-height: 26px;
   padding: 4px 6px;
   background: transparent;
   border: none;
@@ -239,6 +269,8 @@ table.twoda > tbody > tr > td > input {
   font-family: var(--forge-font-mono);
   cursor: default;
   box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   &:focus {
     cursor: text;

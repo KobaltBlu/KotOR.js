@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { memo, useEffect, useRef } from "react";
 
 import * as KotOR from "@/apps/forge/KotOR";
+import { isCellSelected, TwoDASelRange } from "@/apps/forge/helpers/twoDAEditorOps";
 
 export interface TwoDASearchMatch {
   row: number;
@@ -15,9 +16,14 @@ export interface TwoDAEditorRowProps {
   activeRow: number;
   activeColumn?: string;
   editingColumn?: string | null;
-  selectedColumns: Set<string>;
+  /** Selection ranges in visible-column index space. */
+  ranges: TwoDASelRange[];
   matchColumns?: Set<string>;
   currentMatchColumn?: string;
+  /** Remount cell inputs after structural data changes for this row. */
+  dataVersionKey?: number;
+  pendingEditChar?: string | null;
+  onPendingEditCharConsumed?: () => void;
   onCellMouseDown: (
     e: React.MouseEvent,
     rowIndex: number,
@@ -31,14 +37,9 @@ export interface TwoDAEditorRowProps {
   onAfterEdit?: () => void;
   onRowContextMenu?: (e: React.MouseEvent, rowIndex: number) => void;
   onEditingKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>, rowIndex: number, column: string) => void;
-  /** Bump to remount inputs after structural data changes. */
-  dataVersionKey?: number;
-  /** Seed character when edit starts via typing. */
-  pendingEditChar?: string | null;
-  onPendingEditCharConsumed?: () => void;
 }
 
-export const TwoDAEditorRow = function(props: TwoDAEditorRowProps){
+function TwoDAEditorRowImpl(props: TwoDAEditorRowProps){
   const {
     twoDAObject,
     row,
@@ -47,7 +48,7 @@ export const TwoDAEditorRow = function(props: TwoDAEditorRowProps){
     activeRow,
     activeColumn,
     editingColumn,
-    selectedColumns,
+    ranges,
     matchColumns,
     currentMatchColumn,
     onCellMouseDown,
@@ -102,18 +103,21 @@ export const TwoDAEditorRow = function(props: TwoDAEditorRowProps){
 
   return (
     <tr
-      className={isActiveRow ? "focus" : ""}
+      className={[
+        isActiveRow ? "focus" : "",
+        rIndex % 2 === 0 ? "twoda-row-odd" : "",
+      ].filter(Boolean).join(" ") || undefined}
       data-row-index={rIndex}
       onContextMenu={onContextMenu}
     >
-      {visibleColumns.map((column) => {
+      {visibleColumns.map((column, visibleColIndex) => {
         const cIndex = twoDAObject.columns.indexOf(column);
         const value: string = row[column] ?? "";
         const isRowLabel = column === "__rowlabel";
         const tabIdx = (rIndex * columnCount) + Math.max(0, cIndex);
         const isMatch = matchColumns?.has(column) ?? false;
         const isCurrentMatch = currentMatchColumn === column;
-        const isSelected = selectedColumns.has(column);
+        const isSelected = isCellSelected(ranges, rIndex, visibleColIndex);
         const isActive = isActiveRow && activeColumn === column;
         const isEditing = isActiveRow && editingColumn === column && !isRowLabel;
         const className = [
@@ -132,13 +136,13 @@ export const TwoDAEditorRow = function(props: TwoDAEditorRowProps){
             data-column={column}
             className={className || undefined}
             ref={(el) => { tdRefs.current[cIndex] = el; }}
-            onMouseDown={(e) => onCellMouseDown(e, rIndex, column, visibleColumns.indexOf(column), isRowLabel)}
-            onMouseEnter={() => onCellMouseEnter(rIndex, column, visibleColumns.indexOf(column))}
+            onMouseDown={(e) => onCellMouseDown(e, rIndex, column, visibleColIndex, isRowLabel)}
+            onMouseEnter={() => onCellMouseEnter(rIndex, column, visibleColIndex)}
             onDoubleClick={() => {
               if (!isRowLabel) onCellDoubleClick(rIndex, column);
             }}
           >
-              <input
+            <input
               ref={(el) => { inputRefs.current[column] = el; }}
               tabIndex={tabIdx}
               defaultValue={value}
@@ -156,7 +160,6 @@ export const TwoDAEditorRow = function(props: TwoDAEditorRowProps){
               }}
               onMouseDown={(e) => {
                 if (!isEditing) {
-                  // Let the td handler own selection; avoid focusing for edit.
                   e.preventDefault();
                 }
               }}
@@ -166,4 +169,6 @@ export const TwoDAEditorRow = function(props: TwoDAEditorRowProps){
       })}
     </tr>
   );
-};
+}
+
+export const TwoDAEditorRow = memo(TwoDAEditorRowImpl);

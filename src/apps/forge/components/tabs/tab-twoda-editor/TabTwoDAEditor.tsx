@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
@@ -26,7 +26,6 @@ import {
   createEmptyRow,
   deleteColumn,
   getVisibleColumns,
-  isCellSelected,
   makeAllRange,
   makeCellRange,
   makeRowRange,
@@ -50,6 +49,13 @@ import "@/apps/forge/components/tabs/tab-twoda-editor/TabTwoDAEditor.scss";
 import * as KotOR from "@/apps/forge/KotOR";
 
 type ColumnDialogMode = "add" | "rename" | null;
+
+/** Fixed body row height — must match TabTwoDAEditor.scss. */
+const ROW_HEIGHT = 26;
+/** Approx sticky thead height inside the scroll area. */
+const THEAD_HEIGHT = 28;
+const VIEWPORT_OVERSCAN_ROWS = 8;
+const MIN_VISIBLE_ROWS = 24;
 
 export const TabTwoDAEditor = function(props: BaseTabProps){
   const [twoDAObject, setTwoDAObject] = useState<KotOR.TwoDAObject>();
@@ -77,14 +83,18 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
   const [columnDialogValue, setColumnDialogValue] = useState("");
   const [renameTarget, setRenameTarget] = useState<string | null>(null);
   const [pendingEditChar, setPendingEditChar] = useState<string | null>(null);
+  const [viewStart, setViewStart] = useState(0);
+  const [viewEnd, setViewEnd] = useState(MIN_VISIBLE_ROWS - 1);
 
   const importRef = useRef<HTMLInputElement>(null);
   const tableAreaRef = useRef<HTMLDivElement>(null);
   const lastUndoKey = useRef<string | null>(null);
   const selectingRef = useRef(false);
   const selectAdditiveRef = useRef(false);
+  const anchorRef = useRef<TwoDACellRef | null>(null);
   const rangesRef = useRef(ranges);
   rangesRef.current = ranges;
+  anchorRef.current = anchor;
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
 
   const tab = props.tab as TabTwoDAEditorState;
@@ -155,21 +165,98 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
     }
   }, [searchMatches.length, searchMatchIndex]);
 
-  const scrollCellIntoView = useCallback((row: number, column: string) => {
-    if (!tableAreaRef.current) return;
-    const escapedCol = (typeof CSS !== "undefined" && CSS.escape)
-      ? CSS.escape(column)
-      : column.replace(/"/g, '\\"');
-    const cell = tableAreaRef.current.querySelector(
-      `tbody tr[data-row-index="${row}"] td[data-column="${escapedCol}"]`,
-    ) as HTMLElement | null;
-    cell?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, []);
+  const listRows = useMemo(() => {
+    if (!twoDAObject) return [] as { key: string; row: any; rIndex: number }[];
+    const entries = Object.entries(twoDAObject.rows) as [string, any][];
+    const filtered = (filterRows && searchQuery.trim())
+      ? entries.filter(([key, row]) => {
+        const idx = typeof row.__index === "number" ? row.__index : Number(key);
+        return matchingRowIndices.has(idx);
+      })
+      : entries;
+    return filtered.map(([key, row]) => ({
+      key,
+      row,
+      rIndex: typeof row.__index === "number" ? row.__index : Number(key),
+    }));
+  }, [twoDAObject, filterRows, searchQuery, matchingRowIndices, dataVersion]);
+
+  const listCount = listRows.length;
+
+  const displayIndexByRow = useMemo(() => {
+    const map = new Map<number, number>();
+    listRows.forEach((entry, displayIndex) => {
+      map.set(entry.rIndex, displayIndex);
+    });
+    return map;
+  }, [listRows]);
+
+  const syncViewport = useCallback(() => {
+    const el = tableAreaRef.current;
+    const lastRow = Math.max(0, listCount - 1);
+    if (!el) {
+      setViewStart(0);
+      setViewEnd(Math.min(lastRow, MIN_VISIBLE_ROWS - 1));
+      return;
+    }
+    const scrollTop = el.scrollTop;
+    const rawHeight = el.clientHeight;
+    const viewportHeight = rawHeight > 0 ? rawHeight : MIN_VISIBLE_ROWS * ROW_HEIGHT;
+    // Body rows start after sticky thead in the scroll content.
+    const bodyScroll = Math.max(0, scrollTop);
+    let start = Math.max(0, Math.floor(bodyScroll / ROW_HEIGHT) - VIEWPORT_OVERSCAN_ROWS);
+    let end = Math.min(
+      lastRow,
+      Math.ceil((bodyScroll + viewportHeight) / ROW_HEIGHT) + VIEWPORT_OVERSCAN_ROWS,
+    );
+    if (rawHeight === 0 && lastRow > end) {
+      end = Math.min(lastRow, Math.max(end, MIN_VISIBLE_ROWS - 1));
+    }
+    // Keep editing row mounted.
+    setViewStart((prev) => (prev === start ? prev : start));
+    setViewEnd((prev) => (prev === end ? prev : end));
+  }, [listCount]);
+
+  const scrollToDisplayIndex = useCallback((displayIndex: number) => {
+    const el = tableAreaRef.current;
+    if (!el) return;
+    const top = Math.max(0, displayIndex * ROW_HEIGHT - ROW_HEIGHT * 2);
+    el.scrollTop = top;
+    syncViewport();
+  }, [syncViewport]);
+
+  const scrollToDataRow = useCallback((rowIndex: number) => {
+    const displayIndex = displayIndexByRow.get(rowIndex);
+    if (displayIndex == null) return;
+    scrollToDisplayIndex(displayIndex);
+  }, [displayIndexByRow, scrollToDisplayIndex]);
+
+  useLayoutEffect(() => {
+    syncViewport();
+  }, [syncViewport, listCount, dataVersion, filterRows, searchQuery]);
+
+  useEffect(() => {
+    const el = tableAreaRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => syncViewport());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [syncViewport]);
+
+  // Expand window to keep the editing row mounted.
+  useLayoutEffect(() => {
+    if (!editing) return;
+    const displayIndex = displayIndexByRow.get(editing.row);
+    if (displayIndex == null) return;
+    if (displayIndex < viewStart || displayIndex > viewEnd) {
+      scrollToDisplayIndex(displayIndex);
+    }
+  }, [editing, displayIndexByRow, viewStart, viewEnd, scrollToDisplayIndex]);
 
   useEffect(() => {
     if (!currentMatch) return;
-    scrollCellIntoView(currentMatch.row, currentMatch.column);
-  }, [currentMatch, dataVersion, filterRows, searchQuery, scrollCellIntoView]);
+    scrollToDataRow(currentMatch.row);
+  }, [currentMatch, dataVersion, filterRows, searchQuery, scrollToDataRow]);
 
   const setSingleCellSelection = useCallback((row: number, column: string, colIndex: number) => {
     setAnchor({ row, column });
@@ -234,6 +321,17 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
     markDirty();
     setEditing(null);
   }, [markDirty]);
+
+  const onEditingKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === "Escape") {
+      e.preventDefault();
+      (e.target as HTMLInputElement).blur();
+    }
+  }, []);
+
+  const onPendingEditCharConsumed = useCallback(() => {
+    setPendingEditChar(null);
+  }, []);
 
   const onImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -404,11 +502,13 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
   }, [anchor, visibleColumns, selectRowRange]);
 
   const onCellMouseEnter = useCallback((rowIndex: number, column: string, colIndex: number) => {
-    if (!selectingRef.current || !anchor) return;
-    const aIdx = visibleColumns.indexOf(anchor.column);
+    if (!selectingRef.current) return;
+    const selAnchor = anchorRef.current;
+    if (!selAnchor) return;
+    const aIdx = visibleColumns.indexOf(selAnchor.column);
     if (aIdx < 0) return;
     const range = normalizeRange({
-      r0: anchor.row,
+      r0: selAnchor.row,
       c0: aIdx,
       r1: rowIndex,
       c1: colIndex,
@@ -420,13 +520,76 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
       }
       return [range];
     });
-  }, [anchor, visibleColumns]);
+  }, [visibleColumns]);
+
+  const applyDragAtClientPoint = useCallback((clientX: number, clientY: number) => {
+    if (!selectingRef.current || !tableAreaRef.current || !visibleColumns.length || !listCount) return;
+    const selAnchor = anchorRef.current;
+    if (!selAnchor) return;
+    const aIdx = visibleColumns.indexOf(selAnchor.column);
+    if (aIdx < 0) return;
+
+    const area = tableAreaRef.current;
+    const areaRect = area.getBoundingClientRect();
+    const yInBody = clientY - areaRect.top + area.scrollTop - THEAD_HEIGHT;
+    const displayIndex = Math.max(0, Math.min(listCount - 1, Math.floor(yInBody / ROW_HEIGHT)));
+    const entry = listRows[displayIndex];
+    if (!entry) return;
+
+    let colIndex = aIdx;
+    let column = selAnchor.column;
+    const hit = document.elementFromPoint(clientX, clientY) as HTMLElement | null;
+    const td = hit?.closest?.("td[data-column]") as HTMLTableCellElement | null;
+    if (td) {
+      const col = td.getAttribute("data-column");
+      if (col) {
+        const idx = visibleColumns.indexOf(col);
+        if (idx >= 0) {
+          colIndex = idx;
+          column = col;
+        }
+      }
+    }
+
+    const range = normalizeRange({
+      r0: selAnchor.row,
+      c0: aIdx,
+      r1: entry.rIndex,
+      c1: colIndex,
+    });
+    setActive({ row: entry.rIndex, column });
+    setRanges((prev) => {
+      if (selectAdditiveRef.current && prev.length) {
+        return [...prev.slice(0, -1), range];
+      }
+      return [range];
+    });
+
+    // Auto-scroll near edges while dragging.
+    const edge = 40;
+    const relY = clientY - areaRect.top;
+    if (relY < edge) {
+      area.scrollTop = Math.max(0, area.scrollTop - 16);
+      syncViewport();
+    } else if (relY > areaRect.height - edge) {
+      area.scrollTop = area.scrollTop + 16;
+      syncViewport();
+    }
+  }, [visibleColumns, listCount, listRows, syncViewport]);
 
   useEffect(() => {
     const onUp = () => { selectingRef.current = false; };
+    const onMove = (e: MouseEvent) => {
+      if (!selectingRef.current) return;
+      applyDragAtClientPoint(e.clientX, e.clientY);
+    };
     window.addEventListener("mouseup", onUp);
-    return () => window.removeEventListener("mouseup", onUp);
-  }, []);
+    window.addEventListener("mousemove", onMove);
+    return () => {
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("mousemove", onMove);
+    };
+  }, [applyDragAtClientPoint]);
 
   const onCellDoubleClick = useCallback((rowIndex: number, column: string) => {
     if (column === "__rowlabel") return;
@@ -586,7 +749,7 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
     if (!col) return;
     const colIndex = visibleColumns.indexOf(col);
     setSingleCellSelection(rowIndex, col, colIndex);
-    scrollCellIntoView(rowIndex, col);
+    scrollToDataRow(rowIndex);
     setGoToOpen(false);
   };
 
@@ -664,8 +827,8 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
       setAnchor({ row: nextRow, column: nextCol });
       setRanges([makeCellRange(nextRow, nextColIndex)]);
     }
-    scrollCellIntoView(nextRow, nextCol);
-  }, [active, visibleColumns, twoDAObject, anchor, scrollCellIntoView]);
+    scrollToDataRow(nextRow);
+  }, [active, visibleColumns, twoDAObject, anchor, scrollToDataRow]);
 
   const handleEditorKeyDown = useCallback((e: KeyboardEvent) => {
     const target = e.target as HTMLElement | null;
@@ -828,17 +991,20 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
     ? `${Math.min(searchMatchIndex, searchMatches.length - 1) + 1}/${searchMatches.length}`
     : searchQuery.trim() ? "0/0" : "";
 
-  const visibleRowEntries = useMemo(() => {
-    if (!twoDAObject) return [] as [string, any][];
-    const entries = Object.entries(twoDAObject.rows) as [string, any][];
-    if (filterRows && searchQuery.trim()) {
-      return entries.filter(([key, row]) => {
-        const idx = typeof row.__index === "number" ? row.__index : Number(key);
-        return matchingRowIndices.has(idx);
-      });
-    }
-    return entries;
-  }, [twoDAObject, filterRows, searchQuery, matchingRowIndices, dataVersion]);
+  const pinnedDisplayIndex = editing ? displayIndexByRow.get(editing.row) : undefined;
+  let renderStart = viewStart;
+  let renderEnd = viewEnd;
+  if (pinnedDisplayIndex != null) {
+    renderStart = Math.min(renderStart, pinnedDisplayIndex);
+    renderEnd = Math.max(renderEnd, pinnedDisplayIndex);
+  }
+  renderStart = Math.max(0, renderStart);
+  renderEnd = listCount > 0 ? Math.min(listCount - 1, renderEnd) : -1;
+  const visibleSlice = listCount > 0 ? listRows.slice(renderStart, renderEnd + 1) : [];
+  const topSpacerHeight = renderStart * ROW_HEIGHT;
+  const bottomSpacerHeight = renderEnd >= 0
+    ? Math.max(0, (listCount - 1 - renderEnd) * ROW_HEIGHT)
+    : 0;
 
   const matchesByRow = useMemo(() => {
     const map = new Map<number, Set<string>>();
@@ -931,7 +1097,7 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
 
   const dataColumnCount = visibleColumns.filter((c) => c !== "__rowlabel").length;
   const statusDims = filterRows && searchQuery.trim()
-    ? `${visibleRowEntries.length}/${twoDAObject.RowCount} rows × ${dataColumnCount} cols`
+    ? `${listCount}/${twoDAObject.RowCount} rows × ${dataColumnCount} cols`
     : `${twoDAObject.RowCount} rows × ${dataColumnCount} cols`;
   const statusSelection = active
     ? `row ${active.row} · ${active.column === "__rowlabel" ? "ID" : active.column}`
@@ -945,7 +1111,7 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
       <MenuBar items={menuItems} />
 
       <div className="twoda-body">
-        <div className="twoda-table-area" ref={tableAreaRef}>
+        <div className="twoda-table-area" ref={tableAreaRef} onScroll={syncViewport}>
           <table className={`twoda${tableSettings.wrapCells ? " twoda--wrap" : ""}`}>
             <thead>
               <tr>
@@ -963,15 +1129,18 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
               </tr>
             </thead>
             <tbody>
-              {visibleRowEntries.map(([key, row]) => {
-                const rIndex: number = typeof row.__index === "number" ? row.__index : Number(key);
+              {topSpacerHeight > 0 ? (
+                <tr className="twoda-spacer" aria-hidden="true">
+                  <td colSpan={Math.max(1, visibleColumns.length)}>
+                    <div className="twoda-spacer-inner" style={{ height: topSpacerHeight }} />
+                  </td>
+                </tr>
+              ) : null}
+              {visibleSlice.map(({ row, rIndex }) => {
                 const rowMatches = matchesByRow.get(rIndex);
-                const selectedColumns = new Set(
-                  visibleColumns.filter((_, cIdx) => isCellSelected(ranges, rIndex, cIdx)),
-                );
                 return (
                   <TwoDAEditorRow
-                    key={`row-${rIndex}-${dataVersion}`}
+                    key={`row-${rIndex}`}
                     twoDAObject={twoDAObject}
                     row={row}
                     index={rIndex}
@@ -979,7 +1148,7 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
                     activeRow={active?.row ?? -1}
                     activeColumn={active?.column}
                     editingColumn={editing?.row === rIndex ? editing.column : null}
-                    selectedColumns={selectedColumns}
+                    ranges={ranges}
                     matchColumns={rowMatches}
                     currentMatchColumn={currentMatch?.row === rIndex ? currentMatch.column : undefined}
                     onCellMouseDown={onCellMouseDown}
@@ -988,18 +1157,20 @@ export const TabTwoDAEditor = function(props: BaseTabProps){
                     onBeforeEdit={onBeforeEdit}
                     onAfterEdit={onAfterEdit}
                     onRowContextMenu={onRowContextMenu}
-                    onEditingKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === "Escape") {
-                        e.preventDefault();
-                        (e.target as HTMLInputElement).blur();
-                      }
-                    }}
+                    onEditingKeyDown={onEditingKeyDown}
                     dataVersionKey={dataVersion}
                     pendingEditChar={editing?.row === rIndex ? pendingEditChar : null}
-                    onPendingEditCharConsumed={() => setPendingEditChar(null)}
+                    onPendingEditCharConsumed={onPendingEditCharConsumed}
                   />
                 );
               })}
+              {bottomSpacerHeight > 0 ? (
+                <tr className="twoda-spacer" aria-hidden="true">
+                  <td colSpan={Math.max(1, visibleColumns.length)}>
+                    <div className="twoda-spacer-inner" style={{ height: bottomSpacerHeight }} />
+                  </td>
+                </tr>
+              ) : null}
             </tbody>
           </table>
         </div>
