@@ -12,6 +12,12 @@ interface MenuBarProps {
   className?: string;
 }
 
+interface FlyoutPlacement {
+  top: number;
+  left: number;
+  maxHeight: number;
+}
+
 const SUBMENU_CLOSE_DELAY_MS = 220;
 const MENU_EDGE_PAD_PX = 4;
 const MENU_MIN_HEIGHT_PX = 96;
@@ -24,6 +30,13 @@ function isSelectable(item: ForgeMenuItem | undefined): boolean {
     return false;
   }
   return true;
+}
+
+function isPathOpen(openSubmenu: string | null, itemPath: string): boolean {
+  if (!openSubmenu) {
+    return false;
+  }
+  return openSubmenu === itemPath || openSubmenu.startsWith(`${itemPath}-`);
 }
 
 /** Bottom edge of the nearest height-clipped ancestor (tab pane) or the viewport. */
@@ -52,24 +65,49 @@ function resolveMenuClipBottom(from: HTMLElement): number {
 }
 
 function clearMenuMaxHeights(root: HTMLElement) {
-  root.querySelectorAll<HTMLElement>(".forge-menu").forEach((menu) => {
-    menu.style.removeProperty("max-height");
+  root.querySelectorAll<HTMLElement>(".forge-menu__scroller").forEach((scroller) => {
+    scroller.style.removeProperty("max-height");
   });
 }
 
 function applyMenuMaxHeights(root: HTMLElement) {
   const clipBottom = resolveMenuClipBottom(root);
   root.querySelectorAll<HTMLElement>(".forge-menu").forEach((menu) => {
+    const scroller = menu.querySelector<HTMLElement>(":scope > .forge-menu__scroller");
+    if (!scroller) {
+      return;
+    }
     const top = menu.getBoundingClientRect().top;
     const available = Math.floor(clipBottom - top - MENU_EDGE_PAD_PX);
-    menu.style.maxHeight = `${Math.max(MENU_MIN_HEIGHT_PX, available)}px`;
+    scroller.style.maxHeight = `${Math.max(MENU_MIN_HEIGHT_PX, available)}px`;
   });
+}
+
+function measureFlyoutPlacement(
+  trigger: HTMLElement,
+  clipFrom: HTMLElement,
+): FlyoutPlacement {
+  const rect = trigger.getBoundingClientRect();
+  const clipBottom = resolveMenuClipBottom(clipFrom);
+  const clipRight = window.innerWidth;
+  const maxHeight = Math.max(MENU_MIN_HEIGHT_PX, Math.floor(clipBottom - rect.top - MENU_EDGE_PAD_PX));
+  let left = Math.floor(rect.right - 1);
+  // Prefer opening to the right; flip if it would leave the viewport.
+  if (left + 180 > clipRight - MENU_EDGE_PAD_PX) {
+    left = Math.max(MENU_EDGE_PAD_PX, Math.floor(rect.left - 180 + 1));
+  }
+  return {
+    top: Math.floor(rect.top),
+    left,
+    maxHeight,
+  };
 }
 
 export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", className = "" }) => {
   const [openMenu, setOpenMenu] = useState<number | null>(null);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const [activePath, setActivePath] = useState<string | null>(null);
+  const [flyoutPlacements, setFlyoutPlacements] = useState<Record<string, FlyoutPlacement>>({});
   const menuRef = useRef<HTMLDivElement>(null);
   const submenuCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -85,7 +123,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
       cancelPendingSubmenuClose();
       submenuCloseTimerRef.current = setTimeout(() => {
         submenuCloseTimerRef.current = null;
-        setOpenSubmenu((prev) => (prev === path ? null : prev));
+        setOpenSubmenu((prev) => (prev === path || prev?.startsWith(`${path}-`) ? null : prev));
       }, SUBMENU_CLOSE_DELAY_MS);
     },
     [cancelPendingSubmenuClose],
@@ -96,6 +134,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
     setOpenMenu(null);
     setOpenSubmenu(null);
     setActivePath(null);
+    setFlyoutPlacements({});
   }, [cancelPendingSubmenuClose]);
 
   useEffect(() => {
@@ -112,6 +151,44 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [closeAllMenus]);
 
+  const syncFlyoutPlacements = useCallback(() => {
+    const root = menuRef.current;
+    if (!root || openSubmenu === null) {
+      setFlyoutPlacements({});
+      return;
+    }
+
+    const next: Record<string, FlyoutPlacement> = {};
+    const parts = openSubmenu.split("-");
+    // Rebuild every ancestor path: "0-3-1" → "0-3", "0-3-1"
+    for (let depth = 2; depth <= parts.length; depth++) {
+      const path = parts.slice(0, depth).join("-");
+      const trigger = root.querySelector<HTMLElement>(`[data-menu-path="${path}"]`);
+      if (trigger) {
+        next[path] = measureFlyoutPlacement(trigger, root);
+      }
+    }
+    setFlyoutPlacements((prev) => {
+      const prevKeys = Object.keys(prev);
+      const nextKeys = Object.keys(next);
+      if (prevKeys.length === nextKeys.length) {
+        let same = true;
+        for (const key of nextKeys) {
+          const a = prev[key];
+          const b = next[key];
+          if (!a || !b || a.top !== b.top || a.left !== b.left || a.maxHeight !== b.maxHeight) {
+            same = false;
+            break;
+          }
+        }
+        if (same) {
+          return prev;
+        }
+      }
+      return next;
+    });
+  }, [openSubmenu]);
+
   useLayoutEffect(() => {
     const root = menuRef.current;
     if (!root) {
@@ -119,13 +196,28 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
     }
     if (openMenu === null) {
       clearMenuMaxHeights(root);
+      setFlyoutPlacements({});
       return;
     }
 
     applyMenuMaxHeights(root);
+    syncFlyoutPlacements();
+    // Parent flyouts must mount before nested triggers exist; remeasure next frame.
+    const raf = window.requestAnimationFrame(() => {
+      applyMenuMaxHeights(root);
+      syncFlyoutPlacements();
+    });
 
-    const onResize = () => applyMenuMaxHeights(root);
+    const onResize = () => {
+      applyMenuMaxHeights(root);
+      syncFlyoutPlacements();
+    };
     window.addEventListener("resize", onResize);
+
+    const scrollers = Array.from(root.querySelectorAll<HTMLElement>(".forge-menu__scroller"));
+    for (const scroller of scrollers) {
+      scroller.addEventListener("scroll", syncFlyoutPlacements, { passive: true });
+    }
 
     const clipParent = root.parentElement;
     let ro: ResizeObserver | undefined;
@@ -149,10 +241,14 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
     }
 
     return () => {
+      window.cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      for (const scroller of scrollers) {
+        scroller.removeEventListener("scroll", syncFlyoutPlacements);
+      }
       ro?.disconnect();
     };
-  }, [openMenu, openSubmenu, items]);
+  }, [openMenu, openSubmenu, items, syncFlyoutPlacements]);
 
   const selectableTopIndexes = items
     .map((item, index) => (item.disabled || (!item.children?.length && !item.onClick) ? -1 : index))
@@ -267,10 +363,10 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [openMenu, activePath, items, closeAllMenus, openTopByOffset, activateLeaf]);
 
-  const renderMenuItem = (item: ForgeMenuItem, index: number, parentPath: string) => {
+  const renderMenuItemRow = (item: ForgeMenuItem, index: number, parentPath: string) => {
     const itemPath = `${parentPath}-${index}`;
     const hasChildren = !!(item.children && item.children.length > 0);
-    const isSubmenuOpen = openSubmenu === itemPath;
+    const submenuOpen = isPathOpen(openSubmenu, itemPath);
     const isActive = activePath === itemPath;
 
     if (item.separator) {
@@ -292,7 +388,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
     return (
       <div
         key={itemPath}
-        style={{ position: "relative" }}
+        data-menu-path={itemPath}
         onMouseEnter={() => {
           setActivePath(itemPath);
           if (hasChildren) {
@@ -300,7 +396,7 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
             setOpenSubmenu(itemPath);
           } else {
             cancelPendingSubmenuClose();
-            setOpenSubmenu(parentPath || null);
+            setOpenSubmenu(parentPath.includes("-") ? parentPath : null);
           }
         }}
         onMouseLeave={() => {
@@ -310,11 +406,11 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
         }}
       >
         <div
-          className={`forge-menu__item ${item.disabled ? "is-disabled" : ""} ${isSubmenuOpen || isActive ? "is-open" : ""}`}
+          className={`forge-menu__item ${item.disabled ? "is-disabled" : ""} ${submenuOpen || isActive ? "is-open" : ""}`}
           role="menuitem"
           aria-disabled={item.disabled || undefined}
           aria-haspopup={hasChildren || undefined}
-          aria-expanded={hasChildren ? isSubmenuOpen : undefined}
+          aria-expanded={hasChildren ? submenuOpen : undefined}
           aria-checked={item.checked === undefined ? undefined : item.checked}
           onClick={() => {
             if (item.disabled) {
@@ -336,19 +432,64 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
             <span className="forge-menu__shortcut">{item.shortcut}</span>
           ) : null}
         </div>
-        {hasChildren && isSubmenuOpen && (
-          <div
-            className="forge-menu forge-menu--flyout"
-            role="menu"
-            onMouseEnter={() => {
-              cancelPendingSubmenuClose();
-              setOpenSubmenu(itemPath);
-            }}
-            onMouseLeave={() => scheduleSubmenuClose(itemPath)}
-          >
-            {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, itemPath))}
-          </div>
-        )}
+      </div>
+    );
+  };
+
+  const renderMenuPanel = (
+    panelItems: ForgeMenuItem[],
+    parentPath: string,
+    panelClassName = "",
+    placement?: FlyoutPlacement,
+  ) => {
+    const openChild = panelItems.findIndex((_, childIndex) => {
+      const childPath = `${parentPath}-${childIndex}`;
+      return isPathOpen(openSubmenu, childPath);
+    });
+    const openChildItem = openChild >= 0 ? panelItems[openChild] : undefined;
+    const openChildPath = openChild >= 0 ? `${parentPath}-${openChild}` : null;
+    const childPlacement = openChildPath ? flyoutPlacements[openChildPath] : undefined;
+
+    return (
+      <div
+        className={`forge-menu ${panelClassName}`.trim()}
+        role="menu"
+        style={
+          placement
+            ? {
+                position: "fixed",
+                top: placement.top,
+                left: placement.left,
+                maxHeight: undefined,
+              }
+            : undefined
+        }
+        onMouseEnter={() => {
+          if (parentPath.includes("-")) {
+            cancelPendingSubmenuClose();
+            setOpenSubmenu(parentPath);
+          }
+        }}
+        onMouseLeave={() => {
+          if (parentPath.includes("-")) {
+            scheduleSubmenuClose(parentPath);
+          }
+        }}
+      >
+        <div
+          className="forge-menu__scroller"
+          style={placement ? { maxHeight: placement.maxHeight } : undefined}
+        >
+          {panelItems.map((child, childIndex) => renderMenuItemRow(child, childIndex, parentPath))}
+        </div>
+        {openChildItem?.children?.length && openChildPath && childPlacement
+          ? renderMenuPanel(
+            openChildItem.children,
+            openChildPath,
+            "forge-menu--flyout",
+            childPlacement,
+          )
+          : null}
       </div>
     );
   };
@@ -403,11 +544,9 @@ export const MenuBar: React.FC<MenuBarProps> = ({ items, variant = "overlay", cl
             >
               {item.label}
             </button>
-            {isOpen && hasChildren && (
-              <div className="forge-menu" role="menu">
-                {item.children!.map((child, childIndex) => renderMenuItem(child, childIndex, String(index)))}
-              </div>
-            )}
+            {isOpen && hasChildren
+              ? renderMenuPanel(item.children!, String(index))
+              : null}
           </div>
         );
       })}

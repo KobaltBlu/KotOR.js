@@ -19,6 +19,8 @@ export interface ForgeSessionSettings {
   confirmCloseUnsaved: boolean;
   explorerOpenOnLaunch: boolean;
   showFloatingMiniPlayer: boolean;
+  /** When true, Ensign Trask's first-run tour will not auto-start. */
+  traskTourCompleted: boolean;
 }
 
 export const DEFAULT_FORGE_SESSION_SETTINGS: ForgeSessionSettings = {
@@ -26,6 +28,7 @@ export const DEFAULT_FORGE_SESSION_SETTINGS: ForgeSessionSettings = {
   confirmCloseUnsaved: true,
   explorerOpenOnLaunch: true,
   showFloatingMiniPlayer: false,
+  traskTourCompleted: false,
 };
 
 export function sanitizeSessionSettings(value: unknown): ForgeSessionSettings {
@@ -43,6 +46,10 @@ export function sanitizeSessionSettings(value: unknown): ForgeSessionSettings {
     showFloatingMiniPlayer: sanitizeBoolean(
       raw.showFloatingMiniPlayer,
       DEFAULT_FORGE_SESSION_SETTINGS.showFloatingMiniPlayer,
+    ),
+    traskTourCompleted: sanitizeBoolean(
+      raw.traskTourCompleted,
+      DEFAULT_FORGE_SESSION_SETTINGS.traskTourCompleted,
     ),
   };
 }

@@ -44,7 +44,11 @@ export const ForgeStatusBar = function ForgeStatusBar() {
 
   return (
     <div className="forge-statusbar">
-      <span className="forge-statusbar__game" title={hasGameData ? (directoryLabel ? `Game directory: ${directoryLabel}` : "Game install directory loaded") : "Game install directory not loaded, forge experience will be limited"}>{gameKey}{!hasGameData ? " [Offline]" : ''}</span>
+      <span
+        className="forge-statusbar__game"
+        data-trask-target="change-game"
+        title={hasGameData ? (directoryLabel ? `Game directory: ${directoryLabel}` : "Game install directory loaded") : "Game install directory not loaded, forge experience will be limited"}
+      >{gameKey}{!hasGameData ? " [Offline]" : ''}</span>
       <span className="forge-statusbar__tab" title={tabLabel}>{tabLabel || "Ready"}</span>
       <span className="forge-statusbar__idle">Ready</span>
     </div>

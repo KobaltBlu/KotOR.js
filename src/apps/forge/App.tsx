@@ -25,6 +25,7 @@ import { EditorFile } from "@/apps/forge/EditorFile";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
 import { ForgeFloatingMiniPlayer } from "@/apps/forge/components/ForgeFloatingMiniPlayer";
+import { TraskTour } from "@/apps/forge/tutorial/TraskTour";
 import forgeIcon from "@/assets/icons/icon.png";
 import * as KotOR from "@/KotOR";
 
@@ -339,7 +340,11 @@ export const App = (props: any) => {
   }, []);
 
   const westContent = (
-    <div id="tabs-explorer" style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}>
+    <div
+      id="tabs-explorer"
+      data-trask-target="explorer-pane"
+      style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+    >
       <TabManagerProvider manager={ForgeState.explorerTabManager}>
         <TabManager></TabManager>
       </TabManagerProvider>
@@ -383,7 +388,9 @@ export const App = (props: any) => {
               onWestOpenChange={(open) => ForgeState.setExplorerPaneOpen(open)}
             >
               <TabManagerProvider manager={ForgeState.tabManager}>
-                <TabManager renderEmptyState={renderMainTabsEmptyState}></TabManager>
+                <div data-trask-target="main-tabs" style={{ height: "100%", minHeight: 0 }}>
+                  <TabManager renderEmptyState={renderMainTabsEmptyState}></TabManager>
+                </div>
               </TabManagerProvider>
             </LayoutContainer>
           </LayoutContainerProvider>
@@ -394,6 +401,7 @@ export const App = (props: any) => {
         <ModalAbout />
         <CommandPalette />
         <ForgeFloatingMiniPlayer />
+        {appReady ? <TraskTour /> : null}
         {isDragOver && (
           <div className="drag-drop-overlay">
             <div className="drag-drop-overlay__content">

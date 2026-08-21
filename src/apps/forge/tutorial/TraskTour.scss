@@ -1,0 +1,158 @@
+/**
+ * Clippy-style Trask Ulgo tour styles.
+ *
+ * @file TraskTour.scss
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+
+.trask-tour {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: var(--forge-z-tutorial);
+}
+
+.trask-tour__highlight {
+  pointer-events: none;
+  position: fixed;
+  border: 2px solid var(--forge-accent);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.35),
+    0 0 18px color-mix(in srgb, var(--forge-accent) 45%, transparent);
+  transition:
+    top 0.18s ease,
+    left 0.18s ease,
+    width 0.18s ease,
+    height 0.18s ease;
+}
+
+.trask-tour__dock {
+  pointer-events: none;
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--forge-statusbar-height, 22px) + 12px);
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: min(520px, calc(100vw - 24px));
+}
+
+.trask-tour__bubble {
+  pointer-events: auto;
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 220px;
+  max-width: 340px;
+  padding: 12px 14px 10px;
+  background: var(--forge-bg-elevated, var(--forge-bg));
+  border: 1px solid var(--forge-border);
+  border-radius: 6px;
+  box-shadow: var(--forge-shadow-menu);
+  color: var(--forge-fg);
+}
+
+.trask-tour__tail {
+  position: absolute;
+  right: -8px;
+  bottom: 36px;
+  width: 14px;
+  height: 14px;
+  background: var(--forge-bg-elevated, var(--forge-bg));
+  border-right: 1px solid var(--forge-border);
+  border-top: 1px solid var(--forge-border);
+  transform: rotate(45deg);
+}
+
+.trask-tour__bubble-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.trask-tour__name {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--forge-accent);
+}
+
+.trask-tour__step {
+  font-size: 11px;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.trask-tour__body {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.trask-tour__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.trask-tour__nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.trask-tour__portrait {
+  pointer-events: none;
+  flex: 0 0 auto;
+  width: 168px;
+  height: 168px;
+  overflow: hidden;
+}
+
+.trask-tour__sprite {
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
+  /* Drop solid black plate from the spritesheet against Forge chrome. */
+  mix-blend-mode: lighten;
+  animation: trask-tour-pose-in 0.22s ease;
+}
+
+@keyframes trask-tour-pose-in {
+  from {
+    opacity: 0.35;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .trask-tour__dock {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    right: 8px;
+    bottom: calc(var(--forge-statusbar-height, 22px) + 8px);
+  }
+
+  .trask-tour__tail {
+    right: 72px;
+    bottom: -7px;
+    transform: rotate(135deg);
+  }
+
+  .trask-tour__portrait {
+    width: 120px;
+    height: 120px;
+  }
+
+  .trask-tour__bubble {
+    max-width: min(340px, calc(100vw - 16px));
+  }
+}

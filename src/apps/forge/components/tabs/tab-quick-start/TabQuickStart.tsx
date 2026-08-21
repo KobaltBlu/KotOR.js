@@ -75,7 +75,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
       {/* Content Grid */}
       <div className="content-grid">
         {/* Quick Actions */}
-        <div className="quick-start-card quick-actions-card">
+        <div className="quick-start-card quick-actions-card" data-trask-target="quick-start-actions">
           <h2 className="quick-start-card-title">
             <i className="fa-solid fa-rocket" />
             <span>Quick Start</span>

@@ -19,6 +19,7 @@ import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
 import { forgeSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
+import { TraskTourState } from "@/apps/forge/tutorial/TraskTourState";
 import * as KotOR from "@/apps/forge/KotOR";
 
 export function GeneralSettingsPage() {
@@ -146,6 +147,21 @@ export function GeneralSettingsPage() {
           }}
         />
       </SettingRow>
+      <SettingRow
+        label="Trask's introduction"
+        description="Replay Ensign Trask Ulgo's first-run tour of Forge."
+        keywords={["trask", "tour", "tutorial", "onboarding", "help", "introduction"]}
+      >
+        <ForgeButton
+          size="sm"
+          onClick={() => {
+            ModalSettingsState.Hide();
+            TraskTourState.replay();
+          }}
+        >
+          Replay introduction…
+        </ForgeButton>
+      </SettingRow>
     </div>
   );
 }
@@ -155,6 +171,6 @@ registerSettingsPage({
   label: "General",
   group: "application",
   icon: "fa-solid fa-gear",
-  keywords: ["general", "app", "application", "game", "profile", "directory", "folder", "session", "tabs", "explorer"],
+  keywords: ["general", "app", "application", "game", "profile", "directory", "folder", "session", "tabs", "explorer", "trask", "tour", "tutorial"],
   render: () => React.createElement(GeneralSettingsPage),
 });

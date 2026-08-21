@@ -257,6 +257,7 @@ const defaults: any = {
       confirmCloseUnsaved: true,
       explorerOpenOnLaunch: true,
       showFloatingMiniPlayer: false,
+      traskTourCompleted: false,
     },
     localization: {
       language: 0,
