@@ -256,8 +256,9 @@ export class RIMObject {
    */
   static buildFromResourceEntries(entries: { resRef: string; resType: number; data: Uint8Array }[]): Uint8Array {
     const HEADER_RES_TABLE_OFFSET = 160;
+    const RESOURCE_ENTRY_SIZE = 32;
     const n = entries.length;
-    const indexBytes = n * 34;
+    const indexBytes = n * RESOURCE_ENTRY_SIZE;
     let dataCursor = HEADER_RES_TABLE_OFFSET + indexBytes;
     const rows: { resRef: string; resType: number; resId: number; offset: number; size: number; data: Uint8Array }[] = [];
     for(let i = 0; i < n; i++){
@@ -297,7 +298,7 @@ export class RIMObject {
     for(const r of rows){
       writer.writeBytes(r.data);
     }
-    return writer.buffer.subarray(0, writer.tell());
+    return writer.buffer.slice(0, writer.tell());
   }
 
 }

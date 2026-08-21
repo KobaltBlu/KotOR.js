@@ -8,8 +8,8 @@
 
 import React, { ChangeEvent } from "react";
 import { ForgeButton, ForgeInput, ForgeInputGroup } from "@/apps/forge/components/ui";
-import { ModalResRefBrowserState, ResRefKind } from "@/apps/forge/states/modal/ModalResRefBrowserState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ResRefKind } from "@/apps/forge/states/modal/ModalResRefBrowserState";
+import { openResRefBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
 import "@/apps/forge/components/script-resref-input/ScriptResRefInput.scss";
 
 export interface ResRefChangeEvent {
@@ -32,11 +32,9 @@ export function ResRefInput({
   className = "",
 }: ResRefInputProps) {
   const onBrowse = () => {
-    const modal = new ModalResRefBrowserState(kind, (resref) => {
+    openResRefBrowser(kind, (resref) => {
       onChange({ target: { value: resref } });
-    });
-    modal.attachToModalManager(ForgeState.modalManager);
-    modal.open();
+    }, value);
   };
 
   return (

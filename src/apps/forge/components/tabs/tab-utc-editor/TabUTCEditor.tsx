@@ -13,11 +13,31 @@ import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { UtcEquipmentTab } from "@/apps/forge/components/tabs/tab-utc-editor/UtcEquipmentTab";
 import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
+import { UtcGffStructList } from "@/apps/forge/components/tabs/tab-utc-editor/UtcGffStructList";
+import { UtcRuleIndexField } from "@/apps/forge/components/tabs/tab-utc-editor/UtcRuleIndexField";
+import {
+  UTC_CLASS_GFF_COLUMNS,
+  UTC_FEAT_GFF_COLUMNS,
+  UTC_KNOWN_SPELL_GFF_COLUMNS,
+  UTC_SKILL_GFF_COLUMNS,
+  UTC_SPEC_ABILITY_GFF_COLUMNS,
+  featGffRowsToIds,
+  featIdsToGffRows,
+  skillGffRowsToRanks,
+  skillRanksToGffRows,
+  utcRuleSetHasClassOptions,
+  utcRuleSetHasFeatGrid,
+  utcRuleSetHasSkillGrid,
+  utcRuleSetHasSpellGrid,
+} from "@/apps/forge/components/tabs/tab-utc-editor/utcGffList";
 import "@/apps/forge/components/tabs/tab-utc-editor/TabUTCEditor.scss";
 
 export const TabUTCEditor = function(props: BaseTabProps){
 
   const tab: TabUTCEditorState = props.tab as TabUTCEditorState;
+  const hasGameData = useForgeHasGameData();
   const [appearanceType, setAppearanceType] = useState<number>(0);
   const [bodyBag, setBodyBag] = useState<number>(0);
   const [bodyVariation, setBodyVariation] = useState<number>(0);
@@ -111,6 +131,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
   const [creatureClass, setCreatureClass] = useState<number>(0);
   const [creatureLevel, setCreatureLevel] = useState<number>(1);
   const [knownList0, setKnownList0] = useState<KnownSpellEntry[]>([]);
+  const [knownClassIndex, setKnownClassIndex] = useState<number>(0);
   const [appearanceList, setAppearanceList] = useState<KotOR.SWCreatureAppearance[]>([]);
   const [raceList, setRaceList] = useState<KotOR.SWRace[]>([]);
 
@@ -118,7 +139,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
 
   useEffect(() => {
     if(!portraitId) return;
-    setPortrait(KotOR.SWRuleSet.portraits[portraitId]);
+    setPortrait(KotOR.SWRuleSet.portraits?.[portraitId] ?? new KotOR.SWPortrait());
   }, [portraitId]);
 
   const onCreatureChange = useCallback(() => {
@@ -207,7 +228,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     setSlotImplant(tab.creature.slotImplant);
     setSlotHead(tab.creature.slotHead);
     setSlotArms(tab.creature.slotArms);
-    setPortrait(KotOR.SWRuleSet.portraits[portraitId]);
+    setPortrait(KotOR.SWRuleSet.portraits?.[portraitId] ?? new KotOR.SWPortrait());
 
     // Update classList state
     if(tab.creature.classList[0]){
@@ -217,19 +238,25 @@ export const TabUTCEditor = function(props: BaseTabProps){
     }
   }, [tab]);
 
+  const refreshRuleCatalog = useCallback(() => {
+    setFeats((KotOR.SWRuleSet.feats || []).filter(feat => feat?.label != '' && feat.prereqFeat2 == -1 && feat.prereqFeat1 == -1));
+    setSpells((KotOR.SWRuleSet.spells || []).filter(spell => spell?.userType == 1 && (spell.prerequisites || []).length == 0));
+    setSpecialAbilitiesList((KotOR.SWRuleSet.spells || []).filter(spell => spell?.userType == 2 && (spell.prerequisites || []).length == 0));
+    setClasses((KotOR.SWRuleSet.classes || []).slice());
+    setAppearanceList(Array.from(KotOR.AppearanceManager?.appearances?.values?.() ?? []));
+  }, []);
+
   useEffect(() => {
     if(!tab) return;
-    setFeats(KotOR.SWRuleSet.feats.filter(feat => feat.label != '' && feat.prereqFeat2 == -1 && feat.prereqFeat1 == -1));
-    setSpells(KotOR.SWRuleSet.spells.filter(spell => spell.userType == 1 && spell.prerequisites.length == 0));
-    setSpecialAbilitiesList(KotOR.SWRuleSet.spells.filter(spell => spell.userType == 2 && spell.prerequisites.length == 0));
-    setClasses(KotOR.SWRuleSet.classes.slice());
-    setAppearanceList(Array.from(KotOR.AppearanceManager.appearances.values()));
+    refreshRuleCatalog();
     onCreatureChange();
     tab.addEventListener('onEditorFileLoad', onCreatureChange);
     tab.addEventListener('onEditorFileChange', onCreatureChange);
+    ForgeState.addEventListener('onGameDataChanged', refreshRuleCatalog);
     return () => {
       tab.removeEventListener('onEditorFileLoad', onCreatureChange);
       tab.removeEventListener('onEditorFileChange', onCreatureChange);
+      ForgeState.removeEventListener('onGameDataChanged', refreshRuleCatalog);
     };
   }, []);
 
@@ -410,6 +437,77 @@ export const TabUTCEditor = function(props: BaseTabProps){
     tab.updateFile();
   };
 
+  const commitClassList = (updated: CreatureClassEntry[]) => {
+    tab.creature.setProperty('classList', updated);
+    setClassList(updated);
+    if(updated[0]){
+      setCreatureClass(updated[0].class);
+      setCreatureLevel(updated[0].level);
+    }
+    const idx = Math.min(Math.max(0, knownClassIndex), Math.max(0, updated.length - 1));
+    setKnownList0(updated[idx]?.knownList0 || []);
+    tab.updateFile();
+  };
+
+  const ensureClassList = (): CreatureClassEntry[] => {
+    if(tab.creature.classList?.length){
+      return tab.creature.classList;
+    }
+    const created: CreatureClassEntry[] = [{ class: 0, level: 1, knownList0: [] }];
+    tab.creature.setProperty('classList', created);
+    setClassList(created);
+    setCreatureClass(0);
+    setCreatureLevel(1);
+    return created;
+  };
+
+  const onFeatGffListChange = (rows: { Feat: number }[]) => {
+    const updated = featGffRowsToIds(rows);
+    setFeatList(updated);
+    tab.creature.setProperty('featList', updated);
+    tab.updateFile();
+  };
+
+  const onKnownSpellGffListChange = (rows: KnownSpellEntry[]) => {
+    const classes = ensureClassList();
+    const idx = Math.min(Math.max(0, knownClassIndex), Math.max(0, classes.length - 1));
+    const updated = classes.map((entry, index) => (
+      index === idx ? { ...entry, knownList0: rows } : entry
+    ));
+    tab.creature.setProperty('classList', updated);
+    setClassList(updated);
+    setKnownList0(rows);
+    tab.updateFile();
+  };
+
+  const onSpecAbilityGffListChange = (rows: SpecialAbilityEntry[]) => {
+    setSpecialAbilities(rows);
+    tab.creature.setProperty('specAbilityList', rows);
+    tab.updateFile();
+  };
+
+  const onClassGffListChange = (rows: { class: number; level: number }[]) => {
+    const updated: CreatureClassEntry[] = rows.map((row, index) => ({
+      class: row.class || 0,
+      level: row.level || 1,
+      knownList0: classList[index]?.knownList0 || [],
+    }));
+    commitClassList(updated);
+  };
+
+  const onSkillGffListChange = (rows: { Rank: number }[]) => {
+    const updated = skillGffRowsToRanks(rows);
+    setSkillList(updated);
+    tab.creature.setProperty('skillList', updated);
+    tab.updateFile();
+  };
+
+  const hasFeatGrid = utcRuleSetHasFeatGrid(KotOR.SWRuleSet.feats);
+  const hasSpellGrid = utcRuleSetHasSpellGrid(KotOR.SWRuleSet.spells, 1);
+  const hasAbilityGrid = utcRuleSetHasSpellGrid(KotOR.SWRuleSet.spells, 2);
+  const hasClassOptions = utcRuleSetHasClassOptions(KotOR.SWRuleSet.classes);
+  const hasSkillGrid = utcRuleSetHasSkillGrid(KotOR.SWRuleSet.skills);
+
   const tabs: SubTab[] = [
     {
       id: 'basic',
@@ -447,41 +545,48 @@ export const TabUTCEditor = function(props: BaseTabProps){
                   <tr>
                     <td><label>Race</label></td>
                     <td>
-                      <select className="form-select" value={race} onChange={onUpdateNumberField(setRace, 'race')}>
-                        {KotOR.SWRuleSet.racialtypes.map((race) => (
-                          <option key={race.id} value={race.id}>{race.getName()}</option>
-                        ))}
-                      </select>
+                      <UtcRuleIndexField
+                        value={race}
+                        onChange={onUpdateNumberField(setRace, 'race')}
+                        emptyTitle="racialtypes.2da not loaded"
+                        options={(KotOR.SWRuleSet.racialtypes || []).map((row) => ({ id: row.id, label: row.getName() }))}
+                      />
                     </td>
                   </tr>
                   <tr>
                     <td><label>Appearance</label></td>
                     <td>
-                      <select className="form-select" value={appearanceType} onChange={onUpdateNumberField(setAppearanceType, 'appearanceType')}>
-                        {appearanceList.map((appearance) => (
-                          <option key={appearance.id} value={appearance.id}>{appearance.label}</option>
-                        ))}
-                      </select>
+                      {appearanceList.length ? (
+                        <select className="form-select" value={appearanceType} onChange={onUpdateNumberField(setAppearanceType, 'appearanceType')}>
+                          {appearanceList.map((appearance) => (
+                            <option key={appearance.id} value={appearance.id}>{appearance.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input type="number" min="0" value={appearanceType} onChange={onUpdateNumberField(setAppearanceType, 'appearanceType')} title="appearance.2da not loaded" />
+                      )}
                     </td>
                   </tr>
                   <tr>
                     <td><label>Phenotype</label></td>
                     <td>
-                      <select className="form-select" value={phenotype} onChange={onUpdateNumberField(setPhenotype, 'phenotype')}>
-                        {KotOR.SWRuleSet.phenotypes.map((phenotype) => (
-                          <option key={phenotype.id} value={phenotype.id}>{phenotype.getName()}</option>
-                        ))}
-                      </select>
-                      </td>
+                      <UtcRuleIndexField
+                        value={phenotype}
+                        onChange={onUpdateNumberField(setPhenotype, 'phenotype')}
+                        emptyTitle="phenotype.2da not loaded"
+                        options={(KotOR.SWRuleSet.phenotypes || []).map((row) => ({ id: row.id, label: row.getName() }))}
+                      />
+                    </td>
                   </tr>
                   <tr>
                     <td><label>Gender</label></td>
                     <td>
-                      <select className="form-select" value={gender} onChange={onUpdateNumberField(setGender, 'gender')}>
-                        {KotOR.SWRuleSet.genders.map((gender) => (
-                          <option key={gender.id} value={gender.id}>{gender.getName()}</option>
-                        ))}
-                      </select>
+                      <UtcRuleIndexField
+                        value={gender}
+                        onChange={onUpdateNumberField(setGender, 'gender')}
+                        emptyTitle="gender.2da not loaded"
+                        options={(KotOR.SWRuleSet.genders || []).map((row) => ({ id: row.id, label: row.getName() }))}
+                      />
                     </td>
                   </tr>
                   <tr>
@@ -494,11 +599,12 @@ export const TabUTCEditor = function(props: BaseTabProps){
                   <tr>
                     <td><label>BodyBag</label></td>
                     <td>
-                      <select className="form-select" value={bodyBag} onChange={onUpdateNumberField(setBodyBag, 'bodyBag')}>
-                        {KotOR.SWRuleSet.bodyBags.map((bodyBag) => (
-                          <option key={bodyBag.id} value={bodyBag.id}>{bodyBag.label}</option>
-                        ))}
-                      </select>
+                      <UtcRuleIndexField
+                        value={bodyBag}
+                        onChange={onUpdateNumberField(setBodyBag, 'bodyBag')}
+                        emptyTitle="bodybag.2da not loaded"
+                        options={(KotOR.SWRuleSet.bodyBags || []).map((row) => ({ id: row.id, label: row.label }))}
+                      />
                     </td>
                   </tr>
               </tbody>
@@ -509,14 +615,18 @@ export const TabUTCEditor = function(props: BaseTabProps){
             <legend>Portrait</legend>
             <div className="flex-horizontal">
               <div className="flex-grow-1">
-                <TextureCanvas texture={portrait.baseresref || ''} width={64} height={64} />
+                <TextureCanvas texture={portrait?.baseresref || ''} width={64} height={64} />
               </div>
               <div className="flex-grow-1">
-                <select className="form-select" value={portraitId} onChange={onUpdateNumberField(setPortraitId, 'portraitId')}>
-                  {KotOR.SWRuleSet.portraits.map((portrait) => (
-                    <option key={portrait.id} value={portrait.id}>{portrait.baseresref}</option>
-                  ))}
-                </select>
+                {(KotOR.SWRuleSet.portraits || []).length ? (
+                  <select className="form-select" value={portraitId} onChange={onUpdateNumberField(setPortraitId, 'portraitId')}>
+                    {KotOR.SWRuleSet.portraits.map((row) => (
+                      <option key={row.id} value={row.id}>{row.baseresref}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input type="number" min="0" value={portraitId} onChange={onUpdateNumberField(setPortraitId, 'portraitId')} title="portraits.2da not loaded" />
+                )}
               </div>
             </div>
           </fieldset>
@@ -623,11 +733,12 @@ export const TabUTCEditor = function(props: BaseTabProps){
                   <fieldset>
                     <legend>Speed</legend>
                     <label>Movement Rate</label>
-                    <select className="form-select" value={walkRate} onChange={onUpdateNumberField(setWalkRate, 'walkRate')}>
-                      {KotOR.SWRuleSet.creatureSpeeds.map((speed) => (
-                        <option key={speed.id} value={speed.id}>{speed.getTwoDAName()}</option>
-                      ))}
-                    </select>
+                    <UtcRuleIndexField
+                      value={walkRate}
+                      onChange={onUpdateNumberField(setWalkRate, 'walkRate')}
+                      emptyTitle="creaturespeed.2da not loaded"
+                      options={(KotOR.SWRuleSet.creatureSpeeds || []).map((row) => ({ id: row.id, label: row.getTwoDAName() }))}
+                    />
                   </fieldset>
                 </td>
                 <td style={{width: '50%'}}>
@@ -655,8 +766,9 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerIcon: 'fa-wrench',
       headerTitle: 'Skills',
       content: (
+        hasSkillGrid ? (
         <div className="skill-grid">
-          {KotOR.SWRuleSet.skills.map((skill) => (
+          {(KotOR.SWRuleSet.skills || []).map((skill) => (
             <div key={skill.id} className="skill-grid-item">
               <TextureCanvas texture={skill.icon} width={32} height={32} />
               <label>{skill.getName()}</label>
@@ -669,6 +781,16 @@ export const TabUTCEditor = function(props: BaseTabProps){
             </div>
           ))}
         </div>
+        ) : (
+          <UtcGffStructList
+            listLabel="SkillList"
+            addLabel="Add Rank"
+            columns={UTC_SKILL_GFF_COLUMNS}
+            rows={skillRanksToGffRows(skillList)}
+            createRow={() => ({ Rank: 0 })}
+            onChange={onSkillGffListChange}
+          />
+        )
       )
     },
     {
@@ -714,11 +836,12 @@ export const TabUTCEditor = function(props: BaseTabProps){
                 <tr>
                   <td><label>Subrace</label></td>
                   <td>
-                    <select className="form-select" value={subraceIndex} onChange={onUpdateNumberField(setSubraceIndex, 'subraceIndex')}>
-                      {KotOR.SWRuleSet.subRaces.map((subrace) => (
-                        <option key={subrace.id} value={subrace.id}>{subrace.label}</option>
-                      ))}
-                    </select>
+                    <UtcRuleIndexField
+                      value={subraceIndex}
+                      onChange={onUpdateNumberField(setSubraceIndex, 'subraceIndex')}
+                      emptyTitle="subrace.2da not loaded"
+                      options={(KotOR.SWRuleSet.subRaces || []).map((row) => ({ id: row.id, label: row.label }))}
+                    />
                   </td>
                 </tr>
               </tbody>
@@ -737,11 +860,12 @@ export const TabUTCEditor = function(props: BaseTabProps){
                 <td>
                   <fieldset>
                     <legend>Sound Set</legend>
-                    <select className="form-select" value={soundSetFile} onChange={onUpdateNumberField(setSoundSetFile, 'soundSetFile')}>
-                      {KotOR.SWRuleSet.soundSets.map((soundSet) => (
-                        <option key={soundSet.id} value={soundSet.id}>{soundSet.getName()}</option>
-                      ))}
-                    </select>
+                    <UtcRuleIndexField
+                      value={soundSetFile}
+                      onChange={onUpdateNumberField(setSoundSetFile, 'soundSetFile')}
+                      emptyTitle="soundset.2da not loaded"
+                      options={(KotOR.SWRuleSet.soundSets || []).map((row) => ({ id: row.id, label: row.getName() }))}
+                    />
                   </fieldset>
                 </td>
               </tr>
@@ -749,21 +873,23 @@ export const TabUTCEditor = function(props: BaseTabProps){
                 <td>
                   <fieldset>
                     <legend>Faction</legend>
-                    <select className="form-select" value={factionID} onChange={onUpdateNumberField(setFactionID, 'factionID')}>
-                      {KotOR.SWRuleSet.factions.map((faction, index) => (
-                        <option key={faction.id} value={faction.id}>{faction.getName()}</option>
-                      ))}
-                    </select>
+                    <UtcRuleIndexField
+                      value={factionID}
+                      onChange={onUpdateNumberField(setFactionID, 'factionID')}
+                      emptyTitle="repute.2da not loaded"
+                      options={(KotOR.SWRuleSet.factions || []).map((row) => ({ id: row.id, label: row.getName() }))}
+                    />
                   </fieldset>
                 </td>
                 <td>
                   <fieldset>
                     <legend>Perception Range</legend>
-                    <select className="form-select" value={perceptionRange} onChange={onUpdateNumberField(setPerceptionRange, 'perceptionRange')}>
-                      {KotOR.SWRuleSet.ranges.filter(range => range.getType() == 2).map((size) => (
-                        <option key={size.id} value={size.id}>{size.getName()}</option>
-                      ))}
-                    </select>
+                    <UtcRuleIndexField
+                      value={perceptionRange}
+                      onChange={onUpdateNumberField(setPerceptionRange, 'perceptionRange')}
+                      emptyTitle="ranges.2da not loaded"
+                      options={(KotOR.SWRuleSet.ranges || []).filter((range) => range.getType() == 2).map((row) => ({ id: row.id, label: row.getName() }))}
+                    />
                   </fieldset>
                 </td>
               </tr>
@@ -778,6 +904,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerIcon: 'fa-trophy',
       headerTitle: 'Feats',
       content: (
+        hasFeatGrid ? (
         <>
           <div className="feats">
             {feats.map((feat, index) => (
@@ -839,6 +966,16 @@ export const TabUTCEditor = function(props: BaseTabProps){
             ))}
           </div>
         </>
+        ) : (
+          <UtcGffStructList
+            listLabel="FeatList"
+            addLabel="Add Feat"
+            columns={UTC_FEAT_GFF_COLUMNS}
+            rows={featIdsToGffRows(featList)}
+            createRow={() => ({ Feat: 0 })}
+            onChange={onFeatGffListChange}
+          />
+        )
       )
     },
     {
@@ -847,6 +984,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerIcon: 'fa-hand-sparkles',
       headerTitle: 'Force Powers',
       content: (
+        hasSpellGrid ? (
         <>
           <div className="feats">
             {spells.map((spell, index) => (
@@ -908,6 +1046,34 @@ export const TabUTCEditor = function(props: BaseTabProps){
             ))}
           </div>
         </>
+        ) : (
+          <div>
+            {classList.length > 1 ? (
+              <label>
+                ClassList index
+                <input
+                  type="number"
+                  min={0}
+                  max={Math.max(0, classList.length - 1)}
+                  value={knownClassIndex}
+                  onChange={(e) => {
+                    const next = Math.min(Math.max(0, parseInt(e.target.value, 10) || 0), Math.max(0, classList.length - 1));
+                    setKnownClassIndex(next);
+                    setKnownList0(classList[next]?.knownList0 || []);
+                  }}
+                />
+              </label>
+            ) : null}
+            <UtcGffStructList
+              listLabel="KnownList0"
+              addLabel="Add Spell"
+              columns={UTC_KNOWN_SPELL_GFF_COLUMNS}
+              rows={knownList0}
+              createRow={() => ({ spell: 0, spellMetaMagic: 0, spellFlags: 0 })}
+              onChange={onKnownSpellGffListChange}
+            />
+          </div>
+        )
       )
     },
     {
@@ -916,6 +1082,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerIcon: 'fa-user-graduate',
       headerTitle: 'Class',
       content: (
+        hasClassOptions ? (
         <>
           {classList[0] && (
             <>
@@ -947,6 +1114,23 @@ export const TabUTCEditor = function(props: BaseTabProps){
               </>
           )}
         </>
+        ) : (
+          <>
+            <div>
+              <label>Good Evil</label>
+              <input type="range" min="0" max="100" value={goodEvil} onChange={onUpdateNumberField(setGoodEvil, 'goodEvil')} />
+              <span>{goodEvil}</span>
+            </div>
+            <UtcGffStructList
+              listLabel="ClassList"
+              addLabel="Add Class"
+              columns={UTC_CLASS_GFF_COLUMNS}
+              rows={classList.map((entry) => ({ class: entry.class, level: entry.level }))}
+              createRow={() => ({ class: 0, level: 1 })}
+              onChange={onClassGffListChange}
+            />
+          </>
+        )
       )
     },
     {
@@ -955,6 +1139,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
       headerIcon: 'fa-star',
       headerTitle: 'Special Abilities',
       content: (
+        hasAbilityGrid ? (
         <>
           <div className="feats">
             {specialAbilitiesList.map((specialAbility, index) => (
@@ -1016,6 +1201,16 @@ export const TabUTCEditor = function(props: BaseTabProps){
             ))}
           </div>
         </>
+        ) : (
+          <UtcGffStructList
+            listLabel="SpecAbilityList"
+            addLabel="Add Ability"
+            columns={UTC_SPEC_ABILITY_GFF_COLUMNS}
+            rows={specialAbilities}
+            createRow={() => ({ spell: 0, spellCasterLevel: 1, spellFlags: 0 })}
+            onChange={onSpecAbilityGffListChange}
+          />
+        )
       )
     },
     {
@@ -1114,7 +1309,7 @@ export const TabUTCEditor = function(props: BaseTabProps){
     <SubTabHost
       tabs={tabs}
       defaultTab="basic"
-      leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />}
+      leftPanel={hasGameData ? <UI3DRendererView context={tab.ui3DRenderer} /> : undefined}
     />
   );
 

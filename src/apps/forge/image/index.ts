@@ -12,4 +12,5 @@ export * from "@/apps/forge/image/imageBlend";
 export * from "@/apps/forge/image/imageDocument";
 export * from "@/apps/forge/image/imageOps";
 export * from "@/apps/forge/image/imageTools";
+export * from "@/apps/forge/image/psdIo";
 export * from "@/apps/forge/image/tpcExport";

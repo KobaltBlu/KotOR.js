@@ -70,18 +70,16 @@ export class Launcher {
     const profileKeys = Object.keys(Launcher.AppProfiles);
     for(let i = 0; i < profileKeys.length; i++){
       const profile_key = profileKeys[i];
-      let cached_profile = ConfigClient.get(['Profiles', profile_key]);
-      if(typeof cached_profile == 'undefined' || typeof cached_profile !== 'object' || !cached_profile.name){
-        cached_profile = Launcher.AppProfiles[profile_key];
-        cached_profile.key = profile_key;
-        cached_profile.sort = i;
-        cached_profile.id = Launcher.GetProfileID();
-      }else{
-        cached_profile = Object.assign(Launcher.AppProfiles[profile_key], cached_profile);
-        cached_profile.key = profile_key;
-        cached_profile.sort = i;
-        cached_profile.id = Launcher.GetProfileID();
-      }
+      const defaults = Launcher.AppProfiles[profile_key];
+      const stored = ConfigClient.get(['Profiles', profile_key]);
+      const cached_profile = Object.assign(
+        {},
+        defaults,
+        stored && typeof stored === 'object' ? stored : {},
+      );
+      cached_profile.key = profile_key;
+      cached_profile.sort = i;
+      cached_profile.id = Launcher.GetProfileID();
       ConfigClient.set(['Profiles', profile_key], cached_profile);
     }
 

@@ -14,6 +14,7 @@ import { ModalChangeGameState } from "@/apps/forge/components/modal/ModalChangeG
 import { ModalAboutState } from "@/apps/forge/components/modal/ModalAboutState";
 import { ModalSettingsState } from "@/apps/forge/components/modal/ModalSettingsState";
 import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompile";
+import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
 import { exportForgeThemeToFile, installForgeThemeFromFile } from "@/apps/forge/settings/forgeTheme";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
@@ -36,8 +37,10 @@ import { TabUTWEditorState } from "@/apps/forge/states/tabs/TabUTWEditorState";
 import { TabLIPEditorState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLIPEditorState";
 import { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
-import { tabCanCompile, tabCanSave } from "@/apps/forge/commands/editorCommandGuards";
+import { TabGFFEditorState } from "@/apps/forge/states/tabs/TabGFFEditorState";
+import { tabCanCompile, tabCanOpenAsGff, tabCanSave, tabIsGffEditor } from "@/apps/forge/commands/editorCommandGuards";
 import * as KotOR from "@/apps/forge/KotOR";
+import { openTabAsGffEditor } from "@/apps/forge/helpers/openTabAsGff";
 
 function currentTab(): TabState | undefined {
   return ForgeState.tabManager?.currentTab;
@@ -103,6 +106,15 @@ export function registerForgeCommands(): void {
   });
 
   registerCommand({
+    id: "forge.file.saveProjectToFolder",
+    title: "Save Project To Folder...",
+    category: "File",
+    keywords: ["virtual", "export", "copy", "folder"],
+    when: hasProject,
+    run: () => Project.SaveToFolder(),
+  });
+
+  registerCommand({
     id: "forge.file.closeProject",
     title: "Close Project",
     category: "File",
@@ -154,6 +166,43 @@ export function registerForgeCommands(): void {
   });
 
   registerCommand({
+    id: "forge.file.openAsGff",
+    title: "Open as GFF Editor",
+    category: "File",
+    keywords: ["gff", "template", "utc", "utp", "blueprint"],
+    when: () => tabCanOpenAsGff(currentTab()),
+    run: () => openTabAsGffEditor(currentTab()),
+  });
+
+  registerCommand({
+    id: "forge.file.exportGffJson",
+    title: "Export GFF as JSON...",
+    category: "File",
+    keywords: ["gff", "json", "export"],
+    when: () => tabIsGffEditor(currentTab()),
+    run: () => {
+      const tab = currentTab();
+      if (tab instanceof TabGFFEditorState) {
+        void tab.exportJson();
+      }
+    },
+  });
+
+  registerCommand({
+    id: "forge.file.importGffJson",
+    title: "Import GFF JSON...",
+    category: "File",
+    keywords: ["gff", "json", "import"],
+    when: () => tabIsGffEditor(currentTab()),
+    run: () => {
+      const tab = currentTab();
+      if (tab instanceof TabGFFEditorState) {
+        void tab.importJson();
+      }
+    },
+  });
+
+  registerCommand({
     id: "forge.file.settings",
     title: "Settings...",
     category: "File",
@@ -202,6 +251,47 @@ export function registerForgeCommands(): void {
   });
 
   registerCommand({
+    id: "forge.file.loadGameData",
+    title: "Load Game Directory...",
+    category: "File",
+    keywords: ["chitin", "bif", "game", "kotor", "tsl", "data"],
+    run: async () => {
+    const bound = await ForgeState.promptAndBindGameDirectory();
+    if (bound === "cancelled") {
+      return;
+    }
+    if (bound !== "ok") {
+      window.alert("The selected folder does not contain chitin.key. Choose a KotOR or TSL install directory.");
+      return;
+    }
+      const loaded = await ForgeState.attachGameData();
+      if (!loaded) {
+        window.alert("Could not load game archives from that folder. Editors will stay in fallback mode.");
+      }
+    },
+  });
+
+  registerCommand({
+    id: "forge.file.removeGameDirectory",
+    title: "Remove Game Directory",
+    category: "File",
+    keywords: ["chitin", "game", "unbind", "offline", "directory", "folder"],
+    when: () => ForgeState.hasBoundGameDirectory(),
+    run: async () => {
+      const label = ForgeState.getBoundGameDirectoryLabel();
+      const confirmed = window.confirm(
+        label
+          ? `Remove the bound game directory (${label})? Forge will work offline until you choose a folder again.`
+          : "Remove the bound game directory? Forge will work offline until you choose a folder again.",
+      );
+      if (!confirmed) {
+        return;
+      }
+      await ForgeState.unbindGameDirectory();
+    },
+  });
+
+  registerCommand({
     id: "forge.file.changeGame",
     title: "Change Game...",
     category: "File",
@@ -245,6 +335,14 @@ export function registerForgeCommands(): void {
     category: "File",
     keywords: ["texture", "tga", "tpc", "image"],
     run: () => addUntitled(TabImageViewerState, "untitled", KotOR.ResourceTypes.tga),
+  });
+
+  registerCommand({
+    id: "forge.file.new.tpc",
+    title: "New Texture (.tpc)",
+    category: "File",
+    keywords: ["texture", "tpc", "image", "dxt"],
+    run: () => addUntitled(TabImageViewerState, "untitled", KotOR.ResourceTypes.tpc),
   });
 
   registerCommand({
@@ -390,6 +488,15 @@ export function registerForgeCommands(): void {
     category: "View",
     keywords: ["audio", "player"],
     run: () => AudioPlayerState.toggleFloatingMiniPlayer(),
+  });
+
+  registerCommand({
+    id: "forge.project.importModule",
+    title: "Import Module...",
+    category: "Project",
+    keywords: ["rim", "mod", "erf", "ifo", "area"],
+    when: hasProject,
+    run: () => openImportModuleWizard(),
   });
 
   registerCommand({

@@ -27,6 +27,7 @@ export interface RecentFileEntry {
 export interface RecentProjectEntry {
   getDisplayName: () => string;
   path?: string;
+  virtual?: boolean;
 }
 
 export function mapRecentFilesToMenuItems(
@@ -50,9 +51,10 @@ export function mapRecentProjectsToMenuItems(
   return projects.map((project, index) => {
     const name = project.getDisplayName() || "Untitled Project";
     const path = truncatePath(project.path || "");
+    const detail = path && path !== name ? path : (project.virtual ? "Virtual folder" : undefined);
     return {
       label: name,
-      detail: path && path !== name ? path : undefined,
+      detail,
       onClick: () => onOpen(index),
     };
   });

@@ -88,6 +88,7 @@ export const FILE_TYPE_EDITOR_GROUPS: FileTypeEditorGroup[] = [
       { ext: "tga", label: "TGA image", editors: ["native", "hex"] },
       { ext: "png", label: "PNG image", editors: ["native", "hex"] },
       { ext: "jpg", label: "JPEG image", editors: ["native", "hex"] },
+      { ext: "psd", label: "Photoshop document (PSD)", editors: ["native", "hex"] },
       { ext: "wav", label: "WAV audio", editors: ["native", "hex"] },
       { ext: "mp3", label: "MP3 audio", editors: ["native", "hex"] },
       { ext: "bik", label: "Bink video (BIK)", editors: ["native", "hex"] },
@@ -99,7 +100,7 @@ export const FILE_TYPE_EDITOR_GROUPS: FileTypeEditorGroup[] = [
     entries: [
       { ext: "erf", label: "ERF archive", editors: ["native", "hex"] },
       { ext: "mod", label: "Module archive (MOD)", editors: ["native", "hex"] },
-      { ext: "sav", label: "Save archive (SAV)", editors: ["native", "hex"] },
+      { ext: "sav", label: "Save game / save archive (SAV)", editors: ["native", "hex"] },
     ],
   },
   {

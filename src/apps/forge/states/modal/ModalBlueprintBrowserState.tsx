@@ -8,7 +8,7 @@ export type BlueprintType = 'utc' | 'utd' | 'ute' | 'uti' | 'utp' | 'utm' | 'uts
 export interface BlueprintItem {
   resref: string;
   localizedName: string;
-  gff: KotOR.GFFObject;
+  gff?: KotOR.GFFObject;
 }
 
 const BLUEPRINT_TYPE_LABELS: Record<BlueprintType, string> = {
@@ -32,6 +32,11 @@ export class ModalBlueprintBrowserState extends ModalState {
   filteredItems: BlueprintItem[] = [];
   searchQuery: string = '';
   onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void;
+
+  static invalidateCache(): void {
+    ModalBlueprintBrowserState.blueprintCache = new Map();
+    ModalBlueprintBrowserState.cacheLoaded = new Map();
+  }
 
   constructor(blueprintType: BlueprintType, onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void) {
     super();
@@ -66,7 +71,7 @@ export class ModalBlueprintBrowserState extends ModalState {
       }
 
       // Get all blueprint files from KEYManager
-      const blueprintKeys = KotOR.KEYManager.Key.keys.filter(
+      const blueprintKeys = (KotOR.KEYManager?.Key?.keys || []).filter(
         (key: KotOR.IKEYEntry) => key.resType === resType
       );
 

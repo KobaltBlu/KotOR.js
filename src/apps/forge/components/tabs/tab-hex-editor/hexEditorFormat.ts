@@ -2,6 +2,7 @@
 export const HEX_BYTES_PER_ROW = 16;
 
 const HEX_U = "0123456789ABCDEF";
+const HEX_L = "0123456789abcdef";
 
 export function formatOffset8(offset: number): string {
   return (offset >>> 0).toString(16).toUpperCase().padStart(8, "0");
@@ -19,17 +20,20 @@ export function formatOffsetForDisplay(offset: number, mode: HexEditorOffsetDisp
   return mode === "dec" ? formatOffsetDecimal(offset) : formatOffset8(offset);
 }
 
-export function rowCount(byteLength: number): number {
+export function rowCount(byteLength: number, bytesPerRow: number = HEX_BYTES_PER_ROW): number {
   if (byteLength <= 0) return 0;
-  return Math.ceil(byteLength / HEX_BYTES_PER_ROW);
+  const width = bytesPerRow > 0 ? bytesPerRow : HEX_BYTES_PER_ROW;
+  return Math.ceil(byteLength / width);
 }
 
-export function rowIndexForOffset(offset: number): number {
-  return Math.floor((offset >>> 0) / HEX_BYTES_PER_ROW);
+export function rowIndexForOffset(offset: number, bytesPerRow: number = HEX_BYTES_PER_ROW): number {
+  const width = bytesPerRow > 0 ? bytesPerRow : HEX_BYTES_PER_ROW;
+  return Math.floor((offset >>> 0) / width);
 }
 
-export function offsetForRow(rowIndex: number): number {
-  return rowIndex * HEX_BYTES_PER_ROW;
+export function offsetForRow(rowIndex: number, bytesPerRow: number = HEX_BYTES_PER_ROW): number {
+  const width = bytesPerRow > 0 ? bytesPerRow : HEX_BYTES_PER_ROW;
+  return rowIndex * width;
 }
 
 export function parseHexNibble(c: string): number | null {
@@ -50,9 +54,10 @@ export function parseByteHex2(two: string): number | null {
   return (hi << 4) | lo;
 }
 
-export function byteToHex2(b: number): string {
+export function byteToHex2(b: number, uppercase = true): string {
   const x = b & 0xff;
-  return HEX_U[x >> 4] + HEX_U[x & 15];
+  const alphabet = uppercase ? HEX_U : HEX_L;
+  return alphabet[x >> 4] + alphabet[x & 15];
 }
 
 export function asciiChar(b: number): string {

@@ -1,12 +1,16 @@
 import { EditorFile } from "@/apps/forge/EditorFile";
+import {
+  editorFileProjectRelativePath,
+  remapProjectRelativeAfterRename,
+} from "@/apps/forge/helpers/editorFileProjectPath";
 import { DeepObject } from "@/utility/DeepObject";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabModuleEditorState, TabProjectExplorerState, TabQuickStartState } from "@/apps/forge/states/tabs";
 import { RecentProject } from "@/apps/forge/RecentProject";
 
 import * as KotOR from "@/apps/forge/KotOR";
-import { ProjectType } from "@/apps/forge/enum/ProjectType";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
+import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
 import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
@@ -14,15 +18,13 @@ import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
 import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
 import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
+import {
+  createOrOpenVirtualProjectFolder,
+  isOriginPrivateFileSystemAvailable,
+  isProjectDirectoryHandle,
+} from "@/apps/forge/virtual/VirtualProjectFolder";
 
 const DIR_FORGE = '.forge';
-const DIR_BLUEPRINTS = 'blueprints';
-const DIR_MODELS = 'models';
-const DIR_TEXTURES = 'textures';
-const DIR_DIALOGS = 'dialogs';
-const DIR_SOUNDS = 'sounds';
-const DIR_MUSIC = 'music';
-const DIR_SCRIPTS = 'scripts';
 
 export class Project {
 
@@ -51,30 +53,38 @@ export class Project {
     this.settings = DeepObject.Merge(defaults, {});
   }
   
+  static async attachRootAndOpen(options: {
+    path?: string;
+    handle?: FileSystemDirectoryHandle;
+    virtual?: boolean;
+  }): Promise<boolean> {
+    ProjectFileSystem.clearDirectoryCache();
+    ProjectFileSystem.isVirtual = !!options.virtual;
+    ProjectFileSystem.rootDirectoryPath = (options.path || undefined) as any;
+    ProjectFileSystem.rootDirectoryHandle = (options.handle || undefined) as any;
+    if(!ProjectFileSystem.hasRoot()){
+      return false;
+    }
+    const project = new Project();
+    await project.open();
+    if(ForgeState.project instanceof Project){
+      await ProjectFileSystem.initializeProjectExplorer();
+      return true;
+    }
+    return false;
+  }
+  
   static OpenByDirectory() {
     ForgeFileSystem.OpenDirectory().then( async (response) => {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         if(response.paths && response.paths.length){
-          ProjectFileSystem.clearDirectoryCache();
-          const projectPath = response.paths[0];
-          ProjectFileSystem.rootDirectoryPath = projectPath;
-          const project = new Project();
-          await project.open();
-          if(ForgeState.project instanceof Project){
-            await ProjectFileSystem.initializeProjectExplorer();
-          }
+          await Project.attachRootAndOpen({ path: response.paths[0], virtual: false });
         }
       }else if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
         if(response.handles && response.handles.length){
-          ProjectFileSystem.clearDirectoryCache();
           const handle = response.handles[0] as FileSystemDirectoryHandle;
-          ProjectFileSystem.rootDirectoryHandle = handle;
-          console.log('ProjectFileSystem.rootDirectoryHandle', ProjectFileSystem.rootDirectoryHandle);
-          const project = new Project();
-          await project.open();
-          if(ForgeState.project instanceof Project){
-            await ProjectFileSystem.initializeProjectExplorer();
-          }
+          console.log('ProjectFileSystem.rootDirectoryHandle', handle);
+          await Project.attachRootAndOpen({ handle, virtual: false });
         }
       }
     });
@@ -86,23 +96,46 @@ export class Project {
     }
     try{
       ForgeState.loaderShow();
+      if(recentProject.virtual){
+        let handle = isProjectDirectoryHandle(recentProject.handle) ? recentProject.handle : undefined;
+        if(!handle && recentProject.name){
+          const handleKey = `project_handle_${recentProject.getIdentifier()}`;
+          try {
+            const { get } = await import('idb-keyval');
+            handle = await get(handleKey);
+          } catch(e) {
+            console.warn('Failed to restore handle from IndexedDB:', e);
+          }
+        }
+        if(!isProjectDirectoryHandle(handle)){
+          if(isOriginPrivateFileSystemAvailable() && recentProject.name){
+            const created = await createOrOpenVirtualProjectFolder(recentProject.name);
+            handle = created.handle;
+          } else {
+            await ForgeState.removeRecentProject(recentProject);
+            console.warn('Failed to reopen virtual project.');
+            return false;
+          }
+        }
+        const loaded = await Project.attachRootAndOpen({ handle, virtual: true });
+        if(!loaded){
+          await ForgeState.removeRecentProject(recentProject);
+          return false;
+        }
+        return true;
+      }
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         const projectPath = recentProject.path;
         if(!projectPath){
           throw new Error('Project path not available');
         }
-        ProjectFileSystem.clearDirectoryCache();
-        ProjectFileSystem.rootDirectoryPath = projectPath;
-        const project = new Project();
-        const loaded = await project.load();
-        if(loaded){
-          await project.open();
-          await ProjectFileSystem.initializeProjectExplorer();
-          return true;
+        const loaded = await Project.attachRootAndOpen({ path: projectPath, virtual: false });
+        if(!loaded){
+          await ForgeState.removeRecentProject(recentProject);
+          console.warn('Failed to open project. It may have been moved or deleted.');
+          return false;
         }
-        await ForgeState.removeRecentProject(recentProject);
-        console.warn('Failed to open project. It may have been moved or deleted.');
-        return false;
+        return true;
       }
       let handle = recentProject.handle;
       if(!handle && recentProject.name){
@@ -114,20 +147,17 @@ export class Project {
           console.warn('Failed to restore handle from IndexedDB:', e);
         }
       }
-      if(handle instanceof FileSystemDirectoryHandle){
+      if(isProjectDirectoryHandle(handle)){
         try{
-          await handle.queryPermission({ mode: 'read' });
-          ProjectFileSystem.clearDirectoryCache();
-          ProjectFileSystem.rootDirectoryHandle = handle;
-          const project = new Project();
-          const loaded = await project.load();
-          if(loaded){
-            await project.open();
-            await ProjectFileSystem.initializeProjectExplorer();
-            await ForgeState.addRecentProject(handle);
-            return true;
+          if(typeof handle.queryPermission === 'function'){
+            await handle.queryPermission({ mode: 'read' });
           }
-          throw new Error('Project failed to load');
+          const loaded = await Project.attachRootAndOpen({ handle, virtual: false });
+          if(!loaded){
+            throw new Error('Project failed to load');
+          }
+          await ForgeState.addRecentProject(handle);
+          return true;
         } catch(permError){
           console.warn('Handle permission denied or invalid, requesting new access:', permError);
           Project.OpenByDirectory();
@@ -143,6 +173,46 @@ export class Project {
     }finally{
       ForgeState.loaderHide();
     }
+  }
+
+  static async SaveToFolder(): Promise<boolean> {
+    if(!ProjectFileSystem.hasRoot()){
+      return false;
+    }
+    const response = await ForgeFileSystem.showOpenDirectoryDialog({
+      title: 'Save Project To Folder',
+    });
+    if(response.cancelled){
+      return false;
+    }
+    const destPath = (response as { path?: string }).path;
+    const destHandle = isProjectDirectoryHandle((response as { handle?: FileSystemDirectoryHandle }).handle)
+      ? (response as { handle: FileSystemDirectoryHandle }).handle
+      : undefined;
+    if(!destPath && !destHandle){
+      return false;
+    }
+    const copied = await ProjectFileSystem.copyToDirectory({
+      path: destHandle ? undefined : destPath,
+      handle: destHandle,
+    });
+    if(!copied){
+      console.error('Project.SaveToFolder: copy failed');
+      return false;
+    }
+    ProjectFileSystem.clearDirectoryCache();
+    ProjectFileSystem.isVirtual = false;
+    if(destHandle){
+      ProjectFileSystem.rootDirectoryHandle = destHandle;
+      ProjectFileSystem.rootDirectoryPath = undefined as any;
+      await ForgeState.addRecentProject(destHandle);
+    }else if(destPath){
+      ProjectFileSystem.rootDirectoryPath = destPath;
+      ProjectFileSystem.rootDirectoryHandle = undefined as any;
+      await ForgeState.addRecentProject(destPath);
+    }
+    await ProjectFileSystem.initializeProjectExplorer();
+    return true;
   }
 
   // Save project settings and dirty editor tabs (not a module export).
@@ -173,13 +243,14 @@ export class Project {
     for(let i = 0; i < tabs.length; i++){
       const tab = tabs[i];
       if(tab?.isClosable){
-        tab.remove();
+        tab.remove({ skipUnsavedConfirm: true });
       }
     }
     this.moduleEditor = undefined;
     this.module = undefined;
     ForgeState.project = undefined as any;
     ProjectFileSystem.clearDirectoryCache();
+    ProjectFileSystem.isVirtual = false;
     ProjectFileSystem.rootDirectoryPath = undefined as any;
     ProjectFileSystem.rootDirectoryHandle = undefined as any;
     TabProjectExplorerState.Resources.splice(0, TabProjectExplorerState.Resources.length);
@@ -301,22 +372,18 @@ export class Project {
       }
 
       await ForgeInitializer.Init(this.settings.game);
-      //This is where we initialize ProjectType specific operations
       if(!deferInit){
         await this.initializeProject();
       }
 
       ForgeState.project = this;
       
-      // Add to recent projects
-      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-        if(ProjectFileSystem.rootDirectoryPath){
-          await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryPath);
-        }
-      } else {
-        if(ProjectFileSystem.rootDirectoryHandle){
-          await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryHandle);
-        }
+      if(ProjectFileSystem.isVirtual && isProjectDirectoryHandle(ProjectFileSystem.rootDirectoryHandle)){
+        await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryHandle);
+      } else if(ProjectFileSystem.rootDirectoryPath){
+        await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryPath);
+      } else if(isProjectDirectoryHandle(ProjectFileSystem.rootDirectoryHandle)){
+        await ForgeState.addRecentProject(ProjectFileSystem.rootDirectoryHandle);
       }
     }catch(e){
       console.error(e);
@@ -325,16 +392,13 @@ export class Project {
 
   }
 
+  hasModule(): boolean {
+    return !!this.module_ifo;
+  }
+
   async initializeProject(){
-    switch(this.settings.type){
-      case ProjectType.MODULE:
-        //Initialize the Map Editor
-        if(this.settings.module_editor.open)
-          await this.initEditor();
-      break;
-      case ProjectType.OTHER:
-        //TODO: Implement other project types
-      break;
+    if(this.hasModule() && this.settings.module_editor.open){
+      await this.initEditor();
     }
     console.log('Project Init');
 
@@ -370,9 +434,13 @@ export class Project {
     if(this.moduleEditor instanceof TabModuleEditorState){
       ForgeState.tabManager.addTab(this.moduleEditor);
       this.moduleEditor.show();
-    }else{
-      this.initEditor();
+      return;
     }
+    if(this.hasModule()){
+      void this.initEditor();
+      return;
+    }
+    openImportModuleWizard();
   }
 
   getTemplatesByType ( restype = '' ) {
@@ -435,6 +503,34 @@ export class Project {
     }
   }
 
+  /** Rewrite persisted `open_files` URIs after a project-tree rename. */
+  retargetOpenFilesAfterRename(fromRel: string, toRel: string): void {
+    const beforeJson = JSON.stringify(this.settings.open_files);
+    const seen = new Set<string>();
+    const next: string[] = [];
+    for (let i = 0; i < this.settings.open_files.length; i++) {
+      const entry = String(this.settings.open_files[i] ?? "").trim();
+      if (!entry.length) {
+        continue;
+      }
+      const rel = editorFileProjectRelativePath({
+        useProjectFileSystem: true,
+        path: entry,
+      });
+      const mapped = rel ? remapProjectRelativeAfterRename(rel, fromRel, toRel) : undefined;
+      const uri = mapped ? EditorFile.referenceURIForProjectRelative(mapped) : entry;
+      if (seen.has(uri)) {
+        continue;
+      }
+      seen.add(uri);
+      next.push(uri);
+    }
+    this.settings.open_files = next;
+    if (JSON.stringify(this.settings.open_files) !== beforeJson) {
+      this.saveSettings();
+    }
+  }
+
   async buildModuleAndArea(name: string, areaName: string = 'm01aa', rooms: { roomName: string, envAudio: number, ambientScale: number }[] = []){
     const mod = new ForgeModule();
     mod.name.addSubString(name, 0); // Male English (StringID 0 = language 0, gender 0)
@@ -464,33 +560,9 @@ export class Project {
     return { ifo, are, git };
   }
 
+  /** Asset folders are created when files are added. `.forge/` is ensured by save/loadSettings. */
   async initDirectoryStructure(){
-    if(!await ProjectFileSystem.exists(`${DIR_BLUEPRINTS}`)){
-      console.log('Creating directory', `./${DIR_BLUEPRINTS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_BLUEPRINTS}`, { recursive: false });
-    }
-    if(!await ProjectFileSystem.exists(`${DIR_MODELS}`)){
-      console.log('Creating directory', `./${DIR_MODELS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_MODELS}`, { recursive: false });
-    }
-    if(!await ProjectFileSystem.exists(`${DIR_TEXTURES}`)){
-      console.log('Creating directory', `./${DIR_TEXTURES}/`);
-      await ProjectFileSystem.mkdir(`${DIR_TEXTURES}`, { recursive: false });
-    }
-    if(!await ProjectFileSystem.exists(`${DIR_DIALOGS}`)){
-      console.log('Creating directory', `./${DIR_DIALOGS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_DIALOGS}`, { recursive: false });
-    }
-    // if(!await ProjectFileSystem.exists(`${DIR_SOUNDS}`)){
-    //   await ProjectFileSystem.mkdir(`${DIR_SOUNDS}`, { recursive: false });
-    // }
-    // if(!await ProjectFileSystem.exists(`${DIR_MUSIC}`)){
-    //   await ProjectFileSystem.mkdir(`${DIR_MUSIC}`, { recursive: false });
-    // }
-    if(!await ProjectFileSystem.exists(`${DIR_SCRIPTS}`)){
-      console.log('Creating directory', `./${DIR_SCRIPTS}/`);
-      await ProjectFileSystem.mkdir(`${DIR_SCRIPTS}`, { recursive: false });
-    }
+    return;
   }
 
   async saveSettings(){

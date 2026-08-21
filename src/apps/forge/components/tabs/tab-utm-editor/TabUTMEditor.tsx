@@ -7,8 +7,7 @@ import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor
 import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-checkbox";
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { ForgeStore, StoreItemEntry } from "@/apps/forge/module-editor/ForgeStore";
-import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { openItemBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
 import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
 
 export const TabUTMEditor = function(props: BaseTabProps){
@@ -93,12 +92,12 @@ export const TabUTMEditor = function(props: BaseTabProps){
   };
 
   const onOpenItemBrowser = (index: number) => {
-    const modal = new ModalItemBrowserState((item) => {
-      onItemFieldChange(index, 'inventoryRes', item.resref);
+    openItemBrowser((item) => {
+      onItemFieldChange(index, "inventoryRes", item.resref);
+    }, {
+      title: "Store Item",
+      initial: itemList[index]?.inventoryRes,
     });
-    modal.attachToModalManager(ForgeState.modalManager);
-    modal.loadItems();
-    modal.open();
   };
 
   const tabs: SubTab[] = [

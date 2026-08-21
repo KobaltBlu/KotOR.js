@@ -10,10 +10,14 @@ import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
 import { ScriptResRefInput } from "@/apps/forge/components/script-resref-input/ScriptResRefInput";
 import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
+import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
+import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
+import { clampByte } from "@/apps/forge/helpers/UTxEditorHelpers";
 
 export const TabUTDEditor = function(props: BaseTabProps){
 
   const tab: TabUTDEditorState = props.tab as TabUTDEditorState;
+  const hasGameData = useForgeHasGameData();
 
   // Basic tab
   const [locName, setLocName] = useState<KotOR.CExoLocString>(new KotOR.CExoLocString());
@@ -186,7 +190,17 @@ export const TabUTDEditor = function(props: BaseTabProps){
                   label="Door Type" 
                   info="The visual appearance type of the door. Different types have different models and animations. Check the game's door appearance list for valid values."
                 >
-                  <input type="number" min="0" disabled={loadingModel} value={genericType} onChange={onUpdateNumberField(setGenericType, 'genericType')} />
+                  <ForgeTwoDAIndexField
+                    table="genericdoors"
+                    value={genericType}
+                    emptyLabel="genericdoors.2da not loaded"
+                    onChange={(value) => {
+                      const next = clampByte(value);
+                      setGenericType(next);
+                      tab.door.setProperty('genericType', next);
+                      tab.updateFile();
+                    }}
+                  />
                 </FormField>
                 <tr>
                   <td>
@@ -482,7 +496,7 @@ export const TabUTDEditor = function(props: BaseTabProps){
     <SubTabHost
       tabs={tabs}
       defaultTab="basic"
-      leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />}
+      leftPanel={hasGameData ? <UI3DRendererView context={tab.ui3DRenderer} /> : undefined}
     />
   );
 

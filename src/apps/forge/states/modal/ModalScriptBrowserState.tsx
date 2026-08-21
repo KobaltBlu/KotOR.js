@@ -73,7 +73,7 @@ export class ModalScriptBrowserState extends ModalState {
       const [override, project] = await Promise.all([
         listDirectoryScriptResrefs(() => KotOR.GameFileSystem.readdir("Override", { recursive: true })),
         listDirectoryScriptResrefs(async () => {
-          if (!ProjectFileSystem.rootDirectoryPath && !ProjectFileSystem.rootDirectoryHandle) {
+          if (!ProjectFileSystem.hasRoot()) {
             return [];
           }
           return ProjectFileSystem.readdir("", { recursive: true });

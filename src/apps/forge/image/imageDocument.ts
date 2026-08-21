@@ -25,6 +25,24 @@ export function allocLayerId(): string {
   return `L${nextLayerSeq}`;
 }
 
+export function isRasterLayer(layer: ImageLayer): boolean {
+  return (layer.kind || "raster") === "raster";
+}
+
+export function isLayerEditable(layer: ImageLayer | undefined): layer is ImageLayer {
+  if (!layer) {
+    return false;
+  }
+  if (layer.editable === false) {
+    return false;
+  }
+  return isRasterLayer(layer);
+}
+
+export function hasPaintBuffer(layer: ImageLayer, width: number, height: number): boolean {
+  return isRasterLayer(layer) && layer.pixels.length >= width * height * 4;
+}
+
 export function transparentPixels(width: number, height: number): Uint8ClampedArray {
   return new Uint8ClampedArray(Math.max(0, width) * Math.max(0, height) * 4);
 }
@@ -38,6 +56,10 @@ export function cloneLayer(layer: ImageLayer): ImageLayer {
     blend: layer.blend,
     lockTransparent: layer.lockTransparent,
     pixels: new Uint8ClampedArray(layer.pixels),
+    kind: layer.kind || "raster",
+    groupDepth: layer.groupDepth || 0,
+    editable: layer.editable !== false && (layer.kind || "raster") === "raster",
+    foreignBlend: layer.foreignBlend,
   };
 }
 
@@ -52,6 +74,7 @@ export function cloneDocument(doc: ImageDocument): ImageDocument {
     encode: { ...doc.encode },
     foreground: { ...doc.foreground },
     background: { ...doc.background },
+    psd: doc.psd ? { source: doc.psd.source, nodes: { ...doc.psd.nodes } } : undefined,
   };
 }
 
@@ -60,9 +83,12 @@ export function createLayer(
   height: number,
   options: Partial<Omit<ImageLayer, "pixels">> & { pixels?: Uint8ClampedArray | Uint8Array } = {},
 ): ImageLayer {
+  const kind = options.kind || "raster";
   const pixels = options.pixels
     ? new Uint8ClampedArray(options.pixels)
-    : transparentPixels(width, height);
+    : kind === "raster"
+      ? transparentPixels(width, height)
+      : new Uint8ClampedArray(0);
   return {
     id: options.id || allocLayerId(),
     name: options.name || "Layer",
@@ -71,6 +97,10 @@ export function createLayer(
     blend: options.blend || "normal",
     lockTransparent: !!options.lockTransparent,
     pixels,
+    kind,
+    groupDepth: options.groupDepth ?? 0,
+    editable: options.editable !== undefined ? options.editable : kind === "raster",
+    foreignBlend: options.foreignBlend,
   };
 }
 
@@ -119,10 +149,65 @@ export function getActiveLayerIndex(doc: ImageDocument): number {
   return index >= 0 ? index : doc.layers.length - 1;
 }
 
-export function addLayer(doc: ImageDocument, name = "Layer"): ImageLayer {
-  const layer = createLayer(doc.width, doc.height, { name });
-  const index = getActiveLayerIndex(doc) + 1;
-  doc.layers.splice(index, 0, layer);
+function layerNameKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+function usedLayerNameKeys(doc: ImageDocument): Set<string> {
+  const used = new Set<string>();
+  for (let i = 0; i < doc.layers.length; i++) {
+    used.add(layerNameKey(doc.layers[i].name));
+  }
+  return used;
+}
+
+/** Next unused "Layer N" name in the document stack. */
+export function nextUniqueLayerName(doc: ImageDocument, base = "Layer"): string {
+  const used = usedLayerNameKeys(doc);
+  const prefix = base.trim() || "Layer";
+  let n = 1;
+  while (used.has(layerNameKey(`${prefix} ${n}`))) {
+    n += 1;
+  }
+  return `${prefix} ${n}`;
+}
+
+/** Photoshop-style copy names: "Name copy", then "Name copy 2". */
+export function nextCopyLayerName(doc: ImageDocument, sourceName: string): string {
+  const used = usedLayerNameKeys(doc);
+  const trimmed = sourceName.trim() || "Layer";
+  const copyMatch = /^(.*?) copy(?: (\d+))?$/i.exec(trimmed);
+  const stem = (copyMatch ? copyMatch[1] : trimmed).trim() || "Layer";
+  const first = `${stem} copy`;
+  if (!used.has(layerNameKey(first))) {
+    return first;
+  }
+  let n = 2;
+  while (used.has(layerNameKey(`${stem} copy ${n}`))) {
+    n += 1;
+  }
+  return `${stem} copy ${n}`;
+}
+
+export function renameLayer(doc: ImageDocument, layerId: string, name: string): boolean {
+  const layer = doc.layers.find((item) => item.id === layerId);
+  if (!layer) {
+    return false;
+  }
+  const next = name.replace(/\s+/g, " ").trim();
+  if (!next || next === layer.name) {
+    return false;
+  }
+  layer.name = next;
+  return true;
+}
+
+export function addLayer(doc: ImageDocument, name?: string): ImageLayer {
+  const resolved = name && name.trim() ? name.trim() : nextUniqueLayerName(doc);
+  const layer = createLayer(doc.width, doc.height, { name: resolved, kind: "raster", groupDepth: 0, editable: true });
+  const index = getActiveLayerIndex(doc);
+  const insertAt = layerBlockEnd(doc, layerRootStart(doc, index));
+  doc.layers.splice(insertAt, 0, layer);
   doc.activeLayerId = layer.id;
   return layer;
 }
@@ -130,36 +215,94 @@ export function addLayer(doc: ImageDocument, name = "Layer"): ImageLayer {
 export function duplicateLayer(doc: ImageDocument): ImageLayer | undefined {
   const index = getActiveLayerIndex(doc);
   const source = doc.layers[index];
-  if (!source) {
+  if (!source || !isRasterLayer(source)) {
     return undefined;
   }
   const copy = cloneLayer(source);
   copy.id = allocLayerId();
-  copy.name = `${source.name} copy`;
+  copy.name = nextCopyLayerName(doc, source.name);
   doc.layers.splice(index + 1, 0, copy);
   doc.activeLayerId = copy.id;
   return copy;
 }
 
-export function deleteLayer(doc: ImageDocument): boolean {
+export function layerBlockEnd(doc: ImageDocument, index: number): number {
+  const depth = doc.layers[index]?.groupDepth || 0;
+  let end = index + 1;
+  while (end < doc.layers.length && (doc.layers[end].groupDepth || 0) > depth) {
+    end += 1;
+  }
+  return end;
+}
+
+function layerRootStart(doc: ImageDocument, index: number): number {
+  let start = Math.max(0, index);
+  while (start > 0 && (doc.layers[start].groupDepth || 0) > 0) {
+    start -= 1;
+  }
+  return start;
+}
+
+export function canDeleteLayer(doc: ImageDocument): boolean {
   if (doc.layers.length <= 1) {
     return false;
   }
   const index = getActiveLayerIndex(doc);
-  doc.layers.splice(index, 1);
+  const removed = layerBlockEnd(doc, index) - index;
+  return doc.layers.length - removed >= 1;
+}
+
+export function deleteLayer(doc: ImageDocument): boolean {
+  if (!canDeleteLayer(doc)) {
+    return false;
+  }
+  const index = getActiveLayerIndex(doc);
+  const end = layerBlockEnd(doc, index);
+  doc.layers.splice(index, end - index);
   const next = doc.layers[Math.min(index, doc.layers.length - 1)];
   doc.activeLayerId = next.id;
   return true;
 }
 
-export function moveLayer(doc: ImageDocument, direction: 1 | -1): boolean {
+export function canMoveLayer(doc: ImageDocument, direction: 1 | -1): boolean {
   const index = getActiveLayerIndex(doc);
-  const next = index + direction;
-  if (next < 0 || next >= doc.layers.length) {
+  const depth = doc.layers[index]?.groupDepth || 0;
+  const end = layerBlockEnd(doc, index);
+  if (direction === 1) {
+    if (end >= doc.layers.length) {
+      return false;
+    }
+    return (doc.layers[end].groupDepth || 0) === depth;
+  }
+  if (index <= 0) {
     return false;
   }
-  const [layer] = doc.layers.splice(index, 1);
-  doc.layers.splice(next, 0, layer);
+  let prev = index - 1;
+  while (prev > 0 && (doc.layers[prev].groupDepth || 0) > depth) {
+    prev -= 1;
+  }
+  return (doc.layers[prev].groupDepth || 0) === depth;
+}
+
+export function moveLayer(doc: ImageDocument, direction: 1 | -1): boolean {
+  if (!canMoveLayer(doc, direction)) {
+    return false;
+  }
+  const index = getActiveLayerIndex(doc);
+  const depth = doc.layers[index].groupDepth || 0;
+  const end = layerBlockEnd(doc, index);
+  if (direction === 1) {
+    const nextEnd = layerBlockEnd(doc, end);
+    const block = doc.layers.splice(index, end - index);
+    doc.layers.splice(index + (nextEnd - end), 0, ...block);
+    return true;
+  }
+  let prev = index - 1;
+  while (prev > 0 && (doc.layers[prev].groupDepth || 0) > depth) {
+    prev -= 1;
+  }
+  const block = doc.layers.splice(index, end - index);
+  doc.layers.splice(prev, 0, ...block);
   return true;
 }
 
@@ -170,11 +313,15 @@ export function mergeDown(doc: ImageDocument): boolean {
   }
   const upper = doc.layers[index];
   const lower = doc.layers[index - 1];
+  if (!isRasterLayer(upper) || !isRasterLayer(lower)) {
+    return false;
+  }
   if (upper.visible) {
     compositeLayer(lower.pixels, upper.pixels, upper.opacity, upper.blend);
   }
   doc.layers.splice(index, 1);
   doc.activeLayerId = lower.id;
+  clearPsdPassthrough(doc);
   return true;
 }
 
@@ -183,6 +330,34 @@ export function flattenLayers(doc: ImageDocument): void {
   const layer = createLayer(doc.width, doc.height, { name: "Background", pixels: flat });
   doc.layers = [layer];
   doc.activeLayerId = layer.id;
+  clearPsdPassthrough(doc);
+}
+
+/** Drop the original PSD tree. Geometry rebuilds also drop non-raster rows. */
+export function clearPsdPassthrough(doc: ImageDocument, options?: { dropNonRaster?: boolean }): void {
+  if (!doc.psd && !options?.dropNonRaster) {
+    return;
+  }
+  doc.psd = undefined;
+  if (!options?.dropNonRaster) {
+    return;
+  }
+  const rasters = doc.layers.filter(isRasterLayer);
+  if (rasters.length === doc.layers.length) {
+    return;
+  }
+  if (rasters.length) {
+    doc.layers = rasters;
+    for (let i = 0; i < doc.layers.length; i++) {
+      doc.layers[i].groupDepth = 0;
+    }
+  } else {
+    const layer = createLayer(doc.width, doc.height, { name: "Background" });
+    doc.layers = [layer];
+  }
+  if (!doc.layers.some((layer) => layer.id === doc.activeLayerId)) {
+    doc.activeLayerId = doc.layers[doc.layers.length - 1].id;
+  }
 }
 
 export function selectionSize(doc: ImageDocument): number {

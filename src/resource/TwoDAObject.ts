@@ -241,10 +241,16 @@ export class TwoDAObject {
    * Parse a CSV string and populate this instance's columns and rows.
    * Handles RFC-4180 quoting (values containing commas or double-quotes).
    * @param csv - The CSV string to parse
+   * @param options - Optional delimiter and header-row behavior
    * @returns A new TwoDAObject populated from the CSV data
    */
-  static fromCSV(csv: string): TwoDAObject {
+  static fromCSV(
+    csv: string,
+    options?: { delimiter?: string; hasHeader?: boolean },
+  ): TwoDAObject {
     const obj = new TwoDAObject(undefined);
+    const delimiter = options?.delimiter ?? ',';
+    const hasHeader = options?.hasHeader !== false;
 
     const parseCSVLine = (line: string): string[] => {
       const result: string[] = [];
@@ -259,7 +265,7 @@ export class TwoDAObject {
           }else{
             inQuotes = !inQuotes;
           }
-        }else if(ch === ',' && !inQuotes){
+        }else if(ch === delimiter && !inQuotes){
           result.push(current);
           current = '';
         }else{
@@ -277,7 +283,19 @@ export class TwoDAObject {
     while(lineIdx < lines.length && lines[lineIdx].trim() === '') lineIdx++;
     if(lineIdx >= lines.length) return obj;
 
-    const headers = parseCSVLine(lines[lineIdx++]);
+    let headers: string[];
+    if(hasHeader){
+      headers = parseCSVLine(lines[lineIdx++]);
+    }else{
+      const first = parseCSVLine(lines[lineIdx]);
+      headers = first.map((_, i) => (i === 0 ? '__rowlabel' : `Column${i}`));
+    }
+    if(!headers.length || headers[0] !== '__rowlabel'){
+      // Ensure a row-label column exists for editor compatibility
+      if(headers[0] !== '__rowlabel'){
+        headers = ['__rowlabel', ...headers];
+      }
+    }
     obj.columns = headers;
     obj.ColumnCount = Math.max(0, headers.length - 1);
 
@@ -287,8 +305,20 @@ export class TwoDAObject {
       if(line.trim() === '') continue;
       const cells = parseCSVLine(line);
       const row: any = { __index: rowIdx };
-      for(let j = 0; j < headers.length; j++){
-        row[headers[j]] = cells[j] !== undefined ? cells[j] : '****';
+      // When no header and we injected __rowlabel, shift cells so first CSV cell is __rowlabel
+      const offset = (!hasHeader && headers[0] === '__rowlabel' && cells.length === headers.length - 1) ? 1 : 0;
+      if(offset === 1){
+        row['__rowlabel'] = String(rowIdx);
+        for(let j = 1; j < headers.length; j++){
+          row[headers[j]] = cells[j - 1] !== undefined ? cells[j - 1] : '****';
+        }
+      }else{
+        for(let j = 0; j < headers.length; j++){
+          row[headers[j]] = cells[j] !== undefined ? cells[j] : '****';
+        }
+        if(row['__rowlabel'] == null || row['__rowlabel'] === ''){
+          row['__rowlabel'] = String(rowIdx);
+        }
       }
       obj.rows[rowIdx] = row;
       rowIdx++;

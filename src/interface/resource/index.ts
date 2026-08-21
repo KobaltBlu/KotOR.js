@@ -6,6 +6,7 @@ export * from "@/interface/resource/IERFObjectHeader";
 export * from "@/interface/resource/IERFResource";
 export * from "@/interface/resource/IResourceDiskInfo";
 export * from "@/interface/resource/ITPCObjectOptions";
+export * from "@/interface/resource/ITPCExportOptions";
 export * from "@/interface/resource/IKEYEntry";
 export * from "@/interface/resource/ILayoutDoorHook";
 export * from "@/interface/resource/ILayoutObstacle";

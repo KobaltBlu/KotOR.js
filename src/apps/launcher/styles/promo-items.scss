@@ -2,7 +2,7 @@
 .promo-elements {
   display: block;
   white-space: nowrap;
-  overflow: visible;
+  overflow: hidden;
   position: relative;
   height: 250px;
   user-select: none;
@@ -70,6 +70,7 @@
 
 .promo-elements-container {
   transition: all .25s ease-in-out;
+  height: 100%;
 }
 
 .promo-element {
@@ -81,9 +82,53 @@
   cursor: pointer;
   position: relative;
   margin-left: 10px;
+  vertical-align: top;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 @import "./promo-items/promo-gallery.scss";
 @import "./promo-items/promo-webview.scss";
 @import "./promo-items/promo-video.scss";
 @import "./promo-items/promo-ytvideo.scss";
+
+@media (max-width: 900px) {
+  .promo-elements {
+    --promo-tile-width: calc(100vw - 40px);
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    max-height: 220px;
+    margin: 12px 0;
+    overflow: hidden;
+  }
+
+  .promo-elements-container {
+    height: 100%;
+  }
+
+  .promo-element {
+    width: var(--promo-tile-width);
+    max-width: 100%;
+    height: 100%;
+    margin-left: 8px;
+  }
+
+  .promo-element:first-child {
+    margin-left: 0;
+  }
+
+  .promo-elements .promo-elements-left,
+  .promo-elements .promo-elements-right {
+    top: calc(50% - 44px);
+    width: 44px;
+    height: 88px;
+    line-height: 88px;
+    opacity: 0.9;
+  }
+
+  .promo-elements:hover .promo-elements-left,
+  .promo-elements:hover .promo-elements-right {
+    opacity: 1;
+  }
+}

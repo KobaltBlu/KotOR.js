@@ -424,6 +424,11 @@ export class ForgeCreature extends ForgeGameObject {
     }
 
     const appearance = this.creatureAppearance;
+    if(!appearance?.getBodyModelInfo){
+      this.model = new KotOR.OdysseyModel3D();
+      this.container.add(this.model);
+      return this.model;
+    }
     let bodyVariation: string = this.templateSlots.armorItem?.bodyVariation || '';
     let textureVariation: number = this.templateSlots.armorItem?.textureVariation || 1;
     const { model: bodyModel, texture: bodyTexture } = appearance.getBodyModelInfo(bodyVariation || '', textureVariation || 1);
@@ -451,6 +456,9 @@ export class ForgeCreature extends ForgeGameObject {
 
   async loadHead() {
     const appearance = this.creatureAppearance;
+    if(!appearance){
+      return;
+    }
     const headId = appearance.normalhead;//.replace(/\0[\s\S]*$/g,'').toLowerCase();
     if(!( headId >= 0 && appearance.modeltype == 'B' )){
       return;

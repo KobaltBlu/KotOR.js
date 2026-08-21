@@ -16,8 +16,10 @@ import { EnergyWindowPhonemeService } from "@/apps/forge/states/tabs/tab-lip-edi
 import { convertTimedPhonemesToKeyframes, mapPhonemeToShape, PHN_INVALID, TimedPhonemeResult } from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
+import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
+import { forgeLipSettings, resolvePersistedLipHead } from "@/apps/forge/settings/forgeEditorsSettings";
 
-/** Default LIP preview head resref; persisted under `lip_head` in localStorage. */
+/** Default LIP preview head resref; persisted under Forge.editors.lip. */
 export const LIP_EDITOR_DEFAULT_HEAD = 'p_bastilah';
 const DEFAULT_HEAD = LIP_EDITOR_DEFAULT_HEAD;
 
@@ -117,10 +119,16 @@ export class TabLIPEditorState extends TabState {
     this.gainNode.gain.value = this.preview_gain;
     this.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
 
-    const storedHead = localStorage.getItem('lip_head')?.trim();
-    const headCandidate = storedHead && storedHead.length ? storedHead : DEFAULT_HEAD;
-    this.current_head = this.resolvePreviewHead(headCandidate);
-    localStorage.setItem('lip_head', this.current_head);
+    let localHead: string | undefined;
+    try {
+      localHead = typeof localStorage !== "undefined" ? localStorage.getItem("lip_head") ?? undefined : undefined;
+    } catch {
+      localHead = undefined;
+    }
+    this.current_head = this.resolvePreviewHead(
+      resolvePersistedLipHead(forgeLipSettings.get().head, localHead, DEFAULT_HEAD),
+    );
+    forgeLipSettings.set({ head: this.current_head });
     
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.scene.add(this.head_hook);
@@ -282,6 +290,14 @@ export class TabLIPEditorState extends TabState {
     return new Promise<void>( (resolve, reject) => {
       const resolved = this.resolvePreviewHead(model_name || DEFAULT_HEAD);
       if(this.current_head === resolved && this.head instanceof THREE.Object3D){
+        forgeLipSettings.set({ head: this.current_head });
+        this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadChange', []);
+        resolve();
+        return;
+      }
+      if(!utxShouldShow3DPreview()){
+        this.current_head = resolved;
+        forgeLipSettings.set({ head: this.current_head });
         this.processEventListener<TabLIPEditorStateEventListenerTypes>('onHeadChange', []);
         resolve();
         return;
@@ -289,7 +305,7 @@ export class TabLIPEditorState extends TabState {
       KotOR.MDLLoader.loader.load(resolved)
       .then((mdl: KotOR.OdysseyModel) => {
         this.current_head = resolved;
-        localStorage.setItem('lip_head', this.current_head);
+        forgeLipSettings.set({ head: this.current_head });
         KotOR.OdysseyModel3D.FromMDL(mdl, {
           context: this.ui3DRenderer,
           castShadow: true,

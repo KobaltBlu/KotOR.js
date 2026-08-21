@@ -58,4 +58,17 @@ export class TabHexEditorState extends TabState {
   async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
     return this.bytes.length ? this.bytes : new Uint8Array(0);
   }
+
+  protected captureUndoState(): Uint8Array | undefined {
+    return new Uint8Array(this.bytes);
+  }
+
+  protected applyUndoState(state: Uint8Array): void {
+    this.bytes = new Uint8Array(state);
+    if (this.file instanceof EditorFile) {
+      this.file.unsaved_changes = true;
+    }
+    this.editorFileUpdated();
+    this.processEventListener("onEditorFileLoad", [this]);
+  }
 }

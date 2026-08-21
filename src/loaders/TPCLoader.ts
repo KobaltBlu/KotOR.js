@@ -23,42 +23,37 @@ export class TPCLoader {
   
   async findTPC( resRef: string ): Promise<IFindTPCResult> {
     resRef = resRef.toLocaleLowerCase();
-  
-    let erfResource = ERFManager.ERFs.get('swpc_tex_gui').getResourceInfo(resRef, ResourceTypes['tpc']);
-    if(erfResource){
-      const buffer = await ERFManager.ERFs.get('swpc_tex_gui').getResourceBuffer(erfResource);
+
+    const guiPack = ERFManager.ERFs.get('swpc_tex_gui');
+    let erfResource = guiPack?.getResourceInfo(resRef, ResourceTypes['tpc']);
+    if(erfResource && guiPack){
+      const buffer = await guiPack.getResourceBuffer(erfResource);
       return { pack: 0, buffer: buffer };
     }
-  
-    let activeTexturePack;
+
+    let packName = 'swpc_tex_tpa';
     switch(TextureLoaderState.TextureQuality){
-      case 2:
-        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpa');
-      break;
       case 1:
-        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpb');
+        packName = 'swpc_tex_tpb';
       break;
       case 0:
-        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpc');
-      break;
-      default:
-        activeTexturePack = ERFManager.ERFs.get('swpc_tex_tpa');
+        packName = 'swpc_tex_tpc';
       break;
     }
-  
-    erfResource = activeTexturePack.getResourceInfo(resRef, ResourceTypes['tpc']);
-    if(erfResource){
+    const activeTexturePack = ERFManager.ERFs.get(packName);
+
+    erfResource = activeTexturePack?.getResourceInfo(resRef, ResourceTypes['tpc']);
+    if(erfResource && activeTexturePack){
       const buffer = await activeTexturePack.getResourceBuffer(erfResource);
       return { pack: TextureLoaderState.TextureQuality || 2, buffer: buffer };
     }
-  
-    //Check in BIF files
-    const resKey = KEYManager.Key.getFileKey(resRef, ResourceTypes['tpc']);
+
+    const resKey = KEYManager.Key?.getFileKey(resRef, ResourceTypes['tpc']);
     if(resKey){
       const buffer = await KEYManager.Key.getFileBuffer( resKey);
       return { pack: TextureLoaderState.TextureQuality || 2, buffer: buffer };
     }
-  
+
     throw new Error('TPC not found in game resources!');
   }
   

@@ -5,6 +5,7 @@ import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabDLGEditor } from "@/apps/forge/components/tabs/tab-dlg-editor/TabDLGEditor";
 import { ForgeDLG } from "@/apps/forge/dlg/ForgeDLG";
 import { prefetchDlgNodeTexts } from "@/apps/forge/dlg/dlgLocString";
+import { forgeDlgSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 /**
  * Conversation editor tab for .dlg GFF files.
@@ -19,7 +20,7 @@ export class TabDLGEditorState extends TabState {
   dlg: ForgeDLG = ForgeDLG.createUntitled();
   selectedId: string | undefined;
   viewMode: "graph" | "tree" | "catalog" = "graph";
-  graphLayout: "horizontal" | "vertical" = "vertical";
+  graphLayout: "horizontal" | "vertical" = forgeDlgSettings.get().graphLayout;
   walkthrough = false;
   textByNodeId: Map<string, string> = new Map();
 

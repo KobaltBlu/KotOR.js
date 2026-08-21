@@ -11,6 +11,11 @@ import { TLKStringFlags } from "@/enums/resource/TLKStringFlags";
  */
 export class TLKString {
 
+  /** Lazily cached lowercase text for case-insensitive search; invalidated on mutation. */
+  private _searchTextLower: string | null = null;
+  /** Lazily cached lowercase SoundResRef for case-insensitive search. */
+  private _searchResRefLower: string | null = null;
+
   constructor(
     public flags: number,
     public SoundResRef: any,
@@ -21,6 +26,41 @@ export class TLKString {
     public SoundLength: number,
     public Value: string = ''
   ) {}
+
+  invalidateSearchCache(): void {
+    this._searchTextLower = null;
+    this._searchResRefLower = null;
+  }
+
+  /**
+   * Lowercase text haystack for search. Uses Value when TEXT_PRESENT is set
+   * (no per-call regex); empty when text is not present.
+   */
+  getSearchTextLower(): string {
+    if (this._searchTextLower === null) {
+      this._searchTextLower = this.hasTextPresent() ? (this.Value ?? '').toLowerCase() : '';
+    }
+    return this._searchTextLower;
+  }
+
+  /** Lowercase SoundResRef haystack for search when SND_PRESENT is set. */
+  getSearchResRefLower(): string {
+    if (this._searchResRefLower === null) {
+      this._searchResRefLower = this.hasSoundPresent()
+        ? String(this.SoundResRef ?? '').trim().toLowerCase()
+        : '';
+    }
+    return this._searchResRefLower;
+  }
+
+  /** Raw text used for case-sensitive search (no allocation beyond the string itself). */
+  getSearchText(): string {
+    return this.hasTextPresent() ? (this.Value ?? '') : '';
+  }
+
+  getSearchResRef(): string {
+    return this.hasSoundPresent() ? String(this.SoundResRef ?? '').trim() : '';
+  }
 
   hasTextPresent(): boolean {
     return (this.flags & TLKStringFlags.TEXT_PRESENT) !== 0;
@@ -74,6 +114,7 @@ export class TLKString {
     if (!this.hasSoundLengthPresent()) {
       this.SoundLength = 0;
     }
+    this.invalidateSearchCache();
   }
 
   /** Update TEXT_PRESENT / SND_PRESENT / SNDLENGTH_PRESENT from current field values. */
@@ -92,6 +133,7 @@ export class TLKString {
       this.flags |= TLKStringFlags.SNDLENGTH_PRESENT;
     }
     this.flags >>>= 0;
+    this.invalidateSearchCache();
   }
 
   ToDB() {

@@ -37,6 +37,11 @@ export class BIFManager {
     return BIFManager.bifs.get(BIFManager.bifIndexes.get(name));
   }
 
+  static Clear(): void {
+    BIFManager.bifs.clear();
+    BIFManager.bifIndexes.clear();
+  }
+
   static FindByPath(archivePath: string): BIFObject | undefined {
     if(!archivePath){
       return undefined;

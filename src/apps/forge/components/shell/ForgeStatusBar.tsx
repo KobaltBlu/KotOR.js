@@ -5,7 +5,14 @@ import * as KotOR from "@/apps/forge/KotOR";
 
 export const ForgeStatusBar = function ForgeStatusBar() {
   const [tabLabel, setTabLabel] = useState("");
+  const [hasGameData, setHasGameData] = useState(ForgeState.hasGameData);
+  const [directoryLabel, setDirectoryLabel] = useState(ForgeState.getBoundGameDirectoryLabel());
   const gameKey = KotOR.ApplicationProfile.GameKey;
+
+  const syncGame = () => {
+    setHasGameData(ForgeState.hasGameData);
+    setDirectoryLabel(ForgeState.getBoundGameDirectoryLabel());
+  };
 
   const sync = () => {
     const tab = ForgeState.tabManager?.currentTab;
@@ -20,12 +27,14 @@ export const ForgeStatusBar = function ForgeStatusBar() {
     manager.addEventListener("onTabAdded", sync);
     manager.addEventListener("onTabRemoved", sync);
     manager.addEventListener("onTabHide", sync);
+    ForgeState.addEventListener("onGameDataChanged", syncGame);
     sync();
     return () => {
       manager.removeEventListener("onTabShow", sync);
       manager.removeEventListener("onTabAdded", sync);
       manager.removeEventListener("onTabRemoved", sync);
       manager.removeEventListener("onTabHide", sync);
+      ForgeState.removeEventListener("onGameDataChanged", syncGame);
     };
   });
 
@@ -35,7 +44,11 @@ export const ForgeStatusBar = function ForgeStatusBar() {
 
   return (
     <div className="forge-statusbar">
-      <span className="forge-statusbar__game">{gameKey}</span>
+      <span
+        className="forge-statusbar__game"
+        data-trask-target="change-game"
+        title={hasGameData ? (directoryLabel ? `Game directory: ${directoryLabel}` : "Game install directory loaded") : "Game install directory not loaded, forge experience will be limited"}
+      >{gameKey}{!hasGameData ? " [Offline]" : ''}</span>
       <span className="forge-statusbar__tab" title={tabLabel}>{tabLabel || "Ready"}</span>
       <span className="forge-statusbar__idle">Ready</span>
     </div>

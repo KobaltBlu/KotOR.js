@@ -390,7 +390,15 @@ export class ForgeDoor extends ForgeGameObject {
       return this.model;
     }
 
-    const modelName = this.stringCleaner(this.kDoorAppearance?.modelname) || 'plc_invis';
+    const modelName = this.stringCleaner(this.kDoorAppearance?.modelname);
+
+    if(!modelName){
+      this.model = new KotOR.OdysseyModel3D();
+      this.modelLoading = false;
+      this.processEventListener('onModelChange', [this]);
+      this.container.add(this.model);
+      return this.model;
+    }
 
     try{
       this.modelLoading = true;

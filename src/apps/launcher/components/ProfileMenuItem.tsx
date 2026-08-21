@@ -10,9 +10,14 @@ export const ProfileMenuItem = function(props: ProfileMenuItemProps){
 
   const appContext = useApp();
   const [selectedProfileValue, setSelectedProfile] = appContext.selectedProfile;
+  const [, setProfilesDrawerOpen] = appContext.profilesDrawerOpen;
 
   return (
-    <li className={`launcher-option ${profile.key} ${selectedProfileValue == profile ? 'selected' : ''}`} data-sort={profile.sort} key={profile.key} onClick={(e) => { e.preventDefault(); setSelectedProfile(profile); }}>
+    <li className={`launcher-option ${profile.key} ${selectedProfileValue == profile ? 'selected' : ''}`} data-sort={profile.sort} key={profile.key} onClick={(e) => {
+      e.preventDefault();
+      setSelectedProfile(profile);
+      setProfilesDrawerOpen(false);
+    }}>
       <span className="icon" style={{'backgroundImage': `url(${profile.icon})`}}></span>
       <a data-background={profile.background} data-icon={profile.icon}>{profile.name}</a>
     </li>

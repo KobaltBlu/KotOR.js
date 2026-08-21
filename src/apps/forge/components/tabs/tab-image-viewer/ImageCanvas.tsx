@@ -14,6 +14,8 @@ import { OdysseyMaterialBuilder } from "@/three/odyssey/OdysseyMaterialBuilder";
 import { TXI } from "@/resource/TXI";
 import * as KotOR from "@/apps/forge/KotOR";
 import type { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
+import { useForgeSettings } from "@/apps/forge/settings/useForgeSettings";
+import { forgeImageSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 function clampScale(value: number): number {
   if (value < 0.1) return 0.1;
@@ -34,6 +36,7 @@ function eventPixel(e: React.PointerEvent<HTMLCanvasElement>, width: number, hei
 export function ImageCanvas(props: { tab: TabImageViewerState; txiPreview: string }) {
   const tab = props.tab;
   const doc = tab.document;
+  const [imagePrefs] = useForgeSettings(forgeImageSettings);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -214,6 +217,30 @@ export function ImageCanvas(props: { tab: TabImageViewerState; txiPreview: strin
     return () => el.removeEventListener("wheel", onWheel);
   }, [tab]);
 
+  useEffect(() => {
+    if (imagePrefs.defaultZoom !== "fit") {
+      return;
+    }
+    const el = containerRef.current;
+    if (!el) {
+      return;
+    }
+    let applied = false;
+    const applyFit = () => {
+      if (applied || el.clientWidth < 8 || el.clientHeight < 8 || !doc.width || !doc.height) {
+        return;
+      }
+      applied = true;
+      const pad = 32;
+      tab.canvasScale = clampScale(Math.min((el.clientWidth - pad) / doc.width, (el.clientHeight - pad) / doc.height));
+      tab.notifyUi();
+    };
+    applyFit();
+    const observer = new ResizeObserver(applyFit);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [doc.width, doc.height, imagePrefs.defaultZoom, tab]);
+
   const displayW = Math.max(1, Math.round(doc.width * tab.canvasScale));
   const displayH = Math.max(1, Math.round(doc.height * tab.canvasScale));
 
@@ -224,7 +251,10 @@ export function ImageCanvas(props: { tab: TabImageViewerState; txiPreview: strin
         className="image-canvas-wrap"
         style={{ display: tab.preview3D ? "none" : "flex" }}
       >
-        <div className="image-canvas-stack checkerboard" style={{ width: displayW, height: displayH }}>
+        <div
+          className={`image-canvas-stack${imagePrefs.checkerboard ? " checkerboard" : ""} image-canvas-stack--${imagePrefs.filter}`}
+          style={{ width: displayW, height: displayH }}
+        >
           <canvas
             ref={canvasRef}
             className="tab-image-viewer-canvas"

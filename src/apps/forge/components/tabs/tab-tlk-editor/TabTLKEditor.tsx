@@ -3,15 +3,16 @@ import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { TabTLKEditorState } from "@/apps/forge/states/tabs/TabTLKEditorState";
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
-import { ForgeButton, ForgeSpinner } from "@/apps/forge/components/ui";
+import { ForgeButton, ForgeDialog, ForgeInput, ForgeSpinner, ForgeTextArea } from "@/apps/forge/components/ui";
 import * as KotOR from "@/apps/forge/KotOR";
 import { TLKSearchResult } from "@/managers/TLKManager";
 import { TLKStringUpdate } from "@/resource/TLKObject";
 import { normalizeSoundResRef } from "@/apps/forge/states/tabs/ssfEditorTlkHelpers";
+import { forgeTlkSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { TLKEditorResultRow } from "./TLKEditorResultRow";
 
-import "@/apps/forge/components/tabs/tab-tlk-editor/TabTLKEditor.scss";
+import "./TabTLKEditor.scss";
 
-const RESULT_LIMIT = 500;
 const ROW_HEIGHT = 32;
 const SEARCH_DEBOUNCE_MS = 250;
 const VIEWPORT_OVERSCAN_ROWS = 4;
@@ -43,9 +44,20 @@ export const TabTLKEditor = function (props: BaseTabProps) {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewPlaying, setPreviewPlaying] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [draftValue, setDraftValue] = useState("");
+  const [draftSoundResRef, setDraftSoundResRef] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showGoTo, setShowGoTo] = useState(false);
+  const [goToInput, setGoToInput] = useState("");
+  const [goToError, setGoToError] = useState<string | null>(null);
+  const pendingAutoplay = useRef(false);
+  const selectedIndexRef = useRef(selectedIndex);
+  selectedIndexRef.current = selectedIndex;
 
   const listScrollRef = useRef<HTMLDivElement>(null);
+  const listPaneRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const valueInputRef = useRef<HTMLTextAreaElement>(null);
   const bufferSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const lastUndoKey = useRef<string | null>(null);
   const searchGenerationRef = useRef(0);
@@ -84,6 +96,12 @@ export const TabTLKEditor = function (props: BaseTabProps) {
     }
   }, []);
 
+  const syncDraftsFromSelection = useCallback((index: number, obj: KotOR.TLKObject | undefined) => {
+    const entry = index >= 0 ? obj?.TLKStrings[index] : undefined;
+    setDraftValue(entry?.Value ?? "");
+    setDraftSoundResRef(String(entry?.SoundResRef ?? ""));
+  }, []);
+
   const onFileLoad = useCallback(() => {
     lastUndoKey.current = null;
     setTlkObject(tab.tlkObject);
@@ -93,11 +111,44 @@ export const TabTLKEditor = function (props: BaseTabProps) {
     setLimitReached(false);
     setIsSearching(false);
     setSelectedIndex(-1);
+    syncDraftsFromSelection(-1, tab.tlkObject);
     resetListScroll();
     setDataVersion((v) => v + 1);
     setHistoryVersion((v) => v + 1);
     stopPreview();
-  }, [resetListScroll, stopPreview, tab]);
+    setShowDeleteConfirm(false);
+    setShowGoTo(false);
+  }, [resetListScroll, stopPreview, syncDraftsFromSelection, tab]);
+
+  const onEntryRestored = useCallback(
+    (index: number) => {
+      setTlkObject(tab.tlkObject);
+      setDataVersion((v) => v + 1);
+      setHistoryVersion((v) => v + 1);
+      const target = index >= 0 ? index : selectedIndexRef.current;
+      syncDraftsFromSelection(target, tab.tlkObject);
+      if (isFiltering && index >= 0) {
+        const entry = tab.tlkObject?.TLKStrings[index];
+        const text = entry?.getDisplayText() ?? "";
+        setSearchResults((prev) => {
+          const needle = activeQuery.toLowerCase();
+          const stillMatches =
+            text.toLowerCase().includes(needle) ||
+            (entry?.getSearchResRefLower() ?? "").includes(needle);
+          if (!stillMatches) {
+            return prev.filter((r) => r.index !== index);
+          }
+          return prev.map((r) => (r.index === index ? { ...r, text } : r));
+        });
+      }
+    },
+    [activeQuery, isFiltering, syncDraftsFromSelection, tab],
+  );
+
+  const onEntryRestoredRef = useRef(onEntryRestored);
+  onEntryRestoredRef.current = onEntryRestored;
+  const onFileLoadRef = useRef(onFileLoad);
+  onFileLoadRef.current = onFileLoad;
 
   const applySearchResults = useCallback(
     (query: string, results: TLKSearchResult[], hitLimit: boolean) => {
@@ -128,11 +179,12 @@ export const TabTLKEditor = function (props: BaseTabProps) {
       window.setTimeout(() => {
         if (generation !== searchGenerationRef.current) return;
 
-        const results = tab.search(query, { limit: RESULT_LIMIT + 1, includeResRef: true });
-        const hitLimit = results.length > RESULT_LIMIT;
+        const limit = forgeTlkSettings.get().searchResultCap;
+        const results = tab.search(query, { limit: limit + 1, includeResRef: true });
+        const hitLimit = results.length > limit;
         applySearchResults(
           query,
-          hitLimit ? results.slice(0, RESULT_LIMIT) : results,
+          hitLimit ? results.slice(0, limit) : results,
           hitLimit,
         );
       }, 0);
@@ -195,16 +247,25 @@ export const TabTLKEditor = function (props: BaseTabProps) {
       e.preventDefault();
       clearSearchFilter();
       searchInputRef.current?.blur();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      listPaneRef.current?.focus();
     }
   };
 
   useEffectOnce(() => {
-    tab.addEventListener("onEditorFileLoad", onFileLoad);
+    const onLoad = () => onFileLoadRef.current();
+    const onDataChanged = (index?: number) => {
+      onEntryRestoredRef.current(typeof index === "number" ? index : selectedIndexRef.current);
+    };
+    tab.addEventListener("onEditorFileLoad", onLoad);
+    tab.addEventListener("onTLKDataChanged", onDataChanged);
     if (tab.tlkObject) {
-      onFileLoad();
+      onLoad();
     }
     return () => {
-      tab.removeEventListener("onEditorFileLoad", onFileLoad);
+      tab.removeEventListener("onEditorFileLoad", onLoad);
+      tab.removeEventListener("onTLKDataChanged", onDataChanged);
       stopPreview();
     };
   });
@@ -218,8 +279,11 @@ export const TabTLKEditor = function (props: BaseTabProps) {
     const el = listScrollRef.current;
     const lastRow = Math.max(0, listCount - 1);
     if (!el) {
-      setViewStart(0);
-      setViewEnd(Math.min(lastRow, MIN_VISIBLE_ROWS - 1));
+      setViewStart((prev) => (prev === 0 ? prev : 0));
+      setViewEnd((prev) => {
+        const next = Math.min(lastRow, MIN_VISIBLE_ROWS - 1);
+        return prev === next ? prev : next;
+      });
       return;
     }
 
@@ -234,8 +298,8 @@ export const TabTLKEditor = function (props: BaseTabProps) {
     if (rawHeight === 0 && lastRow > end) {
       end = Math.min(lastRow, Math.max(end, MIN_VISIBLE_ROWS - 1));
     }
-    setViewStart(start);
-    setViewEnd(end);
+    setViewStart((prev) => (prev === start ? prev : start));
+    setViewEnd((prev) => (prev === end ? prev : end));
   }, [listCount]);
 
   const getListEntry = useCallback(
@@ -248,13 +312,11 @@ export const TabTLKEditor = function (props: BaseTabProps) {
       if (!entry) return undefined;
       return { index: row, text: entry.getDisplayText() };
     },
-    [tlkObject, isFiltering, searchResults, dataVersion],
+    [tlkObject, isFiltering, searchResults, dataVersion, draftValue],
   );
 
-  const selectedString = useMemo(() => {
-    if (!tlkObject || selectedIndex < 0) return undefined;
-    return tlkObject.TLKStrings[selectedIndex];
-  }, [tlkObject, selectedIndex, dataVersion]);
+  const selectedString =
+    tlkObject && selectedIndex >= 0 ? tlkObject.TLKStrings[selectedIndex] : undefined;
 
   const virtualHeight = listCount * ROW_HEIGHT;
 
@@ -286,23 +348,38 @@ export const TabTLKEditor = function (props: BaseTabProps) {
     [syncListViewport],
   );
 
+  const selectString = useCallback(
+    (index: number) => {
+      pendingAutoplay.current = forgeTlkSettings.get().autoplayVo;
+      setSelectedIndex(index);
+      syncDraftsFromSelection(index, tab.tlkObject);
+      stopPreview();
+    },
+    [stopPreview, syncDraftsFromSelection, tab],
+  );
+
   const refreshAfterStructureChange = useCallback(
     (nextIndex: number) => {
       clearSearchFilter();
       setTlkObject(tab.tlkObject);
       setSelectedIndex(nextIndex);
+      syncDraftsFromSelection(nextIndex, tab.tlkObject);
       setDataVersion((v) => v + 1);
       stopPreview();
       if (nextIndex >= 0) {
         scrollToIndex(nextIndex);
       }
     },
-    [clearSearchFilter, scrollToIndex, stopPreview, tab],
+    [clearSearchFilter, scrollToIndex, stopPreview, syncDraftsFromSelection, tab],
   );
 
   const onAddString = useCallback(
     (afterIndex?: number) => {
-      tab.captureUndoSnapshot();
+      const insertAt =
+        afterIndex === undefined || afterIndex < 0
+          ? tab.tlkObject?.getStringCount() ?? 0
+          : afterIndex + 1;
+      tab.captureInsertUndo(insertAt);
       setHistoryVersion((v) => v + 1);
       const newIndex = tab.addString(afterIndex);
       if (newIndex < 0) return;
@@ -311,22 +388,16 @@ export const TabTLKEditor = function (props: BaseTabProps) {
     [refreshAfterStructureChange, tab],
   );
 
-  const onDeleteString = useCallback(() => {
+  const confirmDeleteString = useCallback(() => {
     if (selectedIndex < 0 || !tlkObject) return;
-    const label = selectedString.getDisplayText().slice(0, 60) || "";
-    const prompt =
-      `Delete string [${selectedIndex}]?` +
-      (label ? `\n\n"${label}${label.length >= 60 ? "…" : ""}"` : "") +
-      "\n\nLater string IDs will shift down. Existing STRREFs above this index are unaffected; at and above the next index they will point to different strings.";
-    if (!window.confirm(prompt)) return;
-
-    tab.captureUndoSnapshot();
+    tab.captureDeleteUndo(selectedIndex);
     setHistoryVersion((v) => v + 1);
     const removedIndex = selectedIndex;
     if (!tab.deleteString(removedIndex)) return;
 
     const nextCount = tab.tlkObject?.getStringCount() ?? 0;
     const nextIndex = nextCount === 0 ? -1 : Math.min(removedIndex, nextCount - 1);
+    setShowDeleteConfirm(false);
     refreshAfterStructureChange(nextIndex);
   }, [refreshAfterStructureChange, selectedIndex, tab, tlkObject]);
 
@@ -335,7 +406,7 @@ export const TabTLKEditor = function (props: BaseTabProps) {
       const key = `${selectedIndex}:${field}`;
       if (lastUndoKey.current === key) return;
       lastUndoKey.current = key;
-      tab.captureUndoSnapshot();
+      tab.captureEntryUndo(selectedIndex);
       setHistoryVersion((v) => v + 1);
     },
     [selectedIndex, tab],
@@ -345,14 +416,44 @@ export const TabTLKEditor = function (props: BaseTabProps) {
     lastUndoKey.current = null;
   }, []);
 
+  const patchFilteredResult = useCallback(
+    (index: number) => {
+      if (!isFiltering) return;
+      const entry = tab.tlkObject?.TLKStrings[index];
+      if (!entry) return;
+      const text = entry.getDisplayText();
+      const needle = activeQuery.toLowerCase();
+      const stillMatches =
+        text.toLowerCase().includes(needle) ||
+        entry.getSearchResRefLower().includes(needle) ||
+        String(index) === activeQuery.trim();
+
+      setSearchResults((prev) => {
+        const hasRow = prev.some((r) => r.index === index);
+        if (!stillMatches) {
+          return hasRow ? prev.filter((r) => r.index !== index) : prev;
+        }
+        if (!hasRow) return prev;
+        return prev.map((r) => (r.index === index ? { ...r, text } : r));
+      });
+    },
+    [activeQuery, isFiltering, tab],
+  );
+
   const commitField = useCallback(
     (field: keyof TLKStringUpdate, raw: string | number) => {
       if (selectedIndex < 0) return;
       if (field === "Value") {
         tab.updateString(selectedIndex, { Value: String(raw) });
-      } else if (field === "SoundResRef") {
+        patchFilteredResult(selectedIndex);
+        return;
+      }
+      if (field === "SoundResRef") {
         tab.updateString(selectedIndex, { SoundResRef: String(raw) });
-      } else if (field === "VolumeVariance") {
+        patchFilteredResult(selectedIndex);
+        return;
+      }
+      if (field === "VolumeVariance") {
         tab.updateString(selectedIndex, { VolumeVariance: Number(raw) >>> 0 });
       } else if (field === "PitchVariance") {
         tab.updateString(selectedIndex, { PitchVariance: Number(raw) >>> 0 });
@@ -361,7 +462,7 @@ export const TabTLKEditor = function (props: BaseTabProps) {
       }
       setDataVersion((v) => v + 1);
     },
-    [selectedIndex, tab],
+    [patchFilteredResult, selectedIndex, tab],
   );
 
   const togglePreview = useCallback(async () => {
@@ -416,6 +517,106 @@ export const TabTLKEditor = function (props: BaseTabProps) {
     }
   }, [previewPlaying, selectedString, stopPreview, stopWebAudioPreview]);
 
+  useEffect(() => {
+    if (!pendingAutoplay.current || selectedIndex < 0 || !selectedString) {
+      return;
+    }
+    pendingAutoplay.current = false;
+    void togglePreview();
+  }, [selectedIndex, selectedString, togglePreview]);
+
+  const moveSelection = useCallback(
+    (delta: number) => {
+      if (!tlkObject || listCount === 0) return;
+      let row = 0;
+      if (selectedIndex >= 0) {
+        if (isFiltering) {
+          const found = searchResults.findIndex((r) => r.index === selectedIndex);
+          row = found >= 0 ? found : 0;
+        } else {
+          row = selectedIndex;
+        }
+      }
+      const nextRow = Math.max(0, Math.min(listCount - 1, row + delta));
+      const entry = getListEntry(nextRow);
+      if (!entry) return;
+      selectString(entry.index);
+      scrollToIndex(nextRow);
+    },
+    [getListEntry, isFiltering, listCount, scrollToIndex, searchResults, selectString, selectedIndex, tlkObject],
+  );
+
+  const onListKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (showDeleteConfirm || showGoTo) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        moveSelection(1);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        moveSelection(-1);
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        const entry = getListEntry(0);
+        if (entry) {
+          selectString(entry.index);
+          scrollToIndex(0);
+        }
+      } else if (e.key === "End") {
+        e.preventDefault();
+        const last = listCount - 1;
+        const entry = getListEntry(last);
+        if (entry) {
+          selectString(entry.index);
+          scrollToIndex(last);
+        }
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        valueInputRef.current?.focus();
+      } else if (e.key === "Delete" && selectedIndex >= 0) {
+        e.preventDefault();
+        setShowDeleteConfirm(true);
+      }
+    },
+    [getListEntry, listCount, moveSelection, scrollToIndex, selectString, selectedIndex, showDeleteConfirm, showGoTo],
+  );
+
+  const openGoTo = useCallback(() => {
+    setGoToInput(selectedIndex >= 0 ? String(selectedIndex) : "");
+    setGoToError(null);
+    setShowGoTo(true);
+  }, [selectedIndex]);
+
+  const submitGoTo = useCallback(() => {
+    const id = parseInt(goToInput.trim(), 10);
+    const count = tlkObject?.getStringCount() ?? 0;
+    if (!Number.isFinite(id) || id < 0 || id >= count) {
+      setGoToError(count > 0 ? `Enter a string ID from 0 to ${count - 1}` : "Talk table is empty");
+      return;
+    }
+    if (isFiltering) {
+      clearSearchFilter();
+    }
+    selectString(id);
+    scrollToIndex(id);
+    setShowGoTo(false);
+  }, [clearSearchFilter, goToInput, isFiltering, scrollToIndex, selectString, tlkObject]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      if (e.key.toLowerCase() !== "g") return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.("textarea, input, [contenteditable=true]")) {
+        // Allow Ctrl+G even from inputs — go-to is intentional.
+      }
+      e.preventDefault();
+      openGoTo();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [openGoTo]);
+
   const menuItems: MenuItem[] = [
     {
       label: "File",
@@ -458,6 +659,13 @@ export const TabTLKEditor = function (props: BaseTabProps) {
           },
           disabled: !tab.canRedo,
         },
+        { id: "sep-goto", separator: true },
+        {
+          label: "Go to String ID...",
+          shortcut: "Ctrl+G",
+          onClick: () => openGoTo(),
+          disabled: !tlkObject,
+        },
         { id: "sep-strings", separator: true },
         {
           label: "Add String",
@@ -471,7 +679,7 @@ export const TabTLKEditor = function (props: BaseTabProps) {
         },
         {
           label: "Delete String",
-          onClick: () => onDeleteString(),
+          onClick: () => setShowDeleteConfirm(true),
           disabled: !tlkObject || selectedIndex < 0,
         },
       ],
@@ -489,7 +697,7 @@ export const TabTLKEditor = function (props: BaseTabProps) {
       return `${listCount.toLocaleString()} entr${listCount === 1 ? "y" : "ies"}`;
     }
     if (limitReached) {
-      return `${RESULT_LIMIT.toLocaleString()}+ matches for “${activeQuery}” — refine your search`;
+      return `${forgeTlkSettings.get().searchResultCap.toLocaleString()}+ matches for “${activeQuery}” — refine your search`;
     }
     if (searchResults.length === 0) {
       return `No matches for “${activeQuery}”`;
@@ -511,12 +719,24 @@ export const TabTLKEditor = function (props: BaseTabProps) {
     tlkObject && isFiltering && !isSearching && !isQueryPending && searchResults.length === 0,
   );
 
+  const deletePreview =
+    selectedIndex >= 0
+      ? (selectedString?.getDisplayText().slice(0, 60) || "")
+      : "";
+
   return (
     <div className="tab-tlk-editor">
       <MenuBar items={menuItems} />
 
       <div className="tab-tlk-editor__body">
-        <div className="tab-tlk-editor__list-pane">
+        <div
+          className="tab-tlk-editor__list-pane"
+          ref={listPaneRef}
+          tabIndex={0}
+          onKeyDown={onListKeyDown}
+          role="listbox"
+          aria-label="Talk table strings"
+        >
           <div className="tab-tlk-editor__search-row">
             <label className="tab-tlk-editor__search-field">
               <span className="tab-tlk-editor__search-icon" aria-hidden="true">
@@ -574,13 +794,6 @@ export const TabTLKEditor = function (props: BaseTabProps) {
               </div>
             )}
 
-            {tlkObject && (isSearching || isQueryPending) && trimmedQuery && (
-              <div className="tab-tlk-editor__empty tab-tlk-editor__empty--pending">
-                <ForgeSpinner animation="border" size="sm" />
-                <p>Searching…</p>
-              </div>
-            )}
-
             {showNoResults && (
               <div className="tab-tlk-editor__empty tab-tlk-editor__empty--no-results">
                 <i className="fa-regular fa-face-frown tab-tlk-editor__empty-icon" aria-hidden="true" />
@@ -589,32 +802,23 @@ export const TabTLKEditor = function (props: BaseTabProps) {
               </div>
             )}
 
-            {tlkObject && listCount > 0 && !(trimmedQuery && (isSearching || isQueryPending)) && (
+            {tlkObject && listCount > 0 && !showNoResults && (
               <div className="tab-tlk-editor__results-virtual" style={{ height: virtualHeight }}>
                 {viewEnd >= viewStart &&
                   Array.from({ length: viewEnd - viewStart + 1 }, (_, offset) => {
                     const row = viewStart + offset;
                     const result = getListEntry(row);
                     if (!result) return null;
-                    const preview =
-                      result.text.length > 120 ? `${result.text.slice(0, 120)}…` : result.text;
                     return (
-                      <div
+                      <TLKEditorResultRow
                         key={result.index}
-                        className={`tab-tlk-editor__result-row${
-                          result.index === selectedIndex ? " tab-tlk-editor__result-row--active" : ""
-                        }`}
-                        style={{ top: row * ROW_HEIGHT, height: ROW_HEIGHT }}
-                        onClick={() => {
-                          setSelectedIndex(result.index);
-                          stopPreview();
-                        }}
-                      >
-                        <span className="tab-tlk-editor__result-index">[{result.index}]</span>
-                        <span className="tab-tlk-editor__result-text" title={result.text}>
-                          {preview || "—"}
-                        </span>
-                      </div>
+                        index={result.index}
+                        text={result.text}
+                        row={row}
+                        rowHeight={ROW_HEIGHT}
+                        active={result.index === selectedIndex}
+                        onSelect={selectString}
+                      />
                     );
                   })}
               </div>
@@ -643,7 +847,7 @@ export const TabTLKEditor = function (props: BaseTabProps) {
             <ForgeButton
               size="sm"
               variant="outline-danger"
-              onClick={() => onDeleteString()}
+              onClick={() => setShowDeleteConfirm(true)}
               disabled={!tlkObject || selectedIndex < 0}
             >
               Delete
@@ -657,94 +861,173 @@ export const TabTLKEditor = function (props: BaseTabProps) {
           ) : (
             <>
               <div className="tab-tlk-editor__detail-fields">
-              <div className="tab-tlk-editor__field">
-                <label>String ID</label>
-                <input type="text" value={selectedIndex} readOnly />
-              </div>
+                <div className="tab-tlk-editor__field">
+                  <label>String ID</label>
+                  <ForgeInput type="text" value={selectedIndex} readOnly />
+                </div>
 
-              <div className="tab-tlk-editor__field">
-                <label>Value</label>
-                <textarea
-                  value={selectedString.Value}
-                  onFocus={() => onBeforeEdit("Value")}
-                  onChange={(e) => commitField("Value", e.target.value)}
-                  onBlur={onAfterEdit}
-                />
-              </div>
+                <div className="tab-tlk-editor__field">
+                  <label>Value</label>
+                  <ForgeTextArea
+                    ref={valueInputRef}
+                    value={draftValue}
+                    onFocus={() => onBeforeEdit("Value")}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setDraftValue(next);
+                      commitField("Value", next);
+                    }}
+                    onBlur={onAfterEdit}
+                  />
+                </div>
 
-              <div className="tab-tlk-editor__field">
-                <label>SoundResRef</label>
-                <input
-                  type="text"
-                  value={String(selectedString.SoundResRef ?? "")}
-                  onFocus={() => onBeforeEdit("SoundResRef")}
-                  onChange={(e) => commitField("SoundResRef", e.target.value)}
-                  onBlur={onAfterEdit}
-                />
-                <div className="tab-tlk-editor__preview-row">
-                  <ForgeButton
-                    size="sm"
-                    variant="outline-secondary"
-                    onClick={() => void togglePreview()}
-                    disabled={previewLoading}
-                  >
-                    {previewLoading ? (
-                      <>
-                        <ForgeSpinner animation="border" size="sm" /> Loading...
-                      </>
-                    ) : previewPlaying ? (
-                      "Stop"
-                    ) : (
-                      "Play preview"
+                <div className="tab-tlk-editor__field">
+                  <label>SoundResRef</label>
+                  <ForgeInput
+                    type="text"
+                    value={draftSoundResRef}
+                    onFocus={() => onBeforeEdit("SoundResRef")}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setDraftSoundResRef(next);
+                      commitField("SoundResRef", next);
+                    }}
+                    onBlur={onAfterEdit}
+                  />
+                  <div className="tab-tlk-editor__preview-row">
+                    <ForgeButton
+                      size="sm"
+                      variant="outline-secondary"
+                      onClick={() => void togglePreview()}
+                      disabled={previewLoading}
+                    >
+                      {previewLoading ? (
+                        <>
+                          <ForgeSpinner animation="border" size="sm" /> Loading...
+                        </>
+                      ) : previewPlaying ? (
+                        "Stop"
+                      ) : (
+                        "Play preview"
+                      )}
+                    </ForgeButton>
+                    {previewError && (
+                      <span className="tab-tlk-editor__preview-error">{previewError}</span>
                     )}
-                  </ForgeButton>
-                  {previewError && (
-                    <span className="tab-tlk-editor__preview-error">{previewError}</span>
-                  )}
+                  </div>
+                </div>
+
+                <div className="tab-tlk-editor__field-row">
+                  <div className="tab-tlk-editor__field">
+                    <label>Sound length</label>
+                    <ForgeInput
+                      type="number"
+                      value={selectedString.SoundLength}
+                      onFocus={() => onBeforeEdit("SoundLength")}
+                      onChange={(e) => commitField("SoundLength", e.target.value)}
+                      onBlur={onAfterEdit}
+                    />
+                  </div>
+                  <div className="tab-tlk-editor__field">
+                    <label>Volume variance</label>
+                    <ForgeInput
+                      type="number"
+                      value={selectedString.VolumeVariance}
+                      onFocus={() => onBeforeEdit("VolumeVariance")}
+                      onChange={(e) => commitField("VolumeVariance", e.target.value)}
+                      onBlur={onAfterEdit}
+                    />
+                  </div>
+                  <div className="tab-tlk-editor__field">
+                    <label>Pitch variance</label>
+                    <ForgeInput
+                      type="number"
+                      value={selectedString.PitchVariance}
+                      onFocus={() => onBeforeEdit("PitchVariance")}
+                      onChange={(e) => commitField("PitchVariance", e.target.value)}
+                      onBlur={onAfterEdit}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="tab-tlk-editor__field-row">
-                <div className="tab-tlk-editor__field">
-                  <label>Sound length</label>
-                  <input
-                    type="number"
-                    value={selectedString.SoundLength}
-                    onFocus={() => onBeforeEdit("SoundLength")}
-                    onChange={(e) => commitField("SoundLength", e.target.value)}
-                    onBlur={onAfterEdit}
-                  />
-                </div>
-                <div className="tab-tlk-editor__field">
-                  <label>Volume variance</label>
-                  <input
-                    type="number"
-                    value={selectedString.VolumeVariance}
-                    onFocus={() => onBeforeEdit("VolumeVariance")}
-                    onChange={(e) => commitField("VolumeVariance", e.target.value)}
-                    onBlur={onAfterEdit}
-                  />
-                </div>
-                <div className="tab-tlk-editor__field">
-                  <label>Pitch variance</label>
-                  <input
-                    type="number"
-                    value={selectedString.PitchVariance}
-                    onFocus={() => onBeforeEdit("PitchVariance")}
-                    onChange={(e) => commitField("PitchVariance", e.target.value)}
-                    onBlur={onAfterEdit}
-                  />
-                </div>
-              </div>
-              </div>
-
-              <div className="tab-tlk-editor__flags-meta" title="TLK string flags (read-only, derived from content on save)">
+              <div
+                className="tab-tlk-editor__flags-meta"
+                title="TLK string flags (read-only, derived from content on save)"
+              >
                 {formatFlagsSummary(selectedString)}
               </div>
             </>
           )}
         </div>
       </div>
+
+      <ForgeDialog show={showDeleteConfirm} onHide={() => setShowDeleteConfirm(false)} size="sm">
+        <ForgeDialog.Header closeButton>
+          <ForgeDialog.Title>Delete string</ForgeDialog.Title>
+        </ForgeDialog.Header>
+        <ForgeDialog.Body>
+          <p>
+            Delete string [{selectedIndex}]?
+            {deletePreview ? (
+              <>
+                <br />
+                <br />
+                &ldquo;{deletePreview}
+                {deletePreview.length >= 60 ? "…" : ""}&rdquo;
+              </>
+            ) : null}
+          </p>
+          <p className="tab-tlk-editor__goto-hint">
+            Later string IDs will shift down. Existing STRREFs above this index are unaffected; at
+            and above the next index they will point to different strings.
+          </p>
+        </ForgeDialog.Body>
+        <ForgeDialog.Footer>
+          <ForgeButton variant="outline-secondary" onClick={() => setShowDeleteConfirm(false)}>
+            Cancel
+          </ForgeButton>
+          <ForgeButton variant="danger" onClick={confirmDeleteString}>
+            Delete
+          </ForgeButton>
+        </ForgeDialog.Footer>
+      </ForgeDialog>
+
+      <ForgeDialog show={showGoTo} onHide={() => setShowGoTo(false)} size="sm">
+        <ForgeDialog.Header closeButton>
+          <ForgeDialog.Title>Go to string ID</ForgeDialog.Title>
+        </ForgeDialog.Header>
+        <ForgeDialog.Body>
+          <div className="tab-tlk-editor__field">
+            <label htmlFor="tlk-goto-id">String ID</label>
+            <ForgeInput
+              id="tlk-goto-id"
+              type="number"
+              min={0}
+              value={goToInput}
+              onChange={(e) => {
+                setGoToInput(e.target.value);
+                setGoToError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitGoTo();
+                }
+              }}
+            />
+            {goToError && <p className="tab-tlk-editor__preview-error">{goToError}</p>}
+          </div>
+        </ForgeDialog.Body>
+        <ForgeDialog.Footer>
+          <ForgeButton variant="outline-secondary" onClick={() => setShowGoTo(false)}>
+            Cancel
+          </ForgeButton>
+          <ForgeButton variant="primary" onClick={submitGoTo}>
+            Go
+          </ForgeButton>
+        </ForgeDialog.Footer>
+      </ForgeDialog>
     </div>
   );
 };

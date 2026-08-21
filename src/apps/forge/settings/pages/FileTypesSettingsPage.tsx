@@ -93,6 +93,7 @@ export function FileTypesSettingsPage() {
 registerSettingsPage({
   id: "file-types",
   label: "File Types",
+  group: "application",
   icon: "fa-solid fa-file",
   keywords: ["editor", "utp", "gff", "hex", "default", "open", "extension"],
   render: () => React.createElement(FileTypesSettingsPage),

@@ -19,11 +19,11 @@ export const ForgeCheckbox = function(props: { label: string, info?: string, val
   return (
     <div className="forge-checkbox">
       {info && <InfoBubble content={info} position="right">
-        <input type="checkbox" className="ui" checked={value} />
+        <input type="checkbox" className="ui" checked={value} readOnly />
         <label className="checkbox-label" onClick={(e) => onChange(e)}>{props.label}</label>
       </InfoBubble>}
       {!info && <>
-        <input type="checkbox" className="ui" checked={value} />
+        <input type="checkbox" className="ui" checked={value} readOnly />
         <label className="checkbox-label" onClick={(e) => onChange(e)}>{props.label}</label>
       </>}
     </div>

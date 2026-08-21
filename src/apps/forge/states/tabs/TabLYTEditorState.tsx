@@ -9,11 +9,12 @@ import * as monacoEditor from "monaco-editor/esm/vs/editor/editor.api";
 import { TabLYTEditor } from "@/apps/forge/components/tabs/tab-lyt-editor/TabLYTEditor";
 import { ILayoutRoom } from "@/interface/resource/ILayoutRoom";
 import {
-  DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY,
   ModelViewerLayerKey,
   ModelViewerLayerVisibility,
   TabModelViewerState,
 } from "@/apps/forge/states/tabs/TabModelViewerState";
+import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
+import { forgeViewportSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import {
   promptForDirectory,
   collectModelAssets,
@@ -38,7 +39,7 @@ export class TabLYTEditorState extends TabState {
   code: string = '';
   roomEntries: LYTRoomEntry[] = [];
   selectedRoomIndex: number = -1;
-  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...DEFAULT_MODEL_VIEWER_LAYER_VISIBILITY };
+  modelViewerLayerVisibility: ModelViewerLayerVisibility = { ...forgeViewportSettings.get().layers };
   groundGridGroup: THREE.Group = new THREE.Group();
 
   editor: monacoEditor.editor.IStandaloneCodeEditor;
@@ -62,6 +63,7 @@ export class TabLYTEditorState extends TabState {
     grid2.rotation.x = -Math.PI / 2;
 
     this.ui3DRenderer = new UI3DRenderer();
+    this.ui3DRenderer.windowPower = forgeViewportSettings.get().windPower;
     this.ui3DRenderer.setCameraFocusMode(CameraFocusMode.SELECTABLE);
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
     this.groundGridGroup.add(grid1);
@@ -173,6 +175,15 @@ export class TabLYTEditorState extends TabState {
 
     if (!this.lyt || !this.lyt.rooms.length) return;
 
+    if (!utxShouldShow3DPreview()) {
+      for (let i = 0; i < this.lyt.rooms.length; i++) {
+        this.roomEntries.push({ lytRoom: this.lyt.rooms[i] });
+      }
+      this.refreshModelViewerLayers();
+      this.processEventListener('onRoomsLoaded', [this.roomEntries]);
+      return;
+    }
+
     for (let i = 0; i < this.lyt.rooms.length; i++) {
       const room = this.lyt.rooms[i];
       const entry: LYTRoomEntry = { lytRoom: room };
@@ -201,7 +212,11 @@ export class TabLYTEditorState extends TabState {
       this.roomEntries.push(entry);
     }
 
-    await KotOR.TextureLoader.LoadQueue();
+    try {
+      await KotOR.TextureLoader.LoadQueue();
+    } catch (e) {
+      console.warn('TabLYTEditorState: texture queue failed', e);
+    }
 
     if (this.ui3DRenderer.renderer) {
       this.ui3DRenderer.renderer.compile(this.ui3DRenderer.scene, this.ui3DRenderer.currentCamera);

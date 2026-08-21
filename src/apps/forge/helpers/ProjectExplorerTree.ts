@@ -4,7 +4,6 @@ import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 
 /**
  * Project explorer paths relative to workspace root using `/`.
- * Recursive readdir yields files only — empty dirs are omitted (possible Phase 2).
  */
 export function normalizeProjectExplorerPath(relPath: string): string {
   return relPath
@@ -15,6 +14,11 @@ export function normalizeProjectExplorerPath(relPath: string): string {
 }
 
 export function getWorkspaceRootLabel(): string {
+  if (ProjectFileSystem.isVirtual) {
+    const h = ProjectFileSystem.rootDirectoryHandle;
+    const name = h?.name || "Project";
+    return `${name} (virtual)`;
+  }
   const dirPath = ProjectFileSystem.rootDirectoryPath;
   if (typeof dirPath === "string" && dirPath.length) {
     const base = normalizeProjectExplorerPath(dirPath.split(/[/\\]/).pop() || dirPath);
@@ -54,6 +58,17 @@ function ensureFolder(parent: FileBrowserNode, segment: string, relPathAccum: st
   return folder;
 }
 
+function insertFolderRelPath(root: FileBrowserNode, norm: string): void {
+  const parts = norm.split("/").filter(Boolean);
+  if (!parts.length) return;
+  let cur = root;
+  let acc = "";
+  for (const seg of parts) {
+    acc = acc ? `${acc}/${seg}` : seg;
+    cur = ensureFolder(cur, seg, acc);
+  }
+}
+
 function insertFileRelPath(root: FileBrowserNode, norm: string): void {
   const parts = norm.split("/").filter(Boolean);
   if (!parts.length) return;
@@ -82,13 +97,19 @@ function insertFileRelPath(root: FileBrowserNode, norm: string): void {
 }
 
 /** Builds a VS Code-style folder tree wrapped in one workspace root row. */
-export function buildProjectExplorerTree(paths: string[]): FileBrowserNode {
+export function buildProjectExplorerTree(paths: string[], dirPaths: string[] = []): FileBrowserNode {
   const root = new FileBrowserNode({
     name: getWorkspaceRootLabel(),
     type: "group",
     canOrphan: true,
     data: { relPath: "", explorerRoot: true },
   });
+
+  const uniqueDirs = [...new Set(dirPaths.map(normalizeProjectExplorerPath).filter(Boolean))];
+  uniqueDirs.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  for (const norm of uniqueDirs) {
+    insertFolderRelPath(root, norm);
+  }
 
   const unique = [...new Set(paths.map(normalizeProjectExplorerPath).filter(Boolean))];
   unique.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));

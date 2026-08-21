@@ -5,6 +5,7 @@ import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { GameFileSystem } from "@/utility/GameFileSystem";
 import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 import { IERFKeyEntry } from "@/interface/resource/IERFKeyEntry";
+import { isUsableDirectoryHandle } from "@/utility/gameDirectoryAccess";
 
 /**
  * CurrentGame class.
@@ -87,7 +88,7 @@ export class CurrentGame {
         console.log(`CurrentGame.CleanGameInProgressFolder`, `Mode: BROWSER`);
         try{
           const directory_handle = await GameFileSystem.opendir_web(CurrentGame.gameinprogress_dir);
-          if(directory_handle instanceof FileSystemDirectoryHandle){
+          if(isUsableDirectoryHandle(directory_handle)){
             for await(let handle of directory_handle.values()){
               if(handle.kind == 'file'){
                 await directory_handle.removeEntry(handle.name);
@@ -104,6 +105,7 @@ export class CurrentGame {
             console.log('exists', directory_handle);
           }
         }
+        return true;
       }
     }catch(e){
       console.log(`CurrentGame.CleanGameInProgressFolder`, `Failed due to exception`);

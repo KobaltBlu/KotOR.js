@@ -18,6 +18,7 @@ export const TabButton = function(props: TabButtonProps) {
   const tab: TabState = props.tab;
   const index = props.index;
   const [tabName, setTabName] = useState<string>(tab.tabName);
+  const [dirty, setDirty] = useState<boolean>(!!tab.file?.unsaved_changes);
 
   //tabManager
   const tabManager = useTabManager();
@@ -29,14 +30,22 @@ export const TabButton = function(props: TabButtonProps) {
 
   const onTabNameChange = () => {
     setTabName(tab.tabName);
+    setDirty(!!tab.file?.unsaved_changes);
+  };
+
+  const onSaveStateChanged = () => {
+    setDirty(!!tab.file?.unsaved_changes);
   };
 
   useEffect(() => {
     tab.addEventListener('onTabNameChange', onTabNameChange);
+    tab.file?.addEventListener('onSaveStateChanged', onSaveStateChanged);
+    setDirty(!!tab.file?.unsaved_changes);
     return () => {
       tab.removeEventListener('onTabNameChange', onTabNameChange);
+      tab.file?.removeEventListener('onSaveStateChanged', onSaveStateChanged);
     }
-  }, [tab]);
+  }, [tab, tab.file]);
 
   const onTabClick = (e: React.MouseEvent<HTMLLIElement>) => {
     e.preventDefault();
@@ -61,7 +70,7 @@ export const TabButton = function(props: TabButtonProps) {
       onDrop={(e) => props.onDrop?.(e, index)}
       onDragEnd={(e) => props.onDragEnd?.(e)}
     >
-      {tab.file?.unsaved_changes ? (<span className="dirty-dot" aria-hidden="true"></span>) : (<></>)}
+      {dirty ? (<span className="dirty-dot" aria-hidden="true"></span>) : (<></>)}
       <a>{tabName}</a>&nbsp;
       {(
         tab.isClosable ? (

@@ -11,7 +11,7 @@ export interface UTIItem {
   iconResRef: string;
   equipableSlots: number;
   droidOrHuman: number;
-  gff: KotOR.GFFObject;
+  gff?: KotOR.GFFObject;
 }
 
 export interface ModalItemBrowserOptions {
@@ -39,6 +39,12 @@ export class ModalItemBrowserState extends ModalState {
     this.slotFilter = options?.slotFilter;
     this.raceFilter = options?.raceFilter;
     this.setView(<ModalItemBrowser modal={this} />);
+  }
+
+  static invalidateCache(): void {
+    ModalItemBrowserState.itemsCache = [];
+    ModalItemBrowserState.cacheLoaded = false;
+    ModalItemBrowserState.cachePromise = undefined;
   }
 
   static findByResref(resref: string): UTIItem | undefined {
@@ -70,7 +76,7 @@ export class ModalItemBrowserState extends ModalState {
 
   private static async buildCache(): Promise<UTIItem[]> {
     const items: UTIItem[] = [];
-    const utiKeys = KotOR.KEYManager.Key.keys.filter(
+    const utiKeys = (KotOR.KEYManager?.Key?.keys || []).filter(
       (key: KotOR.IKEYEntry) => key.resType === KotOR.ResourceTypes["uti"]
     );
 

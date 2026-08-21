@@ -164,6 +164,11 @@ export class ERFObject {
     return this._resourceIndex.get(`${resRef.toLowerCase()}:${resType}`);
   }
 
+  /** BIF-compatible alias of {@link getResourceInfo}. */
+  getResource(resRef: string, resType: number): IERFResource {
+    return this.getResourceInfo(resRef, resType);
+  }
+
   async getFileDescription(): Promise<any> {
     if(this.#fd) return this.#fd;
     this.#fd = await GameFileSystem.open(this.resource_path, 'r');
@@ -185,7 +190,7 @@ export class ERFObject {
     const buffer = new Uint8Array(resource.size);
 
     if(this.inMemory){
-      buffer.set(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
+      buffer.set(this.buffer.slice(resource.offset, resource.offset + resource.size));
       return buffer;
     }else{
       const fd = await this.getFileDescription();
@@ -231,7 +236,7 @@ export class ERFObject {
     }
     
     if(this.inMemory){
-        const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + (resource.size - 1)));
+        const buffer = new Uint8Array(this.buffer.slice(resource.offset, resource.offset + resource.size));
       await GameFileSystem.writeFile(path.join(directory, resref+'.'+ResourceTypes.getKeyByValue(restype)), buffer);
       return buffer;
     }else{
@@ -261,6 +266,36 @@ export class ERFObject {
       unused: 0
     });
 
+    this._resourceIndex.set(`${resRef.toLowerCase()}:${resType}`, this.resources[resId]);
+  }
+
+  /**
+   * Replace an existing key or append a new one. Hydrate resource payloads
+   * with {@link ensureResourceDataLoaded} before {@link getExportBuffer}.
+   */
+  setResource(resRef: string, resType: number, buffer: Uint8Array): void {
+    const existing = this.getResourceInfo(resRef, resType);
+    if (existing) {
+      existing.data = buffer;
+      existing.size = buffer.length;
+      existing.offset = -1;
+      return;
+    }
+    this.addResource(resRef, resType, buffer);
+  }
+
+  async ensureResourceDataLoaded(): Promise<void> {
+    for (let i = 0; i < this.resources.length; i++) {
+      const resource = this.resources[i];
+      if (resource.data instanceof Uint8Array && resource.data.length === resource.size) {
+        continue;
+      }
+      if (this.inMemory && this.buffer instanceof Uint8Array && resource.size > 0) {
+        resource.data = this.buffer.slice(resource.offset, resource.offset + resource.size);
+      } else {
+        resource.data = await this.getResourceBuffer(resource);
+      }
+    }
   }
 
   export( file: string, onExport?: Function, onError?: Function ){

@@ -28,6 +28,7 @@ import {
   type NssCodeLineMap,
 } from "@/nwscript/inspect/nssCodeLineMap";
 import { getMonacoThemeForLanguage } from "@/apps/forge/settings/forgeTheme";
+import { getEditorSettings, setEditorSettings, toMonacoEditorOptions, toMonacoModelOptions } from "@/apps/forge/settings/forgeEditorSettings";
 
 export class TabTextEditorState extends TabState {
 
@@ -55,7 +56,7 @@ export class TabTextEditorState extends TabState {
   modifiedModel: monacoEditor.editor.ITextModel | null = null;
 
   resolvedIncludes: Map<string, string> = new Map();
-  tabSize: number = 2;
+  tabSize: number = getEditorSettings().tabSize;
   manualLanguageId: string | null = null; // Override for manual language selection
 
   isNcsFile(): boolean {
@@ -64,6 +65,105 @@ export class TabTextEditorState extends TabState {
 
   get canCompile(): boolean {
     return (this.file?.ext || '').toLowerCase() === 'nss';
+  }
+
+  get canUndo(): boolean {
+    return this.getActiveTextModel()?.canUndo() ?? false;
+  }
+
+  get canRedo(): boolean {
+    return this.getActiveTextModel()?.canRedo() ?? false;
+  }
+
+  private historyDisposables: monacoEditor.IDisposable[] = [];
+  private lastCanUndo: boolean = false;
+  private lastCanRedo: boolean = false;
+
+  getActiveMonacoEditor(): monacoEditor.editor.IStandaloneCodeEditor | undefined {
+    if (this.isDiffMode && this.diffEditor) {
+      return this.diffEditor.getModifiedEditor();
+    }
+    return this.editor;
+  }
+
+  private getActiveTextModel(): monacoEditor.editor.ITextModel | null {
+    const editor = this.getActiveMonacoEditor();
+    return editor?.getModel() ?? null;
+  }
+
+  protected override shouldHandleUndoKeyboard(e: KeyboardEvent): boolean {
+    const editor = this.getActiveMonacoEditor();
+    if (!editor) {
+      return false;
+    }
+    const target = e.target as HTMLElement | null;
+    if (target?.closest?.(".monaco-editor")) {
+      return false;
+    }
+    if (target instanceof HTMLElement) {
+      const tag = target.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target.isContentEditable) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  undo(): void {
+    const editor = this.getActiveMonacoEditor();
+    if (!editor) {
+      return;
+    }
+    editor.focus();
+    editor.trigger("keyboard", "undo", null);
+    this.processEventListener("onUndoApplied", []);
+    this.notifyHistoryChangedIfNeeded();
+  }
+
+  redo(): void {
+    const editor = this.getActiveMonacoEditor();
+    if (!editor) {
+      return;
+    }
+    editor.focus();
+    editor.trigger("keyboard", "redo", null);
+    this.processEventListener("onRedoApplied", []);
+    this.notifyHistoryChangedIfNeeded();
+  }
+
+  private unbindMonacoHistory(): void {
+    for (let i = 0; i < this.historyDisposables.length; i++) {
+      this.historyDisposables[i].dispose();
+    }
+    this.historyDisposables = [];
+  }
+
+  private bindMonacoHistory(): void {
+    this.unbindMonacoHistory();
+    const editor = this.getActiveMonacoEditor();
+    if (!editor) {
+      this.lastCanUndo = false;
+      this.lastCanRedo = false;
+      return;
+    }
+    this.historyDisposables.push(editor.onDidChangeModelContent(() => {
+      this.notifyHistoryChangedIfNeeded();
+    }));
+    this.historyDisposables.push(editor.onDidChangeModel(() => {
+      this.notifyHistoryChangedIfNeeded();
+    }));
+    this.notifyHistoryChangedIfNeeded(true);
+  }
+
+  private notifyHistoryChangedIfNeeded(force = false): void {
+    const canUndo = this.canUndo;
+    const canRedo = this.canRedo;
+    if (!force && canUndo === this.lastCanUndo && canRedo === this.lastCanRedo) {
+      return;
+    }
+    this.lastCanUndo = canUndo;
+    this.lastCanRedo = canRedo;
+    this.processEventListener("onHistoryChanged", []);
   }
 
   applyDecompile(script: KotOR.NWScript): void {
@@ -168,7 +268,7 @@ export class TabTextEditorState extends TabState {
 
     this.setContentView(<TabTextEditor tab={this}></TabTextEditor>);
     const textDecoder = new TextDecoder();
-    this.nwScriptParser = new NWScriptParser(textDecoder.decode(ForgeState.nwscript_nss));
+    this.nwScriptParser = new NWScriptParser(textDecoder.decode(ForgeState.nwscript_nss ?? new Uint8Array(0)));
     this.openFile();
 
     this.saveTypes = [
@@ -228,35 +328,61 @@ export class TabTextEditorState extends TabState {
 
   }
 
+  destroy() {
+    this.unbindMonacoHistory();
+    super.destroy();
+  }
+
   getSouthTabManager(){
     return this.#southTabManager;
   }
 
   setCode(code: string = ``){
+    const changed = this.code !== code;
     this.code = code;
     // Update diff editor modified model if in diff mode
     if(this.isDiffMode && this.modifiedModel && this.modifiedModel.getValue() !== code) {
       this.modifiedModel.setValue(code);
     }
     this.triggerLinterTimeout();
+    if(changed){
+      this.updateFile();
+    }
   }
 
   setEditor(editor: monacoEditor.editor.IStandaloneCodeEditor){
     this.editor = editor;
-    this.updateTabSize();
+    this.applyEditorSettings();
+    this.bindMonacoHistory();
   }
 
   setTabSize(size: number): void {
-    this.tabSize = size;
+    setEditorSettings({ tabSize: size });
+    this.applyEditorSettings();
+  }
+
+  applyEditorSettings(): void {
+    const settings = getEditorSettings();
+    this.tabSize = settings.tabSize;
+    const editorOptions = toMonacoEditorOptions(settings);
+    if(this.editor) {
+      this.editor.updateOptions(editorOptions);
+    }
+    if(this.diffEditor) {
+      this.diffEditor.updateOptions(editorOptions);
+      this.diffEditor.getOriginalEditor().updateOptions(editorOptions);
+      this.diffEditor.getModifiedEditor().updateOptions(editorOptions);
+    }
     this.updateTabSize();
   }
 
   updateTabSize(): void {
+    const modelOptions = toMonacoModelOptions();
     // Update regular editor model (tabSize is a model option, not editor option)
     if(this.editor) {
       const model = this.editor.getModel();
       if(model) {
-        model.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+        model.updateOptions(modelOptions);
       }
     }
     
@@ -268,19 +394,19 @@ export class TabTextEditorState extends TabState {
       const modifiedModel = modifiedEditor.getModel();
       
       if(originalModel) {
-        originalModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+        originalModel.updateOptions(modelOptions);
       }
       if(modifiedModel) {
-        modifiedModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+        modifiedModel.updateOptions(modelOptions);
       }
     }
     
     // Update standalone models if they exist
     if(this.originalModel) {
-      this.originalModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+      this.originalModel.updateOptions(modelOptions);
     }
     if(this.modifiedModel) {
-      this.modifiedModel.updateOptions({ tabSize: this.tabSize, insertSpaces: true });
+      this.modifiedModel.updateOptions(modelOptions);
     }
   }
 
@@ -290,6 +416,8 @@ export class TabTextEditorState extends TabState {
 
   setDiffEditor(diffEditor: monacoEditor.editor.IStandaloneDiffEditor){
     this.diffEditor = diffEditor;
+    this.applyEditorSettings();
+    this.bindMonacoHistory();
   }
 
   switchToDiffMode(): void {
@@ -303,9 +431,10 @@ export class TabTextEditorState extends TabState {
     this.originalModel = this.monaco.editor.createModel(this.originalText, langId);
     this.modifiedModel = this.monaco.editor.createModel(this.code, langId);
     
-    // Apply tab size to models
-    this.originalModel.updateOptions({ tabSize: this.tabSize });
-    this.modifiedModel.updateOptions({ tabSize: this.tabSize });
+    // Apply indent settings to models
+    const modelOptions = toMonacoModelOptions();
+    this.originalModel.updateOptions(modelOptions);
+    this.modifiedModel.updateOptions(modelOptions);
     
     this.isDiffMode = true;
     this.processEventListener('onDiffModeChanged');
@@ -335,6 +464,7 @@ export class TabTextEditorState extends TabState {
     
     this.isDiffMode = false;
     this.originalText = ``;
+    this.unbindMonacoHistory();
     this.processEventListener('onDiffModeChanged');
   }
 

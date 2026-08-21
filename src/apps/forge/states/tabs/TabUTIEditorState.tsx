@@ -1,12 +1,19 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import * as KotOR from "@/apps/forge/KotOR";
+import { snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
+import { beginUtxFileUpdate, finishUtxUndoApply } from "@/apps/forge/helpers/UTxEditorHelpers";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabUTIEditor } from "@/apps/forge/components/tabs/tab-uti-editor/TabUTIEditor";
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import * as THREE from "three";
 import { ForgeItem, ItemPropertyEntry } from "@/apps/forge/module-editor/ForgeItem";
+import {
+  attachUtxModelPreview,
+  bindUtxPreviewOnGameData,
+  utxShouldShow3DPreview,
+} from "@/apps/forge/helpers/utxPreview3D";
 
 export type { ItemPropertyEntry };
 
@@ -33,6 +40,7 @@ export class TabUTIEditorState extends TabState {
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    bindUtxPreviewOnGameData(this);
     this.setContentView(<TabUTIEditor tab={this}></TabUTIEditor>);
     this.openFile();
     this.saveTypes = [
@@ -64,14 +72,17 @@ export class TabUTIEditorState extends TabState {
   
         file.readFile().then( async (response) => {
           this.item = new ForgeItem(response.buffer, file.resref);
-          this.item.setContext(this.ui3DRenderer);
-          await this.item.load();
-          this.ui3DRenderer.attachObject(this.item.container, false);
+          await this.attachPreview();
+          this.clearUndoHistory();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
       }
     });
+  }
+
+  async attachPreview(): Promise<void> {
+    await attachUtxModelPreview(this.ui3DRenderer, this.item);
   }
 
   box3: THREE.Box3 = new THREE.Box3();
@@ -106,7 +117,7 @@ export class TabUTIEditorState extends TabState {
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     if(!!resref && ext == 'uti'){
       this.item.templateResRef = resref;
-      this.updateFile();
+      this.updateFile({ skipHistory: true });
       return this.item.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
@@ -114,6 +125,7 @@ export class TabUTIEditorState extends TabState {
 
   show(): void {
     super.show();
+    if (!utxShouldShow3DPreview()) return;
     this.ui3DRenderer.enabled = true;
     this.updateCameraFocus();
     this.ui3DRenderer.render();
@@ -124,8 +136,18 @@ export class TabUTIEditorState extends TabState {
     this.ui3DRenderer.enabled = false;
   }
   
-  updateFile(){
+  updateFile(options?: UpdateFileOptions){
+    beginUtxFileUpdate(this, options);
     this.item.exportToBlueprint();
+  }
+
+  protected captureUndoState(): Uint8Array | undefined {
+    return snapshotGff(this.blueprint);
+  }
+
+  protected applyUndoState(state: Uint8Array): void {
+    this.item = new ForgeItem(state, this.file?.resref);
+    finishUtxUndoApply(this, () => this.attachPreview());
   }
 }
 

@@ -239,6 +239,112 @@ const defaults: any = {
     userThemes: [],
     themeCustomizations: {},
     defaultEditors: {},
+    editor: {
+      fontFamily: 'ui-monospace, "Cascadia Code", Consolas, monospace',
+      fontSize: 14,
+      fontLigatures: false,
+      tabSize: 2,
+      insertSpaces: true,
+      wordWrap: 'off',
+      minimap: true,
+      lineNumbers: 'on',
+      renderWhitespace: 'selection',
+      scrollBeyondLastLine: true,
+      mouseWheelZoom: false,
+    },
+    session: {
+      restoreOpenTabs: true,
+      confirmCloseUnsaved: true,
+      explorerOpenOnLaunch: true,
+      showFloatingMiniPlayer: false,
+      traskTourCompleted: false,
+    },
+    localization: {
+      language: 0,
+      gender: 0,
+      previewStrRefFromTlk: true,
+    },
+    editors: {
+      hex: {
+        offsetDisplay: 'hex',
+        bytesPerRow: 16,
+        showAscii: true,
+        uppercase: true,
+      },
+      gff: {
+        showType: true,
+        showPreview: true,
+        previewMaxLength: 48,
+      },
+      twoda: {
+        wrapCells: false,
+        showRowLabel: true,
+      },
+      tlk: {
+        searchResultCap: 500,
+        autoplayVo: false,
+      },
+      ssf: {
+        autoplayOnSelect: false,
+      },
+      viewport: {
+        layers: {
+          lights: true,
+          emitters: true,
+          walkmeshes: false,
+          trimesh: true,
+          skin: true,
+          dangly: true,
+          saber: true,
+          childModels: true,
+          layout: true,
+          ground: true,
+        },
+        windPower: 1,
+        wokWireframe: true,
+        wokGrid: true,
+      },
+      module: {
+        helpers: {
+          creature: true,
+          door: true,
+          encounter: true,
+          placeable: true,
+          merchant: true,
+          sound: true,
+          trigger: true,
+          waypoint: true,
+        },
+      },
+      blueprints: {
+        show3DPreview: true,
+        autoExpandLocString: false,
+      },
+      dlg: {
+        graphLayout: 'vertical',
+      },
+      lip: {
+        head: 'p_bastilah',
+      },
+      image: {
+        filter: 'nearest',
+        checkerboard: true,
+        defaultZoom: '100',
+      },
+      audio: {
+        volume: 0.25,
+        loop: false,
+        visualization: 'spectrum',
+      },
+      gui: {
+        zoomStep: 0.25,
+        zoomMin: 0.1,
+        zoomMax: 5,
+      },
+      archives: {
+        confirmExtractOverwrite: true,
+      },
+    },
   },
 };
 

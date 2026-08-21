@@ -243,12 +243,14 @@ export class ForgeFileSystem {
         const plain: string[] = [];
         const png: string[] = [];
         const jpeg: string[] = [];
+        const psd: string[] = [];
         const wav: string[] = [];
         const mp3: string[] = [];
         for (const d of normalized) {
           if (textExts.has(d)) plain.push(d);
           else if (d === '.png') png.push(d);
           else if (d === '.jpg' || d === '.jpeg') jpeg.push(d);
+          else if (d === '.psd') psd.push(d);
           else if (d === '.wav') wav.push(d);
           else if (d === '.mp3') mp3.push(d);
           else octet.push(d);
@@ -256,6 +258,7 @@ export class ForgeFileSystem {
         if (plain.length) accept['text/plain'] = plain;
         if (png.length) accept['image/png'] = png;
         if (jpeg.length) accept['image/jpeg'] = jpeg;
+        if (psd.length) accept['image/vnd.adobe.photoshop'] = psd;
         if (wav.length) accept['audio/wav'] = wav;
         if (mp3.length) accept['audio/mpeg'] = mp3;
         if (octet.length) accept['application/octet-stream'] = octet;
@@ -363,6 +366,7 @@ export const supportedFilePickerTypes: any[] = [
         ".mod",
         ".ncs",
         ".phn",
+        ".psd",
         ".pwk",
         ".res",
         ".rim",
@@ -385,6 +389,7 @@ export const supportedFilePickerTypes: any[] = [
       "text/plain": [".txt", ".lyt", ".nss", ".vis", ".txi", ".pth"],
       "image/png": [".png"],
       "image/jpeg": [".jpg", ".jpeg"],
+      "image/vnd.adobe.photoshop": [".psd"],
       "audio/wav": [".wav"],
       "audio/mpeg": [".mp3"],
     },
@@ -411,6 +416,12 @@ export const supportedFilePickerTypes: any[] = [
     description: "JPG Image",
     accept: {
       "image/jpeg": [".jpg", ".jpeg"],
+    },
+  },
+  {
+    description: "PSD Image",
+    accept: {
+      "image/vnd.adobe.photoshop": [".psd"],
     },
   },
   {
@@ -608,7 +619,7 @@ export const supportedFileDialogTypes: any[] = [
     extensions: [
       '2da', 'are', 'bic', 'bik', 'dlg', 'dwk', 'erf', 'fac', 'git', 'gff', 'gui', 'ifo',
       'jpg', 'jpeg', 'jrl', 'lip', 'lyt', 'mdl', 'mdl.ascii', 'mdx', 'mod', 'mp3', 'ncs',
-      'nss', 'phn', 'png', 'pth', 'pwk', 'res', 'rim', 'sav', 'ssf', 'tlk', 'tga', 'tpc', 'txi',
+      'nss', 'phn', 'png', 'psd', 'pth', 'pwk', 'res', 'rim', 'sav', 'ssf', 'tlk', 'tga', 'tpc', 'txi',
       'txt', 'utc', 'utd', 'ute', 'uti', 'utm', 'utp', 'uts', 'utt', 'utw', 'vis', 'wav',
       'wok',
     ],
@@ -616,6 +627,7 @@ export const supportedFileDialogTypes: any[] = [
   {name: 'TPC Image', extensions: ['tpc']},
   {name: 'TGA Image', extensions: ['tga']},
   {name: 'PNG Image', extensions: ['png']},
+  {name: 'PSD Image', extensions: ['psd']},
   {name: 'JPG Image', extensions: ['jpg', 'jpeg']},
   {name: 'GFF / Blueprint', extensions: ['gff', 'dlg', 'bic', 'jrl', 'res', 'fac', 'are', 'git', 'ifo']},
   {name: 'Creature Template', extensions: ['utc']},

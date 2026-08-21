@@ -23,10 +23,13 @@ import { ForgeCheckbox } from "@/apps/forge/components/forge-checkbox/forge-chec
 import { SubTab, SubTabHost } from "@/apps/forge/components/SubTabHost";
 import { FormField } from "@/apps/forge/components/form-field/FormField";
 import { InfoBubble } from "@/apps/forge/components/info-bubble/info-bubble";
+import { useForgeHasGameData } from "@/apps/forge/helpers/useForgeHasGameData";
+import { ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
 
 export const TabUTPEditor = function(props: BaseTabProps){
 
   const tab: TabUTPEditorState = props.tab as TabUTPEditorState;
+  const hasGameData = useForgeHasGameData();
   const [selectedTab, setSelectedTab] = useState<string>('basic');
 
   const [animationState, setAnimationState] = useState<number>(0);
@@ -206,11 +209,17 @@ export const TabUTPEditor = function(props: BaseTabProps){
                 <input type="text" maxLength={16} value={tag} onChange={onUpdateResRefField(setTag, 'tag')} />
               </FormField>
               <FormField label="Appearance" info="The appearance of the placeable. This is the model that will be used to display the placeable in-game.">
-                <select className="form-select" value={appearance} onChange={onUpdateByteField(setAppearance, 'appearance')}>
-                  {kPlaceableAppearances.map((appearance: any, index: number) => (
-                    <option key={index} value={index}>{appearance.label}</option>
-                  ))}
-                </select>
+                <ForgeTwoDAIndexField
+                  table="placeables"
+                  value={appearance}
+                  emptyLabel="placeables.2da not loaded"
+                  onChange={(value) => {
+                    const next = clampByte(value);
+                    setAppearance(next);
+                    tab.placeable.setProperty('appearance', next);
+                    tab.updateFile();
+                  }}
+                />
               </FormField>
             </tbody>
           </table>
@@ -319,11 +328,19 @@ export const TabUTPEditor = function(props: BaseTabProps){
               </tr>
               <tr>
                 <td><label>Faction</label></td>
-                <td><select className="form-select" value={faction} onChange={onUpdateByteField(setFaction, 'faction')}>
-                  {kFactions.map((faction: any, index: number) => (
-                    <option key={index} value={index}>{faction.label}</option>
-                  ))}
-                </select></td>
+                <td>
+                  <ForgeTwoDAIndexField
+                    table="repute"
+                    value={faction}
+                    emptyLabel="repute.2da not loaded"
+                    onChange={(value) => {
+                      const next = clampByte(value);
+                      setFaction(next);
+                      tab.placeable.setProperty('faction', next);
+                      tab.updateFile();
+                    }}
+                  />
+                </td>
               </tr>
               <tr>
                 <td><label>Conversation</label></td>
@@ -522,7 +539,7 @@ export const TabUTPEditor = function(props: BaseTabProps){
     <SubTabHost
       tabs={tabs}
       defaultTab="basic"
-      leftPanel={<UI3DRendererView context={tab.ui3DRenderer} />}
+      leftPanel={hasGameData ? <UI3DRendererView context={tab.ui3DRenderer} /> : undefined}
     />
   </>;
 

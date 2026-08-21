@@ -9,7 +9,6 @@ import { ForgeStatusBar } from "@/apps/forge/components/shell/ForgeStatusBar";
 import { MenuTop } from "@/apps/forge/components/MenuTop";
 import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import ModalGrantAccess from "@/apps/forge/components/modal/ModalGrantAccess";
 import { ModalChangeGame } from "@/apps/forge/components/modal/ModalChangeGame";
 import { ModalSettings } from "@/apps/forge/components/modal/ModalSettings";
 import { ModalAbout } from "@/apps/forge/components/modal/ModalAbout";
@@ -26,6 +25,7 @@ import { EditorFile } from "@/apps/forge/EditorFile";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { TabQuickStartState } from "@/apps/forge/states/tabs/TabQuickStartState";
 import { ForgeFloatingMiniPlayer } from "@/apps/forge/components/ForgeFloatingMiniPlayer";
+import { TraskTour } from "@/apps/forge/tutorial/TraskTour";
 import forgeIcon from "@/assets/icons/icon.png";
 import * as KotOR from "@/KotOR";
 
@@ -33,7 +33,6 @@ export const App = (props: any) => {
 
   const appContext = useApp();
   const [appReady, setAppReady] = appContext.appReady;
-  const [showGrantModal, setShowGrantModal] = appContext.showGrantModal;
   const [showLoadingScreen] = appContext.showLoadingScreen;
   const [loadingScreenMessage] = appContext.loadingScreenMessage;
   const [loadingScreenBackgroundURL] = appContext.loadingScreenBackgroundURL;
@@ -46,11 +45,6 @@ export const App = (props: any) => {
     return !!types && Array.from(types).includes('Files');
   };
 
-
-  const onUserGrant = () => {
-    setShowGrantModal(false);
-    beginInit();
-  }
 
   const beginInit = () => {
     ForgeState.InitializeApp().then( () => {
@@ -70,20 +64,19 @@ export const App = (props: any) => {
     // })
   };
 
-  const onUserCancel = () => {
-    setShowGrantModal(true);
-    window.close();
-  }
-
   useEffectOnce( () => {
+    const profile = KotOR.ApplicationProfile.profile;
+    if (profile) {
+      ForgeState.loaderInit(profile.background, profile.logo);
+      ForgeState.loaderShow();
+    }
 
     ForgeState.VerifyGameDirectory(() => {
       console.log('Game Directory', 'verified');
-      setShowGrantModal(false);
       beginInit();
     }, () => {
-      console.warn('Game Directory', 'not found');
-      setShowGrantModal(true);
+      console.warn('Game Directory', 'not found; starting without game data');
+      beginInit();
     });
 
     return () => {
@@ -347,7 +340,11 @@ export const App = (props: any) => {
   }, []);
 
   const westContent = (
-    <div id="tabs-explorer" style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}>
+    <div
+      id="tabs-explorer"
+      data-trask-target="explorer-pane"
+      style={{position: 'absolute', top: 0, left: 0, right: 0, bottom: 0}}
+    >
       <TabManagerProvider manager={ForgeState.explorerTabManager}>
         <TabManager></TabManager>
       </TabManagerProvider>
@@ -391,7 +388,9 @@ export const App = (props: any) => {
               onWestOpenChange={(open) => ForgeState.setExplorerPaneOpen(open)}
             >
               <TabManagerProvider manager={ForgeState.tabManager}>
-                <TabManager renderEmptyState={renderMainTabsEmptyState}></TabManager>
+                <div data-trask-target="main-tabs" style={{ height: "100%", minHeight: 0 }}>
+                  <TabManager renderEmptyState={renderMainTabsEmptyState}></TabManager>
+                </div>
               </TabManagerProvider>
             </LayoutContainer>
           </LayoutContainerProvider>
@@ -402,6 +401,7 @@ export const App = (props: any) => {
         <ModalAbout />
         <CommandPalette />
         <ForgeFloatingMiniPlayer />
+        {appReady ? <TraskTour /> : null}
         {isDragOver && (
           <div className="drag-drop-overlay">
             <div className="drag-drop-overlay__content">
@@ -412,7 +412,6 @@ export const App = (props: any) => {
         )}
       </div>
       <ModalManager manager={ForgeState.modalManager}></ModalManager>
-      <ModalGrantAccess onUserGrant={onUserGrant} onUserCancel={onUserCancel}></ModalGrantAccess>
       <LoadingScreen active={showLoadingScreen} message={loadingScreenMessage} backgroundURL={loadingScreenBackgroundURL} logoURL={loadingScreenLogoURL} />
     </>
   );

@@ -44,16 +44,28 @@
   left: 0;
   z-index: calc(var(--forge-z-dropdown) + 1);
   min-width: 180px;
-  padding: 4px 0;
+  padding: 0;
   background: var(--forge-bg-panel);
   border: 1px solid var(--forge-border);
   box-shadow: var(--forge-shadow-menu);
+  // Keep overflow visible so flyouts are not clipped by the scroller.
+  overflow: visible;
 
   &--flyout {
-    top: 0;
-    left: 100%;
-    margin-left: -1px;
+    // Position comes from fixed inline styles measured against the trigger row.
+    top: auto;
+    left: auto;
+    margin-left: 0;
+    z-index: calc(var(--forge-z-dropdown) + 2);
   }
+}
+
+.forge-menu__scroller {
+  max-height: inherit;
+  padding: 4px 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .forge-menu__item {

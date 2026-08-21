@@ -17,6 +17,7 @@ import {
   TabAudioVisualId,
 } from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
 import * as KotOR from "@/KotOR";
+import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 import "@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer.scss";
 
@@ -31,7 +32,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const contextRef = useRef<CanvasRenderingContext2D | null>(null);
   const visualRef = useRef<HTMLDivElement>(null);
-  const visualIdRef = useRef<TabAudioVisualId>("spectrum");
+  const visualIdRef = useRef<TabAudioVisualId>(forgeAudioSettings.get().visualization);
   const hyperspaceStateRef = useRef<HyperspaceVizState | null>(null);
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -41,7 +42,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const [durationString, setDurationString] = useState<string>("0:00");
   const [volume, setVolume] = useState<number>(AudioPlayerState.volume ?? 0.25);
   const [file, setFile] = useState<KotOR.AudioFile>();
-  const [visualId, setVisualId] = useState<TabAudioVisualId>("spectrum");
+  const [visualId, setVisualId] = useState<TabAudioVisualId>(() => forgeAudioSettings.get().visualization);
   const [ost, setOst] = useState<AudioPlayerOstStatePayload>(() => ({
     active: false,
     label: "",
@@ -212,7 +213,9 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   };
 
   const onVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    AudioPlayerState.SetVolume(parseFloat(e.target.value));
+    const volume = parseFloat(e.target.value);
+    AudioPlayerState.SetVolume(volume);
+    forgeAudioSettings.set({ volume });
   };
 
   const volumeIcon =
@@ -283,7 +286,10 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
               title={opt.title}
               aria-label={opt.label}
               aria-pressed={visualId === opt.id}
-              onClick={() => setVisualId(opt.id)}
+              onClick={() => {
+                setVisualId(opt.id);
+                forgeAudioSettings.set({ visualization: opt.id });
+              }}
             >
               <i className={`fa-solid ${opt.icon}`} aria-hidden />
               <span className="forge-tab-audio__viz-btn-label">{opt.label}</span>

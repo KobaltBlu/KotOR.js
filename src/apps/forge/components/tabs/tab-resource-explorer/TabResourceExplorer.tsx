@@ -4,8 +4,9 @@ import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { EditorFile } from "@/apps/forge/EditorFile";
-import { ForgeProgress, ForgeInput, ForgeInputGroup } from "@/apps/forge/components/ui";
-import "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer.scss";
+import { ForgeProgress, ForgeInput, ForgeInputGroup, ForgeButton } from "@/apps/forge/components/ui";
+import { executeCommand } from "@/apps/forge/commands/forgeCommands";
+import  "@/apps/forge/components/tabs/tab-resource-explorer/TabResourceExplorer.scss";
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
 import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { ResourceListNode } from "@/apps/forge/components/treeview/ResourceListNode";
@@ -13,7 +14,7 @@ import { useContextMenu, ContextMenuItem } from "@/apps/forge/components/common/
 import { promptForDirectory, fileExists, writeFile, ArchiveReadCache, createThrottledProgress, createConcurrencyGate, WRITE_CONCURRENCY } from "@/apps/forge/helpers/AssetExtraction";
 import { createProgressModal, showExtractionResults } from "@/apps/forge/helpers/AssetExtraction";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-import { TabGFFEditorState, TabSSFEditorState, TabTLKEditorState } from "@/apps/forge/states/tabs";
+import { TabERFEditorState, TabGFFEditorState, TabSSFEditorState, TabTLKEditorState } from "@/apps/forge/states/tabs";
 
 
 export interface TabResourceExplorerProps extends BaseTabProps {
@@ -26,6 +27,7 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
   const [loading, setLoading] = useState<boolean>(false);
   const [visibleItems, setVisibleItems] = useState<FileBrowserNode[]>([]);
   const [currentPage, setCurrentPage] = useState<number>(0);
+  const [hasGameData, setHasGameData] = useState(ForgeState.hasGameData);
   const ITEMS_PER_PAGE = 100; // Virtual scrolling chunk size
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
   let searchQuery = '';
@@ -153,7 +155,11 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
     const canOpenWithGff = node.type === 'resource' && !!node.data?.path && gffLikeExtensions.has(nodeExt);
     const canOpenWithSsf = node.type === 'resource' && !!node.data?.path && nodeExt === 'ssf';
     const canOpenWithTlk = node.type === 'resource' && !!node.data?.path && nodeExt === 'tlk';
-    const canOpenWithHex = node.type === 'resource' && !!node.data?.path;
+    const canOpenWithHex = !!node.data?.path && (node.type === 'resource' || !!node.data?.saveGameFolder);
+    const canOpenWithErf = !!node.data?.path && (
+      !!node.data?.saveGameFolder ||
+      (node.type === 'resource' && (nodeExt === 'sav' || nodeExt === 'erf' || nodeExt === 'mod'))
+    );
 
     const items: ContextMenuItem[] = [
       {
@@ -226,6 +232,24 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
       );
     }
 
+    if (canOpenWithErf) {
+      items.push(
+        { id: 'sep-open-with-erf', separator: true },
+        {
+          id: 'open-with-erf',
+          label: 'Open as ERF',
+          onClick: () => {
+            ForgeState.tabManager.addTab(new TabERFEditorState({
+              editorFile: new EditorFile({
+                path: node.data.path,
+                useGameFileSystem: true,
+              }),
+            }));
+          },
+        },
+      );
+    }
+
     if (canOpenWithHex) {
       items.push(
         { id: 'sep-open-with-hex', separator: true },
@@ -258,6 +282,11 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
         updateVisibleItems(TabResourceExplorerState.Resources);
       }
     }
+    const onGameData = () => setHasGameData(ForgeState.hasGameData);
+    ForgeState.addEventListener("onGameDataChanged", onGameData);
+    return () => {
+      ForgeState.removeEventListener("onGameDataChanged", onGameData);
+    };
   });
 
   const onSearchInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -351,6 +380,17 @@ export const TabResourceExplorer = function(props: TabResourceExplorerProps){
       {loading ? (
         <div className="resource-explorer__progress">
           <ForgeProgress striped animated={true} value={100} label="Searching..." />
+        </div>
+      ) : !hasGameData && resourceList.length === 0 ? (
+        <div className="resource-explorer__empty">
+          <p>No game directory is loaded. Open your game directory to browse resources and level up your editing experience.</p>
+          <ForgeButton
+            size="sm"
+            variant="secondary"
+            onClick={() => { void executeCommand("forge.file.loadGameData"); }}
+          >
+            Load Game Directory…
+          </ForgeButton>
         </div>
       ) : (
         <div className="resource-explorer__tree">

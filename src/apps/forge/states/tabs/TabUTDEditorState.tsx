@@ -1,13 +1,20 @@
 import React from "react";
-import { TabState } from "@/apps/forge/states/tabs/TabState";
+import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs/TabState";
 import { EditorFile } from "@/apps/forge/EditorFile";
 import * as KotOR from "@/apps/forge/KotOR";
+import { snapshotGff } from "@/apps/forge/helpers/gffUndoSnapshot";
+import { beginUtxFileUpdate, finishUtxUndoApply } from "@/apps/forge/helpers/UTxEditorHelpers";
 import * as THREE from 'three';
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabUTDEditor } from "@/apps/forge/components/tabs/tab-utd-editor/TabUTDEditor";
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
+import {
+  attachUtxModelPreview,
+  bindUtxPreviewOnGameData,
+  utxShouldShow3DPreview,
+} from "@/apps/forge/helpers/utxPreview3D";
 
 export class TabUTDEditorState extends TabState {
   tabName: string = `UTD`;
@@ -24,6 +31,7 @@ export class TabUTDEditorState extends TabState {
 
     this.ui3DRenderer = new UI3DRenderer();
     this.ui3DRenderer.addEventListener('onBeforeRender', this.animate.bind(this));
+    bindUtxPreviewOnGameData(this);
 
     this.setContentView(<TabUTDEditor tab={this}></TabUTDEditor>);
     this.openFile();
@@ -50,14 +58,17 @@ export class TabUTDEditorState extends TabState {
   
         file.readFile().then( async (response) => {
           this.door = new ForgeDoor(response.buffer, file.resref);
-          this.door.setContext(this.ui3DRenderer);
-          await this.door.load();
-          this.ui3DRenderer.attachObject(this.door.container, false);
+          await this.attachPreview();
+          this.clearUndoHistory();
           this.processEventListener('onEditorFileLoad', [this]);
           resolve(this.blueprint);
         });
       }
     });
+  }
+
+  async attachPreview(): Promise<void> {
+    await attachUtxModelPreview(this.ui3DRenderer, this.door);
   }
 
   box3: THREE.Box3 = new THREE.Box3();
@@ -82,6 +93,7 @@ export class TabUTDEditorState extends TabState {
 
   show(): void {
     super.show();
+    if (!utxShouldShow3DPreview()) return;
     this.ui3DRenderer.enabled = true;
 
     this.updateCameraFocus();
@@ -105,13 +117,23 @@ export class TabUTDEditorState extends TabState {
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     if(!!resref && ext == 'utd'){
       this.door.templateResRef = resref;
-      this.updateFile();
+      this.updateFile({ skipHistory: true });
       return this.door.blueprint.getExportBuffer();
     }
     return super.getExportBuffer(resref, ext);
   }
-  
-  updateFile(){
+
+  updateFile(options?: UpdateFileOptions){
+    beginUtxFileUpdate(this, options);
     this.door.exportToBlueprint();
+  }
+
+  protected captureUndoState(): Uint8Array | undefined {
+    return snapshotGff(this.blueprint);
+  }
+
+  protected applyUndoState(state: Uint8Array): void {
+    this.door = new ForgeDoor(state, this.file?.resref);
+    finishUtxUndoApply(this, () => this.attachPreview());
   }
 }

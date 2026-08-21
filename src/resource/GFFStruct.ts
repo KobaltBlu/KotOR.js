@@ -1,5 +1,7 @@
-import type { GFFField } from "@/resource/GFFField";
+import { GFFField } from "@/resource/GFFField";
 import type { IGFFStructJSON } from "@/interface/resource/IGFFStructJSON";
+import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { CExoLocString } from "./CExoLocString";
 
 /**
  * Represents a GFF (Generic File Format) structure containing a collection of fields.
@@ -87,6 +89,125 @@ export class GFFStruct {
     return this;
   }
 
+  addDWord64(label: string, value: bigint): GFFField {
+    const field = new GFFField(GFFDataType.DWORD64, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addInt64(label: string, value: bigint): GFFField {
+    const field = new GFFField(GFFDataType.INT64, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addDouble(label: string, value: number): GFFField {
+    const field = new GFFField(GFFDataType.DOUBLE, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addFloat(label: string, value: number): GFFField {
+    const field = new GFFField(GFFDataType.FLOAT, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addDWord(label: string, value: number): GFFField {
+    const field = new GFFField(GFFDataType.DWORD, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addInt(label: string, value: number): GFFField {
+    const field = new GFFField(GFFDataType.INT, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addWord(label: string, value: number): GFFField {
+    const field = new GFFField(GFFDataType.WORD, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addShort(label: string, value: number): GFFField  {
+    const field = new GFFField(GFFDataType.SHORT, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addByte(label: string, value: number): GFFField {
+    const field = new GFFField(GFFDataType.BYTE, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addOrientation(label: string, value: {x: number, y: number, z: number, w: number}): GFFField {
+    const field = new GFFField(GFFDataType.ORIENTATION, label);
+    field.setOrientation(value);
+    this.addField(field);
+    return field;
+  }
+
+  addVector(label: string, value: {x: number, y: number, z: number}): GFFField {
+    const field = new GFFField(GFFDataType.VECTOR, label);
+    field.setVector(value);
+    this.addField(field);
+    return field;
+  }
+
+  addCExoString(label: string, value: string): GFFField {
+    const field = new GFFField(GFFDataType.CEXOSTRING, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addRESREF(label: string, value: string): GFFField {
+    const field = new GFFField(GFFDataType.RESREF, label);
+    field.setValue(value);
+    this.addField(field);
+    return field;
+  }
+
+  addCExoLocString(label: string, value: CExoLocString): GFFField {
+    const field = new GFFField(GFFDataType.CEXOLOCSTRING, label);
+    field.setCExoLocString(value);
+    this.addField(field);
+    return field;
+  }
+
+  addVoid(label: string, value: Uint8Array): GFFField {
+    const field = new GFFField(GFFDataType.VOID, label);
+    field.setData(value);
+    this.addField(field);
+    return field;
+  }
+
+  addStruct(label: string, value: GFFStruct): GFFField {
+    const field = new GFFField(GFFDataType.STRUCT, label);
+    field.addChildStruct(value);
+    this.addField(field);
+    return field;
+  }
+
+  addList(label: string, value: GFFStruct[]): GFFField {
+    const field = new GFFField(GFFDataType.LIST, label);
+    field.setChildStructs(value);
+    this.addField(field);
+    return field;
+  }
+
   /**
    * Adds a field to this structure.
    * 
@@ -129,6 +250,18 @@ export class GFFStruct {
         this.fields.splice(i, 1);
         return true;
       }
+    }
+    return false;
+  }
+
+  /**
+   * Removes a field from this structure by instance.
+   */
+  removeField(field: GFFField): boolean {
+    const index = this.fields.indexOf(field);
+    if(index >= 0){
+      this.fields.splice(index, 1);
+      return true;
     }
     return false;
   }

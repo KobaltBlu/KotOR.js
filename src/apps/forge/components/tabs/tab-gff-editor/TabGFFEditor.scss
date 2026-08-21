@@ -1,9 +1,263 @@
 
 
 /* GFF Tab */
+.tab-gff-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--forge-bg, #212121);
+}
+
+.gff-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--forge-border, #333);
+
+  &__search {
+    width: 240px;
+    max-width: 40%;
+  }
+
+  &__matches {
+    min-width: 40px;
+    color: var(--forge-text-muted, #aaa);
+    font-size: 12px;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+}
+
+.gff-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.gff-tree-pane {
+  min-width: 160px;
+  overflow: auto;
+  padding: 8px 4px 8px 8px;
+}
+
+.gff-splitter {
+  width: 6px;
+  cursor: col-resize;
+  flex-shrink: 0;
+  background: transparent;
+
+  &:hover,
+  &:active {
+    background: var(--forge-accent, #337ab7);
+  }
+}
+
+.gff-properties-pane {
+  flex: 1;
+  min-width: 180px;
+  overflow: auto;
+  padding: 10px;
+}
+
+.gff-statusbar {
+  display: flex;
+  gap: 16px;
+  flex-shrink: 0;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: var(--forge-text-muted, #aaa);
+  border-top: 1px solid var(--forge-border, #333);
+}
+
+.gff-inspector {
+  &__meta {
+    margin-bottom: 10px;
+  }
+
+  &__file {
+    font-weight: 600;
+    color: var(--forge-text-bright, #fff);
+  }
+
+  &__path {
+    font-size: 12px;
+    color: var(--forge-text-muted, #aaa);
+    word-break: break-all;
+  }
+
+  &__hint {
+    margin-top: 8px;
+    color: var(--forge-text-muted, #aaa);
+    font-size: 12px;
+  }
+}
+
+.gff-void-hex {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--forge-border, #333);
+  border-radius: 4px;
+  background: var(--forge-bg-raised, #1a1a1a);
+
+  &__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    border-bottom: 1px solid var(--forge-border, #333);
+  }
+
+  &__status {
+    font-size: 12px;
+    color: var(--forge-text-muted, #aaa);
+    margin-right: 4px;
+  }
+
+  &__scroll {
+    height: 240px;
+    overflow: auto;
+    position: relative;
+
+    &:focus {
+      outline: 1px solid var(--forge-accent, #337ab7);
+      outline-offset: -1px;
+    }
+  }
+
+  &__virtual {
+    position: relative;
+    min-width: max-content;
+  }
+
+  &__empty {
+    padding: 12px;
+    font-size: 12px;
+    color: var(--forge-text-muted, #aaa);
+  }
+
+  &__row {
+    position: absolute;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: 4.75rem 1fr 9rem;
+    gap: 0.25rem 0.4rem;
+    align-items: center;
+    padding: 0 6px;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 12px;
+    box-sizing: border-box;
+  }
+
+  &__offset {
+    color: var(--forge-text-muted, #888);
+    user-select: none;
+  }
+
+  &__hex-cells {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
+    align-items: center;
+  }
+
+  &__pair {
+    display: inline-block;
+    min-width: 1.25rem;
+    text-align: center;
+    border-radius: 2px;
+    cursor: text;
+
+    &:hover {
+      background: rgba(18, 142, 199, 0.28);
+    }
+  }
+
+  &__ascii {
+    display: flex;
+    flex-wrap: nowrap;
+    color: var(--forge-text-muted, #888);
+    user-select: none;
+  }
+
+  &__ascii-char {
+    display: inline-block;
+    width: 0.55rem;
+    text-align: center;
+  }
+
+  input[type="text"].gff-void-hex__input {
+    appearance: none;
+    display: inline-block;
+    width: 1.7rem !important;
+    min-width: 1.7rem;
+    max-width: 1.7rem;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 18px;
+    color: inherit;
+    background: rgba(18, 142, 199, 0.16) !important;
+    border: 1px solid rgba(18, 142, 199, 0.65) !important;
+    border-radius: 2px !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  &__hint {
+    padding: 4px 8px 6px;
+    font-size: 11px;
+    color: var(--forge-text-muted, #888);
+    border-top: 1px solid var(--forge-border, #333);
+  }
+}
+
+.gff-node-label {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+
+  &__name {
+    color: #fff;
+  }
+
+  &__title {
+    color: #a378ff;
+  }
+
+  &__value {
+    color: #8f8f8f;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 280px;
+  }
+}
+
+.gff-inline-rename {
+  width: 140px;
+  background: var(--forge-input-bg, #111);
+  color: var(--forge-text, #eee);
+  border: 1px solid var(--forge-accent, #337ab7);
+  font: inherit;
+}
+
+.gff-match > .tree-node-content {
+  box-shadow: inset 2px 0 0 var(--forge-accent, #337ab7);
+}
+
 #gffContainer {
-  padding-top:10px;
-  padding-left:10px;
   white-space: nowrap;
   background: #212121;
 }
@@ -26,10 +280,6 @@ ul.gff-struct {
   }
 }
 
-ul.gff-fields {
-  /*padding-left: 0;*/
-}
-
 li.gff-field.selected, li.gff-struct.selected {
   background: #133652;
 }
@@ -40,15 +290,13 @@ li.gff-struct.gff-root-struct > label {
 
 li.gff-struct > label {
   color: #a378ff;
-  // color: #8476A2;
 }
 
 li.gff-field span.field-label {
   color: #FFFFFF;
-  // color: #337A9C;
-  // color: #BD18FF;
 }
 
+.gff-node-label__type,
 li.gff-field span.field-type {
 
   &.BYTE {
@@ -56,19 +304,19 @@ li.gff-field span.field-type {
   }
 
   &.CHAR {
-    color: #800000;
+    color: #c08080;
   }
   
   &.WORD {
-    color: #808000;
+    color: #c0c060;
   }
   
   &.SHORT {
-    color: #8b008b;
+    color: #c060c0;
   }
   
   &.DWORD {
-    color: #ff0000;
+    color: #ff6b6b;
   }
   
   &.INT {
@@ -76,11 +324,11 @@ li.gff-field span.field-type {
   }
   
   &.DWORD64 {
-    color: #ffff00;
+    color: #ffff80;
   }
   
   &.INT64 {
-    color: #0000cd;
+    color: #7ea0ff;
   }
   
   &.FLOAT {
@@ -92,7 +340,7 @@ li.gff-field span.field-type {
   }
   
   &.CEXOSTRING {
-    color: #4169e1;
+    color: #7aa2f7;
   }
   
   &.RESREF {
@@ -104,7 +352,7 @@ li.gff-field span.field-type {
   }
   
   &.VOID {
-    color: #696969;
+    color: #9a9a9a;
   }
   
   &.STRUCT {
@@ -125,16 +373,37 @@ li.gff-field span.field-type {
 
 }
 
-li.gff-field span.field-value {
-  /* color: #288A43; */
-}
-
 ul.gff-struct, ul.gff-fields, li.gff-field {
   cursor: pointer;
 }
 
 #gffProperties legend {
   margin-bottom:0;
+}
+
+.gff-field.add,
+.gff-struct.add {
+  display: flex;
+  align-items: center;
+  padding: 2px 4px 2px 22px;
+  cursor: pointer;
+
+  .field-icon,
+  .struct-icon {
+    margin-left: -2px;
+  }
+
+  .field-label {
+    margin-left: 6px;
+    font-weight: bold;
+    color: chartreuse;
+  }
+
+  .struct-label {
+    margin-left: 6px;
+    font-weight: bold;
+    color: mediumpurple;
+  }
 }
 
 li.gff-field.add {

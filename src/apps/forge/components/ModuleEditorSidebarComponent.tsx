@@ -3,8 +3,8 @@ import { TabModuleEditorState } from "@/apps/forge/states/tabs";
 import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 import * as THREE from 'three';
-import { ModalBlueprintBrowserState, BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
-import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+import { openBlueprintBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
 import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
 import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
@@ -312,14 +312,10 @@ const PropertyEditor = function(props: { propertyDef: GITPropertyDef; gameObject
       
       const handleBrowseClick = () => {
         if(!blueprintType) return;
-        
-        const modal = new ModalBlueprintBrowserState(blueprintType, (blueprint) => {
-          // Update the property with the selected blueprint's resref
+        openBlueprintBrowser(blueprintType, (blueprint) => {
           const sanitized = gameObject.sanitizeResRef(blueprint.resref);
           updateValue(sanitized);
-        });
-        modal.attachToModalManager(ForgeState.modalManager);
-        modal.open();
+        }, currentValue || "");
       };
       
       return (

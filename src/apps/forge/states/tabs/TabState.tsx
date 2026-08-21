@@ -10,6 +10,7 @@ import { supportedFileDialogTypes, supportedFilePickerTypes } from "@/apps/forge
 import * as KotOR from "@/apps/forge/KotOR";
 import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
+import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -29,6 +30,11 @@ export interface TabStateEventListeners {
   onUndoApplied: Function[],
   onRedoApplied: Function[],
   onHistoryChanged: Function[],
+}
+
+export interface UpdateFileOptions {
+  skipHistory?: boolean;
+  coalesceKey?: string;
 }
 
 export class TabState extends EventListenerModel {
@@ -58,6 +64,8 @@ export class TabState extends EventListenerModel {
   protected undoStack: any[] = [];
   protected redoStack: any[] = [];
   protected suppressUndoCapture: boolean = false;
+  protected undoCoalesceKey: string | null = null;
+  protected undoCoalesceTimer: ReturnType<typeof setTimeout> | undefined;
 
   /**
    * Push the current state onto the undo stack before making a change.
@@ -65,12 +73,36 @@ export class TabState extends EventListenerModel {
    * snapshot. Clears the redo stack on every new change.
    */
   captureUndoSnapshot(): void {
+    this.undoCoalesceKey = null;
+    if (this.undoCoalesceTimer !== undefined) {
+      clearTimeout(this.undoCoalesceTimer);
+      this.undoCoalesceTimer = undefined;
+    }
     if (this.suppressUndoCapture) return;
     const state = this.captureUndoState();
     if (state === undefined) return;
     this.undoStack.push(state);
     this.redoStack = [];
     this.processEventListener('onHistoryChanged', []);
+  }
+
+  /**
+   * Snapshot once per `key` until `delayMs` elapses. Later edits with the
+   * same key (typing, sliders) stay one undo step.
+   */
+  captureCoalescedUndo(key: string, delayMs: number = 400): void {
+    if (this.suppressUndoCapture) return;
+    if (this.undoCoalesceKey !== key) {
+      this.captureUndoSnapshot();
+      this.undoCoalesceKey = key;
+    }
+    if (this.undoCoalesceTimer !== undefined) {
+      clearTimeout(this.undoCoalesceTimer);
+    }
+    this.undoCoalesceTimer = setTimeout(() => {
+      this.undoCoalesceKey = null;
+      this.undoCoalesceTimer = undefined;
+    }, delayMs);
   }
 
   /** Return the current state as a snapshot. Override in subclasses. */
@@ -112,6 +144,11 @@ export class TabState extends EventListenerModel {
   }
 
   clearUndoHistory(): void {
+    this.undoCoalesceKey = null;
+    if (this.undoCoalesceTimer !== undefined) {
+      clearTimeout(this.undoCoalesceTimer);
+      this.undoCoalesceTimer = undefined;
+    }
     this.undoStack = [];
     this.redoStack = [];
     this.processEventListener('onHistoryChanged', []);
@@ -274,7 +311,19 @@ export class TabState extends EventListenerModel {
     window.removeEventListener('keyup', this.#_onKeyUp);
   }
 
-  remove(){
+  remove(options?: { skipUnsavedConfirm?: boolean }){
+    if(
+      !options?.skipUnsavedConfirm
+      && this.isClosable
+      && this.file?.unsaved_changes
+      && getSessionSettings().confirmCloseUnsaved
+    ){
+      const ok = typeof window === "undefined"
+        || window.confirm(`Close "${this.tabName}" without saving?`);
+      if(!ok){
+        return;
+      }
+    }
     this.visible = false;
     if(ForgeState.project && this.file instanceof EditorFile){
       ForgeState.project.removeFromOpenFileList(this.file);
@@ -317,7 +366,7 @@ export class TabState extends EventListenerModel {
   }
 
 
-  updateFile(){
+  updateFile(_options?: UpdateFileOptions){
     //stub method to be overridden by subclasses
   }
 
@@ -326,89 +375,17 @@ export class TabState extends EventListenerModel {
     if(currentFile.archive_path || currentFile.archive_path2){
       return this.saveAs();
     }
-    return new Promise<boolean>( async (resolve, reject) => {
-      try{
-        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-          if(currentFile.path?.length){
-            console.log('saveFile', currentFile.path);
-            //trigger a Save
-            try{
-              const pathInfo = pathParse(currentFile.path);
-              let saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-              fs.writeFile(currentFile.path, saveBuffer, () => {
-                currentFile.buffer = saveBuffer;
-                currentFile.unsaved_changes = false;
-                resolve(true);
-              });
-            }catch(e){
-              console.error(e);
-              resolve(false);
-            }
-          }else{
-            this.saveAs().then( (status: boolean) => {
-              resolve(status);
-            })
-          }
-        }else{
-          try{
-            if(currentFile.handle instanceof FileSystemFileHandle){
-              let granted = (await currentFile.handle.queryPermission({mode: 'readwrite'})) === 'granted';
-              if(!granted){
-                granted = (await currentFile.handle.requestPermission({mode: 'readwrite'})) === 'granted';
-              }
-              if(granted){
-                try{
-                  const pathInfo = pathParse(currentFile.handle.name);
-                  let saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-                  let ws: FileSystemWritableFileStream = await currentFile.handle.createWritable();
-                  await ws.write(saveBuffer as any);
-                  currentFile.buffer = saveBuffer;
-                  currentFile.unsaved_changes = false;
-                  await ws.close();
-                  resolve(true);
-                }catch(e){
-                  console.error(e);
-                  resolve(false);
-                }
-              }else{
-                console.error('Write permissions could not be obtained to save this file');
-                resolve(false);
-              }
-            }else{
-              let newHandle = await window.showSaveFilePicker({
-                suggestedName: this.getSaveSuggestedName(),
-                types: this.saveTypes.length ? this.saveTypes : undefined
-              });
-              if(newHandle){
-                currentFile.handle = newHandle;
-                try{
-                  let ws: FileSystemWritableFileStream = await newHandle.createWritable();
-                  const pathInfo = pathParse(newHandle.name);
-                  const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
-                  await ws.write(saveBuffer as any || new Uint8Array(0) as any);
-                  await ws.close();
-                  currentFile.buffer = saveBuffer;
-                  currentFile.unsaved_changes = false;
-                  resolve(true);
-                }catch(e){
-                  console.error(e);
-                  resolve(false);
-                }
-              }else{
-                console.error('save handle invalid');
-                resolve(false);
-              }
-            }
-          }catch(e){
-            console.error(e);
-            resolve(false);
-          }
-        }
-      }catch(e){
-        console.error(e);
-        resolve(false);
+    try{
+      const pathInfo = pathParse(this.getSaveSuggestedName());
+      const saveBuffer = await this.getExportBuffer(pathInfo.name, pathInfo.ext);
+      const ok = await currentFile.writeBuffer(saveBuffer);
+      if(ok){
+        return true;
       }
-    });
+    }catch(e){
+      console.error(e);
+    }
+    return this.saveAs();
   }
 
   getSaveTypes(): any {

@@ -4,6 +4,7 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { TextureCanvas } from "@/apps/forge/components/TextureCanvas/TextureCanvas";
 import { ModalItemBrowserState, UTIItem } from "@/apps/forge/states/modal/ModalItemBrowserState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { openItemBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
 import { ForgeButton, ForgeInput } from "@/apps/forge/components/ui";
 import {
   CreatureEquipProperty,
@@ -102,9 +103,17 @@ export const UtcEquipmentTab: React.FC<UtcEquipmentTabProps> = ({ tab, race }) =
 
   useEffect(() => {
     const bump = () => setViewTick((n) => n + 1);
-    ModalItemBrowserState.ensureItemsCache()
-      .then(bump)
-      .catch((err) => console.error("Failed to load UTI cache", err));
+    const loadCache = () => {
+      if (!ForgeState.hasGameData) {
+        return;
+      }
+      ModalItemBrowserState.ensureItemsCache()
+        .then(bump)
+        .catch((err) => console.error("Failed to load UTI cache", err));
+    };
+    loadCache();
+    ForgeState.addEventListener("onGameDataChanged", loadCache);
+    return () => ForgeState.removeEventListener("onGameDataChanged", loadCache);
   }, []);
 
   const assignSlot = useCallback((property: CreatureEquipProperty, resref: string) => {
@@ -113,28 +122,23 @@ export const UtcEquipmentTab: React.FC<UtcEquipmentTabProps> = ({ tab, race }) =
   }, [tab, refresh]);
 
   const openSlotBrowser = useCallback((def: EquipSlotDef) => {
-    const modal = new ModalItemBrowserState((item) => {
+    openItemBrowser((item) => {
       assignSlot(def.property, item.resref);
     }, {
       slotFilter: def.slot,
       raceFilter: race,
       title: `Equip ${def.label}`,
+      initial: (tab.creature[def.property] as string) || "",
     });
-    modal.attachToModalManager(ForgeState.modalManager);
-    modal.loadItems();
-    modal.open();
   }, [assignSlot, race]);
 
   const slotResref = (def: EquipSlotDef) => (tab.creature[def.property] as string) || "";
 
   const onAddInventoryItem = () => {
-    const modal = new ModalItemBrowserState((item) => {
+    openItemBrowser((item) => {
       tab.creature.itemList = [...tab.creature.itemList, item.resref];
       refresh();
     }, { title: "Add Inventory Item" });
-    modal.attachToModalManager(ForgeState.modalManager);
-    modal.loadItems();
-    modal.open();
   };
 
   const onChangeInventoryResref = (index: number, value: string) => {
@@ -146,15 +150,15 @@ export const UtcEquipmentTab: React.FC<UtcEquipmentTabProps> = ({ tab, race }) =
   };
 
   const onBrowseInventoryItem = (index: number) => {
-    const modal = new ModalItemBrowserState((item) => {
+    openItemBrowser((item) => {
       const updated = [...tab.creature.itemList];
       updated[index] = item.resref;
       tab.creature.itemList = updated;
       refresh();
-    }, { title: "Replace Inventory Item" });
-    modal.attachToModalManager(ForgeState.modalManager);
-    modal.loadItems();
-    modal.open();
+    }, {
+      title: "Replace Inventory Item",
+      initial: tab.creature.itemList[index],
+    });
   };
 
   const onRemoveInventoryItem = (index: number) => {

@@ -9,7 +9,7 @@
 import { CExoLocString } from "@/resource/CExoLocString";
 import { CExoLocSubString } from "@/resource/CExoLocSubString";
 import type { ForgeDLG } from "@/apps/forge/dlg/ForgeDLG";
-import type { ForgeDLGNode } from "@/apps/forge/dlg/ForgeDLGTypes";
+import { getLocalizationSettings, pickLocStringOverride } from "@/apps/forge/settings/forgeLocalizationSettings";
 
 export type DlgTlkLookup = (strRef: number) => string | undefined;
 
@@ -60,9 +60,9 @@ export function locStringPreview(text?: CExoLocString): string {
   if (!text) {
     return "";
   }
-  const first = text.getString(0);
-  if (first && first.str) {
-    return first.str;
+  const override = pickLocStringOverride(text);
+  if (override) {
+    return override;
   }
   if (typeof text.RESREF === "number" && text.RESREF > -1) {
     return `{StrRef ${text.RESREF}}`;
@@ -78,11 +78,14 @@ export function resolveDlgLineText(
   if (!text) {
     return "";
   }
-  const first = text.getString(0);
-  if (first && first.str) {
-    return first.str;
+  const override = pickLocStringOverride(text);
+  if (override) {
+    return override;
   }
   if (typeof text.RESREF === "number" && text.RESREF > -1) {
+    if (!getLocalizationSettings().previewStrRefFromTlk) {
+      return `{StrRef ${text.RESREF}}`;
+    }
     return lookup(text.RESREF) || `{StrRef ${text.RESREF}}`;
   }
   return "";

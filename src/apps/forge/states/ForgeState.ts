@@ -13,6 +13,10 @@ import { NWScriptParser } from "@/nwscript/compiler/NWScriptParser";
 import { ModalManagerState } from "@/apps/forge/states/modal/ModalManagerState";
 import { MenuTopState } from "@/apps/forge/states/MenuTopState";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
+import { ModalItemBrowserState } from "@/apps/forge/states/modal/ModalItemBrowserState";
+import { ModalBlueprintBrowserState } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
+import { ModalResRefBrowserState } from "@/apps/forge/states/modal/ModalResRefBrowserState";
+import { ModalScriptBrowserState } from "@/apps/forge/states/modal/ModalScriptBrowserState";
 
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeInitializer } from "@/apps/forge/ForgeInitializer";
@@ -20,6 +24,19 @@ import { NWScriptLanguageService } from "@/apps/forge/states/NWScriptLanguageSer
 import { LYTLanguageService } from "@/apps/forge/states/LYTLanguageService";
 import { TXILanguageService } from "@/apps/forge/states/TXILanguageService";
 import { RecentProject } from "@/apps/forge/RecentProject";
+import {
+  isPersistableDirectoryHandle,
+  isProjectDirectoryHandle,
+} from "@/apps/forge/virtual/VirtualProjectFolder";
+import {
+  boundGameDirectoryLabel,
+  clearGameDirectoryBinding,
+  isUsableDirectoryHandle,
+  persistGameDirectoryHandle,
+  persistGameDirectoryPath,
+} from "@/utility/gameDirectoryAccess";
+import { getSessionSettings, shouldRestoreOpenTabs } from "@/apps/forge/settings/forgeSessionSettings";
+import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 export class ForgeState {
   // static MenuTop: MenuTop = new MenuTop()
@@ -34,6 +51,8 @@ export class ForgeState {
   static recentFiles: EditorFile[] = [];
   static recentProjects: RecentProject[] = [];
   static explorerPaneOpen: boolean = true;
+  static hasGameData: boolean = false;
+  static #shellInitialized: boolean = false;
 
   static #persistOpenTabs = (): void => {
     ForgeState.saveOpenTabsState();
@@ -102,6 +121,131 @@ export class ForgeState {
     this.setExplorerPaneOpen(!this.explorerPaneOpen);
   }
 
+  static setHasGameData(value: boolean): void {
+    this.hasGameData = !!value;
+    this.processEventListener('onGameDataChanged', [this.hasGameData]);
+  }
+
+  static async hasChitinKey(): Promise<boolean> {
+    try{
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        if(!KotOR.ApplicationProfile.directory && !KotOR.ApplicationProfile.profile?.directory){
+          return false;
+        }
+      }else if(!KotOR.ApplicationProfile.directoryHandle){
+        return false;
+      }
+      return await KotOR.GameFileSystem.exists('chitin.key');
+    }catch(e){
+      console.warn('ForgeState.hasChitinKey', e);
+      return false;
+    }
+  }
+
+  static gameProfileKey(): string {
+    return String(KotOR.ApplicationProfile.profile?.key || KotOR.ApplicationProfile.key || "").toLowerCase();
+  }
+
+  static getBoundGameDirectoryLabel(): string {
+    const env = KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON ? "electron" : "browser";
+    return boundGameDirectoryLabel({
+      directory: KotOR.ApplicationProfile.directory || KotOR.ApplicationProfile.profile?.directory,
+      directory_handle: KotOR.ApplicationProfile.directoryHandle || KotOR.ApplicationProfile.profile?.directory_handle,
+    }, env);
+  }
+
+  static hasBoundGameDirectory(): boolean {
+    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+      return !!(KotOR.ApplicationProfile.directory || KotOR.ApplicationProfile.profile?.directory);
+    }
+    return !!(KotOR.ApplicationProfile.directoryHandle || KotOR.ApplicationProfile.profile?.directory_handle);
+  }
+
+  static async promptAndBindGameDirectory(): Promise<"ok" | "cancelled" | "invalid"> {
+    const profileKey = ForgeState.gameProfileKey();
+    if(!KotOR.ApplicationProfile.profile){
+      KotOR.ApplicationProfile.profile = { key: profileKey };
+    }
+    const previousDirectory = KotOR.ApplicationProfile.directory;
+    const previousHandle = KotOR.ApplicationProfile.directoryHandle;
+    const previousProfileDirectory = KotOR.ApplicationProfile.profile.directory;
+    const previousProfileHandle = KotOR.ApplicationProfile.profile.directory_handle;
+
+    const restorePrevious = () => {
+      KotOR.ApplicationProfile.directory = previousDirectory;
+      KotOR.ApplicationProfile.directoryHandle = previousHandle;
+      KotOR.ApplicationProfile.profile.directory = previousProfileDirectory;
+      KotOR.ApplicationProfile.profile.directory_handle = previousProfileHandle;
+    };
+
+    if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+      try{
+        const dir = await (window as any).dialog?.locateDirectoryDialog?.();
+        if(!dir){
+          return "cancelled";
+        }
+        KotOR.ApplicationProfile.profile.directory = dir;
+        KotOR.ApplicationProfile.directory = dir;
+        if(!(await ForgeState.hasChitinKey())){
+          restorePrevious();
+          return "invalid";
+        }
+        persistGameDirectoryPath(profileKey, dir);
+      }catch(e){
+        console.error(e);
+        restorePrevious();
+        return "cancelled";
+      }
+    }else{
+      const handle = await KotOR.GameFileSystem.showRequestDirectoryDialog();
+      if(!handle){
+        return "cancelled";
+      }
+      KotOR.ApplicationProfile.directoryHandle = handle;
+      KotOR.ApplicationProfile.profile.directory_handle = handle;
+      if(!(await ForgeState.hasChitinKey())){
+        restorePrevious();
+        return "invalid";
+      }
+      await persistGameDirectoryHandle(profileKey, handle);
+    }
+    return "ok";
+  }
+
+  static async unbindGameDirectory(): Promise<void> {
+    await clearGameDirectoryBinding(ForgeState.gameProfileKey());
+    KotOR.ApplicationProfile.directory = undefined as any;
+    KotOR.ApplicationProfile.directoryHandle = undefined as any;
+    if(KotOR.ApplicationProfile.profile){
+      delete KotOR.ApplicationProfile.profile.directory;
+      delete KotOR.ApplicationProfile.profile.directory_handle;
+    }
+    try{
+      KotOR.KEYManager.Key = new KotOR.KEYObject();
+      KotOR.BIFManager.Clear();
+    }catch(e){
+      console.warn('ForgeState.unbindGameDirectory: archive reset failed', e);
+    }
+    try{
+      KotOR.TLKManager.TLKStrings = [];
+      KotOR.TLKManager.TLKObject = undefined as any;
+    }catch(e){
+      console.warn('ForgeState.unbindGameDirectory: tlk reset failed', e);
+    }
+    ForgeState.setHasGameData(false);
+    ForgeState.invalidateGameCatalogCaches();
+    TabResourceExplorerState.Resources.length = 0;
+    ForgeState.resourceExplorerTab?.reload();
+    MenuTopState.rebuild();
+  }
+
+  static invalidateGameCatalogCaches(): void {
+    ModalItemBrowserState.invalidateCache();
+    ModalBlueprintBrowserState.invalidateCache();
+    ModalResRefBrowserState.invalidateKeyCache();
+    ModalScriptBrowserState.invalidateKeyCache();
+  }
+
   /**
    * Initializes the loading screen
    */
@@ -135,11 +279,10 @@ export class ForgeState {
       if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
         KotOR.ApplicationProfile.directory = KotOR.ApplicationProfile.profile.directory;
       }else{
-        const profileHandle = KotOR.ApplicationProfile.profile?.directory_handle as FileSystemDirectoryHandle | undefined;
-        if(profileHandle instanceof FileSystemDirectoryHandle){
+        const profileHandle = KotOR.ApplicationProfile.profile?.directory_handle;
+        if(isUsableDirectoryHandle(profileHandle)){
           KotOR.ApplicationProfile.directoryHandle = profileHandle;
-        }else if(KotOR.ApplicationProfile.directoryHandle instanceof FileSystemDirectoryHandle){
-          // Keep the active granted handle and mirror it onto the profile object.
+        }else if(isUsableDirectoryHandle(KotOR.ApplicationProfile.directoryHandle)){
           KotOR.ApplicationProfile.profile.directory_handle = KotOR.ApplicationProfile.directoryHandle;
         }else{
           KotOR.ApplicationProfile.directoryHandle = undefined as any;
@@ -152,27 +295,32 @@ export class ForgeState {
       ForgeInitializer.AddEventListener('on-loader-message', (message: string) => {
         ForgeState.loaderMessage(message);
       });
-      ForgeInitializer.Init(KotOR.ApplicationProfile.GameKey).then( async () => {
+
+      const finish = async () => {
         await this.initNWScriptParser();
-        KotOR.OdysseyWalkMesh.Init();
-        KotOR.AudioEngine.GetAudioEngine();
-        KotOR.AudioEngine.GAIN_SFX = 0.75;
-        KotOR.AudioEngine.GAIN_VO = 0.75;
-        KotOR.AudioEngine.GAIN_MUSIC = 0.75;
-        KotOR.AudioEngine.GAIN_MOVIE = 0.75;
-        KotOR.AudioEngine.GAIN_GUI = 0.75;
+        try{
+          KotOR.OdysseyWalkMesh.Init();
+        }catch(e){
+          console.warn('OdysseyWalkMesh.Init failed', e);
+        }
+        try{
+          KotOR.AudioEngine.GetAudioEngine();
+          KotOR.AudioEngine.GAIN_SFX = 0.75;
+          KotOR.AudioEngine.GAIN_VO = 0.75;
+          KotOR.AudioEngine.GAIN_MUSIC = 0.75;
+          KotOR.AudioEngine.GAIN_MOVIE = 0.75;
+          KotOR.AudioEngine.GAIN_GUI = 0.75;
+        }catch(e){
+          console.warn('AudioEngine init failed', e);
+        }
         MenuTopState.rebuild();
         AudioPlayerState.AddEventListener("onFloatingMiniPlayerPrefs", () => {
           MenuTopState.rebuild();
         });
-        //ConfigClient.get('Game.debug.light_helpers') ? true : false
-        // KotOR.LightManager.toggleLightHelpers();
-        // KotOR.AudioEngine.GetAudioEngine() = new KotOR.AudioEngine();
 
         ForgeState.recentFiles = ForgeState.getRecentFiles();
         ForgeState.recentProjects = ForgeState.getRecentProjects();
         
-        // Restore handles from IndexedDB for browser projects
         if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.BROWSER){
           const { get } = await import('idb-keyval');
           for(const proj of ForgeState.recentProjects){
@@ -180,7 +328,7 @@ export class ForgeState {
               const handleKey = `project_handle_${proj.getIdentifier()}`;
               try {
                 const handle = await get(handleKey);
-                if(handle instanceof FileSystemDirectoryHandle){
+                if(isUsableDirectoryHandle(handle) || isProjectDirectoryHandle(handle)){
                   proj.handle = handle;
                 }
               } catch(e) {
@@ -193,71 +341,113 @@ export class ForgeState {
         this.processEventListener('onRecentProjectsUpdated', []);
         this.processEventListener('onRecentFilesUpdated', []);
 
-        ForgeState.tabManager.clearAllTabs();
-        ForgeState.explorerTabManager.clearAllTabs();
-        
-        const tabStates: TabStoreState[] = KotOR.ConfigClient.get('open_tabs', []);
-        if(tabStates.length){
-          for(let i = 0; i < tabStates.length; i++){
-            const tabState = tabStates[i];
-            this.tabManager.restoreTabState(tabState);
+        if(!ForgeState.#shellInitialized){
+          ForgeState.tabManager.clearAllTabs();
+          ForgeState.explorerTabManager.clearAllTabs();
+
+          const session = getSessionSettings();
+          ForgeState.setExplorerPaneOpen(session.explorerOpenOnLaunch);
+          AudioPlayerState.volume = forgeAudioSettings.get().volume;
+          AudioPlayerState.loop = forgeAudioSettings.get().loop;
+          if (session.showFloatingMiniPlayer) {
+            AudioPlayerState.showFloatingMiniPlayer();
           }
-        }else{
-          ForgeState.tabManager.addTab(new TabQuickStartState());
+
+          const tabStates: TabStoreState[] = KotOR.ConfigClient.get('open_tabs', []);
+          if(shouldRestoreOpenTabs(session.restoreOpenTabs, tabStates)){
+            for(let i = 0; i < tabStates.length; i++){
+              const tabState = tabStates[i];
+              this.tabManager.restoreTabState(tabState);
+            }
+          }else{
+            ForgeState.tabManager.addTab(new TabQuickStartState());
+          }
+
+          const persistOpenTabs = ForgeState.#persistOpenTabs;
+          ForgeState.tabManager.removeEventListener('onTabAdded', persistOpenTabs);
+          ForgeState.tabManager.removeEventListener('onTabRemoved', persistOpenTabs);
+          ForgeState.tabManager.removeEventListener('onTabsReordered', persistOpenTabs);
+          ForgeState.tabManager.addEventListener('onTabAdded', persistOpenTabs);
+          ForgeState.tabManager.addEventListener('onTabRemoved', persistOpenTabs);
+          ForgeState.tabManager.addEventListener('onTabsReordered', persistOpenTabs);
+
+          ForgeState.saveOpenTabsState();
+
+          ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
+          ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
+          ForgeState.resourceExplorerTab.show();
+          ForgeState.#shellInitialized = true;
         }
 
-        const persistOpenTabs = ForgeState.#persistOpenTabs;
-        ForgeState.tabManager.removeEventListener('onTabAdded', persistOpenTabs);
-        ForgeState.tabManager.removeEventListener('onTabRemoved', persistOpenTabs);
-        ForgeState.tabManager.removeEventListener('onTabsReordered', persistOpenTabs);
-        ForgeState.tabManager.addEventListener('onTabAdded', persistOpenTabs);
-        ForgeState.tabManager.addEventListener('onTabRemoved', persistOpenTabs);
-        ForgeState.tabManager.addEventListener('onTabsReordered', persistOpenTabs);
-
-        // Tabs restored or default quick start are added before listeners exist; persist once so
-        // open_tabs (including Start Page) matches the real tab strip after load.
-        ForgeState.saveOpenTabsState();
-
-        ForgeState.explorerTabManager.addTab(ForgeState.resourceExplorerTab);
-        ForgeState.explorerTabManager.addTab(ForgeState.projectExplorerTab);
-        ForgeState.resourceExplorerTab.show();
-
-        TabResourceExplorerState.GenerateResourceList( ForgeState.resourceExplorerTab ).then( (resourceList) => {
-          ForgeState.loaderHide();
-          const perfMonitor = (KotOR.GameState as any)?.PerformanceMonitor;
-          if(perfMonitor && typeof perfMonitor.toString === 'function'){
-            console.log(perfMonitor.toString());
+        if(ForgeState.hasGameData){
+          try{
+            await TabResourceExplorerState.GenerateResourceList(ForgeState.resourceExplorerTab);
+          }catch(e){
+            console.warn('GenerateResourceList failed', e);
           }
-          // ScriptEditorTab.InitNWScriptLanguage();
-          resolve();
-        });
+        }else{
+          TabResourceExplorerState.Resources.length = 0;
+          ForgeState.resourceExplorerTab.reload();
+        }
+        ForgeState.loaderHide();
+        const perfMonitor = (KotOR.GameState as any)?.PerformanceMonitor;
+        if(perfMonitor && typeof perfMonitor.toString === 'function'){
+          console.log(perfMonitor.toString());
+        }
+        resolve();
+      };
+
+      ForgeState.hasChitinKey().then(async (hasKey) => {
+        const loaded = await ForgeInitializer.Init(KotOR.ApplicationProfile.GameKey, { loadGameData: hasKey });
+        ForgeState.setHasGameData(!!loaded);
+        await finish();
+      }).catch(async (e) => {
+        console.error(e);
+        await ForgeInitializer.Init(KotOR.ApplicationProfile.GameKey, { loadGameData: false });
+        ForgeState.setHasGameData(false);
+        await finish();
       });
     });
   }
 
+  static async attachGameData(): Promise<boolean> {
+    ForgeState.loaderInit(KotOR.ApplicationProfile.profile.background, KotOR.ApplicationProfile.profile.logo);
+    ForgeState.loaderShow();
+    ForgeState.loaderMessage('Loading game data...');
+    try{
+      const loaded = await ForgeInitializer.LoadGameData();
+      ForgeState.setHasGameData(!!loaded);
+      if(loaded){
+        ForgeState.invalidateGameCatalogCaches();
+        await this.initNWScriptParser();
+        try{
+          await TabResourceExplorerState.GenerateResourceList(ForgeState.resourceExplorerTab);
+        }catch(e){
+          console.warn('GenerateResourceList failed', e);
+        }
+        MenuTopState.rebuild();
+      }
+      return !!loaded;
+    }catch(e){
+      console.error('ForgeState.attachGameData', e);
+      ForgeState.setHasGameData(false);
+      return false;
+    }finally{
+      ForgeState.loaderHide();
+    }
+  }
+
   static async VerifyGameDirectory(onVerified: Function, onError: Function){
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-      // let validated = await KotOR.GameFileSystem.validateDirectory(KotOR.ApplicationProfile.rootDirectory);
-      if(await KotOR.GameFileSystem.exists('chitin.key')){
+      if(await ForgeState.hasChitinKey()){
         onVerified();
       }else{
-        try{
-          let dir = await (window as any).dialog.locateDirectoryDialog();
-          if(dir){
-            KotOR.ApplicationProfile.profile.directory = dir;
-            onVerified();
-          }else{
-            console.error('no directory');
-          }
-
-        }catch(e: any){
-          console.error(e);
-        }
+        onError();
       }
     }else{
       if(KotOR.ApplicationProfile.directoryHandle){
         let validated = await KotOR.GameFileSystem.validateDirectoryHandle(KotOR.ApplicationProfile.directoryHandle);
-        if(validated){
+        if(validated && await ForgeState.hasChitinKey()){
           onVerified();
         }else{
           onError();
@@ -276,18 +466,32 @@ export class ForgeState {
   }
 
   static initNWScriptParser(){
-    return new Promise<void>( (resolve, reject) => {
-      KotOR.ResourceLoader.loadResource( KotOR.ResourceTypes.nss, 'nwscript').then(
+    return new Promise<void>( (resolve) => {
+      const registerLanguages = () => {
+        try{
+          NWScriptLanguageService.initNWScriptLanguage();
+          LYTLanguageService.initLYTLanguage();
+          TXILanguageService.initTXILanguage();
+        }catch(e){
+          console.warn('language service init failed', e);
+        }
+        resolve();
+      };
+      KotOR.ResourceLoader.loadResource(KotOR.ResourceTypes.nss, 'nwscript').then(
         (nss: Uint8Array) => {
           this.nwscript_nss = nss;
           const textDecoder = new TextDecoder();
           this.nwScriptParser = new NWScriptParser(textDecoder.decode(this.nwscript_nss));
-          NWScriptLanguageService.initNWScriptLanguage();
-          LYTLanguageService.initLYTLanguage();
-          TXILanguageService.initTXILanguage();
-          resolve();
+          registerLanguages();
         }
-      ).catch( (e) => {console.error(e)});
+      ).catch( (e) => {
+        console.warn('nwscript.nss not available; script editing continues without engine completions', e);
+        this.nwscript_nss = this.nwscript_nss ?? new Uint8Array(0);
+        if(!this.nwScriptParser){
+          this.nwScriptParser = new NWScriptParser('');
+        }
+        registerLanguages();
+      });
     });
   }
 
@@ -369,28 +573,25 @@ export class ForgeState {
   static async addRecentProject(projectPathOrHandle: string | FileSystemDirectoryHandle, handle?: FileSystemDirectoryHandle){
     try{
       let project: RecentProject | null = null;
+      const asHandle = isProjectDirectoryHandle(projectPathOrHandle)
+        ? projectPathOrHandle
+        : (isProjectDirectoryHandle(handle) ? handle : undefined);
 
-      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-        // For Electron, projectPathOrHandle is a string path
-        if(typeof projectPathOrHandle === 'string' && projectPathOrHandle){
+      if(asHandle){
+        project = new RecentProject({
+          handle: asHandle,
+          name: asHandle.name,
+          virtual: ProjectFileSystem.isVirtual,
+        });
+      } else if(typeof projectPathOrHandle === 'string' && projectPathOrHandle){
+        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
           const normalizedPath = projectPathOrHandle.replace(/\\/g, '/');
           project = new RecentProject({ path: normalizedPath });
-        }
-      } else {
-        // For Browser, projectPathOrHandle could be a handle or a string name
-        if(projectPathOrHandle instanceof FileSystemDirectoryHandle){
-          project = new RecentProject({ 
-            handle: projectPathOrHandle,
-            name: projectPathOrHandle.name 
+        } else {
+          project = new RecentProject({
+            name: projectPathOrHandle,
+            virtual: ProjectFileSystem.isVirtual,
           });
-        } else if(handle instanceof FileSystemDirectoryHandle){
-          project = new RecentProject({ 
-            handle: handle,
-            name: typeof projectPathOrHandle === 'string' ? projectPathOrHandle : handle.name 
-          });
-        } else if(typeof projectPathOrHandle === 'string'){
-          // Fallback: just store the name if handle is not available
-          project = new RecentProject({ name: projectPathOrHandle });
         }
       }
 
@@ -407,18 +608,15 @@ export class ForgeState {
         ForgeState.recentProjects = ForgeState.recentProjects.slice(0, 10);
       }
 
-      // Sync with ConfigClient (handles are stored in IndexedDB via idb-keyval)
-      // We serialize the project data, but handles are stored separately
       const { set } = await import('idb-keyval');
       KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
         const serialized: any = {
           path: proj.path,
-          name: proj.name
+          name: proj.name,
+          virtual: !!proj.virtual,
         };
-        // Store handle separately in IndexedDB if available
-        if(proj.handle){
+        if(isPersistableDirectoryHandle(proj.handle)){
           const handleKey = `project_handle_${proj.getIdentifier()}`;
-          // Store handle in IndexedDB (idb-keyval handles FileSystemDirectoryHandle)
           set(handleKey, proj.handle).catch((e) => {
             console.warn('Failed to store handle in IndexedDB:', e);
           });
@@ -467,9 +665,10 @@ export class ForgeState {
       KotOR.ConfigClient.options.recent_projects = ForgeState.recentProjects.map((proj: RecentProject) => {
         const serialized: any = {
           path: proj.path,
-          name: proj.name
+          name: proj.name,
+          virtual: !!proj.virtual,
         };
-        if(proj.handle){
+        if(isPersistableDirectoryHandle(proj.handle)){
           const handleKey = `project_handle_${proj.getIdentifier()}`;
           set(handleKey, proj.handle).catch((e) => {
             console.warn('Failed to store handle in IndexedDB:', e);
@@ -624,4 +823,12 @@ export class ForgeState {
 window.addEventListener('beforeunload', (event) => { 
   console.log('Saving Editor Config');
   ForgeState.saveOpenTabsState();
+  const session = getSessionSettings();
+  if (session.confirmCloseUnsaved) {
+    const dirty = ForgeState.tabManager.tabs.some((tab) => tab.isClosable && tab.file?.unsaved_changes);
+    if (dirty) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+  }
 });

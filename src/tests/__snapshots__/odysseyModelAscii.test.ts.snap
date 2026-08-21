@@ -1,0 +1,14 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`odysseyModelAscii model banner + header lines snapshot (helpers only) 1`] = `
+"# Exported with KotOR.js
+# MODEL ASCII
+newmodel testgeom
+setsupermodel testgeom null
+classification other
+classification_unk1 0
+ignorefog 1
+setanimationscale 1.0
+compress_quaternions 0
+headlink 0"
+`;

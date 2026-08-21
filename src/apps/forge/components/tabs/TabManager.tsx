@@ -3,6 +3,8 @@ import TabButton from "@/apps/forge/components/tabs/TabButton";
 import { useTabManager } from "@/apps/forge/context/TabManagerContext";
 import { TabState } from "@/apps/forge/states/tabs";
 import { ContextMenuItem, useContextMenu } from "@/apps/forge/components/common/ContextMenu";
+import { tabCanOpenAsGff } from "@/apps/forge/commands/editorCommandGuards";
+import { executeCommand } from "@/apps/forge/commands/forgeCommands";
 
 import "./TabManager.scss";
 
@@ -108,6 +110,16 @@ export const TabManager = function(props: TabManagerProps){
         onClick: () => closeToRight(tab),
       },
     ];
+    if (tabCanOpenAsGff(tab)) {
+      items.push({ id: `sep-open-gff-${tab.id}`, separator: true });
+      items.push({
+        id: `open-gff-${tab.id}`,
+        label: 'Open as GFF Editor',
+        onClick: () => {
+          void executeCommand('forge.file.openAsGff');
+        },
+      });
+    }
     showContextMenu(e.clientX, e.clientY, items);
   };
 
