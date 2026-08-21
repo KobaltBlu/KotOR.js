@@ -203,6 +203,22 @@ export const TabPTHEditor = function(props: BaseTabProps){
     ],
   };
 
+  const fileMenu: MenuItem = {
+    label: 'File',
+    children: [
+      {
+        label: 'Save',
+        shortcut: formatKeybinding('Mod+S'),
+        onClick: () => { void tab.save(); },
+      },
+      {
+        label: 'Save As...',
+        shortcut: formatKeybinding('Mod+Shift+S'),
+        onClick: () => { void tab.saveAs(); },
+      },
+    ],
+  };
+
   const menuItems: MenuItem[] = useMemo(() => {
     const windPowerMenu: MenuItem = {
       label: 'Wind Power',
@@ -251,6 +267,7 @@ export const TabPTHEditor = function(props: BaseTabProps){
     };
 
     return [
+      fileMenu,
       editMenu,
       {
         label: 'View',
