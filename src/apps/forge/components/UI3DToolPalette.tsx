@@ -135,10 +135,10 @@ export const UI3DToolPalette: React.FC<UI3DToolPaletteProps> = ({
   };
 
   const isToolActive = (tool: Tool): boolean => {
-    if (activeToolId !== undefined) {
+    if (activeToolId != null && activeToolId !== '') {
       return activeToolId === tool.id;
     }
-    return tool.active || false;
+    return !!tool.active;
   };
 
   return (
