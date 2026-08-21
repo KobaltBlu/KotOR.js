@@ -22,6 +22,7 @@ export enum TabPTHEditorControlMode {
   SELECT = 0,
   ADD_POINT = 1,
   ADD_CONNECTION = 2,
+  PAN = 3,
 };
 
 export class TabPTHEditorState extends TabState {
@@ -86,6 +87,9 @@ export class TabPTHEditorState extends TabState {
     } else {
       this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => {
         this.bindTransformControlsHistory();
+        if(this.roomsLoaded){
+          this.updateCameraFocus();
+        }
       });
     }
 
@@ -227,8 +231,14 @@ export class TabPTHEditorState extends TabState {
     for(let i = 0; i < this.points.length; i++){
       this.box3.expandByPoint(this.points[i].vector);
     }
-    this.box3.getCenter(this.center);
-    this.ui3DRenderer.orbitControls.target.copy(this.center);
+    if(this.box3.isEmpty()){
+      this.center.set(0, 0, 0);
+    } else {
+      this.box3.getCenter(this.center);
+    }
+    const controls = this.ui3DRenderer.orbitControls;
+    if(!controls) return;
+    controls.target.copy(this.center);
   }
 
   private onSelect(intersect: THREE.Intersection): void {
@@ -402,7 +412,13 @@ export class TabPTHEditorState extends TabState {
     if(!pointA || !pointB || pointA === pointB) return;
 
     this.captureUndoSnapshot();
-    pointA.addConnection(pointB);
+    const alreadyConnected = pointA.connections.indexOf(pointB) >= 0;
+    if(alreadyConnected){
+      pointA.removeConnection(pointB);
+      pointB.removeConnection(pointA);
+    } else {
+      pointA.addConnection(pointB);
+    }
     this.updatePathVisualization();
     this.markUnsaved();
     this.notifyPathChanged();
@@ -416,16 +432,14 @@ export class TabPTHEditorState extends TabState {
     if(!pointToDelete) return;
 
     this.captureUndoSnapshot();
-    console.log('selectedPointIndex', this.selectedPointIndex);
-    console.log('pointToDelete', pointToDelete);
-    
+
+    // Drop both ends of every edge — neighbors keep reverse refs otherwise and lines linger.
     const connections = pointToDelete.connections.slice();
     for(let i = 0; i < connections.length; i++){
       const connection = connections[i];
       pointToDelete.removeConnection(connection);
+      connection.removeConnection(pointToDelete);
     }
-
-    console.log('connections', connections, pointToDelete.connections.slice());
     
     // Remove the point from the array
     this.points.splice(this.selectedPointIndex, 1);
@@ -677,8 +691,8 @@ export class TabPTHEditorState extends TabState {
   }
 
   private async loadLayoutRooms(): Promise<void> {
-    // Clear existing layout models
-    this.disposeLayout();
+    // Clear existing room meshes only — do not wipe this.layout (needed below).
+    this.disposeLayoutModels();
 
     if(!this.layout || !this.layout.rooms || this.layout.rooms.length === 0) return;
     if(!utxShouldShow3DPreview()) return;
@@ -837,7 +851,7 @@ export class TabPTHEditorState extends TabState {
     this.updatePathVisualization();
   }
 
-  private disposeLayout(): void {
+  private disposeLayoutModels(): void {
     this.layoutModels.forEach(model => {
       this.ui3DRenderer.removeObjectFromGroup(model, GroupType.ROOMS);
       try {
@@ -860,6 +874,10 @@ export class TabPTHEditorState extends TabState {
       }
     });
     this.walkmeshes = [];
+  }
+
+  private disposeLayout(): void {
+    this.disposeLayoutModels();
     this.layout = undefined as any;
   }
   

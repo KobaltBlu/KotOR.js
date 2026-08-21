@@ -1,12 +1,15 @@
-/* MenuBar is position:absolute (24px + 1px border). Reserve space like TabTwoDAEditor.twoda-table-area. */
+/* MenuBar is position:absolute (overlay). Reserve space like TLK / 2DA editors. */
 .tab-ssf-editor {
   position: relative;
   min-height: 0;
   height: 100%;
+  overflow: hidden;
+  background: var(--forge-bg, #1e1e1e);
+  color: var(--forge-text, #e0e0e0);
 
   &__scroll {
     position: absolute;
-    top: 25px;
+    top: calc(var(--forge-menubar-height, 22px) + 1px);
     right: 0;
     bottom: 0;
     left: 0;
@@ -14,13 +17,27 @@
     padding: 0;
   }
 
+  &__loading {
+    margin: 0.75rem 1rem;
+    color: var(--forge-text-muted, #9a9a9a);
+  }
+
+  &__table {
+    min-width: 36rem;
+  }
+
   &__grid-header,
   &__grid-row {
     display: grid;
-    grid-template-columns: minmax(7.5rem, 1fr) 7.5rem minmax(6.5rem, 9rem) minmax(0, 1.5fr) 6.5rem;
-    gap: 0.5rem;
+    grid-template-columns:
+      minmax(9rem, 11rem)
+      7.5rem
+      minmax(7rem, 10rem)
+      minmax(0, 1fr)
+      6rem;
+    gap: 0.35rem 0.65rem;
     align-items: center;
-    padding: 0.35rem 0.5rem;
+    padding: 0.35rem 0.65rem;
   }
 
   &__grid-header {
@@ -31,35 +48,60 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    border-bottom: 1px solid var(--forge-border);
-    background: var(--forge-bg);
+    border-bottom: 1px solid var(--forge-border, rgba(255, 255, 255, 0.08));
+    background: var(--forge-bg, #1e1e1e);
+    color: var(--forge-text-muted, #9a9a9a);
   }
 
-  &__grid-row {
-    border-bottom: 1px solid var(--forge-border);
-    font-size: 0.875rem;
+  &__actions-heading {
+    text-align: end;
   }
 
-  &__grid-row:nth-child(even) {
+  &__rows .tab-ssf-editor__grid-row:nth-child(even) {
     background: rgba(255, 255, 255, 0.02);
   }
 
+  &__grid-row {
+    border-bottom: 1px solid var(--forge-border, rgba(255, 255, 255, 0.08));
+    font-size: 0.875rem;
+    cursor: default;
+
+    &:hover {
+      background: var(--forge-bg-hover, rgba(255, 255, 255, 0.04));
+    }
+  }
+
   &__slot-label {
-    font-family: ui-monospace, monospace;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
     font-size: 0.72rem;
     word-break: break-word;
+    line-height: 1.25;
+  }
+
+  &__strref-cell {
+    min-width: 0;
   }
 
   &__strref-input {
+    width: 100%;
     max-width: 7.5rem;
+    box-sizing: border-box;
   }
 
   &__sound-ref {
-    font-family: ui-monospace, monospace;
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
     font-size: 0.78rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
+
+    code {
+      font: inherit;
+      color: inherit;
+      background: transparent;
+      padding: 0;
+    }
   }
 
   &__tlk-preview {
@@ -68,20 +110,26 @@
     white-space: nowrap;
     font-size: 0.8rem;
     opacity: 0.92;
+    min-width: 0;
+  }
+
+  &__empty {
+    color: var(--forge-text-muted, #9a9a9a);
   }
 
   &__actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.25rem;
     align-items: center;
     justify-content: flex-end;
+    min-width: 0;
   }
 
   &__preview-error {
     font-size: 0.72rem;
-    color: var(--forge-danger);
-    max-width: 6rem;
+    color: var(--forge-danger, #e57373);
+    max-width: 4.5rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -424,26 +424,89 @@ export class UI3DRenderer extends EventListenerModel {
   
   #center: THREE.Vector3 = new THREE.Vector3();
   #box3: THREE.Box3 = new THREE.Box3();
+  #focusScratchBox: THREE.Box3 = new THREE.Box3();
+
+  /**
+   * Skyboxes / backdrop meshes are typically not fogged and/or marked backgroundGeometry.
+   * Exclude them so Fit Camera frames the playable scene instead of the sky dome.
+   */
+  private shouldExcludeFromCameraFocus(object: THREE.Object3D): boolean {
+    const odysseyModel = object as KotOR.OdysseyModel3D;
+    if (typeof odysseyModel.affectedByFog === 'boolean' && odysseyModel.modelHeader != null) {
+      if (!odysseyModel.affectedByFog) {
+        return true;
+      }
+    }
+
+    const meshNode = object.userData?.odysseyModelNode as { backgroundGeometry?: boolean } | undefined;
+    if (meshNode?.backgroundGeometry) {
+      return true;
+    }
+
+    const mesh = object as THREE.Mesh;
+    if (mesh.isMesh) {
+      const material = mesh.material;
+      const materials = Array.isArray(material) ? material : material ? [material] : [];
+      if (materials.length > 0 && materials.every((m) => !!m && m.fog === false)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  private expandCameraFocusBounds(object: THREE.Object3D, box: THREE.Box3): void {
+    if (this.shouldExcludeFromCameraFocus(object)) {
+      return;
+    }
+
+    const mesh = object as THREE.Mesh;
+    if (mesh.isMesh && mesh.geometry) {
+      const geometry = mesh.geometry;
+      if (!geometry.boundingBox) {
+        geometry.computeBoundingBox();
+      }
+      if (geometry.boundingBox && !geometry.boundingBox.isEmpty()) {
+        this.#focusScratchBox.copy(geometry.boundingBox).applyMatrix4(mesh.matrixWorld);
+        box.union(this.#focusScratchBox);
+      }
+    }
+
+    const children = object.children;
+    for (let i = 0; i < children.length; i++) {
+      this.expandCameraFocusBounds(children[i], box);
+    }
+  }
 
   private updateCameraFocus(): void {
     console.log('updateCameraFocus');
-    this.#box3 = new THREE.Box3();
+    this.#box3.makeEmpty();
     const objects = this.focusMode === CameraFocusMode.SELECTABLE ? this.selectable.children : this.scene.children;
-    for(let i = 0; i < objects.length; i++){
-      this.#box3.expandByObject(objects[i]);
+    for (let i = 0; i < objects.length; i++) {
+      const root = objects[i];
+      root.updateWorldMatrix(true, true);
+      this.expandCameraFocusBounds(root, this.#box3);
     }
-    this.#box3.getCenter(this.#center);
-    this.orbitControls.target.copy(this.#center);
+    if (this.#box3.isEmpty()) {
+      this.#center.set(0, 0, 0);
+    } else {
+      this.#box3.getCenter(this.#center);
+    }
+    if (this.orbitControls) {
+      this.orbitControls.target.copy(this.#center);
+    }
   }
 
   public fitCameraToScene(offset: number = 1.25): void {
     console.log('fitCameraToScene', offset);
     this.updateCameraFocus();
-    if(!this.#center) return;
+    if(!this.#center || !this.camera || !this.orbitControls) return;
+    if(this.#box3.isEmpty()) return;
     
     // Calculate bounding box size (box3 is already calculated in updateCameraFocus)
     const boxSize = this.#box3.getSize(new THREE.Vector3());
     const maxSize = Math.max(boxSize.x, boxSize.y, boxSize.z);
+    if(maxSize <= 0) return;
     
     const fov = THREE.MathUtils.degToRad(this.camera.fov); // vertical fov in radians
     const aspect = this.camera.aspect;
