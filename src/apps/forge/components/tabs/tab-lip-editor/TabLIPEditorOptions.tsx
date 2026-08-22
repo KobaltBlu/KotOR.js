@@ -35,6 +35,11 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
   const [includeRestKeys, setIncludeRestKeys] = useState<boolean>(() => parentTab.rhubarb_include_rest_keys);
   const [minCueMs, setMinCueMs] = useState<number>(() => parentTab.rhubarb_min_cue_duration_ms);
   const [workerCount, setWorkerCount] = useState<number>(() => parentTab.rhubarb_worker_count);
+  const [expandFromDialog, setExpandFromDialog] = useState<boolean>(() => parentTab.rhubarb_expand_from_dialog);
+  const [splitConsonants, setSplitConsonants] = useState<boolean>(() => parentTab.rhubarb_split_consonants);
+  const [phraseOnsetKeys, setPhraseOnsetKeys] = useState<boolean>(() => parentTab.rhubarb_phrase_onset_keys);
+  const [timeOffsetMs, setTimeOffsetMs] = useState<number>(() => parentTab.rhubarb_time_offset_ms);
+  const [rekeyAfterGapMs, setRekeyAfterGapMs] = useState<number>(() => parentTab.rhubarb_rekey_after_gap_ms);
 
   const onLIPLoaded = () => {
     setDuration(parentTab.lip.duration);
@@ -155,6 +160,27 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
     parentTab.setRhubarbConfig({ workerCount: next });
   };
 
+  const onToggleBool = (
+    key: "expandFromDialog" | "splitConsonants" | "phraseOnsetKeys",
+    setter: (v: boolean) => void,
+  ) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = e.target.checked;
+    setter(next);
+    parentTab.setRhubarbConfig({ [key]: next });
+  };
+
+  const onTimeOffsetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = Math.max(-200, Math.min(200, parseFloat(e.target.value) || 0));
+    setTimeOffsetMs(next);
+    parentTab.setRhubarbConfig({ timeOffsetMs: next });
+  };
+
+  const onRekeyGapChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = Math.max(0, Math.min(500, parseFloat(e.target.value) || 0));
+    setRekeyAfterGapMs(next);
+    parentTab.setRhubarbConfig({ rekeyAfterGapMs: next });
+  };
+
   const onFitToKeyFrames = () => {
     parentTab.fitDurationToKeyFrames();
   };
@@ -181,12 +207,124 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
     }
   }, [headSelectValue, parentTab]);
 
+  const extraShapes: Array<{ letter: "G" | "H" | "X"; label: string; title: string }> = [
+    { letter: "G", label: "F/V", title: "F and V mouth shape" },
+    { letter: "H", label: "L", title: "L mouth shape" },
+    { letter: "X", label: "Rest", title: "Idle / rest mouth shape" },
+  ];
+
   return (
     <div className="lip-sidebar">
 
-      {/* ── Duration ───────────────────────────────────────────────── */}
-      <SectionContainer name="Duration">
-        <div className="lip-sidebar__field-row">
+      <SectionContainer name="Audio & Preview">
+        <div className="lip-sidebar__field-row lip-sidebar__field-row--audio">
+          <i
+            className={`fa-solid fa-${hasAudio ? 'music' : 'music-slash'} lip-sidebar__audio-icon ${hasAudio ? 'lip-sidebar__audio-icon--active' : 'lip-sidebar__audio-icon--missing'}`}
+            title={hasAudio ? 'Audio loaded' : 'No audio'}
+            aria-hidden
+          />
+          <span className="lip-sidebar__audio-name" title={audioName || 'None'}>
+            {audioName || <em className="lip-sidebar__audio-none">none</em>}
+          </span>
+        </div>
+        <div className="lip-sidebar__btn-row">
+          <ForgeButton
+            variant="secondary"
+            size="sm"
+            className="lip-sidebar__btn"
+            onClick={onReplaceAudioClick}
+            title="Open a WAV or MP3 file to use as the preview audio"
+          >
+            <i className="fa-solid fa-folder-open me-1" aria-hidden />
+            {hasAudio ? 'Replace Audio' : 'Load Audio'}
+          </ForgeButton>
+        </div>
+        <div className="lip-sidebar__stack">
+          <label className="lip-sidebar__label" htmlFor="lip-head-select">
+            Preview head
+          </label>
+          {headList.length ? (
+            <ForgeSelect
+              id="lip-head-select"
+              className="lip-sidebar__select"
+              onChange={onPreviewHeadChange}
+              value={headSelectValue}
+            >
+              {headList.map((head: string) => (
+                <option key={head} value={head}>{head}</option>
+              ))}
+            </ForgeSelect>
+          ) : (
+            <ForgeInput
+              id="lip-head-select"
+              className="lip-sidebar__select"
+              title="heads.2da not loaded — enter a head resref"
+              value={headSelectValue}
+              onChange={onPreviewHeadChange}
+            />
+          )}
+        </div>
+      </SectionContainer>
+
+      <SectionContainer name="Generate">
+        <div className="lip-sidebar__stack">
+          <label className="lip-sidebar__label" htmlFor="lip-dialog-text">
+            Spoken line
+          </label>
+          <ForgeTextArea
+            id="lip-dialog-text"
+            className="lip-sidebar__dialog-text"
+            rows={3}
+            placeholder="Paste the VO transcript (English)"
+            value={dialogText}
+            onChange={onDialogTextChange}
+            disabled={phonemeBusy}
+          />
+        </div>
+        <p className="lip-sidebar__hint">
+          Transcript improves recognition. First run loads the speech model.
+        </p>
+        <div className="lip-sidebar__btn-row">
+          <ForgeButton
+            variant="primary"
+            size="sm"
+            className="lip-sidebar__btn"
+            onClick={onGeneratePhonemesAndShapes}
+            disabled={!hasAudio || phonemeBusy}
+            title={hasAudio ? 'Generate mouth shapes from the loaded audio' : 'Load audio first'}
+          >
+            <i className={`fa-solid ${phonemeBusy ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'} me-1`} aria-hidden />
+            {phonemeBusy ? 'Generating…' : 'Generate lipsync'}
+          </ForgeButton>
+        </div>
+        {!hasAudio && (
+          <p className="lip-sidebar__hint">Load audio above before generating.</p>
+        )}
+        {(phonemeEngine || phonemeCount > 0) && !phonemeBusy && !phonemeError && (
+          <p className="lip-sidebar__hint mb-0">
+            {phonemeEngine || 'rhubarb-wasm'}{phonemeCount > 0 ? ` · ${phonemeCount} cues` : ''}
+          </p>
+        )}
+        {phonemeError && (
+          <p className="lip-sidebar__hint text-danger mb-0">{phonemeError}</p>
+        )}
+        <div className="lip-sidebar__btn-row lip-sidebar__btn-row--secondary">
+          <ForgeButton
+            variant="secondary"
+            size="sm"
+            className="lip-sidebar__btn"
+            onClick={onImportPHNClick}
+            title="Replace all keyframes from a PHN phoneme file"
+          >
+            <i className="fa-solid fa-file-import me-1" aria-hidden />
+            Import PHN
+          </ForgeButton>
+        </div>
+        <p className="lip-sidebar__hint">Replaces all keyframes from the PHN file.</p>
+      </SectionContainer>
+
+      <SectionContainer name="Timeline">
+        <div className="lip-sidebar__stack">
           <label className="lip-sidebar__label" htmlFor="lip-duration-input">
             Length (s)
           </label>
@@ -219,68 +357,98 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
         </div>
       </SectionContainer>
 
-      {/* ── Phoneme Detection (PHN + Auto) ─────────────────────────── */}
-      <SectionContainer name="Phoneme Detection">
-        <ForgeButton
-          variant="secondary"
-          size="sm"
-          className="lip-sidebar__btn"
-          onClick={onImportPHNClick}
-          title="Replace keyframes from a PHN phoneme file"
-        >
-          <i className="fa-solid fa-file-import me-1" aria-hidden />
-          Import PHN
-        </ForgeButton>
-        <p className="lip-sidebar__hint">
-          Replaces all keyframes and updates duration from the PHN file.
-        </p>
-        <label className="lip-sidebar__label" htmlFor="lip-dialog-text">
-          Dialog text (optional)
-        </label>
-        <ForgeTextArea
-          id="lip-dialog-text"
-          className="lip-sidebar__dialog-text"
-          rows={3}
-          placeholder="Transcript improves Rhubarb recognition"
-          value={dialogText}
-          onChange={onDialogTextChange}
-          disabled={phonemeBusy}
-        />
-        <p className="lip-sidebar__hint">
-          PocketSphinx (English). First run loads the WASM speech model off the UI thread.
-        </p>
-
-        <div className="lip-sidebar__field-row lip-sidebar__field-row--wrap">
-          <span className="lip-sidebar__label">Extended</span>
-          {(["G", "H", "X"] as const).map((letter) => (
-            <label key={letter} className="lip-sidebar__check" title={`Rhubarb extended shape ${letter}`}>
-              <input
-                type="checkbox"
-                checked={extendedShapes.includes(letter)}
-                disabled={phonemeBusy}
-                onChange={() => toggleExtendedShape(letter)}
-              />
-              {letter}
-            </label>
-          ))}
+      <SectionContainer name="Options" collapsible defaultOpen={false}>
+        <div className="lip-sidebar__stack">
+          <span className="lip-sidebar__label">Extra shapes</span>
+          <div className="lip-sidebar__field-row lip-sidebar__field-row--wrap">
+            {extraShapes.map((shape) => (
+              <label key={shape.letter} className="lip-sidebar__check" title={shape.title}>
+                <input
+                  type="checkbox"
+                  checked={extendedShapes.includes(shape.letter)}
+                  disabled={phonemeBusy}
+                  onChange={() => toggleExtendedShape(shape.letter)}
+                />
+                {shape.label}
+              </label>
+            ))}
+          </div>
         </div>
-        <p className="lip-sidebar__hint">
-          G=F/V, H=L, X=rest. Disabled shapes fold onto basic A–F (like --extendedShapes).
-        </p>
 
-        <label className="lip-sidebar__check lip-sidebar__check--block">
+        <label className="lip-sidebar__check lip-sidebar__check--block" title="Emit idle mouth keys during silence">
           <input
             type="checkbox"
             checked={includeRestKeys}
             disabled={phonemeBusy}
             onChange={onIncludeRestChange}
           />
-          Include rest (X) keyframes
+          Keys during silence
+        </label>
+        <label className="lip-sidebar__check lip-sidebar__check--block" title="Use the spoken line to pick Odyssey mouth shapes">
+          <input
+            type="checkbox"
+            checked={expandFromDialog}
+            disabled={phonemeBusy}
+            onChange={onToggleBool("expandFromDialog", setExpandFromDialog)}
+          />
+          Use spoken line for mouth shapes
+        </label>
+        <label className="lip-sidebar__check lip-sidebar__check--block" title="Break long consonant stretches into more mouth shapes">
+          <input
+            type="checkbox"
+            checked={splitConsonants}
+            disabled={phonemeBusy}
+            onChange={onToggleBool("splitConsonants", setSplitConsonants)}
+          />
+          Split long consonants
+        </label>
+        <label className="lip-sidebar__check lip-sidebar__check--block" title="Insert a closed mouth at the start of each phrase">
+          <input
+            type="checkbox"
+            checked={phraseOnsetKeys}
+            disabled={phonemeBusy}
+            onChange={onToggleBool("phraseOnsetKeys", setPhraseOnsetKeys)}
+          />
+          Closed mouth at phrase start
         </label>
 
-        <div className="lip-sidebar__field-row">
+        <div className="lip-sidebar__stack">
+          <label className="lip-sidebar__label" htmlFor="lip-time-offset">
+            Mouth lead (ms)
+          </label>
+          <ForgeInput
+            id="lip-time-offset"
+            type="number"
+            min={-200}
+            max={200}
+            step={1}
+            className="lip-sidebar__number-input"
+            value={timeOffsetMs}
+            disabled={phonemeBusy}
+            onChange={onTimeOffsetChange}
+            title="Negative values make mouth keys lead the audio"
+          />
+        </div>
+        <div className="lip-sidebar__stack">
+          <label className="lip-sidebar__label" htmlFor="lip-rekey-gap">
+            Repeat after pause (ms)
+          </label>
+          <ForgeInput
+            id="lip-rekey-gap"
+            type="number"
+            min={0}
+            max={500}
+            step={1}
+            className="lip-sidebar__number-input"
+            value={rekeyAfterGapMs}
+            disabled={phonemeBusy}
+            onChange={onRekeyGapChange}
+            title="Re-emit the same mouth shape after this much of a pause"
+          />
+        </div>
+        <div className="lip-sidebar__stack">
           <label className="lip-sidebar__label" htmlFor="lip-min-cue">
-            Min cue (ms)
+            Ignore cues shorter than (ms)
           </label>
           <ForgeInput
             id="lip-min-cue"
@@ -292,12 +460,12 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
             value={minCueMs}
             disabled={phonemeBusy}
             onChange={onMinCueChange}
+            title="Drop or merge mouth cues shorter than this"
           />
         </div>
-
-        <div className="lip-sidebar__field-row">
+        <div className="lip-sidebar__stack">
           <label className="lip-sidebar__label" htmlFor="lip-workers">
-            Workers
+            Analysis workers
           </label>
           <ForgeInput
             id="lip-workers"
@@ -309,93 +477,17 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
             value={workerCount}
             disabled={phonemeBusy}
             onChange={onWorkerCountChange}
+            title="Web workers used for speech analysis"
           />
-        </div>
-        <div className="lip-sidebar__btn-row">
-          <ForgeButton
-            variant="secondary"
-            size="sm"
-            className="lip-sidebar__btn"
-            onClick={onGeneratePhonemesAndShapes}
-            disabled={!hasAudio || phonemeBusy}
-            title="Generate mouth shapes with Rhubarb WASM and convert to LIP keyframes"
-          >
-            <i className={`fa-solid ${phonemeBusy ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'} me-1`} aria-hidden />
-            {phonemeBusy ? 'Generating...' : 'Generate Phonemes + Shapes'}
-          </ForgeButton>
-        </div>
-        {(phonemeEngine || phonemeCount > 0) && !phonemeBusy && !phonemeError && (
-          <p className="lip-sidebar__hint mb-0">
-            {phonemeEngine || 'rhubarb-wasm'}{phonemeCount > 0 ? ` · ${phonemeCount} cues` : ''}
-          </p>
-        )}
-        {phonemeError && (
-          <p className="lip-sidebar__hint text-danger mb-0">{phonemeError}</p>
-        )}
-      </SectionContainer>
-
-      {/* ── Audio ──────────────────────────────────────────────────── */}
-      <SectionContainer name="Audio">
-        <div className="lip-sidebar__field-row lip-sidebar__field-row--audio">
-          <i
-            className={`fa-solid fa-${hasAudio ? 'music' : 'music-slash'} lip-sidebar__audio-icon ${hasAudio ? 'lip-sidebar__audio-icon--active' : 'lip-sidebar__audio-icon--missing'}`}
-            title={hasAudio ? 'Audio loaded' : 'No audio'}
-            aria-hidden
-          />
-          <span className="lip-sidebar__audio-name" title={audioName || 'None'}>
-            {audioName || <em className="lip-sidebar__audio-none">none</em>}
-          </span>
-        </div>
-        <div className="lip-sidebar__btn-row">
-          <ForgeButton
-            variant="secondary"
-            size="sm"
-            className="lip-sidebar__btn"
-            onClick={onReplaceAudioClick}
-            title="Open a WAV or MP3 file to use as the preview audio"
-          >
-            <i className="fa-solid fa-folder-open me-1" aria-hidden />
-            {hasAudio ? 'Replace Audio' : 'Load Audio'}
-          </ForgeButton>
         </div>
       </SectionContainer>
 
-      {/* ── LIP Nodes ──────────────────────────────────────────────── */}
-      <SectionContainer name="LIP Nodes">
+      <SectionContainer name="Keyframes">
         <div className="lip-sidebar-tree-host">
           <SceneGraphTreeView
             manager={parentTab.ui3DRenderer.sceneGraphManager}
             listStyle={{ height: "auto", minHeight: "72px", overflow: "visible" }}
           />
-        </div>
-      </SectionContainer>
-
-      {/* ── Preview Head ───────────────────────────────────────────── */}
-      <SectionContainer name="Preview Head">
-        <div className="lip-sidebar__field-row">
-          <label className="lip-sidebar__label" htmlFor="lip-head-select">
-            Head
-          </label>
-          {headList.length ? (
-            <ForgeSelect
-              id="lip-head-select"
-              className="lip-sidebar__select"
-              onChange={onPreviewHeadChange}
-              value={headSelectValue}
-            >
-              {headList.map((head: string) => (
-                <option key={head} value={head}>{head}</option>
-              ))}
-            </ForgeSelect>
-          ) : (
-            <ForgeInput
-              id="lip-head-select"
-              className="lip-sidebar__select"
-              title="heads.2da not loaded — enter a head resref"
-              value={headSelectValue}
-              onChange={onPreviewHeadChange}
-            />
-          )}
         </div>
       </SectionContainer>
 

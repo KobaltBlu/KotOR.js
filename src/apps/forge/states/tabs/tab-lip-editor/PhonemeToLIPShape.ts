@@ -1,4 +1,10 @@
 import { ILIPKeyFrame } from "@/interface/resource/ILIPKeyFrame";
+import {
+  ShapedCue,
+  expandDialogOntoIslands,
+  rhubarbCuesToShaped,
+  splitConsonantBCues,
+} from "@/apps/forge/states/tabs/tab-lip-editor/OdysseyVisemeExpand";
 
 export const PHN_INVALID = -1;
 export const PHN_EE = 0;
@@ -77,6 +83,16 @@ export interface RhubarbCueConvertOptions {
   extendedShapes?: string;
   /** Drop/merge cues shorter than this (seconds). 0 = keep all. */
   minCueDurationSec?: number;
+  dialogText?: string;
+  expandFromDialog?: boolean;
+  splitConsonants?: boolean;
+  phraseOnsetKeys?: boolean;
+  /** Seconds added to each key (negative = mouth leads audio). */
+  timeOffsetSec?: number;
+  /** Re-emit the same Odyssey shape after this much silence. */
+  rekeyAfterGapSec?: number;
+  audio?: AudioBuffer;
+  durationSec?: number;
 }
 
 export function mapPhonemeToShape(phoneme: string, prevShape: number = PHN_INVALID): number {
@@ -123,7 +139,8 @@ export function filterTimedPhonemesByDuration(
     const startSec = Math.max(0, Number(item.startSec) || 0);
     const endSec = Math.max(startSec, Number(item.endSec) || startSec);
     const last = merged[merged.length - 1];
-    if (last && last.symbol === symbol) {
+    const abuts = last && last.symbol === symbol && startSec <= last.endSec + 1e-4;
+    if (abuts) {
       last.endSec = Math.max(last.endSec, endSec);
       continue;
     }
@@ -138,6 +155,71 @@ export function filterTimedPhonemesByDuration(
   });
 }
 
+function emitShapedCues(
+  cues: ShapedCue[],
+  rekeyAfterGapSec: number,
+): Array<Pick<ILIPKeyFrame, "time" | "shape">> {
+  const frames: Array<Pick<ILIPKeyFrame, "time" | "shape">> = [];
+  let prevShape = PHN_INVALID;
+  let prevTime = -Infinity;
+  const sorted = [...cues].sort((a, b) => a.startSec - b.startSec);
+  for (const cue of sorted) {
+    if (cue.shape === PHN_INVALID) continue;
+    const time = Math.max(0, cue.startSec);
+    const gap = time - prevTime;
+    if (cue.shape === prevShape && gap < rekeyAfterGapSec) continue;
+    frames.push({ time, shape: cue.shape });
+    prevShape = cue.shape;
+    prevTime = time;
+  }
+  return frames;
+}
+
+function applyTimeOffset(
+  frames: Array<Pick<ILIPKeyFrame, "time" | "shape">>,
+  offsetSec: number,
+  durationSec: number,
+): Array<Pick<ILIPKeyFrame, "time" | "shape">> {
+  if (!offsetSec) return frames;
+  const maxT = Number.isFinite(durationSec) && durationSec > 0 ? durationSec : Infinity;
+  return frames
+    .map((frame) => ({
+      ...frame,
+      time: Math.max(0, Math.min(maxT, frame.time + offsetSec)),
+    }))
+    .sort((a, b) => a.time - b.time);
+}
+
+function insertPhraseOnsets(cues: ShapedCue[]): ShapedCue[] {
+  if (!cues.length) return cues;
+  const sorted = [...cues].sort((a, b) => a.startSec - b.startSec);
+  const out: ShapedCue[] = [];
+  let islandStart = sorted[0].startSec;
+  let prevEnd = sorted[0].endSec;
+  for (let i = 0; i < sorted.length; i++) {
+    const cue = sorted[i];
+    const gap = cue.startSec - prevEnd;
+    const newIsland = i === 0 || gap > 0.06;
+    if (newIsland) {
+      islandStart = cue.startSec;
+      if (cue.shape !== PHN_MPB) {
+        out.push({ startSec: islandStart, endSec: cue.startSec, shape: PHN_MPB });
+        if (Math.abs(cue.startSec - islandStart) < 1e-4) {
+          out.push({ ...cue, startSec: islandStart + 0.001 });
+        } else {
+          out.push(cue);
+        }
+      } else {
+        out.push(cue);
+      }
+    } else {
+      out.push(cue);
+    }
+    prevEnd = Math.max(prevEnd, cue.endSec);
+  }
+  return out;
+}
+
 export function convertTimedPhonemesToKeyframes(
   items: TimedPhoneme[],
   options: RhubarbCueConvertOptions = {},
@@ -145,20 +227,44 @@ export function convertTimedPhonemesToKeyframes(
   const includeRestKeys = options.includeRestKeys === true;
   const extended = options.extendedShapes ?? "GHX";
   const minDur = Math.max(0, Number(options.minCueDurationSec) || 0);
+  const expandFromDialog = options.expandFromDialog !== false;
+  const splitConsonants = options.splitConsonants !== false;
+  const phraseOnsetKeys = options.phraseOnsetKeys !== false;
+  const timeOffsetSec = Number(options.timeOffsetSec) || 0;
+  const rekeyAfterGapSec = Math.max(0, Number(options.rekeyAfterGapSec) || 0);
+  const dialogText = String(options.dialogText ?? "").trim();
 
   let prepared = applyExtendedShapesFilter(items, extended);
   prepared = filterTimedPhonemesByDuration(prepared, minDur);
-  if (!includeRestKeys) {
-    prepared = prepared.filter((item) => String(item.symbol).toUpperCase() !== "X");
+
+  const restCues = includeRestKeys
+    ? prepared.filter((item) => String(item.symbol).toUpperCase() === "X")
+    : [];
+  const speech = prepared.filter((item) => String(item.symbol).toUpperCase() !== "X");
+
+  let shaped: ShapedCue[] = [];
+  if (expandFromDialog && dialogText) {
+    const { expanded, leftoverCues } = expandDialogOntoIslands(speech, dialogText);
+    shaped.push(...expanded);
+    let leftover = leftoverCues;
+    if (splitConsonants) leftover = splitConsonantBCues(leftover, options.audio);
+    shaped.push(...rhubarbCuesToShaped(leftover, mapPhonemeToShape));
+  } else {
+    let speechCues = speech;
+    if (splitConsonants) speechCues = splitConsonantBCues(speechCues, options.audio);
+    shaped = rhubarbCuesToShaped(speechCues, mapPhonemeToShape);
   }
 
-  const frames: Array<Pick<ILIPKeyFrame, "time" | "shape">> = [];
-  let prevShape = PHN_INVALID;
-  for (const item of prepared) {
-    const shape = mapPhonemeToShape(item.symbol, prevShape);
-    if (shape === PHN_INVALID || shape === prevShape) continue;
-    frames.push({ time: Math.max(0, item.startSec), shape });
-    prevShape = shape;
+  if (includeRestKeys) {
+    shaped.push(...rhubarbCuesToShaped(restCues, mapPhonemeToShape));
   }
-  return frames.sort((a, b) => a.time - b.time);
+  if (phraseOnsetKeys) {
+    shaped = insertPhraseOnsets(shaped);
+  }
+
+  let frames = emitShapedCues(shaped, rekeyAfterGapSec);
+  const durationSec = options.durationSec
+    ?? Math.max(0, ...items.map((item) => item.endSec), ...frames.map((f) => f.time));
+  frames = applyTimeOffset(frames, timeOffsetSec, durationSec);
+  return frames;
 }

@@ -107,6 +107,70 @@ export function LipSettingsPage() {
           aria-label="Worker count"
         />
       </SettingRow>
+      <SettingRow
+        label="Expand from dialog"
+        description="Turn the VO transcript into Odyssey visemes and align them to Rhubarb speech islands."
+        keywords={["lip", "rhubarb", "dialog", "viseme"]}
+      >
+        <input
+          type="checkbox"
+          checked={settings.expandFromDialog}
+          onChange={(e) => setSettings({ expandFromDialog: e.target.checked })}
+          aria-label="Expand from dialog"
+        />
+      </SettingRow>
+      <SettingRow
+        label="Split consonants"
+        description="Split long Rhubarb B cues with energy onsets when dialog does not cover them."
+        keywords={["lip", "rhubarb", "consonant", "onset"]}
+      >
+        <input
+          type="checkbox"
+          checked={settings.splitConsonants}
+          onChange={(e) => setSettings({ splitConsonants: e.target.checked })}
+          aria-label="Split consonants"
+        />
+      </SettingRow>
+      <SettingRow
+        label="Phrase onset keys"
+        description="Insert a closed mouth key at the start of each speech island."
+        keywords={["lip", "rhubarb", "onset", "phrase"]}
+      >
+        <input
+          type="checkbox"
+          checked={settings.phraseOnsetKeys}
+          onChange={(e) => setSettings({ phraseOnsetKeys: e.target.checked })}
+          aria-label="Phrase onset keys"
+        />
+      </SettingRow>
+      <SettingRow
+        label="Time offset (ms)"
+        description="Shift generated keys. Negative values make the mouth lead the audio."
+        keywords={["lip", "rhubarb", "offset", "anticipate"]}
+      >
+        <ForgeInput
+          type="number"
+          min={-200}
+          max={200}
+          value={settings.timeOffsetMs}
+          onChange={(e) => setSettings({ timeOffsetMs: Number(e.target.value) || 0 })}
+          aria-label="Time offset"
+        />
+      </SettingRow>
+      <SettingRow
+        label="Re-key after gap (ms)"
+        description="Re-emit the same Odyssey shape after a pause at least this long."
+        keywords={["lip", "rhubarb", "gap", "rekey"]}
+      >
+        <ForgeInput
+          type="number"
+          min={0}
+          max={500}
+          value={settings.rekeyAfterGapMs}
+          onChange={(e) => setSettings({ rekeyAfterGapMs: Number(e.target.value) || 0 })}
+          aria-label="Re-key after gap"
+        />
+      </SettingRow>
     </div>
   );
 }

@@ -126,6 +126,12 @@ export interface ForgeLipSettings {
   minCueDurationMs: number;
   /** Web Worker pool size for Rhubarb WASM analysis. */
   workerCount: number;
+  expandFromDialog: boolean;
+  splitConsonants: boolean;
+  phraseOnsetKeys: boolean;
+  /** Negative values make mouth keys lead the audio. */
+  timeOffsetMs: number;
+  rekeyAfterGapMs: number;
 }
 
 export interface ForgeImageSettings {
@@ -225,6 +231,11 @@ export const DEFAULT_FORGE_LIP_SETTINGS: ForgeLipSettings = {
   includeRestKeys: false,
   minCueDurationMs: 0,
   workerCount: 1,
+  expandFromDialog: true,
+  splitConsonants: true,
+  phraseOnsetKeys: true,
+  timeOffsetMs: -20,
+  rekeyAfterGapMs: 80,
 };
 
 export const DEFAULT_FORGE_IMAGE_SETTINGS: ForgeImageSettings = {
@@ -419,6 +430,11 @@ export function sanitizeLipSettings(value: unknown): ForgeLipSettings {
     includeRestKeys: sanitizeBoolean(raw.includeRestKeys, DEFAULT_FORGE_LIP_SETTINGS.includeRestKeys),
     minCueDurationMs: sanitizeNumber(raw.minCueDurationMs, DEFAULT_FORGE_LIP_SETTINGS.minCueDurationMs, 0, 500),
     workerCount: sanitizeNumber(raw.workerCount, DEFAULT_FORGE_LIP_SETTINGS.workerCount, 1, cores),
+    expandFromDialog: sanitizeBoolean(raw.expandFromDialog, DEFAULT_FORGE_LIP_SETTINGS.expandFromDialog),
+    splitConsonants: sanitizeBoolean(raw.splitConsonants, DEFAULT_FORGE_LIP_SETTINGS.splitConsonants),
+    phraseOnsetKeys: sanitizeBoolean(raw.phraseOnsetKeys, DEFAULT_FORGE_LIP_SETTINGS.phraseOnsetKeys),
+    timeOffsetMs: sanitizeNumber(raw.timeOffsetMs, DEFAULT_FORGE_LIP_SETTINGS.timeOffsetMs, -200, 200),
+    rekeyAfterGapMs: sanitizeNumber(raw.rekeyAfterGapMs, DEFAULT_FORGE_LIP_SETTINGS.rekeyAfterGapMs, 0, 500),
   };
 }
 

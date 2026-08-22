@@ -1,10 +1,5 @@
 import { WorkerPool } from "lip-sync-engine";
-import {
-  TimedPhoneme,
-  TimedPhonemeResult,
-  applyExtendedShapesFilter,
-  filterTimedPhonemesByDuration,
-} from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
+import { TimedPhoneme, TimedPhonemeResult } from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
 
 export interface RhubarbPhonemeConfig {
   dialogText?: string;
@@ -192,15 +187,11 @@ export class RhubarbPhonemeService implements AudioPhonemeService {
       window.clearInterval(tick);
       report(onProgress, 92, "analyze", "Analysis complete");
 
-      let items: TimedPhoneme[] = (result.mouthCues ?? []).map((cue) => ({
+      const items: TimedPhoneme[] = (result.mouthCues ?? []).map((cue) => ({
         symbol: String(cue.value ?? "").trim(),
         startSec: Math.max(0, Number(cue.start) || 0),
         endSec: Math.max(0, Number(cue.end) || 0),
       }));
-
-      // Fold disabled extended shapes; keep X for optional rest-key conversion later.
-      items = applyExtendedShapesFilter(items, options.extendedShapes ?? "GHX");
-      items = filterTimedPhonemesByDuration(items, Math.max(0, Number(options.minCueDurationSec) || 0));
 
       report(onProgress, 100, "done", "Done");
       return { source: "auto", engine: RHUBARB_ENGINE_ID, items };
