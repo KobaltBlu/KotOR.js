@@ -32,12 +32,15 @@ import {
   guiControlTypeLabel,
   nextGuiControlId,
   nextUniqueGuiTag,
+  readGuiControlType,
   readGuiParentTag,
   readGuiTag,
   setScalarField,
   setVectorFieldRgb,
   type GuiOutlineNode,
 } from "@/apps/forge/gui/guiOutline";
+import { ensureGuiTypeNests, isTslGuiGame } from "@/gui/guiControlSchema";
+import { GameState } from "@/GameState";
 import * as THREE from "three";
 
 export type TabGUIEditorStateEventListenerTypes =
@@ -68,7 +71,12 @@ export class TabGUIEditorState extends TabState {
 
   selectedPath: string = GUI_ROOT_PATH;
   selectedNode: KotOR.GFFStruct | undefined;
+  /** Nested edit target under the selected control (e.g. ListBox PROTOITEM / SCROLLBAR). */
+  inspectorSubPath: string | null = null;
   canvasScale: number = 1;
+  /** Editor-only outline drawn around the selected control in the preview. */
+  private selectionRect: THREE.LineLoop | undefined;
+  private selectionRectMaterial: THREE.LineBasicMaterial | undefined;
 
   constructor(options: BaseTabStateOptions = {}) {
     super(options);
@@ -109,6 +117,7 @@ export class TabGUIEditorState extends TabState {
   }
 
   destroy(): void {
+    this.disposeSelectionRect();
     if (this.menu?.tGuiPanel?.widget) {
       this.menu.tGuiPanel.widget.removeFromParent();
     }
@@ -118,6 +127,7 @@ export class TabGUIEditorState extends TabState {
 
   animate(delta: number = 0) {
     this.menu?.update(delta);
+    this.updateSelectionRect();
     this.processEventListener("onAnimate", [delta]);
   }
 
@@ -134,8 +144,25 @@ export class TabGUIEditorState extends TabState {
     const node = findGuiOutlineNode(outline, path || GUI_ROOT_PATH) ?? outline;
     this.selectedPath = node?.path ?? GUI_ROOT_PATH;
     this.selectedNode = node?.struct;
+    this.inspectorSubPath = null;
     this.applySelectionHighlight();
     this.processEventListener("onNodeSelected", [this.selectedNode]);
+  }
+
+  setInspectorSubPath(subPath: string | null): void {
+    this.inspectorSubPath = subPath;
+    this.processEventListener("onNodeSelected", [this.selectedNode]);
+  }
+
+  /** Struct currently targeted by the inspector (selected control or nested PROTOITEM/SCROLLBAR). */
+  getActiveStruct(): KotOR.GFFStruct | undefined {
+    if (!this.selectedNode) {
+      return undefined;
+    }
+    if (!this.inspectorSubPath) {
+      return this.selectedNode;
+    }
+    return getNestedStruct(this.selectedNode, this.inspectorSubPath) ?? this.selectedNode;
   }
 
   selectLiveControl(control: KotOR.GUIControl | undefined): void {
@@ -240,6 +267,7 @@ export class TabGUIEditorState extends TabState {
 
   applySelectionHighlight(): void {
     if (!this.menu?.tGuiPanel) {
+      this.hideSelectionRect();
       return;
     }
     const selected = this.selectedNode;
@@ -250,6 +278,81 @@ export class TabGUIEditorState extends TabState {
       }
     };
     walk(this.menu.tGuiPanel);
+    this.updateSelectionRect();
+  }
+
+  private ensureSelectionRect(): THREE.LineLoop {
+    if (this.selectionRect) {
+      return this.selectionRect;
+    }
+    const geometry = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-0.5, -0.5, 0),
+      new THREE.Vector3(0.5, -0.5, 0),
+      new THREE.Vector3(0.5, 0.5, 0),
+      new THREE.Vector3(-0.5, 0.5, 0),
+    ]);
+    this.selectionRectMaterial = new THREE.LineBasicMaterial({
+      color: 0x4fc3f7,
+      depthTest: false,
+      depthWrite: false,
+      transparent: true,
+      opacity: 0.95,
+    });
+    this.selectionRect = new THREE.LineLoop(geometry, this.selectionRectMaterial);
+    this.selectionRect.name = "GUIEditorSelectionRect";
+    this.selectionRect.renderOrder = 9999;
+    this.selectionRect.frustumCulled = false;
+    this.selectionRect.visible = false;
+    this.ui3DRenderer.scene.add(this.selectionRect);
+    return this.selectionRect;
+  }
+
+  private hideSelectionRect(): void {
+    if (this.selectionRect) {
+      this.selectionRect.visible = false;
+    }
+  }
+
+  private disposeSelectionRect(): void {
+    if (this.selectionRect) {
+      this.selectionRect.removeFromParent();
+      this.selectionRect.geometry.dispose();
+      this.selectionRect = undefined;
+    }
+    if (this.selectionRectMaterial) {
+      this.selectionRectMaterial.dispose();
+      this.selectionRectMaterial = undefined;
+    }
+  }
+
+  /** Position the editor selection outline from the live control hit box. */
+  updateSelectionRect(): void {
+    const live = this.findLiveControl(this.selectedNode);
+    if (!live?.widget?.visible || !this.menu?.tGuiPanel) {
+      this.hideSelectionRect();
+      return;
+    }
+    try {
+      live.updateBounds();
+    } catch {
+      this.hideSelectionRect();
+      return;
+    }
+    const box = live.box;
+    if (!box) {
+      this.hideSelectionRect();
+      return;
+    }
+    const width = box.max.x - box.min.x;
+    const height = box.max.y - box.min.y;
+    if (!(width > 0) || !(height > 0)) {
+      this.hideSelectionRect();
+      return;
+    }
+    const rect = this.ensureSelectionRect();
+    rect.position.set((box.min.x + box.max.x) * 0.5, (box.min.y + box.max.y) * 0.5, 50);
+    rect.scale.set(width, height, 1);
+    rect.visible = true;
   }
 
   markDirty(): void {
@@ -260,9 +363,11 @@ export class TabGUIEditorState extends TabState {
     this.processEventListener("onEditorFileChange", [this]);
   }
 
-  mutateSelected(mutator: (struct: KotOR.GFFStruct) => void, options?: { rebuild?: boolean; coalesceKey?: string }): void {
-    const struct = this.selectedNode;
-    if (!struct || !this.gff) {
+  mutateSelected(
+    mutator: (struct: KotOR.GFFStruct) => void,
+    options?: { rebuild?: boolean; coalesceKey?: string; nestPath?: string | null },
+  ): void {
+    if (!this.selectedNode || !this.gff) {
       return;
     }
     if (options?.coalesceKey) {
@@ -270,11 +375,27 @@ export class TabGUIEditorState extends TabState {
     } else {
       this.captureUndoSnapshot();
     }
+    let struct: KotOR.GFFStruct | undefined;
+    if (options?.nestPath) {
+      struct = getNestedStruct(this.selectedNode, options.nestPath);
+      if (!struct) {
+        ensureGuiTypeNests(this.selectedNode, readGuiControlType(this.selectedNode), {
+          includeInnerOffsetY: isTslGuiGame(GameState.GameKey),
+        });
+        struct = getNestedStruct(this.selectedNode, options.nestPath);
+      }
+    } else {
+      struct = this.getActiveStruct();
+    }
+    if (!struct) {
+      return;
+    }
     mutator(struct);
-    if (options?.rebuild) {
+    const rebuild = !!options?.rebuild || !!this.inspectorSubPath || !!options?.nestPath;
+    if (rebuild) {
       void this.rebuildMenu(this.selectedPath);
     } else {
-      const live = this.findLiveControl(struct);
+      const live = this.findLiveControl(this.selectedNode);
       live?.syncFromGFFPartial();
       this.applySelectionHighlight();
     }
@@ -286,9 +407,17 @@ export class TabGUIEditorState extends TabState {
     type: GFFDataType,
     value: number | string,
     coalesceKey?: string,
+    nestPath?: string | null,
   ): void {
     this.mutateSelected((struct) => {
-      if (label === "TAG" && typeof value === "string") {
+      if (label === "CONTROLTYPE" && typeof value === "number") {
+        setScalarField(struct, label, type, value);
+        ensureGuiTypeNests(struct, value, {
+          includeInnerOffsetY: isTslGuiGame(GameState.GameKey),
+        });
+        return;
+      }
+      if (label === "TAG" && typeof value === "string" && !nestPath && !this.inspectorSubPath) {
         const oldTag = readGuiTag(struct);
         setScalarField(struct, label, type, value);
         if (oldTag && oldTag !== value && this.gff?.RootNode) {
@@ -303,7 +432,16 @@ export class TabGUIEditorState extends TabState {
       setScalarField(struct, label, type, value);
     }, {
       coalesceKey,
-      rebuild: label === "CONTROLTYPE" || label === "TAG" || label === "Obj_Parent",
+      nestPath,
+      rebuild:
+        label === "CONTROLTYPE" ||
+        label === "TAG" ||
+        label === "Obj_Parent" ||
+        label === "Obj_ParentID" ||
+        label === "LEFTSCROLLBAR" ||
+        label === "STARTFROMLEFT" ||
+        label === "CURVALUE" ||
+        label === "MAXVALUE",
     });
   }
 
@@ -313,11 +451,18 @@ export class TabGUIEditorState extends TabState {
     type: GFFDataType,
     value: number | string,
     coalesceKey?: string,
+    nestPath?: string | null,
   ): void {
+    const typeNest =
+      group === "THUMB" ||
+      group === "DIR" ||
+      group === "SELECTED" ||
+      group === "HILIGHTSELECTED" ||
+      group === "PROGRESS";
     this.mutateSelected((struct) => {
       const nested = ensureNestedStruct(struct, group);
       setScalarField(nested, label, type, value);
-    }, { coalesceKey });
+    }, { coalesceKey, nestPath, rebuild: typeNest || !!nestPath });
   }
 
   setSelectedNestedColor(
@@ -325,23 +470,66 @@ export class TabGUIEditorState extends TabState {
     label: string,
     rgb: { r: number; g: number; b: number },
     coalesceKey?: string,
+    nestPath?: string | null,
   ): void {
+    const typeNest =
+      group === "SELECTED" ||
+      group === "HILIGHTSELECTED" ||
+      group === "PROGRESS";
     this.mutateSelected((struct) => {
       const nested = ensureNestedStruct(struct, group);
       setVectorFieldRgb(nested, label, rgb);
-    }, { coalesceKey });
+    }, { coalesceKey, nestPath, rebuild: typeNest || !!nestPath });
   }
 
-  readSelectedScalar(label: string, fallback: number | string = 0): number | string {
-    return getScalarFieldValue(this.selectedNode, label, fallback);
+  resolveInspectorStruct(nestPath?: string | null): KotOR.GFFStruct | undefined {
+    if (!this.selectedNode) {
+      return undefined;
+    }
+    if (nestPath) {
+      return getNestedStruct(this.selectedNode, nestPath);
+    }
+    return this.getActiveStruct();
   }
 
-  readSelectedNestedScalar(group: string, label: string, fallback: number | string = 0): number | string {
-    return getScalarFieldValue(getNestedStruct(this.selectedNode, group), label, fallback);
+  readSelectedScalar(label: string, fallback: number | string = 0, nestPath?: string | null): number | string {
+    return getScalarFieldValue(this.resolveInspectorStruct(nestPath), label, fallback);
   }
 
-  readSelectedNestedColor(group: string, label: string): { r: number; g: number; b: number } {
-    return getVectorFieldRgb(getNestedStruct(this.selectedNode, group), label);
+  readSelectedNestedScalar(
+    group: string,
+    label: string,
+    fallback: number | string = 0,
+    nestPath?: string | null,
+  ): number | string {
+    return getScalarFieldValue(getNestedStruct(this.resolveInspectorStruct(nestPath), group), label, fallback);
+  }
+
+  readSelectedNestedColor(
+    group: string,
+    label: string,
+    nestPath?: string | null,
+  ): { r: number; g: number; b: number } {
+    return getVectorFieldRgb(getNestedStruct(this.resolveInspectorStruct(nestPath), group), label);
+  }
+
+  /** Ensure ListBox PROTOITEM / SCROLLBAR nests exist on the selected control. */
+  ensureSelectedTypeNests(): void {
+    if (!this.selectedNode) {
+      return;
+    }
+    const beforeProto = !!getNestedStruct(this.selectedNode, "PROTOITEM");
+    const beforeScroll = !!getNestedStruct(this.selectedNode, "SCROLLBAR");
+    if (beforeProto && beforeScroll) {
+      return;
+    }
+    this.captureUndoSnapshot();
+    ensureGuiTypeNests(this.selectedNode, readGuiControlType(this.selectedNode), {
+      includeInnerOffsetY: isTslGuiGame(GameState.GameKey),
+    });
+    this.markDirty();
+    void this.rebuildMenu(this.selectedPath);
+    this.processEventListener("onNodeSelected", [this.selectedNode]);
   }
 
   addControl(type: number = GUIControlType.Button): void {
@@ -368,6 +556,7 @@ export class TabGUIEditorState extends TabState {
       id: nextGuiControlId(this.gff),
       width: type === GUIControlType.Panel ? 200 : 100,
       height: type === GUIControlType.Panel ? 120 : 25,
+      includeInnerOffsetY: isTslGuiGame(GameState.GameKey),
     });
     ensureGuiControlsList(this.gff.RootNode).addChildStruct(control);
     const controls = getGuiControlsList(this.gff.RootNode);
@@ -466,6 +655,8 @@ export class TabGUIEditorState extends TabState {
       return;
     }
 
+    const preservedSub = this.inspectorSubPath;
+
     if (this.menu?.tGuiPanel?.widget) {
       this.menu.tGuiPanel.widget.removeFromParent();
     }
@@ -481,6 +672,9 @@ export class TabGUIEditorState extends TabState {
       this.setCanvasScale(this.canvasScale);
     }
     this.selectPath(selectPath);
+    if (preservedSub && getNestedStruct(this.selectedNode, preservedSub)) {
+      this.inspectorSubPath = preservedSub;
+    }
   }
 
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {

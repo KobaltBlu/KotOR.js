@@ -9,11 +9,12 @@
 import React, { useMemo, useState } from "react";
 import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { ListItemNode } from "@/apps/forge/components/treeview/ListItemNode";
-import { ForgeButton, ForgeInput } from "@/apps/forge/components/ui";
+import { ForgeButton, ForgeInput, ForgeSelect } from "@/apps/forge/components/ui";
 import { TabGUIEditorState } from "@/apps/forge/states/tabs/TabGUIEditorState";
 import {
   GUI_ROOT_PATH,
   collectExpandedGuiPaths,
+  guiAddableControlTypes,
   guiControlTypeLabel,
   type GuiOutlineNode,
 } from "@/apps/forge/gui/guiOutline";
@@ -42,6 +43,8 @@ function typeIcon(type: number): string {
       return "fa-arrows-up-down";
     case GUIControlType.Panel:
       return "fa-window-maximize";
+    case GUIControlType.ProtoItem:
+      return "fa-table-cells";
     default:
       return "fa-cube";
   }
@@ -127,6 +130,7 @@ export function GUITreeView(props: GUITreeViewProps) {
   const outline = tab.getOutline();
   const selectedPath = tab.selectedPath || GUI_ROOT_PATH;
   const [filter, setFilter] = useState("");
+  const [addType, setAddType] = useState<number>(GUIControlType.Button);
   const [expanded, setExpanded] = useState<Set<string>>(() =>
     collectExpandedGuiPaths(outline, selectedPath),
   );
@@ -167,7 +171,19 @@ export function GUITreeView(props: GUITreeViewProps) {
           className="tab-gui-editor__tree-filter"
         />
         <div className="tab-gui-editor__tree-actions">
-          <ForgeButton size="sm" variant="secondary" onClick={() => tab.addControl(GUIControlType.Button)}>
+          <ForgeSelect
+            className="tab-gui-editor__tree-add-type"
+            value={String(addType)}
+            aria-label="Control type to add"
+            onChange={(e) => setAddType(Number(e.target.value))}
+          >
+            {guiAddableControlTypes().map((type) => (
+              <option key={type} value={type}>
+                {guiControlTypeLabel(type)}
+              </option>
+            ))}
+          </ForgeSelect>
+          <ForgeButton size="sm" variant="secondary" onClick={() => tab.addControl(addType)}>
             Add
           </ForgeButton>
           <ForgeButton

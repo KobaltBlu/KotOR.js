@@ -27,6 +27,7 @@ import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { KeyMapAction } from "@/enums/controls/KeyMapAction";
 import { GFFField } from "@/resource/GFFField";
 import { GFFDataType } from "@/enums/resource/GFFDataType";
+import { createGuiControlStruct, isTslGuiGame } from "@/gui/guiControlSchema";
 
 const itemSize = 2
 const box = { min: [0, 0], max: [0, 0] }
@@ -658,65 +659,32 @@ export class GUIControl {
   }
 
   buildDefaultControl(){
-    const control = new GFFStruct();
-    //build the default control structure
-    const extent = new GFFStruct();
-    extent.addField(new GFFField(GFFDataType.INT, 'TOP', 0));
-    extent.addField(new GFFField(GFFDataType.INT, 'LEFT', 0));
-    extent.addField(new GFFField(GFFDataType.INT, 'WIDTH', 0));
-    extent.addField(new GFFField(GFFDataType.INT, 'HEIGHT', 0));
-    control.addField(new GFFField(GFFDataType.STRUCT, 'EXTENT', extent));
-    //build the default border structure
-    const border = new GFFStruct();
-    border.addField(new GFFField(GFFDataType.VECTOR, 'COLOR', this.defaultColor));
-    border.addField(new GFFField(GFFDataType.INT, 'DIMENSION', 0));
-    border.addField(new GFFField(GFFDataType.INT, 'CORNER', 0));
-    border.addField(new GFFField(GFFDataType.INT, 'EDGE', 0));
-    border.addField(new GFFField(GFFDataType.RESREF, 'FILL', ''));
-    border.addField(new GFFField(GFFDataType.INT, 'FILLSTYLE', 0));
-    border.addField(new GFFField(GFFDataType.INT, 'INNEROFFSET', 0)); 
-    if(GameState.GameKey == GameEngineType.TSL){
-      border.addField(new GFFField(GFFDataType.INT, 'INNEROFFSETY', 0));
-    }
-    border.addField(new GFFField(GFFDataType.BYTE, 'PULSING', 0));
-    control.addField(new GFFField(GFFDataType.STRUCT, 'BORDER', border));
-    //build the default text structure
-    const text = new GFFStruct();
-    text.addField(new GFFField(GFFDataType.RESREF, 'FONT', ''));
-    text.addField(new GFFField(GFFDataType.DWORD, 'STRREF', 0));
-    text.addField(new GFFField(GFFDataType.INT, 'ALIGNMENT', GUIControlAlignment.HorizontalCenter | GUIControlAlignment.VerticalCenter));
-    text.addField(new GFFField(GFFDataType.BYTE, 'PULSING', 0));
-    text.addField(new GFFField(GFFDataType.VECTOR, 'COLOR', this.defaultColor));
-    control.addField(new GFFField(GFFDataType.STRUCT, 'TEXT', text));
-    //build the default highlight structure
-    const highlight = new GFFStruct();
-    highlight.addField(new GFFField(GFFDataType.VECTOR, 'COLOR', this.defaultHighlightColor));
-    highlight.addField(new GFFField(GFFDataType.INT, 'DIMENSION', 0));
-    highlight.addField(new GFFField(GFFDataType.INT, 'CORNER', 0));
-    highlight.addField(new GFFField(GFFDataType.RESREF, 'EDGE', ''));
-    highlight.addField(new GFFField(GFFDataType.RESREF, 'FILL', ''));
-    highlight.addField(new GFFField(GFFDataType.INT, 'FILLSTYLE', 0));
-    highlight.addField(new GFFField(GFFDataType.INT, 'INNEROFFSET', 0));
-    if(GameState.GameKey == GameEngineType.TSL){
-      highlight.addField(new GFFField(GFFDataType.INT, 'INNEROFFSETY', 0));
-    }
-    highlight.addField(new GFFField(GFFDataType.BYTE, 'PULSING', 0));
-    control.addField(new GFFField(GFFDataType.STRUCT, 'HILIGHT', highlight));
-    //build the default moveTo structure
-    const moveTo = new GFFStruct();
-    moveTo.addField(new GFFField(GFFDataType.INT, 'DOWN', -1));
-    moveTo.addField(new GFFField(GFFDataType.INT, 'LEFT', -1));
-    moveTo.addField(new GFFField(GFFDataType.INT, 'RIGHT', -1));
-    moveTo.addField(new GFFField(GFFDataType.INT, 'UP', -1));
-    control.addField(new GFFField(GFFDataType.STRUCT, 'MOVETO', moveTo));
-    //build the default control structure
-    control.addField(new GFFField(GFFDataType.INT, 'TYPE', 0));
-    control.addField(new GFFField(GFFDataType.RESREF, 'TAG', ''));
-    control.addField(new GFFField(GFFDataType.INT, 'ID', 0));
-    control.addField(new GFFField(GFFDataType.INT, 'Obj_Locked', 0));
-    control.addField(new GFFField(GFFDataType.CEXOSTRING, 'Obj_Parent', ''));
-    control.addField(new GFFField(GFFDataType.INT, 'Obj_ParentID', this.parent?.id || -1));
-    return control;
+    const borderColor = {
+      x: this.defaultColor?.r ?? 1,
+      y: this.defaultColor?.g ?? 1,
+      z: this.defaultColor?.b ?? 1,
+    };
+    const highlightColor = {
+      x: this.defaultHighlightColor?.r ?? 1,
+      y: this.defaultHighlightColor?.g ?? 1,
+      z: this.defaultHighlightColor?.b ?? 0,
+    };
+    return createGuiControlStruct({
+      type: typeof this.type === "number" && this.type >= 0 ? this.type : GUIControlType.Panel,
+      tag: "",
+      parentTag: "",
+      parentId: this.parent?.id ?? -1,
+      id: 0,
+      left: 0,
+      top: 0,
+      width: 0,
+      height: 0,
+      includeInnerOffsetY: isTslGuiGame(GameState.GameKey),
+      borderColor,
+      highlightColor,
+      textColor: borderColor,
+      includeTypeNests: false,
+    });
   }
 
   initProperties(){

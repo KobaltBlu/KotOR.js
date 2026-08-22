@@ -8,6 +8,7 @@
 
 import { GFFDataType } from "@/enums/resource/GFFDataType";
 import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { createGuiControlStruct } from "@/gui/guiControlSchema";
 import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
@@ -51,7 +52,23 @@ export function guiControlTypeOptions(): Array<{ value: number; label: string }>
     GUIControlType.ScrollBar,
     GUIControlType.Progress,
     GUIControlType.Listbox,
-  ].map((value) => ({ value, label: `${value} · ${guiControlTypeLabel(value)}` }));
+  ].map((value) => ({
+    value,
+    label: `${value} · ${guiControlTypeLabel(value)}`,
+  }));
+}
+
+/** Control types that can be inserted from the GUI editor Add menu (not ListBox-only nests). */
+export function guiAddableControlTypes(): number[] {
+  return [
+    GUIControlType.Panel,
+    GUIControlType.Label,
+    GUIControlType.Button,
+    GUIControlType.CheckBox,
+    GUIControlType.Slider,
+    GUIControlType.Progress,
+    GUIControlType.Listbox,
+  ];
 }
 
 export function readGuiTag(struct: GFFStruct | undefined): string {
@@ -94,8 +111,8 @@ export function ensureGuiControlsList(root: GFFStruct): GFFField {
   return list;
 }
 
-export function getNestedStruct(parent: GFFStruct, label: string): GFFStruct | undefined {
-  if (!parent.hasField(label)) {
+export function getNestedStruct(parent: GFFStruct | undefined, label: string): GFFStruct | undefined {
+  if (!parent?.hasField(label)) {
     return undefined;
   }
   return parent.getFieldByLabel(label)?.getChildStructs()?.[0];
@@ -301,14 +318,9 @@ export function collectExpandedGuiPaths(root: GuiOutlineNode | undefined, select
   return expanded;
 }
 
-function addStructField(parent: GFFStruct, label: string, child: GFFStruct): void {
-  const field = new GFFField(GFFDataType.STRUCT, label);
-  field.addChildStruct(child);
-  parent.addField(field);
-}
-
 /**
- * Create a new control struct with the common GUI field set (extent/border/text/hilight/moveto).
+ * Create a new control struct with the common GUI field set (extent/border/text/hilight/moveto)
+ * plus type-specific nests when required by the engine.
  */
 export function createDefaultGuiControlStruct(options: {
   type: number;
@@ -320,63 +332,22 @@ export function createDefaultGuiControlStruct(options: {
   top?: number;
   width?: number;
   height?: number;
+  /** When omitted, INNEROFFSETY is not authored (caller should pass true for TSL). */
+  includeInnerOffsetY?: boolean;
 }): GFFStruct {
-  const control = new GFFStruct();
-
-  const extent = new GFFStruct();
-  extent.addField(new GFFField(GFFDataType.INT, "TOP", options.top ?? 0));
-  extent.addField(new GFFField(GFFDataType.INT, "LEFT", options.left ?? 0));
-  extent.addField(new GFFField(GFFDataType.INT, "WIDTH", options.width ?? 100));
-  extent.addField(new GFFField(GFFDataType.INT, "HEIGHT", options.height ?? 25));
-  addStructField(control, "EXTENT", extent);
-
-  const border = new GFFStruct();
-  border.addField(new GFFField(GFFDataType.VECTOR, "COLOR", { x: 1, y: 1, z: 1 }));
-  border.addField(new GFFField(GFFDataType.INT, "DIMENSION", 0));
-  border.addField(new GFFField(GFFDataType.RESREF, "CORNER", ""));
-  border.addField(new GFFField(GFFDataType.RESREF, "EDGE", ""));
-  border.addField(new GFFField(GFFDataType.RESREF, "FILL", ""));
-  border.addField(new GFFField(GFFDataType.INT, "FILLSTYLE", 0));
-  border.addField(new GFFField(GFFDataType.INT, "INNEROFFSET", 0));
-  border.addField(new GFFField(GFFDataType.BYTE, "PULSING", 0));
-  addStructField(control, "BORDER", border);
-
-  const text = new GFFStruct();
-  text.addField(new GFFField(GFFDataType.RESREF, "FONT", ""));
-  text.addField(new GFFField(GFFDataType.DWORD, "STRREF", 0xffffffff));
-  text.addField(new GFFField(GFFDataType.CEXOSTRING, "TEXT", ""));
-  text.addField(new GFFField(GFFDataType.INT, "ALIGNMENT", 18));
-  text.addField(new GFFField(GFFDataType.BYTE, "PULSING", 0));
-  text.addField(new GFFField(GFFDataType.VECTOR, "COLOR", { x: 1, y: 1, z: 1 }));
-  addStructField(control, "TEXT", text);
-
-  const highlight = new GFFStruct();
-  highlight.addField(new GFFField(GFFDataType.VECTOR, "COLOR", { x: 1, y: 1, z: 0 }));
-  highlight.addField(new GFFField(GFFDataType.INT, "DIMENSION", 0));
-  highlight.addField(new GFFField(GFFDataType.RESREF, "CORNER", ""));
-  highlight.addField(new GFFField(GFFDataType.RESREF, "EDGE", ""));
-  highlight.addField(new GFFField(GFFDataType.RESREF, "FILL", ""));
-  highlight.addField(new GFFField(GFFDataType.INT, "FILLSTYLE", 0));
-  highlight.addField(new GFFField(GFFDataType.INT, "INNEROFFSET", 0));
-  highlight.addField(new GFFField(GFFDataType.BYTE, "PULSING", 0));
-  addStructField(control, "HILIGHT", highlight);
-
-  const moveTo = new GFFStruct();
-  moveTo.addField(new GFFField(GFFDataType.INT, "DOWN", -1));
-  moveTo.addField(new GFFField(GFFDataType.INT, "LEFT", -1));
-  moveTo.addField(new GFFField(GFFDataType.INT, "RIGHT", -1));
-  moveTo.addField(new GFFField(GFFDataType.INT, "UP", -1));
-  addStructField(control, "MOVETO", moveTo);
-
-  control.addField(new GFFField(GFFDataType.INT, "CONTROLTYPE", options.type));
-  control.addField(new GFFField(GFFDataType.RESREF, "TAG", options.tag));
-  control.addField(new GFFField(GFFDataType.INT, "ID", options.id ?? 0));
-  control.addField(new GFFField(GFFDataType.BYTE, "Obj_Locked", 0));
-  control.addField(new GFFField(GFFDataType.CEXOSTRING, "Obj_Parent", options.parentTag));
-  control.addField(new GFFField(GFFDataType.INT, "Obj_ParentID", options.parentId ?? -1));
-  control.addField(new GFFField(GFFDataType.INT, "PADDING", 0));
-
-  return control;
+  return createGuiControlStruct({
+    type: options.type,
+    tag: options.tag,
+    parentTag: options.parentTag,
+    parentId: options.parentId,
+    id: options.id,
+    left: options.left,
+    top: options.top,
+    width: options.width,
+    height: options.height,
+    includeInnerOffsetY: !!options.includeInnerOffsetY,
+    includeTypeNests: true,
+  });
 }
 
 export function nextUniqueGuiTag(gff: GFFObject, base: string): string {
