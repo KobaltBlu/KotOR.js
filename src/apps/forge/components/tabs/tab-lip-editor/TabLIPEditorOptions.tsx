@@ -31,6 +31,10 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
   const [phonemeBusy, setPhonemeBusy] = useState<boolean>(false);
   const [phonemeError, setPhonemeError] = useState<string>('');
   const [dialogText, setDialogText] = useState<string>(() => parentTab.phoneme_dialog_text || '');
+  const [extendedShapes, setExtendedShapes] = useState<string>(() => parentTab.rhubarb_extended_shapes || 'GHX');
+  const [includeRestKeys, setIncludeRestKeys] = useState<boolean>(() => parentTab.rhubarb_include_rest_keys);
+  const [minCueMs, setMinCueMs] = useState<number>(() => parentTab.rhubarb_min_cue_duration_ms);
+  const [workerCount, setWorkerCount] = useState<number>(() => parentTab.rhubarb_worker_count);
 
   const onLIPLoaded = () => {
     setDuration(parentTab.lip.duration);
@@ -115,6 +119,41 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
     parentTab.setPhonemeDialogText(value);
   };
 
+  const toggleExtendedShape = (letter: "G" | "H" | "X") => {
+    const set = new Set(
+      String(extendedShapes || "")
+        .toUpperCase()
+        .split("")
+        .filter((c) => c === "G" || c === "H" || c === "X"),
+    );
+    if (set.has(letter)) set.delete(letter);
+    else set.add(letter);
+    const next = ["G", "H", "X"].filter((c) => set.has(c)).join("");
+    setExtendedShapes(next);
+    parentTab.setRhubarbConfig({ extendedShapes: next });
+  };
+
+  const onIncludeRestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = e.target.checked;
+    setIncludeRestKeys(next);
+    parentTab.setRhubarbConfig({ includeRestKeys: next });
+  };
+
+  const onMinCueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const next = Math.max(0, Math.min(500, parseFloat(e.target.value) || 0));
+    setMinCueMs(next);
+    parentTab.setRhubarbConfig({ minCueDurationMs: next });
+  };
+
+  const onWorkerCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cores =
+      typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
+        ? Math.max(1, navigator.hardwareConcurrency)
+        : 8;
+    const next = Math.max(1, Math.min(cores, Math.floor(parseFloat(e.target.value) || 1)));
+    setWorkerCount(next);
+    parentTab.setRhubarbConfig({ workerCount: next });
+  };
 
   const onFitToKeyFrames = () => {
     parentTab.fitDurationToKeyFrames();
@@ -208,8 +247,70 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
           disabled={phonemeBusy}
         />
         <p className="lip-sidebar__hint">
-          Optional VO transcript for Rhubarb WASM. First run loads the speech model.
+          PocketSphinx (English). First run loads the WASM speech model off the UI thread.
         </p>
+
+        <div className="lip-sidebar__field-row lip-sidebar__field-row--wrap">
+          <span className="lip-sidebar__label">Extended</span>
+          {(["G", "H", "X"] as const).map((letter) => (
+            <label key={letter} className="lip-sidebar__check" title={`Rhubarb extended shape ${letter}`}>
+              <input
+                type="checkbox"
+                checked={extendedShapes.includes(letter)}
+                disabled={phonemeBusy}
+                onChange={() => toggleExtendedShape(letter)}
+              />
+              {letter}
+            </label>
+          ))}
+        </div>
+        <p className="lip-sidebar__hint">
+          G=F/V, H=L, X=rest. Disabled shapes fold onto basic A–F (like --extendedShapes).
+        </p>
+
+        <label className="lip-sidebar__check lip-sidebar__check--block">
+          <input
+            type="checkbox"
+            checked={includeRestKeys}
+            disabled={phonemeBusy}
+            onChange={onIncludeRestChange}
+          />
+          Include rest (X) keyframes
+        </label>
+
+        <div className="lip-sidebar__field-row">
+          <label className="lip-sidebar__label" htmlFor="lip-min-cue">
+            Min cue (ms)
+          </label>
+          <ForgeInput
+            id="lip-min-cue"
+            type="number"
+            min={0}
+            max={500}
+            step={1}
+            className="lip-sidebar__number-input"
+            value={minCueMs}
+            disabled={phonemeBusy}
+            onChange={onMinCueChange}
+          />
+        </div>
+
+        <div className="lip-sidebar__field-row">
+          <label className="lip-sidebar__label" htmlFor="lip-workers">
+            Workers
+          </label>
+          <ForgeInput
+            id="lip-workers"
+            type="number"
+            min={1}
+            max={typeof navigator !== "undefined" ? navigator.hardwareConcurrency || 8 : 8}
+            step={1}
+            className="lip-sidebar__number-input"
+            value={workerCount}
+            disabled={phonemeBusy}
+            onChange={onWorkerCountChange}
+          />
+        </div>
         <div className="lip-sidebar__btn-row">
           <ForgeButton
             variant="secondary"

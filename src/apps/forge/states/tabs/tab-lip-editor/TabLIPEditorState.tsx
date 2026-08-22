@@ -12,12 +12,12 @@ import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
 import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
 import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
-import { RhubarbPhonemeService } from "@/apps/forge/states/tabs/tab-lip-editor/AudioPhonemeService";
+import { RhubarbPhonemeService, PhonemeGenerationProgress } from "@/apps/forge/states/tabs/tab-lip-editor/AudioPhonemeService";
 import { convertTimedPhonemesToKeyframes, mapPhonemeToShape, PHN_INVALID, TimedPhonemeResult } from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
 import { utxShouldShow3DPreview } from "@/apps/forge/helpers/utxPreview3D";
-import { forgeLipSettings, resolvePersistedLipHead } from "@/apps/forge/settings/forgeEditorsSettings";
+import { forgeLipSettings, resolvePersistedLipHead, ForgeLipSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 /** Default LIP preview head resref; persisted under Forge.editors.lip. */
 export const LIP_EDITOR_DEFAULT_HEAD = 'p_bastilah';
@@ -28,7 +28,7 @@ TabStateEventListenerTypes &
   ''|'onLIPLoaded'|'onPlay'|'onPause'|'onStop'|'onAudioLoad'|'onHeadChange'|
   'onHeadLoad'|'onKeyFrameSelect'|'onKeyFrameTrackZoomIn'|'onKeyFrameTrackZoomOut'|
   'onAnimate'|'onKeyFramesChange'|'onDurationChange'|'onPhonemesGenerated'|
-  'onPhonemeGenerationStart'|'onPhonemeGenerationError';
+  'onPhonemeGenerationStart'|'onPhonemeGenerationError'|'onPhonemeGenerationProgress';
 
 export interface TabLIPEditorStateEventListeners extends TabStateEventListeners {
   onLIPLoaded: Function[],
@@ -47,6 +47,7 @@ export interface TabLIPEditorStateEventListeners extends TabStateEventListeners 
   onPhonemesGenerated: Function[],
   onPhonemeGenerationStart: Function[],
   onPhonemeGenerationError: Function[],
+  onPhonemeGenerationProgress: Function[],
 }
 
 export interface LIPUndoSnapshot {
@@ -84,6 +85,15 @@ export class TabLIPEditorState extends TabState {
   phoneme_dialog_text: string = '';
   phoneme_generation_error: string|undefined;
   phoneme_generation_busy: boolean = false;
+  phoneme_generation_progress: PhonemeGenerationProgress = {
+    percent: 0,
+    phase: "load",
+    message: "",
+  };
+  rhubarb_extended_shapes: string = forgeLipSettings.get().extendedShapes;
+  rhubarb_include_rest_keys: boolean = forgeLipSettings.get().includeRestKeys;
+  rhubarb_min_cue_duration_ms: number = forgeLipSettings.get().minCueDurationMs;
+  rhubarb_worker_count: number = forgeLipSettings.get().workerCount;
   selected_frame: ILIPKeyFrame|undefined;
   dragging_frame: ILIPKeyFrame|undefined;
   dragging_frame_snapshot: ILIPKeyFrame|undefined;
@@ -419,11 +429,27 @@ export class TabLIPEditorState extends TabState {
     }
     this.phoneme_generation_busy = true;
     this.phoneme_generation_error = undefined;
+    this.phoneme_generation_progress = { percent: 0, phase: "load", message: "Starting…" };
     this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationStart", [this]);
+    this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationProgress", [
+      this,
+      this.phoneme_generation_progress,
+    ]);
     try {
       const dialogText = this.phoneme_dialog_text.trim();
       const result = await this.phonemeService.extractTimedPhonemes(this.audio_buffer, {
         dialogText: dialogText || undefined,
+        extendedShapes: this.rhubarb_extended_shapes,
+        includeRestKeys: this.rhubarb_include_rest_keys,
+        minCueDurationSec: Math.max(0, this.rhubarb_min_cue_duration_ms) / 1000,
+        workerCount: this.rhubarb_worker_count,
+        onProgress: (progress) => {
+          this.phoneme_generation_progress = progress;
+          this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationProgress", [
+            this,
+            progress,
+          ]);
+        },
       });
       this.timed_phonemes = result;
       this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemesGenerated", [this, result]);
@@ -431,10 +457,9 @@ export class TabLIPEditorState extends TabState {
     } catch (e: any) {
       const message = e?.message || "Unable to generate phonemes.";
       this.phoneme_generation_error = message;
+      this.phoneme_generation_busy = false;
       this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationError", [this, message]);
       throw e;
-    } finally {
-      this.phoneme_generation_busy = false;
     }
   }
 
@@ -442,9 +467,49 @@ export class TabLIPEditorState extends TabState {
     this.phoneme_dialog_text = String(value ?? "");
   }
 
+  setRhubarbConfig(partial: Partial<Pick<ForgeLipSettings, "extendedShapes" | "includeRestKeys" | "minCueDurationMs" | "workerCount">>): void {
+    if (partial.extendedShapes !== undefined) {
+      const raw = String(partial.extendedShapes).toUpperCase();
+      this.rhubarb_extended_shapes = ["G", "H", "X"].filter((c) => raw.includes(c)).join("");
+    }
+    if (partial.includeRestKeys !== undefined) {
+      this.rhubarb_include_rest_keys = !!partial.includeRestKeys;
+    }
+    if (partial.minCueDurationMs !== undefined) {
+      this.rhubarb_min_cue_duration_ms = Math.max(0, Math.min(500, Number(partial.minCueDurationMs) || 0));
+    }
+    if (partial.workerCount !== undefined) {
+      const cores =
+        typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
+          ? Math.max(1, navigator.hardwareConcurrency)
+          : 8;
+      this.rhubarb_worker_count = Math.max(1, Math.min(cores, Math.floor(Number(partial.workerCount) || 1)));
+    }
+    forgeLipSettings.set({
+      extendedShapes: this.rhubarb_extended_shapes,
+      includeRestKeys: this.rhubarb_include_rest_keys,
+      minCueDurationMs: this.rhubarb_min_cue_duration_ms,
+      workerCount: this.rhubarb_worker_count,
+    });
+  }
+
   async generateLIPKeyframesFromAudio(): Promise<void> {
-    const result = await this.generatePhonemesFromLoadedAudio();
-    this.applyTimedPhonemesToKeyframes(result);
+    try {
+      const result = await this.generatePhonemesFromLoadedAudio();
+      this.phoneme_generation_progress = { percent: 96, phase: "apply", message: "Applying keyframes…" };
+      this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationProgress", [
+        this,
+        this.phoneme_generation_progress,
+      ]);
+      this.applyTimedPhonemesToKeyframes(result);
+      this.phoneme_generation_progress = { percent: 100, phase: "done", message: "Done" };
+      this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationProgress", [
+        this,
+        this.phoneme_generation_progress,
+      ]);
+    } finally {
+      this.phoneme_generation_busy = false;
+    }
   }
 
   applyTimedPhonemesToKeyframes(result: TimedPhonemeResult = this.timed_phonemes as TimedPhonemeResult): void {
@@ -452,7 +517,11 @@ export class TabLIPEditorState extends TabState {
     this.captureUndoSnapshot();
     this.lip.keyframes = [];
 
-    const converted = convertTimedPhonemesToKeyframes(result.items);
+    const converted = convertTimedPhonemesToKeyframes(result.items, {
+      includeRestKeys: this.rhubarb_include_rest_keys,
+      extendedShapes: this.rhubarb_extended_shapes,
+      minCueDurationSec: Math.max(0, this.rhubarb_min_cue_duration_ms) / 1000,
+    });
     for (const frame of converted) {
       this.lip.addKeyFrame(frame.time, frame.shape);
     }

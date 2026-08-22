@@ -119,6 +119,13 @@ export interface ForgeDlgSettings {
 
 export interface ForgeLipSettings {
   head: string;
+  /** Enabled extended Rhubarb shapes, subset of GHX. */
+  extendedShapes: string;
+  includeRestKeys: boolean;
+  /** Minimum mouth-cue duration in milliseconds. */
+  minCueDurationMs: number;
+  /** Web Worker pool size for Rhubarb WASM analysis. */
+  workerCount: number;
 }
 
 export interface ForgeImageSettings {
@@ -214,6 +221,10 @@ export const DEFAULT_FORGE_DLG_SETTINGS: ForgeDlgSettings = {
 
 export const DEFAULT_FORGE_LIP_SETTINGS: ForgeLipSettings = {
   head: LIP_EDITOR_FALLBACK_HEAD,
+  extendedShapes: "GHX",
+  includeRestKeys: false,
+  minCueDurationMs: 0,
+  workerCount: 1,
 };
 
 export const DEFAULT_FORGE_IMAGE_SETTINGS: ForgeImageSettings = {
@@ -396,8 +407,18 @@ export function sanitizeDlgSettings(value: unknown): ForgeDlgSettings {
 
 export function sanitizeLipSettings(value: unknown): ForgeLipSettings {
   const raw = asSettingsRecord(value);
+  const extendedRaw = String(raw.extendedShapes ?? DEFAULT_FORGE_LIP_SETTINGS.extendedShapes).toUpperCase();
+  const extendedShapes = ["G", "H", "X"].filter((c) => extendedRaw.includes(c)).join("") || "";
+  const cores =
+    typeof navigator !== "undefined" && Number.isFinite(navigator.hardwareConcurrency)
+      ? Math.max(1, navigator.hardwareConcurrency)
+      : 8;
   return {
     head: sanitizeHead(raw.head),
+    extendedShapes,
+    includeRestKeys: sanitizeBoolean(raw.includeRestKeys, DEFAULT_FORGE_LIP_SETTINGS.includeRestKeys),
+    minCueDurationMs: sanitizeNumber(raw.minCueDurationMs, DEFAULT_FORGE_LIP_SETTINGS.minCueDurationMs, 0, 500),
+    workerCount: sanitizeNumber(raw.workerCount, DEFAULT_FORGE_LIP_SETTINGS.workerCount, 1, cores),
   };
 }
 

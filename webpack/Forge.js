@@ -48,6 +48,10 @@ module.exports = (name, color) => ({
           from: "node_modules/lip-sync-engine/dist/wasm",
           to: "wasm",
         },
+        {
+          from: "node_modules/lip-sync-engine/dist/worker.js",
+          to: "wasm/worker.js",
+        },
       ],
     }),
     ...(isProd ? [new MiniCssExtractPlugin({

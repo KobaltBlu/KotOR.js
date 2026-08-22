@@ -20,10 +20,28 @@ export const PHN_KG = 0xF;
 
 const PHN_USE_NEXT = 0x10;
 
+/** Official Rhubarb Preston Blair letters → Odyssey LIP shapes (DanielSWolf docs, not npm README). */
+const RHUBARB_TO_SHAPE = new Map<string, number>([
+  ["A", PHN_MPB], // P/B/M closed
+  ["B", PHN_EE],  // consonants / EE (teeth)
+  ["C", PHN_EH],  // EH / AE
+  ["D", PHN_AH],  // AA wide open
+  ["E", PHN_OH],  // AO / ER
+  ["F", PHN_OOH], // UW / OW / W
+  ["G", PHN_FV],  // F/V extended
+  ["H", PHN_L],   // L extended
+  ["X", PHN_MPB], // idle rest (often omitted from keyframes)
+]);
+
+/** When an extended shape is disabled, fold onto the nearest basic shape. */
+const EXTENDED_FALLBACK: Record<string, string> = {
+  G: "B", // F/V → teeth/consonant workhorse
+  H: "C", // L → open mid
+  X: "A", // rest → closed
+};
+
 const PHONEME_TO_SHAPE = new Map<string, number>([
-  // Rhubarb / Preston Blair mouth cues (lip-sync-engine WASM)
-  ["X", PHN_MPB], ["A", PHN_AH], ["B", PHN_MPB], ["C", PHN_JSH], ["D", PHN_TD],
-  ["E", PHN_EH], ["F", PHN_FV], ["G", PHN_KG], ["H", PHN_EE],
+  ...RHUBARB_TO_SHAPE,
   // Festival / PHN-style symbols
   ["i:", PHN_EE], ["I", PHN_EH], ["I_x", PHN_EH], ["@", PHN_AH],
   ["^", PHN_AH], [">", PHN_SCHWA], ["U", PHN_OH], ["u", PHN_OOH], ["u_x", PHN_OOH], ["&", PHN_OH],
@@ -52,6 +70,15 @@ export interface TimedPhonemeResult {
   items: TimedPhoneme[];
 }
 
+export interface RhubarbCueConvertOptions {
+  /** Include idle rest (X) as keyframes. Default false. */
+  includeRestKeys?: boolean;
+  /** Enabled extended shapes string, e.g. "GHX". Empty = basic A–F only. */
+  extendedShapes?: string;
+  /** Drop/merge cues shorter than this (seconds). 0 = keep all. */
+  minCueDurationSec?: number;
+}
+
 export function mapPhonemeToShape(phoneme: string, prevShape: number = PHN_INVALID): number {
   const shape = PHONEME_TO_SHAPE.get(String(phoneme ?? "").trim());
   if (shape === undefined) return PHN_INVALID;
@@ -59,10 +86,75 @@ export function mapPhonemeToShape(phoneme: string, prevShape: number = PHN_INVAL
   return shape;
 }
 
-export function convertTimedPhonemesToKeyframes(items: TimedPhoneme[]): Array<Pick<ILIPKeyFrame, "time" | "shape">> {
+/**
+ * Apply --extendedShapes-style filtering: disabled G/H/X fold onto basic shapes.
+ */
+export function applyExtendedShapesFilter(
+  items: TimedPhoneme[],
+  extendedShapes: string = "GHX",
+): TimedPhoneme[] {
+  const enabled = new Set(
+    String(extendedShapes ?? "GHX")
+      .toUpperCase()
+      .split("")
+      .filter((c) => c === "G" || c === "H" || c === "X"),
+  );
+  return items.map((item) => {
+    const symbol = String(item.symbol ?? "").trim().toUpperCase();
+    if ((symbol === "G" || symbol === "H" || symbol === "X") && !enabled.has(symbol)) {
+      return { ...item, symbol: EXTENDED_FALLBACK[symbol] ?? "B" };
+    }
+    return { ...item, symbol };
+  });
+}
+
+/**
+ * Merge consecutive same-symbol cues and drop cues shorter than min duration
+ * (unless they are the only cue in a run after merge).
+ */
+export function filterTimedPhonemesByDuration(
+  items: TimedPhoneme[],
+  minCueDurationSec: number = 0,
+): TimedPhoneme[] {
+  if (!items.length) return [];
+  const merged: TimedPhoneme[] = [];
+  for (const item of items) {
+    const symbol = String(item.symbol ?? "").trim();
+    const startSec = Math.max(0, Number(item.startSec) || 0);
+    const endSec = Math.max(startSec, Number(item.endSec) || startSec);
+    const last = merged[merged.length - 1];
+    if (last && last.symbol === symbol) {
+      last.endSec = Math.max(last.endSec, endSec);
+      continue;
+    }
+    merged.push({ symbol, startSec, endSec, confidence: item.confidence });
+  }
+  if (!(minCueDurationSec > 0)) return merged;
+  return merged.filter((item, index) => {
+    const dur = item.endSec - item.startSec;
+    if (dur >= minCueDurationSec) return true;
+    // Keep very short first/last only if nothing else would remain nearby — drop otherwise.
+    return index === 0 || index === merged.length - 1 ? dur > 0 : false;
+  });
+}
+
+export function convertTimedPhonemesToKeyframes(
+  items: TimedPhoneme[],
+  options: RhubarbCueConvertOptions = {},
+): Array<Pick<ILIPKeyFrame, "time" | "shape">> {
+  const includeRestKeys = options.includeRestKeys === true;
+  const extended = options.extendedShapes ?? "GHX";
+  const minDur = Math.max(0, Number(options.minCueDurationSec) || 0);
+
+  let prepared = applyExtendedShapesFilter(items, extended);
+  prepared = filterTimedPhonemesByDuration(prepared, minDur);
+  if (!includeRestKeys) {
+    prepared = prepared.filter((item) => String(item.symbol).toUpperCase() !== "X");
+  }
+
   const frames: Array<Pick<ILIPKeyFrame, "time" | "shape">> = [];
   let prevShape = PHN_INVALID;
-  for (const item of items) {
+  for (const item of prepared) {
     const shape = mapPhonemeToShape(item.symbol, prevShape);
     if (shape === PHN_INVALID || shape === prevShape) continue;
     frames.push({ time: Math.max(0, item.startSec), shape });

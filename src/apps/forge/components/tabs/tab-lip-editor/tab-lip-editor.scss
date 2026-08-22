@@ -1,6 +1,78 @@
 @use "tokens" as *;
 
 // =============================================================================
+// Editor shell + Rhubarb blocking overlay
+// =============================================================================
+
+.lip-editor-shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+
+  > .layout-container {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.lip-rhubarb-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: all;
+  cursor: wait;
+}
+
+.lip-rhubarb-overlay__card {
+  width: min(360px, calc(100% - 32px));
+  padding: $spacing-lg $spacing-md;
+  border-radius: 6px;
+  background: var(--forge-panel-bg, #1e1e24);
+  border: 1px solid var(--forge-border, #3a3a44);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.lip-rhubarb-overlay__title {
+  font-size: $font-size-base;
+  font-weight: 600;
+  margin-bottom: $spacing-sm;
+  color: var(--forge-text, #f0f0f0);
+}
+
+.lip-rhubarb-overlay__message {
+  font-size: $font-size-small;
+  color: var(--forge-text-muted, #a0a0a8);
+  margin-bottom: $spacing-md;
+  min-height: 1.25em;
+}
+
+.lip-rhubarb-overlay__bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.lip-rhubarb-overlay__bar-fill {
+  height: 100%;
+  background: var(--forge-accent, #5b8def);
+  transition: width 0.12s linear;
+}
+
+.lip-rhubarb-overlay__percent {
+  margin-top: $spacing-sm;
+  font-size: $font-size-small;
+  color: var(--forge-text-muted, #a0a0a8);
+  font-variant-numeric: tabular-nums;
+}
+
+// =============================================================================
 // East sidebar
 // =============================================================================
 
@@ -41,6 +113,30 @@
   margin-bottom: $spacing-sm;
   font-size: $font-size-small;
   resize: vertical;
+}
+
+.lip-sidebar__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: $font-size-small;
+  color: var(--forge-text-muted);
+  margin-right: $spacing-sm;
+  user-select: none;
+
+  input {
+    margin: 0;
+  }
+}
+
+.lip-sidebar__check--block {
+  display: flex;
+  margin: 0 0 $spacing-sm;
+}
+
+.lip-sidebar__field-row--wrap {
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 label.lip-sidebar__label[for="lip-dialog-text"] {
@@ -355,15 +451,35 @@ label.lip-sidebar__label[for="lip-dialog-text"] {
 
     .keyframe {
       z-index: 1;
+
+      // Full-height guide line that moves with the diamond (left is on the keyframe itself).
+      &::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        // Keyframe sits at vertical center; stretch stem to track top/bottom
+        top: calc(-50% + 7px);
+        bottom: calc(-50% + 7px);
+        width: 1px;
+        margin-left: -0.5px;
+        background: color-mix(in srgb, var(--forge-accent) 40%, transparent);
+        pointer-events: none;
+        z-index: -1;
+      }
+
+      &.selected::before {
+        background: color-mix(in srgb, var(--forge-accent) 75%, transparent);
+      }
     }
   }
 
+  // Raw Rhubarb cue markers (non-editable); sit behind keyframe stems
   .lip-phoneme-marker {
     position: absolute;
     top: 0;
     bottom: 0;
     width: 1px;
-    background: color-mix(in srgb, var(--forge-accent) 35%, transparent);
+    background: color-mix(in srgb, var(--forge-text-muted) 25%, transparent);
     pointer-events: none;
     z-index: 0;
   }
