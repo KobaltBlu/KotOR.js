@@ -1,4 +1,4 @@
-export const TAB_AUDIO_VISUAL_IDS = ["spectrum", "hyperspace"] as const;
+export const TAB_AUDIO_VISUAL_IDS = ["spectrum", "hyperspace", "waveform"] as const;
 
 export type TabAudioVisualId = (typeof TAB_AUDIO_VISUAL_IDS)[number];
 
@@ -19,6 +19,12 @@ export const TAB_AUDIO_VISUAL_OPTIONS: ReadonlyArray<{
     label: "Hyperspace",
     title: "Always-on star streaks; circular spectrum reacts to audio",
     icon: "fa-meteor",
+  },
+  {
+    id: "waveform",
+    label: "Waveform",
+    title: "Time-domain waveform overview of the current buffer",
+    icon: "fa-wave-square",
   },
 ];
 
@@ -334,3 +340,83 @@ export function drawHyperspace(
   );
   ctx.restore();
 }
+
+
+/** Cached overview peaks for the current AudioBuffer (min/max pairs, normalized -1..1). */
+let waveformCacheKey = "";
+let waveformCachePeaks: Float32Array | null = null;
+
+function buildWaveformPeaks(buffer: AudioBuffer, buckets: number): Float32Array {
+  const peaks = new Float32Array(buckets * 2);
+  const channel = buffer.getChannelData(0);
+  const block = Math.max(1, Math.floor(channel.length / buckets));
+  for (let i = 0; i < buckets; i++) {
+    const start = i * block;
+    const end = Math.min(channel.length, start + block);
+    let min = 1;
+    let max = -1;
+    for (let j = start; j < end; j++) {
+      const v = channel[j];
+      if (v < min) min = v;
+      if (v > max) max = v;
+    }
+    peaks[i * 2] = min;
+    peaks[i * 2 + 1] = max;
+  }
+  return peaks;
+}
+
+export function drawWaveformOverview(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  buffer: AudioBuffer | null | undefined,
+  progress01: number,
+): void {
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  ctx.fillRect(0, 0, w, h);
+  const mid = h * 0.5;
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.beginPath();
+  ctx.moveTo(0, mid);
+  ctx.lineTo(w, mid);
+  ctx.stroke();
+
+  if (!buffer || buffer.length <= 0) {
+    ctx.fillStyle = "rgba(255,255,255,0.35)";
+    ctx.font = "12px sans-serif";
+    ctx.fillText("No waveform — load a track to preview", 16, mid + 4);
+    return;
+  }
+
+  const buckets = Math.max(64, Math.min(1200, Math.floor(w)));
+  const key = `${buffer.duration}:${buffer.sampleRate}:${buffer.length}:${buckets}`;
+  if (waveformCacheKey !== key || !waveformCachePeaks) {
+    waveformCacheKey = key;
+    waveformCachePeaks = buildWaveformPeaks(buffer, buckets);
+  }
+  const peaks = waveformCachePeaks;
+  const barW = w / buckets;
+  const amp = h * 0.42;
+  const playX = Math.max(0, Math.min(1, progress01)) * w;
+
+  for (let i = 0; i < buckets; i++) {
+    const min = peaks[i * 2];
+    const max = peaks[i * 2 + 1];
+    const x = i * barW;
+    const y1 = mid + min * amp;
+    const y2 = mid + max * amp;
+    const played = x + barW <= playX;
+    ctx.fillStyle = played
+      ? "rgba(120, 190, 255, 0.85)"
+      : "rgba(255, 255, 255, 0.28)";
+    ctx.fillRect(x, Math.min(y1, y2), Math.max(1, barW * 0.9), Math.max(1, Math.abs(y2 - y1)));
+  }
+
+  ctx.strokeStyle = "rgba(120, 190, 255, 0.95)";
+  ctx.beginPath();
+  ctx.moveTo(playX, 8);
+  ctx.lineTo(playX, h - 8);
+  ctx.stroke();
+}
+

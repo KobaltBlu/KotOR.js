@@ -483,6 +483,14 @@ export function registerForgeCommands(): void {
   });
 
   registerCommand({
+    id: "forge.view.openAudioPlayer",
+    title: "Audio Player",
+    category: "View",
+    keywords: ["audio", "player", "wav", "mp3", "ost"],
+    run: () => AudioPlayerState.openAudioPlayerTab(),
+  });
+
+  registerCommand({
     id: "forge.view.toggleMiniPlayer",
     title: "Mini Audio Player",
     category: "View",

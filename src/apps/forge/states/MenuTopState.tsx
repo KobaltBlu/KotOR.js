@@ -193,6 +193,7 @@ export class MenuTopState {
           this.commandItem('forge.view.toggleExplorer', {
             checked: ForgeState.explorerPaneOpen,
           }),
+          this.commandItem('forge.view.openAudioPlayer'),
           this.commandItem('forge.view.toggleMiniPlayer', {
             checked: AudioPlayerState.isFloatingMiniPlayerVisible(),
           }),

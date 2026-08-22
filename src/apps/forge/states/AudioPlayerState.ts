@@ -4,11 +4,12 @@ import * as path from "path";
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
-import { GameFileSystem } from "@/utility/GameFileSystem";
-import { AudioLoader } from "@/audio/AudioLoader";
-import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
+import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
+import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { AudioFileAudioType } from "@/enums/audio/AudioFileAudioType";
+import { AudioFileWaveEncoding } from "@/enums/audio/AudioFileWaveEncoding";
 
 declare const dialog: any;
 
@@ -289,11 +290,22 @@ export class AudioPlayerState {
   }
 
   static OpenAudio(file: EditorFile){
-    AudioPlayerState.clearOstMode();
     AudioPlayerState.openAudioPlayerTab();
+
+    const hasManualQueue =
+      !AudioPlayerState.ostMode && AudioPlayerState.playlist.length > 0;
+
+    if (hasManualQueue) {
+      const physicalIndex = AudioPlayerState.playlist.length;
+      AudioPlayerState.appendEditorFilesToPlaylist([file]);
+      void AudioPlayerState.seekPlaylistToPhysicalIndex(physicalIndex);
+      return;
+    }
+
+    AudioPlayerState.clearOstMode();
     AudioPlayerState.Reset();
     AudioPlayerState.Stop();
-    
+
     AudioPlayerState.file = file;
     if(file instanceof EditorFile){
       file.readFile().then( (response) => {
@@ -310,12 +322,10 @@ export class AudioPlayerState {
             AudioPlayerState.buffer = null;
           }
           AudioPlayerState.Play();
-          // AudioPlayerState.Show();
           AudioPlayerState.ProcessEventListener('onOpen', [AudioPlayerState.audioFile]);
         }
         catch (e) {
           console.error(e);
-          //AudioPlayerState.Hide();
         }
       });
     }
@@ -792,7 +802,7 @@ export class AudioPlayerState {
             console.error("decodeAudioData error", error);
 
             // AudioPlayerState.buffer = pcm.toAudioBuffer(data);
-            console.log('Caught PCM error converting ADPCM to PCM', AudioPlayerState.buffer, AudioPlayerState.buffer instanceof AudioBuffer)
+            console.error('decodeAudioData failed; buffer unavailable', AudioPlayerState.buffer)
             if(typeof onBuffered === 'function')
               onBuffered(AudioPlayerState.buffer);
           });
@@ -816,6 +826,7 @@ export class AudioPlayerState {
     AudioPlayerState.pausedAt = 0;
     AudioPlayerState.playing = false;
     AudioPlayerState.loading = false;
+    AudioPlayerState.loop = !!forgeAudioSettings.get().loop;
 
     if(!AudioPlayerState.gainNode){
       AudioPlayerState.gainNode = KotOR.AudioEngine.GetAudioEngine().audioCtx.createGain();
@@ -839,9 +850,7 @@ export class AudioPlayerState {
 
   static Play(){
     AudioPlayerState.source = KotOR.AudioEngine.GetAudioEngine().audioCtx.createBufferSource();
-    if(AudioPlayerState.loading){
-      return;
-    }
+    AudioPlayerState.loading = false;
     void AudioPlayerState.ensurePlaylistEntryLoaded().then((ready) => {
       if (!ready && AudioPlayerState.playOrder.length > 0) {
         return;
@@ -858,7 +867,7 @@ export class AudioPlayerState {
             AudioPlayerState.source.connect(AudioPlayerState.analyser);
             AudioPlayerState.analyser.connect(AudioPlayerState.gainNode);
             AudioPlayerState.gainNode.connect(
-              KotOR.AudioEngine.voChannel.getGainNode(),
+              KotOR.AudioEngine.musicChannel.getGainNode(),
             );
             AudioPlayerState.source.loop = false;
             AudioPlayerState.source.start(0, offset);
@@ -1050,11 +1059,10 @@ export class AudioPlayerState {
     if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
       let payload = await dialog.showSaveDialog({
         title: 'Export Audio File',
-        defaultPath: af.filename,
+        defaultPath: String(af.filename || 'export').replace(/\.(mp3|MP3)$/, '.wav'),
         properties: ['createDirectory'],
         filters: [
           {name: 'Wave File', extensions: ['wav']},
-          {name: 'MP3 File', extensions: ['mp3']}
         ]
       });
 
@@ -1064,13 +1072,10 @@ export class AudioPlayerState {
       }
     }else{
       showSaveFilePicker({
-        suggestedName: af.filename,
+        suggestedName: String(af.filename || 'export.wav').replace(/\.(mp3|MP3)$/, '.wav'),
         types: [{
-          description: 'MP3 File',
-          accept: {'audio/mpeg': ['.mp3']},
-        },{
           description: 'WAV File',
-          accept: {'audio/vnd.wav': ['.wav']},
+          accept: {'audio/wav': ['.wav']},
         }]
       } as SaveFilePickerOptions ).then( async (handle: FileSystemFileHandle) => {
         if(handle){
@@ -1081,6 +1086,96 @@ export class AudioPlayerState {
         }
       })
     }
+  }
+
+
+  static SetLoop(loop: boolean): void {
+    AudioPlayerState.loop = !!loop;
+    forgeAudioSettings.set({ loop: AudioPlayerState.loop });
+    AudioPlayerState.ProcessEventListener("onLoop", [AudioPlayerState.loop]);
+  }
+
+  static ToggleLoop(): void {
+    AudioPlayerState.SetLoop(!AudioPlayerState.loop);
+  }
+
+  /**
+   * Seek within the current decoded buffer without emitting Stop (avoids UI scrubber reset).
+   */
+  static Seek(seconds: number): void {
+    const duration = AudioPlayerState.GetDuration();
+    const clamped = Math.max(0, Math.min(seconds, duration > 0 ? duration : seconds));
+    const wasPlaying = AudioPlayerState.playing;
+    try {
+      if (AudioPlayerState.source) {
+        AudioPlayerState.source.onended = null;
+        AudioPlayerState.source.disconnect();
+        AudioPlayerState.source.stop(0);
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    AudioPlayerState.playing = false;
+    AudioPlayerState.pausedAt = clamped;
+    AudioPlayerState.startedAt = 0;
+    AudioPlayerState.StopLoop();
+    if (wasPlaying) {
+      AudioPlayerState.Play();
+    }
+  }
+
+  static getAudioTechInfo(): {
+    filename: string;
+    container: string;
+    encoding: string;
+    sampleRate: number | null;
+    channels: number | null;
+    duration: number;
+  } {
+    const af = AudioPlayerState.audioFile;
+    const duration = AudioPlayerState.GetDuration();
+    if (!af) {
+      return {
+        filename: "",
+        container: "—",
+        encoding: "—",
+        sampleRate: null,
+        channels: null,
+        duration,
+      };
+    }
+    let container = "Unknown";
+    let encoding = "—";
+    let sampleRate: number | null = null;
+    let channels: number | null = null;
+    try {
+      if (af.audioType === AudioFileAudioType.WAVE) {
+        container = "WAV";
+        const fmt = af.header?.format;
+        if (fmt === AudioFileWaveEncoding.ADPCM) encoding = "ADPCM";
+        else if (fmt === AudioFileWaveEncoding.PCM) encoding = "PCM";
+        else encoding = `fmt 0x${Number(fmt || 0).toString(16)}`;
+        sampleRate = af.header?.sampleRate ?? null;
+        channels = af.header?.channels ?? null;
+      } else if (af.audioType === AudioFileAudioType.MP3) {
+        container = "MP3";
+        encoding = "MPEG";
+      }
+    } catch {
+      /* ignore */
+    }
+    if ((!sampleRate || !channels) && AudioPlayerState.buffer instanceof AudioBuffer) {
+      sampleRate = AudioPlayerState.buffer.sampleRate;
+      channels = AudioPlayerState.buffer.numberOfChannels;
+    }
+    return {
+      filename: String(af.filename || ""),
+      container,
+      encoding,
+      sampleRate,
+      channels,
+      duration,
+    };
   }
 
   static GetCurrentTime(): number {
