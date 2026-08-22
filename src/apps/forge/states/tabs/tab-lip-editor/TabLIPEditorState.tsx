@@ -12,7 +12,7 @@ import { SceneGraphNode } from "@/apps/forge/SceneGraphNode";
 import { LIPShapeLabels } from "@/apps/forge/data/LIPShapeLabels";
 import { ForgeFileSystem, ForgeFileSystemResponse } from "@/apps/forge/ForgeFileSystem";
 import { FileLocationType } from "@/apps/forge/enum/FileLocationType";
-import { EnergyWindowPhonemeService } from "@/apps/forge/states/tabs/tab-lip-editor/AudioPhonemeService";
+import { RhubarbPhonemeService } from "@/apps/forge/states/tabs/tab-lip-editor/AudioPhonemeService";
 import { convertTimedPhonemesToKeyframes, mapPhonemeToShape, PHN_INVALID, TimedPhonemeResult } from "@/apps/forge/states/tabs/tab-lip-editor/PhonemeToLIPShape";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
@@ -81,6 +81,7 @@ export class TabLIPEditorState extends TabState {
   current_head: string = DEFAULT_HEAD;
   audio_name: string;
   timed_phonemes: TimedPhonemeResult|undefined;
+  phoneme_dialog_text: string = '';
   phoneme_generation_error: string|undefined;
   phoneme_generation_busy: boolean = false;
   selected_frame: ILIPKeyFrame|undefined;
@@ -99,7 +100,7 @@ export class TabLIPEditorState extends TabState {
 
   ui3DRenderer: UI3DRenderer;
   box3: THREE.Box3 = new THREE.Box3();
-  phonemeService = new EnergyWindowPhonemeService();
+  phonemeService = new RhubarbPhonemeService();
 
   keyframesSceneGraphNode: SceneGraphNode = new SceneGraphNode({
     name: 'Key Frames',
@@ -420,7 +421,10 @@ export class TabLIPEditorState extends TabState {
     this.phoneme_generation_error = undefined;
     this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemeGenerationStart", [this]);
     try {
-      const result = await this.phonemeService.extractTimedPhonemes(this.audio_buffer);
+      const dialogText = this.phoneme_dialog_text.trim();
+      const result = await this.phonemeService.extractTimedPhonemes(this.audio_buffer, {
+        dialogText: dialogText || undefined,
+      });
       this.timed_phonemes = result;
       this.processEventListener<TabLIPEditorStateEventListenerTypes>("onPhonemesGenerated", [this, result]);
       return result;
@@ -434,8 +438,12 @@ export class TabLIPEditorState extends TabState {
     }
   }
 
+  setPhonemeDialogText(value: string): void {
+    this.phoneme_dialog_text = String(value ?? "");
+  }
+
   async generateLIPKeyframesFromAudio(): Promise<void> {
-    const result = this.timed_phonemes ?? await this.generatePhonemesFromLoadedAudio();
+    const result = await this.generatePhonemesFromLoadedAudio();
     this.applyTimedPhonemesToKeyframes(result);
   }
 

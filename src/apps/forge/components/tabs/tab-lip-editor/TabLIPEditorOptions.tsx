@@ -7,7 +7,7 @@ import {
   LIP_EDITOR_DEFAULT_HEAD,
 } from "@/apps/forge/states/tabs";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { ForgeButton, ForgeInput, ForgeSelect } from "@/apps/forge/components/ui";
+import { ForgeButton, ForgeInput, ForgeSelect, ForgeTextArea } from "@/apps/forge/components/ui";
 import { SectionContainer } from "@/apps/forge/components/SectionContainer";
 
 import * as KotOR from "@/apps/forge/KotOR";
@@ -30,6 +30,7 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
   const [phonemeEngine, setPhonemeEngine] = useState<string>(() => parentTab.timed_phonemes?.engine || '');
   const [phonemeBusy, setPhonemeBusy] = useState<boolean>(false);
   const [phonemeError, setPhonemeError] = useState<string>('');
+  const [dialogText, setDialogText] = useState<string>(() => parentTab.phoneme_dialog_text || '');
 
   const onLIPLoaded = () => {
     setDuration(parentTab.lip.duration);
@@ -106,6 +107,12 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
 
   const onGeneratePhonemesAndShapes = () => {
     parentTab.generateLIPKeyframesFromAudio().catch(() => {});
+  };
+
+  const onDialogTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setDialogText(value);
+    parentTab.setPhonemeDialogText(value);
   };
 
 
@@ -188,6 +195,21 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
         <p className="lip-sidebar__hint">
           Replaces all keyframes and updates duration from the PHN file.
         </p>
+        <label className="lip-sidebar__label" htmlFor="lip-dialog-text">
+          Dialog text (optional)
+        </label>
+        <ForgeTextArea
+          id="lip-dialog-text"
+          className="lip-sidebar__dialog-text"
+          rows={3}
+          placeholder="Transcript improves Rhubarb recognition"
+          value={dialogText}
+          onChange={onDialogTextChange}
+          disabled={phonemeBusy}
+        />
+        <p className="lip-sidebar__hint">
+          Optional VO transcript for Rhubarb WASM. First run loads the speech model.
+        </p>
         <div className="lip-sidebar__btn-row">
           <ForgeButton
             variant="secondary"
@@ -195,12 +217,17 @@ export const TabLIPEditorOptions = function (props: TabLIPEditorOptionsProps) {
             className="lip-sidebar__btn"
             onClick={onGeneratePhonemesAndShapes}
             disabled={!hasAudio || phonemeBusy}
-            title="Generate timed phonemes and convert directly to LIP keyframes"
+            title="Generate mouth shapes with Rhubarb WASM and convert to LIP keyframes"
           >
             <i className={`fa-solid ${phonemeBusy ? 'fa-spinner fa-spin' : 'fa-wand-magic-sparkles'} me-1`} aria-hidden />
             {phonemeBusy ? 'Generating...' : 'Generate Phonemes + Shapes'}
           </ForgeButton>
         </div>
+        {(phonemeEngine || phonemeCount > 0) && !phonemeBusy && !phonemeError && (
+          <p className="lip-sidebar__hint mb-0">
+            {phonemeEngine || 'rhubarb-wasm'}{phonemeCount > 0 ? ` · ${phonemeCount} cues` : ''}
+          </p>
+        )}
         {phonemeError && (
           <p className="lip-sidebar__hint text-danger mb-0">{phonemeError}</p>
         )}

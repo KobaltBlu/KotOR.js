@@ -21,14 +21,18 @@ export const PHN_KG = 0xF;
 const PHN_USE_NEXT = 0x10;
 
 const PHONEME_TO_SHAPE = new Map<string, number>([
-  ["i:", PHN_EE], ["I", PHN_EH], ["I_x", PHN_EH], ["E", PHN_EH], ["@", PHN_AH], ["A", PHN_AH],
+  // Rhubarb / Preston Blair mouth cues (lip-sync-engine WASM)
+  ["X", PHN_MPB], ["A", PHN_AH], ["B", PHN_MPB], ["C", PHN_JSH], ["D", PHN_TD],
+  ["E", PHN_EH], ["F", PHN_FV], ["G", PHN_KG], ["H", PHN_EE],
+  // Festival / PHN-style symbols
+  ["i:", PHN_EE], ["I", PHN_EH], ["I_x", PHN_EH], ["@", PHN_AH],
   ["^", PHN_AH], [">", PHN_SCHWA], ["U", PHN_OH], ["u", PHN_OOH], ["u_x", PHN_OOH], ["&", PHN_OH],
   ["&_0", PHN_OH], ["3r", PHN_SCHWA], ["&r", PHN_SCHWA], ["5", PHN_OH], ["ei", PHN_EH], [">i", PHN_OH],
   ["aI", PHN_AH], ["aU", PHN_AH], ["oU", PHN_OH], ["iU", PHN_EE], ["i&", PHN_EE], ["u&", PHN_OOH],
   ["e&", PHN_EH], ["ah", PHN_AH], ["eh", PHN_EH], ["oh", PHN_OH], ["oo", PHN_OOH],
   ["ph", PHN_MPB], ["pc", PHN_MPB], ["b", PHN_MPB], ["bc", PHN_MPB], ["th", PHN_TD],
   ["tc", PHN_TD], ["d", PHN_TD], ["dc", PHN_TD], ["kh", PHN_KG], ["kc", PHN_KG], ["g", PHN_KG],
-  ["gc", PHN_KG], ["f", PHN_FV], ["v", PHN_FV], ["T", PHN_TH], ["D", PHN_TH], ["s", PHN_S],
+  ["gc", PHN_KG], ["f", PHN_FV], ["v", PHN_FV], ["T", PHN_TH], ["s", PHN_S],
   ["z", PHN_S], ["S", PHN_JSH], ["Z", PHN_JSH], ["h", PHN_USE_NEXT], ["h_v", PHN_USE_NEXT], ["tS", PHN_JSH],
   ["tSc", PHN_JSH], ["dZ", PHN_JSH], ["dZc", PHN_JSH], ["m", PHN_MPB], ["n", PHN_NNG], ["N", PHN_NNG],
   ["d_(", PHN_TD], ["th_(", PHN_TD], ["n_(", PHN_NNG], ["l=", PHN_L], ["m=", PHN_MPB], ["n=", PHN_NNG],
