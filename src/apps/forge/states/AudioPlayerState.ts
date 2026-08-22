@@ -8,6 +8,7 @@ import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
 import { ForgeFileSystem, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
 import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { ForgeStatusBarState } from "@/apps/forge/states/ForgeStatusBarState";
 import { AudioFileAudioType } from "@/enums/audio/AudioFileAudioType";
 import { AudioFileWaveEncoding } from "@/enums/audio/AudioFileWaveEncoding";
 
@@ -406,6 +407,39 @@ export class AudioPlayerState {
     return out;
   }
 
+  static readonly STATUS_BAR_NOW_PLAYING_ID = "audio.nowPlaying";
+
+  /** Publish or clear the app-footer now-playing item. */
+  static publishNowPlayingStatus(): void {
+    const name = String(AudioPlayerState.audioFile?.filename ?? "").trim();
+    if (!name) {
+      ForgeStatusBarState.removeItem(AudioPlayerState.STATUS_BAR_NOW_PLAYING_ID);
+      return;
+    }
+    const pl = AudioPlayerState.playlist;
+    const order = AudioPlayerState.playOrder;
+    let suffix = "";
+    if (pl.length > 1 && order.length > 0) {
+      const kind = AudioPlayerState.ostMode ? "OST" : "Queue";
+      suffix = ` · ${kind} ${AudioPlayerState.playCursor + 1}/${pl.length}`;
+    }
+    const stateLabel = AudioPlayerState.playing
+      ? "Playing"
+      : AudioPlayerState.pausedAt > 0
+        ? "Paused"
+        : "";
+    const text = stateLabel ? `${stateLabel}  ${name}${suffix}` : `${name}${suffix}`;
+    ForgeStatusBarState.setItem({
+      id: AudioPlayerState.STATUS_BAR_NOW_PLAYING_ID,
+      text,
+      title: "Open Audio Player",
+      align: "end",
+      onClick: () => {
+        AudioPlayerState.openAudioPlayerTab();
+      },
+    });
+  }
+
   static emitOstState(): void {
     const pl = AudioPlayerState.playlist;
     const order = AudioPlayerState.playOrder;
@@ -427,6 +461,7 @@ export class AudioPlayerState {
       queueLabels,
     };
     AudioPlayerState.ProcessEventListener("onOstState", [payload]);
+    AudioPlayerState.publishNowPlayingStatus();
   }
 
   static clearOstMode(): void {
@@ -912,6 +947,7 @@ export class AudioPlayerState {
 
             AudioPlayerState.ResumeLoop();
             AudioPlayerState.ProcessEventListener("onPlay");
+            AudioPlayerState.publishNowPlayingStatus();
           }
         });
       }
@@ -934,6 +970,7 @@ export class AudioPlayerState {
     AudioPlayerState.ProcessEventListener('onPause');
     AudioPlayerState.Stop({ emitStopEvent: false });
     AudioPlayerState.pausedAt = elapsed;
+    AudioPlayerState.publishNowPlayingStatus();
   }
 
   static Stop(options?: AudioPlayerStopOptions){
@@ -952,6 +989,7 @@ export class AudioPlayerState {
     AudioPlayerState.StopLoop();
     if (options?.emitStopEvent !== false) {
       AudioPlayerState.ProcessEventListener('onStop');
+      AudioPlayerState.publishNowPlayingStatus();
     }
   }
 

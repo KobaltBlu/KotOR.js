@@ -3,14 +3,21 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import {
+  applyDropdownPlacement,
+  clearDropdownPlacement,
+} from "@/apps/forge/helpers/forgeMenuClip";
 
 interface DropdownContextValue {
   open: boolean;
   setOpen: (open: boolean) => void;
   toggle: () => void;
+  rootRef: React.RefObject<HTMLDivElement | null>;
+  alignEnd: boolean;
 }
 
 const DropdownContext = createContext<DropdownContextValue | null>(null);
@@ -57,7 +64,7 @@ export function ForgeDropdown({
   }, [setOpen]);
 
   return (
-    <DropdownContext.Provider value={{ open, setOpen, toggle }}>
+    <DropdownContext.Provider value={{ open, setOpen, toggle, rootRef, alignEnd: align === "end" }}>
       <div ref={rootRef} className={`forge-dropdown ${align === "end" ? "forge-dropdown--end" : ""} ${className}`.trim()}>
         {children}
       </div>
@@ -95,9 +102,26 @@ export function ForgeDropdownMenu({
   className = "",
 }: { children?: React.ReactNode; className?: string }) {
   const ctx = useContext(DropdownContext);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const root = ctx?.rootRef.current;
+    const menu = menuRef.current;
+    if (!ctx?.open || !root || !menu) {
+      return;
+    }
+    const apply = () => applyDropdownPlacement(root, menu, ctx.alignEnd);
+    apply();
+    window.addEventListener("resize", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      clearDropdownPlacement(menu);
+    };
+  }, [ctx?.open, ctx?.alignEnd, ctx?.rootRef, children]);
+
   if (!ctx?.open) return null;
   return (
-    <div className={`forge-menu forge-dropdown__menu ${className}`.trim()} role="menu">
+    <div ref={menuRef} className={`forge-menu forge-dropdown__menu ${className}`.trim()} role="menu">
       {children}
     </div>
   );

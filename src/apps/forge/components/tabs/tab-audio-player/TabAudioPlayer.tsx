@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { useAudioPlayerTransport } from "@/apps/forge/helpers/useAudioPlayerTransport";
+import { useTabStatusBar } from "@/apps/forge/helpers/useForgeStatusBarItems";
 import { TabAudioPlayerState } from "@/apps/forge/states/tabs/TabAudioPlayerState";
 import {
   AudioPlayerOstStatePayload,
@@ -23,10 +24,7 @@ import { forgeAudioSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 
 import "@/apps/forge/components/tabs/tab-audio-player/TabAudioPlayer.scss";
 
-const VISUAL_MIN_H = 120;
-const VISUAL_MAX_H = 240;
-
-function buildTechChips(
+function buildTechItems(
   info: ReturnType<typeof AudioPlayerState.getAudioTechInfo>,
 ): string[] {
   const parts: string[] = [];
@@ -64,7 +62,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const visualCollapsedRef = useRef(false);
 
   const [file, setFile] = useState<KotOR.AudioFile>();
-  const [techChips, setTechChips] = useState<string[]>([]);
+  const [techItems, setTechItems] = useState<string[]>([]);
   const [visualCollapsed, setVisualCollapsed] = useState(false);
   const [visualId, setVisualId] = useState<TabAudioVisualId>(
     () => forgeAudioSettings.get().visualization,
@@ -97,7 +95,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   };
 
   const refreshTech = () => {
-    setTechChips(buildTechChips(AudioPlayerState.getAudioTechInfo()));
+    setTechItems(buildTechItems(AudioPlayerState.getAudioTechInfo()));
   };
 
   const onOpen = (f: KotOR.AudioFile) => {
@@ -116,15 +114,20 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
       return;
     }
     const rect = wrap.getBoundingClientRect();
-    const w = Math.max(280, Math.floor(rect.width));
-    const h = Math.min(VISUAL_MAX_H, Math.max(VISUAL_MIN_H, Math.floor(w * 0.22)));
-    canvas.width = w;
-    canvas.height = h;
-    hyperspaceStateRef.current = null;
+    const w = Math.max(160, Math.floor(rect.width));
+    const h = Math.max(80, Math.floor(rect.height));
+    if (canvas.width !== w || canvas.height !== h) {
+      canvas.width = w;
+      canvas.height = h;
+      hyperspaceStateRef.current = null;
+    }
   };
 
   useEffect(() => {
     visualCollapsedRef.current = visualCollapsed;
+    if (canvasRef.current) {
+      contextRef.current = canvasRef.current.getContext("2d");
+    }
     const wrap = visualRef.current;
     if (!wrap) {
       return;
@@ -229,20 +232,33 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
     ost.total > 0
       ? `${ost.queuePosition} / ${ost.total}${ost.shuffle ? " · shuffle" : ""}`
       : "";
-  const ostMetaTitle =
+  const nowMeta =
     ost.active && ost.label
-      ? `Ambient soundtrack: ${ost.label}${ostPosition ? ` (${ostPosition})` : ""}`
-      : "";
+      ? `OST  ${ostPosition}`
+      : !ost.active && ost.queueLabels.length > 1
+        ? `Queue  ${ostPosition}`
+        : "";
+  const canSkip = ost.total > 1;
+  const statusBarItems = useMemo(
+    () =>
+      techItems.map((text, i) => ({
+        id: `tech-${i}`,
+        text,
+        title: "Track technical details",
+        align: "start" as const,
+      })),
+    [techItems],
+  );
+  useTabStatusBar(tab, statusBarItems);
 
   return (
     <div className="forge-tab-audio" data-tab-id={tab.id}>
       <div className="forge-tab-audio__shell">
-        <div className="forge-tab-audio__scroll">
+        <div className="forge-tab-audio__workspace">
           <section
             className={`forge-tab-audio__stage${
               visualCollapsed ? " forge-tab-audio__stage--collapsed" : ""
             }`}
-            ref={visualRef}
             aria-label="Visualizer"
           >
             <div
@@ -252,7 +268,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
             >
               <button
                 type="button"
-                className="forge-tab-audio__chip-btn"
+                className="forge-tab-audio__tool-btn"
                 title={visualCollapsed ? "Show visualizer" : "Hide visualizer"}
                 aria-pressed={!visualCollapsed}
                 onClick={() => setVisualCollapsed((v) => !v)}
@@ -261,15 +277,14 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
                   className={`fa-solid ${visualCollapsed ? "fa-eye" : "fa-eye-slash"}`}
                   aria-hidden
                 />
-                <span>{visualCollapsed ? "Show" : "Hide"}</span>
               </button>
               {!visualCollapsed
                 ? TAB_AUDIO_VISUAL_OPTIONS.map((opt) => (
                     <button
                       key={opt.id}
                       type="button"
-                      className={`forge-tab-audio__chip-btn${
-                        visualId === opt.id ? " forge-tab-audio__chip-btn--active" : ""
+                      className={`forge-tab-audio__tool-btn${
+                        visualId === opt.id ? " forge-tab-audio__tool-btn--active" : ""
                       }`}
                       title={opt.title}
                       aria-label={opt.label}
@@ -280,13 +295,13 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
                       }}
                     >
                       <i className={`fa-solid ${opt.icon}`} aria-hidden />
-                      <span>{opt.label}</span>
                     </button>
                   ))
                 : null}
             </div>
+
             {!visualCollapsed ? (
-              <div className="forge-tab-audio__stage-frame">
+              <div className="forge-tab-audio__stage-frame" ref={visualRef}>
                 <canvas
                   ref={canvasRef}
                   className="forge-tab-audio__canvas"
@@ -295,148 +310,125 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
                   aria-hidden
                 />
               </div>
-            ) : (
-              <p className="forge-tab-audio__stage-hint">Visualizer hidden</p>
-            )}
+            ) : null}
+
+            <div className="forge-tab-audio__now">
+              <h2 className="forge-tab-audio__now-title" title={title}>
+                {title}
+              </h2>
+              {nowMeta ? (
+                <div className="forge-tab-audio__now-meta">{nowMeta}</div>
+              ) : null}
+            </div>
           </section>
 
-          <header className="forge-tab-audio__now">
-            <div className="forge-tab-audio__now-kicker">Now playing</div>
-            <h2 className="forge-tab-audio__now-title" title={title}>
-              {title}
-            </h2>
-            {techChips.length ? (
-              <ul className="forge-tab-audio__tech" aria-label="Track technical details">
-                {techChips.map((chip) => (
-                  <li key={chip} className="forge-tab-audio__tech-chip">
-                    {chip}
+          <section className="forge-tab-audio__playlist" aria-label="Playlist">
+            <div className="forge-tab-audio__playlist-head">
+              <h3 className="forge-tab-audio__playlist-title">Playlist</h3>
+              <div className="forge-tab-audio__playlist-actions">
+                <button
+                  type="button"
+                  className="forge-tab-audio__head-btn"
+                  title="Append WAV/MP3 files to the queue"
+                  onClick={() => {
+                    void AudioPlayerState.promptAppendAudioToPlaylist();
+                  }}
+                >
+                  <i className="fa-solid fa-plus" aria-hidden />
+                  <span>Add</span>
+                </button>
+                <button
+                  type="button"
+                  className="forge-tab-audio__head-btn"
+                  disabled={ost.active || !ost.queueLabels.length}
+                  title={
+                    ost.active
+                      ? "Stop OST before editing the queue"
+                      : "Remove all queued files"
+                  }
+                  onClick={() => {
+                    AudioPlayerState.clearManualPlaylist();
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <div className="forge-tab-audio__cols" aria-hidden>
+              <span className="forge-tab-audio__col-index">#</span>
+              <span className="forge-tab-audio__col-title">Title</span>
+            </div>
+
+            {ost.queueLabels.length ? (
+              <ul className="forge-tab-audio__track-list">
+                {ost.queueLabels.map((rowTitle, idx) => (
+                  <li
+                    key={`pl-${idx}-${rowTitle}`}
+                    className={`forge-tab-audio__track${
+                      idx === ost.trackIndex ? " forge-tab-audio__track--active" : ""
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="forge-tab-audio__track-main"
+                      title="Play this track"
+                      onClick={() => {
+                        void AudioPlayerState.seekPlaylistToPhysicalIndex(idx);
+                      }}
+                    >
+                      <span className="forge-tab-audio__track-index">{idx + 1}</span>
+                      <span className="forge-tab-audio__track-name">{rowTitle}</span>
+                      {idx === ost.trackIndex && transport.isPlaying ? (
+                        <i
+                          className="fa-solid fa-volume-high forge-tab-audio__track-playing"
+                          aria-hidden
+                        />
+                      ) : null}
+                    </button>
+                    {!ost.active ? (
+                      <button
+                        type="button"
+                        className="forge-tab-audio__track-remove"
+                        title="Remove from queue"
+                        aria-label={`Remove ${rowTitle}`}
+                        onClick={() => {
+                          AudioPlayerState.removePlaylistPhysicalIndex(idx);
+                        }}
+                      >
+                        <i className="fa-solid fa-xmark" aria-hidden />
+                      </button>
+                    ) : null}
                   </li>
                 ))}
               </ul>
-            ) : null}
-            {ost.active && ost.label ? (
-              <div className="forge-tab-audio__badge forge-tab-audio__badge--ost" title={ostMetaTitle}>
-                <span className="forge-tab-audio__badge-label">OST</span>
-                <span className="forge-tab-audio__badge-text">{ost.label}</span>
-                {ostPosition ? (
-                  <span className="forge-tab-audio__badge-meta">{ostPosition}</span>
-                ) : null}
-              </div>
-            ) : !ost.active && ost.queueLabels.length > 1 ? (
-              <div className="forge-tab-audio__badge forge-tab-audio__badge--queue">
-                <span className="forge-tab-audio__badge-label">Queue</span>
-                <span className="forge-tab-audio__badge-meta">
-                  {ost.queuePosition} / {ost.total}
-                  {ost.shuffle ? " · shuffle" : ""}
-                </span>
-              </div>
-            ) : null}
-          </header>
+            ) : (
+              <p className="forge-tab-audio__empty">Queue is empty.</p>
+            )}
 
-          <div className="forge-tab-audio__body">
-            <section className="forge-tab-audio__queue" aria-label="Playlist">
-              <div className="forge-tab-audio__section-head">
-                <h3 className="forge-tab-audio__section-title">Playlist</h3>
-                <div className="forge-tab-audio__section-actions">
-                  <button
-                    type="button"
-                    className="forge-tab-audio__ghost-btn"
-                    title="Append WAV/MP3 files to the queue"
-                    onClick={() => {
-                      void AudioPlayerState.promptAppendAudioToPlaylist();
-                    }}
-                  >
-                    <i className="fa-solid fa-plus" aria-hidden />
-                    <span>Add files…</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="forge-tab-audio__ghost-btn"
-                    disabled={ost.active || !ost.queueLabels.length}
-                    title={
-                      ost.active
-                        ? "Stop OST before editing the queue"
-                        : "Remove all queued files"
-                    }
-                    onClick={() => {
-                      AudioPlayerState.clearManualPlaylist();
-                    }}
-                  >
-                    Clear
-                  </button>
-                </div>
-              </div>
-
-              {ost.queueLabels.length ? (
-                <ul className="forge-tab-audio__track-list">
-                  {ost.queueLabels.map((rowTitle, idx) => (
-                    <li
-                      key={`pl-${idx}-${rowTitle}`}
-                      className={`forge-tab-audio__track${
-                        idx === ost.trackIndex ? " forge-tab-audio__track--active" : ""
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        className="forge-tab-audio__track-main"
-                        title="Play this track"
-                        onClick={() => {
-                          void AudioPlayerState.seekPlaylistToPhysicalIndex(idx);
-                        }}
-                      >
-                        <span className="forge-tab-audio__track-index">{idx + 1}</span>
-                        <span className="forge-tab-audio__track-name">{rowTitle}</span>
-                        {idx === ost.trackIndex && transport.isPlaying ? (
-                          <i
-                            className="fa-solid fa-volume-high forge-tab-audio__track-playing"
-                            aria-hidden
-                          />
-                        ) : null}
-                      </button>
-                      {!ost.active ? (
-                        <button
-                          type="button"
-                          className="forge-tab-audio__track-remove"
-                          title="Remove from queue"
-                          aria-label={`Remove ${rowTitle}`}
-                          onClick={() => {
-                            AudioPlayerState.removePlaylistPhysicalIndex(idx);
-                          }}
-                        >
-                          <i className="fa-solid fa-xmark" aria-hidden />
-                        </button>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="forge-tab-audio__empty">
-                  No files in the queue. Add WAV/MP3 from disk, or start the ambient
-                  soundtrack — both use this playlist.
-                </p>
-              )}
-            </section>
-
-            <aside className="forge-tab-audio__ost-panel" aria-label="Soundtrack">
-              <div className="forge-tab-audio__section-head">
-                <h3 className="forge-tab-audio__section-title">Soundtrack</h3>
-              </div>
-              <p className="forge-tab-audio__ost-blurb">
-                Play ambient music from ambientmusic.2da (streammusic), or skip within the
-                current queue.
-              </p>
-              <div className="forge-tab-audio__ost-controls">
-                <ForgeAudioOstControls
-                  showInlineNowPlaying={false}
-                  className="forge-audio-ost--tab"
-                />
-              </div>
-            </aside>
-          </div>
+            <div className="forge-tab-audio__playlist-ost">
+              <ForgeAudioOstControls
+                showInlineNowPlaying={false}
+                className="forge-audio-ost--tab"
+              />
+            </div>
+          </section>
         </div>
 
         <footer className="forge-tab-audio__deck">
           <div className="forge-tab-audio__transport">
+            <button
+              type="button"
+              className="forge-tab-audio__ctrl"
+              title="Previous track"
+              aria-label="Previous track"
+              disabled={!canSkip}
+              onClick={() => {
+                void AudioPlayerState.skipOst(-1);
+              }}
+            >
+              <i className="fa-solid fa-backward-step" />
+            </button>
             <button
               type="button"
               className="forge-tab-audio__ctrl forge-tab-audio__ctrl--play"
@@ -445,6 +437,18 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
               onClick={transport.onBtnPlay}
             >
               <i className={`fa-solid ${transport.isPlaying ? "fa-pause" : "fa-play"}`} />
+            </button>
+            <button
+              type="button"
+              className="forge-tab-audio__ctrl"
+              title="Next track"
+              aria-label="Next track"
+              disabled={!canSkip}
+              onClick={() => {
+                void AudioPlayerState.skipOst(1);
+              }}
+            >
+              <i className="fa-solid fa-forward-step" />
             </button>
             <button
               type="button"

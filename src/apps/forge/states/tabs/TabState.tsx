@@ -11,6 +11,10 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { TabStoreState } from "@/apps/forge/interfaces/TabStoreState";
 import { pathParse } from "@/apps/forge/helpers/PathParse";
 import { getSessionSettings } from "@/apps/forge/settings/forgeSessionSettings";
+import {
+  ForgeStatusBarItem,
+  ForgeStatusBarState,
+} from "@/apps/forge/states/ForgeStatusBarState";
 declare const dialog: any;
 
 export type TabStateEventListenerTypes =
@@ -52,6 +56,9 @@ export class TabState extends EventListenerModel {
 
   file: EditorFile;
   saveTypes: FilePickerAcceptType[] = [];
+
+  /** Status bar item ids published by this tab (`tab:{id}:…`). */
+  #statusBarItemIds: string[] = [];
   
   #tabContentView: JSX.Element = (<></>);
 
@@ -301,8 +308,42 @@ export class TabState extends EventListenerModel {
     window.addEventListener('keyup', this.#_onKeyUp);
   }
 
+  /**
+   * Contribute items to the Forge status bar. Replaces this tab's previous items.
+   * Ids are prefixed with `tab:{this.id}:`. Cleared on hide/destroy unless
+   * `keepOnHide` is set (rare — prefer a global `ForgeStatusBarState.setItem`).
+   */
+  setStatusBarItems(
+    items: Array<Omit<ForgeStatusBarItem, "id"> & { id?: string }>,
+  ): void {
+    this.clearStatusBarItems();
+    const nextIds: string[] = [];
+    for (const item of items) {
+      const raw = String(item.id ?? "item").trim() || "item";
+      const id = raw.startsWith(`tab:${this.id}:`) ? raw : `tab:${this.id}:${raw}`;
+      ForgeStatusBarState.setItem({
+        ...item,
+        id,
+      });
+      nextIds.push(id);
+    }
+    this.#statusBarItemIds = nextIds;
+  }
+
+  clearStatusBarItems(): void {
+    if (!this.#statusBarItemIds.length) {
+      ForgeStatusBarState.removeByPrefix(`tab:${this.id}:`);
+      return;
+    }
+    for (const id of this.#statusBarItemIds) {
+      ForgeStatusBarState.removeItem(id);
+    }
+    this.#statusBarItemIds = [];
+  }
+
   hide(){
     this.visible = false;
+    this.clearStatusBarItems();
     this.#tabManager.triggerEventListener('onTabHide', [this]);
     this.processEventListener('onTabHide', [this]);
     
@@ -325,6 +366,7 @@ export class TabState extends EventListenerModel {
       }
     }
     this.visible = false;
+    this.clearStatusBarItems();
     if(ForgeState.project && this.file instanceof EditorFile){
       ForgeState.project.removeFromOpenFileList(this.file);
     }
@@ -343,6 +385,7 @@ export class TabState extends EventListenerModel {
 
   destroy() {
     this.isDestroyed = true;
+    this.clearStatusBarItems();
     
     // Remove keyboard event listeners if tab is still visible
     if(this.visible){
