@@ -59,12 +59,12 @@
       }
     }
 
-    &.selected .tree-node-content {
+    &.selected > .tree-node-content {
       background-color: var(--forge-accent-muted);
       color: var(--forge-text-bright);
     }
 
-    &.focused .tree-node-content {
+    &.focused > .tree-node-content {
       background-color: var(--forge-accent-muted);
     }
 
