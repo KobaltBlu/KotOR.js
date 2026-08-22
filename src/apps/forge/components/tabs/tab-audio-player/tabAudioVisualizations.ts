@@ -76,11 +76,22 @@ export type HyperspaceVizState = {
   pulses?: HyperspacePulse[];
 };
 
+function hyperspaceMaxR(w: number, h: number): number {
+  return Math.hypot(w, h) * 0.58;
+}
+
+function hyperspaceStarCount(w: number, h: number): number {
+  return Math.min(480, Math.max(190, Math.floor((w * h) / 620)));
+}
+
 function makeHyperspaceStar(maxR: number, fromCenter = false): HyperspaceStar {
   return {
     angle: Math.random() * Math.PI * 2,
-    // sqrt(random) distributes the initial field by area rather than over-crowding the hub.
-    r: fromCenter ? 1 + Math.random() * 5 : Math.sqrt(Math.random()) * maxR,
+    // Recycled stars enter near the vanishing point. The initial field is already
+    // mid-flight so the first frame looks like an established tunnel.
+    r: fromCenter
+      ? maxR * (0.05 + Math.random() * 0.08)
+      : maxR * (0.18 + Math.pow(Math.random(), 0.65) * 0.8),
     speed: 0.72 + Math.random() * 0.68,
     size: 0.72 + Math.random() * 0.85,
     phase: Math.random() * Math.PI * 2,
@@ -88,14 +99,48 @@ function makeHyperspaceStar(maxR: number, fromCenter = false): HyperspaceStar {
   };
 }
 
+function advanceHyperspaceStars(
+  stars: HyperspaceVizState["stars"],
+  maxR: number,
+  dt: number,
+  energy: number,
+): void {
+  const energySpeed = 0.94 + clamp01(energy) * 0.27;
+  for (let i = 0; i < stars.length; i++) {
+    const star = stars[i];
+    if (star.speed === undefined) {
+      star.speed = 0.72 + Math.random() * 0.68;
+    }
+    const travelT = clamp01(star.r / maxR);
+    star.r +=
+      maxR *
+      0.285 *
+      star.speed *
+      energySpeed *
+      (0.22 + 3.15 * travelT * travelT) *
+      dt;
+    if (star.r > maxR) {
+      stars[i] = makeHyperspaceStar(maxR, true);
+    }
+  }
+}
+
+function warmupHyperspaceField(stars: HyperspaceVizState["stars"], maxR: number): void {
+  const steps = 80;
+  const dt = 1 / 30;
+  for (let i = 0; i < steps; i++) {
+    advanceHyperspaceStars(stars, maxR, dt, 0.22);
+  }
+}
+
 export function createHyperspaceState(w: number, h: number): HyperspaceVizState {
-  const maxR = Math.hypot(w, h) * 0.58;
-  /** Dense enough to feel continuous without making the two-pass glow unnecessarily expensive. */
-  const target = Math.min(480, Math.max(190, Math.floor((w * h) / 620)));
+  const maxR = hyperspaceMaxR(w, h);
+  const target = hyperspaceStarCount(w, h);
   const stars: HyperspaceVizState["stars"] = [];
   for (let i = 0; i < target; i++) {
     stars.push(makeHyperspaceStar(maxR));
   }
+  warmupHyperspaceField(stars, maxR);
   return {
     stars,
     lastW: w,
@@ -109,8 +154,27 @@ export function ensureHyperspaceState(
   w: number,
   h: number
 ): HyperspaceVizState {
-  if (!state || state.lastW !== w || state.lastH !== h) {
+  if (!state) {
     return createHyperspaceState(w, h);
+  }
+
+  if (state.lastW !== w || state.lastH !== h) {
+    const oldMax = hyperspaceMaxR(state.lastW, state.lastH);
+    const newMax = hyperspaceMaxR(w, h);
+    const scale = oldMax > 1 ? newMax / oldMax : 1;
+    for (const star of state.stars) {
+      star.r *= scale;
+    }
+    const target = hyperspaceStarCount(w, h);
+    if (state.stars.length < target) {
+      while (state.stars.length < target) {
+        state.stars.push(makeHyperspaceStar(newMax));
+      }
+    } else if (state.stars.length > target + 48) {
+      state.stars.length = target;
+    }
+    state.lastW = w;
+    state.lastH = h;
   }
 
   // Keep hot-reloaded state usable after the old radial-spectrum implementation.
@@ -290,7 +354,7 @@ export function drawHyperspace(
   const cx = w * 0.5;
   const cy = h * 0.5;
   const minDim = Math.min(w, h);
-  const maxR = Math.hypot(w, h) * 0.58;
+  const maxR = hyperspaceMaxR(w, h);
 
   const previousTime = state.lastTimeMs ?? timeMs - 1000 / 60;
   // Clamp long gaps (background tab, breakpoint, etc.) so stars do not teleport across the screen.
@@ -420,31 +484,16 @@ export function drawHyperspace(
   ctx.globalCompositeOperation = "lighter";
   ctx.lineCap = "round";
 
+  advanceHyperspaceStars(state.stars, maxR, dt, energy);
+
   for (let i = 0; i < state.stars.length; i++) {
-    let star = state.stars[i];
+    const star = state.stars[i];
 
     // Backward compatibility with state created before the richer star fields existed.
     if (star.speed === undefined) star.speed = 0.72 + Math.random() * 0.68;
     if (star.size === undefined) star.size = 0.72 + Math.random() * 0.85;
     if (star.phase === undefined) star.phase = Math.random() * Math.PI * 2;
     if (star.warmth === undefined) star.warmth = Math.random();
-
-    const travelT = clamp01(star.r / maxR);
-    // Overall loudness subtly increases forward velocity. The range is intentionally restrained.
-    const energySpeed = 0.94 + energy * 0.27;
-    const pxPerSecond =
-      maxR *
-      0.285 *
-      star.speed *
-      energySpeed *
-      (0.22 + 3.15 * travelT * travelT);
-    star.r += pxPerSecond * dt;
-
-    if (star.r > maxR) {
-      star = makeHyperspaceStar(maxR, true);
-      state.stars[i] = star;
-      continue;
-    }
 
     const t = clamp01(star.r / maxR);
 
@@ -575,12 +624,37 @@ function buildWaveformPeaks(buffer: AudioBuffer, buckets: number): Float32Array 
   return peaks;
 }
 
+function drawLiveTimeDomain(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  live: Uint8Array,
+): void {
+  const mid = h * 0.5;
+  const amp = h * 0.38;
+  ctx.strokeStyle = "rgba(120, 190, 255, 0.85)";
+  ctx.lineWidth = 1.25;
+  ctx.beginPath();
+  const n = live.length;
+  for (let i = 0; i < n; i++) {
+    const x = (i / Math.max(1, n - 1)) * w;
+    const y = mid + ((live[i] - 128) / 128) * amp;
+    if (i === 0) {
+      ctx.moveTo(x, y);
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
+}
+
 export function drawWaveformOverview(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
   buffer: AudioBuffer | null | undefined,
   progress01: number,
+  liveTimeDomain?: Uint8Array | null,
 ): void {
   ctx.fillStyle = "rgba(0,0,0,0.35)";
   ctx.fillRect(0, 0, w, h);
@@ -592,6 +666,10 @@ export function drawWaveformOverview(
   ctx.stroke();
 
   if (!buffer || buffer.length <= 0) {
+    if (liveTimeDomain && liveTimeDomain.length > 0) {
+      drawLiveTimeDomain(ctx, w, h, liveTimeDomain);
+      return;
+    }
     ctx.fillStyle = "rgba(255,255,255,0.35)";
     ctx.font = "12px sans-serif";
     ctx.fillText("No waveform — load a track to preview", 16, mid + 4);

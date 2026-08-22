@@ -1216,22 +1216,48 @@ export class AudioPlayerState {
     };
   }
 
+  static getDecodedAudioBuffer(): AudioBuffer | null {
+    const candidates: unknown[] = [
+      AudioPlayerState.buffer,
+      AudioPlayerState.source?.buffer,
+    ];
+    for (const candidate of candidates) {
+      if (
+        candidate &&
+        typeof (candidate as AudioBuffer).getChannelData === "function" &&
+        (candidate as AudioBuffer).length > 0
+      ) {
+        return candidate as AudioBuffer;
+      }
+    }
+    return null;
+  }
+
   static GetCurrentTime(): number {
-    try{
-      if(AudioPlayerState.pausedAt) {
-        return AudioPlayerState.pausedAt;
+    try {
+      const ctxTime = KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime;
+      if (AudioPlayerState.playing) {
+        const started = Number(AudioPlayerState.startedAt);
+        if (Number.isFinite(started)) {
+          return Math.max(0, ctxTime - started);
+        }
       }
-      if(AudioPlayerState.startedAt) {
-        return KotOR.AudioEngine.GetAudioEngine().audioCtx.currentTime - AudioPlayerState.startedAt;
+      const paused = Number(AudioPlayerState.pausedAt);
+      if (Number.isFinite(paused) && paused > 0) {
+        return paused;
       }
-    }catch(e){ }
+    } catch (e) { /* ignore */ }
     return 0;
   }
 
   static GetDuration() {
-    try{
-      return AudioPlayerState.buffer.duration;
-    }catch(e){ }
+    try {
+      const buf = AudioPlayerState.getDecodedAudioBuffer();
+      if (buf && buf.duration > 0) {
+        return buf.duration;
+      }
+      return AudioPlayerState.buffer?.duration || 0;
+    } catch (e) { /* ignore */ }
     return 0;
   }
 

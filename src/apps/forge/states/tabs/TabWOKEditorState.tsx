@@ -327,7 +327,10 @@ export class TabWOKEditorState extends TabState {
   
         file.readFile().then( (response) => {
           console.log(response.buffer);
-          this.wok = new KotOR.OdysseyWalkMesh(new KotOR.BinaryReader(response.buffer));
+          const reader = response.buffer instanceof Uint8Array && response.buffer.length
+            ? new KotOR.BinaryReader(response.buffer)
+            : undefined;
+          this.wok = new KotOR.OdysseyWalkMesh(reader);
           this.wok.material.visible = true;
           this.wok.material.side = THREE.DoubleSide;
           this.wok.material.opacity = 0.75;

@@ -38,6 +38,12 @@ import { TabLIPEditorState } from "@/apps/forge/states/tabs/tab-lip-editor/TabLI
 import { TabImageViewerState } from "@/apps/forge/states/tabs/TabImageViewerState";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
 import { TabGFFEditorState } from "@/apps/forge/states/tabs/TabGFFEditorState";
+import { TabGUIEditorState } from "@/apps/forge/states/tabs/TabGUIEditorState";
+import { TabPTHEditorState } from "@/apps/forge/states/tabs/TabPTHEditorState";
+import { TabLYTEditorState } from "@/apps/forge/states/tabs/TabLYTEditorState";
+import { TabTLKEditorState } from "@/apps/forge/states/tabs/TabTLKEditorState";
+import { TabERFEditorState } from "@/apps/forge/states/tabs/TabERFEditorState";
+import { TabWOKEditorState } from "@/apps/forge/states/tabs/TabWOKEditorState";
 import { tabCanCompile, tabCanOpenAsGff, tabCanSave, tabIsGffEditor } from "@/apps/forge/commands/editorCommandGuards";
 import * as KotOR from "@/apps/forge/KotOR";
 import { openTabAsGffEditor } from "@/apps/forge/helpers/openTabAsGff";
@@ -447,6 +453,134 @@ export function registerForgeCommands(): void {
     category: "File",
     keywords: ["table", "twoda"],
     run: () => addUntitled(TabTwoDAEditorState, "new_table", KotOR.ResourceTypes["2da"]),
+  });
+
+  registerCommand({
+    id: "forge.file.new.tlk",
+    title: "New Talk Table (.tlk)",
+    category: "File",
+    keywords: ["table", "talk", "dialog.tlk", "strings"],
+    run: () => addUntitled(TabTLKEditorState, "dialog", KotOR.ResourceTypes.tlk),
+  });
+
+  registerCommand({
+    id: "forge.file.new.gui",
+    title: "New GUI (.gui)",
+    category: "File",
+    keywords: ["interface", "menu", "gui"],
+    run: () => addUntitled(TabGUIEditorState, "new_gui", KotOR.ResourceTypes.gui),
+  });
+
+  registerCommand({
+    id: "forge.file.new.pth",
+    title: "New Path (.pth)",
+    category: "File",
+    keywords: ["pathfinding", "waypoints", "pth"],
+    run: () => addUntitled(TabPTHEditorState, "new_path", KotOR.ResourceTypes.pth),
+  });
+
+  registerCommand({
+    id: "forge.file.new.lyt",
+    title: "New Layout (.lyt)",
+    category: "File",
+    keywords: ["layout", "rooms", "lyt"],
+    run: () => addUntitled(TabLYTEditorState, "new_layout", KotOR.ResourceTypes.lyt),
+  });
+
+  registerCommand({
+    id: "forge.file.new.wok",
+    title: "New Walkmesh (.wok)",
+    category: "File",
+    keywords: ["walkmesh", "collision", "wok"],
+    run: () => addUntitled(TabWOKEditorState, "new_walkmesh", KotOR.ResourceTypes.wok),
+  });
+
+  registerCommand({
+    id: "forge.file.new.txt",
+    title: "New Text File (.txt)",
+    category: "File",
+    keywords: ["text", "plain"],
+    run: () => addUntitled(TabTextEditorState, "untitled", KotOR.ResourceTypes.txt),
+  });
+
+  registerCommand({
+    id: "forge.file.new.txi",
+    title: "New Texture Info (.txi)",
+    category: "File",
+    keywords: ["texture", "txi", "info"],
+    run: () => addUntitled(TabTextEditorState, "untitled", KotOR.ResourceTypes.txi),
+  });
+
+  registerCommand({
+    id: "forge.file.new.vis",
+    title: "New Visibility (.vis)",
+    category: "File",
+    keywords: ["visibility", "rooms", "vis"],
+    run: () => addUntitled(TabTextEditorState, "untitled", KotOR.ResourceTypes.vis),
+  });
+
+  registerCommand({
+    id: "forge.file.new.gff",
+    title: "New GFF (.gff)",
+    category: "File",
+    keywords: ["gff", "generic"],
+    run: () => addUntitled(TabGFFEditorState, "untitled", KotOR.ResourceTypes.gff),
+  });
+
+  registerCommand({
+    id: "forge.file.new.are",
+    title: "New Area (.are)",
+    category: "File",
+    keywords: ["module", "area", "are", "gff"],
+    run: () => addUntitled(TabGFFEditorState, "new_area", KotOR.ResourceTypes.are),
+  });
+
+  registerCommand({
+    id: "forge.file.new.git",
+    title: "New Area Instances (.git)",
+    category: "File",
+    keywords: ["module", "git", "instances", "gff"],
+    run: () => addUntitled(TabGFFEditorState, "new_area", KotOR.ResourceTypes.git),
+  });
+
+  registerCommand({
+    id: "forge.file.new.ifo",
+    title: "New Module Info (.ifo)",
+    category: "File",
+    keywords: ["module", "ifo", "gff"],
+    run: () => addUntitled(TabGFFEditorState, "module", KotOR.ResourceTypes.ifo),
+  });
+
+  registerCommand({
+    id: "forge.file.new.jrl",
+    title: "New Journal (.jrl)",
+    category: "File",
+    keywords: ["module", "journal", "jrl", "gff"],
+    run: () => addUntitled(TabGFFEditorState, "new_journal", KotOR.ResourceTypes.jrl),
+  });
+
+  registerCommand({
+    id: "forge.file.new.fac",
+    title: "New Faction (.fac)",
+    category: "File",
+    keywords: ["module", "faction", "fac", "gff"],
+    run: () => addUntitled(TabGFFEditorState, "repute", KotOR.ResourceTypes.fac),
+  });
+
+  registerCommand({
+    id: "forge.file.new.erf",
+    title: "New Archive (.erf)",
+    category: "File",
+    keywords: ["archive", "erf", "hak"],
+    run: () => addUntitled(TabERFEditorState, "new_archive", KotOR.ResourceTypes.erf),
+  });
+
+  registerCommand({
+    id: "forge.file.new.mod",
+    title: "New Module Archive (.mod)",
+    category: "File",
+    keywords: ["archive", "mod", "module", "erf"],
+    run: () => addUntitled(TabERFEditorState, "new_module", KotOR.ResourceTypes.mod),
   });
 
   registerCommand({

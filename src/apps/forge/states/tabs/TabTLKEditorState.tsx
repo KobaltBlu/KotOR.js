@@ -231,7 +231,19 @@ export class TabTLKEditorState extends TabState {
 
         file.readFile().then((response) => {
           this.tlkObject = new KotOR.TLKObject();
-          this.tlkObject.loadFromBuffer(response.buffer);
+          const emptyNew = !(response.buffer instanceof Uint8Array && response.buffer.length)
+            && !file.path
+            && !file.archive_path;
+          if (emptyNew) {
+            this.tlkObject.FileType = "TLK ";
+            this.tlkObject.FileVersion = "V3.0";
+            this.tlkObject.LanguageID = 0;
+            this.tlkObject.StringCount = 0;
+            this.tlkObject.StringEntriesOffset = 20;
+            this.tlkObject.TLKStrings = [];
+          } else {
+            this.tlkObject.loadFromBuffer(response.buffer);
+          }
           this.clearUndoHistory();
           this.processEventListener("onEditorFileLoad", [this]);
           resolve(this.tlkObject);

@@ -41,6 +41,33 @@ export class TabERFEditorState extends TabState {
 
     this.tabName = this.file.getFilename();
 
+    const emptyNew = !(file.buffer instanceof Uint8Array && file.buffer.length)
+      && !file.path
+      && !file.archive_path;
+
+    if (emptyNew) {
+      this.erf = new KotOR.ERFObject();
+      this.erf.inMemory = true;
+      this.erf.buffer = new Uint8Array(0);
+      const isMod = file.reskey === KotOR.ResourceTypes.mod;
+      this.erf.header.fileType = isMod ? "MOD " : "ERF ";
+      this.erf.header.fileVersion = "V1.0";
+      this.erf.header.languageCount = 0;
+      this.erf.header.localizedStringSize = 0;
+      this.erf.header.entryCount = 0;
+      this.saveTypes = [
+        {
+          description: isMod ? "Module Archive (MOD)" : "Encapsulated Resource File (ERF)",
+          accept: {
+            "application/octet-stream": [isMod ? ".mod" : ".erf"],
+          },
+        },
+      ];
+      this.files = [];
+      this.processEventListener("onEditorFileLoad", [this]);
+      return this.erf;
+    }
+
     const response = await file.readFile();
     this.erf = new KotOR.ERFObject(response.buffer);
     await this.erf.load();
@@ -48,6 +75,13 @@ export class TabERFEditorState extends TabState {
     this.files = root.nodes;
     this.processEventListener('onEditorFileLoad', [this]);
     return this.erf;
+  }
+
+  async getExportBuffer(_resref?: string, _ext?: string): Promise<Uint8Array> {
+    if (this.erf) {
+      return this.erf.getExportBuffer();
+    }
+    return super.getExportBuffer(_resref, _ext);
   }
 
   async buildFileBrowser(archive: KotOR.ERFObject, parent?: FileBrowserNode){

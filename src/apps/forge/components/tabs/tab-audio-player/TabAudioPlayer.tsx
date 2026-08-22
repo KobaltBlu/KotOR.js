@@ -60,6 +60,8 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
   const visualIdRef = useRef<TabAudioVisualId>(forgeAudioSettings.get().visualization);
   const hyperspaceStateRef = useRef<HyperspaceVizState | null>(null);
   const visualCollapsedRef = useRef(false);
+  const timeDomainRef = useRef<Uint8Array | null>(null);
+  const animateRef = useRef<(time: number) => void>(() => {});
 
   const [file, setFile] = useState<KotOR.AudioFile>();
   const [techItems, setTechItems] = useState<string[]>([]);
@@ -119,7 +121,7 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
     if (canvas.width !== w || canvas.height !== h) {
       canvas.width = w;
       canvas.height = h;
-      hyperspaceStateRef.current = null;
+      contextRef.current = canvas.getContext("2d");
     }
   };
 
@@ -137,6 +139,12 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
     onResize();
     return () => ro.disconnect();
   }, [visualCollapsed]);
+
+  useEffect(() => {
+    if (visualId === "waveform") {
+      AudioPlayerState.GetAudioBuffer();
+    }
+  }, [visualId]);
 
   useEffectOnce(() => {
     if (canvasRef.current) {
@@ -157,7 +165,13 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
       setFile(AudioPlayerState.audioFile);
     }
 
-    requestRef.current = requestAnimationFrame(animate);
+    requestRef.current = requestAnimationFrame((time) => {
+      animateRef.current(time);
+      requestRef.current = requestAnimationFrame(function tick(next: number) {
+        animateRef.current(next);
+        requestRef.current = requestAnimationFrame(tick);
+      });
+    });
 
     return () => {
       AudioPlayerState.RemoveEventListener("onOpen", onOpen);
@@ -169,53 +183,66 @@ export const TabAudioPlayer = function (props: BaseTabProps) {
 
   visualIdRef.current = visualId;
 
-  const animate = (time: number = 0) => {
+  animateRef.current = (time: number = 0) => {
     const context = contextRef.current;
-    if (previousTimeRef.current != undefined && context && !visualCollapsedRef.current) {
-      const w = context.canvas.width;
-      const h = context.canvas.height;
-      context.clearRect(0, 0, w, h);
+    try {
+      if (previousTimeRef.current != undefined && context && !visualCollapsedRef.current) {
+        const w = context.canvas.width;
+        const h = context.canvas.height;
+        context.clearRect(0, 0, w, h);
 
-      let data: Uint8Array | null = null;
-      let bufferLength = 0;
-      if (AudioPlayerState.analyser) {
-        bufferLength = AudioPlayerState.analyserBufferLength;
-        AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as any);
-        data = AudioPlayerState.analyserData;
-      }
-
-      const mode = visualIdRef.current;
-      if (mode === "spectrum") {
-        if (data && bufferLength > 0) {
-          drawSpectrumBars(context, w, h, data, bufferLength);
-        } else {
-          drawSpectrumIdle(context, w, h);
+        let data: Uint8Array | null = null;
+        let bufferLength = 0;
+        if (AudioPlayerState.analyser) {
+          bufferLength = AudioPlayerState.analyserBufferLength;
+          AudioPlayerState.analyser.getByteFrequencyData(AudioPlayerState.analyserData as any);
+          data = AudioPlayerState.analyserData;
         }
-      } else if (mode === "hyperspace") {
-        hyperspaceStateRef.current = ensureHyperspaceState(
-          hyperspaceStateRef.current,
-          w,
-          h,
-        );
-        drawHyperspace(
-          context,
-          w,
-          h,
-          hyperspaceStateRef.current,
-          data,
-          bufferLength,
-          time,
-        );
-      } else if (mode === "waveform") {
-        const buf =
-          AudioPlayerState.buffer instanceof AudioBuffer ? AudioPlayerState.buffer : null;
-        const dur = AudioPlayerState.GetDuration();
-        const progress = dur > 0 ? AudioPlayerState.GetCurrentTime() / dur : 0;
-        drawWaveformOverview(context, w, h, buf, progress);
+
+        const mode = visualIdRef.current;
+        if (mode === "spectrum") {
+          if (data && bufferLength > 0) {
+            drawSpectrumBars(context, w, h, data, bufferLength);
+          } else {
+            drawSpectrumIdle(context, w, h);
+          }
+        } else if (mode === "hyperspace") {
+          hyperspaceStateRef.current = ensureHyperspaceState(
+            hyperspaceStateRef.current,
+            w,
+            h,
+          );
+          drawHyperspace(
+            context,
+            w,
+            h,
+            hyperspaceStateRef.current,
+            data,
+            bufferLength,
+            time,
+          );
+        } else if (mode === "waveform") {
+          const buf = AudioPlayerState.getDecodedAudioBuffer();
+          const dur = AudioPlayerState.GetDuration();
+          const progress = dur > 0 ? AudioPlayerState.GetCurrentTime() / dur : 0;
+          let live: Uint8Array | null = null;
+          if (AudioPlayerState.analyser) {
+            const n = AudioPlayerState.analyser.fftSize || AudioPlayerState.analyserBufferLength || 0;
+            if (n > 0) {
+              if (!timeDomainRef.current || timeDomainRef.current.length !== n) {
+                timeDomainRef.current = new Uint8Array(n);
+              }
+              live = timeDomainRef.current;
+              AudioPlayerState.analyser.getByteTimeDomainData(live as any);
+            }
+          }
+          drawWaveformOverview(context, w, h, buf, progress, live);
+        }
       }
+    } catch {
+      /* keep the visualizer loop running */
     }
     previousTimeRef.current = time;
-    requestRef.current = requestAnimationFrame(animate);
   };
 
   const volumeIcon =

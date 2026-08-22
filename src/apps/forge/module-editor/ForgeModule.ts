@@ -140,7 +140,8 @@ export class ForgeModule {
     // Mod_Area_list - KotOR only supports one Area per module
     const areaList = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Mod_Area_list'))!;
     const areaStruct = new KotOR.GFFStruct(6);
-    areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', this.areas[0].name.getValue()));
+    const areaName = this.areas[0]?.name?.getValue?.() || this.entryArea || '';
+    areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', areaName));
     areaList.addChildStruct(areaStruct);
 
     // Mod_Creator_ID

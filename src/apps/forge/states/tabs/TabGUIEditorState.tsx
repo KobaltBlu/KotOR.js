@@ -642,6 +642,9 @@ export class TabGUIEditorState extends TabState {
         file.readFile().then(async (response) => {
           this.clearUndoHistory();
           this.gff = new KotOR.GFFObject(response.buffer);
+          if (!String(this.gff.FileType || "").trim()) {
+            this.gff.FileType = "GUI ";
+          }
           await this.rebuildMenu(GUI_ROOT_PATH);
           this.processEventListener("onEditorFileLoad", [this]);
           resolve(this.gff);
