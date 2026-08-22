@@ -1,4 +1,5 @@
 
+export * from "@/gui/guiControlSchema";
 export * from "@/gui/GUIControlEvent";
 export * from "@/gui/GUIControl";
 export * from "@/gui/GUIButton";

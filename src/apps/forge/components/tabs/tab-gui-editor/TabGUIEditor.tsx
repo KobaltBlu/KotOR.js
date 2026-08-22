@@ -18,7 +18,7 @@ import { MenuBar, type MenuItem } from "@/apps/forge/components/common/MenuBar";
 import { forgeGuiSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import { GUITreeView } from "@/apps/forge/components/tabs/tab-gui-editor/GUITreeView";
 import { GUIInspector } from "@/apps/forge/components/tabs/tab-gui-editor/GUIInspector";
-import { GUIControlType } from "@/enums/gui/GUIControlType";
+import { guiAddableControlTypes, guiControlTypeLabel } from "@/apps/forge/gui/guiOutline";
 import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
 
 import "@/apps/forge/components/tabs/tab-gui-editor/TabGUIEditor.scss";
@@ -166,26 +166,11 @@ export const TabGUIEditor = function (props: BaseTabProps) {
           onClick: () => tab.redo(),
         },
         { separator: true },
-        {
-          label: "Add Button",
-          onClick: () => tab.addControl(GUIControlType.Button),
+        ...guiAddableControlTypes().map((type) => ({
+          label: `Add ${guiControlTypeLabel(type)}`,
+          onClick: () => tab.addControl(type),
           disabled: !tab.gff,
-        },
-        {
-          label: "Add Label",
-          onClick: () => tab.addControl(GUIControlType.Label),
-          disabled: !tab.gff,
-        },
-        {
-          label: "Add Panel",
-          onClick: () => tab.addControl(GUIControlType.Panel),
-          disabled: !tab.gff,
-        },
-        {
-          label: "Add CheckBox",
-          onClick: () => tab.addControl(GUIControlType.CheckBox),
-          disabled: !tab.gff,
-        },
+        })),
         { separator: true },
         {
           label: "Delete Selected",
