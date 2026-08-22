@@ -189,6 +189,7 @@ export class FileTypeManager {
       break;
       case 'wav':
       case 'mp3':
+      case 'bmu':
         console.log('audio file', res);
         AudioPlayerState.OpenAudio(res);
       break;

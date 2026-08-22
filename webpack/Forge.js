@@ -44,6 +44,10 @@ module.exports = (name, color) => ({
       patterns: [
         { from: "src/assets/forge", to: "" },
         { from: "src/assets/icons/icon.ico", to: "favicon.ico" },
+        {
+          from: "node_modules/lip-sync-engine/dist/wasm",
+          to: "wasm",
+        },
       ],
     }),
     ...(isProd ? [new MiniCssExtractPlugin({

@@ -127,15 +127,51 @@
   }
 
   &__tab {
-    flex: 1;
+    flex: 0 1 auto;
     min-width: 0;
+    max-width: 40%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  &__idle {
+  &__end {
     margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  &__item {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--forge-text-muted);
+
+    &--start {
+      flex: 0 1 auto;
+      max-width: 28%;
+    }
+
+    &--end {
+      max-width: min(420px, 46vw);
+    }
+
+    &--btn {
+      appearance: none;
+      margin: 0;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      text-align: left;
+      &:hover { color: var(--forge-text); }
+      &:focus-visible { outline: 1px solid var(--forge-accent); outline-offset: 1px; }
+    }
   }
 }
 

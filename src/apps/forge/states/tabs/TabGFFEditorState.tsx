@@ -40,6 +40,7 @@ import {
   structFromSerialized,
   uniqueFieldLabel,
 } from "@/apps/forge/helpers/gffJsonCodec";
+import { createUntitledModuleGffForExt } from "@/apps/forge/helpers/createUntitledModuleGff";
 
 function gffSaveTypesForExt(ext?: string): FilePickerAcceptType[] {
   const key = (ext || "gff").replace(/^\./, "").toLowerCase() || "gff";
@@ -153,7 +154,16 @@ export class TabGFFEditorState extends TabState {
         this.saveTypes = gffSaveTypesForExt(ext);
 
         file.readFile().then( (response) => {
-          this.gff = new KotOR.GFFObject(response.buffer);
+          const emptyNew = !(response.buffer instanceof Uint8Array && response.buffer.length)
+            && !file.path
+            && !file.archive_path;
+          const untitledModule = emptyNew
+            ? createUntitledModuleGffForExt(ext, file.resref || "new_area")
+            : undefined;
+          this.gff = untitledModule || new KotOR.GFFObject(response.buffer);
+          if (!String(this.gff.FileType || "").trim() && ext) {
+            this.gff.FileType = (ext.toUpperCase() + "    ").slice(0, 4);
+          }
           this.clearUndoHistory();
           this.selectedPath = GFF_ROOT_PATH;
           this.expandedPaths = new Set([GFF_ROOT_PATH]);
