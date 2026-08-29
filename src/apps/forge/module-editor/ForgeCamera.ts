@@ -30,20 +30,22 @@ export class ForgeCamera extends ForgeGameObject {
     this.perspectiveCamera?.removeFromParent();
     this.cameraHelper?.removeFromParent();
 
-    this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, this.aspectRatio, 0.1, 100);
+    // Container owns retail YZX pose (pitch + yaw from GIT Orientation).
     this.rotation.reorder('YZX');
     this.rotation.x = THREE.MathUtils.degToRad(this.pitch);
     this.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
-    this.perspectiveCamera.rotation.reorder('YZX');
-    this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
-    this.perspectiveCamera.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
-    this.perspectiveCamera.position.set(0, 0, 0);
+
+    // Child camera stays local so gizmo moves on the container are not doubled.
+    this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, this.aspectRatio, 0.1, 100);
+    this.perspectiveCamera.position.set(0, 0, this.height);
+    this.perspectiveCamera.rotation.set(0, 0, 0);
     this.perspectiveCamera.updateMatrix();
-    this.perspectiveCamera.updateMatrixWorld(true);
 
     this.cameraHelper = new THREE.CameraHelper(this.perspectiveCamera);
-    // Parent under container so Layers / transforms / focus see the helper.
-    // Container already owns the GIT world position.
+    // CameraHelper defaults to camera.matrixWorld (scene-root assumption).
+    // Under container, bind local matrix so parent.matrixWorld is applied once.
+    this.cameraHelper.matrix = this.perspectiveCamera.matrix;
+
     this.container.add(this.perspectiveCamera);
     this.container.add(this.cameraHelper);
     this.updateBoundingBox();

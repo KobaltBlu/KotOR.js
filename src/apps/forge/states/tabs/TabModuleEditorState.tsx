@@ -552,26 +552,6 @@ export class TabModuleEditorState extends TabState {
     if(this.module?.area){
       this.module.area.update(delta);
     }
-
-    // this.ui3DRenderer.transformControls.space = 'local';
-    if(this.selectedGameObject){
-      if(this.selectedGameObject instanceof ForgeCamera){
-        const camera = this.selectedGameObject as ForgeCamera;
-        // Ensure rotation order is maintained
-        // camera.rotation.reorder('YZX');
-        // // Sync quaternion from rotation
-        // camera.quaternion.setFromEuler(camera.rotation);
-        // // Update pitch from rotation.x
-        // camera.pitch = THREE.MathUtils.radToDeg(camera.rotation.x);
-        // Sync to perspective camera
-        if(camera.perspectiveCamera){
-          camera.perspectiveCamera.position.copy(camera.position);
-          camera.perspectiveCamera.rotation.copy(camera.rotation);
-          camera.perspectiveCamera.updateMatrixWorld(true);
-          camera.perspectiveCamera.updateMatrix();
-        }
-      }
-    }
   }
   
   private onTransformControlsChange(): void {
@@ -596,25 +576,13 @@ export class TabModuleEditorState extends TabState {
     const object3D = this.selectedGameObject.container;
     if(!object3D) return;
 
-    // For cameras, ensure rotation order is maintained and sync quaternion/pitch
+    // For cameras, keep retail YZX on the container for GIT export.
+    // perspectiveCamera stays local under container — do not copy world pose onto it.
     if(this.selectedGameObject instanceof ForgeCamera){
       const camera = this.selectedGameObject as ForgeCamera;
-      
-      // Ensure rotation order is set correctly
       camera.rotation.reorder('YZX');
-      
-      // Update quaternion from rotation
       camera.quaternion.setFromEuler(camera.rotation);
-      
-      // Update pitch from rotation.x (pitch is stored separately)
       camera.pitch = THREE.MathUtils.radToDeg(camera.rotation.x);
-      
-      // Sync to perspective camera
-      if(camera.perspectiveCamera){
-        camera.perspectiveCamera.quaternion.copy(camera.quaternion);
-        camera.perspectiveCamera.updateMatrixWorld(true);
-        camera.perspectiveCamera.updateMatrix();
-      }
     }
 
     // Room world positions live in LYT; only sync while the user is dragging
