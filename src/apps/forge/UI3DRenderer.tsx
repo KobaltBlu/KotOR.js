@@ -30,6 +30,22 @@ export enum CameraView {
   Default = 'default'
 }
 
+/** Named camera orientations for View menus / viewport toolbars (keys 1–7, 0). */
+export const CAMERA_VIEW_PRESETS: ReadonlyArray<{
+  view: CameraView;
+  label: string;
+  shortcut: string;
+}> = [
+  { view: CameraView.Top, label: 'Top', shortcut: '1' },
+  { view: CameraView.Bottom, label: 'Bottom', shortcut: '2' },
+  { view: CameraView.Left, label: 'Left', shortcut: '3' },
+  { view: CameraView.Right, label: 'Right', shortcut: '4' },
+  { view: CameraView.Front, label: 'Front', shortcut: '5' },
+  { view: CameraView.Back, label: 'Back', shortcut: '6' },
+  { view: CameraView.Orthogonal, label: 'Isometric', shortcut: '7' },
+  { view: CameraView.Default, label: 'Default', shortcut: '0' },
+];
+
 export type UI3DRendererEventListenerTypes =
   'onBeforeRender'|'onAfterRender'|'onCreate'|'onDispose'|'onResize'|'onCanvasAttached'|'onSelect'|'onMouseDown'|'onMouseUp'|'onMouseMove'|'onMouseWheel'|'onKeyDown'|'onKeyUp';
 

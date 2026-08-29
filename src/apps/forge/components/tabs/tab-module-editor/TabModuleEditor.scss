@@ -114,6 +114,62 @@
     margin: 0 4px;
     background: var(--forge-border);
   }
+
+  &__dropdown {
+    position: relative;
+  }
+
+  &__caret {
+    font-size: 9px;
+    opacity: 0.7;
+  }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 30;
+    min-width: 160px;
+    padding: 4px;
+    border: 1px solid var(--forge-border);
+    border-radius: var(--forge-radius);
+    background: var(--forge-bg-elevated);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+
+  &__menu-sep {
+    height: 1px;
+    margin: 4px 0;
+    background: var(--forge-border);
+  }
+
+  &__menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    height: 26px;
+    padding: 0 8px;
+    border: none;
+    border-radius: var(--forge-radius);
+    background: transparent;
+    color: var(--forge-text);
+    font-size: var(--forge-font-size-sm);
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      background: var(--forge-bg-hover);
+      color: var(--forge-text-bright);
+    }
+
+    kbd {
+      font-family: inherit;
+      font-size: 11px;
+      color: var(--forge-text-muted);
+    }
+  }
 }
 
 .module-marquee {

@@ -5,6 +5,7 @@ import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutC
 import { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
 import { GameObjectType, TabModuleEditorControlMode } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
 import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
+import { CAMERA_VIEW_PRESETS } from "@/apps/forge/UI3DRenderer";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
 import { ModuleEditorSidebarComponent } from "@/apps/forge/components/ModuleEditorSidebarComponent";
@@ -26,7 +27,9 @@ import {
   faStore,
   faTriangleExclamation,
   faLocationPin,
-  faCube
+  faCube,
+  faCamera,
+  faExpand,
 } from "@fortawesome/free-solid-svg-icons";
 
 import * as KotOR from "@/apps/forge/KotOR";
@@ -165,6 +168,22 @@ const getGameObjectSubTools = (tab: TabModuleEditorState): SubTool[] => {
 // Create tools configuration for the tool palette
 const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorControlMode): Tool[] => {
   const gameObjectSubTools = getGameObjectSubTools(tab);
+  const cameraViewSubTools: SubTool[] = [
+    {
+      id: 'fit-scene',
+      label: 'Fit Scene (Shift+F)',
+      icon: faExpand,
+      iconColor: 'white',
+      onClick: () => { tab.ui3DRenderer.frameAll(); },
+    },
+    ...CAMERA_VIEW_PRESETS.map((preset) => ({
+      id: `view-${preset.view}`,
+      label: `${preset.label} (${preset.shortcut})`,
+      icon: faCamera,
+      iconColor: 'white',
+      onClick: () => { tab.ui3DRenderer.reorientCamera(preset.view); },
+    })),
+  ];
   
   return [
     {
@@ -201,6 +220,14 @@ const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorCont
       }
     },
     {
+      id: 'camera-view',
+      label: 'Camera View',
+      icon: faCamera,
+      iconColor: 'white',
+      title: 'Camera View Presets (1–7, 0)',
+      subTools: cameraViewSubTools,
+    },
+    {
       id: 'add-game-object',
       label: 'Add Game Object',
       icon: faSquarePlus,
@@ -217,7 +244,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
   const containerRef = useRef<HTMLDivElement>(null);
   const previewHostRef = useRef<HTMLDivElement>(null);
-  const [controlMode, setControlMode] = useState<TabModuleEditorControlMode>(TabModuleEditorControlMode.SELECT);
+  const [controlMode, setControlMode] = useState<TabModuleEditorControlMode>(tab.controlMode);
   const [previewMode, setPreviewMode] = useState(tab.tabMode === ModuleEditorTabMode.PREVIEW);
   const [previewBusy, setPreviewBusy] = useState(false);
   const [previewStage, setPreviewStage] = useState('');

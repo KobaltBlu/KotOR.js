@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
 import { TabModuleEditorControlMode } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
 import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
 import { forgeModuleSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import { EditorTool } from "@/apps/forge/module-editor/kernel/EditorMode";
+import { CAMERA_VIEW_PRESETS } from "@/apps/forge/UI3DRenderer";
 
 export interface ModuleViewportToolbarProps {
   tab: TabModuleEditorState;
@@ -21,6 +22,8 @@ const TOOLS: { id: EditorTool; mode: TabModuleEditorControlMode; label: string; 
 export const ModuleViewportToolbar: React.FC<ModuleViewportToolbarProps> = ({ tab, controlMode }) => {
   const [space, setSpace] = useState(tab.toolService.getSpace());
   const [snap, setSnap] = useState(tab.toolService.getSnap());
+  const [viewOpen, setViewOpen] = useState(false);
+  const viewMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onSpace = () => setSpace(tab.toolService.getSpace());
@@ -32,6 +35,17 @@ export const ModuleViewportToolbar: React.FC<ModuleViewportToolbarProps> = ({ ta
       tab.toolService.removeEventListener("onSnapChanged", onSnap);
     };
   }, [tab]);
+
+  useEffect(() => {
+    if (!viewOpen) return;
+    const onDoc = (event: MouseEvent) => {
+      if (viewMenuRef.current && !viewMenuRef.current.contains(event.target as Node)) {
+        setViewOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [viewOpen]);
 
   const toggleSpace = useCallback(() => {
     const next = tab.toolService.toggleSpace();
@@ -81,7 +95,7 @@ export const ModuleViewportToolbar: React.FC<ModuleViewportToolbarProps> = ({ ta
         <i className="fa-solid fa-border-all" aria-hidden />
         <span>Snap</span>
       </button>
-        <button
+      <button
         type="button"
         className="module-viewport-toolbar__btn"
         title="Frame selection (F)"
@@ -92,6 +106,52 @@ export const ModuleViewportToolbar: React.FC<ModuleViewportToolbarProps> = ({ ta
         <i className="fa-solid fa-crosshairs" aria-hidden />
         <span>Frame</span>
       </button>
+      <div className="module-viewport-toolbar__dropdown" ref={viewMenuRef}>
+        <button
+          type="button"
+          className={`module-viewport-toolbar__btn${viewOpen ? " is-active" : ""}`}
+          title="Camera view presets (1–7, 0)"
+          aria-haspopup="menu"
+          aria-expanded={viewOpen}
+          onClick={() => setViewOpen((open) => !open)}
+        >
+          <i className="fa-solid fa-camera" aria-hidden />
+          <span>View</span>
+          <i className="fa-solid fa-caret-down module-viewport-toolbar__caret" aria-hidden />
+        </button>
+        {viewOpen ? (
+          <div className="module-viewport-toolbar__menu" role="menu" aria-label="Camera views">
+            <button
+              type="button"
+              className="module-viewport-toolbar__menu-item"
+              role="menuitem"
+              onClick={() => {
+                tab.ui3DRenderer.frameAll();
+                setViewOpen(false);
+              }}
+            >
+              <span>Fit Scene</span>
+              <kbd>Shift+F</kbd>
+            </button>
+            <div className="module-viewport-toolbar__menu-sep" role="separator" />
+            {CAMERA_VIEW_PRESETS.map((preset) => (
+              <button
+                key={preset.view}
+                type="button"
+                className="module-viewport-toolbar__menu-item"
+                role="menuitem"
+                onClick={() => {
+                  tab.ui3DRenderer.reorientCamera(preset.view);
+                  setViewOpen(false);
+                }}
+              >
+                <span>{preset.label}</span>
+                <kbd>{preset.shortcut}</kbd>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
       <button
         type="button"
         className="module-viewport-toolbar__btn"

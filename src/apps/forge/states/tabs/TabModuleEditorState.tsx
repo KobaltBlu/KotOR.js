@@ -67,7 +67,7 @@ export interface ModuleEditorSnapshot {
 export class TabModuleEditorState extends TabState {
 
   tabName: string = `Module Editor`;
-  controlMode: TabModuleEditorControlMode = TabModuleEditorControlMode.SELECT;
+  controlMode: TabModuleEditorControlMode = TabModuleEditorControlMode.ADD_GAME_OBJECT;
   selectedGameObjectType: GameObjectType | undefined;
   selectedBlueprintResRef: string = '';
   tabMode: ModuleEditorTabMode = ModuleEditorTabMode.EDIT;
@@ -218,11 +218,13 @@ export class TabModuleEditorState extends TabState {
       if (this.pendingFocusEntry) {
         this.focusCameraOnModuleEntry();
       }
-      // Default tool is Select; reserve left-drag for pick/marquee when enabled.
+      // Place is the default tool; select mode reserves left-drag for pick/marquee when enabled.
       this.ui3DRenderer.setOrbitSelectFriendly(
         this.controlMode === TabModuleEditorControlMode.SELECT
           && forgeModuleSettings.get().marqueeSelect,
       );
+      this.ui3DRenderer.disableSelection =
+        this.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT;
     });
     this.setContentView(<TabModuleEditor tab={this}></TabModuleEditor>);
 
@@ -242,6 +244,8 @@ export class TabModuleEditorState extends TabState {
     }
 
     this.initEditorKernel();
+    // Sync tool service / selection flags for the default Place mode.
+    this.setControlMode(TabModuleEditorControlMode.ADD_GAME_OBJECT);
   }
 
   private initEditorKernel(): void {
@@ -414,7 +418,10 @@ export class TabModuleEditorState extends TabState {
       ...(area.sounds || []),
       ...(area.stores || []),
       ...(area.items || []),
-      ...(area.rooms || []),
+      // Rooms are only selectable outside place mode (large meshes steal picks).
+      ...(this.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT
+        ? []
+        : (area.rooms || [])),
     ];
     this.spatialPickIndex.rebuild(objects);
     return objects;
@@ -764,12 +771,17 @@ export class TabModuleEditorState extends TabState {
 
     const isSelectModeTool = 
       mode === TabModuleEditorControlMode.SELECT;
+    const isPlaceMode = mode === TabModuleEditorControlMode.ADD_GAME_OBJECT;
     
     // Detach transform controls when not in SELECT mode
     if(!isTransformTool && !isSelectModeTool){
       this.selectedGameObject = undefined;
-      this.ui3DRenderer.transformControls.detach();
+      this.selectedGameObjects = [];
+      this.ui3DRenderer.transformControls?.detach();
     }
+
+    // Place mode owns left-click for placement; skip viewport picks (rooms would steal clicks).
+    this.ui3DRenderer.disableSelection = isPlaceMode;
 
     // Select + marquee owns left-drag; camera uses middle/right or Alt+left.
     this.ui3DRenderer.setOrbitSelectFriendly(
@@ -777,15 +789,21 @@ export class TabModuleEditorState extends TabState {
     );
 
     if(mode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
-      this.ui3DRenderer.transformControls.mode = 'translate';
+      if(this.ui3DRenderer.transformControls){
+        this.ui3DRenderer.transformControls.mode = 'translate';
+      }
       this.updateTransformControlHelpers(this.selectedGameObject!);
       this.toolService.setTool(EditorTool.TRANSLATE);
     } else if(mode === TabModuleEditorControlMode.ROTATE_CONTROL){
-      this.ui3DRenderer.transformControls.mode = 'rotate';
+      if(this.ui3DRenderer.transformControls){
+        this.ui3DRenderer.transformControls.mode = 'rotate';
+      }
       this.updateTransformControlHelpers(this.selectedGameObject!);
       this.toolService.setTool(EditorTool.ROTATE);
     } else if(mode === TabModuleEditorControlMode.SCALE_CONTROL){
-      this.ui3DRenderer.transformControls.mode = 'scale';
+      if(this.ui3DRenderer.transformControls){
+        this.ui3DRenderer.transformControls.mode = 'scale';
+      }
       this.updateTransformControlHelpers(this.selectedGameObject!);
       this.toolService.setTool(EditorTool.SCALE);
     } else if(mode === TabModuleEditorControlMode.ADD_GAME_OBJECT){
@@ -801,6 +819,10 @@ export class TabModuleEditorState extends TabState {
 
   onSelect(gameObject: ForgeGameObject | THREE.Object3D | undefined){
     if(this.tabMode === ModuleEditorTabMode.PREVIEW){
+      return;
+    }
+    // Place mode: no viewport selection (rooms especially would steal placement clicks).
+    if(this.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT){
       return;
     }
     if(gameObject instanceof THREE.Object3D){
@@ -999,6 +1021,13 @@ export class TabModuleEditorState extends TabState {
   }
 
   selectGameObject(gameObject: ForgeGameObject | undefined, additive: boolean = false){
+    // Rooms are not selectable while placing — they cover the walkmesh and steal focus.
+    if(
+      this.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT &&
+      gameObject instanceof ForgeRoom
+    ){
+      return;
+    }
     const previous = this.selectedGameObject;
     this.selectedGameObject = gameObject;
     if(gameObject && additive){

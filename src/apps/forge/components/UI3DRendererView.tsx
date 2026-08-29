@@ -1,6 +1,6 @@
 import React, { useLayoutEffect, useRef } from "react";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
-import { CameraView, UI3DRenderer } from "@/apps/forge/UI3DRenderer";
+import { CAMERA_VIEW_PRESETS, UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import { MenuBar, MenuItem } from "@/apps/forge/components/common/MenuBar";
 
 // Re-export MenuItem for backward compatibility
@@ -50,14 +50,10 @@ export const UI3DRendererView = function(props: UI3DRendererViewProps){
           children: [
             { label: 'Fit Camera to Scene', onClick: () => context.fitCameraToScene() },
             { separator: true },
-            { label: 'Top View', onClick: () => context.reorientCamera(CameraView.Top) },
-            { label: 'Bottom View', onClick: () => context.reorientCamera(CameraView.Bottom) },
-            { label: 'Left View', onClick: () => context.reorientCamera(CameraView.Left) },
-            { label: 'Right View', onClick: () => context.reorientCamera(CameraView.Right) },
-            { label: 'Front View', onClick: () => context.reorientCamera(CameraView.Front) },
-            { label: 'Back View', onClick: () => context.reorientCamera(CameraView.Back) },
-            { label: 'Isometric View', onClick: () => context.reorientCamera(CameraView.Orthogonal) },
-            { label: 'Default View', onClick: () => context.reorientCamera(CameraView.Default) },
+            ...CAMERA_VIEW_PRESETS.map((preset) => ({
+              label: `${preset.label} View`,
+              onClick: () => context.reorientCamera(preset.view),
+            })),
           ],
         },
       ],

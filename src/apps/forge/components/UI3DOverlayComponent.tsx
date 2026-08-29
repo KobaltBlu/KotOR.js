@@ -139,7 +139,7 @@ export const UI3DOverlayComponent = function(props: { context: UI3DRenderer; tab
             <div><b>Keymap</b></div>
             <div>Q Select · W Move · E Rotate · R Scale</div>
             <div>P Preview · T Sticky place · F Focus · Shift+F Fit</div>
-            <div>Esc Cancel / Exit preview · Delete Remove</div>
+            <div>1–7 / 0 Camera views · Esc Cancel / Exit preview · Delete Remove</div>
             <div>Shift+Click additive select / one-shot place</div>
             <div>LMB Select/Marquee · MMB Orbit · RMB Pan · Alt+LMB Orbit</div>
             <div>? Toggle this help</div>

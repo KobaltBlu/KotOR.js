@@ -9,10 +9,23 @@ import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart.scss";
 import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
 import { openNewProjectFromModWizard } from "@/apps/forge/helpers/openNewProjectFromModWizard";
+import {
+  ListedVirtualProjectFolder,
+  deleteStoredVirtualProjectFolder,
+  isOriginPrivateFileSystemAvailable,
+  loadVirtualProjectFoldersForRestore,
+} from "@/apps/forge/virtual/VirtualProjectFolder";
 
 export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
   const [files, setFiles] = useState<EditorFile[]>(ForgeState.recentFiles);
   const [projects, setProjects] = useState<RecentProject[]>(ForgeState.recentProjects);
+  const [virtualProjects, setVirtualProjects] = useState<ListedVirtualProjectFolder[]>([]);
+  const [restoringName, setRestoringName] = useState<string | null>(null);
+
+  const refreshVirtualProjects = useCallback(async () => {
+    const listed = await loadVirtualProjectFoldersForRestore(ForgeState.recentProjects);
+    setVirtualProjects(listed);
+  }, []);
 
   const onBtnOpenFile = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -42,11 +55,13 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
 
   const onRecentProjectsUpdated = useCallback(() => {
     setProjects([...ForgeState.recentProjects]);
-  }, []);
+    void refreshVirtualProjects();
+  }, [refreshVirtualProjects]);
 
   useEffectOnce(() => {
     ForgeState.addEventListener('onRecentFilesUpdated', onRecentFilesUpdated);
     ForgeState.addEventListener('onRecentProjectsUpdated', onRecentProjectsUpdated);
+    void refreshVirtualProjects();
     return () => {
       ForgeState.removeEventListener('onRecentFilesUpdated', onRecentFilesUpdated);
       ForgeState.removeEventListener('onRecentProjectsUpdated', onRecentProjectsUpdated);
@@ -69,6 +84,53 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
     e.preventDefault();
     ForgeState.removeRecentFile(file);
   }, []);
+
+  const restoreVirtualProject = useCallback(async (entry: ListedVirtualProjectFolder) => {
+    if (restoringName || ForgeState.project) {
+      return;
+    }
+    setRestoringName(entry.name);
+    try {
+      const opened = await Project.OpenRecent(new RecentProject({
+        name: entry.name,
+        handle: entry.handle,
+        virtual: true,
+      }));
+      if (!opened) {
+        window.alert(`Could not restore "${entry.name}".`);
+        await refreshVirtualProjects();
+      }
+    } finally {
+      setRestoringName(null);
+    }
+  }, [refreshVirtualProjects, restoringName]);
+
+  const deleteVirtualProject = useCallback(async (entry: ListedVirtualProjectFolder) => {
+    if (restoringName || ForgeState.project) {
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to delete the virtual project '${entry.name}'? This cannot be undone.`)) {
+      return;
+    }
+    setRestoringName(entry.name);
+    try {
+      const deleted = await deleteStoredVirtualProjectFolder(entry.name);
+      if (!deleted) {
+        window.alert(`Could not delete "${entry.name}".`);
+        return;
+      }
+      await ForgeState.removeRecentProject(new RecentProject({
+        name: entry.name,
+        handle: entry.handle,
+        virtual: true,
+      }));
+      await refreshVirtualProjects();
+    } finally {
+      setRestoringName(null);
+    }
+  }, [refreshVirtualProjects, restoringName]);
+
+  const canListVirtual = isOriginPrivateFileSystemAvailable() || virtualProjects.length > 0;
 
   return (
     <div className="quick-start-container">
@@ -107,7 +169,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
         </div>
 
         {/* Recent Projects */}
-        <div className="quick-start-card">
+        <div className="quick-start-card" data-trask-target="quick-start-virtual-projects">
           <h2 className="quick-start-card-title">
             <i className="fa-solid fa-clock-rotate-left" />
             <span>Recent Projects</span>
@@ -120,7 +182,7 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
                   className="recent-item"
                   onClick={(e) => onClickRecentProject(e, project)}
                 >
-                  <i className="fa-solid fa-folder item-icon" />
+                  <i className={`fa-solid ${project.virtual ? "fa-cloud" : "fa-folder"} item-icon`} />
                   <div className="item-content">
                     <div className="item-name">{project.getDisplayName()}</div>
                   </div>
@@ -133,6 +195,48 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
               <div>No recent projects</div>
             </div>
           )}
+          {canListVirtual ? (
+            <div className="virtual-projects-under-recent">
+              <h3 className="virtual-projects-under-recent__title">Virtual Projects</h3>
+              {virtualProjects.length > 0 ? (
+                <ul className="recent-items-list">
+                  {virtualProjects.map((entry) => (
+                    <li key={entry.name} className="recent-item virtual-project-item">
+                      <button
+                        type="button"
+                        className="virtual-project-item__open"
+                        disabled={!!restoringName}
+                        title={`Restore ${entry.name}`}
+                        onClick={() => { void restoreVirtualProject(entry); }}
+                      >
+                        <i className="fa-solid fa-cloud item-icon" aria-hidden="true" />
+                        <div className="item-content">
+                          <div className="item-name">{entry.name}</div>
+                          <div className="item-path">
+                            {restoringName === entry.name ? "Working…" : "Stored in this browser"}
+                          </div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        className="remove-button virtual-project-item__delete"
+                        disabled={!!restoringName}
+                        title={`Delete ${entry.name}`}
+                        aria-label={`Delete ${entry.name}`}
+                        onClick={() => { void deleteVirtualProject(entry); }}
+                      >
+                        <i className="fa-solid fa-xmark" aria-hidden="true" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="virtual-projects-under-recent__hint">
+                  Virtual folders created in this browser are kept here so you can restore them later.
+                </p>
+              )}
+            </div>
+          ) : null}
         </div>
 
         {/* Recent Files - Full Width */}
@@ -176,4 +280,3 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
     </div>
   );
 });
-
