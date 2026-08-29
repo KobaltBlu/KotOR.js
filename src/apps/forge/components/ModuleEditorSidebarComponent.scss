@@ -1,28 +1,163 @@
-// Module Editor Sidebar Component Styles
+// Module Editor Sidebar — fill east pane via flex (same pattern as TabGUIEditor)
 
-// Main container
 .module-editor-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--forge-bg-elevated, var(--forge-bg));
+
   .nodes-container {
-    flex: 0.25;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    flex: 0 0 28%;
+    min-height: 120px;
+    max-height: 40%;
+    overflow: hidden;
+    border-bottom: 1px solid var(--forge-border, #333);
+
+    .toolbar-header {
+      flex: 0 0 auto;
+    }
+
+    .forgeTreeView {
+      flex: 1 1 auto;
+      min-height: 0;
+      height: auto !important;
+      overflow: auto;
+      overscroll-behavior: contain;
+    }
   }
 
   .tab-host {
-    flex: 0.75;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+
+    .tabs {
+      flex: 0 0 auto;
+    }
+
+    .tab-container {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+    }
   }
 }
 
 // GIT Instance Properties Editor
 .git-instance-properties-editor {
   display: block;
-  height: 100%;
   width: 100%;
-  overflow: auto;
+  overflow: visible;
 
   &__header {
     font-size: 12px;
     margin-bottom: 5px;
     color: #999;
+  }
+
+  &__object-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px;
+    border-bottom: 1px solid #444;
+    margin-bottom: 4px;
+  }
+
+  &__object-title {
+    min-width: 0;
+    flex: 1;
+
+    .git-instance-properties-editor__type {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #888;
+    }
+
+    .git-instance-properties-editor__name {
+      font-size: 13px;
+      font-weight: 600;
+      color: #eee;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__object-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 0 0 auto;
+  }
+
+  &__action-btn {
+    padding: 2px 6px !important;
+    font-size: 11px !important;
+    background: var(--forge-bg-elevated, #2a2a2a) !important;
+    border: 1px solid var(--forge-border, #444) !important;
+    color: var(--forge-text, #ccc) !important;
+    border-radius: 2px !important;
+    cursor: pointer !important;
+    white-space: nowrap !important;
+
+    &:hover {
+      background: var(--forge-bg-hover, #333) !important;
+      color: var(--forge-text-bright, #fff) !important;
+    }
+  }
+
+  &__section {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #aaa;
+    padding: 10px 8px 4px;
+    border: none;
+    border-bottom: 1px solid #444;
+    margin-top: 4px;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+
+    &:hover {
+      color: #ddd;
+    }
+
+    i {
+      font-size: 9px;
+      width: 10px;
+    }
+  }
+
+  &__section-body {
+    /* fields inherit property-editor-row layout */
+  }
+
+  &__collapsible {
+    margin-bottom: 2px;
+  }
+
+  &__hint {
+    padding: 6px 8px;
+    font-size: 11px;
+    color: #888;
   }
 
   &__list {
@@ -48,6 +183,63 @@
   align-items: center;
   padding: 4px 8px;
   border-bottom: 1px solid #333;
+
+  &--clickable {
+    cursor: pointer;
+
+    &:hover {
+      background-color: #333;
+    }
+  }
+}
+
+.property-editor-hint {
+  flex: 1;
+  font-size: 11px;
+  color: #888;
+  text-align: right;
+}
+
+.property-editor-room-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-bottom: 1px solid #333;
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: #ccc;
+    background: transparent;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    padding: 0;
+
+    &:hover {
+      color: #fff;
+      text-decoration: underline;
+    }
+  }
+
+  &__field {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #999;
+    flex: 0 0 auto;
+
+    .property-editor-input {
+      width: 64px;
+      flex: 0 0 64px !important;
+    }
+  }
 }
 
 .property-editor-label {
@@ -85,6 +277,157 @@
   gap: 4px!important;
   align-items: center!important;
   flex: 1!important;
+
+  &--suggest {
+    position: relative!important;
+  }
+}
+
+.property-editor-suggest-list {
+  position: absolute;
+  left: 0;
+  right: 28px;
+  top: 100%;
+  z-index: 40;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 180px;
+  overflow: auto;
+  background: #1e1e1e;
+  border: 1px solid #555;
+  border-radius: 2px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+
+  li button {
+    display: flex;
+    width: 100%;
+    gap: 8px;
+    align-items: baseline;
+    padding: 4px 8px;
+    border: 0;
+    background: transparent;
+    color: #ddd;
+    font-size: 12px;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: #2f2f2f;
+      color: #fff;
+    }
+
+    small {
+      color: #888;
+      font-size: 10px;
+    }
+  }
+}
+
+.git-instance-properties-editor__badge {
+  margin-left: 6px;
+  font-size: 10px;
+  text-transform: uppercase;
+
+  &--warn {
+    color: #f0a040;
+  }
+}
+
+.git-instance-properties-editor__multi-list {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  color: #bbb;
+  font-size: 12px;
+}
+
+.module-editor-scene-type-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid #333;
+  flex: 0 0 auto;
+}
+
+.module-editor-scene-type-chip {
+  min-width: 24px;
+  height: 22px;
+  padding: 0 6px;
+  font-size: 11px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #bbb;
+  border-radius: 2px;
+  cursor: pointer;
+
+  &:hover {
+    color: #fff;
+    border-color: #666;
+  }
+
+  &.is-active {
+    background: #3a4a5a;
+    border-color: #6af;
+    color: #fff;
+  }
+}
+
+.scene-graph-node-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.scene-graph-node-badge {
+  flex: 0 0 auto;
+  font-size: 9px;
+  text-transform: uppercase;
+  padding: 0 4px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+
+  &--warn {
+    color: #e6c07b;
+    border-color: rgba(230, 192, 123, 0.35);
+  }
+
+  &--error {
+    color: #e06c75;
+    border-color: rgba(224, 108, 117, 0.35);
+  }
+}
+
+.module-editor-status-strip {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #aaa;
+
+  &__link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #8cf;
+    cursor: pointer;
+    font: inherit;
+
+    &:hover {
+      color: #bef;
+      text-decoration: underline;
+    }
+  }
+}
+
+.module-editor-keymap-help {
+  margin-top: 8px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  font-size: 11px;
+  color: #ddd;
+  line-height: 1.45;
 }
 
 .property-editor-browse-button {
@@ -115,5 +458,67 @@
 
   &--italic {
     font-style: italic;
+  }
+}
+
+.module-editor-scene-filter {
+  display: flex;
+  gap: 4px;
+  padding: 4px 8px;
+  border-bottom: 1px solid #333;
+  flex: 0 0 auto;
+
+  input {
+    flex: 1;
+    min-width: 0;
+    padding: 2px 6px;
+    font-size: 12px;
+    background: #2a2a2a;
+    border: 1px solid #444;
+    color: #fff;
+    border-radius: 2px;
+  }
+}
+
+.module-editor-placement-hud {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  z-index: 20;
+  pointer-events: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #eee;
+  font-size: 12px;
+  white-space: nowrap;
+  max-width: calc(100% - 32px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &--invalid {
+    border-color: rgba(255, 80, 80, 0.55);
+    color: #ffb0b0;
+  }
+}
+
+.module-editor-diagnostics {
+  padding: 8px;
+  font-size: 11px;
+
+  &__item {
+    padding: 4px 0;
+    border-bottom: 1px solid #333;
+    color: #ccc;
+
+    &--warn {
+      color: #e6c07b;
+    }
+
+    &--error {
+      color: #e06c75;
+    }
   }
 }

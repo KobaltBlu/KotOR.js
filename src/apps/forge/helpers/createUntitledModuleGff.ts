@@ -14,7 +14,7 @@ import { GFFField } from "@/resource/GFFField";
 import { GFFObject } from "@/resource/GFFObject";
 import { GFFStruct } from "@/resource/GFFStruct";
 
-function normalizeResRef(resref: string, fallback: string): string {
+export function normalizeResRef(resref: string, fallback: string): string {
   const trimmed = String(resref || "").trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
   return trimmed.slice(0, 16) || fallback;
 }

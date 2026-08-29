@@ -47,10 +47,35 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
   syncSelection(object: any){
     const resolved = this.resolveOdysseyObject(object);
     this.sceneNode.traverseChildren((node: SceneGraphNode) => {
-      if (node.data != null && node.data === resolved) {
+      const data = node.data;
+      const forgeObject = data?.userData?.forgeGameObject;
+      const matches = data != null && (
+        data === resolved ||
+        data?.container === resolved ||
+        forgeObject === resolved ||
+        forgeObject?.container === resolved
+      );
+      if (matches) {
         if (!node.selected) node.select();
       } else {
         if (node.selected) node.deselect();
+      }
+    });
+  }
+
+  /** Highlight all selected ForgeGameObjects in the tree (multi-select aware). */
+  syncSelectionFromGameObjects(objects: ForgeGameObject[] = []){
+    const selected = new Set(objects.filter(Boolean));
+    this.sceneNode.traverseChildren((node: SceneGraphNode) => {
+      const data = node.data;
+      const forgeObject = (data instanceof ForgeGameObject)
+        ? data
+        : data?.userData?.forgeGameObject;
+      const matches = forgeObject != null && selected.has(forgeObject);
+      if (matches) {
+        if (!node.selected) node.select();
+      } else if (node.selected && forgeObject) {
+        node.deselect();
       }
     });
   }
@@ -222,7 +247,12 @@ export class SceneGraphTreeViewManager extends EventListenerModel {
               icon: 'fa-solid fa-circle',
               data: vertex,
               onClick: (node) => {
-                // this.context.selectObject(node.data);
+                trigger.showVertexHelpers(true);
+                trigger.selectVertex(k);
+                const helper = trigger.vertexHelpers[k];
+                if(helper){
+                  this.context.selectObject(helper);
+                }
               },
             });
             nodeNode.addChildNode(vertexNode);

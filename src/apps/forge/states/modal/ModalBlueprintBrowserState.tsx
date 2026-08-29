@@ -1,41 +1,65 @@
+/**
+ * Blueprint browser modal state — KEY / Override / project UT* templates.
+ *
+ * @file ModalBlueprintBrowserState.tsx
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+
 import React from "react";
 import { ModalBlueprintBrowser } from "@/apps/forge/components/modal/ModalBlueprintBrowser";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
+import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { invalidateBlueprintSuggestCache } from "@/apps/forge/helpers/blueprintResRefSuggest";
+import { invalidateBlueprintThumbnailCache } from "@/apps/forge/helpers/blueprintThumbnailCache";
+import { resolveBlueprintBuffer } from "@/apps/forge/helpers/blueprintThumbnailResolve";
+import {
+  BlueprintCatalogEntry,
+  BlueprintCatalogSource,
+  blueprintResRefFromPath,
+  mergeBlueprintCatalog,
+} from "@/apps/forge/helpers/blueprintCatalog";
 import * as KotOR from "@/apps/forge/KotOR";
 
-export type BlueprintType = 'utc' | 'utd' | 'ute' | 'uti' | 'utp' | 'utm' | 'uts' | 'utt' | 'utw';
+export type BlueprintType = "utc" | "utd" | "ute" | "uti" | "utp" | "utm" | "uts" | "utt" | "utw";
 
 export interface BlueprintItem {
   resref: string;
   localizedName: string;
+  source?: BlueprintCatalogSource;
+  path?: string;
   gff?: KotOR.GFFObject;
 }
 
 const BLUEPRINT_TYPE_LABELS: Record<BlueprintType, string> = {
-  'utc': 'Creatures',
-  'utd': 'Doors',
-  'ute': 'Encounters',
-  'uti': 'Items',
-  'utp': 'Placeables',
-  'utm': 'Stores',
-  'uts': 'Sounds',
-  'utt': 'Triggers',
-  'utw': 'Waypoints',
+  utc: "Creatures",
+  utd: "Doors",
+  ute: "Encounters",
+  uti: "Items",
+  utp: "Placeables",
+  utm: "Stores",
+  uts: "Sounds",
+  utt: "Triggers",
+  utw: "Waypoints",
 };
 
 export class ModalBlueprintBrowserState extends ModalState {
-  static blueprintCache: Map<BlueprintType, BlueprintItem[]> = new Map();
-  static cacheLoaded: Map<BlueprintType, boolean> = new Map();
+  static gameCache: Map<BlueprintType, BlueprintItem[]> = new Map();
+  static gameCacheLoaded: Map<BlueprintType, boolean> = new Map();
 
   selectedBlueprintType: BlueprintType;
   items: BlueprintItem[] = [];
   filteredItems: BlueprintItem[] = [];
-  searchQuery: string = '';
+  searchQuery: string = "";
   onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void;
 
   static invalidateCache(): void {
-    ModalBlueprintBrowserState.blueprintCache = new Map();
-    ModalBlueprintBrowserState.cacheLoaded = new Map();
+    ModalBlueprintBrowserState.gameCache = new Map();
+    ModalBlueprintBrowserState.gameCacheLoaded = new Map();
+    ForgeGameObject.invalidateProjectTemplatePathCache();
+    invalidateBlueprintSuggestCache();
+    void invalidateBlueprintThumbnailCache();
   }
 
   constructor(blueprintType: BlueprintType, onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void) {
@@ -44,107 +68,136 @@ export class ModalBlueprintBrowserState extends ModalState {
     this.title = `Blueprint Browser - ${BLUEPRINT_TYPE_LABELS[blueprintType]}`;
     this.onBlueprintSelect = onBlueprintSelect;
     this.setView(<ModalBlueprintBrowser modal={this} />);
-    // Load blueprints immediately
-    this.loadBlueprints();
+    void this.loadBlueprints();
+  }
+
+  async loadGameBlueprints(type: BlueprintType): Promise<BlueprintItem[]> {
+    if (ModalBlueprintBrowserState.gameCacheLoaded.get(type)) {
+      return (ModalBlueprintBrowserState.gameCache.get(type) || []).slice(0);
+    }
+
+    const items: BlueprintItem[] = [];
+    const resType = KotOR.ResourceTypes[type];
+    if (!resType) {
+      return items;
+    }
+
+    const blueprintKeys = (KotOR.KEYManager?.Key?.keys || []).filter(
+      (key: KotOR.IKEYEntry) => key.resType === resType
+    );
+
+    for (const key of blueprintKeys) {
+      try {
+        const buffer = await KotOR.KEYManager.Key.getFileBuffer(key);
+        if (!buffer) continue;
+
+        const gff = new KotOR.GFFObject(buffer);
+        gff.parse(buffer);
+        const root = gff.RootNode;
+        if (!root) continue;
+
+        let localizedName = "";
+        if (root.hasField("LocalizedName")) {
+          const localizedNameField = root.getFieldByLabel("LocalizedName");
+          const locString = localizedNameField?.getCExoLocString();
+          if (locString) {
+            localizedName = locString.getValue() || "";
+          }
+        }
+        if (!localizedName && root.hasField("FirstName")) {
+          const firstNameField = root.getFieldByLabel("FirstName");
+          const locString = firstNameField?.getCExoLocString();
+          if (locString) {
+            localizedName = locString.getValue() || "";
+          }
+        }
+        if (!localizedName && root.hasField("Tag")) {
+          localizedName = root.getFieldByLabel("Tag").getValue() || "";
+        }
+        if (!localizedName) {
+          localizedName = key.resRef;
+        }
+
+        items.push({
+          resref: key.resRef,
+          localizedName,
+          source: "game",
+          gff,
+        });
+      } catch (error) {
+        console.error(`Failed to load ${type}: ${key.resRef}`, error);
+      }
+    }
+
+    ModalBlueprintBrowserState.gameCache.set(type, items.slice(0));
+    ModalBlueprintBrowserState.gameCacheLoaded.set(type, true);
+    return items;
   }
 
   async loadBlueprints() {
     const type = this.selectedBlueprintType;
-    
-    if (ModalBlueprintBrowserState.cacheLoaded.get(type)) {
-      const cached = ModalBlueprintBrowserState.blueprintCache.get(type) || [];
-      this.items = cached.slice(0);
-      this.filteredItems = this.items.slice(0);
-      // Delay event firing to ensure React component has mounted and set up listeners
-      await Promise.resolve();
-      this.processEventListener('onBlueprintsLoaded', [this]);
-      return;
-    }
-
     try {
-      const items: BlueprintItem[] = [];
-      const resType = KotOR.ResourceTypes[type];
-      
-      if (!resType) {
-        console.error(`Unknown blueprint type: ${type}`);
-        return;
-      }
-
-      // Get all blueprint files from KEYManager
-      const blueprintKeys = (KotOR.KEYManager?.Key?.keys || []).filter(
-        (key: KotOR.IKEYEntry) => key.resType === resType
-      );
-
-      // Load and parse each blueprint file
-      for (const key of blueprintKeys) {
-        try {
-          const buffer = await KotOR.KEYManager.Key.getFileBuffer(key);
-          if (!buffer) continue;
-
-          const gff = new KotOR.GFFObject(buffer);
-          gff.parse(buffer);
-          const root = gff.RootNode;
-          if (!root) continue;
-
-          // Extract localized name if available
-          let localizedName = '';
-          if (root.hasField('LocalizedName')) {
-            const localizedNameField = root.getFieldByLabel('LocalizedName');
-            if (localizedNameField) {
-              const locString = localizedNameField.getCExoLocString();
-              if (locString) {
-                localizedName = locString.getValue() || '';
-              }
+      const [gameItems, overrideEntries, projectEntries] = await Promise.all([
+        this.loadGameBlueprints(type),
+        listDirectoryBlueprintEntries(
+          () => KotOR.GameFileSystem.readdir("Override", { recursive: true }),
+          type,
+          async (rel) => KotOR.GameFileSystem.readFile(rel)
+        ),
+        listDirectoryBlueprintEntries(
+          async () => {
+            if (!ProjectFileSystem.hasRoot()) {
+              return [];
             }
-          }
+            return ProjectFileSystem.readdir("", { recursive: true });
+          },
+          type,
+          async (rel) => ProjectFileSystem.readFile(rel)
+        ),
+      ]);
 
-          // Try other common name fields
-          if (!localizedName && root.hasField('FirstName')) {
-            const firstNameField = root.getFieldByLabel('FirstName');
-            if (firstNameField) {
-              const locString = firstNameField.getCExoLocString();
-              if (locString) {
-                localizedName = locString.getValue() || '';
-              }
-            }
-          }
+      const merged = mergeBlueprintCatalog([
+        {
+          source: "game",
+          entries: gameItems.map((item) => ({
+            resref: item.resref,
+            localizedName: item.localizedName,
+          })),
+        },
+        { source: "override", entries: overrideEntries },
+        { source: "project", entries: projectEntries },
+      ]);
 
-          if (!localizedName && root.hasField('Tag')) {
-            localizedName = root.getFieldByLabel('Tag').getValue() || '';
-          }
-
-          // Use resref as fallback
-          if (!localizedName) {
-            localizedName = key.resRef;
-          }
-
-          items.push({
-            resref: key.resRef,
-            localizedName,
-            gff
-          });
-        } catch (error) {
-          console.error(`Failed to load ${type}: ${key.resRef}`, error);
-        }
-      }
-
-      this.items = items;
-      this.filteredItems = items;
-      ModalBlueprintBrowserState.blueprintCache.set(type, items.slice(0));
-      ModalBlueprintBrowserState.cacheLoaded.set(type, true);
-      this.processEventListener('onBlueprintsLoaded', [this]);
+      const gameByResref = new Map(gameItems.map((item) => [item.resref.toLowerCase(), item]));
+      this.items = merged.map((entry: BlueprintCatalogEntry) => {
+        const game = gameByResref.get(entry.resref.toLowerCase());
+        return {
+          resref: entry.resref,
+          localizedName: entry.localizedName || game?.localizedName || entry.resref,
+          source: entry.source,
+          path: entry.path,
+          gff: entry.source === "game" ? game?.gff : undefined,
+        };
+      });
+      this.filteredItems = this.items.slice(0);
+      await Promise.resolve();
+      this.processEventListener("onBlueprintsLoaded", [this]);
     } catch (error) {
       console.error(`Failed to load ${type} blueprints`, error);
+      this.items = [];
+      this.filteredItems = [];
+      this.processEventListener("onBlueprintsLoaded", [this]);
     }
   }
 
   setSearchQuery(query: string) {
     this.searchQuery = query.toLowerCase();
-    this.filteredItems = this.items.filter(item => 
-      item.resref.toLowerCase().includes(this.searchQuery) ||
-      item.localizedName.toLowerCase().includes(this.searchQuery)
+    this.filteredItems = this.items.filter(
+      (item) =>
+        item.resref.toLowerCase().includes(this.searchQuery) ||
+        item.localizedName.toLowerCase().includes(this.searchQuery)
     );
-    this.processEventListener('onSearchChanged', [this]);
+    this.processEventListener("onSearchChanged", [this]);
   }
 
   selectBlueprint(blueprint: BlueprintItem) {
@@ -155,3 +208,44 @@ export class ModalBlueprintBrowserState extends ModalState {
   }
 }
 
+export { resolveBlueprintBuffer };
+
+async function listDirectoryBlueprintEntries(
+  read: () => Promise<string[]>,
+  type: BlueprintType,
+  readFile: (path: string) => Promise<Uint8Array>
+): Promise<Array<{ resref: string; localizedName?: string; path?: string }>> {
+  try {
+    const entries = await read();
+    const out: Array<{ resref: string; localizedName?: string; path?: string }> = [];
+    for (let i = 0; i < entries.length; i++) {
+      const rel = String(entries[i] || "");
+      const resref = blueprintResRefFromPath(rel, type);
+      if (!resref) {
+        continue;
+      }
+      let localizedName = resref;
+      try {
+        const buffer = await readFile(rel);
+        if (buffer?.byteLength) {
+          const gff = new KotOR.GFFObject(buffer);
+          gff.parse(buffer);
+          const root = gff.RootNode;
+          if (root?.hasField("LocalizedName")) {
+            localizedName = root.getFieldByLabel("LocalizedName").getCExoLocString()?.getValue() || localizedName;
+          } else if (root?.hasField("FirstName")) {
+            localizedName = root.getFieldByLabel("FirstName").getCExoLocString()?.getValue() || localizedName;
+          } else if (root?.hasField("Tag")) {
+            localizedName = root.getFieldByLabel("Tag").getValue() || localizedName;
+          }
+        }
+      } catch {
+        // Keep resref as display name when GFF parse fails.
+      }
+      out.push({ resref, localizedName, path: rel });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}

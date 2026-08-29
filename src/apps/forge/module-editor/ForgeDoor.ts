@@ -5,7 +5,7 @@ export class ForgeDoor extends ForgeGameObject {
   linkedTo: string = '';
   linkedToFlags: number = 0;
   linkedToModule: string = '';
-  transitionDestin: string = '';
+  transitionDestin: KotOR.CExoLocString = new KotOR.CExoLocString(-1);
 
   /**
    * The walkmesh for the closed state
@@ -104,13 +104,6 @@ export class ForgeDoor extends ForgeGameObject {
     }
     if(property === 'hp'){
       this.currentHP = newValue;
-    }
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
-      }
     }
   }
 
@@ -435,7 +428,8 @@ export class ForgeDoor extends ForgeGameObject {
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'LinkedToModule', this.linkedToModule));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Tag', this.tag));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'TransitionDestin', this.transitionDestin));
+    const transitionDestinField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOLOCSTRING, 'TransitionDestin'))!;
+    transitionDestinField.setCExoLocString(this.transitionDestin);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', this.position.x));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', this.position.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', this.position.z));
@@ -449,7 +443,9 @@ export class ForgeDoor extends ForgeGameObject {
     this.linkedToModule = strt.getFieldByLabel('LinkedToModule').getValue() as string;
     this.tag = strt.getFieldByLabel('Tag').getValue() as string;
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    this.transitionDestin = strt.getFieldByLabel('TransitionDestin').getValue() as string;
+    if(strt.hasField('TransitionDestin')){
+      this.transitionDestin = strt.getFieldByLabel('TransitionDestin').getCExoLocString() || new KotOR.CExoLocString(-1);
+    }
     this.position.x = strt.getFieldByLabel('X').getValue() as number;
     this.position.y = strt.getFieldByLabel('Y').getValue() as number;
     this.position.z = strt.getFieldByLabel('Z').getValue() as number;

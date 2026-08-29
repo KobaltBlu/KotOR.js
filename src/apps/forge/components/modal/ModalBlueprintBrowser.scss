@@ -40,6 +40,28 @@
     }
   }
 
+  .blueprint-browser-count {
+    margin-top: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--forge-text-muted);
+  }
+
+  .blueprint-browser-source {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--forge-text-muted);
+    margin-bottom: 0.15rem;
+
+    &--project {
+      color: var(--forge-accent, #6cf);
+    }
+
+    &--override {
+      color: #c9a227;
+    }
+  }
+
   .blueprint-browser-loading,
   .blueprint-browser-empty {
     text-align: center;
@@ -49,7 +71,7 @@
 
   .blueprint-browser-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 1rem;
     max-height: 60vh;
     overflow-y: auto;
@@ -95,8 +117,8 @@
   }
 
   .blueprint-browser-icon {
-    width: 64px;
-    height: 64px;
+    width: 128px;
+    height: 128px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -105,6 +127,14 @@
     border: 1px solid var(--forge-border);
     border-radius: 4px;
     overflow: hidden;
+
+    &__img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background-color: var(--forge-bg-panel);
+    }
   }
 
   .blueprint-browser-icon-placeholder {
@@ -116,6 +146,17 @@
     font-size: 1.5rem;
     font-weight: bold;
     color: var(--forge-text-bright);
+
+    &--loading {
+      font-size: 1.25rem;
+      color: var(--forge-text-muted);
+      animation: blueprint-thumb-pulse 1s ease-in-out infinite;
+    }
+  }
+
+  @keyframes blueprint-thumb-pulse {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
   }
 
   .blueprint-browser-label {
@@ -123,7 +164,7 @@
     text-align: center;
     word-break: break-word;
     color: var(--forge-text);
-    max-width: 120px;
+    max-width: 160px;
     margin-bottom: 0.25rem;
   }
 
@@ -132,7 +173,7 @@
     text-align: center;
     word-break: break-word;
     color: var(--forge-text-muted);
-    max-width: 120px;
+    max-width: 160px;
     font-style: italic;
   }
 }

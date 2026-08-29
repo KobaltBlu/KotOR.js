@@ -18,6 +18,13 @@ export class ForgeMGEnemy {
   trackName: string = '';
   trigger: number = 0;
 
+  /** Player-only fields: only re-emit if present on the loaded retail struct. */
+  private hadAccelSecs = false;
+  private hadCamera = false;
+  private hadCameraRotate = false;
+  private hadMaximumSpeed = false;
+  private hadMinimumSpeed = false;
+
   // Complex properties
   modelProps: IModelListItem[] = [];
   gunBanks: ForgeMGGunBank[] = [];
@@ -45,15 +52,18 @@ export class ForgeMGEnemy {
 
     // Load basic properties
     if(struct.hasField('Accel_Secs')){
+      this.hadAccelSecs = true;
       this.accel_secs = struct.getFieldByLabel('Accel_Secs').getValue();
     }
     if(struct.hasField('Bump_Damage')){
       this.bump_damage = struct.getFieldByLabel('Bump_Damage').getValue();
     }
     if(struct.hasField('Camera')){
+      this.hadCamera = true;
       this.cameraName = struct.getFieldByLabel('Camera').getValue();
     }
     if(struct.hasField('CameraRotate')){
+      this.hadCameraRotate = true;
       this.cameraRotate = struct.getFieldByLabel('CameraRotate').getValue();
     }
     if(struct.hasField('Hit_Points')){
@@ -66,9 +76,11 @@ export class ForgeMGEnemy {
       this.max_hps = struct.getFieldByLabel('Max_HPs').getValue();
     }
     if(struct.hasField('Maximum_Speed')){
+      this.hadMaximumSpeed = true;
       this.maximum_speed = struct.getFieldByLabel('Maximum_Speed').getValue();
     }
     if(struct.hasField('Minimum_Speed')){
+      this.hadMinimumSpeed = true;
       this.minimum_speed = struct.getFieldByLabel('Minimum_Speed').getValue();
     }
     if(struct.hasField('Num_Loops')){
@@ -100,9 +112,9 @@ export class ForgeMGEnemy {
     if(struct.hasField('Gun_Banks')){
       const gun_banks = struct.getFieldByLabel('Gun_Banks').getChildStructs();
       for(let i = 0; i < gun_banks.length; i++){
-        this.gunBanks.push(
-          new ForgeMGGunBank(gun_banks[i])
-        );
+        const bank = new ForgeMGGunBank(gun_banks[i]);
+        bank.isEnemyBank = true;
+        this.gunBanks.push(bank);
       }
     }
 
@@ -151,17 +163,17 @@ export class ForgeMGEnemy {
   exportToGFFStruct(): KotOR.GFFStruct {
     const enemyStruct = new KotOR.GFFStruct(0);
 
-    // Basic enemy fields
-    if(this.accel_secs !== undefined){
+    // Basic enemy fields (Accel/Camera/speeds only if present on load — player-only otherwise)
+    if(this.hadAccelSecs){
       enemyStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Accel_Secs', this.accel_secs));
     }
     if(this.bump_damage !== undefined){
       enemyStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.INT, 'Bump_Damage', this.bump_damage));
     }
-    if(this.cameraName !== undefined && this.cameraName !== ''){
+    if(this.hadCamera && this.cameraName !== undefined && this.cameraName !== ''){
       enemyStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Camera', this.cameraName));
     }
-    if(this.cameraRotate !== undefined){
+    if(this.hadCameraRotate){
       enemyStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'CameraRotate', this.cameraRotate));
     }
     if(this.hit_points !== undefined){
@@ -173,10 +185,10 @@ export class ForgeMGEnemy {
     if(this.max_hps !== undefined){
       enemyStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Max_HPs', this.max_hps));
     }
-    if(this.maximum_speed !== undefined){
+    if(this.hadMaximumSpeed){
       enemyStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Maximum_Speed', this.maximum_speed));
     }
-    if(this.minimum_speed !== undefined){
+    if(this.hadMinimumSpeed){
       enemyStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Minimum_Speed', this.minimum_speed));
     }
     if(this.num_loops !== undefined){
@@ -196,6 +208,7 @@ export class ForgeMGEnemy {
     const gunBanksField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Gun_Banks');
     for(let i = 0; i < this.gunBanks.length; i++){
       const gunBank = this.gunBanks[i];
+      gunBank.isEnemyBank = true;
       const gunBankStruct = gunBank.exportToGFFStruct();
       gunBanksField.addChildStruct(gunBankStruct);
     }

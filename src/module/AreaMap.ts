@@ -320,7 +320,7 @@ export class AreaMap {
     mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt1X') ).setValue(this.mapPt1X);
     mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt1Y') ).setValue(this.mapPt1Y);
     mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt2X') ).setValue(this.mapPt2X);
-    mapStruct.addField( new GFFField(GFFDataType.INT, 'MapPt2Y') ).setValue(this.mapPt2Y);
+    mapStruct.addField( new GFFField(GFFDataType.FLOAT, 'MapPt2Y') ).setValue(this.mapPt2Y);
     mapStruct.addField( new GFFField(GFFDataType.INT, 'MapResX') ).setValue(this.mapResX);
     mapStruct.addField( new GFFField(GFFDataType.INT, 'MapZoom') ).setValue(this.mapZoom);
     mapStruct.addField( new GFFField(GFFDataType.INT, 'NorthAxis') ).setValue(this.northAxis);
@@ -384,26 +384,34 @@ export class AreaMap {
     }
   }
 
-  static FromStruct( struct: GFFStruct ){
-    if(struct instanceof GFFStruct){
-      let areaMap = new AreaMap();
-
-      areaMap.mapPt1X = struct.getFieldByLabel('MapPt1X').getValue();
-      areaMap.mapPt1Y = struct.getFieldByLabel('MapPt1Y').getValue();
-      areaMap.mapPt2X = struct.getFieldByLabel('MapPt2X').getValue();
-      areaMap.mapPt2Y = struct.getFieldByLabel('MapPt2Y').getValue();
-      areaMap.mapResX = struct.getFieldByLabel('MapResX').getValue();
-      areaMap.mapZoom = struct.getFieldByLabel('MapZoom').getValue();
-      areaMap.northAxis = struct.getFieldByLabel('NorthAxis').getValue();
-      areaMap.worldPt1X = struct.getFieldByLabel('WorldPt1X').getValue();
-      areaMap.worldPt1Y = struct.getFieldByLabel('WorldPt1Y').getValue();
-      areaMap.worldPt2X = struct.getFieldByLabel('WorldPt2X').getValue();
-      areaMap.worldPt2Y = struct.getFieldByLabel('WorldPt2Y').getValue();
-
-      areaMap.init();
-
-      return areaMap;
+  static FromStruct( struct: GFFStruct ): AreaMap | undefined {
+    if(!struct || typeof struct.getFieldByLabel !== 'function'){
+      return undefined;
     }
+
+    const readNumber = (label: string, fallback = 0): number => {
+      const field = struct.getFieldByLabel(label);
+      if(!field){
+        return fallback;
+      }
+      const value = field.getValue();
+      return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+    };
+
+    const areaMap = new AreaMap();
+    areaMap.mapPt1X = readNumber('MapPt1X');
+    areaMap.mapPt1Y = readNumber('MapPt1Y');
+    areaMap.mapPt2X = readNumber('MapPt2X');
+    areaMap.mapPt2Y = readNumber('MapPt2Y');
+    areaMap.mapResX = readNumber('MapResX');
+    areaMap.mapZoom = readNumber('MapZoom');
+    areaMap.northAxis = readNumber('NorthAxis');
+    areaMap.worldPt1X = readNumber('WorldPt1X');
+    areaMap.worldPt1Y = readNumber('WorldPt1Y');
+    areaMap.worldPt2X = readNumber('WorldPt2X');
+    areaMap.worldPt2Y = readNumber('WorldPt2Y');
+    areaMap.init();
+    return areaMap;
   }
 
 }

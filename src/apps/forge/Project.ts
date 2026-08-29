@@ -11,6 +11,9 @@ import { RecentProject } from "@/apps/forge/RecentProject";
 import * as KotOR from "@/apps/forge/KotOR";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
+import { packProjectModule } from "@/apps/forge/helpers/exportProjectModule";
+import * as fs from "fs";
+declare const dialog: any;
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
 import { ProjectSettings } from "@/apps/forge/interfaces/ProjectSettings";
@@ -415,19 +418,81 @@ export class Project {
   }
 
   //Exports the finished project to a .mod file
-  export(){
+  async export(): Promise<boolean> {
+    let overrides: Record<string, Uint8Array> | undefined;
+    if(this.moduleEditor instanceof TabModuleEditorState && this.moduleEditor.file?.unsaved_changes){
+      const saveFirst = window.confirm("The module editor has unsaved changes. Save before exporting?");
+      if(saveFirst){
+        const saved = await this.moduleEditor.save();
+        if(!saved){
+          return false;
+        }
+      }
+    }
+    if(this.moduleEditor instanceof TabModuleEditorState){
+      const buffers = this.moduleEditor.serializeModuleBuffers();
+      const areaResRef = this.moduleEditor.module?.area?.getLayoutResRef();
+      if(buffers && areaResRef){
+        overrides = {
+          "module.ifo": buffers.ifo,
+          [`${areaResRef}.are`]: buffers.are,
+          [`${areaResRef}.git`]: buffers.git,
+        };
+        if(buffers.lyt) overrides[`${areaResRef}.lyt`] = buffers.lyt;
+        if(buffers.vis) overrides[`${areaResRef}.vis`] = buffers.vis;
+      }
+    }
 
+    const files = await ProjectFileSystem.readdir("", { recursive: true });
+    const result = await packProjectModule({
+      files,
+      readFile: (rel) => ProjectFileSystem.readFile(rel),
+      moduleTag: this.moduleEditor?.module?.tag || this.settings.name,
+      projectName: this.settings.name,
+      overrides,
+    });
+    if(!result.ok || !result.buffer){
+      window.alert(result.reason || "Export failed.");
+      return false;
+    }
+
+    try{
+      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+        const savePath = await dialog.showSaveDialog({
+          title: "Export Module",
+          defaultPath: result.filename,
+          filters: [{ name: "Module", extensions: ["mod"] }],
+        });
+        if(!savePath || savePath.cancelled || !savePath.filePath){
+          return false;
+        }
+        await fs.promises.writeFile(savePath.filePath, result.buffer);
+        return true;
+      }
+      const handle = await window.showSaveFilePicker({
+        suggestedName: result.filename,
+        types: [{ description: "Module", accept: { "application/octet-stream": [".mod"] } }],
+      });
+      const ws = await handle.createWritable();
+      await ws.write(result.buffer as any);
+      await ws.close();
+      return true;
+    }catch(e){
+      console.error("Project.export", e);
+      return false;
+    }
   }
 
   /**
    * Creates a new THREE.js Engine and initialize the scene
    */
   async initEditor() {
-    this.moduleEditor = new TabModuleEditorState();
+    if(!(this.moduleEditor instanceof TabModuleEditorState)){
+      this.moduleEditor = new TabModuleEditorState({ editorFile: this.module_ifo });
+    }
+    this.moduleEditor.bindProjectFiles(this);
     ForgeState.tabManager.addTab(this.moduleEditor);
-    this.moduleEditor.module = await TabModuleEditorState.FromProject(this);
-    this.moduleEditor.module?.setContext(this.moduleEditor.ui3DRenderer);
-    await this.moduleEditor.module?.load();
+    await this.moduleEditor.loadFromProject(this);
   }
 
   openModuleEditor(){

@@ -860,13 +860,29 @@ export class Module {
   //ex: end_m01aa end_m01aa_s
   static async Load(modName: string, waypoint?: string){
     console.log('Load', modName);
+    if(!modName){ return new Module(); }
+    try{
+      const archives = await Module.GetModuleArchives(modName);
+      return await Module.LoadFromArchives(archives, waypoint, modName);
+    }catch(e){
+      console.log(`Module.Load: failed to load module.`);
+      console.error(e);
+    }
+  }
+
+  /**
+   * Load a module from already-opened archives (in-memory ERF/RIM).
+   * Used by Forge playable preview so disk `modules/*.mod` is not required.
+   */
+  static async LoadFromArchives(archives: (RIMObject|ERFObject)[], waypoint?: string, modName = 'preview'){
     const module = new Module();
     module.filename = modName;
     module.transWP = waypoint;
-    if(!modName){ return module; }
+    if(!archives?.length){
+      return module;
+    }
     try{
       GameState.ModuleObjectManager.Reset();
-      const archives = await Module.GetModuleArchives(modName);
       await ResourceLoader.InitModuleCache(archives);
       const ifo_data = await ResourceLoader.loadResource(ResourceTypes['ifo'], 'module');
       const ifo = new GFFObject(ifo_data);
@@ -896,8 +912,9 @@ export class Module {
 
       return module;
     }catch(e){
-      console.log(`Module.Load: failed to load module.`);
+      console.log(`Module.LoadFromArchives: failed to load module.`);
       console.error(e);
+      throw e;
     }
   }
 

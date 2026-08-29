@@ -187,6 +187,11 @@ export class ERFObject {
       return new Uint8Array(0);
     }
 
+    // In-memory packs (addResource / setResource) store payload on the entry.
+    if(resource.data instanceof Uint8Array && resource.data.byteLength){
+      return resource.data.slice(0);
+    }
+
     const buffer = new Uint8Array(resource.size);
 
     if(this.inMemory){

@@ -291,6 +291,20 @@ export class TabState extends EventListenerModel {
     return this.file;
   }
 
+  /** Bind or replace the tab's primary EditorFile and its dirty/name listeners. */
+  setEditorFile(file?: EditorFile): void {
+    if(this.file instanceof EditorFile){
+      this.file.removeEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
+      this.file.removeEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
+    }
+    this.file = file as EditorFile;
+    if(this.file instanceof EditorFile){
+      this.file.addEventListener<EditorFileEventListenerTypes>('onSaveStateChanged', this.#_onSaveStateChanged);
+      this.file.addEventListener<EditorFileEventListenerTypes>('onNameChanged', this.#_onNameChanged);
+    }
+    this.editorFileUpdated();
+  }
+
   async getExportBuffer(resref?: string, ext?: string): Promise<Uint8Array> {
     return this.file.buffer ? this.file.buffer : new Uint8Array(0);
   }

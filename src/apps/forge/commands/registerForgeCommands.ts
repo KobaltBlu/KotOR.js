@@ -15,6 +15,7 @@ import { ModalAboutState } from "@/apps/forge/components/modal/ModalAboutState";
 import { ModalSettingsState } from "@/apps/forge/components/modal/ModalSettingsState";
 import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompile";
 import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
+import { openNewModuleWizard } from "@/apps/forge/helpers/openNewModuleWizard";
 import { exportForgeThemeToFile, installForgeThemeFromFile } from "@/apps/forge/settings/forgeTheme";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
@@ -44,12 +45,18 @@ import { TabLYTEditorState } from "@/apps/forge/states/tabs/TabLYTEditorState";
 import { TabTLKEditorState } from "@/apps/forge/states/tabs/TabTLKEditorState";
 import { TabERFEditorState } from "@/apps/forge/states/tabs/TabERFEditorState";
 import { TabWOKEditorState } from "@/apps/forge/states/tabs/TabWOKEditorState";
+import { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
 import { tabCanCompile, tabCanOpenAsGff, tabCanSave, tabIsGffEditor } from "@/apps/forge/commands/editorCommandGuards";
 import * as KotOR from "@/apps/forge/KotOR";
 import { openTabAsGffEditor } from "@/apps/forge/helpers/openTabAsGff";
 
 function currentTab(): TabState | undefined {
   return ForgeState.tabManager?.currentTab;
+}
+
+function currentModuleEditor(): TabModuleEditorState | undefined {
+  const tab = currentTab();
+  return tab instanceof TabModuleEditorState ? tab : undefined;
 }
 
 function hasClosableTab(): boolean {
@@ -633,6 +640,15 @@ export function registerForgeCommands(): void {
   });
 
   registerCommand({
+    id: "forge.project.newModule",
+    title: "New Module...",
+    category: "Project",
+    keywords: ["ifo", "are", "git", "create", "area"],
+    when: hasProject,
+    run: () => openNewModuleWizard(),
+  });
+
+  registerCommand({
     id: "forge.project.importModule",
     title: "Import Module...",
     category: "Project",
@@ -647,6 +663,81 @@ export function registerForgeCommands(): void {
     category: "Project",
     when: hasProject,
     run: () => ForgeState.project.openModuleEditor(),
+  });
+
+  registerCommand({
+    id: "forge.module.deleteSelection",
+    title: "Delete Selection",
+    category: "Module",
+    keywords: ["module", "delete", "remove"],
+    when: () => !!currentModuleEditor()?.selectedGameObject,
+    run: () => {
+      void currentModuleEditor()?.deleteSelectedGameObject();
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.duplicateSelection",
+    title: "Duplicate Selection",
+    category: "Module",
+    keywords: ["module", "clone", "copy"],
+    when: () => !!currentModuleEditor()?.selectedGameObject,
+    run: () => {
+      const tab = currentModuleEditor();
+      if(tab?.selectedGameObject){
+        tab.cloneGameObject(tab.selectedGameObject);
+      }
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.focusSelection",
+    title: "Focus Selection",
+    category: "Module",
+    keywords: ["module", "focus", "camera", "look"],
+    when: () => !!currentModuleEditor()?.selectedGameObject,
+    run: () => {
+      const tab = currentModuleEditor();
+      const container = tab?.selectedGameObject?.container;
+      if(tab && container){
+        tab.ui3DRenderer.lookAtObject(container);
+      }
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.setEntryFromSelection",
+    title: "Set Entry From Selection",
+    category: "Module",
+    keywords: ["module", "entry", "spawn"],
+    when: () => !!currentModuleEditor()?.selectedGameObject,
+    run: () => {
+      const tab = currentModuleEditor();
+      if(tab){
+        tab.setEntryFromSelection();
+        tab.updateFile();
+      }
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.openAreaPth",
+    title: "Open Area Path (.pth)",
+    category: "Module",
+    keywords: ["module", "path", "pth"],
+    when: () => !!currentModuleEditor()?.module?.area,
+    run: () => {
+      void currentModuleEditor()?.openAreaPath();
+    },
+  });
+
+  registerCommand({
+    id: "forge.project.exportModule",
+    title: "Export Module...",
+    category: "Project",
+    keywords: ["mod", "pack", "erf", "export"],
+    when: hasProject,
+    run: () => ForgeState.project.export(),
   });
 
   registerCommand({

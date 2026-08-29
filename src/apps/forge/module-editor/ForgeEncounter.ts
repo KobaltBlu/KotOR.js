@@ -64,13 +64,6 @@ export class ForgeEncounter extends ForgeGameObject {
   }
 
   onPropertyChange(property: string, newValue: any, oldValue: any){
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
-      }
-    }
   }
 
   loadFromBuffer(buffer: Uint8Array){
@@ -269,6 +262,47 @@ export class ForgeEncounter extends ForgeGameObject {
     }
   }
 
+  addVertex(vertex?: THREE.Vector3){
+    this.vertices.push(vertex ? vertex.clone() : new THREE.Vector3(0, 0, DEFAULT_OFFSET_Z));
+    this.buildGeometry();
+    if(this.mesh){
+      this.mesh.geometry = this.bufferGeometry;
+    }
+    this.buildVertexHelpers();
+    return this.vertices.length - 1;
+  }
+
+  removeVertex(index: number){
+    if(index < 0 || index >= this.vertices.length || this.vertices.length <= 3){
+      return false;
+    }
+    this.vertices.splice(index, 1);
+    this.buildGeometry();
+    if(this.mesh){
+      this.mesh.geometry = this.bufferGeometry;
+    }
+    this.buildVertexHelpers();
+    this.selectVertex(-1);
+    return true;
+  }
+
+  addSpawnPoint(entry?: KotOR.EncounterSpawnPointEntry){
+    const point = entry || new KotOR.EncounterSpawnPointEntry();
+    if(!entry){
+      point.position.copy(this.position);
+    }
+    this.spawnPointList.push(point);
+    return this.spawnPointList.length - 1;
+  }
+
+  removeSpawnPoint(index: number){
+    if(index < 0 || index >= this.spawnPointList.length){
+      return false;
+    }
+    this.spawnPointList.splice(index, 1);
+    return true;
+  }
+
   selectVertex(index: number = -1){
     this.selectedVertexIndex = index;
     // Update vertex helper colors
@@ -335,9 +369,9 @@ export class ForgeEncounter extends ForgeGameObject {
     const geometryField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Geometry'));
     for(let i = 0, len = this.vertices.length; i < len; i++){
       const geometryStruct = new KotOR.GFFStruct(3);
-      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointX', this.vertices[i].x));
-      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointY', this.vertices[i].y));
-      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'PointZ', this.vertices[i].z));
+      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', this.vertices[i].x));
+      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', this.vertices[i].y));
+      geometryStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', this.vertices[i].z));
       geometryField?.addChildStruct(geometryStruct);
     }
     const spawnPointListField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'SpawnPointList'));
@@ -362,7 +396,17 @@ export class ForgeEncounter extends ForgeGameObject {
     if(geometryField){
       for(let i = 0, len = geometryField.getChildStructs().length; i < len; i++){
         const geometryStruct = geometryField.getChildStructs()[i];
-        this.vertices.push(new THREE.Vector3(geometryStruct.getFieldByLabel('PointX').getValue() as number, geometryStruct.getFieldByLabel('PointY').getValue() as number, geometryStruct.getFieldByLabel('PointZ').getValue() as number));
+        // Retail uses X/Y/Z; older Forge used PointX/PointY/PointZ
+        const x = geometryStruct.hasField('X')
+          ? geometryStruct.getFieldByLabel('X').getValue() as number
+          : geometryStruct.getFieldByLabel('PointX').getValue() as number;
+        const y = geometryStruct.hasField('Y')
+          ? geometryStruct.getFieldByLabel('Y').getValue() as number
+          : geometryStruct.getFieldByLabel('PointY').getValue() as number;
+        const z = geometryStruct.hasField('Z')
+          ? geometryStruct.getFieldByLabel('Z').getValue() as number
+          : geometryStruct.getFieldByLabel('PointZ').getValue() as number;
+        this.vertices.push(new THREE.Vector3(x, y, z));
       }
     }
     this.spawnPointList = [];
@@ -376,12 +420,18 @@ export class ForgeEncounter extends ForgeGameObject {
         }
       }
     }
-    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
-    this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
-    this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
-    this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+    if(strt.hasField('TemplateResRef')){
+      this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
+    }
+    if(strt.hasField('XPosition')){
+      this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
+    }
+    if(strt.hasField('YPosition')){
+      this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
+    }
+    if(strt.hasField('ZPosition')){
+      this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+    }
   }
 
 }

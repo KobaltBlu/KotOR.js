@@ -65,6 +65,25 @@ export class Mouse {
     Mouse.positionWindow.y = y;
 
     const res = ResolutionManager.screenResolution;
+    const host = ResolutionManager.viewportHost;
+
+    // Embedded hosts (Forge preview): map client coords into the host box.
+    if(host){
+      const rect = host.getBoundingClientRect();
+      const localX = x - rect.left;
+      const localY = y - rect.top;
+      const vpW = Math.max(1, rect.width);
+      const vpH = Math.max(1, rect.height);
+
+      Mouse.positionViewport.x = localX;
+      Mouse.positionViewport.y = localY;
+
+      Mouse.position.x = Mouse.Vector.x = ( localX / vpW ) * 2 - 1;
+      Mouse.position.y = Mouse.Vector.y = - ( localY / vpH ) * 2 + 1;
+      Mouse.positionUI.x = Mouse.Vector.x = ( localX - (vpW / 2) );
+      Mouse.positionUI.y = Mouse.Vector.y = - ( localY - (vpH / 2) );
+      return;
+    }
 
     if(res.isDynamicRes){
       Mouse.positionViewport.x = x;

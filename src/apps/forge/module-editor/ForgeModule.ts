@@ -123,7 +123,98 @@ export class ForgeModule {
   }
 
   setFromIFO(ifo: KotOR.GFFObject){
+    if(!(ifo instanceof KotOR.GFFObject)){
+      return;
+    }
     this.ifo = ifo;
+    this.timeManager.setFromIFO(ifo);
+    this.dawnHour = this.timeManager.dawnHour;
+    this.duskHour = this.timeManager.duskHour;
+
+    const root = ifo.RootNode;
+    const areaList = root.hasField('Mod_Area_list') ? ifo.getFieldByLabel('Mod_Area_list') : undefined;
+    const areaStruct = areaList?.getChildStructs()?.[0];
+    if(areaStruct?.hasField('Area_Name')){
+      this.entryArea = areaStruct.getFieldByLabel('Area_Name').getValue() || this.entryArea;
+    }
+
+    if(root.hasField('Expansion_Pack')){
+      this.expansionPack = ifo.getFieldByLabel('Expansion_Pack').getValue();
+    }
+    if(root.hasField('Mod_Creator_ID')){
+      this.creatorId = ifo.getFieldByLabel('Mod_Creator_ID').getValue();
+    }
+    if(root.hasField('Mod_Description')){
+      this.description = ifo.getFieldByLabel('Mod_Description').getCExoLocString() || this.description;
+    }
+    if(root.hasField('Mod_DawnHour')){
+      this.dawnHour = ifo.getFieldByLabel('Mod_DawnHour').getValue();
+    }
+    if(root.hasField('Mod_DuskHour')){
+      this.duskHour = ifo.getFieldByLabel('Mod_DuskHour').getValue();
+    }
+    if(root.hasField('Mod_Entry_Area')){
+      this.entryArea = ifo.getFieldByLabel('Mod_Entry_Area').getValue() || this.entryArea;
+    }
+    if(root.hasField('Mod_Entry_Dir_X')){
+      this.entryDirectionX = ifo.getFieldByLabel('Mod_Entry_Dir_X').getValue();
+    }
+    if(root.hasField('Mod_Entry_Dir_Y')){
+      this.entryDirectionY = ifo.getFieldByLabel('Mod_Entry_Dir_Y').getValue();
+    }
+    if(root.hasField('Mod_Entry_X')){
+      this.entryX = ifo.getFieldByLabel('Mod_Entry_X').getValue();
+    }
+    if(root.hasField('Mod_Entry_Y')){
+      this.entryY = ifo.getFieldByLabel('Mod_Entry_Y').getValue();
+    }
+    if(root.hasField('Mod_Entry_Z')){
+      this.entryZ = ifo.getFieldByLabel('Mod_Entry_Z').getValue();
+    }
+    if(root.hasField('Mod_Hak')){
+      this.hak = ifo.getFieldByLabel('Mod_Hak').getValue();
+    }
+    if(root.hasField('Mod_ID')){
+      const id = ifo.getFieldByLabel('Mod_ID').getVoid();
+      if(id instanceof Uint8Array){
+        this.id = id;
+      }
+    }
+    if(root.hasField('Mod_IsSaveGame')){
+      this.isSaveGame = !!ifo.getFieldByLabel('Mod_IsSaveGame').getValue();
+    }
+    if(root.hasField('Mod_Name')){
+      this.name = ifo.getFieldByLabel('Mod_Name').getCExoLocString() || this.name;
+    }
+
+    const scriptKeys: ModuleScriptKeys[] = [
+      'Mod_OnAcquirItem', 'Mod_OnActvtItem', 'Mod_OnClientEntr', 'Mod_OnClientLeav',
+      'Mod_OnHeartbeat', 'Mod_OnModLoad', 'Mod_OnModStart', 'Mod_OnPlrDeath',
+      'Mod_OnPlrDying', 'Mod_OnPlrLvlUp', 'Mod_OnPlrRest', 'Mod_OnSpawnBtnDn',
+      'Mod_OnUnAqreItem', 'Mod_OnUsrDefined',
+    ];
+    for(let i = 0; i < scriptKeys.length; i++){
+      const key = scriptKeys[i];
+      if(root.hasField(key)){
+        this.scriptResRefs.set(key, ifo.getFieldByLabel(key).getValue() || '');
+      }
+    }
+
+    if(root.hasField('Mod_StartMovie')){
+      this.startMovie = ifo.getFieldByLabel('Mod_StartMovie').getValue() || '';
+    }
+    if(root.hasField('Mod_Tag')){
+      this.tag = ifo.getFieldByLabel('Mod_Tag').getValue() || '';
+    }
+    if(root.hasField('Mod_VO_ID')){
+      this.voId = ifo.getFieldByLabel('Mod_VO_ID').getValue() || '';
+    }
+    if(root.hasField('Mod_Version')){
+      this.version = ifo.getFieldByLabel('Mod_Version').getValue();
+    }
+    if(root.hasField('Mod_XPScale')){
+      this.xpScale = ifo.getFieldByLabel('Mod_XPScale').getValue();
+    }
   }
 
   async load(){
@@ -134,14 +225,18 @@ export class ForgeModule {
     const ifo = new KotOR.GFFObject();
     ifo.FileType = 'IFO ';
 
+    // Keep timeManager dawn/dusk aligned with module fields before write
+    this.timeManager.dawnHour = this.dawnHour;
+    this.timeManager.duskHour = this.duskHour;
+
     // Expansion_Pack
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.WORD, 'Expansion_Pack', this.expansionPack));
 
     // Mod_Area_list - KotOR only supports one Area per module
     const areaList = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Mod_Area_list'))!;
     const areaStruct = new KotOR.GFFStruct(6);
-    const areaName = this.areas[0]?.name?.getValue?.() || this.entryArea || '';
-    areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', areaName));
+    // Area_Name is a RESREF (same as Mod_Entry_Area), not the localized ARE Name
+    areaStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Area_Name', this.entryArea || ''));
     areaList.addChildStruct(areaStruct);
 
     // Mod_Creator_ID
@@ -179,7 +274,7 @@ export class ForgeModule {
     ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Mod_GVar_List'));
 
     // Mod_Hak
-    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Mod_Hak', ''));
+    ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.CEXOSTRING, 'Mod_Hak', this.hak));
 
     // Mod_ID (BINARY/VOID)
     const modIdField = ifo.RootNode.addField(new KotOR.GFFField(KotOR.GFFDataType.VOID, 'Mod_ID'))!;

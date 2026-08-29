@@ -62,6 +62,23 @@ export function hexToRgb01(hex: string): ForgeRgb01 | undefined {
   };
 }
 
+/** KotOR ARE/GIT DWORD colors are 0xBBGGRR (BGR packed). */
+export function dwordToRgb01(dword: number): ForgeRgb01 {
+  const n = (Number(dword) || 0) >>> 0;
+  return {
+    r: byteToRgb01(n & 0xff),
+    g: byteToRgb01((n >> 8) & 0xff),
+    b: byteToRgb01((n >> 16) & 0xff),
+  };
+}
+
+export function rgb01ToDword(rgb: ForgeRgb01): number {
+  const r = rgb01ToByte(rgb.r);
+  const g = rgb01ToByte(rgb.g);
+  const b = rgb01ToByte(rgb.b);
+  return ((b & 0xff) << 16) | ((g & 0xff) << 8) | (r & 0xff);
+}
+
 export function rgb01ToHsv(rgb: ForgeRgb01): ForgeHsv {
   const r = clamp01(rgb.r);
   const g = clamp01(rgb.g);

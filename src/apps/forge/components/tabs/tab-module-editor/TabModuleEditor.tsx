@@ -3,6 +3,7 @@ import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
 import { TabModuleEditorState, GameObjectType, TabModuleEditorControlMode } from "@/apps/forge/states/tabs";
+import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
 import { ModuleEditorSidebarComponent } from "@/apps/forge/components/ModuleEditorSidebarComponent";
@@ -23,10 +24,13 @@ import {
   faMusic,
   faStore,
   faTriangleExclamation,
-  faLocationPin
+  faLocationPin,
+  faCube
 } from "@fortawesome/free-solid-svg-icons";
 
 import * as KotOR from "@/apps/forge/KotOR";
+import "@/apps/forge/components/tabs/tab-module-editor/TabModuleEditor.scss";
+import "@/apps/forge/components/tabs/tab-module-editor/ModulePreviewHost.scss";
 
 // Extended interface for game object items with icons (for context menu)
 interface GameObjectMenuItem extends ContextMenuItem {
@@ -37,6 +41,15 @@ interface GameObjectMenuItem extends ContextMenuItem {
 // Shared game object type items for context menu
 // Icons match those used in SceneGraphTreeViewManager.ts
 const getGameObjectTypeItems = (tab: TabModuleEditorState): GameObjectMenuItem[] => [
+  {
+    id: 'add-room',
+    label: 'Room',
+    icon: faCube,
+    iconColor: '#a0a0a0',
+    onClick: () => {
+      tab.openAddRoomBrowser();
+    }
+  },
   {
     id: 'add-camera',
     label: 'Camera',
@@ -151,7 +164,7 @@ const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorCont
       label: 'Select',
       icon: faArrowPointer,
       iconColor: 'white',
-      title: 'Select',
+      title: 'Select (Q)',
       active: controlMode === TabModuleEditorControlMode.SELECT,
       onClick: () => {
         tab.setControlMode(TabModuleEditorControlMode.SELECT);
@@ -162,7 +175,7 @@ const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorCont
       label: 'Translate',
       icon: faArrowsUpDownLeftRight,
       iconColor: 'red',
-      title: 'Translate',
+      title: 'Translate (W)',
       active: controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL,
       onClick: () => {
         tab.setControlMode(TabModuleEditorControlMode.TRANSFORM_CONTROL);
@@ -173,7 +186,7 @@ const createTools = (tab: TabModuleEditorState, controlMode: TabModuleEditorCont
       label: 'Rotate',
       icon: faArrowsRotate,
       iconColor: 'green',
-      title: 'Rotate',
+      title: 'Rotate (E)',
       active: controlMode === TabModuleEditorControlMode.ROTATE_CONTROL,
       onClick: () => {
         tab.setControlMode(TabModuleEditorControlMode.ROTATE_CONTROL);
@@ -195,7 +208,13 @@ export const TabModuleEditor = function(props: BaseTabProps){
   const tab: TabModuleEditorState = props.tab as TabModuleEditorState;
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
   const containerRef = useRef<HTMLDivElement>(null);
+  const previewHostRef = useRef<HTMLDivElement>(null);
   const [controlMode, setControlMode] = useState<TabModuleEditorControlMode>(TabModuleEditorControlMode.SELECT);
+  const [previewMode, setPreviewMode] = useState(tab.tabMode === ModuleEditorTabMode.PREVIEW);
+  const [previewBusy, setPreviewBusy] = useState(false);
+  const [previewStage, setPreviewStage] = useState('');
+  const [skippedNss, setSkippedNss] = useState<string[]>([]);
+  const [nssDismissed, setNssDismissed] = useState(false);
 
   const onControlModeChange = () => {
     setControlMode(tab.controlMode);
@@ -208,43 +227,61 @@ export const TabModuleEditor = function(props: BaseTabProps){
     };
   }, [tab]);
 
-  const onModuleLoaded = () => {
-    console.log('module loaded');
-  }
+  useEffect(() => {
+    const onPreview = (enabled: boolean) => {
+      setPreviewMode(!!enabled);
+      if(!enabled){
+        setPreviewBusy(false);
+        setPreviewStage('');
+      }
+    };
+    const onProgress = (stage: string, detail: string) => {
+      setPreviewBusy(stage !== 'ready' && stage !== 'failed');
+      setPreviewStage(detail || stage);
+    };
+    const onSkipped = (list: string[]) => {
+      setSkippedNss(Array.isArray(list) ? list : []);
+      setNssDismissed(false);
+    };
+    tab.addEventListener('onPreviewModeChange', onPreview);
+    tab.addEventListener('onPreviewProgress', onProgress);
+    tab.addEventListener('onPreviewSkippedNss', onSkipped);
+    setPreviewMode(tab.tabMode === ModuleEditorTabMode.PREVIEW);
+    return () => {
+      tab.removeEventListener('onPreviewModeChange', onPreview);
+      tab.removeEventListener('onPreviewProgress', onProgress);
+      tab.removeEventListener('onPreviewSkippedNss', onSkipped);
+    };
+  }, [tab]);
 
   useEffect(() => {
-    tab.addEventListener('onModuleLoaded', onModuleLoaded);
+    tab.setPreviewHostElement(previewHostRef.current);
     return () => {
-      tab.removeEventListener('onModuleLoaded', onModuleLoaded);
+      tab.setPreviewHostElement(undefined);
     };
-  }, []);
+  }, [tab]);
 
   // Attach context menu handler to canvas when it's available
   useEffect(() => {
-    if (!tab.ui3DRenderer) return;
+    if (!tab.ui3DRenderer || previewMode) return;
 
     let canvas: HTMLCanvasElement | undefined;
     let cleanup: (() => void) | undefined;
-    
-    // Track right-click dragging state
     let rightMouseDownPos: { x: number; y: number } | null = null;
     let isRightDragging = false;
-    const DRAG_THRESHOLD = 5; // pixels
+    const DRAG_THRESHOLD = 5;
 
     const handleMouseDown = (e: MouseEvent) => {
-      // Track right mouse button down
-      if (e.button === 2) { // Right mouse button
+      if (e.button === 2) {
         rightMouseDownPos = { x: e.clientX, y: e.clientY };
         isRightDragging = false;
       }
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      // Check if we're dragging with right mouse button
       if (rightMouseDownPos && e.buttons === 2) {
         const dx = Math.abs(e.clientX - rightMouseDownPos.x);
         const dy = Math.abs(e.clientY - rightMouseDownPos.y);
-        
         if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
           isRightDragging = true;
         }
@@ -254,8 +291,6 @@ export const TabModuleEditor = function(props: BaseTabProps){
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-
-      // Don't show context menu if we were dragging
       if (isRightDragging) {
         rightMouseDownPos = null;
         isRightDragging = false;
@@ -263,7 +298,6 @@ export const TabModuleEditor = function(props: BaseTabProps){
       }
 
       const gameObjectTypeItems = getGameObjectTypeItems(tab);
-
       const contextMenuItems: ContextMenuItem[] = [
         {
           id: 'add-game-object',
@@ -280,10 +314,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
             {
               id: 'delete-game-object',
               label: 'Delete',
-              onClick: () => {
-                tab.module?.area?.detachObject(tab.selectedGameObject!);
-                tab.selectGameObject(undefined);
-              }
+              onClick: () => { void tab.deleteSelectedGameObject(); }
             },
             {
               id: 'focus-game-object',
@@ -295,8 +326,14 @@ export const TabModuleEditor = function(props: BaseTabProps){
             {
               id: 'duplicate-game-object',
               label: 'Duplicate',
+              onClick: () => { tab.cloneGameObject(tab.selectedGameObject!); }
+            },
+            {
+              id: 'set-entry-from-selection',
+              label: 'Set Entry From Selection',
               onClick: () => {
-                tab.cloneGameObject(tab.selectedGameObject!);
+                tab.setEntryFromSelection();
+                tab.updateFile();
               }
             }
           ]
@@ -304,8 +341,6 @@ export const TabModuleEditor = function(props: BaseTabProps){
       }
 
       showContextMenu(e.clientX, e.clientY, contextMenuItems);
-      
-      // Reset tracking after showing menu
       rightMouseDownPos = null;
       isRightDragging = false;
       return true;
@@ -327,53 +362,95 @@ export const TabModuleEditor = function(props: BaseTabProps){
       }
     };
 
-    // If canvas is already attached, set up handler immediately
     if (tab.ui3DRenderer.canvas) {
       setupHandler();
     }
-
-    // Also listen for canvas attachment event
-    const onCanvasAttached = () => {
-      setupHandler();
-    };
+    const onCanvasAttached = () => { setupHandler(); };
     tab.ui3DRenderer.addEventListener('onCanvasAttached', onCanvasAttached);
-    
     return () => {
-      if (cleanup) {
-        cleanup();
-      }
+      if (cleanup) cleanup();
       tab.ui3DRenderer?.removeEventListener('onCanvasAttached', onCanvasAttached);
     };
-  }, [tab, showContextMenu]);
+  }, [tab, showContextMenu, previewMode]);
 
   const eastPanel = (
     <ModuleEditorSidebarComponent tab={tab} />
   );
 
   return (
-    <LayoutContainerProvider>
-      <LayoutContainer eastContent={eastPanel} eastSize={350}>
-        <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
-          <UI3DRendererView context={tab.ui3DRenderer}>
-            <UI3DOverlayComponent context={tab.ui3DRenderer}></UI3DOverlayComponent>
-            <UI3DToolPalette 
-              tools={createTools(tab, controlMode)}
-              activeToolId={
-                controlMode === TabModuleEditorControlMode.SELECT ? 'select' :
-                controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL ? 'translate' :
-                controlMode === TabModuleEditorControlMode.ROTATE_CONTROL ? 'rotate' :
-                controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT ? 'add-game-object' :
-                undefined
-              }
-              onToolChange={(toolId) => {
-                // Tool change is handled by onClick in the tool definition
-              }}
-            />
-          </UI3DRendererView>
-        </div>
-        {ContextMenuComponent}
-      </LayoutContainer>
-    </LayoutContainerProvider>
+    <div className="tab-module-editor">
+      <LayoutContainerProvider>
+        <LayoutContainer eastContent={eastPanel} eastSize={350}>
+          <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
+            <div style={{ width: '100%', height: '100%', display: previewMode ? 'none' : 'block' }}>
+              <UI3DRendererView context={tab.ui3DRenderer}>
+                <UI3DOverlayComponent context={tab.ui3DRenderer} tab={tab} />
+                <UI3DToolPalette
+                  tools={createTools(tab, controlMode)}
+                  activeToolId={
+                    controlMode === TabModuleEditorControlMode.SELECT ? 'select' :
+                    controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL ? 'translate' :
+                    controlMode === TabModuleEditorControlMode.ROTATE_CONTROL ? 'rotate' :
+                    controlMode === TabModuleEditorControlMode.SCALE_CONTROL ? 'scale' :
+                    controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT ? 'add-game-object' :
+                    undefined
+                  }
+                  onToolChange={() => {}}
+                />
+              </UI3DRendererView>
+            </div>
+            <div
+              ref={previewHostRef}
+              className={`module-preview-host${previewMode ? ' is-active' : ''}`}
+              style={{ display: previewMode ? 'block' : 'none' }}
+            >
+              <div className="module-preview-host__chrome">
+                <span>
+                  {previewBusy
+                    ? (previewStage || 'Loading playable preview…')
+                    : `Playable Preview (${tab.previewSpawnMode}) — Esc to exit`}
+                </span>
+                <span className="module-preview-host__chrome-actions">
+                  <button
+                    type="button"
+                    className="module-preview-host__exit"
+                    disabled={previewBusy}
+                    title="Re-pack and reload without tearing down the renderer"
+                    onClick={() => {
+                      setPreviewBusy(true);
+                      void tab.warmReloadPlayablePreview().finally(() => setPreviewBusy(false));
+                    }}
+                  >
+                    Reload
+                  </button>
+                  <button
+                    type="button"
+                    className="module-preview-host__exit"
+                    disabled={previewBusy}
+                    onClick={() => {
+                      setPreviewBusy(true);
+                      void tab.stopPlayablePreview().finally(() => setPreviewBusy(false));
+                    }}
+                  >
+                    Exit Preview
+                  </button>
+                </span>
+              </div>
+              {!nssDismissed && skippedNss.length > 0 && (
+                <div className="module-preview-host__nss-warn">
+                  <span>
+                    Skipped uncompiled NSS ({skippedNss.length}): {skippedNss.slice(0, 6).join(', ')}
+                    {skippedNss.length > 6 ? '…' : ''}
+                  </span>
+                  <button type="button" onClick={() => setNssDismissed(true)}>Dismiss</button>
+                </div>
+              )}
+            </div>
+          </div>
+          {ContextMenuComponent}
+        </LayoutContainer>
+      </LayoutContainerProvider>
+    </div>
   )
 }
 

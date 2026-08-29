@@ -11,6 +11,9 @@ export class ForgeMGGunBank {
   sensingRadius: number = 0;
   vertSpread: number = 0;
 
+  /** Retail player banks omit spread / sensing fields; enemy banks include them. */
+  isEnemyBank: boolean = false;
+
   // Bullet template
   bullet: ForgeMGGunBullet;
 
@@ -24,6 +27,13 @@ export class ForgeMGGunBank {
       this.template = new KotOR.GFFObject();
       this.bullet = new ForgeMGGunBullet();
     }
+  }
+
+  /** Create an empty bank; enemy banks include spread fields on export. */
+  static createDefault(isEnemyBank: boolean): ForgeMGGunBank {
+    const bank = new ForgeMGGunBank();
+    bank.isEnemyBank = isEnemyBank;
+    return bank;
   }
 
   loadFromStruct(struct: KotOR.GFFStruct){
@@ -40,15 +50,19 @@ export class ForgeMGGunBank {
       this.gunModel = struct.getFieldByLabel('Gun_Model').getValue();
     }
     if(struct.hasField('Horiz_Spread')){
+      this.isEnemyBank = true;
       this.horizSpread = struct.getFieldByLabel('Horiz_Spread').getValue();
     }
     if(struct.hasField('Inaccuracy')){
+      this.isEnemyBank = true;
       this.inaccuracy = struct.getFieldByLabel('Inaccuracy').getValue();
     }
     if(struct.hasField('Sensing_Radius')){
+      this.isEnemyBank = true;
       this.sensingRadius = struct.getFieldByLabel('Sensing_Radius').getValue();
     }
     if(struct.hasField('Vert_Spread')){
+      this.isEnemyBank = true;
       this.vertSpread = struct.getFieldByLabel('Vert_Spread').getValue();
     }
 
@@ -78,17 +92,19 @@ export class ForgeMGGunBank {
     if(this.gunModel !== undefined && this.gunModel !== ''){
       gunBankStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Gun_Model', this.gunModel));
     }
-    if(this.horizSpread !== undefined){
-      gunBankStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Horiz_Spread', this.horizSpread));
-    }
-    if(this.inaccuracy !== undefined){
-      gunBankStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Inaccuracy', this.inaccuracy));
-    }
-    if(this.sensingRadius !== undefined){
-      gunBankStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Sensing_Radius', this.sensingRadius));
-    }
-    if(this.vertSpread !== undefined){
-      gunBankStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Vert_Spread', this.vertSpread));
+    if(this.isEnemyBank){
+      if(this.horizSpread !== undefined){
+        gunBankStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Horiz_Spread', this.horizSpread));
+      }
+      if(this.inaccuracy !== undefined){
+        gunBankStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Inaccuracy', this.inaccuracy));
+      }
+      if(this.sensingRadius !== undefined){
+        gunBankStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Sensing_Radius', this.sensingRadius));
+      }
+      if(this.vertSpread !== undefined){
+        gunBankStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Vert_Spread', this.vertSpread));
+      }
     }
 
     // Bullet struct

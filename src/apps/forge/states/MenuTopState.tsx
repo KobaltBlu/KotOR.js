@@ -221,8 +221,10 @@ export class MenuTopState {
       {
         label: 'Project',
         children: [
+          this.commandItem('forge.project.newModule'),
           this.commandItem('forge.project.importModule'),
           this.commandItem('forge.project.openModuleEditor'),
+          this.commandItem('forge.project.exportModule'),
           { separator: true },
           this.commandItem('forge.project.compile'),
           this.commandItem('forge.project.compileAllNss'),

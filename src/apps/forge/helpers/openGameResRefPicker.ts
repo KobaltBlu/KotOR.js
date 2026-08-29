@@ -7,6 +7,7 @@
  */
 
 import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { ModalState } from "@/apps/forge/states/modal/ModalState";
 import { ModalItemBrowserState, ModalItemBrowserOptions, UTIItem } from "@/apps/forge/states/modal/ModalItemBrowserState";
 import { ModalBlueprintBrowserState, BlueprintType, BlueprintItem } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
@@ -57,7 +58,7 @@ export function openBlueprintBrowser(
   onBlueprintSelect?: (blueprint: BlueprintItem, type: BlueprintType) => void,
   initial?: string
 ): void {
-  if (catalogNeedsResRefPrompt(ForgeState.hasGameData)) {
+  if (catalogNeedsResRefPrompt(ForgeState.hasGameData) && !ProjectFileSystem.hasRoot()) {
     promptResRef({
       title: blueprintResRefTitle(blueprintType),
       hint: NO_GAME_RESREF_HINT,

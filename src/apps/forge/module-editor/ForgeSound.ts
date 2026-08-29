@@ -1,5 +1,6 @@
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 import * as KotOR from "@/apps/forge/KotOR";
+import * as THREE from "three";
 
 const PRIORITY_LOOPING_AREAWIDE_AMBIENTS = 4;
 const PRIORITY_POSITIONAL_AMBIENTS = 5;
@@ -49,13 +50,6 @@ export class ForgeSound extends ForgeGameObject {
   onPropertyChange(property: string, newValue: any, oldValue: any){
     if(property === 'looping' || property === 'positional'){
       this.calculatePriority();
-    }
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
-      }
     }
   }
 
@@ -221,6 +215,14 @@ export class ForgeSound extends ForgeGameObject {
   }
 
   async load(){
+    this.container.getObjectByName('sound-radius-helper')?.removeFromParent();
+    const helper = new THREE.Mesh(
+      new THREE.SphereGeometry(Math.max(this.maxDistance, 1), 16, 8),
+      new THREE.MeshBasicMaterial({ color: 0xaa66ff, wireframe: true, transparent: true, opacity: 0.45 })
+    );
+    helper.name = 'sound-radius-helper';
+    helper.userData.forgeGameObject = this;
+    this.container.add(helper);
     this.updateBoundingBox();
   }
 
@@ -228,18 +230,25 @@ export class ForgeSound extends ForgeGameObject {
     const instance = new KotOR.GFFStruct(6);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'GeneratedType', this.generatedType));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'X', this.position.x));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Y', this.position.y));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Z', this.position.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', this.position.x));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', this.position.y));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', this.position.z));
     return instance;
   }
 
   setGITInstance(strt: KotOR.GFFStruct){
     this.generatedType = strt.getFieldByLabel('GeneratedType').getValue() as number;
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    this.position.x = strt.getFieldByLabel('X').getValue() as number;
-    this.position.y = strt.getFieldByLabel('Y').getValue() as number;
-    this.position.z = strt.getFieldByLabel('Z').getValue() as number;
+    // Retail GIT uses XPosition*; accept legacy X/Y/Z from older Forge exports
+    if(strt.hasField('XPosition')){
+      this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
+      this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
+      this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+    } else if(strt.hasField('X')){
+      this.position.x = strt.getFieldByLabel('X').getValue() as number;
+      this.position.y = strt.getFieldByLabel('Y').getValue() as number;
+      this.position.z = strt.getFieldByLabel('Z').getValue() as number;
+    }
   }
 
 }

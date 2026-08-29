@@ -1,4 +1,5 @@
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { facingFromYaw, yawFromFacing } from "@/apps/forge/helpers/gitFacing";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from "three";
 
@@ -15,6 +16,12 @@ export class ForgeTrigger extends ForgeGameObject {
     new THREE.Vector3(0.5, 0.5, DEFAULT_OFFSET_Z),
     new THREE.Vector3(-0.5, 0.5, DEFAULT_OFFSET_Z)
   ];
+
+  /**
+   * Retail ZOrientation: third component of the GIT orientation unit vector
+   * (XO/YO/ZO). LoadTrigger uses Yaw of that vector to rotate geometry; typically ZO is 0.
+   */
+  zOrientation: number = 0;
 
   //GIT Instance Properties
   templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.utt;
@@ -67,13 +74,6 @@ export class ForgeTrigger extends ForgeGameObject {
   }
 
   onPropertyChange(property: string, newValue: any, oldValue: any){
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
-      }
-    }
   }
 
   loadFromBuffer(buffer: Uint8Array){
@@ -276,6 +276,30 @@ export class ForgeTrigger extends ForgeGameObject {
     }
   }
 
+  addVertex(vertex?: THREE.Vector3){
+    this.vertices.push(vertex ? vertex.clone() : new THREE.Vector3(0, 0, DEFAULT_OFFSET_Z));
+    this.buildGeometry();
+    if(this.mesh){
+      this.mesh.geometry = this.bufferGeometry;
+    }
+    this.buildVertexHelpers();
+    return this.vertices.length - 1;
+  }
+
+  removeVertex(index: number){
+    if(index < 0 || index >= this.vertices.length || this.vertices.length <= 3){
+      return false;
+    }
+    this.vertices.splice(index, 1);
+    this.buildGeometry();
+    if(this.mesh){
+      this.mesh.geometry = this.bufferGeometry;
+    }
+    this.buildVertexHelpers();
+    this.selectVertex(-1);
+    return true;
+  }
+
   selectVertex(index: number = -1){
     this.selectedVertexIndex = index;
     // Update vertex helper colors
@@ -339,6 +363,7 @@ export class ForgeTrigger extends ForgeGameObject {
 
   getGITInstance(): KotOR.GFFStruct {
     const instance = new KotOR.GFFStruct(1);
+    const facing = facingFromYaw(this.rotation.z);
     const geometryField = instance.addField(new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Geometry'));
     for(let i = 0, len = this.vertices.length; i < len; i++){
       const geometryStruct = new KotOR.GFFStruct(3);
@@ -348,11 +373,11 @@ export class ForgeTrigger extends ForgeGameObject {
       geometryField?.addChildStruct(geometryStruct);
     }
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', this.rotation.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', facing.x));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', this.position.x));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', this.rotation.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', facing.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', this.position.y));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZOrientation', this.rotation.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZOrientation', this.zOrientation));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', this.position.z));
     return instance;
   }
@@ -373,11 +398,12 @@ export class ForgeTrigger extends ForgeGameObject {
       }
     }
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
+    const xo = strt.hasField('XOrientation') ? strt.getFieldByLabel('XOrientation').getValue() as number : 0;
+    const yo = strt.hasField('YOrientation') ? strt.getFieldByLabel('YOrientation').getValue() as number : 1;
+    this.rotation.z = yawFromFacing(xo, yo);
+    this.zOrientation = strt.hasField('ZOrientation') ? strt.getFieldByLabel('ZOrientation').getValue() as number : 0;
     this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
     this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('ZOrientation').getValue() as number;
     this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
   }
 

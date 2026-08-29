@@ -1,0 +1,27 @@
+.tab-module-editor {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+
+  // LayoutContainer east pane is absolute with a fixed height — force children
+  // to fill that height so their internal overflow:auto regions can scroll.
+  .ui-layout-east {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden !important;
+    min-height: 0;
+  }
+
+  .ui-layout-east > * {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto !important;
+    max-height: 100%;
+  }
+
+  .ui-layout-center {
+    min-height: 0;
+    overflow: hidden;
+  }
+}

@@ -96,13 +96,6 @@ export class ForgePlaceable extends ForgeGameObject {
     if(property === 'hp' || property === 'placeable.hp'){
       this.currentHP = newValue;
     }
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
-      }
-    }
   }
 
   loadFromBuffer(buffer: Uint8Array){
@@ -446,9 +439,16 @@ export class ForgePlaceable extends ForgeGameObject {
   setGITInstance(strt: KotOR.GFFStruct){
     this.rotation.z = strt.getFieldByLabel('Bearing').getValue() as number;
     this.templateResRef = strt.getFieldByLabel('TemplateResRef').getValue() as string;
-    this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
-    this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
-    this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+    // Retail GIT uses X/Y/Z (not XPosition*)
+    if(strt.hasField('X')){
+      this.position.x = strt.getFieldByLabel('X').getValue() as number;
+      this.position.y = strt.getFieldByLabel('Y').getValue() as number;
+      this.position.z = strt.getFieldByLabel('Z').getValue() as number;
+    } else if(strt.hasField('XPosition')){
+      this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
+      this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
+      this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
+    }
   }
 
 }

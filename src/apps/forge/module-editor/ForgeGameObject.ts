@@ -1,6 +1,7 @@
 import { EventListenerModel } from "@/apps/forge/EventListenerModel";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from 'three';
+import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 
 /** TabState.tsx is not type-checkable under Jest (`JSX` types). */
 interface BlueprintEditorTab {
@@ -27,6 +28,10 @@ export class ForgeGameObject extends EventListenerModel {
   templateResRef: string = '';
   templateResType: typeof KotOR.ResourceTypes = KotOR.ResourceTypes.NA;
 
+  private static projectTemplatePathCache = new Map<string, string>();
+  private blueprintReloadTimer: ReturnType<typeof setTimeout> | undefined;
+  private blueprintReloadToken = 0;
+
   constructor(){
     super();
     this.position = this.container.position;
@@ -34,6 +39,10 @@ export class ForgeGameObject extends EventListenerModel {
     this.scale = this.container.scale;
     this.quaternion = this.container.quaternion;
     this.container.userData.forgeGameObject = this;
+  }
+
+  static invalidateProjectTemplatePathCache(): void {
+    ForgeGameObject.projectTemplatePathCache.clear();
   }
 
   setArea(area: any){
@@ -49,11 +58,76 @@ export class ForgeGameObject extends EventListenerModel {
     this.templateResType = resType;
   }
 
+  /**
+   * Debounced blueprint reload so typing a resref does not thrash disk/KEY loads.
+   */
+  protected scheduleBlueprintReload(): void {
+    if(this.blueprintReloadTimer){
+      clearTimeout(this.blueprintReloadTimer);
+    }
+    this.blueprintReloadTimer = setTimeout(() => {
+      this.blueprintReloadTimer = undefined;
+      const token = ++this.blueprintReloadToken;
+      void this.loadBlueprint().then(() => {
+        if(token !== this.blueprintReloadToken){
+          return;
+        }
+        return this.load();
+      });
+    }, 350);
+  }
+
+  private async resolveTemplateBuffer(): Promise<Uint8Array | undefined> {
+    if(!this.templateResRef || this.templateResType === KotOR.ResourceTypes.NA){
+      return undefined;
+    }
+    const ext = String(KotOR.ResourceTypes.getKeyByValue?.(this.templateResType) || "").toLowerCase();
+    if(ext && ProjectFileSystem.hasRoot()){
+      const fromProject = await ForgeGameObject.readProjectTemplate(this.templateResRef, ext);
+      if(fromProject?.byteLength){
+        return fromProject;
+      }
+    }
+    try{
+      return await KotOR.ResourceLoader.loadResource(this.templateResType, this.templateResRef);
+    }catch{
+      return undefined;
+    }
+  }
+
+  private static async readProjectTemplate(resRef: string, ext: string): Promise<Uint8Array | undefined> {
+    const key = `${resRef}.${ext}`.toLowerCase();
+    let path = ForgeGameObject.projectTemplatePathCache.get(key);
+    if(!path){
+      try{
+        const files = await ProjectFileSystem.readdir("", { recursive: true });
+        for(let i = 0; i < files.length; i++){
+          const rel = String(files[i] || "").replace(/\\/g, "/");
+          const base = rel.split("/").pop() || "";
+          if(base){
+            ForgeGameObject.projectTemplatePathCache.set(base.toLowerCase(), rel);
+          }
+        }
+      }catch{
+        return undefined;
+      }
+      path = ForgeGameObject.projectTemplatePathCache.get(key);
+    }
+    if(!path){
+      return undefined;
+    }
+    try{
+      return await ProjectFileSystem.readFile(path);
+    }catch{
+      return undefined;
+    }
+  }
+
   async loadBlueprint(){
     if(!this.templateResRef || this.templateResType === KotOR.ResourceTypes.NA) return;
     try{
-      const buffer = await KotOR.ResourceLoader.loadResource(this.templateResType, this.templateResRef);
-      if(buffer){
+      const buffer = await this.resolveTemplateBuffer();
+      if(buffer?.byteLength){
         const gff = new KotOR.GFFObject(buffer);
         this.blueprint = gff;
         this.loadFromBlueprint();
@@ -288,6 +362,9 @@ export class ForgeGameObject extends EventListenerModel {
   setProperty(property: keyof this, value: any){
     const old = (this as any)[property];
     (this as any)[property] = value;
+    if(property === 'templateResRef' && value !== old && this.templateResType !== KotOR.ResourceTypes.NA){
+      this.scheduleBlueprintReload();
+    }
     this.processEventListener('onPropertyChange', [property, value, old]);
     return value;
   }

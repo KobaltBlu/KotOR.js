@@ -345,7 +345,6 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   reorientCamera(view: CameraView) {
-    console.log('reorientCamera', view);
     if(!this.camera || !this.orbitControls) return;
 
     const oldView = this.cameraView;
@@ -418,7 +417,6 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   setCameraFocusMode(mode: CameraFocusMode) {
-    console.log('setCameraFocusMode', mode);
     this.focusMode = mode;
   }
   
@@ -479,7 +477,6 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   private updateCameraFocus(): void {
-    console.log('updateCameraFocus');
     this.#box3.makeEmpty();
     const objects = this.focusMode === CameraFocusMode.SELECTABLE ? this.selectable.children : this.scene.children;
     for (let i = 0; i < objects.length; i++) {
@@ -498,7 +495,6 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   public fitCameraToScene(offset: number = 1.25): void {
-    console.log('fitCameraToScene', offset);
     this.updateCameraFocus();
     if(!this.#center || !this.camera || !this.orbitControls) return;
     if(this.#box3.isEmpty()) return;
@@ -997,8 +993,24 @@ export class UI3DRenderer extends EventListenerModel {
     }
 
     if(object instanceof KotOR.OdysseyWalkMesh){
-      console.warn('selectObject: object picking is not supported yet for OdysseyWalkMesh');
-      return;
+      // Prefer selecting the parent ForgeRoom (authoring unit) over raw walkmesh
+      if(forgeGameObject){
+        object = forgeGameObject.container;
+      } else {
+        let current: THREE.Object3D | null = object.parent;
+        while(current){
+          if(current.userData?.forgeGameObject instanceof ForgeGameObject){
+            forgeGameObject = current.userData.forgeGameObject;
+            object = forgeGameObject.container;
+            break;
+          }
+          current = current.parent;
+        }
+        if(object instanceof KotOR.OdysseyWalkMesh){
+          console.warn('selectObject: object picking is not supported yet for OdysseyWalkMesh without a parent ForgeRoom');
+          return;
+        }
+      }
     }
 
     const nodeType: KotOR.OdysseyModelNodeType = (object as any).odysseyModelNode?.nodeType || 1;

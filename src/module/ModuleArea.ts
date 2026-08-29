@@ -956,9 +956,12 @@ export class ModuleArea extends ModuleObject {
     this.lightingScheme = this.are.getFieldByLabel('LightingScheme').getValue();
     this.loadScreenId = this.are.getFieldByLabel('LoadScreenID').getValue();
 
-    let map = this.are.getFieldByLabel('Map').getChildStructs()[0];
-    if(map){
-      this.areaMap = AreaMap.FromStruct(map);
+    if(this.are.RootNode.hasField('Map')){
+      const map = this.are.getFieldByLabel('Map')?.getChildStructs()?.[0];
+      const loadedMap = map ? AreaMap.FromStruct(map) : undefined;
+      if(loadedMap){
+        this.areaMap = loadedMap;
+      }
     }
 
     if(this.are.RootNode.hasField('MiniGame')){

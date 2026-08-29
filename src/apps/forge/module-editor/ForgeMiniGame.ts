@@ -5,26 +5,72 @@ import { ForgeMGObstacle } from "@/apps/forge/module-editor/ForgeMGObstacle";
 import { ForgeMGTrack } from "@/apps/forge/module-editor/ForgeMGTrack";
 
 export class ForgeMiniGame {
-  type: KotOR.MiniGameType;
+  type: KotOR.MiniGameType = KotOR.MiniGameType.SWOOPRACE;
 
   bumpPlane: number = 0;
-  cameraViewAngle: number = 0;
+  cameraViewAngle: number = 65;
   dof: number = 0;
   doBumping: number = 0;
-  player: ForgeMGPlayer;
+  player: ForgeMGPlayer = new ForgeMGPlayer();
 
-  farClip: number = 0;
-  lateralAccel: number = 0;
-  movementPerSec: number = 0;
+  farClip: number = 100;
+  lateralAccel: number = 60;
+  movementPerSec: number = 6;
   music: number = 0;
-  nearClip: number = 0;
+  nearClip: number = 0.1;
   useInertia: number = 0;
+
+  /** Present on turret MiniGames (e.g. m12ab); absent on swoop. */
+  mouse?: {
+    axisX: number;
+    axisY: number;
+    flipAxisX: boolean;
+    flipAxisY: boolean;
+  };
 
   enemies: ForgeMGEnemy[] = [];
   obstacles: ForgeMGObstacle[] = [];
   tracks: ForgeMGTrack[] = [];
 
-  constructor(struct: KotOR.GFFStruct){
+  /** Default MiniGame for areas that do not yet have one (swoop-style Type 1). */
+  static createDefault(type: KotOR.MiniGameType = KotOR.MiniGameType.SWOOPRACE): ForgeMiniGame {
+    const mg = new ForgeMiniGame();
+    mg.type = type;
+    mg.movementPerSec = type === KotOR.MiniGameType.TURRET ? 90 : 6;
+    mg.player = new ForgeMGPlayer();
+    return mg;
+  }
+
+  addEnemy(): ForgeMGEnemy {
+    const enemy = new ForgeMGEnemy();
+    this.enemies.push(enemy);
+    return enemy;
+  }
+
+  removeEnemy(index: number): void {
+    if(index < 0 || index >= this.enemies.length){
+      return;
+    }
+    this.enemies.splice(index, 1);
+  }
+
+  addObstacle(): ForgeMGObstacle {
+    const obstacle = new ForgeMGObstacle();
+    this.obstacles.push(obstacle);
+    return obstacle;
+  }
+
+  removeObstacle(index: number): void {
+    if(index < 0 || index >= this.obstacles.length){
+      return;
+    }
+    this.obstacles.splice(index, 1);
+  }
+
+  constructor(struct?: KotOR.GFFStruct){
+    if(!struct){
+      return;
+    }
     this.bumpPlane = struct.getFieldByLabel('Bump_Plane').getValue();
     this.cameraViewAngle = struct.getFieldByLabel('CameraViewAngle').getValue();
     this.dof = struct.getFieldByLabel('DOF').getValue();
@@ -36,17 +82,35 @@ export class ForgeMiniGame {
     this.nearClip = struct.getFieldByLabel('Near_Clip').getValue();
     this.type = struct.getFieldByLabel('Type').getValue();
     this.useInertia = struct.getFieldByLabel('UseInertia').getValue();
-    
 
-    this.player = new ForgeMGPlayer(
-      struct.getFieldByLabel('Player').getChildStructs()[0]
-    );
+    if(struct.hasField('Mouse')){
+      const mouseField = struct.getFieldByLabel('Mouse');
+      const mouseStruct = mouseField.getFieldStruct()
+        || mouseField.getChildStructs()?.[0];
+      if(mouseStruct){
+        this.mouse = {
+          axisX: mouseStruct.hasField('AxisX') ? mouseStruct.getFieldByLabel('AxisX').getValue() : 0,
+          axisY: mouseStruct.hasField('AxisY') ? mouseStruct.getFieldByLabel('AxisY').getValue() : 0,
+          flipAxisX: mouseStruct.hasField('FlipAxisX') ? !!mouseStruct.getFieldByLabel('FlipAxisX').getValue() : false,
+          flipAxisY: mouseStruct.hasField('FlipAxisY') ? !!mouseStruct.getFieldByLabel('FlipAxisY').getValue() : false,
+        };
+      }
+    }
 
-    const enemies = struct.getFieldByLabel('Enemies').getChildStructs();
-    for(let i = 0; i < enemies.length; i++){
-      this.enemies.push(
-        new ForgeMGEnemy(enemies[i])
-      );
+    if(struct.hasField('Player')){
+      const playerStructs = struct.getFieldByLabel('Player').getChildStructs();
+      this.player = new ForgeMGPlayer(playerStructs[0]);
+    } else {
+      this.player = new ForgeMGPlayer();
+    }
+
+    if(struct.hasField('Enemies')){
+      const enemies = struct.getFieldByLabel('Enemies').getChildStructs();
+      for(let i = 0; i < enemies.length; i++){
+        this.enemies.push(
+          new ForgeMGEnemy(enemies[i])
+        );
+      }
     }
 
     // Load Obstacles list if it exists
@@ -76,6 +140,17 @@ export class ForgeMiniGame {
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Near_Clip', this.nearClip));
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Type', this.type));
     struct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'UseInertia', this.useInertia));
+
+    if(this.mouse){
+      const mouseField = new KotOR.GFFField(KotOR.GFFDataType.STRUCT, 'Mouse');
+      const mouseStruct = new KotOR.GFFStruct(0);
+      mouseStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'AxisX', this.mouse.axisX));
+      mouseStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'AxisY', this.mouse.axisY));
+      mouseStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'FlipAxisX', this.mouse.flipAxisX ? 1 : 0));
+      mouseStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'FlipAxisY', this.mouse.flipAxisY ? 1 : 0));
+      mouseField.addChildStruct(mouseStruct);
+      struct.addField(mouseField);
+    }
 
     // Player struct
     if(this.player){

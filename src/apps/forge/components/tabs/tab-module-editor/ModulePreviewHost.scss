@@ -1,0 +1,94 @@
+.module-preview-host {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #000;
+  overflow: hidden;
+
+  &.is-active {
+    display: block;
+  }
+
+  /* Canvas size is driven by GameState.setSize / applyForgePreviewCanvasLayout
+     so aspect matches the host; do not stretch with 100% CSS. */
+  canvas {
+    display: block;
+    max-width: none;
+    max-height: none;
+  }
+
+  &__nss-warn {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: rgba(80, 40, 0, 0.88);
+    border: 1px solid rgba(255, 180, 80, 0.45);
+    color: #ffd9a8;
+    font-size: 11px;
+
+    button {
+      pointer-events: auto;
+      padding: 2px 8px;
+      font-size: 11px;
+      background: #3a2a10;
+      border: 1px solid #886633;
+      color: #ffd9a8;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+  }
+
+  &__chrome {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #eee;
+    font-size: 12px;
+    pointer-events: none;
+  }
+
+  &__chrome-actions {
+    display: flex;
+    gap: 6px;
+    pointer-events: auto;
+  }
+
+  &__exit {
+    pointer-events: auto;
+    padding: 2px 8px;
+    font-size: 11px;
+    background: #2a2a2a;
+    border: 1px solid #555;
+    color: #eee;
+    border-radius: 2px;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: #3a3a3a;
+      color: #fff;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+}

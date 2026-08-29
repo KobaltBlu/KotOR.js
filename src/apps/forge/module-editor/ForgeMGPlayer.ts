@@ -101,7 +101,10 @@ export class ForgeMGPlayer {
     if(struct.hasField('Type')){
       this.type = struct.getFieldByLabel('Type').getValue();
     }
-    if(struct.hasField('Uselnertia')){
+    if(struct.hasField('UseInertia')){
+      this.useInertia = struct.getFieldByLabel('UseInertia').getValue();
+    } else if(struct.hasField('Uselnertia')){
+      // Legacy Forge typo (lowercase L)
       this.useInertia = struct.getFieldByLabel('Uselnertia').getValue();
     }
 
@@ -125,11 +128,13 @@ export class ForgeMGPlayer {
       this.targetOffsetZ = struct.getFieldByLabel('Target_Offset_Z').getValue();
     }
 
-    // Load tunnel properties
+    // Load tunnel properties (accept legacy TunneXPos / TunneZNeg / Tunnellnfinite typos)
     if(struct.hasField('TunnelXNeg')){
       this.tunnelXNeg = struct.getFieldByLabel('TunnelXNeg').getValue();
     }
-    if(struct.hasField('TunneXPos')){
+    if(struct.hasField('TunnelXPos')){
+      this.tunnelXPos = struct.getFieldByLabel('TunnelXPos').getValue();
+    } else if(struct.hasField('TunneXPos')){
       this.tunnelXPos = struct.getFieldByLabel('TunneXPos').getValue();
     }
     if(struct.hasField('TunnelYNeg')){
@@ -138,14 +143,19 @@ export class ForgeMGPlayer {
     if(struct.hasField('TunnelYPos')){
       this.tunnelYPos = struct.getFieldByLabel('TunnelYPos').getValue();
     }
-    if(struct.hasField('TunneZNeg')){
+    if(struct.hasField('TunnelZNeg')){
+      this.tunnelZNeg = struct.getFieldByLabel('TunnelZNeg').getValue();
+    } else if(struct.hasField('TunneZNeg')){
       this.tunnelZNeg = struct.getFieldByLabel('TunneZNeg').getValue();
     }
     if(struct.hasField('TunnelZPos')){
       this.tunnelZPos = struct.getFieldByLabel('TunnelZPos').getValue();
     }
-    if(struct.hasField('Tunnellnfinite')){
-      const tunnelInfiniteField = struct.getFieldByLabel('Tunnellnfinite');
+    const tunnelInfiniteLabel = struct.hasField('TunnelInfinite')
+      ? 'TunnelInfinite'
+      : (struct.hasField('Tunnellnfinite') ? 'Tunnellnfinite' : '');
+    if(tunnelInfiniteLabel){
+      const tunnelInfiniteField = struct.getFieldByLabel(tunnelInfiniteLabel);
       if(tunnelInfiniteField && tunnelInfiniteField.vector){
         this.tunnelInfinite = tunnelInfiniteField.vector;
       }
@@ -167,9 +177,9 @@ export class ForgeMGPlayer {
     if(struct.hasField('Gun_Banks')){
       const gun_banks = struct.getFieldByLabel('Gun_Banks').getChildStructs();
       for(let i = 0; i < gun_banks.length; i++){
-        this.gunBanks.push(
-          new ForgeMGGunBank(gun_banks[i])
-        );
+        const bank = new ForgeMGGunBank(gun_banks[i]);
+        bank.isEnemyBank = false;
+        this.gunBanks.push(bank);
       }
     }
 
@@ -255,12 +265,7 @@ export class ForgeMGPlayer {
     if(this.trackName !== undefined && this.trackName !== ''){
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'Track', this.trackName));
     }
-    if(this.type !== undefined){
-      playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.DWORD, 'Type', this.type));
-    }
-    if(this.useInertia !== undefined){
-      playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.BYTE, 'Uselnertia', this.useInertia));
-    }
+    // Retail Player structs omit Type / UseInertia (UseInertia lives on MiniGame root only).
 
     // Offset fields
     if(this.startOffsetX !== undefined){
@@ -282,12 +287,12 @@ export class ForgeMGPlayer {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'Target_Offset_Z', this.targetOffsetZ));
     }
 
-    // Tunnel fields
+    // Tunnel fields (retail spellings)
     if(this.tunnelXNeg !== undefined){
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelXNeg', this.tunnelXNeg));
     }
     if(this.tunnelXPos !== undefined){
-      playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunneXPos', this.tunnelXPos));
+      playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelXPos', this.tunnelXPos));
     }
     if(this.tunnelYNeg !== undefined){
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelYNeg', this.tunnelYNeg));
@@ -296,19 +301,20 @@ export class ForgeMGPlayer {
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelYPos', this.tunnelYPos));
     }
     if(this.tunnelZNeg !== undefined){
-      playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunneZNeg', this.tunnelZNeg));
+      playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelZNeg', this.tunnelZNeg));
     }
     if(this.tunnelZPos !== undefined){
       playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'TunnelZPos', this.tunnelZPos));
     }
-    if(this.tunnelInfinite !== undefined && (this.tunnelInfinite.x !== 0 || this.tunnelInfinite.y !== 0 || this.tunnelInfinite.z !== 0)){
-      playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.VECTOR, 'Tunnellnfinite', this.tunnelInfinite));
+    if(this.tunnelInfinite !== undefined){
+      playerStruct.addField(new KotOR.GFFField(KotOR.GFFDataType.VECTOR, 'TunnelInfinite', this.tunnelInfinite));
     }
 
     // Gun_Banks list
     const gunBanksField = new KotOR.GFFField(KotOR.GFFDataType.LIST, 'Gun_Banks');
     for(let i = 0; i < this.gunBanks.length; i++){
       const gunBank = this.gunBanks[i];
+      gunBank.isEnemyBank = false;
       const gunBankStruct = gunBank.exportToGFFStruct();
       gunBanksField.addChildStruct(gunBankStruct);
     }

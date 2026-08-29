@@ -19,6 +19,12 @@ export class ResolutionManager {
     height: 0
   };
 
+  /**
+   * When set (e.g. Forge module preview), viewport metrics use this element's
+   * client box instead of the browser window.
+   */
+  public static viewportHost: HTMLElement | null = null;
+
   private static resolutionsGenerated: boolean = false;
   static #_screenResolution: IScreenResolution = {
     label: 'Auto Resolution',
@@ -81,19 +87,61 @@ export class ResolutionManager {
     }
   }
 
+  static setViewportHost(element: HTMLElement | null): void {
+    this.viewportHost = element;
+    this.syncWindowResolutionFromHost();
+    this.recalculate();
+  }
+
+  static syncWindowResolutionFromHost(): void {
+    if(this.viewportHost){
+      this.windowResolution.width = Math.max(1, this.viewportHost.clientWidth);
+      this.windowResolution.height = Math.max(1, this.viewportHost.clientHeight);
+    }else{
+      this.windowResolution.width = window.innerWidth;
+      this.windowResolution.height = window.innerHeight;
+    }
+  }
+
+  static getHostWidth(): number {
+    if(this.viewportHost){
+      return Math.max(1, this.viewportHost.clientWidth);
+    }
+    return window.innerWidth;
+  }
+
+  static getHostHeight(): number {
+    if(this.viewportHost){
+      return Math.max(1, this.viewportHost.clientHeight);
+    }
+    return window.innerHeight;
+  }
+
   static getViewportWidth(): number {
+    if(this.viewportHost){
+      return this.getHostWidth();
+    }
     return this.screenResolution.isDynamicRes ? window.innerWidth : this.screenResolution.width;
   }
 
   static getViewportHeight(): number {
+    if(this.viewportHost){
+      return this.getHostHeight();
+    }
     return this.screenResolution.isDynamicRes ? window.innerHeight : this.screenResolution.height;
   }
 
   static getViewportWidthScaled(): number {
+    if(this.viewportHost){
+      return this.getHostWidth();
+    }
     return this.screenResolution.isDynamicRes ? window.innerWidth : this.screenResolution.width * this.vpScaleFactor;
   }
 
   static getViewportHeightScaled(): number {
+    if(this.viewportHost){
+      return this.getHostHeight();
+    }
     return this.screenResolution.isDynamicRes ? window.innerHeight : this.screenResolution.height * this.hpScaleFactor;
   }
 
@@ -106,25 +154,20 @@ export class ResolutionManager {
   }
 
   static recalculate(): void {
-    const scaleX = window.innerWidth / this.getViewportWidth();
-    const scaleY = window.innerHeight / this.getViewportHeight();
+    const hostW = this.getHostWidth();
+    const hostH = this.getHostHeight();
+    this.windowResolution.width = hostW;
+    this.windowResolution.height = hostH;
 
-    const xExceeds = (this.getViewportWidth() * scaleX) > window.innerWidth;
-    const yExceeds = (this.getViewportHeight() * scaleY) > window.innerHeight;
+    const scaleX = hostW / this.getViewportWidth();
+    const scaleY = hostH / this.getViewportHeight();
 
     this.vpScaleFactor = 1.0;
     this.hpScaleFactor = 1.0;
 
-    if(!this.screenResolution.isDynamicRes){
+    if(!this.viewportHost && !this.screenResolution.isDynamicRes){
       this.vpScaleFactor = scaleY;
       this.hpScaleFactor = scaleX;
-      // if(!xExceeds && !yExceeds){
-      //   this.vpScaleFactor = scaleY;
-      // }else if(!yExceeds){
-      //   this.vpScaleFactor = scaleY;
-      // }else if(!xExceeds){
-      //   this.vpScaleFactor = scaleX;
-      // }
     }
   }
 
@@ -285,7 +328,6 @@ export class ResolutionManager {
 }
 
 window.addEventListener('resize', () => {
-  ResolutionManager.windowResolution.width = window.innerWidth;
-  ResolutionManager.windowResolution.height = window.innerHeight;
+  ResolutionManager.syncWindowResolutionFromHost();
   ResolutionManager.recalculate();
 });

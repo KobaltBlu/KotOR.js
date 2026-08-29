@@ -1,5 +1,7 @@
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { facingFromYaw, yawFromFacing } from "@/apps/forge/helpers/gitFacing";
 import * as KotOR from "@/apps/forge/KotOR";
+import * as THREE from "three";
 
 export interface StoreItemEntry {
   inventoryRes: string;
@@ -33,13 +35,6 @@ export class ForgeStore extends ForgeGameObject {
   }
 
   onPropertyChange(property: string, newValue: any, oldValue: any){
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
-      }
-    }
   }
 
   loadFromBuffer(buffer: Uint8Array){
@@ -127,15 +122,26 @@ export class ForgeStore extends ForgeGameObject {
   }
 
   async load(){
+    if(!this.container.getObjectByName('store-helper')){
+      const helper = new THREE.Mesh(
+        new THREE.BoxGeometry(0.65, 0.65, 0.65),
+        new THREE.MeshBasicMaterial({ color: 0xffbb33, wireframe: true })
+      );
+      helper.name = 'store-helper';
+      helper.position.z = 0.325;
+      helper.userData.forgeGameObject = this;
+      this.container.add(helper);
+    }
     this.updateBoundingBox();
   }
 
   getGITInstance(): KotOR.GFFStruct { 
     const instance = new KotOR.GFFStruct(11);
+    const facing = facingFromYaw(this.rotation.z);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'ResRef', this.resref));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', this.rotation.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', facing.x));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', this.position.x));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', this.rotation.z));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', facing.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', this.position.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', this.position.z));
     return instance;
@@ -143,9 +149,10 @@ export class ForgeStore extends ForgeGameObject {
 
   setGITInstance(strt: KotOR.GFFStruct){
     this.resref = strt.getFieldByLabel('ResRef').getValue() as string;
-    this.rotation.z = strt.getFieldByLabel('XOrientation').getValue() as number;
+    const xo = strt.getFieldByLabel('XOrientation').getValue() as number;
+    const yo = strt.getFieldByLabel('YOrientation').getValue() as number;
+    this.rotation.z = yawFromFacing(xo, yo);
     this.position.x = strt.getFieldByLabel('XPosition').getValue() as number;
-    this.rotation.z = strt.getFieldByLabel('YOrientation').getValue() as number;
     this.position.y = strt.getFieldByLabel('YPosition').getValue() as number;
     this.position.z = strt.getFieldByLabel('ZPosition').getValue() as number;
   }

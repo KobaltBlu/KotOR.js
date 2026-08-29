@@ -1,5 +1,6 @@
 import * as KotOR from "@/apps/forge/KotOR";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { facingFromYaw, yawFromFacing } from "@/apps/forge/helpers/gitFacing";
 
 interface EngineItem {
   baseItem: KotOR.SWBaseItem | undefined;
@@ -265,13 +266,6 @@ export class ForgeCreature extends ForgeGameObject {
     if(property === 'slotRightHand2'){
       if(newValue !== oldValue){
         this.loadEquipment(KotOR.ModuleCreatureArmorSlot.RIGHTHAND2);
-      }
-    }
-    if(property === 'templateResRef'){
-      if(newValue !== oldValue){
-        this.loadBlueprint().then(() => {
-          this.load();
-        });
       }
     }
   }
@@ -1017,7 +1011,7 @@ export class ForgeCreature extends ForgeGameObject {
     this.templateResRef = instance.getFieldByLabel('TemplateResRef').getValue() as string;
     const xOrientation = instance.getFieldByLabel('XOrientation').getValue() as number;
     const yOrientation = instance.getFieldByLabel('YOrientation').getValue() as number;
-    this.container.rotation.z = -Math.atan2(yOrientation, xOrientation);
+    this.container.rotation.z = yawFromFacing(xOrientation, yOrientation);
     this.container.position.x = instance.getFieldByLabel('XPosition').getValue() as number;
     this.container.position.y = instance.getFieldByLabel('YPosition').getValue() as number;
     this.container.position.z = instance.getFieldByLabel('ZPosition').getValue() as number;
@@ -1025,10 +1019,11 @@ export class ForgeCreature extends ForgeGameObject {
 
   getGITInstance(): KotOR.GFFStruct {
     const instance = new KotOR.GFFStruct(4);
+    const facing = facingFromYaw(this.container.rotation.z);
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.RESREF, 'TemplateResRef', this.templateResRef));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', Math.cos(this.container.rotation.z + (Math.PI/2))));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XOrientation', facing.x));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'XPosition', this.container.position.x));
-    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', Math.sin(this.container.rotation.z + (Math.PI/2))));
+    instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YOrientation', facing.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'YPosition', this.container.position.y));
     instance.addField(new KotOR.GFFField(KotOR.GFFDataType.FLOAT, 'ZPosition', this.container.position.z));
     return instance;

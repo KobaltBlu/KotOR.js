@@ -150,6 +150,9 @@ export class GameState implements EngineContext {
   static iniConfig: INIConfig;
   
   static Ready = false;
+  /** When true, Init skips MainMenu/legal and stays ready for Forge module preview. */
+  static forgePreviewHost = false;
+  private static forgePreviewResizeObserver: ResizeObserver | null = null;
   
   static CameraDebugZoom = 1;
   
@@ -852,6 +855,15 @@ export class GameState implements EngineContext {
       GameState.OnReadyCalled = true;
       GameState.processEventListener('ready');
       window.dispatchEvent(new Event('resize'));
+
+      if(GameState.forgePreviewHost){
+        GameState.SetEngineMode(EngineMode.LOADING);
+        GameState.State = EngineState.RUNNING;
+        AudioEngine.Unmute(AudioEngineChannel.ALL);
+        AudioEngine.Mute(AudioEngineChannel.MOVIE);
+        GameState.Update();
+        return;
+      }
       
       // if(GameState.GameKey == GameEngineType.TSL){
       //   GameState.SetEngineMode(EngineMode.LEGAL);
@@ -924,10 +936,14 @@ export class GameState implements EngineContext {
 
     GameState.depthTarget.setSize(GameState.ResolutionManager.getViewportWidth() * GameState.rendererUpscaleFactor, GameState.ResolutionManager.getViewportHeight() * GameState.rendererUpscaleFactor);
 
-    if(GameState.ResolutionManager.vpScaleFactor){
+    if(GameState.ResolutionManager.vpScaleFactor && !GameState.forgePreviewHost){
       GameState.canvas.style.transform = 'scale('+GameState.ResolutionManager.vpScaleFactor+')';
     }else{
       GameState.canvas.style.transform = '';
+    }
+
+    if(GameState.forgePreviewHost){
+      GameState.applyForgePreviewCanvasLayout();
     }
 
   }
@@ -1080,6 +1096,195 @@ export class GameState implements EngineContext {
         GameState.loadingModule = false;
       });
     }catch(e){
+      console.error(e);
+      throw e;
+    }
+  }
+
+  /**
+   * Initialize GameState for Forge module preview (no MainMenu / legal movies).
+   * Safe to call again to reparent the canvas into a new host element.
+   */
+  static async InitForForgePreview(host: HTMLElement): Promise<void> {
+    GameState.forgePreviewHost = true;
+    GameState.setDOMElement(host);
+    GameState.ResolutionManager.setViewportHost(host);
+    GameState.attachForgePreviewResizeObserver(host);
+
+    if(GameState.Ready && GameState.canvas){
+      if(GameState.canvas.parentElement !== host){
+        host.appendChild(GameState.canvas);
+      }
+      GameState.applyForgePreviewCanvasLayout();
+      GameState.EventOnResize();
+      return;
+    }
+    await GameState.Init();
+    if(GameState.canvas){
+      if(GameState.canvas.parentElement !== host){
+        host.appendChild(GameState.canvas);
+      }
+      GameState.applyForgePreviewCanvasLayout();
+      GameState.EventOnResize();
+    }
+  }
+
+  /** Size/position the play canvas to the preview host without CSS stretch. */
+  static applyForgePreviewCanvasLayout(): void {
+    if(!GameState.canvas || !GameState.domElement){
+      return;
+    }
+    const w = Math.max(1, GameState.domElement.clientWidth);
+    const h = Math.max(1, GameState.domElement.clientHeight);
+    GameState.canvas.style.setProperty('width', `${w}px`);
+    GameState.canvas.style.setProperty('height', `${h}px`);
+    GameState.canvas.style.setProperty('display', 'block');
+    GameState.canvas.style.setProperty('position', 'absolute');
+    GameState.canvas.style.setProperty('left', '0');
+    GameState.canvas.style.setProperty('top', '0');
+    GameState.canvas.style.removeProperty('transform');
+  }
+
+  static attachForgePreviewResizeObserver(host: HTMLElement): void {
+    GameState.detachForgePreviewResizeObserver();
+    if(typeof ResizeObserver === 'undefined'){
+      return;
+    }
+    GameState.forgePreviewResizeObserver = new ResizeObserver(() => {
+      if(!GameState.forgePreviewHost || GameState.ResolutionManager.viewportHost !== host){
+        return;
+      }
+      GameState.ResolutionManager.syncWindowResolutionFromHost();
+      GameState.ResolutionManager.recalculate();
+      GameState.applyForgePreviewCanvasLayout();
+      GameState.EventOnResize();
+    });
+    GameState.forgePreviewResizeObserver.observe(host);
+  }
+
+  static detachForgePreviewResizeObserver(): void {
+    if(GameState.forgePreviewResizeObserver){
+      GameState.forgePreviewResizeObserver.disconnect();
+      GameState.forgePreviewResizeObserver = null;
+    }
+  }
+
+  /** Tear down Forge preview viewport binding (call on Exit Preview). */
+  static clearForgePreviewViewport(): void {
+    GameState.detachForgePreviewResizeObserver();
+    GameState.forgePreviewHost = false;
+    GameState.ResolutionManager.setViewportHost(null);
+    GameState.ResolutionManager.recalculate();
+  }
+
+  /**
+   * Load a module from in-memory archives (Forge playable preview).
+   * Skips intro movies and does not write a save on dispose of prior module.
+   */
+  static async LoadModuleFromArchives(archives: any[], waypoint: string = null, modName = 'preview'){
+    try{
+      if(GameState.loadingModule){
+        return;
+      }
+      EventManager.FireEvent('module.load', {
+        name: modName,
+        waypoint: waypoint?.toString(),
+        preview: true,
+      });
+      GameState.loadingModule = true;
+      try{
+        await GameState.MenuManager.LoadScreen.setLoadBackground('load_'+modName);
+      }catch(e){
+        console.warn('LoadModuleFromArchives: load background', e);
+      }
+      GameState.FadeOverlayManager.FadeOut(0, 0, 0, 0);
+      GameState.SetEngineMode(EngineMode.LOADING);
+      GameState.MenuManager.ClearMenus();
+
+      GameState.UnloadModule();
+
+      try{
+        GameState.MenuManager.LoadScreen.setProgress(0);
+        GameState.MenuManager.LoadScreen.open();
+      }catch(e){
+        console.warn('LoadModuleFromArchives: load screen', e);
+      }
+
+      try{
+        await GameState.MenuManager.LoadInGameMenus();
+      }catch(e){
+        console.warn('LoadModuleFromArchives: LoadInGameMenus', e);
+      }
+
+      GameState.VideoEffectManager.SetVideoEffect(-1);
+      GameState.ModuleObjectManager.playerSelectableObjects = [];
+      GameState.SetEngineMode(EngineMode.LOADING);
+
+      if(GameState.module){
+        try{ GameState.module.dispose(); }catch(e){
+          console.error(e);
+        }
+        GameState.module = undefined as any;
+      }
+
+      GameState.NWScript.Reload();
+      GameState.controls.initKeys();
+      await GameState.FactionManager.Load();
+
+      if(!GameState.PartyManager.PlayerTemplate){
+        GameState.PartyManager.PlayerTemplate = GameState.PartyManager.GeneratePlayerTemplate();
+        GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
+      }
+
+      const module = await GameState.Module.LoadFromArchives(archives, waypoint, modName);
+      if(!module?.area){
+        throw new Error('Failed to load module from archives');
+      }
+      GameState.module = module;
+      GameState.scene.visible = false;
+
+      await module.loadScene();
+
+      await TextureLoader.LoadQueue( (ref: ITextureLoaderQueuedRef) => {
+        const material = ref.material as any;
+        if(material?.map){
+          GameState.renderer.initTexture(material.map);
+        }
+      });
+
+      module.initEventQueue();
+      await module.initScripts();
+
+      GameState.scene.visible = true;
+      AudioEngine.Unmute();
+
+      const runSpawnScripts = true;
+      GameState.isLoadingSave = false;
+      GameState.ResetModuleAudio();
+
+      try{
+        GameState.MenuManager.InGameOverlay.recalculatePosition();
+        GameState.MenuManager.InGameOverlay.open();
+      }catch(e){
+        console.warn('LoadModuleFromArchives: overlay', e);
+      }
+
+      GameState.renderer.compile(GameState.scene, GameState.currentCamera);
+      GameState.renderer.setClearColor( new THREE.Color(GameState.module.area.sun.fogColor) );
+
+      GameState.SetEngineMode(GameState.module.area.miniGame ? EngineMode.MINIGAME : EngineMode.INGAME);
+      await GameState.module.area.initAreaObjects(runSpawnScripts);
+      GameState.module.readyToProcessEvents = true;
+
+      try{ GameState.MenuManager.LoadScreen.close(); }catch(e){}
+      if(!GameState.holdWorldFadeInForDialog){
+        GameState.FadeOverlayManager.FadeIn(1.0, 0, 0, 0, 1);
+      }
+      GameState.module.area.musicBackgroundPlay();
+      GameState.loadingModule = false;
+      GameState.canvas?.focus();
+    }catch(e){
+      GameState.loadingModule = false;
       console.error(e);
       throw e;
     }
