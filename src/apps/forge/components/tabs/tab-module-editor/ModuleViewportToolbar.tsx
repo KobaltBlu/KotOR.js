@@ -4,7 +4,7 @@ import { TabModuleEditorControlMode } from "@/apps/forge/states/tabs/TabModuleEd
 import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
 import { forgeModuleSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import { EditorTool } from "@/apps/forge/module-editor/kernel/EditorMode";
-import { CAMERA_VIEW_PRESETS } from "@/apps/forge/UI3DRenderer";
+import { CAMERA_VIEW_PRESETS, ObjectType } from "@/apps/forge/UI3DRenderer";
 
 export interface ModuleViewportToolbarProps {
   tab: TabModuleEditorState;
@@ -19,33 +19,60 @@ const TOOLS: { id: EditorTool; mode: TabModuleEditorControlMode; label: string; 
   { id: EditorTool.PLACE, mode: TabModuleEditorControlMode.ADD_GAME_OBJECT, label: "Place", shortcut: "A", icon: "fa-square-plus" },
 ];
 
+const LAYER_TOGGLES: { type: ObjectType; label: string }[] = [
+  { type: ObjectType.ROOM, label: "Rooms" },
+  { type: ObjectType.WALKMESH, label: "Walkmeshes" },
+  { type: ObjectType.CREATURE, label: "Creatures" },
+  { type: ObjectType.DOOR, label: "Doors" },
+  { type: ObjectType.PLACEABLE, label: "Placeables" },
+  { type: ObjectType.ITEM, label: "Items" },
+  { type: ObjectType.TRIGGER, label: "Triggers" },
+  { type: ObjectType.ENCOUNTER, label: "Encounters" },
+  { type: ObjectType.WAYPOINT, label: "Waypoints" },
+  { type: ObjectType.SOUND, label: "Sounds" },
+  { type: ObjectType.STORE, label: "Stores" },
+  { type: ObjectType.CAMERA, label: "Cameras" },
+];
+
 export const ModuleViewportToolbar: React.FC<ModuleViewportToolbarProps> = ({ tab, controlMode }) => {
   const [space, setSpace] = useState(tab.toolService.getSpace());
   const [snap, setSnap] = useState(tab.toolService.getSnap());
   const [viewOpen, setViewOpen] = useState(false);
+  const [layersOpen, setLayersOpen] = useState(false);
+  const [, setVisibilityTick] = useState(0);
   const viewMenuRef = useRef<HTMLDivElement>(null);
+  const layersMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onSpace = () => setSpace(tab.toolService.getSpace());
     const onSnap = () => setSnap(tab.toolService.getSnap());
+    const onVisibility = () => setVisibilityTick((n) => n + 1);
     tab.toolService.addEventListener("onSpaceChanged", onSpace);
     tab.toolService.addEventListener("onSnapChanged", onSnap);
+    tab.addEventListener("onVisibilityChanged", onVisibility);
+    tab.visibilityService.addEventListener("onVisibilityChanged", onVisibility);
     return () => {
       tab.toolService.removeEventListener("onSpaceChanged", onSpace);
       tab.toolService.removeEventListener("onSnapChanged", onSnap);
+      tab.removeEventListener("onVisibilityChanged", onVisibility);
+      tab.visibilityService.removeEventListener("onVisibilityChanged", onVisibility);
     };
   }, [tab]);
 
   useEffect(() => {
-    if (!viewOpen) return;
+    if (!viewOpen && !layersOpen) return;
     const onDoc = (event: MouseEvent) => {
-      if (viewMenuRef.current && !viewMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (viewOpen && viewMenuRef.current && !viewMenuRef.current.contains(target)) {
         setViewOpen(false);
+      }
+      if (layersOpen && layersMenuRef.current && !layersMenuRef.current.contains(target)) {
+        setLayersOpen(false);
       }
     };
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
-  }, [viewOpen]);
+  }, [viewOpen, layersOpen]);
 
   const toggleSpace = useCallback(() => {
     const next = tab.toolService.toggleSpace();
@@ -113,7 +140,10 @@ export const ModuleViewportToolbar: React.FC<ModuleViewportToolbarProps> = ({ ta
           title="Camera view presets (1–7, 0)"
           aria-haspopup="menu"
           aria-expanded={viewOpen}
-          onClick={() => setViewOpen((open) => !open)}
+          onClick={() => {
+            setViewOpen((open) => !open);
+            setLayersOpen(false);
+          }}
         >
           <i className="fa-solid fa-camera" aria-hidden />
           <span>View</span>
@@ -149,6 +179,45 @@ export const ModuleViewportToolbar: React.FC<ModuleViewportToolbarProps> = ({ ta
                 <kbd>{preset.shortcut}</kbd>
               </button>
             ))}
+          </div>
+        ) : null}
+      </div>
+      <div className="module-viewport-toolbar__dropdown" ref={layersMenuRef}>
+        <button
+          type="button"
+          className={`module-viewport-toolbar__btn${layersOpen ? " is-active" : ""}`}
+          title="Toggle visibility by object type"
+          aria-haspopup="menu"
+          aria-expanded={layersOpen}
+          onClick={() => {
+            setLayersOpen((open) => !open);
+            setViewOpen(false);
+          }}
+        >
+          <i className="fa-solid fa-layer-group" aria-hidden />
+          <span>Layers</span>
+          <i className="fa-solid fa-caret-down module-viewport-toolbar__caret" aria-hidden />
+        </button>
+        {layersOpen ? (
+          <div className="module-viewport-toolbar__menu" role="menu" aria-label="Object layers">
+            {LAYER_TOGGLES.map((layer) => {
+              const visible = tab.isObjectTypeVisible(layer.type);
+              return (
+                <button
+                  key={layer.type}
+                  type="button"
+                  className={`module-viewport-toolbar__menu-item${visible ? " is-checked" : ""}`}
+                  role="menuitemcheckbox"
+                  aria-checked={visible}
+                  onClick={() => {
+                    tab.toggleObjectTypeVisible(layer.type);
+                  }}
+                >
+                  <span>{layer.label}</span>
+                  <i className={`fa-solid ${visible ? "fa-eye" : "fa-eye-slash"}`} aria-hidden />
+                </button>
+              );
+            })}
           </div>
         ) : null}
       </div>

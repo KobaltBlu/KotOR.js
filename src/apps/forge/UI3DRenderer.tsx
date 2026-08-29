@@ -18,6 +18,7 @@ import {
   FOCUS_FALLBACK_RADIUS,
   focusNearFar,
 } from "@/apps/forge/module-editor/kernel/CameraFocusPolicy";
+import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 
 export enum CameraView {
   Top = 'top',
@@ -852,77 +853,148 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   toggleVisibilityByType(type: ObjectType) {
-    switch(type) {
-      case 'room':
-        this.group.rooms.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.ROOM];
+    this.setVisibilityByType(type, !this.visibilityState[type]);
+  }
+
+  /**
+   * Show or hide a scene object class. Walkmeshes toggle material visibility
+   * (meshes stay in the graph for raycasts / placement).
+   */
+  setVisibilityByType(type: ObjectType, visible: boolean) {
+    if (this.visibilityState[type] === visible) {
+      this.applyVisibilityByType(type, visible);
+      return;
+    }
+    this.visibilityState[type] = visible;
+    this.applyVisibilityByType(type, visible);
+  }
+
+  private setMaterialVisible(
+    material: THREE.Material | THREE.Material[] | undefined,
+    visible: boolean,
+  ): void {
+    if (!material) return;
+    if (Array.isArray(material)) {
+      for (let i = 0; i < material.length; i++) {
+        material[i].visible = visible;
+      }
+    } else {
+      material.visible = visible;
+    }
+  }
+
+  private isAabbWalkmeshObject(obj: THREE.Object3D): boolean {
+    const node =
+      (obj as { odysseyModelNode?: { nodeType?: number } }).odysseyModelNode ||
+      (obj.userData?.odysseyModelNode as { nodeType?: number } | undefined);
+    if (!node || typeof node.nodeType !== "number") {
+      return false;
+    }
+    return (node.nodeType & OdysseyModelNodeType.AABB) === OdysseyModelNodeType.AABB;
+  }
+
+  /**
+   * Room walkmeshes come in two forms:
+   * 1) `.wok` collision mesh (`userData.wok`)
+   * 2) MDL AABB / makmesh nodes embedded in the room model
+   */
+  private applyWalkmeshVisibility(visible: boolean): void {
+    this.group.rooms.traverse((obj) => {
+      const mesh = obj as THREE.Mesh;
+      if (mesh.isMesh && mesh.userData?.wok) {
+        this.setMaterialVisible(mesh.material, visible);
+        return;
+      }
+      if (this.isAabbWalkmeshObject(obj)) {
+        obj.visible = visible;
+        if (mesh.isMesh) {
+          this.setMaterialVisible(mesh.material, visible);
+        }
+      }
+    });
+  }
+
+  private applyVisibilityByType(type: ObjectType, visible: boolean): void {
+    switch (type) {
+      case ObjectType.ROOM:
+        this.group.rooms.visible = visible;
+        this.group.rooms.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'walkmesh':
-        this.group.rooms.children.forEach( (child) => {
-          ((child as KotOR.OdysseyModel3D).wok.mesh.material as THREE.Material).visible = !this.visibilityState[ObjectType.WALKMESH];
+      case ObjectType.WALKMESH:
+        this.applyWalkmeshVisibility(visible);
+        break;
+      case ObjectType.CREATURE:
+        this.group.creature.visible = visible;
+        this.group.creature.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'creature':
-        this.group.creature.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.CREATURE];
+      case ObjectType.DOOR:
+        this.group.door.visible = visible;
+        this.group.door.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'door':
-        this.group.door.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.DOOR];
+      case ObjectType.PLACEABLE:
+        this.group.placeable.visible = visible;
+        this.group.placeable.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'placeable':
-        this.group.placeable.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.PLACEABLE];
+      case ObjectType.ITEM:
+        this.group.item.visible = visible;
+        this.group.item.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'item':
-        this.group.item.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.ITEM];
+      case ObjectType.TRIGGER:
+        this.group.trigger.visible = visible;
+        this.group.trigger.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'trigger':
-        this.group.trigger.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.TRIGGER];
+      case ObjectType.WAYPOINT:
+        this.group.waypoint.visible = visible;
+        this.group.waypoint.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'waypoint':
-        this.group.waypoint.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.WAYPOINT];
+      case ObjectType.SOUND:
+        this.group.sound.visible = visible;
+        this.group.sound.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'sound':
-        this.group.sound.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.SOUND];
+      case ObjectType.CAMERA:
+        this.group.camera.visible = visible;
+        this.group.camera.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'camera':
-        this.group.camera.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.CAMERA];
+      case ObjectType.ENCOUNTER:
+        this.group.encounter.visible = visible;
+        this.group.encounter.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'encounter':
-        this.group.encounter.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.ENCOUNTER];
+      case ObjectType.STORE:
+        this.group.store.visible = visible;
+        this.group.store.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
-      case 'store':
-        this.group.store.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.STORE];
-        });
-        break;
-      case 'light_helpers':
-        this.group.light_helpers.children.forEach( (child) => {
-          child.visible = !this.visibilityState[ObjectType.LIGHT_HELPERS];
+      case ObjectType.LIGHT_HELPERS:
+        this.group.light_helpers.visible = visible;
+        this.group.light_helpers.children.forEach((child) => {
+          child.visible = visible;
         });
         break;
       default:
-        console.warn(`toggleVisibilityByType: unhandled object type, ${type}`);
+        console.warn(`setVisibilityByType: unhandled object type, ${type}`);
         break;
     }
-    this.visibilityState[type] = !this.visibilityState[type];
   }
 
   addObjectToGroup(object: THREE.Object3D, group: GroupType) {
@@ -930,9 +1002,21 @@ export class UI3DRenderer extends EventListenerModel {
       case GroupType.ROOMS:
         this.group[GroupType.ROOMS].add(object);
         object.visible = this.visibilityState[ObjectType.ROOM];
-        if(object instanceof KotOR.OdysseyModel3D){
-          (object.wok.mesh.material as THREE.Material).visible = this.visibilityState[ObjectType.WALKMESH];
-        }
+        // Apply current walkmesh visibility to WOK + MDL AABB/makmesh under this room.
+        object.traverse((node) => {
+          const mesh = node as THREE.Mesh;
+          if (mesh.isMesh && mesh.userData?.wok) {
+            this.setMaterialVisible(mesh.material, this.visibilityState[ObjectType.WALKMESH]);
+            return;
+          }
+          if (this.isAabbWalkmeshObject(node)) {
+            const walkVisible = this.visibilityState[ObjectType.WALKMESH];
+            node.visible = walkVisible;
+            if (mesh.isMesh) {
+              this.setMaterialVisible(mesh.material, walkVisible);
+            }
+          }
+        });
         break;
       case GroupType.LIGHT_HELPERS:
         this.group[GroupType.LIGHT_HELPERS].add(object);

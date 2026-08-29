@@ -27,6 +27,7 @@ import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
 import {
   forgeModuleSettings,
   MODULE_HELPER_TYPES,
+  setModuleSettings,
   type ModuleHelperType,
 } from "@/apps/forge/settings/forgeEditorsSettings";
 import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
@@ -51,10 +52,20 @@ import { EditorMode } from "@/apps/forge/module-editor/kernel/EditorMode";
 import type { EditorCommandDescriptor } from "@/apps/forge/module-editor/kernel/EditorCommand";
 import { ProjectVFS } from "@/apps/forge/module-editor/vfs/ProjectVFS";
 import { DEFAULT_MODULE_WORKSPACE, type ModuleWorkspaceState } from "@/apps/forge/module-editor/workspace/ModuleWorkspaceState";
-import { setModuleSettings } from "@/apps/forge/settings/forgeEditorsSettings";
 import { TabModuleEditorControlMode, GameObjectType } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
 
 export { TabModuleEditorControlMode, GameObjectType } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
+
+const MODULE_OBJECT_TYPE_TO_HELPER: Partial<Record<ObjectType, ModuleHelperType>> = {
+  [ObjectType.CREATURE]: "creature",
+  [ObjectType.DOOR]: "door",
+  [ObjectType.ENCOUNTER]: "encounter",
+  [ObjectType.PLACEABLE]: "placeable",
+  [ObjectType.STORE]: "merchant",
+  [ObjectType.SOUND]: "sound",
+  [ObjectType.TRIGGER]: "trigger",
+  [ObjectType.WAYPOINT]: "waypoint",
+};
 
 export interface ModuleEditorSnapshot {
   ifo: Uint8Array;
@@ -461,9 +472,51 @@ export class TabModuleEditorState extends TabState {
       const key = MODULE_HELPER_TYPES[i];
       const visible = helpers[key];
       const target = mapping[key];
-      this.ui3DRenderer.group[target.group].visible = visible;
-      this.ui3DRenderer.visibilityState[target.objectType] = visible;
+      this.ui3DRenderer.setVisibilityByType(target.objectType, visible);
+      this.visibilityService.setHelperVisible(key, visible);
     }
+    // Layers not covered by helper settings
+    this.ui3DRenderer.setVisibilityByType(
+      ObjectType.WALKMESH,
+      this.visibilityService.isLayerVisible("walkmesh"),
+    );
+    this.ui3DRenderer.setVisibilityByType(
+      ObjectType.ROOM,
+      this.visibilityService.isLayerVisible("rooms"),
+    );
+    this.ui3DRenderer.setVisibilityByType(
+      ObjectType.CAMERA,
+      this.visibilityService.isLayerVisible("cameras"),
+    );
+  }
+
+  isObjectTypeVisible(type: ObjectType): boolean {
+    return this.ui3DRenderer.visibilityState[type] !== false;
+  }
+
+  setObjectTypeVisible(type: ObjectType, visible: boolean): void {
+    this.ui3DRenderer.setVisibilityByType(type, visible);
+
+    const helperKey = MODULE_OBJECT_TYPE_TO_HELPER[type];
+    if (helperKey) {
+      this.visibilityService.setHelperVisible(helperKey, visible);
+      const helpers = { ...forgeModuleSettings.get().helpers, [helperKey]: visible };
+      setModuleSettings({ helpers });
+    } else if (type === ObjectType.WALKMESH) {
+      this.visibilityService.setLayerVisible("walkmesh", visible);
+    } else if (type === ObjectType.ROOM) {
+      this.visibilityService.setLayerVisible("rooms", visible);
+    } else if (type === ObjectType.CAMERA) {
+      this.visibilityService.setLayerVisible("cameras", visible);
+    } else if (type === ObjectType.ITEM) {
+      // Items are not a module helper setting; keep renderer state only.
+    }
+
+    this.processEventListener("onVisibilityChanged", [type, visible]);
+  }
+
+  toggleObjectTypeVisible(type: ObjectType): void {
+    this.setObjectTypeVisible(type, !this.isObjectTypeVisible(type));
   }
 
   remove(options?: { skipUnsavedConfirm?: boolean }){

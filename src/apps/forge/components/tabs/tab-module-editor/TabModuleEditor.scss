@@ -164,10 +164,23 @@
       color: var(--forge-text-bright);
     }
 
+    &.is-checked {
+      color: var(--forge-text-bright);
+    }
+
     kbd {
       font-family: inherit;
       font-size: 11px;
       color: var(--forge-text-muted);
+    }
+
+    i {
+      font-size: 11px;
+      color: var(--forge-text-muted);
+    }
+
+    &.is-checked i {
+      color: var(--forge-accent);
     }
   }
 }

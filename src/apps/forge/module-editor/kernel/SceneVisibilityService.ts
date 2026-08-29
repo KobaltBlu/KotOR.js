@@ -29,7 +29,7 @@ export class SceneVisibilityService extends EventListenerModel {
     rooms: true,
     cameras: true,
     paths: true,
-    walkmesh: true,
+    walkmesh: false,
     grid: true,
     entry: true,
   };
