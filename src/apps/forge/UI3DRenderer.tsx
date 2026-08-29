@@ -1058,8 +1058,13 @@ export class UI3DRenderer extends EventListenerModel {
         this.group[GroupType.SOUND].add(object);
         object.visible = this.visibilityState[ObjectType.SOUND];
         break;
+      case GroupType.STORE:
+        this.group[GroupType.STORE].add(object);
+        object.visible = this.visibilityState[ObjectType.STORE];
+        break;
       case GroupType.CAMERA:
         this.group[GroupType.CAMERA].add(object);
+        object.visible = this.visibilityState[ObjectType.CAMERA];
         break;
       default:
         console.warn(`addObjectToGroup: unhandled group type, ${group}`);
@@ -1104,6 +1109,9 @@ export class UI3DRenderer extends EventListenerModel {
         break;
       case GroupType.SOUND:
         this.group[GroupType.SOUND].remove(object);
+        break;
+      case GroupType.STORE:
+        this.group[GroupType.STORE].remove(object);
         break;
       case GroupType.CAMERA:
         this.group[GroupType.CAMERA].remove(object);

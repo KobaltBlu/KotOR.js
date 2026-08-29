@@ -669,7 +669,10 @@ export class TabModuleEditorState extends TabState {
         obj.position.x += dx;
         obj.position.y += dy;
         obj.position.z += dz;
-        obj.rotation.z += dYaw;
+        // Rooms do not rotate in the module editor (orientation is MDL-authored).
+        if(!(obj instanceof ForgeRoom) && !(primary instanceof ForgeRoom)){
+          obj.rotation.z += dYaw;
+        }
         obj.container.updateMatrixWorld(true);
       }
       if(allowRoomBulk && this.module?.area){
@@ -815,6 +818,16 @@ export class TabModuleEditorState extends TabState {
   }
 
   setControlMode(mode: TabModuleEditorControlMode){
+    // Room orientation is authored in the MDL — never enable the rotate gizmo for rooms.
+    if(
+      mode === TabModuleEditorControlMode.ROTATE_CONTROL &&
+      (this.selectedGameObject instanceof ForgeRoom ||
+        (this.selectedGameObjects.length > 0 &&
+          this.selectedGameObjects.every((obj) => obj instanceof ForgeRoom)))
+    ){
+      mode = TabModuleEditorControlMode.TRANSFORM_CONTROL;
+    }
+
     this.controlMode = mode;
 
     const isTransformTool = 
@@ -1047,21 +1060,22 @@ export class TabModuleEditorState extends TabState {
   }
 
   updateTransformControlHelpers(gameObject: ForgeGameObject){
-    if(!gameObject) return;
+    if(!gameObject || !this.ui3DRenderer.transformControls) return;
     if(this.controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
       this.ui3DRenderer.transformControls.showX = true;
       this.ui3DRenderer.transformControls.showY = true;
       this.ui3DRenderer.transformControls.showZ = true;
     } else if(this.controlMode === TabModuleEditorControlMode.ROTATE_CONTROL){
-      if(gameObject instanceof ForgeCreature || gameObject instanceof ForgeDoor || gameObject instanceof ForgeEncounter || gameObject instanceof ForgeItem || gameObject instanceof ForgePlaceable || gameObject instanceof ForgeStore || gameObject instanceof ForgeTrigger || gameObject instanceof ForgeWaypoint){
+      if(gameObject instanceof ForgeRoom){
+        // Rooms are not rotatable in the module editor.
+        this.ui3DRenderer.transformControls.showX = false;
+        this.ui3DRenderer.transformControls.showY = false;
+        this.ui3DRenderer.transformControls.showZ = false;
+      } else if(gameObject instanceof ForgeCreature || gameObject instanceof ForgeDoor || gameObject instanceof ForgeEncounter || gameObject instanceof ForgeItem || gameObject instanceof ForgePlaceable || gameObject instanceof ForgeStore || gameObject instanceof ForgeTrigger || gameObject instanceof ForgeWaypoint){
         this.ui3DRenderer.transformControls.showX = false;
         this.ui3DRenderer.transformControls.showY = false;
         this.ui3DRenderer.transformControls.showZ = true;
       } else if(gameObject instanceof ForgeCamera){
-        this.ui3DRenderer.transformControls.showX = false;
-        this.ui3DRenderer.transformControls.showY = false;
-        this.ui3DRenderer.transformControls.showZ = true;
-      } else if(gameObject instanceof ForgeRoom){
         this.ui3DRenderer.transformControls.showX = false;
         this.ui3DRenderer.transformControls.showY = false;
         this.ui3DRenderer.transformControls.showZ = true;
@@ -1121,6 +1135,13 @@ export class TabModuleEditorState extends TabState {
     }
     
     if(gameObject){
+      // Selecting a room while in rotate mode falls back to move — rooms aren't rotatable here.
+      if(
+        gameObject instanceof ForgeRoom &&
+        this.controlMode === TabModuleEditorControlMode.ROTATE_CONTROL
+      ){
+        this.setControlMode(TabModuleEditorControlMode.TRANSFORM_CONTROL);
+      }
       this.ui3DRenderer.transformControls.attach(gameObject.container);
       this.ui3DRenderer.transformControls.size = 0.5;
       this.updateTransformControlHelpers(gameObject);

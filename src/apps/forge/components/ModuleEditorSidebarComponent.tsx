@@ -1703,13 +1703,13 @@ const AudioPropertiesEditor = function(props: { tab: TabModuleEditorState }){
         <BoolField value={area.useTemplate} onChange={(value) => { area.useTemplate = value; mark(); }} />
       </ScalarRow>
       <ScalarRow label="Music Day">
-        <ForgeTwoDAIndexField table="ambientmusic" value={propsAudio.musicDay} onChange={(value) => { propsAudio.musicDay = value; mark(); }} />
+        <ForgeTwoDAIndexField table="ambientmusic" labelColumn="description" value={propsAudio.musicDay} onChange={(value) => { propsAudio.musicDay = value; mark(); }} />
       </ScalarRow>
       <ScalarRow label="Music Night">
-        <ForgeTwoDAIndexField table="ambientmusic" value={propsAudio.musicNight} onChange={(value) => { propsAudio.musicNight = value; mark(); }} />
+        <ForgeTwoDAIndexField table="ambientmusic" labelColumn="description" value={propsAudio.musicNight} onChange={(value) => { propsAudio.musicNight = value; mark(); }} />
       </ScalarRow>
       <ScalarRow label="Music Battle">
-        <ForgeTwoDAIndexField table="ambientmusic" value={propsAudio.musicBattle} onChange={(value) => { propsAudio.musicBattle = value; mark(); }} />
+        <ForgeTwoDAIndexField table="ambientmusic" labelColumn="description" value={propsAudio.musicBattle} onChange={(value) => { propsAudio.musicBattle = value; mark(); }} />
       </ScalarRow>
       <ScalarRow label="Music Delay">
         <NumberField value={propsAudio.musicDelay} onChange={(value) => { propsAudio.musicDelay = value; mark("musicDelay"); }} />

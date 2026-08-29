@@ -6,6 +6,8 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
+import { forgeTlkLookup } from "@/apps/forge/dlg/dlgLocString";
+
 export interface TwoDAIndexSentinel {
   value: number;
   label: string;
@@ -22,12 +24,49 @@ export interface TwoDALike {
   RowCount?: number;
 }
 
-const DEFAULT_LABEL_KEYS = ["label", "LABEL", "name", "Name"];
+const DEFAULT_LABEL_KEYS = [
+  "label",
+  "LABEL",
+  "name",
+  "Name",
+  "description",
+  "Description",
+  "resource",
+  "Resource",
+];
 
 export const TWO_DA_FILTER_THRESHOLD = 30;
 
 /** Dialog AnimList looping band: stored value 10000+row still picks row N. */
 export const DLG_ANIM_LOOP_BAND = 10000;
+
+function isUsableTwoDACell(value: unknown): boolean {
+  if (value == null) {
+    return false;
+  }
+  const text = String(value).trim();
+  return text !== "" && text !== "****";
+}
+
+/**
+ * Display text for a 2DA cell. Numeric description StrRefs resolve via the talk table;
+ * unresolved StrRefs return undefined so callers can fall back (e.g. to `resource`).
+ */
+export function resolveTwoDACellDisplayText(value: unknown): string | undefined {
+  if (!isUsableTwoDACell(value)) {
+    return undefined;
+  }
+  const text = String(value).trim();
+  const asNum = Number(text);
+  if (Number.isInteger(asNum) && asNum >= 0 && String(asNum) === text) {
+    const fromTlk = forgeTlkLookup(asNum);
+    if (fromTlk && fromTlk.trim() !== "") {
+      return fromTlk.trim();
+    }
+    return undefined;
+  }
+  return text;
+}
 
 export function resolveTwoDALabelColumn(columns: string[] | undefined, preferred?: string): string | undefined {
   if (preferred) {
@@ -67,14 +106,16 @@ export function twoDARowLabel(row: Record<string, unknown> | undefined, labelCol
   if (!row) {
     return "";
   }
-  const raw = labelColumn ? row[labelColumn] : undefined;
-  if (raw != null && String(raw).trim() !== "") {
-    return String(raw);
+  if (labelColumn) {
+    const fromPreferred = resolveTwoDACellDisplayText(row[labelColumn]);
+    if (fromPreferred) {
+      return fromPreferred;
+    }
   }
   for (const key of DEFAULT_LABEL_KEYS) {
-    const value = row[key];
-    if (value != null && String(value).trim() !== "") {
-      return String(value);
+    const fromKey = resolveTwoDACellDisplayText(row[key]);
+    if (fromKey) {
+      return fromKey;
     }
   }
   return "";

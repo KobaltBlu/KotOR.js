@@ -394,12 +394,14 @@ export class ForgePlaceable extends ForgeGameObject {
 
     if(!this.templateResRef){
       this.model = new KotOR.OdysseyModel3D();
+      this.container.add(this.model);
       return this.model;
     }
 
     const modelName = this.stringCleaner(this.kPlaceableAppearance?.modelname);
     if(!modelName){
       this.model = new KotOR.OdysseyModel3D();
+      this.container.add(this.model);
       return this.model;
     }
 
@@ -416,6 +418,7 @@ export class ForgePlaceable extends ForgeGameObject {
       return this.model;
     }catch(e){
       this.model = new KotOR.OdysseyModel3D();
+      this.container.add(this.model);
       return this.model;
     }
   }

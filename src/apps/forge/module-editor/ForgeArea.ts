@@ -415,6 +415,15 @@ export class ForgeArea extends ForgeGameObject{
 
     await this.loadRooms();
     await this.loadCreatures();
+    await this.loadGameObjectList(this.doors, GroupType.DOOR, { blueprint: true });
+    await this.loadGameObjectList(this.placeables, GroupType.PLACEABLE, { blueprint: true });
+    await this.loadGameObjectList(this.items, GroupType.ITEM, { blueprint: true });
+    await this.loadGameObjectList(this.stores, GroupType.STORE, { blueprint: true });
+    await this.loadGameObjectList(this.triggers, GroupType.TRIGGER);
+    await this.loadGameObjectList(this.cameras, GroupType.CAMERA);
+    await this.loadGameObjectList(this.waypoints, GroupType.WAYPOINT);
+    await this.loadGameObjectList(this.sounds, GroupType.SOUND);
+    await this.loadGameObjectList(this.encounters, GroupType.ENCOUNTER);
     this.context?.sceneGraphManager?.rebuild();
   }
 
@@ -873,11 +882,29 @@ export class ForgeArea extends ForgeGameObject{
   }
 
   async loadCreatures(): Promise<void> {
-    for(let i = 0; i < this.creatures.length; i++){
-      const creature = this.creatures[i];
-      await creature.loadBlueprint();
-      await creature.load();
-      this.context?.addObjectToGroup(creature.container, GroupType.CREATURE);
+    await this.loadGameObjectList(this.creatures, GroupType.CREATURE, { blueprint: true });
+  }
+
+  /**
+   * Load visuals for GIT-attached game objects. Blueprint-backed types resolve
+   * UT* appearance before building models/helpers.
+   */
+  async loadGameObjectList(
+    objects: ForgeGameObject[],
+    groupType: GroupType,
+    options: { blueprint?: boolean } = {},
+  ): Promise<void> {
+    for(let i = 0; i < objects.length; i++){
+      const object = objects[i];
+      try {
+        if(options.blueprint){
+          await object.loadBlueprint();
+        }
+        await object.load();
+      }catch(e){
+        console.warn(`Failed to load ${groupType} object`, e);
+      }
+      this.context?.addObjectToGroup(object.container, groupType);
     }
   }
 

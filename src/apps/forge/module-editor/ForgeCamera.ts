@@ -26,24 +26,26 @@ export class ForgeCamera extends ForgeGameObject {
     if(this.cameraID === -1 && this.area){
       this.cameraID = this.area.getNextCameraId();
     }
+
+    this.perspectiveCamera?.removeFromParent();
+    this.cameraHelper?.removeFromParent();
+
     this.perspectiveCamera = new THREE.PerspectiveCamera(this.fov, this.aspectRatio, 0.1, 100);
     this.rotation.reorder('YZX');
     this.rotation.x = THREE.MathUtils.degToRad(this.pitch);
     this.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
-    this.perspectiveCamera.updateMatrixWorld(true);
-    this.perspectiveCamera.updateMatrix();
     this.perspectiveCamera.rotation.reorder('YZX');
     this.perspectiveCamera.rotation.x = THREE.MathUtils.degToRad(this.pitch);
     this.perspectiveCamera.rotation.z = -Math.atan2(this.quaternion.w, -this.quaternion.x)*2;
-
-    //@ts-ignore
-    this.perspectiveCamera.position.copy(this.position);
-    //@ts-ignore
-    // this.perspectiveCamera.quaternion.copy(this.quaternion);
+    this.perspectiveCamera.position.set(0, 0, 0);
+    this.perspectiveCamera.updateMatrix();
+    this.perspectiveCamera.updateMatrixWorld(true);
 
     this.cameraHelper = new THREE.CameraHelper(this.perspectiveCamera);
-    this.context.scene.add(this.perspectiveCamera);
-    this.context.scene.add(this.cameraHelper);
+    // Parent under container so Layers / transforms / focus see the helper.
+    // Container already owns the GIT world position.
+    this.container.add(this.perspectiveCamera);
+    this.container.add(this.cameraHelper);
     this.updateBoundingBox();
   }
 
