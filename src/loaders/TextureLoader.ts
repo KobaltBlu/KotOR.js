@@ -74,7 +74,9 @@ export class TextureLoader {
     const texture = await TextureLoader.tpcLoader.fetch(resRef);
     if(!!texture){
       texture.anisotropy = TextureLoader.Anisotropy;
-      texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      if(!(texture as any).isCubeTexture){
+        texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+      }
       if(!noCache){
         if(texture.pack === 0){
           TextureLoader.guiTextures.set(resRef, texture);

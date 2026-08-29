@@ -8,6 +8,7 @@ import { RecentProject } from "@/apps/forge/RecentProject";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import "@/apps/forge/components/tabs/tab-quick-start/TabQuickStart.scss";
 import { ModalNewProjectState } from "@/apps/forge/states/modal/ModalNewProjectState";
+import { openNewProjectFromModWizard } from "@/apps/forge/helpers/openNewProjectFromModWizard";
 
 export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
   const [files, setFiles] = useState<EditorFile[]>(ForgeState.recentFiles);
@@ -23,6 +24,11 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
     const newProjectModalState = new ModalNewProjectState();
     ForgeState.modalManager.addModal(newProjectModalState);
     newProjectModalState.open();
+  }, []);
+
+  const onBtnNewProjectFromMod = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    openNewProjectFromModWizard();
   }, []);
 
   const onBtnOpenProject = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -88,6 +94,10 @@ export const TabQuickStart = memo(function TabQuickStart(props: BaseTabProps) {
             <div className="action-button" onClick={onBtnNewProject}>
               <i className="fa-solid fa-folder-plus" />
               <span>New Project</span>
+            </div>
+            <div className="action-button" onClick={onBtnNewProjectFromMod}>
+              <i className="fa-solid fa-box-archive" />
+              <span>From Module</span>
             </div>
             <div className="action-button" onClick={onBtnOpenProject}>
               <i className="fa-solid fa-folder-open" />

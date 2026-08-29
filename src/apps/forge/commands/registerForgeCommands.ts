@@ -16,6 +16,7 @@ import { ModalSettingsState } from "@/apps/forge/components/modal/ModalSettingsS
 import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompile";
 import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
 import { openNewModuleWizard } from "@/apps/forge/helpers/openNewModuleWizard";
+import { openNewProjectFromModWizard } from "@/apps/forge/helpers/openNewProjectFromModWizard";
 import { exportForgeThemeToFile, installForgeThemeFromFile } from "@/apps/forge/settings/forgeTheme";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
@@ -45,10 +46,20 @@ import { TabLYTEditorState } from "@/apps/forge/states/tabs/TabLYTEditorState";
 import { TabTLKEditorState } from "@/apps/forge/states/tabs/TabTLKEditorState";
 import { TabERFEditorState } from "@/apps/forge/states/tabs/TabERFEditorState";
 import { TabWOKEditorState } from "@/apps/forge/states/tabs/TabWOKEditorState";
+import { TabJRLEditorState } from "@/apps/forge/states/tabs/TabJRLEditorState";
+import { TabIFOEditorState } from "@/apps/forge/states/tabs/TabIFOEditorState";
+import { TabAREEditorState } from "@/apps/forge/states/tabs/TabAREEditorState";
 import { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
+import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
 import { tabCanCompile, tabCanOpenAsGff, tabCanSave, tabIsGffEditor } from "@/apps/forge/commands/editorCommandGuards";
 import * as KotOR from "@/apps/forge/KotOR";
 import { openTabAsGffEditor } from "@/apps/forge/helpers/openTabAsGff";
+import { formatVisAdjacency } from "@/apps/forge/module-editor/room/RoomVisEditing";
+import { ModulePreviewSession } from "@/apps/forge/module-editor/ModulePreviewSession";
+import { PerformanceBaseline } from "@/apps/forge/module-editor/kernel/PerformanceBaseline";
+import { ModuleRecovery } from "@/apps/forge/module-editor/recovery/ModuleRecovery";
+import { buildAssetIndexInBackground } from "@/apps/forge/module-editor/workers/moduleEditorWorkers";
 
 function currentTab(): TabState | undefined {
   return ForgeState.tabManager?.currentTab;
@@ -56,7 +67,10 @@ function currentTab(): TabState | undefined {
 
 function currentModuleEditor(): TabModuleEditorState | undefined {
   const tab = currentTab();
-  return tab instanceof TabModuleEditorState ? tab : undefined;
+  if (!(tab instanceof TabModuleEditorState) || !tab.visible) {
+    return undefined;
+  }
+  return tab;
 }
 
 function hasClosableTab(): boolean {
@@ -100,6 +114,14 @@ export function registerForgeCommands(): void {
       ForgeState.modalManager.addModal(modal);
       modal.open();
     },
+  });
+
+  registerCommand({
+    id: "forge.file.newProjectFromMod",
+    title: "New Project from Module...",
+    category: "File",
+    keywords: ["mod", "rim", "erf", "import", "create project", "module"],
+    run: () => openNewProjectFromModWizard(),
   });
 
   registerCommand({
@@ -539,7 +561,7 @@ export function registerForgeCommands(): void {
     title: "New Area (.are)",
     category: "File",
     keywords: ["module", "area", "are", "gff"],
-    run: () => addUntitled(TabGFFEditorState, "new_area", KotOR.ResourceTypes.are),
+    run: () => addUntitled(TabAREEditorState, "new_area", KotOR.ResourceTypes.are),
   });
 
   registerCommand({
@@ -555,7 +577,7 @@ export function registerForgeCommands(): void {
     title: "New Module Info (.ifo)",
     category: "File",
     keywords: ["module", "ifo", "gff"],
-    run: () => addUntitled(TabGFFEditorState, "module", KotOR.ResourceTypes.ifo),
+    run: () => addUntitled(TabIFOEditorState, "module", KotOR.ResourceTypes.ifo),
   });
 
   registerCommand({
@@ -563,7 +585,7 @@ export function registerForgeCommands(): void {
     title: "New Journal (.jrl)",
     category: "File",
     keywords: ["module", "journal", "jrl", "gff"],
-    run: () => addUntitled(TabGFFEditorState, "new_journal", KotOR.ResourceTypes.jrl),
+    run: () => addUntitled(TabJRLEditorState, "new_journal", KotOR.ResourceTypes.jrl),
   });
 
   registerCommand({
@@ -709,7 +731,7 @@ export function registerForgeCommands(): void {
     id: "forge.module.setEntryFromSelection",
     title: "Set Entry From Selection",
     category: "Module",
-    keywords: ["module", "entry", "spawn"],
+    keywords: ["module", "entry", "spawn", "waypoint"],
     when: () => !!currentModuleEditor()?.selectedGameObject,
     run: () => {
       const tab = currentModuleEditor();
@@ -721,6 +743,71 @@ export function registerForgeCommands(): void {
   });
 
   registerCommand({
+    id: "forge.module.setEntryFromCamera",
+    title: "Set Entry From Camera",
+    category: "Module",
+    keywords: ["module", "entry", "camera", "spawn"],
+    when: () => !!currentModuleEditor()?.module,
+    run: () => {
+      const tab = currentModuleEditor();
+      if(tab){
+        tab.setEntryFromCamera();
+        tab.updateFile();
+      }
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.focusEntry",
+    title: "Focus Entry Point",
+    category: "Module",
+    keywords: ["module", "entry", "focus"],
+    when: () => !!currentModuleEditor()?.module,
+    run: () => {
+      currentModuleEditor()?.focusEntryMarker();
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.placeWaypointAtEntry",
+    title: "Place Waypoint At Entry",
+    category: "Module",
+    keywords: ["module", "entry", "waypoint", "clone"],
+    when: () => !!currentModuleEditor()?.module?.area,
+    run: () => {
+      currentModuleEditor()?.placeWaypointAtEntry();
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.setPreviewWarpFromSelection",
+    title: "Set Preview Warp From Selection",
+    category: "Module",
+    keywords: ["module", "preview", "warp", "waypoint"],
+    when: () => {
+      const sel = currentModuleEditor()?.selectedGameObject;
+      return sel instanceof ForgeWaypoint && !!String(sel.tag || "").trim();
+    },
+    run: () => {
+      const tab = currentModuleEditor();
+      if(tab && !tab.setPreviewWarpFromSelection()){
+        window.alert("Select a waypoint that has a Tag to use as the preview warp.");
+      }
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.clearPreviewWarp",
+    title: "Clear Preview Warp",
+    category: "Module",
+    keywords: ["module", "preview", "warp", "clear"],
+    when: () => !!currentModuleEditor()?.previewWarpWaypointTag,
+    run: () => {
+      currentModuleEditor()?.clearPreviewWarp();
+    },
+  });
+
+  registerCommand({
     id: "forge.module.openAreaPth",
     title: "Open Area Path (.pth)",
     category: "Module",
@@ -728,6 +815,132 @@ export function registerForgeCommands(): void {
     when: () => !!currentModuleEditor()?.module?.area,
     run: () => {
       void currentModuleEditor()?.openAreaPath();
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.openAreaWalkmesh",
+    title: "Open Room Walkmesh (.wok)",
+    category: "Module",
+    keywords: ["module", "walkmesh", "wok"],
+    when: () => !!currentModuleEditor()?.module?.area,
+    run: () => {
+      void currentModuleEditor()?.openAreaWalkmesh();
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.validate",
+    title: "Validate Module",
+    category: "Module",
+    keywords: ["problems", "lint", "check"],
+    when: () => !!currentModuleEditor(),
+    run: () => {
+      void currentModuleEditor()?.validateModule();
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.rebuildAssetIndex",
+    title: "Rebuild Asset Index",
+    category: "Module",
+    keywords: ["assets", "index", "search"],
+    when: () => !!currentModuleEditor(),
+    run: async () => {
+      const tab = currentModuleEditor();
+      if (!tab) return;
+      await buildAssetIndexInBackground(() => tab.assetIndex.rebuild());
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.exportVisAdjacency",
+    title: "Copy Room VIS Adjacency",
+    category: "Module",
+    keywords: ["vis", "rooms", "layout"],
+    when: () => !!currentModuleEditor()?.module?.area,
+    run: async () => {
+      const text = formatVisAdjacency(currentModuleEditor()?.module?.area);
+      if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text || "(no links)");
+      }
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.togglePreview",
+    title: "Preview Module",
+    category: "Module",
+    keywords: ["preview", "play", "test", "ingame"],
+    when: () => !!currentModuleEditor(),
+    run: () => {
+      const tab = currentModuleEditor();
+      if (!tab) return;
+      tab.setPreviewMode(tab.tabMode !== ModuleEditorTabMode.PREVIEW);
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.exitPreview",
+    title: "Exit Preview",
+    category: "Module",
+    keywords: ["preview", "stop"],
+    when: () => !!currentModuleEditor() && currentModuleEditor()!.tabMode === ModuleEditorTabMode.PREVIEW,
+    run: () => {
+      currentModuleEditor()?.setPreviewMode(false);
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.previewReload",
+    title: "Reload Preview",
+    category: "Module",
+    keywords: ["preview", "hot", "reload"],
+    when: () => !!currentModuleEditor() && currentModuleEditor()!.tabMode === ModuleEditorTabMode.PREVIEW,
+    run: () => {
+      const tab = currentModuleEditor();
+      if (!tab) return;
+      void ModulePreviewSession.reloadIncremental(tab, "scene");
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.writeRecoverySnapshot",
+    title: "Write Recovery Snapshot",
+    category: "Module",
+    keywords: ["autosave", "recovery"],
+    when: () => !!currentModuleEditor(),
+    run: () => {
+      void currentModuleEditor()?.writeRecoverySnapshot("manual");
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.exportPerformanceReport",
+    title: "Export Performance Report",
+    category: "Module",
+    keywords: ["baseline", "fps", "timing", "diagnostics"],
+    when: () => !!currentModuleEditor(),
+    run: () => {
+      const report = currentModuleEditor()?.exportPerformanceReport() || PerformanceBaseline.exportJson();
+      const blob = new Blob([report], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "forge-module-performance.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.clearRecovery",
+    title: "Clear Recovery Snapshot",
+    category: "Module",
+    keywords: ["autosave", "recovery"],
+    when: hasProject,
+    run: () => {
+      void ModuleRecovery.clear();
     },
   });
 

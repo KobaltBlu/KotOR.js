@@ -12,6 +12,11 @@ import * as KotOR from "@/apps/forge/KotOR";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
 import { packProjectModule } from "@/apps/forge/helpers/exportProjectModule";
+import {
+  compileAllNssBeforeModulePack,
+  formatBulkNssCompileFailure,
+} from "@/apps/forge/helpers/ForgeNWScriptCompile";
+import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
 import * as fs from "fs";
 declare const dialog: any;
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
@@ -33,6 +38,9 @@ export class Project {
 
   static base_dir: string = 'forge';
   static project_assets_dir: string = 'assets';
+
+  /** True while {@link close} is tearing down tabs; skips clearing module_editor.open. */
+  #closing = false;
   dir: string = '';
 
   className: string;
@@ -234,6 +242,10 @@ export class Project {
     }
   }
 
+  get isClosing(): boolean {
+    return this.#closing;
+  }
+
   async close(): Promise<boolean> {
     const tabs = [...(ForgeState.tabManager?.tabs || [])];
     const dirty = tabs.filter((tab) => tab.isClosable && tab.file?.unsaved_changes);
@@ -243,26 +255,31 @@ export class Project {
         return false;
       }
     }
-    for(let i = 0; i < tabs.length; i++){
-      const tab = tabs[i];
-      if(tab?.isClosable){
-        tab.remove({ skipUnsavedConfirm: true });
+    this.#closing = true;
+    try{
+      for(let i = 0; i < tabs.length; i++){
+        const tab = tabs[i];
+        if(tab?.isClosable){
+          tab.remove({ skipUnsavedConfirm: true });
+        }
       }
+      this.moduleEditor = undefined;
+      this.module = undefined;
+      ForgeState.project = undefined as any;
+      ProjectFileSystem.clearDirectoryCache();
+      ProjectFileSystem.isVirtual = false;
+      ProjectFileSystem.rootDirectoryPath = undefined as any;
+      ProjectFileSystem.rootDirectoryHandle = undefined as any;
+      TabProjectExplorerState.Resources.splice(0, TabProjectExplorerState.Resources.length);
+      ForgeState.projectExplorerTab.reload();
+      const hasStart = ForgeState.tabManager.tabs.some((tab) => tab instanceof TabQuickStartState);
+      if(!hasStart){
+        ForgeState.tabManager.addTab(new TabQuickStartState());
+      }
+      return true;
+    }finally{
+      this.#closing = false;
     }
-    this.moduleEditor = undefined;
-    this.module = undefined;
-    ForgeState.project = undefined as any;
-    ProjectFileSystem.clearDirectoryCache();
-    ProjectFileSystem.isVirtual = false;
-    ProjectFileSystem.rootDirectoryPath = undefined as any;
-    ProjectFileSystem.rootDirectoryHandle = undefined as any;
-    TabProjectExplorerState.Resources.splice(0, TabProjectExplorerState.Resources.length);
-    ForgeState.projectExplorerTab.reload();
-    const hasStart = ForgeState.tabManager.tabs.some((tab) => tab instanceof TabQuickStartState);
-    if(!hasStart){
-      ForgeState.tabManager.addTab(new TabQuickStartState());
-    }
-    return true;
   }
 
   async load(): Promise<boolean> {
@@ -400,7 +417,7 @@ export class Project {
   }
 
   async initializeProject(){
-    if(this.hasModule() && this.settings.module_editor.open){
+    if(this.hasModule() && this.settings.module_editor?.open){
       await this.initEditor();
     }
     console.log('Project Init');
@@ -443,44 +460,70 @@ export class Project {
       }
     }
 
-    const files = await ProjectFileSystem.readdir("", { recursive: true });
-    const result = await packProjectModule({
-      files,
-      readFile: (rel) => ProjectFileSystem.readFile(rel),
-      moduleTag: this.moduleEditor?.module?.tag || this.settings.name,
-      projectName: this.settings.name,
-      overrides,
-    });
-    if(!result.ok || !result.buffer){
-      window.alert(result.reason || "Export failed.");
-      return false;
-    }
-
+    ForgeState.loaderShow();
     try{
-      if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
-        const savePath = await dialog.showSaveDialog({
-          title: "Export Module",
-          defaultPath: result.filename,
-          filters: [{ name: "Module", extensions: ["mod"] }],
-        });
-        if(!savePath || savePath.cancelled || !savePath.filePath){
-          return false;
-        }
-        await fs.promises.writeFile(savePath.filePath, result.buffer);
-        return true;
+      const compile = await compileAllNssBeforeModulePack();
+      if(!compile.ok){
+        const modal = new ModalBulkNssCompileResultsState(compile.outcome);
+        modal.attachToModalManager(ForgeState.modalManager);
+        modal.open();
+        window.alert(formatBulkNssCompileFailure(compile.outcome));
+        return false;
       }
-      const handle = await window.showSaveFilePicker({
-        suggestedName: result.filename,
-        types: [{ description: "Module", accept: { "application/octet-stream": [".mod"] } }],
+
+      const files = await ProjectFileSystem.readdir("", { recursive: true });
+      const result = await packProjectModule({
+        files,
+        readFile: (rel) => ProjectFileSystem.readFile(rel),
+        moduleTag: this.moduleEditor?.module?.tag || this.settings.name,
+        projectName: this.settings.name,
+        overrides,
       });
-      const ws = await handle.createWritable();
-      await ws.write(result.buffer as any);
-      await ws.close();
-      return true;
-    }catch(e){
-      console.error("Project.export", e);
-      return false;
+      if(!result.ok || !result.buffer){
+        window.alert(result.reason || "Export failed.");
+        return false;
+      }
+
+      try{
+        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+          const savePath = await dialog.showSaveDialog({
+            title: "Export Module",
+            defaultPath: result.filename,
+            filters: [{ name: "Module", extensions: ["mod"] }],
+          });
+          if(!savePath || savePath.cancelled || !savePath.filePath){
+            return false;
+          }
+          await fs.promises.writeFile(savePath.filePath, result.buffer);
+          return true;
+        }
+        const handle = await window.showSaveFilePicker({
+          suggestedName: result.filename,
+          types: [{ description: "Module", accept: { "application/octet-stream": [".mod"] } }],
+        });
+        const ws = await handle.createWritable();
+        await ws.write(result.buffer as any);
+        await ws.close();
+        return true;
+      }catch(e){
+        console.error("Project.export", e);
+        return false;
+      }
+    }finally{
+      ForgeState.loaderHide();
     }
+  }
+
+  /** Persist whether the module editor should reopen with this project. */
+  setModuleEditorOpen(open: boolean): void {
+    if(!this.settings.module_editor){
+      this.settings.module_editor = { open: false };
+    }
+    if(this.settings.module_editor.open === open){
+      return;
+    }
+    this.settings.module_editor.open = open;
+    void this.saveSettings();
   }
 
   /**
@@ -492,6 +535,7 @@ export class Project {
     }
     this.moduleEditor.bindProjectFiles(this);
     ForgeState.tabManager.addTab(this.moduleEditor);
+    this.setModuleEditorOpen(true);
     await this.moduleEditor.loadFromProject(this);
   }
 
@@ -499,6 +543,7 @@ export class Project {
     if(this.moduleEditor instanceof TabModuleEditorState){
       ForgeState.tabManager.addTab(this.moduleEditor);
       this.moduleEditor.show();
+      this.setModuleEditorOpen(true);
       return;
     }
     if(this.hasModule()){
@@ -506,6 +551,17 @@ export class Project {
       return;
     }
     openImportModuleWizard();
+  }
+
+  /** Called when the user closes the module editor tab (not when closing the project). */
+  onModuleEditorClosed(tab: TabModuleEditorState): void {
+    if(this.#closing){
+      return;
+    }
+    if(this.moduleEditor === tab){
+      this.moduleEditor = undefined;
+    }
+    this.setModuleEditorOpen(false);
   }
 
   getTemplatesByType ( restype = '' ) {

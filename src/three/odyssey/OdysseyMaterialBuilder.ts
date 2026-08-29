@@ -97,7 +97,9 @@ export class OdysseyMaterialBuilder {
       const envmap: OdysseyTexture = await options.resolveTexture(texture.txi.envMapTexture, options.noCache ?? true);
       if(!!envmap){
         registerManagedTexture(envmap);
-        envmap.wrapS = envmap.wrapT = THREE.RepeatWrapping;
+        envmap.wrapS = envmap.wrapT = (envmap as any).isCubeTexture
+          ? THREE.ClampToEdgeWrapping
+          : THREE.RepeatWrapping;
 
         if(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial){
           material.uniforms.envMap.value = envmap;
@@ -110,6 +112,9 @@ export class OdysseyMaterialBuilder {
           material.defines.ENVMAP_TYPE_CUBE = "";
           material.defines.ENVMAP_MODE_REFLECTION = "";
           material.defines.ENVMAP_BLENDING_ADD = "";
+          if(material.uniforms.reflectivity){
+            material.uniforms.reflectivity.value = 1;
+          }
           material.uniformsNeedUpdate = true;
         }else{
           (material as any).envMap = envmap;
@@ -120,14 +125,21 @@ export class OdysseyMaterialBuilder {
           (material as any).combine = THREE.AddOperation;
           (material as any).reflectivity = 1;
         }
+        const shaderMaterial = material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial
+          ? material
+          : undefined;
+        const opacity = shaderMaterial?.uniforms.opacity?.value ?? material.opacity;
+        if(!texture.txi.decal && opacity >= 1 && !shaderMaterial?.defines?.hasOwnProperty("HOLOGRAM")){
+          material.transparent = false;
+        }
         material.needsUpdate = true;
 
-        if(material instanceof THREE.RawShaderMaterial || material instanceof THREE.ShaderMaterial){
-          if(material.defines.hasOwnProperty("HOLOGRAM")){
+        if(shaderMaterial){
+          if(shaderMaterial.defines.hasOwnProperty("HOLOGRAM")){
             (material as any).combine = THREE.AddOperation;
             material.blending = THREE.NormalBlending;
             material.transparent = true;
-            material.uniformsNeedUpdate = true;
+            shaderMaterial.uniformsNeedUpdate = true;
           }
         }
       }else{

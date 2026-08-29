@@ -157,7 +157,7 @@ export const ForgeTitlebar = function ForgeTitlebar({
 
       if (
         target.closest(
-          "button, .forge-menubar, .forge-titlebar__controls",
+          "button, .forge-menubar, .forge-menubar-host, .forge-menubar-preview-btn, .forge-titlebar__controls",
         )
       ) {
         return;

@@ -6,6 +6,7 @@ import { EditorFile } from "@/apps/forge/EditorFile";
 import * as THREE from 'three';
 import * as KotOR from "@/apps/forge/KotOR";
 import { Project } from "@/apps/forge/Project";
+import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { ForgeArea } from "@/apps/forge/module-editor/ForgeArea";
 import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { TabModuleEditor } from "@/apps/forge/components/tabs/tab-module-editor/TabModuleEditor";
@@ -29,14 +30,31 @@ import {
   type ModuleHelperType,
 } from "@/apps/forge/settings/forgeEditorsSettings";
 import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
+import {
+  CommandHistory,
+  EditorTool,
+  PerformanceBaseline,
+  PickService,
+  PreviewController,
+  SceneVisibilityService,
+  SelectionService,
+  SpatialPickIndex,
+  ToolService,
+} from "@/apps/forge/module-editor/kernel";
+import { AssetIndexService } from "@/apps/forge/module-editor/assets/AssetIndexService";
+import { ModuleValidationService } from "@/apps/forge/module-editor/validation/ModuleValidationService";
+import { ModuleRecovery } from "@/apps/forge/module-editor/recovery/ModuleRecovery";
+import { ModuleExtensionRegistry } from "@/apps/forge/module-editor/extensions/ModuleExtensionTypes";
+import type { ValidationReport } from "@/apps/forge/module-editor/validation/ModuleValidationTypes";
+import type { ScreenRect } from "@/apps/forge/module-editor/kernel/PickService";
+import { EditorMode } from "@/apps/forge/module-editor/kernel/EditorMode";
+import type { EditorCommandDescriptor } from "@/apps/forge/module-editor/kernel/EditorCommand";
+import { ProjectVFS } from "@/apps/forge/module-editor/vfs/ProjectVFS";
+import { DEFAULT_MODULE_WORKSPACE, type ModuleWorkspaceState } from "@/apps/forge/module-editor/workspace/ModuleWorkspaceState";
+import { setModuleSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import { TabModuleEditorControlMode, GameObjectType } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
 
-export enum TabModuleEditorControlMode {
-  SELECT = 0,
-  TRANSFORM_CONTROL = 2,
-  ROTATE_CONTROL = 3,
-  SCALE_CONTROL = 4,
-  ADD_GAME_OBJECT = 5
-};
+export { TabModuleEditorControlMode, GameObjectType } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
 
 export interface ModuleEditorSnapshot {
   ifo: Uint8Array;
@@ -45,20 +63,6 @@ export interface ModuleEditorSnapshot {
   lyt?: Uint8Array;
   vis?: Uint8Array;
 }
-
-export enum GameObjectType {
-  ROOM = 'room',
-  CREATURE = 'creature',
-  CAMERA = 'camera',
-  DOOR = 'door',
-  ENCOUNTER = 'encounter',
-  ITEM = 'item',
-  PLACEABLE = 'placeable',
-  SOUND = 'sound',
-  STORE = 'store',
-  TRIGGER = 'trigger',
-  WAYPOINT = 'waypoint'
-};
 
 export class TabModuleEditorState extends TabState {
 
@@ -75,8 +79,10 @@ export class TabModuleEditorState extends TabState {
   lastBlueprintByType: Partial<Record<GameObjectType, string>> = {};
   /** Phase-2 keymap overlay */
   showKeymapHelp: boolean = false;
-  /** Preview spawn: module entry, editor camera, or selected waypoint tag */
+  /** Preview spawn: module entry, editor camera, or waypoint tag */
   previewSpawnMode: 'entry' | 'camera' | 'waypoint' = 'entry';
+  /** Non-permanent warp waypoint tag for preview (retail area-transition style). */
+  previewWarpWaypointTag: string | null = null;
   private ghostBoundsToken: number = 0;
 
   ui3DRenderer: UI3DRenderer;
@@ -105,10 +111,26 @@ export class TabModuleEditorState extends TabState {
   private multiSelectPrevPos: THREE.Vector3 = new THREE.Vector3();
   private multiSelectPrevRotZ: number = 0;
   private multiSelectTracking: boolean = false;
+
+  /** Phase 0+ editor kernel services. */
+  readonly commandHistory = new CommandHistory();
+  readonly selectionService = new SelectionService();
+  readonly toolService = new ToolService();
+  readonly visibilityService = new SceneVisibilityService();
+  readonly previewController = new PreviewController();
+  readonly validationService = new ModuleValidationService();
+  readonly assetIndex = new AssetIndexService();
+  readonly spatialPickIndex = new SpatialPickIndex(16);
+  lastValidation: ValidationReport | undefined;
+  private autosaveTimer: ReturnType<typeof setInterval> | undefined;
+  private marqueeStart: { x: number; y: number } | null = null;
+  private marqueeCurrent: { x: number; y: number } | null = null;
+  private pendingFocusEntry = false;
   
   // Mouse vector for raycasting (reused to avoid allocation)
   private mouseVector: THREE.Vector2 = new THREE.Vector2();
   private onModuleHelpersChange = (): void => {
+    this.visibilityService.loadFromSettings();
     this.applyModuleHelperVisibility();
   };
 
@@ -185,7 +207,12 @@ export class TabModuleEditorState extends TabState {
     }
     
     // Also listen for when canvas is attached (which calls buildScene and ensures scene is ready)
-    this.ui3DRenderer.addEventListener('onCanvasAttached', addMeshesToScene);
+    this.ui3DRenderer.addEventListener('onCanvasAttached', () => {
+      addMeshesToScene();
+      if (this.pendingFocusEntry) {
+        this.focusCameraOnModuleEntry();
+      }
+    });
     this.setContentView(<TabModuleEditor tab={this}></TabModuleEditor>);
 
     // Listen to transform controls changes to update point positions
@@ -202,17 +229,200 @@ export class TabModuleEditorState extends TabState {
         }
       });
     }
+
+    this.initEditorKernel();
+  }
+
+  private initEditorKernel(): void {
+    const settings = forgeModuleSettings.get();
+    this.snapEnabled = settings.snapPosition;
+    this.snapPosition = settings.snapPositionStep;
+    this.snapAngleDeg = settings.snapAngleStep;
+    this.toolService.setSnap({
+      positionEnabled: settings.snapPosition,
+      positionStep: settings.snapPositionStep,
+      angleEnabled: settings.snapAngle,
+      angleStep: settings.snapAngleStep,
+    });
+    this.toolService.setSpace(settings.transformSpace);
+    this.visibilityService.loadFromSettings();
+    this.restartAutosaveTimer();
+    void this.assetIndex.rebuild().catch((error) => {
+      console.warn("Failed to build module asset index", error);
+    });
+  }
+
+  private restartAutosaveTimer(): void {
+    if (this.autosaveTimer !== undefined) {
+      clearInterval(this.autosaveTimer);
+      this.autosaveTimer = undefined;
+    }
+    const settings = forgeModuleSettings.get();
+    if (!settings.autosaveEnabled) {
+      return;
+    }
+    const ms = Math.max(30, settings.autosaveIntervalSec) * 1000;
+    this.autosaveTimer = setInterval(() => {
+      void this.writeRecoverySnapshot("autosave");
+    }, ms);
+  }
+
+  async writeRecoverySnapshot(reason: "autosave" | "crash" | "manual" = "autosave"): Promise<boolean> {
+    const buffers = this.serializeModuleBuffers();
+    if (!buffers) {
+      return false;
+    }
+    return ModuleRecovery.saveSnapshot(buffers, reason);
+  }
+
+  getWorkspace(): ModuleWorkspaceState {
+    return forgeModuleSettings.get().workspace || DEFAULT_MODULE_WORKSPACE;
+  }
+
+  patchWorkspace(patch: Partial<ModuleWorkspaceState>): ModuleWorkspaceState {
+    const current = this.getWorkspace();
+    const next: ModuleWorkspaceState = {
+      ...current,
+      ...patch,
+      layout: {
+        ...current.layout,
+        ...(patch.layout || {}),
+      },
+    };
+    setModuleSettings({ workspace: next });
+    this.processEventListener("onWorkspaceChanged", [next]);
+    return next;
+  }
+
+  /**
+   * Push a named transactional command. Still captures a snapshot when
+   * command history is disabled or as a compatibility safety net.
+   */
+  pushEditorCommand(descriptor: EditorCommandDescriptor, captureSnapshot = true): void {
+    const settings = forgeModuleSettings.get();
+    if (settings.commandHistoryEnabled) {
+      this.commandHistory.push(descriptor);
+    }
+    if (captureSnapshot && !settings.commandHistoryEnabled) {
+      if (descriptor.coalesceKey) {
+        this.captureCoalescedUndo(descriptor.coalesceKey);
+      } else {
+        this.captureUndoSnapshot();
+      }
+    }
+  }
+
+  async validateModule(): Promise<ValidationReport> {
+    const report = await this.validationService.validateModule(this.module);
+    const contribIssues = [];
+    for (const validator of ModuleExtensionRegistry.validators()) {
+      try {
+        const extra = await validator.validate(this.module!);
+        contribIssues.push(...extra);
+      } catch (error) {
+        console.warn(`Extension validator ${validator.id} failed`, error);
+      }
+    }
+    if (contribIssues.length) {
+      report.issues.push(...contribIssues);
+      report.errorCount += contribIssues.filter((i) => i.severity === "error").length;
+      report.warningCount += contribIssues.filter((i) => i.severity === "warning").length;
+      report.infoCount += contribIssues.filter((i) => i.severity === "info").length;
+    }
+    this.lastValidation = report;
+    this.processEventListener("onValidationCompleted", [report]);
+    return report;
+  }
+
+  beginMarquee(x: number, y: number): void {
+    if (!forgeModuleSettings.get().marqueeSelect) {
+      return;
+    }
+    this.marqueeStart = { x, y };
+    this.marqueeCurrent = { x, y };
+    this.processEventListener("onMarqueeChanged", [this.getMarqueeRect()]);
+  }
+
+  updateMarquee(x: number, y: number): void {
+    if (!this.marqueeStart) {
+      return;
+    }
+    this.marqueeCurrent = { x, y };
+    this.processEventListener("onMarqueeChanged", [this.getMarqueeRect()]);
+  }
+
+  completeMarquee(additive = false): ForgeGameObject[] {
+    const rect = this.getMarqueeRect();
+    this.marqueeStart = null;
+    this.marqueeCurrent = null;
+    this.processEventListener("onMarqueeChanged", [null]);
+    if (!rect || !this.module?.area || !this.ui3DRenderer.camera || !this.ui3DRenderer.canvas) {
+      return [];
+    }
+    const width = Math.abs(rect.right - rect.left);
+    const height = Math.abs(rect.bottom - rect.top);
+    if (width < 4 && height < 4) {
+      return [];
+    }
+    const objects = this.collectSelectableObjects();
+    const hits = PickService.marqueeSelect(
+      objects,
+      this.ui3DRenderer.camera,
+      this.ui3DRenderer.canvas,
+      rect,
+    );
+    if (hits.length) {
+      this.selectionService.selectMany(hits, additive);
+      this.selectedGameObjects = [...this.selectionService.objects];
+      this.selectedGameObject = this.selectionService.primaryObject;
+      this.ui3DRenderer.sceneGraphManager?.syncSelectionFromGameObjects(this.selectedGameObjects);
+      this.processEventListener("onSelectionChanged", [this.selectedGameObject, this.selectedGameObjects]);
+    }
+    return hits;
+  }
+
+  getMarqueeRect(): ScreenRect | null {
+    if (!this.marqueeStart || !this.marqueeCurrent) {
+      return null;
+    }
+    return PickService.normalizeRect(this.marqueeStart, this.marqueeCurrent);
+  }
+
+  private collectSelectableObjects(): ForgeGameObject[] {
+    const area = this.module?.area;
+    if (!area) return [];
+    const objects = [
+      ...(area.creatures || []),
+      ...(area.doors || []),
+      ...(area.placeables || []),
+      ...(area.triggers || []),
+      ...(area.encounters || []),
+      ...(area.waypoints || []),
+      ...(area.sounds || []),
+      ...(area.stores || []),
+      ...(area.items || []),
+      ...(area.rooms || []),
+    ];
+    this.spatialPickIndex.rebuild(objects);
+    return objects;
+  }
+
+  getProjectVfsCapabilities() {
+    return ProjectVFS.shared.capabilities();
+  }
+
+  exportPerformanceReport(): string {
+    return PerformanceBaseline.exportJson();
   }
 
   show(): void {
     super.show();
-    this.ui3DRenderer.enabled = true;
-    this.ui3DRenderer.render();
+    this.ui3DRenderer.setEnabled(true);
   }
 
   hide(): void {
     super.hide();
-    this.ui3DRenderer.enabled = false;
+    this.ui3DRenderer.setEnabled(false);
   }
 
   applyModuleHelperVisibility(): void {
@@ -236,8 +446,18 @@ export class TabModuleEditorState extends TabState {
     }
   }
 
+  remove(options?: { skipUnsavedConfirm?: boolean }){
+    const project = ForgeState.project instanceof Project ? ForgeState.project : undefined;
+    super.remove(options);
+    project?.onModuleEditorClosed(this);
+  }
+
   destroy(): void {
     void this.stopPlayablePreview();
+    if (this.autosaveTimer !== undefined) {
+      clearInterval(this.autosaveTimer);
+      this.autosaveTimer = undefined;
+    }
     forgeModuleSettings.removeListener(this.onModuleHelpersChange);
     // Dispose ghost preview
     if(this.ghostPreviewMesh){
@@ -324,15 +544,18 @@ export class TabModuleEditorState extends TabState {
       }
     }
 
-    // Room world positions live in LYT; disk is flushed only by save/export.
-    if(this.selectedGameObject instanceof ForgeRoom && this.module?.area){
+    // Room world positions live in LYT; only sync while the user is dragging
+    // (attach/detach also fires `change` and must not invent a zeroed layout).
+    const dragging = !!controls.dragging;
+    if(dragging && this.selectedGameObject instanceof ForgeRoom && this.module?.area){
+      this.module.area.ensureLayout();
       this.module.area.syncLayoutAndVisInMemory();
     }
 
-    this.applyMultiSelectTransformDelta();
-    
-    // Mark file as having unsaved changes
-    this.updateFile({ coalesceKey: 'transform' });
+    if(dragging){
+      this.applyMultiSelectTransformDelta();
+      this.updateFile({ coalesceKey: 'transform' });
+    }
   }
 
   private beginMultiSelectTransformTracking(): void {
@@ -377,6 +600,7 @@ export class TabModuleEditorState extends TabState {
         obj.container.updateMatrixWorld(true);
       }
       if(allowRoomBulk && this.module?.area){
+        this.module.area.ensureLayout();
         this.module.area.syncLayoutAndVisInMemory();
       }
     }
@@ -536,13 +760,22 @@ export class TabModuleEditorState extends TabState {
 
     if(mode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
       this.ui3DRenderer.transformControls.mode = 'translate';
-      this.updateTransformControlHelpers(this.selectedGameObject!);  
+      this.updateTransformControlHelpers(this.selectedGameObject!);
+      this.toolService.setTool(EditorTool.TRANSLATE);
     } else if(mode === TabModuleEditorControlMode.ROTATE_CONTROL){
       this.ui3DRenderer.transformControls.mode = 'rotate';
       this.updateTransformControlHelpers(this.selectedGameObject!);
+      this.toolService.setTool(EditorTool.ROTATE);
     } else if(mode === TabModuleEditorControlMode.SCALE_CONTROL){
       this.ui3DRenderer.transformControls.mode = 'scale';
       this.updateTransformControlHelpers(this.selectedGameObject!);
+      this.toolService.setTool(EditorTool.SCALE);
+    } else if(mode === TabModuleEditorControlMode.ADD_GAME_OBJECT){
+      this.toolService.setTool(EditorTool.PLACE);
+      this.toolService.setMode(EditorMode.PLACE);
+    } else {
+      this.toolService.setTool(EditorTool.SELECT);
+      this.toolService.setMode(EditorMode.EDIT);
     }
 
     this.processEventListener('onControlModeChange', [mode]);
@@ -701,6 +934,7 @@ export class TabModuleEditorState extends TabState {
     }
     this.selectGameObject(undefined);
     if(touchedRoom){
+      this.module.area.ensureLayout();
       this.module.area.syncLayoutAndVisInMemory();
     }
     this.updateFile();
@@ -786,6 +1020,7 @@ export class TabModuleEditorState extends TabState {
       this.beginMultiSelectTransformTracking();
     }
     this.ui3DRenderer.sceneGraphManager?.syncSelectionFromGameObjects(this.selectedGameObjects);
+    this.selectionService.selectMany(this.selectedGameObjects, false);
     this.processEventListener('onSelectionChanged', [gameObject, this.selectedGameObjects]);
   }
 
@@ -800,11 +1035,37 @@ export class TabModuleEditorState extends TabState {
     if(this.previewSpawnMode !== 'waypoint'){
       return null;
     }
+    const pinned = String(this.previewWarpWaypointTag || '').trim();
+    if(pinned){
+      return pinned;
+    }
     const wp = this.selectedGameObject instanceof ForgeWaypoint
       ? this.selectedGameObject
       : this.selectedGameObjects.find((o) => o instanceof ForgeWaypoint) as ForgeWaypoint | undefined;
-    const tag = String(wp?.tag || wp?.templateResRef || '').trim();
+    const tag = String(wp?.tag || '').trim();
     return tag || null;
+  }
+
+  setPreviewWarpFromSelection(): boolean {
+    const wp = this.selectedGameObject instanceof ForgeWaypoint
+      ? this.selectedGameObject
+      : this.selectedGameObjects.find((o) => o instanceof ForgeWaypoint) as ForgeWaypoint | undefined;
+    const tag = String(wp?.tag || '').trim();
+    if(!tag){
+      return false;
+    }
+    this.previewWarpWaypointTag = tag;
+    this.previewSpawnMode = 'waypoint';
+    this.processEventListener('onPreviewSpawnModeChange', [this.previewSpawnMode]);
+    return true;
+  }
+
+  clearPreviewWarp(): void {
+    this.previewWarpWaypointTag = null;
+    if(this.previewSpawnMode === 'waypoint'){
+      this.previewSpawnMode = 'entry';
+    }
+    this.processEventListener('onPreviewSpawnModeChange', [this.previewSpawnMode]);
   }
 
   placeGameObject(position: THREE.Vector3, options?: { oneShot?: boolean }){
@@ -852,6 +1113,7 @@ export class TabModuleEditorState extends TabState {
       }
       await gameObject.load();
       if(gameObject instanceof ForgeRoom){
+        this.module?.area.ensureLayout();
         this.module?.area.syncLayoutAndVisInMemory();
       }
     })();
@@ -1056,6 +1318,7 @@ export class TabModuleEditorState extends TabState {
     await this.module.load();
     this.updateEntryMarker();
     await this.refreshPathOverlay();
+    this.focusCameraOnModuleEntry();
     this.processEventListener('onModuleLoaded', [this.module]);
     return true;
   }
@@ -1106,6 +1369,49 @@ export class TabModuleEditorState extends TabState {
     }
   }
 
+  /**
+   * Place the viewport camera behind Mod_Entry looking at the spawn point.
+   */
+  focusCameraOnModuleEntry(): void {
+    if (!this.module || !this.ui3DRenderer?.camera) {
+      return;
+    }
+    if (!this.ui3DRenderer.orbitControls) {
+      this.pendingFocusEntry = true;
+      return;
+    }
+    this.pendingFocusEntry = false;
+
+    const entry = new THREE.Vector3(
+      this.module.entryX,
+      this.module.entryY,
+      this.module.entryZ,
+    );
+    let facingX = this.module.entryDirectionX;
+    let facingY = this.module.entryDirectionY;
+    const facingLen = Math.hypot(facingX, facingY);
+    if (facingLen < 1e-4) {
+      facingX = 0;
+      facingY = 1;
+    } else {
+      facingX /= facingLen;
+      facingY /= facingLen;
+    }
+
+    const distance = 8;
+    const height = 4;
+    const camera = this.ui3DRenderer.camera;
+    camera.up.set(0, 0, 1);
+    camera.position.set(
+      entry.x - facingX * distance,
+      entry.y - facingY * distance,
+      entry.z + height,
+    );
+    camera.lookAt(entry);
+    this.ui3DRenderer.orbitControls.target.copy(entry);
+    this.ui3DRenderer.orbitControls.update();
+  }
+
   updateEntryMarker(): void {
     if(!this.module || !this.entryMarker){
       return;
@@ -1120,14 +1426,113 @@ export class TabModuleEditorState extends TabState {
       return;
     }
     const source = this.selectedGameObject;
-    if(source){
-      this.module.entryX = source.position.x;
-      this.module.entryY = source.position.y;
-      this.module.entryZ = source.position.z;
+    if(!source){
+      return;
+    }
+    this.module.entryX = source.position.x;
+    this.module.entryY = source.position.y;
+    this.module.entryZ = source.position.z;
+    if(source instanceof ForgeWaypoint){
+      const yaw = source.rotation?.z ?? 0;
+      this.module.entryDirectionX = Math.cos(yaw);
+      this.module.entryDirectionY = Math.sin(yaw);
+    }else{
       this.module.entryDirectionX = Math.cos(source.rotation.z);
       this.module.entryDirectionY = Math.sin(source.rotation.z);
     }
     this.updateEntryMarker();
+  }
+
+  setEntryFromCamera(): void {
+    if(!this.module || !this.ui3DRenderer?.camera){
+      return;
+    }
+    const cam = this.ui3DRenderer.camera;
+    this.module.entryX = cam.position.x;
+    this.module.entryY = cam.position.y;
+    this.module.entryZ = cam.position.z;
+    const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion);
+    const len = Math.hypot(forward.x, forward.y) || 1;
+    this.module.entryDirectionX = forward.x / len;
+    this.module.entryDirectionY = forward.y / len;
+    this.updateEntryMarker();
+  }
+
+  focusEntryMarker(): void {
+    if(!this.module || !this.entryMarker){
+      return;
+    }
+    this.updateEntryMarker();
+    this.selectedEntryPoint = true;
+    this.selectGameObject(undefined);
+    this.setControlMode(TabModuleEditorControlMode.TRANSFORM_CONTROL);
+    this.ui3DRenderer.transformControls.detach();
+    this.ui3DRenderer.transformControls.attach(this.entryMarker);
+    this.ui3DRenderer.lookAtObject(this.entryMarker);
+  }
+
+  /** Unique GIT tag for waypoints (max 16/32 chars used elsewhere — keep ≤32). */
+  private allocateUniqueWaypointTag(base: string): string {
+    const root = String(base || 'waypoint').trim() || 'waypoint';
+    const existing = new Set(
+      (this.module?.area?.waypoints || []).map((wp) => String(wp.tag || '').trim().toLowerCase()).filter(Boolean),
+    );
+    if(!existing.has(root.toLowerCase())){
+      return root.slice(0, 32);
+    }
+    for(let i = 2; i < 1000; i++){
+      const suffix = `_${i}`;
+      const next = `${root.slice(0, Math.max(1, 32 - suffix.length))}${suffix}`;
+      if(!existing.has(next.toLowerCase())){
+        return next;
+      }
+    }
+    return `${root.slice(0, 28)}_${Date.now() % 10000}`.slice(0, 32);
+  }
+
+  /**
+   * Place a waypoint at Mod_Entry. If a waypoint is selected, clone its fields;
+   * otherwise create a blank waypoint instance.
+   */
+  placeWaypointAtEntry(): ForgeWaypoint | undefined {
+    if(!this.module?.area){
+      return undefined;
+    }
+    const source = this.selectedGameObject instanceof ForgeWaypoint
+      ? this.selectedGameObject
+      : undefined;
+
+    let wp: ForgeWaypoint | undefined;
+    if(source){
+      const clone = this.cloneGameObject(source, { select: false });
+      if(!(clone instanceof ForgeWaypoint)){
+        return undefined;
+      }
+      wp = clone;
+      wp.tag = this.allocateUniqueWaypointTag(String(source.tag || 'waypoint'));
+    }else{
+      const created = this.createGameObject(GameObjectType.WAYPOINT);
+      if(!(created instanceof ForgeWaypoint)){
+        return undefined;
+      }
+      wp = created;
+      wp.tag = this.allocateUniqueWaypointTag('entry');
+      this.module.area.attachObject(wp);
+      void (async () => {
+        try{
+          await wp!.load();
+        }catch(e){
+          console.warn('placeWaypointAtEntry: failed to load waypoint', e);
+        }
+      })();
+    }
+
+    wp.position.set(this.module.entryX, this.module.entryY, this.module.entryZ);
+    wp.rotation.z = Math.atan2(this.module.entryDirectionY, this.module.entryDirectionX);
+    wp.container.updateMatrixWorld(true);
+    this.selectGameObject(wp);
+    this.updateFile();
+    return wp;
   }
 
   /** Open the area's .pth in the path editor (creates tab; deep editing stays there). */
@@ -1155,6 +1560,37 @@ export class TabModuleEditorState extends TabState {
     }));
   }
 
+  /** Open a room walkmesh (.wok) for the selected room or first area room. */
+  async openAreaWalkmesh(): Promise<void> {
+    const area = this.module?.area;
+    if (!area) {
+      return;
+    }
+    const room = this.selectedGameObject instanceof ForgeRoom
+      ? this.selectedGameObject
+      : area.rooms?.[0];
+    const resref = (room?.roomName || area.getLayoutResRef() || "").toLowerCase();
+    if (!resref) {
+      return;
+    }
+    const filename = `${resref}.wok`;
+    const { ProjectFileSystem } = await import("@/apps/forge/ProjectFileSystem");
+    const { TabWOKEditorState } = await import("@/apps/forge/states/tabs/TabWOKEditorState");
+    const { ForgeState } = await import("@/apps/forge/states/ForgeState");
+    const { EditorFile } = await import("@/apps/forge/EditorFile");
+    const { ResourceTypes } = await import("@/resource/ResourceTypes");
+
+    if (await ProjectFileSystem.exists(filename)) {
+      const editorFile = await ProjectFileSystem.openEditorFile(filename);
+      ForgeState.tabManager.addTab(new TabWOKEditorState({ editorFile }));
+      return;
+    }
+
+    ForgeState.tabManager.addTab(new TabWOKEditorState({
+      editorFile: new EditorFile({ resref, reskey: ResourceTypes.wok }),
+    }));
+  }
+
   openAddRoomBrowser(): void {
     openResRefBrowser('mdl', (resref) => {
       void this.addRoom(resref);
@@ -1174,6 +1610,7 @@ export class TabModuleEditorState extends TabState {
     }catch(e){
       console.warn('Failed to load room', roomName, e);
     }
+    this.module.area.ensureLayout();
     this.module.area.syncLayoutAndVisInMemory();
     this.selectGameObject(room);
     this.updateFile();
@@ -1204,6 +1641,9 @@ export class TabModuleEditorState extends TabState {
     await this.module.load();
     if(state.lyt){
       this.module.area.layout = new KotOR.LYTObject(state.lyt);
+      if(!this.module.area.layoutPresentOnDisk && !this.module.area.layoutLoadedFromGame){
+        this.module.area.layoutEnsuredByEditor = true;
+      }
       for(let i = 0; i < this.module.area.layout.rooms.length; i++){
         const layoutRoom = this.module.area.layout.rooms[i];
         const room = this.module.area.rooms.find((candidate) =>
@@ -1211,11 +1651,17 @@ export class TabModuleEditorState extends TabState {
         );
         room?.position.copy(layoutRoom.position);
       }
+    }else{
+      this.module.area.layout = undefined;
+      this.module.area.layoutEnsuredByEditor = false;
+      this.module.area.layoutLoadedFromGame = false;
     }
     if(state.vis){
       this.module.area.visObject = new KotOR.VISObject(state.vis);
       this.module.area.visObject.read();
       this.module.area.visObject.attachArea(this.module.area as any);
+    }else{
+      this.module.area.visObject = undefined;
     }
     this.updateEntryMarker();
     await this.refreshPathOverlay();
@@ -1254,13 +1700,19 @@ export class TabModuleEditorState extends TabState {
     this.module.ifo = ifo;
     this.module.area.are = are;
     this.module.area.git = git;
-    this.module.area.syncLayoutAndVisInMemory();
+    if(this.module.area.layout){
+      this.module.area.syncLayoutAndVisInMemory();
+    }
     return {
       ifo: ifo.getExportBuffer(),
       are: are.getExportBuffer(),
       git: git.getExportBuffer(),
-      lyt: this.module.area.layout?.export(),
-      vis: new TextEncoder().encode(this.module.area.buildVisText()),
+      lyt: this.module.area.shouldPersistLayout()
+        ? this.module.area.layout?.export()
+        : undefined,
+      vis: this.module.area.shouldPersistLayout()
+        ? new TextEncoder().encode(this.module.area.buildVisText())
+        : undefined,
     };
   }
 
@@ -1294,7 +1746,9 @@ export class TabModuleEditorState extends TabState {
     if(this.gitFile instanceof EditorFile){
       ok = (await this.gitFile.writeBuffer(buffers.git)) && ok;
     }
-    await this.module.area.flushLayoutAndVis();
+    if(this.module.area.shouldPersistLayout()){
+      await this.module.area.flushLayoutAndVis();
+    }
     if(ok){
       if(this.file instanceof EditorFile) this.file.unsaved_changes = false;
       if(this.areFile instanceof EditorFile) this.areFile.unsaved_changes = false;

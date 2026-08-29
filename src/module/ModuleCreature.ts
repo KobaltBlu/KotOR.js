@@ -174,7 +174,7 @@ export class ModuleCreature extends ModuleObject {
   getUpAnimationPlayed: boolean;
   animSpeed: number;
   selectedNPC: number;
-  creatureAppearance: SWCreatureAppearance;
+  creatureAppearance: SWCreatureAppearance | undefined;
 
   /**
    * Head tracking enabled
@@ -1982,7 +1982,7 @@ export class ModuleCreature extends ModuleObject {
 
   getClosesetOpenSpot(oObject: ModuleObject){
     let maxDistance = Infinity;
-    let radius = this.creatureAppearance.hitdist;
+    let radius = this.creatureAppearance?.hitdist ?? 1;
     let closest = undefined;
     let distance = 0;
     let origin = this.position;
@@ -2787,7 +2787,7 @@ export class ModuleCreature extends ModuleObject {
     return this.firstName;
   }
 
-  getAppearance(): SWCreatureAppearance {
+  getAppearance(): SWCreatureAppearance | undefined {
     return this.creatureAppearance;
   }
 
@@ -2800,7 +2800,7 @@ export class ModuleCreature extends ModuleObject {
 
   getRunSpeed(){
     if(this.getWalkRateId() == 7){
-      return this.creatureAppearance.rundist
+      return this.creatureAppearance?.rundist ?? 0;
     }
     const creaturespeed2DA = GameState.TwoDAManager.datatables.get('creaturespeed');
     if(creaturespeed2DA){
@@ -2810,7 +2810,7 @@ export class ModuleCreature extends ModuleObject {
 
   getWalkSpeed(){
     if(this.getWalkRateId() == 7){
-      return this.creatureAppearance.walkdist
+      return this.creatureAppearance?.walkdist ?? 0;
     }
     const creaturespeed2DA = GameState.TwoDAManager.datatables.get('creaturespeed');
     if(creaturespeed2DA){
@@ -2823,7 +2823,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getHitDistance(){
-    return this.creatureAppearance.hitdist;
+    return this.creatureAppearance?.hitdist ?? 1;
   }
 
   getMainClass(){
@@ -3111,7 +3111,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getPersonalSpace(){
-    return this.creatureAppearance.perspace;
+    return this.creatureAppearance?.perspace ?? 1;
   }
 
   initEffects(): void {

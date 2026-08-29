@@ -148,7 +148,7 @@ export class TPCObject {
       return false;
     }
     if (requireKeyword) {
-      return /\b(proceduretype|blending|mipmap|bumpmaptexture|envmaptexture|numx|numy|cube|isbumpmap|compresstexture|filter|clamp|decal|defaultwidth|defaultheight|fps)\b/i.test(trimmed);
+      return /\b(proceduretype|blending|mipmap|bumpmaptexture|bumpyshinytexture|envmaptexture|numx|numy|cube|isbumpmap|compresstexture|filter|clamp|decal|defaultwidth|defaultheight|fps)\b/i.test(trimmed);
     }
     return /[a-zA-Z]/.test(trimmed);
   }
@@ -629,6 +629,10 @@ export class TPCObject {
         (_texture as any).image = images;
         _texture.image.width = texDatas.width;
         _texture.image.height = texDatas.height;
+        _texture.mipmaps = images[ 0 ].mipmaps;
+        (_texture as any).isCubeTexture = true;
+        _texture.mapping = THREE.CubeReflectionMapping;
+        _texture.wrapS = _texture.wrapT = THREE.ClampToEdgeWrapping;
       } else {
         _texture.image.width = texDatas.width;
         _texture.image.height = texDatas.height;

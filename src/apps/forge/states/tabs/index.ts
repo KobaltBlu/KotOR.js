@@ -29,6 +29,9 @@ export * from "@/apps/forge/states/tabs/TabSaveGameEditorState";
 export * from "@/apps/forge/states/tabs/TabPTHEditorState";
 export * from "@/apps/forge/states/tabs/TabLYTEditorState";
 export * from "@/apps/forge/states/tabs/TabBIKPlayerState";
+export * from "@/apps/forge/states/tabs/TabJRLEditorState";
+export * from "@/apps/forge/states/tabs/TabIFOEditorState";
+export * from "@/apps/forge/states/tabs/TabAREEditorState";
 
 export * from "@/apps/forge/states/tabs/TabScriptErrorLogState";
 export * from "@/apps/forge/states/tabs/TabScriptCompileLogState";

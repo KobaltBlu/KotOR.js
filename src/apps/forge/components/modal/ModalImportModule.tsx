@@ -1,8 +1,16 @@
+/**
+ * Modal: import a module archive into the current Forge project.
+ *
+ * @file ModalImportModule.tsx
+ * @author KobaltBlu <https://github.com/KobaltBlu>
+ * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
+ */
+
 import React, { useEffect, useState } from "react";
 import { BaseModalProps } from "@/apps/forge/interfaces/modal/BaseModalProps";
 import { ForgeButton, ForgeDialog, ForgeInput, ForgeInputGroup, ForgeProgress } from "@/apps/forge/components/ui";
 import { ProjectType } from "@/apps/forge/enum/ProjectType";
-import { ForgeFileSystem, ForgeFileSystemResponse, ForgeFileSystemResponseType } from "@/apps/forge/ForgeFileSystem";
+import { ForgeFileSystem } from "@/apps/forge/ForgeFileSystem";
 import {
   companionRimFilename,
   importModuleArchive,
@@ -10,35 +18,13 @@ import {
   tryReadCompanionRim,
   type ModuleArchivePreview,
 } from "@/apps/forge/helpers/importModuleArchive";
+import {
+  MODULE_ARCHIVE_EXTS,
+  readPickedModuleArchive,
+} from "@/apps/forge/helpers/moduleArchivePicker";
 import { Project } from "@/apps/forge/Project";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
-
-const ARCHIVE_EXTS = ["mod", "rim", "erf"];
-
-async function readPickedArchive(
-  response: ForgeFileSystemResponse,
-): Promise<{ buffer: Uint8Array; name: string; path?: string } | undefined> {
-  if (response.type === ForgeFileSystemResponseType.FILE_PATH_STRING) {
-    const filePath = response.paths?.[0];
-    if (!filePath) {
-      return undefined;
-    }
-    const fs = await import("fs");
-    const path = await import("path");
-    const buf = await fs.promises.readFile(filePath);
-    return { buffer: new Uint8Array(buf), name: path.basename(filePath), path: filePath };
-  }
-  const handle = response.handles?.[0] as FileSystemFileHandle | undefined;
-  if (!handle || (handle as FileSystemHandle).kind === "directory") {
-    return undefined;
-  }
-  const file = await handle.getFile();
-  return {
-    buffer: new Uint8Array(await file.arrayBuffer()),
-    name: handle.name,
-  };
-}
 
 export const ModalImportModule = (props: BaseModalProps) => {
   const modal = props.modal;
@@ -105,8 +91,8 @@ export const ModalImportModule = (props: BaseModalProps) => {
   };
 
   const pickArchive = async () => {
-    const response = await ForgeFileSystem.OpenFile({ ext: ARCHIVE_EXTS });
-    const picked = await readPickedArchive(response);
+    const response = await ForgeFileSystem.OpenFile({ ext: MODULE_ARCHIVE_EXTS });
+    const picked = await readPickedModuleArchive(response);
     if (!picked) {
       return;
     }
@@ -115,7 +101,7 @@ export const ModalImportModule = (props: BaseModalProps) => {
 
   const pickCompanion = async () => {
     const response = await ForgeFileSystem.OpenFile({ ext: ["rim"] });
-    const picked = await readPickedArchive(response);
+    const picked = await readPickedModuleArchive(response);
     if (!picked) {
       return;
     }
@@ -175,6 +161,9 @@ export const ModalImportModule = (props: BaseModalProps) => {
           return;
         }
         await applyToProject();
+        if (result.warnings?.length) {
+          window.alert(result.warnings.join("\n"));
+        }
         modal.close();
         return;
       }
@@ -216,7 +205,21 @@ export const ModalImportModule = (props: BaseModalProps) => {
               {preview.resourceCount} resource{preview.resourceCount === 1 ? "" : "s"}
               {preview.hasModuleIfo ? " · contains module.ifo" : " · no module.ifo"}
               {preview.entryArea ? ` · entry area ${preview.entryArea}` : ""}
+              {preview.entryArea
+                ? preview.hasLayout
+                  ? " · has .lyt"
+                  : preview.layoutInGame
+                    ? " · .lyt from game files"
+                    : " · missing .lyt"
+                : ""}
             </p>
+            {preview.warnings?.length ? (
+              <ul style={{ color: preview.layoutInGame || preview.visInGame ? "#c9a227" : "#d9534f", marginTop: 0 }}>
+                {preview.warnings.map((w) => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+            ) : null}
           </div>
         ) : null}
         {showCompanion ? (

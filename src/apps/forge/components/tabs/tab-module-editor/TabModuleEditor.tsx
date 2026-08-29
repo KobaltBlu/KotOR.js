@@ -1,8 +1,9 @@
-import React, { useEffect, useCallback, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useCallback, useRef, useState } from "react";
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { LayoutContainerProvider } from "@/apps/forge/context/LayoutContainerContext";
 import { LayoutContainer } from "@/apps/forge/components/LayoutContainer/LayoutContainer";
-import { TabModuleEditorState, GameObjectType, TabModuleEditorControlMode } from "@/apps/forge/states/tabs";
+import { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
+import { GameObjectType, TabModuleEditorControlMode } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
 import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
 import { UI3DRendererView } from "@/apps/forge/components/UI3DRendererView";
 import { UI3DOverlayComponent } from "@/apps/forge/components/UI3DOverlayComponent";
@@ -31,7 +32,14 @@ import {
 import * as KotOR from "@/apps/forge/KotOR";
 import "@/apps/forge/components/tabs/tab-module-editor/TabModuleEditor.scss";
 import "@/apps/forge/components/tabs/tab-module-editor/ModulePreviewHost.scss";
-
+import { ModuleViewportToolbar } from "@/apps/forge/components/tabs/tab-module-editor/ModuleViewportToolbar";
+import { ModuleProblemsPanel } from "@/apps/forge/components/tabs/tab-module-editor/ModuleProblemsPanel";
+import { ModuleAssetBrowserPanel } from "@/apps/forge/components/tabs/tab-module-editor/ModuleAssetBrowserPanel";
+import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
+import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { forgeModuleSettings } from "@/apps/forge/settings/forgeEditorsSettings";
+import type { ScreenRect } from "@/apps/forge/module-editor/kernel/PickService";
+import { describeSelection } from "@/apps/forge/module-editor/a11y/moduleEditorA11y";
 // Extended interface for game object items with icons (for context menu)
 interface GameObjectMenuItem extends ContextMenuItem {
   icon?: any;
@@ -215,10 +223,26 @@ export const TabModuleEditor = function(props: BaseTabProps){
   const [previewStage, setPreviewStage] = useState('');
   const [skippedNss, setSkippedNss] = useState<string[]>([]);
   const [nssDismissed, setNssDismissed] = useState(false);
+  const [workbench] = useState(() => forgeModuleSettings.get().workbenchEnabled);
+  const [workspace, setWorkspace] = useState(() => tab.getWorkspace());
+  const [marquee, setMarquee] = useState<ScreenRect | null>(null);
+  const [westPanel, setWestPanel] = useState<"hierarchy" | "assets">(workspace.layout.westPanel);
+  const [selectionAnnouncement, setSelectionAnnouncement] = useState("Nothing selected");
 
   const onControlModeChange = () => {
     setControlMode(tab.controlMode);
   };
+
+  useEffect(() => {
+    const onSelection = (gameObject: any) => {
+      const count = tab.selectedGameObjects?.length || (gameObject ? 1 : 0);
+      const label = gameObject?.tag || gameObject?.templateResRef || gameObject?.roomName || undefined;
+      setSelectionAnnouncement(describeSelection(count, label));
+    };
+    tab.addEventListener("onSelectionChanged", onSelection);
+    onSelection(tab.selectedGameObject);
+    return () => tab.removeEventListener("onSelectionChanged", onSelection);
+  }, [tab]);
 
   useEffect(() => {
     tab.addEventListener('onControlModeChange', onControlModeChange);
@@ -254,10 +278,30 @@ export const TabModuleEditor = function(props: BaseTabProps){
     };
   }, [tab]);
 
+  // After exiting preview, restore canvas size and restart the editor render loop.
+  useLayoutEffect(() => {
+    if(previewMode){
+      return;
+    }
+    tab.ui3DRenderer.syncSizeFromParent();
+    tab.ui3DRenderer.setEnabled(true);
+  }, [previewMode, tab]);
+
   useEffect(() => {
     tab.setPreviewHostElement(previewHostRef.current);
     return () => {
       tab.setPreviewHostElement(undefined);
+    };
+  }, [tab]);
+
+  useEffect(() => {
+    const onWorkspace = (next: any) => setWorkspace(next);
+    const onMarquee = (rect: ScreenRect | null) => setMarquee(rect);
+    tab.addEventListener("onWorkspaceChanged", onWorkspace);
+    tab.addEventListener("onMarqueeChanged", onMarquee);
+    return () => {
+      tab.removeEventListener("onWorkspaceChanged", onWorkspace);
+      tab.removeEventListener("onMarqueeChanged", onMarquee);
     };
   }, [tab]);
 
@@ -335,7 +379,19 @@ export const TabModuleEditor = function(props: BaseTabProps){
                 tab.setEntryFromSelection();
                 tab.updateFile();
               }
-            }
+            },
+            ...(tab.selectedGameObject instanceof ForgeWaypoint ? [
+              {
+                id: 'clone-waypoint-at-entry',
+                label: 'Clone Waypoint At Entry',
+                onClick: () => { tab.placeWaypointAtEntry(); }
+              },
+              {
+                id: 'pin-preview-warp',
+                label: 'Pin As Preview Warp',
+                onClick: () => { tab.setPreviewWarpFromSelection(); }
+              },
+            ] : []),
           ]
         });
       }
@@ -377,26 +433,168 @@ export const TabModuleEditor = function(props: BaseTabProps){
     <ModuleEditorSidebarComponent tab={tab} />
   );
 
+  const westPanelContent = workbench ? (
+    <div className="module-workbench-west">
+      <div className="module-workbench-west__tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={westPanel === "assets"}
+          className={westPanel === "assets" ? "is-active" : ""}
+          onClick={() => {
+            setWestPanel("assets");
+            tab.patchWorkspace({ layout: { ...workspace.layout, westPanel: "assets" } });
+          }}
+        >
+          Assets
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={westPanel === "hierarchy"}
+          className={westPanel === "hierarchy" ? "is-active" : ""}
+          onClick={() => {
+            setWestPanel("hierarchy");
+            tab.patchWorkspace({ layout: { ...workspace.layout, westPanel: "hierarchy" } });
+          }}
+        >
+          Hierarchy
+        </button>
+      </div>
+      <div className="module-workbench-west__body">
+        {westPanel === "assets" ? (
+          <ModuleAssetBrowserPanel tab={tab} />
+        ) : (
+          <div className="module-workbench-west__hierarchy" data-trask-target="module-hierarchy">
+            {tab.ui3DRenderer?.sceneGraphManager ? (
+              <SceneGraphTreeView
+                manager={tab.ui3DRenderer.sceneGraphManager}
+                tab={tab}
+                listStyle={{ height: "100%" }}
+              />
+            ) : (
+              <div className="module-workbench-west__hierarchy-hint">
+                Hierarchy will appear once the scene is ready.
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  ) : undefined;
+
+  const southPanel = workbench && forgeModuleSettings.get().showProblemsPanel ? (
+    <ModuleProblemsPanel tab={tab} />
+  ) : undefined;
+
+  const onViewportDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes("application/x-forge-asset")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+    }
+  };
+
+  const onViewportDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const raw = e.dataTransfer.getData("application/x-forge-asset");
+    if (!raw) return;
+    try {
+      const payload = JSON.parse(raw) as { resref: string; extension: string };
+      const typeMap: Record<string, GameObjectType> = {
+        utc: GameObjectType.CREATURE,
+        utd: GameObjectType.DOOR,
+        ute: GameObjectType.ENCOUNTER,
+        uti: GameObjectType.ITEM,
+        utm: GameObjectType.STORE,
+        utp: GameObjectType.PLACEABLE,
+        uts: GameObjectType.SOUND,
+        utt: GameObjectType.TRIGGER,
+        utw: GameObjectType.WAYPOINT,
+      };
+      const type = typeMap[payload.extension];
+      if (!type) return;
+      tab.setGameObjectControlOptions(type, payload.resref, tab.getResourceTypeForGameObjectType(type));
+      tab.assetIndex.touchRecent(payload.resref);
+    } catch (error) {
+      console.warn("Failed to handle asset drop", error);
+    }
+  };
+
+  const onMarqueeMouseDown = (e: React.MouseEvent) => {
+    if (!workbench || !forgeModuleSettings.get().marqueeSelect) return;
+    if (e.button !== 0 || e.altKey) return;
+    if (controlMode !== TabModuleEditorControlMode.SELECT) return;
+    const canvas = tab.ui3DRenderer?.canvas;
+    if (!canvas) return;
+    const bounds = canvas.getBoundingClientRect();
+    tab.beginMarquee(e.clientX - bounds.left, e.clientY - bounds.top);
+  };
+
+  const onMarqueeMouseMove = (e: React.MouseEvent) => {
+    const canvas = tab.ui3DRenderer?.canvas;
+    if (!canvas || !marquee) return;
+    const bounds = canvas.getBoundingClientRect();
+    tab.updateMarquee(e.clientX - bounds.left, e.clientY - bounds.top);
+  };
+
+  const onMarqueeMouseUp = (e: React.MouseEvent) => {
+    if (!marquee) return;
+    tab.completeMarquee(e.shiftKey);
+  };
+
   return (
-    <div className="tab-module-editor">
+    <div className={`tab-module-editor${workbench ? " tab-module-editor--workbench" : ""}`}>
+      <div className="sr-only" aria-live="polite">{selectionAnnouncement}</div>
       <LayoutContainerProvider>
-        <LayoutContainer eastContent={eastPanel} eastSize={350}>
-          <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
-            <div style={{ width: '100%', height: '100%', display: previewMode ? 'none' : 'block' }}>
+        <LayoutContainer
+          eastContent={eastPanel}
+          eastSize={workspace.layout.eastSize}
+          onEastSizeChange={(size) => tab.patchWorkspace({ layout: { ...workspace.layout, eastSize: size } })}
+          westContent={westPanelContent}
+          westSize={workspace.layout.westSize}
+          westOpen={workbench ? workspace.layout.westOpen : false}
+          onWestOpenChange={(open) => tab.patchWorkspace({ layout: { ...workspace.layout, westOpen: open } })}
+          southContent={southPanel}
+          southSize={workspace.layout.southSize}
+        >
+          <div
+            ref={containerRef}
+            style={{ width: '100%', height: '100%', position: 'relative' }}
+            onDragOver={onViewportDragOver}
+            onDrop={onViewportDrop}
+            onMouseDown={onMarqueeMouseDown}
+            onMouseMove={onMarqueeMouseMove}
+            onMouseUp={onMarqueeMouseUp}
+          >
+            {workbench ? <ModuleViewportToolbar tab={tab} controlMode={controlMode} /> : null}
+            <div style={{ width: '100%', height: workbench ? 'calc(100% - 34px)' : '100%', display: previewMode ? 'none' : 'block' }}>
               <UI3DRendererView context={tab.ui3DRenderer}>
                 <UI3DOverlayComponent context={tab.ui3DRenderer} tab={tab} />
-                <UI3DToolPalette
-                  tools={createTools(tab, controlMode)}
-                  activeToolId={
-                    controlMode === TabModuleEditorControlMode.SELECT ? 'select' :
-                    controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL ? 'translate' :
-                    controlMode === TabModuleEditorControlMode.ROTATE_CONTROL ? 'rotate' :
-                    controlMode === TabModuleEditorControlMode.SCALE_CONTROL ? 'scale' :
-                    controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT ? 'add-game-object' :
-                    undefined
-                  }
-                  onToolChange={() => {}}
-                />
+                {!workbench ? (
+                  <UI3DToolPalette
+                    tools={createTools(tab, controlMode)}
+                    activeToolId={
+                      controlMode === TabModuleEditorControlMode.SELECT ? 'select' :
+                      controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL ? 'translate' :
+                      controlMode === TabModuleEditorControlMode.ROTATE_CONTROL ? 'rotate' :
+                      controlMode === TabModuleEditorControlMode.SCALE_CONTROL ? 'scale' :
+                      controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT ? 'add-game-object' :
+                      undefined
+                    }
+                    onToolChange={() => {}}
+                  />
+                ) : null}
+                {marquee ? (
+                  <div
+                    className="module-marquee"
+                    style={{
+                      left: marquee.left,
+                      top: marquee.top,
+                      width: marquee.right - marquee.left,
+                      height: marquee.bottom - marquee.top,
+                    }}
+                  />
+                ) : null}
               </UI3DRendererView>
             </div>
             <div

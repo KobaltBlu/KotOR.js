@@ -20,11 +20,61 @@
     z-index: 1;
     -webkit-app-region: no-drag;
 
+    .forge-menubar-host {
+      display: flex;
+      align-items: stretch;
+      min-width: 0;
+      height: 100%;
+    }
+
     .forge-menubar {
       height: 100%;
       min-height: 100%;
       background: transparent;
       border-bottom: none;
+    }
+  }
+
+  .forge-menubar-preview-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: center;
+    height: 24px;
+    margin-left: 8px;
+    padding: 0 10px;
+    border: 1px solid var(--forge-accent, #4a9eff);
+    border-radius: var(--forge-radius, 4px);
+    background: var(--forge-accent-muted, rgba(74, 158, 255, 0.16));
+    color: var(--forge-text-bright, #fff);
+    font-size: var(--forge-font-size-sm, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-app-region: no-drag;
+
+    i {
+      font-size: 10px;
+    }
+
+    &:hover:not(:disabled) {
+      background: var(--forge-accent, #4a9eff);
+      color: #fff;
+    }
+
+    &:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    &.is-active {
+      border-color: var(--forge-danger, #c42b1c);
+      background: rgba(196, 43, 28, 0.2);
+    }
+
+    &.is-active:hover:not(:disabled) {
+      background: var(--forge-danger, #c42b1c);
+      color: #fff;
     }
   }
 

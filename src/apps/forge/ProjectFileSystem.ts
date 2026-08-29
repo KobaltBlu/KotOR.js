@@ -18,7 +18,12 @@ const spleep = (time: number = 0) => {
 
 /** Project-relative path for File System Access API (forward slashes, no leading slash). */
 function normalizeWebProjectRelativeDir(rel: string): string {
-  return rel.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  let s = rel.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+  // "." means project root; do not treat it as a child directory named ".".
+  if (!s || s === '.') {
+    return '';
+  }
+  return s;
 }
 
 function posixJoinRel(dirbase: string, segment: string): string {

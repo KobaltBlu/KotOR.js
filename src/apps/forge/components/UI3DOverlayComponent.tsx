@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react"
 import { UI3DRenderer } from "@/apps/forge/UI3DRenderer";
 import * as THREE from 'three';
 import type { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
-import { TabModuleEditorControlMode } from "@/apps/forge/states/tabs/TabModuleEditorState";
+import { TabModuleEditorControlMode } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
 import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
+import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
 
 export const UI3DOverlayComponent = function(props: { context: UI3DRenderer; tab?: TabModuleEditorState }){
   const ui3DRenderer = props.context;
@@ -57,8 +58,15 @@ export const UI3DOverlayComponent = function(props: { context: UI3DRenderer; tab
     const spawnLabel = tab.previewSpawnMode === 'camera'
       ? 'Camera'
       : tab.previewSpawnMode === 'waypoint'
-        ? 'Waypoint'
+        ? (tab.previewWarpWaypointTag || tab.getPreviewSpawnWaypointTag() || 'Waypoint')
         : 'Entry';
+    const spawnTitle = tab.previewSpawnMode === 'waypoint'
+      ? (tab.previewWarpWaypointTag
+        ? `Preview warp: ${tab.previewWarpWaypointTag} (click to cycle spawn mode)`
+        : 'Spawn at selected waypoint (pin a warp for a stable tag)')
+      : 'Cycle preview spawn (entry / camera / waypoint)';
+    const canPinWarp = tab.selectedGameObject instanceof ForgeWaypoint
+      && !!String(tab.selectedGameObject.tag || '').trim();
     return (
       <div className="info-overlay module-editor-overlay">
         <b>{previewing ? 'Playable Preview (Esc to exit)' : modeLabels[tab.controlMode]}</b><br />
@@ -91,10 +99,38 @@ export const UI3DOverlayComponent = function(props: { context: UI3DRenderer; tab
               type="button"
               className="module-editor-status-strip__link"
               onClick={() => tab.cyclePreviewSpawnMode()}
-              title="Cycle preview spawn (entry / camera / waypoint)"
+              title={spawnTitle}
             >
-              Spawn {spawnLabel}
+              {tab.previewWarpWaypointTag && tab.previewSpawnMode === 'waypoint'
+                ? `Warp ${spawnLabel}`
+                : `Spawn ${spawnLabel}`}
             </button>
+            {canPinWarp ? (
+              <>
+                {' · '}
+                <button
+                  type="button"
+                  className="module-editor-status-strip__link"
+                  onClick={() => tab.setPreviewWarpFromSelection()}
+                  title="Pin selected waypoint as non-permanent preview warp"
+                >
+                  Pin warp
+                </button>
+              </>
+            ) : null}
+            {tab.previewWarpWaypointTag ? (
+              <>
+                {' · '}
+                <button
+                  type="button"
+                  className="module-editor-status-strip__link"
+                  onClick={() => tab.clearPreviewWarp()}
+                  title="Clear pinned preview warp waypoint"
+                >
+                  Clear warp
+                </button>
+              </>
+            ) : null}
             {' · ? help'}
           </div>
         )}

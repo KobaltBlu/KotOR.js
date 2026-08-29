@@ -17,6 +17,11 @@ import {
 } from "@/apps/forge/settings/forgeSettingsStore";
 import type { TabAudioVisualId } from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
 import { TAB_AUDIO_VISUAL_IDS } from "@/apps/forge/components/tabs/tab-audio-player/tabAudioVisualizations";
+import {
+  DEFAULT_MODULE_WORKSPACE,
+  sanitizeModuleWorkspace,
+  type ModuleWorkspaceState,
+} from "@/apps/forge/module-editor/workspace/ModuleWorkspaceState";
 
 export type ViewportLayerKey =
   | "lights"
@@ -106,6 +111,23 @@ export type ForgeModuleHelperVisibility = Record<ModuleHelperType, boolean>;
 
 export interface ForgeModuleSettings {
   helpers: ForgeModuleHelperVisibility;
+  /** Enable Unity/Unreal-inspired workbench chrome (hierarchy / assets / problems). */
+  workbenchEnabled: boolean;
+  /** Prefer transactional command history; fall back to full snapshots when false. */
+  commandHistoryEnabled: boolean;
+  /** Autosave recovery snapshots into .forge/recovery. */
+  autosaveEnabled: boolean;
+  /** Autosave interval in seconds. */
+  autosaveIntervalSec: number;
+  snapPosition: boolean;
+  snapPositionStep: number;
+  snapAngle: boolean;
+  snapAngleStep: number;
+  transformSpace: "local" | "world";
+  showViewportToolbar: boolean;
+  showProblemsPanel: boolean;
+  marqueeSelect: boolean;
+  workspace: ModuleWorkspaceState;
 }
 
 export interface ForgeBlueprintsSettings {
@@ -152,8 +174,19 @@ export interface ForgeGuiSettings {
   zoomMax: number;
 }
 
+export type ErfBrowserViewMode = "details" | "list" | "icons" | "tiles";
+export type ErfBrowserSortKey = "name" | "type" | "size" | "offset" | "resId";
+export type ErfBrowserSortDir = "asc" | "desc";
+
+export const ERF_BROWSER_VIEW_MODES: ErfBrowserViewMode[] = ["details", "list", "icons", "tiles"];
+export const ERF_BROWSER_SORT_KEYS: ErfBrowserSortKey[] = ["name", "type", "size", "offset", "resId"];
+export const ERF_BROWSER_SORT_DIRS: ErfBrowserSortDir[] = ["asc", "desc"];
+
 export interface ForgeArchivesSettings {
   confirmExtractOverwrite: boolean;
+  defaultView: ErfBrowserViewMode;
+  sortKey: ErfBrowserSortKey;
+  sortDir: ErfBrowserSortDir;
 }
 
 export const DEFAULT_FORGE_HEX_SETTINGS: ForgeHexSettings = {
@@ -214,6 +247,19 @@ export const DEFAULT_FORGE_MODULE_SETTINGS: ForgeModuleSettings = {
     trigger: true,
     waypoint: true,
   },
+  workbenchEnabled: true,
+  commandHistoryEnabled: true,
+  autosaveEnabled: true,
+  autosaveIntervalSec: 120,
+  snapPosition: true,
+  snapPositionStep: 0.1,
+  snapAngle: true,
+  snapAngleStep: 5,
+  transformSpace: "world",
+  showViewportToolbar: true,
+  showProblemsPanel: true,
+  marqueeSelect: true,
+  workspace: DEFAULT_MODULE_WORKSPACE,
 };
 
 export const DEFAULT_FORGE_BLUEPRINTS_SETTINGS: ForgeBlueprintsSettings = {
@@ -258,6 +304,9 @@ export const DEFAULT_FORGE_GUI_SETTINGS: ForgeGuiSettings = {
 
 export const DEFAULT_FORGE_ARCHIVES_SETTINGS: ForgeArchivesSettings = {
   confirmExtractOverwrite: true,
+  defaultView: "details",
+  sortKey: "name",
+  sortDir: "asc",
 };
 
 export const DEFAULT_FORGE_EDITORS = {
@@ -395,6 +444,42 @@ export function sanitizeModuleSettings(value: unknown): ForgeModuleSettings {
   const raw = asSettingsRecord(value);
   return {
     helpers: sanitizeHelpers(raw.helpers),
+    workbenchEnabled: sanitizeBoolean(raw.workbenchEnabled, DEFAULT_FORGE_MODULE_SETTINGS.workbenchEnabled),
+    commandHistoryEnabled: sanitizeBoolean(
+      raw.commandHistoryEnabled,
+      DEFAULT_FORGE_MODULE_SETTINGS.commandHistoryEnabled,
+    ),
+    autosaveEnabled: sanitizeBoolean(raw.autosaveEnabled, DEFAULT_FORGE_MODULE_SETTINGS.autosaveEnabled),
+    autosaveIntervalSec: sanitizeInteger(
+      raw.autosaveIntervalSec,
+      DEFAULT_FORGE_MODULE_SETTINGS.autosaveIntervalSec,
+      30,
+      3600,
+    ),
+    snapPosition: sanitizeBoolean(raw.snapPosition, DEFAULT_FORGE_MODULE_SETTINGS.snapPosition),
+    snapPositionStep: sanitizeNumber(
+      raw.snapPositionStep,
+      DEFAULT_FORGE_MODULE_SETTINGS.snapPositionStep,
+      0.01,
+      10,
+    ),
+    snapAngle: sanitizeBoolean(raw.snapAngle, DEFAULT_FORGE_MODULE_SETTINGS.snapAngle),
+    snapAngleStep: sanitizeNumber(raw.snapAngleStep, DEFAULT_FORGE_MODULE_SETTINGS.snapAngleStep, 1, 90),
+    transformSpace: sanitizeEnum(
+      raw.transformSpace,
+      ["local", "world"] as const,
+      DEFAULT_FORGE_MODULE_SETTINGS.transformSpace,
+    ),
+    showViewportToolbar: sanitizeBoolean(
+      raw.showViewportToolbar,
+      DEFAULT_FORGE_MODULE_SETTINGS.showViewportToolbar,
+    ),
+    showProblemsPanel: sanitizeBoolean(
+      raw.showProblemsPanel,
+      DEFAULT_FORGE_MODULE_SETTINGS.showProblemsPanel,
+    ),
+    marqueeSelect: sanitizeBoolean(raw.marqueeSelect, DEFAULT_FORGE_MODULE_SETTINGS.marqueeSelect),
+    workspace: sanitizeModuleWorkspace(raw.workspace),
   };
 }
 
@@ -473,6 +558,21 @@ export function sanitizeArchivesSettings(value: unknown): ForgeArchivesSettings 
     confirmExtractOverwrite: sanitizeBoolean(
       raw.confirmExtractOverwrite,
       DEFAULT_FORGE_ARCHIVES_SETTINGS.confirmExtractOverwrite,
+    ),
+    defaultView: sanitizeEnum(
+      raw.defaultView,
+      ERF_BROWSER_VIEW_MODES,
+      DEFAULT_FORGE_ARCHIVES_SETTINGS.defaultView,
+    ),
+    sortKey: sanitizeEnum(
+      raw.sortKey,
+      ERF_BROWSER_SORT_KEYS,
+      DEFAULT_FORGE_ARCHIVES_SETTINGS.sortKey,
+    ),
+    sortDir: sanitizeEnum(
+      raw.sortDir,
+      ERF_BROWSER_SORT_DIRS,
+      DEFAULT_FORGE_ARCHIVES_SETTINGS.sortDir,
     ),
   };
 }

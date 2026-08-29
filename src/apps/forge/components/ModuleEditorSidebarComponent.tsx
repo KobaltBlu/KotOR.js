@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { TabModuleEditorState } from "@/apps/forge/states/tabs";
-import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
 import { SceneGraphTreeView } from "@/apps/forge/components/SceneGraphTreeView";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 import * as THREE from 'three';
@@ -44,12 +43,14 @@ export const ModuleEditorSidebarComponent = function(props: any){
 
   const [selectedTab, setSelectedTab] = useState<string>('object-properties');
   const [selectedGameObject, setSelectedGameObject] = useState<ForgeGameObject | undefined>(undefined);
+  const [selectedCount, setSelectedCount] = useState(0);
   const [sceneFilter, setSceneFilter] = useState('');
   const [sceneTypeFilter, setSceneTypeFilter] = useState<GroupType | ''>('');
 
   useEffect(() => {
     const onSelectionChanged = (gameObject: ForgeGameObject | undefined) => {
       setSelectedGameObject(gameObject);
+      setSelectedCount(tab.selectedGameObjects?.length || (gameObject ? 1 : 0));
       if(gameObject instanceof ForgeGameObject){
         setSelectedTab('object-properties');
       }
@@ -59,6 +60,7 @@ export const ModuleEditorSidebarComponent = function(props: any){
     
     // Set initial selection
     setSelectedGameObject(tab.selectedGameObject);
+    setSelectedCount(tab.selectedGameObjects?.length || (tab.selectedGameObject ? 1 : 0));
 
     return () => {
       tab.removeEventListener('onSelectionChanged', onSelectionChanged);
@@ -116,7 +118,14 @@ export const ModuleEditorSidebarComponent = function(props: any){
         </div>
         <div className="tab-container">
           {selectedTab === 'object-properties' && (
-            <GITInstancePropertiesEditor gameObject={selectedGameObject} tab={tab} />
+            <>
+              {selectedCount > 1 ? (
+                <div className="module-editor-multi-select" role="status">
+                  Editing {selectedCount} objects. Shared fields apply to all; mixed values show as (multiple values).
+                </div>
+              ) : null}
+              <GITInstancePropertiesEditor gameObject={selectedGameObject} tab={tab} />
+            </>
           )}
           {selectedTab === 'area-properties' && (
             <AreaPropertiesEditor tab={tab} />
@@ -435,6 +444,20 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
             tab.setEntryFromSelection();
             tab.updateFile();
           }}>Set Entry</button>
+          {selectedObject instanceof ForgeWaypoint ? (
+            <button className="git-instance-properties-editor__action-btn" onClick={() => {
+              tab.selectGameObject(selectedObject);
+              tab.placeWaypointAtEntry();
+            }}>Clone at Entry</button>
+          ) : null}
+          {selectedObject instanceof ForgeWaypoint ? (
+            <button className="git-instance-properties-editor__action-btn" onClick={() => {
+              tab.selectGameObject(selectedObject);
+              if(!tab.setPreviewWarpFromSelection()){
+                window.alert("Waypoint needs a Tag to pin as preview warp.");
+              }
+            }}>Pin Preview Warp</button>
+          ) : null}
           {getBlueprintTypeForGameObject(selectedObject) && (
             <button className="git-instance-properties-editor__action-btn" onClick={() => tab.openBlueprintBrowserForType(getBlueprintTypeForGameObject(selectedObject)!)}>Open Blueprint</button>
           )}
@@ -1191,14 +1214,6 @@ function bytesToHex(bytes: Uint8Array): string {
 const AreaPropertiesEditor = function(props: { tab: TabModuleEditorState }){
   const area = props.tab.module?.area;
   const [tick, setTick] = useState(0);
-  const [previewMode, setPreviewMode] = useState(props.tab.tabMode === ModuleEditorTabMode.PREVIEW);
-
-  useEffect(() => {
-    const onPreview = (enabled: boolean) => setPreviewMode(!!enabled);
-    props.tab.addEventListener('onPreviewModeChange', onPreview);
-    setPreviewMode(props.tab.tabMode === ModuleEditorTabMode.PREVIEW);
-    return () => props.tab.removeEventListener('onPreviewModeChange', onPreview);
-  }, [props.tab]);
 
   if(!area){
     return <div className="git-instance-properties-editor__empty-state">No area loaded.</div>;
@@ -1214,12 +1229,6 @@ const AreaPropertiesEditor = function(props: { tab: TabModuleEditorState }){
       <div className="git-instance-properties-editor__header">Area (ARE)</div>
       <div className="git-instance-properties-editor__object-actions">
         <button className="git-instance-properties-editor__action-btn" onClick={() => void props.tab.openAreaPath()}>Open Path Editor</button>
-        <button
-          className="git-instance-properties-editor__action-btn"
-          onClick={() => props.tab.setPreviewMode(!previewMode)}
-        >
-          {previewMode ? 'Exit Preview' : 'Play Preview'}
-        </button>
       </div>
 
       <CollapsibleSection title="Identity">
@@ -1493,11 +1502,13 @@ const AreaPropertiesEditor = function(props: { tab: TabModuleEditorState }){
               <div className="git-instance-properties-editor__hint">VIS visible from this room</div>
               <div className="git-instance-properties-editor__actions">
                 <button onClick={() => {
+                  area.ensureLayout();
                   area.rooms.forEach((other) => area.setRoomVisibilityLink(room.roomName, other.roomName, true));
                   area.syncLayoutAndVisInMemory();
                   mark();
                 }}>Select all</button>
                 <button onClick={() => {
+                  area.ensureLayout();
                   area.rooms.forEach((other) => area.setRoomVisibilityLink(room.roomName, other.roomName, false));
                   area.syncLayoutAndVisInMemory();
                   mark();
@@ -1512,6 +1523,7 @@ const AreaPropertiesEditor = function(props: { tab: TabModuleEditorState }){
                       className="property-editor-checkbox"
                       checked={linked}
                       onChange={(e) => {
+                        area.ensureLayout();
                         area.setRoomVisibilityLink(room.roomName, other.roomName, e.target.checked);
                         area.syncLayoutAndVisInMemory();
                         mark();
@@ -1750,6 +1762,7 @@ const ModulePropertiesEditor = function(props: { tab: TabModuleEditorState }){
     props.tab.updateFile(coalesceKey ? { coalesceKey } : undefined);
     setTick((n) => n + 1);
   };
+  const refreshUi = () => setTick((n) => n + 1);
   const time = module.timeManager;
   const area = module.area;
   const objects: ForgeGameObject[] = area ? [
@@ -1860,23 +1873,50 @@ const ModulePropertiesEditor = function(props: { tab: TabModuleEditorState }){
 
 <CollapsibleSection title="Entry Point">
       <ScalarRow label="Entry X">
-        <NumberField value={module.entryX} step="0.01" onChange={(value) => { module.entryX = value; mark("entryX"); }} />
+        <NumberField value={module.entryX} step="0.01" onChange={(value) => { module.entryX = value; mark("entryX"); props.tab.updateEntryMarker(); }} />
       </ScalarRow>
       <ScalarRow label="Entry Y">
-        <NumberField value={module.entryY} step="0.01" onChange={(value) => { module.entryY = value; mark("entryY"); }} />
+        <NumberField value={module.entryY} step="0.01" onChange={(value) => { module.entryY = value; mark("entryY"); props.tab.updateEntryMarker(); }} />
       </ScalarRow>
       <ScalarRow label="Entry Z">
-        <NumberField value={module.entryZ} step="0.01" onChange={(value) => { module.entryZ = value; mark("entryZ"); }} />
+        <NumberField value={module.entryZ} step="0.01" onChange={(value) => { module.entryZ = value; mark("entryZ"); props.tab.updateEntryMarker(); }} />
       </ScalarRow>
       <ScalarRow label="Entry Dir X">
-        <NumberField value={module.entryDirectionX} step="0.01" onChange={(value) => { module.entryDirectionX = value; mark("entryDirX"); }} />
+        <NumberField value={module.entryDirectionX} step="0.01" onChange={(value) => { module.entryDirectionX = value; mark("entryDirX"); props.tab.updateEntryMarker(); }} />
       </ScalarRow>
       <ScalarRow label="Entry Dir Y">
-        <NumberField value={module.entryDirectionY} step="0.01" onChange={(value) => { module.entryDirectionY = value; mark("entryDirY"); }} />
+        <NumberField value={module.entryDirectionY} step="0.01" onChange={(value) => { module.entryDirectionY = value; mark("entryDirY"); props.tab.updateEntryMarker(); }} />
       </ScalarRow>
-      <div className="property-editor-row">
+      <div className="property-editor-row" style={{ flexWrap: "wrap", gap: 4 }}>
         <button className="forge-btn" onClick={() => { props.tab.setEntryFromSelection(); mark(); }}>Set entry from selection</button>
+        <button className="forge-btn" onClick={() => { props.tab.setEntryFromCamera(); mark(); }}>Set entry from camera</button>
+        <button className="forge-btn" onClick={() => { props.tab.focusEntryMarker(); }}>Focus entry</button>
+        <button className="forge-btn" onClick={() => { props.tab.placeWaypointAtEntry(); mark(); }}>Place waypoint at entry</button>
       </div>
+      <div className="property-editor-row" style={{ flexWrap: "wrap", gap: 4 }}>
+        <button
+          className="forge-btn"
+          onClick={() => {
+            if(!props.tab.setPreviewWarpFromSelection()){
+              window.alert("Select a waypoint with a Tag to pin as preview warp.");
+            }else{
+              refreshUi();
+            }
+          }}
+        >
+          Pin preview warp from selection
+        </button>
+        <button
+          className="forge-btn"
+          disabled={!props.tab.previewWarpWaypointTag}
+          onClick={() => { props.tab.clearPreviewWarp(); refreshUi(); }}
+        >
+          Clear preview warp
+        </button>
+      </div>
+      {props.tab.previewWarpWaypointTag ? (
+        <div className="property-editor-hint">Preview warp: {props.tab.previewWarpWaypointTag}</div>
+      ) : null}
 </CollapsibleSection>
 
 <CollapsibleSection title="Scripts">

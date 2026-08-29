@@ -8,7 +8,7 @@
 
 import * as THREE from "three";
 import * as KotOR from "@/apps/forge/KotOR";
-import { GameObjectType } from "@/apps/forge/states/tabs/TabModuleEditorState";
+import { GameObjectType } from "@/apps/forge/states/tabs/TabModuleEditorTypes";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { sanitizeResRef } from "@/apps/forge/helpers/UTxEditorHelpers";
 

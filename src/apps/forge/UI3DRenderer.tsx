@@ -8,6 +8,10 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
 import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import {
+  defaultViewportPerfPolicy,
+  shouldIdleRender,
+} from "@/apps/forge/module-editor/kernel/ViewportPerfPolicy";
 
 export enum CameraView {
   Top = 'top',
@@ -170,6 +174,10 @@ export class UI3DRenderer extends EventListenerModel {
   resizeObserver: ResizeObserver;
   loadingTextures: boolean;
   enabled: boolean = false;
+  /** Last user interaction timestamp for idle render throttling. */
+  lastInteractionAt: number = Date.now();
+  private idleFrameAccumulator = 0;
+  private viewportPerfPolicy = defaultViewportPerfPolicy();
 
   queuedAnimationFrame: number;
 
@@ -611,6 +619,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   onKeyDown(event: KeyboardEvent) {
+    this.noteInteraction();
     this.processEventListener('onKeyDown', [event]);
     // Only handle key events when canvas is visible and enabled
     if(!this.canvas || !this.enabled) {
@@ -679,6 +688,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   onMouseDown(event: MouseEvent) {
+    this.noteInteraction();
     this.processEventListener('onMouseDown', [event]);
     if(event.target != this.canvas){
       return;
@@ -717,6 +727,9 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   onMouseMove(event: MouseEvent) {
+    if (KotOR.Mouse.MouseDown) {
+      this.noteInteraction();
+    }
     this.processEventListener('onMouseMove', [event]);
     if(event.target != this.canvas){
       return;
@@ -730,6 +743,7 @@ export class UI3DRenderer extends EventListenerModel {
   }
 
   onMouseWheel(event: WheelEvent) {
+    this.noteInteraction();
     this.processEventListener('onMouseWheel', [event]);
   }
 
@@ -1207,18 +1221,71 @@ export class UI3DRenderer extends EventListenerModel {
     return '';
   }
 
+  /** Mark an interaction so the viewport returns to the active render rate. */
+  noteInteraction(): void {
+    this.lastInteractionAt = Date.now();
+  }
+
+  /**
+   * Enable/disable the render loop. Disabling stops rAF; enabling starts it again.
+   * Assigning `.enabled = true` alone does not restart rendering.
+   */
+  setEnabled(enabled: boolean): void {
+    if(this.enabled === enabled){
+      if(enabled){
+        this.render();
+      }
+      return;
+    }
+    this.enabled = enabled;
+    if(!enabled){
+      cancelAnimationFrame(this.queuedAnimationFrame);
+      this.queuedAnimationFrame = 0 as any;
+      return;
+    }
+    this.syncSizeFromParent();
+    this.render();
+  }
+
+  /** Resize from the canvas parent after it becomes visible again (e.g. exit preview). */
+  syncSizeFromParent(): void {
+    const parent = this.canvas?.parentElement;
+    if(!parent){
+      return;
+    }
+    const width = parent.clientWidth;
+    const height = parent.clientHeight;
+    if(width > 0 && height > 0){
+      this.setSize(width, height);
+    }
+  }
+
   render(){
     if(!this.enabled) return;
     this.queuedAnimationFrame = requestAnimationFrame( () => {
       this.render();
     });
+
+    const rawDelta = this.clock.getDelta();
+    const idle = shouldIdleRender(this.lastInteractionAt);
+    if (idle) {
+      this.idleFrameAccumulator += rawDelta;
+      const frameBudget = 1 / Math.max(1, this.viewportPerfPolicy.idleRenderHz);
+      if (this.idleFrameAccumulator < frameBudget) {
+        return;
+      }
+      this.idleFrameAccumulator = 0;
+    } else {
+      this.idleFrameAccumulator = 0;
+    }
+
     if(this.renderer){
       this.renderer.clear();
       if (this.selectionBox.visible) {
         this.selectionBox.update();
       }
 
-      const delta = this.clock.getDelta();
+      const delta = idle ? (1 / Math.max(1, this.viewportPerfPolicy.idleRenderHz)) : rawDelta;
       this.time += delta;
       this.deltaTime += delta;
       this.deltaTimeFixed += (1/60);

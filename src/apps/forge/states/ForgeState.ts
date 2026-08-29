@@ -353,11 +353,16 @@ export class ForgeState {
             AudioPlayerState.showFloatingMiniPlayer();
           }
 
-          const tabStates: TabStoreState[] = KotOR.ConfigClient.get('open_tabs', []);
+          const tabStates: TabStoreState[] = (KotOR.ConfigClient.get('open_tabs', []) as TabStoreState[])
+            // Module editor is project-scoped and must not be restored without a project.
+            .filter((t) => t?.type !== 'TabModuleEditorState');
           if(shouldRestoreOpenTabs(session.restoreOpenTabs, tabStates)){
             for(let i = 0; i < tabStates.length; i++){
               const tabState = tabStates[i];
               this.tabManager.restoreTabState(tabState);
+            }
+            if(!ForgeState.tabManager.tabs.length){
+              ForgeState.tabManager.addTab(new TabQuickStartState());
             }
           }else{
             ForgeState.tabManager.addTab(new TabQuickStartState());
@@ -799,7 +804,10 @@ export class ForgeState {
 
   static saveOpenTabsState(){
     try{
-      const states: TabStoreState[] = ForgeState.tabManager.tabs.map( (state) => {
+      const states: TabStoreState[] = ForgeState.tabManager.tabs
+        // Module editor is recreated with the project; do not persist it across reloads.
+        .filter((state) => state.type !== 'TabModuleEditorState')
+        .map( (state) => {
         const f = state.file as EditorFile;
         const ref = f?.toReferenceURI?.();
         const filePlain = ref && f

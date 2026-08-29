@@ -1,134 +1,131 @@
 import React, { useCallback, useEffect, useState } from "react";
-// import { Menu, Item, Separator, Submenu, useContextMenu, ItemParams } from 'react-contexify';
 import { BaseTabProps } from "@/apps/forge/interfaces/BaseTabProps";
 import { useEffectOnce } from "@/apps/forge/helpers/UseEffectOnce";
 import { TabERFEditorState } from "@/apps/forge/states/tabs";
 import * as KotOR from "@/apps/forge/KotOR";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { EditorFile } from "@/apps/forge/EditorFile";
-import { ForgeTreeView } from "@/apps/forge/components/treeview/ForgeTreeView";
 import { FileBrowserNode } from "@/apps/forge/FileBrowserNode";
-import { ERFListNode } from "@/apps/forge/components/treeview/ERFListNode";
 import { useContextMenu } from "@/apps/forge/components/common/ContextMenu";
 import { createERFContextMenuItems } from "@/apps/forge/components/tabs/tab-erf-editor/ERFContextMenu";
+import { ERFBrowserToolbar } from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserToolbar";
+import { ERFBrowserBreadcrumbs } from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserBreadcrumbs";
+import { ERFBrowserListing } from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserListing";
+import { ERFBrowserPreview } from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserPreview";
+import { isERFFolderNode } from "@/apps/forge/components/tabs/tab-erf-editor/ERFBrowserTypes";
+import "@/apps/forge/components/tabs/tab-erf-editor/tab-erf-editor.scss";
 
-const MENU_ID = 'context-tab-erf-editor-entry';
-
-const exportAllResourceTypes = [KotOR.ResourceTypes['erf'], KotOR.ResourceTypes['mod'], KotOR.ResourceTypes['sav'], KotOR.ResourceTypes['rim']];
-
-interface ContextMenuProps {
-  archive: KotOR.ERFObject;
-  resource: KotOR.IERFKeyEntry;
-}
-
-export const TabERFEditor = function(props: BaseTabProps) {
+export const TabERFEditor = function (props: BaseTabProps) {
   const tab = props.tab as TabERFEditorState;
-  const [entries, setEntries] = useState<FileBrowserNode[]>([]);
-  const [selectedEntry, setSelectedEntry] = useState<FileBrowserNode>();
+  const [generation, setGeneration] = useState(tab.browserGeneration);
   const { showContextMenu, ContextMenuComponent } = useContextMenu();
 
-  const [selectedFilename, setSelectedFilename] = useState<string>('');
-  const [selectedFiletype, setSelectedFiletype] = useState<string>('');
-  const [selectedFilesize, setSelectedFilesize] = useState<string>('');
+  const refresh = useCallback(() => {
+    setGeneration(tab.browserGeneration);
+  }, [tab]);
 
-  const onEditorFileLoad = () => {
-    setEntries(tab.files);
-  };
-
-  useEffectOnce( () => { //constructor
-    tab.addEventListener('onEditorFileLoad', onEditorFileLoad);
-    return () => { //destructor
-      tab.removeEventListener('onEditorFileLoad', onEditorFileLoad);
-    }
+  useEffectOnce(() => {
+    tab.addEventListener("onEditorFileLoad", refresh);
+    tab.addEventListener("onBrowserChanged", refresh);
+    return () => {
+      tab.removeEventListener("onEditorFileLoad", refresh);
+      tab.removeEventListener("onBrowserChanged", refresh);
+    };
   });
 
   useEffect(() => {
-    if(!selectedEntry) return;
-    const { resource, archive } = selectedEntry.data || {};
-    if(!archive || !resource) return;
-    const res = archive.getResourceInfo?.(resource.resRef, resource.resType)
-      || archive.getResource?.(resource.resRef, resource.resType);
-    setSelectedFilename(resource.resRef);
-    setSelectedFiletype(KotOR.ResourceTypes.getKeyByValue(resource.resType));
-    setSelectedFilesize(KotOR.Utility.bytesToSize( res ? res.size : 0 ));
-  }, [selectedEntry]);
+    setGeneration(tab.browserGeneration);
+  }, [tab, tab.browserGeneration]);
 
-  const onResourceClick = (node: FileBrowserNode) => {
-    console.log('onResourceClick', node);
-    if(!node.data.resource){ return; }
-    setSelectedEntry(node);
-  }
+  const onContextMenu = useCallback(
+    (event: React.MouseEvent, node: FileBrowserNode) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!node.data?.resource) {
+        return;
+      }
+      tab.selectNode(node);
+      const contextMenuItems = createERFContextMenuItems({
+        archive: node.data.archive,
+        resource: node.data.resource,
+      });
+      showContextMenu(event.clientX, event.clientY, contextMenuItems);
+    },
+    [tab, showContextMenu],
+  );
 
-  const onResourceDoubleClick = (node: FileBrowserNode) => {
-    console.log('onResourceDoubleClick', node);
-    if(!node.data.resource){ return; }
-    openERFResource(node.data.archive, node.data.resource);
-  }
-
-  const onContextMenu = (event: React.MouseEvent<any>, node: FileBrowserNode) => {
-    console.log('handleContextMenu', event, node);
-    event.preventDefault();
-    event.stopPropagation();
-    if(!node.data.resource){ return; }
-    setSelectedEntry(node);
-    
-    const contextMenuItems = createERFContextMenuItems({
-      archive: node.data.archive,
-      resource: node.data.resource
-    });
-
-    console.log('contextMenuItems', contextMenuItems);
-    showContextMenu(event.clientX, event.clientY, contextMenuItems);
-  };
-
-  const openERFResource = async (archive: KotOR.ERFObject, key: KotOR.IERFKeyEntry) => {
+  const openERFResource = useCallback(async (archive: KotOR.ERFObject, key: KotOR.IERFKeyEntry) => {
     let buffer: Uint8Array;
     let buffer2: Uint8Array;
-    if(key.resType == KotOR.ResourceTypes['mdl'] || key.resType == KotOR.ResourceTypes['mdx']){
-      buffer = await archive.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes['mdl']);
-      buffer2 = await archive.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes['mdx']);
+    if (key.resType == KotOR.ResourceTypes["mdl"] || key.resType == KotOR.ResourceTypes["mdx"]) {
+      buffer = await archive.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes["mdl"]);
+      buffer2 = await archive.getResourceBufferByResRef(key.resRef, KotOR.ResourceTypes["mdx"]);
       FileTypeManager.onOpenResource(
         new EditorFile({
           resref: key.resRef,
-          reskey: KotOR.ResourceTypes['mdl'],
+          reskey: KotOR.ResourceTypes["mdl"],
           buffer: buffer,
-          buffer2: buffer2
-        })
+          buffer2: buffer2,
+        }),
       );
-    }else {
+    } else {
       buffer = await archive.getResourceBufferByResRef(key.resRef, key.resType);
       FileTypeManager.onOpenResource(
-        new EditorFile({resref: key.resRef, reskey: key.resType, buffer: buffer })
+        new EditorFile({ resref: key.resRef, reskey: key.resType, buffer: buffer }),
       );
     }
-  }
+  }, []);
+
+  void generation;
+
+  const visibleNodes = tab.getVisibleNodes();
+  const cwdChildren = tab.getCwdChildren();
+  const archive = tab.getCurrentArchive();
+  const header = archive?.header;
+  const selected = tab.selectedNode;
 
   return (
     <>
-      <div className="file-browser">
-        <div className="flex-horizontal" style={{height: '100%'}}>
-          <ForgeTreeView style={{flex: 0.5, height: '100%', overflow: 'auto'}}>
-            {
-              entries.map( (node: FileBrowserNode) => {
-                return (
-                  <ERFListNode key={node.id} node={node} onContextMenu={onContextMenu} onSelect={onResourceClick} onDoubleClick={onResourceDoubleClick} />
-                )
-              })
-            }
-          </ForgeTreeView>
-          <div style={{flex: 0.5, height: '100%'}}>
-            {selectedEntry && (
-              <div className="flex-vertical" style={{height: '100%', alignItems: 'center', justifyContent: 'center', textAlign: 'center', textTransform: 'uppercase'}}>
-                <span><i className="fas fa-file-alt"></i></span>
-                <span className="text-primary font-weight-bold">{selectedFilename}</span>
-                <span className="text-secondary">{selectedFiletype}</span>
-                <span className="text-muted">{selectedFilesize}</span>
-              </div>
-            )}
+      <div className="tab-erf-editor">
+        <ERFBrowserToolbar tab={tab} />
+        <ERFBrowserBreadcrumbs tab={tab} />
+        <div className="erf-body">
+          <div className="erf-listing-pane">
+            <ERFBrowserListing
+              tab={tab}
+              nodes={visibleNodes}
+              onContextMenu={onContextMenu}
+              onOpenResource={openERFResource}
+            />
           </div>
+          <div className="erf-preview-pane">
+            <ERFBrowserPreview
+              node={selected}
+              folderFallback={{
+                name: tab.getCwd()?.name || tab.tabName,
+                nodes: cwdChildren,
+                archive,
+              }}
+            />
+          </div>
+        </div>
+        <div className="erf-statusbar">
+          <span>
+            {tab.filterQuery.trim()
+              ? `${visibleNodes.length} of ${cwdChildren.length} items`
+              : `${cwdChildren.length} items`}
+          </span>
+          <span>
+            {(header?.fileType || "ERF ").trim()} {(header?.fileVersion || "").trim()}
+          </span>
+          {selected && (
+            <span>
+              {isERFFolderNode(selected) ? "Folder" : "File"}: {selected.name}
+            </span>
+          )}
         </div>
       </div>
       {ContextMenuComponent}
     </>
   );
-}
+};

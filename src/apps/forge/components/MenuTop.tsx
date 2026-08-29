@@ -4,6 +4,7 @@ import { MenuTopState } from "@/apps/forge/states/MenuTopState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { TabState } from "@/apps/forge/states/tabs/TabState";
 import { MenuBar, ForgeMenuItem } from "@/apps/forge/components/common/MenuBar";
+import { MenuTopPreviewButton } from "@/apps/forge/components/MenuTopPreviewButton";
 import "@/apps/forge/commands/registerForgeCommands";
 
 export interface MenuTopProps {
@@ -74,6 +75,9 @@ export const MenuTop = memo(function MenuTop(props: MenuTopProps = {}) {
   });
 
   return (
-    <MenuBar items={items} variant="flow" className={className} />
+    <div className={`forge-menubar-host${className ? ` ${className}` : ""}`}>
+      <MenuBar items={items} variant="flow" className={className} />
+      <MenuTopPreviewButton />
+    </div>
   );
 });

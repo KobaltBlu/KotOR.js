@@ -4,6 +4,18 @@
   min-height: 0;
   overflow: hidden;
 
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   // LayoutContainer east pane is absolute with a fixed height — force children
   // to fill that height so their internal overflow:auto regions can scroll.
   .ui-layout-east {
@@ -23,5 +35,271 @@
   .ui-layout-center {
     min-height: 0;
     overflow: hidden;
+  }
+
+  .ui-layout-west,
+  .ui-layout-south {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden !important;
+    min-height: 0;
+  }
+
+  .ui-layout-west > *,
+  .ui-layout-south > * {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+.module-viewport-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 8px;
+  background: var(--forge-bg-elevated);
+  border-bottom: 1px solid var(--forge-border);
+  -webkit-app-region: no-drag;
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 26px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: var(--forge-radius);
+    background: transparent;
+    color: var(--forge-text);
+    font-size: var(--forge-font-size-sm);
+    cursor: pointer;
+
+    &:hover {
+      background: var(--forge-bg-hover);
+    }
+
+    &.is-active {
+      background: var(--forge-accent-muted);
+      border-color: var(--forge-accent);
+      color: var(--forge-text-bright);
+    }
+
+    i {
+      font-size: 11px;
+    }
+  }
+
+  &__sep {
+    width: 1px;
+    height: 18px;
+    margin: 0 4px;
+    background: var(--forge-border);
+  }
+}
+
+.module-marquee {
+  position: absolute;
+  border: 1px solid var(--forge-accent);
+  background: var(--forge-accent-muted);
+  pointer-events: none;
+  z-index: 20;
+}
+
+.module-workbench-west {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--forge-bg);
+
+  &__tabs {
+    display: flex;
+    border-bottom: 1px solid var(--forge-border);
+
+    button {
+      flex: 1;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: var(--forge-text-muted);
+      cursor: pointer;
+
+      &.is-active {
+        color: var(--forge-text-bright);
+        box-shadow: inset 0 -2px 0 var(--forge-accent);
+      }
+    }
+  }
+
+  &__body {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  &__hierarchy {
+    height: 100%;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  &__hierarchy-hint {
+    padding: 12px;
+    color: var(--forge-text-muted);
+    font-size: var(--forge-font-size-sm);
+    line-height: 1.4;
+  }
+}
+
+.module-asset-browser {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+
+  &__header,
+  &__filters {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid var(--forge-border-subtle);
+  }
+
+  &__filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    overflow: auto;
+    flex: 1;
+  }
+
+  &__item {
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    gap: 8px;
+    width: 100%;
+    align-items: center;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: var(--forge-radius);
+    background: transparent;
+    color: var(--forge-text);
+    text-align: left;
+    cursor: grab;
+
+    &:hover {
+      background: var(--forge-bg-hover);
+      border-color: var(--forge-border);
+    }
+  }
+
+  &__ext {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--forge-accent);
+  }
+
+  &__resref {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__origin {
+    font-size: 10px;
+    color: var(--forge-text-muted);
+
+    &--project,
+    &--override {
+      color: var(--forge-success);
+    }
+  }
+
+  &__empty {
+    padding: 16px;
+    color: var(--forge-text-muted);
+    font-size: var(--forge-font-size-sm);
+  }
+}
+
+.module-problems-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--forge-bg);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--forge-border);
+  }
+
+  &__counts {
+    flex: 1;
+    color: var(--forge-text-muted);
+    font-size: var(--forge-font-size-sm);
+  }
+
+  &__empty {
+    padding: 12px;
+    color: var(--forge-text-muted);
+    font-size: var(--forge-font-size-sm);
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    overflow: auto;
+    flex: 1;
+  }
+
+  &__issue {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    border: none;
+    border-radius: var(--forge-radius);
+    background: transparent;
+    color: var(--forge-text);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--forge-bg-hover);
+    }
+
+    &--error .module-problems-panel__severity { color: var(--forge-danger); }
+    &--warning .module-problems-panel__severity { color: #d4a017; }
+    &--info .module-problems-panel__severity { color: var(--forge-accent); }
+  }
+
+  &__severity {
+    text-transform: uppercase;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  &__message {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__meta {
+    color: var(--forge-text-muted);
+    font-size: var(--forge-font-size-sm);
   }
 }

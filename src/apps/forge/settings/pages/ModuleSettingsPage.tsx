@@ -1,5 +1,5 @@
 /**
- * Module editor helper visibility.
+ * Module editor helper visibility and workbench options.
  *
  * @file ModuleSettingsPage.tsx
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -36,8 +36,94 @@ export function ModuleSettingsPage() {
     <div className="forge-settings-page">
       <h3 className="forge-settings-page__title">Module</h3>
       <p className="forge-settings-page__lead">
-        Which object types are visible when a module editor opens. Applied to the 3D scene groups.
+        Workbench layout, snapping, and which object helpers are visible in the 3D scene.
       </p>
+
+      <h4 className="forge-settings-page__subtitle">Workbench</h4>
+      <SettingRow
+        label="Modern workbench"
+        description="Hierarchy, asset browser, viewport toolbar, and problems panel."
+        keywords={["module", "workbench", "layout", "unity", "unreal"]}
+      >
+        <ForgeCheckbox
+          label=""
+          value={settings.workbenchEnabled}
+          onChange={(value) => setModuleSettings({ workbenchEnabled: value })}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Command history"
+        description="Named transactional undo for transforms and edits (snapshot fallback remains)."
+        keywords={["module", "undo", "history", "command"]}
+      >
+        <ForgeCheckbox
+          label=""
+          value={settings.commandHistoryEnabled}
+          onChange={(value) => setModuleSettings({ commandHistoryEnabled: value })}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Show viewport toolbar"
+        description="Select / move / rotate / scale / place tools above the scene."
+        keywords={["module", "toolbar", "gizmo"]}
+      >
+        <ForgeCheckbox
+          label=""
+          value={settings.showViewportToolbar}
+          onChange={(value) => setModuleSettings({ showViewportToolbar: value })}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Problems panel"
+        description="Show validation diagnostics under the scene."
+        keywords={["module", "problems", "validation"]}
+      >
+        <ForgeCheckbox
+          label=""
+          value={settings.showProblemsPanel}
+          onChange={(value) => setModuleSettings({ showProblemsPanel: value })}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Marquee select"
+        description="Drag a rectangle in the viewport to multi-select objects."
+        keywords={["module", "marquee", "selection"]}
+      >
+        <ForgeCheckbox
+          label=""
+          value={settings.marqueeSelect}
+          onChange={(value) => setModuleSettings({ marqueeSelect: value })}
+        />
+      </SettingRow>
+      <SettingRow
+        label="Autosave recovery"
+        description="Periodically write recovery snapshots to .forge/recovery."
+        keywords={["module", "autosave", "recovery"]}
+      >
+        <ForgeCheckbox
+          label=""
+          value={settings.autosaveEnabled}
+          onChange={(value) => setModuleSettings({ autosaveEnabled: value })}
+        />
+      </SettingRow>
+
+      <h4 className="forge-settings-page__subtitle">Snapping</h4>
+      <SettingRow label="Snap position" keywords={["module", "snap", "grid"]}>
+        <ForgeCheckbox
+          label=""
+          value={settings.snapPosition}
+          onChange={(value) => setModuleSettings({ snapPosition: value })}
+        />
+      </SettingRow>
+      <SettingRow label="Snap angle" keywords={["module", "snap", "rotate"]}>
+        <ForgeCheckbox
+          label=""
+          value={settings.snapAngle}
+          onChange={(value) => setModuleSettings({ snapAngle: value })}
+        />
+      </SettingRow>
+
+      <h4 className="forge-settings-page__subtitle">Helpers</h4>
       {MODULE_HELPER_TYPES.map((key) => (
         <SettingRow
           key={key}
@@ -65,6 +151,6 @@ registerSettingsPage({
   label: "Module",
   group: "editors",
   icon: "fa-solid fa-map",
-  keywords: ["module", "area", "helpers", "creature", "waypoint", "trigger"],
+  keywords: ["module", "area", "helpers", "creature", "waypoint", "trigger", "workbench"],
   render: () => React.createElement(ModuleSettingsPage),
 });

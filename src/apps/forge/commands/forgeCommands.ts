@@ -7,7 +7,7 @@
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
 
-export type ForgeCommandCategory = "File" | "Edit" | "View" | "Project" | "Help";
+export type ForgeCommandCategory = "File" | "Edit" | "View" | "Project" | "Module" | "Help" | "Preferences";
 
 export interface ForgeCommand {
   id: string;

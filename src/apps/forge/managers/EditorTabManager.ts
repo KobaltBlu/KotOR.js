@@ -193,15 +193,9 @@ export class EditorTabManager extends EventListenerModel {
           new TabGFFEditorState({editorFile: tabState.file})
         );
       break;
-      case 'TabModuleEditorState': {
-        const moduleTab = new TabModuleEditorState({editorFile: tabState.file});
-        this.addTab(moduleTab);
-        void import("@/apps/forge/states/ForgeState").then(({ ForgeState }) => {
-          if(ForgeState.project?.hasModule()){
-            void moduleTab.loadFromProject(ForgeState.project);
-          }
-        });
-      }
+      case 'TabModuleEditorState':
+        // Restored via project settings.module_editor.open when a project is opened.
+        // Never restore from global open_tabs.
       break;
       case 'TabTwoDAEditorState':
         this.addTab(

@@ -170,6 +170,11 @@ export class IngameControls {
     document.addEventListener('pointerlockchange', this.plChangeCallback.bind(this), true);
 
     window.addEventListener('mousedown', (event: MouseEvent) => {
+      // Ignore clicks on React/chrome overlays that sit above the game canvas.
+      if(!this.isGameCanvasMouseTarget(event)){
+        return;
+      }
+
       // Block GUI selection while a movie is playing
       if(GameState.VideoManager.isMoviePlaying()){
         return;
@@ -178,15 +183,13 @@ export class IngameControls {
       if(!Mouse.pointerLock){
         Mouse.Update(event.clientX, event.clientY);
       }
-      if(event.target == this.element){
-        GameState.MenuManager.activeGUIElement = undefined;
+      GameState.MenuManager.activeGUIElement = undefined;
 
-        if(event.button == 0){
+      if(event.button == 0){
 
-        }else if(event.button == 2){
-          // Ask the browser to lock the pointer
-          // this.element.requestPointerLock();
-        }
+      }else if(event.button == 2){
+        // Ask the browser to lock the pointer
+        // this.element.requestPointerLock();
       }
 
       GameState.raycaster.setFromCamera( GameState.mouse, GameState.camera_gui );
@@ -235,6 +238,12 @@ export class IngameControls {
     });
 
     window.addEventListener('mousemove', (event: MouseEvent) => {
+      // Allow look while pointer-locked; otherwise only track when over the canvas
+      // (or while a canvas-started drag is held).
+      if(!this.isGameCanvasMouseTarget(event) && !Mouse.leftDown && !Mouse.rightDown){
+        return;
+      }
+
       // Block GUI selection while a movie is playing
       if(GameState.VideoManager.isMoviePlaying()){
         return;
@@ -265,9 +274,17 @@ export class IngameControls {
     });
 
     window.addEventListener('mouseup', (event: MouseEvent) => {
+      // Finish a canvas-started press even if release lands on overlay chrome;
+      // otherwise ignore presses that never hit the canvas.
+      if(!this.isGameCanvasMouseTarget(event) && !Mouse.leftDown && !Mouse.rightDown){
+        return;
+      }
+
       // Block GUI and in-game selection while a movie is playing
       if(GameState.VideoManager.isMoviePlaying() && event.button == 0){
-        GameState.VideoManager.skipMovie();
+        if(this.isGameCanvasMouseTarget(event)){
+          GameState.VideoManager.skipMovie();
+        }
         return;
       }
 
@@ -380,6 +397,9 @@ export class IngameControls {
     });
 
     document.body.addEventListener('wheel', (e: WheelEvent) => {
+      if(!this.isGameCanvasMouseTarget(e)){
+        return;
+      }
       if(e.deltaY < 0){
         if(BitWise.InstanceOf(GameState.MenuManager.hoveredGUIElement?.objectType, GUIControlTypeMask.GUIListBox)){
           (GameState.MenuManager.hoveredGUIElement as GUIListBox).scrollUp();
@@ -399,6 +419,17 @@ export class IngameControls {
       e.preventDefault();
     });
 
+  }
+
+  /**
+   * True when the event landed on the game canvas (or pointer lock owns look input).
+   * React chrome overlaying the canvas uses other targets and must not drive game input.
+   */
+  isGameCanvasMouseTarget(event: Event): boolean {
+    if(Mouse.pointerLock){
+      return true;
+    }
+    return event.target === this.element;
   }
 
   initKeys(){

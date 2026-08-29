@@ -400,3 +400,38 @@ export async function compileAllNssInProject(): Promise<BulkProjectNssCompileOut
     written,
   };
 }
+
+/**
+ * Save open editors, then compile every project `.nss` so packing/preview
+ * includes fresh `.ncs` bytecode. Returns ok only when nothing failed.
+ */
+export async function compileAllNssBeforeModulePack(): Promise<{
+  ok: boolean;
+  outcome: BulkProjectNssCompileOutcome;
+}> {
+  try {
+    await ForgeState.saveAllEditorTabs();
+  } catch (e) {
+    console.warn("compileAllNssBeforeModulePack: saveAllEditorTabs", e);
+  }
+
+  const outcome = await compileAllNssInProject();
+  const ok = !outcome.abortedReason && outcome.failed === 0;
+  return { ok, outcome };
+}
+
+/** Summarize a bulk compile failure for alerts / preview progress. */
+export function formatBulkNssCompileFailure(outcome: BulkProjectNssCompileOutcome): string {
+  if (outcome.abortedReason) {
+    return outcome.abortedReason;
+  }
+  if (outcome.failed <= 0) {
+    return "Script compilation failed.";
+  }
+  const sample = outcome.failures
+    .slice(0, 3)
+    .map((f) => `${f.relativePath}: ${f.messages[0] || "error"}`)
+    .join("\n");
+  const more = outcome.failed > 3 ? `\n…and ${outcome.failed - 3} more` : "";
+  return `Script compile failed (${outcome.failed} of ${outcome.total}).\n${sample}${more}`;
+}

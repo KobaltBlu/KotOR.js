@@ -10,6 +10,7 @@ import { ERFObject } from "@/resource/ERFObject";
 import { GFFObject } from "@/resource/GFFObject";
 import { ResourceTypes } from "@/resource/ResourceTypes";
 import { RIMObject } from "@/resource/RIMObject";
+import { KEYManager } from "@/managers/KEYManager";
 
 export type ModuleArchiveKind = "rim" | "erf" | "mod";
 
@@ -26,6 +27,15 @@ export interface ModuleArchivePreview {
   resourceCount: number;
   hasModuleIfo: boolean;
   entryArea?: string;
+  /** True when entry-area `.lyt` is present in the archive (or companion merge set). */
+  hasLayout: boolean;
+  /** True when entry-area `.vis` is present in the archive (or companion merge set). */
+  hasVis: boolean;
+  /** Archive lacks .lyt but retail KEY/BIF has it. */
+  layoutInGame: boolean;
+  /** Archive lacks .vis but retail KEY/BIF has it. */
+  visInGame: boolean;
+  warnings: string[];
   isCompanionRim: boolean;
   companionFilename?: string;
 }
@@ -48,9 +58,16 @@ export interface ImportModuleArchiveResult {
   written: string[];
   entryArea?: string;
   hasModuleIfo: boolean;
+  hasLayout?: boolean;
+  hasVis?: boolean;
+  layoutInGame?: boolean;
+  visInGame?: boolean;
+  warnings?: string[];
 }
 
 const IFO_TYPE = ResourceTypes.ifo;
+const LYT_TYPE = ResourceTypes.lyt;
+const VIS_TYPE = ResourceTypes.vis;
 
 function archiveMagic(buffer: Uint8Array): string {
   if (!buffer || buffer.byteLength < 4) {
@@ -188,18 +205,83 @@ function readEntryArea(ifo: ModuleArchiveEntry): string | undefined {
   }
 }
 
+function entryResRefMatches(entry: ModuleArchiveEntry, resRef: string): boolean {
+  return String(entry.resRef || "").trim().toLowerCase() === resRef;
+}
+
+function archiveHasRes(entries: ModuleArchiveEntry[], resRef: string, resType: number): boolean {
+  const ref = String(resRef || "").trim().toLowerCase();
+  if (!ref.length) {
+    return false;
+  }
+  return entries.some((entry) => entry.resType === resType && entryResRefMatches(entry, ref));
+}
+
+/** True when KEY/BIF can Demand this resource — retail incomplete-module case. */
+export function gameHasResource(resRef: string, resType: number): boolean {
+  const ref = String(resRef || "").trim().toLowerCase();
+  if (!ref.length) {
+    return false;
+  }
+  try {
+    return !!KEYManager.Key?.getFileKey?.(ref, resType);
+  } catch {
+    return false;
+  }
+}
+
+/** Layout/VIS presence + warnings for Mod_Entry_Area. */
+export function layoutPresenceForEntries(
+  entries: ModuleArchiveEntry[],
+  entryArea?: string,
+): { hasLayout: boolean; hasVis: boolean; warnings: string[]; layoutInGame: boolean; visInGame: boolean } {
+  const area = String(entryArea || "").trim();
+  if (!area.length) {
+    return { hasLayout: false, hasVis: false, warnings: [], layoutInGame: false, visInGame: false };
+  }
+  const hasLayout = archiveHasRes(entries, area, LYT_TYPE);
+  const hasVis = archiveHasRes(entries, area, VIS_TYPE);
+  const layoutInGame = !hasLayout && gameHasResource(area, LYT_TYPE);
+  const visInGame = !hasVis && gameHasResource(area, VIS_TYPE);
+  const warnings: string[] = [];
+  if (!hasLayout && layoutInGame) {
+    warnings.push(
+      `Entry area "${area}" has no .lyt in the archive; retail game files provide it (incomplete module restore).`,
+    );
+  } else if (!hasLayout) {
+    warnings.push(
+      `Entry area "${area}" has no .lyt in the archive or game files (retail would load 0 layout rooms).`,
+    );
+  }
+  if (!hasVis && visInGame) {
+    warnings.push(
+      `Entry area "${area}" has no .vis in the archive; retail game files provide it.`,
+    );
+  } else if (!hasVis) {
+    warnings.push(`Entry area "${area}" has no .vis in the archive or game files.`);
+  }
+  return { hasLayout, hasVis, warnings, layoutInGame, visInGame };
+}
+
 export async function inspectModuleArchive(
   buffer: Uint8Array,
   filename: string,
 ): Promise<ModuleArchivePreview> {
   const entries = await loadModuleArchiveEntries(buffer);
   const ifo = findModuleIfo(entries);
+  const entryArea = ifo ? readEntryArea(ifo) : undefined;
+  const layout = layoutPresenceForEntries(entries, entryArea);
   return {
     kind: archiveKindFromFilename(filename),
     filename: basenameNoDir(filename),
     resourceCount: entries.length,
     hasModuleIfo: !!ifo,
-    entryArea: ifo ? readEntryArea(ifo) : undefined,
+    entryArea,
+    hasLayout: layout.hasLayout,
+    hasVis: layout.hasVis,
+    layoutInGame: layout.layoutInGame,
+    visInGame: layout.visInGame,
+    warnings: layout.warnings,
     isCompanionRim: isCompanionRimFilename(filename),
     companionFilename: companionRimFilename(filename),
   };
@@ -253,17 +335,26 @@ export async function importModuleArchive(
         : "Archive does not contain module.ifo.",
       written: [],
       hasModuleIfo: false,
+      warnings: [],
     };
   }
 
+  const entryArea = ifo ? readEntryArea(ifo) : undefined;
+
   if (ifo && projectHasIfo && !options.overwriteExisting) {
+    const layout = layoutPresenceForEntries(primary, entryArea);
     return {
       ok: false,
       reason: "This project already has a module.ifo. Importing will overwrite the existing module.",
       needsOverwrite: true,
       written: [],
       hasModuleIfo: true,
-      entryArea: readEntryArea(ifo),
+      entryArea,
+      hasLayout: layout.hasLayout,
+      hasVis: layout.hasVis,
+      layoutInGame: layout.layoutInGame,
+      visInGame: layout.visInGame,
+      warnings: layout.warnings,
     };
   }
 
@@ -274,6 +365,8 @@ export async function importModuleArchive(
       merged.push(companion[i]);
     }
   }
+
+  const layout = layoutPresenceForEntries(merged, entryArea);
 
   const written: string[] = [];
   for (let i = 0; i < merged.length; i++) {
@@ -289,6 +382,11 @@ export async function importModuleArchive(
     ok: true,
     written,
     hasModuleIfo: !!ifo || projectHasIfo,
-    entryArea: ifo ? readEntryArea(ifo) : undefined,
+    entryArea,
+    hasLayout: layout.hasLayout,
+    hasVis: layout.hasVis,
+    layoutInGame: layout.layoutInGame,
+    visInGame: layout.visInGame,
+    warnings: layout.warnings,
   };
 }

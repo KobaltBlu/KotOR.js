@@ -6,6 +6,7 @@ import { formatKeybinding } from "@/apps/forge/commands/forgeKeybindings";
 import { buildOpenRecentMenuItems } from "@/apps/forge/commands/recentMenuItems";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
+import { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
 import * as KotOR from "@/apps/forge/KotOR";
 
 export class MenuTopState {
@@ -120,7 +121,12 @@ export class MenuTopState {
       onClear: () => { void executeCommand('forge.file.clearRecent'); },
     });
 
-    return [
+    const moduleEditorActive = (() => {
+      const tab = ForgeState.tabManager?.currentTab;
+      return tab instanceof TabModuleEditorState && !!tab.visible;
+    })();
+
+    const items: ForgeMenuItem[] = [
       {
         label: 'File',
         children: [
@@ -167,6 +173,7 @@ export class MenuTopState {
             ],
           },
           this.commandItem('forge.file.newProject'),
+          this.commandItem('forge.file.newProjectFromMod'),
           { separator: true },
           this.commandItem('forge.file.openFile'),
           this.commandItem('forge.file.openProject'),
@@ -230,13 +237,44 @@ export class MenuTopState {
           this.commandItem('forge.project.compileAllNss'),
         ],
       },
-      {
-        label: 'Help',
-        children: [
-          this.commandItem('forge.help.about'),
-        ],
-      },
     ];
+
+    if (moduleEditorActive) {
+      items.push({
+        label: 'Module',
+        children: [
+          this.commandItem('forge.module.togglePreview', {
+            label: 'Preview Module',
+            shortcut: 'P',
+          }),
+          this.commandItem('forge.module.exitPreview'),
+          this.commandItem('forge.module.previewReload'),
+          { separator: true },
+          this.commandItem('forge.module.validate'),
+          this.commandItem('forge.module.focusSelection'),
+          this.commandItem('forge.module.setEntryFromSelection'),
+          this.commandItem('forge.module.setEntryFromCamera'),
+          this.commandItem('forge.module.focusEntry'),
+          this.commandItem('forge.module.placeWaypointAtEntry'),
+          this.commandItem('forge.module.setPreviewWarpFromSelection'),
+          this.commandItem('forge.module.clearPreviewWarp'),
+          this.commandItem('forge.module.openAreaPth'),
+          this.commandItem('forge.module.openAreaWalkmesh'),
+          { separator: true },
+          this.commandItem('forge.module.deleteSelection'),
+          this.commandItem('forge.module.duplicateSelection'),
+        ],
+      });
+    }
+
+    items.push({
+      label: 'Help',
+      children: [
+        this.commandItem('forge.help.about'),
+      ],
+    });
+
+    return items;
   }
 
   /** @deprecated Use rebuild() */

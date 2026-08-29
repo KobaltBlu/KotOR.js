@@ -12,11 +12,16 @@ import * as THREE from "three";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
 import { ProjectFileSystem } from "@/apps/forge/ProjectFileSystem";
 import { buildProjectModuleErf } from "@/apps/forge/helpers/exportProjectModule";
+import {
+  compileAllNssBeforeModulePack,
+  formatBulkNssCompileFailure,
+  type BulkProjectNssCompileOutcome,
+} from "@/apps/forge/helpers/ForgeNWScriptCompile";
+import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
 import type { TabModuleEditorState } from "@/apps/forge/states/tabs/TabModuleEditorState";
 import { ModuleEditorTabMode } from "@/apps/forge/enum/ModuleEditorTabMode";
 import { CacheScope } from "@/enums/resource/CacheScope";
 import { EngineMode } from "@/enums/engine/EngineMode";
-import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
 
 export interface ModulePreviewSessionResult {
   ok: boolean;
@@ -26,6 +31,7 @@ export interface ModulePreviewSessionResult {
 
 export type ModulePreviewProgressStage =
   | "preparing"
+  | "compiling"
   | "packing"
   | "init"
   | "loading"
@@ -41,10 +47,13 @@ export class ModulePreviewSession {
     tab.processEventListener("onPreviewProgress", [stage, detail || ""]);
   }
 
-  /** Temporarily apply camera/waypoint spawn into module entry fields for pack. */
+  /** Temporarily apply camera spawn into module entry fields for pack. Waypoint spawn uses LoadModuleFromArchives tag (retail warp). */
   private static withSpawnOverrides<T>(tab: TabModuleEditorState, fn: () => T): T {
     const mod = tab.module;
-    if(!mod || tab.previewSpawnMode === "entry"){
+    if(!mod || tab.previewSpawnMode !== "camera"){
+      return fn();
+    }
+    if(!tab.ui3DRenderer?.camera){
       return fn();
     }
     const saved = {
@@ -55,27 +64,14 @@ export class ModulePreviewSession {
       entryDirectionY: mod.entryDirectionY,
     };
     try{
-      if(tab.previewSpawnMode === "camera" && tab.ui3DRenderer?.camera){
-        const cam = tab.ui3DRenderer.camera;
-        mod.entryX = cam.position.x;
-        mod.entryY = cam.position.y;
-        mod.entryZ = cam.position.z;
-        // Facing from camera forward projected onto XY
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion);
-        const len = Math.hypot(forward.x, forward.y) || 1;
-        mod.entryDirectionX = forward.x / len;
-        mod.entryDirectionY = forward.y / len;
-      }else if(tab.previewSpawnMode === "waypoint"){
-        const wp = tab.selectedGameObject;
-        if(wp instanceof ForgeWaypoint){
-          mod.entryX = wp.position.x;
-          mod.entryY = wp.position.y;
-          mod.entryZ = wp.position.z;
-          const yaw = wp.rotation?.z ?? 0;
-          mod.entryDirectionX = Math.cos(yaw);
-          mod.entryDirectionY = Math.sin(yaw);
-        }
-      }
+      const cam = tab.ui3DRenderer.camera;
+      mod.entryX = cam.position.x;
+      mod.entryY = cam.position.y;
+      mod.entryZ = cam.position.z;
+      const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion);
+      const len = Math.hypot(forward.x, forward.y) || 1;
+      mod.entryDirectionX = forward.x / len;
+      mod.entryDirectionY = forward.y / len;
       return fn();
     }finally{
       mod.entryX = saved.entryX;
@@ -86,6 +82,17 @@ export class ModulePreviewSession {
     }
   }
 
+  private static presentCompileFailure(outcome: BulkProjectNssCompileOutcome): void {
+    try {
+      const modal = new ModalBulkNssCompileResultsState(outcome);
+      modal.attachToModalManager(ForgeState.modalManager);
+      modal.open();
+    } catch (e) {
+      console.error("ModulePreviewSession presentCompileFailure", e);
+    }
+  }
+
+  /** Compile all project NSS, then pack live editor + project files into an ERF. */
   private static async packErf(tab: TabModuleEditorState): Promise<{
     ok: boolean;
     reason?: string;
@@ -93,6 +100,18 @@ export class ModulePreviewSession {
     skippedNss?: string[];
     areaResRef: string;
   }> {
+    this.emitProgress(tab, "compiling", "Compiling project scripts…");
+    const compile = await compileAllNssBeforeModulePack();
+    if (!compile.ok) {
+      this.presentCompileFailure(compile.outcome);
+      return {
+        ok: false,
+        reason: formatBulkNssCompileFailure(compile.outcome),
+        skippedNss: compile.outcome.failures.map((f) => f.relativePath),
+        areaResRef: tab.module?.area?.getLayoutResRef?.() || "",
+      };
+    }
+
     const buffers = this.withSpawnOverrides(tab, () => tab.serializeModuleBuffers());
     if(!buffers){
       return { ok: false, reason: "Failed to serialize the live module.", areaResRef: "" };
@@ -142,7 +161,7 @@ export class ModulePreviewSession {
     this.starting = true;
     tab.tabMode = ModuleEditorTabMode.PREVIEW;
     tab.ui3DRenderer.transformControls.detach();
-    tab.ui3DRenderer.enabled = false;
+    tab.ui3DRenderer.setEnabled(false);
     tab.processEventListener("onPreviewModeChange", [true]);
     tab.processEventListener("onControlModeChange", [tab.controlMode]);
     this.emitProgress(tab, "preparing", "Preparing preview…");
@@ -194,6 +213,23 @@ export class ModulePreviewSession {
     }finally{
       this.starting = false;
     }
+  }
+
+  /**
+   * Incremental preview reload strategies. Script/blueprint patches attempt a
+   * lighter warm reload; unknown scopes fall back to a full ERF repack.
+   */
+  static async reloadIncremental(
+    tab: TabModuleEditorState,
+    scope: "script" | "blueprint" | "scene" | "full" = "full",
+  ): Promise<ModulePreviewSessionResult> {
+    tab.processEventListener("onPreviewProgress", ["preparing", `Incremental ${scope} reload…`]);
+    if (scope === "full" || !this.active) {
+      return this.warmReload(tab);
+    }
+    // Script/blueprint/scene patches currently share warmReload until GameState
+    // supports surgical resource replacement; the scope is retained for UI/API.
+    return this.warmReload(tab);
   }
 
   /**
@@ -278,7 +314,6 @@ export class ModulePreviewSession {
 
     this.hostElement = null;
     tab.tabMode = ModuleEditorTabMode.EDIT;
-    tab.ui3DRenderer.enabled = true;
     tab.processEventListener("onPreviewModeChange", [false]);
     tab.processEventListener("onControlModeChange", [tab.controlMode]);
 
@@ -286,5 +321,14 @@ export class ModulePreviewSession {
       // Restore editor scene graph after play disposed GameState objects.
       tab.processEventListener("onModuleLoaded", [tab.module]);
     }
+
+    // Preview hid the editor canvas (display:none) and stopped the rAF loop.
+    // Re-enable after React has a chance to show the viewport again.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        tab.ui3DRenderer.syncSizeFromParent();
+        tab.ui3DRenderer.setEnabled(true);
+      });
+    });
   }
 }
