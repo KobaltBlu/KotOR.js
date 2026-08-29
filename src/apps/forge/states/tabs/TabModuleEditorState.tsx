@@ -1,5 +1,5 @@
 import React from "react";
-import { UI3DRenderer, UI3DRendererEventListenerTypes, GroupType, ObjectType } from "@/apps/forge/UI3DRenderer";
+import { CameraFocusMode, UI3DRenderer, UI3DRendererEventListenerTypes, GroupType, ObjectType } from "@/apps/forge/UI3DRenderer";
 import BaseTabStateOptions from "@/apps/forge/interfaces/BaseTabStateOptions";
 import { TabState, UpdateFileOptions } from "@/apps/forge/states/tabs";
 import { EditorFile } from "@/apps/forge/EditorFile";
@@ -141,6 +141,8 @@ export class TabModuleEditorState extends TabState {
     
     // Create UI3DRenderer first
     this.ui3DRenderer = new UI3DRenderer();
+    this.ui3DRenderer.setCameraFocusMode(CameraFocusMode.SELECTABLE);
+    this.ui3DRenderer.reserveKeys(['f', 'q', 'w', 'e', 'r', 'x']);
     this.applyModuleHelperVisibility();
     forgeModuleSettings.addListener(this.onModuleHelpersChange);
     
@@ -149,6 +151,7 @@ export class TabModuleEditorState extends TabState {
     this.groundGeometry = new THREE.WireframeGeometry(new THREE.PlaneGeometry( 2500, 2500, 100, 100 ));
     this.groundMaterial = new THREE.LineBasicMaterial( { color: this.groundColor, linewidth: 2 } );
     this.groundMesh = new THREE.LineSegments( this.groundGeometry, this.groundMaterial );
+    this.groundMesh.userData.excludeFromCameraFocus = true;
 
     // Create ghost preview mesh for object placement
     const ghostGeometry = new THREE.BoxGeometry(1, 1, 1);
@@ -160,8 +163,10 @@ export class TabModuleEditorState extends TabState {
     });
     this.ghostPreviewMesh = new THREE.Mesh(ghostGeometry, ghostMaterial);
     this.ghostPreviewMesh.visible = false;
+    this.ghostPreviewMesh.userData.excludeFromCameraFocus = true;
 
     this.entryMarker = new THREE.Group();
+    this.entryMarker.userData.excludeFromCameraFocus = true;
     this.entryMarker.add(new THREE.AxesHelper(1.25));
     const entryPole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.04, 0.04, 1.2, 8),
@@ -195,6 +200,7 @@ export class TabModuleEditorState extends TabState {
           this.ui3DRenderer.scene.add(this.entryMarker);
         }
         this.pathOverlayGroup.name = 'module-path-overlay';
+        this.pathOverlayGroup.userData.excludeFromCameraFocus = true;
         if(!this.ui3DRenderer.scene.children.includes(this.pathOverlayGroup)){
           this.ui3DRenderer.scene.add(this.pathOverlayGroup);
         }
@@ -212,6 +218,11 @@ export class TabModuleEditorState extends TabState {
       if (this.pendingFocusEntry) {
         this.focusCameraOnModuleEntry();
       }
+      // Default tool is Select; reserve left-drag for pick/marquee when enabled.
+      this.ui3DRenderer.setOrbitSelectFriendly(
+        this.controlMode === TabModuleEditorControlMode.SELECT
+          && forgeModuleSettings.get().marqueeSelect,
+      );
     });
     this.setContentView(<TabModuleEditor tab={this}></TabModuleEditor>);
 
@@ -340,6 +351,7 @@ export class TabModuleEditorState extends TabState {
     }
     this.marqueeStart = { x, y };
     this.marqueeCurrent = { x, y };
+    this.ui3DRenderer.setOrbitSuspended(true);
     this.processEventListener("onMarqueeChanged", [this.getMarqueeRect()]);
   }
 
@@ -355,6 +367,7 @@ export class TabModuleEditorState extends TabState {
     const rect = this.getMarqueeRect();
     this.marqueeStart = null;
     this.marqueeCurrent = null;
+    this.ui3DRenderer.setOrbitSuspended(false);
     this.processEventListener("onMarqueeChanged", [null]);
     if (!rect || !this.module?.area || !this.ui3DRenderer.camera || !this.ui3DRenderer.canvas) {
       return [];
@@ -758,6 +771,11 @@ export class TabModuleEditorState extends TabState {
       this.ui3DRenderer.transformControls.detach();
     }
 
+    // Select + marquee owns left-drag; camera uses middle/right or Alt+left.
+    this.ui3DRenderer.setOrbitSelectFriendly(
+      isSelectModeTool && forgeModuleSettings.get().marqueeSelect,
+    );
+
     if(mode === TabModuleEditorControlMode.TRANSFORM_CONTROL){
       this.ui3DRenderer.transformControls.mode = 'translate';
       this.updateTransformControlHelpers(this.selectedGameObject!);
@@ -841,6 +859,9 @@ export class TabModuleEditorState extends TabState {
         return;
       }
     }
+    if(event.key === 'Alt'){
+      this.ui3DRenderer.setOrbitAltRotate(true);
+    }
     if(event.key === 'Control'){
       this.ctrlSnapToggle = true;
     }
@@ -886,10 +907,11 @@ export class TabModuleEditorState extends TabState {
     }else if(event.key.toLowerCase() === 'r'){
       this.setControlMode(TabModuleEditorControlMode.SCALE_CONTROL);
     }else if(event.key.toLowerCase() === 'f'){
+      event.preventDefault();
       if(event.shiftKey){
-        this.ui3DRenderer.fitCameraToScene();
-      }else if(this.selectedGameObject?.container){
-        this.ui3DRenderer.lookAtObject(this.selectedGameObject.container);
+        this.ui3DRenderer.frameAll();
+      }else{
+        this.focusSelection();
       }
     }else if(event.key.toLowerCase() === 'x'){
       const controls = this.ui3DRenderer.transformControls as any;
@@ -907,6 +929,9 @@ export class TabModuleEditorState extends TabState {
   }
 
   onKeyUp(event: KeyboardEvent): void {
+    if(event.key === 'Alt'){
+      this.ui3DRenderer.setOrbitAltRotate(false);
+    }
     if(event.key === 'Control'){
       this.ctrlSnapToggle = false;
     }
@@ -1458,6 +1483,23 @@ export class TabModuleEditorState extends TabState {
     this.updateEntryMarker();
   }
 
+  /**
+   * Frame the current selection (or entry marker). With nothing selected, frames the playable scene.
+   */
+  focusSelection(): boolean {
+    const targets = this.selectedGameObjects.length
+      ? this.selectedGameObjects
+      : (this.selectedGameObject ? [this.selectedGameObject] : []);
+    if(targets.length){
+      return this.ui3DRenderer.frameObjects(targets.map((o) => o.container));
+    }
+    if(this.selectedEntryPoint){
+      return this.ui3DRenderer.frameObjects([this.entryMarker]);
+    }
+    this.ui3DRenderer.frameAll();
+    return true;
+  }
+
   focusEntryMarker(): void {
     if(!this.module || !this.entryMarker){
       return;
@@ -1468,7 +1510,7 @@ export class TabModuleEditorState extends TabState {
     this.setControlMode(TabModuleEditorControlMode.TRANSFORM_CONTROL);
     this.ui3DRenderer.transformControls.detach();
     this.ui3DRenderer.transformControls.attach(this.entryMarker);
-    this.ui3DRenderer.lookAtObject(this.entryMarker);
+    this.ui3DRenderer.frameObjects([this.entryMarker]);
   }
 
   /** Unique GIT tag for waypoints (max 16/32 chars used elsewhere — keep ≤32). */

@@ -376,9 +376,7 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
         </ul>
         <div className="git-instance-properties-editor__object-actions">
           <button className="git-instance-properties-editor__action-btn" onClick={() => {
-            if(selection[0]?.container){
-              tab.ui3DRenderer.lookAtObject(selection[0].container);
-            }
+            tab.focusSelection();
           }}>Focus</button>
           <button className="git-instance-properties-editor__action-btn" onClick={() => tab.duplicateSelectedGameObjects()}>Duplicate</button>
           <button className="git-instance-properties-editor__action-btn" onClick={() => void tab.deleteSelectedGameObject()}>Delete</button>
@@ -436,7 +434,7 @@ const GITInstancePropertiesEditor = function(props: { gameObject: ForgeGameObjec
           {duplicateTag ? <span className="git-instance-properties-editor__badge git-instance-properties-editor__badge--warn"> duplicate tag</span> : null}
         </div>
         <div className="git-instance-properties-editor__object-actions">
-          <button className="git-instance-properties-editor__action-btn" onClick={() => tab.ui3DRenderer.lookAtObject(selectedObject.container)}>Focus</button>
+          <button className="git-instance-properties-editor__action-btn" onClick={() => tab.focusSelection()}>Focus</button>
           <button className="git-instance-properties-editor__action-btn" onClick={() => tab.cloneGameObject(selectedObject)}>Duplicate</button>
           <button className="git-instance-properties-editor__action-btn" onClick={() => void tab.deleteSelectedGameObject()}>Delete</button>
           <button className="git-instance-properties-editor__action-btn" onClick={() => {

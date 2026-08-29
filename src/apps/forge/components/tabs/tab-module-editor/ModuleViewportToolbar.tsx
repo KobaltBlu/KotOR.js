@@ -86,10 +86,7 @@ export const ModuleViewportToolbar: React.FC<ModuleViewportToolbarProps> = ({ ta
         className="module-viewport-toolbar__btn"
         title="Frame selection (F)"
         onClick={() => {
-          const container = tab.selectedGameObject?.container;
-          if (container) {
-            tab.ui3DRenderer.lookAtObject(container);
-          }
+          tab.focusSelection();
         }}
       >
         <i className="fa-solid fa-crosshairs" aria-hidden />

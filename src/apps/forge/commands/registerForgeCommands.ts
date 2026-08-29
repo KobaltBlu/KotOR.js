@@ -716,14 +716,21 @@ export function registerForgeCommands(): void {
     id: "forge.module.focusSelection",
     title: "Focus Selection",
     category: "Module",
-    keywords: ["module", "focus", "camera", "look"],
-    when: () => !!currentModuleEditor()?.selectedGameObject,
+    keywords: ["module", "focus", "camera", "look", "frame"],
+    when: () => !!currentModuleEditor(),
     run: () => {
-      const tab = currentModuleEditor();
-      const container = tab?.selectedGameObject?.container;
-      if(tab && container){
-        tab.ui3DRenderer.lookAtObject(container);
-      }
+      currentModuleEditor()?.focusSelection();
+    },
+  });
+
+  registerCommand({
+    id: "forge.module.frameAll",
+    title: "Frame Entire Module",
+    category: "Module",
+    keywords: ["module", "focus", "camera", "fit", "frame", "scene"],
+    when: () => !!currentModuleEditor()?.module,
+    run: () => {
+      currentModuleEditor()?.ui3DRenderer.frameAll();
     },
   });
 

@@ -17,3 +17,4 @@ export * from "@/apps/forge/module-editor/kernel/PreviewController";
 export * from "@/apps/forge/module-editor/kernel/PerformanceBaseline";
 export * from "@/apps/forge/module-editor/kernel/SpatialPickIndex";
 export * from "@/apps/forge/module-editor/kernel/ViewportPerfPolicy";
+export * from "@/apps/forge/module-editor/kernel/CameraFocusPolicy";

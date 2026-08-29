@@ -191,7 +191,7 @@ export const SceneGraphTreeViewNode = memo(function SceneGraphTreeViewNode(props
   const handleDoubleClick = useCallback(() => {
     const object = node.data?.container ?? node.data;
     if(object){
-      manager.context.lookAtObject(object);
+      manager.context.frameObjects([object]);
     }
   }, [manager, node]);
 

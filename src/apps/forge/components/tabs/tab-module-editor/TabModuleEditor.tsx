@@ -364,7 +364,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
               id: 'focus-game-object',
               label: 'Focus',
               onClick: () => {
-                tab.ui3DRenderer.lookAtObject(tab.selectedGameObject?.container!);
+                tab.focusSelection();
               }
             },
             {
@@ -525,7 +525,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
     if (e.button !== 0 || e.altKey) return;
     if (controlMode !== TabModuleEditorControlMode.SELECT) return;
     const canvas = tab.ui3DRenderer?.canvas;
-    if (!canvas) return;
+    if (!canvas || !(e.target === canvas || canvas.contains(e.target as Node))) return;
     const bounds = canvas.getBoundingClientRect();
     tab.beginMarquee(e.clientX - bounds.left, e.clientY - bounds.top);
   };
@@ -537,10 +537,19 @@ export const TabModuleEditor = function(props: BaseTabProps){
     tab.updateMarquee(e.clientX - bounds.left, e.clientY - bounds.top);
   };
 
-  const onMarqueeMouseUp = (e: React.MouseEvent) => {
+  const onMarqueeMouseUp = (e: React.MouseEvent | MouseEvent) => {
     if (!marquee) return;
-    tab.completeMarquee(e.shiftKey);
+    tab.completeMarquee(!!e.shiftKey);
   };
+
+  useEffect(() => {
+    if (!marquee) return;
+    const onWindowMouseUp = (e: MouseEvent) => {
+      tab.completeMarquee(!!e.shiftKey);
+    };
+    window.addEventListener('mouseup', onWindowMouseUp);
+    return () => window.removeEventListener('mouseup', onWindowMouseUp);
+  }, [marquee, tab]);
 
   return (
     <div className={`tab-module-editor${workbench ? " tab-module-editor--workbench" : ""}`}>
@@ -559,15 +568,19 @@ export const TabModuleEditor = function(props: BaseTabProps){
         >
           <div
             ref={containerRef}
-            style={{ width: '100%', height: '100%', position: 'relative' }}
+            className="module-viewport-host"
             onDragOver={onViewportDragOver}
             onDrop={onViewportDrop}
             onMouseDown={onMarqueeMouseDown}
             onMouseMove={onMarqueeMouseMove}
             onMouseUp={onMarqueeMouseUp}
+            onMouseLeave={onMarqueeMouseUp}
           >
             {workbench ? <ModuleViewportToolbar tab={tab} controlMode={controlMode} /> : null}
-            <div style={{ width: '100%', height: workbench ? 'calc(100% - 34px)' : '100%', display: previewMode ? 'none' : 'block' }}>
+            <div
+              className="module-viewport-host__canvas"
+              style={{ display: previewMode ? 'none' : undefined }}
+            >
               <UI3DRendererView context={tab.ui3DRenderer}>
                 <UI3DOverlayComponent context={tab.ui3DRenderer} tab={tab} />
                 {!workbench ? (

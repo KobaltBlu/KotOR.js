@@ -12,6 +12,12 @@ import {
   defaultViewportPerfPolicy,
   shouldIdleRender,
 } from "@/apps/forge/module-editor/kernel/ViewportPerfPolicy";
+import {
+  computeFocusDistance,
+  expandFocusBounds,
+  FOCUS_FALLBACK_RADIUS,
+  focusNearFar,
+} from "@/apps/forge/module-editor/kernel/CameraFocusPolicy";
 
 export enum CameraView {
   Top = 'top',
@@ -233,7 +239,18 @@ export class UI3DRenderer extends EventListenerModel {
   viewportFrustum: THREE.Frustum;
 
   transformControlsDragging: boolean = false;
+  /** Left mouse reserved for pick/marquee; orbit via middle / right / Alt+left. */
+  private orbitSelectFriendly = false;
+  /** Temporarily disable orbit (e.g. while marquee drag is active). */
+  private orbitSuspended = false;
+  /** Alt held: temporarily restore left-button rotate while select-friendly. */
+  private orbitAltRotate = false;
   focusMode: CameraFocusMode = CameraFocusMode.SCENE;
+  /** Keys claimed by an owning tab so the built-in canvas handler does not also act on them. */
+  private reservedKeys = new Set<string>();
+  #lookAtWorldPos: THREE.Vector3 = new THREE.Vector3();
+  #frameDirection: THREE.Vector3 = new THREE.Vector3();
+  #frameBoxSize: THREE.Vector3 = new THREE.Vector3();
 
   constructor( canvas?: HTMLCanvasElement, width: number = 640, height: number = 480 ){
     super();
@@ -315,6 +332,8 @@ export class UI3DRenderer extends EventListenerModel {
       this.orbitControls.enablePan = true;
       this.orbitControls.enableRotate = true;
       this.orbitControls.panSpeed = 2;
+      this.applyOrbitMouseButtons();
+      this.syncOrbitEnabled();
       this.transformControls = new TransformControls(this.currentCamera, this.canvas);
       this.transformControls.visible = false;
       this.unselectable.add(this.transformControls);
@@ -324,19 +343,61 @@ export class UI3DRenderer extends EventListenerModel {
       });
 
       this.transformControls.addEventListener('dragging-changed', (event: any) => {
-        this.transformControlsDragging = event.value === true;  
-        if (this.orbitControls) {
-          this.orbitControls.enabled = !this.transformControlsDragging;
-        }
+        this.transformControlsDragging = event.value === true;
+        this.syncOrbitEnabled();
       });
 
       this.transformControls.addEventListener('mouseDown', () => {
-        if (this.orbitControls) this.orbitControls.enabled = false;
+        this.syncOrbitEnabled(true);
       });
       this.transformControls.addEventListener('mouseUp', () => {
-        if (this.orbitControls) this.orbitControls.enabled = true;
+        this.syncOrbitEnabled();
       });
     }
+  }
+
+  /**
+   * In select/marquee mode, left-drag must not orbit. Middle rotates, right pans,
+   * Alt+left restores rotate (matches marquee skipping when Alt is held).
+   */
+  setOrbitSelectFriendly(enabled: boolean): void {
+    this.orbitSelectFriendly = enabled;
+    if (!enabled) {
+      this.orbitAltRotate = false;
+    }
+    this.applyOrbitMouseButtons();
+  }
+
+  setOrbitSuspended(suspended: boolean): void {
+    this.orbitSuspended = suspended;
+    this.syncOrbitEnabled();
+  }
+
+  setOrbitAltRotate(active: boolean): void {
+    this.orbitAltRotate = active;
+    this.applyOrbitMouseButtons();
+  }
+
+  private applyOrbitMouseButtons(): void {
+    if (!this.orbitControls) return;
+    if (this.orbitSelectFriendly && !this.orbitAltRotate) {
+      // No THREE.MOUSE action for left — pick/marquee owns the button.
+      (this.orbitControls.mouseButtons as any).LEFT = -1;
+      this.orbitControls.mouseButtons.MIDDLE = THREE.MOUSE.ROTATE;
+      this.orbitControls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+    } else {
+      this.orbitControls.mouseButtons.LEFT = THREE.MOUSE.ROTATE;
+      this.orbitControls.mouseButtons.MIDDLE = this.orbitSelectFriendly
+        ? THREE.MOUSE.ROTATE
+        : THREE.MOUSE.DOLLY;
+      this.orbitControls.mouseButtons.RIGHT = THREE.MOUSE.PAN;
+    }
+  }
+
+  private syncOrbitEnabled(forceOff = false): void {
+    if (!this.orbitControls) return;
+    this.orbitControls.enabled =
+      !forceOff && !this.transformControlsDragging && !this.orbitSuspended;
   }
 
   buildViewHelper() {
@@ -348,8 +409,18 @@ export class UI3DRenderer extends EventListenerModel {
 
   lookAtObject(object?: THREE.Object3D) {
     if(!object || !this.camera || !this.orbitControls) return;
-    this.orbitControls.target.copy(object.position);
+    object.getWorldPosition(this.#lookAtWorldPos);
+    this.orbitControls.target.copy(this.#lookAtWorldPos);
     this.orbitControls.update();
+  }
+
+  /**
+   * Claim keys so the built-in canvas key handler skips them (owning tab handles them instead).
+   */
+  reserveKeys(keys: string[]): void {
+    for (let i = 0; i < keys.length; i++) {
+      this.reservedKeys.add(keys[i].toLowerCase());
+    }
   }
 
   reorientCamera(view: CameraView) {
@@ -433,115 +504,129 @@ export class UI3DRenderer extends EventListenerModel {
   #focusScratchBox: THREE.Box3 = new THREE.Box3();
 
   /**
-   * Skyboxes / backdrop meshes are typically not fogged and/or marked backgroundGeometry.
-   * Exclude them so Fit Camera frames the playable scene instead of the sky dome.
+   * Recompute focus bounds from the current focus mode roots.
+   * Does not mutate orbitControls.target when the box is empty.
+   * @returns true when a non-empty focus box was computed
    */
-  private shouldExcludeFromCameraFocus(object: THREE.Object3D): boolean {
-    const odysseyModel = object as KotOR.OdysseyModel3D;
-    if (typeof odysseyModel.affectedByFog === 'boolean' && odysseyModel.modelHeader != null) {
-      if (!odysseyModel.affectedByFog) {
-        return true;
-      }
-    }
-
-    const meshNode = object.userData?.odysseyModelNode as { backgroundGeometry?: boolean } | undefined;
-    if (meshNode?.backgroundGeometry) {
-      return true;
-    }
-
-    const mesh = object as THREE.Mesh;
-    if (mesh.isMesh) {
-      const material = mesh.material;
-      const materials = Array.isArray(material) ? material : material ? [material] : [];
-      if (materials.length > 0 && materials.every((m) => !!m && m.fog === false)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  private expandCameraFocusBounds(object: THREE.Object3D, box: THREE.Box3): void {
-    if (this.shouldExcludeFromCameraFocus(object)) {
-      return;
-    }
-
-    const mesh = object as THREE.Mesh;
-    if (mesh.isMesh && mesh.geometry) {
-      const geometry = mesh.geometry;
-      if (!geometry.boundingBox) {
-        geometry.computeBoundingBox();
-      }
-      if (geometry.boundingBox && !geometry.boundingBox.isEmpty()) {
-        this.#focusScratchBox.copy(geometry.boundingBox).applyMatrix4(mesh.matrixWorld);
-        box.union(this.#focusScratchBox);
-      }
-    }
-
-    const children = object.children;
-    for (let i = 0; i < children.length; i++) {
-      this.expandCameraFocusBounds(children[i], box);
-    }
-  }
-
-  private updateCameraFocus(): void {
+  private updateCameraFocus(): boolean {
     this.#box3.makeEmpty();
     const objects = this.focusMode === CameraFocusMode.SELECTABLE ? this.selectable.children : this.scene.children;
     for (let i = 0; i < objects.length; i++) {
       const root = objects[i];
       root.updateWorldMatrix(true, true);
-      this.expandCameraFocusBounds(root, this.#box3);
+      expandFocusBounds(root, this.#box3, this.#focusScratchBox);
     }
     if (this.#box3.isEmpty()) {
       this.#center.set(0, 0, 0);
-    } else {
-      this.#box3.getCenter(this.#center);
+      return false;
     }
-    if (this.orbitControls) {
-      this.orbitControls.target.copy(this.#center);
-    }
+    this.#box3.getCenter(this.#center);
+    return true;
   }
 
-  public fitCameraToScene(offset: number = 1.25): void {
-    this.updateCameraFocus();
-    if(!this.#center || !this.camera || !this.orbitControls) return;
-    if(this.#box3.isEmpty()) return;
-    
-    // Calculate bounding box size (box3 is already calculated in updateCameraFocus)
-    const boxSize = this.#box3.getSize(new THREE.Vector3());
-    const maxSize = Math.max(boxSize.x, boxSize.y, boxSize.z);
-    if(maxSize <= 0) return;
-    
-    const fov = THREE.MathUtils.degToRad(this.camera.fov); // vertical fov in radians
-    const aspect = this.camera.aspect;
+  /**
+   * Frame the playable scene (or selectable roots), excluding skyboxes / helpers.
+   * Snaps to the active orthographic/isometric view direction (Fit Camera to Scene).
+   */
+  public frameAll(offset: number = 1.25): boolean {
+    return this.fitCameraToScene(offset);
+  }
 
-    // Distance required to fit box height in view
-    const fitHeightDistance = maxSize / (2 * Math.tan(fov / 2));
-    // Distance required to fit box width in view
-    const fitWidthDistance = fitHeightDistance / aspect;
+  /**
+   * Frame one or more objects (selection). Preserves the current orbit direction
+   * so framing a creature zooms in place rather than snapping to isometric.
+   */
+  public frameObjects(objects: THREE.Object3D[], offset: number = 1.5): boolean {
+    if (!this.camera || !this.orbitControls || !objects.length) {
+      return false;
+    }
 
-    // Take the larger one, then apply offset
-    const distance = offset * Math.max(fitHeightDistance, fitWidthDistance);
+    this.#box3.makeEmpty();
+    for (let i = 0; i < objects.length; i++) {
+      const root = objects[i];
+      if (!root) continue;
+      root.updateWorldMatrix(true, true);
+      expandFocusBounds(root, this.#box3, this.#focusScratchBox);
+    }
 
-    // Get the direction vector based on the current cameraView
-    const direction = this.getDirectionForView(this.cameraView);
+    if (this.#box3.isEmpty()) {
+      for (let i = 0; i < objects.length; i++) {
+        const root = objects[i];
+        if (!root) continue;
+        root.getWorldPosition(this.#lookAtWorldPos);
+        this.#focusScratchBox.setFromCenterAndSize(
+          this.#lookAtWorldPos,
+          this.#frameBoxSize.set(
+            FOCUS_FALLBACK_RADIUS * 2,
+            FOCUS_FALLBACK_RADIUS * 2,
+            FOCUS_FALLBACK_RADIUS * 2,
+          ),
+        );
+        this.#box3.union(this.#focusScratchBox);
+      }
+    }
 
-    // New camera position
-    this.camera.position.copy(this.#center).add(direction.multiplyScalar(distance));
+    if (this.#box3.isEmpty()) {
+      return false;
+    }
 
-    // Update camera up vector based on view
-    this.updateCameraUpForView(this.cameraView);
+    this.#box3.getCenter(this.#center);
+    this.#box3.getSize(this.#frameBoxSize);
 
-    // Update controls target to center the box
+    const distance = computeFocusDistance({
+      boxSize: this.#frameBoxSize,
+      fovDeg: this.camera.fov,
+      aspect: this.camera.aspect,
+      offset,
+    });
+
+    this.#frameDirection.subVectors(this.camera.position, this.orbitControls.target);
+    if (this.#frameDirection.lengthSq() < 1e-8) {
+      this.#frameDirection.copy(this.getDirectionForView(this.cameraView));
+    } else {
+      this.#frameDirection.normalize();
+    }
+
+    this.camera.position.copy(this.#center).add(this.#frameDirection.multiplyScalar(distance));
     this.orbitControls.target.copy(this.#center);
     this.camera.lookAt(this.#center);
 
-    // Optionally update near/far to better match scene scale
-    this.camera.near = distance / 100;
-    this.camera.far = distance * 100;
+    const clip = focusNearFar(distance);
+    this.camera.near = clip.near;
+    this.camera.far = clip.far;
     this.camera.updateProjectionMatrix();
-
     this.orbitControls.update();
+    return true;
+  }
+
+  public fitCameraToScene(offset: number = 1.25): boolean {
+    if (!this.camera || !this.orbitControls) return false;
+    if (!this.updateCameraFocus()) return false;
+
+    this.#box3.getSize(this.#frameBoxSize);
+    const maxSize = Math.max(this.#frameBoxSize.x, this.#frameBoxSize.y, this.#frameBoxSize.z);
+    if (maxSize <= 0) return false;
+
+    const distance = computeFocusDistance({
+      boxSize: this.#frameBoxSize,
+      fovDeg: this.camera.fov,
+      aspect: this.camera.aspect,
+      offset,
+      minDistance: 0.01,
+    });
+
+    const direction = this.getDirectionForView(this.cameraView);
+    this.camera.position.copy(this.#center).add(direction.multiplyScalar(distance));
+    this.updateCameraUpForView(this.cameraView);
+    this.orbitControls.target.copy(this.#center);
+    this.camera.lookAt(this.#center);
+
+    const clip = focusNearFar(distance);
+    this.camera.near = clip.near;
+    this.camera.far = clip.far;
+    this.camera.updateProjectionMatrix();
+    this.orbitControls.update();
+    return true;
   }
 
   private getDirectionForView(view: CameraView): THREE.Vector3 {
@@ -634,7 +719,10 @@ export class UI3DRenderer extends EventListenerModel {
 
     // Prevent default behavior for camera view keys
     const key = event.key.toLowerCase();
-    
+    if (this.reservedKeys.has(key)) {
+      return;
+    }
+
     switch(key) {
       case '1':
         event.preventDefault();
