@@ -551,6 +551,7 @@ export const TabModuleEditor = function(props: BaseTabProps){
     if (!workbench || !forgeModuleSettings.get().marqueeSelect) return;
     if (e.button !== 0 || e.altKey) return;
     if (controlMode !== TabModuleEditorControlMode.SELECT) return;
+    if (tab.isTransformGizmoPointerActive()) return;
     const canvas = tab.ui3DRenderer?.canvas;
     if (!canvas || !(e.target === canvas || canvas.contains(e.target as Node))) return;
     const bounds = canvas.getBoundingClientRect();

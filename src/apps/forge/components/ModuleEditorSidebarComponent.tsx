@@ -8,6 +8,7 @@ import { openBlueprintBrowser, openScriptBrowser } from "@/apps/forge/helpers/op
 import { CExoLocStringEditor } from "@/apps/forge/components/CExoLocStringEditor/CExoLocStringEditor";
 import { ForgeColorField, ForgeTwoDAIndexField } from "@/apps/forge/components/ui";
 import { ForgeCreature } from "@/apps/forge/module-editor/ForgeCreature";
+import { ForgeCamera } from "@/apps/forge/module-editor/ForgeCamera";
 import { ForgeDoor } from "@/apps/forge/module-editor/ForgeDoor";
 import { ForgeEncounter } from "@/apps/forge/module-editor/ForgeEncounter";
 import { ForgeItem } from "@/apps/forge/module-editor/ForgeItem";
@@ -151,7 +152,7 @@ interface GITPropertyDef {
   /** Display label */
   label: string;
   /** Property type */
-  type: 'number' | 'string' | 'boolean' | 'CExoLocString' | 'position' | 'rotation' | 'quaternion' | 'vector3' | 'array';
+  type: 'number' | 'string' | 'boolean' | 'CExoLocString' | 'position' | 'rotation' | 'quaternion' | 'vector3' | 'array' | 'cameraFacing';
   /** GFF field label (for reference) */
   gitFieldLabel?: string;
   /** Optional nested property path (e.g., 'position.x') */
@@ -314,12 +315,13 @@ function getGITPropertyDefinitions(gameObject: ForgeGameObject): GITPropertyDef[
     case 'ForgeCamera':
       props = [
         { propertyName: 'cameraID', label: 'Camera ID', type: 'number', gitFieldLabel: 'CameraID', section: 'Identity' },
-        { propertyName: 'fov', label: 'Field of View', type: 'number', gitFieldLabel: 'FieldOfView', section: 'Advanced' },
-        { propertyName: 'height', label: 'Height', type: 'number', gitFieldLabel: 'Height', section: 'Transform' },
-        { propertyName: 'micRange', label: 'Mic Range', type: 'number', gitFieldLabel: 'MicRange', section: 'Advanced' },
-        { propertyName: 'quaternion', label: 'Orientation', type: 'quaternion', gitFieldLabel: 'Orientation', section: 'Transform' },
+        { propertyName: 'position', label: 'Position', type: 'vector3', gitFieldLabel: 'Position', section: 'Transform' },
+        { propertyName: 'facingYaw', label: 'Facing (yaw °)', type: 'cameraFacing', gitFieldLabel: 'Orientation', section: 'Transform' },
         { propertyName: 'pitch', label: 'Pitch', type: 'number', gitFieldLabel: 'Pitch', section: 'Transform' },
-        { propertyName: 'position', label: 'Position', type: 'vector3', gitFieldLabel: 'Position', section: 'Transform' }
+        { propertyName: 'height', label: 'Height', type: 'number', gitFieldLabel: 'Height', section: 'Transform' },
+        { propertyName: 'orientation', label: 'Orientation', type: 'quaternion', gitFieldLabel: 'Orientation', section: 'Advanced' },
+        { propertyName: 'fov', label: 'Field of View', type: 'number', gitFieldLabel: 'FieldOfView', section: 'Advanced' },
+        { propertyName: 'micRange', label: 'Mic Range', type: 'number', gitFieldLabel: 'MicRange', section: 'Advanced' },
       ];
       break;
 
@@ -680,6 +682,36 @@ const PropertyEditor = function(props: {
           />
         </div>
       );
+
+    case 'cameraFacing':
+      if(!(gameObject instanceof ForgeCamera)){
+        return null;
+      }
+      {
+        const camera = gameObject as ForgeCamera;
+        const degrees = camera.getFacingYawDegrees();
+        return (
+          <div className="property-editor-row">
+            <label
+              className="property-editor-label property-editor-label--ellipsis"
+              title="GIT Orientation is a yaw-only quaternion; Pitch is a separate field"
+            >
+              {propertyDef.label}:
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={Number.isFinite(degrees) ? Number(degrees.toFixed(3)) : 0}
+              onChange={(e) => {
+                camera.setFacingYawDegrees(parseFloat(e.target.value) || 0);
+                tab.updateFile();
+                onEdited?.();
+              }}
+              className="property-editor-input"
+            />
+          </div>
+        );
+      }
 
     case 'string':
       return (

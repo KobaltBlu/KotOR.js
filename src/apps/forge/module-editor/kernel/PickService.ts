@@ -47,6 +47,39 @@ export class PickService {
   }
 
   /**
+   * True when this object and every ancestor has `visible !== false`.
+   * Three.js raycasts can still hit invisible meshes in our build.
+   */
+  static isWorldVisible(object: THREE.Object3D | null | undefined): boolean {
+    let current: THREE.Object3D | null = object ?? null;
+    if (!current) {
+      return false;
+    }
+    while (current) {
+      if (current.visible === false) {
+        return false;
+      }
+      current = current.parent;
+    }
+    return true;
+  }
+
+  /**
+   * First raycast hit whose object is world-visible (Layers / helpers off stay unselectable).
+   */
+  static firstVisibleIntersection(
+    intersects: Array<{ object: THREE.Object3D }>,
+  ): { object: THREE.Object3D } | undefined {
+    for (let i = 0; i < intersects.length; i++) {
+      const hit = intersects[i];
+      if (PickService.isWorldVisible(hit.object)) {
+        return hit;
+      }
+    }
+    return undefined;
+  }
+
+  /**
    * Project object world positions into NDC then screen pixels and collect
    * objects whose projected center falls inside the marquee.
    */
@@ -65,7 +98,7 @@ export class PickService {
     const hits: ForgeGameObject[] = [];
     for (const object of objects) {
       const container = (object as any).container as THREE.Object3D | undefined;
-      if (!container) {
+      if (!container || !PickService.isWorldVisible(container)) {
         continue;
       }
       vector.setFromMatrixPosition(container.matrixWorld);

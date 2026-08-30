@@ -1,5 +1,10 @@
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
 import { facingFromYaw, yawFromFacing } from "@/apps/forge/helpers/gitFacing";
+import {
+  createVertexHandle,
+  disposeVertexHandle,
+  setVertexHandleSelected,
+} from "@/apps/forge/module-editor/vertexHandleVisuals";
 import * as KotOR from "@/apps/forge/KotOR";
 import * as THREE from "three";
 
@@ -60,7 +65,7 @@ export class ForgeTrigger extends ForgeGameObject {
   // Vertex manipulation helpers
   vertexHelperGeometry = new THREE.BoxGeometry(1, 1, 1, 1, 1);
   vertexHelpersGroup: THREE.Group = new THREE.Group();
-  vertexHelpers: THREE.Mesh[] = [];
+  vertexHelpers: THREE.Object3D[] = [];
   vertexHelperSize: number = 0.125;
   selectedVertexIndex: number = -1;
 
@@ -244,26 +249,18 @@ export class ForgeTrigger extends ForgeGameObject {
     while(this.vertexHelpers.length > 0){
       const helper = this.vertexHelpers.pop();
       if(helper){
-        helper.removeFromParent();
-        helper.geometry.dispose();
-        (helper.material as THREE.Material).dispose();
+        disposeVertexHandle(helper);
       }
     }
     
     // Create helpers for each vertex
     for(let i = 0; i < this.vertices.length; i++){
       const vertex = this.vertices[i];
-      const helper = new THREE.Mesh(
-        this.vertexHelperGeometry, 
-        new THREE.MeshBasicMaterial({color: 0x000000})
-      );
-      
+      const helper = createVertexHandle(this.vertexHelperGeometry, this.vertexHelperSize, {
+        vertexIndex: i,
+        forgeGameObject: this,
+      });
       helper.position.copy(vertex);
-      helper.scale.setScalar(this.vertexHelperSize);
-      
-      helper.userData.vertexIndex = i;
-      helper.userData.forgeGameObject = this;
-      
       this.vertexHelpersGroup.add(helper);
       this.vertexHelpers.push(helper);
     }
@@ -302,19 +299,12 @@ export class ForgeTrigger extends ForgeGameObject {
 
   selectVertex(index: number = -1){
     this.selectedVertexIndex = index;
-    // Update vertex helper colors
     for(let i = 0; i < this.vertexHelpers.length; i++){
-      const helper = this.vertexHelpers[i];
-      const material = helper.material as THREE.MeshBasicMaterial;
-      if(i === index){
-        material.color.setHex(0xFFFFFF);
-      } else {
-        material.color.setHex(0x000000);
-      }
+      setVertexHandleSelected(this.vertexHelpers[i], i === index);
     }
   }
 
-  updateVertexFromHelper(vertexIndex: number, helper: THREE.Mesh){
+  updateVertexFromHelper(vertexIndex: number, helper: THREE.Object3D){
     if(vertexIndex >= 0 && vertexIndex < this.vertices.length){
       const vertex = this.vertices[vertexIndex];
       const localPos = helper.position.clone();

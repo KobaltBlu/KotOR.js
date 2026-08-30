@@ -8,6 +8,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js';
 import { ForgeModule } from "@/apps/forge/module-editor/ForgeModule";
 import { ForgeGameObject } from "@/apps/forge/module-editor/ForgeGameObject";
+import { resolveVertexHandleRoot } from "@/apps/forge/module-editor/vertexHandleVisuals";
 import {
   defaultViewportPerfPolicy,
   shouldIdleRender,
@@ -18,6 +19,7 @@ import {
   FOCUS_FALLBACK_RADIUS,
   focusNearFar,
 } from "@/apps/forge/module-editor/kernel/CameraFocusPolicy";
+import { PickService } from "@/apps/forge/module-editor/kernel/PickService";
 import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 
 export enum CameraView {
@@ -810,16 +812,12 @@ export class UI3DRenderer extends EventListenerModel {
     if(KotOR.Mouse.ButtonState == KotOR.MouseState.LEFT && !this.transformControlsDragging){
       this.raycaster.setFromCamera( KotOR.Mouse.Vector, this.camera );
       const intersects = this.raycaster.intersectObjects( this.selectable.children, true );
-      if(intersects.length){
-        const closestIntersection = intersects[0];
-        const isVertexHelper = closestIntersection.object instanceof THREE.Mesh && 
-          closestIntersection.object.userData?.vertexIndex !== undefined;
-        
+      // Three.js may still return hits on visible:false meshes; skip Layer-hidden objects.
+      const closestIntersection = PickService.firstVisibleIntersection(intersects);
+      if(closestIntersection){
         this.selectObject(closestIntersection.object);
-        // this.processEventListener('onSelect', [intersection]);
       }else{
         this.selectObject(undefined);
-        // this.processEventListener('onSelect', [undefined]);
       }
     }
   }
@@ -858,7 +856,8 @@ export class UI3DRenderer extends EventListenerModel {
 
   /**
    * Show or hide a scene object class. Walkmeshes toggle material visibility
-   * (meshes stay in the graph for raycasts / placement).
+   * so placement raycasts can still snap when the walkmesh layer is off;
+   * object Layers use `.visible` and are excluded from selection picks.
    */
   setVisibilityByType(type: ObjectType, visible: boolean) {
     if (this.visibilityState[type] === visible) {
@@ -1178,9 +1177,9 @@ export class UI3DRenderer extends EventListenerModel {
       return;
     }
 
-    // Check if this is a vertex helper - if so, pass it through directly
-    if(object instanceof THREE.Mesh && object.userData?.vertexIndex !== undefined){
-      this.processEventListener('onSelect', [object]);
+    // Check if this is a vertex helper - if so, pass the handle root through
+    if(object.userData?.vertexIndex !== undefined){
+      this.processEventListener('onSelect', [resolveVertexHandleRoot(object)]);
       return;
     }
 

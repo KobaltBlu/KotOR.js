@@ -21,6 +21,7 @@ import { ForgeSound } from "@/apps/forge/module-editor/ForgeSound";
 import { ForgeStore } from "@/apps/forge/module-editor/ForgeStore";
 import { ForgeTrigger } from "@/apps/forge/module-editor/ForgeTrigger";
 import { ForgeWaypoint } from "@/apps/forge/module-editor/ForgeWaypoint";
+import { resolveVertexHandleRoot } from "@/apps/forge/module-editor/vertexHandleVisuals";
 import { BlueprintType } from "@/apps/forge/states/modal/ModalBlueprintBrowserState";
 import { openBlueprintBrowser, openResRefBrowser } from "@/apps/forge/helpers/openGameResRefPicker";
 import { ForgeRoom } from "@/apps/forge/module-editor/ForgeRoom";
@@ -241,16 +242,29 @@ export class TabModuleEditorState extends TabState {
 
     // Listen to transform controls changes to update point positions
     // Add listener immediately if transform controls exist, otherwise wait for canvas attachment
+    const bindTransformControlListeners = () => {
+      const controls = this.ui3DRenderer.transformControls;
+      if (!controls) {
+        return;
+      }
+      controls.addEventListener('change', this.onTransformControlsChange.bind(this));
+      controls.addEventListener('mouseDown', () => {
+        this.beginMultiSelectTransformTracking();
+        // Gizmo / vertex-handle drag must not complete as a marquee selection.
+        this.cancelMarquee();
+      });
+      controls.addEventListener('dragging-changed', (event: any) => {
+        if (event.value === true) {
+          this.cancelMarquee();
+        }
+      });
+    };
     if(this.ui3DRenderer.transformControls){
-      this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
-      this.ui3DRenderer.transformControls.addEventListener('mouseDown', () => this.beginMultiSelectTransformTracking());
+      bindTransformControlListeners();
     } else {
       // Wait for canvas to be attached so transform controls are built
       this.ui3DRenderer.addEventListener<UI3DRendererEventListenerTypes>('onCanvasAttached', () => {
-        if(this.ui3DRenderer.transformControls){
-          this.ui3DRenderer.transformControls.addEventListener('change', this.onTransformControlsChange.bind(this));
-          this.ui3DRenderer.transformControls.addEventListener('mouseDown', () => this.beginMultiSelectTransformTracking());
-        }
+        bindTransformControlListeners();
       });
     }
 
@@ -364,6 +378,10 @@ export class TabModuleEditorState extends TabState {
     if (!forgeModuleSettings.get().marqueeSelect) {
       return;
     }
+    // Don't start a marquee while the move/rotate gizmo (or vertex handle) is being used.
+    if (this.isTransformGizmoPointerActive()) {
+      return;
+    }
     this.marqueeStart = { x, y };
     this.marqueeCurrent = { x, y };
     this.ui3DRenderer.setOrbitSuspended(true);
@@ -374,11 +392,20 @@ export class TabModuleEditorState extends TabState {
     if (!this.marqueeStart) {
       return;
     }
+    // Gizmo drag won the pointer — abandon the marquee without changing selection.
+    if (this.ui3DRenderer.transformControlsDragging) {
+      this.cancelMarquee();
+      return;
+    }
     this.marqueeCurrent = { x, y };
     this.processEventListener("onMarqueeChanged", [this.getMarqueeRect()]);
   }
 
   completeMarquee(additive = false): ForgeGameObject[] {
+    if (this.ui3DRenderer.transformControlsDragging) {
+      this.cancelMarquee();
+      return [];
+    }
     const rect = this.getMarqueeRect();
     this.marqueeStart = null;
     this.marqueeCurrent = null;
@@ -409,6 +436,31 @@ export class TabModuleEditorState extends TabState {
     return hits;
   }
 
+  /** Clear an in-progress marquee without applying selection. */
+  cancelMarquee(): void {
+    if (!this.marqueeStart && !this.marqueeCurrent) {
+      this.ui3DRenderer.setOrbitSuspended(false);
+      return;
+    }
+    this.marqueeStart = null;
+    this.marqueeCurrent = null;
+    this.ui3DRenderer.setOrbitSuspended(false);
+    this.processEventListener("onMarqueeChanged", [null]);
+  }
+
+  /** True when the pointer is on a TransformControls axis or a gizmo drag is active. */
+  isTransformGizmoPointerActive(): boolean {
+    if (this.ui3DRenderer.transformControlsDragging) {
+      return true;
+    }
+    const controls = this.ui3DRenderer.transformControls as { axis?: string | null; object?: unknown } | undefined;
+    if (!controls?.object) {
+      return false;
+    }
+    const axis = controls.axis;
+    return typeof axis === "string" && axis.length > 0;
+  }
+
   getMarqueeRect(): ScreenRect | null {
     if (!this.marqueeStart || !this.marqueeCurrent) {
       return null;
@@ -433,7 +485,7 @@ export class TabModuleEditorState extends TabState {
       ...(this.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT
         ? []
         : (area.rooms || [])),
-    ];
+    ].filter((object) => PickService.isWorldVisible(object.container));
     this.spatialPickIndex.rebuild(objects);
     return objects;
   }
@@ -576,13 +628,9 @@ export class TabModuleEditorState extends TabState {
     const object3D = this.selectedGameObject.container;
     if(!object3D) return;
 
-    // For cameras, keep retail YZX on the container for GIT export.
-    // perspectiveCamera stays local under container — do not copy world pose onto it.
+    // For cameras: split display Euler into authored Pitch + Orientation (never bake pitch into Orientation).
     if(this.selectedGameObject instanceof ForgeCamera){
-      const camera = this.selectedGameObject as ForgeCamera;
-      camera.rotation.reorder('YZX');
-      camera.quaternion.setFromEuler(camera.rotation);
-      camera.pitch = THREE.MathUtils.radToDeg(camera.rotation.x);
+      (this.selectedGameObject as ForgeCamera).syncAuthoredFieldsFromDisplayPose();
     }
 
     // Room world positions live in LYT; only sync while the user is dragging
@@ -874,15 +922,16 @@ export class TabModuleEditorState extends TabState {
     }
     this.selectedEntryPoint = false;
     
-    // Check if a vertex helper was selected
-    if(gameObject instanceof THREE.Mesh && gameObject.userData?.vertexIndex !== undefined){
+    // Check if a vertex helper was selected (pick may hit fill/outline child mesh)
+    if(gameObject instanceof THREE.Object3D && gameObject.userData?.vertexIndex !== undefined){
       const forgeGameObject = gameObject.userData.forgeGameObject as ForgeTrigger | ForgeEncounter;
       if(forgeGameObject && (forgeGameObject instanceof ForgeTrigger || forgeGameObject instanceof ForgeEncounter)){
         const vertexIndex = gameObject.userData.vertexIndex as number;
+        const handleRoot = resolveVertexHandleRoot(gameObject);
         forgeGameObject.selectVertex(vertexIndex);
-        // Attach transform controls to the selected vertex helper
+        // Attach transform controls to the handle root (not fill/outline child)
         this.ui3DRenderer.transformControls.detach();
-        this.ui3DRenderer.transformControls.attach(gameObject);
+        this.ui3DRenderer.transformControls.attach(handleRoot);
         this.ui3DRenderer.transformControls.size = 0.25;
         return;
       }
@@ -970,6 +1019,14 @@ export class TabModuleEditorState extends TabState {
         this.focusSelection();
       }
     }else if(event.key.toLowerCase() === 'x'){
+      // Cameras author Pitch/Orientation in world space; do not toggle to local.
+      if(
+        this.controlMode === TabModuleEditorControlMode.ROTATE_CONTROL &&
+        this.selectedGameObject instanceof ForgeCamera
+      ){
+        this.forceCameraRotateWorldSpace();
+        return;
+      }
       const controls = this.ui3DRenderer.transformControls as any;
       const next = controls.space === 'local' ? 'world' : 'local';
       controls.setSpace?.(next);
@@ -1044,15 +1101,26 @@ export class TabModuleEditorState extends TabState {
         this.ui3DRenderer.transformControls.showY = false;
         this.ui3DRenderer.transformControls.showZ = true;
       } else if(gameObject instanceof ForgeCamera){
-        this.ui3DRenderer.transformControls.showX = false;
+        // World X = Pitch, world Z = Orientation yaw. Local Z on a pitched cam changes pitch.
+        this.ui3DRenderer.transformControls.showX = true;
         this.ui3DRenderer.transformControls.showY = false;
         this.ui3DRenderer.transformControls.showZ = true;
+        this.forceCameraRotateWorldSpace();
       }
     }else if(this.controlMode === TabModuleEditorControlMode.SCALE_CONTROL){
       this.ui3DRenderer.transformControls.showX = true;
       this.ui3DRenderer.transformControls.showY = true;
       this.ui3DRenderer.transformControls.showZ = true;
     }
+  }
+
+  /** Cameras author Pitch (X) and Orientation yaw (Z) in world space only. */
+  private forceCameraRotateWorldSpace(): void {
+    const controls = this.ui3DRenderer.transformControls as any;
+    if(!controls) return;
+    controls.setSpace?.('world');
+    controls.space = 'world';
+    this.toolService.setSpace('world');
   }
 
   selectGameObject(gameObject: ForgeGameObject | undefined, additive: boolean = false){
@@ -1084,11 +1152,7 @@ export class TabModuleEditorState extends TabState {
     // Enable/disable camera preview
     if(gameObject instanceof ForgeCamera){
       const camera = gameObject as ForgeCamera;
-      // Ensure rotation order is set before attaching transform controls
-      camera.rotation.reorder('YZX');
-      // Sync quaternion from rotation to ensure consistency
-      camera.quaternion.setFromEuler(camera.rotation);
-      // Enable preview with the camera's perspective camera
+      camera.applyEditorPose();
       if(camera.perspectiveCamera){
         this.ui3DRenderer.setPreviewCamera(camera.perspectiveCamera);
       }
