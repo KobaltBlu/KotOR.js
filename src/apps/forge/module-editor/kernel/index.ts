@@ -13,6 +13,7 @@ export * from "@/apps/forge/module-editor/kernel/SelectionService";
 export * from "@/apps/forge/module-editor/kernel/ToolService";
 export * from "@/apps/forge/module-editor/kernel/PickService";
 export * from "@/apps/forge/module-editor/kernel/SceneVisibilityService";
+export * from "@/apps/forge/module-editor/kernel/SelectionHighlightService";
 export * from "@/apps/forge/module-editor/kernel/PreviewController";
 export * from "@/apps/forge/module-editor/kernel/PerformanceBaseline";
 export * from "@/apps/forge/module-editor/kernel/SpatialPickIndex";

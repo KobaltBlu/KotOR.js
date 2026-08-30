@@ -20,6 +20,7 @@ import {
   focusNearFar,
 } from "@/apps/forge/module-editor/kernel/CameraFocusPolicy";
 import { PickService } from "@/apps/forge/module-editor/kernel/PickService";
+import { isHighlightableGameObject } from "@/apps/forge/module-editor/kernel/SelectionHighlightService";
 import { OdysseyModelNodeType } from "@/enums/odyssey/OdysseyModelNodeType";
 
 export enum CameraView {
@@ -1230,7 +1231,8 @@ export class UI3DRenderer extends EventListenerModel {
 
     //@ts-ignore
     this.selectionBox.setFromObject(object, true);
-    this.selectionBox.visible = true;
+    // Dynamic GIT instances use inverted-hull outlines; keep BoxHelper for rooms / raw nodes.
+    this.selectionBox.visible = !isHighlightableGameObject(forgeGameObject);
 
     const size = arr.reduce( (a, b) => a + b, 0 );
 

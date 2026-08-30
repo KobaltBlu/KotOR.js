@@ -39,6 +39,8 @@ import {
   PickService,
   PreviewController,
   SceneVisibilityService,
+  SelectionHighlightService,
+  isHighlightableGameObject,
   SelectionService,
   SpatialPickIndex,
   ToolService,
@@ -129,6 +131,9 @@ export class TabModuleEditorState extends TabState {
   readonly selectionService = new SelectionService();
   readonly toolService = new ToolService();
   readonly visibilityService = new SceneVisibilityService();
+  readonly highlightService = new SelectionHighlightService();
+  /** Objects already subscribed for outline refresh on model swap. */
+  private readonly highlightModelListeners = new WeakSet<ForgeGameObject>();
   readonly previewController = new PreviewController();
   readonly validationService = new ModuleValidationService();
   readonly assetIndex = new AssetIndexService();
@@ -431,6 +436,7 @@ export class TabModuleEditorState extends TabState {
       this.selectedGameObjects = [...this.selectionService.objects];
       this.selectedGameObject = this.selectionService.primaryObject;
       this.ui3DRenderer.sceneGraphManager?.syncSelectionFromGameObjects(this.selectedGameObjects);
+      this.syncSelectionHighlights();
       this.processEventListener("onSelectionChanged", [this.selectedGameObject, this.selectedGameObjects]);
     }
     return hits;
@@ -1068,6 +1074,7 @@ export class TabModuleEditorState extends TabState {
       if(targets[i] instanceof ForgeRoom){
         touchedRoom = true;
       }
+      this.highlightService.detach(targets[i]);
       this.module.area.detachObject(targets[i]);
     }
     this.selectGameObject(undefined);
@@ -1181,7 +1188,49 @@ export class TabModuleEditorState extends TabState {
     }
     this.ui3DRenderer.sceneGraphManager?.syncSelectionFromGameObjects(this.selectedGameObjects);
     this.selectionService.selectMany(this.selectedGameObjects, false);
+    this.syncSelectionHighlights();
     this.processEventListener('onSelectionChanged', [gameObject, this.selectedGameObjects]);
+  }
+
+  /** Idle outlines for all dynamics; strengthen the current selection. */
+  private syncSelectionHighlights(): void {
+    this.highlightService.setSelected(this.selectedGameObjects);
+    // BoxHelper is redundant (and noisy) when inverted-hull outlines are active.
+    if (
+      this.selectedGameObjects.length > 0 &&
+      this.selectedGameObjects.every((object) => isHighlightableGameObject(object))
+    ) {
+      this.ui3DRenderer.selectionBox.visible = false;
+    }
+  }
+
+  /** Attach or refresh outlines after an object's visuals finish loading. */
+  private attachObjectHighlight(object: ForgeGameObject): void {
+    if (!isHighlightableGameObject(object)) {
+      return;
+    }
+    this.highlightService.attach(object);
+    if (this.selectedGameObjects.includes(object)) {
+      this.highlightService.setObjectSelected(object, true);
+    }
+    if (this.highlightModelListeners.has(object)) {
+      return;
+    }
+    this.highlightModelListeners.add(object);
+    // Models may swap later (appearance / blueprint reload).
+    object.addEventListener('onModelChange', () => {
+      this.highlightService.refresh(object);
+      if (this.selectedGameObjects.includes(object)) {
+        this.highlightService.setObjectSelected(object, true);
+      }
+    });
+  }
+
+  /** Rebuild idle outlines for every dynamic instance currently in the area. */
+  private rebuildAreaHighlights(): void {
+    this.highlightService.clear();
+    this.highlightService.attachAllFromArea(this.module?.area);
+    this.syncSelectionHighlights();
   }
 
   cyclePreviewSpawnMode(): void {
@@ -1276,6 +1325,7 @@ export class TabModuleEditorState extends TabState {
         this.module?.area.ensureLayout();
         this.module?.area.syncLayoutAndVisInMemory();
       }
+      this.attachObjectHighlight(gameObject);
     })();
 
     // Notify listeners
@@ -1324,6 +1374,7 @@ export class TabModuleEditorState extends TabState {
     void (async () => {
       await clone.loadBlueprint();
       await clone.load();
+      this.attachObjectHighlight(clone);
     })();
     if(options?.select !== false){
       this.selectGameObject(clone);
@@ -1352,9 +1403,11 @@ export class TabModuleEditorState extends TabState {
     this.updateFile();
     this.selectedGameObjects = clones;
     this.selectedGameObject = clones[0];
+    this.selectionService.selectMany(clones, false);
     this.ui3DRenderer.transformControls.detach();
     this.ui3DRenderer.transformControls.attach(clones[0].container);
     this.beginMultiSelectTransformTracking();
+    this.syncSelectionHighlights();
     this.processEventListener('onSelectionChanged', [clones[0], clones]);
   }
 
@@ -1476,6 +1529,7 @@ export class TabModuleEditorState extends TabState {
     this.module = module;
     this.module.setContext(this.ui3DRenderer);
     await this.module.load();
+    this.rebuildAreaHighlights();
     this.updateEntryMarker();
     await this.refreshPathOverlay();
     this.focusCameraOnModuleEntry();
@@ -1804,6 +1858,7 @@ export class TabModuleEditorState extends TabState {
   }
 
   private async applyModuleSnapshot(state: ModuleEditorSnapshot): Promise<void> {
+    this.highlightService.clear();
     this.module?.area?.clearAttachedObjects();
     this.selectGameObject(undefined);
     const ifo = new KotOR.GFFObject(state.ifo);
@@ -1840,6 +1895,7 @@ export class TabModuleEditorState extends TabState {
     }else{
       this.module.area.visObject = undefined;
     }
+    this.rebuildAreaHighlights();
     this.updateEntryMarker();
     await this.refreshPathOverlay();
     this.processEventListener('onModuleLoaded', [this.module]);
