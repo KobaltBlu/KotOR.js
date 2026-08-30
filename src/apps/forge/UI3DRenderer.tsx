@@ -456,9 +456,12 @@ export class UI3DRenderer extends EventListenerModel {
     };
 
     if(this.cameraViewCache[view]){
+      // Top/Bottom leave camera.up as (0,1,0); Default and orthographic side views need Z-up.
+      // lookAt / OrbitControls both use up, so restore it before re-aiming.
+      this.updateCameraUpForView(view);
       this.camera.position.copy(this.cameraViewCache[view].position);
-      this.camera.lookAt(this.cameraViewCache[view].target);
       this.orbitControls.target.copy(this.cameraViewCache[view].target);
+      this.camera.lookAt(this.cameraViewCache[view].target);
       this.orbitControls.update();
       this.orbitControls.enableRotate = view === CameraView.Default;
       return;
