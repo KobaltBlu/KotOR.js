@@ -92,6 +92,7 @@
     "@types/jest": "^30.0.0",
     "ag-psd": "^31.0.2",
     "bootstrap": "^5.3.8",
+    "fflate": "^0.8.3",
     "jest": "^30.2.0",
     "lip-sync-engine": "^1.0.3",
     "monaco-editor": "^0.52.0",

@@ -17,7 +17,6 @@ export enum EditorTool {
   SELECT = "select",
   TRANSLATE = "translate",
   ROTATE = "rotate",
-  SCALE = "scale",
   PLACE = "place",
 }
 

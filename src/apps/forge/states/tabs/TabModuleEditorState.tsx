@@ -854,8 +854,7 @@ export class TabModuleEditorState extends TabState {
 
     const isTransformTool = 
       mode === TabModuleEditorControlMode.TRANSFORM_CONTROL || 
-      mode === TabModuleEditorControlMode.ROTATE_CONTROL || 
-      mode === TabModuleEditorControlMode.SCALE_CONTROL;
+      mode === TabModuleEditorControlMode.ROTATE_CONTROL;
 
     const isSelectModeTool = 
       mode === TabModuleEditorControlMode.SELECT;
@@ -888,12 +887,6 @@ export class TabModuleEditorState extends TabState {
       }
       this.updateTransformControlHelpers(this.selectedGameObject!);
       this.toolService.setTool(EditorTool.ROTATE);
-    } else if(mode === TabModuleEditorControlMode.SCALE_CONTROL){
-      if(this.ui3DRenderer.transformControls){
-        this.ui3DRenderer.transformControls.mode = 'scale';
-      }
-      this.updateTransformControlHelpers(this.selectedGameObject!);
-      this.toolService.setTool(EditorTool.SCALE);
     } else if(mode === TabModuleEditorControlMode.ADD_GAME_OBJECT){
       this.toolService.setTool(EditorTool.PLACE);
       this.toolService.setMode(EditorMode.PLACE);
@@ -1015,8 +1008,6 @@ export class TabModuleEditorState extends TabState {
       this.setControlMode(TabModuleEditorControlMode.TRANSFORM_CONTROL);
     }else if(event.key.toLowerCase() === 'e'){
       this.setControlMode(TabModuleEditorControlMode.ROTATE_CONTROL);
-    }else if(event.key.toLowerCase() === 'r'){
-      this.setControlMode(TabModuleEditorControlMode.SCALE_CONTROL);
     }else if(event.key.toLowerCase() === 'f'){
       event.preventDefault();
       if(event.shiftKey){
@@ -1114,10 +1105,6 @@ export class TabModuleEditorState extends TabState {
         this.ui3DRenderer.transformControls.showZ = true;
         this.forceCameraRotateWorldSpace();
       }
-    }else if(this.controlMode === TabModuleEditorControlMode.SCALE_CONTROL){
-      this.ui3DRenderer.transformControls.showX = true;
-      this.ui3DRenderer.transformControls.showY = true;
-      this.ui3DRenderer.transformControls.showZ = true;
     }
   }
 

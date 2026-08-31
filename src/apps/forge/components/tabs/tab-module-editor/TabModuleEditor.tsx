@@ -618,7 +618,6 @@ export const TabModuleEditor = function(props: BaseTabProps){
                       controlMode === TabModuleEditorControlMode.SELECT ? 'select' :
                       controlMode === TabModuleEditorControlMode.TRANSFORM_CONTROL ? 'translate' :
                       controlMode === TabModuleEditorControlMode.ROTATE_CONTROL ? 'rotate' :
-                      controlMode === TabModuleEditorControlMode.SCALE_CONTROL ? 'scale' :
                       controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT ? 'add-game-object' :
                       undefined
                     }

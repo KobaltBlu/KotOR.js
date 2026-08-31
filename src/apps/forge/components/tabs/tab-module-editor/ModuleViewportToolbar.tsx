@@ -15,7 +15,6 @@ const TOOLS: { id: EditorTool; mode: TabModuleEditorControlMode; label: string; 
   { id: EditorTool.SELECT, mode: TabModuleEditorControlMode.SELECT, label: "Select", shortcut: "Q", icon: "fa-arrow-pointer" },
   { id: EditorTool.TRANSLATE, mode: TabModuleEditorControlMode.TRANSFORM_CONTROL, label: "Move", shortcut: "W", icon: "fa-arrows-up-down-left-right" },
   { id: EditorTool.ROTATE, mode: TabModuleEditorControlMode.ROTATE_CONTROL, label: "Rotate", shortcut: "E", icon: "fa-arrows-rotate" },
-  { id: EditorTool.SCALE, mode: TabModuleEditorControlMode.SCALE_CONTROL, label: "Scale", shortcut: "R", icon: "fa-up-right-and-down-left-from-center" },
   { id: EditorTool.PLACE, mode: TabModuleEditorControlMode.ADD_GAME_OBJECT, label: "Place", shortcut: "A", icon: "fa-square-plus" },
 ];
 

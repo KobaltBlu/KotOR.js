@@ -17,6 +17,7 @@ import { compileAllNssInProject } from "@/apps/forge/helpers/ForgeNWScriptCompil
 import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
 import { openNewModuleWizard } from "@/apps/forge/helpers/openNewModuleWizard";
 import { openNewProjectFromModWizard } from "@/apps/forge/helpers/openNewProjectFromModWizard";
+import { openImportProjectZipWizard } from "@/apps/forge/helpers/openImportProjectZipWizard";
 import { exportForgeThemeToFile, installForgeThemeFromFile } from "@/apps/forge/settings/forgeTheme";
 import { AudioPlayerState } from "@/apps/forge/states/AudioPlayerState";
 import { ForgeState } from "@/apps/forge/states/ForgeState";
@@ -122,6 +123,14 @@ export function registerForgeCommands(): void {
     category: "File",
     keywords: ["mod", "rim", "erf", "import", "create project", "module"],
     run: () => openNewProjectFromModWizard(),
+  });
+
+  registerCommand({
+    id: "forge.file.importProjectZip",
+    title: "Import Project from ZIP...",
+    category: "File",
+    keywords: ["zip", "import", "restore", "archive", "backup"],
+    run: () => openImportProjectZipWizard(),
   });
 
   registerCommand({
@@ -958,6 +967,24 @@ export function registerForgeCommands(): void {
     keywords: ["mod", "pack", "erf", "export"],
     when: hasProject,
     run: () => ForgeState.project.export(),
+  });
+
+  registerCommand({
+    id: "forge.project.exportModuleToGame",
+    title: "Export Module to Game...",
+    category: "Project",
+    keywords: ["mod", "modules", "install", "game", "export"],
+    when: hasProject,
+    run: () => ForgeState.project.exportToGameModules(),
+  });
+
+  registerCommand({
+    id: "forge.project.exportProjectZip",
+    title: "Export Project as ZIP...",
+    category: "Project",
+    keywords: ["zip", "backup", "archive", "export", "share"],
+    when: hasProject,
+    run: () => ForgeState.project.exportAsZip(),
   });
 
   registerCommand({

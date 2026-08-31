@@ -45,7 +45,6 @@ export const UI3DOverlayComponent = function(props: { context: UI3DRenderer; tab
       [TabModuleEditorControlMode.SELECT]: 'Select (Q)',
       [TabModuleEditorControlMode.TRANSFORM_CONTROL]: 'Translate (W)',
       [TabModuleEditorControlMode.ROTATE_CONTROL]: 'Rotate (E)',
-      [TabModuleEditorControlMode.SCALE_CONTROL]: 'Scale (R)',
       [TabModuleEditorControlMode.ADD_GAME_OBJECT]: 'Place Object',
     };
     const placing = tab.controlMode === TabModuleEditorControlMode.ADD_GAME_OBJECT;
@@ -137,7 +136,7 @@ export const UI3DOverlayComponent = function(props: { context: UI3DRenderer; tab
         {tab.showKeymapHelp && !previewing && (
           <div className="module-editor-keymap-help">
             <div><b>Keymap</b></div>
-            <div>Q Select · W Move · E Rotate · R Scale</div>
+            <div>Q Select · W Move · E Rotate</div>
             <div>P Preview · T Sticky place · F Focus · Shift+F Fit</div>
             <div>1–7 / 0 Camera views · Esc Cancel / Exit preview · Delete Remove</div>
             <div>Shift+Click additive select / one-shot place</div>

@@ -11,7 +11,6 @@ export enum TabModuleEditorControlMode {
   SELECT = 0,
   TRANSFORM_CONTROL = 2,
   ROTATE_CONTROL = 3,
-  SCALE_CONTROL = 4,
   ADD_GAME_OBJECT = 5
 }
 

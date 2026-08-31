@@ -11,11 +11,12 @@ import { RecentProject } from "@/apps/forge/RecentProject";
 import * as KotOR from "@/apps/forge/KotOR";
 import { FileTypeManager } from "@/apps/forge/FileTypeManager";
 import { openImportModuleWizard } from "@/apps/forge/helpers/openImportModuleWizard";
-import { packProjectModule } from "@/apps/forge/helpers/exportProjectModule";
+import { packProjectModule, type PackProjectModuleResult } from "@/apps/forge/helpers/exportProjectModule";
 import {
   compileAllNssBeforeModulePack,
   formatBulkNssCompileFailure,
 } from "@/apps/forge/helpers/ForgeNWScriptCompile";
+import { packProjectZip } from "@/apps/forge/helpers/projectZip";
 import { ModalBulkNssCompileResultsState } from "@/apps/forge/states/modal/ModalBulkNssCompileResultsState";
 import * as fs from "fs";
 declare const dialog: any;
@@ -434,15 +435,18 @@ export class Project {
 
   }
 
-  //Exports the finished project to a .mod file
-  async export(): Promise<boolean> {
+  /**
+   * Compile NSS, apply live module-editor overrides, and pack a playable .mod buffer.
+   * Shared by save-as export and install-to-game.
+   */
+  async buildModuleExportBuffer(): Promise<PackProjectModuleResult & { cancelled?: boolean }> {
     let overrides: Record<string, Uint8Array> | undefined;
     if(this.moduleEditor instanceof TabModuleEditorState && this.moduleEditor.file?.unsaved_changes){
       const saveFirst = window.confirm("The module editor has unsaved changes. Save before exporting?");
       if(saveFirst){
         const saved = await this.moduleEditor.save();
         if(!saved){
-          return false;
+          return { ok: false, reason: "Save cancelled.", filename: "module.mod", resourceCount: 0, cancelled: true };
         }
       }
     }
@@ -460,25 +464,36 @@ export class Project {
       }
     }
 
+    const compile = await compileAllNssBeforeModulePack();
+    if(!compile.ok){
+      const modal = new ModalBulkNssCompileResultsState(compile.outcome);
+      modal.attachToModalManager(ForgeState.modalManager);
+      modal.open();
+      window.alert(formatBulkNssCompileFailure(compile.outcome));
+      return { ok: false, reason: "NSS compile failed.", filename: "module.mod", resourceCount: 0 };
+    }
+
+    const files = await ProjectFileSystem.readdir("", { recursive: true });
+    return packProjectModule({
+      files,
+      readFile: (rel) => ProjectFileSystem.readFile(rel),
+      moduleTag: this.moduleEditor?.module?.tag || this.settings.name,
+      projectName: this.settings.name,
+      overrides,
+    });
+  }
+
+  //Exports the finished project to a .mod file
+  async export(): Promise<boolean> {
+    if(!ProjectFileSystem.hasRoot()){
+      return false;
+    }
     ForgeState.loaderShow();
     try{
-      const compile = await compileAllNssBeforeModulePack();
-      if(!compile.ok){
-        const modal = new ModalBulkNssCompileResultsState(compile.outcome);
-        modal.attachToModalManager(ForgeState.modalManager);
-        modal.open();
-        window.alert(formatBulkNssCompileFailure(compile.outcome));
+      const result = await this.buildModuleExportBuffer();
+      if(result.cancelled){
         return false;
       }
-
-      const files = await ProjectFileSystem.readdir("", { recursive: true });
-      const result = await packProjectModule({
-        files,
-        readFile: (rel) => ProjectFileSystem.readFile(rel),
-        moduleTag: this.moduleEditor?.module?.tag || this.settings.name,
-        projectName: this.settings.name,
-        overrides,
-      });
       if(!result.ok || !result.buffer){
         window.alert(result.reason || "Export failed.");
         return false;
@@ -507,6 +522,109 @@ export class Project {
         return true;
       }catch(e){
         console.error("Project.export", e);
+        return false;
+      }
+    }finally{
+      ForgeState.loaderHide();
+    }
+  }
+
+  /** Pack the project module and write it into the bound game's modules folder. */
+  async exportToGameModules(): Promise<boolean> {
+    if(!ProjectFileSystem.hasRoot()){
+      return false;
+    }
+    if(!ForgeState.hasBoundGameDirectory()){
+      window.alert("Locate a game install directory before exporting to Modules.");
+      return false;
+    }
+
+    ForgeState.loaderShow();
+    try{
+      const result = await this.buildModuleExportBuffer();
+      if(result.cancelled){
+        return false;
+      }
+      if(!result.ok || !result.buffer){
+        window.alert(result.reason || "Export failed.");
+        return false;
+      }
+
+      const relPath = `modules/${result.filename}`;
+      if(await KotOR.GameFileSystem.exists(relPath)){
+        const overwrite = window.confirm(`${result.filename} already exists in Modules. Overwrite?`);
+        if(!overwrite){
+          return false;
+        }
+      }
+
+      const written = await KotOR.GameFileSystem.writeFile(relPath, result.buffer);
+      if(!written){
+        window.alert(`Failed to write ${relPath}.`);
+        return false;
+      }
+
+      try{
+        const mod = new KotOR.ERFObject(relPath);
+        await mod.load();
+        mod.group = "Module";
+        const resRef = result.filename.replace(/\.[^.]+$/, "");
+        KotOR.ERFManager.addERF(resRef, mod);
+      }catch(e){
+        console.warn("Project.exportToGameModules: wrote file but failed to refresh ERFManager", e);
+      }
+
+      window.alert(`Exported ${result.filename} to the game Modules folder.`);
+      return true;
+    }catch(e){
+      console.error("Project.exportToGameModules", e);
+      return false;
+    }finally{
+      ForgeState.loaderHide();
+    }
+  }
+
+  /** Export the full project tree (including .forge and source) as a ZIP. */
+  async exportAsZip(): Promise<boolean> {
+    if(!ProjectFileSystem.hasRoot()){
+      return false;
+    }
+    ForgeState.loaderShow();
+    try{
+      const files = await ProjectFileSystem.readdir("", { recursive: true });
+      const result = await packProjectZip({
+        files,
+        readFile: (rel) => ProjectFileSystem.readFile(rel),
+        projectName: this.settings.name,
+      });
+      if(!result.ok || !result.buffer){
+        window.alert(result.reason || "ZIP export failed.");
+        return false;
+      }
+
+      try{
+        if(KotOR.ApplicationProfile.ENV == KotOR.ApplicationEnvironment.ELECTRON){
+          const savePath = await dialog.showSaveDialog({
+            title: "Export Project as ZIP",
+            defaultPath: result.filename,
+            filters: [{ name: "ZIP Archive", extensions: ["zip"] }],
+          });
+          if(!savePath || savePath.cancelled || !savePath.filePath){
+            return false;
+          }
+          await fs.promises.writeFile(savePath.filePath, result.buffer);
+          return true;
+        }
+        const handle = await window.showSaveFilePicker({
+          suggestedName: result.filename,
+          types: [{ description: "ZIP Archive", accept: { "application/zip": [".zip"] } }],
+        });
+        const ws = await handle.createWritable();
+        await ws.write(result.buffer as any);
+        await ws.close();
+        return true;
+      }catch(e){
+        console.error("Project.exportAsZip", e);
         return false;
       }
     }finally{
