@@ -858,7 +858,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail AIUpdate — scheduled by ServerAIMaster.
+   * Scheduled by Module.aiScheduler.
    * Heartbeat/effects (super), damage, action queue, perception, combat timers,
    * regen, AI-level self-adjustment.
    */
@@ -944,12 +944,12 @@ export class ModuleCreature extends ModuleObject {
    * Party/PC → VERY_HIGH; combat → NORMAL; else LOW (area occupied) or VERY_LOW.
    */
   adjustAILevel(){
-    const master = GameState.ServerAIMaster;
-    if(!master) return;
+    const scheduler = GameState.module?.aiScheduler;
+    if(!scheduler) return;
 
     // Party / PC always VERY_HIGH
     if((this.isPlayer || this.isPM || this.isPartyMember()) && this.aiLevel !== AILevel.VERY_HIGH){
-      master.setAILevel(this, AILevel.VERY_HIGH);
+      scheduler.setAILevel(this, AILevel.VERY_HIGH);
       return;
     }
 
@@ -957,7 +957,7 @@ export class ModuleCreature extends ModuleObject {
 
     if(this.combatData?.combatState){
       if(this.aiLevel !== AILevel.NORMAL && this.aiLevel !== AILevel.VERY_HIGH){
-        master.setAILevel(this, AILevel.NORMAL);
+        scheduler.setAILevel(this, AILevel.NORMAL);
       }
       return;
     }
@@ -966,7 +966,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.aiLevel === AILevel.NORMAL){
       const areaOccupied = (this.area as any)?.playersInArea > 0 ||
         (GameState.PartyManager?.party?.length > 0 && this.area === GameState.module?.area);
-      master.setAILevel(this, areaOccupied ? AILevel.LOW : AILevel.VERY_LOW);
+      scheduler.setAILevel(this, areaOccupied ? AILevel.LOW : AILevel.VERY_LOW);
     }
   }
 

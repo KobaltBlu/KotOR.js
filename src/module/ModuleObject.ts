@@ -214,15 +214,15 @@ export class ModuleObject {
   _heartbeatTimerOffset: number;
   _heartbeatTimeout: number;
   /**
-   * Retail ai_level — priority in CServerAIMaster lists.
-   * INVALID until registered via ServerAIMaster.addObject.
+   * Priority in AIScheduler lists.
+   * INVALID until registered via aiScheduler.addObject.
    */
   aiLevel: AILevel = AILevel.INVALID;
   /** Elapsed world-time accumulator for the per-object 6s heartbeat (ms). */
   _aiHeartbeatElapsedMs: number = 0;
   /** World time (ms) of the last aiUpdate — used to accumulate skipped-frame delta. */
   _lastAIUpdateWorldMs: number = 0;
-  /** Set by ServerAIMaster quick-walk pass so aiUpdate skips re-processing move actions. */
+  /** Set by AIScheduler quick-walk pass so aiUpdate skips re-processing move actions. */
   _quickWalkedThisFrame: boolean = false;
 
   //Perception
@@ -542,7 +542,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail AIUpdate — scheduled by ServerAIMaster (budgeted, may skip frames).
+   * Scheduled by Module.aiScheduler (budgeted, may skip frames).
    * Heartbeat (6s), effect list, and subclass action-queue work.
    * @param delta Accumulated world-time seconds since last aiUpdate (or frame delta when first run).
    */
@@ -572,9 +572,8 @@ export class ModuleObject {
   }
 
   /**
-   * Per-frame client/visual update (retail client AI master object pass).
-   * Destroy fade, camera distance, room check, shadow blob, sphere sync.
-   * Server AI (heartbeat / effects / actions) lives in aiUpdate.
+   * Per-frame object update — destroy fade, camera distance, room check, shadow blob, sphere sync.
+   * Budgeted logic (heartbeat / effects / actions) lives in aiUpdate.
    * @param delta
    */
   update(delta = 0){

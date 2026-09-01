@@ -932,7 +932,7 @@ export class PartyManager {
 
     // Retail SetInParty(0) → AI level NORMAL when left in world
     if(leaveInWorld){
-      GameState.ServerAIMaster?.setAILevel?.(partyMember, AILevel.NORMAL);
+      GameState.module?.aiScheduler.setAILevel(partyMember, AILevel.NORMAL);
       if(partyMember.container){
         partyMember.container.removeFromParent();
       }
@@ -964,7 +964,7 @@ export class PartyManager {
       PartyManager.RebuildPortraitOrder();
 
       if(leaveInWorld){
-        GameState.ServerAIMaster?.setAILevel?.(creature, AILevel.NORMAL);
+        GameState.module?.aiScheduler.setAILevel(creature, AILevel.NORMAL);
         if(creature.container){
           creature.container.removeFromParent();
         }
@@ -1452,7 +1452,7 @@ export class PartyManager {
       });
     }
     // Retail SetInParty → AI level VERY_HIGH
-    GameState.ServerAIMaster?.setAILevel?.(creature, AILevel.VERY_HIGH);
+    GameState.module?.aiScheduler.setAILevel(creature, AILevel.VERY_HIGH);
     //Check to see if the creature needs to be removed from the creatures array
     let cIdx = GameState.module.area.creatures.indexOf(creature);
     if(cIdx > -1){

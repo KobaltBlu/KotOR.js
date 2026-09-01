@@ -1,7 +1,7 @@
 /**
  * AILevel enum.
  *
- * Retail CServerAIMaster AI priority levels (SetAILevel / AddObject).
+ * AI priority levels (AIScheduler setAILevel / addObject).
  * Higher levels receive a larger share of the per-frame AIUpdate budget.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

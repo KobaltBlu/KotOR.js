@@ -22,7 +22,6 @@ import { IngameControls } from "@/controls/IngameControls";
 // import { Mouse } from "@/controls/Mouse";
 
 import { INIConfig } from "@/engine/INIConfig";
-import { ServerAIMaster } from "@/engine/ServerAIMaster";
 import { consumeAreaTransitionLoadBackground } from "@/engine/area-transition-bmp";
 import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
 
@@ -125,7 +124,6 @@ export class GameState implements EngineContext {
   static MenuManager: typeof MenuManager;
   static ModuleObjectManager: typeof ModuleObjectManager;
   static PartyManager: typeof PartyManager;
-  static ServerAIMaster: typeof ServerAIMaster = ServerAIMaster;
   static ResolutionManager: typeof ResolutionManager;
   static ShaderManager: typeof ShaderManager;
   static TLKManager: typeof TLKManager;
@@ -503,7 +501,7 @@ export class GameState implements EngineContext {
    *
    * Must run AFTER locomotion this frame. WASD calls cancelLocomotionActions
    * (zeros speed) in controls.Update before creature.update; pathfinding
-   * quickWalk sets speed before clientUpdate. Syncing here (Render) sees the
+   * quickWalk sets speed before area.update. Syncing here (Render) sees the
    * post-movement speed for both.
    *
    * Prefers playerControl.lastAnimMoveSpeed when live,

@@ -33,6 +33,7 @@ import type { NWScriptInstance } from "@/nwscript/NWScriptInstance";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ScriptVarTable } from "@/engine/ScriptVarTable";
 import { ModuleSaveTable } from "@/engine/ModuleSaveTable";
+import { AIScheduler } from "@/engine/AIScheduler";
 
 export interface ModuleExpansionEntry {
   name: CExoLocString;
@@ -77,6 +78,7 @@ export class Module {
   scriptResRefs: Map<ModuleScriptKeys, string> = new Map<ModuleScriptKeys, string>();
 
   timeManager: ModuleTimeManager;
+  aiScheduler: AIScheduler;
 
   archives: (RIMObject|ERFObject)[] = [];
   effects: GameEffect[] = [];
@@ -236,6 +238,7 @@ export class Module {
     this.eventQueue = [];
     this.area = new ModuleArea();
     this.timeManager = new ModuleTimeManager();
+    this.aiScheduler = new AIScheduler();
     this.customTokens = new Map();
 
     this.initProperties();
@@ -594,14 +597,14 @@ export class Module {
         this.effects[i].update(delta);
       }
 
-      // Retail UpdateState — budgeted AI + event drain + quick-walk
-      GameState.ServerAIMaster.updateState(delta);
+      // Budgeted AI + event drain + quick-walk
+      this.aiScheduler.update(delta);
 
-      // Retail DoUpdate — alternate module / area heartbeat
+      // Alternate module / area heartbeat
       this.doUpdate(delta);
 
       if(this.area){
-        this.area.clientUpdate(delta);
+        this.area.update(delta);
       }
 
       this.timeManager.update(delta);
@@ -653,7 +656,7 @@ export class Module {
   tickPaused(delta = 0){
     if(this.readyToProcessEvents){
       // TimeStop exclusions still receive aiUpdate while paused
-      GameState.ServerAIMaster.updateStatePaused(delta);
+      this.aiScheduler.updatePaused(delta);
       if(this.area){
         this.area.updatePaused(delta);
       }

@@ -133,7 +133,7 @@ export class ModuleObjectManager {
     this.ObjectList.set(object.id, object);
     // retail* ctor AddObject(aiMaster, VERY_LOW) — only if not already registered
     if(object.aiLevel === AILevel.INVALID){
-      GameState.ServerAIMaster?.addObject?.(object);
+      GameState.module?.aiScheduler.addObject(object);
     }
   }
 
@@ -200,7 +200,7 @@ export class ModuleObjectManager {
   static RemoveObject(object: ModuleObject){
     if(!object) return;
     this.RemoveObjectFromLookupTableById(object.id);
-    GameState.ServerAIMaster?.removeObject?.(object);
+    GameState.module?.aiScheduler.removeObject(object);
     this.RemoveObjectById(object.id);
     GameState.CursorManager.notifyObjectDestroyed(object);
   }
@@ -212,7 +212,7 @@ export class ModuleObjectManager {
       const obj = this.ObjectList.get(id);
       if(obj){
         this.RemoveObjectFromLookupTableById(id);
-        GameState.ServerAIMaster?.removeObject?.(obj);
+        GameState.module?.aiScheduler.removeObject(obj);
       }
       return this.ObjectList.delete(id);
     }
@@ -225,7 +225,7 @@ export class ModuleObjectManager {
     this.ObjectList.clear();
     this.tagLookup.length = 0;
     MiniGameObjectArray.clear();
-    GameState.ServerAIMaster?.Reset?.();
+    GameState.module?.aiScheduler.reset();
     // Clear Enemy/Mine Sighted latches so post-load rising edge is deterministic
     this.#enemySighted = false;
     this.#enemySightedLatch = 0;

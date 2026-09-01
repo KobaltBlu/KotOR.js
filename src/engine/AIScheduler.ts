@@ -7,46 +7,45 @@ import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
-/** Retail UpdateState total per-frame budget (microseconds). */
+/** Per-frame AI budget (microseconds). */
 const AI_BUDGET_US = 10000;
 /** Fraction of remaining budget each non-zero level may consume. */
 const AI_LEVEL_BUDGET_FRACTION = 0.6;
-/** Warn when a single aiUpdate exceeds this (microseconds) — retail 75000. */
+/** Warn when a single aiUpdate exceeds this (microseconds). */
 const AI_OVERFLOW_US = 75000;
 
 /**
- * ServerAIMaster — retail AI master UpdateState scheduling.
+ * Priority AI scheduler for Module.tick — budgeted `aiUpdate`, every-frame
+ * locomotion, and delayed-event drain between object updates.
  *
- * Five AI-priority lists with time-budgeted round-robin AIUpdate scheduling,
- * an every-frame quick-walk pass for moving creatures, and event-queue draining
- * between object updates.
+ * @see Retail CServerAIMaster (Odyssey fidelity reference)
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
- * @file ServerAIMaster.ts
+ * @file AIScheduler.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
  */
-export class ServerAIMaster {
+export class AIScheduler {
 
-  /** Object id lists per AILevel 0..4 (append order via AddUnique). */
-  static lists: ModuleObject[][] = [[], [], [], [], []];
+  /** Object lists per AILevel 0..4 (append order via addObject). */
+  lists: ModuleObject[][] = [[], [], [], [], []];
   /** Persistent round-robin cursor per list. */
-  static listIndex: number[] = [0, 0, 0, 0, 0];
-  /** Frame delta passed into updateState (seconds). */
-  static frameDelta: number = 0;
+  listIndex: number[] = [0, 0, 0, 0, 0];
+  /** Frame delta passed into update (seconds). */
+  frameDelta: number = 0;
 
-  static Reset(){
+  reset(){
     this.lists = [[], [], [], [], []];
     this.listIndex = [0, 0, 0, 0, 0];
     this.frameDelta = 0;
   }
 
   /**
-   * Retail AddObject — register at a level (default VERY_LOW).
+   * Register at a level (default VERY_LOW).
    * Removes from the previous list if already registered.
    */
-  static addObject(object: ModuleObject, level: AILevel = AILevel.VERY_LOW): boolean {
+  addObject(object: ModuleObject, level: AILevel = AILevel.VERY_LOW): boolean {
     if(!object) return false;
     if(level < AILevel.VERY_LOW || level > AILevel.VERY_HIGH) return false;
 
@@ -62,10 +61,7 @@ export class ServerAIMaster {
     return true;
   }
 
-  /**
-   * Retail RemoveObject.
-   */
-  static removeObject(object: ModuleObject): boolean {
+  removeObject(object: ModuleObject): boolean {
     if(!object || object.aiLevel === AILevel.INVALID) return false;
     const level = object.aiLevel;
     if(level < AILevel.VERY_LOW || level > AILevel.VERY_HIGH){
@@ -88,10 +84,8 @@ export class ServerAIMaster {
     return true;
   }
 
-  /**
-   * Retail SetAILevel — no-op if already at that level.
-   */
-  static setAILevel(object: ModuleObject, level: AILevel): boolean {
+  /** No-op if already at that level. */
+  setAILevel(object: ModuleObject, level: AILevel): boolean {
     if(!object) return false;
     if(object.aiLevel === level) return true;
     if(level < AILevel.VERY_LOW || level > AILevel.VERY_HIGH) return false;
@@ -99,10 +93,9 @@ export class ServerAIMaster {
   }
 
   /**
-   * Retail IncreaseAILevelPriority — promote eligible area objects from VERY_LOW → LOW
-   * when players occupy the area.
+   * Promote eligible area objects from VERY_LOW → LOW when players occupy the area.
    */
-  static increaseAILevelPriority(objects: ModuleObject[]){
+  increaseAILevelPriority(objects: ModuleObject[]){
     for(let i = 0; i < objects.length; i++){
       const obj = objects[i];
       if(!obj || obj.aiLevel !== AILevel.VERY_LOW) continue;
@@ -112,10 +105,8 @@ export class ServerAIMaster {
     }
   }
 
-  /**
-   * Retail DecreaseAILevelPriority — demote level-1 creatures to VERY_LOW when area empties.
-   */
-  static decreaseAILevelPriority(objects: ModuleObject[]){
+  /** Demote level-1 creatures to VERY_LOW when area empties. */
+  decreaseAILevelPriority(objects: ModuleObject[]){
     for(let i = 0; i < objects.length; i++){
       const obj = objects[i];
       if(!obj) continue;
@@ -129,7 +120,7 @@ export class ServerAIMaster {
   }
 
   /** Creatures, AoEs, triggers, transition doors, non-static placeables. */
-  static shouldPromoteOnAreaEntry(obj: ModuleObject): boolean {
+  shouldPromoteOnAreaEntry(obj: ModuleObject): boolean {
     if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) return true;
     if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleAreaOfEffect)) return true;
     if(BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleTrigger)) return true;
@@ -144,11 +135,10 @@ export class ServerAIMaster {
   }
 
   /**
-   * Retail UpdateState.
    * Iterates AI levels 4→0 with a 10ms budget; per list runs quick-walk, drains
    * due events, then round-robins aiUpdate until budget or wrap.
    */
-  static updateState(delta: number = 0){
+  update(delta: number = 0){
     this.frameDelta = delta;
     const module = GameState.module;
     if(!module?.readyToProcessEvents) return;
@@ -206,12 +196,12 @@ export class ServerAIMaster {
           const aiDelta = this.computeObjectAIDelta(obj, delta);
           obj.aiUpdate(aiDelta);
         }catch(e){
-          console.error('ServerAIMaster.aiUpdate', obj, e);
+          console.error('AIScheduler.aiUpdate', obj, e);
         }
         const aiElapsedUs = (performance.now() - aiStart) * 1000;
         if(aiElapsedUs > AI_OVERFLOW_US){
           console.warn(
-            `ServerAIMaster: AIUpdate overflow ${aiElapsedUs.toFixed(0)}us > ${AI_OVERFLOW_US}us`,
+            `AIScheduler: AIUpdate overflow ${aiElapsedUs.toFixed(0)}us > ${AI_OVERFLOW_US}us`,
             obj?.tag ?? obj?.id
           );
         }
@@ -221,13 +211,13 @@ export class ServerAIMaster {
       remainingUs = Math.max(0, remainingUs - levelElapsedUs);
     }
 
-    void frameStart; // reserved for future profiling mirrors of retail timers
+    void frameStart; // reserved for future profiling
   }
 
   /**
-   * Run TimeStop-exclusion aiUpdates while the game is paused (retail exclusion list).
+   * Run TimeStop-exclusion aiUpdates while the game is paused.
    */
-  static updateStatePaused(delta: number = 0){
+  updatePaused(delta: number = 0){
     this.frameDelta = delta;
     if(!GameState.module?.readyToProcessEvents) return;
     if(!GameState.timeStopActive || !GameState.timeStopExclusions?.size) return;
@@ -241,14 +231,14 @@ export class ServerAIMaster {
           const aiDelta = this.computeObjectAIDelta(obj, delta);
           obj.aiUpdate(aiDelta);
         }catch(e){
-          console.error('ServerAIMaster.aiUpdatePaused', obj, e);
+          console.error('AIScheduler.aiUpdatePaused', obj, e);
         }
       }
     }
   }
 
   /** Advance round-robin cursor and return the next object (or undefined if empty). */
-  private static nextObject(level: AILevel): ModuleObject | undefined {
+  private nextObject(level: AILevel): ModuleObject | undefined {
     const list = this.lists[level];
     if(!list.length) return undefined;
     let idx = this.listIndex[level] + 1;
@@ -261,7 +251,7 @@ export class ServerAIMaster {
    * Accumulated world delta for an object that may have skipped frames.
    * Falls back to frame delta on first update.
    */
-  private static computeObjectAIDelta(obj: ModuleObject, frameDelta: number): number {
+  private computeObjectAIDelta(obj: ModuleObject, frameDelta: number): number {
     const nowMs = this.getWorldTimeMs();
     let delta = frameDelta;
     if(obj._lastAIUpdateWorldMs > 0 && nowMs >= obj._lastAIUpdateWorldMs){
@@ -274,7 +264,7 @@ export class ServerAIMaster {
     return delta;
   }
 
-  private static getWorldTimeMs(): number {
+  private getWorldTimeMs(): number {
     const tm = GameState.module?.timeManager;
     if(!tm) return performance.now();
     // pauseTime is the in-module millisecond clock used by event scheduling
@@ -282,17 +272,17 @@ export class ServerAIMaster {
   }
 
   /**
-   * Drain all due module events (retail event_queue head compare ≤ now).
+   * Drain all due module events.
    * Called before each aiUpdate so AssignCommand side-effects land first.
    */
-  static drainDueEvents(){
+  drainDueEvents(){
     const module = GameState.module;
     if(!module?.eventQueue?.length) return;
     const tm = module.timeManager;
     if(!tm) return;
 
-    // Process oldest-first; retail removes head. Our queue is unsorted array
-    // scan and execute all currently due, same as Module.tick did.
+    // Process oldest-first; retail removes head. Our queue is unsorted array —
+    // scan and execute all currently due.
     let i = module.eventQueue.length - 1;
     for(; i >= 0; i--){
       const event = module.eventQueue[i];
@@ -301,7 +291,7 @@ export class ServerAIMaster {
         try{
           event.execute();
         }catch(e){
-          console.error('ServerAIMaster.drainDueEvents', e);
+          console.error('AIScheduler.drainDueEvents', e);
         }
         module.eventQueue.splice(i, 1);
       }
@@ -309,11 +299,11 @@ export class ServerAIMaster {
   }
 
   /**
-   * Retail WalkUpdateLocation_QuickWalk pass — every frame for movers in the list.
-   * Head action MoveToPoint (1) / FollowLeader (0x3D) / ForceFollow / Drive,
+   * Every-frame locomotion pass for movers in the list.
+   * Head action MoveToPoint / FollowLeader / ForceFollow / Drive,
    * or creature currently in a locomotion animation.
    */
-  private static quickWalkPass(list: ModuleObject[], delta: number){
+  private quickWalkPass(list: ModuleObject[], delta: number){
     for(let i = 0; i < list.length; i++){
       const obj = list[i];
       if(!obj || !BitWise.InstanceOfObject(obj, ModuleObjectType.ModuleCreature)) continue;
@@ -323,13 +313,13 @@ export class ServerAIMaster {
       try{
         creature.quickWalkUpdate(delta);
       }catch(e){
-        console.error('ServerAIMaster.quickWalk', creature, e);
+        console.error('AIScheduler.quickWalk', creature, e);
       }
     }
   }
 
-  private static creatureNeedsQuickWalk(creature: ModuleCreature): boolean {
-    // Retail ∈ {4,5,6} — Force Push QuickWalk even while debilitated.
+  private creatureNeedsQuickWalk(creature: ModuleCreature): boolean {
+    // Force Push QuickWalk even while debilitated.
     if(
       creature.forcePushLocoState === 4 ||
       creature.forcePushLocoState === 5 ||
@@ -347,7 +337,7 @@ export class ServerAIMaster {
     ){
       return true;
     }
-    // Retail locomotion / drive anim states. Animation-only quick-walk can skip idle movers.
+    // Animation-only quick-walk can skip idle movers.
     if(!creature.forceVector || creature.forceVector.lengthSq() <= 0.000001){
       return false;
     }

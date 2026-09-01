@@ -478,7 +478,7 @@ export class CutsceneManager {
     // Retail ExecuteCommandActionStartConversation — promote VERY_LOW participants to LOW
     for(const participant of [owner, listener]){
       if(participant && participant.aiLevel === AILevel.VERY_LOW){
-        GameState.ServerAIMaster?.setAILevel?.(participant, AILevel.LOW);
+        GameState.module?.aiScheduler.setAILevel(participant, AILevel.LOW);
       }
     }
     // If the party leader is a switched CNPC (ControlledNPC >= 0), schedule

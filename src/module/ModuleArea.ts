@@ -563,10 +563,9 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Per-frame client/visual pass (retail client AI master + retail visuals).
-   * Server AI for game objects is driven by ServerAIMaster.
+   * Every-frame object/visual pass. Budgeted AI is driven by Module.aiScheduler.
    */
-  clientUpdate(delta: number = 0){
+  update(delta: number = 0){
     // Re-read lengths each iteration: destroy/detach can splice mid-update
     for(let i = 0; i < this.triggers.length; i++){
       this.triggers[i]?.update(delta);
@@ -677,13 +676,13 @@ export class ModuleArea extends ModuleObject {
     this.updateMusic(delta);
   }
 
-  /** @deprecated Prefer clientUpdate — kept for callers that still use area.update */
-  update(delta: number = 0){
-    this.clientUpdate(delta);
+  /** @deprecated Use update */
+  clientUpdate(delta: number = 0){
+    this.update(delta);
   }
 
   updatePaused(delta: number = 0){
-    // Visual pass while paused; TimeStop exclusions already got aiUpdate via ServerAIMaster
+    // Visual pass while paused; TimeStop exclusions already got aiUpdate via aiScheduler
     for(let i = 0; i < this.triggers.length; i++){
       this.triggers[i]?.updatePaused(delta);
     }
@@ -2324,11 +2323,11 @@ export class ModuleArea extends ModuleObject {
           ...this.areaOfEffects,
           ...(GameState.PartyManager?.party || []),
         ];
-        GameState.ServerAIMaster?.increaseAILevelPriority?.(aiObjects);
+        GameState.module.aiScheduler.increaseAILevelPriority(aiObjects);
         // Party / PC always VERY_HIGH
         for(let i = 0; i < (GameState.PartyManager?.party?.length || 0); i++){
           const pm = GameState.PartyManager.party[i];
-          if(pm) GameState.ServerAIMaster?.setAILevel?.(pm, AILevel.VERY_HIGH);
+          if(pm) GameState.module.aiScheduler.setAILevel(pm, AILevel.VERY_HIGH);
         }
       }
 
@@ -2461,8 +2460,8 @@ export class ModuleArea extends ModuleObject {
 
     // Retail AddToArea: promote VERY_LOW → LOW while players occupy the area
     if(this.playersInArea > 0 && object.aiLevel === AILevel.VERY_LOW){
-      if(GameState.ServerAIMaster?.shouldPromoteOnAreaEntry?.(object)){
-        GameState.ServerAIMaster.setAILevel(object, AILevel.LOW);
+      if(GameState.module.aiScheduler.shouldPromoteOnAreaEntry(object)){
+        GameState.module.aiScheduler.setAILevel(object, AILevel.LOW);
       }
     }
 
