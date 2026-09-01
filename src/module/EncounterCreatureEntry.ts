@@ -4,9 +4,9 @@ import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * EncounterCreatureEntry class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EncounterCreatureEntry.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -21,7 +21,7 @@ export class EncounterCreatureEntry {
   save(){
     let struct = new GFFStruct();
 
-    //struct.addField( new GFFField(GFFDataType.INT, 'Appearance') ).setValue(this.appearance);
+    //struct.addField(new GFFField(GFFDataType.INT, 'Appearance')).setValue(this.appearance);
     struct.addField( new GFFField(GFFDataType.RESREF, 'ResRef') ).setValue(this.resref);
     struct.addField( new GFFField(GFFDataType.FLOAT, 'CR') ).setValue(this.cr);
     struct.addField( new GFFField(GFFDataType.BYTE, 'SingleSpawn') ).setValue(this.singleSpawn);

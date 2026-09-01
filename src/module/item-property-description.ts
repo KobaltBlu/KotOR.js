@@ -1,5 +1,5 @@
 /**
- * Retail CSWSItem::GetPropertyDescription @ 0055f340 and Add* helpers.
+ * Retail GetPropertyDescription and Add* helpers.
  * Builds the stats + DescIdentified text shown in equip/inventory/store description panes.
  */
 import { GameState } from '@/GameState';
@@ -94,7 +94,7 @@ function propsOfType(item: ModuleItem, propertyName: number): ItemProperty[] {
   return usableProperties(item).filter(p => p.propertyName === propertyName);
 }
 
-/** Retail GetPropertyDamageRange @ 00555380 — iprp_damagecost NumDice/Die. */
+/** Retail GetPropertyDamageRange — iprp_damagecost NumDice/Die. */
 export function getPropertyDamageRange(costValue: number): { min: number; max: number } {
   const row = costValue | 0;
   const table = GameState.TwoDAManager?.datatables?.get('iprp_damagecost');
@@ -113,7 +113,7 @@ export function getPropertyDamageRange(costValue: number): { min: number; max: n
   return { min: numDice, max: numDice * die };
 }
 
-/** Retail GetDamageTypeString @ 005545d0 */
+/** Retail GetDamageTypeString */
 function getDamageTypeString(flags: number): string {
   const parts: string[] = [];
   if((flags & 7) !== 0){
@@ -128,7 +128,7 @@ function getDamageTypeString(flags: number): string {
 }
 
 /**
- * Retail GetPropertyStrings @ 00554e00 —
+ * Retail GetPropertyStrings
  * returns [propertyName, subtypeName, costValueName, param1Name].
  */
 export function getPropertyStrings(
@@ -199,7 +199,7 @@ function getFeatName(featId: number): string {
   return formatFeatDisplayName(tlk(nameRef));
 }
 
-/** Retail AddFeatRequirements @ 00556490 */
+/** Retail AddFeatRequirements */
 function addFeatRequirements(item: ModuleItem, out: string[]) {
   const base = item.baseItem;
   if(!base) return;
@@ -239,7 +239,7 @@ function addFeatRequirements(item: ModuleItem, out: string[]) {
   append(out, '\n');
 }
 
-/** Retail AddDamageProperties @ 00556de0 — base damage line + bonus damage summaries. */
+/** Retail AddDamageProperties — base damage line + bonus damage summaries. */
 function addDamageProperties(item: ModuleItem, out: string[]) {
   append(out, `${tlk(STR_DAMAGE)}: `);
 
@@ -343,7 +343,7 @@ function addOffTypeDamageBonuses(item: ModuleItem, out: string[], baseFlags: num
   append(out, '\n\n');
 }
 
-/** Retail AddRangeProperties @ 005543b0 */
+/** Retail AddRangeProperties */
 function addRangeProperties(item: ModuleItem, out: string[]) {
   const base = item.baseItem;
   if(!base?.rangedWeapon) return;
@@ -351,7 +351,7 @@ function addRangeProperties(item: ModuleItem, out: string[]) {
   append(out, `${tlk(STR_RANGE)}: ${rangeM}m\n\n`);
 }
 
-/** Retail AddCriticalThreatProperties @ 00558950 */
+/** Retail AddCriticalThreatProperties */
 function addCriticalThreatProperties(item: ModuleItem, out: string[]) {
   const base = item.baseItem;
   if(!base) return;
@@ -378,7 +378,7 @@ function addCriticalThreatProperties(item: ModuleItem, out: string[]) {
   }
 }
 
-/** Retail AddWeaponSizeProperties @ 005544f0 — weapon_size == 2 (SMALL). */
+/** Retail AddWeaponSizeProperties — weapon_size == 2 (SMALL). */
 function addWeaponSizeProperties(item: ModuleItem, out: string[]) {
   if(item.baseItem?.weaponSize === WeaponSize.SMALL){
     const note = tlk(STR_WEAPON_SIZE_SMALL);
@@ -386,7 +386,7 @@ function addWeaponSizeProperties(item: ModuleItem, out: string[]) {
   }
 }
 
-/** Retail AddAttackModifierProperties @ 0055e930 */
+/** Retail AddAttackModifierProperties */
 function addAttackModifierProperties(item: ModuleItem, out: string[]) {
   let bonus = 0;
   for(const prop of usableProperties(item)){
@@ -433,7 +433,7 @@ function addAttackBonusStrings(item: ModuleItem, out: string[], propertyId: numb
   }
 }
 
-/** Retail AddDefenceProperties @ 005599d0 */
+/** Retail AddDefenceProperties */
 function addDefenceProperties(item: ModuleItem, out: string[]) {
   const base = item.baseItem;
   let ac = base?.baseAC || 0;
@@ -489,7 +489,7 @@ function addDefenceProperties(item: ModuleItem, out: string[]) {
   }
 }
 
-/** Retail AddOnHitProperties @ 00558c10 — simplified GetPropertyStrings line. */
+/** Retail AddOnHitProperties — simplified GetPropertyStrings line. */
 function addOnHitProperties(item: ModuleItem, out: string[]) {
   for(const prop of usableProperties(item)){
     if(
@@ -512,7 +512,7 @@ function addOnHitProperties(item: ModuleItem, out: string[]) {
 }
 
 /**
- * Retail AddMiscellaneousProperties @ 0055a510 — remaining usable props via GetPropertyStrings.
+ * Retail AddMiscellaneousProperties — remaining usable props via GetPropertyStrings.
  * Full cast-spell charge math is approximated as name + subtype + cost labels.
  */
 function addMiscellaneousProperties(item: ModuleItem, out: string[]) {
@@ -547,7 +547,7 @@ function addMiscellaneousProperties(item: ModuleItem, out: string[]) {
 }
 
 /**
- * Retail CSWSItem::GetPropertyDescription @ 0055f340.
+ * Retail GetPropertyDescription.
  */
 export function getItemPropertyDescription(item: ModuleItem): string {
   if(!item) return '';

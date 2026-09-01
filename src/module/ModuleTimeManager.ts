@@ -4,11 +4,11 @@ import { GFFObject } from "@/resource/GFFObject";
 
 /**
 * ModuleTimeManager class.
-* 
+*
 * Class representing the time manager for a game module.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleTimeManager.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -18,7 +18,7 @@ export class ModuleTimeManager {
 
   dawnHour = 6;
   duskHour = 18;
-  /** Retail CSWSModule field67_0x1bc — day/night/dawn/dusk phase. */
+  /** retail — day/night/dawn/dusk phase. */
   dayPhase: ModuleDayPhase = ModuleDayPhase.Day;
   /** Retail Mod_Transition — ms spent in the current dawn/dusk hour. */
   transition = 0;
@@ -77,7 +77,7 @@ export class ModuleTimeManager {
   }
 
   /**
-   * Retail CWorldTimer::ConvertHourMinSecMsToMs.
+   * Retail ConvertHourMinSecMsToMs.
    * Hours scale by minutesPerHour; minutes always contribute minute*60000.
    */
   convertHourMinSecMsToMs(hour = 0, minute = 0, second = 0, milisecond = 0){
@@ -102,7 +102,7 @@ export class ModuleTimeManager {
   }
 
   /**
-   * Retail CSWSModule::UpdateTime @ 004c6210.
+   * Retail UpdateTime.
    * Recomputes day phase from the current hour and accumulates Mod_Transition
    * while the previous phase is dawn or dusk.
    */
@@ -148,7 +148,7 @@ export class ModuleTimeManager {
 
   /**
    * Day and dawn use day tracks; night and dusk use night tracks
-   * (retail CSWCSoundObject::UpdateTimeOfDay phase grouping).
+   * (retail UpdateTimeOfDay phase grouping).
    */
   static usesDayAudioTracks(phase: ModuleDayPhase){
     return phase === ModuleDayPhase.Day || phase === ModuleDayPhase.Dawn;
@@ -157,7 +157,7 @@ export class ModuleTimeManager {
   /**
    * Retail UpdateDayNightCycle shadowAlpha during dawn/dusk.
    * before midpoint → opacity*0.01*(1 - t/0.5);
-   * after midpoint  → opacity*0.01*(t/0.5 - 1).
+   * after midpoint → opacity*0.01*(t/0.5 - 1).
    */
   static computeTransitionShadowAlpha(shadowOpacity: number, progress: number, beforeHalfway: boolean, half = 0.5){
     const base = (shadowOpacity | 0) * 0.01;

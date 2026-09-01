@@ -4,7 +4,7 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail CSWCArea corpse ring — effective capacity 3 retained KeepCorpse shells.
+ * retail corpse ring — effective capacity 3 retained KeepCorpse shells.
  * Overflow reveals the oldest linked body bag and fades out the oldest shell.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

@@ -1,6 +1,6 @@
 /**
- * Retail CSWTrackFollower sound slots (Engine=0, Death=1).
- * Layout @ +0x188: volume, +0x18c: frequency, +0x190: frequencyIsRandom (stride 0xc).
+ * retail sound slots (Engine=0, Death=1).
+ * Layout @: volume,: frequency,: frequencyIsRandom (stride 0xc).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -12,11 +12,11 @@ export const MG_SOUND_DEATH = 1;
 export const MG_SOUND_SLOT_COUNT = 2;
 
 export interface IMGTrackFollowerSoundSlot {
-  /** Retail +0x188 — Miles volume byte when applied to engine source. */
+  /** Retail Miles volume byte when applied to engine source. */
   volume: number;
-  /** Retail +0x18c. */
+  /** Retail. */
   frequency: number;
-  /** Retail +0x190. */
+  /** Retail. */
   frequencyIsRandom: number;
 }
 
@@ -78,7 +78,7 @@ export class MGTrackFollowerSounds {
     if(!this.validIndex(index)){ return; }
     const v = volume >>> 0;
     this.slots[index].volume = v;
-    // Retail SetSoundVolume: only slot 0 (engine) pushes to CExoSoundSource::SetVolume.
+    // Retail SetSoundVolume: only slot 0 (engine) pushes to SetVolume.
     if(index === MG_SOUND_ENGINE && this.onEngineVolumeChanged){
       this.onEngineVolumeChanged(v & 0xff);
     }

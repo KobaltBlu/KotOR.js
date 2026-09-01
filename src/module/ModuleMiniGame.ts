@@ -16,7 +16,7 @@ import { MiniGameObjectArray } from "@/module/minigame/MiniGameObjectArray";
 import type { OdysseyModel3D } from "@/three/odyssey";
 import * as THREE from "three";
 
-/** Retail CSWMGPhysicsState @ MiniGame field48/field49 (24 bytes: accel + vel). */
+/** retail @ MiniGame / (24 bytes: accel + vel). */
 export interface MGMPhysicsState {
   acceleration: THREE.Vector3;
   velocity: THREE.Vector3;
@@ -24,11 +24,11 @@ export interface MGMPhysicsState {
 
 /**
 * ModuleMiniGame class.
-* 
+*
 * Class representing the minigame instance in a minigame module.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMiniGame.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -36,7 +36,7 @@ export interface MGMPhysicsState {
 */
 export class ModuleMiniGame {
   /**
-   * TSL CSWMiniPlayer::Control @ 005446a0 — gravity applied to jumpSpeed each frame (type 1).
+   * TSL Control — gravity applied to jumpSpeed each frame (type 1).
    * jumpSpeed -= JUMP_GRAVITY * dt; offset.z += jumpSpeed * dt.
    */
   static readonly JUMP_GRAVITY = 45.8;
@@ -56,7 +56,7 @@ export class ModuleMiniGame {
   movementPerSec: number = 0;
   /**
    * Retail MiniGame.Music — CResRef (streammusic), not ambientmusic.2da index.
-   * K1 Win Load @ 006723d0; Go @ 006714e0 plays via CExoStreamingSoundSource::Play(..., STREAMMUSIC=8).
+   * K1 Win Load ; Go plays via Play(..., STREAMMUSIC=8).
    */
   music: string = '';
   nearClip: number = 0;
@@ -64,34 +64,34 @@ export class ModuleMiniGame {
 
   /**
    * Retail Player.Mouse AxisX/Y (signed: abs 1/2/3 → x/y/z; negative flips).
-   * UpdateMouse @ 00671020.
+   * UpdateMouse.
    */
   axisX: number = 0;
   axisY: number = 0;
 
   /**
-   * Retail field43_0xac — ctor @ 00671c40 defaults to **1** (AxisAcceleration).
-   * 0 → AxisVelocity @ 00670a10; 1 → AxisAcceleration @ 00670c30.
+   * Retail ctor defaults to **1** (AxisAcceleration).
+   * 0 → AxisVelocity ; 1 → AxisAcceleration.
    */
   axisMode: number = 1;
 
-  /** Retail field48_0xc0 — previous physics state. */
+  /** Retail previous physics state. */
   physicsPrev: MGMPhysicsState = {
     acceleration: new THREE.Vector3(),
     velocity: new THREE.Vector3(),
   };
-  /** Retail field49_0xd8 — next physics state (written by AxisAcceleration). */
+  /** Retail next physics state (written by AxisAcceleration). */
   physicsNext: MGMPhysicsState = {
     acceleration: new THREE.Vector3(),
     velocity: new THREE.Vector3(),
   };
-  /** Retail field44..46 — last axis input for Accel midpoint. */
+  /** retail..46 — last axis input for Accel midpoint. */
   lastAxisInput: THREE.Vector3 = new THREE.Vector3();
-  /** Retail axis_velocity @ +0xe4 — mouse accum / Velocity-mode output. */
+  /** Retail axis_velocity @ — mouse accum / Velocity-mode output. */
   axisVelocity: THREE.Vector3 = new THREE.Vector3();
 
   /**
-   * TSL MiniGame jump velocity (offset +0x118). Set by SWMG_SetJumpSpeed / PlayerApplyForce.
+   * TSL MiniGame jump velocity (offset). Set by SWMG_SetJumpSpeed / PlayerApplyForce.
    * Always decayed by JUMP_GRAVITY while type==SWOOPRACE.
    */
   jumpSpeed: number = 0;
@@ -99,7 +99,7 @@ export class ModuleMiniGame {
   /** True after streammusic buffer is loaded for `music`. */
   musicLoaded: boolean = false;
   /**
-   * Retail MiniGame owns a dedicated CExoStreamingSoundSource (ctor @ 00671c40).
+   * Retail MiniGame owns a dedicated CExoStreamingSoundSource (ctor).
    * Do not reuse area day music.
    */
   musicEmitter: AmbientAudioEmitter | null = null;
@@ -137,7 +137,7 @@ export class ModuleMiniGame {
       this.type === MiniGameType.SWOOPRACE ? 6 :
       this.type === MiniGameType.TURRET ? 90 : 0;
 
-    // Retail CSWMiniGame::Load @ 006723d0 defaults.
+    // Retail Load defaults.
     this.movementPerSec = ModuleMiniGame.readFloat(struct, 'MovementPerSec', movementDefault);
     this.lateralAccel = ModuleMiniGame.readFloat(struct, 'LateralAccel', 60);
     this.bumpPlane = ModuleMiniGame.readDword(struct, 'Bump_Plane', 0);
@@ -170,7 +170,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail Load Obstacles @ 006723d0 — ARE Name list; Scripts loaded onto live MGO
+   * Retail Load Obstacles — ARE Name list; Scripts loaded onto live MGO
    * found via GetMiniGameObjectByName. We index ARE structs here for LYT Name merge.
    */
   parseObstacleTemplates(struct: GFFStruct){
@@ -194,7 +194,7 @@ export class ModuleMiniGame {
 
   /**
    * ARE Obstacles Name → Scripts template (not the live client MGO array).
-   * Live lookup: `MiniGameObjectArray.getByName` @ 0066bfb0.
+   * Live lookup: `MiniGameObjectArray.getByName`.
    */
   getMiniGameObjectByName(name: string | undefined | null): GFFObject | undefined {
     const n = ModuleMiniGame.normalizeMgoName(name);
@@ -203,7 +203,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail Load reads Player.Mouse AxisX/Y + FlipAxisX/Y @ 006723d0.
+   * Retail Load reads Player.Mouse AxisX/Y + FlipAxisX/Y.
    * Flip negates the stored axis enum (UpdateMouse uses signed abs).
    */
   parseMouseFromPlayer(){
@@ -265,14 +265,14 @@ export class ModuleMiniGame {
     return resRef;
   }
 
-  /** Retail SWMG_SetJumpSpeed @ 007fc210 (TSL Win) — writes MiniGame jumpSpeed. K1 has no op. */
+  /** Retail SWMG_SetJumpSpeed (TSL Win) — writes MiniGame jumpSpeed. K1 has no op. */
   setJumpSpeed(speed: number = 0){
     if(GameState.GameKey != GameEngineType.TSL){ return; }
     this.jumpSpeed = speed;
   }
 
   /**
-   * Retail CSWMiniGame::BumpPlane @ 00670bb0 —
+   * Retail BumpPlane
    * bump_plane 1/2/3 → quat x/y/z direction; else zero.
    */
   bumpPlaneNormal(quat: THREE.Quaternion, out: THREE.Vector3 = new THREE.Vector3()): THREE.Vector3 {
@@ -313,14 +313,14 @@ export class ModuleMiniGame {
       this.obstacles[i]?.update?.(delta);
     }
 
-    // Retail CSWMiniGame::Update — DoHitCheck only while follower running bit set.
+    // Retail Update — DoHitCheck only while follower running bit set.
     if(this.player?.alive && this.player.running){
       this.doHitCheck();
     }
   }
 
   /**
-   * Retail CSWMiniGame::DoHitCheck @ 006732f0 —
+   * Retail DoHitCheck
    * live bullets → obstacles vs player → follower sphere bumps.
    */
   doHitCheck(){
@@ -436,12 +436,12 @@ export class ModuleMiniGame {
     }
 
     this.player?.onCreate?.();
-    // Retail CSWMiniGame::Go — start track followers + streammusic.
+    // Retail Go — start track followers + streammusic.
     this.go();
   }
 
   /**
-   * Retail CSWMiniGame::Go @ 006714e0 (K1) / @ 0055cd00 (TSL Aspyr) —
+   * Retail Go (K1) / (TSL Aspyr)
    * TSL: when type==1 (swoop), clear global FORFEIT_SWOOPRACE before follower Go/music.
    * player/enemies Go(); if streaming source set, Play(musicResRef, STREAMMUSIC=8, loop).
    */
@@ -475,8 +475,8 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail CSWMiniGame::UpdateMouse @ 00671020 —
-   * accumulates into axis_velocity (= field49.velocity @ +0xe4). Call after UpdateAxis.
+   * Retail UpdateMouse
+   * accumulates into axis_velocity (=.velocity @). Call after UpdateAxis.
    */
   updateMouse(dx: number, dy: number, delta: number = 0){
     if(!this.player || (!dx && !dy) || delta <= 0){ return; }
@@ -489,8 +489,8 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail CSWMiniGame::UpdateAxis @ 00670fb0 —
-   * type remap then AxisAcceleration (default) or AxisVelocity into field49.
+   * Retail UpdateAxis
+   * type remap then AxisAcceleration (default) or AxisVelocity into.
    * Always call (including zero stick) so Accel damping runs.
    */
   updateAxis(x: number, y: number, z: number = 0, delta: number = 0){
@@ -517,7 +517,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail GetAcceleration @ 00670a90 —
+   * Retail GetAcceleration
    * A_lat * axis - (A_lat / MovementPerSec) * state.acceleration
    */
   getAcceleration(axis: THREE.Vector3, state: MGMPhysicsState, out: THREE.Vector3): THREE.Vector3 {
@@ -530,8 +530,8 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail AxisVelocity @ 00670a10 —
-   * field49.velocity = field48.velocity + MovementPerSec * axis * dt
+   * Retail AxisVelocity
+   *.velocity =.velocity + MovementPerSec * axis * dt
    */
   axisVelocityIntegrate(axis: THREE.Vector3, dt: number){
     const m = this.movementPerSec * dt;
@@ -545,7 +545,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail AxisAcceleration @ 00670c30 — RK4 on CSWMGPhysicsState.
+   * Retail AxisAcceleration — RK4 on retail.
    * Derivative: { GetAcceleration(axis, state), state.acceleration }.
    */
   axisAcceleration(axis: THREE.Vector3, dt: number){
@@ -643,8 +643,8 @@ export class ModuleMiniGame {
   };
 
   /**
-   * Retail MiniGame::Control → MiniPlayer::Control @ 0066d640 —
-   * offset += (field49.velocity - field48.velocity), then copy next→prev.
+   * Retail Control → Control
+   * offset += (.velocity -.velocity), then copy next→prev.
    * Call after UseInertia has added DoInertia into physicsNext.acceleration
    * (inertia affects the *next* AxisAcceleration frame, not this delta).
    */
@@ -655,14 +655,14 @@ export class ModuleMiniGame {
     const dz = this.physicsNext.velocity.z - this.physicsPrev.velocity.z;
 
     if(this.type === MiniGameType.SWOOPRACE){
-      // Retail: Vector::+=(&offset, &local_44) with full XYZ velocity delta.
+      // Retail: +=(&offset, &tmp44) with full XYZ velocity delta.
       this.player.playerOffset.x += dx;
       this.player.playerOffset.y += dy;
       this.player.playerOffset.z += dz;
       // Bank from axis input magnitude (not post-commit velocity rate).
       this.player.lateralForce = this.lastAxisInput.x * this.lateralAccel;
     }else if(this.type === MiniGameType.TURRET){
-      // Retail Control @ 0066d640 — offset += velocity delta in **degrees**, then
+      // Retail Control — offset += velocity delta in **degrees**, then
       // KeepInTunnel + write offset to ori controllers. Not radians (was ~57× fast).
       this.player.playerOffset.x += dx;
       this.player.playerOffset.y += dy;
@@ -732,7 +732,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail GetAttachType @ 00670c10 — swoop=1, turret=2, else 0.
+   * Retail GetAttachType — swoop=1, turret=2, else 0.
    */
   getAttachType(): number {
     if(this.type === MiniGameType.SWOOPRACE){ return 1; }
@@ -816,7 +816,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail CSWMiniGame::RemoveEnemy @ 006715b0 — drop enemy from live list by identity.
+   * Retail RemoveEnemy — drop enemy from live list by identity.
    * Does not destroy the follower (die anim / DestroyMiniGameObject handle teardown).
    */
   removeEnemy(enemy: ModuleMGEnemy): boolean {
@@ -872,7 +872,7 @@ export class ModuleMiniGame {
     const player: ModuleMGPlayer = this.player;
     if(!player){ return; }
     await player.load();
-    // Retail type 2 Load @ 006723d0 requires valid Camera ResRef (return 0 if missing).
+    // Retail type 2 Load requires valid Camera ResRef (return 0 if missing).
     if(this.type === MiniGameType.TURRET && !player.cameraName){
       throw new Error('ModuleMiniGame: turret Player.Camera ResRef required');
     }
@@ -910,7 +910,7 @@ export class ModuleMiniGame {
   }
 
   async loadMGEnemies(): Promise<void> {
-    // Retail AddEnemy @ 00671e40 — invalid Track skips the follower (no orphan Gob).
+    // Retail AddEnemy — invalid Track skips the follower (no orphan Gob).
     // initProperties (via load) must run first — Track lives on the ARE template.
     for(let i = this.enemies.length - 1; i >= 0; i--){
       const enemy = this.enemies[i];
@@ -944,7 +944,7 @@ export class ModuleMiniGame {
   }
 
   /**
-   * Retail AddObstacle @ 00672250 — load Gob from LYT name + ready anim.
+   * Retail AddObstacle — load Gob from LYT name + ready anim.
    * ARE Scripts already applied in ModuleArea layout parse.
    */
   async loadMGObstacles(): Promise<void> {
@@ -962,7 +962,7 @@ export class ModuleMiniGame {
 
   /**
    * Push MG OdysseyModel3Ds into the area lighting dynamics list.
-   * ModuleMG* `.model` / `.position` is the container (tunnel-local for followers) —
+   * ModuleMG* `.model` / `.position` is the container (tunnel-local for followers)
    * omit position so OdysseyLightingBinder uses each child model's world pose
    * (same GetNearestLights query point as scene AttachToObject gobs).
    * Camera HUD stays unlit (IGNORE_LIGHTING / MG_CAMERA_HUD) — do not bind it.

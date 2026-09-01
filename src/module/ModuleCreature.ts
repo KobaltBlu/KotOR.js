@@ -157,7 +157,7 @@ import { ModuleCreatureAmbientState } from "@/enums/module/ModuleCreatureAmbient
 import { GameEffectSetStateType } from "@/enums/effects/GameEffectSetStateType";
 import type { SWAnimation } from "@/engine/rules/SWAnimation";
 
-/** Retail CSWSCreaturePartyFollowInfo fields (FollowInfo GFF struct). */
+/** Retail party-follow info fields (FollowInfo GFF struct). */
 export interface CreaturePartyFollowInfo {
   followObject: number;
   followLocation: THREE.Vector3;
@@ -180,7 +180,7 @@ export function createDefaultPartyFollowInfo(): CreaturePartyFollowInfo {
     stickToPos: 0,
     result: 2,
     timeElapsed: 0,
-    // Retail party-member field22 defaults 0 after place/reset; only saved
+    // Retail party-member defaults 0 after place/reset; only saved
     // FollowInfo.InSafetyRange=1 should hold chase until leader ≥7.
     inSafetyRange: 0,
   };
@@ -188,11 +188,11 @@ export function createDefaultPartyFollowInfo(): CreaturePartyFollowInfo {
 
 /**
 * ModuleCreature class.
-* 
+*
 * Class representing a creature found in module areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleCreature.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -226,7 +226,7 @@ export class ModuleCreature extends ModuleObject {
   keepCorpseOnDestroy: boolean = false;
   /** Eviction fade timer for retained shells (seconds remaining). */
   retainedCorpseFadeRemaining: number = -1;
-  /** Party stealth mode (retail CSWCCreature::stealth_mode). */
+  /** Party stealth mode (retail stealth_mode). */
   stealthMode: boolean = false;
   /**
    * Search / detect mode (retail detect_mode).
@@ -234,27 +234,27 @@ export class ModuleCreature extends ModuleObject {
    * Affects passive mine range/bonus and contested Awareness vs Stealth.
    */
   detectMode: boolean = true;
-  /** Retail field307_0x8c8 — Silence / Psychic Static */
+  /** Retail Silence / Psychic Static */
   silenced: boolean = false;
   /** Deafness flag (perception / ASF parent) */
   deaf: boolean = false;
   /** Max ArcaneSpellFailure percent from effects */
   arcaneSpellFailure: number = 0;
-  /** Retail CCombatInformation — creature CombatInfo GFF (0xCAAA). */
+  /** Retail combat information — creature CombatInfo GFF (0xCAAA). */
   combatInformation: CombatInformation = new CombatInformation();
-  /** Retail body_fuel_ @ +0xa9c — Body Fuel active */
+  /** Retail body_fuel_ @ — Body Fuel active */
   bodyFuel: boolean = false;
-  /** Retail field396_0xa04 — Lightsaber Throw in progress */
+  /** Retail Lightsaber Throw in progress */
   throwingLightsaber: boolean = false;
-  /** Retail field437_0xab4 — saber throw projectile rate */
+  /** Retail saber throw projectile rate */
   lightsaberThrowRate: number = 37;
   /**
-   * Inter-area waypoint list (path_find_info field37/36).
+   * Inter-area waypoint list (path_find_info /36).
    * Populated by beginInterAreaPath; advanced by CheckInterArea.
    */
   interAreaWaypoints: InterAreaWaypoint[] = [];
   /**
-   * Retail CPathfindInformation field40_0xb8 / field39_0xb4 —
+   * Retail CPathfindInformation
    * transition object ids excluded after PlotPathInArea failure (failed portals).
    */
   interAreaExcludedIds: number[] = [];
@@ -266,16 +266,16 @@ export class ModuleCreature extends ModuleObject {
    */
   driveControlActive: boolean = false;
   /**
-   * Retail activity_ bitfield (SetActivity @ 004f00a0).
+   * Retail activity_ bitfield (SetActivity).
    * Combat modes use 0x100–0x2000; stealth=1, detect=2, dialog=4.
-   * Default includes detect (2) — matches CSWSCreature ctor.
+   * Default includes detect (2) — matches retail ctor.
    */
   activity: number = 0x2;
   /** Bits that ActivityManager / SetActivity will not auto-clear. */
   activityLocked: number = 0;
-  /** Retail field49_0x4d2 — SetCombatMode @ 0050ee80. */
+  /** Retail SetCombatMode. */
   combatMode: CombatMode = CombatMode.NONE;
-  /** Deferred combat mode while round_started (retail field50_0x4d3). */
+  /** Deferred combat mode while round_started (Retail). */
   pendingCombatMode: number = -1;
   isHasted: boolean = false;
   isSlowed: boolean = false;
@@ -290,7 +290,7 @@ export class ModuleCreature extends ModuleObject {
    * (walk-back toward a goal behind the creature).
    */
   moveDirOverride: { x: number; y: number } | undefined;
-  /** Retail creature+0x8EC vision/detect bits. */
+  /** Retail creature vision/detect bits. */
   visionFlags: number = 0;
 
   cha: number;
@@ -305,20 +305,20 @@ export class ModuleCreature extends ModuleObject {
 
   challengeRating: number;
   /**
-   * Retail field407_0xa24 — encounter game-object id when spawned from an encounter.
+   * Retail encounter game-object id when spawned from an encounter.
    * OBJECT_INVALID when not an encounter creature.
    */
   encounterObjectId: number = ModuleObjectConstant.OBJECT_INVALID;
-  /** Retail field408_0xa28 — already unlinked from encounter active count. */
+  /** Retail already unlinked from encounter active count. */
   encounterUnlinked: boolean = false;
-  /** Retail field347_0x95c — item used for current spell cast (GetSpellCastItem). */
+  /** Retail item used for current spell cast (GetSpellCastItem). */
   spellCastItem: ModuleItem = undefined;
   /**
    * Retail base_class_level — stamped before item SpellCastAndImpact from the
    * last class level; GetCasterLevel returns this while itemSpellCastActive.
    */
   baseClassLevel: number = 0;
-  /** Retail field349_0x964 — true during item SpellCastAndImpact / delayed impact. */
+  /** Retail true during item SpellCastAndImpact / delayed impact. */
   itemSpellCastActive: boolean = false;
   classes: CreatureClass[];
   comment: string;
@@ -341,9 +341,9 @@ export class ModuleCreature extends ModuleObject {
   interruptable: number;
   isPC: number;
   lastName: CExoLocString;
-  /** Retail CSWSCreaturePartyFollowInfo — present for party members. */
+  /** retail — present for party members. */
   partyFollowInfo: CreaturePartyFollowInfo | undefined;
-  /** Retail CSWLevelStats history (LvlStatList) for the real PC. */
+  /** retail history (LvlStatList) for the real PC. */
   levelStats: LevelStatRecord[];
   maxHitPoints: number;
   naturalAC: number;
@@ -384,27 +384,27 @@ export class ModuleCreature extends ModuleObject {
   walkRate: number;
   blockingTimer: number;
   /**
-   * Retail field427_0xa8c — Force Push QuickWalk modes {4,5,6}.
+   * Retail Force Push QuickWalk modes {4,5,6}.
    * Set by OnApplyForcePush; cleared when SetState FORCEPUSH ends.
    */
   forcePushLocoState: number;
-  /** Retail field428_0xa90 — distance traveled during Force Push slide. */
+  /** Retail distance traveled during Force Push slide. */
   forcePushDistanceTraveled: number;
   /** True once QuickWalk_ForcePushed reaches path end (land/getup phase). */
   forcePushArrived: boolean;
   /** Seconds since force-push arrival (drives fp_land / fp_getup). */
   forcePushArriveElapsed: number;
   /**
-   * Retail WalkUpdateLocation field37_0xb8 — previous frame speed factor.
+   * Retail WalkUpdateLocation — previous frame speed factor.
    */
   walkSpeedFactor: number;
   /**
-   * Retail pathfind-info field141_0x268 — consecutive WalkUpdateDistance
+   * Retail pathfind-info — consecutive WalkUpdateDistance
    * TestDistance fails before giving up (hex while &lt; 6).
    */
   pathBlockFailCount: number;
   /**
-   * Camera-relative client controller state (CSWPlayerControlCamRelative).
+   * Camera-relative client controller state (retail).
    * Used for direct WASD / stick; ActionDrive remains the discrete server path.
    */
   playerControl: PlayerCamRelativeState;
@@ -425,12 +425,12 @@ export class ModuleCreature extends ModuleObject {
   skillPoints: any;
   npcId: number;
   /**
-   * TSL assigned puppet slot id (retail CSWCreature+0x11f8).
+   * TSL assigned puppet slot id (retail).
    * Set by AssignPUP; -1 when none.
    */
   assignedPuppetId: number = -1;
   /**
-   * TSL SetIsPuppet flag (retail CSWCreature+0x11fc).
+   * TSL SetIsPuppet flag (retail).
    * True after AddPartyPuppet; GetIsPuppet reads this.
    */
   isPuppet: boolean = false;
@@ -473,16 +473,16 @@ export class ModuleCreature extends ModuleObject {
   } | undefined;
   regenTimer: number;
   regenTimerMax: number;
-  /** Battle-music timer (ms). Retail field31_0x384 / ExcitedDuration.2da. */
+  /** Battle-music timer (ms). Retail / ExcitedDuration.2da. */
   excitedDuration: number;
-  /** Combat engagement timer (ms). Retail field58_0x4e4; SetCombatState refreshes to 8000. */
+  /** Combat engagement timer (ms). Retail; SetCombatState refreshes to 8000. */
   combatStateTimer: number;
-  /** Retail ResolveInitiative field56 — non-party AI combat refresh pending. */
+  /** Retail ResolveInitiative — non-party AI combat refresh pending. */
   combatAiRefreshPending: boolean = false;
-  /** Retail field_0xac0 — 1=Damage, 2=SpellCast; Damage sticks over SpellCast. */
+  /** Retail 1=Damage, 2=SpellCast; Damage sticks over SpellCast. */
   combatStateReason: number;
   /**
-   * Retail InstantUseItem lockout (field436_0xab0). While > 0 during hostile combat,
+   * Retail InstantUseItem lockout. While > 0 during hostile combat,
    * inventory Use Item shows TLK 42409.
    */
   instantItemCooldownMs: number;
@@ -491,7 +491,7 @@ export class ModuleCreature extends ModuleObject {
   /** One-shot guard for Animation Missing console spam. */
   private animationMissingLogged: boolean = false;
   deathStarted: boolean;
-  /** Pass AL — last trap this creature detected (retail CSWSCreature field26_0x370). */
+  /** Pass AL — last trap this creature detected (retail). */
   lastTrapDetected: ModuleObject;
   getUpAnimationPlayed: boolean;
   /** True once scheduleDestroyAsCorpse applied appearance DestroyObjectDelay / FadeDelayOnDeath. */
@@ -647,7 +647,7 @@ export class ModuleCreature extends ModuleObject {
     this.forcePoints = 0;
     this.gender = 0;
     this.goodEvil = 50;
-    this.hitPoints = 0; //Base Maximum Hit Points, not considering any bonuses. See Section 3.4 for more details.   
+    this.hitPoints = 0; //Base Maximum Hit Points, not considering any bonuses. See Section 3.4 for more details.
     this.interruptable = 1;
     this.isPC = 0;
     this.lastName = new CExoLocString();
@@ -715,7 +715,7 @@ export class ModuleCreature extends ModuleObject {
     this.perceptionList = [];
 
     // Do not resolve pause/inj here — HP is still 0 until initProperties.
-    // Retail SetAnimation runs after ReadStatsFromGff (LoadCreature @ 00500350).
+    // Retail SetAnimation runs after ReadStatsFromGff (LoadCreature).
     this.combatData.combatActionTimer = 3; 
     this.combatData.combatState = false;
     this.combatData.lastAttackAction = ActionType.ActionInvalid;
@@ -785,7 +785,7 @@ export class ModuleCreature extends ModuleObject {
    * Recalc movement_rate_factor from MSI/MSD effects.
    * Retail: best increase (absolute %) × (100 − best decrease %) / 100,
    * clamped to [0.125, 1.5] like GetWalkRate / GetRunRate.
-   * TSL GetMovementRateFactor @ 0068f140: Mobility feat (0xc3) adds +0.1 before clamp.
+   * TSL GetMovementRateFactor: Mobility feat (0xc3) adds +0.1 before clamp.
    */
   updateMovementSpeed(){
     let bestIncrease = 100;
@@ -821,7 +821,7 @@ export class ModuleCreature extends ModuleObject {
    * Advances the head MoveTo/Follow/Drive action so motion never skips frames
    * when aiUpdate is budget-deferred. Sets _quickWalkedThisFrame so aiUpdate
    * does not re-process the same action.
-   * Force Push (field427 ∈ {4,5,6}) runs even while debilitated.
+   * Force Push (∈ {4,5,6}) runs even while debilitated.
    */
   quickWalkUpdate(delta: number = 0){
     if(this.destroyed || this.willDestroy || this.isRetainedCorpse) return;
@@ -858,7 +858,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::AIUpdate @ 004fe210 — scheduled by ServerAIMaster.
+   * Retail AIUpdate — scheduled by ServerAIMaster.
    * Heartbeat/effects (super), damage, action queue, perception, combat timers,
    * regen, AI-level self-adjustment.
    */
@@ -940,7 +940,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::AIUpdate AI-level self-adjustment.
+   * Retail AIUpdate AI-level self-adjustment.
    * Party/PC → VERY_HIGH; combat → NORMAL; else LOW (area occupied) or VERY_LOW.
    */
   adjustAILevel(){
@@ -1256,7 +1256,7 @@ export class ModuleCreature extends ModuleObject {
         if(this.speed > 0){
           this.speed = 0;
         }
-        // Retail WalkUpdateLocation @ 0051bb10 end-of-path: vtable+0x7c(0x2710 / PAUSE).
+        // Retail WalkUpdateLocation end-of-path: vtable(0x2710 / PAUSE).
         // Walk/run clips are forced looping — without this, a transit or cancelled
         // move leaves the creature frozen on the last walk frame forever.
         this.clearLocomotionAnimation();
@@ -1488,7 +1488,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   updateActionQueue(delta = 0){
-    // Retail CSWSCreature::AIUpdate @ 004fe210 always calls RunActions — there is
+    // Retail AIUpdate always calls RunActions — there is
     // no debilitated early-out. Locomotion is gated in quickWalkUpdate / move
     // actions; conversation Wait/Resume (k_ptar_calofade after EffectHorrified)
     // must still tick or Pause hangs forever.
@@ -1528,7 +1528,7 @@ export class ModuleCreature extends ModuleObject {
     const str = this.heardStrings[0];
     if(!this.isListening || !str){ return;  }
 
-    // Retail CSWSObject::TestListenExpression — scan registered expressions in
+    // Retail TestListenExpression — scan registered expressions in
     // order; first match wins. No exact-string fast path.
     let patternNum: number | undefined;
     let matchedSubstrings: string[] = [];
@@ -1648,7 +1648,7 @@ export class ModuleCreature extends ModuleObject {
       }
     }
 
-    // Passive trap detect — retail UpdateMineCheck @ 004fa390:
+    // Passive trap detect — retail UpdateMineCheck:
     // Awareness + d10 (or d10+10) vs DetectDC; not ActionFlagMine.
     const detectMode = !!this.detectMode;
     const range = detectMode ? 20.0 : 3.0;
@@ -1935,7 +1935,7 @@ export class ModuleCreature extends ModuleObject {
     this.combatData.lastDamager = oAttacker;
     this.combatData.lastAttacker = oAttacker;
 
-    // Only adopt the damager as attack target when we have no live focus —
+    // Only adopt the damager as attack target when we have no live focus
     // including sticky attempted target — so a hit from another creature cannot
     // pull the PC off a queued combat target.
     const attackTarget = this.combatData.lastAttackTarget;
@@ -1989,7 +1989,7 @@ export class ModuleCreature extends ModuleObject {
   /**
    * Enqueue AIActionMoveToPoint. Retail AddMoveToPointAction: timeout 0 = no
    * Jump fallback (ActionMoveTo*); timeout > 0 = ForceMove jump-on-expiry.
-   * Arrive range: max(script fRange, GetUseRange) — ExecuteCommandMoveToObject @ 0053fb00.
+   * Arrive range: max(script fRange, GetUseRange) — ExecuteCommandMoveToObject.
    */
   moveToObject(target: ModuleObject, bRun = true, distance = 1.0, timeout = 0){
 
@@ -2132,20 +2132,20 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Enter/refresh combat. Retail AddAttackActions → BroadcastCombatStateToParty →
-   * SetCombatState(1) @ 004f2610 (8000ms) + SetExcitedState @ 004f3580 (ExcitedDuration.2da).
+   * SetCombatState(1) (8000ms) + SetExcitedState (ExcitedDuration.2da).
    */
   setCombatEngaged(reason: ExcitedDurationRow = ExcitedDurationRow.Damage){
     const wasCombat = this.combatData.combatState;
     this.setCombatState(true, reason);
     this.setExcitedState(reason);
-    // Retail RemoveCombatInvisibilityEffects @ 004f5f70 on hostile engagement
+    // Retail RemoveCombatInvisibilityEffects on hostile engagement
     if(!wasCombat){
       this.removeCombatInvisibilityEffects();
     }
   }
 
   /**
-   * Retail CSWSCreature::BroadcastCombatStateToParty @ 004fbbe0.
+   * Retail BroadcastCombatStateToParty.
    * Refreshes SetCombatState(1) on self when hostile to `other` (or `other` is self),
    * then party/faction mates in spot range get SetCombatState + SetExcitedState(Damage).
    * Used on attack start and OnPhysicalAttacked (including misses).
@@ -2159,7 +2159,7 @@ export class ModuleCreature extends ModuleObject {
       if(!otherCreature){
         return ExcitedDurationRow.SpellCast;
       }
-      // Retail BroadcastCombatStateToParty @ 004fbbe0 —
+      // Retail BroadcastCombatStateToParty
       // reason 1 (Damage) when other's last attack/spell target is subject.
       const data = otherCreature.combatData;
       if(
@@ -2203,7 +2203,7 @@ export class ModuleCreature extends ModuleObject {
         continue;
       }
 
-      // Retail: GetReputation(member, param_1) < 11 — skip when other is self/friendly
+      // Retail: GetReputation(member, arg1) < 11 — skip when other is self/friendly
       if(other && member.getReputation(other) >= 11){
         continue;
       }
@@ -2217,11 +2217,11 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::ResolveInitiative @ 004ece60 —
-   * sets field56_0x4dc = (field426_0xa88 == 0) — non-party AI refresh flag.
+   * Retail ResolveInitiative
+   * sets = (== 0) — non-party AI refresh flag.
    */
   resolveInitiative(){
-    // Party / player-UI creatures (field426) → 0; others → 1
+    // Party / player-UI creatures () → 0; others → 1
     this.combatAiRefreshPending = GameState.PartyManager?.party?.indexOf(this) < 0;
     if(!this.combatData.combatState){
       this.setCombatState(true, ExcitedDurationRow.SpellCast);
@@ -2236,7 +2236,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::SetCombatState @ 004f2610.
+   * Retail SetCombatState.
    * Active → refresh 8000ms timer; inactive → clear combat engagement.
    */
   setCombatState(active: boolean, reason: number = ExcitedDurationRow.Damage){
@@ -2244,12 +2244,12 @@ export class ModuleCreature extends ModuleObject {
       this.combatData.combatState = false;
       this.combatStateTimer = 0;
       this.combatStateReason = 0;
-      // Retail SetCombatState(0) @ 004f2610 clears attempted/current attack+spell targets
+      // Retail SetCombatState(0) clears attempted/current attack+spell targets
       this.combatData.lastAttemptedAttackTarget = undefined;
       this.combatData.lastAttackTarget = undefined;
       this.combatData.lastAttemptedSpellTarget = undefined;
       this.combatData.lastSpellTarget = undefined;
-      // Retail SetCombatState(0) @ 004f2610: ClearAllAttacks + RemoveAllActions, then
+      // Retail SetCombatState(0): ClearAllAttacks + RemoveAllActions, then
       // EndCombatRound if a round is in progress. Mirrors combat-round teardown here.
       if(this.combatRound){
         if(this.combatRound.specialAttackList){
@@ -2260,7 +2260,7 @@ export class ModuleCreature extends ModuleObject {
           this.combatRound.endCombatRound({ skipCreateNewAttackActions: true });
         }
       }
-      // Client SetCombatMode(0) @ 005ede80 → RestoreCamera
+      // Client SetCombatMode(0) → RestoreCamera
       if(this === GameState.getCurrentPlayer()){
         FollowerCamera.setCombatCameraActive(false);
       }
@@ -2272,14 +2272,14 @@ export class ModuleCreature extends ModuleObject {
     if(this.combatStateReason !== ExcitedDurationRow.Damage){
       this.combatStateReason = reason;
     }
-    // Client SetCombatMode(1) @ 005ede80 → SetCombatCamera (mode 6)
+    // Client SetCombatMode(1) → SetCombatCamera (mode 6)
     if(this === GameState.getCurrentPlayer()){
       FollowerCamera.setCombatCameraActive(true);
     }
   }
 
   /**
-   * Retail CSWSCreature::SetExcitedState @ 004f3580 — only extend if new DURATION is greater.
+   * Retail SetExcitedState — only extend if new DURATION is greater.
    * When extended for a client-controlled creature with GetNearestEnemy(30) present,
    * calls area PlayBattleMusic(1).
    */
@@ -2304,7 +2304,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::RemoveCombatInvisibilityEffects @ 004f5f70 —
+   * Retail RemoveCombatInvisibilityEffects
    * strip INVISIBILITY when int[0]==1 and all SANCTUARY.
    */
   removeCombatInvisibilityEffects(){
@@ -2332,7 +2332,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail AIUpdate combat-state tick @ 004fe210 — field58_0x4e4 countdown to SetCombatState(0).
+   * Retail AIUpdate combat-state tick — countdown to SetCombatState(0).
    */
   updateCombatStateTimer(delta = 0){
     if(this.instantItemCooldownMs > 0){
@@ -2356,7 +2356,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail UpdateExcitedStateTimer @ 004ed110 — battle music timer only (not stance).
+   * Retail UpdateExcitedStateTimer — battle music timer only (not stance).
    * On expiry for a client-controlled creature → PlayBattleMusic(0).
    */
   updateExcitedDuration(delta = 0){
@@ -2430,7 +2430,7 @@ export class ModuleCreature extends ModuleObject {
     if(target.isDead())
       return;
 
-    // Retail AddAttackActions @ 004fde40 — sticky GetAttemptedAttackTarget
+    // Retail AddAttackActions — sticky GetAttemptedAttackTarget
     this.combatData.setAttemptedAttackTargetIfInvalid(target);
 
     let combatAction = new CombatRoundAction();
@@ -2457,8 +2457,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::AddCutsceneAttackActions @ 004f9fb0 /
-   * CSWSCombatRound::AddCutsceneAttackAction @ 004d3810.
+   * Retail AddCutsceneAttackActions
+   * AddCutsceneAttackAction.
    */
   addCutsceneAttackActions(
     target: ModuleObject,
@@ -2508,8 +2508,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::AddCutsceneMoveActions @ 004fa050 /
-   * CSWSCombatRound::AddCutsceneMoveActions @ 004d3b30.
+   * Retail AddCutsceneMoveActions
+   * AddCutsceneMoveActions.
    */
   addCutsceneMoveActions(
     destObject: ModuleObject | undefined,
@@ -2576,7 +2576,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   getDebilitatedState(): number {
-    // Prefer highest SetState (retail field_0x8ed priority).
+    // Prefer highest SetState (retail priority).
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
       const highest = getActiveSetStateType(this as ModuleCreature);
       if(highest > 0) return highest;
@@ -2656,7 +2656,7 @@ export class ModuleCreature extends ModuleObject {
   setAnimationState(animState: ModuleCreatureAnimState){
     if(!animState){ return; }
 
-    // Retail CSWCObject::SetAnimation @ 0063e930 — insert DIE/DIE1 before looping DEAD.
+    // Retail SetAnimation — insert DIE/DIE1 before looping DEAD.
     animState = resolveEnterDeadTransition(animState, this.animationState?.index);
 
     this.animationState.index = animState;
@@ -2725,7 +2725,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWCAnimBaseHeadWield::SetOverlayAnimation @ 00699420 — body + head Gobs.
+   * Retail SetOverlayAnimation — body + head Gobs.
    */
   applyOverlayToBodyAndHead(name: string, data: SWAnimation){
     const flags = resolveOverlayStartFlags(this.overlayAnimationState?.animationIndex || 0);
@@ -2838,7 +2838,7 @@ export class ModuleCreature extends ModuleObject {
       console.log(this, anim);
       return; 
     }
-    // Retail IsLoopingDialogStuntAnimation @ 0062ab70 — l/wl CUT ids loop.
+    // Retail IsLoopingDialogStuntAnimation — l/wl CUT ids loop.
     const looping = animationId > 0x577 && animationId < 0x6c0;
     this.dialogAnimation = {
       animation: anim,
@@ -2865,7 +2865,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::CancelCombat @ 004fdaa0.
+   * Retail CancelCombat.
    * ClearAllActions(1) → SetCombatState(0) → SetLastHostileActor(INVALID) →
    * ClearHostileActionsVersus(null) → EndCombatRound → client SetCombatMode(0).
    */
@@ -2891,7 +2891,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::SurrenderToEnemies @ 00518990.
+   * Retail SurrenderToEnemies.
    * @param retainSelfBuffs - 1 for SurrenderRetainBuffs (keep self-created effects)
    */
   surrenderToEnemies(retainSelfBuffs: boolean = false){
@@ -2933,7 +2933,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::ClearVisibleList + UpdateVisibleList(0) —
+   * Retail ClearVisibleList + UpdateVisibleList(0)
    * used by ChangeFactionByFaction after AddMember.
    */
   clearVisibleList(){
@@ -2944,8 +2944,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::ClearHostileActionsVersus @ 004f61d0 —
-   * drop queued action groups whose head is a hostile action (Attack 0xC /
+   * Retail ClearHostileActionsVersus
+   * drop queued action groups whose head is a hostile action (Attack 0xC
    * CastSpell 0xF / ItemCastSpell 0x2E). When `versus` is provided the group
    * must also target it; when omitted (retail null) every hostile group is dropped.
    */
@@ -2982,7 +2982,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::PacifyCreature @ 004fd960 —
+   * Retail PacifyCreature
    * area creatures that have this as a combat/hostile ref leave combat vs us.
    */
   pacifyCreature(){
@@ -3398,7 +3398,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail PlaySwingSound @ 0060dc50 — weaponsounds row from weaponmattype,
+   * Retail PlaySwingSound — weaponsounds row from weaponmattype,
    * preferring off-hand when it is a lightsaber.
    */
   private getPlaySwingWeaponSound(){
@@ -3516,7 +3516,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   flourish(){
-    // Retail PlayerFlourishWeapons @ 005f4460: PowerItem + SetCombatState(1, 2);
+    // Retail PlayerFlourishWeapons: PowerItem + SetCombatState(1, 2);
     // moving → SetOverlayAnimation(MELEE_WIELD 0x27ad); standing → InsertFireForget(MELEE_COMBAT_WIELD 0x27ae).
     this.setCombatState(true, ExcitedDurationRow.SpellCast);
     let isSimple = this.isSimpleCreature();
@@ -3566,7 +3566,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * True when engagement came from hostile combat (Damage), not flourish/SpellCast-only.
-   * Matches retail client sync gate: SetCombatState client update iff param_2 == 1.
+   * Matches retail client sync gate: SetCombatState client update iff arg2 == 1.
    */
   isHostileCombatEngaged(): boolean {
     return !!(this.combatData.combatState && this.combatStateReason === ExcitedDurationRow.Damage);
@@ -3613,7 +3613,7 @@ export class ModuleCreature extends ModuleObject {
       for(let i = 0, len = this.targetPositions.length; i < len; i++){
         let targetPosition = this.targetPositions[i];
         if(targetPosition.object == undefined){
-          //Generate the target vector for the 
+          //Generate the target vector for the
           targetPosition.targetVector.x = origin.x + (targetPosition.cos * radius);
           targetPosition.targetVector.y = origin.y + (targetPosition.sin * radius);
           targetPosition.targetVector.z = origin.z;
@@ -3692,7 +3692,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWCCreature::GetReticlePoint @ 0060fd80 —
+   * Retail GetReticlePoint
    * head / head_g / rootdummy (then ModuleObject lookathook fallback).
    */
   getReticleNode(){
@@ -3840,8 +3840,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail OnApplyDeath encounter unlink (param_2=0) /
-   * AIActionEncounterCreatureDestroySelf (param_2=1).
+   * Retail OnApplyDeath encounter unlink (arg2=0)
+   * AIActionEncounterCreatureDestroySelf (arg2=1).
    */
   unlinkFromEncounter(fromDestroySelf: boolean = false){
     if(this.encounterUnlinked) return;
@@ -3868,7 +3868,7 @@ export class ModuleCreature extends ModuleObject {
       instance.run(this);
     }
 
-    // Retail OnApplyDeath @ 004e0ac0 → RemoveFromActiveCreatureCount(..., 0)
+    // Retail OnApplyDeath → RemoveFromActiveCreatureCount(..., 0)
     this.unlinkFromEncounter(false);
 
     // Retail OnApplyDeath strips combat/buff VFX before corpse schedule (else willDestroy
@@ -3893,7 +3893,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::GetDeadTemp @ 004ef890 — true when this creature is in the
+   * Retail GetDeadTemp — true when this creature is in the
    * client party and current HP < 1 (awaiting combat-clear resurrection).
    */
   getDeadTemp(): boolean {
@@ -3903,7 +3903,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Begin destroy scheduling for a destroyable corpse.
-   * Retail OnApplyDeath (`004e0ac0`): wait appearance.DestroyObjectDelay (default 3.0s),
+   * Retail OnApplyDeath: wait appearance.DestroyObjectDelay (default 3.0s),
    * then event `0xb` spawns the bag and either SetFadeOutTime (FadeDelayOnDeath ms)
    * or SetKeepCorpse (missing FadeDelayOnDeath) — not an 8s fade-as-authority.
    * Non-destroyable corpses stay selectable with loot on the creature.
@@ -3992,7 +3992,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Placeable appearance id for the bag — retail GetBodyBagAppearance @ 004ef2e0.
+   * Placeable appearance id for the bag — retail GetBodyBagAppearance.
    * bodybag.Appearance → else appearance.Body_Bag row's appearance → else 3.
    */
   getBodyBagAppearance(): number {
@@ -4281,7 +4281,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   onAttacked(attackType: CombatActionType){
-    // Retail EventHandler physical-attacked (0xf) @ 004ff0ed — runs for hit and miss.
+    // Retail EventHandler physical-attacked (0xf) — runs for hit and miss.
     // BroadcastCombatStateToParty on attacker + target refreshes 8000ms combat + party ExcitedDuration.
     const attacker = this.combatData.lastAttacker;
     if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleCreature)){
@@ -4306,7 +4306,7 @@ export class ModuleCreature extends ModuleObject {
     if(this.isDead())
       return true;
 
-    // Retail OnApplyDamage @ 004dfa40 — creatures do not BroadcastCombatStateToParty
+    // Retail OnApplyDamage — creatures do not BroadcastCombatStateToParty
     // (engagement is OnAttacked / harmful OnSpellCastAt). Door/placeable path is on
     // ModuleObject.onDamaged. Refresh ExcitedDuration Damage row when HP is lost.
     this.setExcitedState(ExcitedDurationRow.Damage);
@@ -4323,11 +4323,11 @@ export class ModuleCreature extends ModuleObject {
       return;
 
     const blocker = this.collisionManager?.blockingObject;
-    // Retail PlotPathAroundCreature @ 005d0840:
-    //   GetReputation(blocker, mover) < 11 → pathfail with foundEnemy=blocker;
-    //   if mover commandable → return without hex;
-    //   both arcs fail → pathfail with foundEnemy=INVALID;
-    //   splice ok + hostile on arc → pathfail with that enemy.
+    // Retail PlotPathAroundCreature:
+    // GetReputation(blocker, mover) < 11 → pathfail with foundEnemy=blocker;
+    // if mover commandable → return without hex;
+    // both arcs fail → pathfail with foundEnemy=INVALID;
+    // splice ok + hostile on arc → pathfail with that enemy.
     if(BitWise.InstanceOfObject(blocker, ModuleObjectType.ModuleCreature)){
       const runPathfail = () => {
         const pathfail = GameState.NWScript.Load('k_def_pathfail01');
@@ -4425,7 +4425,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::IsInjured @ 004eff30 — skip when appearance.disableinjuredanim.
+   * Retail IsInjured — skip when appearance.disableinjuredanim.
    */
   isInjured(){
     if(this.getAppearance()?.disableinjuredanim) return false;
@@ -4762,7 +4762,7 @@ export class ModuleCreature extends ModuleObject {
     // Default: getHP = maxHitPoints + currentHitPoints - hitPoints
     // Wookiee/Beast: getHP = hitPoints + currentHitPoints
     // EffectDeath setHP(-11) used only the default inversion, so beast NPCs
-    // (e.g. Calo on Taris) stayed at positive HP with EffectDeath applied —
+    // (e.g. Calo on Taris) stayed at positive HP with EffectDeath applied
     // GetIsObjectValid stayed true and k_ptar_ramp never started tar08_ramp.
     switch(this.subraceIndex){
       case 1: // WOOKIE
@@ -4869,12 +4869,12 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSpell::GetAdjustedForcePoints @ 0059b8a0 — forceadjust.2da by alignment band.
+   * Retail GetAdjustedForcePoints — forceadjust.2da by alignment band.
    */
   getAdjustedForcePointCost(spell: { forcepoints?: number; goodEvil?: string }): number {
     const base = typeof spell?.forcepoints === 'number' ? spell.forcepoints : (parseInt(String(spell?.forcepoints)) || 0);
     if(base <= 0) return 0;
-    // NPCs outside party use base cost (retail param_2 == 0)
+    // NPCs outside party use base cost (retail arg2 == 0)
     if(!this.isPartyMember() && !this.isPC){
       return base;
     }
@@ -4904,7 +4904,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreatureStats::UnReadySpell @ 005a55c0 — drain adjusted FP
+   * Retail UnReadySpell — drain adjusted FP
    * (clamp at 0). Always succeeds when the spell row is valid; menu enable is
    * the soft FP/HP gate (GetSelfForcePowers / GetHostileForcePowers).
    */
@@ -4941,7 +4941,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * NWScript GetAC / simple AC — retail GetArmorClass @ 004ed1d0.
+   * NWScript GetAC / simple AC — retail GetArmorClass.
    */
   getAC(){
     return this.getArmorClassVersus(undefined, false);
@@ -4958,10 +4958,10 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreatureStats::GetArmorClassVersus @ 005ad0e0.
+   * Retail GetArmorClassVersus.
    * @param attacker - creature rolling the attack (for invis / SEEN gates)
    * @param touch - when true, omit armor / shield / natural equipment AC and
-   *   armor/shield effect AC (types 2–3); dodge + deflection still apply
+   * armor/shield effect AC (types 2–3); dodge + deflection still apply
    */
   getArmorClassVersus(attacker?: ModuleCreature, touch = false): number {
     let ac = 10;
@@ -5066,7 +5066,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail ExecuteCommandDoTouchAttack @ 00548de0.
+   * Retail ExecuteCommandDoTouchAttack.
    * @returns 0 miss, 1 hit, 2 critical
    */
   doTouchAttack(target: ModuleObject, ranged = false): number {
@@ -5236,7 +5236,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CalculateSpellSaveDC @ 004ef6e0 —
+   * Retail CalculateSpellSaveDC
    * 5 + total level + WIS mod + CHA mod + Force Focus (+1/+2/+4).
    */
   getSpellSaveDC(){
@@ -5341,7 +5341,7 @@ export class ModuleCreature extends ModuleObject {
     this.locomotionScale = 1;
     this.moveDirOverride = undefined;
     resetWalkSpeedFactor(this);
-    // Retail WalkUpdateLocation @ 0051bb10 end-of-path: SetAnimation(10000 / PAUSE).
+    // Retail WalkUpdateLocation end-of-path: SetAnimation(10000 / PAUSE).
     // Walk/run clips are forced looping, so they never demote on their own.
     this.clearLocomotionAnimation();
     if(resetPlayerControl && this.playerControl){
@@ -5378,7 +5378,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWPlayerControlCamRelative::Control — RK4 accel/drag + turn + DriveAnimationUpdate gate.
+   * Retail Control — RK4 accel/drag + turn + DriveAnimationUpdate gate.
    */
   applyPlayerCamRelativeControl(delta: number = 0){
     const ctrl = this.playerControl;
@@ -5420,7 +5420,7 @@ export class ModuleCreature extends ModuleObject {
 
     // Retail SetSWAnimationSpeed(mag, 0): total |v|; 0 when |v| <= 1
     let animMoveSpeed = playerSetSWAnimationSpeedMag(step.speed);
-    // DriveAnimationUpdate: stealth clamps field164 to drive_anim_walk before gate
+    // DriveAnimationUpdate: stealth clamps to drive_anim_walk before gate
     if(this.stealthMode && animMoveSpeed > 0){
       const walkCap = coalesceDriveAnimWalk(appearance?.driveanimwalk ?? 0);
       if(animMoveSpeed > walkCap) animMoveSpeed = walkCap;
@@ -5480,7 +5480,7 @@ export class ModuleCreature extends ModuleObject {
     const aligned = playerStepAlongFacing(stepMag, this.rotation.z);
     this.forceVector.set(aligned.dx, aligned.dy, 0);
 
-    // DriveAnimationUpdate @ 00615960: run when speed > 0.6*DriveMaxSpeed, else
+    // DriveAnimationUpdate: run when speed > 0.6*DriveMaxSpeed, else
     // walk while SetSWAnimationSpeed mag > 0. On key release, retail coasts:
     // run → walk (below 0.6*Vmax) → idle (|v|<=1) while RK4 still slides to 0.25.
     // Only change the base clip when the state changes — restarting walk every
@@ -5530,7 +5530,7 @@ export class ModuleCreature extends ModuleObject {
       this.animSpeed = 1;
     }
 
-    // Retail SetSWAnimationSpeed — next frame's turn gate reads this (field164)
+    // Retail SetSWAnimationSpeed — next frame's turn gate reads this ()
     ctrl.lastAnimMoveSpeed = animMoveSpeed;
 
     // Consume one-shot axes each frame (keyboard processors re-assert while held)
@@ -5616,7 +5616,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail GetForceItemMask @ 004efa80 — bit flags from equipped baseitem types
+   * Retail GetForceItemMask — bit flags from equipped baseitem types
    * used by AIActionCastSpell forbid/require mask checks.
    */
   getForceItemMask(): number {
@@ -5735,7 +5735,7 @@ export class ModuleCreature extends ModuleObject {
         return true;
       }
     }
-    // Retail bonus_feats list from EffectBonusFeat @ 004e46e0
+    // Retail bonus_feats list from EffectBonusFeat
     if(this.effects?.length){
       for(let i = 0; i < this.effects.length; i++){
         const e = this.effects[i];
@@ -5752,14 +5752,14 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreatureStats::GetCanUseSkill @ 005af880.
+   * Retail GetCanUseSkill.
    */
   getCanUseSkill(value: number): boolean {
     return getCanUseSkillRetail(this.skills, this.classes, value);
   }
 
   /**
-   * Retail CSWSCreatureStats::GetSkillRank @ 005aa570.
+   * Retail GetSkillRank.
    * @param raw — when true, return signed base rank only (no mods/feats/effects).
    */
   getSkillRank(value: number, raw: boolean = false){
@@ -5771,7 +5771,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWCCreature::IsStealthCapable — skill + stealth device on belt/hide.
+   * Retail IsStealthCapable — skill + stealth device on belt/hide.
    */
   isStealthCapable(): boolean {
     if(this.area?.restrictMode) return false;
@@ -5789,7 +5789,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail CSWCCreature::SetStealthMode @ 0050ee50 — toggle invisibility for party stealth.
+   * Retail SetStealthMode — toggle invisibility for party stealth.
    */
   setStealthMode(enabled: boolean){
     const next = !!enabled;
@@ -5813,7 +5813,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SetDetectMode @ 0050ee30 — sets detect_mode; ComputeModifiedMovementRate
+   * Retail SetDetectMode — sets detect_mode; ComputeModifiedMovementRate
    * only applies LimitMovementSpeed for stealth in KotOR (detect is a no-op there).
    */
   setDetectMode(enabled: boolean){
@@ -5823,7 +5823,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SetActivity @ 004f00a0 — set/clear activity bits with combat-mode exclusivity.
+   * Retail SetActivity — set/clear activity bits with combat-mode exclusivity.
    */
   setActivity(bits: number, enable: boolean, _param3: number = 0){
     const mask = bits | 0;
@@ -5877,7 +5877,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail ActivityManager @ 004f87d0 —
+   * Retail ActivityManager
    * param 1 clears skill/combat soft modes; param 4 clears stealth/dialog for CounterSpell.
    */
   activityManager(reason: number){
@@ -5921,7 +5921,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail SetCombatMode @ 0050ee80 — maps mode → activity bit; defers while round started.
+   * Retail SetCombatMode — maps mode → activity bit; defers while round started.
    */
   setCombatMode(mode: number, forceImmediate: boolean = false){
     const next = (mode | 0) as CombatMode;
@@ -6000,7 +6000,7 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Retail AIActionCounterSpell combat-mode enter @ 005143d7 —
+   * Retail AIActionCounterSpell combat-mode enter
    * ActivityManager(4) then set mode 4 / activity 0x800 (or clear prior mode bit).
    */
   enterCounterSpellMode(){
@@ -6349,7 +6349,7 @@ export class ModuleCreature extends ModuleObject {
     
     try{
       const mdl = await MDLLoader.loader.load(this.bodyModel);
-      // Retail CreateSimple @ 006985f0 / CreateBTypeBody @ 00697da5 — appearance.2da ENVMAP
+      // Retail CreateSimple / CreateBTypeBody — appearance.2da ENVMAP
       // is applied to all body parts via SetEnvMap, falling back to "DEFAULT" when blank.
       const envMapOverride = appearance.envmap?.length ? appearance.envmap : 'DEFAULT';
       const model = await OdysseyModel3D.FromMDL(mdl, {
@@ -6413,7 +6413,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Resolve the live heads.2da row for rendered creatures.
-   * Retail creature appearance selection uses appearance.2da NORMALHEAD /
+   * Retail creature appearance selection uses appearance.2da NORMALHEAD
    * BACKUPHEAD for normal creatures; do not treat UTC Appearance_Head as a
    * global render override here or NPCs collapse onto a shared heads row.
    */
@@ -6735,7 +6735,7 @@ export class ModuleCreature extends ModuleObject {
 
   /**
    * Dialog HideEquippedItems — stash slot refs then unequip so ShowEquippedItems
-   * can restore at conversation end (retail SetDialogDelay @ 00758c90).
+   * can restore at conversation end (retail SetDialogDelay).
    */
   hideEquippedItemsForDialog(unequipItems: boolean = false, unequipHead: boolean = false){
     if(!this.dialogEquipmentStash){
@@ -7391,7 +7391,7 @@ export class ModuleCreature extends ModuleObject {
         console.error('ModuleCreature.initProperties CombatRoundData', e);
       }
 
-      // CombatInfo — retail CCombatInformation::LoadData @ 00552350
+      // CombatInfo — retail LoadData
       try{
         if(this.template.RootNode.hasField('CombatInfo')){
           const ciField = this.template.RootNode.getFieldByLabel('CombatInfo');
@@ -7437,7 +7437,7 @@ export class ModuleCreature extends ModuleObject {
       console.error(e);
     }
 
-    // Retail CSWSCreature::LoadCreature — ReadFieldINT("Animation", default 10000)
+    // Retail LoadCreature — ReadFieldINT("Animation", default 10000)
     // then SetAnimation. Always re-resolve after HP is loaded so pause is not
     // stuck on pauseinj from a pre-stats constructor resolve.
     let anim = ModuleCreatureAnimState.PAUSE;
@@ -7447,7 +7447,7 @@ export class ModuleCreature extends ModuleObject {
     if(!anim || anim === ModuleCreatureAnimState.INVALID){
       anim = ModuleCreatureAnimState.PAUSE;
     }
-    // Mid-duel saves stamp ATTACK/ATTACK_DUELING which have no 2DA mapping —
+    // Mid-duel saves stamp ATTACK/ATTACK_DUELING which have no 2DA mapping
     // demote to READY/PAUSE so load does not spam Animation Missing.
     const resolved = this.animationConstantToAnimation(anim);
     const inCombat = !!(this.combatData?.combatState || this.combatRound?.roundStarted);
@@ -7550,7 +7550,7 @@ export class ModuleCreature extends ModuleObject {
   updateDestroyFade(delta: number = 0): void {
     if(this.destroyed || this.isRetainedCorpse) return;
 
-    // Retail EventHandler destroy (0xb) @ 004ff3fa — fires at DestroyObjectDelay
+    // Retail EventHandler destroy (0xb) — fires at DestroyObjectDelay
     if(!this.serverDestroyed && this.timeSinceDestroyStarted >= this.delayUntilFade){
       this.onServerDestroyEvent();
       // KeepCorpse converts to retained shell — stop the destroy timer path
@@ -7586,7 +7586,7 @@ export class ModuleCreature extends ModuleObject {
       return;
     }
 
-    // Retail EventHandler destroy (0xb) @ 004ff3fa
+    // Retail EventHandler destroy (0xb)
     this.unlinkFromEncounter(false);
 
     if(!this.serverDestroyed){
@@ -7702,8 +7702,8 @@ export class ModuleCreature extends ModuleObject {
   }
 
   /**
-   * Sync CCombatInformation fields from live equipment/stats before SaveData.
-   * Retail Compute/Update fills these before SaveData @ 00550f30.
+   * Sync combat information fields from live equipment/stats before SaveData.
+   * Retail Compute/Update fills these before SaveData.
    */
   syncCombatInformationForSave(){
     const info = this.combatInformation;
@@ -7847,7 +7847,7 @@ export class ModuleCreature extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Color_Tattoo2') ).setValue(this.colorTattoo2 | 0);
 
     let combatInfoStruct = gff.RootNode.addField( new GFFField(GFFDataType.STRUCT, 'CombatInfo') );
-    // Retail CCombatInformation::SaveData @ 00550f30 — sync live fields before write
+    // Retail SaveData — sync live fields before write
     this.syncCombatInformationForSave();
     combatInfoStruct.addChildStruct(this.combatInformation.toStruct(0xCAAA));
 
@@ -7881,7 +7881,7 @@ export class ModuleCreature extends ModuleObject {
       effectList.addChildStruct( this.effects[i].save() );
     }
 
-    //Equipment — retail SaveCreature walks slot bits 1<<0 .. 1<<17 (18 slots)
+    //Equipment — retail SaveCreature walks slot bits 1<<0.. 1<<17 (18 slots)
     let equipItemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'Equip_ItemList') );
     for(let slot = 1, n = 0; n < 18; slot <<= 1, n++){
       const equipped = this.GetItemInSlot(slot);

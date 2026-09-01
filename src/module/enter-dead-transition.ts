@@ -1,5 +1,5 @@
 /**
- * Retail CSWCObject::SetAnimation @ 0063e930 — when entering looping DEAD/DEAD1
+ * Retail SetAnimation — when entering looping DEAD/DEAD1
  * from a non-dead pose, insert DIE/DIE1 fireforget before the corpse hold.
  *
  * @file enter-dead-transition.ts

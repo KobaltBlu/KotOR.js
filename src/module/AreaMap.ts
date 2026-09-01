@@ -7,18 +7,18 @@ import { GameEngineType } from "@/enums/engine/GameEngineType";
 import { ApplicationProfile } from "@/utility/ApplicationProfile";
 import type { ModuleWaypoint } from "@/module/ModuleWaypoint";
 
-/** Retail K1 logical map size (CSWSAreaMap / GetMapPixelFromWorldCoord). */
+/** Retail K1 logical map size (retail / GetMapPixelFromWorldCoord). */
 export const AREA_MAP_LOGICAL_SIZE_K1 = { width: 440, height: 256 } as const;
 /** Retail TSL Aspyr logical map size (0x24C x 0x126). */
 export const AREA_MAP_LOGICAL_SIZE_TSL = { width: 588, height: 294 } as const;
 
 /**
 * AreaMap class.
-* 
+*
 * Class representing the logic that powers mini and large game maps ingame.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file AreaMap.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -223,7 +223,7 @@ export class AreaMap {
   }
 
   /**
-   * Retail CSWSAreaMap::SetWorldPointExplored — default radius 1 (UpdateMapData).
+   * Retail SetWorldPointExplored — default radius 1 (UpdateMapData).
    * Radius uses a manhattan diamond of grid cells; -1 reveals the entire map.
    */
   revealPosition(x: number = 0, y: number = 0, radius: number = 1){
@@ -308,7 +308,7 @@ export class AreaMap {
   }
 
   exportData(){
-    // Retail SaveMaps @ 0050622c — AreaMap struct type 0x65 (101)
+    // Retail SaveMaps — AreaMap struct type 0x65 (101)
     let dataStruct = new GFFStruct(0x65);
 
     this.data.fill(0);

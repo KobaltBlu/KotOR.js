@@ -46,11 +46,11 @@ interface AnimStateInfo {
 
 /**
 * ModuleDoor class.
-* 
+*
 * Class representing a door found in module areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleDoor.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -120,7 +120,7 @@ export class ModuleDoor extends ModuleObject {
   /** Retail door script resrefs (ctor defaults all slots to "default"). */
   scriptResRefs: Partial<Record<string, string>> = {};
 
-  /** Retail MoveNextDoorState @ 00683f00 — "door" or doneopening / doneclosing events. */
+  /** Retail MoveNextDoorState — "door" or doneopening / doneclosing events. */
   private static readonly _doorAnimDoneRe = /^done(opening|closing)/i;
   private doorAnimPlayEventHandler = (event: THREE.Event & { event?: string }) => {
     const name = String(event?.event ?? '');
@@ -310,7 +310,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   /**
-   * Retail CSWCDoor::can_use_actions_ — template Useable flag.
+   * Retail can_use_actions_ — template Useable flag.
    * Static doors are never interactable. Open / NotBlastable are gated
    * separately by callers (selection, Bash menu).
    * When Useable is absent from the template, default is true (common on GIT doors).
@@ -324,7 +324,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   /**
-   * Retail NoNonWalkPolysInDoor @ 005890f0 indexes surface_mesh[open_state].
+   * Retail NoNonWalkPolysInDoor indexes surface_mesh[open_state].
    * Missing open1/open2 BWM must NOT fall back to closed — retail LoadMesh leaves
    * an empty mesh for that slot, and NoNonWalkPolys with no faces returns clear.
    */
@@ -382,7 +382,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   /**
-   * Retail CSWSDoor::MoveToNextOpenState @ 00589680 —
+   * Retail MoveToNextOpenState
    * commit also_open_state_ → open_state when open/close anim finishes.
    */
   moveToNextOpenState(): void {
@@ -394,7 +394,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   /**
-   * Retail CSWSDoor::SetOpenState @ 00589600 —
+   * Retail SetOpenState
    * always sets also_open_state_; open_state only when animate == false.
    */
   setOpenState(openState: ModuleDoorOpenState = ModuleDoorOpenState.CLOSED, animate: boolean = true){
@@ -445,7 +445,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   /**
-   * Retail CSWSDoor::OpenDoor @ 00589c70 — side from facing-plane dot product.
+   * Retail OpenDoor — side from facing-plane dot product.
    */
   detectInteractSide(object: ModuleObject): ModuleDoorInteractSide {
     let side = ModuleDoorInteractSide.SIDE_2;
@@ -466,7 +466,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   /**
-   * Retail CSWSDoor::EventHandler script case 7 (OnDialog).
+   * Retail EventHandler script case 7 (OnDialog).
    * OnDialog "default" → k_hen_dialogue01 (doors do not treat empty like creatures).
    */
   onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []): boolean {
@@ -604,7 +604,7 @@ export class ModuleDoor extends ModuleObject {
 
     this.playObjectSound(ModulePlaceableObjectSound.OPENED);
 
-    // Retail OpenDoor @ 00589c70 — orientation-plane side detection
+    // Retail OpenDoor — orientation-plane side detection
     this.objectInteractSide = this.detectInteractSide(object);
     switch(this.objectInteractSide){
       case ModuleDoorInteractSide.SIDE_1:
@@ -645,7 +645,7 @@ export class ModuleDoor extends ModuleObject {
       onDeath.run(this);
     }
 
-    // Retail EventHandler death @ 0058ba8c — SetOpenState(3)
+    // Retail EventHandler death — SetOpenState(3)
     this.setOpenState(ModuleDoorOpenState.DESTROYED, true);
 
   }
@@ -718,7 +718,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   onAttacked(attackType: CombatActionType){
-    // Retail CSWSDoor::EventHandler 0xf @ 0058ba8c — BroadcastCombatStateToParty(attacker, INVALID)
+    // Retail EventHandler 0xf — BroadcastCombatStateToParty(attacker, INVALID)
     const attacker = this.combatData.lastAttacker;
     if(BitWise.InstanceOfObject(attacker, ModuleObjectType.ModuleCreature)){
       const atk = attacker as ModuleCreature;
@@ -733,7 +733,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   onDamaged(): boolean{
-    // Retail OnApplyDamage door/placeable @ 004e055f — BroadcastCombatStateToParty(attacker, INVALID)
+    // Retail OnApplyDamage door/placeable — BroadcastCombatStateToParty(attacker, INVALID)
     const damager = this.combatData.lastDamager ?? this.combatData.lastAttacker;
     if(BitWise.InstanceOfObject(damager, ModuleObjectType.ModuleCreature)){
       (damager as ModuleCreature).broadcastCombatStateToParty();
@@ -746,7 +746,7 @@ export class ModuleDoor extends ModuleObject {
   }
 
   /**
-   * Retail CSWSDoor::AIUpdate — heartbeat/effects + action queue.
+   * Retail AIUpdate — heartbeat/effects + action queue.
    */
   aiUpdate(delta = 0){
     super.aiUpdate(delta);
@@ -899,7 +899,7 @@ export class ModuleDoor extends ModuleObject {
   getCurrentRoom(): void {
     this.room = undefined;
     let aabbFaces = [];
-    let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
+    let intersects;// = GameState.raycaster.intersectOctreeObjects(meshesSearch);
     let box = this.box.clone();
 
     this.rooms = [];
@@ -1112,7 +1112,7 @@ export class ModuleDoor extends ModuleObject {
     const scriptsNode = this.template?.RootNode;
     if(!scriptsNode){ return; }
     for(const scriptKey of scriptKeys){
-      // Retail CSWSDoor ctor seeds all slots to "default"; LoadDoor overwrites with the
+      // retail ctor seeds all slots to "default"; LoadDoor overwrites with the
       // template value including an explicit empty resref (must persist "" on save).
       let resRef = 'default';
       if(scriptsNode.hasField(scriptKey)){
@@ -1371,13 +1371,13 @@ export class ModuleDoor extends ModuleObject {
       }
     }
 
-    // Retail CSWSDoor::PostProcess @ 00589d40 — hardness applies a permanent
+    // Retail PostProcess — hardness applies a permanent
     // DamageResistance effect (subtype |= 2, int0 = 0x3FFF, int1 = hardness, is_exposed = 0).
     if((this.hardness | 0) > 0 && !this.effects.some(e => e.type === GameEffectType.EffectDamageResistance)){
       const eDamageResist = new GameEffectFactory.EffectDamageResistance();
       // Retail PostProcess: subtype & 0xfff8 | 2 (PERMANENT only — not MAGICAL|PERMANENT = 10)
       eDamageResist.setSubTypeUnMasked(GameEffectDurationType.PERMANENT);
-      // Retail ApplyEffect with field97_0x1ec = 1 during PostProcess → SkipOnLoad = 1
+      // Retail ApplyEffect with = 1 during PostProcess → SkipOnLoad = 1
       eDamageResist.setSkipOnLoad(true);
       eDamageResist.setInt(0, 0x3FFF);
       eDamageResist.setInt(1, this.hardness | 0);
@@ -1468,7 +1468,7 @@ export class ModuleDoor extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Min1HP') ).setValue(this.min1HP);
     gff.RootNode.addField( new GFFField(GFFDataType.DWORD, 'ObjectId') ).setValue(this.id);
 
-    // Scripts — retail SaveDoor @ 00588ad0 includes OnDialog; omits non-retail extras
+    // Scripts — retail SaveDoor includes OnDialog; omits non-retail extras
     // Retail ctor defaults all slots to "default"; persist the loaded resref (including "")
     // even if the NCS failed to load. Absent-field slots fall back to "default".
     const scriptResRef = (key: string) => {
@@ -1529,25 +1529,25 @@ export class ModuleDoor extends ModuleObject {
 
   animationConstantToAnimation( animation_constant = 10000 ): SWAnimation {
     switch( animation_constant ){
-      case ModuleDoorAnimState.DEFAULT:       //10000, //327 - 
+      case ModuleDoorAnimState.DEFAULT:       //10000, //327 -
         return GameState.SWRuleSet.animationIdMap.get(327);
-      case ModuleDoorAnimState.OPENED1:       //10050, //331 - 
+      case ModuleDoorAnimState.OPENED1:       //10050, //331 -
         return GameState.SWRuleSet.animationIdMap.get(331);
-      case ModuleDoorAnimState.OPENED2:       //10051, //332 - 
+      case ModuleDoorAnimState.OPENED2:       //10051, //332 -
         return GameState.SWRuleSet.animationIdMap.get(332);
-      case ModuleDoorAnimState.CLOSED:        //10022, //333 - 
+      case ModuleDoorAnimState.CLOSED:        //10022, //333 -
         return GameState.SWRuleSet.animationIdMap.get(333);
-      case ModuleDoorAnimState.OPENING1:      //10052, //334 - 
+      case ModuleDoorAnimState.OPENING1:      //10052, //334 -
         return GameState.SWRuleSet.animationIdMap.get(334);
-      case ModuleDoorAnimState.OPENING2:      //10053, //335 - 
+      case ModuleDoorAnimState.OPENING2:      //10053, //335 -
         return GameState.SWRuleSet.animationIdMap.get(335);
-      case ModuleDoorAnimState.CLOSING1:      //10054, //336 - 
+      case ModuleDoorAnimState.CLOSING1:      //10054, //336 -
         return GameState.SWRuleSet.animationIdMap.get(336);
-      case ModuleDoorAnimState.CLOSING2:      //10055, //337 - 
+      case ModuleDoorAnimState.CLOSING2:      //10055, //337 -
         return GameState.SWRuleSet.animationIdMap.get(337);
-      case ModuleDoorAnimState.BUSTED:        //10153, //366 - 
+      case ModuleDoorAnimState.BUSTED:        //10153, //366 -
         return GameState.SWRuleSet.animationIdMap.get(366);
-      case ModuleDoorAnimState.TRANS:         //10269, //344 - 
+      case ModuleDoorAnimState.TRANS:         //10269, //344 -
         return GameState.SWRuleSet.animationIdMap.get(344);
     }
 

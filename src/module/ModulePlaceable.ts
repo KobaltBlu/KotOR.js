@@ -101,7 +101,7 @@ export class ModulePlaceable extends ModuleObject {
    * Persisted as 1 on save (shells are never serialized); runtime may hide.
    */
   isBodyBagVisible: boolean = true;
-  /** Creature/object id that spawned this body bag (retail field65). */
+  /** Creature/object id that spawned this body bag (retail). */
   sourceCreatureId: number = 0;
   groundPile: boolean = false;
   lightState: any;
@@ -155,7 +155,7 @@ export class ModulePlaceable extends ModuleObject {
     this.paletteID = 0;
     this.partyInteract = false;
     this.plot = false;
-    // Retail CSWSObject ctor portrait_id = 0xFFFF (save writes empty Portrait when unset)
+    // retail ctor portrait_id = 0xFFFF (save writes empty Portrait when unset)
     this.portraitId = 0xFFFF;
     this.ref = 0;
     this.static = false;
@@ -195,7 +195,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   /**
-   * Retail CSWSPlaceable::EventHandler script case 7 (OnDialog).
+   * Retail EventHandler script case 7 (OnDialog).
    * Empty or "default" OnDialog → k_hen_dialogue01.
    */
   onDialog(oSpeaker: ModuleObject, listenPatternNumber = -1, conversation: DLGObject = undefined, matchedSubstrings: string[] = []): boolean {
@@ -230,7 +230,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   /**
-   * Retail CSWSPlaceable::AIUpdate — heartbeat/effects + action queue.
+   * Retail AIUpdate — heartbeat/effects + action queue.
    */
   aiUpdate(delta = 0){
     super.aiUpdate(delta);
@@ -277,11 +277,11 @@ export class ModulePlaceable extends ModuleObject {
     // Action queue processed in aiUpdate
 
     // if(this.animState == ModulePlaceableAnimState.DEFAULT){
-    //   if(this.isOpen()){
-    //     this.setAnimationState(ModulePlaceableAnimState.OPEN);
-    //   }else{
-    //     this.setAnimationState(ModulePlaceableAnimState.CLOSE);
-    //   }
+    // if(this.isOpen()){
+    // this.setAnimationState(ModulePlaceableAnimState.OPEN);
+    // }else{
+    // this.setAnimationState(ModulePlaceableAnimState.CLOSE);
+    // }
     // }
 
     if(this.locked && this.getHP() <= 0){
@@ -408,7 +408,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   /**
-   * Retail CSWCPlaceable::GetReticlePoint @ 00682ff0 —
+   * Retail GetReticlePoint
    * corpses use rootdummy; others fall back to lookathook.
    */
   getReticleNode(){
@@ -419,7 +419,7 @@ export class ModulePlaceable extends ModuleObject {
   }
 
   isOpen(){
-    // Retail field4_0x110: open or destroyed — Bash is suppressed for both.
+    // Retail: open or destroyed — Bash is suppressed for both.
     return this.openState || this.state == ModulePlaceableState.DEAD;
   }
 
@@ -536,7 +536,7 @@ export class ModulePlaceable extends ModuleObject {
     this.animStateInfo.started = false;
     if(animState == ModulePlaceableAnimState.OPEN) this.animStateInfo.loop = true;
     if(animState == ModulePlaceableAnimState.DEFAULT) this.animStateInfo.loop = true;
-    // Resting OPEN / DEAD sync openState for Bash gates (retail field4_0x110).
+    // Resting OPEN / DEAD sync openState for Bash gates (Retail).
     if(animState == ModulePlaceableAnimState.OPEN){
       this.setOpenState(ModulePlaceableState.OPEN);
     }else if(animState == ModulePlaceableAnimState.DEAD){
@@ -803,7 +803,7 @@ export class ModulePlaceable extends ModuleObject {
 
       return walkmesh;
     }catch(e){
-      // Many placeables (incl. body bags) have no .pwk — empty mesh is fine
+      // Many placeables (incl. body bags) have no.pwk — empty mesh is fine
       const walkmesh = new OdysseyWalkMesh();
       walkmesh.name = resRef;
       walkmesh.moduleObject = this;
@@ -1071,13 +1071,13 @@ export class ModulePlaceable extends ModuleObject {
       this.setAnimationState(ModulePlaceableAnimState.CLOSE);
     }
 
-    // Retail CSWSPlaceable::PostProcess @ 00584870 — hardness applies a permanent
+    // Retail PostProcess — hardness applies a permanent
     // DamageResistance effect (subtype |= 2, int0 = 0x3FFF, int1 = hardness, is_exposed = 0).
     if((this.hardness | 0) > 0 && !this.effects.some(e => e.type === GameEffectType.EffectDamageResistance)){
       const eDamageResist = new GameEffectFactory.EffectDamageResistance();
       // Retail PostProcess: subtype & 0xfff8 | 2 (PERMANENT only — not MAGICAL|PERMANENT = 10)
       eDamageResist.setSubTypeUnMasked(GameEffectDurationType.PERMANENT);
-      // Retail ApplyEffect with field97_0x1ec = 1 during PostProcess → SkipOnLoad = 1
+      // Retail ApplyEffect with = 1 during PostProcess → SkipOnLoad = 1
       eDamageResist.setSkipOnLoad(true);
       eDamageResist.setInt(0, 0x3FFF);
       eDamageResist.setInt(1, this.hardness | 0);

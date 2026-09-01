@@ -9,29 +9,29 @@ import * as THREE from "three";
 
 /**
  * Represents a static camera found in module areas.
- * 
+ *
  * ModuleCamera is used to define camera positions and properties within game areas.
  * These cameras can be used for cutscenes, dialogs to show specific viewing angles.
  * The camera data is stored in GFF format and can be loaded from area's GIT file.
- * 
+ *
  * @class ModuleCamera
- * 
+ *
  * @example
  * ```typescript
  * // Create a new camera from GFF data
  * const cameraGFF = new GFFObject();
  * const camera = new ModuleCamera(cameraGFF);
  * camera.load();
- * 
+ *
  * // Access camera properties
  * console.log(camera.cameraID); // Camera identifier
  * console.log(camera.fov); // Field of view
  * console.log(camera.position); // Camera position
- * 
+ *
  * // Get the Three.js camera object
  * const threeCamera = camera.perspectiveCamera;
  * ```
- * 
+ *
  * @file ModuleCamera.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -70,15 +70,15 @@ export class ModuleCamera {
 
   /**
    * Creates a new ModuleCamera instance.
-   * 
+   *
    * @param {GFFObject} [gff=new GFFObject()] - The GFF template containing camera data
-   * 
+   *
    * @example
    * ```typescript
    * // Create camera from existing GFF data
    * const cameraGFF = new GFFObject();
    * const camera = new ModuleCamera(cameraGFF);
-   * 
+   *
    * // Create camera with default empty GFF
    * const camera = new ModuleCamera();
    * ```
@@ -89,10 +89,10 @@ export class ModuleCamera {
 
   /**
    * Loads camera data from the GFF template and builds the Three.js camera.
-   * 
+   *
    * This method initializes all camera properties from the GFF data and creates
    * the corresponding Three.js PerspectiveCamera instance.
-   * 
+   *
    * @example
    * ```typescript
    * const camera = new ModuleCamera(cameraGFF);
@@ -106,11 +106,11 @@ export class ModuleCamera {
 
   /**
    * Builds the Three.js PerspectiveCamera instance from the camera properties.
-   * 
+   *
    * This method creates a new PerspectiveCamera with the configured field of view,
    * position, orientation, and other properties. It also applies a clipping hack
    * to prevent rendering issues and sets up user data for identification.
-   * 
+   *
    * @example
    * ```typescript
    * const camera = new ModuleCamera();
@@ -124,11 +124,11 @@ export class ModuleCamera {
       this.perspectiveCamera.removeFromParent();
       this.perspectiveCamera = undefined;
     }
-    // Retail LoadPlaceableCameras @ 00505eb0 / SetShotFromScript @ 0062e900
-    // / UpdateShotCamera @ 006306e0 (angle 6) / Control @ 006bcf50:
+    // Retail LoadPlaceableCameras / SetShotFromScript
+    // / UpdateShotCamera (angle 6) / Control:
     // position.z += Height; FOV default 55;
     // orientation = YawPitchRoll(Yaw(q), Pitch(q)+Pitch, Roll(q)).
-    // GFF Orientation is WXYZ (ReadFieldQuaternion @ 004121b0).
+    // GFF Orientation is WXYZ (ReadFieldQuaternion).
     // Aurora Camera and Three.js both look along local −Z.
     // No near-plane pad — retail SetShot uses the rebuilt pose as-is.
     const fov = (typeof this.fov === 'number' && this.fov > 0) ? this.fov : 55;
@@ -158,11 +158,11 @@ export class ModuleCamera {
 
   /**
    * Initializes camera properties from the GFF template data.
-   * 
+   *
    * This method reads all camera properties from the GFF template fields and
    * sets the corresponding instance properties. It handles optional fields
    * gracefully, only setting properties if the corresponding GFF field exists.
-   * 
+   *
    * @example
    * ```typescript
    * const camera = new ModuleCamera(cameraGFF);
@@ -200,20 +200,20 @@ export class ModuleCamera {
 
   /**
    * Saves the current camera properties to a GFF object.
-   * 
+   *
    * This method creates a new GFF object with all current camera properties
    * and updates the internal template. The GFF structure type is set to 14
    * (camera type) and all properties are stored with appropriate data types.
-   * 
+   *
    * @returns {GFFObject} The GFF object containing the camera data
-   * 
+   *
    * @example
    * ```typescript
    * const camera = new ModuleCamera();
    * camera.cameraID = 1;
    * camera.fov = 75;
    * camera.position.set(10, 5, 10);
-   * 
+   *
    * const gff = camera.save();
    * console.log(gff.RootNode.type); // 14 (camera type)
    * ```

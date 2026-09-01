@@ -14,11 +14,11 @@ import * as THREE from "three";
 
 /**
 * ModuleMGObstacle class.
-* 
+*
 * Class representing a obstacle found in minigame modules.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMGObstacle.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -60,7 +60,7 @@ export class ModuleMGObstacle extends ModuleObject {
         this.position.copy(layout.position);
       }
     }
-    // Retail CSWMGObstacle ctor → CSWMiniGameObject @ 0066c540 registers in MGO array.
+    // retail ctor → retail registers in MGO array.
     MiniGameObjectArray.register(this);
   }
 
@@ -81,7 +81,7 @@ export class ModuleMGObstacle extends ModuleObject {
       this.models[i]?.update?.(delta);
     }
 
-    // Retail CSWMiniGameObject::Update @ 0066c0a0 — OnHeartbeat every frame.
+    // Retail Update — OnHeartbeat every frame.
     if(GameState.module){
       this.triggerHeartbeat();
     }
@@ -137,7 +137,7 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   /**
-   * Retail AddObstacle @ 00672240 — NewCAurObject(LYT name), SetPosition once on Gob,
+   * Retail AddObstacle — NewCAurObject(LYT name), SetPosition once on Gob,
    * AttachToScene(main_scene), PlayAnimation("ready"). Model stays at local origin.
    */
   async loadModel(): Promise<void> {
@@ -207,7 +207,7 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   /**
-   * Retail SWMG_PlayAnimation / TrackFollower::PlayAnimation @ 0066d550 —
+   * Retail SWMG_PlayAnimation / PlayAnimation
    * loop/queue/overlay flags match player path.
    */
   playAnimation(name = '', bLooping = 0, bQueue = 0, bOverlay = 0){
@@ -256,7 +256,7 @@ export class ModuleMGObstacle extends ModuleObject {
   }
 
   /**
-   * Retail CSWMiniGameObject::OnHitFollower @ 0066c2d0 —
+   * Retail OnHitFollower
    * run OnHitFollower script (accelpad.nss etc). `follower` is the player bumper.
    */
   onHitFollower(follower?: ModuleMGPlayer){

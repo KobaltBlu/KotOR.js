@@ -15,14 +15,14 @@ import {
 import type { OdysseyModel3D } from "@/three/odyssey";
 
 /**
- * Encounter spawn helpers — retail CSWSEncounter:
- * SpawnIfAppropriate @ 00593be0, CalculateSpawnPool @ 005931d0,
- * BuildSpawnList @ 005935d0, BuildInitialSpawnList @ 00590f80,
- * AddCreaturesToSpawnList @ 00592280, PadOutCreatureCount @ 00590b10,
- * SpawnCreatureFromSpawnList @ 00591ca0 / 00591e70,
- * TallyEnemyRadiusPoints @ 00591af0.
+ * Encounter spawn helpers — retail:
+ * SpawnIfAppropriate, CalculateSpawnPool,
+ * BuildSpawnList, BuildInitialSpawnList,
+ * AddCreaturesToSpawnList, PadOutCreatureCount,
+ * SpawnCreatureFromSpawnList ,
+ * TallyEnemyRadiusPoints.
  *
- * Placement uses ComputeSafeLocation @ 004be860 / ComputeNonVisibleLocation @ 004bee30.
+ * Placement uses ComputeSafeLocation / ComputeNonVisibleLocation.
  *
  * @file encounter-spawn.ts
  */
@@ -68,7 +68,7 @@ export function tallyEnemyRadiusPoints(encounter: ModuleEncounter): number {
     if(!encounter.isHostile?.(c)) continue;
 
     let level = levelOf(c);
-    // Retail halves when field377_0x9d4 == 0 (cached is_pc from PostProcess)
+    // Retail halves when == 0 (cached is_pc from PostProcess)
     if(!c.isPC){
       level = Math.floor(level / 2);
     }
@@ -79,7 +79,7 @@ export function tallyEnemyRadiusPoints(encounter: ModuleEncounter): number {
 }
 
 /**
- * Retail CalculateSpawnPool @ 005931d0.
+ * Retail CalculateSpawnPool.
  * @param challengeRatingHint -1 = tally radius; else points from that CR
  */
 export function calculateSpawnPool(encounter: ModuleEncounter, challengeRatingHint: number = -1){
@@ -110,7 +110,7 @@ function pushSpawnEntry(out: EncounterSpawnEntry[], c: EncounterCreatureEntry, p
 }
 
 /**
- * Retail PadOutCreatureCount @ 00590b10 — fill to (rec − spawned) by repeatedly
+ * Retail PadOutCreatureCount — fill to (rec − spawned) by repeatedly
  * selecting the highest CR-points band among eligible creatures, then random within band.
  */
 function padOutCreatureCount(
@@ -162,7 +162,7 @@ function padOutCreatureCount(
 }
 
 /**
- * Retail AddCreaturesToSpawnList @ 00592280 —
+ * Retail AddCreaturesToSpawnList
  * Truncate spawn list from `atIndex`, then refill with creatures cheaper than the seed CR budget.
  */
 function addCreaturesToSpawnList(
@@ -175,7 +175,7 @@ function addCreaturesToSpawnList(
 ){
   const seedPts = calculatePointsFromCR(seed.spawnCR || 0);
   const areaPts = Number(encounter.areaPoints) || 0;
-  // Retail: skip when seed points == field38_0x2d0 (area points)
+  // Retail: skip when seed points == (area points)
   if(seedPts === areaPts) return;
 
   if(out.length === 1){
@@ -211,8 +211,8 @@ function addCreaturesToSpawnList(
 }
 
 /**
- * BuildInitialSpawnList @ 00590f80 + AddCreaturesToSpawnList @ 00592280
- * + PadOutCreatureCount @ 00590b10.
+ * BuildInitialSpawnList + AddCreaturesToSpawnList
+ * + PadOutCreatureCount.
  */
 export function buildSpawnList(encounter: ModuleEncounter){
   const maxCreatures = Math.max(1, encounter.maxCreatures | 0);
@@ -231,7 +231,7 @@ export function buildSpawnList(encounter: ModuleEncounter){
   const recovered = Number(encounter.spawnPoolRecovered) || 0;
   const areaPts = Number(encounter.areaPoints) || 0;
 
-  // Reset per-wave singleSpawn markers (retail field3_0x18)
+  // Reset per-wave singleSpawn markers (Retail)
   for(const c of list){
     c.usedThisWave = false;
     c.pickMark = false;
@@ -331,8 +331,8 @@ export function buildSpawnList(encounter: ModuleEncounter){
 }
 
 /**
- * Retail SpawnIfAppropriate @ 00593be0 —
- * only builds when spawnPoolRecovered (field40_0x2d8) > 0.
+ * Retail SpawnIfAppropriate
+ * only builds when spawnPoolRecovered > 0.
  */
 export function spawnIfAppropriate(encounter: ModuleEncounter){
   if(!encounter.active || encounter.started === 1) return;
@@ -344,7 +344,7 @@ export function spawnIfAppropriate(encounter: ModuleEncounter){
   }
 
   calculateSpawnPool(encounter, -1);
-  // Retail: if (0.0 < field40_0x2d8) BuildSpawnList
+  // Retail: if (0.0 <) BuildSpawnList
   if((Number(encounter.spawnPoolRecovered) || 0) > 0){
     buildSpawnList(encounter);
     if(encounter.spawnList.length > 0){
@@ -356,7 +356,7 @@ export function spawnIfAppropriate(encounter: ModuleEncounter){
 const NONVISIBLE_SENTINEL = -1;
 
 /**
- * Retail SpawnCreatureFromSpawnList placement @ 00591e70.
+ * Retail SpawnCreatureFromSpawnList placement.
  * @returns undefined when NonVisible returns (−1,−1,−1) — abort spawn (retry next tick).
  */
 export function pickSpawnPosition(
@@ -461,7 +461,7 @@ export function spawnCreatureFromSpawnList(encounter: ModuleEncounter): ModuleCr
   creature.clearAllActions?.();
   creature.position.copy(pos);
   creature.setFacing?.(facing, true);
-  // Retail field377_0x9d4 = 0 at spawn (mirrors is_pc cache; NPCs already 0)
+  // Retail = 0 at spawn (mirrors is_pc cache; NPCs already 0)
   creature.isPC = 0;
 
   const poolCost =

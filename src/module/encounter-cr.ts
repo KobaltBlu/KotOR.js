@@ -1,7 +1,7 @@
 import { GameState } from "@/GameState";
 
 /**
- * Retail CSWSEncounter::CalculatePointsFromCR @ 005919e0.
+ * Retail CalculatePointsFromCR.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

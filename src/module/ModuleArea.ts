@@ -91,7 +91,7 @@ type AreaScriptKeys = 'OnEnter'|'OnExit'|'OnHeartbeat'|'OnUserDefined';
  */
 export class ModuleArea extends ModuleObject {
 
-  /** Retail CSWSArea::LoadGIT object sequence — see area-load-order.ts */
+  /** Retail LoadGIT object sequence — see area-load-order.ts */
   static readonly LOAD_GIT_OBJECT_ORDER = RETAIL_LOAD_GIT_OBJECT_ORDER;
   /** loadScene object asset order (rooms/path/music excluded) */
   static readonly LOAD_SCENE_OBJECT_ORDER = RETAIL_LOAD_SCENE_OBJECT_ORDER;
@@ -143,7 +143,7 @@ export class ModuleArea extends ModuleObject {
   transPendNextId: number = 0;
 
   /**
-   * Retail CSWSArea::GetNextTransitionPendingID — bump allocator, skip 0.
+   * Retail GetNextTransitionPendingID — bump allocator, skip 0.
    */
   getNextTransitionPendingId(): number {
     this.transPendNextId = ((this.transPendNextId | 0) + 1) & 0xFF;
@@ -154,7 +154,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail CSWSArea::SetTransitionPending — door/trigger module-link handshake.
+   * Retail SetTransitionPending — door/trigger module-link handshake.
    * @param pending 1 while transition is in flight, 0 when cleared
    * @param currId optional pending id; allocated when pending and omitted
    */
@@ -172,14 +172,14 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail CSWSArea field42_0x1e0 — visit mark during CountAreaTransitionTriggers.
+   * retail — visit mark during CountAreaTransitionTriggers.
    * Set when a transition into this area is chosen so only one portal per dest is used.
    */
   interAreaVisitMark: number = 0;
 
   cameras: ModuleCamera[] = [];
   creatures: ModuleCreature[] = [];
-  /** Retail CSWCArea KeepCorpse shell cache (max 3). */
+  /** retail KeepCorpse shell cache (max 3). */
   corpseCache: CorpseCache = new CorpseCache();
   doorhooks: any[] = [];
   doors: ModuleDoor[] = [];
@@ -192,8 +192,8 @@ export class ModuleArea extends ModuleObject {
   waypoints: ModuleWaypoint[] = [];
   areaOfEffects: ModuleAreaOfEffect[] = [];
   /**
-   * Retail CSWSArea::game_objects — X-sorted for GetNearestObject spiral
-   * (GetFirstObjectIndiceByX @ 00506f20 / ExecuteCommandGetNearestObject @ 0054b550).
+   * Retail game_objects — X-sorted for GetNearestObject spiral
+   * (GetFirstObjectIndiceByX / ExecuteCommandGetNearestObject).
    */
   gameObjects: ModuleObject[] = [];
   /** When true, gameObjects must be rebuilt before nearest queries. */
@@ -242,7 +242,7 @@ export class ModuleArea extends ModuleObject {
 
   /**
    * Determines if there is an active day/night cycle.
-   * Retail CSWCArea::UpdateDayNightCycle / SetAsDay|Night|Dawn|Dusk.
+   * Retail UpdateDayNightCycle / SetAsDay|Night|Dawn|Dusk.
    */
   dayNightCycle: boolean = false;
 
@@ -263,9 +263,9 @@ export class ModuleArea extends ModuleObject {
 
   /**
    * Set of bit flags specifying area terrain type:
-   * 0x0001: INTERIOR     (exterior if unset)
-   * 0x0002: UNDERGROUND  (aboveground if unset)
-   * 0x0004: NATURAL      (urban if unset)
+   * 0x0001: INTERIOR (exterior if unset)
+   * 0x0002: UNDERGROUND (aboveground if unset)
+   * 0x0004: NATURAL (urban if unset)
    * These flags affect game behaviour with respect to ability to hear things behind walls, map exploration visibility, and whether certain feats are active, though not necessarily in that order. They do not affect how the toolset presents the area to the user.
    * @remarks currently unused
    */
@@ -307,13 +307,13 @@ export class ModuleArea extends ModuleObject {
    */
   lightingIsNight = false;
 
-  /** Retail dawn-transition flag (CSWCArea field38_0x1b4). */
+  /** Retail dawn-transition flag. */
   dayNightDawnActive = false;
 
-  /** Retail dusk-transition flag (CSWCArea field39_0x1b8). */
+  /** Retail dusk-transition flag. */
   dayNightDuskActive = false;
 
-  /** Retail field41_0x1c0 — pending midpoint audio/lighting flip during dawn/dusk. */
+  /** Retail pending midpoint audio/lighting flip during dawn/dusk. */
   dayNightHalfwayPending = false;
 
   /** Last module day phase applied via SetTimeOfDayState. */
@@ -470,7 +470,7 @@ export class ModuleArea extends ModuleObject {
     this.areaMap.dispose();
     this.corpseCache.clear();
 
-    // Retail FadeAndStopDialogAmbientTrack @ 004e15c0 — 500ms on UnloadArea.
+    // Retail FadeAndStopDialogAmbientTrack — 500ms on UnloadArea.
     void AudioEngine.GetAudioEngine().fadeStopDialogAmbientTrack();
 
     if(this.miniGame){
@@ -538,7 +538,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail CSWSArea::AIUpdate — weather re-roll + OnHeartbeat every 5999ms.
+   * Retail AIUpdate — weather re-roll + OnHeartbeat every 5999ms.
    */
   aiUpdate(delta: number = 0){
     this.weather?.aiUpdate?.(delta);
@@ -563,7 +563,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Per-frame client/visual pass (retail CClientAIMaster + CSWCArea visuals).
+   * Per-frame client/visual pass (retail client AI master + retail visuals).
    * Server AI for game objects is driven by ServerAIMaster.
    */
   clientUpdate(delta: number = 0){
@@ -738,7 +738,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail CSWCArea::UpdateDayNightCycle @ 00606490 + SetTimeOfDayState @ 00640640.
+   * Retail UpdateDayNightCycle + SetTimeOfDayState.
    * Applies sun/moon lighting for the module day phase and lerps during dawn/dusk.
    */
   updateDayNightCycle(){
@@ -823,7 +823,7 @@ export class ModuleArea extends ModuleObject {
   /**
    * Retail UpdateDayNightCycle shadowAlpha during dawn/dusk:
    * before midpoint → opacity*0.01*(1 - t/0.5);
-   * after midpoint  → opacity*0.01*(t/0.5 - 1).
+   * after midpoint → opacity*0.01*(t/0.5 - 1).
    */
   updateTransitionShadowAlpha(progress: number, half = 0.5){
     this.shadowAlpha = ModuleArea.computeTransitionShadowAlpha(
@@ -840,7 +840,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail CSWCModule::SetTimeOfDayState @ 00640640.
+   * Retail SetTimeOfDayState.
    */
   setTimeOfDayState(phase: ModuleDayPhase){
     switch(phase){
@@ -867,7 +867,7 @@ export class ModuleArea extends ModuleObject {
     }
   }
 
-  /** Retail CSWCArea::SetAsDay @ 006058c0. */
+  /** Retail SetAsDay. */
   setAsDay(){
     if(!this.dayNightCycle && this.isNight){
       this.setAsNight();
@@ -882,7 +882,7 @@ export class ModuleArea extends ModuleObject {
     this.applySunLighting();
   }
 
-  /** Retail CSWCArea::SetAsNight @ 006059c0. */
+  /** Retail SetAsNight. */
   setAsNight(){
     if(!this.dayNightCycle && !this.isNight){
       this.setAsDay();
@@ -897,7 +897,7 @@ export class ModuleArea extends ModuleObject {
     this.applyMoonLighting();
   }
 
-  /** Retail CSWCArea::SetAsDawn @ 00606cf0. */
+  /** Retail SetAsDawn. */
   setAsDawn(){
     if(!this.dayNightCycle){
       if(this.isNight){
@@ -915,7 +915,7 @@ export class ModuleArea extends ModuleObject {
     this.shadowAlpha = (this.shadowOpacity | 0) * 0.01;
   }
 
-  /** Retail CSWCArea::SetAsDusk @ 00606c50. */
+  /** Retail SetAsDusk. */
   setAsDusk(){
     if(!this.dayNightCycle){
       if(this.isNight){
@@ -934,7 +934,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail CSWCArea::ForceBrightSunAndMoon @ 00605fe0.
+   * Retail ForceBrightSunAndMoon.
    * Ambient RGB → 0; diffuse RGB → 1; sun fog off; reapply day/night.
    */
   forceBrightSunAndMoon(){
@@ -978,7 +978,7 @@ export class ModuleArea extends ModuleObject {
    * Apply retail sun/moon directional ambient + diffuse (+ fog/clear).
    * Scene light-model ambient stays ARE DynAmbientColor (see applyDynAmbient).
    * sunAmbient → directional ambient channel; diffuse → OdysseyLightingBinder sunColor.
-   * Colors are applied directly — no invented intensity curves (CSWCArea::UpdateDayNightCycle @ 00606490).
+   * Colors are applied directly — no invented intensity curves (UpdateDayNightCycle).
    * shadowAlpha / beamingProjectionAlpha remain on GameState for stencil shadows / beaming meshes.
    */
   applyLightingColors(
@@ -996,7 +996,7 @@ export class ModuleArea extends ModuleObject {
     GameState.shadowAlpha = GameState.areaShadowsEnabled ? this.shadowAlpha : 0;
     GameState.beamingProjectionAlpha = this.beamingProjectionAlpha;
 
-    // Keep DynAmbient as scene ambient (LoadArea → CAurScene::SetAmbient).
+    // Keep DynAmbient as scene ambient (LoadArea → SetAmbient).
     this.applyDynAmbient();
 
     const sar = (sunAmbientColor & 0xFF) / 255;
@@ -1038,7 +1038,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail LoadArea → CAurScene::SetAmbient(DynAmbientColor).
+   * Retail LoadArea → SetAmbient(DynAmbientColor).
    * This is the light-model ambient for dynamic objects — not sun/moon ambient.
    */
   applyDynAmbient(){
@@ -1056,7 +1056,7 @@ export class ModuleArea extends ModuleObject {
 
   /**
    * Read one TSL ARE dirt layer (One/Two/Three). Missing fields → zeros.
-   * Retail CSWSArea::LoadAreaHeader swaps DirtyFormula 0↔1 before storage.
+   * Retail LoadAreaHeader swaps DirtyFormula 0↔1 before storage.
    */
   readAreDirtLayer(suffix: 'One' | 'Two' | 'Three'): IAreaDirtLayer {
     const readInt = (label: string): number | undefined => {
@@ -1084,7 +1084,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail SetBeaming @ 0047147e — apply beamingProjectionAlpha to beaming meshes
+   * Retail SetBeaming — apply beamingProjectionAlpha to beaming meshes
    * (additive blend color alpha during dawn/dusk).
    */
   updateBeamingMaterials(){
@@ -1126,7 +1126,7 @@ export class ModuleArea extends ModuleObject {
 
   /**
    * Day and dawn use day tracks; night and dusk use night tracks
-   * (retail CSWCSoundObject::UpdateTimeOfDay phase grouping).
+   * (retail UpdateTimeOfDay phase grouping).
    */
   static usesDayAudioTracks(phase: ModuleDayPhase){
     return ModuleTimeManager.usesDayAudioTracks(phase);
@@ -1227,7 +1227,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail CSWSAmbientSound::PlayBattleMusic @ 005c9b90.
+   * Retail PlayBattleMusic.
    * NWScript MusicBattlePlay / MusicBattleStop and excited-timer combat music share this path.
    */
   playBattleMusic(play: boolean){
@@ -1476,7 +1476,7 @@ export class ModuleArea extends ModuleObject {
   updateRoomVisibility(delta: number = 0){
     switch(GameState.Mode){
       case EngineMode.DIALOG: {
-        // Retail MainLoop @ 00603a79: while dialog (field45_0xb4), UpdateRoom uses
+        // Retail MainLoop: while dialog, UpdateRoom uses
         // GetDialogCameraPosition — SetCurrentRoom + VIS links, not frustum OR.
         const cam = GameState.currentCamera;
         if(!cam){ return; }
@@ -1535,7 +1535,7 @@ export class ModuleArea extends ModuleObject {
 
         this.lastRoom = player.room;
 
-        // Retail UpdateRoom @ 005ee860 — SetDesiredEnvironment + SetDesiredAmbientScale.
+        // Retail UpdateRoom — SetDesiredEnvironment + SetDesiredAmbientScale.
         if(this.lastRoom?.envAudio >= 0){
           AudioEngine.GetAudioEngine().setDesiredEnvironment(this.lastRoom.envAudio || 0);
         }
@@ -1650,7 +1650,7 @@ export class ModuleArea extends ModuleObject {
     this.creatorId = this.are.getFieldByLabel('Creator_ID').getValue();
     this.dayNightCycle = this.are.getFieldByLabel('DayNightCycle').getValue();
     this.defaultEnvMap = this.are.getFieldByLabel('DefaultEnvMap').getValue();
-    // Retail CSWCObject::SetEnvMap @ 0063cb70 resolves the "DEFAULT" envmap resref
+    // Retail SetEnvMap resolves the "DEFAULT" envmap resref
     // against the current area's DefaultEnvMap.
     OdysseyMaterialBuilder.defaultEnvMap = this.defaultEnvMap;
     this.dynamicAmbientColor = this.are.getFieldByLabel('DynAmbientColor').getValue();
@@ -1787,7 +1787,7 @@ export class ModuleArea extends ModuleObject {
       GameState.scene.fog = undefined;
     }
 
-    // BEGIN GIT LOAD — retail CSWSArea::LoadGIT @ 0050dd80 (K1) / 0071ae10 (TSL)
+    // BEGIN GIT LOAD — retail LoadGIT (K1) (TSL)
     // Order: weather/vars → creatures → items → doors → triggers → encounters →
     // waypoints → sounds → placeables → stores → AOEs → properties → maps → cameras
 
@@ -2112,7 +2112,7 @@ export class ModuleArea extends ModuleObject {
           const template = name ? this.miniGame.getMiniGameObjectByName(name) : undefined;
           const obstacle = new ModuleMGObstacle(template, layoutObs);
           if(template){
-            // Retail CSWMGObstacle::Load @ 0066d0b0 — Scripts then OnCreate (OnCreate in initMiniGameObjects).
+            // Retail Load — Scripts then OnCreate (OnCreate in initMiniGameObjects).
             obstacle.loadScripts();
           }
           this.miniGame.obstacles.push(obstacle);
@@ -2125,7 +2125,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail CSWCArea::RestartMiniGame @ 00605e50 (cheat `restartminigame`) —
+   * Retail RestartMiniGame (cheat `restartminigame`)
    * new MiniGame, re-add tracks/obstacles from layout, Load, destroy old, Go.
    */
   async restartMiniGame(): Promise<ModuleMiniGame | undefined> {
@@ -2239,14 +2239,14 @@ export class ModuleArea extends ModuleObject {
       // Retail Scene ctor loads dirtytex* before room models bind dirt overlays.
       try { await DirtyTextureManager.loadForArea(this); } catch(e){ console.error(e); }
 
-      // Retail LoadArea @ 0050e190: rooms → LoadGIT objects → LoadPathPoints
+      // Retail LoadArea: rooms → LoadGIT objects → LoadPathPoints
       try { await this.loadRooms(); } catch(e){ console.error(e); }
 
       this.roomWalkmeshes = this.rooms.filter( (r) => { return r?.model?.wok}).map( (r) => { return r.model.wok; });
 
       GameState.MenuManager.LoadScreen.setProgress(10);
 
-      // GIT object asset order matches LoadGIT @ 0050dd80 (player/party adjacent to creatures)
+      // GIT object asset order matches LoadGIT (player/party adjacent to creatures)
       try { await this.loadCreatures(); } catch(e){ console.error(e); }
       try { await this.loadPlayer(); } catch(e){ console.error(e); }
       try { await this.loadParty(); } catch(e){ console.error(e); }
@@ -2580,7 +2580,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   /**
-   * Retail GetFirstObjectIndiceByX @ 00506f20 — lower_bound on position.x.
+   * Retail GetFirstObjectIndiceByX — lower_bound on position.x.
    */
   getFirstObjectIndexByX(x: number): number {
     this.ensureGameObjectsSorted();
@@ -3401,7 +3401,7 @@ export class ModuleArea extends ModuleObject {
   }
 
   getAreaPropertiesStruct(){
-    // Retail SaveProperties @ 00506090 — AreaProperties struct type 100
+    // Retail SaveProperties — AreaProperties struct type 100
     let struct = new GFFStruct(100);
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDay') ).setValue(this.audio.ambient.day);
     struct.addField( new GFFField(GFFDataType.INT, 'AmbientSndDayVol') ).setValue(this.audio.ambient.dayVolume);
@@ -3465,7 +3465,7 @@ export class ModuleArea extends ModuleObject {
       creatureList.addChildStruct( creature.save().RootNode );
     }
 
-    // Retail CSWSArea::SaveGIT — CurrentWeather is BYTE, not LIST
+    // Retail SaveGIT — CurrentWeather is BYTE, not LIST
     git.RootNode.addField( new GFFField(GFFDataType.BYTE, 'CurrentWeather') ).setValue(this.weather.currentWeather | 0);
 
     const doorList = git.RootNode.addField( new GFFField(GFFDataType.LIST, 'Door List') );

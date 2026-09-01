@@ -1,7 +1,7 @@
 /**
- * Retail CSWTrackFollower engine + death playback.
- * LoadSounds @ 00541190, Go @ 005417e0, Stop @ 005419b0, OnDeath @ 00541a50,
- * SetSoundVolume @ 00542aa0 (engine Miles volume only).
+ * retail engine + death playback.
+ * LoadSounds, Go, Stop, OnDeath,
+ * SetSoundVolume (engine Miles volume only).
  *
  * @file MGTrackFollowerAudio.ts
  */
@@ -72,7 +72,7 @@ export class MGTrackFollowerAudio {
     }
   }
 
-  /** Retail CSWTrackFollower::Go — Play engine if not already playing. */
+  /** Retail Go — Play engine if not already playing. */
   go(x: number = 0, y: number = 0, z: number = 0){
     if(this.destroyed || this.going){ return; }
     this.going = true;
@@ -86,7 +86,7 @@ export class MGTrackFollowerAudio {
     }
   }
 
-  /** Retail CSWTrackFollower::Stop — Stop engine source. */
+  /** Retail Stop — Stop engine source. */
   stop(){
     this.going = false;
     this.engineEmitter?.stop();

@@ -19,11 +19,11 @@ import { ModuleDayPhase } from "@/enums/module/ModuleDayPhase";
 
 /**
 * ModuleSound class.
-* 
+*
 * Class representing sound emitters found in modules areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleSound.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -34,7 +34,7 @@ export class ModuleSound extends ModuleObject {
   soundType: AudioEmitterType = AudioEmitterType.GLOBAL;
   active: boolean = true;
   /**
-   * Client-only time-of-day gate (retail CSWCSoundObject field7_0x114).
+   * Client-only time-of-day gate (retail).
    * Does not persist — never overwrite Active from UpdateTimeOfDay.
    */
   timeOfDayActive: boolean = true;
@@ -238,7 +238,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   /**
-   * Retail CSWCSoundObject::UpdateTimeOfDay @ 0066ae90.
+   * Retail UpdateTimeOfDay.
    * Times: 0 = Hours bitmask, 1 = day-only, 2 = night-only, other = always.
    * Client-only: updates timeOfDayActive; never mutates persisted Active.
    */
@@ -301,7 +301,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   start(): ModuleSound {
-    // Retail CSWSSoundObject::Play sets Active = 1 before starting the source.
+    // Retail Play sets Active = 1 before starting the source.
     this.active = true;
     if(this.audioEmitter){
       const combined = this.active && (this.timeOfDayActive ?? true);
@@ -323,7 +323,7 @@ export class ModuleSound extends ModuleObject {
   }
 
   /**
-   * Retail CSWSSoundObject::FadeAndStop — deactivate then fade/stop the source.
+   * Retail FadeAndStop — deactivate then fade/stop the source.
    * @param fadeSeconds NWScript fSeconds (converted to ms in retail; Web Audio uses seconds).
    */
   fadeAndStop(fadeSeconds: number = 0): ModuleSound {
@@ -468,8 +468,8 @@ export class ModuleSound extends ModuleObject {
     gff.FileType = 'UTS ';
     gff.RootNode.type = 6;
 
-    // Retail CSWSSoundObject::Save field set (no TemplateResRef / Priority / Elevation).
-    // Commandable is written by retail CSWSObject::SaveObjectState after Save.
+    // Retail Save field set (no TemplateResRef / Priority / Elevation).
+    // Commandable is written by retail SaveObjectState after Save.
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Active') ).setValue(this.active ? 1 : 0);
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Positional') ).setValue(this.positional ? 1 : 0);
@@ -494,7 +494,7 @@ export class ModuleSound extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YPosition') ).setValue(this.position.y);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'ZPosition') ).setValue(this.position.z);
 
-    // Retail CSWSObject::SaveObjectState writes Commandable for every object
+    // Retail SaveObjectState writes Commandable for every object
     gff.RootNode.addField( new GFFField(GFFDataType.BYTE, 'Commandable') ).setValue(this.commandable ? 1 : 0);
 
     // KotOR.js engine extras (ObjectId / locals / actions) for round-trip within engine

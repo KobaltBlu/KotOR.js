@@ -30,7 +30,7 @@ import { hitCheckPart } from "@/module/minigame/MGHitCheck";
 import { FollowerCamera } from "@/engine/FollowerCamera";
 import { AuroraAnimationFlag } from "@/enums/animation/AuroraAnimationFlag";
 
-/** Retail SWMGKeyInfo (0x24) appended by OnReportKey @ 0066dd60. */
+/** Retail SWMGKeyInfo (0x24) appended by OnReportKey. */
 export interface SWMGKeyInfo {
   time: number;
   position: THREE.Vector3;
@@ -41,11 +41,11 @@ export interface SWMGKeyInfo {
 
 /**
 * ModuleMGPlayer class.
-* 
+*
 * Class representing the player in minigame modules.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMGPlayer.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -63,7 +63,7 @@ export class ModuleMGPlayer extends ModuleObject {
   gunBanks: ModuleMGGunBank[] = [];
   bullets: ModuleMGGunBullet[] = [];
 
-  /** Retail CSWTrackFollower Sounds (Engine / Death) + SWMG sound properties. */
+  /** retail Sounds (Engine / Death) + SWMG sound properties. */
   trackFollowerSounds: MGTrackFollowerSounds = new MGTrackFollowerSounds();
   /** Engine loop + death oneshot (Go / Stop / OnDeath). */
   trackFollowerAudio: MGTrackFollowerAudio = new MGTrackFollowerAudio(this.trackFollowerSounds, true);
@@ -96,12 +96,12 @@ export class ModuleMGPlayer extends ModuleObject {
   /** Retail player origin (Start_Offset_*) added to tunnel clamps. */
   origin: { x: number; y: number; z: number };
   /**
-   * Retail Target_Offset_X/Y/Z @ Load 006702f0 (fields 0x214–0x21c) —
+   * Retail Target_Offset_X/Y/Z @ Load 006702f0 (fields 0x214–0x21c)
    * local-space aim point for BehaviorTrack / FireGunCallback targeting.
    */
   targetOffset: THREE.Vector3 = new THREE.Vector3();
   /**
-   * Retail CSWMiniPlayer offset — tunnel-local translation (swoop) or aim (turret uses rotation).
+   * retail offset — tunnel-local translation (swoop) or aim (turret uses rotation).
    * Applied to container local position for type 1.
    */
   playerOffset: THREE.Vector3;
@@ -118,20 +118,20 @@ export class ModuleMGPlayer extends ModuleObject {
   /** Retail AdjustPosition bank level −10..10 for BankL/R_## anims. */
   bankLevel: number = 0;
   /**
-   * Retail CSWMiniGame field35_0x8c — continuous signed bank magnitude.
-   * Mapped to bankLevel via Control @ 006710e0 thresholds.
+   * retail — continuous signed bank magnitude.
+   * Mapped to bankLevel via Control thresholds.
    */
   bankMagnitude: number = 0;
-  /** Retail field36_0x90 — latch so decay snaps to plateau once per release. */
+  /** Retail latch so decay snaps to plateau once per release. */
   bankDecayLatched: boolean = false;
   /**
-   * Retail CSWMiniPlayer DoInertia @ 0066cd30 — previous modelhook velocity
+   * retail DoInertia — previous modelhook velocity
    * (fields 0x228–0x230) for bump-plane projection when UseInertia.
    */
   inertiaVelocity: THREE.Vector3 = new THREE.Vector3();
   /**
-   * Retail OnReportKey @ 0066dd60 → follower.trigger (Pos keys, flag+0xc≠0)
-   * and MiniPlayer field3_0x1ac (Ori keys, flag+0xc==0). SWMGKeyInfo 0x24.
+   * Retail OnReportKey → follower.trigger (Pos keys, flag≠0)
+   * and MiniPlayer (Ori keys, flag==0). SWMGKeyInfo 0x24.
    */
   inertiaKeysTrigger: SWMGKeyInfo[] = [];
   inertiaKeysReport: SWMGKeyInfo[] = [];
@@ -156,14 +156,14 @@ export class ModuleMGPlayer extends ModuleObject {
   cameraName: string = '';
   trackName: string = '';
   /**
-   * Retail CSWTrackFollower field9_0x88 bit0 — set by Go, cleared by Stop / ForceSetTrack.
+   * retail bit0 — set by Go, cleared by Stop / ForceSetTrack.
    * DoHitCheck only runs while the player follower is running.
    */
   running: boolean = false;
   /** True when `track` was created for this follower (must dispose with follower). */
   ownsTrack: boolean = false;
   /**
-   * Retail ForceSetTrack 3rd arg / GetAttachType @ 00670c10 —
+   * Retail ForceSetTrack 3rd arg / GetAttachType
    * swoop=1, turret=2, enemy=0. Used when attaching rotating models to modelhook.
    */
   trackAttachType: number = 0;
@@ -180,7 +180,7 @@ export class ModuleMGPlayer extends ModuleObject {
   /** World pose for sphere / audio — container.position holds swoop tunnel offset. */
   private static _worldPos = new THREE.Vector3();
   /**
-   * Retail OnAnimKeyEvent @ 0066fe50 — bound playEvent listeners on track + models.
+   * Retail OnAnimKeyEvent — bound playEvent listeners on track + models.
    * Detached in disposeFollower.
    */
   private animPlayEventHandler = (e: { event?: string; target?: { name?: string } }) => {
@@ -206,7 +206,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
     this.animationManagers = [];
 
-    // Retail CSWTrackFollower ctor @ 0066dee0 — speed defaults to 100 (track rate = speed*0.01).
+    // retail ctor — speed defaults to 100 (track rate = speed*0.01).
     this.speed = 100;
     this.speed_min = 0;
     this.speed_max = 0;
@@ -240,7 +240,7 @@ export class ModuleMGPlayer extends ModuleObject {
     material.opacity = 0.15;
     this.sphere_geom = new THREE.Mesh( geometry, material );
 
-    // Retail CSWTrackFollower → CSWMiniGameObject @ 0066c540.
+    // retail → retail.
     MiniGameObjectArray.register(this);
   }
 
@@ -318,7 +318,7 @@ export class ModuleMGPlayer extends ModuleObject {
     this.bindAnimPlayEvent(this.track);
   }
 
-  /** Sync track anim playback rate — retail SetSpeed @ 0066c870. */
+  /** Sync track anim playback rate — retail SetSpeed. */
   setFollowerSpeed(speed: number){
     this.speed = speed;
     this.trackAnimRate = Math.max(0, speed) * 0.01;
@@ -329,7 +329,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   /**
    * Ensure "track" anim is playing.
-   * Retail Go / SetSpeed PlayAnimation("track", speed*0.01, flags) —
+   * Retail Go / SetSpeed PlayAnimation("track", speed*0.01, flags)
    * looping==1 → 0x11, else 0x14 (both loop-style; JS uses loop=true).
    * OnReportKey is synthesized from modelhook key crossings (no Aurora CB).
    */
@@ -348,7 +348,7 @@ export class ModuleMGPlayer extends ModuleObject {
 
   /**
    * Retail Target_Offset aim point — model world position + local offset rotated
-   * by model world orientation (BehaviorTrack / FireGunCallback @ 00673a40).
+   * by model world orientation (BehaviorTrack / FireGunCallback).
    */
   getTargetAimPoint(out: THREE.Vector3 = new THREE.Vector3()): THREE.Vector3 {
     const model =
@@ -396,7 +396,7 @@ export class ModuleMGPlayer extends ModuleObject {
     this.getHitModelWorld(this.hitModelSegFrom);
     this.hitModelSegReady = true;
 
-    // Retail CSWMiniGameObject::Update @ 0066c0a0 — OnHeartbeat (script index 4)
+    // Retail Update — OnHeartbeat (script index 4)
     // every frame when the ResRef is set; delta is unused (no 3s/6s timer).
     if(GameState.module){
       this.triggerHeartbeat();
@@ -480,8 +480,8 @@ export class ModuleMGPlayer extends ModuleObject {
           this.forceVector.set(0, this.speed * delta, 0);
         }
 
-        // Retail Control @ 0066d640 order: advance track → OnReportKey → DoInertia
-        // into field49.acceleration → offset += velocity delta → KeepInTunnel.
+        // Retail Control order: advance track → OnReportKey → DoInertia
+        // into.acceleration → offset += velocity delta → KeepInTunnel.
         // Track Gob motion is Aurora "track" anim only — never translate the mesh.
         if(this.track instanceof OdysseyModel3D){
           const rate = this.running ? this.trackAnimRate : 0;
@@ -503,7 +503,7 @@ export class ModuleMGPlayer extends ModuleObject {
         this.updateBankAnimation(this.lateralForce, delta);
         this.lateralForce = 0;
 
-        // TSL CSWMiniPlayer::Control @ 005446a0 — jumpSpeed * dt on Z, then gravity.
+        // TSL Control — jumpSpeed * dt on Z, then gravity.
         // K1 has no MiniGame jumpSpeed field / SWMG_SetJumpSpeed.
         if(GameState.GameKey == GameEngineType.TSL){
           const jumpBefore = miniGame.jumpSpeed;
@@ -579,7 +579,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail CSWTrackFollower::OnDeath @ 0066e2a0.
+   * Retail OnDeath.
    * skipScript=true = DefaultImpl path (OnDeath(1)).
    */
   die(skipScript: boolean = false){
@@ -615,7 +615,7 @@ export class ModuleMGPlayer extends ModuleObject {
       model.playAnimation(dieAnim, false);
     }
 
-    // Retail OnDeath → each gun bank Die @ 00674990.
+    // Retail OnDeath → each gun bank Die.
     for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i]?.die?.();
     }
@@ -630,7 +630,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
   }
 
-  /** Retail CSWTrackFollower::Go @ 006701c0 — Ready_01, track anim @ speed*0.01, running bit, engine.
+  /** Retail Go — Ready_01, track anim @ speed*0.01, running bit, engine.
    * Also RegisterCallBack(OnReportKey) when UseInertia path active — see emitInertiaKeysFromTrackAnim. */
   go(){
     if(this.running || !this.alive){ return; }
@@ -655,7 +655,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail CSWTrackFollower::Stop @ 0066d440 —
+   * Retail Stop
    * PlayAnimation("track", 0, flags) then clear running + engine Stop.
    * (Not a hard stopAnimation — disposeFollower hard-stops after this.)
    */
@@ -724,8 +724,8 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail AdjustHitPoints @ 0066e8e0 — queue hp_adjust then OnDamage(0).
-   * SetFollowerHitPoints → SetHitPoints @ 0066c900 (nAbsolute path; only if nHP > 0).
+   * Retail AdjustHitPoints — queue hp_adjust then OnDamage(0).
+   * SetFollowerHitPoints → SetHitPoints (nAbsolute path; only if nHP > 0).
    * ExecuteCommand Adjust pops one int only — nAbsolute is unused by retail Adjust.
    */
   adjustHitPoints(nHP = 0, nAbsolute = 0){
@@ -740,7 +740,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail OnDamage @ 0066e7a0 —
+   * Retail OnDamage
    * param 0: OnDamage script if present (return; script may SWMG_OnDamage).
    * else / param 1: apply lastHPChange, damage anims, death if HP ≤ 0.
    */
@@ -785,7 +785,7 @@ export class ModuleMGPlayer extends ModuleObject {
   /**
    * TSL-only swoop hop: prefer OnBrake (211TEL OnBrake=onjump → SWMG_SetJumpSpeed),
    * else OnFire for K1-style bindings; else PLAYER_JUMP_SPEED.
-   * K1 HandleInputEvent always MiniPlayer::Fire (guns) — no jumpSpeed.
+   * K1 HandleInputEvent always Fire (guns) — no jumpSpeed.
    */
   jump(){
     if(GameState.GameKey != GameEngineType.TSL){ return; }
@@ -804,11 +804,11 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail CSWMiniGame::Control @ 006710e0 bank curve + AdjustPosition @ 0066ce60 —
+   * Retail Control bank curve + AdjustPosition
    * accumulate/decay continuous `bankMagnitude`, map ABS to level −10..10, play
    * Ready_01 / BankL_## / BankR_## when the discrete level changes.
    *
-   * @param lateralInput retail field44_0xb0 — signed rate (keys: ±LateralAccel; stick: axis).
+   * @param lateralInput Retail signed rate (keys: ±LateralAccel; stick: axis).
    */
   updateBankAnimation(lateralInput: number, delta: number = 0){
     if(delta < 0){ delta = 0; }
@@ -873,7 +873,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail Control @ 006710e0 — map |bankMagnitude| thresholds → bank level 0..10.
+   * Retail Control — map |bankMagnitude| thresholds → bank level 0..10.
    */
   static bankMagnitudeToLevel(magnitude: number): number {
     const sgn = magnitude < 0 ? -1 : magnitude > 0 ? 1 : 0;
@@ -899,8 +899,8 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail OnReportKey @ 0066dd60 stand-in — for each modelhook Position key crossed
-   * append to follower.trigger list; Orientation keys → field3 list.
+   * Retail OnReportKey stand-in — for each modelhook Position key crossed
+   * append to follower.trigger list; Orientation keys → list.
    * World-bakes Aurora local key values for DoInertia (expects world pos/quat).
    */
   emitInertiaKeysFromTrackAnim(){
@@ -965,9 +965,9 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail UseInertia: Control @ 0066d640 merges OnReportKey buffers → DoInertia
+   * Retail UseInertia: Control merges OnReportKey buffers → DoInertia
    * per segment, then remainder to live modelhook; clears counts each frame.
-   * DoInertia results accumulate into MiniGame field49.acceleration (physicsNext),
+   * DoInertia results accumulate into MiniGame.acceleration (physicsNext),
    * not playerOffset — offset only receives the axis velocity delta afterward.
    */
   applyInertia(delta: number){
@@ -1157,7 +1157,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail CSWMiniPlayer::DoInertia @ 0066cd30 —
+   * Retail DoInertia
    * vel = (curr−prev)/dt; project (prevVel−vel) off BumpPlane; store vel;
    * return Inverse(quat) * tangential (scale 1.0).
    */
@@ -1181,14 +1181,14 @@ export class ModuleMGPlayer extends ModuleObject {
     out.y -= this.inertiaPlane.y * along;
     out.z -= this.inertiaPlane.z * along;
     this.inertiaVelocity.copy(this.inertiaScratch);
-    // Inverse(quat) * tangential — retail FLOAT scale is 1.0 @ 007a2488.
+    // Inverse(quat) * tangential — retail FLOAT scale is 1.0.
     this.inertiaHookQuat.copy(quat).invert();
     out.applyQuaternion(this.inertiaHookQuat);
     return out;
   }
 
   /**
-   * Retail CSWMiniPlayer::KeepInTunnel @ 0066cb40 / TSL 00544160.
+   * Retail KeepInTunnel / TSL.
    * Type 1: clamp offset to origin±tunnel. Type 2 infinite: wrap degrees 0–360.
    */
   keepInTunnel(offset: THREE.Vector3){
@@ -1266,7 +1266,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail DoObstacleHitCheck @ 0066e6b0 —
+   * Retail DoObstacleHitCheck
    * Requires obstacle Gob "hitbump" part + follower models.size != 0, then HitCheckPart.
    * No proximity fallback (that falsely killed turret players with large Sphere_Radius).
    */
@@ -1328,7 +1328,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail Control @ 0066d640 — after KeepInTunnel, write offset to rotating
+   * Retail Control — after KeepInTunnel, write offset to rotating
    * model controllers (0x3ea) and camera Gob controller (0x3eb).
    * CameraRotate==0 parents the camera to modelhook as a sibling of container;
    * both must share playerOffset so the bike stays tunnel-centered on screen.
@@ -1394,8 +1394,8 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   playAnimation(name = '', bLooping = 0, bQueue = 0, bOverlay = 0){
-    // const padding = '                                             ';
-    //console.log(`play: ${name}${padding}`.substring(0, 20), `bLooping: ${bLooping ? 'true' : 'false'}${padding}`.substring(0, 20), `bQueue: ${bQueue ? 'true' : 'false'}${padding}`.substring(0, 20), `bOverlay: ${bOverlay ? 'true' : 'false'}${padding}`.substring(0, 20));
+    // const padding = ' ';
+    //console.log(`play: ${name}${padding}`.substring(0, 20), `bLooping: ${bLooping ? 'true': 'false'}${padding}`.substring(0, 20), `bQueue: ${bQueue ? 'true': 'false'}${padding}`.substring(0, 20), `bOverlay: ${bOverlay ? 'true': 'false'}${padding}`.substring(0, 20));
     for(let i = 0; i < this.models.length; i++){
       const model = this.models[i];
       const anim = model.odysseyAnimationMap.get(name.toLowerCase().trim());
@@ -1421,8 +1421,8 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   removeAnimation(name = ''){
-    // const padding = '                                             ';
-    //console.log( `remove: ${name}${padding}`.substring(0, 20) );
+    // const padding = ' ';
+    //console.log(`remove: ${name}${padding}`.substring(0, 20));
     const existingIndex = this.animationManagers.findIndex( am => am?.currentAnimation?.name == name );
     if(existingIndex >= 0){
       this.animationManagers.splice(existingIndex, 1);
@@ -1621,7 +1621,7 @@ export class ModuleMGPlayer extends ModuleObject {
     if(this instanceof ModuleObject){
       this.room = undefined;
       let aabbFaces = [];
-      let intersects;// = GameState.raycaster.intersectOctreeObjects( meshesSearch );
+      let intersects;// = GameState.raycaster.intersectOctreeObjects(meshesSearch);
       const box = this.box.clone();
 
       this.rooms = [];
@@ -1761,7 +1761,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail CSWMiniPlayer::SetCameraHook @ 0066d030 —
+   * Retail SetCameraHook
    * CameraRotate==0 → AttachToObject(modelhook, behavior 0); else GetAttachType.
    * Swoop (flag 0): camera Gob is a modelhook sibling; Control writes shared offset.
    * Turret (flag 1, attach 2): parent under aim container so cam/HUD follow rotation.
@@ -1834,7 +1834,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail TrackFollower::Load Gun_Banks then AttachGuns on each model @ 0066fff0.
+   * Retail Load Gun_Banks then AttachGuns on each model.
    */
   async loadGunBanks(){
     for(let i = 0; i < this.gunBanks.length; i++){
@@ -1856,7 +1856,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail OnAnimKeyEvent @ 0066fe50 stand-in via OdysseyModel3D playEvent.
+   * Retail OnAnimKeyEvent stand-in via OdysseyModel3D playEvent.
    * custom_* → lastEvent = suffix + OnAnimEvent script; loop → Num_Loops + OnTrackLoop.
    */
   handleAnimPlayEvent(e: { event?: string; target?: { name?: string } }){
@@ -1867,7 +1867,7 @@ export class ModuleMGPlayer extends ModuleObject {
     const mg = GameState.module?.area?.miniGame;
 
     if(lower.startsWith('custom_')){
-      // Retail stores param_2+7 (suffix after "custom_").
+      // Retail stores arg2+7 (suffix after "custom_").
       mg?.recordAnimEvent?.(raw.substring(7), modelName);
       this.onAnimEvent();
       return;
@@ -1977,7 +1977,7 @@ export class ModuleMGPlayer extends ModuleObject {
   }
 
   /**
-   * Retail OnHitObstacle @ 0066e5c0 —
+   * Retail OnHitObstacle
    * param 0: try OnHitObstacle script; else stop anims, dead bit, OnDeath(0).
    * param 1 (SWMG_OnObstacleHit DefaultImpl): skip script → OnDeath(0).
    */
@@ -2075,7 +2075,7 @@ export class ModuleMGPlayer extends ModuleObject {
         this.template.getFieldByLabel('Track').getValue()
       );
 
-    // Retail CSWTrackFollower Sounds struct (Death / Engine resrefs).
+    // retail Sounds struct (Death / Engine resrefs).
     if(this.template.RootNode.hasField('Sounds')){
       this.trackFollowerSounds.loadFromSoundsStruct(
         this.template.getFieldByLabel('Sounds').getFieldStruct()
@@ -2119,7 +2119,7 @@ export class ModuleMGPlayer extends ModuleObject {
     }
     loadTunnelInfinite('Tunnellnfinite'); // forge typo present in some exports
 
-    // Retail Start_Offset_* → SetOrigin @ 0066cfd0 (also seeds offset when not running).
+    // Retail Start_Offset_* → SetOrigin (also seeds offset when not running).
     const startX = this.readFloatField('Start_Offset_X', 'XOrigin');
     const startY = this.readFloatField('Start_Offset_Y', 'YOrigin');
     const startZ = this.readFloatField('Start_Offset_Z', 'ZOrigin');

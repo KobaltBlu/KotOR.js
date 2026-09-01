@@ -18,24 +18,24 @@ import { ModuleMGTrack } from "@/module/ModuleMGTrack";
 
 /**
 * ModuleMGEnemy class.
-* 
+*
 * Class representing an enemy object found in minigame modules.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMGEnemy.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
 * @memberof KotOR
 */
 export class ModuleMGEnemy extends ModuleObject {
-  /** Retail CSWTrackFollower ctor @ 0066dee0 — default track playback speed. */
+  /** retail ctor — default track playback speed. */
   static readonly DEFAULT_TRACK_SPEED = 100;
 
   gunBanks: ModuleMGGunBank[] = [];
   models: OdysseyModel3D[] = [];
   track: THREE.Object3D;
-  /** Retail CSWTrackFollower Sounds + SWMG sound properties. */
+  /** retail Sounds + SWMG sound properties. */
   trackFollowerSounds: MGTrackFollowerSounds = new MGTrackFollowerSounds();
   /** Engine loop + death oneshot (Go / Stop / OnDeath). */
   trackFollowerAudio: MGTrackFollowerAudio = new MGTrackFollowerAudio(this.trackFollowerSounds, false);
@@ -50,7 +50,7 @@ export class ModuleMGEnemy extends ModuleObject {
   boostVelocity: number;
   invince: number;
   alive: boolean;
-  /** Retail CSWMiniEnemy Trigger byte @ +0x1a0 — SWMG_IsTrigger / IsObstacle fallthrough. */
+  /** retail Trigger byte @ — SWMG_IsTrigger / IsObstacle fallthrough. */
   isTrigger: boolean = false;
   sphere_geom: THREE.Mesh;
   sphere_radius: number;
@@ -66,7 +66,7 @@ export class ModuleMGEnemy extends ModuleObject {
   maximum_speed: number = 0;
   minimum_speed: number = 0;
   num_loops: any;
-  /** Retail CSWTrackFollower field9_0x88 bit0 — Go sets, Stop clears. */
+  /** retail bit0 — Go sets, Stop clears. */
   running: boolean = false;
   /** True when track model was created for this follower. */
   ownsTrack: boolean = false;
@@ -75,7 +75,7 @@ export class ModuleMGEnemy extends ModuleObject {
    */
   trackAttachType: number = 0;
   /**
-   * Retail CSWTrackFollower ctor @ 0066dee0 — speed = 100.
+   * retail ctor — speed = 100.
    * Go / SetSpeed play "track" at speed * 0.01.
    */
   speed: number = 100;
@@ -83,7 +83,7 @@ export class ModuleMGEnemy extends ModuleObject {
   trackAnimRate: number = 0;
   trackName: any;
   /**
-   * Retail OnAnimKeyEvent @ 0066fe50 — playEvent on track + models.
+   * Retail OnAnimKeyEvent — playEvent on track + models.
    */
   private animPlayEventHandler = (e: { event?: string; target?: { name?: string } }) => {
     this.handleAnimPlayEvent(e);
@@ -117,7 +117,7 @@ export class ModuleMGEnemy extends ModuleObject {
 
     this.alive = true;
 
-    //this.model.children[2].rotation.y = .1
+    //this.model.children[2].rotation.y =.1
 
     const geometry = new THREE.SphereGeometry( 1, 16, 16 );
     const material = new THREE.MeshBasicMaterial( { color: 0xFF0000 } );
@@ -126,7 +126,7 @@ export class ModuleMGEnemy extends ModuleObject {
     this.sphere_geom = new THREE.Mesh( geometry, material );
     this.sphere_geom.visible = false;
 
-    // Retail CSWTrackFollower → CSWMiniGameObject @ 0066c540.
+    // retail → retail.
     MiniGameObjectArray.register(this);
   }
 
@@ -283,7 +283,7 @@ export class ModuleMGEnemy extends ModuleObject {
       }
     }
 
-    // Retail CSWMiniGameObject::Update @ 0066c0a0 — OnHeartbeat every frame.
+    // Retail Update — OnHeartbeat every frame.
     if(GameState.module){
       this.triggerHeartbeat();
     }
@@ -300,7 +300,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail AdjustHitPoints @ 0066e8e0 — queue hp_adjust then OnDamage(0).
+   * Retail AdjustHitPoints — queue hp_adjust then OnDamage(0).
    * SetFollowerHitPoints → SetHitPoints (nAbsolute; only if nHP > 0).
    */
   adjustHitPoints(nHP = 0, nAbsolute = 0){
@@ -315,7 +315,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail OnDamage @ 0066e7a0 default apply path.
+   * Retail OnDamage default apply path.
    */
   applyQueuedHitPoints(){
     const adjust = this.lastHPChange;
@@ -436,7 +436,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail OnAnimKeyEvent @ 0066fe50 stand-in via OdysseyModel3D playEvent.
+   * Retail OnAnimKeyEvent stand-in via OdysseyModel3D playEvent.
    */
   handleAnimPlayEvent(e: { event?: string; target?: { name?: string } }){
     const raw = String(e?.event ?? '');
@@ -499,7 +499,7 @@ export class ModuleMGEnemy extends ModuleObject {
     onCreate.run(this, 0);
   }
 
-  /** Retail CSWTrackFollower::Go @ 006701c0. */
+  /** Retail Go. */
   go(){
     if(this.running || !this.alive){ return; }
 
@@ -522,7 +522,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail CSWTrackFollower::OnDeath @ 0066e2a0.
+   * Retail OnDeath.
    * skipScript=true = DefaultImpl path (OnDeath(1)).
    */
   die(skipScript: boolean = false){
@@ -556,7 +556,7 @@ export class ModuleMGEnemy extends ModuleObject {
       this.died = true;
     }
 
-    // Retail OnDeath → each gun bank Die @ 00674990.
+    // Retail OnDeath → each gun bank Die.
     for(let i = 0; i < this.gunBanks.length; i++){
       this.gunBanks[i]?.die?.();
     }
@@ -574,7 +574,7 @@ export class ModuleMGEnemy extends ModuleObject {
     }
   }
 
-  /** Retail CSWTrackFollower::RemoveModel @ 0066d280. */
+  /** Retail RemoveModel. */
   removeModelAt(index: number){
     if(index < 0 || index >= this.models.length){ return; }
     const model = this.models[index];
@@ -585,7 +585,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail CSWTrackFollower::Stop @ 0066d440 —
+   * Retail Stop
    * PlayAnimation("track", 0, flags) then clear running + engine Stop.
    */
   stopTrack(){
@@ -640,7 +640,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail OnDamage @ 0066e7a0 —
+   * Retail OnDamage
    * param 0: script if present; else / param 1: apply lastHPChange.
    */
   onDamaged(skipScript: boolean = false){
@@ -682,7 +682,7 @@ export class ModuleMGEnemy extends ModuleObject {
   }
 
   /**
-   * Retail OnHitObstacle @ 0066e5c0 — script if set (param 0); else OnDeath(0).
+   * Retail OnHitObstacle — script if set (param 0); else OnDeath(0).
    * skipScript=true = SWMG_OnObstacleHit DefaultImpl (param 1).
    */
   onHitObstacle(skipScript: boolean = false){

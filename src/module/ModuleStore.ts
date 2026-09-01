@@ -13,11 +13,11 @@ import { GameState } from "@/GameState";
 
 /**
 * ModuleStore class.
-* 
+*
 * Class representing merchant stores found in modules areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleStore.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -200,7 +200,7 @@ export class ModuleStore extends ModuleObject {
 
     let itemList = gff.RootNode.addField( new GFFField(GFFDataType.LIST, 'ItemList') );
     for(let i = 0; i < this.inventory.length; i++){
-      // Retail CSWSStore::SaveStore writes Infinite before SaveItem.
+      // Retail SaveStore writes Infinite before SaveItem.
       const itemStruct = this.inventory[i].save();
       itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Infinite') ).setValue(this.inventory[i].isInfinite() ? 1 : 0);
       itemList.addChildStruct( itemStruct );

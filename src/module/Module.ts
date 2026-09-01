@@ -48,11 +48,11 @@ type ModuleScriptKeys = 'Mod_OnAcquirItem'|'Mod_OnActvtItem'|'Mod_OnClientEntr'|
 
 /**
  * Module class.
- * 
+ *
  * Class representing an ingame module.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Module.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -90,7 +90,7 @@ export class Module {
   itemActivator: ModuleCreature = undefined;
   itemActivatedTarget: any = undefined;
   itemActivatedTargetLocation: EngineLocation = undefined;
-  /** Pass AL — ModuleAccess last-player slots (retail CSWSModule 0x16c / 0x170 / 0x174) */
+  /** Pass AL — ModuleAccess last-player slots (retail 0x16c / 0x170 / 0x174) */
   lastPlayerDied: ModuleCreature = undefined;
   lastPlayerDying: ModuleCreature = undefined;
   lastRespawnButtonPresser: ModuleCreature = undefined;
@@ -143,7 +143,7 @@ export class Module {
   voId: string;
 
   /**
-   * Module version. Is always set to 3. 
+   * Module version. Is always set to 3.
    */
   version: number = 3;
 
@@ -182,22 +182,22 @@ export class Module {
    */
   effectNextId: number;
   
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
   expansionList: ModuleExpansionEntry[] = [];
 
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
   globalVariableList: any[] = [];
 
-  /** 
+  /**
    * @deprecated Obsolete: since NWN
    */
   hak: string;
 
-  /** 
+  /**
    * @deprecated Deprecated: since NWN
    */
   cutSceneList: ModuleCutSceneEntry[] = [];
@@ -211,7 +211,7 @@ export class Module {
   _locals: { Booleans: boolean[]; Numbers: Record<number, number> } = { Booleans: [], Numbers: {} };
   scriptVarTable: ScriptVarTable = new ScriptVarTable();
 
-  /** 
+  /**
    * always set to 2
    * @deprecated Deprecated: since NWN
    */
@@ -221,7 +221,7 @@ export class Module {
   readyToProcessEvents: boolean = false;
   isSaveGame: boolean = false;
   /**
-   * Retail CSWSModule::DoUpdate flip-flop — alternates module vs area AIUpdate each frame.
+   * Retail DoUpdate flip-flop — alternates module vs area AIUpdate each frame.
    * 1 = next doUpdate runs module.aiUpdate; 0 = area.aiUpdate.
    */
   _doUpdateFlip: number = 1;
@@ -342,9 +342,9 @@ export class Module {
         GameState.PartyManager.PlayerTemplate = GFFObject.FromStruct(playerList[0]);
         GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc || GameState.PartyManager.PlayerTemplate;
         // if(GameState.PartyManager.PlayerTemplate.getFieldByLabel('IsPC').getValue()){
-        //   GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
+        // GameState.PartyManager.ActualPlayerTemplate = GameState.PartyManager.PlayerTemplate;
         // }else{
-        //   GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc;
+        // GameState.PartyManager.ActualPlayerTemplate = GameState.SaveGame.pc;
         // }
       }
     }
@@ -594,10 +594,10 @@ export class Module {
         this.effects[i].update(delta);
       }
 
-      // Retail CServerAIMaster::UpdateState — budgeted AI + event drain + quick-walk
+      // Retail UpdateState — budgeted AI + event drain + quick-walk
       GameState.ServerAIMaster.updateState(delta);
 
-      // Retail CSWSModule::DoUpdate — alternate module / area heartbeat
+      // Retail DoUpdate — alternate module / area heartbeat
       this.doUpdate(delta);
 
       if(this.area){
@@ -611,7 +611,7 @@ export class Module {
   }
 
   /**
-   * Retail CSWSModule::DoUpdate @ 004c6dc0 — alternates each frame between
+   * Retail DoUpdate — alternates each frame between
    * module AIUpdate and area AIUpdate.
    */
   doUpdate(delta: number = 0){
@@ -627,7 +627,7 @@ export class Module {
   }
 
   /**
-   * Retail CSWSModule::AIUpdate — Mod_OnHeartbeat every 5999ms.
+   * Retail AIUpdate — Mod_OnHeartbeat every 5999ms.
    */
   aiUpdate(delta: number = 0){
     if(!this._moduleHeartbeatInitialized){
@@ -670,7 +670,7 @@ export class Module {
       
       GameState.ModuleObjectManager.ResetPlayerId();
 
-      // Scene ambient = ARE DynAmbientColor (CAurScene::SetAmbient). Sun/moon ambient
+      // Scene ambient = ARE DynAmbientColor (SetAmbient). Sun/moon ambient
       // is the directional light ambient channel via applyLightingColors.
 
       GameState.camera.position.setX(this.entryX);
@@ -901,7 +901,7 @@ export class Module {
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseDay') ).setValue(this.timeManager.pauseDay);
     ifo.RootNode.addField( new GFFField(GFFDataType.DWORD, 'Mod_PauseTime') ).setValue(this.timeManager.pauseTime);
 
-    // Player — retail SavePlayers @ 004c78c6: list element type 0xBEAD + Mod_* wrapper fields
+    // Player — retail SavePlayers: list element type 0xBEAD + Mod_* wrapper fields
     const playerList = ifo.RootNode.addField( new GFFField(GFFDataType.LIST, 'Mod_PlayerList') );
     if(GameState.PartyManager.Player){
       const player = GameState.PartyManager.Player;
@@ -1245,11 +1245,11 @@ export class Module {
 
   Save(){
 
-    //Export .ifo
+    //Export.ifo
 
-    //Export .are
+    //Export.are
 
-    //Export .git
+    //Export.git
 
     return {
       are: null,

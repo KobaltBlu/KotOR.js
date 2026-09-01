@@ -8,7 +8,7 @@ import type { SWAnimation } from "@/engine/rules/SWAnimation";
 export const ANIMATION_REVERSE_SERVER_ID = 10256;
 
 /**
- * Server IDs that retail SetOverlayAnimation (@ 0069e420) treats as additive
+ * Server IDs that retail SetOverlayAnimation () treats as additive
  * (flag 0x400 on stop). Used as a mode-1 overlay band when 2DA overlay is unset.
  */
 const OVERLAY_ADDITIVE_SERVER_IDS = new Set<number>([
@@ -44,7 +44,7 @@ export function resolvePlaybackMode(
 }
 
 /**
- * Aurora flags when starting an overlay (param_3 != 0 → 0x08 | often 0x001).
+ * Aurora flags when starting an overlay (arg3 != 0 → 0x08 | often 0x001).
  */
 export function resolveOverlayStartFlags(serverId: number): number {
   let flags = 0x08; // OVERLAY_SLOT
@@ -67,7 +67,7 @@ export function resolveOverlayStartFlags(serverId: number): number {
 }
 
 /**
- * Aurora stop flags when clearing an overlay (param_3 == 0).
+ * Aurora stop flags when clearing an overlay (arg3 == 0).
  * Additive gesture IDs → 0x400; otherwise 0x80.
  */
 export function resolveOverlayStopFlags(serverId: number): number {

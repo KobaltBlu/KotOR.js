@@ -32,11 +32,11 @@ type SmoothSession = {
 
 /**
 * ModulePath class.
-* 
+*
 * Class representing all of the points and connections fro pathfinding in a module area.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModulePath.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -56,13 +56,13 @@ export class ModulePath {
   connectionCount: number = 0;
 
   /**
-   * Per-owner DFS TransTable resume (PlotPathPointPath field104_0x1b4 / field111).
+   * Per-owner DFS TransTable resume (PlotPathPointPath).
    * Survives ComputedPath teardown when MoveTo clears realtime paths.
    */
   private dfsResumeByOwner = new Map<number, PathPointDfsResume>();
 
   /**
-   * Per-owner SmoothSelectionRestartable resume (field124 + densify cursor).
+   * Per-owner SmoothSelectionRestartable resume (+ densify cursor).
    * Survives MoveTo realtime clear so smooth continues without re-DFS.
    */
   private smoothResumeByOwner = new Map<number, SmoothSelectionResume>();
@@ -410,7 +410,7 @@ export class ModulePath {
   }
 
   /**
-   * Retail PlotPathInArea @ 004c3260:
+   * Retail PlotPathInArea:
    * 1. TestDirectLine → 2-point path when clear
    * 2. Else PathPointDFS (PlotPathPointPath)
    * 3. Else PlotGridPath / GridDFS when no PTH / DFS fail
@@ -496,7 +496,7 @@ export class ModulePath {
       return this.partialClearPath(owner, origin, dest, originPoint);
     }
 
-    // Stage 3: no PTH — retail PlotGridPath @ 004c1a00
+    // Stage 3: no PTH — retail PlotGridPath
     this.clearSmoothSession(ownerId);
     const gridPath = this.gridPathToComputed(owner, origin, dest, originPoint);
     if(gridPath){

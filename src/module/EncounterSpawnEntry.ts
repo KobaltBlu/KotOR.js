@@ -4,9 +4,9 @@ import { GFFStruct } from "@/resource/GFFStruct";
 
 /**
  * EncounterSpawnEntry class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EncounterSpawnEntry.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -15,7 +15,7 @@ export class EncounterSpawnEntry {
 
   spawnResref = '';
   spawnCR = 0;
-  /** Precomputed pool cost (retail field2_0x14). */
+  /** Precomputed pool cost (Retail). */
   poolPoints = 0;
 
   save(){

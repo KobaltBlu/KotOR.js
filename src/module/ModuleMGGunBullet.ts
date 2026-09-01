@@ -15,11 +15,11 @@ import { hitCheckPart, type MGHitCheckOut } from "@/module/minigame/MGHitCheck";
 
 /**
 * ModuleMGGunBullet class.
-* 
+*
 * Class representing a bullet that was spawned from gun banks found in minigame modules.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleMGGunBullet.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -146,7 +146,7 @@ export class ModuleMGGunBullet extends ModuleObject {
   }
 
   /**
-   * Retail HitCheckBullet @ 006730a0 —
+   * Retail HitCheckBullet
    * segment previous→current vs obstacle part "hitbullet" via HitCheckPart.
    */
   hitsObstacle(obstacle: ModuleMGObstacle): boolean {
@@ -168,7 +168,7 @@ export class ModuleMGGunBullet extends ModuleObject {
       }
     }
 
-    // Retail HitCheckBullet @ 006730a0 — no hitbullet part → miss (no proximity stand-in).
+    // Retail HitCheckBullet — no hitbullet part → miss (no proximity stand-in).
     return false;
   }
 

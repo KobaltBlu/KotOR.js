@@ -15,11 +15,11 @@ import { BitWise } from "@/utility/BitWise";
 
 /**
  * ModuleAreaOfEffect class.
- * 
+ *
  * Class representing an area of effect.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ModuleAreaOfEffect.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -247,7 +247,7 @@ export class ModuleAreaOfEffect extends ModuleObject {
   }
 
   /**
-   * Retail CSWSAreaOfEffectObject::AIUpdate — follow, occupants, 6s AoE heartbeat.
+   * Retail AIUpdate — follow, occupants, 6s AoE heartbeat.
    */
   aiUpdate(delta = 0){
     if(this.destroyRequested || this.destroyed) return;

@@ -1,8 +1,8 @@
 /**
- * Retail CSWMiniGameObjectArray @ 0066bf10 —
+ * retail
  * client-global 255-slot registry of live minigame objects (followers + obstacles).
- * Ctor @ 0066c540 claims findNextEmptyIndex; dtor @ 0066c610 clears the slot.
- * GetMiniGameObjectByName @ 0066bfb0 scans objects[0..0xfe] by name.
+ * Ctor claims findNextEmptyIndex; dtor clears the slot.
+ * GetMiniGameObjectByName scans objects[0..0xfe] by name.
  *
  * Distinct from ModuleMiniGame.obstacleTemplates (ARE Obstacles Name→Scripts structs).
  *
@@ -33,7 +33,7 @@ export class MiniGameObjectArray {
   }
 
   /**
-   * Retail findNextEmptyIndex @ 0066c060 —
+   * Retail findNextEmptyIndex
    * walk from cursor to first empty slot; wrap; return 0xff if full.
    */
   static findNextEmptyIndex(): number {
@@ -56,7 +56,7 @@ export class MiniGameObjectArray {
   }
 
   /**
-   * Retail CSWMiniGameObject ctor registration @ 0066c540.
+   * retail ctor registration.
    * Stores slot on `object.mgoIndex` and syncs `object.id` for NWScript
    * StackPushObject / StoreState (retail pushes mgo_index).
    */
@@ -86,7 +86,7 @@ export class MiniGameObjectArray {
     return slot;
   }
 
-  /** Retail ~CSWMiniGameObject @ 0066c610 — clear objects[mgo_index]. */
+  /** Retail ~retail — clear objects[mgo_index]. */
   static unregister(object: ModuleObject | undefined): void {
     if(!object){ return; }
     const slot = object.mgoIndex;
@@ -99,14 +99,14 @@ export class MiniGameObjectArray {
     object.mgoIndex = MiniGameObjectArray.INVALID_INDEX;
   }
 
-  /** Retail GetMiniGameObject @ 0066bf30 — by index. */
+  /** Retail GetMiniGameObject — by index. */
   static get(index: number): ModuleObject | undefined {
     if(index < 0 || index >= MiniGameObjectArray.CAPACITY){ return undefined; }
     return MiniGameObjectArray.objects[index];
   }
 
   /**
-   * Retail GetMiniGameObjectByName @ 0066bfb0 —
+   * Retail GetMiniGameObjectByName
    * linear scan of live slots; name compare is case-insensitive.
    */
   static getByName(name: string | undefined | null): ModuleObject | undefined {

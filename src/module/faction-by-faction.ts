@@ -4,7 +4,7 @@ import type { ModuleArea, ModuleCreature, ModuleObject } from "@/module";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Resolve the area used by ExecuteCommandChangeByFaction @ 00546340.
+ * Resolve the area used by ExecuteCommandChangeByFaction.
  * Caller may be a creature/object (→ GetArea) or the area itself.
  */
 export function resolveCallerArea(caller: ModuleObject | undefined): ModuleArea | undefined {
@@ -16,7 +16,7 @@ export function resolveCallerArea(caller: ModuleObject | undefined): ModuleArea 
 }
 
 /**
- * Retail ExecuteCommandChangeByFaction @ 00546340 —
+ * Retail ExecuteCommandChangeByFaction
  * ChangeFactionByFaction / SurrenderByFaction.
  *
  * All creatures in the caller's area whose FactionID matches `fromFactionId`

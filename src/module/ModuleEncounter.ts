@@ -23,11 +23,11 @@ import type { ModuleCreature } from "@/module/ModuleCreature";
 
 /**
 * ModuleEncounter class.
-* 
+*
 * Class representing an encounter found in module areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleEncounter.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -66,7 +66,7 @@ export class ModuleEncounter extends ModuleObject {
   customScriptId: any;
   areaListMaxSize: any;
   spawnPoolActive: any;
-  /** Retail field40_0x2d8 — CR points recovered via DestroySelf unlink. */
+  /** Retail CR points recovered via DestroySelf unlink. */
   spawnPoolRecovered: number = 0;
 
   constructor ( gff = new GFFObject() ) {
@@ -118,7 +118,7 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   /**
-   * Retail CSWSEncounter::AIUpdate — occupancy, spawn reset, spawn queue.
+   * Retail AIUpdate — occupancy, spawn reset, spawn queue.
    */
   aiUpdate(delta = 0){
     super.aiUpdate(delta);
@@ -188,7 +188,7 @@ export class ModuleEncounter extends ModuleObject {
       }
     }
 
-    // Retail AIUpdate @ 00593fb0: Single-shot + Reset → re-activate after ResetTime
+    // Retail AIUpdate: Single-shot + Reset → re-activate after ResetTime
     // Gate: current_spawns < max_spawns (Respawns) || max_spawns == -1
     if(
       this.spawnOption === 1 &&
@@ -255,7 +255,7 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   /**
-   * Mark a creature as spawned from this encounter (retail field407_0xa24).
+   * Mark a creature as spawned from this encounter (Retail).
    */
   registerSpawnedCreature(creature: ModuleCreature, poolCost: number = 0){
     if(!creature) return;
@@ -269,10 +269,10 @@ export class ModuleEncounter extends ModuleObject {
   }
 
   /**
-   * Retail CSWSEncounter::RemoveFromActiveCreatureCount @ 00594310.
+   * Retail RemoveFromActiveCreatureCount.
    * @param challengeRating creature CR
-   * @param fromDestroySelf 1 = AIActionEncounterCreatureDestroySelf (recover to field40);
-   *                        0 = OnApplyDeath (may fire OnExhausted when count hits 0)
+   * @param fromDestroySelf 1 = AIActionEncounterCreatureDestroySelf (recover to);
+   * 0 = OnApplyDeath (may fire OnExhausted when count hits 0)
    */
   removeFromActiveCreatureCount(challengeRating: number, fromDestroySelf: number = 0){
     let spawned = this.numberSpawned || 0;

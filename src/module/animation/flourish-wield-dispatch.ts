@@ -1,7 +1,7 @@
 /**
  * animations.2da row indices for flourish-related server IDs.
  * MELEE_WIELD (10157) / MELEE_COMBAT_WIELD (10158) from ModuleCreatureAnimState comments
- * and PlayerFlourishWeapons @ 005f4460.
+ * and PlayerFlourishWeapons.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *

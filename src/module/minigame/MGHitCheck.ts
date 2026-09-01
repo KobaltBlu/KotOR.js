@@ -1,5 +1,5 @@
 /**
- * Retail Gob::HitCheckPart @ 0043e930 stand-in for minigame collisions.
+ * Retail HitCheckPart stand-in for minigame collisions.
  * World segment → gob local → bounding-sphere cull → part mesh raycast → world hit.
  *
  * @file MGHitCheck.ts

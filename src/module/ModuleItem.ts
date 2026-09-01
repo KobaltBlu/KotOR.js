@@ -40,18 +40,18 @@ import {
 } from "@/combat/item-property-uses";
 import type { SWWeaponSound } from "@/engine/rules/SWWeaponSound";
 
-/** Retail InstantUseItem combat lockout (field436_0xab0 = 3000). */
+/** Retail InstantUseItem combat lockout (= 3000). */
 export const INSTANT_ITEM_USE_COOLDOWN_MS = 3000;
 /** TLK: one item per combat round (inventory InstantUseItem gate). */
 export const TLK_ITEM_USE_COMBAT_ROUND = 42409;
 
 /**
 * ModuleItem class.
-* 
+*
 * Class representing an item found in module areas, placeable, creatures, etc...
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleItem.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -152,7 +152,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail CSWSItem::GetPropertyDescription — stats/properties + DescIdentified
+   * Retail GetPropertyDescription — stats/properties + DescIdentified
    * for equip / inventory / store description panes.
    */
   getPropertyDescription(): string {
@@ -229,7 +229,7 @@ export class ModuleItem extends ModuleObject {
 
   /**
    * Whether this item should be transferred into a body bag.
-   * Retail CSWSItem Dropable bit (flags & 8): missing field defaults to 0 (not droppable).
+   * retail Dropable bit (flags & 8): missing field defaults to 0 (not droppable).
    */
   isDropable(): boolean {
     return !!this.dropable;
@@ -261,7 +261,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail CSWSItem::GetCost — plot items are worthless; otherwise
+   * Retail GetCost — plot items are worthless; otherwise
    * floor(Cost * baseitems.itemmultiplier), with results under 2 treated as 1.
    */
   getGoldPieceValue(): number {
@@ -327,7 +327,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail CSWSItem::GetUsedActivePropertyUsesLeft @ 00555a60.
+   * Retail GetUsedActivePropertyUsesLeft.
    */
   getUsedActivePropertyUsesLeft(propertyIndex: number = 0): number {
     const prop = this.properties?.[propertyIndex | 0];
@@ -619,13 +619,13 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::UseItem → AddItemCastSpellActions (mipc / PartyMenuUseItem).
+   * Retail UseItem → AddItemCastSpellActions (mipc / PartyMenuUseItem).
    * Schedules ITEM_CAST_SPELL on the combat round, then ensures ActionCombat.
    */
   scheduleItemCastSpell(oCaster: ModuleCreature, oTarget: ModuleObject, spellId: number, options: { isUserAction?: boolean; activePropertyIndex?: number } = {}){
     if(!oCaster?.combatRound) return;
 
-    // Retail AddItemCastSpellActions visibility (non-party field426==0)
+    // Retail AddItemCastSpellActions visibility (non-party ==0)
     if(oTarget && oTarget !== oCaster){
       const isPartyUI = !!(oCaster.isPartyMember?.() || oCaster.isPlayer || oCaster.isPM);
       const entry = oCaster.perceptionList?.find((o) => o.object === oTarget || o.objectId === oTarget.id);
@@ -666,10 +666,10 @@ export class ModuleItem extends ModuleObject {
     combatAction.animationTime = timing.pauseMs;
 
     oCaster.combatRound.addAction(combatAction);
-    // Retail GetSpellCastItem field347 — stamp caster for spell scripts
+    // Retail GetSpellCastItem — stamp caster for spell scripts
     oCaster.spellCastItem = this;
 
-    // Retail AddItemCastSpellActions (param_9==0): player with pending combat
+    // Retail AddItemCastSpellActions (arg9==0): player with pending combat
     // action → ClearAllActions on the action queue (combat round list kept).
     if(hadPending && oCaster === GameState.getCurrentPlayer?.()){
       oCaster.actionQueue.clear();
@@ -682,7 +682,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail CSWSItem::DecrementUses @ 0055de20 — cost_value drives stack /
+   * Retail DecrementUses — cost_value drives stack
    * charge / uses-per-day burn; may mark the property unusable and destroy.
    */
   decrementUses(oCaster?: ModuleCreature, propertyIndex: number = 0): void {
@@ -739,7 +739,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   /**
-   * Retail InstantUseItem @ 004efe30 — inventory Use Item (immediate SpellCastAndImpact).
+   * Retail InstantUseItem — inventory Use Item (immediate SpellCastAndImpact).
    * During combat sets a 3s lockout (TLK 42409 / one item per round).
    */
   instantUseItem(oCaster: ModuleCreature): boolean {
@@ -766,7 +766,7 @@ export class ModuleItem extends ModuleObject {
       cast.castItem = this;
       cast.conjureTime = 0;
       cast.allowCounterSpell = false;
-      // Retail InstantUseItem still SpellCastAndImpact — stamp caster level /
+      // Retail InstantUseItem still SpellCastAndImpact — stamp caster level
       // GetSpellCastItem; delay impact when the spell is a throw / projectile.
       const lastClass = oCaster.classes?.[oCaster.classes.length - 1];
       oCaster.baseClassLevel = (lastClass?.level | 0);
@@ -860,7 +860,7 @@ export class ModuleItem extends ModuleObject {
   }
 
   load(){
-    // Retail CSWSItem::LoadItem: LoadFromTemplate then re-apply instance Dropable /
+    // Retail LoadItem: LoadFromTemplate then re-apply instance Dropable
     // Pickpocketable from the Equip_ItemList / ItemList struct (default 0 if absent).
     const hadDropable = this.template?.RootNode?.hasField('Dropable');
     const instanceDropable = hadDropable
@@ -967,9 +967,9 @@ export class ModuleItem extends ModuleObject {
     return name + value;
   }
 
-  /** Desired PowerItem state — true while combat-powered (retail field40_0x19c). */
+  /** Desired PowerItem state — true while combat-powered (Retail). */
   poweredDesired: boolean = false;
-  /** Queue looping `powered` after non-looping `powerup` finishes (PowerItem @ 00647130). */
+  /** Queue looping `powered` after non-looping `powerup` finishes (PowerItem). */
   pendingPoweredAnim: boolean = false;
 
   /**
@@ -1303,7 +1303,7 @@ export class ModuleItem extends ModuleObject {
   save(){
     let itemStruct = new GFFStruct(0);
 
-    // Retail CSWSItem::SaveItem does not write ObjectId
+    // Retail SaveItem does not write ObjectId
     itemStruct.addField( new GFFField(GFFDataType.INT, 'BaseItem') ).setValue(this.getBaseItemId());
     itemStruct.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     itemStruct.addField( new GFFField(GFFDataType.BYTE, 'Identified') ).setValue(this.identified);

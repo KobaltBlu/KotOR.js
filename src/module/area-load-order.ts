@@ -1,8 +1,8 @@
 /**
- * Canonical module-area object load order matching retail CSWSArea::LoadGIT.
+ * Canonical module-area object load order matching retail LoadGIT.
  *
- * K1: LoadGIT @ 0050dd80, LoadArea @ 0050e190
- * TSL: LoadGIT @ 0071ae10 (identical object sequence)
+ * K1: LoadGIT, LoadArea
+ * TSL: LoadGIT (identical object sequence)
  *
  * LoadArea wraps: LoadAreaHeader → LoadRoomInfo → LoadGIT → LoadPathPoints.
  * KotOR.js maps rooms before GIT objects and path after them in loadScene.

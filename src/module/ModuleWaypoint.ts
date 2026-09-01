@@ -14,11 +14,11 @@ import EngineLocation from "@/engine/EngineLocation";
 
 /**
 * ModuleWaypoint class.
-* 
+*
 * Class representing a waypoint object found in modules areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleWaypoint.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -62,7 +62,7 @@ export class ModuleWaypoint extends ModuleObject {
   }
 
   /**
-   * Retail CSWSObject::GetScriptLocation — copy live X/Y/ZOrientation from the waypoint
+   * Retail GetScriptLocation — copy live X/Y/ZOrientation from the waypoint
    * (GIT fields), not a bearing rebuild.
    */
   getLocation(){
@@ -134,7 +134,7 @@ export class ModuleWaypoint extends ModuleObject {
     gff.RootNode.addField( new GFFField(GFFDataType.CEXOSTRING, 'Tag') ).setValue(this.tag);
     this.writeNamedVarTable(gff.RootNode);
 
-    // Retail CSWSWaypoint::SaveWaypoint — live orientation, not template snapshot
+    // Retail SaveWaypoint — live orientation, not template snapshot
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XOrientation') ).setValue(this.getXOrientation());
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'XPosition') ).setValue(this.position.x);
     gff.RootNode.addField( new GFFField(GFFDataType.FLOAT, 'YOrientation') ).setValue(this.getYOrientation());

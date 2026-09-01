@@ -6,11 +6,11 @@ import { GameState } from "@/GameState";
 
 /**
 * ModulePlayer class.
-* 
+*
 * Class representing player objects found in modules areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModulePlayer.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

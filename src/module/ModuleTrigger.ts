@@ -20,11 +20,11 @@ const OBJECTS_INSIDE_UPDATE_THRESHOLD = 15; // 15 frame ticks
 
 /**
 * ModuleTrigger class.
-* 
+*
 * Class representing a trigger object found in modules areas.
-* 
+*
 * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
-* 
+*
 * @file ModuleTrigger.ts
 * @author KobaltBlu <https://github.com/KobaltBlu>
 * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -332,7 +332,7 @@ export class ModuleTrigger extends ModuleObject {
   }
 
   /**
-   * Retail CSWSTrigger::AIUpdate — heartbeat/effects + action queue.
+   * Retail AIUpdate — heartbeat/effects + action queue.
    */
   aiUpdate(delta = 0){
     super.aiUpdate(delta);
@@ -381,8 +381,8 @@ export class ModuleTrigger extends ModuleObject {
   /**
    * Update the objectsInside array
    * @deprecated - use the positionChanged event inside ModuleCreature instead
-   * @param delta 
-   * @returns 
+   * @param delta
+   * @returns
    */
   autoUpdateObjectsInside(){
     this.#autoObjectsInsideTimer += 1;
@@ -405,7 +405,7 @@ export class ModuleTrigger extends ModuleObject {
   /**
    * Update the objectsInside array and fire enter/exit for occupancy changes.
    *
-   * Retail CSWSCreature::HandleSubAreaStateChanges @ 00516020 queues OnObjectEnter
+   * Retail HandleSubAreaStateChanges queues OnObjectEnter
    * (0xc) for every newly occupied generic/transition trigger — no hostility or
    * global one-shot gate. A previous `!triggered && isHostile` lock meant the first
    * NPC through a Faction=1 trigger on new-game spawn set `triggered` and blocked
@@ -442,12 +442,12 @@ export class ModuleTrigger extends ModuleObject {
   /**
    * Action dialog object
    * This is used to start a conversation with the trigger, Since the trigger is not a creature it cannot start a conversation itself
-   * @param target 
-   * @param dialogResRef 
-   * @param ignoreStartRange 
-   * @param bPrivate 
-   * @param nConvoType 
-   * @param clearable 
+   * @param target
+   * @param dialogResRef
+   * @param ignoreStartRange
+   * @param bPrivate
+   * @param nConvoType
+   * @param clearable
    */
   actionDialogObject( target: ModuleObject, dialogResRef = '', ignoreStartRange = true, bPrivate = 0, nConvoType = 1, clearable = false ){
     const action = new GameState.ActionFactory.ActionDialogObject();

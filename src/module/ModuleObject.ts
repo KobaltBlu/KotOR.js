@@ -106,9 +106,9 @@ export class ModuleObject {
   controlled: boolean;
   id: number;
   /**
-   * Retail CSWMiniGameObject::mgo_index — slot in client MiniGameObjectArray (0xff = unset).
+   * Retail mgo_index — slot in client MiniGameObjectArray (0xff = unset).
    * Synced to `id` on register so NWScript StackPushObject / StoreState use the slot
-   * (retail ExecuteCommandSWMG_GetObjectByName @ 005cb6d0 pushes mgo_index).
+   * (retail ExecuteCommandSWMG_GetObjectByName pushes mgo_index).
    */
   mgoIndex: number = 0xff;
   initialized: boolean;
@@ -201,7 +201,7 @@ export class ModuleObject {
   casting: any[] = [];
   damageList: any[] = [];
   _locals: { Booleans: any[]; Numbers: {}; };
-  /** Retail named VarTable (CSWSScriptVarTable) — round-trip from saves */
+  /** Retail named VarTable (retail) — round-trip from saves */
   scriptVarTable: ScriptVarTable = new ScriptVarTable();
   objectsInside: any[];
   lockDialogOrientation: boolean = false;
@@ -214,7 +214,7 @@ export class ModuleObject {
   _heartbeatTimerOffset: number;
   _heartbeatTimeout: number;
   /**
-   * Retail CSWSObject::ai_level — priority in CServerAIMaster lists.
+   * Retail ai_level — priority in CServerAIMaster lists.
    * INVALID until registered via ServerAIMaster.addObject.
    */
   aiLevel: AILevel = AILevel.INVALID;
@@ -284,7 +284,7 @@ export class ModuleObject {
   fp_getup_played: any;
 
   /**
-   * Retail CSWSObject::spell_target_position — stamped by item/force casts for
+   * Retail spell_target_position — stamped by item/force casts for
    * GetSpellTargetLocation when the spell has no creature target.
    */
   spellTargetPosition: THREE.Vector3 = new THREE.Vector3();
@@ -542,7 +542,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail CSWSObject::AIUpdate — scheduled by ServerAIMaster (budgeted, may skip frames).
+   * Retail AIUpdate — scheduled by ServerAIMaster (budgeted, may skip frames).
    * Heartbeat (6s), effect list, and subclass action-queue work.
    * @param delta Accumulated world-time seconds since last aiUpdate (or frame delta when first run).
    */
@@ -572,7 +572,7 @@ export class ModuleObject {
   }
 
   /**
-   * Per-frame client/visual update (retail CClientAIMaster object pass).
+   * Per-frame client/visual update (retail client AI master object pass).
    * Destroy fade, camera distance, room check, shadow blob, sphere sync.
    * Server AI (heartbeat / effects / actions) lives in aiUpdate.
    * @param delta
@@ -691,16 +691,16 @@ export class ModuleObject {
   /**
    * Clear all actions
    * @param skipUnclearable — retail ActionManager(1) / ClearAllActions(1): keep
-   *   unclearable actions (dialog), ClearAllAttacks on the combat round, and
-   *   interrupt combat-round pause so a newly queued CAST_SPELL / attack can
-   *   dispatch via ActionCombat immediately.
+   * unclearable actions (dialog), ClearAllAttacks on the combat round, and
+   * interrupt combat-round pause so a newly queued CAST_SPELL / attack can
+   * dispatch via ActionCombat immediately.
    *
-   * Retail CSWSObject::ClearAllActions @ 004ccd80 (commandable path) keeps
-   * conversation control actions via a per-action callback. EffectHorrified /
+   * Retail ClearAllActions (commandable path) keeps
+   * conversation control actions via a per-action callback. EffectHorrified
    * SetState must not drop Pause/Wait/Resume or dialogs hang (tar08_calo082).
    *
-   * Retail CSWSObject::ClearAllActions @ 004ccd80 does **not** RemoveAllActions
-   * on the combat-round schedule — that is a separate call (GUI ClearAll /
+   * Retail ClearAllActions does **not** RemoveAllActions
+   * on the combat-round schedule — that is a separate call (GUI ClearAll
    * CancelCombat / SetCombatState(0)). Keeping the schedule lets the player
    * queue multiple attacks/spells while in combat.
    */
@@ -726,7 +726,7 @@ export class ModuleObject {
       let i = this.actionQueue.length;
       while(i--){
         let action = this.actionQueue[i];
-        // Retail CSWSObject::ClearAllActions @ 004ccd80 (commandable path) uses
+        // Retail ClearAllActions (commandable path) uses
         // a per-action keep/drop callback. Conversation Pause/Wait/Resume must
         // survive SetState clears (EffectHorrified in k_ptar_calofade) or the
         // dialog stays paused forever with pendingAdvance.
@@ -861,7 +861,7 @@ export class ModuleObject {
     }else{
       action.setParameter(5, ActionParameterType.DWORD, ModuleObjectConstant.OBJECT_INVALID);
     }
-    // Params 6–11: ignore-object names (retail CGuiInGame::AddToDialogNonDependantList)
+    // Params 6–11: ignore-object names (retail AddToDialogNonDependantList)
     for(let i = 0; i < 6; i++){
       action.setParameter(6 + i, ActionParameterType.STRING, ignoreObjectNames[i] ?? '');
     }
@@ -1711,8 +1711,8 @@ export class ModuleObject {
 
   /**
    * Trigger the user defined event
-   * Retail: CSWSArea::EventHandler SignalEvent 0x0B @ 0050d6c0 runs script_on_user_defined;
-   * CSWSModule::EventHandler case 0x0B @ 004c5120 runs Mod_OnUsrDefined.
+   * Retail: EventHandler SignalEvent 0x0B runs script_on_user_defined;
+   * EventHandler case 0x0B runs Mod_OnUsrDefined.
    * @param event
    */
   triggerUserDefinedEvent( event: NWScriptEvent ){
@@ -1747,7 +1747,7 @@ export class ModuleObject {
 
   /**
    * Trigger the spell cast at event
-   * Retail creature EventHandler case 2 @ 004ff7a0 / placeable-door @ 005883d4:
+   * Retail creature EventHandler case 2 / placeable-door:
    * harmful → BroadcastCombatStateToParty + SetExcitedState.
    * @param event
    */
@@ -1760,7 +1760,7 @@ export class ModuleObject {
     if(harmful && BitWise.InstanceOfObject(caster, ModuleObjectType.ModuleCreature)){
       const c = caster as ModuleCreature;
       if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
-        // Creature target: engage both sides (retail @ 004ff835 / 004ff863)
+        // Creature target: engage both sides (retail)
         const target = this as any as ModuleCreature;
         c.broadcastCombatStateToParty(target);
         c.setExcitedState(ExcitedDurationRow.SpellCast);
@@ -1768,7 +1768,7 @@ export class ModuleObject {
         target.broadcastCombatStateToParty(c);
         target.setExcitedState(ExcitedDurationRow.Damage);
       }else{
-        // Door / placeable: engage caster only (retail @ 005883d4)
+        // Door / placeable: engage caster only (retail)
         c.broadcastCombatStateToParty();
         c.setExcitedState(ExcitedDurationRow.SpellCast);
         c.removeCombatInvisibilityEffects();
@@ -2225,7 +2225,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail CSWSCreature::IsInjured @ 004eff30 — current/max < 0.2.
+   * Retail IsInjured — current/max < 0.2.
    * Invalid max HP must not count as injured (avoids 0/0 → NaN → pauseinj on load).
    */
   isInjured(){
@@ -2310,7 +2310,7 @@ export class ModuleObject {
     if(this.isDead())
       return true;
 
-    // Retail OnApplyDamage door/placeable @ 004e055f — BroadcastCombatStateToParty(attacker, INVALID)
+    // Retail OnApplyDamage door/placeable — BroadcastCombatStateToParty(attacker, INVALID)
     if(
       BitWise.InstanceOfObject(this, ModuleObjectType.ModulePlaceable) ||
       BitWise.InstanceOfObject(this, ModuleObjectType.ModuleDoor)
@@ -2391,13 +2391,13 @@ export class ModuleObject {
   }
 
   speakString(str: string, volume: TalkVolume){
-    // Retail CSWSObject::BroadcastDialog @ 004cd760 — area objects in range with
+    // Retail BroadcastDialog — area objects in range with
     // listening set. Party members live in PartyManager.party (not always in
     // area.creatures), so they must be notified for every volume that notifies.
     const plan = getSpeakStringNotifyPlan(volume);
     const talkVolume = volume;
     const rangeSquared = plan.range * plan.range;
-    // Keep original case — CSWSExpression captures slice from the original-case
+    // Keep original case — retail captures slice from the original-case
     // input; matching lowercases internally when case-insensitive.
     const spoken = str;
     const notified = new Set<number>();
@@ -2445,7 +2445,7 @@ export class ModuleObject {
   }
 
   /**
-   * Set the commandable state (retail CSWSObject field49_0xe8).
+   * Set the commandable state (retail).
    */
   setCommadable(arg0: any) {
     this.commandable = !!arg0;
@@ -2519,25 +2519,25 @@ export class ModuleObject {
   }
 
   // findWalkableFace(object?: ModuleObject){
-  //   let face;
-  //   let room;
-  //   for(let i = 0, il = this.area.rooms.length; i < il; i++){
-  //     room = this.area.rooms[i];
-  //     if(room.walkmesh){
-  //       for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
-  //         face = room.walkmesh.walkableFaces[j];
-  //         if(face.triangle.containsPoint(this.position)){
-  //           this.groundFace = face;
-  //           this.lastGroundFace = this.groundFace;
-  //           this.surfaceId = this.groundFace.walkIndex;
-  //           this.attachToRoom(room);
-  //           face.triangle.closestPointToPoint(this.position, this.collisionManager.wm_c_point);
-  //           this.position.z = this.collisionManager.wm_c_point.z + .005;
-  //         }
-  //       }
-  //     }
-  //   }
-  //   return face;
+  // let face;
+  // let room;
+  // for(let i = 0, il = this.area.rooms.length; i < il; i++){
+  // room = this.area.rooms[i];
+  // if(room.walkmesh){
+  // for(let j = 0, jl = room.walkmesh.walkableFaces.length; j < jl; j++){
+  // face = room.walkmesh.walkableFaces[j];
+  // if(face.triangle.containsPoint(this.position)){
+  // this.groundFace = face;
+  // this.lastGroundFace = this.groundFace;
+  // this.surfaceId = this.groundFace.walkIndex;
+  // this.attachToRoom(room);
+  // face.triangle.closestPointToPoint(this.position, this.collisionManager.wm_c_point);
+  // this.position.z = this.collisionManager.wm_c_point.z +.005;
+  // }
+  // }
+  // }
+  // }
+  // return face;
   // }
 
   #tmpCHVec3 = new THREE.Vector3();
@@ -2631,7 +2631,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail CSWCAnimBase::ApplyShadowBlob — attach Fx_Shadow_S/M/L under the model root.
+   * Retail ApplyShadowBlob — attach Fx_Shadow_S/M/L under the model root.
    * Blob models have shadows turned off (TurnOffShadows).
    */
   async applyShadowBlob(resref: string): Promise<void> {
@@ -2671,7 +2671,7 @@ export class ModuleObject {
 
   /**
    * Resolve retail Fx_Shadow_S/M/L from appearance.sizecategory (creatures).
-   * size 1–2 → S, 4–5 → L, else M (CSWCCreature::ApplyShadowBlob).
+   * size 1–2 → S, 4–5 → L, else M (ApplyShadowBlob).
    */
   static shadowBlobResRefFromSizeCategory(sizeCategory: number): string {
     switch(sizeCategory | 0){
@@ -2688,7 +2688,7 @@ export class ModuleObject {
 
   /**
    * Resolve retail Fx_Shadow_S/M/L from placeables.2da ShadowSize.
-   * 0 → S, 1 → M, 2 → L, else M (CSWCPlaceable::ApplyShadowBlob).
+   * 0 → S, 1 → M, 2 → L, else M (ApplyShadowBlob).
    */
   static shadowBlobResRefFromPlaceableShadowSize(shadowSize: number): string {
     switch(shadowSize | 0){
@@ -2828,7 +2828,7 @@ export class ModuleObject {
   }
 
   /**
-   * Get the fortitude save — retail GetFortSavingThrow @ 005ab810.
+   * Get the fortitude save — retail GetFortSavingThrow.
    * Creatures: CON + FortSaveThrow + class/conditioning + effects.
    */
   getFortitudeSave(){
@@ -2840,7 +2840,7 @@ export class ModuleObject {
   }
 
   /**
-   * Get the reflex save — retail GetReflexSavingThrow @ 005ab8f0.
+   * Get the reflex save — retail GetReflexSavingThrow.
    */
   getReflexSave(){
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
@@ -2851,7 +2851,7 @@ export class ModuleObject {
   }
 
   /**
-   * Fortitude save — retail SavingThrowRoll type 1 @ 005b92b0.
+   * Fortitude save — retail SavingThrowRoll type 1.
    * @returns 0 fail, 1 success, 2 immune
    */
   fortitudeSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
@@ -2867,7 +2867,7 @@ export class ModuleObject {
   }
 
   /**
-   * Reflex save — retail SavingThrowRoll type 2 @ 005b92b0.
+   * Reflex save — retail SavingThrowRoll type 2.
    * @returns 0 fail, 1 success, 2 immune
    */
   reflexSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
@@ -2883,7 +2883,7 @@ export class ModuleObject {
   }
 
   /**
-   * Get the will save — retail GetWillSavingThrow @ 005ab880.
+   * Get the will save — retail GetWillSavingThrow.
    */
   getWillSave(){
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature)){
@@ -2894,7 +2894,7 @@ export class ModuleObject {
   }
 
   /**
-   * Will save — retail SavingThrowRoll type 3 @ 005b92b0.
+   * Will save — retail SavingThrowRoll type 3.
    * @returns 0 fail, 1 success, 2 immune
    */
   willSave(nDC = 0, nSaveType = 0, oVersus: any = undefined){
@@ -2925,7 +2925,7 @@ export class ModuleObject {
    */
   resistForce(oCaster: ModuleObject){
     if(BitWise.InstanceOfObject(this, ModuleObjectType.ModuleCreature) && BitWise.InstanceOfObject(oCaster, ModuleObjectType.ModuleCreature)){
-      //https://gamefaqs.gamespot.com/boards/516675-star-wars-knights-of-the-old-republic/62811657
+      //https://gamefaqs.gamespot.com/boards-star-wars-knights-of-the-old-republic
       //1d20 + target level + ForceResistance± vs. DC of caster level + 10
       const frBonus = getForceResistanceBonus(this);
       let roll = Dice.roll(1, DiceType.d20, (this as any).getTotalClassLevel() + frBonus);
@@ -3023,7 +3023,7 @@ export class ModuleObject {
     if(!effect.applied){
       return;
     }
-    // Retail CSWSObject::ApplyEffect @ 004d14f0 — OnApplyDamage returns 1 so the
+    // Retail ApplyEffect — OnApplyDamage returns 1 so the
     // effect is freed and never inserted into EffectList. Keeping it caused
     // re-apply (and OnDamaged) during initEffects on module load.
     if(effect.type === GameEffectType.EffectDamage){
@@ -3077,7 +3077,7 @@ export class ModuleObject {
   }
 
   /**
-   * Remove every attached effect (retail ClearAllEffects @ 004d0940).
+   * Remove every attached effect (retail ClearAllEffects).
    * @param retainSelfBuffs - SurrenderRetainBuffs: keep effects created by this object
    */
   clearAllEffects(retainSelfBuffs: boolean = false){
@@ -3095,7 +3095,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail OnApplyDeath effect strip @ 004e0ac0 + IsEffectToIgnoreOnDeath @ 004df420.
+   * Retail OnApplyDeath effect strip + IsEffectToIgnoreOnDeath.
    * Removes all non-EQUIPPED/INNATE effects except types listed in removefxondeath.2da
    * (Disguise, Beam, and beam VisualEffects).
    */
@@ -3113,7 +3113,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail IsEffectToIgnoreOnDeath @ 004df420 — removefxondeath.2da EffectType column
+   * Retail IsEffectToIgnoreOnDeath — removefxondeath.2da EffectType column
    * uses NWScript EFFECT_TYPE_* (Disguise=62, Beam=21). Beam VFX also kept.
    */
   isEffectToIgnoreOnDeath(effect: GameEffect): boolean {
@@ -3122,7 +3122,7 @@ export class ModuleObject {
     if(effect.type === GameEffectType.EffectDisguise) return true;
     // EFFECT_BEAM = 21 → GameEffectType.EffectBeam (0x20)
     if(effect.type === GameEffectType.EffectBeam) return true;
-    // VisualEffect that is a beam (type_fd 'B') — retail CLoopingVisualEffect::GetIsBeam
+    // VisualEffect that is a beam (type_fd 'B') — retail GetIsBeam
     if(effect.type === GameEffectType.EffectVisualEffect){
       const vfx = (effect as any).visualEffect;
       if(vfx?.type_fd === 'B') return true;
@@ -3339,7 +3339,7 @@ export class ModuleObject {
 
   /**
    * Set the HP
-   * Retail CSWSObject::DoDamage clamps to 1 when min1hp is set.
+   * Retail DoDamage clamps to 1 when min1hp is set.
    * @param value
    */
   setHP(value = 0){
@@ -3487,7 +3487,7 @@ export class ModuleObject {
   }
 
   /**
-   * Retail CSWCObject::GetReticlePoint @ 0063d560 — prefer lookathook.
+   * Retail GetReticlePoint — prefer lookathook.
    * Creatures / corpse placeables override (head_g / rootdummy).
    */
   getReticleNode(){
@@ -3541,7 +3541,7 @@ export class ModuleObject {
   }
 
   /**
-   * Set the listening pattern (retail CSWSObject::SetListenExpression).
+   * Set the listening pattern (retail SetListenExpression).
    * Re-parses in place when the pattern number already exists.
    * @param sString
    * @param iNum
@@ -3668,7 +3668,7 @@ export class ModuleObject {
 
   /**
    * Initialize the perception list.
-   * Retail SaveCreature @ 005009af writes every non-null CSWVisibilityNode
+   * Retail SaveCreature writes every non-null retail
    * verbatim (including stale / OBJECT_INVALID ids). Resolve object refs when
    * possible, but never prune unresolved nodes — they must round-trip on save.
    */
@@ -3808,7 +3808,7 @@ export class ModuleObject {
 
   /**
    * Check if the object has line of sight to another object.
-   * Retail ClearLineOfSight @ 0050c330 (combat / GetIsInUseRange) uses eye
+   * Retail ClearLineOfSight (combat / GetIsInUseRange) uses eye
    * height ~1.5 and does not clamp to perception range — pass
    * ignorePerceptionRange for those. GetIsInUseRange rays to the GetUseRange
    * point (doors/placeables), not object origin.
@@ -4204,7 +4204,7 @@ export class ModuleObject {
   }
 
   /**
-   * Load named VarTable from a GFF LIST field (retail CSWSScriptVarTable).
+   * Load named VarTable from a GFF LIST field (retail).
    */
   loadNamedVarTable(field?: GFFField){
     this.scriptVarTable.loadFromListField(field);
@@ -4299,7 +4299,7 @@ export class ModuleObject {
   static FADE_TIME: number = 8.0;
 
   /**
-   * Fade-out length in seconds (retail CSWSObject::SetFadeOutTime default 8000ms).
+   * Fade-out length in seconds (retail SetFadeOutTime default 8000ms).
    */
   fadeDuration: number = 8.0;
 
@@ -4436,13 +4436,13 @@ export class ModuleObject {
         this.forceVector = undefined;
       }
       // if(this.position){
-      //   this.position = undefined;
+      // this.position = undefined;
       // }
       // if(this.rotation){
-      //   this.rotation = undefined;
+      // this.rotation = undefined;
       // }
       // if(this.quaternion){
-      //   this.quaternion = undefined;
+      // this.quaternion = undefined;
       // }
       if(this.box){
         this.box = undefined;
