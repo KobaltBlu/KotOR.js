@@ -6,7 +6,7 @@ import { GameState } from "@/GameState";
  * AmbientAudioEmitter class.
  *
  * Streaming-style ambient / music source. Mirrors retail
- * CExoStreamingSoundSource SetPriorityGroup (0063c970): group id + volume byte.
+ * SetPriorityGroup: group id + volume byte.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -39,12 +39,12 @@ export class AmbientAudioEmitter extends EventListener {
    */
   priorityGroupId: number = undefined;
 
-  /** Group volume byte 0–127 (streaming source +0xd4). */
+  /** Group volume byte 0–127 from prioritygroups.2da. */
   priorityGroupVolume: number = 127;
 
   /**
-   * Retail CExoStreamingSoundSource::SetStreamingMusicForMovie (+0x108).
-   * PauseAllButStreamingMusicForMovie @ 00638f00 skips streams with this set.
+   * Retail SetStreamingMusicForMovie.
+   * PauseAllButStreamingMusicForMovie skips streams with this set.
    */
   streamingMusicForMovie: boolean = false;
 
@@ -57,8 +57,7 @@ export class AmbientAudioEmitter extends EventListener {
   }
 
   /**
-   * Retail CExoStreamingSoundSourceInternal::SetPriorityGroup @ 0063c970 —
-   * store group id and copy volume byte from CExoSoundPriorityGroup +0x7.
+   * Retail SetPriorityGroup — store group id and copy volume byte from the priority group.
    */
   setPriorityGroupId(priorityGroupId: number): this {
     this.priorityGroupId = priorityGroupId;
@@ -78,7 +77,7 @@ export class AmbientAudioEmitter extends EventListener {
 
   /**
    * volume × (groupVolume / 127) × dialog duck — retail streaming SetVolume compose.
-   * Duck (K2 sound+0) applies when slider type is music (groups 1/2) or group is 4/5.
+   * Duck (K2) applies when slider type is music (groups 1/2) or group is 4/5.
    * Result is Miles volume_levels / Web Audio GainNode linear amplitude (0–1).
    */
   getEffectiveVolume(): number {
@@ -287,8 +286,8 @@ export class AmbientAudioEmitter extends EventListener {
   }
 
   /**
-   * Retail CExoStreamingSoundSource::FadeAndStop — fade then hard-stop.
-   * Default 800ms matches PlayBattleMusic / PlayMusic transitions @ 0068e610 / 0068e1f0.
+   * Retail FadeAndStop — fade then hard-stop.
+   * Default 800ms matches PlayBattleMusic / PlayMusic transitions .
    */
   fadeOutAndStop(duration: number = 0.8): Promise<void> {
     if(!this.playing){

@@ -46,8 +46,8 @@ export class AudioEmitter {
   isActive: boolean = true;
   isLooping: boolean = false;
   /**
-   * Retail UTS Continuous (+0x154 client). When false, sequence stops after last sound
-   * and deactivates (GetNextSound @ 0055be40 → SetIsActive(0)). Default true matches
+   * Retail UTS Continuous. When false, sequence stops after last sound
+   * and deactivates (GetNextSound → SetIsActive(0)). Default true matches
    * prior wrap behavior for non-UTS emitters.
    */
   isContinuous: boolean = true;
@@ -68,7 +68,7 @@ export class AudioEmitter {
   /**
    * Retail FixedVariance (UTS / SoundObjectSetFixedVariance).
    * Playback-rate multiplier in [0.5, 2]; when set, random pitch variance is ignored
-   * (CExoSoundSourceInternal::SetFixedVariance @ 0063f2f0 clears +0x7c).
+   * (SetFixedVariance clears fixed-variance).
    */
   fixedVariance: number = 1;
   elevation: number = 0;
@@ -92,7 +92,7 @@ export class AudioEmitter {
   disabled: boolean = false;
 
   /**
-   * Retail GetWithinRangeOfListener (0063e820): positional sources are in range when
+   * Retail GetWithinRangeOfListener: positional sources are in range when
    * distance-to-listener <= maxDistance. Globals (2D) are always in range.
    */
   inListenerRange: boolean = true;
@@ -101,7 +101,7 @@ export class AudioEmitter {
   pendingResume: boolean = false;
 
   /**
-   * Retail Miles obstruction factor [0,1] at source +0xa4 / streaming +0x104.
+   * Retail Miles obstruction factor [0,1] on positional / streaming sources.
    * Gain multiplies by (1 − factor) — approximates AIL_set_sample_obstruction.
    */
   obstructionFactor: number = 0;
@@ -204,7 +204,7 @@ export class AudioEmitter {
   /**
    * Miles-like 3D falloff via Web Audio linear distance model:
    * full level until refDistance (min), silent at maxDistance.
-   * Retail SetDistance stores min @ +0x78, max @ +0x74; range gate uses max.
+   * Retail SetDistance stores min/max range; range gate uses max.
    */
   applyPannerDistances(): void {
     if(!(this.mainNode instanceof PannerNode)){ return; }
@@ -234,7 +234,7 @@ export class AudioEmitter {
   }
 
   /**
-   * Retail CExoSoundSourceInternal::GetWithinRangeOfListener @ 0063e820.
+   * Retail GetWithinRangeOfListener.
    * Non-positional (2D) always true; else distance <= maxDistance.
    */
   isWithinListenerRange(): boolean {
@@ -819,7 +819,7 @@ export class AudioEmitter {
   }
 
   getPlaybackRate(): number {
-    // Retail: FixedVariance in [0.5, 2] replaces random pitch (helper @ 0063f5d0).
+    // Retail: FixedVariance in [0.5, 2] replaces random pitch (helper).
     const fv = this.fixedVariance;
     if(Number.isFinite(fv) && fv >= 0.5 && fv <= 2 && fv !== 1){
       return this.playbackRate * fv;
@@ -833,13 +833,13 @@ export class AudioEmitter {
     }
     let gain = (this.volume + this.getRandomVariation(this.volumeVariation)) / 127;
     gain *= this.priorityGroupVolume / 127;
-    // Retail CExoSoundInternal::Render multiplies playing/streaming sources by ambient scale.
+    // Retail Render multiplies playing/streaming sources by ambient scale.
     // Apply to SFX channel emitters (area AmbientScale from UpdateRoom).
     if(this.channel === AudioEngineChannel.SFX && this.engine){
       gain *= this.engine.currentAmbientScale;
     }
-    // Retail oneshot SetVolume does not multiply by K2 sound+0 duck scale
-    // (only CExoStreamingSoundSourceInternal::SetVolume does for music/4/5).
+    // Retail oneshot SetVolume does not multiply by K2 music/ambient duck scale
+    // (only streaming SetVolume does for music/4/5).
     // Retail DoObstructionWork / AIL_set_sample_obstruction → volume × (1 − factor).
     if(this.type === AudioEmitterType.POSITIONAL){
       gain *= obstructionVolumeScale(this.obstructionFactor);

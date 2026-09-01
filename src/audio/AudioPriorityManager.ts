@@ -43,17 +43,17 @@ export const SOFT_3D_VOICE_BUDGET = 32;
 /**
  * Retail prioritygroups.2da voice allocator.
  *
- * From Linux TSL CExoSoundInternal (KOTOR2 ELF):
- * - LoadPriorityGroups @ 006380c0 — 2DA → CExoSoundPriorityGroup[0x18]
- * - Play @ 0063dcf0 — if count >= maxplaying: interrupt==0 deny, else InterruptPlayingSound
- * - InterruptPlayingSound @ 00638750 — shut down first same-group voice in playing list
+ * Behavior:
+ * - LoadPriorityGroups — 2DA → priority group table
+ * - Play — if count >= maxplaying: interrupt==0 deny, else InterruptPlayingSound
+ * - InterruptPlayingSound — shut down first same-group voice in playing list
  *   (AddToPlayingList uses AddHead → first = newest)
- * - AddToPlayingList @ 00637fc0 / RemoveFromPlayingList @ 00637850 — group count ±1 at +0x5
- * - GetFree2DVoice @ 00637db0 / GetFree3DVoice @ 00637bd0 — Miles HW slot steal by
+ * - AddToPlayingList / RemoveFromPlayingList — group count ±1
+ * - GetFree2DVoice / GetFree3DVoice — Miles HW slot steal by
  *   priority rank (lower better); soft-budgeted here via separate 2D/3D pools
- * - GetPriorityGroup @ 00637f90 — invalid id clamps to row 0x17 (DEFAULT)
+ * - GetPriorityGroup — invalid id clamps to row 0x17 (DEFAULT)
  *
- * Volume: source copies group volume byte (+0x7) at construct; emitters multiply
+ * Volume: source copies group volume byte at construct; emitters multiply
  * emitterVolume/127 * groupVolume/127 (and ambient scale for SFX).
  */
 export class AudioPriorityManager {
