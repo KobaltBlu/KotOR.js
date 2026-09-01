@@ -8,7 +8,7 @@ import { smoothSelection } from "@/engine/pathfinding/smooth-select-nodes";
 import { getPathStepTolerance } from "@/engine/pathfinding/path-point-creature-detour";
 
 /**
- * CSWSArea::PlotGridPath @ 004c1a00 + GridDFSearch @ 004c0930.
+ * PlotGridPath + GridDFSearch.
  *
  * Corridor grid along start→end (cell ≈ personal_space), then DFS with
  * Moore successors + TransTable prune + expanding lateral budget.
@@ -19,7 +19,7 @@ import { getPathStepTolerance } from "@/engine/pathfinding/path-point-creature-d
 const MAX_ALONG = 96;
 /** Retail PlotGridPath expands DFS budget up to along + 0x24 (36). */
 const MAX_LATERAL = 36;
-/** Retail field38 abort after 0x3f recursive frames. */
+/** retail abort after 0x3f recursive frames. */
 const MAX_DFS_DEPTH = 64;
 const MAX_NODES = 12000;
 
@@ -197,7 +197,7 @@ function searchGridDfs(
   const table = new GridDfsTransTable();
   table.reset();
 
-  // Moore 3×3 + forward leaps (GridDFSGenerateSuccessors @ 004bcee0)
+  // Moore 3×3 + forward leaps (GridDFSGenerateSuccessors)
   const neighbors: number[][] = [];
   for(let da = -1; da <= 1; da++){
     for(let dl = -1; dl <= 1; dl++){

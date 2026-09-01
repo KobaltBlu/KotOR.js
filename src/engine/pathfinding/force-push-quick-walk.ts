@@ -15,12 +15,12 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { BitWise } from "@/utility/BitWise";
 
 /**
- * Retail OnApplyForcePush @ 004e3800 + WalkUpdateLocation_QuickWalk_ForcePushed @ 0051c0d0.
+ * Retail OnApplyForcePush + WalkUpdateLocation_QuickWalk_ForcePushed.
  *
  * @file force-push-quick-walk.ts
  */
 
-/** Retail field427_0xa8c value set by OnApplyForcePush. */
+/** Retail value set by OnApplyForcePush. */
 export const FORCE_PUSH_LOCO_STATE = 4;
 
 /** Retail QuickWalk_ForcePushed speed when loco state == 4. */
@@ -130,9 +130,9 @@ export function facingFromDirection(dirX: number, dirY: number): number {
 
 /**
  * Retail TestDirectLine clip for Force Push:
- *   1 → keep dest
- *   0 → stay at current position
- *   else → walk-hit clear point
+ * 1 → keep dest
+ * 0 → stay at current position
+ * else → walk-hit clear point
  */
 export function clipForcePushDestination(
   creature: ModuleCreature,
@@ -147,7 +147,7 @@ export function clipForcePushDestination(
   const ignoreIds: number[] = [];
   if(creature.id != null) ignoreIds.push(creature.id);
 
-  // Retail: TestDirectLine(..., personal_space, path_find_info->height, ...)
+  // Retail: TestDirectLine(..., personal_space, path_find_info->height,...)
   const height = creature.getAppearance?.()?.height ?? 0;
   const hit = testDirectLine(creature.area, creature.position, dest, {
     owner: creature,
@@ -175,7 +175,7 @@ export function clipForcePushDestination(
   return clear;
 }
 
-/** True when retail QuickWalk routes to ForcePushed (field427 ∈ {4,5,6}). */
+/** True when retail QuickWalk routes to ForcePushed (state ∈ {4,5,6}). */
 export function isForcePushLocoActive(creature: ModuleCreature | undefined): boolean {
   if(!creature) return false;
   const s = creature.forcePushLocoState | 0;
@@ -226,8 +226,8 @@ export function clearForcePushLoco(creature: ModuleCreature): void {
 }
 
 /**
- * Retail OnApplySetAIState @ 004da050 with int −3 — AND activity with 0xFFFD.
- * Shared by ForcePush / Whirlwind / Crush / Choke / Horror / Knockdown /
+ * Retail OnApplySetAIState with int −3 — AND activity with 0xFFFD.
+ * Shared by ForcePush / Whirlwind / Crush / Choke / Horror / Knockdown
  * Held / Stun / MindTrick / DroidScramble / DroidStun SetState internals.
  */
 export function applyForcePushAIActivityMask(creature: ModuleCreature): void {
@@ -237,7 +237,7 @@ export function applyForcePushAIActivityMask(creature: ModuleCreature): void {
 
 /**
  * Retail OnApplySetStateInternal (state==9): stamp creator's current attack
- * field122=9 / field134=1 for attack-summary feedback.
+ * state=9 / state=1 for attack-summary feedback.
  */
 export function stampForcePushAttackSummary(
   creator: ModuleCreature | undefined,

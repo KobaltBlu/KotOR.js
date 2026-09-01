@@ -1,8 +1,8 @@
 import { GameState } from "@/GameState";
 
 /**
- * Retail CSWSPlayer::SetAreaTransitionBMP @ 00560cd0 +
- * SendServerToPlayerArea_ClientArea @ 0056cd20 consumption.
+ * Retail SetAreaTransitionBMP +
+ * SendServerToPlayerArea_ClientArea consumption.
  *
  * Pending id is one-shot for the next module/area load, then reset to -1.
  * -1 / unset → area LoadScreenID or `load_<module>`

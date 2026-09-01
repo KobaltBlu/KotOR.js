@@ -13,7 +13,7 @@ const HALF_PI = Math.PI / 2;
 const EASE_THRESHOLD = Math.PI / 2;
 const FOCUS_DEAD_ZONE = 0.16;
 
-/** Retail ChangeLocation flags — SendServerToPlayerCamera_ChangeLocation @ 0056c610 */
+/** Retail ChangeLocation flags — SendServerToPlayerCamera_ChangeLocation */
 export const CAMERA_LOC_FLAG_FACING = 0x01;
 export const CAMERA_LOC_FLAG_PITCH = 0x02;
 export const CAMERA_LOC_FLAG_DISTANCE = 0x04;
@@ -22,8 +22,8 @@ export const CAMERA_LOC_FLAG_TRANSITION = 0x08;
 /**
  * FollowerCamera class.
  *
- * Client chase camera — retail CSWCameraOnAStick (K1 Control @ 0063bcb0,
- * SetCameraStyle @ 00638070, HitCheckCamera @ 0063b050) plus CSWCameraDeath.
+ * Client chase camera — retail OnAStick chase (Control, SetCameraStyle,
+ * HitCheckCamera) plus death-camera blends.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -43,17 +43,17 @@ export class FollowerCamera {
   static readonly DEFAULT_STYLE_PITCH_DEG = 80.0;
   static readonly DEFAULT_STYLE_HEIGHT = 3.5;
 
-  /** Retail cameraPersonalSpace global @ 007a241c */
+  /** Retail cameraPersonalSpace global */
   static readonly DEFAULT_CAMERA_PERSONAL_SPACE = 0.35;
   /** Retail HitCheckCamera pad (cameraPersonalSpace + 0.15) */
   static readonly CAMERA_HIT_PAD = 0.15;
   /**
-   * cameraInterpDistAmt @ 007a243c — ComputeNewCameraPosition @ 006398f0
+   * cameraInterpDistAmt — ComputeNewCameraPosition
    * blends current XY cam distance toward style dist each tick.
    */
   static readonly CAMERA_INTERP_DIST_AMT = 0.5;
   /**
-   * Control_AccelerateInterp @ 00637b80 — rate clamp / accelerate when
+   * Control_AccelerateInterp — rate clamp / accelerate when
    * desired↔current position sep² crosses 1.0 (used for soft yaw catch-up).
    */
   static readonly CAMERA_INTERP_AMT_MIN = 2.5;
@@ -62,7 +62,7 @@ export class FollowerCamera {
   static readonly CAMERA_INTERP_DECEL = 5.0;
 
   /**
-   * UpdateCameraModeChaseCam / BG / EQ defaults (UpdateCameraFollow @ 006419a0).
+   * UpdateCameraModeChaseCam / BG / EQ defaults (UpdateCameraFollow).
    * Applied when SetCameraMode switches away from OnAStick.
    */
   static readonly CHASE_MIN_DIST = 5.0;
@@ -72,7 +72,7 @@ export class FollowerCamera {
   static readonly STIFF_MAX_PITCH_DEG = 62.0;
   static readonly CHASE_YAW_SOFT = 2.0;
   static readonly STIFF_YAW_MULT = 5.0;
-  /** camerastyle.2da row used by CSWBehaviorCameraCombat ctor @ 006d12b0 */
+  /** camerastyle.2da row used by combat camera ctor */
   static readonly COMBAT_STYLE_ROW = 8;
   /** Navigate default move rates (Message turn/tilt/speed/strafe consumed per frame) */
   static readonly NAVIGATE_MOVE_SPEED = 8.0;
@@ -119,7 +119,7 @@ export class FollowerCamera {
   static maxTurnRateDeg: number = FollowerCamera.DEFAULT_MAX_TURN_RATE_DEG;
 
   /**
-   * CSWCameraFreeLook style columns (UpdateCamraStyle @ 006383c0).
+   * freelook camera style columns (UpdateCamraStyle).
    * Defaults when 2DA missing: rotate/tilt 60°.
    */
   static flTiltSpeed: number = 60;
@@ -133,7 +133,7 @@ export class FollowerCamera {
   static freeLookYawAxis: number = 0;
   static freeLookActive: boolean = false;
 
-  /** Keyboard turn rate state — CSWRK4Acceleration / Keyboard Camera DPS path */
+  /** Keyboard turn rate state — RK4 acceleration / Keyboard Camera DPS path */
   static speed: number = 0;
   static maxSpeed: number = THREE.MathUtils.degToRad(FollowerCamera.DEFAULT_KEYBOARD_DPS);
   static minSpeed: number = 0;
@@ -159,8 +159,8 @@ export class FollowerCamera {
   static locationHasDistance = false;
 
   /**
-   * CSWCameraDeath — set when party wipe starts.
-   * Retail ctor @ 0063bbd0: speed_yaw 30°/s, desired_pitch 90°, distance 3,
+   * death camera — set when party wipe starts.
+   * Retail ctor: speed_yaw 30°/s, desired_pitch 90°, distance 3,
    * height 0.75→0, log_pitch/height 0.01, log_distance 0.5, log_yaw 0.5.
    */
   static deathCamActive = false;
@@ -187,7 +187,7 @@ export class FollowerCamera {
   static tmpForward: THREE.Vector3 = new THREE.Vector3();
 
   /**
-   * Soft yaw catch-up rate (field35_0x9c) — Control_AccelerateInterp @ 00637b80.
+   * Soft yaw catch-up rate — Control_AccelerateInterp.
    * Clamped [CAMERA_INTERP_AMT_MIN, CAMERA_INTERP_AMT_MAX].
    */
   static positionInterpRate = 2.5;
@@ -197,21 +197,21 @@ export class FollowerCamera {
 
   /**
    * SetCombatCamera / RestoreCamera — enter mode 6 from party combat,
-   * restore prior mode when combat clears (client SetCombatMode @ 005ede80).
+   * restore prior mode when combat clears (client SetCombatMode).
    */
   static combatCameraActive = false;
   static preCombatCameraMode = ClientCameraMode.ON_A_STICK;
   static savedAreaCameraStyle: any = undefined;
   /**
    * Player orbit offset around the combat look axis
-   * (CSWBehaviorCameraCombat::CalculateDesiredLocation keyboard RK4 @ 006d14e0).
+   * (CalculateDesiredLocation keyboard RK4).
    */
   static combatOrbitOffset = 0;
   /** Last combat look-target id — reset orbit when the lock changes. */
   static combatLookTargetId: number = -1;
 
   /**
-   * CSWCameraNavigate — free-fly state (Control @ 006387e0).
+   * navigate camera — free-fly state (Control).
    * Axes are set by controls and consumed each navigate frame.
    * navigateHoverMode maps to retail hsMode != 0 (ship-style flight).
    */
@@ -232,7 +232,7 @@ export class FollowerCamera {
   }
 
   /**
-   * CSWCameraOnAStick::SetCameraStyle — load camerastyle.2da row columns.
+   * SetCameraStyle — load camerastyle.2da row columns.
    * DISTANCE, SPEED, PITCH, HEIGHT, TILTUP, TILTDOWN, TILTSPEED, ROTATION, VIEWANGLE.
    */
   static setCameraStyle(cameraStyle: any = {}){
@@ -297,7 +297,7 @@ export class FollowerCamera {
 
   /**
    * Refresh Keyboard Camera DPS / Acceleration / Deceleration from ini
-   * (CSWCameraOnAStick::Control_CheckAndUpdateCameraStyle @ 00638f60).
+   * (Control_CheckAndUpdateCameraStyle).
    */
   static refreshKeyboardTurnOptions(){
     const ini = GameState.iniConfig;
@@ -324,7 +324,7 @@ export class FollowerCamera {
     FollowerCamera.resize();
   }
 
-  /** Enter FreeLook — CSWCameraFreeLook ctor resets look offsets. */
+  /** Enter FreeLook — freelook camera ctor resets look offsets. */
   static beginFreeLook(){
     FollowerCamera.freeLookActive = true;
     FollowerCamera.freeLookPitchDeg = 0;
@@ -347,7 +347,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Retail CSWMiniGame::SetCamera @ 00671670 — BehaviorAttach live camera to camerahook.
+   * Retail SetCamera — BehaviorAttach live camera to camerahook.
    * Identity local transform; world pose follows the hook (no per-frame copy).
    */
   static mgCameraHookAttached = false;
@@ -391,7 +391,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Retail UpdateCamera @ 005f5e10 mouse path while rightClickHeld (or Mouse Look):
+   * Retail UpdateCamera mouse path while rightClickHeld (or Mouse Look):
    * TurnCamera(dx * GetMouseSenSetting), TiltCamera(dy * GetMouseSenSetting).
    * dx/dy are pixel movement this frame (browser); normalized like DI [-1,1].
    */
@@ -430,7 +430,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Resolve FreeLookHook → CameraHook → root+2 (CSWCameraFreeLook::Control @ 00639d00).
+   * Resolve FreeLookHook → CameraHook → root+2 (Control).
    */
   static resolveFreeLookHook(followee: ModuleObject): boolean {
     const model = (followee as any).model;
@@ -451,7 +451,7 @@ export class FollowerCamera {
   }
 
   /**
-   * CSWCameraFreeLook::Control — attach to FreeLookHook, apply yaw/pitch look limits.
+   * Control — attach to FreeLookHook, apply yaw/pitch look limits.
    */
   static updateFreeLook(delta: number = 0){
     const followee = GameState.getCurrentPlayer();
@@ -520,7 +520,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Apply camera ChangeLocation (retail CAMERA msg subtype 1 @ 0056c610).
+   * Apply camera ChangeLocation (retail CAMERA msg subtype 1).
    * Payload: flags + up to 3 floats (facing/pitch/distance) + optional transition byte.
    * Floats of -1 mean "keep current".
    * @param transitionType 0 = snap; else lerp speed (CAMERA_TRANSITION_TYPE_*)
@@ -629,7 +629,7 @@ export class FollowerCamera {
   }
 
   /**
-   * CSWCameraDeath::Control @ 0063a810 — per-frame multiplicative blends + yaw orbit.
+   * Control — per-frame multiplicative blends + yaw orbit.
    */
   static updateDeathCamera(delta: number = 0){
     const target = FollowerCamera.focusObject;
@@ -640,7 +640,7 @@ export class FollowerCamera {
 
     const dt = Math.max(0, delta);
 
-    // height = (desired - height) * log_height + height  (per-frame, no delta)
+    // height = (desired - height) * log_height + height (per-frame, no delta)
     FollowerCamera.deathHeight =
       (FollowerCamera.DEATH_DESIRED_HEIGHT - FollowerCamera.deathHeight) * FollowerCamera.DEATH_LOG_HEIGHT +
       FollowerCamera.deathHeight;
@@ -731,8 +731,7 @@ export class FollowerCamera {
   }
 
   /**
-   * UpdateCameraModeChaseCam / BG / EQ / Combat — apply distance/pitch when mode changes
-   * (field56_0xd8 path in retail).
+   * UpdateCameraModeChaseCam / BG / EQ / Combat — apply distance/pitch when mode changes.
    */
   static applyCameraModeStyle(mode: number){
     if(mode === FollowerCamera.lastAppliedCameraMode) return;
@@ -772,7 +771,7 @@ export class FollowerCamera {
     }
   }
 
-  /** Load camerastyle.2da row 8 — CSWBehaviorCameraCombat ctor. */
+  /** Load camerastyle.2da row 8 — combat camera ctor. */
   static applyCombatStyleRow(){
     const table = GameState.TwoDAManager?.datatables?.get('camerastyle');
     const row = table?.rows?.[FollowerCamera.COMBAT_STYLE_ROW]
@@ -784,14 +783,14 @@ export class FollowerCamera {
   }
 
   /**
-   * Client SetCombatMode @ 005ede80 → SetCombatCamera / RestoreCamera.
+   * Client SetCombatMode → SetCombatCamera / RestoreCamera.
    * Only auto-switches from OnAStick so scripted FreeLook/Navigate stay intact.
    */
   static setCombatCameraActive(active: boolean){
     if(active){
       if(FollowerCamera.combatCameraActive) return;
       const mode = GameState.clientCameraMode | 0;
-      // Retail SetCombatCamera @ 00641540 only swaps when already OnAStick (mode 3).
+      // Retail SetCombatCamera only swaps when already OnAStick (mode 3).
       if(mode !== ClientCameraMode.ON_A_STICK){
         return;
       }
@@ -823,7 +822,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Combat look target — retail Control @ 006d1fc0 uses GetLastTarget only.
+   * Combat look target — retail Control uses GetLastTarget only.
    * Cursor hover must not steal the lock (that blocked free orbit).
    */
   static getCombatLookTarget(followee: ModuleObject): ModuleObject | undefined {
@@ -839,11 +838,11 @@ export class FollowerCamera {
   }
 
   /**
-   * CSWBehaviorCameraCombat::Control @ 006d1fc0 —
+   * Control
    * desired yaw from PC↔target axis, player keyboard orbit via RK4 accel
-   * (CalculateDesiredLocation @ 006d14e0).
+   * (CalculateDesiredLocation).
    *
-   * GetNextYaw @ 006d16f0 returns desired yaw; GetNextPosition @ 006d1760 only
+   * GetNextYaw returns desired yaw; GetNextPosition only
    * soft-steps when duration > 0, but shipped GetNextYaw always writes 0 — so
    * retail snaps position every tick. Soft-approach yaw with AccelerateInterp
    * rate (ChaseCam-style) for follow→combat / retarget; keep position snapped.
@@ -945,7 +944,7 @@ export class FollowerCamera {
   }
 
   /**
-   * CSWCameraNavigate::Control @ 006387e0.
+   * Control.
    * hsMode==0: simple yaw/pitch + move. hsMode!=0: scaled ship flight + roll blend.
    */
   static updateNavigate(delta: number){
@@ -1101,7 +1100,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Control_AccelerateInterp @ 00637b80 — bump soft rate from desired↔current sep².
+   * Control_AccelerateInterp — bump soft rate from desired↔current sep².
    */
   static updatePositionInterpRate(
     current: THREE.Vector3,
@@ -1125,7 +1124,7 @@ export class FollowerCamera {
   }
 
   /**
-   * ComputeNewCameraPosition distance blend @ 006398f0:
+   * ComputeNewCameraPosition distance blend:
    * styleDist + (1 − cameraInterpDistAmt) * (currentDist − styleDist).
    */
   static blendStyleDistance(styleDist: number, currentDist: number): number {
@@ -1134,7 +1133,7 @@ export class FollowerCamera {
   }
 
   /**
-   * CSWSArea::ShrinkLineByCreatures @ 004bf650 — pull camera end in if it sits
+   * ShrinkLineByCreatures — pull camera end in if it sits
    * inside another creature's personal-space circle (2D).
    */
   static shrinkDistanceByCreatures(
@@ -1211,7 +1210,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Control_HitCheckCamera @ 0063b050 / DetermineSafePosition @ 006d18e0 —
+   * Control_HitCheckCamera / DetermineSafePosition
    * ShrinkLineByCreatures, multi-pass center+side HitChecks, pull along ray,
    * then post-hit nudge (ps+0.15)*(hitLen/fullLen) along creature forward.
    * Writes safe camera position into `out`.
@@ -1340,7 +1339,7 @@ export class FollowerCamera {
   }
 
   /**
-   * Control_HitCheckCamera @ 0063b050 — ShrinkLineByCreatures then multi-pass
+   * Control_HitCheckCamera — ShrinkLineByCreatures then multi-pass
    * center + side rays; returns safe distance along chase yaw (nudge baked into
    * last hitCheckCamera out when used via update).
    */
@@ -1382,7 +1381,7 @@ export class FollowerCamera {
       return;
     }
 
-    // Mode 7 — CSWCameraNavigate free-fly
+    // Mode 7 — navigate camera free-fly
     if((GameState.clientCameraMode | 0) === ClientCameraMode.NAVIGATE){
       FollowerCamera.applyCameraModeStyle(ClientCameraMode.NAVIGATE);
       FollowerCamera.updateNavigate(delta);
@@ -1466,8 +1465,8 @@ export class FollowerCamera {
       ? FollowerCamera.STIFF_DIST
       : FollowerCamera.maxDistance) * GameState.CameraDebugZoom;
 
-    // ComputeNewCameraPosition @ 006398f0 — soft blend toward style distance.
-    // Combat CalculateDesiredLocation @ 006d14e0 uses this->distance directly.
+    // ComputeNewCameraPosition — soft blend toward style distance.
+    // Combat CalculateDesiredLocation uses this->distance directly.
     let distance = mode === ClientCameraMode.COMBAT
       ? styleDist
       : FollowerCamera.blendStyleDistance(styleDist, FollowerCamera.distance);
@@ -1506,7 +1505,7 @@ export class FollowerCamera {
             FollowerCamera.detachMinigameCamera();
           }
           FollowerCamera.camera.fov = area.miniGame.cameraViewAngle;
-          // Retail CSWMiniGame clip_start/clip_end (Near_Clip / Far_Clip)
+          // retail clip_start/clip_end (Near_Clip / Far_Clip)
           if(area.miniGame.nearClip > 0){
             FollowerCamera.camera.near = area.miniGame.nearClip;
           }

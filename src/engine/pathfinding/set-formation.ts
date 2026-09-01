@@ -9,7 +9,7 @@ import { BitWise } from "@/utility/BitWise";
 const DEG2RAD = Math.PI / 180;
 
 /**
- * Retail CSWSCreature::SetFormation @ 00514700.
+ * Retail SetFormation.
  * formations.2da ANGLE_n / DISTANCE_n → MoveToPoint + ChangeFacingPoint.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
@@ -46,7 +46,7 @@ export function setCreatureFormation(
     return false;
   }
 
-  // Retail Yaw @ 004aa0f0 on anchor orientation, then + ANGLE degrees.
+  // Retail Yaw on anchor orientation, then + ANGLE degrees.
   const ox = typeof anchor.getXOrientation === "function" ? anchor.getXOrientation() : 0;
   const oy = typeof anchor.getYOrientation === "function" ? anchor.getYOrientation() : 1;
   const yaw = -Math.atan2(ox, oy);

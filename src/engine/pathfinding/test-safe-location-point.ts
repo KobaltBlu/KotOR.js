@@ -7,7 +7,7 @@ import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
 import { getRoomAtPoint } from "@/engine/pathfinding/test-direct-line";
 
 /**
- * Approximate CSWSArea::TestSafeLocationPoint @ 004be5e0.
+ * Approximate TestSafeLocationPoint.
  *
  * Retail: tiny ±0.01 XY / ±0.1 Z probe through room NoNonWalk + Detailed +
  * NoCreaturesOnLine (param skipBumpable=0).

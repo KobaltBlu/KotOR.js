@@ -7,9 +7,9 @@ import { ApplicationEnvironment } from "@/enums/ApplicationEnvironment";
 
 /**
  * INIConfig class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file INIConfig.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -102,9 +102,9 @@ export class INIConfig {
   }
 
   // Code copied from linked Stack Overflow question
-  // https://stackoverflow.com/questions/27936772/how-to-deep-merge-instead-of-shallow-merge
+  // https://stackoverflow.com/questions/how-to-deep-merge-instead-of-shallow-merge
   // Answer by Salakar:
-  // https://stackoverflow.com/users/2938161/salakar
+  // https://stackoverflow.com/users/salakar
   getProperty(key: string): any {
     const parts = key.split('.');
     let o: any = this.options;

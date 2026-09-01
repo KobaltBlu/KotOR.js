@@ -1,12 +1,12 @@
 /**
- * Retail CSWGuiSkillFlowChart membership for the in-game abilities menu.
+ * retail membership for the in-game abilities menu.
  *
  * Anchors (K1 `/K1/k1_win_gog_swkotor.exe`):
- * - BuildSortedFeatList @ 006cd960
- * - CreateFeatChart (in-game) @ 006ce370 — SetCharacter
- * - BuildSortedPowerList @ 006cd590
- * - CreatePowerChart @ 006ce0f0 — CreatePowerList param_2=0
- * - Subradial encode in CSWSpellArray::Load @ 0059ba20
+ * - BuildSortedFeatList
+ * - CreateFeatChart (in-game) — SetCharacter
+ * - BuildSortedPowerList
+ * - CreatePowerChart — CreatePowerList arg2=0
+ * - Subradial encode in Load
  *
  * @file skill-flow-chart.ts
  */
@@ -54,7 +54,7 @@ export function featChainDepth(feat: {
 }
 
 /**
- * Retail BuildSortedFeatList @ 006cd960 — feats with name != 0, ordered by depth ascending.
+ * Retail BuildSortedFeatList — feats with name != 0, ordered by depth ascending.
  */
 export function buildSortedFeatIds(feats: readonly (TalentFeat | undefined | null)[]): number[] {
   const sorted: number[] = [];
@@ -81,7 +81,7 @@ export function buildSortedFeatIds(feats: readonly (TalentFeat | undefined | nul
 }
 
 /**
- * Retail CreateFeatChart (in-game) @ 006ce370.
+ * Retail CreateFeatChart (in-game).
  * Known roots only; mid/end only when HasFeat. Sparse [root, mid?, end?].
  */
 export function createInGameFeatChart(
@@ -129,7 +129,7 @@ export function createInGameFeatChart(
 }
 
 /**
- * Retail CSWSpellArray::Load subradial encode @ 0059ba20.
+ * Retail Load subradial encode.
  * Returns the first radial key (FORCEFRIENDLY, then HOSTILE, then PASSIVE order in Load).
  * -1 when no force menu column is set.
  */
@@ -152,13 +152,13 @@ export function encodeSpellSubRadial(spell: SpellSubRadialFields): number {
   return -1;
 }
 
-/** Retail CSWSpell::GetPriority @ 006474d0 */
+/** Retail GetPriority */
 export function spellSubRadialPriority(key: number): number {
   if (key < 0) return -1;
   return key % 10;
 }
 
-/** Retail CSWSpell::GetSlot @ 00647510 */
+/** Retail GetSlot */
 export function spellSubRadialSlot(key: number): number {
   if (key < 0) return -1;
   return Math.floor((key % 1000) / 10);
@@ -189,7 +189,7 @@ function spellIdOf(spell: TalentSpell, fallbackIndex: number): number {
 }
 
 /**
- * Retail BuildSortedPowerList @ 006cd590 — usertype==1, name!=0;
+ * Retail BuildSortedPowerList — usertype==1, name!=0;
  * sort by priority, then family, then slot.
  */
 export function buildSortedPowerIds(spells: readonly (TalentSpell | undefined | null)[]): number[] {
@@ -244,7 +244,7 @@ function hasSpellKnown(creature: SkillFlowCreature, id: number): boolean {
 }
 
 /**
- * Retail CSWSCreatureStats::HasSpell with param_3 != 0:
+ * Retail HasSpell with arg3 != 0:
  * known and adjusted force cost ≤ current FP.
  */
 function hasSpellAffordable(
@@ -273,7 +273,7 @@ export function isSpellChartRoot(key: number): boolean {
 }
 
 /**
- * Retail CreatePowerChart @ 006ce0f0 with param_2=0 (in-game abilities).
+ * Retail CreatePowerChart with arg2=0 (in-game abilities).
  * Roots: known + root priority. Children: same family/slot; HasSpell afford gate.
  * Sparse [root, mid?, end?].
  */

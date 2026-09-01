@@ -6,7 +6,7 @@ import type { IPazaakTable } from '@/interface/minigames/IPazaakTable';
 /**
  * Side-card point delta for play / AI.
  * Card 0x16 (PLUS_MINUS_1_OR_2): CHANGE selects magnitude, FLIP selects sign.
- * Retail SetCard @ 0054c6b0 / HandleChangeHandCard @ 00555dd0.
+ * Retail SetCard / HandleChangeHandCard.
  */
 export function resolveSideCardDelta(
   card: IPazaakCard,

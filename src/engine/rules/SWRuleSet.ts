@@ -40,9 +40,9 @@ import { SWCombatAnimation } from "./SWCombatAnimation";
 
 /**
  * SWRuleSet class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SWRuleSet.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -184,7 +184,7 @@ export class SWRuleSet {
 
     /**
      * Initialize EXP Table
-     *  - Used to calculate the level of a creature based on the amount of experience they have
+     * - Used to calculate the level of a creature based on the amount of experience they have
      */
     const expTable = GameState.TwoDAManager.datatables.get('exptable');
     if(expTable){
@@ -193,7 +193,7 @@ export class SWRuleSet {
 
     /**
      * Initialize XP Table
-     *  - Used to calculate the amount of experience to grant to a creature when they defeat an enemy
+     * - Used to calculate the amount of experience to grant to a creature when they defeat an enemy
      */
     const xpTable = GameState.TwoDAManager.datatables.get('xptable'); 
     if(xpTable){

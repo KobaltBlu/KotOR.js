@@ -16,9 +16,9 @@ const box = { min: [0, 0], max: [0, 0] }
 
 /**
  * TextSprite3D class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file TextSprite3D.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}

@@ -5,8 +5,8 @@ import { GameState } from "@/GameState";
 import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 
 /**
- * Retail CSWSArea::CountVisibleToPlayers @ 004bb8b0 —
- * used by ComputeNonVisibleLocation @ 004bee30.
+ * Retail CountVisibleToPlayers
+ * used by ComputeNonVisibleLocation.
  *
  * Counts player creatures with ClearLineOfSight to `point`, early-out at `maxCount`
  * (retail starts at 0x60 and shrinks to the best score found so far).

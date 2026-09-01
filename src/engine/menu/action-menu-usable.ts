@@ -41,7 +41,7 @@ export {
   passesDroidOrHumanRestriction,
 } from "@/engine/menu/action-menu-usable-pure";
 
-/** Retail GetUsableItems mask bits (CSWCCreature::GetPersonalActions). */
+/** Retail GetUsableItems mask bits (GetPersonalActions). */
 export const UsableItemMask = {
   MEDICAL: 1,
   MINES: 2,
@@ -125,7 +125,7 @@ function collectUseLimitationProps(item: ModuleItem): UseLimitationProp[] {
 }
 
 /**
- * Retail CheckItemRaceRestrictions @ 005182f0 (menu subset via CanUseItem).
+ * Retail CheckItemRaceRestrictions (menu subset via CanUseItem).
  */
 export function passesItemRaceRestriction(creature: ModuleCreature, item: ModuleItem): boolean {
   return checkItemRaceRestrictionsPure(
@@ -138,7 +138,7 @@ export function passesItemRaceRestriction(creature: ModuleCreature, item: Module
 }
 
 /**
- * Retail CSWSCreature::CanUseItem UseLimitation gates @ 0051b440
+ * Retail CanUseItem UseLimitation gates
  * (alignment / class / race / feat). Weapon size + CheckProficiencies omitted
  * for personal-use HUD items (weapon_type typically 0).
  */
@@ -175,7 +175,7 @@ export function canUseItemForMenu(creature: ModuleCreature, item: ModuleItem): b
 }
 
 /**
- * Retail CSWCCreature::IsLeaderUsableItem — whether an item belongs in a personal-use HUD slot.
+ * Retail IsLeaderUsableItem — whether an item belongs in a personal-use HUD slot.
  * Category gates first; every success path ends in CanUseItem.
  */
 export function isLeaderUsableItem(
@@ -227,10 +227,10 @@ export function isLeaderUsableItem(
 
 /**
  * Whether a usable medical/recovery item should appear active (not dimmed).
- * Retail CreateUsableItemEntry @ 006193a0:
+ * Retail CreateUsableItemEntry:
  * - item_type 0x2d / 0x1a (medpac / droid repair): disable when caster at full HP
  * - item_type 0x2f (squad kit): disable when no party member is injured
- * - equipped non-medical: enable bit from CastSpell.usable (property +0xc)
+ * - equipped non-medical: enable bit from CastSpell.usable (property)
  * Also dims while InstantUseItem combat lockout is active.
  */
 export function isUsableItemActive(
@@ -387,7 +387,7 @@ export function isPlaceableTargetUseItem(item: ModuleItem): boolean {
 }
 
 /**
- * Retail CSWCTrigger::GetMineStrengthLevel — maps traps.2da row → strength tier.
+ * Retail GetMineStrengthLevel — maps traps.2da row → strength tier.
  * Returns -1 when the trap type has no Force-counter path.
  */
 export function getMineStrengthLevel(trapType: number): number {

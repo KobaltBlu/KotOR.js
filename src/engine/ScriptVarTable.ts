@@ -4,7 +4,7 @@ import { GFFStruct } from "@/resource/GFFStruct";
 import EngineLocation from "@/engine/EngineLocation";
 
 /**
- * Retail CSWSScriptVar type constants (SaveVarTable / LoadVarTable).
+ * retail type constants (SaveVarTable / LoadVarTable).
  */
 export enum ScriptVarType {
   Int = 1,

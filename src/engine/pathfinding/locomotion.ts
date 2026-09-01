@@ -25,7 +25,7 @@ export function clampMovementRateFactor(factor: number): number {
 }
 
 /**
- * TSL GetMovementRateFactor @ 0068f140 — Mobility feat (0xc3) adds +0.1 before clamp.
+ * TSL GetMovementRateFactor — Mobility feat (0xc3) adds +0.1 before clamp.
  * K1 has no equivalent bonus.
  */
 export function applyMobilityMovementBonus(
@@ -47,7 +47,7 @@ export function normalizeSpeedIncreasePercent(n: number): number {
 }
 
 /**
- * Path-approach ease — retail WalkUpdateLocation @ 0051bb10.
+ * Path-approach ease — retail WalkUpdateLocation.
  * Far (remaining > rate×0.5) → 1; near → √(remaining/thresh), min 0.1.
  * When near, retail also subtracts dt_ms*0.001 from the approach target.
  */
@@ -56,7 +56,7 @@ export function pathApproachScale(remaining: number, baseSpeed: number, deltaSec
   if(remaining > thresh) return 1;
   const ratio = remaining / thresh;
   let approach = ratio < 0.01 ? 0.1 : Math.sqrt(ratio);
-  // field42 dt_ms * 0.001
+  // state dt_ms * 0.001
   if(deltaSec > 0){
     approach -= deltaSec;
   }
@@ -64,7 +64,7 @@ export function pathApproachScale(remaining: number, baseSpeed: number, deltaSec
 }
 
 /**
- * Retail field37_0xb8 speed-factor ramp toward approach target.
+ * Retail speed-factor ramp toward approach target.
  * Ramps up by dt when previous factor < 1 and below target.
  */
 export function walkSpeedFactorRamp(
@@ -85,9 +85,9 @@ export function walkSpeedFactorRamp(
 
 /**
  * Trapezoidal step distance — retail:
- *   step = dt_ms * (new + old) * rate_milli * 0.5 * 1e-6
+ * step = dt_ms * (new + old) * rate_milli * 0.5 * 1e-6
  * With world rate (units/sec) and delta seconds:
- *   step = delta * (new + old) * 0.5 * rate
+ * step = delta * (new + old) * 0.5 * rate
  */
 export function walkTrapezoidStep(
   previousFactor: number,
@@ -101,8 +101,8 @@ export function walkTrapezoidStep(
 }
 
 /**
- * Retail FollowLeader post-rate dist² bands (@ 0051c360):
- *   dist² < 1 → ×0.9; < 225 → ×1.2; else ×1.5
+ * Retail FollowLeader post-rate dist² bands ():
+ * dist² < 1 → ×0.9; < 225 → ×1.2; else ×1.5
  */
 export function getFollowRateScale(distToOffset: number): number {
   const d2 = distToOffset * distToOffset;

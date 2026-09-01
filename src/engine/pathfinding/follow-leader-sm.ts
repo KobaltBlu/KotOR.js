@@ -50,7 +50,7 @@ function getEffectiveFollowRate(owner: ModuleCreature, run: boolean): number {
 }
 
 /**
- * Drive one FollowLeader SM iteration (retail do/while switch @ 0051c360).
+ * Drive one FollowLeader SM iteration (retail do/while switch).
  */
 export function stepFollowLeaderState(
   runtime: FollowLeaderRuntime,
@@ -152,7 +152,7 @@ function handleFindPath(
 }
 
 /**
- * Retail WaitingForPath @ 005127d0 — hold until ring count > 4, then pick
+ * Retail WaitingForPath — hold until ring count > 4, then pick
  * trail back-point; safety gate; LOS to lateral → MovingToOffset, else center
  * → MovingToPath, else FindPath.
  */
@@ -186,7 +186,7 @@ function handleWaitingForPath(
   const dz = leader.position.z - owner.position.z;
   const distLeaderSq = dx * dx + dy * dy + dz * dz;
 
-  // Retail field22_0x70: hold while in-safety and leader within 7 units
+  // Retail: hold while in-safety and leader within 7 units
   if(runtime.inSafetyRange !== 0 && distLeaderSq < FOLLOW_SAFETY_DIST_SQ){
     runtime.stuckCounter = 0;
     runtime.stuckTimer = 0;
@@ -204,7 +204,7 @@ function handleWaitingForPath(
   runtime.goalY = _lateral.y;
   runtime.goalZ = _lateral.z;
 
-  // Sample start: lastSample (retail field17); seeded on Reset
+  // Sample start: lastSample (retail); seeded on Reset
   _sample.set(runtime.lastSampleX, runtime.lastSampleY, runtime.lastSampleZ);
 
   const area = owner.area ?? GameState.module?.area;
@@ -236,7 +236,7 @@ function hasFollowLos(
 }
 
 /**
- * Retail OffsetWaitDest @ 00512a60 / PathWaitDest @ 00512b40 —
+ * Retail OffsetWaitDest / PathWaitDest
  * walk ring indices from cursor→goal; hold while writeHead not yet at goal,
  * else → Offset (1) or FollowingPath (3).
  */
@@ -300,7 +300,7 @@ function handleWaitDest(
     runtime.state === FollowLeaderState.ToOffsetWaitDest
   ){
     // Retail OffsetWaitDest → Offset (1) when already in formation band.
-    // If still outside comfort, enter MovingToPath so we actually walk —
+    // If still outside comfort, enter MovingToPath so we actually walk
     // otherwise FindPath↔WaitDest↔Offset thrash freezes companions far away.
     const distGoal = Math.hypot(
       owner.position.x - runtime.goalX,
@@ -317,7 +317,7 @@ function handleWaitDest(
 }
 
 /**
- * Retail Offset @ 00511290 — AdvancePointOnPath + formation lateral sample,
+ * Retail Offset — AdvancePointOnPath + formation lateral sample,
  * direct SetPosition toward that sample (no parkIdle). Leave → MovingToPath
  * only on LOS fail or distOffset ≥ FOLLOW_REPATH.
  */
@@ -330,7 +330,7 @@ function handleOffset(
   distLeader: number,
   distOffset: number
 ): FollowStepResult {
-  // Retail Offset success path clears field11_0x44
+  // Retail Offset success path clears stuck counters
   runtime.stuckTimer = 0;
   runtime.stuckCounter = 0;
   runtime.offsetStepped = false;
@@ -349,7 +349,7 @@ function handleOffset(
   const followScale = getFollowRateScale(distOffset);
   const budget = Math.max(0, rate * Math.max(0, delta) * followScale);
 
-  // Seed path cursor (retail field6) from Recalc center if unset
+  // Seed path cursor (retail) from Recalc center if unset
   if(
     Math.abs(runtime.pathPointX) < 1e-8 &&
     Math.abs(runtime.pathPointY) < 1e-8 &&
@@ -373,7 +373,7 @@ function handleOffset(
   runtime.pathPointY = _center.y;
   runtime.pathPointZ = _center.z;
 
-  // Retail Offset @ 00511290 — lerp formation laterals between ring[idx] and ring[idx−1]
+  // Retail Offset — lerp formation laterals between ring[idx] and ring[idx−1]
   const idx = idxBox.value;
   const prevIdx = idx > 0 ? idx - 1 : FOLLOW_RING_SIZE - 1;
   const curr = partyFollowPath.points[idx];
@@ -418,8 +418,8 @@ function handleOffset(
     _sample.copy(owner.position);
   }
 
-  // Retail: LOS field17 → new lateral; fail → MovingToPath.
-  // If field17 is stale (NPC stood on the old sample), retry from feet so
+  // Retail: LOS state → new lateral; fail → MovingToPath.
+  // If state is stale (NPC stood on the old sample), retry from feet so
   // Offset↔Moving thrash cannot freeze lastSample forever.
   if(area && !hasFollowLos(area, owner, _sample, _lateral)){
     const sampleDist = Utility.Distance2D(owner.position, _sample);
@@ -429,7 +429,7 @@ function handleOffset(
       runtime.lastSampleY = owner.position.y;
       runtime.lastSampleZ = owner.position.z;
     }else{
-      // Refresh field17 to feet before pathing so a later Offset re-entry is live
+      // Refresh state to feet before pathing so a later Offset re-entry is live
       runtime.lastSampleX = owner.position.x;
       runtime.lastSampleY = owner.position.y;
       runtime.lastSampleZ = owner.position.z;
@@ -453,7 +453,7 @@ function handleOffset(
     ) > 0.02;
 
   if(distToSample > 0.05 || sampleMoved){
-    // Retail FollowLeader @ 0051c360 — after Advance burns budget into field17,
+    // Retail FollowLeader — after Advance burns budget into state,
     // SetPosition toward that sample (not WalkUpdate trapezoid).
     applyFollowSetPosition(owner, _lateral, budget, delta, run);
     runtime.offsetStepped = true;
@@ -475,7 +475,7 @@ function handleMoving(
   if(distOffset <= FOLLOW_COMFORT){
     runtime.stuckTimer = 0;
     runtime.state = FollowLeaderState.Offset;
-    // Seed path cursor (retail field6) from Recalc center for AdvancePointOnPath
+    // Seed path cursor (retail) from Recalc center for AdvancePointOnPath
     const partyIdx = GameState.PartyManager?.party?.indexOf?.(owner) ?? -1;
     const slot = partyIdx === 2 ? 2 : 1;
     if(partyFollowPath.getFollowGoal(slot, _center)){
@@ -487,7 +487,7 @@ function handleMoving(
       runtime.pathPointY = owner.position.y;
       runtime.pathPointZ = owner.position.z;
     }
-    // Keep field17 at feet when re-entering Offset from Moving* so a stale
+    // Keep state at feet when re-entering Offset from Moving* so a stale
     // sample behind an NPC cannot immediately bounce us back to MovingToPath.
     runtime.lastSampleX = owner.position.x;
     runtime.lastSampleY = owner.position.y;
@@ -526,7 +526,7 @@ function handleMoving(
 }
 
 /**
- * Retail FollowLeader outer SetPosition toward field17 (@ 0051c360).
+ * Retail FollowLeader outer SetPosition toward last sample.
  * Budget already burned by AdvancePointOnPath; step toward sample with
  * TestDirectLine / TestSafeLocationPoint gate.
  */

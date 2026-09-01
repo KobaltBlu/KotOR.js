@@ -7,13 +7,13 @@ import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import { createWalkHitInfo } from "@/engine/pathfinding/walk-hit-info";
 
 /**
- * Approximate CSWSArea::ClearLineOfSight @ 0050c330.
+ * Approximate ClearLineOfSight.
  *
- * Retail order (Ghidra-validated):
+ * Retail order (retail):
  * 1. NoNonWalkPolysDetailed(…, personal_space=0.001, exclude source+target)
- *    — static doors/placeables only (not room walk-check mesh)
+ * — static doors/placeables only (not room walk-check mesh)
  * 2. Per-room CheckAABBLineOfSight with los_material_mask
- *    (`1 << (mat & 0x1f)` & mask — JS: surfacemat.lineofsight / blocksLineOfSight)
+ * (`1 << (mat & 0x1f)` & mask — JS: surfacemat.lineofsight / blocksLineOfSight)
  *
  * @file clear-line-of-sight.ts
  */

@@ -6,14 +6,14 @@ import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
 import { SMOOTH_SELECTION_BUDGET_MS } from "@/engine/pathfinding/smooth-select-nodes";
 
 /**
- * CSWSArea::SmoothCornerOptimize @ 004bfe20 + ComputeBestCorner @ 004be3a0.
+ * SmoothCornerOptimize + ComputeBestCorner.
  *
  * For sharp corners (BA·BC normalized < 0.9), binary-search a chord that cuts
  * the corner, then nested CBC passes refine near/far sides of the chord
  * (retail SmoothCornerOptimize control flow).
  *
  * Restartable variant is KotOR.js hitch hardening (retail runs corners sync after
- * SmoothSelectionRestartable returns 0). Budget matches DAT_007a1b1c ≈ 10ms.
+ * SmoothSelectionRestartable returns 0). Budget matches retail constant ≈ 10ms.
  *
  * @file smooth-corner-optimize.ts
  */
@@ -91,7 +91,7 @@ export function smoothCornerOptimizeRestartable(
     const b = source[cornerIndex].vector;
     const c = source[cornerIndex + 1].vector;
 
-    // Retail SmoothCornerOptimize @ 004bfe20 — nested ComputeBestCorner passes
+    // Retail SmoothCornerOptimize — nested ComputeBestCorner passes
     const chord = computeBestCorner(area, a, b, c, owner);
     if(!chord){
       workingVecs.push(b.clone());

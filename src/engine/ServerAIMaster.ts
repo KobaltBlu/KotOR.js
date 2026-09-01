@@ -7,7 +7,7 @@ import { GameState } from "@/GameState";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { ModuleCreature } from "@/module/ModuleCreature";
 
-/** Retail CServerAIMaster::UpdateState total per-frame budget (microseconds). */
+/** Retail UpdateState total per-frame budget (microseconds). */
 const AI_BUDGET_US = 10000;
 /** Fraction of remaining budget each non-zero level may consume. */
 const AI_LEVEL_BUDGET_FRACTION = 0.6;
@@ -15,7 +15,7 @@ const AI_LEVEL_BUDGET_FRACTION = 0.6;
 const AI_OVERFLOW_US = 75000;
 
 /**
- * ServerAIMaster — port of retail CServerAIMaster (UpdateState @ 004b0b70).
+ * ServerAIMaster — retail AI master UpdateState scheduling.
  *
  * Five AI-priority lists with time-budgeted round-robin AIUpdate scheduling,
  * an every-frame quick-walk pass for moving creatures, and event-queue draining
@@ -43,7 +43,7 @@ export class ServerAIMaster {
   }
 
   /**
-   * Retail CServerAIMaster::AddObject — register at a level (default VERY_LOW).
+   * Retail AddObject — register at a level (default VERY_LOW).
    * Removes from the previous list if already registered.
    */
   static addObject(object: ModuleObject, level: AILevel = AILevel.VERY_LOW): boolean {
@@ -63,7 +63,7 @@ export class ServerAIMaster {
   }
 
   /**
-   * Retail CServerAIMaster::RemoveObject.
+   * Retail RemoveObject.
    */
   static removeObject(object: ModuleObject): boolean {
     if(!object || object.aiLevel === AILevel.INVALID) return false;
@@ -89,7 +89,7 @@ export class ServerAIMaster {
   }
 
   /**
-   * Retail CServerAIMaster::SetAILevel — no-op if already at that level.
+   * Retail SetAILevel — no-op if already at that level.
    */
   static setAILevel(object: ModuleObject, level: AILevel): boolean {
     if(!object) return false;
@@ -144,7 +144,7 @@ export class ServerAIMaster {
   }
 
   /**
-   * Retail CServerAIMaster::UpdateState @ 004b0b70.
+   * Retail UpdateState.
    * Iterates AI levels 4→0 with a 10ms budget; per list runs quick-walk, drains
    * due events, then round-robins aiUpdate until budget or wrap.
    */
@@ -291,7 +291,7 @@ export class ServerAIMaster {
     const tm = module.timeManager;
     if(!tm) return;
 
-    // Process oldest-first; retail removes head. Our queue is unsorted array —
+    // Process oldest-first; retail removes head. Our queue is unsorted array
     // scan and execute all currently due, same as Module.tick did.
     let i = module.eventQueue.length - 1;
     for(; i >= 0; i--){
@@ -329,7 +329,7 @@ export class ServerAIMaster {
   }
 
   private static creatureNeedsQuickWalk(creature: ModuleCreature): boolean {
-    // Retail field427_0xa8c ∈ {4,5,6} — Force Push QuickWalk even while debilitated.
+    // Retail ∈ {4,5,6} — Force Push QuickWalk even while debilitated.
     if(
       creature.forcePushLocoState === 4 ||
       creature.forcePushLocoState === 5 ||

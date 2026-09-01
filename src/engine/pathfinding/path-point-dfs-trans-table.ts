@@ -1,5 +1,5 @@
 /**
- * Approximate CSWSArea::PathPointDFSTransTable* @ 004bbeb0 / 004bbf20 / 004bc010.
+ * Approximate PathPointDFSTransTable*.
  *
  * 512 slots (256 primary + 256 overflow), 16 bytes each = 0x2000.
  * Slot: { x, y, gCost, remainingBudget }.
@@ -37,7 +37,7 @@ export class PathPointDfsTransTable {
   }
 
   /**
-   * Retail Get: match primary then overflow (+0x100).
+   * Retail Get: match primary then overflow.
    * Returns stored g/remaining, or undefined on miss.
    */
   get(px: number, py: number): TransTableEntry | undefined {

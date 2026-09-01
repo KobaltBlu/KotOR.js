@@ -8,7 +8,7 @@ import { GameEngineType } from "@/enums/engine";
 export class SaveLoadAudit {
   static PREFIX = '[SaveLoadAudit]';
 
-  /** Retail CSWGlobalVariableTable::WriteTable ValBoolean size */
+  /** Retail WriteTable ValBoolean size */
   static valBooleanByteSize(booleanCount: number): number {
     return (booleanCount >> 3) + 1;
   }
@@ -76,7 +76,7 @@ export class SaveLoadAudit {
     const pm = GameState.PartyManager;
     const isTSL = GameState.GameKey == GameEngineType.TSL;
 
-    // Static formula smoke (Ghidra WriteTable)
+    // Static formula smoke (retailWriteTable)
     const vbSamples = [0, 1, 7, 8, 9, 16];
     const vbOk = vbSamples.every(n => {
       const expected = (n >> 3) + 1;
@@ -168,7 +168,7 @@ export class SaveLoadAudit {
     checks.push({
       name: 'Sound Times BYTE',
       ok: true,
-      detail: 'CSWSSoundObject::Save Times is BYTE',
+      detail: 'SoundObject Save Times is BYTE',
     });
     checks.push({
       name: 'creature Age/AIState fields',
@@ -254,7 +254,7 @@ export class SaveLoadAudit {
     }
 
     // Accepted-empty stores (not gaps unless scripts rely on them mid-playthrough)
-    // Limbo: Ghidra AddObjectToLimbo is load-only — empty at playtime is retail-accurate
+    // Limbo: retailAddObjectToLimbo is load-only — empty at playtime is retail-accurate
     if(when === 'export' && (mod?.limboCreatures?.length ?? 0) === 0){
       SaveLoadAudit.summary('accepted-empty', { limbo: 0 });
     }

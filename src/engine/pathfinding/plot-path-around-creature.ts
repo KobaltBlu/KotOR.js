@@ -6,7 +6,7 @@ import { computeHeightAtPoint } from "@/engine/pathfinding/compute-safe-location
 import { getCreaturePersonalSpace } from "@/combat/attack-range";
 
 /**
- * Approximate CAvoidCreature::PlotPathAroundCreature @ 005d0840.
+ * Approximate PlotPathAroundCreature.
  *
  * Retail: ComputeHexPoints around blocker (cre_personal_space sum), FindEntryAndExit
  * on current path, dual FindPath (CW/CCW), IsPathClear scoring, InsertPathSegmentBetween.
@@ -44,7 +44,7 @@ type EntryExit = {
 };
 
 /**
- * Build hex vertices around center (retail ComputeHexPoints @ 005cf1f0).
+ * Build hex vertices around center (retail ComputeHexPoints).
  * First vertex = center + normalize(-facing) * (radius / 0.866025);
  * then rotate −60° about Z five times. Z via ComputeHeight approx.
  */
@@ -77,7 +77,7 @@ export function computeHexPoints(
 }
 
 /**
- * Retail IsPointInHex @ 005cfc70 — point inside all six inward half-planes.
+ * Retail IsPointInHex — point inside all six inward half-planes.
  */
 export function isPointInHex(hex: THREE.Vector3[], p: THREE.Vector3): boolean {
   if(hex.length < 3) return false;
@@ -126,7 +126,7 @@ function intersectSegments2d(
 }
 
 /**
- * Retail FindEntryAndExit @ 005d0160 — walk path segments vs hex edges.
+ * Retail FindEntryAndExit — walk path segments vs hex edges.
  */
 export function findEntryAndExit(
   pathPoints: { vector: THREE.Vector3 }[],
@@ -155,7 +155,7 @@ export function findEntryAndExit(
         entryPoint.copy(_hit);
         hits = 1;
       }else{
-        // Shift previous entry → "first hit" storage like retail field2..field6
+        // Shift previous entry → "first hit" storage like retail..state
         exitPathIdx = entryPathIdx;
         exitHexEdge = entryHexEdge;
         exitPoint.copy(entryPoint);
@@ -169,7 +169,7 @@ export function findEntryAndExit(
     }
   }
 
-  // After loop retail stores: field2=entry path idx, field7=exit path idx (swapped naming).
+  // After loop retail stores: state=entry path idx, state=exit path idx (swapped naming).
   // We want chronological entry then exit along the path.
   if(hits >= 2){
     // Last two hits: exitPoint was previous, entryPoint is latest — swap to chronological
@@ -274,9 +274,9 @@ function scoreArc(
 /**
  * Try to detour around blocker. Returns splice result + optional enemy on arc.
  *
- * Retail CAvoidCreature::PlotPathAroundCreature @ 005d0840: FindEntryAndExit
+ * Retail PlotPathAroundCreature: FindEntryAndExit
  * miss → return 0 (no splice). We pop consumed waypoints (retail keeps them and
- * advances field33), so the remaining path may be only the destination while the
+ * advances state), so the remaining path may be only the destination while the
  * blocker sits on the creature→dest segment. Prepend the live position for
  * FindEntryAndExit / splice so that segment is visible — still fail closed when
  * entry/exit cannot be resolved (no distance fallback; that grew paths unboundedly).

@@ -1,24 +1,24 @@
 /**
- * Retail CSWGuiTutorial help sequences for PlayPazaak(bShowTutorial=1).
+ * Pazaak tutorial help sequences for PlayPazaak(bShowTutorial=1).
  *
- * K1: ShowMultipleHelp @ 0067e0b0, HandleTutorialClose @ 0067ea10,
- * StartNewGame @ 0067e770, OnPanelAdded (setup) @ 0067f750.
- * Aspyr: FUN_0088eaa0 mirrors the same TLK ids.
+ * K1: ShowMultipleHelp, HandleTutorialClose,
+ * StartNewGame, OnPanelAdded (setup).
+ * Aspyr mirrors the same TLK ids.
  *
  * Pure state machine — no GameState / Three.js imports (Jest-safe).
  */
 
 /** Setup OnPanelAdded help. */
 export const PAZAAK_TUT_SETUP = [0x96e3, 0x96e4, 0x96e5] as const;
-/** Game StartNewGame help (once per session, field29 bit 8). */
+/** Game StartNewGame help (once per session, state bit 8). */
 export const PAZAAK_TUT_GAME_START = [0x96e7, 0x96e8] as const;
-/** After first player draw (field29 bit 2). */
+/** After first player draw (state bit 2). */
 export const PAZAAK_TUT_DRAWN_CARD = 0x96e9;
 /** After closing 0x96e9 — hand / flip help. */
 export const PAZAAK_TUT_HAND_HELP = [0x96ea, 0x96eb, 0x96ec, 0x96f3, 0x96f4] as const;
 /** After closing 0x96ec / 0x96f4 — stand / continue help. */
 export const PAZAAK_TUT_STAND_HELP = [0x96ed, 0x96ee, 0x96ef] as const;
-/** Enemy turn help (field29 bit 4). */
+/** Enemy turn help (state bit 4). */
 export const PAZAAK_TUT_ENEMY_TURN = 0x96f5;
 /** Perfect 20. */
 export const PAZAAK_TUT_TWENTY = 0x96f6;
@@ -62,15 +62,15 @@ export class PazaakTutorialDriver {
   queue: number[] = [];
   /** Strref currently (or last) shown. */
   current = 0;
-  /** Retail field29 bit 8 — StartNewGame intro. */
+  /** retail bit 8 — StartNewGame intro. */
   gameStartShown = false;
-  /** Retail field29 bit 2 — first draw help. */
+  /** retail bit 2 — first draw help. */
   drawnCardHelpShown = false;
-  /** Retail field29 bit 4 — enemy turn help. */
+  /** retail bit 4 — enemy turn help. */
   enemyTurnHelpShown = false;
-  /** Retail field29 bit 0x10 — twenty help. */
+  /** retail bit 0x10 — twenty help. */
   twentyHelpShown = false;
-  /** Hand index deferred for PLAY_SIDE (HandlePlayHandCard field30). */
+  /** Hand index deferred for PLAY_SIDE (HandlePlayHandCard state). */
   pendingHandIndex = -1;
 
   reset(){

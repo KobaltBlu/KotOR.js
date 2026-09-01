@@ -9,7 +9,7 @@ import {
 } from "@/engine/rules/skill-points";
 
 /**
- * Retail ability index for CSWLevelStats::attribute_index / LevelUp @ 005aabf0.
+ * Retail ability index for attribute_index / LevelUp.
  * Order is STR,DEX,CON,INT,WIS,CHA (not CharGenAttribute).
  */
 export enum LevelUpAbilityIndex {
@@ -22,7 +22,7 @@ export enum LevelUpAbilityIndex {
   CHA = 5,
 }
 
-/** Pending level draft mirroring retail CSWLevelStats. */
+/** Pending level draft mirroring retail. */
 export interface LevelUpDraft {
   classId: number;
   /** New class level after this level-up (1-based). */
@@ -47,7 +47,7 @@ export interface LevelUpDraft {
   hasPowersStep: boolean;
 }
 
-/** Persisted retail CSWLevelStats entry (LvlStatList element). */
+/** Persisted retail entry (LvlStatList element). */
 export interface LevelStatRecord {
   classId: number;
   hpChange: number;

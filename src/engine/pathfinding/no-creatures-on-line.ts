@@ -14,7 +14,7 @@ import {
 } from "@/engine/pathfinding/walk-hit-info";
 
 /**
- * Approximate CSWSArea::NoCreaturesOnLine @ 004bc590.
+ * Approximate NoCreaturesOnLine.
  *
  * Retail: cre_personal_space(+0.01) capsule along the segment; returns 0 and
  * writes blocker object id when a living bumpable creature overlaps.
@@ -27,7 +27,7 @@ import {
 export type NoCreaturesOnLineResult = {
   /** true = clear (retail return 1). */
   clear: boolean;
-  /** Blocker id when clear=false (retail *param_6). */
+  /** Blocker id when clear=false (retail *arg6). */
   blockingCreatureId?: number;
 };
 
@@ -70,15 +70,15 @@ export function noCreaturesOnLine(
   to: THREE.Vector3,
   options: {
     owner?: ModuleObject;
-    /** Self cre_personal_space (retail param_3->cre_personal_space + 0.01). */
+    /** Self cre_personal_space (retail arg3->cre_personal_space + 0.01). */
     crePersonalSpace?: number;
     ignoreCreatureIds?: number[];
     allowPartyCreatures?: boolean;
-    /** Soft-pair for EvaluateOverlappingTargets (retail pathfind field12). */
+    /** Soft-pair for EvaluateOverlappingTargets (retail pathfind state). */
     softCreature?: ModuleObject;
     /**
      * When true, skip creatures where GetIsCreatureBumpable(owner, other)
-     * (retail NoCreatures param_5 gate — rarely set by callers).
+     * (retail NoCreatures arg5 gate — rarely set by callers).
      */
     skipBumpable?: boolean;
     /** Optional retail CWalkHitInfo out-param. */

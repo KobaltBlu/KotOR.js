@@ -1,5 +1,5 @@
 /**
- * Jump destination resolution — retail CSWSCreature::AIActionJumpToPoint @ 0051d600
+ * Jump destination resolution — retail AIActionJumpToPoint
  * (AddToArea when dest area ≠ current; same-area SetPosition).
  *
  * KotOR.js modules are typically one area; when dest area belongs to another

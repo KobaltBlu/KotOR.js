@@ -4,11 +4,11 @@ import { PathPoint } from "@/engine/pathfinding/PathPoint";
 import { PathPointDfsTransTable } from "@/engine/pathfinding/path-point-dfs-trans-table";
 
 /**
- * Approximate CSWSArea::PathPointDFSearch @ 004c0b30 + GenerateSuccessors @ 004bdb00.
+ * Approximate PathPointDFSearch + GenerateSuccessors.
  *
- * Goal-ordered DFS with iterative cost budget (PlotPathPointPath @ 004c2200)
+ * Goal-ordered DFS with iterative cost budget (PlotPathPointPath)
  * and TransTable pruning. Wall-clock time slice mirrors retail return-1;
- * continuation reuses TransTable + cost budget (field104/field111) — retail
+ * continuation reuses TransTable + cost budget (state/state) — retail
  * does not save the mid-DFS call stack.
  *
  * @file path-point-dfs.ts
@@ -28,9 +28,9 @@ export type PathPointDfsResult = {
   visits: number;
   /** True when wall-clock budget expired before a full solution (retail return 1). */
   timedOut?: boolean;
-  /** TransTable to reuse on the next frame (retail field104_0x1b4). */
+  /** TransTable to reuse on the next frame (Retail). */
   transTable?: PathPointDfsTransTable;
-  /** Cost budget to continue deepening from (retail field111). */
+  /** Cost budget to continue deepening from (retail). */
   costBudget?: number;
 };
 

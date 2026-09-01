@@ -14,12 +14,12 @@ import { getNearestActionPoint } from "@/combat/nearest-action-point";
 import { getPathPersonalSpace } from "@/combat/attack-range";
 
 /**
- * Inter-area pathfinding (retail PlotInterAreaPath / ComputeInterAreaPath /
- * InterAreaDFS @ 004c6e20 / 004c6bd0 / 004c5510).
+ * Inter-area pathfinding (retail PlotInterAreaPath / ComputeInterAreaPath
+ * InterAreaDFS).
  *
  * Builds a waypoint list of transition doors/triggers. Same-module hops use
  * LinkedToFlags 1|2 doors + TRANSITION triggers; cross-module hops use
- * LinkedToModule. CountAreaTransitionTriggers visit marks (field42_0x1e0)
+ * LinkedToModule. CountAreaTransitionTriggers visit marks
  * keep one portal per destination.
  *
  * @file inter-area-path.ts
@@ -71,7 +71,7 @@ function getLoadedAreas(): ModuleArea[] {
   return [];
 }
 
-/** Clear retail field42_0x1e0 on all loaded areas. */
+/** Clear Retail on all loaded areas. */
 export function clearInterAreaVisitMarks(){
   const areas = getLoadedAreas();
   for(let i = 0; i < areas.length; i++){
@@ -110,7 +110,7 @@ export function resolveTransitionDest(
     };
   }
 
-  // Retail GetTargetArea @ 0058c830 — TRANSITION trigger LinkedTo → waypoint → area
+  // Retail GetTargetArea — TRANSITION trigger LinkedTo → waypoint → area
   if(BitWise.InstanceOfObject(transition, ModuleObjectType.ModuleTrigger)){
     const trigger = transition as ModuleTrigger;
     if((trigger.type | 0) !== ModuleTriggerType.TRANSITION) return undefined;
@@ -131,7 +131,7 @@ export function resolveTransitionDest(
 }
 
 /**
- * Retail CountAreaTransitionTriggers @ 004bc400.
+ * Retail CountAreaTransitionTriggers.
  * Linked doors (flags 1|2) + TRANSITION triggers with resolvable dest.
  * LinkedToModule portals included for cross-module chase (KotOR.js).
  * When `out` is provided, fills it and sets dest area interAreaVisitMark (one portal per dest).
@@ -197,7 +197,7 @@ export function countAreaTransitionTriggers(
 
 /**
  * Collect module-transition + same-module linked doors/triggers in an area.
- * @param excludedIds Retail field40_0xb8 — skip these transition object ids.
+ * @param excludedIds Skip these transition object ids.
  * Uses visit marks: one portal per destination (CountAreaTransitionTriggers).
  */
 export function listAreaTransitions(
@@ -248,7 +248,7 @@ function listAllLoadedEdges(excludedIds?: ReadonlyArray<number>): TransitionEdge
 }
 
 /**
- * Retail InterAreaDFS @ 004c5510 — depth-limited search for dest key.
+ * Retail InterAreaDFS — depth-limited search for dest key.
  * Returns transition objects along the path (excluding start).
  */
 export function interAreaDFS(
@@ -303,7 +303,7 @@ export function interAreaDFS(
 }
 
 /**
- * Retail ComputeInterAreaPath @ 004c6bd0 — try depths 1..9.
+ * Retail ComputeInterAreaPath — try depths 1..9.
  */
 export function computeInterAreaPath(
   startAreaId: number,
@@ -375,7 +375,7 @@ export function findBestTransition(
 }
 
 /**
- * Retail SetIntraAreaGoal @ 004c3ea0 — place start goal at door action point
+ * Retail SetIntraAreaGoal — place start goal at door action point
  * or trigger closest point.
  */
 export function setIntraAreaGoal(
@@ -411,7 +411,7 @@ export function setIntraAreaGoal(
 /**
  * Seed creature.interAreaWaypoints via ComputeInterAreaPath / DFS.
  * Falls back to nearest transition when no dest specified or DFS fails.
- * Honors creature.interAreaExcludedIds (retail field40_0xb8).
+ * Honors creature.interAreaExcludedIds (Retail).
  */
 export function beginInterAreaPath(
   creature: ModuleCreature,
@@ -483,8 +483,8 @@ export function beginInterAreaPath(
 }
 
 /**
- * Retail PlotInterAreaPath failed-portal retry @ 004c6e20:
- * append first hop transition id to field40_0xb8, reset path search, recompute.
+ * Retail PlotInterAreaPath failed-portal retry:
+ * append first hop transition id to the exclusion list, reset path search, recompute.
  * Returns true if a new path was found.
  */
 export function excludeFailedInterAreaPortal(

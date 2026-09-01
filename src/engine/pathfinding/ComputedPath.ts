@@ -15,7 +15,7 @@ import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import { noCreaturesOnLine } from "@/engine/pathfinding/no-creatures-on-line";
 import { isPthEdgeBlockedByObject } from "@/engine/pathfinding/pth-edge-block";
 
-/** Resume state for PlotPathPointPath field104 / field111 across timed-out searches. */
+/** Resume state for PlotPathPointPath state / state across timed-out searches. */
 export type PathPointDfsResume = {
   transTable: PathPointDfsTransTable;
   costBudget: number;
@@ -34,13 +34,13 @@ export class ComputedPath {
   destination: PathPoint = undefined;
   realtime: boolean = false;
   timer: number = 0;
-  /** SmoothSelectionRestartable mid-pipeline resume (field124 + working). */
+  /** SmoothSelectionRestartable mid-pipeline resume (state + working). */
   smoothResume: SmoothSelectionResume | undefined;
   /** SmoothCornerOptimize mid-pass resume (JS hitch hardening after selection). */
   smoothCornerResume: SmoothCornerResume | undefined;
   /** True when DFS hit wall-clock budget without a full path (retail return 1). */
   incomplete: boolean = false;
-  /** Populated on timeout for cross-frame TransTable reuse (retail field104_0x1b4). */
+  /** Populated on timeout for cross-frame TransTable reuse (Retail). */
   dfsResume: PathPointDfsResume | undefined;
 
   color = new THREE.Color().setRGB(1, 0.6470588235294118, 0);
@@ -82,10 +82,10 @@ export class ComputedPath {
   }
 
   /**
-   * PTH graph search — PathPointDFS (@ 004c0b30) with TransTable + iterative
+   * PTH graph search — PathPointDFS () with TransTable + iterative
    * cost budget (PlotPathPointPath). Creature detours from GenerateSuccessors.
    * Optional wall-clock slice (~retail high-res timer continuation).
-   * Pass `resume` to reuse TransTable when start/end unchanged (field104).
+   * Pass `resume` to reuse TransTable when start/end unchanged (state).
    */
   search(options: {
     timeBudgetMs?: number;
@@ -163,7 +163,7 @@ export class ComputedPath {
   }
 
   /**
-   * Edge cost for PTH expansion (GenerateSuccessors @ 004bdb00).
+   * Edge cost for PTH expansion (GenerateSuccessors).
    * cost < 0 = blocked (static door / placeable).
    * Non-static doors do not prune edges — plot through while scripted open finishes.
    * Creature on line → retail detour length + splice waypoint.
@@ -203,7 +203,7 @@ export class ComputedPath {
 
   /**
    * Prune — retail SmoothSelection three-pass (densify + string-pull).
-   * Optional time budget + resume (~SmoothSelectionRestartable @ 004c13e0).
+   * Optional time budget + resume (~SmoothSelectionRestartable).
    * On timeout sets `smoothResume` for ModulePath cross-frame session.
    */
   prunePathPoints(options: {

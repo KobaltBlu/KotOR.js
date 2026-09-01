@@ -6,7 +6,7 @@ import type { TwoDAObject } from '@/resource/TwoDAObject';
 
 /**
  * Retail modulesave.2da AutoSaveOnEnter column values.
- * TSL AutoSaveOnEnteringModule @ 007bdf50 / K1 StartNewModule path.
+ * TSL AutoSaveOnEnteringModule / K1 StartNewModule path.
  */
 export enum ModuleAutoSaveOnEnter {
   No = 'no',
@@ -16,7 +16,7 @@ export enum ModuleAutoSaveOnEnter {
 
 /**
  * modulesave.2da helpers — IncludeModuleInSave, AutoSaveOnEnteringModule,
- * DoModuleEnterSaveCleanup (TSL @ 007bddb0 / 007bdf50 / 007bfb10).
+ * DoModuleEnterSaveCleanup (TSL).
  */
 export class ModuleSaveTable {
 
@@ -121,7 +121,7 @@ export class ModuleSaveTable {
   }
 
   /**
-   * Retail UpdateAutoSaveTimer @ 007bce70 — accumulate wall time; mark due at ~15 min.
+   * Retail UpdateAutoSaveTimer — accumulate wall time; mark due at ~15 min.
    * @param deltaSeconds THREE.Clock delta in seconds
    */
   static updateAutoSaveTimer(deltaSeconds: number): boolean {
@@ -137,7 +137,7 @@ export class ModuleSaveTable {
   }
 
   /**
-   * Retail AutoSaveOnEnteringModule @ 007bdf50.
+   * Retail AutoSaveOnEnteringModule.
    * force → always; no → never; yes → only if timer due and INI AutoSave on;
    * missing table/row/column → autosave (and clear timer).
    */
@@ -150,7 +150,7 @@ export class ModuleSaveTable {
 
     const mode = ModuleSaveTable.getAutoSaveOnEnter(moduleName);
     if(mode === undefined){
-      // GetCExoStringEntry failed / blank → clear timer, autosave
+      // String entry failed / blank → clear timer, autosave
       ModuleSaveTable.clearAutoSaveTimer();
       return true;
     }
@@ -173,8 +173,8 @@ export class ModuleSaveTable {
   }
 
   /**
-   * Retail DoModuleEnterSaveCleanup @ 007bfb10 —
-   * delete GAMEINPROGRESS .sav for every module whose SaveGroup matches
+   * Retail DoModuleEnterSaveCleanup
+   * delete GAMEINPROGRESS.sav for every module whose SaveGroup matches
    * the destination's DeleteSaveGroupOnEnter.
    */
   static async doModuleEnterSaveCleanup(moduleName: string): Promise<void> {

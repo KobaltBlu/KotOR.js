@@ -12,8 +12,8 @@ import { clearLineOfSight } from "@/engine/pathfinding/clear-line-of-sight";
 import { countVisibleToPlayers } from "@/engine/pathfinding/count-visible-to-players";
 
 /**
- * Retail CSWSArea::ComputeSafeLocation @ 004be860 /
- * ComputeNonVisibleLocation @ 004bee30 (Pass AF).
+ * Retail ComputeSafeLocation
+ * ComputeNonVisibleLocation (Pass AF).
  *
  * Safe: expanding ring of TestSafeLocationPoint (center first).
  * NonVisible: prefers candidates with lower CountVisibleToPlayers; on total
@@ -29,7 +29,7 @@ export type ComputeSafeLocationOptions = {
   radius?: number;
   /** Step / personal_space; defaults to owner appearance.perspace. */
   personalSpace?: number;
-  /** When true, require TestDirectLine clear to center (retail param_4). */
+  /** When true, require TestDirectLine clear to center (retail arg4). */
   requireLineOfSight?: boolean;
   /** Creature for perspace / creature-blocking tests. */
   owner?: ModuleObject;
@@ -139,7 +139,7 @@ export function computeSafeLocation(
 }
 
 /**
- * Retail CSWSArea::ComputeNonVisibleLocation @ 004bee30 (Pass AF).
+ * Retail ComputeNonVisibleLocation (Pass AF).
  * Prefers safe points with fewer player LOS hits via CountVisibleToPlayers
  * (30 m + eye Z); candidates within 30 of center need ClearLineOfSight from center.
  * On total failure sets out to (−1,−1,−1) and returns false.

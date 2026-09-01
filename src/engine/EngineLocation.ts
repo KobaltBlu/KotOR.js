@@ -4,9 +4,9 @@ import { GameState } from "@/GameState";
 
 /**
  * EngineLocation class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file EngineLocation.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -67,7 +67,7 @@ export default class EngineLocation {
   }
 
   //Use the rotation values to update the facing value
-  // Retail Yaw @ 004aa0f0: atan2(-x, y) — matches ModuleCreature loadPlayer facing.
+  // Retail Yaw: atan2(-x, y) — matches ModuleCreature loadPlayer facing.
   updateFacing(){
     this.facing = -Math.atan2(this.rotation.x, this.rotation.y);
   }

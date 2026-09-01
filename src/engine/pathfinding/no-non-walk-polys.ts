@@ -8,11 +8,11 @@ import {
 } from "@/engine/pathfinding/walk-hit-info";
 
 /**
- * CSWSArea::NoNonWalkPolysDetailed @ 00506650 +
- * NoNonWalkPolysOnRoom @ 00579680 (doors / placeables / mesh).
+ * NoNonWalkPolysDetailed +
+ * NoNonWalkPolysOnRoom (doors / placeables / mesh).
  *
- * Retail static placeables: CSWSPlaceable::NoNonWalkPolys @ 00585350 →
- * CSWCollisionMesh only (no bare AABB). Closed doors keep facing-plane /
+ * Retail static placeables: NoNonWalkPolys →
+ * collision mesh only (no bare AABB). Closed doors keep facing-plane
  * door-wok tests; room non-walk materials via NoNonWalkPolysOnRoom.
  *
  * @file no-non-walk-polys.ts
@@ -42,7 +42,7 @@ function segmentHitsBox(a: THREE.Vector3, b: THREE.Vector3, box: THREE.Box3): bo
 }
 
 /**
- * Door walkmesh — retail NoNonWalkPolysInDoor @ 005890f0 runs CSWCollisionMesh
+ * Door walkmesh — retail NoNonWalkPolysInDoor runs collision mesh
  * on the open_state surface mesh. Missing/empty open mesh = clear (no faces).
  * Facing-plane fallback is closed-only (GetDoorCrossed).
  */
@@ -128,7 +128,7 @@ export function noNonWalkPolysDetailed(
     hit?: WalkHitInfo;
     /** Skip room/placeable wok face corridor (grid micro-steps). */
     skipMesh?: boolean;
-    /** Object ids to skip (ClearLineOfSight exclude list @ 0050c330). */
+    /** Object ids to skip (ClearLineOfSight exclude list). */
     ignoreObjectIds?: number[];
   } = {}
 ): NoNonWalkPolysResult {
@@ -154,8 +154,8 @@ export function noNonWalkPolysDetailed(
     }
   }
 
-  // Retail NoNoneWalkPolysInStaticObject @ 004bbe20 → CSWSPlaceable::NoNonWalkPolys
-  // @ 00585350 → CSWCollisionMesh only. Static placeables with no surface wok
+  // Retail NoNoneWalkPolysInStaticObject → NoNonWalkPolys
+  // → collision mesh only. Static placeables with no surface wok
   // (InfoTerm / invisible cameras / speak placeholders) must not AABB-block.
   const placeables = area.placeables;
   if(placeables?.length){

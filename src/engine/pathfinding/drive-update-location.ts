@@ -15,9 +15,9 @@ import {
 } from "@/engine/pathfinding/test-direct-line";
 
 /**
- * Retail CSWSCreature::DriveUpdateLocation @ 0051cd20 + GetDoorCrossed @ 005064d0
- * + WalkUpdateLocationTestDistance creature/BumpFriends gate @ 00512fd0
- * + AIActionDrive TestDirectLine binary/wall-slide @ 0051e6a0.
+ * Retail DriveUpdateLocation + GetDoorCrossed
+ * + WalkUpdateLocationTestDistance creature/BumpFriends gate
+ * + AIActionDrive TestDirectLine binary/wall-slide.
  *
  * Moves toward the path point by walk/run × delta, clips via TestDirectLine
  * (NoNonWalkPolysDetailed), NoCreaturesOnLine + BumpFriends, fires OnClicked
@@ -116,7 +116,7 @@ function lineOk(code: TestDirectLineCode): boolean {
 }
 
 /**
- * AIActionDrive @ 0051e6a0 — TestDirectLine to ideal; on fail binary-search
+ * AIActionDrive — TestDirectLine to ideal; on fail binary-search
  * fraction then ±perpendicular wall-slide (up to 15 iters). Uses
  * NoNonWalkPolysDetailed via testDirectLine (hitinfo path).
  */
@@ -257,7 +257,7 @@ export function driveResolveMoveTarget(
     }
   }
 
-  // Retail: slide step length *= max(dot, 0.25) via field398 speed factor
+  // Retail: slide step length *= max(dot, 0.25) via state speed factor
   if(best){
     const factor = Math.max(0.25, Math.min(1, bestDot > 0 ? bestDot : 0.25));
     if(creature){
@@ -346,7 +346,7 @@ function signalDoorClicked(creature: ModuleCreature, door: ModuleDoor){
 
 /**
  * Retail DriveUpdateLocation — one frame of drive motion toward dest.
- * @param running Use run rate (retail param_1).
+ * @param running Use run rate (retail arg1).
  * @param rateOverride Optional world-units/sec (strafe 0x275e/0x275f → 1.6).
  */
 export function driveUpdateLocation(
@@ -408,7 +408,7 @@ export function driveUpdateLocation(
     return DriveUpdateResult.BLOCKED;
   }
 
-  // DriveUpdateLocation @ 0051cd20: NoCreaturesOnLine only (no BumpFriends —
+  // DriveUpdateLocation: NoCreaturesOnLine only (no BumpFriends
   // bump happens in AIActionDrive / WalkUpdate / driveResolveMoveTarget).
   // Party members are soft-bumped earlier; do not hard-block the final step.
   const creatures = noCreaturesOnLine(area, creature.position, clipped, {

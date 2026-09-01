@@ -20,7 +20,7 @@ export const RACE_DROID = 5;
 export const RACE_HUMAN = 6;
 
 /**
- * Retail CheckItemRaceRestrictions droid_or_human @ 005182f0:
+ * Retail CheckItemRaceRestrictions droid_or_human:
  * 1 = human (race 6), 2 = droid (race 5).
  */
 export function passesDroidOrHumanRestriction(race: number, droidOrHuman: number): boolean {
@@ -77,7 +77,7 @@ export function passesDenySubraceMask(subraceIndex: number, denySubrace: number)
 }
 
 /**
- * Retail CSWSCreatureStats::GetSimpleAlignmentGoodEvil @ 005a5110 /
+ * Retail GetSimpleAlignmentGoodEvil
  * adjustAlignment labels: 1 = NEUTRAL, 2 = LIGHT, 3 = DARK.
  */
 export const SimpleAlignment = {
@@ -115,7 +115,7 @@ function hasUseableProp(props: UseLimitationProp[], propertyName: number): boole
 }
 
 /**
- * Retail CheckItemAlignmentRestrictions @ 005145a0.
+ * Retail CheckItemAlignmentRestrictions.
  * Bypass when HasFeat(PROFICIENCY_ALL / 0x5d).
  */
 export function checkItemAlignmentRestrictions(
@@ -135,7 +135,7 @@ export function checkItemAlignmentRestrictions(
 }
 
 /**
- * Retail CheckItemClassRestrictions @ 00518210.
+ * Retail CheckItemClassRestrictions.
  * OR across UseLimitationClass props — any matching class passes.
  */
 export function checkItemClassRestrictions(
@@ -156,7 +156,7 @@ export function checkItemClassRestrictions(
 }
 
 /**
- * Retail CheckItemFeatRestrictions @ 00514650.
+ * Retail CheckItemFeatRestrictions.
  * Fail when any UseLimitationFeat has zero remaining uses.
  * Menu uses hasFeat as remaining-uses proxy (non-zero if owned).
  */
@@ -176,7 +176,7 @@ export function checkItemFeatRestrictions(
 }
 
 /**
- * Retail CheckItemRaceRestrictions UseLimitationRacial branch @ 005182f0
+ * Retail CheckItemRaceRestrictions UseLimitationRacial branch
  * (after denysubrace clear): if prop exists, creature race must match a subtype.
  */
 export function checkItemUseLimitationRacial(

@@ -24,9 +24,9 @@ const winEpoch = new Date("01-01-1601 UTC").getTime();
 
 /**
  * SaveGame class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SaveGame.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -114,15 +114,15 @@ export class SaveGame {
 
   /**
    * Creates a new SaveGame instance.
-   * 
+   *
    * @param {string} [name=''] - The folder name or path of the save game. If a full path is provided, only the folder name will be used.
-   * 
+   *
    * @example
    * // Create a save game from folder name
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
-   * 
+   *
    * // Create a save game from full path
-   * const saveGame = new SaveGame('Saves/000001 - AUTOSAVE');
+   * const saveGame = new SaveGame('Saves - AUTOSAVE');
    */
   constructor(name = ''){
     this.folderName = name.split('/').pop();
@@ -145,16 +145,16 @@ export class SaveGame {
 
   /**
    * Loads the save game metadata from the savenfo.res file.
-   * 
+   *
    * This method reads the savenfo.res file from the save game directory and populates
    * all the metadata properties including area name, module name, save name, time played,
    * timestamps, portraits, and other save game information.
-   * 
+   *
    * @async
    * @returns {Promise<void>} Resolves when the metadata has been loaded.
-   * 
+   *
    * @throws {Error} Throws an error if the savenfo.res file cannot be read or parsed.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * await saveGame.loadNFO();
@@ -255,16 +255,16 @@ export class SaveGame {
 
   /**
    * Loads the Player Information File Object (PIFO) from the save game.
-   * 
+   *
    * The PIFO contains player character template information and is used to restore
    * the player's character data when loading a save game. This method loads the
    * pifo.ifo file and sets up the player template in the PartyManager.
-   * 
+   *
    * @async
    * @returns {Promise<void>} Resolves when the PIFO has been loaded and processed.
-   * 
+   *
    * @throws {Error} Throws an error if the pifo.ifo file cannot be read or parsed.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * await saveGame.loadPIFO();
@@ -288,17 +288,17 @@ export class SaveGame {
 
   /**
    * Loads the Player Character (PC) data from the save game.
-   * 
+   *
    * This method extracts the player character data from the SAVEGAME.sav file
    * and loads it into a GFFObject for further processing. The PC data contains
    * the current state of the player character including stats, inventory, and
    * other character-specific information.
-   * 
+   *
    * @async
    * @returns {Promise<void>} Resolves when the PC data has been loaded.
-   * 
+   *
    * @throws {Error} Throws an error if the PC data cannot be extracted or parsed.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * await saveGame.loadPC();
@@ -316,7 +316,7 @@ export class SaveGame {
 
   /**
    * Loads a complete save game and restores the game state.
-   * 
+   *
    * This is the main method for loading a save game. It performs the following operations:
    * 1. Sets up the loading state and tutorial tracking
    * 2. Restores the game time from the save
@@ -327,12 +327,12 @@ export class SaveGame {
    * 7. Loads party table data
    * 8. Loads player information (PIFO and PC)
    * 9. Loads the last module that was being played
-   * 
+   *
    * @async
    * @returns {Promise<void>} Resolves when the save game has been completely loaded.
-   * 
+   *
    * @throws {Error} Throws an error if any part of the loading process fails.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * await saveGame.load();
@@ -418,16 +418,16 @@ export class SaveGame {
 
   /**
    * Initializes the game in progress folder and extracts save game resources.
-   * 
+   *
    * This method creates the game in progress folder structure and extracts
    * all necessary resources from the SAVEGAME.sav file to make them available
    * for the game engine to use during gameplay.
-   * 
+   *
    * @async
    * @returns {Promise<void>} Resolves when the game in progress folder has been initialized.
-   * 
+   *
    * @throws {Error} Throws an error if the folder creation or resource extraction fails.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * await saveGame.initGameInProgressFolder();
@@ -440,18 +440,18 @@ export class SaveGame {
 
   /**
    * Initializes the save game resource loader by loading the SAVEGAME.sav file.
-   * 
+   *
    * This method creates an ERFObject from the SAVEGAME.sav file and loads it,
    * making all the save game resources available for extraction and use.
    * The SAVEGAME.sav file is an ERF (Encapsulated Resource File) containing
    * all the game state data, modules, and other resources needed to restore
    * the game to its saved state.
-   * 
+   *
    * @async
    * @returns {Promise<void>} Resolves when the save game resource loader has been initialized.
-   * 
+   *
    * @throws {Error} Throws an error if the SAVEGAME.sav file cannot be loaded.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * await saveGame.initSaveGameResourceLoader();
@@ -465,23 +465,23 @@ export class SaveGame {
 
   /**
    * Loads global variables from the GLOBALVARS.res file.
-   * 
+   *
    * This method reads and parses the global variables file, which contains
    * all the game's global state including numbers, booleans, strings, and
    * locations. These variables are used to track quest progress, story state,
    * and other persistent game data across save/load cycles.
-   * 
+   *
    * The method handles different data types:
    * - Numbers: Stored as byte values
    * - Booleans: Stored as bit flags in a byte array
-   * - Strings: Stored as CExoString values
+   * - Strings: Stored as ExoString values
    * - Locations: Stored as 6 float values (x, y, z, rx, ry, rz)
-   * 
+   *
    * @async
    * @returns {Promise<void>} Resolves when all global variables have been loaded.
-   * 
+   *
    * @throws {Error} Throws an error if the GLOBALVARS.res file cannot be read or parsed.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * await saveGame.loadGlobalVARS();
@@ -591,17 +591,17 @@ export class SaveGame {
 
   /**
    * Loads the party table data from the PARTYTABLE.res file.
-   * 
+   *
    * This method reads the party table file which contains information about
    * all party members, their stats, equipment, and other character data.
    * The party table is used to restore the complete state of all party
    * members when loading a save game.
-   * 
+   *
    * @async
    * @returns {Promise<void>} Resolves when the party table has been loaded.
-   * 
+   *
    * @throws {Error} Throws an error if the PARTYTABLE.res file cannot be read or parsed.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * await saveGame.loadPartyTable();
@@ -622,17 +622,17 @@ export class SaveGame {
 
   /**
    * Loads the inventory data from the inventory.res file.
-   * 
+   *
    * This method reads the inventory file which contains all items in the
    * player's inventory and adds them to the InventoryManager. The inventory
    * data includes item properties, quantities, and other item-specific
    * information needed to restore the player's items.
-   * 
+   *
    * @async
    * @returns {Promise<void>} Resolves when the inventory has been loaded.
-   * 
+   *
    * @throws {Error} Throws an error if the inventory.res file cannot be read or parsed.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * await saveGame.loadInventory();
@@ -658,9 +658,9 @@ export class SaveGame {
 
   /**
    * Gets the area name where the save game was created.
-   * 
+   *
    * @returns {string} The name of the area where the game was saved.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getAreaName()); // "Endar Spire"
@@ -671,9 +671,9 @@ export class SaveGame {
 
   /**
    * Gets the last module that was being played when the save was created.
-   * 
+   *
    * @returns {string} The name of the last module that was loaded.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getLastModule()); // "001EBO"
@@ -684,9 +684,9 @@ export class SaveGame {
 
   /**
    * Gets the custom name assigned to the save game.
-   * 
+   *
    * @returns {string} The custom name of the save game, or empty string if none was set.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getSaveName()); // "My Save Game" or ""
@@ -697,17 +697,17 @@ export class SaveGame {
 
   /**
    * Gets the full display name of the save game.
-   * 
+   *
    * This combines the save type (Game, AUTOSAVE, QUICKSAVE) with the custom
    * save name if one was provided. If no custom name was set, only the
    * save type is returned.
-   * 
+   *
    * @returns {string} The full display name of the save game.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getFullName()); // "AUTOSAVE"
-   * 
+   *
    * const customSave = new SaveGame('000002 - Game1');
    * customSave.SAVEGAMENAME = 'My Adventure';
    * console.log(customSave.getFullName()); // "Game1 - My Adventure"
@@ -726,13 +726,13 @@ export class SaveGame {
 
   /**
    * Checks if this save game is an automatic save.
-   * 
+   *
    * @returns {boolean} True if this is an autosave, false otherwise.
-   * 
+   *
    * @example
    * const autoSave = new SaveGame('000001 - AUTOSAVE');
    * console.log(autoSave.getIsAutoSave()); // true
-   * 
+   *
    * const manualSave = new SaveGame('000002 - Game1');
    * console.log(manualSave.getIsAutoSave()); // false
    */
@@ -742,13 +742,13 @@ export class SaveGame {
 
   /**
    * Checks if this save game is a quick save.
-   * 
+   *
    * @returns {boolean} True if this is a quicksave, false otherwise.
-   * 
+   *
    * @example
    * const quickSave = new SaveGame('000000 - QUICKSAVE');
    * console.log(quickSave.getIsQuickSave()); // true
-   * 
+   *
    * const manualSave = new SaveGame('000002 - Game1');
    * console.log(manualSave.getIsQuickSave()); // false
    */
@@ -758,13 +758,13 @@ export class SaveGame {
 
   /**
    * Gets the save number from the folder name.
-   * 
+   *
    * @returns {number} The numeric ID of the save game.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * console.log(saveGame.getSaveNumber()); // 1
-   * 
+   *
    * const quickSave = new SaveGame('000000 - QUICKSAVE');
    * console.log(quickSave.getSaveNumber()); // 0
    */
@@ -774,9 +774,9 @@ export class SaveGame {
 
   /**
    * Gets the number of hours played in this save game.
-   * 
+   *
    * @returns {number} The number of hours played, rounded down to the nearest integer.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * saveGame.TIMEPLAYED = 7200; // 2 hours in seconds
@@ -788,9 +788,9 @@ export class SaveGame {
 
   /**
    * Gets the number of minutes played in this save game (excluding full hours).
-   * 
+   *
    * @returns {number} The number of minutes played, rounded down to the nearest integer.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * saveGame.TIMEPLAYED = 7320; // 2 hours and 2 minutes in seconds
@@ -802,17 +802,17 @@ export class SaveGame {
 
   /**
    * Gets the thumbnail texture for this save game.
-   * 
+   *
    * This method loads the screenshot thumbnail that was captured when the save
    * was created. It first tries to load the Screen.tga file from the save
    * directory, then falls back to a module-specific loading screen, and
    * finally to a default white fill texture if all else fails.
-   * 
+   *
    * @async
    * @returns {Promise<OdysseyTexture>} The thumbnail texture for the save game.
-   * 
+   *
    * @throws {Error} Throws an error if no thumbnail can be loaded.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * const thumbnail = await saveGame.getThumbnail();
@@ -841,17 +841,17 @@ export class SaveGame {
 
   /**
    * Gets the portrait texture for the specified party member.
-   * 
+   *
    * This method loads the portrait texture for a party member based on their
    * position in the party (0-based index). The portrait name is stored in
    * the PORTRAIT0, PORTRAIT1, PORTRAIT2, etc. properties.
-   * 
+   *
    * @async
    * @param {number} [nth=0] - The party member index (0-based).
    * @returns {Promise<OdysseyTexture|undefined>} The portrait texture, or undefined if not found.
-   * 
+   *
    * @throws {Error} Throws an error if the portrait texture cannot be loaded.
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * const playerPortrait = await saveGame.getPortrait(0); // First party member
@@ -917,7 +917,7 @@ export class SaveGame {
     await SaveGame.ExportSaveNFO(save_dir, name, save_id, save_id === 1, nfoModuleName);
     await SaveGame.ExportGlobalVars( save_dir );
     await GameState.PartyManager.Export( save_dir );
-    // Retail DoPCAutosave @ 004b908c copies TEMP:pifo only into 000001 - AUTOSAVE.
+    // Retail DoPCAutosave copies TEMP:pifo only into 000001 - AUTOSAVE.
     // Manual / quick saves never include pifo.ifo.
     if(save_id === 1){
       await SaveGame.ExportPIFO(save_dir);
@@ -1033,7 +1033,7 @@ export class SaveGame {
   }
 
   /**
-   * Retail DoQuickLoad @ 00633c50 — load slot 000000 QUICKSAVE; no-op if missing.
+   * Retail DoQuickLoad — load slot 000000 QUICKSAVE; no-op if missing.
    */
   static async QuickLoad(){
     const save = SaveGame.saves.find(s => s.getIsQuickSave());
@@ -1066,22 +1066,22 @@ export class SaveGame {
 
   /**
    * Exports the save game metadata to a savenfo.res file.
-   * 
+   *
    * This static method creates the savenfo.res file containing all the
    * metadata needed to display the save game in the save/load menu.
    * The metadata includes area name, module name, save name, time played,
    * timestamps, party portraits, and other display information.
-   * 
+   *
    * @static
    * @async
    * @param {string} directory - The directory where the savenfo.res file should be created.
    * @param {string} savename - The custom name for the save game.
    * @returns {Promise<void>} Resolves when the savenfo.res file has been created.
-   * 
+   *
    * @throws {Error} Throws an error if the file cannot be created.
-   * 
+   *
    * @example
-   * await SaveGame.ExportSaveNFO('Saves/000001 - Game1', 'My Adventure');
+   * await SaveGame.ExportSaveNFO('Saves - Game1', 'My Adventure');
    * // savenfo.res file created with metadata
    */
   static async ExportSaveNFO( directory: string, savename: string, saveNumber = 0, isPCAutoSave = false, nfoModuleName?: string){
@@ -1154,24 +1154,24 @@ export class SaveGame {
 
   /**
    * Exports the global variables to a GLOBALVARS.res file.
-   * 
+   *
    * This static method creates the GLOBALVARS.res file containing all the
    * current global variables from the GlobalVariableManager. The variables
    * are stored in different formats based on their type:
    * - Numbers: Stored as byte values
    * - Booleans: Stored as bit flags in a byte array
-   * - Strings: Stored as CExoString values
+   * - Strings: Stored as ExoString values
    * - Locations: Stored as 6 float values (x, y, z, rx, ry, rz)
-   * 
+   *
    * @static
    * @async
    * @param {string} directory - The directory where the GLOBALVARS.res file should be created.
    * @returns {Promise<void>} Resolves when the GLOBALVARS.res file has been created.
-   * 
+   *
    * @throws {Error} Throws an error if the file cannot be created.
-   * 
+   *
    * @example
-   * await SaveGame.ExportGlobalVars('Saves/000001 - Game1');
+   * await SaveGame.ExportGlobalVars('Saves - Game1');
    * // GLOBALVARS.res file created with current global variables
    */
   static async ExportGlobalVars( directory: string ){
@@ -1197,7 +1197,7 @@ export class SaveGame {
       const byte_offset = Math.floor( i / 8 );
       const bit_index = (i % 8);
 
-      // Retail MSB-first packing (CSWGlobalVariableTable::WriteTable / SetBit)
+      // Retail MSB-first packing (WriteTable / SetBit)
       if(boolean?.value){
         boolBuffer[byte_offset] |= 1 << (7 - bit_index);
       }
@@ -1268,18 +1268,18 @@ export class SaveGame {
 
   /**
    * Scans the save game directory and loads all available save games.
-   * 
+   *
    * This static method searches the Saves directory for all folders containing
    * SAVEGAME.sav files and creates SaveGame instances for each one found.
    * The save games are added to the static saves array and the NEXT_SAVE_ID
    * is updated based on the highest save number found.
-   * 
+   *
    * @static
    * @async
    * @returns {Promise<void>} Resolves when all save games have been loaded.
-   * 
+   *
    * @throws {Error} Throws an error if the save directory cannot be read.
-   * 
+   *
    * @example
    * await SaveGame.GetSaveGames();
    * console.log(SaveGame.saves.length); // Number of save games found
@@ -1339,15 +1339,15 @@ export class SaveGame {
 
   /**
    * Adds a save game to the static saves array and updates the next save ID.
-   * 
+   *
    * This static method adds a SaveGame instance to the saves array and
    * updates the NEXT_SAVE_ID if the added save game has a higher ID than
    * the current next ID. This ensures that new saves get unique IDs.
-   * 
+   *
    * @static
    * @param {SaveGame} savegame - The SaveGame instance to add to the list.
    * @returns {void}
-   * 
+   *
    * @example
    * const saveGame = new SaveGame('000001 - AUTOSAVE');
    * SaveGame.AddSaveGame(saveGame);

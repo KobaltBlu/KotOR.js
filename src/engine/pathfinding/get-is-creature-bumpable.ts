@@ -3,14 +3,14 @@ import { ActionType } from "@/enums/actions/ActionType";
 import { GameState } from "@/GameState";
 
 /**
- * Approximate CSWSCreature::GetIsCreatureBumpable @ 004f62a0.
+ * Approximate GetIsCreatureBumpable.
  *
  * Returns true when `other` is a soft friendly that may be pushed
  * (BumpFriends) rather than treated as a hard path blocker.
  *
  * Retail gates:
  * - reputation > 9
- * - other.field426_0xa88 == 0 (non-party / non-player-UI) — mirrored as !isPartyMember
+ * - other is non-party / non-player-UI — mirrored as !isPartyMember
  * - Party / player-UI mover: never bumps world creatures out of the way
  * - NPC mover: other not player, empty action queue, round not paused
  *
@@ -31,7 +31,7 @@ function getPlayerCreature(): ModuleCreature | undefined {
   return GameState.PartyManager?.party?.[0];
 }
 
-/** Retail field426_0xa88 — party / player-UI creatures are never bump targets. */
+/** Party / player-UI creatures are never bump targets. */
 function isPartyUiCreature(creature: ModuleCreature): boolean {
   if(creature.isPartyMember?.()) return true;
   const party = GameState.PartyManager?.party;
@@ -55,7 +55,7 @@ export function getIsCreatureBumpable(
     : 0;
   if(!(rep > 9)) return false;
 
-  // Retail: param_1->field426_0xa88 == 0
+  // Retail: party / player-UI creatures are not bumpable
   if(isPartyUiCreature(other)) return false;
   // Party followers use FollowLeader direct-line recovery, not world-creature pushes.
   if(isPartyUiCreature(self)) return false;
@@ -65,7 +65,7 @@ export function getIsCreatureBumpable(
   const frontType = front?.type;
 
   if(player && player === self){
-    // Player mover: busy combat/cast → early 0; otherwise local_4 = field426 (== 0)
+    // Player mover: busy combat/cast → not bumpable; otherwise require empty party-UI bit
     if(frontType != null && BUSY_ACTIONS.indexOf(frontType) >= 0){
       return false;
     }

@@ -20,11 +20,11 @@ import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 import { ModuleCreatureAnimState } from "@/enums/module/ModuleCreatureAnimState";
 
 /**
- * Retail CSWSCreature::WalkUpdateLocation @ 0051bb10.
+ * Retail WalkUpdateLocation.
  *
- * SQRT approach + persistent speed-factor ramp (field37) + trapezoidal step,
+ * SQRT approach + persistent speed-factor ramp (state) + trapezoidal step,
  * then DriveUpdateLocation walkable clip / door-cross / NoCreaturesOnLine.
- * Mid-step creature block → BumpFriends / PlotPathAroundCreature (field141).
+ * Mid-step creature block → BumpFriends / PlotPathAroundCreature (state).
  *
  * @file walk-update-location.ts
  */
@@ -41,7 +41,7 @@ export interface WalkUpdateOptions {
   allowWalkBack?: boolean;
   /** Extra locomotion scale (FollowLeader bands). */
   followScale?: number;
-  /** Retail pathfind field12 — UseRange early-out target id. */
+  /** Retail pathfind state — UseRange early-out target id. */
   useRangeTargetId?: number;
 }
 
@@ -57,7 +57,7 @@ export function walkUpdateLocation(
 ): DriveUpdateResult {
   if(!creature?.area || !dest) return DriveUpdateResult.BLOCKED;
 
-  // Retail WalkUpdateLocationDistance UseRange early-out (@ 00516630 field12)
+  // Retail WalkUpdateLocationDistance UseRange early-out (state)
   if(options.useRangeTargetId != null && options.useRangeTargetId !== 0x7f000000){
     const target = GameState.ModuleObjectManager?.GetObjectById?.(options.useRangeTargetId);
     if(
@@ -117,7 +117,7 @@ export function walkUpdateLocation(
   }
 
   // Retail WalkUpdateLocationTestDistance: test the actual frame step, then
-  // BumpFriends; on fail field141 < 6 → PlotPathAroundCreature (@ 00516630).
+  // BumpFriends; on fail state < 6 → PlotPathAroundCreature ().
   const toX = dest.x - creature.position.x;
   const toY = dest.y - creature.position.y;
   const toLen = Math.hypot(toX, toY);
@@ -173,7 +173,7 @@ export function walkUpdateLocation(
               return DriveUpdateResult.BLOCKED;
             }
             // Retail PlotPathAroundCreature return 0 → PauseReady + ResetAtEndOfPath
-            // via WalkUpdateLocationDistance return-1 / ARRIVED (@ 00516630).
+            // via WalkUpdateLocationDistance return-1 / ARRIVED ().
             // Clearing here drops a poisoned path (e.g. FindEntryAndExit miss) so
             // ActionMoveToPoint replots instead of walking a stale far waypoint.
             creature.setComputedPath?.(undefined);
@@ -210,7 +210,7 @@ export function walkUpdateLocation(
   return result;
 }
 
-/** Reset persistent WalkUpdate field37 when pathing ends. */
+/** Reset persistent WalkUpdate state when pathing ends. */
 export function resetWalkSpeedFactor(creature: ModuleCreature): void {
   if(creature) creature.walkSpeedFactor = 0;
 }

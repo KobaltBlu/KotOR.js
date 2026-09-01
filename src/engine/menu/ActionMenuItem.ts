@@ -2,9 +2,9 @@ import type { ModuleItem } from "@/module/ModuleItem";
 
 /**
  * ActionMenuItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file ActionMenuItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -16,7 +16,7 @@ export class ActionMenuItem {
   talent: any = undefined;
   icon = '';
   item: ModuleItem;
-  /** Retail field7 bit0: false → dimmed / inactive icon. */
+  /** retail bit0: false → dimmed / inactive icon. */
   enabled: boolean = true;
   name: string = '';
   /** TSL GetBehaviors — ActionMenuSelectBehavior AISTATE value. */

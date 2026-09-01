@@ -10,9 +10,9 @@ interface IFeatGainClass {
 /**
  * class SWFeatGain
  * - used to get feat gain points for a class per level
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SWFeatGain.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -26,7 +26,7 @@ export class SWFeatGain {
 
   /**
    * Bonus feat picks per level (featgain.2da *_bon).
-   * Used by retail CalcLevelUpNumberFeats second out-param @ 005a6f40.
+   * Used by retail CalcLevelUpNumberFeats second out-param.
    */
   getBonus(classCode: string): number[] {
     return this.classMap.get(classCode.toLowerCase())?.bonuses || [];

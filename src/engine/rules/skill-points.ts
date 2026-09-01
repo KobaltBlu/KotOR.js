@@ -37,7 +37,7 @@ export function getAbilityModifier(score: number): number {
 }
 
 /**
- * Retail CSWCLevelUpStats::AddSkillPointsPerLevel — points gained for the
+ * Retail AddSkillPointsPerLevel — points gained for the
  * given total level (K1 and K2 formulas differ).
  */
 export function computeSkillPointsGained(
@@ -119,7 +119,7 @@ export function isClassSkill(creature: SkillPointCreature, skillId: number): boo
 }
 
 /**
- * Retail CSWCLevelUpStats::GetSkillPointCostForSkillRank — class 1, cross-class 2.
+ * Retail GetSkillPointCostForSkillRank — class 1, cross-class 2.
  * Returns 0 when the skill is not usable by any of the creature's classes.
  */
 export function getSkillPointCost(

@@ -4,8 +4,8 @@ import { WalkmeshEdge } from "@/odyssey/WalkmeshEdge";
 import { OdysseyFace3 } from "@/three/odyssey";
 
 /**
- * Approximate CSWRoomSurfaceMesh::ClippedLineSegmentWalkable @ 00584220
- * (+ ComputeClippedLineSegment @ 00583e30 exit semantics).
+ * Approximate ClippedLineSegmentWalkable
+ * (+ ComputeClippedLineSegment exit semantics).
  *
  * Walks walkable faces from origin toward dest via adjacency. Fails when the
  * ray exits through a non-transition WalkmeshEdge (GetAdjacentRoom == -1).

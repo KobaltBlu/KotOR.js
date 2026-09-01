@@ -8,7 +8,7 @@ import { BitWise } from "@/utility/BitWise";
 import { ModuleObjectType } from "@/enums/module/ModuleObjectType";
 
 /**
- * Retail PlotPath @ 004c6f70 / PlotPathInArea return codes.
+ * Retail PlotPath / PlotPathInArea return codes.
  * Thin façade over ModulePath.traverseToPoint + resume maps (Pass AD).
  *
  * @file plot-path.ts
@@ -28,13 +28,13 @@ export type PathFindInfoLite = {
   origin: THREE.Vector3;
   dest: THREE.Vector3;
   destAreaId?: number;
-  /** Retail pathfind field12 — live chase / UseRange target object id. */
+  /** Retail pathfind state — live chase / UseRange target object id. */
   targetObjectId?: number;
-  /** Last code; Ready + unchanged endpoints → early-out like field28_0x88. */
+  /** Last code; Ready + unchanged endpoints → early-out. */
   lastCode?: PlotPathCode;
   lastOrigin?: THREE.Vector3;
   lastDest?: THREE.Vector3;
-  /** Optional: force reset like field20_0x58==1. */
+  /** Optional: force path reset. */
   replot?: boolean;
 };
 
@@ -85,7 +85,7 @@ export function plotPath(
     return { code: PlotPathCode.Incomplete };
   }
 
-  // Early-out Ready when endpoints unchanged (retail field28_0x88)
+  // Early-out Ready when endpoints unchanged (Retail)
   if(
     !info.replot &&
     info.lastCode === PlotPathCode.Ready &&

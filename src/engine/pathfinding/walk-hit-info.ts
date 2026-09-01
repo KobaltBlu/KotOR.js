@@ -36,7 +36,7 @@ export function createWalkHitInfo(): WalkHitInfo {
 }
 
 /**
- * Approximate CSWSArea::SetHitInfoForCreature @ 004bc0e0.
+ * Approximate SetHitInfoForCreature.
  * Fills hit from circle(creature) ∩ segment intersection (nearest to line start).
  */
 export function setHitInfoForCreature(

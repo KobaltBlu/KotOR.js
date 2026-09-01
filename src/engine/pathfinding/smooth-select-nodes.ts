@@ -4,17 +4,17 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
 
 /**
- * Approximate CSWSArea::SmoothSelectNodes @ 004c0180 /
- * SmoothSelectNodesRestartable @ 004c04e0 + SmoothSelectionRestartable @ 004c13e0.
+ * Approximate SmoothSelectNodes
+ * SmoothSelectNodesRestartable + SmoothSelectionRestartable.
  *
- * Retail SmoothSelectionRestartable (Ghidra-validated @ 004c13e0):
- *   field124 stage 2: densify only — param_5=1, param_6=0, param_7=**5.0**
- *   field124 stage 3: densify + look-ahead string-pull — (1, 1, **1.1**)
- *   field124 stage 4: string-pull only — (0, 1, 1.1)
+ * Retail SmoothSelectionRestartable (retail):
+ * state stage 2: densify only — arg5=1, arg6=0, arg7=**5.0**
+ * state stage 3: densify + look-ahead string-pull — (1, 1, **1.1**)
+ * state stage 4: string-pull only — (0, 1, 1.1)
  *
- * Time budget: retail compares Exo high-res delta to DAT_007a1b1c (=10000);
+ * Time budget: retail compares Exo high-res delta to retail constant (=10000);
  * JS uses ~10ms wall clock and may return mid-pipeline with resume
- * (field124 + mid-pass densify cursor field131/field132/field133).
+ * (state + mid-pass densify cursor state/state/state).
  *
  * @file smooth-select-nodes.ts
  */
@@ -24,27 +24,27 @@ const DENSIFY_STEP = 1.0;
 const DENSIFY_MIN_COARSE = 5.0;
 /** Pass-2/3 threshold. */
 const DENSIFY_MIN_FINE = 1.1;
-/** Retail DAT_007a1b1c = 10000 timer ticks ≈ 10ms wall slice. */
+/** retail constant = 10000 timer ticks ≈ 10ms wall slice. */
 export const SMOOTH_SELECTION_BUDGET_MS = 10;
 
-/** field124_0x214 — SmoothSelectionRestartable stage. */
+/** SmoothSelectionRestartable stage. */
 export type SmoothSelectionStage = 2 | 3 | 4;
 
 /**
  * Resume across frames when SmoothSelectNodesRestartable returns 1.
  * Working polyline is the input for the next stage (or current if mid-stage).
- * Densify cursor mirrors retail field131/132/133 on CPathfindInformation.
+ * Densify cursor mirrors retail/132/133 on CPathfindInformation.
  */
 export type SmoothSelectionResume = {
   stage: SmoothSelectionStage;
   working: THREE.Vector3[];
   /** Input polyline for the current densify pass. */
   source?: THREE.Vector3[];
-  /** field131 — next source index to consume (1..source.length). */
+  /** state — next source index to consume (1..source.length). */
   srcIndex?: number;
-  /** field133 — remaining inserts along the current edge. */
+  /** state — remaining inserts along the current edge. */
   densifyStack?: THREE.Vector3[];
-  /** field132 — densify stack depth; -1 = idle. */
+  /** state — densify stack depth; -1 = idle. */
   densifyStackDepth?: number;
 };
 
@@ -287,7 +287,7 @@ function makeDensifyResume(
 }
 
 /**
- * Retail SmoothSelectionRestartable three-pass pipeline (@ 004c13e0).
+ * Retail SmoothSelectionRestartable three-pass pipeline ().
  * May return early with `timedOut` + `resume` when wall budget exhausted.
  */
 export function smoothSelectionRestartable(

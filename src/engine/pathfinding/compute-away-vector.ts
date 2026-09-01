@@ -8,7 +8,7 @@ import {
 } from "@/engine/pathfinding/test-direct-line";
 
 /**
- * Retail CSWSArea::ComputeAwayVector @ 004bdf80 —
+ * Retail ComputeAwayVector
  * Try 8 directions at 45° around the creature→threat axis, prefer 180°
  * (away), clip with TestDirectLine / farthestClearPoint, pick best by
  * distance-from-threat × angle weight.

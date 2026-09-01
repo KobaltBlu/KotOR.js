@@ -9,10 +9,10 @@ import {
 import { isWalkCheckBlockingFace } from "@/engine/pathfinding/walk-check-material-mask";
 
 /**
- * Approximate CSWCollisionMesh::NoNonWalkPolys @ 005972b0 /
- * CSWSRoom::NoNonWalkPolysOnRoom @ 00579680.
+ * Approximate NoNonWalkPolys
+ * NoNonWalkPolysOnRoom.
  *
- * Retail (Ghidra-validated): personal-space stadium corridor vs walk-check
+ * Retail (retail): personal-space stadium corridor vs walk-check
  * faces — IntersectLineSegments2d × stadium edges, IntersectCircle2d ends,
  * interior containment.
  *
@@ -39,7 +39,7 @@ function meshFaces(wok: OdysseyWalkMesh | undefined): OdysseyFace3[] | undefined
 }
 
 /**
- * Approximate CSWCollisionMesh IntersectCircle2d @ 004aab50 —
+ * Approximate collision mesh IntersectCircle2d
  * circle-segment intersections in 2D (return count 0/1/2).
  */
 export function intersectCircle2d(
@@ -123,7 +123,7 @@ function distSegSeg2D(
 }
 
 /**
- * Approximate IntersectLineSegments2d @ 004ac340 — true if segments cross in 2D.
+ * Approximate IntersectLineSegments2d — true if segments cross in 2D.
  */
 export function intersectLineSegments2d(
   ax: number, ay: number, bx: number, by: number,
@@ -180,7 +180,7 @@ function faceVerts(face: OdysseyFace3): [THREE.Vector3, THREE.Vector3, THREE.Vec
 }
 
 /**
- * Retail NoNonWalkPolys stadium vs triangle (@ 005972b0):
+ * Retail NoNonWalkPolys stadium vs triangle ():
  * IntersectLineSegments2d × stadium edges, IntersectCircle2d ends, interior samples.
  */
 function corridorHitsFace(
@@ -299,7 +299,7 @@ const _invMatrix = new THREE.Matrix4();
 
 /**
  * Test a single walkmesh (door / placeable surface) against the stadium corridor.
- * Applies WorldToLocal (@ 00596a00) when `matrixWorld` is set — retail door mesh
+ * Applies WorldToLocal () when `matrixWorld` is set — retail door mesh
  * stores verts in object space after obj_position_/orientation.
  *
  * `blockAllFaces`: door meshes often lack walkcheck bits — treat every face as blocking

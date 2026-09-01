@@ -15,10 +15,10 @@ import {
 } from "@/engine/pathfinding/walk-hit-info";
 
 /**
- * Approximate CSWSArea::TestDirectLine @ 004bcb70 + NoCreaturesOnLine.
+ * Approximate TestDirectLine + NoCreaturesOnLine.
  *
  * Retail walks room→room via ClippedLineSegmentWalkable / NoNonWalkPolys,
- * height band (param_4), then NoCreaturesOnLine.
+ * height band (arg4), then NoCreaturesOnLine.
  *
  * JS: face-walk ClippedLine + NoNonWalkPolysDetailed (doors/static/mesh) +
  * adaptive samples + personal-space ring + height continuity +
@@ -163,7 +163,7 @@ const _walkAdjCache = new WeakMap<ModuleArea, { roomCount: number; adj: Map<stri
 
 /**
  * Undirected room graph from WalkmeshEdge.transition → area.rooms[index].
- * Retail TestDirectLine uses GetAdjacentRoom on clip exit, not .vis links.
+ * Retail TestDirectLine uses GetAdjacentRoom on clip exit, not.vis links.
  */
 function getWalkRoomAdjacency(area: ModuleArea): Map<string, Set<string>> {
   const cached = _walkAdjCache.get(area);

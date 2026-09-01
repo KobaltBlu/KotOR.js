@@ -8,9 +8,9 @@ import { GameState } from "@/GameState";
 
 /**
  * BaseItem class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file BaseItem.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -47,7 +47,7 @@ export class BaseItem {
   baseCost: number = 0;
   stacking: number = 1;
   itemMultiplier: number = 1;
-  /** Retail CSWBaseItem+0xc4 — PARTYTABLE PT_COST_MULT_VALUE (defaults to 1.0; not itemmultiplier). */
+  /** retail — PARTYTABLE PT_COST_MULT_VALUE (defaults to 1.0; not itemmultiplier). */
   costMultiplier: number = 1;
   description: number = 0;
   invSoundType: number = -1;

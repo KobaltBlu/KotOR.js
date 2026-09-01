@@ -1,5 +1,5 @@
 /**
- * Retail CSWGuiAbilitiesCharGen::DetermineCostToIncreaseScore /
+ * Retail DetermineCostToIncreaseScore
  * DetermineCostToDecreaseScore point-buy costs.
  */
 export function costToIncreaseAbility(currentScore: number): number {

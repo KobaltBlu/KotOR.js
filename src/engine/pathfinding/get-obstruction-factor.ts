@@ -8,7 +8,7 @@ import { noNonWalkPolysDetailed } from "@/engine/pathfinding/no-non-walk-polys";
 import { createWalkHitInfo } from "@/engine/pathfinding/walk-hit-info";
 
 /**
- * Retail CExoSoundInternal / GetObstructionFactor @ 00716310.
+ * Retail sound internal / GetObstructionFactor.
  *
  * Walks ClearLineOfSight from source → listener, accumulating Miles-style
  * obstruction: wall/placeable +0.4, door +0.55, capped at 1.0. After each hit,
@@ -32,7 +32,7 @@ export const OBSTRUCTION_STEP = 0.1;
 export const OBSTRUCTION_REUSE_DIST = 0.5;
 /** GetClosestRecentSound max age (0xaf ms). */
 export const OBSTRUCTION_REUSE_AGE_MS = 0xaf;
-/** Per-call time budget in GetObstructionFactor (local_38 < 100). */
+/** Per-call time budget in GetObstructionFactor (tmp38 < 100). */
 export const OBSTRUCTION_CALL_BUDGET_MS = 100;
 
 export type AudioObstructionHitKind = "wall" | "door" | "placeable";

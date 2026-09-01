@@ -47,7 +47,7 @@ const MINE_FORCE_SPELL_SHOCK = 0x2f;
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * Populates mipc personal/target action slots like retail
- * CSWCCreature::{GetPersonalActions,GetTargetActions}.
+ * {GetPersonalActions,GetTargetActions}.
  *
  * @file ActionMenuManager.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -120,7 +120,7 @@ export class ActionMenuManager {
   /** Retail GetSelfForcePowers → personal slot 0. */
   static populateSelfForcePowers(){
     if(!ActionMenuManager.oPC) return;
-    // ClassInfo::GetMenuInfo returns empty while area restrict_mode != 0.
+    // GetMenuInfo returns empty while area restrict_mode != 0.
     if(ActionMenuManager.areaIsRestricted()) return;
 
     const resource = ActionMenuManager.oPC.getForceMenuResource();
@@ -333,7 +333,7 @@ export class ActionMenuManager {
 
   /**
    * Retail GetDoorInterfaceMines / GetPlaceableInterfaceMines → target slot 2.
-   * Client pre-gate: trapFlag clear (door+0x108 / placeable+0x11C).
+   * Client pre-gate: trapFlag clear (door / placeable).
    */
   static populateDoorOrPlaceableMines(target: ModuleObject, plantStrRef: number = 0xbbd9){
     if(!ActionMenuManager.oPC || !target) return;
@@ -368,7 +368,7 @@ export class ActionMenuManager {
   }
 
   /**
-   * Retail CSWCTrigger::GetTargetActions slot 2 — one best mine-counter Force power.
+   * Retail GetTargetActions slot 2 — one best mine-counter Force power.
    */
   static populateTrapMineForcePowers(trapType: number){
     if(!ActionMenuManager.oPC || !ActionMenuManager.oTarget) return;

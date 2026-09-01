@@ -4,7 +4,7 @@ import { getCreaturePersonalSpace } from "@/combat/attack-range";
 import { getIsCreatureBumpable } from "@/engine/pathfinding/get-is-creature-bumpable";
 
 /**
- * Approximate CSWSCreature::BumpFriends @ 004f6390.
+ * Approximate BumpFriends.
  *
  * If `other` is bumpable, push them off the mover's travel line by
  * combined creperspace, then clamp to a walkable point.

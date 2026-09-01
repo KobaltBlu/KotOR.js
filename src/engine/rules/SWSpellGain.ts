@@ -9,9 +9,9 @@ interface ISpellGainClass {
 /**
  * class SWSpellGain
  * - used to get spell gain points for a class per level
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file SWSpellGain.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -22,7 +22,7 @@ export class SWSpellGain {
 
   /**
    * Get the number of spell points gained for a class per level
-   * @param classCode 
+   * @param classCode
    * @returns number[]
    */
   getSpellGain(classCode: string){

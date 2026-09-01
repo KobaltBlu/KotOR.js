@@ -6,7 +6,7 @@ import { getCreaturePersonalSpace, getPathPersonalSpace } from "@/combat/attack-
 import { hasDirectLine } from "@/engine/pathfinding/test-direct-line";
 
 /**
- * Retail PathPointDFSGenerateSuccessors creature detour @ 004bdb00:
+ * Retail PathPointDFSGenerateSuccessors creature detour:
  * When NoCreaturesOnLine fails, cost = |A→offset| + |offset→B| where
  * offset = blocker.pos + normalize(⊥(B−A)) * (blocker.perspace + self.perspace).
  *

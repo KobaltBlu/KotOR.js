@@ -163,7 +163,7 @@ export class CollisionManager {
   // Collision state
   lastBlockingObject: ModuleObject;
   blockingObject: ModuleObject;
-  /** Retail path_find_info->field140_0x264 — hostile found while pathing around a blocker. */
+  /** Hostile found while pathing around a blocker. */
   foundEnemyCreature: ModuleObject;
 
   // Ground/walkmesh state
@@ -717,8 +717,8 @@ export class CollisionManager {
 
     // Ignore very small penetrations that could cause micro-jitter
     // if (collision.penetration < 0.002) {
-    //   CollisionPool.releaseProcessedCollision(collision);
-    //   return null;
+    // CollisionPool.releaseProcessedCollision(collision);
+    // return null;
     // }
 
     collision.priority = CollisionConfig.PROFILES[collisionType].priority;

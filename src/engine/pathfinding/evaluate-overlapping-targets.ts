@@ -3,11 +3,11 @@ import type { ModuleObject } from "@/module/ModuleObject";
 import { getCreaturePersonalSpace } from "@/combat/attack-range";
 
 /**
- * Approximate CSWSArea::EvaluateOverlappingTargets @ 004bba40.
+ * Approximate EvaluateOverlappingTargets.
  *
  * Called after a geometric capsule hit in NoCreaturesOnLine. Soft-clears when
  * the blocker already overlaps the line start (stacked / starting intersection)
- * or an optional soft-pair creature (retail field12 pathfind target).
+ * or an optional soft-pair creature (retail pathfind target).
  *
  * @file evaluate-overlapping-targets.ts
  */
@@ -27,7 +27,7 @@ export function evaluateOverlappingTargets(
   lineStart: { x: number; y: number; z?: number },
   combinedRadius: number,
   options: {
-    /** Soft-pair creature (retail pathfind field12) — allow if already overlapping it. */
+    /** Soft-pair creature (retail pathfind state) — allow if already overlapping it. */
     softCreature?: ModuleObject;
     owner?: ModuleObject;
   } = {}

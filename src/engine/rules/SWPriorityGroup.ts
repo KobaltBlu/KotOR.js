@@ -3,8 +3,8 @@ import { TwoDAObject } from "@/resource/TwoDAObject";
 /**
  * SWPriorityGroup class.
  *
- * Mirrors retail CExoSoundPriorityGroup (0x18 bytes) loaded by
- * CExoSoundInternal::LoadPriorityGroups (Linux TSL @ 006380c0).
+ * Mirrors retail sound priority group (0x18 bytes) loaded by
+ * LoadPriorityGroups (Linux TSL).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  *
@@ -37,8 +37,8 @@ export class SWPriorityGroup {
   maxplaying: number = 255;
 
   /**
-   * Retail Interrupt field (CExoSoundPriorityGroup +0x0).
-   * When at maxplaying during Play (0063dcf0):
+   * Retail Interrupt field (sound priority group).
+   * When at maxplaying during Play:
    * - interrupt == 0 → deny the new play
    * - interrupt != 0 → InterruptPlayingSound (preempt one same-group voice)
    * **** keeps ctor default 1.

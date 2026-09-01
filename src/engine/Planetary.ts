@@ -9,9 +9,9 @@ import { GameState } from "@/GameState";
 
 /**
  * Planetary class.
- * 
+ *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
- * 
+ *
  * @file Planetary.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
  * @license {@link https://www.gnu.org/licenses/gpl-3.0.txt|GPLv3}
@@ -48,7 +48,7 @@ export class Planetary {
   }
 
   /**
-   * Retail CSWPartyTable::SetSelectedPlanet — only commits when the planet is
+   * Retail SetSelectedPlanet — only commits when the planet is
    * both available and selectable (index in 0..15).
    */
   static SetSelectedPlanet( index = 0 ){
@@ -64,7 +64,7 @@ export class Planetary {
   }
 
   /**
-   * Retail CSWPartyTable::SetPlanetAvailable — no-op unless index in 0..15.
+   * Retail SetPlanetAvailable — no-op unless index in 0..15.
    */
   static SetPlanetAvailable(index: number, bState: boolean){
     if((index >>> 0) >= 16){ return; }
@@ -74,7 +74,7 @@ export class Planetary {
   }
 
   /**
-   * Retail CSWPartyTable::SetPlanetSelectable — no-op unless index in 0..15.
+   * Retail SetPlanetSelectable — no-op unless index in 0..15.
    * Scripts may pass live-content index 16 or scripting constants; retail ignores those.
    */
   static SetPlanetSelectable(index: number, bState: boolean){

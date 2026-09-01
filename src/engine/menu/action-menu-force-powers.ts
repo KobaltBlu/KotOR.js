@@ -3,9 +3,9 @@ import type { ModuleItem } from "@/module/ModuleItem";
 import type { ModuleObject } from "@/module/ModuleObject";
 import type { TalentSpell } from "@/talents/TalentSpell";
 
-/** Appearance racialtype 5 (droid) — retail global @ 0074bf10. */
+/** Appearance racialtype 5 (droid) — retail global. */
 export const APPEARANCE_RACIALTYPE_DROID = 5;
-/** Appearance racialtype 6 — retail global @ 0074bf14. */
+/** Appearance racialtype 6 — retail global. */
 export const APPEARANCE_RACIALTYPE_ALT = 6;
 
 /** Spell exclusion flags passed into GetMenuInfo (GetHostileForcePowers). */
@@ -54,7 +54,7 @@ function isCreatureLike(target: ModuleObject | undefined): target is ModuleCreat
 }
 
 /**
- * Retail GetHostileForcePowers local_14 — exclusion bits for the current target.
+ * Retail GetHostileForcePowers tmp14 — exclusion bits for the current target.
  */
 export function getHostileTargetExclusionFlags(target: ModuleObject | undefined): number {
   if(!isCreatureLike(target)){
@@ -76,7 +76,7 @@ export function spellPassesForceMenuExclusion(spell: TalentSpell, flags: number)
 }
 
 /**
- * Retail CSWRules secondary_ranges used by GetMinSpellRange @ 00647dd0.
+ * retail secondary_ranges used by GetMinSpellRange.
  * P and T both use Touch secondary; W uses Throw secondary.
  */
 export function resolveForceMenuMinRange(rangeLetter: string): number {
@@ -134,7 +134,7 @@ function priorityOf(spell: TalentSpell): number {
 }
 
 /**
- * Retail ClassInfo::GetMenuInfo known-spell pass: filter by menu column + exclusion,
+ * Retail GetMenuInfo known-spell pass: filter by menu column + exclusion,
  * keep highest FORCEPRIORITY per sort index, ascending sort order.
  */
 export function buildForceMenuSpellList(

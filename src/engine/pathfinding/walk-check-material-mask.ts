@@ -5,7 +5,7 @@ import type { SurfaceMaterial } from "@/engine/SurfaceMaterial";
 /**
  * Surface-material bitmasks for collision / LOS (surfacemat.2da).
  *
- * Walk-check: `walkcheck && !walk` — Nonwalk, Lava, Pit… (NoNonWalkPolys @ 005972b0).
+ * Walk-check: `walkcheck && !walk` — Nonwalk, Lava, Pit… (NoNonWalkPolys).
  * Line-of-sight: `lineofsight` — Obscuring + most solid mats; Transparent/Door/Trigger do NOT
  * block visual LOS (ClearLineOfSight room AABB / walkmesh faces).
  *
