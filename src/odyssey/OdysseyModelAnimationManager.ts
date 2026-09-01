@@ -222,7 +222,7 @@ export class OdysseyModelAnimationManager {
   // --- Play / stop ---
 
   /**
-   * Insert an AnimRun (retail Gob::PlayAnimation).
+   * Insert an AnimRun (retail PlayAnimation).
    * @returns the new or reused run
    */
   playAnimation(

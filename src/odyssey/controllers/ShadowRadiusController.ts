@@ -10,7 +10,7 @@ import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 /**
  * ShadowRadiusController class.
  *
- * Animates PartLight shadow radius (retail field4_0x60) used by
+ * Animates PartLight shadow radius used by
  * DoGobShadowsForThisLight / ProjectDynamicShadow.
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

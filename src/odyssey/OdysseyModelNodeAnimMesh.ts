@@ -15,21 +15,21 @@ import { OdysseyModelUtility } from "@/odyssey/OdysseyModelUtility";
  * @see <https://synchro.codeberg.page/rakata/api/rakata_formats/mdl/types/struct.MdlAnimMesh.html>
  */
 export class OdysseyModelNodeAnimMesh extends OdysseyModelNodeMesh {
-  /** AnimMesh extra +0x00 — animation sampling period. */
+  /** AnimMesh sampling period. */
   samplePeriod: number = 0;
 
-  /** Animated vertex positions (CExoArrayList at extra +0x04). */
+  /** Animated vertex positions. */
   animVerts: [number, number, number][] = [];
 
-  /** Animated texture coordinates, 3 floats per entry (extra +0x10). */
+  /** Animated texture coordinates, 3 floats per entry. */
   animTVerts: [number, number, number][] = [];
 
-  /** Relocated when {@link dataCount1} is non-zero (extra +0x1C). */
+  /** Relocated when {@link dataCount1} is non-zero. */
   dataPtr1: number = 0;
   dataCount1: number = 0;
   dataPtr1Payload: Float32Array | undefined;
 
-  /** Extra +0x24 — padding on disk. */
+  /** Padding on disk. */
   padding24: number = 0;
 
   /** Runtime-only fields (zero on disk); preserved for round-trip fidelity. */

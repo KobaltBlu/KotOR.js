@@ -36,17 +36,17 @@ export class OdysseyWalkMesh {
   moduleObject: ModuleObject;
   header: any = { };
   /**
-   * Retail CSWWalkMeshHeader.relative_use_positions[0] @ file+0x0C —
-   * loaded by CSWCollisionMesh::LoadMeshBinary @ 00597120 into
-   * relative_use_position_1 (mesh+0x70). Used by GetNearestActionPoint.
+   * Retail relative_use_positions[0] —
+   * loaded by LoadMeshBinary into relative_use_position_1.
+   * Used by GetNearestActionPoint.
    */
   relativeUsePosition1: THREE.Vector3 = new THREE.Vector3();
-  /** Retail relative_use_positions[1] @ file+0x18 → relative_use_position_2. */
+  /** Retail relative_use_positions[1] → relative_use_position_2. */
   relativeUsePosition2: THREE.Vector3 = new THREE.Vector3();
   /**
-   * Retail CSWWalkMeshHeader.absolute_use_positions[0/1] @ file+0x24/+0x30.
+   * Retail absolute_use_positions[0/1].
    * Present in the 136-byte header; LoadMeshBinary does not copy these into
-   * CSWCollisionMesh (only the relative pair is used at runtime).
+   * the collision mesh (only the relative pair is used at runtime).
    */
   absoluteUsePosition1: THREE.Vector3 = new THREE.Vector3();
   absoluteUsePosition2: THREE.Vector3 = new THREE.Vector3();
@@ -515,8 +515,8 @@ export class OdysseyWalkMesh {
   }
 
   readHeader(){
-    // Retail CSWWalkMeshHeader @ Ghidra (size 0x88 = 136) —
-    // written by SaveBinaryMesh @ 0059a040, read by LoadMeshBinary @ 00597120.
+    // Retail walkmesh header (size 0x88 = 136) —
+    // written by SaveBinaryMesh, read by LoadMeshBinary.
     return {
       fileType: this.wokReader.readChars(4),
       version: this.wokReader.readChars(4),
@@ -594,7 +594,7 @@ export class OdysseyWalkMesh {
 
   /**
    * World-space relative use/action point —
-   * retail CSWCollisionMesh::LocalToWorld @ 00596aa0 of relative_use_position_1/2.
+   * retail LocalToWorld of relative_use_position_1/2.
    * Returns undefined when the local vector is zero (GetNearestActionPoint fallback).
    *
    * Baked area PWK/DWK use non-identity mat4; parented/spawned placeables (bodybags)

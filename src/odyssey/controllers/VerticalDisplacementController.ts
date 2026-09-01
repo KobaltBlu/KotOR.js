@@ -10,7 +10,7 @@ import type { OdysseyLight3D } from "@/three/odyssey/OdysseyLight3D";
 /**
  * VerticalDisplacementController class.
  *
- * Animates PartLight vertical displacement (retail field5_0x64) added to
+ * Animates PartLight vertical displacement added to
  * light Z for shadow projection (ProjectDynamicShadow).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

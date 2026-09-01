@@ -66,7 +66,7 @@ export const enum MdlNodeHeaderOffset {
   CtrlDataArr = 0x44,
 }
 
-/** TriMesh extra: MDX layout block starts at node+0x150 (extra+0x100). */
+/** TriMesh extra: MDX layout block starts at node offset 0x150 (extra offset 0x100). */
 export const enum MdlTriMeshExtraOffset {
   MdxDataOffset = 0x144,
   VertArrayOffset = 0x148,

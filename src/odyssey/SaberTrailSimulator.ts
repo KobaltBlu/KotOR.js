@@ -3,17 +3,17 @@ import type { OdysseyModelNodeSaber } from "@/odyssey/OdysseyModelNodeSaber";
 import type { OdysseyModel3D } from "@/three/odyssey/OdysseyModel3D";
 
 /**
- * Retail PartLightsaber trail — Animate @ 00481ae0 / Draw @ 00471860.
+ * Retail PartLightsaber trail — Animate / Draw.
  *
- * Ring capacity 0x14 (20); min Δt @ 0x798b34 ≈ 0.01; segment interval @ 0x798b30 ≈ 0.012.
+ * Ring capacity 0x14 (20); min Δt ≈ 0.01; segment interval ≈ 0.012.
  * Trail profile cross-section starts at MDL vert 0x58 (88); idle blade uses verts 0..7.
  */
 
-/** Retail ring size @ 0x740a4c */
+/** Retail ring size. */
 export const SABER_TRAIL_RING = 20;
-/** Retail lightsaberDelta @ 0x798b34 */
+/** Retail lightsaberDelta. */
 export const SABER_TRAIL_MIN_DELTA = 0.01;
-/** Retail lightsaberSegmentInterval @ 0x798b30 */
+/** Retail lightsaberSegmentInterval. */
 export const SABER_TRAIL_SEGMENT_INTERVAL = 0.012;
 /** Retail teleport clear threshold in Animate */
 export const SABER_TRAIL_TELEPORT_MAG = 1.0;
@@ -105,7 +105,7 @@ function clearTrail(sim: SaberTrailState): void {
 }
 
 /**
- * Retail Animate @ 00481ae0 — age ring samples and push world pose when the blade moves.
+ * Retail Animate — age ring samples and push world pose when the blade moves.
  */
 export function animateSaberTrail(mesh: THREE.Mesh, delta: number): void {
   const sim = mesh.userData.saberTrail as SaberTrailState | undefined;
@@ -277,7 +277,7 @@ function rebuildIdleBlade(sim: SaberTrailState, vertCount: { n: number }, indexC
 }
 
 /**
- * Retail Draw @ 00471860 — rebuild ribbon from history × MDL profile, or idle blade.
+ * Retail Draw — rebuild ribbon from history × MDL profile, or idle blade.
  */
 export function rebuildSaberRibbon(mesh: THREE.Mesh): void {
   const sim = mesh.userData.saberTrail as SaberTrailState | undefined;

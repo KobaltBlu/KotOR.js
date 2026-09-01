@@ -23,7 +23,7 @@ export class GravityController extends OdysseyController {
 
   setFrame(manager: OdysseyModelAnimationManager, anim: OdysseyModelAnimation, data: IOdysseyControllerFrameGeneric){
     if(manager.modelNode.emitter){
-      // Retail grav → PartEmitter+0x74 — used by moveParticleP2PGrav attract, not fountain 9.81.
+      // Retail grav — used by moveParticleP2PGrav attract, not fountain 9.81.
       manager.modelNode.emitter.gravity = data.value;
     }
   }
