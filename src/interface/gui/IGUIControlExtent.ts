@@ -1,8 +1,8 @@
 /**
  * IGUIControlExtent interface.
  *
- * Mirrors retail CSWGuiExtent (16 bytes): int left, top, width, height.
- * K1 CSWGuiExtent::Load @ 00409dc0 reads LEFT/TOP/WIDTH/HEIGHT as INT.
+ * Mirrors retail GUI extent (16 bytes): int left, top, width, height.
+ * K1 Load reads LEFT/TOP/WIDTH/HEIGHT as INT.
  * Runtime values must stay integers (see asExtentInt / GUIControl setters).
  *
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II

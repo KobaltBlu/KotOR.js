@@ -681,7 +681,7 @@ export class TGALoader {
 	}
 
 	/**
-	 * Retail GLRender::CreateTexture @ 00424980 — uncompressed cycle sheets are
+	 * Retail CreateTexture — uncompressed cycle sheets are
 	 * ImageGetSubImage'd at (i % numx)*subW, (i / numx)*subH into one GL tid per frame.
 	 * parse() remaps BL/BR into an upright canvas, so row indexing is inverted for those
 	 * origins to match retail's raw bottom-up buffer (frame 0 = bottom-left cell).

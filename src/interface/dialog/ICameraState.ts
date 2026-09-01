@@ -27,8 +27,8 @@ export interface ICameraState {
   /** TarHeightOffset from active entry/reply (SetShot field4). */
   tarHeightOffset?: number;
   /**
-   * Close-up pull from dialoganimations CU_PB_Range (UpdateShotCamera @ 006306e0
-   * field137_0xbb8 / SetShot field5). Cleared when shot type ≠ 1.
+   * Close-up pull from dialoganimations CU_PB_Range (UpdateShotCamera /
+   * SetShot field5). Cleared when shot type ≠ 1.
    */
   closeUpExtra?: number;
   /** CamFieldOfView from active entry/reply; ≤0 means use default 55. */

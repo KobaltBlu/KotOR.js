@@ -94,7 +94,7 @@ export class TextureLoader {
   }
 
   /**
-   * Retail CreateTexture @ 00424980 applies wrap/filter to every cycle frame GL tid.
+   * Retail CreateTexture applies wrap/filter to every cycle frame GL tid.
    * TextureLoader only configures the returned texture (frame 0); copy that sampler
    * state onto the rest of cycleFrames so animateuv scroll tiles correctly.
    */
