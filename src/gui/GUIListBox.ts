@@ -39,7 +39,7 @@ import {
 export type { ListBoxSavedExtent };
 
 /**
- * GUIListBox — aligned with retail CSWGuiListBox (swkotor.exe).
+ * GUIListBox — aligned with retail list box (swkotor.exe).
  *
  * Layout uses index-based OrganizeControls / OrganizeUnequal / OrganizeOversized.
  * RTT rendering and menu APIs (setItems / setProtoBuilder) are preserved.
@@ -107,7 +107,7 @@ export class GUIListBox extends GUIControl {
   selectionIndex: number = -1;
   clickedIndex: number = -1;
   hoveredRowIndex: number = -1;
-  /** When true, row classes expose an explicit click-to-select contract (retail field24). */
+  /** When true, row classes expose an explicit click-to-select contract. */
   protoClickSelects: boolean = false;
   topVisibleIndex: number = 0;
   bottomVisibleIndex: number = 0;
@@ -129,10 +129,10 @@ export class GUIListBox extends GUIControl {
   private publishGeneration = 0;
   /**
    * Pass AN — retail control_extents parallel to children.
-   * Restored before GetHeight when layoutDirty (OrganizeControls @ 0041b140).
+   * Restored before GetHeight when layoutDirty (OrganizeControls).
    */
   private savedExtents: ListBoxSavedExtent[] = [];
-  /** Scrollbar thumb drag start (retail field5_0x7c). */
+  /** Scrollbar thumb drag start. */
   private scrollDragStartValue = 0;
   private scrollBarDragState: 'none' | 'bar' | 'arrow_up' | 'arrow_down' | 'page_up' | 'page_down' = 'none';
 
@@ -148,7 +148,7 @@ export class GUIListBox extends GUIControl {
     this.scene = new THREE.Scene();
     this.bitFlags = createDefaultListBoxBitFlags();
 
-    // Retail Load @ 0041d5b0 — LEFTSCROLLBAR default 1
+    // Retail Load — LEFTSCROLLBAR default 1
     if (control.hasField('LEFTSCROLLBAR')) {
       this.bitFlags.scrollbarOnLeft = control.getFieldByLabel('LEFTSCROLLBAR').getValue() == 1;
     } else {
@@ -166,7 +166,7 @@ export class GUIListBox extends GUIControl {
       }
     }
 
-    //ProtoItem — retail LoadProtoItem @ 0041d3e0
+    //ProtoItem — retail LoadProtoItem
     this.hasProtoItem = control.hasField('PROTOITEM');
     if(this.hasProtoItem){
       this.protoItem = this.menu.factory.FromStruct(control.getFieldByLabel('PROTOITEM').getChildStructs()[0], this.menu, this, this.scale);
@@ -259,7 +259,7 @@ export class GUIListBox extends GUIControl {
   }
 
   /**
-   * Retail SetScrollBarExtent @ 004181f0 — bar height matches list; X from LEFTSCROLLBAR.
+   * Retail SetScrollBarExtent — bar height matches list; X from LEFTSCROLLBAR.
    */
   syncScrollBarExtent(): void {
     if (!this.scrollbar) return;
@@ -353,7 +353,7 @@ export class GUIListBox extends GUIControl {
   }
 
   /**
-   * Replace the list with zero or one row. Description panes use this path —
+   * Replace the list with zero or one row. Description panes use this path
    * retail treats them as noSelectMode (scroll-only, visibleValue = 1).
    */
   setItem(node: any, options: GUIListItemCallbacks = {} as GUIListItemCallbacks): void {
@@ -523,7 +523,7 @@ export class GUIListBox extends GUIControl {
   }
 
   /**
-   * Retail SetTopVisible @ 006b2590 — clamp topVisibleIndex into scroll range.
+   * Retail SetTopVisible — clamp topVisibleIndex into scroll range.
    */
   setTopVisible(newTopIndex: number): void {
     const maxTop = Math.max(0, this.children.length - this.itemsPerPage);
@@ -537,7 +537,7 @@ export class GUIListBox extends GUIControl {
   }
 
   /**
-   * Whether hover should change selection (retail HandleMouseMove @ 0041c400).
+   * Whether hover should change selection (retail HandleMouseMove).
    * Retail ctor default selectOnLeftClick=false → hover-select unless protoClickSelects.
    */
   shouldHoverSelect(): boolean {
@@ -643,7 +643,7 @@ export class GUIListBox extends GUIControl {
       }
     }
 
-    // Retail AddControls: CExoArrayList<CSWGuiExtent>::Add(&control_extents, value->extent)
+    // Retail AddControls: Add(&control_extents, value->extent)
     this.savedExtents.push(snapshotListBoxExtent(ctrl.extent));
 
     this.invalidateHeightCache();
@@ -657,7 +657,7 @@ export class GUIListBox extends GUIControl {
   }
 
   /**
-   * Retail SetSelectedControl @ 0041c040 — always AutoScroll + OrganizeControls.
+   * Retail SetSelectedControl — always AutoScroll + OrganizeControls.
    */
   setSelectedControl(controlId: number, _playSound: boolean = false): void {
     const sameIndex = controlId === this.selectionIndex && controlId >= 0;
@@ -773,7 +773,7 @@ export class GUIListBox extends GUIControl {
   listItemMarginBottom = 0;
 
   getViewportInnerHeight(): number {
-    // Retail SetExtent @ 0041bf80: viewport_height = border GetInnerExtent height
+    // Retail SetExtent: viewport_height = border GetInnerExtent height
     // (INNEROFFSET applied — not the Draw fill hole from getFillExtent)
     return this.getInnerSize().height;
   }
@@ -783,7 +783,7 @@ export class GUIListBox extends GUIControl {
     return Math.max(0, this.getInnerSize().width - asExtentInt(this.getShrinkWidth()));
   }
 
-  /** Retail shouldScroll @ 0041a290 — single item taller than viewport. */
+  /** Retail shouldScroll — single item taller than viewport. */
   shouldScroll(): boolean {
     const count = this.children.length;
     if (count <= 0) return false;
@@ -792,7 +792,7 @@ export class GUIListBox extends GUIControl {
     return vh < (this.padding + this.itemHeight);
   }
 
-  /** Retail getPagesToScroll @ 004182b0. */
+  /** Retail getPagesToScroll. */
   getPagesToScroll(): number {
     const vh = this.getViewportInnerHeight();
     if (vh === 0) return 1;
@@ -870,7 +870,7 @@ export class GUIListBox extends GUIControl {
   }
 
   /**
-   * Retail Draw clip test @ 0041a3e0 — whether a row intersects (or is fully inside) the viewport.
+   * Retail Draw clip test — whether a row intersects (or is fully inside) the viewport.
    */
   private isRowInViewport(top: number, height: number, vh: number): boolean {
     const bottom = top + height;
@@ -889,7 +889,7 @@ export class GUIListBox extends GUIControl {
   }
 
   /**
-   * Retail OrganizeControls @ 0041b140 (with Unequal / Oversized branches).
+   * Retail OrganizeControls (with Unequal / Oversized branches).
    */
   organizeControls(): void {
     const count = this.children.length;
@@ -914,7 +914,7 @@ export class GUIListBox extends GUIControl {
       return;
     }
 
-    // Pass AN: restore control_extents before GetHeight when layoutDirty (0041b140).
+    // Pass AN: restore control_extents before GetHeight when layoutDirty.
     if (this.bitFlags.layoutDirty) {
       this.restoreSavedExtentsToChildren();
       this.invalidateHeightCache();
@@ -1041,7 +1041,7 @@ export class GUIListBox extends GUIControl {
     const pad = this.padding;
     const itemWidth = Math.max(0, vw - pad * 2);
 
-    // Retail leftover stretch (@ 0041b140): distribute into visible slot heights.
+    // Retail leftover stretch : distribute into visible slot heights.
     // Place at original top; remainder bumps next cursor (+1), advance by pad + baseSlotH.
     const { stretchPerItem, remainderPixels } = listBoxLeftoverStretch(vh, ipp, pitch, pad);
     let rem = remainderPixels;
@@ -1102,7 +1102,7 @@ export class GUIListBox extends GUIControl {
   }
 
   /**
-   * Retail OrganizeUnequal @ 00419ee0.
+   * Retail OrganizeUnequal.
    */
   private organizeUnequal(heights: number[]): void {
     const count = this.children.length;
@@ -1226,7 +1226,7 @@ export class GUIListBox extends GUIControl {
   }
 
   /**
-   * Retail OrganizeOversized @ 0041a2d0.
+   * Retail OrganizeOversized.
    */
   private organizeOversized(): void {
     const vh = this.getViewportInnerHeight();
@@ -1399,7 +1399,7 @@ export class GUIListBox extends GUIControl {
 
   beginScrollBarDrag(): void {
     if (this.shouldScroll()) {
-      // Retail field5_0x7c = scroll_position (1-based)
+      // Retail field = scroll_position (1-based)
       this.scrollDragStartValue = this.scrollPosition;
     } else {
       this.scrollDragStartValue = this.scrollbar?.currentValue ?? this.topVisibleIndex;
@@ -1467,7 +1467,7 @@ export class GUIListBox extends GUIControl {
     const shrink = asExtentInt(this.getShrinkWidth());
     const viewportX = this.isScrollBarLeft() ? borderSize + shrink : borderSize;
     const viewportY = borderSize;
-    // Retail HitCheckMouseLocal @ 0041a5e0 — viewport-local mouse for rows
+    // Retail HitCheckMouseLocal — viewport-local mouse for rows
     const vx = listLocal.x - viewportX;
     const vy = listLocal.y - viewportY;
 
@@ -1513,7 +1513,7 @@ export class GUIListBox extends GUIControl {
       }
     }
 
-    // Retail HandleMouseMove @ 0041c400 — hover-select when !selectOnLeftClick
+    // Retail HandleMouseMove — hover-select when !selectOnLeftClick
     this.onRowHover(hoveredRow);
 
     return controls;

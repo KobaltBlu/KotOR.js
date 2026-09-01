@@ -10,7 +10,7 @@ import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { resolveProtoItemHeight } from "@/gui/listrow/protoItemHeight";
 import { applyProtoTemplateSkin } from "@/gui/listrow/applyProtoTemplateSkin";
 
-/** Retail CSWGuiExtent supplied to a row by menu/entry-class code (never the PROTOITEM GFF). */
+/** Retail GUI extent supplied to a row by menu/entry-class code (never the PROTOITEM GFF). */
 export type RetailRowExtent = {
   left: number;
   top: number;
@@ -57,7 +57,7 @@ export class GUIProtoItem extends GUIControl{
       this.setExtentWidth(Math.max(1, asExtentInt(vw - list.padding * 2)));
     }
 
-    // Retail CSWGuiListBox::SetSelectedControl @ 0041c040 drives row chrome via
+    // Retail SetSelectedControl drives row chrome via
     // HandleInputEvent on selection change — not mouse hover. Hover-select lists
     // still pulse because hover calls SetSelectedControl first.
     this.onSelect = () => {
@@ -68,11 +68,11 @@ export class GUIProtoItem extends GUIControl{
   /**
    * Retail base row extent — supplied by the menu / entry class, NOT the PROTOITEM GFF.
    *
-   * In retail, PopulateGameList (K1 @ 006cc160), CSWGuiSaveLoadEntry (TSL @ 005d5140)
-   * and CSWGuiInGameItemEntry::Initialize (K1 @ 006b4db0) each construct a stack extent
-   * and pass it into CSWGuiButton::Initialize @ 00417970, which copies the extent then
+   * In retail, PopulateGameList (K1), retail GUI (TSL)
+   * and Initialize (K1) each construct a stack extent
+   * and pass it into Initialize, which copies the extent then
    * re-initializes border/text from the proto's PARAMS. The proto extent is never read
-   * for height. Override per row class with the Ghidra-sourced value.
+   * for height. Override per row class with the retail-sourced value.
    *
    * This base implementation is the UNVERIFIED fallback: it returns the PROTOITEM extent
    * (matching legacy KotOR.js behavior) so unmigrated rows keep working.
@@ -87,7 +87,7 @@ export class GUIProtoItem extends GUIControl{
   }
 
   /**
-   * Mirrors CSWGuiButton::Initialize @ 00417970: assign the caller-supplied base extent,
+   * Mirrors Initialize: assign the caller-supplied base extent,
    * then take font/texture (params analog) from the PROTOITEM template. Must NOT read
    * `template.extent` — retail derives row height only from the base extent above.
    */
@@ -115,7 +115,7 @@ export class GUIProtoItem extends GUIControl{
   /**
    * Selected-row chrome only. Do not key off hover — description panes
    * (LB_DESC / noSelectMode) are hoverable for scroll hit-tests but must not
-   * pulse or take the highlight text color (retail OptionsMain sets field22_0x2c1).
+   * pulse or take the highlight text color (retail OptionsMain sets field).
    */
   onSelectStateChanged(){
     if(this.selected){
@@ -145,14 +145,14 @@ export class GUIProtoItem extends GUIControl{
   calculatePosition(){
     /*let posX = ((this.list.extent.width - this.extent.width)/2) - this.list.border.inneroffset;
 
-    if(!this.list.isScrollBarLeft()){
+    if(!this.list.isScrollBarLeft){
       posX -= this.parent.border.inneroffset/2;
       posX = posX * -1;
     }else{
       posX -= this.parent.border.inneroffset + this.list.border.inneroffset;
     }
 
-    let height = this.getItemHeight();
+    let height = this.getItemHeight;
     let posY = this.list.lastHeight + (this.list.extent.height/2) - height;
     posY += height/2;
     this.list.lastHeight += height + this.list.padding;
@@ -165,7 +165,7 @@ export class GUIProtoItem extends GUIControl{
     this.widget.position.x = this.anchorOffset.x + this.offset.x;
     this.widget.position.y = this.anchorOffset.y + this.offset.y;
     
-    this.calculateBox();*/
+    this.calculateBox;*/
   }
 
   getItemHeight(){

@@ -6,7 +6,7 @@ import type { GUIControl } from "@/gui/GUIControl";
 import { asExtentInt } from "@/gui/GUICoord";
 
 /**
- * Retail Camera::SetViewAngle value used by ClassSel / MainCG / PORTCUST /
+ * Retail SetViewAngle value used by ClassSel / MainCG / PORTCUST /
  * Setup3DScene / Upgrade (0x41b5ced9 ≈ 22.726).
  */
 export const GUI_3D_VIEW_FOV = 22.72;
@@ -109,21 +109,21 @@ export class LBL_3DView {
     this.setSize(w, h);
 
     this.control.setFillTexture(this.texture.texture);
-    // this.control.getFill().material.uniforms.map.value = this.texture.texture;
+    // this.control.getFill.material.uniforms.map.value = this.texture.texture;
     this.control.getFill().material.uniforms.diffuse.value.setHex(0xFFFFFF);
   }
 
-  /** Retail Camera::SetViewAngle — ClassSel / MainCG / PORTCUST / Setup3DScene. */
+  /** Retail SetViewAngle — ClassSel / MainCG / PORTCUST / Setup3DScene. */
   setViewAngle(fov: number = GUI_3D_VIEW_FOV){
     this.camera.fov = fov;
     this.camera.updateProjectionMatrix();
   }
 
   /**
-   * Copy pose from a light-model camerahook (retail Camera::AttachToObject).
+   * Copy pose from a light-model camerahook (retail AttachToObject).
    * Optional AttachTranslate offset:
-   * - worldSpace true  → field2_0x48=1 (Setup3DScene / MainCG): position += offset
-   * - worldSpace false → field2_0x48=0 (PORTCUST): rotate offset by camera orientation
+   * - worldSpace true → field=1 (Setup3DScene / MainCG): position += offset
+   * - worldSpace false → field=0 (PORTCUST): rotate offset by camera orientation
    */
   attachCameraToHook(
     hook: THREE.Object3D | undefined,

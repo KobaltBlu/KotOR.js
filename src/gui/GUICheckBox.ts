@@ -12,9 +12,9 @@ import { GUIControlType } from "@/enums/gui/GUIControlType";
 import { GUIControlAlignment } from "@/enums/gui/GUIControlAlignment";
 import { asExtentInt, truncDiv, writeOrthoAlignedPlanePositions } from "@/gui/GUICoord";
 
-/** K1 CSWGuiOptionsCheckbox fixed glyph size (`0x19`). */
+/** K1 options checkbox fixed glyph size (`0x19`). */
 const OPTIONS_CHECKBOX_SIZE = 0x19;
-/** K1 CSWGuiOptionsCheckbox text strip starts at `left + 0x1e`. */
+/** K1 options checkbox text strip starts at `left + 0x1e`. */
 const OPTIONS_TEXT_OFFSET = 0x1e;
 
 /**
@@ -22,8 +22,8 @@ const OPTIONS_TEXT_OFFSET = 0x1e;
  * 
  * KotOR JS - A remake of the Odyssey Game Engine that powered KotOR I & II
  * 
- * Maps to K1 `CSWGuiButtonToggle`. Tags starting with `CB_` use the
- * `CSWGuiOptionsCheckbox` SetExtent layout (fixed 25×25 glyph + label strip).
+ * Maps to K1 button-toggle controls. Tags starting with `CB_` use the
+ * options-checkbox SetExtent layout (fixed 25×25 glyph + label strip).
  * 
  * @file GUICheckBox.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -391,8 +391,8 @@ export class GUICheckBox extends GUIControl{
   }
 
   /**
-   * K1 options menus construct type-7 as `CSWGuiOptionsCheckbox` (fixed glyph + label).
-   * Overlay toggles (`TB_*`, party BTNs) stay as plain `CSWGuiButtonToggle`.
+   * K1 options menus construct type-7 as an options checkbox (fixed glyph + label).
+   * Overlay toggles (`TB_*`, party BTNs) stay as plain button toggles.
    * List PROTOITEM checkbox rows (e.g. optfeedback LB_OPTIONS) are OptionsCheckbox.
    */
   isOptionsStyleLayout(): boolean {

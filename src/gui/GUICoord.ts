@@ -2,8 +2,8 @@ import type { IGUIControlExtent } from "@/interface/gui/IGUIControlExtent";
 import { GameEngineType } from "@/enums/engine/GameEngineType";
 
 /**
- * Retail GUI design letterbox base (CSWGuiPanel HitCheckMouse / GetLocalMouseCoords).
- * K1 @ 0040b690 / 0040ba20; TSL Aspyr @ 0090e350 — same 0x280 / 0x1e0 constants.
+ * Retail GUI design letterbox base (GUI panel HitCheckMouse / GetLocalMouseCoords).
+ * K1 / TSL Aspyr — same 0x280 / 0x1e0 constants.
  */
 export const GUI_DESIGN_WIDTH = 640;
 export const GUI_DESIGN_HEIGHT = 480;
@@ -11,8 +11,8 @@ export const GUI_DESIGN_HEIGHT = 480;
 /**
  * Semantic panel coord flags for GetLocalMouseCoords / GetExtentAccountingForPanelOffset.
  *
- * K1 @ 0040aa00 bit layout: CenterInViewport=bit3, DockDesignX=bit5, DockDesignY=bit6.
- * TSL Aspyr @ 0090e4a0 uses different raw bits for dock (bit4/bit5) and has no center path —
+ * K1 bit layout: CenterInViewport=bit3, DockDesignX=bit5, DockDesignY=bit6.
+ * TSL Aspyr uses different raw bits for dock (bit4/bit5) and has no center path
  * callers still OR these semantic flags; the engine branch applies the correct gate.
  * UseExtentOffset (bit0) is shared by both.
  */
@@ -36,7 +36,7 @@ export function truncDiv(a: number, b: number): number {
   return Math.trunc(a / b);
 }
 
-/** Coerce to a retail CSWGuiExtent field (ReadFieldINT / int store). */
+/** Coerce to a retail GUI extent field (ReadFieldINT / int store). */
 export function asExtentInt(n: number): number {
   return Math.trunc(n) | 0;
 }
@@ -122,9 +122,9 @@ export function copyExtentInt(src: IGUIControlExtent): IGUIControlExtent {
 }
 
 /**
- * Retail CSWGuiPanel::GetExtentAccountingForPanelOffset.
- * K1 @ 0040aa00 — center (bit3) returns early; else dock X/Y (bits 5/6).
- * TSL Aspyr @ 0090e4a0 — if bit3 set, copy only; else dock when dock flags set.
+ * Retail GetExtentAccountingForPanelOffset.
+ * K1 — center (bit3) returns early; else dock X/Y (bits 5/6).
+ * TSL Aspyr — if bit3 set, copy only; else dock when dock flags set.
  */
 export function getExtentAccountingForPanelOffset(
   extent: IGUIControlExtent,
@@ -138,7 +138,7 @@ export function getExtentAccountingForPanelOffset(
   const vpH = asExtentInt(viewportHeight);
 
   if(engine === GameEngineType.TSL){
-    // Aspyr @ 0090e4a0: CenterInViewport set → no dock; else apply DockDesignX/Y.
+    // Aspyr: CenterInViewport set → no dock; else apply DockDesignX/Y.
     if((flags & GUIPanelCoordFlags.CenterInViewport) !== 0){
       return out;
     }
@@ -151,7 +151,7 @@ export function getExtentAccountingForPanelOffset(
     return out;
   }
 
-  // K1 @ 0040aa00
+  // K1
   if((flags & GUIPanelCoordFlags.CenterInViewport) !== 0){
     out.left = out.left + truncDiv(vpW - out.width, 2);
     out.top = out.top + truncDiv(vpH - out.height, 2);
@@ -211,7 +211,7 @@ export function applyPanelOffsetToLetterboxLocal(
 }
 
 /**
- * Retail CSWGuiPanel::GetLocalMouseCoords @ 0040ba20 (K1) / @ 0090e350 (TSL Aspyr).
+ * Retail GetLocalMouseCoords K1 / TSL Aspyr.
  * Both use design letterbox 640×480 (0x280 / 0x1e0). Returns mouse in panel-local
  * top-left Y-down integer space.
  *
@@ -247,7 +247,7 @@ export function getLocalMouseCoords(
 }
 
 /**
- * Retail CSWGuiControl::HitCheckMouse @ 004187c0 (assembly).
+ * Retail HitCheckMouse.
  * Inclusive AABB: left ≤ x ≤ left+width AND top ≤ y ≤ top+height.
  */
 export function hitCheckMouseLocal(
@@ -265,7 +265,7 @@ export function hitCheckMouseLocal(
 }
 
 /**
- * Retail CSWGuiPanel::HitCheckMouse @ 0040b690 — children walked last→first;
+ * Retail HitCheckMouse — children walked last→first;
  * first hit wins. Overlapping siblings do not both receive input.
  * `childHit[i]` is true when child i's HitCheckMouse succeeds.
  *
@@ -331,7 +331,7 @@ export function skillFlowArrowExtentLeft(
  * using the list's world/UI AABB (`GUIControl.box` / `calculateBox`).
  *
  * Prefer this over `panelLocal - list.extent` when the list widget is docked in
- * viewport space while `extent.left/top` still hold design (or hacked) values —
+ * viewport space while `extent.left/top` still hold design (or hacked) values
  * e.g. InGameDialog LB_REPLIES.
  */
 export function listLocalFromWorldBox(

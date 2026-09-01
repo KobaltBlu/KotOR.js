@@ -1,13 +1,13 @@
 import { truncDiv } from "@/gui/GUICoord";
 
 /**
- * Pure port of CSWGuiBorder::GetInnerExtent @ 00415240 (K1) for width/height.
+ * Matches retail GetInnerExtent (K1) for width/height.
  *
  * corner/edge sizes come from the border DIMENSION (GetBorderDim). DIMENSION 0 means no
  * corner/edge geometry in KotOR.js (retail would use corner/edge image sizes there — not
  * modeled). INNEROFFSET is then applied with retail's axis asymmetry:
- *   width  = (w - 2*corner) + 2*min(INNEROFFSET,  DIMENSION)
- *   height = (h - 2*corner) + 2*INNEROFFSETY   (raw, no cap)
+ * width = (w - 2*corner) + 2*min(INNEROFFSET, DIMENSION)
+ * height = (h - 2*corner) + 2*INNEROFFSETY (raw, no cap)
  * plus the degenerate-collapse test: if content is smaller than half an edge tile, it collapses.
  */
 export function borderInnerExtent(params: {

@@ -39,11 +39,11 @@ export class GUIInventoryItem extends GUIProtoItem {
   }
 
   /**
-   * Retail base row extent — CSWGuiInGameInventory::CreateItemEntry passes
-   * width = viewport_width - 2*padding into CSWGuiInGameItemEntry::Initialize, which calls
+   * Retail base row extent — CreateItemEntry passes
+   * width = viewport_width - 2*padding into Initialize, which calls
    * SetExtent with a fixed height:
-   *   K1  @ 006b4db0: height 0x38 (56).
-   *   TSL @ 005a4b50: ftol(GetResolutionTextScalar() * 36.0) = 36 at base resolution.
+   * K1: height 0x38 (56).
+   * TSL: ftol(GetResolutionTextScalar * 36.0) = 36 at base resolution.
    * The PROTOITEM GFF height is never used for the row.
    */
   getRetailBaseExtent(list: GUIListBox): RetailRowExtent {

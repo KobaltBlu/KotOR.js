@@ -8,10 +8,10 @@ import { asExtentInt } from "@/gui/GUICoord";
 import { GameState } from "@/GameState";
 
 /**
- * GUIEditBox — retail CSWGuiEditbox (@ 0041c6b0).
+ * GUIEditBox — retail edit box.
  *
- * Navigable control with border + editable text (CSWGuiEditText @ 004173d0).
- * Load: TEXT → BORDER → base (0041c7d0). SetExtent: border full → text inner (00418450).
+ * Navigable control with border + editable text.
+ * Load: TEXT → BORDER → base. SetExtent: border full → text inner.
  *
  * @file GUIEditBox.ts
  * @author KobaltBlu <https://github.com/KobaltBlu>
@@ -81,8 +81,8 @@ export class GUIEditBox extends GUIControl {
   }
 
   /**
-   * Retail SetExtent @ 00418450 — border full extent; text uses GetInnerExtent.
-   * Border rebuild is handled by super; text geometry already uses getInnerSize().
+   * Retail SetExtent — border full extent; text uses GetInnerExtent.
+   * Border rebuild is handled by super; text geometry already uses getInnerSize.
    */
   resizeControl(): void {
     super.resizeControl();

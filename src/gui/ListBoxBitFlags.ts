@@ -1,6 +1,6 @@
 /**
- * Retail CSWGuiListBox_BitFlags (swkotor.exe).
- * Defaults match CSWGuiListBox constructor @ 0041be40.
+ * Retail list-box bit flags (swkotor.exe).
+ * Defaults match the list box constructor.
  */
 export interface ListBoxBitFlags {
   selectOnLeftClick: boolean;
@@ -20,7 +20,7 @@ export interface ListBoxBitFlags {
 
 export function createDefaultListBoxBitFlags(): ListBoxBitFlags {
   return {
-    // Retail CSWGuiListBox ctor @ 0041be40 — selectOnLeftClick = false (hover-select).
+    // Retail list box ctor — selectOnLeftClick = false (hover-select).
     // setProtoBuilder sets protoClickSelects for click-to-select custom rows.
     selectOnLeftClick: false,
     suppressControlCleanup: true,

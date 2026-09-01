@@ -397,7 +397,7 @@ export class LBL_MapView {
       }
     }
 
-    // Retail CSWGuiMapHider::Draw — companion dots for party[1..] on both minimap and full map
+    // Retail Draw — companion dots for party[1..] on both minimap and full map
     for(let i = 0; i < 2; i++){
       const pm = GameState.PartyManager.party[i+1];
       const mesh = this.partyGroup.children[i];

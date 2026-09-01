@@ -58,7 +58,7 @@ export class GameMenu {
   width: number = 640;
   height: number = 480;
   /**
-   * Retail CSWGuiPanel bit_flags for GetLocalMouseCoords.
+   * Retail GUI panel bit_flags for GetLocalMouseCoords.
    * UseExtentOffset|CenterInViewport matches our centered Three.js panel projection
    * (clear UseExtentOffset for retail 640×480 mouse letterbox).
    */
@@ -137,12 +137,12 @@ export class GameMenu {
     //You can just use this.CONTROL_NAME 
     this.assignChildControlsToMenu(this.tGuiPanel);
 
-    // Retail CSWGuiPanel::StopLoadFromLayout — MOVETO IDs → control pointers
+    // Retail StopLoadFromLayout — MOVETO IDs → control pointers
     this.resolveMoveToControls();
 
     await this.menuControlInitializer();
 
-    // await TextureLoader.LoadQueue();
+    // await TextureLoader.LoadQueue;
     GameState.PerformanceMonitor.stop(this.constructor.name+'.buildMenu');
     return this;
   }
@@ -163,7 +163,7 @@ export class GameMenu {
   }
 
   /**
-   * Retail CSWGuiPanel::StopLoadFromLayout — replace MOVETO control IDs with pointers.
+   * Retail StopLoadFromLayout — replace MOVETO control IDs with pointers.
    * IDs index the panel control list the same way InitControl places controls by GFF ID.
    */
   resolveMoveToControls(){
@@ -203,7 +203,7 @@ export class GameMenu {
   }
 
   /**
-   * Retail CSWGuiPanel::SetActiveControl — deactivate previous, activate next (hover visual).
+   * Retail SetActiveControl — deactivate previous, activate next (hover visual).
    */
   setActiveControl(control?: GUIControl, _playSound: boolean = true){
     if(this.selectedControl === control){
@@ -306,7 +306,7 @@ export class GameMenu {
 
   getControlByName(name: string): GUIControl {
     try{
-      return (this as any)[name];//this.tGuiPanel.getControl().getObjectByName(name).userData.control;
+      return (this as any)[name];//this.tGuiPanel.getControl.getObjectByName(name).userData.control;
     }catch(e){
       console.error('getControlByName', 'Control not found', name);
     }
@@ -323,7 +323,7 @@ export class GameMenu {
   }
 
   show(){
-    // this.Hide();
+    // this.Hide;
     if(!this.isOverlayGUI && GameState.Mode !== EngineMode.MOVIE)
       GameState.SetEngineMode(this.engineMode);
       
@@ -339,7 +339,7 @@ export class GameMenu {
     this.hide();
     this.manager.Remove(this);
     // if(!this.isOverlayGUI){
-    //   GameState.RestoreEnginePlayMode();
+    //   GameState.RestoreEnginePlayMode;
     // }
   }
 
@@ -414,8 +414,8 @@ export class GameMenu {
   }
 
   /**
-   * Retail mouse-over is a single control (CSWGuiManager field2_0x8 /
-   * CSWGuiPanel::SetActiveControl). Activating one clears any other hover.
+   * Retail mouse-over is a single control (GUI manager hover slot /
+   * SetActiveControl). Activating one clears any other hover.
    */
   setWidgetHoverActive(control: GUIControl, bActive: boolean = false){
 
@@ -535,13 +535,13 @@ export class GameMenu {
 
   triggerControllerBumperLPress(){
     if(this.manager.activeGUIElement){
-      //this.manager.activeGUIElement.click();
+      //this.manager.activeGUIElement.click;
     }
   }
 
   triggerControllerBumperRPress(){
     if(this.manager.activeGUIElement){
-      //this.manager.activeGUIElement.click();
+      //this.manager.activeGUIElement.click;
     }
   }
 

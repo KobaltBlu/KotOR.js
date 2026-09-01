@@ -5,7 +5,7 @@ import { TXI } from "@/resource/TXI";
 import { OdysseyTexture } from "@/three/odyssey/OdysseyTexture";
 import { createQuadElements as createIndicies } from "@/utility/QuadIndices";
 
-/** Retail CAurGUIStringInternal::Draw UV inset to reduce atlas bleeding. */
+/** Retail Draw UV inset to reduce atlas bleeding. */
 const UV_BIAS = 0.0001;
 
 interface Line {
@@ -43,7 +43,7 @@ export class GUIFont {
 
       this.ratio = texture.image.width / texture.image.height;
 
-      // Retail CAurGUIStringInternal::GetFontPixelHeight / GetIdealPixelHeight
+      // Retail GetFontPixelHeight / GetIdealPixelHeight
       this.height = asExtentInt(this.txi.fontheight     * 100 * this.scale);
       this.bsline = asExtentInt(this.txi.baselineheight * 100 * this.scale);
       this.spaceR = asExtentInt(this.txi.spacingr       * 100 * this.scale);
@@ -88,7 +88,7 @@ export class GUIFont {
 
   /**
    * Line / word pixel width: sum(content) + spacingR * (n - 1).
-   * Matches CAurGUIStringInternal::WrapStrings accumulation.
+   * Matches WrapStrings accumulation.
    */
   getCharsWidth(chars: GUIFontChar[]): number {
     if(!chars || !chars.length) return 0;
@@ -363,7 +363,7 @@ export class GUIFontChar {
     this.ul = ulArr[idx] || {x: 0, y: 0, z: 0};
     this.lr = lrArr[idx] || {x: 0, y: 0, z: 0};
 
-    // Retail: (lr.x - ul.x) * texturewidth  [world] → * 100 for GUI pixels
+    // Retail: (lr.x - ul.x) * texturewidth [world] → * 100 for GUI pixels
     this.contentWidth = asExtentInt(((this.lr.x - this.ul.x) * font.txi.texturewidth) * font.scale * 100);
     this.width = this.contentWidth + font.spaceR;
     this.height = font.height;

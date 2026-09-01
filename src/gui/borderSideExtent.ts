@@ -15,7 +15,7 @@ export type BorderSide =
 /**
  * Edge/corner PlaneGeometry centers + sizes in widget-local centered space (ints).
  *
- * Retail CSWGuiBorder::Draw @ 004168c0 uses top-left rects. In center space that span is
+ * Retail Draw uses top-left rects. In center space that span is
  * [−truncDiv(w,2), w−truncDiv(w,2)), not ±truncDiv(w,2). Using ±truncDiv(innerW,2) as
  * PlaneGeometry centers drops the right (and top) pixel when the control size is odd.
  */

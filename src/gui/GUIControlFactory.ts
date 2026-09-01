@@ -34,8 +34,8 @@ export class GUIControlFactory {
   static GUIScrollBar: typeof GUIScrollBar = GUIScrollBar;
 
   /**
-   * Retail InitControl constructs CSWGuiEditbox by TAG (NAME_BOX_EDIT / EDITBOX),
-   * not GFF CONTROLTYPE — chargen @ 006f9e70 / save-name @ 006cae70.
+   * Retail InitControl constructs edit box by TAG (NAME_BOX_EDIT / EDITBOX),
+   * not GFF CONTROLTYPE — chargen / save-name.
    */
   static FromStruct(struct: GFFStruct, menu: GameMenu, parent: GUIControl, scale: boolean): GUIControl {
     const tag = struct.hasField('TAG') ? String(struct.getFieldByLabel('TAG')?.getValue() ?? '') : '';

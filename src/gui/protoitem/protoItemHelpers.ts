@@ -109,7 +109,7 @@ type TextureGateControl = GUIControl & {
   invalidateListRtt: () => void;
 };
 
-/** K1 vs TSL ability-row chrome textures (CSWGuiSkillFlow). */
+/** K1 vs TSL ability-row chrome textures (skill flow). */
 export function getAbilityBackTextureName(): string {
   return GameState.GameKey == GameEngineType.TSL ? 'uibit_abi_back' : 'lbl_indent';
 }
@@ -119,8 +119,8 @@ export function getAbilityArrowTextureName(): string {
 }
 
 /**
- * Retail CSWGuiSkillFlow::SetSkillStatus status byte (K1 @ 006ccfd0 / TSL @ 00587c00).
- * CharGen BuildButtons @ 006f30f0 assigns these; in-game SetCharacter uses InGame (6) for all.
+ * Retail SetSkillStatus status byte (K1 / TSL).
+ * CharGen BuildButtons assigns these; in-game SetCharacter uses InGame (6) for all.
  */
 export enum SkillFlowStatus {
   /** Available to pick — icon alpha 0.25; yellow border when selected. */
@@ -132,7 +132,7 @@ export enum SkillFlowStatus {
   /** Locked / unmet prereqs — icon+arrow alpha 0.25; red border when selected. */
   Locked = 3,
   /**
-   * Chosen this CharGen/level-up session (retail field27 / BuildButtons status 4).
+   * Chosen this CharGen/level-up session (field / BuildButtons status 4).
    * Green border; Select button shows Remove Feat.
    */
   Chosen = 4,
@@ -166,7 +166,7 @@ export type SkillFlowSlotVisuals = {
 };
 
 /**
- * Apply retail CSWGuiSkillFlow::SetSkillStatus visuals for one feat/power slot.
+ * Apply retail SetSkillStatus visuals for one feat/power slot.
  * Pass `chromeOnly: false` (default) for full status; use `alphasOnly` after
  * GUIControl.update so locked icon/fill alphas stick without killing pulse.
  */
@@ -252,7 +252,7 @@ export function applySkillFlowStatus(
     iconMaterial.needsUpdate = true;
   }
 
-  // Keep indent/back fill visible; dim only when locked (retail field2 alpha on case 3).
+  // Keep indent/back fill visible; dim only when locked (field alpha on case 3).
   const fillMat = button.getFill?.()?.material as THREE.ShaderMaterial | undefined;
   if(fillMat?.uniforms?.opacity){
     fillMat.uniforms.opacity.value = statusNum === SkillFlowStatus.Locked

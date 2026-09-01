@@ -196,7 +196,7 @@ export class GUIControl {
   /** When true, the control will be rebuilt on the next update. */
   needsUpdate: boolean = false;
 
-  /** Counts outstanding texture loads started by initTextures() and subclass overrides. */
+  /** Counts outstanding texture loads started by initTextures and subclass overrides. */
   private _pendingTextureCount: number = 0;
 
   /** True when all texture slots queued by this control have finished loading. */
@@ -786,7 +786,7 @@ export class GUIControl {
 
     this.padding = ( control.hasField('PADDING') ? control.getFieldByLabel('PADDING')?.getValue() : 0 );
 
-    //Extent — retail CSWGuiExtent::Load @ 00409dc0 (ReadFieldINT)
+    //Extent — retail Load (ReadFieldINT)
     this.hasExtent = control.hasField('EXTENT');
     if(this.hasExtent){
       let extent = control.getFieldByLabel('EXTENT')?.getChildStructs()[0];
@@ -894,7 +894,7 @@ export class GUIControl {
       }
     }
 
-    //Moveto — retail CSWGuiNavigable::Load (IDs into panel controls[]; resolved later)
+    //Moveto — retail Load (IDs into panel controls[]; resolved later)
     this.hasMoveTo = control.hasField('MOVETO');
     if(this.hasMoveTo){
       let moveTo = control.getFieldByLabel('MOVETO')?.getChildStructs()[0];
@@ -1130,7 +1130,7 @@ export class GUIControl {
   }
 
   /**
-   * Retail CSWGuiControl::GetIsSelectable — mouse hover / click targets are
+   * Retail GetIsSelectable — mouse hover / click targets are
    * navigable controls (buttons, etc.), not decorative labels (LBLH_*, slot
    * icon LBL_INV_*). Labels only qualify when they actually have click handlers.
    */
@@ -1337,7 +1337,7 @@ export class GUIControl {
 
   update(delta: number){
     const opacity = this.disableSelection ? 0.5 : 1;
-    // Retail CSWGuiBorder::Draw / CSWGuiText::Draw: use m_fPulsingAlpha when pulsing bits set.
+    // Retail Draw / Draw: use m_fPulsingAlpha when pulsing bits set.
     // GFF PULSING → SetPulsingAlpha(nonzero, bit0, bit1): bit0 = edges/corners, bit1 = fill.
     // `this.pulsing` is the runtime SetPulsingAlpha(enable, …) equivalent (menus/protoitems).
     const borderFlags = this.border.pulsing | 0;
@@ -1724,8 +1724,8 @@ export class GUIControl {
   }
 
   /**
-   * Retail CSWGuiControl::HitCheckMouse @ 004187c0 — inclusive int AABB.
-   * List rows store extents in list viewport-local space (HitCheckMouseLocal @ 0041a5e0).
+   * Retail HitCheckMouse — inclusive int AABB.
+   * List rows store extents in list viewport-local space (HitCheckMouseLocal).
    * Row mouse is derived from the list world/UI box so viewport-docked lists
    * (dialog LB_REPLIES) still pick correctly when extent.left/top are not panel-local.
    * Nested children of a list row keep parent-local extents — compose with ancestor
@@ -1733,8 +1733,8 @@ export class GUIControl {
    * Anchored HUD controls are viewport-pinned; test their integer world box instead.
    *
    * Nested Obj_Parent children may extend outside this control's AABB (abchrgen /
-   * skchrgen: STR_POINTS_BTN → STR_PLUS_BTN / STR_LBL). Retail CSWGuiPanel::HitCheckMouse
-   * @ 0040b690 walks a flat panel control list, so those children are tested directly.
+   * skchrgen: STR_POINTS_BTN → STR_PLUS_BTN / STR_LBL). Retail HitCheckMouse
+   * walks a flat panel control list, so those children are tested directly.
    * With a nested children[] tree, treat descendant hits as a hit on this control so
    * {@link getActiveControls} can recurse into the branch and prefer the child.
    */
@@ -1916,7 +1916,7 @@ export class GUIControl {
   }
 
   /**
-   * Retail CSWGuiPanel::HitCheckMouse @ 0040b690 — walk children reverse (topmost
+   * Retail HitCheckMouse — walk children reverse (topmost
    * first) and return only the first hit branch. Overlapping siblings do not both
    * receive hover/click.
    */
@@ -2030,9 +2030,9 @@ export class GUIControl {
   }
 
   /**
-   * Text layout box — retail sets CSWGuiText extent from border GetInnerExtent
-   * (Label/EditBox @ 004176f0 / 00418450). Buttons / hilight-labels use the
-   * intersection of border + hilight GetInnerExtent (CSWGuiButton::SetExtent @ 00417a50).
+   * Text layout box — retail sets GUI text extent from border GetInnerExtent
+   * (Label/EditBox). Buttons / hilight-labels use the
+   * intersection of border + hilight GetInnerExtent (SetExtent).
    * Both rects are centered on the control, so intersecting sizes is enough.
    */
   getInnerSize(){
@@ -2089,12 +2089,12 @@ export class GUIControl {
   }
 
   /**
-   * Center-fill image size — CSWGuiBorder::Draw @ 004168c0 fill pass.
+   * Center-fill image size — Draw fill pass.
    *
    * Draw sizes the fill to the hole inside the corner/edge tiles (w−2·dim × h−2·dim),
    * not GetInnerExtent. INNEROFFSET expands text/viewport only ({@link getInnerSize});
    * applying it here made thick-border fills (e.g. character BTN_AUTO) cover the frame.
-   * Scrollbar shrink (listbox SetExtent @ 0041bf80) is subtracted after, separately.
+   * Scrollbar shrink (listbox SetExtent) is subtracted after, separately.
    */
   getFillExtent(){
     const extent = this.getControlExtent();
@@ -2108,7 +2108,7 @@ export class GUIControl {
       innerOffsetY: 0,
     });
 
-    // Scrollbar shrink (listbox SetExtent @ 0041bf80) is content-width only, applied after.
+    // Scrollbar shrink (listbox SetExtent) is content-width only, applied after.
     const width = Math.max(0, hole.width - shrinkWidth);
     const height = Math.max(0, hole.height);
 
@@ -2140,7 +2140,7 @@ export class GUIControl {
     let shrinkWidth = 0;
     if(BitWise.InstanceOfObject(this, GUIControlTypeMask.GUIListBox)){
       const lb = this as any;
-      // Retail SetExtent @ 0041bf80: content width -= scrollbar.extent.width only
+      // Retail SetExtent: content width -= scrollbar.extent.width only
       if (lb.scrollbar?.extent?.width) {
         shrinkWidth = lb.scrollbar.extent.width;
       }
@@ -2150,7 +2150,7 @@ export class GUIControl {
 
   /**
    * Border edge/corner quads in widget-local space (ints).
-   * Retail CSWGuiBorder::Draw @ 004168c0 uses int left/top/width/height.
+   * Retail Draw uses int left/top/width/height.
    */
   getBorderExtent(side: string){
     const shrinkWidth = asExtentInt(this.getShrinkWidth());
@@ -2781,7 +2781,7 @@ export class GUIControl {
     this.widget.highlight.add(sprite);
 
     sprite.isClickable = (e: any) => {
-      return this.isClickable();
+      return this.isClickable;
     };
 
     sprite.onClick = (e: any) => {
@@ -2809,7 +2809,7 @@ export class GUIControl {
         this.onMouseIn(e: any);
     };
 
-    sprite.getControl = () => {
+    sprite.getControl =  => {
       return this;
     }*/
 
@@ -2908,7 +2908,7 @@ export class GUIControl {
   }
 
   /**
-   * Retail CSWGuiNavigable::SetMoveToControl — stores a resolved neighbor pointer
+   * Retail SetMoveToControl — stores a resolved neighbor pointer
    * (or clears the link). Before panel resolve, GFF MOVETO IDs live in {@link moveTo}.
    */
   setMoveToControl(direction: string, control?: GUIControl){
@@ -2933,7 +2933,7 @@ export class GUIControl {
     }
   }
 
-  /** Retail CSWGuiNavigable::GetMoveToControl — neighbor pointer after resolve. */
+  /** Retail GetMoveToControl — neighbor pointer after resolve. */
   getMoveToControl(direction: string): GUIControl | undefined {
     if(typeof direction == 'string'){
       direction = direction.toLowerCase();
@@ -2953,7 +2953,7 @@ export class GUIControl {
   }
 
   /**
-   * Retail CSWGuiNavigable::HandleInputEvent for D-pad / arrow keys.
+   * Retail HandleInputEvent for D-pad / arrow keys.
    * Follows resolved MoveTo neighbors and activates via the parent menu.
    */
   directionalNavigate(direction = ''){

@@ -1,8 +1,8 @@
 import { asExtentInt } from "@/gui/GUICoord";
 
 /**
- * Retail CSWGuiExtent snapshot stored in control_extents
- * (AddControls @ 0041c2a0; restored in OrganizeControls @ 0041b140).
+ * Retail GUI extent snapshot stored in control_extents
+ * (AddControls; restored in OrganizeControls).
  */
 export type ListBoxSavedExtent = {
   left: number;
@@ -52,7 +52,7 @@ export function maxItemHeightFromHeights(heights: readonly number[]): number {
 }
 
 /**
- * Retail OrganizeControls leftover (@ 0041b140):
+ * Retail OrganizeControls leftover :
  * leftover = (viewport_height - items_per_page * pitch) - padding
  * stretch = leftover / items_per_page (trunc toward 0); rem = leftover - stretch * ipp
  */

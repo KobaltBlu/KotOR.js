@@ -2,7 +2,7 @@ import { asExtentInt, truncDiv } from "@/gui/GUICoord";
 import { borderInnerExtent } from "@/gui/borderInnerExtent";
 
 /**
- * Retail CSWGuiScrollBar::SetExtent @ 004193f0 — thumb size inside border
+ * Retail SetExtent — thumb size inside border
  * GetInnerExtent. Height floors at 4 when maxValue > 1.
  */
 export function scrollBarThumbSize(params: {
@@ -43,8 +43,8 @@ export function scrollBarThumbSize(params: {
 }
 
 /**
- * Retail CSWGuiListBox::HandleMouseCapturedMovement @ 0041b670 thumb drag.
- * `startValue` is field5_0x7c (1-based scroll_position when shouldScroll, else cur).
+ * Retail HandleMouseCapturedMovement thumb drag.
+ * `startValue` is the 1-based scroll_position when shouldScroll, else cur.
  * Returns the same units as startValue (1-based or 0-based accordingly).
  */
 export function scrollBarDragValue(params: {
