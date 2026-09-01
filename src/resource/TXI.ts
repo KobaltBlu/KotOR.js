@@ -78,7 +78,7 @@ export class TXI {
     this.upperleftcoords = [];
     this.lowerrightcoords = [];
 
-    //Animation — retail CycleTIDTextureController ctor defaults fps to 1.0 (@ 00463470)
+    //Animation — retail cycle texture controller defaults fps to 1.0
     this.isAnimated = false;
     this.numx = 0;
     this.numy = 0;
@@ -211,7 +211,7 @@ export class TXI {
           this.numy = parseInt(args[1]);
         break;
         case 'fps':
-          // Retail CycleTIDTextureController::ParseField @ 004634d0 — Parse_float
+          // Retail ParseField — Parse_float
           this.fps = parseFloat(args[1]);
           if(isNaN(this.fps) || this.fps <= 0) this.fps = 1;
         break;

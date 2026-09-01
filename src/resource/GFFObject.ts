@@ -460,7 +460,7 @@ export class GFFObject {
   }
 
   //Gets data from the FieldDataHeader
-  // Retail CResGFF::ReadFieldQuaternion @ 004121b0 stores Orientation as W,X,Y,Z.
+  // Retail ReadFieldQuaternion stores Orientation as W,X,Y,Z.
   getOrientation(offset: number): {x: number, y: number, z: number, w: number}{
     let OriginalPos = this.reader.tell();//Store the original position of the reader object
     this.reader.seek(this.FieldDataOffset + offset);
@@ -884,7 +884,7 @@ export class GFFObject {
             break;
           case GFFDataType.ORIENTATION:
             //Export the Orientation data to the FieldData block and record the offset with the field
-            // Retail CResGFF::WriteFieldQuaternion @ 00412ca0 writes W,X,Y,Z.
+            // Retail WriteFieldQuaternion writes W,X,Y,Z.
             this.BWFields.writeUInt32(this.BWFieldData.position);
             this.BWFieldData.writeSingle(field.getOrientation().w);
             this.BWFieldData.writeSingle(field.getOrientation().x);

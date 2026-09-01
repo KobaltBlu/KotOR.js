@@ -79,7 +79,7 @@ export class DLGNode {
   speaker: ModuleObject;
   dialog: DLGObject;
 
-  /** Retail WaitFlags bits (CSWSObject::IsDialogDelay). */
+  /** Retail WaitFlags bits (IsDialogDelay). */
   static readonly WAIT_CAMERA = 0x01;
   static readonly WAIT_VOICE = 0x02;
   static readonly WAIT_ANIM = 0x04;
@@ -260,7 +260,7 @@ export class DLGNode {
   }
 
   /**
-   * Retail SendDialogReplies @ 007562c0 — Logic 0=AND, 1=OR;
+   * Retail SendDialogReplies — Logic 0=AND, 1=OR;
    * a single present Active script is evaluated alone.
    */
   runActiveScripts(){
@@ -298,7 +298,7 @@ export class DLGNode {
       const allowOverrideHigher = false;
       GameState.JournalManager.AddJournalQuestEntry(this.quest, this.questEntry, allowOverrideHigher);
     }
-    // Retail CSWSDialog::GiveDialogPlotXP @ 00758ad0
+    // Retail GiveDialogPlotXP
     this.awardPlotIndexXP();
     if(!this.text || this.text.length == 0 || this.isContinueDialog()){
       console.warn(`No text found for ${this.text} on ${this.speaker?.getName()}. not saving to journal`, this.isContinueDialog());
@@ -367,7 +367,7 @@ export class DLGNode {
 
   /**
    * Apply DLG node fade overlay.
-   * Retail HandleDialogEntry → CSWGuiDialogLetterbox::SetFade @ 006a7620
+   * Retail HandleDialogEntry → SetFade
    * (KotOR.js reuses FadeOverlayManager with the same dir/wait/length/color).
    * Types 1/4 fade out; 2/3 fade in. Length 0 is an instant cut (types 1/2).
    * WaitFlags&0x08 (WAIT_FADE) completes when the overlay IsFadeDone, with a
@@ -491,7 +491,7 @@ export class DLGNode {
   }
 
   /**
-   * Entry completion checklist mirroring retail CSWSObject::IsDialogDelay WaitFlags bits.
+   * Entry completion checklist mirroring retail IsDialogDelay WaitFlags bits.
    */
   resetChecklist(){
     const waitCamera = (this.waitFlags & DLGNode.WAIT_CAMERA) !== 0;
@@ -571,7 +571,7 @@ export class DLGNode {
       node.sound = struct.getFieldByLabel('Sound').getValue();
     }
 
-    // Retail LoadDialogBase @ 0074f4f0 — SoundExists default 0x80 when absent
+    // Retail LoadDialogBase — SoundExists default 0x80 when absent
     if(struct.hasField('SoundExists')){
       node.soundExists = struct.getFieldByLabel('SoundExists').getValue();
     }else{
@@ -583,7 +583,7 @@ export class DLGNode {
     }
 
     if(struct.hasField('CameraAnimation')){
-      // Retail WORD; 0 means none. Valid CUT ids are 1000..0x6BF (SetAnimatedCamera @ 0062bfa0).
+      // Retail WORD; 0 means none. Valid CUT ids are 1000..0x6BF (SetAnimatedCamera).
       const anim = struct.getFieldByLabel('CameraAnimation').getValue();
       node.cameraAnimation = anim > 0 ? anim : -1;
     }
@@ -684,7 +684,7 @@ export class DLGNode {
       node.camFieldOfView = struct.getFieldByLabel('CamFieldOfView').getValue();
     }
 
-    // LoadDialogCamera @ 0059eaa0
+    // LoadDialogCamera
     if(struct.hasField('CamHeightOffset')){
       node.camHeightOffset = struct.getFieldByLabel('CamHeightOffset').getValue();
     }
@@ -960,7 +960,7 @@ export class DLGNode {
     // Retail LoadDialogBase alien VO resolve must run before delay/WaitFlags mutations
     node.resolveAlienVO(dialog);
 
-    // Retail CSWSDialog::LoadDialogBase fade / delay / WaitFlags mutations
+    // Retail LoadDialogBase fade / delay / WaitFlags mutations
     node.applyLoadDialogBaseMutations(dialog, fadeTypePresent, defaultUnsetDelay);
 
     if(struct.hasField('NodeUnskippable')){
@@ -990,7 +990,7 @@ export class DLGNode {
   }
 
   /**
-   * Retail LoadDialogBase @ 0074f4f0 alien/foreign-language VO resolution.
+   * Retail LoadDialogBase alien/foreign-language VO resolution.
    * When VO_ResRef is empty: race row from AlienRaceNode (or AlienRaceOwner for
    * empty Speaker); emotion.2da[Emotion].LABEL names the alienvo.2da column.
    */
@@ -1047,7 +1047,7 @@ export class DLGNode {
   }
 
   /**
-   * Retail CSWSDialog::LoadDialogBase post-load mutations for Delay, WaitFlags, and fade fields.
+   * Retail LoadDialogBase post-load mutations for Delay, WaitFlags, and fade fields.
    * @param defaultUnsetDelay — DelayEntry for entries, DelayReply for replies.
    */
   applyLoadDialogBaseMutations(
@@ -1096,8 +1096,8 @@ export class DLGNode {
 
   /**
    * Spoken-time estimate in seconds when Delay is unset and there is no VO.
-   * Retail CExoLocString::GetSpokenTimeEstimate @ 005ea270: length * 0.11 + 1.0
-   * (empty text returns 0; CSWSDialog::SetDialogDelay floors the result to 0.01).
+   * Retail GetSpokenTimeEstimate: length * 0.11 + 1.0
+   * (empty text returns 0; SetDialogDelay floors the result to 0.01).
    */
   static estimateSpokenTimeSeconds(text: string): number {
     const cleaned = (text || '').trim();

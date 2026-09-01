@@ -35,7 +35,7 @@ export class DLGObject {
   resref: string;
   gff: GFFObject;
   conversationType: number;
-  /** Root ComputerType BYTE — default 0 (retail LoadDialog @ 0074e160). */
+  /** Root ComputerType BYTE — default 0 (retail LoadDialog). */
   computerType: number = 0;
   entryList: DLGNode[] = [];
   replyList: DLGNode[] = [];
@@ -54,7 +54,7 @@ export class DLGObject {
   ambientTrack: string;
   unequipHeadItem: boolean;
   unequipItems: boolean;
-  /** Root Skippable BYTE — default true (retail LoadDialog @ 0074e160). */
+  /** Root Skippable BYTE — default true (retail LoadDialog). */
   skippable: boolean = true;
   isAnimatedCutscene: boolean;
   animatedCameraResRef: string;
@@ -489,7 +489,7 @@ export class DLGObject {
   }
 
   /**
-   * Load the dialog AmbientTrack (retail LoadAmbientTrackForDialog @ 004d4750).
+   * Load the dialog AmbientTrack (retail LoadAmbientTrackForDialog).
    * Empty / missing track destroys any prior dialog stream without recreating.
    */
   async loadBackgroundMusic() {
@@ -502,8 +502,8 @@ export class DLGObject {
     const bgm = await AudioLoader.LoadMusic(this.ambientTrack);
     if(!bgm){ return; }
     audio.setAudioBuffer('DIALOG', bgm.buffer as ArrayBuffer, this.ambientTrack);
-    // Retail: new CExoStreamingSoundSource → looping field[2]=0; Play never SetLooping.
-    // AIL loop_count = (field[2]==0) → 1 (play once). Play's 4th arg is STREAMMUSIC path, not loop.
+    // Retail: new streaming sound source → looping off; Play never SetLooping.
+    // AIL loop_count with looping off → 1 (play once). Play's 4th arg is STREAMMUSIC path, not loop.
     // Layers over ducked area BGM (do not stop area).
     audio.dialogMusicAudioEmitter.play(false);
   }

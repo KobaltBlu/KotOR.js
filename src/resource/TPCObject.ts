@@ -14,9 +14,9 @@ import { TXIPROCEDURETYPE } from "@/enums/graphics/txi/TXIPROCEDURETYPE";
 const TPCHeaderLength = 128;
 
 /**
- * Retail GLRender::CreateCubeTexture @ 00424000 (uncompressed cubemaps only):
+ * Retail CreateCubeTexture (uncompressed cubemaps only):
  * source face i is quarter-rotated clockwise CUBEMAP_FACE_ROTATIONS[i] times
- * (tables @ 0078db38) and uploaded to GL face CUBEMAP_FACE_REMAP[i] (@ 0078db50).
+ * and uploaded to GL face CUBEMAP_FACE_REMAP[i].
  * The DXT path (CreateProcessedCubeTexture) uploads faces in order, unrotated.
  */
 const CUBEMAP_FACE_REMAP = [1, 0, 2, 3, 4, 5];
@@ -91,8 +91,8 @@ export class TPCObject {
    * Extract DDS/mipmap data from the TPC.
    * @param compressMipMaps Keep DXT compressed (true) or decompress to RGBA (false).
    * @param options.stitchCycleFrames When true, rebuild cycle frames into one contact-sheet
-   *   atlas (Forge preview). Engine path keeps frames split — retail CAurTextureBasic::glImage
-   *   @ 00420970 uploads one GL texture per frame.
+   *   atlas (Forge preview). Engine path keeps frames split — retail glImage
+   *   uploads one GL texture per frame.
    */
   getDDS( compressMipMaps: boolean = true, options?: { stitchCycleFrames?: boolean } ) {
 
@@ -139,9 +139,9 @@ export class TPCObject {
     let dataOffset = TPCHeaderLength;
 
     // TXI proceduretype cycle:
-    //  - Compressed (CreateProcessedTexture @ 00424dd0): sequential per-frame mip chains
-    //    with stride from GetCompressedContactSheetOffset @ 00424d70 (full chain, square frameW).
-    //  - Uncompressed (CreateTexture @ 00424980): 2D contact sheet + ImageGetSubImage.
+    //  - Compressed (CreateProcessedTexture): sequential per-frame mip chains
+    //    with stride from GetCompressedContactSheetOffset (full chain, square frameW).
+    //  - Uncompressed (CreateTexture): 2D contact sheet + ImageGetSubImage.
     const isCycle = this.txi.procedureType == TXIPROCEDURETYPE.CYCLE
       && (this.txi.numx | 0) > 0 && (this.txi.numy | 0) > 0
       && (this.txi.numx * this.txi.numy) > 1;
@@ -239,8 +239,8 @@ export class TPCObject {
   }
 
   /**
-   * Compressed cycle TPCs — retail CreateProcessedTexture @ 00424dd0 /
-   * GetCompressedContactSheetOffset @ 00424d70.
+   * Compressed cycle TPCs — retail CreateProcessedTexture /
+   * GetCompressedContactSheetOffset.
    *
    * On disk: [frame0 full mip chain][frame1 full mip chain]... with stride
    * = sum of DXT sizes for square frameW down to 1x1 (header.mipMapCount may be 1;
@@ -354,7 +354,7 @@ export class TPCObject {
 
   /**
    * Uncompressed cycle contact sheet → per-frame mip chains.
-   * Retail CreateTexture @ 00424980 ImageGetSubImage(x = (i%numx)*fw, y = (i/numx)*fh).
+   * Retail CreateTexture ImageGetSubImage(x = (i%numx)*fw, y = (i/numx)*fh).
    */
   private splitUncompressedCycleContactSheet(dds: any): any {
     const numx = this.txi.numx | 0;
@@ -389,7 +389,7 @@ export class TPCObject {
     return dds;
   }
 
-  /** Retail ImageGetSubImage @ 0045f000 — RGBA8 rectangle copy. */
+  /** Retail ImageGetSubImage — RGBA8 rectangle copy. */
   static extractRgbaSubImage(
     src: Uint8Array, srcW: number, srcH: number,
     x: number, y: number, w: number, h: number
@@ -406,7 +406,7 @@ export class TPCObject {
   }
 
   /**
-   * Retail GetCompressedContactSheetOffset @ 00424d70.
+   * Retail GetCompressedContactSheetOffset.
    * Returns byte offset to frameIndex's mip chain. Assumes square frames (retail uses frameW only).
    * bpp == 4 → DXT5 (16-byte blocks), else DXT1 (8-byte blocks).
    */
@@ -619,7 +619,7 @@ export class TPCObject {
   }
 
   //Convert the TPC into a THREE.CompressedTexture for use in the engine
-  // Retail CAurTextureBasic::glImage @ 00420970 — cycle textures get one GL tid per frame.
+  // Retail glImage — cycle textures get one GL tid per frame.
   toCompressedTexture(){
     let images = [];
     let texDatas = this.getDDS( true );
@@ -633,7 +633,7 @@ export class TPCObject {
         tex.minFilter = THREE.LinearFilter;
       }
       tex.format = texDatas.format;
-      // Retail CreateTexture @ 00424980 — default wrap is GL_REPEAT when TXI clamp bits are clear.
+      // Retail CreateTexture — default wrap is GL_REPEAT when TXI clamp bits are clear.
       tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
       tex.needsUpdate = true;
       (tex as any).bumpMapType = 'NORMAL';
@@ -644,7 +644,7 @@ export class TPCObject {
     };
 
     if ( isCycle ) {
-      // Per-frame mip chains — CreateProcessedTexture @ 00424dd0 / GetCompressedContactSheetOffset
+      // Per-frame mip chains — CreateProcessedTexture / GetCompressedContactSheetOffset
       const cycleFrames: OdysseyCompressedTexture[] = [];
       for ( let f = 0; f < frameCount; f++ ) {
         const start = f * texDatas.mipmapCount;
