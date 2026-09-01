@@ -192,7 +192,7 @@ export class GameState implements EngineContext {
    */
   static DEBUG_COMBAT_FLOATY_ALL_ATTACKERS = false;
 
-  /** Retail CClientOptions.turbo_enabled — GetMaxSpeed returns 15 when set. */
+  /** Retail client turbo_enabled — GetMaxSpeed returns 15 when set. */
   static turboEnabled = false;
   /** Retail party invulnerability cheat (server immortal for party). */
   static cheatInvulnerable = false;
@@ -234,10 +234,10 @@ export class GameState implements EngineContext {
   static timeStopExclusions: Set<number> = new Set();
   
   static Mode: EngineMode = EngineMode.GUI;
-  /** CClientOptions::camera_mode — default 3 (OnAStick); SetCameraMode / drive gate */
+  /** Retail camera_mode — default 3 (OnAStick); SetCameraMode / drive gate */
   static clientCameraMode: number = 3;
   /**
-   * Retail hsMode @ 008338e8 — message-panel key sequence sets 1;
+   * Retail hsMode — message-panel key sequence sets 1;
    * freelook then enters Navigate (hover) and bumps to 2.
    */
   static cameraHsMode: number = 0;
@@ -321,7 +321,7 @@ export class GameState implements EngineContext {
   static viewportFrustum: THREE.Frustum;
   static viewportProjectionMatrix: THREE.Matrix4;
 
-  // Scene light-model ambient = ARE DynAmbientColor (CAurScene::SetAmbient @ LoadArea).
+  // Scene light-model ambient = ARE DynAmbientColor (SetAmbient during LoadArea).
   // Sun/moon ambient = directional light ambient channel; diffuse = gidy_sun_diff.
   static ambientColor = new THREE.Color(0xFFFFFF);
   static sunAmbientColor = new THREE.Color(0x000000);
@@ -415,7 +415,7 @@ export class GameState implements EngineContext {
   static speedBlurRatio: number = 0.75;
   /**
    * Retail motionBlurVFXCount — Force Speed progFX 0x641/0x642 refcount
-   * (ApplyMotionBlur @ 006a14e0 / RemoveMotionBlur @ 006a1570).
+   * (ApplyMotionBlur / RemoveMotionBlur).
    */
   static motionBlurVFXCount: number = 0;
   
@@ -447,8 +447,8 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail ExecuteCommandSWMG_SetSpeedBlurEffect @ 00543550 —
-   * AurSetSpeedBlurRatio @ 0044f130 (default 0.75) + AurEnable/DisableSpeedBlur @ 0044f0a0/0044f0b0.
+   * Retail SWMG_SetSpeedBlurEffect —
+   * AurSetSpeedBlurRatio (default 0.75) + AurEnable/DisableSpeedBlur.
    * Accumulation via AccumulationBlurPass (RenderAccumulationBlur + 128^2 RenderFrameToTexture).
    */
   static SetSpeedBlurEffect(enabled: boolean, ratio: number = 0.75){
@@ -466,7 +466,7 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail ApplyMotionBlur @ 006a14e0 — progFX 0x641/0x642 on the player (not during MG).
+   * Retail ApplyMotionBlur — progFX 0x641/0x642 on the player (not during MG).
    */
   static applyMotionBlurVFX(target: ModuleCreature | undefined, progFX: number){
     if(progFX !== 0x641 && progFX !== 0x642){
@@ -482,7 +482,7 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail RemoveMotionBlur @ 006a1570 — disable when refcount hits zero (outside MG).
+   * Retail RemoveMotionBlur — disable when refcount hits zero (outside MG).
    */
   static removeMotionBlurVFX(){
     GameState.motionBlurVFXCount--;
@@ -499,14 +499,14 @@ export class GameState implements EngineContext {
   }
 
   /**
-   * Retail UpdateMotionBlur @ 006a5920 — ratio = clamp(speed/driveMax, 1) * 0.75.
+   * Retail UpdateMotionBlur — ratio = clamp(speed/driveMax, 1) * 0.75.
    *
    * Must run AFTER locomotion this frame. WASD calls cancelLocomotionActions
    * (zeros speed) in controls.Update before creature.update; pathfinding
    * quickWalk sets speed before clientUpdate. Syncing here (Render) sees the
    * post-movement speed for both.
    *
-   * Prefers playerControl.lastAnimMoveSpeed (retail field164) when live,
+   * Prefers playerControl.lastAnimMoveSpeed when live,
    * else creature.speed (WalkUpdateLocation).
    */
   static syncMotionBlurRatio(){
@@ -528,7 +528,7 @@ export class GameState implements EngineContext {
     }
     const anim = creature.playerControl?.lastAnimMoveSpeed ?? 0;
     const raw = typeof creature.speed === 'number' ? creature.speed : 0;
-    // Pathfinding never writes lastAnimMoveSpeed; WASD does (field164).
+    // Pathfinding never writes lastAnimMoveSpeed; WASD does.
     const speed = anim > 0 ? anim : raw;
     let t = speed / driveMax;
     if(t > 1) t = 1;
@@ -807,7 +807,7 @@ export class GameState implements EngineContext {
 
     GameState.camera_dialog = new THREE.PerspectiveCamera( 55, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.01, 15000 );
     GameState.camera_dialog.up = new THREE.Vector3( 0, 0, 1 );
-    // Animated clip defaults match SetAnimatedCamera @ 00641010 (0.1, 10000)
+    // Animated clip defaults match SetAnimatedCamera (0.1, 10000)
     GameState.camera_animated = new THREE.PerspectiveCamera( 55, GameState.ResolutionManager.getViewportWidth() / GameState.ResolutionManager.getViewportHeight(), 0.1, 10000 );
     // Match dialog / follower cameras — Aurora world is Z-up.
     GameState.camera_animated.up = new THREE.Vector3( 0, 0, 1 );
@@ -1155,7 +1155,7 @@ export class GameState implements EngineContext {
       void GameState.ensureForceDistortionTexture();
 
       // Retail BeginIntro: K1 queues leclogo/biologo/legal BIKs; TSL queues
-      // leclogo/obsidianent then CSWGuiLegalScreen (texture), not a Legal movie.
+      // leclogo/obsidianent then legal screen texture, not a Legal movie.
       if(GameState.GameKey == GameEngineType.KOTOR){
         GameState.VideoManager.queueMovie('leclogo', true);
         GameState.VideoManager.queueMovie('biologo', true);
@@ -1184,7 +1184,7 @@ export class GameState implements EngineContext {
 
       const onIntroComplete = () => {
         window.dispatchEvent(new Event('resize'));
-        // TSL retail: after PlayMovieQueue, CSWGuiLegalScreen then main menu
+        // TSL retail: after PlayMovieQueue, legal screen then main menu
         if(GameState.GameKey == GameEngineType.TSL){
           GameState.LegalScreenManager.Start();
           return;
@@ -1482,7 +1482,7 @@ export class GameState implements EngineContext {
         GameState.MenuManager.LoadScreen.close();
         // Retail MainLoop after StartSounds: SetSoundMode(0) again (clears BusyWait mute under load).
         AudioEngine.clearSoundModeStack();
-        // Retail also defers when dialog already active (field45_0xb4) and forces holdWorld.
+        // Retail also defers when dialog already active and forces holdWorld.
         if(GameState.Mode == EngineMode.DIALOG || GameState.CutsceneManager?.active){
           GameState.holdWorldFadeInForDialog = true;
         }
@@ -1527,7 +1527,7 @@ export class GameState implements EngineContext {
     console.log('SetEngineMode: ', mode);
     GameState.Mode = mode;
 
-    // CSWCameraFreeLook enter/exit
+    // Freelook camera enter/exit
     if(mode == EngineMode.FREELOOK && prev != EngineMode.FREELOOK){
       FollowerCamera.beginFreeLook();
     }else if(prev == EngineMode.FREELOOK && mode != EngineMode.FREELOOK){
@@ -1679,7 +1679,7 @@ export class GameState implements EngineContext {
     }
 
     GameState.VideoEffectManager.Update(delta);
-    // Retail CycleTIDTextureController::Control @ 00460970 — once per rendered frame
+    // Retail CycleTIDTextureController — once per rendered frame
     TextureAnimationManager.update(delta);
 
     GameState.MenuManager.Update(delta);
@@ -1919,7 +1919,7 @@ export class GameState implements EngineContext {
   }
 
   static UpdateFreeLook(delta: number = 0){
-    // CSWCameraFreeLook — video effect from appearance.freelookeffect
+    // Freelook camera — video effect from appearance.freelookeffect
     GameState.VideoEffectManager.SetVideoEffect(-1);
     const player = GameState.getCurrentPlayer();
     if(player){
